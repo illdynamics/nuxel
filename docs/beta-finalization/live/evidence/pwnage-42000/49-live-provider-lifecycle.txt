@@ -1,0 +1,12 @@
+policy={"enabled": false, "updated": 1793475829.0286202}
+geoclue=active agent=active
+rail=0
+--- get-status (disabled; no coordinates)
+{'success': True, 'enabled': False, 'state': 'disabled', 'latitude': None, 'longitude': None, 'active_clients': 0, 'provider_ready': False, 'gnss_fix': False, 'network_fix': False}
+--- wait 65s for GeoClue idle auto-stop
+geoclue=inactive agent=active
+rail=0
+Oct 31 20:43:38 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 20:43:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 20:44:49 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[17261]: Service not used for 60 seconds. Shutting down..
+Oct 31 20:44:49 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.

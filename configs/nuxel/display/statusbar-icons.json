@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "updated_at": 0,
+  "source": "default",
+  "icons": {
+    "time": true,
+    "signal": true,
+    "wifi": true,
+    "location": true,
+    "bluetooth": true,
+    "nfc": true,
+    "sound": true,
+    "usb": true,
+    "remote": true,
+    "battery": true,
+    "battery_pct": true
+  }
+}

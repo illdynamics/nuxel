@@ -1,0 +1,39 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== deployed hashes ==
+220c1a671f0780aa8894b6b499a85141e20101a5883109720156540ca8ec4498  /usr/lib/nuxel/nuxel-graphics-profile
+54e33f98b1f6370da6329525cc77e3ad304bf9c20fb446311138fa97a280ebca  /etc/nuxel/graphics/graphics-profile.json
+be822e7220df31cf94a19bb4059aef05c79e62f22d884121d6619ddc1819f59f  /usr/lib/nuxel/nuxel-session.sh
+634d859d669a0b5a632d3f7046b442707f38b61887280e8a167c6b27638377e1  /usr/lib/nuxel/nuxel-bridge/api.py
+04775ce4542fea5480a1aecf264f949270c61861560bada465ca92355f73fa3d  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+875737d5bd754f791fb7a5edcfb6bbdbc528596bc8bd736ce55f21218269aeaf  /usr/share/nuxel/pwa/nuxel-home/js/launcher.js
+045be85d92df47f1180644dfdcbb9b7639db2c7045b5a4c9f60095f8f07d197a  /usr/share/nuxel/pwa/nuxel-apps/photos/js/photos.js
+eba18f340e519bbd04765c0744bb7f554df99ca328f3dd7921698600d3477b0f  /usr/lib64/libEGL_mesa.so.0.0.0
+78a305d013e9d944b7d4f893a0af4a42f71eb39e0e080951d6004063a7ac7dc5  /usr/lib64/libgallium_dri.so
+2ccada1a6fb4cbf4b371567754efaed2ee6266daf8320c0b6791f7b61c58247c  /usr/lib64/libwlroots-0.19.so
+
+== backups ==
+drwxr-xr-x. 2 root root 4096 Nov  1 10:12 /var/backups/nuxel/p50000-mesa-20261101T101226
+drwxr-xr-x. 2 root root 4096 Nov  1 10:27 /var/backups/nuxel/p50000-policy-20261101T102722
+drwxr-xr-x. 2 root root 4096 Nov  1 10:27 /var/backups/nuxel/p50000-pwa-20261101T102715
+drwxr-xr-x. 2 root root 4096 Nov  1 10:11 /var/backups/nuxel/p50000-wlroots-20261101T101148
+drwxr-xr-x. 2 root root 4096 Nov  1 10:32 /var/backups/nuxel/p50000-wsi-canary-20261101T103202
+
+== services ==
+active
+active
+active
+active
+
+== fallback ==
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory
+
+== panel ==
+1793525828 FRAMES_OK total=3992 fps_1s=23 failures=0 blits=966 present_skipped=3025 blit_avg_ms=38 damage=72-1396 damage_blits=948 damage_avg_ms=38 idle_ms=16 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=967 decon_pan_failed=0

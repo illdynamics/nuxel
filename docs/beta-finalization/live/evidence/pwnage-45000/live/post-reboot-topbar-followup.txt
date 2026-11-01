@@ -1,0 +1,21 @@
+# Post-reboot verification (2026-10-31T19:22Z)
+
+                  Mobile Linux for Control Freaks
+4.14.253-gf7194c1d15ed-dirty
+up 4 minutes
+lock_state=missing (native bar fail-closed hidden)
+5976 /usr/lib/nuxel/nuxel-statusbar
+2026-10-31T20:18:52 STATUSBAR_START_HIDDEN locked=1
+active
+active
+active
+active
+active
+css/status-bar.css?v=p45001
+v71-p45001
+ddcf5092a5dae376f95f47fc99ceec438adcc34454d98fd90cba2b598223c812  /usr/lib/nuxel/nuxel-statusbar
+fda4ff8494c97bd0d799eb652f2455d03e3759f7f43d98eb144951496810c648  /usr/share/nuxel/pwa/nuxel-home/index.html
+53eafc68fd717642f226d8a2474a5b37ec1d252f66d0a633adfc38901d565e34  /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+
+screenshot: docs/beta-finalization/live/evidence/pwnage-45000/screenshots/post-reboot-lockscreen-no-topbar.png (720x1520)
+top 72px is wallpaper (stddev 37-42), not a uniform status-bar strip

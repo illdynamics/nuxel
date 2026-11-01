@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "schema": "nuxel.packages-manifest/1",
-  "generated": "2026-10-31T12:19:00Z",
+  "generated": "2026-10-31T19:50:25Z",
   "source": {
     "distribution": "fedora",
     "release": "43",
@@ -23,7 +23,7 @@
           "compressed_bytes": 14837955,
           "decompressed_sha256": "02d247f25e10add65533a4e76462fe390ebf2b77fcc4e60fe53c2c172ce2d680"
         },
-        "source": "network (dl.fedoraproject.org)",
+        "source": "offline cache",
         "nevra_count": 68135
       },
       {
@@ -37,7 +37,7 @@
           "compressed_bytes": 5641092,
           "decompressed_sha256": "1c11af60b2f44e9f2db5a834bc24c0199bb007d47223ebb70d0021fe5917413a"
         },
-        "source": "network (dl.fedoraproject.org)",
+        "source": "offline cache",
         "nevra_count": 26116
       }
     ],
@@ -55,7 +55,7 @@
       "version_satisfaction": "delegated to dnf's solver: this verifier matches names/capabilities, it does not compare EVR strings",
       "file_requirements": "'kind=file' requirements (/usr/bin/sh) cannot be resolved from primary.xml - Fedora keeps file provides in filelists.xml, which this verifier deliberately does not download; they are counted, never reported as verified"
     },
-    "essential_packages": 61,
+    "essential_packages": 69,
     "requirements_total": 1656,
     "by_kind": {
       "file": 65,
@@ -132,6 +132,27 @@
         ],
         "unresolved": []
       },
+      "PackageKit": {
+        "nevra": "PackageKit-1.3.6-1.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "PackageKit-command-not-found": {
+        "nevra": "PackageKit-command-not-found-1.3.6-1.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "acl": {
+        "nevra": "acl-2.4.0-1.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
+        "unresolved": []
+      },
       "alsa-lib": {
         "nevra": "alsa-lib-1.2.16.1-1.fc43.aarch64",
         "total": 7,
@@ -148,6 +169,20 @@
           "file": 1,
           "capability": 40
         },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "appstream": {
+        "nevra": "appstream-1.1.3-1.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "appstream-data": {
+        "nevra": "appstream-data-43-3.fc43.noarch",
+        "total": 0,
+        "by_kind": {},
         "package_requirements": [],
         "unresolved": []
       },
@@ -374,6 +409,13 @@
         ],
         "unresolved": []
       },
+      "gnome-software": {
+        "nevra": "gnome-software-49.4-1.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
+        "unresolved": []
+      },
       "greetd": {
         "nevra": "greetd-0.10.3-6.fc43.aarch64",
         "total": 16,
@@ -463,6 +505,13 @@
           "file": 1,
           "capability": 24
         },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "lxpolkit": {
+        "nevra": "lxpolkit-0.5.6-3.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
         "package_requirements": [],
         "unresolved": []
       },
@@ -802,6 +851,13 @@
         "package_requirements": [],
         "unresolved": []
       },
+      "xfce-polkit": {
+        "nevra": "xfce-polkit-0.3-16.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
+        "unresolved": []
+      },
       "xorg-x11-server-Xorg": {
         "nevra": "xorg-x11-server-Xorg-21.1.25-2.fc43.aarch64",
         "total": 34,
@@ -1133,6 +1189,16 @@
             "packages": [
               "libss"
             ],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "acl",
+          "nevra": "acl-2.4.0-1.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         },
@@ -1769,6 +1835,82 @@
       ]
     },
     {
+      "id": "software",
+      "description": "PWNAGE-45000 native software center (RPM/PackageKit + polkit agent)",
+      "packages": [
+        {
+          "name": "gnome-software",
+          "nevra": "gnome-software-49.4-1.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "PackageKit",
+          "nevra": "PackageKit-1.3.6-1.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "PackageKit-command-not-found",
+          "nevra": "PackageKit-command-not-found-1.3.6-1.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "lxpolkit",
+          "nevra": "lxpolkit-0.5.6-3.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "xfce-polkit",
+          "nevra": "xfce-polkit-0.3-16.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "appstream",
+          "nevra": "appstream-1.1.3-1.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "appstream-data",
+          "nevra": "appstream-data-43-3.fc43.noarch",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        }
+      ]
+    },
+    {
       "id": "remote-desktop",
       "description": "PWNAGE-47000 GUI remote access (XRDP + Phoc VNC + Android ADB)",
       "packages": [
@@ -1932,5 +2074,5 @@
   "unavailable": [],
   "pin_mismatches": [],
   "verdict": "resolved",
-  "resolved_count": 61
+  "resolved_count": 69
 }

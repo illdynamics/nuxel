@@ -1,0 +1,15 @@
+{
+  "name": "Nuxel Clipper",
+  "short_name": "Clipper",
+  "description": "Clipboard history and quick copy manager",
+  "start_url": "/pwa/nuxel-apps/clipper/index.html",
+  "scope": "/pwa/nuxel-apps/clipper/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#071426",
+  "theme_color": "#071426",
+  "icons": [
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+  ],
+  "nuxel": {"capabilities": ["clipboard:read", "clipboard:write"], "network": "none"}
+}

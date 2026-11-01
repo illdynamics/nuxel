@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
+<meta name="theme-color" content="#0a1628">
+<meta name="nuxel-app-id" content="org.nuxel.PenguInterface">
+<link rel="manifest" href="manifest.json">
+<title>PenguInterface</title>
+<link rel="stylesheet" href="css/pengu.css">
+</head>
+<body>
+<header class="hdr"><h1>PenguInterface</h1><span id="badge" class="badge">profile: loading</span><span class="grow"></span><button id="close" class="ghost">Close</button></header>
+<main>
+  <p class="hint">Read-only compatibility profile. Values below come from the shipped, schema-validated <code>profile.json</code>; nothing here changes hardware state.</p>
+  <section id="device" class="card"></section>
+  <section id="caps" class="card"></section>
+  <p id="report" class="state" role="status"></p>
+</main>
+<script src="js/pengu.js"></script>
+</body>
+</html>

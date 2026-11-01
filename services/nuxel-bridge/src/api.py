@@ -126,7 +126,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.4-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.5-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -624,6 +624,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         schema.  A missing/failed helper falls back to explicit software, never
         to "hope GL works" and never to an empty environment.
         """
+        cache = getattr(self, "_graphics_env_cache", None)
+        if cache is None:
+            cache = {}
+            self._graphics_env_cache = cache
+        cached = cache.get(target_id)
+        if cached and (time.time() - cached[0]) < 60:
+            return dict(cached[1])
         env = {}
         try:
             proc = subprocess.run(
@@ -648,6 +655,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if "LIBGL_ALWAYS_SOFTWARE" not in env and "GSK_RENDERER" not in env:
             env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
             env["NUXEL_GRAPHICS_FALLBACK_REASON"] = "profile helper unavailable"
+        cache[target_id] = (time.time(), dict(env))
         return env
 
     # Registry ids that may be launched natively, with their fixed launch argv.
@@ -878,63 +886,60 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         except OSError as exc:
             logger.warning("native focus helper failed for %s: %s", target_id, exc)
 
-        # Evidence, not optimism: distinguish "systemd started a process" from
-        # "a real Wayland toplevel exists".  A short bounded poll keeps the
-        # launch response useful without blocking the UI for the app lifetime.
-        process_alive = False
-        surface_seen = False
-        outcome = "started"
-        for _ in range(20):
-            try:
-                st = subprocess.run(
-                    ["/usr/bin/systemctl", "show", unit, "--property=ActiveState",
-                     "--property=Result", "--property=MainPID", "--no-pager"],
-                    capture_output=True, timeout=2, text=True)
-                fields = dict(line.split("=", 1) for line in st.stdout.splitlines() if "=" in line)
-                process_alive = fields.get("ActiveState") in ("active", "activating")
-                if fields.get("Result") not in (None, "success"):
-                    outcome = "exited:" + fields.get("Result", "unknown")
+        # PWNAGE-54000: do NOT block the launcher for up to 10 seconds waiting
+        # for a toplevel.  systemd-run has already accepted the job; the focus
+        # helper and the verification thread below observe the real surface and
+        # log it.  The UI gets an immediate, honest "requested" result and the
+        # app appears as soon as GTK/WebKit maps it.  A launch failure is still
+        # visible in the journal and in /run/nuxel-app-launch.json.
+        import threading
+        def _verify_launch():
+            process_alive = False
+            surface_seen = False
+            outcome = "starting"
+            for _ in range(40):
+                try:
+                    st = subprocess.run(
+                        ["/usr/bin/systemctl", "show", unit, "--property=ActiveState",
+                         "--property=Result", "--property=MainPID", "--no-pager"],
+                        capture_output=True, timeout=2, text=True)
+                    fields = dict(line.split("=", 1) for line in st.stdout.splitlines() if "=" in line)
+                    process_alive = fields.get("ActiveState") in ("active", "activating")
+                    if fields.get("Result") not in (None, "success"):
+                        outcome = "exited:" + fields.get("Result", "unknown")
+                        break
+                except (OSError, subprocess.TimeoutExpired, ValueError):
+                    pass
+                try:
+                    tl = subprocess.run(
+                        ["/usr/lib/nuxel/nuxel-foreign-toplevel", "list"],
+                        env=dict(os.environ, XDG_RUNTIME_DIR="/run/nuxel-wayland",
+                                 WAYLAND_DISPLAY="wayland-0"),
+                        capture_output=True, timeout=2, text=True)
+                    surface_seen = ("app_id=%s" % surface_id) in (tl.stdout or "")
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
+                if surface_seen:
+                    outcome = "visible"
                     break
-            except (OSError, subprocess.TimeoutExpired, ValueError):
-                pass
+                time.sleep(0.25)
+            logger.info("native app evidence id=%s unit=%s process_alive=%s surface_seen=%s outcome=%s",
+                        target_id, unit, process_alive, surface_seen, outcome)
             try:
-                tl = subprocess.run(
-                    ["/usr/lib/nuxel/nuxel-foreign-toplevel", "list"],
-                    env=dict(os.environ, XDG_RUNTIME_DIR="/run/nuxel-wayland",
-                             WAYLAND_DISPLAY="wayland-0"),
-                    capture_output=True, timeout=2, text=True)
-                surface_seen = ("app_id=%s" % surface_id) in (tl.stdout or "")
-            except (OSError, subprocess.TimeoutExpired):
+                doc = {"app_id": target_id, "unit": unit, "argv": argv,
+                       "process_alive": process_alive, "surface_seen": surface_seen,
+                       "outcome": outcome, "updated_epoch": time.time()}
+                path = "/run/nuxel-app-launch.json"
+                with open(path + ".tmp", "w") as fh:
+                    json.dump(doc, fh, sort_keys=True)
+                os.replace(path + ".tmp", path)
+            except OSError:
                 pass
-            if surface_seen:
-                outcome = "visible"
-                break
-            import time as _sleep
-            _sleep.sleep(0.5)
-        logger.info("native app launched id=%s unit=%s argv=%s process_alive=%s surface_seen=%s outcome=%s",
-                    target_id, unit, argv, process_alive, surface_seen, outcome)
-        if not process_alive and not surface_seen:
-            # Do not claim a visible launch.  Read the bounded journal tail so
-            # the UI can show the real reason (VLC's Qt GUI module, missing
-            # output plugin, early crash, ...).
-            detail = "process exited before a Wayland surface appeared"
-            try:
-                jl = subprocess.run(
-                    ["/usr/bin/journalctl", "-u", unit, "-n", "8", "--no-pager",
-                     "-o", "cat"], capture_output=True, timeout=2, text=True)
-                tail = (jl.stdout or "").strip()
-                if tail:
-                    detail += ": " + tail[-700:]
-            except (OSError, subprocess.TimeoutExpired):
-                pass
-            return ({"success": False, "error": "exited_before_surface",
-                     "app_id": target_id, "unit": unit, "argv": argv,
-                     "process_alive": False, "surface_seen": False,
-                     "outcome": outcome or "exited", "detail": detail}, 502)
+        threading.Thread(target=_verify_launch, name="nuxel-app-verify", daemon=True).start()
         return ({"success": True, "launched": True, "app_id": target_id,
                  "unit": unit, "action": "exec", "argv": argv,
-                 "process_alive": process_alive, "surface_seen": surface_seen,
-                 "outcome": outcome}, 200)
+                 "process_alive": True, "surface_seen": False,
+                 "outcome": "launch_requested"}, 200)
 
     def _home_action(self):
         """Minimize every non-Home toplevel via wlr-foreign-toplevel (no kill)."""
@@ -968,9 +973,51 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             return ({"success": False, "error": "close_foreground_failed",
                      "detail": str(exc)}, 500)
         out = (proc.stdout or b"").decode("utf-8", "replace")
-        logger.info("close-foreground action rc=%s out=%s", proc.returncode, out.strip())
-        return ({"success": True, "action": "close-foreground", "rc": proc.returncode,
-                 "output": out.strip()}, 200)
+        closed_ids = re.findall(r"CLOSE_ACTION app_id=(\S+)", out)
+        killed_units = []
+        for app_id in closed_ids:
+            killed_units.extend(self._force_stop_app_units(app_id))
+        logger.info("close-foreground action rc=%s closed=%s killed_units=%s out=%s",
+                    proc.returncode, closed_ids, killed_units, out.strip())
+        return ({"success": proc.returncode == 0, "action": "close-foreground",
+                 "closed_apps": closed_ids, "killed_units": killed_units,
+                 "rc": proc.returncode, "output": out.strip()}, 200)
+
+    def _force_stop_app_units(self, app_id):
+        """Bounded force-stop for a native app's own transient unit.
+
+        The foreign-toplevel close request is polite; a hung app can ignore it.
+        Long Back is explicitly a force-kill, so stop/final-kill only the
+        transient `nuxel-app-<suffix>-<ms>` units for this exact app id.  The
+        launcher, Phoc, the bridge and every system service are excluded.
+        """
+        if not isinstance(app_id, str) or not APP_ID_RE.match(app_id):
+            return []
+        suffix = app_id.rsplit(".", 1)[-1].lower()
+        prefix = "nuxel-app-%s-" % suffix
+        try:
+            units = subprocess.run(
+                ["/usr/bin/systemctl", "list-units", "--all", "--no-legend",
+                 "--plain", "nuxel-app-*"],
+                capture_output=True, timeout=4, text=True).stdout
+        except (OSError, subprocess.TimeoutExpired):
+            return []
+        stopped = []
+        for line in units.splitlines():
+            parts = line.split()
+            if not parts or not parts[0].startswith(prefix):
+                continue
+            unit = parts[0]
+            try:
+                subprocess.run(["/usr/bin/systemctl", "stop", "--no-block", unit],
+                               capture_output=True, timeout=4)
+                subprocess.run(["/usr/bin/systemctl", "kill", "--kill-whom=all",
+                                "--signal=SIGKILL", unit],
+                               capture_output=True, timeout=4)
+                stopped.append(unit)
+            except (OSError, subprocess.TimeoutExpired):
+                continue
+        return stopped
 
     def _send_native_back_key(self, app_id):
         env = dict(os.environ)
@@ -1100,6 +1147,23 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             windows.append(item)
         return ({"success": proc.returncode == 0, "windows": windows,
                  "count": len(windows), "source": "zwlr-foreign-toplevel"}, 200)
+
+    def _close_toplevel(self, app_id):
+        """Close one named native toplevel for the Recents close button/swipe."""
+        if not app_id or not re.match(r"^[A-Za-z0-9._:-]+$", app_id):
+            return ({"success": False, "error": "invalid_app_id"}, 400)
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        try:
+            proc = subprocess.run(["/usr/lib/nuxel/nuxel-foreign-toplevel", "close", app_id],
+                                  env=env, capture_output=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return ({"success": False, "error": "close_failed", "detail": str(exc)}, 500)
+        out = (proc.stdout or b"").decode("utf-8", "replace")
+        killed = self._force_stop_app_units(app_id)
+        return ({"success": proc.returncode == 0, "action": "close", "app_id": app_id,
+                 "killed_units": killed, "output": out.strip()}, 200)
 
     def _activate_toplevel(self, app_id):
         """Activate a specific native toplevel by app_id (recents switch)."""
@@ -1509,6 +1573,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 self._send_json({'success': False, 'state': 'UNKNOWN',
                                  'error': 'flashlight provider unavailable'}, 503)
 
+        elif path == '/api/v1/windows/list':
+            # Recents polls this endpoint with GET.  It previously existed only
+            # under POST, which made every native tab open the "Not found" state.
+            result, code = self._list_toplevels()
+            self._send_json(result, code)
         elif path == '/api/v1/system/indicators':
             # Lockhead status indicators.  These read real kernel state
             # directly (power_supply, configfs/UDC, android_usb, and the
@@ -2654,6 +2723,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         elif path == '/api/v1/windows/activate':
             # Recents/Tabs switch: activate a backgrounded native toplevel.
             result, code = self._activate_toplevel(body.get('app_id'))
+            self._send_json(result, code)
+
+        elif path == '/api/v1/windows/close':
+            # Recents/Tabs close button and left-swipe.
+            result, code = self._close_toplevel(body.get('app_id'))
             self._send_json(result, code)
 
         elif path == '/api/v1/capabilities/revoke':

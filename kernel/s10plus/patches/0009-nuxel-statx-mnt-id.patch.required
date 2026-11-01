@@ -1,0 +1,4 @@
+Required for Flatpak 1.16 / bubblewrap: 4.14 statx lacks STATX_MNT_ID, so
+flatpak run aborts with "statx didn't return all required fields: No data
+available" after user namespaces are enabled.  This backport fills stx_mnt_id
+from the existing mount namespace id and satisfies STATX_MNT_ID/UNIQUE.

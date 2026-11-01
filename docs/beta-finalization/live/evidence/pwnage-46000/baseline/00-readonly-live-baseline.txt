@@ -1,0 +1,580 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== identity ===
+  Transient hostname: 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128
+     Static hostname: (unset)
+           Icon name: computer
+          Machine ID: b8ad6098c76847d181f06e221ca43e0f
+             Boot ID: a40ad4ce1ba6469483f62d1ee4e6aed8
+    Operating System: Fedora Linux 43 (Forty Three)
+         CPE OS Name: cpe:/o:fedoraproject:fedora:43
+      OS Support End: Wed 2026-12-02
+OS Support Remaining: 1month
+              Kernel: Linux 4.14.253-gf7194c1d15ed-dirty
+        Architecture: arm64
+=== ps wayland/display/input ===
+   5358 nuxel-b+       1 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+   5390 root           1 seatd           /usr/bin/seatd -g seat
+   5808 nuxel-b+       1 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+   5815 root           1 phoc            /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+   5899 root        5885 nuxel-navdock   /usr/lib/nuxel/nuxel-navdock
+   5900 root        5885 dbus-run-sessio dbus-run-session -- /usr/bin/phosh-osk-stevia
+   5915 root           1 dbus-daemon     dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+   5916 root        5900 phosh-osk-stevi /usr/bin/phosh-osk-stevia
+   5948 root           1 nuxel-wl-fb     /usr/lib/nuxel/nuxel-wl-fb
+   5974 root        5968 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   6004 root        5994 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   6781 root           1 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+=== runtime dirs ===
+total 0
+drwxr-xr-x.  2 root root   40 Oct 31 17:29 .
+drwxr-xr-x. 27 root root 1120 Oct 31 17:29 ..
+=== systemd units ===
+active
+active
+active
+active
+active
+● nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+     Loaded: loaded (/etc/systemd/system/nuxel-wayland.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-wayland.service.d
+             └─30-fast-stop.conf
+     Active: active (running) since Sat 2026-10-31 17:29:08 CET; 24min ago
+ Invocation: 91d0b6ddacf74b03926f9271717a77e8
+       Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+   Main PID: 5815 (phoc)
+      Tasks: 116 (limit: 8173)
+     Memory: 706.3M
+     CGroup: /system.slice/nuxel-wayland.service
+             ├─5815 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+             ├─5885 /usr/lib/nuxel/nuxel-pwa-host
+             ├─5899 /usr/lib/nuxel/nuxel-navdock
+             ├─5900 dbus-run-session -- /usr/bin/phosh-osk-stevia
+             ├─5905 dbus-daemon --nofork --print-address 4 --session
+             ├─5915 dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+             ├─5916 /usr/bin/phosh-osk-stevia
+             ├─5968 /usr/libexec/at-spi-bus-launcher
+             ├─5974 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+             ├─5982 /usr/libexec/at-spi2-registryd --use-gnome-session
+             ├─5994 /usr/libexec/at-spi-bus-launcher
+             ├─6004 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+             ├─6043 /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 18
+             ├─6044 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 21
+             └─6046 /usr/libexec/at-spi2-registryd --use-gnome-session
+
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: GLOBAL name=44 iface=zwlr_output_manager_v1 ver=4
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: GLOBAL name=45 iface=zwlr_output_power_manager_v1 ver=1
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: GLOBAL name=46 iface=zwlr_data_control_manager_v1 ver=2
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: GLOBAL name=47 iface=wl_seat ver=9
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: GLOBAL name=48 iface=zphoc_device_state_v1 ver=2
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: GLOBAL name=49 iface=wl_output ver=4
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: WINDOWS=1
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=1 act=1 fs=0
+Oct 31 17:50:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[14185]: HOME_ACTION minimized=0 raised=1
+Oct 31 17:53:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+     Loaded: loaded (/etc/systemd/system/nuxel-wl-fb.service; enabled; preset: disabled)
+    Drop-In: /etc/systemd/system/nuxel-wl-fb.service.d
+             └─10-display-priority.conf
+             /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-wl-fb.service.d
+             └─20-fast-stop.conf
+     Active: active (running) since Sat 2026-10-31 17:29:09 CET; 24min ago
+ Invocation: 8c09c2abb0b3455ca25eca1d9ea83b6e
+       Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+   Main PID: 5948 (nuxel-wl-fb)
+      Tasks: 1 (limit: 8173)
+     Memory: 6.4M
+     CGroup: /system.slice/nuxel-wl-fb.service
+             └─5948 /usr/lib/nuxel/nuxel-wl-fb
+
+Oct 31 17:29:08 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 17:29:09 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 17:53:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-orientationd.service - Nuxel Orientation Policy Service
+     Loaded: loaded (/etc/systemd/system/nuxel-orientationd.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: active (exited) since Sat 2026-10-31 17:29:09 CET; 24min ago
+ Invocation: 905bdaa7809a4aa892741492f972b7bb
+       Docs: https://github.com/nuxel/nuxel/docs/A49
+   Main PID: 5818 (code=exited, status=0/SUCCESS)
+
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "auto_capable": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "available": true,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "reason": "",
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "source": "manual"
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:       }
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     ],
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "unverified": true
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   }
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]: }
+Oct 31 17:29:09 fedora systemd[1]: Finished nuxel-orientationd.service - Nuxel Orientation Policy Service.
+=== installed orientation ===
+-rwxr-xr-x 1 root root 11184 Oct 21 19:52 /usr/libexec/nuxel/nuxel-orientationd
+ls: cannot access '/usr/lib/nuxel/nuxel-orientationd': No such file or directory
+-rw-r--r-- 1 root root 3644 Oct 22 15:15 /etc/nuxel/orientation/orientation.json
+-rw-r--r-- 1 root root 1704 Oct 21 19:51 /etc/nuxel/orientation/orientation.schema.json
+ls: cannot access '/usr/lib/python3*/site-packages/nuxel_orientation': No such file or directory
+-rw-r--r-- 1 nuxel-bridge nuxel 161 Oct 27 19:43 /var/lib/nuxel/orientation/state.json
+d097529dd17fbd8ad6e685552d723a45352fad19cfc4aa3d07b73b65beec4b06  /usr/libexec/nuxel/nuxel-orientationd
+fb5b77e4b7adc67881d67966b24b937ce0b910288cc2d9b91e20e9a8506c2c8b  /usr/lib/nuxel/nuxel-wl-fb
+d097529dd17fbd8ad6e685552d723a45352fad19cfc4aa3d07b73b65beec4b06  /usr/libexec/nuxel/nuxel-orientationd
+=== state/config ===
+{
+  "schema_version": 1,
+  "mode": "auto",
+  "effective_orientation": 0,
+  "last_orientation": 0,
+  "set_by": "nuxel-orientationd",
+  "updated_at": 1793126601
+}
+{
+  "schema_version": 1,
+  "comment": "Orientation policy document for the S10+ (beyond2lte). ONE authoritative source shared by Quick Settings, Settings, nuxelctl and nuxel-orientationd. There are SEVEN named modes exactly (the owner phrase 'six modes' is a count mismatch: four fixed poses plus three auto policies). Selected policy (mode) is distinct from the current effective orientation (effective_degrees). Nothing here rotates pixels by itself: nuxel-orientationd computes the desired transform and asks the compositor, and reports honestly when the compositor cannot apply it.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "panel": "S6E3HA9 Dynamic AMOLED 3040x1440 (portrait scanout 1440x3040)"
+  },
+  "modes": {
+    "portrait":            { "label": "Forced Portrait",      "allowed": [0] },
+    "reverse-portrait":    { "label": "Reverse Portrait",     "allowed": [180] },
+    "landscape":           { "label": "Forced Landscape",     "allowed": [90] },
+    "reverse-landscape":   { "label": "Reverse Landscape",    "allowed": [270] },
+    "auto":                { "label": "Auto",                 "allowed": [0, 90, 180, 270], "auto": true },
+    "auto-portrait":       { "label": "Auto Portrait",        "allowed": [0, 180],          "auto": true },
+    "auto-landscape":      { "label": "Auto Landscape",       "allowed": [90, 270],         "auto": true }
+  },
+  "mode_order": ["auto", "auto-portrait", "auto-landscape", "portrait", "landscape", "reverse-portrait", "reverse-landscape"],
+  "default_mode": "portrait",
+  "policy": {
+    "hysteresis_ms": 450,
+    "cooldown_ms": 250,
+    "debounce_ms": 60,
+    "flat_gravity_ratio": 0.55,
+    "weak_gravity_ms2": 2.0,
+    "sample_interval_ms": 100,
+    "last_good_on_flat": true
+  },
+  "sensor": {
+    "preferred_source": "auto",
+    "sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+    "iio": {
+      "name_hints": ["accel", "bmi160", "lsm6ds", "lsm6dso", "accel_3d"],
+      "channels": ["in_accel_x_raw", "in_accel_y_raw", "in_accel_z_raw"],
+      "scale_files": ["in_accel_scale", "in_accel_x_scale"]
+    },
+    "mount_matrix": {
+      "comment": "3x3 row-major map from sensor axes to display-native axes (x=right, y=up, z=out of screen). This is the DEFAULT convention and MUST be calibrated from observed device motion on hardware; until then it is calibration_status=unverified.",
+      "matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      "calibration_status": "unverified"
+    },
+    "gravity_reference": {
+      "comment": "Unit gravity vector (display-native) for each discrete orientation. 0=portrait, 90/180/270 clockwise physical poses. Unverified until observed on the actual handset.",
+      "0":   [0.0, -1.0, 0.0],
+      "90":  [1.0,  0.0, 0.0],
+      "180": [0.0,  1.0, 0.0],
+      "270": [-1.0,  0.0, 0.0],
+      "calibration_status": "unverified"
+    }
+  },
+  "compositor": {
+    "backend": "auto",
+    "candidates": ["wlr-randr", "phoc-config", "none"],
+    "output": "DSI-1",
+    "transform_map": { "0": "normal", "90": "270", "180": "180", "270": "90" },
+    "comment_transform_map": "Physical pose -> wlr-randr transform that keeps content upright. The mapping and the matching touch calibration are UNVERIFIED until Phase 3 is exercised on the real device.",
+    "revert_after_ms": 4000,
+    "touch": { "verified": false, "matrix_available": false }
+  },
+  "paths": {
+    "state_file": "/var/lib/nuxel/orientation/state.json",
+    "control_fifo": "/run/nuxel-orientation.cmd",
+    "log": "/var/log/nuxel/orientation.log"
+  },
+  "owner_test": "docs/A49/OWNER-TEST-ORIENTATION.md"
+}
+=== tools ===
+/usr/bin/wayland-info
+/usr/bin/grim
+/usr/local/bin/nuxelctl
+=== fb ===
+crw-------. 1 root root 29, 0 Jan  1  1970 /dev/fb0
+1440,6080
+5760
+32
+                     USER        PID ACCESS COMMAND
+/dev/fb0:            root       5948 F.... nuxel-wl-fb
+=== input ===
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="meta_event"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input0
+U: Uniq=
+H: Handlers=event0 
+B: PROP=0
+B: EV=5
+B: REL=c0
+
+I: Bus=0019 Vendor=0001 Product=0001 Version=0100
+N: Name="gpio_keys"
+P: Phys=gpio-keys/input0
+S: Sysfs=/devices/platform/gpio_keys/input/input1
+U: Uniq=
+H: Handlers=sec_key_notifier event1 
+B: PROP=0
+B: EV=3
+B: KEY=8000000000000000 0 0 0 0 0 0 0 0 1c000000000000 0
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="sec_touchscreen"
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+U: Uniq=
+H: Handlers=sec_key_notifier event2 
+B: PROP=2
+B: EV=2b
+B: KEY=4000000000000000 0 0 80 0 420 0 0 8000 0 0
+B: ABS=4263800000000003
+B: SW=0
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="sec_touchpad"
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3
+U: Uniq=
+H: Handlers=sec_key_notifier event3 
+B: PROP=1
+B: EV=2b
+B: KEY=4000000000000000 0 0 80 0 e520 0 0 8000 0 0
+B: ABS=4263800000000003
+B: SW=0
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="sec_touchproximity"
+P: Phys=sec_touchproximity/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input4
+U: Uniq=
+H: Handlers=event4 
+B: PROP=2
+B: EV=29
+B: ABS=4000000000000000
+B: SW=0
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="grip_sensor"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input5
+U: Uniq=
+H: Handlers=event5 
+B: PROP=0
+B: EV=5
+B: REL=200
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="ssp_context"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input6
+U: Uniq=
+H: Handlers=event6 
+B: PROP=0
+B: EV=5
+B: REL=38
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="hrm_sensor"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input7
+U: Uniq=
+H: Handlers=event7 
+B: PROP=0
+B: EV=d
+B: REL=20f
+B: ABS=ff
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="Headset"
+P: Phys=madera/extcon
+S: Sysfs=/devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/input/input8
+U: Uniq=
+H: Handlers=sec_key_notifier event8 
+B: PROP=0
+B: EV=23
+B: KEY=40 0 0 0 0 0 402000000 0 c000000000000 0
+B: SW=94
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="hall"
+P: Phys=hall
+S: Sysfs=/devices/platform/hall/input/input9
+U: Uniq=
+H: Handlers=event9 
+B: PROP=0
+B: EV=100021
+B: SW=1
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="certify_hall"
+P: Phys=certify_hall
+S: Sysfs=/devices/platform/certify_hall/input/input10
+U: Uniq=
+H: Handlers=event10 
+B: PROP=0
+B: EV=100021
+B: SW=8000000
+
+=== sensors ===
+[/sys/bus/iio/devices/iio:device0]
+15c40000.adc
+[/sys/bus/iio/devices/iio:device1]
+accelerometer_sensor
+[/sys/bus/iio/devices/iio:device10]
+light_flicker_sensor
+[/sys/bus/iio/devices/iio:device11]
+proximity_sensor
+[/sys/bus/iio/devices/iio:device12]
+proximity_alert_sensor
+[/sys/bus/iio/devices/iio:device13]
+proximity_raw
+[/sys/bus/iio/devices/iio:device14]
+rotation_vector_sensor
+[/sys/bus/iio/devices/iio:device15]
+game_rotation_vector
+[/sys/bus/iio/devices/iio:device16]
+sig_motion_sensor
+[/sys/bus/iio/devices/iio:device17]
+step_det_sensor
+[/sys/bus/iio/devices/iio:device18]
+step_cnt_sensor
+[/sys/bus/iio/devices/iio:device19]
+tilt_detector
+[/sys/bus/iio/devices/iio:device2]
+geomagnetic_sensor
+[/sys/bus/iio/devices/iio:device20]
+pickup_gesture
+[/sys/bus/iio/devices/iio:device21]
+scontext_iio
+[/sys/bus/iio/devices/iio:device22]
+light_cct_sensor
+[/sys/bus/iio/devices/iio:device23]
+thermistor_sensor
+[/sys/bus/iio/devices/iio:device24]
+proximity_pocket
+[/sys/bus/iio/devices/iio:device25]
+uncal_accel_sensor
+[/sys/bus/iio/devices/iio:device26]
+meta_event
+[/sys/bus/iio/devices/iio:device27]
+wake_up_motion
+[/sys/bus/iio/devices/iio:device28]
+move_detector
+[/sys/bus/iio/devices/iio:device29]
+call_gesture
+[/sys/bus/iio/devices/iio:device3]
+uncal_geomagnetic_sensor
+[/sys/bus/iio/devices/iio:device30]
+uncal_light_sensor
+[/sys/bus/iio/devices/iio:device31]
+pocket_mode
+[/sys/bus/iio/devices/iio:device32]
+led_cover_event
+[/sys/bus/iio/devices/iio:device4]
+gyro_sensor
+[/sys/bus/iio/devices/iio:device5]
+uncal_gyro_sensor
+[/sys/bus/iio/devices/iio:device6]
+interrupt_gyro_sensor
+[/sys/bus/iio/devices/iio:device7]
+pressure_sensor
+[/sys/bus/iio/devices/iio:device8]
+light_sensor
+[/sys/bus/iio/devices/iio:device9]
+light_ir_sensor
+total 0
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 accelerometer_sensor -> ../../devices/virtual/sensors/accelerometer_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 barometer_sensor -> ../../devices/virtual/sensors/barometer_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 grip_sensor -> ../../devices/virtual/sensors/grip_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 gyro_sensor -> ../../devices/virtual/sensors/gyro_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 hidden_hole -> ../../devices/virtual/sensors/hidden_hole
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 hrm_sensor -> ../../devices/virtual/sensors/hrm_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 light_sensor -> ../../devices/virtual/sensors/light_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 magnetic_sensor -> ../../devices/virtual/sensors/magnetic_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 proximity_sensor -> ../../devices/virtual/sensors/proximity_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 sensor_dev -> ../../devices/virtual/sensors/sensor_dev
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 ssp_sensor -> ../../devices/virtual/sensors/ssp_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 17:29 thermistor_sensor -> ../../devices/virtual/sensors/thermistor_sensor
+=== dmesg sensors/display/input ===
+[ 1380.835855] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1386.980006] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1392.867960] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1398.755904] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1404.899503] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1410.787925] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1416.932158] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1422.820230] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1428.963575] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1434.851625] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1440.995669] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1446.764728] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1446.765469] [SSP] panel_notifier_callback PANEL_EVENT_BL_CHANGED 0 9820
+[ 1446.765486] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1446.765508] [SSPBBD]: ssp_down == true. returning
+[ 1446.766253] PANEL:INFO:panel_fb_notifier:EARLY BLANK POWER DOWN
+[ 1446.766281] [SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 4
+[ 1446.770529] [SSPBBD]: ssp_down == true. returning
+[ 1446.770538] [SSP] send_panel_information, failed to send panel information
+[ 1446.775555] [SSP]: ssp_send_cmd - command 0xd2 failed -1
+[ 1446.775571] decon-0 POWERDOWN mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+[ 1446.775585] decon-0 decon_disable +
+[ 1446.775596] _decon_disable: elapsed time to flush decon-0 thread: 1usec, remaining_frame: 0
+[ 1446.792311] _decon_disable elapsed time to disable interrupt: 16714usec
+[ 1446.792353] _decon_disable: elapsed time to stop decon reg: 16759usec
+[ 1446.792366] _decon_disable: elapsed time to stop dpp: 16773usec
+[ 1446.792383] dsim-0 dsim_disable +
+[ 1446.792398] PANEL:INFO:panel_core_ioctl:PANEL_IOC_SLEEP_IN
+[ 1446.813028] ========== SHOW PANEL [EEh:ERR_FG] INFO ==========
+[ 1446.813146] ========== SHOW PANEL [05h:DSIE_CNT] INFO ==========
+[ 1446.884067] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1446.933809] panel_sleep_in panel_state:NORMAL -> ON
+[ 1446.933931] PANEL:INFO:panel_core_ioctl:PANEL_IOC_SET_POWER
+[ 1446.936301] __set_panel_power, power(off) gpio_reset(low)
+[ 1446.936326] panel_power_off panel_state:ON -> OFF
+[ 1446.937009] dsim-0 dsim_disable - (state:ON -> OFF)
+[ 1446.937026] _decon_disable: elapsed time to disable dsim: 161430usec
+[ 1446.937058] exynos-decon 19030000.decon_f: pm_relax
+[ 1446.937095] _decon_disable: totol elapsed time: 161501usec
+[ 1446.937110] decon-0 decon_disable - (state:ON -> OFF)
+[ 1446.937122] decon_blank -
+[ 1446.937293] PANEL:INFO:panel_fb_notifier:BLANK POWER DOWN
+[ 1446.942867] [SSP] copr_fb_notifier_callback: early_blank = 0, fb_blank = 4
+[ 1446.942906] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1446.942920] PANEL:WARN:excute_seqtbl_nolock:dsim off
+[ 1446.942929] panel_bl_set_brightness, failed to write seqtbl
+[ 1446.942939] panel_update_brightness, failed to set_brightness (ret -5)
+[ 1448.469828] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1448.469857] PANEL:WARN:excute_seqtbl_nolock:dsim off
+[ 1448.469874] panel_bl_set_brightness, failed to write seqtbl
+[ 1448.469888] panel_update_brightness, failed to set_brightness (ret -5)
+[ 1448.470307] PANEL:INFO:panel_fb_notifier:EARLY UNBLANK
+[ 1448.470337] [SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0
+[ 1448.470353] decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+[ 1448.470373] decon-0 decon_enable +
+[ 1448.470395] exynos-decon 19030000.decon_f: pm_stay_awake
+[ 1448.470642] dsim-0 dsim_enable +
+[ 1448.471137] PANEL:INFO:panel_core_ioctl:PANEL_IOC_SET_POWER
+[ 1448.471852] PANEL:INFO:panel_regulator_set_short_detection:set regulator(elvss) SSD:2000uA, state:1 enable:true
+[ 1448.490014] __set_panel_power, power(on) gpio_reset(high)
+[ 1448.490033] panel_power_on panel_state:OFF -> ON
+[ 1448.490527] PANEL:INFO:panel_core_ioctl:PANEL_IOC_SLEEP_OUT
+[ 1448.490553] PANEL:INFO:panel_sleep_out:ub connected
+[ 1448.506830] ========== SHOW PANEL [0Fh:SELF_DIAG] INFO ==========
+[ 1448.512374] aod_init_panel was called
+[ 1448.513358] PANEL:INFO:__panel_seq_init:check disp det .. success
+[ 1448.513371] panel_sleep_out panel_state:ON -> NORMAL
+[ 1448.513383] dsim-0 dsim_enable - (state:OFF -> ON)
+[ 1448.513609] decon-0 decon_enable - (state:OFF -> ON)
+[ 1448.513622] decon_blank -
+[ 1448.513776] PANEL:INFO:panel_fb_notifier:UNBLANK
+[ 1448.540529] PANEL:INFO:panel_core_ioctl:FRAME_DONE (panel_state:NORMAL, display on)
+[ 1448.540557] panel_set_mdnie, do mdnie-seq (mode:scenario, afc:off)
+[ 1448.541187] panel_condition_handler: after normal disp on
+[ 1448.541628] ========== SHOW PANEL [0Ah:RDDPM] INFO ==========
+[ 1448.595288] sec_ts 4-0048: [sec_input] sec_ts_reinit: charger=0x0, touch_functions=0x61, Power mode=0x2
+[ 1448.598008] [SSP] copr_fb_notifier_callback: early_blank = 0, fb_blank = 0
+[ 1448.598025] [SSPBBD]: ssp_down == true. returning
+[ 1448.603038] [SSP]: ssp_send_cmd - command 0xd1 failed -1
+[ 1448.603066] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1448.607866] panel_set_mdnie, do mdnie-seq (mode:scenario, afc:off)
+[ 1448.613539] panel_bl_set_brightness bl-0 dim:table plat_br:12800 br[384]:12800 nit:183(183.00) acl:on(5)
+[ 1448.624426] [SSP] panel_notifier_callback PANEL_EVENT_BL_CHANGED 12800 3557
+[ 1448.624450] [SSPBBD]: ssp_down == true. returning
+[ 1448.629476] [SSP] send_panel_information, failed to send panel information
+[ 1448.631299] sec_ts 4-0048: [sec_input] sec_ts_get_touch_function: touch_functions:61 ic_status:61
+[ 1449.600954] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1449.601318] [SSP] panel_notifier_callback PANEL_EVENT_BL_CHANGED 0 9820
+[ 1449.601342] [SSPBBD]: ssp_down == true. returning
+[ 1449.601879] PANEL:INFO:panel_fb_notifier:EARLY BLANK POWER DOWN
+[ 1449.601899] [SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 4
+[ 1449.606367] [SSP] send_panel_information, failed to send panel information
+[ 1449.606376] [SSPBBD]: ssp_down == true. returning
+[ 1449.611390] [SSP]: ssp_send_cmd - command 0xd2 failed -1
+[ 1449.611401] decon-0 POWERDOWN mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+[ 1449.611410] decon-0 decon_disable +
+[ 1449.611417] _decon_disable: elapsed time to flush decon-0 thread: 0usec, remaining_frame: 0
+[ 1449.628353] _decon_disable elapsed time to disable interrupt: 16932usec
+[ 1449.628395] _decon_disable: elapsed time to stop decon reg: 16977usec
+[ 1449.628408] _decon_disable: elapsed time to stop dpp: 16991usec
+[ 1449.628425] dsim-0 dsim_disable +
+[ 1449.628439] PANEL:INFO:panel_core_ioctl:PANEL_IOC_SLEEP_IN
+[ 1449.650221] ========== SHOW PANEL [EEh:ERR_FG] INFO ==========
+[ 1449.651227] ========== SHOW PANEL [05h:DSIE_CNT] INFO ==========
+[ 1449.772613] panel_sleep_in panel_state:NORMAL -> ON
+[ 1449.772752] PANEL:INFO:panel_core_ioctl:PANEL_IOC_SET_POWER
+[ 1449.774183] __set_panel_power, power(off) gpio_reset(low)
+[ 1449.774206] panel_power_off panel_state:ON -> OFF
+[ 1449.774903] dsim-0 dsim_disable - (state:ON -> OFF)
+[ 1449.774920] _decon_disable: elapsed time to disable dsim: 163500usec
+[ 1449.774950] exynos-decon 19030000.decon_f: pm_relax
+[ 1449.774988] _decon_disable: totol elapsed time: 163569usec
+[ 1449.775004] decon-0 decon_disable - (state:ON -> OFF)
+[ 1449.775016] decon_blank -
+[ 1449.775184] PANEL:INFO:panel_fb_notifier:BLANK POWER DOWN
+[ 1449.780352] [SSP] copr_fb_notifier_callback: early_blank = 0, fb_blank = 4
+[ 1449.780389] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1449.780402] PANEL:WARN:excute_seqtbl_nolock:dsim off
+[ 1449.780408] panel_bl_set_brightness, failed to write seqtbl
+[ 1449.780416] panel_update_brightness, failed to set_brightness (ret -5)
+[ 1452.772551] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 1452.977584] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1452.977615] PANEL:WARN:excute_seqtbl_nolock:dsim off
+[ 1452.977631] panel_bl_set_brightness, failed to write seqtbl
+[ 1452.977646] panel_update_brightness, failed to set_brightness (ret -5)
+[ 1452.978043] PANEL:INFO:panel_fb_notifier:EARLY UNBLANK
+[ 1452.978073] [SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0
+[ 1452.978089] decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+[ 1452.978109] decon-0 decon_enable +
+[ 1452.978134] exynos-decon 19030000.decon_f: pm_stay_awake
+[ 1452.978326] dsim-0 dsim_enable +
+[ 1452.978823] PANEL:INFO:panel_core_ioctl:PANEL_IOC_SET_POWER
+[ 1452.979738] PANEL:INFO:panel_regulator_set_short_detection:set regulator(elvss) SSD:2000uA, state:1 enable:true
+[ 1452.998086] __set_panel_power, power(on) gpio_reset(high)
+[ 1452.998101] panel_power_on panel_state:OFF -> ON
+[ 1452.998569] PANEL:INFO:panel_core_ioctl:PANEL_IOC_SLEEP_OUT
+[ 1452.998598] PANEL:INFO:panel_sleep_out:ub connected
+[ 1453.015199] ========== SHOW PANEL [0Fh:SELF_DIAG] INFO ==========
+[ 1453.025329] aod_init_panel was called
+[ 1453.026359] PANEL:INFO:__panel_seq_init:check disp det .. success
+[ 1453.026374] panel_sleep_out panel_state:ON -> NORMAL
+[ 1453.026386] dsim-0 dsim_enable - (state:OFF -> ON)
+[ 1453.026623] decon-0 decon_enable - (state:OFF -> ON)
+[ 1453.026637] decon_blank -
+[ 1453.026786] PANEL:INFO:panel_fb_notifier:UNBLANK
+[ 1453.048797] PANEL:INFO:panel_core_ioctl:FRAME_DONE (panel_state:NORMAL, display on)
+[ 1453.048824] panel_set_mdnie, do mdnie-seq (mode:scenario, afc:off)
+[ 1453.049757] panel_condition_handler: after normal disp on
+[ 1453.049898] ========== SHOW PANEL [0Ah:RDDPM] INFO ==========
+[ 1453.107020] sec_ts 4-0048: [sec_input] sec_ts_reinit: charger=0x0, touch_functions=0x61, Power mode=0x2
+[ 1453.108992] [SSP] copr_fb_notifier_callback: early_blank = 0, fb_blank = 0
+[ 1453.109009] [SSPBBD]: ssp_down == true. returning
+[ 1453.114025] [SSP]: ssp_send_cmd - command 0xd1 failed -1
+[ 1453.114060] panel_bl_set_brightness bl-0 dim:table plat_br:0 br[0]:0 nit:2(2.00) acl:on(5)
+[ 1453.115887] panel_set_mdnie, do mdnie-seq (mode:scenario, afc:off)
+[ 1453.121141] panel_bl_set_brightness bl-0 dim:table plat_br:12800 br[384]:12800 nit:183(183.00) acl:on(5)
+[ 1453.133871] [SSP] panel_notifier_callback PANEL_EVENT_BL_CHANGED 12800 3557
+[ 1453.133899] [SSPBBD]: ssp_down == true. returning
+[ 1453.138921] [SSP] send_panel_information, failed to send panel information
+[ 1453.142528] sec_ts 4-0048: [sec_input] sec_ts_get_touch_function: touch_functions:61 ic_status:61

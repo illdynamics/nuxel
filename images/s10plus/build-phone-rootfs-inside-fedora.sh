@@ -86,7 +86,7 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     gtk3 webkit2gtk4.1 gtk4 libadwaita glib-networking libproxy \
     pipewire wireplumber pipewire-utils alsa-lib mpg123 mpv \
     polkit nftables upower greetd \
-    wlr-randr \
+    wlr-randr xrandr \
     iproute procps-ng kmod e2fsprogs acl \
     shadow-utils ca-certificates curl \
     wayvnc wayland-utils xrdp xorgxrdp xorg-x11-server-Xorg xorg-x11-server-Xwayland wtype \
@@ -180,6 +180,21 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) \
     -I /nuxel/tools/s10plus/a45 -I /nuxel/tools/s10plus/a33 -o "$B/nuxel-pwa-host" \
     /nuxel/tools/s10plus/a45/nuxel-pwa-host.c \
     $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) -lutil
+
+# PWNAGE-54000: the three GTK4/libadwaita phone apps are built from the
+# repository source, not copied from a developer machine.  They share the
+# dependency-free nuxel-phone-data layer and are installed into the image.
+mkdir -p "$B/native-apps"
+for _app in nuxel-contacts nuxel-messages nuxel-dialer; do
+  gcc -O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11 \
+      $(pkg-config --cflags gtk4 libadwaita-1) \
+      -I /nuxel/shell/nuxel-shell/nuxel-phone-data \
+      -o "$B/native-apps/$_app" \
+      "/nuxel/shell/nuxel-shell/$_app/main.c" \
+      /nuxel/shell/nuxel-shell/nuxel-phone-data/nuxel-phone-data.c \
+      $(pkg-config --libs gtk4 libadwaita-1)
+  test -x "$B/native-apps/$_app" || { echo "ERROR: native app $_app missing" >&2; exit 1; }
+done
 
 # PWNAGE-43000/50000: persistent nav dock + native OSD + foreign-toplevel
 # controller.  All are built from the same sources the handset runs.
@@ -381,6 +396,9 @@ install -m 0755 /nuxel/tools/s10plus/a29/nuxel-touch-arm "$STAGE/usr/lib/nuxel/n
 # built from repository sources above, not copied from a developer's build tree.
 install -m 0755 "$B/nuxel-wl-fb"               "$STAGE/usr/lib/nuxel/nuxel-wl-fb"
 install -m 0755 "$B/nuxel-pwa-host"            "$STAGE/usr/lib/nuxel/nuxel-pwa-host"
+for _app in nuxel-contacts nuxel-messages nuxel-dialer; do
+  install -m 0755 "$B/native-apps/$_app" "$STAGE/usr/bin/$_app"
+done
 install -m 0755 "$B/nuxel-button-manager"      "$STAGE/usr/lib/nuxel/nuxel-button-manager"
 install -m 0755 "$B/libnuxel-libinput-path.so" "$STAGE/usr/lib/nuxel/libnuxel-libinput-path.so"
 install -d "$STAGE/usr/local/bin"
@@ -403,6 +421,8 @@ install -m 0644 /nuxel/services/nuxel-orientation/systemd/nuxel-orientationd.ser
 install -Dm0644 /nuxel/docs/beta-finalization/live/PWNAGE-46000-TODO.md     "$STAGE/usr/share/doc/nuxel/PWNAGE-46000.md"
 install -m 0755 /nuxel/tools/pwnage46000/rotation-notes.py \
     "$STAGE/usr/local/bin/nuxel-rotation-notes"
+install -m 0755 /nuxel/services/nuxel-remote-desktop/bin/nuxel-orientation-remote-sync \
+    "$STAGE/usr/libexec/nuxel/nuxel-orientation-remote-sync"
 # The service imports `nuxel_orientation` from its own directory.  Prove the
 # installed copy is importable now, not after boot.
 PYTHONPATH="$STAGE/usr/libexec/nuxel" python3 -c     'from nuxel_orientation.policy import SEVEN_MODES, MODE_ORDER; assert len(MODE_ORDER)==7 and len(SEVEN_MODES)==7'
@@ -416,6 +436,16 @@ test -f "$STAGE/etc/systemd/system/nuxel-orientationd.service" || {
 # daemon but without this executable reports "applied: false" forever.
 test -x "$STAGE/usr/bin/wlr-randr" || {
   echo "ERROR: wlr-randr missing from rootfs (orientation transform backend)" >&2; exit 1; }
+test -x "$STAGE/usr/libexec/nuxel/nuxel-orientation-remote-sync" || {
+  echo "ERROR: orientation remote sync helper missing from rootfs" >&2; exit 1; }
+for _app in nuxel-contacts nuxel-messages nuxel-dialer; do
+  test -x "$STAGE/usr/bin/$_app" || {
+    echo "ERROR: native phone app $_app missing from rootfs" >&2; exit 1; }
+done
+test -f "$STAGE/usr/share/nuxel/pwa/nuxel-apps/clipper/index.html" || {
+  echo "ERROR: Clipper app missing from rootfs" >&2; exit 1; }
+test -x "$STAGE/usr/bin/xrandr" || {
+  echo "ERROR: xrandr missing from rootfs (XRDP geometry probe)" >&2; exit 1; }
 # default device configuration: the S10+ port starts from its own profile, and a
 # full rebuild must reproduce what the live deployment installed
 install -d "$STAGE/etc/nuxel/display" "$STAGE/etc/nuxel/input"
@@ -489,20 +519,27 @@ for _probe in nuxel-gtk3-gl-probe nuxel-gtk4-gsk-probe nuxel-webkit-probe; do
   fi
 done
 
-# PWNAGE-51000: the S10+ GPU baseline is the vendor kbase Mali-G76 path, not a
-# DRM render node.  Install the exact kbase Mesa/wlroots set from the pinned
-# build output (tools/s10plus/a67/build-mesa-kbase.sh + build-wlroots-kbase.sh).
-# Without these three files the compositor silently falls back to llvmpipe and
-# the UI remains usable but loses the known-good GPU path.
-KBASE_GPU=/nuxel/build/out/s10plus/kbase-gpu/lib
+# PWNAGE-51000/53000: the S10+ GPU baseline is the vendor kbase Mali-G76 path,
+# NOT a DRM render node.  Install the exact kbase Mesa/wlroots set that runs on
+# the handset.  The canonical, hash-pinned copy lives in release/s10plus/gpu
+# (recorded from the physical phone); build/out/s10plus/kbase-gpu is only a
+# developer rebuild and is used when the canonical copy is absent.
+KBASE_GPU=/nuxel/release/s10plus/gpu
+[ -f "$KBASE_GPU/libEGL_mesa.so.0.0.0" ] || KBASE_GPU=/nuxel/build/out/s10plus/kbase-gpu/lib
 if [ -f "$KBASE_GPU/libEGL_mesa.so.0.0.0" ] && \
    [ -f "$KBASE_GPU/libgallium_dri.so" ] && \
    [ -f "$KBASE_GPU/libwlroots-0.19.so" ]; then
   install -m 0644 "$KBASE_GPU/libEGL_mesa.so.0.0.0" "$STAGE/usr/lib64/libEGL_mesa.so.0.0.0"
   install -m 0755 "$KBASE_GPU/libgallium_dri.so"   "$STAGE/usr/lib64/libgallium_dri.so"
   install -m 0644 "$KBASE_GPU/libwlroots-0.19.so"   "$STAGE/usr/lib64/libwlroots-0.19.so"
-  install -m 0644 /nuxel/build/out/s10plus/kbase-gpu/50_mesa.json \
-      "$STAGE/usr/share/glvnd/egl_vendor.d/50_mesa.json"
+  # glvnd vendor file: the canonical dir carries the phone's 50_mesa.json
+  # content; the developer tree keeps it one level up.  Never ship a missing
+  # file silently - glvnd would then pick the stock (llvmpipe) library.
+  for _json in "$KBASE_GPU/50_mesa.json" "$KBASE_GPU/../50_mesa.json"; do
+    [ -f "$_json" ] && break
+  done
+  [ -f "$_json" ] || { echo "ERROR: 50_mesa.json not found under $KBASE_GPU" >&2; exit 1; }
+  install -m 0644 "$_json" "$STAGE/usr/share/glvnd/egl_vendor.d/50_mesa.json"
   # PWNAGE-53000: pin the kbase EGL build by absolute path so a Mesa package
   # update cannot silently reset the glvnd symlink to the stock library.
   install -d -m 0755 "$STAGE/etc/nuxel"
@@ -934,6 +971,7 @@ NUXEL_NOTIFY_GID="$(awk -F: '$1=="nuxel-notifications"{print $3; exit}' "$STAGE/
 chown 0:"$NUXEL_NOTIFY_GID" "$STAGE/var/lib/nuxel"
 chmod 0771 "$STAGE/var/lib/nuxel"
 setfacl -m "u:${NUXEL_BRIDGE_UID}:r-x" "$STAGE/var/lib/nuxel"
+setfacl -m "u:${NUXEL_UID}:r-x" "$STAGE/var/lib/nuxel"
 setfacl -m "u:${NUXEL_BRIDGE_UID}:rwx" "$STAGE/var/lib/nuxel/permissions"
 # Prove the exact access path the bridge needs.  If the build host kernel has no
 # ACL support this fails the build instead of shipping a silently broken policy.

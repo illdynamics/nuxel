@@ -1,0 +1,89 @@
+Device 0 (VID=18d1 and PID=4ee7) is UNKNOWN in libmtp v1.1.23.
+Please report this VID/PID and the device model to the libmtp development team
+desired configuration different from current, trying to set configuration
+libmtp version: 1.1.23
+
+Listing raw device(s)
+   Found 1 device(s):
+   18d1:4ee7 @ bus 0, dev 1
+Attempting to connect device(s)
+USB low-level info:
+   Interface has a kernel driver attached.
+   bcdUSB: 528
+   bDeviceClass: 0
+   bDeviceSubClass: 0
+   bDeviceProtocol: 0
+   idVendor: 18d1
+   idProduct: 4ee7
+   IN endpoint maxpacket: 512 bytes
+   OUT endpoint maxpacket: 512 bytes
+   Raw device info:
+      Bus location: 0
+      Device number: 1
+      Device entry info:
+         Vendor: (null)
+         Vendor id: 0x18d1
+         Product: (null)
+         Product id: 0x4ee7
+         Device flags: 0x00000000
+Configuration 0, interface 0, altsetting 0:
+   Interface description contains the string "MTP"
+   Device recognized as MTP, no further probing.
+Device info:
+   Manufacturer: Nuxel
+   Model: Nuxel S10+
+   Device version: PWNAGE-43000
+   Serial number: NUXEL-S10PLUS-0001
+   Vendor extension ID: 0x00000006
+   Vendor extension description: microsoft.com: 1.0
+   Detected object size: 32 bits
+   Extensions:
+Supported operations:
+   1001: Get device info
+   1002: Open session
+   1003: Close session
+   1004: Get storage IDs
+   1005: Get storage info
+   1006: Get number of objects
+   1007: Get object handles
+   1008: Get object info
+   1009: Get object
+   101b: Get partial object
+   100b: Delete object
+   100c: Send object info
+   100d: Send object
+   9806: Set object property list
+   9801: Get object properties supported
+   9803: Get object property value
+   1010: Reset device
+   1014: Get device property description
+   1015: Get device property value
+   1016: Set device property value
+Events supported:
+   None.
+Device Properties Supported:
+Playable File (Object) Types and Object Properties Supported:
+Storage Devices:
+   StorageID: 0x00010001
+      StorageType: 0x0004 removable RAM storage
+      FilesystemType: 0x0002 generic hierarchical
+      AccessCapability: 0x0000 read/write
+      MaxCapacity: 118975332352
+      FreeSpaceInBytes: 93593657344
+      FreeSpaceInObjects: 0
+      StorageDescription: Nuxel user storage
+      VolumeIdentifier: nuxel
+Special directories:
+   Default music folder: 0xffffffff
+   Default playlist folder: 0xffffffff
+   Default picture folder: 0xffffffff
+   Default video folder: 0xffffffff
+   Default organizer folder: 0xffffffff
+   Default zencast folder: 0xffffffff
+   Default album folder: 0xffffffff
+   Default text folder: 0xffffffff
+MTP-specific device properties:
+   Friendly name: (NULL)
+   Synchronization partner: (NULL)
+libmtp supported (playable) filetypes:
+OK.

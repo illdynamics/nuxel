@@ -1,0 +1,178 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== nuxelctl help ===
+nuxelctl — the Nuxel live-console control tool (A33).
+
+A33 adds the boot-surface controls that have to agree with the Settings UI:
+    nuxelctl verbose-boot status|on|off     durable verbose-boot setting (briq-02b)
+    nuxelctl verbose-boot animation MODE    boot animation policy: standard|short|off
+    nuxelctl verbose-boot verbosity N       boot-log detail: 0 (quiet) .. 3 (debug)
+    nuxelctl verbose-boot override          one-time Bixby-hold override status
+    nuxelctl handoff status                 single-owner lock + ownership receipt (briq-02a)
+    nuxelctl handoff simulate               replayable handoff timing harness
+    nuxelctl handoff audit                  audit the artefacts as an operator would
+
+Every path is resolved through NUXEL_ROOT (default /) so the whole tool can be
+exercised by the offline harness against a fake root - the same code path the
+device uses.
+
+Everything the graphical Nuxel Settings app can configure is configurable here,
+through the SAME files and the SAME service channels - there is exactly one
+settings system, not a UI path and a console path:
+
+    /etc/nuxel/display/statusbar-safezones.json   status-bar zone editor (mission 9)
+    /etc/nuxel/input/buttons.json                 hardware-button mapping (mission 13)
+
+and live actions are delivered over the running services' own control FIFOs
+(/run/nuxel-wl-fb.cmd for the display bridge, /run/nuxel-buttons.cmd for the
+hardware-button manager), so a console command and a finger tap do the same thing.
+
+Usage:
+    nuxelctl status
+    nuxelctl statusbar show
+    nuxelctl statusbar zones 9,10            # block zones 9 and 10 (current orientation)
+    nuxelctl statusbar preset right_camera|center_camera|left_camera|none|custom
+    nuxelctl statusbar orientation portrait|landscape_left|landscape_right
+    nuxelctl statusbar padding 8
+    nuxelctl display off|on|toggle
+    nuxelctl orientation status|get|modes|set <mode>|watch [s]
+    nuxelctl volume up|down|mute
+    nuxelctl buttons list
+    nuxelctl buttons set bixby_short open-terminal
+    nuxelctl buttons set power_short screen-toggle
+    nuxelctl buttons set bixby_short app:org.nuxel.Mail
+    nuxelctl action open-terminal|home|search|settings
+
+P3 subsystems (connectivity, time, audio, headphones, buttons) delegate to the
+single shipped implementation of each, so there is never a second copy of the
+logic:
+    nuxelctl wifi status|scan|connect <SSID>|firmware|report|selftest
+    nuxelctl time status|verify|rtc|mark|compare|sync|set <ISO8601>|selftest
+    nuxelctl audio status|pipeline|capture|tone|ucm-install|selftest
+    nuxelctl headphone status|jack|usbc|route|watch|selftest
+    nuxelctl buttons fsm|menu|gates        # state machine, menu table, reboot gate
+
+=== nuxelctl orientation ===
+{
+  "allowed": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "auto": true,
+  "calibration": {
+    "gravity_reference": "unverified",
+    "mount_matrix": "unverified"
+  },
+  "compositor": {
+    "output": "DSI-1",
+    "touch_calibration_verified": false,
+    "transform_available": false,
+    "transform_map_verified": false
+  },
+  "effective_orientation": 0,
+  "last_orientation": 0,
+  "mode": "auto",
+  "mode_label": "Auto",
+  "sensor": {
+    "available": false,
+    "preferred": null,
+    "sources": [
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "IIO device present but no readable scale",
+        "source": "iio-accel"
+      },
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+        "source": "iio-sensor-proxy"
+      },
+      {
+        "auto_capable": false,
+        "available": true,
+        "reason": "",
+        "source": "manual"
+      }
+    ],
+    "unverified": true
+  }
+}
+=== bridge api env/help ===
+NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000,http://localhost:8000
+NUXEL_APP_REGISTRY=/usr/share/nuxel/pwa/nuxel-common/app-registry.json
+NUXEL_BRIDGE_PROTOCOL_VERSION=1
+NUXEL_BRIDGE_VERSION=0.7.4-beta
+NUXEL_FILES_ROOT=/home/nuxel
+NUXEL_HTTP_BIND=127.0.0.1
+NUXEL_HTTP_MODE=dev
+NUXEL_HTTP_PORT=8080
+NUXEL_LED_POLICY=/etc/nuxel/leds/leds.json
+NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
+NUXEL_SESSION_USER=nuxel
+NUXEL_THUMBNAIL_DIR=/var/cache/nuxel/thumbnails
+XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share/:/usr/share/
+   5808 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+   6781 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+=== api listener ===
+State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess                           
+LISTEN 0      16           0.0.0.0:5900      0.0.0.0:*    users:(("wayvnc",pid=7239,fd=10))
+LISTEN 0      128        127.0.0.1:5037      0.0.0.0:*    users:(("adb",pid=14107,fd=9))   
+LISTEN 0      5          127.0.0.1:8080      0.0.0.0:*    users:(("python3",pid=6781,fd=3))
+LISTEN 0      128        127.0.0.1:8624      0.0.0.0:*    users:(("systemd",pid=1,fd=101)) 
+LISTEN 0      128          0.0.0.0:22        0.0.0.0:*    users:(("sshd",pid=5875,fd=6))   
+LISTEN 0      2            0.0.0.0:3389      0.0.0.0:*    users:(("xrdp",pid=7230,fd=7))   
+LISTEN 0      5          127.0.0.1:8000      0.0.0.0:*    users:(("python3",pid=5810,fd=3))
+LISTEN 0      128             [::]:22           [::]:*    users:(("sshd",pid=5875,fd=7))   
+/etc/nuxel/app-registry/app_registry.json.a59-bak-20261022T202602:6:  "url_base": "http://127.0.0.1:8000",
+/etc/nuxel/app-registry/app_registry.json:6:  "url_base": "http://127.0.0.1:8000",
+/etc/nuxel/app-registry/app_registry.json:899:    "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently.",
+/etc/nuxel/app-registry/app_registry.json.nuxel-rollback:6:  "url_base": "http://127.0.0.1:8000",
+/etc/nuxel/bridge-version.json:21:      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+/etc/nuxel/remote-desktop/xrdp/xrdp.ini:103:#enable_token_login=true
+/etc/nuxel/remote-desktop/backups/xrdp.ini.20261031-163956:103:#enable_token_login=true
+/etc/nuxel/input/button-fsm.json:53:      "very_long_min_ms": 8000,
+/etc/nuxel/input/button-fsm.json.prev:53:      "very_long_min_ms": 8000,
+/etc/nuxel/boot/preload-cinema.json:14:  "preflight_timeout_ms": 8000,
+/etc/nuxel/boot/preload-cinema.json:24:    "audio": "AAC-LC, 48000 Hz, stereo; deliberately not played",
+/etc/nuxel/boot/preload-cinema.json.nuxel-rollback:14:  "preflight_timeout_ms": 8000,
+/etc/nuxel/boot/preload-cinema.json.nuxel-rollback:23:    "audio": "AAC-LC, 48000 Hz, stereo; deliberately not played",
+/etc/nuxel/boot/preload-cinema.json.nuxel-rollback.pre-deploy-20261028T105440-2833780:14:  "preflight_timeout_ms": 8000,
+/etc/nuxel/boot/preload-cinema.json.nuxel-rollback.pre-deploy-20261028T105440-2833780:23:    "audio": "AAC-LC, 48000 Hz, stereo; deliberately not played",
+/etc/nuxel/boot/preload-cinema.json.bak-preloadfix:14:  "preflight_timeout_ms": 8000,
+/etc/nuxel/boot/preload-cinema.json.bak-preloadfix:23:    "audio": "AAC-LC, 48000 Hz, stereo; deliberately not played",
+/etc/nuxel/boot/preload-cinema.json.nuxel-rollback.pre-deploy-20261028T105710-2836090:14:  "preflight_timeout_ms": 8000,
+/etc/nuxel/boot/preload-cinema.json.nuxel-rollback.pre-deploy-20261028T105710-2836090:23:    "audio": "AAC-LC, 48000 Hz, stereo; deliberately not played",
+/etc/nuxel/bridge-version.json.nuxel-rollback.pre-v070-delta-release3:21:      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+/etc/nuxel/device/s10plus/pipewire/README.md:31:    default.clock.rate          = 48000
+/etc/nuxel/device/s10plus/pipewire/README.md:32:    default.clock.allowed-rates = [ 48000 ]
+/etc/nuxel/device/s10plus/wireplumber/README.md:13:placeholder: 48000 Hz, 2ch stereo. No values are invented.
+/etc/nuxel/bridge-version.json.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000:21:      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+/etc/nuxel/bridge-version.json.nuxel-rollback.pre-deploy-20261027T214530-2399261:21:      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+/etc/nuxel/audio/audio.json:43:    "measured_working_route": "hw:0,1 (RDMA1) at 48000 Hz, verified with a bounded low-level aplay (hw_ptr advances, rc=0); 44100 Hz leaves hw_ptr at 0 and returns EIO. RDMA0 does not advance at any tested rate. The static sink is configs/s10plus/pipewire/50-nuxel-s10-alsa.conf.",
+/etc/nuxel/bridge-version.json.nuxel-rollback.pre-v070-delta-release2:21:      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+/etc/nuxel/time/time.json:54:    "bridge_health": "http://127.0.0.1:8080/api/v1/health",
+/etc/nuxel/time/time.json:55:    "bridge_token": "http://127.0.0.1:8080/api/v1/auth/token",
+/etc/nuxel/time/time.json:56:    "bridge_status": "http://127.0.0.1:8080/api/v1/phone/status",
+/etc/nuxel/bridge-version.json.nuxel-rollback.pre-v070-delta-release4:21:      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+/etc/nuxel/bridge-version.json.nuxel-rollback:21:      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+/etc/nuxel/bridge-version.json.nuxel-rollback.pre-v070-delta-release:21:      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+/etc/nuxel/gnss/gnss.json:54:      "protocol": "broadcom-bbd-lhd-rpc",
+/etc/nuxel/gnss/gnss.json:84:      "name": "broadcom-bbd-lhd-rpc",
+/etc/nuxel/gnss/gnss.json:163:    "protocol": "broadcom-bbd-lhd-rpc"
+/etc/nuxel/security/privacy-config.json:86:    "root_token_file": "/run/nuxel/privacy/root.token",
+/etc/nuxel/security/privacy-config.json:90:    "honest_note": "The daemon serves STATUS read-only to any local process and refuses state changes unless the caller presents the root token (a 0600 root-owned file an unprivileged app cannot read). The control-centre PWA therefore queues a request and shows the exact console command; it never silently escalates."
+=== notes data files ===
+   142836     12 -rw-r--r--   1 nuxel    nuxel       12288 Oct 29 09:31 /home/nuxel/.local/share/nuxel_browser_native.py/hsts-storage.sqlite
+  3279594     28 -rw-r--r--   1 nuxel    nuxel       28672 Oct 31 17:29 /home/nuxel/.mozilla/firefox/xrdp/storage.sqlite
+  1968916     28 -rw-r--r--   1 nuxel    nuxel       28672 Oct 31 00:41 /home/nuxel/.mozilla/firefox/c0q4hg3r.default-release/storage.sqlite

@@ -1,0 +1,4 @@
+PWNAGE-49000 local QR decoder check (headless Chrome + bundled jsQR 1.4.0)
+Input: generated test-only otpauth://totp/ URI
+Decoded: otpauth://totp/Nuxel%20Test:owner%40example.org?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&amp;issuer=Nuxel%20Test&amp;algorithm=SHA1&amp;digits=6&amp;period=30
+Result: PASS (decoder returns the exact otpauth payload; no network used)

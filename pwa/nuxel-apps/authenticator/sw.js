@@ -1,6 +1,6 @@
-const CACHE_NAME = 'nuxel-authenticator-v1';
+const CACHE_NAME = 'nuxel-authenticator-v2-p49000';
 const ASSETS = [
-  '/', '/index.html', '/css/authenticator.css', '/js/authenticator.js', '/js/totp.js', '/js/vault.js',
+  '/', '/index.html', '/css/authenticator.css', '/js/authenticator.js', '/js/totp.js', '/js/vault.js', '/vendor/jsQR.js',
   '/samples/otpauth-examples.json', '../nuxel-common/bridge.js', '/manifest.json',
   '/icons/icon-48.png', '/icons/icon-72.png', '/icons/icon-96.png', '/icons/icon-128.png',
   '/icons/icon-144.png', '/icons/icon-152.png', '/icons/icon-192.png', '/icons/icon-384.png',

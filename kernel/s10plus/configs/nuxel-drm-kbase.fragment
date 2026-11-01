@@ -37,3 +37,29 @@ CONFIG_EXYNOS_DPU20=y
 CONFIG_EXYNOS_MIPI_DSIM=y
 CONFIG_ION=y
 CONFIG_ION_EXYNOS=y
+
+# Flatpak / Bubblewrap: unprivileged user namespaces and the namespace/
+# seccomp/cgroup prerequisites.  This is necessary but NOT sufficient on this
+# Samsung 4.14 tree: create_user_ns() also carries a CONFIG_LOD_SEC runtime gate
+# and a current_chrooted() check.  The live status is decided by
+# `unshare -Ur true` and a real Flatpak launch, never by this fragment alone.
+CONFIG_MULTIUSER=y
+CONFIG_NAMESPACES=y
+CONFIG_USER_NS=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+CONFIG_SECCOMP=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_CGROUPS=y
+
+# NFC (PWNAGE-53000): vendor S3NRN82 controller.  The sec_nfc driver class is
+# renamed by patches/0007-sec-nfc-class-name.patch; without that rename the
+# generic NFC core and sec_nfc both register /sys/class/nfc and sysfs panics.
+CONFIG_NFC=y
+CONFIG_NFC_DIGITAL=y
+CONFIG_NFC_NCI=y
+CONFIG_SAMSUNG_NFC=y
+CONFIG_SEC_NFC=y
+CONFIG_SEC_NFC_LOGGER=y

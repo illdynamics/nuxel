@@ -24,6 +24,27 @@
     catch (e) { return Promise.resolve({ success: false, state: 'unavailable', error: String(e && e.message || e) }); }
   }
   function setText(id, text) { var el = $(id); if (el) el.textContent = text; }
+  // PWNAGE-52000: every provider refresh is bounded.  A slow external
+  // connector scan must never leave a permanent spinner or block the
+  // independent Graphics Acceleration card above it.
+  var _displayReq = 0;
+  function callBounded(ns, verb, params, timeoutMs) {
+    var req = Promise.resolve(call(ns, verb, params));
+    var timer;
+    var timeout = new Promise(function (resolve) {
+      timer = setTimeout(function () {
+        resolve({ success: false, timeout: true, state: 'timeout',
+                  error: 'no response within ' + Math.round(timeoutMs / 1000) + ' s' });
+      }, timeoutMs);
+    });
+    return Promise.race([req, timeout]).then(function (r) {
+      if (timer) clearTimeout(timer);
+      return r;
+    }, function (e) {
+      if (timer) clearTimeout(timer);
+      return { success: false, error: String(e && e.message || e) };
+    });
+  }
 
   // ---- Bluetooth ---------------------------------------------------------
   function renderBluetooth(st) {
@@ -159,7 +180,11 @@
   // ---- Displays ----------------------------------------------------------
   function renderDisplays(st) {
     if (!st || st.success === false) {
-      setText('display-state', 'Display provider unavailable' + (st && st.error ? (': ' + st.error) : ''));
+      setText('external-display-state', 'External connector provider unavailable' +
+        (st && st.timeout ? ' (timed out)' : '') +
+        (st && st.error ? (': ' + st.error) : '') +
+        '\nThe Graphics Acceleration block above is independent and remains usable.');
+      setText('external-display-detail', 'Connector discovery failed or exceeded its 4 s deadline. Press Refresh connectors to retry; no GPU state was changed.');
       return;
     }
     var ports = (st.type_c_ports || []).map(function (p) {
@@ -179,14 +204,21 @@
       'Desktop supported : ' + (st.desktop_supported ? 'yes' : 'no')
     ];
     if (st.blocker) lines.push('blocker           : ' + st.blocker);
-    setText('display-state', lines.join('\n'));
-    setText('display-detail', st.drm_present
+    setText('external-display-state', lines.join('\n'));
+    setText('external-display-detail', st.drm_present
       ? 'An external DRM output path exists; further connector/mode enumeration is needed.'
       : 'No DRM/KMS exists on this kernel (CONFIG_DRM is not set) and the image renders via the framebuffer backend. USB-C DisplayPort Alt Mode video therefore cannot be driven by userspace today — Mirror/Desktop are honestly unavailable, not hidden.');
   }
   function refreshDisplays() {
-    setText('display-state', 'Checking display path…');
-    return call('display', 'status', {}).then(renderDisplays);
+    var req = ++_displayReq;
+    setText('external-display-state', 'Checking external connector path (bounded 4 s)…');
+    var started = Date.now();
+    return callBounded('display', 'status', {}, 4000).then(function (st) {
+      if (req !== _displayReq) return st;  // stale response after a newer refresh
+      if (st && st.success !== false) st.elapsed_ms = Date.now() - started;
+      renderDisplays(st);
+      return st;
+    });
   }
 
   // ---- Audio -------------------------------------------------------------
@@ -345,7 +377,9 @@
     bridgeTries = 0;
     refreshBluetooth();
     refreshBluetoothDevices();
-    refreshDisplays();
+    // PWNAGE-52000: connector discovery is independent and bounded.  Start it
+    // only after the graphics card has had a chance to paint its first state.
+    setTimeout(refreshDisplays, 250);
     refreshAudio();
   }
   if (document.readyState === 'loading') {

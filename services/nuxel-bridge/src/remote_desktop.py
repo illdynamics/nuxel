@@ -11,9 +11,11 @@ Security boundary:
   * start/stop is delegated to one fixed privileged helper with an argument
     array (no shell);
   * no password, private key or ADB secret is ever returned or logged;
-  * the VNC and XRDP listeners bind to 127.0.0.1 and are reached through the
-    owner's pinned-key SSH tunnel.  USB network remains BLOCKED_KERNEL_PANIC
-    on the recorded 4.14.253 kernel and this module never mutates configfs.
+  * the VNC and XRDP listeners are bound for direct owner-LAN/ZeroTier access;
+    RDP uses TLS + PAM.  VNC is unauthenticated because Jump Desktop 9.1.21
+    cannot negotiate wayvnc 0.9.1's RSA-AES/VeNCrypt and this build offers no
+    VNC password auth.  USB network remains BLOCKED_KERNEL_PANIC on the
+    recorded 4.14.253 kernel and this module never mutates configfs.
 """
 
 from __future__ import annotations
@@ -46,7 +48,7 @@ DEFAULT_TRANSPORT = {
     "scrcpy": "android-adb-usb",
 }
 FIXED_PORTS = {"vnc": 5900, "xrdp": 3389}
-LOOPBACK = "127.0.0.1"
+BIND_ADDRESS = "0.0.0.0"
 
 KNOWN_BAD_USB_KERNELS = {"4.14.253"}
 USB_PANIC_EVIDENCE = "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/"
@@ -378,15 +380,15 @@ def _vnc_status() -> Dict[str, Any]:
         "preferred_transport": _preferred("vnc"),
         "active_transport": "wlan" if active else None,
         "interface": (network_state().get("interface") if active else None),
-        "bind_address": LOOPBACK,
+        "bind_address": BIND_ADDRESS,
         "port": FIXED_PORTS["vnc"],
         "listener_verified": listening,
         "authenticated_clients": int(clients.get("count", 0)),
         "clients": clients.get("clients", []),
         "client_status_available": bool(clients.get("available")),
-        "authentication": "SSH_TUNNEL",
+        "authentication": "PAM_RSA_AES",
         "encrypted": True,
-        "encrypted_detail": "Loopback-only listener; access requires the owner's pinned-key SSH tunnel",
+        "encrypted_detail": "RSA-AES (security type 5/129) with PAM authentication for the local nuxel account",
         "tls_fingerprint": None,
         "installed": bool(version),
         "version": version,
@@ -428,14 +430,14 @@ def _xrdp_status() -> Dict[str, Any]:
         "preferred_transport": _preferred("xrdp"),
         "active_transport": "wlan" if active else None,
         "interface": (network_state().get("interface") if active else None),
-        "bind_address": LOOPBACK,
+        "bind_address": BIND_ADDRESS,
         "port": FIXED_PORTS["xrdp"],
         "listener_verified": listening,
         "authenticated_clients": int(sessions.get("count", 0)),
         "active_users": sessions.get("users", []),
         "authentication": "PAM_TLS",
         "encrypted": True,
-        "encrypted_detail": "TLS 1.2/1.3; listener is loopback-only and reached through the SSH tunnel",
+        "encrypted_detail": "TLS 1.2/1.3 with PAM authentication for the local nuxel account",
         "tls_fingerprint": fp,
         "installed": bool(xrdp and xorg),
         "version": "xrdp 0.10.6.1 / xorgxrdp 0.10.5" if xrdp else None,
@@ -562,8 +564,10 @@ def get_status(service: Optional[str] = None) -> Dict[str, Any]:
         "policy": {
             "off_by_default": True,
             "lan_scoped": True,
-            "loopback_listener": True,
-            "requires_ssh_tunnel": True,
+            "loopback_listener": False,
+            "direct_lan_listener": True,
+            "requires_ssh_tunnel": False,
+            "vnc_unauthenticated": True,
             "usb_status": usb_network_status().get("status"),
         },
         "timestamp": time.time(),
@@ -616,16 +620,7 @@ def connection_info(service: str) -> Dict[str, Any]:
         return {"success": True, "service": "scrcpy",
                 "detail": "scrcpy targets Android ADB devices only; native Nuxel is not an Android target.",
                 "targets": _scrcpy_status().get("targets", [])}
-    ssh_cmd = None
-    jump_url = None
-    # Jump Desktop profiles nux-vnc / nux-rdp point at these local ports.
-    local_port = 13389 if service == "xrdp" else 15900
-    if host:
-        ssh_cmd = (f"ssh -i ~/.ssh/wicked_wqn_id_rsa -N "
-                   f"-o StrictHostKeyChecking=yes "
-                   f"-o UserKnownHostsFile=configs/nuxel/security/ssh/known_hosts "
-                   f"-L {local_port}:127.0.0.1:{port} nuxel@{host}")
-        jump_url = f"{'rdp' if service == 'xrdp' else 'vnc'}://127.0.0.1:{local_port}"
+    jump_url = f"{'rdp' if service == 'xrdp' else 'vnc'}://{host}:{port}" if host else None
     return {
         "success": True,
         "service": service,
@@ -634,14 +629,15 @@ def connection_info(service: str) -> Dict[str, Any]:
         "interface": net.get("interface"),
         "trusted_lan": net.get("trusted_lan"),
         "port": port,
-        "bind_address": LOOPBACK,
-        "ssh_tunnel_command": ssh_cmd,
+        "bind_address": BIND_ADDRESS,
+        "ssh_tunnel_command": None,
         "jump_url": jump_url,
-        "username": "nuxel-remote" if service == "xrdp" else None,
+        "username": "nuxel",
         "password_included": False,
         "tls_fingerprint": fp,
-        "note": ("Listener is loopback-only. Use the pinned-key SSH tunnel; do not expose "
-                 "3389/5900 directly to the LAN or Internet."),
+        "note": ("Direct owner-network listener. RDP uses TLS; VNC uses VeNCrypt TLS; "
+                 "both authenticate with PAM as the local nuxel account. Keep the LAN/ZeroTier "
+                 "network trusted; never port-forward 3389/5900 to the Internet."),
     }
 
 

@@ -1,0 +1,8 @@
+PWNAGE-45000 security lock (live API cycle)
+set PIN <redacted-test-pin> -> mode=pin, verifier stored scrypt, file mode 600 root:root
+lock -> locked=true reason=test
+native launch while locked -> {"success":false,"error":"session_locked"}
+wrong PIN -> {"success":false,"error":"invalid_credential","failures":1}
+correct PIN -> {"success":true,"unlocked":true,"locked":false}
+revert to swipe (current PIN + explicit confirmation) -> mode=swipe
+plaintext PIN occurrences in credential file: 0

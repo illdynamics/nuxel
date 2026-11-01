@@ -183,9 +183,18 @@
     photo.decoding = 'async';
     photo.className = 'media';
     photo.style.imageOrientation = 'from-image';
+    var retried = false;
     photo.addEventListener('error', function () {
+      // The thumbnail endpoint serves the same verified rung for stills and
+      // has its own strict path check.  Retry once there before giving up; a
+      // transient full-file read must not leave a permanent "undecodable" tile.
+      if (!retried && item.path) {
+        retried = true;
+        photo.src = thumbnailUrl(item);
+        return;
+      }
       photo.replaceWith(placeholder('Image could not be decoded (format unsupported)'));
-    }, { once: true });
+    });
     return photo;
   }
 
@@ -235,8 +244,33 @@
         box.appendChild(poster);
         var note = document.createElement('p');
         note.textContent = 'Playback unavailable: WebKit cannot decode ' + item.name +
-          '. The still frame is shown; use a native player for this codec.';
+          '. The still frame is shown; open it in the native player for this codec.';
         box.appendChild(note);
+        if (full && item.source === 'storage' && item.path) {
+          var openNative = document.createElement('button');
+          openNative.type = 'button';
+          openNative.className = 'icon-btn';
+          openNative.textContent = 'Open in Player';
+          openNative.addEventListener('click', function (e) {
+            e.stopPropagation();
+            openNative.disabled = true;
+            fetch('http://127.0.0.1:8080/api/v1/apps/open-media', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ app_id: 'org.nuxel.MediaPlayer', path: item.path })
+            }).then(function (r) { return r.json(); }).then(function (res) {
+              if (!res || res.success !== true) {
+                openNative.disabled = false;
+                openNative.textContent = 'Player: ' + ((res && (res.error || res.detail)) || 'not available');
+              } else {
+                openNative.textContent = 'Opening in Player…';
+              }
+            }).catch(function (err) {
+              openNative.disabled = false;
+              openNative.textContent = 'Player: ' + (err && err.message ? err.message : 'failed');
+            });
+          });
+          box.appendChild(openNative);
+        }
         v.replaceWith(box);
       }, { once: true });
       return v;
@@ -302,8 +336,30 @@
         cell.__nuxelLoad = loadMedia;
         sharedObserver.observe(cell);
       } else loadMedia();
-      cell.addEventListener('click', function () { openViewer(item); });
+      cell.addEventListener('click', function () {
+        if (item.kind === 'video') openNativePlayer(item); else openViewer(item);
+      });
       els.grid.appendChild(cell);
+    });
+  }
+
+  function openNativePlayer(item) {
+    if (!item || item.source !== 'storage' || !item.path) {
+      openViewer(item);
+      return;
+    }
+    toast('Opening ' + item.name + ' in the native player…');
+    fetch('http://127.0.0.1:8080/api/v1/apps/open-media', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_id: 'org.nuxel.MediaPlayer', path: item.path })
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (!res || res.success !== true) {
+        toast('Player: ' + ((res && (res.error || res.detail)) || 'not available') + ' — showing still');
+        openViewer(item);
+      }
+    }).catch(function (err) {
+      toast('Player launch failed: ' + (err && err.message ? err.message : 'unknown'));
+      openViewer(item);
     });
   }
 

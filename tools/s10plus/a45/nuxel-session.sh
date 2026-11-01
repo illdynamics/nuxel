@@ -21,6 +21,35 @@
 # Software rendering is forced because this kernel has no DRM/EGL device.
 set -eu
 export XDG_SESSION_TYPE=wayland
+# phoc may create the Wayland socket just AFTER it starts this session command.
+# A one-shot chmod at startup raced that creation and left the socket 0755
+# root:root, so Firefox/VLC/GTK apps running as nuxel could not connect.  Watch
+# briefly for the socket and grant only the nuxel group access.
+if getent group nuxel >/dev/null 2>&1; then
+  (
+    i=0
+    while [ "$i" -lt 100 ]; do
+      if [ -S /run/nuxel-wayland/wayland-0 ]; then
+        chgrp nuxel /run/nuxel-wayland /run/nuxel-wayland/wayland-0 /run/nuxel-wayland/wayland-0.lock 2>/dev/null || true
+        chmod 0750 /run/nuxel-wayland 2>/dev/null || true
+        chmod 0660 /run/nuxel-wayland/wayland-0 2>/dev/null || true
+        chmod 0640 /run/nuxel-wayland/wayland-0.lock 2>/dev/null || true
+        mkdir -p /run/user/1000 /run/user/1000/dconf 2>/dev/null || true
+        chown 1000:1000 /run/user/1000 /run/user/1000/dconf 2>/dev/null || true
+        chmod 0700 /run/user/1000 /run/user/1000/dconf 2>/dev/null || true
+        # The root PWA host can recreate dconf under the compositor runtime;
+        # never leave it root-owned while a session-user app needs it.
+        mkdir -p /run/nuxel-wayland/dconf 2>/dev/null || true
+        chown -R nuxel:nuxel /run/nuxel-wayland/dconf 2>/dev/null || true
+        ln -sfn /run/nuxel-wayland/wayland-0 /run/user/1000/wayland-0 2>/dev/null || true
+        ln -sfn /run/nuxel-wayland/wayland-0.lock /run/user/1000/wayland-0.lock 2>/dev/null || true
+        break
+      fi
+      i=$((i + 1))
+      sleep 0.1
+    done
+  ) &
+fi
 # Native communication apps run as the real session user (see the HTTP bridge's
 # NATIVE_AS_SESSION_USER list), so the compositor runtime directory must be
 # traversable.  The Wayland socket itself is already 0755.
@@ -44,9 +73,16 @@ if getent group nuxel >/dev/null 2>&1; then
   chmod 0700 /run/nuxel-wayland/dconf 2>/dev/null || true
 fi
 export GDK_BACKEND=wayland
-export WEBKIT_DISABLE_COMPOSITING_MODE=1
-export LIBGL_ALWAYS_SOFTWARE=1
-export GSK_RENDERER=cairo
+# PWNAGE-50000: one validated policy owns graphics environment.  The default
+# profile is the conservative software WebKit path; accelerated modes are only
+# selected after the Wayland EGL/DMA-BUF probes pass.  Per-process, never global.
+if [ -x /usr/lib/nuxel/nuxel-graphics-profile ]; then
+  eval "$(/usr/lib/nuxel/nuxel-graphics-profile env webkit)" || true
+else
+  export WEBKIT_DISABLE_COMPOSITING_MODE=1
+  export LIBGL_ALWAYS_SOFTWARE=1
+fi
+export GSK_RENDERER="${GSK_RENDERER:-cairo}"
 LOG=/run/nuxel-session.log
 # Native GUI applications run as the real nuxel user (uid 1000) so Firefox,
 # VLC and the GNOME tools do not refuse a root session.  They need the
@@ -157,10 +193,12 @@ fi
 # OSK provider registration succeeds.
 say "starting A45 nav dock + Stevia OSK"
 nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
-# Persistent top status strip over fullscreen native clients (Firefox/VLC/...).
-# It has an empty input region, so Home's DOM status-bar gestures still work.
-if [ -x /usr/lib/nuxel/nuxel-statusbar ]; then
-  nohup /usr/lib/nuxel/nuxel-statusbar </dev/null >/run/nuxel-statusbar.out 2>&1 &
+# PWNAGE-50000: the Home DOM status bar is the ONE top bar.  The old native
+# nuxel-statusbar overlay rendered a reduced duplicate (clock/Wi-Fi/battery) and
+# covered the proper bar.  Do not start it.  The native OSD below is a separate,
+# transparent overlay used only for volume/power-menu feedback.
+if [ -x /usr/lib/nuxel/nuxel-osd ]; then
+  nohup /usr/lib/nuxel/nuxel-osd </dev/null >/run/nuxel-osd.out 2>&1 &
 fi
 if [ -x /usr/bin/phosh-osk-stevia ]; then
   nohup dbus-run-session -- /usr/bin/phosh-osk-stevia </dev/null >/run/stevia.out 2>&1 &
@@ -188,6 +226,50 @@ systemctl --no-block start nuxel-audio-session.service 2>/dev/null || \
   say "audio session service unavailable; audio route retry remains"
 chgrp -R audio /dev/snd 2>/dev/null || true
 chmod -R g+rw /dev/snd 2>/dev/null || true
+
+# PWNAGE-45000: a real graphical polkit agent for GNOME Software/PackageKit.
+# It runs as the session user (uid 1000) on the shared session bus and Wayland
+# socket, so authorization prompts appear above the client and can be touched.
+mkdir -p /run/nuxel-wayland/dconf 2>/dev/null || true
+chown -R nuxel:nuxel /run/nuxel-wayland/dconf 2>/dev/null || true
+chmod 0700 /run/nuxel-wayland/dconf 2>/dev/null || true
+POLKIT_AGENT=""
+# xfce-polkit is GTK3 and can use the Wayland backend; lxpolkit is GTK2/X11
+# only and cannot open a display on this image.
+for _pa in /usr/libexec/xfce-polkit /usr/bin/xfce-polkit; do
+  [ -x "$_pa" ] && { POLKIT_AGENT="$_pa"; break; }
+done
+if [ -n "$POLKIT_AGENT" ] && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  # polkit agents need a real logind subject.  This root-owned Phoc session has
+  # no logind session on the 4.14 image; starting the agent anyway leaves an
+  # empty window and a false impression of authorization.  Do not start it
+  # until a nuxel logind session exists.
+  if ! loginctl list-sessions --no-legend 2>/dev/null | awk '$3 == "nuxel" {found=1} END {exit !found}'; then
+    say "no nuxel logind session; polkit agent not started (privileged prompts unavailable)"
+    POLKIT_AGENT=""
+  fi
+fi
+if [ -n "$POLKIT_AGENT" ] && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  if command -v runuser >/dev/null 2>&1; then
+    nohup runuser -u nuxel -- env \
+      XDG_RUNTIME_DIR=/run/nuxel-wayland WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+      DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
+      GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 \
+      HOME=/home/nuxel "$POLKIT_AGENT" \
+      </dev/null >/run/nuxel-polkit-agent.out 2>&1 &
+    say "polkit graphical agent started ($POLKIT_AGENT uid=nuxel pid=$!)"
+    # Agent registration needs a logind session.  Record the real outcome so
+    # the UI/evidence does not claim an authorization prompt that cannot appear.
+    sleep 1
+    if ! pgrep -f "$(basename "$POLKIT_AGENT")" >/dev/null 2>&1; then
+      say "polkit agent exited: no graphical authorization prompt available (logind session absent)"
+    fi
+  else
+    say "polkit agent present but runuser unavailable; no graphical agent"
+  fi
+else
+  say "no Wayland-capable polkit agent; Software transactions will report the blocker"
+fi
 
 say "starting launcher host url=$NUXEL_HOME_URL"
 exec /usr/lib/nuxel/nuxel-pwa-host

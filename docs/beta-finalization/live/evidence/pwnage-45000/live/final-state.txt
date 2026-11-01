@@ -1,0 +1,39 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+PWNAGE-45000 final state 2026-10-31T19:49:41+01:00
+up 1 minute
+4.14.253-gf7194c1d15ed-dirty
+--- units
+active
+active
+active
+active
+--- session
+drwxr-x---. 6 root  nuxel 260 Oct 31 19:49 /run/nuxel-wayland
+drwx------. 3 nuxel nuxel 100 Oct 31 19:49 /run/user/1000
+srw-rw----. 1 root nuxel  0 Oct 31 19:49 /run/nuxel-wayland/wayland-0
+lrwxrwxrwx. 1 root root  28 Oct 31 19:49 /run/user/1000/wayland-0 -> /run/nuxel-wayland/wayland-0
+--- security
+{"success": true, "schema": "nuxel.security-status/1", "mode": "swipe", "credential_set": true, "pin_fallback_set": false, "locked": true, "reason": "post-mission", "fingerprint": {"provider_ready": false, "selectable": false}, "rate_limit"
+--- providers
+dnd {'active': False}
+nfc {'state': 'BLOCKED_KERNEL', 'supported': False}
+fingerprint {'state': 'BLOCKED_SECURE_PROVIDER', 'supported': False}
+led-notification {'state': 'OFF', 'supported': False, 'hardware_led': False}
+software {'native_ready': True, 'flatpak_ready': False}
+--- toplevels
+WINDOWS=1
+WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=1 act=1 fs=0
+--- polkit
+2026-10-31T18:49:15Z no nuxel logind session; polkit agent not started (privileged prompts unavailable)
+2026-10-31T18:49:15Z no Wayland-capable polkit agent; Software transactions will report the blocker
+--- torch/usb
+0
+acm.usb0

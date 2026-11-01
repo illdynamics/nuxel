@@ -1,0 +1,28 @@
+== verify-a25-boot: PASS ==
+boot.img        : boot14.userns.img (52445184 bytes, sha256 9c339535e5affb3eff71bed74953938d4a8b309c8afbca58084e57e7d0929d11)
+kernel Image    : Image-userns (49508360 bytes, sha256 513eedaaff70b82ac3112911fdbfee45de2ffac48fea98239870b6b3ffbf7a61)
+initramfs cpio  : initramfs.userns.cpio (9786716 bytes, sha256 d10bdb4a09a98ddad667aee9203042a3d9827e0b4ba0bee7a391cbfd70af9a4c)
+
+checks:
+  ok     container: verify-boot-image.py PASS —    note  ramdisk: /bin/sh -> toybox
+  ok     container: ANDROID! magic — b'ANDROID!'
+  ok     container: page_size 2048 — 2048
+  ok     container: kernel_size == raw Image size — 49508360 vs 49508360
+  ok     container: kernel_addr is a real load address — 0x10008000
+  ok     kernel payload: not gzip (S-Boot executes gzip as code) — 00c06b14
+  ok     kernel payload: raw arm64 Image magic at 56 — b'ARMd'
+  ok     kernel file: raw arm64 Image magic at 56 — b'ARMd'
+  ok     kernel: initramfs embedded (CONFIG_INITRAMFS_SOURCE) — gzip at offset 34329944, 9786716 bytes
+  ok     kernel: embedded /init — a2157e62283a7a95
+  ok     kernel: embedded /opt/nuxel/nuxel-ui — 771ca3f9a3b68f51
+  ok     kernel: embedded /opt/nuxel/nuxel-console — 8b73333c980e5ea9
+  ok     kernel: embedded /opt/nuxel/nuxel-anim-player — fd7e62dd8ae01f2a
+  ok     kernel: embedded /opt/nuxel/nuxel-postboot.sh — dd7df734719dd9d7
+  ok     kernel: embedded /opt/nuxel/libsystemd-shared-258.11-1.fc43.so — 848149cf4b506aef
+  ok     kernel: embedded archive == built initramfs (member-by-member) — sha256 d10bdb4a09a98dda
+  ok     kernel: embedded archive size == built archive size — 9786716 vs 9786716
+  ok     kernel: pinned systemd payload sha256 — 848149cf4b506aef
+  ok     container: ramdisk decompresses (lzma-alone) — 9852252 bytes
+  ok     container: ramdisk is a newc cpio
+  ok     container: ramdisk == built initramfs (+ zero padding) — payload 9786716, padding 65536
+  ok     container: fits the BOOT partition — 52445184 <= 57671680 (slack 5226496)

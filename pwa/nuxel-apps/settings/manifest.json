@@ -4,7 +4,7 @@
   "description": "Nuxel system settings (display, status bar, sound, network, input, location and maps diagnostics)",
   "start_url": "./index.html",
   "display": "fullscreen",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "scope": "./",
   "background_color": "#0a1628",
   "theme_color": "#0a1628",
@@ -23,7 +23,7 @@
     }
   ],
   "nuxel": {
-    "bridge_version": "1",
+    "bridge_version": "1", "pwa_version": "0.7.5-beta",
     "capabilities": [
       "location:read",
       "location:manage"

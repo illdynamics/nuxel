@@ -1,0 +1,41 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+    720x1520 px (current)
+  Transform: normal
+CAP /tmp/scan-normal.z 1440 3040 32 5760 bytes 17510400 R 16 G 8 B 0
+grim=0
+e4736e1769cbc8796d945bde77aad558698323acfbefe6fffcf962895a7404cd  /tmp/scan-normal.z
+6cc35fe624fc8ad7542f68d2fb7efd62ec8a38d78cd5f883b350aae51b07ccb3  /tmp/grim-normal.png
+1793465844 FRAMES_OK total=13452 fps_1s=5 failures=0 blits=416 present_skipped=13033 blit_avg_ms=35 damage=0-1520 damage_blits=390 damage_avg_ms=34 idle_ms=15247 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=417 decon_pan_failed=0
+
+    720x1520 px (current)
+  Transform: 90
+CAP /tmp/scan-90.z 1440 3040 32 5760 bytes 17510400 R 16 G 8 B 0
+grim=0
+3db629fb0b5ed3e50299403eddbfd6e72e22ff1362f599d23c6de50b0f3e3dd1  /tmp/scan-90.z
+8e1ad094abfdfe28520f77303323187211ace267f852274de735b6a7f19105bf  /tmp/grim-90.png
+1793465846 FRAMES_OK total=13499 fps_1s=29 failures=0 blits=418 present_skipped=13078 blit_avg_ms=36 damage=0-1520 damage_blits=390 damage_avg_ms=34 idle_ms=1009 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=419 decon_pan_failed=0
+
+    720x1520 px (current)
+  Transform: 180
+CAP /tmp/scan-180.z 1440 3040 32 5760 bytes 17510400 R 16 G 8 B 0
+grim=0
+b8e469c7d3087ebfa8f2d46b69427764d2f5c8bf6631f9b6f85bef687d227c02  /tmp/scan-180.z
+6cc35fe624fc8ad7542f68d2fb7efd62ec8a38d78cd5f883b350aae51b07ccb3  /tmp/grim-180.png
+1793465849 FRAMES_OK total=13566 fps_1s=25 failures=0 blits=420 present_skipped=13143 blit_avg_ms=36 damage=0-1520 damage_blits=390 damage_avg_ms=34 idle_ms=1505 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=421 decon_pan_failed=0
+
+    720x1520 px (current)
+  Transform: 270
+CAP /tmp/scan-270.z 1440 3040 32 5760 bytes 17510400 R 16 G 8 B 0
+grim=0
+ea3b61afe479073adcf8c4843d1cad2fb28255e3ac846fdda27e3e4aee5716bc  /tmp/scan-270.z
+8e1ad094abfdfe28520f77303323187211ace267f852274de735b6a7f19105bf  /tmp/grim-270.png
+1793465852 FRAMES_OK total=13630 fps_1s=20 failures=0 blits=422 present_skipped=13205 blit_avg_ms=36 damage=0-1520 damage_blits=390 damage_avg_ms=34 idle_ms=1632 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=423 decon_pan_failed=0
+

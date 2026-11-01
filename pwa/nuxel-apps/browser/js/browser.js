@@ -219,6 +219,25 @@
 
   document.getElementById('go').addEventListener('click', function () { navigate(els.url.value); });
   els.url.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') navigate(els.url.value); });
+  // Tapping/clicking the address bar must select the whole URL immediately so
+  // the next keystroke replaces it.  WebKit's focus timing can clear a select()
+  // made during pointerdown, so apply it on both events and once more after the
+  // browser's focus pass.
+  function selectAddress(ev) {
+    if (ev && ev.type === 'keydown' && /^(Arrow|Home|End|Tab|Shift)/.test(ev.key || '')) return;
+    var input = els.url;
+    try {
+      input.focus({ preventScroll: true });
+      input.select();
+      input.setSelectionRange(0, input.value.length);
+      setTimeout(function () {
+        try { input.select(); input.setSelectionRange(0, input.value.length); } catch (e) {}
+      }, 0);
+    } catch (e) { /* clipboard/input API unavailable: keep normal editing */ }
+  }
+  els.url.addEventListener('pointerdown', selectAddress);
+  els.url.addEventListener('focus', selectAddress);
+  els.url.addEventListener('click', selectAddress);
   document.getElementById('back').addEventListener('click', function () {
     if (state.pos > 0) { state.pos--; navigate(state.stack[state.pos], { noStack: true, silent: true }); }
   });

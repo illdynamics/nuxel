@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
 <meta name="theme-color" content="#04191c">
 <meta name="nuxel-app-id" content="org.nuxel.Authenticator">
 <link rel="manifest" href="manifest.json">
@@ -53,6 +54,27 @@
     </div>
 
     <div id="tab-add" class="panel" style="padding:0">
+      <div class="card">
+        <h3>Scan a QR code</h3>
+        <p class="hint">Decoding stays on this device. The camera preview and image bytes are never
+          sent to the Bridge, network, logs or crash reports.</p>
+        <div class="row">
+          <button id="qr-camera" class="primary">Scan with camera</button>
+          <button id="qr-image-btn">Import QR image</button>
+        </div>
+        <input id="qr-image" type="file" accept="image/*" hidden>
+        <video id="qr-video" playsinline muted autoplay hidden></video>
+        <canvas id="qr-canvas" hidden></canvas>
+        <p id="qr-note" class="hint" style="color:#ffb4b4"></p>
+      </div>
+      <div class="card" id="qr-preview" style="display:none">
+        <h3>Confirm this account</h3>
+        <p class="hint" id="qr-preview-text"></p>
+        <div class="row" style="margin-top:8px">
+          <button id="qr-add" class="primary">Add account</button>
+          <button id="qr-cancel">Cancel</button>
+        </div>
+      </div>
       <div class="card">
         <h3>Paste an otpauth:// URI</h3>
         <input id="add-uri" type="text" placeholder="otpauth://totp/Issuer:account?secret=…&issuer=…">
@@ -133,6 +155,16 @@
         </ul>
       </div>
       <div class="card">
+        <h3>Microsoft Entra / work accounts</h3>
+        <p class="hint"><b>Standard TOTP only.</b> If your organization permits software OATH tokens, add the
+          work account through the Entra security-info portal (or your IT enrollment process), choose
+          “third-party authenticator / software OATH token”, then scan the offered QR or enter the setup key.
+          The code this app shows is a time-based OATH/TOTP code, not a push notification.</p>
+        <p class="hint">This app cannot do Microsoft Authenticator push approval, number matching, passwordless
+          phone sign-in, device registration/PRT, Intune compliance claims or passkey attestation. Confirm tenant
+          policy with IT before relying on third-party OATH.</p>
+      </div>
+      <div class="card">
         <h3>Self test — RFC 6238 vectors</h3>
         <div class="row"><button id="selftest-run" class="primary">Run the 18 published vectors</button></div>
         <p><span id="selftest-summary" class="pill warn">not run in this session</span></p>
@@ -152,6 +184,7 @@
 <div id="toast" class="toast"></div>
 
 <script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="vendor/jsQR.js"></script>
 <script src="js/totp.js"></script>
 <script src="js/vault.js"></script>
 <script src="js/authenticator.js"></script>

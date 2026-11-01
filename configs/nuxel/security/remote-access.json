@@ -81,27 +81,29 @@
       "xrdp": {
         "provider": "xrdp + xorgxrdp",
         "port": 3389,
-        "bind": "127.0.0.1",
+        "bind": "0.0.0.0",
         "session": "separate-x11-session",
-        "account": "nuxel-remote",
+        "account": "nuxel",
         "root_login": false,
         "tls": true,
         "default_transport": "wlan",
-        "usb": "BLOCKED_KERNEL_PANIC"
+        "usb": "BLOCKED_KERNEL_PANIC",
+        "note": "TLS + PAM as the local nuxel account; direct LAN/ZeroTier access; no SSH tunnel required."
       },
       "vnc": {
         "provider": "wayvnc",
         "port": 5900,
-        "bind": "127.0.0.1",
+        "bind": "0.0.0.0",
         "session": "current-wayland-session",
         "capture": "zwlr_screencopy_manager_v1",
         "input": [
           "zwlr_virtual_pointer_manager_v1",
           "zwp_virtual_keyboard_manager_v1"
         ],
-        "encryption": "pinned-key SSH tunnel",
+        "encryption": "none (trusted LAN/ZeroTier only)",
         "default_transport": "wlan",
-        "usb": "BLOCKED_KERNEL_PANIC"
+        "usb": "BLOCKED_KERNEL_PANIC",
+        "note": "Jump Desktop 9.1.21 cannot negotiate wayvnc 0.9.1 RSA-AES/VeNCrypt and this build has no VNC password auth; do not expose 5900 to the Internet."
       },
       "scrcpy": {
         "provider": "official scrcpy + Android ADB",
@@ -114,14 +116,14 @@
     },
     "allowed_interfaces": [
       "wlan0",
+      "0.0.0.0",
       "127.0.0.1"
     ],
     "forbidden": [
-      "binding 3389/5900 to 0.0.0.0 or ::",
       "root desktop login",
-      "legacy DES-only VNC authentication",
       "USB NCM teardown on kernel 4.14.253",
       "cellular/rmnet/public Internet exposure",
+      "Internet port-forwarding of 3389/5900",
       "storing service passwords in PWA localStorage, URLs, QR codes or logs"
     ],
     "indicator": {
@@ -142,6 +144,6 @@
       "evidence": "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/",
       "note": "Do not retry NCM, mutate configfs or rebind the UDC. USB RDP/VNC requires an independently safe non-NCM route and a macOS host test before it may be offered."
     },
-    "notes": "VNC mirrors the actual Phoc session and must respect the Nuxel lock policy. XRDP is a separate X session and never claims to mirror the physical display."
+    "notes": "VNC mirrors the actual Phoc session and must respect the Nuxel lock policy. XRDP is a separate X session and never claims to mirror the physical display. Direct listeners are for the owner LAN / ZeroTier only."
   }
 }

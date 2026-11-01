@@ -1,0 +1,26 @@
+diff --git a/drivers/input/touchscreen/sec_ts/y771/sec_ts.c b/drivers/input/touchscreen/sec_ts/y771/sec_ts.c
+index 1531a0042..8e6ea5294 100644
+--- a/drivers/input/touchscreen/sec_ts/y771/sec_ts.c
++++ b/drivers/input/touchscreen/sec_ts/y771/sec_ts.c
+@@ -3218,11 +3218,17 @@ static struct i2c_driver sec_ts_driver = {
+ static int __init sec_ts_init(void)
+ {
+ #ifdef CONFIG_BATTERY_SAMSUNG
+-	if (lpcharge == 1) {
+-		pr_err("%s %s: Do not load driver due to : lpm %d\n",
++	/*
++	 * NUXEL: an S-Boot LPM/charger power-up is not a reason to remove the
++	 * touchscreen for the entire boot.  lpcharge only changes how this boot was
++	 * started; the controller rails, reset and IRQ sequence are unchanged, and
++	 * battery/charger/thermal policy does not live in this driver.  Keep the
++	 * cached flag for sec_reboot/watchdog safety, but bind the I2C driver so a
++	 * normal Nuxel session has touch.  The dump-time LPM check below remains.
++	 */
++	if (lpcharge == 1)
++		pr_info("%s %s: LPM power-up (lpcharge=%d): binding touchscreen\n",
+ 				SECLOG, __func__, lpcharge);
+-		return -ENODEV;
+-	}
+ #endif
+ 	pr_err("%s %s\n", SECLOG, __func__);
+ 

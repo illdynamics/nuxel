@@ -255,8 +255,12 @@ def classify(ev):
             hits.append({"why": why, "line": line, "origin": origin})
     lpm = bool(hits)
     _n, tsp_line, tsp_origin = ev.grep(r"input:\s*" + SEC_TS_NAME + r"\s+as\s+\S+")
+    # A normal boot's dmesg may have wrapped/cleared before this unit runs.
+    # /proc/bus/input/devices is an equally direct proof of registration.
+    _n3, dev_line, dev_origin = ev.grep(r'Name="' + SEC_TS_NAME + r'"')
+    _n4, sys_line, sys_origin = ev.grep(r"/sys/class/sec/tsp|/sys/bus/i2c/devices/4-0048")
     _n2, prop_line, prop_origin = ev.grep(r"\bPROP=([0-9a-fA-F]+)")
-    registered = tsp_line is not None
+    registered = (tsp_line is not None or dev_line is not None or sys_line is not None)
     if registered and not lpm:
         mode = "normal"
     elif lpm:

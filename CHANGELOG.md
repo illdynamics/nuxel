@@ -12,6 +12,98 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.5-beta] - 2026-11-01 - *Rotation confirmed, partial GPU acceleration, PWNAGE-47000..54000*
+
+**This is the release where rotation works and the Mali GPU is really in the
+render path.** The compositor runs on the vendor kbase Mali-G76 through Mesa
+panfrost (not llvmpipe), the screen rotates without the presenter rotating
+twice, and touch is calibrated together with the display. GPU acceleration is
+**partial** and is described as such: WebKit renders on the GPU but presents
+through SHM, and true zero-copy DMA-BUF presentation is blocked by the kernel
+ABI on this board.
+
+### Rotation and touch — WORKING (owner-confirmed)
+
+- **`wlr-randr` is the only truthful output inventory.** The live Phoc session
+  exposes `HEADLESS-1` (720x1520), not `DSI-1`. Transform and scale are now
+  applied as one transaction; the reverse 90/270 mapping is the physical mapping
+  recovered from the historical configuration.
+- **Every successful rotation was silently reverted.** The 75 s "owner
+  confirmation" trial ran on the normal `set` path and nothing ever confirmed
+  it. A normal `set` now commits only after live readback, and a failed apply
+  restores the previous verified transform. `--trial` is opt-in only.
+- **Touch was never transformed by the compositor.** Phoc feeds raw libinput
+  touch coordinates; wlroots rotates the rendered scene and the screencopy
+  buffer, not touch. `libnuxel-libinput-path.so` now applies the calibrated
+  matrix from `/run/nuxel-orientation/input.json` through
+  `libinput_device_config_calibration_set_matrix()` and re-applies it from an
+  inotify thread while the screen is idle.
+- **Triple navigation unblocked.** The launcher's stale boot-gate cache
+  discarded every Back/Home/Recents request; it now reconciles against
+  `security.status` and replays the action only after the provider confirms
+  `locked=false`.
+- Evidence: `docs/beta-finalization/live/PWNAGE-54000-REPORT.md`,
+  `evidence/pwnage-54000/`.
+
+### GPU — PARTIAL (measured on the handset)
+
+- **Phoc renders on the real Mali-G76.** `GL_RENDERER=Mali-G76 MC12
+  (Panfrost)`, three `/dev/mali0` contexts, zero llvmpipe threads; the kbase EGL
+  build is pinned by absolute path in `/etc/nuxel/egl-kbase.json`.
+- **wlroots advertises `zwp_linux_dmabuf_v1` v3 with LINEAR formats only**, and
+  validates plane/offset/stride/dimension before import (malformed buffers
+  disconnect only that client; Phoc survives).
+- **WebKit renders on the GPU** (`gpu-rendered-shm-presented`): three
+  `/dev/mali0` contexts, four `ThreadedCompositor` threads and 186
+  `KBASE_IOCTL_JOB_SUBMIT` calls in 3 s, with `WEBKIT_FORCE_COMPOSITING_MODE=1`.
+- **Not accelerated, and not claimed.** WebKit DMA-BUF export/import and true
+  zero-copy presentation are `BLOCKED_KERNEL_ABI`: `drmMainDevice()` is null,
+  `CONFIG_DRM_VGEM` is unset and there is no `/dev/dri`. GTK4 GSK stays
+  auto/cairo. `nuxel-wl-fb` still CPU-copies the frame into `/dev/fb0`.
+- Profiles are truthful (`software-safe` default, `gpu-rendered-shm-presented`,
+  and two `unavailable` profiles with loud fallback reasons).
+- Measured effect: active userspace CPU 47.0 % → 27.8–31.3 % of one core,
+  16.0 % post-reboot idle; blit 45 ms → 20–38 ms; idle capture 24 fps → 1 fps.
+
+### PWNAGE-47000..53000
+
+- **GUI tri-link remote desktop**: VNC (mirrors the Phoc session), XRDP
+  (separate X11 session) and scrcpy (Android targets only), loopback listeners
+  reached through a pinned-key SSH tunnel, with orientation sync.
+- **Kernel capabilities now match the phone**: DRM core, `CONFIG_UDMABUF`, the
+  Mali Bifrost kbase driver, user namespaces/SECCOMP/cgroups, NFC, and the
+  `STATX_MNT_ID` backport. The release workflow builds the same capability
+  fragment and fails closed if the built `.config` drifts
+  (`tools/s10plus/verify-kernel-config.py`).
+- **Flatpak/bubblewrap works**: the Samsung `current_chrooted()`/`LOD_SEC` user
+  namespace gates are removed and `bwrap` gets a `--ro-bind-fd` compatibility
+  shim for this 4.14 kernel.
+- **Microphone capture works** through a real WDMA1 source (48 kHz S16LE),
+  with an enforceable mute round-trip in the privacy provider.
+- **NFC** is enabled in the kernel (`/dev/sec-nfc`, controller bound and
+  firmware staged) but has no userspace NCI reader: `BLOCKED_EXTERNAL_RESOURCE`.
+- **Contacts / Messages / Dialer** are now compiled from source into the image
+  (`shell/nuxel-shell/nuxel-phone-data`), and the Clipper PWA is shipped.
+
+### Release engineering
+
+- **The release publishes the exact installed image.** `release/s10plus/` was
+  re-captured from the running handset: the complete BOOT partition
+  (`2cbc5085…`, 57,671,680 bytes) plus a 5,873-entry userspace hash inventory.
+  `tools/release/capture-installed-image.sh` reproduces the capture and
+  `tools/release/verify-installed-image.py` gates it fail-closed.
+- **The kbase GPU userspace is a hash-pinned release input**
+  (`release/s10plus/gpu/`, `SHA256SUMS`), so a clean CI build ships the exact
+  Mesa/wlroots bytes running on the phone instead of silently falling back to
+  llvmpipe.
+- **CI repair**: `gen-navdock-art.py` resolves its repository root from a build
+  copy (`missing art /assets/button-left.png` was the v0.7.4-beta main failure),
+  the A34 decon contract reads the active A67 bridge, the launcher input harness
+  stubs `getElementById`, and the home cache version matches its manifest.
+- **Honest limits unchanged**: satellite GNSS `BLOCKED_FIRMWARE`, fingerprint
+  unlock not implemented, camera and cellular modem not working, charger/LPM
+  cold-boot acceptance still an owner action.
+
 ## [v0.7.4-beta] - 2026-10-31 - *Release: working audio, near-complete GNSS, GTK/Flatpak apps and the PWNAGE-41000..44000 UI pass*
 
 **This is the release where the S10+ speaker became owner-confirmed audible.**

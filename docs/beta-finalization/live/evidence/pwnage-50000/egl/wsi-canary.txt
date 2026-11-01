@@ -1,0 +1,20 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+MESA-EGL: warning: nuxel: kbase=1 fd=4 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+MESA: info: kbase: exportable BO request 4583424 bytes (aligned 4583424)
+MESA: info: kbase: udmabuf test memfd=7 udmabuf=8 sizeof=24 req=0x40187542 aligned=4583424
+MESA: info: kbase: udmabuf create fields memfd=7 flags=0 off=0 size=4583424
+MESA: info: kbase: udmabuf fd=10
+MESA: info: kbase: exportable BO request 4583424 bytes (aligned 4583424)
+MESA: info: kbase: udmabuf test memfd=7 udmabuf=8 sizeof=24 req=0x40187542 aligned=4583424
+MESA: info: kbase: udmabuf create fields memfd=7 flags=0 off=0 size=4583424
+MESA: info: kbase: udmabuf fd=11

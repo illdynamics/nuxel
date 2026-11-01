@@ -1,7 +1,20 @@
 /* Nuxel Settings (A32) — uses the launcher's palette variables when embedded. */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* PWNAGE-52000 width contract: the page itself NEVER pans sideways.  The tab
+   rail is the only deliberate horizontal scroller; every panel/card/child is
+   constrained to the viewport so one long device path, renderer string or
+   fixed-width control cannot widen the document. */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+@supports not (overflow-x: clip) {
+  html, body { overflow-x: hidden; }
+}
 body {
-  margin: 0; min-height: 100vh;
+  margin: 0; min-height: 100dvh;
   font-family: var(--font-family, system-ui, sans-serif);
   background: var(--bg-primary, #0a1628);
   color: var(--text-primary, #fff);
@@ -9,11 +22,18 @@ body {
 }
 .hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px; }
 .hdr h1 { font-size: 20px; margin: 0; }
-.tabs { display: flex; gap: 6px; padding: 0 12px 8px; overflow-x: auto; }
+.tabs { display: flex; gap: 6px; padding: 0 12px 8px; overflow-x: auto; overflow-y: hidden;
+        max-width: 100%; min-width: 0; overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch; touch-action: pan-x; }
+.tabs .tab { flex: 0 0 auto; }
 .tab { background: var(--bg-card, #122952); color: var(--text-secondary, #b8c7e0); border: 0;
        padding: 8px 12px; border-radius: 20px; font-size: 13px; white-space: nowrap; }
 .tab.active { background: var(--accent-light, #3b82f6); color: #fff; }
-main { padding: 0 12px 90px; }
+main { padding: 0 12px 90px; width: 100%; max-width: 100%; min-width: 0; overflow-x: clip; }
+.panel { max-width: 100%; min-width: 0; }
+.panel > *, .card > *, .row > * { min-width: 0; max-width: 100%; }
+.card { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+h1, h2, h3, h4, p, label, .hint { overflow-wrap: anywhere; }
 .panel { display: none; } .panel.active { display: block; }
 h2 { font-size: 16px; margin: 10px 4px; color: var(--text-accent, #60a5fa); }
 h3 { font-size: 14px; margin: 0 0 8px; }
@@ -22,22 +42,26 @@ h4 { font-size: 13px; margin: 14px 0 6px; color: var(--text-secondary, #b8c7e0);
         border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; }
 .hint { font-size: 12px; color: var(--text-secondary, #b8c7e0); margin: 6px 0; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-.row.wrap label { display: flex; flex-direction: column; font-size: 11px; gap: 4px;
+.row.wrap label { display: flex; flex-direction: column; font-size: 11px; gap: 4px; min-width: 0; max-width: 100%; flex: 1 1 9em;
                   color: var(--text-secondary, #b8c7e0); }
 button { background: var(--bg-card-hover, #1a3466); color: var(--text-primary, #fff); border: 0;
          padding: 9px 14px; border-radius: 10px; font-size: 13px; }
 button.primary { background: var(--accent-light, #3b82f6); }
 button.ghost { background: transparent; border: 1px solid var(--border-subtle, rgba(59,130,246,.15)); }
 button.danger { background: var(--error, #f44336); }
+select, input, textarea { max-width: 100%; min-width: 0; }
 select, input[type=range] { background: var(--bg-secondary, #0d1f3c); color: var(--text-primary, #fff);
         border: 1px solid var(--border-subtle, rgba(59,130,246,.15)); border-radius: 8px; padding: 6px; font-size: 12px; }
 label { display: block; margin: 8px 0; font-size: 13px; }
 .state { background: #050c17; border-radius: 8px; padding: 8px; font-size: 11px; line-height: 1.45;
-         white-space: pre-wrap; word-break: break-word; color: #9fd0ff; max-height: 220px; overflow: auto; }
+         white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; color: #9fd0ff;
+         max-width: 100%; min-width: 0; max-height: 220px; overflow-y: auto; overflow-x: hidden;
+         overscroll-behavior: contain; }
+pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 
 /* ten-zone editor */
-.zones { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin: 12px 0 4px; }
-.zone { position: relative; height: 54px; border-radius: 8px; border: 1px solid var(--border-subtle, rgba(59,130,246,.25));
+.zones { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px; margin: 12px 0 4px; max-width: 100%; min-width: 0; }
+.zone { position: relative; min-width: 0; height: 48px; border-radius: 8px; border: 1px solid var(--border-subtle, rgba(59,130,246,.25));
         background: var(--bg-secondary, #0d1f3c); display: flex; align-items: flex-end; justify-content: center;
         font-size: 11px; color: var(--text-secondary, #b8c7e0); padding-bottom: 3px; }
 .zone.blocked { background: repeating-linear-gradient(45deg, #7f1d1d, #7f1d1d 6px, #991b1b 6px, #991b1b 12px);
@@ -80,9 +104,30 @@ label { display: block; margin: 8px 0; font-size: 13px; }
 
 
 /* PWNAGE-30000 theme + haptics cards. */
-.theme-cards { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-.theme-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 120px; background: var(--nx-surface); border: 1px solid var(--nx-border); border-radius: 12px; padding: 10px; color: var(--nx-text); cursor: pointer; }
+.theme-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; margin-top: 8px; max-width: 100%; }
+.theme-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; max-width: 100%; background: var(--nx-surface); border: 1px solid var(--nx-border); border-radius: 12px; padding: 10px; color: var(--nx-text); cursor: pointer; }
 .theme-card.selected { border-color: var(--nx-primary); box-shadow: 0 0 0 1px var(--nx-primary) inset; }
 .theme-card .swatch { width: 26px; height: 26px; border-radius: 8px; display: inline-block; }
 .theme-card .tname { font-size: 14px; font-weight: 600; }
 .theme-card .tnote { font-size: 11px; color: var(--nx-text-dim); }
+
+/* PWNAGE-52000 Status Bar Icons card. */
+.statusbar-icon-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px; margin: 10px 0; max-width: 100%; min-width: 0; }
+.statusbar-icon-row { display: flex; align-items: center; gap: 9px; min-width: 0;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);
+  border-radius: 9px; padding: 8px 10px; font-size: 13px; }
+.statusbar-icon-row input { width: 18px; height: 18px; accent-color: var(--accent-light, #3b82f6); flex: 0 0 auto; }
+.statusbar-icon-row span { min-width: 0; overflow-wrap: anywhere; }
+.statusbar-icon-row .cap { color: var(--text-secondary, #b8c7e0); font-size: 10px; margin-left: auto; }
+.statusbar-icon-row.disabled { opacity: .55; }
+@media (max-width: 380px) {
+  .hdr { padding: 10px 10px 4px; }
+  main { padding: 0 8px 90px; }
+  .card { padding: 10px; border-radius: 12px; }
+  .preview-bar { font-size: 9px; }
+  h2 { margin: 8px 2px; }
+}
+@media (orientation: landscape) {
+  .statusbar-icon-list { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}

@@ -1,0 +1,146 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== iio1 listing ===
+total 0
+drwxr-xr-x  5 root root    0 Oct 31 17:57 .
+drwxr-xr-x 36 root root    0 Oct 31 17:29 ..
+drwxr-xr-x  2 root root    0 Oct 31 17:55 buffer
+-rw-r--r--  1 root root 4096 Oct 31 17:57 current_timestamp_clock
+-r--r--r--  1 root root 4096 Oct 31 17:57 dev
+-r--r--r--  1 root root 4096 Oct 31 17:29 name
+lrwxrwxrwx  1 root root    0 Oct 31 17:57 of_node -> ../../../../../../../firmware/devicetree/base/spi@10970000/BCM4773@0
+-rw-rw-r--  1 root root 4096 Oct 31 17:57 poll_delay
+drwxr-xr-x  2 root root    0 Oct 31 17:57 power
+drwxr-xr-x  2 root root    0 Oct 31 17:57 scan_elements
+lrwxrwxrwx  1 root root    0 Oct 31 17:29 subsystem -> ../../../../../../../bus/iio
+-rw-r--r--  1 root root 4096 Oct 31 17:29 uevent
+=== iio14 listing ===
+total 0
+drwxr-xr-x  5 root root    0 Oct 31 17:57 .
+drwxr-xr-x 36 root root    0 Oct 31 17:57 ..
+drwxr-xr-x  2 root root    0 Oct 31 17:55 buffer
+-rw-r--r--  1 root root 4096 Oct 31 17:57 current_timestamp_clock
+-r--r--r--  1 root root 4096 Oct 31 17:57 dev
+-r--r--r--  1 root root 4096 Oct 31 17:53 name
+lrwxrwxrwx  1 root root    0 Oct 31 17:57 of_node -> ../../../../../../../firmware/devicetree/base/spi@10970000/BCM4773@0
+-rw-rw-r--  1 root root 4096 Oct 31 17:57 poll_delay
+drwxr-xr-x  2 root root    0 Oct 31 17:57 power
+drwxr-xr-x  2 root root    0 Oct 31 17:57 scan_elements
+lrwxrwxrwx  1 root root    0 Oct 31 17:29 subsystem -> ../../../../../../../bus/iio
+-rw-r--r--  1 root root 4096 Oct 31 17:29 uevent
+=== iio15 listing ===
+total 0
+drwxr-xr-x  5 root root    0 Oct 31 17:57 .
+drwxr-xr-x 36 root root    0 Oct 31 17:57 ..
+drwxr-xr-x  2 root root    0 Oct 31 17:57 buffer
+-rw-r--r--  1 root root 4096 Oct 31 17:57 current_timestamp_clock
+-r--r--r--  1 root root 4096 Oct 31 17:57 dev
+-r--r--r--  1 root root 4096 Oct 31 17:53 name
+lrwxrwxrwx  1 root root    0 Oct 31 17:57 of_node -> ../../../../../../../firmware/devicetree/base/spi@10970000/BCM4773@0
+-rw-rw-r--  1 root root 4096 Oct 31 17:57 poll_delay
+drwxr-xr-x  2 root root    0 Oct 31 17:57 power
+drwxr-xr-x  2 root root    0 Oct 31 17:57 scan_elements
+lrwxrwxrwx  1 root root    0 Oct 31 17:29 subsystem -> ../../../../../../../bus/iio
+-rw-r--r--  1 root root 4096 Oct 31 17:29 uevent
+=== iio25 listing ===
+total 0
+drwxr-xr-x  5 root root    0 Oct 31 17:57 .
+drwxr-xr-x 36 root root    0 Oct 31 17:57 ..
+drwxr-xr-x  2 root root    0 Oct 31 17:57 buffer
+-rw-r--r--  1 root root 4096 Oct 31 17:57 current_timestamp_clock
+-r--r--r--  1 root root 4096 Oct 31 17:57 dev
+-r--r--r--  1 root root 4096 Oct 31 17:53 name
+lrwxrwxrwx  1 root root    0 Oct 31 17:57 of_node -> ../../../../../../../firmware/devicetree/base/spi@10970000/BCM4773@0
+-rw-rw-r--  1 root root 4096 Oct 31 17:57 poll_delay
+drwxr-xr-x  2 root root    0 Oct 31 17:57 power
+drwxr-xr-x  2 root root    0 Oct 31 17:57 scan_elements
+lrwxrwxrwx  1 root root    0 Oct 31 17:29 subsystem -> ../../../../../../../bus/iio
+-rw-r--r--  1 root root 4096 Oct 31 17:29 uevent
+=== sensor class files ===
+[/sys/class/sensors/accelerometer_sensor]
+/sys/class/sensors/accelerometer_sensor/uevent
+/sys/class/sensors/accelerometer_sensor/raw_data
+/sys/class/sensors/accelerometer_sensor/calibration
+/sys/class/sensors/accelerometer_sensor/vendor
+/sys/class/sensors/accelerometer_sensor/power/runtime_active_time
+/sys/class/sensors/accelerometer_sensor/power/runtime_status
+/sys/class/sensors/accelerometer_sensor/power/autosuspend_delay_ms
+/sys/class/sensors/accelerometer_sensor/power/runtime_suspended_time
+/sys/class/sensors/accelerometer_sensor/power/control
+/sys/class/sensors/accelerometer_sensor/lowpassfilter
+/sys/class/sensors/accelerometer_sensor/calibration_info
+/sys/class/sensors/accelerometer_sensor/dhr_sensor_info
+/sys/class/sensors/accelerometer_sensor/reactive_alert
+/sys/class/sensors/accelerometer_sensor/selftest
+/sys/class/sensors/accelerometer_sensor/name
+[/sys/class/sensors/ssp_sensor]
+/sys/class/sensors/ssp_sensor/uevent
+/sys/class/sensors/ssp_sensor/enable_irq
+/sys/class/sensors/ssp_sensor/ssp_control
+/sys/class/sensors/ssp_sensor/mcu_sleep_test
+/sys/class/sensors/ssp_sensor/mcu_rev
+/sys/class/sensors/ssp_sensor/mcu_test
+/sys/class/sensors/ssp_sensor/power/runtime_active_time
+/sys/class/sensors/ssp_sensor/power/runtime_status
+/sys/class/sensors/ssp_sensor/power/autosuspend_delay_ms
+/sys/class/sensors/ssp_sensor/power/runtime_suspended_time
+/sys/class/sensors/ssp_sensor/power/control
+/sys/class/sensors/ssp_sensor/mcu_name
+/sys/class/sensors/ssp_sensor/ssp_flush
+/sys/class/sensors/ssp_sensor/mcu_reset
+/sys/class/sensors/ssp_sensor/thermistor_channel_0
+/sys/class/sensors/ssp_sensor/sensor_state
+/sys/class/sensors/ssp_sensor/data_injection_enable
+/sys/class/sensors/ssp_sensor/sensor_dump
+/sys/class/sensors/ssp_sensor/reset_info
+/sys/class/sensors/ssp_sensor/enable
+/sys/class/sensors/ssp_sensor/bcm_minidump
+/sys/class/sensors/ssp_sensor/thermistor_channel_1
+[/sys/devices/virtual/sensors/accelerometer_sensor]
+/sys/devices/virtual/sensors/accelerometer_sensor/uevent
+/sys/devices/virtual/sensors/accelerometer_sensor/raw_data
+/sys/devices/virtual/sensors/accelerometer_sensor/calibration
+/sys/devices/virtual/sensors/accelerometer_sensor/vendor
+/sys/devices/virtual/sensors/accelerometer_sensor/power/runtime_active_time
+/sys/devices/virtual/sensors/accelerometer_sensor/power/runtime_status
+/sys/devices/virtual/sensors/accelerometer_sensor/power/autosuspend_delay_ms
+/sys/devices/virtual/sensors/accelerometer_sensor/power/runtime_suspended_time
+/sys/devices/virtual/sensors/accelerometer_sensor/power/control
+/sys/devices/virtual/sensors/accelerometer_sensor/lowpassfilter
+/sys/devices/virtual/sensors/accelerometer_sensor/calibration_info
+/sys/devices/virtual/sensors/accelerometer_sensor/dhr_sensor_info
+/sys/devices/virtual/sensors/accelerometer_sensor/reactive_alert
+/sys/devices/virtual/sensors/accelerometer_sensor/selftest
+/sys/devices/virtual/sensors/accelerometer_sensor/name
+=== ssp char/misc ===
+crw-------. 1 root root  236,   1 Jan  1  1970 bbd_sensor
+cr--r--r--. 1 root root   10,  87 Jan  1  1970 max_hrm
+crw-------. 1 root root   10,  89 Jan  1  1970 ssp_data_injection
+crw-------. 1 root root   10,  88 Jan  1  1970 ssp_sensorhub
+/sys/class/sensors
+/sys/class/sensors/proximity_sensor
+/sys/class/sensors/thermistor_sensor
+/sys/class/sensors/light_sensor
+/sys/class/sensors/barometer_sensor
+/sys/class/sensors/ssp_sensor
+/sys/class/sensors/gyro_sensor
+/sys/class/sensors/magnetic_sensor
+/sys/class/sensors/accelerometer_sensor
+/sys/class/sensors/sensor_dev
+/sys/class/sensors/hrm_sensor
+/sys/class/sensors/grip_sensor
+/sys/class/misc/ssp_data_injection
+/sys/class/misc/ssp_sensorhub
+/sys/class/bbd/bbd_sensor
+/sys/class/sec/sensorhub
+/sys/class/sensor_event
+=== relevant modules ===
+=== iio event files ===
+=== read buffer with timeout (read-only) ===

@@ -48,3 +48,18 @@ table.selftest th, table.selftest td { text-align:left; padding:4px 6px; border-
 .statusbar { display:flex; justify-content:space-between; gap:10px; padding:6px 12px; padding-bottom:max(6px,env(safe-area-inset-bottom));
   border-top:1px solid #14545e; background:#07242a; color:var(--dim); font-size:11.5px; }
 @media (min-width:620px) { .panel { padding:14px 18px 18px; } }
+
+/* PWNAGE-49000: local QR enrollment preview.  Bound the live video so the
+   software-rendered handset never decodes an unbounded camera frame. */
+#qr-video { width:100%; max-height:220px; object-fit:cover; border-radius:10px; margin-top:10px; background:#000; }
+#qr-video[hidden] { display:none; }
+#qr-preview { border-color:#2f7f7f; }
+
+/* PWNAGE-52000: keep the Authenticator header inside 320 px. */
+@media (max-width: 420px) {
+  .hdr { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+  .hdr h1 { font-size: 16px; }
+  .hdr .grow { display: none; }
+  .hdr .badge { font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .hdr button { padding: 7px 10px; }
+}

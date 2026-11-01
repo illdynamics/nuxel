@@ -51,10 +51,17 @@ class QuickSettings {
             bluetooth: false,
             mobile: false,
             location: false,
-            dnd: false,
+            dnd: null,
             flashlight: false,
             rotate: false,
+            nfc: null,
+            fingerprint: null,
+            camera: null,
+            microphone: null,
         };
+        this.privacy = { nfc: null, fingerprint: null, camera: null, microphone: null };
+        this._privacyGeneration = 0;
+        this._privacyInFlight = false;
         this.wifiConnected = null;
         this._init();
     }
@@ -96,7 +103,8 @@ class QuickSettings {
         document.addEventListener('gesture:qs', () => this.pull());
 
         // Individual toggle clicks
-        const toggles = ['wifi', 'bluetooth', 'mobile', 'location', 'dnd', 'flashlight', 'rotate'];
+        const toggles = ['wifi', 'bluetooth', 'mobile', 'location', 'dnd', 'flashlight', 'rotate',
+                         'nfc', 'fingerprint', 'camera', 'microphone'];
         toggles.forEach(id => {
             const el = document.getElementById(`qs-${id}`);
             if (el) {
@@ -146,7 +154,7 @@ class QuickSettings {
     _buildVerboseBootTile() {
         const panel = this.panel;
         if (!panel || document.getElementById('qs-verbose-boot')) return;
-        const rows = panel.querySelectorAll('.qs-row');
+        const rows = panel.querySelectorAll('.qs-row:not(.qs-privacy-row)');
         const row = rows[rows.length - 1] || panel;
         const tile = document.createElement('div');
         tile.className = 'qs-item';
@@ -285,7 +293,7 @@ class QuickSettings {
             this._locationTimer = setInterval(() => {
                 if (!this.isOpen) return;
                 this._syncLocation();
-                if (this.expanded) this._syncIndicators();
+                if (this.expanded) { this._syncIndicators(); this._syncPrivacy(); }
             }, 5000);
         }
     }
@@ -300,6 +308,7 @@ class QuickSettings {
         if (this._locationTimer) { clearInterval(this._locationTimer); this._locationTimer = null; }
         // Stale indicator responses are ignored by the generation check.
         this._indicatorGeneration = (this._indicatorGeneration || 0) + 1;
+        this._privacyGeneration = (this._privacyGeneration || 0) + 1;
         try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
     }
 
@@ -311,12 +320,18 @@ class QuickSettings {
 
     _setExpandedUI(on) {
         const details = document.getElementById('qs-details');
+        const privacy = document.getElementById('qs-privacy-row');
         const btn = document.getElementById('qs-expand-toggle');
         if (details) details.hidden = !on;
+        if (privacy) privacy.hidden = !on;
         if (btn) {
             btn.setAttribute('aria-expanded', on ? 'true' : 'false');
             btn.textContent = on ? 'Hide connection status' : 'More connection status';
         }
+        // PWNAGE-52000: privacy providers are read only while this row is
+        // actually visible in the fully expanded panel.
+        if (on) this._syncPrivacy();
+        else this._privacyGeneration = (this._privacyGeneration || 0) + 1;
     }
 
     expand() {
@@ -354,13 +369,141 @@ class QuickSettings {
             await this._setLocationEnabled(!this.state.location);
             return;
         }
+        if (id === 'dnd') {
+            await this._toggleDnd();
+            return;
+        }
         if (id === 'flashlight') {
             await this._toggleFlashlight();
+            return;
+        }
+        if (id === 'nfc' || id === 'fingerprint' || id === 'camera' || id === 'microphone') {
+            await this._togglePrivacy(id);
             return;
         }
         // A tile must not become a decorative switch.  Keep unintegrated
         // controls honest until their hardware backend is landed.
         this._osdNotice(`${id} control is unavailable on this build`);
+    }
+
+    // ---- PWNAGE-52000 privacy row --------------------------------------
+    // Every tile is a real provider action.  UNSUPPORTED is rendered as a
+    // disabled tile with the provider's blocker, never as a fake ON.
+    _privacyCall(ns, verb, params, timeoutMs) {
+        const ms = timeoutMs || 3500;
+        let timer;
+        const timeout = new Promise((resolve) => {
+            timer = setTimeout(() => resolve({ success: false, timeout: true, state: 'timeout',
+                error: 'provider did not answer within ' + Math.round(ms / 1000) + ' s' }), ms);
+        });
+        return Promise.race([bridge.call(ns, verb, params || {}), timeout]).then((r) => {
+            if (timer) clearTimeout(timer);
+            return r;
+        }, (e) => {
+            if (timer) clearTimeout(timer);
+            return { success: false, error: String(e && e.message || e) };
+        });
+    }
+
+    async _syncPrivacy() {
+        if (!this.isOpen || !this.expanded) return;
+        if (this._privacyInFlight) return;
+        this._privacyInFlight = true;
+        const gen = this._privacyGeneration || 0;
+        try {
+            const [nfc, fp, cam, mic, sec] = await Promise.all([
+                this._privacyCall('nfc', 'status', {}),
+                this._privacyCall('fingerprint', 'status', {}),
+                this._privacyCall('privacy', 'camera-status', {}),
+                this._privacyCall('privacy', 'microphone-status', {}),
+                this._privacyCall('security', 'status', {}),
+            ]);
+            if (!this.isOpen || !this.expanded || gen !== (this._privacyGeneration || 0)) return;
+            this.privacy = { nfc, fingerprint: fp, camera: cam, microphone: mic, security: sec };
+            this._renderPrivacy();
+        } finally {
+            this._privacyInFlight = false;
+        }
+    }
+
+    _setPrivacyTile(id, supported, on, label, title) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.dataset.supported = supported ? 'true' : (supported === false ? 'false' : 'unknown');
+        el.dataset.enabled = on === true ? 'true' : (on === false ? 'false' : 'unknown');
+        el.setAttribute('aria-disabled', supported === false ? 'true' : 'false');
+        const lab = el.querySelector('.qs-label');
+        if (lab) lab.innerHTML = label;
+        el.title = title || label.replace(/<br>/g, ' ');
+    }
+
+    _renderPrivacy() {
+        const nfc = this.privacy.nfc || {};
+        const nfcSupported = nfc.success !== false && nfc.supported === true;
+        this._setPrivacyTile('qs-nfc', nfcSupported,
+            nfcSupported && nfc.enabled === true,
+            'NFC<br>' + (nfcSupported ? (nfc.enabled === true ? 'on' : 'off') : 'unsupported'),
+            nfcSupported ? 'NFC provider state; tap to toggle' :
+            ('NFC unsupported/blocked: ' + (nfc.blocker || nfc.state || 'provider unavailable')));
+
+        const fp = this.privacy.fingerprint || {};
+        const sec = this.privacy.security || {};
+        const fpReady = fp.success !== false && fp.ready === true && fp.supported === true;
+        const bio = sec.biometric_unlock || sec.fingerprint_unlock || {};
+        const fpPolicy = (bio && typeof bio === 'object') ? bio.enabled === true : bio === true;
+        this._setPrivacyTile('qs-fingerprint', fpReady,
+            fpReady && fpPolicy,
+            'Fingerprint<br>' + (fpReady ? (fpPolicy ? 'unlock on' : 'unlock off') : 'unsupported'),
+            fpReady ? 'Biometric unlock policy; PIN fallback always retained' :
+            ('Fingerprint unavailable: ' + (fp.blocker || fp.state || 'no secure provider')));
+
+        const cam = this.privacy.camera || {};
+        const camSupported = cam.success !== false && cam.supported !== false;
+        const camBlocked = cam.blocked === true;
+        this._setPrivacyTile('qs-camera', camSupported,
+            camSupported && camBlocked,
+            'Camera<br>' + (camSupported ? (camBlocked ? 'blocked' : 'allow') : 'unsupported'),
+            camSupported ? ('Camera privacy gate: ' + (camBlocked ? 'blocked' : 'allowed') +
+                '; frame capture=' + (cam.capture_supported === true ? 'available' : 'unavailable on this kernel') +
+                '; active sessions=' + (cam.active_sessions == null ? 'unknown' : cam.active_sessions)) :
+            ('Camera privacy unavailable: ' + (cam.error || cam.state || 'provider unavailable')));
+
+        const mic = this.privacy.microphone || {};
+        const micSupported = mic.success !== false && mic.supported !== false;
+        const micMuted = mic.muted === true;
+        this._setPrivacyTile('qs-microphone', micSupported,
+            micSupported && micMuted,
+            'Microphone<br>' + (micSupported ? (micMuted ? 'muted' : 'live') : 'unsupported'),
+            micSupported ? ('System capture mute: ' + (micMuted ? 'muted' : 'not muted') +
+                '; sources=' + (mic.source_count == null ? 'unknown' : mic.source_count)) :
+            ('Microphone privacy unavailable: ' + (mic.error || mic.state || 'provider unavailable')));
+    }
+
+    async _togglePrivacy(id) {
+        const tile = document.getElementById('qs-' + id);
+        if (!tile || tile.dataset.supported === 'false') {
+            const provider = this.privacy && this.privacy[id === 'fingerprint' ? 'fingerprint' : id];
+            this._osdNotice((provider && (provider.blocker || provider.error || provider.state)) ||
+                (id + ' is unsupported on this device'));
+            return;
+        }
+        const now = tile.dataset.enabled === 'true';
+        let res;
+        if (id === 'nfc') {
+            res = await this._privacyCall('nfc', 'set-enabled', { enabled: !now }, 6000);
+        } else if (id === 'fingerprint') {
+            res = await this._privacyCall('security', 'set-biometric-unlock', { enabled: !now });
+        } else if (id === 'camera') {
+            res = await this._privacyCall('privacy', 'camera-set', { blocked: !now }, 6000);
+        } else {
+            res = await this._privacyCall('privacy', 'microphone-set', { muted: !now }, 8000);
+        }
+        if (!res || res.success === false) {
+            this._osdNotice(id + ' failed: ' + ((res && (res.error || res.detail || res.blocker)) || 'provider did not confirm'));
+        } else {
+            this._osdNotice(id + ' ' + (now ? 'turned off' : 'turned on') + ' (provider confirmed)');
+        }
+        await this._syncPrivacy();
     }
 
     // ---- expanded canonical connection indicators ---------------------
@@ -491,6 +634,55 @@ class QuickSettings {
         }
     }
 
+    // ---- persistent Do Not Disturb ------------------------------------
+    async _syncDnd() {
+        const tile = document.getElementById('qs-dnd');
+        if (!tile) return;
+        try {
+            const st = await bridge.call('dnd', 'status', {});
+            if (!st || st.success === false) {
+                this.state.dnd = null;
+                tile.dataset.enabled = 'unknown';
+                tile.dataset.state = 'unavailable';
+                const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'DND<br>unknown';
+                tile.title = 'DND provider unavailable' + (st && st.error ? ': ' + st.error : '');
+                return;
+            }
+            this.state.dnd = st.active === true;
+            tile.dataset.enabled = st.active === true ? 'true' : 'false';
+            tile.dataset.state = st.active ? ('on-' + (st.reason || 'manual')) : 'off';
+            const l = tile.querySelector('.qs-label');
+            if (l) l.innerHTML = st.active
+                ? (st.reason === 'schedule' ? 'DND<br>scheduled' : 'DND<br>on')
+                : 'DND<br>off';
+            tile.title = 'Do Not Disturb: ' + (st.active ? ('ON (' + (st.reason || 'manual') + ')') : 'OFF')
+                + '\nSuppresses popups/sound/haptics/LED; notification history is preserved';
+        } catch (e) {
+            this.state.dnd = null;
+            tile.dataset.enabled = 'unknown';
+            tile.dataset.state = 'error';
+            const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'DND<br>unknown';
+            tile.title = 'DND provider error: ' + (e && e.message ? e.message : 'bridge error');
+        }
+    }
+
+    async _toggleDnd() {
+        const tile = document.getElementById('qs-dnd');
+        if (tile) tile.dataset.pending = 'true';
+        try {
+            const res = await bridge.call('dnd', 'toggle', {});
+            if (!res || res.success === false) throw new Error((res && (res.error || res.detail)) || 'DND provider unavailable');
+            this._osdNotice(res.active ? 'Do Not Disturb on (history preserved)' : 'Do Not Disturb off');
+            this._hapticSwitch();
+            await this._syncDnd();
+        } catch (e) {
+            await this._syncDnd();
+            this._osdNotice('DND unchanged: ' + (e && e.message ? e.message : 'provider unavailable'));
+        } finally {
+            if (tile) delete tile.dataset.pending;
+        }
+    }
+
     async _setWifiEnabled(enabled) {
         const el = document.getElementById('qs-wifi');
         if (el) el.dataset.pending = 'true';
@@ -519,7 +711,7 @@ class QuickSettings {
         }
     }
 
-    // ---- orientation (A53): tap = forced portrait<->auto, long-press = five primary + advanced modes ----
+    // ---- orientation: long-press selects all seven exact owner labels ----
     async _orientationState() {
         try {
             const res = await bridge.call('orientation', 'get', {});
@@ -530,9 +722,20 @@ class QuickSettings {
     }
 
     async _toggleRotate() {
+        // Short tap is a predictable 90-degree clockwise LOCKED rotation.
+        // Auto is never selected by a tap: a blocked sensor must not look like
+        // a successful automatic rotation.  The seven-mode chooser is the
+        // long-press / context-menu action.
         const cur = await this._orientationState();
-        const next = (cur.mode === 'auto') ? 'portrait' : 'auto';
-        await this._setOrientation(next);
+        const order = [
+            ['portrait', 0], ['landscape', 90],
+            ['reverse-portrait', 180], ['reverse-landscape', 270],
+        ];
+        let effective = Number(cur.effective_orientation);
+        if (!Number.isFinite(effective)) effective = 0;
+        const index = order.findIndex(([, deg]) => deg === ((effective % 360) + 360) % 360);
+        const next = order[(index + 1 + order.length) % order.length];
+        await this._setOrientation(next[0]);
     }
 
     async _setOrientation(mode) {
@@ -545,7 +748,22 @@ class QuickSettings {
             }
             this.orientationMode = res.mode || mode;
             await this._syncRotate();
-            this._osdNotice('Rotation: ' + (res.mode_label || res.mode));
+            const display = res.display || res.compositor || {};
+            const applied = res.applied === true || display.applied === true;
+            if (!applied) {
+                this._osdNotice('Rotation NOT applied: '
+                    + (res.last_error || display.error || 'compositor unavailable'));
+            } else {
+                const trial = res.trial || {};
+                const secs = trial.pending_confirmation && trial.deadline_epoch
+                    ? Math.max(0, Math.round(trial.deadline_epoch - Date.now() / 1000)) : 0;
+                const degraded = res.auto && res.sensor && res.sensor.available === false;
+                this._osdNotice('Rotation applied: ' + (res.mode_label || res.mode)
+                    + ' · ' + (res.effective_orientation === undefined ? '?' : res.effective_orientation + '°')
+                    + ' · ' + (display.transform || 'transform?')
+                    + (degraded ? ' · AUTO DEGRADED: no live sensor' : '')
+                    + (trial.pending_confirmation ? (' · confirm in Notes (' + secs + 's)') : ''));
+            }
             this._hapticSwitch();
         } catch (error) {
             await this._syncRotate();
@@ -568,22 +786,32 @@ class QuickSettings {
         const auto = !!(st.auto);
         const sensor = st.sensor;
         const sensorOk = !!(sensor && sensor.available);
-        tile.dataset.enabled = auto ? 'true' : 'false';
+        // Auto is only "enabled" (green) when a REAL sensor source is live.
+        // A blocked Auto policy stays selected but is rendered as degraded.
+        tile.dataset.enabled = (auto && sensorOk) ? 'true' : 'false';
+        tile.dataset.degraded = (auto && !sensorOk) ? 'true' : 'false';
         tile.dataset.mode = this.orientationMode;
         const label = tile.querySelector('.qs-label');
         // Show the REAL selected mode (one of seven), never a bare Locked/Auto.
         if (label) label.textContent = this._rotateModeLabel(this.orientationMode);
+        const display = st.display || st.compositor || {};
+        const applied = st.applied === true || display.applied === true;
         tile.title = 'Rotation: ' + (st.mode_label || this._rotateModeLabel(this.orientationMode))
             + ' | effective ' + (st.effective_orientation === undefined ? '?' : st.effective_orientation + '°')
-            + (auto ? (' | sensor ' + (sensorOk ? 'available' : 'unavailable')) : '')
-            + '\nTap = forced portrait/auto, long-press = all seven modes';
+            + ' | ' + (applied ? 'APPLIED' : 'NOT APPLIED')
+            + (display.output ? (' on ' + display.output) : '')
+            + (display.transform ? (' (' + display.transform + ')') : '')
+            + (auto ? (' | sensor ' + (sensorOk ? 'available' : 'DEGRADED - no live sensor')) : '')
+            + (st.transition_state ? (' | state ' + st.transition_state) : '')
+            + (st.vnc_status ? (' | VNC ' + st.vnc_status) : '')
+            + '\nTap = rotate 90 degrees (locked), long-press = all seven modes';
     }
 
     _rotateModes() {
         return [
-            ['auto', 'Auto'], ['auto-portrait', 'Auto Portrait'], ['auto-landscape', 'Auto Landscape'],
-            ['portrait', 'Forced Portrait'], ['landscape', 'Forced Landscape'],
-            ['reverse-portrait', 'Reverse Portrait (advanced)'], ['reverse-landscape', 'Reverse Landscape (advanced)'],
+            ['auto', 'Auto (FULL)'], ['auto-portrait', 'Auto (PT)'], ['auto-landscape', 'Auto (LS)'],
+            ['portrait', 'Locked (PT)'], ['landscape', 'Locked (LS)'],
+            ['reverse-portrait', 'Locked (RPT)'], ['reverse-landscape', 'Locked (RLS)'],
         ];
     }
 
@@ -866,6 +1094,7 @@ class QuickSettings {
         this._updateUI();
         this._syncBluetooth();
         this._syncLocation();
+        this._syncDnd();
         this._syncFlashlight();
     }
 

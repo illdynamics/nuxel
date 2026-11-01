@@ -1,0 +1,25 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== runtime /run/user/1000 ===
+=== runtime /run/user/0 ===
+=== wayland-info ===
+--- XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-0
+--- XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-1
+--- XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0
+--- XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-1
+=== wlr-randr ===
+--- /run/user/1000/wayland-0
+timeout: failed to run command 'wlr-randr': No such file or directory
+--- /run/user/1000/wayland-1
+timeout: failed to run command 'wlr-randr': No such file or directory
+--- /run/user/0/wayland-0
+timeout: failed to run command 'wlr-randr': No such file or directory
+--- /run/user/0/wayland-1
+timeout: failed to run command 'wlr-randr': No such file or directory

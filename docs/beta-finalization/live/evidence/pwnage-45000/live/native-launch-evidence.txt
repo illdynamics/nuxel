@@ -1,0 +1,20 @@
+PWNAGE-45000 native launch evidence
+Firefox:
+  target org.mozilla.firefox -> /usr/bin/firefox
+  process_alive=true surface_seen=true outcome=visible
+  toplevel: "Mozilla Firefox" app_id=org.mozilla.firefox
+Nuxel Software:
+  target org.gnome.Software -> /usr/lib/nuxel/nuxel-software
+  process_alive=true surface_seen=true outcome=visible
+  toplevel: "Nuxel Software" app_id=nuxel-software
+VLC:
+  /usr/bin/vlc exits before a surface; VLC's Qt GUI module never registers
+  ("no suitable interface module"), so VLC falls back to its CLI and exits.
+  Bridge returns success=false error=exited_before_surface with the journal
+  tail; it does not claim a visible window.
+Signal:
+  registry status=unsupported; launch returns 409 unsupported_on_device.
+  No official Signal Desktop aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n.
+GNOME Software:
+  /usr/bin/gnome-software segfaults (SIGSEGV) before any surface on this image;
+  the supported Software app is the GTK3 nuxel-software PackageKit front-end.

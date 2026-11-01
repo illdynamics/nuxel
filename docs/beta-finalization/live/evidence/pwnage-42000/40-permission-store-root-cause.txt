@@ -1,0 +1,114 @@
+=== path ownership / modes ===
+drwxrwx--- root:nuxel-notifications /var/lib/nuxel
+drwxrwx--- nuxel:nuxel /var/lib/nuxel/permissions
+-rw-r--r-- nuxel-bridge:nuxel-bridge /var/lib/nuxel/permissions/location-policy.json
+-rw-r--r-- root:root /var/lib/nuxel/permissions/nuxel-settings.json
+-rw-r--r-- nuxel-bridge:nuxel-bridge /var/lib/nuxel/permissions/org.nuxel.Home.json
+-rw-r--r-- nuxel-bridge:nuxel-bridge /var/lib/nuxel/permissions/org.nuxel.Maps.json
+
+=== ACLs after repair ===
+# file: /var/lib/nuxel
+# owner: root
+# group: nuxel-notifications
+user::rwx
+user:nuxel-bridge:r-x
+group::rwx
+mask::rwx
+other::---
+
+# file: /var/lib/nuxel/permissions
+# owner: nuxel
+# group: nuxel
+user::rwx
+user:nuxel-bridge:rwx
+group::rwx
+mask::rwx
+other::---
+
+
+=== bridge can read policy and grants ===
+{"enabled": true, "updated": 1793434777.3529482}
+{
+  "network:manage": {
+    "duration": "session",
+    "granted_at": 1792500231.2952952,
+    "source": "preserved first-party grant: Settings Wi-Fi controls"
+  },
+  "location:manage": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "location",
+    "source": "first-party-system-grant: Settings Location & Maps diagnostics"
+  },
+  "location:read": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "location",
+    "source": "first-party-system-grant: Settings may request a real provider fix"
+  },
+  "bluetooth:manage": {
+    "duration": "always",
+
+=== provider status after restart (coordinates redacted) ===
+{
+  "accuracy": null,
+  "acquiring": false,
+  "acquisition_started_at": null,
+  "active_clients": 0,
+  "detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "enabled": true,
+  "fix_kind": null,
+  "fix_source": null,
+  "fix_source_detail": null,
+  "fix_timestamp": null,
+  "fix_valid": false,
+  "freshness_seconds": 60.0,
+  "gnss": {
+    "bbd_nodes": [],
+    "blocker": "no compatible BCM4773 BBD sensor-hub patch firmware (vendor lhd expects /dev/bbd_patch)",
+    "driver": "brcm gps spi",
+    "driver_bound": true,
+    "firmware": [],
+    "firmware_loaded": false,
+    "firmware_present": false,
+    "fix_supported": false,
+    "hardware_responds": null,
+    "nmea_stream": false,
+    "node_visible_to_bridge": false,
+    "nodes": [],
+    "present": true,
+    "private_devices": true,
+    "protocol": "broadcom-bbd-lhd-rpc",
+    "spi_bindings": [
+      "/sys/bus/spi/drivers/brcm gps spi/spi17.0"
+    ],
+    "userspace_provider": null,
+    "vendor_runtime": {
+      "android_linker": false,
+      "complete": false,
+      "gps_config": false,
+      "gpsd": false,
+      "hidl_gnss_lib": false,
+      "lhd": false,
+      "lhd_config": false
+    }
+  },
+  "gnss_fix": false,
+  "last_error": null,
+  "last_fix_age_s": null,
+  "last_fix_timestamp": null,
+  "latitude": null,
+  "location_fix_available": false,
+  "longitude": null,
+  "network_fix": false,
+  "permission_enabled": true,
+  "provider": "geoclue2",
+  "provider_available": true,
+  "provider_detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "provider_ready": false,
+  "stale": false,
+  "stale_after_seconds": 600.0,
+  "state": "no_fix",
+  "success": true,
+  "timestamp": 1793475447.1327078
+}

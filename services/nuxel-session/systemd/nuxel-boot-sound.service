@@ -1,7 +1,7 @@
 [Unit]
 Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
-After=nuxel-wayland.service nuxel-abox-firmware-reload.service nuxel-audio-route.service nuxel-wl-fb.service sound.target nuxel-button-manager.service
-Wants=nuxel-wayland.service nuxel-abox-firmware-reload.service nuxel-audio-route.service nuxel-wl-fb.service
+After=nuxel-wayland.service nuxel-wl-fb.service sound.target nuxel-button-manager.service
+Wants=nuxel-wayland.service nuxel-wl-fb.service
 ConditionPathExists=/usr/share/nuxel/assets/nuxel-pow.mp3
 # Cheap early gate on the *live* route state.  nuxel-audio-route.service writes
 # this file before it exits, so a boot where the route script never ran at all
@@ -17,7 +17,9 @@ Type=oneshot
 # every route control, 48 kHz sink, default sink, volume cap) for up to
 # 200 s.  A one-shot --check here failed at 09:35:45Z, 0.1 s after the
 # ABOX reload, before the CS35L41 DSP1 download had finished.
-ExecStartPre=/usr/lib/nuxel/nuxel-audio-route.sh --wait 200
+# Bounded: a cold ABOX DSP download must never hold the boot transaction
+# open forever. The cue is cosmetic; the ABOX timer can finish later.
+ExecStartPre=-/usr/lib/nuxel/nuxel-audio-route.sh --check
 ExecStart=/usr/libexec/nuxel/nuxel-sound-cue boot
 # The cue process itself repeats the read-only `nuxel-audio-route.sh --check`
 # readiness gate immediately before playback; a stale state file is

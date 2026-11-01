@@ -1,0 +1,40 @@
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 4c4308f55..ddc2b00ba 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -91,9 +91,14 @@ int create_user_ns(struct cred *new)
+ 	 * by verifing that the root directory is at the root of the
+ 	 * mount namespace which allows all files to be accessed.
+ 	 */
++	/*
++	 * NUXEL: Flatpak/bubblewrap on this device need a user namespace even when
++	 * the session is rooted at the Nuxel switch_root mount.  The upstream
++	 * current_chrooted() policy gate is incompatible with that boot layout and
++	 * returns EPERM for every otherwise-valid request.  The mount-namespace and
++	 * kuid/kgid mapping checks below remain in force.
++	 */
+ 	ret = -EPERM;
+-	if (current_chrooted())
+-		goto fail_dec;
+ 
+ 	/* The creator needs a mapping in the parent user namespace
+ 	 * or else we won't be able to reasonably tell userspace who
+@@ -139,12 +144,12 @@ int create_user_ns(struct cred *new)
+ 		goto fail_keyring;
+ 
+ #ifdef CONFIG_LOD_SEC
+-	if (0 != (current_cred()->uid.val)){
+-		ret = -EPERM;
+-		printk(KERN_ERR "LOD: blocking USERNS from non-root PROC %s PID %d UID %d\n",
+-			current->comm, current->pid, current_cred()->uid.val);
+-		goto fail_keyring;
+-	}
++	/*
++	 * NUXEL: the Samsung LOD policy blocked user namespaces for the
++	 * unprivileged nuxel session, which makes Flatpak/bubblewrap unusable.
++	 * Keep the standard namespace ownership and mapping validation above;
++	 * do not add a vendor-only uid gate here.
++	 */
+ #endif
+ 
+ 	set_cred_user_ns(new, ns);

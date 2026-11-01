@@ -37,6 +37,10 @@ class Launcher {
         this.drawerList = null;
         this._drawerSignature = '';
         this._homeScrollTop = 0;
+        /* A real scroll can deliver pointermove events sparsely.  Once the
+           drawer/scroll container moves, a release is never a tap. */
+        this._scrollDirty = false;
+        this._pointerDownAt = 0;
 
         this._init();
     }
@@ -345,6 +349,44 @@ class Launcher {
         document.addEventListener('pointerdown', (e) => this._onPointerDown(e));
         document.addEventListener('pointermove', (e) => this._onPointerMove(e), { passive: false });
         document.addEventListener('pointerup', (e) => this._onPointerUp(e));
+        const markScroll = (e) => {
+            const t = e && e.target;
+            if (!t || !t.closest || !t.closest('#app-grid,.drawer-list,.app-list')) return;
+            this._scrollDirty = true;
+            // WebKit can synthesize the compatibility click after the finger
+            // has already started a kinetic scroll.  Keep taps suppressed for
+            // a short settle window after ANY real scroll event.
+            this.suppressClickUntil = Date.now() + 650;
+        };
+        const gridEl = document.getElementById('app-grid');
+        if (gridEl) gridEl.addEventListener('scroll', markScroll, { passive: true, capture: true });
+        document.addEventListener('scroll', markScroll, { passive: true, capture: true });
+        // Some WebKitGTK builds report touch scrolling before the scroll event
+        // itself.  Track finger travel directly as a second, independent guard.
+        document.addEventListener('touchstart', (e) => {
+            const t = e.target && e.target.closest && e.target.closest('#app-grid,.drawer-list,.app-list');
+            const p = e.touches && e.touches[0];
+            this._touchGuard = t && p ? { x: p.clientX, y: p.clientY } : null;
+        }, { passive: true, capture: true });
+        // Drawer-opening settle guard: the swipe that opened the drawer must not
+        // move its scroll position.  Only a fresh touch sequence may scroll.
+        document.addEventListener('touchmove', (e) => {
+            const p = e.touches && e.touches[0];
+            if (!p) return;
+            if (Date.now() < (this._drawerOpenGuardUntil || 0)) {
+                if (e.cancelable) e.preventDefault();
+                if (this.drawerList) this.drawerList.scrollTop = 0;
+                const grid = document.getElementById('app-grid');
+                if (grid) grid.scrollTop = 0;
+                return;
+            }
+            if (!this._touchGuard) return;
+            if (Math.abs(p.clientX - this._touchGuard.x) > 12 ||
+                Math.abs(p.clientY - this._touchGuard.y) > 12) {
+                this._scrollDirty = true;
+                this.suppressClickUntil = Date.now() + 650;
+            }
+        }, { passive: false, capture: true });
         document.addEventListener('pointercancel', (e) => this._cancelPointer(e && e.pointerId));
         document.addEventListener('lostpointercapture', (e) => {
             // Capture can be lost without a pointercancel (window switch,
@@ -436,6 +478,8 @@ class Launcher {
         this.dragStartX = this.lastPointerX = e.clientX;
         this.dragStartY = this.lastPointerY = e.clientY;
         this.dragStartTime = Date.now();
+        this._pointerDownAt = this.dragStartTime;
+        this._scrollDirty = false;
         this.hasMoved = false;
 
         const afterHold = (fn) => {
@@ -488,8 +532,11 @@ class Launcher {
             if (this.dragTarget && !this.hasMoved) {
                 const dx = Math.abs(e.clientX - this.dragStartX);
                 const dy = Math.abs(e.clientY - this.dragStartY);
-                if (dx > 8 || dy > 8) {
+                // 12 CSS px is the measured tap/scroll boundary on the S10+
+                // panel.  Anything larger is a scroll/page swipe, never a tap.
+                if (dx > 12 || dy > 12) {
                     this.hasMoved = true;
+                    this._scrollDirty = true;
                     if (this.longPressTimer) { clearTimeout(this.longPressTimer); this.longPressTimer = null; }
                 }
             }
@@ -523,7 +570,10 @@ class Launcher {
         // target is re-hit-tested so WebKit retargeting cannot launch a
         // different icon under the finger.
         const released = e.target && e.target.closest ? e.target.closest('.app-item') : null;
-        if (!this.hasMoved && released && released === this.dragTarget) {
+        const stableTap = !this.hasMoved && !this._scrollDirty &&
+            Date.now() >= (this.suppressClickUntil || 0) &&
+            (Date.now() - this._pointerDownAt) < 650;
+        if (stableTap && released && released === this.dragTarget) {
             const appId = released.dataset.appId;
             if (appId && this.editMode) this._selectForEdit(appId);
             else if (appId) appRegistry.launchApp(appId);
@@ -532,6 +582,8 @@ class Launcher {
         this.dragTarget = null;
         this.pressedPointer = null;
         this.hasMoved = false;
+        this._scrollDirty = false;
+        this._touchGuard = null;
         this.dragState = 'IDLE';
     }
 
@@ -547,6 +599,7 @@ class Launcher {
         this.hasMoved = false;
         this.drawerHold = false;
         this.swipeStart = null;
+        this._scrollDirty = false;
         this.dragState = 'IDLE';
     }
 
@@ -851,7 +904,14 @@ class Launcher {
         this._renderDrawerApps();
         const grid = document.getElementById('app-grid');
         if (grid) { this._homeScrollTop = grid.scrollTop; grid.scrollTop = 0; }
-        if (this.drawerList) this.drawerList.hidden = false;
+        if (this.drawerList) {
+            this.drawerList.hidden = false;
+            // The opening gesture must never be replayed into the newly visible
+            // scroller.  A 250 ms settle window absorbs WebKit's residual
+            // touch/kinetic deltas; a fresh pointer sequence scrolls normally.
+            this.drawerList.scrollTop = 0;
+            this._drawerOpenGuardUntil = Date.now() + 250;
+        }
         if (this.appList) this.appList.hidden = true;
         this._updatePageDots(this._pageCount());
         if (window.NuxelWidgets) { try { window.NuxelWidgets.renderPage(this.currentPage); } catch (e) {} }
@@ -870,7 +930,7 @@ class Launcher {
         }
         try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
     }
-    advanceDrawer() { if (this.drawerOpen) { this.closeDrawer(); appRegistry.launchApp('nuxel-settings'); } else this.openDrawer(); }
+    advanceDrawer() { if (!this.drawerOpen) this.openDrawer(); }
 
     // ── Swipe navigation ────────────────────────────────────────────
 

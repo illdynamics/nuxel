@@ -21,7 +21,7 @@
 #
 # Usage:
 #   NUXEL_DEVICE=s10plus bash kernel/s10plus/build-kernel.sh [--clone] [--clean]
-#       [--jobs N] [--cross <prefix>] [--help]
+#       [--jobs N] [--cross <prefix>] [--fragment FILE] [--no-fragment] [--help]
 #
 # Outputs (under kernel/s10plus/.build/out/):
 #   arch/arm64/boot/Image.gz
@@ -72,6 +72,11 @@ DEFAULT_KCFLAGS="-fcommon -Wno-error=incompatible-pointer-types -Wno-error=impli
 DO_CLONE=0
 DO_CLEAN=0
 JOBS="${JOBS:-$( (command -v nproc >/dev/null && nproc) || echo 4)}"
+# The live S10+ kernel is NOT the stock exynos9820-beyond2lte defconfig: it also
+# carries the kbase/UDMABUF/userns/NFC capability fragment (PWNAGE-48000..54000).
+# Apply it by default so a CI build reproduces the kernel the phone runs.
+FRAGMENT="${NUXEL_KERNEL_FRAGMENT:-${NUXEL_ROOT}/kernel/s10plus/configs/nuxel-drm-kbase.fragment}"
+USE_FRAGMENT=1
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -80,6 +85,8 @@ while [[ $# -gt 0 ]]; do
         --clean) DO_CLEAN=1; shift ;;
         --jobs)  JOBS="$2"; shift 2 ;;
         --cross) CROSS_COMPILE="$2"; shift 2 ;;
+        --fragment) FRAGMENT="$2"; shift 2 ;;
+        --no-fragment) USE_FRAGMENT=0; shift ;;
         --device) export NUXEL_DEVICE="$2"; shift 2 ;;
         *) echo "Unknown: $1"; exit 1 ;;
     esac
@@ -238,11 +245,46 @@ cd "${KSRC}"
 make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
     KCFLAGS="${KCFLAGS}" "${DEFCONFIG}"
 
+# --- live capability fragment (kbase GPU, UDMABUF, userns, NFC) -------------
+# Every setting below was read back from the running handset
+# (`zcat /proc/config.gz`); tools/s10plus/verify-kernel-config.py is the
+# fail-closed gate that proves the built .config still has them.
+if [[ "${USE_FRAGMENT}" = "1" ]]; then
+    [ -f "${FRAGMENT}" ] || { echo "[kernel] ERROR: fragment not found: ${FRAGMENT}" >&2; exit 1; }
+    echo "[nuxel-s10plus-kernel] applying capability fragment: ${FRAGMENT}"
+    while IFS= read -r line; do
+        case "${line}" in ''|'#'*) continue ;; esac
+        key="${line%%=*}"; val="${line#*=}"
+        if [ "${val}" = "n" ]; then
+            if grep -q "^${key}=" "${KOUT}/.config"; then
+                sed -i.bak "s|^${key}=.*|# ${key} is not set|" "${KOUT}/.config"
+            elif ! grep -q "^# ${key} is not set" "${KOUT}/.config"; then
+                printf '# %s is not set\n' "${key}" >> "${KOUT}/.config"
+            fi
+        elif grep -q "^${key}=" "${KOUT}/.config"; then
+            sed -i.bak "s|^${key}=.*|${key}=${val}|" "${KOUT}/.config"
+        elif grep -q "^# ${key} is not set" "${KOUT}/.config"; then
+            sed -i.bak "s|^# ${key} is not set|${key}=${val}|" "${KOUT}/.config"
+        else
+            printf '%s=%s\n' "${key}" "${val}" >> "${KOUT}/.config"
+        fi
+    done < "${FRAGMENT}"
+    rm -f "${KOUT}/.config.bak"
+    make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
+        KCFLAGS="${KCFLAGS}" olddefconfig >/dev/null
+    echo "[nuxel-s10plus-kernel] capability fragment applied + olddefconfig"
+fi
+
 # --- build ---
 echo "[kernel] Building Image.gz + dtbs (jobs=${JOBS})..."
 make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
     -j"${JOBS}" KCFLAGS="${KCFLAGS}" Image.gz dtbs
 
 echo "[kernel] Done."
+if [[ "${USE_FRAGMENT}" = "1" ]]; then
+    echo "[kernel] capability parity:"
+    python3 "${NUXEL_ROOT}/tools/s10plus/verify-kernel-config.py" \\
+        --config "${KOUT}/.config" --quiet || echo "[kernel] WARN: capability parity failed (release gate will fail)" >&2
+fi
 ls -lh "${KOUT}/arch/arm64/boot/Image.gz" 2>/dev/null || echo "[kernel] WARN: Image.gz missing"
 find "${KOUT}/arch/arm64/boot/dts" -name 'exynos9820-beyond2lte*.dtb' 2>/dev/null || true

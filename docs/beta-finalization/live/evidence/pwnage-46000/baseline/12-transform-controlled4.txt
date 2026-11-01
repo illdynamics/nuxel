@@ -1,0 +1,57 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== normal rc=0 ===
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Transform: normal
+	physical_width: 0 mm, physical_height: 0 mm,
+	subpixel_orientation: unknown, output_transform: normal,
+		width: 720 px, height: 1520 px, refresh: 0.000 Hz,
+grim=0
+20d81c2f2fc217a8585aaeab56d39f274949d828fb9aa3191f89a7aa3eef068b  /tmp/fresh-normal.png
+state: 1793465821 FRAMES_OK total=13126 fps_1s=25 failures=0 blits=408 present_skipped=12715 blit_avg_ms=35 damage=105-212 damage_blits=390 damage_avg_ms=34 idle_ms=819 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=409 decon_pan_failed=0
+
+=== 90 rc=0 ===
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Transform: 90
+	physical_width: 0 mm, physical_height: 0 mm,
+	subpixel_orientation: unknown, output_transform: 90°,
+		width: 720 px, height: 1520 px, refresh: 0.000 Hz,
+grim=0
+8e1ad094abfdfe28520f77303323187211ace267f852274de735b6a7f19105bf  /tmp/fresh-90.png
+state: 1793465823 FRAMES_OK total=13179 fps_1s=26 failures=0 blits=410 present_skipped=12766 blit_avg_ms=35 damage=0-1520 damage_blits=390 damage_avg_ms=34 idle_ms=1322 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=411 decon_pan_failed=0
+
+=== 180 rc=0 ===
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Transform: 180
+	physical_width: 0 mm, physical_height: 0 mm,
+	subpixel_orientation: unknown, output_transform: 180°,
+		width: 720 px, height: 1520 px, refresh: 0.000 Hz,
+grim=0
+6cc35fe624fc8ad7542f68d2fb7efd62ec8a38d78cd5f883b350aae51b07ccb3  /tmp/fresh-180.png
+state: 1793465825 FRAMES_OK total=13228 fps_1s=30 failures=0 blits=412 present_skipped=12813 blit_avg_ms=35 damage=0-1520 damage_blits=390 damage_avg_ms=34 idle_ms=1046 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=413 decon_pan_failed=0
+
+=== 270 rc=0 ===
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Transform: 270
+	physical_width: 0 mm, physical_height: 0 mm,
+	subpixel_orientation: unknown, output_transform: 270°,
+		width: 720 px, height: 1520 px, refresh: 0.000 Hz,
+grim=0
+8e1ad094abfdfe28520f77303323187211ace267f852274de735b6a7f19105bf  /tmp/fresh-270.png
+state: 1793465828 FRAMES_OK total=13293 fps_1s=25 failures=0 blits=414 present_skipped=12876 blit_avg_ms=35 damage=0-1520 damage_blits=390 damage_avg_ms=34 idle_ms=1412 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=415 decon_pan_failed=0
+

@@ -1,0 +1,22 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+phoc_pid=5862
+lrwx------. 1 root root 64 Nov  1 11:53 13 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  1 11:53 14 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  1 11:53 15 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  1 11:53 16 -> /dev/udmabuf
+lrwx------. 1 root root 64 Nov  1 11:53 27 -> anon_inode:dmabuf_udmabuf
+== kbase ==
+mali0                   2902
+  kctx-0xffffff8021205000       2902 | tgid=      5862 | pid=      5862  | name=                phoc
+== fb ==
+1793530475 FRAMES_OK total=783 fps_1s=5 failures=0 blits=162 present_skipped=620 blit_avg_ms=22 damage=137-138 damage_blits=159 damage_avg_ms=22 idle_ms=34807 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=163 decon_pan_failed=0
+== usb ==
+{"selected":"file_transfer","active":true,"endpoint_state":"mtp","udc_state":"configured","udc_speed":"high-speed","vbus":true,"typec_device":true,"mtp_device":true,"sd_export":false}

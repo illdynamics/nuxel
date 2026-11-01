@@ -34,7 +34,7 @@
     "facilities": [
       "real Bridge status/start/stop/diagnose/connection-info",
       "preferred transport selection with USB gated by kernel evidence",
-      "loopback listener reached through the owner's pinned-key SSH tunnel"
+      "direct owner-LAN/ZeroTier listener (no VNC password; trusted networks only)"
     ]
   }
 }

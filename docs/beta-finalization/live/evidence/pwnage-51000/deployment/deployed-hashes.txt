@@ -1,0 +1,20 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+3800718931c0b359be31374c8ab0ce10ee6b1926992a7d8646a8746176a0f71e  /usr/lib64/libEGL_mesa.so.0.0.0
+b5e167ef0bd0479a797d1e38c6704fec7cfd3fb99a6bc4e6ad8a461aa777f5b1  /usr/lib64/libgallium_dri.so
+2ccada1a6fb4cbf4b371567754efaed2ee6266daf8320c0b6791f7b61c58247c  /usr/lib64/libwlroots-0.19.so
+3800718931c0b359be31374c8ab0ce10ee6b1926992a7d8646a8746176a0f71e  /usr/lib64/libEGL_mesa.so.0
+20a3e374d2c41a6ceeb9abbc5c3fddd89b078c51fb8ae2449e9720a021430975  /usr/share/nuxel/pwa/nuxel-home/js/launcher.js
+8aa8c4f2d426ae68d13e172520d750f867fe21be86ae3a419acb82c889e03d29  /usr/share/nuxel/pwa/nuxel-home/js/gestures.js
+34ca89a886a3d94614134b0ae6df91ff74cf1f4685adaefa82fcaacb4cd30d9b  /usr/share/nuxel/pwa/nuxel-home/js/lockscreen-indicators.js
+1bafa271303f5090ea38a38f2191a93454ffae0f95fe0bff9873a96e42e6493d  /usr/lib/nuxel/nuxel-bridge/software_provider.py
+e2e2ce0191d39fa8c51b86d1978ecbefac2f17652f3a93531f7c8cd8064ee689  /usr/lib/nuxel/nuxel-audio-session.sh
+5f15157af9343b872d1e5d3480d77568be2be9c7aad206520f6301e064326802  /usr/lib/nuxel/nuxel-usb-mode.sh
+c415110b5de0bce4514c84bbf9cb210b1bd8d336ae3bfaaa79445fe21c4244ab  /usr/bin/bwrap

@@ -148,3 +148,12 @@ backups/**
 # repository-hygiene assertion in tools/beta/regression-guard.sh then FAILED —
 # which is how bg-00-preflight found it in the 2026-10-16 re-verification.
 .venv
+
+# --- Local PWNAGE scratch (2026-11-01) --------------------------------------
+# Ad-hoc desktop screenshots of Jump Desktop/VNC sessions taken while driving
+# the phone from the Mac.  They are working notes, not release artifacts; the
+# authoritative captures live under docs/beta-finalization/live/evidence/.
+/mac-jump-*.png
+/vnc-*.png
+# Rendered preview of the feature-matrix spreadsheet (the .xlsx is committed).
+/.nuxel-xlsx-preview/

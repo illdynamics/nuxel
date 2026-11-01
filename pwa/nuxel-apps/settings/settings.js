@@ -455,6 +455,84 @@
   var hapticsReset = document.getElementById('haptics-reset');
   if (hapticsReset) hapticsReset.addEventListener('click', function () { cfgSet(HAPTICS_NAME, JSON.stringify(HAPTICS_DEFAULTS, null, 2) + '\n').then(function () { renderHaptics(HAPTICS_DEFAULTS); }); });
 
+  // ---------- status bar icon visibility (PWNAGE-52000) ----------
+  (function statusBarIcons() {
+    var api = window.NuxelStatusBarIcons;
+    var list = document.getElementById('statusbar-icon-list');
+    var report = document.getElementById('statusbar-icons-state');
+    if (!api || !list) return;
+    var doc = null;
+    var draft = null;
+    function render() {
+      list.textContent = '';
+      api.DEFS.forEach(function (def) {
+        var row = document.createElement('label');
+        row.className = 'statusbar-icon-row';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = draft.icons[def.id] !== false;
+        cb.setAttribute('aria-label', def.label);
+        cb.addEventListener('change', function () {
+          draft.icons[def.id] = cb.checked;
+          report.textContent = 'Unsaved changes. Use Save to persist; Live preview applies temporarily to the running Home bar.';
+        });
+        var name = document.createElement('span');
+        name.textContent = def.label;
+        var cap = document.createElement('span');
+        cap.className = 'cap';
+        cap.textContent = def.core ? 'core' : 'contextual';
+        row.appendChild(cb); row.appendChild(name); row.appendChild(cap);
+        list.appendChild(row);
+      });
+    }
+    function load() {
+      api.load().then(function (d) {
+        doc = d; draft = api.normalize(d);
+        render();
+        report.textContent = 'Loaded ' + Object.keys(draft.icons).length + ' icon preferences from ' +
+          '/etc/nuxel/display/statusbar-icons.json (missing keys use defaults).';
+      });
+    }
+    function notifyLauncher(applyStorage) {
+      try {
+        var p = window.parent;
+        if (p && p.NuxelStatusBar) {
+          p.NuxelStatusBar.iconPrefs = api.normalize(draft);
+          p.NuxelStatusBar._applyIconPreferences();
+          p.NuxelStatusBar._applySafeZones();
+        }
+      } catch (e) { /* live preview is best-effort; persistence is authoritative */ }
+      try {
+        document.dispatchEvent(new CustomEvent('nuxel:statusbar-icons-changed', { detail: api.normalize(draft) }));
+      } catch (e) {}
+      if (applyStorage) {
+        try { localStorage.setItem('nuxel.statusbarIcons', JSON.stringify(draft, null, 2)); } catch (e) {}
+      }
+    }
+    var save = document.getElementById('statusbar-icons-save');
+    if (save) save.addEventListener('click', function () {
+      api.save(draft).then(function (r) {
+        doc = r.doc;
+        report.textContent = r.ok
+          ? 'Saved to /etc/nuxel/display/statusbar-icons.json. The running status bar rehydrates provider state now; no radio or service was changed.'
+          : 'NOT saved durably: ' + (r.error || 'launcher host unavailable') + '. The live preview was applied for this session only.';
+        notifyLauncher(true);
+      });
+    });
+    var defaults = document.getElementById('statusbar-icons-defaults');
+    if (defaults) defaults.addEventListener('click', function () {
+      draft = api.defaults();
+      render();
+      report.textContent = 'Defaults selected (every icon visible). Press Save to persist.';
+    });
+    var preview = document.getElementById('statusbar-icons-preview');
+    if (preview) preview.addEventListener('click', function () {
+      notifyLauncher(false);
+      report.textContent = 'Live preview applied to the visible status bar. Provider OFF/unsupported icons still stay hidden.';
+    });
+    load();
+  })();
+
   // ---------- developer status ----------
   function statusLine(name) {
     return call('status.read', { name: name }).then(function (res) {
@@ -463,10 +541,18 @@
     });
   }
   function refreshDev() {
+    // PWNAGE-52000: Developer diagnostics own ONLY dev-state/dev-input.  The
+    // old code wrote the fourth status line into the duplicate `display-state`
+    // id (the Screen panel) whenever this 4 s refresh ran, which also made the
+    // external-display panel look frozen.  Graphics and connector cards have
+    // independent elements and independent refresh paths.
     Promise.all(['wlfb-state', 'launcher-state', 'anim-state', 'display-state', 'touch-arm-state']
       .map(statusLine)).then(function (lines) {
         document.getElementById('dev-state').textContent = lines.join('\n\n');
-        document.getElementById('display-state').textContent = lines[3];
+        // The Screen card owns its own id and shows the real display-bridge
+        // state.  It must never be the Developer diagnostics dump.
+        var screen = document.getElementById('screen-state');
+        if (screen) screen.textContent = lines[0];
       });
     Promise.all([['volume', 'Volume OSD'], ['touch-arm-state', 'Touch arming']].map(function (p) {
       return call('status.read', { name: p[0] }).then(function (r) {
@@ -647,9 +733,9 @@
   // (home document owns it in the VM build). The seven modes below mirror the
   // daemon; the authoritative list is the orientation.modes RPC response.
   var ROTATE_MODES = [
-    ['auto', 'Auto'], ['auto-portrait', 'Auto Portrait'], ['auto-landscape', 'Auto Landscape'],
-    ['portrait', 'Forced Portrait'], ['landscape', 'Forced Landscape'],
-    ['reverse-portrait', 'Reverse Portrait (advanced)'], ['reverse-landscape', 'Reverse Landscape (advanced)']
+    ['auto', 'Auto (FULL)'], ['auto-portrait', 'Auto (PT)'], ['auto-landscape', 'Auto (LS)'],
+    ['portrait', 'Locked (PT)'], ['landscape', 'Locked (LS)'],
+    ['reverse-portrait', 'Locked (RPT)'], ['reverse-landscape', 'Locked (RLS)']
   ];
   function orientationBridge() {
     try {
@@ -684,15 +770,21 @@
         if (!input.checked) return;
         rotationState.textContent = 'Applying ' + label + '…';
         orientationCall('set', { mode: id }).then(function (res) {
+          var display = (res && (res.display || res.compositor)) || {};
+          var applied = !!(res && (res.applied === true || display.applied === true));
           if (res && res.success === true) {
-            rotationState.textContent = 'Rotation mode: ' + (res.mode_label || res.mode) +
-              ' (effective ' + res.effective_orientation + '°)';
-            if (res.compositor && res.compositor.applied === false) {
-              rotationHint.textContent = 'Compositor did not apply the transform yet: ' +
-                (res.compositor.error || 'no transform backend');
+            rotationState.textContent = 'Selected mode: ' + (res.mode_label || res.mode) +
+              ' | effective ' + res.effective_orientation + '°' +
+              ' | ' + (applied ? 'physically applied' : 'NOT applied');
+            if (!applied) {
+              rotationHint.textContent = 'Compositor/backend did not confirm the transform: ' +
+                (res.last_error || display.error || 'no transform backend');
             } else {
-              rotationHint.textContent = 'Compositor transform applied via ' +
-                (res.compositor && res.compositor.backend ? res.compositor.backend : 'backend');
+              var trial = res.trial || {};
+              rotationHint.textContent = 'Applied via ' + (display.backend || 'backend') +
+                ' on ' + (display.output || '?') + ' (' + (display.transform || '?') + ')' +
+                ' | touch: wlroots output transform' +
+                (trial.pending_confirmation ? ' | trial: confirm in Notes' : '');
             }
             renderRotationModes(res.mode || id);
           } else {
@@ -718,12 +810,43 @@
       }
       renderRotationModes(st.mode);
       var sensor = st.sensor || {};
-      rotationState.textContent = 'Mode: ' + (st.mode_label || st.mode) +
+      var display = st.display || st.compositor || {};
+      var applied = !!(st.applied === true || display.applied === true);
+      rotationState.textContent = 'Selected: ' + (st.mode_label || st.mode) +
         ' | effective ' + st.effective_orientation + '°' +
-        (st.auto ? (' | sensor ' + (sensor.available ? 'available' : 'unavailable')) : '');
-      rotationHint.textContent = 'Mount matrix / gravity reference: ' +
-        ((st.calibration && st.calibration.mount_matrix) || 'unverified') +
-        '. Owner proof: docs/A49/OWNER-TEST-ORIENTATION.md';
+        ' | ' + (applied ? 'physically applied' : 'NOT applied') +
+        (st.auto ? (' | sensor ' + (sensor.available ? 'available' : 'unavailable/auto blocked')) : '');
+      var trial = st.trial || {};
+      var sx = sensor.sources || [];
+      var sensorLine = (sensor.preferred || 'none') + (sensor.available ? ' (available)' : ' (unavailable)');
+      if (!sensor.available && sx.length) {
+        var blocker = sx.find(function (x) { return x && x.reason; });
+        if (blocker && blocker.reason) sensorLine += ' — ' + blocker.reason;
+      }
+      var hub = sensor.hub || {};
+      if (hub.auto_blocked_reason) sensorLine += '\nHub: ' + (hub.raw_data || '0,0,0')
+        + ' | MCU powered: ' + (hub.mcu_powered ? 'yes' : 'no')
+        + ' | accel enabled: ' + (hub.accelerometer_enabled ? 'yes' : 'no')
+        + '\n' + hub.auto_blocked_reason;
+      var xrdp = st.xrdp_sessions || [];
+      var xrdpLine = xrdp.length ? xrdp.map(function (x) {
+        return (x.display || '?') + ':' + (x.status || '?') + (x.xrandr_rotation ? ('/' + x.xrandr_rotation) : '');
+      }).join(', ') : 'none';
+      rotationHint.textContent = 'State: ' + (st.transition_state || 'idle') +
+        ' | sequence ' + (st.sequence == null ? '?' : st.sequence) +
+        '\nOutput: ' + (display.output || '?') + ' | backend: ' + (display.backend || 'none') +
+        ' | transform: ' + (display.transform || '?') + ' | scale: ' + (display.scale || '?') +
+        ' | logical: ' + (display.logical_width || '?') + 'x' + (display.logical_height || '?') +
+        ' | verified: ' + (st.display_verified ? 'yes' : 'NO') +
+        '\nTouch: ' + ((st.touch && st.touch.owner) || 'unknown') +
+        ' | verified: ' + (st.touch && st.touch.verified ? 'owner-confirmed' : 'physical test pending') +
+        ' | calibration: ' + ((st.calibration && st.calibration.mount_matrix) || 'unverified') +
+        '\nSensor: ' + sensorLine +
+        '\nLast good: ' + (st.last_good && st.last_good.effective_orientation != null ? st.last_good.effective_orientation + '°' : '—') +
+        ' | rollback: ' + (st.transition_state === 'rolled_back' ? 'performed' : 'armed') +
+        '\nVNC: ' + (st.vnc_status || 'not_configured') + ' | XRDP: ' + xrdpLine +
+        (trial.pending_confirmation ? ('\nExplicit trial pending until ' + new Date((trial.deadline_epoch || 0) * 1000).toLocaleTimeString() + '; answer yes/works in Notes to keep it.') : '') +
+        (st.last_error ? ('\nLast error: ' + st.last_error) : '');
     }, function () {
       rotationState.textContent = 'Orientation service unavailable (offline)';
     });
@@ -733,7 +856,7 @@
   // ---------- boot ----------
   loadZonesDoc().then(loadButtons).then(loadBoot).then(hapticsDoc).then(renderHaptics).then(function () {
     refreshDev();
-    setInterval(refreshDev, 4000);
+    setInterval(function () { if (!document.hidden) refreshDev(); }, 15000);
     window.addEventListener('resize', previewLayout);
   });
 })();

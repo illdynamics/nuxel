@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#071426">
+<meta name="nuxel-app-id" content="org.nuxel.Clipper">
+<title>Nuxel Clipper</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p54000">
+<link rel="stylesheet" href="css/clipper.css?v=p54000">
+</head>
+<body>
+<header class="app-head">
+  <div>
+    <h1>Clipper</h1>
+    <p id="status" class="sub">Clipboard history stays on this device.</p>
+  </div>
+  <button id="capture" class="primary">Read clipboard</button>
+</header>
+
+<main>
+  <section class="card">
+    <label for="search">Search</label>
+    <input id="search" type="search" placeholder="Filter clips…" autocomplete="off">
+    <div class="row">
+      <button id="add" class="ghost">Add text…</button>
+      <button id="clear" class="danger">Clear all</button>
+      <button id="settings-toggle" class="ghost">Settings</button>
+    </div>
+  </section>
+
+  <section id="settings" class="card hidden" aria-label="Clipper settings">
+    <h2>Settings</h2>
+    <label class="check"><input id="auto-capture" type="checkbox"> Read the clipboard when Clipper opens</label>
+    <label class="check"><input id="dedupe" type="checkbox" checked> Move an existing clip to the top instead of duplicating it</label>
+    <label class="check"><input id="trim" type="checkbox" checked> Trim whitespace before storing</label>
+    <label>Maximum clips
+      <select id="max-entries">
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="200">200</option>
+      </select>
+    </label>
+    <p class="hint">Browser clipboard reads require permission. Manual entries always work, and every clip is stored locally in this app only.</p>
+  </section>
+
+  <section class="card">
+    <div class="row between">
+      <h2 id="count">0 clips</h2>
+      <button id="copy-latest" class="ghost" disabled>Copy latest</button>
+    </div>
+    <ul id="clips" class="clips"></ul>
+  </section>
+</main>
+
+<dialog id="add-dialog">
+  <form method="dialog">
+    <h2>Add a clip</h2>
+    <textarea id="add-text" rows="7" placeholder="Paste or type text…"></textarea>
+    <div class="row end">
+      <button value="cancel" class="ghost">Cancel</button>
+      <button id="add-save" value="save" class="primary">Save clip</button>
+    </div>
+  </form>
+</dialog>
+
+<p id="toast" class="toast hidden"></p>
+<script src="../../nuxel-common/bridge.js" type="module"></script>
+<script src="js/clipper.js?v=p54000"></script>
+</body>
+</html>

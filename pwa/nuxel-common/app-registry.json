@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry/1",
-  "registry_version": 9,
+  "registry_version": 11,
   "bridge_version": "1",
   "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
   "url_base": "http://127.0.0.1:8000",
@@ -13,14 +13,14 @@
   },
   "contract": {
     "one_registry": "This file is the canonical launcher registry. The PWA launcher (apps.js), the native shell (app_registry.json) and the HTTP bridge all serve the SAME app set; verify-app-registry.py fails on any drift between them.",
-    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) — an app may not declare a capability the bridge does not know.",
+    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) \u2014 an app may not declare a capability the bridge does not know.",
     "manifest_rule": "every pwa entry must resolve to a real index.html AND a manifest.json carrying nuxel.capabilities (list) and nuxel.bridge_version equal to the pin."
   },
   "apps": [
     {
       "id": "nuxel-dialer",
       "name": "Phone",
-      "icon": "📞",
+      "icon": "\ud83d\udcde",
       "color": "#4CAF50",
       "category": "communication",
       "type": "native",
@@ -43,7 +43,7 @@
     {
       "id": "nuxel-messages",
       "name": "Messages",
-      "icon": "💬",
+      "icon": "\ud83d\udcac",
       "color": "#2196F3",
       "category": "communication",
       "type": "native",
@@ -65,7 +65,7 @@
     {
       "id": "nuxel-contacts",
       "name": "Contacts",
-      "icon": "👤",
+      "icon": "\ud83d\udc64",
       "color": "#9C27B0",
       "category": "communication",
       "type": "native",
@@ -85,7 +85,7 @@
     {
       "id": "nuxel-camera",
       "name": "Camera",
-      "icon": "📷",
+      "icon": "\ud83d\udcf7",
       "color": "#795548",
       "category": "media",
       "type": "native",
@@ -106,7 +106,7 @@
     {
       "id": "org.nuxel.Mail",
       "name": "Mail",
-      "icon": "✉️",
+      "icon": "\u2709\ufe0f",
       "color": "#FF9800",
       "category": "productivity",
       "type": "pwa",
@@ -125,7 +125,7 @@
     {
       "id": "org.nuxel.Calendar",
       "name": "Calendar",
-      "icon": "📅",
+      "icon": "\ud83d\udcc5",
       "color": "#E91E63",
       "category": "productivity",
       "type": "pwa",
@@ -143,7 +143,7 @@
     {
       "id": "org.nuxel.Notes",
       "name": "Notes",
-      "icon": "📝",
+      "icon": "\ud83d\udcdd",
       "color": "#607D8B",
       "category": "productivity",
       "type": "pwa",
@@ -160,7 +160,7 @@
     {
       "id": "org.nuxel.Files",
       "name": "Files",
-      "icon": "📁",
+      "icon": "\ud83d\udcc1",
       "color": "#3F51B5",
       "category": "tools",
       "type": "pwa",
@@ -175,7 +175,7 @@
     {
       "id": "nuxel-settings",
       "name": "Settings",
-      "icon": "⚙️",
+      "icon": "\u2699\ufe0f",
       "color": "#78909C",
       "category": "system",
       "type": "pwa",
@@ -193,7 +193,7 @@
     {
       "id": "org.nuxel.Terminal",
       "name": "Terminal",
-      "icon": "🖥️",
+      "icon": "\ud83d\udda5\ufe0f",
       "color": "#263238",
       "category": "system",
       "type": "pwa",
@@ -210,7 +210,7 @@
     {
       "id": "org.nuxel.LiveConsole",
       "name": "Serial Live Console",
-      "icon": "📟",
+      "icon": "\ud83d\udcdf",
       "color": "#37474F",
       "category": "system",
       "type": "pwa",
@@ -227,7 +227,7 @@
     {
       "id": "org.nuxel.USBSSHConsole",
       "name": "USB SSH Console",
-      "icon": "🔌",
+      "icon": "\ud83d\udd0c",
       "color": "#6D4C41",
       "category": "system",
       "type": "pwa",
@@ -245,7 +245,7 @@
     {
       "id": "org.nuxel.WiFiSSHConsole",
       "name": "Wi-Fi SSH Console",
-      "icon": "📶",
+      "icon": "\ud83d\udcf6",
       "color": "#0288D1",
       "category": "system",
       "type": "pwa",
@@ -262,7 +262,7 @@
     {
       "id": "org.nuxel.RemoteDesktopXRDP",
       "name": "XRDP Remote Desktop",
-      "icon": "🖥️",
+      "icon": "\ud83d\udda5\ufe0f",
       "iconAsset": "/assets/nuxel-applications-icon-pack/05-07_web-window.png",
       "color": "#5db7ff",
       "category": "system",
@@ -283,7 +283,7 @@
     {
       "id": "org.nuxel.RemoteDesktopVNC",
       "name": "VNC Screen Sharing",
-      "icon": "🖵",
+      "icon": "\ud83d\uddb5",
       "iconAsset": "/assets/nuxel-applications-icon-pack/06-04_casting-screen.png",
       "color": "#48d597",
       "category": "system",
@@ -304,7 +304,7 @@
     {
       "id": "org.nuxel.ScrcpyMirror",
       "name": "scrcpy (Android)",
-      "icon": "📱",
+      "icon": "\ud83d\udcf1",
       "iconAsset": "/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png",
       "color": "#b68cff",
       "category": "system",
@@ -325,7 +325,7 @@
     {
       "id": "org.nuxel.Browser",
       "name": "Browser",
-      "icon": "🌐",
+      "icon": "\ud83c\udf10",
       "color": "#297ad7",
       "category": "tools",
       "type": "native",
@@ -347,7 +347,7 @@
     },
     {
       "name": "Calculator",
-      "icon": "🧮",
+      "icon": "\ud83e\uddee",
       "color": "#009688",
       "category": "tools",
       "type": "pwa",
@@ -362,7 +362,7 @@
     },
     {
       "name": "Clock",
-      "icon": "⏰",
+      "icon": "\u23f0",
       "color": "#455A64",
       "category": "tools",
       "type": "pwa",
@@ -380,7 +380,7 @@
     },
     {
       "name": "Gallery",
-      "icon": "🖼️",
+      "icon": "\ud83d\uddbc\ufe0f",
       "color": "#F06292",
       "category": "media",
       "type": "pwa",
@@ -397,7 +397,7 @@
     },
     {
       "name": "Weather",
-      "icon": "⛅",
+      "icon": "\u26c5",
       "color": "#29B6F6",
       "category": "tools",
       "type": "pwa",
@@ -415,7 +415,7 @@
     },
     {
       "name": "Maps",
-      "icon": "🗺️",
+      "icon": "\ud83d\uddfa\ufe0f",
       "color": "#7CB342",
       "category": "tools",
       "type": "pwa",
@@ -434,7 +434,7 @@
     },
     {
       "name": "NuxTore",
-      "icon": "🛍️",
+      "icon": "\ud83d\udecd\ufe0f",
       "color": "#FF7043",
       "category": "tools",
       "type": "pwa",
@@ -449,7 +449,7 @@
     },
     {
       "name": "Recorder",
-      "icon": "🎙️",
+      "icon": "\ud83c\udf99\ufe0f",
       "color": "#D32F2F",
       "category": "media",
       "type": "pwa",
@@ -466,7 +466,7 @@
     },
     {
       "name": "SnekByte",
-      "icon": "🐍",
+      "icon": "\ud83d\udc0d",
       "color": "#66BB6A",
       "category": "games",
       "type": "pwa",
@@ -482,13 +482,13 @@
     {
       "id": "org.mozilla.firefox",
       "name": "Firefox",
-      "icon": "🦊",
-      "iconAsset": "/assets/nuxel-applications-icon-pack/05-07_web-window.png",
+      "icon": "\ud83e\udd8a",
+      "iconAsset": "/assets/native-app-icons/firefox.png",
       "color": "#ff7139",
       "category": "tools",
       "type": "native",
       "url": "org.mozilla.firefox://",
-      "native_binary": "/usr/lib/nuxel/nuxel-flatpak-firefox",
+      "native_binary": "/usr/bin/firefox",
       "desktop_entry": "shell/config/org.mozilla.firefox.desktop",
       "description": "Firefox (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)",
       "capabilities": [
@@ -505,29 +505,29 @@
     {
       "id": "org.videolan.VLC",
       "name": "VLC",
-      "icon": "🎬",
-      "iconAsset": "/assets/nuxel-applications-icon-pack/03-04_video-player.png",
+      "icon": "\ud83c\udfac",
+      "iconAsset": "/assets/native-app-icons/vlc.png",
       "color": "#ff8800",
       "category": "media",
       "type": "native",
       "url": "org.videolan.VLC://",
-      "native_binary": "/usr/lib/nuxel/nuxel-flatpak-vlc",
+      "native_binary": "/usr/lib/nuxel/nuxel-vlc-fallback",
       "desktop_entry": "shell/config/org.videolan.VLC.desktop",
-      "description": "VLC (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)",
+      "description": "VLC (Fedora aarch64 RPM). The packaged 3.0.24 GUI/vout cannot initialize on this image; the launcher tries VLC then falls back to mpv for real playback.",
       "capabilities": [
         "storage:persistent"
       ],
       "bridge_version": "1",
       "docked": false,
       "status": "installed",
-      "runtime_state": "native Fedora aarch64 RPM (launchable)",
+      "runtime_state": "VLC engine packaged; GUI/vout unavailable on this image, mpv fallback verified",
       "install_source": "/usr/lib/nuxel/nuxel-flatpak-vlc",
       "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-vlc"
     },
     {
       "id": "org.signal.Signal",
       "name": "Signal",
-      "icon": "💬",
+      "icon": "\ud83d\udcac",
       "iconAsset": "/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
       "color": "#3a76f0",
       "category": "communication",
@@ -535,23 +535,23 @@
       "url": "org.signal.Signal://",
       "native_binary": "/usr/lib/nuxel/nuxel-flatpak-signal",
       "desktop_entry": "shell/config/org.signal.Signal.desktop",
-      "description": "Signal Desktop (aarch64 Flatpak installed; BLOCKED: kernel CONFIG_USER_NS=n)",
+      "description": "Signal Desktop is NOT installed (no official aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)",
       "capabilities": [
         "network:outbound",
         "storage:persistent"
       ],
       "bridge_version": "1",
       "docked": false,
-      "status": "installed",
-      "runtime_state": "aarch64 Flatpak installed; BLOCKED by CONFIG_USER_NS=n",
+      "status": "unsupported",
+      "runtime_state": "not installed: no official Signal Desktop aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n",
       "install_source": "/usr/lib/nuxel/nuxel-flatpak-signal",
       "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-signal"
     },
     {
       "id": "com.stremio.Stremio",
       "name": "Stremio",
-      "icon": "🍿",
-      "iconAsset": "/assets/nuxel-applications-icon-pack/06-04_casting-screen.png",
+      "icon": "\ud83c\udf7f",
+      "iconAsset": "/assets/native-app-icons/stremio.svg",
       "color": "#7b5cff",
       "category": "media",
       "type": "native",
@@ -565,15 +565,15 @@
       ],
       "bridge_version": "1",
       "docked": false,
-      "status": "installed",
-      "runtime_state": "aarch64 Flatpak installed; BLOCKED by CONFIG_USER_NS=n",
+      "status": "unsupported",
+      "runtime_state": "Flatpak blocked by CONFIG_USER_NS=n; not launchable on this kernel",
       "install_source": "/usr/lib/nuxel/nuxel-flatpak-stremio",
       "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-stremio"
     },
     {
       "id": "org.gnome.FileRoller",
       "name": "Archive Manager",
-      "icon": "🗜️",
+      "icon": "\ud83d\udddc\ufe0f",
       "iconAsset": "/assets/nuxel-applications-icon-pack/02-05_folders.png",
       "color": "#d6a45c",
       "category": "tools",
@@ -595,7 +595,7 @@
     {
       "id": "org.gnome.Loupe",
       "name": "Image Viewer",
-      "icon": "🖼️",
+      "icon": "\ud83d\uddbc\ufe0f",
       "iconAsset": "/assets/nuxel-applications-icon-pack/03-02_gallery.png",
       "color": "#4a90e2",
       "category": "media",
@@ -617,7 +617,7 @@
     {
       "id": "org.gnome.Papers",
       "name": "Document Viewer",
-      "icon": "📄",
+      "icon": "\ud83d\udcc4",
       "iconAsset": "/assets/nuxel-applications-icon-pack/02-04_reader.png",
       "color": "#e05d5d",
       "category": "productivity",
@@ -639,7 +639,7 @@
     {
       "id": "org.gnome.SystemMonitor",
       "name": "System Monitor",
-      "icon": "📈",
+      "icon": "\ud83d\udcc8",
       "iconAsset": "/assets/nuxel-applications-icon-pack/05-02_system-monitor.png",
       "color": "#4caf50",
       "category": "system",
@@ -655,6 +655,152 @@
       "runtime_state": "Fedora 43 aarch64",
       "install_source": "/usr/bin/gnome-system-monitor",
       "package": "fedora43-aarch64-rpm"
+    },
+    {
+      "id": "org.nuxel.Media",
+      "name": "Media Player",
+      "icon": "\ud83c\udfac",
+      "color": "#e05d5d",
+      "category": "media",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/media/index.html",
+      "entry": "pwa/nuxel-apps/media/index.html",
+      "manifest": "pwa/nuxel-apps/media/manifest.json",
+      "description": "Local audio/video playback through the real PipeWire/ALSA path",
+      "capabilities": [
+        "audio:playback",
+        "media:library"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.Downloader",
+      "name": "Media Downloader",
+      "icon": "\u2b07\ufe0f",
+      "color": "#4a90e2",
+      "category": "media",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/downloader/index.html",
+      "entry": "pwa/nuxel-apps/downloader/index.html",
+      "manifest": "pwa/nuxel-apps/downloader/manifest.json",
+      "description": "Bounded local download queue with checksums and legal-use gate",
+      "capabilities": [
+        "download:queue"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.Authenticator",
+      "name": "Authenticator",
+      "icon": "\ud83d\udd10",
+      "color": "#7e57c2",
+      "category": "security",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/authenticator/index.html",
+      "entry": "pwa/nuxel-apps/authenticator/index.html",
+      "manifest": "pwa/nuxel-apps/authenticator/manifest.json",
+      "description": "Encrypted on-device TOTP authenticator",
+      "capabilities": [
+        "storage:encrypted"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.Cleanup",
+      "name": "Safe Cleanup",
+      "icon": "\ud83e\uddf9",
+      "color": "#26a69a",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/cleanup/index.html",
+      "entry": "pwa/nuxel-apps/cleanup/index.html",
+      "manifest": "pwa/nuxel-apps/cleanup/manifest.json",
+      "description": "Preview-then-delete allowlisted cache cleanup",
+      "capabilities": [
+        "storage:cleanup"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.DevMgmt",
+      "name": "DevMgmt",
+      "icon": "\ud83d\udee0\ufe0f",
+      "color": "#00695c",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/devmgmt/index.html",
+      "entry": "pwa/nuxel-apps/devmgmt/index.html",
+      "manifest": "pwa/nuxel-apps/devmgmt/manifest.json",
+      "description": "Read-only device and peripheral inspection",
+      "capabilities": [
+        "system:inspect"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.PenguInterface",
+      "name": "PenguInterface",
+      "icon": "/assets/nuxel-app-penguinterface.png",
+      "color": "#3f51b5",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/penguinterface/index.html",
+      "entry": "pwa/nuxel-apps/penguinterface/index.html",
+      "manifest": "pwa/nuxel-apps/penguinterface/manifest.json",
+      "description": "Validated per-device compatibility profiles",
+      "capabilities": [
+        "system:inspect"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "icon_asset": "/assets/nuxel-app-penguinterface.png"
+    },
+    {
+      "id": "org.gnome.Software",
+      "name": "Software",
+      "icon": "\ud83d\udecd\ufe0f",
+      "color": "#2ec27e",
+      "category": "system",
+      "type": "native",
+      "url": "org.gnome.Software://",
+      "native_binary": "/usr/lib/nuxel/nuxel-software",
+      "desktop_entry": "shell/config/nuxel-software.desktop",
+      "description": "Native Fedora RPM management (PackageKit/DNF via pkcon + polkit)",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "GTK3 Nuxel Software; Flatpak blocked by CONFIG_USER_NS=n",
+      "install_source": "/usr/bin/gnome-software"
+    },
+    {
+      "id": "org.nuxel.Clipper",
+      "name": "Clipper",
+      "icon": "\ud83d\udccb",
+      "color": "#00BCD4",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/clipper/index.html",
+      "entry": "pwa/nuxel-apps/clipper/index.html",
+      "manifest": "pwa/nuxel-apps/clipper/manifest.json",
+      "description": "Clipboard history and quick copy manager",
+      "capabilities": [
+        "clipboard:read",
+        "clipboard:write"
+      ],
+      "bridge_version": "1",
+      "docked": false
     }
   ],
   "tree_apps": [
@@ -795,19 +941,19 @@
       "dir": "pwa/nuxel-apps/remote-xrdp",
       "owner_group": "pwnage-47000-gui-tri-link",
       "state": "complete",
-      "note": "XRDP Remote Desktop: real Bridge status/start/stop with fixed loopback listeners and explicit USB kernel blocker."
+      "note": "XRDP Remote Desktop: real Bridge status/start/stop with direct LAN/ZeroTier listeners and explicit USB kernel blocker."
     },
     {
       "dir": "pwa/nuxel-apps/remote-vnc",
       "owner_group": "pwnage-47000-gui-tri-link",
       "state": "complete",
-      "note": "VNC Screen Sharing: real Bridge status/start/stop with fixed loopback listeners and explicit USB kernel blocker."
+      "note": "VNC Screen Sharing: real Bridge status/start/stop with direct LAN/ZeroTier listeners and explicit USB kernel blocker."
     },
     {
       "dir": "pwa/nuxel-apps/remote-scrcpy",
       "owner_group": "pwnage-47000-gui-tri-link",
       "state": "complete",
-      "note": "scrcpy (Android): real Bridge status/start/stop with fixed loopback listeners and explicit USB kernel blocker."
+      "note": "scrcpy (Android): real Bridge status/start/stop with direct LAN/ZeroTier listeners and explicit USB kernel blocker."
     }
   ],
   "capability_gaps": [

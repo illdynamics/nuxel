@@ -1,0 +1,52 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== /proc/devices mtp/ffs ===
+180 usb
+188 ttyUSB
+189 usb_device
+=== /dev ===
+ls: cannot access '/dev/mtp*': No such file or directory
+ls: cannot access '/dev/ffs*': No such file or directory
+ls: cannot access '/dev/gadget*': No such file or directory
+=== gadget function dirs ===
+acm.usb0
+=== try scratch gadget + mtp function ===
+mkdir: cannot create directory '/sys/kernel/config/usb_gadget/nxlprobe': Cannot allocate memory
+=== after cleanup ===
+nuxel
+=== f_mtp symbols ===
+0000000000000000 T print_mtp_offset
+0000000000000000 T init_dimming_mtp
+0000000000000000 t getidx_hmd_dimming_mtptbl
+0000000000000000 T send_hqm_pmtp_work
+0000000000000000 t mtp_free
+0000000000000000 t mtp_attr_release
+0000000000000000 t mtp_free_inst
+0000000000000000 t mtp_req_get
+0000000000000000 t mtp_set_inst_name
+0000000000000000 T alloc_inst_mtp_ptp
+0000000000000000 t mtp_alloc_inst
+0000000000000000 t mtp_complete_out
+0000000000000000 t mtp_ctrlreq_configfs
+0000000000000000 t mtp_function_disable
+0000000000000000 t mtp_function_set_alt
+0000000000000000 t mtp_request_new
+0000000000000000 T function_alloc_mtp_ptp
+0000000000000000 t mtp_function_unbind
+0000000000000000 t mtp_read
+0000000000000000 t mtp_alloc
+=== udc cable state ===
+not attached
+0
+1
+0
+0
+0
+0

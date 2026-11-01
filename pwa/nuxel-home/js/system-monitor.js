@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
   var ENDPOINT = 'http://127.0.0.1:8624/metrics';
-  var DEFAULT_INTERVAL = 3;
+  var DEFAULT_INTERVAL = 10;
   var ALLOWED_INTERVALS = [1, 2, 3, 5, 10];
   var timer = null, serial = 0, activeRequest = 0;
   var config = { enabled: true, interval: DEFAULT_INTERVAL, detailed: true };
@@ -70,12 +70,12 @@
     meter('memory', data.memory_percent, data.memory_status === 'ok');
     meter('gpu', data.gpu_percent, data.gpu_status === 'ok');
 
-    // VRAM on this SoC is shared system memory: the Mali producer accounts
-    // allocations in /sys/kernel/gpu/gpu_memory, and the budget is MemTotal.
-    // Show real bytes allocated rather than the old hard-coded N/A.
+    // This SoC has NO dedicated VRAM.  The Mali driver tracks allocations in
+    // shared system RAM (debugfs used_pages on this kernel).  MemTotal is a
+    // budget REFERENCE/upper bound, not GPU capacity.  Never present it as VRAM.
     var gpuUsed = Number(data.gpu_memory_kib);
     var gpuTotal = Number(data.gpu_memory_total_kib);
-    var gpuMemoryOk = data.gpu_memory_status === 'ok' &&
+    var gpuMemoryOk = (data.gpu_memory_status === 'ok_shared_budget_reference' || data.gpu_memory_status === 'ok') &&
       Number.isFinite(gpuUsed) && Number.isFinite(gpuTotal) && gpuTotal > 0;
     meter('gpu-memory', gpuMemoryOk ? (gpuUsed / gpuTotal) * 100 : null,
       gpuMemoryOk, gpuMemoryOk ? memAmount(gpuUsed) : null);
@@ -83,7 +83,44 @@
     detail('cpu', mhz(data.cpu_frequency_mhz));
     detail('memory', data.memory_status === 'ok' && Number.isFinite(Number(data.memory_used_kib)) && Number.isFinite(Number(data.memory_total_kib)) ? gib(data.memory_used_kib) + '/' + gib(data.memory_total_kib) : 'N/A');
     detail('gpu', mhz(data.gpu_frequency_mhz));
-    detail('gpu-memory', gpuMemoryOk ? memAmount(gpuUsed) + ' / ' + memAmount(gpuTotal) + ' shared' : 'N/A (shared RAM)');
+    detail('gpu-memory', gpuMemoryOk ? memAmount(gpuUsed) + ' / ' + memAmount(gpuTotal) + ' RAM budget' : 'N/A (shared RAM)');
+  }
+  // PWNAGE-52000: the GPU meter label must not imply whole-GUI acceleration.
+  // We ask the authoritative graphics provider (bounded, low frequency) and
+  // only append (ACC) when every measured interactive layer is accelerated.
+  var gpuLabelTimer = null, gpuLabelState = 'unknown', gpuLabelChecked = 0;
+  function setGpuLabel(state) {
+    gpuLabelState = state;
+    var el = widget && widget.querySelector('[data-meter="gpu"] .system-meter-label');
+    if (!el) return;
+    var text = 'GPU';
+    var title = 'GPU utilization and clock; acceleration state unknown';
+    if (state === 'ACCELERATED') { text = 'GPU (ACC)'; title = 'Phoc and WebKitGTK are both proved hardware-accelerated'; }
+    else if (state === 'PARTIAL') { text = 'GPU (PARTIAL)'; title = 'Phoc kbase is accelerated; WebKitGTK/GTK GL is software. Copy to fbdev/DECON is CPU work.'; }
+    else if (state === 'SOFTWARE') { text = 'GPU'; title = 'No live accelerated GUI path proved'; }
+    el.textContent = text;
+    var meter = el.closest('.system-meter'); if (meter) meter.title = title;
+  }
+  function bridgeCall(ns, verb, params) {
+    var b = global.NuxelBridge;
+    if (!b || typeof b.call !== 'function') {
+      try { b = global.parent && global.parent.NuxelBridge; } catch (_) {}
+    }
+    if (!b || typeof b.call !== 'function') return Promise.reject(new Error('bridge unavailable'));
+    return Promise.resolve(b.call(ns, verb, params || {}));
+  }
+  function refreshGpuLabel(force) {
+    if (!shouldPoll()) return;
+    var now = Date.now();
+    if (!force && now - gpuLabelChecked < 60000) return;
+    gpuLabelChecked = now;
+    var timer;
+    var timeout = new Promise(function (resolve) { timer = setTimeout(function () { resolve(null); }, 2500); });
+    Promise.race([bridgeCall('graphics', 'status', {}), timeout]).then(function (st) {
+      if (timer) clearTimeout(timer);
+      if (!st || st.success === false) { setGpuLabel('unknown'); return; }
+      setGpuLabel(st.verdict || 'unknown');
+    }).catch(function () { if (timer) clearTimeout(timer); setGpuLabel('unknown'); });
   }
   function stop() {
     if (timer !== null) { global.clearTimeout(timer); timer = null; }
@@ -119,13 +156,16 @@
       })
       .then(function (data) { finished(); if (request === activeRequest && shouldPoll()) render(data); })
       .catch(function () { finished(); if (request === activeRequest && shouldPoll()) render({}); })
-      .then(function () { if (request === activeRequest) schedule(); });
+      .then(function () {
+        if (request === activeRequest) { refreshGpuLabel(false); schedule(); }
+      });
   }
   function configure(input) {
     config = normalize(input || appearance());
+    if (gpuLabelTimer !== null) { global.clearTimeout(gpuLabelTimer); gpuLabelTimer = null; }
     if (widget) { widget.hidden = !config.enabled; widget.dataset.detailed = config.detailed ? 'true' : 'false'; }
     stop();
-    if (shouldPoll()) poll();
+    if (shouldPoll()) { poll(); refreshGpuLabel(true); }
   }
   function init() {
     widget = document.getElementById('system-monitor');
@@ -136,7 +176,8 @@
     document.addEventListener('nuxel:overlay-changed', function () { configure(config); });
     configure(appearance());
   }
-  global.NuxelSystemMonitor = { configure: configure, stop: stop, _normalize: normalize, _shouldPoll: shouldPoll };
+  global.NuxelSystemMonitor = { configure: configure, stop: stop, _normalize: normalize, _shouldPoll: shouldPoll,
+    _gpuLabel: function () { return gpuLabelState; }, _setGpuLabel: setGpuLabel };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })(window);

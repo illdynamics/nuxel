@@ -1,0 +1,30 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+final reboot 2026-11-01T10:46:47+01:00
+up 0 minutes
+active
+active
+active
+active
+phoc=5867
+lrwx------. 1 root root 64 Nov  1 10:46 13 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  1 10:46 14 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  1 10:46 15 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  1 10:46 16 -> /dev/udmabuf
+lrwx------. 1 root root 64 Nov  1 10:46 28 -> anon_inode:dmabuf_udmabuf
+1793526407 FRAMES_OK total=285 fps_1s=5 failures=0 blits=152 present_skipped=132 blit_avg_ms=20 damage=111-271 damage_blits=151 damage_avg_ms=20 idle_ms=10001 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=153 decon_pan_failed=0
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory
+6074 /usr/lib/nuxel/nuxel-navdock
+6075 /usr/lib/nuxel/nuxel-osd
+7433 bash -c echo "final reboot $(date -Is)"; uptime -p; systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-web nuxel-http-bridge; P=$(pgrep -n phoc); echo phoc=$P; ls -l /proc/$P/fd | grep -E "mali|udmabuf"; tail -1 /run/nuxel-wl-fb.state; ls -l /run/nuxel-gpu-fallback 2>&1; pgrep -af "nuxel-statusbar|nuxel-navdock|nuxel-osd"; grep -o "lpcharge[^ ]*\|androidboot.mode=[^ ]*" /proc/cmdline || echo no-lpm-marker; sha256sum /usr/lib64/libEGL_mesa.so.0.0.0 /usr/lib64/libgallium_dri.so /usr/lib64/libwlroots-0.19.so
+no-lpm-marker
+3800718931c0b359be31374c8ab0ce10ee6b1926992a7d8646a8746176a0f71e  /usr/lib64/libEGL_mesa.so.0.0.0
+78a305d013e9d944b7d4f893a0af4a42f71eb39e0e080951d6004063a7ac7dc5  /usr/lib64/libgallium_dri.so
+2ccada1a6fb4cbf4b371567754efaed2ee6266daf8320c0b6791f7b61c58247c  /usr/lib64/libwlroots-0.19.so

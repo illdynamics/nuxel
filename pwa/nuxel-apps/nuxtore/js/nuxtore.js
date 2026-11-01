@@ -34,17 +34,38 @@
   }
 
   // ---- persistence ---------------------------------------------------------
+  // App IDs are case-sensitive.  The catalog shipped `org.nuxel.NuxTore`
+  // while the canonical launcher registry uses `org.nuxel.Nuxtore`; migrate
+  // existing local records instead of ever showing two Home icons.
+  var ID_ALIASES = { 'org.nuxel.NuxTore': 'org.nuxel.Nuxtore',
+                     'org.nuxel.Snekbyte': 'org.nuxel.SnekByte',
+                     // PWNAGE-49000: the catalog shipped the built-in recovery
+                     // console as org.nuxel.Console while Home registers the
+                     // same tree as org.nuxel.LiveConsole.  One runtime ID,
+                     // legacy alias preserved, no duplicate Home icon.
+                     'org.nuxel.Console': 'org.nuxel.LiveConsole' };
+  function canonId(id) { return ID_ALIASES[id] || id; }
+  function canonicalState(st) {
+    if (!st || typeof st !== 'object') return Cat.emptyState();
+    var installed = {};
+    Object.keys(st.installed || {}).forEach(function (k) {
+      var v = st.installed[k];
+      if (v) installed[canonId(k)] = v;
+    });
+    st.installed = installed;
+    return st;
+  }
   function loadState() {
     try {
       var raw = localStorage.getItem(STATE_KEY);
-      if (raw) state = JSON.parse(raw);
+      if (raw) state = canonicalState(JSON.parse(raw));
       if (!state.installed) state = Cat.emptyState();
     } catch (e) { state = Cat.emptyState(); }
     var h = host();
     if (h) h.configGet('nuxtore-state').then(function (res) {
       if (res && res.ok && res.text) {
         try {
-          var remote = JSON.parse(res.text);
+          var remote = canonicalState(JSON.parse(res.text));
           if (remote && remote.installed) { state = remote; render(); }
         } catch (e) { /* keep local */ }
       }
@@ -118,6 +139,18 @@
       readFile: deep ? readFile : null,
       verifyFiles: !!deep
     });
+    // The signed payload keeps its historical id.  Canonicalise the *runtime*
+    // view after verification so one legacy case variant cannot create a
+    // second installed key or Home icon.
+    (report.packages || []).forEach(function (pkg) {
+      pkg.id = canonId(pkg.id);
+      if (pkg.installer) pkg.installer.app_id = canonId(pkg.installer.app_id || pkg.id);
+    });
+    (catalog.packages || []).forEach(function (pkg) {
+      pkg._signed_id = pkg.id;
+      pkg.id = canonId(pkg.id);
+      if (pkg.install) pkg.install.app_id = canonId(pkg.install.app_id || pkg.id);
+    });
     if (pub) el('sb-engine').textContent = 'signatures: ' + (await Crypt.ed25519Supported()
       ? 'Ed25519 available in this engine'
       : 'Ed25519 NOT implemented by this engine — offline verifier required');
@@ -137,6 +170,50 @@
     window.__nuxtoreReport = report;
     window.__nuxtoreCatalog = catalog;
     render();
+    reconcileFromRegistry();
+  }
+
+  // ---- runtime registry reconciliation -------------------------------------
+  // `state_hint` is package metadata, never installation proof.  Ask the
+  // Bridge to repair/register shipped payloads, then mark a package installed
+  // only when the canonical registry says it is installed_and_launchable.
+  function bridgeClient() {
+    if (window.NuxelBridge && typeof window.NuxelBridge.call === 'function') return window.NuxelBridge;
+    try { if (window.parent && window.parent.NuxelBridge) return window.parent.NuxelBridge; } catch (e) {}
+    return null;
+  }
+  function notifyHome() {
+    try { if (window.parent && window.parent.appRegistry && window.parent.appRegistry.refreshFromBridge) window.parent.appRegistry.refreshFromBridge(); } catch (e) {}
+  }
+  async function reconcileFromRegistry() {
+    var b = bridgeClient();
+    if (!b) return { ok: false, reason: 'bridge unavailable' };
+    try {
+      await b.call('apps', 'reconcile', {});
+      var ids = (catalog && catalog.packages ? catalog.packages : []).map(function (p) {
+        return canonId((p.install && (p.install.app_id || p.install.installer && p.install.installer.app_id)) || p.id);
+      });
+      var inv = await b.call('apps', 'inventory', { ids: ids });
+      if (!inv || inv.success === false || !Array.isArray(inv.apps)) {
+        return { ok: false, reason: (inv && (inv.error || inv.error_code)) || 'inventory unavailable' };
+      }
+      var now = {};
+      inv.apps.forEach(function (e) {
+        var id = canonId(e.id);
+        if (e.state === 'installed_and_launchable') {
+          var pkg = (catalog.packages || []).filter(function (p) { return canonId(p.id) === id; })[0] || {};
+          now[id] = { version: pkg.version || 'installed', installedAt: new Date().toISOString(),
+                      source: 'registry', state: e.state };
+        }
+      });
+      state.installed = now;
+      saveState('reconciled ' + Object.keys(now).length + ' installed app(s) from the canonical registry');
+      notifyHome();
+      render();
+      return { ok: true, count: Object.keys(now).length };
+    } catch (e) {
+      return { ok: false, reason: (e && e.message) || String(e) };
+    }
   }
 
   // ---- rendering -----------------------------------------------------------
@@ -304,26 +381,49 @@
       render();
       return;
     }
-    // Best-effort registry hint: the authoritative registry is the launcher's.
-    var b = window.NuxelBridge;
-    var regNote = 'registry: recorded locally';
-    if (b && typeof b.call === 'function') {
-      try {
-        var res = await b.call('apps', 'register', {
-          app_id: p.installer.app_id, name: p.name, start_url: p.installer.start_url,
-          version: p.version, sha256: p.sha256 });
-        regNote = 'registry: ' + (res && res.mock ? 'local-only (bridge offline)' : 'registered with the bridge');
-      } catch (e) { regNote = 'registry: local-only (' + (e && e.message) + ')'; }
+    // Registration is the install commit point.  A local flag alone is not an
+    // installation: if the Bridge cannot register a real launchable entry, do
+    // not mark the package installed.
+    var b = bridgeClient();
+    if (!b) { saveState('REFUSED install ' + p.id + ' — bridge unavailable; launcher was not registered'); render(); return; }
+    var appId = canonId(p.installer.app_id);
+    var res;
+    try {
+      res = await b.call('apps', 'register', {
+        app_id: appId, name: p.name, start_url: p.installer.start_url,
+        version: p.version, sha256: p.sha256, capabilities: p.capabilities || [] });
+    } catch (e) {
+      saveState('REFUSED install ' + p.id + ' — registry call failed: ' + ((e && e.message) || e)); render(); return;
     }
-    state = Cat.applyInstall(state, p, new Date().toISOString());
-    saveState('install ' + p.id + ' ' + p.version + ' — ' + decision.reason + ' — ' + regNote);
+    if (!res || res.success === false || !res.registered) {
+      saveState('REFUSED install ' + p.id + ' — launcher registration failed: ' +
+        ((res && (res.error || res.detail)) || 'unknown error')); render(); return;
+    }
+    var local = Object.assign({}, p, { id: appId });
+    state = Cat.applyInstall(state, local, new Date().toISOString());
+    saveState('install ' + appId + ' ' + p.version + ' — ' + decision.reason + ' — registry: ' + (res.state || 'registered'));
+    notifyHome();
     closeSheet();
     render();
   }
 
-  function doRemove(p) {
+  async function doRemove(p) {
+    var b = bridgeClient();
+    if (!b) { saveState('REFUSED remove ' + p.id + ' — bridge unavailable'); render(); return; }
+    var appId = canonId((p.install && p.install.app_id) || p.id);
+    var res;
+    try {
+      res = await b.call('apps', 'unregister', { app_id: appId, purge_data: false });
+    } catch (e) {
+      saveState('REFUSED remove ' + appId + ' — registry error: ' + ((e && e.message) || e)); render(); return;
+    }
+    if (!res || res.success === false) {
+      saveState('REFUSED remove ' + appId + ' — ' +
+        ((res && (res.error || res.detail)) || 'launcher was not unregistered')); render(); return;
+    }
     state = Cat.applyRemove(state, p.id, new Date().toISOString());
-    saveState('remove ' + p.id + ' — staged files kept on disk (no destructive uninstall)');
+    saveState('remove ' + appId + ' — launcher unregistered; app payload and user data preserved');
+    notifyHome();
     render();
   }
 
@@ -334,7 +434,12 @@
     report.packages.forEach(function (x) { if (x.id === id) raw = x; });
     if (!raw) return;
     var pkg = (catalog.packages || []).filter(function (x) { return x.id === id; })[0];
-    var res = await Cat.verifyPackage(pkg, { policy: catalog.policy, publicKeys: publicKeys,
+    if (!pkg) return;
+    // Verify the ORIGINAL signed payload (historical id), never the runtime
+    // canonical alias applied above.
+    var signed = JSON.parse(JSON.stringify(pkg));
+    if (signed._signed_id) { signed.id = signed._signed_id; delete signed._signed_id; }
+    var res = await Cat.verifyPackage(signed, { policy: catalog.policy, publicKeys: publicKeys,
                                              readBundle: readBundle, readFile: readFile, verifyFiles: true });
     var idx = report.packages.indexOf(raw);
     if (idx >= 0) report.packages[idx] = res;

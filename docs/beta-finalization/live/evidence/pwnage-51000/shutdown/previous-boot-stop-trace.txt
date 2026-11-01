@@ -1,0 +1,26 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+[   21.020946] fedora systemd[1]: Stopped nuxel-audio-route.service - Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1).
+[   21.051766] fedora systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[   21.157006] fedora systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   34.667898] fedora systemd[1]: Stopped nuxel-audio-route.service - Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1).
+[   55.370684] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-audio-route.timer - Nuxel S10+ ABOX playback route — deferred retry after boot.
+[   55.373692] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-audio-route.service - Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1).
+[   55.392349] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[   55.504210] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   55.824904] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+[   59.119419] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: State 'stop-sigterm' timed out. Aborting.
+[   59.123729] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+[   59.573749] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target reboot.target - System Reboot.
+[   59.573818] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Shutting down.
+[   59.680349] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Using hardware watchdog /dev/watchdog0: 'S3C2410 Watchdog', version 0.
+[   59.680529] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Failed to set watchdog hardware timeout to 10min: Invalid argument
+[   59.692070] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Syncing filesystems and block devices.
+[   59.806729] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Sending SIGTERM to remaining processes...

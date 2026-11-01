@@ -1,0 +1,2 @@
+PASS drawer open guard + 12px tap/scroll discrimination
+JS_OK

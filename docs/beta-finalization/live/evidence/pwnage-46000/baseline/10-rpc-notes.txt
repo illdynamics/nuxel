@@ -1,0 +1,27 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== health ===
+HTTP/1.0 200 OK
+Server: BaseHTTP/0.6 Python/3.14.7
+Date: Sat, 31 Oct 2026 16:56:29 GMT
+Content-Type: application/json
+Content-Length: 227
+
+{"success": true, "service": "nuxel-http-bridge", "version": "0.7.4-beta", "bridge_version": "1", "registry": {"source": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json", "available": true}, "timestamp": 1793465789.839406}=== rpc no auth ===
+HTTP/1.0 404 Not Found
+Server: BaseHTTP/0.6 Python/3.14.7
+Date: Sat, 31 Oct 2026 16:56:29 GMT
+Content-Type: application/json
+Content-Length: 22
+Access-Control-Allow-Origin: http://127.0.0.1:8000
+
+{"error": "Not found"}=== storage key size ===
+ls: cannot access '/var/lib/nuxel/app-data/keys/nuxel-notes.json': No such file or directory
+notes_err [Errno 2] No such file or directory: '/var/lib/nuxel/app-data/keys/nuxel-notes.json'

@@ -1,0 +1,106 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
++ systemd-analyze time
+Startup finished in 3.449s (kernel) + 58.375s (userspace) = 1min 1.825s 
+multi-user.target reached after 17.259s in userspace.
++ systemd-analyze critical-chain --no-pager
++ head -30
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @17.259s
+└─nuxel-audio-session.service @43.370s
+  └─basic.target @3.876s
+    └─sockets.target @3.875s
+      └─systemd-logind-varlink.socket @3.875s +202us
+        └─sysinit.target @3.862s
+          └─systemd-update-utmp.service @3.847s +13ms
+            └─systemd-tmpfiles-setup.service @3.396s +446ms
+              └─systemd-journal-flush.service @3.196s +196ms
+                └─systemd-journald.service @2.310s +859ms
+                  └─systemd-journald.socket @2.298s +295us
+                    └─-.mount @2.211s
+                      └─-.slice @2.211s
++ systemd-analyze blame --no-pager
++ head -25
+48.329s nuxel-abox-firmware-reload.service
+ 6.021s nuxel-fallback.service
+ 4.915s nuxel-boot-sound.service
+ 3.290s nuxel-http-bridge.service
+ 3.158s nuxel-audio-route.service
+ 3.016s NetworkManager-wait-online.service
+ 2.585s nuxel-audio-route-retry.service
+ 2.034s NetworkManager.service
+ 1.016s nuxel-wl-fb.service
+  942ms systemd-udev-trigger.service
+  859ms systemd-journald.service
+  798ms rtkit-daemon.service
+  759ms polkit.service
+  742ms nuxel-device-permissions.service
+  609ms systemd-hostnamed.service
+  446ms systemd-tmpfiles-setup.service
+  429ms nuxel-orientationd.service
+  222ms ModemManager.service
+  196ms systemd-journal-flush.service
+  181ms nuxel-wifi.service
+  155ms geoclue.service
+  144ms systemd-logind.service
+  134ms bluetooth.service
+  124ms systemd-tmpfiles-setup-dev-early.service
+   79ms avahi-daemon.service
++ systemctl --failed --no-pager
+  UNIT                               LOAD   ACTIVE SUB    DESCRIPTION
+● avahi-daemon.service               loaded failed failed Avahi mDNS/DNS-SD Stack
+● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+2 loaded units listed.
+== nuxel units ==
+active
+active
+active
+active
+activating
+== bridge ==
+
+== fb ==
+1440,6080
+5760
++ echo '== nuxel units =='
++ systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-web nuxel-bridge nuxel-portal
++ echo '== bridge =='
++ curl -s --max-time 3 http://127.0.0.1:8787/state
++ head -c 2000
++ echo
++ echo '== fb =='
++ cat /sys/class/graphics/fb0/virtual_size /sys/class/graphics/fb0/stride
+== kbase ==
+crw-------. 1 root root 29,   0 Jan  1  1970 /dev/fb0
+crw-rw-rw-. 1 root root 10, 121 Jan  1  1970 /dev/mali0
+crw-rw-rw-. 1 root root 10, 105 Jan  1  1970 /dev/udmabuf
+mali0                      0
+== fallback ==
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory
+== mtp ==
+inactive
+ls: cannot access '/dev/usb-ffs/mtp': No such file or directory
++ echo '== kbase =='
++ ls -l /dev/mali0 /dev/udmabuf /dev/fb0
++ cat /sys/kernel/debug/mali/gpu_memory
++ head -20
++ echo '== fallback =='
++ ls -l /run/nuxel-gpu-fallback
++ echo '== mtp =='
++ systemctl is-active nuxel-mtp
++ ls -l /dev/usb-ffs/mtp
++ head

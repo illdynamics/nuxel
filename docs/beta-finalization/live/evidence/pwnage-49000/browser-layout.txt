@@ -1,0 +1,8 @@
+PWNAGE-49000 headless Chrome layout evidence (360x760 CSS px)
+computed={"body":"lockscreen-active ready native-osk","status":{"display":"grid","z":"520","pos":"fixed","bg":"rgba(26, 26, 46, 0.95)","rect":[0,0,500,36],"vis":"visible","op":"1"},"lock":{"display":"flex","z":"500","rect":[0,0,500,673]}}
+lockscreen-dom-topbar.png size=(360, 760)
+  top strip samples y=0/15/35: [(25, 25, 45), (25, 25, 45), (32, 32, 51)]
+  below strip y=40: (4, 18, 31)
+home-single-topbar.png size=(360, 760)
+  top strip samples y=0/15/35: [(25, 25, 44), (27, 27, 46), (32, 32, 50)]
+  below strip y=40: (4, 5, 7)

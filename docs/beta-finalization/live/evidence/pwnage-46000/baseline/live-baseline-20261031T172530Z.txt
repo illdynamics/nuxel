@@ -1,0 +1,1327 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+## identity
+Sat Oct 31 17:25:46 UTC 2026
+2001-1c00-4d09-8a00-162b-e49d-dc7c-4128
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Wed Oct 28 14:55:36 CET 2026 aarch64 GNU/Linux
+Fedora release 43 (Forty Three)
+297.77 2075.59
+## boot id
+d0974605-4bee-4bae-86d2-0f31fe6944fa
+## cmdline
+
+console=ram
+loglevel=4
+sec_debug.pcb_offset=7346944
+sec_debug.smd_offset=7348992
+sec_debug.lpddr4_size=8
+sec_debug.dram_info=01,06,03,8G
+sec_debug.pwrsrc_rs=0x0000000820000000
+sec_debug.reset_reason=7
+sec_reset.reset_reason=7
+sec_debug.reset_rwc=0
+sec_debug.level=0
+sec_watchdog.sec_pet=5
+androidboot.debug_level=0x4f4c
+androidboot.force_upload=0x0
+softdog.soft_margin=100
+softdog.soft_panic=1
+sec_debug.dump_sink=0x0
+sec_debug.upload_count=0
+androidboot.dram_info=01,06,03,8G
+androidboot.fmm_lock=48
+sec_debug.fmm_lock_offset=7340600
+sec_debug.sjl=1
+androidboot.sn.param.offset=7343024
+androidboot.prototype.param.offset=7351040
+androidboot.recovery_offset=7355136
+printk.devkmsg=on
+ess_setup=0xfd900000
+sec_avc_log=0x40000@0x91202000
+sec_tsp_log=0x40000@0x91244000
+sec_disp_log=0x100000@0x91286000
+sec_debug_next=0x800000@0x91388000
+charging_mode=0x3030
+s3cfb.bootloaderfb=0xca000000
+lcdtype=10555411
+androidboot.carrierid.param.offset=7340608
+androidboot.carrierid=PHN
+consoleblank=0
+ehci_hcd.park=3
+oops=panic
+pmic_info=43
+ccic_info=1
+fg_reset=0
+androidboot.emmc_checksum=3
+androidboot.sales.param.offset=7340572
+sales_code=PHN
+androidboot.odin_download=1
+androidboot.bootloader=G975FXXSEFUL1
+androidboot.selinux=enforcing
+androidboot.ucs_mode=0
+androidboot.revision=26
+androidboot.hardware=exynos9820
+androidboot.warranty_bit=1
+androidboot.wb.hs=0e03
+androidboot.rp=14
+androidboot.wb.snapQB=34489444R
+sec_debug.bin=A
+androidboot.hmac_mismatch=0
+androidboot.sec_atd.tty=/dev/ttySAC0
+androidboot.serialno=R58M75KDB2X
+androidboot.ap_serial=0x10764E6460BA
+snd_soc_core.pmdown_time=1000
+androidboot.cp_reserved_mem=off
+rootwait
+ro
+init=/init
+root=/dev/sda25
+androidboot.dtbo_idx=9
+androidboot.fmp_config=0
+androidboot.em.did=2010764e6460ba11
+androidboot.em.model=SM-G975F
+androidboot.em.status=0x0
+androidboot.sb.debug0=0x0
+androidboot.verifiedbootstate=orange
+androidboot.svb.ver=SVB1.0
+bcm_setup=
+reserve-fimc=
+firmware_class.path=/vendor/firmware
+ecd_setup=disable
+region1=EUR
+region2=OPEN
+factory_mode=0
+androidboot.ulcnt=1
+android.nonce=79939db19f35c86e52b2f95132811356
+root=PARTUUID=52444E41-494F-2044-7379-7374656D0000
+
+## services
+● nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+     Loaded: loaded (/etc/systemd/system/nuxel-orientationd.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: active (running) since Sat 2026-10-31 18:21:28 CET; 4min 17s ago
+ Invocation: 316eef8035e04aab963777b9e4263576
+       Docs: file:/usr/share/doc/nuxel/PWNAGE-46000.md
+    Process: 8836 ExecStartPre=/bin/install -d -o root -g nuxel -m 0775 /run/nuxel-orientation (code=exited, status=0/SUCCESS)
+    Process: 8838 ExecStartPre=/usr/libexec/nuxel/nuxel-orientationd selftest (code=exited, status=0/SUCCESS)
+   Main PID: 8839 (python3)
+      Tasks: 1 (limit: 8173)
+     Memory: 13.6M
+     CGroup: /system.slice/nuxel-orientationd.service
+             └─8839 python3 /usr/libexec/nuxel/nuxel-orientationd daemon
+
+Oct 31 18:21:28 fedora systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:21:28 fedora nuxel-orientationd[8838]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:21:28 fedora systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:25:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+     Loaded: loaded (/etc/systemd/system/nuxel-wayland.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-wayland.service.d
+             └─30-fast-stop.conf
+     Active: active (running) since Sat 2026-10-31 18:20:57 CET; 4min 49s ago
+ Invocation: cec3a5714fb34bc2a8d51d744f457f24
+       Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+   Main PID: 5818 (phoc)
+      Tasks: 117 (limit: 8173)
+     Memory: 708.6M
+     CGroup: /system.slice/nuxel-wayland.service
+             ├─5818 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+             ├─5878 /usr/lib/nuxel/nuxel-pwa-host
+             ├─5893 /usr/lib/nuxel/nuxel-navdock
+             ├─5894 dbus-run-session -- /usr/bin/phosh-osk-stevia
+             ├─5898 dbus-daemon --nofork --print-address 4 --session
+             ├─5902 dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+             ├─5903 /usr/bin/phosh-osk-stevia
+             ├─5967 /usr/libexec/at-spi-bus-launcher
+             ├─5977 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+             ├─5992 /usr/libexec/at-spi2-registryd --use-gnome-session
+             ├─6003 /usr/libexec/at-spi-bus-launcher
+             ├─6009 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+             ├─6079 /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 18
+             ├─6106 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 21
+             └─6126 /usr/libexec/at-spi2-registryd --use-gnome-session
+
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11239]: GLOBAL name=47 iface=wl_seat ver=9
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11239]: GLOBAL name=48 iface=zphoc_device_state_v1 ver=2
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11239]: GLOBAL name=49 iface=wl_output ver=4
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11237]: WINDOWS=1
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11237]: WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=1 act=1 fs=0
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11237]: HOME_ACTION minimized=0 raised=1
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11239]: WINDOWS=1
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11239]: WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=1 act=1 fs=0
+Oct 31 18:25:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[11239]: HOME_ACTION minimized=0 raised=1
+Oct 31 18:25:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+     Loaded: loaded (/etc/systemd/system/nuxel-wl-fb.service; enabled; preset: disabled)
+    Drop-In: /etc/systemd/system/nuxel-wl-fb.service.d
+             └─10-display-priority.conf
+             /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-wl-fb.service.d
+             └─20-fast-stop.conf
+     Active: active (running) since Sat 2026-10-31 18:20:57 CET; 4min 48s ago
+ Invocation: 183245cbaf3242529bce84348ad10f46
+       Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+   Main PID: 5849 (nuxel-wl-fb)
+      Tasks: 1 (limit: 8173)
+     Memory: 6M
+     CGroup: /system.slice/nuxel-wl-fb.service
+             └─5849 /usr/lib/nuxel/nuxel-wl-fb
+
+Oct 31 18:20:57 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 18:20:57 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 18:25:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator
+     Loaded: loaded (/etc/systemd/system/nuxel-bridge.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-bridge.service.d
+             └─20-fast-stop.conf
+     Active: active (running) since Sat 2026-10-31 18:20:57 CET; 4min 49s ago
+ Invocation: 43e0bda7b8bb45db98100872ea6f1297
+       Docs: https://github.com/nuxel/nuxel/docs/architecture.md
+   Main PID: 5803 (python3)
+      Tasks: 1 (limit: 8173)
+     Memory: 22.8M
+     CGroup: /system.slice/nuxel-bridge.service
+             └─5803 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+
+Oct 31 18:20:59 fedora systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Oct 31 18:20:59 fedora systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 18:21:00 fedora systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Oct 31 18:21:00 fedora systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 18:21:00 fedora systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Oct 31 18:21:00 fedora systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 18:21:01 fedora systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Oct 31 18:21:01 fedora systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 18:21:44 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[5803]: 2026-10-31 18:21:44,577 [INFO] nuxel-bridge: NetworkManager connected
+Oct 31 18:25:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-web.service - Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+     Loaded: loaded (/etc/systemd/system/nuxel-web.service; disabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-web.service.d
+             └─20-fast-stop.conf
+     Active: active (running) since Sat 2026-10-31 18:20:57 CET; 4min 49s ago
+ Invocation: 72450c5f25c94ecdb21ad594806f8a1a
+       Docs: https://nuxel.org
+   Main PID: 5805 (python3)
+      Tasks: 2 (limit: 8173)
+     Memory: 22.2M
+     CGroup: /system.slice/nuxel-web.service
+             └─5805 /usr/bin/python3 /usr/lib/nuxel/nuxel-web-server.py
+
+Oct 31 18:24:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:24:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:24:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:24:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:25:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:25:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:25:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:25:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:25:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-web[5805]: [nuxel-web] GET /pwa/nuxel-home/keyboard-provider.json -> 404
+Oct 31 18:25:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-web.service: Failed to get CPU usage: No such file or directory
+
+● seatd.service - Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+     Loaded: loaded (/etc/systemd/system/seatd.service; disabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: active (running) since Sat 2026-10-31 18:20:56 CET; 4min 50s ago
+ Invocation: 6baca81af54f45e7aa21a57b4cef3019
+       Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+   Main PID: 5382 (seatd)
+      Tasks: 1 (limit: 8173)
+     Memory: 528K
+     CGroup: /system.slice/seatd.service
+             └─5382 /usr/bin/seatd -g seat
+
+Oct 31 18:20:56 fedora systemd[1]: Started seatd.service - Nuxel seat daemon (seatd) — backend session for wlroots/phoc input.
+Oct 31 18:20:56 fedora seatd[5382]: 00:00:00.000 [INFO] [seatd/seat.c:48] Created VT-bound seat seat0
+Oct 31 18:20:56 fedora seatd[5382]: 00:00:00.000 [INFO] [seatd/seatd.c:194] seatd started
+Oct 31 18:25:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: seatd.service: Failed to get CPU usage: No such file or directory
+## service files
+--- /etc/systemd/system/nuxel-orientationd.service
+-rw-r--r--. 1 root root 905 Oct 31 18:14 /etc/systemd/system/nuxel-orientationd.service
+b7f24bef581e6981babe5972f29f7325f18117768f90ba0fb425b38d68d2d227  /etc/systemd/system/nuxel-orientationd.service
+[Unit]
+Description=Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+Documentation=file:/usr/share/doc/nuxel/PWNAGE-46000.md
+After=nuxel-wayland.service
+Wants=nuxel-wayland.service
+Before=nuxel-wl-fb.service
+StartLimitIntervalSec=120
+StartLimitBurst=6
+
+[Service]
+Type=simple
+ExecStartPre=/bin/install -d -o root -g nuxel -m 0775 /run/nuxel-orientation
+ExecStart=/usr/libexec/nuxel/nuxel-orientationd daemon
+ExecStartPre=/usr/libexec/nuxel/nuxel-orientationd selftest
+Environment=NUXEL_ROOT=/
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=3
+User=root
+Group=root
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/nuxel /run
+# The compositor is a root-owned headless session at /run/nuxel-wayland.
+# wlr-randr needs its socket; /dev/fb0 is deliberately NOT opened here.
+DevicePolicy=closed
+
+[Install]
+WantedBy=multi-user.target
+--- /usr/libexec/nuxel/nuxel-orientationd
+-rwxr-xr-x. 1 root root 37556 Oct 31 18:21 /usr/libexec/nuxel/nuxel-orientationd
+1257dd34295948ee822592d4ea97863b17f31f5ba4930df96e4af47218f5b319  /usr/libexec/nuxel/nuxel-orientationd
+#!/usr/bin/env python3
+"""nuxel-orientationd - the ONE authoritative orientation owner.
+
+Seven stable modes, exact owner-facing labels, one policy implementation.  The
+daemon owns persistence, the compositor transform, the continuous sensor loop
+for auto modes, the visible trial/rollback transaction and truthful status.
+
+Design rules this file enforces:
+  * a persisted mode is not the same thing as an applied transform;
+  * manual modes work with no accelerometer;
+  * a real sensor is required for an auto mode to move the screen;
+  * every mode change is a bounded trial that rolls back on ``no``, a saved
+    blank answer, timeout, compositor loss or daemon restart;
+  * one process owns the loop.  UI clients only read status and send requests.
+"""
+from __future__ import annotations
+
+import json
+import os
+import signal
+import sys
+import time
+import traceback
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+
+from nuxel_orientation.policy import (  # noqa: E402
+    MODE_ORDER, SEVEN_MODES, Orientator, PolicyError,
+    allowed_orientations, choose_initial_orientation, is_auto,
+    mode_from_document, normalize_mode, validate_mode,
+)
+from nuxel_orientation import sensors as sensor_mod  # noqa: E402
+from nuxel_orientation import apply as apply_mod  # noqa: E402
+
+ROOT = os.environ.get("NUXEL_ROOT", "/").rstrip("/")
+
+
+def P(path):
+    return (ROOT + path) if ROOT else path
+
+
+CONFIG_PATH = "/etc/nuxel/orientation/orientation.json"
+REQUEST_PATH = "/run/nuxel-orientation/request.json"
+STATUS_PATH = "/run/nuxel-orientation/status.json"
+PID_PATH = "/run/nuxel-orientation/daemon.pid"
+DEFAULT_CONFIG = {
+    "schema_version": 1,
+    "default_mode": "portrait",
+    "mode_order": MODE_ORDER,
+    "modes": SEVEN_MODES,
+    "policy": {"hysteresis_ms": 450, "cooldown_ms": 250, "debounce_ms": 60,
+               "flat_gravity_ratio": 0.55, "weak_gravity_ms2": 2.0,
+               "sample_interval_ms": 100, "last_good_on_flat": True},
+    "sensor": {"sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+               "mount_matrix": {"matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+                                "calibration_status": "unverified"},
+               "gravity_reference": {
+                   "0": [0.0, -1.0, 0.0], "90": [1.0, 0.0, 0.0],
+                   "180": [0.0, 1.0, 0.0], "270": [-1.0, 0.0, 0.0],
+                   "calibration_status": "unverified"}},
+    "compositor": {"backend": "auto", "output": "auto",
+                   "runtime_dir": "/run/nuxel-wayland",
+                   "wayland_display": "wayland-0",
+                   "transform_map": {"0": "normal", "90": "270",
+                                     "180": "180", "270": "90"},
+                   "transform_map_verified": False,
+                   "revert_after_ms": 75000, "trial_seconds": 75,
+                   "touch": {"verified": False, "matrix_available": False}},
+    "paths": {"state_file": "/var/lib/nuxel/orientation/state.json",
+              "last_good_file": "/var/lib/nuxel/orientation/last-good.json",
+              "control_fifo": "/run/nuxel-orientation.cmd",
+              "log": "/var/log/nuxel/orientation.log"},
+}
+
+MANUAL_SOURCES = {"manual"}
+
+
+def load_config():
+    try:
+        with open(P(CONFIG_PATH)) as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        doc = {}
+    merged = json.loads(json.dumps(DEFAULT_CONFIG))
+    if isinstance(doc, dict):
+        for key in ("modes", "policy", "sensor", "compositor", "paths",
+                    "mode_order", "default_mode", "device"):
+            if key in doc:
+                merged[key] = doc[key]
+    merged["modes"] = {**SEVEN_MODES, **merged.get("modes", {})}
+    merged["mode_order"] = MODE_ORDER
+    return merged
+
+
+def state_path(config):
+    return P(config.get("paths", {}).get("state_file",
+           "/var/lib/nuxel/orientation/state.json"))
+
+
+def last_good_path(config):
+    return P(config.get("paths", {}).get("last_good_file",
+           "/var/lib/nuxel/orientation/last-good.json"))
+
+
+def _read_json(path, default=None):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def ensure_runtime_dir():
+    """Create the request/status directory writable by the Bridge user.
+
+    nuxel-bridge (group nuxel) must be able to drop a request; the daemon is
+    root because the compositor runtime socket is root-only.
+    """
+    path = os.path.dirname(P(REQUEST_PATH))
+--- /usr/libexec/nuxel/nuxel_orientation/apply.py
+-rw-r--r--. 1 root root 9158 Oct 31 18:14 /usr/libexec/nuxel/nuxel_orientation/apply.py
+3b300d264f7b7b3584e593826a41db6a906e6a8cda3578c691aa35fe1159ec54  /usr/libexec/nuxel/nuxel_orientation/apply.py
+"""Compositor output transform backend for Nuxel orientation.
+
+The S10+ compositor is Phoc/wlroots on a headless output.  The panel itself is
+still portrait scanout, so a compositor transform is only half of the display
+path: ``nuxel-wl-fb`` reads the transform from this module's published state and
+rotates the captured landscape frame back into portrait scanout.
+
+This module never guesses that a command succeeded.  After wlr-randr returns it
+queries the output again and reports the transform the compositor actually
+reports.  A missing utility, a missing output, or an unchanged transform is an
+honest ``applied=False`` result.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+
+TRANSFORM_VALUES = ("normal", "90", "180", "270", "flipped",
+                    "flipped-90", "flipped-180", "flipped-270")
+QUARTER_TURNS = {"normal": 0, "90": 90, "180": 180, "270": 270}
+
+DEFAULT_RUNTIME_DIR = "/run/nuxel-wayland"
+DEFAULT_WAYLAND_DISPLAY = "wayland-0"
+
+
+def _comp(config=None):
+    return (config or {}).get("compositor", {})
+
+
+def _run_env(config=None):
+    comp = _comp(config)
+    env = dict(os.environ)
+    # The compositor owns a root-only runtime dir on the phone.  Never inherit a
+    # stale desktop WAYLAND_DISPLAY from a shell; the orientation document is
+    # the single source for this stack.
+    env["XDG_RUNTIME_DIR"] = comp.get("runtime_dir", DEFAULT_RUNTIME_DIR)
+    env["WAYLAND_DISPLAY"] = comp.get("wayland_display", DEFAULT_WAYLAND_DISPLAY)
+    return env
+
+
+def transform_for(degrees, config=None):
+    """Return the compositor transform string for an effective orientation.
+
+    The mapping is deliberately data-driven because the physical direction has
+    to be calibrated on the handset.  The shipped document starts with the
+    inverse-pose candidate and keeps ``transform_map_verified=false`` until the
+    owner confirms it.
+    """
+    comp = _comp(config)
+    mapping = comp.get("transform_map", {"0": "normal", "90": "270",
+                                          "180": "180", "270": "90"})
+    return mapping.get(str(degrees), mapping.get(degrees))
+
+
+def wlr_randr_available():
+    """True when the ``wlr-randr`` executable is on PATH.
+
+    ``command`` is a shell builtin, not an executable; the previous
+    ``subprocess.run(["command", "-v", ...])`` therefore always failed.
+    """
+    return shutil.which("wlr-randr") is not None
+
+
+def _parse_json_outputs(raw):
+    try:
+        doc = json.loads(raw)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("wlr-randr returned invalid JSON: %s" % exc)
+    return doc if isinstance(doc, list) else []
+
+
+def _select_output(outputs, wanted):
+    enabled = [o for o in outputs if isinstance(o, dict) and o.get("enabled", True)]
+    if not enabled:
+        return None
+    if wanted and wanted != "auto":
+        for out in enabled:
+            if out.get("name") == wanted:
+                return out
+        return None
+    # The live output is whichever enabled output the compositor currently
+    # exports.  Prefer an actual panel-looking name, then the first output.
+    for out in enabled:
+        if str(out.get("name", "")).startswith(("DSI-", "eDP-", "LVDS-")):
+            return out
+    return enabled[0]
+
+
+def output_status(config=None, output=None):
+    """Query the live output and return dimensions/transform truth.
+
+    ``logical_width/height`` account for the compositor transform.  The
+    physical mode stays the reported output mode; ``nuxel-wl-fb`` handles the
+    final scanout rotation.
+    """
+    comp = _comp(config)
+    wanted = output or comp.get("output", "auto")
+    if not wlr_randr_available():
+        return {
+            "backend": "none", "output": None, "transform": None,
+            "applied": False, "error": "wlr-randr not present",
+            "outputs": [],
+        }
+    try:
+        proc = subprocess.run(
+            ["wlr-randr", "--json"], capture_output=True, text=True,
+            timeout=5, env=_run_env(config))
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"backend": "wlr-randr", "output": wanted, "transform": None,
+                "applied": False, "error": str(exc), "outputs": []}
+    if proc.returncode != 0:
+        return {"backend": "wlr-randr", "output": wanted, "transform": None,
+                "applied": False,
+                "error": proc.stderr.strip() or "wlr-randr query failed",
+                "outputs": []}
+    try:
+        outputs = _parse_json_outputs(proc.stdout)
+--- /etc/nuxel/orientation/orientation.json
+-rw-r--r--. 1 root root 4074 Oct 31 18:21 /etc/nuxel/orientation/orientation.json
+0e05c7950a33d967ec4e1cd10026599317db1be11337428e86bcc1d22b8ad299  /etc/nuxel/orientation/orientation.json
+{
+  "schema_version": 1,
+  "comment": "Orientation policy document for the S10+ (beyond2lte). ONE authoritative source shared by Quick Settings, Settings, nuxelctl and nuxel-orientationd. There are SEVEN named modes exactly (the owner phrase 'six modes' is a count mismatch: four fixed poses plus three auto policies). Selected policy (mode) is distinct from the current effective orientation (effective_degrees). Nothing here rotates pixels by itself: nuxel-orientationd computes the desired transform and asks the compositor, and reports honestly when the compositor cannot apply it.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "panel": "S6E3HA9 Dynamic AMOLED 3040x1440 (portrait scanout 1440x3040)"
+  },
+  "modes": {
+    "portrait":            { "label": "Portrait",      "allowed": [0] },
+    "reverse-portrait":    { "label": "RPortrait",     "allowed": [180] },
+    "landscape":           { "label": "Landscape",     "allowed": [90] },
+    "reverse-landscape":   { "label": "RLandscape",    "allowed": [270] },
+    "auto":                { "label": "Auto",                 "allowed": [0, 90, 180, 270], "auto": true },
+    "auto-portrait":       { "label": "Auto (PT)",        "allowed": [0, 180],          "auto": true },
+    "auto-landscape":      { "label": "Auto (LS)",       "allowed": [90, 270],         "auto": true }
+  },
+  "mode_order": ["auto", "auto-portrait", "auto-landscape", "portrait", "landscape", "reverse-portrait", "reverse-landscape"],
+  "default_mode": "portrait",
+  "policy": {
+    "hysteresis_ms": 450,
+    "cooldown_ms": 250,
+    "debounce_ms": 60,
+    "flat_gravity_ratio": 0.55,
+    "weak_gravity_ms2": 2.0,
+    "sample_interval_ms": 100,
+    "last_good_on_flat": true
+  },
+  "sensor": {
+    "preferred_source": "auto",
+    "sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+    "iio": {
+      "name_hints": ["accel", "bmi160", "lsm6ds", "lsm6dso", "accel_3d"],
+      "channels": ["in_accel_x_raw", "in_accel_y_raw", "in_accel_z_raw"],
+      "scale_files": ["in_accel_scale", "in_accel_x_scale"]
+    },
+    "mount_matrix": {
+      "comment": "3x3 row-major map from sensor axes to display-native axes (x=right, y=up, z=out of screen). This is the DEFAULT convention and MUST be calibrated from observed device motion on hardware; until then it is calibration_status=unverified.",
+      "matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      "calibration_status": "unverified"
+    },
+    "gravity_reference": {
+      "comment": "Unit gravity vector (display-native) for each discrete orientation. 0=portrait, 90/180/270 clockwise physical poses. Unverified until observed on the actual handset.",
+      "0":   [0.0, -1.0, 0.0],
+      "90":  [1.0,  0.0, 0.0],
+      "180": [0.0,  1.0, 0.0],
+      "270": [-1.0,  0.0, 0.0],
+      "calibration_status": "unverified"
+    }
+  },
+  "compositor": {
+    "backend": "auto",
+    "candidates": ["wlr-randr", "phoc-config", "none"],
+    "output": "auto",
+    "transform_map": { "0": "normal", "90": "270", "180": "180", "270": "90" },
+    "comment_transform_map": "Physical pose -> wlr-randr transform that keeps content upright. The mapping and the matching touch calibration are UNVERIFIED until Phase 3 is exercised on the real device.",
+    "revert_after_ms": 75000,
+    "trial_seconds": 75,
+    "runtime_dir": "/run/nuxel-wayland",
+    "presenter_state": "/run/nuxel-wl-fb-orientation",
+    "screencopy_already_transformed": true,
+    "presenter_compensation": "none (compositor owns the one output transform)",
+    "wayland_display": "wayland-0",
+    "touch": { "verified": false, "matrix_available": false,
+               "mechanism": "single wlroots output transform; libinput coordinates and the screencopy buffer are both transformed by the compositor, presenter adds no second rotation" }
+  },
+  "paths": {
+    "state_file": "/var/lib/nuxel/orientation/state.json",
+    "control_fifo": "/run/nuxel-orientation.cmd",
+    "log": "/var/log/nuxel/orientation.log"
+  },
+  "owner_test": "docs/A49/OWNER-TEST-ORIENTATION.md"
+}
+--- /run/nuxel-orientation/status.json
+-rw-r--r--. 1 root root 2334 Oct 31 18:25 /run/nuxel-orientation/status.json
+bd489f0677c151a772551175232bc27e9c541ac9d8c1d6a972071cf2803c5920  /run/nuxel-orientation/status.json
+{
+  "_daemon_live": true,
+  "allowed": [
+    0
+  ],
+  "applied": true,
+  "auto": false,
+  "auto_state": "fixed",
+  "calibration": {
+    "gravity_reference": "unverified",
+    "mount_matrix": "unverified"
+  },
+  "compositor": {
+    "backend": "wlr-randr",
+    "error": "",
+    "output": "HEADLESS-1",
+    "touch_calibration_verified": false,
+    "transform": "normal",
+    "transform_available": true,
+    "transform_map_verified": false
+  },
+  "display": {
+    "applied": true,
+    "backend": "wlr-randr",
+    "enabled": true,
+    "error": "",
+    "logical_height": 1520,
+    "logical_width": 720,
+    "output": "HEADLESS-1",
+    "outputs": [
+      "HEADLESS-1"
+    ],
+    "physical_height": 1520,
+    "physical_width": 720,
+    "scale": 2.0,
+    "transform": "normal",
+    "transform_map": {
+      "0": "normal",
+      "180": "180",
+      "270": "90",
+      "90": "270"
+    },
+    "verified": false
+  },
+  "effective_orientation": 0,
+  "last_error": "trial rollback: no_feedback_timeout",
+  "last_good": {
+    "effective_orientation": 0,
+    "mode": "portrait",
+    "requested_orientation": 0,
+    "transform": "normal"
+  },
+  "last_orientation": 0,
+  "last_request_id": "req-10841-1793467407807",
+  "mode": "portrait",
+  "mode_label": "Portrait",
+  "pid": 8839,
+  "requested_orientation": 0,
+  "sensor": {
+    "available": false,
+    "preferred": null,
+    "sources": [
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "IIO device present but no readable scale",
+        "source": "iio-accel"
+      },
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+        "source": "iio-sensor-proxy"
+      },
+      {
+        "auto_capable": false,
+        "available": true,
+        "reason": "",
+        "source": "manual"
+      }
+    ],
+    "unverified": true
+  },
+  "success": true,
+  "touch": {
+    "mechanism": "single wlroots output transform; libinput coordinates and the screencopy buffer are both transformed by the compositor, presenter adds no second rotation",
+    "transform_available": true,
+    "verified": false
+  },
+  "trial": {
+    "pending_confirmation": false
+  },
+  "updated_epoch": 1793467545.9952426
+}
+--- /run/nuxel-orientation/request.json
+ls: cannot access '/run/nuxel-orientation/request.json': No such file or directory
+--- /var/lib/nuxel/orientation/state.json
+-rw-r--r--. 1 root nuxel 315 Oct 31 18:24 /var/lib/nuxel/orientation/state.json
+86b6fba7864a01ca66cde98581752227b9215fe17711e2f8b8cde23d221f06cc  /var/lib/nuxel/orientation/state.json
+{
+  "effective_orientation": 0,
+  "last_error": "trial rollback: no_feedback_timeout",
+  "last_orientation": 0,
+  "last_request_id": "req-10841-1793467407807",
+  "mode": "portrait",
+  "requested_orientation": 0,
+  "schema_version": 1,
+  "set_by": "nuxel-orientationd",
+  "trial": null,
+  "updated_at": 1793467483
+}
+--- /var/lib/nuxel/orientation/last-good.json
+-rw-r--r--. 1 root nuxel 110 Oct 31 18:23 /var/lib/nuxel/orientation/last-good.json
+8ff3f431f5506c839a5131e1520c40f80551bb4f650b41ba80a9c2b69d9767de  /var/lib/nuxel/orientation/last-good.json
+{
+  "effective_orientation": 0,
+  "mode": "portrait",
+  "requested_orientation": 0,
+  "transform": "normal"
+}
+--- /run/nuxel-wl-fb-orientation
+-rw-r--r--. 1 root root 141 Oct 31 18:25 /run/nuxel-wl-fb-orientation
+abb77ea576a4b09ed2cd271ba34b6501d6aa8713963554297d533ef5edd2ca00  /run/nuxel-wl-fb-orientation
+transform=0
+presenter_rotation=0
+effective_orientation=0
+output=HEADLESS-1
+logical_width=720
+logical_height=1520
+backend=wlr-randr
+applied=1
+--- /run/nuxel-wl-fb.orient.state
+-rw-r--r--. 1 root root 69 Oct 31 18:25 /run/nuxel-wl-fb.orient.state
+35c5bb65a789b7d3d1f82aa04fd2e7b5152c0fadc8729ba56c6156318c92b15c  /run/nuxel-wl-fb.orient.state
+presenter_rotation=0 src=720x1520 out=720x1520 src_format=0x00000001
+## processes
+   5352       1 nuxel-b+ /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+   5355       1 root     python3 /usr/lib/nuxel/nuxel-hapticsd.py
+   5357       1 nuxel-n+ /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+   5359       1 nuxel    /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+   5803       1 nuxel-b+ /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+   5805       1 nuxel    /usr/bin/python3 /usr/lib/nuxel/nuxel-web-server.py
+   5818       1 root     /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+   5849       1 root     /usr/lib/nuxel/nuxel-wl-fb
+   5878    5818 root     /usr/lib/nuxel/nuxel-pwa-host
+   5890    5878 root     [python3] <defunct>
+   5894    5878 root     dbus-run-session -- /usr/bin/phosh-osk-stevia
+   5903    5894 root     /usr/bin/phosh-osk-stevia
+   6079    5878 root     /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 18
+   6106    5878 root     /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 21
+   6734       1 root     /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+   8839       1 root     python3 /usr/libexec/nuxel/nuxel-orientationd daemon
+## wayland runtime
+total 0
+drwx------.  6 root root  260 Oct 31 18:21 .
+drwxr-xr-x. 28 root root 1180 Oct 31 18:25 ..
+drwx------.  2 root root   60 Oct 31 18:20 at-spi
+srwxrwxrwx.  1 root root    0 Oct 31 18:20 bus
+drwx------.  3 root root   60 Oct 31 18:20 dbus-1
+drwx------.  2 root root   60 Oct 31 18:20 dconf
+srwxr-xr-x.  1 root root    0 Oct 31 18:21 pipewire-0
+srwxr-xr-x.  1 root root    0 Oct 31 18:21 pipewire-0-manager
+-rw-r-----.  1 root root    0 Oct 31 18:20 pipewire-0-manager.lock
+-rw-r-----.  1 root root    0 Oct 31 18:20 pipewire-0.lock
+drwx------.  2 root root   80 Oct 31 18:21 pulse
+srwxr-xr-x.  1 root root    0 Oct 31 18:20 wayland-0
+-rw-r-----.  1 root root    0 Oct 31 18:20 wayland-0.lock
+ls: cannot access '/run/user/1000': No such file or directory
+## wayland info
+--- wayland-info /usr/bin/wayland-info
+--- weston-info 
+--- wlr-randr /usr/bin/wlr-randr
+=== /run/nuxel-wayland/wayland-0
+[
+  {
+    "name": "HEADLESS-1",
+    "description": "Headless output 1",
+    "make": null,
+    "model": null,
+    "serial": null,
+    "physical_size": {
+      "width": 0,
+      "height": 0
+    },
+    "enabled": true,
+    "modes": [
+      {
+        "width": 720,
+        "height": 1520,
+        "refresh": 0.000000,
+        "preferred": false,
+        "current": true
+      }
+    ],
+    "position": {
+      "x": 0,
+      "y": 0
+    },
+    "transform": "normal",
+    "scale": 2.000000,
+    "adaptive_sync": false
+  }
+]
+--- text
+interface: 'zwp_tablet_manager_v2',                      version:  1, name:  9
+interface: 'wp_security_context_manager_v1',             version:  1, name: 10
+interface: 'zwlr_gamma_control_manager_v1',              version:  1, name: 11
+interface: 'zwlr_export_dmabuf_manager_v1',              version:  1, name: 12
+interface: 'org_kde_kwin_server_decoration_manager',     version:  1, name: 13
+interface: 'zwp_primary_selection_device_manager_v1',    version:  1, name: 14
+interface: 'zwp_input_method_manager_v2',                version:  1, name: 15
+interface: 'zwp_text_input_manager_v3',                  version:  1, name: 16
+interface: 'ext_idle_notifier_v1',                       version:  2, name: 17
+interface: 'gtk_shell1',                                 version:  3, name: 18
+interface: 'phosh_private',                              version:  7, name: 19
+interface: 'xdg_activation_v1',                          version:  1, name: 20
+interface: 'zwp_virtual_keyboard_manager_v1',            version:  1, name: 21
+interface: 'zwp_keyboard_shortcuts_inhibit_manager_v1',  version:  1, name: 22
+interface: 'zwlr_virtual_pointer_manager_v1',            version:  2, name: 23
+interface: 'zwlr_screencopy_manager_v1',                 version:  3, name: 24
+interface: 'ext_image_copy_capture_manager_v1',          version:  1, name: 25
+interface: 'ext_output_image_capture_source_manager_v1', version:  1, name: 26
+interface: 'zxdg_decoration_manager_v1',                 version:  1, name: 27
+interface: 'xx_cutouts_manager_v1',                      version:  1, name: 28
+interface: 'wp_viewporter',                              version:  1, name: 29
+interface: 'wp_single_pixel_buffer_manager_v1',          version:  1, name: 30
+interface: 'wp_fractional_scale_manager_v1',             version:  1, name: 31
+interface: 'zxdg_exporter_v1',                           version:  1, name: 32
+interface: 'zxdg_importer_v1',                           version:  1, name: 33
+interface: 'zxdg_exporter_v2',                           version:  1, name: 34
+interface: 'zxdg_importer_v2',                           version:  1, name: 35
+interface: 'zwp_pointer_constraints_v1',                 version:  1, name: 36
+interface: 'wp_cursor_shape_manager_v1',                 version:  1, name: 37
+interface: 'wp_alpha_modifier_v1',                       version:  1, name: 38
+interface: 'wp_presentation',                            version:  2, name: 39
+	presentation clock id: 1 (CLOCK_MONOTONIC)
+interface: 'zwlr_foreign_toplevel_manager_v1',           version:  3, name: 40
+interface: 'ext_foreign_toplevel_list_v1',               version:  1, name: 41
+interface: 'zwp_relative_pointer_manager_v1',            version:  1, name: 42
+interface: 'zwp_pointer_gestures_v1',                    version:  3, name: 43
+interface: 'zwlr_output_manager_v1',                     version:  4, name: 44
+interface: 'zwlr_output_power_manager_v1',               version:  1, name: 45
+interface: 'zwlr_data_control_manager_v1',               version:  2, name: 46
+interface: 'wl_seat',                                    version:  9, name: 47
+	name: seat0
+	capabilities: keyboard touch
+	keyboard repeat rate: 33
+	keyboard repeat delay: 500
+interface: 'zphoc_device_state_v1',                      version:  2, name: 48
+interface: 'wl_output',                                  version:  4, name: 49
+	name: HEADLESS-1
+	description: Headless output 1
+	x: 0, y: 0, scale: 2,
+	physical_width: 0 mm, physical_height: 0 mm,
+	make: 'Unknown', model: 'Unknown',
+	subpixel_orientation: unknown, output_transform: normal,
+	mode:
+		width: 720 px, height: 1520 px, refresh: 0.000 Hz,
+		flags: current
+## fb
+crw-------. 1 root root 29, 0 Jan  1  1970 /dev/fb0
+1440,6080
+5760
+32
+## input devices
+--- /proc/bus/input/devices
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="meta_event"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input0
+U: Uniq=
+H: Handlers=event0 
+B: PROP=0
+B: EV=5
+B: REL=c0
+
+I: Bus=0019 Vendor=0001 Product=0001 Version=0100
+N: Name="gpio_keys"
+P: Phys=gpio-keys/input0
+S: Sysfs=/devices/platform/gpio_keys/input/input1
+U: Uniq=
+H: Handlers=sec_key_notifier event1 
+B: PROP=0
+B: EV=3
+B: KEY=8000000000000000 0 0 0 0 0 0 0 0 1c000000000000 0
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="sec_touchscreen"
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+U: Uniq=
+H: Handlers=sec_key_notifier event2 
+B: PROP=2
+B: EV=2b
+B: KEY=4000000000000000 0 0 80 0 420 0 0 8000 0 0
+B: ABS=4263800000000003
+B: SW=0
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="sec_touchpad"
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3
+U: Uniq=
+H: Handlers=sec_key_notifier event3 
+B: PROP=1
+B: EV=2b
+B: KEY=4000000000000000 0 0 80 0 e520 0 0 8000 0 0
+B: ABS=4263800000000003
+B: SW=0
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="sec_touchproximity"
+P: Phys=sec_touchproximity/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input4
+U: Uniq=
+H: Handlers=event4 
+B: PROP=2
+B: EV=29
+B: ABS=4000000000000000
+B: SW=0
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="grip_sensor"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input5
+U: Uniq=
+H: Handlers=event5 
+B: PROP=0
+B: EV=5
+B: REL=200
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="ssp_context"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input6
+U: Uniq=
+H: Handlers=event6 
+B: PROP=0
+B: EV=5
+B: REL=38
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="hrm_sensor"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input7
+U: Uniq=
+H: Handlers=event7 
+B: PROP=0
+B: EV=d
+B: REL=20f
+B: ABS=ff
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="Headset"
+P: Phys=madera/extcon
+S: Sysfs=/devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/input/input8
+U: Uniq=
+H: Handlers=sec_key_notifier event8 
+B: PROP=0
+B: EV=23
+B: KEY=40 0 0 0 0 0 402000000 0 c000000000000 0
+B: SW=94
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="hall"
+P: Phys=hall
+S: Sysfs=/devices/platform/hall/input/input9
+U: Uniq=
+H: Handlers=event9 
+B: PROP=0
+B: EV=100021
+B: SW=1
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="certify_hall"
+P: Phys=certify_hall
+S: Sysfs=/devices/platform/certify_hall/input/input10
+U: Uniq=
+H: Handlers=event10 
+B: PROP=0
+B: EV=100021
+B: SW=8000000
+
+--- /sys/class/input/event0/device/name
+meta_event
+--- /sys/class/input/event1/device/name
+gpio_keys
+--- /sys/class/input/event10/device/name
+certify_hall
+--- /sys/class/input/event2/device/name
+sec_touchscreen
+--- /sys/class/input/event3/device/name
+sec_touchpad
+--- /sys/class/input/event4/device/name
+sec_touchproximity
+--- /sys/class/input/event5/device/name
+grip_sensor
+--- /sys/class/input/event6/device/name
+ssp_context
+--- /sys/class/input/event7/device/name
+hrm_sensor
+--- /sys/class/input/event8/device/name
+Headset
+--- /sys/class/input/event9/device/name
+hall
+--- /run/nuxel-libinput-path.state
+1793467257 PATH_CONTEXT_CREATED ctx=0x5586d31d30 udev=0x5586d13a40 (udev daemon not required)
+1793467257 UDEVDB_SEEDED /run/udev/data/c13:66 (initialized marker; systemd-udevd cannot run on this kernel)
+1793467257 DEVICE_OPEN_LIBSEAT path=/dev/input/event2 rc=24 fd=-1
+1793467257 PATH_ADD node=/dev/input/event2 name='sec_touchscreen' accepted=1
+1793467257 UDEVDB_SEEDED /run/udev/data/c13:68 (initialized marker; systemd-udevd cannot run on this kernel)
+1793467257 DEVICE_OPEN_LIBSEAT path=/dev/input/event4 rc=25 fd=-1
+1793467257 PATH_ADD node=/dev/input/event4 name='sec_touchproximity' accepted=1
+1793467258 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=2 added=2 db_seeded=2
+--- /etc/nuxel/device/s10plus/libinput/99-nuxel-beyond2lte-touch.conf
+# Samsung S6SY761 sec_ts touch calibration for S10+ (3040×1440)
+# Device: Samsung Galaxy S10+ (beyond2lte)
+# Touch controller: S6SY761 (sec_ts), I2C hsi2c_10 @ 0x48
+#
+# This InputClass is the X11 form of the touch calibration (installed to
+# /etc/X11/xorg.conf.d/99-nuxel-beyond2lte-touch.conf on the S10+ target).
+# On Wayland/Phosh the same MatchProduct/MatchIsTouchscreen properties are
+# honoured by libinput's udev-based device matching; the TransformationMatrix
+# below is the identity (panel and framebuffer share orientation) and the
+# CalibrationMatrix stays commented out until Phase 0 (`getevent -pl` /
+# `libinput debug-events`) provides real values. No values are invented.
+
+Section "InputClass"
+    Identifier "nuxel-s10plus-touch"
+    MatchIsTouchscreen "on"
+    MatchDevicePath "/dev/input/event*"
+    # S6SY761 presents as "sec_touchscreen" in kernel
+    MatchProduct "sec_touchscreen"
+    Driver "libinput"
+    Option "TransformationMatrix" "1 0 0 0 1 0 0 0 1"
+    # Calibration values — fill from real device (libinput debug-events)
+    # Option "CalibrationMatrix" "UNKNOWN UNKNOWN UNKNOWN UNKNOWN UNKNOWN UNKNOWN"
+EndSection
+--- /etc/nuxel/phoc-phone.ini
+# Nuxel S10+ phoc configuration (beyond2lte).
+#
+# This is /usr/share/phosh/phoc.ini for the phone, with the HEADLESS-1 output
+# geometry set to the handset's own panel: 1440x3040 at scale 2 => 720x1520
+# logical pixels => a 360 CSS-pixel viewport, the same band the UTM VM renders
+# the Nuxel launcher in (VM: [output:Virtual-1] mode = 720x1440, scale = 2,
+# 360 CSS px).  The VM value is kept for reference below; only the physical
+# resolution differs, which the port record documents.
+[output:HEADLESS-1]
+mode = 720x1520
+scale = 2
+## sensors
+/sys/bus/iio/devices/iio:device0/name: 15c40000.adc
+/sys/bus/iio/devices/iio:device1/name: accelerometer_sensor
+/sys/bus/iio/devices/iio:device10/name: light_flicker_sensor
+/sys/bus/iio/devices/iio:device11/name: proximity_sensor
+/sys/bus/iio/devices/iio:device12/name: proximity_alert_sensor
+/sys/bus/iio/devices/iio:device13/name: proximity_raw
+/sys/bus/iio/devices/iio:device14/name: rotation_vector_sensor
+/sys/bus/iio/devices/iio:device15/name: game_rotation_vector
+/sys/bus/iio/devices/iio:device16/name: sig_motion_sensor
+/sys/bus/iio/devices/iio:device17/name: step_det_sensor
+/sys/bus/iio/devices/iio:device18/name: step_cnt_sensor
+/sys/bus/iio/devices/iio:device19/name: tilt_detector
+/sys/bus/iio/devices/iio:device2/name: geomagnetic_sensor
+/sys/bus/iio/devices/iio:device20/name: pickup_gesture
+/sys/bus/iio/devices/iio:device21/name: scontext_iio
+/sys/bus/iio/devices/iio:device22/name: light_cct_sensor
+/sys/bus/iio/devices/iio:device23/name: thermistor_sensor
+/sys/bus/iio/devices/iio:device24/name: proximity_pocket
+/sys/bus/iio/devices/iio:device25/name: uncal_accel_sensor
+/sys/bus/iio/devices/iio:device26/name: meta_event
+/sys/bus/iio/devices/iio:device27/name: wake_up_motion
+/sys/bus/iio/devices/iio:device28/name: move_detector
+/sys/bus/iio/devices/iio:device29/name: call_gesture
+/sys/bus/iio/devices/iio:device3/name: uncal_geomagnetic_sensor
+/sys/bus/iio/devices/iio:device30/name: uncal_light_sensor
+/sys/bus/iio/devices/iio:device31/name: pocket_mode
+/sys/bus/iio/devices/iio:device32/name: led_cover_event
+/sys/bus/iio/devices/iio:device4/name: gyro_sensor
+/sys/bus/iio/devices/iio:device5/name: uncal_gyro_sensor
+/sys/bus/iio/devices/iio:device6/name: interrupt_gyro_sensor
+/sys/bus/iio/devices/iio:device7/name: pressure_sensor
+/sys/bus/iio/devices/iio:device8/name: light_sensor
+/sys/bus/iio/devices/iio:device9/name: light_ir_sensor
+total 0
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 accelerometer_sensor -> ../../devices/virtual/sensors/accelerometer_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 barometer_sensor -> ../../devices/virtual/sensors/barometer_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 grip_sensor -> ../../devices/virtual/sensors/grip_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 gyro_sensor -> ../../devices/virtual/sensors/gyro_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 hidden_hole -> ../../devices/virtual/sensors/hidden_hole
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 hrm_sensor -> ../../devices/virtual/sensors/hrm_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 light_sensor -> ../../devices/virtual/sensors/light_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 magnetic_sensor -> ../../devices/virtual/sensors/magnetic_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 proximity_sensor -> ../../devices/virtual/sensors/proximity_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 sensor_dev -> ../../devices/virtual/sensors/sensor_dev
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 ssp_sensor -> ../../devices/virtual/sensors/ssp_sensor
+lrwxrwxrwx 1 root root 0 Oct 31 18:20 thermistor_sensor -> ../../devices/virtual/sensors/thermistor_sensor
+## bridge rpc
+{"result": {"_daemon_live": true, "allowed": [0], "applied": true, "auto": false, "auto_state": "fixed", "calibration": {"gravity_reference": "unverified", "mount_matrix": "unverified"}, "compositor": {"backend": "wlr-randr", "error": "", "output": "HEADLESS-1", "touch_calibration_verified": false, "transform": "normal", "transform_available": true, "transform_map_verified": false}, "display": {"applied": true, "backend": "wlr-randr", "enabled": true, "error": "", "logical_height": 1520, "logical_width": 720, "output": "HEADLESS-1", "outputs": ["HEADLESS-1"], "physical_height": 1520, "physical_width": 720, "scale": 2.0, "transform": "normal", "transform_map": {"0": "normal", "180": "180", "270": "90", "90": "270"}, "verified": false}, "effective_orientation": 0, "last_error": "trial rollback: no_feedback_timeout", "last_good": {"effective_orientation": 0, "mode": "portrait", "requested_orientation": 0, "transform": "normal"}, "last_orientation": 0, "last_request_id": "req-10841-1793467407807", "mode": "portrait", "mode_label": "Portrait", "pid": 8839, "requested_orientation": 0, "sensor": {"available": false, "preferred": null, "sources": [{"auto_capable": false, "available": false, "reason": "IIO device present but no readable scale", "source": "iio-accel"}, {"auto_capable": false, "available": false, "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files", "source": "iio-sensor-proxy"}, {"auto_capable": false, "available": true, "reason": "", "source": "manual"}], "unverified": true}, "status_age_seconds": 1, "success": true, "touch": {"mechanism": "single wlroots output transform; libinput coordinates and the screencopy buffer are both transformed by the compositor, presenter adds no second rotation", "transform_available": true, "verified": false}, "trial": {"pending_confirmation": false}, "updated_epoch": 1793467545.9952426}}
+{"result": [{"allowed": [0, 90, 180, 270], "auto": true, "label": "Auto", "mode": "auto"}, {"allowed": [0, 180], "auto": true, "label": "Auto (PT)", "mode": "auto-portrait"}, {"allowed": [90, 270], "auto": true, "label": "Auto (LS)", "mode": "auto-landscape"}, {"allowed": [0], "auto": false, "label": "Portrait", "mode": "portrait"}, {"allowed": [90], "auto": false, "label": "Landscape", "mode": "landscape"}, {"allowed": [180], "auto": false, "label": "RPortrait", "mode": "reverse-portrait"}, {"allowed": [270], "auto": false, "label": "RLandscape", "mode": "reverse-landscape"}]}## orientation log tail
+tail: cannot open '/var/log/nuxel/orientation.log' for reading: No such file or directory
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "source": "iio-accel"
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:       },
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:       {
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "auto_capable": false,
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "available": false,
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "source": "iio-sensor-proxy"
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:       },
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:       {
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "auto_capable": false,
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "available": true,
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "reason": "",
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:         "source": "manual"
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:       }
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:     ],
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:     "unverified": true
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]:   }
+Oct 31 17:07:13 fedora nuxel-orientationd[5816]: }
+Oct 31 17:07:13 fedora systemd[1]: Finished nuxel-orientationd.service - Nuxel Orientation Policy Service.
+Oct 31 17:27:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 17:27:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel Orientation Policy Service.
+-- Boot a40ad4ce1ba6469483f62d1ee4e6aed8 --
+Oct 31 17:29:08 fedora systemd[1]: Starting nuxel-orientationd.service - Nuxel Orientation Policy Service...
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]: {
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "allowed": [
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     0,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     90,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     180,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     270
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   ],
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "auto": true,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "calibration": {
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "gravity_reference": "unverified",
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "mount_matrix": "unverified"
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   },
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "compositor": {
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "output": "DSI-1",
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "touch_calibration_verified": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "transform_available": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "transform_map_verified": false
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   },
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "effective_orientation": 0,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "last_orientation": 0,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "mode": "auto",
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "mode_label": "Auto",
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   "sensor": {
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "available": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "preferred": null,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "sources": [
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:       {
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "auto_capable": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "available": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "reason": "IIO device present but no readable scale",
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "source": "iio-accel"
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:       },
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:       {
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "auto_capable": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "available": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "source": "iio-sensor-proxy"
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:       },
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:       {
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "auto_capable": false,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "available": true,
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "reason": "",
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:         "source": "manual"
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:       }
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     ],
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:     "unverified": true
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]:   }
+Oct 31 17:29:09 fedora nuxel-orientationd[5818]: }
+Oct 31 17:29:09 fedora systemd[1]: Finished nuxel-orientationd.service - Nuxel Orientation Policy Service.
+Oct 31 18:14:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 18:14:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:14:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:14:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:14:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-orientationd[22066]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:14:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:15:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:15:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 18:15:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:15:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:15:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-orientationd[22393]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:15:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:15:49 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:15:50 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 18:15:50 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:15:50 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:15:50 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-orientationd[22812]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:15:50 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:16:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:16:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 18:16:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:16:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:16:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-orientationd[22953]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:16:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:16:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:16:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 18:16:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:16:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:16:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-orientationd[23173]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:16:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:19:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:19:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 18:19:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:19:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:19:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-orientationd[25196]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:19:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:19:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:19:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 18:19:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+-- Boot d09746054bee4bae86d20f31fe6944fa --
+Oct 31 18:20:57 fedora systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:20:57 fedora nuxel-orientationd[5835]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:20:57 fedora systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:21:28 fedora systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:21:28 fedora systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+Oct 31 18:21:28 fedora systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:21:28 fedora systemd[1]: Starting nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+Oct 31 18:21:28 fedora nuxel-orientationd[8838]: PASS orientation policy (7 modes, exact labels, legal sets)
+Oct 31 18:21:28 fedora systemd[1]: Started nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+Oct 31 18:25:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Failed to get CPU usage: No such file or directory
+## wl-fb log tail
+Oct 31 09:55:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 09:56:40 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Main process exited, code=exited, status=5/NOTINSTALLED
+Oct 31 09:56:40 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed with result 'exit-code'.
+Oct 31 09:56:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Scheduled restart job, restart counter is at 2.
+Oct 31 09:56:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 09:56:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 09:56:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Main process exited, code=exited, status=5/NOTINSTALLED
+Oct 31 09:56:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed with result 'exit-code'.
+Oct 31 09:57:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Scheduled restart job, restart counter is at 3.
+Oct 31 09:57:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 09:57:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 09:57:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Main process exited, code=exited, status=5/NOTINSTALLED
+Oct 31 09:57:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed with result 'exit-code'.
+Oct 31 09:57:59 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Scheduled restart job, restart counter is at 4.
+Oct 31 09:57:59 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 09:57:59 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 09:58:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Main process exited, code=exited, status=5/NOTINSTALLED
+Oct 31 09:58:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed with result 'exit-code'.
+Oct 31 09:58:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Scheduled restart job, restart counter is at 5.
+Oct 31 09:58:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 09:58:39 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 09:58:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 09:58:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 09:58:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 09:58:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 09:58:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 10:01:09 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Main process exited, code=exited, status=5/NOTINSTALLED
+Oct 31 10:01:09 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed with result 'exit-code'.
+Oct 31 10:01:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Scheduled restart job, restart counter is at 1.
+Oct 31 10:01:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 10:01:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 10:01:19 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 10:01:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 10:01:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 10:01:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 10:01:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 10:04:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 10:04:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 10:04:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+-- Boot df736b5313b849a1ba5fd7f7c0b1853f --
+Oct 31 10:04:52 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 10:04:53 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 10:06:56 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed to get CPU usage: No such file or directory
+Oct 31 11:00:10 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 11:00:10 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 11:00:10 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+-- Boot e3e030821a99402aaa7ea720b0d478d4 --
+Oct 31 11:01:28 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 11:01:29 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 13:25:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 13:25:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 13:25:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+-- Boot 7c6ba8f1f99c4d5e9c0f61e045da1510 --
+Oct 31 13:45:36 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 13:45:38 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 13:47:59 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed to get CPU usage: No such file or directory
+Oct 31 14:04:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 14:04:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 14:04:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+-- Boot 69ddacb9527148319b0f3675a380decf --
+Oct 31 14:05:51 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 14:05:52 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 17:05:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 17:05:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 17:05:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+-- Boot ae32ee4dd2fd4610aceba2dc4d53f6b9 --
+Oct 31 17:07:13 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 17:07:14 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 17:27:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 17:27:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 17:27:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+-- Boot a40ad4ce1ba6469483f62d1ee4e6aed8 --
+Oct 31 17:29:08 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 17:29:09 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 17:53:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed to get CPU usage: No such file or directory
+Oct 31 18:17:35 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 18:17:35 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 18:17:35 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 18:17:35 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 18:17:35 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 18:19:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 18:19:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 18:19:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+-- Boot d09746054bee4bae86d20f31fe6944fa --
+Oct 31 18:20:57 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 18:20:57 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 18:25:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Failed to get CPU usage: No such file or directory

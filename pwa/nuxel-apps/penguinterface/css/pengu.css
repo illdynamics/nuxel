@@ -1,0 +1,8 @@
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0a1628;color:#e8f1ff;font:15px/1.5 system-ui,sans-serif}
+.hdr{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #1e3a5f;position:sticky;top:0;background:#0a1628}
+h1{font-size:19px;margin:0}.grow{flex:1}.badge{font-size:11px;padding:3px 7px;border-radius:9px;background:#173356;color:#9fc5ff}
+button.ghost{background:transparent;color:#cfe3ff;border:1px solid #365b84;border-radius:9px;padding:7px 11px;min-height:40px}
+main{padding:14px;max-width:760px;margin:0 auto}.card{background:#0e1f36;border:1px solid #213f63;border-radius:12px;padding:12px;margin:0 0 12px}
+.card h2{font-size:16px;margin:0 0 8px}.row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid #17304e;font-size:14px}
+.row:last-child{border-bottom:0}.state-tag{font-weight:600}.ok{color:#7ee29a}.blocked{color:#ffb36b}.fallback{color:#8fd4ff}.unsupported{color:#ff9a9a}
+.hint{color:#9fb7d4;font-size:13px}.state{color:#9fb7d4;font-size:13px}code{color:#bfe0ff}

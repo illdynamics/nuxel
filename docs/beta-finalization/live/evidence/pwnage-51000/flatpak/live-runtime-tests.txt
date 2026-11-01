@@ -1,0 +1,23 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== software status ==
+{"success": true, "schema": "nuxel.software-status/1", "native": {"dnf5": true, "dnf": true, "rpm": true, "packagekitd": true, "gnome_software": true, "nuxel_software": true, "appstream": true}, "native_ready": true, "native_backend": "DNF5", "native_ui": "/usr/lib/nuxel/nuxel-software", "polkit": true, "flatpak": {"flatpak": true, "bwrap": true, "portal": true, "user_namespace": {"ok": false, "detail": "unshare: unshare failed: Operation not permitted"}}, "flatpak_ready": false, "flatpak_blocker": "user namespace creation denied by the kernel: unshare: unshare failed: Operation not permitted", "source_policy": "local/NuxTore only for this mission; native RPM uses configured Fedora repos", "source": "software_provider"}
+== userns tests ==
+root_unshare_rc=1
+unshare: unshare failed: Operation not permitted
+unshare: unshare failed: Operation not permitted
+nuxel_unshare_rc=1
+== bwrap ==
+755 root:root /usr/bin/bwrap
+bwrap: No permissions to creating new namespace, likely because the kernel does not allow non-privileged user namespaces. On e.g. debian this can be enabled with 'sysctl kernel.unprivileged_userns_clone=1'.
+bwrap_rc=1
+== limits ==
+27213
+27213

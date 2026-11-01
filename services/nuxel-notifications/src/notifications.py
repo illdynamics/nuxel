@@ -40,7 +40,7 @@ import dbus.mainloop.glib
 from gi.repository import GLib
 from datetime import datetime
 
-NUXEL_NOTIFICATIONS_VERSION = "0.7.4-beta"
+NUXEL_NOTIFICATIONS_VERSION = "0.7.5-beta"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -109,6 +109,23 @@ def _load_history_file():
 
 HISTORY_FILE = _load_history_file()
 NOTIFICATION_HISTORY_CAP = int(os.environ.get('NUXEL_NOTIFICATIONS_HISTORY_CAP', '200') or '200')
+
+# Persistent DND state written by services/nuxel-bridge/src/dnd_provider.py.
+# DND suppresses interruption effects, never history.
+DND_STATE_FILE = os.environ.get('NUXEL_DND_STATE', '/var/lib/nuxel/notifications/dnd.json')
+
+
+def _dnd_active():
+    try:
+        with open(DND_STATE_FILE, 'r') as fh:
+            doc = json.load(fh)
+        if not isinstance(doc, dict):
+            return False, None
+        enabled = bool(doc.get('enabled', False))
+        return enabled, (doc.get('reason') or ('manual' if enabled else 'off'))
+    except (OSError, ValueError):
+        return False, None
+
 
 # Notification urgency map
 URGENCY_MAP = {
@@ -182,9 +199,11 @@ class NuxelNotificationsService(dbus.service.Object):
                 for nid in sorted(self._notifications.keys())[:len(self._notifications) - NOTIFICATION_HISTORY_CAP]:
                     self._notifications.pop(nid, None)
             tmp = HISTORY_FILE + '.tmp'
-            with open(tmp, 'w') as f:
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, 'w') as f:
                 json.dump(entries, f, indent=2)
             os.replace(tmp, HISTORY_FILE)
+            os.chmod(HISTORY_FILE, 0o600)
         except OSError as e:
             logger.error("Failed to persist notification history: %s", e)
 
@@ -256,15 +275,27 @@ class NuxelNotificationsService(dbus.service.Object):
             return json.dumps({"success": False, "error": "app_id and summary required"})
 
         notif = notification_dict(app_id, summary, body)
+        dnd, dnd_reason = _dnd_active()
+        if dnd:
+            # Keep the record and id; only the interruption effects are
+            # suppressed.  Consumers must not replay a stale popup storm when
+            # DND is turned off.
+            notif['suppressed'] = True
+            notif['suppression_reason'] = 'dnd'
+            notif['dnd_mode'] = dnd_reason
+        else:
+            notif['suppressed'] = False
         self._notifications[notif['id']] = notif
 
-        logger.info("Notification #%d from %s: %s", notif['id'], app_id, summary)
+        logger.info("Notification #%d from %s: %s%s", notif['id'], app_id, summary,
+                    " (DND suppressed)" if dnd else "")
 
-        # Emit signal
+        # Emit signal (including suppressed records so badges/history update).
         self.NotificationAdded(json.dumps(notif))
         self._persist_history()
 
-        return json.dumps({"success": True, "id": notif['id']})
+        return json.dumps({"success": True, "id": notif['id'],
+                           "suppressed": bool(dnd)})
 
     @dbus.service.method(BUS_NAME, in_signature='', out_signature='s')
     def GetNotifications(self):

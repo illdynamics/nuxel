@@ -1,11 +1,11 @@
 // Nuxel Home text keyboard for the headless phone host.
 //
 // The compositor-owned OSK (phosh-osk-stevia through phoc's
-// zwp_input_method_manager_v2 relay) is preferred whenever it is running.  This
-// in-page keyboard is only the labelled fallback for a launcher WebKit session
-// that has no input-method provider.  It edits the focused field through the
-// document's own editing commands and emits the normal beforeinput/input events;
-// it never opens an input device and never injects keys into another process.
+// zwp_input_method_manager_v2 relay) is the ONLY visible keyboard on the phone.
+// PWNAGE-46000 removed the in-page blue key panel completely: the marker probe
+// could miss and paint a second keyboard behind Stevia.  The editing helpers in
+// this file remain for offline harnesses and compatibility, but they never
+// create or reveal a DOM keyboard and never inject keys into another process.
 (function (global) {
     'use strict';
     const letters = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
@@ -233,15 +233,11 @@
                 if (diag) diag.postMessage('OSK ' + message);
             } catch (e) { /* observation only */ }
         },
-        // The software keyboard is needed whenever the Nuxel host is present;
-        // keep the S10+ UA fallback for the injected handset browser.
-        get enabled() {
-            // Whether the fallback may be used at all.  nativeProvider is a
-            // separate, asynchronous fact: deciding it before this first probe
-            // resolves was how the old blue DOM keyboard appeared ON TOP of the
-            // working Stevia OSK (two keyboards for one field).
-            return !!(global.NuxelHost && global.NuxelHost.available) || /Nuxel\/.*S10\+/.test((global.navigator && global.navigator.userAgent) || '');
-        },
+        // PWNAGE-46000: the in-page keyboard is permanently disabled.  The
+        // target always has the compositor-owned Stevia OSK, and a failed or
+        // delayed marker probe must never resurrect the blue DOM key panel
+        // behind it.  `edit()` stays available for offline input tests only.
+        get enabled() { return false; },
         _applyProviderText(text) {
             const value = String(text || '');
             this.nativeProvider = /(^|\n)(native=1|provider=stevia)(\n|$)/i.test(value);
@@ -255,7 +251,10 @@
             const fromMarker = () => {
                 try {
                     if (global.fetch) {
-                        return global.fetch('/pwa/nuxel-home/keyboard-provider.json', { cache: 'no-store' })
+                        // The launcher is served from /pwa/nuxel-home, so this
+                        // relative URL resolves beside THIS script regardless of
+                        // the static server's docroot layout.
+                        return global.fetch('keyboard-provider.json', { cache: 'no-store' })
                             .then((res) => res.ok ? res.json() : null)
                             .then((doc) => !!(doc && doc.native === true))
                             .catch(() => false);
@@ -293,6 +292,11 @@
             if (this.panel && this.panel.parentNode) this.panel.parentNode.removeChild(this.panel);
             this.panel = null;
             this.target = null;
+            try {
+                document.querySelectorAll('.nuxel-touch-keyboard').forEach((el) => {
+                    if (el.parentNode) el.parentNode.removeChild(el);
+                });
+            } catch (e) { /* a stripped test DOM */ }
             try { document.body.classList.remove('touch-keyboard-open'); } catch (e) {}
         },
         attach(doc) {
@@ -327,44 +331,18 @@
         },
         _inPanel(node) { try { return !!(this.panel && node && this.panel.contains(node)); } catch (e) { return false; } },
         show(target) {
-            if (!this.enabled || !editable(target)) { this._trace('not-shown enabled=' + this.enabled + ' editable=' + editable(target)); return; }
-            const seq = ++this._showSeq;
-            const reveal = (native) => {
-                if (seq !== this._showSeq) return;   // focus moved on; stale probe
-                if (native || this.nativeProvider) {
-                    this._trace('native-provider-active');
-                    this._discardFallback();
-                    return;
-                }
-                this._showFallback(target);
-            };
-            const probe = this.detectProvider();
-            if (probe && probe.then) probe.then(reveal, () => reveal(false));
-            else reveal(this.nativeProvider);
+            // Native Stevia owns text input.  Never build a second keyboard.
+            if (editable(target)) this._trace('native-osk-only');
+            this._discardFallback();
         },
-        _showFallback(target) {
-            if (this.nativeProvider) { this._discardFallback(); return; }
-            this.target = target;
-            if (!this.panel) {
-                this.panel = document.createElement('div');
-                this.panel.className = 'nuxel-touch-keyboard';
-                this.panel.setAttribute('role', 'group');
-                this.panel.setAttribute('aria-label', 'Touch keyboard');
-                // A key press must not blur the text field or lose its selection.
-                this.panel.addEventListener('pointerdown', e => e.preventDefault());
-                document.body.appendChild(this.panel);
-            }
-            this.panel.hidden = false;
-            this.render();
-            document.body.classList.add('touch-keyboard-open');
-            this._trace('fallback-show tag=' + String(target.tagName || '?') + ' id=' + String(target.id || '-') + ' rows=' + this.panel.children.length);
-            try { target.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* optional */ }
+        _showFallback() {
+            // Kept as an explicit no-op so an old caller cannot reintroduce the
+            // duplicate blue key panel.
+            this._discardFallback();
         },
         hide() {
-            if (this.panel) this.panel.hidden = true;
+            this._discardFallback();
             document.body.classList.remove('touch-keyboard-open');
-            if (this.target) this._trace('hide');
-            this.target = null;
         },
         visible() { return !!(this.panel && !this.panel.hidden); },
         haptic() {
@@ -379,6 +357,7 @@
             else { try { if (global.navigator && global.navigator.vibrate) global.navigator.vibrate(12); } catch (e) {} }
         },
         render() {
+            // No DOM panel exists in the native-OSK-only build.
             if (!this.panel) return;
             this.panel.replaceChildren();
             const button = (row, label, action, wide, aria) => {

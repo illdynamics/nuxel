@@ -1,0 +1,8 @@
+active
+active
+1babe7cc6fe43346819a80b18fdbb13517e44f6d6438791fc5fb56ca74c75dc6  /usr/lib/nuxel/nuxel-bridge/bridge.py
+81a90c39fbe9022408a5407bef84b248cb1d3d7271d1b4ecc6a7d941fc2aa486  /usr/share/nuxel/pwa/nuxel-home/index.html
+8f14c6a8f797af282e1c7364a1c2a662dde7b676cfcd6357031311b766a0f5a8  /usr/share/nuxel/pwa/nuxel-home/manifest.json
+d05e5e2ce82ffbe85b53e0d57e4cca42061b9c636dc00268f95437f91ebebed5  /usr/share/nuxel/pwa/nuxel-home/sw.js
+0d961796b244e6ef101e89fa7fbf32f27ad69c295f6d4904ee6adc221816a003  /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+36de01f95b96d19e6649c1d5ff7e0b9b2a486892ee9a60c9042454aa53c3cbee  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js

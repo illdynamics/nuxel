@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
     <meta name="theme-color" content="#3beaa1">
     <meta name="nuxel-app-id" content="org.nuxel.Calendar">
     <link rel="manifest" href="manifest.json">
@@ -49,12 +50,12 @@
             <input type="date" id="event-date" class="editor-input">
             <label class="check"><input type="checkbox" id="event-all-day"> All-day event</label>
             <div class="time-row">
-                <input type="time" id="event-start" class="editor-input time" title="Start time">
+                <input type="text" inputmode="numeric" pattern="[0-9:]*" maxlength="5" autocomplete="off" id="event-start" class="editor-input time" title="Start time (HH:MM)" placeholder="HH:MM">
                 <span>to</span>
-                <input type="time" id="event-end" class="editor-input time" title="End time">
+                <input type="text" inputmode="numeric" pattern="[0-9:]*" maxlength="5" autocomplete="off" id="event-end" class="editor-input time" title="End time (HH:MM)" placeholder="HH:MM">
             </div>
             <input type="text" id="event-location" placeholder="Location" class="editor-input">
-            <input type="number" id="event-reminder" placeholder="Reminder (minutes before)" min="0" class="editor-input">
+            <input type="number" inputmode="numeric" id="event-reminder" placeholder="Reminder (minutes before)" min="0" class="editor-input">
             <textarea id="event-desc" placeholder="Description" class="editor-textarea"></textarea>
             <div class="color-picker">
                 <span class="color-opt selected" data-color="#3beaa1" style="background:#3beaa1"></span>

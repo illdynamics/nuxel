@@ -71,13 +71,13 @@
 .status-right #status-location {
     width: 16px;
     height: 16px;
-    background: url('/assets/nuxel-quicksettings-icon-pack/09-location.png') center/14px 14px no-repeat;
+    background: url('/assets/nuxel-quicksettings-icon-pack/09-location.svg') center/14px 14px no-repeat;
     opacity: 0.45;
     filter: grayscale(1);
 }
 .status-right #status-location[data-state="searching"] {
     opacity: 0.8;
-    animation: nuxel-location-pulse 1.6s ease-in-out infinite;
+    animation: nuxel-location-pulse 1.6s ease-in-out 3;
 }
 .status-right #status-location[data-state="fixed"][data-kind="network"] {
     opacity: 1;
@@ -165,62 +165,49 @@
 .signal-bar:nth-child(3) { height: 10px; }
 .signal-bar:nth-child(4) { height: 13px; }
 
-/* WiFi icon */
+/* PWNAGE-49000: one renderer per radio icon.  The old Wi-Fi glyph was a
+   partial ring (read as a radar/eye) and Bluetooth was two skewed CSS borders.
+   Both now use the owner-supplied Nuxel icon pack as a colour mask: a single
+   filled silhouette per cell, no pseudo-element artwork layered underneath. */
 .wifi-icon {
-    position: relative;
     width: 16px;
     height: 16px;
+    background-color: var(--wifi-colour, var(--text-primary));
+    -webkit-mask: url('/assets/nuxel-quicksettings-icon-pack/01-wifi.png') center / 15px 15px no-repeat;
+    mask: url('/assets/nuxel-quicksettings-icon-pack/01-wifi.png') center / 15px 15px no-repeat;
 }
-
-.wifi-icon::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--wifi-colour, var(--text-primary));
-}
-
+.wifi-icon::before,
 .wifi-icon::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 3px;
-    width: 10px;
-    height: 10px;
-    border: 2px solid var(--wifi-colour, var(--text-primary));
-    border-radius: 50%;
-    border-bottom-color: transparent;
-    border-left-color: transparent;
+    content: none;
 }
 
-/* Bluetooth indicator: only drawn when the adapter is ON.  UNKNOWN and OFF
-   hide the glyph; this is a state indicator, not a toggle. */
+/* Bluetooth indicator: the recognisable rune silhouette.  OFF and UNKNOWN
+   remain visible but muted so the owner can tell that the radio is off or the
+   provider is unavailable; this is a state indicator, not a toggle. */
 .bluetooth-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--bluetooth-colour, #4CAF50);
+    width: 16px;
+    height: 16px;
+    background-color: var(--bluetooth-colour, #4CAF50);
+    -webkit-mask: url('/assets/nuxel-quicksettings-icon-pack/04-bluetooth.svg') center / 15px 15px no-repeat;
+    mask: url('/assets/nuxel-quicksettings-icon-pack/04-bluetooth.svg') center / 15px 15px no-repeat;
 }
-.bluetooth-icon::before {
-    content: '';
-    width: 9px;
-    height: 9px;
-    border-left: 2px solid currentColor;
-    border-top: 2px solid currentColor;
-    transform: rotate(45deg) skew(-8deg, -8deg);
-}
+.bluetooth-icon::before,
 .bluetooth-icon::after {
-    content: '';
-    position: absolute;
-    width: 9px;
-    height: 9px;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg) skew(-8deg, -8deg);
+    content: none;
+}
+.bluetooth-icon[data-bluetooth-state="off"] {
+    --bluetooth-colour: #aebdd2;
+    opacity: .62;
+}
+.bluetooth-icon[data-bluetooth-state="discovering"] {
+    --bluetooth-colour: #ffd166;
+    opacity: 1;
+}
+.bluetooth-icon[data-bluetooth-state="unknown"],
+.bluetooth-icon[data-bluetooth-state="error"],
+.bluetooth-icon[data-bluetooth-state="unavailable"] {
+    --bluetooth-colour: #aebdd2;
+    opacity: .42;
 }
 
 /* Battery icon */
@@ -298,7 +285,13 @@
     display: flex;
     gap: 8px;
     margin-bottom: 8px;
+    min-width: 0;
 }
+.qs-row[hidden] { display: none !important; }
+/* PWNAGE-52000 privacy row: only when fully expanded; never in compact mode. */
+#quick-settings:not(.expanded) #qs-privacy-row { display: none !important; }
+.qs-privacy-row .qs-item[data-supported="false"] { opacity: .45; filter: grayscale(.7); }
+.qs-privacy-row .qs-item[data-supported="false"] .qs-label { font-style: italic; }
 
 .qs-item {
     flex: 1;
@@ -585,6 +578,18 @@
 
 /* ---- PWNAGE-44000: sound mode, wired USB and charging bolt --------------- */
 .status-right #status-sound,
+.status-right #status-nfc {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 26px; height: 18px; padding: 0 3px; border-radius: 5px;
+    border: 1px solid rgba(159, 197, 255, .6); color: #9fc5ff;
+    font: 700 9px/1 system-ui, sans-serif; letter-spacing: .02em;
+}
+.status-right #status-nfc::before { content: 'NFC'; }
+.status-right #status-nfc[hidden] { display: none !important; }
+.status-right #status-nfc[data-state="on"] { color: #7ee29a; border-color: rgba(126,226,154,.8); }
+.status-right #status-nfc[data-state="off"], .status-right #status-nfc[data-state="unknown"] { color: #8ea6c2; border-color: rgba(142,166,194,.45); }
+.status-right #status-nfc[data-state="unsupported"], .status-right #status-nfc[data-state="blocked"] { color: #ff9a9a; border-color: rgba(255,154,154,.55); }
+
 .status-right #status-usb {
     position: relative;
     color: var(--text-primary);
@@ -735,3 +740,160 @@ body.display-off .lockscreen-hint::before { animation: none !important; }
     font: 800 8px/1 ui-monospace, "DejaVu Sans Mono", monospace;
     letter-spacing: .04em; color: #ffb3b3;
 }
+
+/* PWNAGE-49000: the DOM status bar is the one proper top bar.  It is raised
+   above the lockscreen overlay (z-index 500) so the owner sees time, radios,
+   location and battery while locked.  It stays below the connection-mode
+   dialog (600), Recents (110/4000) and other critical OSD surfaces.  The
+   lockscreen meta starts at 44px, so the compact 36px strip never covers the
+   large clock or the unlock handle. */
+/* PWNAGE-52000: while locked the top bar must never paint.  The previous
+   rule deliberately raised it above the lockscreen; that leaked the clock,
+   radios and battery on the lock surface.  The provider keeps polling stopped
+   by _coveredByLock(), so this is a presentation rule only. */
+body.lockscreen-active .status-bar,
+body.lockscreen-active #status-bar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+
+/* ---- PWNAGE-42000: top-bar contrast repair -------------------------------
+   The DOM top bar is drawn from CSS shapes and a masked PNG.  Explicit
+   high-contrast values are used here instead of inheriting theme tokens: a
+   dark theme or a stale variable must never make the clock, signal, Wi-Fi,
+   location, sound, USB or battery glyph disappear into the navy strip.
+
+   These rules are the final authority for the status bar only.  They do not
+   change app colours or the Quick Settings artwork palette. */
+.status-bar {
+    --nuxel-status-fg: #f5f9ff;
+    --nuxel-status-dim: #c8d7ea;
+    --nuxel-status-muted: #aebdd2;
+    --nuxel-network: #69b7ff;
+    --nuxel-gnss: #6ee7a8;
+    color: var(--nuxel-status-fg);
+}
+.status-bar #status-time,
+.status-left,
+.status-right {
+    color: var(--nuxel-status-fg);
+}
+.status-right .status-icon {
+    color: var(--nuxel-status-fg);
+    opacity: 1;
+}
+.signal-bar {
+    background: rgba(245, 249, 255, 0.42);
+    opacity: 1;
+}
+.signal-bar.active {
+    background: #74e6a0;
+    box-shadow: 0 0 4px rgba(116, 230, 160, 0.35);
+}
+.wifi-icon {
+    background-color: var(--wifi-colour, var(--nuxel-status-fg));
+    opacity: 1;
+}
+.bluetooth-icon {
+    background-color: var(--bluetooth-colour, var(--nuxel-status-fg));
+}
+.battery-icon {
+    border-color: var(--nuxel-status-fg);
+}
+.battery-icon::before {
+    background: var(--nuxel-status-fg);
+}
+.battery-icon .battery-level {
+    background: #74e6a0;
+    opacity: 0.92;
+}
+.battery-icon .battery-level.warning { background: #ffc65c; }
+.battery-icon .battery-level.critical { background: #ff7b7b; }
+.battery-inside-pct {
+    color: #f7fbff;
+    text-shadow: 0 1px 2px #020b16, 0 0 3px #020b16;
+}
+#status-battery-pct {
+    color: var(--nuxel-status-fg);
+}
+.status-right #status-sound {
+    color: var(--nuxel-status-fg);
+    opacity: 1;
+}
+.status-right #status-usb {
+    color: var(--nuxel-status-fg);
+    opacity: 1;
+}
+.status-right #status-nfc {
+    color: #d8ecff;
+    opacity: 1;
+}
+/* Location: mask the supplied artwork so its grey pixels cannot dim the glyph.
+   Unknown/unavailable stays a visible neutral; network is blue; satellite is
+   green.  The icon is only shown while the global policy is ON. */
+.status-right #status-location {
+    background-color: var(--nuxel-status-muted);
+    background-image: none;
+    opacity: 1;
+    filter: none;
+    -webkit-mask: url('/assets/nuxel-quicksettings-icon-pack/09-location.svg') center / 14px 14px no-repeat;
+    mask: url('/assets/nuxel-quicksettings-icon-pack/09-location.svg') center / 14px 14px no-repeat;
+}
+.status-right #status-location[data-state="searching"] {
+    background-color: var(--nuxel-status-fg);
+    opacity: 1;
+    animation: nuxel-location-pulse 1.6s ease-in-out 3;
+}
+.status-right #status-location[data-state="fixed"][data-kind="network"] {
+    background-color: var(--nuxel-network);
+    opacity: 1;
+}
+.status-right #status-location[data-state="fixed"][data-kind="satellite"] {
+    background-color: var(--nuxel-gnss);
+    opacity: 1;
+}
+.status-right #status-location[data-state="stale"] {
+    background-color: var(--nuxel-status-dim);
+    opacity: 0.9;
+}
+.status-right #status-location[data-state="disabled"] {
+    background-color: var(--nuxel-status-muted);
+    opacity: 0.5;
+}
+.status-right #status-location[data-state="unavailable"],
+.status-right #status-location[data-state="error"] {
+    background-color: var(--nuxel-status-muted);
+    opacity: 0.9;
+}
+/* Quick Settings artwork: preserve the source colours but lift the mid-grey
+   location tile out of the dark panel.  Unselected tiles remain readable. */
+#quick-settings .qs-item img.qs-icon {
+    filter: brightness(1.45) saturate(1.08) drop-shadow(0 0 2px rgba(154, 205, 255, 0.35));
+    opacity: 1;
+}
+#quick-settings .qs-item[data-enabled="false"] img.qs-icon {
+    filter: brightness(1.7) saturate(0.85) drop-shadow(0 0 2px rgba(154, 205, 255, 0.25));
+    opacity: 0.98;
+}
+#quick-settings .qs-item[data-enabled="true"] img.qs-icon {
+    filter: brightness(1.25) saturate(1.15) drop-shadow(0 0 3px rgba(126, 226, 154, 0.45));
+    opacity: 1;
+}
+
+/* PWNAGE-50000: keep every indicator slot present.  Unavailable is a muted,
+   labelled glyph, not a hidden slot and never a green "working" state. */
+.status-right .status-icon.unavailable,
+.status-right #status-signal.unavailable {
+    opacity: 0.38 !important;
+    filter: grayscale(1);
+}
+.status-right #status-signal.unavailable .signal-bar {
+    background: currentColor;
+    opacity: 0.35;
+}
+
+/* PWNAGE-54000: a selected-but-blocked Auto mode must never look green. */
+.qs-item[data-degraded="true"] { border-color: #f59e0b !important; }
+.qs-item[data-degraded="true"] .qs-label::after { content: " !"; color: #fbbf24; }

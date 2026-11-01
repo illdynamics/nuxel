@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""Read and validate the single Nuxel graphics policy (PWNAGE-53000).
+
+Usage:
+  nuxel-graphics-profile env webkit|gtk3|gtk4|native:<app-id>|all|profile:<name>
+  nuxel-graphics-profile status
+  nuxel-graphics-profile json
+  nuxel-graphics-profile check
+
+Output for `env` is shell-safe `export KEY=VALUE` lines.  It never accepts a
+caller-supplied variable name or value: only this closed schema can produce an
+environment.
+
+Profiles are named for measured facts, not aspirations:
+  software-safe                 no EGL/GL; WebKit shared-memory transport
+  gpu-rendered-shm-presented    Mali EGL rendering + WebKit/DMABUF-disabled SHM
+                                presentation (no udmabuf/dmabuf fd in the web
+                                process; proven with KBASE_IOCTL_JOB_SUBMIT)
+  gpu-rendered-dmabuf-presented Mali rendering + real DMA-BUF exchange
+  fully-accelerated             DMA-BUF presentation *and* no CPU scanout copy
+
+The last two are unavailable on this kernel because CONFIG_DRM_VGEM is unset
+and there is no /dev/dri: WebKit 2.54.1 gates its Hardware transport on
+drmMainDevice().  The helper falls back loudly instead of mislabelling SHM.
+"""
+import json
+import os
+import shlex
+import sys
+
+PATH = os.environ.get("NUXEL_GRAPHICS_PROFILE", "/etc/nuxel/graphics/graphics-profile.json")
+
+VALID = {
+    "webkitgtk": {"software", "gpu-rendered-shm-presented",
+                  "gpu-rendered-dmabuf-presented", "fully-accelerated"},
+    "gtk3": {"software", "enabled"},
+    "gtk4": {"auto", "software", "gl", "ngl", "cairo"},
+}
+
+SAFE_DEFAULT = {
+    "schema_version": 2,
+    "default_profile": "software-safe",
+    "compositor": {"profile": "kbase-gles2-udmabuf-linear-dmabuf", "allow_change": False},
+    "profiles": {
+        "software-safe": {"available": True, "measured": True,
+                          "webkitgtk": "software", "gtk3": "software"},
+        "gpu-rendered-shm-presented": {"available": True, "measured": True,
+                                       "webkitgtk": "gpu-rendered-shm-presented",
+                                       "gtk3": "enabled"},
+        "gpu-rendered-dmabuf-presented": {
+            "available": False,
+            "reason": "WebKit 2.54.1 requires drmMainDevice() for Hardware transport; CONFIG_DRM_VGEM is unset and /dev/dri is absent.",
+            "webkitgtk": "software", "gtk3": "software"},
+        "fully-accelerated": {
+            "available": False,
+            "reason": "DMA-BUF presentation is blocked; nuxel-wl-fb still CPU-copies/scales into /dev/fb0.",
+            "webkitgtk": "software", "gtk3": "software"},
+    },
+    "webkitgtk": {"profile": "software-safe", "fallback": "software-safe"},
+    "gtk3": {"profile": "software-safe", "fallback": "software-safe"},
+    "gtk4": {"mode": "auto", "renderer": "auto", "fallback": "cairo"},
+    "presentation": {"mode": "current-wl-fb", "target_fps": 24, "allow_dma_path": False},
+    "apps": {},
+}
+
+KBASE_ENV = {
+    "GDK_BACKEND": "wayland",
+    "GDK_GL": "gles",
+    "MESA_KBASE_NODE": "/dev/mali0",
+    "MESA_LOADER_DRIVER_OVERRIDE": "panfrost",
+    "LIBGL_DRIVERS_PATH": "/usr/lib64/dri",
+    "__EGL_VENDOR_LIBRARY_FILENAMES": "/etc/nuxel/egl-kbase.json",
+}
+SOFTWARE_ENV = {
+    "GDK_BACKEND": "wayland",
+    "LIBGL_ALWAYS_SOFTWARE": "1",
+    "WEBKIT_DISABLE_COMPOSITING_MODE": "1",
+}
+
+
+def load():
+    try:
+        with open(PATH, "r", encoding="utf-8") as f:
+            doc = json.load(f)
+        if not isinstance(doc, dict) or doc.get("schema_version") not in (1, 2):
+            raise ValueError("unsupported schema_version")
+        return doc, None
+    except Exception as exc:  # fail closed to the safe profile
+        return SAFE_DEFAULT, str(exc)
+
+
+def profiles(doc):
+    p = doc.get("profiles")
+    if isinstance(p, dict) and p:
+        return p
+    # schema v1 compatibility: build the four names from the old sections.
+    w = (doc.get("webkitgtk") or {}).get("mode", "software")
+    g = (doc.get("gtk3") or {}).get("mode", "software")
+    return {
+        "software-safe": {"available": True, "measured": True,
+                          "webkitgtk": "software", "gtk3": "software"},
+        "gpu-rendered-shm-presented": {"available": w == "accelerated",
+                                       "measured": w == "accelerated",
+                                       "webkitgtk": "gpu-rendered-shm-presented",
+                                       "gtk3": "enabled" if g == "enabled" else "software"},
+        "gpu-rendered-dmabuf-presented": {"available": False, "reason": "schema v1"},
+        "fully-accelerated": {"available": False, "reason": "schema v1"},
+    }
+
+
+def profile_env(name, prof, reasons):
+    if not prof.get("available", False):
+        reasons.append("%s unavailable: %s" % (name, prof.get("reason", "no reason recorded")))
+        name = "software-safe"
+        prof = profiles(SAFE_DEFAULT)["software-safe"]
+    env = dict(KBASE_ENV)
+    if prof.get("webkitgtk") == "software" or prof.get("gtk3") == "software":
+        env.update(SOFTWARE_ENV)
+    if prof.get("webkitgtk") == "gpu-rendered-shm-presented":
+        env.update({"WEBKIT_DISABLE_COMPOSITING_MODE": "0",
+                    "WEBKIT_FORCE_COMPOSITING_MODE": "1",
+                    "NUXEL_KBASE_WSI": "1"})
+        env.pop("LIBGL_ALWAYS_SOFTWARE", None)
+    return env
+
+
+def env_for(target):
+    doc, err = load()
+    profs = profiles(doc)
+    reasons = []
+    if err:
+        reasons.append("profile: " + err)
+
+    if target in ("all", "webkit"):
+        name = (doc.get("webkitgtk") or {}).get("profile", doc.get("default_profile", "software-safe"))
+        chosen, prof = name, profs.get(name, {"available": False, "reason": "unknown profile"})
+        env = profile_env(chosen, prof, reasons)
+    elif target in ("gtk3", "gtk4"):
+        name = (doc.get("gtk3") if target == "gtk3" else doc.get("gtk4") or {}).get(
+            "profile", doc.get("default_profile", "software-safe"))
+        env = profile_env(name, profs.get(name, {"available": False, "reason": "unknown profile"}), reasons)
+        if target == "gtk4":
+            section = doc.get("gtk4") or {}
+            renderer = section.get("renderer", "auto")
+            if renderer not in VALID["gtk4"]:
+                reasons.append("invalid gtk4 renderer %r" % renderer)
+                renderer = "cairo"
+            env["GSK_RENDERER"] = "cairo" if renderer in ("cairo", "software") else renderer
+    elif target.startswith("profile:"):
+        name = target.split(":", 1)[1]
+        env = profile_env(name, profs.get(name, {"available": False, "reason": "unknown profile"}), reasons)
+    elif target.startswith("native:"):
+        app = target.split(":", 1)[1]
+        override = (doc.get("apps") or {}).get(app) or {}
+        name = override.get("profile", doc.get("default_profile", "software-safe"))
+        env = profile_env(name, profs.get(name, {"available": False, "reason": "unknown profile"}), reasons)
+        toolkit = override.get("toolkit", "gtk3")
+        if toolkit == "gtk4":
+            env["GSK_RENDERER"] = "cairo" if name == "software-safe" else "auto"
+    else:
+        reasons.append("unknown target %r" % target)
+        env = profile_env("software-safe", profs["software-safe"], reasons)
+
+    if reasons:
+        env["NUXEL_GRAPHICS_FALLBACK_REASON"] = "; ".join(reasons)
+    return env
+
+
+def main(argv):
+    if len(argv) < 2:
+        print(__doc__, file=sys.stderr)
+        return 2
+    cmd = argv[1]
+    if cmd == "check":
+        doc, err = load()
+        if err:
+            print(json.dumps({"ok": False, "error": err, "path": PATH}))
+            return 1
+        print(json.dumps({"ok": True, "path": PATH, "schema_version": doc.get("schema_version")}))
+        return 0
+    if cmd == "json":
+        print(json.dumps(load()[0], indent=2, sort_keys=True))
+        return 0
+    if cmd == "status":
+        doc, err = load()
+        out = {"path": PATH, "error": err,
+               "profiles": {k: {"available": bool(v.get("available")),
+                                "measured": bool(v.get("measured")),
+                                "reason": v.get("reason")}
+                            for k, v in profiles(doc).items()}}
+        print(json.dumps(out, indent=2, sort_keys=True))
+        return 0 if not err else 1
+    if cmd == "env":
+        target = argv[2] if len(argv) > 2 else "all"
+        for k, v in sorted(env_for(target).items()):
+            print("export %s=%s" % (k, shlex.quote(v)))
+        return 0
+    print("unknown command: " + cmd, file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

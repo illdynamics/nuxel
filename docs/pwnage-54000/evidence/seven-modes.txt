@@ -1,0 +1,17 @@
+PWNAGE-54000 seven-mode live application via org.nuxel.Bridge
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+auto                 success=True  applied=True  effective=0   transform=normal logical=360x760 auto_state=blocked_sensor_unavailable err=sensor unavailable: Auto (FULL) is blocked unt
+auto-portrait        success=True  applied=True  effective=0   transform=normal logical=360x760 auto_state=blocked_sensor_unavailable err=
+auto-landscape       success=True  applied=True  effective=90  transform=270    logical=1520x720 auto_state=blocked_sensor_unavailable err=sensor unavailable: Auto (LS) is blocked until
+portrait             success=True  applied=True  effective=0   transform=normal logical=360x760 auto_state=fixed err=
+landscape            success=True  applied=True  effective=90  transform=270    logical=1520x720 auto_state=fixed err=
+reverse-portrait     success=True  applied=True  effective=180 transform=180    logical=360x760 auto_state=fixed err=
+reverse-landscape    success=True  applied=True  effective=270 transform=90     logical=1520x720 auto_state=fixed err=

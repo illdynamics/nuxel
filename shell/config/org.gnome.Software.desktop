@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Software
+Comment=Install and remove native Fedora RPM applications
+Exec=gnome-software %U
+TryExec=gnome-software
+Icon=org.gnome.Software
+Terminal=false
+Categories=System;PackageManager;
+DBusActivatable=true

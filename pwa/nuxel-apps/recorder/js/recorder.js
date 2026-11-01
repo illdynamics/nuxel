@@ -32,7 +32,25 @@
     if (window.NuxelBridge && typeof window.NuxelBridge.call === 'function') {
       return window.NuxelBridge.call(ns, verb, params).catch(function (e) { return { success: false, error: e && e.message }; });
     }
+    var host = window.NuxelHost || (window.parent && window.parent.NuxelHost);
+    if (host && typeof host.call === 'function') {
+      return host.call(ns + '.' + verb, params || {}).then(function (r) {
+        if (r && r.ok === false) return { success: false, error: r.error || 'host unavailable' };
+        var text = r && r.text;
+        if (typeof text === 'string') {
+          try { var parsed = JSON.parse(text); if (parsed && typeof parsed === 'object') return parsed; }
+          catch (e) { return { success: false, error: 'invalid host response' }; }
+        }
+        return r || { success: false, error: 'empty host response' };
+      });
+    }
     return Promise.resolve({ success: false, offline: true });
+  }
+
+  function hostMicAuthorize() {
+    var host = window.NuxelHost || (window.parent && window.parent.NuxelHost);
+    if (host && typeof host.micAuthorize === 'function') return host.micAuthorize();
+    return Promise.resolve({ ok: false, offline: true });
   }
 
   function toast(msg) {
@@ -141,6 +159,13 @@
       return { supported: false, error: 'getUserMedia unavailable' };
     }
     try {
+      var grant = await hostMicAuthorize();
+      if (grant && grant.ok === false && !grant.offline) {
+        lines.push('Native microphone authorization failed: ' + (grant.error || 'unknown'));
+      } else if (grant && grant.ok) {
+        lines.push('Native microphone authorization: one-shot grant (' +
+                   (grant.ttl_ms || 15000) + ' ms)');
+      }
       stream = await withTimeout(navigator.mediaDevices.getUserMedia({ audio: true }), 8000, 'microphone request timed out');
       el.micBadge.textContent = 'microphone: available';
       el.capability.textContent = 'Microphone stream is available; Start recording will capture WAV audio.';

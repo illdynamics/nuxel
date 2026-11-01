@@ -1,0 +1,19 @@
+PWNAGE-45000 post-reboot native launch (session script watcher active)
+Nuxel Software:
+  {"success":true,"launched":true,"app_id":"org.gnome.Software",
+   "argv":["/usr/lib/nuxel/nuxel-software"],"process_alive":true,
+   "surface_seen":true,"outcome":"visible"}
+Firefox:
+  {"success":true,"launched":true,"app_id":"org.mozilla.firefox",
+   "argv":["/usr/bin/firefox"],"process_alive":true,
+   "surface_seen":true,"outcome":"visible"}
+Toplevels:
+  Nuxel / app_id=nuxel-pwa-host
+  Restore Session — Mozilla Firefox / app_id=org.mozilla.firefox
+  Nuxel Software / app_id=nuxel-software
+
+Wayland runtime after session start:
+  drwxr-x--- root nuxel /run/nuxel-wayland
+  srw-rw---- root nuxel /run/nuxel-wayland/wayland-0
+  drwx------ nuxel nuxel /run/user/1000
+  /run/user/1000/wayland-0 -> /run/nuxel-wayland/wayland-0

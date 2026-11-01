@@ -1,7 +1,8 @@
 #!/bin/sh
-# Signal Desktop has no official Fedora aarch64 RPM.  The aarch64 Flathub
-# package is installed, but Flatpak cannot launch on this kernel: CONFIG_USER_NS
-# is not set, so bubblewrap cannot create its sandbox.  Report the blocker
-# truthfully instead of starting a fake web shortcut.
-echo "Signal requires Flatpak/bubblewrap user namespaces; this 4.14 kernel has CONFIG_USER_NS=n." >&2
+# Signal Desktop has no official Fedora aarch64 RPM.  Launch the real Flathub
+# build only when the kernel actually permits an unprivileged user namespace.
+if command -v flatpak >/dev/null 2>&1 && unshare -Ur true >/dev/null 2>&1; then
+    exec flatpak run org.signal.Signal "$@"
+fi
+echo "Signal's Flatpak sandbox cannot start: the running kernel advertises CONFIG_USER_NS=y but denies user-namespace creation (vendor LOD_SEC/root gate). No setuid fallback or sandbox bypass is used." >&2
 exit 2

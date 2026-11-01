@@ -1,0 +1,8 @@
+PWNAGE-45000 software center
+- PackageKit DNF backend: pkcon resolve htop -> Installed htop-3.4.1-2.fc43.aarch64
+- pkcon search name htop -> Installed htop + Available pcp-htop-7.2.2
+- gnome-software installed but SIGSEGV on this image; not used
+- supported UI: /usr/lib/nuxel/nuxel-software (GTK3, pkcon fixed argv)
+- polkit: /usr/bin/pkexec present; xfce-polkit (GTK3/Wayland) installed
+- Flatpak: flatpak+bwrap+portal present, unshare -U ->
+  "unshare failed: Invalid argument"; flatpak_ready=false, blocker CONFIG_USER_NS=n

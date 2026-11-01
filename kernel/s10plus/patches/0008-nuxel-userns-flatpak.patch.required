@@ -1,0 +1,3 @@
+Required for Flatpak/bubblewrap: removes the Samsung current_chrooted() and
+LOD_SEC uid gates that return EPERM for every valid user-namespace request on
+the Nuxel switch_root layout.  Standard mapping and namespace checks remain.

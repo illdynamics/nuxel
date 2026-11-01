@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.7.4-beta
+// Nuxel Status Bar — v0.7.5-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.7.4-beta'; }
+    static get VERSION() { return '0.7.5-beta'; }
 
     constructor() {
         this.state = {
@@ -31,6 +31,8 @@ class StatusBar {
             operator: '',
             wifiConnected: false,
             wifiState: 'unavailable',
+            // Radio power is distinct from link state.  null = unknown.
+            wifiRadioOn: null,
             // Bluetooth is a real radio fact, independent of Wi-Fi.  null is
             // UNKNOWN: the indicator stays hidden until a hardware-backed
             // reading says the adapter is powered.
@@ -75,6 +77,7 @@ class StatusBar {
             remote: document.getElementById('status-remote'),
             battery: document.getElementById('status-battery'),
             batteryPct: document.getElementById('status-battery-pct'),
+            nfc: document.getElementById('status-nfc'),
         };
         this._notificationElements = {
             button: null,
@@ -83,6 +86,9 @@ class StatusBar {
         };
         this._notifPollTimer = null;
         this._pollTimer = null;
+        this.iconPrefs = null;            // null = loading/default-visible
+        this._providerVisible = {};       // element id -> provider says it is relevant
+        this._loadIconPreferences();
         this.batteryStyle = 'inside';
         this._init();
         this._pubVersion();
@@ -105,6 +111,71 @@ class StatusBar {
         try { window.NUXEL_STATUS_BAR_VERSION = StatusBar.VERSION; } catch (e) {}
     }
 
+    // PWNAGE-52000: status-bar icon visibility is a user preference layered on
+    // top of real provider state.  It never turns a radio/service off.  A
+    // provider OFF/unsupported/unknown state wins over the user's "show".
+    _loadIconPreferences(attempt) {
+        const tries = attempt || 0;
+        const api = window.NuxelStatusBarIcons;
+        if (!api || typeof api.load !== 'function') { this._applyIconPreferences(); return; }
+        api.load().then((doc) => {
+            this.iconPrefs = doc;
+            this._applyIconPreferences();
+            this._applySafeZones();
+            // status-bar.js is loaded before host-bridge.js in index.html.  If
+            // the durable host channel was not ready yet, keep the default for
+            // one frame and re-read the real /etc document shortly after.
+            const hostReady = !!(window.NuxelHost && window.NuxelHost.available);
+            if (!hostReady && tries < 12) setTimeout(() => this._loadIconPreferences(tries + 1), 250);
+        }).catch(() => { this.iconPrefs = null; this._applyIconPreferences(); });
+    }
+
+    reloadIconPreferences() { return this._loadIconPreferences(0); }
+
+    _prefVisible(id) {
+        if (!this.iconPrefs || !this.iconPrefs.icons) return true;
+        return this.iconPrefs.icons[id] !== false;
+    }
+
+    _setProviderVisible(element, visible) {
+        if (!element) return;
+        this._providerVisible[element.id] = !!visible;
+        const def = window.NuxelStatusBarIcons && window.NuxelStatusBarIcons.byElement(element.id);
+        const pref = def ? this._prefVisible(def.id) : true;
+        element.hidden = !(visible && pref);
+        element.dataset.userVisible = pref ? 'true' : 'false';
+        element.dataset.providerVisible = visible ? 'true' : 'false';
+    }
+
+    _applyIconPreferences() {
+        const api = window.NuxelStatusBarIcons;
+        if (api && Array.isArray(api.DEFS)) {
+            api.DEFS.forEach((def) => {
+                const el = document.getElementById(def.element);
+                if (!el) return;
+                const provider = this._providerVisible[def.element];
+                // Before any provider sample, only the local clock and the
+                // battery cell may paint.  Every hardware/radio icon requires
+                // an explicit provider proof (unknown is hidden, not guessed).
+                const providerVisible = provider === true ||
+                    (provider === undefined && (def.id === 'time' || def.id === 'battery'));
+                this._setProviderVisible(el, providerVisible);
+            });
+        }
+        this.elements.time && this._setProviderVisible(this.elements.time, this._providerVisible['status-time'] !== false);
+        try {
+            const ids = (api && api.DEFS ? api.DEFS : []).map((d) => d.id + '=' +
+                (document.getElementById(d.element) && !document.getElementById(d.element).hidden ? '1' : '0')).join(',');
+            const line = 'STATUSBAR_ICONS ' + ids + ' locked=' +
+                (document.body.classList.contains('lockscreen-active') ? '1' : '0');
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nuxelDiag) {
+                window.webkit.messageHandlers.nuxelDiag.postMessage(line);
+            } else if (window.console && window.console.log) {
+                window.console.log('[status-bar] ' + line);
+            }
+        } catch (e) { /* evidence must never break the bar */ }
+    }
+
     _init() {
         this._updateTime();
         this._renderBattery();
@@ -122,6 +193,7 @@ class StatusBar {
         // on the handset: the handler existed and the pull-down did nothing).
         // Wire the gesture to the REAL status bar; no layout or visual change.
         this._bindQuickSettingsGesture();
+        this._bindNfcTile();
 
         // Update local time every second (no bridge needed)
         // HH:MM only needs a minute cadence.  The old 1 s timer woke the
@@ -149,6 +221,10 @@ class StatusBar {
         // /var/lib/nuxel/notifications.json surfaced via the bridge).
         this._pollNotifications();
         this._notifPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNotifications(); }, 20000);
+        // NFC: one provider read per visible interval; no separate duplicated
+        // poller in Settings (Settings reads on tab selection).
+        this._pollNfc();
+        this._nfcPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNfc(); }, 30000);
         // A wake is an event: refresh immediately instead of waiting a poll.
         document.addEventListener('nuxel:display-on', () => {
             this._updateTime();
@@ -158,6 +234,7 @@ class StatusBar {
             this._pollLocation();
             this._pollSystemIndicators();
             this._pollNotifications();
+            this._pollNfc();
         });
         // Unlock reveals the bar without a display OFF->ON transition; refresh
         // the authoritative state once instead of polling behind the lock.
@@ -204,6 +281,9 @@ class StatusBar {
         let startX = 0, startY = 0, tracking = false, fired = false;
 
         const start = (x, y) => {
+            // The bar is visible on the lockscreen, but protected Quick
+            // Settings actions remain unavailable until a real unlock.
+            if (this._displayOff() || this._coveredByLock()) return;
             startX = x; startY = y; tracking = true; fired = false;
         };
         const move = (x, y) => {
@@ -262,12 +342,67 @@ class StatusBar {
         });
     }
 
+    // ---- NFC status/toggle ------------------------------------------------
+    async _pollNfc() {
+        const el = this.elements.nfc;
+        if (!el) return;
+        try {
+            const b = (typeof bridge !== 'undefined' && bridge && bridge.call) ? bridge : null;
+            if (!b) { el.hidden = true; return; }
+            const st = await b.call('nfc', 'status', {});
+            if (!st || st.success === false) {
+                el.dataset.state = 'unknown'; el.title = 'NFC status unavailable';
+                this._setProviderVisible(el, false); return;
+            }
+            if (!st.supported) {
+                el.dataset.state = (st.state || 'blocked') === 'BLOCKED_KERNEL' ? 'blocked' : 'unsupported';
+                el.title = 'NFC unavailable: ' + (st.blocker || st.state || 'not supported');
+                this._setProviderVisible(el, false);
+                return;
+            }
+            const nfcOn = st.enabled === true;
+            el.dataset.state = nfcOn ? 'on' : (st.enabled === false ? 'off' : 'unknown');
+            el.title = 'NFC ' + (nfcOn ? 'on' : st.enabled === false ? 'off' : 'unknown') +
+                ' — tap to toggle; long-press opens Settings';
+            this._setProviderVisible(el, nfcOn);
+        } catch (e) { el.dataset.state = 'unknown'; el.title = 'NFC provider error'; this._setProviderVisible(el, false); }
+    }
+
+    _bindNfcTile() {
+        const el = this.elements.nfc;
+        if (!el || el.dataset.bound === '1') return;
+        el.dataset.bound = '1';
+        let press = null, long = false;
+        el.addEventListener('pointerdown', () => {
+            long = false;
+            press = setTimeout(() => {
+                long = true;
+                try { if (window.appRegistry) window.appRegistry.launchApp('nuxel-settings'); } catch (e) {}
+            }, 700);
+        });
+        el.addEventListener('pointerup', async () => {
+            if (press) clearTimeout(press);
+            if (long) return;
+            try {
+                const st = await bridge.call('nfc', 'status', {});
+                if (!st || !st.supported) {
+                    if (window.appRegistry) window.appRegistry.launchApp('nuxel-settings');
+                    return;
+                }
+                const r = await bridge.call('nfc', 'toggle', {});
+                if (r && r.success === false) el.title = 'NFC unchanged: ' + (r.error || r.blocker || 'refused');
+                await this._pollNfc();
+            } catch (e) { /* diagnostics only */ }
+        });
+        el.addEventListener('pointerleave', () => { if (press) clearTimeout(press); });
+    }
+
     // A54: deterministic collision assertion.  Measure every VISIBLE status
     // cell and report any intersecting pair.  This is the same geometry the
     // physical panel renders; a PASS means no two indicators share pixels.
     _assertNoOverlap() {
         const ids = ['status-signal', 'status-wifi', 'status-location', 'status-bluetooth',
-                     'status-sound', 'status-usb', 'status-battery', 'status-battery-pct'];
+                     'status-nfc', 'status-sound', 'status-usb', 'status-battery', 'status-battery-pct'];
         const boxes = [];
         ids.forEach((id) => {
             const el = document.getElementById(id);
@@ -311,7 +446,10 @@ class StatusBar {
             return !!(ls && !ls.hidden);
         } catch (e) { return false; }
     }
-    _statusInactive() { return this._displayOff() || this._coveredByLock(); }
+    /* PWNAGE-49000: the proper DOM status bar is visible above the lockscreen
+       now, so lock coverage must NOT pause its provider refreshes.  Only a
+       real display-off state pauses the non-essential pollers. */
+    _statusInactive() { return this._displayOff(); }
 
     _updateTime() {
         if (this._displayOff()) return;
@@ -322,15 +460,21 @@ class StatusBar {
         if (this.elements.time && this.elements.time.textContent !== text) {
             this.elements.time.textContent = text;
         }
+        if (this.elements.time) this._setProviderVisible(this.elements.time, true);
     }
 
     _renderSignal() {
         if (!this.elements.signal) return;
         const state = this.state.cellularState;
-        const visible = state === 'registered';
-        this.elements.signal.hidden = !visible;
+        // PWNAGE-52000: unsupported/OFF is HIDDEN.  A muted zero-bar glyph
+        // was indistinguishable from a real radio with no signal; on this
+        // handset the CP transport is UNSUPPORTED, so it reserves no width.
+        const registered = state === 'registered';
+        const visible = registered;
+        this._setProviderVisible(this.elements.signal, visible);
         this.elements.signal.dataset.cellularState = state;
-        if (!visible) {
+        this.elements.signal.classList.toggle('unavailable', !registered);
+        if (!registered) {
             const labels = {
                 'no-sim': 'No SIM',
                 unavailable: 'Cellular adapter unavailable',
@@ -338,7 +482,11 @@ class StatusBar {
                 unknown: 'Cellular status unavailable',
             };
             this.elements.signal.setAttribute('aria-label', labels[state] || labels.unknown);
-            this.elements.signal.replaceChildren();
+            this.elements.signal.title = labels[state] || labels.unknown;
+            let muted = '<span class="signal-bars">';
+            for (let i = 0; i < 4; i++) muted += '<span class="signal-bar"></span>';
+            muted += '</span>';
+            this.elements.signal.innerHTML = muted;
             this._applySafeZones();
             return;
         }
@@ -375,31 +523,53 @@ class StatusBar {
             connected: 'Wi-Fi connected without verified internet',
             internet: 'Wi-Fi internet verified',
         };
+        // PWNAGE-52000: radio OFF / unsupported hides the icon completely.
+        // ON-but-disconnected remains visible with a neutral glyph.  Unknown
+        // never becomes a confident connection.
+        const radioOn = this.state.wifiRadioOn;
+        const knownOff = radioOn === false || ['disabled', 'unavailable', 'unmanaged'].includes(state);
+        const visible = radioOn === true && !knownOff;
+        this._setProviderVisible(this.elements.wifi, visible);
         this.elements.wifi.dataset.wifiState = state;
         this.elements.wifi.setAttribute('aria-label', labels[state] || labels.unavailable);
-        this.elements.wifi.style.opacity = connected ? '1' : (connecting ? '0.7' : '0.4');
-        this.elements.wifi.style.setProperty('--wifi-colour', connected ? '#4CAF50' : (connecting ? '#d9a441' : '#666'));
-    }
-
-    // Bluetooth is drawn only when a real powered adapter is present.  OFF and
-    // UNKNOWN both hide the glyph; the Quick Settings tile carries the detailed
-    // blocker/state.  An unreadable provider never becomes a false OFF.
-    _renderBluetooth() {
-        if (!this.elements.bluetooth) return;
-        const on = this.state.bluetoothOn === true;
-        this.elements.bluetooth.hidden = !on;
-        this.elements.bluetooth.dataset.bluetoothState = this.state.bluetoothState;
-        this.elements.bluetooth.dataset.discovering =
-            this.state.bluetoothDiscovering ? 'true' : 'false';
-        if (!on) {
-            this.elements.bluetooth.replaceChildren();
-            this.elements.bluetooth.setAttribute('aria-label', 'Bluetooth off or unavailable');
+        if (!visible) {
+            this.elements.wifi.title = knownOff ? 'Wi-Fi radio off / unavailable' : 'Wi-Fi state unknown';
             this._applySafeZones();
             return;
         }
-        const label = this.state.bluetoothDiscovering
-            ? 'Bluetooth on, discovering'
-            : 'Bluetooth on';
+        // PWNAGE-42000: disconnected/unknown Wi-Fi must remain legible.  The
+        // old #666 at 0.4 opacity disappeared into the navy status strip.
+        this.elements.wifi.style.opacity = connected ? '1' : (connecting ? '0.95' : '0.9');
+        this.elements.wifi.style.setProperty(
+            '--wifi-colour',
+            connected ? '#7ee29a' : (connecting ? '#ffd166' : '#c8d7ea'));
+    }
+
+    // PWNAGE-49000: show the recognisable Bluetooth rune whenever the adapter
+    // state is known.  OFF is a muted rune (not a false ON), UNKNOWN/error is
+    // hidden rather than invented.  This remains a state indicator, never a
+    // toggle; the Quick Settings tile owns the detailed blocker text.
+    _renderBluetooth() {
+        if (!this.elements.bluetooth) return;
+        const state = this.state.bluetoothState || 'unknown';
+        // PWNAGE-52000: Bluetooth is shown only while the provider confirms
+        // the radio is powered.  OFF/unknown/error reserves no layout width.
+        const visible = this.state.bluetoothOn === true && state !== 'unknown' && state !== 'error';
+        this._setProviderVisible(this.elements.bluetooth, visible);
+        this.elements.bluetooth.classList.toggle('unavailable', state === 'unknown' || state === 'error');
+        this.elements.bluetooth.dataset.bluetoothState = state;
+        this.elements.bluetooth.dataset.discovering =
+            this.state.bluetoothDiscovering ? 'true' : 'false';
+        this.elements.bluetooth.replaceChildren();
+        if (!visible) {
+            this.elements.bluetooth.setAttribute('aria-label', 'Bluetooth state unavailable');
+            this.elements.bluetooth.title = 'Bluetooth state unavailable';
+            this._applySafeZones();
+            return;
+        }
+        const label = state === 'off'
+            ? 'Bluetooth off'
+            : (this.state.bluetoothDiscovering ? 'Bluetooth on, discovering' : 'Bluetooth on');
         this.elements.bluetooth.setAttribute('aria-label',
             label + (this.state.bluetoothAddress ? (', ' + this.state.bluetoothAddress) : ''));
         this.elements.bluetooth.title = label +
@@ -442,8 +612,12 @@ class StatusBar {
         const el = this.elements.location;
         if (!el) return;
         const state = this.state.locationState || 'unknown';
-        const visible = this.state.locationEnabled && state !== 'unknown' && state !== 'disabled';
-        el.hidden = !visible;
+        // PWNAGE-52000: Location off/unsupported/unknown is hidden.  Only an
+        // actually enabled provider reserves status-bar width.
+        const visible = this.state.locationEnabled === true &&
+            state !== 'unknown' && state !== 'unavailable' && state !== 'error' && state !== 'disabled';
+        this._setProviderVisible(el, visible);
+        el.classList.toggle('unavailable', state === 'unknown' || state === 'unavailable' || state === 'error');
         el.dataset.state = state;
         el.dataset.kind = this.state.locationKind || 'unknown';
         let label;
@@ -498,7 +672,7 @@ class StatusBar {
         if (!el) return;
         const mode = this.state.soundMode;
         const known = mode === 'normal' || mode === 'vibrate' || mode === 'silent';
-        el.hidden = !known;
+        this._setProviderVisible(el, known);
         el.dataset.mode = known ? mode : 'unknown';
         if (!known) {
             el.setAttribute('aria-label', 'Sound mode unknown');
@@ -535,7 +709,7 @@ class StatusBar {
             else if (usb.pc_connected === true) { label = ''; visible = true; }
         }
         this.state.usbLabel = label;
-        el.hidden = !visible;
+        this._setProviderVisible(el, visible);
         el.dataset.state = visible ? (label || 'connected') : 'unknown';
         const tag = el.querySelector('.usb-label');
         if (tag) tag.textContent = label;
@@ -557,7 +731,7 @@ class StatusBar {
         const el = this.elements.remote;
         if (!el) return;
         const active = !!(remote && remote.active === true);
-        el.hidden = !active;
+        this._setProviderVisible(el, active);
         el.dataset.state = active ? 'active' : 'off';
         const tag = el.querySelector('.remote-label');
         if (tag) tag.textContent = active ? 'R' : '';
@@ -621,10 +795,17 @@ class StatusBar {
         if (style === 'percentage') {
             this.elements.battery.innerHTML = '';
             this.elements.battery.style.display = 'none';
-            if (this.elements.batteryPct) { this.elements.batteryPct.hidden = false; this.elements.batteryPct.textContent = level === null ? '—' : level + '%'; }
+            this._providerVisible['status-battery'] = false;
+            if (this.elements.batteryPct) {
+                this._providerVisible['status-battery-pct'] = true;
+                this.elements.batteryPct.textContent = level === null ? '—' : level + '%';
+                this._setProviderVisible(this.elements.batteryPct, true);
+            }
+            this._applyIconPreferences();
             return;
         }
         this.elements.battery.style.display = '';
+        this._setProviderVisible(this.elements.battery, true);
         const inside = style === 'inside';
         const capacity = this.state.batteryCapacityUah;
         const capacityLabel = Number.isFinite(capacity) && capacity > 0
@@ -634,7 +815,11 @@ class StatusBar {
         this.elements.battery.innerHTML = '<span class="battery-icon' + (charging ? ' charging' : '') + '">' +
             '<span class="battery-level ' + levelClass + '" style="width:' + width + '%"></span>' +
             (inside ? '<span class="battery-inside-pct">' + (level === null ? '—' : level + '%') + '</span>' : '') + '</span>';
-        if (this.elements.batteryPct) { this.elements.batteryPct.textContent = ''; this.elements.batteryPct.hidden = true; }
+        if (this.elements.batteryPct) {
+            this.elements.batteryPct.textContent = '';
+            this._providerVisible['status-battery-pct'] = false;
+            this._setProviderVisible(this.elements.batteryPct, false);
+        }
         this._applySafeZones();
     }
 
@@ -790,6 +975,15 @@ class StatusBar {
         // Network / Wi-Fi. The bridge reports Wi-Fi device state separately
         // from its own D-Bus reachability and generic ethernet routes.
         const network = status.network || {};
+        if (typeof network.wifi_enabled === 'boolean') {
+            this.state.wifiRadioOn = network.wifi_enabled;
+        } else if (['disabled', 'unavailable', 'unmanaged'].includes(network.wifi_state)) {
+            this.state.wifiRadioOn = false;
+        } else if (['connected', 'internet', 'enabled_disconnected', 'connecting'].includes(network.wifi_state)) {
+            this.state.wifiRadioOn = true;
+        } else {
+            this.state.wifiRadioOn = null;
+        }
         if (typeof network.wifi_state === 'string') {
             this.state.wifiState = network.wifi_state;
             this.state.wifiConnected = Boolean(network.wifi_connected);
@@ -963,6 +1157,7 @@ class StatusBar {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.statusBar = new StatusBar();
+    window.NuxelStatusBar = window.statusBar;
 });
 
 

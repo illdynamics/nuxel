@@ -99,8 +99,24 @@
 #define READY  "/run/nuxel-launcher-ready"
 #define DEFAULT_URL "http://127.0.0.1:8000/pwa/nuxel-home/index.html"
 
+/* PWNAGE-54000: the launcher state is an append-only diagnostics log and is
+ * polled by Home every few seconds.  It previously grew without bound (measured
+ * 286 KB after one hour), so every status read became a larger file read and
+ * the journal/disk got slower over time.  Keep one bounded file; rotate once at
+ * 256 KiB.  The recent tail remains available for touch/input evidence. */
+#define STATE_MAX_BYTES (256u * 1024u)
 static void st(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 static void st(const char *fmt, ...) {
+  static int rotated;
+  if (!rotated) {
+    struct stat sb;
+    if (stat(STATE, &sb) == 0 && (unsigned long long)sb.st_size > STATE_MAX_BYTES) {
+      char old[64];
+      snprintf(old, sizeof old, "%s.1", STATE);
+      rename(STATE, old);
+    }
+    rotated = 1;
+  }
   FILE *f = fopen(STATE, "a");
   if (!f) return;
   fprintf(f, "%ld ", (long)time(NULL));
@@ -796,6 +812,7 @@ static void indicator_fallback_start(void) {
 struct cfgfile { const char *name; const char *path; int writable; };
 static const struct cfgfile CFG[] = {
   { "statusbar-safezones", "/etc/nuxel/display/statusbar-safezones.json", 1 },
+  { "statusbar-icons",     "/etc/nuxel/display/statusbar-icons.json",     1 },
   { "buttons",             "/etc/nuxel/input/buttons.json",               1 },
   { "display",             "/etc/nuxel/display/display.json",             1 },
   /* A33 boot surface: the ONE writable boot document (verbose boot, briq-02b)
@@ -819,7 +836,7 @@ static const struct cfgfile CFG[] = {
      document) and is read-only here - no new verb, no new write path, no change
      to the terminal, the buttons or the boot surface. */
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
-  { "lock-state",          "/run/nuxel-lock.state",                        0 },
+  { "lock-state",          "/run/nuxel/security/lock-state.json",            0 },
   { "navdock-state",       "/run/nuxel-navdock.state",                     0 },
   /* Real S10+ battery nodes (the gauge is named `battery`, not BAT*). */
   { "battery-capacity",    "/sys/class/power_supply/battery/capacity",     0 },
@@ -1116,6 +1133,7 @@ static int ppm_to_png(const char *ppm_path, const char *png_path, int *out_w, in
            png_chunk(out, "IHDR", ihdr, sizeof ihdr) == 0 &&
            png_chunk(out, "IDAT", zbuf, (size_t)zlen) == 0 &&
            png_chunk(out, "IEND", NULL, 0) == 0;
+  if (ok) { fflush(out); fsync(fileno(out)); }
   fclose(out);
   g_free(zbuf);
   if (!ok) { unlink(png_path); return -1; }
@@ -1160,11 +1178,15 @@ static int nuxel_capture_screenshot(char *out_path, size_t outn, int *out_w, int
   }
 
   mkdir(SHOT_DIR, 0750);
-  char stamp[32];
-  time_t now = time(NULL);
+  char stamp[32], base[32];
+  struct timespec now;
+  clock_gettime(CLOCK_REALTIME, &now);
   struct tm tm;
-  gmtime_r(&now, &tm);
-  strftime(stamp, sizeof stamp, "%Y%m%dT%H%M%SZ", &tm);
+  gmtime_r(&now.tv_sec, &tm);
+  strftime(base, sizeof base, "%Y%m%dT%H%M%S", &tm);
+  /* Millisecond suffix: two captures in the same second must never share a
+     path.  A shared path was one source of zero-byte Gallery entries. */
+  snprintf(stamp, sizeof stamp, "%s%03ldZ", base, now.tv_nsec / 1000000L);
   snprintf(out_path, outn, SHOT_DIR "/nuxel-screenshot-%s.png", stamp);
 
   int w = 0, h = 0;
@@ -1209,7 +1231,10 @@ static void host_toast(const char *text) {
 
 static void action_perform(const char *action, char *result, size_t rn) {
   if (!strcmp(action, "screen-lock")) {
-    /* Lock is the display bridge's verb; the launcher also sends screen-off. */
+    /* Lock is the display bridge's verb; hide the native dock first so no
+       layer-shell frame can paint over the lockscreen. */
+    int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
+    if (nf >= 0) { dprintf(nf, "hide\n"); close(nf); }
     int fd = open("/run/nuxel-wl-fb.cmd", O_WRONLY | O_NONBLOCK);
     if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"bridge-fifo-absent\"}"); return; }
     dprintf(fd, "lock\n");
@@ -1358,6 +1383,13 @@ static void action_perform(const char *action, char *result, size_t rn) {
      * DOM `home` event cannot dismiss it.  Home/back must close it here, or the
      * fullscreen terminal stays in front of Home (the A34 owner-test symptom). */
     if (!strcmp(action, "home")) term_close_window();
+    /* Hide the native dock BEFORE any launcher transition that can reveal the
+       lockscreen.  Unlock is different: Home maps the dock only after the
+       authoritative unlock and Home transition, so the host does not show it. */
+    if (!strcmp(action, "lock")) {
+      int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
+      if (nf >= 0) { dprintf(nf, "hide\n"); close(nf); }
+    }
     if (g_main_view) {
       GString *g = g_string_new("");
       const char *js_action = !strcmp(action, "home") ? "'home'" :
@@ -1375,22 +1407,22 @@ static void action_perform(const char *action, char *result, size_t rn) {
       webkit_web_view_evaluate_javascript(g_main_view, g->str, -1, NULL, NULL, NULL, NULL, NULL);
       g_string_free(g, TRUE);
     }
-    /* The native nav dock is an overlay layer-shell surface that would otherwise
-       paint over the lockscreen; hide it while locked and restore it on unlock. */
-    if (!strcmp(action, "lock")) {
-      int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
-      if (nf >= 0) { dprintf(nf, "hide\n"); close(nf); }
-    } else if (!strcmp(action, "unlock")) {
-      int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
-      if (nf >= 0) { dprintf(nf, "show\n"); close(nf); }
+    if (!strcmp(action, "unlock")) {
+      /* Deliberately do NOT map the dock here.  _unlock() queues nav-show
+         after the lockscreen hide and Home transition; that is the only path
+         allowed to restore the native dock. */
+      st("HOST_ACTION unlock -> launcher page (dock restore deferred to Home)");
+    } else {
+      st("HOST_ACTION %s -> launcher page", action);
     }
-    st("HOST_ACTION %s -> launcher page", action);
     snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\"}", action);
     return;
   }
   st("HOST_ACTION_REFUSED %s", action);
   snprintf(result, rn, "{\"ok\":false,\"error\":\"unknown-action\"}");
 }
+
+static gint64 g_mic_grant_until_us;
 
 static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult *r, gpointer d) {
   (void)m;
@@ -1437,7 +1469,8 @@ static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult 
     host_reply(v, id, 1, out->str);
     g_string_free(out, TRUE);
     g_free(esc); g_free(buf);
-    st("HOST_CONFIG_GET name=%s bytes=%zu", name, n);
+    /* Successful status reads are not events.  Logging every 2 s made the
+     * diagnostics file a write amplifier; failures still log above. */
     g_free(js);
     return;
   }
@@ -1464,6 +1497,15 @@ static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult 
     if (rename(tmp, path) != 0) { host_reply(v, id, 0, "{\"error\":\"rename-failed\"}"); g_free(js); return; }
     host_reply(v, id, 1, "{\"ok\":true}");
     st("HOST_CONFIG_SET name=%s bytes=%zu", name, strlen(text));
+    g_free(js);
+    return;
+  }
+  if (!strcmp(method, "media.mic-authorize")) {
+    /* Trusted-origin gate is evaluated by WebKit before this handler is
+       reached.  Grant is deliberately short (15 s) and consumed once. */
+    g_mic_grant_until_us = g_get_monotonic_time() + 15 * G_TIME_SPAN_SECOND;
+    host_reply(v, id, 1, "{\"ok\":true,\"grant\":\"audio-once\",\"ttl_ms\":15000}");
+    st("HOST_MEDIA_MIC_AUTHORIZE ttl_ms=15000");
     g_free(js);
     return;
   }
@@ -1905,12 +1947,20 @@ static WebKitWebView *on_create(WebKitWebView *v, WebKitNavigationAction *a, gpo
   return view_new();
 }
 
-/* A31 permission policy: deny by default, allow only from the trusted local
-   origin, and only the capability the launcher legitimately uses (notifications -
- * js/app.js requests notifications:receive).  Camera/microphone are denied
- * because there is no working media path on this kernel, so the launcher reports
- * them truthfully as unavailable rather than holding a permission it cannot use.
+/* Permission policy: deny by default, allow only from the trusted local
+ * origin, and only capabilities with a real backend.  Notifications are used by
+ * the launcher.  Audio capture is allowed only for the local Recorder page,
+ * whose ALSA/PipeWire route is verified by the Bridge before getUserMedia.  The
+ * S10+ camera remains denied because its vendor capture graph is unavailable.
  * Every request and decision is written to the state file. */
+/* The recorder app runs inside the launcher iframe, so WebKitWebView's URI is
+ * the launcher URL rather than /pwa/nuxel-apps/recorder/.  WebKitGTK 4.1 does
+ * not expose the requesting frame origin on WebKitUserMediaPermissionRequest.
+ * The recorder therefore asks the host for a one-shot, short-lived microphone
+ * authorization immediately before getUserMedia.  Only the trusted local
+ * launcher can send nuxelHost messages, and the grant is consumed by one
+ * permission request, so an arbitrary remote origin still cannot capture. */
+
 static void on_permission(WebKitWebView *v, WebKitPermissionRequest *r, gpointer d) {
   (void)d;
   const char *trusted = getenv("NUXEL_TRUSTED_ORIGIN");
@@ -1931,10 +1981,18 @@ static void on_permission(WebKitWebView *v, WebKitPermissionRequest *r, gpointer
         WEBKIT_USER_MEDIA_PERMISSION_REQUEST(r));
     gboolean video = webkit_user_media_permission_is_for_video_device(
         WEBKIT_USER_MEDIA_PERMISSION_REQUEST(r));
-    if (audio && !video && uri &&
-        (g_strstr_len(uri, -1, "/pwa/nuxel-apps/recorder/") != NULL)) {
+    /* WebKit 2.54 can report only the requested device class through this
+       permission object.  The recorder page never asks for video, so an audio
+       device or an audio-only request from that exact page is allowed. */
+    gboolean recorder_page = uri &&
+        (g_strstr_len(uri, -1, "/pwa/nuxel-apps/recorder/") != NULL);
+    gboolean host_grant = g_mic_grant_until_us > g_get_monotonic_time();
+    if (!video && (recorder_page || host_grant)) {
       allow = TRUE;
-      reason = "allowed-microphone-recorder";
+      if (host_grant) g_mic_grant_until_us = 0;  /* one-shot */
+      reason = audio ? (host_grant ? "allowed-microphone-host-grant" :
+                                    "allowed-microphone-recorder") :
+                       "allowed-microphone-recorder-media-object";
     } else if (video) {
       reason = "denied-camera-backend-deferred";
     } else {
@@ -1992,6 +2050,7 @@ static WebKitWebView *view_new(void) {
       "enable-developer-extras", FALSE,
       "javascript-can-open-windows-automatically", TRUE,
       "enable-media", media,
+      "enable-media-stream", TRUE,
       "enable-mediasource", media,
       "user-agent", "Mozilla/5.0 (Linux; aarch64) Nuxel/1.0 (S10+, like Gecko) WebKitGTK",
       NULL);

@@ -269,7 +269,17 @@ jobs:
         run: |
           case "${{ matrix.device }}" in
             g7power) bash kernel/g7power/build-kernel.sh --clone ;;
-            s10plus) bash kernel/s10plus/build-kernel.sh --clone ;;
+            s10plus)
+              # The handset does NOT run the stock exynos9820-beyond2lte config.
+              # PWNAGE-48000..54000 added DRM core, UDMABUF, the Mali Bifrost
+              # kbase driver, user namespaces/SECCOMP/cgroups and NFC.  The
+              # wrapper applies kernel/s10plus/configs/nuxel-drm-kbase.fragment
+              # by default so this build reproduces the running kernel; the
+              # parity gate below fails the job if it does not.
+              bash kernel/s10plus/build-kernel.sh --clone
+              python3 tools/s10plus/verify-kernel-config.py \
+                --config kernel/s10plus/.build/out/.config
+              ;;
             *) echo "::error::unsupported device ${{ matrix.device }}"; exit 1 ;;
           esac
 
@@ -296,6 +306,11 @@ jobs:
               #    host, button manager, libinput shim, snapshot tool), so CI
               #    produces exactly the runtime the handset is running rather
               #    than copying a developer-only build/out/s10plus/a32 tree.
+              # NUXEL_REQUIRE_KBASE=1 turns the "GPU userspace missing"
+              # warning into a hard error: release/s10plus/gpu carries the exact
+              # kbase Mesa/wlroots set running on the handset, so a release
+              # without it would silently ship llvmpipe.
+              NUXEL_REQUIRE_KBASE=1 \
               NUXEL_S10PLUS_OUTPUT="$PWD/build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone.img" \
                 bash images/s10plus/build.sh --device s10plus --phone-rootfs
               ;;

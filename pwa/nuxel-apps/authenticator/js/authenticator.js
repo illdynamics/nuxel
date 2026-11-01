@@ -14,7 +14,10 @@
   }
   function esc(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function loadEnv() { try { var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
-  function storeEnv(env) { try { localStorage.setItem(KEY, JSON.stringify(env)); } catch (e) { toast('could not save the vault: ' + e.message); } }
+  function storeEnv(env) {
+    try { localStorage.setItem(KEY, JSON.stringify(env)); return true; }
+    catch (e) { toast('could not save the vault: ' + e.message); return false; }
+  }
 
   /* ---------------- lock screen ---------------- */
 
@@ -45,6 +48,17 @@
     el('vault-count').textContent = state.accounts.length + ' account(s)';
   }
 
+  function lockVault(reason) {
+    state.key = null;
+    state.accounts = [];
+    state.codes = {};
+    stopQr(false);
+    if (state.tick) { clearInterval(state.tick); state.tick = null; }
+    if (state.filter) state.filter = '';
+    renderLock();
+    if (reason) toast('Vault locked');
+  }
+
   async function lockAction() {
     var pass = el('pass').value, pass2 = el('pass2').value;
     el('lock-error').textContent = '';
@@ -53,7 +67,11 @@
         if (pass !== pass2) throw new Error('the two passphrases do not match');
         var v = await V.create(pass);
         state.env = v.envelope; state.key = v.key; state.accounts = [];
-        storeEnv(state.env); showMain(); toast('Vault created');
+        if (!storeEnv(state.env)) {
+          state.key = null; state.accounts = [];
+          throw new Error('the encrypted vault could not be stored on this device');
+        }
+        showMain(); toast('Vault created');
         return;
       }
       var un = await V.unlock(state.env, pass);
@@ -89,8 +107,8 @@
         'The vault is empty. Add an account with “Add account”, or paste an otpauth:// URI.') + '</p>';
       return;
     }
-    for (var i = 0; i < list.length; i++) {
-      var a = list[i];
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
       var counter = Math.floor(now / a.period);
       // The code only changes when the counter changes, so the HMAC is computed
       // once per period per account (the ticker runs 2x/s for the countdown).
@@ -147,9 +165,9 @@
     var text = node.querySelector('.grp').textContent.replace(/\s+/g, '');
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function () { toast('Code copied'); },
-        function () { toast('Clipboard refused — the code is ' + text); });
+        function () { toast('Clipboard refused; the code was not copied'); });
     } else {
-      toast('Clipboard unavailable — the code is ' + text);
+      toast('Clipboard unavailable; the code was not copied');
     }
   }
 
@@ -163,10 +181,17 @@
   }
 
   async function save() {
-    if (!state.key) return;
-    state.env = await V.save(state.env, state.accounts, state.key);
-    storeEnv(state.env);
-    el('vault-count').textContent = state.accounts.length + ' account(s)';
+    if (!state.key) return false;
+    try {
+      var next = await V.save(state.env, state.accounts, state.key);
+      if (!storeEnv(next)) return false;
+      state.env = next;
+      el('vault-count').textContent = state.accounts.length + ' account(s)';
+      return true;
+    } catch (e) {
+      toast('could not save the vault: ' + (e && e.message ? e.message : e));
+      return false;
+    }
   }
 
   /* ---------------- add account ---------------- */
@@ -181,7 +206,10 @@
     state.accounts = res.accounts;
     el('add-error').textContent = '';
     ['add-issuer', 'add-account', 'add-secret'].forEach(function (i) { el(i).value = ''; });
-    save().then(function () { renderAccounts(); toast('Account added'); });
+    save().then(function (ok) {
+      if (!ok) { el('add-error').textContent = 'Refused: the encrypted vault could not be saved.'; return; }
+      renderAccounts(); toast('Account added');
+    });
   }
 
   function addFromUri() {
@@ -191,10 +219,126 @@
       if (!res.ok) { el('uri-error').textContent = 'Refused: ' + res.problems.join('; '); return; }
       state.accounts = res.accounts;
       el('uri-error').textContent = ''; el('add-uri').value = '';
-      save().then(function () { renderAccounts(); toast('Imported ' + p.account); });
+      save().then(function (ok) {
+        if (!ok) { el('uri-error').textContent = 'Refused: the encrypted vault could not be saved.'; return; }
+        renderAccounts(); toast('Imported ' + p.account);
+      });
     } catch (e) {
       el('uri-error').textContent = 'Refused: ' + e.message;
     }
+  }
+
+  /* ---------------- QR enrollment (local only) ---------------- */
+  var qr = { stream: null, raf: 0, active: false, pending: null };
+
+  function qrNote(msg) { el('qr-note').textContent = msg || ''; }
+
+  function stopQr(clearNote) {
+    if (qr.raf) { cancelAnimationFrame(qr.raf); qr.raf = 0; }
+    if (qr.stream) {
+      qr.stream.getTracks().forEach(function (tr) { try { tr.stop(); } catch (e) {} });
+      qr.stream = null;
+    }
+    var v = el('qr-video');
+    if (v) { try { v.pause(); } catch (e) {} v.srcObject = null; v.hidden = true; }
+    qr.active = false;
+    if (clearNote) qrNote('');
+  }
+
+  function decodeImageSource(source, w, h, cb) {
+    var c = el('qr-canvas');
+    var scale = Math.min(1, 1000 / Math.max(w, h));
+    c.width = Math.max(1, Math.round(w * scale));
+    c.height = Math.max(1, Math.round(h * scale));
+    var ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(source, 0, 0, c.width, c.height);
+    var data = ctx.getImageData(0, 0, c.width, c.height);
+    if (typeof window.jsQR !== 'function') { cb('QR decoder unavailable in this build'); return; }
+    var found = window.jsQR(data.data, data.width, data.height, { inversionAttempts: 'dontInvert' });
+    cb(null, found && found.data ? found.data : null);
+  }
+
+  function qrPreview(payload) {
+    var parsed;
+    try { parsed = T.parseOtpauth(payload); }
+    catch (e) { qrNote('Refused: ' + e.message); return false; }
+    qr.pending = parsed;
+    var text = (parsed.issuer || 'Unnamed issuer') + ' · ' + parsed.account +
+      ' · ' + parsed.algorithm + ' · ' + parsed.digits + ' digits · ' + parsed.period + 's';
+    el('qr-preview-text').textContent = text;
+    el('qr-preview').style.display = 'block';
+    qrNote('QR read. Confirm the account below; the secret is not shown.');
+    return true;
+  }
+
+  function commitQrPreview() {
+    if (!qr.pending) return;
+    var parsed = qr.pending;
+    var res = V.addAccount(state.accounts, parsed);
+    if (!res.ok) { qrNote('Refused: ' + res.problems.join('; ')); return; }
+    state.accounts = res.accounts;
+    qr.pending = null;
+    el('qr-preview').style.display = 'none';
+    save().then(function (ok) {
+      if (!ok) { qrNote('Refused: the encrypted vault could not be saved.'); return; }
+      renderAccounts();
+      toast('Imported ' + parsed.account);
+    });
+  }
+
+  async function scanWithCamera() {
+    stopQr(false);
+    qrNote('');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      qrNote('Camera capture is unavailable in this WebKit build. Import a QR image or use the URI/secret fields.');
+      return;
+    }
+    try {
+      qr.stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 640 } }, audio: false
+      });
+    } catch (e) {
+      qrNote('Camera permission was not granted. Import a QR image or use the URI/secret fields.');
+      return;
+    }
+    var v = el('qr-video');
+    v.srcObject = qr.stream;
+    v.hidden = false;
+    try { await v.play(); } catch (e) { /* autoplay policy: the frame loop still runs */ }
+    qr.active = true;
+    var last = 0;
+    var tick = function (ts) {
+      if (!qr.active) return;
+      if (ts - last >= 180 && v.videoWidth) {
+        last = ts;
+        decodeImageSource(v, v.videoWidth, v.videoHeight, function (err, payload) {
+          if (err) { qrNote(err); stopQr(false); return; }
+          if (payload) {
+            stopQr(false);
+            qrPreview(payload);
+          }
+        });
+      }
+      if (qr.active) qr.raf = requestAnimationFrame(tick);
+    };
+    qr.raf = requestAnimationFrame(tick);
+  }
+
+  function importQrImage(file) {
+    if (!file) return;
+    qrNote('');
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      decodeImageSource(img, img.naturalWidth, img.naturalHeight, function (err, payload) {
+        URL.revokeObjectURL(url);
+        if (err) { qrNote(err); return; }
+        if (!payload) { qrNote('No QR code was found in that image.'); return; }
+        qrPreview(payload);
+      });
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); qrNote('That image could not be read.'); };
+    img.src = url;
   }
 
   function renderAccounts() {
@@ -305,7 +449,7 @@
     el('lock-go').addEventListener('click', lockAction);
     el('pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') lockAction(); });
     el('pass2').addEventListener('keydown', function (e) { if (e.key === 'Enter') lockAction(); });
-    el('lock-now').addEventListener('click', renderLock);
+    el('lock-now').addEventListener('click', function () { lockVault('manual'); });
     el('search').addEventListener('input', function () { state.filter = el('search').value; renderCodes(); });
     el('add-form-go').addEventListener('click', addFromForm);
     el('add-uri-go').addEventListener('click', addFromUri);
@@ -314,6 +458,25 @@
     el('rekey-go').addEventListener('click', rekey);
     el('wipe-go').addEventListener('click', wipe);
     el('selftest-run').addEventListener('click', runSelfTest);
+    el('qr-camera').addEventListener('click', scanWithCamera);
+    el('qr-image-btn').addEventListener('click', function () { el('qr-image').click(); });
+    el('qr-image').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      importQrImage(f);
+      e.target.value = '';
+    });
+    el('qr-add').addEventListener('click', commitQrPreview);
+    el('qr-cancel').addEventListener('click', function () {
+      qr.pending = null; el('qr-preview').style.display = 'none'; qrNote('');
+    });
+    var bgLock = null;
+    document.addEventListener('visibilitychange', function () {
+      stopQr(false);
+      if (document.hidden) {
+        if (!bgLock) bgLock = setTimeout(function () { bgLock = null; lockVault('background'); }, 60000);
+      } else if (bgLock) { clearTimeout(bgLock); bgLock = null; }
+    });
+    window.addEventListener('pagehide', function () { stopQr(false); lockVault(); });
     el('close').addEventListener('click', function () { try { window.close(); } catch (e) {} });
     el('selftest-summary').textContent = 'not run in this session';
 

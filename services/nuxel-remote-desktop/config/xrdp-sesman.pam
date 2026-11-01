@@ -1,0 +1,18 @@
+#%PAM-1.0
+# Nuxel RDP: only the local desktop identity (nuxel, uid 1000) may log in.
+# The retired nuxel-remote account must never obtain an RDP session.
+auth       required     pam_succeed_if.so user = nuxel
+account    required     pam_succeed_if.so user = nuxel
+auth       include      password-auth
+account    include      password-auth
+password   include      password-auth
+
+# pam_selinux.so close must be the first session rule so any prior context is
+# torn down before the new session is set up. Keep the Fedora xrdp order.
+session    required     pam_selinux.so close
+session    required     pam_loginuid.so
+session    required     pam_selinux.so open
+session    required     pam_namespace.so
+session    optional     pam_keyinit.so force revoke
+session    include      password-auth
+session    optional     pam_lastlog.so silent

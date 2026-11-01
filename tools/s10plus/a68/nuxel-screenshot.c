@@ -54,7 +54,10 @@ static const struct zwlr_screencopy_frame_v1_listener frame_listener = {
 
 static int create_shm_buffer(int w, int h, int stride, uint32_t format,
                              struct wl_buffer **out, void **map, size_t *mapn) {
-    (void)format;
+    /* The compositor's frame.buffer event names the ONLY format it will accept
+       for this copy.  phoc rejects a hard-coded XRGB8888 buffer with
+       "invalid buffer format" (measured on the S10+), which is why screenshots
+       were zero bytes.  Use the offered format verbatim. */
     int size = stride * h;
     if (size <= 0) return -1;
     int fd = memfd_create("nuxel-shot", MFD_CLOEXEC);
@@ -64,7 +67,7 @@ static int create_shm_buffer(int w, int h, int stride, uint32_t format,
     void *m = mmap(NULL, (size_t)size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (m == MAP_FAILED) { close(fd); return -1; }
     struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
-    struct wl_buffer *b = wl_shm_pool_create_buffer(pool, 0, w, h, stride, WL_SHM_FORMAT_XRGB8888);
+    struct wl_buffer *b = wl_shm_pool_create_buffer(pool, 0, w, h, stride, format);
     wl_shm_pool_destroy(pool);
     close(fd);
     if (!b) { munmap(m, (size_t)size); return -1; }
@@ -124,15 +127,34 @@ int main(int argc, char **argv) {
     FILE *f = fopen(path, "wb");
     if (!f) { fprintf(stderr, "OPEN_FAIL %s\n", path); return 11; }
     const uint8_t *px = (const uint8_t *)map;
+    /* Wayland shm words are little-endian.  XRGB8888/ARGB8888 are 0x00RRGGBB
+       (R in bits 16..23); XBGR8888/ABGR8888 are 0x00BBGGRR (R in bits 0..7).
+       Any other format is refused honestly rather than saved with swapped
+       channels. */
+    int xrgb = (fmt == WL_SHM_FORMAT_XRGB8888 || fmt == WL_SHM_FORMAT_ARGB8888);
+    int xbgr = (fmt == WL_SHM_FORMAT_XBGR8888 || fmt == WL_SHM_FORMAT_ABGR8888);
+    if (!xrgb && !xbgr) {
+        fprintf(stderr, "UNSUPPORTED_FORMAT fmt=0x%08x\n", fmt);
+        fclose(f);
+        wl_buffer_destroy(buf); munmap(map, mapn);
+        zwlr_screencopy_frame_v1_destroy(frame); wl_display_disconnect(dpy);
+        return 12;
+    }
     fprintf(f, "P6\n%d %d\n255\n", fw, fh);
     for (int32_t y = 0; y < fh; y++) {
         const uint32_t *row = (const uint32_t *)(px + (size_t)y * fstride);
         for (int32_t x = 0; x < fw; x++) {
             uint32_t v = row[x];
             unsigned char rgb[3];
-            rgb[0] = (unsigned char)((v >> 16) & 0xff); /* R */
-            rgb[1] = (unsigned char)((v >> 8) & 0xff);  /* G */
-            rgb[2] = (unsigned char)(v & 0xff);         /* B */
+            if (xrgb) {
+                rgb[0] = (unsigned char)((v >> 16) & 0xff); /* R */
+                rgb[1] = (unsigned char)((v >> 8) & 0xff);  /* G */
+                rgb[2] = (unsigned char)(v & 0xff);         /* B */
+            } else {
+                rgb[0] = (unsigned char)(v & 0xff);         /* R */
+                rgb[1] = (unsigned char)((v >> 8) & 0xff);  /* G */
+                rgb[2] = (unsigned char)((v >> 16) & 0xff); /* B */
+            }
             fwrite(rgb, 1, 3, f);
         }
     }

@@ -169,9 +169,9 @@ say "starting A45 nav dock + Stevia OSK"
 nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
 # Persistent top status strip over fullscreen native clients (Firefox/VLC/...).
 # It has an empty input region, so Home's DOM status-bar gestures still work.
-if [ -x /usr/lib/nuxel/nuxel-statusbar ]; then
-  nohup /usr/lib/nuxel/nuxel-statusbar </dev/null >/run/nuxel-statusbar.out 2>&1 &
-fi
+# PWNAGE-50000: the Home DOM status bar is the only top bar.  The native
+# reduced overlay is obsolete and must never be started (it hid the proper
+# clock/radio/location/USB/NFC row on the glass).
 if [ -x /usr/bin/phosh-osk-stevia ]; then
   nohup dbus-run-session -- /usr/bin/phosh-osk-stevia </dev/null >/run/stevia.out 2>&1 &
 fi

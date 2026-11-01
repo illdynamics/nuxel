@@ -1,0 +1,99 @@
+{
+  "_daemon_live": true,
+  "allowed": [
+    0
+  ],
+  "applied": true,
+  "auto": false,
+  "auto_state": "fixed",
+  "calibration": {
+    "gravity_reference": "unverified",
+    "mount_matrix": "unverified"
+  },
+  "compositor": {
+    "backend": "wlr-randr",
+    "error": "",
+    "output": "HEADLESS-1",
+    "touch_calibration_verified": false,
+    "transform": "normal",
+    "transform_available": true,
+    "transform_map_verified": false
+  },
+  "display": {
+    "applied": true,
+    "backend": "wlr-randr",
+    "enabled": true,
+    "error": "",
+    "logical_height": 1520,
+    "logical_width": 720,
+    "output": "HEADLESS-1",
+    "outputs": [
+      "HEADLESS-1"
+    ],
+    "physical_height": 1520,
+    "physical_width": 720,
+    "scale": 2.0,
+    "transform": "normal",
+    "transform_map": {
+      "0": "normal",
+      "180": "180",
+      "270": "90",
+      "90": "270"
+    },
+    "verified": false
+  },
+  "effective_orientation": 0,
+  "last_error": "",
+  "last_good": {
+    "effective_orientation": 0,
+    "mode": "portrait",
+    "requested_orientation": 0,
+    "transform": "normal"
+  },
+  "last_orientation": 0,
+  "last_request_id": "req-10841-1793467407807",
+  "mode": "portrait",
+  "mode_label": "Portrait",
+  "pid": 15020,
+  "requested_orientation": 0,
+  "sensor": {
+    "available": false,
+    "preferred": null,
+    "sources": [
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "IIO device present but no readable scale",
+        "source": "iio-accel"
+      },
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+        "source": "iio-sensor-proxy"
+      },
+      {
+        "auto_capable": false,
+        "available": true,
+        "reason": "",
+        "source": "manual"
+      }
+    ],
+    "unverified": true
+  },
+  "status_age_seconds": 0,
+  "success": true,
+  "touch": {
+    "mechanism": "wlroots maps libinput through the output transform; nuxel-wl-fb rotates the logical screencopy frame back to the portrait AMOLED scanout",
+    "transform_available": true,
+    "verified": false
+  },
+  "trial": {
+    "pending_confirmation": false
+  },
+  "updated_epoch": 1793468169.9865625
+}
+36d682d2d2ffb6c33e79f572332fce892548dafa88b8889b22e77944e6bc8f79  /etc/nuxel/orientation/orientation.json
+168dd89a6b6c0d45b2aec5443b09f990913aad46b54ce286195ced5b0316283c  /usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js
+8c2019d6895c5a94c0de36edcd5ebbcb5a105678e67a85c610523170be12cc4b  /usr/share/nuxel/pwa/nuxel-home/css/style.css
+a83a3e172d6694fb9957bb5fb1856d613e1d61907a4b881723413b4b137ad951  /usr/share/nuxel/pwa/nuxel-home/keyboard-provider.json

@@ -1,0 +1,128 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-10-31T17:22:16Z
+{
+  "_daemon_live": true,
+  "allowed": [
+    0
+  ],
+  "applied": true,
+  "auto": false,
+  "auto_state": "fixed",
+  "calibration": {
+    "gravity_reference": "unverified",
+    "mount_matrix": "unverified"
+  },
+  "compositor": {
+    "backend": "wlr-randr",
+    "error": "",
+    "output": "HEADLESS-1",
+    "touch_calibration_verified": false,
+    "transform": "normal",
+    "transform_available": true,
+    "transform_map_verified": false
+  },
+  "display": {
+    "applied": true,
+    "backend": "wlr-randr",
+    "enabled": true,
+    "error": "",
+    "logical_height": 1520,
+    "logical_width": 720,
+    "output": "HEADLESS-1",
+    "outputs": [
+      "HEADLESS-1"
+    ],
+    "physical_height": 1520,
+    "physical_width": 720,
+    "scale": 2.0,
+    "transform": "normal",
+    "transform_map": {
+      "0": "normal",
+      "180": "180",
+      "270": "90",
+      "90": "270"
+    },
+    "verified": false
+  },
+  "effective_orientation": 0,
+  "last_error": "",
+  "last_good": {
+    "effective_orientation": 0,
+    "mode": "portrait",
+    "requested_orientation": 0,
+    "transform": "normal"
+  },
+  "last_orientation": 0,
+  "last_request_id": "req-9445-1793467307533",
+  "mode": "portrait",
+  "mode_label": "Portrait",
+  "pid": 8839,
+  "requested_orientation": 0,
+  "sensor": {
+    "available": false,
+    "preferred": null,
+    "sources": [
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "IIO device present but no readable scale",
+        "source": "iio-accel"
+      },
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+        "source": "iio-sensor-proxy"
+      },
+      {
+        "auto_capable": false,
+        "available": true,
+        "reason": "",
+        "source": "manual"
+      }
+    ],
+    "unverified": true
+  },
+  "status_age_seconds": 1,
+  "success": true,
+  "touch": {
+    "mechanism": "single wlroots output transform; libinput coordinates and the screencopy buffer are both transformed by the compositor, presenter adds no second rotation",
+    "transform_available": true,
+    "verified": false
+  },
+  "trial": {
+    "deadline_epoch": 1793467382.6487567,
+    "effective_orientation": 0,
+    "id": "req-9445-1793467307533",
+    "last_result": "pending",
+    "mode": "portrait",
+    "pending_confirmation": true,
+    "request_id": "req-9445-1793467307533",
+    "started_epoch": 1793467307.6487567
+  },
+  "updated_epoch": 1793467335.5486484
+}
+{
+  "ok": true,
+  "id": "pwnage-46000-rotation-feedback",
+  "title": "PWNAGE-46000 Rotation Test Feedback",
+  "updatedAt": "2026-10-31T17:21:47.139148Z",
+  "test": "M1-PORTRAIT",
+  "answer": "WAITING"
+}
+transform=0
+presenter_rotation=0
+effective_orientation=0
+output=HEADLESS-1
+logical_width=720
+logical_height=1520
+backend=wlr-randr
+applied=1

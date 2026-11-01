@@ -149,6 +149,25 @@ def test_scrcpy_native_nuxel_is_honest(monkeypatch):
     assert "Android ADB" in st["reason"]
 
 
+def test_direct_listener_and_local_account_contract():
+    """Owner request: no SSH tunnel; RDP/VNC direct on the LAN/ZeroTier with
+    TLS and PAM as the local nuxel account."""
+    ctl = (ROOT / "services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl").read_text()
+    rd = (ROOT / "services/nuxel-bridge/src/remote_desktop.py").read_text()
+    xrdp = (ROOT / "services/nuxel-remote-desktop/config/xrdp.ini").read_text()
+    vnc = (ROOT / "services/nuxel-remote-desktop/config/wayvnc.conf.example").read_text()
+    assert 'VNC_BIND = "0.0.0.0"' in ctl
+    assert "enable_auth=false" in ctl
+    assert '"0.0.0.0", "port": 3389' in ctl
+    assert "port=tcp://:3389" in xrdp
+    assert "address=0.0.0.0" in vnc and "enable_auth=false" in vnc
+    assert 'BIND_ADDRESS = "0.0.0.0"' in rd
+    assert '"username": "nuxel"' in rd
+    assert '"requires_ssh_tunnel": False' in rd
+    assert '"ssh_tunnel_command": None' in rd
+    assert '"vnc_unauthenticated": True' in rd
+
+
 def test_status_never_contains_secret_fields(monkeypatch):
     mod = load_remote()
     monkeypatch.setattr(mod, "_vnc_status", lambda: {"state": "OFF", "port": 5900, "listener_verified": False})
@@ -160,18 +179,18 @@ def test_status_never_contains_secret_fields(monkeypatch):
         assert forbidden not in text
 
 
-def test_connection_info_is_safe_and_loopback_only(monkeypatch):
+def test_connection_info_is_direct_and_secret_free(monkeypatch):
     mod = load_remote()
     monkeypatch.setattr(mod, "network_state", lambda: {"address": "192.168.44.77", "interface": "wlan0", "trusted_lan": True})
     monkeypatch.setattr(mod, "_xrdp_fingerprint", lambda: "AA:BB")
     info = mod.connection_info("xrdp")
-    assert info["bind_address"] == "127.0.0.1"
+    assert info["bind_address"] == "0.0.0.0"
     assert info["port"] == 3389
     assert info["password_included"] is False
-    assert "127.0.0.1:3389" in info["ssh_tunnel_command"]
-    assert "192.168.44.77" in info["ssh_tunnel_command"]
-    assert "0.0.0.0" not in json.dumps(info)
-    assert "password" not in info["ssh_tunnel_command"].lower()
+    assert info["ssh_tunnel_command"] is None
+    assert info["jump_url"] == "rdp://192.168.44.77:3389"
+    assert info["username"] == "nuxel"
+    assert "password" not in json.dumps({k: v for k, v in info.items() if k != "password_included"}).lower()
 
 
 def test_helper_accepts_only_fixed_service_names():
@@ -238,3 +257,17 @@ def test_ctl_clears_failed_unit_state_after_forced_stop():
     text = (ROOT / "services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl").read_text()
     assert '"systemctl", "reset-failed", "xrdp.service", "xrdp-sesman.service"' in text
     assert '"systemctl", "reset-failed", VNC_SERVICE' in text
+
+
+def test_rdp_pam_is_locked_to_the_local_nuxel_account():
+    """The owner wants the RDP identity to be the same local account as
+    SSH/VNC.  PAM must reject the retired nuxel-remote account before the
+    session launcher is ever reached."""
+    pam = (ROOT / "services/nuxel-remote-desktop/config/xrdp-sesman.pam").read_text()
+    session = (ROOT / "services/nuxel-remote-desktop/bin/nuxel-xrdp-session").read_text()
+    builder = (ROOT / "images/s10plus/build-phone-rootfs-inside-fedora.sh").read_text()
+    assert "auth       required     pam_succeed_if.so user = nuxel" in pam
+    assert "account    required     pam_succeed_if.so user = nuxel" in pam
+    assert 'if [ "$(id -u)" -ne 1000 ] || [ "$(id -un)" != "nuxel" ]; then' in session
+    assert "xrdp-sesman.pam" in builder
+    assert '"$STAGE/etc/pam.d/xrdp-sesman"' in builder

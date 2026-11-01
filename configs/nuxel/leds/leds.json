@@ -15,6 +15,7 @@
     "flashlight": {
       "comment": "Torch/white flash. Candidates are probed in order; the FIRST that responds wins and its real path is reported.",
       "candidates": [
+        "/sys/class/camera/flash/rear_flash",
         "/sys/class/leds/led:flash_0", "/sys/class/leds/led:flash_1",
         "/sys/class/leds/led:torch_0", "/sys/class/leds/led:torch_1",
         "/sys/class/leds/flashlight", "/sys/class/leds/torch",
@@ -49,7 +50,7 @@
 
   "safety": {
     "comment": "Thermal and battery guard for the torch: the torch is a real 1 W-class emitter, so a bounded ON time and an explicit OFF are mandatory, and nothing turns it on automatically.",
-    "max_on_ms": 60000,
+    "max_on_ms": 600000,
     "require_explicit_yes": true,
     "auto_on_boot": false,
     "off_on_exit": true,

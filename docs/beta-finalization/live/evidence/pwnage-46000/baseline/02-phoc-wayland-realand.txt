@@ -1,0 +1,368 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== phoc env ===
+USER=root
+XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share/:/usr/share/
+XDG_RUNTIME_DIR=/run/nuxel-wayland
+XDG_SESSION_TYPE=wayland
+=== wl-fb env ===
+USER=root
+XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share/:/usr/share/
+XDG_RUNTIME_DIR=/run/nuxel-wayland
+XDG_SESSION_TYPE=wayland
+=== phoc service ===
+[Unit]
+Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+After=nuxel-touch-arm.service seatd.service nuxel-web.service
+Wants=nuxel-touch-arm.service seatd.service nuxel-web.service
+Before=nuxel-wl-fb.service nuxel-fallback.service
+
+[Service]
+Type=simple
+# phoc with wlroots 0.19: headless backend + pixman renderer is the only Wayland
+# output this kernel (CONFIG_DRM unset) can offer.
+Environment=WLR_BACKENDS=headless,libinput
+# The handset has NO VT (/dev/tty0, /sys/class/vtconsole, /proc/consoles all
+# absent), so a VT-bound seat can never activate; libseat's noop backend
+# satisfies wlroots' session requirement and device access is granted by the
+# preloaded libinput path shim.  See tools/s10plus/a31/nuxel-libinput-path.c.
+Environment=LIBSEAT_BACKEND=noop
+# If the panel node is absent (charger mode: sec_ts never binds) wlroots would
+# fail the whole backend and phoc would restart-loop.  The shim records what it
+# found in /run/nuxel-libinput-path.state, so "zero devices" stays visible.
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+# The udev daemon is masked on this image (it cannot register workers on 4.14),
+# so libinput's udev backend discovers zero devices; the shim redirects ONLY
+# libinput's discovery step to its path backend and adds the real
+# /dev/input/eventN node that carries INPUT_PROP_DIRECT.  Real evdev, real
+# libinput parsing, real wl_touch - no synthesised events.
+Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
+Environment=WLR_RENDERER=pixman
+Environment=WLR_HEADLESS_OUTPUTS=1
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
+ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
+ExecStart=/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
+[Unit]
+Description=Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=120
+StartLimitBurst=6
+After=nuxel-wayland.service
+Wants=nuxel-wayland.service
+Before=nuxel-fallback.service nuxel-button-manager.service
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/usr/lib/nuxel/nuxel-wait-wayland /run/nuxel-wayland 30
+ExecStart=/usr/lib/nuxel/nuxel-wl-fb
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+=== session script ===
+#!/bin/sh
+# Nuxel phone session — runs INSIDE the phoc compositor (phoc -E ...).
+#
+# Composition (identical to the UTM VM, minus the VM's browser that is not
+# installed on the handset - nuxel-pwa-host takes that role):
+#   1. the static PWA server.  nuxel-web.service is the single owner of
+#      127.0.0.1:8000.  This session only starts a development fallback on
+#      127.0.0.1:8001 when nuxel-web is not reachable, so a later nuxel-web
+#      restart can always bind :8000 instead of failing with EADDRINUSE;
+#   2. the real launcher (WebKitGTK view) through nuxel-pwa-host.
+#
+# DOCROOT LAYOUT (fixed A29b, measured): services/nuxel-web.service does NOT
+# serve pwa/nuxel-home.  It serves the repository root so that the launcher's own
+# relative reference `../nuxel-common/bridge.js` (index.html line 125, enforced
+# by pwa/nuxel-common/verify-wiring.js) resolves.  The launcher URL is therefore
+# /pwa/nuxel-home/index.html and BOTH pwa/nuxel-home and pwa/nuxel-common must
+# exist under the docroot.  The first phone image staged only /usr/share/nuxel/
+# nuxel-home (no pwa/ level, no nuxel-common), which 404'd the index and the
+# bridge module; this script now resolves the layout and says which one it used.
+#
+# Software rendering is forced because this kernel has no DRM/EGL device.
+set -eu
+export XDG_SESSION_TYPE=wayland
+export GDK_BACKEND=wayland
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+export LIBGL_ALWAYS_SOFTWARE=1
+export GSK_RENDERER=cairo
+LOG=/run/nuxel-session.log
+# Claim the boot overlay before the systemd fallback unit can write the
+# one-shot marker.  The controller yields to this marker; it is per-boot
+# because /run is a tmpfs.
+: > /run/nuxel-preload-session.owner 2>/dev/null || true
+say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
+
+DOCROOT=/usr/share/nuxel
+WEB_PORT=8000
+FALLBACK_PORT=8001
+# Layout A = the VM's (and the image builder's) pwa/ tree; layout B = the flat
+# copy the first handset image shipped.  Chosen by the launcher's own index.html.
+HOME_REL=""
+for c in /pwa/nuxel-home /nuxel-home; do
+  if [ -f "$DOCROOT$c/index.html" ]; then HOME_REL="$c"; break; fi
+done
+if [ -z "$HOME_REL" ]; then
+  say "FATAL launcher index.html not found under $DOCROOT (looked for /pwa/nuxel-home, /nuxel-home)"
+  exit 1
+fi
+[ -n "${NUXEL_HOME_URL:-}" ] || NUXEL_HOME_URL="http://127.0.0.1:$WEB_PORT$HOME_REL/index.html"
+# the ES module the launcher imports by relative path
+BRIDGE="$DOCROOT${HOME_REL%/*}/nuxel-common/bridge.js"
+if [ -f "$BRIDGE" ]; then BRIDGE_OK=yes; else BRIDGE_OK=no; fi
+
+# PWNAGE-36000: the preload controller publishes its first-frame state as a
+# regular file under the PWA docroot (nuxel-web refuses symlink escapes from
+# the docroot, so /run cannot be linked in).  Remove any status file
+# unconditionally BEFORE this boot's controller starts.  A previous controller
+# (or the old systemd unit) can leave a current-boot-id "fallback" document
+# behind; the launcher would then release the cover immediately and expose the
+# lockscreen for the first second.  The session controller owns this file for
+# the whole boot and rewrites it atomically from "starting" onward.
+PRELOAD_STATUS_FILE="$DOCROOT$HOME_REL/preload-status.json"
+rm -f "$PRELOAD_STATUS_FILE" 2>/dev/null || true
+[ -L "$PRELOAD_STATUS_FILE" ] && rm -f "$PRELOAD_STATUS_FILE" 2>/dev/null || true
+
+say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
+say "session start WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-?} layout=$HOME_REL bridge_ok=$BRIDGE_OK url=$NUXEL_HOME_URL"
+
+if ! curl -fsS -o /dev/null "$NUXEL_HOME_URL" 2>/dev/null; then
+  # nuxel-web.service owns :8000.  Never bind that port here: a fallback on
+  # the same port makes every later `systemctl restart nuxel-web` fail with
+  # OSError EADDRINUSE.  The launcher can still load from :8001 in this case.
+  FALLBACK_URL="http://127.0.0.1:$FALLBACK_PORT$HOME_REL/index.html"
+  ( cd "$DOCROOT" && exec python3 -m http.server "$FALLBACK_PORT" --bind 127.0.0.1 ) >/run/nuxel-web.log 2>&1 &
+  WEB_PID=$!
+  for i in $(seq 1 40); do
+    curl -fsS -o /dev/null "$FALLBACK_URL" && break
+    sleep 0.25
+  done
+  if curl -fsS -o /dev/null "$FALLBACK_URL"; then
+    READY=yes
+    NUXEL_HOME_URL="$FALLBACK_URL"
+  else
+    READY=no
+  fi
+  say "web fallback pid=$WEB_PID port=$FALLBACK_PORT ready=$READY url=$NUXEL_HOME_URL"
+else
+  say "web server already serving on :$WEB_PORT"
+fi
+# PWNAGE-31000 PRE-LOCKSCREEN CINEMA (early): map the preloading video BEFORE
+# the launcher host constructs the lockscreen, so the first composited frame
+# shows the video rather than a one-second lockscreen flash.  The controller is
+# a fail-open presentation overlay: it never blocks the launcher and falls back
+# to the normal lockscreen on every failure path.
+if [ -x /usr/lib/nuxel/nuxel-preload-cinema ]; then
+  # The early controller waits for /run/nuxel-launcher-ready, then maps mpv
+  # above the launcher.  Give that marker a generous bound: the cover is
+  # opaque until the controller publishes its first presented frame, so a
+  # slower audio/navdock startup can never expose the lockscreen.
+  NUXEL_PRELOAD_EARLY=1 \
+  NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS="${NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS:-6000}" \
+  NUXEL_PRELOAD_EARLY_MAP_DELAY_MS="${NUXEL_PRELOAD_EARLY_MAP_DELAY_MS:-800}" \
+  NUXEL_PRELOAD_WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+  nohup /usr/lib/nuxel/nuxel-preload-cinema --early \
+      </dev/null >/run/nuxel-preload-cinema.out 2>&1 &
+  say "starting pre-lockscreen cinema overlay pid=$!"
+fi
+
+# PWNAGE-32000 KEYBOARD: the persistent Back/Home/Recents dock is a native
+# zwlr_layer_shell_v1 OVERLAY surface with an exclusive zone, so the native
+# Stevia OSK (the working grey/black/white keyboard) stops above it instead
+# of covering it.  Start both as session Wayland clients before the launcher
+# host takes the foreground.  Stevia is started inside a session D-Bus so its
+# OSK provider registration succeeds.
+say "starting A45 nav dock + Stevia OSK"
+nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
+if [ -x /usr/bin/phosh-osk-stevia ]; then
+  nohup dbus-run-session -- /usr/bin/phosh-osk-stevia </dev/null >/run/stevia.out 2>&1 &
+fi
+
+# PWNAGE-36000 AUDIO: this phone session runs as root and has no logind user
+# session, so the stock `systemctl --user pipewire` path does not exist.  Run
+# one private session bus + PipeWire/WirePlumber in the compositor's runtime
+# directory.  The exports are inherited by nuxel-pwa-host and every app it
+# launches.  This image has no udev daemon, so the udev rule is a fallback;
+# the session re-applies the /dev/snd group/mode itself on every boot.
+AUDIO_RUNTIME="${XDG_RUNTIME_DIR:-/run/nuxel-wayland}"
+export XDG_RUNTIME_DIR="$AUDIO_RUNTIME"
+export PIPEWIRE_RUNTIME_DIR="$AUDIO_RUNTIME"
+export PULSE_SERVER="${PULSE_SERVER:-unix:$AUDIO_RUNTIME/pulse/native}"
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  BUS_SOCKET="$AUDIO_RUNTIME/bus"
+  if [ -S "$BUS_SOCKET" ]; then rm -f "$BUS_SOCKET" 2>/dev/null || true; fi
+  if dbus-daemon --session --fork --address="unix:path=$BUS_SOCKET" --nopidfile >/run/nuxel-dbus.out 2>&1; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS_SOCKET"
+    say "audio session bus $BUS_SOCKET"
+  else
+    say "audio session bus unavailable"
+  fi
+fi
+chgrp -R audio /dev/snd 2>/dev/null || true
+chmod -R g+rw /dev/snd 2>/dev/null || true
+if command -v pipewire >/dev/null 2>&1; then
+  nohup pipewire >/run/nuxel-pipewire.out 2>&1 &
+  say "pipewire started pid=$!"
+  # Do not start WirePlumber before the PipeWire socket exists; otherwise the
+  # session manager logs a failed connection and wpctl can hang on first use.
+  _pw_i=0
+  while [ "$_pw_i" -lt 30 ]; do
+    [ -S "$AUDIO_RUNTIME/pipewire-0" ] && break
+    sleep 0.1
+    _pw_i=$((_pw_i + 1))
+  done
+  if [ -S "$AUDIO_RUNTIME/pipewire-0" ]; then
+    say "pipewire socket ready"
+  else
+    say "pipewire socket missing after 3s"
+  fi
+  if command -v wireplumber >/dev/null 2>&1; then
+    nohup wireplumber >/run/nuxel-wireplumber.out 2>&1 &
+    say "wireplumber started pid=$!"
+  fi
+  if command -v pipewire-pulse >/dev/null 2>&1; then
+    nohup pipewire-pulse >/run/nuxel-pipewire-pulse.out 2>&1 &
+    say "pipewire-pulse started pid=$!"
+  fi
+fi
+
+say "starting launcher host url=$NUXEL_HOME_URL"
+exec /usr/lib/nuxel/nuxel-pwa-host
+=== phoc ini ===
+# Nuxel S10+ phoc configuration (beyond2lte).
+#
+# This is /usr/share/phosh/phoc.ini for the phone, with the HEADLESS-1 output
+# geometry set to the handset's own panel: 1440x3040 at scale 2 => 720x1520
+# logical pixels => a 360 CSS-pixel viewport, the same band the UTM VM renders
+# the Nuxel launcher in (VM: [output:Virtual-1] mode = 720x1440, scale = 2,
+# 360 CSS px).  The VM value is kept for reference below; only the physical
+# resolution differs, which the port record documents.
+[output:HEADLESS-1]
+mode = 720x1520
+scale = 2
+=== runtime socket ===
+     4096      0 drwx------   6 root     root          280 Oct 31 17:29 /run/nuxel-wayland
+    38131      0 srwxr-xr-x   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/pipewire-0-manager
+    38129      0 srwxr-xr-x   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/pipewire-0
+    40496      0 srwxr-xr-x   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/wayvncctl
+    24934      0 drwx------   2 root     root           60 Oct 31 17:29 /run/nuxel-wayland/at-spi
+    28043      0 srwxrwxrwx   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/at-spi/bus
+    28001      0 drwx------   2 root     root           80 Oct 31 17:29 /run/nuxel-wayland/pulse
+    41634      0 srwxrwxrwx   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/pulse/native
+    28004      4 -rw-r--r--   1 root     root            5 Oct 31 17:29 /run/nuxel-wayland/pulse/pid
+    15633      0 -rw-r-----   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/pipewire-0-manager.lock
+    15630      0 -rw-r-----   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/pipewire-0.lock
+    14231      0 srwxrwxrwx   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/bus
+     2750      0 drwx------   3 root     root           60 Oct 31 17:29 /run/nuxel-wayland/dbus-1
+     2751      0 drwx------   2 root     root           40 Oct 31 17:29 /run/nuxel-wayland/dbus-1/services
+    29043      0 srwxr-xr-x   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/wayland-0
+    29041      0 -rw-r-----   1 root     root            0 Oct 31 17:29 /run/nuxel-wayland/wayland-0.lock
+    29039      0 drwx------   2 root     root           60 Oct 31 17:29 /run/nuxel-wayland/dconf
+    29040      4 -rw-------   1 root     root            2 Oct 31 17:29 /run/nuxel-wayland/dconf/user
+=== wayland-info correct ===
+interface: 'wl_shm',                                     version:  2, name:  1
+	formats (fourcc):
+	0x30334258 = 'XB30'
+	0x30334241 = 'AB30'
+	0x30335258 = 'XR30'
+	0x30335241 = 'AR30'
+	0x36314742 = 'BG16'
+	0x36314752 = 'RG16'
+	0x34325842 = 'BX24'
+	0x34324142 = 'BA24'
+	0x34325852 = 'RX24'
+	0x34324152 = 'RA24'
+	0x34324241 = 'AB24'
+	         1 = 'XR24'
+	0x34324258 = 'XB24'
+	         0 = 'AR24'
+interface: 'wl_data_device_manager',                     version:  3, name:  2
+interface: 'wl_compositor',                              version:  6, name:  3
+interface: 'wl_subcompositor',                           version:  1, name:  4
+interface: 'zxdg_output_manager_v1',                     version:  3, name:  5
+	xdg_output_v1
+		output: 49
+		name: 'HEADLESS-1'
+		description: 'Headless output 1'
+		logical_x: 0, logical_y: 0
+		logical_width: 360, logical_height: 760
+interface: 'xdg_wm_base',                                version:  6, name:  6
+interface: 'zwlr_layer_shell_v1',                        version:  3, name:  7
+interface: 'zphoc_layer_shell_effects_v1',               version:  3, name:  8
+interface: 'zwp_tablet_manager_v2',                      version:  1, name:  9
+interface: 'wp_security_context_manager_v1',             version:  1, name: 10
+interface: 'zwlr_gamma_control_manager_v1',              version:  1, name: 11
+interface: 'zwlr_export_dmabuf_manager_v1',              version:  1, name: 12
+interface: 'org_kde_kwin_server_decoration_manager',     version:  1, name: 13
+interface: 'zwp_primary_selection_device_manager_v1',    version:  1, name: 14
+interface: 'zwp_input_method_manager_v2',                version:  1, name: 15
+interface: 'zwp_text_input_manager_v3',                  version:  1, name: 16
+interface: 'ext_idle_notifier_v1',                       version:  2, name: 17
+interface: 'gtk_shell1',                                 version:  3, name: 18
+interface: 'phosh_private',                              version:  7, name: 19
+interface: 'xdg_activation_v1',                          version:  1, name: 20
+interface: 'zwp_virtual_keyboard_manager_v1',            version:  1, name: 21
+interface: 'zwp_keyboard_shortcuts_inhibit_manager_v1',  version:  1, name: 22
+interface: 'zwlr_virtual_pointer_manager_v1',            version:  2, name: 23
+interface: 'zwlr_screencopy_manager_v1',                 version:  3, name: 24
+interface: 'ext_image_copy_capture_manager_v1',          version:  1, name: 25
+interface: 'ext_output_image_capture_source_manager_v1', version:  1, name: 26
+interface: 'zxdg_decoration_manager_v1',                 version:  1, name: 27
+interface: 'xx_cutouts_manager_v1',                      version:  1, name: 28
+interface: 'wp_viewporter',                              version:  1, name: 29
+interface: 'wp_single_pixel_buffer_manager_v1',          version:  1, name: 30
+interface: 'wp_fractional_scale_manager_v1',             version:  1, name: 31
+interface: 'zxdg_exporter_v1',                           version:  1, name: 32
+interface: 'zxdg_importer_v1',                           version:  1, name: 33
+interface: 'zxdg_exporter_v2',                           version:  1, name: 34
+interface: 'zxdg_importer_v2',                           version:  1, name: 35
+interface: 'zwp_pointer_constraints_v1',                 version:  1, name: 36
+interface: 'wp_cursor_shape_manager_v1',                 version:  1, name: 37
+interface: 'wp_alpha_modifier_v1',                       version:  1, name: 38
+interface: 'wp_presentation',                            version:  2, name: 39
+	presentation clock id: 1 (CLOCK_MONOTONIC)
+interface: 'zwlr_foreign_toplevel_manager_v1',           version:  3, name: 40
+interface: 'ext_foreign_toplevel_list_v1',               version:  1, name: 41
+interface: 'zwp_relative_pointer_manager_v1',            version:  1, name: 42
+interface: 'zwp_pointer_gestures_v1',                    version:  3, name: 43
+interface: 'zwlr_output_manager_v1',                     version:  4, name: 44
+interface: 'zwlr_output_power_manager_v1',               version:  1, name: 45
+interface: 'zwlr_data_control_manager_v1',               version:  2, name: 46
+interface: 'wl_seat',                                    version:  9, name: 47
+	name: seat0
+	capabilities: keyboard touch
+interface: 'zphoc_device_state_v1',                      version:  2, name: 48
+interface: 'wl_output',                                  version:  4, name: 49
+	name: HEADLESS-1
+	description: Headless output 1
+	x: 0, y: 0, scale: 2,
+	physical_width: 0 mm, physical_height: 0 mm,
+	make: 'Unknown', model: 'Unknown',
+	subpixel_orientation: unknown, output_transform: normal,
+	mode:
+		width: 720 px, height: 1520 px, refresh: 0.000 Hz,
+		flags: current

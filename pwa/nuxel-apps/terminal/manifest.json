@@ -5,7 +5,7 @@
   "start_url": "/pwa/nuxel-apps/terminal/index.html",
   "scope": "/pwa/nuxel-apps/terminal/",
   "display": "fullscreen",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#05080f",
   "theme_color": "#05080f",
   "lang": "en",

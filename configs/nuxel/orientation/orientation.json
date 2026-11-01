@@ -8,15 +8,66 @@
     "panel": "S6E3HA9 Dynamic AMOLED 3040x1440 (portrait scanout 1440x3040)"
   },
   "modes": {
-    "portrait":            { "label": "Forced Portrait",      "allowed": [0] },
-    "reverse-portrait":    { "label": "Reverse Portrait",     "allowed": [180] },
-    "landscape":           { "label": "Forced Landscape",     "allowed": [90] },
-    "reverse-landscape":   { "label": "Reverse Landscape",    "allowed": [270] },
-    "auto":                { "label": "Auto",                 "allowed": [0, 90, 180, 270], "auto": true },
-    "auto-portrait":       { "label": "Auto Portrait",        "allowed": [0, 180],          "auto": true },
-    "auto-landscape":      { "label": "Auto Landscape",       "allowed": [90, 270],         "auto": true }
+    "portrait": {
+      "label": "Locked (PT)",
+      "allowed": [
+        0
+      ]
+    },
+    "reverse-portrait": {
+      "label": "Locked (RPT)",
+      "allowed": [
+        180
+      ]
+    },
+    "landscape": {
+      "label": "Locked (LS)",
+      "allowed": [
+        90
+      ]
+    },
+    "reverse-landscape": {
+      "label": "Locked (RLS)",
+      "allowed": [
+        270
+      ]
+    },
+    "auto": {
+      "label": "Auto (FULL)",
+      "allowed": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "auto": true
+    },
+    "auto-portrait": {
+      "label": "Auto (PT)",
+      "allowed": [
+        0,
+        180
+      ],
+      "auto": true
+    },
+    "auto-landscape": {
+      "label": "Auto (LS)",
+      "allowed": [
+        90,
+        270
+      ],
+      "auto": true
+    }
   },
-  "mode_order": ["auto", "auto-portrait", "auto-landscape", "portrait", "landscape", "reverse-portrait", "reverse-landscape"],
+  "mode_order": [
+    "auto",
+    "auto-portrait",
+    "auto-landscape",
+    "portrait",
+    "landscape",
+    "reverse-portrait",
+    "reverse-landscape"
+  ],
   "default_mode": "portrait",
   "policy": {
     "hysteresis_ms": 450,
@@ -29,34 +80,162 @@
   },
   "sensor": {
     "preferred_source": "auto",
-    "sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+    "sources": [
+      "iio-sysfs-accel",
+      "iio-accel",
+      "iio-sensor-proxy",
+      "manual"
+    ],
     "iio": {
-      "name_hints": ["accel", "bmi160", "lsm6ds", "lsm6dso", "accel_3d"],
-      "channels": ["in_accel_x_raw", "in_accel_y_raw", "in_accel_z_raw"],
-      "scale_files": ["in_accel_scale", "in_accel_x_scale"]
+      "name_hints": [
+        "accel",
+        "bmi160",
+        "lsm6ds",
+        "lsm6dso",
+        "accel_3d"
+      ],
+      "channels": [
+        "in_accel_x_raw",
+        "in_accel_y_raw",
+        "in_accel_z_raw"
+      ],
+      "scale_files": [
+        "in_accel_scale",
+        "in_accel_x_scale"
+      ]
     },
     "mount_matrix": {
       "comment": "3x3 row-major map from sensor axes to display-native axes (x=right, y=up, z=out of screen). This is the DEFAULT convention and MUST be calibrated from observed device motion on hardware; until then it is calibration_status=unverified.",
-      "matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      "matrix": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
       "calibration_status": "unverified"
     },
     "gravity_reference": {
       "comment": "Unit gravity vector (display-native) for each discrete orientation. 0=portrait, 90/180/270 clockwise physical poses. Unverified until observed on the actual handset.",
-      "0":   [0.0, -1.0, 0.0],
-      "90":  [1.0,  0.0, 0.0],
-      "180": [0.0,  1.0, 0.0],
-      "270": [-1.0,  0.0, 0.0],
+      "0": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "90": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "180": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "270": [
+        -1.0,
+        0.0,
+        0.0
+      ],
       "calibration_status": "unverified"
+    },
+    "sensor_hub": {
+      "device": "BCM47752 / LSM6DSO via /sys/class/sensors/accelerometer_sensor/raw_data",
+      "bbd_ready": "/dev/bbd_control",
+      "requires_patch_loader": "the Broadcom LHD sensor-hub patch loader is not shipped; raw_data remains 0,0,0 until the hub MCU is initialized",
+      "production_source": true,
+      "raw_data": "/sys/class/sensors/accelerometer_sensor/raw_data",
+      "enable": "/sys/class/sensors/ssp_sensor/enable",
+      "mcu_power": "/sys/class/sec/sensorhub/mcu_power",
+      "bbd_control": "/dev/bbd_control",
+      "enable_bit": 1,
+      "lhd_paths": [
+        "/vendor/bin/hw/lhd",
+        "/vendor/bin/lhd"
+      ],
+      "linker_paths": [
+        "/system/bin/linker64"
+      ],
+      "auto_start": true,
+      "startup_timeout_ms": 1500,
+      "retry_interval_ms": 30000,
+      "comment": "nuxel-orientationd drives these real kernel nodes before an Auto probe: ESW:READY wakes the BBD/SSP bridge and the accelerometer bit is OR-ed into enable. raw_data must then become non-zero; no synthetic sample is ever used. The vendor Android lhd runtime (with /system/bin/linker64) is required to patch the BCM47752 MCU; when absent, Auto remains truthfully blocked."
     }
   },
   "compositor": {
     "backend": "auto",
-    "candidates": ["wlr-randr", "phoc-config", "none"],
-    "output": "DSI-1",
-    "transform_map": { "0": "normal", "90": "270", "180": "180", "270": "90" },
-    "comment_transform_map": "Physical pose -> wlr-randr transform that keeps content upright. The mapping and the matching touch calibration are UNVERIFIED until Phase 3 is exercised on the real device.",
-    "revert_after_ms": 4000,
-    "touch": { "verified": false, "matrix_available": false }
+    "candidates": [
+      "wlr-randr",
+      "phoc-config",
+      "none"
+    ],
+    "output": "auto",
+    "transform_map": {
+      "0": "normal",
+      "90": "270",
+      "180": "180",
+      "270": "90"
+    },
+    "portrait_scale": 2,
+    "landscape_scale": 1,
+    "comment_transform_map": "Canonical clockwise pose -> wlr-randr transform. PWNAGE-54000 live measurement: Phoc HEADLESS-1 captures a 720x1520 buffer and grim exposes the transformed 1520x720 logical desktop. The historical 90->270 / 270->90 mapping is retained. Touch uses the inverse coordinate mapping through libinput calibration in the Nuxel libinput shim; nuxel-wl-fb does not rotate pixels a second time.",
+    "revert_after_ms": 15000,
+    "trial_seconds": 0,
+    "commit_verified": true,
+    "transform_map_verified": true,
+    "verify_timeout_ms": 2500,
+    "runtime_dir": "/run/nuxel-wayland",
+    "presenter_state": "/run/nuxel-wl-fb-orientation",
+    "screencopy_already_transformed": true,
+    "presenter_compensation": "none: phoc screencopy returns the transformed logical frame in the portrait 720x1520 binding; nuxel-wl-fb scales it directly to 1440x3040",
+    "wayland_display": "wayland-0",
+    "touch": {
+      "verified": false,
+      "matrix_available": true,
+      "owner": "libnuxel-libinput-path.so (LD_PRELOAD input owner in phoc)",
+      "mechanism": "libinput calibration matrix driven by the verified compositor transform; Phoc receives already-mapped touch coordinates; nuxel-wl-fb never rotates touch",
+      "calibration_status": "matrix-derived-and-applied-from-live-transform; physical corner test pending"
+    },
+    "input_state": "/run/nuxel-orientation/input.json",
+    "input_matrix_map": {
+      "normal": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "90": [
+        0,
+        -1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "180": [
+        -1,
+        0,
+        1,
+        0,
+        -1,
+        1
+      ],
+      "270": [
+        0,
+        1,
+        0,
+        -1,
+        0,
+        1
+      ]
+    },
+    "input_matrix_comment": "libinput calibration matrix selected from the compositor transform that was actually read back. 270 means the portrait touch frame must be mapped 270 degrees clockwise into the 1520x720 logical desktop; the matrix is applied exactly once by libnuxel-libinput-path.so inside Phoc."
   },
   "paths": {
     "state_file": "/var/lib/nuxel/orientation/state.json",

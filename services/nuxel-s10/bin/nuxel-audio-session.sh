@@ -31,5 +31,25 @@ if [ ! -S "$RUNTIME/pipewire-0" ]; then
 fi
 log "pipewire socket ready pid=$PIPE_PID"
 wireplumber >/run/nuxel-wireplumber.out 2>&1 &
+WIRE_PID=$!
 pipewire-pulse >/run/nuxel-pipewire-pulse.out 2>&1 &
+PULSE_PID=$!
+
+# systemd stops this unit before the ABOX core-firmware reload and on every
+# reboot.  PipeWire may ignore the first SIGTERM for several seconds; forward it
+# explicitly and bound the wait so a stop is deterministic (not an 8 s timeout).
+term() {
+  trap - TERM INT
+  kill -TERM "$PULSE_PID" "$WIRE_PID" "$PIPE_PID" 2>/dev/null || true
+  n=0
+  while [ "$n" -lt 30 ]; do
+    kill -0 "$PIPE_PID" 2>/dev/null || break
+    n=$((n+1)); sleep 0.1
+  done
+  kill -KILL "$PULSE_PID" "$WIRE_PID" "$PIPE_PID" 2>/dev/null || true
+  wait 2>/dev/null || true
+  exit 0
+}
+trap term TERM INT
+
 wait "$PIPE_PID"

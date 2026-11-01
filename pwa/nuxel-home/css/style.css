@@ -149,7 +149,7 @@ html, body {
     border: 2px solid var(--accent-light);
     border-top-color: var(--text-accent);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: spin 0.8s linear 4;
     margin-left: 12px;
 }
 
@@ -279,6 +279,10 @@ html, body {
 }
 
 .nuxel-touch-keyboard {
+    /* PWNAGE-46000: Stevia is the only visible phone keyboard.  This rule is a
+       second, CSS-level guard against an old cached script or stale DOM node
+       painting the blue in-page key panel behind Stevia. */
+    display: none !important;
     position: fixed;
     left: 0; right: 0; bottom: var(--system-nav-height);
     z-index: 240;

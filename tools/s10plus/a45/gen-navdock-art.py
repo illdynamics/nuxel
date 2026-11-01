@@ -1,61 +1,132 @@
 #!/usr/bin/env python3
-"""Generate navdock-art.h — the three nav buttons as ARGB8888 C arrays.
+"""Generate navdock-art.h plus the DOM-fallback PNGs.
 
-Converts the owner-supplied button artwork to pre-multiplied-free straight
-ARGB8888 (wl_shm WL_SHM_FORMAT_ARGB8888) at a fixed logical size, preserving
-alpha and aspect ratio (contain). The C header is embedded by nuxel-navdock.c.
+The owner artwork has very large transparent margins (for example the Back
+source is 1448x1086 but only ~683x525 px is painted above an 8/255 alpha
+threshold).  Scaling the *full* canvas into 48x48 therefore produced a tiny,
+inconsistently centred button.  This generator:
+
+  1. measures the real alpha bounds at a visibility threshold,
+  2. crops transparent padding (keeping a small glow margin),
+  3. normalises each icon into the same 44 px content box,
+  4. centres it on a 48x48 logical canvas,
+  5. writes premultiplied WL_SHM_FORMAT_ARGB8888 exactly once,
+  6. writes matching 96x96 fallback PNGs for the DOM dock.
+
+Run it with: python3 tools/s10plus/a45/gen-navdock-art.py
 """
-import os, sys
-from PIL import Image
+import os
+import sys
+from PIL import Image, ImageChops
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 
-SIZE = 48   # logical px (48 CSS px; navdock upscales by output scale for crisp pixels)
+
+def _find_root():
+    """Locate the repository root from either the source tree or a build copy.
+
+    The image builder copies this script to /tmp/<stage>/a45, so the old
+    fixed ../../.. walk resolved to "/" and lost the artwork.  Search explicit
+    roots and every ancestor first, then the canonical build mount.
+    """
+    candidates = []
+    env = os.environ.get("NUXEL_ROOT")
+    if env:
+        candidates.append(env)
+    here = HERE
+    for _ in range(8):
+        candidates.append(here)
+        parent = os.path.dirname(here)
+        if parent == here:
+            break
+        here = parent
+    candidates.append(os.getcwd())
+    candidates.append("/nuxel")
+    for cand in candidates:
+        if os.path.isfile(os.path.join(cand, "assets", "button-left.png")):
+            return os.path.abspath(cand)
+    raise SystemExit("cannot locate repository root (assets/button-left.png not found)")
+
+
+ROOT = _find_root()
+SKIP_FALLBACK = os.environ.get("NUXEL_NAVDOCK_SKIP_FALLBACK") == "1"
+
+SIZE = 48            # logical px consumed by nuxel-navdock.c
+FALLBACK_SIZE = 96   # 2x DOM fallback used by pwa/nuxel-home
+CONTENT = 44         # painted bounds inside the logical square
+ALPHA_THRESHOLD = 8  # ignore only invisible padding/compression noise
 
 ART = [
-    ("left",   os.path.join(ROOT, "assets", "button-left.png")),
-    ("middle", os.path.join(ROOT, "assets", "button-middle.png")),
-    ("right",  os.path.join(ROOT, "assets", "button-right.png")),
+    ("left",   os.path.join(ROOT, "assets", "button-left.png"),
+               os.path.join(ROOT, "pwa", "nuxel-home", "assets", "button-left.png")),
+    ("middle", os.path.join(ROOT, "assets", "button-middle.png"),
+               os.path.join(ROOT, "pwa", "nuxel-home", "assets", "button-middle.png")),
+    ("right",  os.path.join(ROOT, "assets", "button-right.png"),
+               os.path.join(ROOT, "pwa", "nuxel-home", "assets", "button-right.png")),
 ]
 
-def to_argb(path, size):
+
+def painted_bbox(im):
+    """Bounds above ALPHA_THRESHOLD, never just the first non-zero pixel."""
+    alpha = im.getchannel("A")
+    mask = alpha.point(lambda v: 255 if v > ALPHA_THRESHOLD else 0)
+    return mask.getbbox()
+
+
+def normalise(path):
     im = Image.open(path).convert("RGBA")
-    im.thumbnail((size, size), Image.LANCZOS)
-    w, h = im.size
-    # center into a square canvas
+    bb = painted_bbox(im)
+    if bb is None:
+        raise SystemExit("no painted pixels in %s" % path)
+    im = im.crop(bb)
+    # Preserve a small amount of transparent glow around the silhouette, but
+    # never let that pad dominate the scale calculation.
+    pad = max(1, int(round(max(im.size) * 0.015)))
+    canvas = Image.new("RGBA", (im.width + pad * 2, im.height + pad * 2), (0, 0, 0, 0))
+    canvas.paste(im, (pad, pad))
+    im = canvas
+    scale = CONTENT / float(max(im.size))
+    new_size = (max(1, int(round(im.width * scale))),
+                max(1, int(round(im.height * scale))))
+    return im.resize(new_size, Image.LANCZOS)
+
+
+def centre(im, size):
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    canvas.paste(im, ((size - w) // 2, (size - h) // 2))
-    px = canvas.load()
+    canvas.paste(im, ((size - im.width) // 2, (size - im.height) // 2))
+    return canvas
+
+
+def to_argb(im):
+    """Premultiply exactly once, store ARGB8888 in memory order (BGRA bytes)."""
+    px = im.load()
     out = []
-    for y in range(size):
-        for x in range(size):
+    for y in range(im.height):
+        for x in range(im.width):
             r, g, b, a = px[x, y]
-            # Wayland WL_SHM_FORMAT_ARGB8888 is PREMULTIPLIED alpha (the alpha
-            # byte is the most significant byte, stored first in memory on
-            # little-endian).  Multiply colour by alpha so partially-transparent
-            # edge pixels never add un-premultiplied colour bleed and the icons
-            # render identically on every boot instead of intermittently
-            # chopping/washing out at the 1-2px edges.
-            a8 = a
-            if a8:
-                r = (r * a8 + 127) // 255
-                g = (g * a8 + 127) // 255
-                b = (b * a8 + 127) // 255
-            out.append((a8 << 24) | (r << 16) | (g << 8) | b)
+            if a:
+                r = (r * a + 127) // 255
+                g = (g * a + 127) // 255
+                b = (b * a + 127) // 255
+            else:
+                r = g = b = 0
+            out.append((a << 24) | (r << 16) | (g << 8) | b)
     return out
+
 
 def main():
     out = os.path.join(HERE, "navdock-art.h")
-    parts = []
-    parts.append("/* AUTO-GENERATED by gen-navdock-art.py — do not edit by hand. */")
-    parts.append("#pragma once")
-    parts.append("#define NAV_ART_SIZE %d" % SIZE)
-    for name, path in ART:
-        if not os.path.exists(path):
-            sys.stderr.write("missing art %s\n" % path)
+    parts = [
+        "/* AUTO-GENERATED by gen-navdock-art.py — do not edit by hand. */",
+        "#pragma once",
+        "#define NAV_ART_SIZE %d" % SIZE,
+    ]
+    for name, src, fallback in ART:
+        if not os.path.exists(src):
+            sys.stderr.write("missing art %s\n" % src)
             sys.exit(1)
-        data = to_argb(path, SIZE)
+        logical = centre(normalise(src), SIZE)
+        data = to_argb(logical)
         parts.append("static const unsigned int art_%s[NAV_ART_SIZE*NAV_ART_SIZE] = {" % name)
         line = []
         for i, v in enumerate(data):
@@ -66,10 +137,21 @@ def main():
         if line:
             parts.append("  " + ",".join(line) + ",")
         parts.append("};")
+        # Same normalised artwork at 2x for the DOM dock fallback.  This is a
+        # true 2x render of the alpha-cropped source, not an upscale of the
+        # 48px native buffer.
+        if not SKIP_FALLBACK:
+            fb = centre(normalise(src), SIZE).resize((FALLBACK_SIZE, FALLBACK_SIZE), Image.LANCZOS)
+            os.makedirs(os.path.dirname(fallback), exist_ok=True)
+            fb.save(fallback)
     parts.append("")
     with open(out, "w") as f:
         f.write("\n".join(parts) + "\n")
     print("wrote %s (%d bytes)" % (out, os.path.getsize(out)))
+    if not SKIP_FALLBACK:
+        for _, _, fallback in ART:
+            print("wrote %s" % fallback)
+
 
 if __name__ == "__main__":
     main()

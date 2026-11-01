@@ -1,0 +1,30 @@
+=== boot ===
+ 21:02:53 up 0 min,  0 user,  load average: 5.68, 1.35, 0.45
+Linux fedora 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Wed Oct 28 14:55:36 CET 2026 aarch64 GNU/Linux
+         system boot  Oct 31 21:02
+=== services ===
+active
+active
+active
+active
+active
+active
+active
+active
+=== statusbar processes ===
+   5995 /usr/lib/nuxel/nuxel-statusbar
+=== statusbar hash / audit ===
+f98f5584c6e057d09925a85734f1a3fea18cc9bd841df647689e988fec8385b4  /usr/lib/nuxel/nuxel-statusbar
+2026-10-31T21:02:35 STATUSBAR_START_HIDDEN locked=1
+=== policy / rail ===
+{"enabled": false, "updated": 1793476874.8934417}
+GPS_PWR_EN=0
+=== bridge status (no coordinates) ===
+{'success': True, 'enabled': False, 'state': 'disabled', 'latitude': None, 'longitude': None, 'location_fix_available': False, 'gnss_fix': False, 'network_fix': False, 'active_clients': 0}
+=== policy as bridge user ===
+{"enabled": false, "updated": 1793476874.8934417}
+=== PWA revision ===
+status-bar.css?v=p42000
+const CACHE_VERSION = 'v72-p42000';
+=== lock ===
+cat: /run/nuxel/security/lock-state.json: No such file or directory

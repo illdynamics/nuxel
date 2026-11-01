@@ -1,0 +1,48 @@
+=== boot ===
+ 20:54:11 up 0 min,  0 user,  load average: 5.85, 1.38, 0.46
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Wed Oct 28 14:55:36 CET 2026 aarch64 GNU/Linux
+         system boot  Oct 31 20:53
+=== services ===
+active
+active
+active
+active
+active
+active
+active
+active
+=== policy / ACL / rail ===
+{"enabled": false, "updated": 1793476354.21211}
+# file: /var/lib/nuxel
+# owner: root
+# group: nuxel-notifications
+user::rwx
+user:nuxel-bridge:r-x
+group::rwx
+mask::rwx
+other::---
+
+# file: /var/lib/nuxel/permissions
+# owner: nuxel
+# group: nuxel
+user::rwx
+user:nuxel-bridge:rwx
+group::rwx
+mask::rwx
+other::---
+
+GPS_PWR_EN=0
+=== bridge location status (coordinates must be null) ===
+{'success': True, 'enabled': False, 'state': 'disabled', 'latitude': None, 'longitude': None, 'location_fix_available': False, 'gnss_fix': False, 'network_fix': False, 'provider_ready': False, 'active_clients': 0}
+=== policy readback as bridge user ===
+{"enabled": false, "updated": 1793476354.21211}
+=== deployed hashes ===
+1babe7cc6fe43346819a80b18fdbb13517e44f6d6438791fc5fb56ca74c75dc6  /usr/lib/nuxel/nuxel-bridge/bridge.py
+81a90c39fbe9022408a5407bef84b248cb1d3d7271d1b4ecc6a7d941fc2aa486  /usr/share/nuxel/pwa/nuxel-home/index.html
+0d961796b244e6ef101e89fa7fbf32f27ad69c295f6d4904ee6adc221816a003  /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+36de01f95b96d19e6649c1d5ff7e0b9b2a486892ee9a60c9042454aa53c3cbee  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+=== served PWA revision ===
+status-bar.css?v=p42000
+const CACHE_VERSION = 'v72-p42000';
+=== lock state ===
+cat: /run/nuxel/security/lock-state.json: No such file or directory

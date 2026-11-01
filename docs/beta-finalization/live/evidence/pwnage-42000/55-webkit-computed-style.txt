@@ -1,0 +1,20 @@
+Live WebKitGTK computed-style probe (fresh page load, same served CSS/JS)
+URL: http://127.0.0.1:8000/pwa/nuxel-home/index.html
+
+JS_RESULT {
+  "locHidden": false,
+  "locState": "fixed",
+  "locBg": "rgb(105, 183, 255)",
+  "locMask": "url(\"http://127.0.0.1:8000/assets/nuxel-quicksettings-icon-pack/09-location.png\")",
+  "locOp": "1",
+  "wifiColor": "#7ee29a",
+  "wifiOp": "1",
+  "soundColor": "rgb(245, 249, 255)",
+  "sheets": [
+    "http://127.0.0.1:8000/pwa/nuxel-home/css/status-bar.css?v=p42000"
+  ]
+}
+
+Interpretation: the top-bar location glyph is a blue mask (network fix), the
+Wi-Fi glyph is green when linked, and the sound glyph is explicit near-white.
+No dark-grey #666 or 0.45-opacity location state remains in the served CSS.

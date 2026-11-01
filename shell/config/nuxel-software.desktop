@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Software
+Comment=Install and remove native Fedora RPM applications
+Exec=/usr/lib/nuxel/nuxel-software
+TryExec=/usr/lib/nuxel/nuxel-software
+Icon=org.gnome.Software
+Terminal=false
+Categories=System;PackageManager;

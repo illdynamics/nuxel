@@ -417,10 +417,12 @@ dialer_initiate_call (NuxelDialer *dialer)
     g_debug ("[Dialer] Initiating call to: %s", number);
     gtk_label_set_text (GTK_LABEL (dialer->call_status), "Dialing...");
     
-    /* Create call via ModemManager */
-    MMSmsProperties *properties = mm_sms_properties_new ();
+    /* Create a voice call via ModemManager.  The previous code built
+     * MMSmsProperties (an SMS object) and passed it to mm_modem_create_call(),
+     * which is a type-mismatched call and made the phone app look "bugged". */
+    MMCallProperties *properties = mm_call_properties_new ();
     g_object_set (properties,
-                  MM_SMS_PROPERTY_NUMBER, number,
+                  MM_CALL_PROPERTY_NUMBER, number,
                   NULL);
     
     mm_modem_create_call (dialer->mm_modem,
@@ -672,6 +674,8 @@ activate_cb (GtkApplication *app,
     gtk_window_set_title (GTK_WINDOW (dialer->window), "Phone");
     gtk_window_set_default_size (GTK_WINDOW (dialer->window), 400, 700);
     gtk_window_set_resizable (GTK_WINDOW (dialer->window), TRUE);
+    AdwStyleManager *style = adw_style_manager_get_default();
+    adw_style_manager_set_color_scheme(style, ADW_COLOR_SCHEME_FORCE_DARK);
     
     /* CSS styling */
     GtkCssProvider *provider = gtk_css_provider_new ();

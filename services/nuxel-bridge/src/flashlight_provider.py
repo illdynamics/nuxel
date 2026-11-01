@@ -33,6 +33,7 @@ from typing import Any, Dict, Optional
 
 DEFAULT_POLICY = "/etc/nuxel/leds/leds.json"
 DEFAULT_LEDS_ROOT = "/sys/class/leds"
+DEFAULT_FLASH_ROOT = "/sys/class/camera/flash"
 DEFAULT_STATE = "/var/lib/nuxel/leds/state.json"
 DEFAULT_CAMERA_ACTIVE = "/run/nuxel/camera-active"
 DEFAULT_THERMAL_ROOT = "/sys/class/thermal"
@@ -70,6 +71,7 @@ class FlashlightProvider:
     def __init__(self) -> None:
         self.policy_path = os.environ.get("NUXEL_LED_POLICY", DEFAULT_POLICY)
         self.leds_root = os.environ.get("NUXEL_LEDS_ROOT", DEFAULT_LEDS_ROOT)
+        self.flash_root = os.environ.get("NUXEL_FLASH_ROOT", DEFAULT_FLASH_ROOT)
         self.state_path = os.environ.get("NUXEL_FLASHLIGHT_STATE", DEFAULT_STATE)
         self.camera_markers = [p for p in os.environ.get(
             "NUXEL_CAMERA_ACTIVE", DEFAULT_CAMERA_ACTIVE).split(":") if p]
@@ -80,6 +82,7 @@ class FlashlightProvider:
         self._reason = "not requested"
         self._brightness_path: Optional[str] = None
         self._max_brightness = 255
+        self._boolean_control = False
         self._policy = self._load_policy()
         atexit.register(self.force_off)
         self._refresh_path()
@@ -99,6 +102,15 @@ class FlashlightProvider:
         return torch if isinstance(torch, dict) else {}
 
     def _candidates(self):
+        # The vendor S2MPB02 LED class deliberately disables its sysfs
+        # brightness writer (`s2mpb02_led_set` is compiled out).  The real
+        # torch switch is the camera-class `rear_flash` node, whose accepted
+        # values are 0 (off), 1 (torch), 100/200 (factory) and 1001..1015.
+        # Prefer it when present; the LED-class path remains a fallback for
+        # kernels that do implement it.
+        rear = os.path.join(self.flash_root, "rear_flash")
+        if os.path.isfile(rear):
+            yield rear
         torch = self._policy_torch()
         for p in torch.get("candidates") or []:
             yield str(p)
@@ -118,6 +130,15 @@ class FlashlightProvider:
                 # Map policy absolute paths onto the actual (possibly test) root.
                 if cand.startswith("/sys/class/leds/"):
                     cand = os.path.join(self.leds_root, cand[len("/sys/class/leds/"):])
+                # The camera-class rear_flash is a writable sysfs FILE, not a
+                # LED-class directory.  Treat it as a direct brightness node.
+                if os.path.isfile(cand):
+                    if not os.access(cand, os.W_OK):
+                        continue
+                    self._brightness_path = cand
+                    self._boolean_control = os.path.basename(cand) == "rear_flash"
+                    self._max_brightness = 2015 if self._boolean_control else 255
+                    return cand
                 if not os.path.isdir(cand):
                     continue
                 brightness = os.path.join(cand, "brightness")
@@ -126,7 +147,8 @@ class FlashlightProvider:
                 if not os.access(brightness, os.W_OK):
                     continue
                 self._brightness_path = brightness
-                self._max_brightness = _read_int(os.path.join(cand, "max_brightness")) or 255
+                self._boolean_control = os.path.basename(cand) == "rear_flash"
+                self._max_brightness = 1 if self._boolean_control else (_read_int(os.path.join(cand, "max_brightness")) or 255)
                 return brightness
             self._brightness_path = None
             return None
@@ -178,7 +200,9 @@ class FlashlightProvider:
                 "state": state,
                 "on": state == "ON",
                 "led_path": self._brightness_path,
-                "led_name": os.path.basename(os.path.dirname(self._brightness_path)) if self._brightness_path else None,
+                "led_name": ("rear_flash" if self._boolean_control and self._brightness_path else
+                             (os.path.basename(os.path.dirname(self._brightness_path)) if self._brightness_path else None)),
+                "control": "camera-rear_flash" if self._boolean_control else "led-brightness",
                 "max_on_seconds": self._max_on_seconds(),
                 "camera_active": self._camera_active(),
                 "thermal_blocked": self._thermal_blocked(),
@@ -191,7 +215,15 @@ class FlashlightProvider:
             return False
         try:
             with open(self._brightness_path, "w") as fh:
-                fh.write(str(max(0, min(self._max_brightness, int(value)))))
+                if self._boolean_control:
+                    # rear_flash accepts 0/1/100/200 and the documented
+                    # 2001..2015 torch-current selector.  Value 1 is only
+                    # 60 mA and is too dim to be a usable torch; 2015 selects
+                    # the maximum supported 300 mA continuous torch current.
+                    # Never write the old generic LED max_brightness here.
+                    fh.write(str(max(1, min(2015, int(value)))) if int(value) > 0 else "0")
+                else:
+                    fh.write(str(max(0, min(self._max_brightness, int(value)))))
             return True
         except OSError:
             return False

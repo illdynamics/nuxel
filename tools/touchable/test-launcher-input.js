@@ -6,7 +6,12 @@ const path = require('node:path');
 const listeners = {};
 const calls = [];
 const sandbox = {
-    document: { addEventListener(name, fn) { (listeners[name] ||= []).push(fn); } },
+    document: {
+        addEventListener(name, fn) { (listeners[name] ||= []).push(fn); },
+        // Real DOM lookup used by _bindPointerEvents (scroll guard).  This
+        // harness only exercises the pointer handlers, so no node is needed.
+        getElementById() { return null; },
+    },
     window: { PointerEvent: function () {} },
     appRegistry: { launchApp(id) { calls.push(id); } },
     localStorage: { getItem() { return null; }, setItem() {} },

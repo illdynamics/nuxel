@@ -1,0 +1,12 @@
+# PWNAGE-49000 physical/live access — 2026-10-31T22:33:29Z
+
+The last documented handset address in this checkout (10.20.30.16) was probed read-only.
+$ ssh -o BatchMode=yes -o ConnectTimeout=5 nuxel@10.20.30.16 uname -a
+Result: ssh: connect to host 10.20.30.16 port 22: Can't assign requested address (rc=255)
+
+No USB network interface / serial recovery tty is present on this workstation in this run.
+Therefore no live file hash, screenshot, service restart, USB MTP enumeration,
+NFC tag read, fingerprint enrollment or physical haptic test was performed.
+
+Status: PHYSICAL EVIDENCE BLOCKED — no reachable handset path. Source and headless
+layout tests only. Do not mark any item PASS_PHYSICAL from this run.

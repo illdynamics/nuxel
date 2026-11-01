@@ -69,7 +69,7 @@
       "/sys/class/video4linux/*/name",
       "/sys/class/v4l-subdev*/name"
     ],
-    "sensor_name_regex": "(s5k|isocell|imx|ov[0-9]|hi[0-9]|sec_cam|front|rear|exynos[0-9]*is)",
+    "sensor_name_regex": "(s5k|isocell|imx|ov[0-9]|hi[0-9]|sec_cam|front|rear|fimc|exynos[0-9]*(is|-is))",
     "sysfs_counts": {
       "video4linux": "/sys/class/video4linux",
       "media": "/sys/class/media"

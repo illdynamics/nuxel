@@ -9,9 +9,9 @@ startRemoteApp({
   glyph: "VNC",
   defaultTransport: "wlan",
   transports: [
-    { id: "wlan", label: "Wi-Fi", detail: "Owner LAN · pinned-key SSH tunnel" },
+    { id: "wlan", label: "Wi-Fi", detail: "Owner LAN / ZeroTier · direct" },
     { id: "usb", label: "USB network", detail: "BLOCKED_KERNEL_PANIC on 4.14.253" }
   ],
-  confirmText: "This lets an authenticated VNC client view and control the actual Nuxel Phoc screen while it is running. The listener stays on loopback and is reached through the owner SSH tunnel. Start it?",
+  confirmText: "This lets an authenticated VNC client view and control the actual Nuxel Phoc screen while it is running. The listener is direct on the owner LAN / ZeroTier and has no VNC password. Keep it off untrusted networks. Start it?",
   note: "wayvnc attaches to the active Phoc session using wlr-screencopy and virtual pointer/keyboard. It never opens /dev/fb0, never starts a second compositor, and the normal Nuxel lock policy still applies."
 });

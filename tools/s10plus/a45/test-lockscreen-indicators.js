@@ -93,6 +93,14 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
   }
   check('index.html has the three independent indicator nodes',
         ['charging', 'usb', 'live'].every(k => index.includes('lockscreen-indicator-' + k)));
+  const iCharge = index.indexOf('lockscreen-indicator-charging');
+  const iLive = index.indexOf('lockscreen-indicator-live');
+  const iUsb = index.indexOf('lockscreen-indicator-usb');
+  check('live-console indicator is the middle status light', iCharge < iLive && iLive < iUsb,
+        `order charging=${iCharge} live=${iLive} usb=${iUsb}`);
+  check('console transport artwork is the PWNAGE-46000 cache revision',
+        ['serial', 'usb', 'wlan'].every(k => index.includes(
+          `/assets/nuxel-console-${k}.png?v=p46000`)));
   check('index.html loads lockscreen-indicators.js before lockscreen.js',
         index.indexOf('lockscreen-indicators.js') >= 0 &&
         index.indexOf('lockscreen-indicators.js') < index.indexOf('js/lockscreen.js'));
@@ -218,6 +226,27 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
     check('a failed read leaves charging dim', !h.nodes['lockscreen-indicator-charging'].classList.contains('active'));
     check('a failed read leaves usb dim', !h.nodes['lockscreen-indicator-usb'].classList.contains('active'));
     check('a failed read leaves console dim', !h.nodes['lockscreen-indicator-live'].classList.contains('active'));
+    ind.stop();
+  }
+
+  // PWNAGE-46000: a WLAN-only console is still a live console.  The middle
+  // status light must be on even when no serial or USB console exists.
+  {
+    const h = harness({
+      charging: {}, usb_data: {},
+      live_console: { active: false, service_armed: false },
+      console_transports: { serial: { active: false }, usb: { active: false },
+                            wlan: { active: true, source: 'netlink:wlan' } },
+    });
+    const ind = new h.sandbox.NuxelLockscreenIndicators();
+    ind.start();
+    await flush();
+    check('WLAN-only console lights the middle live-console indicator',
+          h.nodes['lockscreen-indicator-live'].classList.contains('active'));
+    check('WLAN-only console names its provenance',
+          h.nodes['lockscreen-indicator-live'].dataset.liveReason === 'wlan-console');
+    check('WLAN-only console still lights the WLAN transport',
+          h.nodes['lockscreen-transport-wlan'].classList.contains('active'));
     ind.stop();
   }
 

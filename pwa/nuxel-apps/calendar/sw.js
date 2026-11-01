@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nuxel-calendar-v1';
+const CACHE_NAME = 'nuxel-calendar-v2-p54000';
 const ASSETS = [
   '/',
   '/index.html',

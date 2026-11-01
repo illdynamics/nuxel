@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "comment": "Persistent Do Not Disturb policy. Suppression never deletes notification history: the daemon records suppressed=true and the reason.",
+  "default_enabled": false,
+  "suppress": {
+    "popups": true,
+    "sound": true,
+    "haptics": true,
+    "led": true
+  },
+  "exceptions": {
+    "critical": true,
+    "alarms": true,
+    "calls": false
+  },
+  "schedule": {
+    "enabled": false,
+    "start": "22:00",
+    "end": "07:00",
+    "days": [0, 1, 2, 3, 4, 5, 6]
+  }
+}

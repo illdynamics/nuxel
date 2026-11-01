@@ -1,0 +1,33 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+timestamp=2026-11-01T11:55:56+01:00
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Sun Nov 1 10:16:28 UTC 2026 aarch64 GNU/Linux
+== services ==
+active
+active
+active
+active
+active
+active
+== gpu ==
+phoc=15247 mali_fds=3
+mali0                   2885
+  kctx-0xffffff8013375000       2885 | tgid=     15247 | pid=     15247  | name=                phoc
+== display ==
+1793530556 FRAMES_OK total=267 fps_1s=5 failures=0 blits=16 present_skipped=250 blit_avg_ms=29 damage=231-243 damage_blits=11 damage_avg_ms=29 idle_ms=21216 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=17 decon_pan_failed=0
+== usb ==
+{"selected":"file_transfer","active":true,"endpoint_state":"mtp","udc_state":"configured","udc_speed":"high-speed","vbus":true,"typec_device":true,"mtp_device":true,"sd_export":false}
+== flatpak ==
+{"success": true, "schema": "nuxel.software-status/1", "native": {"dnf5": true, "dnf": true, "rpm": true, "packagekitd": true, "gnome_software": true, "nuxel_software": true, "appstream": true}, "native_ready": true, "native_backend": "DNF5", "native_ui": "/usr/lib/nuxel/nuxel-software", "polkit": true, "flatpak": {"flatpak": true, "bwrap": true, "portal": true, "user_namespace": {"ok": false, "detail": "unshare: unshare failed: Operation not permitted"}}, "flatpak_ready": false, "flatpak_blocker": "user namespace creation denied by the kernel: unshare: unshare failed: Operation not permitted", "source_policy": "local/NuxTore only for this mission; native RPM uses configured Fedora repos", "source": "software_provider"}
+== bwrap ==
+755 root:root /usr/bin/bwrap
+== userns ==
+rc=1
+unshare: unshare failed: Operation not permitted

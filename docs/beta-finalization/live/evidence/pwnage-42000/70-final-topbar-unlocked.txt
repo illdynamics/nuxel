@@ -1,0 +1,14 @@
+{"result": {"success": true, "unlocked": true, "locked": false}}
+2026-10-31T21:02:35 STATUSBAR_START_HIDDEN locked=1
+2026-10-31T21:03:02 STATUSBAR_SHOWN locked=0
+-rw-r--r--. 1 root root 509840 Oct 31 21:03 /tmp/nuxel-topbar-final-unlocked.png
+{
+  "locked": true,
+  "owner": "security_provider",
+  "reason": "pwnage-42000-final",
+  "schema_version": 1,
+  "updated_at": 1793476985.9528308
+}
+
+{"enabled": false, "updated": 1793476874.8934417}
+GPS_PWR_EN=0

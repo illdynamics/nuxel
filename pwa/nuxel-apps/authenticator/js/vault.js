@@ -149,11 +149,16 @@
     return { ok: problems.length === 0, problems: problems, algorithm: alg, digits: digits, period: period, secret: secret };
   }
 
-  function idFor(a) {
-    var s = (a.issuer || '') + '|' + a.account + '|' + String(a.secret).slice(0, 6);
-    var h = 5381;
-    for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
-    return 'acct-' + h.toString(36);
+  /* PWNAGE-49000: opaque, cryptographically random account IDs.  The old
+     deterministic hash included part of the secret and could collide; IDs are
+     only for DOM/storage selection and must never encode account material. */
+  function idFor() {
+    var c = cryptoObj();
+    var bytes = new Uint8Array(16);
+    c.getRandomValues(bytes);
+    var hex = '';
+    for (var i = 0; i < bytes.length; i++) hex += ('0' + bytes[i].toString(16)).slice(-2);
+    return 'acct-' + hex;
   }
 
   function addAccount(accounts, raw) {

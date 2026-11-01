@@ -17,16 +17,16 @@
 (function (global) {
   'use strict';
 
-  var VERSION = 'p021';
+  var VERSION = 'p46000';
   var SAFETY_MS = 5000;
   var API_PATH = 'http://127.0.0.1:8080/api/v1/system/indicators';
   var ICONS = {
     charging: '/assets/nuxel-charging.png?v=a77.1',
     usb: '/assets/nuxel-connected-pc.png?v=a77.1',
     live: '/assets/nuxel-live-console-active.png?v=a77.1',
-    serial: '/assets/nuxel-console-serial.png?v=p34000',
-    usbConsole: '/assets/nuxel-console-usb.png?v=p34000',
-    wlan: '/assets/nuxel-console-wlan.png?v=p34000',
+    serial: '/assets/nuxel-console-serial.png?v=p46000',
+    usbConsole: '/assets/nuxel-console-usb.png?v=p46000',
+    wlan: '/assets/nuxel-console-wlan.png?v=p46000',
     fileTransfer: '/assets/nuxel-file-transfer.png?v=p34000',
     bluetooth: '/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=p021'
   };
@@ -345,7 +345,15 @@
     this._apply(this.els.charging, 'active', this.state.externalPower);
     this._apply(this.els.charging, 'charging', this.state.charging);
     this._apply(this.els.usb, 'active', this.state.pcConnected);
-    this._apply(this.els.live, 'active', this.state.liveConsole);
+    // The middle status light is the live-console meaning.  A WLAN-only
+    // nuxel-console session is still a live console and must light it too.
+    this._apply(this.els.live, 'active', this.state.liveConsole || this.state.wlanConsole);
+    if (this.els.live) {
+      this.els.live.dataset.liveReason = this.state.liveConsole ? 'console' :
+        (this.state.wlanConsole ? 'wlan-console' : '');
+      this.els.live.setAttribute('aria-label', this.state.liveConsole ? 'Live console active' :
+        (this.state.wlanConsole ? 'Live console active over WLAN' : 'Live console inactive'));
+    }
     this._apply(this.transportEls.serial, 'active', this.state.serialConsole);
     this._apply(this.transportEls.usb, 'active', this.state.usbConsole);
     this._apply(this.transportEls.wlan, 'active', this.state.wlanConsole);
@@ -396,8 +404,8 @@
       if (this.state.modeBusy) this.modeStatus.textContent = 'Changing mode…';
       else if (selected === 'file_transfer') {
         this.modeStatus.textContent = this.state.fileTransfer
-          ? 'File transfer active'
-          : 'File transfer selected, not active';
+          ? 'File transfer active. On macOS use OpenMTP or MTPLX; Finder does not mount MTP volumes.'
+          : 'File transfer selected, not active. On macOS use OpenMTP or MTPLX; Finder does not mount MTP volumes.';
       } else {
         this.modeStatus.textContent = 'Charging selected';
       }

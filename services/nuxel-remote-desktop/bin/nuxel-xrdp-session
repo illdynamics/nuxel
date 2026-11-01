@@ -5,7 +5,20 @@ export XDG_SESSION_TYPE=x11
 export XDG_CURRENT_DESKTOP=NuxelRemote
 export XDG_RUNTIME_DIR="$(mktemp -d /tmp/nuxel-xrdp-runtime.XXXXXX)"
 chmod 700 "$XDG_RUNTIME_DIR"
-mkdir -p "$HOME/.config/openbox"
+# Run as the local desktop identity (same nuxel account as SSH/VNC), so
+# xrdp-sesman reconciles by UID and does not race with the Wayland session.
+# Fail closed if a legacy account ever reaches the session launcher.
+if [ "$(id -u)" -ne 1000 ] || [ "$(id -un)" != "nuxel" ]; then
+    echo "nuxel-xrdp-session: refusing non-nuxel identity $(id -un) uid $(id -u)" >&2
+    exit 1
+fi
+case "$HOME" in
+  /home/nuxel-remote|/home/nuxel-remote/*)
+    echo "nuxel-xrdp-session: refusing the retired nuxel-remote HOME" >&2
+    exit 1
+    ;;
+esac
+mkdir -p "$HOME/.config/openbox" "$HOME/.mozilla/firefox/xrdp"
 cat > "$HOME/.config/openbox/rc.xml" <<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <openbox_config xmlns="http://openbox.org/3.4/rc">

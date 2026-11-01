@@ -1,0 +1,19 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+post_reboot_fixed_modes
+portrait True 0 normal 360 760 True
+device=sec_touchscreen why=orientation-state applied=1 matrix=1.0000,0.0000,0.0000,0.0000,1.0000,0.0000 transform=0 source=/run/nuxel-orientation/input.json owner=libnuxel-libinput-path.so 
+landscape True 90 270 1520 720 True
+device=sec_touchscreen why=orientation-state applied=1 matrix=0.0000,1.0000,0.0000,-1.0000,0.0000,1.0000 transform=270 source=/run/nuxel-orientation/input.json owner=libnuxel-libinput-path.so 
+reverse-portrait True 180 180 360 760 True
+device=sec_touchscreen why=orientation-state applied=1 matrix=-1.0000,0.0000,1.0000,0.0000,-1.0000,1.0000 transform=180 source=/run/nuxel-orientation/input.json owner=libnuxel-libinput-path.so 
+reverse-landscape True 270 90 1520 720 True
+device=sec_touchscreen why=orientation-state applied=1 matrix=0.0000,-1.0000,1.0000,1.0000,0.0000,0.0000 transform=90 source=/run/nuxel-orientation/input.json owner=libnuxel-libinput-path.so 
+final_mode=landscape

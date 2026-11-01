@@ -33,6 +33,7 @@ import os
 import pwd
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import time
@@ -287,12 +288,17 @@ class PwaStore:
             raise StoreError("path escapes the file manager root")
         return resolved
 
-    def _entry(self, p: Path, root: Path) -> dict:
-        st = p.lstat()
+    def _entry(self, p: Path, root: Path, st=None) -> dict:
+        # PWNAGE-54000: one lstat per entry.  The old code called lstat plus
+        # is_symlink()/is_dir()/is_file() (four stat syscalls) and the sort key
+        # added two more; on a large folder that made Files feel frozen.
+        if st is None:
+            st = p.lstat()
         rel = p.relative_to(root).as_posix()
-        if p.is_symlink():
+        mode = st.st_mode
+        if stat.S_ISLNK(mode):
             kind = "symlink"
-        elif p.is_dir():
+        elif stat.S_ISDIR(mode):
             kind = "folder"
         else:
             kind = "file"
@@ -308,12 +314,24 @@ class PwaStore:
         if not target.is_dir():
             return {"success": False, "error": "not a directory", "error_code": "NOT_A_DIRECTORY"}
         entries = []
+        scanned = []
         try:
-            for child in sorted(target.iterdir(), key=lambda p: (p.is_symlink() or p.is_file(), p.name.lower())):
+            with os.scandir(target) as it:
+                for de in it:
+                    try:
+                        st = de.stat(follow_symlinks=False)
+                    except OSError:
+                        st = None
+                    scanned.append((de.name, Path(de.path), st))
+            # One stat-backed sort: folders first, then case-insensitive name.
+            scanned.sort(key=lambda row: (
+                0 if (row[2] is not None and stat.S_ISDIR(row[2].st_mode)) else 1,
+                row[0].lower()))
+            for name, child, st in scanned:
                 try:
-                    entries.append(self._entry(child, self.files_root))
+                    entries.append(self._entry(child, self.files_root, st))
                 except OSError:
-                    entries.append({"name": child.name, "path": "", "type": "unreadable",
+                    entries.append({"name": name, "path": "", "type": "unreadable",
                                     "size": 0, "modified": 0})
         except OSError as exc:
             return {"success": False, "error": "cannot list directory: %s" % exc,
@@ -564,6 +582,12 @@ class PwaStore:
                         st = path.lstat()
                     except OSError:
                         continue
+                    # A zero-byte image/video is a failed capture, not media.
+                    # It used to appear in Gallery as an "unable to decode"
+                    # tile.  Keep it out of the index; the owner can recover
+                    # space with Safe Cleanup.
+                    if st.st_size <= 0:
+                        continue
                     rel = path.relative_to(self.files_root).as_posix()
                     if rel in seen:
                         continue
@@ -635,6 +659,11 @@ class PwaStore:
             raise StoreError("media path check failed: %s" % exc)
         if not resolved.is_file():
             raise StoreError("not a media file")
+        try:
+            if resolved.stat().st_size <= 0:
+                raise StoreError("media file is empty (failed capture)")
+        except OSError as exc:
+            raise StoreError("media stat failed: %s" % exc)
         if resolved.suffix.lower() not in (IMAGE_EXTS | VIDEO_EXTS):
             raise StoreError("unsupported media type")
         # Refuse to decode a file a symlink swapped after validation.

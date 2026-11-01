@@ -1,0 +1,233 @@
+{
+  "ok": true,
+  "test_id": "L1-LANDSCAPE-90",
+  "updatedAt": "2026-10-31T17:36:55.174870Z"
+}
+{
+  "_daemon_live": true,
+  "allowed": [
+    90
+  ],
+  "applied": true,
+  "auto": false,
+  "auto_state": "fixed",
+  "calibration": {
+    "gravity_reference": "unverified",
+    "mount_matrix": "unverified"
+  },
+  "compositor": {
+    "backend": "wlr-randr",
+    "error": "",
+    "output": "HEADLESS-1",
+    "touch_calibration_verified": false,
+    "transform": "270",
+    "transform_available": true,
+    "transform_map_verified": false
+  },
+  "display": {
+    "after": {
+      "applied": true,
+      "backend": "wlr-randr",
+      "enabled": true,
+      "error": "",
+      "logical_height": 720,
+      "logical_width": 1520,
+      "output": "HEADLESS-1",
+      "outputs": [
+        "HEADLESS-1"
+      ],
+      "physical_height": 1520,
+      "physical_width": 720,
+      "scale": 2.0,
+      "transform": "270"
+    },
+    "applied": true,
+    "backend": "wlr-randr",
+    "before": {
+      "applied": true,
+      "backend": "wlr-randr",
+      "enabled": true,
+      "error": "",
+      "logical_height": 1520,
+      "logical_width": 720,
+      "output": "HEADLESS-1",
+      "outputs": [
+        "HEADLESS-1"
+      ],
+      "physical_height": 1520,
+      "physical_width": 720,
+      "scale": 2.0,
+      "transform": "normal"
+    },
+    "dry_run": false,
+    "error": "",
+    "logical_height": 720,
+    "logical_width": 1520,
+    "output": "HEADLESS-1",
+    "physical_height": 1520,
+    "physical_width": 720,
+    "requested_transform": "270",
+    "scale": 2.0,
+    "transform": "270"
+  },
+  "effective_orientation": 90,
+  "last_error": "",
+  "last_good": {
+    "effective_orientation": 0,
+    "mode": "portrait",
+    "requested_orientation": 0,
+    "transform": "normal"
+  },
+  "last_orientation": 90,
+  "last_request_id": "req-15298-1793468215390",
+  "mode": "landscape",
+  "mode_label": "Landscape",
+  "pid": 15020,
+  "requested_orientation": 90,
+  "sensor": {
+    "available": false,
+    "preferred": null,
+    "sources": [
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "IIO device present but no readable scale",
+        "source": "iio-accel"
+      },
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+        "source": "iio-sensor-proxy"
+      },
+      {
+        "auto_capable": false,
+        "available": true,
+        "reason": "",
+        "source": "manual"
+      }
+    ],
+    "unverified": true
+  },
+  "status_age_seconds": 0,
+  "success": true,
+  "touch": {
+    "mechanism": "wlroots maps libinput through the output transform; nuxel-wl-fb rotates the logical screencopy frame back to the portrait AMOLED scanout",
+    "transform_available": true,
+    "verified": false
+  },
+  "trial": {
+    "deadline_epoch": 1793468305.5319717,
+    "effective_orientation": 90,
+    "id": "req-15298-1793468215390",
+    "last_result": "pending",
+    "mode": "landscape",
+    "pending_confirmation": true,
+    "request_id": "req-15298-1793468215390",
+    "started_epoch": 1793468215.5319717
+  },
+  "updated_epoch": 1793468215.6155949
+}
+===presenter
+transform=270
+presenter_rotation=270
+effective_orientation=90
+output=HEADLESS-1
+logical_width=1520
+logical_height=720
+backend=wlr-randr
+applied=1
+===state
+1793468215 FRAMES_OK total=24583 fps_1s=5 failures=0 blits=1471 present_skipped=23109 blit_avg_ms=46 damage=108-266 damage_blits=1457 damage_avg_ms=46 idle_ms=11037 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=1472 decon_pan_failed=0
+===randr
+[
+  {
+    "name": "HEADLESS-1",
+    "description": "Headless output 1",
+    "make": null,
+    "model": null,
+    "serial": null,
+    "physical_size": {
+      "width": 0,
+      "height": 0
+    },
+    "enabled": true,
+    "modes": [
+      {
+        "width": 720,
+        "height": 1520,
+        "refresh": 0.000000,
+        "preferred": false,
+        "current": true
+      }
+    ],
+    "position": {
+      "x": 0,
+      "y": 0
+    },
+    "transform": "270",
+    "scale": 2.000000,
+    "adaptive_sync": false
+  }
+]
+{"event": "baseline", "updatedAt": "2026-10-31T17:36:55.174870Z", "answer": "WAITING", "test": "L1-LANDSCAPE-90"}
+{"event": "timeout", "test_id": "L1-LANDSCAPE-90", "polls": 172}
+WAIT_RC=1
+{
+  "ok": true,
+  "id": "pwnage-46000-rotation-feedback",
+  "title": "PWNAGE-46000 Rotation Test Feedback",
+  "updatedAt": "2026-10-31T17:36:55.174870Z",
+  "test": "L1-LANDSCAPE-90",
+  "answer": "WAITING"
+}
+===status
+{
+  "mode": "portrait",
+  "effective_orientation": 0,
+  "applied": true,
+  "display": {
+    "applied": true,
+    "backend": "wlr-randr",
+    "enabled": true,
+    "error": "",
+    "logical_height": 1520,
+    "logical_width": 720,
+    "output": "HEADLESS-1",
+    "outputs": [
+      "HEADLESS-1"
+    ],
+    "physical_height": 1520,
+    "physical_width": 720,
+    "scale": 2.0,
+    "transform": "normal",
+    "transform_map": {
+      "0": "normal",
+      "180": "180",
+      "270": "90",
+      "90": "270"
+    },
+    "verified": false
+  },
+  "trial": {
+    "pending_confirmation": false
+  },
+  "last_error": "trial rollback: no_feedback_timeout",
+  "last_good": {
+    "effective_orientation": 0,
+    "mode": "portrait",
+    "requested_orientation": 0,
+    "transform": "normal"
+  }
+}
+===presenter
+transform=0
+presenter_rotation=0
+effective_orientation=0
+output=HEADLESS-1
+logical_width=720
+logical_height=1520
+backend=wlr-randr
+applied=1
+===state
+1793468309 FRAMES_OK total=25322 fps_1s=24 failures=0 blits=1481 present_skipped=23838 blit_avg_ms=46 damage=0-1520 damage_blits=1458 damage_avg_ms=46 idle_ms=1608 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=1482 decon_pan_failed=0

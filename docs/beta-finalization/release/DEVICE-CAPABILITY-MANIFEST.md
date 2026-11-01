@@ -4,7 +4,7 @@
 **Machine-readable twin:** [`DEVICE-CAPABILITY-MANIFEST.json`](DEVICE-CAPABILITY-MANIFEST.json) · **Schema:** [`DEVICE-CAPABILITY-MANIFEST.schema.json`](DEVICE-CAPABILITY-MANIFEST.schema.json) · **Validator:** `tools/beta/validate-capability-manifest.py`
 **Companion:** [`../testing/TEST-STRATEGY.md`](../testing/TEST-STRATEGY.md) (L1–L6) · [`SOAK-AND-PERFORMANCE.md`](../testing/SOAK-AND-PERFORMANCE.md) · [`REBOOT-ROLLBACK.md`](REBOOT-ROLLBACK.md) · [`ROLLBACK.md`](ROLLBACK.md) · [`../BETA-MANUAL-PROOF-CHECKLIST.md`](../BETA-MANUAL-PROOF-CHECKLIST.md)
 
-**Version:** `v0.7.4-beta` · **git head at generation:** the `v0.7.4-beta` release commit · **generated:** `2026-10-31T12:00:00+0100`
+**Version:** `v0.7.5-beta` · **git head at generation:** the `v0.7.5-beta` release commit · **generated:** `2026-11-01T18:00:00+0100`
 
 ---
 
@@ -37,7 +37,7 @@ This is why most rows still carry `1`s and `2`s: nothing is promoted on the stre
 | Model | Samsung Galaxy S10+ (SM-G975F) |
 | Codename | beyond2lte |
 | SoC | Samsung Exynos 9820 |
-| Kernel | Linux 4.14.253 (Samsung vendor tree, #15 SMP PREEMPT aarch64) |
+| Kernel | Linux 4.14.253 (Samsung vendor tree, #5 SMP PREEMPT aarch64; kbase GPU, UDMABUF, user namespaces, NFC) |
 | Userspace | Fedora Linux 43 (aarch64) |
 | Boot mode at last capture | `androidboot.mode=charger (LPM) at the last capture` |
 | Display | /dev/fb0 DECON 1440x3040x32 (virtual 1440x6080), no /dev/dri |

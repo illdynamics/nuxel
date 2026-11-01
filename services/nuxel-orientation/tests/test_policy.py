@@ -183,3 +183,12 @@ def test_cooldown_blocks_rapid_flapping():
     # immediately back to portrait within cooldown -> refused
     assert o.update((0, -9.8, 0), now + 0.05) is None
     assert o.current == 90
+
+
+def test_exact_owner_facing_labels():
+    assert {m: SEVEN_MODES[m]["label"] for m in MODE_ORDER} == {
+        "auto": "Auto (FULL)", "auto-portrait": "Auto (PT)",
+        "auto-landscape": "Auto (LS)", "portrait": "Locked (PT)",
+        "landscape": "Locked (LS)", "reverse-portrait": "Locked (RPT)",
+        "reverse-landscape": "Locked (RLS)",
+    }

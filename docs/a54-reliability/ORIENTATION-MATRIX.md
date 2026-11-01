@@ -4,13 +4,13 @@
 
 | UI choice | Stored key | Allowed poses |
 |---|---|---|
-| Auto | `auto` | 0/90/180/270 |
-| Auto Portrait | `auto-portrait` | 0/180 |
-| Auto Landscape | `auto-landscape` | 90/270 |
-| Forced Portrait | `portrait` | 0 |
-| Forced Landscape | `landscape` | 90 |
-| Reverse Portrait | `reverse-portrait` | 180 |
-| Reverse Landscape | `reverse-landscape` | 270 |
+| Auto (FULL) | `auto` | 0/90/180/270 |
+| Auto (PT) | `auto-portrait` | 0/180 |
+| Auto (LS) | `auto-landscape` | 90/270 |
+| Locked (PT) | `portrait` | 0 |
+| Locked (LS) | `landscape` | 90 |
+| Locked (RPT) | `reverse-portrait` | 180 |
+| Locked (RLS) | `reverse-landscape` | 270 |
 
 ## What was wrong
 - Backend `policy.py`, `qs.js`, `settings.js` and `settings-model.js` all used
@@ -43,16 +43,56 @@
 - **Sensors:** no IIO accelerometer with a readable scale is exposed
   (`iio-accel` "device present but no readable scale"); `iio-sensor-proxy` is not
   installed. Auto modes therefore cannot drive physical rotation today.
-- **Compositor transform:** `wlr-randr` is absent, so `apply.py` has no transform
-  backend; the fixed portrait screencopy→`/dev/fb0` path cannot be rotated by a
-  compositor transform. Rotating CSS while leaving touch coordinates unrotated is
-  explicitly forbidden by the mission, so a CSS-only "rotation" is not shipped.
+- **Compositor transform (historical note only):** an earlier archive reported
+  `wlr-randr` absent. That is no longer true on the current image: `wlr-randr`
+  is installed and HEADLESS-1 accepts the four transforms. The old missing
+  binary was one cause of preference-only rotation.
 
 ## Gate
 - **ROT-MENU:** PASS_INTEGRATION (all seven entries, real persisted state, no
   `undefined`, legacy migration).
-- **ROT-FORCED:** PARTIAL — mode selection/persistence works and would drive the
-  transform, but physical output+touch rotation is blocked by the missing
-  compositor transform backend (`transform_available=false`).
+- **ROT-FORCED:** PASS_LIVE — all four transforms applied and were read back;
+  framebuffer-vs-Phoc captures prove the 0/90/180/270 physical relationships.
 - **ROT-AUTO:** BLOCKED_HARDWARE — no auto-capable gravity sensor source is
   exposed on this kernel (detailed per-source reason in `status.sensor.sources`).
+
+
+## PWNAGE-54000 live result
+
+The active output is `HEADLESS-1` (720x1520). The historical transform map is
+restored: `0→normal`, `90→270`, `180→180`, `270→90`. Portrait poses use scale 2
+(360x760 logical); landscape poses use scale 1 (1520x720 logical). A successful
+transform is committed after live readback, not auto-reverted by a hidden trial.
+All four fixed poses verified live. Touch is owned exactly once by
+`libnuxel-libinput-path.so`, which applies a libinput calibration matrix selected
+from the verified transform and records read-back evidence in
+`/run/nuxel-touch-calibration.state`. Phoc 0.54 does not transform touch itself.
+`nuxel-wl-fb` performs no presenter rotation. Auto remains blocked by the SSP
+sensor hub, and status reports the hub's MCU/raw_data reason instead of a green
+fake Auto. Quick Settings short-tap rotates through the four Locked poses; the
+seven-mode chooser is long-press. VNC uses `wayvncctl detach`/`attach` then `output-set` to re-read the
+live transform without restarting the server.
+
+## PWNAGE-55000 Auto-path repair (2026-11-01)
+
+The auto policy and hysteresis were already correct; the missing link was that
+the sensor hub was never started. `nuxel-orientationd` now calls
+`sensors.SensorHubControl` when an Auto mode is selected (and at Auto startup),
+which:
+
+1. writes `ESW:READY` to `/dev/bbd_control`,
+2. ORs accelerometer bit 0 into `/sys/class/sensors/ssp_sensor/enable`, and
+3. waits for a real non-zero `accelerometer_sensor/raw_data` sample.
+
+It never injects a reading. The same path is exposed as
+`nuxel-orientationd sensor --start --json`.
+
+Live result after deploy and reboot: the four Locked modes still apply and
+verify (`transforms normal/270/180/90`, logical `360x760`/`1520x720`). Auto
+remains `blocked_sensor_unavailable` with the specific reason
+`vendor Android lhd daemon is not installed; the BCM47752 MCU cannot receive
+its BBD/LHD patch`. The accelerometer bit stays 0 because the MCU never answers
+(`initialize_mcu ... MCU is not working`); therefore no genuine Auto rotation
+can be claimed on this image yet. The difference from the earlier defect is
+that the daemon now performs the start sequence instead of only reading a zero
+node, and reports the exact missing runtime.
