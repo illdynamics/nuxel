@@ -39,7 +39,7 @@ Evidence: `evidence/pwnage-53000/{baseline,crash,dmabuf,egl,gtk,webkit,performan
 | 25 | Rollback tested live | **PASS** | restored llvmpipe set, panel healthy, then redeployed accelerated set |
 | 26 | Reproducible packaging | **PASS** | `build-wlroots-kbase-linear.sh`, `deploy-pwnage53000.sh`, `rollback-pwnage53000.sh`, rootfs builder updated |
 | 27 | Automated regression tests | **PASS** | `tests/pwnage53000/test_graphics_linear_dmabuf.py` (8 passed) + on-device `pwnage53000-live-test.sh` |
-| 28 | Reboot and re-verify | **PENDING** | final step; persistent diagnostics installed under `/usr/lib/nuxel` |
+| 28 | Reboot and re-verify | **PASS** | rebooted 15:31; all services active; full acceptance PASS post-reboot; `performance/postreboot.txt` |
 
 ## Remaining blockers (honest)
 

@@ -1,0 +1,49 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Sun Nov  1 15:33:59 CET 2026
+4.14.253-gf7194c1d15ed-dirty
+ 15:33:59 up 1 min,  0 user,  load average: 9.68, 3.00, 1.05
+=== dstate ===
+11
+=== services ===
+nuxel-wayland active
+nuxel-wl-fb active
+nuxel-web active
+nuxel-bridge active
+nuxel-http-bridge active
+=== phoc ===
+/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh 
+/usr/lib64/libEGL_mesa.so.0.0.0
+/usr/lib64/libgallium_dri.so
+/usr/lib64/libwlroots-0.19.so
+mali_fds=3
+=== dmabuf ===
+interface: 'zwp_linux_dmabuf_v1',                        version:  3, name:  2
+	0x34324258 = 'XB24'; 0x0000000000000000 = LINEAR
+	0x34325258 = 'XR24'; 0x0000000000000000 = LINEAR
+	0x34324241 = 'AB24'; 0x0000000000000000 = LINEAR
+	0x34325241 = 'AR24'; 0x0000000000000000 = LINEAR
+interface: 'wl_data_device_manager',                     version:  3, name:  3
+=== state ===
+1793543639 FRAMES_OK total=539 fps_1s=3 failures=0 blits=334 present_skipped=204 blit_avg_ms=31 damage=227-228 damage_blits=328 damage_avg_ms=31 idle_ms=8544 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=335 decon_pan_failed=0
+=== snapshot delta ===
+SNAPSHOT_CHANGED
+=== cpu 15s ===
+5854 phoc 7.9%
+6078 nuxel-wl-fb 3.5%
+5964 nuxel-pwa-host 2.1%
+6197 WebKitWebProces 1.7%
+6182 WebKitNetworkPr 0.8%
+9995 bash 0.0%
+=== fb ===
+1440,6080
+                     USER        PID ACCESS COMMAND
+/dev/fb0:            root       6078 F.... nuxel-wl-fb
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory

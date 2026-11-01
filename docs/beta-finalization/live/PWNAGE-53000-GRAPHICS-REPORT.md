@@ -192,9 +192,15 @@ acceleration. Evidence: `evidence/pwnage-53000/webkit/`.
 | `nuxel-wl-fb` CPU | 10.6% | 6.4–8.9% |
 | WebKitWebProcess CPU | 6.5% | 3.1–4.7% |
 | UI host CPU | 2.4% | 2.1–2.9% |
-| **sum (one core)** | **47.0%** | **27.8–31.3%** |
-| blit average | 45 ms | 30–38 ms |
+| **sum (one core)** | **47.0%** | **27.8–31.3%** active UI |
+| **sum, post-reboot idle** | — | **16.0%** (phoc 7.9, wl-fb 3.5, WebKit 1.7, host 2.1) |
+| blit average | 45 ms | 20–38 ms |
 | idle capture (static) | fixed 24 fps | 1 fps after 12 s (verified 10/10 s) |
+
+Post-reboot verification (15:33, `evidence/.../performance/postreboot.txt`): all
+five services active, Phoc on kbase Mesa with 3× `/dev/mali0`, linux-dmabuf v3
+LINEAR RGB, `FRAMES_OK`, `decon_pan_failed=0`, one `/dev/fb0` writer, no fallback
+marker, and two snapshots 2 s apart differ (the live clock is updating).
 
 Remaining CPU work, disclosed: every changed frame is still
 `screencopy → CPU memcmp/damage → NEON 2× row expansion → `/dev/fb0` mmap →
