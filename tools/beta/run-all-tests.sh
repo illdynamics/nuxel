@@ -647,6 +647,9 @@ add_suite U-pwa-assets unit bg-02-boot-animation-launcher 300 hard bash \
 add_suite U-pwnage31000-preload-cinema unit bg-02-boot-animation-launcher 900 hard "$PY" \
   "PWNAGE-31000 bounded pre-lockscreen controller: readiness, timing, fallback, cleanup, supplied-asset packaging/hash" \
   'python3 -m pytest -q tests/pwnage31000 && python3 tools/pwnage31000/verify-preload-cinema.py'
+add_suite U-pwnage58000-idle-truth unit bg-04-userspace-completion 300 hard "$PY" \
+  "PWNAGE-58000: perf service and journald drop-in are wired into the image, bounded, and honestly documented" \
+  'python3 -m pytest -q tests/pwnage58000'
 add_suite U-soak-harness unit release 300 hard bash \
   "the soak/performance harness works offline (plan, sampling, verdicts)" \
   'bash tools/beta/soak.sh --selftest'

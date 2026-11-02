@@ -349,6 +349,25 @@ install -Dm0644 /nuxel/services/nuxel-metrics/nuxel-metrics.socket \
 install -d "$STAGE/etc/systemd/system/sockets.target.wants"
 ln -sf ../nuxel-metrics.socket \
     "$STAGE/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket"
+# PWNAGE-58000: the idle/wakeup tuning that was committed in 794c879 is now
+# part of the shipped image, not just the repository.  Three separate pieces:
+#   1. the one-shot nuxel-perf-tune.service (I/O scheduler + dirty writeback +
+#      swappiness; userspace-only and reversible on the next boot);
+#   2. the journald drop-in that bounds the vendor kernel's driver-log volume on
+#      a phone-sized rootfs;
+#   3. a multi-user.target wants symlink so a fresh image actually enables 1.
+# The build text itself is the boot-graph contract: verify-service-graph.py
+# asserts the install and enablement lines, and verify-fedora-phone-rootfs.py
+# proves the packaged bytes match these exact repository sources.
+install -d "$STAGE/etc/systemd/journald.conf.d"
+install -m 0755 /nuxel/services/nuxel-performance/bin/nuxel-perf-tune.sh \
+    "$STAGE/usr/lib/nuxel/nuxel-perf-tune.sh"
+install -m 0644 /nuxel/services/nuxel-performance/systemd/nuxel-perf-tune.service \
+    "$STAGE/etc/systemd/system/nuxel-perf-tune.service"
+install -m 0644 /nuxel/configs/nuxel/performance/journald.conf \
+    "$STAGE/etc/systemd/journald.conf.d/50-nuxel-performance.conf"
+ln -sf ../nuxel-perf-tune.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-perf-tune.service"
 # Package the already-existing haptics implementation and preferences. Do NOT
 # enable an additional vibrator owner automatically: the older haptics bridge
 # may already own the device on live phones. Physical owner test is required.
