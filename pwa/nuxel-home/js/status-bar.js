@@ -205,26 +205,26 @@ class StatusBar {
         // lockscreen and refreshed on unlock.
         this._pollPhoneStatus();
         this._pollBluetooth();
-        this._pollTimer = setInterval(() => { if (!this._statusInactive()) this._pollPhoneStatus(); }, 15000);
+        this._pollTimer = setInterval(() => { if (!this._statusInactive()) this._pollPhoneStatus(); }, 30000);
         this._pollLocation();
         this._locationPollTimer = setInterval(() => {
             if (!this._statusInactive()) this._pollLocation();
-        }, 10000);
+        }, 30000);
         // Sound mode + wired USB/file-transfer/console state.  One canonical
         // in-process read; no second high-frequency poller is created.
         this._pollSystemIndicators();
         this._indicatorPollTimer = setInterval(() => {
             if (!this._statusInactive()) this._pollSystemIndicators();
-        }, 10000);
+        }, 15000);
 
         // Poll notifications from the same JSON source (canonical
         // /var/lib/nuxel/notifications.json surfaced via the bridge).
         this._pollNotifications();
-        this._notifPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNotifications(); }, 20000);
+        this._notifPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNotifications(); }, 30000);
         // NFC: one provider read per visible interval; no separate duplicated
         // poller in Settings (Settings reads on tab selection).
         this._pollNfc();
-        this._nfcPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNfc(); }, 30000);
+        this._nfcPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNfc(); }, 60000);
         // A wake is an event: refresh immediately instead of waiting a poll.
         document.addEventListener('nuxel:display-on', () => {
             this._updateTime();

@@ -1,0 +1,18 @@
+[Unit]
+Description=Nuxel userspace performance/idle tuning (storage + writeback)
+Documentation=file:/usr/share/doc/nuxel/
+After=local-fs.target
+# One-shot; the knobs persist in the kernel for this boot.
+ConditionPathExists=/usr/lib/nuxel/nuxel-perf-tune.sh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-perf-tune.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=20
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

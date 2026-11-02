@@ -328,11 +328,15 @@ status() {
 
 monitor() {
   # Keep the persisted state truthful after a physical eject/disconnect.  This
-  # is intentionally independent of the WebView.  A three-second debounce keeps
-  # a transient re-enumeration from flapping the mode.
+  # is intentionally independent of the WebView.  A three-sample debounce keeps
+  # a transient re-enumeration from flapping the mode.  Only an active File
+  # Transfer session needs a 1 s cadence; while charging, a 5 s cadence halves
+  # nothing important but removes 80% of the wakeups from an idle bash poller.
   local down=0
   while :; do
+    local interval=5
     if [ -r "$ACTIVATION" ] && grep -q '"mode": "file_transfer"' "$ACTIVATION" 2>/dev/null && grep -q '"active": true' "$ACTIVATION" 2>/dev/null; then
+      interval=1
       local typec_ok=1
       compgen -G '/sys/class/typec/port*' >/dev/null 2>&1 && ! typec_connected && typec_ok=0
       if [ "$(udc_state)" != configured ] || ! vbus_online || [ "$typec_ok" -eq 0 ]; then
@@ -348,7 +352,7 @@ monitor() {
     else
       down=0
     fi
-    sleep 1
+    sleep "$interval"
   done
 }
 

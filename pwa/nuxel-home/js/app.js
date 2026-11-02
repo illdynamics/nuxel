@@ -1175,7 +1175,7 @@ class NuxelHome {
             }).catch(() => {});
         };
         read();
-        setInterval(read, 2000);
+        setInterval(read, 5000);
     }
 
     forward() {
