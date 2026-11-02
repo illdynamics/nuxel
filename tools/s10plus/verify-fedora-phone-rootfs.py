@@ -55,6 +55,12 @@ FILES=(
     '/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-01_terminal.png',
     '/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/01-wifi.png',
     '/etc/systemd/system/nuxel-metrics.service',
+    # PWNAGE-58000 idle/wakeup contract: the one-shot tuning service, its
+    # executable and the bounded journald drop-in must be in a fresh image.
+    '/usr/lib/nuxel/nuxel-perf-tune.sh',
+    '/etc/systemd/system/nuxel-perf-tune.service',
+    '/etc/systemd/system/multi-user.target.wants/nuxel-perf-tune.service',
+    '/etc/systemd/journald.conf.d/50-nuxel-performance.conf',
     '/etc/systemd/system/nuxel-metrics.socket',
     '/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket',
     # PWNAGE-31000 pre-lockscreen controller.  The supplied clip is installed
@@ -140,6 +146,10 @@ SOURCE_PARITY = {
     '/usr/lib/nuxel/nuxel-bridge/bridge.py': 'services/nuxel-bridge/src/bridge.py',
     '/usr/lib/nuxel/nuxel-bridge/api.py': 'services/nuxel-bridge/src/api.py',
     '/etc/systemd/system/nuxel-metrics.service': 'services/nuxel-metrics/nuxel-metrics.service',
+    '/usr/lib/nuxel/nuxel-perf-tune.sh': 'services/nuxel-performance/bin/nuxel-perf-tune.sh',
+    '/etc/systemd/system/nuxel-perf-tune.service': 'services/nuxel-performance/systemd/nuxel-perf-tune.service',
+    '/etc/systemd/system/multi-user.target.wants/nuxel-perf-tune.service': 'services/nuxel-performance/systemd/nuxel-perf-tune.service',
+    '/etc/systemd/journald.conf.d/50-nuxel-performance.conf': 'configs/nuxel/performance/journald.conf',
     '/etc/systemd/system/nuxel-metrics.socket': 'services/nuxel-metrics/nuxel-metrics.socket',
     '/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket': 'services/nuxel-metrics/nuxel-metrics.socket',
     '/usr/lib/nuxel/nuxel-preload-cinema': 'services/nuxel-preload-cinema/nuxel-preload-cinema',
