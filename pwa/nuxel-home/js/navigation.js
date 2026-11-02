@@ -91,7 +91,7 @@
       };
       sync();
       /* State changes are rare; 2 s statusRead polling was pure idle churn. */
-      if (!this._navSyncTimer) this._navSyncTimer = setInterval(sync, 5000);
+      if (!this._navSyncTimer) this._navSyncTimer = setInterval(sync, 10000);
     }
     _traceNs(message) {
       try {

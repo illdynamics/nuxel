@@ -1,0 +1,9 @@
+dev=/dev/cu.usbmodem2201 bytes_in=7544 echo_ok=True error=None elapsed=0.326s
+sample:
+perty cable type = 19 sleep_mode = 0
+6,274941,35526486020,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+6,274942,35526991112,-;[SSP]: show_sensors_enable - cur_enable = 0
+3,274943,35526991379,-;[SSP] show_mcu_power: vdd_mcu_1p8, is enabled 1
+6,274944,35527000177,-;[SSP]: show_sensors_enable - cur_enable = 0
+3,274945,35527000641,-;[SSP] show_mcu_power: vdd_mcu_1p8, is enabled 1
+4,2749

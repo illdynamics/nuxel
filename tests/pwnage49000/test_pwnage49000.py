@@ -99,11 +99,11 @@ def test_transport_penguins_sit_between_primary_row_and_wordmark():
 def test_cache_version_bumped():
     sw = read("pwa/nuxel-home/sw.js")
     manifest = read("pwa/nuxel-home/manifest.json")
-    assert "v80-p52000" in sw and "v80-p52000" in manifest
+    assert "v83-p56000-perf" in sw and "v83-p56000-perf" in manifest
     html = read("pwa/nuxel-home/index.html")
     assert "status-bar.css?v=p52000" in html
-    assert "status-bar.js?v=p52000" in html
-    assert "app.js?v=p52000" in html
+    assert "status-bar.js?v=p56000" in html
+    assert "app.js?v=p56000" in html
 
 
 if __name__ == "__main__":

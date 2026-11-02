@@ -149,15 +149,28 @@ def ensure_runtime_dir():
         pass
 
 
-def _write_json(path, doc):
+def _write_json(path, doc, fsync=True):
+    """Atomically publish JSON, skipping an identical rewrite.
+
+    ``/run`` files are tmpfs: an fsync per publish is pure syscall overhead and
+    cannot improve durability across a reboot.  Persistent state keeps fsync.
+    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    data = json.dumps(doc, indent=2, sort_keys=True) + "\n"
+    try:
+        with open(path) as f:
+            if f.read() == data:
+                return False
+    except OSError:
+        pass
     tmp = path + ".tmp"
     with open(tmp, "w") as f:
-        json.dump(doc, f, indent=2, sort_keys=True)
-        f.write("\n")
-        f.flush()
-        os.fsync(f.fileno())
+        f.write(data)
+        if fsync:
+            f.flush()
+            os.fsync(f.fileno())
     os.replace(tmp, path)
+    return True
 
 
 def load_state(config):
@@ -347,13 +360,17 @@ def _emit_input_state(config, display, effective=None):
         "note": "libinput calibration only; Phoc consumes mapped touch; presenter rotates no pixels",
     }
     try:
+        data = json.dumps(doc, sort_keys=True) + "\n"
+        try:
+            with open(path) as f:
+                if f.read() == data:
+                    return
+        except OSError:
+            pass
         os.makedirs(os.path.dirname(path), exist_ok=True)
         tmp = path + ".tmp"
         with open(tmp, "w") as f:
-            json.dump(doc, f, sort_keys=True)
-            f.write("\n")
-            f.flush()
-            os.fsync(f.fileno())
+            f.write(data)
         os.replace(tmp, path)
     except OSError:
         pass
@@ -390,12 +407,17 @@ def _emit_presenter_state(config, display, effective=None):
         1 if display.get("applied") else 0,
     )
     try:
+        try:
+            with open(path) as f:
+                if f.read() == doc:
+                    _emit_input_state(config, display, effective)
+                    return
+        except OSError:
+            pass
         os.makedirs(os.path.dirname(path), exist_ok=True)
         tmp = path + ".tmp"
         with open(tmp, "w") as f:
             f.write(doc)
-            f.flush()
-            os.fsync(f.fileno())
         os.replace(tmp, path)
     except OSError:
         pass
@@ -441,11 +463,14 @@ def _mode_label(mode):
     return SEVEN_MODES.get(mode, {}).get("label", mode)
 
 
-def _base_status(config, state=None):
+def _base_status(config, state=None, sensor=None, display=None):
     state = state or load_state(config)
     mode, effective, last = normalize_mode(state)
-    sensor = sensor_probe(config)
-    display = _display_snapshot(config)
+    # The daemon already owns a cached sensor/display snapshot.  Re-probing and
+    # re-running wlr-randr on every status publish was the largest idle cost:
+    # it forked a helper and read the whole sensor tree every two seconds.
+    sensor = sensor if sensor is not None else sensor_probe(config)
+    display = display if display is not None else _display_snapshot(config)
     _emit_presenter_state(config, display, effective)
     requested = state.get("requested_orientation", effective)
     if requested not in allowed_orientations(mode):
@@ -702,6 +727,7 @@ class Runtime:
         self._remote_sequence = -1
         self._remote_child = None
         self._remote_last_tick = 0.0
+        self._last_sensor_probe = 0.0
         self._trial_good = None
         # A pending trial from a previous daemon process is unsafe: nobody can
         # be sure the owner saw the screen.  Restore the saved last-good.
@@ -725,7 +751,8 @@ class Runtime:
             pass
 
     def _publish(self):
-        doc = _base_status(self.config, self.state)
+        doc = _base_status(self.config, self.state,
+                           sensor=self.sensor, display=self.display)
         doc["_daemon_live"] = True
         doc["pid"] = os.getpid()
         doc["updated_epoch"] = time.time()
@@ -761,8 +788,8 @@ class Runtime:
         doc["display_verified"] = bool(
             self.display.get("output") and self.display.get("transform") ==
             apply_mod.transform_for(self.effective, self.config) and scale_ok)
-        doc.update(_remote_snapshot())
-        _emit_presenter_state(self.config, self.display, self.effective)
+        # _base_status already refreshed the presenter/input state from the
+        # cached display snapshot, and had already included the remote snapshot.
         doc["compositor"] = {
             "output": self.display.get("output"),
             "backend": self.display.get("backend"),
@@ -774,7 +801,7 @@ class Runtime:
                 "touch", {}).get("verified", False)),
             "error": self.display.get("error", ""),
         }
-        _write_json(P(STATUS_PATH), doc)
+        _write_json(P(STATUS_PATH), doc, fsync=False)
         # Remote sessions are asynchronous consumers of the verified local
         # state.  One short-lived helper per committed sequence; no polling
         # loop, no blocking, and a remote failure cannot alter the phone.
@@ -1043,17 +1070,22 @@ class Runtime:
         now = time.monotonic()
         # Detect a new/reconnected XRDP session and prune a vanished one even
         # when the orientation itself has not changed.  This is one shared
-        # 10 s consumer refresh, not a per-session loop and not an authority.
-        if now - self._remote_last_tick >= 10.0:
+        # 30 s consumer refresh, not a per-session loop and not an authority.
+        if now - self._remote_last_tick >= 30.0:
             self._remote_last_tick = now
             self._spawn_remote_sync()
-        if now - self.last_output_check < 2.0:
+        if now - self.last_output_check < 5.0:
             return
         self.last_output_check = now
-        if is_auto(self.mode) and not self.sensor.get("available"):
-            self.sensor = sensor_probe(self.config, start=True)
-        elif is_auto(self.mode):
-            self.sensor = sensor_probe(self.config)
+        # Auto mode is normally blocked on this handset (no vendor LHD runtime).
+        # Retrying the full sensor probe every 5 s only woke the hub again; a
+        # 30 s re-probe is enough to notice a real source appearing.
+        if is_auto(self.mode) and now - self._last_sensor_probe >= 30.0:
+            self._last_sensor_probe = now
+            if not self.sensor.get("available"):
+                self.sensor = sensor_probe(self.config, start=True)
+            else:
+                self.sensor = sensor_probe(self.config)
         latest = _display_snapshot(self.config)
         wanted = apply_mod.transform_for(self.effective, self.config)
         if latest.get("output") and latest.get("transform") != wanted and not (
@@ -1089,7 +1121,12 @@ class Runtime:
                 self._trial_watchdog()
                 self._sensor_tick()
                 self._output_tick()
-                time.sleep(0.20)
+                # Keep the full auto-rotation sample cadence when a real
+                # sensor source exists; otherwise half-second ticks are ample
+                # for a fixed mode and cut the idle wakeup rate by 60%.
+                active_auto = (is_auto(self.mode) and
+                               self.sensor.get("available"))
+                time.sleep(0.20 if active_auto else 0.50)
             except Exception:
                 self.last_error = "daemon loop: " + traceback.format_exc(limit=2)
                 self._publish()

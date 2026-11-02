@@ -81,9 +81,9 @@ def test_status_polling_pauses_under_lockscreen_and_is_coalesced():
     js = read("js/status-bar.js")
     assert "_coveredByLock()" in js
     assert "this._statusInactive()" in js
-    assert "}, 15000);" in js
-    assert "}, 10000);" in js
-    assert "}, 20000);" in js
+    assert "}, 30000);" in js
+    assert "}, 30000);" in js
+    assert "}, 30000);" in js
     assert "this._safeZonesScheduled" in js
     # One rAF measurement, not two nested passes per caller.
     body = re.search(r"_applySafeZones\(\)\s*\{(.*?)\n    \}", js, re.S).group(1)

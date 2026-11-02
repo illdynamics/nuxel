@@ -765,6 +765,12 @@ static void ind_signature(char *out, size_t outn) {
 static gboolean ind_signature_tick(gpointer data) {
   (void)data;
   if (!g_main_view) return TRUE;
+  /* The kobject uevent socket is the event source.  This signature read is a
+   * safety net for state that does not emit uevents (e.g. a console session
+   * appearing/disappearing).  G_LIKELY signatures change on power/USB events,
+   * which the netlink path already pushes within 120 ms; re-reading every
+   * second was measurably pure idle churn.  Keep a 5 s floor so a missed
+   * uevent is still caught quickly. */
   char now[256];
   ind_signature(now, sizeof now);
   if (strcmp(now, ind_last_signature) != 0) {
@@ -805,8 +811,8 @@ static void indicator_fallback_start(void) {
    * only for kernels where a non-root session cannot bind it; 1 s is still
    * event-driven at the UI boundary (it pushes only on a real state change) and
    * removes four wakeups/second while the phone is idle. */
-  ind_fallback_timer = (guint)g_timeout_add(1000, ind_signature_tick, NULL);
-  st("HOST_INDICATOR_FALLBACK interval=1000ms push-on-change=1");
+  ind_fallback_timer = (guint)g_timeout_add(5000, ind_signature_tick, NULL);
+  st("HOST_INDICATOR_FALLBACK interval=5000ms push-on-change=1");
 }
 
 struct cfgfile { const char *name; const char *path; int writable; };
@@ -1041,6 +1047,14 @@ static int ind_gate_allows(const char *key) {
   return !strncmp(p, "true", 4);
 }
 
+/* Detached children (systemctl, foreign-toplevel) have no caller to wait for
+ * them.  Registering them with GLib's child watcher reaps the exit status, so a
+ * long session cannot accumulate one zombie per Home/power action. */
+static void detached_child_exited(GPid pid, gint status, gpointer data) {
+  (void)status; (void)data;
+  g_spawn_close_pid(pid);
+}
+
 static void run_async_systemctl(const char *verb) {
   pid_t pid = fork();
   if (pid < 0) return;
@@ -1050,6 +1064,7 @@ static void run_async_systemctl(const char *verb) {
     execv(argv[0], (char *const *)argv);
     _exit(127);
   }
+  g_child_watch_add(pid, detached_child_exited, NULL);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1359,6 +1374,7 @@ static void action_perform(const char *action, char *result, size_t rn) {
             "nuxel-foreign-toplevel", "home", (char *)NULL);
       _exit(127);
     }
+    if (pid > 0) g_child_watch_add(pid, detached_child_exited, NULL);
     if (g_main_window) gtk_window_present(GTK_WINDOW(g_main_window));
     st("HOST_ACTION %s -> foreign-toplevel home + raise", action);
     if (!strcmp(action, "dismiss-keyboard")) {
