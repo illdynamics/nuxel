@@ -11,7 +11,7 @@ bridge = (ROOT / 'tools/s10plus/a67/nuxel-wl-fb.c').read_text()
 rootfs = (ROOT / 'images/s10plus/build-phone-rootfs-inside-fedora.sh').read_text()
 unit = (ROOT / 'services/nuxel-session/systemd/nuxel-wl-fb.service').read_text()
 
-assert 'return panel_commit_frame("frame");' in bridge, 'blit must commit each frame'
+assert re.search(r'static int frame_blit_once\(void\) \{.*?panel_commit_frame\("frame"\);.*?return rc;', bridge, re.S), 'blit must commit each frame'
 # A65 wrapped the steady-state blit in `if (changed)`: unchanged frames are
 # skipped on purpose, but EVERY changed frame must still be committed.  Assert
 # the invariant, not one historical brace layout (the old regex required the
