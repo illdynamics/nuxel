@@ -1,0 +1,9 @@
+probe: audio-abox (06-audio)
+cmd: sh /var/tmp/nuxel-live-probes/nuxel-audio-diag.sh pipeline --json
+staged: [{"bytes": 31297, "frames": 327, "sha256": "a6eb18d7cc08952ffcfa9d5568171946decd9eef863d65e6903365ec0b30d034", "source": "tools/s10plus/a33/nuxel-audio-diag.sh", "target": "/var/tmp/nuxel-live-probes/nuxel-audio-diag.sh"}]
+rc: 0 framed: True sha_ok: True
+verdict: FAILED
+reason: the walk named the first broken playback stage: {"schema_version":1,"device":"beyond2lte","card":"beyond-madera","card_index":0,"stages":{"card":"OK","pcm":"OK","controls":"OK","dapm":"OK","route":"OK","dac_r
+--- observation ---
+{"schema_version":1,"device":"beyond2lte","card":"beyond-madera","card_index":0,"stages":{"card":"OK","pcm":"OK","controls":"OK","dapm":"OK","route":"OK","dac_running":"FAIL"},"pcm_state":"","playback_controls":1475,"firmware":"PRESENT","state":"DAC_NOT_RUNNING","first_broken_stage":"dac_running","reason":"PCM state='' — the DAC/ABox never entered the running state","low_volume_cap_percent":100}
+

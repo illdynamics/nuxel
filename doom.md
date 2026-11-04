@@ -1,745 +1,1360 @@
-# NUXEL-A76 — OPERATION DOOM POCKET PWNAGE 25000
-## Build the ultimate mobile-first DOOM experience for Nuxel Linux
+# NUXEL-A77 — OPERATION POCKET DOOM
+## Build the ultimate native mobile DOOM RPG collection for Nuxel Linux
 
-**Mission:** Transform Nuxel into a proper mobile gaming platform by integrating a fully playable, touchscreen-optimized DOOM experience. This is not a simple desktop port. Build a first-class native Linux phone game experience with custom controls, launcher, engine integration, Flatpak distribution, haptics and performance optimization.
+**Project codename:** Pocket DOOM
+**Collection name:** Nuxel Pocket Classics
+**Target devices:** Nuxel ARM64 Linux phones
+**Primary hardware:** Samsung Galaxy S10+ SM-G975F, Exynos 9820
+**Operating system:** Nuxel Fedora-based mobile Linux
+**Primary target resolution:** Adapt to the actual device display, including the S10+'s available portrait and landscape modes
+**Architecture:** Native ARM64, SDL2-based game engines, Nuxel application integration
+**Distribution:** NuXtore, using the existing Nuxel application and Flatpak architecture.
 
-**Repository:** `github.com/illdynamics/nuxel`  
-**Primary hardware target:** Samsung Galaxy S10+ (`beyond2lte`, Exynos 9820, aarch64)  
-**Operating system:** Current Nuxel Fedora-based build  
-**Distribution:** Native Nuxel Flatpak application  
-**App identity target:** `org.nuxel.Doom` (verify naming conventions before adopting)  
-**Campaign:** Freedoom as the freely distributable default game content.
+## 0. THE MISSION
+
+Build a complete mobile gaming collection containing TWO original mobile DOOM RPG experiences:
+
+1. **DOOM RPG (2005)** — the original mobile RPG.
+2. **DOOM II RPG (2009)** — the sequel.
+
+These games were designed specifically for mobile phones with tiny screens, keypad controls and D-pad navigation.
+
+We want to recreate that original experience as closely as possible while making the games feel completely at home on modern Nuxel Linux phones.
+
+This is NOT a conventional DOOM FPS port.
+
+This is NOT a Minecraft clone.
+
+This is NOT a Java ME emulator running inside Nuxel.
+
+We want the original mobile DOOM RPG games reconstructed and running natively through their respective reverse-engineered engines.
+
+The ultimate experience:
+
+- Native ARM64 game engines.
+- Original game graphics and sound.
+- Original gameplay.
+- Original animations.
+- Original menus.
+- Authentic small-screen presentation.
+- Virtual touchscreen D-pad.
+- Dedicated action buttons.
+- One-handed gameplay.
+- Physical D-pad and Bluetooth controller support.
+- Persistent saves.
+- Offline gameplay.
+- Integration into NuXtore and Nuxel Home.
+
+The final product should feel like someone has taken the original 2005–2009 mobile DOOM gaming experience and rebuilt it specifically for a modern Linux phone.
+
+**The original mobile gaming experience is the feature, not an inconvenience we should modernize away.**
 
 ---
 
-# 1. ROLE AND EXECUTION REQUIREMENTS
+# 1. MANDATORY REPOSITORY RECONNAISSANCE
 
-You are the autonomous principal Linux mobile gaming engineer, GTK4/libadwaita developer, SDL2 engine developer, ARM64 performance engineer and Nuxel systems integrator.
+Repository:
 
-Your mission is to IMPLEMENT, BUILD, TEST AND DOCUMENT the complete solution.
+`github.com/illdynamics/nuxel`
 
-Do not stop after producing a research report, architecture proposal or implementation plan.
+Before implementing anything, investigate the entire existing repository and current implementation.
 
-Execute the entire task in the existing repository.
+The ordinary DOOM application is already working in Nuxel. Preserve it.
 
-Work methodically and independently. Resolve technical issues instead of documenting them as excuses.
-
-Critical rules:
-
-- Inspect the actual current repository before modifying anything.
-- Preserve all unrelated working functionality.
-- Respect existing architectural conventions and security boundaries.
-- Do not replace the existing launcher, compositor, navigation system or display management.
-- No Android dependencies, emulation or compatibility layers.
-- No Snap.
-- No proprietary game assets bundled into the distribution.
-- No unnecessary network access.
-- No privileged input injection.
-- No destructive device operations.
-- Never flash a phone, erase data or reboot hardware as part of this task.
-
-Inspect the current working tree and preserve existing uncommitted changes. Do not reset or overwrite unrelated user work.
-
-If an assumption in this prompt conflicts with the current implementation, investigate and follow the actual source of truth.
-
----
-
-# 2. PHASE ZERO — REPOSITORY AND HARDWARE RECONNAISSANCE
-
-Before writing code, inspect:
+Inspect:
 
 - README.md
 - CHANGELOG.md
 - VERSION
-- Latest NUXEL-A75 prompt and previous relevant prompt history
-- docs/app-store.md
-- docs/pwa-model.md
-- Current NuXtore implementation
-- Nuxel Home and launcher implementation
-- Flatpak manifests and runtime configuration
-- Application discovery and registration
-- Nuxel permission and sandbox systems
-- Nuxel Portal and Bridge D-Bus interfaces
-- Orientation and rotation management
-- Navigation: Back / Home / Tabs
-- Haptics services
-- PipeWire audio integration
-- Application lifecycle and suspension
-- Current S10+ display bridge and Phoc implementation
-- Existing application icons and asset conventions
-- Build scripts, CI and VM testing infrastructure.
+- Existing DOOM implementation.
+- Existing DOOMCRAFT work, if present.
+- NuXtore.
+- Application registry.
+- Launcher implementation.
+- Application installation and removal mechanisms.
+- Flatpak manifests.
+- SDL2 integration.
+- Display handling.
+- Phoc and compositor integration.
+- Existing S10+ framebuffer presentation bridge.
+- Input handling.
+- Touchscreen event handling.
+- Haptics.
+- PipeWire integration.
+- Application lifecycle.
+- Application backgrounding.
+- Navigation.
+- Existing app-specific persistent storage conventions.
+- Existing documentation.
+- CI and test infrastructure.
 
-Determine the real application launch contract, foreground lifecycle, app discovery mechanism and Flatpak installation model.
+Determine the current actual platform capabilities.
 
-**Hardware reality:**
+The S10+ has historically used headless Phoc with a framebuffer presentation bridge rather than a conventional `/dev/dri` configuration.
 
-The S10+ implementation has historically used a DECON framebuffer screencopy bridge and headless Phoc. Do not assume that an SDL application can directly access DRM/KMS, GBM or `/dev/dri`.
+Do not assume conventional DRM/KMS access.
 
-Determine the actual SDL2 video driver and Wayland presentation path available in the current build.
+Do not introduce a competing display manager or compositor.
 
-Test the real rendering and input path rather than merely verifying that the engine executable starts.
+Respect the existing SDL2 and Wayland presentation infrastructure.
 
-Produce a concise initial technical assessment and immediately proceed with implementation.
+Inspect whether the current DOOM application already provides reusable SDL2 infrastructure, Flatpak permissions, audio services, configuration utilities and NuXtore registration.
 
-# 3. PHASE ONE — CHOOSE AND INTEGRATE THE DOOM ENGINE
+Reuse functioning components rather than duplicating them.
 
-Evaluate these projects:
+Do not assume the Home application is a conventional GTK4 application. Use the real existing Nuxel UI architecture.
 
-1. Chocolate Doom: https://github.com/chocolate-doom/chocolate-doom
-2. Crispy Doom: https://github.com/fabiangreffrath/crispy-doom
-3. Other lightweight, actively maintained SDL2-compatible source ports if there is a compelling technical reason.
+Do not remove or modify unrelated existing functionality.
 
-Chocolate Doom is an excellent baseline because of its lightweight implementation and historically faithful gameplay.
-
-Crispy Doom should be evaluated for its improved rendering and additional gameplay features.
-
-Selection criteria:
-
-- Native ARM64 compatibility.
-- SDL2 support.
-- Wayland compatibility.
-- Good performance on Exynos 9820.
-- Reasonable memory consumption.
-- Open-source implementation.
-- Reproducible build.
-- Sustainable upstream maintenance.
-- Feasible native touchscreen integration.
-
-Do not simply download an unverified binary.
-
-Pin an upstream version or commit and verify downloaded source checksums.
-
-Prefer maintaining a small, clearly documented Nuxel-specific patch set over creating an unnecessarily large proprietary fork.
-
-The engine must support:
-
-- Original DOOM-compatible WAD files.
-- Freedoom.
-- Savegames.
-- Audio.
-- Configurable rendering.
-- Keyboard input.
-- Bluetooth game controllers.
-- Custom touch input.
-
-Use a native SDL2 engine for the gameplay itself. A GTK4 application should provide the Nuxel-facing launcher and configuration experience.
-
-# 4. PHASE TWO — BUILD THE MOBILE-FIRST DOOM APPLICATION
-
-Create a proper Nuxel application.
-
-The target experience:
-
-A user opens NuXtore, taps DOOM, installs it, launches it and immediately has a playable game without needing a keyboard, mouse or terminal.
-
-Application screens:
-
-### A. DOOM home screen
-
-Create a retro arcade-inspired Nuxel interface.
-
-Include:
-
-- Large PLAY DOOM button.
-- Campaign selection.
-- Installed game data indicator.
-- Engine version.
-- Performance mode.
-- Touch control settings.
-- Controller settings.
-- Sound and haptics settings.
-- Import WAD option.
-- About and license information.
-
-Visual direction:
-
-- Nuxel's existing pixel-art aesthetic.
-- Dark arcade-inspired interface.
-- Crisp retro typography.
-- Limited glow and transparency.
-- Properly sized touchscreen controls.
-- Original Nuxel DOOM graphics and icons.
-
-Create a dedicated DOOM application icon featuring a Nuxel-inspired retro gaming penguin/space marine. Do not copy copyrighted DOOM artwork.
-
-### B. Game launcher
-
-The PLAY button must:
-
-1. Validate that a compatible IWAD exists.
-2. Select the configured campaign.
-3. Acquire the existing Nuxel landscape orientation mechanism where supported.
-4. Start the engine.
-5. Initialize the configured touch HUD.
-6. Initialize audio and optional haptics.
-7. Enter gameplay.
-
-Handle engine startup failures gracefully.
-
-Provide useful error messages instead of silently crashing.
-
-### C. Campaign selection
-
-Implement:
-
-- Freedoom Phase 1.
-- Freedoom Phase 2.
-- FreeDM where supported.
-- User-imported DOOM and DOOM II IWADs.
-
-Do not bundle copyrighted commercial WAD files.
-
-Freedoom is game content rather than an engine: https://github.com/freedoom/freedoom
-
-Verify its current redistribution conditions before bundling any assets.
-
-Prefer including a verified, pinned, freely distributable Freedoom release with its required license files, provided the build and distribution conditions permit it.
-
-Otherwise implement an opt-in, checksum-verified installation or import flow.
-
-The user must be able to import legally obtained WAD files using the existing XDG document portal.
-
-Never grant unrestricted home-directory access merely to locate game files.
-
-Copy imported content into the application's private persistent storage and validate its format before enabling it.
+Inspect the current Git status and preserve all user changes.
 
 ---
 
-# 5. PHASE THREE — THE TOUCHSCREEN DOOM CONTROL SYSTEM
+# 2. THE TWO GAME ENGINES
 
-THIS IS THE MOST IMPORTANT PART OF THE PROJECT.
+Use the existing reverse-engineered native projects as the foundation.
 
-The game must be genuinely playable using only the phone touchscreen.
+## GAME A — DOOM RPG (2005)
 
-A stock desktop Doom interface is not an acceptable result.
+Upstream:
 
-Implement a mobile touchscreen HUD integrated into the actual SDL2 game rendering/input process.
+https://github.com/Erick194/DoomRPG-RE
 
-Investigate the SDL2 event architecture and implement native SDL multitouch support.
+Original developer:
 
-Prefer intercepting SDL_FINGERDOWN, SDL_FINGERMOTION and SDL_FINGERUP inside the engine process, translating touch gestures into the engine's native movement, mouse-look and action inputs.
+Fountainhead Entertainment / id Software.
 
-Draw the controls as an overlay in the game viewport.
+Reverse-engineering project:
 
-Do not implement an external privileged keyboard injector, unrestricted uinput daemon or global touch interception service.
+GEC / Erick Vásquez García.
 
-## A. Default landscape control layout
+Documented upstream version: 0.2.2.
 
-Create a layout similar to a modern mobile FPS.
+Language: C.
 
-**LEFT SIDE — MOVEMENT**
+Documented dependencies:
 
-A virtual analog joystick with:
+- CMake.
+- SDL2.
+- SDL2_mixer.
+- zlib.
+- FluidSynth.
 
-- Forward.
-- Backward.
-- Strafe left.
-- Strafe right.
-- Diagonal movement.
-- Configurable sensitivity.
-- Configurable dead zone.
+The upstream implementation reconstructs the original BREW version.
 
-The joystick must support both fixed and floating modes.
+Its documented controls include:
 
-**RIGHT SIDE — AIMING**
+| Original control | Function |
+|---|---|
+| Up | Move forward |
+| Down | Move backward |
+| Left | Turn left |
+| Right | Turn right |
+| A | Strafe left |
+| D | Strafe right |
+| Enter | Attack / talk / interact |
+| Z | Next weapon |
+| X | Previous weapon |
+| C | Pass turn |
+| Tab | Automap |
+| Escape | Menu / back |
 
-A dedicated touch-look area.
+Preserve these functions.
 
-- Drag horizontally to turn.
-- Drag vertically for configurable look movement where supported.
-- Configurable sensitivity.
-- Adjustable response curve.
-- Optional inverted Y-axis.
-- Smooth movement without excessive latency.
+Investigate upstream source compatibility with ARM64 and Linux.
 
-**RIGHT THUMB BUTTONS**
+Check existing issues, forks, pull requests and known Linux/64-bit problems.
 
-Large touchscreen actions:
+Implement only necessary compatibility patches.
 
-- FIRE.
-- USE / OPEN DOOR.
-- WEAPON NEXT.
-- WEAPON PREVIOUS.
-- PAUSE / MENU.
-- RUN.
+Keep those patches isolated and documented.
 
-Optional secondary controls:
+Do not silently alter gameplay mechanics.
 
-- Quick weapon selection.
-- Automap.
-- Menu.
-- Screenshot.
+### Important: 2005 asset handling
 
-Use engine-supported features and do not invent bindings that do not exist.
+This implementation targets BREW game assets.
 
-## B. Multitouch support
+Investigate the actual resource loading mechanism.
 
-Allow simultaneous actions.
+The project expects its game resource archive in the format documented by upstream.
 
-Examples:
+Determine how to obtain the supported resource structure from user-supplied original game data.
 
-- Move forward while aiming.
-- Strafe while shooting.
-- Turn while firing.
-- Move while activating doors.
+Investigate the `doomrpg.bar` to `DoomRPG.zip` conversion requirement.
 
-Track individual SDL touch/finger IDs.
+The PortMaster implementation is a useful additional reference:
 
-Maintain correct button-down and button-up semantics.
+https://github.com/Cebion/DoomRPG-RE_PM
 
-Handle:
+https://portmaster.games/detail.html?devices=&name=doomrpg
 
-- Finger cancellation.
-- Focus loss.
-- Rotation.
-- Application suspension.
-- Pause.
-- Engine termination.
+Its documented original-game asset requirement is a BREW `.bar` archive.
 
-Never leave a movement or firing key stuck after a finger disappears.
+Do not assume every J2ME or BREW edition is interchangeable.
 
-## C. HUD appearance
+Implement explicit version detection.
 
-Create an attractive retro gaming HUD.
+Investigate whether the Java ME edition can be supported separately through an alternative native reconstruction, including:
 
-Controls must be:
+https://github.com/sp00nznet/doomrpgrecomp
 
-- Large enough for thumbs.
-- Responsive to different screen dimensions.
-- Properly spaced.
-- Semi-transparent but readable.
-- High contrast.
-- Configurable.
-- Able to avoid important gameplay HUD areas.
+Treat alternative implementations as experimental candidates. Do not derail the primary native BREW implementation.
 
-Provide at least two layouts:
+If the user has an unsupported original edition, explain precisely what is missing and provide an appropriate compatibility assessment.
 
-1. Standard right-handed layout.
-2. Left-handed layout.
+Never report successful installation merely because an archive was accepted.
 
-Allow adjustable:
+## GAME B — DOOM II RPG (2009)
 
-- Button size.
-- HUD opacity.
-- Joystick size.
-- Joystick sensitivity.
-- Look sensitivity.
-- Button positioning.
-- HUD visibility.
+Upstream:
 
-Persist all preferences across restarts.
+https://github.com/Erick194/DoomIIRPG-RE
 
-Do not hardcode coordinates for one specific resolution.
+Original developer:
 
-Use current runtime display dimensions and safe-area information.
+Fountainhead Entertainment / id Software.
 
-## D. Physical controllers
+Reverse-engineering project:
 
-Preserve native keyboard and mouse support.
+GEC / Erick Vásquez García.
 
-Support SDL-compatible Bluetooth game controllers where available.
+Documented upstream version: 0.1.
 
-The touchscreen HUD and physical gamepad must coexist without fighting over input state.
+Language: C.
 
-Automatically recognize controller connection and disconnection.
+Documented dependencies:
 
-Provide a controller configuration page.
+- CMake.
+- SDL2.
+- zlib.
+- OpenAL.
+
+Documented controls:
+
+| Original control | Function |
+|---|---|
+| W / Up | Move forward |
+| S / Down | Move backward |
+| A | Strafe left |
+| D | Strafe right |
+| Left arrow | Turn left |
+| Right arrow | Turn right |
+| Enter | Attack / talk / interact |
+| Z | Next weapon |
+| X | Previous weapon |
+| C | Pass turn |
+| Tab | Automap |
+| Escape | Menu |
+| I | Items / information |
+| O | Drinks |
+| P | PDA |
+| B | Deploy / return bot |
+
+Preserve the complete control mapping.
+
+The sequel's additional gameplay systems are important. Do not build a basic port that omits them.
+
+Investigate:
+
+- Inventory.
+- Drinks.
+- PDA.
+- Companion robot.
+- Robot deployment.
+- Robot return.
+- Original weapon systems.
+- Dialogues.
+- Save games.
+- Level progression.
+- Original sound effects.
+- Original music.
+- Animations.
+- Original menus.
+
+### Important: DOOM II RPG assets
+
+Investigate the actual upstream resource-loading mechanism.
+
+The iOS IPA data route is documented by the existing Doom II RPG Vita implementation:
+
+https://github.com/Rinnegatamante/DoomIIRPG-RE
+
+Inspect the Vita adaptation and its data loading approach, but do not blindly reuse platform-specific Vita code.
+
+Investigate whether the upstream implementation expects the iOS `.ipa` data layout, a specific filename or a particular extracted directory structure.
+
+The importer must be built around verified source-code requirements.
+
+Do not assume that the 2005 BREW `.bar` format works for the sequel.
+
+Do not create a universal importer that silently mixes incompatible game versions.
+
+Investigate current Linux compilation compatibility and existing open pull requests.
+
+The documented 0.1 implementation should be treated as a starting point, not proof that the current main branch builds successfully on Fedora ARM64.
+
+Repair genuine build problems and verify actual game execution.
 
 ---
 
-# 6. PHASE FOUR — LANDSCAPE, FULLSCREEN AND NAVIGATION
+# 3. IMPLEMENT A SHARED NUXEL POCKET DOOM COLLECTION
 
-DOOM should feel like a proper handheld gaming application.
+The two games should appear together in one beautifully designed Nuxel mobile gaming experience.
 
-Use Nuxel's existing orientation management.
+Suggested application identity:
 
-Request landscape mode only while gameplay requires it.
+`org.nuxel.PocketDoom`
 
-Important:
+However, inspect the existing Nuxel application naming and packaging conventions before adopting this exact ID.
 
-- Do not issue arbitrary wlr-randr commands from the application.
-- Do not directly manipulate the framebuffer.
-- Do not modify the kernel display configuration.
-- Do not permanently alter system orientation.
-- Do not circumvent the Nuxel Portal.
-- Do not break existing orientation restoration.
+Preferred navigation:
 
-Use an existing supported orientation API or introduce a narrowly scoped, capability-controlled orientation lease if necessary.
+**NUXEL HOME → NUXEL DOOM → POCKET CLASSICS**
 
-When the game exits, restore the previous display orientation.
+Show two separate game entries:
 
-If the engine crashes or the app is terminated, do not leave the phone trapped in landscape mode.
+<pre>
++-----------------------------------+
+|          NUXEL POCKET DOOM        |
+|                                   |
+|    [ DOOM RPG - 2005 ]            |
+|                                   |
+|    [ DOOM II RPG - 2009 ]         |
+|                                   |
+|    Settings                       |
+|    Game Data Manager              |
+|    Controls                       |
++-----------------------------------+
+</pre>
 
-Preserve Nuxel's three-button navigation:
+Each game must have:
 
-**BACK:** Pause the game or return from an in-game menu.
+- Individual executable.
+- Individual configuration.
+- Individual save directory.
+- Individual resource directory.
+- Individual import validation.
+- Independent launch and shutdown lifecycle.
 
-**HOME:** Always return to Nuxel Home using the existing navigation mechanism.
+Avoid building one heavily modified game engine containing both games' logic.
 
-**TABS:** Open the existing application overview.
+Keep the engines separated.
 
-Never intercept or disable the system HOME action.
+Build a shared Nuxel integration layer for:
 
-Implement a proper pause screen containing:
+- Launcher.
+- Settings.
+- Touch controls.
+- Gamepad input.
+- Audio routing.
+- Haptics.
+- Save location management.
+- Installation state.
+- Error reporting.
 
-- Resume.
-- Controls.
-- Sound settings.
-- Save game.
-- Load game.
-- Restart level.
-- Return to campaign.
-- Exit DOOM.
+The two games must continue to work independently.
 
-Pause automatically when the application loses foreground focus.
+If one crashes, it must not corrupt the other game's settings or save data.
 
-Resume safely without stale touch states.
+The launcher should tell the user which game data is installed and which is missing.
 
-The game must not interfere with the existing app switcher or background application management.
+---
 
-# 7. PHASE FIVE — AUDIO, HAPTICS AND PERFORMANCE
+# 4. THE MOST IMPORTANT FEATURE: AUTHENTIC MOBILE D-PAD CONTROLS
 
-## Audio
+We want to recreate the actual feel of playing these games on old Nokia, Sony Ericsson and other feature phones.
 
-Integrate through the existing Nuxel PipeWire audio setup.
+This is not a modern FPS joystick.
+
+The D-pad is the primary interaction method.
+
+The controls must respect the original discrete, turn-based mechanics.
+
+Do not convert movement into continuous free-running joystick movement.
+
+## A. Virtual touchscreen D-pad
+
+Implement a large, comfortable virtual D-pad.
+
+The D-pad should support:
+
+- Up.
+- Down.
+- Left.
+- Right.
+- Accurate individual button events.
+- Configurable touch repeat.
+- Adjustable size.
+- Adjustable opacity.
+- Haptic confirmation.
+- Immediate button release.
+- Multitouch support.
+
+Map the controls according to each game's native key mapping.
+
+For example, in DOOM RPG:
+
+- Up = move forward.
+- Down = move backward.
+- Left = turn left.
+- Right = turn right.
+- Strafe left/right = secondary controls.
+
+For DOOM II RPG:
+
+- Up/down = forward/backward.
+- Left/right = rotation.
+- Strafe left/right = additional controls.
+
+Preserve the games' original turn-based movement semantics.
+
+Repeated movement should be deliberate and configurable.
+
+Never generate uncontrolled repeated turns while a button is held.
+
+Support optional directional repeat with a configurable delay.
+
+## B. Action buttons
+
+Implement touchscreen equivalents of the original phone action buttons.
+
+Primary actions:
+
+- ATTACK / TALK / INTERACT.
+- SKIP TURN.
+- AUTOMAP.
+- MENU / BACK.
+- NEXT WEAPON.
+- PREVIOUS WEAPON.
+
+DOOM II RPG must also support:
+
+- ITEMS / INFORMATION.
+- DRINKS.
+- PDA.
+- ROBOT DEPLOY / RETURN.
+
+Do not hide sequel-specific functions.
+
+Use a secondary actions drawer or compact expansion menu if necessary.
+
+Every original function must remain accessible.
+
+## C. Two-handed and one-handed modes
 
 Support:
 
-- Weapon sounds.
-- Enemy sounds.
-- Music.
-- Menu sounds.
-- Configurable sound volume.
-- Configurable music volume.
+1. Two-thumb landscape mode.
+2. Two-thumb portrait mode.
+3. Left-handed mode.
+4. Right-handed mode.
+5. Compact one-handed mode.
 
-Do not replace Nuxel's audio server or create another competing audio service.
+The compact one-handed layout should prioritize:
 
-Handle audio focus and app suspension properly.
+- D-pad.
+- Action.
+- Back.
+- Menu.
 
-Verify that gameplay audio is actually audible through the S10+ speaker route.
+Provide configurable button positioning.
 
-## Haptics
+Do not make buttons overlap or interfere with the game's actual rendered controls.
 
-Integrate with the existing Nuxel haptics service.
+## D. Physical controller support
 
-Implement optional subtle vibration for:
+Support:
 
-- Weapon firing.
-- Damage received.
-- Explosion events where technically appropriate.
-- Menu interactions.
+- Bluetooth gamepads.
+- SDL-compatible controllers.
+- Physical D-pads.
+- ABXY buttons.
+- Shoulder buttons.
+- Select and Start.
 
-Use throttling and intensity controls.
+Suggested default controller mapping:
 
-Do not send one vibration request per render frame.
-
-Haptics must be optional and must gracefully degrade when unavailable.
-
-## Performance
-
-The S10+ is a mobile device, not a gaming PC.
-
-Optimize for ARM64 and the Exynos 9820.
-
-Implement:
-
-- Configurable rendering resolution.
-- Pixel-perfect scaling.
-- Optional reduced-resolution mode.
-- 30 FPS battery saver.
-- 60 FPS performance target.
-- Configurable frame pacing.
-- Efficient software rendering.
-- Minimal background allocations.
-- Avoidance of unnecessary GTK rendering while gameplay is active.
-
-Do not assume a working DRM acceleration path.
-
-Do not force llvmpipe or CPU rendering when an existing working GPU-backed presentation path is available.
-
-Measure actual performance.
-
-Target stable 30 FPS minimum and 60 FPS where achievable.
-
-Provide a low-performance mode for devices with weaker graphics hardware.
-
-Avoid thermal and battery drain caused by unnecessary uncapped rendering.
-
-# 8. PHASE SIX — FLATPAK AND NUXEL DISTRIBUTION
-
-Package the complete application according to Nuxel's actual distribution architecture.
-
-The final product should be installable through NuXtore.
-
-Implement:
-
-- Flatpak manifest.
-- Reproducible build instructions.
-- ARM64 support.
-- Proper application ID.
-- Desktop entry.
-- AppStream metadata.
-- Application icon.
-- Version metadata.
-- License files.
-- Source repository reference.
-- Nuxel permission metadata.
-- Persistent app-specific storage.
-- Proper uninstall integration.
-
-Use the project's established GNOME runtime and org.nuxel.Platform conventions where appropriate.
-
-Do not blindly assume that every existing application uses the same runtime.
-
-Inspect the current manifests before making that decision.
-
-Keep permissions minimal.
-
-Expected permissions should be limited to actual requirements:
-
-- Display access through the established Wayland mechanism.
-- Audio output.
-- Game controller access when needed.
-- XDG document portal for user-imported WAD files.
-- Required session services.
-
-No network access by default.
-
-No broad filesystem permissions.
-
-No unrestricted device access.
-
-No unnecessary system bus permissions.
-
-The game should remain completely playable offline after installation.
-
-Integrate with the actual NuXtore application discovery and installation workflow.
-
-Ensure that installation detection, launch, upgrades and uninstall all function correctly.
-
-Do not merely add an icon to the launcher without a functioning installed application behind it.
-
-# 9. PHASE SEVEN — QUALITY ASSURANCE
-
-Build a comprehensive automated test suite.
-
-## Engine tests
-
-- ARM64 compilation.
-- SDL2 initialization.
-- Wayland startup.
-- Fullscreen behavior.
-- IWAD discovery.
-- WAD validation.
-- Save/load.
-- Audio initialization.
-- Controller detection.
-
-## Touch-input tests
-
-Test:
-
-- Single-finger movement.
-- Single-finger aiming.
-- Fire button.
-- Simultaneous movement and fire.
-- Simultaneous movement and aiming.
-- Simultaneous movement, aiming and fire.
-- Finger cancellation.
-- Focus loss.
-- Application suspension.
-- Rotation.
-- Repeated pause/resume.
-
-Verify that all input states are released correctly.
-
-## Nuxel integration tests
-
-- Application appears in NuXtore.
-- Application installs.
-- Application launches from Nuxel Home.
-- Application enters landscape safely.
-- HOME works during gameplay.
-- TABS works during gameplay.
-- BACK opens the pause menu.
-- Engine exits cleanly.
-- Orientation restores.
-- Audio route restores.
-- Haptics can be disabled.
-- Application survives normal suspension/resume.
-- Existing applications continue functioning.
-
-## Performance tests
-
-Record:
-
-- Memory consumption.
-- CPU utilization.
-- Frame rate.
-- Frame-time stability.
-- Startup time.
-- Audio latency.
-- Touch response latency.
-
-Test normal and reduced-resolution rendering.
-
-Use a VM and automated tests where possible.
-
-Use actual S10+ test results where hardware is available.
-
-Do not claim a physical-device test passed unless it was genuinely performed.
-
-# 10. PHASE EIGHT — DOCUMENTATION AND RELEASE READINESS
-
-Create:
-
-- `docs/games/doom.md`
-- `docs/games/doom-touch-controls.md`
-- `docs/games/doom-troubleshooting.md`
-- Flatpak build and installation documentation.
-- WAD import instructions.
-- Controller pairing instructions.
-- Performance tuning documentation.
-- License and redistribution documentation.
-
-Add a changelog entry.
-
-Update application and feature documentation.
-
-Create an implementation report documenting:
-
-1. Selected engine and why.
-2. ARM64 compatibility.
-3. Touchscreen implementation.
-4. Fullscreen and orientation integration.
-5. Audio and haptics.
-6. Flatpak permissions.
-7. NuXtore integration.
-8. Tests performed.
-9. Actual performance measurements.
-10. Known remaining limitations.
-
-Keep version numbers consistent with the current repository conventions. Do not arbitrarily bump the OS release version for an individual application.
-
-# 11. FINAL ACCEPTANCE CRITERIA
-
-The project is NOT COMPLETE merely because a DOOM executable compiles.
-
-All of the following are required for completion:
-
-| Requirement | Expected result |
+| Controller | Action |
 |---|---|
-| Native engine | ARM64 SDL2 engine builds |
-| Mobile launcher | Native Nuxel application |
-| Flatpak | Installable package |
-| NuXtore | Discoverable and launchable |
-| Game content | Freedoom or imported IWAD |
-| Touch movement | Working |
-| Touch aiming | Working |
-| Touch shooting | Working |
-| Multitouch | Working simultaneously |
-| Landscape | Correct orientation |
-| System navigation | Back/Home/Tabs preserved |
-| Pause/resume | Working |
-| Audio | Integrated with PipeWire |
-| Haptics | Integrated and configurable |
-| Bluetooth controller | Supported |
-| Save/load | Working |
-| Offline gameplay | Working |
-| ARM64 performance | Measured |
-| Existing Nuxel functions | No regressions |
+| D-pad up/down | Forward/backward |
+| D-pad left/right | Turn |
+| A | Action / attack / interact |
+| B | Pass turn / back |
+| X | Previous weapon |
+| Y | Automap |
+| L1 | Strafe left |
+| R1 | Strafe right |
+| L2 | Previous weapon |
+| R2 | Next weapon |
+| Start | Menu |
+| Select | Secondary menu |
 
-The complete system must have a clear separation between:
+Make the mapping configurable.
 
-- Native GTK4 launcher.
-- SDL2 gameplay engine.
-- Touchscreen HUD.
-- Nuxel integration.
-- Flatpak packaging.
+Preserve native engine input compatibility.
 
-# 12. EXECUTION STRATEGY
+Do not use global OS keyboard injection.
 
-Work in sequential implementation phases.
+Do not create a privileged uinput daemon.
 
-Do not create competing implementations of the same components.
-
-Where multiple specialist agents are available, they may investigate separate areas, but maintain one integration owner and one authoritative implementation.
-
-Recommended execution order:
-
-1. Repository reconnaissance and engine selection.
-2. ARM64 engine build.
-3. Minimal playable game.
-4. SDL multitouch implementation.
-5. Custom HUD.
-6. GTK launcher.
-7. Orientation and navigation.
-8. Audio and haptics.
-9. Flatpak and NuXtore.
-10. Performance optimization.
-11. Automated regression tests.
-12. Documentation and completion report.
-
-Prioritize achieving a working playable vertical slice as early as possible.
-
-Do not spend the entire task designing beautiful menus while the game itself remains unplayable.
-
-Do not stop after a failed build. Diagnose, repair and retry.
-
-Do not silently disable tests to obtain a green build.
-
-Run the existing relevant Nuxel test suites and regression gates.
-
-Preserve all existing working functionality.
-
-If a dependency cannot be built or a hardware API is genuinely blocked, document the evidence, implement the best supported fallback and continue with all remaining work.
-
-# 13. DEFINITION OF DONE
-
-I want to be able to:
-
-1. Open NuXtore on my Samsung S10+.
-2. Find DOOM.
-3. Install it.
-4. Open the Nuxel DOOM launcher.
-5. Select Freedoom.
-6. Press PLAY.
-7. Have the display enter landscape.
-8. Start playing immediately using only my thumbs.
-9. Walk, strafe, aim, shoot and open doors simultaneously.
-10. Hear the original-style game audio.
-11. Feel optional haptic feedback.
-12. Pause and resume.
-13. Return to Nuxel Home without breaking navigation.
-14. Reopen the game without losing my settings or saved progress.
-
-No keyboard required. No mouse required. No terminal required.
-
-**The result should feel like a dedicated Linux gaming handheld experience running on a Nuxel phone.**
-
-Think classic DOOM meets a custom Linux handheld, with Nuxel's pixel-art identity.
-
-Build it properly.
-
-**THE PENGUIN HAS A SHOTGUN.** 🐧💀
+Translate touchscreen controls into engine-local SDL events or directly into the existing engine input mapping.
 
 ---
 
-**FINAL RESPONSE FORMAT**
+# 5. RECREATE THE ORIGINAL SMALL-SCREEN EXPERIENCE
+
+This is where we distinguish Pocket DOOM from the existing normal DOOM implementation.
+
+Do not force either game into the full-screen modern FPS interface.
+
+Preserve the original mobile game's visual structure.
+
+The original games were designed around compact display resolutions and keypad navigation.
+
+Build a responsive rendering layout that keeps the authentic visual proportions.
+
+### Requirements
+
+- Preserve the original game's viewport aspect ratio.
+- Preserve original asset proportions.
+- Use crisp nearest-neighbour scaling.
+- Avoid blurry texture interpolation.
+- Preserve original HUD placement.
+- Preserve original portrait/menu layouts where supported.
+- Respect the actual game interface.
+- Never stretch the original images to fill an arbitrary screen.
+
+Support both portrait and landscape if the underlying engine permits it reliably.
+
+Default to portrait-oriented mobile presentation when that matches the original game's supported UI.
+
+Do not unnecessarily rotate the entire phone.
+
+Keep Nuxel's three navigation controls working.
+
+### Optional display modes
+
+Implement:
+
+**ORIGINAL PHONE MODE**
+
+Faithful original screen layout with accurate scaling and original visual proportions.
+
+**MODERN MOBILE MODE**
+
+The original game viewport is combined with carefully positioned modern touchscreen controls.
+
+**PIXEL PERFECT MODE**
+
+Nearest-neighbour scaling and integer scaling where practical.
+
+**COMPACT MODE**
+
+Prioritize the original small-screen experience and one-handed operation.
+
+Allow users to switch modes without losing game progress.
+
+---
+
+# 6. ORIGINAL GRAPHICS AND SOUND
+
+The original visual and audio identity is critical.
+
+Do not replace original game graphics with generic DOOM assets.
+
+Do not substitute Freedoom assets.
+
+Do not reuse assets from the normal Doom FPS application unless they are genuinely part of these specific games.
+
+Use the actual locally supplied original game data.
+
+Preserve:
+
+- Original weapon sprites.
+- Original monster sprites.
+- Original environments.
+- Original menu graphics.
+- Original portraits.
+- Original inventory graphics.
+- Original animations.
+- Original UI graphics.
+- Original sound effects.
+- Original music.
+- Original dialogue-related assets.
+
+Maintain the original colour palettes.
+
+Do not apply the DOOMCRAFT graphics transformations automatically.
+
+These are two separate products.
+
+### Optional experimental graphics
+
+Provide the possibility of a separate optional visual enhancement in the future, but prioritize faithful original presentation first.
+
+---
+
+# 7. NUXEL MOBILE UI DESIGN
+
+Create a dedicated Pocket DOOM visual identity.
+
+Design direction:
+
+- Retro mobile phone gaming.
+- Early-2000s handheld gaming.
+- Dark metallic UI.
+- Chunky pixel typography.
+- Classic arcade elements.
+- Minimal glow.
+- Crisp icons.
+- Nuxel branding.
+
+Create original application artwork for:
+
+- Pocket DOOM collection.
+- DOOM RPG 2005.
+- DOOM II RPG 2009.
+- Game data import.
+- Controller.
+- Virtual D-pad.
+- Automap.
+- Inventory.
+- PDA.
+- Robot.
+- Game settings.
+
+Do not copy proprietary cover artwork or promotional imagery.
+
+Create original launcher artwork inspired by early mobile gaming.
+
+Use the existing Nuxel design system and asset conventions.
+
+## Home screen
+
+Show:
+
+- Two game tiles.
+- Individual installed/missing data indicators.
+- Last played game.
+- Last played date.
+- Continue button when a valid save exists.
+- New Game.
+- Settings.
+- Import Game Data.
+- Controller Configuration.
+- About and credits.
+
+## Game-specific menus
+
+Keep each game's menu structure authentic.
+
+Do not force the same menu into both engines.
+
+DOOM II RPG should have its own controls and menu configuration to accommodate its additional gameplay systems.
+
+---
+
+# 8. GAME DATA IMPORTER AND VALIDATION SYSTEM
+
+Build a safe, native Nuxel game-data import experience.
+
+The user must be able to import their own legally obtained original game data.
+
+Do not distribute commercial game data.
+
+Do not download copyrighted game assets automatically.
+
+Do not include commercial game archives, extracted sprites, music, sounds or compiled original game binaries in Git, Flatpak or NuXtore.
+
+Use only original data the user is entitled to provide.
+
+## A. DOOM RPG importer
+
+Support the verified BREW resource format required by the selected engine.
+
+Investigate:
+
+- `.bar`
+- Converted `.zip` data.
+- Original resource structure.
+- Expected filenames.
+- Required resources.
+- Archive validation.
+- Soundfont requirement.
+- Data compatibility.
+
+Implement a guided import interface.
+
+Display:
+
+- Detected game version.
+- Detected archive format.
+- Required conversion status.
+- Resource verification result.
+- Missing files.
+- Installation status.
+
+If a converter is needed:
+
+- Prefer an audited open-source implementation.
+- Pin its source.
+- Verify its license.
+- Build it natively for ARM64.
+- Do not download mysterious precompiled converters.
+- Keep the original archive unchanged.
+
+The importer must not silently modify the user's original file.
+
+## B. DOOM II RPG importer
+
+Support the verified resource format required by the selected implementation.
+
+Investigate the iOS `.ipa` route and actual expected folder hierarchy.
+
+Implement:
+
+- IPA validation.
+- Safe archive extraction.
+- Required directory detection.
+- Missing-resource detection.
+- Asset compatibility verification.
+- Installation into private application storage.
+
+Never assume that extracting an IPA's outer directory is sufficient.
+
+Inspect the real expected `Payload/*.app` resource structure and implement the required extraction correctly.
+
+## C. Secure archive handling
+
+Treat every imported file as untrusted input.
+
+Protect against:
+
+- Path traversal.
+- Symlink traversal.
+- Malicious archive entry names.
+- Oversized extracted files.
+- Archive bombs.
+- Duplicate conflicting files.
+- Unexpected filesystem writes.
+- Invalid nested archives.
+
+Use safe temporary directories.
+
+Verify expected file checksums and structures where known.
+
+Never run executable code from an imported archive.
+
+## D. Data persistence
+
+Use separate game-data storage.
+
+For example:
+
+```text
+~/.var/app/<verified-application-id>/
+    data/
+        doom-rpg/
+            resources/
+            saves/
+            config/
+        doom-ii-rpg/
+            resources/
+            saves/
+            config/
+```
+
+Adapt this to the actual Flatpak and XDG storage conventions.
+
+Keep imported original game files persistent when updating the application.
+
+Uninstalling the engines must not accidentally erase user-imported game data without an explicit user decision.
+
+---
+
+# 9. SAVE GAMES AND GAME CONTINUITY
+
+Both games must preserve their original save systems.
+
+Verify:
+
+- Save creation.
+- Save loading.
+- Multiple save slots.
+- Save deletion.
+- Game state restoration.
+- Inventory persistence.
+- Weapon persistence.
+- Mission progression.
+- Game-specific state.
+
+If the engines currently use relative save paths or hardcoded locations, patch them to use Nuxel's private persistent application storage.
+
+Do not overwrite existing saves during upgrades.
+
+Add optional automatic backup before application updates.
+
+Do not invent a replacement save format when the original implementation can be preserved.
+
+If a save conversion is necessary, make it explicit, reversible and tested.
+
+---
+
+# 10. AUDIO, HAPTICS AND SYSTEM INTEGRATION
+
+## Audio
+
+The 2005 implementation uses SDL2_mixer and FluidSynth according to upstream documentation.
+
+The 2009 implementation documents OpenAL.
+
+Investigate the actual audio implementation and use the existing Nuxel audio infrastructure where possible.
+
+Requirements:
+
+- Original music.
+- Original sound effects.
+- Correct volume levels.
+- Audio focus.
+- Suspend/resume.
+- No competing audio daemons.
+- No interference with Nuxel system sounds.
+
+For DOOM RPG, provide the required soundfont configuration if the game uses FluidSynth.
+
+Do not bundle copyrighted soundfonts without permission.
+
+## Haptics
+
+Use Nuxel's existing haptics service.
+
+Optional haptic feedback for:
+
+- D-pad taps.
+- Menu selection.
+- Attack.
+- Interaction.
+- Damage.
+- Important notifications.
+
+Provide configurable strength and disable functionality.
+
+Do not create continuous vibrations from touch-repeat loops.
+
+## System navigation
+
+Preserve Back / Home / Tabs.
+
+Requirements:
+
+BACK:
+Return to the active game menu or exit an appropriate submenu.
+
+HOME:
+Immediately return to Nuxel Home through the established system navigation mechanism.
+
+TABS:
+Open the existing application switcher.
+
+Never disable the system HOME mechanism.
+
+Never leave the game in an invalid foreground or suspended state.
+
+Audio and haptics must stop or pause appropriately when leaving the application.
+
+---
+
+# 11. PERFORMANCE AND ARM64 COMPATIBILITY
+
+Optimize specifically for the Exynos 9820.
+
+These are lightweight mobile RPG engines, so we should not need excessive CPU or GPU resources.
+
+Prioritize:
+
+- Native ARM64 compilation.
+- Efficient SDL2 rendering.
+- Low memory consumption.
+- Crisp original-resolution rendering.
+- Efficient texture caching.
+- Predictable frame pacing.
+- Fast startup.
+- Low power consumption.
+- Proper audio resource management.
+
+Do not add unnecessary high-performance graphics dependencies.
+
+Do not assume `/dev/dri` exists.
+
+Respect the actual Nuxel rendering path.
+
+Aim for responsive rendering at 30–60 FPS, subject to the original games' actual frame behavior.
+
+More importantly, preserve input responsiveness and animation timing.
+
+Do not force modern animation speeds where doing so changes the original gameplay.
+
+Provide a performance diagnostics option.
+
+Report actual memory consumption and frame timings.
+
+---
+
+# 12. FLATPAK AND NUXEL INTEGRATION
+
+Package the collection using the actual current Nuxel application distribution model.
+
+Inspect existing Flatpak manifests before creating new ones.
+
+Use native ARM64 builds.
+
+Keep engine dependencies isolated where appropriate.
+
+Provide:
+
+- Application metadata.
+- Desktop entries.
+- Application icons.
+- ARM64 binaries.
+- Correct runtime dependencies.
+- Resource directories.
+- Game-specific configuration.
+- Persistent storage.
+- Game-data import access.
+- License files.
+- Source references.
+
+Minimize permissions.
+
+Expected capabilities should be limited to actual requirements:
+
+- Existing Wayland display mechanism.
+- Audio output.
+- Controller access where required.
+- XDG document portal.
+- Required session services.
+
+No broad filesystem permissions.
+
+No unnecessary network access.
+
+No unrestricted device access.
+
+No root privileges.
+
+## Source licensing
+
+Both reverse-engineered projects advertise GPL-3.0.
+
+Inspect the precise licenses of all source components and dependencies.
+
+Preserve original copyright notices.
+
+Include complete applicable license texts.
+
+Ensure corresponding-source and build-script obligations are met for distributed GPL components.
+
+Maintain clean provenance for all Nuxel patches.
+
+Prefer retaining the two upstream engines as independent executable projects.
+
+Do not copy upstream code into unrelated proprietary Nuxel components.
+
+Do not claim that using separate processes automatically resolves every licensing obligation.
+
+---
+
+# 13. AUTOMATED TESTING
+
+Create proper automated tests.
+
+## A. Build tests
+
+- Native x86_64 build.
+- Native aarch64 build.
+- Fedora dependency resolution.
+- SDL2 initialization.
+- Audio initialization.
+- Engine startup.
+- Resource discovery.
+- Application termination.
+
+## B. DOOM RPG tests
+
+- Import supported BREW archive.
+- Validate converted resources.
+- Load menu.
+- Start new game.
+- Load save.
+- Move forward.
+- Move backward.
+- Turn left.
+- Turn right.
+- Strafe.
+- Attack.
+- Talk.
+- Interact.
+- Pass turn.
+- Open map.
+- Change weapons.
+- Save and restore progress.
+
+## C. DOOM II RPG tests
+
+- Import supported iOS resource package.
+- Extract correct resources.
+- Load menu.
+- Start new game.
+- Load save.
+- Movement.
+- Turning.
+- Strafing.
+- Attacking.
+- Items.
+- Drinks.
+- PDA.
+- Bot deployment.
+- Bot return.
+- Automap.
+- Weapon selection.
+- Save and restore progress.
+
+## D. Touchscreen tests
+
+- Individual directional presses.
+- Rapid D-pad tapping.
+- Controlled button repeat.
+- Simultaneous multitouch.
+- Action buttons.
+- Secondary menu.
+- Left-handed mode.
+- Right-handed mode.
+- One-handed mode.
+- Finger cancellation.
+- Application focus loss.
+- Pause/resume.
+
+Verify that a lost touch event never leaves an input button stuck.
+
+## E. Regression tests
+
+- Existing normal DOOM FPS still launches.
+- Existing DOOMCRAFT work remains intact.
+- Existing NuXtore remains functional.
+- Nuxel Home continues working.
+- Back/Home/Tabs continue working.
+- Other applications continue working.
+- Audio routing restores correctly.
+- Haptics remain available.
+- Existing system navigation is not broken.
+
+## F. Physical device verification
+
+Use the S10+ where available.
+
+Test actual game execution, not just engine startup.
+
+Record:
+
+- Startup time.
+- Average memory consumption.
+- CPU utilization.
+- Rendering frame rate.
+- Touch input latency.
+- Audio functionality.
+- Save persistence.
+
+Clearly separate automated test results from physical hardware verification.
+
+Do not claim real device testing without actually performing it.
+
+---
+
+# 14. IMPLEMENTATION ORDER
+
+Work in manageable stages, but continue until the implementation is complete.
+
+### Phase 1 — Reconnaissance
+
+Inspect Nuxel and both upstream repositories.
+
+Establish the precise dependency, resource and build requirements.
+
+Identify existing Linux/ARM64 compatibility problems.
+
+Produce a brief technical assessment.
+
+### Phase 2 — DOOM RPG 2005
+
+Build the native ARM64 version.
+
+Resolve dependencies.
+
+Implement asset importing.
+
+Get the actual game menu running.
+
+Get a complete playable campaign working with user-supplied data.
+
+### Phase 3 — DOOM II RPG 2009
+
+Build the native ARM64 version.
+
+Resolve upstream compatibility issues.
+
+Implement IPA data importing.
+
+Get the game menu running.
+
+Verify its additional gameplay functions.
+
+### Phase 4 — Shared Nuxel controls
+
+Implement the touch D-pad system.
+
+Map every game function correctly.
+
+Add controller support.
+
+Implement portrait and landscape interfaces.
+
+### Phase 5 — Pocket DOOM launcher
+
+Implement the combined application experience.
+
+Add two separate game entries.
+
+Add settings and data import management.
+
+### Phase 6 — Audio and haptics
+
+Integrate both engines with Nuxel system services.
+
+Test actual audio output.
+
+### Phase 7 — Packaging
+
+Integrate NuXtore.
+
+Create reproducible ARM64 Flatpak builds.
+
+Test installation and uninstall behavior.
+
+### Phase 8 — Optimization
+
+Tune the engines for Exynos 9820.
+
+Test responsiveness and battery consumption.
+
+### Phase 9 — QA and documentation
+
+Run automated and actual hardware tests.
+
+Fix regressions.
+
+Complete documentation.
+
+Create deployment instructions.
+
+---
+
+# 15. DOCUMENTATION TO ADD
+
+Create:
+
+```text
+docs/games/pocket-doom.md
+docs/games/pocket-doom-doom-rpg.md
+docs/games/pocket-doom-doom-ii-rpg.md
+docs/games/pocket-doom-controls.md
+docs/games/pocket-doom-game-data.md
+docs/games/pocket-doom-troubleshooting.md
+docs/games/pocket-doom-build.md
+```
+
+Document:
+
+- Game selection.
+- Engine versions.
+- Source repositories.
+- License details.
+- Build commands.
+- Resource requirements.
+- Game-data importing.
+- Touch controls.
+- Physical controllers.
+- Save locations.
+- Audio configuration.
+- Known limitations.
+- Troubleshooting.
+- Actual S10+ performance.
+
+Update README.md and CHANGELOG.md where appropriate.
+
+Do not arbitrarily bump the Nuxel operating system version for this individual feature.
+
+---
+
+# 16. ACCEPTANCE CRITERIA
+
+| Feature | Required result |
+|---|---|
+| DOOM RPG 2005 | Native ARM64 executable |
+| DOOM II RPG 2009 | Native ARM64 executable |
+| Independent engines | Yes |
+| Independent saves | Yes |
+| Original game assets | Preserved |
+| Game-data importer | Working |
+| Original mobile presentation | Preserved |
+| Virtual D-pad | Working |
+| Touch action buttons | Working |
+| One-handed mode | Working |
+| Left-handed mode | Working |
+| Physical controller | Working |
+| Portrait display | Supported where engine permits |
+| Landscape display | Supported where engine permits |
+| Audio | Working |
+| Haptics | Optional and working |
+| NuXtore | Integrated |
+| Flatpak | Working |
+| Offline operation | Working |
+| Normal DOOM FPS | Unaffected |
+| Nuxel navigation | Unaffected |
+| S10+ performance | Measured |
+
+A title must not be marked playable if it only opens a blank window or displays a title screen without actually supporting gameplay.
+
+---
+
+# 17. DEFINITION OF DONE
+
+I want to use my S10+ like an old-school mobile gaming phone.
+
+I open Nuxel Home.
+
+I launch Nuxel Pocket DOOM.
+
+I see two games:
+
+**DOOM RPG (2005)**
+
+**DOOM II RPG (2009)**
+
+I select either game and immediately get that authentic old-school mobile interface.
+
+I can:
+
+- Move using the virtual D-pad.
+- Turn using directional buttons.
+- Strafe using secondary controls.
+- Shoot and interact.
+- Skip turns.
+- Open inventory and menus.
+- Use the sequel's PDA.
+- Deploy and control the sequel's robot.
+- View the automap.
+- Save and continue.
+- Play entirely offline.
+- Use physical controller buttons if connected.
+
+Everything feels natural on a modern Linux phone without sacrificing the original gameplay experience.
+
+No external keyboard.
+
+No mouse.
+
+No Android emulator.
+
+No Java ME runtime.
+
+No desktop UI pretending to be a mobile game.
+
+**Native Linux. Native ARM64. Original DOOM mobile RPG gameplay.**
+
+---
+
+# 18. AUTONOMOUS EXECUTION RULES
+
+This is an implementation task, not a research-only assignment.
+
+Do not stop after inspecting the repositories.
+
+Do not stop after creating build scripts.
+
+Do not stop after one game works.
+
+Work through both implementations and complete every achievable integration task.
+
+When one upstream engine has a blocker:
+
+1. Identify the exact failure.
+2. Inspect related upstream fixes and forks.
+3. Determine whether a small compatibility patch is appropriate.
+4. Implement and test the patch.
+5. Continue with the remaining integration work.
+
+Do not invent missing game assets.
+
+Do not download commercial game data.
+
+Do not claim an untested engine works.
+
+Do not compromise the working Nuxel DOOM FPS application.
+
+Do not delete or overwrite user changes.
+
+Do not disable existing regression tests.
+
+Keep upstream patches reproducible.
+
+When useful, delegate independent reconnaissance or testing tasks to specialist agents, but maintain one integration owner and one authoritative implementation.
+
+Prioritize real gameplay over decorative UI work.
+
+A complete working first title is better than two beautiful but nonfunctional launchers. Nevertheless, the final deliverable must make a genuine attempt at both engines.
+
+If one game cannot be completed due to a verified upstream limitation, provide the working first game and the most complete safe implementation of the second, with the exact remaining blocker documented.
+
+# 19. FINAL DELIVERY REPORT
 
 When implementation finishes, provide:
 
-- Overall completion status.
-- Engine selected and version.
-- Exact files added and modified.
-- Flatpak application ID.
-- Build commands.
-- Installation commands.
-- Launch command.
-- Test results with pass/fail counts.
-- Performance measurements.
-- Hardware verification status.
-- Any outstanding blockers.
-- Exact commands to deploy the completed application to the connected S10+ without flashing or replacing the OS.
+1. Overall status.
+2. DOOM RPG engine version and source commit.
+3. DOOM II RPG engine version and source commit.
+4. Exact ARM64 build results.
+5. Exact files added and modified.
+6. Flatpak IDs.
+7. NuXtore integration details.
+8. Game-data formats supported.
+9. Touchscreen control mappings.
+10. Physical controller mappings.
+11. Save-data locations.
+12. Test results and pass/fail counts.
+13. Actual S10+ verification.
+14. Memory and performance measurements.
+15. Known limitations.
+16. Installation commands.
+17. Update commands.
+18. SSH deployment commands for the connected S10+.
 
-Do not report FULLY COMPLETE unless the acceptance criteria have genuinely been met.
+Do not flash or replace the Nuxel operating system.
+
+Do not reboot or erase the phone automatically.
+
+The application should be deployable independently.
+
+**FINAL PROJECT VISION:**
+
+NUXEL POCKET DOOM.
+
+Two legendary mobile RPGs.
+
+One native Linux phone.
+
+A proper virtual D-pad.
+
+The original mobile gaming experience brought back to life.
+
+**THE PENGUIN HAS FOUND ITS OLD NOKIA COLLECTION.** 🐧📱💀

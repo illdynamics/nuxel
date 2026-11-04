@@ -166,3 +166,6 @@ evidence/**/*.img
 evidence/**/*.img.gz
 evidence/**/*.journal
 evidence/**/*.journal~
+
+# Local UZDoom source/build scratch (not a repository artifact)
+.uzdoom-build/

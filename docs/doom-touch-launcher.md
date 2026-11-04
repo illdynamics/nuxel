@@ -1,10 +1,11 @@
 # Doom on Nuxel: touch-first launcher and fullscreen fit
 
-> **v0.7.6-beta:** the primary Doom experience is now the original **Nuxel
-> Doom** app (`org.nuxel.Doom`) documented in
-> [`games/doom.md`](games/doom.md). This page remains the record of the
-> optional Crispy Doom launcher path that the in-app **CLASSIC ENGINE** button
-> can start when that Flatpak is installed.
+> **v0.7.7-beta:** the primary Doom experience is **Nuxel Doom**
+> (`org.nuxel.Doom`), a real Chocolate Doom WebAssembly WAD engine documented
+> in [`games/doom.md`](games/doom.md). This page remains the record of the
+> older GTK/Crispy launcher path. The in-app engine comparison now exposes
+> native **Chocolate Doom** and **UZDoom** packages; see
+> [`games/doom-engines.md`](games/doom-engines.md).
 
 The installed Flathub **Crispy Doom** (`io.github.fabiangreffrath.Doom`) is still
 the game source.  The Nuxel launcher is the "Linux Doom Launcher" option: a
@@ -55,3 +56,42 @@ is a gamepad.
 ```sh
 sudo tools/s10plus/a33/nuxel-doom-launcher-install.sh
 ```
+
+## Home route and persistence
+
+The Flatpak id stays `io.github.fabiangreffrath.Doom`, but the bridge's
+`FlatpakProvider.launch_argv()` resolves that one id to
+`/usr/lib/nuxel/nuxel-flatpak-doom`.  Home therefore opens the touch launcher
+from the normal **Crispy Doom** tile; no separate special-case entry is needed.
+
+The launcher, the two wrappers and the provider change are deployed by
+`tools/beta/live/nuxel-doom-launcher-manifest.json` (userspace only, SHA-256
+verified, `.nuxel-rollback` kept).  They survive reboot.
+
+## Verified on the handset (2026-11-04)
+
+- Home's `POST /api/v1/apps/exec` for `io.github.fabiangreffrath.Doom`
+  returned `argv: ["/usr/lib/nuxel/nuxel-flatpak-doom"]` and started the
+  launcher.
+- The launcher rendered fullscreen at the current logical 1520×720 landscape
+  output and listed `Freedoom: Phase 1` as a large `▶ PLAY` tile.
+- Tapping the tile path starts the Flathub `crispy-doom` binary through the
+  host SDL2 stack with `-iwad /home/nuxel/doom/freedoom1.wad -fullscreen`; the
+  engine reached `P_SetupLevel: E1M6` and presented a fullscreen frame.
+- Sound remains off by default: the host `sdl2-compat`/ALSA path reports
+  `installation of hardware parameter failed` and does not currently produce
+  audio.  The **Sound (experimental)** switch is the opt-in test path.
+- In-game touch movement/fire is **not** part of this launcher.  Crispy Doom
+  still needs a Bluetooth gamepad or keyboard for gameplay; this page covers
+  the touch-first WAD selection and fullscreen presentation only.
+
+## After the reboot (2026-11-04)
+
+The reboot verifier's automatic framebuffer and :8000 checks fired before the
+session settled and reported false negatives.  A manual recheck after boot
+found: `systemctl is-system-running = running`, 0 failed units; the seven
+session units active; exactly one `/dev/fb0` owner (`nuxel-wl-fb`); Home HTTP
+200; bridge ping 200; and all four launcher hashes unchanged.  The Crispy Doom
+Flatpak and `~/doom/freedoom1.wad` were still present.  The handset was left at
+the lock screen, so the launch endpoint correctly returned HTTP 423
+`session_locked` until the owner unlocks and taps **Crispy Doom**.

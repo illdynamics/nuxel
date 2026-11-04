@@ -1,0 +1,2 @@
+UZDOOM_COMMIT=7910df7102033fd7754a317f3254f24101135926
+Built natively from UZDoom 5.0.3 source with tools/s10plus/a33/doom-engines/build-uzdoom.sh; software renderer on the S10+.

@@ -37,6 +37,13 @@
 #include "navdock-art.h"
 
 #define NAV_HEIGHT 62           /* logical px = 62 CSS px */
+/* v0.7.7-beta: every app except Home is immersive.  The dock is not unmapped
+ * when an app owns the glass; it becomes a thin bottom-edge gesture strip
+ * that reveals the three buttons on an upward swipe.  Home keeps the full
+ * dock.  The lockscreen never maps either state. */
+#define NAV_STRIP_HEIGHT 14
+#define NAV_REVEAL_DISTANCE 18
+#define NAV_AUTOHIDE_MS 4500
 #define HOST_FIFO  "/run/nuxel-pwa-host.cmd"
 #define HAP_FIFO   "/run/nuxel-haptics/haptics.cmd"
 #define CMD_FIFO   "/run/nuxel-navdock.cmd"
@@ -58,7 +65,10 @@ static struct wl_surface *surface;
 static struct zwlr_layer_surface_v1 *layer_surface;
 static struct wl_buffer *buffer;
 static int cmd_fd = -1;
-static int dock_visible = 0;   /* fail closed until lock state is ready */
+static int dock_visible = 0;   /* full three-button dock is shown */
+static int dock_desired = 0;   /* Home requested the full dock */
+static int strip_mode = 0;     /* mapped as the bottom gesture strip */
+static int64_t reveal_deadline = 0;  /* auto-hide after a swipe reveal */
 static int touch_down = 0;
 static int long_fired = 0;              /* one action per gesture */
 static const struct zwlr_layer_surface_v1_listener layer_listener;
@@ -68,6 +78,8 @@ static int32_t width = 720, height = NAV_HEIGHT;
 
 static int lock_state_read(void);
 static int home_ready(void);
+static int64_t now_ms(void);
+static void dock_gesture_reveal(void);
 static void audit(const char *fmt, ...) {
   char b[512];
   va_list ap;
@@ -89,9 +101,11 @@ static void publish_state(const char *reason) {
   if (!f) return;
   fprintf(f,
     "{\"schema_version\":1,\"visible\":%s,\"mapped\":%s,"
+    "\"desired\":%s,\"strip\":%s,"
     "\"lock\":\"%s\",\"home_ready\":%s,\"fifo_ready\":%s,"
     "\"width\":%d,\"height\":%d,\"scale\":%d,\"reason\":\"%s\"}\n",
-    dock_visible ? "true" : "false", (dock_visible && surface) ? "true" : "false",
+    dock_visible ? "true" : "false", surface ? "true" : "false",
+    dock_desired ? "true" : "false", strip_mode ? "true" : "false",
     st == 2 ? "unlocked" : st == 1 ? "locked" : "unknown",
     home_ready() ? "true" : "false", cmd_fd >= 0 ? "true" : "false",
     width, height, scale, reason ? reason : "");
@@ -136,8 +150,8 @@ static void dock_resolve_startup(void) {
     audit("NAV_DOCK_START visible=1 lock=unlocked home=ready");
   } else {
     dock_hide();
-    audit("NAV_DOCK_START visible=0 lock=%s home=%s",
-          st == 2 ? "unlocked" : st == 1 ? "locked" : "unknown",
+    audit("NAV_DOCK_START visible=0 strip=%d lock=%s home=%s",
+          strip_mode, st == 2 ? "unlocked" : st == 1 ? "locked" : "unknown",
           home_ready() ? "ready" : "not-ready");
   }
 }
@@ -183,15 +197,31 @@ static void render_frame(void) {
   if (px == MAP_FAILED) { close(fd); audit("SHM_MMAP_FAIL errno=%d", errno); return; }
   memset(px, 0, size);   /* fully transparent background */
 
-  int cell = bw / 3;
-  int art_px = NAV_ART_SIZE * scale;   /* art square size in buffer px */
+  if (strip_mode) {
+    /* Only a subtle grabber is painted.  The strip is 14 logical px tall and
+     * the rest of the display belongs to the foreground app. */
+    int handle_w = bw / 9;
+    if (handle_w < 24 * scale) handle_w = 24 * scale;
+    if (handle_w > 160 * scale) handle_w = 160 * scale;
+    int handle_h = 3 * scale;
+    int hx = (bw - handle_w) / 2;
+    int hy = bh - handle_h - 3 * scale;
+    unsigned int colour = 0x66FFFFFFu;  /* translucent white, premultiplied */
+    for (int y = hy; y < hy + handle_h && y < bh; y++) {
+      unsigned int *row = px + (size_t)y * stride;
+      for (int x = hx; x < hx + handle_w && x < bw; x++) row[x] = colour;
+    }
+  } else {
+    int cell = bw / 3;
+    int art_px = NAV_ART_SIZE * scale;   /* art square size in buffer px */
 
-  blit(px, stride, art_px, art_px, art_left, NAV_ART_SIZE, NAV_ART_SIZE,
-       cell * 0 + (cell - art_px) / 2, (bh - art_px) / 2, scale);
-  blit(px, stride, art_px, art_px, art_middle, NAV_ART_SIZE, NAV_ART_SIZE,
-       cell * 1 + (cell - art_px) / 2, (bh - art_px) / 2, scale);
-  blit(px, stride, art_px, art_px, art_right, NAV_ART_SIZE, NAV_ART_SIZE,
-       cell * 2 + (cell - art_px) / 2, (bh - art_px) / 2, scale);
+    blit(px, stride, art_px, art_px, art_left, NAV_ART_SIZE, NAV_ART_SIZE,
+         cell * 0 + (cell - art_px) / 2, (bh - art_px) / 2, scale);
+    blit(px, stride, art_px, art_px, art_middle, NAV_ART_SIZE, NAV_ART_SIZE,
+         cell * 1 + (cell - art_px) / 2, (bh - art_px) / 2, scale);
+    blit(px, stride, art_px, art_px, art_right, NAV_ART_SIZE, NAV_ART_SIZE,
+         cell * 2 + (cell - art_px) / 2, (bh - art_px) / 2, scale);
+  }
 
   struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
   struct wl_buffer *buf = wl_shm_pool_create_buffer(pool, 0, bw, bh, stride * 4,
@@ -210,7 +240,8 @@ static void render_frame(void) {
 
 /* ---- native dock lifecycle ------------------------------------------------ */
 static void dock_create(void) {
-  if (!dock_visible || surface || !compositor || !shm || !layer_shell || !output) return;
+  if (surface || !compositor || !shm || !layer_shell || !output) return;
+  int logical_h = strip_mode ? NAV_STRIP_HEIGHT : NAV_HEIGHT;
   surface = wl_compositor_create_surface(compositor);
   if (!surface) { audit("DOCK_SURFACE_FAIL"); return; }
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(
@@ -218,44 +249,83 @@ static void dock_create(void) {
   zwlr_layer_surface_v1_set_anchor(layer_surface,
       ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
       ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
-  zwlr_layer_surface_v1_set_size(layer_surface, 0, NAV_HEIGHT);
-  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, NAV_HEIGHT);
+  zwlr_layer_surface_v1_set_size(layer_surface, 0, (uint32_t)logical_h);
+  /* The strip must not reserve app space; the full dock reserves its band so
+   * the launcher and OSK keep the established layout. */
+  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface,
+      strip_mode ? 0 : NAV_HEIGHT);
   zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
       ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
   zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
   wl_surface_commit(surface);
-  publish_state("show");
+  publish_state(strip_mode ? "strip" : "show");
 }
 
 static void dock_destroy(void) {
   touch_down = 0;
+  reveal_deadline = 0;
   if (buffer) { wl_buffer_destroy(buffer); buffer = NULL; }
   if (layer_surface) { zwlr_layer_surface_v1_destroy(layer_surface); layer_surface = NULL; }
   if (surface) { wl_surface_destroy(surface); surface = NULL; }
   publish_state("hide");
 }
 
+/* Full three-button dock (Home). */
 static void dock_show(void) {
   int st = lock_state_read();
   if (st != 2) {
     // Fail closed: an explicit show during lock/unknown is refused.
-    dock_hide();
+    dock_desired = 0;
+    dock_visible = 0;
+    strip_mode = 0;
+    if (surface) dock_destroy();
     audit("NAV_DOCK_SHOW_REFUSED lock=%s", st == 1 ? "locked" : "unknown");
     return;
   }
-  if (dock_visible && surface) { publish_state("show-idempotent"); return; }
+  dock_desired = 1;
+  if (dock_visible && surface && !strip_mode) { publish_state("show-idempotent"); return; }
   dock_visible = 1;
+  strip_mode = 0;
+  reveal_deadline = 0;
+  if (surface) dock_destroy();
   dock_create();
   audit("NAV_DOCK_SHOW lock=unlocked");
   publish_state("show");
 }
 
+/* App owns the foreground: keep only the bottom gesture strip mapped.  The
+ * lockscreen still refuses any mapping at all. */
 static void dock_hide(void) {
-  if (!dock_visible && !surface) return;
+  dock_desired = 0;
+  if (lock_state_read() != 2) {
+    dock_visible = 0;
+    strip_mode = 0;
+    if (surface) dock_destroy();
+    audit("NAV_DOCK_HIDE locked");
+    return;
+  }
+  if (!dock_visible && surface && strip_mode) { publish_state("strip-idempotent"); return; }
   dock_visible = 0;
-  dock_destroy();
-  audit("NAV_DOCK_HIDE");
-  publish_state("hide");
+  strip_mode = 1;
+  reveal_deadline = 0;
+  if (surface) dock_destroy();
+  dock_create();
+  audit("NAV_DOCK_STRIP app-foreground");
+  publish_state("strip");
+}
+
+/* Upward swipe on the strip: show the buttons temporarily without changing the
+ * app's desired state, so the next tick does not leave them permanently up. */
+static void dock_gesture_reveal(void) {
+  if (lock_state_read() != 2) return;
+  if (dock_visible && !strip_mode) return;
+  dock_visible = 1;
+  strip_mode = 0;
+  reveal_deadline = now_ms() + NAV_AUTOHIDE_MS;
+  if (surface) dock_destroy();
+  dock_create();
+  audit("NAV_DOCK_GESTURE_REVEAL");
+  publish_state("reveal");
 }
 
 static void process_command(const char *q);
@@ -318,13 +388,23 @@ static void dock_tick(void) {
     last_home = home;
   }
   if (st != 2) {
-    if (dock_visible || surface) {
-      dock_hide();
+    if (surface || dock_visible) {
+      dock_visible = 0;
+      strip_mode = 0;
+      dock_destroy();
       audit("NAV_DOCK_LOCK_HIDE lock=%s", st == 1 ? "locked" : "unknown");
     }
-  } else if (!dock_visible && home_ready()) {
-    dock_show();
-    audit("NAV_DOCK_LOCK_RESTORE lock=unlocked home=ready");
+  } else if (dock_desired) {
+    if (!dock_visible || strip_mode || !surface) {
+      dock_show();
+      audit("NAV_DOCK_LOCK_RESTORE lock=unlocked home=ready");
+    }
+  } else if (!surface) {
+    dock_hide();
+    audit("NAV_DOCK_STRIP_RESTORE");
+  } else if (dock_visible && reveal_deadline && now_ms() >= reveal_deadline) {
+    dock_hide();
+    audit("NAV_DOCK_GESTURE_AUTOHIDE");
   }
   cmd_read_pending();
 }
@@ -349,6 +429,7 @@ static void send_haptic(const char *name) {
  * `long` pattern; the ordinary navigation tick is never also sent. */
 static void forward(const char *action) {
   if (!dock_visible || !layer_surface) return;
+  if (!dock_desired) reveal_deadline = now_ms() + 1200;
   send_haptic(!strcmp(action, "back-long") ? "long" : "navigation");
 
   int fd = open(HOST_FIFO, O_WRONLY | O_NONBLOCK);
@@ -391,7 +472,7 @@ static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
                           uint32_t time, struct wl_surface *surf, int32_t id,
                           wl_fixed_t x, wl_fixed_t y) {
   (void)d; (void)t; (void)serial; (void)time; (void)surf; (void)id;
-  if (!dock_visible) return;
+  if (!surface || (!dock_visible && !strip_mode)) return;
   if (!touch_down) {
     touch_down = 1;
     long_fired = 0;
@@ -406,6 +487,7 @@ static void touch_up_cb(void *d, struct wl_touch *t, uint32_t serial,
   if (!touch_down) return;
   touch_down = 0;
   if (long_fired) { long_fired = 0; return; }   /* never double-fire */
+  if (strip_mode) return;   /* the strip only recognises an upward swipe */
   int dx = last_x - down_x, dy = last_y - down_y;
   /* A tap is a mostly-stationary contact: treat drags as non-actions. */
   if (dx < TAP_SLOP_PX && dx > -TAP_SLOP_PX &&
@@ -417,6 +499,10 @@ static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t 
   (void)d; (void)t; (void)time; (void)id;
   last_x = wl_fixed_to_int(x);
   last_y = wl_fixed_to_int(y);
+  if (strip_mode && touch_down && (down_y - last_y) >= NAV_REVEAL_DISTANCE) {
+    touch_down = 0;
+    dock_gesture_reveal();
+  }
 }
 static void touch_frame_cb(void *d, struct wl_touch *t) { (void)d; (void)t; }
 static void touch_cancel_cb(void *d, struct wl_touch *t) {
@@ -431,7 +517,7 @@ static const struct wl_touch_listener touch_listener = {
  * finger is still down, not on release.  Movement beyond the tap slop or a
  * pointer cancel disarms it, so a scroll across the dock never closes an app. */
 static void maybe_long_press(void) {
-  if (!touch_down || long_fired || !dock_visible) return;
+  if (!touch_down || long_fired || !dock_visible || strip_mode) return;
   if (cell_at(down_x) != 0) return;
   int dx = last_x - down_x, dy = last_y - down_y;
   if (dx >= TAP_SLOP_PX || dx <= -TAP_SLOP_PX ||
@@ -442,7 +528,7 @@ static void maybe_long_press(void) {
 }
 
 static int long_press_timeout_ms(void) {
-  if (!touch_down || long_fired || !dock_visible || cell_at(down_x) != 0) return -1;
+  if (!touch_down || long_fired || !dock_visible || strip_mode || cell_at(down_x) != 0) return -1;
   int dx = last_x - down_x, dy = last_y - down_y;
   if (dx >= TAP_SLOP_PX || dx <= -TAP_SLOP_PX ||
       dy >= TAP_SLOP_PX || dy <= -TAP_SLOP_PX) return -1;

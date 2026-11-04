@@ -24,7 +24,9 @@ out = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else (
 items = set()
 for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
              'pwa/nuxel-apps/console', 'pwa/nuxel-apps/console-usb',
-             'pwa/nuxel-apps/console-wifi', 'pwa/nuxel-apps/maps'):
+             'pwa/nuxel-apps/console-wifi', 'pwa/nuxel-apps/maps',
+             'pwa/nuxel-apps/doom', 'pwa/nuxel-apps/doom-chocolate',
+             'pwa/nuxel-apps/doom-uzdoom', 'pwa/nuxel-apps/nuxtore/catalog'):
     for path in (root / base).rglob('*'):
         if not path.is_file() or path.is_symlink():
             continue
@@ -39,6 +41,8 @@ items.update({
     'pwa/nuxel-common/maps-core.js',
     'services/nuxel-bridge/src/api.py',
     'services/nuxel-bridge/src/bridge.py',
+    'services/nuxel-bridge/src/doom_assets.py',
+    'tools/s10plus/a33/doom-engines/nuxel-doom-engine',
     'services/nuxel-bridge/src/hw_providers.py',
     'services/nuxel-bridge/src/tri_link_status.py',
     'services/nuxel-bridge/src/media_store.py',

@@ -1,14 +1,19 @@
 # Nuxel feature status
 
 Canonical, human-readable feature list for the current repository state
-(`v0.7.6-beta`, 2026-11-04). It describes what the code and the physical Galaxy
+(`v0.7.7-beta`, 2026-11-04). It describes what the code and the physical Galaxy
 S10+ actually do, not what is merely planned.
 
-**v0.7.6-beta adds Nuxel Doom and immersive chrome:** `org.nuxel.Doom` is a
-signed NuXtore package with an original touch-first engine, and all foreground
-PWA apps now hide the triple buttons until a bottom-edge swipe; real fullscreen
-apps also hide the top bar until a top-edge pull. Home and the lockscreen are
-excluded. See [`../games/doom.md`](../games/doom.md).
+**v0.7.7-beta turns Nuxel Doom into a real WAD engine:** `org.nuxel.Doom` now
+runs Chocolate Doom 3.0 compiled to WebAssembly, loads Freedoom or an imported
+WAD from the read-only bridge catalogue, renders actual maps, and maps the touch
+HUD to the engine's own keyboard events. Separate NuXtore packages add native
+**Chocolate Doom** and **UZDoom** comparison paths. Every foreground app now
+hides both the triple buttons and top bar; swipe up from the bottom for
+navigation and pull down from the top for the status bar. Home and the
+lockscreen are excluded. See [`../games/doom.md`](../games/doom.md),
+[`../games/doom-engines.md`](../games/doom-engines.md) and
+[`../releases/v0.7.7-beta.md`](../releases/v0.7.7-beta.md).
 
 **v0.7.5-beta headline verdicts remain:** rotation is `WORKING`
 (owner-confirmed, transform+scale as one transaction, touch calibration follows
@@ -35,9 +40,9 @@ satellite GNSS remains `BLOCKED_FIRMWARE`.
 | S10+ cold boot | `WORKING` | Raw arm64 kernel + embedded initramfs + Fedora 43 ext4 rootfs + systemd 258 + Nuxel Home. Boot animation hands off to the launcher. |
 | Display path | `WORKING` | Headless Phoc → Wayland screencopy → DECON `/dev/fb0`; 1440×3040 ABGR8888 frames committed. No DRM/KMS on the 4.14 vendor tree. |
 | Touch input | `WORKING` | `sec_ts` → evdev → libinput → Phoc → WebKit; unlock, Home, app launch and launcher gestures receive real finger contacts. |
-| Lockscreen | `WORKING` | Penguin drag-to-unlock, battery/time/date, charging, USB-host and live-console indicators, connection-mode selector. |
+| Lockscreen | `WORKING` | Penguin drag-to-unlock, battery/time/date, charging, USB-host and live-console indicators, connection-mode selector. Cold boot starts and stays in portrait until this screen is unlocked. |
 | Home launcher | `WORKING` | App grid, search, dock, recents, widgets, safe zones, home settings, service-worker cache migration. |
-| Global navigation | `PARTIAL` | Back/Home/Recents work across PWAs; some native/dialog focus and long-Back kill paths still need owner acceptance. |
+| Global navigation | `PARTIAL` | Back/Home/Recents work across PWAs and native apps; every app hides the buttons behind a bottom-edge swipe (native apps keep a 14 px layer-shell strip). Some native/dialog focus and long-Back kill paths still need owner acceptance. |
 | Status bar | `WORKING` | Clock, cellular presence (never inferred from Wi-Fi), Wi-Fi radio/link state, battery with charge state, notifications, cutout-safe layout and overlap assertion. |
 | Quick Settings | `WORKING` | Wi-Fi tri-state, Bluetooth power/status, mobile, location policy, do-not-disturb, flashlight, rotation menu and verbose-boot tile. |
 | Bluetooth | `WORKING` | BCM4375 HCD + `CONFIG_BT_HCIUART` + `btattach` register `hci0`; controller powers on and a 12 s scan discovers peers. Settings supports list, scan, pair, connect, disconnect, trust and remove. |
@@ -73,6 +78,8 @@ satellite GNSS remains `BLOCKED_FIRMWARE`.
 | Maps/Location UI | `WORKING` | Network location is verified live (`51.4005, 5.47196 ±25 km`, source `network_wifi`) through the per-UID GeoClue agent; Maps and Quick Settings distinguish GNSS, network and stale fixes, and the shim never invents coordinates, timestamps or accuracy. Satellite fix remains blocked. |
 | Weather/Clock/Calculator | `WORKING` | Functional PWAs with offline states. |
 | SnekByte | `WORKING` | Bundled offline game with touch controls and system navigation. |
+| Nuxel Doom | `ALMOST` | Real Chocolate Doom WASM WAD engine, touch HUD and NuXtore install/remove. Browser-level map rendering is verified; the physical touch-thumb pass remains an owner check. |
+| Chocolate Doom / UZDoom | `PARTIAL` | Native comparison launchers and packages. Chocolate Doom 3.1.1 is installed; UZDoom is shipped/optional with a software renderer on this kernel. |
 | Settings | `WORKING` | Display/safe zones, status bar, Wi-Fi, Bluetooth, audio, location, input, buttons, theme/haptics, power, developer and About. |
 | Nuxtore | `PARTIAL` | Honest store/empty state and local verification; install backend is incomplete. |
 | Flatpak app model | `ALMOST` | aarch64 Firefox/VLC/Signal/Stremio packages are installed, but `CONFIG_USER_NS=n` means bubblewrap cannot create a user namespace. Firefox/VLC wrappers exec the genuine Fedora aarch64 RPMs; Signal/Stremio report the blocker and exit 2. |
@@ -94,7 +101,7 @@ satellite GNSS remains `BLOCKED_FIRMWARE`.
 
 - `README.md` — release summary and readiness table.
 - `audio.md` — detailed audio state and remaining checks.
-- `CHANGELOG.md` / `docs/releases/v0.7.6-beta.md` — what changed in this release.
+- `CHANGELOG.md` / `docs/releases/v0.7.7-beta.md` — what changed in this release.
 - `out.md` — owner-confirmed audio root cause and the `works` confirmations.
 - `docs/beta-finalization/live/PWNAGE-42000-REPORT.md` — GeoClue agent and network-location evidence.
 - `docs/beta-finalization/live/PWNAGE-44000-REPORT.md` — Home/hardware UI work and measurements.

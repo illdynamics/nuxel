@@ -1,10 +1,12 @@
-// Nuxel Doom — offline-first cache. One cache for this app only; a failed
-// install never replaces a working offline copy.
-const NAME = 'nuxel-doom-100-v2';
+// Nuxel Doom — offline-first shell cache. The WAD itself is streamed from the
+// read-only Nuxel bridge and is never cached here.
+const NAME = 'nuxel-doom-200-v1';
 const PREFIX = 'nuxel-doom-';
 const ASSETS = [
   './', './index.html', './app.json', './manifest.json',
-  './css/doom.css', './js/doom-engine.js', './js/doom.js',
+  './css/doom.css', './js/doom.js',
+  './engine/websockets-doom.js', './engine/websockets-doom.wasm',
+  './engine/PROVENANCE.md', './engine/COPYING.md',
   './icons/icon-48.png', './icons/icon-72.png', './icons/icon-96.png',
   './icons/icon-128.png', './icons/icon-144.png', './icons/icon-152.png',
   './icons/icon-192.png', './icons/icon-384.png', './icons/icon-512.png',

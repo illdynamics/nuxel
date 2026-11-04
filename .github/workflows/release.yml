@@ -358,15 +358,21 @@ jobs:
           python3 -m pytest tests/pwnage30000 -q
           python3 tools/s10plus/a33/tests/test-core-apps.py --no-runtime
 
-      - name: v0.7.6-beta Doom + immersive chrome acceptance
+      - name: v0.7.7-beta real WAD engine + immersive chrome acceptance
         if: matrix.device == 's10plus'
         run: |
           # The release must ship the exact Doom payload and catalogue that the
           # owner installs from NuXtore, and the immersive chrome contract.
           node pwa/nuxel-apps/doom/tests/test-doom.js
           node pwa/nuxel-home/tests/test-immersive-chrome.js
+          python3 services/nuxel-bridge/test-doom-assets.py
           python3 pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py --require-signature --confirm-unsigned org.example.UnsignedDemo
           python3 tools/s10plus/a33/verify-app-registry.py
+          python3 -m pytest services/nuxel-orientation/tests -q
+          python3 tests/pwnage45000/test_pwnage45000.py
+          python3 -m pytest tests/pwnage49000/test_pwnage49000.py -q
+          python3 tests/pwnage52000/test_lockscreen_privacy.py
+          python3 tests/pwnage62000/test_shell_chrome.py
 
       - name: Verify artifacts (${{ matrix.device }})
         run: bash tools/verify-artifacts.sh --device "${{ matrix.device }}"

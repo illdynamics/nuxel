@@ -1,35 +1,43 @@
-/* Nuxel Doom — touch HUD, audio, persistence and app lifecycle. */
+/* Nuxel Doom — real Chocolate Doom WAD engine shell.
+ *
+ * The engine is the Cloudflare WebSockets Doom build of Chocolate Doom 3.0,
+ * compiled to WebAssembly.  Nuxel supplies the WAD catalogue (read-only bridge
+ * endpoint), the launch flow, the multitouch HUD and lifecycle integration.
+ * Touch gestures are translated into the engine's own keyboard events; there
+ * is no global input injection and no text field that can raise the OSK.
+ */
 (function () {
   'use strict';
 
   const $ = (id) => document.getElementById(id);
-  const ENGINE = window.NuxelDoomEngine;
-  const SETTINGS_KEY = 'nuxel.doom.settings.v1';
-  const SAVE_KEY = 'nuxel.doom.progress.v1';
+  const BRIDGE = 'http://127.0.0.1:8080';
+  const SETTINGS_KEY = 'nuxel.doom.wad.settings.v1';
+  const SELECTED_KEY = 'nuxel.doom.wad.selected.v1';
+  const ENGINE_JS = 'engine/websockets-doom.js?v=p77000';
+  const ENGINE_WASM = 'engine/websockets-doom.wasm?v=p77000';
   const DEFAULT_SETTINGS = {
-    sound: true, haptics: true, lookSensitivity: 0.0034, inverted: false,
-    leftHanded: false, opacity: 0.82,
+    sound: true, haptics: true, strafe: true, leftHanded: false, turnSensitivity: 1.0,
   };
   let settings = Object.assign({}, DEFAULT_SETTINGS);
   try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) {}
-  let progress = { bestSector: 1, kills: 0, runs: 0 };
-  try { Object.assign(progress, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
 
-  const canvas = $('view');
-  const ctx = canvas.getContext('2d', { alpha: false });
-  const engine = new ENGINE({ width: 320, height: 180 });
-  let raf = 0, last = 0, paused = true, started = false;
-  let fireHeld = false, useLatch = false;
-  const input = { forward: 0, strafe: 0, turn: 0, lookYaw: 0, lookPitch: 0, run: false };
-
-  // ---- Nuxel host integration --------------------------------------------
-  // The launcher owns the real chrome. Immersive mode is requested explicitly:
-  // Doom gets the whole glass, the top bar and triple buttons disappear, and
-  // the launcher re-reveals them on a top/bottom edge gesture. The app never
-  // raises the system keyboard: there are no text fields and focus is dropped.
+  const canvas = $('canvas');
+  let catalogue = [];
+  let selectedWad = null;
+  let selectedEngine = 'nuxel';
+  let startMode = 'episode';
+  let engineModule = null;
+  let engineStarted = false;
+  let paused = false;
   let immersive = false;
   let savedOrientation = null;
   let landscapeRequested = false;
+  let scriptPromise = null;
+  let lastWeaponIndex = 0;
+
+  const WEAPON_KEYS = [49, 50, 51, 52, 53, 54, 55]; // 1..7
+
+  // ---- host integration ---------------------------------------------------
   function postToHost(type, detail) {
     try {
       if (window.parent && window.parent !== window) {
@@ -41,15 +49,12 @@
     try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
     try { if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide(); } catch (e) {}
     try {
-      const parent = window.parent;
-      if (parent && parent !== window && parent.nuxel && typeof parent.nuxel.dismissKeyboard === 'function') {
-        parent.nuxel.dismissKeyboard();
-        return;
+      const p = window.parent;
+      if (p && p !== window && p.nuxel && typeof p.nuxel.dismissKeyboard === 'function') {
+        p.nuxel.dismissKeyboard(); return;
       }
     } catch (e) { /* same-origin host only */ }
-    try {
-      if (window.NuxelHost && window.NuxelHost.available) window.NuxelHost.action('dismiss-keyboard');
-    } catch (e) {}
+    try { if (window.NuxelHost && window.NuxelHost.available) window.NuxelHost.action('dismiss-keyboard'); } catch (e) {}
   }
   function setImmersive(on) {
     on = !!on;
@@ -58,10 +63,8 @@
     document.documentElement.classList.toggle('doom-immersive', on);
     postToHost('nuxel:immersive', { active: on });
     try {
-      const parent = window.parent;
-      if (parent && parent !== window && parent.nuxel && typeof parent.nuxel.setImmersive === 'function') {
-        parent.nuxel.setImmersive(on);
-      }
+      const p = window.parent;
+      if (p && p !== window && p.nuxel && typeof p.nuxel.setImmersive === 'function') p.nuxel.setImmersive(on);
     } catch (e) {}
   }
   function bridge() {
@@ -77,7 +80,7 @@
       const mode = cur && (cur.mode || cur.requested_mode);
       if (mode && mode !== 'landscape' && mode !== 'auto-landscape') savedOrientation = mode;
       return b.call('orientation', 'set', { mode: 'landscape' });
-    }).catch(() => { /* no orientation service in the VM/browser */ });
+    }).catch(() => { /* desktop/VM has no orientation service */ });
   }
   function restoreOrientation() {
     if (!landscapeRequested) return;
@@ -88,22 +91,11 @@
     if (!b || typeof b.call !== 'function' || !mode) return;
     Promise.resolve(b.call('orientation', 'set', { mode: mode })).catch(() => {});
   }
-  function releaseAllInput() {
-    input.forward = input.strafe = input.turn = 0;
-    input.lookYaw = input.lookPitch = 0;
-    input.run = false;
-    fireHeld = false; useLatch = false; joyPointer = null; lookPointer = null; lookLast = null;
-    try { stickKnob.style.transform = 'translate(0,0)'; } catch (e) {}
-    document.querySelectorAll('.action.pressed').forEach(el => el.classList.remove('pressed'));
-  }
 
-  // ---- persisted settings -------------------------------------------------
+  // ---- settings -----------------------------------------------------------
   function saveSettings() {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
     applySettings();
-  }
-  function saveProgress() {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); } catch (e) {}
   }
   function setToggle(id, value, onText, offText) {
     const el = $(id); if (!el) return;
@@ -113,386 +105,601 @@
   }
   function applySettings() {
     document.body.classList.toggle('left-handed', !!settings.leftHanded);
-    document.documentElement.style.setProperty('--hud-opacity', String(settings.opacity));
     setToggle('set-sound', settings.sound);
     setToggle('set-haptics', settings.haptics);
-    setToggle('set-invert', settings.inverted);
+    setToggle('set-strafe', settings.strafe);
     setToggle('set-hand', settings.leftHanded);
-    const sens = $('sens-value'); if (sens) sens.textContent = Number(settings.lookSensitivity).toFixed(4);
+    const sens = $('sens-value');
+    if (sens) sens.textContent = Number(settings.turnSensitivity).toFixed(1);
   }
 
-  // ---- audio --------------------------------------------------------------
-  let audio = null;
-  function ensureAudio() {
-    if (!settings.sound) return null;
-    if (audio) { if (audio.state === 'suspended') audio.resume().catch(() => {}); return audio; }
-    try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audio = null; }
-    return audio;
+  // ---- keyboard bridge into Chocolate Doom --------------------------------
+  const held = new Map();
+  function dispatchKey(type, code, keyCode, key) {
+    const ev = new KeyboardEvent(type, {
+      key: key || code, code: code, keyCode: keyCode, which: keyCode,
+      bubbles: true, cancelable: true,
+    });
+    try { window.dispatchEvent(ev); } catch (e) {}
+    try { document.dispatchEvent(ev); } catch (e) {}
   }
-  function tone(freq, duration, type, gain, slide) {
-    const ac = ensureAudio();
-    if (!ac) return;
-    const osc = ac.createOscillator();
-    const g = ac.createGain();
-    osc.type = type || 'square';
-    osc.frequency.value = freq;
-    if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(30, slide), ac.currentTime + duration);
-    g.gain.value = gain || 0.04;
-    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + duration);
-    osc.connect(g).connect(ac.destination);
-    osc.start(); osc.stop(ac.currentTime + duration);
+  function keyDown(code, keyCode, key) {
+    if (held.has(code)) return;
+    held.set(code, { keyCode: keyCode, key: key || code });
+    dispatchKey('keydown', code, keyCode, key);
   }
-  function noise(duration, gain) {
-    const ac = ensureAudio();
-    if (!ac) return;
-    const frames = Math.floor(ac.sampleRate * duration);
-    const buffer = ac.createBuffer(1, frames, ac.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < frames; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / frames);
-    const src = ac.createBufferSource(); src.buffer = buffer;
-    const g = ac.createGain(); g.gain.value = gain || 0.05;
-    src.connect(g).connect(ac.destination); src.start();
+  function keyUp(code) {
+    const info = held.get(code);
+    if (!info) return;
+    held.delete(code);
+    dispatchKey('keyup', code, info.keyCode, info.key);
   }
-  function sfx(kind) {
-    if (!settings.sound) return;
-    if (kind === 'pistol') { noise(0.08, 0.06); tone(180, 0.06, 'square', 0.03, 90); }
-    else if (kind === 'shotgun') { noise(0.18, 0.10); tone(95, 0.15, 'sawtooth', 0.05, 45); }
-    else if (kind === 'plasma') { tone(640, 0.08, 'sawtooth', 0.035, 280); }
-    else if (kind === 'hit') { tone(110, 0.08, 'square', 0.03, 60); }
-    else if (kind === 'pickup') { tone(660, 0.07, 'sine', 0.04, 990); }
-    else if (kind === 'door') { tone(70, 0.35, 'sawtooth', 0.035, 140); }
-    else if (kind === 'pain') { noise(0.14, 0.07); tone(80, 0.14, 'sawtooth', 0.04, 40); }
-    else if (kind === 'victory') { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'square', 0.035), i * 120)); }
-    else if (kind === 'dead') { tone(140, 0.8, 'sawtooth', 0.06, 30); }
+  function tapKey(code, keyCode, key, ms) {
+    keyDown(code, keyCode, key);
+    setTimeout(function () { keyUp(code); }, ms || 70);
+  }
+  function releaseAllInput() {
+    Array.from(held.keys()).forEach(keyUp);
+    try { $('joy-knob').style.transform = 'translate(0,0)'; } catch (e) {}
+    joyPointer = null; lookPointer = null; lookLast = null;
+    document.querySelectorAll('.action.pressed').forEach(function (el) { el.classList.remove('pressed'); });
+    const run = $('btn-run'); if (run) run.classList.remove('active');
   }
   function vibrate(kind) {
     if (!settings.haptics) return;
     try {
       const host = window.parent && window.parent.NuxelHost;
       if (host && host.available && typeof host.action === 'function') {
-        host.action('haptics-' + (kind === 'long' ? 'long' : 'navigation')).catch(() => {});
+        host.action('haptics-' + (kind === 'long' ? 'long' : 'navigation')).catch(function () {});
         return;
       }
     } catch (e) {}
     try { if (navigator.vibrate) navigator.vibrate(kind === 'long' ? 35 : 12); } catch (e) {}
   }
 
-  // ---- lifecycle ----------------------------------------------------------
-  function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    // Keep the world framebuffer at 320x180 for speed; the CSS upscales it.
-    canvas.width = 320;
-    canvas.height = 180;
-    ctx.imageSmoothingEnabled = false;
-    return rect;
+  // ---- WAD catalogue ------------------------------------------------------
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c];
+    });
   }
-
-  function updateHud() {
-    const s = engine.snapshot();
-    $('hud-health').textContent = String(s.health).padStart(3, '0');
-    $('hud-armor').textContent = String(s.armor).padStart(3, '0');
-    $('hud-ammo').textContent = String(s.ammo).padStart(2, '0');
-    $('hud-weapon').textContent = s.weapon.toUpperCase();
-    $('hud-kills').textContent = s.kills + '/' + s.enemies;
-    $('hud-sector').textContent = s.level + '/' + s.levels;
+  function prettyBytes(n) {
+    n = Number(n) || 0;
+    if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+    return Math.round(n / 1024) + ' KB';
   }
-
-  function frame(now) {
-    raf = requestAnimationFrame(frame);
-    if (!last) last = now;
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    if (!paused) {
-      if (fireHeld) engine.fire();
-      engine.update(dt, input);
-      input.lookYaw = 0;
-      input.lookPitch = 0;
-      if (engine.state === 'dead' && !document.body.classList.contains('dead')) showEnd(false);
-      if (engine.state === 'victory' && !document.body.classList.contains('victory')) showEnd(true);
-      updateHud();
+  function renderWads() {
+    const host = $('wad-list');
+    if (!host) return;
+    if (!catalogue.length) {
+      host.innerHTML = '<button class="wad-tile" type="button" disabled><span class="campaign-art">!</span>' +
+        '<span><strong>NO WAD FOUND</strong><small>Add freedoom1.wad to ~/doom or install Freedoom, then SCAN AGAIN.</small></span></button>';
+      const subtitle = $('start-subtitle'); if (subtitle) subtitle.textContent = 'NO PLAYABLE WAD';
+      return;
     }
-    engine.render(ctx);
+    const saved = localStorage.getItem(SELECTED_KEY) || '';
+    if (!selectedWad) {
+      selectedWad = catalogue.find(function (w) { return w.id === saved; }) ||
+        catalogue.find(function (w) { return w.tags && w.tags.indexOf('IWAD') !== -1; }) || catalogue[0];
+    }
+    host.innerHTML = catalogue.map(function (w) {
+      const tags = (w.tags || []).join(' · ');
+      return '<button class="wad-tile' + (w.id === selectedWad.id ? ' primary' : '') + '" type="button" data-wad="' +
+        escapeHtml(w.id) + '" aria-pressed="' + (w.id === selectedWad.id) + '">' +
+        '<span class="campaign-art">' + (w.tags && w.tags.indexOf('IWAD') !== -1 ? 'IWAD' : 'PWAD') + '</span>' +
+        '<span><strong>' + escapeHtml(w.name) + '</strong><small>' + escapeHtml(w.file) + ' · ' +
+        prettyBytes(w.size) + '</small></span><span class="wad-tag">' + escapeHtml(tags) + '</span></button>';
+    }).join('');
+    host.querySelectorAll('[data-wad]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const id = btn.getAttribute('data-wad');
+        selectedWad = catalogue.find(function (w) { return w.id === id; }) || selectedWad;
+        try { localStorage.setItem(SELECTED_KEY, selectedWad.id); } catch (e) {}
+        renderWads(); updateStartSubtitle();
+        vibrate('navigation');
+      });
+    });
+    updateStartSubtitle();
+  }
+  function updateStartSubtitle() {
+    const el = $('start-subtitle');
+    if (!el) return;
+    if (!selectedWad) { el.textContent = 'NO WAD SELECTED'; return; }
+    const doom1 = (selectedWad.tags || []).some(function (t) { return t === 'Doom 1' || t === 'Freedoom'; });
+    el.textContent = (startMode === 'episode' ? (doom1 ? 'WARP TO EPISODE 1, MAP 1' : 'WARP TO MAP 01') : 'TITLE SCREEN · IN-GAME MENU') + ' · ' + selectedWad.name;
+  }
+  async function loadCatalogue() {
+    const host = $('wad-list');
+    if (host) host.innerHTML = '<button class="wad-tile primary" type="button" disabled><span class="campaign-art">…</span><span><strong>SCANNING WADS</strong><small>Reading the read-only Nuxel WAD catalogue</small></span></button>';
+    try {
+      const res = await fetch(BRIDGE + '/api/v1/doom/wads', { cache: 'no-store' });
+      const doc = await res.json();
+      catalogue = Array.isArray(doc.wads) ? doc.wads : [];
+      selectedWad = null;
+      renderWads();
+    } catch (e) {
+      catalogue = [];
+      renderWads();
+    }
   }
 
-  function startGame(sector) {
-    ensureAudio();
-    setImmersive(true);
-    requestLandscape();
-    hideKeyboard();
-    engine.reset((sector || 0));
-    stopped = false;
-    paused = false;
-    started = true;
-    document.body.classList.remove('dead', 'victory', 'paused');
-    $('start-screen').hidden = true;
-    $('pause-screen').hidden = true;
-    $('end-screen').hidden = true;
-    $('hud').hidden = false;
-    $('controls').hidden = false;
-    progress.runs = (progress.runs || 0) + 1;
-    saveProgress();
-    vibrate('navigation');
-    sfx('door');
-    last = 0;
-    dismissKeyboard();
-    setTimeout(dismissKeyboard, 180);
+  // ---- WASM engine start --------------------------------------------------
+  function showScreen(id) {
+    ['start-screen', 'settings-screen', 'about-screen', 'pause-screen', 'error-screen'].forEach(function (s) {
+      const el = $(s); if (el) el.hidden = s !== id;
+    });
   }
-  let stopped = false;
+  function showError(message) {
+    const copy = $('error-copy'); if (copy) copy.textContent = message;
+    showScreen('error-screen');
+    document.body.classList.remove('engine-running', 'loading');
+  }
+  function progressUi() {
+    let bar = $('engine-progress');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'engine-progress';
+      bar.className = 'loading-bar';
+      bar.innerHTML = '<i></i>';
+      const list = $('wad-list');
+      if (list && list.parentNode) list.parentNode.insertBefore(bar, list.nextSibling);
+    }
+    return bar;
+  }
+  function setProgress(fraction) {
+    const bar = progressUi();
+    const fill = bar && bar.querySelector('i');
+    if (fill) fill.style.width = Math.max(0, Math.min(100, Math.round(fraction * 100))) + '%';
+  }
+  function defaultConfig() {
+    return [
+      'use_mouse 0', 'grabmouse 0', 'fullscreen 0', 'aspect_ratio_correct 1',
+      'window_width 640', 'window_height 400', 'show_endoom 0',
+      'snd_samplerate 44100', 'use_libsamplerate 0',
+      'key_right 39', 'key_left 37', 'key_up 38', 'key_down 40',
+      'key_strafeleft 188', 'key_straferight 190',
+      'key_fire 17', 'key_use 32', 'key_speed 16', 'key_speed_alt 16',
+      'key_strafe 18', 'key_strafe_alt 18',
+      '',
+    ].join('\n');
+  }
+  async function fetchWadBytes(wad, onProgress) {
+    const res = await fetch(BRIDGE + '/api/v1/doom/wad?id=' + encodeURIComponent(wad.id), { cache: 'force-cache' });
+    if (!res.ok) throw new Error('WAD fetch failed (' + res.status + ')');
+    const total = Number(res.headers.get('content-length')) || wad.size || 0;
+    if (!res.body || !res.body.getReader) {
+      const buf = await res.arrayBuffer();
+      if (onProgress) onProgress(1);
+      return new Uint8Array(buf);
+    }
+    const reader = res.body.getReader();
+    const chunks = [];
+    let got = 0;
+    while (true) {
+      const step = await reader.read();
+      if (step.done) break;
+      chunks.push(step.value);
+      got += step.value.length;
+      if (onProgress) onProgress(total ? Math.min(0.98, got / total) : 0.5);
+    }
+    const out = new Uint8Array(got);
+    let at = 0;
+    chunks.forEach(function (c) { out.set(c, at); at += c.length; });
+    if (onProgress) onProgress(1);
+    return out;
+  }
+  function loadEngineScript() {
+    if (scriptPromise) return scriptPromise;
+    scriptPromise = new Promise(function (resolve, reject) {
+      const s = document.createElement('script');
+      s.src = ENGINE_JS;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { reject(new Error('engine script failed to load')); };
+      document.body.appendChild(s);
+    });
+    return scriptPromise;
+  }
+  function safeFile(wad, index) {
+    const base = String(wad.file || 'game.wad').replace(/[^A-Za-z0-9._-]/g, '_');
+    return index + '-' + base;
+  }
+  function findBaseIwad() {
+    return catalogue.find(function (w) { return w.tags && w.tags.indexOf('IWAD') !== -1; }) || null;
+  }
+  async function startWadEngine() {
+    if (engineStarted) return;
+    if (!selectedWad) { showError('No WAD is available. Add a legally obtained IWAD or install Freedoom, then scan again.'); return; }
+    engineStarted = true;
+    document.body.classList.add('loading');
+    showScreen('start-screen');
+    const note = $('engine-note');
+    if (note) { note.hidden = false; note.textContent = 'Loading Chocolate Doom WebAssembly…'; }
+    if (typeof WebAssembly !== 'object' || typeof WebAssembly.instantiate !== 'function') {
+      engineStarted = false;
+      showError('This WebKit build has WebAssembly disabled; Nuxel Doom cannot start the Chocolate Doom engine.');
+      return;
+    }
+    setProgress(0.02);
+    dismissKeyboard(); releaseAllInput();
+    canvas.focus();
+    requestLandscape(); setImmersive(true);
 
-  function pauseGame() {
-    if (!started) return;
-    paused = true;
-    document.body.classList.add('paused');
-    $('pause-screen').hidden = false;
-    $('hud').hidden = true;
-    $('controls').hidden = true;
-    releaseAllInput();
-    vibrate('navigation');
-  }
-  function resumeGame() {
-    if (!started) return;
-    paused = false;
-    document.body.classList.remove('paused');
-    $('pause-screen').hidden = true;
-    $('hud').hidden = false;
-    $('controls').hidden = false;
-    last = 0;
-  }
-  function showEnd(victory) {
-    paused = true;
-    started = false;
-    document.body.classList.add(victory ? 'victory' : 'dead');
-    $('end-title').textContent = victory ? 'HELLGATE CLEARED' : 'YOU DIED';
-    $('end-copy').textContent = victory
-      ? 'All three sectors are clear. The penguin has a shotgun and the demons know it.'
-      : 'The demons win this round. Restart the sector and make them regret it.';
-    $('end-screen').hidden = false;
-    $('hud').hidden = true;
-    $('controls').hidden = true;
-    releaseAllInput();
-    progress.bestSector = Math.max(progress.bestSector || 1, engine.levelIndex + 1);
-    progress.kills = (progress.kills || 0) + engine.kills;
-    saveProgress();
-    sfx(victory ? 'victory' : 'dead');
-    vibrate(victory ? 'long' : 'navigation');
+    let runtimeResolve = null;
+    let runtimeReject = null;
+    const runtimeReady = new Promise(function (resolve, reject) { runtimeResolve = resolve; runtimeReject = reject; });
+    const module = {
+      noInitialRun: true,
+      canvas: canvas,
+      locateFile: function (path) { return path === 'websockets-doom.wasm' ? ENGINE_WASM : path; },
+      onRuntimeInitialized: function () {
+        if (note) note.textContent = 'WebAssembly runtime ready; preparing the WAD…';
+        if (runtimeResolve) runtimeResolve();
+      },
+      onAbort: function (what) { if (runtimeReject) runtimeReject(new Error('engine aborted: ' + what)); },
+      print: function (text) { console.log('[doom] ' + text); },
+      printErr: function (text) {
+        console.warn('[doom] ' + text);
+        if (/Error|failed|fatal/i.test(String(text))) {
+          const n = $('engine-note'); if (n) { n.hidden = false; n.textContent = String(text); }
+        }
+      },
+    };
+    window.Module = module;
+
+    try {
+      await loadEngineScript();
+      await Promise.race([
+        runtimeReady,
+        new Promise(function (_, reject) {
+          setTimeout(function () {
+            reject(new Error('engine runtime timed out while compiling the 2.2 MB WebAssembly module'));
+          }, 120000);
+        }),
+      ]);
+    } catch (err) {
+      engineStarted = false;
+      showError('The WebAssembly engine could not initialise: ' + (err && err.message ? err.message : err));
+      console.error(err);
+      return;
+    }
+
+    try {
+      if (note) note.textContent = 'Streaming ' + selectedWad.name + '…';
+      const base = (selectedWad.tags && selectedWad.tags.indexOf('IWAD') !== -1) ? selectedWad : findBaseIwad();
+      if (!base) throw new Error('A PWAD needs an IWAD. Install Freedoom or add an IWAD first.');
+      const baseBytes = await fetchWadBytes(base, function (f) { setProgress(0.05 + f * 0.45); });
+      const baseName = safeFile(base, 0);
+      module.FS.writeFile(baseName, baseBytes);
+      let fileArgs = [];
+      if (base.id !== selectedWad.id) {
+        const bytes = await fetchWadBytes(selectedWad, function (f) { setProgress(0.5 + f * 0.4); });
+        const pwadName = safeFile(selectedWad, 1);
+        module.FS.writeFile(pwadName, bytes);
+        fileArgs = ['-file', pwadName];
+      }
+      // Explicit bindings make the touch HUD deterministic across WADs.
+      try { module.FS.writeFile('default.cfg', defaultConfig()); } catch (e) {}
+      try { module.FS.mkdir('/libsdl'); } catch (e) {}
+      try { module.FS.mkdir('/libsdl/doom-ws-wasm'); } catch (e) {}
+      try { module.FS.writeFile('/libsdl/doom-ws-wasm/default.cfg', defaultConfig()); } catch (e) {}
+
+      const doom1 = (selectedWad.tags || []).some(function (t) { return t === 'Doom 1' || t === 'Freedoom'; });
+      const args = ['-iwad', baseName].concat(fileArgs).concat([
+        '-window', '-nogui', '-nomusic', '-config', 'default.cfg',
+        '-width', '640', '-height', '400', '-skill', '3',
+      ]);
+      if (!settings.sound) args.push('-nosound');
+      if (startMode === 'episode') {
+        args.push('-warp');
+        if (doom1) args.push('1', '1'); else args.push('1');
+      }
+      if (note) note.textContent = 'Starting Chocolate Doom…';
+      setProgress(0.97);
+      document.body.classList.add('engine-running');
+      document.body.classList.remove('loading');
+      $('controls').hidden = false;
+      $('hud').hidden = false;
+      $('hud-wad').textContent = String(selectedWad.name || 'WAD').toUpperCase().slice(0, 24);
+      callMain(args);
+      setProgress(1);
+      setTimeout(function () { const b = $('engine-progress'); if (b) b.style.display = 'none'; }, 1200);
+      setTimeout(dismissKeyboard, 250);
+      setTimeout(dismissKeyboard, 1200);
+      vibrate('navigation');
+    } catch (err) {
+      engineStarted = false;
+      document.body.classList.remove('engine-running', 'loading');
+      showError('Could not load the WAD: ' + (err && err.message ? err.message : err));
+      console.error(err);
+    }
   }
 
-  function exitApp() {
-    setImmersive(false);
-    restoreOrientation();
-    dismissKeyboard();
-    try { if (window.parent && window.parent.nuxel && window.parent.nuxel.home) window.parent.nuxel.home(); } catch (e) {}
-    try { if (window.parent && window.parent.NuxelLauncherClose) window.parent.NuxelLauncherClose(); } catch (e) {}
-  }
-  function returnToCampaign() {
-    setImmersive(false);
-    restoreOrientation();
-    paused = true;
-    started = false;
-    releaseAllInput();
-    document.body.classList.remove('dead', 'victory', 'paused');
-    $('pause-screen').hidden = true;
-    $('end-screen').hidden = true;
-    $('settings-screen').hidden = true;
-    $('start-screen').hidden = false;
-    $('hud').hidden = true;
-    $('controls').hidden = true;
-    dismissKeyboard();
-  }
-
-  function launchClassic() {
-    const note = $('classic-note');
-    if (note) { note.hidden = false; note.textContent = 'Requesting classic engine…'; }
-    fetch('http://127.0.0.1:8080/api/v1/apps/exec', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target: 'io.github.fabiangreffrath.Doom', app_id: 'org.nuxel.Doom', source: 'doom-launcher' }),
-    }).then(r => r.json()).then(doc => {
-      if (note) note.textContent = doc && doc.success ? 'Classic engine starting…' : 'Classic engine unavailable: ' + ((doc && (doc.detail || doc.error)) || 'not installed');
-    }).catch(() => { if (note) note.textContent = 'Classic engine unavailable in this build.'; });
+  // ---- native comparison engines -----------------------------------------
+  const NATIVE_TARGETS = {
+    chocolate: 'org.nuxel.Doom.Chocolate',
+    uzdoom: 'org.nuxel.Doom.UZDoom',
+    crispy: 'io.github.fabiangreffrath.Doom',
+  };
+  async function launchNative(kind) {
+    const note = $('engine-note');
+    const target = NATIVE_TARGETS[kind];
+    if (!target) return;
+    if (note) { note.hidden = false; note.textContent = 'Requesting ' + kind.toUpperCase() + ' through the Nuxel bridge…'; }
+    try {
+      const res = await fetch(BRIDGE + '/api/v1/apps/exec', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: target, app_id: 'org.nuxel.Doom', source: 'doom-engine-compare' }),
+      });
+      const doc = await res.json().catch(function () { return {}; });
+      if (doc && doc.success) {
+        if (note) note.textContent = kind.toUpperCase() + ' is starting. It is a native fullscreen app; use its own keyboard or gamepad bindings.';
+        setImmersive(false);
+      } else {
+        const why = (doc && (doc.detail || doc.error)) || ('HTTP ' + res.status);
+        if (note) note.textContent = kind.toUpperCase() + ' unavailable: ' + why + '. Use NUXEL DOOM above for the touch WAD engine.';
+      }
+    } catch (e) {
+      if (note) note.textContent = kind.toUpperCase() + ' unavailable in this build (bridge unreachable).';
+    }
   }
 
-  // ---- joystick -----------------------------------------------------------
+  // ---- touch controls -----------------------------------------------------
   const stickZone = $('joy-zone');
   const stickBase = $('joy-base');
   const stickKnob = $('joy-knob');
   let joyPointer = null, joyCenter = null;
+  let lookPointer = null, lookLast = null;
+  let turnTimer = 0;
+  let runLatch = false;
+
   function joyStart(e) {
     if (joyPointer !== null) return;
     joyPointer = e.pointerId;
     const r = stickBase.getBoundingClientRect();
     joyCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2, radius: r.width * 0.42 };
-    stickZone.setPointerCapture && stickZone.setPointerCapture(e.pointerId);
+    try { stickZone.setPointerCapture(e.pointerId); } catch (err) {}
     joyMove(e);
   }
   function joyMove(e) {
-    if (e.pointerId !== joyPointer) return;
+    if (e.pointerId !== joyPointer || !joyCenter) return;
     let dx = e.clientX - joyCenter.x, dy = e.clientY - joyCenter.y;
     const mag = Math.hypot(dx, dy) || 1;
     if (mag > joyCenter.radius) { dx = dx / mag * joyCenter.radius; dy = dy / mag * joyCenter.radius; }
     stickKnob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
     const nx = dx / joyCenter.radius, ny = dy / joyCenter.radius;
-    input.strafe = Math.abs(nx) > 0.16 ? nx : 0;
-    input.forward = Math.abs(ny) > 0.16 ? -ny : 0;
-    input.run = Math.hypot(nx, ny) > 0.86;
+    const dead = 0.20;
+    if (ny < -dead) keyDown('ArrowUp', 38, 'ArrowUp'); else keyUp('ArrowUp');
+    if (ny > dead) keyDown('ArrowDown', 40, 'ArrowDown'); else keyUp('ArrowDown');
+    if (settings.strafe) {
+      if (nx < -dead) keyDown('Comma', 188, ','); else keyUp('Comma');
+      if (nx > dead) keyDown('Period', 190, '.'); else keyUp('Period');
+    } else {
+      if (nx < -dead) keyDown('ArrowLeft', 37, 'ArrowLeft'); else keyUp('ArrowLeft');
+      if (nx > dead) keyDown('ArrowRight', 39, 'ArrowRight'); else keyUp('ArrowRight');
+    }
+    const running = Math.hypot(nx, ny) > 0.88;
+    if (running || runLatch) keyDown('ShiftLeft', 16, 'Shift'); else keyUp('ShiftLeft');
   }
   function joyEnd(e) {
     if (e.pointerId !== joyPointer) return;
     joyPointer = null;
     stickKnob.style.transform = 'translate(0,0)';
-    input.forward = input.strafe = 0; input.run = false;
+    ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Comma', 'Period'].forEach(keyUp);
+    if (!runLatch) keyUp('ShiftLeft');
   }
-  stickZone.addEventListener('pointerdown', joyStart);
-  stickZone.addEventListener('pointermove', joyMove);
-  stickZone.addEventListener('pointerup', joyEnd);
-  stickZone.addEventListener('pointercancel', joyEnd);
-  stickZone.addEventListener('lostpointercapture', joyEnd);
+  if (stickZone) {
+    stickZone.addEventListener('pointerdown', joyStart);
+    stickZone.addEventListener('pointermove', joyMove);
+    stickZone.addEventListener('pointerup', joyEnd);
+    stickZone.addEventListener('pointercancel', joyEnd);
+    stickZone.addEventListener('lostpointercapture', joyEnd);
+  }
 
-  // ---- look drag ----------------------------------------------------------
-  let lookPointer = null, lookLast = null;
   const lookZone = $('look-zone');
-  function isControl(target) { return target && target.closest && target.closest('button,.joy-zone,#hud,#overlay'); }
-  lookZone.addEventListener('pointerdown', (e) => {
-    if (lookPointer !== null || isControl(e.target)) return;
+  function lookStopTurn() {
+    if (turnTimer) { clearTimeout(turnTimer); turnTimer = 0; }
+    keyUp('ArrowLeft'); keyUp('ArrowRight');
+  }
+  function lookStart(e) {
+    if (lookPointer !== null) return;
+    if (e.target && e.target.closest && e.target.closest('button,.joy-zone')) return;
     lookPointer = e.pointerId; lookLast = { x: e.clientX, y: e.clientY };
-    lookZone.setPointerCapture && lookZone.setPointerCapture(e.pointerId);
-  });
-  lookZone.addEventListener('pointermove', (e) => {
+    try { lookZone.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+  function lookMove(e) {
     if (e.pointerId !== lookPointer || !lookLast) return;
-    const dx = e.clientX - lookLast.x, dy = e.clientY - lookLast.y;
+    const dx = e.clientX - lookLast.x;
     lookLast = { x: e.clientX, y: e.clientY };
-    const sens = settings.lookSensitivity;
-    input.lookYaw += dx * sens;
-    input.lookPitch += (settings.inverted ? dy : -dy) * sens * 0.45;
-  });
+    const threshold = Math.max(1.5, 5 / Math.max(0.3, settings.turnSensitivity));
+    if (Math.abs(dx) < threshold) return;
+    if (dx < 0) { keyUp('ArrowRight'); keyDown('ArrowLeft', 37, 'ArrowLeft'); }
+    else { keyUp('ArrowLeft'); keyDown('ArrowRight', 39, 'ArrowRight'); }
+    if (turnTimer) clearTimeout(turnTimer);
+    turnTimer = setTimeout(lookStopTurn, 90);
+  }
   function lookEnd(e) {
     if (e.pointerId !== lookPointer) return;
-    lookPointer = null; lookLast = null;
+    lookPointer = null; lookLast = null; lookStopTurn();
   }
-  lookZone.addEventListener('pointerup', lookEnd);
-  lookZone.addEventListener('pointercancel', lookEnd);
-  lookZone.addEventListener('lostpointercapture', lookEnd);
+  if (lookZone) {
+    lookZone.addEventListener('pointerdown', lookStart);
+    lookZone.addEventListener('pointermove', lookMove);
+    lookZone.addEventListener('pointerup', lookEnd);
+    lookZone.addEventListener('pointercancel', lookEnd);
+    lookZone.addEventListener('lostpointercapture', lookEnd);
+  }
 
-  // ---- action buttons -----------------------------------------------------
   function bindHold(id, down, up) {
-    const el = $(id);
-    if (!el) return;
-    const press = (e) => { e.preventDefault(); e.stopPropagation(); el.classList.add('pressed'); el.setPointerCapture && el.setPointerCapture(e.pointerId); down && down(); };
-    const release = (e) => { e.preventDefault(); e.stopPropagation(); el.classList.remove('pressed'); up && up(); };
+    const el = $(id); if (!el) return;
+    const press = function (e) {
+      e.preventDefault(); e.stopPropagation();
+      el.classList.add('pressed');
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      if (down) down();
+    };
+    const release = function (e) {
+      e.preventDefault(); e.stopPropagation();
+      el.classList.remove('pressed');
+      if (up) up();
+    };
     el.addEventListener('pointerdown', press);
     el.addEventListener('pointerup', release);
     el.addEventListener('pointercancel', release);
     el.addEventListener('lostpointercapture', release);
-    el.addEventListener('click', (e) => { e.preventDefault(); if (!el.__heldAction) return; });
   }
-  bindHold('btn-fire', () => {
-    ensureAudio(); fireHeld = true; vibrate('navigation');
-    const fired = engine.fire();
-    if (fired) { sfx(window.NuxelDoomWeapons[engine.player.weapon].sound); setTimeout(() => { fireHeld = false; }, 260); }
-    else fireHeld = false;
-  }, () => { if (fireHeld) { fireHeld = false; } });
-  bindHold('btn-use', () => {
-    if (useLatch) return; useLatch = true;
-    const what = engine.use();
-    if (what === 'door') sfx('door');
+  bindHold('btn-fire', function () { keyDown('ControlLeft', 17, 'Control'); vibrate('navigation'); }, function () { keyUp('ControlLeft'); });
+  bindHold('btn-use', function () { tapKey('Space', 32, ' ', 140); vibrate('navigation'); }, function () {});
+  bindHold('btn-next', function () {
+    lastWeaponIndex = (lastWeaponIndex + 1) % WEAPON_KEYS.length;
+    tapKey('Digit' + (lastWeaponIndex + 1), WEAPON_KEYS[lastWeaponIndex], String(lastWeaponIndex + 1));
     vibrate('navigation');
-    setTimeout(() => { useLatch = false; }, 300);
-  }, () => {});
-  bindHold('btn-next', () => { engine.switchWeapon(1); vibrate('navigation'); }, () => {});
-  bindHold('btn-prev', () => { engine.switchWeapon(-1); vibrate('navigation'); }, () => {});
-  bindHold('btn-run', () => { input.run = !input.run; $('btn-run').classList.toggle('active', input.run); }, () => {});
-  bindHold('btn-pause', () => { pauseGame(); }, () => {});
-  $('btn-pause').addEventListener('click', (e) => { e.preventDefault(); pauseGame(); });
+  }, function () {});
+  bindHold('btn-prev', function () {
+    lastWeaponIndex = (lastWeaponIndex + WEAPON_KEYS.length - 1) % WEAPON_KEYS.length;
+    tapKey('Digit' + (lastWeaponIndex + 1), WEAPON_KEYS[lastWeaponIndex], String(lastWeaponIndex + 1));
+    vibrate('navigation');
+  }, function () {});
+  bindHold('btn-run', function () {
+    runLatch = !runLatch;
+    $('btn-run').classList.toggle('active', runLatch);
+    if (runLatch) keyDown('ShiftLeft', 16, 'Shift'); else keyUp('ShiftLeft');
+  }, function () {});
+  bindHold('btn-pause', pauseEngine, function () {});
 
-  // ---- menu wiring --------------------------------------------------------
-  document.querySelectorAll('[data-sector]').forEach(btn => {
-    btn.addEventListener('click', () => startGame(Number(btn.dataset.sector) || 0));
-  });
-  $('btn-resume').addEventListener('click', resumeGame);
-  $('btn-restart').addEventListener('click', () => startGame(engine.levelIndex));
-  $('btn-quit').addEventListener('click', exitApp);
-  $('btn-again').addEventListener('click', () => startGame(0));
-  $('btn-menu').addEventListener('click', returnToCampaign);
-  const btnMenu2 = $('btn-menu-2'); if (btnMenu2) btnMenu2.addEventListener('click', returnToCampaign);
-  const btnSettingsDone = $('btn-settings-done'); if (btnSettingsDone) btnSettingsDone.addEventListener('click', () => {
-    $('settings-screen').hidden = true; $('start-screen').hidden = false;
-  });
-  $('btn-classic').addEventListener('click', launchClassic);
-  $('btn-settings').addEventListener('click', () => {
-    $('start-screen').hidden = true; $('settings-screen').hidden = false;
-  });
-  $('btn-settings-back').addEventListener('click', () => {
-    $('settings-screen').hidden = true; $('start-screen').hidden = false;
-  });
-  $('set-sound').addEventListener('click', () => { settings.sound = !settings.sound; saveSettings(); });
-  $('set-haptics').addEventListener('click', () => { settings.haptics = !settings.haptics; saveSettings(); });
-  $('set-invert').addEventListener('click', () => { settings.inverted = !settings.inverted; saveSettings(); });
-  $('set-hand').addEventListener('click', () => { settings.leftHanded = !settings.leftHanded; saveSettings(); });
-  $('set-sens-down').addEventListener('click', () => { settings.lookSensitivity = Math.max(0.0015, settings.lookSensitivity - 0.0004); saveSettings(); });
-  $('set-sens-up').addEventListener('click', () => { settings.lookSensitivity = Math.min(0.008, settings.lookSensitivity + 0.0004); saveSettings(); });
-
-  // ---- keyboard (desktop convenience; phone play needs no keyboard) -------
-  const keys = Object.create(null);
-  function keyInput() {
-    input.turn = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0);
-    if (keys.KeyW || keys.ArrowUp) input.forward = 1;
-    else if (keys.KeyS || keys.ArrowDown) input.forward = -1;
-    else if (joyPointer === null) input.forward = 0;
-    if (keys.KeyD) input.strafe = 1;
-    else if (keys.KeyA) input.strafe = -1;
-    else if (joyPointer === null) input.strafe = 0;
-    input.run = !!(keys.ShiftLeft || keys.ShiftRight) || input.run;
+  // ---- lifecycle ----------------------------------------------------------
+  function pauseEngine() {
+    if (!engineStarted || paused) return;
+    paused = true;
+    releaseAllInput();
+    try { if (engineModule && engineModule.pauseMainLoop) engineModule.pauseMainLoop(); } catch (e) {}
+    try { if (window.Module && window.Module.pauseMainLoop) window.Module.pauseMainLoop(); } catch (e) {}
+    document.body.classList.add('paused');
+    showScreen('pause-screen');
+    $('hud').hidden = true;
+    $('controls').hidden = true;
+    vibrate('navigation');
   }
-  window.addEventListener('keydown', (e) => {
-    if (!started || paused) return;
-    keys[e.code] = true;
-    if (e.code === 'Space') { e.preventDefault(); fireHeld = true; }
-    else if (e.code === 'KeyE') engine.use();
-    else if (e.code === 'Digit1') engine.selectWeapon(0);
-    else if (e.code === 'Digit2') engine.selectWeapon(1);
-    else if (e.code === 'Digit3') engine.selectWeapon(2);
-    else if (e.code === 'Escape') pauseGame();
-    if (/^(Arrow|Key[WASD]|Space)/.test(e.code)) e.preventDefault();
-    keyInput();
+  function resumeEngine() {
+    if (!paused) return;
+    paused = false;
+    document.body.classList.remove('paused');
+    showScreen('start-screen');
+    try { if (window.Module && window.Module.resumeMainLoop) window.Module.resumeMainLoop(); } catch (e) {}
+    $('hud').hidden = false;
+    $('controls').hidden = false;
+    releaseAllInput();
+    setTimeout(dismissKeyboard, 120);
+  }
+  function showLauncher() {
+    releaseAllInput();
+    document.body.classList.remove('engine-running', 'paused', 'loading');
+    $('hud').hidden = true;
+    $('controls').hidden = true;
+    showScreen('start-screen');
+    setImmersive(false);
+    restoreOrientation();
+    dismissKeyboard();
+    // A WebAssembly Module cannot be re-initialised safely in place.  Reload
+    // the app shell so the launcher (and a later WAD/engine choice) starts
+    // from a clean runtime instead of leaving a paused engine behind.
+    if (engineStarted) setTimeout(function () { location.reload(); }, 120);
+  }
+  function exitGame() {
+    releaseAllInput();
+    try { if (window.Module && window.Module.pauseMainLoop) window.Module.pauseMainLoop(); } catch (e) {}
+    setImmersive(false);
+    restoreOrientation();
+    dismissKeyboard();
+    try {
+      if (window.parent && window.parent.nuxel && typeof window.parent.nuxel.home === 'function') {
+        window.parent.nuxel.home(); return;
+      }
+    } catch (e) {}
+    location.reload();
+  }
+
+  // ---- wiring -------------------------------------------------------------
+  document.querySelectorAll('[data-start]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      startMode = btn.getAttribute('data-start') === 'title' ? 'title' : 'episode';
+      updateStartSubtitle();
+      startWadEngine();
+    });
   });
-  window.addEventListener('keyup', (e) => {
-    keys[e.code] = false;
-    if (e.code === 'Space') fireHeld = false;
-    keyInput();
+  document.querySelectorAll('[data-engine]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const kind = btn.getAttribute('data-engine');
+      selectedEngine = kind;
+      document.querySelectorAll('[data-engine]').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      if (kind === 'nuxel') {
+        const n = $('engine-note'); if (n) n.textContent = 'Nuxel Doom uses the in-app Chocolate Doom WebAssembly engine with the touch HUD.';
+      } else {
+        launchNative(kind);
+      }
+      vibrate('navigation');
+    });
+  });
+  $('btn-rescan').addEventListener('click', loadCatalogue);
+  $('btn-settings').addEventListener('click', function () { showScreen('settings-screen'); });
+  $('btn-settings-back').addEventListener('click', function () { showScreen('start-screen'); });
+  $('btn-settings-done').addEventListener('click', function () { showScreen('start-screen'); });
+  $('btn-about').addEventListener('click', function () { showScreen('about-screen'); });
+  $('btn-about-back').addEventListener('click', function () { showScreen('start-screen'); });
+  $('btn-about-done').addEventListener('click', function () { showScreen('start-screen'); });
+  $('btn-resume').addEventListener('click', resumeEngine);
+  $('btn-menu').addEventListener('click', showLauncher);
+  $('btn-quit').addEventListener('click', exitGame);
+  $('btn-error-back').addEventListener('click', showLauncher);
+  $('set-sound').addEventListener('click', function () { settings.sound = !settings.sound; saveSettings(); });
+  $('set-haptics').addEventListener('click', function () { settings.haptics = !settings.haptics; saveSettings(); });
+  $('set-strafe').addEventListener('click', function () { settings.strafe = !settings.strafe; saveSettings(); });
+  $('set-hand').addEventListener('click', function () { settings.leftHanded = !settings.leftHanded; saveSettings(); });
+  $('set-sens-down').addEventListener('click', function () { settings.turnSensitivity = Math.max(0.4, settings.turnSensitivity - 0.1); saveSettings(); });
+  $('set-sens-up').addEventListener('click', function () { settings.turnSensitivity = Math.min(2.5, settings.turnSensitivity + 0.1); saveSettings(); });
+
+  // Desktop convenience only.  Phone play needs no keyboard.
+  window.addEventListener('keydown', function (e) {
+    if (!engineStarted || paused) return;
+    if (e.code === 'Escape') { e.preventDefault(); pauseEngine(); }
   });
 
-  // Open-app state can change focus; never leave the native keyboard raised.
-  function hideKeyboard() {
-    try { if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide(); } catch (e) {}
-    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
-  }
-  window.addEventListener('focus', hideKeyboard);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && started && !paused) pauseGame();
-    hideKeyboard();
-  });
+  // Never leave an OSK or held key behind when focus changes.
   window.addEventListener('blur', releaseAllInput);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) releaseAllInput();
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      releaseAllInput();
+      if (engineStarted && !paused) pauseEngine();
+      dismissKeyboard();
+    }
   });
-  window.addEventListener('pagehide', () => { setImmersive(false); restoreOrientation(); dismissKeyboard(); });
   window.addEventListener('focus', dismissKeyboard);
+  window.addEventListener('pagehide', function () { releaseAllInput(); setImmersive(false); restoreOrientation(); dismissKeyboard(); });
 
   applySettings();
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-  updateHud();
-  raf = requestAnimationFrame(frame);
-  hideKeyboard();
-  setTimeout(hideKeyboard, 250);
-  setTimeout(hideKeyboard, 1200);
+  showScreen('start-screen');
+  loadCatalogue();
+  dismissKeyboard();
+  setTimeout(dismissKeyboard, 250);
+  setTimeout(dismissKeyboard, 1200);
+
   try {
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function () {});
   } catch (e) {}
 
-  // Public handle used by tests and the host diagnostics.
+  // Public handle used by offline contract tests and diagnostics.
   window.NuxelDoom = {
-    engine, startGame, pauseGame, resumeGame, setImmersive, returnToCampaign,
-    settings, progress, get paused() { return paused; }, get immersive() { return immersive; },
+    startWadEngine: startWadEngine,
+    pauseEngine: pauseEngine,
+    resumeEngine: resumeEngine,
+    releaseAllInput: releaseAllInput,
+    setImmersive: setImmersive,
+    settings: settings,
+    get catalogue() { return catalogue; },
+    get selectedWad() { return selectedWad; },
+    get selectedEngine() { return selectedEngine; },
+    get engineStarted() { return engineStarted; },
+    get paused() { return paused; },
+    keyDown: keyDown,
+    keyUp: keyUp,
   };
 })();

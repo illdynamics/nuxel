@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-doom-launcher",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F",
+    "soc": "Exynos 9820",
+    "os": "Nuxel (Fedora 43 ARM64, kernel 4.14.253)"
+  },
+  "note": "Touch-first Crispy Doom launcher: GTK4 WAD picker, fullscreen Crispy Doom wrapper, and the bridge route that maps io.github.fabiangreffrath.Doom to it. Userspace only; each file is staged, SHA-256 verified, atomically installed and rolled back on failure.",
+  "groups": [
+    {
+      "id": "crispy-doom-launcher",
+      "component": "Crispy Doom touch launcher and bridge route",
+      "priority": 1,
+      "risk": "medium",
+      "restart_service": "nuxel-http-bridge",
+      "pre": [],
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "rollback": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "files": [
+        {
+          "source": "tools/s10plus/a33/nuxel-doom-launcher",
+          "target": "/usr/lib/nuxel/nuxel-doom-launcher",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-crispy-doom",
+          "target": "/usr/lib/nuxel/nuxel-crispy-doom",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-flatpak-doom",
+          "target": "/usr/lib/nuxel/nuxel-flatpak-doom",
+          "mode": "0755"
+        },
+        {
+          "source": "services/nuxel-bridge/src/flatpak_provider.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py",
+          "mode": "0644"
+        }
+      ]
+    }
+  ]
+}

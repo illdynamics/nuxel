@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 13;
+const NUXEL_REGISTRY_VERSION = 14;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -433,7 +433,9 @@ const NUXEL_APP_ICON_ASSETS = {
     'org.nuxel.RemoteDesktopVNC': '/assets/nuxel-applications-icon-pack/06-04_casting-screen.png?v=p47000',
     'org.nuxel.ScrcpyMirror': '/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png?v=p47000',
     'org.nuxel.SnekByte': '/assets/nuxel-applications-icon-pack/01-02_snekbyte.png?v=a63',
-    'org.nuxel.Doom': '/pwa/nuxel-apps/doom/icons/icon-192.png?v=p76000',
+    'org.nuxel.Doom': '/pwa/nuxel-apps/doom/icons/icon-192.png?v=p77000',
+    'org.nuxel.Doom.Chocolate': '/pwa/nuxel-apps/doom-chocolate/icons/icon-192.png?v=p77000',
+    'org.nuxel.Doom.UZDoom': '/pwa/nuxel-apps/doom-uzdoom/icons/icon-192.png?v=p77000',
     'org.nuxel.Calculator': '/assets/nuxel-applications-icon-pack/06-02_calculator.png?v=p33000',
     'org.nuxel.Clock': '/assets/nuxel-applications-icon-pack/06-03_clock.png?v=p33000',
     'org.nuxel.Photos': '/assets/nuxel-applications-icon-pack/03-02_gallery.png?v=p33000',

@@ -1,0 +1,42 @@
+[
+  {
+    "group": "crispy-doom-launcher",
+    "n": 1,
+    "risk": "medium",
+    "script": "scripts/001-nuxel-doom-launcher.sh",
+    "service": "nuxel-http-bridge",
+    "source": "tools/s10plus/a33/nuxel-doom-launcher",
+    "source_sha256": "95d937ebae70c63ee1ca8e96283133d6fe92c913a0ea684bd70f018256be455d",
+    "target": "/usr/lib/nuxel/nuxel-doom-launcher"
+  },
+  {
+    "group": "crispy-doom-launcher",
+    "n": 2,
+    "risk": "medium",
+    "script": "scripts/002-nuxel-crispy-doom.sh",
+    "service": "nuxel-http-bridge",
+    "source": "tools/s10plus/a33/nuxel-crispy-doom",
+    "source_sha256": "29d811b73e134688c89d84501fbbe2eba351aaf5e46e11e19fd377f81aaad6ae",
+    "target": "/usr/lib/nuxel/nuxel-crispy-doom"
+  },
+  {
+    "group": "crispy-doom-launcher",
+    "n": 3,
+    "risk": "medium",
+    "script": "scripts/003-nuxel-flatpak-doom.sh",
+    "service": "nuxel-http-bridge",
+    "source": "tools/s10plus/a33/nuxel-flatpak-doom",
+    "source_sha256": "47dbcd3922fc7e5257e73cc31c7bd9cd66df324833df198adc4779dcd2237aa6",
+    "target": "/usr/lib/nuxel/nuxel-flatpak-doom"
+  },
+  {
+    "group": "crispy-doom-launcher",
+    "n": 4,
+    "risk": "medium",
+    "script": "scripts/004-flatpak_provider.py.sh",
+    "service": "nuxel-http-bridge",
+    "source": "services/nuxel-bridge/src/flatpak_provider.py",
+    "source_sha256": "fe0de4b2bd82529e675c970dea7d7bce52b801fd9a41103221f99ae6677aa3cb",
+    "target": "/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py"
+  }
+]

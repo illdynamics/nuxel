@@ -461,7 +461,7 @@ function loadLauncher(startHash) {
   reg.launchApp('nuxel-settings');
   acknowledge({ok:true});
   await tick();
-  // v0.7.6-beta: PWA activation also hides the native nav dock, because the
+  // v0.7.7-beta: PWA activation also hides the native nav dock, because the
   // triple buttons live behind the bottom-edge gesture in a foreground app.
   check('switching from native Terminal requests host surface cleanup',
         actions.join(',') === 'open-terminal,close-terminal,nav-hide', actions.join(','));

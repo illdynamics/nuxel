@@ -1,6 +1,6 @@
 {
   "catalog_id": "nuxel-beta-local",
-  "generated": "2026-10-16T00:00:00Z",
+  "generated": "2026-11-04T00:00:00Z",
   "notice": "Local, offline-first catalog. NuxTore never publishes or submits packages to any external store; every package is staged from this repository and hash-pinned here.",
   "packages": [
     {
@@ -19,11 +19,11 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "NuxTore",
       "requires": [],
-      "sha256": "c8531f142efe24d914aa088852709481e8d35a6baeb5f6f6a33e723efaccfccc",
+      "sha256": "ad76d255dec95ff3a6632dc82647ddf64fec6b84d9ded536fa113bb4d817a289",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "nb9VbBimJsmgBE+57pFqtctBxgEpkzSjzkUdHBFp1paf0tbcE//+uIt8Zg5MKHAEWxMm1kqcv+UtY1ce/IZVBg=="
+        "value": "elL9TuAqrlODuwZr7AUB5pPiKIYVh4G9QrWqomVnzu/zlM8OCIOoeSfCD2wC9+yMe8hQjLiTyue7j1cwyHmpAw=="
       },
       "size_bytes": 193988,
       "source": {
@@ -286,11 +286,11 @@
       "version": "1.0.0"
     },
     {
-      "bundle": "bundles/org.nuxel.Doom-1.0.0.bundle.json",
+      "bundle": "bundles/org.nuxel.Doom-2.0.0.bundle.json",
       "capabilities": [],
       "category": "games",
-      "description": "Three original sectors, a 320x180 raycasting engine, multitouch movement and aiming, fire, use, weapon switching, doors, pickups, enemies, pause and offline saves. Original Nuxel artwork and code only; no DOOM WAD or commercial game asset is bundled. Installation and removal are handled by NuxTore through the canonical app registry.",
-      "file_count": 18,
+      "description": "A real Chocolate Doom 3.0 engine compiled to WebAssembly, with a touch HUD for movement, aiming, fire, use, weapons and pause. Loads Freedoom or an imported WAD from the read-only Nuxel game-data catalogue, keeps the WAD out of the app bundle, and offers native Chocolate Doom and UZDoom comparison launch paths. No commercial WAD or sprite is bundled.",
+      "file_count": 21,
       "id": "org.nuxel.Doom",
       "install": {
         "app_id": "org.nuxel.Doom",
@@ -301,21 +301,21 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "Nuxel Doom",
       "requires": [],
-      "sha256": "c2dc4dd20cf3ed83a53ad83c1c65af154d760b1bcf168a360401e1a6d09cb9f6",
+      "sha256": "3a7469b37098c526b0db2b32b59493ca212d0ded923d4369eccc46779d743bbb",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "HPghP0HX5fMd6Ac96gz0+6kK8fRV9ebPjeS7bF1E23CApm55p910IL0EXRpx2NvWZbSwYcjCSFWkRgPgnIQzCQ=="
+        "value": "kiu4hRCTPKHDm0CVdCY5x0BymygrC3XdqBtcuTDzpOObTitcRklPpjivdqyb0cwsyRFIXrUGKuVhME0oIhcQDA=="
       },
-      "size_bytes": 660565,
+      "size_bytes": 3226697,
       "source": {
-        "provenance": "Original Nuxel implementation for v0.7.6-beta; no external assets",
+        "provenance": "Chocolate Doom 3.0 WebAssembly from cloudflare/doom-wasm (GPL-2.0-or-later), pinned commit 65e0d3ae; original Nuxel launcher and touch HUD; no commercial assets",
         "type": "local-bundle",
         "uri": "pwa/nuxel-apps/doom"
       },
       "state_hint": "available",
-      "summary": "Touch-first original Nuxel arcade shooter",
-      "version": "1.0.0"
+      "summary": "Real Chocolate Doom WAD engine with touch-first controls",
+      "version": "2.0.0"
     },
     {
       "bundle": "bundles/org.nuxel.PenguInterface-1.0.0.bundle.json",
@@ -403,7 +403,7 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "Unsigned Demo Package",
       "requires": [],
-      "sha256": "c8531f142efe24d914aa088852709481e8d35a6baeb5f6f6a33e723efaccfccc",
+      "sha256": "ad76d255dec95ff3a6632dc82647ddf64fec6b84d9ded536fa113bb4d817a289",
       "size_bytes": 193988,
       "source": {
         "provenance": "test fixture \u2014 no publisher claims, no signature",
@@ -413,6 +413,70 @@
       "state_hint": "available",
       "summary": "Deliberately unsigned entry used to prove the safety gate",
       "version": "0.0.1"
+    },
+    {
+      "bundle": "bundles/org.nuxel.Doom.Chocolate-1.0.0.bundle.json",
+      "capabilities": [],
+      "category": "games",
+      "description": "The native Fedora aarch64 Chocolate Doom 3.1.1 engine, launched fullscreen through the Nuxel Doom engine wrapper. It uses the same Freedoom/imported WAD catalogue and is intended for comparing the historically faithful 1993 feel, keyboard/gamepad bindings and native fullscreen behaviour with Nuxel Doom's touch-first WebAssembly engine.",
+      "file_count": 6,
+      "id": "org.nuxel.Doom.Chocolate",
+      "install": {
+        "app_id": "org.nuxel.Doom.Chocolate",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/doom-chocolate/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-2.0-or-later (Nuxel launcher; Chocolate Doom upstream)",
+      "name": "Chocolate Doom",
+      "requires": [],
+      "sha256": "4e26cc1a33804edc49e5098ef189e3ca512362b7e94ebacf56a56af9f2a3b386",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "VlNNZr4IuRKzFAAn2PclqQTp8/YnzT/xd8E+BiIiJ9slnBhhI9iwFsMsj/FRyaOmXO0ASEG48mKdCNcqfsXfCg=="
+      },
+      "size_bytes": 12101,
+      "source": {
+        "provenance": "Nuxel comparison launcher for Fedora Chocolate Doom 3.1.1; GPL-2.0-or-later; no commercial WAD bundled",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/doom-chocolate"
+      },
+      "state_hint": "available",
+      "summary": "Native Chocolate Doom comparison engine",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.Doom.UZDoom-1.0.0.bundle.json",
+      "capabilities": [],
+      "category": "games",
+      "description": "UZDoom 5.0.3, the modern GZDoom-lineage source port, launched fullscreen through the Nuxel Doom engine wrapper with the software renderer. It is a comparison path for map detail and menu depth, not the touch-first default; the vendor-kernel S10+ has no usable /dev/dri node.",
+      "file_count": 13,
+      "id": "org.nuxel.Doom.UZDoom",
+      "install": {
+        "app_id": "org.nuxel.Doom.UZDoom",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/doom-uzdoom/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel launcher; UZDoom upstream)",
+      "name": "UZDoom",
+      "requires": [],
+      "sha256": "311a3682868d1ef85bfa2f989edcf2068ea0df97d203cb1c4e36756e943ae095",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "iT/+2m3s4d/h/R9MdINGCFg5D3oDN192Kv8wygjIC3NRoAvpKVxbVl+Mw+EAr1M/+Ca367YtPWocZy1E/5DADA=="
+      },
+      "size_bytes": 28831152,
+      "source": {
+        "provenance": "Nuxel comparison launcher for UZDoom 5.0.3; GPL-3.0-or-later; no commercial WAD bundled",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/doom-uzdoom"
+      },
+      "state_hint": "available",
+      "summary": "Modern UZDoom comparison engine",
+      "version": "1.0.0"
     }
   ],
   "policy": {

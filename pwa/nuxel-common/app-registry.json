@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry/1",
-  "registry_version": 13,
+  "registry_version": 14,
   "bridge_version": "1",
   "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
   "url_base": "http://127.0.0.1:8000",
@@ -13,14 +13,14 @@
   },
   "contract": {
     "one_registry": "This file is the canonical launcher registry. The PWA launcher (apps.js), the native shell (app_registry.json) and the HTTP bridge all serve the SAME app set; verify-app-registry.py fails on any drift between them.",
-    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) — an app may not declare a capability the bridge does not know.",
+    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) \u2014 an app may not declare a capability the bridge does not know.",
     "manifest_rule": "every pwa entry must resolve to a real index.html AND a manifest.json carrying nuxel.capabilities (list) and nuxel.bridge_version equal to the pin."
   },
   "apps": [
     {
       "id": "nuxel-dialer",
       "name": "Phone",
-      "icon": "📞",
+      "icon": "\ud83d\udcde",
       "color": "#4CAF50",
       "category": "communication",
       "type": "native",
@@ -43,7 +43,7 @@
     {
       "id": "nuxel-messages",
       "name": "Messages",
-      "icon": "💬",
+      "icon": "\ud83d\udcac",
       "color": "#2196F3",
       "category": "communication",
       "type": "native",
@@ -65,7 +65,7 @@
     {
       "id": "nuxel-contacts",
       "name": "Contacts",
-      "icon": "👤",
+      "icon": "\ud83d\udc64",
       "color": "#9C27B0",
       "category": "communication",
       "type": "native",
@@ -85,7 +85,7 @@
     {
       "id": "nuxel-camera",
       "name": "Camera",
-      "icon": "📷",
+      "icon": "\ud83d\udcf7",
       "color": "#795548",
       "category": "media",
       "type": "native",
@@ -106,7 +106,7 @@
     {
       "id": "org.nuxel.Mail",
       "name": "Mail",
-      "icon": "✉️",
+      "icon": "\u2709\ufe0f",
       "color": "#FF9800",
       "category": "productivity",
       "type": "pwa",
@@ -125,7 +125,7 @@
     {
       "id": "org.nuxel.Calendar",
       "name": "Calendar",
-      "icon": "📅",
+      "icon": "\ud83d\udcc5",
       "color": "#E91E63",
       "category": "productivity",
       "type": "pwa",
@@ -143,7 +143,7 @@
     {
       "id": "org.nuxel.Notes",
       "name": "Notes",
-      "icon": "📝",
+      "icon": "\ud83d\udcdd",
       "color": "#607D8B",
       "category": "productivity",
       "type": "pwa",
@@ -160,7 +160,7 @@
     {
       "id": "org.nuxel.Files",
       "name": "Files",
-      "icon": "📁",
+      "icon": "\ud83d\udcc1",
       "color": "#3F51B5",
       "category": "tools",
       "type": "pwa",
@@ -175,7 +175,7 @@
     {
       "id": "nuxel-settings",
       "name": "Settings",
-      "icon": "⚙️",
+      "icon": "\u2699\ufe0f",
       "color": "#78909C",
       "category": "system",
       "type": "pwa",
@@ -193,7 +193,7 @@
     {
       "id": "org.nuxel.Terminal",
       "name": "Terminal",
-      "icon": "🖥️",
+      "icon": "\ud83d\udda5\ufe0f",
       "color": "#263238",
       "category": "system",
       "type": "pwa",
@@ -210,7 +210,7 @@
     {
       "id": "org.nuxel.LiveConsole",
       "name": "Serial Live Console",
-      "icon": "📟",
+      "icon": "\ud83d\udcdf",
       "color": "#37474F",
       "category": "system",
       "type": "pwa",
@@ -227,7 +227,7 @@
     {
       "id": "org.nuxel.USBSSHConsole",
       "name": "USB SSH Console",
-      "icon": "🔌",
+      "icon": "\ud83d\udd0c",
       "color": "#6D4C41",
       "category": "system",
       "type": "pwa",
@@ -245,7 +245,7 @@
     {
       "id": "org.nuxel.WiFiSSHConsole",
       "name": "Wi-Fi SSH Console",
-      "icon": "📶",
+      "icon": "\ud83d\udcf6",
       "color": "#0288D1",
       "category": "system",
       "type": "pwa",
@@ -262,7 +262,7 @@
     {
       "id": "org.nuxel.RemoteDesktopXRDP",
       "name": "XRDP Remote Desktop",
-      "icon": "🖥️",
+      "icon": "\ud83d\udda5\ufe0f",
       "iconAsset": "/assets/nuxel-applications-icon-pack/05-07_web-window.png",
       "color": "#5db7ff",
       "category": "system",
@@ -283,7 +283,7 @@
     {
       "id": "org.nuxel.RemoteDesktopVNC",
       "name": "VNC Screen Sharing",
-      "icon": "🖵",
+      "icon": "\ud83d\uddb5",
       "iconAsset": "/assets/nuxel-applications-icon-pack/06-04_casting-screen.png",
       "color": "#48d597",
       "category": "system",
@@ -304,7 +304,7 @@
     {
       "id": "org.nuxel.ScrcpyMirror",
       "name": "scrcpy (Android)",
-      "icon": "📱",
+      "icon": "\ud83d\udcf1",
       "iconAsset": "/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png",
       "color": "#b68cff",
       "category": "system",
@@ -325,7 +325,7 @@
     {
       "id": "org.nuxel.Browser",
       "name": "Browser",
-      "icon": "🌐",
+      "icon": "\ud83c\udf10",
       "color": "#297ad7",
       "category": "tools",
       "type": "native",
@@ -347,7 +347,7 @@
     },
     {
       "name": "Calculator",
-      "icon": "🧮",
+      "icon": "\ud83e\uddee",
       "color": "#009688",
       "category": "tools",
       "type": "pwa",
@@ -362,7 +362,7 @@
     },
     {
       "name": "Clock",
-      "icon": "⏰",
+      "icon": "\u23f0",
       "color": "#455A64",
       "category": "tools",
       "type": "pwa",
@@ -380,7 +380,7 @@
     },
     {
       "name": "Gallery",
-      "icon": "🖼️",
+      "icon": "\ud83d\uddbc\ufe0f",
       "color": "#F06292",
       "category": "media",
       "type": "pwa",
@@ -397,7 +397,7 @@
     },
     {
       "name": "Weather",
-      "icon": "⛅",
+      "icon": "\u26c5",
       "color": "#29B6F6",
       "category": "tools",
       "type": "pwa",
@@ -415,7 +415,7 @@
     },
     {
       "name": "Maps",
-      "icon": "🗺️",
+      "icon": "\ud83d\uddfa\ufe0f",
       "color": "#7CB342",
       "category": "tools",
       "type": "pwa",
@@ -434,7 +434,7 @@
     },
     {
       "name": "NuxTore",
-      "icon": "🛍️",
+      "icon": "\ud83d\udecd\ufe0f",
       "color": "#FF7043",
       "category": "tools",
       "type": "pwa",
@@ -449,7 +449,7 @@
     },
     {
       "name": "Recorder",
-      "icon": "🎙️",
+      "icon": "\ud83c\udf99\ufe0f",
       "color": "#D32F2F",
       "category": "media",
       "type": "pwa",
@@ -466,7 +466,7 @@
     },
     {
       "name": "SnekByte",
-      "icon": "🐍",
+      "icon": "\ud83d\udc0d",
       "color": "#66BB6A",
       "category": "games",
       "type": "pwa",
@@ -482,7 +482,7 @@
     {
       "id": "org.mozilla.firefox",
       "name": "Firefox",
-      "icon": "🦊",
+      "icon": "\ud83e\udd8a",
       "iconAsset": "/assets/native-app-icons/firefox.png",
       "color": "#ff7139",
       "category": "tools",
@@ -505,7 +505,7 @@
     {
       "id": "org.videolan.VLC",
       "name": "VLC",
-      "icon": "🎬",
+      "icon": "\ud83c\udfac",
       "iconAsset": "/assets/native-app-icons/vlc.png",
       "color": "#ff8800",
       "category": "media",
@@ -527,7 +527,7 @@
     {
       "id": "org.signal.Signal",
       "name": "Signal",
-      "icon": "💬",
+      "icon": "\ud83d\udcac",
       "iconAsset": "/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
       "color": "#3a76f0",
       "category": "communication",
@@ -550,7 +550,7 @@
     {
       "id": "com.stremio.Stremio",
       "name": "Stremio",
-      "icon": "🍿",
+      "icon": "\ud83c\udf7f",
       "iconAsset": "/assets/native-app-icons/stremio.svg",
       "color": "#7b5cff",
       "category": "media",
@@ -573,7 +573,7 @@
     {
       "id": "org.gnome.FileRoller",
       "name": "Archive Manager",
-      "icon": "🗜️",
+      "icon": "\ud83d\udddc\ufe0f",
       "iconAsset": "/assets/nuxel-applications-icon-pack/02-05_folders.png",
       "color": "#d6a45c",
       "category": "tools",
@@ -595,7 +595,7 @@
     {
       "id": "org.gnome.Loupe",
       "name": "Image Viewer",
-      "icon": "🖼️",
+      "icon": "\ud83d\uddbc\ufe0f",
       "iconAsset": "/assets/nuxel-applications-icon-pack/03-02_gallery.png",
       "color": "#4a90e2",
       "category": "media",
@@ -617,7 +617,7 @@
     {
       "id": "org.gnome.Papers",
       "name": "Document Viewer",
-      "icon": "📄",
+      "icon": "\ud83d\udcc4",
       "iconAsset": "/assets/nuxel-applications-icon-pack/02-04_reader.png",
       "color": "#e05d5d",
       "category": "productivity",
@@ -639,7 +639,7 @@
     {
       "id": "org.gnome.SystemMonitor",
       "name": "System Monitor",
-      "icon": "📈",
+      "icon": "\ud83d\udcc8",
       "iconAsset": "/assets/nuxel-applications-icon-pack/05-02_system-monitor.png",
       "color": "#4caf50",
       "category": "system",
@@ -659,7 +659,7 @@
     {
       "id": "org.nuxel.Media",
       "name": "Media Player",
-      "icon": "🎬",
+      "icon": "\ud83c\udfac",
       "color": "#e05d5d",
       "category": "media",
       "type": "pwa",
@@ -678,7 +678,7 @@
     {
       "id": "org.nuxel.Downloader",
       "name": "Media Downloader",
-      "icon": "⬇️",
+      "icon": "\u2b07\ufe0f",
       "color": "#4a90e2",
       "category": "media",
       "type": "pwa",
@@ -696,7 +696,7 @@
     {
       "id": "org.nuxel.Authenticator",
       "name": "Authenticator",
-      "icon": "🔐",
+      "icon": "\ud83d\udd10",
       "color": "#7e57c2",
       "category": "security",
       "type": "pwa",
@@ -715,7 +715,7 @@
     {
       "id": "org.nuxel.Vault",
       "name": "Vault",
-      "icon": "🔑",
+      "icon": "\ud83d\udd11",
       "color": "#0b3b46",
       "category": "security",
       "type": "pwa",
@@ -733,7 +733,7 @@
     {
       "id": "org.nuxel.Cleanup",
       "name": "Safe Cleanup",
-      "icon": "🧹",
+      "icon": "\ud83e\uddf9",
       "color": "#26a69a",
       "category": "tools",
       "type": "pwa",
@@ -751,7 +751,7 @@
     {
       "id": "org.nuxel.DevMgmt",
       "name": "DevMgmt",
-      "icon": "🛠️",
+      "icon": "\ud83d\udee0\ufe0f",
       "color": "#00695c",
       "category": "tools",
       "type": "pwa",
@@ -788,7 +788,7 @@
     {
       "id": "org.gnome.Software",
       "name": "Software",
-      "icon": "🛍️",
+      "icon": "\ud83d\udecd\ufe0f",
       "color": "#2ec27e",
       "category": "system",
       "type": "native",
@@ -806,7 +806,7 @@
     {
       "id": "org.nuxel.Clipper",
       "name": "Clipper",
-      "icon": "📋",
+      "icon": "\ud83d\udccb",
       "color": "#00BCD4",
       "category": "tools",
       "type": "pwa",
@@ -953,8 +953,8 @@
     {
       "dir": "pwa/nuxel-apps/doom",
       "owner_group": "bg-07-specialty-apps",
-      "state": "in_progress",
-      "note": "Nuxel Doom v1.0.0 ships as a NuxTore catalogue package. The payload is present in the image and is registered in Home only after the user installs it; Remove unregisters it again."
+      "state": "complete",
+      "note": "Nuxel Doom v2.0.0 is a real Chocolate Doom WebAssembly WAD engine with a touch HUD and NuxTore install/remove. The WAD is streamed read-only from the bridge; no commercial WAD is bundled."
     },
     {
       "dir": "pwa/nuxel-apps/weather",
@@ -979,6 +979,18 @@
       "owner_group": "pwnage-47000-gui-tri-link",
       "state": "complete",
       "note": "scrcpy (Android): real Bridge status/start/stop with direct LAN/ZeroTier listeners and explicit USB kernel blocker."
+    },
+    {
+      "dir": "pwa/nuxel-apps/doom-chocolate",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Native Chocolate Doom 3.1.1 comparison launcher and NuxTore package."
+    },
+    {
+      "dir": "pwa/nuxel-apps/doom-uzdoom",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "UZDoom comparison launcher and NuxTore package; software renderer on the vendor-kernel S10+."
     }
   ],
   "capability_gaps": [
@@ -1064,7 +1076,7 @@
     }
   ],
   "notes": {
-    "revision": "PWNAGE-76000/v0.7.6-beta: registry_version 13 adds the NuxTore-installable Nuxel Doom payload; registry_version 9 added the three GUI Tri-Link remote-access entries (XRDP, VNC, scrcpy). The three Serial/Wi-Fi/USB SSH console entries are preserved unchanged.",
+    "revision": "v0.7.7-beta: registry_version 14 adds the Chocolate Doom and UZDoom comparison apps and promotes Nuxel Doom to the WAD-engine 2.0 package. registry_version 13 added the NuxTore-installable Nuxel Doom payload; registry_version 9 added the three GUI Tri-Link remote-access entries.",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
     "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
     "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently.",

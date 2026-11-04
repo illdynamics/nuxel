@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1797, "b64_chars": 2396, "bytes": 1797, "decoded_sha256": "37cce983384ad4e4d3da28ca64727326ef58985fcdee9bd3d7da5922c5ca3910", "frames": 19, "mode": "frame", "parts": 19, "path": "/var/tmp/nxl-install-004.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=c1af6f801fa6fd788dc6afba0c0277b69ca512e70bff96ac2444546abba9c763
+/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -45,6 +45,8 @@ CONFIG_PATH = "/etc/nuxel/orientation/orientation.json"
 REQUEST_PATH = "/run/nuxel-orientation/request.json"
 STATUS_PATH = "/run/nuxel-orientation/status.json"
 PID_PATH = "/run/nuxel-orientation/daemon.pid"
+BOOT_ID_PATH = "/run/nuxel-orientation/boot-id"
+BOOT_PREVIOUS_PATH = "/run/nuxel-orientation/boot-previous.json"
 DEFAULT_CONFIG = {
     "schema_version": 1,
     "default_mode": "portrait",
@@ -215,6 +217,38 @@ def _read_text(path, default=""):
             return f.read().strip()
     except OSError:
         return default
+
+
+def _boot_id():
+    return _read_text("/proc/sys/kernel/random/boot_id", "")
+
+
+def _write_text(path, value):
+    try:
+        os.makedirs(os.path.dirname(P(path)), exist_ok=True)
+        with open(P(path), "w") as f:
+            f.write(value)
+    except OSError:
+        pass
+
+
+def clear_boot_portrait_hold(clear_previous=True):
+    """End the cold-boot portrait hold after an explicit orientation set.
+
+    The daemon forces portrait on the first start of each boot and records the
+    mode that was selected before boot.  Home reads that record, holds portrait
+    through the lockscreen and asks for the previous mode only after unlock.
+    Any explicit set-mode request means the boot hold is over.
+    """
+    try:
+        os.unlink(P(BOOT_ID_PATH))
+    except OSError:
+        pass
+    if clear_previous:
+        try:
+            os.unlink(P(BOOT_PREVIOUS_PATH))
+        except OSError:
+            pass
 
 
 def sensor_hub_state(config=None):
@@ -628,6 +662,7 @@ def request_set(config, mode, apply_now=True, trial=False, trial_seconds=None):
 def _set_mode_direct(config, mode, apply_now=True, trial=False,
                      trial_seconds=None, request_id=None):
     mode = validate_mode(mode)
+    clear_boot_portrait_hold(clear_previous=(mode != "portrait"))
     state = load_state(config)
     old_mode, old_effective, last = normalize_mode(state)
     sensor_orient = None
@@ -758,6 +793,9 @@ class Runtime:
         doc["updated_epoch"] = time.time()
         doc["mode"] = self.mode
         doc["mode_label"] = _mode_label(self.mode)
+        prev = _read_json(P(BOOT_PREVIOUS_PATH), {}) or {}
+        doc["boot_previous_mode"] = prev.get("mode")
+        doc["boot_portrait_until_unlock"] = os.path.exists(P(BOOT_ID_PATH))
         doc["auto"] = is_auto(self.mode)
         doc["allowed"] = list(allowed_orientations(self.mode))
         doc["effective_orientation"] = self.effective
@@ -885,6 +923,9 @@ class Runtime:
     def set_mode(self, mode, apply_now=True, arm_trial=False, trial_seconds=None,
                  request_id=None):
         mode = validate_mode(mode)
+        # Any explicit request ends the cold-boot hold.  A set-to-portrait
+        # keeps the recorded previous mode until the owner unlocks.
+        clear_boot_portrait_hold(clear_previous=(mode != "portrait"))
         old = {"mode": self.mode, "effective_orientation": self.effective,
                "transform": apply_mod.transform_for(self.effective, self.config),
                "requested_orientation": self.requested}
@@ -1106,10 +1147,32 @@ class Runtime:
         os.makedirs(os.path.dirname(P(PID_PATH)), exist_ok=True)
         with open(P(PID_PATH), "w") as f:
             f.write("%d\n" % os.getpid())
+        # Cold-boot portrait hold (v0.7.7-beta): the first daemon start of a
+        # new kernel boot always applies portrait, even when the persisted
+        # mode is landscape/auto.  The previous mode is recorded for Home to
+        # restore only after the lockscreen is unlocked.  A service restart in
+        # the same boot does not re-apply this.
+        boot_id = _boot_id()
+        if boot_id and _read_text(BOOT_ID_PATH, "") != boot_id:
+            _write_text(BOOT_ID_PATH, boot_id + "\n")
+            if self.mode != "portrait":
+                _write_json(P(BOOT_PREVIOUS_PATH), {
+                    "schema_version": 1, "mode": self.mode,
+                    "effective_orientation": self.effective,
+                    "saved_epoch": int(time.time()),
+                })
+            self.mode = "portrait"
+            self.effective = self.requested = self.last = 0
+            self.orientator.set_mode("portrait")
+            self.trial = None
+            self._persist()
+            audit_boot = "cold-boot portrait hold"
+        else:
+            audit_boot = "startup restore"
         # Startup restore: if a pending trial survived an unclean stop the
         # constructor already rolled it back.  Otherwise reapply the persisted
         # mode without creating a new trial.
-        ok = self._apply(self.effective, "startup-restore")
+        ok = self._apply(self.effective, audit_boot)
         if not ok:
             self.last_error = self.last_error or "startup transform not applied"
         self._publish()

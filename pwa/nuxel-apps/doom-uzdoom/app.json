@@ -1,0 +1,16 @@
+{
+  "id": "org.nuxel.Doom.UZDoom",
+  "name": "UZDoom",
+  "icon": "/pwa/nuxel-apps/doom-uzdoom/icons/icon-192.png",
+  "color": "#64c8ff",
+  "category": "games",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/doom-uzdoom/index.html",
+  "description": "The modern GZDoom-lineage engine with advanced rendering and mod support. On this vendor-kernel phone it runs with the software renderer because there is no usable /dev/dri node. Compare its map detail and menu depth with Nuxel Doom and Chocolate Doom.",
+  "capabilities": [],
+  "docked": false,
+  "network": "none",
+  "offline_first": true,
+  "provenance": "Native engine comparison path for Nuxel Doom; no commercial WAD bundled.",
+  "version": "1.0.0"
+}

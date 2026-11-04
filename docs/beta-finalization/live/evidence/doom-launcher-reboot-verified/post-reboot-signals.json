@@ -1,0 +1,12 @@
+{
+  "animation": "ANIM_STAGE=ANIMATION_STOPPED\nANIM_OWNER=nuxel-wl-fb\n",
+  "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory\n",
+  "boot_id": "4cacd5cc-5560-457e-bbf1-acd565b972e9\n",
+  "boot_mode": "",
+  "failed_units": "",
+  "fb_owner": "schema_version=1\nowner=nuxel-wl-fb\npid=5996\nstage=LAUNCHER_DISPLAY_OWNER\nui_writer=1\nreason=single_owner_takeover\nreceipt=1793788443-ANIMATION_STOP_CONFIRMED-5996\nlock=/run/nuxel-fb-owner.lock\nboot_id=4cacd5cc-5560-457e-bbf1-acd565b972e9\nts=1793788443\n",
+  "registry_http": "403\n",
+  "units": "nuxel-wayland=active\nnuxel-wl-fb=active\nnuxel-button-manager=active\nnuxel-touch-arm=active\nseatd=active\n",
+  "uptime": "18.91 107.84\n",
+  "wl_fb_state": "1793788448 FRAMES_OK total=51 fps_1s=5 failures=0 blits=7 present_skipped=43 blit_avg_ms=0 pan_avg_ms=7 capture_avg_ms=3 compare_avg_ms=0 damage=546-974 damage_runs=1 damage_blits=6 damage_avg_ms=0 idle_ms=3040 out=720x1520 src=720x1520 scale=1 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=8 decon_pan_failed=0\n"
+}

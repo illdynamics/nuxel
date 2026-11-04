@@ -6,6 +6,71 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.7-beta] - 2026-11-04 - *Real WAD engine, Chocolate Doom + UZDoom comparison, global immersive chrome*
+
+**This is the release where Nuxel Doom becomes a real Doom.** The old
+lookalike 320x180 raycaster is replaced by **Chocolate Doom 3.0 compiled to
+WebAssembly**. The app now loads actual Freedoom or imported IWAD/PWAD maps
+through a read-only bridge catalogue, warps into a real map, renders real
+geometry and textures, and drives the engine from a two-thumb touch HUD. Two
+native comparison apps, **Chocolate Doom 3.1.1** and **UZDoom 5.0.3**, are
+separate NuXtore packages.
+
+Every foreground app is now immersive by default. The triple buttons and top
+bar disappear; a bottom-edge swipe reveals Back/Home/Recents and a top-edge pull
+reveals the status bar. Home and the lockscreen remain exempt. No Doom screen
+contains a text field or raises the system keyboard.
+
+### Added
+
+- `pwa/nuxel-apps/doom/engine/` — pinned Chocolate Doom WebAssembly build from
+  `cloudflare/doom-wasm` commit `65e0d3ae`, with provenance, GPL text and
+  SHA-256-pinned JS/WASM artifacts.
+- `services/nuxel-bridge/src/doom_assets.py` and the read-only
+  `/api/v1/doom/wads` / `/api/v1/doom/wad?id=<sha256>` endpoints.
+- Real WAD launcher: IWAD/PWAD composition, `-warp`, explicit touch bindings,
+  progress and failure UI.
+- `pwa/nuxel-apps/doom-chocolate/` and `pwa/nuxel-apps/doom-uzdoom/`
+  comparison apps with distinct icons, manifests and service workers.
+- `tools/s10plus/a33/doom-engines/nuxel-doom-engine` native wrapper and bridge
+  allowlist entries for both engines.
+- `services/nuxel-bridge/test-doom-assets.py` (16 passed).
+- Native aarch64 UZDoom 5.0.3 bundle and the `build-uzdoom.sh` reproducer.
+- `docs/games/doom-engines.md` and `docs/releases/v0.7.7-beta.md`.
+
+### Changed
+
+- `org.nuxel.Doom` bumped to `2.0.0`; the manifest describes a WAD engine and
+  the old `doom-engine.js` is no longer loaded.
+- NuXtore stages and signs `org.nuxel.Doom` 2.0.0 plus
+  `org.nuxel.Doom.Chocolate` and `org.nuxel.Doom.UZDoom`.
+- App registry revision 14; native shell consumer regenerated.
+- Global immersive chrome is the default for every ACTIVE/LAUNCHING app.
+  The native `nuxel-navdock` now hides to a 14 px bottom-edge gesture strip
+  instead of unmapping, so native apps can reveal Back/Home/Recents by swiping
+  up; the strip auto-hides after a reveal.
+- Native `nuxel-statusbar` likewise collapses to a 12 px top-edge strip over a
+  native foreground app. A downward swipe reveals the full bar for a few
+  seconds, then it collapses again. Home and the lockscreen never map it.
+- Cold boot always applies portrait orientation through
+  `nuxel-orientationd` (first start of each kernel boot) and holds it until a
+  successful lockscreen unlock, then restores the mode selected before boot.
+- App launch explicitly dismisses the OSK after the session becomes ACTIVE.
+- Rootfs builder installs `chocolate-doom`, `freedoom`, `freedoom2` and
+  `freedoom-freedm`.
+- Live userspace payload includes the Doom apps, engine artifacts, NuXtore
+  catalog and WAD module.
+- Version lockstep bumped to `v0.7.7-beta`.
+
+### Fixed
+
+- Empty/no-map Doom: real WAD geometry now renders.
+- Doom keyboard: no text inputs, focus blur and host/compositor dismissal.
+- Stuck touch input: every pointer-cancel/blur/visibility/pause/exit path emits
+  key-up for every held key.
+- Top bar and triple buttons are recoverable by edge gesture in every app, not
+  only apps that explicitly request immersive mode.
+
 ## [v0.7.6-beta] - 2026-11-04 - *Nuxel Doom, immersive app chrome and NuXtore install/remove*
 
 **This is the release where Nuxel becomes a handheld.** The headline feature is

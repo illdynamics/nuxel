@@ -100,7 +100,8 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     wayvnc wayland-utils xrdp xorgxrdp xorg-x11-server-Xorg xorg-x11-server-Xwayland wtype \
     openbox xterm firefox android-tools openssl \
     gnome-software PackageKit PackageKit-command-not-found lxpolkit xfce-polkit appstream \
-    xdg-desktop-portal-gtk xdg-desktop-portal-wlr
+    xdg-desktop-portal-gtk xdg-desktop-portal-wlr \
+    chocolate-doom freedoom freedoom2 freedoom-freedm
 # PWNAGE-47000 BOOT SAFETY: Nuxel runs systemd PID 1 and the initramfs live
 # console from a kernel_t context.  The graphical remote-access packages
 # (xrdp/xorgxrdp/tigervnc-selinux) pull in selinux-policy-targeted as a weak
@@ -592,6 +593,9 @@ if [ -d "$STAGE/usr/lib/nuxel/stage36000" ]; then
       "$STAGE/usr/lib/nuxel/stage36000/session/nuxel-session.sh"
 fi
 install -m 0755 /nuxel/tools/s10plus/a67/nuxel-gpu-status             "$STAGE/usr/lib/nuxel/nuxel-gpu-status"
+# v0.7.7-beta: native Doom engine comparison entry point (Chocolate/UZDoom/
+# Crispy).  Nuxel Doom itself is the WebAssembly engine inside the PWA.
+install -m 0755 /nuxel/tools/s10plus/a33/doom-engines/nuxel-doom-engine "$STAGE/usr/lib/nuxel/nuxel-doom-engine"
 install -Dm0644 /nuxel/configs/nuxel/portals.conf                      "$STAGE/etc/xdg-desktop-portal/portals.conf"
 install -Dm0755 /nuxel/tools/s10plus/a45/nuxel-graphics-profile \
     "$STAGE/usr/lib/nuxel/nuxel-graphics-profile"
