@@ -29,6 +29,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 FLATPAK = shutil.which("flatpak") or "/usr/bin/flatpak"
 BWRAP = "/usr/bin/bwrap"
+CRISPY_DOOM_APP_ID = "io.github.fabiangreffrath.Doom"
+CRISPY_DOOM_WRAPPER = "/usr/lib/nuxel/nuxel-flatpak-doom"
 REAL_BWRAP = "/usr/libexec/bwrap.real"
 SYSTEM_INSTALL = "/var/lib/flatpak"
 USER_HOME = "/home/nuxel"
@@ -628,11 +630,14 @@ class FlatpakProvider:
         aid = _valid_app_id(app_id)
         if not aid or not self.is_installed(aid):
             return None
-        # Crispy Doom is a game, not a GTK/Electron/WebKit app.  Its Flatpak
-        # override carries the Nuxel kbase/Panfrost environment and the
-        # Freedoom WAD search path, so let that override apply.
-        if aid == "io.github.fabiangreffrath.Doom":
-            return [FLATPAK, "run", aid]
+        # Crispy Doom: the org.freedesktop.Platform 24.08 SDL2 Wayland
+        # backend creates an xdg_toplevel but never presents a buffer on this
+        # 4.14 vendor kernel.  The Flatpak install stays authoritative; the
+        # wrapper runs the same Flathub binary with the host sdl2-compat stack,
+        # which maps and plays the game.  It also opens the touch-first WAD
+        # picker when launched without arguments and carries the Freedoom path.
+        if aid == CRISPY_DOOM_APP_ID:
+            return [CRISPY_DOOM_WRAPPER]
         # The host's Mali/kbase EGL stack is not a DRM device and cannot be
         # assumed inside a Flatpak runtime.  Force the runtime's own software
         # path so GTK/Electron/WebKit apps can create a Wayland surface; GPU
