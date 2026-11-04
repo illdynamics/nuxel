@@ -120,7 +120,7 @@ def read_battery_status():
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.5-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.6-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -1596,90 +1596,13 @@ class LocationConnector:
         NMEA serial port, and /dev/bbd_patch is where the sensor-hub patch
         firmware is loaded by the vendor lhd daemon.  A bound SPI driver or a
         readable tty is therefore hardware evidence only, never a fix.
+
+        PWNAGE-64000: the single canonical classifier in ``gnss_inventory`` owns
+        the node/firmware/vendor lists so the bridge, provider and diagnostic
+        cannot drift into different filename heuristics.
         """
-        nodes = [n for n in ('/dev/ttyBCM', '/dev/ssp_sensorhub',
-                             '/dev/ssp_data_injection', '/dev/bbd_sensor')
-                 if os.path.exists(n)]
-        bbd_nodes = [n for n in ('/dev/bbd_patch', '/dev/bbd_control',
-                                 '/dev/bbd_sensor', '/dev/bbd_urgent_patch')
-                     if os.path.exists(n)]
-        spi_dir = '/sys/bus/spi/drivers/brcm gps spi'
-        bound = []
-        try:
-            for name in sorted(os.listdir(spi_dir)):
-                if name.startswith('spi'):
-                    bound.append(os.path.join(spi_dir, name))
-        except OSError:
-            pass
-        firmware = []
-        for d in ('/lib/firmware/gnss', '/lib/firmware', '/vendor/firmware'):
-            try:
-                for name in sorted(os.listdir(d)):
-                    low = name.lower()
-                    if (('bcm477' in low or low.startswith('gps') or
-                         low.startswith('gnss') or 'sensorhub' in low or
-                         low.startswith('ssp')) and
-                            not low.endswith(('.hcd', '.txt', '.conf', '.json'))):
-                        firmware.append(os.path.join(d, name))
-            except OSError:
-                continue
-        # The vendor lhd daemon loads a BBD patch from /dev/bbd_patch (see
-        # beyond2lte vendor/etc/sensor/lhd.conf).  Without that exact patch and
-        # the Android/Bionic lhd+gpsd pair, no BBD/LHD RPC exchange is possible.
-        vendor_runtime = {
-            'lhd': any(os.path.exists(p) for p in
-                       ('/vendor/bin/hw/lhd', '/vendor/bin/lhd')),
-            'gpsd': any(os.path.exists(p) for p in
-                        ('/vendor/bin/hw/gpsd', '/vendor/bin/gpsd')),
-            'android_linker': os.path.exists('/system/bin/linker64'),
-            'hidl_gnss_lib': any(os.path.exists(p) for p in
-                                 ('/vendor/lib64/vendor.samsung.hardware.gnss@2.0.so',
-                                  '/vendor/lib64/vendor.samsung.hardware.gnss@2.0-impl.so')),
-            'lhd_config': os.path.exists('/vendor/etc/sensor/lhd.conf'),
-            'gps_config': os.path.exists('/vendor/etc/gnss/gps.xml'),
-        }
-        vendor_runtime['complete'] = all(vendor_runtime.values())
-        blocker = None
-        if not nodes and not bound:
-            blocker = 'no GNSS device node or BCM GPS SPI driver binding'
-        elif not bound:
-            blocker = 'no BCM GPS SPI driver binding'
-        if blocker is None and not firmware:
-            blocker = ('no compatible BCM4773 BBD sensor-hub patch firmware '
-                       '(vendor lhd expects /dev/bbd_patch)')
-        if blocker is None and not vendor_runtime['complete']:
-            missing = [k for k, v in vendor_runtime.items() if not v]
-            blocker = ('GNSS firmware/RPC stack incomplete: missing ' +
-                       ', '.join(missing))
-        if blocker is None and not nodes:
-            blocker = ('GNSS driver is bound but /dev is private to the bridge; '
-                       'no BBD/LHD userspace provider is wired')
-        if blocker is None:
-            blocker = ('BCM4773 BBD/LHD userspace provider is not wired '
-                       '(stock gpsd cannot decode this RPC protocol)')
-        return {
-            # The bridge unit has PrivateDevices=true, so a node may exist in
-            # the real /dev while being hidden here.  A bound SPI device is
-            # still positive evidence that the GNSS hardware path is present.
-            'present': bool(nodes or bound),
-            'nodes': nodes,
-            'node_visible_to_bridge': bool(nodes),
-            'bbd_nodes': bbd_nodes,
-            'private_devices': True,
-            'driver': 'brcm gps spi',
-            'driver_bound': bool(bound),
-            'spi_bindings': bound,
-            'protocol': 'broadcom-bbd-lhd-rpc',
-            'nmea_stream': False,
-            'firmware_present': bool(firmware),
-            'firmware': firmware,
-            'firmware_loaded': False,
-            'vendor_runtime': vendor_runtime,
-            'userspace_provider': None,
-            'hardware_responds': None,
-            'fix_supported': False,
-            'blocker': blocker,
-        }
+        import gnss_inventory as _gi
+        return _gi.bridge_inventory(root='/')
 
     def _remember_fix(self, loc):
         """Remember a provider result without inventing freshness.
@@ -2727,7 +2650,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.7.5-beta...")
+    logger.info("Starting Nuxel Bridge v0.7.6-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

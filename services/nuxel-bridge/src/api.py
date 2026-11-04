@@ -74,7 +74,7 @@ except Exception as _e:  # pragma: no cover - optional module
 # an ON state without hardware evidence.
 for _modname in ('dnd_provider', 'nfc_provider', 'fingerprint_provider',
                  'security_provider', 'led_notification_provider', 'app_manager',
-                 'software_provider', 'privacy_provider'):
+                 'software_provider', 'privacy_provider', 'flatpak_provider'):
     try:
         globals()[_modname] = __import__(_modname)
     except Exception as _e:  # pragma: no cover - optional module
@@ -112,6 +112,16 @@ except Exception as _e:  # pragma: no cover - optional module
     mail_client = None
     logger.warning('mail_client unavailable: %s', _e)
 
+# Nuxel Vault / Authenticator keyring.  The provider is a narrow Secret Service
+# client; the module is optional so a missing python3-dbus / GNOME Keyring never
+# blocks the rest of the bridge.  Keyring calls fail closed in that case.
+try:
+    import keyring_api as _keyring_api
+except Exception as _e:  # pragma: no cover - optional module
+    _keyring_api = None
+    logger.warning('keyring provider unavailable: %s', _e)
+
+
 # ── Environment-driven configuration ────────────────────────────
 
 HTTP_BIND = os.environ.get('NUXEL_HTTP_BIND', '127.0.0.1')
@@ -126,7 +136,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.5-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.6-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -188,8 +198,27 @@ ACTIVATION_REJECTED = {"count": 0, "last": None}
 # An app id is an identifier, never a path: no separator, no "..", no leading dot.
 APP_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$")
 
+# Flatpak apps that also have a legacy static launcher entry.  The dynamic
+# provider is authoritative: when one is uninstalled its static entry is
+# removed, so the launcher never keeps a stale ghost icon.
+KNOWN_FLATPAK_IDS = {
+    "org.mozilla.firefox", "org.videolan.VLC",
+    "org.signal.Signal", "com.stremio.Stremio",
+}
+FLATPAK_CATEGORY = {
+    "org.mozilla.firefox": "tools",
+    "org.videolan.VLC": "media",
+    "org.signal.Signal": "communication",
+    "com.stremio.Stremio": "media",
+}
+
 TOKEN_DIR = os.path.join(NUXEL_DATA_DIR, 'http-bridge')
 TOKEN_FILE = os.path.join(TOKEN_DIR, 'token')
+# PWNAGE-63000: the native PWA host injects a top-frame-only relay that holds
+# this per-device secret in a closure.  The Bridge reads the same root-only file.
+KEYRING_LAUNCHER_SECRET_FILE = os.environ.get(
+    'NUXEL_KEYRING_SECRET_FILE', '/etc/nuxel/keyring-launcher.secret')
+KEYRING_LAUNCHER_APPS = {'org.nuxel.Vault', 'org.nuxel.Authenticator'}
 
 # Per-session token registry: token -> {app_id, created, expires}
 SESSION_TOKENS = {}
@@ -219,6 +248,20 @@ def _get_token():
             return None
         with open(TOKEN_FILE) as f:
             return f.read().strip()
+
+
+def _keyring_launcher_secret():
+    """Read the per-device launcher secret; None if absent/invalid."""
+    try:
+        with open(KEYRING_LAUNCHER_SECRET_FILE, 'r') as fh:
+            value = fh.read(256).strip()
+    except OSError:
+        return None
+    if len(value) != 64:
+        return None
+    if any(c not in '0123456789abcdefABCDEF' for c in value):
+        return None
+    return value
 
 
 def _get_cors_origin(origin_header):
@@ -380,6 +423,23 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response)
 
+    def _send_bytes(self, data, content_type='application/octet-stream', status=200,
+                    cache='no-store'):
+        """Send a bounded binary response (Flatpak icons only in this revision)."""
+        self.send_response(status)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', cache)
+        origin = self.headers.get('Origin', '')
+        cors_origin = _get_cors_origin(origin if origin else None)
+        if cors_origin:
+            self.send_header('Access-Control-Allow-Origin', cors_origin)
+        self.end_headers()
+        try:
+            self.wfile.write(data)
+        except OSError:
+            pass
+
     def _verify_auth(self):
         """Verify authentication token.
 
@@ -427,6 +487,44 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         return False
 
 
+    def _session_token(self):
+        """Return the live per-session token document, or None."""
+        auth = self.headers.get('Authorization', '')
+        if not auth.startswith('Bearer '):
+            return None
+        token = auth[7:]
+        if not token:
+            return None
+        session = SESSION_TOKENS.get(token)
+        if session is None:
+            return None
+        if session.get('expires', 0) < time.time():
+            SESSION_TOKENS.pop(token, None)
+            return None
+        return session
+
+    def _keyring_identity(self, app_id):
+        """Prove the caller is the registered local app, not a JSON app_id."""
+        if _keyring_api is None:
+            return ({'success': False, 'error': 'provider_unavailable',
+                     'state': 'unavailable', 'offline': True,
+                     'detail': 'the native keyring module is not installed'}, None)
+        session = self._session_token()
+        entry = None
+        if app_id in _keyring_api.KEYRING_APP_CAPABILITY:
+            entry, _info = self._lookup_registry_app(app_id)
+        denial = _keyring_api.check_identity(app_id, self.headers, session, entry,
+                                             ALLOWED_ORIGINS)
+        if denial is not None:
+            logger.info("keyring identity denied app=%s code=%s issuer=%s token_app=%s issued_ref=%s current_ref=%s origin=%s",
+                        app_id, denial.get('error'),
+                        (session or {}).get('issuer', 'self'),
+                        (session or {}).get('app_id'),
+                        urlparse((session or {}).get('referer') or '').path,
+                        urlparse(self.headers.get('Referer', '') or '').path,
+                        self.headers.get('Origin', ''))
+        return (denial, session)
+
     def _load_app_registry(self):
         """Serve the canonical app registry (briq-04c): the SAME file the PWA and
         the native shell consume, so the grid cannot drift from the bridge.
@@ -457,10 +555,91 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             "url_base": doc.get("url_base"),
             "apps": apps,
         })
+        self._augment_registry_with_flatpak(info)
         declared = doc.get("bridge_version")
         if declared and declared != BRIDGE_PROTOCOL_VERSION:
             info["version_mismatch"] = {"registry": declared, "host": BRIDGE_PROTOCOL_VERSION}
         return info
+
+    def _augment_registry_with_flatpak(self, info):
+        """Merge installed Flatpak apps into the canonical launcher registry.
+
+        The static registry remains the offline baseline for native/PWA apps.
+        Flatpak entries are dynamic: a successful ``flatpak list`` replaces the
+        legacy static entry for the same id and removes a legacy entry whose
+        Flatpak is no longer installed.  A provider failure leaves the baseline
+        untouched and reports the reason instead of inventing apps.
+        """
+        if flatpak_provider is None:
+            info["flatpak"] = {"available": False, "error": "provider unavailable"}
+            return
+        try:
+            installed = flatpak_provider.get_provider().list_installed()
+        except Exception as exc:  # noqa: BLE001
+            info["flatpak"] = {"available": False, "error": str(exc)}
+            return
+        if not installed.get("success"):
+            info["flatpak"] = {"available": False,
+                               "error": installed.get("error") or "flatpak list failed"}
+            return
+        dynamic = {}
+        for app in installed.get("apps") or []:
+            aid = app.get("id")
+            if not isinstance(aid, str) or not APP_ID_RE.match(aid):
+                continue
+            scope = app.get("scope") or "system"
+            category = FLATPAK_CATEGORY.get(aid, "tools")
+            dynamic[aid] = {
+                "id": aid,
+                "name": app.get("name") or aid,
+                "icon": "📦",
+                "iconAsset": "http://127.0.0.1:8080/api/v1/flatpak/icon/" + aid,
+                "color": "#4a90e2",
+                "category": category,
+                "type": "native",
+                "url": aid + "://",
+                "native_binary": "/usr/bin/flatpak",
+                "flatpak_id": aid,
+                "flatpak_scope": scope,
+                "flatpak_version": app.get("version") or "",
+                "flatpak_branch": app.get("branch") or "",
+                "flatpak_arch": app.get("arch") or "aarch64",
+                "flatpak_runtime": app.get("runtime") or "",
+                "flatpak_ref": app.get("ref") or "",
+                "desktop_entry": app.get("desktop_file") or "",
+                "description": app.get("description") or ("Flatpak application (%s)" % (app.get("runtime") or "Flatpak")),
+                "capabilities": [],
+                "bridge_version": BRIDGE_PROTOCOL_VERSION,
+                "docked": False,
+                "status": "installed",
+                "runtime_state": "Flatpak %s · %s · %s" % (
+                    app.get("version") or "installed",
+                    app.get("runtime") or "unknown runtime",
+                    app.get("arch") or "aarch64"),
+                "install_source": "flatpak:" + scope,
+            }
+        static = info.get("apps") or []
+        kept = []
+        for app in static:
+            aid = app.get("id")
+            if aid in dynamic:
+                continue
+            if aid in KNOWN_FLATPAK_IDS:
+                continue
+            kept.append(app)
+        for aid, entry in dynamic.items():
+            prev = next((a for a in static if a.get("id") == aid), {})
+            merged = dict(prev)
+            merged.update(entry)
+            merged["docked"] = bool(prev.get("docked", False))
+            kept.append(merged)
+        info["apps"] = kept
+        info["flatpak"] = {
+            "available": True,
+            "installed": len(dynamic),
+            "source": "flatpak_provider",
+            "scopes": sorted({a.get("flatpak_scope") for a in dynamic.values()}),
+        }
 
     def _lookup_registry_app(self, app_id):
         """Return (app_entry_or_None, registry_info). Never invents an app."""
@@ -787,12 +966,32 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if not isinstance(target_id, str) or not APP_ID_RE.match(target_id):
             return ({"success": False, "error": "invalid_app_id",
                      "detail": "an app id is an identifier, never a path or a command"}, 400)
-        argv = self.NATIVE_LAUNCH.get(target_id)
+        # Flatpak is authoritative for an installed app id.  The argv is
+        # always ["flatpak", "run", <validated id>] and is never built from a
+        # client command/path.  Static native_launch entries remain fallbacks
+        # for an uninstalled RPM/wrapper.
+        flatpak_argv = None
+        if flatpak_provider is not None:
+            try:
+                flatpak_argv = flatpak_provider.get_provider().launch_argv(target_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("flatpak launch probe failed for %s: %s", target_id, exc)
+        is_flatpak = bool(flatpak_argv)
+        argv = list(flatpak_argv) if flatpak_argv else self.NATIVE_LAUNCH.get(target_id)
         if argv and extra_args:
-            if target_id not in ("org.videolan.VLC", "org.nuxel.MediaPlayer") or len(extra_args) != 1:
+            if target_id not in ("org.videolan.VLC", "org.nuxel.MediaPlayer", "io.mpv.Mpv") or len(extra_args) != 1:
                 return ({"success": False, "error": "extra_args_denied",
                          "app_id": target_id}, 400)
-            argv = list(argv) + [str(extra_args[0])]
+            if is_flatpak:
+                # Flatpak needs --file-forwarding BEFORE the app id so the host
+                # path is exported into the sandbox and replaced with its
+                # sandbox path.  VLC's exported desktop entry uses the same
+                # file-forwarding contract.
+                base = list(argv)
+                argv = base[:-1] + ["--file-forwarding", base[-1],
+                                    "@@", str(extra_args[0]), "@@"]
+            else:
+                argv = list(argv) + [str(extra_args[0])]
         if not argv:
             app, _info = self._lookup_registry_app(target_id)
             if app and app.get("type") == "native" and app.get("native_binary"):
@@ -825,13 +1024,18 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         import time as _t
         home = self._session_home()
         unit = "nuxel-app-" + target_id.rsplit(".", 1)[-1].lower() + "-%d" % int(_t.time() * 1000)
-        as_user = target_id in self.NATIVE_AS_SESSION_USER
+        as_user = target_id in self.NATIVE_AS_SESSION_USER or is_flatpak
         # Session-user apps use the standard per-user runtime so dconf and
         # other $XDG_RUNTIME_DIR consumers work; the session script creates it
         # and symlinks the Phoc socket from /run/nuxel-wayland.  Root-owned
         # native tools (browser/camera) keep the compositor runtime directly.
         runtime = "/run/user/1000" if as_user else "/run/nuxel-wayland"
-        use_x11 = target_id == "org.videolan.VLC"
+        # Flatpak apps get the per-user portal bus.  Legacy native apps keep the
+        # root session bus they have always used, avoiding a regression in the
+        # custom PhoshAgent/AT-SPI path.
+        dbus_address = ("unix:path=/run/user/1000/bus" if is_flatpak
+                        else "unix:path=/run/nuxel-wayland/bus")
+        use_x11 = (target_id == "org.videolan.VLC" and not is_flatpak)
         if use_x11 and not self._ensure_xwayland():
             logger.warning("VLC launch continuing without a verified Xwayland socket")
         cmd = ["/usr/bin/systemd-run", "--unit=%s" % unit, "--collect",
@@ -842,15 +1046,19 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                "--setenv=MOZ_ENABLE_WAYLAND=1",
                "--setenv=GDK_BACKEND=wayland",
                "--setenv=QT_QPA_PLATFORM=wayland",
-               "--setenv=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus",
+               "--setenv=DBUS_SESSION_BUS_ADDRESS=%s" % dbus_address,
                "--setenv=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native",
                "--setenv=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland",
                "--setenv=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                "--setenv=HOME=%s" % home,
                "--setenv=XDG_DATA_HOME=%s/.local/share" % home]
-        gfx_env = self._graphics_env_for(target_id)
-        for key, value in sorted(gfx_env.items()):
-            cmd.append("--setenv=%s=%s" % (key, value))
+        # The host's custom Mali/kbase EGL stack is NOT assumed to exist inside
+        # a Flatpak runtime.  Let the runtime choose its own Mesa/llvmpipe path
+        # and report GPU acceleration separately from sandbox success.
+        if not is_flatpak:
+            gfx_env = self._graphics_env_for(target_id)
+            for key, value in sorted(gfx_env.items()):
+                cmd.append("--setenv=%s=%s" % (key, value))
         if use_x11:
             cmd += ["--setenv=DISPLAY=:0", "--setenv=QT_QPA_PLATFORM=xcb",
                     "--setenv=QT_X11_NO_MITSHM=1"]
@@ -1465,7 +1673,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if cors_origin:
             self.send_header('Access-Control-Allow-Origin', cors_origin)
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Nuxel-Bridge-Version')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Nuxel-Bridge-Version, X-Nuxel-Launcher-Secret')
         self.end_headers()
 
     def do_GET(self):
@@ -1510,6 +1718,41 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
 
         elif path == '/api/v1/apps/registry':
             self._send_json(self._load_app_registry())
+
+        elif path == '/api/v1/flatpak/status':
+            if flatpak_provider is None:
+                self._send_json({'success': False, 'error': 'flatpak provider unavailable'}, 503)
+            else:
+                self._send_json(flatpak_provider.get_provider().status())
+
+        elif path == '/api/v1/flatpak/apps':
+            if flatpak_provider is None:
+                self._send_json({'success': False, 'error': 'flatpak provider unavailable'}, 503)
+            else:
+                self._send_json(flatpak_provider.get_provider().list_installed())
+
+        elif path == '/api/v1/flatpak/remote-ls':
+            if flatpak_provider is None:
+                self._send_json({'success': False, 'error': 'flatpak provider unavailable'}, 503)
+            else:
+                qs = parse_qs(parsed.query)
+                self._send_json(flatpak_provider.get_provider().remote_ls(
+                    remote=qs.get('remote', ['flathub'])[0],
+                    arch=qs.get('arch', ['aarch64'])[0],
+                    query=qs.get('q', [''])[0],
+                    limit=int(qs.get('limit', ['600'])[0] or 600)))
+
+        elif path.startswith('/api/v1/flatpak/icon/'):
+            if flatpak_provider is None:
+                self._send_json({'success': False, 'error': 'flatpak provider unavailable'}, 503)
+            else:
+                aid = path.rsplit('/', 1)[-1]
+                data, mime, err = flatpak_provider.get_provider().icon(aid)
+                if data is not None and mime:
+                    self._send_bytes(data, mime)
+                else:
+                    self._send_json({'success': False, 'error': err or 'icon_not_found',
+                                     'app_id': aid}, 404)
 
         elif path == '/api/v1/capabilities':
             result = self._call_bridge('GetCapabilities')
@@ -1819,6 +2062,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             pkgs[name] = out if out and not out.startswith("package ") else None
         webkit_processes = run(["/usr/bin/pgrep", "-af", "WebKitWebProcess"]) or ""
         webkit_env = None
+        webkit_fds = []
+        webkit_gpu_maps = False
         for line in webkit_processes.splitlines():
             try:
                 wpid = int(line.split()[0])
@@ -1830,9 +2075,33 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 if "=" in item:
                     k, v = item.split("=", 1)
                     if k in ("WEBKIT_DISABLE_COMPOSITING_MODE", "WEBKIT_FORCE_COMPOSITING_MODE",
-                             "LIBGL_ALWAYS_SOFTWARE", "MESA_KBASE_NODE", "NUXEL_KBASE_WSI"):
+                             "LIBGL_ALWAYS_SOFTWARE", "MESA_KBASE_NODE", "NUXEL_KBASE_WSI",
+                             "NUXEL_GRAPHICS_PROFILE_ACTIVE", "NUXEL_GRAPHICS_PROFILE_REQUESTED",
+                             "NUXEL_GRAPHICS_FALLBACK_REASON"):
                         webkit_env[k] = v
+            maps = read("/proc/%d/maps" % wpid, 8 << 20) or ""
+            webkit_gpu_maps = "libgallium" in maps
+            try:
+                for fd in os.listdir("/proc/%d/fd" % wpid):
+                    try:
+                        target = os.readlink("/proc/%d/fd/%s" % (wpid, fd))
+                    except OSError:
+                        continue
+                    if "udmabuf" in target or "dmabuf" in target or "/dev/dri" in target:
+                        webkit_fds.append({"fd": fd, "target": target})
+            except OSError:
+                pass
             break
+        webkit_disable = (webkit_env or {}).get("WEBKIT_DISABLE_COMPOSITING_MODE")
+        webkit_force = (webkit_env or {}).get("WEBKIT_FORCE_COMPOSITING_MODE")
+        if webkit_disable == "1":
+            webkit_status = "SOFTWARE_FALLBACK"
+        elif webkit_force == "1" and webkit_gpu_maps:
+            webkit_status = "GPU_RENDERED_SHM_PRESENTED"
+        elif webkit_force == "1":
+            webkit_status = "GPU_REQUESTED_NO_MAPPING"
+        else:
+            webkit_status = "UNKNOWN"
 
         # ---- bridge/panel counters from its current status line
         bridge_text = read("/run/nuxel-wl-fb.state", 8192)
@@ -1873,7 +2142,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 "process_running": bool(webkit_processes),
                 "compositing_env": webkit_env,
                 "dma_buf_backing_store": None,
-                "status": "SOFTWARE_FALLBACK" if (webkit_env or {}).get("WEBKIT_DISABLE_COMPOSITING_MODE") == "1" else "UNKNOWN",
+                "gpu_library_mapped": webkit_gpu_maps,
+                "transport": "shm" if not webkit_fds else "dmabuf-candidate",
+                "transport_fds": webkit_fds,
+                "status": webkit_status,
             },
             "gtk3": {"package": pkgs.get("gtk3"), "gl_test": None,
                       "note": "GTK3 WebKit host is independent of GSK_RENDERER"},
@@ -1893,12 +2165,145 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             },
             "probes": probes,
             "blocked_reason": (
-                "WebKit acceleration is not enabled: the Phoc kbase session does not "
-                "advertise linux-dmabuf, so the GTK UI process cannot share accelerated "
-                "WebKit backing-store buffers with the compositor."
-                if not fallback_marker and (webkit_env or {}).get("WEBKIT_DISABLE_COMPOSITING_MODE") == "1"
+                "WebKit DMA-BUF transport is blocked: WebKit 2.54.1 gates its "
+                "Hardware backing store on drmMainDevice(), and this kernel has no "
+                "DRM/GBM node (CONFIG_DRM_VGEM unset, /dev/dri absent). WebKit is "
+                "GPU-rendered but presents through shared memory."
+                if not fallback_marker and webkit_disable == "1"
                 else None
             ),
+        }
+
+    def _graphics_status_from_layers(self, layers):
+        """Map the PWNAGE-60000 layered status onto the Settings API surface.
+
+        The Settings card is intentionally conservative: GPU rendering and SHM
+        presentation are reported together, while zero-copy scanout remains
+        false until the CPU framebuffer bridge is genuinely removed.
+        """
+        kg = layers.get("kernel_gpu") or {}
+        ph = layers.get("phoc") or {}
+        eg = layers.get("egl") or {}
+        wk = layers.get("webkit") or {}
+        dm = layers.get("linux_dmabuf") or {}
+        fb = layers.get("final_output") or {}
+        caps = layers.get("capabilities") or {}
+        prof = layers.get("profile_summary") or {}
+        probe = eg.get("probe") or {}
+        fb_parsed = fb.get("parsed") or {}
+        webkit_gpu = bool(wk.get("gpu_rendering"))
+        webkit_shm = (wk.get("transport") == "shm")
+        fallback = bool((prof.get("fallback_active")))
+        phoc_accel = bool(ph.get("accelerated")) and not fb.get("fallback_marker")
+        if fallback or fb.get("fallback_marker"):
+            verdict = "SOFTWARE"
+        elif phoc_accel and webkit_gpu:
+            verdict = "ACCELERATED_SHM"
+        elif phoc_accel:
+            verdict = "PARTIAL"
+        else:
+            verdict = "UNKNOWN"
+        webkit_status = ("GPU_RENDERED_SHM_PRESENTED" if webkit_gpu and webkit_shm
+                         else ("GPU_RENDERED_DMABUF_CANDIDATE" if webkit_gpu
+                               else "SOFTWARE_FALLBACK"))
+        dmabuf_status = ("LINEAR-ONLY v%s (import proven; WebKit export blocked)"
+                         % dm.get("protocol") if dm.get("protocol") else
+                         "protocol not observed")
+        gtk4 = layers.get("gtk4") or {}
+        gtk3 = layers.get("gtk3") or {}
+        return {
+            "success": True,
+            "schema": "nuxel.graphics-status/2",
+            "source": "nuxel-bridge:graphics-status:layers",
+            "timestamp": time.time(),
+            "verdict": verdict,
+            "acceleration_label": ("GPU-RENDERED / SHM-PRESENTED"
+                                   if verdict == "ACCELERATED_SHM" else
+                                   ("PARTIAL" if verdict == "PARTIAL" else verdict)),
+            "gpu": {
+                "hardware": "Mali-G76 MP12" if kg.get("present") else None,
+                "kernel_driver": kg.get("driver"),
+                "device_present": kg.get("present"),
+                "device_node": "/dev/mali0" if kg.get("present") else None,
+                "context_owner": "phoc" if phoc_accel else None,
+                "context_opened_by_compositor": bool(phoc_accel),
+                "dri_render_node": kg.get("dri_present"),
+            },
+            "phoc": {
+                "pid": ph.get("pid"),
+                "renderer": probe.get("renderer"),
+                "wlr_renderer": "gles2" if phoc_accel else "pixman",
+                "mali_fds": ph.get("mali_fds"),
+                "udmabuf_fds": ph.get("udmabuf_fds"),
+                "fd_scan": ph.get("fd_scan"),
+                "fallback_marker": fb.get("fallback_marker"),
+                "accelerated": phoc_accel,
+                "llvmpipe_threads": len(ph.get("llvmpipe_threads") or []),
+            },
+            "egl": {
+                "library": eg.get("vendor_library"),
+                "sha256": eg.get("egl_mesa_sha256"),
+                "vendor": "Mesa Project" if probe.get("renderer") else None,
+                "version": probe.get("egl_version"),
+                "init": "ok" if probe.get("ok") else ("failed" if probe else None),
+                "gles_renderer": probe.get("renderer"),
+                "gles_version": probe.get("gl_version"),
+                "stock_backup_selected": eg.get("stock_backup_selected"),
+            },
+            "gtk_gl": {
+                "status": gtk3.get("status") or "NOT_MEASURED",
+                "gtk3": gtk3.get("status"),
+                "gtk4": "%s (%s)" % (gtk4.get("status"), gtk4.get("requested_renderer")),
+                "gsk_renderer": gtk4.get("requested_renderer"),
+                "detail": gtk3.get("note") or gtk3.get("reason") or gtk4.get("reason") or
+                          "GTK3/GTK4 are separate runtime layers; --deep runs the live probes",
+            },
+            "webkitgtk": {
+                "status": webkit_status,
+                "process_running": bool(wk.get("running")),
+                "transport": wk.get("transport"),
+                "transport_fds": wk.get("transport_fds") or [],
+                "gpu_library_mapped": bool(wk.get("gallium_library")),
+                "mali_fds": wk.get("mali_fds", 0),
+                "profile_requested": prof.get("requested"),
+                "profile_active": prof.get("active"),
+                "fallback_active": fallback,
+            },
+            "dmabuf": {
+                "udmabuf_device": bool(kg.get("udmabuf")),
+                "linux_dmabuf_global": bool(dm.get("protocol")),
+                "protocol": dm.get("protocol"),
+                "linear_only": dm.get("linear_only"),
+                "status": dmabuf_status,
+            },
+            "display_bridge": {
+                "frames_ok": bool(fb.get("frames_ok")),
+                "decon_pan_failed": fb.get("decon_pan_failed"),
+                "fb_virtual_size": (fb.get("geometry") or {}).get("virtual_size"),
+                "path": "cpu-framebuffer-bridge",
+                "one_writer": bool(fb.get("one_writer")),
+                "blit_avg_ms": fb_parsed.get("blit_avg_ms"),
+                "damage_avg_ms": fb_parsed.get("damage_avg_ms"),
+                "present_skipped": fb_parsed.get("present_skipped"),
+            },
+            "fbdev_drm": {
+                "fb0": bool(fb.get("frames_ok")),
+                "drm_render_node": bool(kg.get("dri_present")),
+            },
+            "zero_copy_scanout": False,
+            "honest_summary": (
+                "Phoc renders through Mali kbase. WebKit is GPU-rendered and presents "
+                "through shared memory; it is not DMA-BUF/zero-copy. The final panel "
+                "path is still CPU copy/scale into /dev/fb0 through one writer."
+            ),
+            "blocked_reason": (
+                "WebKit 2.54.1 Hardware transport requires drmMainDevice(); this "
+                "kernel has no /dev/dri and CONFIG_DRM_VGEM is unset."
+                if dmabuf_status.startswith("protocol") or not dm.get("protocol") else None
+            ),
+            "layers": layers,
+            "capabilities": caps,
+            "profile": prof,
         }
 
     def _graphics_status(self):
@@ -1909,6 +2314,29 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         missing subcomponent is reported as null/UNKNOWN; it never suppresses
         the other layers, and it never claims whole-GUI acceleration.
         """
+        # PWNAGE-60000: one truth source for the layered view.  The CLI reads
+        # /proc, /sys and cached probe results only (no deep probe), is bounded
+        # to 3 s, and is cached for 5 s so a Settings refresh cannot block the
+        # bridge or hammer the device.
+        layers = None
+        try:
+            tool = "/usr/lib/nuxel/nuxel-gpu-status"
+            now = time.time()
+            cached = getattr(self, "_gpu_layers_cache", None)
+            if cached and (now - cached[0]) < 5:
+                layers = cached[1]
+            elif os.path.exists(tool):
+                proc = subprocess.run([tool, "--json", "--no-probe"],
+                                      capture_output=True, text=True, timeout=3)
+                if proc.returncode == 0 and proc.stdout.strip():
+                    layers = json.loads(proc.stdout)
+                    self._gpu_layers_cache = (now, layers)
+        except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+            logger.debug("layered GPU status unavailable: %s", exc)
+
+        if isinstance(layers, dict) and layers.get("schema") == "nuxel.gpu-status/2":
+            return self._graphics_status_from_layers(layers)
+
         doc = self._graphics_diagnostics()
         if not isinstance(doc, dict) or doc.get("success") is False:
             return doc
@@ -1954,16 +2382,19 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
 
         phoc_accel = bool(c.get("mali_fds")) and not c.get("fallback_marker")
         webkit_status = w.get("status") or "UNKNOWN"
-        webkit_accel = webkit_status == "ACCELERATED"
+        webkit_accel = webkit_status in ("ACCELERATED", "GPU_RENDERED_SHM_PRESENTED")
         webkit_software = webkit_status == "SOFTWARE_FALLBACK"
         if c.get("fallback_marker"):
             verdict = "SOFTWARE"
         elif phoc_accel and webkit_accel:
-            verdict = "ACCELERATED"
+            # GPU rendering + SHM presentation is still a PARTIAL desktop
+            # acceleration result; it is never "fully accelerated" while the
+            # final panel path CPU-copies into /dev/fb0.
+            verdict = "ACCELERATED_SHM"
         elif phoc_accel and webkit_software:
             verdict = "PARTIAL"
         elif phoc_accel:
-            verdict = "PARTIAL" if webkit_status == "UNKNOWN" else "PARTIAL"
+            verdict = "PARTIAL"
         else:
             verdict = "UNKNOWN"
 
@@ -1990,8 +2421,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             "source": "nuxel-bridge:graphics-status",
             "timestamp": time.time(),
             "verdict": verdict,
-            "acceleration_label": "ACCELERATED" if verdict == "ACCELERATED" else (
-                "PARTIAL" if verdict == "PARTIAL" else verdict),
+            "acceleration_label": ("GPU-RENDERED / SHM-PRESENTED"
+                                   if verdict == "ACCELERATED_SHM" else
+                                   ("PARTIAL" if verdict == "PARTIAL" else verdict)),
+            "layers": layers,
+            "capabilities": (layers or {}).get("capabilities"),
+            "profile": (layers or {}).get("profile_summary"),
             "gpu": {
                 "hardware": g.get("hardware"),
                 "kernel_driver": g.get("kernel_driver"),
@@ -2072,6 +2507,17 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         namespace = body.get('namespace', '')
         verb = body.get('verb', '')
         params = body.get('params', {}) or {}
+        # Nuxel Vault / Authenticator: the only secret-bearing namespace.  It
+        # has its own identity check and never falls back to mock success.
+        if namespace == 'keyring':
+            denial, _session = self._keyring_identity(app_id)
+            if denial is not None:
+                return denial
+            if _keyring_api is None:
+                return {'success': False, 'error': 'provider_unavailable',
+                        'state': 'unavailable', 'offline': True,
+                        'detail': 'the native keyring module is not installed'}
+            return _keyring_api.get_api().handle(app_id, verb, params)
         # PWNAGE-50000: driver-status diagnostics for Settings.  These are
         # read-only allowlisted tools; the bridge never accepts a path or a
         # command from the caller.  JSON status is passed through verbatim so
@@ -2265,6 +2711,27 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 logger.error('remote-desktop RPC %s failed: %s', action, exc)
                 return {'success': False, 'error': str(exc),
                         'error_code': 'PROVIDER_ERROR'}
+        if namespace == 'apps' and verb in ('registry', 'get-registry'):
+            return self._load_app_registry()
+        if namespace == 'flatpak':
+            if flatpak_provider is None:
+                return {'success': False, 'error': 'flatpak provider unavailable',
+                        'error_code': 'PROVIDER_UNAVAILABLE'}
+            # NuxTore and Home are the only local surfaces allowed to mutate
+            # Flatpak installations. Launch/list/status stay readable.
+            _owner_ok = app_id in ("org.nuxel.Nuxtore", "org.nuxel.NuxTore",
+                                   "org.nuxel.Home", "nuxel-settings",
+                                   "org.gnome.Software")
+            if verb in ('install', 'update', 'uninstall') and not _owner_ok:
+                return {'success': False, 'error': 'capability_denied',
+                        'detail': 'only Software, NuxTore or Home may change Flatpak installations'}
+            try:
+                return flatpak_provider.handle(verb, params if isinstance(params, dict) else {})
+            except Exception as exc:  # noqa: BLE001
+                logger.warning('flatpak RPC %s failed: %s', verb, exc)
+                return {'success': False, 'error': str(exc),
+                        'error_code': 'PROVIDER_ERROR'}
+
         # Privileged hardware control.  These verbs are handled in this root
         # process (never forwarded to the sandboxed D-Bus bridge) because they
         # read /dev/snd or write /sys/class/rfkill.
@@ -2283,14 +2750,28 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             # owner surfaces.  Read-only status stays available to all local apps.
             _owner_ok = app_id in ("org.nuxel.Nuxtore", "org.nuxel.NuxTore", "org.nuxel.Home", "nuxel-settings")
             if not _owner_ok and ((namespace == "apps" and verb in ("register", "unregister", "install", "remove")) or
-                                  (namespace == "security" and verb in ("set-mode", "set-credential", "set-pin", "set-pattern", "lock", "unlock"))):
+                                  (namespace == "security" and verb in ("set-mode", "set-credential", "set-pin", "set-pattern", "lock", "unlock")) or
+                                  (namespace == "nfc" and verb in ("set-enabled", "toggle", "test-tag", "scan", "read-tag", "read", "clear"))):
                 return {"success": False, "error": "capability_denied",
-                        "detail": "this app may not mutate the app registry or device lock"}
+                        "detail": "this app may not mutate the app registry, device lock or NFC reader"}
             try:
-                return mod.handle(verb, params)
+                result = mod.handle(verb, params)
             except Exception as exc:  # noqa: BLE001
                 logger.warning('%s RPC %s failed: %s', namespace, verb, exc)
                 return {'success': False, 'error': str(exc), 'error_code': 'PROVIDER_ERROR'}
+            # Screen lock is the session lifecycle trigger for the keyring.  The
+            # lock must never be blocked by a keyring failure: log the status
+            # only, and leave the authoritative device lock result intact.
+            if namespace == 'security' and verb == 'lock' and \
+                    isinstance(result, dict) and result.get('success'):
+                try:
+                    if _keyring_api is not None and app_id in ('org.nuxel.Home',):
+                        kres = _keyring_api.get_api().handle(app_id, 'lock', {})
+                        result = dict(result)
+                        result['keyring_locked'] = bool(kres.get('success'))
+                except Exception:  # noqa: BLE001
+                    logger.info('keyring lock on screen lock failed')
+            return result
         if namespace == 'audio':
             if hw_providers is None:
                 return {'success': False, 'error': 'audio provider unavailable'}
@@ -2579,6 +3060,42 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             self._send_json(mismatch, 409)
             return
 
+        # Launcher-minted token endpoint.  Only the root-owned native PWA host
+        # knows this per-device secret; it injects a top-frame-only relay into
+        # the Home page.  This is the strong path for iframe apps (WebKit does
+        # not send Referer for their fetch calls).
+        if path == '/api/v1/auth/app-token':
+            body = self._get_json_body()
+            if body is None:
+                return
+            expected = _keyring_launcher_secret()
+            got = self.headers.get('X-Nuxel-Launcher-Secret', '')
+            if not expected or not hmac.compare_digest(got, expected):
+                logger.warning('launcher token refused: secret missing or invalid')
+                self._send_json({'success': False, 'error': 'launcher_unauthorized'}, 403)
+                return
+            app_id = body.get('app_id', '')
+            if app_id not in KEYRING_LAUNCHER_APPS:
+                self._send_json({'success': False, 'error': 'invalid_app_id'}, 400)
+                return
+            token = str(uuid.uuid4())
+            SESSION_TOKENS[token] = {
+                'app_id': app_id,
+                'created': time.time(),
+                'expires': time.time() + SESSION_TTL_SECONDS,
+                'issuer': 'nuxel-launcher',
+                'origin': self.headers.get('Origin', ''),
+                'referer': '',
+            }
+            logger.info('Issued launcher-bound token for app %s', app_id)
+            self._send_json({
+                'success': True,
+                'token': token,
+                'expires_at': SESSION_TOKENS[token]['expires'],
+                'ttl': SESSION_TTL_SECONDS,
+            })
+            return
+
         # Bootstrap token endpoint: deliberately NOT auth-gated. A PWA without a
         # token calls this once to obtain a per-session token.
         if path == '/api/v1/auth/token':
@@ -2591,6 +3108,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 "app_id": app_id,
                 "created": time.time(),
                 "expires": time.time() + SESSION_TTL_SECONDS,
+                # Route provenance for the keyring identity check.  This is a
+                # URL path, never a secret.  It prevents a token issued for one
+                # app route from being replayed for another app_id.
+                "origin": self.headers.get('Origin', ''),
+                "referer": self.headers.get('Referer', ''),
             }
             logger.info("Issued per-session token for app %s", app_id)
             self._send_json({
@@ -2663,6 +3185,26 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             result = self._call_bridge('SendNotification', app_id, title, message)
             self._send_json(result)
 
+        elif path.startswith('/api/v1/flatpak/'):
+            verb = path.rsplit('/', 1)[-1]
+            if flatpak_provider is None:
+                self._send_json({'success': False, 'error': 'flatpak provider unavailable'}, 503)
+                return
+            if verb not in ('install', 'update', 'uninstall', 'job', 'launch', 'refresh'):
+                self._send_json({'success': False, 'error': 'unknown flatpak verb',
+                                 'verb': verb}, 404)
+                return
+            payload = body if isinstance(body, dict) else {}
+            if verb in ('install', 'update', 'uninstall'):
+                _owner = payload.get('caller') or app_id
+                if _owner not in ('org.nuxel.Nuxtore', 'org.nuxel.NuxTore',
+                                  'org.nuxel.Home', 'nuxel-settings',
+                                  'org.gnome.Software'):
+                    self._send_json({'success': False, 'error': 'capability_denied',
+                                     'detail': 'only Software, NuxTore or Home may change Flatpak installations'}, 403)
+                    return
+            self._send_json(flatpak_provider.handle(verb, payload))
+
         elif path == '/api/v1/apps/activate':
             # The target is its OWN field: `app_id` in this API is the CALLER (used
             # for capability checks), and conflating the two would let a caller
@@ -2675,7 +3217,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         elif path == '/api/v1/apps/open-media':
             target = body.get('app_id') or ''
             media_path = body.get('path') or ''
-            if target not in ('org.videolan.VLC', 'org.nuxel.MediaPlayer'):
+            if target not in ('org.videolan.VLC', 'org.nuxel.MediaPlayer', 'io.mpv.Mpv'):
                 self._send_json({'success': False, 'error': 'app_not_media_capable'}, 400)
                 return
             try:

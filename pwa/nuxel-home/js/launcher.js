@@ -10,6 +10,9 @@ class Launcher {
         this.currentPage = 0;
         this.appsPerPage = 20;
         this.settings = { gridColumns: 4, gridRows: 5, dockColumns: 4, desktopCount: 2, homeLocked: false };
+        /* Portrait is rendered three icons wide (owner request).  The saved
+           preference stays untouched so landscape keeps its configured width. */
+        this.effectiveGridColumns = 4;
         this.hiddenAppIds = new Set();
         this.appSizes = {};
         this.layout = null;
@@ -51,6 +54,7 @@ class Launcher {
         this._applyLayout();
         this._renderAll();
         this._bindPointerEvents();
+        this._bindOrientation();
     }
 
     // ── Persistence ────────────────────────────────────────────────
@@ -91,6 +95,21 @@ class Launcher {
         } catch (e) { console.warn('Could not save launcher layout:', e); }
     }
 
+    /* A phone held upright gets three app columns; landscape (and a desktop
+       window wider than it is tall) keeps the owner's configured width. */
+    _isPortrait() {
+        try {
+            if (window.matchMedia) {
+                const mq = window.matchMedia('(orientation: portrait)');
+                if (mq && typeof mq.matches === 'boolean') return mq.matches;
+            }
+            if (typeof window.innerWidth === 'number' && typeof window.innerHeight === 'number') {
+                return window.innerHeight >= window.innerWidth;
+            }
+        } catch (e) { /* no media query support: use the configured width */ }
+        return false;
+    }
+
     _applyLayout() {
         const clamp = (value, low, high, fallback) => {
             value = Number(value);
@@ -101,14 +120,41 @@ class Launcher {
         this.settings.dockColumns = 4; // Four original fixed dock shortcuts.
         this.settings.desktopCount = clamp(this.settings.desktopCount, 1, 8, 2);
         this.settings.homeLocked = this.settings.homeLocked === true;
-        this.appsPerPage = this.settings.gridColumns * this.settings.gridRows;
-        document.documentElement.style.setProperty('--home-columns', this.settings.gridColumns);
+        this.effectiveGridColumns = this._isPortrait() ? 3 : this.settings.gridColumns;
+        this.appsPerPage = this.effectiveGridColumns * this.settings.gridRows;
+        document.documentElement.style.setProperty('--home-columns', this.effectiveGridColumns);
         document.documentElement.style.setProperty('--dock-columns', this.settings.dockColumns);
+    }
+
+    _bindOrientation() {
+        if (this._orientationWired) return;
+        this._orientationWired = true;
+        let pending = null;
+        const reflow = () => {
+            if (pending !== null) clearTimeout(pending);
+            pending = setTimeout(() => {
+                pending = null;
+                const before = this.effectiveGridColumns;
+                this._applyLayout();
+                if (this.effectiveGridColumns !== before) this._renderAll();
+            }, 120);
+        };
+        try {
+            if (window.matchMedia) {
+                const mq = window.matchMedia('(orientation: portrait)');
+                if (mq && mq.addEventListener) mq.addEventListener('change', reflow);
+                else if (mq && mq.addListener) mq.addListener(reflow);
+            }
+        } catch (e) { /* optional */ }
+        try { window.addEventListener('orientationchange', reflow, { passive: true }); } catch (e) {}
+        try { window.addEventListener('resize', reflow, { passive: true }); } catch (e) {}
     }
 
     updateHomeSettings(next) {
         const desired = Object.assign({}, this.settings, next || {});
-        const cap = (Number(desired.gridColumns) || 4) * (Number(desired.gridRows) || 5);
+        const desiredColumns = Math.max(3, Math.min(6, Number(desired.gridColumns) || 4));
+        const effectiveColumns = this._isPortrait() ? Math.min(3, desiredColumns) : desiredColumns;
+        const cap = effectiveColumns * (Number(desired.gridRows) || 5);
         const wanted = Number(desired.desktopCount) || 2;
         const occupied = this._entries().length;
         if (wanted * cap < occupied) {

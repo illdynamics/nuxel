@@ -4,14 +4,14 @@
   "notice": "Local, offline-first catalog. NuxTore never publishes or submits packages to any external store; every package is staged from this repository and hash-pinned here.",
   "packages": [
     {
-      "bundle": "bundles/org.nuxel.NuxTore-1.0.0.bundle.json",
+      "bundle": "bundles/org.nuxel.Nuxtore-1.0.0.bundle.json",
       "capabilities": [],
       "category": "system",
       "description": "NuxTore lists what the device already has and what the repository can stage. Every package carries a SHA-256 bundle digest, a provenance record and (normally) an Ed25519 signature; unsigned packages are refused unless the user turns on the unsigned-install policy and confirms each one by hand.",
-      "file_count": 24,
-      "id": "org.nuxel.NuxTore",
+      "file_count": 25,
+      "id": "org.nuxel.Nuxtore",
       "install": {
-        "app_id": "org.nuxel.NuxTore",
+        "app_id": "org.nuxel.Nuxtore",
         "mode": "staged",
         "start_url": "/pwa/nuxel-apps/nuxtore/index.html",
         "type": "pwa"
@@ -19,13 +19,13 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "NuxTore",
       "requires": [],
-      "sha256": "32788d253141df896e3dec777e621821a40ac516e2a76caef256c8255703d137",
+      "sha256": "c8531f142efe24d914aa088852709481e8d35a6baeb5f6f6a33e723efaccfccc",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "6HOFhrVWBZ7Tn43yyqZ6ACigdFEPIxqpUwF4SJ1FoiCfPuliHyMMbpxiZUGM7hrrbKd1a1Pmti3aKjHdSxuCCg=="
+        "value": "nb9VbBimJsmgBE+57pFqtctBxgEpkzSjzkUdHBFp1paf0tbcE//+uIt8Zg5MKHAEWxMm1kqcv+UtY1ce/IZVBg=="
       },
-      "size_bytes": 174408,
+      "size_bytes": 193988,
       "source": {
         "provenance": "built in this repository during beta finalization (A32 baseline); no external publisher, no network fetch",
         "type": "local-bundle",
@@ -56,13 +56,13 @@
       "requires": [
         "audio:playback"
       ],
-      "sha256": "d2a3f3ef255243909c3df7341d5ecd8202aad4ab1c628acd463acb22805b6a10",
+      "sha256": "6d8a3a9dd41f8ada7fffda81d1999620da35d1b0d45f1e8aa46b32a3166da6ab",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "ouVg71K2LHuyG9Fl3BT8X8OHff3dDudlgRLP2hvvJ0S45ck3aKDbsp/O3lPJhWMAb1WWq4E2qnTzH6eanGgvDw=="
+        "value": "ZDB30A1f+5cXonJOWH27c1UfBufrh56+sszFaLus/N1J4zPJKadnH/d56LZClKxBoRF6xdB9sh04VAhsA8s7DA=="
       },
-      "size_bytes": 152084,
+      "size_bytes": 152320,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -93,13 +93,13 @@
         "network:optional",
         "storage:downloads"
       ],
-      "sha256": "be5a217e76f53de7637674d43de75f5f2dddec4e9774507d901936b3026c78dd",
+      "sha256": "a72aad408cd8c5f8275ec9eeaa900df2c45bb6e5386200b5ae087de6bd416148",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "l53Rjf6Vb7dGOUWNncsS5WSt5h8pUfRgG5DufqAfSsoMhrru144hyztCzk8+AgkLrFLKg3FWJ9ehXxXABKxxDw=="
+        "value": "Bs9u4Qg5w0tar6fNuFTrrdJyoFvn7gz9ZbYRiRbfzkCsyioJpawBGtYWoTJbnH21KGhbzvpVGVJ+JaOeJVKFBw=="
       },
-      "size_bytes": 92080,
+      "size_bytes": 92298,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -112,11 +112,12 @@
     {
       "bundle": "bundles/org.nuxel.Authenticator-1.0.0.bundle.json",
       "capabilities": [
-        "storage:encrypted"
+        "storage:encrypted",
+        "secrets:authenticator-unlock"
       ],
       "category": "security",
-      "description": "Standards-only TOTP (SHA-1/256/512, 6-8 digits, 30/60s). Secrets are encrypted at rest with AES-GCM under a passphrase-derived key, and never leave the device.",
-      "file_count": 21,
+      "description": "Standards-only TOTP (SHA-1/256/512, 6-8 digits, 30/60s). Secrets are encrypted at rest with AES-GCM under a passphrase-derived key, and never leave the device. Optional Nuxel Keyring convenience unlock stores only the passphrase in the OS Secret Service after explicit opt-in.",
+      "file_count": 24,
       "id": "org.nuxel.Authenticator",
       "install": {
         "app_id": "org.nuxel.Authenticator",
@@ -127,20 +128,54 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "Authenticator",
       "requires": [],
-      "sha256": "4c25cb99c111439bafb4cbf144a2f51ffa8f96a20a8b41004bc16c305a824806",
+      "sha256": "8e17b52fdea2ffadffe288918b2caf288682da3fc9be82b5d6231df1c7d25002",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "lNOlIG1dsXH3rpG8AyNUEflgKElOVseLCGjVkSA7Xxdx7yeXj/kuMgVfnk8WHMWYLLYg9zAxKpAD3FBAweCxDQ=="
+        "value": "3v17wbA1SZ2t3Rwu8bTMJfMsd0NRqjXwJuDHGr3+jOvs0AIzi9mkIYL7peRAgbSpyx5FjwdbT6f0wBAddjhCCA=="
       },
-      "size_bytes": 150141,
+      "size_bytes": 449376,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
         "uri": "pwa/nuxel-apps/authenticator"
       },
       "state_hint": "available",
-      "summary": "RFC 6238 TOTP with encrypted on-device secrets",
+      "summary": "RFC 6238 TOTP with encrypted on-device secrets and optional keyring unlock",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.Vault-1.0.0.bundle.json",
+      "capabilities": [
+        "secrets:manage"
+      ],
+      "category": "security",
+      "description": "Nuxel Vault stores logins and secure notes in the operating system's Secret Service (GNOME Keyring). It includes a CSPRNG password generator, safe clipboard auto-clear, encrypted export/import and an explicitly opt-in Authenticator convenience-unlock credential. There is no cloud sync, no network access and no plaintext browser storage.",
+      "file_count": 21,
+      "id": "org.nuxel.Vault",
+      "install": {
+        "app_id": "org.nuxel.Vault",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/vault/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "Vault",
+      "requires": [],
+      "sha256": "fb19b85247380bffef1353ab9c1b0f18cace71b6651be47090d49477792e7746",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "M927pVr5d5aeQJyh3svMhnF7p52owGJMzREu5dBqM/7kJ+WB4MQbbMdWg4tMw7B7voDwyvaSQRMYy6yrLdPqCA=="
+      },
+      "size_bytes": 452771,
+      "source": {
+        "provenance": "Nuxel repository, PWNAGE-63000",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/vault"
+      },
+      "state_hint": "available",
+      "summary": "On-device keyring-backed password manager and secure notes",
       "version": "1.0.0"
     },
     {
@@ -163,13 +198,13 @@
       "requires": [
         "storage:appdata"
       ],
-      "sha256": "4cdbad87462ea02142fea20123b06c6297fb1340a63d279d40f12eabd32cfaa9",
+      "sha256": "89b9c7fc5032e4a079d8e96ed8a589e5246e25e725976968c4b585db0d4d2f99",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "GdWNbLdNPx0WBf4IHE+BwUSXFvBn4iuB/Kz5QdDIvo3lEVML/RoP0VWaUOTKcriFtrLEs8kYNusOY1oMlWlMAA=="
+        "value": "/VDlhlsBhot9WArF/SYOPax6R3/Wgc8Hlel0dSzm9E9V0CgAd2zsJ+RH2rzrLm9aE8aoxmNSY4fMaP4cNuiGBQ=="
       },
-      "size_bytes": 102418,
+      "size_bytes": 102597,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -199,13 +234,13 @@
       "requires": [
         "sysfs:read"
       ],
-      "sha256": "0093772c770c4206d50b64bdce7cac120280148484fa2a9809b2a2eb310b4f09",
+      "sha256": "62051e47c41990de65e129b302d8e5b6caa8a9a11228da95ce1e46e7c665591e",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "5vdQPt0KSCVe61b/yaC7e9ZcMwTCmBVpNfRP2tVJ5fmumnfTpI4jJMVKcVmfRCokqo8Beq3wjenZKM7UfBxlCQ=="
+        "value": "p82VcST0d46qXQu28Ui12KS2atEXGdD3ymVJx95AW004UuMFUjqS2PRfRC+lTlzgQwVaGLW6wl7z06SGYxnYCg=="
       },
-      "size_bytes": 124953,
+      "size_bytes": 125128,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -234,13 +269,13 @@
       "license": "original SnekByte sources shipped without a licence file - see UPSTREAM-PROVENANCE.md",
       "name": "SnekByte",
       "requires": [],
-      "sha256": "ae65c8eeaf97493e0024f70c06f887d1787640cae09523eab11bda406d3d7f8b",
+      "sha256": "86bee7117ac326b494c1320a5b6e86f7018af92e3d12eb92120983894e2b2c4a",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "hu7lumSA5WmmV7Q1Uup8gC20k5VOe3cSBOYtbEVieZyhRI0OOqMGgRkFmmd2KJcCHKK+Fqx2sz7COFRmHBXDCg=="
+        "value": "kUpeXkqfsW+nChkKVZhhWGVp7wHqD6K+fS9kZmZn0QZrNrCuznC/tR5qWkyhVEs3S+FtW8DYX6PLhiulAaNlCw=="
       },
-      "size_bytes": 210600,
+      "size_bytes": 210674,
       "source": {
         "provenance": "ported from snekbyte-main.zip (see tools/s10plus/a33/snekbyte/UPSTREAM-PROVENANCE.md)",
         "type": "local-bundle",
@@ -251,13 +286,45 @@
       "version": "1.0.0"
     },
     {
+      "bundle": "bundles/org.nuxel.Doom-1.0.0.bundle.json",
+      "capabilities": [],
+      "category": "games",
+      "description": "Three original sectors, a 320x180 raycasting engine, multitouch movement and aiming, fire, use, weapon switching, doors, pickups, enemies, pause and offline saves. Original Nuxel artwork and code only; no DOOM WAD or commercial game asset is bundled. Installation and removal are handled by NuxTore through the canonical app registry.",
+      "file_count": 18,
+      "id": "org.nuxel.Doom",
+      "install": {
+        "app_id": "org.nuxel.Doom",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/doom/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "Nuxel Doom",
+      "requires": [],
+      "sha256": "c2dc4dd20cf3ed83a53ad83c1c65af154d760b1bcf168a360401e1a6d09cb9f6",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "HPghP0HX5fMd6Ac96gz0+6kK8fRV9ebPjeS7bF1E23CApm55p910IL0EXRpx2NvWZbSwYcjCSFWkRgPgnIQzCQ=="
+      },
+      "size_bytes": 660565,
+      "source": {
+        "provenance": "Original Nuxel implementation for v0.7.6-beta; no external assets",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/doom"
+      },
+      "state_hint": "available",
+      "summary": "Touch-first original Nuxel arcade shooter",
+      "version": "1.0.0"
+    },
+    {
       "bundle": "bundles/org.nuxel.PenguInterface-1.0.0.bundle.json",
       "capabilities": [
         "system:inspect"
       ],
       "category": "system",
       "description": "Maps a device codename to its capabilities, quirks and required configuration documents, with strict isolation so one device's profile can never leak into another's.",
-      "file_count": 10,
+      "file_count": 16,
       "id": "org.nuxel.PenguInterface",
       "install": {
         "app_id": "org.nuxel.PenguInterface",
@@ -268,13 +335,13 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "PenguInterface",
       "requires": [],
-      "sha256": "9b6eda7bc8928811a8f55cca1ba4c6f9062f12158b51aeab3159de8a6cdd3a57",
+      "sha256": "1a5d8e36c8a339af588d66dd410a32c56ea1836d831a1a365a86833a3d24cd78",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "0RF22Q1PmWQub07wy3In0U2C08Oyjm0YUX3IVUQLCg6yxkFp53dl3CsH4l47G9sWz+L2kgXuNtudCw/X7s22Dg=="
+        "value": "8dT457ECYrhdnLJW7Nw0TSUsKNgJmjfcc8OFXpsDd+++CxWK89VGKPujVmpD29U7K5ZWa+pyidfLPLYQvqYwBg=="
       },
-      "size_bytes": 88511,
+      "size_bytes": 95698,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -304,13 +371,13 @@
       "requires": [
         "console:local"
       ],
-      "sha256": "6c60339c2fd860a87cc8d7ae2e7fae3581efa6eb1aad77b73e4b3decf4a60518",
+      "sha256": "a4eb5a6166aa256e7bf4595ffc3508ccc52fb0d15702c02608d6d861bcf139d8",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "vpaz1FBcTmaBeXHiYW9+fOEuP0c6t3m+jV/oP6p3fP/XsiaIc508LX5+Hkl+zuKqK/ZDY2Z0+AtehUirWF8xCQ=="
+        "value": "Q+VTksmD4MqhuY6OgAdovH7FcuAVE88Mh+pYudSGljOM5Bvh7fRsmxiwLFZDDrKyFipQoyLFme6qDPHOZOAsAw=="
       },
-      "size_bytes": 66241,
+      "size_bytes": 66315,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -325,7 +392,7 @@
       "capabilities": [],
       "category": "tools",
       "description": "This entry ships WITHOUT a signature on purpose. NuxTore must refuse it by default, must never auto-install it, and may only install it after the operator enables unsigned installs and types the package id as a confirmation. It exists so the refusal path is exercised by the offline test suite, not just described.",
-      "file_count": 24,
+      "file_count": 25,
       "id": "org.example.UnsignedDemo",
       "install": {
         "app_id": "org.example.UnsignedDemo",
@@ -336,8 +403,8 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "Unsigned Demo Package",
       "requires": [],
-      "sha256": "32788d253141df896e3dec777e621821a40ac516e2a76caef256c8255703d137",
-      "size_bytes": 174408,
+      "sha256": "c8531f142efe24d914aa088852709481e8d35a6baeb5f6f6a33e723efaccfccc",
+      "size_bytes": 193988,
       "source": {
         "provenance": "test fixture \u2014 no publisher claims, no signature",
         "type": "local-bundle",

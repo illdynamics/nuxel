@@ -1,0 +1,34 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+95d937ebae70c63ee1ca8e96283133d6fe92c913a0ea684bd70f018256be455d  /usr/lib/nuxel/nuxel-doom-launcher
+29d811b73e134688c89d84501fbbe2eba351aaf5e46e11e19fd377f81aaad6ae  /usr/lib/nuxel/nuxel-crispy-doom
+47dbcd3922fc7e5257e73cc31c7bd9cd66df324833df198adc4779dcd2237aa6  /usr/lib/nuxel/nuxel-flatpak-doom
+f1642845bd10149729766acc0924860d06482f1852bb3c7b7f98e4ec89e3b582  /usr/share/applications/org.nuxel.DoomLauncher.desktop
+---
+
+--- 2026-11-04T10:47:32+0100 /usr/lib/nuxel/nuxel-crispy-doom -iwad /home/nuxel/doom/freedoom1.wad -fullscreen ---
+2026-11-04T10:47:32+0100 Started game (pid 42032). Returning when it exits.
+I_InitSound: SDL audio driver is none
+S_ChangeMusic: D_INTROA (freedoom1.wad)
+S_ChangeMusic: D_E1M6 (freedoom1.wad)
+P_SetupLevel: E1M6 (freedoom1.wad) Normal 0:00:00/0:00:00 Doom (BSP)
+2026-11-04T10:47:43+0100 child exited rc=-15
+2026-11-04T10:47:43+0100 Crispy Doom exited (status -15).
+---
+fullscreen                    1
+aspect_ratio_correct          1
+smooth_pixel_scaling          1
+integer_scaling               0
+window_width                  720
+window_height                 405
+fullscreen_width              0
+fullscreen_height             0
+startup_delay                 0
+grabmouse                     0

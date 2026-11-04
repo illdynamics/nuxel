@@ -8,9 +8,12 @@ compositor and the ``nuxel-wl-fb`` display bridge are up, keeps the real Nuxel
 lockscreen alive underneath, and releases the overlay only when:
 
   * the video has reached EOF (or the bounded display interval has paused it), and
-  * the real lockscreen has published its readiness receipt,
-  * the display bridge is still healthy and the panel is on, and
-  * the touch path has settled (ARMED_OK, or an honest NO_TOUCH_DEVICE warning).
+  * the real lockscreen presentation is ready (launcher document + panel),
+  * the display bridge is still healthy and the panel is on.
+
+Touch/input readiness is tracked separately.  A delayed touch device must not
+hold the final video frame once the real locked UI is present; the lockscreen
+remains locked and reports the degraded input state.
 
 Every failure path is fail-open: the overlay exits and the existing lockscreen /
 fallback remains.  The controller never calls ``unlock``, never writes a display
@@ -72,17 +75,18 @@ DEFAULT_WAYLAND_DISPLAY = "wayland-0"
 
 # Bounded defaults.  They are durations, not guessed startup progress: the
 # controller logs and releases the overlay when they expire.
-DEFAULT_MAX_DISPLAY_MS = 20_000
-DEFAULT_START_TIMEOUT_MS = 30_000  # covers the initramfs animation handoff
-DEFAULT_READINESS_GRACE_MS = 12_000
-DEFAULT_HARD_TIMEOUT_MS = 25_000
+DEFAULT_MAX_DISPLAY_MS = 12_000
+DEFAULT_START_TIMEOUT_MS = 20_000  # covers the initramfs animation handoff
+DEFAULT_READINESS_GRACE_MS = 2_000
+DEFAULT_FINAL_FRAME_GRACE_MS = 1_500
+DEFAULT_HARD_TIMEOUT_MS = 15_000
 DEFAULT_POLL_MS = 100
 DEFAULT_PREFLIGHT_TIMEOUT_MS = 8_000
 # Early mode starts from nuxel-session.sh before nuxel-pwa-host maps.  Waiting
 # for the launcher's readiness marker makes mpv the LAST mapped toplevel, so the
 # video is above WebKit instead of behind it.  The PWA's opaque first-frame
 # cover hides the lockscreen during this wait.  Bounded and fail-open.
-DEFAULT_EARLY_WAIT_LAUNCHER_MS = 6_000
+DEFAULT_EARLY_WAIT_LAUNCHER_MS = 4_000
 # After the launcher reports ready, WebKit still has one or more GTK/Wayland
 # map+fullscreen commits to make.  Measured 2026-10-28: an mpv spawned at the
 # first launcher_ready can be mapped *below* that later commit (the video is
@@ -90,7 +94,7 @@ DEFAULT_EARLY_WAIT_LAUNCHER_MS = 6_000
 # to settle makes mpv the last mapped toplevel.  The opaque first-frame cover
 # stays up during this bounded delay, so the user sees a still frame, not the
 # lockscreen.
-DEFAULT_EARLY_MAP_DELAY_MS = 800
+DEFAULT_EARLY_MAP_DELAY_MS = 1_200
 
 CONFIG_DEFAULTS: dict[str, Any] = {
     "schema_version": SCHEMA_VERSION,
@@ -102,6 +106,7 @@ CONFIG_DEFAULTS: dict[str, Any] = {
     "max_display_ms": DEFAULT_MAX_DISPLAY_MS,
     "start_timeout_ms": DEFAULT_START_TIMEOUT_MS,
     "readiness_grace_ms": DEFAULT_READINESS_GRACE_MS,
+    "final_frame_grace_ms": DEFAULT_FINAL_FRAME_GRACE_MS,
     "hard_timeout_ms": DEFAULT_HARD_TIMEOUT_MS,
     "poll_ms": DEFAULT_POLL_MS,
     "preflight_timeout_ms": DEFAULT_PREFLIGHT_TIMEOUT_MS,
@@ -120,6 +125,7 @@ ENV_MAP = {
     "max_display_ms": "NUXEL_PRELOAD_MAX_DISPLAY_MS",
     "start_timeout_ms": "NUXEL_PRELOAD_START_TIMEOUT_MS",
     "readiness_grace_ms": "NUXEL_PRELOAD_READINESS_GRACE_MS",
+    "final_frame_grace_ms": "NUXEL_PRELOAD_FINAL_FRAME_GRACE_MS",
     "hard_timeout_ms": "NUXEL_PRELOAD_HARD_TIMEOUT_MS",
     "poll_ms": "NUXEL_PRELOAD_POLL_MS",
     "preflight_timeout_ms": "NUXEL_PRELOAD_PREFLIGHT_TIMEOUT_MS",
@@ -307,14 +313,17 @@ def load_config(argv: list[str]) -> Config:
         ("max_display_ms", DEFAULT_MAX_DISPLAY_MS, 100),
         ("start_timeout_ms", DEFAULT_START_TIMEOUT_MS, 100),
         ("readiness_grace_ms", DEFAULT_READINESS_GRACE_MS, 0),
+        ("final_frame_grace_ms", DEFAULT_FINAL_FRAME_GRACE_MS, 0),
         ("hard_timeout_ms", DEFAULT_HARD_TIMEOUT_MS, 100),
         ("poll_ms", DEFAULT_POLL_MS, 20),
         ("preflight_timeout_ms", DEFAULT_PREFLIGHT_TIMEOUT_MS, 100),
         ("early_wait_launcher_ms", DEFAULT_EARLY_WAIT_LAUNCHER_MS, 0),
+        ("early_map_delay_ms", DEFAULT_EARLY_MAP_DELAY_MS, 0),
     ):
         values[key] = _as_int(values.get(key), default, minimum)
-    if values["hard_timeout_ms"] < values["max_display_ms"]:
-        values["hard_timeout_ms"] = values["max_display_ms"]
+    # The hard deadline is the final fail-open bound.  It is deliberately not
+    # forced up to max_display_ms: a stuck decoder/EOF must release sooner than
+    # an arbitrarily long moving-video interval.
     paths: dict[str, Path] = {}
     for key, (env_name, default) in PATH_ENV.items():
         paths[key] = Path(os.environ.get(env_name, default))
@@ -367,11 +376,22 @@ class Readiness:
 
     @property
     def critical(self) -> bool:
+        """Presentation readiness: the real locked UI can be shown safely."""
         return self.launcher_ready and self.boot_os and self.wlfb_ready and self.display_on
 
     @property
+    def input_ready(self) -> bool:
+        return bool(self.touch_settled or self.touch_unknown)
+
+    @property
     def ready(self) -> bool:
-        return self.critical and (self.touch_settled or self.touch_unknown)
+        """Overlay release gate.
+
+        Input readiness is intentionally NOT part of this predicate.  The
+        lockscreen remains locked while touch is degraded; freezing a video
+        frame for a slow touch controller is not a security requirement.
+        """
+        return self.critical
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -381,6 +401,8 @@ class Readiness:
             "display_on": self.display_on,
             "touch_settled": self.touch_settled,
             "touch_unknown": self.touch_unknown,
+            "presentation_ready": self.critical,
+            "input_ready": self.input_ready,
             "critical": self.critical,
             "ready": self.ready,
             "detail": self.detail,
@@ -1027,11 +1049,12 @@ def run(argv: list[str] | None = None) -> int:
 
         t0 = time.monotonic()
         eof = False
+        eof_at: float | None = None
         held = False
         readiness = initial
         readiness_at: float | None = None
         last_sig = None
-        stop_reason = "video-and-lockscreen-ready"
+        stop_reason = "video-eof-and-presentation-ready"
         bounded = False
         display_lost = False
         while True:
@@ -1082,7 +1105,8 @@ def run(argv: list[str] | None = None) -> int:
                                 first_frame_s=round(pt_value, 3),
                                 elapsed_s=round(elapsed, 3),
                                 wlfb_ready=True)
-            if eof and not held:
+            if eof and eof_at is None:
+                eof_at = elapsed
                 log.log("INFO", "video_eof", elapsed_s=round(elapsed, 3))
             if eof and duration is None:
                 duration = elapsed
@@ -1111,7 +1135,25 @@ def run(argv: list[str] | None = None) -> int:
 
             max_s = int(cfg.get("max_display_ms")) / 1000.0
             hard_s = int(cfg.get("hard_timeout_ms")) / 1000.0
+            grace_s = int(cfg.get("final_frame_grace_ms", DEFAULT_FINAL_FRAME_GRACE_MS)) / 1000.0
             if eof and readiness.ready:
+                stop_reason = "video-eof-and-presentation-ready"
+                break
+            # EOF before the presentation gate: do not freeze the last frame
+            # while input/touch is still warming up.  If the visual surfaces
+            # that can be shown safely are present (launcher + panel), release
+            # after a short, explicit hold.  If the launcher itself is absent,
+            # keep the cover until the hard bound so we never reveal black.
+            if (eof and eof_at is not None and
+                    elapsed - eof_at >= grace_s and
+                    readiness.launcher_ready and readiness.wlfb_ready and
+                    readiness.display_on):
+                stop_reason = "presentation-grace-expired"
+                bounded = True
+                log.log("WARN", "presentation_grace_expired",
+                        elapsed_s=round(elapsed, 3),
+                        hold_s=round(elapsed - eof_at, 3),
+                        input_ready=readiness.input_ready)
                 break
             if elapsed >= max_s and not held:
                 # Bound the moving-video interval.  Keep the final frame (a
@@ -1127,7 +1169,7 @@ def run(argv: list[str] | None = None) -> int:
             if elapsed >= hard_s:
                 bounded = True
                 stop_reason = ("hard-timeout-readiness-pending"
-                               if not readiness.ready else "video-and-lockscreen-ready")
+                               if not readiness.ready else "video-eof-and-presentation-ready")
                 log.log("WARN", "hard_timeout", elapsed_s=round(elapsed, 3),
                         ready=readiness.ready)
                 break
@@ -1148,12 +1190,17 @@ def run(argv: list[str] | None = None) -> int:
             "started_at": started_wall,
             "elapsed_s": round(time.monotonic() - t0, 3),
             "video_eof": bool(eof),
+            "eof_at_s": (round(eof_at, 3) if eof_at is not None else None),
+            "final_frame_hold_s": (round(elapsed - eof_at, 3) if eof_at is not None else None),
+            "presentation_ready": readiness.critical,
+            "input_ready": readiness.input_ready,
             "video_held": bool(held),
             "bounded": bool(bounded),
             "display_lost": bool(display_lost),
             "readiness": readiness.as_dict(),
             "readiness_ready_at_s": (round(readiness_at, 3) if readiness_at is not None else None),
             "max_display_ms": int(cfg.get("max_display_ms")),
+            "final_frame_grace_ms": int(cfg.get("final_frame_grace_ms", DEFAULT_FINAL_FRAME_GRACE_MS)),
             "hard_timeout_ms": int(cfg.get("hard_timeout_ms")),
             "audio": "disabled",
             "fullscreen": True,

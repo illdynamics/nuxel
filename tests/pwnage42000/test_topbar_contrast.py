@@ -22,7 +22,8 @@ def test_status_bar_uses_explicit_high_contrast_colours():
     assert "--nuxel-status-fg: #f5f9ff" in css
     assert "PWNAGE-42000: top-bar contrast repair" in css
     # The location glyph is a mask now; a grey source PNG can no longer dim it.
-    assert "-webkit-mask: url('/assets/nuxel-quicksettings-icon-pack/09-location.png')" in css
+    assert ("-webkit-mask: url('/assets/nuxel-quicksettings-icon-pack/09-location.png')" in css
+            or "-webkit-mask: url('/assets/nuxel-quicksettings-icon-pack/09-location.svg')" in css)
     assert "background-color: var(--nuxel-network)" in css
     assert "background-color: var(--nuxel-gnss)" in css
     # Sound / USB / clock / battery are explicitly painted, not theme-inherited.

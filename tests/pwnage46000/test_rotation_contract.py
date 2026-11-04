@@ -110,8 +110,12 @@ def test_lockscreen_live_console_is_middle_and_lights_for_wlan():
     i_usb = html.index('id="lockscreen-indicator-usb"')
     assert i_charge < i_live < i_usb
     js = (ROOT / "pwa/nuxel-home/js/lockscreen-indicators.js").read_text()
-    assert "this.state.liveConsole || this.state.wlanConsole" in js
-    assert "wlan-console" in js
+    # PWNAGE-62000 contract: a listening sshd is not a console session.  The
+    # WLAN transport lights only for a real interactive session counted by the
+    # backend; service readiness drives the base penguin separately.
+    assert "wlanTransport.active === true && wlanSessions > 0" in js
+    assert "live.service_armed" in js
+    assert "lockscreen-transport-wlan" in js
 
 
 def test_notes_feedback_helper_preserves_notes():

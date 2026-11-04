@@ -1,0 +1,903 @@
+#!/usr/bin/env python3
+# =============================================================================
+# nuxel-mfc-diag — safe Exynos 9820 MFC inventory / status / opt-in probe
+#
+# PWNAGE-61000.  Default mode is INVENTORY and it never opens /dev/video*.
+#
+# The historical failure was open(), not readdir(): the vendor MFC driver loads
+# mfc_fw.bin from its .open() callback.  With the old request_firmware() path
+# and CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y, a missing blob waited for the
+# 60 s firmware timeout and callers could enter uninterruptible D state.
+#
+# This tool therefore:
+#   * resolves the decoder by exact sysfs identity (name/driver/compatible/ip_ver),
+#     never by scanning and opening /dev/videoN;
+#   * refuses any active open unless --device, --allow-hardware-open and a
+#     matching owner-approved safety receipt are all present;
+#   * never runs from package scripts, boot, login, plugin scanning or Settings;
+#   * keeps the software fallback as the default.
+#
+# Schema: nuxel.mfc.status/1
+# =============================================================================
+from __future__ import annotations
+
+import argparse
+import errno
+import fcntl
+import gzip
+import hashlib
+import json
+import os
+import re
+import signal
+import stat
+import struct
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+VERSION = "1.0.0"
+SCHEMA = "nuxel.mfc.status/1"
+RECEIPT_SCHEMA = "nuxel.mfc.safety-receipt/1"
+
+DEVICE = "beyond2lte"
+DEVICE_MODEL = "SM-G975F"
+SOC = "exynos9820"
+SOURCE_COMMIT = "f7194c1d15eded1c2a1a4dc63825b26103435cc0"
+EXPECTED_DRIVER = "s5p-mfc"
+EXPECTED_COMPATIBLE = "samsung,exynos-mfc"
+EXPECTED_IP_VER = "0x1300"
+EXPECTED_PLATFORM = "188d0000.mfc"
+DECODER_SYSFS_NAME = "s5p-mfc-dec0"
+DECODER_DEFAULT_NODE = "/dev/video6"
+FIRMWARE_NAME = "mfc_fw.bin"
+FIRMWARE_SHA256 = "f3802d34524f5919c16505c03b4cbfe184963f98787feed6232b643bda68b55f"
+FIRMWARE_SIZE = 685832
+KERNEL_PATCH = "0008-mfc-firmware-fail-closed.patch"
+
+DEFAULT_RECEIPT = "/etc/nuxel/mfc/safety-receipt.json"
+DEFAULT_STATUS = "/run/nuxel/mfc/status.json"
+DEFAULT_LOG_DIR = "/var/log/nuxel/mfc"
+
+# V4L2 ioctl numbers (aarch64, system UAPI headers).
+VIDIOC_QUERYCAP = 0x80685600       # _IOR('V', 0, struct v4l2_capability) = 104 bytes
+VIDIOC_ENUM_FMT = 0xC0405602      # _IOWR('V', 2, struct v4l2_fmtdesc) = 64 bytes
+V4L2_CAP_VIDEO_CAPTURE = 0x00000001
+V4L2_CAP_VIDEO_OUTPUT = 0x00000002
+V4L2_CAP_VIDEO_CAPTURE_MPLANE = 0x00001000
+V4L2_CAP_VIDEO_OUTPUT_MPLANE = 0x00002000
+V4L2_CAP_STREAMING = 0x04000000
+V4L2_CAP_DEVICE_CAPS = 0x80000000
+V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE = 0x00000009
+V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE = 0x0000000A
+
+HARDWARE_OPEN_ALARM_SECONDS = 20
+
+
+class DiagError(RuntimeError):
+    pass
+
+
+def _read(path: Path) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace").strip("\x00 \t\r\n")
+    except OSError:
+        return None
+
+
+def _read_bytes(path: Path) -> bytes | None:
+    try:
+        return path.read_bytes()
+    except OSError:
+        return None
+
+
+def _dt_u32(path: Path) -> int | None:
+    """Read a device-tree u32 cell (big-endian, as stored in the DTB)."""
+    raw = _read_bytes(path)
+    if not raw or len(raw) < 4:
+        return None
+    return struct.unpack(">I", raw[:4])[0]
+
+
+def _dt_string(path: Path) -> str | None:
+    raw = _read_bytes(path)
+    if raw is None:
+        return None
+    # Device-tree strings are NUL-separated.  The compatible property can hold
+    # several entries; the first is the most specific one.
+    parts = [p.decode("ascii", "replace") for p in raw.split(b"\x00") if p]
+    return parts[0] if parts else None
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _platform_device_from_path(device_path: str) -> str:
+    # /sys/devices/platform/188d0000.mfc -> 188d0000.mfc
+    return os.path.basename(os.path.realpath(device_path)) if device_path else ""
+
+
+def scan_video_nodes(sysfs_root: str = "/sys") -> list[dict]:
+    """Return video-node metadata using sysfs only.  Never opens a device node."""
+    base = Path(sysfs_root) / "class" / "video4linux"
+    out: list[dict] = []
+    if not base.is_dir():
+        return out
+    for entry in sorted(base.glob("video*")):
+        if not entry.is_dir():
+            continue
+        name = _read(entry / "name") or ""
+        index = _read(entry / "index") or ""
+        dev = _read(entry / "dev") or ""
+        device_link = entry / "device"
+        device_real = os.path.realpath(device_link) if device_link.exists() else ""
+        platform = _platform_device_from_path(device_real)
+        driver = ""
+        drv_link = Path(device_real) / "driver" if device_real else None
+        if drv_link and drv_link.exists():
+            driver = os.path.basename(os.path.realpath(drv_link))
+        compatible = None
+        ip_ver = None
+        of_node = Path(device_real) / "of_node" if device_real else None
+        if of_node and of_node.exists():
+            compatible = _dt_string(of_node / "compatible")
+            iv = _dt_u32(of_node / "ip_ver")
+            if iv is not None:
+                ip_ver = "0x%04x" % iv
+        out.append({
+            "sysfs": str(entry),
+            "name": name,
+            "index": index,
+            "dev": dev,
+            "device": device_real,
+            "platform_device": platform,
+            "driver": driver,
+            "compatible": compatible,
+            "ip_ver": ip_ver,
+        })
+    return out
+
+
+def classify_node(node: dict) -> str:
+    """Exact allow-list classification.  A number in /dev/videoN is irrelevant."""
+    if (
+        node.get("name") == DECODER_SYSFS_NAME
+        and node.get("driver") == EXPECTED_DRIVER
+        and node.get("compatible") == EXPECTED_COMPATIBLE
+        and node.get("ip_ver") == EXPECTED_IP_VER
+        and node.get("platform_device") == EXPECTED_PLATFORM
+    ):
+        return "MFC_DECODER"
+    if node.get("driver") == EXPECTED_DRIVER or node.get("compatible") == EXPECTED_COMPATIBLE:
+        return "MFC_OTHER"
+    return "NOT_MFC"
+
+
+def find_decoder(nodes: list[dict]) -> tuple[dict | None, str]:
+    matches = [n for n in nodes if classify_node(n) == "MFC_DECODER"]
+    if len(matches) == 1:
+        return matches[0], ""
+    if not matches:
+        return None, "no node matches the exact MFC decoder allow-list"
+    return None, "ambiguous MFC decoder identity (%d matches)" % len(matches)
+
+
+def firmware_status(firmware_dirs: list[str] | None = None) -> dict:
+    dirs = firmware_dirs or ["/lib/firmware", "/vendor/firmware"]
+    found = []
+    for d in dirs:
+        p = Path(d) / FIRMWARE_NAME
+        if not p.is_file():
+            continue
+        try:
+            size = p.stat().st_size
+            digest = sha256_file(p)
+        except OSError as exc:
+            found.append({"path": str(p), "error": str(exc)})
+            continue
+        found.append({"path": str(p), "size": size, "sha256": digest})
+    if not found:
+        return {
+            "state": "MISSING",
+            "request_name": FIRMWARE_NAME,
+            "expected_sha256": FIRMWARE_SHA256,
+            "expected_size": FIRMWARE_SIZE,
+            "paths": [str(Path(d) / FIRMWARE_NAME) for d in dirs],
+        }
+    good = [f for f in found if f.get("sha256") == FIRMWARE_SHA256 and f.get("size") == FIRMWARE_SIZE]
+    if good:
+        return {
+            "state": "PRESENT_OK",
+            "request_name": FIRMWARE_NAME,
+            "expected_sha256": FIRMWARE_SHA256,
+            "expected_size": FIRMWARE_SIZE,
+            "paths": [g["path"] for g in good],
+            "found": found,
+        }
+    return {
+        "state": "MISMATCH",
+        "request_name": FIRMWARE_NAME,
+        "expected_sha256": FIRMWARE_SHA256,
+        "expected_size": FIRMWARE_SIZE,
+        "found": found,
+    }
+
+
+def live_kernel_release() -> str:
+    return _read(Path("/proc/sys/kernel/osrelease")) or ""
+
+
+def live_boot_id() -> str:
+    return _read(Path("/proc/sys/kernel/random/boot_id")) or ""
+
+
+def kernel_config(config_path: str | None = None) -> dict:
+    """Read the running kernel config read-only.  Does not open any video node."""
+    path = Path(config_path) if config_path else Path("/proc/config.gz")
+    text = ""
+    if path.is_file():
+        try:
+            if path.suffix == ".gz" or path.name.endswith(".gz"):
+                with gzip.open(path, "rt", encoding="utf-8", errors="replace") as f:
+                    text = f.read()
+            else:
+                text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            text = ""
+    values = {}
+    for line in text.splitlines():
+        m = re.match(r"^(CONFIG_[A-Za-z0-9_]+)=(.*)$", line.strip())
+        if m:
+            values[m.group(1)] = m.group(2)
+        m = re.match(r"^# (CONFIG_[A-Za-z0-9_]+) is not set$", line.strip())
+        if m:
+            values[m.group(1)] = "n"
+    required = {
+        "CONFIG_VIDEO_EXYNOS_MFC": "y",
+        "CONFIG_VIDEOBUF2_DMA_SG": "y",
+        "CONFIG_EXYNOS_IOMMU": "y",
+        "CONFIG_V4L2_MEM2MEM_DEV": "y",
+    }
+    ok = all(values.get(k) == v for k, v in required.items())
+    return {
+        "path": str(path),
+        "present": bool(text),
+        "mfc_driver": values.get("CONFIG_VIDEO_EXYNOS_MFC"),
+        "iommu": values.get("CONFIG_EXYNOS_IOMMU"),
+        "required_ok": ok,
+        "values": {k: values.get(k) for k in required},
+    }
+
+# ---------------------------------------------------------------------------
+# Safety receipt
+# ---------------------------------------------------------------------------
+
+RECEIPT_REQUIRED = (
+    "owner_approved",
+    "source_commit",
+    "device",
+    "decoder_node",
+    "platform_device",
+    "driver",
+    "compatible",
+    "ip_ver",
+    "firmware_name",
+    "firmware_sha256",
+    "kernel_patch",
+    "kernel_patch_applied",
+    "missing_firmware_test",
+)
+
+
+def load_receipt(path: str = DEFAULT_RECEIPT) -> tuple[dict | None, str]:
+    p = Path(path)
+    if not p.is_file():
+        return None, "safety receipt missing: %s" % p
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, "safety receipt unreadable: %s" % exc
+    if not isinstance(data, dict):
+        return None, "safety receipt is not a JSON object"
+    if data.get("schema") != RECEIPT_SCHEMA:
+        return None, "safety receipt schema must be %s" % RECEIPT_SCHEMA
+    for key in RECEIPT_REQUIRED:
+        if key not in data:
+            return None, "safety receipt missing field: %s" % key
+    if data.get("owner_approved") is not True:
+        return None, "safety receipt does not record explicit owner approval"
+    if data.get("source_commit") != SOURCE_COMMIT:
+        return None, "safety receipt source_commit does not match the pinned kernel"
+    if data.get("device") != DEVICE:
+        return None, "safety receipt device is not %s" % DEVICE
+    if data.get("platform_device") != EXPECTED_PLATFORM:
+        return None, "safety receipt platform_device is not %s" % EXPECTED_PLATFORM
+    if data.get("driver") != EXPECTED_DRIVER:
+        return None, "safety receipt driver is not %s" % EXPECTED_DRIVER
+    if data.get("compatible") != EXPECTED_COMPATIBLE:
+        return None, "safety receipt compatible is not %s" % EXPECTED_COMPATIBLE
+    if str(data.get("ip_ver")).lower() != EXPECTED_IP_VER:
+        return None, "safety receipt ip_ver is not %s" % EXPECTED_IP_VER
+    if data.get("firmware_name") != FIRMWARE_NAME:
+        return None, "safety receipt firmware_name is not %s" % FIRMWARE_NAME
+    if data.get("firmware_sha256") != FIRMWARE_SHA256:
+        return None, "safety receipt firmware_sha256 does not match the verified blob"
+    if data.get("kernel_patch") != KERNEL_PATCH:
+        return None, "safety receipt kernel_patch is not %s" % KERNEL_PATCH
+    if data.get("kernel_patch_applied") is not True:
+        return None, "safety receipt says the kernel safety patch is NOT applied"
+    if data.get("missing_firmware_test") not in ("PASS", "SOURCE_PASS"):
+        return None, "safety receipt missing-firmware test did not pass"
+    return data, ""
+
+
+# ---------------------------------------------------------------------------
+# Environment status (read-only)
+# ---------------------------------------------------------------------------
+
+def guard_status(root: str = "/") -> dict:
+    base = Path(root) / "usr/lib64/gstreamer-1.0"
+    names = ["libgstvideo4linux2.so", "libgstv4l2codecs.so", "libgstkms.so", "libgstopengl.so"]
+    rows = []
+    for n in names:
+        active = (base / n).exists()
+        disabled = (base / (n + ".nuxel-disabled")).exists()
+        rows.append({"plugin": n, "active": active, "disabled": disabled})
+    return {
+        "guard_present": (Path(root) / "usr/lib/nuxel/nuxel-gstreamer-guard.sh").exists(),
+        "plugins": rows,
+        "v4l2_plugins_disabled": all((not r["active"]) and r["disabled"] for r in rows if r["plugin"].startswith("libgstvideo4linux2") or r["plugin"].startswith("libgstv4l2codecs")),
+    }
+
+
+def wireplumber_status(root: str = "/") -> dict:
+    p = Path(root) / "etc/wireplumber/wireplumber.conf.d/99-nuxel-no-v4l2.conf"
+    text = _read(p) or ""
+    return {
+        "config": str(p),
+        "video_capture_disabled": "hardware.video-capture = disabled" in text,
+        "audio_required": "hardware.audio = required" in text,
+        "bluetooth_required": "hardware.bluetooth = required" in text,
+    }
+
+
+def preload_policy_status(root: str = "/") -> dict:
+    candidates = [
+        Path(root) / "usr/lib/nuxel/nuxel-preload-cinema.sh",
+        Path(root) / "usr/lib/nuxel/nuxel-session.sh",
+        Path(root) / "usr/lib/nuxel/nuxel-preload-cinema",
+    ]
+    hits = []
+    for p in candidates:
+        t = _read(p)
+        if t and "--hwdec=no" in t:
+            hits.append(str(p))
+    return {"software_safe_hwdec_no": bool(hits), "files": hits}
+
+
+def build_status(
+    *,
+    sysfs_root: str = "/sys",
+    dev_root: str = "/dev",
+    firmware_dirs: list[str] | None = None,
+    config_path: str | None = None,
+    receipt_path: str = DEFAULT_RECEIPT,
+    root: str = "/",
+) -> dict:
+    nodes = scan_video_nodes(sysfs_root)
+    decoder, decoder_err = find_decoder(nodes)
+    fw = firmware_status(firmware_dirs)
+    kc = kernel_config(config_path)
+    receipt, receipt_err = load_receipt(receipt_path)
+
+    state = "NOT_TESTED_ON_DEVICE"
+    reason = ""
+    device_node = None
+    if decoder is None:
+        mfc_other = [n for n in nodes if classify_node(n) == "MFC_OTHER"]
+        if mfc_other:
+            state = "UNIDENTIFIED_VIDEO_NODE"
+            reason = decoder_err
+        else:
+            state = "NOT_PRESENT"
+            reason = "no Exynos MFC video node is registered"
+    else:
+        device_node = str(Path(dev_root) / os.path.basename(decoder["sysfs"]))
+        if not kc["required_ok"]:
+            state = "BLOCKED_DRIVER_MISSING"
+            reason = "kernel config lacks the MFC driver/buffer/IOMMU set"
+        elif fw["state"] == "MISSING":
+            state = "BLOCKED_FIRMWARE_MISSING"
+            reason = "%s is absent; hardware decode stays blocked" % FIRMWARE_NAME
+        elif fw["state"] == "MISMATCH":
+            state = "BLOCKED_FIRMWARE_HASH"
+            reason = "%s does not match the verified size/SHA-256" % FIRMWARE_NAME
+        elif receipt is None:
+            state = "BLOCKED_DRIVER_UNSAFE"
+            reason = receipt_err
+        elif receipt.get("decode_verified") is True:
+            evidence = receipt.get("decode_evidence")
+            if isinstance(evidence, dict) and evidence.get("firmware_sha256") == FIRMWARE_SHA256:
+                state = "AVAILABLE_HARDWARE_DECODE"
+                reason = "a recorded on-device decode test used this exact firmware"
+            else:
+                state = "AVAILABLE_PROBE_ONLY"
+                reason = "receipt claims decode_verified but has no matching evidence"
+        else:
+            state = "AVAILABLE_PROBE_ONLY"
+            reason = "identity, firmware and safety receipt verified; no decode proof yet"
+
+    safe_open_allowed = state in ("AVAILABLE_PROBE_ONLY", "AVAILABLE_HARDWARE_DECODE")
+    capabilities = []
+    if receipt and receipt.get("decode_verified") is True:
+        caps = receipt.get("capabilities")
+        if isinstance(caps, list):
+            capabilities = caps
+
+    return {
+        "schema": SCHEMA,
+        "state": state,
+        "reason": reason,
+        "source_commit": SOURCE_COMMIT,
+        "kernel_release": live_kernel_release(),
+        "boot_id": live_boot_id(),
+        "device": DEVICE,
+        "device_model": DEVICE_MODEL,
+        "soc": SOC,
+        "decoder_node": device_node,
+        "decoder_sysfs_name": decoder["name"] if decoder else None,
+        "platform_device": decoder["platform_device"] if decoder else None,
+        "driver": decoder["driver"] if decoder else None,
+        "compatible": decoder["compatible"] if decoder else None,
+        "ip_ver": decoder["ip_ver"] if decoder else None,
+        "firmware": fw,
+        "kernel_config": kc,
+        "safety_receipt": {
+            "path": receipt_path,
+            "present": receipt is not None,
+            "error": receipt_err,
+            "owner_approved": bool(receipt and receipt.get("owner_approved")),
+            "kernel_patch_applied": bool(receipt and receipt.get("kernel_patch_applied")),
+            "decode_verified": bool(receipt and receipt.get("decode_verified")),
+        },
+        "safe_open_allowed": safe_open_allowed,
+        "capabilities": capabilities,
+        "guard": guard_status(root),
+        "wireplumber": wireplumber_status(root),
+        "preload": preload_policy_status(root),
+        "last_test_time": (receipt or {}).get("decode_verified_at"),
+        "node_count": len(nodes),
+        "nodes": nodes,
+    }
+
+
+# ---------------------------------------------------------------------------
+# V4L2 query (active mode only; requires explicit owner-approved gate)
+# ---------------------------------------------------------------------------
+
+def _fourcc(value: int) -> str:
+    return struct.pack("<I", value).decode("latin1", "replace")
+
+
+def _alarm_handler(_signum, _frame):
+    raise DiagError("MFC open/query watchdog expired; if the task is in D state, userspace cannot fix it")
+
+
+def v4l2_query(device: str, alarm_seconds: int = HARDWARE_OPEN_ALARM_SECONDS) -> dict:
+    """Open exactly one explicitly named node and run QUERYCAP + ENUM_FMT.
+
+    This function is only called after the CLI safety gate.  It is not a
+    substitute for the kernel fix: SIGALRM cannot interrupt uninterruptible
+    kernel state.
+    """
+    old_handler = signal.signal(signal.SIGALRM, _alarm_handler)
+    signal.alarm(alarm_seconds)
+    fd = None
+    try:
+        fd = os.open(device, os.O_RDWR | os.O_NONBLOCK)
+        cap_buf = bytearray(104)
+        fcntl.ioctl(fd, VIDIOC_QUERYCAP, cap_buf, True)
+        driver, card, bus_info, version, caps, device_caps = struct.unpack_from(
+            "<16s32s32sIII", cap_buf, 0
+        )
+        result = {
+            "device": device,
+            "driver": driver.split(b"\x00", 1)[0].decode("latin1", "replace"),
+            "card": card.split(b"\x00", 1)[0].decode("latin1", "replace"),
+            "bus_info": bus_info.split(b"\x00", 1)[0].decode("latin1", "replace"),
+            "version": version,
+            "capabilities": "0x%08x" % caps,
+            "device_caps": "0x%08x" % device_caps,
+            "has_output_mplane": bool(device_caps & V4L2_CAP_VIDEO_OUTPUT_MPLANE),
+            "has_capture_mplane": bool(device_caps & V4L2_CAP_VIDEO_CAPTURE_MPLANE),
+            "has_streaming": bool(device_caps & V4L2_CAP_STREAMING),
+            "formats": {},
+        }
+        for label, buf_type in (
+            ("output_mplane", V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE),
+            ("capture_mplane", V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE),
+        ):
+            formats = []
+            for index in range(64):
+                fbuf = bytearray(64)
+                struct.pack_into("<III", fbuf, 0, index, buf_type, 0)
+                try:
+                    fcntl.ioctl(fd, VIDIOC_ENUM_FMT, fbuf, True)
+                except OSError as exc:
+                    if exc.errno in (errno.EINVAL, errno.ENOTTY):
+                        break
+                    raise
+                desc = fbuf[12:44].split(b"\x00", 1)[0].decode("latin1", "replace")
+                pixfmt = struct.unpack_from("<I", fbuf, 44)[0]
+                formats.append({
+                    "index": index,
+                    "description": desc,
+                    "pixelformat": _fourcc(pixfmt),
+                    "pixelformat_hex": "0x%08x" % pixfmt,
+                })
+            result["formats"][label] = formats
+        return result
+    finally:
+        if fd is not None:
+            os.close(fd)
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
+
+
+def require_active_gate(status: dict, device: str, receipt: dict | None) -> tuple[dict | None, str]:
+    if receipt is None:
+        return None, "active mode refused: matching safety receipt required"
+    if status["decoder_node"] is None:
+        return None, "active mode refused: decoder identity not resolved"
+    if os.path.realpath(device) != os.path.realpath(status["decoder_node"]):
+        return None, "active mode refused: device is not the allow-listed decoder node"
+    receipt_node = receipt.get("decoder_node")
+    if os.path.realpath(str(receipt_node)) != os.path.realpath(device):
+        return None, "active mode refused: receipt was approved for a different node"
+    if not status["safe_open_allowed"]:
+        return None, "active mode refused: state is %s (%s)" % (status["state"], status["reason"])
+    return receipt, ""
+
+
+def write_json_atomic(path: str, data: dict) -> None:
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, p)
+
+
+def write_log(log_dir: str, name: str, data: dict) -> str:
+    d = Path(log_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    path = d / (name + "-" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + ".json")
+    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.chmod(path, 0o644)
+    return str(path)
+
+# ---------------------------------------------------------------------------
+# Self-test (never touches real /dev/video*)
+# ---------------------------------------------------------------------------
+
+def _fake_video_node(tmp: Path, sysfs_root: Path, video: str, name: str, platform: str, driver: str,
+                     compatible: str | None, ip_ver: int | None) -> None:
+    node = sysfs_root / "class" / "video4linux" / video
+    node.mkdir(parents=True, exist_ok=True)
+    (node / "name").write_text(name + "\n")
+    (node / "index").write_text("0\n")
+    (node / "dev").write_text("81:0\n")
+    devdir = sysfs_root / "devices" / "platform" / platform
+    devdir.mkdir(parents=True, exist_ok=True)
+    drv = sysfs_root / "bus" / "platform" / "drivers" / driver
+    drv.mkdir(parents=True, exist_ok=True)
+    try:
+        (devdir / "driver").symlink_to(drv)
+    except FileExistsError:
+        pass
+    if compatible is not None:
+        of = devdir / "of_node"
+        of.mkdir(exist_ok=True)
+        (of / "compatible").write_bytes(compatible.encode() + b"\x00")
+        if ip_ver is not None:
+            (of / "ip_ver").write_bytes(struct.pack(">I", ip_ver))
+    try:
+        (node / "device").symlink_to(devdir)
+    except FileExistsError:
+        pass
+
+
+def self_test() -> int:
+    import tempfile
+    checks = 0
+    failures = []
+
+    def check(name, cond):
+        nonlocal checks
+        checks += 1
+        if not cond:
+            failures.append(name)
+
+    # Exact identity allow-list.
+    good = {"name": DECODER_SYSFS_NAME, "driver": EXPECTED_DRIVER,
+            "compatible": EXPECTED_COMPATIBLE, "ip_ver": EXPECTED_IP_VER,
+            "platform_device": EXPECTED_PLATFORM}
+    check("good decoder classified", classify_node(good) == "MFC_DECODER")
+    bad = dict(good, ip_ver="0x1200")
+    check("wrong ip_ver rejected", classify_node(bad) != "MFC_DECODER")
+    bad = dict(good, driver="exynos-fimc-is")
+    check("camera driver rejected", classify_node(bad) != "MFC_DECODER")
+    camera = {"name": "exynos-fimc-is-30c", "driver": "exynos-fimc-is",
+              "compatible": "samsung,exynos5-fimc-is", "ip_ver": None,
+              "platform_device": "170e0000.fimc_is"}
+    check("camera node is not MFC", classify_node(camera) == "NOT_MFC")
+    check("fourcc decode", _fourcc(0x34363248) == "H264")
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        sysfs = root / "sys"
+        _fake_video_node(root, sysfs, "video6", DECODER_SYSFS_NAME,
+                         EXPECTED_PLATFORM, EXPECTED_DRIVER, EXPECTED_COMPATIBLE, 0x1300)
+        _fake_video_node(root, sysfs, "video111", "exynos-fimc-is-30c",
+                         "170e0000.fimc_is", "exynos-fimc-is",
+                         "samsung,exynos5-fimc-is", None)
+        nodes = scan_video_nodes(str(sysfs))
+        dec, err = find_decoder(nodes)
+        check("fake decoder found", dec is not None and not err)
+        check("fake node count", len(nodes) == 2)
+        check("camera not selected", dec is not None and dec["name"] == DECODER_SYSFS_NAME)
+
+        # Missing firmware must be a blocked state, and inventory must not open.
+        cfg = root / "config"
+        cfg.write_text("CONFIG_VIDEO_EXYNOS_MFC=y\nCONFIG_VIDEOBUF2_DMA_SG=y\n"
+                       "CONFIG_EXYNOS_IOMMU=y\nCONFIG_V4L2_MEM2MEM_DEV=y\n")
+        fwdir = root / "fw"
+        fwdir.mkdir()
+        st = build_status(sysfs_root=str(sysfs), dev_root=str(root / "dev"),
+                          firmware_dirs=[str(fwdir)], config_path=str(cfg),
+                          receipt_path=str(root / "no-receipt.json"), root=str(root))
+        check("missing firmware blocked", st["state"] == "BLOCKED_FIRMWARE_MISSING")
+        check("missing firmware not openable", st["safe_open_allowed"] is False)
+        check("inventory did not create dev node", not (root / "dev").exists())
+
+        # Wrong firmware hash is a distinct blocked state.
+        (fwdir / FIRMWARE_NAME).write_bytes(b"not the firmware")
+        st = build_status(sysfs_root=str(sysfs), dev_root=str(root / "dev"),
+                          firmware_dirs=[str(fwdir)], config_path=str(cfg),
+                          receipt_path=str(root / "no-receipt.json"), root=str(root))
+        check("wrong firmware hash blocked", st["state"] == "BLOCKED_FIRMWARE_HASH")
+
+        # Receipt validation.
+        receipt = {
+            "schema": RECEIPT_SCHEMA, "owner_approved": True,
+            "source_commit": SOURCE_COMMIT, "device": DEVICE,
+            "decoder_node": DECODER_DEFAULT_NODE,
+            "platform_device": EXPECTED_PLATFORM, "driver": EXPECTED_DRIVER,
+            "compatible": EXPECTED_COMPATIBLE, "ip_ver": EXPECTED_IP_VER,
+            "firmware_name": FIRMWARE_NAME, "firmware_sha256": FIRMWARE_SHA256,
+            "kernel_patch": KERNEL_PATCH, "kernel_patch_applied": True,
+            "missing_firmware_test": "SOURCE_PASS",
+        }
+        rp = root / "receipt.json"
+        rp.write_text(json.dumps(receipt))
+        loaded, rerr = load_receipt(str(rp))
+        check("valid receipt loads", loaded is not None and not rerr)
+        receipt_bad = dict(receipt, owner_approved=False)
+        rp.write_text(json.dumps(receipt_bad))
+        loaded, rerr = load_receipt(str(rp))
+        check("unapproved receipt rejected", loaded is None and bool(rerr))
+
+        # Gate refusal.
+        st_allowed = {"decoder_node": DECODER_DEFAULT_NODE, "safe_open_allowed": True,
+                      "state": "AVAILABLE_PROBE_ONLY", "reason": ""}
+        _, gerr = require_active_gate(st_allowed, "/dev/video111", loaded)
+        check("wrong node refused", bool(gerr))
+        st_blocked = {"decoder_node": DECODER_DEFAULT_NODE, "safe_open_allowed": False,
+                      "state": "BLOCKED_FIRMWARE_MISSING", "reason": "missing"}
+        _, gerr = require_active_gate(st_blocked, DECODER_DEFAULT_NODE, receipt)
+        check("blocked state refused", bool(gerr))
+
+        # Kernel config check.
+        kc = kernel_config(str(cfg))
+        check("kernel config required set", kc["required_ok"] is True)
+
+    if failures:
+        print("SELF-TEST FAIL: %d/%d checks failed" % (len(failures), checks))
+        for f in failures:
+            print("  FAIL", f)
+        return 1
+    print("SELF-TEST PASS: %d checks" % checks)
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Output and CLI
+# ---------------------------------------------------------------------------
+
+def print_inventory(st: dict) -> None:
+    print("Nuxel MFC inventory (read-only; no device node opened)")
+    print("  device        : %s (%s, %s)" % (st["device"], st["device_model"], st["soc"]))
+    print("  kernel        : %s" % (st["kernel_release"] or "<unknown>"))
+    print("  boot id       : %s" % (st["boot_id"] or "<unknown>"))
+    print("  decoder node  : %s" % (st["decoder_node"] or "<unresolved>"))
+    print("  sysfs name    : %s" % (st["decoder_sysfs_name"] or "<none>"))
+    print("  platform      : %s" % (st["platform_device"] or "<none>"))
+    print("  driver        : %s" % (st["driver"] or "<none>"))
+    print("  compatible    : %s" % (st["compatible"] or "<none>"))
+    print("  ip_ver        : %s" % (st["ip_ver"] or "<none>"))
+    print("  firmware      : %s" % st["firmware"]["state"])
+    if st["firmware"].get("found"):
+        for f in st["firmware"]["found"]:
+            print("    %s size=%s sha256=%s" % (f.get("path"), f.get("size"), f.get("sha256")))
+    print("  kernel config : %s" % ("PASS" if st["kernel_config"]["required_ok"] else "FAIL"))
+    print("  guard         : v4l2_disabled=%s guard_present=%s" % (
+        st["guard"]["v4l2_plugins_disabled"], st["guard"]["guard_present"]))
+    print("  wireplumber   : video_capture_disabled=%s audio=%s bluetooth=%s" % (
+        st["wireplumber"]["video_capture_disabled"],
+        st["wireplumber"]["audio_required"],
+        st["wireplumber"]["bluetooth_required"]))
+    print("  state         : %s — %s" % (st["state"], st["reason"]))
+    print("  safe open     : %s" % ("YES" if st["safe_open_allowed"] else "NO"))
+
+
+def print_status(st: dict) -> None:
+    print("schema        : %s" % st["schema"])
+    print("state         : %s" % st["state"])
+    print("reason        : %s" % st["reason"])
+    print("source_commit : %s" % st["source_commit"])
+    print("kernel        : %s" % (st["kernel_release"] or "<unknown>"))
+    print("device        : %s" % st["device"])
+    print("node          : %s" % (st["decoder_node"] or "<unresolved>"))
+    print("firmware      : %s" % st["firmware"]["state"])
+    print("receipt       : %s" % ("present" if st["safety_receipt"]["present"] else "missing"))
+    print("safe open     : %s" % ("YES" if st["safe_open_allowed"] else "NO"))
+    print("capabilities  : %s" % (", ".join(st["capabilities"]) if st["capabilities"] else "<none verified>"))
+
+
+def _emit(data: dict, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(data, indent=2, sort_keys=True))
+    else:
+        print_status(data)
+
+
+def run_decode_test(args, receipt: dict) -> int:
+    helper = args.decode_helper or "/usr/lib/nuxel/nuxel-mfc-decode"
+    if not os.path.isfile(helper):
+        print("nuxel-mfc-diag: decode helper not installed: %s" % helper, file=sys.stderr)
+        return 2
+    cmd = [helper, "--device", args.device, "--input", args.decode_test,
+           "--allow-hardware-open", "--receipt", args.receipt]
+    if args.output:
+        cmd += ["--output", args.output]
+    if args.width:
+        cmd += ["--width", str(args.width)]
+    if args.height:
+        cmd += ["--height", str(args.height)]
+    if args.max_frames:
+        cmd += ["--max-frames", str(args.max_frames)]
+    print("nuxel-mfc-diag: running exactly one vendor-ABI decode test:", " ".join(cmd))
+    try:
+        completed = subprocess.run(cmd, timeout=args.timeout, check=False)
+    except subprocess.TimeoutExpired:
+        print("nuxel-mfc-diag: decode helper timed out; do NOT retry in a loop", file=sys.stderr)
+        return 124
+    return completed.returncode
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(
+        prog="nuxel-mfc-diag",
+        description="Safe Exynos 9820 MFC inventory / status / opt-in probe (PWNAGE-61000)",
+    )
+    ap.add_argument("--version", action="version", version="%(prog)s " + VERSION)
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--inventory", action="store_true", help="read sysfs only; never opens a node (default)")
+    mode.add_argument("--status", action="store_true", help="print nuxel.mfc.status/1 (read-only)")
+    mode.add_argument("--self-test", action="store_true", help="run offline unit checks; no device access")
+    mode.add_argument("--query-only", action="store_true", help="open the approved node and run QUERYCAP/ENUM_FMT")
+    mode.add_argument("--decode-test", metavar="FILE", help="run the vendor-ABI decode helper on FILE")
+    ap.add_argument("--device", help="exact decoder node, e.g. /dev/video6")
+    ap.add_argument("--allow-hardware-open", action="store_true",
+                    help="required for --query-only/--decode-test; never implied")
+    ap.add_argument("--receipt", default=DEFAULT_RECEIPT, help="owner-approved safety receipt JSON")
+    ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--write-status", action="store_true", help="write status JSON to --status-file")
+    ap.add_argument("--status-file", default=DEFAULT_STATUS)
+    ap.add_argument("--log-dir", default=DEFAULT_LOG_DIR)
+    ap.add_argument("--sysfs-root", default="/sys", help=argparse.SUPPRESS)
+    ap.add_argument("--dev-root", default="/dev", help=argparse.SUPPRESS)
+    ap.add_argument("--firmware-dir", action="append", default=None,
+                    help="override firmware search dir (repeatable)")
+    ap.add_argument("--config", help="override kernel config path (default /proc/config.gz)")
+    ap.add_argument("--decode-helper", help="override nuxel-mfc-decode path")
+    ap.add_argument("--output", help="decode helper raw-frame output path")
+    ap.add_argument("--width", type=int)
+    ap.add_argument("--height", type=int)
+    ap.add_argument("--max-frames", type=int)
+    ap.add_argument("--timeout", type=int, default=120)
+    ap.add_argument("--repeat", type=int, default=1, help="query-only: repeat open/query/close N times (max 100)")
+    args = ap.parse_args(argv)
+
+    if args.self_test:
+        return self_test()
+
+    status = build_status(
+        sysfs_root=args.sysfs_root,
+        dev_root=args.dev_root,
+        firmware_dirs=args.firmware_dir,
+        config_path=args.config,
+        receipt_path=args.receipt,
+        root="/",
+    )
+
+    if args.write_status:
+        write_json_atomic(args.status_file, status)
+
+    active = bool(args.query_only or args.decode_test)
+    if active:
+        if not args.allow_hardware_open:
+            print("nuxel-mfc-diag: REFUSED — active mode requires --allow-hardware-open", file=sys.stderr)
+            return 2
+        if not args.device:
+            print("nuxel-mfc-diag: REFUSED — active mode requires --device /dev/videoN", file=sys.stderr)
+            return 2
+        receipt, rerr = load_receipt(args.receipt)
+        if receipt is None:
+            print("nuxel-mfc-diag: REFUSED — %s" % rerr, file=sys.stderr)
+            return 2
+        receipt, gerr = require_active_gate(status, args.device, receipt)
+        if receipt is None:
+            print("nuxel-mfc-diag: REFUSED — %s" % gerr, file=sys.stderr)
+            return 2
+        print("nuxel-mfc-diag: opening %s because it matched %s/%s/%s on %s ip_ver %s" % (
+            args.device, DECODER_SYSFS_NAME, EXPECTED_DRIVER, EXPECTED_COMPATIBLE,
+            EXPECTED_PLATFORM, EXPECTED_IP_VER))
+        if args.query_only:
+            repeat = max(1, min(args.repeat, 100))
+            results = []
+            for i in range(repeat):
+                try:
+                    result = v4l2_query(args.device, alarm_seconds=min(HARDWARE_OPEN_ALARM_SECONDS, args.timeout))
+                except (OSError, DiagError) as exc:
+                    print("nuxel-mfc-diag: query %d/%d failed: %s" % (i + 1, repeat, exc),
+                          file=sys.stderr)
+                    return 1
+                results.append(result)
+            result = results[-1]
+            result["schema"] = SCHEMA
+            result["status_state"] = status["state"]
+            result["firmware_sha256"] = FIRMWARE_SHA256
+            result["source_commit"] = SOURCE_COMMIT
+            result["open_close_repetitions"] = repeat
+            log = write_log(args.log_dir, "query", result)
+            result["log"] = log
+            print(json.dumps(result, indent=2, sort_keys=True) if args.json else
+                  "QUERYCAP driver=%s card=%s caps=%s device_caps=%s\n"
+                  "formats output=%d capture=%d\nopen/close repetitions=%d\nlog=%s" % (
+                      result["driver"], result["card"], result["capabilities"],
+                      result["device_caps"], len(result["formats"]["output_mplane"]),
+                      len(result["formats"]["capture_mplane"]), repeat, log))
+            return 0
+        return run_decode_test(args, receipt)
+
+    if args.status:
+        _emit(status, args.json)
+    else:
+        # Default is inventory.  It never opens a device node.
+        if args.json:
+            print(json.dumps(status, indent=2, sort_keys=True))
+        else:
+            print_inventory(status)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

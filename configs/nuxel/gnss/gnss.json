@@ -40,15 +40,9 @@
       "/vendor/firmware"
     ],
     "firmware_candidates": [
-      "gnss.bin",
-      "gnss_firmware.bin",
-      "gns.bin",
-      "gps.bin",
-      "gnss/gnss.bin",
-      "gnss/lto.dat",
-      "bcm4773.bin",
-      "bcm47752.bin",
-      "bcm47755.bin"
+      "bcm_sensorhub_a1.patch",
+      "bcm4773_sensorhub.patch",
+      "sensorhub_a1.patch"
     ],
     "stream": {
       "protocol": "broadcom-bbd-lhd-rpc",
@@ -177,5 +171,36 @@
   "diagnostics": {
     "log": "/var/log/nuxel/gnss-diag.log",
     "monitor_seconds_max": 600
-  }
+  },
+  "expected_artefacts": [
+    {
+      "component": "bcm_sensorhub_a1.patch",
+      "description": "BCM4773 BBD sensor-hub patch firmware loaded by the vendor lhd daemon",
+      "roles": [
+        "firmware"
+      ],
+      "expected_paths": [
+        "/system/bin/bcm_sensorhub_a1.patch",
+        "/vendor/firmware/bcm_sensorhub_a1.patch"
+      ],
+      "fallback_paths": [
+        "/lib/firmware/gnss/bcm_sensorhub_a1.patch",
+        "/vendor/firmware/bcm4773_sensorhub.patch"
+      ],
+      "target_model": "Samsung Galaxy S10+ SM-G975F",
+      "target_codename": "beyond2lte",
+      "chip_family": "BCM4773 (Exynos 9820 integrated GNSS)",
+      "firmware_build_revision": null,
+      "sha256": null,
+      "size_bytes": null,
+      "provenance": "Samsung stock beyond2lte firmware; owner extraction from a mounted/vendor image (docs/beta-finalization/manual-proof/13-gps.md)",
+      "extraction_method": "read-only extract from owner-provided stock firmware or the device's own mounted /system image; never flash",
+      "license_note": "proprietary vendor blob; not redistributed without permission",
+      "kind": "character-device payload",
+      "loader_node": "/dev/bbd_patch",
+      "required_for_fix": true,
+      "status": "absent",
+      "status_note": "Not present on the Nuxel Fedora rootfs. Present != compatible; an extracted blob is not automatically accepted by the receiver."
+    }
+  ]
 }

@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""Ask the root bridge to persist the authoritative lock state.
+
+PWNAGE-62000: the native host uses this fixed helper when a lock is requested
+while a GTK/Flatpak window covers Home.  It never writes lock-state.json itself;
+security_provider.py remains the single lock authority.  Loopback-only, fixed
+namespace/verb, bounded timeout, no secret material.
+"""
+import json
+import sys
+import urllib.request
+
+reason = (sys.argv[1] if len(sys.argv) > 1 else "host")[:64]
+body = json.dumps({
+    "app_id": "org.nuxel.Home",
+    "namespace": "security",
+    "verb": "lock",
+    "params": {"reason": reason},
+}).encode()
+req = urllib.request.Request(
+    "http://127.0.0.1:8080/api/v1/rpc", data=body,
+    headers={"Content-Type": "application/json"}, method="POST")
+try:
+    with urllib.request.urlopen(req, timeout=2) as resp:
+        doc = json.loads(resp.read(4096) or b"{}")
+    result = doc.get("result", doc)
+    if not (isinstance(result, dict) and result.get("success") is not False):
+        raise SystemExit(2)
+except Exception as exc:  # noqa: BLE001 - host JS path still locks fail-closed
+    sys.stderr.write("nuxel-security-lock-rpc: %s\n" % exc)
+    raise SystemExit(1)

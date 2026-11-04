@@ -1,31 +1,175 @@
 #!/usr/bin/env python3
-"""Nuxel Software — a small native GTK3 front-end to PackageKit.
+"""Nuxel Software — Fedora RPM + Flathub software center.
 
-GNOME Software 49 segfaults on this image (GB10/4.14 userspace), so this app is
-the supported native RPM surface.  It invokes the real `pkcon` PackageKit client
-with fixed argv (never a shell), previews the transaction and requires an
-explicit confirmation.  PackageKit/polkit performs authorization through the
-session's graphical agent (lxpolkit).  Flatpak is reported blocked because this
-kernel has CONFIG_USER_NS=n; no sandbox weakening is attempted.
+The native GTK3 surface is deliberately small and honest:
+
+* Fedora packages are discovered through the live PackageKit/DNF backend
+  (``pkcon``) and the installed RPM database (``rpm -qa``).
+* Flatpak applications are discovered through the configured Flatpak
+  installations (system Flathub by default).
+* Mutating Flatpak operations go through the local Nuxel bridge, which owns
+  the privileged system-scope Flatpak jobs.  RPM operations keep using
+  PackageKit/polkit.
+* No shell is used for an operation; every command is a fixed argv list.
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 import shutil
 import subprocess
+import threading
+import time
+import urllib.error
+import urllib.request
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, Pango  # noqa: E402
+from gi.repository import GLib, Gtk, Pango  # noqa: E402
+
+CALLER = "org.gnome.Software"
+BRIDGE = "http://127.0.0.1:8080/api/v1"
+MAX_ROWS = 4000
+PKCON_LINE = re.compile(r"^(Installed|Available)\s+(\S+)\s+\((.*?)\)\s*$")
+
+
+def _run(argv, timeout=120):
+    try:
+        p = subprocess.run(
+            argv,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=dict(os.environ, LC_ALL="C.UTF-8"),
+        )
+        return p.returncode, (p.stdout or "") + (p.stderr or "")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return 127, str(exc)
+
+
+def _post(path, payload, timeout=30):
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        BRIDGE + path,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as res:
+            body = res.read().decode("utf-8", "replace")
+            doc = json.loads(body) if body else {}
+            if not isinstance(doc, dict):
+                return {"success": False, "error": "invalid bridge response"}
+            return doc
+    except (OSError, ValueError, urllib.error.URLError) as exc:
+        return {"success": False, "error": str(exc)}
+
+
+def _split_rpm_token(token):
+    """Split name-version-release.arch without assuming name has no hyphens."""
+    token = token.strip()
+    if not token:
+        return "", "", ""
+    arch = ""
+    if "." in token:
+        token, arch = token.rsplit(".", 1)
+    parts = token.rsplit("-", 2)
+    if len(parts) == 3:
+        name, version, release = parts
+    elif len(parts) == 2:
+        name, version = parts
+        release = ""
+    else:
+        name, version, release = token, "", ""
+    shown = version if not release else "%s-%s" % (version, release)
+    return name, shown, arch
+
+
+def _parse_pkcon(out):
+    rows = []
+    for line in out.splitlines():
+        line = line.strip()
+        m = PKCON_LINE.match(line)
+        if not m:
+            continue
+        state, token, repo = m.groups()
+        name, version, arch = _split_rpm_token(token)
+        if not name:
+            continue
+        rows.append({
+            "id": name,
+            "name": name,
+            "version": version,
+            "arch": arch,
+            "repo": repo,
+            "installed": state == "Installed",
+            "kind": "rpm",
+            "source": "Fedora",
+        })
+    return rows
+
+
+def _parse_flatpak_list(out):
+    rows = []
+    for line in out.splitlines():
+        fields = line.split("\t")
+        if len(fields) < 5:
+            continue
+        aid, name, version, branch, origin = fields[:5]
+        installation = fields[5] if len(fields) > 5 else "system"
+        if not aid:
+            continue
+        rows.append({
+            "id": aid,
+            "name": name or aid,
+            "version": version or branch or "",
+            "arch": "aarch64",
+            "repo": installation,
+            "origin": origin,
+            "installed": True,
+            "kind": "flatpak",
+            "source": "Flathub" if "flathub" in origin.lower() else ("Flatpak/" + (origin or "system")),
+        })
+    return rows
+
+
+def _parse_flatpak_search(out):
+    rows = []
+    for line in out.splitlines():
+        fields = line.split("\t")
+        if len(fields) < 5:
+            continue
+        aid, name, version, branch, remotes = fields[:5]
+        if not aid:
+            continue
+        remote = remotes or "flathub"
+        rows.append({
+            "id": aid,
+            "name": name or aid,
+            "version": version or branch or "",
+            "arch": "aarch64",
+            "repo": remote,
+            "origin": remote,
+            "installed": False,
+            "kind": "flatpak",
+            "source": "Flathub" if "flathub" in remote.lower() else ("Flatpak/" + remote),
+        })
+    return rows
 
 
 class SoftwareWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="Nuxel Software")
-        self.set_default_size(380, 700)
+        self.set_default_size(430, 720)
         self.flatpak_ok, self.flatpak_reason = self._flatpak_status()
         self.packages = []
+        self._busy = False
+        self._pending = False
+        self._generation = 0
+        self._search_timer = None
 
         header = Gtk.HeaderBar()
         header.set_show_close_button(True)
@@ -40,32 +184,51 @@ class SoftwareWindow(Gtk.Window):
         self.add(box)
 
         self.search = Gtk.SearchEntry()
-        self.search.set_placeholder_text("Search RPM packages…")
+        self.search.set_placeholder_text("Search Fedora and Flathub…")
         self.search.connect("activate", lambda *_: self.refresh())
+        self.search.connect("search-changed", self._search_changed)
         box.pack_start(self.search, False, False, 0)
+
+        filters = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        label = Gtk.Label(label="Source:")
+        label.set_xalign(0)
+        filters.pack_start(label, False, False, 0)
+        self.source = Gtk.ComboBoxText()
+        self.source.append_text("All sources")
+        self.source.append_text("Fedora RPM")
+        self.source.append_text("Flathub / Flatpak")
+        self.source.set_active(0)
+        self.source.connect("changed", lambda *_: self.refresh())
+        filters.pack_start(self.source, True, True, 0)
+        box.pack_start(filters, False, False, 0)
 
         self.status = Gtk.Label(label="PackageKit: checking…")
         self.status.set_xalign(0)
         self.status.set_line_wrap(True)
         box.pack_start(self.status, False, False, 0)
 
+        fp_text = ("available — system Flathub" if self.flatpak_ok
+                   else "BLOCKED — " + self.flatpak_reason)
         fp = Gtk.Label()
         fp.set_xalign(0)
         fp.set_line_wrap(True)
-        fp.set_markup("<b>Flatpak:</b> " + (
-            "available" if self.flatpak_ok else "BLOCKED — " + self.flatpak_reason))
+        fp.set_markup("<b>Flatpak:</b> " + GLib.markup_escape_text(fp_text))
         box.pack_start(fp, False, False, 0)
 
         scroller = Gtk.ScrolledWindow()
         scroller.set_vexpand(True)
-        self.store = Gtk.ListStore(str, str, str, bool)  # id, name, version, installed
+        self.store = Gtk.ListStore(str, str, str, str, bool, str, str)
         view = Gtk.TreeView(model=self.store)
-        for title, idx, expand in (("Package", 0, True), ("Version", 2, False),
-                                   ("State", 3, False)):
-            if idx == 3:
+        for title, idx, expand in (
+            ("Package", 1, True),
+            ("Source", 2, False),
+            ("Version", 3, False),
+            ("Installed", 4, False),
+        ):
+            if idx == 4:
                 renderer = Gtk.CellRendererToggle()
                 renderer.set_property("activatable", False)
-                col = Gtk.TreeViewColumn("Installed", renderer, active=3)
+                col = Gtk.TreeViewColumn("Installed", renderer, active=4)
             else:
                 renderer = Gtk.CellRendererText()
                 renderer.set_property("ellipsize", Pango.EllipsizeMode.END)
@@ -76,13 +239,16 @@ class SoftwareWindow(Gtk.Window):
         scroller.add(view)
         box.pack_start(scroller, True, True, 0)
 
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.install_btn = Gtk.Button(label="Install selected")
         self.install_btn.connect("clicked", lambda *_: self._act("install"))
         self.remove_btn = Gtk.Button(label="Remove selected")
         self.remove_btn.connect("clicked", lambda *_: self._act("remove"))
+        self.launch_btn = Gtk.Button(label="Launch")
+        self.launch_btn.connect("clicked", lambda *_: self._act("launch"))
         row.pack_start(self.install_btn, True, True, 0)
         row.pack_start(self.remove_btn, True, True, 0)
+        row.pack_start(self.launch_btn, False, False, 0)
         box.pack_start(row, False, False, 0)
 
         self.log = Gtk.Label(label="")
@@ -93,112 +259,301 @@ class SoftwareWindow(Gtk.Window):
 
         self.refresh()
 
+    # ---- status helpers -------------------------------------------------
+
     def _flatpak_status(self):
         if not shutil.which("flatpak"):
             return False, "flatpak executable missing"
         try:
             p = subprocess.run(["unshare", "-U", "true"], capture_output=True, timeout=3)
             if p.returncode != 0:
-                return False, "CONFIG_USER_NS is not set (unshare -U failed)"
-        except (OSError, subprocess.TimeoutExpired):
+                return False, "user namespaces unavailable (unshare -U failed)"
+        except (OSError, subprocess.SubprocessError):
             return False, "cannot probe user namespaces"
         if not shutil.which("bwrap"):
             return False, "bubblewrap missing"
         if not (shutil.which("xdg-desktop-portal") or os.path.exists("/usr/libexec/xdg-desktop-portal")):
             return False, "xdg-desktop-portal missing"
-        return True, "sandbox prerequisites reported present"
+        return True, ""
 
-    def _run(self, argv, timeout=120):
-        try:
-            p = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
-            return p.returncode, (p.stdout or "") + (p.stderr or "")
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            return 127, str(exc)
+    def _log_text(self, text):
+        GLib.idle_add(self.log.set_text, text)
+
+    def _set_status(self, text):
+        self.status.set_text(text)
+
+    def _search_changed(self, *_args):
+        if self._search_timer is not None:
+            GLib.source_remove(self._search_timer)
+        self._search_timer = GLib.timeout_add(350, self._debounced_refresh)
+
+    def _debounced_refresh(self):
+        self._search_timer = None
+        self.refresh()
+        return False
+
+    # ---- discovery ------------------------------------------------------
+
+    def _rpm_installed(self):
+        rc, out = _run(["rpm", "-qa", "--qf", "%{NAME}\\t%{VERSION}-%{RELEASE}\\t%{ARCH}\\n"], timeout=30)
+        installed = {}
+        rows = []
+        if rc != 0:
+            return installed, rows
+        for line in out.splitlines():
+            fields = line.split("\t")
+            if len(fields) < 3:
+                continue
+            name, version, arch = fields[:3]
+            installed[name] = version
+            rows.append({
+                "id": name,
+                "name": name,
+                "version": version,
+                "arch": arch,
+                "repo": "installed",
+                "installed": True,
+                "kind": "rpm",
+                "source": "Fedora",
+            })
+        return installed, rows
+
+    def _pkcon_search(self, query, installed):
+        rc, out = _run(["pkcon", "--plain", "search", "name", query], timeout=90)
+        rows = _parse_pkcon(out)
+        for row in rows:
+            row["installed"] = row["id"] in installed
+            if row["installed"]:
+                row["version"] = installed.get(row["id"], row["version"])
+        return rows
+
+    def _flatpak_rows(self, query):
+        rc, out = _run([
+            "flatpak", "list", "--app",
+            "--columns=application,name,version,branch,origin,installation",
+        ], timeout=30)
+        installed_rows = _parse_flatpak_list(out) if rc == 0 else []
+        installed = {r["id"] for r in installed_rows}
+        if not query:
+            return installed_rows
+        rc, out = _run([
+            "flatpak", "search",
+            "--columns=application,name,version,branch,remotes", query,
+        ], timeout=90)
+        rows = _parse_flatpak_search(out) if rc == 0 else []
+        for row in rows:
+            row["installed"] = row["id"] in installed
+        # Include a matching installed app even if flatpak search omits it.
+        q = query.lower()
+        for row in installed_rows:
+            if q in row["id"].lower() or q in row["name"].lower():
+                rows.append(row)
+        return rows
+
+    def _refresh_worker(self, query, source, generation):
+        rows = []
+        error = ""
+        if source in ("all", "fedora"):
+            try:
+                installed, installed_rows = self._rpm_installed()
+                if query:
+                    rows.extend(self._pkcon_search(query, installed))
+                else:
+                    rows.extend(installed_rows)
+            except Exception as exc:  # noqa: BLE001
+                error = "Fedora: %s" % exc
+        if source in ("all", "flathub"):
+            if self.flatpak_ok:
+                try:
+                    rows.extend(self._flatpak_rows(query))
+                except Exception as exc:  # noqa: BLE001
+                    error = (error + "; " if error else "") + "Flatpak: %s" % exc
+            else:
+                error = (error + "; " if error else "") + "Flatpak: " + self.flatpak_reason
+        # Deduplicate: an installed row wins over an available row.
+        merged = {}
+        for row in rows:
+            key = (row["kind"], row["id"])
+            old = merged.get(key)
+            if old is None or (row["installed"] and not old["installed"]):
+                merged[key] = row
+        out = sorted(merged.values(), key=lambda r: (r["name"].lower(), r["kind"]))
+        GLib.idle_add(self._apply_rows, out, query, source, error, generation)
 
     def refresh(self):
-        q = self.search.get_text().strip()
-        argv = ["pkcon", "search", "name", q] if q else ["pkcon", "get-packages"]
-        rc, out = self._run(argv + ["--filter=installed"] if not q else argv, timeout=60)
-        # `pkcon search name q` already includes installed state; fall back to
-        # the installed list when the search is empty.
-        if not q:
-            rc, out = self._run(["pkcon", "get-packages", "--filter=installed"], timeout=60)
+        if self._busy:
+            self._pending = True
+            return
+        query = self.search.get_text().strip()
+        source = ("all", "fedora", "flathub")[self.source.get_active() or 0]
+        self._busy = True
+        self._generation += 1
+        generation = self._generation
+        self.status.set_text("Searching Fedora and Flathub…")
+        threading.Thread(
+            target=self._refresh_worker,
+            args=(query, source, generation),
+            daemon=True,
+        ).start()
+
+    def _apply_rows(self, rows, query, source, error, generation):
+        self._busy = False
+        if generation != self._generation:
+            return False
+        pending = self._pending
+        self._pending = False
         self.store.clear()
         self.packages = []
-        for line in out.splitlines():
-            line = line.strip()
-            if not line or line.startswith("Loading") or line.startswith("Querying"):
-                continue
-            parts = line.split()
-            if len(parts) >= 2 and ("\t" in line or parts[0].lower() in ("installed", "available")):
-                continue
-            # pkcon lines look like: "name;version;arch;repo;summary"
-            fields = [f.strip() for f in line.split(";")]
-            if len(fields) >= 3:
-                name = fields[0].split(".")[0]
-                version = fields[1]
-                repo = fields[3] if len(fields) > 3 else ""
-                installed = repo.lower().startswith("installed")
-                self.store.append([name, name, version, installed])
-                self.packages.append({"id": name, "version": version,
-                                      "repo": repo, "installed": installed})
-        self.status.set_text("PackageKit: %d package row(s)%s" % (
-            len(self.packages), (" for “%s”" % q) if q else ""))
-        if not self.packages:
-            self.log.set_text("No matching RPM package rows. The configured Fedora repositories remain the source of truth.")
+        for row in rows[:MAX_ROWS]:
+            self.store.append([
+                row["id"], row["name"], row["source"], row["version"],
+                bool(row["installed"]), row["kind"], row.get("repo", ""),
+            ])
+            self.packages.append(row)
+        rpm_count = sum(1 for r in rows if r["kind"] == "rpm")
+        fp_count = sum(1 for r in rows if r["kind"] == "flatpak")
+        suffix = ""
+        if len(rows) > MAX_ROWS:
+            suffix = " · showing first %d" % MAX_ROWS
+        self.status.set_text(
+            "Fedora: %d · Flatpak: %d%s%s" % (
+                rpm_count, fp_count, suffix,
+                (" · " + error) if error else "",
+            )
+        )
+        if not rows:
+            self.log.set_text(
+                "No matching software. Fedora repositories and Flathub are the "
+                "configured sources; check the source filter or network."
+            )
+        if pending:
+            GLib.idle_add(self.refresh)
+        return False
+
+    # ---- actions --------------------------------------------------------
 
     def _selected(self):
-        sel = None
         view = None
-        for child in self.get_children():
-            pass
-        # Find the TreeView through the hierarchy.
-        def walk(w):
+
+        def walk(widget):
             nonlocal view
-            if isinstance(w, Gtk.TreeView):
-                view = w
-            if isinstance(w, Gtk.Container):
-                for c in w.get_children():
-                    walk(c)
+            if isinstance(widget, Gtk.TreeView):
+                view = widget
+            if isinstance(widget, Gtk.Container):
+                for child in widget.get_children():
+                    walk(child)
+
         walk(self)
         if view is None:
             return None
         model, it = view.get_selection().get_selected()
         if it is None:
             return None
-        return {"id": model[it][0], "version": model[it][2], "installed": model[it][3]}
+        return {
+            "id": model[it][0],
+            "name": model[it][1],
+            "source": model[it][2],
+            "version": model[it][3],
+            "installed": bool(model[it][4]),
+            "kind": model[it][5],
+            "repo": model[it][6],
+        }
 
     def _row_activated(self, view, path, column):
-        self._act("install" if not self._selected() or not self._selected()["installed"] else "remove")
+        pkg = self._selected()
+        if not pkg:
+            return
+        if pkg["kind"] == "flatpak" and pkg["installed"]:
+            self._act("launch")
+        elif not pkg["installed"]:
+            self._act("install")
+        else:
+            self._act("remove")
 
     def _act(self, action):
         pkg = self._selected()
         if not pkg:
             self.log.set_text("Select a package row first.")
             return
-        if action == "remove" and not pkg["installed"]:
-            self.log.set_text("That package is not installed.")
-            return
         if action == "install" and pkg["installed"]:
             self.log.set_text("That package is already installed.")
             return
-        verb = "install" if action == "install" else "remove"
-        dlg = Gtk.MessageDialog(
-            transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION,
-            buttons=Gtk.ButtonsType.OK_CANCEL,
-            text="%s %s?" % (verb.capitalize(), pkg["id"]))
-        dlg.format_secondary_text(
-            "PackageKit will resolve dependencies and ask polkit for authorization. "
-            "Verify the repository/version before continuing.\n\nVersion: %s" % pkg["version"])
-        if dlg.run() != Gtk.ResponseType.OK:
-            dlg.destroy()
+        if action == "remove" and not pkg["installed"]:
+            self.log.set_text("That package is not installed.")
             return
-        dlg.destroy()
-        argv = ["pkcon", verb, "-y", pkg["id"]]
-        self.log.set_text("Running: " + " ".join(argv))
-        rc, out = self._run(argv, timeout=600)
-        self.log.set_text(out.strip()[-1200:] or ("exit %d" % rc))
-        self.refresh()
+        if action == "launch" and (pkg["kind"] != "flatpak" or not pkg["installed"]):
+            self.log.set_text("Launch is available for installed Flatpak apps.")
+            return
+        if action == "remove":
+            dlg = Gtk.MessageDialog(
+                transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION,
+                buttons=Gtk.ButtonsType.OK_CANCEL,
+                text="Remove %s?" % pkg["name"],
+            )
+            dlg.format_secondary_text(
+                "Source: %s\nVersion: %s\n\nPackageKit/Flatpak will resolve "
+                "dependencies and authorization." % (pkg["source"], pkg["version"])
+            )
+            if dlg.run() != Gtk.ResponseType.OK:
+                dlg.destroy()
+                return
+            dlg.destroy()
+        self.log.set_text("Working on %s…" % pkg["name"])
+        threading.Thread(
+            target=self._action_worker, args=(pkg, action), daemon=True
+        ).start()
+
+    def _action_worker(self, pkg, action):
+        if action == "launch":
+            result = _post("/apps/exec", {"target": pkg["id"], "app_id": CALLER})
+            self._finish_action(result, pkg, action)
+            return
+        if pkg["kind"] == "rpm":
+            verb = "install" if action == "install" else "remove"
+            rc, out = _run(["pkcon", verb, "-y", pkg["id"]], timeout=900)
+            self._finish_action(
+                {"success": rc == 0, "detail": out.strip()[-1200:] or ("exit %d" % rc)},
+                pkg, action,
+            )
+            return
+        # Flatpak mutations are owned by the privileged Nuxel bridge.
+        if action == "install":
+            result = _post("/flatpak/install", {
+                "caller": CALLER, "app_id": pkg["id"],
+                "remote": "flathub", "scope": "system",
+            })
+        else:
+            result = _post("/flatpak/uninstall", {
+                "caller": CALLER, "app_id": pkg["id"], "scope": "system",
+            })
+        if result.get("success") and result.get("job"):
+            result = self._poll_job(result["job"])
+        self._finish_action(result, pkg, action)
+
+    def _poll_job(self, job_id):
+        last = {}
+        for _ in range(900):
+            last = _post("/flatpak/job", {"caller": CALLER, "job_id": job_id})
+            if not last.get("success"):
+                return last
+            state = last.get("state")
+            if state in ("done", "failed"):
+                return last
+            time.sleep(1)
+        return {"success": False, "error": "job timeout", "detail": str(last)}
+
+    def _finish_action(self, result, pkg, action):
+        if result.get("success"):
+            detail = result.get("log_tail") or result.get("detail") or result.get("outcome") or "done"
+            text = "%s %s: %s" % (action.capitalize(), pkg["name"], str(detail)[-1200:])
+        else:
+            text = "%s failed for %s: %s" % (
+                action.capitalize(), pkg["name"],
+                result.get("detail") or result.get("error") or "unknown error",
+            )
+        GLib.idle_add(self.log.set_text, text)
+        if action != "launch":
+            GLib.idle_add(self.refresh)
 
 
 def main():

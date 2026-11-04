@@ -32,6 +32,22 @@ echo "== nuxel-navdock =="
   "$OUT/gen/wlr-layer-shell-unstable-v1-protocol.c" \
   "$OUT/gen/xdg-shell-protocol.c" "${LIBS[@]}"
 
+# Native top bar.  It needs Cairo/Pango in the target sysroot; when the cross
+# sysroot does not carry them, report the blocker instead of silently omitting
+# the shell component.  The image builder and on-device build both compile it.
+if [ -f "$SYS/include/pango-1.0/pango/pangocairo.h" ] || pkg-config --exists pangocairo; then
+  echo "== nuxel-statusbar =="
+  "$CC" "${COMMON[@]}" $(pkg-config --cflags pangocairo cairo 2>/dev/null) \
+    -o "$OUT/nuxel-statusbar" \
+    "$HERE/nuxel-statusbar.c" \
+    "$OUT/gen/wlr-layer-shell-unstable-v1-protocol.c" "${LIBS[@]}" \
+    $(pkg-config --libs pangocairo cairo 2>/dev/null)
+  file "$OUT/nuxel-statusbar" | grep -q 'ARM aarch64'
+else
+  echo "ERROR: nuxel-statusbar requires Cairo/Pango in the target sysroot" >&2
+  exit 1
+fi
+
 echo "== nuxel-text-input-probe =="
 "$CC" "${COMMON[@]}" -o "$OUT/nuxel-text-input-probe" \
   "$HERE/nuxel-text-input-probe.c" \
@@ -39,5 +55,5 @@ echo "== nuxel-text-input-probe =="
   "$OUT/gen/xdg-shell-protocol.c" "${LIBS[@]}"
 
 file "$OUT/nuxel-navdock" | grep -q 'ARM aarch64' || { echo "NOT aarch64"; exit 1; }
-sha256sum "$OUT/nuxel-navdock" "$OUT/nuxel-text-input-probe"
+sha256sum "$OUT/nuxel-navdock" "$OUT/nuxel-statusbar" "$OUT/nuxel-text-input-probe"
 echo "built in $OUT"

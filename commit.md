@@ -10,7 +10,7 @@ Merged via **[PR #27](https://github.com/illdynamics/nuxel/pull/27)**.
 **What happened**
 - Found uncommitted work on the already-merged `fix/kernel-parity-gate-invocation` branch, with `main` 6 commits ahead.    
 - Branched `perf/idle-wakeup-reduction` from current `origin/main`, staged all 11 modified + 3 untracked paths (22 files, +319/−49), and committed as `794c879`.
-- Opened, verified `MERGEABLE`/`CLEAN`, and merged with a merge commit `4140450`. `main` release workflow ran and succeeded; build/publish jobs skipped because `VERSION` is unchanged from the already-tagged `v0.7.5-beta`.
+- Opened, verified `MERGEABLE`/`CLEAN`, and merged with a merge commit `4140450`. `main` release workflow ran and succeeded; build/publish jobs skipped because `VERSION` is unchanged from the already-tagged `v0.7.6-beta`.
 - Cleaned up the temporary baseline worktree; local `main` is now up to date.
 
 **Verification**

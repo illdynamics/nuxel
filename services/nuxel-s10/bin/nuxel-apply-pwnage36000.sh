@@ -110,9 +110,33 @@ install_zsh_files() {
 
 install_preload() {
     # Session/controller live in /usr/lib/nuxel; the PWA files are root-owned.
-    [ -f "$STAGE/session/nuxel-session.sh" ] && inst "$STAGE/session/nuxel-session.sh" /usr/lib/nuxel/nuxel-session.sh 0755 || true
-    [ -f "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema" ] && inst "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema" /usr/lib/nuxel/nuxel-preload-cinema 0755 || true
-    [ -f "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema.service" ] && inst "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema.service" /etc/systemd/system/nuxel-preload-cinema.service 0644 || true
+    # PWNAGE-60000: this bootstrap runs --files-only on every boot.  It used to
+    # overwrite a newer deployed session with its Oct-2026 staged copy, which
+    # silently reverted the production GPU policy after a cold boot.  Only roll
+    # forward when the staged copy is genuinely newer.
+    if [ -f "$STAGE/session/nuxel-session.sh" ] && \
+       { [ ! -f /usr/lib/nuxel/nuxel-session.sh ] || \
+         [ "$STAGE/session/nuxel-session.sh" -nt /usr/lib/nuxel/nuxel-session.sh ]; }; then
+        inst "$STAGE/session/nuxel-session.sh" /usr/lib/nuxel/nuxel-session.sh 0755 || true
+    else
+        say "kept newer deployed /usr/lib/nuxel/nuxel-session.sh (stage copy is not newer)"
+    fi
+    # The same boot-bootstrap trap applied to the preload controller: its
+    # unconditional install reverted the PWNAGE-62000 presentation/input split
+    # on the first cold boot (measured 2026-11-03).  Only roll forward when the
+    # staged controller is genuinely newer than the deployed one.
+    if [ -f "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema" ] && \
+       { [ ! -f /usr/lib/nuxel/nuxel-preload-cinema ] || \
+         [ "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema" -nt /usr/lib/nuxel/nuxel-preload-cinema ]; }; then
+        inst "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema" /usr/lib/nuxel/nuxel-preload-cinema 0755 || true
+    else
+        say "kept newer deployed /usr/lib/nuxel/nuxel-preload-cinema (stage copy is not newer)"
+    fi
+    if [ -f "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema.service" ] && \
+       { [ ! -f /etc/systemd/system/nuxel-preload-cinema.service ] || \
+         [ "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema.service" -nt /etc/systemd/system/nuxel-preload-cinema.service ]; }; then
+        inst "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema.service" /etc/systemd/system/nuxel-preload-cinema.service 0644 || true
+    fi
     # Launcher assets are installed ONLY when the staged copy is newer than the
     # deployed file.  This bootstrap runs --files-only on every boot; an
     # unconditional install silently reverted live PWNAGE fixes (measured

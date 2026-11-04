@@ -47,7 +47,7 @@ DESC = {
   "nfc": "Samsung S3NRN82 NFC controller firmware",
   "modem_dsp": "Shannon/Calliope modem DSP image (Phase 7)",
   "camera_isp": "FIMC-IS camera ISP / sensor setfiles (Phase 7)",
-  "video": "MFC video codec firmware",
+  "video": "Exynos 9820 MFC video codec firmware (mfc_fw.bin)",
   "npu": "NPU / AI accelerator firmware + models",
   "misc": "Other vendor firmware",
 }
@@ -140,6 +140,18 @@ def main():
             lines.append('      description: "%s"' % DESC.get(cat, cat))
             lines.append('      required: %s' % req)
             lines.append('      checksum: "%s"' % digest)
+            if cat == "video" and fn == "mfc_fw.bin":
+                # PWNAGE-61000: keep the firmware contract next to the blob
+                # hash so a regeneration cannot silently lose provenance.
+                lines.append('      size: %d' % os.path.getsize(full))
+                lines.append('      source_repo: "Linux4/proprietary_vendor_samsung"')
+                lines.append('      source_commit: "05c9ef8f16e0ad5ab274e408c120dfd99fd5c628"')
+                lines.append('      source_path_full: "exynos9820-common/proprietary/vendor/firmware/mfc_fw.bin"')
+                lines.append('      driver_request_name: "mfc_fw.bin"')
+                lines.append('      expected_ip_ver: "0x1300"')
+                lines.append('      format: "ARM32 little-endian firmware image"')
+                lines.append('      redistribution: "build-time fetch only; not redistributed by this repository"')
+                lines.append('      license: "Samsung proprietary vendor blob; provenance is the pinned pmaports vendor-blob source"')
     with open(OUT, "w") as f:
         f.write("\n".join(lines) + "\n")
     print("wrote %s (%d blobs, %d groups)" % (OUT, len(entries), len(groups)))

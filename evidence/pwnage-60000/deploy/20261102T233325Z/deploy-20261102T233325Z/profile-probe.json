@@ -1,0 +1,42 @@
+{
+  "evidence": {
+    "egl_vendor": {
+      "library": "/usr/lib64/libEGL_mesa.so.0.0.0",
+      "path": "/etc/nuxel/egl-kbase.json"
+    },
+    "kbase_node": {
+      "mode": "0o666",
+      "path": "/dev/mali0"
+    },
+    "libraries": {
+      "/usr/lib64/libEGL_mesa.so.0.0.0": [
+        66319,
+        1317152,
+        537128,
+        1793662411355997426
+      ],
+      "/usr/lib64/libgallium_dri.so": [
+        66319,
+        1317178,
+        27575608,
+        1793662411435997426
+      ],
+      "/usr/lib64/libwlroots-0.19.so": [
+        66319,
+        1317179,
+        1352608,
+        1793662411487997426
+      ]
+    },
+    "probe": {
+      "egl_version": "1.5",
+      "elapsed_ms": 87,
+      "gl_version": "OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)",
+      "rc": 0,
+      "renderer": "Mali-G76 MC12 (Panfrost)",
+      "stderr": "MESA-LOADER: failed to retrieve device information"
+    }
+  },
+  "ready": true,
+  "reason": null
+}

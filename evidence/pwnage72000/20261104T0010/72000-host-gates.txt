@@ -1,0 +1,1160 @@
+=== python3 tools/beta/verify-service-graph.py
+/home/wicked/.asdf/installs/python/3.11.8/bin/python3: can't open file '/x/nuxel/tools/beta/verify-service-graph.py': [Errno 2] No such file or directory
+EXIT=2
+=== python3 tests/pwnage62000/test_boot_surface_contract.py
+/home/wicked/.asdf/installs/python/3.11.8/bin/python3: can't open file '/x/nuxel/tests/pwnage62000/test_boot_surface_contract.py': [Errno 2] No such file or directory
+EXIT=2
+=== node tools/s10plus/a45/launcher-registry-test.js
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+
+Error: Cannot find module '/x/nuxel/tools/s10plus/a45/launcher-registry-test.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v20.20.0
+EXIT=1
+=== python3 -m pytest -q tests/pwnage62000
+/home/wicked/.asdf/installs/python/3.11.8/lib/python3.11/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.6.3) or chardet (7.4.3)/charset_normalizer (3.5.0) doesn't match a supported version!
+  warnings.warn(
+....                                                                     [100%]
+4 passed in 0.39s
+EXIT=0
+=== node tools/s10plus/a45/test-lockscreen-indicators.js
+PASS index.html references the exact asset nuxel-charging.png
+PASS index.html references the exact asset nuxel-connected-pc.png
+PASS index.html references the exact asset nuxel-live-console-active.png
+PASS index.html has the three independent indicator nodes
+PASS live-console indicator is the middle status light
+PASS console transport artwork is the PWNAGE-46000 cache revision
+PASS index.html loads lockscreen-indicators.js before lockscreen.js
+PASS runtime reparents stale nested indicator markup to the lockscreen itself
+PASS combination 0: charging independent
+PASS combination 0: usb independent
+PASS combination 0: live independent
+PASS combination 0: charge animation only while charging
+PASS combination 0: inactive charging has no glow class
+PASS combination 0: charging aria visibility follows truth
+PASS combination 0: usb aria visibility follows truth
+PASS combination 0: console aria visibility follows truth
+PASS combination 1: charging independent
+PASS combination 1: usb independent
+PASS combination 1: live independent
+PASS combination 1: charge animation only while charging
+PASS combination 1: charging aria visibility follows truth
+PASS combination 1: usb aria visibility follows truth
+PASS combination 1: console aria visibility follows truth
+PASS combination 2: charging independent
+PASS combination 2: usb independent
+PASS combination 2: live independent
+PASS combination 2: charge animation only while charging
+PASS combination 2: inactive charging has no glow class
+PASS combination 2: charging aria visibility follows truth
+PASS combination 2: usb aria visibility follows truth
+PASS combination 2: console aria visibility follows truth
+PASS combination 3: charging independent
+PASS combination 3: usb independent
+PASS combination 3: live independent
+PASS combination 3: charge animation only while charging
+PASS combination 3: charging aria visibility follows truth
+PASS combination 3: usb aria visibility follows truth
+PASS combination 3: console aria visibility follows truth
+PASS combination 4: charging independent
+PASS combination 4: usb independent
+PASS combination 4: live independent
+PASS combination 4: charge animation only while charging
+PASS combination 4: inactive charging has no glow class
+PASS combination 4: charging aria visibility follows truth
+PASS combination 4: usb aria visibility follows truth
+PASS combination 4: console aria visibility follows truth
+PASS combination 5: charging independent
+PASS combination 5: usb independent
+PASS combination 5: live independent
+PASS combination 5: charge animation only while charging
+PASS combination 5: charging aria visibility follows truth
+PASS combination 5: usb aria visibility follows truth
+PASS combination 5: console aria visibility follows truth
+PASS combination 6: charging independent
+PASS combination 6: usb independent
+PASS combination 6: live independent
+PASS combination 6: charge animation only while charging
+PASS combination 6: inactive charging has no glow class
+PASS combination 6: charging aria visibility follows truth
+PASS combination 6: usb aria visibility follows truth
+PASS combination 6: console aria visibility follows truth
+PASS combination 7: charging independent
+PASS combination 7: usb independent
+PASS combination 7: live independent
+PASS combination 7: charge animation only while charging
+PASS combination 7: charging aria visibility follows truth
+PASS combination 7: usb aria visibility follows truth
+PASS combination 7: console aria visibility follows truth
+PASS refresh during in-flight read queues one fresh backend read
+PASS stale positive response cannot re-light USB after detach
+PASS fresh detach response keeps charging independent
+PASS failed refresh hides previously-on USB proof
+PASS failed refresh hides previously-on console proof
+PASS failed refresh preserves independent external-power state
+PASS a stopped indicator does not read system state
+PASS start() reads immediately
+PASS repeated ticks do not issue overlapping reads
+PASS a failed read leaves charging dim
+PASS a failed read leaves usb dim
+PASS a failed read leaves console dim
+PASS connected WLAN console keeps the base live-console indicator on
+PASS base live-console indicator names service readiness
+PASS connected WLAN console lights the WLAN transport
+PASS idle WLAN listener keeps the base indicator on (service ready)
+PASS idle WLAN listener never lights a transport icon
+PASS idle WLAN listener leaves the WLAN transport dark
+PASS powered Bluetooth lights the lockscreen indicator
+PASS Bluetooth discovery is exposed on the indicator
+PASS Bluetooth indicator names its state
+PASS explicit Bluetooth OFF leaves the indicator dim
+PASS explicit Bluetooth OFF is distinguishable from unknown
+PASS missing Bluetooth provider leaves the indicator dim, not OFF
+PASS missing Bluetooth provider reports UNKNOWN
+
+ALL PASS
+EXIT=0
+=== node tools/s10plus/a45/test-lockscreen-layout.js
+PASS penguin bottom is above the viewport centre (below-half reserved)
+PASS lockhead top is below the wallpaper penguin
+PASS lockhead/penguin spacing is at least MIN_SPACING
+PASS lockhead bottom edge is inside the viewport
+PASS lockhead top edge is inside the viewport
+PASS lockhead is centred within horizontal bounds
+PASS lockhead occupies the lower ~quarter of the screen
+PASS charging painted width is exactly 2x baseline
+PASS charging painted height is exactly 2x baseline
+PASS charging full alpha silhouette fits its box
+PASS usb painted width is exactly 2x baseline
+PASS usb painted height is exactly 2x baseline
+PASS usb full alpha silhouette fits its box
+PASS live painted width is exactly 2x baseline
+PASS live painted height is exactly 2x baseline
+PASS live full alpha silhouette fits its box
+PASS indicator row has a neat 14px gap below battery
+PASS indicator painted lower edge is above vertical centre
+PASS indicator row is above lockhead resting position
+PASS 1-active row fits 360px viewport
+PASS 1-active row is horizontally centred
+PASS 2-active row fits 360px viewport
+PASS 2-active row is horizontally centred
+PASS 3-active row fits 360px viewport
+PASS 3-active row is horizontally centred
+PASS CSS uses the measured 68px indicator box
+PASS indicator row is pinned to the proven physical y=184 placement
+PASS inactive indicators are removed from paint, not ghosted
+PASS active indicators return to layout
+PASS crop-only clip-path is gone
+PASS a72 per-indicator box sizes present
+PASS a72 equal painted height across all three indicators
+PASS a72 equal-height row fits 360px viewport
+PASS indicator row follows the handle block as a lockscreen-level sibling
+PASS idle lockhead has no software filter
+PASS idle indicators have no software filter
+PASS drag feedback keeps the short-lived lockhead drop-shadow
+PASS armed feedback keeps the short-lived lockhead drop-shadow
+PASS variant 360x760 non-overlap
+PASS variant 360x760 handle inside viewport
+PASS variant 760x360 non-overlap
+PASS variant 760x360 handle inside viewport
+PASS variant 320x640 non-overlap
+PASS variant 320x640 handle inside viewport
+PASS variant 430x900 non-overlap
+PASS variant 430x900 handle inside viewport
+ALL PASS
+EXIT=0
+=== node tools/s10plus/a45/test-lockscreen-unlock.js
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=release id=1 pointer=7 up=27 threshold=167 reached=0 source=pointerup state=DRAGGING locked=1 visible=1
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] state=IDLE reason=release-below-threshold
+PASS [MOCK] small drag remains locked
+PASS [MOCK] small drag sends zero unlock requests
+PASS [MOCK] small drag snaps back to rest
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=197 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=7 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] sufficient upward drag requests unlock once
+PASS [MOCK] sufficient upward drag dismisses lockscreen
+PASS [MOCK] request carries viewport-pixel distance and threshold
+PASS [MOCK] threshold is physically reachable above the resting lockhead
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=11 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=release id=1 pointer=11 up=247 threshold=167 reached=1 source=pointerup state=TOUCH_CAPTURED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] release coordinate alone can complete a coalesced swipe
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=7 up=247 threshold=167 reached=1 source=window-pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] release outside the icon bounds still unlocks
+PASS [MOCK] release outside dismisses the overlay
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=197 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=cancel id=1 reason=window-pointercancel locked=1 visible=1
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] state=IDLE reason=window-pointercancel
+PASS [MOCK] pointercancel never requests unlock
+PASS [MOCK] pointercancel remains locked and returns to rest
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=297 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=cancel id=1 reason=lostpointercapture locked=1 visible=1
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] state=IDLE reason=lostpointercapture
+PASS [MOCK] lostpointercapture never requests unlock
+PASS [MOCK] lostpointercapture remains locked and returns to rest
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=release id=1 pointer=7 up=-153 threshold=167 reached=0 source=pointerup state=TOUCH_CAPTURED locked=1 visible=1
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] state=IDLE reason=release-below-threshold
+PASS [MOCK] downward movement never requests unlock
+PASS [MOCK] downward movement remains locked
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=release id=1 pointer=7 up=0 threshold=167 reached=0 source=pointerup state=TOUCH_CAPTURED locked=1 visible=1
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] state=IDLE reason=release-below-threshold
+PASS [MOCK] tap without drag never requests unlock
+PASS [MOCK] tap remains locked
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=7 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] duplicate release/cancel events produce exactly one request
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=7 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] gesture=unlock-rejected id=1 error=backend-unlock-failed stateAfter=UNLOCKING lockedAfter=1 visibleAfter=1
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] state=IDLE reason=unlock-rejected
+PASS [MOCK] backend error keeps the lockscreen mounted
+PASS [MOCK] backend error returns the handle to rest
+PASS [MOCK] backend error leaves state IDLE for a retry
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=7 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] successful acknowledgement hides the overlay and clears locked
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=boot locked=1 visible=1 threshold=167
+PASS [MOCK] locked state blocks Home/application interaction
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=7 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] gesture handoff reaches the launcher controller and dismisses
+PASS [MOCK] native host unlock action was requested
+PASS [MOCK] successful unlock lands on the canonical Home desktop
+PASS [MOCK] unlocked session restores application interaction
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=power locked=1 visible=1 threshold=167
+PASS [MOCK] next Power-button lock re-shows the lockscreen
+PASS [MOCK] Power-button lock still asks for panel off
+PASS [MOCK] Power-button lock hides the keyboard
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=boot locked=1 visible=1 threshold=167
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+PASS [MOCK] real bridge display=off transition re-locks the session
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+PASS [MOCK] subsequent wake keeps the lockscreen visible
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] stale OFF after unlock does not immediately re-lock
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=display-off locked=1 visible=1 threshold=167
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+PASS [MOCK] next real display-off after wake locks again
+PASS [MOCK] native idle timeout default leaves five minutes for first interaction
+PASS [MOCK] native idle timeout still reads screen-timeout.json
+PASS [MOCK] native timeout still emits IDLE_SCREEN_OFF
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=20 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=20 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=2 pointer=21 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=2 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=2 pointer=21 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=2 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] gesture=unlock-ack id=2 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=3 pointer=22 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=3 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=3 pointer=22 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=3 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] gesture=unlock-ack id=3 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=4 pointer=23 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=4 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=4 pointer=23 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=4 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] gesture=unlock-ack id=4 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=5 pointer=24 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=5 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=5 pointer=24 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=5 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] gesture=unlock-ack id=5 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=cycle locked=1 visible=1 threshold=167
+PASS [MOCK] pointerdown handler count stays at one
+PASS [MOCK] window pointerup handler count does not grow
+PASS [MOCK] five cycles still issue exactly five unlock requests
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=boot locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=7 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] no lockscreen overlay remains after unlock
+PASS [MOCK] elementFromPoint reaches the launcher after unlock
+PASS [MOCK] an application element can take focus after unlock
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=boot locked=1 visible=1 threshold=167
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] successful boot unlock calls the canonical Home reset exactly once
+PASS [MOCK] successful boot unlock closes a stale Applications drawer
+PASS [MOCK] lockscreen is hidden before Home is selected (no drawer flash)
+PASS [MOCK] Home reset returns the launcher to desktop 1
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=boot locked=1 visible=1 threshold=167
+Opening PWA: Wi-Fi SSH Console at /pwa/nuxel-apps/console-wifi/index.html
+PASS [MOCK] locked deep-link launch is ignored, not rendered behind the lock
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=boot locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=7 down=(180,547) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=threshold id=1 up=247 threshold=167 reached=1 state=THRESHOLD_REACHED
+[Lockscreen] gesture=release id=1 pointer=7 up=247 threshold=167 reached=1 source=pointerup state=THRESHOLD_REACHED locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=247 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] gesture=unlock-rejected id=1 error=backend-unlock-failed stateAfter=UNLOCKING lockedAfter=1 visibleAfter=1
+[Lockscreen] state=IDLE reason=unlock-rejected
+PASS [MOCK] failed backend unlock does not navigate to Home
+PASS [MOCK] failed backend unlock keeps the lockscreen mounted and locked
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=boot locked=1 visible=1 threshold=167
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] post-unlock clears a stale #app route so it cannot reopen later
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=boot locked=1 visible=1 threshold=167
+PASS [MOCK] cold boot leaves the lockscreen mounted and locked
+PASS [MOCK] boot gate still keys on ?boot=os
+PASS [MOCK] lockscreen script uses the current cache-busting revision
+PASS [MOCK] app controller uses the current cache-busting revision
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+PASS [MOCK] a valid Full reading paints 100%
+PASS [MOCK] a Full 0% sample never replaces 100%
+PASS [MOCK] first charging 0% sample is rejected
+PASS [MOCK] second charging 0% sample is rejected
+PASS [MOCK] third consecutive charging 0% sample is accepted
+PASS [MOCK] a normal 1% change is accepted immediately
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] touch-warning show=1 last=2026-10-27T20:00:00Z NO_TOUCH_DEVICE devices=7
+PASS [MOCK] no-touch boot shows the warning banner
+PASS [MOCK] warning tells the owner to unplug and restart
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:10Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen'
+PASS [MOCK] a successful ARMED_OK receipt hides the warning
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] position top=579 penguinBottom=547 vh=760 handle=108
+[Lockscreen] show version=a45.1 reason=test locked=1 visible=1 threshold=167
+[Lockscreen] gesture=down id=1 pointer=31 down=(40,600) threshold=167 vh=760 state=TOUCH_CAPTURED
+[Lockscreen] gesture=release id=1 pointer=31 up=300 threshold=167 reached=1 source=window-pointerup state=DRAGGING locked=1 visible=1
+[Lockscreen] gesture=unlock-request id=1 up=300 threshold=167 state=UNLOCKING locked=1 visible=1
+[Lockscreen] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+[Lockscreen] touch-warning show=0 last=2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2
+[Lockscreen] hide version=a45.1 state=UNLOCKED locked=0 visible=0
+PASS [MOCK] a lower-band swipe away from the artwork unlocks
+
+NOTE: all checks above are MOCKED/OFFLINE.  Wayland/phoc/WebKitGTK
+      integration and the physical panel are verified only by the live
+      USB run and the owner acceptance test.
+
+ALL PASS (66/66)
+EXIT=0
+=== node tools/s10plus/a45/test-drawer-gesture.js
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+
+Error: Cannot find module '/x/nuxel/tools/s10plus/a45/test-drawer-gesture.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v20.20.0
+EXIT=1
+=== python3 tools/s10plus/a45/test-lockscreen-indicators.py
+PASS empty tree: all indicators off
+PASS charging-only cable: power on, no false PC, no console
+PASS actively charging: charge animation only
+PASS battery Full: external power, not active charging
+PASS battery Not charging: external power, no charge animation
+PASS OTG/host mode does NOT light the charging indicator
+PASS configured UDC + tty, no console process: PC only
+PASS stale android USB CONFIGURED: no UDC proof, no PC
+PASS android USB DISCONNECTED: no PC
+PASS addressed UDC is pre-enumeration: no PC
+PASS configured UDC + running console process: all three
+PASS root shell alone does NOT light live console
+PASS console process without tty fd does NOT light live console
+PASS not-attached UDC: console cannot stay active without a data link
+PASS console process without a bound gadget is inactive
+PASS configured UDC + typec [device] role: PC on
+PASS A77: UNKNOWN udc speed after detach clears PC + console
+PASS connected udc speed restores the PC truth
+PASS A77: no wired VBUS clears PC + console
+PASS wireless charging alone never restores a data link
+PASS absent speed/VBUS attributes stay neutral
+PASS typec no-device-role vetoes a stale configured UDC
+PASS typec [device] role restored: PC on again
+PASS absent Type-C class leaves UDC proof authoritative
+PASS A74: dwc3 debugfs link_state is NOT read; PC on via Type-C role
+PASS combination power=0 pc=0 live=0 -> (0,0,0,0)
+PASS combination power=0 pc=0 live=1 -> (0,0,0,0)
+PASS combination power=0 pc=1 live=0 -> (1,0,1,0)
+PASS combination power=0 pc=1 live=1 -> (1,0,1,1)
+PASS combination power=1 pc=0 live=0 -> (1,1,0,0)
+PASS combination power=1 pc=0 live=1 -> (1,1,0,0)
+PASS combination power=1 pc=1 live=0 -> (1,1,1,0)
+PASS combination power=1 pc=1 live=1 -> (1,1,1,1)
+PASS stale lease pid does NOT light live console
+PASS validated live lease lights the console
+PASS start_ticks-bound serving lease lights the console
+PASS reused PID with the wrong start_ticks is rejected
+PASS a non-serving lease state does not light the console
+PASS JSON envelope carries all three active states
+
+ALL PASS
+PASS empty tree: all indicators off
+PASS charging-only cable: power on, no false PC, no console
+PASS actively charging: charge animation only
+PASS battery Full: external power, not active charging
+PASS battery Not charging: external power, no charge animation
+PASS OTG/host mode does NOT light the charging indicator
+PASS configured UDC + tty, no console process: PC only
+PASS stale android USB CONFIGURED: no UDC proof, no PC
+PASS android USB DISCONNECTED: no PC
+PASS addressed UDC is pre-enumeration: no PC
+PASS configured UDC + running console process: all three
+PASS root shell alone does NOT light live console
+PASS console process without tty fd does NOT light live console
+PASS not-attached UDC: console cannot stay active without a data link
+PASS console process without a bound gadget is inactive
+PASS configured UDC + typec [device] role: PC on
+PASS A77: UNKNOWN udc speed after detach clears PC + console
+PASS connected udc speed restores the PC truth
+PASS A77: no wired VBUS clears PC + console
+PASS wireless charging alone never restores a data link
+PASS absent speed/VBUS attributes stay neutral
+PASS typec no-device-role vetoes a stale configured UDC
+PASS typec [device] role restored: PC on again
+PASS absent Type-C class leaves UDC proof authoritative
+PASS A74: dwc3 debugfs link_state is NOT read; PC on via Type-C role
+PASS combination power=0 pc=0 live=0 -> (0,0,0,0)
+PASS combination power=0 pc=0 live=1 -> (0,0,0,0)
+PASS combination power=0 pc=1 live=0 -> (1,0,1,0)
+PASS combination power=0 pc=1 live=1 -> (1,0,1,1)
+PASS combination power=1 pc=0 live=0 -> (1,1,0,0)
+PASS combination power=1 pc=0 live=1 -> (1,1,0,0)
+PASS combination power=1 pc=1 live=0 -> (1,1,1,0)
+PASS combination power=1 pc=1 live=1 -> (1,1,1,1)
+PASS stale lease pid does NOT light live console
+PASS validated live lease lights the console
+PASS start_ticks-bound serving lease lights the console
+PASS reused PID with the wrong start_ticks is rejected
+PASS a non-serving lease state does not light the console
+PASS JSON envelope carries all three active states
+
+ALL PASS
+[compile:a33] cc -std=gnu11 -Wall -Wextra -Werror -I /tmp/nuxel-ind-c-810nwa5x/a33 -o /tmp/nuxel-ind-c-810nwa5x/a33/test-lockscreen-indicators /x/nuxel/tools/s10plus/a45/test-lockscreen-indicators.c
+[compile:a45] cc -std=gnu11 -Wall -Wextra -Werror -I /tmp/nuxel-ind-c-810nwa5x/a45 -o /tmp/nuxel-ind-c-810nwa5x/a45/test-lockscreen-indicators /x/nuxel/tools/s10plus/a45/test-lockscreen-indicators.c
+EXIT=0
+=== bash tools/beta/tests/test-rollback-reboot.sh
+=== rollback & reboot-policy scenarios (offline, sandboxed) ===
+  sandbox: /tmp/nuxel-rb-scen-yY3v9d
+  PASS capture records the previous hash (and records an absent target as absent)
+  PASS an install that cannot be completed: auto-rollback, previous bytes intact (rc=3)
+  PASS no staged file left behind after the refused install
+  PASS a failing manifest health_check: automatic rollback (rc=3)
+  PASS raw-block target refused as a manifest violation, nothing written (rc=4)
+  PASS a missing source is refused as a manifest violation (rc=4, target untouched)
+  PASS clean install: staged-verified, atomic, health-gated; verdict DEPLOYED_UNVERIFIED
+  PASS rollback restores the recorded baseline after a mutation
+  PASS --briq isolates the baseline under <state>/<briq-id>/ and records the id
+  PASS policy refuses a reboot with no stated reason
+  PASS policy allows the first reboot (reason + diagnostic)
+  PASS policy refuses a blind repeat (same diagnostic)
+  PASS policy refuses the same reason twice
+  PASS policy allows a new reason + a new diagnostic
+  PASS policy refuses the next reboot when Nuxel did not come back
+  PASS policy refuses a 4th reboot (hard budget of 3)
+  PASS policy refuses further reboots in a mode that failed three times
+  PASS a different diagnostic mode is still allowed (the guard is mode-scoped)
+  PASS reboot needs --execute --confirm AND a reachable console; the dry run issues nothing
+  PASS the reboot invocation is guarded: reachability gate (line 210) and dry-run exit (line 225) precede it (line 234)
+  PASS no scenario wrote under .qq
+  PASS no receipt JSON was written into the workspace
+rollback/reboot scenario tests: PASS=22 FAIL=0
+EXIT=0
+=== python3 -m pytest -q tests/pwnage31000/test_preload_cinema.py tests/pwnage31000/test_preload_packaging.py
+/home/wicked/.asdf/installs/python/3.11.8/lib/python3.11/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.6.3) or chardet (7.4.3)/charset_normalizer (3.5.0) doesn't match a supported version!
+  warnings.warn(
+.................................................                        [100%]
+49 passed in 25.64s
+EXIT=0
+=== python3 -m pytest -q tests/pwnage49000/test_pwnage49000.py
+/home/wicked/.asdf/installs/python/3.11.8/lib/python3.11/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.6.3) or chardet (7.4.3)/charset_normalizer (3.5.0) doesn't match a supported version!
+  warnings.warn(
+..........                                                               [100%]
+10 passed in 0.06s
+EXIT=0
+=== python3 tools/s10plus/a33/verify-service-graph.py
+INFO  nuxel-console.service is installed but deliberately NOT enabled: the live console has exactly ONE owner: the initramfs-started /opt/nuxel/nuxel-console already holds /run/nuxel-console.lock before systemd exists, and a second console on the same tty desynchronises the framed protocol. The unit is guarded by ConditionPathExists=/usr/bin/nuxel-console (absent on the shipped image) + ExecCondition=nuxel-console-free (proves the port is free) + Restart=no
+WARN  nuxel-camera-portal.service: WantedBy=graphical-session.target is a USER target in a SYSTEM unit (enablement is a no-op in the system manager) - VM-only surface (shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service), never installed on the handset by images/s10plus/build-phone-rootfs-inside-fedora.sh; enablement belongs to the VM/user manager
+WARN  nuxel-home-kiosk.service: ExecStart /home/wicked/bin/nuxel-home-kiosk is a VM/desktop development path - these units are installed by the VM/dev bootstrap, never by the handset builder
+WARN  nuxel-home-native.service: ExecStart /usr/local/bin/nuxel-home is a VM/desktop development path - these units are installed by the VM/dev bootstrap, never by the handset builder
+WARN  nuxel-phosh-agent.service: ExecStart /usr/local/bin/nuxel-phosh-agent is a VM/desktop development path - these units are installed by the VM/dev bootstrap, never by the handset builder
+WARN  services/nuxel-session/systemd/nuxel-wayland.service dropped the shipped Environment= ('WLR_RENDERER=pixman')
+units=17 problems=0 warnings=5 verdict=OFFLINE_TESTED
+EXIT=0
+=== python3 tools/s10plus/a33/tests/test-boot-surface-contract.py
+== boot-surface wiring contract (bg-02) ==
+PASS the A33 bridge source exists
+PASS bridge: ANIM_MIN_CYCLE (the minimum-cycle floor is reported)
+PASS bridge: ANIMATION_STOP (the stop is logged (requested AND confirmed))
+PASS bridge: LAUNCHER_DISPLAY (the launcher taking the panel is logged)
+PASS bridge: NUXEL_ANIM_HANDOFF (the handoff receipt is logged)
+PASS bridge: NUXEL_ANIM_LOOP= (the player's own loop counter is read)
+PASS bridge: NUXEL_ANIM_HEARTBEAT_LOOPS= (the player's heartbeat counter is read)
+PASS bridge: NUXEL_FB_OWNER_BUSY (a second framebuffer writer is refused and reported)
+PASS bridge: receipt=%s owner=%s (the receipt format is receipt=<id> owner=<anim|ui>)
+PASS bridge: the single-owner lock is /run/nuxel-fb-owner.lock
+PASS bridge: the durable owner record is /var/lib/nuxel/fb-owner
+PASS bridge: the receipt path is /run/nuxel-anim-handoff
+PASS bridge: the ownership lock is taken BEFORE /dev/fb0 is opened
+PASS bridge: the decision table is the shared header, not a private copy
+PASS bridge: the protected ABGR conversion is still the DECON order
+PASS animation-handoff config parses
+PASS config: the handoff mode is receipt-driven (no shipped time/gap rule)
+PASS config: min_cycles >= 1 (at least one complete play-through)
+PASS config: the mp4 geometry is the measured 192 frames @ 24 fps
+PASS config: receipt_path (/run/nuxel-anim-handoff) is the path the bridge uses
+PASS config: owner_lock (/run/nuxel-fb-owner.lock) is the path the bridge uses
+PASS config: owner_record (/var/lib/nuxel/fb-owner) is the path the bridge uses
+PASS config: log_path (/var/lib/nuxel/anim-handoff.log) is the path the bridge uses
+PASS config: the bounded wait exists so a stalled player cannot freeze the boot
+PASS config: it is the file the bridge reads
+PASS verbose-boot config parses
+PASS verbose-boot consumer exists
+PASS verbose-boot default is OFF (a fresh boot is not verbose)
+PASS verbose-boot: the Bixby hold override is reported as needing a BOOT update, not faked
+PASS the boot-diagnostics document carries animation_mode=standard by default
+PASS the boot-diagnostics document carries verbosity_level=1 by default
+PASS the document states the ONE precedence rule
+PASS the document maps all four verbosity levels
+PASS the override records a userspace fallback that needs no BOOT write
+PASS the document explains that adding keys does not bump schema_version
+PASS verbose-boot consumer reads /etc/nuxel/boot/verbose-boot.json
+PASS verbose-boot consumer migrates the legacy locations
+PASS verbose-boot consumer publishes /run/nuxel/verbose-boot
+PASS verbose-boot consumer publishes the animation-skip request the bridge reads
+PASS verbose-boot consumer records the stage log
+PASS verbose-boot consumer refuses to overwrite an unreadable document
+PASS verbose-boot consumer validates the animation mode instead of trusting it
+PASS verbose-boot consumer clamps/reports the verbosity level
+PASS verbose-boot consumer implements the documented precedence
+PASS verbose-boot consumer publishes the animation policy and verbosity
+PASS verbose-boot consumer emits a NUXEL_BOOT_ANIMATION marker for the live group
+PASS the skip request names WHY the animation was waived
+PASS the boot-log verbosity never turns the log on by itself
+PASS nuxelctl exists
+PASS nuxelctl: verbose-boot status|on|off is wired
+PASS nuxelctl: the one-time override status is exposed
+PASS nuxelctl: the animation policy is settable from the console
+PASS nuxelctl: the verbosity level is settable from the console
+PASS nuxelctl: an out-of-range verbosity level is refused, not silently clamped
+PASS nuxelctl: every boot-diagnostics write merges instead of replacing the document
+PASS nuxelctl: the boot controls share ONE document writer
+PASS nuxelctl: handoff status|simulate|audit is wired
+PASS nuxelctl: it resolves the same config path as the consumer/settings UI
+PASS launcher manifest parses
+PASS manifest carries pwa_version / cache_version / registry_version
+PASS sw.js CACHE_VERSION == manifest.cache_version
+PASS status-bar.js VERSION == manifest.pwa_version
+PASS apps.js REGISTRY_VERSION == manifest.registry_version
+PASS the cache namespace advanced past the A32 baseline (v3-a32)
+PASS sw.js deletes the previous cache namespaces on activate
+PASS the launcher registry contains org.nuxel.Terminal
+PASS the launcher registry contains nuxel-settings
+PASS manifest.apps_in_registry lists exactly the registry ids it claims
+PASS manifest names this tree the single source of truth
+PASS manifest exposes 10 safe zones for this device
+PASS index.html loads the safe-zone engine and the status bar
+PASS the Settings app is runnable (index.html + settings.js present)
+PASS Settings: the verbose-boot toggle writes the same config name as the console
+PASS Settings: the safe-zone editor calls the launcher's shared planner
+PASS safe-zones.js exists
+PASS safe-zones: ZONES = 10
+PASS safe-zones: the S10+ portrait preset is zones 9,10
+PASS safe-zones: padding_dp 6
+PASS safe-zones: the storage name is statusbar-safezones
+PASS safe-zones: it writes through NuxelHost.configSet with a localStorage fallback
+PASS safe-zones: the blocked intervals are excluded, and the planner is shared
+PASS shipped safe-zone document parses
+PASS shipped safe-zone document: zones = 10 in the schema
+PASS shipped safe-zone document: s10plus portrait = [9, 10]
+PASS document present: docs/beta-finalization/boot/ANIMATION-HANDOFF.md
+PASS document present: docs/beta-finalization/boot/VERBOSE-BOOT.md
+PASS document present: docs/beta-finalization/boot/COLOUR-CONVERSION.md
+PASS document present: docs/beta-finalization/launcher/SAFE-ZONES.md
+PASS document present: docs/beta-finalization/manual-proof/02-launcher.md
+PASS document present: docs/beta-finalization/manual-proof/03-display-boot.md
+PASS ANIMATION-HANDOFF.md documents the audit line the bridge emits
+PASS ANIMATION-HANDOFF.md names the shared decision corpus
+PASS VERBOSE-BOOT.md documents the durable path and the override state
+PASS SAFE-ZONES.md documents the ten-zone geometry and the excluded-interval contract
+PASS manual proof area 3 covers the handoff, the colour order and verbose boot
+PASS manual proof area 3 covers the animation policy and the verbosity level
+PASS VERBOSE-BOOT.md documents the three controls and the precedence
+PASS colour test page ships for the owner (on-glass colour check)
+PASS the Settings app exposes the standard-animation control
+PASS the Settings app exposes the verbosity-level control
+PASS the Settings app writes the whole panel through the same config name
+PASS the Settings app keeps the documented precedence on screen
+PASS the Settings app does not fake the animation effect it cannot observe
+PASS the store exports the animation modes and the verbosity range
+PASS the store implements the precedence rule in one place
+PASS the Quick Settings tile surfaces the effective animation policy
+PASS the Quick Settings tile cycles the policy on a long press
+PASS the consumer uses the same three animation modes
+PASS nuxelctl uses the same three animation modes
+PASS the store uses the same three animation modes
+PASS the Settings app uses the same three animation modes
+PASS no guessed reboot/magic string in nuxel-wl-fb.c
+PASS no guessed reboot/magic string in nuxel-verbose-boot.py
+PASS no guessed reboot/magic string in nuxelctl
+PASS no guessed reboot/magic string in qs.js
+PASS no guessed reboot/magic string in settings-store.js
+PASS no guessed reboot/magic string in settings.js
+PASS the launcher tree has app manifests to check
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/authenticator/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/authenticator/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/authenticator/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/authenticator/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/browser/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/browser/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/calculator/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calculator/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/calendar/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/calendar/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/calendar/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/camera-gallery/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/camera-gallery/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/camera-gallery/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/cleanup/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/cleanup/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/cleanup/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/cleanup/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/clipper/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/clipper/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/clock/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/clock/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/console-usb/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/console-usb/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/console-wifi/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/console-wifi/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/console/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/console/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/devmgmt/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/devmgmt/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/devmgmt/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/devmgmt/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/downloader/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/downloader/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/downloader/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/downloader/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/files/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/files/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/files/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/mail/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/mail/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/mail/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/maps/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/maps/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/media/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/media/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/media/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/media/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/notes/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/notes/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/notes/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/nuxtore/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/nuxtore/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/penguinterface/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/penguinterface/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/penguinterface/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/penguinterface/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/photos/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/photos/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/recorder/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/recorder/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/remote-scrcpy/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/remote-scrcpy/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/remote-vnc/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/remote-vnc/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/remote-xrdp/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/remote-xrdp/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/rootcontrol/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/rootcontrol/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/rootcontrol/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/rootcontrol/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/settings/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/settings/manifest.json -> ../../nuxel-home/icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/settings/manifest.json -> ../../nuxel-home/icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/snekbyte/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/snekbyte/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/terminal/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/terminal/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/terminal/manifest.json -> icons/icon-512.png
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/vault/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon-512.png
+PASS app manifest icon resolves: pwa/nuxel-apps/vault/manifest.json -> icons/icon.svg
+PASS app manifest is valid (name + start_url): pwa/nuxel-apps/weather/manifest.json
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-48.png
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-72.png
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-96.png
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-128.png
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-144.png
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-152.png
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-192.png
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-384.png
+PASS app manifest icon resolves: pwa/nuxel-apps/weather/manifest.json -> icons/icon-512.png
+PASS the Settings manifest identifies itself as the nuxel-settings registry entry
+PASS the Settings manifest declares the settings documents it edits
+PASS boot test runner exists
+PASS runner executes test-boot-surface-contract.py
+PASS runner executes test-colour-order.py
+PASS runner executes nuxel-anim-handoff.py
+PASS runner executes nuxel-verbose-boot.py
+PASS runner executes settings-store-test.js
+PASS runner executes launcher-registry-test.js
+PASS runner executes safe-zones-test.js
+PASS runner is executable
+PASS boot build script exists
+PASS build script builds the bridge source and the shared handoff header
+PASS build script reports a skipped build instead of faking one
+PASS build script never writes the A32 artifact directory
+PASS build script is executable
+PASS no TODO/FIXME/placeholder left in nuxel-wl-fb.c
+PASS no positive on-device verification claim in nuxel-wl-fb.c
+PASS no TODO/FIXME/placeholder left in nuxel-handoff-logic.h
+PASS no positive on-device verification claim in nuxel-handoff-logic.h
+PASS no TODO/FIXME/placeholder left in safe-zones.js
+PASS no positive on-device verification claim in safe-zones.js
+PASS no TODO/FIXME/placeholder left in status-bar.js
+PASS no positive on-device verification claim in status-bar.js
+PASS no TODO/FIXME/placeholder left in apps.js
+PASS no positive on-device verification claim in apps.js
+PASS no TODO/FIXME/placeholder left in settings.js
+PASS no positive on-device verification claim in settings.js
+PASS no TODO/FIXME/placeholder left in nuxelctl
+PASS no positive on-device verification claim in nuxelctl
+PASS no TODO/FIXME/placeholder left in nuxel-verbose-boot.py
+PASS no positive on-device verification claim in nuxel-verbose-boot.py
+PASS no TODO/FIXME/placeholder left in colour-test.html
+PASS no positive on-device verification claim in colour-test.html
+PASS no TODO/FIXME/placeholder left in ANIMATION-HANDOFF.md
+PASS no positive on-device verification claim in ANIMATION-HANDOFF.md
+PASS no TODO/FIXME/placeholder left in VERBOSE-BOOT.md
+PASS no positive on-device verification claim in VERBOSE-BOOT.md
+PASS no TODO/FIXME/placeholder left in COLOUR-CONVERSION.md
+PASS no positive on-device verification claim in COLOUR-CONVERSION.md
+PASS no TODO/FIXME/placeholder left in SAFE-ZONES.md
+PASS no positive on-device verification claim in SAFE-ZONES.md
+PASS no TODO/FIXME/placeholder left in 02-launcher.md
+PASS no positive on-device verification claim in 02-launcher.md
+PASS no TODO/FIXME/placeholder left in 03-display-boot.md
+PASS no positive on-device verification claim in 03-display-boot.md
+
+PASS boot-surface contract (0 failures)
+EXIT=0
+=== node tools/s10plus/a33/tests/launcher-registry-test.js
+PASS registry loaded
+PASS registry carries a machine-readable revision
+PASS registry has org.nuxel.Terminal
+PASS registry has nuxel-settings
+PASS registry has canonical org.nuxel.SnekByte
+PASS SnekByte uses the supplied launcher icon
+PASS old SnekByte recents id is migrated
+PASS A32 registry entry kept: nuxel-dialer
+PASS A32 registry entry kept: nuxel-messages
+PASS A32 registry entry kept: nuxel-contacts
+PASS A32 registry entry kept: org.nuxel.Mail
+PASS A32 registry entry kept: org.nuxel.Calendar
+PASS A32 registry entry kept: org.nuxel.Notes
+PASS A32 registry entry kept: org.nuxel.Files
+PASS A32 registry entry kept: nuxel-camera
+PASS entry nuxel-dialer is launchable (id/name/url/type/category)
+PASS entry nuxel-messages is launchable (id/name/url/type/category)
+PASS entry nuxel-contacts is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Clipper is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Mail is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calendar is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Browser is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Notes is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Files is launchable (id/name/url/type/category)
+PASS entry nuxel-camera is launchable (id/name/url/type/category)
+PASS entry nuxel-settings is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Terminal is launchable (id/name/url/type/category)
+PASS entry org.nuxel.LiveConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.USBSSHConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.WiFiSSHConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.RemoteDesktopXRDP is launchable (id/name/url/type/category)
+PASS entry org.nuxel.RemoteDesktopVNC is launchable (id/name/url/type/category)
+PASS entry org.nuxel.ScrcpyMirror is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calculator is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Clock is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Photos is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Weather is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Maps is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Nuxtore is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Recorder is launchable (id/name/url/type/category)
+PASS entry org.nuxel.SnekByte is launchable (id/name/url/type/category)
+PASS entry org.mozilla.firefox is launchable (id/name/url/type/category)
+PASS entry org.videolan.VLC is launchable (id/name/url/type/category)
+PASS entry org.signal.Signal is launchable (id/name/url/type/category)
+PASS entry com.stremio.Stremio is launchable (id/name/url/type/category)
+PASS entry org.gnome.FileRoller is launchable (id/name/url/type/category)
+PASS entry org.gnome.Loupe is launchable (id/name/url/type/category)
+PASS entry org.gnome.Papers is launchable (id/name/url/type/category)
+PASS entry org.gnome.SystemMonitor is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Media is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Downloader is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Authenticator is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Vault is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Cleanup is launchable (id/name/url/type/category)
+PASS entry org.nuxel.DevMgmt is launchable (id/name/url/type/category)
+PASS entry org.nuxel.PenguInterface is launchable (id/name/url/type/category)
+PASS entry org.gnome.Software is launchable (id/name/url/type/category)
+PASS settings is a served PWA, not the native placeholder
+PASS terminal is a served PWA under the authoritative tree
+PASS every PWA url lives under /pwa/nuxel-apps/
+PASS registry entry org.nuxel.Clipper is served with a valid manifest
+PASS served asset exists for org.nuxel.Mail (/pwa/nuxel-apps/mail/index.html)
+PASS app manifest valid for org.nuxel.Mail
+PASS served asset exists for org.nuxel.Calendar (/pwa/nuxel-apps/calendar/index.html)
+PASS app manifest valid for org.nuxel.Calendar
+PASS served asset exists for org.nuxel.Notes (/pwa/nuxel-apps/notes/index.html)
+PASS app manifest valid for org.nuxel.Notes
+PASS served asset exists for org.nuxel.Files (/pwa/nuxel-apps/files/index.html)
+PASS app manifest valid for org.nuxel.Files
+PASS served asset exists for nuxel-settings (/pwa/nuxel-apps/settings/index.html)
+PASS app manifest valid for nuxel-settings
+PASS served asset exists for org.nuxel.Terminal (/pwa/nuxel-apps/terminal/index.html)
+PASS app manifest valid for org.nuxel.Terminal
+PASS registry entry org.nuxel.LiveConsole is served with a valid manifest
+PASS registry entry org.nuxel.USBSSHConsole is served with a valid manifest
+PASS registry entry org.nuxel.WiFiSSHConsole is served with a valid manifest
+PASS registry entry org.nuxel.RemoteDesktopXRDP is served with a valid manifest
+PASS registry entry org.nuxel.RemoteDesktopVNC is served with a valid manifest
+PASS registry entry org.nuxel.ScrcpyMirror is served with a valid manifest
+PASS registry entry org.nuxel.Calculator is served with a valid manifest
+PASS registry entry org.nuxel.Clock is served with a valid manifest
+PASS registry entry org.nuxel.Photos is served with a valid manifest
+PASS registry entry org.nuxel.Weather is served with a valid manifest
+PASS registry entry org.nuxel.Maps is served with a valid manifest
+PASS registry entry org.nuxel.Nuxtore is served with a valid manifest
+PASS registry entry org.nuxel.Recorder is served with a valid manifest
+PASS registry entry org.nuxel.SnekByte is served with a valid manifest
+PASS registry entry org.nuxel.Media is served with a valid manifest
+PASS registry entry org.nuxel.Downloader is served with a valid manifest
+PASS registry entry org.nuxel.Authenticator is served with a valid manifest
+PASS registry entry org.nuxel.Vault is served with a valid manifest
+PASS registry entry org.nuxel.Cleanup is served with a valid manifest
+PASS registry entry org.nuxel.DevMgmt is served with a valid manifest
+PASS registry entry org.nuxel.PenguInterface is served with a valid manifest
+PASS nuxel-apps/settings frontend is runnable (index.html + js)
+PASS launcher manifest.json parses
+PASS manifest carries nuxel.pwa_version
+PASS manifest carries nuxel.cache_version
+PASS manifest declares this tree the single source of truth
+PASS status-bar.js exposes a machine-readable VERSION
+PASS status-bar.js VERSION == manifest pwa_version (0.7.5-beta)
+PASS status-bar.js reports a newer revision than the stale v0.3.2 device copy
+PASS sw.js declares an explicit CACHE_VERSION
+PASS sw.js CACHE_VERSION == manifest cache_version (v63000-pw63001)
+PASS sw.js cache namespace advanced past the A32 baseline v3-a32
+PASS sw.js activate deletes the previous namespaces
+PASS sw.js keeps the A32 network-first rule for code assets
+PASS precache list contains ./js/status-bar.js
+PASS precache list contains ./js/qs.js
+PASS precache list contains ./js/safe-zones.js
+PASS precache list contains ./js/settings-store.js
+PASS precache list contains ./js/bootlog.js
+PASS precache list contains ./manifest.json
+PASS precache list contains ./assets/nuxel-background.png
+PASS every precached asset exists in the tree
+PASS index.html loads js/apps.js
+PASS index.html loads js/status-bar.js
+PASS index.html loads js/qs.js
+PASS index.html loads js/safe-zones.js
+PASS index.html loads js/settings-store.js
+PASS index.html loads js/app.js
+PASS manifest exposes shortcuts (Terminal/Settings/Console)
+PASS shortcut "Terminal" points at a registry id
+PASS shortcut "Settings" points at a registry id
+PASS shortcut "Serial Live Console" points at a registry id
+PASS shortcut "USB SSH Console" points at a registry id
+PASS shortcut "Wi-Fi SSH Console" points at a registry id
+PASS manifest settings_documents lists /etc/nuxel/boot/verbose-boot.json
+PASS manifest settings_documents lists /etc/nuxel/boot/animation-handoff.json
+PASS manifest settings_documents lists /etc/nuxel/display/statusbar-safezones.json
+PASS manifest settings_documents lists /etc/nuxel/input/buttons.json
+PASS manifest apps_in_registry matches the registry ids
+PASS manifest registry_version matches the registry revision
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/status-bar.js.orig
+PASS no stale duplicate launcher asset pwa/nuxel-home/status-bar.js
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/bundle.js
+PASS no v0.3.2 launcher version constant survives under pwa/nuxel-home/js
+PASS the registry is exposed to the launcher host (window.appRegistry)
+PASS the real controller booted and bound its events
+PASS activation dispatches app:launch for the requested id
+PASS activation records the app in the recents list
+PASS activation actually opens the app frame (real controller, not a mock)
+PASS the opened frame points at the app url from the registry
+PASS app content reserves the system status and native Home bar, below Quick Settings
+PASS opening an app enters LAUNCHING
+PASS the frame load transition enters ACTIVE
+PASS a hidden active app enters BACKGROUND
+PASS a visible background app returns ACTIVE
+PASS no redundant app-owned title bar is created
+PASS Home backgrounds the frame and returns to the launcher
+PASS Home preserves the resumable surface in BACKGROUND state
+PASS activation leaves exactly one visible app surface
+PASS the logical "home" action closes overlays (return-home)
+PASS the launcher exposes the same-origin app close hook
+PASS the status bar wires a real vertical pull to gesture:qs
+PASS unanswered startup services cannot swallow app activation
+PASS Home closes the actual Quick Settings instance
+PASS switching from native Terminal requests host surface cleanup
+PASS late Terminal acknowledgement cannot overwrite the new app
+PASS an empty query returns no results
+PASS search finds the Terminal by name
+PASS a name match is ranked as a name match
+PASS search is case-insensitive
+PASS search matches the category too
+PASS a nonsense query returns nothing (no fake results)
+PASS the search UI delegates to the registry matcher (no second implementation)
+PASS the #app=<id> deeplink launches that registry app
+PASS an unknown deeplink is refused, not launched into a blank frame
+PASS every manifest shortcut id is launchable from the deeplink path
+PASS the launcher grid is a scrollable container
+PASS the grid keeps touch momentum scrolling on the phone
+PASS the app grid is a real CSS grid (4 columns as shipped)
+PASS the launcher page declares the fullscreen viewport-fit the cutout needs
+PASS the app grid container exists in the page
+PASS the search results list is scrollable too
+
+launcher registry/parity tests passed
+EXIT=0
+=== node tests/pwnage62000/test_drawer_gesture.js
+PASS upward touch swipe opens the app drawer after pointercancel
+PASS a second touch swipe still opens the drawer
+PASS upward swipe starting on an app icon opens the drawer
+PASS short tap on an app icon does not open the drawer
+PASS swipe inside an open drawer is a scroll, not a second open
+PASS status-bar-handled top pull is not applied twice
+ALL PASS
+EXIT=0

@@ -1,0 +1,16 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+webkit=60827
+WEBKIT_DISABLE_COMPOSITING_MODE=1
+0
+ls: cannot access '/usr/lib/nuxel/nuxel-gpu-status': No such file or directory
+ls: cannot access '/usr/lib/nuxel/nuxel-kbase-egl-probe': No such file or directory
+ls: cannot access '/usr/share/nuxel/gpu-manifest.json': No such file or directory

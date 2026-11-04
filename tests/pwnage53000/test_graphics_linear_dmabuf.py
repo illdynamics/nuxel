@@ -69,7 +69,25 @@ def _profile_env(tmp_path, target):
         "webkitgtk": {"profile": "software-safe"},
         "gtk3": {"profile": "software-safe"},
     }))
-    env = {"NUXEL_GRAPHICS_PROFILE": str(cfg), "PATH": "/usr/bin:/bin"}
+    node = tmp_path / "mali0"
+    node.write_bytes(b"")
+    node.chmod(0o666)
+    libs = {}
+    for name in ("libEGL_mesa.so.0.0.0", "libgallium_dri.so", "libwlroots-0.19.so"):
+        lib = tmp_path / name
+        lib.write_bytes(name.encode())
+        libs[name] = lib
+    vendor = tmp_path / "egl-kbase.json"
+    vendor.write_text(json.dumps({"ICD": {"library_path": str(libs["libEGL_mesa.so.0.0.0"])}}))
+    env = {"NUXEL_GRAPHICS_PROFILE": str(cfg), "PATH": "/usr/bin:/bin",
+           "NUXEL_KBASE_NODE": str(node),
+           "NUXEL_KBASE_EGL": str(libs["libEGL_mesa.so.0.0.0"]),
+           "NUXEL_KBASE_GALLIUM": str(libs["libgallium_dri.so"]),
+           "NUXEL_KBASE_WLROOTS": str(libs["libwlroots-0.19.so"]),
+           "NUXEL_EGL_VENDOR": str(vendor),
+           "NUXEL_GPU_CACHE": str(tmp_path / "gpu-cache.json"),
+           "NUXEL_GPU_FALLBACK_MARKER": str(tmp_path / "no-fallback-marker"),
+           "NUXEL_GPU_PROBE_DISABLE": "1"}
     out = subprocess.run([str(PROFILE), "env", target], capture_output=True,
                          text=True, env=env, check=True).stdout
     return dict(line[7:].split("=", 1) for line in out.splitlines() if line.startswith("export "))

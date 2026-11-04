@@ -1,0 +1,7 @@
+{
+  "allowed": true,
+  "code": "ok",
+  "reason": "budget (0/3) and prerequisites satisfied"
+}
+reboot-policy: ALLOWED
+policy_rc=0

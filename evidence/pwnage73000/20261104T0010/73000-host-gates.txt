@@ -1,0 +1,235 @@
+=== python3 -m pytest -q tests/pwnage63000/test_secret_service.py
+/home/wicked/.asdf/installs/python/3.11.8/lib/python3.11/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.6.3) or chardet (7.4.3)/charset_normalizer (3.5.0) doesn't match a supported version!
+  warnings.warn(
+...........                                                              [100%]
+11 passed in 0.06s
+EXIT=0
+=== python3 -m pytest -q tests/pwnage63000/test_vault_app.py
+/home/wicked/.asdf/installs/python/3.11.8/lib/python3.11/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.6.3) or chardet (7.4.3)/charset_normalizer (3.5.0) doesn't match a supported version!
+  warnings.warn(
+..............                                                           [100%]
+14 passed in 0.44s
+EXIT=0
+=== node --test tests/pwnage63000/test_bridge_keyring.mjs
+TAP version 13
+#   PASS disconnected keyring save fails closed
+#   PASS disconnected save reports unavailable
+#   PASS disconnected save never reports mock
+#   PASS disconnected save did not write localStorage
+#   PASS keyring never flips the client into mock mode
+#   PASS generic call routes keyring to fail-closed path
+#   PASS generic mock fallback cannot succeed for keyring
+#   PASS online keyring call succeeds
+#   PASS online keyring call has no secret in localStorage
+#   PASS body app_id is the client app id
+#   PASS body namespace is keyring
+#   PASS Authorization carries the per-app token
+#   PASS keyring token is not persisted
+# 13 passed, 0 failed
+# Subtest: /x/nuxel/tests/pwnage63000/test_bridge_keyring.mjs
+ok 1 - /x/nuxel/tests/pwnage63000/test_bridge_keyring.mjs
+  ---
+  duration_ms: 25.72534
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 29.08682
+EXIT=0
+=== node pwa/nuxel-apps/authenticator/tests/test-vault.js
+encrypted vault
+  PASS a short passphrase is refused
+  PASS a well-known weak passphrase is refused
+  PASS a single repeated character is refused
+  PASS digits-only is refused
+  PASS a reasonable passphrase is accepted
+  PASS create() refuses a weak passphrase instead of storing secrets behind it
+  PASS the envelope names its schema
+  PASS the envelope stores the KDF parameters, not the passphrase
+  PASS the envelope carries no plaintext accounts key
+  PASS the envelope has an IV and ciphertext
+  PASS the right passphrase unlocks an empty vault
+  PASS a wrong passphrase fails authentication and yields nothing
+  PASS a valid account is added
+  PASS defaults are applied (SHA1/6/30)
+  PASS account ids are opaque and do not encode the secret
+  PASS a duplicate account is refused
+  PASS a missing account name is refused
+  PASS an invalid base32 secret is refused
+  PASS a short secret is refused with the byte count
+  PASS an unsupported algorithm is refused
+  PASS digits=7 is refused
+  PASS digits=8 is accepted
+  PASS a 5 second period is refused
+  PASS a 60 second period is accepted
+  PASS an account can be removed
+  PASS a saved vault reloads its accounts
+  PASS every save uses a fresh AES-GCM IV
+  PASS the ciphertext changed even though the data did not
+  PASS one flipped ciphertext bit is caught by the GCM tag
+  PASS a weakened KDF parameter is refused on unlock
+  PASS export produces JSON of the encrypted envelope
+  PASS export never contains the secret
+  PASS an exported envelope re-imports
+  PASS a PLAINTEXT export file is refused on import
+  PASS a non-JSON import is refused
+  PASS an unknown envelope schema is refused
+  PASS an import with a weakened KDF is refused
+  PASS the vault has no network path: no fetch/XHR/WebSocket in the module source
+  PASS the vault has no sync/server field in the envelope
+
+39 passed, 0 failed
+EXIT=0
+=== node pwa/nuxel-apps/authenticator/tests/test-totp-vectors.js
+TOTP/HOTP conformance
+  PASS RFC 4226 HOTP counter 0  — 755224 vs 755224
+  PASS RFC 4226 HOTP counter 1  — 287082 vs 287082
+  PASS RFC 4226 HOTP counter 2  — 359152 vs 359152
+  PASS RFC 4226 HOTP counter 3  — 969429 vs 969429
+  PASS RFC 4226 HOTP counter 4  — 338314 vs 338314
+  PASS RFC 4226 HOTP counter 5  — 254676 vs 254676
+  PASS RFC 4226 HOTP counter 6  — 287922 vs 287922
+  PASS RFC 4226 HOTP counter 7  — 162583 vs 162583
+  PASS RFC 4226 HOTP counter 8  — 399871 vs 399871
+  PASS RFC 4226 HOTP counter 9  — 520489 vs 520489
+  PASS base32 encodes the RFC secret exactly
+  PASS base32 tolerates lower case and separators
+  PASS base32 rejects an illegal character
+  PASS eight digits are supported
+  PASS every RFC 6238 vector in the shipped table passes  — 18 vectors
+  PASS the table covers all three hashes
+  PASS the table covers six timestamps
+  PASS a 60 s period halves the counter rate
+  PASS SHA-256 and SHA-1 differ for the same secret and time
+  PASS verify accepts the current code
+  PASS verify accepts one step of clock skew
+  PASS verify rejects a code two steps away by default
+  PASS verify ignores spaces a user typed
+  PASS secondsRemaining counts down within the period  — 20
+  PASS progress is a fraction of the period
+  PASS otpauth issuer is parsed
+  PASS otpauth account is parsed and decoded
+  PASS otpauth algorithm/digits/period are parsed
+  PASS otpauth round-trips
+  PASS a hotp:// URI is refused
+  PASS a URI without a secret is refused
+  PASS a non-otpauth URI is refused
+
+32 passed, 0 failed
+EXIT=0
+=== node pwa/nuxel-apps/vault/tests/test-archive.js
+vault archive
+  PASS weak export passphrase refused
+  PASS reasonable export passphrase accepted
+  PASS archive schema/version
+  PASS archive has no plaintext items
+  PASS archive carries KDF parameters
+  PASS archive carries IV and ciphertext
+  PASS archive never contains the password
+  PASS fresh salt and IV on every export
+  PASS right passphrase opens the archive
+  PASS wrong passphrase fails authentication
+  PASS one flipped ciphertext bit is caught
+  PASS KDF downgrade is refused
+  PASS plaintext archive is refused
+  PASS export is JSON text
+  PASS importText accepts an encrypted archive
+  PASS unknown item fields are refused
+  PASS oversized fields are refused
+  PASS archive has no network path
+  PASS archive uses CSPRNG
+19 passed, 0 failed
+EXIT=0
+=== node pwa/nuxel-apps/vault/tests/test-pwgen.js
+  PASS requested length
+  PASS two calls differ
+  PASS has uppercase
+  PASS has lowercase
+  PASS has digit
+  PASS has symbol
+  PASS no ambiguous characters when excluded
+  PASS digits-only stays in 0-9  — 48..57
+  PASS no class selected is refused
+  PASS strength estimate is numeric
+  PASS generator never uses Math.random
+  PASS generator uses getRandomValues
+12 passed, 0 failed
+EXIT=0
+=== python3 tools/s10plus/a33/verify-app-registry.py
+OK    capability_gaps documented: audio:output, shell:local-pty, storage:read, storage:write
+OK    native nuxel-dialer -> /usr/bin/nuxel-dialer (source shell/nuxel-shell/nuxel-dialer)
+OK    native nuxel-messages -> /usr/bin/nuxel-messages (source shell/nuxel-shell/nuxel-messages)
+OK    native nuxel-contacts -> /usr/bin/nuxel-contacts (source shell/nuxel-shell/nuxel-contacts)
+OK    native nuxel-camera -> /usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py (source shell/nuxel-camera-native)
+OK    pwa org.nuxel.Mail -> pwa/nuxel-apps/mail/index.html + pwa/nuxel-apps/mail/manifest.json
+OK    pwa org.nuxel.Calendar -> pwa/nuxel-apps/calendar/index.html + pwa/nuxel-apps/calendar/manifest.json
+OK    pwa org.nuxel.Notes -> pwa/nuxel-apps/notes/index.html + pwa/nuxel-apps/notes/manifest.json
+OK    pwa org.nuxel.Files -> pwa/nuxel-apps/files/index.html + pwa/nuxel-apps/files/manifest.json
+OK    pwa nuxel-settings -> pwa/nuxel-apps/settings/index.html + pwa/nuxel-apps/settings/manifest.json
+OK    pwa org.nuxel.Terminal -> pwa/nuxel-apps/terminal/index.html + pwa/nuxel-apps/terminal/manifest.json
+OK    pwa org.nuxel.LiveConsole -> pwa/nuxel-apps/console/index.html + pwa/nuxel-apps/console/manifest.json
+OK    pwa org.nuxel.USBSSHConsole -> pwa/nuxel-apps/console-usb/index.html + pwa/nuxel-apps/console-usb/manifest.json
+OK    pwa org.nuxel.WiFiSSHConsole -> pwa/nuxel-apps/console-wifi/index.html + pwa/nuxel-apps/console-wifi/manifest.json
+OK    pwa org.nuxel.RemoteDesktopXRDP -> pwa/nuxel-apps/remote-xrdp/index.html + pwa/nuxel-apps/remote-xrdp/manifest.json
+OK    pwa org.nuxel.RemoteDesktopVNC -> pwa/nuxel-apps/remote-vnc/index.html + pwa/nuxel-apps/remote-vnc/manifest.json
+OK    pwa org.nuxel.ScrcpyMirror -> pwa/nuxel-apps/remote-scrcpy/index.html + pwa/nuxel-apps/remote-scrcpy/manifest.json
+OK    native org.nuxel.Browser -> /usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py (source shell/nuxel-browser-native)
+OK    pwa org.nuxel.Calculator -> pwa/nuxel-apps/calculator/index.html + pwa/nuxel-apps/calculator/manifest.json
+OK    pwa org.nuxel.Clock -> pwa/nuxel-apps/clock/index.html + pwa/nuxel-apps/clock/manifest.json
+OK    pwa org.nuxel.Photos -> pwa/nuxel-apps/photos/index.html + pwa/nuxel-apps/photos/manifest.json
+OK    pwa org.nuxel.Weather -> pwa/nuxel-apps/weather/index.html + pwa/nuxel-apps/weather/manifest.json
+OK    pwa org.nuxel.Maps -> pwa/nuxel-apps/maps/index.html + pwa/nuxel-apps/maps/manifest.json
+OK    pwa org.nuxel.Nuxtore -> pwa/nuxel-apps/nuxtore/index.html + pwa/nuxel-apps/nuxtore/manifest.json
+OK    pwa org.nuxel.Recorder -> pwa/nuxel-apps/recorder/index.html + pwa/nuxel-apps/recorder/manifest.json
+OK    pwa org.nuxel.SnekByte -> pwa/nuxel-apps/snekbyte/index.html + pwa/nuxel-apps/snekbyte/manifest.json
+OK    native org.mozilla.firefox -> /usr/bin/firefox (source services/nuxel-s10/bin/nuxel-flatpak-firefox)
+OK    native org.videolan.VLC -> /usr/lib/nuxel/nuxel-vlc-fallback (source services/nuxel-s10/bin/nuxel-flatpak-vlc)
+OK    native org.signal.Signal -> /usr/lib/nuxel/nuxel-flatpak-signal (source services/nuxel-s10/bin/nuxel-flatpak-signal)
+OK    native com.stremio.Stremio -> /usr/lib/nuxel/nuxel-flatpak-stremio (source services/nuxel-s10/bin/nuxel-flatpak-stremio)
+OK    native org.gnome.FileRoller -> /usr/bin/file-roller (installed package; desktop shell/config/org.gnome.FileRoller.desktop)
+OK    native org.gnome.Loupe -> /usr/bin/loupe (installed package; desktop shell/config/org.gnome.Loupe.desktop)
+OK    native org.gnome.Papers -> /usr/bin/papers (installed package; desktop shell/config/org.gnome.Papers.desktop)
+OK    native org.gnome.SystemMonitor -> /usr/bin/gnome-system-monitor (installed package; desktop shell/config/org.gnome.SystemMonitor.desktop)
+OK    pwa org.nuxel.Media -> pwa/nuxel-apps/media/index.html + pwa/nuxel-apps/media/manifest.json
+OK    pwa org.nuxel.Downloader -> pwa/nuxel-apps/downloader/index.html + pwa/nuxel-apps/downloader/manifest.json
+OK    pwa org.nuxel.Authenticator -> pwa/nuxel-apps/authenticator/index.html + pwa/nuxel-apps/authenticator/manifest.json
+OK    pwa org.nuxel.Vault -> pwa/nuxel-apps/vault/index.html + pwa/nuxel-apps/vault/manifest.json
+OK    pwa org.nuxel.Cleanup -> pwa/nuxel-apps/cleanup/index.html + pwa/nuxel-apps/cleanup/manifest.json
+OK    pwa org.nuxel.DevMgmt -> pwa/nuxel-apps/devmgmt/index.html + pwa/nuxel-apps/devmgmt/manifest.json
+OK    pwa org.nuxel.PenguInterface -> pwa/nuxel-apps/penguinterface/index.html + pwa/nuxel-apps/penguinterface/manifest.json
+OK    native org.gnome.Software -> /usr/lib/nuxel/nuxel-software (installed package; desktop shell/config/nuxel-software.desktop)
+OK    pwa org.nuxel.Clipper -> pwa/nuxel-apps/clipper/index.html + pwa/nuxel-apps/clipper/manifest.json
+OK    capability 'shell:local-pty' is declared by org.nuxel.Terminal but not yet in the bridge enum — documented gap (owner bg-06-core-phone-apps, status not-in-capabilities.py-enum): The Terminal's PTY is opened by the native PWA host (tools/s10plus/a3x/nuxel-pwa-host.c), NOT through the bridge capability model, so no bridge enum e
+OK    launcher apps.js serves exactly the canonical 42 apps (registry_version 12)
+OK    native shell copy matches the canonical registry (42 apps)
+OK    required app not yet in the tree: Permissions & Privacy manager (owner bg-05-security-permissions, briq-05a-permission-manager, status not-started/in_progress)
+OK    required app not yet in the tree: Firewall manager (owner bg-05-security-permissions, briq-05b-firewall-app, status not-started/in_progress)
+OK    required app not yet in the tree: VPN, Tor and remote access (owner bg-05-security-permissions, briq-05c-vpn-tor-remote, status partially-implemented/in_progress)
+OK    required app not yet in the tree: Security auditor (owner bg-05-security-permissions, briq-05d-security-auditor, status not-started/pending)
+OK    required app not yet in the tree: System monitor / diagnostics (owner bg-06-core-phone-apps, briq-06b-missing-core-apps, status not-started/in_progress)
+OK    tree_apps documents pwa/nuxel-apps/_shared (no index.html yet: shared-assets-not-an-app)
+OK    tree_apps documents pwa/nuxel-apps/privacy (no index.html yet: planned)
+OK    bridge.js NUXEL_BRIDGE_VERSION == pin (1)
+DEFER pwa/nuxel-apps/privacy: declared planned, not landed yet (owners: bg-05-security-permissions, ledger: briq-05a-permission-manager) — declared `planned`: the owner group has not landed the app tree in this revision. Recorded as a DEFER (never a silent pass); the entry is promoted automatically when index.html + manifest.json appear.
+apps=42 problems=0 warnings=0 deferred=1 required_apps_pending=5 verdict=OFFLINE_TESTED_WITH_DEFERRALS
+EXIT=0
+=== python3 pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py
+NuxTore catalog verification — /x/nuxel/pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json
+  OK org.nuxel.Nuxtore        1.0.0    SIGNED_VERIFIED   25 files, 193988 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Media          1.0.0    SIGNED_VERIFIED   22 files, 152320 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Downloader     1.0.0    SIGNED_VERIFIED   19 files, 92298 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Authenticator  1.0.0    SIGNED_VERIFIED   24 files, 449376 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Vault          1.0.0    SIGNED_VERIFIED   21 files, 452771 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Cleanup        1.0.0    SIGNED_VERIFIED   19 files, 102597 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.DevMgmt        1.0.0    SIGNED_VERIFIED   18 files, 125128 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.SnekByte       1.0.0    SIGNED_VERIFIED   20 files, 210674 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.PenguInterface 1.0.0    SIGNED_VERIFIED   16 files, 95698 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Console        1.0.0    SIGNED_VERIFIED   15 files, 66315 bytes; signed by nuxel-beta-dev-2026
+  -- org.example.UnsignedDemo 0.0.1    UNSIGNED_REFUSED  25 files, 193988 bytes; no signature (unsigned package)
+  => all packages verified
+EXIT=0

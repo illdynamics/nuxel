@@ -1,0 +1,55 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-03T00:36:15+01:00
+9e1e97d3-b642-46c7-8f64-12d929d4c4b8
+ 00:36:15 up 0 min,  0 user,  load average: 7.62, 2.01, 0.68
+4.14.253-gf7194c1d15ed-dirty
+== services ==
+active
+active
+active
+active
+active
+  UNIT                               LOAD   ACTIVE SUB    DESCRIPTION
+● avahi-daemon.service               loaded failed failed Avahi mDNS/DNS-SD Stack
+● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+● nuxel-boot-sound.service           loaded failed failed Nuxel startup cue after confirmed boot-animation to launcher handoff
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+== profile ==
+export NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+export WEBKIT_DISABLE_COMPOSITING_MODE=0
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory
+== bridge ==
+1793662575 FRAMES_OK total=197 fps_1s=1 failures=0 blits=125 present_skipped=71 blit_avg_ms=2 pan_avg_ms=8 capture_avg_ms=3 compare_avg_ms=0 damage=108-271 damage_runs=1 damage_blits=124 damage_avg_ms=2 idle_ms=24063 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=126 decon_pan_failed=0
+== process ==
+5877 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+5974 /usr/lib/nuxel/nuxel-pwa-host
+6086 /usr/lib/nuxel/nuxel-wl-fb
+6211 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 21
+9084 bash -c set +e date -Is; cat /proc/sys/kernel/random/boot_id; uptime; uname -r echo "== services =="; systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-bridge nuxel-http-bridge nuxel-web systemctl --failed --no-pager | head -8 echo "== profile =="; /usr/lib/nuxel/nuxel-graphics-profile env webkit | grep -E "ACTIVE|DISABLE|FALLBACK" ls -l /run/nuxel-gpu-fallback 2>&1 echo "== bridge =="; cat /run/nuxel-wl-fb.state echo "== process =="; pgrep -a -f "phoc|nuxel-wl-fb|WebKitWebProcess|nuxel-pwa-host" echo "== phoc =="; p=$(pgrep -x phoc); grep -E "libEGL_mesa|libgallium|libwlroots|llvmpipe" /proc/$p/maps | awk "{print \$6}" | sort -u; ls -l /proc/$p/fd | grep -E "mali0|udmabuf"; for t in /proc/$p/task/*; do cat $t/comm; done | sort | uniq -c | grep -i llvmpipe || echo no-llvmpipe echo "== webkit =="; w=$(pgrep -f WebKitWebProcess | head -1); echo pid=$w; grep -c libgallium /proc/$w/maps; ls -l /proc/$w/fd | grep -E "mali0|udmabuf" || true; tr "\0" "\n" < /proc/$w/environ | grep -E "NUXEL_GRAPHICS|WEBKIT_DISABLE|WEBKIT_FORCE|LIBGL" 
+== phoc ==
+/usr/lib64/libEGL_mesa.so.0.0.0
+/usr/lib64/libgallium_dri.so
+/usr/lib64/libwlroots-0.19.so
+lrwx------. 1 root root 64 Nov  3 00:36 13 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 00:36 14 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 00:36 15 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 00:36 16 -> /dev/udmabuf
+lrwx------. 1 root root 64 Nov  3 00:36 26 -> anon_inode:dmabuf_udmabuf
+no-llvmpipe
+== webkit ==
+pid=6211
+0
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+LIBGL_ALWAYS_SOFTWARE=1
+WEBKIT_DISABLE_COMPOSITING_MODE=1

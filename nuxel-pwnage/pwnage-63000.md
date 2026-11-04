@@ -1,0 +1,16 @@
+# PWNAGE-63000 — Kickstarter / Agent Launch Prompt
+
+You are executing the full Nuxel Vault & Keyring Manager mission.
+
+1. Read **`full-pwnage-63000.md` completely** before editing anything. Treat it as the acceptance contract, not optional background reading.
+2. Audit the current checkout and active S10+ source paths. Confirm current branch/commit, live-vs-source drift, existing Authenticator envelope format, actual active Wayland/D-Bus session and whether `org.freedesktop.secrets` is really provided. Do not assume the generic package config reflects the S10+ image.
+3. Implement a real GNOME Keyring / freedesktop Secret Service backend (or another proven existing provider), package and activate it in the actual S10+ session, and expose only narrowly scoped, app-identity-checked Nuxel Bridge operations. Secret operations must fail closed when the bridge/provider is unavailable; no mock success and no plaintext storage.
+4. Build the Nuxel Vault password/keyring manager UI and integrate Authenticator so its existing passphrase can be saved only after explicit owner consent, then used for auto-unlock only while the OS keyring is unlocked. Preserve manual unlock, encrypted backups, and an Authenticator-only reset option. Migrate the existing encrypted TOTP vault safely; never silently wipe unrelated keyring data.
+5. Add a guided Microsoft Entra **third-party software OATH/TOTP** enrollment flow. Keep the distinction explicit: TOTP may work if the tenant permits third-party OATH; Microsoft Authenticator push, number matching, passwordless, PRT/device registration and passkeys are not implemented. Do not reverse-engineer or impersonate Microsoft protocols.
+6. Integrate the new app into the canonical registry, all mirrored registries, Nuxtore catalog/bundle/signature, actual S10+ package manifest, service activation and service-worker cache versions.
+7. Run the full automated test matrix, ARM64/rootfs package validation and physical S10+ acceptance tests. Keep real user secrets out of logs and test fixtures. Do not claim a hardware/provider feature works without device proof.
+8. Produce the complete implementation report, architecture/threat model, migration/recovery guide, tests, signed/deployable patch or full drop-in ZIP, SHA-256, exact deployment instructions and rollback procedure.
+
+**Execution rules:** implement, do not stop at a plan. Work in small verifiable commits/patches. Preserve the current boot, Wi-Fi SSH and USB recovery path. Do not flash the kernel/bootloader. Never put passwords/seeds/OTPs in browser storage, logs, argv, environment variables or external services. If a secure provider or capability is unavailable, report the precise evidence and leave a safe locked state instead of faking success.
+
+**Definition of done:** Vault manages real secrets through the OS keyring; Authenticator linking/auto-unlock is explicitly authorized and works only with an unlocked keyring; existing TOTP data survives migration; Entra software OATH works where tenant policy permits; all registries/packages/tests pass; the S10+ has been physically verified; and rollback preserves every user secret.

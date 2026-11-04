@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src http://127.0.0.1:8080; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#04191c">
+<meta name="nuxel-app-id" content="org.nuxel.Vault">
+<link rel="manifest" href="manifest.json">
+<title>Nuxel Vault</title>
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p63000">
+<link rel="stylesheet" href="css/vault.css">
+</head>
+<body>
+<header class="hdr">
+  <div class="brand">
+    <img src="icons/icon-48.png" alt="" class="brand-icon">
+    <h1>Vault</h1>
+  </div>
+  <span id="keyring-badge" class="badge bad">checking</span>
+  <span class="grow"></span>
+  <button id="lock-now" class="ghost" hidden>Lock</button>
+  <button id="close" class="ghost">Close</button>
+</header>
+
+<main>
+  <section id="screen-boot" class="screen active">
+    <div class="card center">
+      <div class="spinner" aria-hidden="true"></div>
+      <h2>Checking the system keyring…</h2>
+      <p class="hint">No secret is loaded until the keyring is unlocked.</p>
+      <p id="boot-error" class="error" hidden></p>
+    </div>
+  </section>
+
+  <section id="screen-unlock" class="screen">
+    <div id="provider-error" class="card danger-card" hidden>
+      <h2>System keyring unavailable</h2>
+      <p id="provider-error-text" class="hint"></p>
+      <p class="hint">Nuxel Vault will not store passwords in a browser file, localStorage or a fake keyring. Fix the provider first.</p>
+      <div class="row"><button id="retry-provider" class="primary">Retry provider</button></div>
+      <pre id="provider-diagnostics" class="diag" hidden></pre>
+    </div>
+
+    <div id="unlock-welcome" class="card" hidden>
+      <h2>Create your Nuxel Vault keyring</h2>
+      <p class="hint">Nuxel Vault stores items in the operating system's Secret Service
+        (GNOME Keyring). The keyring encrypts them at rest; the master password is
+        never stored by Nuxel and cannot be recovered if you lose it.</p>
+      <ul class="hint list">
+        <li>The master password protects the whole Nuxel keyring on this phone.</li>
+        <li>Losing it and every encrypted backup means the data is unrecoverable.</li>
+        <li>There is no cloud escrow, no hidden recovery key and no network sync.</li>
+      </ul>
+      <label class="field">
+        <span>Master password</span>
+        <input id="create-pass" type="password" autocomplete="new-password" placeholder="At least 10 characters">
+      </label>
+      <label class="field">
+        <span>Repeat master password</span>
+        <input id="create-pass2" type="password" autocomplete="new-password" placeholder="Repeat">
+      </label>
+      <div class="row wrap">
+        <button id="create-toggle" class="ghost small">Show</button>
+        <button id="create-go" class="primary">Create Nuxel Vault</button>
+      </div>
+      <p id="create-error" class="error"></p>
+    </div>
+
+    <div id="unlock-existing" class="card" hidden>
+      <h2>Unlock Nuxel Vault</h2>
+      <p class="hint">The keyring is locked. Enter the Nuxel Vault master password.
+        Your Authenticator passphrase is separate unless you linked it explicitly.</p>
+      <label class="field">
+        <span>Master password</span>
+        <input id="unlock-pass" type="password" autocomplete="current-password" placeholder="Master password">
+      </label>
+      <div class="row wrap">
+        <button id="unlock-toggle" class="ghost small">Show</button>
+        <button id="unlock-go" class="primary">Unlock</button>
+        <button id="unlock-cancel" class="ghost">Cancel</button>
+      </div>
+      <p id="unlock-error" class="error"></p>
+      <p class="hint">Cancel leaves the keyring locked. Manual entry is always available;
+        a failed keyring unlock never falls back to plaintext storage.</p>
+    </div>
+  </section>
+
+  <section id="screen-main" class="screen">
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="logins">Logins</button>
+      <button class="tab" data-tab="notes">Notes</button>
+      <button class="tab" data-tab="generator">Generate</button>
+      <button class="tab" data-tab="integrations">Integrations</button>
+      <button class="tab" data-tab="backup">Backup</button>
+      <button class="tab" data-tab="security">Security</button>
+    </nav>
+
+    <div id="tab-overview" class="tab-panel active">
+      <div class="card">
+        <div class="row between">
+          <div><h2 class="tight">Nuxel Vault</h2><p class="hint tight">System-keyring backed</p></div>
+          <span id="overview-state" class="badge good">unlocked</span>
+        </div>
+        <div class="stat-grid">
+          <div class="stat"><b id="stat-total">0</b><span>items</span></div>
+          <div class="stat"><b id="stat-logins">0</b><span>logins</span></div>
+          <div class="stat"><b id="stat-notes">0</b><span>notes</span></div>
+          <div class="stat"><b id="stat-fav">0</b><span>favorites</span></div>
+        </div>
+        <div class="row wrap">
+          <button class="primary" data-add="login">Add login</button>
+          <button data-add="note">Add secure note</button>
+          <button id="overview-lock" class="ghost">Lock now</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row between"><h3 class="tight">Recent metadata</h3><span class="hint tight">no secret values shown</span></div>
+        <div id="recent-list" class="item-list"></div>
+      </div>
+      <div class="card">
+        <h3 class="tight">Authenticator convenience unlock</h3>
+        <p id="overview-auth" class="hint">Checking…</p>
+        <div class="row"><button id="overview-auth-open" class="ghost">Open Authenticator</button></div>
+      </div>
+    </div>
+
+    <div id="tab-logins" class="tab-panel">
+      <div class="card">
+        <div class="row"><input id="login-search" type="search" placeholder="Search logins"></div>
+        <div class="row wrap"><button class="primary" data-add="login">Add login</button></div>
+      </div>
+      <div id="login-list" class="item-list"></div>
+    </div>
+
+    <div id="tab-notes" class="tab-panel">
+      <div class="card">
+        <div class="row"><input id="note-search" type="search" placeholder="Search secure notes"></div>
+        <div class="row wrap"><button class="primary" data-add="note">Add secure note</button></div>
+        <p class="hint">Note bodies are not shown in overview or search results until you open an item.</p>
+      </div>
+      <div id="note-list" class="item-list"></div>
+    </div>
+
+    <div id="tab-generator" class="tab-panel">
+      <div class="card">
+        <h2 class="tight">Password generator</h2>
+        <p class="hint">Local CSPRNG only. No network, no breach lookup, no analytics.</p>
+        <label class="field"><span>Length: <b id="gen-length-label">20</b></span>
+          <input id="gen-length" type="range" min="12" max="64" value="20">
+        </label>
+        <div class="check-grid">
+          <label><input id="gen-upper" type="checkbox" checked> Uppercase</label>
+          <label><input id="gen-lower" type="checkbox" checked> Lowercase</label>
+          <label><input id="gen-digits" type="checkbox" checked> Digits</label>
+          <label><input id="gen-symbols" type="checkbox" checked> Symbols</label>
+          <label><input id="gen-ambiguous" type="checkbox"> Allow ambiguous</label>
+        </div>
+        <div class="gen-output" id="gen-output" aria-live="polite">—</div>
+        <p id="gen-strength" class="hint"></p>
+        <div class="row wrap">
+          <button id="gen-go" class="primary">Generate</button>
+          <button id="gen-copy" class="ghost">Copy</button>
+          <button id="gen-use" class="ghost">Use in new login</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-integrations" class="tab-panel">
+      <div class="card">
+        <h2 class="tight">Nuxel Authenticator</h2>
+        <p id="auth-status" class="hint">Checking…</p>
+        <div class="row wrap">
+          <button id="auth-refresh" class="ghost">Refresh status</button>
+          <button id="auth-open" class="primary">Open Authenticator</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="tight">What linking means</h3>
+        <p class="hint">Linking stores the Authenticator vault passphrase in this OS keyring
+          only after you opt in inside Authenticator. It lets Authenticator unlock automatically
+          <b>only while the Nuxel keyring is unlocked</b>. Anyone or any process that can use
+          the unlocked keyring with Authenticator's granted access may be able to unlock those
+          TOTP secrets. Keep the keyring protected.</p>
+        <p class="hint">Vault never reads the Authenticator credential. Link, rotate or remove it
+          in Authenticator → Security. Removing it never deletes your TOTP accounts.</p>
+      </div>
+    </div>
+
+    <div id="tab-backup" class="tab-panel">
+      <div class="card">
+        <h2 class="tight">Encrypted export</h2>
+        <p class="hint">The archive is AES-256-GCM under a PBKDF2-SHA-256 key derived from a
+          separate export passphrase. There is no plaintext export button.</p>
+        <label class="field"><span>Export passphrase</span><input id="export-pass" type="password" autocomplete="new-password" placeholder="At least 10 characters"></label>
+        <label class="field"><span>Repeat export passphrase</span><input id="export-pass2" type="password" autocomplete="new-password" placeholder="Repeat"></label>
+        <div class="row wrap"><button id="export-go" class="primary">Download encrypted archive</button></div>
+        <p id="export-note" class="hint"></p>
+      </div>
+      <div class="card">
+        <h2 class="tight">Import encrypted archive</h2>
+        <input id="import-file" type="file" accept="application/json,.json">
+        <label class="field"><span>Archive passphrase</span><input id="import-pass" type="password" autocomplete="current-password" placeholder="Archive passphrase"></label>
+        <div class="row wrap">
+          <label><input id="import-mode-merge" type="radio" name="import-mode" value="merge" checked> Merge</label>
+          <label><input id="import-mode-replace" type="radio" name="import-mode" value="replace"> Replace Vault items</label>
+        </div>
+        <label class="checkline"><input id="import-backup-ack" type="checkbox"> I downloaded an encrypted backup and understand Replace deletes current Vault items only.</label>
+        <div class="row wrap"><button id="import-go" class="primary">Authenticate and import</button></div>
+        <p id="import-note" class="hint"></p>
+      </div>
+      <div class="card">
+        <h3 class="tight">Backup status</h3>
+        <p id="backup-status" class="hint">—</p>
+        <div class="row wrap"><button id="backup-status-refresh" class="ghost">Refresh</button></div>
+      </div>
+    </div>
+
+    <div id="tab-security" class="tab-panel">
+      <div class="card">
+        <h2 class="tight">Session</h2>
+        <div class="row wrap">
+          <button id="security-lock" class="primary">Lock now</button>
+        </div>
+        <label class="field"><span>Auto-lock inactivity</span>
+          <select id="autolock">
+            <option value="60">1 minute</option>
+            <option value="120" selected>2 minutes</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+          </select>
+        </label>
+        <label class="checkline"><input id="lock-on-hide" type="checkbox" checked> Lock immediately when this app is hidden/backgrounded</label>
+        <p class="hint">Screen lock, suspend, logout and session teardown also lock the keyring through the native bridge.</p>
+      </div>
+      <div class="card">
+        <h3 class="tight">Provider diagnostics</h3>
+        <pre id="diag" class="diag">—</pre>
+        <div class="row wrap"><button id="diag-refresh" class="ghost">Run read-only diagnostics</button></div>
+      </div>
+      <div class="card">
+        <h3 class="tight">Change master password</h3>
+        <p class="hint">GNOME Keyring does not expose a safe standard Secret Service API to change
+          the collection master password. Nuxel will not use a private/unsupported keyring
+          interface. To rotate it, create a new keyring after exporting an encrypted backup,
+          or use the provider's own desktop tooling. This build reports the limitation instead
+          of pretending the password changed.</p>
+      </div>
+      <div class="card danger-card">
+        <h3 class="tight">Reset Nuxel Vault items</h3>
+        <p class="hint">Deletes only items owned by <code>org.nuxel.Vault</code>. It does not delete
+          the Authenticator credential, the Authenticator TOTP vault, or unrelated keyring items.</p>
+        <label class="field"><span>Type RESET NUXEL VAULT to confirm</span><input id="reset-confirm" type="text" placeholder="RESET NUXEL VAULT"></label>
+        <div class="row wrap"><button id="reset-go" class="danger">Reset Nuxel Vault items</button></div>
+        <p id="reset-note" class="hint"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="editor" class="modal" hidden>
+  <div class="modal-card">
+    <div class="row between"><h2 id="editor-title" class="tight">New item</h2><button id="editor-close" class="ghost">Close</button></div>
+    <input id="edit-id" type="hidden">
+    <input id="edit-type" type="hidden">
+    <label class="field"><span>Title</span><input id="edit-title" type="text" maxlength="200" placeholder="Entry title"></label>
+    <div id="login-fields">
+      <label class="field"><span>URL / origin (optional)</span><input id="edit-url" type="text" maxlength="2048" inputmode="url" placeholder="https://example.org"></label>
+      <label class="field"><span>Username</span><input id="edit-username" type="text" maxlength="320" autocomplete="off" placeholder="Username"></label>
+      <label class="field"><span>Password</span><input id="edit-password" type="password" maxlength="4096" autocomplete="new-password" placeholder="Password"></label>
+      <div class="row wrap"><button id="edit-password-toggle" class="ghost small">Show password</button><button id="edit-generate" class="ghost small">Generate</button></div>
+    </div>
+    <label class="field"><span>Notes</span><textarea id="edit-notes" maxlength="16384" rows="4" placeholder="Local only"></textarea></label>
+    <label class="field"><span>Tags (comma separated)</span><input id="edit-tags" type="text" placeholder="work, email"></label>
+    <label class="checkline"><input id="edit-favorite" type="checkbox"> Favorite</label>
+    <p id="editor-error" class="error"></p>
+    <div class="row wrap"><button id="editor-save" class="primary">Save to keyring</button><button id="editor-cancel" class="ghost">Cancel</button></div>
+  </div>
+</div>
+
+<div id="detail" class="modal" hidden>
+  <div class="modal-card">
+    <div class="row between"><h2 id="detail-title" class="tight">Item</h2><button id="detail-close" class="ghost">Close</button></div>
+    <p id="detail-meta" class="hint"></p>
+    <div id="detail-fields"></div>
+    <div class="row wrap">
+      <button id="detail-copy-user" class="ghost">Copy username</button>
+      <button id="detail-copy-pass" class="primary">Copy password</button>
+      <button id="detail-edit" class="ghost">Edit</button>
+      <button id="detail-delete" class="danger">Delete</button>
+    </div>
+    <p id="detail-note" class="hint"></p>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/boot-guard.js"></script>
+<script src="js/archive.js"></script>
+<script src="js/pwgen.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

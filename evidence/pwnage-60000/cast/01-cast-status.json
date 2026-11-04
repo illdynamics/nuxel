@@ -1,0 +1,11 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"device":"beyond2lte","tool":"nuxel-cast-diag","read_only":true,"p2p":"iw-p2p","wpa_p2p":"","capture":"grim,pipewire","encoders":"openh264enc,av1enc,vp8enc,vp9enc","gnome_network_displays":"","wifi_interfaces":["/sys/class/net/ip6_vti0","/sys/class/net/ip6tnl0","/sys/class/net/ip_vti0","/sys/class/net/lo","/sys/class/net/mcps0","/sys/class/net/p2p0","/sys/class/net/rmnet0","/sys/class/net/rmnet1","/sys/class/net/rmnet2","/sys/class/net/rmnet3","/sys/class/net/rmnet4","/sys/class/net/rmnet5","/sys/class/net/rmnet6","/sys/class/net/rmnet7","/sys/class/net/sit0","/sys/class/net/umts_dm0","/sys/class/net/wlan0","/sys/class/net/wlan1"],"verdict":"MIRACAST_CANDIDATE","owner_proof":"docs/A49/OWNER-TEST-CAST.md","moving_picture_verified":false}
+rc=0

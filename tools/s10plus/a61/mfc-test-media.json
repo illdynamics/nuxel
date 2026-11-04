@@ -1,0 +1,73 @@
+{
+  "schema": "nuxel.mfc.test-media/1",
+  "policy": "Identical files must be used for software and MFC runs. No binary is committed here; fixtures are acquired/generated locally and hashed before use.",
+  "software_reference": {
+    "id": "nuxel-preloading-screen",
+    "path": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+    "source": "assets/nuxel-preloading-screen.mp4",
+    "container": "ISO-BMFF (mp4/mov)",
+    "codec": "H.264 High",
+    "resolution": "1080x1920 (portrait)",
+    "fps": 24,
+    "frames": 144,
+    "duration_ms": 6016,
+    "pixel_format": "yuv420p",
+    "color": "bt709/tv",
+    "audio": "AAC-LC 48000 Hz stereo (deliberately not played at boot)",
+    "sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+    "status": "PRESENT_SOFTWARE_REFERENCE",
+    "note": "This is the boot/preload asset. It proves software decode only; it is not an MFC proof."
+  },
+  "fixtures": [
+    {
+      "id": "h264-720p30",
+      "status": "NOT_PRESENT",
+      "required_codec": "H.264 High (or Main)",
+      "resolution": "1280x720",
+      "fps": 30,
+      "pixel_format": "yuv420p 8-bit 4:2:0",
+      "purpose": "PWNAGE-61000 Stage 1 minimum hardware proof",
+      "sha256": null
+    },
+    {
+      "id": "h264-1080p30",
+      "status": "NOT_PRESENT",
+      "required_codec": "H.264 High",
+      "resolution": "1920x1080",
+      "fps": 30,
+      "pixel_format": "yuv420p 8-bit 4:2:0",
+      "purpose": "Stage 2 everyday HD",
+      "sha256": null
+    },
+    {
+      "id": "h264-1080p60",
+      "status": "NOT_PRESENT",
+      "required_codec": "H.264 High",
+      "resolution": "1920x1080",
+      "fps": 60,
+      "pixel_format": "yuv420p 8-bit 4:2:0",
+      "purpose": "Stage 2 only if advertised by the driver",
+      "sha256": null
+    },
+    {
+      "id": "hevc-main-1080p30",
+      "status": "NOT_PRESENT",
+      "required_codec": "HEVC Main",
+      "resolution": "1920x1080",
+      "fps": 30,
+      "pixel_format": "yuv420p 8-bit 4:2:0",
+      "purpose": "Stage 2/3 only if advertised",
+      "sha256": null
+    },
+    {
+      "id": "4k30",
+      "status": "NOT_PRESENT",
+      "required_codec": "H.264 High or HEVC Main",
+      "resolution": "3840x2160",
+      "fps": 30,
+      "pixel_format": "yuv420p 8-bit 4:2:0",
+      "purpose": "Stage 4 experiment only after sustained HD passes; not an acceptance requirement",
+      "sha256": null
+    }
+  ]
+}

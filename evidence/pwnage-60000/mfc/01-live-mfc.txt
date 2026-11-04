@@ -1,0 +1,347 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== video devices ==
+ls: cannot access '/dev/media*': No such file or directory
+crw-------. 1 root root 81,  4 Jan  1  1970 /dev/video10
+crw-------. 1 root root 81, 38 Jan  1  1970 /dev/video101
+crw-------. 1 root root 81, 43 Jan  1  1970 /dev/video102
+crw-------. 1 root root 81, 48 Jan  1  1970 /dev/video103
+crw-------. 1 root root 81, 53 Jan  1  1970 /dev/video104
+crw-------. 1 root root 81, 58 Jan  1  1970 /dev/video105
+crw-------. 1 root root 81, 63 Jan  1  1970 /dev/video106
+crw-------. 1 root root 81,  5 Jan  1  1970 /dev/video11
+crw-------. 1 root root 81,  9 Jan  1  1970 /dev/video110
+crw-------. 1 root root 81, 10 Jan  1  1970 /dev/video111
+crw-------. 1 root root 81, 11 Jan  1  1970 /dev/video112
+crw-------. 1 root root 81, 12 Jan  1  1970 /dev/video113
+crw-------. 1 root root 81, 13 Jan  1  1970 /dev/video114
+crw-------. 1 root root 81,  7 Jan  1  1970 /dev/video12
+crw-------. 1 root root 81, 14 Jan  1  1970 /dev/video120
+crw-------. 1 root root 81, 15 Jan  1  1970 /dev/video121
+crw-------. 1 root root 81, 16 Jan  1  1970 /dev/video122
+crw-------. 1 root root 81, 17 Jan  1  1970 /dev/video123
+crw-------. 1 root root 81, 18 Jan  1  1970 /dev/video124
+crw-------. 1 root root 81, 21 Jan  1  1970 /dev/video130
+crw-------. 1 root root 81, 22 Jan  1  1970 /dev/video131
+crw-------. 1 root root 81, 23 Jan  1  1970 /dev/video132
+crw-------. 1 root root 81, 24 Jan  1  1970 /dev/video140
+crw-------. 1 root root 81, 25 Jan  1  1970 /dev/video141
+crw-------. 1 root root 81, 26 Jan  1  1970 /dev/video142
+crw-------. 1 root root 81, 27 Jan  1  1970 /dev/video148
+crw-------. 1 root root 81, 28 Jan  1  1970 /dev/video149
+crw-------. 1 root root 81,  6 Jan  1  1970 /dev/video155
+crw-------. 1 root root 81, 29 Jan  1  1970 /dev/video160
+crw-------. 1 root root 81, 30 Jan  1  1970 /dev/video161
+crw-------. 1 root root 81, 31 Jan  1  1970 /dev/video170
+crw-------. 1 root root 81, 32 Jan  1  1970 /dev/video171
+crw-------. 1 root root 81, 33 Jan  1  1970 /dev/video172
+crw-------. 1 root root 81, 34 Jan  1  1970 /dev/video173
+crw-------. 1 root root 81, 35 Jan  1  1970 /dev/video174
+crw-------. 1 root root 81, 36 Jan  1  1970 /dev/video175
+crw-------. 1 root root 81, 37 Jan  1  1970 /dev/video180
+crw-------. 1 root root 81, 39 Jan  1  1970 /dev/video210
+crw-------. 1 root root 81, 40 Jan  1  1970 /dev/video211
+crw-------. 1 root root 81, 41 Jan  1  1970 /dev/video212
+crw-------. 1 root root 81, 42 Jan  1  1970 /dev/video213
+crw-------. 1 root root 81, 44 Jan  1  1970 /dev/video214
+crw-------. 1 root root 81, 45 Jan  1  1970 /dev/video215
+crw-------. 1 root root 81, 46 Jan  1  1970 /dev/video216
+crw-------. 1 root root 81, 47 Jan  1  1970 /dev/video217
+crw-------. 1 root root 81, 49 Jan  1  1970 /dev/video218
+crw-------. 1 root root 81, 50 Jan  1  1970 /dev/video219
+crw-------. 1 root root 81, 51 Jan  1  1970 /dev/video220
+crw-------. 1 root root 81, 52 Jan  1  1970 /dev/video221
+crw-------. 1 root root 81, 54 Jan  1  1970 /dev/video222
+crw-------. 1 root root 81, 55 Jan  1  1970 /dev/video223
+crw-------. 1 root root 81, 56 Jan  1  1970 /dev/video224
+crw-------. 1 root root 81, 57 Jan  1  1970 /dev/video225
+crw-------. 1 root root 81, 59 Jan  1  1970 /dev/video226
+crw-------. 1 root root 81, 60 Jan  1  1970 /dev/video227
+crw-------. 1 root root 81, 61 Jan  1  1970 /dev/video228
+crw-------. 1 root root 81, 62 Jan  1  1970 /dev/video229
+crw-------. 1 root root 81, 64 Jan  1  1970 /dev/video230
+crw-------. 1 root root 81, 65 Jan  1  1970 /dev/video231
+crw-------. 1 root root 81, 66 Jan  1  1970 /dev/video232
+crw-------. 1 root root 81, 67 Jan  1  1970 /dev/video233
+crw-------. 1 root root 81, 19 Jan  1  1970 /dev/video250
+crw-------. 1 root root 81, 20 Jan  1  1970 /dev/video251
+crw-------. 1 root root 81,  8 Jan  1  1970 /dev/video50
+crw-------. 1 root root 81,  0 Jan  1  1970 /dev/video6
+crw-------. 1 root root 81,  1 Jan  1  1970 /dev/video7
+crw-------. 1 root root 81,  2 Jan  1  1970 /dev/video8
+crw-------. 1 root root 81,  3 Jan  1  1970 /dev/video9
+== v4l2 sysfs ==
+-- /sys/class/video4linux/video10
+s5p-mfc-enc-otf0
+/sys/bus/platform/drivers/s5p-mfc
+-- /sys/class/video4linux/video101
+exynos-fimc-is-ss0
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video102
+exynos-fimc-is-ss1
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video103
+exynos-fimc-is-ss2
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video104
+exynos-fimc-is-ss3
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video105
+exynos-fimc-is-ss4
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video106
+exynos-fimc-is-ss5
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video11
+s5p-mfc-enc-otf-secure0
+/sys/bus/platform/drivers/s5p-mfc
+-- /sys/class/video4linux/video110
+exynos-fimc-is-30s
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video111
+exynos-fimc-is-30c
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video112
+exynos-fimc-is-30p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video113
+exynos-fimc-is-30f
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video114
+exynos-fimc-is-30g
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video12
+exynos-jpeg
+/sys/bus/platform/drivers/exynos-jpeg
+-- /sys/class/video4linux/video120
+exynos-fimc-is-31s
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video121
+exynos-fimc-is-31c
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video122
+exynos-fimc-is-31p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video123
+exynos-fimc-is-31f
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video124
+exynos-fimc-is-31g
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video130
+exynos-fimc-is-i0s
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video131
+exynos-fimc-is-i0c
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video132
+exynos-fimc-is-i0p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video140
+exynos-fimc-is-i1s
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video141
+exynos-fimc-is-i1c
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video142
+exynos-fimc-is-i1p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video148
+exynos-fimc-is-me0c
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video149
+exynos-fimc-is-me1c
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video155
+camerapp-gdc:m2m
+/sys/bus/platform/drivers/camerapp-gdc
+-- /sys/class/video4linux/video160
+exynos-fimc-is-m0s
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video161
+exynos-fimc-is-m1s
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video170
+exynos-fimc-is-m0p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video171
+exynos-fimc-is-m1p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video172
+exynos-fimc-is-m2p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video173
+exynos-fimc-is-m3p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video174
+exynos-fimc-is-m4p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video175
+exynos-fimc-is-m5p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video180
+exynos-fimc-is-vra
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video210
+exynos-fimc-is-ssinstancevc0
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video211
+exynos-fimc-is-ssinstancevc1
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video212
+exynos-fimc-is-ssinstancevc2
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video213
+exynos-fimc-is-ssinstancevc3
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video214
+exynos-fimc-is-ssinstancevc0
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video215
+exynos-fimc-is-ssinstancevc1
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video216
+exynos-fimc-is-ssinstancevc2
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video217
+exynos-fimc-is-ssinstancevc3
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video218
+exynos-fimc-is-ssinstancevc0
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video219
+exynos-fimc-is-ssinstancevc1
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video220
+exynos-fimc-is-ssinstancevc2
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video221
+exynos-fimc-is-ssinstancevc3
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video222
+exynos-fimc-is-ssinstancevc0
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video223
+exynos-fimc-is-ssinstancevc1
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video224
+exynos-fimc-is-ssinstancevc2
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video225
+exynos-fimc-is-ssinstancevc3
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video226
+exynos-fimc-is-ssinstancevc0
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video227
+exynos-fimc-is-ssinstancevc1
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video228
+exynos-fimc-is-ssinstancevc2
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video229
+exynos-fimc-is-ssinstancevc3
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video230
+exynos-fimc-is-ssinstancevc0
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video231
+exynos-fimc-is-ssinstancevc1
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video232
+exynos-fimc-is-ssinstancevc2
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video233
+exynos-fimc-is-ssinstancevc3
+/sys/bus/platform/drivers/exynos-fimc-is-sensor
+-- /sys/class/video4linux/video250
+exynos-fimc-is-32s
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video251
+exynos-fimc-is-32p
+/sys/bus/platform/drivers/exynos-fimc-is
+-- /sys/class/video4linux/video50
+exynos5-scaler:m2m
+/sys/bus/platform/drivers/exynos5-scaler
+-- /sys/class/video4linux/video6
+s5p-mfc-dec0
+/sys/bus/platform/drivers/s5p-mfc
+-- /sys/class/video4linux/video7
+s5p-mfc-enc0
+/sys/bus/platform/drivers/s5p-mfc
+-- /sys/class/video4linux/video8
+s5p-mfc-dec-secure0
+/sys/bus/platform/drivers/s5p-mfc
+-- /sys/class/video4linux/video9
+s5p-mfc-enc-secure0
+/sys/bus/platform/drivers/s5p-mfc
+== mfc sysfs/dmesg ==
+/sys/kernel/tracing/events/mfc
+/sys/kernel/tracing/events/mfc/mfc_node_open
+/sys/kernel/tracing/events/mfc/mfc_node_close
+/sys/kernel/tracing/events/mfc/mfc_loadfw_start
+/sys/kernel/tracing/events/mfc/mfc_loadfw_end
+/sys/kernel/tracing/events/mfc/mfc_dcpp_start
+/sys/kernel/tracing/events/mfc/mfc_dcpp_end
+/sys/kernel/tracing/events/mfc/mfc_frame_start
+/sys/kernel/tracing/events/mfc/mfc_frame_top
+/sys/kernel/tracing/events/mfc/mfc_frame_bottom
+/sys/kernel/debug/pm_genpd/pd-mfc
+/sys/kernel/debug/exynos-pd/dbgdev-pd-mfc
+/sys/kernel/debug/vclk/VCLK_IP_D_TZPC_MFC
+/sys/kernel/debug/vclk/VCLK_IP_LH_ATB_MFC
+/sys/kernel/debug/vclk/VCLK_IP_MFC
+/sys/kernel/debug/vclk/VCLK_IP_VGEN_MFC
+/sys/kernel/debug/vclk/VCLK_IP_XIU_D_MFC
+/sys/kernel/debug/vclk/VCLK_IP_PPMU_MFCD2
+/sys/kernel/debug/vclk/VCLK_IP_AS_APB_SYSMMU_S_MFCD1
+/sys/kernel/debug/vclk/VCLK_IP_AS_APB_SYSMMU_S_MFCD0
+/sys/kernel/debug/vclk/VCLK_IP_AS_APB_SYSMMU_NS_MFCD1
+/sys/kernel/debug/vclk/VCLK_IP_AS_APB_SYSMMU_NS_MFCD0
+/sys/kernel/debug/vclk/VCLK_IP_BTM_MFCD1
+/sys/kernel/debug/vclk/VCLK_IP_BTM_MFCD0
+/sys/kernel/debug/vclk/VCLK_IP_PPMU_MFCD1
+/sys/kernel/debug/vclk/VCLK_IP_PPMU_MFCD0
+/sys/kernel/debug/vclk/VCLK_IP_SYSMMU_MFCD1
+/sys/kernel/debug/vclk/VCLK_IP_SYSMMU_MFCD0
+/sys/kernel/debug/vclk/VCLK_IP_LHM_AXI_P_MFC
+/sys/kernel/debug/vclk/VCLK_IP_LHS_AXI_D1_MFC
+[    9.187807] dhd_verify_firmware_mode_change: current_mode 0x1, prev_opmode 0x405
+[   20.756048] samsung-abox 18c50000.abox: abox_core_download_firmware: download calliope_sram.bin
+[   20.765265] samsung-abox 18c50000.abox: abox_core_download_firmware: download calliope_dram.bin
+[   34.579971] samsung-abox 18c50000.abox: abox_core_download_firmware: download calliope_sram.bin
+[   34.583626] samsung-abox 18c50000.abox: abox_core_download_firmware: download calliope_dram.bin
+[   34.586134] samsung-abox 18c50000.abox: abox_core_download_firmware: download calliope_sram_2.bin
+[   34.589906] samsung-abox 18c50000.abox: abox_core_download_firmware: download calliope_dram_2.bin
+[   34.592352] samsung-abox 18c50000.abox: new extra firmware AP_AUDIO_SLSI.bin
+[   34.593435] samsung-abox 18c50000.abox: new extra firmware APBargeIn_AUDIO_SLSI.bin
+[   34.594063] samsung-abox 18c50000.abox: new extra firmware SoundBoosterParam.bin
+[   34.594716] samsung-abox 18c50000.abox: new extra firmware APDV_AUDIO_SLSI.bin
+[   34.595677] samsung-abox 18c50000.abox: new extra firmware APBiBF_AUDIO_SLSI.bin
+[   34.596104] samsung-abox 18c50000.abox: new extra firmware dnn.bin
+[   34.600748] samsung-abox 18c50000.abox: new extra firmware usbout.bin
+[   34.601440] samsung-abox 18c50000.abox: new extra firmware usbin.bin
+[   34.601902] samsung-abox 18c50000.abox: new extra firmware fmsb.bin
+[   34.602774] samsung-abox 18c50000.abox: new extra firmware txse1.bin
+[   34.604417] samsung-abox 18c50000.abox: new extra firmware rxse.bin
+[   34.605279] samsung-abox 18c50000.abox: new extra firmware txse2.bin
+[   34.605765] samsung-abox 18c50000.abox: new extra firmware a2dpcom.bin
+[   34.607261] samsung-abox 18c50000.abox: new extra firmware bidirmic.bin
+[   34.609142] samsung-abox 18c50000.abox: new extra firmware calliope2.dt
+[   34.609743] samsung-abox 18c50000.abox: new extra firmware APTV_AUDIO_SLSI.bin
+[   34.610321] samsung-abox 18c50000.abox: new extra firmware APSV_AUDIO_SLSI.bin
+[   34.611343] samsung-abox 18c50000.abox: new extra firmware txse3.bin
+[   34.793581] cs35l41 11-0041: DSP1: Firmware version: 3
+[   35.447968] cs35l41 11-0041: DSP1: Firmware: 400a4 vendor: 0x2 v0.0.1, 1 algorithms
+[   35.592202] cs35l41 11-0040: DSP1: Firmware version: 3
+[   36.246574] cs35l41 11-0040: DSP1: Firmware: 400a4 vendor: 0x2 v0.0.1, 1 algorithms
+[   62.438726] samsung-vts 15510000.vts: Failed to request firmware
+== firmware ==
+== modules ==

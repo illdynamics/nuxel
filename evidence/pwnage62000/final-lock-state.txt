@@ -1,0 +1,23 @@
+===LOCK
+{
+  "locked": true,
+  "owner": "security_provider",
+  "reason": "host-native-screen-lock",
+  "schema_version": 1,
+  "updated_at": 1793694167.6207044
+}
+===FT
+WINDOWS=2
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+===NAV
+{"schema_version":1,"visible":false,"mapped":false,"lock":"locked","home_ready":true,"fifo_ready":true,"width":360,"height":62,"scale":2,"reason":"hide"}
+
+===BAR
+{"schema_version":1,"ready":true,"visible":false,"reason":"locked","foreground_app_id":"","locked":true,"width":360,"height":36,"scale":2,"error":"","owner":"nuxel-statusbar"}
+
+===ENFORCE
+{"schema_version":1,"updated_at":1793694172,"locked":true,"home_raised":true,"hidden_non_home":1,"active_app":"","error":"","owner":"nuxel-foreign-toplevel"}
+
+===WLFB
+1793694172 DISPLAY_SLEEP total=468 failures=0 owner=nuxel-wl-fb display=off capture=stopped

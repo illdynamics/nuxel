@@ -1,0 +1,1405 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== IDENTITY ===
+2026-11-03T01:21:00+01:00
+954ea1bf-732c-4274-825f-ff2788b14467
+Linux fedora 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+Linux version 4.14.253-gf7194c1d15ed-dirty (wicked@infranux) (gcc version 15.2.0 (GCC)) #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026
+ console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=0 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=00cb632e4d613e62ad9ae402e9ae7ad1 root=PARTUUID=52444E41-494F-2044-7379-7374656D0000 
+NAME="Fedora Linux"
+VERSION="43 (Forty Three)"
+RELEASE_TYPE=stable
+ID=fedora
+VERSION_ID=43
+VERSION_CODENAME=""
+PRETTY_NAME="Fedora Linux 43 (Forty Three)"
+ANSI_COLOR="0;38;2;60;110;180"
+LOGO=fedora-logo-icon
+CPE_NAME="cpe:/o:fedoraproject:fedora:43"
+DEFAULT_HOSTNAME="fedora"
+HOME_URL="https://fedoraproject.org/"
+DOCUMENTATION_URL="https://docs.fedoraproject.org/en-US/fedora/f43/"
+SUPPORT_URL="https://ask.fedoraproject.org/"
+BUG_REPORT_URL="https://bugzilla.redhat.com/"
+REDHAT_BUGZILLA_PRODUCT="Fedora"
+REDHAT_BUGZILLA_PRODUCT_VERSION=43
+REDHAT_SUPPORT_PRODUCT="Fedora"
+REDHAT_SUPPORT_PRODUCT_VERSION=43
+SUPPORT_END=2026-12-02
+uid=0(root) gid=0(root) groups=0(root) context=unconfined_u:unconfined_r:unconfined_t:s0
+=== DEV NODES (listing only, not opening) ===
+crw-------. 1 root root 10, 126 Jan  1  1970 /dev/ion
+crw-rw-rw-. 1 root root 10, 121 Jan  1  1970 /dev/mali0
+crw-rw-rw-. 1 root root 10, 105 Jan  1  1970 /dev/udmabuf
+crw-------. 1 root root 81,   4 Jan  1  1970 /dev/video10
+crw-------. 1 root root 81,  38 Jan  1  1970 /dev/video101
+crw-------. 1 root root 81,  43 Jan  1  1970 /dev/video102
+crw-------. 1 root root 81,  48 Jan  1  1970 /dev/video103
+crw-------. 1 root root 81,  53 Jan  1  1970 /dev/video104
+crw-------. 1 root root 81,  58 Jan  1  1970 /dev/video105
+crw-------. 1 root root 81,  63 Jan  1  1970 /dev/video106
+crw-------. 1 root root 81,   5 Jan  1  1970 /dev/video11
+crw-------. 1 root root 81,   9 Jan  1  1970 /dev/video110
+crw-------. 1 root root 81,  10 Jan  1  1970 /dev/video111
+crw-------. 1 root root 81,  11 Jan  1  1970 /dev/video112
+crw-------. 1 root root 81,  12 Jan  1  1970 /dev/video113
+crw-------. 1 root root 81,  13 Jan  1  1970 /dev/video114
+crw-------. 1 root root 81,   7 Jan  1  1970 /dev/video12
+crw-------. 1 root root 81,  14 Jan  1  1970 /dev/video120
+crw-------. 1 root root 81,  15 Jan  1  1970 /dev/video121
+crw-------. 1 root root 81,  16 Jan  1  1970 /dev/video122
+crw-------. 1 root root 81,  17 Jan  1  1970 /dev/video123
+crw-------. 1 root root 81,  18 Jan  1  1970 /dev/video124
+crw-------. 1 root root 81,  21 Jan  1  1970 /dev/video130
+crw-------. 1 root root 81,  22 Jan  1  1970 /dev/video131
+crw-------. 1 root root 81,  23 Jan  1  1970 /dev/video132
+crw-------. 1 root root 81,  24 Jan  1  1970 /dev/video140
+crw-------. 1 root root 81,  25 Jan  1  1970 /dev/video141
+crw-------. 1 root root 81,  26 Jan  1  1970 /dev/video142
+crw-------. 1 root root 81,  27 Jan  1  1970 /dev/video148
+crw-------. 1 root root 81,  28 Jan  1  1970 /dev/video149
+crw-------. 1 root root 81,   6 Jan  1  1970 /dev/video155
+crw-------. 1 root root 81,  29 Jan  1  1970 /dev/video160
+crw-------. 1 root root 81,  30 Jan  1  1970 /dev/video161
+crw-------. 1 root root 81,  31 Jan  1  1970 /dev/video170
+crw-------. 1 root root 81,  32 Jan  1  1970 /dev/video171
+crw-------. 1 root root 81,  33 Jan  1  1970 /dev/video172
+crw-------. 1 root root 81,  34 Jan  1  1970 /dev/video173
+crw-------. 1 root root 81,  35 Jan  1  1970 /dev/video174
+crw-------. 1 root root 81,  36 Jan  1  1970 /dev/video175
+crw-------. 1 root root 81,  37 Jan  1  1970 /dev/video180
+crw-------. 1 root root 81,  39 Jan  1  1970 /dev/video210
+crw-------. 1 root root 81,  40 Jan  1  1970 /dev/video211
+crw-------. 1 root root 81,  41 Jan  1  1970 /dev/video212
+crw-------. 1 root root 81,  42 Jan  1  1970 /dev/video213
+crw-------. 1 root root 81,  44 Jan  1  1970 /dev/video214
+crw-------. 1 root root 81,  45 Jan  1  1970 /dev/video215
+crw-------. 1 root root 81,  46 Jan  1  1970 /dev/video216
+crw-------. 1 root root 81,  47 Jan  1  1970 /dev/video217
+crw-------. 1 root root 81,  49 Jan  1  1970 /dev/video218
+crw-------. 1 root root 81,  50 Jan  1  1970 /dev/video219
+crw-------. 1 root root 81,  51 Jan  1  1970 /dev/video220
+crw-------. 1 root root 81,  52 Jan  1  1970 /dev/video221
+crw-------. 1 root root 81,  54 Jan  1  1970 /dev/video222
+crw-------. 1 root root 81,  55 Jan  1  1970 /dev/video223
+crw-------. 1 root root 81,  56 Jan  1  1970 /dev/video224
+crw-------. 1 root root 81,  57 Jan  1  1970 /dev/video225
+crw-------. 1 root root 81,  59 Jan  1  1970 /dev/video226
+crw-------. 1 root root 81,  60 Jan  1  1970 /dev/video227
+crw-------. 1 root root 81,  61 Jan  1  1970 /dev/video228
+crw-------. 1 root root 81,  62 Jan  1  1970 /dev/video229
+crw-------. 1 root root 81,  64 Jan  1  1970 /dev/video230
+crw-------. 1 root root 81,  65 Jan  1  1970 /dev/video231
+crw-------. 1 root root 81,  66 Jan  1  1970 /dev/video232
+crw-------. 1 root root 81,  67 Jan  1  1970 /dev/video233
+crw-------. 1 root root 81,  19 Jan  1  1970 /dev/video250
+crw-------. 1 root root 81,  20 Jan  1  1970 /dev/video251
+crw-------. 1 root root 81,   8 Jan  1  1970 /dev/video50
+crw-------. 1 root root 81,   0 Jan  1  1970 /dev/video6
+crw-------. 1 root root 81,   1 Jan  1  1970 /dev/video7
+crw-------. 1 root root 81,   2 Jan  1  1970 /dev/video8
+crw-------. 1 root root 81,   3 Jan  1  1970 /dev/video9
+=== VIDEO4LINUX SYSFS ===
+total 0
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video10 -> ../../devices/platform/188d0000.mfc/video4linux/video10
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video101 -> ../../devices/platform/17030000.fimc_is_sensor/video4linux/video101
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video102 -> ../../devices/platform/17050000.fimc_is_sensor2/video4linux/video102
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video103 -> ../../devices/platform/17050000.fimc_is_sensor/video4linux/video103
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video104 -> ../../devices/platform/17090000.fimc_is_sensor/video4linux/video104
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video105 -> ../../devices/platform/17040000.fimc_is_sensor/video4linux/video105
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video106 -> ../../devices/platform/17060000.fimc_is_sensor/video4linux/video106
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video11 -> ../../devices/platform/188d0000.mfc/video4linux/video11
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video110 -> ../../devices/platform/170e0000.fimc_is/video4linux/video110
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video111 -> ../../devices/platform/170e0000.fimc_is/video4linux/video111
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video112 -> ../../devices/platform/170e0000.fimc_is/video4linux/video112
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video113 -> ../../devices/platform/170e0000.fimc_is/video4linux/video113
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video114 -> ../../devices/platform/170e0000.fimc_is/video4linux/video114
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video12 -> ../../devices/platform/18b00000.smfc/video4linux/video12
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video120 -> ../../devices/platform/170e0000.fimc_is/video4linux/video120
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video121 -> ../../devices/platform/170e0000.fimc_is/video4linux/video121
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video122 -> ../../devices/platform/170e0000.fimc_is/video4linux/video122
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video123 -> ../../devices/platform/170e0000.fimc_is/video4linux/video123
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video124 -> ../../devices/platform/170e0000.fimc_is/video4linux/video124
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video130 -> ../../devices/platform/170e0000.fimc_is/video4linux/video130
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video131 -> ../../devices/platform/170e0000.fimc_is/video4linux/video131
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video132 -> ../../devices/platform/170e0000.fimc_is/video4linux/video132
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video140 -> ../../devices/platform/170e0000.fimc_is/video4linux/video140
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video141 -> ../../devices/platform/170e0000.fimc_is/video4linux/video141
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video142 -> ../../devices/platform/170e0000.fimc_is/video4linux/video142
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video148 -> ../../devices/platform/170e0000.fimc_is/video4linux/video148
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video149 -> ../../devices/platform/170e0000.fimc_is/video4linux/video149
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video155 -> ../../devices/platform/17530000.gdc/video4linux/video155
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video160 -> ../../devices/platform/170e0000.fimc_is/video4linux/video160
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video161 -> ../../devices/platform/170e0000.fimc_is/video4linux/video161
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video170 -> ../../devices/platform/170e0000.fimc_is/video4linux/video170
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video171 -> ../../devices/platform/170e0000.fimc_is/video4linux/video171
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video172 -> ../../devices/platform/170e0000.fimc_is/video4linux/video172
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video173 -> ../../devices/platform/170e0000.fimc_is/video4linux/video173
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video174 -> ../../devices/platform/170e0000.fimc_is/video4linux/video174
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video175 -> ../../devices/platform/170e0000.fimc_is/video4linux/video175
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video180 -> ../../devices/platform/170e0000.fimc_is/video4linux/video180
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video210 -> ../../devices/platform/17030000.fimc_is_sensor/video4linux/video210
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video211 -> ../../devices/platform/17030000.fimc_is_sensor/video4linux/video211
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video212 -> ../../devices/platform/17030000.fimc_is_sensor/video4linux/video212
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video213 -> ../../devices/platform/17030000.fimc_is_sensor/video4linux/video213
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video214 -> ../../devices/platform/17050000.fimc_is_sensor2/video4linux/video214
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video215 -> ../../devices/platform/17050000.fimc_is_sensor2/video4linux/video215
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video216 -> ../../devices/platform/17050000.fimc_is_sensor2/video4linux/video216
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video217 -> ../../devices/platform/17050000.fimc_is_sensor2/video4linux/video217
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video218 -> ../../devices/platform/17050000.fimc_is_sensor/video4linux/video218
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video219 -> ../../devices/platform/17050000.fimc_is_sensor/video4linux/video219
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video220 -> ../../devices/platform/17050000.fimc_is_sensor/video4linux/video220
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video221 -> ../../devices/platform/17050000.fimc_is_sensor/video4linux/video221
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video222 -> ../../devices/platform/17090000.fimc_is_sensor/video4linux/video222
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video223 -> ../../devices/platform/17090000.fimc_is_sensor/video4linux/video223
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video224 -> ../../devices/platform/17090000.fimc_is_sensor/video4linux/video224
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video225 -> ../../devices/platform/17090000.fimc_is_sensor/video4linux/video225
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video226 -> ../../devices/platform/17040000.fimc_is_sensor/video4linux/video226
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video227 -> ../../devices/platform/17040000.fimc_is_sensor/video4linux/video227
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video228 -> ../../devices/platform/17040000.fimc_is_sensor/video4linux/video228
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video229 -> ../../devices/platform/17040000.fimc_is_sensor/video4linux/video229
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video230 -> ../../devices/platform/17060000.fimc_is_sensor/video4linux/video230
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video231 -> ../../devices/platform/17060000.fimc_is_sensor/video4linux/video231
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video232 -> ../../devices/platform/17060000.fimc_is_sensor/video4linux/video232
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video233 -> ../../devices/platform/17060000.fimc_is_sensor/video4linux/video233
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video250 -> ../../devices/platform/170e0000.fimc_is/video4linux/video250
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video251 -> ../../devices/platform/170e0000.fimc_is/video4linux/video251
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video50 -> ../../devices/platform/18b10000.scaler/video4linux/video50
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video6 -> ../../devices/platform/188d0000.mfc/video4linux/video6
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video7 -> ../../devices/platform/188d0000.mfc/video4linux/video7
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video8 -> ../../devices/platform/188d0000.mfc/video4linux/video8
+lrwxrwxrwx 1 root root 0 Nov  3 01:15 video9 -> ../../devices/platform/188d0000.mfc/video4linux/video9
+-- /sys/class/video4linux/video10
+name: s5p-mfc-enc-otf0
+index: 4
+dev: 81:4
+/sys/devices/platform/188d0000.mfc
+-- /sys/class/video4linux/video101
+name: exynos-fimc-is-ss0
+index: 0
+dev: 81:38
+/sys/devices/platform/17030000.fimc_is_sensor
+-- /sys/class/video4linux/video102
+name: exynos-fimc-is-ss1
+index: 0
+dev: 81:43
+/sys/devices/platform/17050000.fimc_is_sensor2
+-- /sys/class/video4linux/video103
+name: exynos-fimc-is-ss2
+index: 0
+dev: 81:48
+/sys/devices/platform/17050000.fimc_is_sensor
+-- /sys/class/video4linux/video104
+name: exynos-fimc-is-ss3
+index: 0
+dev: 81:53
+/sys/devices/platform/17090000.fimc_is_sensor
+-- /sys/class/video4linux/video105
+name: exynos-fimc-is-ss4
+index: 0
+dev: 81:58
+/sys/devices/platform/17040000.fimc_is_sensor
+-- /sys/class/video4linux/video106
+name: exynos-fimc-is-ss5
+index: 0
+dev: 81:63
+/sys/devices/platform/17060000.fimc_is_sensor
+-- /sys/class/video4linux/video11
+name: s5p-mfc-enc-otf-secure0
+index: 5
+dev: 81:5
+/sys/devices/platform/188d0000.mfc
+-- /sys/class/video4linux/video110
+name: exynos-fimc-is-30s
+index: 0
+dev: 81:9
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video111
+name: exynos-fimc-is-30c
+index: 1
+dev: 81:10
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video112
+name: exynos-fimc-is-30p
+index: 2
+dev: 81:11
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video113
+name: exynos-fimc-is-30f
+index: 3
+dev: 81:12
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video114
+name: exynos-fimc-is-30g
+index: 4
+dev: 81:13
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video12
+name: exynos-jpeg
+index: 0
+dev: 81:7
+/sys/devices/platform/18b00000.smfc
+-- /sys/class/video4linux/video120
+name: exynos-fimc-is-31s
+index: 5
+dev: 81:14
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video121
+name: exynos-fimc-is-31c
+index: 6
+dev: 81:15
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video122
+name: exynos-fimc-is-31p
+index: 7
+dev: 81:16
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video123
+name: exynos-fimc-is-31f
+index: 8
+dev: 81:17
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video124
+name: exynos-fimc-is-31g
+index: 9
+dev: 81:18
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video130
+name: exynos-fimc-is-i0s
+index: 12
+dev: 81:21
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video131
+name: exynos-fimc-is-i0c
+index: 13
+dev: 81:22
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video132
+name: exynos-fimc-is-i0p
+index: 14
+dev: 81:23
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video140
+name: exynos-fimc-is-i1s
+index: 15
+dev: 81:24
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video141
+name: exynos-fimc-is-i1c
+index: 16
+dev: 81:25
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video142
+name: exynos-fimc-is-i1p
+index: 17
+dev: 81:26
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video148
+name: exynos-fimc-is-me0c
+index: 18
+dev: 81:27
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video149
+name: exynos-fimc-is-me1c
+index: 19
+dev: 81:28
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video155
+name: camerapp-gdc:m2m
+index: 0
+dev: 81:6
+/sys/devices/platform/17530000.gdc
+-- /sys/class/video4linux/video160
+name: exynos-fimc-is-m0s
+index: 20
+dev: 81:29
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video161
+name: exynos-fimc-is-m1s
+index: 21
+dev: 81:30
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video170
+name: exynos-fimc-is-m0p
+index: 22
+dev: 81:31
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video171
+name: exynos-fimc-is-m1p
+index: 23
+dev: 81:32
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video172
+name: exynos-fimc-is-m2p
+index: 24
+dev: 81:33
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video173
+name: exynos-fimc-is-m3p
+index: 25
+dev: 81:34
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video174
+name: exynos-fimc-is-m4p
+index: 26
+dev: 81:35
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video175
+name: exynos-fimc-is-m5p
+index: 27
+dev: 81:36
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video180
+name: exynos-fimc-is-vra
+index: 28
+dev: 81:37
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video210
+name: exynos-fimc-is-ssinstancevc0
+index: 1
+dev: 81:39
+/sys/devices/platform/17030000.fimc_is_sensor
+-- /sys/class/video4linux/video211
+name: exynos-fimc-is-ssinstancevc1
+index: 2
+dev: 81:40
+/sys/devices/platform/17030000.fimc_is_sensor
+-- /sys/class/video4linux/video212
+name: exynos-fimc-is-ssinstancevc2
+index: 3
+dev: 81:41
+/sys/devices/platform/17030000.fimc_is_sensor
+-- /sys/class/video4linux/video213
+name: exynos-fimc-is-ssinstancevc3
+index: 4
+dev: 81:42
+/sys/devices/platform/17030000.fimc_is_sensor
+-- /sys/class/video4linux/video214
+name: exynos-fimc-is-ssinstancevc0
+index: 1
+dev: 81:44
+/sys/devices/platform/17050000.fimc_is_sensor2
+-- /sys/class/video4linux/video215
+name: exynos-fimc-is-ssinstancevc1
+index: 2
+dev: 81:45
+/sys/devices/platform/17050000.fimc_is_sensor2
+-- /sys/class/video4linux/video216
+name: exynos-fimc-is-ssinstancevc2
+index: 3
+dev: 81:46
+/sys/devices/platform/17050000.fimc_is_sensor2
+-- /sys/class/video4linux/video217
+name: exynos-fimc-is-ssinstancevc3
+index: 4
+dev: 81:47
+/sys/devices/platform/17050000.fimc_is_sensor2
+-- /sys/class/video4linux/video218
+name: exynos-fimc-is-ssinstancevc0
+index: 1
+dev: 81:49
+/sys/devices/platform/17050000.fimc_is_sensor
+-- /sys/class/video4linux/video219
+name: exynos-fimc-is-ssinstancevc1
+index: 2
+dev: 81:50
+/sys/devices/platform/17050000.fimc_is_sensor
+-- /sys/class/video4linux/video220
+name: exynos-fimc-is-ssinstancevc2
+index: 3
+dev: 81:51
+/sys/devices/platform/17050000.fimc_is_sensor
+-- /sys/class/video4linux/video221
+name: exynos-fimc-is-ssinstancevc3
+index: 4
+dev: 81:52
+/sys/devices/platform/17050000.fimc_is_sensor
+-- /sys/class/video4linux/video222
+name: exynos-fimc-is-ssinstancevc0
+index: 1
+dev: 81:54
+/sys/devices/platform/17090000.fimc_is_sensor
+-- /sys/class/video4linux/video223
+name: exynos-fimc-is-ssinstancevc1
+index: 2
+dev: 81:55
+/sys/devices/platform/17090000.fimc_is_sensor
+-- /sys/class/video4linux/video224
+name: exynos-fimc-is-ssinstancevc2
+index: 3
+dev: 81:56
+/sys/devices/platform/17090000.fimc_is_sensor
+-- /sys/class/video4linux/video225
+name: exynos-fimc-is-ssinstancevc3
+index: 4
+dev: 81:57
+/sys/devices/platform/17090000.fimc_is_sensor
+-- /sys/class/video4linux/video226
+name: exynos-fimc-is-ssinstancevc0
+index: 1
+dev: 81:59
+/sys/devices/platform/17040000.fimc_is_sensor
+-- /sys/class/video4linux/video227
+name: exynos-fimc-is-ssinstancevc1
+index: 2
+dev: 81:60
+/sys/devices/platform/17040000.fimc_is_sensor
+-- /sys/class/video4linux/video228
+name: exynos-fimc-is-ssinstancevc2
+index: 3
+dev: 81:61
+/sys/devices/platform/17040000.fimc_is_sensor
+-- /sys/class/video4linux/video229
+name: exynos-fimc-is-ssinstancevc3
+index: 4
+dev: 81:62
+/sys/devices/platform/17040000.fimc_is_sensor
+-- /sys/class/video4linux/video230
+name: exynos-fimc-is-ssinstancevc0
+index: 1
+dev: 81:64
+/sys/devices/platform/17060000.fimc_is_sensor
+-- /sys/class/video4linux/video231
+name: exynos-fimc-is-ssinstancevc1
+index: 2
+dev: 81:65
+/sys/devices/platform/17060000.fimc_is_sensor
+-- /sys/class/video4linux/video232
+name: exynos-fimc-is-ssinstancevc2
+index: 3
+dev: 81:66
+/sys/devices/platform/17060000.fimc_is_sensor
+-- /sys/class/video4linux/video233
+name: exynos-fimc-is-ssinstancevc3
+index: 4
+dev: 81:67
+/sys/devices/platform/17060000.fimc_is_sensor
+-- /sys/class/video4linux/video250
+name: exynos-fimc-is-32s
+index: 10
+dev: 81:19
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video251
+name: exynos-fimc-is-32p
+index: 11
+dev: 81:20
+/sys/devices/platform/170e0000.fimc_is
+-- /sys/class/video4linux/video50
+name: exynos5-scaler:m2m
+index: 0
+dev: 81:8
+/sys/devices/platform/18b10000.scaler
+-- /sys/class/video4linux/video6
+name: s5p-mfc-dec0
+index: 0
+dev: 81:0
+/sys/devices/platform/188d0000.mfc
+-- /sys/class/video4linux/video7
+name: s5p-mfc-enc0
+index: 1
+dev: 81:1
+/sys/devices/platform/188d0000.mfc
+-- /sys/class/video4linux/video8
+name: s5p-mfc-dec-secure0
+index: 2
+dev: 81:2
+/sys/devices/platform/188d0000.mfc
+-- /sys/class/video4linux/video9
+name: s5p-mfc-enc-secure0
+index: 3
+dev: 81:3
+/sys/devices/platform/188d0000.mfc
+=== PLATFORM DRIVER BINDINGS ===
+-- /sys/bus/platform/drivers/s5p-mfc
+total 0
+lrwxrwxrwx 1 root root    0 Nov  3 01:21 188d0000.mfc -> ../../../../devices/platform/188d0000.mfc
+--w------- 1 root root 4096 Nov  3 01:15 uevent
+=== DT MFC NODES ===
+/sys/firmware/devicetree/base/hsi2c@15D70000/mfc-charger@3b
+/sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone_5v
+/sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_gear
+/sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_lcd_on
+/sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone
+/sys/firmware/devicetree/base/smfc@18B00000
+/sys/firmware/devicetree/base/smfc@18B00000/smfc,int_qos_minlock
+/sys/firmware/devicetree/base/iommu-domain_mscl_smfc
+/sys/firmware/devicetree/base/iommu-domain_mfc
+/sys/firmware/devicetree/base/pd-mfc@15862600
+/sys/firmware/devicetree/base/exynos_devfreq/devfreq_mfc@17000090
+/sys/firmware/devicetree/base/aliases/mfc0
+/sys/firmware/devicetree/base/pmucal_dbg/pmucal_dbg_local/pd-mfc
+/sys/firmware/devicetree/base/mfc@188D0000
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_fault_num
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_freq_control
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_8
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_6
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_4
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_2
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_0
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_9
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_7
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_5
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_3
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_1
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_perf_boost_table
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_perf_boost_table/freq_mfc
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_freqs
+/sys/firmware/devicetree/base/mfc@188D0000/num_mfc_freq
+/sys/firmware/devicetree/base/dbgdev-pd-mfc
+/sys/firmware/devicetree/base/__symbols__/mfc_0
+/sys/firmware/devicetree/base/__symbols__/sysmmu_mfc1
+/sys/firmware/devicetree/base/__symbols__/pd_mfc
+/sys/firmware/devicetree/base/__symbols__/smfc
+/sys/firmware/devicetree/base/__symbols__/sysmmu_mfc0
+/sys/firmware/devicetree/base/exynos-dm@17000000/dm_domains/devfreq_mfc
+### /sys/firmware/devicetree/base/hsi2c@15D70000/mfc-charger@3b
+total 0
+drwxr-xr-x 2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 3 root root  0 Nov  3 01:21 ..
+-r--r--r-- 1 root root 17 Nov  3 01:21 battery,charger_name
+-r--r--r-- 1 root root 48 Nov  3 01:21 battery,fod_data
+-r--r--r-- 1 root root 48 Nov  3 01:21 battery,fod_data_cv
+-r--r--r-- 1 root root 48 Nov  3 01:21 battery,fod_dream_cv_data
+-r--r--r-- 1 root root 48 Nov  3 01:21 battery,fod_dream_data
+-r--r--r-- 1 root root 48 Nov  3 01:21 battery,fod_hero_5v_data
+-r--r--r-- 1 root root 19 Nov  3 01:21 battery,fuelgauge_name
+-r--r--r-- 1 root root 12 Nov  3 01:21 battery,mst_pwr_en
+-r--r--r-- 1 root root  4 Nov  3 01:21 battery,oc_fod1
+-r--r--r-- 1 root root  4 Nov  3 01:21 battery,tx_gear_min_op_freq_delay
+-r--r--r-- 1 root root  4 Nov  3 01:21 battery,wc_cover_rpp
+-r--r--r-- 1 root root  4 Nov  3 01:21 battery,wireless20_max_power_list
+-r--r--r-- 1 root root  4 Nov  3 01:21 battery,wireless20_vout_list
+-r--r--r-- 1 root root  4 Nov  3 01:21 battery,wireless20_vrect_list
+-r--r--r-- 1 root root 12 Nov  3 01:21 battery,wireless_charger_name
+-r--r--r-- 1 root root 12 Nov  3 01:21 battery,wpc_det
+-r--r--r-- 1 root root 12 Nov  3 01:21 battery,wpc_int
+-r--r--r-- 1 root root 16 Nov  3 01:21 compatible
+-r--r--r-- 1 root root 12 Nov  3 01:21 name
+-r--r--r-- 1 root root  8 Nov  3 01:21 pinctrl-0
+-r--r--r-- 1 root root  8 Nov  3 01:21 pinctrl-names
+-r--r--r-- 1 root root  4 Nov  3 01:21 reg
+-r--r--r-- 1 root root  5 Nov  3 01:21 status
+compatible: idt,mfc-charger 
+status: okay 
+reg:    ;
+### /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone_5v
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone_5v
+### /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_gear
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_gear
+### /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_lcd_on
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_lcd_on
+### /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone
+### /sys/firmware/devicetree/base/smfc@18B00000
+total 0
+drwxr-xr-x   2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 449 root root  0 Nov  3 01:15 ..
+-r--r--r--   1 root root  5 Nov  3 01:21 clock-names
+-r--r--r--   1 root root  8 Nov  3 01:21 clocks
+-r--r--r--   1 root root 24 Nov  3 01:21 compatible
+-r--r--r--   1 root root  0 Nov  3 01:21 dma-coherent
+-r--r--r--   1 root root 12 Nov  3 01:21 interrupts
+-r--r--r--   1 root root  4 Nov  3 01:21 iommus
+-r--r--r--   1 root root  4 Nov  3 01:21 linux,phandle
+-r--r--r--   1 root root  5 Nov  3 01:21 name
+-r--r--r--   1 root root  4 Nov  3 01:21 phandle
+-r--r--r--   1 root root 12 Nov  3 01:21 reg
+-r--r--r--   1 root root  4 Nov  3 01:21 smfc,int_qos_minlock
+compatible: samsung,exynos8890-jpeg 
+reg:     �     
+interrupts:           
+clock-names: gate 
+phandle:   
+### /sys/firmware/devicetree/base/smfc@18B00000/smfc,int_qos_minlock
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/smfc@18B00000/smfc,int_qos_minlock
+### /sys/firmware/devicetree/base/iommu-domain_mscl_smfc
+total 0
+-r--r--r--   1 root root  4 Nov  3 01:21 #address-cells
+-r--r--r--   1 root root  4 Nov  3 01:21 #size-cells
+drwxr-xr-x   2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 449 root root  0 Nov  3 01:21 ..
+-r--r--r--   1 root root 25 Nov  3 01:21 compatible
+-r--r--r--   1 root root 12 Nov  3 01:21 domain-clients
+-r--r--r--   1 root root 23 Nov  3 01:21 name
+-r--r--r--   1 root root  0 Nov  3 01:21 ranges
+compatible: samsung,exynos-iommu-bus 
+### /sys/firmware/devicetree/base/iommu-domain_mfc
+total 0
+-r--r--r--   1 root root  4 Nov  3 01:21 #address-cells
+-r--r--r--   1 root root  4 Nov  3 01:21 #size-cells
+drwxr-xr-x   2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 449 root root  0 Nov  3 01:21 ..
+-r--r--r--   1 root root 25 Nov  3 01:21 compatible
+-r--r--r--   1 root root  8 Nov  3 01:21 domain-clients
+-r--r--r--   1 root root 17 Nov  3 01:21 name
+-r--r--r--   1 root root  0 Nov  3 01:21 ranges
+compatible: samsung,exynos-iommu-bus 
+### /sys/firmware/devicetree/base/pd-mfc@15862600
+total 0
+drwxr-xr-x   2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 449 root root  0 Nov  3 01:21 ..
+-r--r--r--   1 root root  4 Nov  3 01:21 cal_id
+-r--r--r--   1 root root 18 Nov  3 01:21 compatible
+-r--r--r--   1 root root  4 Nov  3 01:21 linux,phandle
+-r--r--r--   1 root root  7 Nov  3 01:21 name
+-r--r--r--   1 root root  4 Nov  3 01:21 need_smc
+-r--r--r--   1 root root  4 Nov  3 01:21 phandle
+-r--r--r--   1 root root 12 Nov  3 01:21 reg
+-r--r--r--   1 root root  5 Nov  3 01:21 status
+compatible: samsung,exynos-pd 
+status: okay 
+reg:     �&     
+phandle:    
+### /sys/firmware/devicetree/base/exynos_devfreq/devfreq_mfc@17000090
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  8 Nov  3 01:21 boot_info
+-r--r--r--  1 root root  6 Nov  3 01:21 bts_update
+-r--r--r--  1 root root 23 Nov  3 01:21 compatible
+-r--r--r--  1 root root  9 Nov  3 01:21 devfreq_domain_name
+-r--r--r--  1 root root  4 Nov  3 01:21 devfreq_type
+-r--r--r--  1 root root  4 Nov  3 01:21 dfs_id
+-r--r--r--  1 root root  4 Nov  3 01:21 dm-index
+-r--r--r--  1 root root  4 Nov  3 01:21 ess_flag
+-r--r--r--  1 root root 24 Nov  3 01:21 freq_info
+-r--r--r--  1 root root  4 Nov  3 01:21 governor
+-r--r--r--  1 root root  4 Nov  3 01:21 linux,phandle
+-r--r--r--  1 root root 12 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 phandle
+-r--r--r--  1 root root  4 Nov  3 01:21 pm_qos_class
+-r--r--r--  1 root root  4 Nov  3 01:21 pm_qos_class_max
+-r--r--r--  1 root root 12 Nov  3 01:21 reg
+-r--r--r--  1 root root  6 Nov  3 01:21 use_delay_time
+compatible: samsung,exynos-devfreq 
+reg:       �    
+phandle:   �
+### /sys/firmware/devicetree/base/aliases/mfc0
+-r--r--r-- 1 root root 14 Nov  3 01:21 /sys/firmware/devicetree/base/aliases/mfc0
+### /sys/firmware/devicetree/base/pmucal_dbg/pmucal_dbg_local/pd-mfc
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 18 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root 17 Nov  3 01:21 device_type
+-r--r--r--  1 root root  4 Nov  3 01:21 emul_bit
+-r--r--r--  1 root root  4 Nov  3 01:21 emul_en
+-r--r--r--  1 root root  4 Nov  3 01:21 emul_offset
+-r--r--r--  1 root root  4 Nov  3 01:21 id
+-r--r--r--  1 root root  4 Nov  3 01:21 latency_offset
+-r--r--r--  1 root root  7 Nov  3 01:21 name
+### /sys/firmware/devicetree/base/mfc@188D0000
+total 0
+-r--r--r--   1 root root   4 Nov  3 01:21 #address-cells
+-r--r--r--   1 root root   4 Nov  3 01:21 #size-cells
+drwxr-xr-x   8 root root   0 Nov  3 01:21 .
+drwxr-xr-x 449 root root   0 Nov  3 01:21 ..
+-r--r--r--   1 root root   4 Nov  3 01:21 P010_decoding
+-r--r--r--   1 root root   4 Nov  3 01:21 axid_mask
+-r--r--r--   1 root root   8 Nov  3 01:21 black_bar
+-r--r--r--   1 root root   4 Nov  3 01:21 bw_control
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_dec_h264
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_dec_hevc
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_dec_hevc_10bit
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_dec_mpeg4
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_dec_vp8
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_dec_vp9
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_dec_vp9_10bit
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_enc_h264
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_enc_hevc
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_enc_hevc_10bit
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_enc_mpeg4
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_enc_vp8
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_enc_vp9
+-r--r--r--   1 root root  12 Nov  3 01:21 bw_enc_vp9_10bit
+-r--r--r--   1 root root   9 Nov  3 01:21 clock-names
+-r--r--r--   1 root root   8 Nov  3 01:21 clocks
+drwxr-xr-x   2 root root   0 Nov  3 01:21 cmu
+-r--r--r--   1 root root   8 Nov  3 01:21 color_aspect_dec
+-r--r--r--   1 root root   8 Nov  3 01:21 color_aspect_enc
+-r--r--r--   1 root root  19 Nov  3 01:21 compatible
+-r--r--r--   1 root root   4 Nov  3 01:21 debug_mode
+-r--r--r--   1 root root 100 Nov  3 01:21 enc_param_addr
+-r--r--r--   1 root root   4 Nov  3 01:21 enc_param_num
+-r--r--r--   1 root root 100 Nov  3 01:21 enc_param_val
+-r--r--r--   1 root root   8 Nov  3 01:21 hdr10_plus
+drwxr-xr-x   2 root root   0 Nov  3 01:21 hwfc
+-r--r--r--   1 root root  12 Nov  3 01:21 interrupts
+drwxr-xr-x   2 root root   0 Nov  3 01:21 iommu
+-r--r--r--   1 root root   8 Nov  3 01:21 iommus
+-r--r--r--   1 root root   4 Nov  3 01:21 ip_ver
+-r--r--r--   1 root root   4 Nov  3 01:21 linux,phandle
+-r--r--r--   1 root root   8 Nov  3 01:21 max_Kbps
+-r--r--r--   1 root root   4 Nov  3 01:21 max_hdr_win
+-r--r--r--   1 root root   4 Nov  3 01:21 max_mb
+-r--r--r--   1 root root   4 Nov  3 01:21 max_qos_steps
+-r--r--r--   1 root root   4 Nov  3 01:21 mfc_fault_num
+-r--r--r--   1 root root   4 Nov  3 01:21 mfc_freq_control
+-r--r--r--   1 root root  20 Nov  3 01:21 mfc_freqs
+drwxr-xr-x   2 root root   0 Nov  3 01:21 mfc_perf_boost_table
+drwxr-xr-x  12 root root   0 Nov  3 01:21 mfc_qos_table
+drwxr-xr-x   2 root root   0 Nov  3 01:21 mmcache
+-r--r--r--   1 root root   4 Nov  3 01:21 mo_control
+-r--r--r--   1 root root   8 Nov  3 01:21 nal_q
+-r--r--r--   1 root root   4 Nov  3 01:21 nal_q_dump_size
+-r--r--r--   1 root root   4 Nov  3 01:21 nal_q_entry_size
+-r--r--r--   1 root root   4 Nov  3 01:21 name
+-r--r--r--   1 root root   4 Nov  3 01:21 num_mfc_freq
+-r--r--r--   1 root root   4 Nov  3 01:21 num_qos_steps
+-r--r--r--   1 root root   4 Nov  3 01:21 phandle
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_10bit
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_3plane
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_422
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_bframe
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_gpb
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_h264_hevc
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_num_of_ref
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_num_of_tile
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_other_codec
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_super64_bframe
+-r--r--r--   1 root root   4 Nov  3 01:21 qos_weight_vp8_vp9
+-r--r--r--   1 root root   0 Nov  3 01:21 ranges
+-r--r--r--   1 root root  12 Nov  3 01:21 reg
+-r--r--r--   1 root root   4 Nov  3 01:21 share_sysmmu
+-r--r--r--   1 root root   8 Nov  3 01:21 skype
+-r--r--r--   1 root root   8 Nov  3 01:21 static_info_dec
+-r--r--r--   1 root root   8 Nov  3 01:21 static_info_enc
+-r--r--r--   1 root root   4 Nov  3 01:21 support_10bit
+-r--r--r--   1 root root   4 Nov  3 01:21 support_422
+-r--r--r--   1 root root   4 Nov  3 01:21 support_rgb
+compatible: samsung,exynos-mfc 
+ip_ver:  00130000
+reg:     �     
+interrupts:       R    
+clock-names: aclk_mfc 
+phandle:    
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_fault_num
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/mfc@188D0000/mfc_fault_num
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_freq_control
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/mfc@188D0000/mfc_freq_control
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table
+total 0
+drwxr-xr-x 12 root root  0 Nov  3 01:21 .
+drwxr-xr-x  8 root root  0 Nov  3 01:21 ..
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_1
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_2
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_3
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_4
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_5
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_6
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_7
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_8
+drwxr-xr-x  2 root root  0 Nov  3 01:21 mfc_qos_variant_9
+-r--r--r--  1 root root 14 Nov  3 01:21 name
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_8
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_6
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_4
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_2
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_0
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_9
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_7
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_5
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_3
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table/mfc_qos_variant_1
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 12 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_int
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r--  1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_10bit_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_uhd_enc60_value
+-r--r--r--  1 root root  4 Nov  3 01:21 mo_value
+-r--r--r--  1 root root 18 Nov  3 01:21 name
+-r--r--r--  1 root root  4 Nov  3 01:21 thrd_mb
+-r--r--r--  1 root root  4 Nov  3 01:21 time_fw
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_perf_boost_table
+total 0
+drwxr-xr-x 2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 8 root root  0 Nov  3 01:21 ..
+-r--r--r-- 1 root root 12 Nov  3 01:21 freq_cluster
+-r--r--r-- 1 root root  4 Nov  3 01:21 freq_int
+-r--r--r-- 1 root root  4 Nov  3 01:21 freq_mfc
+-r--r--r-- 1 root root  4 Nov  3 01:21 freq_mif
+-r--r--r-- 1 root root 21 Nov  3 01:21 name
+-r--r--r-- 1 root root  4 Nov  3 01:21 num_cluster
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_perf_boost_table/freq_mfc
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/mfc@188D0000/mfc_perf_boost_table/freq_mfc
+### /sys/firmware/devicetree/base/mfc@188D0000/mfc_freqs
+-r--r--r-- 1 root root 20 Nov  3 01:21 /sys/firmware/devicetree/base/mfc@188D0000/mfc_freqs
+### /sys/firmware/devicetree/base/mfc@188D0000/num_mfc_freq
+-r--r--r-- 1 root root 4 Nov  3 01:21 /sys/firmware/devicetree/base/mfc@188D0000/num_mfc_freq
+### /sys/firmware/devicetree/base/dbgdev-pd-mfc
+total 0
+drwxr-xr-x   2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 449 root root  0 Nov  3 01:21 ..
+-r--r--r--   1 root root 22 Nov  3 01:21 compatible
+-r--r--r--   1 root root 14 Nov  3 01:21 name
+-r--r--r--   1 root root  4 Nov  3 01:21 samsung,power-domain
+compatible: samsung,exynos-pd-dbg 
+### /sys/firmware/devicetree/base/__symbols__/mfc_0
+-r--r--r-- 1 root root 14 Nov  3 01:21 /sys/firmware/devicetree/base/__symbols__/mfc_0
+### /sys/firmware/devicetree/base/__symbols__/sysmmu_mfc1
+-r--r--r-- 1 root root 17 Nov  3 01:21 /sys/firmware/devicetree/base/__symbols__/sysmmu_mfc1
+### /sys/firmware/devicetree/base/__symbols__/pd_mfc
+-r--r--r-- 1 root root 17 Nov  3 01:21 /sys/firmware/devicetree/base/__symbols__/pd_mfc
+### /sys/firmware/devicetree/base/__symbols__/smfc
+-r--r--r-- 1 root root 15 Nov  3 01:21 /sys/firmware/devicetree/base/__symbols__/smfc
+### /sys/firmware/devicetree/base/__symbols__/sysmmu_mfc0
+-r--r--r-- 1 root root 17 Nov  3 01:21 /sys/firmware/devicetree/base/__symbols__/sysmmu_mfc0
+### /sys/firmware/devicetree/base/exynos-dm@17000000/dm_domains/devfreq_mfc
+total 0
+drwxr-xr-x  2 root root  0 Nov  3 01:21 .
+drwxr-xr-x 16 root root  0 Nov  3 01:21 ..
+-r--r--r--  1 root root  5 Nov  3 01:21 available
+-r--r--r--  1 root root  4 Nov  3 01:21 cal_id
+-r--r--r--  1 root root  4 Nov  3 01:21 dm-index
+-r--r--r--  1 root root  7 Nov  3 01:21 dm_type_name
+-r--r--r--  1 root root 12 Nov  3 01:21 name
+=== FIRMWARE ===
+ls: cannot access '/lib/firmware/mfc_fw.bin': No such file or directory
+sha256sum: /lib/firmware/mfc_fw.bin: No such file or directory
+=== DMESG MFC/MEDIA ===
+[Tue Nov  3 01:20:03 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:03 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:03 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:05 2026] SysMMU alloc num : 1040(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:05 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: D state: 0, d32c00
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:391c811
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:06 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0x11 with retry_cnt =0.
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:08 2026] SysMMU alloc num : 1039(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:08 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: D state: 0, bc7a00
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3903911
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:12 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:13 2026] SysMMU alloc num : 1039(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:13 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: D state: 0, 6b9400
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3a21e11
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:18 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:19 2026] SysMMU alloc num : 1039(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:19 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: D state: 0, 7cca00
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3ff0f11
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:24 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:25 2026] SysMMU alloc num : 1039(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:25 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: D state: 0, 51e400
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:36df811
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:26 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:27 2026] SysMMU alloc num : 1038(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:27 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: D state: 0, 520100
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:37c0d11
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:30 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0x14 with retry_cnt =0.
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =1.
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: cannot receive ack message from wifi
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:31 2026] SysMMU alloc num : 1038(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:31 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: D state: 0, 5b8f00
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3fbaa11
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:34 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:39 2026] SysMMU alloc num : 1037(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:39 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: D state: 0, c60a00
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:35e0b11
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:42 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:43 2026] SysMMU alloc num : 1037(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:43 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: D state: 0, a0300
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:386a511
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:47 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0x14 with retry_cnt =0.
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =1.
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: cannot receive ack message from wifi
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:50 2026] SysMMU alloc num : 1047(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:50 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:52 2026] exynos-decon 19030000.decon_f: pm_relax
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: D state: 0, 929f00
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3225011
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:54 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: ack message is ok
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[Tue Nov  3 01:20:55 2026] SysMMU alloc num : 1044(Max:1165), lv2_alloc : 28, fault : 0
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[Tue Nov  3 01:20:55 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: D state: 0, 3b5300
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:37f6711
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[Tue Nov  3 01:20:59 2026] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+=== KCONFIG ===
+CONFIG_IOMMU_HELPER=y
+CONFIG_FW_LOADER=y
+CONFIG_FW_LOADER_USER_HELPER=y
+CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
+CONFIG_MEDIA_SUPPORT=y
+# CONFIG_MEDIA_CONTROLLER is not set
+CONFIG_VIDEO_DEV=y
+CONFIG_V4L2_MEM2MEM_DEV=y
+CONFIG_VIDEOBUF2_CORE=y
+CONFIG_VIDEOBUF2_MEMOPS=y
+CONFIG_VIDEOBUF2_DMA_SG=y
+CONFIG_VIDEO_EXYNOS=y
+CONFIG_VIDEO_EXYNOS_MFC=y
+CONFIG_VIDEO_EXYNOS_CAMERA_POSTPROCESS=y
+CONFIG_VIDEO_EXYNOS_CAMERA_POSTPROCESS_GDC=y
+# CONFIG_VIDEO_EXYNOS_CAMERA_POSTPROCESS_STR is not set
+CONFIG_VIDEO_EXYNOS_REPEATER=y
+CONFIG_VIDEO_EXYNOS_TSMUX=y
+CONFIG_VIDEO_EXYNOS_JPEG_SQZ=y
+CONFIG_VIDEO_EXYNOS_FIMC_IS2=y
+CONFIG_VIDEO_EXYNOS_SMFC=y
+CONFIG_VIDEO_EXYNOS_SCALER=y
+CONFIG_IOMMU_API=y
+CONFIG_IOMMU_SUPPORT=y
+# CONFIG_IOMMU_IO_PGTABLE_LPAE is not set
+# CONFIG_IOMMU_IO_PGTABLE_ARMV7S is not set
+CONFIG_IOMMU_IOVA=y
+CONFIG_IOMMU_DMA=y
+CONFIG_EXYNOS_IOMMU=y
+# CONFIG_EXYNOS_IOMMU_DEBUG is not set
+CONFIG_EXYNOS_CONTENT_PATH_PROTECTION=y
+=== FIRMWARE TIMEOUT SETTING ===
+60
+=== CLOCKS/PM ===
+pd-aud
+pd-dpu
+pd-dspm
+pd-dsps
+pd-embedded_g3d
+pd-fsys0a
+pd-g2d
+pd-isphq
+pd-isplp
+pd-isppre
+pd-iva
+pd-mfc
+pd-npu0
+pd-npu1
+pd-vra2
+pd-vts
+pm_genpd_summary
+-- /sys/kernel/debug/pm_genpd/pd-mfc
+=== GUARD + WIREPLUMBER ===
+-rwxr-xr-x 1 root root 1142 Oct 28 17:36 /usr/lib/nuxel/nuxel-gstreamer-guard.sh
+-rwxr-xr-x  1 root root 135136 Mar 30  2026 libgstkms.so.nuxel-disabled
+-rwxr-xr-x. 1 root root 403448 Mar 30  2026 libgstopengl.so.nuxel-disabled
+-rwxr-xr-x  1 root root 203560 Mar 30  2026 libgstv4l2codecs.so.nuxel-disabled
+-rwxr-xr-x  1 root root 135136 Mar 30  2026 /usr/lib64/gstreamer-1.0/libgstkms.so.nuxel-disabled
+-rwxr-xr-x. 1 root root 403448 Mar 30  2026 /usr/lib64/gstreamer-1.0/libgstopengl.so.nuxel-disabled
+-rwxr-xr-x  1 root root 203560 Mar 30  2026 /usr/lib64/gstreamer-1.0/libgstv4l2codecs.so.nuxel-disabled
+-rwxr-xr-x  1 root root 405648 Mar 30  2026 /usr/lib64/gstreamer-1.0/libgstvideo4linux2.so.nuxel-disabled
+-- /etc/wireplumber/wireplumber.conf.d/99-nuxel-no-v4l2.conf
+# Nuxel S10+ (beyond2lte): disable WirePlumber's V4L2/libcamera monitor.
+#
+# The downstream Samsung MFC exposes /dev/video* nodes whose open() calls
+# request_firmware() and blocks in mfc_load_firmware() because the vendor
+# firmware is absent.  WirePlumber's video-capture monitor scans those nodes at
+# session start and enters uninterruptible D state, which makes wpctl and the
+# audio policy hang.  Nuxel has no working camera path yet, so disable only the
+# video-capture feature; audio and Bluetooth remain required.
+#
+# The full main profile is repeated deliberately: a profile table override must
+# not silently drop hardware.audio or hardware.bluetooth when it disables one
+# feature.
+wireplumber.profiles = {
+  main = {
+    inherits = [ base ]
+
+    metadata.sm-settings = required
+    metadata.sm-objects = required
+
+    policy.standard = required
+
+    hardware.audio = required
+    hardware.bluetooth = required
+    hardware.video-capture = disabled
+  }
+}
+=== MEDIA PACKAGES ===
+gstreamer1-1.26.11-1.fc43.aarch64
+gstreamer1-plugins-base-1.26.11-1.fc43.aarch64
+gstreamer1-plugins-good-1.26.11-1.fc43.aarch64
+gstreamer1-plugins-bad-free-1.26.11-1.fc43.aarch64
+package gstreamer1-plugins-ugly-free is not installed
+package gstreamer1-plugin-libav is not installed
+gstreamer1-plugin-openh264-1.26.11-1.fc43.aarch64
+mpv-0.40.0-3.fc43.aarch64
+package ffmpeg-free is not installed
+package ffmpeg is not installed
+libavcodec-free-7.1.5-1.fc43.aarch64
+package libavcodec is not installed
+package v4l-utils is not installed
+=== TOOL VERSIONS (no device open) ===
+mpv v0.40.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+libplacebo version: v7.351.0
+FFmpeg version: 7.1.1 (runtime 7.1.5)
+FFmpeg library versions:
+   libavcodec      61.19.101
+   libavdevice     61.3.100
+   libavfilter     10.4.100 (runtime 10.5.100)
+   libavformat     61.7.100 (runtime 61.7.103)
+   libavutil       59.39.100
+   libswresample   5.3.100
+   libswscale      8.3.100
+--- hwdec help ---
+Valid values (with alternative full names):
+  nvdec (h263-nvdec)
+  nvdec (h263p-nvdec)
+  nvdec (mjpeg-nvdec)
+  nvdec (mpeg1video-nvdec)
+  nvdec (mpeg2video-nvdec)
+  nvdec (mpeg4-nvdec)
+  nvdec (vp8-nvdec)
+  nvdec (vp9-nvdec)
+  nvdec (av1-nvdec)
+  vaapi (h263-vaapi)
+  vaapi (h263p-vaapi)
+  vaapi (mjpeg-vaapi)
+  vaapi (mpeg2video-vaapi)
+  vaapi (mpeg4-vaapi)
+  vaapi (vp8-vaapi)
+  vaapi (vp9-vaapi)
+  vaapi (av1-vaapi)
+  vulkan (av1-vulkan)
+  vdpau (h263-vdpau)
+  vdpau (h263p-vdpau)
+  vdpau (mpeg1video-vdpau)
+  vdpau (mpeg2video-vdpau)
+  vdpau (mpeg4-vdpau)
+  vdpau (vp9-vdpau)
+  vdpau (av1-vdpau)
+  nvdec-copy (h263-nvdec-copy)
+  nvdec-copy (h263p-nvdec-copy)
+  nvdec-copy (mjpeg-nvdec-copy)
+  nvdec-copy (mpeg1video-nvdec-copy)
+  nvdec-copy (mpeg2video-nvdec-copy)
+  nvdec-copy (mpeg4-nvdec-copy)
+  nvdec-copy (vp8-nvdec-copy)
+  nvdec-copy (vp9-nvdec-copy)
+  nvdec-copy (av1-nvdec-copy)
+  vaapi-copy (h263-vaapi-copy)
+  vaapi-copy (h263p-vaapi-copy)
+  vaapi-copy (mjpeg-vaapi-copy)
+  vaapi-copy (mpeg2video-vaapi-copy)
+  vaapi-copy (mpeg4-vaapi-copy)
+gst-inspect-1.0 version 1.26.11
+GStreamer 1.26.11
+http://download.fedoraproject.org
+=== PROCESSES ===
+   6102 S    runuser         runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal-gtk
+   6364 S    runuser         runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal
+   9816 S<l  pipewire        pipewire
+   9827 S<l  wireplumber     wireplumber
+   9828 S<l  pipewire-pulse  pipewire-pulse
+=== D-STATE ===
+     12 D    tz_worker_threa [tz_worker_threa]
+     18 D    tz_worker_threa [tz_worker_threa]
+     25 D    tz_worker_threa [tz_worker_threa]
+     32 D    tz_worker_threa [tz_worker_threa]
+     39 D    tz_worker_threa [tz_worker_threa]
+     46 D    tz_worker_threa [tz_worker_threa]
+     53 D    tz_worker_threa [tz_worker_threa]
+     60 D    tz_worker_threa [tz_worker_threa]
+   1038 D    scsi_srpmb_work [scsi_srpmb_work]
+   1818 D    ree_time        [ree_time]
+   1824 D    tz_iwsock       [tz_iwsock]

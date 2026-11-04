@@ -1,0 +1,92 @@
+[
+  {
+    "path": "pwa/nuxel-apps/doom/app.json",
+    "sha256": "31842d8b165f7ff3a106e33b3a1ec74b359005ed30ba8879025c0d5b93c82e27",
+    "size": 538
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/css/doom.css",
+    "sha256": "19b3e1240732b5b3702389ac133f2a2463878db3ddc5cb85d4d18e4a93684e12",
+    "size": 11710
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-128.png",
+    "sha256": "6fe04a9189f0ec1def97bf0d3bdf164258b5e1303c554937a8e5076d6299853c",
+    "size": 44883
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-144.png",
+    "sha256": "76677166a27eee4c945ae126644e0992430165dcdd0fd6b225b9cee99be23396",
+    "size": 55700
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-152.png",
+    "sha256": "70b74c8f9dd97ec20c47420531ac9e8d7d6ca813224e20746bb1f528ebfda030",
+    "size": 59488
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-192.png",
+    "sha256": "2e4e67d8a27f26f6051677749955e3995c179bf522f87ab415cbfe94848b0d0a",
+    "size": 79504
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-384.png",
+    "sha256": "c5567b51a79fa9cad036ebfe2c8ecf77124afb46e79dba85329ecc615a158db6",
+    "size": 196220
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-48.png",
+    "sha256": "de49fe3c43159123a542f27dbf26bd5e7c21a6b803a26ef4a36bfff7acfa4ea1",
+    "size": 10828
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-512.png",
+    "sha256": "86b4f16f9858f7b2e082ff182a74c96f1ce935c7bcfdf196b7334378f522b2b7",
+    "size": 81083
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-72.png",
+    "sha256": "43606105ca3388bf607f5a9962ee2f213f6a9238fd8ad92f3bb05395ad44f9fb",
+    "size": 20163
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon-96.png",
+    "sha256": "b6558e0f878adb2531706c8b20a760913f94daee76ed98d1c129e3152a1d00d3",
+    "size": 30984
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/icons/icon.svg",
+    "sha256": "bcf3d611d797d00bfc8af4ec4a566af24c9304f14e65f6f7a01a3052ac360976",
+    "size": 2591
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/index.html",
+    "sha256": "005d0847242338a72e1881c8e35f7c9682b96854d10bb152e9d1bb71cfbdaa8c",
+    "size": 7276
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/js/doom-engine.js",
+    "sha256": "a644050d5d221359528d1019e4b600f9a81323aff68e851079d660cc575a51f1",
+    "size": 27495
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/js/doom.js",
+    "sha256": "e0a2a1e875563cef9b5f052f388d63e64f992ab8f987a56e5dc428a172de103d",
+    "size": 22363
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/manifest.json",
+    "sha256": "a2e89f4944969eb78d67ff6d9e1514a5fb1f90c2fab53a01fb1721d736753406",
+    "size": 1935
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/sw.js",
+    "sha256": "0c07108da43df1b518017c96bcdf44070bf40009f59dc918428e613af2571360",
+    "size": 1359
+  },
+  {
+    "path": "pwa/nuxel-apps/doom/tests/test-doom.js",
+    "sha256": "0bd6f53128a598c37836a1285c190e08a6ec4f0f4fd9dbc7f088938221ea5dfb",
+    "size": 6445
+  }
+]

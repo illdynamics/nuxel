@@ -1,0 +1,29 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== BEFORE (GPU profile) webkit=98164 ===
+NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+WEBKIT_DISABLE_COMPOSITING_MODE=0
+MESA_KBASE_NODE=/dev/mali0
+
+=== STEP A: marker-driven software-safe fallback ===
+state: 1793737464 FRAMES_OK total=53 fps_1s=17 failures=0 blits=5 present_skipped=47 blit_avg_ms=6 pan_avg_ms=7 capture_avg_ms=5 compare_avg_ms=2 damage=120-1400 damage_runs=1 damage_blits=1 damage_avg_ms=6 idle_ms=783 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=6 decon_pan_failed=0
+webkit=113166 active=
+MARKER_FRAMES_OK=YES
+
+=== STEP B: genuine probe-missing fail-closed (probe moved aside, cache cleared) ===
+state: 1793737470 FRAMES_OK total=56 fps_1s=14 failures=0 blits=5 present_skipped=50 blit_avg_ms=5 pan_avg_ms=9 capture_avg_ms=5 compare_avg_ms=2 damage=120-1400 damage_runs=1 damage_blits=1 damage_avg_ms=4 idle_ms=1151 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=6 decon_pan_failed=0
+webkit=113166 active=
+PROBEMISSING_FRAMES_OK=YES
+
+=== RESTORE: probe back, marker removed, GPU profile ===
+state: 1793737477 FRAMES_OK total=53 fps_1s=15 failures=0 blits=5 present_skipped=47 blit_avg_ms=3 pan_avg_ms=8 capture_avg_ms=4 compare_avg_ms=2 damage=134-1396 damage_runs=32 damage_blits=2 damage_avg_ms=2 idle_ms=403 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=6 decon_pan_failed=0
+webkit=113166 active=
+RESTORED_FRAMES_OK=YES
+PROBE_RESTORED /usr/lib/nuxel/nuxel-kbase-egl-probe 73736

@@ -1,0 +1,24 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== startup fallback state ==
+-rw-r--r--. 1 root root 0 Nov  3 00:32 /run/nuxel-gpu-fallback
+active
+active
+1793662370 FRAMES_OK total=125 fps_1s=1 failures=0 blits=7 present_skipped=117 blit_avg_ms=4 pan_avg_ms=9 capture_avg_ms=5 compare_avg_ms=3 damage=108-267 damage_runs=1 damage_blits=3 damage_avg_ms=1 idle_ms=18036 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=8 decon_pan_failed=0
+webkit=57651
+0
+export NUXEL_GRAPHICS_FALLBACK_REASON='GPU startup validation failed: compositor GPU fallback marker present (/run/nuxel-gpu-fallback)'
+export NUXEL_GRAPHICS_PROFILE_ACTIVE=software-safe
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+-rw-r--r--. 1 root root 511941 Nov  3 00:32 /tmp/fallback.png
+== restore probe and GPU ==
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory
+1793662400 FRAMES_OK total=130 fps_1s=1 failures=0 blits=13 present_skipped=116 blit_avg_ms=1 pan_avg_ms=9 capture_avg_ms=6 compare_avg_ms=3 damage=110-261 damage_runs=17 damage_blits=10 damage_avg_ms=0 idle_ms=18063 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=14 decon_pan_failed=0
+0

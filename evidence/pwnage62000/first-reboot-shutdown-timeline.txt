@@ -1,0 +1,44 @@
+[    7.088644] fedora audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-audio-session comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[    7.095040] fedora systemd[1]: Started nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[    7.092644] fedora audit[5359]: AVC avc:  denied  { execute_no_trans } for  pid=5359 comm="(ssion.sh)" path="/usr/lib/nuxel/nuxel-audio-session.sh" dev="sda31" ino=6803 scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:object_r:lib_t:s0 tclass=file permissive=1
+[   10.083963] fedora nuxel-audio-session.sh[5359]: 2026-11-03T01:22:07Z nuxel-audio-session: pipewire socket ready pid=6068
+[   11.136644] fedora audit[1]: USER_AVC pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='avc:  denied  { start } for auid=n/a uid=0 gid=0 path="/etc/systemd/system/nuxel-audio-session.service" cmdline="" function="bus_unit_method_start_generic" scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:object_r:unlabeled_t:s0 tclass=service permissive=1 exe="/usr/lib/systemd/systemd" sauid=0 hostname=? addr=? terminal=?'
+[   20.113955] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[   20.218354] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-audio-session.service: Deactivated successfully.
+[   20.218612] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   20.212645] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-audio-session comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[   37.532358] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Started nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   37.528644] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-audio-session comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[   37.644381] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net nuxel-audio-session.sh[8722]: 2026-11-03T01:22:35Z nuxel-audio-session: pipewire socket ready pid=8726
+[22652.631729] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[22654.584813] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[24370.392596] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+[24370.957027] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+[24393.193316] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+[24393.769129] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+[24776.545151] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[24795.672819] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[24795.680789] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net nuxel-audio-session.sh[8722]: Terminated                 wait "$PIPE_PID"
+[24795.681118] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-audio-session.service: Main process exited, code=exited, status=143/n/a
+[24795.767921] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+[24797.808587] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+[24798.188270] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+[24798.769380] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+[24799.819607] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-audio-session.service: State 'final-sigterm' timed out. Aborting.
+[24799.821078] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-audio-session.service: Failed with result 'exit-code'.
+[24799.823258] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[24799.816644] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-audio-session comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=failed'
+===LAST
+[24810.806189] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: ack message is ok
+[24810.807879] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+[24810.809635] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: SysMMU alloc num : 1049(Max:1443), lv2_alloc : 23, fault : 0
+[24810.809785] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+[24810.811461] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+[24810.813236] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhd_runtimepm_state, update suspend states
+[24810.813355] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: __dhd_txflowcontrol: Start Netif Queue
+[24810.813486] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: __dhd_txflowcontrol: Start Netif Queue
+===BOOTLIST
+ -3 95b82b793d514a48955eb446551ccffd Tue 2026-11-03 01:38:39 CET Tue 2026-11-03 02:15:32 CET
+ -2 a5bfd4df15764d03baffdeb9c0f9518c Tue 2026-11-03 02:15:59 CET Tue 2026-11-03 02:20:56 CET
+ -1 da176b4d976a44eb8c58a77e48f9e5e7 Tue 2026-11-03 02:22:03 CET Tue 2026-11-03 09:15:28 CET
+  0 87a27ad2e091409abf7eb71d47a5d195 Tue 2026-11-03 09:16:08 CET Tue 2026-11-03 09:18:14 CET

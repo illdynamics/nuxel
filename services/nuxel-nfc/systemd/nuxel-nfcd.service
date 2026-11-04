@@ -1,0 +1,46 @@
+[Unit]
+Description=Nuxel NFC controller service (Samsung sec-nfc transport)
+Documentation=file:/usr/share/doc/nuxel/PWNAGE-65000.md
+StartLimitIntervalSec=120
+StartLimitBurst=5
+# No dependency on the session: the service is inert until an explicit
+# enable/scan request arrives, so it must never delay boot.
+After=local-fs.target
+Before=multi-user.target
+
+[Service]
+Type=simple
+RuntimeDirectory=nuxel/nfc
+RuntimeDirectoryMode=0700
+StateDirectory=nuxel/nfc
+StateDirectoryMode=0700
+ExecStart=/usr/bin/python3 -m nuxel_nfc.daemon daemon
+Environment=PYTHONPATH=/usr/lib/nuxel/nuxel-nfc
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=3
+TimeoutStartSec=15
+TimeoutStopSec=10
+User=root
+Group=root
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=no
+DevicePolicy=closed
+DeviceAllow=/dev/sec-nfc rw
+RestrictAddressFamilies=AF_UNIX
+ReadWritePaths=/run/nuxel/nfc /var/lib/nuxel/nfc /var/log/nuxel
+CapabilityBoundingSet=
+AmbientCapabilities=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+SystemCallArchitectures=native
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,67 @@
+schema:                      nuxel.gpu-status/2
+host/kernel:                 fedora / 4.14.253-gf7194c1d15ed-dirty
+profile requested:           gpu-rendered-shm-presented
+profile active:              gpu-rendered-shm-presented
+fallback active:             False
+EGL renderer:                Mali-G76 MC12 (Panfrost)
+
+[Kernel GPU]
+device:                      /dev/mali0 present=True mode=0o666
+driver:                      mali_kbase (vendor ARM kbase)
+udmabuf:                     True
+
+[EGL / GLES]
+active EGL link:             libEGL_mesa.so.0.0.0
+vendor library:              /usr/lib64/libEGL_mesa.so.0.0.0
+stock backup selected:       False
+probe:                       Mali-G76 MC12 (Panfrost)
+
+[Phoc]
+pid:                         17783
+gallium:                     ['/usr/lib64/libgallium_dri.so']
+mali fds:                    3
+llvmpipe threads:            0
+job submit proxy:            {'method': 'open /dev/mali0 fd count', 'count': 3, 'note': 'kbase does not expose a portable job counter'}
+
+[GTK3 / GTK4]
+gtk3:                        UNTESTED
+gtk3 renderer:               None
+gtk4 GSK:                    FALLBACK (cairo)
+
+[WebKit]
+pid:                         18722
+GPU rendering:               True
+transport:                   shm
+transport fds:               []
+mali fds:                    3
+
+[linux-dmabuf]
+protocol:                    None
+linear only:                 False
+formats:                     1
+
+[Final panel]
+one writer:                  True [{'pid': 17825, 'comm': 'nuxel-wl-fb', 'fd': '4'}]
+frames_ok:                   True
+decon_pan_failed:            0
+geometry:                    {'virtual_size': '1440,6080', 'modes': 'U:1440x3040p-0', 'name': '', 'bpp': '32'}
+state:                       1793659910 FRAMES_OK total=65 fps_1s=10 failures=0 blits=9 present_skipped=55 blit_avg_ms=3 pan_avg_ms=8 capture_avg_ms=5 compare_avg_ms=2 damage=108-488 damage_runs=1 damage_blits=5 damage_avg_ms=1 idle_ms=18 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=10 decon_pan_failed=0
+
+[Video / external / casting]
+MFC:                         BLOCKED_GUARDED
+Type-C/HDMI:                 NEEDS OWNER TEST
+Miracast:                    CANDIDATE
+
+[Capabilities]
+phoc_mali_rendering:         PASS
+gtk3_accelerated:            UNTESTED
+gtk4_gsk:                    FALLBACK
+webkit_gpu_rendering:        PASS
+webkit_shm_presentation:     PASS
+webkit_dmabuf_presentation:  BLOCKED
+zero_copy_scanout:           NOT AVAILABLE
+framebuffer_bridge:          PASS
+exynos_mfc_decode:           BLOCKED_GUARDED
+usbc_dp_altmode_hdmi:        NEEDS OWNER TEST
+wireless_miracast:           CANDIDATE
+lan_screen_share:            CANDIDATE (no implementation proven)

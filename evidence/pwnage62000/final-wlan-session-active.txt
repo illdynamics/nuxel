@@ -1,0 +1,2 @@
+{"boot": "final", "live": true, "serial": false, "sessions": 1, "source": "wlan:interactive-pty-session", "usb": false, "wlan": true, "wlan_available": true}
+{"boot": "final", "live": true, "serial": false, "sessions": 0, "source": "INACTIVE:no-interactive-ssh-session", "usb": false, "wlan": false, "wlan_available": true}

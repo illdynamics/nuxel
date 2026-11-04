@@ -97,10 +97,15 @@ class QuickSettings {
     }
 
     _bindEvents() {
-        // Toggle on status bar swipe down
-        // First pull opens the compact panel; a deeper/second pull expands it
-        // instead of closing it.  Closing stays an explicit action/back.
-        document.addEventListener('gesture:qs', () => this.pull());
+        // Direction-aware gesture contract.  A pull-down on the status bar or
+        // inside the panel opens the compact shade; while it is open a further
+        // pull-down expands it and a pull-up closes the compact panel.  Once
+        // expanded, pull-down closes and pull-up is deliberately inert.
+        document.addEventListener('gesture:qs', (ev) => {
+            const direction = ev && ev.detail && ev.detail.direction;
+            this.pull(direction);
+        });
+        this._bindPullGesture();
 
         // Individual toggle clicks
         const toggles = ['wifi', 'bluetooth', 'mobile', 'location', 'dnd', 'flashlight', 'rotate',
@@ -312,10 +317,89 @@ class QuickSettings {
         try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
     }
 
+    // `direction` is 'up', 'down' or undefined (legacy cyclic pull).
+    // closed       + down -> open compact
+    // compact open + down -> expanded
+    // compact open + up   -> closed
+    // expanded     + down -> closed
+    // expanded     + up   -> no-op (the expanded panel owns its scroll)
     pull() {
-        if (!this.isOpen) this.open();
-        else if (!this.expanded) this.expand();
-        else this.close();
+        const direction = arguments.length ? arguments[0] : null;
+        if (!this.isOpen) {
+            if (direction !== 'up') this.open();
+            return;
+        }
+        if (direction === 'up') {
+            if (!this.expanded) this.close();
+            return;
+        }
+        if (this.expanded) {
+            this.close();
+            return;
+        }
+        this.expand();
+    }
+
+    // Swiping the Quick Settings panel itself follows the same contract as a
+    // pull on the status bar.  Pointer and touch are both observed because
+    // WebKit cancels the pointer stream once a pan starts; the first stream to
+    // cross the threshold wins and the other is ignored for a short settle
+    // window.  A swipe never activates the tile under the finger.
+    _bindPullGesture() {
+        const panel = this.panel;
+        if (!panel || this._pullGestureBound) return;
+        this._pullGestureBound = true;
+        const MIN_PULL = 42;
+        const MAX_SKEW = 70;
+        let start = null;
+        let lastHandledAt = 0;
+        const begin = (x, y, id, source) => {
+            start = this.isOpen ? { x, y, id, source } : null;
+        };
+        const finish = (x, y, id, source) => {
+            const gesture = start;
+            if (!gesture || gesture.source !== source) return;
+            if (id !== undefined && gesture.id !== undefined && id !== gesture.id) return;
+            start = null;
+            if (!this.isOpen) return;
+            const dx = x - gesture.x;
+            const dy = y - gesture.y;
+            if (Math.abs(dy) < MIN_PULL || Math.abs(dx) > MAX_SKEW ||
+                Math.abs(dx) > Math.abs(dy) * 1.1 + 8) return;
+            // A down-swipe while reading scrolled details belongs to the
+            // details scroller, not to the panel dismiss gesture.
+            if (dy > 0 && this.expanded && (panel.scrollTop || 0) > 0) return;
+            const now = performance.now();
+            if (now - lastHandledAt < 400) return;   // pointer+touch duplicate
+            lastHandledAt = now;
+            this._suppressSwipeClickUntil = now + 450;
+            this.pull(dy > 0 ? 'down' : 'up');
+        };
+        panel.addEventListener('pointerdown', (ev) => {
+            if (ev.button !== undefined && ev.button !== 0) return;
+            begin(ev.clientX, ev.clientY, ev.pointerId, 'pointer');
+        }, { passive: true });
+        panel.addEventListener('pointerup', (ev) => finish(ev.clientX, ev.clientY, ev.pointerId, 'pointer'), { passive: true });
+        panel.addEventListener('pointercancel', () => { if (start && start.source === 'pointer') start = null; }, { passive: true });
+        panel.addEventListener('touchstart', (ev) => {
+            const t = ev.changedTouches && ev.changedTouches[0];
+            if (t) begin(t.clientX, t.clientY, t.identifier, 'touch');
+        }, { passive: true });
+        panel.addEventListener('touchend', (ev) => {
+            if (!start || start.source !== 'touch') return;
+            const t = Array.from(ev.changedTouches || []).find(x => x.identifier === start.id);
+            if (t) finish(t.clientX, t.clientY, t.identifier, 'touch');
+            else start = null;
+        }, { passive: true });
+        panel.addEventListener('touchcancel', () => { if (start && start.source === 'touch') start = null; }, { passive: true });
+        // Swallow the compatibility click a swipe would otherwise deliver to
+        // the tile it started on.
+        panel.addEventListener('click', (ev) => {
+            if (performance.now() < (this._suppressSwipeClickUntil || 0)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+            }
+        }, true);
     }
 
     _setExpandedUI(on) {

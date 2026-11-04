@@ -92,6 +92,18 @@ class Capability(str, Enum):
     # Location policy
     LOCATION_MANAGE = 'location:manage'
 
+    # Secrets / system keyring.  Deliberately narrow:
+    #   secrets:manage               -> Nuxel Vault's own collection items
+    #   secrets:authenticator-unlock -> Authenticator's one named credential
+    # Neither is a generic Secret Service proxy or access to unrelated items.
+    SECRETS_MANAGE = 'secrets:manage'
+    SECRETS_AUTHENTICATOR_UNLOCK = 'secrets:authenticator-unlock'
+
+    # Clipboard history (the Clipper app).  These do not grant raw system
+    # clipboard access through the bridge; the app uses the browser Clipboard API.
+    CLIPBOARD_READ = 'clipboard:read'
+    CLIPBOARD_WRITE = 'clipboard:write'
+
 
 class CapabilityState(Enum):
     """State of a capability grant."""
@@ -310,6 +322,38 @@ CAPABILITY_INFO = {
         'persistent': True,
         'prompt': 'Allow this app to manage the system location policy?',
         'portal_type': 'location',
+    },
+    Capability.SECRETS_MANAGE: {
+        'name': 'Manage Nuxel Vault',
+        'description': "Create, read, update and delete items in Nuxel Vault's own system-keyring collection",
+        'risk': 'high',
+        'persistent': True,
+        'prompt': 'Allow this app to manage Nuxel Vault keyring items?',
+        'portal_type': None,
+    },
+    Capability.SECRETS_AUTHENTICATOR_UNLOCK: {
+        'name': 'Authenticator keyring unlock',
+        'description': "Store or retrieve the Authenticator's own vault passphrase in the system keyring",
+        'risk': 'high',
+        'persistent': True,
+        'prompt': 'Allow Authenticator to save its vault passphrase in the Nuxel keyring?',
+        'portal_type': None,
+    },
+    Capability.CLIPBOARD_READ: {
+        'name': 'Clipboard history',
+        'description': 'Read clipboard history inside the Clipper app surface',
+        'risk': 'high',
+        'persistent': False,
+        'prompt': 'Allow this app to read clipboard history?',
+        'portal_type': None,
+    },
+    Capability.CLIPBOARD_WRITE: {
+        'name': 'Clipboard write',
+        'description': 'Place a user-selected value on the clipboard',
+        'risk': 'medium',
+        'persistent': False,
+        'prompt': 'Allow this app to write to the clipboard?',
+        'portal_type': None,
     },
 }
 

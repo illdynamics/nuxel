@@ -1,0 +1,84 @@
+PWNAGE-61000 kernel build artifacts
+2026-11-03T01:36:30+01:00
+
+cfc80df9b80374ed6e390507a5cec304b131e57aa9a8e6b369aea6ac79d90ed7  kernel/s10plus/.build/out/arch/arm64/boot/Image.gz
+74d61637cf43a94eb0e37ca808042a4ebc88dc635830f6338fa06d9e3a5add2d  kernel/s10plus/.build/out/.config
+-rw-r--r--. 1 wicked wicked 16M Nov  3 01:36 kernel/s10plus/.build/out/arch/arm64/boot/Image.gz
+
+== MFC config ==
+CONFIG_FW_LOADER_USER_HELPER=y
+CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
+CONFIG_MEDIA_SUPPORT=y
+# CONFIG_MEDIA_CONTROLLER is not set
+CONFIG_V4L2_MEM2MEM_DEV=y
+CONFIG_VIDEOBUF2_DMA_SG=y
+CONFIG_VIDEO_EXYNOS_MFC=y
+CONFIG_EXYNOS_IOMMU=y
+# CONFIG_EXYNOS_IOMMU_DEBUG is not set
+
+== capability parity ==
+  [ok  ] CONFIG_DRM = y
+  [ok  ] CONFIG_DRM_KMS_HELPER = y
+  [ok  ] CONFIG_DRM_KMS_FB_HELPER = y
+  [ok  ] CONFIG_DRM_FBDEV_EMULATION = y
+  [ok  ] CONFIG_DRM_FBDEV_OVERALLOC = 100
+  [ok  ] CONFIG_DRM_EXYNOS = n
+  [ok  ] CONFIG_DRM_PANEL = y
+  [ok  ] CONFIG_DRM_BRIDGE = y
+  [ok  ] CONFIG_DMA_SHARED_BUFFER = y
+  [ok  ] CONFIG_DMA_CMA = y
+  [ok  ] CONFIG_CMA = y
+  [ok  ] CONFIG_CMA_SIZE_MBYTES = 64
+  [ok  ] CONFIG_SYNC_FILE = y
+  [ok  ] CONFIG_UDMABUF = y
+  [ok  ] CONFIG_MALI_MIDGARD = y
+  [ok  ] CONFIG_MALI_BIFROST_R26P0 = y
+  [ok  ] CONFIG_MALI_REAL_HW = y
+  [ok  ] CONFIG_MALI_DEBUG_SYS = y
+  [ok  ] CONFIG_FB = y
+  [ok  ] CONFIG_EXYNOS_DPU20 = y
+  [ok  ] CONFIG_EXYNOS_MIPI_DSIM = y
+  [ok  ] CONFIG_ION = y
+  [ok  ] CONFIG_ION_EXYNOS = y
+  [ok  ] CONFIG_MULTIUSER = y
+  [ok  ] CONFIG_NAMESPACES = y
+  [ok  ] CONFIG_USER_NS = y
+  [ok  ] CONFIG_UTS_NS = y
+  [ok  ] CONFIG_IPC_NS = y
+  [ok  ] CONFIG_PID_NS = y
+  [ok  ] CONFIG_NET_NS = y
+  [ok  ] CONFIG_SECCOMP = y
+  [ok  ] CONFIG_SECCOMP_FILTER = y
+  [ok  ] CONFIG_CGROUPS = y
+  [ok  ] CONFIG_NFC = y
+  [ok  ] CONFIG_NFC_DIGITAL = y
+  [ok  ] CONFIG_NFC_NCI = y
+  [ok  ] CONFIG_SAMSUNG_NFC = y
+  [ok  ] CONFIG_SEC_NFC = y
+  [ok  ] CONFIG_SEC_NFC_LOGGER = y
+  [ok  ] CONFIG_DRM_VGEM = n
+  [ok  ] CONFIG_MEDIA_SUPPORT = y
+  [ok  ] CONFIG_VIDEO_DEV = y
+  [ok  ] CONFIG_V4L2_MEM2MEM_DEV = y
+  [ok  ] CONFIG_VIDEOBUF2_CORE = y
+  [ok  ] CONFIG_VIDEOBUF2_MEMOPS = y
+  [ok  ] CONFIG_VIDEOBUF2_DMA_SG = y
+  [ok  ] CONFIG_VIDEO_EXYNOS = y
+  [ok  ] CONFIG_VIDEO_EXYNOS_MFC = y
+  [ok  ] CONFIG_EXYNOS_IOMMU = y
+  [ok  ] CONFIG_IOMMU_SUPPORT = y
+  [ok  ] CONFIG_IOMMU_API = y
+  [ok  ] CONFIG_IOMMU_DMA = y
+  [ok  ] CONFIG_IOMMU_IOVA = y
+kernel config: 53/53 required capabilities present
+kernel config: PASS — matches the live S10+ capability set
+
+== symbols ==
+ffffff8008b3c080 T mfc_load_firmware
+ffffff80087528b0 T request_firmware
+ffffff8008752908 T request_firmware_direct
+
+== mfc_load_firmware call target ==
+ffffff8008b3c0ec:	97f05a07 	bl	ffffff8008752908 <request_firmware_direct>
+
+== built DTB files ==

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "schema": "nuxel.packages-manifest/1",
-  "generated": "2026-10-31T19:50:25Z",
+  "generated": "2026-11-03T11:01:54Z",
   "source": {
     "distribution": "fedora",
     "release": "43",
@@ -23,25 +23,25 @@
           "compressed_bytes": 14837955,
           "decompressed_sha256": "02d247f25e10add65533a4e76462fe390ebf2b77fcc4e60fe53c2c172ce2d680"
         },
-        "source": "offline cache",
+        "source": "network (dl.fedoraproject.org)",
         "nevra_count": 68135
       },
       {
         "repo": "https://dl.fedoraproject.org/pub/fedora/linux/updates/43/Everything/aarch64",
         "repomd": {
-          "sha256": "19038a4159648717fa2f022403718abeddadbab2b1c72e29b47c9fb481e61c92"
+          "sha256": "d943b75ec1ab358459b6780d5d501632c9eaa5506626789c2b5e3f1c5b879f59"
         },
         "primary": {
-          "href": "repodata/c1c4aec01f374e411717e98838b316df6a859a0227998d74ee69897d68bbd75c-primary.xml.zst",
-          "compressed_sha256": "c1c4aec01f374e411717e98838b316df6a859a0227998d74ee69897d68bbd75c",
-          "compressed_bytes": 5641092,
-          "decompressed_sha256": "1c11af60b2f44e9f2db5a834bc24c0199bb007d47223ebb70d0021fe5917413a"
+          "href": "repodata/0cc3a22789afa389201dc8edd21206fc76e4ff89840b4833cbcf0c5ab7aa0d3f-primary.xml.zst",
+          "compressed_sha256": "0cc3a22789afa389201dc8edd21206fc76e4ff89840b4833cbcf0c5ab7aa0d3f",
+          "compressed_bytes": 5609460,
+          "decompressed_sha256": "476f9e0c2fcf871c463a009a5b15d74479b49fe3a02aec3c6425ab51f7f313e4"
         },
-        "source": "offline cache",
-        "nevra_count": 26116
+        "source": "network (dl.fedoraproject.org)",
+        "nevra_count": 25943
       }
     ],
-    "package_count": 94251
+    "package_count": 94078
   },
   "policy": {
     "no_skip_unavailable": true,
@@ -55,17 +55,17 @@
       "version_satisfaction": "delegated to dnf's solver: this verifier matches names/capabilities, it does not compare EVR strings",
       "file_requirements": "'kind=file' requirements (/usr/bin/sh) cannot be resolved from primary.xml - Fedora keeps file provides in filelists.xml, which this verifier deliberately does not download; they are counted, never reported as verified"
     },
-    "essential_packages": 69,
-    "requirements_total": 1656,
+    "essential_packages": 72,
+    "requirements_total": 1221,
     "by_kind": {
-      "file": 65,
-      "capability": 1453,
-      "package": 125,
-      "rich": 13
+      "file": 52,
+      "capability": 1063,
+      "package": 95,
+      "rich": 11
     },
     "unresolved": [],
     "unverifiable_from_primary": {
-      "file": 65,
+      "file": 52,
       "rpmlib": 0,
       "config": 0,
       "empty": 0,
@@ -164,11 +164,8 @@
       },
       "android-tools": {
         "nevra": "android-tools-1:37.0.0p1-1.fc43.aarch64",
-        "total": 41,
-        "by_kind": {
-          "file": 1,
-          "capability": 40
-        },
+        "total": 0,
+        "by_kind": {},
         "package_requirements": [],
         "unresolved": []
       },
@@ -213,7 +210,7 @@
         "unresolved": []
       },
       "ca-certificates": {
-        "nevra": "ca-certificates-2026.2.92_v9.0.319-2.fc43.noarch",
+        "nevra": "ca-certificates-2026.2.90_v9.0.317-1.fc43.noarch",
         "total": 16,
         "by_kind": {
           "file": 2,
@@ -324,23 +321,10 @@
         "unresolved": []
       },
       "firefox": {
-        "nevra": "firefox-159.0-1.fc43.aarch64",
-        "total": 151,
-        "by_kind": {
-          "rich": 1,
-          "file": 2,
-          "capability": 141,
-          "package": 7
-        },
-        "package_requirements": [
-          "mozilla-filesystem",
-          "nspr",
-          "nss",
-          "p11-kit-trust",
-          "pciutils-libs",
-          "u2f-hidraw-policy",
-          "xdg-desktop-portal"
-        ],
+        "nevra": "firefox-157.0.1-1.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "gawk": {
@@ -354,6 +338,13 @@
         "package_requirements": [
           "filesystem"
         ],
+        "unresolved": []
+      },
+      "gcr3": {
+        "nevra": "gcr3-3.41.1-11.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "geoclue2": {
@@ -371,15 +362,9 @@
       },
       "glib-networking": {
         "nevra": "glib-networking-2.80.1-3.fc43.aarch64",
-        "total": 16,
-        "by_kind": {
-          "package": 2,
-          "capability": 14
-        },
-        "package_requirements": [
-          "ca-certificates",
-          "gsettings-desktop-schemas"
-        ],
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "glibc": {
@@ -407,6 +392,13 @@
           "glibc",
           "glibc-common"
         ],
+        "unresolved": []
+      },
+      "gnome-keyring": {
+        "nevra": "gnome-keyring-48.0-3.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "gnome-software": {
@@ -508,6 +500,13 @@
         "package_requirements": [],
         "unresolved": []
       },
+      "libsecret": {
+        "nevra": "libsecret-0.21.8.2-2.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
+        "unresolved": []
+      },
       "lxpolkit": {
         "nevra": "lxpolkit-0.5.6-3.fc43.aarch64",
         "total": 0,
@@ -545,14 +544,9 @@
       },
       "mpv": {
         "nevra": "mpv-0.40.0-3.fc43.aarch64",
-        "total": 81,
-        "by_kind": {
-          "package": 1,
-          "capability": 80
-        },
-        "package_requirements": [
-          "hicolor-icon-theme"
-        ],
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "nftables": {
@@ -569,16 +563,9 @@
       },
       "openbox": {
         "nevra": "openbox-3.6.1-29.fc43.aarch64",
-        "total": 20,
-        "by_kind": {
-          "file": 2,
-          "capability": 16,
-          "package": 2
-        },
-        "package_requirements": [
-          "python3-pyxdg",
-          "redhat-menus"
-        ],
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "phoc": {
@@ -783,7 +770,7 @@
         "unresolved": []
       },
       "util-linux": {
-        "nevra": "util-linux-2.41.6-1.fc43.aarch64",
+        "nevra": "util-linux-2.41.5-1.fc43.aarch64",
         "total": 86,
         "by_kind": {
           "rich": 2,
@@ -806,29 +793,20 @@
       },
       "wayland-utils": {
         "nevra": "wayland-utils-1.3.0-2.fc43.aarch64",
-        "total": 6,
-        "by_kind": {
-          "capability": 6
-        },
+        "total": 0,
+        "by_kind": {},
         "package_requirements": [],
         "unresolved": []
       },
       "wayvnc": {
         "nevra": "wayvnc-0.9.1-3.fc43.aarch64",
-        "total": 22,
-        "by_kind": {
-          "rich": 1,
-          "package": 2,
-          "capability": 19
-        },
-        "package_requirements": [
-          "aml",
-          "neatvnc"
-        ],
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "webkit2gtk4.1": {
-        "nevra": "webkit2gtk4.1-2.54.2-1.fc43.aarch64",
+        "nevra": "webkit2gtk4.1-2.54.1-1.fc43.aarch64",
         "total": 120,
         "by_kind": {
           "package": 3,
@@ -859,62 +837,30 @@
         "unresolved": []
       },
       "xorg-x11-server-Xorg": {
-        "nevra": "xorg-x11-server-Xorg-21.1.25-2.fc43.aarch64",
-        "total": 34,
-        "by_kind": {
-          "file": 1,
-          "package": 4,
-          "capability": 29
-        },
-        "package_requirements": [
-          "libEGL",
-          "system-setup-keyboard",
-          "xorg-x11-drv-libinput",
-          "xorg-x11-server-common"
-        ],
+        "nevra": "xorg-x11-server-Xorg-21.1.24-1.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "xorgxrdp": {
         "nevra": "xorgxrdp-0.10.5-1.fc43.aarch64",
-        "total": 9,
-        "by_kind": {
-          "package": 3,
-          "capability": 6
-        },
-        "package_requirements": [
-          "Xorg",
-          "xorg-x11-server-Xorg",
-          "xrdp"
-        ],
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "xrdp": {
         "nevra": "xrdp-1:0.10.6.1-3.fc43.aarch64",
-        "total": 35,
-        "by_kind": {
-          "file": 6,
-          "capability": 20,
-          "package": 9
-        },
-        "package_requirements": [
-          "fuse3",
-          "openssl",
-          "systemd",
-          "systemd-sysv",
-          "systemd-tmpfiles",
-          "tigervnc-server-minimal",
-          "util-linux",
-          "xorg-x11-xinit"
-        ],
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "xterm": {
         "nevra": "xterm-411-1.fc43.aarch64",
-        "total": 20,
-        "by_kind": {
-          "file": 1,
-          "capability": 19
-        },
+        "total": 0,
+        "by_kind": {},
         "package_requirements": [],
         "unresolved": []
       }
@@ -1058,7 +1004,7 @@
         },
         {
           "name": "util-linux",
-          "nevra": "util-linux-2.41.6-1.fc43.aarch64",
+          "nevra": "util-linux-2.41.5-1.fc43.aarch64",
           "requires": {
             "total": 86,
             "by_kind": {
@@ -1204,7 +1150,7 @@
         },
         {
           "name": "ca-certificates",
-          "nevra": "ca-certificates-2026.2.92_v9.0.319-2.fc43.noarch",
+          "nevra": "ca-certificates-2026.2.90_v9.0.317-1.fc43.noarch",
           "requires": {
             "total": 16,
             "by_kind": {
@@ -1527,7 +1473,7 @@
         },
         {
           "name": "webkit2gtk4.1",
-          "nevra": "webkit2gtk4.1-2.54.2-1.fc43.aarch64",
+          "nevra": "webkit2gtk4.1-2.54.1-1.fc43.aarch64",
           "requires": {
             "total": 120,
             "by_kind": {
@@ -1575,15 +1521,9 @@
           "name": "glib-networking",
           "nevra": "glib-networking-2.80.1-3.fc43.aarch64",
           "requires": {
-            "total": 16,
-            "by_kind": {
-              "package": 2,
-              "capability": 14
-            },
-            "packages": [
-              "ca-certificates",
-              "gsettings-desktop-schemas"
-            ],
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         }
@@ -1755,7 +1695,7 @@
     },
     {
       "id": "security",
-      "description": "Polkit authorisation + nftables firewall",
+      "description": "Polkit authorisation, nftables firewall and the OS secret service",
       "packages": [
         {
           "name": "polkit",
@@ -1786,6 +1726,36 @@
             "packages": [
               "nftables-services"
             ],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "gnome-keyring",
+          "nevra": "gnome-keyring-48.0-3.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "gcr3",
+          "nevra": "gcr3-3.41.1-11.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "libsecret",
+          "nevra": "libsecret-0.21.8.2-2.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         }
@@ -1821,14 +1791,9 @@
           "name": "mpv",
           "nevra": "mpv-0.40.0-3.fc43.aarch64",
           "requires": {
-            "total": 81,
-            "by_kind": {
-              "package": 1,
-              "capability": 80
-            },
-            "packages": [
-              "hicolor-icon-theme"
-            ],
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         }
@@ -1918,16 +1883,9 @@
           "name": "wayvnc",
           "nevra": "wayvnc-0.9.1-3.fc43.aarch64",
           "requires": {
-            "total": 22,
-            "by_kind": {
-              "rich": 1,
-              "package": 2,
-              "capability": 19
-            },
-            "packages": [
-              "aml",
-              "neatvnc"
-            ],
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         },
@@ -1935,10 +1893,8 @@
           "name": "wayland-utils",
           "nevra": "wayland-utils-1.3.0-2.fc43.aarch64",
           "requires": {
-            "total": 6,
-            "by_kind": {
-              "capability": 6
-            },
+            "total": 0,
+            "by_kind": {},
             "packages": [],
             "unresolved": []
           }
@@ -1947,22 +1903,9 @@
           "name": "xrdp",
           "nevra": "xrdp-1:0.10.6.1-3.fc43.aarch64",
           "requires": {
-            "total": 35,
-            "by_kind": {
-              "file": 6,
-              "capability": 20,
-              "package": 9
-            },
-            "packages": [
-              "fuse3",
-              "openssl",
-              "systemd",
-              "systemd-sysv",
-              "systemd-tmpfiles",
-              "tigervnc-server-minimal",
-              "util-linux",
-              "xorg-x11-xinit"
-            ],
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         },
@@ -1970,35 +1913,19 @@
           "name": "xorgxrdp",
           "nevra": "xorgxrdp-0.10.5-1.fc43.aarch64",
           "requires": {
-            "total": 9,
-            "by_kind": {
-              "package": 3,
-              "capability": 6
-            },
-            "packages": [
-              "Xorg",
-              "xorg-x11-server-Xorg",
-              "xrdp"
-            ],
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         },
         {
           "name": "xorg-x11-server-Xorg",
-          "nevra": "xorg-x11-server-Xorg-21.1.25-2.fc43.aarch64",
+          "nevra": "xorg-x11-server-Xorg-21.1.24-1.fc43.aarch64",
           "requires": {
-            "total": 34,
-            "by_kind": {
-              "file": 1,
-              "package": 4,
-              "capability": 29
-            },
-            "packages": [
-              "libEGL",
-              "system-setup-keyboard",
-              "xorg-x11-drv-libinput",
-              "xorg-x11-server-common"
-            ],
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         },
@@ -2006,16 +1933,9 @@
           "name": "openbox",
           "nevra": "openbox-3.6.1-29.fc43.aarch64",
           "requires": {
-            "total": 20,
-            "by_kind": {
-              "file": 2,
-              "capability": 16,
-              "package": 2
-            },
-            "packages": [
-              "python3-pyxdg",
-              "redhat-menus"
-            ],
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         },
@@ -2023,35 +1943,19 @@
           "name": "xterm",
           "nevra": "xterm-411-1.fc43.aarch64",
           "requires": {
-            "total": 20,
-            "by_kind": {
-              "file": 1,
-              "capability": 19
-            },
+            "total": 0,
+            "by_kind": {},
             "packages": [],
             "unresolved": []
           }
         },
         {
           "name": "firefox",
-          "nevra": "firefox-159.0-1.fc43.aarch64",
+          "nevra": "firefox-157.0.1-1.fc43.aarch64",
           "requires": {
-            "total": 151,
-            "by_kind": {
-              "rich": 1,
-              "file": 2,
-              "capability": 141,
-              "package": 7
-            },
-            "packages": [
-              "mozilla-filesystem",
-              "nspr",
-              "nss",
-              "p11-kit-trust",
-              "pciutils-libs",
-              "u2f-hidraw-policy",
-              "xdg-desktop-portal"
-            ],
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
             "unresolved": []
           }
         },
@@ -2059,11 +1963,8 @@
           "name": "android-tools",
           "nevra": "android-tools-1:37.0.0p1-1.fc43.aarch64",
           "requires": {
-            "total": 41,
-            "by_kind": {
-              "file": 1,
-              "capability": 40
-            },
+            "total": 0,
+            "by_kind": {},
             "packages": [],
             "unresolved": []
           }
@@ -2074,5 +1975,5 @@
   "unavailable": [],
   "pin_mismatches": [],
   "verdict": "resolved",
-  "resolved_count": 69
+  "resolved_count": 72
 }

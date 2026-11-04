@@ -157,3 +157,12 @@ backups/**
 /vnc-*.png
 # Rendered preview of the feature-matrix spreadsheet (the .xlsx is committed).
 /.nuxel-xlsx-preview/
+
+# --- Raw handset evidence blobs (host-local, not release artifacts) ---------
+# Full disk images, journals and boot readbacks are large and regenerable.
+# Text reports, screenshots and manifests under evidence/ stay committed.
+evidence-pwnage56000/
+evidence/**/*.img
+evidence/**/*.img.gz
+evidence/**/*.journal
+evidence/**/*.journal~

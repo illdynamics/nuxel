@@ -1,0 +1,39 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== EGL symlink chain ==
+lrwxrwxrwx  1 root root     15 Jul 24  2025 /usr/lib64/libEGL.so -> libEGL.so.1.1.0
+lrwxrwxrwx. 1 root root     15 Jul 24  2025 /usr/lib64/libEGL.so.1 -> libEGL.so.1.1.0
+-rwxr-xr-x. 1 root root  70408 Jul 24  2025 /usr/lib64/libEGL.so.1.1.0
+lrwxrwxrwx. 1 root root     30 Nov  1 16:02 /usr/lib64/libEGL_mesa.so.0 -> libEGL_mesa.so.0.0.0.nuxel-bak
+-rw-r--r--. 1 root root 537128 Nov  1 15:23 /usr/lib64/libEGL_mesa.so.0.0.0
+-rwxr-xr-x. 1 root root 338040 Mar 24  2026 /usr/lib64/libEGL_mesa.so.0.0.0.nuxel-bak
+/usr/lib64/libEGL_mesa.so.0.0.0
+eba18f340e519bbd04765c0744bb7f554df99ca328f3dd7921698600d3477b0f  /usr/lib64/libEGL_mesa.so.0.0.0
+/usr/lib64/libEGL_mesa.so.0.0.0.nuxel-bak
+9165851e73bbd7857ddbea8cbf253343022dd52f3b880cae70bf0cca50af8934  /usr/lib64/libEGL_mesa.so.0.0.0.nuxel-bak
+== gallium ==
+lrwxrwxrwx. 1 root root       20 Nov  1 15:23 /usr/lib64/dri/panfrost_dri.so -> ../libgallium_dri.so
+-rwxr-xr-x. 1 root root 38119672 Mar 24  2026 /usr/lib64/libgallium-25.3.6.so
+-rwxr-xr-x. 1 root root 27575608 Nov  1 15:23 /usr/lib64/libgallium_dri.so
+== env helper from fresh shell ==
+export GDK_BACKEND=wayland
+export GDK_GL=gles
+export LIBGL_ALWAYS_SOFTWARE=1
+export LIBGL_DRIVERS_PATH=/usr/lib64/dri
+export MESA_KBASE_NODE=/dev/mali0
+export MESA_LOADER_DRIVER_OVERRIDE=panfrost
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+export __EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json
+== gdk/gsk defaults in session ==
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+MESA_KBASE_NODE=/dev/mali0
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+MESA_SHADER_CACHE_DISABLE=1
+__EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json

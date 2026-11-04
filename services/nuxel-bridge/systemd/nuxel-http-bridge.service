@@ -29,6 +29,14 @@ PrivateDevices=no
 RestrictAddressFamilies=AF_INET AF_UNIX
 ReadOnlyPaths=/
 ReadWritePaths=/run/nuxel /var/lib/nuxel /var/log/nuxel /var/cache/nuxel /home/nuxel /sys/kernel/config/usb_gadget /sys/class/leds /etc/nuxel/remote-desktop /etc/nuxel/app-registry /etc/nuxel/notifications /etc/nuxel/privacy /etc/nuxel/security
+# PWNAGE-63000: the Nuxel Vault / Authenticator Secret Service provider is
+# started by this process through the supported PAM login path
+# (gnome-keyring-daemon --login --daemonize reads the master password from
+# stdin).  The sandbox must allow exactly two write locations: the encrypted
+# keyring directory and the daemon's control socket directory.  Nothing else
+# under /root is writable, and the system bus is never used for secrets.
+ReadWritePaths=-/run/nuxel-wayland/keyring
+ReadWritePaths=-/root/.local/share/keyrings
 # The lockhead Bluetooth indicator is a provider-state document consumed by
 # both the native host and this service.  /run/nuxel already holds the
 # connection-mode and USB-mode state, so it is the canonical runtime location.
@@ -41,7 +49,7 @@ Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 # shell use, so /api/v1/apps/registry cannot drift from the launcher.
 Environment=NUXEL_APP_REGISTRY=/etc/nuxel/app-registry/app_registry.json
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.7.5-beta
+Environment=NUXEL_BRIDGE_VERSION=0.7.6-beta
 Environment=NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000,http://localhost:8000
 Environment=NUXEL_SESSION_USER=nuxel
 Environment=NUXEL_FILES_ROOT=/home/nuxel
@@ -50,6 +58,8 @@ Environment=NUXEL_LED_POLICY=/etc/nuxel/leds/leds.json
 # BlueZ OBEX (org.bluez.obex) is a session-bus service on Fedora; the Nuxel
 # session bus is the root-owned socket under /run/nuxel-wayland.
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=HOME=/root
 
 [Install]
 WantedBy=multi-user.target

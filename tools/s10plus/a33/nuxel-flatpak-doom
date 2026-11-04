@@ -1,0 +1,28 @@
+#!/bin/sh
+# Nuxel's Crispy Doom entry point.
+#
+# The installed Flatpak id is still io.github.fabiangreffrath.Doom, but Home
+# opens this touch-first launcher instead of dropping straight into a 360x225
+# desktop window.  A command line with game switches (or --game) still reaches
+# the real Crispy Doom binary, so the old callers keep working.
+set -eu
+if [ "$(id -u)" = "0" ]; then
+    exec runuser -u nuxel -- "$0" "$@"
+fi
+
+export GDK_BACKEND=wayland
+export GSK_RENDERER="${GSK_RENDERER:-cairo}"
+export LIBGL_ALWAYS_SOFTWARE="${LIBGL_ALWAYS_SOFTWARE:-1}"
+
+case "${1:-}" in
+    --game)
+        shift
+        exec /usr/lib/nuxel/nuxel-crispy-doom "$@"
+        ;;
+    -*)
+        exec /usr/lib/nuxel/nuxel-crispy-doom "$@"
+        ;;
+    *)
+        exec /usr/lib/nuxel/nuxel-doom-launcher
+        ;;
+esac

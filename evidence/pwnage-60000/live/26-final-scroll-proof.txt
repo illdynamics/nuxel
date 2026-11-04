@@ -1,0 +1,13 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+SCROLL_WORKLOAD seconds=3 events=92 x=360 y=620
+869efc3dfaebb600f813addd7dc57d1eb9c759c0b2d68814e472f38e0d7376fa  /tmp/final-c.png
+869efc3dfaebb600f813addd7dc57d1eb9c759c0b2d68814e472f38e0d7376fa  /tmp/final-d.png
+1793664674 FRAMES_OK total=396 fps_1s=1 failures=0 blits=127 present_skipped=268 blit_avg_ms=2 pan_avg_ms=8 capture_avg_ms=5 compare_avg_ms=2 damage=66-346 damage_runs=8 damage_blits=124 damage_avg_ms=2 idle_ms=14059 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=128 decon_pan_failed=0

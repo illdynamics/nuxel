@@ -1,0 +1,1 @@
+PASS dirty-run coalescing, full-span detection, fragmentation fallback

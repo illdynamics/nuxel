@@ -1,0 +1,115 @@
+{
+  "active_ui_total_pct_one_core": 26.34,
+  "battery_end": {
+    "capacity": "94",
+    "current_now": "-142",
+    "status": "Discharging",
+    "voltage_now": "4199000"
+  },
+  "battery_start": {
+    "capacity": "94",
+    "current_now": "-142",
+    "status": "Discharging",
+    "voltage_now": "4199000"
+  },
+  "cpu_pct_one_core": {
+    "WebKitNetworkProcess": 0.83,
+    "WebKitWebProcess": 5.19,
+    "nuxel-pwa-host": 8.98,
+    "nuxel-wl-fb": 2.6,
+    "phoc": 9.57
+  },
+  "end": "2026-11-02T23:26:48.138900+00:00",
+  "evidence": {
+    "processes": {
+      "WebKitNetworkProcess": {
+        "comm": "WebKitNetworkPr",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 50950,
+        "profile_active": "software-safe",
+        "webkit_disable_compositing": "1"
+      },
+      "WebKitWebProcess": {
+        "comm": "WebKitWebProces",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 50952,
+        "profile_active": "software-safe",
+        "webkit_disable_compositing": "1"
+      },
+      "nuxel-pwa-host": {
+        "comm": "nuxel-pwa-host",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": true,
+        "libEGL_mesa_mapped": true,
+        "mali_fds": 0,
+        "pid": 49853,
+        "profile_active": "software-safe",
+        "webkit_disable_compositing": "1"
+      },
+      "nuxel-wl-fb": {
+        "comm": "nuxel-wl-fb",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 49915
+      },
+      "phoc": {
+        "comm": "phoc",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 49843
+      }
+    },
+    "renderer": null,
+    "transport": "shm"
+  },
+  "job_submit_probe": {
+    "available": false,
+    "reason": "Command '['strace', '-f', '-e', 'trace=ioctl', '-p', '50952']' timed out after 4.0 seconds"
+  },
+  "label": "software-safe-settings-scroll",
+  "loadavg_max": 12.35,
+  "mission": "PWNAGE-60000",
+  "run": 3,
+  "schema": "nuxel.bench/1",
+  "seconds": 60,
+  "start": "2026-11-02T23:25:44.164668+00:00",
+  "state_delta": {
+    "blits": 96.0,
+    "damage_blits": 96.0,
+    "decon_pan_failed": 0.0,
+    "decon_pan_ok": 96.0,
+    "frames": 316.0,
+    "present_skipped": 220.0
+  },
+  "state_end": "1793662007 FRAMES_OK total=1268 fps_1s=7 failures=0 blits=387 present_skipped=880 blit_avg_ms=1 pan_avg_ms=8 capture_avg_ms=15 compare_avg_ms=3 damage=107-1185 damage_runs=5 damage_blits=382 damage_avg_ms=1 idle_ms=2356 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=388 decon_pan_failed=0",
+  "state_start": "1793661944 FRAMES_OK total=952 fps_1s=1 failures=0 blits=291 present_skipped=660 blit_avg_ms=1 pan_avg_ms=8 capture_avg_ms=14 compare_avg_ms=3 damage=107-1185 damage_runs=5 damage_blits=286 damage_avg_ms=1 idle_ms=12037 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=292 decon_pan_failed=0",
+  "thermal_c_max": 43.0,
+  "timings_ms": {
+    "blit_avg": 1.0,
+    "capture_avg": 15.0,
+    "compare_avg": 3.0,
+    "damage_blit_avg": 1.0,
+    "pan_avg": 8.0
+  },
+  "workload": "scroll",
+  "workload_result": {
+    "rc": 0,
+    "stderr": "",
+    "stdout": "SCROLL_WORKLOAD seconds=55 events=2160 x=360 y=620"
+  }
+}

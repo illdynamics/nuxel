@@ -1,0 +1,19 @@
+captured=2026-11-03T23:10:49Z
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+boot_id=e3b5e426-5c2b-4ac8-ad14-70e2cfb27ab4
+4.14.253-gf7194c1d15ed-dirty
+d7a0b744424a6b380fbbfc5918e5a4c351ce4d8951e66dfdc9696ce68305127f  /usr/share/nuxel/pwa/nuxel-home/manifest.json
+dcf0423bb5d28eecc8eff6be3c198b241607d558e329959454dfb3c469fde976  /usr/share/nuxel/nuxel-home/manifest.json
+7ea793abaf45c0ccb78037c89e5bbbe12b2e96316011edf1cb645e87a4c213d0  /etc/systemd/system/nuxel-wayland.service
+active
+active
+active
+active

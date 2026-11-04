@@ -28,13 +28,15 @@
     "bridge_version": "1",
     "app_id": "org.nuxel.Authenticator",
     "capabilities": [
-      "storage:encrypted"
+      "storage:encrypted",
+      "secrets:authenticator-unlock"
     ],
     "app_type": "security",
     "offline_first": true,
     "network": "none",
     "storage": [
-      "localStorage (AES-GCM encrypted vault only)"
+      "localStorage (AES-GCM encrypted vault only)",
+      "system Secret Service (Authenticator credential only, explicit opt-in)"
     ],
     "features": [
       "TOTP SHA1/SHA256/SHA512",
@@ -45,7 +47,9 @@
       "QR camera scan (local decode)",
       "QR image import (local decode)",
       "encrypted export/import",
-      "RFC 6238 self test"
+      "RFC 6238 self test",
+      "optional Nuxel Keyring convenience unlock",
+      "authenticator-credential status/link/remove"
     ]
   }
 }

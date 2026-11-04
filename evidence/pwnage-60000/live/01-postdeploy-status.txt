@@ -1,0 +1,117 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== profile env ==
+export GDK_BACKEND=wayland
+export GDK_GL=gles
+export LIBGL_DRIVERS_PATH=/usr/lib64/dri
+export MESA_KBASE_NODE=/dev/mali0
+export MESA_LOADER_DRIVER_OVERRIDE=panfrost
+export NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+export NUXEL_GRAPHICS_PROFILE_REQUESTED=gpu-rendered-shm-presented
+export NUXEL_KBASE_WSI=1
+export WEBKIT_DISABLE_COMPOSITING_MODE=0
+export WEBKIT_FORCE_COMPOSITING_MODE=1
+export __EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json
+== status ==
+{
+  "active": {
+    "gtk3": {
+      "fallback_active": false,
+      "profile_active": "gpu-rendered-shm-presented",
+      "profile_requested": "gpu-rendered-shm-presented",
+      "reason": null
+    },
+    "gtk4": {
+      "fallback_active": false,
+      "profile_active": "gpu-rendered-shm-presented",
+      "profile_requested": "gpu-rendered-shm-presented",
+      "reason": null
+    },
+    "webkit": {
+      "fallback_active": false,
+      "profile_active": "gpu-rendered-shm-presented",
+      "profile_requested": "gpu-rendered-shm-presented",
+      "reason": null
+    }
+  },
+  "default_profile": "gpu-rendered-shm-presented",
+  "error": null,
+  "gpu": {
+    "evidence": {
+      "egl_vendor": {
+        "library": "/usr/lib64/libEGL_mesa.so.0.0.0",
+        "path": "/etc/nuxel/egl-kbase.json"
+      },
+      "egl_version": "1.5",
+      "gl_version": "OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)",
+      "kbase_node": {
+        "mode": "0o666",
+        "path": "/dev/mali0"
+      },
+      "libraries": {
+        "/usr/lib64/libEGL_mesa.so.0.0.0": [
+          66319,
+          2739,
+          537128,
+          1793543016971996672
+        ],
+        "/usr/lib64/libgallium_dri.so": [
+          66319,
+          6757,
+          27575608,
+          1793543017047996672
+        ],
+        "/usr/lib64/libwlroots-0.19.so": [
+          66319,
+          6762,
+          1352608,
+          1793543017059996672
+        ]
+      },
+      "probe": "cache",
+      "renderer": "Mali-G76 MC12 (Panfrost)"
+    },
+    "ready": true,
+    "reason": null
+  },
+  "path": "/etc/nuxel/graphics/graphics-profile.json",
+  "profiles": {
+    "fully-accelerated": {
+      "available": false,
+      "measured": false,
+      "reason": "DMA-BUF presentation blocked as above; nuxel-wl-fb still CPU-copies/scales 720x1520 -> 1440x3040 into /dev/fb0."
+    },
+    "gpu-rendered-dmabuf-presented": {
+      "available": false,
+      "measured": false,
+      "reason": "WebKit 2.54.1 requires drmMainDevice() for RendererBufferTransportMode::Hardware; CONFIG_DRM_VGEM is unset and /dev/dri is absent. Phoc can import LINEAR DMA-BUF; WebKit cannot allocate/export one."
+    },
+    "gpu-rendered-shm-presented": {
+      "available": true,
+      "measured": true,
+      "reason": null
+    },
+    "software-safe": {
+      "available": true,
+      "measured": true,
+      "reason": null
+    }
+  }
+}
+== egl link ==
+/usr/lib64/libEGL_mesa.so.0.0.0
+lrwxrwxrwx. 1 root root 20 Nov  2 23:51 /usr/lib64/libEGL_mesa.so.0 -> libEGL_mesa.so.0.0.0
+== bridge state ==
+1793659917 FRAMES_OK total=123 fps_1s=3 failures=0 blits=15 present_skipped=107 blit_avg_ms=2 pan_avg_ms=9 capture_avg_ms=6 compare_avg_ms=3 damage=350-446 damage_runs=0 damage_blits=11 damage_avg_ms=1 idle_ms=5379 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=16 decon_pan_failed=0
+== processes ==
+17783 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+17792 /usr/lib/nuxel/nuxel-pwa-host
+17825 /usr/lib/nuxel/nuxel-wl-fb
+18722 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 23

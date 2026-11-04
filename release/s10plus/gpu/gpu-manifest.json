@@ -1,0 +1,180 @@
+{
+  "build": {
+    "glvnd": {
+      "package": "libglvnd-1.7.0-8.fc43.aarch64"
+    },
+    "mesa": {
+      "commit": "a5010bb447ae34e697cb917c2d387272063e9fd8",
+      "configure": [
+        "platforms=wayland",
+        "gallium-drivers=panfrost",
+        "egl=enabled",
+        "gles2=enabled",
+        "gbm=disabled",
+        "glx=disabled",
+        "unversion-libgallium=true"
+      ],
+      "patch": {
+        "path": "tools/s10plus/a67/mesa-kbase-wayland-wsi.patch",
+        "sha256": "89b89f2b88104ee4b57e078d632f645873a9c5e8a4ce9360bcdffcd04402bc83"
+      },
+      "repo": "https://github.com/JimVulkan/mesa-unified-drivers.git",
+      "version": "26.3.0-devel (git-a5010bb447)"
+    },
+    "toolchain": {
+      "gcc": "15.3.1 20260722 (Red Hat 15.3.1-1)",
+      "libc": "glibc 2.42",
+      "meson_ninja": "Fedora 43 packages",
+      "note": "Recorded from the live Fedora 43 aarch64 builder; byte-identical rebuilds require the same toolchain."
+    },
+    "wlroots": {
+      "commit": "88a869855742281c98c22cab9641b317b8d065ef",
+      "configure": [
+        "renderers=gles2",
+        "backends=drm,libinput",
+        "allocators=gbm,udmabuf"
+      ],
+      "patch": {
+        "path": "tools/s10plus/a67/wlroots-kbase-linear-dmabuf.patch",
+        "sha256": "7580962d75cf00e1df3e36ece91037272c35403e684c4f68772b3ab69b92b2a4"
+      },
+      "repo": "https://gitlab.freedesktop.org/wlroots/wlroots.git",
+      "tag": "0.19.3"
+    }
+  },
+  "files": [
+    {
+      "arch": "aarch64",
+      "build_id": "d1a3a0a58aa0b86246526a32d4f54184979e16ab",
+      "install": "/usr/lib64/libEGL_mesa.so.0.0.0",
+      "kind": "elf-shared-library",
+      "mode": "0644",
+      "required": true,
+      "sha256": "eba18f340e519bbd04765c0744bb7f554df99ca328f3dd7921698600d3477b0f",
+      "soname": "libEGL_mesa.so.0",
+      "source": "libEGL_mesa.so.0.0.0"
+    },
+    {
+      "arch": "aarch64",
+      "build_id": "0924f8d37dab71b26cdc0b295794b8d24e1ac086",
+      "install": "/usr/lib64/libgallium_dri.so",
+      "kind": "elf-shared-library",
+      "mode": "0755",
+      "required": true,
+      "sha256": "818bc380242006c158455241099b3b5185dfc70630f6f4c9cda5602a9196b800",
+      "source": "libgallium_dri.so"
+    },
+    {
+      "arch": "aarch64",
+      "build_id": "e7ce7b747b395e4fc73e3deccf903252344c2b26",
+      "install": "/usr/lib64/libwlroots-0.19.so",
+      "kind": "elf-shared-library",
+      "mode": "0644",
+      "required": true,
+      "sha256": "95e039a783bf4e9263542a01f9609e03ffb4b2f8d47ca9ec23c60a6803d2d4cc",
+      "soname": "libwlroots-0.19.so",
+      "source": "libwlroots-0.19.so"
+    },
+    {
+      "install": "/usr/lib/nuxel/nuxel-graphics-profile",
+      "kind": "python-helper",
+      "mode": "0755",
+      "required": true,
+      "sha256": "cf161394aa3f418ad1125e08adae46fcaa3278e1cf0b8ad301de061f1aaa0dbc",
+      "source": "nuxel-graphics-profile"
+    },
+    {
+      "install": "/etc/nuxel/graphics/graphics-profile.json",
+      "kind": "json-policy",
+      "mode": "0644",
+      "required": true,
+      "sha256": "447bb4e2dc5f5c87ed8922e5f0f5650499a0bac39698f9e8cbbf2da674c26dd3",
+      "source": "graphics-profile.json"
+    },
+    {
+      "install": "/etc/nuxel/egl-kbase.json",
+      "kind": "glvnd-vendor-json",
+      "mode": "0644",
+      "required": true,
+      "sha256": "b191240f08da028c28c63957ba4529ee15e3d7b8bc02eb67852c250059e9caf5",
+      "source": "egl-kbase.json"
+    },
+    {
+      "install": "/usr/share/glvnd/egl_vendor.d/50_mesa.json",
+      "kind": "glvnd-vendor-json",
+      "mode": "0644",
+      "required": true,
+      "sha256": "cd3881df4227c13ca7f9cfe6c78820f21d5f7a00a41b299214f6f827e63be369",
+      "source": "50_mesa.json"
+    },
+    {
+      "install": "/usr/lib/nuxel/nuxel-gpu-status",
+      "kind": "diagnostic-helper",
+      "mode": "0755",
+      "required": true,
+      "sha256": "9a8e4d2ff3b4a95b40bb186ab6b949bb6a293d62f64cd946bab4764a2478dcd5",
+      "source": "nuxel-gpu-status"
+    },
+    {
+      "install": "/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh",
+      "kind": "session-script",
+      "mode": "0755",
+      "required": true,
+      "sha256": "31d6bc3aab4fefa028b7912171ce1f42496624de53a05340e94e469d96d790e7",
+      "source": "nuxel-wayland-gpu-wrapper.sh"
+    },
+    {
+      "install": "/usr/lib/nuxel/nuxel-session.sh",
+      "kind": "session-script",
+      "mode": "0755",
+      "required": true,
+      "sha256": "fe61581a46f95b725e90c0f76cd2e2ab4484db0f81cb017c9151bbe2a85ed2e2",
+      "source": "nuxel-session.sh"
+    }
+  ],
+  "generated_by": "tools/s10plus/a67/gen-gpu-manifest.py",
+  "mission": "PWNAGE-60000",
+  "probe": {
+    "install": "/usr/lib/nuxel/nuxel-kbase-egl-probe",
+    "required": true,
+    "sha256": "470164360a6ad51fc449f269b100f15b99c0feb55ae68f6acbcaae4f4557abe7",
+    "source": "tools/s10plus/a67/nuxel-kbase-egl-probe.c"
+  },
+  "profile": {
+    "default_profile": "gpu-rendered-shm-presented",
+    "fallback": "software-safe",
+    "path": "/etc/nuxel/graphics/graphics-profile.json",
+    "unavailable": [
+      "gpu-rendered-dmabuf-presented",
+      "fully-accelerated"
+    ]
+  },
+  "schema": "nuxel.gpu-manifest/1",
+  "symlinks": [
+    {
+      "path": "/usr/lib64/libEGL_mesa.so.0",
+      "target": "libEGL_mesa.so.0.0.0"
+    },
+    {
+      "path": "/usr/lib64/dri/panfrost_dri.so",
+      "target": "../libgallium_dri.so"
+    },
+    {
+      "path": "/usr/lib64/dri/exynos_dri.so",
+      "target": "../libgallium_dri.so"
+    }
+  ],
+  "target": {
+    "abi": "aarch64-glibc-2.42",
+    "arch": "aarch64",
+    "codename": "beyond2lte",
+    "device": "Samsung Galaxy S10+ SM-G975F",
+    "fedora_release": "43",
+    "gpu": "Mali-G76 MP12",
+    "soc": "Exynos 9820"
+  },
+  "verification": {
+    "image_verifier": "tools/s10plus/a67/nuxel-gpu-image-verify.sh",
+    "sha256sums": "SHA256SUMS"
+  }
+}

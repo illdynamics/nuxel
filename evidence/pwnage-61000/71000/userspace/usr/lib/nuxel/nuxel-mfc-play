@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+# =============================================================================
+# nuxel-mfc-play — truthful decoder policy for S10+ (PWNAGE-61000)
+#
+# Default is SOFTWARE.  It always invokes mpv with --hwdec=no, so the boot,
+# preload and normal fallback paths never depend on MFC.
+#
+# The vendor Exynos MFC ABI is not supported by the installed mpv/FFmpeg-free
+# build (no v4l2m2m hwdec).  --hardware therefore uses the explicit
+# nuxel-mfc-decode helper to produce raw NV12 frames and then plays them with
+# mpv's rawvideo demuxer.  It refuses unless nuxel-mfc-diag reports
+# AVAILABLE_HARDWARE_DECODE from a real recorded decode test.
+#
+# This script is user-invoked only.  It is never installed into autostart,
+# boot, the preload controller, WirePlumber or a package post-install hook.
+# =============================================================================
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+DIAG = os.environ.get("NUXEL_MFC_DIAG", "/usr/lib/nuxel/nuxel-mfc-diag")
+DECODE = os.environ.get("NUXEL_MFC_DECODE", "/usr/lib/nuxel/nuxel-mfc-decode")
+MPV = os.environ.get("NUXEL_MPV", "/usr/bin/mpv")
+
+
+def run_status() -> dict:
+    try:
+        p = subprocess.run([DIAG, "--status", "--json"], capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"state": "BLOCKED_DRIVER_UNSAFE", "reason": "diag unavailable: %s" % exc}
+    if p.returncode != 0:
+        return {"state": "BLOCKED_DRIVER_UNSAFE", "reason": p.stderr.strip() or "diag failed"}
+    try:
+        return json.loads(p.stdout)
+    except ValueError as exc:
+        return {"state": "BLOCKED_DRIVER_UNSAFE", "reason": "diag JSON invalid: %s" % exc}
+
+
+def software(args, reason: str | None = None) -> int:
+    if reason:
+        print("nuxel-mfc-play: decoder=software (%s)" % reason, file=sys.stderr)
+    else:
+        print("nuxel-mfc-play: decoder=software (explicit --hwdec=no)", file=sys.stderr)
+    cmd = [MPV, "--hwdec=no", "--no-config"] + args
+    os.execv(cmd[0], cmd)
+    return 127
+
+
+def hardware(opts, extra, st: dict) -> int:
+    if st.get("state") != "AVAILABLE_HARDWARE_DECODE":
+        print("nuxel-mfc-play: decoder=hardware REFUSED — state=%s (%s)" %
+              (st.get("state"), st.get("reason")), file=sys.stderr)
+        print("nuxel-mfc-play: use --software or --auto; hardware is not claimed without a decode proof.",
+              file=sys.stderr)
+        return 1
+    if not opts.width or not opts.height:
+        print("nuxel-mfc-play: --hardware requires --width and --height (rawvideo needs them)",
+              file=sys.stderr)
+        return 2
+    if not os.path.isfile(DECODE):
+        print("nuxel-mfc-play: decode helper not installed: %s" % DECODE, file=sys.stderr)
+        return 2
+    run_dir = "/run/nuxel/mfc"
+    try:
+        os.makedirs(run_dir, exist_ok=True)
+        tmp = tempfile.NamedTemporaryFile(prefix="decoded-", suffix=".nv12", dir=run_dir, delete=False)
+        raw_path = tmp.name
+        tmp.close()
+    except OSError:
+        tmp = tempfile.NamedTemporaryFile(prefix="decoded-", suffix=".nv12", delete=False)
+        raw_path = tmp.name
+        tmp.close()
+    cmd = [DECODE, "--device", st.get("decoder_node") or "/dev/video6",
+           "--input", opts.input, "--output", raw_path,
+           "--width", str(opts.width), "--height", str(opts.height),
+           "--allow-hardware-open", "--receipt", opts.receipt]
+    if opts.max_frames:
+        cmd += ["--max-frames", str(opts.max_frames)]
+    print("nuxel-mfc-play: decoder=hardware node=%s helper=%s" %
+          (st.get("decoder_node"), DECODE), file=sys.stderr)
+    rc = subprocess.run(cmd, timeout=opts.timeout, check=False).returncode
+    if rc != 0:
+        print("nuxel-mfc-play: hardware decode failed (rc=%d); software fallback is available" % rc,
+              file=sys.stderr)
+        try:
+            os.unlink(raw_path)
+        except OSError:
+            pass
+        return rc
+    play = [MPV, "--no-config", "--hwdec=no",
+            "--demuxer=rawvideo",
+            "--demuxer-rawvideo-format=nv12",
+            "--demuxer-rawvideo-w=%d" % args.width,
+            "--demuxer-rawvideo-h=%d" % args.height,
+            "--demuxer-rawvideo-fps=%s" % opts.fps,
+            raw_path] + extra
+    print("nuxel-mfc-play: playback=rawvideo/nv12 (MFC decoded; CPU presentation copy)", file=sys.stderr)
+    try:
+        return subprocess.run(play, check=False).returncode
+    finally:
+        try:
+            os.unlink(raw_path)
+        except OSError:
+            pass
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(prog="nuxel-mfc-play",
+                                 description="Truthful S10+ MFC/software decoder policy")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--software", action="store_true", help="force mpv --hwdec=no (default)")
+    mode.add_argument("--hardware", metavar="FILE", help="decode FILE with the vendor-ABI MFC helper, then play raw NV12")
+    mode.add_argument("--auto", metavar="FILE", help="use MFC only if a recorded decode proof says AVAILABLE")
+    mode.add_argument("--show-policy", action="store_true", help="print the current status/policy and exit")
+    ap.add_argument("--width", type=int)
+    ap.add_argument("--height", type=int)
+    ap.add_argument("--fps", default="24")
+    ap.add_argument("--max-frames", type=int)
+    ap.add_argument("--timeout", type=int, default=300)
+    ap.add_argument("--receipt", default="/etc/nuxel/mfc/safety-receipt.json")
+    ap.add_argument("media", nargs="*", help="media file/args passed to mpv in software mode")
+    args = ap.parse_args(argv)
+
+    st = run_status()
+    if args.show_policy:
+        print(json.dumps({"policy": "auto" if args.auto else ("hardware" if args.hardware else "software"),
+                          "state": st.get("state"), "reason": st.get("reason"),
+                          "decoder_node": st.get("decoder_node"),
+                          "software_fallback": True}, indent=2, sort_keys=True))
+        return 0
+
+    if args.hardware:
+        if args.media:
+            print("nuxel-mfc-play: cannot combine --hardware FILE with positional mpv media", file=sys.stderr)
+            return 2
+        return hardware_file(args, st)
+    if args.auto:
+        if st.get("state") == "AVAILABLE_HARDWARE_DECODE":
+            return hardware_file(args, st)
+        return software(args.media, "state=%s" % st.get("state"))
+    return software(args.media)
+
+
+def hardware_file(args, st: dict) -> int:
+    args.input = args.hardware or args.auto
+    return hardware(args, [], st)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

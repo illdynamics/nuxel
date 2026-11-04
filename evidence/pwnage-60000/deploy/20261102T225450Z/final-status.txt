@@ -1,0 +1,15 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== final status ==
+1793660143 FRAMES_OK total=220 fps_1s=3 failures=0 blits=31 present_skipped=188 blit_avg_ms=2 pan_avg_ms=8 capture_avg_ms=8 compare_avg_ms=3 damage=0-1520 damage_runs=0 damage_blits=26 damage_avg_ms=1 idle_ms=5052 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=32 decon_pan_failed=0
+
+active
+active
+active

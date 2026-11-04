@@ -1,0 +1,24 @@
+{
+  "at": "2026-11-03T09:14:25+0100",
+  "blocked_reason": "cannot take the console: no CDC-ACM serial capability present (no USB gadget enumerated)",
+  "briq": "briq-10c-live-reboot-and-verify",
+  "checklists": {},
+  "diagnostic": null,
+  "evidence_dir": "/x/nuxel/evidence/pwnage62000/reboot-verify-20261103T091425+0100",
+  "exit_code": 3,
+  "history_before": [],
+  "history_path": "/x/nuxel/evidence/pwnage62000/reboots.json",
+  "probes": [],
+  "reason": null,
+  "reboot": {
+    "requested": false
+  },
+  "reboot_cmd": null,
+  "reboot_requested": false,
+  "simulated": false,
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10c-live-reboot-and-verify": "BLOCKED_EXTERNAL_RESOURCE",
+    "per-item": {}
+  }
+}

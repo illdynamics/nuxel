@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "nuxel.mfc.status/1",
+  "title": "Nuxel MFC status",
+  "type": "object",
+  "required": ["schema", "state", "reason", "source_commit", "device", "firmware", "kernel_config", "safe_open_allowed"],
+  "properties": {
+    "schema": {"const": "nuxel.mfc.status/1"},
+    "state": {
+      "enum": [
+        "NOT_PRESENT", "UNIDENTIFIED_VIDEO_NODE", "BLOCKED_DRIVER_MISSING",
+        "BLOCKED_DRIVER_UNSAFE", "BLOCKED_FIRMWARE_MISSING", "BLOCKED_FIRMWARE_HASH",
+        "BLOCKED_FIRMWARE_ABI", "BLOCKED_DT_RESOURCE", "BLOCKED_IOMMU_DMA",
+        "BLOCKED_UNSUPPORTED_CODEC", "AVAILABLE_PROBE_ONLY",
+        "AVAILABLE_HARDWARE_DECODE", "AVAILABLE_HARDWARE_DECODE_WITH_COPY",
+        "AVAILABLE_HARDWARE_DECODE_DMABUF", "AVAILABLE_SOFTWARE_ONLY",
+        "TEST_FAILED", "NOT_TESTED_ON_DEVICE"
+      ]
+    },
+    "reason": {"type": "string"},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "kernel_release": {"type": "string"},
+    "boot_id": {"type": "string"},
+    "device": {"const": "beyond2lte"},
+    "device_model": {"type": "string"},
+    "soc": {"type": "string"},
+    "decoder_node": {"type": ["string", "null"]},
+    "decoder_sysfs_name": {"type": ["string", "null"]},
+    "platform_device": {"type": ["string", "null"]},
+    "driver": {"type": ["string", "null"]},
+    "compatible": {"type": ["string", "null"]},
+    "ip_ver": {"type": ["string", "null"]},
+    "firmware": {
+      "type": "object",
+      "required": ["state", "request_name", "expected_sha256", "expected_size"],
+      "properties": {
+        "state": {"enum": ["MISSING", "PRESENT_OK", "MISMATCH"]},
+        "request_name": {"type": "string"},
+        "expected_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "expected_size": {"type": "integer"},
+        "paths": {"type": "array", "items": {"type": "string"}},
+        "found": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "kernel_config": {
+      "type": "object",
+      "required": ["present", "required_ok"],
+      "properties": {
+        "present": {"type": "boolean"},
+        "required_ok": {"type": "boolean"},
+        "mfc_driver": {"type": ["string", "null"]},
+        "iommu": {"type": ["string", "null"]}
+      }
+    },
+    "safety_receipt": {
+      "type": "object",
+      "required": ["present", "owner_approved", "kernel_patch_applied", "decode_verified"],
+      "properties": {
+        "present": {"type": "boolean"},
+        "owner_approved": {"type": "boolean"},
+        "kernel_patch_applied": {"type": "boolean"},
+        "decode_verified": {"type": "boolean"},
+        "error": {"type": "string"}
+      }
+    },
+    "safe_open_allowed": {"type": "boolean"},
+    "capabilities": {"type": "array", "items": {"type": "object"}},
+    "guard": {
+      "type": "object",
+      "properties": {
+        "guard_present": {"type": "boolean"},
+        "v4l2_plugins_disabled": {"type": "boolean"}
+      }
+    },
+    "wireplumber": {
+      "type": "object",
+      "properties": {
+        "video_capture_disabled": {"type": "boolean"},
+        "audio_required": {"type": "boolean"},
+        "bluetooth_required": {"type": "boolean"}
+      }
+    },
+    "preload": {
+      "type": "object",
+      "properties": {"software_safe_hwdec_no": {"type": "boolean"}}
+    },
+    "last_test_time": {"type": ["string", "null"]},
+    "node_count": {"type": "integer", "minimum": 0},
+    "nodes": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

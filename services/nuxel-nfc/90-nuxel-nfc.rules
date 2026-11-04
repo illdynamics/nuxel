@@ -1,0 +1,3 @@
+# Keep the Samsung raw transport root-only.  The daemon runs as root and is
+# the sole owner; no TAG+="uaccess" and no 0666.
+KERNEL=="sec-nfc", MODE="0600", OWNER="root", GROUP="root"

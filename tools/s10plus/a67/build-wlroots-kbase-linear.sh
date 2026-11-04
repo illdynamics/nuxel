@@ -13,6 +13,8 @@ ROOT="${ROOT:-/nuxel}"
 WORK="${WORK:-/work/wlroots53000}"
 OUT="${OUT:-/usr/local/lib/nuxel-gpu/wlroots53000}"
 SRC="$WORK/wlroots"
+# shellcheck source=gpu-build-pins.env
+. "$ROOT/tools/s10plus/a67/gpu-build-pins.env"
 
 dnf -y install meson ninja-build git wayland-devel wayland-protocols-devel \
   libinput-devel libseat-devel mesa-libEGL-devel mesa-libGLES-devel \
@@ -26,20 +28,22 @@ dnf -y install meson ninja-build git wayland-devel wayland-protocols-devel \
 
 mkdir -p "$WORK" "$OUT"
 if [ ! -d "$SRC/.git" ]; then
-  git clone --depth 1 --branch 0.19.3 \
-    https://gitlab.freedesktop.org/wlroots/wlroots.git "$SRC"
+  git clone "$WLROOTS_REPO" "$SRC"
 fi
+git -C "$SRC" fetch --tags --force origin
+git -C "$SRC" checkout --detach "$WLROOTS_COMMIT"
+test "$(git -C "$SRC" rev-parse HEAD)" = "$WLROOTS_COMMIT" || {
+  echo "ERROR: wlroots HEAD is not the pinned commit $WLROOTS_COMMIT" >&2; exit 1; }
+git -C "$SRC" reset --hard "$WLROOTS_COMMIT"
+git -C "$SRC" clean -ffdx
 
 # The linear patch is cumulative: it contains the surfaceless backend fix,
 # the explicit v3 dmabuf global and the LINEAR-only filter.  It applies
 # cleanly to a pristine wlroots 0.19.3 tree.
-PATCH="$ROOT/tools/s10plus/a67/wlroots-kbase-linear-dmabuf.patch"
-if git -C "$SRC" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
-  echo "wlroots: linear patch already applied"
-else
-  git -C "$SRC" checkout -- .
-  git -C "$SRC" apply "$PATCH"
-fi
+PATCH="$ROOT/$WLROOTS_PATCH"
+git -C "$SRC" apply --check "$PATCH"
+git -C "$SRC" apply "$PATCH"
+echo "wlroots pinned: tag=$WLROOTS_TAG commit=$WLROOTS_COMMIT patch=$PATCH"
 
 rm -rf "$SRC/build"
 meson setup "$SRC/build" -Dbuildtype=release -Db_ndebug=true -Dwerror=false \

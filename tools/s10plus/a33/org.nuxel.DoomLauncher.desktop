@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Doom
+Comment=Crispy Doom touch launcher and WAD picker
+Exec=/usr/lib/nuxel/nuxel-doom-launcher
+Icon=io.github.fabiangreffrath.Doom
+Terminal=false
+Type=Application
+Categories=Game;ActionGame;
+Keywords=doom;freedoom;wad;crispy;

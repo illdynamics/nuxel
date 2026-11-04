@@ -1,0 +1,54 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-03T00:39:34+01:00
+80fc54f6-8399-4dda-b082-d3d1016319d3
+ 00:39:34 up 0 min,  0 user,  load average: 7.21, 1.89, 0.64
+== session file ==
+07668a4e3d8fcce31ef895239977a14696834eae30222c491d0ba8d87df4403f  /usr/lib/nuxel/nuxel-session.sh
+07668a4e3d8fcce31ef895239977a14696834eae30222c491d0ba8d87df4403f  /usr/lib/nuxel/stage36000/session/nuxel-session.sh
+87:  eval "$(/usr/lib/nuxel/nuxel-graphics-profile env webkit)" || true
+== apply log ==
+2026-11-02T23:39:02Z rfkill bluetooth rc=0
+2026-11-02T23:39:02Z bluetooth bring-up already active; not restarting
+2026-11-02T23:39:02Z restart geoclue rc=0
+2026-11-02T23:39:02Z restart wifi rc=0
+2026-11-02T23:39:02Z start audio route rc=0
+2026-11-02T23:39:02Z bluetooth: 
+2026-11-02T23:39:02Z wifi: 
+2026-11-02T23:39:02Z audio: cards:  0 [beyondmadera   ]: beyond-madera - beyond-madera                       beyond-madera  1 [aboxvdma       ]: abox_vdma - abox_vdma                       abox_vdma  2 [aboxdump       ]: abox_dump - abox_dump                       abox_dump pcms: 00-00: RDMA0 (*) :  : playback 1 00-01: RDMA1 (*) :  : playback 1 00-02: RDMA2 (*) :  : playback 1 00-03: RDMA3 (*) :  : playback 1 00-04: RDMA4 (*) :  : playback 1 00-06: RDMA6 (*) :  : playback 1 00-07: RDMA7 (*) :  : playback 1 00-08: RDMA8 (*) :  : playback 1 00-09: RDMA9 (*) :  : playback 1 00-10: RDMA10 (*) :  : playback 1 00-11: RDMA11 (*) :  : playback 1 00-12: WDMA0 (*) :  : capture 1 00-13: WDMA1 (*) :  : capture 1 00-14: WDMA2 (*) :  : capture 1 00-15: WDMA3 (*) :  : capture 1 00-16: WDMA4 (*) :  : capture 1 00-17: WDMA5 (*) :  : capture 1 00-18: WDMA6 (*) :  : capture 1 00-19: WDMA7 (*) :  : capture 1 00-20: VTS-Trigger snd-soc-dummy-dai-20 :  : capture 1 route: state=deferred card=0 reason=Calliope core firmware is not MUB0 at=2026-11-02T23:39:01Z pipewire_socket=present pulse_socket=present wireplumber=running pipewire=running 
+2026-11-02T23:39:02Z gps: device=/dev/ttyBCM present=yes spi_driver=brcm gps spi power_rail=/sys/devices/virtual/sec/gps/GPS_PWR_EN/value value=0 geoclue=active gnss_verdict=BLOCKED_FIRMWARE (BCM4773 BBD/LHD needs vendor gpsd; ttyBCM is not NMEA) note=network location works via GeoClue [wifi]+[ip]; GNSS needs compatible BBD patch firmware + vendor lhd/gpsd runtime 
+2026-11-02T23:39:02Z == services done ==
+== profile ==
+export NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+export WEBKIT_DISABLE_COMPOSITING_MODE=0
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory
+== webkit ==
+pid=7046
+NUXEL_GRAPHICS_PROFILE_REQUESTED=gpu-rendered-shm-presented
+NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+WEBKIT_FORCE_COMPOSITING_MODE=1
+WEBKIT_DISABLE_COMPOSITING_MODE=0
+4
+lrwx------. 1 root root 64 Nov  3 00:39 18 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 00:39 19 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 00:39 21 -> /dev/mali0
+== bridge ==
+1793662773 FRAMES_OK total=196 fps_1s=1 failures=0 blits=123 present_skipped=72 blit_avg_ms=2 pan_avg_ms=8 capture_avg_ms=4 compare_avg_ms=0 damage=108-266 damage_runs=1 damage_blits=122 damage_avg_ms=2 idle_ms=22059 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=124 decon_pan_failed=0
+== phoc ==
+4
+3
+no-llvmpipe
+== services ==
+active
+active
+active
+active
+active

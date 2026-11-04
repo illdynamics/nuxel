@@ -1,0 +1,15 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-03T00:34:24+01:00
+c75bcb62-064a-4f42-8486-7f038eb3017c
+ 00:34:24 up  1:00,  0 user,  load average: 12.27, 12.39, 12.09
+1793662464 FRAMES_OK total=138 fps_1s=1 failures=0 blits=13 present_skipped=124 blit_avg_ms=2 pan_avg_ms=10 capture_avg_ms=8 compare_avg_ms=3 damage=188-189 damage_runs=1 damage_blits=8 damage_avg_ms=0 idle_ms=22028 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=14 decon_pan_failed=0
+export NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+export WEBKIT_DISABLE_COMPOSITING_MODE=0

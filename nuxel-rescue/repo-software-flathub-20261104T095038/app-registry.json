@@ -1,0 +1,1067 @@
+{
+  "schema": "nuxel.app-registry/1",
+  "registry_version": 12,
+  "bridge_version": "1",
+  "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
+  "url_base": "http://127.0.0.1:8000",
+  "consumers": {
+    "pwa_launcher": "pwa/nuxel-home/js/apps.js",
+    "native_shell": "shell/nuxel-home-native/nuxel_home/app_registry.json",
+    "http_bridge": "services/nuxel-bridge/src/api.py (GET /api/v1/apps/registry)",
+    "installed_copy": "/etc/nuxel/app-registry/app_registry.json (rootfs builder, briq-04b)",
+    "verifier": "tools/s10plus/a33/verify-app-registry.py"
+  },
+  "contract": {
+    "one_registry": "This file is the canonical launcher registry. The PWA launcher (apps.js), the native shell (app_registry.json) and the HTTP bridge all serve the SAME app set; verify-app-registry.py fails on any drift between them.",
+    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) \u2014 an app may not declare a capability the bridge does not know.",
+    "manifest_rule": "every pwa entry must resolve to a real index.html AND a manifest.json carrying nuxel.capabilities (list) and nuxel.bridge_version equal to the pin."
+  },
+  "apps": [
+    {
+      "id": "nuxel-dialer",
+      "name": "Phone",
+      "icon": "\ud83d\udcde",
+      "color": "#4CAF50",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-dialer://",
+      "native_binary": "/usr/bin/nuxel-dialer",
+      "binary_source": "shell/nuxel-shell/nuxel-dialer",
+      "desktop_entry": "shell/config/nuxel-dialer.desktop",
+      "description": "Make phone calls",
+      "capabilities": [
+        "call:initiate",
+        "call:end",
+        "call:status",
+        "contacts:read"
+      ],
+      "bridge_version": "1",
+      "docked": true,
+      "status": "implemented",
+      "runtime_state": "NEEDS_OWNER_TEST (real call needs a SIM and a carrier)"
+    },
+    {
+      "id": "nuxel-messages",
+      "name": "Messages",
+      "icon": "\ud83d\udcac",
+      "color": "#2196F3",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-messages://",
+      "native_binary": "/usr/bin/nuxel-messages",
+      "binary_source": "shell/nuxel-shell/nuxel-messages",
+      "desktop_entry": "shell/config/nuxel-messages.desktop",
+      "description": "Send and receive SMS",
+      "capabilities": [
+        "sms:send",
+        "sms:receive",
+        "contacts:read"
+      ],
+      "bridge_version": "1",
+      "docked": true,
+      "status": "implemented",
+      "runtime_state": "NEEDS_OWNER_TEST (real SMS needs a SIM and a carrier)"
+    },
+    {
+      "id": "nuxel-contacts",
+      "name": "Contacts",
+      "icon": "\ud83d\udc64",
+      "color": "#9C27B0",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-contacts://",
+      "native_binary": "/usr/bin/nuxel-contacts",
+      "binary_source": "shell/nuxel-shell/nuxel-contacts",
+      "desktop_entry": "shell/config/nuxel-contacts.desktop",
+      "description": "Manage your contacts",
+      "capabilities": [
+        "contacts:read",
+        "contacts:write"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented"
+    },
+    {
+      "id": "nuxel-camera",
+      "name": "Camera",
+      "icon": "\ud83d\udcf7",
+      "color": "#795548",
+      "category": "media",
+      "type": "native",
+      "url": "nuxel-camera://",
+      "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
+      "binary_source": "shell/nuxel-camera-native",
+      "desktop_entry": "shell/nuxel-camera-native/org.nuxel.CameraNative.desktop",
+      "description": "Camera UI with honest hardware status; backend capture is deferred",
+      "capabilities": [
+        "camera:capture",
+        "camera:preview"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented",
+      "implementation_note": "Custom Nuxel Camera native app (GTK4); hardware capture remains subject to the Exynos FIMC-IS pipeline."
+    },
+    {
+      "id": "org.nuxel.Mail",
+      "name": "Mail",
+      "icon": "\u2709\ufe0f",
+      "color": "#FF9800",
+      "category": "productivity",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/mail/index.html",
+      "entry": "pwa/nuxel-apps/mail/index.html",
+      "manifest": "pwa/nuxel-apps/mail/manifest.json",
+      "description": "Email client",
+      "capabilities": [
+        "notifications:send",
+        "notifications:receive",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false
+    },
+    {
+      "id": "org.nuxel.Calendar",
+      "name": "Calendar",
+      "icon": "\ud83d\udcc5",
+      "color": "#E91E63",
+      "category": "productivity",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/calendar/index.html",
+      "entry": "pwa/nuxel-apps/calendar/index.html",
+      "manifest": "pwa/nuxel-apps/calendar/manifest.json",
+      "description": "Calendar and events",
+      "capabilities": [
+        "notifications:send",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false
+    },
+    {
+      "id": "org.nuxel.Notes",
+      "name": "Notes",
+      "icon": "\ud83d\udcdd",
+      "color": "#607D8B",
+      "category": "productivity",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/notes/index.html",
+      "entry": "pwa/nuxel-apps/notes/index.html",
+      "manifest": "pwa/nuxel-apps/notes/manifest.json",
+      "description": "Take notes",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false
+    },
+    {
+      "id": "org.nuxel.Files",
+      "name": "Files",
+      "icon": "\ud83d\udcc1",
+      "color": "#3F51B5",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/files/index.html",
+      "entry": "pwa/nuxel-apps/files/index.html",
+      "manifest": "pwa/nuxel-apps/files/manifest.json",
+      "description": "File browser",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false
+    },
+    {
+      "id": "nuxel-settings",
+      "name": "Settings",
+      "icon": "\u2699\ufe0f",
+      "color": "#78909C",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/settings/index.html",
+      "entry": "pwa/nuxel-apps/settings/index.html",
+      "manifest": "pwa/nuxel-apps/settings/manifest.json",
+      "description": "System settings (display, network, input, location & maps diagnostics)",
+      "capabilities": [
+        "location:read",
+        "location:manage"
+      ],
+      "bridge_version": "1",
+      "docked": true
+    },
+    {
+      "id": "org.nuxel.Terminal",
+      "name": "Terminal",
+      "icon": "\ud83d\udda5\ufe0f",
+      "color": "#263238",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/terminal/index.html",
+      "entry": "pwa/nuxel-apps/terminal/index.html",
+      "manifest": "pwa/nuxel-apps/terminal/manifest.json",
+      "description": "Nuxel shell console",
+      "capabilities": [
+        "shell:local-pty"
+      ],
+      "bridge_version": "1",
+      "docked": true
+    },
+    {
+      "id": "org.nuxel.LiveConsole",
+      "name": "Serial Live Console",
+      "icon": "\ud83d\udcdf",
+      "color": "#37474F",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/console/index.html",
+      "entry": "pwa/nuxel-apps/console/index.html",
+      "manifest": "pwa/nuxel-apps/console/manifest.json",
+      "description": "USB CDC-ACM recovery console with exclusive serial ownership",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "console_transport": "serial",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.USBSSHConsole",
+      "name": "USB SSH Console",
+      "icon": "\ud83d\udd0c",
+      "color": "#6D4C41",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/console-usb/index.html",
+      "entry": "pwa/nuxel-apps/console-usb/index.html",
+      "manifest": "pwa/nuxel-apps/console-usb/manifest.json",
+      "description": "SSH over the USB network gadget; unavailable on the current 4.14.253 NCM stack",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "console_transport": "usb",
+      "status": "implemented",
+      "runtime_state": "BLOCKED_KERNEL_PANIC on 4.14.253 (documented NCM teardown panic; no fake connection)"
+    },
+    {
+      "id": "org.nuxel.WiFiSSHConsole",
+      "name": "Wi-Fi SSH Console",
+      "icon": "\ud83d\udcf6",
+      "color": "#0288D1",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/console-wifi/index.html",
+      "entry": "pwa/nuxel-apps/console-wifi/index.html",
+      "manifest": "pwa/nuxel-apps/console-wifi/manifest.json",
+      "description": "Key-only SSH over the phone's Wi-Fi address (pinned host key on the host)",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "console_transport": "wifi",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.RemoteDesktopXRDP",
+      "name": "XRDP Remote Desktop",
+      "icon": "\ud83d\udda5\ufe0f",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/05-07_web-window.png",
+      "color": "#5db7ff",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/remote-xrdp/index.html",
+      "entry": "pwa/nuxel-apps/remote-xrdp/index.html",
+      "manifest": "pwa/nuxel-apps/remote-xrdp/manifest.json",
+      "description": "Separate authenticated RDP/TLS X11 session; Wi-Fi preferred, USB blocked by kernel evidence",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "remote_service": "xrdp",
+      "default_transport": "wlan",
+      "session_mode": "separate-x11-session",
+      "status": "implemented",
+      "runtime_state": "OFF by default; started only by explicit owner action"
+    },
+    {
+      "id": "org.nuxel.RemoteDesktopVNC",
+      "name": "VNC Screen Sharing",
+      "icon": "\ud83d\uddb5",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/06-04_casting-screen.png",
+      "color": "#48d597",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/remote-vnc/index.html",
+      "entry": "pwa/nuxel-apps/remote-vnc/index.html",
+      "manifest": "pwa/nuxel-apps/remote-vnc/manifest.json",
+      "description": "VNC screen sharing of the actual Phoc/Wayland session; Wi-Fi preferred, USB blocked by kernel evidence",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "remote_service": "vnc",
+      "default_transport": "wlan",
+      "session_mode": "current-wayland-session",
+      "status": "implemented",
+      "runtime_state": "OFF by default; started only by explicit owner action"
+    },
+    {
+      "id": "org.nuxel.ScrcpyMirror",
+      "name": "scrcpy (Android)",
+      "icon": "\ud83d\udcf1",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+      "color": "#b68cff",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/remote-scrcpy/index.html",
+      "entry": "pwa/nuxel-apps/remote-scrcpy/index.html",
+      "manifest": "pwa/nuxel-apps/remote-scrcpy/manifest.json",
+      "description": "Official scrcpy for real Android ADB targets only; native Nuxel is not an Android target",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "remote_service": "scrcpy",
+      "default_transport": "android-adb-usb",
+      "session_mode": "android-adb-target",
+      "status": "implemented",
+      "runtime_state": "Android targets only; native Nuxel reports NOT_APPLICABLE_NATIVE_NUXEL"
+    },
+    {
+      "id": "org.nuxel.Browser",
+      "name": "Browser",
+      "icon": "\ud83c\udf10",
+      "color": "#297ad7",
+      "category": "tools",
+      "type": "native",
+      "url": "/pwa/nuxel-apps/browser/index.html",
+      "description": "Real top-level WebKitGTK browser (HTTPS); shell navigation remains visible",
+      "capabilities": [
+        "network:outbound",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented",
+      "runtime_state": "NEEDS_OWNER_TEST (HTTPS iframe restrictions on some websites)",
+      "entry": "pwa/nuxel-apps/browser/index.html",
+      "manifest": "pwa/nuxel-apps/browser/manifest.json",
+      "native_binary": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
+      "binary_source": "shell/nuxel-browser-native",
+      "desktop_entry": "shell/nuxel-browser-native/org.nuxel.BrowserNative.desktop"
+    },
+    {
+      "name": "Calculator",
+      "icon": "\ud83e\uddee",
+      "color": "#009688",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/calculator/index.html",
+      "entry": "pwa/nuxel-apps/calculator/index.html",
+      "manifest": "pwa/nuxel-apps/calculator/manifest.json",
+      "description": "Offline expression calculator",
+      "capabilities": [],
+      "docked": false,
+      "id": "org.nuxel.Calculator",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Clock",
+      "icon": "\u23f0",
+      "color": "#455A64",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/clock/index.html",
+      "entry": "pwa/nuxel-apps/clock/index.html",
+      "manifest": "pwa/nuxel-apps/clock/manifest.json",
+      "description": "Clock, alarms and timers",
+      "capabilities": [
+        "notifications:send",
+        "storage:persistent"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Clock",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Gallery",
+      "icon": "\ud83d\uddbc\ufe0f",
+      "color": "#F06292",
+      "category": "media",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/photos/index.html",
+      "entry": "pwa/nuxel-apps/photos/index.html",
+      "manifest": "pwa/nuxel-apps/photos/manifest.json",
+      "description": "Photo and video gallery over real user media folders",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Photos",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Weather",
+      "icon": "\u26c5",
+      "color": "#29B6F6",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/weather/index.html",
+      "entry": "pwa/nuxel-apps/weather/index.html",
+      "manifest": "pwa/nuxel-apps/weather/manifest.json",
+      "description": "Weather forecast with manual locations",
+      "capabilities": [
+        "storage:persistent",
+        "network:outbound"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Weather",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Maps",
+      "icon": "\ud83d\uddfa\ufe0f",
+      "color": "#7CB342",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/maps/index.html",
+      "entry": "pwa/nuxel-apps/maps/index.html",
+      "manifest": "pwa/nuxel-apps/maps/manifest.json",
+      "description": "Maps and navigation",
+      "capabilities": [
+        "location:read",
+        "storage:persistent",
+        "network:outbound"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Maps",
+      "bridge_version": "1"
+    },
+    {
+      "name": "NuxTore",
+      "icon": "\ud83d\udecd\ufe0f",
+      "color": "#FF7043",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/nuxtore/index.html",
+      "entry": "pwa/nuxel-apps/nuxtore/index.html",
+      "manifest": "pwa/nuxel-apps/nuxtore/manifest.json",
+      "description": "Nuxel app catalog (honest empty installed state)",
+      "capabilities": [],
+      "docked": false,
+      "id": "org.nuxel.Nuxtore",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Recorder",
+      "icon": "\ud83c\udf99\ufe0f",
+      "color": "#D32F2F",
+      "category": "media",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/recorder/index.html",
+      "entry": "pwa/nuxel-apps/recorder/index.html",
+      "manifest": "pwa/nuxel-apps/recorder/manifest.json",
+      "description": "Voice recorder saving to ~/VoiceRecordings",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Recorder",
+      "bridge_version": "1"
+    },
+    {
+      "name": "SnekByte",
+      "icon": "\ud83d\udc0d",
+      "color": "#66BB6A",
+      "category": "games",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/snekbyte/index.html",
+      "entry": "pwa/nuxel-apps/snekbyte/index.html",
+      "manifest": "pwa/nuxel-apps/snekbyte/manifest.json",
+      "description": "Nuxel Arcade",
+      "capabilities": [],
+      "docked": false,
+      "id": "org.nuxel.SnekByte",
+      "bridge_version": "1"
+    },
+    {
+      "id": "org.mozilla.firefox",
+      "name": "Firefox",
+      "icon": "\ud83e\udd8a",
+      "iconAsset": "/assets/native-app-icons/firefox.png",
+      "color": "#ff7139",
+      "category": "tools",
+      "type": "native",
+      "url": "org.mozilla.firefox://",
+      "native_binary": "/usr/bin/firefox",
+      "desktop_entry": "shell/config/org.mozilla.firefox.desktop",
+      "description": "Firefox (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)",
+      "capabilities": [
+        "network:outbound",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "native Fedora aarch64 RPM (launchable)",
+      "install_source": "/usr/lib/nuxel/nuxel-flatpak-firefox",
+      "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-firefox"
+    },
+    {
+      "id": "org.videolan.VLC",
+      "name": "VLC",
+      "icon": "\ud83c\udfac",
+      "iconAsset": "/assets/native-app-icons/vlc.png",
+      "color": "#ff8800",
+      "category": "media",
+      "type": "native",
+      "url": "org.videolan.VLC://",
+      "native_binary": "/usr/lib/nuxel/nuxel-vlc-fallback",
+      "desktop_entry": "shell/config/org.videolan.VLC.desktop",
+      "description": "VLC (Fedora aarch64 RPM). The packaged 3.0.24 GUI/vout cannot initialize on this image; the launcher tries VLC then falls back to mpv for real playback.",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "VLC engine packaged; GUI/vout unavailable on this image, mpv fallback verified",
+      "install_source": "/usr/lib/nuxel/nuxel-flatpak-vlc",
+      "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-vlc"
+    },
+    {
+      "id": "org.signal.Signal",
+      "name": "Signal",
+      "icon": "\ud83d\udcac",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+      "color": "#3a76f0",
+      "category": "communication",
+      "type": "native",
+      "url": "org.signal.Signal://",
+      "native_binary": "/usr/lib/nuxel/nuxel-flatpak-signal",
+      "desktop_entry": "shell/config/org.signal.Signal.desktop",
+      "description": "Signal Desktop is NOT installed (no official aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)",
+      "capabilities": [
+        "network:outbound",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "unsupported",
+      "runtime_state": "not installed: no official Signal Desktop aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n",
+      "install_source": "/usr/lib/nuxel/nuxel-flatpak-signal",
+      "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-signal"
+    },
+    {
+      "id": "com.stremio.Stremio",
+      "name": "Stremio",
+      "icon": "\ud83c\udf7f",
+      "iconAsset": "/assets/native-app-icons/stremio.svg",
+      "color": "#7b5cff",
+      "category": "media",
+      "type": "native",
+      "url": "com.stremio.Stremio://",
+      "native_binary": "/usr/lib/nuxel/nuxel-flatpak-stremio",
+      "desktop_entry": "shell/config/com.stremio.Stremio.desktop",
+      "description": "Stremio (aarch64 Flatpak installed; BLOCKED: kernel CONFIG_USER_NS=n)",
+      "capabilities": [
+        "network:outbound",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "unsupported",
+      "runtime_state": "Flatpak blocked by CONFIG_USER_NS=n; not launchable on this kernel",
+      "install_source": "/usr/lib/nuxel/nuxel-flatpak-stremio",
+      "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-stremio"
+    },
+    {
+      "id": "org.gnome.FileRoller",
+      "name": "Archive Manager",
+      "icon": "\ud83d\udddc\ufe0f",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/02-05_folders.png",
+      "color": "#d6a45c",
+      "category": "tools",
+      "type": "native",
+      "url": "org.gnome.FileRoller://",
+      "native_binary": "/usr/bin/file-roller",
+      "desktop_entry": "shell/config/org.gnome.FileRoller.desktop",
+      "description": "Archive manager (Fedora aarch64 RPM)",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Fedora 43 aarch64",
+      "install_source": "/usr/bin/file-roller",
+      "package": "fedora43-aarch64-rpm"
+    },
+    {
+      "id": "org.gnome.Loupe",
+      "name": "Image Viewer",
+      "icon": "\ud83d\uddbc\ufe0f",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/03-02_gallery.png",
+      "color": "#4a90e2",
+      "category": "media",
+      "type": "native",
+      "url": "org.gnome.Loupe://",
+      "native_binary": "/usr/bin/loupe",
+      "desktop_entry": "shell/config/org.gnome.Loupe.desktop",
+      "description": "GNOME Loupe image viewer (Fedora aarch64 RPM)",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Fedora 43 aarch64",
+      "install_source": "/usr/bin/loupe",
+      "package": "fedora43-aarch64-rpm"
+    },
+    {
+      "id": "org.gnome.Papers",
+      "name": "Document Viewer",
+      "icon": "\ud83d\udcc4",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/02-04_reader.png",
+      "color": "#e05d5d",
+      "category": "productivity",
+      "type": "native",
+      "url": "org.gnome.Papers://",
+      "native_binary": "/usr/bin/papers",
+      "desktop_entry": "shell/config/org.gnome.Papers.desktop",
+      "description": "GNOME Papers PDF/document viewer (Fedora aarch64 RPM)",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Fedora 43 aarch64",
+      "install_source": "/usr/bin/papers",
+      "package": "fedora43-aarch64-rpm"
+    },
+    {
+      "id": "org.gnome.SystemMonitor",
+      "name": "System Monitor",
+      "icon": "\ud83d\udcc8",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/05-02_system-monitor.png",
+      "color": "#4caf50",
+      "category": "system",
+      "type": "native",
+      "url": "org.gnome.SystemMonitor://",
+      "native_binary": "/usr/bin/gnome-system-monitor",
+      "desktop_entry": "shell/config/org.gnome.SystemMonitor.desktop",
+      "description": "Live CPU/memory/process monitor (Fedora aarch64 RPM)",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Fedora 43 aarch64",
+      "install_source": "/usr/bin/gnome-system-monitor",
+      "package": "fedora43-aarch64-rpm"
+    },
+    {
+      "id": "org.nuxel.Media",
+      "name": "Media Player",
+      "icon": "\ud83c\udfac",
+      "color": "#e05d5d",
+      "category": "media",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/media/index.html",
+      "entry": "pwa/nuxel-apps/media/index.html",
+      "manifest": "pwa/nuxel-apps/media/manifest.json",
+      "description": "Local audio/video playback through the real PipeWire/ALSA path",
+      "capabilities": [
+        "audio:playback",
+        "media:library"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.Downloader",
+      "name": "Media Downloader",
+      "icon": "\u2b07\ufe0f",
+      "color": "#4a90e2",
+      "category": "media",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/downloader/index.html",
+      "entry": "pwa/nuxel-apps/downloader/index.html",
+      "manifest": "pwa/nuxel-apps/downloader/manifest.json",
+      "description": "Bounded local download queue with checksums and legal-use gate",
+      "capabilities": [
+        "download:queue"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.Authenticator",
+      "name": "Authenticator",
+      "icon": "\ud83d\udd10",
+      "color": "#7e57c2",
+      "category": "security",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/authenticator/index.html",
+      "entry": "pwa/nuxel-apps/authenticator/index.html",
+      "manifest": "pwa/nuxel-apps/authenticator/manifest.json",
+      "description": "Encrypted on-device TOTP authenticator",
+      "capabilities": [
+        "storage:encrypted",
+        "secrets:authenticator-unlock"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.Vault",
+      "name": "Vault",
+      "icon": "\ud83d\udd11",
+      "color": "#0b3b46",
+      "category": "security",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/vault/index.html",
+      "entry": "pwa/nuxel-apps/vault/index.html",
+      "manifest": "pwa/nuxel-apps/vault/manifest.json",
+      "description": "On-device keyring-backed password manager and secure notes",
+      "capabilities": [
+        "secrets:manage"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.Cleanup",
+      "name": "Safe Cleanup",
+      "icon": "\ud83e\uddf9",
+      "color": "#26a69a",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/cleanup/index.html",
+      "entry": "pwa/nuxel-apps/cleanup/index.html",
+      "manifest": "pwa/nuxel-apps/cleanup/manifest.json",
+      "description": "Preview-then-delete allowlisted cache cleanup",
+      "capabilities": [
+        "storage:cleanup"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.DevMgmt",
+      "name": "DevMgmt",
+      "icon": "\ud83d\udee0\ufe0f",
+      "color": "#00695c",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/devmgmt/index.html",
+      "entry": "pwa/nuxel-apps/devmgmt/index.html",
+      "manifest": "pwa/nuxel-apps/devmgmt/manifest.json",
+      "description": "Read-only device and peripheral inspection",
+      "capabilities": [
+        "system:inspect"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed"
+    },
+    {
+      "id": "org.nuxel.PenguInterface",
+      "name": "PenguInterface",
+      "icon": "/assets/nuxel-app-penguinterface.png",
+      "color": "#3f51b5",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/penguinterface/index.html",
+      "entry": "pwa/nuxel-apps/penguinterface/index.html",
+      "manifest": "pwa/nuxel-apps/penguinterface/manifest.json",
+      "description": "Validated per-device compatibility profiles",
+      "capabilities": [
+        "system:inspect"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "icon_asset": "/assets/nuxel-app-penguinterface.png"
+    },
+    {
+      "id": "org.gnome.Software",
+      "name": "Software",
+      "icon": "\ud83d\udecd\ufe0f",
+      "color": "#2ec27e",
+      "category": "system",
+      "type": "native",
+      "url": "org.gnome.Software://",
+      "native_binary": "/usr/lib/nuxel/nuxel-software",
+      "desktop_entry": "shell/config/nuxel-software.desktop",
+      "description": "Native Fedora RPM management (PackageKit/DNF via pkcon + polkit)",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "GTK3 Nuxel Software; Flatpak blocked by CONFIG_USER_NS=n",
+      "install_source": "/usr/bin/gnome-software"
+    },
+    {
+      "id": "org.nuxel.Clipper",
+      "name": "Clipper",
+      "icon": "\ud83d\udccb",
+      "color": "#00BCD4",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/clipper/index.html",
+      "entry": "pwa/nuxel-apps/clipper/index.html",
+      "manifest": "pwa/nuxel-apps/clipper/manifest.json",
+      "description": "Clipboard history and quick copy manager",
+      "capabilities": [
+        "clipboard:read",
+        "clipboard:write"
+      ],
+      "bridge_version": "1",
+      "docked": false
+    }
+  ],
+  "tree_apps": [
+    {
+      "dir": "pwa/nuxel-apps/_shared",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "shared-assets-not-an-app",
+      "note": "Shared CSS/JS for the nuxel-apps tree, deliberately not a launcher entry."
+    },
+    {
+      "dir": "pwa/nuxel-apps/authenticator",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle; registered by its owner when index.html + manifest.json land."
+    },
+    {
+      "dir": "pwa/nuxel-apps/browser",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Present with index.html + manifest.json but intentionally NOT in the A32 launcher default set; a separate registry revision would be required to surface it on the home grid."
+    },
+    {
+      "dir": "pwa/nuxel-apps/calculator",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Same as browser: installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/camera-gallery",
+      "owner_group": "unassigned-this-cycle",
+      "state": "complete",
+      "note": "The real camera surface; referenced by the nuxel-camera placeholder fallback."
+    },
+    {
+      "dir": "pwa/nuxel-apps/cleanup",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/clock",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/console",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Serial Live Console: real index.html + manifest.json plus the shared Tri-Link console CSS/JS. Registered exactly once as org.nuxel.LiveConsole."
+    },
+    {
+      "dir": "pwa/nuxel-apps/console-usb",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "USB SSH Console: truthful unavailable view on the current 4.14.253 kernel; distinct icon/handler."
+    },
+    {
+      "dir": "pwa/nuxel-apps/console-wifi",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Wi-Fi SSH Console: key-only SSH endpoint status; distinct icon/handler."
+    },
+    {
+      "dir": "pwa/nuxel-apps/devmgmt",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/downloader",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle."
+    },
+    {
+      "dir": "pwa/nuxel-apps/maps",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/media",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "manifest.json present, index.html not yet; owner group completes it."
+    },
+    {
+      "dir": "pwa/nuxel-apps/nuxtore",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/penguinterface",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle."
+    },
+    {
+      "dir": "pwa/nuxel-apps/photos",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/privacy",
+      "owner_group": "bg-05-security-permissions",
+      "state": "planned",
+      "note": "Owner-group (bg-05) work not started in this revision: the directory does not exist yet. Declared as `planned` so the inventory stays honest - the verifier reports a DEFER (owner named, never a silent pass) until index.html + manifest.json land, and promotes it automatically when they do.",
+      "ledger_briq": "briq-05a-permission-manager"
+    },
+    {
+      "dir": "pwa/nuxel-apps/recorder",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/rootcontrol",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/snekbyte",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle."
+    },
+    {
+      "dir": "pwa/nuxel-apps/weather",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/remote-xrdp",
+      "owner_group": "pwnage-47000-gui-tri-link",
+      "state": "complete",
+      "note": "XRDP Remote Desktop: real Bridge status/start/stop with direct LAN/ZeroTier listeners and explicit USB kernel blocker."
+    },
+    {
+      "dir": "pwa/nuxel-apps/remote-vnc",
+      "owner_group": "pwnage-47000-gui-tri-link",
+      "state": "complete",
+      "note": "VNC Screen Sharing: real Bridge status/start/stop with direct LAN/ZeroTier listeners and explicit USB kernel blocker."
+    },
+    {
+      "dir": "pwa/nuxel-apps/remote-scrcpy",
+      "owner_group": "pwnage-47000-gui-tri-link",
+      "state": "complete",
+      "note": "scrcpy (Android): real Bridge status/start/stop with direct LAN/ZeroTier listeners and explicit USB kernel blocker."
+    }
+  ],
+  "capability_gaps": [
+    {
+      "capability": "storage:read",
+      "declared_by": [
+        "pwa/nuxel-apps/mail/manifest.json",
+        "pwa/nuxel-apps/calendar/manifest.json"
+      ],
+      "status": "not-in-capabilities.py-enum",
+      "bridge_enum_equivalent": "storage:persistent",
+      "owner_group": "bg-06-core-phone-apps",
+      "note": "The apps ask for a read/write storage pair; the bridge enum defines storage:persistent only. Not fatal for the registry (the ids are a manifest contract, not an enforcement claim) but an app must not advertise a capability the host cannot arbitrate - the owning group either adds the enum entry or moves the manifests to storage:persistent."
+    },
+    {
+      "capability": "storage:write",
+      "declared_by": [
+        "pwa/nuxel-apps/mail/manifest.json",
+        "pwa/nuxel-apps/calendar/manifest.json"
+      ],
+      "status": "not-in-capabilities.py-enum",
+      "bridge_enum_equivalent": "storage:persistent",
+      "owner_group": "bg-06-core-phone-apps",
+      "note": "See storage:read."
+    },
+    {
+      "capability": "shell:local-pty",
+      "declared_by": [
+        "pwa/nuxel-apps/terminal/manifest.json"
+      ],
+      "status": "not-in-capabilities.py-enum",
+      "bridge_enum_equivalent": null,
+      "owner_group": "bg-06-core-phone-apps",
+      "note": "The Terminal's PTY is opened by the native PWA host (tools/s10plus/a3x/nuxel-pwa-host.c), NOT through the bridge capability model, so no bridge enum entry exists. Recorded so the gap is visible instead of implied."
+    },
+    {
+      "capability": "audio:output",
+      "declared_by": [
+        "pwa/nuxel-apps/media/manifest.json"
+      ],
+      "status": "not-in-capabilities.py-enum",
+      "bridge_enum_equivalent": null,
+      "owner_group": "bg-04-media",
+      "note": "VLC and the Media PWA play audio through the native PWA host and PipeWire, not through a bridge capability. v0.7.4-beta removed the bogus audio:output declaration from the org.videolan.VLC registry entry; no bridge enum entry is needed."
+    }
+  ],
+  "launcher_manifest_notes": [],
+  "required_apps_not_yet_in_tree": [
+    {
+      "app": "Permissions & Privacy manager",
+      "owner_group": "bg-05-security-permissions",
+      "ledger_briq": "briq-05a-permission-manager",
+      "status": "not-started",
+      "note": "Per-app permission states, global kill switches, kernel-confinement reality (Linux 4.14: no Landlock). No tree path is claimed here on purpose: this is the concept-level inventory, and a path guess would make the verifier report a directory that will not exist."
+    },
+    {
+      "app": "Firewall manager",
+      "owner_group": "bg-05-security-permissions",
+      "ledger_briq": "briq-05b-firewall-app",
+      "status": "not-started",
+      "note": "One authoritative backend (firewalld or UFW), blocklists, hosts editor with atomic writes."
+    },
+    {
+      "app": "VPN, Tor and remote access",
+      "owner_group": "bg-05-security-permissions",
+      "ledger_briq": "briq-05c-vpn-tor-remote",
+      "status": "partially-implemented",
+      "note": "PWNAGE-47000 added the separate GUI remote-access group (XRDP, VNC, scrcpy) with its own Bridge/provider. VPN/Tor configuration remains separate."
+    },
+    {
+      "app": "Security auditor",
+      "owner_group": "bg-05-security-permissions",
+      "ledger_briq": "briq-05d-security-auditor",
+      "status": "not-started",
+      "note": "Read-only audit with recorded coverage/version; never presented as a certified CIS score."
+    },
+    {
+      "app": "System monitor / diagnostics",
+      "owner_group": "bg-06-core-phone-apps",
+      "ledger_briq": "briq-06b-missing-core-apps",
+      "status": "not-started",
+      "note": "CPU/memory/storage/thermal/sensor readouts plus the hardware capability inventory."
+    }
+  ],
+  "notes": {
+    "revision": "PWNAGE-47000/v0.7.5-beta: registry_version 9 adds the three GUI Tri-Link remote-access entries (XRDP, VNC, scrcpy). The three Serial/Wi-Fi/USB SSH console entries are preserved unchanged.",
+    "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
+    "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
+    "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently.",
+    "registry_version_9_gui_tri_link": "org.nuxel.RemoteDesktopXRDP (separate X11 RDP/TLS session), org.nuxel.RemoteDesktopVNC (active Phoc Wayland screen sharing) and org.nuxel.ScrcpyMirror (Android ADB only) are distinct from the serial/SSH console entries and use the separate system.remote-desktop Bridge namespace."
+  }
+}

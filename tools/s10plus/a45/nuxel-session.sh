@@ -73,16 +73,30 @@ if getent group nuxel >/dev/null 2>&1; then
   chmod 0700 /run/nuxel-wayland/dconf 2>/dev/null || true
 fi
 export GDK_BACKEND=wayland
-# PWNAGE-50000: one validated policy owns graphics environment.  The default
-# profile is the conservative software WebKit path; accelerated modes are only
-# selected after the Wayland EGL/DMA-BUF probes pass.  Per-process, never global.
+# PWNAGE-60000: one validated policy owns the graphics environment.  The
+# measured GPU-rendered/SHM-presented profile is the production default for
+# Home, Settings and the launcher's WebKit web process.  The helper runs a
+# bounded kbase EGL probe once per boot (cached under /run) and returns the
+# software-safe environment if the device, libraries or EGL path are unhealthy.
+# The compositor wrapper writes /run/nuxel-gpu-fallback before this script runs,
+# so a phoc GPU failure also forces the matching software policy.  Never global:
+# native apps resolve their own profile through `env native:<id>`.
 if [ -x /usr/lib/nuxel/nuxel-graphics-profile ]; then
+  # Pre-warm the bounded probe so the first WebKit launch does not pay for it.
+  timeout 8 /usr/lib/nuxel/nuxel-graphics-profile probe       >/run/nuxel-gpu-session-probe.json 2>&1 || true
   eval "$(/usr/lib/nuxel/nuxel-graphics-profile env webkit)" || true
 else
   export WEBKIT_DISABLE_COMPOSITING_MODE=1
   export LIBGL_ALWAYS_SOFTWARE=1
 fi
-export GSK_RENDERER="${GSK_RENDERER:-cairo}"
+# PWNAGE-60000: GTK4's probe passes with the kbase Mesa GL renderer.  Only use
+# it when the validated graphics profile is active; a GPU fallback keeps GTK4
+# on the known-good cairo renderer.  GTK 4.20.4 rejects the literal "auto".
+if [ "${NUXEL_GRAPHICS_PROFILE_ACTIVE:-software-safe}" = "software-safe" ]; then
+  export GSK_RENDERER="${GSK_RENDERER:-cairo}"
+else
+  export GSK_RENDERER="${GSK_RENDERER:-gl}"
+fi
 LOG=/run/nuxel-session.log
 # Native GUI applications run as the real nuxel user (uid 1000) so Firefox,
 # VLC and the GNOME tools do not refuse a root session.  They need the
@@ -176,9 +190,12 @@ if [ -x /usr/lib/nuxel/nuxel-preload-cinema ]; then
   # above the launcher.  Give that marker a generous bound: the cover is
   # opaque until the controller publishes its first presented frame, so a
   # slower audio/navdock startup can never expose the lockscreen.
+  # PWNAGE-62000: the JSON config is the single authoritative timing source.
+  # Only the launch-mode and display are set here; explicit operator overrides
+  # already present in the environment are inherited untouched.  Never repeat
+  # a different default here (the old 6000/800 shell fallbacks silently beat
+  # the checked-in 4000/1200 values).
   NUXEL_PRELOAD_EARLY=1 \
-  NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS="${NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS:-6000}" \
-  NUXEL_PRELOAD_EARLY_MAP_DELAY_MS="${NUXEL_PRELOAD_EARLY_MAP_DELAY_MS:-800}" \
   NUXEL_PRELOAD_WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
   nohup /usr/lib/nuxel/nuxel-preload-cinema --early \
       </dev/null >/run/nuxel-preload-cinema.out 2>&1 &
@@ -191,12 +208,19 @@ fi
 # of covering it.  Start both as session Wayland clients before the launcher
 # host takes the foreground.  Stevia is started inside a session D-Bus so its
 # OSK provider registration succeeds.
-say "starting A45 nav dock + Stevia OSK"
-nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
-# PWNAGE-50000: the Home DOM status bar is the ONE top bar.  The old native
-# nuxel-statusbar overlay rendered a reduced duplicate (clock/Wi-Fi/battery) and
-# covered the proper bar.  Do not start it.  The native OSD below is a separate,
-# transparent overlay used only for volume/power-menu feedback.
+# PWNAGE-62000: one supervised owner starts the native nav dock, the native
+# top bar and the compositor-level lock enforcer.  The native bar hides itself
+# on Home and while locked, so it never duplicates Home's DOM bar; the dock is
+# the single Back/Penguin Home/Tabs surface over native and Flatpak apps.
+say "starting supervised shell chrome (navdock + statusbar + lock enforcement)"
+if [ -x /usr/lib/nuxel/nuxel-shell-chrome.sh ]; then
+  nohup /usr/lib/nuxel/nuxel-shell-chrome.sh </dev/null >/run/nuxel-shell-chrome.out 2>&1 &
+else
+  say "shell-chrome supervisor missing; starting navdock only (degraded)"
+  nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
+fi
+# The native OSD is a separate, transparent overlay used only for volume and
+# power-menu feedback; it is not part of the top bar contract.
 if [ -x /usr/lib/nuxel/nuxel-osd ]; then
   nohup /usr/lib/nuxel/nuxel-osd </dev/null >/run/nuxel-osd.out 2>&1 &
 fi
@@ -217,15 +241,94 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
   if dbus-daemon --session --fork --address="unix:path=$BUS_SOCKET" --nopidfile >/run/nuxel-dbus.out 2>&1; then
     export DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS_SOCKET"
     say "session dbus $BUS_SOCKET"
+    # PWNAGE-63000: publish the session environment to D-Bus activation so the
+    # gnome-keyring-daemon starts in THIS session (HOME=/root, XDG_RUNTIME_DIR
+    # and the Wayland display), not in an unrelated or root-system context.
+    if [ -x /usr/bin/dbus-update-activation-environment ]; then
+      dbus-update-activation-environment \
+        DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR WAYLAND_DISPLAY \
+        GDK_BACKEND XDG_SESSION_TYPE HOME >/dev/null 2>&1 || true
+    fi
+    # Warm up the Secret Service name once, in the background and bounded: the
+    # bootstrap must never wait for a first-time user to create a keyring.
+    if [ -x /usr/bin/busctl ]; then
+      ( timeout 8 busctl --address="unix:path=$BUS_SOCKET" \
+          call org.freedesktop.secrets /org/freedesktop/secrets \
+          org.freedesktop.Secret.Service ReadAlias s default \
+          >/dev/null 2>&1 || true ) &
+    fi
   else
     say "session dbus unavailable"
   fi
 fi
+# PWNAGE-56000: Flatpak needs a REAL per-user session bus and portals.  The
+# root-owned /run/nuxel-wayland/bus is for the compositor/native host; Flatpak
+# apps and xdg-desktop-portal must talk on /run/user/1000/bus so the document
+# portal and GTK dialogs run as the same uid as the app.  No desktop is pulled
+# in: only xdg-desktop-portal + xdg-desktop-portal-gtk are used.
+USER_RUNTIME=/run/user/1000
+USER_BUS=$USER_RUNTIME/bus
+install -d -m 0700 -o nuxel -g nuxel "$USER_RUNTIME" 2>/dev/null || true
+if ! pgrep -u nuxel -f "dbus-daemon.*$USER_BUS" >/dev/null 2>&1; then
+  [ -S "$USER_BUS" ] && rm -f "$USER_BUS" 2>/dev/null || true
+  if runuser -u nuxel -- dbus-daemon --session --fork --address="unix:path=$USER_BUS" --nopidfile >/run/nuxel-user-dbus.log 2>&1; then
+    say "user session dbus $USER_BUS"
+  else
+    say "user session dbus unavailable"
+  fi
+fi
+if [ -S "$USER_BUS" ]; then
+  chown nuxel:nuxel "$USER_BUS" 2>/dev/null || true
+  chmod 0600 "$USER_BUS" 2>/dev/null || true
+fi
+PORTAL_ENVV="XDG_RUNTIME_DIR=$USER_RUNTIME DBUS_SESSION_BUS_ADDRESS=unix:path=$USER_BUS XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0} GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel"
+if [ -S "$USER_BUS" ] && [ -x /usr/libexec/xdg-desktop-portal-gtk ]; then
+  if ! pgrep -u nuxel -f "/usr/libexec/xdg-desktop-portal-gtk" >/dev/null 2>&1; then
+    nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/xdg-desktop-portal-gtk       </dev/null >/run/nuxel-portal-gtk.log 2>&1 &
+    say "started xdg-desktop-portal-gtk uid=nuxel pid=$!"
+  fi
+  sleep 1
+  if ! pgrep -u nuxel -f "^/usr/libexec/xdg-desktop-portal$" >/dev/null 2>&1; then
+    nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/xdg-desktop-portal       </dev/null >/run/nuxel-portal.log 2>&1 &
+    say "started xdg-desktop-portal uid=nuxel pid=$!"
+  fi
+  (
+    sleep 2
+    GTK=0; FRONT=0; WLR=0
+    NAMES=$(runuser -u nuxel -- env $PORTAL_ENVV busctl --user list --no-pager 2>/dev/null || true)
+    # Require an ACTIVE PID, not merely an activatable name.  The wlr backend
+    # appears as activatable but exits when it cannot reach PipeWire.
+    echo "$NAMES" | awk '$1=="org.freedesktop.impl.portal.desktop.gtk" && $2 ~ /^[0-9]+$/ {f=1} END{exit !f}' && GTK=1
+    echo "$NAMES" | awk '$1=="org.freedesktop.portal.Desktop" && $2 ~ /^[0-9]+$/ {f=1} END{exit !f}' && FRONT=1
+    echo "$NAMES" | awk '$1=="org.freedesktop.impl.portal.desktop.wlr" && $2 ~ /^[0-9]+$/ {f=1} END{exit !f}' && WLR=1
+    printf '{"portal":%s,"gtk":%s,"wlr":%s,"screencast":"%s","bus":"%s","updated":%s}\n' \
+      "$FRONT" "$GTK" "$WLR" \
+      "$([ "$WLR" = 1 ] && echo available || echo 'unavailable (wlr backend cannot reach PipeWire)')" \
+      "$USER_BUS" "$(date +%s)" > /run/nuxel-portal-ready.json 2>/dev/null || true
+  ) &
+fi
+
 say "starting standalone audio session"
 systemctl --no-block start nuxel-audio-session.service 2>/dev/null || \
   say "audio session service unavailable; audio route retry remains"
 chgrp -R audio /dev/snd 2>/dev/null || true
 chmod -R g+rw /dev/snd 2>/dev/null || true
+# PWNAGE-56000: Flatpak --socket=pulseaudio needs a user-visible Pulse socket.
+# The audio session runs as root; make only the socket directory traversable by
+# nuxel and expose the same socket through the standard per-user runtime path.
+for _i in $(seq 1 50); do
+  [ -S /run/nuxel-wayland/pulse/native ] && break
+  sleep 0.2
+done
+if [ -S /run/nuxel-wayland/pulse/native ]; then
+  chgrp nuxel /run/nuxel-wayland/pulse 2>/dev/null || true
+  chmod 0750 /run/nuxel-wayland/pulse 2>/dev/null || true
+  chgrp nuxel /run/nuxel-wayland/pulse/native 2>/dev/null || true
+  chmod 0770 /run/nuxel-wayland/pulse/native 2>/dev/null || true
+  ln -sfn /run/nuxel-wayland/pulse /run/user/1000/pulse 2>/dev/null || true
+  chown -h nuxel:nuxel /run/user/1000/pulse 2>/dev/null || true
+  say "flatpak pulse socket linked for nuxel"
+fi
 
 # PWNAGE-45000: a real graphical polkit agent for GNOME Software/PackageKit.
 # It runs as the session user (uid 1000) on the shared session bus and Wayland

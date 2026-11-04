@@ -1,0 +1,26 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== current webkit processes ===
+116707 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 23
+118270 bash -c  echo "=== current webkit processes ==="; pgrep -af WebKitWebProcess | sed "s/\x1b\[[0-9;]*[a-zA-Z]//g" for p in $(pgrep -f WebKitWebProcess); do echo "--- pid $p ---"; tr "\0" "\n" < /proc/$p/environ 2>/dev/null | grep -E "NUXEL_GRAPHICS_PROFILE_ACTIVE|WEBKIT_DISABLE_COMPOSITING_MODE|MESA_KBASE_NODE" ; done echo; echo "=== nuxel-gpu-status profile.active + webkit.transport (no-probe) ===" /usr/lib/nuxel/nuxel-gpu-status --json --no-probe | python3 -c "import json,sys;d=json.load(sys.stdin);print(\"profile.active=\",d[\"profile\"][\"active\"]);print(\"webkit.transport=\",d[\"webkit\"].get(\"transport\"));print(\"fallback_active=\",d[\"profile\"].get(\"fallback_active\"))" echo; echo "=== one writer + FRAMES_OK ==="; cat /run/nuxel-wl-fb.state | grep -oE "FRAMES_OK|DISPLAY_SLEEP"; python3 -c "import os;n=sum(1 for e in os.listdir(/proc) if e.isdigit() and any(os.readlink(/proc/%s/fd/%s%(e,f))==/dev/fb0 for f in os.listdir(/proc/%s/fd%e) if (lambda: (os.path.islink(/proc/%s/fd/%s%(e,f)),)[0]) and True); print(\"writers=\",n)" 2>/dev/null || echo "writer-scan-skipped" 
+--- pid 116707 ---
+NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+WEBKIT_DISABLE_COMPOSITING_MODE=0
+MESA_KBASE_NODE=/dev/mali0
+--- pid 118270 ---
+
+=== nuxel-gpu-status profile.active + webkit.transport (no-probe) ===
+profile.active= {'gtk3': {'fallback_active': False, 'profile_active': 'gpu-rendered-shm-presented', 'profile_requested': 'gpu-rendered-shm-presented', 'reason': None}, 'gtk4': {'fallback_active': False, 'profile_active': 'gpu-rendered-shm-presented', 'profile_requested': 'gpu-rendered-shm-presented', 'reason': None}, 'webkit': {'fallback_active': False, 'profile_active': 'gpu-rendered-shm-presented', 'profile_requested': 'gpu-rendered-shm-presented', 'reason': None}}
+webkit.transport= shm
+fallback_active= None
+
+=== one writer + FRAMES_OK ===
+DISPLAY_SLEEP
+writer-scan-skipped

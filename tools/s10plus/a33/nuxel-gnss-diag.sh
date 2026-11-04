@@ -139,14 +139,14 @@ verdict() { # node module firmware userspace stream protocol
   case "$n" in absent) printf 'BLOCKED_KERNEL'; return ;; esac
   case "$m" in none-loaded) printf 'PARTIAL'; return ;; esac
   case "$f" in missing|loader-only:*) printf 'BLOCKED_FIRMWARE'; return ;; esac
-  if [ "$p" = bbd ]; then
+  case "$p" in bbd|broadcom-bbd-lhd-rpc)
     case "$u" in
       no-native-bbd-lhd-decoder) printf 'BLOCKED_PROTOCOL' ;;
       android-vendor-runtime) case "$s" in bbd-transport:*) printf 'READY_FOR_SKY' ;; *) printf 'BLOCKED_PROTOCOL' ;; esac ;;
       *) printf 'BLOCKED_PROTOCOL' ;;
     esac
-    return
-  fi
+    return ;;
+  esac
   case "$u" in no-consumer) printf 'BLOCKED_EXTERNAL_RESOURCE' ;; *) printf 'READY_FOR_SKY' ;; esac
 }
 first_failing() { # node module firmware userspace protocol
@@ -154,29 +154,26 @@ first_failing() { # node module firmware userspace protocol
   case "$n" in absent) printf 'device_node'; return ;; esac
   case "$m" in none-loaded) printf 'module'; return ;; esac
   case "$f" in missing|loader-only:*) printf 'firmware'; return ;; esac
-  if [ "$p" = bbd ]; then
+  case "$p" in bbd|broadcom-bbd-lhd-rpc)
     case "$u" in no-native-bbd-lhd-decoder|no-consumer) printf 'userspace'; return ;; esac
-  else
-    case "$u" in no-consumer) printf 'userspace'; return ;; esac
-  fi
+  ;; *) case "$u" in no-consumer) printf 'userspace'; return ;; esac ;; esac
   printf 'fix'
 }
-protocol_of() { if is_bbd "$1" "$2"; then printf bbd; else printf generic; fi; }
+protocol_of() { if is_bbd "$1" "$2"; then printf broadcom-bbd-lhd-rpc; else printf generic; fi; }
 cmd_status() {
-  local n m f u s p v ff
+  local n m f u s p v ff nmea=false
   n="$(stage_node)"; m="$(stage_module)"; p="$(protocol_of "$n" "$m")"
+  [ "$p" = generic ] && case "$n" in node:*) nmea=true ;; esac
   f="$(stage_firmware "$p")"; u="$(stage_userspace "$p")"; s="$(stage_stream "$p")"
   v="$(verdict "$n" "$m" "$f" "$u" "$s" "$p")"; ff="$(first_failing "$n" "$m" "$f" "$u" "$p")"
   if [ "$JSON" = 1 ]; then
     printf '{"device":"beyond2lte","tool":"nuxel-gnss-diag","protocol":"%s","stages":{"device_node":"%s","module":"%s","firmware":"%s","vendor_runtime":"%s","userspace":"%s","stream":"%s"},"first_failing_stage":"%s","state":"%s","fix_verified":false,"nmea_stream":%s,"owner_test":"docs/beta-finalization/manual-proof/13-gps.md"}\n' \
-      "$p" "$(jesc "$n")" "$(jesc "$m")" "$(jesc "$f")" "$(jesc "$(stage_vendor_runtime)")" "$(jesc "$u")" "$(jesc "$s")" "$ff" "$v" "$([ "$p" = generic ] && printf true || printf false)"
+      "$p" "$(jesc "$n")" "$(jesc "$m")" "$(jesc "$f")" "$(jesc "$(stage_vendor_runtime)")" "$(jesc "$u")" "$(jesc "$s")" "$ff" "$v" "$nmea"
     return 0
   fi
-  if [ "$p" = bbd ]; then
+  case "$p" in bbd|broadcom-bbd-lhd-rpc)
     say "device : beyond2lte   GNSS : BCM4773 (Broadcom BBD/LHD RPC, not NMEA)"
-  else
-    say "device : beyond2lte   GNSS : generic kernel GNSS path"
-  fi
+  ;; *) say "device : beyond2lte   GNSS : generic kernel GNSS path" ;; esac
   say ""
   say "stages:"
   say "  device_node   : $n"
@@ -190,13 +187,14 @@ cmd_status() {
   say "verdict             : $v"
   case "$v" in
     READY_FOR_SKY)
-      if [ "$p" = bbd ]; then
-        say "  the BBD/LHD provider path is present. A fix remains NEEDS_OWNER_TEST and"
-        say "  must be observed OUTDOORS via the real provider (not by cat/grep on ttyBCM)."
-      else
-        say "  a readable stream exists. A fix is NEEDS_OWNER_TEST and can only be observed"
-        say "  OUTDOORS: run 'nuxel-gnss-diag.sh monitor 180' with a clear sky view."
-      fi ;;
+      case "$p" in
+        bbd|broadcom-bbd-lhd-rpc)
+          say "  the BBD/LHD provider path is present. A fix remains NEEDS_OWNER_TEST and"
+          say "  must be observed OUTDOORS via the real provider (not by cat/grep on ttyBCM)." ;;
+        *)
+          say "  a readable stream exists. A fix is NEEDS_OWNER_TEST and can only be observed"
+          say "  OUTDOORS: run 'nuxel-gnss-diag.sh monitor 180' with a clear sky view." ;;
+      esac ;;
     BLOCKED_KERNEL) say "  no GNSS node/driver bound on this kernel; no coordinate is invented here." ;;
     BLOCKED_FIRMWARE)
       say "  driver/node present but no compatible BCM4773 BBD sensor-hub patch firmware."
@@ -212,7 +210,7 @@ cmd_status() {
 cmd_firmware() {
   local dir f p
   say "GNSS firmware candidate inventory (device-specific BBD first):"
-  if [ "$(protocol_of "$(stage_node)" "$(stage_module)")" = bbd ]; then
+  if [ "$(protocol_of "$(stage_node)" "$(stage_module)")" = broadcom-bbd-lhd-rpc ]; then
     say "  BBD/LHD patch candidates:"
     while IFS= read -r p; do [ -n "$p" ] && say "    -      $p"; done < <(pol 'evidence_sources.firmware_device_candidates')
     say "  note: $(pol 'evidence_sources.firmware_absent_reason')"
@@ -230,15 +228,15 @@ cmd_stream() {
   [ "$secs" -gt "$cap" ] 2>/dev/null && { say "capping ${secs}s to the policy maximum ${cap}s"; secs="$cap"; }
   node="$(stage_node)"; p="$(protocol_of "$node" "$(stage_module)")"
   case "$node" in node:*) : ;; *) say "no readable GNSS device node ($node) — nothing to sample"; return 2 ;; esac
-  if [ "$p" = bbd ]; then
+  case "$p" in bbd|broadcom-bbd-lhd-rpc)
     if [ "$ROOT" != "/" ]; then
       say "BBD/LHD fixture: ${node#node:} is a BBD RPC transport, not NMEA; no coordinate is fabricated"
       return 0
     fi
     say "REFUSING NMEA interpretation of ${node#node:}: the BCM4773 uses BBD/LHD RPC."
     say "Use a compatible BBD/LHD provider. Raw bytes/SPI responses are not a fix; no coordinate is fabricated."
-    return 3
-  fi
+    return 3 ;;
+  esac
   say "bounded NMEA sample for ${secs}s from ${node#node:}"
   if [ "$ROOT" = "/" ]; then
     timeout "$secs" cat "${node#node:}" 2>/dev/null | head -200 | \
@@ -254,7 +252,7 @@ cmd_monitor() {
   [ "$secs" -gt "$cap" ] 2>/dev/null && { say "capping ${secs}s to the policy maximum ${cap}s"; secs="$cap"; }
   node="$(stage_node)"; p="$(protocol_of "$node" "$(stage_module)")"
   case "$node" in node:*) : ;; *) say "no readable GNSS device node ($node) — cannot monitor"; return 2 ;; esac
-  if [ "$p" = bbd ]; then
+  case "$p" in bbd|broadcom-bbd-lhd-rpc)
     if [ "$ROOT" != "/" ]; then
       say "BBD/LHD fixture: a fix cannot be decoded by NMEA parsing; no coordinate is fabricated"
       return 0
@@ -262,8 +260,8 @@ cmd_monitor() {
     say "BBD/LHD device: this diagnostic cannot decode the Broadcom RPC protocol."
     say "Start the compatible provider and observe its provider timestamp/source outdoors."
     say "NO_FIX claimed; no coordinate is fabricated."
-    return 3
-  fi
+    return 3 ;;
+  esac
   say "bounded fix monitor for ${secs}s (OWNER: this must be done OUTDOORS with a clear sky view)"
   if [ "$ROOT" = "/" ]; then
     fix="$(timeout "$secs" cat "${node#node:}" 2>/dev/null | grep -E '^\$(GP|GN)GGA' | grep -v ',0,,' | grep -E ',(1|2|4|5),' | head -1 || true)"
@@ -300,12 +298,31 @@ print("  network optional: %s ; cached area must load offline: %s"
 print("  no fixed coordinate in the repository: %s" % d["geolocation"]["no_fixed_coordinate_in_repo"])
 PY
 }
+# Per-fixture hard bound. A stage function can block on a real device
+# read (e.g. waiting on the BBD transport); without this the selftest
+# would hang to an external cap instead of returning deterministically.
+SELFTEST_TIMEOUT_S="${NUXEL_GNSS_SELFTEST_TIMEOUT:-30}"
 selftest() {
-  local fixdir="$HERE/tests/hw-subsystems/fixtures" rc=0 n=0 f exp got
+  local fixdir="" cand rc=0 n=0 f exp got
+  # The fixture corpus lives next to the repository source.  Installed copies
+  # (/usr/local/bin) intentionally do not ship fixtures; report that as an
+  # explicit host-only SKIP instead of a misleading FAIL or an unbounded wait.
+  for cand in "${NUXEL_GNSS_FIXTURES:-}" \
+              "$HERE/tests/hw-subsystems/fixtures" \
+              "$HERE/../tests/hw-subsystems/fixtures" \
+              "$HERE/../a33/tests/hw-subsystems/fixtures" \
+              "/usr/share/nuxel/tests/gnss-fixtures"; do
+    [ -n "$cand" ] || continue
+    if compgen -G "$cand/gnss-*" >/dev/null 2>&1; then fixdir="$cand"; break; fi
+  done
+  if [ -z "$fixdir" ]; then
+    printf 'SKIP selftest: no GNSS fixture corpus installed (host-only test; use tests/pwnage64000 or tools/s10plus/a33/tests)\n'
+    return 0
+  fi
   for f in "$fixdir"/gnss-*; do
     [ -d "$f" ] || continue
     n=$((n+1)); exp="$(sed -n 's/^state=//p' "$f/EXPECTED" | head -1)"
-    got="$(NUXEL_DIAG_NO_SYSTEM=1 bash "$0" --root "$f" status --json | sed -n 's/.*"state":"\([A-Z_]*\)".*/\1/p' | head -1)"
+    got="$(NUXEL_DIAG_NO_SYSTEM=1 timeout "$SELFTEST_TIMEOUT_S" bash "$0" --root "$f" status --json 2>/dev/null | sed -n 's/.*"state":"\([A-Z_]*\)".*/\1/p' | head -1)"
     if [ "$exp" = "$got" ]; then printf 'PASS %-28s state=%s\n' "$(basename "$f")" "$got"
     else printf 'FAIL %-28s expected=%s got=%s\n' "$(basename "$f")" "$exp" "$got"; rc=1; fi
   done

@@ -1,0 +1,14 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+drm_devices=error errno=2
+render_nodes=0 webkit_drmMainDevice_is_null=true
+rc=1
+WEBKIT_WEB_RENDER_DEVICE_FILE=unset
+e32369a225527c648118f3a8df2c0987962a06168a975bf2a3ef9d3bb3719bd0  nuxel-drm-main-device-probe

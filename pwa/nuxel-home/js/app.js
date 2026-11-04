@@ -1,6 +1,48 @@
 // Nuxel Home - Main Application Controller
 // Coordinates all components and handles global events
 
+// PWNAGE-63000: relay a keyring-token request from the exact PWA iframe the
+// launcher created to the native top-frame relay.  The WeakMap is keyed by the
+// real event.source window, never by a value the iframe can supply.  The
+// native relay holds the per-device secret in a top-frame-only closure and
+// exchanges the request for a Bridge token for this app id.
+const NuxelKeyringRelay = (function () {
+    const frames = new WeakMap();
+    const pending = new Map();
+    const NONCE_RE = /^[A-Za-z0-9._-]{8,96}$/;
+    function attach(frame, appId) {
+        try { if (frame && frame.contentWindow) frames.set(frame.contentWindow, String(appId)); } catch (e) {}
+    }
+    try {
+        window.addEventListener('message', function (event) {
+            if (event.origin !== window.location.origin || !event.data) return;
+            const data = event.data;
+            if (data.type === 'nuxel-keyring-token-request') {
+                const appId = frames.get(event.source);
+                const nonce = String(data.nonce || '');
+                if (!appId || !NONCE_RE.test(nonce)) return;
+                pending.set(nonce, event.source);
+                try {
+                    window.postMessage({ type: 'nuxel-keyring-mint', app_id: appId, nonce: nonce },
+                        window.location.origin);
+                } catch (e) { pending.delete(nonce); }
+                return;
+            }
+            if (event.source === window && data.type === 'nuxel-keyring-token') {
+                const nonce = String(data.nonce || '');
+                const source = pending.get(nonce);
+                if (!source) return;
+                pending.delete(nonce);
+                try {
+                    source.postMessage({ type: 'nuxel-keyring-token', nonce: nonce,
+                        token: String(data.token || '') }, window.location.origin);
+                } catch (e) { /* the frame is gone; the app will time out closed */ }
+            }
+        });
+    } catch (e) { /* no DOM (offline tests) */ }
+    return { attach: attach };
+}());
+
 class NuxelHome {
     constructor() {
         this.initialized = false;
@@ -48,6 +90,7 @@ class NuxelHome {
             const doc = frame.contentDocument;
             if (!doc || doc.__nuxelObserved) return;
             if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.attach(doc);
+            if (window.NuxelImmersive) window.NuxelImmersive.attach(doc);
             doc.__nuxelObserved = true;
             doc.addEventListener('contextmenu', event => event.preventDefault());
             let lastMove = 0;
@@ -118,6 +161,10 @@ class NuxelHome {
         } else {
             frame.hidden = true;
         }
+        // Returning to the launcher always restores the ordinary chrome.  A
+        // fullscreen game must not leave the top bar or the nav strip hidden.
+        if (window.NuxelImmersive) window.NuxelImmersive.reset();
+        this._setNavDock(true);
         // Remember the user's intent for an app that is still loading.  Its
         // load handler must not flip an intentionally backgrounded surface back
         // to ACTIVE and paint over Home.  The data attribute is the CSS hook:
@@ -139,6 +186,9 @@ class NuxelHome {
         [surface.frame, surface.bar, surface.status].forEach(el => {
             if (el) el.hidden = false;
         });
+        // A PWA owns the glass: its triple buttons start hidden and the bottom
+        // edge gesture reveals them.  Native apps still use their own dock.
+        this._setNavDock(false);
         if (surface.frame) {
             surface.frame.__nuxelBackgrounded = false;
             if (typeof surface.frame.removeAttribute === 'function') surface.frame.removeAttribute('data-nuxel-backgrounded');
@@ -646,6 +696,10 @@ class NuxelHome {
             display: block !important;
         `;
         document.body.appendChild(frame);
+        try { NuxelKeyringRelay.attach(frame, app.id); } catch (e) {}
+        // PWA chrome is immersive by default: no native dock over the app.  The
+        // bottom swipe reveals it (immersive.js -> nuxel.setNavVisible).
+        this._setNavDock(false);
         this._setAppState('LAUNCHING', app, frame);
 
         const status = document.createElement('div');
@@ -671,6 +725,7 @@ class NuxelHome {
             }
             this._setAppState('ACTIVE', app, frame);
             this._observeAppFrame(frame, app);
+            this._setNavDock(false);
         }, { once: true });
         frame.addEventListener('error', () => {
             if (this.appSession.frame !== frame) return;
@@ -915,6 +970,7 @@ class NuxelHome {
         // hide the DOM fallback, then continue the normal Home transition.
         this._dismissKeyboard();
         this._setNavDock(true);
+        if (window.NuxelImmersive) window.NuxelImmersive.reset();
         try {
             this._closeOverlays();
         } catch (error) {
@@ -1015,7 +1071,8 @@ class NuxelHome {
         // The native dock is restored only after authentication succeeded and
         // the Home surface has been requested.  One animation frame lets the
         // lockscreen removal commit before the layer-shell surface maps.
-        requestAnimationFrame(() => this._setNavDock(true));
+        const raf = window.requestAnimationFrame || ((fn) => setTimeout(fn, 0));
+        raf(() => this._setNavDock(true));
         /* The system monitor pauses while the panel is locked or display-off.
            The boot-lock path never passed through a display ON transition, so
            its poll loop stayed stopped after unlock (a real startup race).
@@ -1209,6 +1266,29 @@ class NuxelHome {
         }
         this._closeAppSurface();
         this.home();
+    }
+
+    /* Public chrome controls used by immersive.js.  A PWA can hide the native
+       dock as well as the DOM fallback; desktop/VM runs simply have no host. */
+    setNavVisible(visible) {
+        if (!this.appSession.app) { this._setNavDock(true); return; }
+        this._setNavDock(!!visible);
+    }
+
+    /* Requested by a same-origin foreground app (Nuxel Doom).  The app remains
+       the owner of its own content; this only changes launcher chrome. */
+    setImmersive(on) {
+        if (window.NuxelImmersive) window.NuxelImmersive.setImmersive(!!on);
+    }
+
+    /* Public, non-destructive keyboard dismissal for apps that never use text
+       input.  Doom calls this on start/focus so the system OSK cannot linger. */
+    dismissKeyboard() {
+        this._dismissKeyboard();
+    }
+
+    isLocked() {
+        return this._isLocked();
     }
 
     _setNavDock(visible) {

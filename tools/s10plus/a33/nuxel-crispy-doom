@@ -1,0 +1,46 @@
+#!/bin/sh
+# Run the Flathub Crispy Doom binary with Nuxel's host sdl2-compat stack.
+#
+# The org.freedesktop.Platform 24.08 SDL2 Wayland backend on this 4.14
+# vendor kernel creates an xdg_toplevel but never attaches a buffer.  The
+# host Fedora sdl2-compat build presents the same Flathub binary correctly.
+# The Flatpak install remains the authoritative source.
+set -eu
+if [ "$(id -u)" = "0" ]; then
+    exec runuser -u nuxel -- "$0" "$@"
+fi
+
+APP=/var/lib/flatpak/app/io.github.fabiangreffrath.Doom/current/active/files
+RUNTIME=""
+for d in /var/lib/flatpak/runtime/org.freedesktop.Platform/aarch64/24.08/*/files; do
+    [ -d "$d" ] && { RUNTIME="$d"; break; }
+done
+[ -n "$RUNTIME" ] || { echo "Crispy Doom: Flatpak runtime not found" >&2; exit 1; }
+[ -x "$APP/bin/crispy-doom" ] || { echo "Crispy Doom: Flatpak binary not found" >&2; exit 1; }
+
+export HOME=/home/nuxel
+export XDG_RUNTIME_DIR=/run/user/1000
+export WAYLAND_DISPLAY=wayland-0
+export XDG_SESSION_TYPE=wayland
+export XDG_DATA_HOME=/home/nuxel/.var/app/io.github.fabiangreffrath.Doom/data
+export XDG_CONFIG_HOME=/home/nuxel/.var/app/io.github.fabiangreffrath.Doom/config
+export XDG_CACHE_HOME=/home/nuxel/.var/app/io.github.fabiangreffrath.Doom/cache
+export XDG_STATE_HOME=/home/nuxel/.var/app/io.github.fabiangreffrath.Doom/.local/state
+export DOOMWADDIR=/home/nuxel/doom
+export PULSE_SERVER="${PULSE_SERVER:-unix:/run/nuxel-wayland/pulse/native}"
+export PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland
+export SDL_VIDEODRIVER=wayland
+export SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR=0
+export LD_LIBRARY_PATH="/lib64:/usr/lib64:$RUNTIME/lib/aarch64-linux-gnu"
+
+if [ "${1:-}" = "--setup" ]; then
+    shift
+    exec "$APP/bin/crispy-doom-setup" "$@"
+fi
+
+# Sound is off by default: host sdl2-compat audio initialization invalidated
+# the SDL renderer on this image.  Set NUXEL_DOOM_SOUND=1 to experiment.
+if [ "${NUXEL_DOOM_SOUND:-0}" = "1" ]; then
+    exec "$APP/bin/crispy-doom" "$@"
+fi
+exec "$APP/bin/crispy-doom" -nosound "$@"

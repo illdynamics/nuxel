@@ -79,11 +79,18 @@
 .app-list[hidden] { display: none !important; }
 .app-list {
     display: grid;
-    /* Static fallback also documents the shipped 4-wide default. */
+    /* launcher.js sets --home-columns to 3 while the phone is in portrait. */
     grid-template-columns: repeat(4, 1fr);
     grid-template-columns: repeat(var(--home-columns, 4), 1fr);
     gap: 16px 8px;
     padding-bottom: 20px;
+}
+
+/* Portrait: three wider columns, so scale the tiles up instead of leaving a
+   sparse four-column-sized icon in a third of the screen. */
+@media (orientation: portrait) {
+    :root { --app-icon-size: clamp(64px, 20vw, 82px); }
+    .app-list { gap: 18px 10px; }
 }
 
 .app-item {

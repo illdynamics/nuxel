@@ -106,15 +106,16 @@
     "app_type": "home",
     "native_fallback": false,
     "bridge_version": "1",
-    "pwa_version": "0.7.5-beta",
-    "cache_version": "v83-p56000-perf",
-    "registry_version": 10,
+    "pwa_version": "0.7.6-beta",
+    "cache_version": "v63000-pw63001",
+    "registry_version": 13,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [
       "nuxel-dialer",
       "nuxel-messages",
       "nuxel-contacts",
       "nuxel-camera",
+      "org.nuxel.Clipper",
       "org.nuxel.Mail",
       "org.nuxel.Calendar",
       "org.nuxel.Notes",
@@ -150,6 +151,7 @@
       "org.nuxel.Cleanup",
       "org.nuxel.DevMgmt",
       "org.nuxel.PenguInterface",
+      "org.nuxel.Vault",
       "org.gnome.Software"
     ],
     "settings_documents": [
@@ -164,7 +166,7 @@
       "safe_zones": 10,
       "safe_zone_profile": "s10plus"
     },
-    "host_version": "0.7.5-beta"
+    "host_version": "0.7.6-beta"
   },
   "id": "/pwa/nuxel-home/",
   "display_override": [

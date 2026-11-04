@@ -74,7 +74,7 @@ def test_navdock_long_back_uses_distinct_one_shot_haptic():
 def test_short_back_root_is_noop_home_is_distinct():
     js = read("pwa/nuxel-home/js/app.js")
     assert "back:pwa-at-root" in js
-    assert "back:native-at-root-noop" in js
+    assert "back:native-at-root-close-to-home" in js
     assert "back:native-no-foreground" in js
     assert "this.appSession.app.type === 'flatpak'" in js
 
@@ -97,13 +97,21 @@ def test_transport_penguins_sit_between_primary_row_and_wordmark():
 
 
 def test_cache_version_bumped():
+    # Read the live source of truth instead of pinning a historical version.
+    # PWNAGE-73000: the tree intentionally moved past v62000-pw62000; the
+    # invariant that matters is that sw.js and manifest.json agree.
+    import json
+
     sw = read("pwa/nuxel-home/sw.js")
-    manifest = read("pwa/nuxel-home/manifest.json")
-    assert "v83-p56000-perf" in sw and "v83-p56000-perf" in manifest
+    manifest_text = read("pwa/nuxel-home/manifest.json")
+    cache = json.loads(manifest_text)["nuxel"]["cache_version"]
+    assert cache and cache != "v62000-pw62000"
+    assert cache in sw
+    assert cache in manifest_text
     html = read("pwa/nuxel-home/index.html")
     assert "status-bar.css?v=p52000" in html
     assert "status-bar.js?v=p56000" in html
-    assert "app.js?v=p56000" in html
+    assert "app.js?v=p62000" in html
 
 
 if __name__ == "__main__":

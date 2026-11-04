@@ -1,6 +1,6 @@
 # Nuxel GUI Tri-Link — Quickstart
 
-_Status: 2026-11-01 · Nuxel v0.7.5-beta · S10+ (beyond2lte, Exynos 9820)_
+_Status: 2026-11-01 · Nuxel v0.7.6-beta · S10+ (beyond2lte, Exynos 9820)_
 _PWNAGE-47000 live acceptance: Jump Desktop 9.1.21 on macOS 15.7.9 (arm64)._
 
 The GUI Tri-Link is **separate** from the serial/WLAN/USB SSH Tri-Link.

@@ -1,0 +1,119 @@
+{
+  "active_ui_total_pct_one_core": 25.25,
+  "battery_end": {
+    "capacity": "94",
+    "current_now": "-72",
+    "status": "Discharging",
+    "voltage_now": "4209000"
+  },
+  "battery_start": {
+    "capacity": "94",
+    "current_now": "-72",
+    "status": "Discharging",
+    "voltage_now": "4209000"
+  },
+  "cpu_pct_one_core": {
+    "WebKitNetworkProcess": 1.61,
+    "WebKitWebProcess": 15.97,
+    "nuxel-pwa-host": 5.41,
+    "nuxel-wl-fb": 1.14,
+    "phoc": 2.73
+  },
+  "end": "2026-11-02T23:28:39.051751+00:00",
+  "evidence": {
+    "gl_version": "OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)",
+    "processes": {
+      "WebKitNetworkProcess": {
+        "comm": "WebKitNetworkPr",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 53750,
+        "profile_active": "gpu-rendered-shm-presented",
+        "webkit_disable_compositing": "0",
+        "webkit_force_compositing": "1"
+      },
+      "WebKitWebProcess": {
+        "comm": "WebKitWebProces",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": true,
+        "libEGL_mesa_mapped": true,
+        "mali_fds": 3,
+        "pid": 53759,
+        "profile_active": "gpu-rendered-shm-presented",
+        "webkit_disable_compositing": "0",
+        "webkit_force_compositing": "1"
+      },
+      "nuxel-pwa-host": {
+        "comm": "nuxel-pwa-host",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": true,
+        "libEGL_mesa_mapped": true,
+        "mali_fds": 3,
+        "pid": 52774,
+        "profile_active": "gpu-rendered-shm-presented",
+        "webkit_disable_compositing": "0",
+        "webkit_force_compositing": "1"
+      },
+      "nuxel-wl-fb": {
+        "comm": "nuxel-wl-fb",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 52802
+      },
+      "phoc": {
+        "comm": "phoc",
+        "dmabuf_fds": 2,
+        "fd_scan": "ok",
+        "gallium_mapped": true,
+        "libEGL_mesa_mapped": true,
+        "mali_fds": 3,
+        "pid": 52764
+      }
+    },
+    "renderer": "Mali-G76 MC12 (Panfrost)",
+    "transport": "shm"
+  },
+  "job_submit_probe": {
+    "available": false,
+    "reason": "Command '['strace', '-f', '-e', 'trace=ioctl', '-p', '53759']' timed out after 4.0 seconds"
+  },
+  "label": "gpu-rendered-shm-presented-settings-scroll",
+  "loadavg_max": 12.31,
+  "mission": "PWNAGE-60000",
+  "run": 1,
+  "schema": "nuxel.bench/1",
+  "seconds": 60,
+  "start": "2026-11-02T23:27:34.925340+00:00",
+  "state_delta": {
+    "blits": null,
+    "damage_blits": null,
+    "decon_pan_failed": null,
+    "decon_pan_ok": null,
+    "frames": 126.0,
+    "present_skipped": null
+  },
+  "state_end": "1793662118 DISPLAY_SLEEP total=367 failures=0 owner=nuxel-wl-fb display=off capture=stopped",
+  "state_start": "1793662054 FRAMES_OK total=241 fps_1s=3 failures=0 blits=62 present_skipped=178 blit_avg_ms=1 pan_avg_ms=9 capture_avg_ms=8 compare_avg_ms=3 damage=20-459 damage_runs=4 damage_blits=57 damage_avg_ms=1 idle_ms=3785 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=63 decon_pan_failed=0",
+  "thermal_c_max": 40.0,
+  "timings_ms": {
+    "blit_avg": null,
+    "capture_avg": null,
+    "compare_avg": null,
+    "damage_blit_avg": null,
+    "pan_avg": null
+  },
+  "workload": "scroll",
+  "workload_result": {
+    "rc": 0,
+    "stderr": "",
+    "stdout": "SCROLL_WORKLOAD seconds=55 events=2170 x=360 y=620"
+  }
+}

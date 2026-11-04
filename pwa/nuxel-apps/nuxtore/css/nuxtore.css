@@ -76,3 +76,10 @@ pre.log { font-family: var(--mono); font-size: 11px; line-height: 1.45; white-sp
   .toolbar { flex-wrap: wrap; padding: 8px 10px; }
   .toolbar input[type=search] { flex: 1 1 100%; min-width: 0; }
 }
+
+/* PWNAGE-56000: Flatpak lifecycle cards */
+.fp-card { display: flex; gap: 12px; align-items: flex-start; }
+.fp-card .fp-main { flex: 1; min-width: 0; }
+.fp-icon { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; flex: 0 0 40px; background: #0b1a30; }
+.fp-card .sub { overflow-wrap: anywhere; }
+.fp-card .row button { min-width: 84px; }

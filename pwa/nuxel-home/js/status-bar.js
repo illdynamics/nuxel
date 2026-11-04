@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.7.5-beta
+// Nuxel Status Bar — v0.7.6-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.7.5-beta'; }
+    static get VERSION() { return '0.7.6-beta'; }
 
     constructor() {
         this.state = {
@@ -277,7 +277,7 @@ class StatusBar {
         const bar = document.getElementById('status-bar');
         if (!bar) return;
         const PULL_PX = 24;      // CSS px, measured against the real 360x760 viewport
-        const MAX_SKEW = 80;     // reject diagonal drags that are not a pull-down
+        const MAX_SKEW = 80;     // reject diagonal drags that are not a vertical pull
         let startX = 0, startY = 0, tracking = false, fired = false;
 
         const start = (x, y) => {
@@ -285,16 +285,20 @@ class StatusBar {
             // Settings actions remain unavailable until a real unlock.
             if (this._displayOff() || this._coveredByLock()) return;
             startX = x; startY = y; tracking = true; fired = false;
+            window.__nuxelQsGestureConsumed = false;
         };
         const move = (x, y) => {
             if (!tracking || fired) return;
             const dy = y - startY;
             const dx = Math.abs(x - startX);
-            if (dy >= PULL_PX && dx <= MAX_SKEW) {
+            if (Math.abs(dy) >= PULL_PX && dx <= MAX_SKEW) {
                 fired = true;
                 tracking = false;
+                window.__nuxelQsGestureConsumed = true;
                 try {
-                    document.dispatchEvent(new CustomEvent('gesture:qs'));
+                    document.dispatchEvent(new CustomEvent('gesture:qs', {
+                        detail: { direction: dy > 0 ? 'down' : 'up' },
+                    }));
                 } catch (e) {}
             }
         };

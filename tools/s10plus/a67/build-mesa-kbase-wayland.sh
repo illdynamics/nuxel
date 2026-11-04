@@ -14,15 +14,23 @@ WORK="${WORK:-/work/mesa-wayland}"
 OUT="${OUT:-/work/mesa-wayland-out}"
 REPO="${REPO:-$WORK/mesa-unified-drivers}"
 BUILD="$REPO/build-wayland-wsi"
+# shellcheck source=gpu-build-pins.env
+. "$ROOT/tools/s10plus/a67/gpu-build-pins.env"
 
 mkdir -p "$WORK" "$OUT"
 if [ ! -d "$REPO/.git" ]; then
-  git clone --depth 1 https://github.com/JimVulkan/mesa-unified-drivers.git "$REPO"
+  git clone "$MESA_REPO" "$REPO"
 fi
-PATCH="$ROOT/tools/s10plus/a67/mesa-kbase-wayland-wsi.patch"
-if ! git -C "$REPO" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
-  git -C "$REPO" apply "$PATCH"
-fi
+git -C "$REPO" fetch --tags --force origin
+git -C "$REPO" checkout --detach "$MESA_COMMIT"
+test "$(git -C "$REPO" rev-parse HEAD)" = "$MESA_COMMIT" || {
+  echo "ERROR: Mesa HEAD is not the pinned commit $MESA_COMMIT" >&2; exit 1; }
+git -C "$REPO" reset --hard "$MESA_COMMIT"
+git -C "$REPO" clean -ffdx
+PATCH="$ROOT/$MESA_PATCH"
+git -C "$REPO" apply --check "$PATCH"
+git -C "$REPO" apply "$PATCH"
+echo "mesa pinned: $MESA_VERSION commit=$MESA_COMMIT patch=$PATCH"
 
 dnf -y install meson ninja-build flex bison pkgconf-pkg-config \
   python3-mako python3-packaging python3-pyyaml llvm-devel clang clang-devel \

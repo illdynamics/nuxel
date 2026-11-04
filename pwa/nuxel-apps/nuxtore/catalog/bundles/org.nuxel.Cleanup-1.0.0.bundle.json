@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/cleanup/index.html",
-    "sha256": "61974ccd1d34a8679734f2503cb18d5e383e8b8c90d99797b34e0a216bd33f54",
-    "size": 3647
+    "sha256": "b76bc17f5a1d3a331b52b9524311f95342b6eb82493b2d1541d9d44686111b86",
+    "size": 3721
   },
   {
     "path": "pwa/nuxel-apps/cleanup/js/cleanup-plan.js",
@@ -81,8 +81,8 @@
   },
   {
     "path": "pwa/nuxel-apps/cleanup/manifest.json",
-    "sha256": "33d51d3d16adfc00c2b91925bba06ab28d4c3fdf13080639c15799152fd2512d",
-    "size": 805
+    "sha256": "4ead6a1568cf5416ed8632ed50d27c86c36cf449142f22858903febeb880861b",
+    "size": 910
   },
   {
     "path": "pwa/nuxel-apps/cleanup/sw.js",

@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 10;
+const NUXEL_REGISTRY_VERSION = 13;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -306,7 +306,7 @@ const NUXEL_APPS = {
         category: 'tools', type: 'native',
         url: 'org.mozilla.firefox://',
         native_binary: '/usr/bin/firefox',
-        description: 'Firefox (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)',
+        description: 'Firefox (Flatpak aarch64; unprivileged Bubblewrap sandbox)',
         capabilities: ['network:outbound', 'storage:persistent'], docked: false,
     },
     'org.videolan.VLC': {
@@ -314,7 +314,7 @@ const NUXEL_APPS = {
         category: 'media', type: 'native',
         url: 'org.videolan.VLC://',
         native_binary: '/usr/lib/nuxel/nuxel-vlc-fallback',
-        description: 'VLC (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)',
+        description: 'VLC (Flatpak aarch64; KDE runtime)',
         capabilities: ['storage:persistent', 'audio:output'], docked: false,
     },
     'org.signal.Signal': {
@@ -322,16 +322,16 @@ const NUXEL_APPS = {
         category: 'communication', type: 'native',
         url: 'org.signal.Signal://',
         native_binary: '/usr/lib/nuxel/nuxel-flatpak-signal',
-        description: 'Signal Desktop is NOT installed (no official aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)',
-        capabilities: ['network:outbound', 'storage:persistent'], docked: false, status: 'unsupported',
+        description: 'Signal Desktop (Flatpak aarch64; unprivileged Bubblewrap sandbox)',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
     },
     'com.stremio.Stremio': {
         id: 'com.stremio.Stremio', name: 'Stremio', icon: '🍿', color: '#7b5cff',
         category: 'media', type: 'native',
         url: 'com.stremio.Stremio://',
         native_binary: '/usr/lib/nuxel/nuxel-flatpak-stremio',
-        description: 'Stremio is NOT launchable: Flatpak blocked by CONFIG_USER_NS=n',
-        capabilities: ['network:outbound', 'storage:persistent'], docked: false, status: 'unsupported',
+        description: 'Stremio (Flatpak aarch64; GNOME runtime)',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
     },
     'org.gnome.FileRoller': {
         id: 'org.gnome.FileRoller', name: 'Archive Manager', icon: '🗜️', color: '#d6a45c',
@@ -382,7 +382,13 @@ const NUXEL_APPS = {
         id: 'org.nuxel.Authenticator', name: 'Authenticator', icon: '🔐', color: '#7e57c2',
         category: 'security', type: 'pwa', url: '/pwa/nuxel-apps/authenticator/index.html',
         description: 'Encrypted on-device TOTP authenticator',
-        capabilities: ['storage:encrypted'], docked: false,
+        capabilities: ['storage:encrypted', 'secrets:authenticator-unlock'], docked: false,
+    },
+    'org.nuxel.Vault': {
+        id: 'org.nuxel.Vault', name: 'Vault', icon: '🔑', color: '#0b3b46',
+        category: 'security', type: 'pwa', url: '/pwa/nuxel-apps/vault/index.html',
+        description: 'On-device keyring-backed password manager and secure notes',
+        capabilities: ['secrets:manage'], docked: false,
     },
     'org.nuxel.Cleanup': {
         id: 'org.nuxel.Cleanup', name: 'Safe Cleanup', icon: '🧹', color: '#26a69a',
@@ -406,7 +412,7 @@ const NUXEL_APPS = {
         id: 'org.gnome.Software', name: 'Software', icon: '🛍️', color: '#2ec27e',
         category: 'system', type: 'native', url: 'org.gnome.Software://',
         native_binary: '/usr/lib/nuxel/nuxel-software',
-        description: 'Native Fedora RPM management (PackageKit/DNF + polkit)',
+        description: 'Fedora RPM and Flathub software center (PackageKit/DNF + Flatpak)',
         capabilities: [], docked: false,
     },
 };
@@ -427,6 +433,7 @@ const NUXEL_APP_ICON_ASSETS = {
     'org.nuxel.RemoteDesktopVNC': '/assets/nuxel-applications-icon-pack/06-04_casting-screen.png?v=p47000',
     'org.nuxel.ScrcpyMirror': '/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png?v=p47000',
     'org.nuxel.SnekByte': '/assets/nuxel-applications-icon-pack/01-02_snekbyte.png?v=a63',
+    'org.nuxel.Doom': '/pwa/nuxel-apps/doom/icons/icon-192.png?v=p76000',
     'org.nuxel.Calculator': '/assets/nuxel-applications-icon-pack/06-02_calculator.png?v=p33000',
     'org.nuxel.Clock': '/assets/nuxel-applications-icon-pack/06-03_clock.png?v=p33000',
     'org.nuxel.Photos': '/assets/nuxel-applications-icon-pack/03-02_gallery.png?v=p33000',
@@ -472,6 +479,10 @@ class AppRegistry {
         this.userApps = new Map();
         this.recentApps = [];
         this.maxRecentApps = 10;
+        // Apps that exist only because NuxTore registered them.  They must be
+        // able to disappear again when the user presses Remove; static built-in
+        // apps are never removed by a registry refresh.
+        this.canonicalDynamicIds = new Set();
         this._loadState();
     }
 
@@ -485,9 +496,11 @@ class AppRegistry {
         const canonical = (id) => aliases[id] || id;
         const incoming = Array.isArray(doc && doc.apps) ? doc.apps : [];
         let changed = false;
+        const incomingIds = new Set();
         for (const raw of incoming) {
             if (!raw || !raw.id) continue;
             const id = canonical(raw.id);
+            incomingIds.add(id);
             if (id !== raw.id) changed = true;
             const prev = this.apps.get(id) || {};
             const merged = Object.assign({}, prev, raw, { id });
@@ -496,6 +509,16 @@ class AppRegistry {
             if (!merged.url && merged.native_binary) merged.url = id + '://';
             this.apps.set(id, merged);
         }
+        // NuxTore removal unregisters the app in the canonical registry.  Drop
+        // catalogue-installed entries that are no longer present, while never
+        // touching the offline static baseline.
+        for (const id of Array.from(this.canonicalDynamicIds)) {
+            if (!incomingIds.has(id) && !Object.prototype.hasOwnProperty.call(NUXEL_APPS, id)) {
+                if (this.apps.delete(id)) changed = true;
+            }
+        }
+        this.canonicalDynamicIds = new Set(Array.from(incomingIds)
+            .filter(id => !Object.prototype.hasOwnProperty.call(NUXEL_APPS, id)));
         // Drop legacy case variants if both somehow exist.
         for (const legacy of Object.keys(aliases)) {
             if (legacy !== aliases[legacy] && this.apps.has(legacy)) {
@@ -509,14 +532,28 @@ class AppRegistry {
     }
 
     async refreshFromBridge() {
+        // The launcher is served from :8000 while the bridge API is :8080.
+        // Use the shared authenticated client when the module has loaded, then
+        // fall back to the loopback API (dev mode allows loopback without a
+        // token).  The old relative fetch returned 404 on the handset because
+        // nuxel-web does not proxy /api/v1.
+        let doc = null;
         try {
-            const res = await fetch('/api/v1/apps/registry', { cache: 'no-store' });
-            if (!res.ok) return 0;
-            const doc = await res.json();
-            const n = this.applyCanonicalRegistry(doc);
-            try { if (window.launcher && window.launcher._renderDrawerApps) window.launcher._renderDrawerApps(true); } catch (e) {}
-            return n;
-        } catch (e) { return 0; }
+            if (window.NuxelBridge && typeof window.NuxelBridge.call === 'function') {
+                doc = await window.NuxelBridge.call('apps', 'registry', {});
+            }
+        } catch (e) { doc = null; }
+        if (!doc || !Array.isArray(doc.apps)) {
+            try {
+                const res = await fetch('http://127.0.0.1:8080/api/v1/apps/registry', { cache: 'no-store' });
+                if (!res.ok) return 0;
+                doc = await res.json();
+            } catch (e) { return 0; }
+        }
+        const n = this.applyCanonicalRegistry(doc);
+        try { if (window.launcher && window.launcher._renderDrawerApps) window.launcher._renderDrawerApps(true); } catch (e) {}
+        try { document.dispatchEvent(new CustomEvent('nuxel:app-registry-changed', { detail: { count: n, source: 'flatpak+registry' } })); } catch (e) {}
+        return n;
     }
 
     getAllApps() {
