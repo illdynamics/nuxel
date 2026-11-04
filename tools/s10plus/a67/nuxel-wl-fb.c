@@ -186,13 +186,37 @@ static inline uint32_t color_convert(uint32_t v) {
 }
 
 
+/* PWNAGE-60000: every state document is written to a sibling temp file and
+   renamed into place.  The old fopen("w") truncated the live file, so a status
+   reader could observe an empty/partial line and report missing counters. */
+static void atomic_write(const char *path, const char *data, size_t len) {
+  char tmp[512];
+  snprintf(tmp, sizeof tmp, "%s.tmp.%ld", path, (long)getpid());
+  int fd = open(tmp, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if (fd < 0) return;
+  size_t off = 0;
+  while (off < len) {
+    ssize_t n = write(fd, data + off, len - off);
+    if (n <= 0) break;
+    off += (size_t)n;
+  }
+  close(fd);
+  if (rename(tmp, path) != 0) unlink(tmp);
+}
+
 static void st(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 static void st(const char *fmt, ...) {
-  FILE *f = fopen(STATE, "w");
-  if (!f) return;
-  fprintf(f, "%ld ", (long)time(NULL));
-  va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
-  fputc('\n', f); fclose(f);
+  char buf[4096];
+  int n = snprintf(buf, sizeof buf, "%ld ", (long)time(NULL));
+  if (n < 0 || (size_t)n >= sizeof buf) return;
+  va_list ap; va_start(ap, fmt);
+  int m = vsnprintf(buf + n, sizeof buf - (size_t)n, fmt, ap);
+  va_end(ap);
+  if (m < 0) return;
+  size_t len = (size_t)n + (size_t)m;
+  if (len >= sizeof buf - 1) len = sizeof buf - 2;
+  buf[len++] = '\n';
+  atomic_write(STATE, buf, len);
 }
 
 struct out {
@@ -221,6 +245,14 @@ static struct {
    the compositor + capture actually produced so a rotation can be proven from
    the glass-side state file and never relies on a transform exit code alone. */
 static void publish_orientation_proof(int src_w, int src_h, int frame_ok) {
+  /* PWNAGE-60000: orientation changes at human speed, not at 20-30 fps.
+     The old path opened and rewrote this proof file on every changed frame.
+     One update per second keeps the glass-side evidence current without the
+     syscall load; the first frame always writes. */
+  static time_t last_write;
+  time_t now_s = time(NULL);
+  if (now_s == last_write) return;
+  last_write = now_s;
   int transform = 0, eff = -1;
   char output[64] = "", backend[64] = "", line[192];
   FILE *f = fopen(ORIENT_STATE, "r");
@@ -437,6 +469,22 @@ struct buf { struct wl_buffer *wl; uint8_t *data; size_t len; int w, h, stride; 
 
 static int mkbuf(struct buf *b, int w, int h, int stride, uint32_t format) {
   size_t len = (size_t)stride * h;
+  /* PWNAGE-60000: wlr-screencopy is not a one-shot buffer.  After the ready
+     (or failed) event the compositor is done with this wl_buffer, so the next
+     capture may reuse the same sealed shm mapping.  The old code re-created
+     the shm file, mmap and wl_buffer for every single frame at up to 30 fps. */
+  if (b->wl && b->data && b->len == len && b->w == w && b->h == h &&
+      b->stride == stride && b->format == format) {
+    return 0;
+  }
+  if (b->wl) {
+    wl_buffer_destroy(b->wl);
+    b->wl = NULL;
+  }
+  if (b->data) {
+    munmap(b->data, b->len);
+    b->data = NULL;
+  }
   char name[64];
   snprintf(name, sizeof name, "/nuxel-wl-fb-%d", getpid());
   int fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
@@ -599,10 +647,7 @@ static const struct wl_registry_listener reg_listener = { .global = reg_global, 
 #define MK_ANIM_HANDOFF     "NUXEL_ANIM_HANDOFF"
 
 static void wr_state(const char *path, const char *data) {
-  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-  if (fd < 0) return;
-  if (write(fd, data, strlen(data)) < 0) { /* best effort */ }
-  close(fd);
+  atomic_write(path, data, strlen(data));
 }
 
 static int file_has(const char *path, const char *needle, char *out, size_t outn) {
@@ -1102,18 +1147,43 @@ static int panel_commit_frame(const char *why) {
 }
 
 static int damage_y0, damage_y1;
+#define MAX_DIRTY_RUNS 64
+static int dirty_y0[MAX_DIRTY_RUNS], dirty_y1[MAX_DIRTY_RUNS];
+static int ndirty;                 /* 0 = unchanged; one run 0..h = full frame */
+static int last_damage_runs;       /* runs in the last CHANGED frame (telemetry) */
+static int dirty_is_full(void);
+static unsigned long long g_blit_ns, g_pan_ns;
+static inline unsigned long long ts_ns(const struct timespec *t) {
+  return (unsigned long long)t->tv_sec * 1000000000ull + (unsigned long long)t->tv_nsec;
+}
 static int frame_blit_once(void) {
+  struct timespec a, b, c;
+  clock_gettime(CLOCK_MONOTONIC, &a);
   blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
-  return panel_commit_frame("frame");
+  clock_gettime(CLOCK_MONOTONIC, &b);
+  int rc = panel_commit_frame("frame");
+  clock_gettime(CLOCK_MONOTONIC, &c);
+  g_blit_ns = ts_ns(&b) - ts_ns(&a);
+  g_pan_ns = ts_ns(&c) - ts_ns(&b);
+  return rc;
 }
 
-/* Partial framebuffer update for a verified damage range.  The DECON commit
+/* Partial framebuffer update for verified dirty row runs.  The DECON commit
    (FBIOPAN_DISPLAY) still happens after every changed frame; only the CPU copy
-   is narrowed. */
+   is narrowed.  Runs, not a single min..max span: a clock tick at the top and a
+   battery glyph at the bottom must not re-expand the unchanged middle. */
 static int frame_blit_damage(void) {
-  blit_rows(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format,
-            damage_y0, damage_y1);
-  return panel_commit_frame("frame-damage");
+  struct timespec a, b, c;
+  clock_gettime(CLOCK_MONOTONIC, &a);
+  for (int i = 0; i < ndirty; i++)
+    blit_rows(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format,
+              dirty_y0[i], dirty_y1[i]);
+  clock_gettime(CLOCK_MONOTONIC, &b);
+  int rc = panel_commit_frame("frame-damage");
+  clock_gettime(CLOCK_MONOTONIC, &c);
+  g_blit_ns = ts_ns(&b) - ts_ns(&a);
+  g_pan_ns = ts_ns(&c) - ts_ns(&b);
+  return rc;
 }
 
 /* A47: source-frame fingerprint.  wlr-screencopy is damage-driven only in name:
@@ -1134,33 +1204,67 @@ static int damage_ready(void) {
   const char *v = getenv("NUXEL_WLFB_DAMAGE");
   return !(v && v[0] == '0');
 }
+static void dirty_reset(void) { ndirty = 0; }
+static void dirty_add(int y0, int y1) {
+  if (y1 <= y0) return;
+  if (ndirty > 0 && y0 <= dirty_y1[ndirty - 1] + 2) {
+    /* Merge tiny gaps: expanding two rows twice is cheaper than a second
+       blit_rows call, and it cannot miss a changed row. */
+    if (y1 > dirty_y1[ndirty - 1]) dirty_y1[ndirty - 1] = y1;
+    return;
+  }
+  if (ndirty >= MAX_DIRTY_RUNS) {
+    /* Pathological fragmentation: coalesce to one full span.  Correctness is
+       preserved; the next ordinary frame returns to the run list. */
+    dirty_y0[0] = 0; dirty_y1[0] = frame_buf.h; ndirty = 1;
+    return;
+  }
+  dirty_y0[ndirty] = y0; dirty_y1[ndirty] = y1; ndirty++;
+}
+static int dirty_is_full(void) {
+  return ndirty == 1 && dirty_y0[0] == 0 && dirty_y1[0] == frame_buf.h;
+}
 static int frame_damage_rows(void) {
+  dirty_reset();
   if (!damage_ready() || !prev_src || prev_src_len < frame_buf.len ||
       prev_src_w != frame_buf.w || prev_src_h != frame_buf.h ||
       prev_src_stride != frame_buf.stride) {
     free(prev_src);
     prev_src_len = frame_buf.len ? frame_buf.len : 1;
     prev_src = malloc(prev_src_len);
-    if (!prev_src) return 1;                 /* fall back to a full blit */
+    if (!prev_src) {                         /* fall back to a full blit */
+      damage_y0 = 0; damage_y1 = frame_buf.h; dirty_add(0, frame_buf.h);
+      return 1;
+    }
     prev_src_w = frame_buf.w; prev_src_h = frame_buf.h; prev_src_stride = frame_buf.stride;
     if (frame_buf.data && frame_buf.len) memcpy(prev_src, frame_buf.data, frame_buf.len);
-    damage_y0 = 0; damage_y1 = frame_buf.h;
+    damage_y0 = 0; damage_y1 = frame_buf.h; dirty_add(0, frame_buf.h);
     return 1;
   }
   const size_t rowbytes = (size_t)frame_buf.w * 4u;
   const size_t stride = (size_t)frame_buf.stride;
-  int first = -1, last = -1;
+  int run_start = -1;
   for (int y = 0; y < frame_buf.h; y++) {
     const uint8_t *a = frame_buf.data + (size_t)y * stride;
     const uint8_t *b = prev_src + (size_t)y * stride;
-    if (memcmp(a, b, rowbytes)) {
-      if (first < 0) first = y;
-      last = y;
+    int changed = memcmp(a, b, rowbytes) != 0;
+    if (changed && run_start < 0) run_start = y;
+    else if (!changed && run_start >= 0) {
+      dirty_add(run_start, y);
+      run_start = -1;
     }
   }
-  if (first < 0) return 0;
-  memcpy(prev_src, frame_buf.data, frame_buf.len);
-  damage_y0 = first; damage_y1 = last + 1;
+  if (run_start >= 0) dirty_add(run_start, frame_buf.h);
+  if (ndirty == 0) return 0;
+  damage_y0 = dirty_y0[0];
+  damage_y1 = dirty_y1[ndirty - 1];
+  /* Copy back only rows that changed.  The previous code copied the whole
+     4.4 MiB source frame even when one clock digit changed. */
+  for (int i = 0; i < ndirty; i++) {
+    size_t off = (size_t)dirty_y0[i] * stride;
+    size_t len = (size_t)(dirty_y1[i] - dirty_y0[i]) * stride;
+    memcpy(prev_src + off, frame_buf.data + off, len);
+  }
   return 1;
 }
 
@@ -1168,6 +1272,40 @@ static int64_t mono_ms(void) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+/* PWNAGE-60000 offline dirty-run test.  No framebuffer, no Wayland: it proves
+   the run coalescer cannot drop a changed row and that pathological
+   fragmentation falls back to one full span. */
+static int damage_selftest(void) {
+  int fail = 0;
+  frame_buf.h = 100;
+  dirty_reset();
+  dirty_add(10, 20);
+  dirty_add(22, 30);                 /* gap of 2 -> merged */
+  dirty_add(50, 60);
+  if (ndirty != 2 || dirty_y0[0] != 10 || dirty_y1[0] != 30 ||
+      dirty_y0[1] != 50 || dirty_y1[1] != 60) {
+    printf("FAIL run coalescing ndirty=%d runs=%d-%d,%d-%d\n", ndirty,
+           dirty_y0[0], dirty_y1[0], dirty_y0[1], dirty_y1[1]);
+    fail++;
+  }
+  dirty_reset();
+  dirty_add(0, 100);
+  if (!dirty_is_full()) { printf("FAIL full frame not detected\n"); fail++; }
+  frame_buf.h = 1000;
+  dirty_reset();
+  for (int i = 0; i < 200; i++) dirty_add(i * 4, i * 4 + 1);  /* gaps > 2 */
+  if (ndirty != 1 || dirty_y0[0] != 0 || dirty_y1[0] != 1000) {
+    printf("FAIL fragmentation fallback ndirty=%d span=%d-%d\n",
+           ndirty, dirty_y0[0], dirty_y1[0]);
+    fail++;
+  }
+  dirty_reset();
+  if (ndirty != 0 || dirty_is_full()) { printf("FAIL empty reset\n"); fail++; }
+  printf("%s dirty-run coalescing, full-span detection, fragmentation fallback\n",
+         fail ? "FAIL" : "PASS");
+  return fail ? 1 : 0;
 }
 
 /* Offline, deterministic colour test (mission 17).  Runs on any host, touches no
@@ -1231,6 +1369,7 @@ static int colour_dump(void) {
 
 int main(int argc, char **argv) {
   if (argc > 1 && !strcmp(argv[1], "--colour-selftest")) return colour_selftest();
+  if (argc > 1 && !strcmp(argv[1], "--damage-selftest")) return damage_selftest();
   if (argc > 1 && !strcmp(argv[1], "--colour-dump")) return colour_dump();
   /* A33 offline modes: no framebuffer, no Wayland, no handset. */
   if (argc > 1 && !strcmp(argv[1], "--handoff-selftest")) return nuxel_handoff_selftest(stdout) ? 1 : 0;
@@ -1327,7 +1466,7 @@ int main(int argc, char **argv) {
     else got = 1;
     zwlr_screencopy_frame_v1_destroy(frame);
     if (got) break;
-    if (frame_buf.wl) { wl_buffer_destroy(frame_buf.wl); munmap(frame_buf.data, frame_buf.len); frame_buf.wl = NULL; }
+    /* Keep the shm buffer; the next attempt reuses it when geometry matches. */
     usleep(50000);
   }
   if (!got) { st("HANDOFF_NO_FRAME failures=%d panel untouched", failures); close(fb.fd); return 6; }
@@ -1542,7 +1681,9 @@ int main(int argc, char **argv) {
   const char *fpsenv = getenv("NUXEL_TARGET_FPS");
   if (fpsenv) { int v = atoi(fpsenv); if (v >= 1 && v <= 120) fps_target = v; }
   int consec_fail = 0;
-  unsigned long long blit_ns_sum = 0;
+  unsigned long long blit_ns_sum = 0, pan_ns_sum = 0;
+  unsigned long long capture_ns_sum = 0, compare_ns_sum = 0;
+  unsigned long long capture_n = 0, compare_n = 0;
   unsigned long long blits = 0, present_skipped = 0;
   unsigned long long damage_blits = 0, damage_blit_ns_sum = 0;
   int have_hash = 0;
@@ -1568,7 +1709,7 @@ int main(int argc, char **argv) {
         st("DISPLAY_SLEEP total=%d failures=%d owner=nuxel-wl-fb display=off capture=stopped", frames, failures);
       }
     }
-    struct timespec t_start;
+    struct timespec t_start, t_ready, t_cmp0, t_cmp1;
     clock_gettime(CLOCK_MONOTONIC, &t_start);
     ctrl_pump();                      /* A32: screen on/off + status requests */
     struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
@@ -1581,6 +1722,9 @@ int main(int argc, char **argv) {
         have_pending = 0;
       }
     }
+    clock_gettime(CLOCK_MONOTONIC, &t_ready);
+    capture_ns_sum += ts_ns(&t_ready) - ts_ns(&t_start);
+    capture_n++;
     if (frame_failed) { failures++; consec_fail++; }
     else if (!display_on) {
       /* Defensive only: the top of the loop blocks while off.  If a queued frame
@@ -1589,30 +1733,34 @@ int main(int argc, char **argv) {
     }
     else {
       int changed;
+      clock_gettime(CLOCK_MONOTONIC, &t_cmp0);
       if (force_present || !have_hash) {
         changed = 1;
         /* Prime the damage baseline even when this frame is a forced repaint;
            if the baseline already exists, use its real dirty span. */
-        if (!frame_damage_rows()) { damage_y0 = 0; damage_y1 = frame_buf.h; }
+        if (!frame_damage_rows()) {
+          damage_y0 = 0; damage_y1 = frame_buf.h;
+          dirty_reset(); dirty_add(0, frame_buf.h);
+        }
         have_hash = 1;
       } else {
         changed = frame_damage_rows();
       }
+      clock_gettime(CLOCK_MONOTONIC, &t_cmp1);
+      compare_ns_sum += ts_ns(&t_cmp1) - ts_ns(&t_cmp0);
+      compare_n++;
       if (changed) {
         force_present = 0;
         last_change_ms = mono_ms();
         /* Command-mode Samsung DECON: every changed frame MUST be committed.
            Merely blitting to mmap() is not enough (A35 stale-display fix). */
-        int partial = !(damage_y0 == 0 && damage_y1 == frame_buf.h);
+        int partial = !dirty_is_full();
+        last_damage_runs = ndirty;
         int pan_rc = partial ? frame_blit_damage() : frame_blit_once();
         blits++;
-        struct timespec t_end;
-        clock_gettime(CLOCK_MONOTONIC, &t_end);
-        unsigned long long elapsed_ns =
-            (unsigned long long)(t_end.tv_sec - t_start.tv_sec) * 1000000000ull
-          + (unsigned long long)(t_end.tv_nsec - t_start.tv_nsec);
-        blit_ns_sum += elapsed_ns;
-        if (partial) { damage_blits++; damage_blit_ns_sum += elapsed_ns; }
+        blit_ns_sum += g_blit_ns;
+        pan_ns_sum += g_pan_ns;
+        if (partial) { damage_blits++; damage_blit_ns_sum += g_blit_ns; }
         if (pan_rc != 0) { failures++; consec_fail++; }
         else consec_fail = 0;
       } else {
@@ -1623,7 +1771,8 @@ int main(int argc, char **argv) {
       publish_orientation_proof(frame_buf.w, frame_buf.h, frame_buf.data != NULL);
     }
     zwlr_screencopy_frame_v1_destroy(frame);
-    if (frame_buf.wl) { wl_buffer_destroy(frame_buf.wl); munmap(frame_buf.data, frame_buf.len); frame_buf.wl = NULL; }
+    /* PWNAGE-60000: keep frame_buf.wl mapped for the next capture.  The copy
+       completed before the ready event, so the buffer is reusable. */
 
     /* Full mode re-assertion ONLY on measured capture/pan failures (A35).
        Steady state MUST run FBIOPAN_DISPLAY after each blit, but MUST NOT
@@ -1634,9 +1783,13 @@ int main(int argc, char **argv) {
     if (now != last) {
       int avg_ms = blits ? (int)(blit_ns_sum / blits / 1000000ull) : 0;
       int dmg_ms = damage_blits ? (int)(damage_blit_ns_sum / damage_blits / 1000000ull) : 0;
-      st("FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d damage=%d-%d damage_blits=%llu damage_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
-         frames, fps, failures, blits, present_skipped, avg_ms, damage_y0, damage_y1,
-         damage_blits, dmg_ms, (long long)(mono_ms() - last_change_ms),
+      int pan_ms = blits ? (int)(pan_ns_sum / blits / 1000000ull) : 0;
+      int cap_ms = capture_n ? (int)(capture_ns_sum / capture_n / 1000000ull) : 0;
+      int cmp_ms = compare_n ? (int)(compare_ns_sum / compare_n / 1000000ull) : 0;
+      st("FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d pan_avg_ms=%d capture_avg_ms=%d compare_avg_ms=%d damage=%d-%d damage_runs=%d damage_blits=%llu damage_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
+         frames, fps, failures, blits, present_skipped, avg_ms, pan_ms, cap_ms, cmp_ms,
+         damage_y0, damage_y1, last_damage_runs, damage_blits, dmg_ms,
+         (long long)(mono_ms() - last_change_ms),
          o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
          display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override,
          decon_pan_ok, decon_pan_failed);

@@ -1,0 +1,86 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===== PID 6182 WebKitNetworkPr =====
+/usr/lib64/libEGL.so.1.1.0
+/usr/lib64/libgtk-3.so.0.2420.32
+/usr/lib64/libwebkit2gtk-4.1.so.0.24.4
+-- fds mali/dmabuf/fb --
+none
+-- threads --
+      2 ReceiveQueue
+      1 Storage
+      2 WebKitNetworkPr
+      1 background
+      1 cheStorageCache
+      1 erialBackground
+      1 gdbus
+      1 gmain
+      1 persistent
+      1 pool-spawner
+-- env --
+GDK_BACKEND=wayland
+GSK_RENDERER=cairo
+LIBGL_ALWAYS_SOFTWARE=1
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+MESA_KBASE_NODE=/dev/mali0
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+MESA_SHADER_CACHE_DISABLE=1
+WAYLAND_DISPLAY=wayland-0
+WEBKIT_DISABLE_COMPOSITING_MODE=1
+__EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json
+===== PID 6196 WebKitWebProces =====
+/usr/lib64/libEGL.so.1.1.0
+/usr/lib64/libgtk-3.so.0.2420.32
+/usr/lib64/libwebkit2gtk-4.1.so.0.24.4
+/usr/lib64/webkit2gtk-4.1/injected-bundle/libwebkit2gtkinjectedbundle.so
+-- fds mali/dmabuf/fb --
+none
+-- threads --
+      1 EventDispatcher
+      2 JITWorker
+      2 ReceiveQueue
+      2 WebKitWebProces
+      1 gdbus
+      1 gmain
+      1 onnection queue
+      1 pool-spawner
+      1 rruptDispatcher
+      1 s Signal Sender
+-- env --
+GDK_BACKEND=wayland
+GSK_RENDERER=cairo
+LIBGL_ALWAYS_SOFTWARE=1
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+MESA_KBASE_NODE=/dev/mali0
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+MESA_SHADER_CACHE_DISABLE=1
+WAYLAND_DISPLAY=wayland-0
+WEBKIT_DISABLE_COMPOSITING_MODE=1
+__EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json
+===== PID 13945 bash =====
+-- fds mali/dmabuf/fb --
+none
+-- threads --
+      1 bash
+-- env --
+== pwa host ==
+/usr/lib64/libEGL.so.1.1.0
+/usr/lib64/libEGL_mesa.so.0.0.0
+/usr/lib64/libgallium_dri.so
+GDK_BACKEND=wayland
+GSK_RENDERER=cairo
+LIBGL_ALWAYS_SOFTWARE=1
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+MESA_KBASE_NODE=/dev/mali0
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+MESA_SHADER_CACHE_DISABLE=1
+WAYLAND_DISPLAY=wayland-0
+WEBKIT_DISABLE_COMPOSITING_MODE=1
+__EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json

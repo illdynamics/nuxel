@@ -1,0 +1,723 @@
+#!/usr/bin/python3
+"""Nuxel Doom Launcher - a touch-first GTK4 WAD picker for Crispy Doom.
+
+This is the "Linux Doom Launcher" option for Nuxel: a small Python + GTK4
+frontend that scans the phone for WADs, presents them as full-width touch
+targets, and starts the installed Crispy Doom binary fullscreen on the current
+Phoc output.  It deliberately has no non-GTK dependencies.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+# Keep the launcher on the same software path the Nuxel home surface uses.
+# The vendor kernel has no usable DRM/GBM node for a GTK GL context.
+os.environ.setdefault("GSK_RENDERER", "cairo")
+os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Gdk", "4.0")
+from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
+
+APP_ID = "org.nuxel.DoomLauncher"
+GAME_WRAPPER = "/usr/lib/nuxel/nuxel-crispy-doom"
+HOME = Path(os.environ.get("HOME", "/home/nuxel"))
+CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", str(HOME / ".config"))) / "nuxel"
+CONFIG_PATH = CONFIG_DIR / "doom-launcher.json"
+STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", str(HOME / ".local/state"))) / "nuxel-doom-launcher"
+LOG_PATH = STATE_DIR / "launcher.log"
+
+WAD_SUFFIXES = {".wad", ".WAD", ".iwad", ".IWAD"}
+
+SEARCH_DIRS = [
+    HOME / "doom",
+    HOME / "Downloads",
+    HOME / "Documents",
+    HOME / ".local/share/crispy-doom",
+    HOME / ".var/app/io.github.fabiangreffrath.Doom/data/crispy-doom",
+    Path("/usr/share/games/doom"),
+    Path("/usr/share/doom"),
+    Path("/usr/local/share/doom"),
+]
+
+PRETTY_NAMES = {
+    "freedoom1": "Freedoom: Phase 1",
+    "freedoom2": "Freedoom: Phase 2",
+    "doom": "Doom (shareware)",
+    "doom1": "Doom (shareware)",
+    "doom2": "Doom II",
+    "tnt": "TNT: Evilution",
+    "plutonia": "The Plutonia Experiment",
+    "heretic": "Heretic",
+    "hexen": "Hexen",
+    "strife": "Strife",
+}
+
+
+def log(message: str) -> None:
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        with LOG_PATH.open("a", encoding="utf-8") as fh:
+            fh.write("%s %s\n" % (time.strftime("%Y-%m-%dT%H:%M:%S%z"), message))
+    except OSError:
+        pass
+
+
+def load_config() -> dict:
+    defaults = {"fullscreen": True, "sound": False, "aspect": True, "extra_wads": []}
+    try:
+        doc = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        if isinstance(doc, dict):
+            defaults.update(doc)
+    except (OSError, ValueError):
+        pass
+    if not isinstance(defaults.get("extra_wads"), list):
+        defaults["extra_wads"] = []
+    return defaults
+
+
+def save_config(cfg: dict) -> None:
+    try:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = CONFIG_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(cfg, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        tmp.replace(CONFIG_PATH)
+    except OSError as exc:
+        log("config save failed: %s" % exc)
+
+
+def human_mb(size: int) -> str:
+    if size >= 1024 * 1024:
+        return "%.1f MB" % (size / (1024.0 * 1024.0))
+    return "%.0f KB" % (size / 1024.0)
+
+
+def wad_metadata(path: Path) -> dict:
+    """Read the WAD directory without loading the whole file."""
+    meta = {"magic": "WAD", "tags": [], "lumps": 0}
+    try:
+        size = path.stat().st_size
+        with path.open("rb") as fh:
+            header = fh.read(12)
+            if len(header) < 12:
+                return meta
+            magic = header[:4]
+            if magic not in (b"IWAD", b"PWAD"):
+                return meta
+            count = int.from_bytes(header[4:8], "little")
+            offset = int.from_bytes(header[8:12], "little")
+            names = []
+            if 0 < count <= 65535:
+                fh.seek(offset)
+                for _ in range(min(count, 4096)):
+                    entry = fh.read(16)
+                    if len(entry) < 16:
+                        break
+                    names.append(entry[8:16].rstrip(b"\x00").decode("ascii", "replace"))
+    except OSError:
+        return meta
+    tags = ["IWAD" if magic == b"IWAD" else "PWAD"]
+    if any(n in ("E1M1", "E2M1", "E3M1", "E4M1") for n in names):
+        tags.append("Doom 1")
+    if "MAP01" in names:
+        tags.append("Doom 2 / Hexen")
+    if any(n in ("FREEDOOM", "FREEDM") for n in names):
+        tags.append("Freedoom")
+    if any(n.startswith("TXT_") for n in names):
+        tags.append("Hexen")
+    if "S_START" in names and "E1M1" not in names and "MAP01" not in names:
+        tags.append("resource")
+    return {"magic": magic.decode("ascii"), "tags": tags, "lumps": count, "size": size}
+
+
+def pretty_name(path: Path) -> str:
+    stem = path.stem
+    return PRETTY_NAMES.get(stem.lower(), stem.replace("_", " ").replace("-", " ").title())
+
+
+def scan_wads(extra: list[str]) -> list[dict]:
+    found: dict[str, dict] = {}
+    roots = list(SEARCH_DIRS)
+    for raw in extra:
+        try:
+            p = Path(raw).expanduser()
+        except (TypeError, ValueError):
+            continue
+        if p.is_file():
+            roots.append(p.parent)
+        elif p.is_dir():
+            roots.append(p)
+    for root in roots:
+        try:
+            if not root.is_dir():
+                continue
+            # Keep the scan bounded: no hidden trees, no deep system walks.
+            candidates = list(root.glob("*")) + list(root.glob("*/*"))
+        except OSError:
+            continue
+        for path in candidates:
+            try:
+                if not path.is_file() or path.name.startswith("."):
+                    continue
+                if path.suffix not in WAD_SUFFIXES:
+                    continue
+                real = str(path.resolve())
+                if real in found:
+                    continue
+                meta = wad_metadata(path)
+                if meta.get("magic") not in ("IWAD", "PWAD"):
+                    continue
+                found[real] = {
+                    "path": real,
+                    "name": pretty_name(path),
+                    "meta": meta,
+                    "size": meta.get("size", 0),
+                }
+            except OSError:
+                continue
+    return sorted(found.values(), key=lambda w: (w["name"].lower(), w["path"]))
+
+
+CSS = b"""
+window {
+    background-color: #070a0e;
+    color: #f7f1e3;
+}
+.doom-header {
+    background-color: #0b1017;
+    border-bottom: 2px solid #2a3340;
+    padding: 20px 24px 16px 24px;
+}
+.doom-title {
+    color: #f0b23a;
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: 46px;
+    font-weight: 900;
+}
+.doom-sub {
+    color: #93a4b8;
+    font-size: 16px;
+}
+.doom-count {
+    color: #f7f1e3;
+    background-color: #1b2430;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 16px;
+    font-weight: 700;
+}
+.wad-scroll {
+    background-color: #070a0e;
+}
+.wad-tile {
+    background-color: #111822;
+    background-image: none;
+    border: 2px solid #2a3340;
+    border-radius: 18px;
+    padding: 18px;
+    min-height: 112px;
+    color: #f7f1e3;
+    box-shadow: none;
+}
+.wad-tile:hover {
+    background-color: #182230;
+    border-color: #f0b23a;
+}
+.wad-tile:active {
+    background-color: #2b1d0c;
+    border-color: #ffd166;
+}
+.wad-name {
+    font-size: 25px;
+    font-weight: 800;
+    color: #ffffff;
+}
+.wad-meta {
+    font-size: 15px;
+    color: #98aabc;
+}
+.wad-play {
+    font-size: 17px;
+    font-weight: 800;
+    color: #f0b23a;
+}
+.wad-path {
+    font-size: 12px;
+    color: #65778b;
+}
+.footer {
+    background-color: #0b1017;
+    border-top: 2px solid #2a3340;
+    padding: 12px 18px 16px 18px;
+}
+.action {
+    background-image: none;
+    background-color: #1b2430;
+    border: 1px solid #34404f;
+    border-radius: 14px;
+    min-height: 58px;
+    min-width: 92px;
+    padding: 4px 16px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #f7f1e3;
+    box-shadow: none;
+}
+.action:hover {
+    background-color: #253140;
+    border-color: #f0b23a;
+}
+.action:active {
+    background-color: #2b1d0c;
+}
+.action.primary {
+    background-color: #b83b25;
+    border-color: #ff7a5c;
+    color: #ffffff;
+}
+.action.primary:hover {
+    background-color: #d34a31;
+}
+.check {
+    font-size: 16px;
+    color: #c9d5e2;
+    padding: 8px 10px;
+}
+.status {
+    font-size: 13px;
+    color: #8fa1b5;
+}
+.error {
+    color: #ff8a73;
+}
+"""
+
+
+class DoomLauncherWindow(Gtk.ApplicationWindow):
+    def __init__(self, app: Gtk.Application):
+        super().__init__(application=app, title="Nuxel Doom")
+        self.set_decorated(False)
+        self.set_default_size(720, 1520)
+        self.set_resizable(True)
+        self.cfg = load_config()
+        self.wads: list[dict] = []
+        self.game_proc: subprocess.Popen | None = None
+        self.game_log = None
+        self._held = False
+
+        self._install_css()
+        self._build_ui()
+        self._refresh()
+
+        self.connect("close-request", self._on_close)
+        self.connect("destroy", lambda *_a: setattr(self.get_application(), "_nuxel_window", None))
+        GLib.idle_add(self._enter_fullscreen)
+
+    # ---- presentation -------------------------------------------------
+    def _install_css(self) -> None:
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS)
+        display = Gdk.Display.get_default()
+        if display is not None:
+            Gtk.StyleContext.add_provider_for_display(
+                display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
+        settings = Gtk.Settings.get_default()
+        if settings is not None:
+            settings.set_property("gtk-application-prefer-dark-theme", True)
+
+    def _enter_fullscreen(self) -> bool:
+        try:
+            self.fullscreen()
+        except Exception:
+            pass
+        self.present()
+        return False
+
+    def _build_ui(self) -> None:
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.set_child(root)
+
+        header = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        header.add_css_class("doom-header")
+        top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        title = Gtk.Label(label="DOOM", xalign=0)
+        title.add_css_class("doom-title")
+        title.set_hexpand(True)
+        self.count_label = Gtk.Label(label="0 WADs")
+        self.count_label.add_css_class("doom-count")
+        top.append(title)
+        top.append(self.count_label)
+        header.append(top)
+        subtitle = Gtk.Label(
+            label="Tap a WAD to play fullscreen.  Crispy Doom on Nuxel.",
+            xalign=0,
+        )
+        subtitle.add_css_class("doom-sub")
+        subtitle.set_wrap(True)
+        header.append(subtitle)
+        root.append(header)
+
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroller.set_vexpand(True)
+        scroller.add_css_class("wad-scroll")
+        self.flow = Gtk.FlowBox()
+        self.flow.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.flow.set_homogeneous(True)
+        self.flow.set_min_children_per_line(1)
+        self.flow.set_max_children_per_line(4)
+        self.flow.set_row_spacing(14)
+        self.flow.set_column_spacing(14)
+        self.flow.set_margin_top(16)
+        self.flow.set_margin_bottom(16)
+        self.flow.set_margin_start(16)
+        self.flow.set_margin_end(16)
+        self.flow.set_valign(Gtk.Align.START)
+        scroller.set_child(self.flow)
+        root.append(scroller)
+
+        footer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        footer.add_css_class("footer")
+
+        self.status = Gtk.Label(label="Scanning for WADs...", xalign=0)
+        self.status.add_css_class("status")
+        self.status.set_wrap(True)
+        self.status.set_ellipsize(Pango.EllipsizeMode.END)
+        footer.append(self.status)
+
+        toggles = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        toggles.set_homogeneous(True)
+        self.fullscreen_check = Gtk.CheckButton(label="Fullscreen")
+        self.fullscreen_check.set_active(bool(self.cfg.get("fullscreen", True)))
+        self.fullscreen_check.add_css_class("check")
+        self.fullscreen_check.connect("toggled", self._save_toggles)
+        self.sound_check = Gtk.CheckButton(label="Sound (experimental)")
+        self.sound_check.set_active(bool(self.cfg.get("sound", False)))
+        self.sound_check.add_css_class("check")
+        self.sound_check.connect("toggled", self._save_toggles)
+        self.aspect_check = Gtk.CheckButton(label="Keep 4:3")
+        self.aspect_check.set_active(bool(self.cfg.get("aspect", False)))
+        self.aspect_check.add_css_class("check")
+        self.aspect_check.connect("toggled", self._save_toggles)
+        toggles.append(self.fullscreen_check)
+        toggles.append(self.sound_check)
+        toggles.append(self.aspect_check)
+        footer.append(toggles)
+
+        actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        actions.set_homogeneous(True)
+        add = Gtk.Button(label="Add WAD")
+        add.add_css_class("action")
+        add.connect("clicked", self._browse)
+        rescan = Gtk.Button(label="Rescan")
+        rescan.add_css_class("action")
+        rescan.connect("clicked", lambda _b: self._refresh())
+        setup = Gtk.Button(label="Setup")
+        setup.add_css_class("action")
+        setup.connect("clicked", lambda _b: self._run_setup())
+        close = Gtk.Button(label="Close")
+        close.add_css_class("action")
+        close.connect("clicked", lambda _b: self.close())
+        actions.append(add)
+        actions.append(rescan)
+        actions.append(setup)
+        actions.append(close)
+        footer.append(actions)
+        root.append(footer)
+
+    # ---- config / scan -------------------------------------------------
+    def _save_toggles(self, *_args) -> None:
+        self.cfg["fullscreen"] = bool(self.fullscreen_check.get_active())
+        self.cfg["sound"] = bool(self.sound_check.get_active())
+        self.cfg["aspect"] = bool(self.aspect_check.get_active())
+        save_config(self.cfg)
+
+    def _refresh(self) -> None:
+        if self.game_proc is not None:
+            return
+        self.wads = scan_wads(self.cfg.get("extra_wads", []))
+        child = self.flow.get_first_child()
+        while child is not None:
+            nxt = child.get_next_sibling()
+            self.flow.remove(child)
+            child = nxt
+        self.count_label.set_text("%d WAD%s" % (len(self.wads), "" if len(self.wads) == 1 else "s"))
+        if not self.wads:
+            empty = Gtk.Label(
+                label="No WADs found.\nPut a .wad in ~/doom or tap Add WAD.",
+                justify=Gtk.Justification.CENTER,
+            )
+            empty.add_css_class("wad-meta")
+            empty.set_margin_top(80)
+            empty.set_hexpand(True)
+            self.flow.append(empty)
+            self.status.set_text("Searched: " + ", ".join(str(p) for p in SEARCH_DIRS))
+            return
+        bases = [w for w in self.wads if w["meta"].get("magic") == "IWAD"]
+        for wad in self.wads:
+            self.flow.append(self._wad_tile(wad, bool(bases)))
+        self.status.set_text(
+            "%d WAD%s ready.  Fullscreen %s.  Sound %s." % (
+                len(self.wads),
+                "" if len(self.wads) == 1 else "s",
+                "on" if self.fullscreen_check.get_active() else "off",
+                "on" if self.sound_check.get_active() else "off (known renderer workaround)",
+            )
+        )
+
+    def _wad_tile(self, wad: dict, have_iwad: bool) -> Gtk.Widget:
+        meta = wad["meta"]
+        tags = " / ".join(meta.get("tags", [])) or meta.get("magic", "WAD")
+        is_iwad = meta.get("magic") == "IWAD"
+        button = Gtk.Button()
+        button.add_css_class("wad-tile")
+        button.set_hexpand(True)
+        button.set_size_request(280, 126)
+        button.set_tooltip_text(wad["path"])
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        name = Gtk.Label(label=wad["name"], xalign=0)
+        name.add_css_class("wad-name")
+        name.set_ellipsize(Pango.EllipsizeMode.END)
+        info = Gtk.Label(label="%s  ·  %s  ·  %d lumps" % (tags, human_mb(wad["size"]), meta.get("lumps", 0)), xalign=0)
+        info.add_css_class("wad-meta")
+        info.set_ellipsize(Pango.EllipsizeMode.END)
+        path = Gtk.Label(label=wad["path"], xalign=0)
+        path.add_css_class("wad-path")
+        path.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+        action = Gtk.Label(
+            label=("▶  PLAY" if is_iwad else ("▶  LOAD MOD" if have_iwad else "NEEDS AN IWAD")),
+            xalign=0,
+        )
+        action.add_css_class("wad-play")
+        box.append(name)
+        box.append(info)
+        box.append(path)
+        box.append(action)
+        button.set_child(box)
+        button.set_sensitive(is_iwad or have_iwad)
+        button.connect("clicked", lambda _b, p=wad["path"]: self._launch(p))
+        return button
+
+    # ---- actions -------------------------------------------------------
+    def _browse(self, _button: Gtk.Button) -> None:
+        dialog = Gtk.FileDialog(title="Add a Doom WAD")
+        filt = Gtk.FileFilter()
+        filt.set_name("Doom WAD files")
+        for pattern in ("*.wad", "*.WAD", "*.iwad", "*.IWAD"):
+            filt.add_pattern(pattern)
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(filt)
+        dialog.set_filters(filters)
+        dialog.set_default_filter(filt)
+        dialog.open(self, None, self._on_file_chosen)
+
+    def _on_file_chosen(self, dialog: Gtk.FileDialog, result) -> None:
+        try:
+            gfile = dialog.open_finish(result)
+        except GLib.Error as exc:
+            if exc.matches(Gtk.DialogError.quark(), Gtk.DialogError.DISMISSED):
+                return
+            self._set_error("Could not open the file picker: %s" % exc.message)
+            return
+        if gfile is None:
+            return
+        path = gfile.get_path()
+        if not path:
+            self._set_error("That location has no host path.")
+            return
+        extras = list(self.cfg.get("extra_wads", []))
+        if path not in extras:
+            extras.append(path)
+            self.cfg["extra_wads"] = extras
+            save_config(self.cfg)
+        self._refresh()
+
+    def _preferred_iwad(self) -> dict | None:
+        iwads = [w for w in self.wads if w["meta"].get("magic") == "IWAD"]
+        if not iwads:
+            return None
+        for needle in ("freedoom: phase 1", "doom", "freedoom: phase 2", "doom ii"):
+            for wad in iwads:
+                if needle in wad["name"].lower():
+                    return wad
+        return iwads[0]
+
+    def _tune_config(self) -> None:
+        cfg_path = HOME / ".var/app/io.github.fabiangreffrath.Doom/data/crispy-doom/crispy-doom.cfg"
+        if not cfg_path.is_file():
+            return
+        updates = {
+            "fullscreen": "1" if self.fullscreen_check.get_active() else "0",
+            "fullscreen_width": "0",
+            "fullscreen_height": "0",
+            "aspect_ratio_correct": "1" if self.aspect_check.get_active() else "0",
+            "smooth_pixel_scaling": "1",
+            "integer_scaling": "0",
+            "startup_delay": "0",
+            "grabmouse": "0",
+            "window_width": "720",
+            "window_height": "405",
+        }
+        try:
+            lines = cfg_path.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            return
+        seen = set()
+        out = []
+        for line in lines:
+            key = line.split(None, 1)[0] if line.strip() else ""
+            if key in updates:
+                out.append("%-30s%s" % (key, updates[key]))
+                seen.add(key)
+            else:
+                out.append(line)
+        for key, value in updates.items():
+            if key not in seen:
+                out.append("%-30s%s" % (key, value))
+        try:
+            backup = cfg_path.with_name(cfg_path.name + ".bak-nuxel-launcher")
+            if not backup.exists():
+                backup.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            cfg_path.write_text("\n".join(out) + "\n", encoding="utf-8")
+        except OSError as exc:
+            log("config tune failed: %s" % exc)
+
+    def _launch(self, path: str) -> None:
+        if self.game_proc is not None:
+            self._set_error("Crispy Doom is already running. Close it first.")
+            return
+        wad = find_wad(self.wads, path)
+        if wad is None:
+            self._set_error("That WAD disappeared. Tap Rescan.")
+            return
+        if wad["meta"].get("magic") == "IWAD":
+            args = [GAME_WRAPPER, "-iwad", path]
+        else:
+            base = self._preferred_iwad()
+            if base is None:
+                self._set_error("Load an IWAD first (for example Freedoom Phase 1), then this mod.")
+                return
+            args = [GAME_WRAPPER, "-iwad", base["path"], "-file", path]
+        if self.fullscreen_check.get_active():
+            args.append("-fullscreen")
+        else:
+            args.extend(["-window", "-width", "720", "-height", "405"])
+        self._tune_config()
+        env = os.environ.copy()
+        env["NUXEL_DOOM_SOUND"] = "1" if self.sound_check.get_active() else "0"
+        env["NUXEL_DOOM_FULLSCREEN"] = "1" if self.fullscreen_check.get_active() else "0"
+        self._start_process(args, "game", env)
+
+    def _run_setup(self) -> None:
+        if self.game_proc is not None:
+            self._set_error("Close the running game before Setup.")
+            return
+        self._tune_config()
+        env = os.environ.copy()
+        env["NUXEL_DOOM_SOUND"] = "1" if self.sound_check.get_active() else "0"
+        self._start_process([GAME_WRAPPER, "--setup"], "setup", env)
+
+    def _start_process(self, args: list[str], label: str, env: dict) -> None:
+        try:
+            STATE_DIR.mkdir(parents=True, exist_ok=True)
+            self.game_log = LOG_PATH.open("a", encoding="utf-8")
+            self.game_log.write("\n--- %s %s ---\n" % (time.strftime("%Y-%m-%dT%H:%M:%S%z"), " ".join(args)))
+            self.game_log.flush()
+            proc = subprocess.Popen(
+                args,
+                env=env,
+                stdin=subprocess.DEVNULL,
+                stdout=self.game_log,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+        except OSError as exc:
+            self.game_log = None
+            self._set_error("Could not start Crispy Doom: %s" % exc)
+            return
+        self.game_proc = proc
+        self._set_status("Started %s (pid %d). Returning when it exits." % (label, proc.pid))
+        # Keep the application alive while its only window is hidden.
+        if not self._held:
+            self.get_application().hold()
+            self._held = True
+        self.set_visible(False)
+        GLib.timeout_add(400, self._poll_game)
+
+    def _poll_game(self) -> bool:
+        if self.game_proc is None:
+            return False
+        rc = self.game_proc.poll()
+        if rc is None:
+            return True
+        log("child exited rc=%s" % rc)
+        self.game_proc = None
+        if self.game_log is not None:
+            try:
+                self.game_log.close()
+            except OSError:
+                pass
+            self.game_log = None
+        if self._held:
+            self.get_application().release()
+            self._held = False
+        self.present()
+        try:
+            self.fullscreen()
+        except Exception:
+            pass
+        self._set_status("Crispy Doom exited (status %s)." % rc)
+        self._refresh()
+        return False
+
+    def _set_status(self, text: str) -> None:
+        self.status.remove_css_class("error")
+        self.status.set_text(text)
+        log(text)
+
+    def _set_error(self, text: str) -> None:
+        self.status.add_css_class("error")
+        self.status.set_text(text)
+        log("ERROR " + text)
+
+    def _on_close(self, *_args) -> bool:
+        if self.game_proc is not None:
+            self._set_error("A game is still running; close it before closing the launcher.")
+            return True
+        return False
+
+
+def find_wad(wads: list[dict], path: str) -> dict | None:
+    for wad in wads:
+        if wad["path"] == path:
+            return wad
+    return None
+
+
+def main() -> int:
+    app = Gtk.Application(application_id=APP_ID, flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
+
+    def activate(application: Gtk.Application) -> None:
+        window = getattr(application, "_nuxel_window", None)
+        if window is None:
+            window = DoomLauncherWindow(application)
+            application._nuxel_window = window
+        window.present()
+        GLib.idle_add(window._enter_fullscreen)
+
+    app.connect("activate", activate)
+    return app.run(sys.argv)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

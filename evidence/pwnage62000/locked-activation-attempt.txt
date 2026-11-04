@@ -1,0 +1,26 @@
+BEFORE
+WINDOWS=2
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+AFTER
+WINDOWS=2
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+{"schema_version":1,"updated_at":1793694182,"locked":true,"home_raised":true,"hidden_non_home":1,"active_app":"","error":"","owner":"nuxel-foreign-toplevel"}
+
+locked=1 native=0 app_id=
+BEFORE
+WINDOWS=2
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+WINDOWS=2
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+FOCUS_ACTION focused=1 home_minimized=1 want=com.stremio.Stremio
+AFTER
+WINDOWS=2
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+{"schema_version":1,"updated_at":1793694187,"locked":true,"home_raised":true,"hidden_non_home":1,"active_app":"","error":"","owner":"nuxel-foreign-toplevel"}
+
+locked=1 native=0 app_id=

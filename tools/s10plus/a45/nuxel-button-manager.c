@@ -199,7 +199,7 @@ static char *slurp(const char *path, size_t max) {
 
 static nuxel_fsm_cfg C;        /* the action map (FSM defaults + buttons.json) */
 static nuxel_fsm_gate GATE;    /* the reboot gate                              */
-static int vol_cap_pct = 25;   /* from audio.json                              */
+static int vol_cap_pct = 100;  /* from audio.json; 25% bring-up cap retired      */
 static int vol_cap_active = 0; /* only while the bring-up flag exists          */
 static int64_t now_ms(void); /* forward decl: defined below (monotonic ms) */
 static int64_t last_activity_ms = 0; /* A45 idle: monotonic, real input only   */
@@ -284,7 +284,7 @@ static void cfg_load_actions(void) {
 
   /* audio: the low-volume cap only bites while the first bring-up is unfinished */
   char *a = slurp(AUDIO_JSON, 0);
-  vol_cap_pct = a ? json_int(a, "volume_cap_percent", 25) : 25;
+  vol_cap_pct = a ? json_int(a, "volume_cap_percent", 100) : 100;
   struct stat sb;
   vol_cap_active = (stat(BRINGUP_FLAG, &sb) == 0) ||
                    (getenv("NUXEL_AUDIO_LOW_VOLUME") && atoi(getenv("NUXEL_AUDIO_LOW_VOLUME")) != 0);
@@ -668,6 +668,15 @@ static int gated_system_action_pre(const char *what, void (*pre_exec)(void *), v
   mkdir(GATE_STATE_DIR, 0755);
   FILE *f = fopen(GATE_STATE, "w");
   if (f) { fprintf(f, "%lld\n", (long long)time(NULL)); fclose(f); }
+  if (!is_poweroff) {
+    mkdir("/run/nuxel", 0755);
+    FILE *rf = fopen("/run/nuxel/reboot-request", "w");
+    if (rf) {
+      fprintf(rf, "source=button-manager reason=%s requested_at=%lld\n",
+              reason ? reason : "unknown", (long long)time(NULL));
+      fclose(rf);
+    }
+  }
   if (pre_exec) pre_exec(arg);
   pid_t pid = fork();
   if (pid == 0) {

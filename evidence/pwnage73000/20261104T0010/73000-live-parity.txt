@@ -1,0 +1,86 @@
+captured=2026-11-03T23:11:35Z
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+boot_id=e3b5e426-5c2b-4ac8-ad14-70e2cfb27ab4
+--- packages
+gnome-keyring-48.0-3.fc43.aarch64
+gcr3-3.41.1-11.fc43.aarch64
+libsecret-0.21.8.2-2.fc43.aarch64
+--- secrets provider
+PID=160045
+PPID=1
+TTY=n/a
+UID=0
+EUID=0
+SUID=0
+FSUID=0
+GID=0
+EGID=0
+SGID=0
+FSGID=0
+SupplementaryGIDs=0
+--- keyring metadata
+ABSENT /root/.local/share/keyrings/login.keyring
+/etc/nuxel/keyring-launcher.secret mode=600 owner=root:root size=65
+--- live hashes
+aab569150a9f489b60acfe96c0188702f688e231158dd73ffb8bd7e0ca569479  /usr/lib/nuxel/nuxel-bridge/api.py
+09491c673eae7c34d015cb8918d872116da6edff8a6a090f216e9b275b2573d9  /usr/lib/nuxel/nuxel-bridge/capabilities.py
+11dfb11a145819a5879749c087465880814130ee047dfec6f17e6b02486c6a56  /usr/lib/nuxel/nuxel-bridge/secret_service.py
+d3d8aa15f3fa5a34c80b02404ad46ad489dfc16fcea4fa05e84e51ff875fd9f4  /usr/lib/nuxel/nuxel-bridge/keyring_api.py
+45a593dd8a2dadbc3330f1025dcb78b541ed2d50042958be03fe342d914e59f5  /etc/systemd/system/nuxel-http-bridge.service
+ced52672bccd82aaa916360bc13146f0b69b2c5540ddc0337ea6d129132f0048  /usr/share/nuxel/pwa/nuxel-common/bridge.js
+610097c560f40109e13aa105e6cc33a49eeecf974e96c03aefe1b5945da6e739  /usr/share/nuxel/pwa/nuxel-common/app-registry.json
+7cfcfecba2bed4f1aa63c6fd483dca500f11842bfc57a77b3ce0049f58c41294  /usr/share/nuxel/pwa/nuxel-apps/vault/index.html
+822bdf1c3243c5dc37e354a7ea53d94ec4c65f870649b376082dade301176ad5  /usr/share/nuxel/pwa/nuxel-apps/authenticator/index.html
+de0cfe24f73b9e7b1db2d1d0b13dc25cc8a21e78c1e3bde0858be4b0fafd3100  /usr/lib/systemd/system-sleep/nuxel-keyring-lock
+--- active
+active
+active
+active
+active
+--- receipt
+{
+  "stamp": "20261103T113054Z",
+  "target": "root@10.20.30.16",
+  "target_model": "SM-G975F beyond2lte",
+  "kernel": "4.14.253-gf7194c1d15ed-dirty",
+  "status": "deployed_userspace_and_rebooted",
+  "post_reboot_verified_utc": "2026-11-03T11:37:06Z",
+  "services": {
+    "nuxel-wayland": "active",
+    "nuxel-http-bridge": "active",
+    "nuxel-web": "active",
+    "nuxel-bridge": "active"
+  },
+  "packages": {
+    "gnome-keyring": "48.0-3.fc43",
+    "gcr3": "3.41.1-11.fc43",
+    "libsecret": "0.21.8.2-2.fc43"
+  },
+  "secret_service_owner": {
+    "name": "org.freedesktop.secrets",
+    "uid": 0,
+    "euid": 0,
+    "bus": "unix:path=/run/nuxel-wayland/bus"
+  },
+  "keyring_initialized_by_agent": false,
+  "keyring_files": 0,
+  "authenticator_envelope": {
+    "key": "nuxel-authenticator-envelope-v1",
+    "bytes": 654,
+    "ciphertext_only": true
+  },
+  "launcher_token_relay": "top-frame-only native host; secret file 0600 root",
+  "final_deploy_backup": "/var/backups/nuxel/p63000-20261103T113054Z",
+  "premission_rollback_backup": "/var/backups/nuxel/p63000-20261103T111313Z",
+  "kernel_or_boot_flash": false,
+  "artifact": "release/pwnage63000/nuxel-pwnage63000.tar.gz",
+  "artifact_sha256": "899fffca24c46ca468ab84976340b1725efdc9735084f198b904fcd248008818"
+}

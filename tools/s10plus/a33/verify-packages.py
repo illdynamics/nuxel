@@ -156,8 +156,15 @@ ESSENTIAL_GROUPS: "List[Tuple[str, str, List[dict]]]" = [
     ("audio", "PipeWire/WirePlumber + ALSA (beyond-madera card path)", [
         {"name": "pipewire"}, {"name": "wireplumber"}, {"name": "alsa-lib"},
     ]),
-    ("security", "Polkit authorisation + nftables firewall", [
+    ("security", "Polkit authorisation, nftables firewall and the OS secret service", [
         {"name": "polkit"}, {"name": "nftables"},
+        # PWNAGE-63000: the freedesktop Secret Service provider for Nuxel Vault /
+        # Authenticator.  gnome-keyring owns org.freedesktop.secrets; gcr3 ships
+        # gcr-prompter + the PrivatePrompter D-Bus service; libsecret is the
+        # supported client library used by secret-tool diagnostics and other
+        # native clients.  The manifest verifier resolves their full aarch64
+        # dependency sets against real Fedora 43 metadata and fails closed.
+        {"name": "gnome-keyring"}, {"name": "gcr3"}, {"name": "libsecret"},
     ]),
     ("power", "Power/session peripherals", [
         {"name": "upower"},

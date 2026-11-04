@@ -1,0 +1,11 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"device":"beyond2lte","tool":"nuxel-typec-diag","read_only":true,"typec_ports":["/sys/class/typec/port0"],"dp_altmodes":[],"drm_connectors":[],"drm_connected":[],"modules":[],"verdict":"TYPEC_ENUMERATED_NO_DP","owner_proof":"docs/A49/OWNER-TEST-EXTERNAL-DISPLAY.md","visible_output_verified":false}
+rc=0

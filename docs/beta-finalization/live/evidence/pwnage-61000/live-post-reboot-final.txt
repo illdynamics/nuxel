@@ -1,0 +1,34 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+POST_REBOOT_FINAL
+2026-11-03T01:40:23+01:00
+95b82b79-3d51-4a48-955e-b446551ccffd
+4.14.253-gf7194c1d15ed-dirty
+ 01:40:23 up 1 min,  0 user,  load average: 10.26, 3.88, 1.42
+degraded
+  UNIT                               LOAD   ACTIVE SUB    DESCRIPTION
+● avahi-daemon.service               loaded failed failed Avahi mDNS/DNS-SD Stack
+● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+● nuxel-boot-sound.service           loaded failed failed Nuxel startup cue after confirmed boot-animation to launcher handoff
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+3 loaded units listed.
+5873 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+9653 wireplumber
+DIAG_RC=0
+state BLOCKED_FIRMWARE_MISSING
+node /dev/video6
+firmware MISSING
+guard True
+wp True True True
+safe False

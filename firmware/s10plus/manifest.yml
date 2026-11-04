@@ -241,11 +241,32 @@ firmware_files:
       required: false
       checksum: "d315cd8bf47d90b7537aa978cb52299b7f2a56e8748588fb980b83ee823c0bfb"
   video:
+    # PWNAGE-61000: exact Exynos 9820 MFC firmware ABI candidate.
+    #
+    # The driver (drivers/media/platform/exynos/mfc) requests the bare name
+    # "mfc_fw.bin" via MFC_FW_NAME.  On this handset firmware_class.path also
+    # contains /vendor/firmware, but /lib/firmware is searched and is the
+    # destination used by this manifest.  The pin below is the approved
+    # upstream source of record; the binary is NOT committed to this
+    # repository (firmware/s10plus/blobs/vendor-firmware/ is gitignored).
+    #
+    # required:false keeps generic/software-only Nuxel images buildable.  An
+    # MFC-enabled release profile must fail closed via
+    # `install-firmware.sh --verify-mfc` if this file is absent or differs.
     - source_path: "vendor/firmware/mfc_fw.bin"
       dest: "/lib/firmware/mfc_fw.bin"
-      description: "MFC video codec firmware"
+      description: "Exynos 9820 MFC video codec firmware (mfc_fw.bin)"
       required: false
       checksum: "f3802d34524f5919c16505c03b4cbfe184963f98787feed6232b643bda68b55f"
+      size: 685832
+      source_repo: "Linux4/proprietary_vendor_samsung"
+      source_commit: "05c9ef8f16e0ad5ab274e408c120dfd99fd5c628"
+      source_path_full: "exynos9820-common/proprietary/vendor/firmware/mfc_fw.bin"
+      driver_request_name: "mfc_fw.bin"
+      expected_ip_ver: "0x1300"
+      format: "ARM32 little-endian firmware image"
+      redistribution: "build-time fetch only; not redistributed by this repository"
+      license: "Samsung proprietary vendor blob; provenance is the pinned pmaports vendor-blob source"
   camera_isp:
     - source_path: "vendor/firmware/dnn.bin"
       dest: "/lib/firmware/dnn.bin"

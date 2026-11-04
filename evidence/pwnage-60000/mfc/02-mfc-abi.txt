@@ -1,0 +1,62 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== firmware dirs ==
+drwxr-xr-x 4 root root 4096 Nov  1 13:30 /lib/firmware
+drwxr-xr-x 4 root root 4096 Nov  1 13:30 /usr/lib/firmware
+drwxr-xr-x 3 root root 4096 Nov  1 13:30 /vendor/firmware
+bcm4375B1_semco.hcd
+calliope2.dt
+calliope_dram.bin
+calliope_dram_2.bin
+calliope_sram.bin
+calliope_sram_2.bin
+cs35l40-bot-dsp1-spk-prot-calib.bin
+cs35l40-bot-dsp1-spk-prot.bin
+cs35l40-bot-dsp1-spk-prot.wmfw
+cs35l40-rcv-dsp1-spk-prot-calib.bin
+cs35l40-rcv-dsp1-spk-prot.bin
+cs35l40-rcv-dsp1-spk-prot.wmfw
+cs47l93-dsp1-trace.wmfw
+nfc
+== mfc platform ==
+-- /sys/bus/platform/drivers/s5p-mfc/188d0000.mfc
+driver
+driver_override
+modalias
+of_node
+power
+subsystem
+uevent
+video4linux
+-- /sys/bus/platform/drivers/s5p-mfc/uevent
+/sys/bus/platform/drivers/s5p-mfc/uevent
+== mfc tracepoints ==
+/sys/kernel/tracing/events/mfc/mfc_dcpp_end/enable=0
+/sys/kernel/tracing/events/mfc/mfc_dcpp_start/enable=0
+/sys/kernel/tracing/events/mfc/mfc_frame_bottom/enable=0
+/sys/kernel/tracing/events/mfc/mfc_frame_start/enable=0
+/sys/kernel/tracing/events/mfc/mfc_frame_top/enable=0
+/sys/kernel/tracing/events/mfc/mfc_loadfw_end/enable=0
+/sys/kernel/tracing/events/mfc/mfc_loadfw_start/enable=0
+/sys/kernel/tracing/events/mfc/mfc_node_close/enable=0
+/sys/kernel/tracing/events/mfc/mfc_node_open/enable=0
+== mfc dmesg ==
+== video6 sysfs ==
+s5p-mfc-dec0
+0
+/sys/devices/platform/188d0000.mfc
+== v4l2 probe script ==
+ls: cannot access '/usr/local/sbin/nuxel-v4l2-probe.py': No such file or directory
+ls: cannot access '/usr/lib/nuxel/nuxel-v4l2-probe.py': No such file or directory
+== guard state ==
+-rwxr-xr-x  1 root root 135136 Mar 30  2026 /usr/lib64/gstreamer-1.0/libgstkms.so.nuxel-disabled
+-rwxr-xr-x. 1 root root 403448 Mar 30  2026 /usr/lib64/gstreamer-1.0/libgstopengl.so.nuxel-disabled
+-rwxr-xr-x  1 root root 203560 Mar 30  2026 /usr/lib64/gstreamer-1.0/libgstv4l2codecs.so.nuxel-disabled
+-rwxr-xr-x  1 root root 405648 Mar 30  2026 /usr/lib64/gstreamer-1.0/libgstvideo4linux2.so.nuxel-disabled

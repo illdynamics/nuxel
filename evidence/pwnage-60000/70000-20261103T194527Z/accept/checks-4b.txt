@@ -1,0 +1,40 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== pid -> comm ==
+97020 phoc
+98164 WebKitWebProces
+107225 bash
+
+== WebKit env (transport/compositing) ==
+NUXEL_GRAPHICS_PROFILE_REQUESTED=gpu-rendered-shm-presented
+NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+NUXEL_GPU=1
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+NUXEL_KBASE_WSI=1
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+WEBKIT_FORCE_COMPOSITING_MODE=1
+WEBKIT_DISABLE_COMPOSITING_MODE=0
+MESA_SHADER_CACHE_DISABLE=1
+MESA_KBASE_NODE=/dev/mali0
+
+== llvmpipe in phoc maps? (expect 0) ==
+0
+0
+
+== writer count right now ==
+1
+
+== profile fields ==
+  File "<string>", line 1
+    import json,sys;d=json.load(sys.stdin);print(default_profile=,d.get("profile",{}).get("default_profile"));print(profile_active=,d.get("profile",{}).get("active"));print(fallback=,d.get("profile",{}).get("fallback_active"));print(webkit_transport=,d.get("profile",{}).get("transport") or d.get("profiles",{}).get("webgtk",{}).get("transport"));print(panel_path=,d.get("panel",{}).get("current_path","?") or d.get("presenter",{}).get("path"));print(zero_copy=,d.get("panel",{}).get("zero_copy") if isinstance(d.get("panel"),dict) else "?")
+                                                 ^^^^^^^^^^^^^^^^
+SyntaxError: expected argument value expression
+Exception ignored while flushing sys.stdout:
+BrokenPipeError: [Errno 32] Broken pipe

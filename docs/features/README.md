@@ -1,10 +1,16 @@
 # Nuxel feature status
 
 Canonical, human-readable feature list for the current repository state
-(`v0.7.5-beta`, 2026-11-01). It describes what the code and the physical Galaxy
+(`v0.7.6-beta`, 2026-11-04). It describes what the code and the physical Galaxy
 S10+ actually do, not what is merely planned.
 
-**v0.7.5-beta changes the headline verdicts:** rotation is `WORKING`
+**v0.7.6-beta adds Nuxel Doom and immersive chrome:** `org.nuxel.Doom` is a
+signed NuXtore package with an original touch-first engine, and all foreground
+PWA apps now hide the triple buttons until a bottom-edge swipe; real fullscreen
+apps also hide the top bar until a top-edge pull. Home and the lockscreen are
+excluded. See [`../games/doom.md`](../games/doom.md).
+
+**v0.7.5-beta headline verdicts remain:** rotation is `WORKING`
 (owner-confirmed, transform+scale as one transaction, touch calibration follows
 it), GPU acceleration is `PARTIAL` (Phoc and WebKit render on the Mali-G76,
 WebKit presents through SHM, and WebKit DMA-BUF / zero-copy presentation are
@@ -88,7 +94,7 @@ satellite GNSS remains `BLOCKED_FIRMWARE`.
 
 - `README.md` — release summary and readiness table.
 - `audio.md` — detailed audio state and remaining checks.
-- `CHANGELOG.md` / `docs/releases/v0.7.5-beta.md` — what changed in this release.
+- `CHANGELOG.md` / `docs/releases/v0.7.6-beta.md` — what changed in this release.
 - `out.md` — owner-confirmed audio root cause and the `works` confirmations.
 - `docs/beta-finalization/live/PWNAGE-42000-REPORT.md` — GeoClue agent and network-location evidence.
 - `docs/beta-finalization/live/PWNAGE-44000-REPORT.md` — Home/hardware UI work and measurements.

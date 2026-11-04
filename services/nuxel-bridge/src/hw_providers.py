@@ -22,6 +22,10 @@ import subprocess
 import threading
 import time
 
+from gnss_inventory import (
+    PROTOCOL,
+)
+
 # Owner-approved ceiling, shared with configs/nuxel/audio/audio.json
 # (``safety.volume_cap_percent``).  The 25% low-volume bring-up cap was retired
 # on 2026-10-30 after the CS35L41 speaker path became owner-confirmed audible.
@@ -1238,6 +1242,16 @@ class GnssProvider:
                                  "/var/lib/nuxel/permissions/location-policy.json")
     MAX_LEASE_SECONDS = 300.0
 
+    def __init__(self, root="/"):
+        """Optional ``root`` prefix for the sysfs/dev/firmware paths.
+
+        Defaults to "/" (the real device). Unit tests inject a fake root so they
+        can exercise power-on gating without touching the phone. The rail and
+        BBD node constants below stay absolute; only firmware/vendor enumeration
+        honors the prefix.
+        """
+        self.root = root
+
     _rail_lock = threading.Lock()
     _rail_owners = set()
     _rail_initial_state = None
@@ -1453,17 +1467,10 @@ class GnssProvider:
             vendor[name] = any(os.path.exists(p) for p in candidates)
         vendor_complete = all(vendor.values())
         nodes = [n for n in (self.BBD_PACKET_NODE,) + self.BBD_NODES if os.path.exists(n)]
-        firmware = []
-        for d in ("/lib/firmware/gnss", "/lib/firmware", "/vendor/firmware"):
-            try:
-                for name in sorted(os.listdir(d)):
-                    low = name.lower()
-                    if (("bcm477" in low or low.startswith(("gps", "gnss", "ssp")) or
-                         "sensorhub" in low) and
-                            not low.endswith((".hcd", ".txt", ".conf", ".json", ".cer"))):
-                        firmware.append(os.path.join(d, name))
-            except OSError:
-                continue
+        # Strict, loader-aware BBD patch inventory (single classifier). A random
+        # gps.bin/gnss.bin/ssp* blob is NOT accepted as the BCM4773 patch.
+        fw = __import__("gnss_inventory").firmware(root=self.root)
+        firmware = [f["path"] for f in fw]
         spi_bound = []
         driver_dir = "/sys/bus/spi/drivers/brcm gps spi"
         try:
@@ -1495,6 +1502,8 @@ class GnssProvider:
             "power_rail_error": rail_err,
             "active_leases": self._active_owners(),
             "firmware": firmware,
+            "firmware_candidates": fw,
+            "firmware_identity_verified": __import__("gnss_inventory").firmware_identity_verified(fw),
             "firmware_present": bool(firmware),
             "firmware_loaded": False,
             "vendor_files": vendor,

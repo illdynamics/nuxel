@@ -1,0 +1,403 @@
+{
+  "cases": {
+    "final-gpu-rendered-shm-presented-idle": {
+      "max": 7.89,
+      "median_cpu": {
+        "WebKitNetworkProcess": 0.67,
+        "WebKitWebProcess": 1.65,
+        "nuxel-pwa-host": 1.46,
+        "nuxel-wl-fb": 0.84,
+        "phoc": 1.16
+      },
+      "median_total_pct_one_core": 5.1,
+      "min": 4.68,
+      "runs": [
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 2.08,
+            "WebKitWebProcess": 3.45,
+            "nuxel-pwa-host": 2.18,
+            "nuxel-wl-fb": 0.96,
+            "phoc": 1.3
+          },
+          "renderer": "Mali-G76 MC12 (Panfrost)",
+          "run": 1,
+          "state_delta": {
+            "blits": 12.0,
+            "damage_blits": 6.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 12.0,
+            "frames": 132.0,
+            "present_skipped": 120.0
+          },
+          "timings_ms": {
+            "blit_avg": 2.0,
+            "capture_avg": 5.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 0.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 7.89,
+          "transport": "shm"
+        },
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.67,
+            "WebKitWebProcess": 1.64,
+            "nuxel-pwa-host": 1.46,
+            "nuxel-wl-fb": 0.84,
+            "phoc": 1.16
+          },
+          "renderer": "Mali-G76 MC12 (Panfrost)",
+          "run": 2,
+          "state_delta": {
+            "blits": 2.0,
+            "damage_blits": 1.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 2.0,
+            "frames": 116.0,
+            "present_skipped": 113.0
+          },
+          "timings_ms": {
+            "blit_avg": 2.0,
+            "capture_avg": 5.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 0.0,
+            "pan_avg": 10.0
+          },
+          "total_pct_one_core": 5.1,
+          "transport": "shm"
+        },
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.61,
+            "WebKitWebProcess": 1.65,
+            "nuxel-pwa-host": 1.43,
+            "nuxel-wl-fb": 0.64,
+            "phoc": 0.96
+          },
+          "renderer": "Mali-G76 MC12 (Panfrost)",
+          "run": 3,
+          "state_delta": {
+            "blits": 2.0,
+            "damage_blits": 2.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 2.0,
+            "frames": 94.0,
+            "present_skipped": 92.0
+          },
+          "timings_ms": {
+            "blit_avg": 2.0,
+            "capture_avg": 5.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 0.0,
+            "pan_avg": 10.0
+          },
+          "total_pct_one_core": 4.68,
+          "transport": "shm"
+        }
+      ]
+    },
+    "final-gpu-rendered-shm-presented-settings-scroll": {
+      "max": 24.05,
+      "median_cpu": {
+        "WebKitNetworkProcess": 0.63,
+        "WebKitWebProcess": 13.77,
+        "nuxel-pwa-host": 4.53,
+        "nuxel-wl-fb": 2.1,
+        "phoc": 3.29
+      },
+      "median_total_pct_one_core": 23.83,
+      "min": 23.44,
+      "runs": [
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.6,
+            "WebKitWebProcess": 13.94,
+            "nuxel-pwa-host": 4.5,
+            "nuxel-wl-fb": 2.1,
+            "phoc": 3.29
+          },
+          "renderer": "Mali-G76 MC12 (Panfrost)",
+          "run": 1,
+          "state_delta": {
+            "blits": 99.0,
+            "damage_blits": 99.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 99.0,
+            "frames": 266.0,
+            "present_skipped": 167.0
+          },
+          "timings_ms": {
+            "blit_avg": 1.0,
+            "capture_avg": 6.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 1.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 23.83,
+          "transport": "shm"
+        },
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.63,
+            "WebKitWebProcess": 13.77,
+            "nuxel-pwa-host": 4.54,
+            "nuxel-wl-fb": 1.94,
+            "phoc": 3.19
+          },
+          "renderer": "Mali-G76 MC12 (Panfrost)",
+          "run": 2,
+          "state_delta": {
+            "blits": 98.0,
+            "damage_blits": 98.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 98.0,
+            "frames": 257.0,
+            "present_skipped": 159.0
+          },
+          "timings_ms": {
+            "blit_avg": 1.0,
+            "capture_avg": 6.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 1.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 23.44,
+          "transport": "shm"
+        },
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.67,
+            "WebKitWebProcess": 13.62,
+            "nuxel-pwa-host": 4.53,
+            "nuxel-wl-fb": 2.38,
+            "phoc": 3.52
+          },
+          "renderer": "Mali-G76 MC12 (Panfrost)",
+          "run": 3,
+          "state_delta": {
+            "blits": 113.0,
+            "damage_blits": 112.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 113.0,
+            "frames": 303.0,
+            "present_skipped": 189.0
+          },
+          "timings_ms": {
+            "blit_avg": 1.0,
+            "capture_avg": 6.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 1.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 24.05,
+          "transport": "shm"
+        }
+      ]
+    },
+    "final-software-safe-idle": {
+      "max": 14.45,
+      "median_cpu": {
+        "WebKitNetworkProcess": 0.8,
+        "WebKitWebProcess": 3.01,
+        "nuxel-pwa-host": 3.09,
+        "nuxel-wl-fb": 1.83,
+        "phoc": 3.41
+      },
+      "median_total_pct_one_core": 11.05,
+      "min": 10.59,
+      "runs": [
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 2.16,
+            "WebKitWebProcess": 5.66,
+            "nuxel-pwa-host": 3.46,
+            "nuxel-wl-fb": 1.83,
+            "phoc": 3.5
+          },
+          "renderer": null,
+          "run": 1,
+          "state_delta": {
+            "blits": 13.0,
+            "damage_blits": 11.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 13.0,
+            "frames": 274.0,
+            "present_skipped": 261.0
+          },
+          "timings_ms": {
+            "blit_avg": 2.0,
+            "capture_avg": 5.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 0.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 14.45,
+          "transport": "shm"
+        },
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.8,
+            "WebKitWebProcess": 3.01,
+            "nuxel-pwa-host": 2.63,
+            "nuxel-wl-fb": 2.0,
+            "phoc": 3.41
+          },
+          "renderer": null,
+          "run": 2,
+          "state_delta": {
+            "blits": 10.0,
+            "damage_blits": 10.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 10.0,
+            "frames": 306.0,
+            "present_skipped": 296.0
+          },
+          "timings_ms": {
+            "blit_avg": 1.0,
+            "capture_avg": 4.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 0.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 11.05,
+          "transport": "shm"
+        },
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.69,
+            "WebKitWebProcess": 2.96,
+            "nuxel-pwa-host": 3.09,
+            "nuxel-wl-fb": 1.3,
+            "phoc": 3.24
+          },
+          "renderer": null,
+          "run": 3,
+          "state_delta": {
+            "blits": 6.0,
+            "damage_blits": 6.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 6.0,
+            "frames": 186.0,
+            "present_skipped": 180.0
+          },
+          "timings_ms": {
+            "blit_avg": 1.0,
+            "capture_avg": 4.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 0.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 10.59,
+          "transport": "shm"
+        }
+      ]
+    },
+    "final-software-safe-settings-scroll": {
+      "max": 23.04,
+      "median_cpu": {
+        "WebKitNetworkProcess": 0.6,
+        "WebKitWebProcess": 4.03,
+        "nuxel-pwa-host": 7.9,
+        "nuxel-wl-fb": 2.51,
+        "phoc": 8.35
+      },
+      "median_total_pct_one_core": 22.8,
+      "min": 22.75,
+      "runs": [
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.75,
+            "WebKitWebProcess": 4.14,
+            "nuxel-pwa-host": 7.67,
+            "nuxel-wl-fb": 2.81,
+            "phoc": 8.42
+          },
+          "renderer": null,
+          "run": 1,
+          "state_delta": {
+            "blits": 119.0,
+            "damage_blits": 119.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 119.0,
+            "frames": 383.0,
+            "present_skipped": 263.0
+          },
+          "timings_ms": {
+            "blit_avg": 1.0,
+            "capture_avg": 8.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 1.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 23.04,
+          "transport": "shm"
+        },
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.6,
+            "WebKitWebProcess": 3.99,
+            "nuxel-pwa-host": 7.9,
+            "nuxel-wl-fb": 2.51,
+            "phoc": 8.35
+          },
+          "renderer": null,
+          "run": 2,
+          "state_delta": {
+            "blits": 122.0,
+            "damage_blits": 122.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 122.0,
+            "frames": 344.0,
+            "present_skipped": 222.0
+          },
+          "timings_ms": {
+            "blit_avg": 1.0,
+            "capture_avg": 9.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 1.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 22.75,
+          "transport": "shm"
+        },
+        {
+          "cpu": {
+            "WebKitNetworkProcess": 0.6,
+            "WebKitWebProcess": 4.03,
+            "nuxel-pwa-host": 7.93,
+            "nuxel-wl-fb": 2.49,
+            "phoc": 8.35
+          },
+          "renderer": null,
+          "run": 3,
+          "state_delta": {
+            "blits": 111.0,
+            "damage_blits": 111.0,
+            "decon_pan_failed": 0.0,
+            "decon_pan_ok": 111.0,
+            "frames": 354.0,
+            "present_skipped": 243.0
+          },
+          "timings_ms": {
+            "blit_avg": 1.0,
+            "capture_avg": 9.0,
+            "compare_avg": 3.0,
+            "damage_blit_avg": 1.0,
+            "pan_avg": 9.0
+          },
+          "total_pct_one_core": 22.8,
+          "transport": "shm"
+        }
+      ]
+    }
+  },
+  "deltas": {
+    "idle_gpu_vs_sw_pct_change": -53.85,
+    "settings_scroll_gpu_vs_sw_pct_change": 4.52
+  },
+  "schema": "nuxel.pwnage60000.ab-summary/1",
+  "source": "evidence/pwnage-60000/bench/final/final-bench",
+  "workload_note": "3x60s per case, panel kept awake via screen-on FIFO, WebKit process profile asserted before each case"
+}

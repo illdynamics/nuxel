@@ -66,8 +66,8 @@
   },
   {
     "path": "pwa/nuxel-apps/console/index.html",
-    "sha256": "b7fc76d120ddb21535f616f82c761fa142cd3b662757e8d953f2fac58b96f8dc",
-    "size": 580
+    "sha256": "5d28fb7ebcf7b721d965791b72b20ad5ed6719ba96a3aab8042b70655679c6d1",
+    "size": 654
   },
   {
     "path": "pwa/nuxel-apps/console/manifest.json",

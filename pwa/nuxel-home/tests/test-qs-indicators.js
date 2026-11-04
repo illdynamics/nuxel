@@ -32,7 +32,7 @@ function load(indicators) {
   vm.runInContext(classSrc + '\nthis.__QS = QuickSettings;', sandbox);
   const qs = Object.create(sandbox.__QS.prototype);
   qs.isOpen = true; qs.expanded = true; qs.state = {}; qs._indicatorGeneration = 0;
-  return { qs, els };
+  return { qs, els, QS: sandbox.__QS };
 }
 const base = {
   charging: { charging: false, external_power: false, battery_level: 42 },
@@ -67,7 +67,28 @@ const base = {
 
   check('QS close stops the panel timers', /close\(\)[\s\S]*clearInterval\(this\._locationTimer\)/.test(src));
   check('stale indicator responses are discarded after close', /_indicatorGeneration/.test(src));
-  check('deeper pull expands instead of closing', /pull\(\)[\s\S]*else if \(!this\.expanded\) this\.expand\(\)/.test(src));
+  // Directional pull contract: closed -> compact -> expanded, while an
+  // upward pull closes only the compact panel.
+  const { QS } = load(base);
+  const pullOutcome = (isOpen, expanded, direction) => {
+    const q = Object.create(QS.prototype);
+    q.isOpen = isOpen; q.expanded = expanded;
+    const calls = [];
+    q.open = () => { calls.push('open'); q.isOpen = true; q.expanded = false; };
+    q.expand = () => { calls.push('expand'); q.expanded = true; };
+    q.close = () => { calls.push('close'); q.isOpen = false; q.expanded = false; };
+    q.pull(direction);
+    return calls[0] || 'noop';
+  };
+  check('closed + pull-down opens compact', pullOutcome(false, false, 'down') === 'open');
+  check('closed + pull-up is inert', pullOutcome(false, false, 'up') === 'noop');
+  check('compact + pull-down expands', pullOutcome(true, false, 'down') === 'expand');
+  check('compact + pull-up closes', pullOutcome(true, false, 'up') === 'close');
+  check('expanded + pull-down closes', pullOutcome(true, true, 'down') === 'close');
+  check('expanded + pull-up is inert', pullOutcome(true, true, 'up') === 'noop');
+  check('Quick Settings panel owns its own pointer/touch pull',
+        /_bindPullGesture\(\)/.test(src) && /\.addEventListener\('touchstart'/.test(src) &&
+        /\.addEventListener\('pointerup'/.test(src));
   check('flashlight uses the privileged provider', /bridge\.call\('flashlight', 'toggle'/.test(src));
   process.exit(failures ? 1 : 0);
 })();

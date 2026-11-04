@@ -229,24 +229,45 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
     ind.stop();
   }
 
-  // PWNAGE-46000: a WLAN-only console is still a live console.  The middle
-  // status light must be on even when no serial or USB console exists.
+  // PWNAGE-46000 / A77: a WLAN console counts as live only while an SSH
+  // session is ESTABLISHED.  A listening sshd with zero sessions is not a
+  // connection and must leave both the WLAN and generic live lights dark.
   {
     const h = harness({
       charging: {}, usb_data: {},
-      live_console: { active: false, service_armed: false },
+      live_console: { active: true, service_armed: true },
       console_transports: { serial: { active: false }, usb: { active: false },
-                            wlan: { active: true, source: 'netlink:wlan' } },
+                            wlan: { available: true, active: true,
+                                    source: 'wlan:interactive-pty-session', sessions: 1 } },
     });
     const ind = new h.sandbox.NuxelLockscreenIndicators();
     ind.start();
     await flush();
-    check('WLAN-only console lights the middle live-console indicator',
+    check('connected WLAN console keeps the base live-console indicator on',
           h.nodes['lockscreen-indicator-live'].classList.contains('active'));
-    check('WLAN-only console names its provenance',
-          h.nodes['lockscreen-indicator-live'].dataset.liveReason === 'wlan-console');
-    check('WLAN-only console still lights the WLAN transport',
+    check('base live-console indicator names service readiness',
+          h.nodes['lockscreen-indicator-live'].dataset.liveReason === 'service-ready');
+    check('connected WLAN console lights the WLAN transport',
           h.nodes['lockscreen-transport-wlan'].classList.contains('active'));
+    ind.stop();
+  }
+
+  {
+    const h = harness({
+      charging: {}, usb_data: {},
+      live_console: { active: false, service_armed: true },
+      console_transports: { serial: { active: false }, usb: { active: false },
+                            wlan: { active: true, source: 'wlan:sshd-listening', sessions: 0 } },
+    });
+    const ind = new h.sandbox.NuxelLockscreenIndicators();
+    ind.start();
+    await flush();
+    check('idle WLAN listener keeps the base indicator on (service ready)',
+          h.nodes['lockscreen-indicator-live'].classList.contains('active'));
+    check('idle WLAN listener never lights a transport icon',
+          !h.nodes['lockscreen-transport-wlan'].classList.contains('active'));
+    check('idle WLAN listener leaves the WLAN transport dark',
+          !h.nodes['lockscreen-transport-wlan'].classList.contains('active'));
     ind.stop();
   }
 

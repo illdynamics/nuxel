@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/media/index.html",
-    "sha256": "c689a6adceca4f04a6ba643c5ddbeae65563f72ce8c6af47725e15f681335ca6",
-    "size": 6757
+    "sha256": "28a07a9afc1ed0b3ecb9707b9ba6f240427d69ae01a9ad5bbbd163cc4fadb4aa",
+    "size": 6831
   },
   {
     "path": "pwa/nuxel-apps/media/js/media-library.js",
@@ -76,8 +76,8 @@
   },
   {
     "path": "pwa/nuxel-apps/media/manifest.json",
-    "sha256": "9e64105ec87afaa7c9c469b2b1183712b0371b660a789716a805294c29e597f9",
-    "size": 983
+    "sha256": "879a0ad305b0a68ca9e4027803bced7b5f208253426f51f32e1dc5f4fd67645a",
+    "size": 1145
   },
   {
     "path": "pwa/nuxel-apps/media/samples/cover-tone.svg",

@@ -1,0 +1,747 @@
+#!/usr/bin/env python3
+"""Truthful, layered Nuxel GPU / media / external-display status (PWNAGE-60000).
+
+  nuxel-gpu-status [--json] [--deep] [--no-probe]
+
+Read-only.  It never opens /dev/video*, never writes /dev/fb0, never creates a
+DRM node and never runs a benchmark.  Rendering, WebKit transport and final
+panel presentation are reported separately so a single green "GPU" badge can
+never hide a CPU copy or an SHM presentation path.
+
+--deep additionally runs the bounded GTK3 probe and a short strace attach for a
+kbase job-submit proxy.  Without --deep only cheap /proc, /sys and cached
+results are read, so the bridge can call it on a UI request path.
+"""
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import glob
+
+PROFILE_TOOL = "/usr/lib/nuxel/nuxel-graphics-profile"
+EGL_VENDOR = "/etc/nuxel/egl-kbase.json"
+FB_STATE = "/run/nuxel-wl-fb.state"
+GTK3_CACHE = "/run/nuxel/graphics-gtk3.json"
+GTK4_CACHE = "/run/nuxel/graphics-gtk4.json"
+CAST_CACHE = "/run/nuxel/cast-status.json"
+WEBKIT_DMABUF_PROOF = "/run/nuxel-webkit-dmabuf-proof.json"
+FB_FALLBACK = "/run/nuxel-gpu-fallback"
+KBASE_IOCTL_JOB_SUBMIT = "0x40108002"  # _IOW(0x80, 0x02, 0x10)
+
+
+def read(path, limit=262144):
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            return f.read(limit)
+    except OSError:
+        return ""
+
+
+def read_bytes(path, limit=1 << 20):
+    try:
+        with open(path, "rb") as f:
+            return f.read(limit)
+    except OSError:
+        return b""
+
+
+def sha(path):
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError:
+        return None
+
+
+def run(argv, timeout=2.0, env=None):
+    """Run a bounded child and KEEP stdout/stderr even if it is killed at the
+    deadline.  The GTK3 probe intentionally stays in its main loop after it has
+    already printed PASS; discarding that output made the status lie."""
+    try:
+        p = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True, env=env, start_new_session=True)
+    except OSError as exc:
+        return 127, "", str(exc)
+    try:
+        out, err = p.communicate(timeout=timeout)
+        return p.returncode, out, err
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(p.pid, 9)
+        except Exception:
+            pass
+        try:
+            out, err = p.communicate(timeout=1)
+        except Exception:
+            out, err = "", ""
+        return 124, out, err
+
+
+def probe_env(extra=None):
+    env = dict(os.environ)
+    env.pop("LIBGL_ALWAYS_SOFTWARE", None)
+    env.pop("WEBKIT_DISABLE_COMPOSITING_MODE", None)
+    env.update({
+        "XDG_RUNTIME_DIR": env.get("XDG_RUNTIME_DIR", "/run/nuxel-wayland"),
+        "WAYLAND_DISPLAY": env.get("WAYLAND_DISPLAY", "wayland-0"),
+        "GDK_BACKEND": "wayland",
+        "GDK_GL": "gles",
+        "MESA_KBASE_NODE": "/dev/mali0",
+        "MESA_LOADER_DRIVER_OVERRIDE": "panfrost",
+        "LIBGL_DRIVERS_PATH": "/usr/lib64/dri",
+        "__EGL_VENDOR_LIBRARY_FILENAMES": "/etc/nuxel/egl-kbase.json",
+    })
+    if extra:
+        env.update(extra)
+    return env
+
+
+def proc_comm(pid):
+    return read("/proc/%d/comm" % pid, 256).strip()
+
+
+def pids_matching(pattern):
+    out = []
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        pid = int(entry)
+        comm = proc_comm(pid)
+        try:
+            cmd = read("/proc/%d/cmdline" % pid, 8192).replace("\0", " ")
+        except OSError:
+            cmd = ""
+        if re.search(pattern, comm + " " + cmd):
+            out.append(pid)
+    return out
+
+
+def normalize_fd_target(target):
+    """A systemd mount namespace may expose the host root as /newroot.
+    Normalize that prefix so /newroot/dev/mali0 is still recognized."""
+    if target.startswith("/newroot/"):
+        return target[len("/newroot"):]
+    return target
+
+
+def fd_links(pid):
+    """Return (links, error).  A sandboxed caller may be denied /proc/PID/fd
+    while still being allowed to read maps/environ; that is reported as
+    fd_scan=denied instead of being misread as zero open files."""
+    links = []
+    try:
+        for name in os.listdir("/proc/%d/fd" % pid):
+            try:
+                target = normalize_fd_target(
+                    os.readlink("/proc/%d/fd/%s" % (pid, name)))
+                links.append((name, target))
+            except OSError:
+                pass
+        return links, None
+    except OSError as exc:
+        return [], exc
+
+
+def thread_names(pid):
+    names = []
+    try:
+        for t in os.listdir("/proc/%d/task" % pid):
+            names.append(read("/proc/%d/task/%s/comm" % (pid, t), 256).strip())
+    except OSError:
+        pass
+    return names
+
+
+def mapping_paths(pid, needle):
+    paths = set()
+    for line in read("/proc/%d/maps" % pid, 8 << 20).splitlines():
+        if needle in line:
+            parts = line.split()
+            if len(parts) >= 6:
+                paths.add(parts[-1])
+    return sorted(paths)
+
+
+def parse_kv_state(text):
+    out = {}
+    for token in text.split():
+        if "=" in token:
+            k, _, v = token.partition("=")
+            out[k] = v
+    m = re.search(r"FRAMES_OK", text)
+    out["_frames_ok"] = bool(m)
+    return out
+
+
+def profile_status():
+    if not os.path.isfile(PROFILE_TOOL):
+        return {"available": False, "reason": "helper missing"}
+    rc, out, err = run([PROFILE_TOOL, "status", "--no-probe"], timeout=3)
+    try:
+        doc = json.loads(out)
+        doc["_rc"] = rc
+        return doc
+    except ValueError:
+        return {"available": False, "reason": (err or out or "no JSON")[:300]}
+
+
+def kernel_gpu():
+    node = "/dev/mali0"
+    doc = {"device": node, "present": os.path.exists(node)}
+    if doc["present"]:
+        try:
+            st = os.stat(node)
+            doc["mode"] = oct(st.st_mode & 0o777)
+            doc["readable"] = os.access(node, os.R_OK)
+            doc["writable"] = os.access(node, os.W_OK)
+        except OSError:
+            pass
+    versions = {}
+    for p in ("/sys/module/mali/version", "/sys/module/mali_kbase/version",
+              "/sys/class/misc/mali0/version", "/sys/class/misc/mali0/device/version"):
+        v = read(p, 256).strip()
+        if v:
+            versions[p] = v
+    doc["version_files"] = versions
+    doc["driver"] = "mali_kbase (vendor ARM kbase)" if doc["present"] else None
+    doc["udmabuf"] = os.path.exists("/dev/udmabuf")
+    doc["dri_present"] = os.path.exists("/dev/dri")
+    return doc
+
+
+def egl_status():
+    link = "/usr/lib64/libEGL_mesa.so.0"
+    doc = {
+        "link": os.readlink(link) if os.path.islink(link) else None,
+        "vendor_json": EGL_VENDOR,
+        "vendor_json_present": os.path.isfile(EGL_VENDOR),
+    }
+    try:
+        v = json.loads(read(EGL_VENDOR, 4096))
+        lib = (v.get("ICD") or {}).get("library_path")
+        doc["vendor_library"] = lib
+        doc["vendor_library_present"] = bool(lib and os.path.isfile(lib))
+        doc["vendor_library_sha256"] = sha(lib) if lib else None
+    except Exception:
+        pass
+    doc["egl_mesa_sha256"] = sha("/usr/lib64/libEGL_mesa.so.0.0.0")
+    doc["gallium_sha256"] = sha("/usr/lib64/libgallium_dri.so")
+    doc["wlroots_sha256"] = sha("/usr/lib64/libwlroots-0.19.so")
+    doc["stock_backup_selected"] = bool(doc.get("link") and "nuxel-bak" in doc["link"])
+    probe = "/run/nuxel/graphics-gpu-probe.json"
+    try:
+        p = json.loads(read(probe, 8192))
+        doc["probe"] = {"ok": p.get("ok"), "renderer": p.get("renderer"),
+                        "gl_version": p.get("gl_version"),
+                        "egl_version": p.get("egl_version"),
+                        "rc": p.get("rc"), "elapsed_ms": p.get("elapsed_ms")}
+    except Exception:
+        doc["probe"] = None
+    return doc
+
+
+def phoc_status(deep):
+    ps = pids_matching(r"(^|/| )phoc( |$)")
+    if not ps:
+        return {"running": False}
+    pid = ps[0]
+    links, ferr = fd_links(pid)
+    mali = sum(1 for _, t in links if t == "/dev/mali0") if ferr is None else None
+    udmabuf = sum(1 for _, t in links if t == "/dev/udmabuf") if ferr is None else None
+    names = thread_names(pid)
+    gallium = mapping_paths(pid, "libgallium")
+    env = read("/proc/%d/environ" % pid, 65536)
+    gpu_env = "NUXEL_GPU=1" in env or "MESA_KBASE_NODE=/dev/mali0" in env
+    doc = {
+        "running": True,
+        "pid": pid,
+        "comm": proc_comm(pid),
+        "egl_library": mapping_paths(pid, "libEGL_mesa"),
+        "gallium_library": gallium,
+        "wlroots_library": mapping_paths(pid, "libwlroots"),
+        "llvmpipe_threads": sorted(n for n in names if "llvmpipe" in n.lower()),
+        "mali_fds": mali,
+        "udmabuf_fds": udmabuf,
+        "fd_scan": "ok" if ferr is None else "denied",
+        "fd_scan_error": str(ferr) if ferr else None,
+        "accelerated": bool(gallium) and gpu_env and
+                       (mali > 0 if mali is not None else True),
+        "job_submit_proxy": {"method": "open /dev/mali0 fd count", "count": mali,
+                             "note": "kbase does not expose a portable job counter"},
+    }
+    if deep:
+        if shutil.which("strace"):
+            rc, out, err = run(["strace", "-f", "-e", "trace=ioctl",
+                                "-p", str(pid)], timeout=2.5)
+            hits = (out + err).count(KBASE_IOCTL_JOB_SUBMIT)
+            doc["job_submit_proxy"]["strace"] = {
+                "rc": rc, "job_submit_hits": hits, "window_s": 2.5,
+                "note": "ioctl count is a proxy, not a driver counter"}
+        else:
+            doc["job_submit_proxy"]["strace"] = "strace not installed"
+    return doc
+
+
+def gtk3_status(deep):
+    if not deep:
+        try:
+            return json.loads(read(GTK3_CACHE, 8192))
+        except Exception:
+            return {"status": "UNTESTED", "note": "use --deep to run GtkGLArea probe"}
+    probe = "/usr/lib/nuxel/nuxel-gtk3-gl-probe"
+    if not os.path.isfile(probe):
+        return {"status": "UNTESTED", "reason": "probe not installed"}
+    rc, out, err = run([probe], timeout=4, env=probe_env())
+    renderer = None
+    for line in out.splitlines():
+        if line.strip().startswith("{"):
+            try:
+                j = json.loads(line)
+                if j.get("gl_renderer"):
+                    renderer = j["gl_renderer"]
+                if j.get("gtk3_gl") == "PASS":
+                    doc = {"status": "PASS", "renderer": renderer,
+                           "rc": rc, "note": "probe stays in its main loop; rc=124 is normal after PASS"}
+                    try:
+                        os.makedirs(os.path.dirname(GTK3_CACHE), exist_ok=True)
+                        with open(GTK3_CACHE, "w") as f:
+                            json.dump(doc, f)
+                    except OSError:
+                        pass
+                    return doc
+            except ValueError:
+                pass
+    return {"status": "FALLBACK", "renderer": renderer, "rc": rc,
+            "stderr": err.strip()[-300:]}
+
+
+def gtk4_status(deep):
+    env_renderer = None
+    for p in pids_matching(r"nuxel-pwa-host|WebKitWebProcess"):
+        env = read("/proc/%d/environ" % p, 65536)
+        for item in env.split("\0"):
+            if item.startswith("GSK_RENDERER="):
+                env_renderer = item.split("=", 1)[1]
+                break
+        if env_renderer:
+            break
+    doc = {"requested_renderer": env_renderer or "unset", "status": "UNTESTED"}
+    if env_renderer in ("cairo", "software"):
+        doc["status"] = "FALLBACK"
+        doc["reason"] = "GTK4 GSK is deliberately scoped to cairo until the live probe passes"
+        return doc
+    if not deep:
+        try:
+            return json.loads(read(GTK4_CACHE, 8192))
+        except Exception:
+            return doc
+    probe = "/usr/lib/nuxel/nuxel-gtk4-gsk-probe"
+    if not os.path.isfile(probe):
+        doc["reason"] = "gtk4 probe not installed"
+        return doc
+    rc, out, err = run([probe], timeout=4, env=probe_env({"GSK_RENDERER": "gl"}))
+    doc["probe"] = {"rc": rc, "stdout": out.strip()[-800:], "stderr": err.strip()[-300:]}
+    doc["status"] = "PASS" if '"gtk4_gsk":"PASS"' in out else "FALLBACK"
+    try:
+        os.makedirs(os.path.dirname(GTK4_CACHE), exist_ok=True)
+        with open(GTK4_CACHE, "w") as f:
+            json.dump(doc, f)
+    except OSError:
+        pass
+    return doc
+
+
+def webkit_status(deep):
+    ps = pids_matching(r"WebKitWebProcess")
+    if not ps:
+        return {"running": False}
+    pid = ps[0]
+    links, ferr = fd_links(pid)
+    mali = sum(1 for _, t in links if t == "/dev/mali0") if ferr is None else None
+    transport_fds = [{"fd": n, "target": t} for n, t in links
+                     if "udmabuf" in t or "dmabuf" in t or "/dev/dri" in t]
+    gallium = mapping_paths(pid, "libgallium")
+    env = {}
+    raw = read("/proc/%d/environ" % pid, 131072)
+    for item in raw.split("\0"):
+        if "=" in item:
+            k, v = item.split("=", 1)
+            if k in ("WEBKIT_DISABLE_COMPOSITING_MODE", "WEBKIT_FORCE_COMPOSITING_MODE",
+                     "LIBGL_ALWAYS_SOFTWARE", "MESA_KBASE_NODE", "NUXEL_KBASE_WSI",
+                     "NUXEL_GRAPHICS_PROFILE_ACTIVE", "NUXEL_GRAPHICS_PROFILE_REQUESTED",
+                     "NUXEL_GRAPHICS_FALLBACK_REASON",
+                     "WEBKIT_WEB_RENDER_DEVICE_FILE"):
+                env[k] = v
+    gpu = bool(gallium) and env.get("WEBKIT_DISABLE_COMPOSITING_MODE") != "1" and \
+        (mali > 0 if mali is not None else True)
+    doc = {
+        "running": True,
+        "pid": pid,
+        "egl_library": mapping_paths(pid, "libEGL_mesa"),
+        "gallium_library": mapping_paths(pid, "libgallium"),
+        "mali_fds": mali,
+        "transport_fds": transport_fds,
+        "transport": "shm" if not transport_fds else "dmabuf-candidate",
+        "gpu_rendering": gpu,
+        "fd_scan": "ok" if ferr is None else "denied",
+        "fd_scan_error": str(ferr) if ferr else None,
+        "env": env,
+        "webkit_2_54_1_gate": {
+            "requires_drmMainDevice": True,
+            "drm_main_device_null": not os.path.exists("/dev/dri"),
+            "web_render_device_file": env.get("WEBKIT_WEB_RENDER_DEVICE_FILE",
+                                              "unset"),
+            "hardware_transport_available": bool(transport_fds),
+            "note": "SHM is honest; DMA-BUF requires a real DRM/GBM device.",
+        },
+    }
+    if deep and shutil.which("strace"):
+        rc, out, err = run(["strace", "-f", "-e", "trace=ioctl",
+                            "-p", str(pid)], timeout=2.5)
+        doc["job_submit_proxy"] = {
+            "rc": rc, "job_submit_hits": (out + err).count(KBASE_IOCTL_JOB_SUBMIT),
+            "window_s": 2.5}
+    return doc
+
+
+def dmabuf_status(deep):
+    doc = {"protocol": None, "linear_only": None, "formats": [], "source": None}
+    if shutil.which("wayland-info"):
+        env = dict(os.environ)
+        env.setdefault("XDG_RUNTIME_DIR", "/run/nuxel-wayland")
+        env.setdefault("WAYLAND_DISPLAY", "wayland-0")
+        rc, out, err = run(["wayland-info"], timeout=3, env=env)
+        if rc == 0:
+            doc["source"] = "wayland-info"
+            m = re.search(r"interface: 'zwp_linux_dmabuf_v1', version: (\d+)", out)
+            if m:
+                doc["protocol"] = int(m.group(1))
+            # A v3 legacy format table appears as format/modifier pairs.
+            for line in out.splitlines():
+                if "format" in line.lower() and "modifier" in line.lower():
+                    doc["formats"].append(line.strip()[:200])
+            doc["linear_only"] = bool(doc["formats"]) and all(
+                "linear" in f.lower() or "0x0" in f for f in doc["formats"])
+    if doc["source"] is None:
+        text = read("/run/nuxel-wayland.log", 1 << 20)
+        m = re.search(r"linux_dmabuf.*v(?:ersion)?[ =:]?(\d+)", text, re.I)
+        if m:
+            doc["protocol"] = int(m.group(1))
+            doc["source"] = "/run/nuxel-wayland.log"
+    return doc
+
+
+def fb_status():
+    text = read(FB_STATE, 8192)
+    state = parse_kv_state(text)
+    writers = []
+    fd_scan_denied = False
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        pid = int(entry)
+        links, ferr = fd_links(pid)
+        if ferr is not None:
+            fd_scan_denied = True
+        for n, t in links:
+            if t == "/dev/fb0":
+                writers.append({"pid": pid, "comm": proc_comm(pid), "fd": n})
+    geom = {}
+    for key, path in (("virtual_size", "/sys/class/graphics/fb0/virtual_size"),
+                      ("modes", "/sys/class/graphics/fb0/modes"),
+                      ("name", "/sys/class/graphics/fb0/name"),
+                      ("bpp", "/sys/class/graphics/fb0/bits_per_pixel")):
+        geom[key] = read(path, 256).strip()
+    bridge_procs = pids_matching(r"^nuxel-wl-fb$")
+    owner = state.get("owner")
+    one_writer = (len(writers) == 1) if not fd_scan_denied else (
+        len(bridge_procs) == 1 and owner == "nuxel-wl-fb")
+    return {
+        "state": text.strip(),
+        "parsed": state,
+        "writers": writers,
+        "fd_scan": "denied" if fd_scan_denied else "ok",
+        "nuxel_wl_fb_processes": bridge_procs,
+        "one_writer": one_writer,
+        "geometry": geom,
+        "fallback_marker": os.path.exists(FB_FALLBACK),
+        "frames_ok": bool(state.get("_frames_ok")),
+        "decon_pan_failed": int(state.get("decon_pan_failed", -1))
+        if str(state.get("decon_pan_failed", "")).isdigit() else None,
+    }
+
+
+def video_status():
+    nodes = []
+    for d in sorted(glob.glob("/sys/class/video4linux/video*")):
+        name = read(os.path.join(d, "name"), 256).strip()
+        if "mfc" in name.lower():
+            nodes.append({"node": "/dev/" + os.path.basename(d), "name": name,
+                          "driver": os.path.basename(os.path.realpath(
+                              os.path.join(d, "device/driver")))})
+    guard = "/usr/lib/nuxel/nuxel-gstreamer-guard.sh"
+    disabled = sorted(os.path.basename(p) for p in
+                      glob.glob("/usr/lib64/gstreamer-1.0/*.nuxel-disabled"))
+    firmware = sorted(os.path.basename(p) for p in
+                      glob.glob("/lib/firmware/*mfc*") + glob.glob("/usr/lib/firmware/*mfc*") +
+                      glob.glob("/vendor/firmware/*mfc*"))
+    firmware_paths = ["/lib/firmware/mfc_fw.bin", "/usr/lib/firmware/mfc_fw.bin",
+                      "/vendor/firmware/mfc_fw.bin"]
+    firmware_present = [p for p in firmware_paths if os.path.isfile(p)]
+    doc = {
+        "driver_nodes": nodes,
+        "gstreamer_guard_installed": os.path.isfile(guard),
+        "gstreamer_plugins_disabled": disabled,
+        "firmware_files": firmware,
+        "expected_firmware": "mfc_fw.bin (s5p-mfc / samsung,exynos-mfc)",
+        "firmware_paths_checked": firmware_paths,
+        "firmware_present": firmware_present,
+        "request_firmware_user_helper_fallback": True,
+        "opened_any_video_node": False,
+        "note": "This diagnostic reads sysfs only. It never open()s /dev/video*; "
+                "MFC open() has previously blocked in firmware loading.",
+    }
+    if nodes and not firmware_present:
+        doc["status"] = "BLOCKED_GUARDED"
+        doc["reason"] = ("s5p-mfc nodes exist but mfc_fw.bin is absent from every "
+                         "firmware path; CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y can "
+                         "wait in request_firmware, so the GStreamer guard remains active")
+    elif nodes and os.path.isfile(guard):
+        doc["status"] = "BLOCKED_GUARDED"
+        doc["reason"] = ("s5p-mfc nodes exist but the matching ABI/open path is not "
+                         "proven; GStreamer guard remains active")
+    elif nodes:
+        doc["status"] = "CANDIDATE_GUARD_MISSING"
+    else:
+        doc["status"] = "NOT_TESTED"
+    return doc
+
+
+def typec_status():
+    ports = []
+    for p in sorted(glob.glob("/sys/class/typec/port*")):
+        ports.append({
+            "port": os.path.basename(p),
+            "data_role": read(os.path.join(p, "data_role"), 128).strip(),
+            "power_role": read(os.path.join(p, "power_role"), 128).strip(),
+            "port_type": read(os.path.join(p, "port_type"), 128).strip(),
+            "orientation": read(os.path.join(p, "orientation"), 128).strip(),
+        })
+    connectors = sorted(os.path.basename(p) for p in glob.glob("/sys/class/drm/card*-*"))
+    doc = {
+        "typec_ports": ports,
+        "drm_connectors": connectors,
+        "drm_nodes": sorted(os.path.basename(p) for p in glob.glob("/dev/dri/*")),
+        "dp_aux_nodes": sorted(glob.glob("/dev/drm_dp_aux*")),
+        "hpd": "unknown",
+        "status": "NEEDS OWNER TEST" if ports else "BLOCKED",
+        "note": "No mux/PMIC writes and no adapter is assumed. A Type-C port does "
+                "not prove DP Alt Mode negotiation, a DRM connector or external pixels.",
+    }
+    return doc
+
+
+def cast_status():
+    # A root-shell run can query netlink.  The HTTP bridge is deliberately
+    # sandboxed with RestrictAddressFamilies=AF_INET AF_UNIX, so iw returns no
+    # data there.  Prefer a fresh cache written by the read-only CLI; otherwise
+    # report UNKNOWN, never a false BLOCKED.
+    try:
+        st = os.stat(CAST_CACHE)
+        if time.time() - st.st_mtime < 3600:
+            cached = json.loads(read(CAST_CACHE, 65536))
+            cached["cached"] = True
+            cached["cache_age_s"] = int(time.time() - st.st_mtime)
+            return cached
+    except Exception:
+        pass
+    iw = shutil.which("iw") or "/usr/sbin/iw"
+    rc, out, err = run([iw, "dev"], timeout=2)
+    query_ok = rc == 0 and bool(out.strip())
+    p2p = query_ok and "P2P-device" in out
+    rc2, out2, _ = run([iw, "list"], timeout=2)
+    ap = rc2 == 0 and "AP" in out2
+    wpa = os.path.exists("/run/wpa_supplicant") or bool(pids_matching(r"wpa_supplicant"))
+    doc = {
+        "p2p_device": p2p if query_ok else None,
+        "ap_mode_advertised": ap,
+        "wpa_supplicant_running": wpa,
+        "capture_source": "not implemented in this diagnostic",
+        "encoder": "not probed (MFC guard active)",
+        "status": ("CANDIDATE" if p2p else "BLOCKED") if query_ok else "UNKNOWN",
+        "note": "P2P capability is not Miracast. RTSP, real capture, encoder and a "
+                "receiver must be proven independently before any UI control exists.",
+    }
+    if not query_ok:
+        doc["reason"] = ("iw/netlink query unavailable in this sandbox (%s); run "
+                         "/usr/local/sbin/nuxel-cast-diag.sh from a root shell"
+                         % (err.strip() or "no output"))
+    return doc
+
+
+def capabilities(doc):
+    ph = doc["phoc"]
+    wk = doc["webkit"]
+    g3 = doc["gtk3"]
+    g4 = doc["gtk4"]
+    fb = doc["final_output"]
+    caps = {}
+    caps["phoc_mali_rendering"] = (
+        "PASS" if ph.get("running") and ph.get("gallium_library") and
+        ph.get("accelerated") and not ph.get("llvmpipe_threads") else "FAIL")
+    caps["gtk3_accelerated"] = g3.get("status", "UNTESTED")
+    caps["gtk4_gsk"] = g4.get("status", "UNTESTED")
+    caps["webkit_gpu_rendering"] = "PASS" if wk.get("gpu_rendering") else "FALLBACK"
+    caps["webkit_shm_presentation"] = (
+        "PASS" if wk.get("transport") == "shm" and wk.get("gpu_rendering") else
+        ("FALLBACK" if wk.get("transport") == "shm" else "NOT TESTED"))
+    if os.path.isfile(WEBKIT_DMABUF_PROOF):
+        caps["webkit_dmabuf_presentation"] = "PASS (proof file present)"
+    elif wk.get("transport") == "dmabuf-candidate":
+        caps["webkit_dmabuf_presentation"] = "PARTIAL (fds observed; cross-process proof missing)"
+    else:
+        caps["webkit_dmabuf_presentation"] = "BLOCKED"
+    caps["zero_copy_scanout"] = "NOT AVAILABLE"
+    caps["framebuffer_bridge"] = (
+        "PASS" if fb.get("frames_ok") and fb.get("one_writer") else "PARTIAL")
+    caps["exynos_mfc_decode"] = doc["video"].get("status", "NOT TESTED")
+    caps["usbc_dp_altmode_hdmi"] = doc["external_display"].get("status", "NEEDS OWNER TEST")
+    caps["wireless_miracast"] = doc["casting"].get("status", "CANDIDATE")
+    caps["lan_screen_share"] = "CANDIDATE (no implementation proven)"
+    return caps
+
+
+def collect(deep):
+    doc = {
+        "schema": "nuxel.gpu-status/2",
+        "mission": "PWNAGE-60000",
+        "timestamp": int(time.time()),
+        "date": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "host": os.uname().nodename,
+        "kernel": os.uname().release,
+        "profile": profile_status(),
+        "kernel_gpu": kernel_gpu(),
+        "egl": egl_status(),
+        "phoc": phoc_status(deep),
+        "gtk3": gtk3_status(deep),
+        "gtk4": gtk4_status(deep),
+        "webkit": webkit_status(deep),
+        "linux_dmabuf": dmabuf_status(deep),
+        "final_output": fb_status(),
+        "video": video_status(),
+        "external_display": typec_status(),
+        "casting": cast_status(),
+    }
+    doc["capabilities"] = capabilities(doc)
+    doc["profile_summary"] = {
+        "requested": (doc["profile"].get("active", {}).get("webkit", {}) or {}).get("profile_requested"),
+        "active": (doc["profile"].get("active", {}).get("webkit", {}) or {}).get("profile_active"),
+        "fallback_active": (doc["profile"].get("active", {}).get("webkit", {}) or {}).get("fallback_active"),
+        "renderer": (doc["egl"].get("probe") or {}).get("renderer"),
+        "gl_version": (doc["egl"].get("probe") or {}).get("gl_version"),
+        "egl_version": (doc["egl"].get("probe") or {}).get("egl_version"),
+        "webkit_transport": doc["webkit"].get("transport"),
+        "final_panel_presenter": "cpu-framebuffer-bridge",
+        "zero_copy_scanout": False,
+    }
+    return doc
+
+
+def human(doc):
+    def line(k, v):
+        print("%-28s %s" % (k + ":", v))
+    line("schema", doc["schema"])
+    line("host/kernel", "%s / %s" % (doc["host"], doc["kernel"]))
+    line("profile requested", doc["profile_summary"]["requested"])
+    line("profile active", doc["profile_summary"]["active"])
+    line("fallback active", doc["profile_summary"]["fallback_active"])
+    line("EGL renderer", doc["profile_summary"]["renderer"] or "unknown")
+    print()
+    print("[Kernel GPU]")
+    kg = doc["kernel_gpu"]
+    line("device", "%s present=%s mode=%s" % (kg.get("device"), kg.get("present"), kg.get("mode")))
+    line("driver", kg.get("driver"))
+    line("udmabuf", kg.get("udmabuf"))
+    print()
+    print("[EGL / GLES]")
+    e = doc["egl"]
+    line("active EGL link", e.get("link"))
+    line("vendor library", e.get("vendor_library"))
+    line("stock backup selected", e.get("stock_backup_selected"))
+    line("probe", (e.get("probe") or {}).get("renderer") or "no cached probe")
+    print()
+    print("[Phoc]")
+    p = doc["phoc"]
+    line("pid", p.get("pid"))
+    line("gallium", p.get("gallium_library"))
+    line("mali fds", p.get("mali_fds"))
+    line("llvmpipe threads", len(p.get("llvmpipe_threads") or []))
+    line("job submit proxy", p.get("job_submit_proxy"))
+    print()
+    print("[GTK3 / GTK4]")
+    line("gtk3", doc["gtk3"].get("status"))
+    line("gtk3 renderer", doc["gtk3"].get("renderer"))
+    line("gtk4 GSK", "%s (%s)" % (doc["gtk4"].get("status"), doc["gtk4"].get("requested_renderer")))
+    print()
+    print("[WebKit]")
+    w = doc["webkit"]
+    line("pid", w.get("pid"))
+    line("GPU rendering", w.get("gpu_rendering"))
+    line("transport", w.get("transport"))
+    line("transport fds", w.get("transport_fds"))
+    line("mali fds", w.get("mali_fds"))
+    print()
+    print("[linux-dmabuf]")
+    line("protocol", doc["linux_dmabuf"].get("protocol"))
+    line("linear only", doc["linux_dmabuf"].get("linear_only"))
+    line("formats", len(doc["linux_dmabuf"].get("formats") or []))
+    print()
+    print("[Final panel]")
+    f = doc["final_output"]
+    line("one writer", "%s %s" % (f.get("one_writer"), f.get("writers")))
+    line("frames_ok", f.get("frames_ok"))
+    line("decon_pan_failed", f.get("decon_pan_failed"))
+    line("geometry", f.get("geometry"))
+    line("state", f.get("state"))
+    print()
+    print("[Video / external / casting]")
+    line("MFC", doc["video"].get("status"))
+    line("Type-C/HDMI", doc["external_display"].get("status"))
+    line("Miracast", doc["casting"].get("status"))
+    print()
+    print("[Capabilities]")
+    for k, v in doc["capabilities"].items():
+        line(k, v)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--deep", action="store_true")
+    ap.add_argument("--no-probe", action="store_true", help="same as default; kept for API clarity")
+    args = ap.parse_args()
+    deep = args.deep and not args.no_probe
+    try:
+        doc = collect(deep)
+    except Exception as exc:
+        doc = {"schema": "nuxel.gpu-status/2", "error": str(exc),
+               "timestamp": int(time.time())}
+        print(json.dumps(doc, indent=2, sort_keys=True) if args.json else "ERROR: %s" % exc)
+        return 1
+    if args.json:
+        print(json.dumps(doc, indent=2, sort_keys=True))
+    else:
+        human(doc)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

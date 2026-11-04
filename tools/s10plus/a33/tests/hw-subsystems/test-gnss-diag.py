@@ -38,9 +38,24 @@ def check(name, ok, detail=""):
         fails.append(name)
 
 
+# A real device read on /dev/ttyBCM (BBD/LHD RPC) can block for the full
+# acquisition window; an unbounded subprocess here would hang this whole suite.
+# Every tool call is therefore hard-bounded and killed + reaped on timeout.
+RUN_TIMEOUT_S = 30
+
+
 def run(args, env=None):
     e = dict(os.environ); e.update(env or {})
-    return subprocess.run(args, capture_output=True, text=True, env=e)
+    try:
+        return subprocess.run(
+            args, capture_output=True, text=True, env=e, timeout=RUN_TIMEOUT_S)
+    except subprocess.TimeoutExpired as exc:
+        # Preserve the captured partial output; flag it so callers still get a
+        # deterministic verdict instead of hanging to an external cap.
+        out = (exc.stdout or b"").decode(errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+        err = (exc.stderr or b"").decode(errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        return subprocess.CompletedProcess(args, -9, out,
+                                           (err + "\n[timeout: tool call exceeded %ds]" % RUN_TIMEOUT_S))
 
 
 def jdoc(out):

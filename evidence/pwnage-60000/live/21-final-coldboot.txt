@@ -1,0 +1,64 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-03T01:09:31+01:00
+d83b72df-024f-4e8e-a768-876a5cb4fac0
+ 01:09:31 up 0 min,  0 user,  load average: 8.06, 2.25, 0.77
+4.14.253-gf7194c1d15ed-dirty
+== services ==
+active
+active
+active
+active
+active
+== session identity ==
+07668a4e3d8fcce31ef895239977a14696834eae30222c491d0ba8d87df4403f  /usr/lib/nuxel/nuxel-session.sh
+07668a4e3d8fcce31ef895239977a14696834eae30222c491d0ba8d87df4403f  /usr/lib/nuxel/stage36000/session/nuxel-session.sh
+1
+1
+== profile ==
+export NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+export WEBKIT_DISABLE_COMPOSITING_MODE=0
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory
+== bridge ==
+1793664571 FRAMES_OK total=217 fps_1s=12 failures=0 blits=125 present_skipped=91 blit_avg_ms=2 pan_avg_ms=8 capture_avg_ms=4 compare_avg_ms=1 damage=0-1520 damage_runs=1 damage_blits=122 damage_avg_ms=2 idle_ms=672 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=126 decon_pan_failed=0
+== processes ==
+5877 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+5984 /usr/lib/nuxel/nuxel-pwa-host
+6013 /usr/lib/nuxel/nuxel-wl-fb
+7040 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 24
+9847 bash -c set +e date -Is; cat /proc/sys/kernel/random/boot_id; uptime; uname -r echo "== services =="; systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-bridge nuxel-http-bridge nuxel-web echo "== session identity =="; sha256sum /usr/lib/nuxel/nuxel-session.sh /usr/lib/nuxel/stage36000/session/nuxel-session.sh grep -c "kept newer deployed /usr/lib/nuxel/nuxel-session.sh" /usr/lib/nuxel/stage36000/apply-pwnage36000.sh grep -c "nuxel-graphics-profile env webkit" /usr/lib/nuxel/nuxel-session.sh echo "== profile =="; /usr/lib/nuxel/nuxel-graphics-profile env webkit | grep -E "ACTIVE|DISABLE|FALLBACK" ls -l /run/nuxel-gpu-fallback 2>&1 echo "== bridge =="; cat /run/nuxel-wl-fb.state echo "== processes =="; pgrep -a -f "phoc|nuxel-wl-fb|WebKitWebProcess|nuxel-pwa-host" echo "== phoc =="; p=$(pgrep -x phoc); grep -E "libEGL_mesa|libgallium|libwlroots" /proc/$p/maps | awk "{print \$6}" | sort -u; ls -l /proc/$p/fd | grep -E "mali0|udmabuf"; for t in /proc/$p/task/*; do cat $t/comm; done | sort | uniq -c | grep -i llvmpipe || echo no-llvmpipe echo "== webkit =="; w=$(pgrep -f WebKitWebProcess | head -1); echo pid=$w; tr "\0" "\n" < /proc/$w/environ | grep -E "NUXEL_GRAPHICS|WEBKIT_DISABLE|WEBKIT_FORCE|LIBGL"; grep -c libgallium /proc/$w/maps; ls -l /proc/$w/fd | grep -E "mali0|udmabuf" || true echo "== apply log =="; grep -E "kept newer deployed /usr/lib/nuxel/nuxel-session.sh|installed /usr/lib/nuxel/nuxel-session.sh" /var/lib/nuxel/apply-pwnage36000.log | tail -5 
+== phoc ==
+/usr/lib64/libEGL_mesa.so.0.0.0
+/usr/lib64/libgallium_dri.so
+/usr/lib64/libwlroots-0.19.so
+lrwx------. 1 root root 64 Nov  3 01:09 13 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 01:09 14 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 01:09 15 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 01:09 16 -> /dev/udmabuf
+lrwx------. 1 root root 64 Nov  3 01:09 28 -> anon_inode:dmabuf_udmabuf
+no-llvmpipe
+== webkit ==
+pid=7040
+NUXEL_GRAPHICS_PROFILE_REQUESTED=gpu-rendered-shm-presented
+NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+WEBKIT_FORCE_COMPOSITING_MODE=1
+WEBKIT_DISABLE_COMPOSITING_MODE=0
+4
+lrwx------. 1 root root 64 Nov  3 01:09 18 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 01:09 19 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  3 01:09 21 -> /dev/mali0
+== apply log ==
+2026-10-28T23:24:57Z installed /usr/lib/nuxel/nuxel-session.sh
+2026-10-29T08:33:53Z installed /usr/lib/nuxel/nuxel-session.sh
+2026-10-29T10:02:07Z installed /usr/lib/nuxel/nuxel-session.sh
+2026-10-29T10:46:16Z installed /usr/lib/nuxel/nuxel-session.sh
+2026-10-29T10:57:27Z installed /usr/lib/nuxel/nuxel-session.sh
+grep: /var/lib/nuxel/apply-pwnage36000.log: binary file matches

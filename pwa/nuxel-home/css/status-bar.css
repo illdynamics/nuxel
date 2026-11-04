@@ -188,8 +188,8 @@
     width: 16px;
     height: 16px;
     background-color: var(--bluetooth-colour, #4CAF50);
-    -webkit-mask: url('/assets/nuxel-quicksettings-icon-pack/04-bluetooth.svg') center / 15px 15px no-repeat;
-    mask: url('/assets/nuxel-quicksettings-icon-pack/04-bluetooth.svg') center / 15px 15px no-repeat;
+    -webkit-mask: url('/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png') center / 15px 15px no-repeat;
+    mask: url('/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png') center / 15px 15px no-repeat;
 }
 .bluetooth-icon::before,
 .bluetooth-icon::after {

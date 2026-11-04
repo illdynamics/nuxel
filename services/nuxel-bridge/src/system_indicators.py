@@ -63,7 +63,10 @@ Every root is overridable for the offline tests:
 
 from __future__ import annotations
 
+import fcntl
 import os
+import socket
+import struct
 from typing import Any, Dict, List, Optional
 
 _EXTERNAL_TYPES = {
@@ -526,12 +529,15 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
 
     if not pc_connected:
         # Fail closed on detach even if the daemon and its lease are still alive.
+        # The BASE penguin still follows the background service; the serial
+        # transport icon uses usb_session_active (always false without a link).
         return {
-            "active": False,
+            "active": bool(service_armed),
             "service_armed": service_armed,
             "transport_connected": False,
             "session_active": session_active,
-            "source": "inactive:no-usb-data-link",
+            "usb_session_active": False,
+            "source": "service:armed" if service_armed else "inactive:no-usb-data-link",
             "pids": sorted(set(pids)),
         }
 
@@ -539,21 +545,23 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
     tty_registered = any(os.path.exists(os.path.join(ttyroot, name)) for name in ttynames)
     if not tty_registered:
         return {
-            "active": False,
+            "active": bool(service_armed),
             "service_armed": service_armed,
             "transport_connected": False,
             "session_active": session_active,
-            "source": "inactive:console-tty-missing",
+            "usb_session_active": False,
+            "source": "service:armed" if service_armed else "inactive:console-tty-missing",
             "pids": sorted(set(pids)),
         }
 
     if not session_active:
         return {
-            "active": False,
+            "active": bool(service_armed),
             "service_armed": service_armed,
             "transport_connected": True,
             "session_active": False,
-            "source": "inactive:no-console-session",
+            "usb_session_active": False,
+            "source": "service:armed" if service_armed else "inactive:no-console-session",
             "pids": sorted(set(pids)),
         }
 
@@ -563,6 +571,7 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
             "service_armed": service_armed,
             "transport_connected": True,
             "session_active": True,
+            "usb_session_active": True,
             "source": "proc:nuxel-console:tty",
             "pids": sorted(set(pids)),
         }
@@ -572,6 +581,7 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
         "service_armed": service_armed,
         "transport_connected": True,
         "session_active": True,
+        "usb_session_active": True,
         "source": "lease:nuxel-console:serving",
         "pids": sorted(set(pids)),
     }
@@ -605,14 +615,221 @@ def _proc_net_sockets(proc_root: str = "/proc") -> List[Dict[str, Any]]:
     return out
 
 
-def _established_ssh_sessions(proc_root: str = "/proc", port: int = 22) -> List[Dict[str, Any]]:
-    """Return ESTABLISHED TCP connections on the SSH port (state 01)."""
-    return [s for s in _proc_net_sockets(proc_root)
-            if s["port"] == int(port) and s["state"] == "01"]
+def _tcp_established(proc_root: str = "/proc", port: int = 22) -> List[Dict[str, Any]]:
+    """Return ESTABLISHED TCP sockets on *port* with their inode/local IPv4."""
+    out: List[Dict[str, Any]] = []
+    for name in ("tcp", "tcp6"):
+        text = _read(os.path.join(proc_root, "net", name))
+        if not text:
+            continue
+        for line in text.splitlines():
+            if "local_address" in line:
+                continue
+            fields = line.split()
+            if len(fields) < 10 or fields[3].upper() != "01":
+                continue
+            local, _, port_hex = fields[1].partition(":")
+            try:
+                if int(port_hex, 16) != int(port):
+                    continue
+            except ValueError:
+                continue
+            try:
+                inode = int(fields[9])
+            except (TypeError, ValueError):
+                continue
+            if inode <= 0:
+                continue
+            ip = None
+            if name == "tcp":
+                try:
+                    raw = bytes.fromhex(local)[::-1]
+                    if len(raw) == 4:
+                        ip = ".".join(str(b) for b in raw)
+                except ValueError:
+                    ip = None
+            out.append({"proto": name, "inode": inode, "local_ip": ip})
+    return out
 
+
+def _pid_stat(pid: int, proc_root: str = "/proc") -> Dict[str, Any]:
+    text = _read(os.path.join(proc_root, str(pid), "stat"))
+    if not text:
+        return {}
+    end = text.rfind(")")
+    if end < 0:
+        return {}
+    fields = text[end + 1:].strip().split()
+    if len(fields) < 20:
+        return {}
+    try:
+        return {"comm": text[text.find("(") + 1:end],
+                "ppid": int(fields[1]), "start_ticks": int(fields[19])}
+    except (ValueError, IndexError):
+        return {}
+
+
+def _pid_uid(pid: int, proc_root: str = "/proc") -> Optional[int]:
+    text = _read(os.path.join(proc_root, str(pid), "status"))
+    if not text:
+        return None
+    for line in text.splitlines():
+        if line.startswith("Uid:"):
+            parts = line.split()
+            if len(parts) > 1:
+                try:
+                    return int(parts[1])
+                except ValueError:
+                    return None
+    return None
+
+
+def _pid_has_socket(pid: int, inode: int, proc_root: str = "/proc") -> bool:
+    fdroot = os.path.join(proc_root, str(pid), "fd")
+    want = "socket:[%d]" % inode
+    for fd in _list_dir(fdroot):
+        try:
+            if os.readlink(os.path.join(fdroot, fd)) == want:
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def _interactive_shell_cmdline(pid: int, proc_root: str = "/proc") -> bool:
+    """True for a real interactive/login shell, not `shell -c <command>`.
+
+    `ssh -t host true` allocates a PTY and briefly runs the login shell with
+    `-c true`; that is a health probe, not a console session.  Interactive
+    login shells have no command argument.
+    """
+    cmd = _cmdline(str(pid), proc_root)
+    if not cmd:
+        return False
+    parts = cmd.split()
+    return parts and "-c" not in parts[1:]
+
+
+def _pid_has_pty(pid: int, proc_root: str = "/proc") -> bool:
+    fdroot = os.path.join(proc_root, str(pid), "fd")
+    for fd in _list_dir(fdroot):
+        try:
+            target = os.readlink(os.path.join(fdroot, fd))
+        except OSError:
+            continue
+        if target.startswith("/dev/pts/"):
+            return True
+    return False
+
+
+def _is_descendant(pid: int, ancestor: int, proc_root: str = "/proc") -> bool:
+    cur = pid
+    for _ in range(12):
+        if cur <= 1:
+            return False
+        st = _pid_stat(cur, proc_root)
+        ppid = st.get("ppid")
+        if not isinstance(ppid, int) or ppid <= 0:
+            return False
+        if ppid == ancestor:
+            return True
+        cur = ppid
+    return False
+
+
+_SHELLS = {"bash", "sh", "zsh", "fish", "dash", "ash", "ksh"}
+_CONSOLE_UID = 1000  # nuxel
+
+
+def _wifi_ipv4_addresses(proc_root: str = "/proc") -> List[str]:
+    """Return non-loopback, non-USB IPv4 addresses from sysfs/ioctl."""
+    override = os.environ.get("NUXEL_WLAN_ADDRESSES", "")
+    if override.strip():
+        return [a.strip() for a in override.split(",") if a.strip()]
+    net_root = _root("NUXEL_SYS_NET", "/sys/class/net")
+    out: List[str] = []
+    for name in _list_dir(net_root):
+        if name == "lo" or name.startswith(("usb", "ncm", "rndis")):
+            continue
+        if not name.startswith(("wlan", "wlp", "wifi", "wl")):
+            continue
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                packed = struct.pack("256s", name.encode("utf-8")[:15])
+                raw = fcntl.ioctl(sock.fileno(), 0x8915, packed)[20:24]  # SIOCGIFADDR
+                out.append(socket.inet_ntoa(raw))
+            finally:
+                sock.close()
+        except OSError:
+            continue
+    return out
+
+
+def wlan_console_sessions(proc_root: str = "/proc",
+                          wifi_addresses: Optional[List[str]] = None
+                          ) -> List[Dict[str, Any]]:
+    """Prove interactive WLAN SSH sessions from /proc, without guessing.
+
+    A session requires ALL of: ESTABLISHED TCP/22 on a local Wi-Fi IPv4
+    address, an sshd process holding that exact socket inode, and a live
+    descendant owned by uid 1000 (nuxel) running an interactive shell with a
+    /dev/pts pty.  Listeners, port forwards, SFTP-only and one-shot commands
+    have no such shell/pty and therefore never count.
+    """
+    wifi = wifi_addresses if wifi_addresses is not None else _wifi_ipv4_addresses(proc_root)
+    if not wifi:
+        return []
+    sessions: List[Dict[str, Any]] = []
+    pids = [int(p) for p in _list_dir(proc_root) if p.isdigit()]
+    meta = {pid: _pid_stat(pid, proc_root) for pid in pids}
+    for sock in _tcp_established(proc_root, 22):
+        if sock["proto"] != "tcp" or sock.get("local_ip") not in wifi:
+            continue
+        inode = int(sock["inode"])
+        owner = None
+        for pid in pids:
+            comm = str(meta.get(pid, {}).get("comm") or "")
+            if "sshd" not in comm:
+                continue
+            if _pid_has_socket(pid, inode, proc_root):
+                owner = pid
+                break
+        if owner is None:
+            continue
+        shell = None
+        for pid in pids:
+            if pid == owner:
+                continue
+            st = meta.get(pid, {})
+            if str(st.get("comm") or "") not in _SHELLS:
+                continue
+            if _pid_uid(pid, proc_root) != _CONSOLE_UID:
+                continue
+            if not _pid_has_pty(pid, proc_root):
+                continue
+            if not _interactive_shell_cmdline(pid, proc_root):
+                continue
+            if not _is_descendant(pid, owner, proc_root):
+                continue
+            shell = pid
+            break
+        if shell is None:
+            continue
+        sessions.append({
+            "inode": inode,
+            "sshd_pid": owner,
+            "shell_pid": shell,
+            "user": "nuxel",
+            "local_ip": sock.get("local_ip"),
+            "interactive": True,
+            "transport": "wlan",
+            "start_ticks": meta.get(shell, {}).get("start_ticks"),
+        })
+    return sessions
 
 _TRANSPORT_CACHE: Dict[str, Any] = {"at": 0.0}
-_TRANSPORT_CACHE_TTL_S = 5.0
+_TRANSPORT_CACHE_TTL_S = 1.0
 
 def bluetooth_indicator() -> Dict[str, Any]:
     """Return proof-only Bluetooth state for the lockscreen indicator.
@@ -686,12 +903,11 @@ def console_transports(serial_live: Optional[Dict[str, Any]] = None) -> Dict[str
                       validated serving lease) AND the USB data link is up.
                       This is exactly the existing live-console display predicate.
 
-      wlan_active     the project defines a live WLAN console as a reachable,
-                      key-only sshd listener on a non-loopback Wi-Fi interface.
-                      It is true when that listener is present; the number of
-                      currently ESTABLISHED SSH sessions is reported separately
-                      so a listening-but-idle console is not conflated with an
-                      active remote session.
+      wlan_active     a live WLAN console requires BOTH the reachable,
+                      key-only sshd listener on a non-loopback Wi-Fi interface
+                      AND at least one currently ESTABLISHED SSH session.  A
+                      listening-but-idle endpoint (or merely having Wi-Fi up)
+                      is not a console connection and never lights the icon.
 
       usb_active      an SSH listener over a USB network interface.  On the
                       current 4.14.253 kernel the USB-network gadget is blocked
@@ -700,8 +916,8 @@ def console_transports(serial_live: Optional[Dict[str, Any]] = None) -> Dict[str
     """
     if serial_live is None:
         serial_live = live_console()
-    serial_active = bool(serial_live.get("active"))
-    serial_source = serial_live.get("source", "unknown")
+    serial_active = bool(serial_live.get("usb_session_active"))
+    serial_source = serial_live.get("usb_source", serial_live.get("source", "unknown"))
 
     # WLAN/USB reachability uses the tri-link module's definition, cached for a
     # few seconds so status polling never re-reads /proc/config.gz on every tick.
@@ -711,23 +927,35 @@ def console_transports(serial_live: Optional[Dict[str, Any]] = None) -> Dict[str
     usb_detail = facts.get("usb_status", "blocked-kernel")
     usb_ready = usb_detail == "AVAILABLE"
 
-    established = _established_ssh_sessions()
+    sessions = wlan_console_sessions()
+    wlan_active = bool(wifi_ready and sessions)
 
+    if not wifi_ready:
+        wlan_source = wifi_detail
+    elif not sessions:
+        wlan_source = "INACTIVE:no-interactive-ssh-session"
+    else:
+        wlan_source = "wlan:interactive-pty-session"
+
+    usb_session = bool(serial_live.get("usb_session_active"))
     return {
         "serial": {
-            "active": serial_active,
+            "active": usb_session,
             "source": serial_source,
             "pids": serial_live.get("pids", []),
         },
         "usb": {
-            "active": usb_ready,
+            "available": usb_ready,
+            "active": False,
             "source": usb_detail,
             "sessions": 0,
         },
         "wlan": {
-            "active": wifi_ready,
-            "source": wifi_detail,
-            "sessions": len(established),
+            "available": wifi_ready,
+            "active": wlan_active,
+            "source": wlan_source,
+            "sessions": len(sessions),
+            "interactive_sessions": len(sessions),
         },
     }
 
@@ -824,6 +1052,8 @@ def get_indicators() -> Dict[str, Any]:
             "service_armed": bool(console["service_armed"]),
             "transport_connected": bool(console["transport_connected"]),
             "session_active": bool(console["session_active"]),
+            "usb_session_active": bool(console.get("usb_session_active")),
+            "base_ready": bool(console["service_armed"]),
             "source": console["source"],
             "pids": console.get("pids", []),
         },
@@ -834,14 +1064,17 @@ def get_indicators() -> Dict[str, Any]:
                 "pids": transports["serial"].get("pids", []),
             },
             "usb": {
+                "available": bool(transports["usb"].get("available")),
                 "active": bool(transports["usb"]["active"]),
                 "source": transports["usb"]["source"],
                 "sessions": transports["usb"].get("sessions", 0),
             },
             "wlan": {
+                "available": bool(transports["wlan"].get("available")),
                 "active": bool(transports["wlan"]["active"]),
                 "source": transports["wlan"]["source"],
                 "sessions": transports["wlan"].get("sessions", 0),
+                "interactive_sessions": transports["wlan"].get("interactive_sessions", 0),
             },
         },
         "file_transfer": {

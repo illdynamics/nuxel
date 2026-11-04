@@ -1,0 +1,16 @@
+{
+  "id": "org.nuxel.Doom",
+  "name": "Nuxel Doom",
+  "icon": "/pwa/nuxel-apps/doom/icons/icon-192.png",
+  "color": "#ff7a2f",
+  "category": "games",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/doom/index.html",
+  "description": "Touch-first original Nuxel arcade shooter with fullscreen multitouch controls",
+  "capabilities": [],
+  "docked": false,
+  "network": "none",
+  "offline_first": true,
+  "provenance": "Original Nuxel implementation. No DOOM WAD, copyrighted sprite or commercial game asset is bundled.",
+  "version": "1.0.0"
+}

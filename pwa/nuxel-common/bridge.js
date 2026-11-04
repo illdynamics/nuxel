@@ -75,6 +75,10 @@ export class NuxelBridgeClient {
         this._sseSources = new Map();
         this._seen = new Set();
         this._initPromise = null;
+        // Keyring operations use a per-page token bound to this app id.  It is
+        // kept in memory only and never written to localStorage/IndexedDB.
+        this._keyringToken = '';
+        this._keyringTokenExpiry = 0;
     }
 
     /* ---- Token acquisition ---- */
@@ -320,6 +324,10 @@ export class NuxelBridgeClient {
     /* ---- Generic RPC with mock fallback ---- */
 
     async call(namespace, verb, params) {
+        // Keyring operations must NEVER use the generic mock fallback.  Route
+        // them through the dedicated fail-closed client even if an app calls
+        // the generic method by mistake.
+        if (namespace === 'keyring') return this.keyring(verb, params);
         await this._init();
         if (this.versionMismatch) {
             // Protocol skew is not an availability problem: mock data would make a
@@ -347,6 +355,159 @@ export class NuxelBridgeClient {
                     error: 'Nuxel bridge is unreachable; remote-desktop status/control was not performed' };
             }
             return this._mockCall(namespace, verb, payload.params);
+        }
+    }
+
+    /* ---- Nuxel Vault / Authenticator keyring (fail closed) ---- */
+
+    /**
+     * Obtain a fresh per-page token bound to this app id.  It is deliberately
+     * not persisted: the shared origin's localStorage may hold a token issued
+     * for a different app, and replaying it must not grant keyring access.
+     */
+    _keyringLauncherToken() {
+        return new Promise((resolve, reject) => {
+            if (typeof window === 'undefined' || !window.parent || window.parent === window) {
+                reject(new Error('not-embedded'));
+                return;
+            }
+            const parent = window.parent;
+            const bytes = new Uint8Array(16);
+            const cryptoObj = (typeof globalThis !== 'undefined' && globalThis.crypto) ||
+                (typeof window !== 'undefined' && window.crypto) || null;
+            if (!cryptoObj || !cryptoObj.getRandomValues) { reject(new Error('csprng-unavailable')); return; }
+            cryptoObj.getRandomValues(bytes);
+            const nonce = Array.prototype.map.call(bytes, (b) => ('0' + b.toString(16)).slice(-2)).join('');
+            let done = false;
+            const timer = setTimeout(() => {
+                if (done) return;
+                done = true;
+                window.removeEventListener('message', onMessage);
+                reject(new Error('launcher-token-timeout'));
+            }, 5000);
+            function onMessage(event) {
+                if (event.source !== parent || event.origin !== window.location.origin) return;
+                const data = event.data || {};
+                if (data.type !== 'nuxel-keyring-token' || data.nonce !== nonce) return;
+                if (done) return;
+                done = true;
+                clearTimeout(timer);
+                window.removeEventListener('message', onMessage);
+                if (!data.token) reject(new Error('launcher-token-denied'));
+                else resolve(String(data.token));
+            }
+            window.addEventListener('message', onMessage);
+            try {
+                parent.postMessage({ type: 'nuxel-keyring-token-request',
+                    app_id: this.appId, nonce: nonce }, window.location.origin);
+            } catch (e) {
+                done = true;
+                clearTimeout(timer);
+                window.removeEventListener('message', onMessage);
+                reject(new Error('launcher-token-post-failed'));
+            }
+        });
+    }
+
+    async _keyringAuthToken() {
+        const now = Date.now();
+        if (this._keyringToken && now < this._keyringTokenExpiry) return this._keyringToken;
+        // Iframe path: ask the trusted Home relay for a token bound to this app
+        // id.  WebKit sends no Referer from iframes, so this is the strong path.
+        if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+            try {
+                const launcherToken = await this._keyringLauncherToken();
+                this._keyringToken = launcherToken;
+                this._keyringTokenExpiry = now + 3000 * 1000; // refresh well before the 1h TTL
+                return launcherToken;
+            } catch (e) {
+                // Fail closed.  A self-issued token has no app-route proof and
+                // the server rejects it; falling back would only hide the cause.
+                throw new Error('launcher-token: ' + ((e && e.message) || 'failed'));
+            }
+        }
+        const res = await fetch(this.apiUrl + '/auth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Nuxel-Bridge-Version': NUXEL_BRIDGE_VERSION,
+            },
+            body: JSON.stringify({ app_id: this.appId }),
+        });
+        if (!res || !res.ok) throw new Error('keyring token unavailable');
+        const doc = await res.json();
+        if (!doc || !doc.token) throw new Error('keyring token missing');
+        this._keyringToken = String(doc.token);
+        const ttl = Number(doc.ttl || 3600);
+        this._keyringTokenExpiry = now + Math.max(30, ttl - 60) * 1000;
+        return this._keyringToken;
+    }
+
+    /**
+     * Scoped keyring RPC.  Returns a structured result and NEVER a mock success.
+     *
+     * Failure contract (asserted by tests):
+     *   {success:false, offline:true, state:'unavailable', error:'bridge_unreachable'}
+     * when the bridge/provider is absent.  No secret is written to any browser
+     * storage on this path.
+     */
+    async keyring(verb, params) {
+        if (typeof verb !== 'string' || !verb) {
+            return { success: false, state: 'invalid_request', error: 'invalid_request' };
+        }
+        try {
+            if (!this.pinVerified) await this._verifyVersionPin();
+            if (this.versionMismatch) {
+                return {
+                    success: false, state: 'unavailable', offline: true,
+                    error: 'bridge_version_mismatch',
+                    detail: 'refusing keyring access against a skewed host',
+                };
+            }
+            const token = await this._keyringAuthToken();
+            const res = await fetch(this.apiUrl + '/rpc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                    'X-Nuxel-Bridge-Version': NUXEL_BRIDGE_VERSION,
+                },
+                body: JSON.stringify({
+                    app_id: this.appId,
+                    namespace: 'keyring',
+                    verb: verb,
+                    params: params || {},
+                }),
+            });
+            let body = null;
+            try { body = await res.json(); } catch (e) { body = null; }
+            if (!res.ok) {
+                const err = (body && body.error) || ('http_' + res.status);
+                return {
+                    success: false, state: res.status === 401 || res.status === 403 ? 'denied' : 'unavailable',
+                    offline: res.status >= 500, error: err,
+                    detail: (body && body.detail) || 'the bridge refused the keyring operation',
+                };
+            }
+            const result = body && body.result !== undefined ? body.result : body;
+            if (!result || typeof result !== 'object') {
+                return { success: false, state: 'unavailable', offline: true,
+                    error: 'invalid_bridge_response' };
+            }
+            if (result.success === false && !result.state) {
+                if (result.error === 'provider_unavailable') result.state = 'unavailable';
+                else if (result.error === 'collection_locked') result.state = 'collection_locked';
+                else if (result.error === 'permission_denied') result.state = 'denied';
+                else result.state = 'error';
+            }
+            return result;
+        } catch (e) {
+            return {
+                success: false, offline: true, state: 'unavailable',
+                error: 'bridge_unreachable',
+                detail: 'Nuxel Bridge or the system keyring is unavailable; nothing was saved (' +
+                    ((e && e.message) || 'unknown error') + ')',
+            };
         }
     }
 
@@ -426,6 +587,12 @@ export class NuxelBridgeClient {
                     state: 'unavailable',
                     error: 'Nuxel bridge is unreachable; remote-desktop status/control was not performed' };
             default:
+                // No secret operation may ever receive a development fallback.
+                if (namespace === 'keyring') {
+                    return { success: false, offline: true, state: 'unavailable',
+                        error: 'keyring_provider_unavailable',
+                        detail: 'the system keyring is unavailable; nothing was saved' };
+                }
                 return { success: true, mock: true, _key: key };
         }
     }

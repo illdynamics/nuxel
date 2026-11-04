@@ -371,6 +371,10 @@ html, body {
    seen. Never hide BOTH hosts: if the native dock is absent the DOM fallback
    remains the one true nav surface. */
 .native-nav-present #system-navigation { display: none; }
+/* Until the first status read proves whether the native dock exists, do
+   not paint both navigation hosts.  navigation.js removes this class on
+   the first response (and keeps the DOM nav if the dock is absent). */
+.native-nav-pending #system-navigation { display: none; }
 
 /* A69-13: while an app is the foreground surface the four-icon desktop dock and
    the app drawer are Home chrome and must not paint above app content. The dock
@@ -485,3 +489,72 @@ body[data-app-state="CLOSING"] #dock,
 body[data-app-state="CLOSING"] #app-grid,
 body[data-app-state="FAILED"] #dock,
 body[data-app-state="FAILED"] #app-grid { display: none; }
+
+/* ── PWNAGE-76000 / v0.7.6-beta — immersive app chrome ─────────────────────
+   While an app is foreground the triple buttons are hidden.  A swipe up from
+   the bottom edge reveals them; a swipe down from the top edge reveals the top
+   bar.  Real fullscreen apps (Nuxel Doom) hide the top bar by default and use
+   the whole panel.  Home and the lockscreen are never put in this state. */
+#status-bar {
+    transition: transform .18s ease, opacity .18s ease;
+}
+.system-navigation {
+    transition: transform .18s ease, opacity .18s ease;
+}
+body.app-status-hidden:not(.app-status-revealed) #status-bar {
+    transform: translateY(-110%);
+    opacity: 0;
+    pointer-events: none;
+}
+body.app-status-revealed #status-bar {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 300;
+}
+body.app-nav-hidden:not(.app-nav-revealed) #system-navigation {
+    transform: translateY(110%);
+    opacity: 0;
+    pointer-events: none;
+}
+body.app-nav-revealed #system-navigation {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 300;
+}
+body.app-nav-hidden:not(.app-nav-revealed)::after {
+    content: '';
+    position: fixed;
+    left: 50%;
+    bottom: calc(4px + env(safe-area-inset-bottom));
+    width: min(96px, 24vw);
+    height: 4px;
+    margin-left: calc(min(96px, 24vw) / -2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .34);
+    box-shadow: 0 0 8px rgba(96, 165, 250, .25);
+    pointer-events: none;
+    z-index: 255;
+}
+body.app-immersive .pwa-frame {
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+}
+body.app-immersive #status-bar {
+    background: rgba(16, 10, 9, .97);
+    border-bottom-color: rgba(255, 157, 59, .32);
+}
+body.app-immersive .pwa-app-status {
+    bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+}
+/* The lockscreen's own privacy rules must always win. */
+body.lockscreen-active #status-bar,
+body.lockscreen-active #system-navigation,
+html.nuxel-boot-locked #status-bar,
+html.nuxel-boot-locked #system-navigation {
+    transform: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}

@@ -270,7 +270,7 @@ def test_successful_play_and_cleanup(tmp_path):
     assert out.returncode == 0, out.stderr
     r = h.receipt_doc()
     assert r["verdict"] == "PLAYED"
-    assert r["reason"] == "video-and-lockscreen-ready"
+    assert r["reason"] == "video-eof-and-presentation-ready"
     assert r["video_eof"] is True
     assert r["readiness"]["ready"] is True
     assert r["unlock_actions"] == 0
@@ -554,7 +554,7 @@ def test_late_display_handoff_is_waited_for_within_start_timeout(tmp_path):
     assert proc.returncode == 0, err
     r = h.receipt_doc()
     assert r["verdict"] == "PLAYED"
-    assert r["reason"] == "video-and-lockscreen-ready"
+    assert r["reason"] == "video-eof-and-presentation-ready"
     assert r["readiness"]["wlfb_ready"] is True
 
 

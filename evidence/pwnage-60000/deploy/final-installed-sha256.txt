@@ -1,0 +1,21 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+eba18f340e519bbd04765c0744bb7f554df99ca328f3dd7921698600d3477b0f  /usr/lib64/libEGL_mesa.so.0.0.0
+818bc380242006c158455241099b3b5185dfc70630f6f4c9cda5602a9196b800  /usr/lib64/libgallium_dri.so
+95e039a783bf4e9263542a01f9609e03ffb4b2f8d47ca9ec23c60a6803d2d4cc  /usr/lib64/libwlroots-0.19.so
+137eed48d33b8545f8c5dbabe82a183a6d0b089c26a62974902b947090757785  /usr/lib/nuxel/nuxel-wl-fb
+613ee5ed4926883e9a12ba87158c85ee4a288b38f6985c746bf8c3e0d7c2eabd  /usr/lib/nuxel/nuxel-kbase-egl-probe
+cf161394aa3f418ad1125e08adae46fcaa3278e1cf0b8ad301de061f1aaa0dbc  /usr/lib/nuxel/nuxel-graphics-profile
+9a8e4d2ff3b4a95b40bb186ab6b949bb6a293d62f64cd946bab4764a2478dcd5  /usr/lib/nuxel/nuxel-gpu-status
+31d6bc3aab4fefa028b7912171ce1f42496624de53a05340e94e469d96d790e7  /usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+07668a4e3d8fcce31ef895239977a14696834eae30222c491d0ba8d87df4403f  /usr/lib/nuxel/nuxel-session.sh
+a337121202eff07c36cfc2f8e45a3043e9110dac8f37f2223174acbca46eb5fd  /usr/lib/nuxel/nuxel-bridge/api.py
+a357b0fa013e4f81c056db5fc76cb812c10aa8f48f37e958e5fe4ce3bc91a638  /usr/lib/nuxel/stage36000/apply-pwnage36000.sh
+07668a4e3d8fcce31ef895239977a14696834eae30222c491d0ba8d87df4403f  /usr/lib/nuxel/stage36000/session/nuxel-session.sh

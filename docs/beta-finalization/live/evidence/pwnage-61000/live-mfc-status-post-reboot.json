@@ -1,0 +1,840 @@
+{
+  "boot_id": "95b82b79-3d51-4a48-955e-b446551ccffd",
+  "capabilities": [],
+  "compatible": "samsung,exynos-mfc",
+  "decoder_node": "/dev/video6",
+  "decoder_sysfs_name": "s5p-mfc-dec0",
+  "device": "beyond2lte",
+  "device_model": "SM-G975F",
+  "driver": "s5p-mfc",
+  "firmware": {
+    "expected_sha256": "f3802d34524f5919c16505c03b4cbfe184963f98787feed6232b643bda68b55f",
+    "expected_size": 685832,
+    "paths": [
+      "/lib/firmware/mfc_fw.bin",
+      "/vendor/firmware/mfc_fw.bin"
+    ],
+    "request_name": "mfc_fw.bin",
+    "state": "MISSING"
+  },
+  "guard": {
+    "guard_present": true,
+    "plugins": [
+      {
+        "active": false,
+        "disabled": true,
+        "plugin": "libgstvideo4linux2.so"
+      },
+      {
+        "active": false,
+        "disabled": true,
+        "plugin": "libgstv4l2codecs.so"
+      },
+      {
+        "active": false,
+        "disabled": true,
+        "plugin": "libgstkms.so"
+      },
+      {
+        "active": false,
+        "disabled": true,
+        "plugin": "libgstopengl.so"
+      }
+    ],
+    "v4l2_plugins_disabled": true
+  },
+  "ip_ver": "0x1300",
+  "kernel_config": {
+    "iommu": "y",
+    "mfc_driver": "y",
+    "path": "/proc/config.gz",
+    "present": true,
+    "required_ok": true,
+    "values": {
+      "CONFIG_EXYNOS_IOMMU": "y",
+      "CONFIG_V4L2_MEM2MEM_DEV": "y",
+      "CONFIG_VIDEOBUF2_DMA_SG": "y",
+      "CONFIG_VIDEO_EXYNOS_MFC": "y"
+    }
+  },
+  "kernel_release": "4.14.253-gf7194c1d15ed-dirty",
+  "last_test_time": null,
+  "node_count": 68,
+  "nodes": [
+    {
+      "compatible": "samsung,exynos-mfc",
+      "dev": "81:4",
+      "device": "/sys/devices/platform/188d0000.mfc",
+      "driver": "s5p-mfc",
+      "index": "4",
+      "ip_ver": "0x1300",
+      "name": "s5p-mfc-enc-otf0",
+      "platform_device": "188d0000.mfc",
+      "sysfs": "/sys/class/video4linux/video10"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:38",
+      "device": "/sys/devices/platform/17030000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ss0",
+      "platform_device": "17030000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video101"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:43",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor2",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ss1",
+      "platform_device": "17050000.fimc_is_sensor2",
+      "sysfs": "/sys/class/video4linux/video102"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:48",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ss2",
+      "platform_device": "17050000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video103"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:53",
+      "device": "/sys/devices/platform/17090000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ss3",
+      "platform_device": "17090000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video104"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:58",
+      "device": "/sys/devices/platform/17040000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ss4",
+      "platform_device": "17040000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video105"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:63",
+      "device": "/sys/devices/platform/17060000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ss5",
+      "platform_device": "17060000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video106"
+    },
+    {
+      "compatible": "samsung,exynos-mfc",
+      "dev": "81:5",
+      "device": "/sys/devices/platform/188d0000.mfc",
+      "driver": "s5p-mfc",
+      "index": "5",
+      "ip_ver": "0x1300",
+      "name": "s5p-mfc-enc-otf-secure0",
+      "platform_device": "188d0000.mfc",
+      "sysfs": "/sys/class/video4linux/video11"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:9",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-30s",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video110"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:10",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "1",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-30c",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video111"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:11",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "2",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-30p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video112"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:12",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "3",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-30f",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video113"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:13",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "4",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-30g",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video114"
+    },
+    {
+      "compatible": "samsung,exynos8890-jpeg",
+      "dev": "81:7",
+      "device": "/sys/devices/platform/18b00000.smfc",
+      "driver": "exynos-jpeg",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos-jpeg",
+      "platform_device": "18b00000.smfc",
+      "sysfs": "/sys/class/video4linux/video12"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:14",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "5",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-31s",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video120"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:15",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "6",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-31c",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video121"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:16",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "7",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-31p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video122"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:17",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "8",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-31f",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video123"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:18",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "9",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-31g",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video124"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:21",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "12",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-i0s",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video130"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:22",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "13",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-i0c",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video131"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:23",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "14",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-i0p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video132"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:24",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "15",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-i1s",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video140"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:25",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "16",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-i1c",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video141"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:26",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "17",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-i1p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video142"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:27",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "18",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-me0c",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video148"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:28",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "19",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-me1c",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video149"
+    },
+    {
+      "compatible": "samsung,exynos5-camerapp-gdc",
+      "dev": "81:6",
+      "device": "/sys/devices/platform/17530000.gdc",
+      "driver": "camerapp-gdc",
+      "index": "0",
+      "ip_ver": null,
+      "name": "camerapp-gdc:m2m",
+      "platform_device": "17530000.gdc",
+      "sysfs": "/sys/class/video4linux/video155"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:29",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "20",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-m0s",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video160"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:30",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "21",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-m1s",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video161"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:31",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "22",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-m0p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video170"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:32",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "23",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-m1p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video171"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:33",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "24",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-m2p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video172"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:34",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "25",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-m3p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video173"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:35",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "26",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-m4p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video174"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:36",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "27",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-m5p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video175"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:37",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "28",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-vra",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video180"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:39",
+      "device": "/sys/devices/platform/17030000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "1",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc0",
+      "platform_device": "17030000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video210"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:40",
+      "device": "/sys/devices/platform/17030000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "2",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc1",
+      "platform_device": "17030000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video211"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:41",
+      "device": "/sys/devices/platform/17030000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "3",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc2",
+      "platform_device": "17030000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video212"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:42",
+      "device": "/sys/devices/platform/17030000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "4",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc3",
+      "platform_device": "17030000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video213"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:44",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor2",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "1",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc0",
+      "platform_device": "17050000.fimc_is_sensor2",
+      "sysfs": "/sys/class/video4linux/video214"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:45",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor2",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "2",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc1",
+      "platform_device": "17050000.fimc_is_sensor2",
+      "sysfs": "/sys/class/video4linux/video215"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:46",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor2",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "3",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc2",
+      "platform_device": "17050000.fimc_is_sensor2",
+      "sysfs": "/sys/class/video4linux/video216"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:47",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor2",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "4",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc3",
+      "platform_device": "17050000.fimc_is_sensor2",
+      "sysfs": "/sys/class/video4linux/video217"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:49",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "1",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc0",
+      "platform_device": "17050000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video218"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:50",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "2",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc1",
+      "platform_device": "17050000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video219"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:51",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "3",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc2",
+      "platform_device": "17050000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video220"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:52",
+      "device": "/sys/devices/platform/17050000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "4",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc3",
+      "platform_device": "17050000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video221"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:54",
+      "device": "/sys/devices/platform/17090000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "1",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc0",
+      "platform_device": "17090000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video222"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:55",
+      "device": "/sys/devices/platform/17090000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "2",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc1",
+      "platform_device": "17090000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video223"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:56",
+      "device": "/sys/devices/platform/17090000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "3",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc2",
+      "platform_device": "17090000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video224"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:57",
+      "device": "/sys/devices/platform/17090000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "4",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc3",
+      "platform_device": "17090000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video225"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:59",
+      "device": "/sys/devices/platform/17040000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "1",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc0",
+      "platform_device": "17040000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video226"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:60",
+      "device": "/sys/devices/platform/17040000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "2",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc1",
+      "platform_device": "17040000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video227"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:61",
+      "device": "/sys/devices/platform/17040000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "3",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc2",
+      "platform_device": "17040000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video228"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:62",
+      "device": "/sys/devices/platform/17040000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "4",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc3",
+      "platform_device": "17040000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video229"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:64",
+      "device": "/sys/devices/platform/17060000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "1",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc0",
+      "platform_device": "17060000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video230"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:65",
+      "device": "/sys/devices/platform/17060000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "2",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc1",
+      "platform_device": "17060000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video231"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:66",
+      "device": "/sys/devices/platform/17060000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "3",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc2",
+      "platform_device": "17060000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video232"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is-sensor",
+      "dev": "81:67",
+      "device": "/sys/devices/platform/17060000.fimc_is_sensor",
+      "driver": "exynos-fimc-is-sensor",
+      "index": "4",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-ssinstancevc3",
+      "platform_device": "17060000.fimc_is_sensor",
+      "sysfs": "/sys/class/video4linux/video233"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:19",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "10",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-32s",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video250"
+    },
+    {
+      "compatible": "samsung,exynos5-fimc-is",
+      "dev": "81:20",
+      "device": "/sys/devices/platform/170e0000.fimc_is",
+      "driver": "exynos-fimc-is",
+      "index": "11",
+      "ip_ver": null,
+      "name": "exynos-fimc-is-32p",
+      "platform_device": "170e0000.fimc_is",
+      "sysfs": "/sys/class/video4linux/video251"
+    },
+    {
+      "compatible": "samsung,exynos5-scaler",
+      "dev": "81:8",
+      "device": "/sys/devices/platform/18b10000.scaler",
+      "driver": "exynos5-scaler",
+      "index": "0",
+      "ip_ver": null,
+      "name": "exynos5-scaler:m2m",
+      "platform_device": "18b10000.scaler",
+      "sysfs": "/sys/class/video4linux/video50"
+    },
+    {
+      "compatible": "samsung,exynos-mfc",
+      "dev": "81:0",
+      "device": "/sys/devices/platform/188d0000.mfc",
+      "driver": "s5p-mfc",
+      "index": "0",
+      "ip_ver": "0x1300",
+      "name": "s5p-mfc-dec0",
+      "platform_device": "188d0000.mfc",
+      "sysfs": "/sys/class/video4linux/video6"
+    },
+    {
+      "compatible": "samsung,exynos-mfc",
+      "dev": "81:1",
+      "device": "/sys/devices/platform/188d0000.mfc",
+      "driver": "s5p-mfc",
+      "index": "1",
+      "ip_ver": "0x1300",
+      "name": "s5p-mfc-enc0",
+      "platform_device": "188d0000.mfc",
+      "sysfs": "/sys/class/video4linux/video7"
+    },
+    {
+      "compatible": "samsung,exynos-mfc",
+      "dev": "81:2",
+      "device": "/sys/devices/platform/188d0000.mfc",
+      "driver": "s5p-mfc",
+      "index": "2",
+      "ip_ver": "0x1300",
+      "name": "s5p-mfc-dec-secure0",
+      "platform_device": "188d0000.mfc",
+      "sysfs": "/sys/class/video4linux/video8"
+    },
+    {
+      "compatible": "samsung,exynos-mfc",
+      "dev": "81:3",
+      "device": "/sys/devices/platform/188d0000.mfc",
+      "driver": "s5p-mfc",
+      "index": "3",
+      "ip_ver": "0x1300",
+      "name": "s5p-mfc-enc-secure0",
+      "platform_device": "188d0000.mfc",
+      "sysfs": "/sys/class/video4linux/video9"
+    }
+  ],
+  "platform_device": "188d0000.mfc",
+  "preload": {
+    "files": [
+      "/usr/lib/nuxel/nuxel-preload-cinema"
+    ],
+    "software_safe_hwdec_no": true
+  },
+  "reason": "mfc_fw.bin is absent; hardware decode stays blocked",
+  "safe_open_allowed": false,
+  "safety_receipt": {
+    "decode_verified": false,
+    "error": "safety receipt missing: /etc/nuxel/mfc/safety-receipt.json",
+    "kernel_patch_applied": false,
+    "owner_approved": false,
+    "path": "/etc/nuxel/mfc/safety-receipt.json",
+    "present": false
+  },
+  "schema": "nuxel.mfc.status/1",
+  "soc": "exynos9820",
+  "source_commit": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+  "state": "BLOCKED_FIRMWARE_MISSING",
+  "wireplumber": {
+    "audio_required": true,
+    "bluetooth_required": true,
+    "config": "/etc/wireplumber/wireplumber.conf.d/99-nuxel-no-v4l2.conf",
+    "video_capture_disabled": true
+  }
+}

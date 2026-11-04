@@ -1,0 +1,19 @@
+pwnage30000              rc=0    warnings.warn( .....................                                                    [100%] 21 passed in 0.38s 
+pwnage31000              rc=0    warnings.warn( .................................................                        [100%] 49 passed in 33.06s 
+pwnage33000              rc=1  =========================== short test summary info ============================ FAILED tests/pwnage33000/test_pwnage33000.py::test_registry_is_consistent_and_exactly_matches_launcher 1 failed, 10 passed in 0.43s 
+pwnage34000              rc=0    warnings.warn( ....                                                                     [100%] 4 passed in 0.19s 
+pwnage37000              rc=1  FAILED tests/pwnage37000/test_boot_butterscotch.py::test_abox_unit_does_not_want_multi_user FAILED tests/pwnage37000/test_pwnage37000.py::test_a29_and_a45_session_scripts_are_identical 2 failed, 110 passed in 0.99s 
+pwnage38000              rc=0    warnings.warn( .......                                                                  [100%] 7 passed in 0.16s 
+pwnage40000              rc=1  FAILED tests/pwnage40000/test_audio_persistence_40000.py::test_route_keeps_25_percent_ceiling FAILED tests/pwnage40000/test_audio_persistence_40000.py::test_abox_wrapper_starts_session_before_route_and_waits 3 failed, 16 passed in 0.29s 
+pwnage42000              rc=1  =========================== short test summary info ============================ FAILED tests/pwnage42000/test_topbar_contrast.py::test_status_bar_uses_explicit_high_contrast_colours 1 failed, 12 passed in 0.59s 
+pwnage44000              rc=3  INTERNALERROR> SystemExit: 0  no tests ran in 0.05s 
+pwnage45000              rc=3  INTERNALERROR> SystemExit: 1  no tests ran in 0.96s 
+pwnage46000              rc=0    warnings.warn( .............                                                            [100%] 13 passed in 0.27s 
+pwnage49000              rc=1  FAILED tests/pwnage49000/test_pwnage49000.py::test_radio_icons_use_single_local_mask_artwork FAILED tests/pwnage49000/test_pwnage49000.py::test_short_back_root_is_noop_home_is_distinct 2 failed, 14 passed in 0.34s 
+pwnage50000              rc=0    warnings.warn( ........                                                                 [100%] 8 passed in 0.70s 
+pwnage52000              rc=0    warnings.warn( .......................................                                  [100%] 39 passed in 0.64s 
+pwnage53000              rc=0    warnings.warn( .............                                                            [100%] 13 passed in 0.65s 
+pwnage54000              rc=3  INTERNALERROR> SystemExit: 0  no tests ran in 0.06s 
+pwnage58000              rc=0    warnings.warn( ..........                                                               [100%] 10 passed in 0.23s 
+pwnage60000              rc=0    warnings.warn( ...............................                                          [100%] 31 passed in 5.51s 
+pwnage61000              rc=0    35 passed in 1.88s

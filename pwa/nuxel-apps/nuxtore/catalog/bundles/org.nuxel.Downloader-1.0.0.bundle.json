@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/downloader/index.html",
-    "sha256": "d5f4ce8e741ff8f4480200666216045cce8ac167ef9e6a703e42342a3caf1c72",
-    "size": 5694
+    "sha256": "dc23a2aec5190ac24f27454f388f9ea41aac6f425d994c21e59a6ee38d99a2eb",
+    "size": 5768
   },
   {
     "path": "pwa/nuxel-apps/downloader/js/download-queue.js",
@@ -76,8 +76,8 @@
   },
   {
     "path": "pwa/nuxel-apps/downloader/manifest.json",
-    "sha256": "ffc13eeac7e437bd9500b0f51eedcc555220de023ea657689aa13a74c977f9a1",
-    "size": 945
+    "sha256": "8be225be530942876740a0490ef77ba142fc7e9783d47b635c9f8c55ada5d1be",
+    "size": 1089
   },
   {
     "path": "pwa/nuxel-apps/downloader/samples/queue-examples.json",

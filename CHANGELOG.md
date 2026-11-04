@@ -6,6 +6,55 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.6-beta] - 2026-11-04 - *Nuxel Doom, immersive app chrome and NuXtore install/remove*
+
+**This is the release where Nuxel becomes a handheld.** The headline feature is
+**Nuxel Doom**, an original touch-first shooter shipped as a signed NuXtore
+package. It uses a 320x180 raycasting engine, three sectors, separate movement
+and aim surfaces, simultaneous fire/use/weapon/run bindings, doors, enemies,
+pickups, audio, optional host haptics, pause/resume and offline saves. It is
+installable and removable from NuXtore through the canonical app registry.
+
+The launcher also gains an immersive chrome contract. Foreground PWA apps hide
+the triple buttons by default; a bottom-edge swipe reveals Back/Home/Recents.
+Real fullscreen apps such as Doom hide the top bar as well, with a top-edge pull
+to reveal it. Home and the lockscreen are excluded. Doom contains no text inputs
+and dismisses the system keyboard on start, focus and resume.
+
+### Added
+
+- `pwa/nuxel-apps/doom/` — original engine, touch HUD, settings, campaign,
+  pause/end screens, offline service worker, icons, manifest, app metadata and
+  tests (`31 passed`).
+- `pwa/nuxel-home/js/immersive.js` — bottom/top edge chrome gestures, including
+  same-origin iframe listeners and source-checked app immersive requests.
+- `pwa/nuxel-home/tests/test-immersive-chrome.js` — offline contract test
+  (`21 passed`).
+- `docs/games/doom.md`, `docs/games/doom-touch-controls.md`,
+  `docs/games/doom-troubleshooting.md` and
+  `docs/releases/v0.7.6-beta.md`.
+- NuXtore package `org.nuxel.Doom` with a signed bundle, catalogue metadata and
+  SHA-256-pinned file list.
+
+### Changed
+
+- Nuxel Home hides PWA nav chrome in the foreground and restores it on Home or
+  background; the native dock follows the same public `setNavVisible` contract.
+- Dynamic NuxTore apps are removed from the Home registry when unregistered,
+  while static built-in apps remain untouched.
+- Registry revision 13 records the Doom tree as a catalogue-only app.
+- Repository version lockstep bumped to `v0.7.6-beta` across the OS, shell,
+  bridge, PWA manifests, device APKBUILDs, OTA and VM tooling.
+
+### Fixed
+
+- Doom never opens the system keyboard: no text inputs exist and the shell
+  explicitly dismisses the OSK on start, focus, resume and exit.
+- Fullscreen exit releases every touch/button state and restores the previous
+  orientation.
+- The top bar and triple buttons can always be recovered with edge gestures
+  except on the launcher and lockscreen.
+
 ## [v0.7.5-beta] - 2026-11-01 - *Rotation confirmed, partial GPU acceleration, PWNAGE-47000..54000*
 
 **This is the release where rotation works and the Mali GPU is really in the

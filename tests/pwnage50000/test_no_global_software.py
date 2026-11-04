@@ -16,7 +16,10 @@ def test_native_launch_uses_profile_helper_not_hardcoded_software():
     assert "LIBGL_ALWAYS_SOFTWARE=1" not in s
 
 
-def test_graphics_defaults_are_software_webkit_and_independent_gtk4():
+def test_graphics_default_is_gpu_shm_with_software_fallback():
     s = (ROOT / "configs/nuxel/graphics/graphics-profile.json").read_text()
-    assert '"mode": "software"' in s
+    assert '"default_profile": "gpu-rendered-shm-presented"' in s
+    assert '"fallback": "software-safe"' in s
+    assert '"allow_dma_path": false' in s
+    assert '"zero_copy_scanout": false' in s
     assert '"webkitgtk"' in s and '"gtk4"' in s

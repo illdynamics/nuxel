@@ -1,10 +1,10 @@
 {
   "schema_version": 2,
-  "default_profile": "software-safe",
+  "default_profile": "gpu-rendered-shm-presented",
   "compositor": {
     "profile": "kbase-gles2-udmabuf-linear-dmabuf",
     "allow_change": false,
-    "evidence": "PWNAGE-53000: phoc maps libgallium_dri.so + 3x /dev/mali0; linux-dmabuf v3 advertises LINEAR only"
+    "evidence": "PWNAGE-53000/60000: phoc maps libEGL_mesa.so.0.0.0 + libgallium_dri.so + 3x /dev/mali0; linux-dmabuf v3 advertises LINEAR only; no llvmpipe threads"
   },
   "profiles": {
     "software-safe": {
@@ -12,14 +12,14 @@
       "measured": true,
       "webkitgtk": "software",
       "gtk3": "software",
-      "note": "Baseline fallback. WebKit SHM, no EGL in the web process."
+      "note": "Baseline fallback. WebKit SHM, no EGL in the web process. Always available and used automatically if the bounded kbase EGL probe fails."
     },
     "gpu-rendered-shm-presented": {
       "available": true,
       "measured": true,
       "webkitgtk": "gpu-rendered-shm-presented",
       "gtk3": "enabled",
-      "note": "Mali EGL in web/UI process, KBASE_IOCTL_JOB_SUBMIT observed, 0 udmabuf/dmabuf fds (WebKit Hardware transport gated on drmMainDevice)."
+      "note": "Production default after PWNAGE-60000 live revalidation. Mali EGL in the web/UI process, KBASE_IOCTL_JOB_SUBMIT observed, 0 udmabuf/dmabuf fds in WebKit (Hardware transport still gated on drmMainDevice). Final panel output is the CPU framebuffer bridge, not zero-copy."
     },
     "gpu-rendered-dmabuf-presented": {
       "available": false,
@@ -34,14 +34,32 @@
       "gtk3": "software"
     }
   },
-  "webkitgtk": { "profile": "software-safe", "fallback": "software-safe" },
-  "gtk3": { "profile": "software-safe", "fallback": "software-safe" },
-  "gtk4": { "mode": "auto", "renderer": "auto", "fallback": "cairo" },
+  "webkitgtk": {
+    "profile": "gpu-rendered-shm-presented",
+    "fallback": "software-safe"
+  },
+  "gtk3": {
+    "profile": "gpu-rendered-shm-presented",
+    "fallback": "software-safe"
+  },
+  "gtk4": {
+    "mode": "gl-validated",
+    "renderer": "gl",
+    "fallback": "cairo",
+    "evidence": "PWNAGE-60000 live probe: GSK_RENDERER=gl loads the kbase Mesa screen and renders a GTK4 window; cairo is the fallback"
+  },
+  "validation": {
+    "egl_probe": "/usr/lib/nuxel/nuxel-kbase-egl-probe",
+    "timeout_s": 4,
+    "cache": "/run/nuxel/graphics-gpu-probe.json",
+    "compositor_fallback_marker": "/run/nuxel-gpu-fallback"
+  },
   "presentation": {
     "mode": "current-wl-fb",
-    "target_fps": 24,
+    "target_fps": 20,
     "allow_dma_path": false,
-    "idle_capture_fps": 1
+    "idle_capture_fps": 1,
+    "zero_copy_scanout": false
   },
   "apps": {
     "pwnage53000-diagnostic": {

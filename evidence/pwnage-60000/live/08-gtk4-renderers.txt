@@ -1,0 +1,42 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== GSK_RENDERER=help ==
+The old OpenGL renderer has been removed in GTK 4.18, so using
+GSK_RENDERER=gl will cause a warning and use the new OpenGL renderer.
+
+Other arguments will cause a warning and be ignored.
+MESA-EGL: warning: nuxel: kbase=1 fd=9 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+{"gtk4_gsk":"PASS","width":360,"height":659}
+rc=0
+== GSK_RENDERER=gl ==
+MESA-EGL: warning: nuxel: kbase=1 fd=9 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+{"gtk4_gsk":"PASS","width":360,"height":659}
+rc=0
+== GSK_RENDERER=ngl ==
+
+(nuxel-gtk4-gsk-probe:20366): Gsk-WARNING **: 23:54:38.449: The new GL renderer has been renamed to gl. Try GSK_RENDERER=help
+MESA-EGL: warning: nuxel: kbase=1 fd=9 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+{"gtk4_gsk":"PASS","width":360,"height":659}
+rc=0
+== GSK_RENDERER=vulkan ==
+MESA-EGL: warning: nuxel: kbase=1 fd=9 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+{"gtk4_gsk":"PASS","width":360,"height":659}
+rc=0
+== GSK_RENDERER=cairo ==
+{"gtk4_gsk":"PASS","width":360,"height":659}
+rc=0

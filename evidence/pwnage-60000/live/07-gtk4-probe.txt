@@ -1,0 +1,17 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+BUILD_OK
+
+(nuxel-gtk4-gsk-probe:20246): Gsk-WARNING **: 23:54:25.281: Unrecognized renderer "auto". Try GSK_RENDERER=help
+MESA-EGL: warning: nuxel: kbase=1 fd=9 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+{"gtk4_gsk":"PASS","width":360,"height":659}
+rc=0

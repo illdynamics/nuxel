@@ -20,7 +20,7 @@ verifies them with `tools/release/verify-installed-image.py`.
   closed if they are missing (`NUXEL_REQUIRE_KBASE=1`) or altered.
 
 The captured BOOT image and userspace inventory are the bytes published with
-Nuxel v0.7.5-beta, captured from the handset on 2026-11-01. Reproduce them
+Nuxel v0.7.6-beta, captured from the handset on 2026-11-01. Reproduce them
 read-only with `tools/release/capture-installed-image.sh root@<phone>`; the
 release workflow gates them with
 `tools/release/verify-installed-image.py` before publishing. The root
@@ -28,5 +28,5 @@ filesystem is a live mounted ext4 filesystem; no consistent block snapshot is
 claimed. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](../docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
 for the capture design and
-[`docs/releases/v0.7.5-beta.md`](../docs/releases/v0.7.5-beta.md) for this
+[`docs/releases/v0.7.6-beta.md`](../docs/releases/v0.7.6-beta.md) for this
 release's current-state notes.

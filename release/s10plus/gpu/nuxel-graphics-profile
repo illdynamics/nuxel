@@ -1,41 +1,70 @@
 #!/usr/bin/env python3
-"""Read and validate the single Nuxel graphics policy (PWNAGE-53000).
+"""Read, validate and apply the single Nuxel graphics policy (PWNAGE-60000).
 
 Usage:
-  nuxel-graphics-profile env webkit|gtk3|gtk4|native:<app-id>|all|profile:<name>
-  nuxel-graphics-profile status
+  nuxel-graphics-profile env webkit|gtk3|gtk4|all|native:<app-id>|profile:<name>
+  nuxel-graphics-profile status [--no-probe]
   nuxel-graphics-profile json
+  nuxel-graphics-profile validate
   nuxel-graphics-profile check
+  nuxel-graphics-profile probe [--refresh]
+  nuxel-graphics-profile cache-clear
 
-Output for `env` is shell-safe `export KEY=VALUE` lines.  It never accepts a
-caller-supplied variable name or value: only this closed schema can produce an
-environment.
+`env` emits only shell-safe `export KEY=VALUE` lines.  The schema is closed:
+the caller never supplies a variable name or an unvalidated value.
 
 Profiles are named for measured facts, not aspirations:
   software-safe                 no EGL/GL; WebKit shared-memory transport
-  gpu-rendered-shm-presented    Mali EGL rendering + WebKit/DMABUF-disabled SHM
-                                presentation (no udmabuf/dmabuf fd in the web
-                                process; proven with KBASE_IOCTL_JOB_SUBMIT)
+  gpu-rendered-shm-presented    Mali EGL rendering + WebKit SHM presentation
   gpu-rendered-dmabuf-presented Mali rendering + real DMA-BUF exchange
   fully-accelerated             DMA-BUF presentation *and* no CPU scanout copy
 
-The last two are unavailable on this kernel because CONFIG_DRM_VGEM is unset
-and there is no /dev/dri: WebKit 2.54.1 gates its Hardware transport on
-drmMainDevice().  The helper falls back loudly instead of mislabelling SHM.
+The last two are unavailable on this kernel: CONFIG_DRM_VGEM is unset and there
+is no /dev/dri, so WebKit 2.54.1's Hardware transport (drmMainDevice()) cannot
+open.  This helper falls back loudly instead of mislabelling SHM as zero-copy.
+
+PWNAGE-60000 production rule: the measured GPU-SHM profile is the default for
+normal Home/Settings/WebKit.  A bounded, cached kbase EGL probe (or the
+compositor's own /run/nuxel-gpu-fallback marker) selects software-safe if the
+GPU path is not healthy.  The check never runs for software-safe itself and is
+cached for the current boot/library set, so app launches stay fast.
 """
+import hashlib
 import json
 import os
+import re
 import shlex
+import subprocess
 import sys
+import tempfile
+import time
 
 PATH = os.environ.get("NUXEL_GRAPHICS_PROFILE", "/etc/nuxel/graphics/graphics-profile.json")
+# Path overrides exist for the unit tests and for read-only diagnostics.  The
+# shipped helper uses the defaults; an attacker who can set the app environment
+# already controls that app's graphics policy.
+KBASE_NODE = os.environ.get("NUXEL_KBASE_NODE", "/dev/mali0")
+KBASE_EGL = os.environ.get("NUXEL_KBASE_EGL", "/usr/lib64/libEGL_mesa.so.0.0.0")
+KBASE_GALLIUM = os.environ.get("NUXEL_KBASE_GALLIUM", "/usr/lib64/libgallium_dri.so")
+KBASE_WLROOTS = os.environ.get("NUXEL_KBASE_WLROOTS", "/usr/lib64/libwlroots-0.19.so")
+EGL_VENDOR = os.environ.get("NUXEL_EGL_VENDOR", "/etc/nuxel/egl-kbase.json")
+GPU_PROBE = os.environ.get("NUXEL_GPU_PROBE", "/usr/lib/nuxel/nuxel-kbase-egl-probe")
+GPU_CACHE = os.environ.get("NUXEL_GPU_CACHE", "/run/nuxel/graphics-gpu-probe.json")
+GPU_FALLBACK_MARKER = os.environ.get("NUXEL_GPU_FALLBACK_MARKER", "/run/nuxel-gpu-fallback")
+PROBE_TIMEOUT = float(os.environ.get("NUXEL_GPU_PROBE_TIMEOUT", "4"))
 
-VALID = {
-    "webkitgtk": {"software", "gpu-rendered-shm-presented",
-                  "gpu-rendered-dmabuf-presented", "fully-accelerated"},
-    "gtk3": {"software", "enabled"},
-    "gtk4": {"auto", "software", "gl", "ngl", "cairo"},
+VALID_PROFILES = {
+    "software-safe",
+    "gpu-rendered-shm-presented",
+    "gpu-rendered-dmabuf-presented",
+    "fully-accelerated",
 }
+VALID_WEBKIT = {"software", "gpu-rendered-shm-presented",
+                "gpu-rendered-dmabuf-presented", "fully-accelerated"}
+VALID_GTK3 = {"software", "enabled"}
+VALID_GTK4 = {"auto", "software", "gl", "ngl", "cairo"}
+VALID_TOOLKITS = {"gtk3", "gtk4", "none"}
+APP_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._@+-]{0,127}$")
 
 SAFE_DEFAULT = {
     "schema_version": 2,
@@ -59,23 +88,209 @@ SAFE_DEFAULT = {
     "webkitgtk": {"profile": "software-safe", "fallback": "software-safe"},
     "gtk3": {"profile": "software-safe", "fallback": "software-safe"},
     "gtk4": {"mode": "auto", "renderer": "auto", "fallback": "cairo"},
-    "presentation": {"mode": "current-wl-fb", "target_fps": 24, "allow_dma_path": False},
+    "presentation": {"mode": "current-wl-fb", "target_fps": 20,
+                     "allow_dma_path": False, "idle_capture_fps": 1},
     "apps": {},
 }
 
-KBASE_ENV = {
+GPU_BASE_ENV = {
     "GDK_BACKEND": "wayland",
     "GDK_GL": "gles",
-    "MESA_KBASE_NODE": "/dev/mali0",
+    "MESA_KBASE_NODE": KBASE_NODE,
     "MESA_LOADER_DRIVER_OVERRIDE": "panfrost",
     "LIBGL_DRIVERS_PATH": "/usr/lib64/dri",
-    "__EGL_VENDOR_LIBRARY_FILENAMES": "/etc/nuxel/egl-kbase.json",
+    "__EGL_VENDOR_LIBRARY_FILENAMES": EGL_VENDOR,
+}
+GPU_WEBKIT_ENV = {
+    "WEBKIT_DISABLE_COMPOSITING_MODE": "0",
+    "WEBKIT_FORCE_COMPOSITING_MODE": "1",
+    "NUXEL_KBASE_WSI": "1",
 }
 SOFTWARE_ENV = {
     "GDK_BACKEND": "wayland",
     "LIBGL_ALWAYS_SOFTWARE": "1",
     "WEBKIT_DISABLE_COMPOSITING_MODE": "1",
 }
+
+
+def _atomic_json(path, doc):
+    try:
+        d = os.path.dirname(path) or "."
+        os.makedirs(d, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(prefix=".gpu-", dir=d)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(doc, f, sort_keys=True)
+            f.write("\n")
+        os.replace(tmp, path)
+        return True
+    except Exception:
+        return False
+
+
+def _stat_sig(path):
+    try:
+        st = os.stat(path)
+        return [st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns]
+    except OSError:
+        return None
+
+
+def _boot_id():
+    try:
+        with open("/proc/sys/kernel/random/boot_id", "r", encoding="ascii") as f:
+            return f.read().strip()
+    except OSError:
+        return "unknown"
+
+
+def _probe_key():
+    return {
+        "boot_id": _boot_id(),
+        "probe": _stat_sig(GPU_PROBE),
+        "egl": _stat_sig(KBASE_EGL),
+        "gallium": _stat_sig(KBASE_GALLIUM),
+        "wlroots": _stat_sig(KBASE_WLROOTS),
+        "vendor": _stat_sig(EGL_VENDOR),
+        "policy": _stat_sig(PATH),
+    }
+
+
+def _read_cache():
+    try:
+        with open(GPU_CACHE, "r", encoding="utf-8") as f:
+            doc = json.load(f)
+        if isinstance(doc, dict):
+            return doc
+    except Exception:
+        pass
+    return None
+
+
+def _vendor_library():
+    try:
+        with open(EGL_VENDOR, "r", encoding="utf-8") as f:
+            doc = json.load(f)
+        return (doc.get("ICD") or {}).get("library_path")
+    except Exception:
+        return None
+
+
+def gpu_ready(force=False, allow_probe=True):
+    """Return (ready, reason, evidence).  Never raises, always bounded."""
+    reasons = []
+    evidence = {}
+    if os.environ.get("NUXEL_GRAPHICS_FORCE_SOFTWARE") == "1":
+        return False, "NUXEL_GRAPHICS_FORCE_SOFTWARE=1", {"forced": True}
+    if os.path.exists(GPU_FALLBACK_MARKER):
+        reasons.append("compositor GPU fallback marker present (%s)" % GPU_FALLBACK_MARKER)
+    try:
+        st = os.stat(KBASE_NODE)
+        evidence["kbase_node"] = {"path": KBASE_NODE, "mode": oct(st.st_mode & 0o777)}
+        if not os.access(KBASE_NODE, os.R_OK | os.W_OK):
+            reasons.append("/dev/mali0 is not readable/writable")
+    except OSError as exc:
+        reasons.append("/dev/mali0 missing or inaccessible: %s" % exc)
+    for p in (KBASE_EGL, KBASE_GALLIUM, KBASE_WLROOTS):
+        if not os.path.isfile(p):
+            reasons.append("missing GPU library %s" % p)
+        else:
+            evidence.setdefault("libraries", {})[p] = _stat_sig(p)
+    vendor = _vendor_library()
+    evidence["egl_vendor"] = {"path": EGL_VENDOR, "library": vendor}
+    if not vendor:
+        reasons.append("EGL vendor JSON missing or unreadable: %s" % EGL_VENDOR)
+    elif not os.path.isfile(vendor):
+        reasons.append("EGL vendor library not present: %s" % vendor)
+    if reasons:
+        return False, "; ".join(reasons), evidence
+
+    key = _probe_key()
+    cache = _read_cache()
+    if not force and cache and cache.get("key") == key:
+        if cache.get("ok") is True:
+            evidence["probe"] = "cache"
+            evidence["renderer"] = cache.get("renderer")
+            evidence["gl_version"] = cache.get("gl_version")
+            evidence["egl_version"] = cache.get("egl_version")
+            return True, None, evidence
+        # Cache a failed probe briefly too.  Without this, every app launch
+        # would pay the full timeout while the GPU path is broken.  The short
+        # TTL lets a transient boot failure recover without a reboot.
+        try:
+            age = time.time() - float(cache.get("created", 0))
+        except (TypeError, ValueError):
+            age = 1e9
+        if age < 30:
+            evidence["probe"] = "negative-cache"
+            evidence["renderer"] = cache.get("renderer")
+            return False, ("cached kbase EGL probe failure (rc=%s, renderer=%r, age=%ds)"
+                           % (cache.get("rc"), cache.get("renderer"), int(age))), evidence
+
+    if not allow_probe or os.environ.get("NUXEL_GPU_PROBE_DISABLE") == "1":
+        evidence["probe"] = "cheap-check (probe disabled)"
+        return True, None, evidence
+    if not os.path.isfile(GPU_PROBE) or not os.access(GPU_PROBE, os.X_OK):
+        # PWNAGE-60000 fail closed: a release image and the compositor boot gate
+        # both require this probe.  A missing probe is not evidence that EGL
+        # works; it must select software-safe instead of blindly claiming GPU.
+        return False, ("required kbase EGL probe missing or not executable: %s"
+                       % GPU_PROBE), evidence
+
+    env = dict(os.environ)
+    # A stale developer shell must not make the readiness probe itself run on
+    # llvmpipe.  These are removed only for the probe child, never globally.
+    env.pop("LIBGL_ALWAYS_SOFTWARE", None)
+    env.pop("WEBKIT_DISABLE_COMPOSITING_MODE", None)
+    env.update(GPU_BASE_ENV)
+    rc = 124
+    out = err = ""
+    started = time.time()
+    try:
+        proc = subprocess.Popen([GPU_PROBE], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True, env=env,
+                                start_new_session=True)
+        try:
+            out, err = proc.communicate(timeout=PROBE_TIMEOUT)
+            rc = proc.returncode
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(proc.pid, 9)
+            except Exception:
+                pass
+            try:
+                out, err = proc.communicate(timeout=1)
+            except Exception:
+                pass
+            rc = 124
+    except OSError as exc:
+        err = str(exc)
+        rc = 127
+    elapsed_ms = int((time.time() - started) * 1000)
+    renderer = None
+    gl_version = None
+    egl_version = None
+    for line in out.splitlines():
+        if line.startswith("GL_RENDERER="):
+            renderer = line.split("=", 1)[1].strip()
+        elif line.startswith("GL_VERSION="):
+            gl_version = line.split("=", 1)[1].strip()
+        elif line.startswith("EGL "):
+            egl_version = line.split(" ", 1)[1].strip()
+    ok = (rc == 0 and renderer and "panfrost" in renderer.lower()
+          and "llvmpipe" not in renderer.lower())
+    evidence["probe"] = {"rc": rc, "elapsed_ms": elapsed_ms,
+                         "renderer": renderer, "gl_version": gl_version,
+                         "egl_version": egl_version,
+                         "stderr": err.strip()[-400:] if err else ""}
+    _atomic_json(GPU_CACHE, {"key": key, "ok": ok, "renderer": renderer,
+                             "gl_version": gl_version, "egl_version": egl_version,
+                             "rc": rc, "elapsed_ms": elapsed_ms,
+                             "created": int(time.time())})
+    if not ok:
+        detail = err.strip().splitlines()[-1] if err.strip() else "no renderer"
+        return False, ("kbase EGL probe failed (rc=%d, renderer=%r, %s)"
+                       % (rc, renderer, detail)), evidence
+    return True, None, evidence
 
 
 def load():
@@ -108,62 +323,252 @@ def profiles(doc):
     }
 
 
-def profile_env(name, prof, reasons):
+def section_profile(doc, section, default="software-safe"):
+    sec = doc.get(section) or {}
+    return sec.get("profile", sec.get("mode", default))
+
+
+def section_fallback(doc, section, default="software-safe"):
+    sec = doc.get(section) or {}
+    fb = sec.get("fallback", default)
+    return fb if fb in profiles(doc) else default
+
+
+def requested_profile(doc, target):
+    if doc.get("schema_version") == 1:
+        # schema v1 used mode names, not profile ids.
+        wmode = (doc.get("webkitgtk") or {}).get("mode", "software")
+        gmode = (doc.get("gtk3") or {}).get("mode", "software")
+        if target in ("all", "webkit"):
+            return "gpu-rendered-shm-presented" if wmode == "accelerated" else "software-safe"
+        if target == "gtk3":
+            return "gpu-rendered-shm-presented" if gmode == "enabled" else "software-safe"
+        if target == "gtk4":
+            return "software-safe"
+    if target in ("all", "webkit"):
+        return section_profile(doc, "webkitgtk", doc.get("default_profile", "software-safe"))
+    if target == "gtk3":
+        return section_profile(doc, "gtk3", doc.get("default_profile", "software-safe"))
+    if target == "gtk4":
+        # gtk4.mode/renderer describe GSK, not a Nuxel profile.  Use an explicit
+        # gtk4.profile if one is present, otherwise the production default.
+        return (doc.get("gtk4") or {}).get(
+            "profile", doc.get("default_profile", "software-safe"))
+    if target.startswith("profile:"):
+        return target.split(":", 1)[1]
+    if target.startswith("native:"):
+        app = target.split(":", 1)[1]
+        override = (doc.get("apps") or {}).get(app) or {}
+        return override.get("profile", doc.get("default_profile", "software-safe"))
+    return "software-safe"
+
+
+def _is_gpu_profile(name):
+    return name in ("gpu-rendered-shm-presented", "gpu-rendered-dmabuf-presented",
+                    "fully-accelerated")
+
+
+def profile_env(name, target="all", doc=None):
+    """Build a closed environment for one process class."""
+    reasons = []
+    profs = profiles(doc or SAFE_DEFAULT)
+    fallback = "software-safe"
+    if doc:
+        section = "webkitgtk" if target in ("all", "webkit", "native") else target
+        if target == "gtk3":
+            fallback = section_fallback(doc, "gtk3")
+        elif target in ("all", "webkit"):
+            fallback = section_fallback(doc, "webkitgtk")
+        elif target.startswith("profile:") or target.startswith("native:"):
+            fallback = "software-safe"
+    prof = profs.get(name)
+    if not isinstance(prof, dict):
+        reasons.append("unknown profile %r; using %s" % (name, fallback))
+        name = fallback if fallback in profs else "software-safe"
+        prof = profs.get(name) or profiles(SAFE_DEFAULT)["software-safe"]
     if not prof.get("available", False):
         reasons.append("%s unavailable: %s" % (name, prof.get("reason", "no reason recorded")))
-        name = "software-safe"
-        prof = profiles(SAFE_DEFAULT)["software-safe"]
-    env = dict(KBASE_ENV)
-    if prof.get("webkitgtk") == "software" or prof.get("gtk3") == "software":
-        env.update(SOFTWARE_ENV)
-    if prof.get("webkitgtk") == "gpu-rendered-shm-presented":
-        env.update({"WEBKIT_DISABLE_COMPOSITING_MODE": "0",
-                    "WEBKIT_FORCE_COMPOSITING_MODE": "1",
-                    "NUXEL_KBASE_WSI": "1"})
-        env.pop("LIBGL_ALWAYS_SOFTWARE", None)
+        name = fallback if fallback in profs and profs[fallback].get("available") else "software-safe"
+        prof = profs.get(name) or profiles(SAFE_DEFAULT)["software-safe"]
+    if _is_gpu_profile(name):
+        ready, why, evidence = gpu_ready(allow_probe=True)
+        if not ready:
+            reasons.append("GPU startup validation failed: %s" % why)
+            name = fallback if fallback in profs and profs[fallback].get("available") else "software-safe"
+            prof = profs.get(name) or profiles(SAFE_DEFAULT)["software-safe"]
+    env = {}
+    native_webkit = bool(target.startswith("native:") and
+                         ((doc or {}).get("apps") or {}).get(
+                             target.split(":", 1)[1], {}).get("webkit"))
+    webkit_target = (target in ("all", "webkit", "profile:") or
+                     target.startswith("profile:") or native_webkit)
+    if webkit_target:
+        software = prof.get("webkitgtk") == "software"
+    elif target in ("gtk3", "gtk4"):
+        software = prof.get("gtk3") == "software"
+    else:
+        software = (prof.get("webkitgtk") == "software" or
+                    prof.get("gtk3") == "software")
+    if software:
+        env["GDK_BACKEND"] = "wayland"
+        if webkit_target:
+            env.update(SOFTWARE_ENV)
+        else:
+            env["LIBGL_ALWAYS_SOFTWARE"] = "1"
+    else:
+        env.update(GPU_BASE_ENV)
+        if webkit_target:
+            env.update(GPU_WEBKIT_ENV)
+    if target == "gtk4":
+        section = (doc or {}).get("gtk4") or {}
+        renderer = section.get("renderer", "auto")
+        if renderer not in VALID_GTK4:
+            reasons.append("invalid gtk4 renderer %r; using cairo" % renderer)
+            renderer = "cairo"
+        env["GSK_RENDERER"] = "cairo" if renderer in ("cairo", "software") else renderer
+        env.pop("LIBGL_ALWAYS_SOFTWARE", None) if renderer not in ("cairo", "software") else None
+    if reasons:
+        env["NUXEL_GRAPHICS_FALLBACK_REASON"] = "; ".join(reasons)
+    env["NUXEL_GRAPHICS_PROFILE_ACTIVE"] = name
     return env
 
 
 def env_for(target):
     doc, err = load()
-    profs = profiles(doc)
+    requested = requested_profile(doc, target)
     reasons = []
     if err:
         reasons.append("profile: " + err)
-
-    if target in ("all", "webkit"):
-        name = (doc.get("webkitgtk") or {}).get("profile", doc.get("default_profile", "software-safe"))
-        chosen, prof = name, profs.get(name, {"available": False, "reason": "unknown profile"})
-        env = profile_env(chosen, prof, reasons)
-    elif target in ("gtk3", "gtk4"):
-        name = (doc.get("gtk3") if target == "gtk3" else doc.get("gtk4") or {}).get(
-            "profile", doc.get("default_profile", "software-safe"))
-        env = profile_env(name, profs.get(name, {"available": False, "reason": "unknown profile"}), reasons)
-        if target == "gtk4":
-            section = doc.get("gtk4") or {}
-            renderer = section.get("renderer", "auto")
-            if renderer not in VALID["gtk4"]:
-                reasons.append("invalid gtk4 renderer %r" % renderer)
-                renderer = "cairo"
-            env["GSK_RENDERER"] = "cairo" if renderer in ("cairo", "software") else renderer
-    elif target.startswith("profile:"):
-        name = target.split(":", 1)[1]
-        env = profile_env(name, profs.get(name, {"available": False, "reason": "unknown profile"}), reasons)
-    elif target.startswith("native:"):
-        app = target.split(":", 1)[1]
-        override = (doc.get("apps") or {}).get(app) or {}
-        name = override.get("profile", doc.get("default_profile", "software-safe"))
-        env = profile_env(name, profs.get(name, {"available": False, "reason": "unknown profile"}), reasons)
-        toolkit = override.get("toolkit", "gtk3")
-        if toolkit == "gtk4":
-            env["GSK_RENDERER"] = "cairo" if name == "software-safe" else "auto"
-    else:
-        reasons.append("unknown target %r" % target)
-        env = profile_env("software-safe", profs["software-safe"], reasons)
-
+    if doc.get("schema_version") == 1:
+        if target in ("all", "webkit"):
+            mode = (doc.get("webkitgtk") or {}).get("mode", "software")
+            if mode not in ("accelerated", "software"):
+                reasons.append("invalid webkitgtk.mode %r; using software-safe" % mode)
+        elif target == "gtk3":
+            mode = (doc.get("gtk3") or {}).get("mode", "software")
+            if mode not in ("enabled", "software"):
+                reasons.append("invalid gtk3.mode %r; using software-safe" % mode)
+    env = profile_env(requested, target=target, doc=doc)
+    env["NUXEL_GRAPHICS_PROFILE_REQUESTED"] = requested
     if reasons:
-        env["NUXEL_GRAPHICS_FALLBACK_REASON"] = "; ".join(reasons)
+        prev = env.get("NUXEL_GRAPHICS_FALLBACK_REASON")
+        env["NUXEL_GRAPHICS_FALLBACK_REASON"] = "; ".join(reasons + ([prev] if prev else []))
     return env
+
+
+def validate_doc(doc):
+    errors, warnings = [], []
+    if not isinstance(doc, dict):
+        return ["document is not a JSON object"], warnings
+    schema = doc.get("schema_version")
+    if schema not in (1, 2):
+        errors.append("schema_version must be 1 or 2")
+    profs = doc.get("profiles")
+    if not isinstance(profs, dict) or not profs:
+        errors.append("profiles must be a non-empty object")
+        return errors, warnings
+    unknown = set(profs) - VALID_PROFILES
+    if unknown:
+        errors.append("unknown profile ids: %s" % ", ".join(sorted(unknown)))
+    default = doc.get("default_profile")
+    if default not in profs:
+        errors.append("default_profile %r is not defined" % default)
+    elif not profs[default].get("available"):
+        errors.append("default_profile %r is not available" % default)
+    for name, prof in profs.items():
+        if not isinstance(prof, dict):
+            errors.append("profile %r is not an object" % name)
+            continue
+        if not isinstance(prof.get("available"), bool):
+            errors.append("profile %r.available must be boolean" % name)
+        if not prof.get("available") and not str(prof.get("reason", "")).strip():
+            errors.append("unavailable profile %r needs a reason" % name)
+        for key in ("webkitgtk", "gtk3"):
+            if key in prof and prof[key] not in (VALID_WEBKIT if key == "webkitgtk" else VALID_GTK3):
+                errors.append("profile %r.%s has invalid value %r" % (name, key, prof[key]))
+    if profs.get("fully-accelerated", {}).get("available"):
+        presentation = doc.get("presentation") or {}
+        if not (presentation.get("allow_dma_path") and presentation.get("zero_copy_scanout")):
+            errors.append("fully-accelerated cannot be available without proven DMA-BUF scanout")
+    for section in ("webkitgtk", "gtk3"):
+        sec = doc.get(section)
+        if not isinstance(sec, dict):
+            errors.append("%s section missing" % section)
+            continue
+        name = sec.get("profile", sec.get("mode"))
+        if name not in profs:
+            errors.append("%s.profile %r is not defined" % (section, name))
+        fb = sec.get("fallback")
+        if fb not in profs:
+            errors.append("%s.fallback %r is not defined" % (section, fb))
+        elif fb != "software-safe":
+            warnings.append("%s.fallback is %r, not software-safe" % (section, fb))
+    gtk4 = doc.get("gtk4") or {}
+    if gtk4.get("renderer", "auto") not in VALID_GTK4:
+        errors.append("gtk4.renderer is invalid")
+    presentation = doc.get("presentation") or {}
+    if presentation.get("mode") not in (None, "current-wl-fb"):
+        errors.append("presentation.mode must be current-wl-fb")
+    for key in ("target_fps", "idle_capture_fps"):
+        if key in presentation and (not isinstance(presentation[key], int) or
+                                    not 0 <= presentation[key] <= 120):
+            errors.append("presentation.%s must be an integer 0..120" % key)
+    if presentation.get("allow_dma_path") and not profs.get("gpu-rendered-dmabuf-presented", {}).get("available"):
+        errors.append("presentation.allow_dma_path is true while DMA-BUF profile is unavailable")
+    apps = doc.get("apps") or {}
+    if not isinstance(apps, dict):
+        errors.append("apps must be an object")
+    else:
+        for app_id, override in apps.items():
+            if not APP_RE.match(str(app_id)):
+                errors.append("invalid app id %r" % app_id)
+            if not isinstance(override, dict):
+                errors.append("app %r override is not an object" % app_id)
+                continue
+            if override.get("profile") not in profs:
+                errors.append("app %r profile %r is not defined" % (app_id, override.get("profile")))
+            if override.get("toolkit", "gtk3") not in VALID_TOOLKITS:
+                errors.append("app %r toolkit is invalid" % app_id)
+            if "webkit" in override and not isinstance(override["webkit"], bool):
+                errors.append("app %r webkit must be boolean" % app_id)
+    return errors, warnings
+
+
+def cmd_status(allow_probe=True):
+    doc, err = load()
+    ready, why, evidence = gpu_ready(allow_probe=allow_probe)
+    out = {
+        "path": PATH,
+        "error": err,
+        "default_profile": doc.get("default_profile"),
+        "profiles": {k: {"available": bool(v.get("available")),
+                         "measured": bool(v.get("measured")),
+                         "reason": v.get("reason")}
+                     for k, v in profiles(doc).items()},
+        "gpu": {"ready": ready, "reason": why, "evidence": evidence},
+        "active": {},
+    }
+    for target in ("webkit", "gtk3", "gtk4"):
+        requested = requested_profile(doc, target)
+        env = env_for(target)
+        active = env.get("NUXEL_GRAPHICS_PROFILE_ACTIVE", "software-safe")
+        out["active"][target] = {
+            "profile_requested": requested,
+            "profile_active": active,
+            "fallback_active": bool(env.get("NUXEL_GRAPHICS_FALLBACK_REASON")),
+            "reason": env.get("NUXEL_GRAPHICS_FALLBACK_REASON"),
+        }
+    return out, err
+
+
+def _safe_value(value):
+    """One-line, bounded shell value.  shlex.quote still protects metacharacters;
+    control characters/newlines are flattened so line-oriented consumers can
+    never be tricked into reading a second assignment."""
+    text = value if isinstance(value, str) else str(value)
+    text = text.replace("\x00", " ").replace("\r", " ").replace("\n", " ")
+    text = "".join(ch if 32 <= ord(ch) < 127 else " " for ch in text)
+    return text[:1024]
 
 
 def main(argv):
@@ -176,24 +581,42 @@ def main(argv):
         if err:
             print(json.dumps({"ok": False, "error": err, "path": PATH}))
             return 1
-        print(json.dumps({"ok": True, "path": PATH, "schema_version": doc.get("schema_version")}))
-        return 0
+        errors, warnings = validate_doc(doc)
+        ok = not errors
+        print(json.dumps({"ok": ok, "path": PATH, "schema_version": doc.get("schema_version"),
+                          "errors": errors, "warnings": warnings}))
+        return 0 if ok else 1
+    if cmd == "validate":
+        doc, err = load()
+        errors, warnings = ([err] if err else []), []
+        if not err:
+            errors, warnings = validate_doc(doc)
+        print(json.dumps({"ok": not errors, "path": PATH, "errors": errors,
+                          "warnings": warnings}, indent=2, sort_keys=True))
+        return 0 if not errors else 1
     if cmd == "json":
         print(json.dumps(load()[0], indent=2, sort_keys=True))
         return 0
     if cmd == "status":
-        doc, err = load()
-        out = {"path": PATH, "error": err,
-               "profiles": {k: {"available": bool(v.get("available")),
-                                "measured": bool(v.get("measured")),
-                                "reason": v.get("reason")}
-                            for k, v in profiles(doc).items()}}
+        out, err = cmd_status(allow_probe="--no-probe" not in argv)
         print(json.dumps(out, indent=2, sort_keys=True))
         return 0 if not err else 1
     if cmd == "env":
         target = argv[2] if len(argv) > 2 else "all"
         for k, v in sorted(env_for(target).items()):
-            print("export %s=%s" % (k, shlex.quote(v)))
+            print("export %s=%s" % (k, shlex.quote(_safe_value(v))))
+        return 0
+    if cmd == "probe":
+        ready, why, evidence = gpu_ready(force="--refresh" in argv, allow_probe=True)
+        print(json.dumps({"ready": ready, "reason": why, "evidence": evidence},
+                         indent=2, sort_keys=True))
+        return 0 if ready else 1
+    if cmd == "cache-clear":
+        try:
+            os.unlink(GPU_CACHE)
+        except OSError:
+            pass
+        print(json.dumps({"ok": True, "cache": GPU_CACHE}))
         return 0
     print("unknown command: " + cmd, file=sys.stderr)
     return 2

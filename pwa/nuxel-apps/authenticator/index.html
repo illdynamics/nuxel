@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src http://127.0.0.1:8080; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
 <meta name="theme-color" content="#04191c">
@@ -34,6 +35,27 @@
       <p class="hint">Storage: AES-256-GCM under a PBKDF2-SHA-256 key. There is no account, no sync server and no
         network call anywhere in this app — the vault is a single encrypted file on this device.</p>
     </div>
+
+    <div id="kr-lock-card" class="card" hidden>
+      <h3>Nuxel Keyring</h3>
+      <p id="kr-lock-status" class="hint">Checking…</p>
+      <div id="kr-unlock-row" hidden>
+        <p class="hint">The Nuxel Keyring is locked. Unlocking it is a separate credential from this
+          Authenticator passphrase. Unlocking the keyring does not reveal your TOTP codes until this
+          app explicitly retrieves its own saved credential.</p>
+        <input id="kr-unlock-pass" type="password" autocomplete="current-password" placeholder="Nuxel Keyring master password">
+        <div class="row" style="margin-top:8px">
+          <button id="kr-unlock-go" class="primary">Unlock Nuxel Keyring</button>
+          <button id="kr-unlock-cancel" class="ghost">Not now</button>
+        </div>
+        <p id="kr-unlock-error" class="hint" style="color:#ffb4b4"></p>
+      </div>
+      <div class="row" id="kr-auto-row" hidden>
+        <button id="kr-auto-go" class="primary">Unlock with Nuxel Keyring</button>
+      </div>
+      <p class="hint">Manual passphrase entry above always remains available. If the keyring is unavailable,
+        this app stays locked and never falls back to plaintext storage.</p>
+    </div>
   </section>
 
   <section id="screen-main" class="panel" style="display:none">
@@ -48,12 +70,35 @@
       <div class="card">
         <div class="row"><input id="search" type="search" placeholder="Filter issuer or account"></div>
         <p class="hint">Codes are computed locally from the secret with WebCrypto. The countdown is the real
-          remaining time in this 30 s (or 60 s) step — not a decorative animation.</p>
+          remaining time in this 30 s (or 60 s) step — not a decorative animation. TOTP depends on this
+          phone's clock: if a service rejects a correct-looking code, check the device time instead of
+          weakening the vault.</p>
       </div>
       <div id="codes"></div>
     </div>
 
     <div id="tab-add" class="panel" style="padding:0">
+      <div class="card" id="entra-card">
+        <h3>Add a Microsoft work or school account</h3>
+        <p class="hint"><b>Standard TOTP only — third-party software OATH.</b> This is not Microsoft
+          Authenticator push approval, number matching, passwordless phone sign-in, device registration/PRT,
+          Intune compliance or passkey attestation. Nuxel cannot and will not impersonate Microsoft protocols.</p>
+        <ol class="hint">
+          <li>On a trusted device, open your organization's Microsoft Entra <b>Security info</b> page
+            (or the enrollment page IT gave you). Do not type your work password into Nuxel Authenticator.</li>
+          <li>Add a sign-in method and choose the option that explicitly permits a third-party authenticator
+            or software OATH token. The wording depends on your tenant policy.</li>
+          <li>When Entra shows a QR code or setup key, scan it below or paste the standard
+            <code>otpauth://totp/</code> URI. Confirm issuer, account, algorithm, digits and period.</li>
+          <li>Enter the current code into Microsoft's enrollment page. Nuxel cannot verify tenant acceptance;
+            only Microsoft's page can.</li>
+        </ol>
+        <p class="hint">If your organization disables third-party OATH, requires push/number matching, device
+          registration or a phishing-resistant method, stop and contact IT. Standard TOTP is not
+          phishing-resistant and may not satisfy a Conditional Access policy that requires a phishing-resistant method.</p>
+        <div class="row"><button id="entra-start" class="primary">Use QR / setup key</button></div>
+        <p class="hint">Official docs: learn.microsoft.com/entra/identity/authentication/concept-authentication-oath-tokens</p>
+      </div>
       <div class="card">
         <h3>Scan a QR code</h3>
         <p class="hint">Decoding stays on this device. The camera preview and image bytes are never
@@ -125,14 +170,34 @@
       </div>
       <div class="card">
         <h3>Delete</h3>
-        <div class="row"><input id="wipe-confirm" type="text" placeholder="Type DELETE VAULT to confirm"></div>
-        <div class="row" style="margin-top:8px"><button id="wipe-go" class="danger">Delete the vault on this device</button></div>
+        <div class="row"><input id="wipe-confirm" type="text" placeholder="Type DELETE AUTHENTICATOR VAULT to confirm"></div>
+        <div class="row" style="margin-top:8px"><button id="wipe-go" class="danger">Delete the Authenticator vault and its saved keyring credential</button></div>
         <p id="wipe-note" class="hint"></p>
       </div>
       <p id="io-note" class="hint"></p>
     </div>
 
     <div id="tab-security" class="panel" style="padding:0">
+      <div class="card" id="kr-security-card">
+        <h3>Nuxel Keyring convenience unlock</h3>
+        <p id="kr-status" class="hint">Checking…</p>
+        <p class="hint">This stores this Authenticator vault's passphrase in the Nuxel system keyring.
+          Authenticator can unlock automatically only while the keyring is unlocked. Anyone or any process that
+          can use the unlocked keyring with this app's granted access may be able to unlock these TOTP secrets.
+          Keep the keyring protected.</p>
+        <label class="hint" style="display:flex;gap:10px;align-items:flex-start;margin:10px 0">
+          <input id="kr-consent" type="checkbox" style="width:20px;height:20px;flex:0 0 auto">
+          <span>I understand and explicitly opt in to saving this vault's passphrase in the Nuxel Keyring.</span>
+        </label>
+        <input id="kr-link-pass" type="password" autocomplete="new-password" placeholder="Current Authenticator passphrase">
+        <div class="row" style="margin-top:8px;flex-wrap:wrap">
+          <button id="kr-link-go" class="primary">Save passphrase to Nuxel Keyring</button>
+          <button id="kr-unlink" class="ghost">Remove saved credential</button>
+        </div>
+        <p id="kr-link-note" class="hint"></p>
+        <p class="hint">Removing the saved credential never deletes your TOTP accounts. Deleting this
+          Authenticator vault is a separate destructive action below; it never deletes Nuxel Vault password items.</p>
+      </div>
       <div class="card">
         <h3>What this app is</h3>
         <ul class="hint">

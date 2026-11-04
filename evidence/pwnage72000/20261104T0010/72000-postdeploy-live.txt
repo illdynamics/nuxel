@@ -1,0 +1,59 @@
+captured=2026-11-03T23:11:15Z
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+boot_id=e3b5e426-5c2b-4ac8-ad14-70e2cfb27ab4
+4.14.253-gf7194c1d15ed-dirty
+ 00:11:34 up  9:43,  0 user,  load average: 12.82, 12.26, 12.12
+--- active units
+active
+active
+active
+active
+active
+--- target hashes
+f6d0709ed9974cfc804a60e6ac98ed67f6814d2172dd2cf787da0605ea37b575  /usr/share/nuxel/pwa/nuxel-home/manifest.json
+f6d0709ed9974cfc804a60e6ac98ed67f6814d2172dd2cf787da0605ea37b575  /usr/share/nuxel/nuxel-home/manifest.json
+7d00d6754fed7a19af5c4b38f883c1973ba6152eefc692b674b7eee47b7d50a9  /etc/systemd/system/nuxel-wayland.service
+5d93bc8ae0183f0aeb2b2fcfc6c869d0a9e5ffa2c4633c3790bcaf0c1c4ac423  /usr/share/nuxel/pwa/nuxel-home/index.html
+85f7513ef3ee25c19136058b493d9af5706cd1fc4fc1ab13db0d52d0f6a56e69  /usr/share/nuxel/pwa/nuxel-home/sw.js
+aa1666288362f5b68dea8553bc5cce03a7581afa0e83838edc322731c3dc2228  /usr/share/nuxel/pwa/nuxel-home/js/apps.js
+a4b69270b5c465fad805d468dad8052d863f0c484504ab23881338d957f24538  /usr/share/nuxel/pwa/nuxel-home/js/app.js
+dc7e9fec09d81d4f13860c8f9e4b5092794e5dae6d22ad040427a8bed43972e8  /usr/share/nuxel/pwa/nuxel-home/js/gestures.js
+d56f9775bd93b2d32f9ce2d35d57bf068dbb111e4f7e765d168e37d95de36827  /usr/share/nuxel/pwa/nuxel-home/js/lockscreen-indicators.js
+fdefb18a95fd6129eef19af7d479128ccb4d0478263bc7ed7580d49a6e4f52ed  /usr/share/nuxel/pwa/nuxel-home/js/launcher.js
+d6879a27eaa41434bb81ab727c2cdf297a35fdaa2062c606c7c98297498d9b52  /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+fe61581a46f95b725e90c0f76cd2e2ab4484db0f81cb017c9151bbe2a85ed2e2  /usr/lib/nuxel/nuxel-session.sh
+644b564abcb5fb87a9bc30073722fa1889b45cf377a217f2174108b479ad1360  /usr/lib/nuxel/nuxel-shell-chrome.sh
+9981a8c9d8e88b75eae70013f635cdac0a0020e05dcd0fe7d24d745ef05821c9  /usr/lib/nuxel/nuxel-navdock
+b9433451981479438d032928f64b749d61a984726d2c314c511d5dca59770535  /usr/lib/nuxel/nuxel-statusbar
+4b7fb38c2337198059eca8aad43b654520ad2d86e663cdc569e82ace9f43c03b  /usr/lib/nuxel/nuxel-foreign-toplevel
+a1ab7891cf34c8495e2c8363e23419fbda6b85c51dd789b49935e411b9dfb3e0  /usr/lib/nuxel/nuxel-pwa-host
+07e0cd8439c7fdd34cd2bb96e200adb06d1b403683f7b5ce559a7433a7c768cf  /usr/lib/nuxel/nuxel-button-manager
+7037fe036c656ecee7a00269d0324972f191bbe2649ae5eb800fc455d03ffa1f  /usr/lib/nuxel/nuxel-security-lock-rpc
+--- manifests
+{
+  "name": "Nuxel Home",
+  "short_name": "Nuxel",
+Nuxel Home 12 42
+--- unit
+49:ExecStart=/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+2s
+2s
+--- readiness
+1793747494 FRAMES_OK total=106 fps_1s=8 failures=0 blits=12 present_skipped=93 blit_avg_ms=2 pan_avg_ms=8 capture_avg_ms=6 compare_avg_ms=3 damage=108-256 damage_runs=14 damage_blits=9 damage_avg_ms=0 idle_ms=2338 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=13 decon_pan_failed=0
+
+{"schema_version":1,"ready":true,"visible":false,"reason":"locked","foreground_app_id":"","locked":true,"width":360,"height":36,"scale":2,"error":"","owner":"nuxel-statusbar"}
+
+{"schema_version":1,"supervisor_pid":160012,"navdock_pid":160026,"statusbar_pid":160028,"lock_watch_pid":160029,"updated_at":"2026-11-03T23:11:25Z"}
+
+{"schema_version":1,"visible":false,"mapped":false,"lock":"locked","home_ready":true,"fifo_ready":true,"width":720,"height":62,"scale":2,"reason":"tick"}
+
+--- receipt
+{"schema_version":1,"mission":"PWNAGE-62000","deployed_at":"2026-11-03T23:11:28Z","backup":"/var/backups/nuxel/p62000-20261103T231049Z","stage":"/tmp/pwnage62000-20261103T231049Z","statusbar":true,"navdock":true,"lock_watch":true}

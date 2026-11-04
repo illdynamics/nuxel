@@ -1,0 +1,5 @@
+137eed48d33b8545f8c5dbabe82a183a6d0b089c26a62974902b947090757785  /usr/lib/nuxel/nuxel-wl-fb
+613ee5ed4926883e9a12ba87158c85ee4a288b38f6985c746bf8c3e0d7c2eabd  /usr/lib/nuxel/nuxel-kbase-egl-probe
+cf161394aa3f418ad1125e08adae46fcaa3278e1cf0b8ad301de061f1aaa0dbc  /usr/lib/nuxel/nuxel-graphics-profile
+9a8e4d2ff3b4a95b40bb186ab6b949bb6a293d62f64cd946bab4764a2478dcd5  /usr/lib/nuxel/nuxel-gpu-status
+a337121202eff07c36cfc2f8e45a3043e9110dac8f37f2223174acbca46eb5fd  /usr/lib/nuxel/nuxel-bridge/api.py

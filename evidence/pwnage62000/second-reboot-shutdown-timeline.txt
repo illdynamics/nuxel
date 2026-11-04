@@ -1,0 +1,24 @@
+===PREV_SHUTDOWN
+[    7.156256] fedora systemd[1]: avahi-daemon.service: Failed with result 'exit-code'.
+[   12.474361] fedora systemd[1]: NetworkManager-wait-online.service: Failed with result 'exit-code'.
+[   20.333953] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[   20.439048] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   51.604665] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-boot-sound.service: Failed with result 'exit-code'.
+[  188.236791] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[  188.322691] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+[  188.691196] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[  190.527112] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+[  190.749791] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopping nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+[  191.325463] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+[  191.757314] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Reached target reboot.target - System Reboot.
+[  191.884562] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd-shutdown[1]: Using hardware watchdog /dev/watchdog0: 'S3C2410 Watchdog', version 0.
+[  191.884704] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd-shutdown[1]: Failed to set watchdog hardware timeout to 10min: Invalid argument
+[  191.903875] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd-shutdown[1]: Syncing filesystems and block devices.
+[  191.992426] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd-shutdown[1]: Sending SIGTERM to remaining processes...
+[  192.014212] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd-journald[3567]: Journal stopped
+===LAST
+[  192.013457] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: __dhd_txflowcontrol: Start Netif Queue
+[  192.013585] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: __dhd_txflowcontrol: Start Netif Queue
+[  192.013709] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhd_runtimepm_state : runtime resume ended 
+[  192.013855] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd-journald[3567]: Received SIGTERM from PID 1 (systemd-shutdow).
+[  192.014212] 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd-journald[3567]: Journal stopped

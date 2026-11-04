@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#170b0b"/>
+      <stop offset="0.55" stop-color="#3b0b0b"/>
+      <stop offset="1" stop-color="#080d14"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="55%">
+      <stop offset="0" stop-color="#ff7a2f" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#ff2a00" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <rect x="18" y="18" width="476" height="476" rx="80" fill="none" stroke="#ff7a2f" stroke-width="6" opacity=".55"/>
+  <circle cx="256" cy="220" r="170" fill="url(#glow)"/>
+  <!-- helmet -->
+  <path d="M150 300 L154 172 Q160 106 232 92 L280 92 Q352 106 358 172 L362 300 L330 326 L182 326 Z" fill="#2f7a4c" stroke="#08120c" stroke-width="10"/>
+  <path d="M176 168 Q256 128 336 168 L332 212 Q256 182 180 212 Z" fill="#47b56c"/>
+  <path d="M186 214 L326 214 L318 278 L294 300 L218 300 L194 278 Z" fill="#0b1410"/>
+  <rect x="202" y="226" width="108" height="32" rx="8" fill="#ff9d3b"/>
+  <rect x="212" y="232" width="36" height="20" fill="#ffe2a8"/>
+  <rect x="264" y="232" width="36" height="20" fill="#ffe2a8"/>
+  <path d="M214 286 L298 286 L290 306 L222 306 Z" fill="#47b56c"/>
+  <!-- oxygen/vent -->
+  <rect x="238" y="94" width="36" height="22" rx="6" fill="#1a3b2a"/>
+  <!-- shoulders -->
+  <path d="M118 438 Q120 344 188 326 L324 326 Q392 344 394 438 Z" fill="#274a35" stroke="#08120c" stroke-width="10"/>
+  <path d="M150 420 Q160 366 204 350 L308 350 Q352 366 362 420 Z" fill="#35634a"/>
+  <!-- shotgun -->
+  <g transform="rotate(-16 350 330)">
+    <rect x="314" y="312" width="150" height="34" rx="10" fill="#2b2b31" stroke="#080808" stroke-width="8"/>
+    <rect x="330" y="338" width="84" height="18" rx="6" fill="#7b4a24" stroke="#1a0e06" stroke-width="6"/>
+    <rect x="430" y="308" width="34" height="42" rx="8" fill="#4a4a55" stroke="#080808" stroke-width="8"/>
+    <rect x="454" y="318" width="26" height="10" fill="#ff9d3b"/>
+  </g>
+  <!-- penguin flippers -->
+  <path d="M118 438 Q88 392 102 330 Q118 348 140 364 L146 438 Z" fill="#101b16"/>
+  <path d="M394 438 Q424 392 410 330 Q394 348 372 364 L366 438 Z" fill="#101b16"/>
+  <!-- badge -->
+  <rect x="214" y="368" width="84" height="46" rx="10" fill="#08120c" stroke="#ff7a2f" stroke-width="5"/>
+  <text x="256" y="402" font-family="monospace" font-size="30" font-weight="700" text-anchor="middle" fill="#ff9d3b">DOOM</text>
+</svg>

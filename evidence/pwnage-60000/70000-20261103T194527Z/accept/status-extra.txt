@@ -1,0 +1,21 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+### final_output = {"decon_pan_failed": null, "fallback_marker": false, "fd_scan": "ok", "frames_ok": false, "geometry": {"bpp": "32", "modes": "U:1440x3040p-0", "name": "", "virtual_size": "1440,6080"}, "nuxel_wl_fb_processes": [], "one_writer": true, "parsed": {"_frames_ok": false, "capture": "stopped", "display": "off", "failures": "0", "owner": "nuxel-wl-fb", "total": "1629"}, "state": "1793736331 DISPLAY_SLEEP total=1629 failures=0 owner=nuxel-wl-fb display=off capture=stopped", "writers": [{"comm": "nuxel-wl-fb", "fd": "4", "pid": 97060}]}
+
+### webkit = {"egl_library": ["/usr/lib64/libEGL_mesa.so.0.0.0"], "env": {"MESA_KBASE_NODE": "/dev/mali0", "NUXEL_GRAPHICS_PROFILE_ACTIVE": "gpu-rendered-shm-presented", "NUXEL_GRAPHICS_PROFILE_REQUESTED": "gpu-rendered-shm-presented", "NUXEL_KBASE_WSI": "1", "WEBKIT_DISABLE_COMPOSITING_MODE": "0", "WEBKIT_FORCE_COMPOSITING_MODE": "1"}, "fd_scan": "ok", "fd_scan_error": null, "gallium_library": ["/usr/lib64/libgallium_dri.so"], "gpu_rendering": true, "mali_fds": 3, "pid": 98164, "running": true, "transport": "shm", "transport_fds": [], "webkit_2_54_1_gate": {"drm_main_device_null": true, "hardware_transport_available": false, "note": "SHM is honest; DMA-BUF requires a real DRM/GBM device.", "requires_drmMainDevice": true, "web_render_device_file": "unset"}}
+
+### linux_dmabuf = {"formats": ["formats (fourcc) and modifiers (names):"], "linear_only": false, "protocol": null, "source": "wayland-info"}
+
+### host = "fedora"
+
+### kernel_gpu = {"device": "/dev/mali0", "dri_present": false, "driver": "mali_kbase (vendor ARM kbase)", "mode": "0o666", "present": true, "readable": true, "udmabuf": true, "version_files": {"/sys/module/mali_kbase/version": "r26p0-01eac0 (UK version 11.27)"}, "writable": true}
+
+### profile_summary = {"active": "gpu-rendered-shm-presented", "egl_version": "1.5", "fallback_active": false, "final_panel_presenter": "cpu-framebuffer-bridge", "gl_version": "OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)", "renderer": "Mali-G76 MC12 (Panfrost)", "requested": "gpu-rendered-shm-presented", "webkit_transport": "shm", "zero_copy_scanout": false}
+

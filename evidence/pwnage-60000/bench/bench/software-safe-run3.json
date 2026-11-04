@@ -1,0 +1,109 @@
+{
+  "active_ui_total_pct_one_core": 7.31,
+  "battery_end": {
+    "capacity": "95",
+    "current_now": "-16",
+    "status": "Discharging",
+    "voltage_now": "4218000"
+  },
+  "battery_start": {
+    "capacity": "95",
+    "current_now": "-16",
+    "status": "Discharging",
+    "voltage_now": "4218000"
+  },
+  "cpu_pct_one_core": {
+    "WebKitNetworkProcess": 0.73,
+    "WebKitWebProcess": 2.63,
+    "nuxel-pwa-host": 2.2,
+    "nuxel-wl-fb": 0.73,
+    "phoc": 1.75
+  },
+  "end": "2026-11-02T23:11:48.024766+00:00",
+  "evidence": {
+    "processes": {
+      "WebKitNetworkProcess": {
+        "comm": "WebKitNetworkPr",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 34176,
+        "profile_active": "software-safe",
+        "webkit_disable_compositing": "1"
+      },
+      "WebKitWebProcess": {
+        "comm": "WebKitWebProces",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 34186,
+        "profile_active": "software-safe",
+        "webkit_disable_compositing": "1"
+      },
+      "nuxel-pwa-host": {
+        "comm": "nuxel-pwa-host",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": true,
+        "libEGL_mesa_mapped": true,
+        "mali_fds": 0,
+        "pid": 33257,
+        "profile_active": "software-safe",
+        "webkit_disable_compositing": "1"
+      },
+      "nuxel-wl-fb": {
+        "comm": "nuxel-wl-fb",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 33315
+      },
+      "phoc": {
+        "comm": "phoc",
+        "dmabuf_fds": 0,
+        "fd_scan": "ok",
+        "gallium_mapped": false,
+        "libEGL_mesa_mapped": false,
+        "mali_fds": 0,
+        "pid": 33249
+      }
+    },
+    "renderer": null,
+    "transport": "shm"
+  },
+  "job_submit_probe": {
+    "available": false,
+    "reason": "Command '['strace', '-f', '-e', 'trace=ioctl', '-p', '34186']' timed out after 4.0 seconds"
+  },
+  "label": "software-safe",
+  "loadavg_max": 11.97,
+  "mission": "PWNAGE-60000",
+  "run": 3,
+  "schema": "nuxel.bench/1",
+  "seconds": 60,
+  "start": "2026-11-02T23:10:43.849673+00:00",
+  "state_delta": {
+    "blits": null,
+    "damage_blits": null,
+    "decon_pan_failed": null,
+    "decon_pan_ok": null,
+    "frames": 81.0,
+    "present_skipped": null
+  },
+  "state_end": "1793661107 DISPLAY_SLEEP total=823 failures=0 owner=nuxel-wl-fb display=off capture=stopped",
+  "state_start": "1793661043 FRAMES_OK total=742 fps_1s=1 failures=0 blits=34 present_skipped=707 blit_avg_ms=1 pan_avg_ms=10 capture_avg_ms=7 compare_avg_ms=3 damage=9-38 damage_runs=2 damage_blits=28 damage_avg_ms=0 idle_ms=7032 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=35 decon_pan_failed=0",
+  "thermal_c_max": 36.0,
+  "timings_ms": {
+    "blit_avg": null,
+    "capture_avg": null,
+    "compare_avg": null,
+    "damage_blit_avg": null,
+    "pan_avg": null
+  }
+}

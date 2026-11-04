@@ -15,6 +15,10 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <net/if.h>
 #include <unistd.h>
 
 #include "indicator_snippet.inc"

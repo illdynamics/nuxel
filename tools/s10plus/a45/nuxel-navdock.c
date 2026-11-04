@@ -40,6 +40,8 @@
 #define HOST_FIFO  "/run/nuxel-pwa-host.cmd"
 #define HAP_FIFO   "/run/nuxel-haptics/haptics.cmd"
 #define CMD_FIFO   "/run/nuxel-navdock.cmd"
+#define REQ_FILE   "/run/nuxel-navdock.request"
+#define STATE_JSON "/run/nuxel-navdock.json"
 #define LOCK_STATE "/run/nuxel/security/lock-state.json"
 #define LAUNCHER_READY "/run/nuxel-launcher-ready"
 
@@ -64,6 +66,8 @@ static int32_t scale = 2;
 static int32_t out_w = 720, out_h = 1520;
 static int32_t width = 720, height = NAV_HEIGHT;
 
+static int lock_state_read(void);
+static int home_ready(void);
 static void audit(const char *fmt, ...) {
   char b[512];
   va_list ap;
@@ -75,6 +79,24 @@ static void audit(const char *fmt, ...) {
   time_t t = time(NULL);
   dprintf(fd, "%lld %s\n", (long long)t, b);
   close(fd);
+}
+
+static void publish_state(const char *reason) {
+  int st = lock_state_read();
+  char tmp[128];
+  snprintf(tmp, sizeof tmp, STATE_JSON ".%d", (int)getpid());
+  FILE *f = fopen(tmp, "w");
+  if (!f) return;
+  fprintf(f,
+    "{\"schema_version\":1,\"visible\":%s,\"mapped\":%s,"
+    "\"lock\":\"%s\",\"home_ready\":%s,\"fifo_ready\":%s,"
+    "\"width\":%d,\"height\":%d,\"scale\":%d,\"reason\":\"%s\"}\n",
+    dock_visible ? "true" : "false", (dock_visible && surface) ? "true" : "false",
+    st == 2 ? "unlocked" : st == 1 ? "locked" : "unknown",
+    home_ready() ? "true" : "false", cmd_fd >= 0 ? "true" : "false",
+    width, height, scale, reason ? reason : "");
+  fclose(f);
+  rename(tmp, STATE_JSON);
 }
 
 /* ---- authoritative lock state ------------------------------------------- */
@@ -202,6 +224,7 @@ static void dock_create(void) {
       ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
   zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
   wl_surface_commit(surface);
+  publish_state("show");
 }
 
 static void dock_destroy(void) {
@@ -209,6 +232,7 @@ static void dock_destroy(void) {
   if (buffer) { wl_buffer_destroy(buffer); buffer = NULL; }
   if (layer_surface) { zwlr_layer_surface_v1_destroy(layer_surface); layer_surface = NULL; }
   if (surface) { wl_surface_destroy(surface); surface = NULL; }
+  publish_state("hide");
 }
 
 static void dock_show(void) {
@@ -219,10 +243,11 @@ static void dock_show(void) {
     audit("NAV_DOCK_SHOW_REFUSED lock=%s", st == 1 ? "locked" : "unknown");
     return;
   }
-  if (dock_visible && surface) return;
+  if (dock_visible && surface) { publish_state("show-idempotent"); return; }
   dock_visible = 1;
   dock_create();
   audit("NAV_DOCK_SHOW lock=unlocked");
+  publish_state("show");
 }
 
 static void dock_hide(void) {
@@ -230,7 +255,10 @@ static void dock_hide(void) {
   dock_visible = 0;
   dock_destroy();
   audit("NAV_DOCK_HIDE");
+  publish_state("hide");
 }
+
+static void process_command(const char *q);
 
 static void cmd_pump(void) {
   char buf[512];
@@ -242,12 +270,63 @@ static void cmd_pump(void) {
     for (char *q = buf; q && *q; ) {
       char *nl = strchr(q, '\n');
       if (nl) *nl = 0;
-      if (!strcmp(q, "hide")) dock_hide();
-      else if (!strcmp(q, "show")) dock_show();
-      else if (!strcmp(q, "status")) audit("NAV_DOCK_STATUS visible=%d surface=%d", dock_visible, surface != NULL);
+      process_command(q);
       q = nl ? nl + 1 : NULL;
     }
   }
+}
+
+static void process_command(const char *q) {
+  if (!q || !*q) return;
+  if (!strcmp(q, "hide")) dock_hide();
+  else if (!strcmp(q, "show")) dock_show();
+  else if (!strcmp(q, "status")) {
+    audit("NAV_DOCK_STATUS visible=%d surface=%d locked=%d",
+          dock_visible, surface != NULL, lock_state_read());
+    publish_state("status");
+  }
+}
+
+/* A nav-show written before the FIFO existed must not be lost.  The host
+ * atomically drops the desired command here when open("/run/nuxel-navdock.cmd")
+ * fails; this is checked at startup and on every bounded tick. */
+static void cmd_read_pending(void) {
+  int fd = open(REQ_FILE, O_RDONLY | O_CLOEXEC);
+  if (fd < 0) return;
+  char buf[128];
+  ssize_t n = read(fd, buf, sizeof buf - 1);
+  close(fd);
+  unlink(REQ_FILE);
+  if (n <= 0) return;
+  buf[n] = 0;
+  char *nl = strchr(buf, '\n');
+  if (nl) *nl = 0;
+  audit("NAV_DOCK_PENDING_CMD %s", buf);
+  process_command(buf);
+}
+
+/* Authoritative-state reconciliation.  Runs on a bounded 500 ms timer so a
+ * lost/stale FIFO command can never leave the dock visible over the lockscreen
+ * or hide it forever after unlock. */
+static void dock_tick(void) {
+  static int last_st = -2, last_home = -1;
+  int st = lock_state_read();
+  int home = home_ready();
+  if (st != last_st || home != last_home) {
+    publish_state("tick");
+    last_st = st;
+    last_home = home;
+  }
+  if (st != 2) {
+    if (dock_visible || surface) {
+      dock_hide();
+      audit("NAV_DOCK_LOCK_HIDE lock=%s", st == 1 ? "locked" : "unknown");
+    }
+  } else if (!dock_visible && home_ready()) {
+    dock_show();
+    audit("NAV_DOCK_LOCK_RESTORE lock=unlocked home=ready");
+  }
+  cmd_read_pending();
 }
 
 static void cmd_open(void) {
@@ -391,6 +470,7 @@ static void layer_configure(void *d, struct zwlr_layer_surface_v1 *ls,
   if ((int32_t)h > 0) height = (int32_t)h;
   zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
   render_frame();
+  publish_state("configured");
 }
 static void layer_closed(void *d, struct zwlr_layer_surface_v1 *ls) {
   (void)d; (void)ls; audit("LAYER_CLOSED");
@@ -457,11 +537,13 @@ int main(void) {
   wl_display_roundtrip(display);   /* collect output mode/scale */
 
   cmd_open();
+  cmd_read_pending();
   dock_resolve_startup();
   wl_display_roundtrip(display);   /* receive configure -> render + map */
 
   audit("NAV_DOCK_READY width=%d height=%d scale=%d out=%dx%d",
         width, height, scale, out_w, out_h);
+  publish_state("ready");
 
   for (;;) {
     while (wl_display_prepare_read(display) != 0) {
@@ -474,6 +556,7 @@ int main(void) {
     };
     int nfds = cmd_fd >= 0 ? 2 : 1;
     int timeout = long_press_timeout_ms();
+    if (timeout < 0 || timeout > 500) timeout = 500;
     int pr = poll(pf, (nfds_t)nfds, timeout);
     if (pr < 0) {
       wl_display_cancel_read(display);
@@ -484,6 +567,7 @@ int main(void) {
     if (pr == 0) {
       wl_display_cancel_read(display);
       maybe_long_press();
+      dock_tick();
       continue;
     }
     if (pf[0].revents & POLLIN) {
@@ -494,6 +578,7 @@ int main(void) {
     }
     if (cmd_fd >= 0 && (pf[1].revents & (POLLIN | POLLHUP))) cmd_pump();
     maybe_long_press();
+    dock_tick();
   }
   audit("NAV_DOCK_EXIT");
   return 0;

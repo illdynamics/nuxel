@@ -53,7 +53,18 @@ stage_controller() {
   printf 'absent'
 }
 stage_firmware() {
-  local dir f
+  local dir f exact exp_sha
+  exact="$(pol 'evidence_sources.firmware_expected.path')"
+  exp_sha="$(pol 'evidence_sources.firmware_expected.sha256')"
+  if [ -f "$(abs "$exact")" ]; then
+    f="$(sha256sum "$(abs "$exact")" 2>/dev/null | cut -d' ' -f1)"
+    if [ -n "$exp_sha" ] && [ "$f" = "$exp_sha" ]; then
+      printf 'verified:%s:sha256=%s' "$exact" "$f"
+    else
+      printf 'hash-mismatch:%s:sha256=%s' "$exact" "${f:-unreadable}"
+    fi
+    return
+  fi
   for dir in $(pol 'evidence_sources.firmware_dirs'); do
     for f in $(pol 'evidence_sources.firmware_candidates'); do
       [ -f "$(abs "$dir/$f")" ] && { printf 'found:%s/%s' "$dir" "$f"; return; }
@@ -68,7 +79,9 @@ stage_subsystem() { # kernel NFC subsystem: netlink class or /dev/nfcN
   printf 'down'
 }
 stage_stack() {
-  local c
+  local c sock
+  sock="$(pol 'evidence_sources.service.socket')"
+  if [ -S "$(abs "${sock:-/run/nuxel/nfc/nfc.sock}")" ]; then printf 'daemon:nuxel-nfcd'; return; fi
   for c in $(pol 'evidence_sources.stack.client_candidates'); do
     if [ -x "$(abs "/usr/bin/$c")" ] || [ -x "$(abs "/usr/sbin/$c")" ]; then printf 'client:%s' "$c"; return; fi
     [ "$ROOT" = "/" ] && command -v "$c" >/dev/null 2>&1 && { printf 'client:%s' "$c"; return; }
@@ -81,7 +94,9 @@ stage_stack() {
 verdict() { # controller firmware subsystem stack
   case "$1" in absent) printf 'BLOCKED_KERNEL' ;;
     *) case "$2" in missing) printf 'BLOCKED_FIRMWARE' ;;
-       *) case "$3" in down) printf 'BLOCKED_KERNEL' ;;
+       hash-mismatch*) printf 'BLOCKED_FIRMWARE_HASH' ;;
+       *) case "$2" in missing) printf 'BLOCKED_FIRMWARE' ;; hash-mismatch*) printf 'BLOCKED_FIRMWARE_HASH' ;; *) : ;; esac
+       case "$3" in down) printf 'BLOCKED_KERNEL' ;;
           *) case "$4" in no-stack) printf 'BLOCKED_EXTERNAL_RESOURCE' ;; *) printf 'READY_FOR_TAG' ;; esac ;; esac ;; esac ;;
   esac
 }

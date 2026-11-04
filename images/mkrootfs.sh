@@ -105,6 +105,8 @@ install_core_services() {
         "${ROOTFS_DIR}/usr/lib/nuxel/nuxel-bridge/capabilities.py"
     install -Dm644 "${NUXEL_ROOT}/services/nuxel-bridge/src/system_indicators.py" \
         "${ROOTFS_DIR}/usr/lib/nuxel/nuxel-bridge/system_indicators.py"
+    install -Dm644 "${NUXEL_ROOT}/services/nuxel-bridge/src/tri_link_status.py" \
+        "${ROOTFS_DIR}/usr/lib/nuxel/nuxel-bridge/tri_link_status.py"
     
     if [ -f "${NUXEL_ROOT}/services/nuxel-bridge/dbus/org.nuxel.Bridge.conf" ]; then
         install -Dm644 "${NUXEL_ROOT}/services/nuxel-bridge/dbus/org.nuxel.Bridge.conf" \

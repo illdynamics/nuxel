@@ -1,0 +1,1 @@
+1793659896 DISPLAY_SLEEP total=1880 failures=0 owner=nuxel-wl-fb display=off capture=stopped

@@ -1,0 +1,7 @@
+#!/bin/sh
+# Installed CLI wrapper.  The Python package lives beside the installed
+# service data; keep the import path explicit so this works under systemd and
+# from an operator shell.
+PYTHONPATH="/usr/lib/nuxel/nuxel-nfc${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+exec python3 -m nuxel_nfc.daemon "$@"

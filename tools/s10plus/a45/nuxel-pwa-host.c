@@ -36,6 +36,9 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <net/if.h>
 #ifdef __linux__
 #include <linux/netlink.h>
 #endif
@@ -122,6 +125,102 @@ static void st(const char *fmt, ...) {
   fprintf(f, "%ld ", (long)time(NULL));
   va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
   fputc('\n', f); fclose(f);
+}
+
+/* ============================================================================
+ * PWNAGE-63000 — launcher-minted keyring tokens
+ *
+ * The WebKit iframe used for a PWA does not send a Referer header (measured on
+ * the S10+), so the HTTP bridge cannot tell Vault from an arbitrary same-origin
+ * page by Referer alone.  The trusted top-level Home page relays a token request
+ * from the exact iframe it created; this root-owned host injects a top-frame-only
+ * script that exchanges that request for a Bridge token using a per-device
+ * secret in a root-only file.  The secret lives in the user-script closure, is
+ * never exposed as a window property, and iframes do not receive this script.
+ * ==========================================================================*/
+#define KEYRING_SECRET_PATH "/etc/nuxel/keyring-launcher.secret"
+static char g_launcher_secret[65];
+
+static int hex64(const char *s) {
+  size_t n = strlen(s);
+  if (n != 64) return 0;
+  for (size_t i = 0; i < n; i++) {
+    char c = s[i];
+    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) return 0;
+  }
+  return 1;
+}
+
+static void keyring_secret_load(void) {
+  char buf[256] = {0};
+  FILE *f = fopen(KEYRING_SECRET_PATH, "r");
+  if (f) {
+    if (fgets(buf, sizeof buf, f)) {
+      char *p = buf;
+      while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+      size_t n = strlen(p);
+      while (n && (p[n-1] == '\r' || p[n-1] == '\n' || p[n-1] == ' ' || p[n-1] == '\t')) p[--n] = 0;
+      if (hex64(p)) snprintf(g_launcher_secret, sizeof g_launcher_secret, "%s", p);
+    }
+    fclose(f);
+  }
+  if (g_launcher_secret[0]) {
+    st("NUXEL_KEYRING_SECRET loaded=1");
+    return;
+  }
+  unsigned char raw[32];
+  int ok = 0;
+  int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+  if (fd >= 0) {
+    ssize_t got = read(fd, raw, sizeof raw);
+    close(fd);
+    if (got == (ssize_t)sizeof raw) ok = 1;
+  }
+  if (!ok) { st("NUXEL_KEYRING_SECRET missing=1 urandom=0"); return; }
+  char hex[65];
+  for (int i = 0; i < 32; i++) snprintf(hex + i * 2, 3, "%02x", raw[i]);
+  hex[64] = 0;
+  int out = open(KEYRING_SECRET_PATH, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+  if (out < 0) { st("NUXEL_KEYRING_SECRET write_failed=1"); return; }
+  ssize_t wrote = write(out, hex, 64);
+  if (wrote == 64) { write(out, "\n", 1); fsync(out); }
+  close(out);
+  if (wrote != 64) { st("NUXEL_KEYRING_SECRET write_failed=1"); return; }
+  snprintf(g_launcher_secret, sizeof g_launcher_secret, "%s", hex);
+  st("NUXEL_KEYRING_SECRET generated=1");
+}
+
+static void keyring_mint_attach(WebKitUserContentManager *ucm) {
+  if (!ucm || !g_launcher_secret[0]) {
+    st("NUXEL_KEYRING_MINT disabled=missing-secret");
+    return;
+  }
+  GString *js = g_string_new(
+      "(function(){"
+      "if(window.top!==window)return;"
+      "var S=\"");
+  g_string_append(js, g_launcher_secret);
+  g_string_append(js,
+      "\";"
+      "var F=window.fetch.bind(window);"
+      "function reply(o){try{window.postMessage(o,window.location.origin);}catch(e){}}"
+      "window.addEventListener('message',function(e){"
+        "if(e.source!==window||e.origin!==window.location.origin||!e.data||e.data.type!=='nuxel-keyring-mint')return;"
+        "var a=String(e.data.app_id||''),n=String(e.data.nonce||'');"
+        "if(!/^[A-Za-z0-9._:-]{1,64}$/.test(a)||!/^[A-Za-z0-9._-]{8,96}$/.test(n))return;"
+        "F('http://127.0.0.1:8080/api/v1/auth/app-token',{method:'POST',headers:{'Content-Type':'application/json','X-Nuxel-Launcher-Secret':S},body:JSON.stringify({app_id:a,nonce:n})})"
+        ".then(function(r){return r.json();})"
+        ".then(function(d){reply({type:'nuxel-keyring-token',nonce:n,token:(d&&d.token)||''});})"
+        ".catch(function(){reply({type:'nuxel-keyring-token',nonce:n,token:''});});"
+      "});"
+      "})();");
+  WebKitUserScript *ks = webkit_user_script_new(js->str,
+      WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+      WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL);
+  webkit_user_content_manager_add_script(ucm, ks);
+  webkit_user_script_unref(ks);
+  g_string_free(js, TRUE);
+  st("NUXEL_KEYRING_MINT enabled=1 top-frame-only=1");
 }
 
 
@@ -589,10 +688,170 @@ static int ind_json_str_field(const char *path, const char *key, char *out, size
   return 1;
 }
 
-static void ind_ssh_tcp(int *listening, int *established) {
-  *listening = 0;
-  *established = 0;
-  const char *files[] = {"/proc/net/tcp", "/proc/net/tcp6"};
+/* True interactive WLAN SSH console sessions.
+ *
+ * A listening sshd, a Wi-Fi address, a port-forward, an SFTP subsystem or a
+ * one-shot `ssh host true` are all *not* console sessions.  A session counts
+ * only when an ESTABLISHED TCP/22 socket has a local address belonging to a
+ * real Wi-Fi interface AND its sshd process has a live descendant owned by the
+ * nuxel account running an interactive shell with stdin/stdout/stderr on a
+ * /dev/pts pty.  Socket inodes make the attribution exact and let the count
+ * drop as soon as the last session closes. */
+static int ind_wifi_ipv4(char out[][INET_ADDRSTRLEN], int max) {
+  struct ifaddrs *ifa = NULL;
+  int n = 0;
+  if (getifaddrs(&ifa) != 0) return 0;
+  for (struct ifaddrs *a = ifa; a && n < max; a = a->ifa_next) {
+    if (!a->ifa_addr || a->ifa_addr->sa_family != AF_INET) continue;
+    if (!(a->ifa_flags & IFF_UP) || (a->ifa_flags & IFF_LOOPBACK)) continue;
+    const char *name = a->ifa_name ? a->ifa_name : "";
+    if (strncmp(name, "usb", 3) && strncmp(name, "ncm", 3) &&
+        strncmp(name, "rndis", 5) && strncmp(name, "wlan", 4) &&
+        strncmp(name, "wlp", 3) && strncmp(name, "wifi", 4) &&
+        strncmp(name, "wl", 2)) continue;
+    const struct sockaddr_in *sin = (const struct sockaddr_in *)a->ifa_addr;
+    if (inet_ntop(AF_INET, &sin->sin_addr, out[n], INET_ADDRSTRLEN)) n++;
+  }
+  freeifaddrs(ifa);
+  return n;
+}
+
+static int ind_pid_comm(pid_t pid, char *out, size_t outn) {
+  char path[512];
+  snprintf(path, sizeof path, "%s/%d/comm", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  return ind_read_line(path, out, outn);
+}
+
+static long ind_pid_ppid(pid_t pid) {
+  char path[512], text[1024];
+  snprintf(path, sizeof path, "%s/%d/stat", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  FILE *f = fopen(path, "rb");
+  if (!f) return -1;
+  size_t n = fread(text, 1, sizeof text - 1, f);
+  fclose(f);
+  text[n] = 0;
+  char *end = strrchr(text, ')');
+  if (!end) return -1;
+  char *save = NULL;
+  int field = 3;
+  for (char *tok = strtok_r(end + 1, " \t\n\r", &save); tok;
+       tok = strtok_r(NULL, " \t\n\r", &save), field++) {
+    if (field == 4) return strtol(tok, NULL, 10);  /* ppid */
+  }
+  return -1;
+}
+
+static int ind_pid_uid(pid_t pid) {
+  char path[512], text[2048];
+  snprintf(path, sizeof path, "%s/%d/status", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  FILE *f = fopen(path, "rb");
+  if (!f) return -1;
+  size_t n = fread(text, 1, sizeof text - 1, f);
+  fclose(f);
+  text[n] = 0;
+  char *p = strstr(text, "\nUid:");
+  if (!p) p = strstr(text, "Uid:");
+  if (!p) return -1;
+  p = strchr(p, '\t');
+  if (!p) return -1;
+  return (int)strtol(p + 1, NULL, 10);
+}
+
+static int ind_pid_has_pts(pid_t pid) {
+  char fdpath[512];
+  snprintf(fdpath, sizeof fdpath, "%s/%d/fd", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  DIR *d = opendir(fdpath);
+  if (!d) return 0;
+  int holds = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
+    char lp[768], target[512];
+    snprintf(lp, sizeof lp, "%s/%s", fdpath, de->d_name);
+    ssize_t n = readlink(lp, target, sizeof target - 1);
+    if (n <= 0) continue;
+    target[n] = 0;
+    if (!strncmp(target, "/dev/pts/", 9)) { holds = 1; break; }
+  }
+  closedir(d);
+  return holds;
+}
+
+static int ind_pid_has_socket_inode(pid_t pid, unsigned long inode) {
+  char fdpath[512], want[64];
+  snprintf(want, sizeof want, "socket:[%lu]", inode);
+  snprintf(fdpath, sizeof fdpath, "%s/%d/fd", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  DIR *d = opendir(fdpath);
+  if (!d) return 0;
+  int found = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
+    char lp[768], target[512];
+    snprintf(lp, sizeof lp, "%s/%s", fdpath, de->d_name);
+    ssize_t n = readlink(lp, target, sizeof target - 1);
+    if (n <= 0) continue;
+    target[n] = 0;
+    if (!strcmp(target, want)) { found = 1; break; }
+  }
+  closedir(d);
+  return found;
+}
+
+static int ind_is_descendant(pid_t pid, pid_t ancestor) {
+  pid_t cur = pid;
+  for (int depth = 0; depth < 12 && cur > 1; depth++) {
+    long pp = ind_pid_ppid(cur);
+    if (pp <= 0) return 0;
+    if ((pid_t)pp == ancestor) return 1;
+    cur = (pid_t)pp;
+  }
+  return 0;
+}
+
+static int ind_shell_name(const char *comm) {
+  static const char *names[] = { "bash", "sh", "zsh", "fish", "dash", "ash", "ksh", NULL };
+  for (int i = 0; names[i]; i++) if (!strcmp(comm, names[i])) return 1;
+  return 0;
+}
+
+static int ind_interactive_descendant(pid_t owner) {
+  DIR *d = opendir(ind_root("NUXEL_PROC", "/proc"));
+  if (!d) return 0;
+  int found = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
+    pid_t pid = (pid_t)atoi(de->d_name);
+    if (pid <= 0 || pid == owner) continue;
+    char comm[64] = "";
+    if (!ind_pid_comm(pid, comm, sizeof comm)) continue;
+    if (!ind_shell_name(comm)) continue;
+    if (ind_pid_uid(pid) != 1000) continue;
+    if (!ind_pid_has_pts(pid)) continue;
+    if (!ind_is_descendant(pid, owner)) continue;
+    found = 1;
+    break;
+  }
+  closedir(d);
+  return found;
+}
+
+static int ind_wlan_ssh_sessions(void) {
+  static time_t cached_at;
+  static int cached_count;
+  time_t now = time(NULL);
+  if (cached_at && now - cached_at < 1) return cached_count;
+  cached_at = now;
+  cached_count = 0;
+
+  char wifi[8][INET_ADDRSTRLEN];
+  int nwifi = ind_wifi_ipv4(wifi, 8);
+  if (nwifi <= 0) return 0;
+
+  unsigned long seen[32];
+  int nseen = 0;
+  const char *files[] = { "/proc/net/tcp", "/proc/net/tcp6" };
   for (int fi = 0; fi < 2; fi++) {
     FILE *f = fopen(files[fi], "r");
     if (!f) continue;
@@ -600,28 +859,83 @@ static void ind_ssh_tcp(int *listening, int *established) {
     int first = 1;
     while (fgets(line, sizeof line, f)) {
       if (first) { first = 0; continue; }
-      char *save = NULL;
-      char *sl = strtok_r(line, " \t\n", &save);
-      if (!sl) continue;
-      char *local = strtok_r(NULL, " \t\n", &save);
-      if (!local) continue;
-      char *rem = strtok_r(NULL, " \t\n", &save);
-      if (!rem) continue;
-      char *st = strtok_r(NULL, " \t\n", &save);
-      if (!st) continue;
+      char local[128], st[16], inodebuf[64];
+      if (sscanf(line, "%*s %127s %*s %15s %*s %*s %*s %*s %*s %63s",
+                 local, st, inodebuf) != 3) continue;
+      if (strcmp(st, "01") != 0) continue;
       char *colon = strchr(local, ':');
       if (!colon) continue;
-      int port = (int)strtol(colon + 1, NULL, 16);
-      if (port != 22) continue;
-      size_t alen = (size_t)(colon - local);
-      char addr[40] = {0};
-      if (alen >= sizeof addr) alen = sizeof addr - 1;
-      memcpy(addr, local, alen);
-      int state = (int)strtol(st, NULL, 16);
-      int loop = (strcmp(addr, "0100007F") == 0) ||
-                 (strcmp(addr, "00000000000000000000000001000000") == 0);
-      if (state == 0x0A && !loop) *listening = 1;
-      if (state == 0x01) (*established)++;
+      if ((int)strtol(colon + 1, NULL, 16) != 22) continue;
+      unsigned long inode = strtoul(inodebuf, NULL, 10);
+      if (!inode || nseen >= (int)(sizeof seen / sizeof seen[0])) continue;
+
+      int matches = 0;
+      if (fi == 0) {
+        unsigned a = 0, b = 0, c = 0, d = 0;
+        *colon = 0;
+        if (sscanf(local, "%2x%2x%2x%2x", &a, &b, &c, &d) == 4) {
+          char ip[INET_ADDRSTRLEN];
+          snprintf(ip, sizeof ip, "%u.%u.%u.%u", d, c, b, a);
+          for (int i = 0; i < nwifi; i++)
+            if (!strcmp(ip, wifi[i])) { matches = 1; break; }
+        }
+      } else {
+        /* The S10+ WLAN SSH path is IPv4.  Do not guess an IPv6 interface
+           from a global address: that could mislabel USB-network or another
+           namespace as WLAN.  IPv6 sessions stay uncounted until an exact
+           local-address match is added. */
+        matches = 0;
+      }
+      if (!matches) continue;
+
+      int duplicate = 0;
+      for (int i = 0; i < nseen; i++) if (seen[i] == inode) duplicate = 1;
+      if (duplicate) continue;
+
+      /* Find the sshd process holding this exact socket inode. */
+      DIR *d = opendir(ind_root("NUXEL_PROC", "/proc"));
+      if (!d) continue;
+      struct dirent *de;
+      pid_t owner = 0;
+      while ((de = readdir(d))) {
+        if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
+        pid_t pid = (pid_t)atoi(de->d_name);
+        if (pid <= 0) continue;
+        char comm[64] = "";
+        if (!ind_pid_comm(pid, comm, sizeof comm)) continue;
+        if (!strstr(comm, "sshd")) continue;
+        if (ind_pid_has_socket_inode(pid, inode)) { owner = pid; break; }
+      }
+      closedir(d);
+      if (!owner) continue;
+      if (!ind_interactive_descendant(owner)) continue;
+      seen[nseen++] = inode;
+      cached_count++;
+    }
+    fclose(f);
+  }
+  return cached_count;
+}
+
+/* Kept for the availability side: a listener is reported separately, never as
+ * an active console. */
+static void ind_ssh_tcp(int *listening, int *established) {
+  *listening = 0;
+  *established = ind_wlan_ssh_sessions();
+  const char *files[] = { "/proc/net/tcp", "/proc/net/tcp6" };
+  for (int fi = 0; fi < 2; fi++) {
+    FILE *f = fopen(files[fi], "r");
+    if (!f) continue;
+    char line[512];
+    int first = 1;
+    while (fgets(line, sizeof line, f)) {
+      if (first) { first = 0; continue; }
+      char local[128], st[16];
+      if (sscanf(line, "%*s %127s %*s %15s", local, st) != 2) continue;
+      char *colon = strchr(local, ':');
+      if (!colon) continue;
+      if ((int)strtol(colon + 1, NULL, 16) != 22) continue;
+      if (!strcmp(st, "0A") && strcmp(local, "0100007F:0016")) *listening = 1;
     }
     fclose(f);
   }
@@ -632,10 +946,14 @@ static void indicators_json(char *out, size_t outn) {
   ind_power(&external_power, &charging);
   char pcsrc[96] = "";
   int pc = ind_pc_connected_ex(pcsrc, sizeof pcsrc);
-  int live = ind_live_console();
+  int serial_active = ind_live_console();
   int armed = ind_console_service_armed();
   int wlan = 0, ssh_sessions = 0;
   ind_ssh_tcp(&wlan, &ssh_sessions);
+  /* PWNAGE-62000 visual contract: the base live penguin means "the Live
+     Console service is running/ready" (or a transport session is active).
+     The serial/USB/WLAN type icons mean an actual interactive session only. */
+  int live = armed || serial_active || (ssh_sessions > 0);
   int ft_active = 0;
   ind_json_bool_field("/run/nuxel/usb-mode.state", "active", &ft_active);
   /* Bluetooth is proof-only: the authoritative bridge/provider writes this
@@ -692,9 +1010,10 @@ static void indicators_json(char *out, size_t outn) {
     "\"file_transfer\":{\"active\":%d,\"selected\":\"%s\",\"endpoint_state\":\"%s\",\"source\":\"%s\",\"error\":null},"
     "\"bluetooth\":{\"powered\":%s,\"state\":\"%s\",\"discovering\":%s,\"source\":\"%s\"},"
     "\"connection_mode\":{\"selected\":\"%s\",\"transition_in_progress\":0,\"host_connected\":%d,\"endpoint_state\":\"%s\",\"last_error\":null}}",
-    external_power, charging, level, pc, pcsrc, live, armed, pc, live,
-    live, (live ? "proc:nuxel-console:tty" : "inactive:no-console-session"),
-    wlan, (wlan ? "wlan:sshd-listening" : "inactive:no-ssh-listener"), ssh_sessions,
+    external_power, charging, level, pc, pcsrc, live, armed, pc, serial_active,
+    serial_active, (serial_active ? "proc:nuxel-console:tty" : "inactive:no-console-session"),
+    (ssh_sessions > 0), (ssh_sessions > 0 ? "wlan:interactive-pty-session" :
+                         "inactive:no-interactive-session"), ssh_sessions,
     ft_active, mode, (ft_active ? "active" : "inactive"), (ft_active ? "usb-mode-helper" : "unavailable:not-activated"),
     (bt_known ? (bt_powered ? "true" : "false") : "null"), bt_state,
     (bt_discovering ? "true" : "false"), bt_source,
@@ -844,6 +1163,11 @@ static const struct cfgfile CFG[] = {
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
   { "lock-state",          "/run/nuxel/security/lock-state.json",            0 },
   { "navdock-state",       "/run/nuxel-navdock.state",                     0 },
+  { "navdock-json",        "/run/nuxel-navdock.json",                      0 },
+  { "statusbar-json",      "/run/nuxel-statusbar.state",                   0 },
+  { "shell-chrome",        "/run/nuxel/shell-chrome.json",                 0 },
+  { "lock-enforcement",    "/run/nuxel/lock-enforcement.state",            0 },
+  { "foreground",          "/run/nuxel/foreground.state",                  0 },
   /* Real S10+ battery nodes (the gauge is named `battery`, not BAT*). */
   { "battery-capacity",    "/sys/class/power_supply/battery/capacity",     0 },
   { "battery-status",      "/sys/class/power_supply/battery/status",       0 },
@@ -1244,17 +1568,67 @@ static void host_toast(const char *text) {
   g_free(esc);
 }
 
+/* PWNAGE-62000: never lose a nav command because the dock FIFO was not ready
+ * yet.  A short bounded retry covers the normal map race; a persistent request
+ * file is consumed by nuxel-navdock on its next 500 ms tick. */
+static int nav_command(const char *cmd) {
+  for (int i = 0; i < 12; i++) {
+    int fd = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
+    if (fd >= 0) {
+      dprintf(fd, "%s\n", cmd);
+      close(fd);
+      return 0;
+    }
+    usleep(50000);
+  }
+  const char *tmp = "/run/nuxel-navdock.request.tmp";
+  int fd = open(tmp, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+  if (fd < 0) return -1;
+  dprintf(fd, "%s\n", cmd);
+  close(fd);
+  if (rename(tmp, "/run/nuxel-navdock.request") != 0) return -1;
+  st("HOST_NAV_CMD_QUEUED %s", cmd);
+  return 0;
+}
+
+/* The host cannot write the authoritative lock state itself (security_provider
+ * is the single owner).  This fixed helper asks the loopback bridge to persist
+ * the lock, so a lock request still takes effect even when the native app hides
+ * the Home WebView.  Failures are non-fatal: the Home JS path remains. */
+static void request_authoritative_lock(const char *reason) {
+  pid_t pid = fork();
+  if (pid == 0) {
+    setsid();
+    execl("/usr/lib/nuxel/nuxel-security-lock-rpc",
+          "nuxel-security-lock-rpc", reason ? reason : "host", (char *)NULL);
+    _exit(127);
+  }
+  if (pid > 0) g_child_watch_add(pid, detached_child_exited, NULL);
+}
+
 static void action_perform(const char *action, char *result, size_t rn) {
   if (!strcmp(action, "screen-lock")) {
     /* Lock is the display bridge's verb; hide the native dock first so no
        layer-shell frame can paint over the lockscreen. */
-    int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
-    if (nf >= 0) { dprintf(nf, "hide\n"); close(nf); }
+    request_authoritative_lock("host-native-screen-lock");
+    nav_command("hide");
+    /* The display bridge owns screen-off, not a "lock" verb.  Send the real
+       verb and also drive Home's lock presentation: when a native app covers
+       the WebView the DOM listener still runs in the hidden view, and the
+       compositor-level lock watcher then keeps Home above every app. */
     int fd = open("/run/nuxel-wl-fb.cmd", O_WRONLY | O_NONBLOCK);
-    if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"bridge-fifo-absent\"}"); return; }
-    dprintf(fd, "lock\n");
-    close(fd);
-    st("HOST_ACTION screen-lock -> nuxel-wl-fb control fifo");
+    if (fd >= 0) {
+      dprintf(fd, "screen-off\n");
+      close(fd);
+    }
+    if (g_main_view) {
+      const char *js =
+        "window.dispatchEvent(new CustomEvent('nuxel:action',"
+        "{detail:{action:'lock'}}));";
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL,
+                                          NULL, NULL, NULL);
+    }
+    st("HOST_ACTION screen-lock -> host lockscreen + nuxel-wl-fb screen-off");
     snprintf(result, rn, "{\"ok\":true,\"action\":\"screen-lock\"}");
     return;
   }
@@ -1283,6 +1657,17 @@ static void action_perform(const char *action, char *result, size_t rn) {
     if (!ind_gate_allows(!strcmp(action, "restart") ? "allow_restart" : "allow_poweroff")) {
       snprintf(result, rn, "{\"ok\":false,\"error\":\"reboot-gate-closed\"}");
       return;
+    }
+    if (!strcmp(action, "restart")) {
+      /* Per-boot diagnostic: tells nuxel-wl-fb's bounded ExecStop that this is
+         an owner-requested normal reboot, so the last frame stays on the panel
+         while the compositor stops.  It never forces or delays the job. */
+      mkdir("/run/nuxel", 0755);
+      FILE *rf = fopen("/run/nuxel/reboot-request", "w");
+      if (rf) {
+        fprintf(rf, "source=pwa-host requested_at=%lld\n", (long long)time(NULL));
+        fclose(rf);
+      }
     }
     run_async_systemctl(!strcmp(action, "restart") ? "reboot" : "poweroff");
     /* Acknowledge immediately: the orderly systemd job runs in the background.
@@ -1383,12 +1768,13 @@ static void action_perform(const char *action, char *result, size_t rn) {
     }
   }
   if (!strcmp(action, "nav-hide") || !strcmp(action, "nav-show")) {
-    int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
-    if (nf < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"navdock-fifo-absent\"}"); return; }
-    dprintf(nf, "%s\n", !strcmp(action, "nav-show") ? "show" : "hide");
-    close(nf);
-    st("HOST_ACTION %s -> navdock fifo", action);
-    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\"}", action);
+    const char *cmd = !strcmp(action, "nav-show") ? "show" : "hide";
+    if (nav_command(cmd) != 0) {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"navdock-command-unavailable\"}");
+      return;
+    }
+    st("HOST_ACTION %s -> navdock (fifo or queued request)", action);
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\",\"queued\":false}", action);
     return;
   }
   if (!strcmp(action, "home") || !strcmp(action, "back") || !strcmp(action, "back-long") || !strcmp(action, "forward") ||
@@ -1402,10 +1788,7 @@ static void action_perform(const char *action, char *result, size_t rn) {
     /* Hide the native dock BEFORE any launcher transition that can reveal the
        lockscreen.  Unlock is different: Home maps the dock only after the
        authoritative unlock and Home transition, so the host does not show it. */
-    if (!strcmp(action, "lock")) {
-      int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
-      if (nf >= 0) { dprintf(nf, "hide\n"); close(nf); }
-    }
+    if (!strcmp(action, "lock")) nav_command("hide");
     if (g_main_view) {
       GString *g = g_string_new("");
       const char *js_action = !strcmp(action, "home") ? "'home'" :
@@ -2095,6 +2478,8 @@ static WebKitWebView *view_new(void) {
   } else {
     st("NUXEL_INPUT_DIAG disabled=1 (set NUXEL_INPUT_DIAG=1 to enable)");
   }
+  keyring_secret_load();
+  keyring_mint_attach(ucm);
   WebKitWebView *v = WEBKIT_WEB_VIEW(
       webkit_web_view_new_with_user_content_manager(ucm));
   webkit_web_view_set_settings(v, s);

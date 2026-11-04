@@ -1,0 +1,175 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== symlinks ==
+/usr/lib64/libEGL_mesa.so.0.0.0.nuxel-bak
+/usr/lib64/libgallium_dri.so
+== hashes ==
+eba18f340e519bbd04765c0744bb7f554df99ca328f3dd7921698600d3477b0f  /usr/lib64/libEGL_mesa.so.0.0.0
+818bc380242006c158455241099b3b5185dfc70630f6f4c9cda5602a9196b800  /usr/lib64/libgallium_dri.so
+95e039a783bf4e9263542a01f9609e03ffb4b2f8d47ca9ec23c60a6803d2d4cc  /usr/lib64/libwlroots-0.19.so
+45bb5546f5c315680494286ef4cce151cfc8ed14532fbee169da5d82b6ced944  /usr/lib/nuxel/nuxel-wl-fb
+10a66e8431a118abfdbef307773eab8d724a90fbecf069c2b038a64d1188c04b  /usr/lib/nuxel/nuxel-graphics-profile
+== dri/dev ==
+ls: cannot access '/dev/dri': No such file or directory
+crw-rw-rw-. 1 root root 10, 121 Jan  1  1970 /dev/mali0
+crw-rw-rw-. 1 root root 10, 105 Jan  1  1970 /dev/udmabuf
+== egl vendor ==
+{
+  "file_format_version": "1.0.0",
+  "ICD": { "library_path": "/usr/lib64/libEGL_mesa.so.0.0.0" }
+}
+total 8
+-rw-r--r--. 1 root root 105 Mar 24  2026 50_mesa.json
+-rw-r--r--. 1 root root 105 Mar 24  2026 50_mesa.json.nuxel-bak
+== installed profile ==
+{
+  "schema_version": 2,
+  "default_profile": "software-safe",
+  "compositor": {
+    "profile": "kbase-gles2-udmabuf-linear-dmabuf",
+    "allow_change": false,
+    "evidence": "PWNAGE-53000: phoc maps libgallium_dri.so + 3x /dev/mali0; linux-dmabuf v3 advertises LINEAR only"
+  },
+  "profiles": {
+    "software-safe": {
+      "available": true,
+      "measured": true,
+      "webkitgtk": "software",
+      "gtk3": "software",
+      "note": "Baseline fallback. WebKit SHM, no EGL in the web process."
+    },
+    "gpu-rendered-shm-presented": {
+      "available": true,
+      "measured": true,
+      "webkitgtk": "gpu-rendered-shm-presented",
+      "gtk3": "enabled",
+      "note": "Mali EGL in web/UI process, KBASE_IOCTL_JOB_SUBMIT observed, 0 udmabuf/dmabuf fds (WebKit Hardware transport gated on drmMainDevice)."
+    },
+    "gpu-rendered-dmabuf-presented": {
+      "available": false,
+      "reason": "WebKit 2.54.1 requires drmMainDevice() for RendererBufferTransportMode::Hardware; CONFIG_DRM_VGEM is unset and /dev/dri is absent. Phoc can import LINEAR DMA-BUF; WebKit cannot allocate/export one.",
+      "webkitgtk": "software",
+      "gtk3": "software"
+    },
+    "fully-accelerated": {
+      "available": false,
+      "reason": "DMA-BUF presentation blocked as above; nuxel-wl-fb still CPU-copies/scales 720x1520 -> 1440x3040 into /dev/fb0.",
+      "webkitgtk": "software",
+      "gtk3": "software"
+    }
+  },
+  "webkitgtk": { "profile": "software-safe", "fallback": "software-safe" },
+  "gtk3": { "profile": "software-safe", "fallback": "software-safe" },
+  "gtk4": { "mode": "auto", "renderer": "auto", "fallback": "cairo" },
+  "presentation": {
+    "mode": "current-wl-fb",
+    "target_fps": 24,
+    "allow_dma_path": false,
+    "idle_capture_fps": 1
+  },
+  "apps": {
+    "pwnage53000-diagnostic": {
+      "profile": "gpu-rendered-shm-presented",
+      "toolkit": "gtk3",
+      "webkit": true
+    }
+  }
+}
+== profile status ==
+{
+  "error": null,
+  "path": "/etc/nuxel/graphics/graphics-profile.json",
+  "profiles": {
+    "fully-accelerated": {
+      "available": false,
+      "measured": false,
+      "reason": "DMA-BUF presentation blocked as above; nuxel-wl-fb still CPU-copies/scales 720x1520 -> 1440x3040 into /dev/fb0."
+    },
+    "gpu-rendered-dmabuf-presented": {
+      "available": false,
+      "measured": false,
+      "reason": "WebKit 2.54.1 requires drmMainDevice() for RendererBufferTransportMode::Hardware; CONFIG_DRM_VGEM is unset and /dev/dri is absent. Phoc can import LINEAR DMA-BUF; WebKit cannot allocate/export one."
+    },
+    "gpu-rendered-shm-presented": {
+      "available": true,
+      "measured": true,
+      "reason": null
+    },
+    "software-safe": {
+      "available": true,
+      "measured": true,
+      "reason": null
+    }
+  }
+}
+--json--
+{
+  "apps": {
+    "pwnage53000-diagnostic": {
+      "profile": "gpu-rendered-shm-presented",
+      "toolkit": "gtk3",
+      "webkit": true
+    }
+  },
+  "compositor": {
+    "allow_change": false,
+    "evidence": "PWNAGE-53000: phoc maps libgallium_dri.so + 3x /dev/mali0; linux-dmabuf v3 advertises LINEAR only",
+    "profile": "kbase-gles2-udmabuf-linear-dmabuf"
+  },
+  "default_profile": "software-safe",
+  "gtk3": {
+    "fallback": "software-safe",
+    "profile": "software-safe"
+  },
+  "gtk4": {
+    "fallback": "cairo",
+    "mode": "auto",
+    "renderer": "auto"
+  },
+  "presentation": {
+    "allow_dma_path": false,
+    "idle_capture_fps": 1,
+    "mode": "current-wl-fb",
+    "target_fps": 24
+  },
+  "profiles": {
+    "fully-accelerated": {
+      "available": false,
+      "gtk3": "software",
+      "reason": "DMA-BUF presentation blocked as above; nuxel-wl-fb still CPU-copies/scales 720x1520 -> 1440x3040 into /dev/fb0.",
+      "webkitgtk": "software"
+    },
+    "gpu-rendered-dmabuf-presented": {
+      "available": false,
+      "gtk3": "software",
+      "reason": "WebKit 2.54.1 requires drmMainDevice() for RendererBufferTransportMode::Hardware; CONFIG_DRM_VGEM is unset and /dev/dri is absent. Phoc can import LINEAR DMA-BUF; WebKit cannot allocate/export one.",
+      "webkitgtk": "software"
+    },
+    "gpu-rendered-shm-presented": {
+      "available": true,
+      "gtk3": "enabled",
+      "measured": true,
+      "note": "Mali EGL in web/UI process, KBASE_IOCTL_JOB_SUBMIT observed, 0 udmabuf/dmabuf fds (WebKit Hardware transport gated on drmMainDevice).",
+      "webkitgtk": "gpu-rendered-shm-presented"
+    },
+    "software-safe": {
+      "available": true,
+      "gtk3": "software",
+      "measured": true,
+      "note": "Baseline fallback. WebKit SHM, no EGL in the web process.",
+      "webkitgtk": "software"
+    }
+  },
+  "schema_version": 2,
+  "webkitgtk": {
+    "fallback": "software-safe",
+    "profile": "software-safe"
+  }
+}

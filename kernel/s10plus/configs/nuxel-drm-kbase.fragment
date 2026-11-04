@@ -63,3 +63,28 @@ CONFIG_NFC_NCI=y
 CONFIG_SAMSUNG_NFC=y
 CONFIG_SEC_NFC=y
 CONFIG_SEC_NFC_LOGGER=y
+
+# ---------------------------------------------------------------------------
+# MFC hardware video decode (PWNAGE-61000).
+#
+# Exynos 9820 MFC (DT mfc@188D0000, ip_ver 0x1300), vendor driver at
+# drivers/media/platform/exynos/mfc/.  This is a decoder/encoder block, not the
+# camera ISP.  Keep MEDIA_CONTROLLER off, camera capture disabled and the
+# GStreamer V4L2 guard in place.  The driver requests /lib/firmware/mfc_fw.bin;
+# the PWNAGE-61000 patch switches that request to request_firmware_direct() so
+# a missing blob fails immediately instead of waiting for the 60 s udev
+# fallback.
+# ---------------------------------------------------------------------------
+CONFIG_MEDIA_SUPPORT=y
+CONFIG_VIDEO_DEV=y
+CONFIG_V4L2_MEM2MEM_DEV=y
+CONFIG_VIDEOBUF2_CORE=y
+CONFIG_VIDEOBUF2_MEMOPS=y
+CONFIG_VIDEOBUF2_DMA_SG=y
+CONFIG_VIDEO_EXYNOS=y
+CONFIG_VIDEO_EXYNOS_MFC=y
+CONFIG_EXYNOS_IOMMU=y
+CONFIG_IOMMU_SUPPORT=y
+CONFIG_IOMMU_API=y
+CONFIG_IOMMU_DMA=y
+CONFIG_IOMMU_IOVA=y

@@ -1,0 +1,40 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===== PID 5850 phoc =====
+-- libs --
+/usr/lib64/libEGL.so.1.1.0
+/usr/lib64/libEGL_mesa.so.0.0.0
+/usr/lib64/libgallium_dri.so
+/usr/lib64/libwlroots-0.19.so
+-- mali fds --
+lrwx------. 1 root root 64 Nov  2 23:34 13 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:34 14 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:34 15 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:34 16 -> /dev/udmabuf
+lrwx------. 1 root root 64 Nov  2 23:34 27 -> anon_inode:dmabuf_udmabuf
+-- threads --
+8
+(no llvmpipe/mesa thread names)
+===== PID 6080 nuxel-wl-fb =====
+-- libs --
+-- mali fds --
+lrwx------. 1 root root 64 Nov  2 23:33 4 -> /dev/fb0
+-- threads --
+1
+(no llvmpipe/mesa thread names)
+== fb0 owners (rw) ==
+                     USER        PID ACCESS COMMAND
+/dev/fb0:            root       6080 F.... nuxel-wl-fb
+pid 6080 nuxel-wl-fb fd 4 -> /dev/fb0
+== fb geometry ==
+1440,6080
+U:1440x3040p-0
+
+32

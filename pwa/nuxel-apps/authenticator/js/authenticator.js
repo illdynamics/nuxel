@@ -6,7 +6,12 @@
   var V = window.AuthVault, T = window.NuxelTotp;
   var KEY = 'nuxel-authenticator-envelope-v1';
   var el = function (id) { return document.getElementById(id); };
-  var state = { env: null, key: null, accounts: [], filter: '', tick: null, codes: {} };
+  var state = {
+    env: null, key: null, accounts: [], filter: '', tick: null, codes: {},
+    keyring: { status: 'unknown', locked: null, linked: null, notInitialized: false,
+               autoBusy: false, poll: null },
+    clip: null
+  };
 
   function toast(m) {
     var t = el('toast'); t.textContent = m; t.classList.add('show');
@@ -17,6 +22,196 @@
   function storeEnv(env) {
     try { localStorage.setItem(KEY, JSON.stringify(env)); return true; }
     catch (e) { toast('could not save the vault: ' + e.message); return false; }
+  }
+
+  /* ---------------- Nuxel Keyring (fail closed) ---------------- */
+
+  function kr(verb, params) {
+    if (!window.NuxelBridge || typeof window.NuxelBridge.keyring !== 'function') {
+      return Promise.resolve({ success: false, state: 'unavailable', offline: true,
+        error: 'bridge_unreachable', detail: 'Nuxel Bridge keyring client unavailable' });
+    }
+    return window.NuxelBridge.keyring(verb, params || {});
+  }
+
+  function krError(res) {
+    var code = res && res.error;
+    if (code === 'collection_locked') return 'The Nuxel Keyring is locked.';
+    if (code === 'provider_unavailable') return 'The Nuxel Keyring provider is unavailable.';
+    if (code === 'invalid_credentials') return 'The keyring master password did not unlock it.';
+    if (code === 'rate_limited') return 'Too many failed keyring unlock attempts. Wait a moment.';
+    if (code === 'item_not_found') return 'No saved Authenticator credential exists.';
+    if (code === 'permission_denied') return 'The bridge denied the keyring operation.';
+    if (code === 'timeout') return 'The keyring provider did not answer in time.';
+    return (res && (res.detail || res.error)) || 'The keyring operation failed.';
+  }
+
+  function keyringLabel() {
+    var k = state.keyring;
+    if (k.status === 'unavailable') return 'Provider unavailable — manual passphrase only.';
+    if (!state.env) return 'Create the Authenticator vault first; linking is available in Security.';
+    if (k.notInitialized) return 'Nuxel Keyring is not initialized. Open Nuxel Vault to create it.';
+    if (k.locked) {
+      return k.linked === true ? 'Linked — keyring locked.' :
+        'Keyring locked. Unlock it to check whether a saved credential exists.';
+    }
+    if (k.linked === true) return 'Linked — keyring unlocked.';
+    if (k.linked === false) return 'Not linked — manual passphrase only.';
+    return 'Keyring unlocked; credential status unknown.';
+  }
+
+  function updateKeyringUi() {
+    var k = state.keyring;
+    var status = keyringLabel();
+    if (el('kr-lock-status')) el('kr-lock-status').textContent = status;
+    if (el('kr-status')) el('kr-status').textContent = status;
+    var showCard = !!state.env;
+    if (el('kr-lock-card')) el('kr-lock-card').hidden = !showCard;
+    var canUnlock = showCard && !k.notInitialized && k.status !== 'unavailable' && k.locked === true;
+    if (el('kr-unlock-row')) el('kr-unlock-row').hidden = !canUnlock;
+    if (el('kr-auto-row')) el('kr-auto-row').hidden = !(showCard && !k.locked && k.linked === true && !state.key);
+    if (el('kr-unlink')) el('kr-unlink').disabled = !(k.linked === true);
+  }
+
+  async function refreshKeyringState(autoUnlock) {
+    var st = await kr('status');
+    if (!st.success) {
+      state.keyring.status = 'unavailable';
+      state.keyring.locked = null;
+      state.keyring.linked = null;
+      state.keyring.notInitialized = false;
+      updateKeyringUi();
+      return state.keyring;
+    }
+    state.keyring.status = st.state || (st.locked ? 'collection_locked' : 'unlocked');
+    state.keyring.notInitialized = st.state === 'not_initialized';
+    state.keyring.locked = !!st.locked || st.state === 'collection_locked';
+    var cs = await kr('authenticator-credential-status');
+    if (cs.success) {
+      if (cs.exists === true) state.keyring.linked = true;
+      else if (cs.exists === false) state.keyring.linked = false;
+      else if (cs.state === 'keyring_locked') state.keyring.linked = null;
+    }
+    updateKeyringUi();
+    if (autoUnlock && state.env && !state.key && state.keyring.linked === true && !state.keyring.locked) {
+      await autoUnlockFromKeyring();
+    }
+    return state.keyring;
+  }
+
+  async function autoUnlockFromKeyring() {
+    if (!state.env || state.key || state.keyring.autoBusy) return false;
+    if (state.keyring.linked !== true || state.keyring.locked || state.keyring.status === 'unavailable') {
+      updateKeyringUi();
+      return false;
+    }
+    state.keyring.autoBusy = true;
+    var pass = null;
+    try {
+      var res = await kr('authenticator-credential-get');
+      if (!res.success || !res.credential) {
+        el('lock-error').textContent = 'The saved Nuxel Keyring credential could not be read. Enter the passphrase manually or re-link.';
+        return false;
+      }
+      pass = String(res.credential);
+      res.credential = null;
+      try {
+        var un = await V.unlock(state.env, pass);
+        state.key = un.key;
+        state.accounts = un.accounts;
+        showMain();
+        toast('Unlocked with Nuxel Keyring');
+        return true;
+      } catch (e) {
+        el('lock-error').textContent = 'The saved Nuxel Keyring credential did not open this vault. Enter the passphrase manually or re-link.';
+        return false;
+      }
+    } finally {
+      pass = null;
+      state.keyring.autoBusy = false;
+    }
+  }
+
+  async function keyringUnlockAction() {
+    var pass = el('kr-unlock-pass').value;
+    el('kr-unlock-error').textContent = '';
+    if (!pass) { el('kr-unlock-error').textContent = 'Enter the Nuxel Keyring master password.'; return; }
+    var res = await kr('unlock', { master_password: pass });
+    pass = null;
+    el('kr-unlock-pass').value = '';
+    if (!res.success) { el('kr-unlock-error').textContent = krError(res); return; }
+    await refreshKeyringState(false);
+    if (state.keyring.linked === true) await autoUnlockFromKeyring();
+  }
+
+  async function linkKeyringCredential() {
+    var note = el('kr-link-note');
+    note.textContent = '';
+    var pass = el('kr-link-pass').value;
+    if (!state.env || !state.key) { note.textContent = 'Unlock the Authenticator vault manually first.'; return; }
+    if (!el('kr-consent').checked) { note.textContent = 'Explicit consent is required before storing the passphrase.'; return; }
+    if (!pass) { note.textContent = 'Enter the current Authenticator passphrase to verify it.'; return; }
+    try {
+      await V.unlock(state.env, pass);
+    } catch (e) {
+      pass = null;
+      el('kr-link-pass').value = '';
+      note.textContent = 'That is not the current passphrase for this vault.';
+      return;
+    }
+    var res = await kr('authenticator-credential-store', { credential: pass, consent: true });
+    pass = null;
+    el('kr-link-pass').value = '';
+    if (!res.success) { note.textContent = krError(res); return; }
+    state.keyring.linked = true;
+    await refreshKeyringState(false);
+    note.textContent = 'Saved in the Nuxel Keyring. Authenticator will auto-unlock only while the keyring is unlocked.';
+    toast('Linked to Nuxel Keyring');
+  }
+
+  async function unlinkKeyringCredential() {
+    if (!state.keyring.linked) { el('kr-link-note').textContent = 'No saved credential is linked.'; return; }
+    if (!window.confirm('Remove the saved Authenticator passphrase from the Nuxel Keyring? Your TOTP accounts stay in the encrypted vault.')) return;
+    var res = await kr('authenticator-credential-delete');
+    if (!res.success) { el('kr-link-note').textContent = krError(res); return; }
+    state.keyring.linked = false;
+    await refreshKeyringState(false);
+    el('kr-link-note').textContent = 'Saved credential removed. The encrypted TOTP vault is unchanged and manual unlock still works.';
+    toast('Saved credential removed');
+  }
+
+  function startKeyringPoll() {
+    if (state.keyring.poll) clearInterval(state.keyring.poll);
+    state.keyring.poll = setInterval(async function () {
+      if (!state.key || state.keyring.linked === false) return;
+      var st = await kr('status');
+      if (!st.success || st.state !== 'unlocked' || st.locked) {
+        lockVault('keyring');
+      }
+    }, 30000);
+  }
+
+  function stopKeyringPoll() {
+    if (state.keyring.poll) { clearInterval(state.keyring.poll); state.keyring.poll = null; }
+  }
+
+  /* ---------------- clipboard (OTP) ---------------- */
+
+  function trackOtpClipboard(value) {
+    state.clip = { value: String(value) };
+    if (state.clip.timer) clearTimeout(state.clip.timer);
+    state.clip.timer = setTimeout(clearOtpClipboardIfSame, 30000);
+  }
+
+  async function clearOtpClipboardIfSame() {
+    var tracked = state.clip;
+    state.clip = null;
+    if (!tracked) return;
+    if (tracked.timer) clearTimeout(tracked.timer);
+    try {
+      var now = await navigator.clipboard.readText();
+      if (now === tracked.value) await navigator.clipboard.writeText('');
+    } catch (e) { /* never erase a value we cannot verify */ }
   }
 
   /* ---------------- lock screen ---------------- */
@@ -35,6 +230,8 @@
     el('screen-main').style.display = 'none';
     el('header-state').textContent = exists ? 'locked' : 'no vault';
     el('header-state').className = 'badge ' + (exists ? 'warn' : 'bad');
+    if (el('kr-unlock-error')) el('kr-unlock-error').textContent = '';
+    updateKeyringUi();
   }
 
   function showMain() {
@@ -46,6 +243,8 @@
     startTicker();
     el('vault-kdf').textContent = state.env.kdf.name + '-' + state.env.kdf.hash + ' · ' + state.env.kdf.iterations + ' iterations';
     el('vault-count').textContent = state.accounts.length + ' account(s)';
+    startKeyringPoll();
+    refreshKeyringState(false);
   }
 
   function lockVault(reason) {
@@ -53,8 +252,13 @@
     state.accounts = [];
     state.codes = {};
     stopQr(false);
+    stopKeyringPoll();
+    clearOtpClipboardIfSame();
     if (state.tick) { clearInterval(state.tick); state.tick = null; }
-    if (state.filter) state.filter = '';
+    state.filter = '';
+    if (el('search')) el('search').value = '';
+    if (el('codes')) el('codes').textContent = '';
+    if (el('header-code-count')) el('header-code-count').textContent = '';
     renderLock();
     if (reason) toast('Vault locked');
   }
@@ -72,11 +276,13 @@
           throw new Error('the encrypted vault could not be stored on this device');
         }
         showMain(); toast('Vault created');
+        refreshKeyringState(false);
         return;
       }
       var un = await V.unlock(state.env, pass);
       state.key = un.key; state.accounts = un.accounts;
       showMain(); toast('Unlocked');
+      refreshKeyringState(false);
     } catch (e) {
       el('lock-error').textContent = e.message;
     }
@@ -164,8 +370,10 @@
     if (!node) return;
     var text = node.querySelector('.grp').textContent.replace(/\s+/g, '');
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { toast('Code copied'); },
-        function () { toast('Clipboard refused; the code was not copied'); });
+      navigator.clipboard.writeText(text).then(function () {
+        trackOtpClipboard(text);
+        toast('Code copied');
+      }, function () { toast('Clipboard refused; the code was not copied'); });
     } else {
       toast('Clipboard unavailable; the code was not copied');
     }
@@ -388,27 +596,69 @@
       // A new passphrase gets a FRESH salt and key: the envelope must carry the
       // matching KDF parameters or the vault would be unopenable afterwards.
       var created = await V.create(next);
-      state.env = Object.assign({}, state.env, { kdf: created.envelope.kdf });
-      state.key = created.key;
-      state.accounts = un.accounts;
-      await save();
-      el('rk-note').textContent = 'Re-keyed with a fresh salt and key. The old passphrase no longer opens this vault.';
+      var newEnv = Object.assign({}, state.env, { kdf: created.envelope.kdf });
+      var oldEnv = state.env, oldKey = state.key, oldAccounts = state.accounts;
+      state.env = newEnv; state.key = created.key; state.accounts = un.accounts;
+      var saved = await save();
+      if (!saved) {
+        state.env = oldEnv; state.key = oldKey; state.accounts = oldAccounts;
+        throw new Error('the new encrypted envelope could not be saved; the old vault remains active');
+      }
+      var linkedNote = '';
+      if (state.keyring.linked === true) {
+        // The old credential belongs to the old passphrase.  Update it only
+        // after the new envelope is durable; if that fails, remove it so the
+        // app never auto-unlocks with a stale secret.
+        var stored = await kr('authenticator-credential-store', { credential: next, consent: true });
+        if (!stored.success) {
+          await kr('authenticator-credential-delete');
+          state.keyring.linked = false;
+          linkedNote = ' Auto-unlock was disabled because the saved keyring credential could not be updated; re-link it in Security. The new passphrase opens the vault.';
+        }
+      }
+      el('vault-kdf').textContent = state.env.kdf.name + '-' + state.env.kdf.hash + ' · ' + state.env.kdf.iterations + ' iterations';
+      el('rk-note').textContent = 'Re-keyed with a fresh salt, key and AES-GCM IV. The old passphrase no longer opens this vault.' + linkedNote;
       ['rk-current', 'rk-new', 'rk-new2'].forEach(function (i) { el(i).value = ''; });
+      await refreshKeyringState(false);
       toast('Vault re-keyed');
     } catch (e) { el('rk-note').textContent = e.message; }
+    finally { current = null; next = null; again = null; }
   }
 
-  function wipe() {
-    if (el('wipe-confirm').value.trim() !== 'DELETE VAULT') {
-      el('wipe-note').textContent = 'Type DELETE VAULT exactly to confirm.';
+  async function wipe() {
+    if (el('wipe-confirm').value.trim() !== 'DELETE AUTHENTICATOR VAULT') {
+      el('wipe-note').textContent = 'Type DELETE AUTHENTICATOR VAULT exactly to confirm.';
+      return;
+    }
+    var krNote = '';
+    var cs = await kr('authenticator-credential-status');
+    if (cs.success && cs.exists === true) {
+      var del = await kr('authenticator-credential-delete');
+      if (!del.success) {
+        el('wipe-note').textContent = 'Cannot remove the saved Authenticator credential while the Nuxel Keyring is locked or unavailable. Unlock it and retry; the TOTP vault was NOT deleted.';
+        return;
+      }
+      krNote = ' The saved Nuxel Keyring credential was removed.';
+    } else if (cs.success && cs.exists === null) {
+      el('wipe-note').textContent = 'The Nuxel Keyring is locked, so a saved credential cannot be removed. Unlock the keyring and retry; the TOTP vault was NOT deleted.';
+      return;
+    } else if (!cs.success) {
+      el('wipe-note').textContent = 'Cannot confirm whether a saved keyring credential exists. Unlock the keyring and retry; the TOTP vault was NOT deleted.';
       return;
     }
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
-    state = { env: null, key: null, accounts: [], filter: '', tick: null, codes: {} };
-    if (state.tick) clearInterval(state.tick);
-    el('codes').innerHTML = '';
-    el('wipe-note').textContent = 'Vault deleted from this device. There is no cloud copy to restore from.';
-    renderLock(); toast('Vault deleted');
+    stopKeyringPoll();
+    clearOtpClipboardIfSame();
+    state = {
+      env: null, key: null, accounts: [], filter: '', tick: null, codes: {},
+      keyring: { status: 'unknown', locked: null, linked: false, notInitialized: false,
+                 autoBusy: false, poll: null },
+      clip: null
+    };
+    el('codes').textContent = '';
+    el('header-code-count').textContent = '';
+    el('wipe-note').textContent = 'Authenticator vault deleted from this device. Nuxel Vault password items and unrelated keyring entries were not touched.' + krNote;
+    renderLock(); toast('Authenticator vault deleted');
   }
 
   async function runSelfTest() {
@@ -469,12 +719,13 @@
     el('qr-cancel').addEventListener('click', function () {
       qr.pending = null; el('qr-preview').style.display = 'none'; qrNote('');
     });
-    var bgLock = null;
     document.addEventListener('visibilitychange', function () {
       stopQr(false);
-      if (document.hidden) {
-        if (!bgLock) bgLock = setTimeout(function () { bgLock = null; lockVault('background'); }, 60000);
-      } else if (bgLock) { clearTimeout(bgLock); bgLock = null; }
+      // A backgrounded WebKit surface must never keep live OTP codes rendered.
+      // Lock immediately on hide; an explicit foreground unlock is required.
+      if (document.hidden && state.key) {
+        lockVault('background');
+      }
     });
     window.addEventListener('pagehide', function () { stopQr(false); lockVault(); });
     el('close').addEventListener('click', function () { try { window.close(); } catch (e) {} });
@@ -482,5 +733,24 @@
 
     state.env = loadEnv();
     renderLock();
+    refreshKeyringState(true);
+
+    el('kr-unlock-go').addEventListener('click', keyringUnlockAction);
+    el('kr-unlock-cancel').addEventListener('click', function () {
+      el('kr-unlock-pass').value = '';
+      el('kr-unlock-error').textContent = '';
+      toast('Nuxel Keyring remains locked');
+    });
+    el('kr-unlock-pass').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') keyringUnlockAction();
+    });
+    el('kr-auto-go').addEventListener('click', autoUnlockFromKeyring);
+    el('kr-link-go').addEventListener('click', linkKeyringCredential);
+    el('kr-unlink').addEventListener('click', unlinkKeyringCredential);
+    el('entra-start').addEventListener('click', function () {
+      var target = el('qr-camera');
+      if (target && target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(function () { try { target.focus(); } catch (e) {} }, 250);
+    });
   });
 }());

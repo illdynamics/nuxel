@@ -1,0 +1,21 @@
+{
+  "locked": true,
+  "owner": "security_provider",
+  "reason": "host",
+  "schema_version": 1,
+  "updated_at": 1793693647.957866
+}
+
+{"schema_version":1,"visible":false,"mapped":false,"lock":"locked","home_ready":true,"fifo_ready":true,"width":360,"height":62,"scale":2,"reason":"hide"}
+
+{"schema_version":1,"ready":true,"visible":false,"reason":"locked","foreground_app_id":"","locked":true,"width":360,"height":36,"scale":2,"error":"","owner":"nuxel-statusbar"}
+
+locked=1 native=0 app_id=
+
+{"schema_version":1,"updated_at":1793693704,"locked":true,"home_raised":true,"hidden_non_home":1,"active_app":"","error":"","owner":"nuxel-foreign-toplevel"}
+
+1793693704 DISPLAY_SLEEP total=622 failures=0 owner=nuxel-wl-fb display=off capture=stopped
+
+da176b4d-976a-44eb-8c58-a77e48f9e5e7
+
+24786.84 194595.02

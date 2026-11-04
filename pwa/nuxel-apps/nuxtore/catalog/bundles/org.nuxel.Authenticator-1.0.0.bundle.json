@@ -1,13 +1,18 @@
 [
   {
+    "path": "pwa/nuxel-apps/authenticator/ENTRA-OATH.md",
+    "sha256": "7287876fa107abcc40d16ebef0725eb9ee48824682463cc6a97296545db9bb99",
+    "size": 3252
+  },
+  {
     "path": "pwa/nuxel-apps/authenticator/app.json",
-    "sha256": "24a1889b3b5efc3a4b8805332f617544b1e6f818a8b6a25a487253a136c36fd0",
-    "size": 401
+    "sha256": "8423a1073b880a2f66915aedef69f38b728ce5e0e8b83a9608a59c9de73524d3",
+    "size": 445
   },
   {
     "path": "pwa/nuxel-apps/authenticator/css/authenticator.css",
-    "sha256": "82a1e5b5e80229b9894f04b01a71fc9420d5da39b5fae4e8642474aa1d64247c",
-    "size": 4039
+    "sha256": "58f7050a089c1c161df1a69e3784531585d19890437c0d6fd8fab44d72264e3b",
+    "size": 4726
   },
   {
     "path": "pwa/nuxel-apps/authenticator/icons/icon-128.png",
@@ -61,13 +66,13 @@
   },
   {
     "path": "pwa/nuxel-apps/authenticator/index.html",
-    "sha256": "5b45a64049e1f174b5cc7186461bac83c73fc8f24a0231e1a63a2be55c4754cb",
-    "size": 8402
+    "sha256": "822bdf1c3243c5dc37e354a7ea53d94ec4c65f870649b376082dade301176ad5",
+    "size": 15313
   },
   {
     "path": "pwa/nuxel-apps/authenticator/js/authenticator.js",
-    "sha256": "da07e9c47ee933c052468d7545e7a8826364a807fa2be00c52aafb83566e2468",
-    "size": 15103
+    "sha256": "f2143b3a95e2c691be233feba81fde8b53dcc32bd507b44c07123e0d9f70b26a",
+    "size": 33772
   },
   {
     "path": "pwa/nuxel-apps/authenticator/js/totp.js",
@@ -76,13 +81,13 @@
   },
   {
     "path": "pwa/nuxel-apps/authenticator/js/vault.js",
-    "sha256": "251e0925e7d2ed73a3513930201b8f82850ff48c6d7cfdfa6707bbfbd96fa6ea",
-    "size": 13578
+    "sha256": "448136cf8ffd06977c1fc5f2d849f40a2b32ee92b9c883dc403562c30eb9675d",
+    "size": 13816
   },
   {
     "path": "pwa/nuxel-apps/authenticator/manifest.json",
-    "sha256": "ae6a4ce6b7eedf5f654828acdea8469e425ba2ccc00465de3bd162f67d158dac",
-    "size": 1039
+    "sha256": "98d1bfc0f567a60a78184f4a6607f7f0434d3fe80d47f0a0bdc8a3586183ac76",
+    "size": 1493
   },
   {
     "path": "pwa/nuxel-apps/authenticator/samples/otpauth-examples.json",
@@ -91,8 +96,8 @@
   },
   {
     "path": "pwa/nuxel-apps/authenticator/sw.js",
-    "sha256": "b4b38adf4eeea7d0155ea46d7094044360ea680c9676242d4fa11422464a8540",
-    "size": 1125
+    "sha256": "41098f5e4162f8fa56366f6994dbc670e81fb00c8e24be56838de83ff5b567cb",
+    "size": 1713
   },
   {
     "path": "pwa/nuxel-apps/authenticator/tests/test-totp-vectors.js",
@@ -101,7 +106,17 @@
   },
   {
     "path": "pwa/nuxel-apps/authenticator/tests/test-vault.js",
-    "sha256": "93fdd20f5e4152bf5af851b6bdff8f30a43d921cdb95e58be028d0ed2045f689",
-    "size": 7460
+    "sha256": "46757f9d0e56eb857610ff60775f586baad54f68e03f452e82bd272df5f2afdc",
+    "size": 7609
+  },
+  {
+    "path": "pwa/nuxel-apps/authenticator/vendor/jsQR.LICENSE.txt",
+    "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "size": 11358
+  },
+  {
+    "path": "pwa/nuxel-apps/authenticator/vendor/jsQR.js",
+    "sha256": "bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859",
+    "size": 256885
   }
 ]

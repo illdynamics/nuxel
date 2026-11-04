@@ -1,0 +1,2 @@
+GPU IMAGE VERIFY: PASS (10 files, 3 symlinks)
+WARNING: file(1) unavailable; could not check probe architecture

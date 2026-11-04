@@ -1,0 +1,2 @@
+1793660124 FRAMES_OK total=13 fps_1s=11 failures=0 blits=3 present_skipped=9 blit_avg_ms=1 pan_avg_ms=11 capture_avg_ms=3 compare_avg_ms=2 damage=1426-1496 damage_runs=0 damage_blits=2 damage_avg_ms=0 idle_ms=297 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=4 decon_pan_failed=0
+writers=1

@@ -1,0 +1,110 @@
+PWNAGE-61000 MFC source audit excerpts
+kernel source: f7194c1d15eded1c2a1a4dc63825b26103435cc0
+
+== firmware request ==
+587-	 * direct filesystem path is the correct one.  A missing blob must
+588-	 * fail promptly and cleanly.
+589-	 */
+590:	err = request_firmware_direct(&fw_blob, MFC_FW_NAME,
+591-				      dev->v4l2_dev.dev);
+592-	if (err) {
+593-		mfc_err_dev("[F/W] %s unavailable (%d); hardware decode blocked\n",
+594:			    MFC_FW_NAME, err);
+595-		return err;
+596-	}
+597-
+598-	if (!fw_blob || !fw_blob->data || fw_blob->size == 0) {
+599:		mfc_err_dev("[F/W] %s is empty or invalid\n", MFC_FW_NAME);
+600-		release_firmware(fw_blob);
+601-		return -EINVAL;
+602-	}
+603-
+604-	mfc_debug(2, "[MEMINFO][F/W] loaded %s Size: %zu\n",
+605:		  MFC_FW_NAME, fw_blob->size);
+606-
+607-	if (fw_blob->size > firmware_size) {
+608-		mfc_err_dev("[MEMINFO][F/W] MFC firmware(%zu) is too big to be loaded in memory(%zu)\n",
+609-				fw_blob->size, firmware_size);
+610-		release_firmware(fw_blob);
+611-		return -ENOMEM;
+612-	}
+613-
+614-	if (dev->fw_buf.dma_buf == NULL || dev->fw_buf.daddr == 0) {
+615-		mfc_err_dev("[F/W] MFC firmware is not allocated or was not mapped correctly\n");
+616-		release_firmware(fw_blob);
+617-		return -EINVAL;
+
+== DT node ==
+4470:		mfc0 = "/mfc@188D0000";
+4471-		scaler0 = "/scaler@18B10000";
+4472-		panel0 = "/panel@0";
+4473-	};
+4474-
+4475-	system-controller@17020500 {
+4476-		compatible = "samsung,exynos9810-isppre", "syscon";
+4477-		reg = <0x0 0x17020500 0x4>;
+4478-		linux,phandle = <0x41>;
+4479-		phandle = <0x41>;
+4480-	};
+4481-
+4482-	dphy_m4s4_csis0@17020500 {
+--
+5002:	mfc@188D0000 {
+5003-		compatible = "samsung,exynos-mfc";
+5004-		reg = <0x0 0x188d0000 0x10000>;
+5005-		interrupts = <0x0 0x152 0x0>;
+5006-		clock-names = "aclk_mfc";
+5007-		clocks = <0x2 0x1a6>;
+
+== V4L2 ops (no decoder_cmd / events / MMAP) ==
+1262:static const struct v4l2_ioctl_ops mfc_dec_ioctl_ops = {
+1263-	.vidioc_querycap		= mfc_dec_querycap,
+1264-	.vidioc_enum_fmt_vid_cap_mplane	= mfc_dec_enum_fmt_vid_cap_mplane,
+1265-	.vidioc_enum_fmt_vid_out_mplane	= mfc_dec_enum_fmt_vid_out_mplane,
+1266-	.vidioc_g_fmt_vid_cap_mplane	= mfc_dec_g_fmt_vid_cap_mplane,
+1267-	.vidioc_g_fmt_vid_out_mplane	= mfc_dec_g_fmt_vid_out_mplane,
+1268-	.vidioc_try_fmt_vid_cap_mplane	= mfc_dec_try_fmt,
+1269-	.vidioc_try_fmt_vid_out_mplane	= mfc_dec_try_fmt,
+1270-	.vidioc_s_fmt_vid_cap_mplane	= mfc_dec_s_fmt_vid_cap_mplane,
+1271-	.vidioc_s_fmt_vid_out_mplane	= mfc_dec_s_fmt_vid_out_mplane,
+1272-	.vidioc_reqbufs			= mfc_dec_reqbufs,
+1273-	.vidioc_querybuf		= mfc_dec_querybuf,
+1274-	.vidioc_qbuf			= mfc_dec_qbuf,
+1275-	.vidioc_dqbuf			= mfc_dec_dqbuf,
+1276-	.vidioc_streamon		= mfc_dec_streamon,
+1277-	.vidioc_streamoff		= mfc_dec_streamoff,
+1278-	.vidioc_queryctrl		= mfc_dec_queryctrl,
+1279-	.vidioc_g_ctrl			= mfc_dec_g_ctrl,
+1280-	.vidioc_s_ctrl			= mfc_dec_s_ctrl,
+1281-	.vidioc_g_crop			= mfc_dec_g_crop,
+1282-	.vidioc_g_ext_ctrls		= mfc_dec_g_ext_ctrls,
+1283-};
+1284-
+1285-const struct v4l2_ioctl_ops *mfc_get_dec_v4l2_ioctl_ops(void)
+1286-{
+1287-	return &mfc_dec_ioctl_ops;
+1288-}
+
+== capture DMA-BUF import ==
+297:void mfc_get_iovmm(struct mfc_ctx *ctx, struct vb2_buffer *vb)
+298-{
+299-	struct mfc_dev *dev = ctx->dev;
+300-	struct mfc_dec *dec = ctx->dec_priv;
+301-	int i, mem_get_count = 0;
+302-	int index = vb->index;
+303-	int ioprot = IOMMU_WRITE;
+304-
+305-	for (i = 0; i < ctx->dst_fmt->mem_planes; i++) {
+306-		mem_get_count++;
+307-
+308-		dec->assigned_dmabufs[index][0][i] = dma_buf_get(vb->planes[i].m.fd);
+309-		if (IS_ERR(dec->assigned_dmabufs[index][0][i])) {
+310-			mfc_err_ctx("[IOVMM] Failed to dma_buf_get (err %ld)\n",
+311-					PTR_ERR(dec->assigned_dmabufs[index][0][i]));
+312-			dec->assigned_dmabufs[index][0][i] = NULL;
+
+== timeouts ==
+43:#define MFC_INT_TIMEOUT		4000
+45:#define MFC_INT_SHORT_TIMEOUT	800
+47:#define MFC_HWLOCK_TIMEOUT	5000
+53:#define MFC_INT_TIMEOUT_CNT	2

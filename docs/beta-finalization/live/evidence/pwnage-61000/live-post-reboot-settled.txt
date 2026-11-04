@@ -1,0 +1,58 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+POST_SETTLE
+2026-11-03T01:39:30+01:00
+95b82b79-3d51-4a48-955e-b446551ccffd
+4.14.253-gf7194c1d15ed-dirty
+starting
+  UNIT                               LOAD   ACTIVE SUB    DESCRIPTION
+● avahi-daemon.service               loaded failed failed Avahi mDNS/DNS-SD Stack
+● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+● nuxel-boot-sound.service           loaded failed failed Nuxel startup cue after confirmed boot-animation to launcher handoff
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+3 loaded units listed.
+crw-------. 1 root root 81, 0 Jan  1  1970 /dev/video6
+4
+     12 D    tz_worker_threa
+     18 D    tz_worker_threa
+     25 D    tz_worker_threa
+     32 D    tz_worker_threa
+     39 D    tz_worker_threa
+     46 D    tz_worker_threa
+     53 D    tz_worker_threa
+     56 D    kworker/6:0
+     60 D    tz_worker_threa
+   1036 D    scsi_srpmb_work
+   1817 D    ree_time
+   1823 D    tz_iwsock
+DIAG_RC=127
+bash: line 1: /tmp/nuxel-mfc-diag: No such file or directory
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json;d=json.load(open("/tmp/mfc-status-post.json"));print("state",d["state"]);print("node",d["decoder_node"]);print("firmware",d["firmware"]["state"]);print("guard",d["guard"]["v4l2_plugins_disabled"]);print("wp",d["wireplumber"]["video_capture_disabled"],d["wireplumber"]["audio_required"],d["wireplumber"]["bluetooth_required"]);print("safe",d["safe_open_allowed"])
+                  ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/json/__init__.py", line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File "/usr/lib64/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib64/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)

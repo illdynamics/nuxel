@@ -1,0 +1,15 @@
+{
+  "id": "org.nuxel.Vault",
+  "name": "Vault",
+  "icon": "VA",
+  "color": "#0b3b46",
+  "category": "security",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/vault/index.html",
+  "description": "Nuxel's on-device keyring and password manager",
+  "capabilities": ["secrets:manage"],
+  "docked": false,
+  "network": "none",
+  "third_party_accounts": [],
+  "cloud_sync": false
+}

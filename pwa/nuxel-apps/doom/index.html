@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b0708">
+  <meta name="nuxel-app-id" content="org.nuxel.Doom">
+  <meta name="description" content="Nuxel Doom — a touch-first, offline arcade shooter built for the Nuxel phone.">
+  <title>Nuxel Doom</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
+  <link rel="stylesheet" href="css/doom.css">
+</head>
+<body>
+<main id="app" aria-label="Nuxel Doom">
+  <canvas id="view" width="320" height="180" aria-label="Doom game view" tabindex="-1"></canvas>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <!-- In-game HUD -->
+  <section id="hud" class="hud" hidden aria-label="Player status">
+    <div class="hud-cell"><span>HEALTH</span><strong id="hud-health">100</strong></div>
+    <div class="hud-cell"><span>ARMOR</span><strong id="hud-armor">000</strong></div>
+    <div class="hud-cell"><span>AMMO</span><strong id="hud-ammo">48</strong></div>
+    <div class="hud-cell wide"><span>WEAPON</span><strong id="hud-weapon">PISTOL</strong></div>
+    <div class="hud-cell"><span>KILLS</span><strong id="hud-kills">0/0</strong></div>
+    <div class="hud-cell"><span>SECTOR</span><strong id="hud-sector">1/3</strong></div>
+  </section>
+
+  <!-- Touch controls. The look zone is the right half; action buttons sit above it. -->
+  <section id="controls" class="controls" hidden aria-label="Touch controls">
+    <div id="joy-zone" class="joy-zone" aria-label="Movement joystick">
+      <div id="joy-base" class="joy-base"><div id="joy-knob" class="joy-knob"></div></div>
+    </div>
+    <div id="look-zone" class="look-zone" aria-label="Drag to aim"></div>
+    <div class="action-cluster" aria-label="Action buttons">
+      <button id="btn-fire" class="action fire" type="button" aria-label="Fire">FIRE</button>
+      <button id="btn-use" class="action use" type="button" aria-label="Use or open door">USE</button>
+      <button id="btn-next" class="action small" type="button" aria-label="Next weapon">WPN +</button>
+      <button id="btn-prev" class="action small" type="button" aria-label="Previous weapon">WPN −</button>
+      <button id="btn-run" class="action small" type="button" aria-label="Toggle run">RUN</button>
+      <button id="btn-pause" class="action small" type="button" aria-label="Pause" data-action="back">MENU</button>
+    </div>
+    <div class="aim-hint" aria-hidden="true">DRAG TO AIM</div>
+  </section>
+
+  <!-- Launch / campaign screen -->
+  <section id="start-screen" class="screen launch" aria-labelledby="title">
+    <div class="launch-card">
+      <div class="brand-row">
+        <img src="icons/icon-192.png" alt="" width="72" height="72">
+        <div>
+          <p class="eyebrow">NUXEL ARCADE // ORIGINAL</p>
+          <h1 id="title">NUXEL <span>DOOM</span></h1>
+          <p class="tagline">The penguin has a shotgun. The demons do not have a good day.</p>
+        </div>
+      </div>
+      <div class="campaigns" aria-label="Campaign selection">
+        <button class="campaign primary" type="button" data-sector="0">
+          <span class="campaign-art" aria-hidden="true">01</span>
+          <span><strong>PLAY DOOM</strong><small>SECTOR 01 — DOCKING BAY</small></span>
+        </button>
+        <button class="campaign" type="button" data-sector="1">
+          <span class="campaign-art" aria-hidden="true">02</span>
+          <span><strong>FOUNDRY</strong><small>SECTOR 02 — HOT METAL</small></span>
+        </button>
+        <button class="campaign" type="button" data-sector="2">
+          <span class="campaign-art" aria-hidden="true">03</span>
+          <span><strong>HELLGATE</strong><small>SECTOR 03 — FINAL PUSH</small></span>
+        </button>
+      </div>
+      <div class="launch-actions">
+        <button id="btn-settings" type="button">⚙ TOUCH &amp; AUDIO</button>
+        <button id="btn-classic" type="button">▶ CLASSIC ENGINE</button>
+      </div>
+      <p id="classic-note" class="note" hidden></p>
+      <div class="meta-row">
+        <span id="offline-indicator">● OFFLINE READY</span>
+        <span>THREE SECTORS · TOUCH-FIRST · NUXEL v0.7.6-beta</span>
+      </div>
+      <p class="fineprint">Original Nuxel game. No DOOM WAD assets are bundled. The optional Classic Engine button launches an installed Crispy Doom when available.</p>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section id="settings-screen" class="screen settings" hidden aria-labelledby="settings-title">
+    <div class="sheet">
+      <header>
+        <div><p class="eyebrow">NUXEL DOOM</p><h2 id="settings-title">TOUCH &amp; AUDIO</h2></div>
+        <button id="btn-settings-back" type="button" aria-label="Back to launch screen">✕</button>
+      </header>
+      <div class="setting-grid">
+        <button id="set-sound" class="toggle" type="button" aria-pressed="true"><span>SOUND</span><strong>ON</strong></button>
+        <button id="set-haptics" class="toggle" type="button" aria-pressed="true"><span>HAPTICS</span><strong>ON</strong></button>
+        <button id="set-invert" class="toggle" type="button" aria-pressed="false"><span>INVERT LOOK</span><strong>OFF</strong></button>
+        <button id="set-hand" class="toggle" type="button" aria-pressed="false"><span>LEFT HANDED</span><strong>OFF</strong></button>
+      </div>
+      <div class="sensitivity">
+        <span>LOOK SENSITIVITY</span>
+        <div><button id="set-sens-down" type="button" aria-label="Lower look sensitivity">−</button><output id="sens-value">0.0034</output><button id="set-sens-up" type="button" aria-label="Raise look sensitivity">+</button></div>
+      </div>
+      <p class="fineprint">Movement uses the left joystick. Aim by dragging the right side. Fire, use, weapon, run and pause are simultaneous multitouch buttons. Settings persist on this device.</p>
+      <button id="btn-settings-done" class="primary wide" type="button">DONE</button>
+    </div>
+  </section>
+
+  <!-- Pause -->
+  <section id="pause-screen" class="screen modal" hidden aria-labelledby="pause-title">
+    <div class="sheet compact">
+      <p class="eyebrow">SYSTEM PAUSE</p>
+      <h2 id="pause-title">PAUSED</h2>
+      <p>The demons are polite enough to wait. Mostly.</p>
+      <button id="btn-resume" class="primary wide" type="button">RESUME</button>
+      <button id="btn-restart" type="button">RESTART SECTOR</button>
+      <button id="btn-menu" type="button">RETURN TO CAMPAIGN</button>
+      <button id="btn-quit" class="danger wide" type="button">EXIT DOOM</button>
+    </div>
+  </section>
+
+  <!-- End -->
+  <section id="end-screen" class="screen modal" hidden aria-labelledby="end-title">
+    <div class="sheet compact">
+      <p class="eyebrow">MISSION REPORT</p>
+      <h2 id="end-title">YOU DIED</h2>
+      <p id="end-copy"></p>
+      <button id="btn-again" class="primary wide" type="button">PLAY AGAIN</button>
+      <button id="btn-menu-2" type="button">RETURN TO CAMPAIGN</button>
+    </div>
+  </section>
+</main>
+
+<script src="js/doom-engine.js"></script>
+<script src="js/doom.js"></script>
+</body>
+</html>

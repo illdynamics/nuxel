@@ -14,6 +14,8 @@
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
 #include <errno.h>
+#include <math.h>
+#include <stdarg.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <stdint.h>
@@ -29,6 +31,9 @@
 
 #define BAR_HEIGHT 36
 #define STATE_FILE "/run/nuxel-statusbar.state"
+#define LOG_FILE "/run/nuxel-statusbar.log"
+#define FG_STATE "/run/nuxel/foreground.state"
+#define PRELOAD_OVERLAY "/run/nuxel/preload-cinema.overlay"
 #define LOCK_STATE "/run/nuxel/security/lock-state.json"
 #define LOCATION_POLICY "/var/lib/nuxel/permissions/location-policy.json"
 #define FT_BIN "/usr/lib/nuxel/nuxel-foreign-toplevel"
@@ -45,13 +50,33 @@ static int32_t width = 360, height = BAR_HEIGHT, scale = 2;
 static int configured = 0;
 
 static void audit(const char *fmt, ...) {
-  FILE *f = fopen(STATE_FILE, "a");
+  FILE *f = fopen(LOG_FILE, "a");
   if (!f) return;
   va_list ap; va_start(ap, fmt);
   time_t t = time(NULL); struct tm tm; localtime_r(&t, &tm);
   char ts[32]; strftime(ts, sizeof ts, "%Y-%m-%dT%H:%M:%S", &tm);
   fprintf(f, "%s ", ts); vfprintf(f, fmt, ap); fputc('\n', f);
   va_end(ap); fclose(f);
+}
+
+static int session_locked(void);
+
+static void publish_state(int visible, const char *reason, const char *fg,
+                          int locked, const char *error) {
+  char tmp[128];
+  snprintf(tmp, sizeof tmp, STATE_FILE ".%d", (int)getpid());
+  FILE *f = fopen(tmp, "w");
+  if (!f) return;
+  fprintf(f,
+    "{\"schema_version\":1,\"ready\":true,\"visible\":%s,"
+    "\"reason\":\"%s\",\"foreground_app_id\":\"%s\","
+    "\"locked\":%s,\"width\":%d,\"height\":%d,\"scale\":%d,"
+    "\"error\":\"%s\",\"owner\":\"nuxel-statusbar\"}\n",
+    visible ? "true" : "false", reason ? reason : "",
+    fg ? fg : "", locked ? "true" : "false", width, height, scale,
+    error ? error : "");
+  fclose(f);
+  rename(tmp, STATE_FILE);
 }
 
 static int read_text(const char *path, char *out, size_t n) {
@@ -91,23 +116,63 @@ static int session_locked(void) {
  * activated and show the overlay only when it is a non-Home app.  The helper
  * is the same trusted foreign-toplevel tool used by Back/Home; it is a short
  * bounded child, not a poller inside the render path. */
-static int native_foreground(void) {
+static int foreground_from_watcher(char *app_id, size_t app_n) {
+  struct stat st;
+  if (stat(FG_STATE, &st) != 0) return -1;
+  /* The lock watcher rewrites this at least every 2 s while running.  A stale
+     file must not pin chrome over Home. */
+  if (time(NULL) - st.st_mtime > 3) return -1;
+  char b[512];
+  if (!read_text(FG_STATE, b, sizeof b)) return -1;
+  if (!strstr(b, "locked=0")) return -1;
+  if (!strstr(b, "native=1")) return -1;
+  const char *p = strstr(b, "app_id=");
+  if (!p) return -1;
+  p += 7;
+  size_t i = 0;
+  while (*p && *p != '\n' && *p != ' ' && i + 1 < app_n) app_id[i++] = *p++;
+  app_id[i] = 0;
+  return *app_id ? 1 : -1;
+}
+
+static int native_foreground(char *app_id, size_t app_n) {
+  if (app_id && app_n) app_id[0] = 0;
+  int cached = foreground_from_watcher(app_id, app_n);
+  if (cached >= 0) return cached;
+  /* Fallback for a missing/restarting watcher: one bounded helper invocation.
+     The caller applies a 2 s cache, so this is never a per-frame cost. */
   FILE *p = popen(FT_BIN " list 2>/dev/null", "r");
   if (!p) return 0;
   char line[512];
   int found = 0;
   while (fgets(line, sizeof line, p)) {
     if (strncmp(line, "WIN ", 4) != 0) continue;
-    /* phoc reports activation for normal focus, while the launch helper
-       raises by unminimizing/maximizing; accept either as "on glass". */
-    if (!strstr(line, " act=1 ") && !strstr(line, " min=0 ")) continue;
+    if (!strstr(line, " act=1 ")) continue;
     if (strstr(line, "app_id=nuxel-pwa-host")) continue;
     if (strstr(line, "title=Nuxel")) continue;
+    if (app_id && app_n) {
+      const char *a = strstr(line, "app_id=");
+      if (a) {
+        a += 7;
+        size_t i = 0;
+        while (*a && *a != ' ' && *a != '\n' && i + 1 < app_n) app_id[i++] = *a++;
+        app_id[i] = 0;
+      }
+    }
     found = 1;
     break;
   }
   pclose(p);
   return found;
+}
+
+static int preloading_active(void) {
+  char b[512];
+  if (!read_text(PRELOAD_OVERLAY, b, sizeof b)) return 0;
+  return strstr(b, "\"state\": \"starting\"") ||
+         strstr(b, "\"state\":\"starting\"") ||
+         strstr(b, "\"state\": \"covered\"") ||
+         strstr(b, "\"state\":\"covered\"");
 }
 
 static int wifi_up(void) {
@@ -289,6 +354,7 @@ static void bar_hide(void) {
   }
   configured = 0;
   audit("STATUSBAR_HIDDEN reason=lock_or_home");
+  publish_state(0, "lock_home_or_preload", "", session_locked(), NULL);
 }
 
 static void bar_show(void) {
@@ -311,6 +377,7 @@ static void bar_show(void) {
   wl_surface_commit(surface);
   configured = 0;
   audit("STATUSBAR_SHOWN locked=0");
+  publish_state(1, "native_foreground", "", 0, NULL);
 }
 
 static void layer_configure(void *d, struct zwlr_layer_surface_v1 *ls,
@@ -324,8 +391,13 @@ static void layer_configure(void *d, struct zwlr_layer_surface_v1 *ls,
 }
 static void layer_closed(void *d, struct zwlr_layer_surface_v1 *ls) {
   (void)d;
-  if (ls == layer_surface) { layer_surface = NULL; configured = 0; }
+  if (ls == layer_surface) {
+    layer_surface = NULL;
+    configured = 0;
+    if (surface) { wl_surface_destroy(surface); surface = NULL; }
+  }
   audit("LAYER_CLOSED");
+  publish_state(0, "layer-closed", "", session_locked(), "layer-closed");
 }
 static const struct zwlr_layer_surface_v1_listener layer_listener = {
   .configure = layer_configure, .closed = layer_closed,
@@ -365,7 +437,7 @@ static void reg_remove(void *d, struct wl_registry *r, uint32_t name) { (void)d;
 static const struct wl_registry_listener reg_listener = { reg_global, reg_remove };
 
 int main(void) {
-  unlink(STATE_FILE);
+  unlink(LOG_FILE);
   display = wl_display_connect(NULL);
   if (!display) { audit("DISPLAY_CONNECT_FAIL"); return 1; }
   registry = wl_display_get_registry(display);
@@ -383,16 +455,18 @@ int main(void) {
      - the session is unlocked (never over the lockscreen; the DOM bar owns
        that surface), and
      - a non-Home Wayland toplevel is activated (never double the Home bar). */
-  surface = wl_compositor_create_surface(compositor);
   int locked = session_locked();
+  char fg[256] = "";
   int shown = 0;
-  if (!locked && native_foreground()) {
+  if (!locked && !preloading_active() && native_foreground(fg, sizeof fg)) {
     bar_show();
     shown = 1;
     wl_display_roundtrip(display);
     audit("STATUSBAR_READY width=%d height=%d scale=%d", width, height, scale);
   } else {
-    audit("STATUSBAR_START_HIDDEN locked=%d home=%d", locked, !locked && !shown);
+    audit("STATUSBAR_START_HIDDEN locked=%d preload=%d", locked, preloading_active());
+    publish_state(0, locked ? "locked" : preloading_active() ? "preload" : "home",
+                  fg, locked, NULL);
   }
   time_t last = 0;
   for (;;) {
@@ -401,18 +475,36 @@ int main(void) {
     }
     wl_display_flush(display);
     struct pollfd pf = { .fd = wl_display_get_fd(display), .events = POLLIN };
-    int pr = poll(&pf, 1, 500);
+    int pr = poll(&pf, 1, 250);
     if (pr < 0) { wl_display_cancel_read(display); if (errno == EINTR) continue; return 0; }
     if (pr == 0) {
       wl_display_cancel_read(display);
       int now_locked = session_locked();
       int want = 0;
-      /* Only spend a list query while unlocked. */
-      if (!now_locked) want = native_foreground();
+      char fg[256] = "";
+      if (shown && !layer_surface) shown = 0;   /* recreate after LAYER_CLOSED */
+      if (!now_locked && !preloading_active()) {
+        /* The persistent watcher is the normal source; the bounded popen
+           fallback is rate-limited to once every 2 s. */
+        static time_t fg_checked = 0;
+        static int fg_cached = 0;
+        static char fg_id[256] = "";
+        time_t now = time(NULL);
+        if (now - fg_checked >= 2) {
+          fg_cached = native_foreground(fg_id, sizeof fg_id);
+          fg_checked = now;
+        }
+        want = fg_cached;
+        snprintf(fg, sizeof fg, "%s", fg_id);
+      }
       if (now_locked != locked || want != shown) {
         locked = now_locked;
         shown = want;
         if (shown) bar_show(); else bar_hide();
+        audit("STATUSBAR_TRANSITION locked=%d shown=%d fg=%s", locked, shown, fg);
+        publish_state(shown, shown ? "native_foreground" :
+                      locked ? "locked" : preloading_active() ? "preload" : "home",
+                      fg, locked, NULL);
       }
       time_t now = time(NULL);
       if (shown && now - last >= 10) { last = now; render(); }

@@ -1,0 +1,112 @@
+From: Nuxel PWNAGE-61000 <nuxel@localhost>
+Subject: [PATCH] media: exynos-mfc: fail closed and promptly on missing firmware
+
+The vendor Exynos MFC driver loads mfc_fw.bin from mfc_open().  It uses
+request_firmware(), and this kernel has CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y.
+When /lib/firmware/mfc_fw.bin is absent, request_firmware() therefore falls
+back to the userspace helper and can block for the 60 s firmware timeout while
+mfc_open() holds dev->mfc_mutex.  GStreamer's plugin scanner and WirePlumber's
+video-capture monitor have historically entered uninterruptible D state on
+this path.
+
+The MFC node is opened from userspace after the rootfs is mounted, so the
+direct filesystem loader is the correct one.  request_firmware_direct() fails
+with -ENOENT immediately instead of waiting for udev.  Also reject empty or
+invalid blobs, propagate the real error and stop logging a bogus "invalid
+path" message.
+
+The driver only has the Exynos 9820 MFC integration (DT ip_ver 0x1300) in this
+tree.  Reject an unknown declared IP revision during probe, before firmware
+allocation or hardware register access.
+
+Signed-off-by: Nuxel PWNAGE-61000 <nuxel@localhost>
+---
+diff --git a/drivers/media/platform/exynos/mfc/mfc.c b/drivers/media/platform/exynos/mfc/mfc.c
+index 70d1d017ca04..08b796c6fbf0 100644
+--- a/drivers/media/platform/exynos/mfc/mfc.c
++++ b/drivers/media/platform/exynos/mfc/mfc.c
+@@ -1392,6 +1392,19 @@ static int mfc_probe(struct platform_device *pdev)
+ 
+ 	__mfc_parse_dt(dev->device->of_node, dev);
+ 
++	/*
++	 * PWNAGE-61000: this tree only has the Exynos 9820 MFC integration
++	 * (DT ip_ver 0x1300).  Refuse an unknown declared revision before
++	 * allocating firmware or touching hardware registers.
++	 */
++	if (dev->pdata->ip_ver != MFC_SUPPORTED_IP_VER) {
++		dev_err(&pdev->dev,
++			"unsupported MFC IP revision 0x%x (expected 0x%x)\n",
++			dev->pdata->ip_ver, MFC_SUPPORTED_IP_VER);
++		ret = -ENODEV;
++		goto err_pm;
++	}
++
+ 	atomic_set(&dev->trace_ref, 0);
+ 	atomic_set(&dev->trace_ref_longterm, 0);
+ 	atomic_set(&dev->trace_ref_log, 0);
+diff --git a/drivers/media/platform/exynos/mfc/mfc_buf.c b/drivers/media/platform/exynos/mfc/mfc_buf.c
+index d4d2e47fc8e0..64d00816d2cc 100644
+--- a/drivers/media/platform/exynos/mfc/mfc_buf.c
++++ b/drivers/media/platform/exynos/mfc/mfc_buf.c
+@@ -567,7 +567,7 @@ int mfc_alloc_firmware(struct mfc_dev *dev)
+ /* Load firmware to MFC */
+ int mfc_load_firmware(struct mfc_dev *dev)
+ {
+-	struct firmware *fw_blob;
++	const struct firmware *fw_blob = NULL;
+ 	size_t firmware_size;
+ 	int err;
+ 
+@@ -577,16 +577,32 @@ int mfc_load_firmware(struct mfc_dev *dev)
+ 	 * into kernel. */
+ 	mfc_debug_enter();
+ 	mfc_debug(4, "[F/W] Requesting F/W\n");
+-	err = request_firmware((const struct firmware **)&fw_blob,
+-					MFC_FW_NAME, dev->v4l2_dev.dev);
+ 
+-	if (err != 0) {
+-		mfc_err_dev("[F/W] Couldn't find the F/W invalid path\n");
++	/*
++	 * Use the direct loader.  request_firmware() falls back to the
++	 * userspace helper when the file is absent; with
++	 * CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y that waits for the 60 s
++	 * firmware timeout while mfc_open() holds dev->mfc_mutex.  The MFC
++	 * blob is opened from userspace after the rootfs is mounted, so the
++	 * direct filesystem path is the correct one.  A missing blob must
++	 * fail promptly and cleanly.
++	 */
++	err = request_firmware_direct(&fw_blob, MFC_FW_NAME,
++				      dev->v4l2_dev.dev);
++	if (err) {
++		mfc_err_dev("[F/W] %s unavailable (%d); hardware decode blocked\n",
++			    MFC_FW_NAME, err);
++		return err;
++	}
++
++	if (!fw_blob || !fw_blob->data || fw_blob->size == 0) {
++		mfc_err_dev("[F/W] %s is empty or invalid\n", MFC_FW_NAME);
+ 		release_firmware(fw_blob);
+ 		return -EINVAL;
+ 	}
+ 
+-	mfc_debug(2, "[MEMINFO][F/W] loaded F/W Size: %zu\n", fw_blob->size);
++	mfc_debug(2, "[MEMINFO][F/W] loaded %s Size: %zu\n",
++		  MFC_FW_NAME, fw_blob->size);
+ 
+ 	if (fw_blob->size > firmware_size) {
+ 		mfc_err_dev("[MEMINFO][F/W] MFC firmware(%zu) is too big to be loaded in memory(%zu)\n",
+diff --git a/drivers/media/platform/exynos/mfc/mfc_common.h b/drivers/media/platform/exynos/mfc/mfc_common.h
+index 5b847ef74f0a..a53b70043fc2 100644
+--- a/drivers/media/platform/exynos/mfc/mfc_common.h
++++ b/drivers/media/platform/exynos/mfc/mfc_common.h
+@@ -30,6 +30,9 @@
+ 
+ #define MFC_DRIVER_INFO		180315
+ 
++/* Exynos 9820 (beyond2lte) MFC IP revision declared by DT. */
++#define MFC_SUPPORTED_IP_VER	0x1300
++
+ #define MFC_MAX_REF_BUFS	2
+ #define MFC_FRAME_PLANES	2
+ #define MFC_INFO_INIT_FD	-1

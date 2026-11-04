@@ -1,0 +1,224 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+# /etc/systemd/system/nuxel-wayland.service
+[Unit]
+Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+After=nuxel-touch-arm.service seatd.service nuxel-web.service
+Wants=nuxel-touch-arm.service seatd.service nuxel-web.service
+Before=nuxel-wl-fb.service nuxel-fallback.service
+
+[Service]
+Type=simple
+# phoc with wlroots 0.19.  The wrapper tries Mali-G76 GLES2 through Mesa
+# panfrost on ARM kbase first, and falls back to pixman if that path fails.
+Environment=WLR_BACKENDS=headless,libinput
+# The handset has NO VT (/dev/tty0, /sys/class/vtconsole, /proc/consoles all
+# absent), so a VT-bound seat can never activate; libseat's noop backend
+# satisfies wlroots' session requirement and device access is granted by the
+# preloaded libinput path shim.  See tools/s10plus/a31/nuxel-libinput-path.c.
+Environment=LIBSEAT_BACKEND=noop
+# If the panel node is absent (charger mode: sec_ts never binds) wlroots would
+# fail the whole backend and phoc would restart-loop.  The shim records what it
+# found in /run/nuxel-libinput-path.state, so "zero devices" stays visible.
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+# The udev daemon is masked on this image (it cannot register workers on 4.14),
+# so libinput's udev backend discovers zero devices; the shim redirects ONLY
+# libinput's discovery step to its path backend and adds the real
+# /dev/input/eventN node that carries INPUT_PROP_DIRECT.  Real evdev, real
+# libinput parsing, real wl_touch - no synthesised events.
+Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
+Environment=WLR_HEADLESS_OUTPUTS=1
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
+ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
+ExecStart=/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+
+# /etc/systemd/system/nuxel-wayland.service.d/30-fast-stop.conf
+# PWNAGE-37000 BUTTERSCOTCH boot-latency fix.
+#
+# The ABOX firmware-reload service stops nuxel-wayland.service before cycling
+# the audio DSP, then restarts it. On this 4.14 vendor kernel the default
+# 90 s stop timeout let phoc/WebKit/PipeWire sit in final-sigterm for ~46 s
+# before systemd aborted the stop. That single stop is the largest measured
+# component of the S10+ cold-boot "spinning penguin" delay.
+#
+# The session is restarted immediately afterwards by the ABOX wrapper, so a
+# short, deterministic stop is the correct behaviour: TERM the whole cgroup,
+# then SIGKILL what remains after 8 s. Normal shutdown also benefits because
+# the compositor no longer hangs the reboot for up to 90 s.
+[Service]
+TimeoutStopSec=8
+SendSIGKILL=yes
+KillMode=control-group
+
+# /etc/systemd/system/nuxel-wayland.service.d/40-bounded-stop.conf
+# PWNAGE-51000: the compositor is the only unit that consumed its full stop
+# timeout during a normal reboot.  The unit's MAINPID is the wrapper shell;
+# phoc is its child, so signal both the main process and its children, then
+# use a short unit-specific SIGKILL fallback.  Global timeouts are untouched.
+[Service]
+TimeoutStopSec=3
+ExecStop=/bin/sh -c 'kill -TERM "$MAINPID" 2>/dev/null || true; pkill -TERM -P "$MAINPID" 2>/dev/null || true; n=0; while kill -0 "$MAINPID" 2>/dev/null && [ "$n" -lt 12 ]; do n=$((n+1)); sleep 0.1; done; pkill -KILL -P "$MAINPID" 2>/dev/null || true; kill -KILL "$MAINPID" 2>/dev/null || true'
+KillMode=control-group
+SendSIGKILL=yes
+
+# /etc/systemd/system/nuxel-wayland.service.d/50-kbase-egl.conf
+# PWNAGE-53000: load the kbase Mesa EGL build by absolute path.
+# Without this, glvnd follows /usr/lib64/libEGL_mesa.so.0 and a Mesa package
+# update can silently point it back at the stock (llvmpipe-capable) library.
+[Service]
+Environment=__EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json
+Environment=LIBGL_DRIVERS_PATH=/usr/lib64/dri
+
+# /etc/systemd/system/nuxel-wl-fb.service
+[Unit]
+Description=Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=120
+StartLimitBurst=6
+After=nuxel-wayland.service
+Wants=nuxel-wayland.service
+Before=nuxel-fallback.service nuxel-button-manager.service
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/usr/lib/nuxel/nuxel-wait-wayland /run/nuxel-wayland 30
+ExecStart=/usr/lib/nuxel/nuxel-wl-fb
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/nuxel-wl-fb.service.d/10-display-priority.conf
+# PWNAGE-43000 DISPLAY: the framebuffer bridge is the single scanout owner.
+# Giving it a small CPU advantage keeps touch feedback and the video->lock
+# handoff frame-paced even while the ABOX reload is running.
+[Service]
+Nice=-5
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+
+# /etc/systemd/system/nuxel-wl-fb.service.d/15-idle-fps.conf
+# PWNAGE-54000: cap the software scanout at 20 fps.  The panel is refreshed
+# from a full wlr-screencopy every frame; 30 fps kept two CPU cores busy even
+# when the UI was static and contributed to the 20-30% idle load.  20 fps
+# preserves motion smoothness while cutting that work by one fifth.
+[Service]
+Environment=NUXEL_TARGET_FPS=20
+
+# /etc/systemd/system/nuxel-wl-fb.service.d/20-fast-stop.conf
+[Service]
+TimeoutStopSec=5
+KillMode=control-group
+SendSIGKILL=yes
+===
+● nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+     Loaded: loaded (/etc/systemd/system/nuxel-wayland.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-wayland.service.d
+             └─30-fast-stop.conf, 40-bounded-stop.conf, 50-kbase-egl.conf
+     Active: active (running) since Mon 2026-11-02 23:33:39 CET; 5min ago
+ Invocation: 09616e09ff454a8c89e91204cfae2103
+       Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+   Main PID: 5845 (nuxel-wayland-g)
+      Tasks: 87 (limit: 8164)
+     Memory: 406.4M
+     CGroup: /system.slice/nuxel-wayland.service
+             ├─5845 /bin/sh /usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+             ├─5850 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+             ├─5961 /usr/lib/nuxel/nuxel-pwa-host
+             ├─6047 /usr/lib/nuxel/nuxel-navdock
+             ├─6048 /usr/lib/nuxel/nuxel-osd
+             ├─6049 dbus-run-session -- /usr/bin/phosh-osk-stevia
+             ├─6051 dbus-daemon --nofork --print-address 4 --session
+             ├─6053 dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+             ├─6054 /usr/bin/phosh-osk-stevia
+             ├─6090 /usr/libexec/at-spi-bus-launcher
+             ├─6096 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+             ├─6098 /usr/libexec/at-spi2-registryd --use-gnome-session
+             ├─6110 /usr/libexec/at-spi-bus-launcher
+             ├─6117 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+             ├─6182 /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 18
+             ├─6196 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 21
+             └─6205 /usr/libexec/at-spi2-registryd --use-gnome-session
+
+Nov 02 23:34:27 fedora nuxel-wayland-gpu-wrapper.sh[9616]: GLOBAL name=50 iface=wl_output ver=4
+Nov 02 23:34:27 fedora nuxel-wayland-gpu-wrapper.sh[9616]: interface 'wl_seat' has no event 1
+Nov 02 23:34:27 fedora nuxel-wayland-gpu-wrapper.sh[9616]: WINDOWS=0
+Nov 02 23:34:27 fedora nuxel-wayland-gpu-wrapper.sh[9616]: HOME_ACTION minimized=0 raised=0
+Nov 02 23:38:51 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+     Loaded: loaded (/etc/systemd/system/nuxel-wl-fb.service; enabled; preset: disabled)
+    Drop-In: /etc/systemd/system/nuxel-wl-fb.service.d
+             └─10-display-priority.conf
+             /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-wl-fb.service.d
+             └─15-idle-fps.conf, 20-fast-stop.conf
+     Active: active (running) since Mon 2026-11-02 23:33:41 CET; 5min ago
+ Invocation: 45c8d3a1f1a74074adb550ed2a423946
+       Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+   Main PID: 6080 (nuxel-wl-fb)
+      Tasks: 1 (limit: 8164)
+     Memory: 5.8M
+     CGroup: /system.slice/nuxel-wl-fb.service
+             └─6080 /usr/lib/nuxel/nuxel-wl-fb
+
+Nov 02 23:33:40 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Nov 02 23:33:41 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Nov 02 23:38:51 fedora systemd[1]: nuxel-wl-fb.service: Failed to get CPU usage: No such file or directory
+===
+1793659131 FRAMES_OK total=1672 fps_1s=5 failures=0 blits=209 present_skipped=1462 blit_avg_ms=27 damage=122-160 damage_blits=205 damage_avg_ms=27 idle_ms=3009 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=210 decon_pan_failed=0

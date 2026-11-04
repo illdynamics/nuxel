@@ -1,0 +1,14 @@
+pid=21846 gallium_maps=4
+NUXEL_GRAPHICS_PROFILE_REQUESTED=gpu-rendered-shm-presented
+NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+NUXEL_GPU=1
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+NUXEL_KBASE_WSI=1
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+WEBKIT_FORCE_COMPOSITING_MODE=1
+WEBKIT_DISABLE_COMPOSITING_MODE=0
+MESA_SHADER_CACHE_DISABLE=1
+MESA_KBASE_NODE=/dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:55 18 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:55 20 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:55 22 -> /dev/mali0

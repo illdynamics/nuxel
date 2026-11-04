@@ -1,0 +1,6 @@
+PASS red   src=0x00ff0000 got=0xff0000ff want=0xff0000ff
+PASS green src=0x0000ff00 got=0xff00ff00 want=0xff00ff00
+PASS blue  src=0x000000ff got=0xffff0000 want=0xffff0000
+PASS white src=0x00ffffff got=0xffffffff want=0xffffffff
+PASS black src=0x00000000 got=0xff000000 want=0xff000000
+PASS alpha forced opaque on every channel pattern

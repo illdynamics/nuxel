@@ -1,0 +1,22 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+RC=0
+schema        : nuxel.mfc.status/1
+state         : UNIDENTIFIED_VIDEO_NODE
+reason        : no node matches the exact MFC decoder allow-list
+source_commit : f7194c1d15eded1c2a1a4dc63825b26103435cc0
+kernel        : 4.14.253-gf7194c1d15ed-dirty
+device        : beyond2lte
+node          : <unresolved>
+firmware      : MISSING
+receipt       : missing
+safe open     : NO
+capabilities  : <none verified>
+STATUS_RC=0

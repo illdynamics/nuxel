@@ -17,8 +17,11 @@
 (function (global) {
   'use strict';
 
-  var VERSION = 'p46000';
-  var SAFETY_MS = 5000;
+  var VERSION = 'p62000';
+  /* Locked, visible screen only; the backend cache is also 1 s.  Reads are
+     de-duplicated by _inFlight/_pending, so this is one bounded sysfs/proc
+     sample per second, not a busy poll. */
+  var SAFETY_MS = 1000;
   var API_PATH = 'http://127.0.0.1:8080/api/v1/system/indicators';
   var ICONS = {
     charging: '/assets/nuxel-charging.png?v=a77.1',
@@ -39,6 +42,13 @@
     var usb = data.usb_data || {};
     var live = data.live_console || {};
     var transports = data.console_transports || {};
+    var wlanTransport = transports.wlan || {};
+    /* A listening sshd is not a console connection.  The WLAN transport only
+       lights while an ESTABLISHED SSH session exists; a bare Wi-Fi link or an
+       idle listener must leave both the WLAN and generic live icon dark. */
+    var wlanSessions = Number(wlanTransport.sessions);
+    if (!isFinite(wlanSessions)) wlanSessions = 0;
+    var wlanAvailable = wlanTransport.available === true;
     var transfer = data.file_transfer || {};
     var mode = data.connection_mode || {};
     var bt = data.bluetooth || {};
@@ -49,10 +59,14 @@
       externalPower: Boolean(charging.external_power),
       charging: Boolean(charging.charging),
       pcConnected: Boolean(usb.pc_connected),
-      liveConsole: Boolean(live.active),
+      /* Base penguin: service-ready/background availability. */
+      liveConsole: Boolean(live.active) || Boolean(live.service_armed),
       serialConsole: Boolean((transports.serial || {}).active),
       usbConsole: Boolean((transports.usb || {}).active),
-      wlanConsole: Boolean((transports.wlan || {}).active),
+      /* Availability is NOT activity.  Only a proven interactive session may
+         light the WLAN type icon. */
+      wlanAvailable: wlanAvailable,
+      wlanConsole: wlanTransport.active === true && wlanSessions > 0,
       fileTransfer: Boolean(transfer.active),
       bluetooth: btPowered,
       bluetoothDiscovering: Boolean(bt.discovering),
@@ -79,6 +93,7 @@
            a.serialConsole === b.serialConsole &&
            a.usbConsole === b.usbConsole &&
            a.wlanConsole === b.wlanConsole &&
+           a.wlanAvailable === b.wlanAvailable &&
            a.fileTransfer === b.fileTransfer &&
            a.bluetooth === b.bluetooth &&
            a.bluetoothDiscovering === b.bluetoothDiscovering &&
@@ -128,7 +143,7 @@
     this.state = {
       externalPower: false, charging: false, pcConnected: false, liveConsole: false,
       serialConsole: false, usbConsole: false, wlanConsole: false,
-      fileTransfer: false, bluetooth: null, bluetoothDiscovering: false,
+      wlanAvailable: false, fileTransfer: false, bluetooth: null, bluetoothDiscovering: false,
       modeSelected: 'charging', modeBusy: false,
       sources: { power: '', usb: '', live: '', serial: '', usbConsole: '', wlan: '',
                  transfer: '', bluetooth: '' }
@@ -248,6 +263,7 @@
             serialConsole: false,
             usbConsole: false,
             wlanConsole: false,
+            wlanAvailable: false,
             fileTransfer: false,
             bluetooth: null,
             bluetoothDiscovering: false,
@@ -345,14 +361,14 @@
     this._apply(this.els.charging, 'active', this.state.externalPower);
     this._apply(this.els.charging, 'charging', this.state.charging);
     this._apply(this.els.usb, 'active', this.state.pcConnected);
-    // The middle status light is the live-console meaning.  A WLAN-only
-    // nuxel-console session is still a live console and must light it too.
-    this._apply(this.els.live, 'active', this.state.liveConsole || this.state.wlanConsole);
+    // The base penguin means "Live Console service is running/ready".  The
+    // transport-specific penguins below are the only place Wi-Fi/USB-serial
+    // activity is shown.  Availability never lights the base on its own.
+    this._apply(this.els.live, 'active', this.state.liveConsole);
     if (this.els.live) {
-      this.els.live.dataset.liveReason = this.state.liveConsole ? 'console' :
-        (this.state.wlanConsole ? 'wlan-console' : '');
-      this.els.live.setAttribute('aria-label', this.state.liveConsole ? 'Live console active' :
-        (this.state.wlanConsole ? 'Live console active over WLAN' : 'Live console inactive'));
+      this.els.live.dataset.liveReason = this.state.liveConsole ? 'service-ready' : '';
+      this.els.live.setAttribute('aria-label', this.state.liveConsole ?
+        'Live Console service ready' : 'Live Console service inactive');
     }
     this._apply(this.transportEls.serial, 'active', this.state.serialConsole);
     this._apply(this.transportEls.usb, 'active', this.state.usbConsole);
@@ -381,6 +397,7 @@
         this.transportContainer.dataset.serialSource = this.state.sources.serial;
         this.transportContainer.dataset.usbSource = this.state.sources.usbConsole;
         this.transportContainer.dataset.wlanSource = this.state.sources.wlan;
+        this.transportContainer.dataset.wlanAvailable = this.state.wlanAvailable ? 'true' : 'false';
         this.transportContainer.dataset.transferSource = this.state.sources.transfer;
         this.transportContainer.dataset.bluetoothSource = this.state.sources.bluetooth;
       }

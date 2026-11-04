@@ -3,34 +3,28 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.7.5-beta** — _Build the bunker first. Add the rave lights later._
+**v0.7.6-beta** — _The penguin has a shotgun._
 
-> **v0.7.5-beta (2026-11-01).** **Rotation works and the GPU is really in the
-> render path.** The compositor now runs on the vendor **Mali-G76** through Mesa
-> panfrost (not llvmpipe), transform and scale are applied as one transaction,
-> and touch follows the display because the libinput calibration matrix is
-> applied in the same change. **GPU acceleration is partial and is described as
-> partial:** Phoc and WebKit render on the GPU, WebKit presents through SHM, and
-> true zero-copy DMA-BUF presentation is `BLOCKED_KERNEL_ABI` on this board (no
-> DRM/GBM node, `CONFIG_DRM_VGEM` unset, no `/dev/dri`). This release also ships
-> the PWNAGE-47000..54000 work: GUI tri-link remote desktop, working
-> Flatpak/bubblewrap through kernel user namespaces, microphone capture, NFC
-> kernel bring-up (userspace reader still blocked), and Contacts/Messages/Dialer
-> compiled into the image. The Release workflow now builds the **same kernel
-> capability set the phone runs** and fails closed if it drifts. The release
-> publishes the **exact installed BOOT image** re-captured from the handset
-> (`2cbc5085…`). See
-> [`docs/features/README.md`](docs/features/README.md) and
+> **v0.7.6-beta (2026-11-04).** **Nuxel Doom is here, and the phone finally
+> behaves like a handheld.** The new **Nuxel Doom** PWA ships an original
+> 320×180 raycasting engine with three sectors, a left-thumb movement stick,
+> right-side aim, multitouch fire/use/weapon/run, doors, pickups, enemies,
+> audio, optional haptics, pause/resume and offline saves. It is installable
+> and removable from **NuXtore** like any other local package. The launcher now
+> hides the triple buttons in every foreground app and reveals them with a
+> bottom-edge swipe; real fullscreen apps such as Doom also lose the top bar,
+> which pulls down on demand. The launcher and lockscreen keep their chrome.
+> No keyboard is opened by any Doom screen. See
+> [`docs/games/doom.md`](docs/games/doom.md) and
+> [`docs/releases/v0.7.6-beta.md`](docs/releases/v0.7.6-beta.md).
+>
+> **Previously in v0.7.5-beta:** rotation works (owner-confirmed, transform and
+> scale as one transaction, touch calibration follows it), GPU acceleration is
+> **partial** (Phoc and WebKit render on the Mali-G76, WebKit presents through
+> SHM), and Flatpak/bubblewrap works through kernel user namespaces. The
+> release workflow builds the same kernel capability set the phone runs and
+> publishes the exact installed BOOT image. See
 > [`docs/releases/v0.7.5-beta.md`](docs/releases/v0.7.5-beta.md).
-
-> **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
-> 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
-> running under headless Phoc and presented through the DECON framebuffer
-> screencopy bridge (GPU render, CPU scanout copy — not DRM/KMS zero-copy).
-> Real finger taps open apps, rotation and touch-follow work, Bluetooth works,
-> the audio route and microphone capture are live. Camera, satellite GNSS, the
-> cellular modem and full Phosh acceptance remain open for `v0.7.5-beta`; see
-> [`docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md`](docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md).
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
 scratch on a pure Linux substrate. **Zero Android dependencies.** Immutable OS.
@@ -174,6 +168,30 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
+## What's new in v0.7.6-beta
+
+- **Nuxel Doom.** A complete, offline-first PWA shooter built for thumbs: a
+  320×180 raycasting renderer, three original sectors, enemies, doors, pickups,
+  three weapons, a separate movement stick and aim surface, simultaneous
+  fire/use/weapon/run, configurable sensitivity, left-handed layout, sound,
+  optional host haptics, pause/resume and local progress. No DOOM WAD or
+  copyrighted sprite is bundled; the optional Classic Engine button can launch
+  an installed Crispy Doom.
+- **Install and remove from NuXtore.** `org.nuxel.Doom` is a signed local
+  catalogue package. NuxTore registers it with the canonical app registry on
+  install, Nuxel Home shows its icon without a reboot, and Remove unregisters
+  the launcher entry while preserving user data.
+- **Immersive app chrome.** Foreground PWA apps hide the triple buttons by
+  default. A bottom-edge swipe reveals Back/Home/Recents for a few seconds so
+  any app can be minimised or killed. Real fullscreen apps additionally hide
+  the top bar; a top-edge pull reveals it. The launcher and lockscreen
+  deliberately keep their normal chrome.
+- **No Doom keyboard.** The Doom shell contains no text inputs and explicitly
+  dismisses the system OSK on start, focus and resume.
+- **Resolution of app lifecycle state.** Fullscreen mode, landscape orientation
+  and input state are released on pause, focus loss, page hide and app exit,
+  so the phone cannot be left in Doom's landscape mode with stuck fire input.
+
 ## What's new in v0.7.5-beta
 
 - **Rotation works, and it holds.** The live Phoc session exposes
@@ -259,7 +277,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
   rootfs builder now installs the audio warm-up, GeoClue agent, desktop entries
   and Python D-Bus dependencies a fresh image needs.
 - **Release tooling.** Launcher cache `v66-v074-release`; whole-repo lockstep
-  at `v0.7.5-beta`; registry revision 11 with the remote-desktop, Clipper and native phone apps.
+  at `v0.7.6-beta`; registry revision 11 with the remote-desktop, Clipper and native phone apps.
 
 ## What's new in v0.2.1
 
@@ -711,7 +729,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.7.5-beta
+## Honest Status — v0.7.6-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**
@@ -785,7 +803,7 @@ source rebuild and is explicitly labelled as such: it is not byte-identical to
 the installed image. The kbase Mesa/wlroots bytes running on the phone are
 shipped as the hash-pinned `release/s10plus/gpu/` input. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
-and [`docs/releases/v0.7.5-beta.md`](docs/releases/v0.7.5-beta.md).
+and [`docs/releases/v0.7.6-beta.md`](docs/releases/v0.7.6-beta.md).
 
 | Area | Score | Notes |
 |---|---|---|
@@ -997,7 +1015,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.5-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.6-beta + readiness |
 | [docs/features/README.md](docs/features/README.md) | Canonical feature-status matrix with evidence anchors |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |

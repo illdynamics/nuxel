@@ -1,0 +1,124 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== typec ==
+/sys/class/typec
+/sys/class/typec/port0
+/sys/class/typec/port0/data_role=host [device]
+/sys/class/typec/port0/power_role=source [sink]
+/sys/class/typec/port0/port_type=[dual] source sink
+== drm ==
+total 0
+-r--r--r-- 1 root root 4096 Nov  2 23:39 version
+ls: cannot access '/dev/dri': No such file or directory
+== dp/hdmi ==
+/sys/kernel/tracing/events/udp
+/sys/kernel/tracing/events/xdp
+/sys/kernel/slab/UDP
+/sys/kernel/slab/UDP-Lite
+/sys/kernel/slab/UDPLITEv6
+/sys/kernel/slab/UDPv6
+/sys/kernel/debug/pm_genpd/pd-dpu
+/sys/kernel/debug/exynos-pd/dbgdev-pd-dpu
+/sys/kernel/debug/vclk/VCLK_IP_U_DMIC_CLK_MUX
+/sys/kernel/debug/vclk/VCLK_IP_LHM_AXI_D_IDPSRAM3
+/sys/kernel/debug/vclk/VCLK_IP_LHM_AXI_D_IDPSRAM1
+/sys/kernel/debug/vclk/VCLK_IP_LHS_AXI_D_IDPSRAM3
+/sys/kernel/debug/vclk/VCLK_IP_LHS_AXI_D_IDPSRAM1
+/sys/kernel/debug/vclk/VCLK_IP_AXI2APB_G2DP1
+/sys/kernel/debug/vclk/VCLK_IP_AXI2APB_G2DP0
+/sys/kernel/debug/vclk/VCLK_IP_DP_LINK
+/sys/kernel/debug/vclk/VCLK_IP_D_TZPC_DPU
+/sys/kernel/debug/vclk/VCLK_IP_LHS_AXI_D0_DPU
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_DPU_DMA_PGEN
+/sys/kernel/debug/vclk/VCLK_IP_DPU
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_SYSMMU_DPUD2_S
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_SYSMMU_DPUD2
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_SYSMMU_DPUD1_S
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_SYSMMU_DPUD1
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_SYSMMU_DPUD0_S
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_SYSMMU_DPUD0
+/sys/kernel/debug/vclk/VCLK_IP_PPMU_DPUD2
+/sys/kernel/debug/vclk/VCLK_IP_PPMU_DPUD1
+/sys/kernel/debug/vclk/VCLK_IP_PPMU_DPUD0
+/sys/kernel/debug/vclk/VCLK_IP_SYSMMU_DPUD1
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_DPU_WB_MUX
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_DPU_DMA
+/sys/kernel/debug/vclk/VCLK_IP_SYSMMU_DPUD2
+/sys/kernel/debug/vclk/VCLK_IP_BTM_DPUD2
+/sys/kernel/debug/vclk/VCLK_IP_LHS_AXI_D2_DPU
+/sys/kernel/debug/vclk/VCLK_IP_AD_APB_DPP
+/sys/kernel/debug/vclk/VCLK_IP_XIU_P_DPU
+/sys/kernel/debug/vclk/VCLK_IP_LHS_AXI_D1_DPU
+/sys/kernel/debug/vclk/VCLK_IP_LHM_AXI_P_DPU
+/sys/kernel/debug/vclk/VCLK_IP_SYSMMU_DPUD0
+== wifi p2p ==
+phy#0
+	Unnamed/non-netdev interface
+		wdev 0x3
+		addr aa:db:03:b2:a1:d2
+		type P2P-device
+		txpower 31.00 dBm
+	Interface wlan1
+		ifindex 18
+		wdev 0x2
+		addr 32:dc:52:cd:41:11
+		type managed
+		txpower 31.00 dBm
+	Interface wlan0
+		ifindex 17
+		wdev 0x1
+		addr 76:a5:9b:f2:e6:03
+		ssid Snoerbreuk
+		type managed
+		txpower 31.00 dBm
+	Supported interface modes:
+		 * IBSS
+		 * managed
+		 * AP
+IN-USE  BSSID              SSID                    MODE   CHAN  RATE        SIGNAL  BARS  SECURITY 
+        10:2B:AA:95:0A:66  Snoerbreuk              Infra  1     270 Mbit/s  84      ****  WPA2     
+        10:2B:AA:95:0A:67  Snoerbreuk_ExtraWiFi2G  Infra  1     270 Mbit/s  84      ****  WPA2     
+*       10:2B:AA:95:0A:6A  Snoerbreuk              Infra  36    540 Mbit/s  70      ***   WPA2     
+        7C:FF:4D:A9:3E:1E  Fam. Linders            Infra  6     195 Mbit/s  39      **    WPA2     
+        7C:FF:4D:C8:8F:71  FRITZ!Box 7560 DL       Infra  1     195 Mbit/s  27      *     WPA2     
+        44:05:3F:92:13:3F  Ziggo5113835            Infra  6     405 Mbit/s  25      *     WPA2     
+        46:05:3F:92:13:38  --                      Infra  6     405 Mbit/s  24      *     WPA2     
+        8C:9A:8F:4F:D1:B9  Ziggo1659159            Infra  6     405 Mbit/s  24      *     WPA2     
+        0A:A0:30:D9:4B:F0  Ziggo5113835            Infra  11    130 Mbit/s  14      *     WPA2     
+== cast tools ==
+ls: cannot access '/usr/lib/nuxel/nuxel-cast-diag.sh': No such file or directory
+ls: cannot access '/usr/lib/nuxel/nuxel-typec-diag.sh': No such file or directory
+-rwxr-xr-x 1 root root 5818 Oct 27 18:26 /usr/local/sbin/nuxel-cast-diag.sh
+-rwxr-xr-x 1 root root 5594 Oct 27 18:26 /usr/local/sbin/nuxel-typec-diag.sh
+== gstreamer guard ==
+-rwxr-xr-x 1 root root 1142 Oct 28 17:36 /usr/lib/nuxel/nuxel-gstreamer-guard.sh
+#!/bin/sh
+# Keep GStreamer away from the broken vendor video devices.
+#
+# The S10+ downstream MFC exposes /dev/video* nodes whose open() blocks in
+# request_firmware()/mfc_open.  GStreamer's plugin scanner and WebKit's media
+# path can enter uninterruptible D state while probing them, freezing the UI
+# (measured during PWNAGE-33000: gst-plugin-scanner in _request_firmware and a
+# WebKitWebProcess in abox_wait_restored).  Camera capture is explicitly out of
+# scope, so disable only the plugins that probe those devices.  Audio,
+# demuxers and software video decoders are untouched.
+set -eu
+for f in libgstvideo4linux2.so libgstv4l2codecs.so libgstkms.so libgstopengl.so; do
+    p="/usr/lib64/gstreamer-1.0/$f"
+    if [ -e "$p" ] && [ ! -e "$p.nuxel-disabled" ]; then
+        mv "$p" "$p.nuxel-disabled"
+        echo "nuxel-gstreamer-guard: disabled $f"
+    fi
+done
+# Drop a scanner registry that may have been built while a probe was wedged.
+for d in /root/.cache/gstreamer-1.0 /home/nuxel/.cache/gstreamer-1.0; do
+    [ -d "$d" ] || continue
+    find "$d" -maxdepth 1 -name 'registry.*' -type f -exec rm -f {} + 2>/dev/null || true
+done

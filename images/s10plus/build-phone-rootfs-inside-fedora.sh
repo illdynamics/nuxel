@@ -1,6 +1,11 @@
 #!/bin/bash
 # Executed inside docker --platform linux/arm64 fedora:43, not on macOS.
 set -Eeuo pipefail
+# PWNAGE-60000: release images require the pinned kbase GPU set.  A developer
+# image may opt into a software fallback explicitly with NUXEL_REQUIRE_KBASE=0.
+GPU_REQUIRED="${NUXEL_REQUIRE_KBASE:-0}"
+[ "${NUXEL_RELEASE:-0}" = "1" ] && GPU_REQUIRED=1
+GPU_MANIFEST="${NUXEL_GPU_MANIFEST:-/nuxel/release/s10plus/gpu/gpu-manifest.json}"
 [[ "$(uname -m)" == aarch64 ]] || { echo 'ERROR: expected aarch64 execution' >&2; exit 2; }
 NAME="${NUXEL_IMAGE_NAME:?}"
 MB="${NUXEL_IMAGE_MB:?}"
@@ -94,7 +99,8 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     shadow-utils ca-certificates curl \
     wayvnc wayland-utils xrdp xorgxrdp xorg-x11-server-Xorg xorg-x11-server-Xwayland wtype \
     openbox xterm firefox android-tools openssl \
-    gnome-software PackageKit PackageKit-command-not-found lxpolkit xfce-polkit appstream
+    gnome-software PackageKit PackageKit-command-not-found lxpolkit xfce-polkit appstream \
+    xdg-desktop-portal-gtk xdg-desktop-portal-wlr
 # PWNAGE-47000 BOOT SAFETY: Nuxel runs systemd PID 1 and the initramfs live
 # console from a kernel_t context.  The graphical remote-access packages
 # (xrdp/xorgxrdp/tigervnc-selinux) pull in selinux-policy-targeted as a weak
@@ -234,9 +240,12 @@ if pkg-config --exists egl glesv2 wayland-client wayland-egl; then
       /nuxel/tools/s10plus/a67/nuxel-wayland-egl-probe.c \
       $(pkg-config --cflags --libs egl glesv2 wayland-client wayland-egl) || true
 fi
-gcc $CFLAGS_COMMON -o "$B/nuxel-kbase-egl-probe" \
+if ! gcc $CFLAGS_COMMON -o "$B/nuxel-kbase-egl-probe" \
     /nuxel/tools/s10plus/a67/nuxel-kbase-egl-probe.c \
-    $(pkg-config --cflags --libs egl glesv2) || true
+    $(pkg-config --cflags --libs egl glesv2); then
+  [ "$GPU_REQUIRED" = 1 ] && { echo "ERROR: required kbase EGL probe failed to build" >&2; exit 1; }
+  rm -f "$B/nuxel-kbase-egl-probe"
+fi
 if pkg-config --exists gtk+-3.0 epoxy; then
   gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 epoxy) \
       -o "$B/nuxel-gtk3-gl-probe" /nuxel/tools/s10plus/a67/nuxel-gtk3-gl-probe.c \
@@ -502,6 +511,23 @@ install -m 0644 /nuxel/configs/nuxel/notifications/dnd.json "$STAGE/etc/nuxel/no
 install -m 0644 /nuxel/configs/nuxel/notifications/README.md "$STAGE/usr/share/doc/nuxel/notifications-policy.md" 2>/dev/null || true
 install -m 0644 /nuxel/configs/nuxel/nfc/nfc.json "$STAGE/etc/nuxel/nfc/nfc.json"
 install -m 0644 /nuxel/configs/nuxel/nfc/README.md "$STAGE/usr/share/doc/nuxel/nfc.md" 2>/dev/null || true
+
+# PWNAGE-65000: one root-owned NFC service owns /dev/sec-nfc.  It stays
+# default-OFF and does not open the controller until an explicit enable/scan.
+install -d "$STAGE/usr/lib/nuxel/nuxel-nfc/nuxel_nfc" "$STAGE/usr/libexec/nuxel" \
+           "$STAGE/etc/udev/rules.d"
+install -m 0644 /nuxel/services/nuxel-nfc/nuxel_nfc/*.py \
+    "$STAGE/usr/lib/nuxel/nuxel-nfc/nuxel_nfc/"
+install -m 0755 /nuxel/services/nuxel-nfc/nuxel-nfc "$STAGE/usr/libexec/nuxel/nuxel-nfc"
+ln -sfn /usr/libexec/nuxel/nuxel-nfc "$STAGE/usr/bin/nuxel-nfc"
+install -m 0644 /nuxel/services/nuxel-nfc/systemd/nuxel-nfcd.service \
+    "$STAGE/etc/systemd/system/nuxel-nfcd.service"
+install -m 0644 /nuxel/services/nuxel-nfc/90-nuxel-nfc.rules \
+    "$STAGE/etc/udev/rules.d/90-nuxel-nfc.rules"
+ln -sf ../nuxel-nfcd.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-nfcd.service"
+test -f "$STAGE/usr/lib/nuxel/nuxel-nfc/nuxel_nfc/daemon.py" || {
+  echo 'ERROR: nuxel NFC service missing from staged rootfs' >&2; exit 1; }
 # Read-only hardware diagnostics used by Settings > Mobile network / Camera /
 # Sensors / NFC / GNSS and the LED pages.  A page whose tool is absent would
 # either lie or fail with ENOENT; ship the complete allowlisted set.
@@ -525,6 +551,48 @@ done
 install -m 0644 /nuxel/configs/nuxel/sensors/sensors.json "$STAGE/etc/nuxel/sensors/sensors.json"
 install -m 0644 /nuxel/configs/nuxel/gnss/gnss.json "$STAGE/etc/nuxel/gnss/gnss.json"
 install -m 0755 /nuxel/tools/s10plus/a45/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
+install -m 0755 /nuxel/tools/s10plus/a67/nuxel-wayland-gpu-wrapper.sh "$STAGE/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh"
+# The session hook is only useful if the guard binary is actually installed.
+# A clean image previously relied on a previously-provisioned handset copy.
+install -m 0755 /nuxel/tools/s10plus/a29/nuxel-gstreamer-guard.sh     "$STAGE/usr/lib/nuxel/nuxel-gstreamer-guard.sh"
+
+# --- PWNAGE-61000: MFC diagnostics and truthful decoder policy -------------
+# Installed read-only/inventory-first.  Nothing here starts at boot, login,
+# package install or Settings render, and nothing opens /dev/video* by default.
+# The helper is optional: a software-only image remains valid without it.
+install -d "$STAGE/usr/lib/nuxel" "$STAGE/usr/share/nuxel" "$STAGE/etc/nuxel/mfc"
+install -m 0755 /nuxel/tools/s10plus/a61/nuxel-mfc-diag     "$STAGE/usr/lib/nuxel/nuxel-mfc-diag"
+install -m 0755 /nuxel/tools/s10plus/a61/nuxel-mfc-play     "$STAGE/usr/lib/nuxel/nuxel-mfc-play"
+install -m 0755 /nuxel/tools/s10plus/a61/nuxel-mfc-safety-receipt.py     "$STAGE/usr/lib/nuxel/nuxel-mfc-safety-receipt.py"
+install -m 0644 /nuxel/tools/s10plus/a61/mfc-status.schema.json     "$STAGE/usr/share/nuxel/mfc-status.schema.json"
+install -m 0644 /nuxel/tools/s10plus/a61/mfc-safety-receipt.template.json     "$STAGE/etc/nuxel/mfc/safety-receipt.template.json"
+# The decode helper is a real aarch64 binary, never a shell wrapper around an
+# unsafe generic player.  Prefer a prebuilt artifact; otherwise cross-compile
+# from the repository source when a toolchain is available.
+_mfc_decode_bin="${NUXEL_MFC_DECODE_BIN:-/nuxel/build/pwnage61000/nuxel-mfc-decode}"
+if [ ! -x "$_mfc_decode_bin" ] && [ -f /nuxel/tools/s10plus/a61/nuxel-mfc-decode.c ]; then
+  if [ "$(uname -m)" = "aarch64" ] && command -v cc >/dev/null 2>&1; then
+    cc -O2 -Wall -Wextra -Wno-unused-parameter -Wno-format-truncation       -o /tmp/nuxel-mfc-decode /nuxel/tools/s10plus/a61/nuxel-mfc-decode.c       && _mfc_decode_bin=/tmp/nuxel-mfc-decode
+  elif command -v aarch64-linux-gnu-gcc >/dev/null 2>&1; then
+    aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Wno-unused-parameter -Wno-format-truncation       -o /tmp/nuxel-mfc-decode /nuxel/tools/s10plus/a61/nuxel-mfc-decode.c       && _mfc_decode_bin=/tmp/nuxel-mfc-decode
+  fi
+fi
+if [ -x "$_mfc_decode_bin" ]; then
+  install -m 0755 "$_mfc_decode_bin" "$STAGE/usr/lib/nuxel/nuxel-mfc-decode"
+else
+  echo "[nuxel] NOTE: nuxel-mfc-decode not built; software-only image remains valid" >&2
+fi
+# PWNAGE-60000: the PWN36000 boot bootstrap used to overwrite a newer deployed
+# session on every boot.  Ship the guarded bootstrap and the same session in
+# the stage so a cold boot cannot revert the production graphics policy.
+if [ -d "$STAGE/usr/lib/nuxel/stage36000" ]; then
+  install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-apply-pwnage36000.sh \
+      "$STAGE/usr/lib/nuxel/stage36000/apply-pwnage36000.sh"
+  install -Dm0755 /nuxel/tools/s10plus/a45/nuxel-session.sh \
+      "$STAGE/usr/lib/nuxel/stage36000/session/nuxel-session.sh"
+fi
+install -m 0755 /nuxel/tools/s10plus/a67/nuxel-gpu-status             "$STAGE/usr/lib/nuxel/nuxel-gpu-status"
+install -Dm0644 /nuxel/configs/nuxel/portals.conf                      "$STAGE/etc/xdg-desktop-portal/portals.conf"
 install -Dm0755 /nuxel/tools/s10plus/a45/nuxel-graphics-profile \
     "$STAGE/usr/lib/nuxel/nuxel-graphics-profile"
 install -Dm0644 /nuxel/configs/nuxel/graphics/graphics-profile.json \
@@ -540,6 +608,12 @@ for _probe in nuxel-gtk3-gl-probe nuxel-gtk4-gsk-probe nuxel-webkit-probe; do
     install -m 0755 "$B/$_probe" "$STAGE/usr/lib/nuxel/$_probe"
   fi
 done
+if [ -x "$B/nuxel-kbase-egl-probe" ]; then
+  install -m 0755 "$B/nuxel-kbase-egl-probe" "$STAGE/usr/lib/nuxel/nuxel-kbase-egl-probe"
+elif [ "$GPU_REQUIRED" = 1 ]; then
+  echo "ERROR: required kbase EGL probe is missing at $B/nuxel-kbase-egl-probe" >&2
+  exit 1
+fi
 
 # PWNAGE-51000/53000: the S10+ GPU baseline is the vendor kbase Mali-G76 path,
 # NOT a DRM render node.  Install the exact kbase Mesa/wlroots set that runs on
@@ -547,7 +621,16 @@ done
 # (recorded from the physical phone); build/out/s10plus/kbase-gpu is only a
 # developer rebuild and is used when the canonical copy is absent.
 KBASE_GPU=/nuxel/release/s10plus/gpu
-[ -f "$KBASE_GPU/libEGL_mesa.so.0.0.0" ] || KBASE_GPU=/nuxel/build/out/s10plus/kbase-gpu/lib
+if [ "$GPU_REQUIRED" = 1 ]; then
+  # Release builds must use the canonical, manifest-pinned set.  Never silently
+  # fall back to a developer tree or to stock Mesa/llvmpipe.
+  [ -f "$GPU_MANIFEST" ] || { echo "ERROR: GPU manifest missing: $GPU_MANIFEST" >&2; exit 1; }
+  [ -f "$KBASE_GPU/SHA256SUMS" ] || { echo "ERROR: $KBASE_GPU/SHA256SUMS missing" >&2; exit 1; }
+  ( cd "$KBASE_GPU" && sha256sum -c SHA256SUMS --quiet ) || {
+    echo "ERROR: release GPU assets failed SHA-256 verification in $KBASE_GPU" >&2; exit 1; }
+else
+  [ -f "$KBASE_GPU/libEGL_mesa.so.0.0.0" ] || KBASE_GPU=/nuxel/build/out/s10plus/kbase-gpu/lib
+fi
 if [ -f "$KBASE_GPU/libEGL_mesa.so.0.0.0" ] && \
    [ -f "$KBASE_GPU/libgallium_dri.so" ] && \
    [ -f "$KBASE_GPU/libwlroots-0.19.so" ]; then
@@ -562,16 +645,29 @@ if [ -f "$KBASE_GPU/libEGL_mesa.so.0.0.0" ] && \
   done
   [ -f "$_json" ] || { echo "ERROR: 50_mesa.json not found under $KBASE_GPU" >&2; exit 1; }
   install -m 0644 "$_json" "$STAGE/usr/share/glvnd/egl_vendor.d/50_mesa.json"
-  # PWNAGE-53000: pin the kbase EGL build by absolute path so a Mesa package
-  # update cannot silently reset the glvnd symlink to the stock library.
+  # PWNAGE-53000/60000: pin the kbase EGL build by absolute path so a Mesa
+  # package update cannot silently reset the glvnd symlink to the stock library.
   install -d -m 0755 "$STAGE/etc/nuxel"
-  printf '{\n  "file_format_version": "1.0.0",\n  "ICD": { "library_path": "/usr/lib64/libEGL_mesa.so.0.0.0" }\n}\n' \
-      > "$STAGE/etc/nuxel/egl-kbase.json"
+  if [ "$GPU_REQUIRED" = 1 ] && [ -f "$KBASE_GPU/egl-kbase.json" ]; then
+    install -m 0644 "$KBASE_GPU/egl-kbase.json" "$STAGE/etc/nuxel/egl-kbase.json"
+    install -m 0755 "$KBASE_GPU/nuxel-graphics-profile" "$STAGE/usr/lib/nuxel/nuxel-graphics-profile"
+    install -Dm0644 "$KBASE_GPU/graphics-profile.json" "$STAGE/etc/nuxel/graphics/graphics-profile.json"
+    install -m 0755 "$KBASE_GPU/nuxel-gpu-status" "$STAGE/usr/lib/nuxel/nuxel-gpu-status"
+    install -m 0755 "$KBASE_GPU/nuxel-wayland-gpu-wrapper.sh" "$STAGE/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh"
+    install -m 0755 "$KBASE_GPU/nuxel-session.sh" "$STAGE/usr/lib/nuxel/nuxel-session.sh"
+  else
+    printf '{\n  "file_format_version": "1.0.0",\n  "ICD": { "library_path": "/usr/lib64/libEGL_mesa.so.0.0.0" }\n}\n' \
+        > "$STAGE/etc/nuxel/egl-kbase.json"
+  fi
   ln -sfn libEGL_mesa.so.0.0.0 "$STAGE/usr/lib64/libEGL_mesa.so.0"
   ln -sfn ../libgallium_dri.so "$STAGE/usr/lib64/dri/panfrost_dri.so"
   ln -sfn ../libgallium_dri.so "$STAGE/usr/lib64/dri/exynos_dri.so"
+  if [ -f "$GPU_MANIFEST" ]; then
+    install -Dm0644 "$GPU_MANIFEST" "$STAGE/usr/share/nuxel/gpu-manifest.json"
+    install -Dm0644 "$(dirname "$GPU_MANIFEST")/SHA256SUMS" "$STAGE/usr/share/nuxel/gpu-SHA256SUMS"
+  fi
   echo "[nuxel-rootfs] kbase GPU userspace installed (Mali-G76 / Panfrost)"
-elif [ "${NUXEL_REQUIRE_KBASE:-0}" = 1 ]; then
+elif [ "$GPU_REQUIRED" = 1 ]; then
   echo "ERROR: kbase GPU userspace missing at $KBASE_GPU" >&2
   exit 1
 else
@@ -587,12 +683,14 @@ for _desk in org.mozilla.firefox org.videolan.VLC org.signal.Signal com.stremio.
   install -m 0644 "/nuxel/shell/config/$_desk.desktop" "$STAGE/usr/share/applications/$_desk.desktop"
 done
 install -m 0755 "$B/nuxel-navdock"            "$STAGE/usr/lib/nuxel/nuxel-navdock"
-# PWNAGE-50000: the native statusbar duplicated (and hid) the DOM bar.
-# Keep the binary only as a disabled diagnostic artifact; never install it
-# under the executable path a service/autostart could pick up.
-install -m 0755 "$B/nuxel-statusbar"          "$STAGE/usr/lib/nuxel/nuxel-statusbar.disabled"
+# PWNAGE-62000: the native top bar is now part of the real shell.  It hides on
+# Home and while locked, and is shown only over a non-Home native/Flatpak
+# toplevel, so it never duplicates Home's DOM bar.
+install -m 0755 "$B/nuxel-statusbar"          "$STAGE/usr/lib/nuxel/nuxel-statusbar"
 install -m 0755 "$B/nuxel-osd"                "$STAGE/usr/lib/nuxel/nuxel-osd"
 install -m 0755 "$B/nuxel-foreign-toplevel"   "$STAGE/usr/lib/nuxel/nuxel-foreign-toplevel"
+install -m 0755 /nuxel/tools/s10plus/a45/nuxel-shell-chrome.sh "$STAGE/usr/lib/nuxel/nuxel-shell-chrome.sh"
+install -m 0755 /nuxel/tools/s10plus/a45/nuxel-security-lock-rpc "$STAGE/usr/lib/nuxel/nuxel-security-lock-rpc"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-focus-app.sh "$STAGE/usr/lib/nuxel/nuxel-focus-app.sh"
 # PWNAGE-40000 pre-play amplifier/DAPM warm-up.  It starts an inaudible 8 s
 # stream, repairs the CS35L41 driver cache and waits for DAPM SPEAKER=On so the
@@ -633,6 +731,9 @@ for _w in firefox vlc signal stremio; do
   install -m 0755 "/nuxel/services/nuxel-s10/bin/nuxel-flatpak-$_w" "$STAGE/usr/lib/nuxel/nuxel-flatpak-$_w"
 done
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-session.service "$STAGE/etc/systemd/system/nuxel-audio-session.service"
+install -d -m 0755 "$STAGE/etc/systemd/system/nuxel-audio-session.service.d"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-session.service.d/10-stop-bound.conf "$STAGE/etc/systemd/system/nuxel-audio-session.service.d/10-stop-bound.conf"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-stop.sh "$STAGE/usr/lib/nuxel/nuxel-audio-stop.sh"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-abox-firmware-reload.service "$STAGE/etc/systemd/system/nuxel-abox-firmware-reload.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route.service "$STAGE/etc/systemd/system/nuxel-audio-route.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route-retry.service "$STAGE/etc/systemd/system/nuxel-audio-route-retry.service"
@@ -646,6 +747,9 @@ install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-mode-monitor.service
 
 install -d -m 0755 "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wl-fb.service.d/15-idle-fps.conf "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d/15-idle-fps.conf"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wl-fb.service.d/25-reboot-hold.conf "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d/25-reboot-hold.conf"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-wl-fb-hold.sh "$STAGE/usr/lib/nuxel/nuxel-wl-fb-hold.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-wayland-stop.sh "$STAGE/usr/lib/nuxel/nuxel-wayland-stop.sh"
 # PWNAGE-42000: GeoClue2 queues Manager.GetClient until an agent is registered
 # for the calling UID.  The agent must run in its own process (the bridge's
 # single-threaded D-Bus loop deadlocks on the callback), as the same UID.
@@ -735,6 +839,10 @@ install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-wl-fb.service       
 install -d -m 0755 "$STAGE/etc/systemd/system/nuxel-wayland.service.d"
 install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-wayland.service.d/50-kbase-egl.conf \
     "$STAGE/etc/systemd/system/nuxel-wayland.service.d/50-kbase-egl.conf"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wayland.service.d/30-fast-stop.conf \
+    "$STAGE/etc/systemd/system/nuxel-wayland.service.d/30-fast-stop.conf"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wayland.service.d/40-bounded-stop.conf \
+    "$STAGE/etc/systemd/system/nuxel-wayland.service.d/40-bounded-stop.conf"
 install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-fallback.service       "$STAGE/etc/systemd/system/nuxel-fallback.service"
 install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-button-manager.service "$STAGE/etc/systemd/system/nuxel-button-manager.service"
 install -m 0644 /nuxel/services/nuxel-animation/systemd/nuxel-animation.service \
@@ -1077,3 +1185,13 @@ e2fsck -fn "$OUT"
 python3 /nuxel/tools/s10plus/verify-fedora-phone-rootfs.py --ext4 "$OUT"
 sha256sum "$OUT" > "${OUT}.sha256"
 echo "[nuxel] Fedora 43 aarch64 phone rootfs packaged: $OUT"
+
+# PWNAGE-60000 FINAL GATE: verify the generated tree after every package and
+# asset transaction.  This catches a DNF transaction resetting the GLVND vendor
+# file or a missing probe before the image can be published.
+if [ "$GPU_REQUIRED" = 1 ]; then
+  /nuxel/tools/s10plus/a67/nuxel-gpu-image-verify.sh "$STAGE" --manifest "$GPU_MANIFEST" || {
+    echo "ERROR: GPU image verification failed; refusing to publish this image" >&2
+    exit 1
+  }
+fi

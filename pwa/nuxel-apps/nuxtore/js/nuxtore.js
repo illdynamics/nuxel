@@ -127,7 +127,7 @@
       el('seal').textContent = 'catalog: unreadable';
       el('seal').className = 'seal bad';
       el('sb-source').textContent = 'source: catalog/nuxtore-catalog.json not readable (' + e.message + ')';
-      document.querySelectorAll('.panel').forEach(function (p) { if (p.id !== 'tab-about') p.innerHTML = ''; });
+      document.querySelectorAll('.panel').forEach(function (p) { if (p.id !== 'tab-about' && p.id !== 'tab-flatpak') p.innerHTML = ''; });
       el('tab-available').innerHTML = '<div class="empty">The local catalog could not be read. This is expected only when the' +
         ' page is opened outside the Nuxel PWA host (for example from a plain file:// path).</div>';
       return;

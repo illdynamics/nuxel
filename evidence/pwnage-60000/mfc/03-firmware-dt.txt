@@ -1,0 +1,190 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== fw paths ==
+ls: cannot access '/lib/firmware/mfc*': No such file or directory
+ls: cannot access '/usr/lib/firmware/mfc*': No such file or directory
+ls: cannot access '/vendor/firmware/mfc*': No such file or directory
+== fw loader config ==
+CONFIG_FW_LOADER=y
+CONFIG_EXTRA_FIRMWARE=""
+CONFIG_FW_LOADER_USER_HELPER=y
+CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
+CONFIG_VIDEO_EXYNOS_MFC=y
+== dt mfc ==
+-- /sys/firmware/devicetree/base/dbgdev-pd-mfc
+compatible
+name
+samsung,power-domain
+compatible=samsung,exynos-pd-dbg
+-- /sys/firmware/devicetree/base/iommu-domain_mfc
+#address-cells
+#size-cells
+compatible
+domain-clients
+name
+ranges
+compatible=samsung,exynos-iommu-bus
+-- /sys/firmware/devicetree/base/iommu-domain_mscl_smfc
+#address-cells
+#size-cells
+compatible
+domain-clients
+name
+ranges
+compatible=samsung,exynos-iommu-bus
+-- /sys/firmware/devicetree/base/mfc@188D0000
+#address-cells
+#size-cells
+P010_decoding
+axid_mask
+black_bar
+bw_control
+bw_dec_h264
+bw_dec_hevc
+bw_dec_hevc_10bit
+bw_dec_mpeg4
+bw_dec_vp8
+bw_dec_vp9
+bw_dec_vp9_10bit
+bw_enc_h264
+bw_enc_hevc
+bw_enc_hevc_10bit
+bw_enc_mpeg4
+bw_enc_vp8
+bw_enc_vp9
+bw_enc_vp9_10bit
+compatible=samsung,exynos-mfc
+clocks=�
+clock-names=aclk_mfc
+interrupts=R
+iommus=GH
+-- /sys/firmware/devicetree/base/pd-mfc@15862600
+cal_id
+compatible
+linux,phandle
+name
+need_smc
+phandle
+reg
+status
+compatible=samsung,exynos-pd
+-- /sys/firmware/devicetree/base/smfc@18B00000
+clock-names
+clocks
+compatible
+dma-coherent
+interrupts
+iommus
+linux,phandle
+name
+phandle
+reg
+smfc,int_qos_minlock
+compatible=samsung,exynos8890-jpeg
+clocks=C
+clock-names=gate
+interrupts=
+iommus=
+-- /sys/firmware/devicetree/base/__symbols__/mfc_0
+/sys/firmware/devicetree/base/__symbols__/mfc_0
+-- /sys/firmware/devicetree/base/__symbols__/pd_mfc
+/sys/firmware/devicetree/base/__symbols__/pd_mfc
+-- /sys/firmware/devicetree/base/__symbols__/smfc
+/sys/firmware/devicetree/base/__symbols__/smfc
+-- /sys/firmware/devicetree/base/__symbols__/sysmmu_mfc0
+/sys/firmware/devicetree/base/__symbols__/sysmmu_mfc0
+-- /sys/firmware/devicetree/base/__symbols__/sysmmu_mfc1
+/sys/firmware/devicetree/base/__symbols__/sysmmu_mfc1
+-- /sys/firmware/devicetree/base/aliases/mfc0
+/sys/firmware/devicetree/base/aliases/mfc0
+-- /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_gear
+/sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_gear
+-- /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_lcd_on
+/sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_lcd_on
+-- /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone
+/sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone
+-- /sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone_5v
+/sys/firmware/devicetree/base/battery/battery,tx_mfc_iout_phone_5v
+-- /sys/firmware/devicetree/base/exynos_devfreq/devfreq_mfc@17000090
+boot_info
+bts_update
+compatible
+devfreq_domain_name
+devfreq_type
+dfs_id
+dm-index
+ess_flag
+freq_info
+governor
+linux,phandle
+name
+phandle
+pm_qos_class
+pm_qos_class_max
+reg
+use_delay_time
+compatible=samsung,exynos-devfreq
+-- /sys/firmware/devicetree/base/hsi2c@15D70000/mfc-charger@3b
+battery,charger_name
+battery,fod_data
+battery,fod_data_cv
+battery,fod_dream_cv_data
+battery,fod_dream_data
+battery,fod_hero_5v_data
+battery,fuelgauge_name
+battery,mst_pwr_en
+battery,oc_fod1
+battery,tx_gear_min_op_freq_delay
+battery,wc_cover_rpp
+battery,wireless20_max_power_list
+battery,wireless20_vout_list
+battery,wireless20_vrect_list
+battery,wireless_charger_name
+battery,wpc_det
+battery,wpc_int
+compatible
+name
+pinctrl-0
+compatible=idt,mfc-charger
+-- /sys/firmware/devicetree/base/mfc@188D0000/mfc_fault_num
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_fault_num
+-- /sys/firmware/devicetree/base/mfc@188D0000/mfc_freq_control
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_freq_control
+-- /sys/firmware/devicetree/base/mfc@188D0000/mfc_freqs
+/sys/firmware/devicetree/base/mfc@188D0000/mfc_freqs
+-- /sys/firmware/devicetree/base/mfc@188D0000/mfc_perf_boost_table
+freq_cluster
+freq_int
+freq_mfc
+freq_mif
+name
+num_cluster
+-- /sys/firmware/devicetree/base/mfc@188D0000/mfc_qos_table
+mfc_qos_variant_0
+mfc_qos_variant_1
+mfc_qos_variant_2
+mfc_qos_variant_3
+mfc_qos_variant_4
+mfc_qos_variant_5
+mfc_qos_variant_6
+mfc_qos_variant_7
+mfc_qos_variant_8
+mfc_qos_variant_9
+name
+-- /sys/firmware/devicetree/base/mfc@188D0000/num_mfc_freq
+/sys/firmware/devicetree/base/mfc@188D0000/num_mfc_freq
+-- /sys/firmware/devicetree/base/smfc@18B00000/smfc,int_qos_minlock
+/sys/firmware/devicetree/base/smfc@18B00000/smfc,int_qos_minlock
+== dev node ==
+/sys/firmware/devicetree/base/mfc@188D0000
+== iommu ==
+== clock/power ==
+suspended
+cat: /sys/kernel/debug/pm_genpd/pd-mfc/status: No such file or directory

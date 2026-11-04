@@ -1,0 +1,66 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===== PID 17783 phoc =====
+-- gpu libs --
+/usr/lib64/libEGL_mesa.so.0.0.0
+/usr/lib64/libgallium_dri.so
+/usr/lib64/libwlroots-0.19.so
+-- mali/dmabuf/fb fds --
+lrwx------. 1 root root 64 Nov  2 23:51 13 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:51 14 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:51 15 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:51 16 -> /dev/udmabuf
+lrwx------. 1 root root 64 Nov  2 23:51 26 -> anon_inode:dmabuf_udmabuf
+-- threads llvmpipe --
+none
+-- env --
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+MESA_KBASE_NODE=/dev/mali0
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+MESA_SHADER_CACHE_DISABLE=1
+NUXEL_GPU=1
+===== PID 18722 WebKitWebProces =====
+-- gpu libs --
+/usr/lib64/libEGL_mesa.so.0.0.0
+/usr/lib64/libgallium_dri.so
+-- mali/dmabuf/fb fds --
+lrwx------. 1 root root 64 Nov  2 23:51 18 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:51 20 -> /dev/mali0
+lrwx------. 1 root root 64 Nov  2 23:51 21 -> /dev/mali0
+-- threads llvmpipe --
+none
+-- env --
+GDK_BACKEND=wayland
+GDK_GL=gles
+GSK_RENDERER=cairo
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+MESA_KBASE_NODE=/dev/mali0
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+MESA_SHADER_CACHE_DISABLE=1
+NUXEL_GPU=1
+NUXEL_GRAPHICS_PROFILE_ACTIVE=gpu-rendered-shm-presented
+NUXEL_GRAPHICS_PROFILE_REQUESTED=gpu-rendered-shm-presented
+NUXEL_KBASE_WSI=1
+WEBKIT_DISABLE_COMPOSITING_MODE=0
+WEBKIT_FORCE_COMPOSITING_MODE=1
+===== PID 19039 bash =====
+-- gpu libs --
+-- mali/dmabuf/fb fds --
+none
+-- threads llvmpipe --
+none
+-- env --
+===== PID 19040 bash =====
+-- gpu libs --
+-- mali/dmabuf/fb fds --
+none
+-- threads llvmpipe --
+none
+-- env --

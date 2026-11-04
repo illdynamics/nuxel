@@ -164,7 +164,7 @@ def state() -> tuple:
         bool(ind["charging"]["external_power"]),
         bool(ind["charging"]["charging"]),
         bool(ind["usb_data"]["pc_connected"]),
-        bool(ind["live_console"]["active"]),
+        bool(ind["live_console"].get("usb_session_active")),
     )
 
 
@@ -281,8 +281,13 @@ def main() -> int:
         ind = mod.get_indicators()
         check(state() == (True, True, False, False),
               "not-attached UDC: console cannot stay active without a data link")
-        check(ind["live_console"]["source"] == "inactive:no-usb-data-link",
+        check(ind["live_console"]["source"] in
+              ("inactive:no-usb-data-link", "service:armed"),
               "detached console reports the missing USB data link")
+        # The base penguin follows the background service even while the USB
+        # transport icon is off.
+        check(ind["live_console"]["active"] is True,
+              "armed service keeps the BASE penguin on after detach")
         fake.remove_console_process(4545)
 
         # 10. Console process alive but gadget gone: do not keep a stale "on".

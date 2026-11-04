@@ -42,6 +42,19 @@ else
   # panfrost shader cache is optional; keep the renderer deterministic so a
   # stale cache cannot take the UI down before the fallback is armed.
   export MESA_SHADER_CACHE_DISABLE=1
+  # PWNAGE-60000: prove the kbase EGL path BEFORE handing the panel session to
+  # phoc.  The helper runs the bounded probe and records a per-boot cache.  A
+  # failure arms the same marker the old crash path used, so this boot runs the
+  # proven pixman compositor and every app gets software-safe from the helper.
+  # /run is a tmpfs: a later boot retries the GPU.
+  if [ -x /usr/lib/nuxel/nuxel-graphics-profile ]; then
+    if ! timeout 8 /usr/lib/nuxel/nuxel-graphics-profile probe          >/run/nuxel-gpu-boot-probe.json 2>&1; then
+      : > "$FALLBACK"
+      export NUXEL_GPU=0
+      export WLR_RENDERER=pixman
+      echo "nuxel-wayland: kbase EGL boot probe failed; using pixman" >&2
+    fi
+  fi
 fi
 
 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini \

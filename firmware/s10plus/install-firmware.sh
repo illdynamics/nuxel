@@ -27,6 +27,11 @@
 #   --verify-only   Verify installed blobs; UNKNOWN checksums report
 #                   "pending" and exit 0 (not an error).
 #   --checksums     Print sha256 of every blob under blobs/.
+#   --verify-mfc    Verify the exact Exynos 9820 MFC blob (mfc_fw.bin):
+#                   presence, size, SHA-256 and ARM firmware header.  Fails
+#                   closed; never fabricates or pads the file.  If
+#                   --rootfs-staging is supplied, also verifies the staged
+#                   /lib/firmware/mfc_fw.bin copy.
 #   --twrp-pull     Pull vendor blobs from the TWRP-connected device into
 #                   blobs/ (identity-checked), then cross-reference the
 #                   manifest found vs missing. This is the acquisition step
@@ -51,6 +56,8 @@ DO_VERIFY=0
 DO_CHECKSUMS=0
 DO_PULL=0
 DO_INSTALL=0
+DO_VERIFY_MFC=0
+STAGING_OVERRIDE=""
 FORCE_PENDING=0
 # VERBOSE adds per-file diagnostics in install_blobs (accepted via --verbose).
 VERBOSE=0
@@ -201,6 +208,73 @@ verify_only() {
     [ "${mismatch}" -eq 0 ] && [ "${missing}" -eq 0 ]
 }
 
+# PWNAGE-61000: verify the exact MFC firmware contract.  This is separate from
+# --verify-only because the MFC blob is optional for generic images but a
+# hardware-decode release profile must fail closed when it is absent/wrong.
+verify_mfc() {
+    local cat src dst req cs _desc blob actual size magic rc=0 found=0
+    while IFS=$'\t' read -r cat src dst req cs _desc; do
+        [ "$cat" = "video" ] || continue
+        case "$src" in
+            *mfc_fw.bin) ;;
+            *) continue ;;
+        esac
+        found=$((found+1))
+        blob="$(blob_path_for_source "$src" || true)"
+        if [ -z "$blob" ] || [ ! -f "$blob" ]; then
+            err "MFC_BLOB_MISSING ${src} (run fetch-vendor-blobs.sh)"
+            rc=1
+            continue
+        fi
+        actual="$(sha256_of "$blob")" || { err "MFC_BLOB_UNREADABLE ${blob}"; rc=1; continue; }
+        size="$(stat -c '%s' "$blob" 2>/dev/null || wc -c < "$blob")"
+        magic="$(od -An -tx4 -N4 "$blob" 2>/dev/null | tr -d ' \n')"
+        if [ "$actual" != "$cs" ]; then
+            err "MFC_BLOB_HASH expected ${cs}, got ${actual}"
+            rc=1
+        fi
+        if [ "$size" != "685832" ]; then
+            err "MFC_BLOB_SIZE expected 685832, got ${size}"
+            rc=1
+        fi
+        # The pinned Exynos 9820 image starts with an ARM32 branch word.
+        if [ "$magic" != "ea000077" ]; then
+            err "MFC_BLOB_HEADER expected ARM32 branch word ea000077, got ${magic:-<empty>}"
+            rc=1
+        fi
+        if [ "$rc" -eq 0 ]; then
+            log "MFC_BLOB_OK ${src} size=${size} sha256=${actual} magic=${magic}"
+        fi
+        # Optional staged-rootfs verification.
+        if [ -n "${STAGING_OVERRIDE:-}" ]; then
+            local staged="${STAGING%/}${dst}"
+            if [ ! -f "$staged" ]; then
+                err "MFC_STAGED_MISSING ${staged}"
+                rc=1
+            else
+                local staged_sum
+                staged_sum="$(sha256_of "$staged")" || staged_sum=""
+                if [ "$staged_sum" != "$cs" ]; then
+                    err "MFC_STAGED_HASH ${staged} expected ${cs}, got ${staged_sum:-<unreadable>}"
+                    rc=1
+                else
+                    log "MFC_STAGED_OK ${staged} sha256=${staged_sum}"
+                fi
+            fi
+        fi
+    done < <(manifest_tsv)
+    if [ "$found" -eq 0 ]; then
+        err "MFC_MANIFEST_ENTRY_MISSING (no video/mfc_fw.bin entry in manifest.yml)"
+        return 1
+    fi
+    if [ "$rc" -ne 0 ]; then
+        err "MFC firmware verification FAILED — hardware decode must stay blocked."
+        return 1
+    fi
+    log "MFC firmware verification PASS — exact blob matches the pinned manifest."
+    return 0
+}
+
 checksums() {
     if [ ! -d "${BLOBS_DIR}" ]; then
         warn "blobs/ does not exist yet — run --twrp-pull on the S10+ first."
@@ -336,10 +410,11 @@ while [[ $# -gt 0 ]]; do
         --list-files) DO_LIST=1; shift ;;
         --verify-only) DO_VERIFY=1; shift ;;
         --checksums) DO_CHECKSUMS=1; shift ;;
+        --verify-mfc) DO_VERIFY_MFC=1; shift ;;
         --twrp-pull) DO_PULL=1; shift ;;
         --install) DO_INSTALL=1; shift ;;
         --force-pending) FORCE_PENDING=1; shift ;;
-        --rootfs-staging) STAGING="$2"; shift 2 ;;
+        --rootfs-staging) STAGING="$2"; STAGING_OVERRIDE="$2"; shift 2 ;;
         --verbose|-v) VERBOSE=1; shift ;;
         *) err "Unknown option: $1"; usage; exit 1 ;;
     esac
@@ -371,6 +446,9 @@ fi
 if [ "${DO_CHECKSUMS}" -eq 1 ]; then
     checksums
 fi
+if [ "${DO_VERIFY_MFC}" -eq 1 ]; then
+    verify_mfc
+fi
 if [ "${DO_PULL}" -eq 1 ]; then
     twrp_pull
 fi
@@ -378,7 +456,7 @@ if [ "${DO_INSTALL}" -eq 1 ]; then
     install_blobs
 fi
 
-if [ "${DO_LIST}${DO_VERIFY}${DO_CHECKSUMS}${DO_PULL}${DO_INSTALL}" = "00000" ]; then
+if [ "${DO_LIST}${DO_VERIFY}${DO_CHECKSUMS}${DO_VERIFY_MFC}${DO_PULL}${DO_INSTALL}" = "000000" ]; then
     warn "No mode selected. Use --help to see available modes."
     exit 1
 fi

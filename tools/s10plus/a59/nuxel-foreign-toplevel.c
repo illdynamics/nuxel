@@ -22,10 +22,16 @@
  */
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 struct wl_array { size_t size; size_t alloc; void *data; };
 struct wl_interface {
@@ -45,6 +51,11 @@ static int (*_roundtrip)(void *);
 static void *(*_marshal)(void *, uint32_t, const void *, uint32_t, uint32_t, ...);
 static int (*_add_listener)(void *, void (**)(void), void *);
 static void (*_destroy)(void *);
+static int (*_flush)(void *);
+static int (*_get_fd)(void *);
+static int (*_dispatch)(void *);
+static uint32_t (*_get_version)(void *);
+static const struct wl_interface *(*_get_iface)(void *);
 
 static int load_wayland(void) {
     WL = dlopen("libwayland-client.so.0", RTLD_NOW | RTLD_GLOBAL);
@@ -55,7 +66,13 @@ static int load_wayland(void) {
     _marshal   = (void *(*)(void *,uint32_t,const void *,uint32_t,uint32_t,...)) dlsym(WL, "wl_proxy_marshal_flags");
     _add_listener = (int (*)(void *,void (**)(void),void *)) dlsym(WL, "wl_proxy_add_listener");
     _destroy   = (void (*)(void *)) dlsym(WL, "wl_proxy_destroy");
-    if (!_connect || !_disconnect || !_roundtrip || !_marshal || !_add_listener || !_destroy) {
+    _flush     = (int (*)(void *)) dlsym(WL, "wl_display_flush");
+    _get_fd    = (int (*)(void *)) dlsym(WL, "wl_display_get_fd");
+    _dispatch  = (int (*)(void *)) dlsym(WL, "wl_display_dispatch");
+    _get_version = (uint32_t (*)(void *)) dlsym(WL, "wl_proxy_get_version");
+    _get_iface = (const struct wl_interface *(*)(void *)) dlsym(WL, "wl_proxy_get_interface");
+    if (!_connect || !_disconnect || !_roundtrip || !_marshal || !_add_listener || !_destroy ||
+        !_flush || !_get_fd || !_dispatch || !_get_version) {
         fprintf(stderr, "DLSYM_FAIL %s\n", dlerror()); return -1;
     }
     return 0;
@@ -80,7 +97,9 @@ static struct wl_interface wl_display_interface = {
     "wl_display", 1, 2, wl_display_messages, 2, wl_display_events,
 };
 
-static const struct wl_interface *wl_registry_bind_types[] = { NULL, NULL, NULL, &fto_manager_interface };
+/* wl_registry.bind's new_id interface is supplied to wl_proxy_marshal_flags
+ * as its interface argument (as generated code does), not by this table. */
+static const struct wl_interface *wl_registry_bind_types[] = { NULL, NULL, NULL, NULL };
 static struct wl_message wl_registry_messages[] = {
     { "bind", "usun", wl_registry_bind_types },
 };
@@ -90,10 +109,17 @@ static struct wl_message wl_registry_events[] = {
 static struct wl_interface wl_registry_interface = {
     "wl_registry", 1, 1, wl_registry_messages, 2, wl_registry_events,
 };
-/* Minimal table used only to bind a wl_seat so foreign-toplevel activate()
- * can name the seat whose focus should move.  No seat events are consumed. */
+/* Minimal but protocol-complete wl_seat table.  foreign-toplevel activate()
+ * names the seat whose focus should move.  The seat still emits capabilities
+ * and name events; an interface with event_count=0 made libwayland abort
+ * dispatch ("interface 'wl_seat' has no event 1"), which silently hid EVERY
+ * toplevel from the chrome/lock watcher. */
+static struct wl_message wl_seat_events[] = {
+    { "capabilities", "u", NULL },
+    { "name", "s", NULL },
+};
 static struct wl_interface wl_seat_interface = {
-    "wl_seat", 7, 0, NULL, 0, NULL,
+    "wl_seat", 7, 0, NULL, 2, wl_seat_events,
 };
 
 static struct wl_message fto_manager_messages[] = { { "stop", "", NULL } };
@@ -142,6 +168,20 @@ static struct window *windows;
 static void *g_display, *g_registry, *g_manager, *g_seat;
 static int have_manager;
 
+/* Seat events are informational; consuming them keeps the default queue
+ * healthy while activate() still receives the seat object. */
+static void on_seat_capabilities(void *d, void *s, uint32_t caps) {
+    (void)d; (void)s; (void)caps;
+}
+static void on_seat_name(void *d, void *s, const char *name) {
+    (void)d; (void)s; (void)name;
+}
+static void (*seat_listener[])(void) = {
+    (void(*)(void))on_seat_capabilities,
+    (void(*)(void))on_seat_name,
+    NULL,
+};
+
 static struct window *find_win(void *h) {
     for (struct window *w = windows; w; w = w->next) if (w->handle == h) return w;
     return NULL;
@@ -154,7 +194,10 @@ static void on_state(void *d, void *h, struct wl_array *a) {
     (void)d; struct window *w = find_win(h); if(!w) return;
     w->maximized=w->minimized=w->activated=w->fullscreen=0;
     uint32_t *p = (uint32_t*)a->data; size_t n = a->size/4;
-    for (size_t i=0;i<n;i++){ switch(p[i]){ case 1: w->maximized=1; break; case 2: w->minimized=1; break; case 3: w->activated=1; break; case 4: w->fullscreen=1; break; } }
+    /* zwlr_foreign_toplevel_handle_v1.state: 0=maximized, 1=minimized,
+       2=activated, 3=fullscreen.  An off-by-one here made windowed
+       GTK/Flatpak apps invisible to the top bar and focus watcher. */
+    for (size_t i=0;i<n;i++){ switch(p[i]){ case 0: w->maximized=1; break; case 1: w->minimized=1; break; case 2: w->activated=1; break; case 3: w->fullscreen=1; break; } }
 }
 static void on_done(void *d, void *h) { (void)d;(void)h; }
 static void on_closed(void *d, void *h) {
@@ -180,6 +223,7 @@ static void on_global(void *d, void *r, uint32_t name, const char *iface, uint32
     if (!strcmp(iface, "wl_seat") && !g_seat) {
         g_seat = _marshal(g_registry, 0, &wl_seat_interface, ver < 7 ? ver : 7, 0,
                           name, "wl_seat", ver < 7 ? ver : 7, NULL);
+        if (g_seat) _add_listener(g_seat, seat_listener, NULL);
     } else if (!strcmp(iface, "zwlr_foreign_toplevel_manager_v1")) {
         have_manager = 1;
         /* bind: registry opcode 0 ("usun"); new_id target set via types[3] */
@@ -195,6 +239,173 @@ static void on_display_error(void *d, void *display, void *object, uint32_t code
 static void on_delete_id(void *d, void *display, uint32_t id) { (void)d;(void)display;(void)id; }
 static void (*display_listener[])(void) = { (void(*)(void))on_display_error, (void(*)(void))on_delete_id, NULL };
 static void (*registry_listener[])(void) = { (void(*)(void))on_global, (void(*)(void))on_global_remove, NULL };
+
+
+/* ---------------------------------------------------------------------------
+ * PWNAGE-62000: compositor-level lock enforcement.
+ *
+ * The authoritative lock flag is written only by the root bridge
+ * (security_provider.py).  Missing, unreadable or malformed state fails closed.
+ * While locked, a persistent foreign-toplevel subscription re-checks every
+ * 250 ms and on every state event: every non-Home toplevel is taken out of
+ * fullscreen/maximised and asked to minimise, then the Home toplevel is
+ * unminimised, un-fullscreened, maximised and activated.  A late app activation
+ * therefore cannot cover the Home lockscreen; the app process is never killed.
+ * ------------------------------------------------------------------------- */
+#define LOCK_STATE "/run/nuxel/security/lock-state.json"
+#define LOCK_RECEIPT "/run/nuxel/lock-enforcement.state"
+#define FOREGROUND_STATE "/run/nuxel/foreground.state"
+
+static int read_lock_state(void) {
+    FILE *f = fopen(LOCK_STATE, "r");
+    if (!f) return -1;                 /* unknown -> fail closed */
+    char b[4096];
+    size_t n = fread(b, 1, sizeof b - 1, f);
+    fclose(f);
+    b[n] = 0;
+    char *p = strstr(b, "\"locked\"");
+    if (!p) return -1;
+    p = strchr(p, ':');
+    if (!p) return -1;
+    p++;
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+    if (!strncmp(p, "false", 5)) return 0;
+    if (!strncmp(p, "true", 4)) return 1;
+    return -1;
+}
+
+static uint32_t handle_version(void *h) {
+    return _get_version ? _get_version(h) : 3;
+}
+
+static int is_home(const struct window *w) {
+    return !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
+}
+
+static void json_id(char *dst, size_t n, const char *src) {
+    size_t i = 0;
+    if (n == 0) return;
+    for (; src && *src && i + 1 < n; src++) {
+        char c = *src;
+        if (c == '"' || c == '\\' || c == '\n' || c == '\r' || c == '\t') c = '_';
+        dst[i++] = c;
+    }
+    dst[i] = 0;
+}
+
+static void write_receipt(int locked, int home_raised, int hidden,
+                          const char *active, const char *error) {
+    char tmp[256];
+    snprintf(tmp, sizeof tmp, LOCK_RECEIPT ".%d", (int)getpid());
+    FILE *f = fopen(tmp, "w");
+    if (!f) return;
+    char act[256] = "", err[256] = "";
+    json_id(act, sizeof act, active ? active : "");
+    json_id(err, sizeof err, error ? error : "");
+    time_t now = time(NULL);
+    fprintf(f,
+        "{\"schema_version\":1,\"updated_at\":%lld,\"locked\":%s,"
+        "\"home_raised\":%s,\"hidden_non_home\":%d,\"active_app\":\"%s\","
+        "\"error\":\"%s\",\"owner\":\"nuxel-foreign-toplevel\"}\n",
+        (long long)now, locked ? "true" : "false",
+        home_raised ? "true" : "false", hidden, act, err);
+    fclose(f);
+    rename(tmp, LOCK_RECEIPT);
+}
+
+static void write_foreground(int locked, const char *active) {
+    char tmp[256];
+    snprintf(tmp, sizeof tmp, FOREGROUND_STATE ".%d", (int)getpid());
+    FILE *f = fopen(tmp, "w");
+    if (!f) return;
+    char act[256] = "";
+    json_id(act, sizeof act, active ? active : "");
+    fprintf(f, "locked=%d native=%d app_id=%s\n",
+            locked ? 1 : 0, (active && *active) ? 1 : 0, act);
+    fclose(f);
+    rename(tmp, FOREGROUND_STATE);
+}
+
+static void enforce_locked(int locked) {
+    int hidden = 0, raised = 0;
+    const char *active = "";
+    for (struct window *w = windows; w; w = w->next) {
+        if (is_home(w)) continue;
+        if (w->activated) active = w->app_id;
+        /* phoc 0.54 does not implement request_minimize, but unsetting
+           fullscreen/maximise is honoured and is enough to move the app out
+           of the top stacking layer.  set_minimized is retained for
+           compositors that do implement it. */
+        if (w->fullscreen) _marshal(w->handle, 9, NULL, handle_version(w->handle), 0);
+        if (w->maximized) _marshal(w->handle, 1, NULL, handle_version(w->handle), 0);
+        _marshal(w->handle, 2, NULL, handle_version(w->handle), 0);
+        hidden++;
+    }
+    for (struct window *w = windows; w; w = w->next) {
+        if (!is_home(w)) continue;
+        _marshal(w->handle, 3, NULL, handle_version(w->handle), 0);  /* unset_minimized */
+        _marshal(w->handle, 9, NULL, handle_version(w->handle), 0);  /* unset_fullscreen */
+        _marshal(w->handle, 0, NULL, handle_version(w->handle), 0);  /* set_maximized */
+        if (g_seat) _marshal(w->handle, 4, NULL, handle_version(w->handle), 0, g_seat);
+        raised = 1;
+    }
+    if (g_display) _flush(g_display);   /* bounded: never block on a roundtrip */
+    write_receipt(locked, raised, hidden, active, NULL);
+    write_foreground(locked, active);
+}
+
+static int watch_lock(void *dpy) {
+    int last_locked = -2;
+    time_t last_receipt = 0;
+    time_t last_enforce = 0;
+    for (;;) {
+        int locked = read_lock_state();
+        time_t now = time(NULL);
+        int nonhome_active = 0;
+        for (struct window *w = windows; w; w = w->next)
+            if (!is_home(w) && w->activated) { nonhome_active = 1; break; }
+        /* Fail closed: unknown is treated exactly like locked.  Re-enforce on
+           a lock transition, any non-Home activation, or once per second (a
+           bounded policy tick, not a busy loop). */
+        if (locked != 0 && (locked != last_locked || nonhome_active ||
+                            now - last_enforce >= 1)) {
+            enforce_locked(1);
+            last_enforce = now;
+        } else if (locked != 0) {
+            write_foreground(1, NULL);
+        } else {
+            int native = 0;
+            const char *active = "";
+            for (struct window *w = windows; w; w = w->next) {
+                if (is_home(w)) continue;
+                if (w->activated) { native = 1; active = w->app_id; break; }
+            }
+            if (locked != last_locked || now - last_receipt >= 2) {
+                write_receipt(0, 0, 0, active, NULL);
+                last_receipt = now;
+            }
+            write_foreground(0, native ? active : NULL);
+        }
+        if (locked != last_locked) {
+            fprintf(stderr, "LOCK_WATCH locked=%d\n", locked);
+            last_locked = locked;
+        }
+        _flush(dpy);
+        struct pollfd pfd = { .fd = _get_fd(dpy), .events = POLLIN, .revents = 0 };
+        int pr = poll(&pfd, 1, 250);
+        if (pr < 0) {
+            if (errno == EINTR) continue;
+            fprintf(stderr, "LOCK_WATCH poll errno=%d\n", errno);
+            return 1;
+        }
+        if (pr > 0 && (pfd.revents & POLLIN)) {
+            if (_dispatch(dpy) < 0) {
+                fprintf(stderr, "LOCK_WATCH dispatch failed\n");
+                return 1;
+            }
+        }
+    }
+}
 
 int main(int argc, char **argv) {
     const char *mode = (argc > 1) ? argv[1] : "list";
@@ -221,12 +432,12 @@ int main(int argc, char **argv) {
         for (struct window *w=windows;w;w=w->next) {
             int is_home = !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
             if (is_home) {
-                _marshal(w->handle, 3, &fto_handle_interface, 3, 0);  /* unset_minimized */
-                _marshal(w->handle, 0, &fto_handle_interface, 3, 0);  /* set_maximized */
-                if (g_seat) _marshal(w->handle, 4, &fto_handle_interface, 3, 0, g_seat); /* activate */
+                _marshal(w->handle, 3, NULL, handle_version(w->handle), 0);  /* unset_minimized */
+                _marshal(w->handle, 0, NULL, handle_version(w->handle), 0);  /* set_maximized */
+                if (g_seat) _marshal(w->handle, 4, NULL, handle_version(w->handle), 0, g_seat); /* activate */
                 raised++;
             } else {
-                _marshal(w->handle, 2, &fto_handle_interface, 3, 0);  /* set_minimized */
+                _marshal(w->handle, 2, NULL, handle_version(w->handle), 0);  /* set_minimized */
                 minimized++;
             }
         }
@@ -246,18 +457,18 @@ int main(int argc, char **argv) {
             if (is_home) {
                 /* A fullscreen Home is the reason set_minimized looked
                    ineffective.  Leave fullscreen first, then minimize. */
-                _marshal(w->handle, 9, &fto_handle_interface, 3, 0);  /* unset_fullscreen */
-                _marshal(w->handle, 2, &fto_handle_interface, 3, 0);  /* set_minimized */
+                _marshal(w->handle, 9, NULL, handle_version(w->handle), 0);  /* unset_fullscreen */
+                _marshal(w->handle, 2, NULL, handle_version(w->handle), 0);  /* set_minimized */
                 minimized++;
                 continue;
             }
             if (want && *want && strcmp(w->app_id, want) && strcmp(w->title, want)) continue;
-            _marshal(w->handle, 3, &fto_handle_interface, 3, 0);  /* unset_minimized */
-            _marshal(w->handle, 0, &fto_handle_interface, 3, 0);  /* set_maximized */
+            _marshal(w->handle, 3, NULL, handle_version(w->handle), 0);  /* unset_minimized */
+            _marshal(w->handle, 0, NULL, handle_version(w->handle), 0);  /* set_maximized */
             /* The protocol requires a wl_seat for activate(); without this
                call wlroots may update the requested size but keep keyboard
                focus and stacking on the shell surface. */
-            if (g_seat) _marshal(w->handle, 4, &fto_handle_interface, 3, 0, g_seat);
+            if (g_seat) _marshal(w->handle, 4, NULL, handle_version(w->handle), 0, g_seat);
             focused++;
         }
         _roundtrip(g_display);
@@ -273,7 +484,7 @@ int main(int argc, char **argv) {
                               !strcmp(w->title, "Nuxel");
                 if (is_home) continue;
                 if (strcmp(w->app_id, want) && strcmp(w->title, want)) continue;
-                _marshal(w->handle, 5, &fto_handle_interface, 3, 0);  /* close */
+                _marshal(w->handle, 5, NULL, handle_version(w->handle), 0);  /* close */
                 printf("CLOSE_ACTION app_id=%s title=%s closed=1\n", w->app_id, w->title);
                 closed++;
             }
@@ -283,6 +494,13 @@ int main(int argc, char **argv) {
     }
     /* Long Back: close ONLY the activated non-Home toplevel.  Home, the
        pwa-host and every daemon are excluded by identity, not by index. */
+    if (!strcmp(mode, "lock") || !strcmp(mode, "enforce-lock")) {
+        enforce_locked(1);
+        printf("LOCK_ACTION locked=1\n");
+    }
+    if (!strcmp(mode, "watch-lock")) {
+        return watch_lock(g_display);
+    }
     if (!strcmp(mode, "close-foreground")) {
         int closed = 0, skipped_home = 0;
         for (struct window *w = windows; w; w = w->next) {
@@ -290,7 +508,7 @@ int main(int argc, char **argv) {
                           !strcmp(w->title, "Nuxel");
             if (is_home) { skipped_home++; continue; }
             if (!w->activated) continue;
-            _marshal(w->handle, 5, &fto_handle_interface, 3, 0);  /* close */
+            _marshal(w->handle, 5, NULL, handle_version(w->handle), 0);  /* close */
             printf("CLOSE_ACTION app_id=%s title=%s closed=1\n", w->app_id, w->title);
             closed++;
         }

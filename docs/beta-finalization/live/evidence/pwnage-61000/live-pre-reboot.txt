@@ -1,0 +1,23 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+PRE_REBOOT
+2026-11-03T01:37:26+01:00
+954ea1bf-732c-4274-825f-ff2788b14467
+4.14.253-gf7194c1d15ed-dirty
+     12 D    tz_worker_threa
+     18 D    tz_worker_threa
+     25 D    tz_worker_threa
+     32 D    tz_worker_threa
+     39 D    tz_worker_threa
+     46 D    tz_worker_threa
+     53 D    tz_worker_threa
+     60 D    tz_worker_threa
+   1038 D    scsi_srpmb_work
+   1818 D    ree_time

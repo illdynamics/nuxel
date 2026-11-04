@@ -1,0 +1,57 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===UPTIME===
+up 0 minutes
+2026-11-04T10:50:32+01:00
+===FAILED===
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+===DOOM-REGISTRY===
+{
+  "id": "io.github.fabiangreffrath.Doom",
+  "name": "Crispy Doom",
+  "icon": "\ud83d\udce6",
+  "iconAsset": "http://127.0.0.1:8080/api/v1/flatpak/icon/io.github.fabiangreffrath.Doom",
+  "color": "#4a90e2",
+  "category": "tools",
+  "type": "native",
+  "url": "io.github.fabiangreffrath.Doom://",
+  "native_binary": "/usr/bin/flatpak",
+  "flatpak_id": "io.github.fabiangreffrath.Doom",
+  "flatpak_scope": "system",
+  "flatpak_version": "7.1",
+  "flatpak_branch": "stable",
+  "flatpak_arch": "aarch64",
+  "flatpak_runtime": "org.freedesktop.Platform/aarch64/24.08",
+  "flatpak_ref": "io.github.fabiangreffrath.Doom/aarch64/stable",
+  "desktop_entry": "/var/lib/flatpak/exports/share/applications/io.github.fabiangreffrath.Doom.desktop",
+  "description": "Limit-removing enhanced-resolution Doom source port",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "status": "installed",
+  "runtime_state": "Flatpak 7.1 \u00b7 org.freedesktop.Platform/aarch64/24.08 \u00b7 aarch64",
+  "install_source": "flatpak:system"
+}
+===PROVIDER===
+        # Crispy Doom: the org.freedesktop.Platform 24.08 SDL2 Wayland
+        # backend creates an xdg_toplevel but never presents a buffer on this
+        # 4.14 vendor kernel.  The Flatpak install stays authoritative; the
+        # wrapper runs the same Flathub binary with the host sdl2-compat stack,
+===HOMESTATE===
+1793785826 HOST_STATUS_INDICATORS ok
+1793785826 HOST_STATUS_INDICATORS ok
+1793785827 HOST_STATUS_INDICATORS ok
+1793785827 HOST_STATUS_INDICATORS ok
+1793785828 HOST_STATUS_INDICATORS ok
+1793785829 HOST_STATUS_INDICATORS ok
+1793785830 HOST_STATUS_INDICATORS ok
+1793785831 HOST_STATUS_INDICATORS ok
