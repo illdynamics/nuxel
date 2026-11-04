@@ -1,0 +1,67 @@
+[
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/app.json",
+    "sha256": "d812c6bbb38ccf7c4dc1e861798d7942ed3f9a49a76631407e10d15b53d86062",
+    "size": 703
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/engine/CC-BY.txt",
+    "sha256": "7e7170e3cebf88a9f60c7b8421418323c09304da1af4d5e90f4da1dc1c8a2661",
+    "size": 18650
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/engine/COPYING.txt",
+    "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+    "size": 35147
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/engine/PROVENANCE.txt",
+    "sha256": "ac1cd700a15eb91cb861aad4c9b0ae4a966e6efc31330fb2dc3f7af7c5b06a3e",
+    "size": 179
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/engine/game_support.pk3",
+    "sha256": "d44214b245ab108b57ecde2330c5c80490056d5e687e710dc8f1040d0a88a185",
+    "size": 2024333
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/engine/lights.pk3",
+    "sha256": "dca7c7a5a0ec3911721bca17e1f82199bdef92bee7b99286de75a0fd01971de1",
+    "size": 23637
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/engine/uzdoom",
+    "sha256": "2182f312062735d869a802f575a19d50e99d71754d5637f9d5a133723c856483",
+    "size": 19557864
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/engine/uzdoom.pk3",
+    "sha256": "9341c6b12274ba567774adefff22d9210e7dd49701892b30cdd64ca488ab61f2",
+    "size": 7159816
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/icons/icon-192.png",
+    "sha256": "e3a99ab3e94cc95fb20dce138069cecdc30fb2072662afa72b3d6c9b99b6ea5f",
+    "size": 3205
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/icons/icon.svg",
+    "sha256": "fdb0dd9836f32b043a82dca1abc3ae072a40afb4b00abb898b45faf07d15ac0a",
+    "size": 473
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/index.html",
+    "sha256": "ae5c0a350f5ad9c9c10399693432b9e67e3f0b017c7be92f3977a5d31943c0c4",
+    "size": 5283
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/manifest.json",
+    "sha256": "f2550a0f50194bd98142b3afc79081e89728a2dd76a5dbe1dfc663c63085a57a",
+    "size": 1305
+  },
+  {
+    "path": "pwa/nuxel-apps/doom-uzdoom/sw.js",
+    "sha256": "f541f156725c0cda24e0fa0ae00723c9dfaa3db3391bef59dc3e906d6260df7b",
+    "size": 557
+  }
+]

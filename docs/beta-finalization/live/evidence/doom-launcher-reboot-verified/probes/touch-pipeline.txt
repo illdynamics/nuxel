@@ -1,0 +1,71 @@
+probe: touch-pipeline (01-touchscreen)
+cmd: sh /var/tmp/nuxel-live-probes/nuxel-touch-capture.sh --dry-run --seconds 20
+staged: [{"bytes": 12394, "frames": 130, "sha256": "e39a04aa390bd6b75ac96dad8c2223128e013ccb2fa07230cbaf4899a820f60d", "source": "tools/s10plus/a33/nuxel-touch-capture.sh", "target": "/var/tmp/nuxel-live-probes/nuxel-touch-capture.sh"}, {"bytes": 117921, "frames": 1229, "sha256": "7adc6f12a99dbd11789907aa700cb46a0fe187a49d9768a6cf29063176bde7df", "source": "tools/s10plus/a33/nuxel-touch-trace.py", "target": "/var/tmp/nuxel-live-probes/nuxel-touch-trace.py"}, {"bytes": 26824, "frames": 280, "sha256": "4dfad2a9da0db0762772a5996acb6b60950a95bae05dacae23b20401f34f9d4d", "source": "tools/s10plus/a33/nuxel-bootmode-guard.py", "target": "/var/tmp/nuxel-live-probes/nuxel-bootmode-guard.py"}]
+rc: 1 framed: True sha_ok: True
+verdict: NEEDS_OWNER_TEST
+reason: the capture wrote its bundle but recorded no finger: a desk run without a touch is not a touchscreen test
+--- observation ---
+== nuxel-touch-capture ==
+BUNDLE=/var/lib/nuxel/touch-capture/20261104T103709Z
+BUDGET_SECONDS=20 MAX_EVENTS=4000 MAX_BYTES=1048576 DRY_RUN=1
+---- TOUCH SEQUENCE (perform these while the capture is armed) ----------------
+  1. TAP DOWN/UP      one deliberate tap in the centre of the screen (slow, ~0.3 s)
+  2. THREE TAPS       top-left, centre, bottom-right (catches a swapped/inverted axis)
+  3. SWIPE            bottom third -> top third, slowly (>= 1 s), for scroll/gesture
+  4. MULTI-CONTACT    two fingers down together for ~1 s, then lift both
+  5. SELECT AN APP    tap a launcher tile (Terminal or Settings) and let it open
+  6. KEYBOARD         if a text field is reachable, type three keys on the on-screen
+                      keyboard (proves the keyboard's own hit testing)
+  Then, and only then, answer the human half: did the UI actually respond?
+------------------------------------------------------------------------------
+SEQUENCE recorded in $OUT/commands.txt (and above)
+== nuxel-touch-trace --capture  budget=20s max_events=4000 max_bytes=1048576 dry_run=True ==
+BOOT_MODE=normal (no charger/LPM marker present)
+DRY_RUN: no arming, no DOM collector, no writes outside the evidence bundle
+EVDEV_SCAN nodes=11 touch_candidates=1 (/dev/input/event2='sec_touchscreen')
+SYSFS_INPUT root=/sys/class/input entries=11 selected=/dev/input/event2 name='sec_touchscreen' direct=1 mt=1 vendor=0000 product=0000
+NODE_ID ioctl EVIOCGID bustype=0x0018 vendor=0x0000 product=0x0000 version=0x0000 (the node's own answer) | sysfs id bustype=0018 vendor=0000 product=0000; ABS_MT_SLOT claimed=True EVIOCGABS(ABS_MT_SLOT)=(0, 9) -> contact_slots=10
+PANEL=1440x3040 source=/sys/class/graphics/fb0/modes fb=(unreadable) bpp=32 virtual_size=1440x6080 pages=2 output=(unknown) scale=1 transform=normal
+COORD_MAP mapping=scaled device_range_x=[0, 4095] device_range_y=[0, 4095] range_source=ioctl EVIOCGABS on /dev/input/event2 -> panel 1440x3040 -> output 1440x3040
+EVENTS_JSONL=/var/lib/nuxel/touch-capture/20261104T103709Z/events.jsonl records=0 frames=0 points=0
+COORD_VALIDATION points=0 inside_device_range=False inside_panel_bounds=False verdict=NO_POINTS
+LAYER=1 NAME=driver STATE=ok EVIDENCE=/var/lib/nuxel/touch-capture/20261104T103709Z/boot-driver.txt DETAIL=current direct MT evdev confirms sec_touchscreen registration
+LAYER=2 NAME=irq STATE=drop EVIDENCE=/var/lib/nuxel/touch-capture/20261104T103709Z/interrupts-before.txt DETAIL=irq 431 present but delivered 0 events in the window while raw events were seen below it
+LAYER=3 NAME=evdev STATE=ok EVIDENCE=/var/lib/nuxel/touch-capture/20261104T103709Z/evdev.txt DETAIL=panel /dev/input/event2 name='sec_touchscreen' PROP=DIRECT ABS_MT=present range x=(0, 4095) y=(0, 4095) EVIOCGID bustype=0x0018 vendor=0x0000 product=0x0000 contact_slots=10 (EVIOCGBIT claims ABS_MT_SLOT=True, EVIOCGABS(ABS_MT_SLOT)=(0, 9))
+LAYER=4 NAME=libinput STATE=ok EVIDENCE=/var/lib/nuxel/touch-capture/20261104T103709Z/libinput-path.state DETAIL=2 accepted device(s); last: 1793788439 PATH_ADD node=/dev/input/event2 order=2 name='sec_touchscreen' accepted=1
+LAYER=5 NAME=compositor STATE=drop EVIDENCE=/var/lib/nuxel/touch-capture/20261104T103709Z/compositor-fds.txt DETAIL=phoc pid=5826 holds NO /dev/input node (input never reached the compositor)
+LAYER=6 NAME=wayland STATE=drop EVIDENCE=/var/lib/nuxel/touch-capture/20261104T103709Z/wayland-seat.txt DETAIL=compositor state present but no wl_touch in the journal window while raw events were seen below it (0 seat/focus lines)
+LAYER=7 NAME=dom STATE=drop EVIDENCE=/var/lib/nuxel/touch-capture/20261104T103709Z/dom.txt DETAIL=the DOM probe is installed (diag lines present) but no touch event reached the document in this window while raw events were seen below it
+RAW_SUMMARY events=0 frames=0 BTN_TOUCH=0 down=0 up=0 points=0 
+GATE=fail {"btn_touch_events": 0, "down": 0, "up": 0, "points": 0, "coords_x": [], "coords_y": [], "device_range_x": [0, 4095], "device_range_y": [0, 4095], "coords_plausible": false, "dom_layer_state": "drop", "pass": false}
+FIRST_FAIL_LAYER=2
+FIRST_DROP_LAYER=2
+VERDICT=PIPELINE_STOPPED_AT_LAYER=2 NAME=irq STATE=drop
+LAYER_EXIT=1 NAME=driver STATE=ok EXIT=11
+LAYER_EXIT=2 NAME=irq STATE=drop EXIT=12
+LAYER_EXIT=3 NAME=evdev STATE=ok EXIT=13
+LAYER_EXIT=4 NAME=libinput STATE=ok EXIT=14
+LAYER_EXIT=5 NAME=compositor STATE=drop EXIT=15
+LAYER_EXIT=6 NAME=wayland STATE=drop EXIT=16
+LAYER_EXIT=7 NAME=dom STATE=drop EXIT=17
+EXIT_CODE=3 (gate fail; first lossy layer 2 irq is drop - pass --layer-exit-codes to get 12 here)
+EVIDENCE_BUNDLE=/var/lib/nuxel/touch-capture/20261104T103709Z
+NOTE: --expect-finger was set and the gate did not pass; write the result as NEEDS_OWNER_TEST (a human finger is the only acceptable proof) - never VERIFIED_ON_S10PLUS.
+ARCHIVE_HINT=python3 nuxel-touch-trace.py --archive /var/lib/nuxel/touch-capture/20261104T103709Z --archive-dir docs/beta-finalization/live/evidence
+----------------------------------------------------------------
+CAPTURE_GATE=FAIL
+VERDICT=NEEDS_OWNER_TEST(dom=drop btn=0 down=0 up=0 points=0)
+BUNDLE=/var/lib/nuxel/touch-capture/20261104T103709Z
+EVIDENCE: /var/lib/nuxel/touch-capture/20261104T103709Z/gate.json  /var/lib/nuxel/touch-capture/20261104T103709Z/trace.txt  /var/lib/nuxel/touch-capture/20261104T103709Z/events.jsonl  /var/lib/nuxel/touch-capture/20261104T103709Z/coordinate-map.json
+          /var/lib/nuxel/touch-capture/20261104T103709Z/diagnostics.txt  /var/lib/nuxel/touch-capture/20261104T103709Z/raw-touch.bin  /var/lib/nuxel/touch-capture/20261104T103709Z/touch-events.log
+ARCHIVE (from the host, so the evidence lands in the repository):
+  tools/s10plus/a33/nuxel-touch-trace.py --archive /var/lib/nuxel/touch-capture/20261104T103709Z --archive-dir docs/beta-finalization/live/evidence
+log paths: /run/nuxel-touch-dom.log (DOM), /run/nuxel-libinput-path.state (libinput),
+           /run/nuxel-home.state (launcher NUXEL_INPUT), /var/lib/nuxel/touch-capture/20261104T103709Z/touch-events.log (raw decode)
+
+No end-to-end touch was proven. Read the per-layer verdicts in trace.txt:
+  grep '^LAYER=' /var/lib/nuxel/touch-capture/20261104T103709Z/trace.txt
+  grep '^FIRST_FAIL_LAYER=' /var/lib/nuxel/touch-capture/20261104T103709Z/trace.txt
+The FIRST failing layer is where the pipeline stops; that is the thing to fix.
+This item stays NEEDS_OWNER_TEST; it must NOT be reported as VERIFIED_ON_S10PLUS.
+

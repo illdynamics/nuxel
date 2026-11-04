@@ -6,11 +6,11 @@
   "category": "games",
   "type": "pwa",
   "url": "/pwa/nuxel-apps/doom/index.html",
-  "description": "Touch-first original Nuxel arcade shooter with fullscreen multitouch controls",
+  "description": "Real Chocolate Doom WAD engine with touch-first controls, Freedoom support and native engine comparison",
   "capabilities": [],
   "docked": false,
   "network": "none",
   "offline_first": true,
-  "provenance": "Original Nuxel implementation. No DOOM WAD, copyrighted sprite or commercial game asset is bundled.",
-  "version": "1.0.0"
+  "provenance": "Chocolate Doom 3.0 WebAssembly from cloudflare/doom-wasm (GPL-2.0-or-later) plus original Nuxel shell. No commercial WAD or sprite is bundled.",
+  "version": "2.0.0"
 }

@@ -3,20 +3,24 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.7.6-beta** — _The penguin has a shotgun._
+**v0.7.7-beta** — _The penguin has a shotgun and a real WAD engine._
 
-> **v0.7.6-beta (2026-11-04).** **Nuxel Doom is here, and the phone finally
-> behaves like a handheld.** The new **Nuxel Doom** PWA ships an original
-> 320×180 raycasting engine with three sectors, a left-thumb movement stick,
-> right-side aim, multitouch fire/use/weapon/run, doors, pickups, enemies,
-> audio, optional haptics, pause/resume and offline saves. It is installable
-> and removable from **NuXtore** like any other local package. The launcher now
-> hides the triple buttons in every foreground app and reveals them with a
-> bottom-edge swipe; real fullscreen apps such as Doom also lose the top bar,
-> which pulls down on demand. The launcher and lockscreen keep their chrome.
-> No keyboard is opened by any Doom screen. See
-> [`docs/games/doom.md`](docs/games/doom.md) and
-> [`docs/releases/v0.7.6-beta.md`](docs/releases/v0.7.6-beta.md).
+> **v0.7.7-beta (2026-11-04).** **Nuxel Doom is now a real WAD engine.**
+> The old lookalike raycaster is gone: `org.nuxel.Doom` runs the **Chocolate
+> Doom 3.0 engine compiled to WebAssembly**, loads Freedoom or an imported WAD
+> through a read-only bridge catalogue, and renders the actual DOOM maps with
+> a two-thumb multitouch HUD. The same release adds **Chocolate Doom** and
+> **UZDoom** comparison apps, both installable/removable from **NuXtore**.
+> Every foreground app is now immersive by default: the triple buttons and top
+> bar disappear, a bottom-edge swipe brings navigation back, and a top-edge
+> pull brings the status bar back. The same gesture works for native apps: the
+> layer-shell dock keeps a 14 px bottom strip instead of vanishing. Home and
+> the lockscreen are exempt. The phone also always boots in portrait and holds
+> that pose through the lockscreen; the saved rotation mode resumes only after
+> unlock. No Doom screen contains a text field or raises the system keyboard. See
+> [`docs/games/doom.md`](docs/games/doom.md),
+> [`docs/games/doom-engines.md`](docs/games/doom-engines.md) and
+> [`docs/releases/v0.7.7-beta.md`](docs/releases/v0.7.7-beta.md).
 >
 > **Previously in v0.7.5-beta:** rotation works (owner-confirmed, transform and
 > scale as one transaction, touch calibration follows it), GPU acceleration is
@@ -168,29 +172,39 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
-## What's new in v0.7.6-beta
+## What's new in v0.7.7-beta
 
-- **Nuxel Doom.** A complete, offline-first PWA shooter built for thumbs: a
-  320×180 raycasting renderer, three original sectors, enemies, doors, pickups,
-  three weapons, a separate movement stick and aim surface, simultaneous
-  fire/use/weapon/run, configurable sensitivity, left-handed layout, sound,
-  optional host haptics, pause/resume and local progress. No DOOM WAD or
-  copyrighted sprite is bundled; the optional Classic Engine button can launch
-  an installed Crispy Doom.
-- **Install and remove from NuXtore.** `org.nuxel.Doom` is a signed local
-  catalogue package. NuxTore registers it with the canonical app registry on
-  install, Nuxel Home shows its icon without a reboot, and Remove unregisters
-  the launcher entry while preserving user data.
-- **Immersive app chrome.** Foreground PWA apps hide the triple buttons by
-  default. A bottom-edge swipe reveals Back/Home/Recents for a few seconds so
-  any app can be minimised or killed. Real fullscreen apps additionally hide
-  the top bar; a top-edge pull reveals it. The launcher and lockscreen
-  deliberately keep their normal chrome.
-- **No Doom keyboard.** The Doom shell contains no text inputs and explicitly
-  dismisses the system OSK on start, focus and resume.
-- **Resolution of app lifecycle state.** Fullscreen mode, landscape orientation
-  and input state are released on pause, focus loss, page hide and app exit,
-  so the phone cannot be left in Doom's landscape mode with stuck fire input.
+- **A real WAD engine, not a raycaster.** Nuxel Doom now embeds Chocolate Doom
+  3.0 compiled to WebAssembly. It loads Freedoom Phase 1/2/FreeDM or an
+  imported IWAD/PWAD, warps straight into a real map, renders the actual
+  geometry, textures and status bar, and translates the touch HUD into the
+  engine's own keyboard events. The old procedural engine is no longer used.
+- **Three engines to compare.** **Nuxel Doom** is the touch-first WASM path.
+  **Chocolate Doom** is the native Fedora 3.1.1 port. **UZDoom 5.0.3** is the
+  modern GZDoom-lineage comparison path using its software renderer on this
+  vendor-kernel phone. All three are separate NuXtore packages and can be
+  installed or removed independently.
+- **Freedoom is the default content.** No commercial WAD is bundled. The bridge
+  exposes a read-only catalogue of allowlisted game-data directories and
+  streams WADs by SHA-256 digest; the app never receives a general filesystem
+  API and no path is accepted from the client.
+- **Global immersive chrome.** Every foreground app, PWA or native, now hides
+  the triple buttons and top bar by default. Swipe up from the bottom edge for
+  Back/Home/Recents (and Recents to kill), pull down from the top edge for the
+  status bar. PWAs use the DOM immersive controller; native apps keep a 14 px
+  bottom gesture strip for the dock and a 12 px top strip for the status bar.
+  Home and the lockscreen keep their normal chrome.
+- **Portrait boot until unlock.** A cold boot always applies the portrait
+  orientation before the lockscreen settles. The mode selected before boot is
+  recorded by `nuxel-orientationd` and restored by Home only after a successful
+  unlock, so rotation becomes available again once the owner is past the
+  lockscreen.
+- **No Doom keyboard.** The Doom shell has no text input, blurs focus, and asks
+  both the host and the compositor to dismiss the OSK at launch, focus, resume
+  and exit.
+- **Lifecycle safety.** Pause suspends the engine loop, focus loss releases every
+  held key, and exiting restores the previous orientation and the normal app
+  chrome.
 
 ## What's new in v0.7.5-beta
 
@@ -277,7 +291,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
   rootfs builder now installs the audio warm-up, GeoClue agent, desktop entries
   and Python D-Bus dependencies a fresh image needs.
 - **Release tooling.** Launcher cache `v66-v074-release`; whole-repo lockstep
-  at `v0.7.6-beta`; registry revision 11 with the remote-desktop, Clipper and native phone apps.
+  at `v0.7.7-beta`; registry revision 14 with the remote-desktop, Clipper and native phone apps.
 
 ## What's new in v0.2.1
 
@@ -729,7 +743,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.7.6-beta
+## Honest Status — v0.7.7-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**
@@ -803,7 +817,7 @@ source rebuild and is explicitly labelled as such: it is not byte-identical to
 the installed image. The kbase Mesa/wlroots bytes running on the phone are
 shipped as the hash-pinned `release/s10plus/gpu/` input. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
-and [`docs/releases/v0.7.6-beta.md`](docs/releases/v0.7.6-beta.md).
+and [`docs/releases/v0.7.7-beta.md`](docs/releases/v0.7.7-beta.md).
 
 | Area | Score | Notes |
 |---|---|---|
@@ -1015,7 +1029,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.6-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.7-beta + readiness |
 | [docs/features/README.md](docs/features/README.md) | Canonical feature-status matrix with evidence anchors |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |

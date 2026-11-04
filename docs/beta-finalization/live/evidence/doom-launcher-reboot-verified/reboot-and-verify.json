@@ -1,0 +1,416 @@
+{
+  "at": "2026-11-04T11:33:07+0100",
+  "blocked_reason": null,
+  "briq": "briq-10c-live-reboot-and-verify",
+  "checklists": {
+    "post": [
+      {
+        "evidence": "{\"rid\": \"2c840a0b\", \"rc\": 0, \"framed\": true, \"sha_ok\": true, \"elapsed_s\": 0.842, \"raw_len\": 974, \"output_bytes\": 77}",
+        "id": "po-1",
+        "item": "console reconnects and answers a verified frame",
+        "status": "pass"
+      },
+      {
+        "evidence": "0 failed units | units: {\"nuxel-wayland\": \"active\", \"nuxel-wl-fb\": \"active\", \"nuxel-button-manager\": \"active\", \"nuxel-touch-arm\": \"active\", \"seatd\": \"active\"}",
+        "id": "po-2",
+        "item": "boot graph completed without failed units",
+        "status": "pass"
+      },
+      {
+        "evidence": "schema_version=1",
+        "id": "po-3",
+        "item": "framebuffer owner is the single Wayland/fb bridge",
+        "status": "fail"
+      },
+      {
+        "evidence": "ANIM_STAGE=ANIMATION_STOPPED",
+        "id": "po-4",
+        "item": "animation handoff receipt present",
+        "status": "pass"
+      },
+      {
+        "evidence": "HTTP 403",
+        "id": "po-5",
+        "item": "launcher serves the registry on :8000",
+        "status": "fail"
+      }
+    ],
+    "pre": [
+      {
+        "evidence": "906 deploy targets audited, 0 refused by assert_userspace_path(); skipped blocked groups: console-and-kernel-side-followups",
+        "id": "pr-1",
+        "item": "no block-device / firmware write this session",
+        "status": "pass"
+      },
+      {
+        "evidence": "10 *.nuxel-rollback file(s) on the device",
+        "id": "pr-2",
+        "item": "rollback copies present for deployed files",
+        "status": "pass"
+      },
+      {
+        "evidence": "MISSING",
+        "id": "pr-3",
+        "item": "known-good userspace rollback path recorded",
+        "status": "warn"
+      },
+      {
+        "evidence": "capability-based reconnect (/dev/ttyACM0); timeout 240.0s, poll 3.0s",
+        "id": "pr-4",
+        "item": "console reconnect procedure ready on the host",
+        "status": "pass"
+      },
+      {
+        "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261028T093120+0100",
+        "id": "pr-5",
+        "item": "baseline bundle captured and hashed",
+        "status": "pass"
+      }
+    ]
+  },
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "match_stage": "explicit"
+  },
+  "diagnostic": "post-install verification: launcher paths, bridge route and fullscreen Crispy Doom startup",
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/doom-launcher-reboot-verified",
+  "exit_code": 0,
+  "history_after": [
+    {
+      "at": "2026-11-04T11:33:49+0100",
+      "diagnostic": "post-install verification: launcher paths, bridge route and fullscreen Crispy Doom startup",
+      "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/doom-launcher-reboot-verified",
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/doom-launcher-reboot-verified",
+      "n": 1,
+      "reason": "user-requested reboot after installing and verifying the Crispy Doom touch launcher",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    }
+  ],
+  "history_before": [
+    {
+      "at": "2026-11-04T11:33:49+0100",
+      "diagnostic": "post-install verification: launcher paths, bridge route and fullscreen Crispy Doom startup",
+      "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/doom-launcher-reboot-verified",
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/doom-launcher-reboot-verified",
+      "n": 1,
+      "reason": "user-requested reboot after installing and verifying the Crispy Doom touch launcher",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    }
+  ],
+  "history_path": "docs/beta-finalization/live/evidence/doom-launcher-reboot/reboots.json",
+  "history_verdict": {
+    "allowed": true,
+    "code": "ok",
+    "reason": "budget and prerequisites satisfied"
+  },
+  "post_reboot": {
+    "animation": "ANIM_STAGE=ANIMATION_STOPPED",
+    "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory",
+    "boot_id": "4cacd5cc-5560-457e-bbf1-acd565b972e9",
+    "boot_mode": "",
+    "failed_units": "",
+    "fb_owner": "schema_version=1",
+    "registry_http": "403",
+    "units": "nuxel-wayland=active",
+    "uptime": "18.91 107.84",
+    "wl_fb_state": "1793788448 FRAMES_OK total=51 fps_1s=5 failures=0 blits=7 present_skipped=43 blit_avg_ms=0 pan_avg_ms=7 capture_avg_ms=3 compare_avg_ms=0 damage=546-974 damage_runs=1 damage_blits=6 damage_avg_ms=0 idle_ms=3040 out=720x1520 src=720x1520 scale=1 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=8 decon_pan_failed=0"
+  },
+  "pre_reboot": {
+    "animation": "ANIM_STAGE=ANIMATION_STOPPED",
+    "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory",
+    "boot_id": "79af4d41-0488-4c67-9d08-80bbac7f171e",
+    "boot_mode": "",
+    "failed_units": "",
+    "fb_owner": "schema_version=1",
+    "registry_http": "403",
+    "units": "nuxel-wayland=active",
+    "uptime": "941.73 6012.43",
+    "wl_fb_state": "1793788408 DISPLAY_SLEEP total=7947 failures=0 owner=nuxel-wl-fb display=off capture=stopped"
+  },
+  "probe": {
+    "at": "2026-11-04T11:33:08+0100",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.303,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "probe_summary": {
+    "DEPLOYED_UNVERIFIED": 2,
+    "FAILED": 2,
+    "NEEDS_OWNER_TEST": 1,
+    "VERIFIED_ON_S10PLUS": 1
+  },
+  "probes": [
+    {
+      "area": "01-touchscreen",
+      "cmd": "sh /var/tmp/nuxel-live-probes/nuxel-touch-capture.sh --dry-run --seconds 20",
+      "diagnostic": "nuxel-touch-capture.sh --seconds 90 (finger) / --dry-run (state only)",
+      "failure_symptoms": "no CAPTURE_GATE line; tracer reports a missing node; charger-mode classification",
+      "framed": true,
+      "human_required": true,
+      "id": "touch-pipeline",
+      "log": "probes/touch-pipeline.txt",
+      "observation": "== nuxel-touch-capture ==\nBUNDLE=/var/lib/nuxel/touch-capture/20261104T103709Z\nBUDGET_SECONDS=20 MAX_EVENTS=4000 MAX_BYTES=1048576 DRY_RUN=1\n---- TOUCH SEQUENCE (perform these while the capture is armed) ----------------\n  1. TAP DOWN/UP      one deliberate tap in the centre of the screen (slow, ~0.3 s)\n  2. THREE TAPS       top-left, centre, bottom-right (catches a swapped/inverted axis)\n  3. SWIPE            bottom third -> top third, slowly (>= 1 s), for scroll/gesture\n  4. MULTI-CONTACT    two fingers down together for ~1 s, then lift both\n  5. SELECT AN APP    tap a launcher tile (Terminal or Settings) and let it open\n  6. KEYBOARD         if a text field is reachable, type three keys on the on-screen\n                      keyboard (proves the keyboard's own hit testing)\n  Then, and only then, answer the human half: did the UI actually respond?\n------------------------------------------------------------------------------\nSEQUENCE recorded in $OUT/commands.txt (and above)\n== nuxel-touch-trace --capture  budget=20s max_events=4000 max_bytes=1048576 dry_run=True ==\nBOOT_MODE=normal (no charger/LPM marker present)\nDRY_RUN: no arming, no DOM collector, no writes outside the evidence bundle\nEVDEV_SCAN nodes=11 touch_candidates=1 (/dev/input/event2='sec_touchscreen')\nSYSFS_INPUT root=/sys/class/input entries=11 selected=/dev/input/event2 name='sec_touchscreen' direct=1 mt=1 vendor=0000 product=0000\nNODE_ID ioctl EVIOCGID bustype=0x0018 vendor=0x0000 product=0x0000 version=0x0000 (the node's own answer) | sysfs id bustype=0018 vendor=0000 product=0000; ABS_MT_SLOT claimed=True EVIOCGABS(ABS_MT_SLOT)=(0, 9) -> contact_slots=10\nPANEL=1440x3040 source=/sys/class/graphics/fb0/modes fb=(unreadable) bpp=32 virtual_size=1440x6080 pages=2 output=(unknown) scale=1 transform=normal\nCOORD_MAP mapping=scaled device_range_x=[0, 4095] device_range_y=[0, 4095] range_source=ioctl EVIOCGABS on /dev/input/event2 -> panel 1440x3040 -> output 1440x3040\nEVENTS_JSONL=/var/lib/nuxel/touch-c",
+      "priority": 1,
+      "purpose": "prove how far a touch event travels before something drops it (sec_ts -> IRQ -> evdev -> libinput -> Phoc -> Wayland -> WebKitGTK -> PWA)",
+      "rc": 1,
+      "reason": "the capture wrote its bundle but recorded no finger: a desk run without a touch is not a touchscreen test",
+      "sha_ok": true,
+      "staged": [
+        {
+          "bytes": 12394,
+          "frames": 130,
+          "sha256": "e39a04aa390bd6b75ac96dad8c2223128e013ccb2fa07230cbaf4899a820f60d",
+          "source": "tools/s10plus/a33/nuxel-touch-capture.sh",
+          "target": "/var/tmp/nuxel-live-probes/nuxel-touch-capture.sh"
+        },
+        {
+          "bytes": 117921,
+          "frames": 1229,
+          "sha256": "7adc6f12a99dbd11789907aa700cb46a0fe187a49d9768a6cf29063176bde7df",
+          "source": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "target": "/var/tmp/nuxel-live-probes/nuxel-touch-trace.py"
+        },
+        {
+          "bytes": 26824,
+          "frames": 280,
+          "sha256": "4dfad2a9da0db0762772a5996acb6b60950a95bae05dacae23b20401f34f9d4d",
+          "source": "tools/s10plus/a33/nuxel-bootmode-guard.py",
+          "target": "/var/tmp/nuxel-live-probes/nuxel-bootmode-guard.py"
+        }
+      ],
+      "verdict": "NEEDS_OWNER_TEST"
+    },
+    {
+      "area": "06-audio",
+      "cmd": "sh /var/tmp/nuxel-live-probes/nuxel-audio-diag.sh pipeline --json",
+      "diagnostic": "nuxel-audio-diag.sh pipeline --json; tone 500 --yes (low volume)",
+      "failure_symptoms": "no beyond-madera card; a named first broken stage; DAC never enters the running state",
+      "framed": true,
+      "human_required": true,
+      "id": "audio-abox",
+      "log": "probes/audio-abox.txt",
+      "observation": "{\"schema_version\":1,\"device\":\"beyond2lte\",\"card\":\"beyond-madera\",\"card_index\":0,\"stages\":{\"card\":\"OK\",\"pcm\":\"OK\",\"controls\":\"OK\",\"dapm\":\"OK\",\"route\":\"OK\",\"dac_running\":\"FAIL\"},\"pcm_state\":\"\",\"playback_controls\":1475,\"firmware\":\"PRESENT\",\"state\":\"DAC_NOT_RUNNING\",\"first_broken_stage\":\"dac_running\",\"reason\":\"PCM state='' \u2014 the DAC/ABox never entered the running state\",\"low_volume_cap_percent\":100}",
+      "priority": 3,
+      "purpose": "walk card -> PCM -> mixer -> DAPM -> route -> DAC/ABox and name the first stage that is missing or silent",
+      "rc": 0,
+      "reason": "the walk named the first broken playback stage: {\"schema_version\":1,\"device\":\"beyond2lte\",\"card\":\"beyond-madera\",\"card_index\":0,\"stages\":{\"card\":\"OK\",\"pcm\":\"OK\",\"controls\":\"OK\",\"dapm\":\"OK\",\"route\":\"OK\",\"dac_r",
+      "sha_ok": true,
+      "staged": [
+        {
+          "bytes": 31297,
+          "frames": 327,
+          "sha256": "a6eb18d7cc08952ffcfa9d5568171946decd9eef863d65e6903365ec0b30d034",
+          "source": "tools/s10plus/a33/nuxel-audio-diag.sh",
+          "target": "/var/tmp/nuxel-live-probes/nuxel-audio-diag.sh"
+        }
+      ],
+      "verdict": "FAILED"
+    },
+    {
+      "area": "02-boot-animation-launcher",
+      "cmd": "cat /var/lib/nuxel/fb-owner; cat /run/nuxel-wl-fb.state",
+      "diagnostic": "cat /var/lib/nuxel/fb-owner /run/nuxel-wl-fb.state",
+      "failure_symptoms": "two owners, an empty receipt, or an owner that is not nuxel-wl-fb",
+      "framed": true,
+      "human_required": false,
+      "id": "fb-owner",
+      "log": "probes/fb-owner.txt",
+      "observation": "schema_version=1\nowner=nuxel-wl-fb\npid=5996\nstage=LAUNCHER_DISPLAY_OWNER\nui_writer=1\nreason=single_owner_takeover\nreceipt=1793788443-ANIMATION_STOP_CONFIRMED-5996\nlock=/run/nuxel-fb-owner.lock\nboot_id=4cacd5cc-5560-457e-bbf1-acd565b972e9\nts=1793788443\n1793788670 FRAMES_OK total=395 fps_1s=1 failures=0 blits=11 present_skipped=383 blit_avg_ms=1 pan_avg_ms=8 capture_avg_ms=5 compare_avg_ms=3 damage=631-887 damage_runs=2 damage_blits=9 damage_avg_ms=0 idle_ms=50072 out=720x1520 src=720x1520 scale=1 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=12 decon_pan_failed=0",
+      "priority": 2,
+      "purpose": "exactly one framebuffer owner after the reboot",
+      "rc": 0,
+      "reason": "the device itself reports the single framebuffer owner (nuxel-wl-fb) in /var/lib/nuxel/fb-owner and /run/nuxel-wl-fb.state",
+      "sha_ok": true,
+      "staged": [],
+      "verdict": "VERIFIED_ON_S10PLUS"
+    },
+    {
+      "area": "01-touchscreen",
+      "cmd": "grep -iE 'sec_ts|sec_touch' /proc/interrupts",
+      "diagnostic": "grep -iE 'sec_ts|sec_touch' /proc/interrupts",
+      "failure_symptoms": "no sec_ts line, or a line whose counter never moves",
+      "framed": true,
+      "human_required": false,
+      "id": "sec-ts-irq",
+      "log": "probes/sec-ts-irq.txt",
+      "observation": "431:          9          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0 Level     sec_ts",
+      "priority": 1,
+      "purpose": "the touch controller's interrupt counter after the reboot",
+      "rc": 0,
+      "reason": "sec_ts has a live interrupt counter (sum=9): this proves the controller is mapped, not that a touch is delivered",
+      "sha_ok": true,
+      "staged": [],
+      "verdict": "DEPLOYED_UNVERIFIED"
+    },
+    {
+      "area": "20-applications",
+      "cmd": "curl -s http://127.0.0.1:8000/registry.json | head -c 400",
+      "diagnostic": "curl -s http://127.0.0.1:8000/registry.json | head -c 400",
+      "failure_symptoms": "connection refused, empty body, non-JSON body",
+      "framed": true,
+      "human_required": false,
+      "id": "pwa-registry",
+      "log": "probes/pwa-registry.txt",
+      "observation": "nuxel-web: not found",
+      "priority": 2,
+      "purpose": "the launcher/app registry is served over :8000 after the reboot",
+      "rc": 0,
+      "reason": "the launcher did not serve the registry on 127.0.0.1:8000",
+      "sha_ok": true,
+      "staged": [],
+      "verdict": "FAILED"
+    },
+    {
+      "area": "01-touchscreen",
+      "cmd": "cat /sys/class/power_supply/*/online 2>/dev/null; dmesg 2>/dev/null | grep -i lpcharge | tail -3",
+      "diagnostic": "dmesg | grep -i lpcharge; tr ' ' '\\n' </proc/cmdline | grep mode",
+      "failure_symptoms": "lpcharge/charger-mode markers in the kernel log on a normal boot",
+      "framed": true,
+      "human_required": false,
+      "id": "charger-mode",
+      "log": "probes/charger-mode.txt",
+      "observation": "1\n19\n0\n0\n0\n0",
+      "priority": 1,
+      "purpose": "the known touch-blocking boot mode that must not be regressed",
+      "rc": 0,
+      "reason": "no charger-mode marker observed on this boot",
+      "sha_ok": true,
+      "staged": [],
+      "verdict": "DEPLOYED_UNVERIFIED"
+    }
+  ],
+  "reason": "user-requested reboot after installing and verifying the Crispy Doom touch launcher",
+  "reboot": {
+    "command_frame": {
+      "elapsed_s": 0.113,
+      "framed": true,
+      "output_bytes": 0,
+      "raw_len": 11917,
+      "rc": 0,
+      "rid": "4fa109e6",
+      "sha_ok": true
+    },
+    "command_output": "",
+    "disconnect": "end of stream on /dev/ttyACM0 (gadget disconnected)",
+    "disconnected": true,
+    "issued_at": "2026-11-04T11:33:10+0100",
+    "policy": {
+      "allowed": true,
+      "code": "ok",
+      "reason": "budget and prerequisites satisfied"
+    },
+    "proof": {
+      "boot_count_after": null,
+      "boot_count_before": null,
+      "boot_id_after": "4cacd5cc-5560-457e-bbf1-acd565b972e9",
+      "boot_id_before": "79af4d41-0488-4c67-9d08-80bbac7f171e",
+      "boot_id_changed": true,
+      "note": "at least one independent on-device signal proves the power cycle",
+      "rebooted": true,
+      "signals": [
+        "kernel boot_id changed",
+        "uptime went backwards (941.7s -> 18.9s)"
+      ],
+      "uptime_after": 18.91,
+      "uptime_before": 941.73,
+      "uptime_went_backwards": true
+    },
+    "reconnect_attempts": [
+      {
+        "at": "2026-11-04T11:33:26+0100",
+        "error": "cannot open/configure /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+        "node": null,
+        "reachable": false
+      },
+      {
+        "at": "2026-11-04T11:33:29+0100",
+        "error": "cannot open/configure /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+        "node": null,
+        "reachable": false
+      },
+      {
+        "at": "2026-11-04T11:33:32+0100",
+        "error": "cannot open/configure /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+        "node": null,
+        "reachable": false
+      },
+      {
+        "at": "2026-11-04T11:33:35+0100",
+        "error": "cannot open/configure /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+        "node": null,
+        "reachable": false
+      },
+      {
+        "at": "2026-11-04T11:33:38+0100",
+        "error": "cannot open/configure /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+        "node": null,
+        "reachable": false
+      },
+      {
+        "at": "2026-11-04T11:33:41+0100",
+        "error": "cannot open/configure /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+        "node": null,
+        "reachable": false
+      },
+      {
+        "at": "2026-11-04T11:33:44+0100",
+        "error": "cannot open/configure /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+        "node": null,
+        "reachable": false
+      },
+      {
+        "at": "2026-11-04T11:33:47+0100",
+        "error": null,
+        "frame": {
+          "elapsed_s": 0.842,
+          "framed": true,
+          "output_bytes": 77,
+          "raw_len": 974,
+          "rc": 0,
+          "rid": "2c840a0b",
+          "sha_ok": true
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-11-04T11:33:47+0100",
+          "bytes_in": 115,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.302,
+          "error": null,
+          "reachable": true,
+          "sample": "^[[?2004hsh-5.3#\n\u001b[?2004lsh: :s^[[?2004hsh-5.3#: substitution failed\n\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": true
+      }
+    ],
+    "requested": true,
+    "returned_to_nuxel": true,
+    "verdict": "VERIFIED_ON_S10PLUS"
+  },
+  "reboot_cmd": "systemctl reboot --force",
+  "reboot_requested": true,
+  "simulated": false,
+  "verdict": "FAILED",
+  "verdict_note": "the phone returned to Nuxel; per-item verdicts above are taken from the device's own output, never from the fact that a command exited 0",
+  "verdicts": {
+    "briq-10c-live-reboot-and-verify": "FAILED",
+    "per-item": {
+      "audio-abox": "FAILED",
+      "charger-mode": "DEPLOYED_UNVERIFIED",
+      "fb-owner": "VERIFIED_ON_S10PLUS",
+      "pwa-registry": "FAILED",
+      "sec-ts-irq": "DEPLOYED_UNVERIFIED",
+      "touch-pipeline": "NEEDS_OWNER_TEST"
+    }
+  }
+}

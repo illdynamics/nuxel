@@ -111,7 +111,7 @@ def test_cache_version_bumped():
     html = read("pwa/nuxel-home/index.html")
     assert "status-bar.css?v=p52000" in html
     assert "status-bar.js?v=p56000" in html
-    assert "app.js?v=p62000" in html
+    assert "app.js?v=p77000" in html
 
 
 if __name__ == "__main__":

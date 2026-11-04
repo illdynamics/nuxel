@@ -61,6 +61,12 @@ class NuxelHome {
         this._lastActionAt = 0;
         this._suppressBackUntil = 0;
         this._backBusy = false;
+        // v0.7.7-beta: every cold boot starts in portrait while the lockscreen
+        // is up.  The previous orientation mode is remembered and restored only
+        // after a successful unlock, so rotation becomes available again once
+        // the owner is past the lockscreen.
+        this._bootOrientationActive = false;
+        this._bootOrientationPrevious = null;
         this._init();
     }
 
@@ -195,6 +201,9 @@ class NuxelHome {
             this._observeAppFrame(surface.frame, app);
         }
         this._setAppState('ACTIVE', app, surface.frame);
+        // A game or any app may gain focus without owning an editable field.
+        // Never let a stale IME surface ride along with the app launch.
+        this._dismissKeyboard();
         if (this.sessions) this.sessions.activate(app.id);
         return true;
     }
@@ -726,6 +735,7 @@ class NuxelHome {
             this._setAppState('ACTIVE', app, frame);
             this._observeAppFrame(frame, app);
             this._setNavDock(false);
+            this._dismissKeyboard();
         }, { once: true });
         frame.addEventListener('error', () => {
             if (this.appSession.frame !== frame) return;
@@ -750,10 +760,12 @@ class NuxelHome {
             return;
         }
         this._dismissLauncherChrome();
-        // Native applications are fullscreen top-level Wayland clients; the
-        // layer-shell nav dock is what keeps Back/Home/Recents (and the top
-        // status bar in the Home surface) available over them.
-        this._setNavDock(true);
+        // Native applications are fullscreen top-level Wayland clients.  The
+        // global contract is the same as for PWAs: no visible triple buttons
+        // over the app.  nuxel-navdock keeps a 14 px bottom gesture strip
+        // mapped instead; an upward swipe reveals Back/Home/Recents and then
+        // auto-hides them.  Home and the lockscreen are the only exceptions.
+        this._setNavDock(false);
         const target = app.nativeAppId || app.id;
         this._setAppState('LAUNCHING', app, null);
 
@@ -1096,6 +1108,9 @@ class NuxelHome {
        contract is testable and so a failed unlock can never call it. */
     _enterHomeAfterUnlock(reason) {
         this._inputTrace(`unlock:home reason=${reason}`);
+        // The boot pose ends here, not before: portrait is held through the
+        // lockscreen and the previously selected mode may rotate only now.
+        this._releaseBootOrientation();
         // A stale #app=<id> is a route from before the lock; clear it so a
         // later hashchange/reload cannot reopen the Applications window.
         try {
@@ -1182,13 +1197,80 @@ class NuxelHome {
                     this.lockscreen.hide();
                     try { document.documentElement.classList.remove('nuxel-boot-locked'); } catch (e) {}
                     this._setNavDock(true);
+                    this._releaseBootOrientation();
                     this._inputTrace('lockscreen:boot-authority-unlocked');
                 }
             }).catch(() => {});
         }
         this._inputTrace(`lockscreen-controller version=a45.1 device=${window.NuxelHost && window.NuxelHost.available ? 'phone' : 'local'}`);
         if (this._isLocked()) this._setNavDock(false);
+        // Portrait is the boot pose.  This runs only while the lockscreen is
+        // actually up; a warm launcher reload does not rotate a live session.
+        const bootLocked = !!(document.documentElement &&
+            document.documentElement.classList &&
+            document.documentElement.classList.contains('nuxel-boot-locked'));
+        if (this._isLocked() || bootLocked) {
+            this._applyBootOrientation();
+        }
         this._watchDisplayForLock();
+    }
+
+    /* Boot orientation contract (v0.7.7-beta).
+       The owner asked for Nuxel to ALWAYS come up in portrait, up to and
+       including the lockscreen; only after a successful unlock may the saved
+       orientation mode take over again.  The bridge is the one owner of the
+       compositor transform, so this only asks it to apply portrait and later
+       restores the exact mode that was selected before boot. */
+    _applyBootOrientation() {
+        if (this._bootOrientationActive) return Promise.resolve(false);
+        this._bootOrientationActive = true;
+        this._bootOrientationPrevious = null;
+        const b = (typeof bridge !== 'undefined' && bridge && typeof bridge.call === 'function')
+            ? bridge : null;
+        if (!b) return Promise.resolve(false);
+        let current = null;
+        return Promise.resolve(b.call('orientation', 'get', {})).then((st) => {
+            if (st && st.success !== false) {
+                current = st.mode || (st.state && st.state.mode) || null;
+                // The daemon may already have applied the cold-boot portrait
+                // hold and recorded the owner's pre-boot mode.  Prefer that
+                // record over the now-portrait current mode.
+                const recorded = st.boot_previous_mode || null;
+                if (recorded && recorded !== 'portrait') this._bootOrientationPrevious = recorded;
+                else if (current && current !== 'portrait') this._bootOrientationPrevious = current;
+            }
+            return b.call('orientation', 'set', { mode: 'portrait' });
+        }).then((res) => {
+            const display = (res && (res.display || res.compositor)) || {};
+            const applied = !!(res && (res.applied === true || display.applied === true));
+            this._inputTrace('boot-orientation portrait applied=' + (applied ? 1 : 0));
+            return applied;
+        }).catch((e) => {
+            this._inputTrace('boot-orientation error ' + (e && e.message ? e.message : e));
+            return false;
+        });
+    }
+
+    _releaseBootOrientation() {
+        if (!this._bootOrientationActive) return Promise.resolve(false);
+        this._bootOrientationActive = false;
+        const previous = this._bootOrientationPrevious;
+        this._bootOrientationPrevious = null;
+        if (!previous || previous === 'portrait') return Promise.resolve(false);
+        const b = (typeof bridge !== 'undefined' && bridge && typeof bridge.call === 'function')
+            ? bridge : null;
+        if (!b) return Promise.resolve(false);
+        return Promise.resolve(b.call('orientation', 'set', { mode: previous }))
+            .then((res) => {
+                this._inputTrace('boot-orientation released mode=' + previous +
+                    ' success=' + (res && res.success === true ? 1 : 0));
+                return !!(res && res.success === true);
+            })
+            .catch((e) => {
+                this._inputTrace('boot-orientation release-error ' +
+                    (e && e.message ? e.message : e));
+                return false;
+            });
     }
 
     /* Re-lock when the display actually powers down (idle timeout or Power),

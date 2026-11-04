@@ -74,7 +74,8 @@ except Exception as _e:  # pragma: no cover - optional module
 # an ON state without hardware evidence.
 for _modname in ('dnd_provider', 'nfc_provider', 'fingerprint_provider',
                  'security_provider', 'led_notification_provider', 'app_manager',
-                 'software_provider', 'privacy_provider', 'flatpak_provider'):
+                 'software_provider', 'privacy_provider', 'flatpak_provider',
+                 'doom_assets'):
     try:
         globals()[_modname] = __import__(_modname)
     except Exception as _e:  # pragma: no cover - optional module
@@ -136,7 +137,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.6-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.7-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -871,6 +872,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "org.gnome.SystemMonitor": ["/usr/bin/gnome-system-monitor"],
         # PWNAGE-45000 native Software center (GTK3 + PackageKit/polkit).
         "org.gnome.Software": ["/usr/lib/nuxel/nuxel-software"],
+        # v0.7.7-beta: native Doom engine comparison paths.  Nuxel Doom itself
+        # runs Chocolate Doom in WebAssembly inside the PWA; these wrappers run
+        # the distro Chocolate Doom and the optional UZDoom build fullscreen.
+        "org.nuxel.Doom.Chocolate": ["/usr/lib/nuxel/nuxel-doom-engine", "chocolate"],
+        "org.nuxel.Doom.UZDoom": ["/usr/lib/nuxel/nuxel-doom-engine", "uzdoom"],
+        "org.nuxel.Doom.Crispy": ["/usr/lib/nuxel/nuxel-doom-engine", "crispy"],
     }
 
     # Wayland app_id reported by nuxel-foreign-toplevel (may differ from the
@@ -896,6 +903,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "org.gnome.FileRoller", "org.gnome.Loupe",
         "org.gnome.Papers", "org.gnome.SystemMonitor",
         "org.gnome.Software",
+        "org.nuxel.Doom.Chocolate", "org.nuxel.Doom.UZDoom",
+        "org.nuxel.Doom.Crispy",
     }
 
     def _ensure_xwayland(self):
@@ -1715,6 +1724,30 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
 
         elif path == '/api/v1/storage/thumbnail':
             self._send_storage_thumbnail(parse_qs(parsed.query).get('path', [''])[0])
+
+        elif path == '/api/v1/doom/wads':
+            # Read-only WAD catalogue for the in-app Chocolate Doom engine.
+            # Only allowlisted game-data roots are ever scanned; the response
+            # omits absolute paths and addresses files by SHA-256.
+            if doom_assets is None:
+                self._send_json({'success': False, 'error': 'doom_assets_unavailable'}, 503)
+            else:
+                self._send_json(doom_assets.public_catalogue())
+
+        elif path == '/api/v1/doom/wad':
+            # Stream one already-catalogued WAD into the WebAssembly FS.  The
+            # query parameter is a digest, never a path.
+            if doom_assets is None:
+                self._send_json({'success': False, 'error': 'doom_assets_unavailable'}, 503)
+            else:
+                wid = parse_qs(parsed.query).get('id', [''])[0]
+                data = doom_assets.read_bytes(wid)
+                if data is None:
+                    self._send_json({'success': False, 'error': 'wad_not_found',
+                                     'id': wid}, 404)
+                else:
+                    self._send_bytes(data, 'application/octet-stream',
+                                     cache='private, max-age=3600')
 
         elif path == '/api/v1/apps/registry':
             self._send_json(self._load_app_registry())

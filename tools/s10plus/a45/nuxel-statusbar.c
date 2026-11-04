@@ -30,6 +30,13 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 #define BAR_HEIGHT 36
+/* v0.7.7-beta: over a native fullscreen app the top bar is not kept visible.
+ * It collapses to a 12 px top-edge gesture strip and expands on a downward
+ * swipe, mirroring the nav dock's bottom-edge reveal.  Home and the lockscreen
+ * never map either state. */
+#define BAR_STRIP_HEIGHT 12
+#define BAR_REVEAL_DISTANCE 16
+#define BAR_AUTOHIDE_MS 4500
 #define STATE_FILE "/run/nuxel-statusbar.state"
 #define LOG_FILE "/run/nuxel-statusbar.log"
 #define FG_STATE "/run/nuxel/foreground.state"
@@ -44,10 +51,17 @@ static struct wl_compositor *compositor;
 static struct wl_shm *shm;
 static struct zwlr_layer_shell_v1 *layer_shell;
 static struct wl_output *output;
+static struct wl_seat *seat;
+static struct wl_touch *touch;
 static struct wl_surface *surface;
 static struct zwlr_layer_surface_v1 *layer_surface;
 static int32_t width = 360, height = BAR_HEIGHT, scale = 2;
 static int configured = 0;
+static int strip_mode = 0;       /* mapped as the top gesture strip */
+static int bar_revealed = 0;     /* full bar revealed by a downward swipe */
+static int64_t reveal_deadline = 0;
+static int touch_down = 0;
+static int32_t down_y = 0, last_y = 0;
 
 static void audit(const char *fmt, ...) {
   FILE *f = fopen(LOG_FILE, "a");
@@ -60,6 +74,9 @@ static void audit(const char *fmt, ...) {
 }
 
 static int session_locked(void);
+static int64_t now_ms(void);
+static void bar_strip(void);
+static void bar_reveal(void);
 
 static void publish_state(int visible, const char *reason, const char *fg,
                           int locked, const char *error) {
@@ -71,9 +88,11 @@ static void publish_state(int visible, const char *reason, const char *fg,
     "{\"schema_version\":1,\"ready\":true,\"visible\":%s,"
     "\"reason\":\"%s\",\"foreground_app_id\":\"%s\","
     "\"locked\":%s,\"width\":%d,\"height\":%d,\"scale\":%d,"
+    "\"strip\":%s,\"revealed\":%s,"
     "\"error\":\"%s\",\"owner\":\"nuxel-statusbar\"}\n",
     visible ? "true" : "false", reason ? reason : "",
     fg ? fg : "", locked ? "true" : "false", width, height, scale,
+    strip_mode ? "true" : "false", bar_revealed ? "true" : "false",
     error ? error : "");
   fclose(f);
   rename(tmp, STATE_FILE);
@@ -286,6 +305,31 @@ static void render(void) {
   cairo_t *cr = cairo_create(cs);
   cairo_scale(cr, scale, scale);
 
+  if (strip_mode) {
+    /* Transparent 12 px strip with a small grabber; the app keeps the glass. */
+    cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(cr);
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+    double gw = 46.0, gh = 3.0;
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.38);
+    cairo_rectangle(cr, (width - gw) / 2.0, 3.0, gw, gh);
+    cairo_fill(cr);
+    struct wl_shm_pool *spool = wl_shm_create_pool(shm, fd, size);
+    struct wl_buffer *sbuf = wl_shm_pool_create_buffer(spool, 0, bw, bh, (int)stride,
+                                                      WL_SHM_FORMAT_ARGB8888);
+    wl_shm_pool_destroy(spool);
+    wl_surface_set_buffer_scale(surface, scale);
+    wl_surface_attach(surface, sbuf, 0, 0);
+    wl_surface_damage(surface, 0, 0, bw, bh);
+    wl_surface_commit(surface);
+    cairo_destroy(cr);
+    cairo_surface_destroy(cs);
+    munmap(px, size);
+    wl_buffer_destroy(sbuf);
+    close(fd);
+    return;
+  }
+
   /* Opaque Nuxel strip (matches the launcher's status-bar colour family). */
   cairo_set_source_rgba(cr, 0.043, 0.071, 0.122, 0.96);
   cairo_paint(cr);
@@ -353,38 +397,85 @@ static void bar_hide(void) {
     surface = NULL;
   }
   configured = 0;
+  bar_revealed = 0;
+  reveal_deadline = 0;
   audit("STATUSBAR_HIDDEN reason=lock_or_home");
   publish_state(0, "lock_home_or_preload", "", session_locked(), NULL);
 }
 
-static void bar_show(void) {
+static void bar_create(void) {
   if (layer_surface || !compositor || !layer_shell || !output) return;
   if (!surface) surface = wl_compositor_create_surface(compositor);
   if (!surface) return;
+  int32_t h = strip_mode ? BAR_STRIP_HEIGHT : BAR_HEIGHT;
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(
       layer_shell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "nuxel-statusbar");
   zwlr_layer_surface_v1_set_anchor(layer_surface,
       ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
       ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
-  zwlr_layer_surface_v1_set_size(layer_surface, 0, BAR_HEIGHT);
-  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, BAR_HEIGHT);
+  zwlr_layer_surface_v1_set_size(layer_surface, 0, (uint32_t)h);
+  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface,
+      strip_mode ? 0 : BAR_HEIGHT);
   zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
       ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
-  struct wl_region *empty = wl_compositor_create_region(compositor);
-  wl_surface_set_input_region(surface, empty);
-  wl_region_destroy(empty);
+  if (!strip_mode) {
+    /* The full bar is presentation only; the top-edge reveal strip below it is
+     * the only touch owner. */
+    struct wl_region *empty = wl_compositor_create_region(compositor);
+    wl_surface_set_input_region(surface, empty);
+    wl_region_destroy(empty);
+  }
+  height = h;
   zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
   wl_surface_commit(surface);
   configured = 0;
+}
+
+static void bar_show(void) {
+  /* Default native-foreground state is the strip, not the full bar.  A swipe
+   * sets bar_revealed=1, and only then does bar_show map the full overlay. */
+  if (!bar_revealed) { bar_strip(); return; }
+  strip_mode = 0;
+  reveal_deadline = 0;
+  if (layer_surface) bar_hide();
+  bar_revealed = 1;
+  bar_create();
   audit("STATUSBAR_SHOWN locked=0");
   publish_state(1, "native_foreground", "", 0, NULL);
+}
+
+static void bar_strip(void) {
+  if (layer_surface) bar_hide();
+  strip_mode = 1;
+  bar_revealed = 0;
+  reveal_deadline = 0;
+  bar_create();
+  audit("STATUSBAR_STRIP native_foreground");
+  publish_state(0, "native_strip", "", 0, NULL);
+}
+
+static void bar_reveal(void) {
+  if (!strip_mode) return;
+  if (layer_surface) bar_hide();
+  strip_mode = 0;
+  bar_revealed = 1;
+  reveal_deadline = now_ms() + BAR_AUTOHIDE_MS;
+  bar_create();
+  audit("STATUSBAR_GESTURE_REVEAL");
+  publish_state(1, "native_reveal", "", 0, NULL);
+}
+
+static int64_t now_ms(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
 
 static void layer_configure(void *d, struct zwlr_layer_surface_v1 *ls,
                             uint32_t serial, uint32_t w, uint32_t h) {
   (void)d;
   if ((int32_t)w > 0) width = (int32_t)w;
-  height = BAR_HEIGHT;
+  height = strip_mode ? BAR_STRIP_HEIGHT : BAR_HEIGHT;
   zwlr_layer_surface_v1_ack_configure(ls, serial);
   configured = 1;
   render();
@@ -401,6 +492,51 @@ static void layer_closed(void *d, struct zwlr_layer_surface_v1 *ls) {
 }
 static const struct zwlr_layer_surface_v1_listener layer_listener = {
   .configure = layer_configure, .closed = layer_closed,
+};
+
+/* ---- top gesture strip touch -------------------------------------------- */
+static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
+                          uint32_t time, struct wl_surface *surf, int32_t id,
+                          wl_fixed_t x, wl_fixed_t y) {
+  (void)d; (void)t; (void)serial; (void)time; (void)surf; (void)id; (void)x;
+  if (!strip_mode) return;
+  touch_down = 1;
+  down_y = last_y = wl_fixed_to_int(y);
+}
+static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t id,
+                            wl_fixed_t x, wl_fixed_t y) {
+  (void)d; (void)t; (void)time; (void)id; (void)x;
+  last_y = wl_fixed_to_int(y);
+  if (strip_mode && touch_down && (last_y - down_y) >= BAR_REVEAL_DISTANCE) {
+    touch_down = 0;
+    bar_reveal();
+  }
+}
+static void touch_up_cb(void *d, struct wl_touch *t, uint32_t serial,
+                        uint32_t time, int32_t id) {
+  (void)d; (void)t; (void)serial; (void)time; (void)id;
+  touch_down = 0;
+}
+static void touch_cancel_cb(void *d, struct wl_touch *t) {
+  (void)d; (void)t; touch_down = 0;
+}
+static void touch_frame_cb(void *d, struct wl_touch *t) { (void)d; (void)t; }
+static const struct wl_touch_listener touch_listener = {
+  .down = touch_down_cb, .up = touch_up_cb, .motion = touch_motion_cb,
+  .frame = touch_frame_cb, .cancel = touch_cancel_cb,
+};
+static void seat_caps(void *d, struct wl_seat *s, uint32_t caps) {
+  (void)d;
+  if ((caps & WL_SEAT_CAPABILITY_TOUCH) && !touch) {
+    touch = wl_seat_get_touch(seat);
+    wl_touch_add_listener(touch, &touch_listener, NULL);
+  }
+}
+static void seat_name(void *d, struct wl_seat *s, const char *name) {
+  (void)d; (void)s; (void)name;
+}
+static const struct wl_seat_listener seat_listener = {
+  .capabilities = seat_caps, .name = seat_name,
 };
 
 static void output_mode(void *d, struct wl_output *o, uint32_t flags,
@@ -432,6 +568,8 @@ static void reg_global(void *d, struct wl_registry *r, uint32_t name,
     layer_shell = wl_registry_bind(r, name, &zwlr_layer_shell_v1_interface, ver < 3 ? ver : 3);
   else if (!strcmp(iface, wl_output_interface.name) && !output)
     output = wl_registry_bind(r, name, &wl_output_interface, 3);
+  else if (!strcmp(iface, wl_seat_interface.name) && !seat)
+    seat = wl_registry_bind(r, name, &wl_seat_interface, 5);
 }
 static void reg_remove(void *d, struct wl_registry *r, uint32_t name) { (void)d;(void)r;(void)name; }
 static const struct wl_registry_listener reg_listener = { reg_global, reg_remove };
@@ -449,6 +587,7 @@ int main(void) {
     return 2;
   }
   wl_output_add_listener(output, &output_listener, NULL);
+  if (seat) wl_seat_add_listener(seat, &seat_listener, NULL);
   wl_display_roundtrip(display);
 
   /* The overlay owns presentation only while ALL of these are true:
@@ -459,7 +598,7 @@ int main(void) {
   char fg[256] = "";
   int shown = 0;
   if (!locked && !preloading_active() && native_foreground(fg, sizeof fg)) {
-    bar_show();
+    bar_strip();
     shown = 1;
     wl_display_roundtrip(display);
     audit("STATUSBAR_READY width=%d height=%d scale=%d", width, height, scale);
@@ -506,8 +645,12 @@ int main(void) {
                       locked ? "locked" : preloading_active() ? "preload" : "home",
                       fg, locked, NULL);
       }
+      if (shown && !strip_mode && reveal_deadline && now_ms() >= reveal_deadline) {
+        bar_strip();
+        audit("STATUSBAR_GESTURE_AUTOHIDE");
+      }
       time_t now = time(NULL);
-      if (shown && now - last >= 10) { last = now; render(); }
+      if (shown && now - last >= 10) { last = now; if (!strip_mode) render(); }
       continue;
     }
     if (pf.revents & POLLIN) {

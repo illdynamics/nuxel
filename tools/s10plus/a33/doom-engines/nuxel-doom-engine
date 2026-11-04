@@ -1,0 +1,83 @@
+#!/bin/sh
+# Nuxel native Doom engine launcher.
+#
+# Usage: nuxel-doom-engine [nuxel|chocolate|uzdoom|crispy] [extra args...]
+#
+# This wrapper is the only native engine entry point.  It sets the real Nuxel
+# Wayland/PipeWire session environment, chooses an installed freedoom/imported
+# IWAD and runs the selected engine fullscreen.  It never writes display or
+# kernel configuration; orientation stays owned by the Nuxel bridge.
+set -eu
+ENGINE="${1:-nuxel}"
+[ $# -gt 0 ] && shift || true
+
+if [ "$(id -u)" = "0" ]; then
+    exec runuser -u nuxel -- env HOME=/home/nuxel USER=nuxel LOGNAME=nuxel \
+        XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-0 \
+        XDG_SESSION_TYPE=wayland "$0" "$ENGINE" "$@"
+fi
+
+export HOME="${HOME:-/home/nuxel}"
+export USER="${USER:-nuxel}"
+export LOGNAME="${LOGNAME:-nuxel}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+export XDG_SESSION_TYPE=wayland
+export PULSE_SERVER="${PULSE_SERVER:-unix:/run/nuxel-wayland/pulse/native}"
+export PIPEWIRE_RUNTIME_DIR="${PIPEWIRE_RUNTIME_DIR:-/run/nuxel-wayland}"
+export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-wayland}"
+export SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR=0
+export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-pulseaudio}"
+export DOOMWADDIR="${DOOMWADDIR:-$HOME/doom}"
+export NUXEL_DOOM_ENGINE="$ENGINE"
+
+STATE="${XDG_CONFIG_HOME:-$HOME/.config}/nuxel/doom-native"
+mkdir -p "$STATE/saves" 2>/dev/null || true
+
+find_iwad() {
+    # Explicit override first; then the user's import directory, then system
+    # Freedoom.  Only regular files with an IWAD header are accepted.
+    for c in "${NUXEL_DOOM_WAD:-}" "$HOME/doom/freedoom1.wad" \
+             "$HOME/doom/doom.wad" "$HOME/doom/doom2.wad" \
+             "$HOME/doom/freedoom2.wad" "$HOME/doom/freedm.wad" \
+             /usr/share/doom/freedoom1.wad /usr/share/doom/freedoom2.wad \
+             /usr/share/doom/freedm.wad /usr/share/doom/doom.wad; do
+        [ -n "$c" ] || continue
+        [ -f "$c" ] || continue
+        head -c 4 "$c" 2>/dev/null | grep -q '^IWAD' && { printf '%s\n' "$c"; return 0; }
+    done
+    return 1
+}
+WAD="$(find_iwad)" || {
+    echo "Nuxel Doom: no IWAD found in $HOME/doom or /usr/share/doom" >&2
+    exit 1
+}
+
+case "$ENGINE" in
+  nuxel|chocolate|chocolate-doom)
+    BIN=/usr/bin/chocolate-doom
+    [ -x "$BIN" ] || { echo "Chocolate Doom is not installed" >&2; exit 1; }
+    # Disable music: the handset has no working OPL/MIDI route in this image.
+    exec "$BIN" -iwad "$WAD" -config "$STATE/chocolate-doom.cfg" \
+         -savedir "$STATE/saves" -nomusic "$@"
+    ;;
+  crispy)
+    exec /usr/lib/nuxel/nuxel-crispy-doom -iwad "$WAD" -fullscreen "$@"
+    ;;
+  uzdoom)
+    BIN=""
+    for c in /usr/lib/nuxel/uzdoom/uzdoom /usr/lib/nuxel/uzdoom/bin/uzdoom \
+             /usr/share/nuxel/pwa/nuxel-apps/doom-uzdoom/engine/uzdoom; do
+        [ -x "$c" ] && { BIN="$c"; break; }
+    done
+    [ -n "$BIN" ] || { echo "UZDoom is not installed on this image" >&2; exit 1; }
+    # UZDoom has a software renderer that works without /dev/dri.  Force it so
+    # the vendor-kernel phone never falls into a broken GL path.
+    exec "$BIN" -iwad "$WAD" -config "$STATE/uzdoom.ini" \
+         +vid_renderer 0 +fullscreen 1 +vid_vsync 0 +snd_musicvolume 0 "$@"
+    ;;
+  *)
+    echo "Unknown Nuxel Doom engine: $ENGINE" >&2
+    exit 2
+    ;;
+esac

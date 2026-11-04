@@ -1,0 +1,263 @@
+{
+  "activation": [
+    {
+      "framed": true,
+      "group": "crispy-doom-launcher",
+      "kind": "restart",
+      "output": "active\nACTIVATE-OK\nNXLSCRIPT-RC=0\n",
+      "rc": 0,
+      "service": "nuxel-http-bridge.service"
+    },
+    {
+      "check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "group": "crispy-doom-launcher",
+      "kind": "health",
+      "ok": true,
+      "output": "active"
+    }
+  ],
+  "activation_counts": {
+    "daemon_reloads": 0,
+    "health_checks": 1,
+    "reloads": 0,
+    "restarts": 1
+  },
+  "apply": true,
+  "at": "2026-11-04T11:28:28+0100",
+  "boot_id_after": "79af4d41-0488-4c67-9d08-80bbac7f171e",
+  "boot_id_before": "79af4d41-0488-4c67-9d08-80bbac7f171e",
+  "boot_id_changed": false,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "changed_steps": 1,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261104T112828+0100",
+  "executed_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 0,
+      "independent_restarts_planned": 1,
+      "reloads_planned": 0,
+      "restarts_planned": 1
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [],
+    "restart_services": [
+      "nuxel-http-bridge.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "crispy-doom-launcher",
+        "service": "nuxel-http-bridge.service"
+      }
+    ]
+  },
+  "exit_code": 0,
+  "finished_at": "2026-11-04T11:28:40+0100",
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "crispy-doom-launcher",
+      "priority": 1,
+      "restart_service": "nuxel-http-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 4
+    }
+  ],
+  "health": [
+    {
+      "check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "group": "crispy-doom-launcher",
+      "kind": "health",
+      "ok": true,
+      "output": "active"
+    }
+  ],
+  "host": "dextronux",
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261104T112828+0100/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-doom-launcher-manifest.json",
+  "no_op": false,
+  "observation": null,
+  "operation_id": "deploy-20261104T112828-3208175",
+  "order": "manifest",
+  "pid": 3208175,
+  "pid_start": "100965962",
+  "planned_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 0,
+      "independent_restarts_planned": 1,
+      "reloads_planned": 0,
+      "restarts_planned": 1
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [],
+    "restart_services": [
+      "nuxel-http-bridge.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "crispy-doom-launcher",
+        "service": "nuxel-http-bridge.service"
+      }
+    ]
+  },
+  "probe": {
+    "at": "2026-11-04T11:28:28+0100",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.304,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "already_deployed": true,
+      "attempts": 1,
+      "changed": false,
+      "declared_reload": null,
+      "elapsed_s": 0.087,
+      "group": "crispy-doom-launcher",
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "installed_hash": "95d937ebae70c63ee1ca8e96283133d6fe92c913a0ea684bd70f018256be455d",
+      "mode": "0755",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "95d937ebae70c63ee1ca8e96283133d6fe92c913a0ea684bd70f018256be455d",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "service": "nuxel-http-bridge",
+      "source": "tools/s10plus/a33/nuxel-doom-launcher",
+      "source_sha256": "95d937ebae70c63ee1ca8e96283133d6fe92c913a0ea684bd70f018256be455d",
+      "target": "/usr/lib/nuxel/nuxel-doom-launcher",
+      "txn_backup": "/usr/lib/nuxel/nuxel-doom-launcher.nuxel-rollback.pre-deploy-20261104T112828-3208175"
+    },
+    {
+      "already_deployed": true,
+      "attempts": 1,
+      "changed": false,
+      "declared_reload": null,
+      "elapsed_s": 0.084,
+      "group": "crispy-doom-launcher",
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "installed_hash": "29d811b73e134688c89d84501fbbe2eba351aaf5e46e11e19fd377f81aaad6ae",
+      "mode": "0755",
+      "n": 2,
+      "ok": true,
+      "previous_hash": "29d811b73e134688c89d84501fbbe2eba351aaf5e46e11e19fd377f81aaad6ae",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "service": "nuxel-http-bridge",
+      "source": "tools/s10plus/a33/nuxel-crispy-doom",
+      "source_sha256": "29d811b73e134688c89d84501fbbe2eba351aaf5e46e11e19fd377f81aaad6ae",
+      "target": "/usr/lib/nuxel/nuxel-crispy-doom",
+      "txn_backup": "/usr/lib/nuxel/nuxel-crispy-doom.nuxel-rollback.pre-deploy-20261104T112828-3208175"
+    },
+    {
+      "already_deployed": true,
+      "attempts": 1,
+      "changed": false,
+      "declared_reload": null,
+      "elapsed_s": 0.08,
+      "group": "crispy-doom-launcher",
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "installed_hash": "47dbcd3922fc7e5257e73cc31c7bd9cd66df324833df198adc4779dcd2237aa6",
+      "mode": "0755",
+      "n": 3,
+      "ok": true,
+      "previous_hash": "47dbcd3922fc7e5257e73cc31c7bd9cd66df324833df198adc4779dcd2237aa6",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "service": "nuxel-http-bridge",
+      "source": "tools/s10plus/a33/nuxel-flatpak-doom",
+      "source_sha256": "47dbcd3922fc7e5257e73cc31c7bd9cd66df324833df198adc4779dcd2237aa6",
+      "target": "/usr/lib/nuxel/nuxel-flatpak-doom",
+      "txn_backup": "/usr/lib/nuxel/nuxel-flatpak-doom.nuxel-rollback.pre-deploy-20261104T112828-3208175"
+    },
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": null,
+      "elapsed_s": 8.463,
+      "group": "crispy-doom-launcher",
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "install": {
+        "framed": true,
+        "output": "PREV=c1af6f801fa6fd788dc6afba0c0277b69ca512e70bff96ac2444546abba9c763\n/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "fe0de4b2bd82529e675c970dea7d7bce52b801fd9a41103221f99ae6677aa3cb",
+      "mode": "0644",
+      "n": 4,
+      "ok": true,
+      "previous_hash": "c1af6f801fa6fd788dc6afba0c0277b69ca512e70bff96ac2444546abba9c763",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "service": "nuxel-http-bridge",
+      "source": "services/nuxel-bridge/src/flatpak_provider.py",
+      "source_sha256": "fe0de4b2bd82529e675c970dea7d7bce52b801fd9a41103221f99ae6677aa3cb",
+      "staged_push": {
+        "ack_writes": 22,
+        "acked_bytes": 31048,
+        "blocks": 22,
+        "bytes": 31048,
+        "elapsed_s": 4.956,
+        "fallback": false,
+        "mode": "block",
+        "parts": 109,
+        "raw_writes": 22,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "fe0de4b2bd82529e675c970dea7d7bce52b801fd9a41103221f99ae6677aa3cb",
+        "throughput_bytes_s": 6264.7,
+        "write_bytes": 60980
+      },
+      "target": "/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py",
+      "txn_backup": "/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py.nuxel-rollback.pre-deploy-20261104T112828-3208175",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    }
+  ],
+  "risk_envelope": {
+    "medium": 4
+  },
+  "rollbacks": [],
+  "skipped": [],
+  "steps": 4,
+  "transfer": {
+    "ack_writes": 22,
+    "blocks": 22,
+    "bytes": 31048,
+    "elapsed_s": 4.956,
+    "parts": 109,
+    "raw_writes": 22,
+    "resumes": 0,
+    "retries": 0,
+    "throughput_bytes_s": 6264.7,
+    "write_bytes": 60980
+  },
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "files staged, hash-verified, atomically installed and the transaction's coalesced reload/restart actions run once. DEPLOYED_UNVERIFIED means the deploy succeeded but no human-visible behaviour was observed.",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "DEPLOYED_UNVERIFIED"
+  },
+  "violations": []
+}

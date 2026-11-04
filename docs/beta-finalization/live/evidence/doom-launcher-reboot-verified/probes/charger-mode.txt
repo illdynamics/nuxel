@@ -1,0 +1,14 @@
+probe: charger-mode (01-touchscreen)
+cmd: cat /sys/class/power_supply/*/online 2>/dev/null; dmesg 2>/dev/null | grep -i lpcharge | tail -3
+staged: []
+rc: 0 framed: True sha_ok: True
+verdict: DEPLOYED_UNVERIFIED
+reason: no charger-mode marker observed on this boot
+--- observation ---
+1
+19
+0
+0
+0
+0
+

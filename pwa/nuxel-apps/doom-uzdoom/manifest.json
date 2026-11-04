@@ -1,0 +1,45 @@
+{
+  "name": "UZDoom",
+  "short_name": "UZDoom",
+  "id": "org.nuxel.Doom.UZDoom",
+  "description": "The modern GZDoom-lineage engine with advanced rendering and mod support. On this vendor-kernel phone it runs with the software renderer because there is no usable /dev/dri node. Compare its map detail and menu depth with Nuxel Doom and Chocolate Doom.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#06101c",
+  "theme_color": "#06101c",
+  "categories": [
+    "games"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "app_id": "org.nuxel.Doom.UZDoom",
+    "app_type": "games",
+    "offline_first": true,
+    "network": "none",
+    "capabilities": [],
+    "bridge_version": "1",
+    "source": "Native Doom engine comparison launcher; no commercial WAD bundled",
+    "features": [
+      "Modern UZDoom source port",
+      "Software renderer for the S10+ kernel",
+      "Native fullscreen WAD launch",
+      "Optional comparison path, not the touch default"
+    ]
+  },
+  "version": "1.0.0"
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "at": "2026-11-04T11:33:49+0100",
+    "diagnostic": "post-install verification: launcher paths, bridge route and fullscreen Crispy Doom startup",
+    "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/doom-launcher-reboot-verified",
+    "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/doom-launcher-reboot-verified",
+    "n": 1,
+    "reason": "user-requested reboot after installing and verifying the Crispy Doom touch launcher",
+    "returned_to_nuxel": true,
+    "rollback_known_good": true
+  }
+]

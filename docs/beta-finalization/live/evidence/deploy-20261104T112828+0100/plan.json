@@ -1,0 +1,133 @@
+{
+  "activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 0,
+      "independent_restarts_planned": 1,
+      "reloads_planned": 0,
+      "restarts_planned": 1
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [],
+    "restart_services": [
+      "nuxel-http-bridge.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "crispy-doom-launcher",
+        "service": "nuxel-http-bridge.service"
+      }
+    ]
+  },
+  "group_order": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "crispy-doom-launcher",
+      "priority": 1,
+      "restart_service": "nuxel-http-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 4
+    }
+  ],
+  "risk_envelope": {
+    "medium": 4
+  },
+  "schema_version": 1,
+  "skipped": [],
+  "steps": [
+    {
+      "backup": "/usr/lib/nuxel/nuxel-doom-launcher.nuxel-rollback",
+      "component": "Crispy Doom touch launcher and bridge route",
+      "declared_reload": "",
+      "group": "crispy-doom-launcher",
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "service": "nuxel-http-bridge",
+      "source": "tools/s10plus/a33/nuxel-doom-launcher",
+      "source_sha256": "95d937ebae70c63ee1ca8e96283133d6fe92c913a0ea684bd70f018256be455d",
+      "staged": "/usr/lib/nuxel/nuxel-doom-launcher.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-doom-launcher",
+      "txn_backup": "/usr/lib/nuxel/nuxel-doom-launcher.nuxel-rollback.pre-deploy-20261104T112828-3208175",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-doom-launcher"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-crispy-doom.nuxel-rollback",
+      "component": "Crispy Doom touch launcher and bridge route",
+      "declared_reload": "",
+      "group": "crispy-doom-launcher",
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "service": "nuxel-http-bridge",
+      "source": "tools/s10plus/a33/nuxel-crispy-doom",
+      "source_sha256": "29d811b73e134688c89d84501fbbe2eba351aaf5e46e11e19fd377f81aaad6ae",
+      "staged": "/usr/lib/nuxel/nuxel-crispy-doom.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-crispy-doom",
+      "txn_backup": "/usr/lib/nuxel/nuxel-crispy-doom.nuxel-rollback.pre-deploy-20261104T112828-3208175",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-crispy-doom"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-flatpak-doom.nuxel-rollback",
+      "component": "Crispy Doom touch launcher and bridge route",
+      "declared_reload": "",
+      "group": "crispy-doom-launcher",
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "service": "nuxel-http-bridge",
+      "source": "tools/s10plus/a33/nuxel-flatpak-doom",
+      "source_sha256": "47dbcd3922fc7e5257e73cc31c7bd9cd66df324833df198adc4779dcd2237aa6",
+      "staged": "/usr/lib/nuxel/nuxel-flatpak-doom.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-flatpak-doom",
+      "txn_backup": "/usr/lib/nuxel/nuxel-flatpak-doom.nuxel-rollback.pre-deploy-20261104T112828-3208175",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-flatpak-doom"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py.nuxel-rollback",
+      "component": "Crispy Doom touch launcher and bridge route",
+      "declared_reload": "",
+      "group": "crispy-doom-launcher",
+      "health_check": "systemctl is-active nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-doom-launcher /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py && curl -fsS -m 10 http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore the .nuxel-rollback copies of /usr/lib/nuxel/nuxel-doom-launcher, /usr/lib/nuxel/nuxel-crispy-doom, /usr/lib/nuxel/nuxel-flatpak-doom and /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py, then restart nuxel-http-bridge",
+      "service": "nuxel-http-bridge",
+      "source": "services/nuxel-bridge/src/flatpak_provider.py",
+      "source_sha256": "fe0de4b2bd82529e675c970dea7d7bce52b801fd9a41103221f99ae6677aa3cb",
+      "staged": "/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py",
+      "txn_backup": "/usr/lib/nuxel/nuxel-bridge/flatpak_provider.py.nuxel-rollback.pre-deploy-20261104T112828-3208175",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py"
+    }
+  ],
+  "violations": []
+}

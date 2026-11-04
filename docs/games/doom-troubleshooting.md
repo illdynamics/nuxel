@@ -1,98 +1,108 @@
 # Nuxel Doom troubleshooting
 
-## The game is not in Nuxel Home
+## Nuxel Doom is not in Home
 
 1. Open **NuXtore → Available** and install `org.nuxel.Doom`.
-2. If NuXtore shows **Install** but the launcher does not update, pull Home
-   away and back, or reopen Home. Installation registers the app through the
-   canonical app registry; it is not a localStorage-only flag.
-3. If NuXtore refuses the package, run the offline verifier from a development
-   checkout:
+2. Pull Home away and back, or reopen Home.
+3. Verify the catalogue offline:
 
 ```sh
 python3 pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py --require-signature --confirm-unsigned org.example.UnsignedDemo
 ```
 
-A digest or signature failure is a hard failure and must not be bypassed.
+A digest or signature failure is a hard failure; do not bypass it.
 
-## Remove did nothing
+## “NO WAD FOUND”
 
-NuxTore Remove calls the Bridge `apps.unregister` verb. The app icon disappears
-from Home after the next registry refresh. User settings and progress are
-intentionally preserved. If the icon remains, check that the registry refresh
-succeeded:
+The bridge catalogue is empty or unreachable. Check:
 
 ```sh
-curl -s http://127.0.0.1:8080/api/v1/apps/registry | python3 -m json.tool | \
-  grep -n 'org.nuxel.Doom'
+curl -s http://127.0.0.1:8080/api/v1/doom/wads | python3 -m json.tool
 ```
 
-No output after Remove is the expected result.
+The catalogue scans only `/home/nuxel/doom`, `~/Downloads`, `~/Documents` and
+the system Doom directories. Freedoom is installed by the image. To add a WAD,
+copy it into `~/doom` and press **SCAN AGAIN**.
+
+## The game starts but the map is black
+
+- Confirm the selected file is an **IWAD**, not a resource PWAD such as
+  `prboom.wad`. A PWAD needs an IWAD base; the app loads the first available
+  IWAD automatically.
+- Try **PLAY DOOM** rather than the title screen; `-warp` skips the menu.
+- Check the browser console for `WAD fetch failed` or an engine abort. A 404
+  from `/api/v1/doom/wad?id=...` means the catalogue cache and the file changed
+  between scan and launch; press **SCAN AGAIN**.
+
+## The WebAssembly engine fails to initialise
+
+- The app needs `engine/websockets-doom.wasm` (about 2.2 MB). Confirm the file
+  exists under `/usr/share/nuxel/pwa/nuxel-apps/doom/engine/`.
+- Clear the old service worker cache by reopening the app after an OS update.
+- The engine needs WebGL/SwiftShader-backed canvas presentation. If the host's
+  WebKit GPU path is broken, Nuxel Doom reports the error instead of showing a
+  blank screen.
 
 ## The system keyboard opens
 
-Nuxel Doom has no `<input>` or `<textarea>` elements. If a keyboard still
-appears, it belongs to the previous app or the host's text-input focus:
-
-1. Tap the Doom game area once.
-2. Press the revealed **MENU** button.
-3. If necessary, return Home and reopen Doom.
-
-The shell calls `dismissKeyboard()` and the host `dismiss-keyboard` action on
-start, focus, resume and exit.
+Nuxel Doom has no `<input>` or `<textarea>` elements. If a keyboard appears it
+belongs to a previous app or the compositor's stale text-input focus. The shell
+blurs the active field and calls both the host and compositor dismiss actions
+on launch, focus, resume and exit. Tap the game once and press **MENU**; if it
+persists, return Home and reopen Doom.
 
 ## Triple buttons are missing
 
-That is intentional in a foreground PWA. **Swipe up from the bottom edge** of
-the screen. The Back/Home/Recents strip appears for a few seconds. On the
-lockscreen it stays hidden by design.
-
-If the strip does not appear:
-
-- make sure the swipe starts within roughly 34 px of the bottom edge;
-- swipe upward at least 42 px;
-- check that the lockscreen is not active;
-- on the handset, confirm the native dock is alive with the normal launcher
-  diagnostics.
+That is the global foreground-app contract. **Swipe up from the bottom edge**
+within about 34 px of the bottom, moving at least 42 px upward. In a PWA the
+DOM dock appears; in a native app `nuxel-navdock` keeps a 14 px gesture strip
+mapped and expands to the full dock. Both hide again after a few seconds.
+Home and the lockscreen never enter this mode.
 
 ## The top bar is missing
 
-Doom enters real fullscreen mode when gameplay starts. Pull down from the top
-edge to reveal the top bar. It hides again automatically.
+It is hidden in every foreground app now. **Pull down from the top edge** to
+reveal it. It hides again automatically.
 
 ## Display stayed in landscape
 
-Doom asks the orientation service for landscape only while it is starting and
-restores the previous mode when leaving the campaign, exiting, or receiving a
-page-hide event. If a crash leaves the session in landscape, use Quick Settings
-to select the wanted rotation. Do not issue arbitrary `wlr-randr` commands.
+A cold boot forces portrait through the lockscreen and restores the mode
+selected before boot only after unlock. Doom then requests landscape while
+the engine is active and restores the previous mode on pause/exit/page-hide.
+If a crash leaves the session rotated, use Quick Settings. Do not issue
+arbitrary `wlr-randr` commands.
 
 ## No sound
 
-Nuxel Doom uses the browser Web Audio path inside the host. Check:
-
-1. the **SOUND** toggle in Doom settings;
-2. the system volume;
-3. the PipeWire output route in Settings;
-4. that the host audio service is running.
-
-The optional Classic Engine button follows the separately documented Crispy
-Doom audio path.
+The WebAssembly engine uses Web Audio and starts audio after the first tap.
+Check the **SOUND** toggle, system volume and the PipeWire output route. If the
+host route is not ready the engine continues silently; the UI does not fake
+audio.
 
 ## Low frame rate
 
-The renderer is intentionally 320×180. If the panel feels slow:
+Nuxel Doom renders at 640×400 inside WebAssembly and presents through the
+browser canvas. If it feels slow:
 
 - close other foreground apps;
-- avoid maximum brightness and performance-heavy background work;
-- verify the GPU path is healthy with the normal Nuxel performance tools;
-- remember that the framebuffer presenter still performs a CPU scanout copy.
-
-Nuxel Doom does not force llvmpipe and does not assume a working DRM/KMS path.
+- lower the display scale in Quick Settings;
+- use the native Chocolate Doom comparison engine with a gamepad if the browser
+  canvas path is the bottleneck;
+- remember the framebuffer presenter still performs a CPU scanout copy.
 
 ## A touch stays stuck after switching apps
 
-This is a bug. The shell calls `releaseAllInput()` on blur, visibility change,
-pause, cancellation and page hide. Capture a diagnostic trace and report the
-exact transition (Home, Recents, lock, notification shade, rotation). Do not
-work around it with a global input injector.
+This is a bug. `releaseAllInput()` runs on blur, visibility change, pause,
+cancellation and page hide, and emits key-up for every held key. Capture a
+diagnostic trace and report the exact transition. Do not work around it with a
+global input injector.
+
+## Native Chocolate Doom / UZDoom does not start
+
+- These are optional comparison engines; Nuxel Doom itself does not need them.
+- Native Chocolate Doom must be installed (`chocolate-doom` RPM) and launched
+  through `/usr/lib/nuxel/nuxel-doom-engine chocolate`.
+- UZDoom is only available if the UZDoom package binary is present. The wrapper
+  reports `UZDoom is not installed on this image` instead of pretending it ran.
+- The native path uses keyboard/gamepad input; it does not draw the Nuxel touch
+  HUD over a native surface.

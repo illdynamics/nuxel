@@ -1,11 +1,15 @@
-/* Nuxel immersive app chrome (PWNAGE-76000 / v0.7.6-beta).
+/* Nuxel immersive app chrome (v0.7.7-beta).
  *
- * In a foreground app the triple buttons are hidden by default.  A short swipe
- * up from the bottom edge reveals Back/Home/Recents; a swipe down from the top
- * edge reveals the status bar.  Real fullscreen apps (Doom) also hide the top
- * bar and expand their iframe to the whole glass.  The Home launcher and the
- * lockscreen are deliberately excluded: Home always keeps its chrome and the
- * lockscreen never permits app navigation.
+ * EVERY foreground app is immersive by default: the triple buttons disappear
+ * and the iframe expands over the status-bar band, so a fullscreen game or a
+ * normal PWA both get the whole glass.  A short swipe up from the bottom edge
+ * reveals Back/Home/Recents; a swipe down from the top edge reveals the status
+ * bar.  The Home launcher and the lockscreen are deliberately excluded: Home
+ * always keeps its chrome and the lockscreen never permits app navigation.
+ *
+ * This is the single global contract for all PWA apps.  Apps may still request
+ * immersive explicitly (Nuxel Doom does), but they no longer have to: the
+ * default is immersive for every ACTIVE/LAUNCHING session.
  *
  * The same-origin app iframe receives its own gesture listeners because touches
  * inside it do not bubble to the parent document.  The listeners are passive
@@ -135,13 +139,17 @@
   document.addEventListener('app:lifecycle', function (event) {
     const state = event && event.detail && event.detail.state;
     if (state === 'ACTIVE' || state === 'LAUNCHING') {
-      document.body.classList.add('app-nav-hidden');
-      document.body.classList.remove('app-nav-revealed');
-      if (!document.body.classList.contains('app-immersive')) {
-        document.body.classList.remove('app-status-hidden', 'app-status-revealed');
-      }
+      if (!allowed()) { resetChrome(); return; }
+      // Global default: no triple buttons AND no top bar while any app owns
+      // the foreground.  Both are recoverable with the edge gestures below.
+      document.body.classList.add('app-nav-hidden', 'app-immersive', 'app-status-hidden');
+      document.body.classList.remove('app-nav-revealed', 'app-status-revealed');
+      const n = home();
+      if (n && typeof n.setNavVisible === 'function') n.setNavVisible(false);
     } else {
       resetChrome();
+      const n = home();
+      if (n && typeof n.setNavVisible === 'function') n.setNavVisible(true);
     }
   });
 

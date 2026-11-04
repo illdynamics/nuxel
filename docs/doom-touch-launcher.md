@@ -1,10 +1,11 @@
 # Doom on Nuxel: touch-first launcher and fullscreen fit
 
-> **v0.7.6-beta:** the primary Doom experience is now the original **Nuxel
-> Doom** app (`org.nuxel.Doom`) documented in
-> [`games/doom.md`](games/doom.md). This page remains the record of the
-> optional Crispy Doom launcher path that the in-app **CLASSIC ENGINE** button
-> can start when that Flatpak is installed.
+> **v0.7.7-beta:** the primary Doom experience is **Nuxel Doom**
+> (`org.nuxel.Doom`), a real Chocolate Doom WebAssembly WAD engine documented
+> in [`games/doom.md`](games/doom.md). This page remains the record of the
+> older GTK/Crispy launcher path. The in-app engine comparison now exposes
+> native **Chocolate Doom** and **UZDoom** packages; see
+> [`games/doom-engines.md`](games/doom-engines.md).
 
 The installed Flathub **Crispy Doom** (`io.github.fabiangreffrath.Doom`) is still
 the game source.  The Nuxel launcher is the "Linux Doom Launcher" option: a
