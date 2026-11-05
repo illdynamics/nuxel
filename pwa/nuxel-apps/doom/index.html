@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b0708">
   <meta name="nuxel-app-id" content="org.nuxel.Doom">
   <meta name="description" content="Nuxel Doom — a real Chocolate Doom WAD engine with touch-first controls for the Nuxel phone.">
   <title>Nuxel Doom</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
-  <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p76000">
-  <link rel="stylesheet" href="css/doom.css?v=p77000">
+  <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p80000">
+  <link rel="stylesheet" href="css/doom.css?v=p80000">
+    <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
 <main id="app" aria-label="Nuxel Doom WAD engine">
@@ -29,6 +30,16 @@
       <div id="joy-base" class="joy-base"><div id="joy-knob" class="joy-knob"></div></div>
     </div>
     <div id="look-zone" class="look-zone" aria-label="Drag to aim"></div>
+    <!-- Right-hand look pad: hold left/right to turn, tap MAP for the automap
+         and MENU for the in-game menu. Chocolate Doom has no vertical aim, so
+         this pad deliberately does not invent a look-up/down axis. -->
+    <div id="look-pad" class="look-pad" aria-label="Look D-pad">
+      <span class="look-title" aria-hidden="true">LOOK</span>
+      <button id="look-left" class="look-key left" type="button" aria-label="Turn left">◀</button>
+      <button id="look-map" class="look-key map" type="button" aria-label="Toggle automap">MAP</button>
+      <button id="look-menu" class="look-key menu" type="button" aria-label="Open game menu">☰</button>
+      <button id="look-right" class="look-key right" type="button" aria-label="Turn right">▶</button>
+    </div>
     <div class="action-cluster" aria-label="Action buttons">
       <button id="btn-fire" class="action fire" type="button" aria-label="Fire">FIRE</button>
       <button id="btn-use" class="action use" type="button" aria-label="Use or open door">USE</button>
@@ -57,6 +68,10 @@
         <button class="wad-tile primary" type="button" disabled><span class="campaign-art">…</span><span><strong>SCANNING WADS</strong><small>Reading the Nuxel bridge catalogue</small></span></button>
       </div>
       <button id="btn-rescan" class="scan-button" type="button">↻ SCAN AGAIN</button>
+      <label class="license-ack"><input type="checkbox" id="wad-license-ack"> I own the rights to the WAD I import; no commercial WAD is bundled by Nuxel.</label>
+      <label class="scan-button import-button" for="wad-import">＋ IMPORT YOUR OWN WAD</label>
+      <input id="wad-import" type="file" accept=".wad,application/octet-stream" hidden>
+      <p id="wad-import-note" class="fineprint">Imported WADs are stored privately under ~/doom/imported and are never uploaded. Freedoom Phase 1/2 and FreeDM are free content and remain the default.</p>
 
       <p class="section-label">2 · START</p>
       <div class="campaigns" aria-label="Start options">
@@ -71,15 +86,12 @@
       </div>
 
       <p class="section-label">3 · COMPARE ENGINES</p>
-      <div class="engine-grid" aria-label="Engine comparison">
+      <div class="engine-grid two-up" aria-label="Engine comparison">
         <button class="engine-card active" type="button" data-engine="nuxel">
           <strong>NUXEL DOOM</strong><small>Chocolate Doom WASM · touch HUD · WAD maps</small>
         </button>
         <button class="engine-card" type="button" data-engine="chocolate">
-          <strong>CHOCOLATE DOOM</strong><small>Native Fedora port · keyboard/gamepad</small>
-        </button>
-        <button class="engine-card" type="button" data-engine="uzdoom">
-          <strong>UZDOOM</strong><small>Modern GZDoom lineage · software renderer</small>
+          <strong>NATIVE ENGINE</strong><small>Internal Chocolate Doom runtime · no separate install</small>
         </button>
       </div>
       <p id="engine-note" class="note" hidden></p>
@@ -92,7 +104,7 @@
         <span id="offline-indicator">● OFFLINE READY</span>
         <span>CHOCOLATE DOOM WASM · NUXEL v0.7.7-beta</span>
       </div>
-      <p class="fineprint">No DOOM commercial WAD or sprite is bundled. Freedoom is the default free content; imported WADs stay in the read-only Nuxel game-data catalogue. The native engines are optional comparison paths.</p>
+      <p class="fineprint">No DOOM commercial WAD or sprite is bundled. Freedoom is the default free content; imported WADs stay in the read-only Nuxel game-data catalogue. The internal native comparison runtime is optional and is never a separate install or a replacement for the bundled Nuxel Doom engine.</p>
     </div>
   </section>
 
@@ -155,6 +167,6 @@
   </section>
 </main>
 
-<script src="js/doom.js?v=p77000"></script>
+<script src="js/doom.js?v=p80000"></script>
 </body>
 </html>

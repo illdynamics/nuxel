@@ -25,8 +25,8 @@ items = set()
 for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
              'pwa/nuxel-apps/console', 'pwa/nuxel-apps/console-usb',
              'pwa/nuxel-apps/console-wifi', 'pwa/nuxel-apps/maps',
-             'pwa/nuxel-apps/doom', 'pwa/nuxel-apps/doom-chocolate',
-             'pwa/nuxel-apps/doom-uzdoom', 'pwa/nuxel-apps/nuxtore/catalog'):
+             'pwa/nuxel-apps/doom',
+             'pwa/nuxel-apps/nuxtore/catalog'):
     for path in (root / base).rglob('*'):
         if not path.is_file() or path.is_symlink():
             continue

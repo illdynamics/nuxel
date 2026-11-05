@@ -897,3 +897,13 @@ body.lockscreen-active #status-bar {
 /* PWNAGE-54000: a selected-but-blocked Auto mode must never look green. */
 .qs-item[data-degraded="true"] { border-color: #f59e0b !important; }
 .qs-item[data-degraded="true"] .qs-label::after { content: " !"; color: #fbbf24; }
+
+/* PWNAGE-80000 Recents lifecycle gestures.  Swipe left = graceful close,
+ * swipe right = explicit force-kill.  The transform is only on the card, never
+ * on the scroll container, so vertical scrolling and every other app gesture
+ * keep their normal meaning. */
+.recents-card { touch-action: pan-y; transition: transform .16s ease, opacity .16s ease, border-color .16s ease; border-left: 3px solid transparent; }
+.recents-card.swiping { transition: none; }
+.recents-card.closing { opacity: .62; border-left-color: #f59e0b; }
+.recents-card.closing .recents-label span { color: #fbbf24; }
+.recents-close { min-height: 34px; padding: 0 12px; border: 1px solid rgba(147,197,253,.45); border-radius: 10px; background: rgba(20,48,72,.85); color: #dbeafe; }

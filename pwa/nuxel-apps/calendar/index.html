@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
     <meta name="theme-color" content="#3beaa1">
     <meta name="nuxel-app-id" content="org.nuxel.Calendar">
     <link rel="manifest" href="manifest.json">
     <title>Nuxel Calendar</title>
     <link rel="stylesheet" href="../../nuxel-common/theme.css">
-    <link rel="stylesheet" href="css/calendar.css">
+    <link rel="stylesheet" href="css/calendar.css?v=p80000">
+    <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
     <div class="top-bar">
@@ -40,7 +41,7 @@
 
     <div id="event-editor" class="event-editor hidden">
         <div class="editor-header">
-            <button id="editor-back" class="icon-btn">←</button>
+            <button id="editor-back" class="icon-btn" data-action="back" aria-label="Back">←</button>
             <h2 id="editor-title">New Event</h2>
             <button id="editor-save" class="btn-primary">Save</button>
         </div>
@@ -50,9 +51,22 @@
             <input type="date" id="event-date" class="editor-input">
             <label class="check"><input type="checkbox" id="event-all-day"> All-day event</label>
             <div class="time-row">
-                <input type="text" inputmode="numeric" pattern="[0-9:]*" maxlength="5" autocomplete="off" id="event-start" class="editor-input time" title="Start time (HH:MM)" placeholder="HH:MM">
+                <input type="text" inputmode="numeric" pattern="[0-9:]*" maxlength="5" autocomplete="off" enterkeyhint="done" id="event-start" class="editor-input time" data-input-purpose="time" title="Start time (HH:MM)" placeholder="HH:MM" aria-label="Start time">
                 <span>to</span>
-                <input type="text" inputmode="numeric" pattern="[0-9:]*" maxlength="5" autocomplete="off" id="event-end" class="editor-input time" title="End time (HH:MM)" placeholder="HH:MM">
+                <input type="text" inputmode="numeric" pattern="[0-9:]*" maxlength="5" autocomplete="off" enterkeyhint="done" id="event-end" class="editor-input time" data-input-purpose="time" title="End time (HH:MM)" placeholder="HH:MM" aria-label="End time">
+            </div>
+            <!-- PWNAGE-80000: a real time keypad for the compositor OSK.  It
+                 supplies the digits and the required HH:MM separator even when
+                 the numeric OSK layout has no colon key. -->
+            <div id="time-keypad" class="time-keypad" role="group" aria-label="Time keypad" hidden>
+                <div class="time-keypad-head"><span id="time-keypad-label">Time</span><button type="button" id="time-key-clear" data-time-key="clear">Clear</button><button type="button" id="time-key-now" data-time-key="now">Now</button></div>
+                <div class="time-keypad-grid">
+                    <button type="button" id="time-key-1" data-time-key="1">1</button><button type="button" id="time-key-2" data-time-key="2">2</button><button type="button" id="time-key-3" data-time-key="3">3</button>
+                    <button type="button" id="time-key-4" data-time-key="4">4</button><button type="button" id="time-key-5" data-time-key="5">5</button><button type="button" id="time-key-6" data-time-key="6">6</button>
+                    <button type="button" id="time-key-7" data-time-key="7">7</button><button type="button" id="time-key-8" data-time-key="8">8</button><button type="button" id="time-key-9" data-time-key="9">9</button>
+                    <button type="button" id="time-key-colon" data-time-key=":" class="sep">:</button><button type="button" id="time-key-0" data-time-key="0">0</button><button type="button" id="time-key-back" data-time-key="back" aria-label="Backspace">⌫</button>
+                </div>
+                <button type="button" id="time-key-done" class="time-keypad-done" data-time-key="done">Done</button>
             </div>
             <input type="text" id="event-location" placeholder="Location" class="editor-input">
             <input type="number" inputmode="numeric" id="event-reminder" placeholder="Reminder (minutes before)" min="0" class="editor-input">
@@ -72,6 +86,6 @@
     <script src="../../nuxel-common/theme.js"></script>
     <script src="../../nuxel-common/haptics.js"></script>
     <script type="module" src="../../nuxel-common/bridge.js"></script>
-    <script src="js/calendar.js"></script>
+    <script src="js/calendar.js?v=p80000f"></script>
 </body>
 </html>

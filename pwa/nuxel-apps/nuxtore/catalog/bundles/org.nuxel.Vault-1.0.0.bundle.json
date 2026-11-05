@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/vault/index.html",
-    "sha256": "7cfcfecba2bed4f1aa63c6fd483dca500f11842bfc57a77b3ce0049f58c41294",
-    "size": 16096
+    "sha256": "b7ed836dd634695d1d8d9056b363e9bdff3e1d5e70302779c2f76303be28d9f4",
+    "size": 16186
   },
   {
     "path": "pwa/nuxel-apps/vault/js/app.js",

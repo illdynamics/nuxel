@@ -66,8 +66,8 @@
   },
   {
     "path": "pwa/nuxel-apps/authenticator/index.html",
-    "sha256": "822bdf1c3243c5dc37e354a7ea53d94ec4c65f870649b376082dade301176ad5",
-    "size": 15313
+    "sha256": "605c7279055e463def3b54a483718ef1449c60aa34b92477ce65a01e344a054a",
+    "size": 15403
   },
   {
     "path": "pwa/nuxel-apps/authenticator/js/authenticator.js",

@@ -12,9 +12,8 @@ used.
 │ CHOCOLATE DOOM · FREEDOOM                                    │
 │                                                              │
 │                                                              │
-│   (left thumb)                    (right thumb)              │
-│      joystick          FIRE       USE                        │
-│                        WPN- WPN+  RUN  MENU                  │
+│   (left thumb)          LOOK      FIRE       USE             │
+│      joystick          [◀][▶]     WPN- WPN+  RUN  MENU        │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -22,8 +21,14 @@ used.
 The right side is divided into:
 
 - a transparent **look surface** for drag-to-turn;
+- a right-thumb **LOOK D-pad**: hold **◀** / **▶** to turn without swiping;
 - a large **FIRE** button (hold to keep firing);
 - **USE** (doors/switches), **WPN +/−**, **RUN** and **MENU**.
+
+Chocolate Doom has no vertical free-look, so the look pad deliberately exposes
+only the horizontal turn axis. The stock engine config is written with DOS
+set-1 scan codes (`key_fire 29` = left Ctrl), which is why the Fire button now
+matches the engine's fire binding.
 
 ## Engine mapping
 
@@ -33,6 +38,7 @@ The right side is divided into:
 | Joystick left/right | `,` / `.` (strafe mode) | strafe left/right |
 | Joystick sideways in turn mode | `ArrowLeft` / `ArrowRight` | turn |
 | Drag to turn | `ArrowLeft` / `ArrowRight` | turn |
+| Look pad ◀ / ▶ | `ArrowLeft` / `ArrowRight` | turn |
 | FIRE | `ControlLeft` | fire |
 | USE | `Space` | use / open |
 | WPN +/− | `1`..`7` | weapon select |

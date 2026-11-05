@@ -5,15 +5,31 @@
  */
 (function () {
   'use strict';
+  function calDiag(msg) { try { window.webkit.messageHandlers.nuxelDiag.postMessage(msg); } catch (e) {} }
+  window.addEventListener('error', function (e) { calDiag('CAL_JS_ERROR ' + (e.message || e) + ' @' + (e.filename || '?') + ':' + (e.lineno || 0) + ':' + (e.colno || 0)); });
   var STORE_KEY = 'nuxel-calendar-events';
 
   var el = {};
-  ['cal-title','today-btn','add-event-btn','day-grid','prev-month','next-month','month-label',
-   'selected-date','events-list','event-editor','editor-back','editor-title','editor-save',
-   'event-title','event-date','event-start','event-end','event-all-day','event-location',
-   'event-desc','event-reminder','event-delete','editor-error'].forEach(function (id) {
-    el[id] = document.getElementById(id);
+  /* The controller uses camelCase properties while the HTML ids are
+     kebab-case.  Keeping this map explicit is the single place the two naming
+     worlds meet; the old code only populated kebab-case keys, so the first
+     `el.prevMonth.addEventListener` threw and Calendar never bound at all. */
+  var ELEMENT_IDS = {
+    calTitle: 'cal-title', todayBtn: 'today-btn', addEventBtn: 'add-event-btn',
+    dayGrid: 'day-grid', prevMonth: 'prev-month', nextMonth: 'next-month',
+    monthLabel: 'month-label', selectedDate: 'selected-date', eventsList: 'events-list',
+    eventEditor: 'event-editor', editorBack: 'editor-back', editorTitle: 'editor-title',
+    editorSave: 'editor-save', editorDelete: 'event-delete', eventTitle: 'event-title', eventDate: 'event-date',
+    eventStart: 'event-start', eventEnd: 'event-end', eventAllDay: 'event-all-day',
+    eventLocation: 'event-location', eventDesc: 'event-desc', eventReminder: 'event-reminder',
+    eventDelete: 'event-delete', editorError: 'editor-error', timeKeypad: 'time-keypad',
+    timeKeypadLabel: 'time-keypad-label'
+  };
+  Object.keys(ELEMENT_IDS).forEach(function (name) {
+    el[name] = document.getElementById(ELEMENT_IDS[name]);
   });
+  el.ids = ELEMENT_IDS;
+  var timeTarget = null;
 
   function bridgeCall(ns, verb, params) {
     if (window.NuxelBridge && typeof window.NuxelBridge.call === 'function') {
@@ -51,13 +67,18 @@
     saving: false,
     editingId: null,
     color: '#3beaa1',
+    bound: false,
 
     init: function () {
+      if (this.bound) return;
       this.bind();
       this.load().then(this.render.bind(this));
     },
 
     bind: function () {
+      if (this.bound) return;
+      var missing = Object.keys(ELEMENT_IDS).filter(function (name) { return !el[name]; });
+      if (missing.length) throw new Error('Calendar missing elements: ' + missing.join(','));
       el.prevMonth.addEventListener('click', function () { app.viewDate = new Date(app.viewDate.getFullYear(), app.viewDate.getMonth() - 1, 1); app.render(); });
       el.nextMonth.addEventListener('click', function () { app.viewDate = new Date(app.viewDate.getFullYear(), app.viewDate.getMonth() + 1, 1); app.render(); });
       el.todayBtn.addEventListener('click', function () { var n = new Date(); app.viewDate = new Date(n.getFullYear(), n.getMonth(), 1); app.selectedDate = n; app.render(); });
@@ -67,11 +88,34 @@
       el.editorDelete.addEventListener('click', function () { app.removeCurrent(); });
       el.eventAllDay.addEventListener('change', function () { app.toggleAllDay(); });
       [el.eventStart, el.eventEnd].forEach(function (input) {
+        input.addEventListener('focus', function () { app.openTimeKeypad(input); });
+        input.addEventListener('click', function () { app.openTimeKeypad(input); });
         input.addEventListener('blur', function () {
           var n = normaliseTime(input.value);
           if (n != null) input.value = n;
         });
       });
+      if (el.timeKeypad) {
+        el.timeKeypad.querySelectorAll('[data-time-key]').forEach(function (btn) {
+          btn.addEventListener('click', function (ev) {
+            ev.preventDefault(); ev.stopPropagation();
+            app.timeKey(btn.getAttribute('data-time-key'));
+          });
+        });
+      }
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape' && !el.eventEditor.classList.contains('hidden')) {
+          ev.preventDefault(); app.closeEditor();
+        }
+      });
+      // Calendar is a normal, non-immersive app: the Nuxel triple buttons stay
+      // visible by default and the native dock reserves its exclusive zone above
+      // the keyboard, so Back/Home/Tabs remain reachable with the OSK open.
+      try {
+        window.parent.postMessage({ type: 'nuxel:immersive', active: false }, window.location.origin);
+        window.parent.postMessage({ type: 'nuxel:nav-visible', active: true }, window.location.origin);
+        if (window.parent && window.parent.nuxel && window.parent.nuxel.setNavVisible) window.parent.nuxel.setNavVisible(true);
+      } catch (e) {}
       document.querySelectorAll('.color-opt').forEach(function (c) {
         c.addEventListener('click', function () {
           document.querySelectorAll('.color-opt').forEach(function (x) { x.classList.remove('selected'); });
@@ -79,6 +123,7 @@
           app.color = c.dataset.color;
         });
       });
+      this.bound = true;
     },
 
     async load() {
@@ -191,13 +236,59 @@
       this.color = event && event.color ? event.color : '#3beaa1';
       document.querySelectorAll('.color-opt').forEach(function (c) { c.classList.toggle('selected', c.dataset.color === app.color); });
       el.editorError.textContent = '';
+      this.closeTimeKeypad();
       el.editorDelete.style.display = event ? '' : 'none';
       this.toggleAllDay();
       el.eventEditor.classList.remove('hidden');
     },
 
+    openTimeKeypad: function (input) {
+      if (!el.timeKeypad || !input || input.disabled) return;
+      timeTarget = input;
+      if (el.timeKeypadLabel) el.timeKeypadLabel.textContent = (input === el.eventStart ? 'Start time' : 'End time') + ' · HH:MM';
+      el.timeKeypad.hidden = false;
+      try { el.timeKeypad.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+    },
+
+    closeTimeKeypad: function () {
+      if (el.timeKeypad) el.timeKeypad.hidden = true;
+      timeTarget = null;
+    },
+
+    timeKey: function (key) {
+      if (!timeTarget) return;
+      var v = String(timeTarget.value || '').replace(/[^0-9:]/g, '');
+      if (key === 'clear') v = '';
+      else if (key === 'back') v = v.slice(0, -1);
+      else if (key === 'done') {
+        var n = normaliseTime(v);
+        if (n != null) timeTarget.value = n;
+        try { timeTarget.blur(); } catch (e) {}
+        this.closeTimeKeypad();
+        return;
+      } else if (key === 'now') {
+        var now = new Date();
+        v = pad(now.getHours()) + ':' + pad(now.getMinutes());
+      } else if (key === ':') {
+        var d = v.replace(/:/g, '');
+        if (d.length === 0) v = '00:';
+        else if (d.length === 1) v = '0' + d + ':';
+        else v = d.slice(0, 2) + ':' + d.slice(2);
+      } else if (/^[0-9]$/.test(key)) {
+        var digits = v.replace(/:/g, '');
+        if (digits.length < 4) {
+          digits += key;
+          v = digits.length > 2 ? digits.slice(0, 2) + ':' + digits.slice(2) : digits;
+        }
+      }
+      v = v.slice(0, 5);
+      timeTarget.value = v;
+      timeTarget.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+
     closeEditor: function () {
       el.eventEditor.classList.add('hidden');
+      this.closeTimeKeypad();
       this.saving = false;
       el.editorSave.disabled = false;
     },
@@ -281,5 +372,37 @@
   };
 
   window.nuxelCalendar = { app: function () { return app; }, storageKey: STORE_KEY, dateKey: dateKey };
-  document.addEventListener('DOMContentLoaded', function () { app.init(); });
+  window.__nuxelCalendarVersion = 'p80000e';
+
+  /* Explicit Back contract for the central Home dispatcher.  The editor and
+     the custom time keypad are separate app-level screens; when neither is
+     open, Back has reached the app root and Home may close it gracefully. */
+  function canAppGoBack() {
+    return !!((el.timeKeypad && !el.timeKeypad.hidden) ||
+              (el.eventEditor && !el.eventEditor.classList.contains('hidden')));
+  }
+  function appGoBack() {
+    if (el.timeKeypad && !el.timeKeypad.hidden) { app.closeTimeKeypad(); return true; }
+    if (el.eventEditor && !el.eventEditor.classList.contains('hidden')) { app.closeEditor(); return true; }
+    return false;
+  }
+  window.NuxelBack = { canGoBack: canAppGoBack, back: appGoBack };
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== 'nuxel:close-request') return;
+    app.closeTimeKeypad();
+    app.closeEditor();
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+  });
+  window.addEventListener('pagehide', function () {
+    app.closeTimeKeypad();
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+  });
+  function boot() { try { app.init(); } catch (e) { calDiag('CAL_INIT_ERROR ' + ((e && (e.stack || e.message)) || e)); } }
+  // This script is at the end of <body>; initialise immediately, then keep the
+  // DOMContentLoaded call as an idempotent fallback.  The old listener-only
+  // path could miss the event in a long-lived WebKit frame, leaving every
+  // Calendar control unbound while the page still looked normal.
+  boot();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
 })();

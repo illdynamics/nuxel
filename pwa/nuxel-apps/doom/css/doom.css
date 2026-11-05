@@ -84,8 +84,36 @@ body.paused .hud { display: none; }
 .action-cluster {
   position: absolute; right: max(10px, env(safe-area-inset-right)); bottom: calc(12px + var(--safe-bottom));
   width: min(48vw, 250px); display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  pointer-events: auto;
+  pointer-events: auto; z-index: 12;
 }
+/* Right-thumb look D-pad.  The two large keys are held to turn; MAP and MENU
+ * are one-shot engine shortcuts.  It sits above the action cluster and is
+ * deliberately independent of the drag-to-aim surface. */
+.look-pad {
+  position: absolute; top: calc(var(--safe-top) + 62px);
+  right: max(10px, env(safe-area-inset-right));
+  width: min(46vw, 190px);
+  display: grid; grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 48px 40px; gap: 6px;
+  pointer-events: auto; z-index: 12;
+}
+.look-title {
+  grid-column: 1 / -1; text-align: right; color: rgba(255,190,120,.66);
+  font-size: 9px; letter-spacing: .18em; line-height: 1;
+}
+.look-key {
+  min-width: 0; border-radius: 11px; border: 1px solid rgba(255,180,110,.55);
+  background: linear-gradient(180deg, rgba(63,24,16,.82), rgba(22,9,8,.82));
+  color: #ffe1b1; font-size: clamp(13px, 3.2vw, 19px); font-weight: 800;
+  box-shadow: 0 3px 0 rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.12);
+  touch-action: none; text-shadow: 0 1px 0 #3a0c04;
+}
+.look-key.map, .look-key.menu { font-size: clamp(8px, 2.2vw, 11px); letter-spacing: .04em; }
+.look-key.pressed, .look-key:active { transform: translateY(2px) scale(.97); filter: brightness(1.24); }
+#look-left { grid-column: 1; grid-row: 2; }
+#look-right { grid-column: 2; grid-row: 2; }
+#look-map { grid-column: 1; grid-row: 3; }
+#look-menu { grid-column: 2; grid-row: 3; }
 .action {
   min-height: 58px; border-radius: 14px; border: 1px solid rgba(255,180,110,.65);
   background: linear-gradient(180deg, rgba(78,25,16,.88), rgba(30,9,8,.86));
@@ -113,6 +141,8 @@ body.paused .hud { display: none; }
 body.left-handed .joy-zone { left: auto; right: max(10px, env(safe-area-inset-right)); }
 body.left-handed .action-cluster { right: auto; left: max(10px, env(safe-area-inset-left)); }
 body.left-handed .look-zone { right: auto; left: 0; }
+body.left-handed .look-pad { right: auto; left: max(10px, env(safe-area-inset-left)); }
+body.left-handed .look-title { text-align: left; }
 body.left-handed .aim-hint { right: auto; left: 18px; }
 
 /* ---------- screens ---------- */
@@ -193,6 +223,8 @@ body.paused .controls, body.dead .controls, body.victory .controls { visibility:
   .hud-cell strong { font-size: clamp(11px, 2.2vw, 15px); }
   .joy-zone { width: min(34vh, 190px); left: max(8px, env(safe-area-inset-left)); bottom: max(8px, var(--safe-bottom)); }
   .action-cluster { width: min(44vw, 230px); right: max(8px, env(safe-area-inset-right)); bottom: max(8px, var(--safe-bottom)); gap: 6px; }
+  .look-pad { top: calc(var(--safe-top) + 52px); right: max(8px, env(safe-area-inset-right)); width: min(42vw, 178px); grid-template-rows: auto 42px 34px; gap: 5px; }
+  body.left-handed .look-pad { right: auto; left: max(8px, env(safe-area-inset-left)); }
   .action { min-height: 46px; }
   .action.fire { min-height: 98px; }
   .action.small { min-height: 38px; }
@@ -269,3 +301,9 @@ body.loading #start-screen .wad-list { opacity: .5; pointer-events: none; }
   .engine-card { min-height: 48px; padding: 6px 8px; }
   .scan-button { padding: 7px; }
 }
+
+/* PWNAGE-80000 WAD import + licence acknowledgement */
+.license-ack { display: flex; gap: 9px; align-items: flex-start; margin: 10px 0 6px; color: #dbeafe; font: 500 12px/1.35 system-ui, sans-serif; }
+.license-ack input { width: 20px; height: 20px; margin-top: 1px; accent-color: #f97316; }
+.import-button { display: block; text-align: center; cursor: pointer; border: 1px solid rgba(249,115,22,.65); color: #ffd7b0; }
+.import-button:active { transform: scale(.98); }

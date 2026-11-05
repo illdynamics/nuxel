@@ -79,15 +79,14 @@
 .app-list[hidden] { display: none !important; }
 .app-list {
     display: grid;
-    /* launcher.js sets --home-columns to 3 while the phone is in portrait. */
+    /* Home columns come straight from Home settings (portrait included). */
     grid-template-columns: repeat(4, 1fr);
     grid-template-columns: repeat(var(--home-columns, 4), 1fr);
     gap: 16px 8px;
     padding-bottom: 20px;
 }
 
-/* Portrait: three wider columns, so scale the tiles up instead of leaving a
-   sparse four-column-sized icon in a third of the screen. */
+/* Portrait: scale the tiles for the configured column count. */
 @media (orientation: portrait) {
     :root { --app-icon-size: clamp(64px, 20vw, 82px); }
     .app-list { gap: 18px 10px; }
@@ -336,8 +335,15 @@ body.launcher-dragging .app-item {
 .folder-card input { width: calc(100% - 70px); margin: 0 8px 16px 0; padding: 10px; color: white; background: #122952; border: 1px solid #60a5fa; border-radius: 10px; }
 .folder-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }.folder-items button { border: 0; color: #dbeafe; background: transparent; }.folder-items img { width: 52px; height: 52px; border-radius: 12px; }.folder-items span { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
 body.app-drawer-open .app-grid { z-index: 80; background: var(--bg-primary); top: var(--status-bar-height); bottom: var(--system-nav-height); }
-/* The drawer is a cached sibling list; opening it never re-parses Home. */
-.drawer-list { padding-bottom: 26px; contain: content; touch-action: pan-y; overscroll-behavior: contain; }
+/* The drawer is a cached sibling list; opening it never re-parses Home.  Its
+ * column count is its own setting and must not inherit --home-columns. */
+.drawer-list {
+    padding-bottom: 26px; contain: content; touch-action: pan-y; overscroll-behavior: contain;
+    grid-template-columns: repeat(var(--drawer-columns, 3), minmax(0, 1fr));
+    width: 100%; max-width: 100%; box-sizing: border-box;
+}
+.drawer-list .app-item { min-width: 0; max-width: 100%; }
+.drawer-list .app-icon { width: min(var(--app-icon-size), 100%); height: auto; aspect-ratio: 1; max-width: 100%; }
 body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 10px; font-size: 14px; color: var(--text-secondary); -webkit-text-fill-color: var(--text-secondary); }
 
 /* A37: fall back to a readable native glyph if an asset genuinely fails to load. */

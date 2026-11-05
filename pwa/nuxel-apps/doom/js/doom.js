@@ -13,8 +13,8 @@
   const BRIDGE = 'http://127.0.0.1:8080';
   const SETTINGS_KEY = 'nuxel.doom.wad.settings.v1';
   const SELECTED_KEY = 'nuxel.doom.wad.selected.v1';
-  const ENGINE_JS = 'engine/websockets-doom.js?v=p77000';
-  const ENGINE_WASM = 'engine/websockets-doom.wasm?v=p77000';
+  const ENGINE_JS = 'engine/websockets-doom.js?v=p77002';
+  const ENGINE_WASM = 'engine/websockets-doom.wasm?v=p77002';
   const DEFAULT_SETTINGS = {
     sound: true, haptics: true, strafe: true, leftHanded: false, turnSensitivity: 1.0,
   };
@@ -173,7 +173,7 @@
     if (!host) return;
     if (!catalogue.length) {
       host.innerHTML = '<button class="wad-tile" type="button" disabled><span class="campaign-art">!</span>' +
-        '<span><strong>NO WAD FOUND</strong><small>Add freedoom1.wad to ~/doom or install Freedoom, then SCAN AGAIN.</small></span></button>';
+        '<span><strong>NO WAD FOUND</strong><small>Install Freedoom from the OS, or import a WAD you own below, then SCAN AGAIN.</small></span></button>';
       const subtitle = $('start-subtitle'); if (subtitle) subtitle.textContent = 'NO PLAYABLE WAD';
       return;
     }
@@ -208,6 +208,63 @@
     const doom1 = (selectedWad.tags || []).some(function (t) { return t === 'Doom 1' || t === 'Freedoom'; });
     el.textContent = (startMode === 'episode' ? (doom1 ? 'WARP TO EPISODE 1, MAP 1' : 'WARP TO MAP 01') : 'TITLE SCREEN · IN-GAME MENU') + ' · ' + selectedWad.name;
   }
+  function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+  async function importWad(file) {
+    const note = $('wad-import-note');
+    const ack = $('wad-license-ack');
+    if (!file) return;
+    if (!/\.wad$/i.test(file.name)) {
+      if (note) note.textContent = 'Import failed: choose a .wad file.';
+      return;
+    }
+    if (!ack || !ack.checked) {
+      if (note) note.textContent = 'Import blocked: confirm that you own the rights to this WAD.';
+      return;
+    }
+    if (file.size > 256 * 1024 * 1024) {
+      if (note) note.textContent = 'Import failed: WAD is larger than the 256 MB limit.';
+      return;
+    }
+    if (note) note.textContent = 'Reading ' + file.name + '…';
+    let data;
+    try { data = await file.arrayBuffer(); }
+    catch (e) { if (note) note.textContent = 'Import failed: could not read the file.'; return; }
+    const b = bridge();
+    if (!b || typeof b.call !== 'function') {
+      if (note) note.textContent = 'Import failed: the Nuxel bridge is unavailable.';
+      return;
+    }
+    if (note) note.textContent = 'Validating and storing ' + file.name + '…';
+    let res;
+    try {
+      res = await b.call('doom', 'import', {
+        name: file.name, license_ack: true, data_base64: arrayBufferToBase64(data),
+      });
+    } catch (e) {
+      if (note) note.textContent = 'Import failed: ' + ((e && e.message) || e);
+      return;
+    }
+    if (!res || res.success === false) {
+      if (note) note.textContent = 'Import refused: ' + ((res && (res.error || res.detail)) || 'unknown error');
+      return;
+    }
+    if (note) note.textContent = 'Imported ' + (res.name || file.name) + ' (' + (res.tags || []).join(' · ') + '). Rescanning…';
+    await loadCatalogue();
+    if (res.id) {
+      selectedWad = catalogue.find(function (w) { return w.id === res.id; }) || selectedWad;
+      try { localStorage.setItem(SELECTED_KEY, res.id); } catch (e) {}
+      renderWads();
+    }
+  }
+
   async function loadCatalogue() {
     const host = $('wad-list');
     if (host) host.innerHTML = '<button class="wad-tile primary" type="button" disabled><span class="campaign-art">…</span><span><strong>SCANNING WADS</strong><small>Reading the read-only Nuxel WAD catalogue</small></span></button>';
@@ -256,11 +313,15 @@
       'use_mouse 0', 'grabmouse 0', 'fullscreen 0', 'aspect_ratio_correct 1',
       'window_width 640', 'window_height 400', 'show_endoom 0',
       'snd_samplerate 44100', 'use_libsamplerate 0',
-      'key_right 39', 'key_left 37', 'key_up 38', 'key_down 40',
-      'key_strafeleft 188', 'key_straferight 190',
-      'key_fire 17', 'key_use 32', 'key_speed 16', 'key_speed_alt 16',
-      'key_strafe 18', 'key_strafe_alt 18',
-      '',
+      // Chocolate Doom's config file stores DOS set-1 scan codes, not DOM
+      // keyCodes.  The old `key_fire 17` was DOM Ctrl but DOS `W`, so the Fire
+      // button (ControlLeft) never matched.  These explicit bindings are the
+      // real DOS scan codes and match the HUD exactly: fire = left Ctrl,
+      // use = Space, run = Shift, arrows = move/turn, comma/period = strafe.
+      'key_right 77', 'key_left 75', 'key_up 72', 'key_down 80',
+      'key_strafeleft 51', 'key_straferight 52',
+      'key_fire 29', 'key_use 57', 'key_speed 42', 'key_speed_alt 42',
+      'key_strafe 56', 'key_strafe_alt 56',
     ].join('\n');
   }
   async function fetchWadBytes(wad, onProgress) {
@@ -417,8 +478,6 @@
   // ---- native comparison engines -----------------------------------------
   const NATIVE_TARGETS = {
     chocolate: 'org.nuxel.Doom.Chocolate',
-    uzdoom: 'org.nuxel.Doom.UZDoom',
-    crispy: 'io.github.fabiangreffrath.Doom',
   };
   async function launchNative(kind) {
     const note = $('engine-note');
@@ -502,7 +561,7 @@
   }
   function lookStart(e) {
     if (lookPointer !== null) return;
-    if (e.target && e.target.closest && e.target.closest('button,.joy-zone')) return;
+    if (e.target && e.target.closest && e.target.closest('button,.joy-zone,.look-pad')) return;
     lookPointer = e.pointerId; lookLast = { x: e.clientX, y: e.clientY };
     try { lookZone.setPointerCapture(e.pointerId); } catch (err) {}
   }
@@ -528,6 +587,15 @@
     lookZone.addEventListener('pointercancel', lookEnd);
     lookZone.addEventListener('lostpointercapture', lookEnd);
   }
+
+  // Right-side look pad.  Left/right are true engine turn keys (hold to keep
+  // turning); MAP and MENU are one-shot engine shortcuts.  Chocolate Doom is a
+  // faithful vanilla engine and has no free-look pitch, so no fake vertical
+  // axis is exposed here.
+  bindHold('look-left', function () { keyDown('ArrowLeft', 37, 'ArrowLeft'); vibrate('navigation'); }, function () { keyUp('ArrowLeft'); });
+  bindHold('look-right', function () { keyDown('ArrowRight', 39, 'ArrowRight'); vibrate('navigation'); }, function () { keyUp('ArrowRight'); });
+  bindHold('look-map', function () { tapKey('Tab', 9, 'Tab', 90); vibrate('navigation'); }, function () {});
+  bindHold('look-menu', function () { tapKey('Escape', 27, 'Escape', 90); vibrate('navigation'); }, function () {});
 
   function bindHold(id, down, up) {
     const el = $(id); if (!el) return;
@@ -640,6 +708,10 @@
     });
   });
   $('btn-rescan').addEventListener('click', loadCatalogue);
+  const wadFile = $('wad-import');
+  if (wadFile) wadFile.addEventListener('change', function () {
+    importWad(wadFile.files && wadFile.files[0]).finally(function () { wadFile.value = ''; });
+  });
   $('btn-settings').addEventListener('click', function () { showScreen('settings-screen'); });
   $('btn-settings-back').addEventListener('click', function () { showScreen('start-screen'); });
   $('btn-settings-done').addEventListener('click', function () { showScreen('start-screen'); });
@@ -685,6 +757,34 @@
   try {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function () {});
   } catch (e) {}
+
+  /* Explicit Back contract for the central Home dispatcher.  In-game Back
+     pauses; Back from settings/about/error returns to the launch screen; Back
+     at the launch screen reaches the app root so Home can close it. */
+  function canAppGoBack() {
+    if (paused || engineStarted) return true;
+    const s = $('settings-screen'), a = $('about-screen'), e = $('error-screen');
+    return !!((s && !s.hidden) || (a && !a.hidden) || (e && !e.hidden));
+  }
+  function appGoBack() {
+    if (paused) { resumeEngine(); return true; }
+    if (engineStarted) { pauseEngine(); return true; }
+    const s = $('settings-screen'), a = $('about-screen'), e = $('error-screen');
+    if ((s && !s.hidden) || (a && !a.hidden) || (e && !e.hidden)) {
+      showScreen('start-screen');
+      return true;
+    }
+    return false;
+  }
+  window.NuxelBack = { canGoBack: canAppGoBack, back: appGoBack };
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== 'nuxel:close-request') return;
+    releaseAllInput();
+    dismissKeyboard();
+    setImmersive(false);
+    restoreOrientation();
+  });
 
   // Public handle used by offline contract tests and diagnostics.
   window.NuxelDoom = {

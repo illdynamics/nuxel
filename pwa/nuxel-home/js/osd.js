@@ -33,8 +33,17 @@
     } catch (e) { /* no host (VM/desktop): the menu stays read-only */ }
   }
 
+  function nativeOsdActive() {
+    // The phone session starts nuxel-osd, a layer-shell overlay above every
+    // client.  It renders the power menu and receives touch itself.  Rendering
+    // the same menu in Home would create a second, possibly invisible instance.
+    try { return !!(global.NuxelHost && global.NuxelHost.available); } catch (e) { return false; }
+  }
+
   function ensure() {
-    if (el) return el;
+    if (el && el.isConnected) return el;
+    var old = document.getElementById('nuxel-osd');
+    if (old && old !== el) old.remove();
     el = document.createElement('div');
     el.id = 'nuxel-osd';
     el.style.cssText = [
@@ -74,7 +83,11 @@
   }
 
   function ensureMenu() {
-    if (menu) return menu;
+    if (menu && menu.isConnected) return menu;
+    // Exactly one DOM menu root.  A hot reload/duplicate script evaluation used
+    // to append a second #nuxel-power-menu over the first.
+    var duplicates = document.querySelectorAll('#nuxel-power-menu');
+    for (var di = 0; di < duplicates.length; di++) duplicates[di].remove();
     menu = document.createElement('div');
     menu.id = 'nuxel-power-menu';
     menu.setAttribute('role', 'dialog');
@@ -157,6 +170,12 @@
       .then(function (j) {
         if (!j || !j.ts) return;
         if (j.kind === 'power-menu') {
+          if (nativeOsdActive()) {
+            // Native nuxel-osd owns the single power-menu instance on the phone.
+            hideMenu();
+            lastTs = j.ts;
+            return;
+          }
           if (j.entries && j.entries.length) {
             renderMenu(j);
             lastTs = j.ts;

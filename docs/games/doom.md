@@ -94,13 +94,16 @@ unlock.
 
 ## Engine comparison
 
-Nuxel also ships two native comparison apps:
+Nuxel exposes one Doom app/package:
 
 | App | Package | why |
 |---|---|---|
-| Nuxel Doom | `org.nuxel.Doom` | Touch-first Chocolate Doom WASM; the default phone experience |
-| Chocolate Doom | `org.nuxel.Doom.Chocolate` | Native Fedora Chocolate Doom 3.1.1; keyboard/gamepad |
-| UZDoom | `org.nuxel.Doom.UZDoom` | Modern GZDoom lineage; software renderer on this kernel |
+| Nuxel Doom | `org.nuxel.Doom` | Complete Chocolate Doom WASM engine plus touch HUD; the only NuXtore install |
+
+Fedora's native Chocolate Doom 3.1.1 may exist as an optional internal
+comparison runtime, but it is not a standalone app, NuXtore package or install
+prerequisite. The UZDoom and Crispy Doom comparison paths were removed at the
+owner's request.
 
 See [`doom-engines.md`](doom-engines.md) for the comparison and the exact
 launch paths.

@@ -147,6 +147,14 @@
         "why_gated": "Executed only by nuxel-button-manager after reboot-gate.json allows it (enabled + allow_poweroff + cooldown + rollback path)."
       },
       {
+        "id": "suspend",
+        "label": "Suspend",
+        "action": "systemctl-suspend",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "why": "logind CanSuspend reports yes on this device; this is a userspace systemctl suspend, not a reboot and not gated by the reboot policy."
+      },
+      {
         "id": "reboot-verbose",
         "label": "Reboot Verbose",
         "action": "reboot-verbose",

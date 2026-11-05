@@ -184,6 +184,31 @@ int main(int argc, char **argv) {
         wl_display_disconnect(dpy);
         return 0;
     }
+    if (!strcmp(mode, "hide-keyboard")) {
+        /* PWNAGE-80000: dismiss the compositor IME without backgrounding the
+         * foreground app.  A brief focus bounce to Home sends text-input leave
+         * (Stevia hides); the same app is then re-activated.  If no non-Home
+         * toplevel is active this is a no-op. */
+        struct toplevel *prev = NULL;
+        for (struct toplevel *t = tops; t; t = t->next)
+            if (!is_home(t) && t->activated) { prev = t; break; }
+        if (!prev) {
+            printf("HIDE_KEYBOARD no-foreground\n");
+            wl_display_disconnect(dpy);
+            return 0;
+        }
+        for (struct toplevel *t = tops; t; t = t->next)
+            if (is_home(t)) zwlr_foreign_toplevel_handle_v1_activate(t->handle, seat);
+        wl_display_flush(dpy);
+        wl_display_roundtrip(dpy);
+        usleep(180000);
+        zwlr_foreign_toplevel_handle_v1_activate(prev->handle, seat);
+        wl_display_flush(dpy);
+        wl_display_roundtrip(dpy);
+        printf("HIDE_KEYBOARD app_id=%s restored=1\n", prev->app_id);
+        wl_display_disconnect(dpy);
+        return 0;
+    }
     if (!strcmp(mode, "close-foreground")) {
         int closed = 0;
         for (struct toplevel *t = tops; t; t = t->next) {

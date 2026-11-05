@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/snekbyte/index.html",
-    "sha256": "8dd8fc1eb10b40b30bd21bbb66ae8b430d984fe369e40fd48df9aa3f5c0b2884",
-    "size": 6655
+    "sha256": "584b8109245c8e442f9d57bf7cc51e08e2eb5a04693df1aad0722de9a18a99f5",
+    "size": 6782
   },
   {
     "path": "pwa/nuxel-apps/snekbyte/js/snek-controls.js",

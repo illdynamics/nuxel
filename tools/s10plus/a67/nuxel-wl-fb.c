@@ -985,6 +985,7 @@ static int kmsg_max_loops(void) {
 static int ctrl_fd = -1;
 static int display_on = 1;
 static int force_present = 1;   /* A47: always paint the first frame after wake */
+static int force_full_frames = 0; /* PWNAGE-80000: one-shot full reproject after app close/reload/rotation */
 static int saved_brightness = -1;
 static int max_brightness = -1;
 
@@ -1077,6 +1078,14 @@ static void ctrl_pump(void) {
       if (!strncmp(q, "screen-off", 10))       display_set(0, "control-fifo");
       else if (!strncmp(q, "screen-on", 9))    display_set(1, "control-fifo");
       else if (!strncmp(q, "screen-toggle", 13)) display_set(!display_on, "control-fifo");
+      else if (!strncmp(q, "repaint", 7)) {
+        /* One-shot full-frame request from nuxel-pwa-host after an app close,
+         * launcher reload, lockscreen transition or orientation change.  It is
+         * deliberately bounded to two frames and is never a recurring timer. */
+        force_present = 1;
+        force_full_frames = 2;
+        st("REPAINT_REQUEST force_full_frames=%d why=control-fifo", force_full_frames);
+      }
       else if (!strncmp(q, "status", 6))       display_publish();
       q = nl ? nl + 1 : NULL;
     }
@@ -1734,7 +1743,18 @@ int main(int argc, char **argv) {
     else {
       int changed;
       clock_gettime(CLOCK_MONOTONIC, &t_cmp0);
-      if (force_present || !have_hash) {
+      if (force_full_frames > 0) {
+        changed = 1;
+        /* Refresh the baseline, then explicitly widen this frame to the full
+         * source height.  This is what removes a stale top band/rectangle that
+         * partial row damage would otherwise preserve. */
+        frame_damage_rows();
+        damage_y0 = 0; damage_y1 = frame_buf.h;
+        dirty_reset(); dirty_add(0, frame_buf.h);
+        force_present = 0;
+        force_full_frames--;
+        st("REPAINT_FULL remaining=%d src=%dx%d", force_full_frames, frame_buf.w, frame_buf.h);
+      } else if (force_present || !have_hash) {
         changed = 1;
         /* Prime the damage baseline even when this frame is a forced repaint;
            if the baseline already exists, use its real dirty span. */

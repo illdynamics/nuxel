@@ -110,7 +110,7 @@
             document.body.appendChild(panel);
         }
         const launcher = global.launcher;
-        const settings = launcher ? launcher.settings : { gridColumns: 4, gridRows: 5, dockColumns: 5 };
+        const settings = launcher ? launcher.settings : { gridColumns: 4, gridRows: 5, drawerColumns: 3, dockColumns: 5 };
         const appearance = read();
         // PWNAGE-43000: this panel is static once built.  Rebuilding it on
         // every open re-decoded the dock artwork and reparsed every control,
@@ -121,6 +121,7 @@
             const setChk = (sel, val) => { const e = panel.querySelector(sel); if (e) e.checked = !!val; };
             setVal('[data-grid-columns]', settings.gridColumns);
             setVal('[data-grid-rows]', settings.gridRows);
+            setVal('[data-drawer-columns]', settings.drawerColumns || 3);
             setVal('[data-desktop-count]', settings.desktopCount || 2);
             setChk('[data-home-locked]', settings.homeLocked === true);
             setVal('[data-battery-style]', appearance.batteryStyle || 'inside');
@@ -159,7 +160,9 @@
             '</div><label class="wallpaper-upload">Choose photo<input type="file" accept="image/*" data-wallpaper-file></label>' +
             '<h3>Home grid</h3><div class="home-setting-row"><label>Columns <select data-grid-columns>' + options(3, 6, settings.gridColumns) + '</select></label>' +
             '<label>Rows <select data-grid-rows>' + options(4, 7, settings.gridRows) + '</select></label></div>' +
-            '<p class="home-setting-hint">Default: 4 columns × 5 rows.</p>' +
+            '<p class="home-setting-hint">Default: 4 columns × 5 rows. Home keeps this count in portrait and landscape.</p>' +
+            '<h3>Apps drawer</h3><div class="home-setting-row"><label>Columns <select data-drawer-columns>' + options(3, 6, settings.drawerColumns || 3) + '</select></label></div>' +
+            '<p class="home-setting-hint">Independent from the Home grid. Default: 4 columns.</p>' +
             '<h3>Home layout</h3>' +
             '<div class="home-setting-row"><label>Lock icon layout <input type="checkbox" data-home-locked' + (settings.homeLocked ? ' checked' : '') + '></label>' +
             '<label>Desktops <select data-desktop-count>' + options(1, 8, settings.desktopCount || 2) + '</select></label></div>' +
@@ -225,11 +228,13 @@
         const update = () => launcher && launcher.updateHomeSettings({
             gridColumns: Number(panel.querySelector('[data-grid-columns]').value),
             gridRows: Number(panel.querySelector('[data-grid-rows]').value),
+            drawerColumns: Number(panel.querySelector('[data-drawer-columns]').value),
             desktopCount: Number(panel.querySelector('[data-desktop-count]').value),
             homeLocked: panel.querySelector('[data-home-locked]').checked,
         });
         panel.querySelector('[data-grid-columns]').onchange = update;
         panel.querySelector('[data-grid-rows]').onchange = update;
+        panel.querySelector('[data-drawer-columns]').onchange = update;
         panel.querySelector('[data-desktop-count]').onchange = update;
         panel.querySelector('[data-home-locked]').onchange = update;
         const lockSel = panel.querySelector('[data-lock-after-off]');

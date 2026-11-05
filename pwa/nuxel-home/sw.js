@@ -42,7 +42,7 @@
 // lockstep bump.
 // PWNAGE-46000 bumps to v69-p46000 to remove the duplicate blue DOM keyboard
 // behind Stevia and allow the manifest/viewport to follow all seven modes.
-const CACHE_VERSION = 'v77000-pw77001';
+const CACHE_VERSION = 'v80000-pw80002';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -82,6 +82,7 @@ const PRECACHE_ASSETS = [
     './js/osd.js',
     './js/bootlog.js',
     './js/app.js',
+    '../nuxel-common/zoom-policy.js',
     './js/touch-keyboard.js',
     './keyboard-provider.json',
     './js/navigation.js',

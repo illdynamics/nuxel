@@ -1,13 +1,18 @@
 [
   {
+    "path": "pwa/nuxel-apps/doom/WAD-LICENSES.md",
+    "sha256": "3a4e5fce3b962164585f5004869ca7c690154321b0e3df3dd44153cfeef75b57",
+    "size": 1750
+  },
+  {
     "path": "pwa/nuxel-apps/doom/app.json",
-    "sha256": "7ca637a01ad0c8604ecf31556d2d17a5f6f9ec5d8ca7ae5ea8e91bc5f063dac1",
-    "size": 607
+    "sha256": "0e2e0bcd590bc9227ba73c640c152b3c052fd6392a0677e3e88376aa43143bad",
+    "size": 637
   },
   {
     "path": "pwa/nuxel-apps/doom/css/doom.css",
-    "sha256": "faac8612f510638ead265e0c2e6f8d06e6e88f43231e18f90dd8d7b6b8906294",
-    "size": 14702
+    "sha256": "d56835a68caa0680b354a20f6a9e53b6a7169b3a7010243751aac1acac314968",
+    "size": 16961
   },
   {
     "path": "pwa/nuxel-apps/doom/engine/COPYING.md",
@@ -81,27 +86,27 @@
   },
   {
     "path": "pwa/nuxel-apps/doom/index.html",
-    "sha256": "b709aa98df5af9dec33925f7d534bbea1ce45ce74fa81c9fb09bddcc545844cb",
-    "size": 8945
+    "sha256": "36adfd70a5bbb7298f49842eb4a134769a6b2e1f9f16100a66c451d3caca1e0a",
+    "size": 10314
   },
   {
     "path": "pwa/nuxel-apps/doom/js/doom.js",
-    "sha256": "c68839365f737e0154ddcc263d4dab2d699d80240b714b327d85b0aa481c956f",
-    "size": 31125
+    "sha256": "ff9568535d2d06ac346f4dbc246c42d7b6b84d4c1dc7cc9ac823f544376d1229",
+    "size": 35757
   },
   {
     "path": "pwa/nuxel-apps/doom/manifest.json",
-    "sha256": "e8f50b1f9fc462ea823ef44305db264532dc9ea537108a6f04d5edca1f5a69be",
-    "size": 2386
+    "sha256": "fc891dd36d3c51a8d236dfd9cc5a0b8dbac1ff44b3b3809bee45be3d19b4e9d7",
+    "size": 2414
   },
   {
     "path": "pwa/nuxel-apps/doom/sw.js",
-    "sha256": "85d832b2911c2b05c8d04768d2802c0696a376b8039c6533d48bf2a68cc3da7b",
-    "size": 1459
+    "sha256": "4dcb77088087f09ced73447a15a559a559336536d73c4040d22146a5cabb6c33",
+    "size": 1480
   },
   {
     "path": "pwa/nuxel-apps/doom/tests/test-doom.js",
-    "sha256": "2f961ec729e2f41ec0d6b9e07e2553debda9d3481593712813a72fd62cee3572",
-    "size": 7194
+    "sha256": "421f299c14ecddcfaea921f31ac331ec3d5d9eae5b1a4ef9c94681b8401a1d43",
+    "size": 7767
   }
 ]

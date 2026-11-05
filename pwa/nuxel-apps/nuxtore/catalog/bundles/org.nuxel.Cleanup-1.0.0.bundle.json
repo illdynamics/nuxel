@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/cleanup/index.html",
-    "sha256": "b76bc17f5a1d3a331b52b9524311f95342b6eb82493b2d1541d9d44686111b86",
-    "size": 3721
+    "sha256": "de6da1c7373296b6102f73d0bff8abcefed8971f7fd3824a44feb6285846b3b9",
+    "size": 3811
   },
   {
     "path": "pwa/nuxel-apps/cleanup/js/cleanup-plan.js",

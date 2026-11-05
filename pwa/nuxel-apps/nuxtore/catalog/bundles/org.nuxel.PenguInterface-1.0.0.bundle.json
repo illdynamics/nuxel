@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/penguinterface/index.html",
-    "sha256": "8c34e491408cc570a01e3bb9a40023abd53968ad24e994acd776d41c9b212571",
-    "size": 1065
+    "sha256": "20a78aa2383d7dfaf370250698875e67ccd63adae668778945ff44d1696afd2d",
+    "size": 1155
   },
   {
     "path": "pwa/nuxel-apps/penguinterface/js/pengu.js",

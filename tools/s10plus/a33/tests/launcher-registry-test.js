@@ -526,6 +526,15 @@ function loadLauncher(startHash) {
   const searchCss = fs.readFileSync(path.join(HOME, 'css/search.css'), 'utf8');
   check('the search results list is scrollable too',
         /\.search-results\s*\{[^}]*overflow-y:\s*auto/s.test(searchCss) || /overflow-y:\s*auto/.test(searchCss));
+  const launcherJs = fs.readFileSync(path.join(HOME, 'js/launcher.js'), 'utf8');
+  check('Home grid honours the saved column count in portrait',
+        /effectiveGridColumns = this\.settings\.gridColumns/.test(launcherJs) &&
+        !/effectiveGridColumns = this\._isPortrait\(\) \?/.test(launcherJs));
+  check('Apps drawer has its own independent column setting',
+        /drawerColumns/.test(launcherJs) && /--drawer-columns/.test(launcherJs) &&
+        /--drawer-columns/.test(css));
+  check('Home settings exposes a separate Apps drawer column selector',
+        /data-drawer-columns/.test(fs.readFileSync(path.join(HOME, 'js/home-settings.js'), 'utf8')));
 }
 
 // The summary is printed here (not at the top level) because section 7 has to

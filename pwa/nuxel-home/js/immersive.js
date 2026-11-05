@@ -156,11 +156,20 @@
   // App-requested immersive mode. Only the actual foreground iframe may ask.
   global.addEventListener('message', function (event) {
     if (event.origin !== global.location.origin) return;
-    if (!event.data || event.data.type !== 'nuxel:immersive') return;
+    if (!event.data) return;
     const n = home();
     const frame = n && n.appSession && n.appSession.frame;
     if (!frame || event.source !== frame.contentWindow) return;
-    setImmersive(!!event.data.active);
+    if (event.data.type === 'nuxel:immersive') {
+      setImmersive(!!event.data.active);
+      return;
+    }
+    if (event.data.type === 'nuxel:nav-visible') {
+      // A non-immersive app (Calendar) asks for the persistent triple buttons.
+      // autoHideMs=0 means "keep them up" and never starts a timer.
+      setNavVisible(!!event.data.active, 0);
+      if (n && typeof n.setNavVisible === 'function') n.setNavVisible(!!event.data.active);
+    }
   });
 
   // Tapping a revealed system button should not leave the strip up forever.

@@ -9,9 +9,10 @@ class Launcher {
 
         this.currentPage = 0;
         this.appsPerPage = 20;
-        this.settings = { gridColumns: 4, gridRows: 5, dockColumns: 4, desktopCount: 2, homeLocked: false };
-        /* Portrait is rendered three icons wide (owner request).  The saved
-           preference stays untouched so landscape keeps its configured width. */
+        this.settings = { gridColumns: 4, gridRows: 5, drawerColumns: 3, dockColumns: 4, desktopCount: 2, homeLocked: false };
+        /* Home and the All Apps drawer are independent grids.  The Home grid
+           always honours the saved column count; the drawer has its own saved
+           count so changing one never silently changes the other. */
         this.effectiveGridColumns = 4;
         this.hiddenAppIds = new Set();
         this.appSizes = {};
@@ -95,8 +96,8 @@ class Launcher {
         } catch (e) { console.warn('Could not save launcher layout:', e); }
     }
 
-    /* A phone held upright gets three app columns; landscape (and a desktop
-       window wider than it is tall) keeps the owner's configured width. */
+    /* Retained for callers that need the current orientation; Home column
+       count is now an explicit user setting and is never overridden by it. */
     _isPortrait() {
         try {
             if (window.matchMedia) {
@@ -117,12 +118,17 @@ class Launcher {
         };
         this.settings.gridColumns = clamp(this.settings.gridColumns, 3, 6, 4);
         this.settings.gridRows = clamp(this.settings.gridRows, 4, 7, 5);
+        this.settings.drawerColumns = clamp(this.settings.drawerColumns, 3, 6, 3);
         this.settings.dockColumns = 4; // Four original fixed dock shortcuts.
         this.settings.desktopCount = clamp(this.settings.desktopCount, 1, 8, 2);
         this.settings.homeLocked = this.settings.homeLocked === true;
-        this.effectiveGridColumns = this._isPortrait() ? 3 : this.settings.gridColumns;
+        // Home settings are authoritative in every orientation.  The old
+        // portrait-only three-column override made a 4-column setting render
+        // as three and is intentionally gone.
+        this.effectiveGridColumns = this.settings.gridColumns;
         this.appsPerPage = this.effectiveGridColumns * this.settings.gridRows;
         document.documentElement.style.setProperty('--home-columns', this.effectiveGridColumns);
+        document.documentElement.style.setProperty('--drawer-columns', this.settings.drawerColumns);
         document.documentElement.style.setProperty('--dock-columns', this.settings.dockColumns);
     }
 
@@ -135,9 +141,30 @@ class Launcher {
             pending = setTimeout(() => {
                 pending = null;
                 const before = this.effectiveGridColumns;
+                const drawerBefore = this.settings.drawerColumns;
                 this._applyLayout();
-                if (this.effectiveGridColumns !== before) this._renderAll();
-            }, 120);
+                // A rotation can leave WebKit page scale, cached layout or the
+                // drawer's intrinsic size from the previous viewport.  Reset the
+                // central zoom policy, rebuild the cached drawer, and force the
+                // grid to a fresh layout even when the column count is unchanged.
+                try {
+                    if (window.NuxelZoomPolicy && window.NuxelZoomPolicy.reset) window.NuxelZoomPolicy.reset(window);
+                    const host = window.NuxelHost;
+                    if (host && host.available && typeof host.action === 'function') {
+                        Promise.resolve(host.action('reset-zoom')).catch(() => {});
+                    }
+                } catch (e) {}
+                if (this.drawerOpen || this.drawerList) this._renderDrawerApps(true);
+                if (this.drawerList) {
+                    this.drawerList.style.gridTemplateColumns = 'repeat(' + this.settings.drawerColumns + ', minmax(0, 1fr))';
+                    this.drawerList.scrollTop = 0;
+                    try { void this.drawerList.offsetHeight; } catch (e) {}
+                }
+                try { document.documentElement.style.setProperty('--viewport-width', window.innerWidth + 'px'); } catch (e) {}
+                if (this.effectiveGridColumns !== before || drawerBefore !== this.settings.drawerColumns) this._renderAll();
+                try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+                try { document.dispatchEvent(new CustomEvent('nuxel:orientation-reflow', { detail: { columns: this.settings.drawerColumns, width: window.innerWidth, height: window.innerHeight } })); } catch (e) {}
+            }, 160);
         };
         try {
             if (window.matchMedia) {
@@ -148,12 +175,15 @@ class Launcher {
         } catch (e) { /* optional */ }
         try { window.addEventListener('orientationchange', reflow, { passive: true }); } catch (e) {}
         try { window.addEventListener('resize', reflow, { passive: true }); } catch (e) {}
+        try { if (window.visualViewport) window.visualViewport.addEventListener('resize', reflow, { passive: true }); } catch (e) {}
     }
 
     updateHomeSettings(next) {
         const desired = Object.assign({}, this.settings, next || {});
         const desiredColumns = Math.max(3, Math.min(6, Number(desired.gridColumns) || 4));
-        const effectiveColumns = this._isPortrait() ? Math.min(3, desiredColumns) : desiredColumns;
+        desired.gridColumns = desiredColumns;
+        desired.drawerColumns = Math.max(3, Math.min(6, Number(desired.drawerColumns) || 3));
+        const effectiveColumns = desiredColumns;
         const cap = effectiveColumns * (Number(desired.gridRows) || 5);
         const wanted = Number(desired.desktopCount) || 2;
         const occupied = this._entries().length;
@@ -263,7 +293,7 @@ class Launcher {
         this.appSizes = {};
         this.pageAssignments = {};
         this.layout = null;
-        this.settings = { gridColumns: 4, gridRows: 5, dockColumns: 4, desktopCount: 2, homeLocked: false };
+        this.settings = { gridColumns: 4, gridRows: 5, drawerColumns: 3, dockColumns: 4, desktopCount: 2, homeLocked: false };
         this._applyLayout();
         this._renderAll();
     }

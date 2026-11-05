@@ -10,6 +10,8 @@ against an API key or session token. It is a convenience layer for development
 and testing; production PWAs should use D-Bus directly via xdg-desktop-portal.
 """
 
+import base64
+import binascii
 import json
 import mimetypes
 import re
@@ -872,12 +874,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "org.gnome.SystemMonitor": ["/usr/bin/gnome-system-monitor"],
         # PWNAGE-45000 native Software center (GTK3 + PackageKit/polkit).
         "org.gnome.Software": ["/usr/lib/nuxel/nuxel-software"],
-        # v0.7.7-beta: native Doom engine comparison paths.  Nuxel Doom itself
-        # runs Chocolate Doom in WebAssembly inside the PWA; these wrappers run
-        # the distro Chocolate Doom and the optional UZDoom build fullscreen.
+        # v0.7.7-beta: the only native Doom path is Chocolate Doom.  Nuxel
+        # Doom itself runs Chocolate Doom in WebAssembly inside the PWA; the
+        # native Chocolate Doom card runs the distro engine fullscreen.  The
+        # UZDoom and Crispy comparison paths were removed by owner request.
         "org.nuxel.Doom.Chocolate": ["/usr/lib/nuxel/nuxel-doom-engine", "chocolate"],
-        "org.nuxel.Doom.UZDoom": ["/usr/lib/nuxel/nuxel-doom-engine", "uzdoom"],
-        "org.nuxel.Doom.Crispy": ["/usr/lib/nuxel/nuxel-doom-engine", "crispy"],
     }
 
     # Wayland app_id reported by nuxel-foreign-toplevel (may differ from the
@@ -903,8 +904,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "org.gnome.FileRoller", "org.gnome.Loupe",
         "org.gnome.Papers", "org.gnome.SystemMonitor",
         "org.gnome.Software",
-        "org.nuxel.Doom.Chocolate", "org.nuxel.Doom.UZDoom",
-        "org.nuxel.Doom.Crispy",
+        "org.nuxel.Doom.Chocolate",
     }
 
     def _ensure_xwayland(self):
@@ -1198,6 +1198,33 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     proc.returncode, closed_ids, killed_units, out.strip())
         return ({"success": proc.returncode == 0, "action": "close-foreground",
                  "closed_apps": closed_ids, "killed_units": killed_units,
+                 "rc": proc.returncode, "output": out.strip()}, 200)
+
+    def _close_app_action(self, app_id, force=False):
+        """Close one exact native toplevel by app id.
+
+        Graceful: compositor request_close only.  Force: the same close, then a
+        bounded stop/SIGKILL of that app's own transient systemd units.  Home,
+        Phoc, the bridge and every system service are excluded by identity.
+        """
+        if not isinstance(app_id, str) or not APP_ID_RE.match(app_id):
+            return ({"success": False, "error": "invalid_app_id"}, 400)
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        argv = ["/usr/lib/nuxel/nuxel-foreign-toplevel", "close", app_id]
+        try:
+            proc = subprocess.run(argv, env=env, capture_output=True, timeout=8)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.error("close app %s failed: %s", app_id, exc)
+            return ({"success": False, "error": "close_failed", "detail": str(exc)}, 500)
+        out = (proc.stdout or b"").decode("utf-8", "replace")
+        closed = re.findall(r"CLOSE_ACTION app_id=(\S+)", out)
+        killed = self._force_stop_app_units(app_id) if force else []
+        logger.info("close app=%s force=%s rc=%s closed=%s killed=%s out=%s",
+                    app_id, force, proc.returncode, closed, killed, out.strip())
+        return ({"success": proc.returncode == 0, "action": "force-close" if force else "close",
+                 "app_id": app_id, "closed_apps": closed, "killed_units": killed,
                  "rc": proc.returncode, "output": out.strip()}, 200)
 
     def _force_stop_app_units(self, app_id):
@@ -2744,6 +2771,30 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 logger.error('remote-desktop RPC %s failed: %s', action, exc)
                 return {'success': False, 'error': str(exc),
                         'error_code': 'PROVIDER_ERROR'}
+        if namespace == 'doom':
+            if doom_assets is None:
+                return {'success': False, 'error': 'doom_assets_unavailable'}
+            if verb in ('wads', 'catalogue', 'list'):
+                return doom_assets.public_catalogue()
+            if verb == 'import':
+                # Only the Doom app and the two local owner surfaces may add a
+                # WAD.  The user must explicitly confirm the file's licence.
+                if app_id not in ('org.nuxel.Doom', 'org.nuxel.Nuxtore',
+                                  'org.nuxel.NuxTore', 'org.nuxel.Home'):
+                    return {'success': False, 'error': 'capability_denied',
+                            'detail': 'only Nuxel Doom, NuxTore or Home may import a WAD'}
+                name = params.get('name', '') if isinstance(params, dict) else ''
+                ack = bool(params.get('license_ack')) if isinstance(params, dict) else False
+                b64 = params.get('data_base64', '') if isinstance(params, dict) else ''
+                if not isinstance(b64, str) or not b64:
+                    return {'success': False, 'error': 'missing_file_data'}
+                try:
+                    data = base64.b64decode(b64, validate=True)
+                except (binascii.Error, ValueError):
+                    return {'success': False, 'error': 'invalid_base64'}
+                return doom_assets.import_bytes(data, str(name), ack)
+            return {'success': False, 'error': 'unknown_doom_verb', 'verb': verb}
+
         if namespace == 'apps' and verb in ('registry', 'get-registry'):
             return self._load_app_registry()
         if namespace == 'flatpak':
@@ -3282,8 +3333,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             self._send_json(result, code)
 
         elif path == '/api/v1/apps/close-foreground':
-            # Long Back: close the activated non-Home toplevel, never kill.
+            # Long Back / explicit graceful close of the activated non-Home toplevel.
             result, code = self._close_foreground_action()
+            self._send_json(result, code)
+
+        elif path == '/api/v1/apps/close':
+            result, code = self._close_app_action(str(body.get('app_id', '')), force=False)
+            self._send_json(result, code)
+
+        elif path == '/api/v1/apps/force-close':
+            result, code = self._close_app_action(str(body.get('app_id', '')), force=True)
             self._send_json(result, code)
 
         elif path == '/api/v1/apps/back':
