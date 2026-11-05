@@ -76,6 +76,8 @@ def main() -> int:
     check("close removes only orphaned app surfaces", "querySelectorAll('.pwa-frame,.pwa-app-status,.pwa-app-bar')" in app and "const live = new Set()" in app and "if (!live.has(el)) el.remove()" in app)
     check("close retires the exact session from Recents", "if (appId) this.sessions.close(appId)" in app)
     check("close dispatches after-app-close redraw", "host.action('after-app-close')" in app)
+    check("app close re-focuses the Home WebView", "gtk_widget_grab_focus(GTK_WIDGET(g_main_view))" in host and 'focus=home' in host)
+    check("focus restoration runs after the async WebKit blur", "refocus_home_after_blur" in host and "g_timeout_add(80, refocus_home_after_blur" in host)
     check("lockscreen transition requests a full redraw", "host.action('force-redraw')" in app[app.index("    _lock(reason) {"):app.index("    _unlock(reason) {")])
     rec = read("pwa/nuxel-home/js/recents.js")
     check("Recents swipe left is graceful", "dx < 0" in rec and "_graceful(appId" in rec)
@@ -144,7 +146,14 @@ def main() -> int:
     check("button manager confirms systemd accepted the job", "REBOOT_ACCEPTED" in bm and "spawned-unconfirmed" in bm and "WEXITSTATUS(status) == 0" in bm)
     check("Settings reports the backend power verdict", "power-action-result" in read("pwa/nuxel-apps/settings/power-menu.js") and "accepted by systemd" in read("pwa/nuxel-apps/settings/power-menu.js"))
     check("systemd stop is bounded", (ROOT / "services/nuxel-s10/systemd/system.conf.d/50-nuxel-bounded-stop.conf").is_file() and "DefaultTimeoutStopSec=15s" in read("services/nuxel-s10/systemd/system.conf.d/50-nuxel-bounded-stop.conf"))
-    check("cosmetic boot sound cannot hold shutdown", (ROOT / "services/nuxel-session/systemd/nuxel-boot-sound.service.d/99-p80000-fast-stop.conf").is_file())
+    cue_paths = [
+        "services/nuxel-session/systemd/nuxel-boot-sound.service.d/99-p80000-fast-stop.conf",
+        "services/nuxel-s10/systemd/p80000-boot-sound-fast-stop.conf",
+    ]
+    cue_stops = [read(p) for p in cue_paths]
+    check("cosmetic boot sound cannot hold shutdown", all("TimeoutStopSec=5s" in t for t in cue_stops))
+    check("boot cue stop attaches to the cue process, not the warm-up helper",
+          all("KillMode=process" in t and "KillMode=control-group" not in t for t in cue_stops))
 
     print("\n[doom + nuxtore]")
     cat = json.loads(read("pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json"))

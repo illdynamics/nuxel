@@ -1615,6 +1615,22 @@ static void host_hide_keyboard(void) {
  * complete valid frame: pin WebKit zoom, clear the focus chain and ask the
  * framebuffer bridge for one full blit instead of waiting for a partial damage
  * region to age out.  This is a one-shot, not a repeating timer. */
+/* One-shot focus restoration after the asynchronous WebKit blur above.  The
+ * blur is intentionally queued so text-input leave reaches Stevia; grabbing
+ * focus in the same stack would be overwritten when that JS later runs. */
+static gboolean refocus_home_after_blur(gpointer d) {
+  (void)d;
+  if (g_main_window) {
+    gtk_window_present(GTK_WINDOW(g_main_window));
+    gtk_window_set_focus(GTK_WINDOW(g_main_window), GTK_WIDGET(g_main_view));
+    if (g_main_view) gtk_widget_grab_focus(GTK_WIDGET(g_main_view));
+  }
+  st("HOST_HOME_REFOCUS active=%d view_focus=%d",
+     g_main_window ? gtk_window_is_active(GTK_WINDOW(g_main_window)) : -1,
+     g_main_view ? gtk_widget_has_focus(GTK_WIDGET(g_main_view)) : -1);
+  return G_SOURCE_REMOVE;
+}
+
 static void host_after_app_close(const char *why) {
   reset_web_zoom(g_main_view);
   if (g_main_view) {
@@ -1629,8 +1645,17 @@ static void host_after_app_close(const char *why) {
     webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
   }
   wlfb_command("repaint");
-  if (g_main_window) { gtk_widget_queue_draw(g_main_window); }
-  st("HOST_AFTER_APP_CLOSE why=%s zoom=1 repaint=1 focus=cleared", why ? why : "unspecified");
+  /* Blurring the dead app field clears text-input/IME state, but it can also
+   * leave the toplevel document unfocused (document.hasFocus() == false).
+   * Re-attach keyboard/pointer focus to the Home WebView so the desktop is
+   * interactive in the same frame instead of waiting for an unrelated tap. */
+  if (g_main_window) {
+    gtk_window_present(GTK_WINDOW(g_main_window));
+    if (g_main_view) gtk_widget_grab_focus(GTK_WIDGET(g_main_view));
+    gtk_widget_queue_draw(g_main_window);
+  }
+  g_timeout_add(80, refocus_home_after_blur, NULL);
+  st("HOST_AFTER_APP_CLOSE why=%s zoom=1 repaint=1 focus=home", why ? why : "unspecified");
 }
 
 static void action_perform(const char *action, char *result, size_t rn) {

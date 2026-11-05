@@ -42,10 +42,37 @@ Legend: **PASS-LIVE** = exercised on `root@192.168.178.167`; **PASS-OFFLINE** = 
 
 ## Offline suites
 
-- `tests/pwnage80000/test_pwnage80000.py`: **93 passed, 0 failed**
+- `tests/pwnage80000/test_pwnage80000.py`: **96 passed, 0 failed**
 - `pwa/nuxel-apps/doom/tests/test-doom.js`: **45 passed, 0 failed**
 - `pwa/nuxel-home/tests/test-zoom-policy.js`: **7 passed, 0 failed**
 - `pwa/nuxel-apps/nuxtore/tests/test-catalog.js`: **18 passed, 0 failed**
 - `pwa/nuxel-apps/nuxtore/tests/test-catalog.py`: **18 + 12 passed, 0 failed**
 - `services/nuxel-bridge/test-doom-assets.py`: **16 passed, 0 failed**
 - `nuxtore-verify.py --root .`: **all signed packages verified**; unsigned demo correctly refused
+
+
+## Continuation rows (post-reboot hardening)
+
+| Case | Evidence | Result |
+|---|---|---|
+| Boot cue fresh path | `start_rc=0`, `Result=success`, warm-up helper still alive | PASS-LIVE |
+| Boot cue after full reboot | `nuxel-boot-sound.service` inactive/dead, `Result=success`, `KillMode=process` | PASS-LIVE |
+| Failed units after reboot | `systemctl --failed` empty | PASS-LIVE |
+| Wayland restart rebind | before `WL_DISPATCH_FAIL errno=32`; after `FRAMES_OK display=on` | PASS-LIVE |
+| App-close native focus | `HOST_HOME_REFOCUS active=1 view_focus=1` | PASS-LIVE |
+| App-close overlays/keyboard | frames/iframes/powerMenus/folderSheets 0; keyboard 0 | PASS-LIVE |
+| Desktop after close | drawer opened, 45 items, 3 columns | PASS-LIVE |
+| Calendar post-reboot Back chain | keyboard-dismiss → app-control ×2 → root graceful close | PASS-LIVE |
+| Calendar navdock with keyboard | `visible:true`, `mapped:true`, keyboard 1 | PASS-LIVE |
+| Recents swipe left/right post-reboot | graceful-start / force-killed | PASS-LIVE |
+| Power menu post-reboot | 1 OSD, interactive 16 rows, screenshot 27→28, back closes | PASS-LIVE |
+| Final reboot acceptance | `REBOOT_SPAWNED` → `REBOOT_ACCEPTED` +102 ms | PASS-LIVE |
+| Final reboot target | selection 15:29:47.746Z → reboot.target 16:29:51.640 CET ≈3.9 s | PASS-LIVE |
+| Post-reboot service matrix | Wayland, wl-fb, buttons, web, HTTP bridge, orientation all active | PASS-LIVE |
+| Post-reboot orientation | portrait, effective 0, applied True | PASS-LIVE |
+| Post-reboot zoom policy | all-frames default deny; guard installed | PASS-LIVE |
+| Post-reboot Doom package | signed catalog verifies; 4 WADs; only org.nuxel.Doom exposed | PASS-LIVE |
+| Blue rectangle after close | top-500 mean diff 0.09; no >80% blue rows | PASS-LIVE |
+| Physical touch injection | still unavailable via phoc no-udev hotplug; UI FIFO/Recents harness used | LIMITED |
+| Swipe-down keyboard gesture | button-manager code path verified; no physical injection | LIMITED |
+| Suspend / power-off | gate/backend shared with restart; not executed to preserve SSH | LIMITED |

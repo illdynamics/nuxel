@@ -110,9 +110,14 @@ if [ "$RESTART" = 1 ]; then
   "${SSH[@]}" 'systemctl reset-failed nuxel-button-manager.service 2>/dev/null || true
 systemctl restart nuxel-button-manager.service
 systemctl restart nuxel-wayland.service
+# nuxel-wl-fb keeps its old Wayland connection when only the compositor is
+# restarted: systemd still reports it active, but its state is a single
+# WL_DISPATCH_FAIL and the panel remains asleep.  Rebind it explicitly.
+systemctl restart nuxel-wl-fb.service
 for i in $(seq 1 30); do
   systemctl is-active --quiet nuxel-wayland.service && \
   systemctl is-active --quiet nuxel-wl-fb.service && \
+  grep -q FRAMES_OK /run/nuxel-wl-fb.state 2>/dev/null && \
   systemctl is-active --quiet nuxel-button-manager.service && break
   sleep 1
 done

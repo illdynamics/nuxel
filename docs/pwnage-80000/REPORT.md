@@ -165,3 +165,55 @@ The desktop now has one Back dispatcher, one app/window lifecycle manager, one n
 - The accelerometer source remains unavailable; orientation was exercised through the authoritative `nuxel-orientationd` fixed modes (`--apply`), not physical rotation.
 - Suspend and power-off were not executed because they would terminate remote access. They share the same gate/back-end path as Restart.
 - Bootloader/kernel time (~30 s) is outside userspace and was not modified. No kernel was flashed.
+
+## Continuation verification and hardening (2026-11-05)
+
+The first reboot exposed three follow-up defects that were not visible in the pre-reboot run. They are fixed in the same reversible branch and re-verified on the handset.
+
+### A. Cosmetic boot cue was marked failed at boot
+
+**Cause:** `99-p80000-fast-stop.conf` overrode `20-warmup-keepalive.conf` with `KillMode=control-group`. The cue intentionally leaves a bounded `nuxel-audio-warmup` helper alive after the oneshot's main process exits. Control-group teardown waited for that helper, hit the new 5 s stop timeout, and marked a successful cue `failed`.
+
+**Fix:** the drop-in now keeps `TimeoutStopSec=5s` but uses `KillMode=process`, matching the documented warm-up contract. The unreferenced `services/nuxel-s10/systemd/p80000-boot-sound-fast-stop.conf` source was aligned so it cannot reintroduce the trap.
+
+**Live proof:** a fresh cue start returned 0 with `Result=success` while `timeout`/`pw-play` were still alive, and `systemctl --failed` was empty. After the final reboot the unit is `inactive/dead`, `Result=success`, `KillMode=process`.
+
+### B. Wayland restart left the framebuffer bridge disconnected
+
+**Cause:** restarting only `nuxel-wayland.service` leaves `nuxel-wl-fb.service` systemd-active but holding the old Wayland connection. Its state became a single `WL_DISPATCH_FAIL errno=32` and the panel stayed dark.
+
+**Fix:** `tools/pwnage80000/deploy-pwnage80000.sh` now restarts `nuxel-wl-fb.service` after the compositor and waits for a fresh `FRAMES_OK` state, not merely `is-active`.
+
+**Live proof:** before the fix the bridge reported `WL_DISPATCH_FAIL`; after the explicit rebind it reported `FRAMES_OK … display=on failures=0`.
+
+### C. App-close focus was not restored after the asynchronous blur
+
+**Cause:** `after-app-close` queues a WebKit blur (needed to release text-input/IME state) but immediately grabbed focus in the same stack. The queued blur then ran and could leave the Home document without focus. The first fix (immediate `gtk_widget_grab_focus`) logged `HOST_AFTER_APP_CLOSE … focus=home` but was still followed by the async blur.
+
+**Fix:** `nuxel-pwa-host.c` now performs a one-shot `g_timeout_add(80, refocus_home_after_blur, ...)` after queueing the blur. The callback re-presents Home, sets focus to the WebView and logs `HOST_HOME_REFOCUS active=… view_focus=…`. This is a focus callback, not a shell reload or a sleep workaround.
+
+**Live proof:** after Calendar close, `HOST_HOME_REFOCUS active=1 view_focus=1`, `overlays={frames:0,iframes:0,powerMenus:0,folderSheets:0}`, keyboard 0, and the app drawer opened immediately. WebKitGTK still reports `document.hasFocus()==false` after synthetic close, but GTK reports the toplevel active and the Home view focused; the desktop state and hit targets are present.
+
+## Final controlled reboot
+
+The final test used the real native power menu (`CTRL_MENU_SELECT index=3 id=restart`) through the button-manager gate:
+
+```text
+Selection:        2026-11-05T15:29:47.746Z
+REBOOT_ALLOWED    at_ms=1378361
+REBOOT_SPAWNED    at_ms=1378362
+REBOOT_ACCEPTED   at_ms=1378464   (+102 ms)
+Reached reboot.target  16:29:51.640 CET (≈3.9 s after selection)
+New boot ID:      4a1d352f-57b0-4058-9a57-57c68705104d
+SSH observed again: 2026-11-05T15:30:44.990Z
+```
+
+The ~3.9 s is the userspace/systemd transaction; the remainder is bootloader/kernel boot. There is no 30 s delay before the reboot request. No failed units appeared after boot, the boot cue succeeded, core services were active, orientation returned to portrait, and the deployed hashes persisted.
+
+## Continuation source changes
+
+- `services/nuxel-session/systemd/nuxel-boot-sound.service.d/99-p80000-fast-stop.conf` — process-scoped stop.
+- `services/nuxel-s10/systemd/p80000-boot-sound-fast-stop.conf` — aligned duplicate source.
+- `tools/s10plus/a45/nuxel-pwa-host.c` — post-blur Home refocus and focus diagnostics.
+- `tools/pwnage80000/deploy-pwnage80000.sh` — rebind `nuxel-wl-fb` after Wayland restart.
+- `tests/pwnage80000/test_pwnage80000.py` — 96 checks including the three continuations.
