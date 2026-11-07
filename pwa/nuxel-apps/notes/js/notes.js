@@ -37,11 +37,26 @@
     },
 
     async load() {
-      var res = await bridgeCall('storage', 'read', { key: STORE_KEY });
-      if (res && res.success !== false && Array.isArray(res.data)) {
-        this.notes = res.data;
+      var res = await bridgeCall('notes', 'list', {});
+      if (res && res.success !== false && Array.isArray(res.notes)) {
+        this.notes = res.notes;
         this._lastTransport = 'bridge';
         saveLocal(this.notes);
+        // One-time, lossless migration of notes created before the file store.
+        if (!this.notes.length) {
+          var legacy = loadLocal();
+          if (legacy.length) {
+            var migrated = [];
+            for (var i = 0; i < legacy.length; i++) {
+              var saved = await bridgeCall('notes', 'save', { note: legacy[i] });
+              if (saved && saved.success !== false && saved.note) migrated.push(saved.note);
+            }
+            if (migrated.length) {
+              this.notes = migrated;
+              this._lastTransport = 'bridge';
+            }
+          }
+        }
       } else {
         this.notes = loadLocal();
         this._lastTransport = res && res.offline ? 'local-offline' : 'local-cache';
@@ -58,7 +73,25 @@
     },
 
     // Compatibility with notes-io.js (it calls _saveNotes when pinning/importing).
-    _saveNotes: function () { return this.persist(); },
+    _saveNotes: function () { return this.saveAll(); },
+
+    async saveAll() {
+      var snapshot = JSON.parse(JSON.stringify(this.notes));
+      saveLocal(snapshot);
+      var ok = true, error = null;
+      for (var i = 0; i < snapshot.length; i++) {
+        var r = await bridgeCall('notes', 'save', { note: snapshot[i] });
+        if (r && r.success === false) { ok = false; error = r.error || 'save failed'; break; }
+      }
+      if (ok) {
+        this._lastTransport = 'bridge';
+        this._announce(snapshot);
+      } else {
+        this._lastTransport = 'local-offline';
+        this.showStatus('Save failed: ' + error + '. Your content is kept locally.');
+      }
+      return { ok: ok, error: error };
+    },
 
     // Serialized writes: an older completion can never mark newer text as
     // saved. localStorage is written first as a durable offline cache; the
@@ -80,12 +113,7 @@
     },
 
     async persist() {
-      var notes = JSON.parse(JSON.stringify(this.notes));
-      saveLocal(notes);
-      this._revision++;
-      var res = await this._enqueueWrite(notes, this._revision);
-      if (res.ok) this._announce(notes);
-      return res;
+      return this.saveAll();
     },
 
     _announce(notes) {
@@ -99,23 +127,78 @@
         if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
         return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
       });
+      list.textContent = '';
       if (!sorted.length) {
-        list.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><h3>No notes yet</h3><p>Tap + to create your first note</p></div>';
+        var empty = document.createElement('div');
+        empty.className = 'empty-state';
+        var icon = document.createElement('div'); icon.className = 'empty-icon'; icon.textContent = '🐧';
+        var h = document.createElement('h3'); h.textContent = 'No notes yet';
+        var p = document.createElement('p'); p.textContent = 'Tap + to create your first note in ~/Notes.';
+        empty.appendChild(icon); empty.appendChild(h); empty.appendChild(p); list.appendChild(empty);
         return;
       }
       var self = this;
-      list.innerHTML = sorted.map(function (note) {
-        return '<div class="note-card" data-id="' + self.esc(note.id) + '">' +
-          '<div class="note-card-title">' + self.esc(note.title || 'Untitled') + '</div>' +
-          '<div class="note-card-preview">' + self.esc((note.body || '').substring(0, 100)) + '</div>' +
-          '<div class="note-card-date">' + self.esc(self.formatDate(note.updatedAt)) + '</div></div>';
-      }).join('');
-      list.querySelectorAll('.note-card').forEach(function (card) {
-        card.addEventListener('click', function () {
-          var note = self.notes.find(function (n) { return n.id === card.dataset.id; });
-          if (note) self.openEditor(note);
+      sorted.forEach(function (note) {
+        var card = document.createElement('article');
+        card.className = 'note-card' + (note.pinned ? ' pinned' : '');
+        card.dataset.id = note.id;
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', (note.pinned ? 'Pinned note: ' : 'Note: ') + (note.title || 'Untitled'));
+        var head = document.createElement('div'); head.className = 'note-card-head';
+        var title = document.createElement('div'); title.className = 'note-card-title'; title.textContent = note.title || 'Untitled';
+        var pin = document.createElement('button'); pin.type = 'button'; pin.className = 'note-card-icon';
+        pin.textContent = note.pinned ? '★' : '☆'; pin.title = note.pinned ? 'Unpin note' : 'Pin note';
+        pin.setAttribute('aria-label', pin.title);
+        pin.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          note.pinned = !note.pinned;
+          note.updatedAt = new Date().toISOString();
+          self.saveNoteDirect(note).then(function (ok) { if (ok) { self.renderList(); self._announce(self.notes); } });
         });
+        head.appendChild(title); head.appendChild(pin);
+        var preview = document.createElement('div'); preview.className = 'note-card-preview';
+        preview.textContent = String(note.body || '').replace(/\s+/g, ' ').slice(0, 180);
+        var foot = document.createElement('div'); foot.className = 'note-card-foot';
+        var date = document.createElement('span'); date.className = 'note-card-date'; date.textContent = self.formatDate(note.updatedAt);
+        var path = document.createElement('span'); path.className = 'note-card-path'; path.textContent = note.path || '~/Notes';
+        foot.appendChild(date); foot.appendChild(path);
+        card.appendChild(head); card.appendChild(preview); card.appendChild(foot);
+        card.addEventListener('click', function () { self.openEditor(note); });
+        card.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); self.openEditor(note); }
+        });
+        list.appendChild(card);
       });
+    },
+
+    saveNoteDirect: async function (note) {
+      var res = await bridgeCall('notes', 'save', { note: note });
+      if (!res || res.success === false) {
+        this.showStatus('Save failed: ' + ((res && (res.error || res.detail)) || 'backend unavailable'));
+        return false;
+      }
+      var saved = res.note || note;
+      var idx = this.notes.findIndex(function (n) { return n.id === saved.id; });
+      if (idx >= 0) this.notes[idx] = saved; else this.notes.push(saved);
+      saveLocal(this.notes);
+      this._lastTransport = 'bridge';
+      return true;
+    },
+
+    openApp: function (appId, draftKey, draft) {
+      try { localStorage.setItem(draftKey, JSON.stringify(draft)); } catch (e) {}
+      var registry = null;
+      try { registry = window.parent && window.parent.appRegistry; } catch (e) {}
+      try {
+        if (registry && typeof registry.launchApp === 'function') { registry.launchApp(appId); return true; }
+      } catch (e) {}
+      try {
+        if (window.parent && window.parent.nuxel && typeof window.parent.nuxel.launchApp === 'function') {
+          window.parent.nuxel.launchApp(appId); return true;
+        }
+      } catch (e) {}
+      return false;
     },
 
     openEditor: function (note) {
@@ -154,29 +237,34 @@
 
     async save() {
       if (!this.currentNote) return { ok: true };
-      // Capture first even if a write is already in flight: the queued write
-      // uses this snapshot and a newer revision, so text is never dropped.
       this.capture();
       var rev = this._revision;
-      var snapshot = JSON.parse(JSON.stringify(this.notes));
+      var note = JSON.parse(JSON.stringify(this.currentNote));
       this.saving = true;
       this.updateMeta();
-      saveLocal(snapshot);
-      var res = await this._enqueueWrite(snapshot, rev);
-      // Only the newest revision may clear the dirty flag / print "Saved".
+      var res = await bridgeCall('notes', 'save', { note: note });
       if (rev === this._revision) {
         this.saving = false;
-        if (res.ok) {
+        if (res && res.success !== false) {
+          this._lastTransport = 'bridge';
+          var saved = res.note || note;
+          var idx = this.notes.findIndex(function (n) { return n.id === saved.id; });
+          if (idx >= 0) this.notes[idx] = saved; else this.notes.push(saved);
+          this.currentNote = saved;
           this.dirty = false;
+          saveLocal(this.notes);
           this.updateMeta();
           this.renderList();
-          this._announce(snapshot);
-        } else {
-          this.updateMeta();
-          this.showStatus('Save failed: ' + (res.error || 'unknown error') + '. Your content is kept.');
+          this._announce(this.notes);
+          return { ok: true, note: saved };
         }
+        saveLocal(this.notes);
+        var error = (res && (res.error || res.detail)) || 'unknown error';
+        this.updateMeta();
+        this.showStatus('Save failed: ' + error + '. Your content is kept locally.');
+        return { ok: false, error: error };
       }
-      return res;
+      return { ok: true };
     },
 
     async saveAndClose() {
@@ -188,10 +276,75 @@
     },
 
     async deleteNote(id) {
-      this.notes = this.notes.filter(function (n) { return n.id !== id; });
-      var res = await this.persist();
-      this.renderList();
-      if (!res.ok) this.showStatus('Delete failed: ' + (res.error || 'unknown error'));
+      if (this.currentNote && this.currentNote.id === id) {
+        var saveFirst = await this.save();
+        if (!saveFirst.ok) return;
+      }
+      var res = await bridgeCall('notes', 'delete', { id: id });
+      if (res && res.success !== false) {
+        this.notes = this.notes.filter(function (n) { return n.id !== id; });
+        if (this.currentNote && this.currentNote.id === id) this.currentNote = null;
+        saveLocal(this.notes);
+        this.renderList();
+        this._announce(this.notes);
+      } else {
+        this.showStatus('Delete failed: ' + ((res && (res.error || res.detail)) || 'unknown error'));
+      }
+    },
+
+    async renameNote(id, title) {
+      var res = await bridgeCall('notes', 'rename', { id: id, title: title });
+      if (res && res.success !== false) {
+        var note = this.notes.find(function (n) { return n.id === id; });
+        if (note) { note.title = title; note.updatedAt = new Date().toISOString(); }
+        if (this.currentNote && this.currentNote.id === id) this.currentNote.title = title;
+        saveLocal(this.notes);
+        this.renderList();
+        this._announce(this.notes);
+        return true;
+      }
+      this.showStatus('Rename failed: ' + ((res && (res.error || res.detail)) || 'unknown error'));
+      return false;
+    },
+
+    async convertToCalendar(note, when) {
+      // Handoff is a real prefilled Calendar editor, not a silent event write.
+      var draft = {
+        title: (note.title || 'Note').slice(0, 200),
+        description: (note.body || '').slice(0, 8000),
+        date: when && when.date,
+        startTime: when && when.startTime || '',
+        endTime: when && when.endTime || '',
+        allDay: !!(when && when.allDay),
+        reminder: Number(when && when.reminder || 10) || 10,
+        sourceNoteId: note.id,
+        createdAt: new Date().toISOString()
+      };
+      var opened = this.openApp('org.nuxel.Calendar', 'nuxel.calendar.draft', draft);
+      this.showStatus(opened ? 'Calendar opened with the note prefilled. Confirm the event there.' :
+        'Calendar draft saved. Open Calendar to finish the event.');
+      return opened;
+    },
+
+    async convertToAlarm(note, when) {
+      // Handoff is a real prefilled Clock alarm form.  The user confirms the
+      // time/recurrence; note prose is never parsed into a silent schedule.
+      var draft = {
+        time: when && when.time || '',
+        label: (note.title || 'Note reminder').slice(0, 120),
+        repeat: false,
+        sourceNoteId: note.id
+      };
+      var opened = this.openApp('org.nuxel.Clock', 'nuxel.clock.alarmDraft', draft);
+      this.showStatus(opened ? 'Clock opened with the alarm prefilled. Confirm Add there.' :
+        'Alarm draft saved. Open Clock to finish scheduling it.');
+      return opened;
+    },
+
+    async openNotesFolder() {
+      var opened = this.openApp('org.nuxel.Files', 'nuxel.files.open', { path: '/Notes' });
+      this.showStatus(opened ? 'Files opened at ~/Notes.' : 'Notes are stored in ~/Notes; open Files to browse them.');
+      return opened;
     },
 
     bind: function () {
@@ -219,6 +372,33 @@
         if (self.dirty) self.saveAndClose(); else { document.getElementById('note-editor').classList.add('hidden'); self.currentNote = null; }
       });
       document.getElementById('editor-save').addEventListener('click', function () { self.saveAndClose(); });
+      document.querySelectorAll('[data-note-action]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (!self.currentNote) return;
+          self.capture();
+          var action = btn.getAttribute('data-note-action');
+          var d = new Date();
+          var date = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          var now = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+          if (action === 'alarm') {
+            var t = window.prompt('Alarm time (HH:MM)', now);
+            if (!t || !/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) return;
+            self.convertToAlarm(self.currentNote, { time: t });
+          } else if (action === 'calendar') {
+            var when = window.prompt('Event date (YYYY-MM-DD)', date);
+            if (!when || !/^\d{4}-\d{2}-\d{2}$/.test(when)) return;
+            var start = window.prompt('Start time (HH:MM, or blank for all-day)', now);
+            var allDay = !start;
+            if (start && !/^([01]\d|2[0-3]):[0-5]\d$/.test(start)) return;
+            self.convertToCalendar(self.currentNote, { date: when, startTime: start || '', endTime: '', allDay: allDay, reminder: 10 });
+          } else if (action === 'reminder') {
+            var mins = Number(window.prompt('Reminder minutes before now (0 for immediately)', '10'));
+            if (!Number.isFinite(mins) || mins < 0) return;
+            self.currentNote.reminder = { at: new Date(Date.now() + mins * 60000).toISOString(), minutes: mins };
+            self.save().then(function (r) { if (r.ok) self.showStatus('Reminder saved on the note.'); });
+          }
+        });
+      });
 
       var timer;
       function autosave() {
@@ -229,7 +409,8 @@
       document.getElementById('note-body').addEventListener('input', function () { self.capture(); autosave(); });
 
       document.getElementById('menu-btn').addEventListener('click', function () {
-        if (self.currentNote && window.confirm('Delete this note?')) {
+        if (!self.currentNote) { self.openNotesFolder(); return; }
+        if (window.confirm('Delete this note? The file in ~/Notes will be removed.')) {
           self.deleteNote(self.currentNote.id);
           document.getElementById('note-editor').classList.add('hidden');
           self.currentNote = null;

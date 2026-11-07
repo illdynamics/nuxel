@@ -501,6 +501,29 @@ int main(int argc, char **argv) {
     if (!strcmp(mode, "watch-lock")) {
         return watch_lock(g_display);
     }
+    if (!strcmp(mode, "hide-keyboard")) {
+        /* PWNAGE-80000: dismiss the compositor IME without leaving the app
+         * backgrounded.  A short focus bounce to Home forces text-input leave
+         * (Stevia hides), then the same toplevel is re-activated. */
+        struct window *prev = NULL;
+        for (struct window *w = windows; w; w = w->next) {
+            int is_home = !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
+            if (!is_home && w->activated) { prev = w; break; }
+        }
+        if (!prev) {
+            printf("HIDE_KEYBOARD no-foreground\n");
+        } else {
+            for (struct window *w = windows; w; w = w->next) {
+                int is_home = !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
+                if (is_home) { _marshal(w->handle, 4, NULL, handle_version(w->handle), 0, g_seat); break; }
+            }
+            _roundtrip(g_display);
+            usleep(180000);
+            _marshal(prev->handle, 4, NULL, handle_version(prev->handle), 0, g_seat);
+            _roundtrip(g_display);
+            printf("HIDE_KEYBOARD app_id=%s restored=1\n", prev->app_id);
+        }
+    }
     if (!strcmp(mode, "close-foreground")) {
         int closed = 0, skipped_home = 0;
         for (struct window *w = windows; w; w = w->next) {

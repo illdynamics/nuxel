@@ -1,0 +1,219 @@
+#!/usr/bin/env python3
+"""Persist and restore Nuxel interface (radio) ON/OFF intent.
+
+Examples:
+    nuxel-interface-state status [--json]
+    nuxel-interface-state set bluetooth off
+    nuxel-interface-state restore
+
+The durable document is /var/lib/nuxel/interfaces.json (overridable with
+NUXEL_INTERFACE_STATE).  A missing document means the first-boot defaults:
+Bluetooth OFF, NFC OFF, GNSS rail OFF.  Wi-Fi and the location/GPS privacy
+policy keep their existing owners (NetworkManager and the bridge policy file).
+"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import time
+
+BRIDGE_DIR = os.environ.get("NUXEL_BRIDGE_DIR", "/usr/lib/nuxel/nuxel-bridge")
+if BRIDGE_DIR not in sys.path:
+    sys.path.insert(0, BRIDGE_DIR)
+
+import interface_state  # noqa: E402
+
+POWER_RAIL = "/sys/devices/virtual/sec/gps/GPS_PWR_EN/value"
+NFC_SOCKET = os.environ.get("NUXEL_NFC_SOCKET", "/run/nuxel/nfc/nfc.sock")
+LOCATION_POLICY = os.environ.get(
+    "NUXEL_LOCATION_POLICY", "/var/lib/nuxel/permissions/location-policy.json")
+NM_STATE = "/var/lib/NetworkManager/NetworkManager.state"
+
+NAMES = ("bluetooth", "nfc", "gps")
+
+
+def _read_text(path, default=None):
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        return default
+
+
+def _run(argv, timeout=12.0):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True,
+                              timeout=timeout, check=False)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return type("R", (), {"returncode": 127, "stdout": "", "stderr": str(exc)})()
+
+
+def _bluetooth_rfkill():
+    base = "/sys/class/rfkill"
+    out = {"present": False, "soft_blocked": None, "hard_blocked": None}
+    try:
+        entries = sorted(os.listdir(base))
+    except OSError:
+        return out
+    for entry in entries:
+        root = os.path.join(base, entry)
+        if (_read_text(os.path.join(root, "type"), "") or "").lower() != "bluetooth":
+            continue
+        out["present"] = True
+        for key, attr in (("soft_blocked", "soft"), ("hard_blocked", "hard")):
+            raw = _read_text(os.path.join(root, attr))
+            if raw in ("0", "1"):
+                out[key] = raw == "1"
+    return out
+
+
+def _location_enabled():
+    try:
+        with open(LOCATION_POLICY, "r", encoding="utf-8") as fh:
+            return bool(json.load(fh).get("enabled", False))
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def _wifi_radio():
+    proc = _run(["nmcli", "-t", "-f", "WIFI", "radio"], timeout=4)
+    value = (proc.stdout or "").strip().splitlines()
+    if value:
+        return value[-1]
+    return (_read_text(NM_STATE, "") or "")
+
+
+def actual_status():
+    bt = _bluetooth_rfkill()
+    bt["service_active"] = _run(["systemctl", "is-active", "bluetooth.service"]).stdout.strip() == "active"
+    rail = _read_text(POWER_RAIL)
+    nfc = {}
+    try:
+        import nfc_provider
+        nfc = nfc_provider.get_provider().status()
+    except Exception as exc:  # noqa: BLE001
+        nfc = {"success": False, "error": str(exc)}
+    return {
+        "bluetooth": bt,
+        "nfc": {
+            "available": bool(nfc.get("userspace", {}).get("socket")) if isinstance(nfc, dict) else False,
+            "enabled": bool(nfc.get("enabled")) if isinstance(nfc, dict) else False,
+            "state": nfc.get("state") if isinstance(nfc, dict) else None,
+            "error": nfc.get("error") if isinstance(nfc, dict) else None,
+        },
+        "gps": {"power_rail": rail, "enabled": rail == "1"},
+        "location": {"enabled": _location_enabled(), "owner": LOCATION_POLICY},
+        "wifi": {"owner": NM_STATE, "state": _wifi_radio()},
+    }
+
+
+def desired_status():
+    doc = interface_state.read()
+    interfaces = doc.get("interfaces", {})
+    return {name: interfaces.get(name, {}) for name in interface_state.INTERFACES}
+
+
+def apply_one(name, enabled):
+    enabled = bool(enabled)
+    if name == "bluetooth":
+        import hw_providers
+        return hw_providers.bluetooth_set_power(enabled, persist=False)
+    if name == "nfc":
+        import nfc_provider
+        return nfc_provider.get_provider().set_enabled(enabled, persist=False)
+    if name == "gps":
+        import hw_providers
+        return hw_providers.GnssProvider().power_rail(enabled)
+    return {"success": False, "error": "unknown interface: %s" % name}
+
+
+def _wait_for_nfc(seconds=8.0):
+    deadline = time.monotonic() + max(0.0, float(seconds))
+    while time.monotonic() < deadline:
+        if os.path.exists(NFC_SOCKET):
+            return True
+        time.sleep(0.2)
+    return os.path.exists(NFC_SOCKET)
+
+
+def cmd_status(args):
+    payload = {
+        "desired": desired_status(),
+        "actual": actual_status(),
+        "state_path": interface_state.state_path(),
+    }
+    if "--json" in args:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        for name in interface_state.INTERFACES:
+            entry = payload["desired"].get(name, {})
+            print("%-10s desired=%-3s source=%s" % (
+                name, "on" if entry.get("enabled") else "off",
+                entry.get("source", "default")))
+        print(json.dumps(payload["actual"], indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_set(args):
+    if len(args) != 2 or args[0] not in interface_state.INTERFACES:
+        print("usage: nuxel-interface-state set <%s> <on|off>" %
+              "|".join(interface_state.INTERFACES), file=sys.stderr)
+        return 2
+    name, value = args
+    if value not in ("on", "off", "true", "false", "1", "0"):
+        print("value must be on/off", file=sys.stderr)
+        return 2
+    enabled = value in ("on", "true", "1")
+    result = apply_one(name, enabled)
+    ok = result.get("success") is not False
+    try:
+        interface_state.set_desired(name, enabled, source="nuxel-interface-state")
+        persisted = True
+    except Exception as exc:  # noqa: BLE001
+        persisted = False
+        result.setdefault("persist_error", str(exc))
+    result["persisted"] = persisted
+    print(json.dumps({"interface": name, "requested": enabled,
+                      "success": ok, "result": result}, indent=2, sort_keys=True))
+    return 0 if ok and persisted else 1
+
+
+def cmd_restore(_args):
+    """Apply persisted intent without rewriting the document."""
+    desired = desired_status()
+    if bool(desired.get("nfc", {}).get("enabled", False)):
+        _wait_for_nfc()
+    failures = 0
+    for name in interface_state.INTERFACES:
+        entry = desired.get(name, {})
+        enabled = bool(entry.get("enabled", interface_state.DEFAULTS[name]))
+        result = apply_one(name, enabled)
+        ok = result.get("success") is not False
+        if not ok:
+            failures += 1
+        print("INTERFACE_RESTORE interface=%s desired=%s success=%s detail=%s" % (
+            name, "on" if enabled else "off", "1" if ok else "0",
+            (result.get("error") or result.get("state") or "")))
+    return 0  # boot must continue even when a radio is physically absent
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        print(__doc__)
+        return 0
+    cmd, args = argv[0], argv[1:]
+    if cmd == "status":
+        return cmd_status(args)
+    if cmd == "set":
+        return cmd_set(args)
+    if cmd == "restore":
+        return cmd_restore(args)
+    print("unknown command: %s" % cmd, file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

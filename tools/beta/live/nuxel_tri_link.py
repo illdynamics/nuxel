@@ -570,12 +570,23 @@ class SshAdapter:
             self.sleep(retry_delay)
         return last.returncode if last else EXIT_NETWORK
 
-    def interactive(self, shell: str | None = None) -> int:
-        """exec a genuine interactive shell with PTY, resize and signals intact."""
+    def interactive(self, shell: str | None = None,
+                    transport: str | None = None) -> int:
+        """exec a genuine interactive shell with PTY, resize and signals intact.
+
+        For a Wi-Fi/USB Tri-Link console the remote command is the explicit
+        session wrapper.  That wrapper registers the session (PID + start_ticks
+        + transport), exports NUXEL_TRI_LINK_CONSOLE=1 and then execs the same
+        interactive shell.  Ordinary maintenance SSH commands stay unregistered
+        and therefore cannot light the phone's live-console indicator.
+        """
         remote = "/bin/bash -l" if (shell or "").endswith("/bash") else "/bin/sh -l"
         if shell and shell not in ("/bin/bash", "/usr/bin/bash"):
             remote = "%s -l" % q(shell)
-        argv = self.ssh_argv("exec " + remote, batch=False, tty=True)
+        if transport in ("wlan", "usb"):
+            remote = ("exec /usr/libexec/nuxel/nuxel-tri-link-session %s"
+                      % q(transport))
+        argv = self.ssh_argv(remote, batch=False, tty=True)
         os.execvp(argv[0], argv)
         return 127  # unreachable
 

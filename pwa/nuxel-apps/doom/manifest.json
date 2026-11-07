@@ -86,7 +86,7 @@
       "real Chocolate Doom WAD engine (WebAssembly)",
       "Freedoom and imported WAD catalogue",
       "multitouch joystick + aim + fire + use",
-      "Chocolate Doom and UZDoom comparison launch paths",
+      "optional internal Chocolate Doom comparison runtime (no standalone app entry)",
       "offline engine shell with bridge-streamed WADs",
       "immersive fullscreen chrome with edge gestures"
     ]

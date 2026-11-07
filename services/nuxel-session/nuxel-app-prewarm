@@ -1,0 +1,30 @@
+#!/bin/sh
+# Nuxel GTK/Flatpak launch prewarm (PWNAGE-81000).
+#
+# The measured cold launches were dominated by fontconfig cache construction,
+# icon-theme cache misses and desktop database lookups, not by the application
+# code.  Build those caches once after boot; no application is kept running and
+# Flatpak sandboxing is untouched.
+set -u
+STAMP=${NUXEL_PREWARM_STAMP:-/var/lib/nuxel/cache/app-prewarm.stamp}
+if [ -e "$STAMP" ]; then
+  exit 0
+fi
+mkdir -p "$(dirname "$STAMP")"
+if command -v fc-cache >/dev/null 2>&1; then
+  timeout 90 fc-cache -f >/dev/null 2>&1 || true
+fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+  for d in /usr/share/icons/hicolor /usr/share/icons/Adwaita; do
+    [ -d "$d" ] && timeout 45 gtk-update-icon-cache -f -t "$d" >/dev/null 2>&1 || true
+  done
+fi
+if command -v update-desktop-database >/dev/null 2>&1; then
+  timeout 30 update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+  timeout 30 update-desktop-database /var/lib/flatpak/exports/share/applications >/dev/null 2>&1 || true
+fi
+# Prime the Flatpak metadata cache without launching an app.
+if command -v flatpak >/dev/null 2>&1; then
+  timeout 30 flatpak list --columns=application,arch,branch >/dev/null 2>&1 || true
+fi
+touch "$STAMP"

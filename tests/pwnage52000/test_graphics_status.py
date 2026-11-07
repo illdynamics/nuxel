@@ -42,7 +42,9 @@ def test_home_gpu_label_only_adds_acc_when_proved():
     assert "state === 'ACCELERATED'" in js
     assert "GPU (ACC)" in js
     assert "GPU (PARTIAL)" in js
-    assert "GPU MEM (shared)" in (ROOT / 'pwa/nuxel-home/index.html').read_text()
+    html = (ROOT / 'pwa/nuxel-home/index.html').read_text()
+    assert '>VRAM<' in html
+    assert 'GPU MEM (shared)' not in html
 
 
 def test_gtk_gl_is_measured_from_the_real_host_warning():

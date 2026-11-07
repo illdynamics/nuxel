@@ -60,7 +60,8 @@
       charging: Boolean(charging.charging),
       pcConnected: Boolean(usb.pc_connected),
       /* Base penguin: service-ready/background availability. */
-      liveConsole: Boolean(live.active) || Boolean(live.service_armed),
+      /* Activity only.  A prestarted/armed console daemon is not a session. */
+      liveConsole: live.active === true,
       serialConsole: Boolean((transports.serial || {}).active),
       usbConsole: Boolean((transports.usb || {}).active),
       /* Availability is NOT activity.  Only a proven interactive session may
@@ -238,11 +239,22 @@
     this._inFlight = true;
     settle(this._read(), function (next) {
       self._inFlight = false;
-      if (self._visible && generation === self._generation && !same(self.state, next)) {
-        self.state = next;
-        self._render();
-        self._trace('update power=' + (next.externalPower ? (next.charging ? 'charging' : 'power') : 'off') +
-                    ' usb=' + (next.pcConnected ? 1 : 0) + ' live=' + (next.liveConsole ? 1 : 0));
+      if (self._visible && generation === self._generation) {
+        if (next && next.display_off === true) {
+          /* The panel is blanked.  Keep the last projection for the wake
+             frame, but stop the 1 Hz sysfs/bridge poll until refresh() is
+             called by nuxel:display-on or another real event. */
+          self.state = next;
+          self._stopTimer();
+          return;
+        }
+        self._ensureTimer();
+        if (!same(self.state, next)) {
+          self.state = next;
+          self._render();
+          self._trace('update power=' + (next.externalPower ? (next.charging ? 'charging' : 'power') : 'off') +
+                      ' usb=' + (next.pcConnected ? 1 : 0) + ' live=' + (next.liveConsole ? 1 : 0));
+        }
       }
       self._drainPending();
     }, function (err) {
@@ -305,6 +317,7 @@
   LockscreenIndicators.prototype.refresh = function () {
     if (!this._visible) return;
     this._generation++;
+    this._ensureTimer();
     if (this._inFlight) {
       this._pending = true;
       return;
@@ -357,6 +370,12 @@
     if (this._timer !== null) { global.clearInterval(this._timer); this._timer = null; }
   };
 
+  LockscreenIndicators.prototype._ensureTimer = function () {
+    if (!this._visible || this._timer !== null) return;
+    var self = this;
+    this._timer = global.setInterval(function () { self._tick(); }, SAFETY_MS);
+  };
+
   LockscreenIndicators.prototype._render = function () {
     this._apply(this.els.charging, 'active', this.state.externalPower);
     this._apply(this.els.charging, 'charging', this.state.charging);
@@ -366,9 +385,9 @@
     // activity is shown.  Availability never lights the base on its own.
     this._apply(this.els.live, 'active', this.state.liveConsole);
     if (this.els.live) {
-      this.els.live.dataset.liveReason = this.state.liveConsole ? 'service-ready' : '';
+      this.els.live.dataset.liveReason = this.state.liveConsole ? 'external-session' : '';
       this.els.live.setAttribute('aria-label', this.state.liveConsole ?
-        'Live Console service ready' : 'Live Console service inactive');
+        'External Live Console session active' : 'No external Live Console session');
     }
     this._apply(this.transportEls.serial, 'active', this.state.serialConsole);
     this._apply(this.transportEls.usb, 'active', this.state.usbConsole);

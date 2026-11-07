@@ -87,6 +87,13 @@ FILES=(
     '/usr/share/nuxel/assets/nuxel-console-usb.png',
     '/usr/share/nuxel/assets/nuxel-console-wlan.png',
     '/usr/share/nuxel/preload/nuxel-preloading-screen.mp4.sha256',
+    # Durable interface ON/OFF state + default-off Bluetooth bring-up.
+    '/usr/lib/nuxel/nuxel-interface-state',
+    '/usr/local/bin/nuxel-interface-state',
+    '/usr/lib/nuxel/nuxel-bridge/interface_state.py',
+    '/etc/systemd/system/nuxel-bluetooth.service',
+    '/etc/systemd/system/nuxel-interface-state.service',
+    '/etc/systemd/system/multi-user.target.wants/nuxel-interface-state.service',
 )
 
 # Runtime-critical files copied verbatim by the rootfs builder.  Comparing the
@@ -145,6 +152,11 @@ SOURCE_PARITY = {
     '/usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js': 'pwa/nuxel-apps/settings/wifi-settings.js',
     '/usr/lib/nuxel/nuxel-bridge/bridge.py': 'services/nuxel-bridge/src/bridge.py',
     '/usr/lib/nuxel/nuxel-bridge/api.py': 'services/nuxel-bridge/src/api.py',
+    '/usr/lib/nuxel/nuxel-bridge/interface_state.py': 'services/nuxel-bridge/src/interface_state.py',
+    '/usr/lib/nuxel/nuxel-interface-state': 'services/nuxel-s10/bin/nuxel-interface-state',
+    '/etc/systemd/system/nuxel-bluetooth.service': 'services/nuxel-s10/systemd/nuxel-bluetooth.service',
+    '/etc/systemd/system/nuxel-interface-state.service': 'services/nuxel-s10/systemd/nuxel-interface-state.service',
+    '/usr/share/nuxel/pwa/nuxel-home/js/desktop-layout.js': 'pwa/nuxel-home/js/desktop-layout.js',
     '/etc/systemd/system/nuxel-metrics.service': 'services/nuxel-metrics/nuxel-metrics.service',
     '/usr/lib/nuxel/nuxel-perf-tune.sh': 'services/nuxel-performance/bin/nuxel-perf-tune.sh',
     '/etc/systemd/system/nuxel-perf-tune.service': 'services/nuxel-performance/systemd/nuxel-perf-tune.service',

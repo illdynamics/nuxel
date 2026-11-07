@@ -217,6 +217,95 @@
     el('sb-time').textContent = 'read at ' + new Date().toISOString();
   }
 
+  // ---- graphics acceleration (PWNAGE-81000) ---------------------------
+  function gfxStatusClass(status) {
+    var s = String(status || '').toUpperCase();
+    if (s === 'FULL') return 'ok';
+    if (s === 'PARTIAL') return 'partial';
+    if (s === 'DEGRADED') return 'degraded';
+    if (s === 'UNAVAILABLE') return 'bad';
+    return 'untested';
+  }
+  function gfxStage(name, status, detail) {
+    return '<div class="gfx-stage"><span class="gfx-stage-name">' + esc(name) +
+      '</span><span class="gfx-stage-status ' + gfxStatusClass(status) + '">' + esc(status) +
+      '</span><span class="gfx-stage-detail">' + esc(detail || 'not reported') + '</span></div>';
+  }
+  function renderGraphics(st) {
+    var box = el('graphics-stages');
+    if (!box) return;
+    if (!st || st.success === false) {
+      el('graphics-verdict').textContent = 'Graphics diagnostics unavailable: ' +
+        ((st && (st.error || st.detail)) || 'bridge/provider error');
+      box.innerHTML = '';
+      return;
+    }
+    var layers = st.layers || {};
+    var kg = layers.kernel_gpu || {};
+    var ph = layers.phoc || {};
+    var eg = layers.egl || {};
+    var wk = layers.webkit || {};
+    var dm = layers.linux_dmabuf || {};
+    var fb = layers.final_output || {};
+    var prof = st.profile || layers.profile_summary || {};
+    var caps = st.capabilities || layers.capabilities || {};
+    var verdict = String(st.verdict || prof.verdict || 'UNKNOWN');
+    var label = verdict === 'ACCELERATED_SHM' ? 'PARTIAL' :
+                verdict === 'ACCELERATED' ? 'FULL' :
+                verdict === 'PARTIAL' ? 'PARTIAL' :
+                verdict === 'SOFTWARE' ? 'UNAVAILABLE' :
+                verdict === 'UNKNOWN' ? 'NOT TESTED' : verdict;
+    el('graphics-verdict').textContent =
+      'Verdict: ' + label + '  (' + verdict + ')\n' +
+      'GPU renderer: ' + ((eg.probe || {}).renderer || prof.renderer || 'not reported') + '\n' +
+      'Final panel presenter: ' + (prof.final_panel_presenter || 'not reported') + '\n' +
+      'WebKit transport: ' + (wk.transport || prof.webkit_transport || 'not reported');
+    var gate = wk.webkit_2_54_1_gate || {};
+    var stages = [
+      gfxStage('Mali kbase', kg.present ? 'FULL' : 'UNAVAILABLE',
+        (kg.driver || 'driver unknown') + (kg.version_files ? ' · ' + JSON.stringify(kg.version_files) : '')),
+      gfxStage('/dev/mali0', (kg.present && kg.readable !== false) ? 'FULL' : 'UNAVAILABLE',
+        'device=' + (kg.device || 'absent') + ' mode=' + (kg.mode || '?') + ' readable=' + (kg.readable !== false) + ' phoc_mali_fds=' + (ph.mali_fds || 0)),
+      gfxStage('EGL vendor/version/renderer', (eg.probe || {}).ok ? 'FULL' : 'UNAVAILABLE',
+        'vendor=' + ((eg.probe || {}).egl_version || 'unknown') + ' version=' + ((eg.probe || {}).gl_version || 'unknown') + ' renderer=' + ((eg.probe || {}).renderer || 'unknown')),
+      gfxStage('GLES', (eg.probe || {}).gl_version ? 'FULL' : 'UNAVAILABLE',
+        (eg.probe || {}).gl_version || 'no GLES version reported'),
+      gfxStage('Phoc renderer', ph.accelerated ? 'FULL' : 'DEGRADED',
+        'pid=' + (ph.pid || '?') + ' wlr=' + (ph.wlr_renderer || '?') + ' mali_fds=' + (ph.mali_fds || 0) + ' llvmpipe_threads=' + (ph.llvmpipe_threads || 0)),
+      gfxStage('WebKit GPU rendering', wk.gpu_rendering ? 'FULL' : (wk.running ? 'DEGRADED' : 'NOT TESTED'),
+        'pid=' + (wk.pid || '?') + ' gpu_rendering=' + !!wk.gpu_rendering + ' gallium=' + !!wk.gallium_library),
+      gfxStage('WebKit DMA-BUF transport', (wk.transport && wk.transport !== 'shm') ? 'PARTIAL' : 'UNAVAILABLE',
+        'transport=' + (wk.transport || 'unknown') + ' fds=' + ((wk.transport_fds || []).length) + ' drmMainDevice_null=' + (gate.drm_main_device_null === true)),
+      gfxStage('DRM device discovery', kg.dri_present ? 'FULL' : 'UNAVAILABLE',
+        'dri_present=' + !!kg.dri_present + ' /dev/dri=' + (st.fbdev_drm ? !!st.fbdev_drm.drm_render_node : false)),
+      gfxStage('VGEM', kg.dri_present ? 'NOT TESTED' : 'UNAVAILABLE',
+        'no /dev/dri render node and CONFIG_DRM_VGEM is unset on this kernel'),
+      gfxStage('GBM import', kg.dri_present ? 'NOT TESTED' : 'UNAVAILABLE',
+        'GBM needs a real DRM render node; no fake node is created'),
+      gfxStage('linux-dmabuf formats/modifiers', dm.protocol ? 'PARTIAL' : 'UNAVAILABLE',
+        'protocol=' + (dm.protocol || 'not observed') + ' formats=' + ((dm.formats || []).length) + ' linear_only=' + !!dm.linear_only),
+      gfxStage('Phoc import', Number(ph.udmabuf_fds || 0) > 0 ? 'PARTIAL' : 'NOT TESTED',
+        'udmabuf_fds=' + (ph.udmabuf_fds || 0) + ' (import observed; WebKit export is still gated)'),
+      gfxStage('Framebuffer bridge', fb.one_writer ? 'PARTIAL' : 'UNAVAILABLE',
+        'nuxel-wl-fb one_writer=' + !!fb.one_writer + ' frames_ok=' + !!fb.frames_ok + ' state=' + (fb.state || 'n/a')),
+      gfxStage('Physical presentation', (fb.one_writer && fb.geometry) ? 'PARTIAL' : 'NOT TESTED',
+        'fb0 geometry=' + JSON.stringify(fb.geometry || {}) + ' decon_pan_failed=' + (fb.decon_pan_failed == null ? 'none' : fb.decon_pan_failed)),
+      gfxStage('CPU final copy/scale', (prof.final_panel_presenter || '').indexOf('cpu') >= 0 ? 'PARTIAL' : 'NOT TESTED',
+        'presenter=' + (prof.final_panel_presenter || 'not reported') + '; the panel path is not zero-copy')
+    ];
+    box.innerHTML = stages.join('');
+    el('graphics-detail').textContent = (st.honest_summary || st.blocked_reason || '') +
+      (st.blocked_reason ? '\nLast error / blocker: ' + st.blocked_reason : '');
+  }
+  async function refreshGraphics(force) {
+    var badge = el('graphics-verdict');
+    if (badge) badge.textContent = 'Reading GPU, EGL, Phoc, WebKit, DMA-BUF and framebuffer stages…';
+    var b = window.NuxelBridge;
+    if (!b || typeof b.call !== 'function') { renderGraphics({ success: false, error: 'Nuxel bridge unavailable' }); return; }
+    try { renderGraphics(await b.call('graphics', 'status', {})); }
+    catch (e) { renderGraphics({ success: false, error: e && e.message ? e.message : String(e) }); }
+  }
+
   async function refresh() {
     el('source-badge').textContent = 'source: reading…';
     var res = await S.readMany(PATHS);
@@ -230,9 +319,17 @@
       document.querySelectorAll('.panel').forEach(function (x) { x.classList.remove('active'); });
       t.classList.add('active');
       el('tab-' + t.dataset.tab).classList.add('active');
+      /* PWNAGE-88000: keep the active tab visible at narrow widths / high DPI
+         without a visible scrollbar; horizontal scrolling is still available. */
+      if (t.scrollIntoView) t.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     });
   });
   el('refresh').addEventListener('click', refresh);
+  var gfxRefresh = el('graphics-refresh');
+  if (gfxRefresh) gfxRefresh.addEventListener('click', function () { refreshGraphics(true); });
+  document.querySelectorAll('.tab').forEach(function (t) {
+    if (t.dataset.tab === 'graphics') t.addEventListener('click', function () { refreshGraphics(true); });
+  });
   el('close').addEventListener('click', function () {
     var f = window.frameElement;
     if (f) {
@@ -254,4 +351,5 @@
   });
 
   refresh();
+  refreshGraphics(true);
 })();

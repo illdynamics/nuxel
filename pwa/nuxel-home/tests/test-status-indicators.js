@@ -59,6 +59,7 @@ function instance() {
   sb._acceptBatteryLevel(55, true, 'Charging');
   sb._renderBattery();
   check('battery icon gets charging class only while charging', /battery-icon charging/.test(sb.elements.battery.innerHTML));
+  check('charging battery renders three zaps', /battery-zaps/.test(sb.elements.battery.innerHTML) && (sb.elements.battery.innerHTML.match(/<i><\/i>/g) || []).length === 2);
 
   const setInd = (ind) => { sb.state.indicators = ind; sb._renderUsb(); };
   const base = { charging: {}, usb_data: {}, console_transports: {}, file_transfer: {}, live_console: {} };
@@ -67,7 +68,8 @@ function instance() {
   setInd(Object.assign({}, base, { file_transfer: { selected: 'file_transfer', active: false }, console_transports: { usb: { active: true } }, usb_data: { pc_connected: true } }));
   check('selected-but-inactive file transfer does not label file', sb.elements.usb.dataset.state === 'term');
   setInd(Object.assign({}, base, { usb_data: { pc_connected: true }, charging: { charging: true, external_power: true } }));
-  check('active charging gets chrg', sb.elements.usb.dataset.state === 'chrg');
+  check('active charging gets chrg state', sb.elements.usb.dataset.state === 'chrg');
+  check('active charging never prints chrg text', sb.elements['usb-label'].textContent === '');
   setInd(Object.assign({}, base, { usb_data: { pc_connected: true }, charging: { charging: false, external_power: true } }));
   check('external power + Full shows a cable without a false chrg tag', sb.elements.usb.hidden === false && sb.elements['usb-label'].textContent === '' && sb.elements.usb.dataset.state === 'connected');
   setInd(Object.assign({}, base, { usb_data: { pc_connected: false } }));
@@ -87,6 +89,7 @@ function instance() {
   check('top bar declares Location, sound and USB cells', ['status-location','status-sound','status-usb'].every(id => index.includes('id="' + id + '"')));
   check('overlap assertion includes the new cells', /status-sound/.test(src) && /status-usb/.test(src) && /_assertNoOverlap\(\)/.test(src));
   check('charging bolt exists in CSS', /\.battery-icon\.charging::after/.test(css));
+  check('charging battery has two extra yellow zaps in CSS', /\.battery-icon \.battery-zaps i/.test(css) && /#ffd43b/.test(css));
   check('USB label CSS has file/term/chrg precedence states', ['file','term','chrg'].every(x => css.includes('data-state="' + x + '"')));
 
   process.exit(failures ? 1 : 0);

@@ -42,6 +42,51 @@ static int32_t width = 360, height = 760, scale = 2;
 static int configured = 0;
 static char last_draw[32768];
 static double shown_at = 0;
+/* PWNAGE-80000: the native OSD used to be pass-through-only, so the power menu
+ * it painted above every app could not be tapped.  These fields describe the
+ * exact card geometry from the last frame; the input region and the touch
+ * mapping use the same numbers, so a visible row and a tappable row cannot
+ * disagree. */
+static int menu_present = 0;
+static int menu_rows = 0;
+static int menu_index = 0;
+static int menu_cols = 1;
+static int menu_rows_per_col = 0;
+static double menu_x = 0, menu_y = 0, menu_cw = 0, menu_ch = 0;
+static double menu_row_h = 46.0, menu_col_w = 0;
+static struct wl_seat *seat = NULL;
+static struct wl_touch *touch = NULL;
+static struct wl_pointer *pointer = NULL;
+static int touch_active = 0;
+static double touch_x = 0, touch_y = 0;
+#define BUTTON_FIFO "/run/nuxel-buttons.cmd"
+#define HAPTIC_FIFO "/run/nuxel-haptics/haptics.cmd"
+
+static void button_line(const char *line) {
+  int fd = open(BUTTON_FIFO, O_WRONLY | O_NONBLOCK);
+  if (fd < 0) return;
+  dprintf(fd, "%s\n", line);
+  close(fd);
+}
+static void haptic_line(const char *line) {
+  int fd = open(HAPTIC_FIFO, O_WRONLY | O_NONBLOCK);
+  if (fd < 0) return;
+  dprintf(fd, "%s\n", line);
+  close(fd);
+}
+static void osd_input_region(int interactive) {
+  if (!surface || !compositor) return;
+  struct wl_region *r = wl_compositor_create_region(compositor);
+  if (!r) return;
+  if (interactive) {
+    /* Full-screen modal: a tap outside the card closes the menu, while every
+     * app touch underneath is blocked until the menu is dismissed. */
+    wl_region_add(r, 0, 0, width, height);
+  }
+  wl_surface_set_input_region(surface, r);
+  wl_region_destroy(r);
+  wl_surface_commit(surface);
+}
 
 static int read_file(const char *path, char *out, size_t n) {
   FILE *f = fopen(path, "r");
@@ -159,9 +204,23 @@ static void draw_osd(const char *json) {
   if (power && n > 0) {
     cairo_set_source_rgba(cr, 0.008, 0.024, 0.055, 0.68);
     cairo_paint(cr);
-    double cardw = fmin(width - 36.0, 320.0);
-    double cardh = fmin(height - 80.0, 56.0 + n * 46.0);
+    /* The landscape layer-shell height can be as little as 600 logical px
+     * after the status/nav exclusive zones.  Sixteen rows at a 34 px minimum
+     * then overflow the card.  Use two columns in that case so every visible
+     * row is also inside the hit-test card.  Portrait keeps one column. */
+    int cols = (n > 10 && height < 900) ? 2 : 1;
+    int rows_per_col = (n + cols - 1) / cols;
+    double cardw = fmin(width - 36.0, cols == 2 ? 620.0 : 320.0);
+    double cardh = fmin(height - 40.0, 84.0 + rows_per_col * 46.0);
+    double ideal_row = (cardh - 84.0) / (rows_per_col > 0 ? rows_per_col : 1);
+    menu_row_h = ideal_row > 46.0 ? 46.0 : ideal_row;
+    if (menu_row_h < 32.0) menu_row_h = 32.0;
+    menu_cols = cols;
+    menu_rows_per_col = rows_per_col;
+    menu_col_w = cardw / cols;
     double x = (width - cardw) / 2.0, y = (height - cardh) / 2.0;
+    menu_present = 1; menu_rows = n; menu_index = (int)idx;
+    menu_x = x; menu_y = y; menu_cw = cardw; menu_ch = cardh;
     cairo_set_source_rgba(cr, 0.047, 0.086, 0.149, 0.98);
     cairo_rectangle(cr, x, y, cardw, cardh);
     cairo_fill(cr);
@@ -171,13 +230,16 @@ static void draw_osd(const char *json) {
     cairo_stroke(cr);
     draw_text(cr, "POWER", x + 16, y + 14, cardw - 32, "Nuxel Sans Bold 11", .63, .82, 1.0, 0);
     for (int i = 0; i < n; i++) {
-      double ry = y + 46 + i * 46;
+      int c = cols == 2 ? i / rows_per_col : 0;
+      int r = cols == 2 ? i % rows_per_col : i;
+      double cx = x + c * menu_col_w;
+      double ry = y + 46 + r * menu_row_h;
       if (i == (int)idx) {
         cairo_set_source_rgba(cr, 0.114, 0.306, 0.847, 1.0);
-        cairo_rectangle(cr, x + 10, ry, cardw - 20, 40);
+        cairo_rectangle(cr, cx + 10, ry, menu_col_w - 20, menu_row_h - 6);
         cairo_fill(cr);
       }
-      draw_text(cr, labs[i], x + 22, ry + 10, cardw - 44,
+      draw_text(cr, labs[i], cx + 22, ry + (menu_row_h - 18) / 2, menu_col_w - 44,
                 "Nuxel Sans 14", .92, .96, 1.0, 0);
     }
     draw_text(cr, "Volume Up/Down to move  ·  Power to choose", x + 16,
@@ -211,6 +273,7 @@ static void draw_osd(const char *json) {
     }
   }
 
+  if (!(power && n > 0)) { menu_present = 0; menu_rows = 0; }
   cairo_destroy(cr);
   cairo_surface_flush(cs);
   struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
@@ -243,6 +306,134 @@ static const struct zwlr_layer_surface_v1_listener layer_listener = {
   .configure = layer_configure, .closed = layer_closed,
 };
 
+
+/* ---- touch (PWNAGE-80000) ------------------------------------------------ */
+static int menu_row_at(double x, double y) {
+  if (!menu_present) return -1;
+  if (x < menu_x || x > menu_x + menu_cw || y < menu_y || y > menu_y + menu_ch)
+    return -2;                       /* outside the card: dismiss */
+  int c = menu_cols == 2 ? (int)((x - menu_x) / menu_col_w) : 0;
+  if (c < 0) c = 0;
+  if (c >= menu_cols) c = menu_cols - 1;
+  double top = menu_y + 46.0;
+  if (y < top) return -1;            /* title area: no action */
+  int r = (int)((y - top) / menu_row_h);
+  if (r < 0 || r >= menu_rows_per_col) return -1;
+  int i = c * menu_rows_per_col + r;
+  return i < menu_rows ? i : -1;
+}
+static void menu_activate(double x, double y) {
+  int row = menu_row_at(x, y);
+  if (row >= 0) {
+    char line[64];
+    snprintf(line, sizeof line, "menu-select %d", row);
+    button_line(line);
+    haptic_line("navigation");
+    menu_present = 0;
+    osd_input_region(0);
+    fprintf(stderr, "OSD_MENU_TAP row=%d x=%.1f y=%.1f\n", row, x, y);
+  } else if (row == -2) {
+    button_line("menu-close");
+    haptic_line("navigation");
+    menu_present = 0;
+    osd_input_region(0);
+    fprintf(stderr, "OSD_MENU_DISMISS outside x=%.1f y=%.1f\n", x, y);
+  }
+}
+
+/* Pointer input is deliberately supported as well as touch: the layer-shell
+ * menu must be usable by a mouse/trackpad on the desktop and by the test
+ * harness.  The visible row and the hit-tested row are the same rectangle. */
+static void pointer_enter_cb(void *d, struct wl_pointer *p, uint32_t serial,
+                             struct wl_surface *surf, wl_fixed_t x, wl_fixed_t y) {
+  (void)d; (void)p; (void)serial; (void)surf;
+  touch_x = wl_fixed_to_double(x); touch_y = wl_fixed_to_double(y);
+}
+static void pointer_leave_cb(void *d, struct wl_pointer *p, uint32_t serial,
+                             struct wl_surface *surf) {
+  (void)d; (void)p; (void)serial; (void)surf;
+}
+static void pointer_motion_cb(void *d, struct wl_pointer *p, uint32_t time,
+                              wl_fixed_t x, wl_fixed_t y) {
+  (void)d; (void)p; (void)time;
+  touch_x = wl_fixed_to_double(x); touch_y = wl_fixed_to_double(y);
+}
+static void pointer_button_cb(void *d, struct wl_pointer *p, uint32_t serial,
+                              uint32_t time, uint32_t button, uint32_t state) {
+  (void)d; (void)p; (void)serial; (void)time;
+  if (button != 0x110 || state != WL_POINTER_BUTTON_STATE_RELEASED || !menu_present) return;
+  menu_activate(touch_x, touch_y);
+}
+static void pointer_axis_cb(void *d, struct wl_pointer *p, uint32_t time,
+                            uint32_t axis, wl_fixed_t value) {
+  (void)d; (void)p; (void)time; (void)axis; (void)value;
+}
+static void pointer_frame_cb(void *d, struct wl_pointer *p) { (void)d; (void)p; }
+static void pointer_axis_source_cb(void *d, struct wl_pointer *p, uint32_t source) {
+  (void)d; (void)p; (void)source;
+}
+static void pointer_axis_stop_cb(void *d, struct wl_pointer *p, uint32_t time, uint32_t axis) {
+  (void)d; (void)p; (void)time; (void)axis;
+}
+static void pointer_axis_discrete_cb(void *d, struct wl_pointer *p, uint32_t axis, int32_t discrete) {
+  (void)d; (void)p; (void)axis; (void)discrete;
+}
+static const struct wl_pointer_listener pointer_listener = {
+  .enter = pointer_enter_cb, .leave = pointer_leave_cb, .motion = pointer_motion_cb,
+  .button = pointer_button_cb, .axis = pointer_axis_cb, .frame = pointer_frame_cb,
+  .axis_source = pointer_axis_source_cb, .axis_stop = pointer_axis_stop_cb,
+  .axis_discrete = pointer_axis_discrete_cb,
+};
+
+static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
+                          uint32_t time, struct wl_surface *surf, int32_t id,
+                          wl_fixed_t x, wl_fixed_t y) {
+  (void)d; (void)t; (void)serial; (void)time; (void)surf; (void)id;
+  if (!menu_present) return;
+  touch_active = 1;
+  touch_x = wl_fixed_to_double(x);
+  touch_y = wl_fixed_to_double(y);
+}
+static void touch_up_cb(void *d, struct wl_touch *t, uint32_t serial,
+                        uint32_t time, int32_t id) {
+  (void)d; (void)t; (void)serial; (void)time; (void)id;
+  if (!touch_active) return;
+  touch_active = 0;
+  menu_activate(touch_x, touch_y);
+}
+static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t id,
+                            wl_fixed_t x, wl_fixed_t y) {
+  (void)d; (void)t; (void)time; (void)id;
+  touch_x = wl_fixed_to_double(x); touch_y = wl_fixed_to_double(y);
+}
+static void touch_frame_cb(void *d, struct wl_touch *t) { (void)d; (void)t; }
+static void touch_cancel_cb(void *d, struct wl_touch *t) { (void)d; (void)t; touch_active = 0; }
+static const struct wl_touch_listener touch_listener = {
+  .down = touch_down_cb, .up = touch_up_cb, .motion = touch_motion_cb,
+  .frame = touch_frame_cb, .cancel = touch_cancel_cb,
+};
+static void seat_caps_cb(void *d, struct wl_seat *s, uint32_t caps) {
+  (void)d; (void)s;
+  if ((caps & WL_SEAT_CAPABILITY_TOUCH) && !touch) {
+    touch = wl_seat_get_touch(seat);
+    wl_touch_add_listener(touch, &touch_listener, NULL);
+  } else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && touch) {
+    wl_touch_destroy(touch); touch = NULL;
+  }
+  if ((caps & WL_SEAT_CAPABILITY_POINTER) && !pointer) {
+    pointer = wl_seat_get_pointer(seat);
+    wl_pointer_add_listener(pointer, &pointer_listener, NULL);
+  } else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && pointer) {
+    wl_pointer_destroy(pointer); pointer = NULL;
+  }
+}
+static void seat_name_cb(void *d, struct wl_seat *s, const char *name) {
+  (void)d; (void)s; (void)name;
+}
+static const struct wl_seat_listener seat_listener = {
+  .capabilities = seat_caps_cb, .name = seat_name_cb,
+};
+
 static void output_mode(void *d, struct wl_output *o, uint32_t flags, int32_t w, int32_t h, int32_t refresh) {
   (void)d; (void)o; if (flags & WL_OUTPUT_MODE_CURRENT) { if (w > 0) width = w; if (h > 0) height = h; }
   (void)refresh;
@@ -267,6 +458,8 @@ static void reg_global(void *d, struct wl_registry *r, uint32_t name, const char
     layer_shell = wl_registry_bind(r, name, &zwlr_layer_shell_v1_interface, ver < 3 ? ver : 3);
   else if (!strcmp(iface, wl_output_interface.name) && !output)
     output = wl_registry_bind(r, name, &wl_output_interface, 3);
+  else if (!strcmp(iface, wl_seat_interface.name) && !seat)
+    seat = wl_registry_bind(r, name, &wl_seat_interface, 5);
 }
 static void reg_remove(void *d, struct wl_registry *r, uint32_t name) { (void)d;(void)r;(void)name; }
 static const struct wl_registry_listener reg_listener = { reg_global, reg_remove };
@@ -279,6 +472,7 @@ int main(void) {
   wl_display_roundtrip(display);
   if (!compositor || !shm || !layer_shell || !output) return 2;
   wl_output_add_listener(output, &output_listener, NULL);
+  if (seat) wl_seat_add_listener(seat, &seat_listener, NULL);
   wl_display_roundtrip(display);
 
   surface = wl_compositor_create_surface(compositor);
@@ -291,15 +485,14 @@ int main(void) {
   zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, 0);
   zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
       ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
-  struct wl_region *empty = wl_compositor_create_region(compositor);
-  wl_surface_set_input_region(surface, empty);
-  wl_region_destroy(empty);
+  osd_input_region(0);
   zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
   wl_surface_commit(surface);
   wl_display_roundtrip(display);
 
   char json[32768];
   int last_visible = 0;
+  int last_interactive = -1;
   double last_change = 0;
   for (;;) {
     while (wl_display_prepare_read(display) != 0) {
@@ -335,11 +528,17 @@ int main(void) {
                       (!last_visible || !strcmp(kind, "power-menu"))) ||
           (!visible && last_visible)) {
         draw_osd(json);
+        if (menu_present != last_interactive) {
+          osd_input_region(menu_present);
+          last_interactive = menu_present;
+          fprintf(stderr, "OSD_INPUT interactive=%d rows=%d row_h=%.1f cols=%d rows_per_col=%d\n", menu_present, menu_rows, menu_row_h, menu_cols, menu_rows_per_col);
+        }
         last_visible = visible;
       } else if (visible && !strcmp(kind, "power-menu") && n > 0) {
         /* Keep the selected row current while hardware volume keys move it. */
         static double last_idx = -1;
-        if (idx != last_idx) { last_idx = idx; draw_osd(json); }
+        if (idx != last_idx) { last_idx = idx; draw_osd(json);
+          if (menu_present != last_interactive) { osd_input_region(menu_present); last_interactive = menu_present; } }
       }
     } else if (pf.revents & POLLIN) {
       if (wl_display_read_events(display) < 0) return 0;

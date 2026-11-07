@@ -265,6 +265,7 @@ static const nuxel_fsm_menu_entry nuxel_fsm_menu[] = {
   { "screenshot",    "Take screenshot",   "screenshot",            1, NULL },
   { "restart",       "Restart",           "systemctl-reboot",      1, "reboot-gate-refused" },
   { "power-off",     "Power off",         "systemctl-poweroff",    1, "reboot-gate-refused" },
+  { "suspend",       "Suspend",           "systemctl-suspend",     1, NULL },
   { "reboot-verbose","Reboot Verbose",    "reboot-verbose",        1, "reboot-gate-refused" },
   { "reboot-safe-mode","Safe Mode",       "reboot-safe-mode",      1, "reboot-gate-refused" },
   { "reboot-diag",   "Reboot Diag",       "reboot-diag",           1, "reboot-gate-refused" },

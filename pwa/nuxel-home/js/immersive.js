@@ -100,8 +100,17 @@
       if (!s) return;
       const dx = x - s.x, dy = y - s.y;
       if (Math.abs(dy) < DISTANCE || Math.abs(dy) < Math.abs(dx) * 1.1) return;
-      if (s.kind === 'nav' && dy < 0) setNavVisible(true);
-      else if (s.kind === 'status' && dy > 0) setStatusVisible(true);
+      if (s.kind === 'nav' && dy < 0) {
+        // Toggle: first upward swipe reveals the triple buttons, the next
+        // upward swipe on the revealed dock collapses them again (no timer).
+        const revealed = document.body.classList.contains('app-nav-revealed');
+        setNavVisible(!revealed, 0);
+      } else if (s.kind === 'status') {
+        // Swipe down from the top edge expands the top bar; swipe up collapses
+        // it again. Swiping down again simply opens it normally.
+        if (dy > 0) setStatusVisible(true, 0);
+        else if (dy < 0) setStatusVisible(false, 0);
+      }
     }
 
     doc.addEventListener('pointerdown', function (e) {
@@ -156,11 +165,20 @@
   // App-requested immersive mode. Only the actual foreground iframe may ask.
   global.addEventListener('message', function (event) {
     if (event.origin !== global.location.origin) return;
-    if (!event.data || event.data.type !== 'nuxel:immersive') return;
+    if (!event.data) return;
     const n = home();
     const frame = n && n.appSession && n.appSession.frame;
     if (!frame || event.source !== frame.contentWindow) return;
-    setImmersive(!!event.data.active);
+    if (event.data.type === 'nuxel:immersive') {
+      setImmersive(!!event.data.active);
+      return;
+    }
+    if (event.data.type === 'nuxel:nav-visible') {
+      // A non-immersive app (Calendar) asks for the persistent triple buttons.
+      // autoHideMs=0 means "keep them up" and never starts a timer.
+      setNavVisible(!!event.data.active, 0);
+      if (n && typeof n.setNavVisible === 'function') n.setNavVisible(!!event.data.active);
+    }
   });
 
   // Tapping a revealed system button should not leave the strip up forever.

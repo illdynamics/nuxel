@@ -239,9 +239,9 @@
     var actions = [];
     if (s) {
       actions.push('<span class="badge ok">installed ' + esc(s.version) + '</span>');
-      if (canRemove) actions.push('<button data-remove="' + esc(p.id) + '" class="danger">Remove</button>');
+      if (canRemove) actions.push('<button id="remove-' + esc(p.id) + '" data-remove="' + esc(p.id) + '" class="danger">Remove</button>');
     } else {
-      actions.push('<button data-install="' + esc(p.id) + '"' + (decision.allowed ? ' class="primary"' : '') +
+      actions.push('<button id="install-' + esc(p.id) + '" data-install="' + esc(p.id) + '"' + (decision.allowed ? ' class="primary"' : '') +
                    '>' + (decision.allowed ? 'Install' : 'Install…') + '</button>');
     }
     actions.push('<button data-verify="' + esc(p.id) + '">Verify files</button>');
@@ -252,6 +252,14 @@
       '<p class="prov">provenance: ' + esc((p.source || {}).provenance || '—') + '</p>' +
       '<p class="meta">' + esc(p.category) + ' · ' + Cat.formatBytes(p.size_bytes) + ' · ' +
         p.file_count + ' files · ' + esc(p.license || '—') + '</p>' +
+      (p.requires && p.requires.length ? '<p class="hint"><b>Runtime requirements:</b> ' + p.requires.map(esc).join(' · ') + '</p>' : '') +
+      (p.runtime ? '<p class="hint"><b>Engine:</b> ' + esc(p.runtime.engine || '—') +
+        '<br><b>WAD fields (required/default):</b> ' + esc((p.runtime.default_wads || []).join(', ') || 'none') +
+        '<br><b>WAD search roots:</b> ' + esc((p.runtime.wad_roots || []).join(', ') || '—') +
+        '<br><b>Bundled commercial WADs:</b> ' + (p.runtime.bundled_wads && p.runtime.bundled_wads.length ? esc(p.runtime.bundled_wads.join(', ')) : 'none') +
+        '</p>' : '') +
+      (p.wad_policy ? '<p class="hint"><b>WAD policy:</b> ' + esc(p.wad_policy.user_import || '') +
+        '<br><b>Free default:</b> ' + esc((p.wad_policy.default_free_content || []).join(', ') || '—') + '</p>' : '') +
       '<p class="digest">sha256 ' + esc(p.sha256) + '</p>' +
       (p.problems.length ? '<p class="hint" style="color:#ef9a9a">' + p.problems.map(esc).join('<br>') + '</p>' : '') +
       (ctx.hint ? '<p class="hint">' + ctx.hint + '</p>' : '') +
@@ -451,14 +459,34 @@
   }
 
   // ---- wiring --------------------------------------------------------------
+  function blurKeyboard() {
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+    try {
+      var p = window.parent;
+      if (p && p !== window && p.nuxel && typeof p.nuxel.dismissKeyboard === 'function') p.nuxel.dismissKeyboard();
+    } catch (e) {}
+  }
   document.querySelectorAll('.tab').forEach(function (t) {
     t.addEventListener('click', function () {
       document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); });
       document.querySelectorAll('.panel').forEach(function (x) { x.classList.remove('active'); });
       t.classList.add('active');
       el('tab-' + t.dataset.tab).classList.add('active');
+      blurKeyboard();
     });
   });
+  // The Software app must never open with a retained OSK.  Clear focus on
+  // load, tab changes and teardown; Back's keyboard-first handling belongs to
+  // the shared Home dispatcher.
+  setTimeout(blurKeyboard, 0);
+  setTimeout(blurKeyboard, 200);
+  window.addEventListener('pagehide', blurKeyboard);
+  document.addEventListener('nuxel:dismiss-keyboard', blurKeyboard);
+  try {
+    window.parent.postMessage({ type: 'nuxel:immersive', active: false }, window.location.origin);
+    window.parent.postMessage({ type: 'nuxel:nav-visible', active: true }, window.location.origin);
+    if (window.parent && window.parent.nuxel && window.parent.nuxel.setNavVisible) window.parent.nuxel.setNavVisible(true);
+  } catch (e) {}
   el('search').addEventListener('input', render);
   el('category').addEventListener('change', render);
   el('sortmode').addEventListener('change', render);

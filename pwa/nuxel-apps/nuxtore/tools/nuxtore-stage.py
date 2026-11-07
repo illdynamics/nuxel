@@ -109,6 +109,11 @@ def main(argv=None):
             "capabilities": s.get("capabilities", []),
             "state_hint": s.get("state_hint", "available"),
         }
+        # PWNAGE-80000: carry the Doom runtime/WAD policy verbatim so the signed
+        # package states what it bundles, what it requires and what it refuses.
+        for extra in ("runtime", "wad_policy"):
+            if extra in s:
+                pkg[extra] = s[extra]
         # Every package, including the deliberately unsigned refusal fixture,
         # needs its content bundle: the verifier must be able to re-hash it and
         # then still refuse installation on the signature gate.

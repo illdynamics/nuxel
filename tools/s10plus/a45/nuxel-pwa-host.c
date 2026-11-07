@@ -1161,6 +1161,7 @@ static const struct cfgfile CFG[] = {
      document) and is read-only here - no new verb, no new write path, no change
      to the terminal, the buttons or the boot surface. */
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
+  { "keyboard-visible",    "/run/nuxel-keyboard.visible",                  0 },
   { "lock-state",          "/run/nuxel/security/lock-state.json",            0 },
   { "navdock-state",       "/run/nuxel-navdock.state",                     0 },
   { "navdock-json",        "/run/nuxel-navdock.json",                      0 },
@@ -1168,6 +1169,7 @@ static const struct cfgfile CFG[] = {
   { "shell-chrome",        "/run/nuxel/shell-chrome.json",                 0 },
   { "lock-enforcement",    "/run/nuxel/lock-enforcement.state",            0 },
   { "foreground",          "/run/nuxel/foreground.state",                  0 },
+  { "power-action-result", "/run/nuxel/power-action.result",               0 },
   /* Real S10+ battery nodes (the gauge is named `battery`, not BAT*). */
   { "battery-capacity",    "/sys/class/power_supply/battery/capacity",     0 },
   { "battery-status",      "/sys/class/power_supply/battery/status",       0 },
@@ -1349,46 +1351,12 @@ static int json_str(const char *js, const char *key, char *out, size_t outn) {
  * session (nuxel-wayland -> this host) while the host was still blocked inside
  * action_perform, so shutdown sat until a timeout.  Forking decouples the two.
  * ------------------------------------------------------------------------- */
-#define REBOOT_GATE_PATH "/etc/nuxel/buttons/reboot-gate.json"
-
-/* Read the WHOLE gate document.  The old code used ind_read_line() (fgets), so it
- * only ever saw line 1 of the pretty-printed JSON and `allow_restart` /
- * `allow_poweroff` could never be found -> every Settings Restart was refused
- * with reboot-gate-closed even though the gate was open. */
-static int ind_gate_allows(const char *key) {
-  FILE *f = fopen(REBOOT_GATE_PATH, "rb");
-  if (!f) return 0;
-  char buf[8192];
-  size_t n = fread(buf, 1, sizeof buf - 1, f);
-  fclose(f);
-  buf[n] = 0;
-  char pat[96];
-  snprintf(pat, sizeof pat, "\"%s\":", key);
-  char *p = strstr(buf, pat);
-  if (!p) return 0;
-  p += strlen(pat);
-  while (*p == ' ' || *p == '\t') p++;
-  return !strncmp(p, "true", 4);
-}
-
 /* Detached children (systemctl, foreign-toplevel) have no caller to wait for
  * them.  Registering them with GLib's child watcher reaps the exit status, so a
  * long session cannot accumulate one zombie per Home/power action. */
 static void detached_child_exited(GPid pid, gint status, gpointer data) {
   (void)status; (void)data;
   g_spawn_close_pid(pid);
-}
-
-static void run_async_systemctl(const char *verb) {
-  pid_t pid = fork();
-  if (pid < 0) return;
-  if (pid == 0) {
-    if (setsid() < 0) { /* best effort; exec still runs */ }
-    const char *argv[] = {"/usr/bin/systemctl", verb, NULL};
-    execv(argv[0], (char *const *)argv);
-    _exit(127);
-  }
-  g_child_watch_add(pid, detached_child_exited, NULL);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1606,6 +1574,90 @@ static void request_authoritative_lock(const char *reason) {
   if (pid > 0) g_child_watch_add(pid, detached_child_exited, NULL);
 }
 
+
+static void reset_web_zoom(WebKitWebView *v);
+static int wlfb_command(const char *cmd);
+static void publish_keyboard_visibility(int visible);
+
+/* PWNAGE-80000: keyboard dismissal must not minimize the foreground app.  The
+ * old `dismiss-keyboard` action ran `nuxel-foreign-toplevel home`, which
+ * backgrounded a native app (and raised Home over a PWA) merely because the user
+ * pressed Back with the OSK open.  Here we blur the WebKit focus chain first;
+ * for native text-input clients the foreign-toplevel helper performs a bounded
+ * focus bounce that returns to the same app instead of leaving Home on top. */
+static void host_hide_keyboard(void) {
+  if (g_main_view) {
+    const char *js =
+      "(function(){try{"
+      "function blurWin(w){try{var a=w.document&&w.document.activeElement;"
+      "if(a&&a.tagName==='IFRAME'){try{blurWin(a.contentWindow);}catch(e){}}"
+      "if(a&&a.blur)a.blur();"
+      "try{w.dispatchEvent(new CustomEvent('nuxel:dismiss-keyboard'));}catch(e){}"
+      "}catch(e){}}"
+      "blurWin(window);"
+      "try{if(document.body&&document.body.focus)document.body.focus();}catch(e){}"
+      "}catch(e){}})();";
+    webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+  }
+  pid_t pid = fork();
+  if (pid == 0) {
+    setsid();
+    execl("/usr/lib/nuxel/nuxel-foreign-toplevel",
+          "nuxel-foreign-toplevel", "hide-keyboard", (char *)NULL);
+    _exit(127);
+  }
+  if (pid > 0) g_child_watch_add(pid, detached_child_exited, NULL);
+  publish_keyboard_visibility(0);
+  st("HOST_KEYBOARD_DISMISS blur=1 native_focus_bounce=1 home_raise=0");
+}
+
+/* A lifecycle transition (app close, launcher reload, lockscreen) must leave a
+ * complete valid frame: pin WebKit zoom, clear the focus chain and ask the
+ * framebuffer bridge for one full blit instead of waiting for a partial damage
+ * region to age out.  This is a one-shot, not a repeating timer. */
+/* One-shot focus restoration after the asynchronous WebKit blur above.  The
+ * blur is intentionally queued so text-input leave reaches Stevia; grabbing
+ * focus in the same stack would be overwritten when that JS later runs. */
+static gboolean refocus_home_after_blur(gpointer d) {
+  (void)d;
+  if (g_main_window) {
+    gtk_window_present(GTK_WINDOW(g_main_window));
+    gtk_window_set_focus(GTK_WINDOW(g_main_window), GTK_WIDGET(g_main_view));
+    if (g_main_view) gtk_widget_grab_focus(GTK_WIDGET(g_main_view));
+  }
+  st("HOST_HOME_REFOCUS active=%d view_focus=%d",
+     g_main_window ? gtk_window_is_active(GTK_WINDOW(g_main_window)) : -1,
+     g_main_view ? gtk_widget_has_focus(GTK_WIDGET(g_main_view)) : -1);
+  return G_SOURCE_REMOVE;
+}
+
+static void host_after_app_close(const char *why) {
+  reset_web_zoom(g_main_view);
+  if (g_main_view) {
+    const char *js =
+      "(function(){try{"
+      "if(window.NuxelZoomPolicy&&window.NuxelZoomPolicy.reset)window.NuxelZoomPolicy.reset(window);"
+      "if(window.NuxelImmersive&&window.NuxelImmersive.reset)window.NuxelImmersive.reset();"
+      "try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(e){}"
+      "try{window.dispatchEvent(new CustomEvent('nuxel:app-closed'));}catch(e){}"
+      "try{window.dispatchEvent(new CustomEvent('nuxel:zoom-reset'));}catch(e){}"
+      "}catch(e){}})();";
+    webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+  }
+  wlfb_command("repaint");
+  /* Blurring the dead app field clears text-input/IME state, but it can also
+   * leave the toplevel document unfocused (document.hasFocus() == false).
+   * Re-attach keyboard/pointer focus to the Home WebView so the desktop is
+   * interactive in the same frame instead of waiting for an unrelated tap. */
+  if (g_main_window) {
+    gtk_window_present(GTK_WINDOW(g_main_window));
+    if (g_main_view) gtk_widget_grab_focus(GTK_WIDGET(g_main_view));
+    gtk_widget_queue_draw(g_main_window);
+  }
+  g_timeout_add(80, refocus_home_after_blur, NULL);
+  st("HOST_AFTER_APP_CLOSE why=%s zoom=1 repaint=1 focus=home", why ? why : "unspecified");
+}
+
 static void action_perform(const char *action, char *result, size_t rn) {
   if (!strcmp(action, "screen-lock")) {
     /* Lock is the display bridge's verb; hide the native dock first so no
@@ -1653,26 +1705,30 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"screenshot\",\"path\":\"%s\",\"width\":%d,\"height\":%d}", path, w, h);
     return;
   }
+  if (!strcmp(action, "suspend") || !strcmp(action, "systemctl-suspend")) {
+    int fd = open("/run/nuxel-buttons.cmd", O_WRONLY | O_NONBLOCK);
+    if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"button-fifo-absent\"}"); return; }
+    dprintf(fd, "action systemctl-suspend\n");
+    close(fd);
+    st("HOST_ACTION systemctl-suspend -> button manager fifo");
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"systemctl-suspend\",\"pending\":true}");
+    return;
+  }
   if (!strcmp(action, "restart") || !strcmp(action, "poweroff")) {
-    if (!ind_gate_allows(!strcmp(action, "restart") ? "allow_restart" : "allow_poweroff")) {
-      snprintf(result, rn, "{\"ok\":false,\"error\":\"reboot-gate-closed\"}");
+    /* PWNAGE-80000: the Settings power surface and any host caller go through
+     * the SAME gate and the SAME timestamped execution path as the hardware
+     * power menu.  A direct systemctl call here bypassed the cooldown/policy
+     * checks and made the menu look intermittently gated.  The manager owns
+     * the result and logs REBOOT_ALLOWED/REFUSED plus the request timestamps. */
+    int fd = open("/run/nuxel-buttons.cmd", O_WRONLY | O_NONBLOCK);
+    if (fd < 0) {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"button-fifo-absent\"}");
       return;
     }
-    if (!strcmp(action, "restart")) {
-      /* Per-boot diagnostic: tells nuxel-wl-fb's bounded ExecStop that this is
-         an owner-requested normal reboot, so the last frame stays on the panel
-         while the compositor stops.  It never forces or delays the job. */
-      mkdir("/run/nuxel", 0755);
-      FILE *rf = fopen("/run/nuxel/reboot-request", "w");
-      if (rf) {
-        fprintf(rf, "source=pwa-host requested_at=%lld\n", (long long)time(NULL));
-        fclose(rf);
-      }
-    }
-    run_async_systemctl(!strcmp(action, "restart") ? "reboot" : "poweroff");
-    /* Acknowledge immediately: the orderly systemd job runs in the background.
-       The page shows the accepted state; the next boot confirms completion. */
-    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\",\"pending\":true}", action);
+    dprintf(fd, "action %s\n", !strcmp(action, "restart") ? "systemctl-reboot" : "systemctl-poweroff");
+    close(fd);
+    st("HOST_ACTION %s -> button-manager gate (request queued)", action);
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\",\"pending\":true,\"backend\":\"button-manager-gate\"}", action);
     return;
   }
   if (!strcmp(action, "screen-off") || !strcmp(action, "screen-on") || !strcmp(action, "screen-toggle")) {
@@ -1745,13 +1801,142 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"open-terminal\"}");
     return;
   }
-  /* PWNAGE-43000: Home must dismiss the COMPOSITOR's keyboard even when a
-   * native top-level app (Firefox/VLC) owns text-input focus.  The launcher
-   * page cannot blur another client's field, so ask the foreign-toplevel
-   * controller to minimize every non-Home window and raise Home now.  This is
-   * the same trusted controller the HTTP bridge uses, invoked directly on the
-   * button path so it cannot be delayed by a busy WebKit page. */
-  if (!strcmp(action, "home") || !strcmp(action, "dismiss-keyboard")) {
+  /* PWNAGE-80000: a pure keyboard dismissal never raises Home or backgrounds
+   * the foreground app.  Home itself still performs the authoritative
+   * foreign-toplevel Home transition below. */
+  if (!strcmp(action, "dismiss-keyboard") || !strcmp(action, "hide-keyboard")) {
+    host_hide_keyboard();
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"hide-keyboard\"}");
+    return;
+  }
+  /* Root-console test hooks.  They can only resolve a local app id or a DOM
+   * id/selector-shaped token, never arbitrary JavaScript.  They exist so the
+   * four-orientation/acceptance matrix can be driven from the SSH console when
+   * the physical panel is not in reach, and they use the same launcher/app
+   * functions as a real tap. */
+  if (!strncmp(action, "launch-app ", 11)) {
+    const char *id = action + 11;
+    int ok = *id != 0;
+    for (const char *p = id; *p; p++) {
+      if (!(isalnum((unsigned char)*p) || *p == '.' || *p == '-' || *p == '_')) { ok = 0; break; }
+    }
+    if (ok && g_main_view) {
+      char js[256];
+      snprintf(js, sizeof js,
+        "try{window.appRegistry&&window.appRegistry.launchApp('%s');}catch(e){}", id);
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+      st("HOST_UI_LAUNCH app_id=%s", id);
+      snprintf(result, rn, "{\"ok\":true,\"action\":\"launch-app\",\"app_id\":\"%s\"}", id);
+    } else {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_app_id\"}");
+    }
+    return;
+  }
+  if (!strncmp(action, "ui-swipe ", 9)) {
+    /* Bounded acceptance hook: dispatch the same pointer sequence a finger
+     * produces on one Recents card.  It is not a general evaluator: the id must
+     * exist in the launcher document and the direction is one of left/right. */
+    char swipe_id[160] = "", dir[16] = "";
+    if (sscanf(action + 9, "%159s %15s", swipe_id, dir) == 2) {
+      int valid = (*swipe_id != 0) && (!strcmp(dir, "left") || !strcmp(dir, "right"));
+      for (const char *p = swipe_id; valid && *p; p++) {
+        if (!(isalnum((unsigned char)*p) || *p == '.' || *p == '-' || *p == '_' || *p == ':')) valid = 0;
+      }
+      if (valid && g_main_view) {
+        char js[2600];
+        snprintf(js, sizeof js,
+          "(function(){try{var id='%s',dir='%s';var e=document.getElementById(id);"
+          "if(!e||!e.getBoundingClientRect)return;var r=e.getBoundingClientRect();"
+          "var x=r.left+r.width/2,y=r.top+r.height/2,d=(dir==='right'?110:-110);"
+          "function pe(t,cx){try{return new PointerEvent(t,{bubbles:true,cancelable:true,composed:true,pointerId:7,pointerType:'touch',isPrimary:true,button:0,buttons:t==='pointerup'?0:1,clientX:cx,clientY:y});}"
+          "catch(q){return new MouseEvent(t,{bubbles:true,cancelable:true,clientX:cx,clientY:y,button:0});}}"
+          "e.dispatchEvent(pe('pointerdown',x));e.dispatchEvent(pe('pointermove',x+d/2));"
+          "e.dispatchEvent(pe('pointermove',x+d));e.dispatchEvent(pe('pointerup',x+d));"
+          "try{window.webkit.messageHandlers.nuxelDiag.postMessage('UI_SWIPE id='+id+' dir='+dir);}catch(q){}"
+          "}catch(e){try{window.webkit.messageHandlers.nuxelDiag.postMessage('UI_SWIPE_ERROR '+e);}catch(q){}}})();",
+          swipe_id, dir);
+        webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+        st("HOST_UI_SWIPE id=%s dir=%s", swipe_id, dir);
+        snprintf(result, rn, "{\"ok\":true,\"action\":\"ui-swipe\",\"id\":\"%s\",\"dir\":\"%s\"}", swipe_id, dir);
+      } else {
+        snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_swipe_target\"}");
+      }
+    } else {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_swipe_args\"}");
+    }
+    return;
+  }
+  if (!strncmp(action, "ui-focus ", 9) || !strncmp(action, "ui-click ", 9)) {
+    const char *id = action + 9;
+    int ok = *id != 0;
+    for (const char *p = id; *p; p++) {
+      if (!(isalnum((unsigned char)*p) || *p == '.' || *p == '-' || *p == '_' || *p == ':')) { ok = 0; break; }
+    }
+    if (ok && g_main_view) {
+      char js[1024];
+      snprintf(js, sizeof js,
+        "(function(){try{function w(x){try{var e=x.document.getElementById('%s');"
+        "if(e){try{e.focus();}catch(q){}try{e.click();}catch(q){}"
+        "try{x.webkit.messageHandlers.nuxelDiag.postMessage('UI_FOCUS id=%s result=ok');}catch(q){}"
+        "return true;}var f=x.document.querySelectorAll('iframe');"
+        "for(var i=0;i<f.length;i++){if(w(f[i].contentWindow))return true;}"
+        "}catch(q){}return false;}return w(window);}catch(e){}})();", id, id);
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+      st("HOST_UI_FOCUS id=%s", id);
+      snprintf(result, rn, "{\"ok\":true,\"action\":\"ui-focus\",\"id\":\"%s\"}", id);
+    } else {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_element_id\"}");
+    }
+    return;
+  }
+  if (!strcmp(action, "diag-ui")) {
+    if (g_main_view) {
+      const char *js =
+        "try{var l=window.launcher||{};var d=document.getElementById('drawer-list');"
+        "window.webkit.messageHandlers.nuxelDiag.postMessage('UI '+JSON.stringify({"
+        "drawerOpen:!!l.drawerOpen,drawerHidden:d?d.hidden:null,drawerChildren:d?d.children.length:null,"
+        "bodyClass:String(document.body.className),appState:document.body.dataset.appState,"
+        "session:(window.nuxel&&window.nuxel.appSession&&window.nuxel.appSession.state)||null,"
+        "grid:!!document.getElementById('app-grid'),dock:!!document.getElementById('dock'),"
+        "drawerDisplay:d?getComputedStyle(d).display:null,drawerVis:d?getComputedStyle(d).visibility:null,"
+        "drawerOpacity:d?getComputedStyle(d).opacity:null,drawerZ:d?getComputedStyle(d).zIndex:null,"
+        "drawerRect:d?{x:d.getBoundingClientRect().x,y:d.getBoundingClientRect().y,w:d.getBoundingClientRect().width,h:d.getBoundingClientRect().height}:null,"
+        "drawerCols:d?getComputedStyle(d).gridTemplateColumns:null,"
+        "drawerScroll:d?{w:d.scrollWidth,h:d.scrollHeight,cw:d.clientWidth,ch:d.clientHeight,left:d.scrollLeft,top:d.scrollTop}:null,"
+        "drawerItems:d?(function(){var q=d.querySelectorAll('.app-item');var a=q[0],b=q[q.length-1];var rr=function(e){if(!e)return null;var r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};};return {count:q.length,first:rr(a),last:rr(b)};})():null,"
+        "drawerVar:d?getComputedStyle(document.documentElement).getPropertyValue('--drawer-columns'):null,"
+        "homeVar:getComputedStyle(document.documentElement).getPropertyValue('--home-columns'),"
+        "visualViewport:window.visualViewport?{w:window.visualViewport.width,h:window.visualViewport.height,scale:window.visualViewport.scale,offsetX:window.visualViewport.offsetLeft,offsetY:window.visualViewport.offsetTop}:null,"
+        "docScroll:{w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight},"
+        "gridDisplay:document.getElementById('app-grid')?getComputedStyle(document.getElementById('app-grid')).display:null,"
+        "appListHidden:document.querySelector('.app-list:not(.drawer-list)')?document.querySelector('.app-list:not(.drawer-list)').hidden:null,"
+        "lockEl:!!document.getElementById('lockscreen'),lockHidden:document.getElementById('lockscreen')?document.getElementById('lockscreen').hidden:null,"
+        "lockDisplay:document.getElementById('lockscreen')?getComputedStyle(document.getElementById('lockscreen')).display:null,"
+        "lockClass:document.getElementById('lockscreen')?String(document.getElementById('lockscreen').className):null,"
+        "docClass:String(document.documentElement.className),hidden:document.hidden,visibility:document.visibilityState,hasFocus:document.hasFocus(),"
+        "appId:(window.nuxel&&window.nuxel.appSession&&window.nuxel.appSession.app&&window.nuxel.appSession.app.id)||null,"
+        "cal:(function(){try{var f=Array.from(document.querySelectorAll('iframe')).find(function(x){return /calendar/.test(x.src||'');});if(!f||!f.contentDocument)return null;var d=f.contentDocument;var g=function(id){return d.getElementById(id);};var cs=function(e){return e?getComputedStyle(e):null;};var ed=g('event-editor'),kp=g('time-keypad'),st=g('event-start'),ad=g('event-all-day');var ca=d.defaultView.nuxelCalendar&&d.defaultView.nuxelCalendar.app?d.defaultView.nuxelCalendar.app():null;return {editorHidden:ed?ed.hidden:null,editorClass:ed?ed.className:null,editorDisplay:ed?cs(ed).display:null,keypadHidden:kp?kp.hidden:null,keypadClass:kp?kp.className:null,keypadDisplay:kp?cs(kp).display:null,start:st?st.value:null,startDisabled:st?st.disabled:null,allDay:ad?ad.checked:null,active:(d.activeElement&&d.activeElement.id)||'',app:!!ca,bound:ca?ca.bound:null,events:ca&&ca.events?ca.events.length:null,gridChildren:g('day-grid')?g('day-grid').children.length:null,keypadRect:kp?{x:kp.getBoundingClientRect().x,y:kp.getBoundingClientRect().y,w:kp.getBoundingClientRect().width,h:kp.getBoundingClientRect().height}:null};}catch(e){return 'ERR '+e;}})(),"
+        "overlays:{frames:document.querySelectorAll('.pwa-frame').length,iframes:document.querySelectorAll('iframe').length,powerMenus:document.querySelectorAll('#nuxel-power-menu').length,osd:document.querySelectorAll('#nuxel-osd').length,folderSheets:document.querySelectorAll('.folder-sheet').length},"
+        "frame:(function(){try{var f=Array.from(document.querySelectorAll('.pwa-frame')).find(function(x){return !x.hidden;});if(!f)return null;var w=f.contentWindow;return {src:String(f.src||''),navDepth:f.__nuxelNavDepth||0,historyLength:w.history?w.history.length:null,hasNavigation:!!w.navigation,navigationCanGoBack:(w.navigation&&typeof w.navigation.canGoBack==='boolean')?w.navigation.canGoBack:null,explicitBack:!!(w.NuxelBack&&w.NuxelBack.canGoBack),canGoBack:!!(w.NuxelBack&&w.NuxelBack.canGoBack&&w.NuxelBack.canGoBack())};}catch(e){return 'ERR '+e;}})(),"
+        "innerWidth:window.innerWidth,innerHeight:window.innerHeight,dpr:window.devicePixelRatio}));"
+        "}catch(e){try{window.webkit.messageHandlers.nuxelDiag.postMessage('UI_ERROR '+e);}catch(x){}}";
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+    }
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"diag-ui\"}");
+    return;
+  }
+  if (!strcmp(action, "reset-zoom")) {
+    reset_web_zoom(g_main_view);
+    wlfb_command("repaint");
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"reset-zoom\",\"zoom\":1.0}");
+    return;
+  }
+  if (!strcmp(action, "force-redraw") || !strcmp(action, "after-app-close")) {
+    host_after_app_close(action);
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\",\"repaint\":true}", action);
+    return;
+  }
+  if (!strcmp(action, "home")) {
     pid_t pid = fork();
     if (pid == 0) {
       setsid();
@@ -1761,11 +1946,7 @@ static void action_perform(const char *action, char *result, size_t rn) {
     }
     if (pid > 0) g_child_watch_add(pid, detached_child_exited, NULL);
     if (g_main_window) gtk_window_present(GTK_WINDOW(g_main_window));
-    st("HOST_ACTION %s -> foreign-toplevel home + raise", action);
-    if (!strcmp(action, "dismiss-keyboard")) {
-      snprintf(result, rn, "{\"ok\":true,\"action\":\"dismiss-keyboard\"}");
-      return;
-    }
+    st("HOST_ACTION home -> foreign-toplevel home + raise");
   }
   if (!strcmp(action, "nav-hide") || !strcmp(action, "nav-show")) {
     const char *cmd = !strcmp(action, "nav-show") ? "show" : "hide";
@@ -1780,7 +1961,9 @@ static void action_perform(const char *action, char *result, size_t rn) {
   if (!strcmp(action, "home") || !strcmp(action, "back") || !strcmp(action, "back-long") || !strcmp(action, "forward") ||
       !strcmp(action, "stop") || !strcmp(action, "reload-launcher") ||
       !strcmp(action, "search") || !strcmp(action, "settings") ||
-      !strcmp(action, "recents") || !strcmp(action, "lock") || !strcmp(action, "unlock")) {
+      !strcmp(action, "recents") || !strcmp(action, "all-apps") ||
+      !strcmp(action, "notifications-panel") ||
+      !strcmp(action, "lock") || !strcmp(action, "unlock")) {
     /* A native terminal window is a separate top-level surface: the launcher's
      * DOM `home` event cannot dismiss it.  Home/back must close it here, or the
      * fullscreen terminal stays in front of Home (the A34 owner-test symptom). */
@@ -1800,6 +1983,8 @@ static void action_perform(const char *action, char *result, size_t rn) {
                               !strcmp(action, "search") ? "'search'" :
                               !strcmp(action, "settings") ? "'settings'" :
                               !strcmp(action, "recents") ? "'recents'" :
+                              !strcmp(action, "all-apps") ? "'all-apps'" :
+                              !strcmp(action, "notifications-panel") ? "'notifications-panel'" :
                               !strcmp(action, "lock") ? "'lock'" : "'unlock'";
       g_string_append_printf(g,
         "window.dispatchEvent(new CustomEvent('nuxel:action',{detail:{action:%s}}));", js_action);
@@ -2293,6 +2478,134 @@ static const char *POLICY_JS =
   " setTimeout(function(){ kill(); try { mo.disconnect(); } catch(e){} }, 15000);"
   "} catch (e) {} })();";
 
+
+/* ---------------------------------------------------------------------------
+ * PWNAGE-80000 CENTRAL ZOOM POLICY
+ *
+ * Default deny in every frame.  This user script is injected into ALL frames
+ * (not just the top document) before any app script runs.  It is one layer of
+ * defence in depth with the WebKitSettings/WebView pinning and the GTK gesture
+ * capture-denial installed in view_new().  It never intercepts one-finger
+ * scrolling, dragging, selection or app controls.
+ * ------------------------------------------------------------------------- */
+static const char *ZOOM_POLICY_JS =
+  "(function(){try{"
+  "if(window.__nuxelZoomPolicy80000)return;window.__nuxelZoomPolicy80000=1;"
+  "var allow=function(){try{return !!(window.NuxelZoomPolicy&&window.NuxelZoomPolicy.allowed&&window.NuxelZoomPolicy.allowed(window.NuxelZoomPolicy.appId));}catch(e){return false;}};"
+  "var stop=function(e){try{if(e.cancelable)e.preventDefault();}catch(x){}try{e.stopPropagation();}catch(x){}return false;};"
+  "['gesturestart','gesturechange','gestureend'].forEach(function(n){document.addEventListener(n,function(e){if(!allow())stop(e);},{capture:true,passive:false});});"
+  "document.addEventListener('wheel',function(e){if((e.ctrlKey||e.metaKey)&&!allow())stop(e);},{capture:true,passive:false});"
+  "document.addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||allow())return;if(e.key==='+'||e.key==='='||e.key==='-'||e.key==='_'||e.key==='0')stop(e);},{capture:true,passive:false});"
+  "var multi=function(e){if(!allow()&&e.touches&&e.touches.length>1)stop(e);};"
+  "document.addEventListener('touchstart',multi,{capture:true,passive:false});"
+  "document.addEventListener('touchmove',multi,{capture:true,passive:false});"
+  "window.addEventListener('nuxel:zoom-reset',function(){try{window.scrollTo(window.scrollX||0,window.scrollY||0);}catch(e){}});"
+  "}catch(e){}})();";
+
+/* Focus observation is the only way the native shell can know the virtual
+ * keyboard is on-screen without guessing a keyboard rectangle.  It is
+ * deliberately limited to a boolean and never records field values. */
+static const char *KEYBOARD_FOCUS_JS =
+  "(function(){try{"
+  "if(window.__nuxelFocusObs80000)return;window.__nuxelFocusObs80000=1;"
+  "var post=function(on){try{window.webkit.messageHandlers.nuxelKeyboard.postMessage(on?'1':'0');}catch(e){}};"
+  "var editable=function(el){try{return !!(el&&(el.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName||'')));}catch(e){return false;}};"
+  "document.addEventListener('focusin',function(e){if(editable(e.target))post(1);},true);"
+  "document.addEventListener('focusout',function(){setTimeout(function(){post(editable(document.activeElement)?1:0);},80);},true);"
+  "window.addEventListener('nuxel:dismiss-keyboard',function(){try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(e){}post(0);});"
+  "}catch(e){}})();";
+
+static void publish_keyboard_visibility(int visible) {
+  int fd = open("/run/nuxel-keyboard.visible", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if (fd >= 0) { dprintf(fd, "%d\n", visible); close(fd); }
+  if (g_main_view) {
+    char js[192];
+    snprintf(js, sizeof js,
+      "window.__nuxelHostEvent&&window.__nuxelHostEvent('keyboard-visible',{visible:%d});",
+      visible ? 1 : 0);
+    webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+  }
+  st("NUXEL_KEYBOARD_VISIBLE %d", visible);
+}
+
+static void on_keyboard_message(WebKitUserContentManager *m, WebKitJavascriptResult *r, gpointer d) {
+  (void)m; (void)d;
+  JSCValue *v = webkit_javascript_result_get_js_value(r);
+  char *s = v ? jsc_value_to_string(v) : NULL;
+  int visible = s && s[0] == '1';
+  publish_keyboard_visibility(visible);
+  if (s) g_free(s);
+}
+
+/* Pin both WebKit zoom mechanisms.  WebKitGTK 2.54 exposes `magnification`
+ * (pinch page scale) and `zoom-level` (page zoom); neither alone is enough. */
+static int zoom_guard_active;
+static void reset_web_zoom(WebKitWebView *v) {
+  if (!v || zoom_guard_active) return;
+  zoom_guard_active = 1;
+  GObjectClass *c = G_OBJECT_GET_CLASS(v);
+  if (g_object_class_find_property(c, "magnification"))
+    g_object_set(v, "magnification", 1.0, NULL);
+  if (g_object_class_find_property(c, "zoom-level"))
+    g_object_set(v, "zoom-level", 1.0, NULL);
+  zoom_guard_active = 0;
+}
+static void on_web_zoom_changed(GObject *o, GParamSpec *pspec, gpointer d) {
+  (void)pspec; (void)d;
+  if (zoom_guard_active) return;
+  gdouble m = 1.0, z = 1.0;
+  GObjectClass *c = G_OBJECT_GET_CLASS(o);
+  if (g_object_class_find_property(c, "magnification")) g_object_get(o, "magnification", &m, NULL);
+  if (g_object_class_find_property(c, "zoom-level")) g_object_get(o, "zoom-level", &z, NULL);
+  if (m != 1.0 || z != 1.0) {
+    st("NUXEL_ZOOM_RESET magnification=%.4f zoom=%.4f", m, z);
+    reset_web_zoom(WEBKIT_WEB_VIEW(o));
+  }
+}
+static void deny_gesture_begin(GtkGesture *g, GdkEventSequence *seq, gpointer d) {
+  (void)seq; (void)d;
+  gtk_gesture_set_state(g, GTK_EVENT_SEQUENCE_DENIED);
+}
+static void deny_gesture_scale(GtkGestureZoom *g, gdouble scale, gpointer d) {
+  (void)scale; (void)d;
+  gtk_gesture_set_state(GTK_GESTURE(g), GTK_EVENT_SEQUENCE_DENIED);
+}
+static void deny_multipress(GtkGestureMultiPress *g, gint n_press, gdouble x, gdouble y, gpointer d) {
+  (void)x; (void)y; (void)d;
+  /* Only the second (and later) press is denied.  A single tap must pass
+   * through to the page untouched. */
+  if (n_press >= 2) gtk_gesture_set_state(GTK_GESTURE(g), GTK_EVENT_SEQUENCE_DENIED);
+}
+static gboolean on_ctrl_scroll(GtkWidget *w, GdkEventScroll *ev, gpointer d) {
+  (void)w; (void)d;
+  if (!ev) return FALSE;
+  return (ev->state & (GDK_CONTROL_MASK | GDK_MOD1_MASK)) ? TRUE : FALSE;
+}
+static void install_zoom_guards(WebKitWebView *v) {
+  reset_web_zoom(v);
+  g_signal_connect(v, "notify::magnification", G_CALLBACK(on_web_zoom_changed), NULL);
+  g_signal_connect(v, "notify::zoom-level", G_CALLBACK(on_web_zoom_changed), NULL);
+
+  GtkGesture *pinch = gtk_gesture_zoom_new(GTK_WIDGET(v));
+  gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(pinch), GTK_PHASE_CAPTURE);
+  g_signal_connect(pinch, "begin", G_CALLBACK(deny_gesture_begin), NULL);
+  g_signal_connect(pinch, "scale-changed", G_CALLBACK(deny_gesture_scale), NULL);
+
+  GtkGesture *dbl = gtk_gesture_multi_press_new(GTK_WIDGET(v));
+  gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(dbl), GTK_PHASE_CAPTURE);
+  g_signal_connect(dbl, "pressed", G_CALLBACK(deny_multipress), NULL);
+  g_signal_connect(v, "scroll-event", G_CALLBACK(on_ctrl_scroll), NULL);
+  st("NUXEL_ZOOM_GUARD installed=1 default=deny magnification=1 zoom=1 gestures=denied");
+}
+
+static int wlfb_command(const char *cmd) {
+  int fd = open("/run/nuxel-wl-fb.cmd", O_WRONLY | O_NONBLOCK);
+  if (fd < 0) return -1;
+  dprintf(fd, "%s\n", cmd);
+  close(fd);
+  return 0;
+}
+
 static void on_diag_message(WebKitUserContentManager *m, WebKitJavascriptResult *r, gpointer d) {
   (void)m; (void)d;
   JSCValue *v = webkit_javascript_result_get_js_value(r);
@@ -2451,6 +2764,7 @@ static WebKitWebView *view_new(void) {
       "enable-media", media,
       "enable-media-stream", TRUE,
       "enable-mediasource", media,
+      "enable-back-forward-navigation-gestures", FALSE,
       "user-agent", "Mozilla/5.0 (Linux; aarch64) Nuxel/1.0 (S10+, like Gecko) WebKitGTK",
       NULL);
   WebKitUserContentManager *ucm = webkit_user_content_manager_new();
@@ -2478,11 +2792,32 @@ static WebKitWebView *view_new(void) {
   } else {
     st("NUXEL_INPUT_DIAG disabled=1 (set NUXEL_INPUT_DIAG=1 to enable)");
   }
+  /* PWNAGE-80000: the centralized zoom policy and keyboard-focus observer are
+   * injected into EVERY frame (apps live in same-origin iframes, and popups are
+   * separate WebKit views).  They run before app script and cannot be removed by
+   * the page.  This is additive to the native GTK gesture denial below. */
+  {
+    WebKitUserScript *zs = webkit_user_script_new(ZOOM_POLICY_JS,
+        WEBKIT_USER_CONTENT_INJECT_ALL_FRAMES,
+        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL);
+    webkit_user_content_manager_add_script(ucm, zs);
+    webkit_user_script_unref(zs);
+    WebKitUserScript *ks = webkit_user_script_new(KEYBOARD_FOCUS_JS,
+        WEBKIT_USER_CONTENT_INJECT_ALL_FRAMES,
+        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL);
+    webkit_user_content_manager_add_script(ucm, ks);
+    webkit_user_script_unref(ks);
+    webkit_user_content_manager_register_script_message_handler(ucm, "nuxelKeyboard");
+    g_signal_connect(ucm, "script-message-received::nuxelKeyboard",
+                     G_CALLBACK(on_keyboard_message), NULL);
+    st("NUXEL_ZOOM_POLICY injected=all-frames default=deny");
+  }
   keyring_secret_load();
   keyring_mint_attach(ucm);
   WebKitWebView *v = WEBKIT_WEB_VIEW(
       webkit_web_view_new_with_user_content_manager(ucm));
   webkit_web_view_set_settings(v, s);
+  install_zoom_guards(v);            /* PWNAGE-80000: deny pinch/double-tap/Ctrl+wheel */
   host_api_attach(ucm, v);          /* A32: settings / actions / terminal API */
   g_object_unref(ucm);
   g_object_unref(s);
@@ -2517,8 +2852,12 @@ int main(int argc, char **argv) {
        launcher URL changes with it (mission 7.2, versioned asset deployment) */
     struct stat sb;
     unsigned long stamp = 0;
-    if (stat("/usr/share/nuxel/nuxel-home/index.html", &sb) == 0)
-      stamp = (unsigned long)sb.st_mtime + (unsigned long)sb.st_size;
+    /* The active server layout is /pwa/nuxel-home.  The flat
+     * /nuxel-home copy exists only as a legacy fallback, so it must not decide
+     * the cache-busting stamp for the page actually loaded. */
+    if (stat("/usr/share/nuxel/pwa/nuxel-home/index.html", &sb) != 0)
+      (void)stat("/usr/share/nuxel/nuxel-home/index.html", &sb);
+    stamp = (unsigned long)sb.st_mtime + (unsigned long)sb.st_size;
     snprintf(urlbuf, sizeof urlbuf, "%s%sboot=os&v=%lu", url, strchr(url, '?') ? "&" : "?", stamp);
     url = urlbuf;
   }

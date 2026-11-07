@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/index.html",
-    "sha256": "3e7e5d3fbcfc114b9bf03aeb7a18f19f62c750582a3b9a64a59b8f0956a22e02",
-    "size": 3895
+    "sha256": "426f0287598e3210c5a27fe45178fe9112103bfa766c41259095ad13df2bbe6a",
+    "size": 3985
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/js/devmgmt-parsers.js",

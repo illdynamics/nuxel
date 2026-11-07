@@ -1,0 +1,92 @@
+Startup finished in 3.586s (kernel) + 46.973s (userspace) = 50.559s 
+multi-user.target reached after 45.877s in userspace.
+===BLAME===
+41.633s nuxel-soundd.service
+38.541s nuxel-boot-sound.service
+36.942s nuxel-mic-route.service
+27.193s nuxel-abox-firmware-reload.service
+ 7.047s dnf-makecache.service
+ 6.267s NetworkManager-wait-online.service
+ 4.690s nuxel-audio-route.service
+ 4.016s nuxel-fallback.service
+ 3.024s nuxel-http-bridge.service
+ 2.450s nuxel-audio-route-retry.service
+ 1.991s NetworkManager.service
+ 1.865s systemd-tmpfiles-clean.service
+ 1.019s nuxel-wl-fb.service
+  792ms nuxel-device-permissions.service
+  708ms polkit.service
+  638ms systemd-udev-trigger.service
+  635ms systemd-journald.service
+  578ms systemd-hostnamed.service
+  563ms systemd-tmpfiles-setup.service
+  508ms rtkit-daemon.service
+  390ms nuxel-bootmode-guard.service
+  376ms nuxel-interface-state.service
+  359ms systemd-user-sessions.service
+  354ms sshd.service
+  351ms ModemManager.service
+  296ms nuxel-orientationd.service
+  285ms systemd-timesyncd.service
+  198ms systemd-journal-flush.service
+  183ms nuxel-wifi.service
+  165ms systemd-logind.service
+  146ms systemd-tmpfiles-setup-dev-early.service
+  128ms geoclue.service
+   77ms systemd-tmpfiles-setup-dev.service
+   76ms authselect-apply-changes.service
+   72ms nuxel-network-udev-seed.service
+   66ms systemd-sysctl.service
+   66ms systemd-network-generator.service
+   63ms nuxel-bootmode-oneshot.service
+   62ms nuxel-charger-mode-recovery.service
+   37ms systemd-random-seed.service
+   37ms sys-fs-fuse-connections.mount
+   34ms dev-mqueue.mount
+   33ms sys-kernel-debug.mount
+   32ms sys-kernel-tracing.mount
+   32ms nuxel-usb-mode-restore.service
+   30ms wpa_supplicant.service
+   30ms systemd-modules-load.service
+   29ms tmp.mount
+   27ms systemd-remount-fs.service
+   20ms nuxel-fuse-access.service
+   19ms avahi-daemon.service
+   15ms systemd-udev-settle.service
+   15ms nuxel-app-prewarm.service
+   15ms systemd-update-utmp.service
+   15ms nuxel-wayland.service
+    4ms nuxel-metrics.socket
+    3ms sshd-unix-local.socket
+    2ms systemd-bootctl.socket
+    2ms systemd-ask-password.socket
+    2ms systemd-coredump.socket
+    2ms systemd-creds.socket
+    1ms systemd-factory-reset.socket
+    1ms systemd-sysext.socket
+  647us dbus.socket
+  467us avahi-daemon.socket
+  342us systemd-journald-dev-log.socket
+  286us systemd-hostnamed.socket
+  225us systemd-journald.socket
+  176us systemd-logind-varlink.socket
+  118us systemd-journald-audit.socket
+===CRIT===
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @45.877s
+└─nuxel-clockd.service @45.877s
+  └─nuxel-soundd.service @4.237s +41.633s
+    └─nuxel-audio-session.service @38.923s
+      └─basic.target @4.195s
+        └─sockets.target @4.194s
+          └─systemd-logind-varlink.socket @4.193s +176us
+            └─sysinit.target @4.182s
+              └─systemd-timesyncd.service @3.897s +285ms
+                └─systemd-tmpfiles-setup.service @3.329s +563ms
+                  └─systemd-journal-flush.service @3.128s +198ms
+                    └─systemd-journald.service @2.491s +635ms
+                      └─systemd-journald.socket @2.475s +225us
+                        └─system.slice @2.459s
+                          └─-.slice @2.459s

@@ -28,7 +28,7 @@ ProtectHome=no
 PrivateDevices=no
 RestrictAddressFamilies=AF_INET AF_UNIX
 ReadOnlyPaths=/
-ReadWritePaths=/run/nuxel /var/lib/nuxel /var/log/nuxel /var/cache/nuxel /home/nuxel /sys/kernel/config/usb_gadget /sys/class/leds /etc/nuxel/remote-desktop /etc/nuxel/app-registry /etc/nuxel/notifications /etc/nuxel/privacy /etc/nuxel/security
+ReadWritePaths=/run/nuxel /run/nuxel-orientation /var/lib/nuxel /var/log/nuxel /var/cache/nuxel /home/nuxel /sys/kernel/config/usb_gadget /sys/class/leds /etc/nuxel/remote-desktop /etc/nuxel/app-registry /etc/nuxel/notifications /etc/nuxel/privacy /etc/nuxel/security /etc/nuxel/orientation
 # PWNAGE-63000: the Nuxel Vault / Authenticator Secret Service provider is
 # started by this process through the supported PAM login path
 # (gnome-keyring-daemon --login --daemonize reads the master password from

@@ -447,7 +447,22 @@ static void osd_volume(void) {
  * The helper reads the real current mixer state; it never bypasses the 25%
  * bring-up cap. The wrapper is optional on older deployed phone revisions. */
 static void cue_volume_preview(int pct) {
-  if (pct <= 0 || access("/usr/libexec/nuxel/nuxel-sound-cue", X_OK) != 0) return;
+  if (pct <= 0) return;
+  /* The shared sound-mode contract still wins: normal only. */
+  char mode[32] = "";
+  int mf = open(SOUND_MODE_FILE, O_RDONLY | O_CLOEXEC);
+  if (mf >= 0) {
+    ssize_t mn = read(mf, mode, sizeof mode - 1);
+    close(mf);
+    if (mn > 0) {
+      mode[mn] = 0;
+      char *nl = strchr(mode, '\n');
+      if (nl) *nl = 0;
+      if (!strcmp(mode, "silent") || !strcmp(mode, "vibrate")) return;
+    }
+  }
+  if (access("/usr/libexec/nuxel/nuxel-soundctl", X_OK) != 0 &&
+      access("/usr/libexec/nuxel/nuxel-sound-cue", X_OK) != 0) return;
   /* One preview per gesture: holding the key used to spawn a fresh pow for
    * every autorepeat event, which the owner rightly called "pow nonstop". */
   static int64_t last_cue_ms = 0;
@@ -463,6 +478,13 @@ static void cue_volume_preview(int pct) {
     if (player < 0) _exit(1);
     if (player == 0) {
       setsid();
+      /* Fast path: the C soundctl only formats one JSON line and writes it
+       * to the already-running soundd stream (measured 12-17 ms).  The old
+       * Python cue path cost ~130-180 ms and is retained only as a fallback. */
+      if (access("/usr/libexec/nuxel/nuxel-soundctl", X_OK) == 0) {
+        execl("/usr/libexec/nuxel/nuxel-soundctl", "nuxel-soundctl",
+              "play", "volume", (char *)NULL);
+      }
       execl("/usr/libexec/nuxel/nuxel-sound-cue", "nuxel-sound-cue",
             "volume", "--level", b, (char *)NULL);
       _exit(127);
@@ -539,6 +561,11 @@ static int pwctl_volume_step(int dir) {
 }
 
 static void volume_step(int dir) {
+  /* Latency rule (PWNAGE-81000): emit the assigned volume cue immediately on
+   * the key event, in parallel with the mixer update.  wpctl get/set/get can
+   * take 100-150 ms on this phone; waiting for it put the cue well outside the
+   * 100 ms target even though the cue itself is a 12-17 ms socket write. */
+  cue_volume_preview(100);
   if (pwctl_volume_step(dir)) return;
   if (mixer_open_dev() < 0 || !selem) { osd_volume(); return; }
   long step = nuxel_fsm_volume_step(vol_min, vol_max);   /* same formula as A32 */
@@ -550,9 +577,6 @@ static void volume_step(int dir) {
   vol_cur = v;
   audit("VOLUME_STEP dir=%d value=%ld step=%ld ceiling=%ld capped=%d", dir, v, step, ceiling, mixer_capped);
   osd_volume();
-  /* Preview at the successfully selected ALSA mixer level (not previous). */
-  int pct = (vol_max > vol_min) ? (int)(((vol_cur - vol_min) * 100) / (vol_max - vol_min)) : 0;
-  cue_volume_preview(pct);
 }
 
 static void volume_mute_toggle(void) {
@@ -659,10 +683,26 @@ static int gated_system_action_pre(const char *what, void (*pre_exec)(void *), v
   if (!ok) {
     audit("REBOOT_REFUSED action=%s reason=%s (nothing was executed)", what, reason);
     publish("REBOOT_REFUSED action=%s reason=%s", what, reason);
+    mkdir("/run/nuxel", 0755);
+    FILE *r = fopen("/run/nuxel/power-action.result", "w");
+    if (r) {
+      fprintf(r, "state=refused action=%s reason=%s at_ms=%lld\n",
+              what, reason ? reason : "unknown", (long long)now_ms());
+      fclose(r);
+    }
     osd_publish("power", "power off / restart is gated: see the engineering report", 0, 100);
     return 0;
   }
-  audit("REBOOT_ALLOWED action=%s reason=%s -> executing through the userspace path", what, reason);
+  audit("REBOOT_ALLOWED action=%s reason=%s at_ms=%lld -> executing through the userspace path", what, reason, (long long)now_ms());
+  mkdir("/run/nuxel", 0755);
+  {
+    FILE *r = fopen("/run/nuxel/power-action.result", "w");
+    if (r) {
+      fprintf(r, "state=allowed action=%s reason=%s at_ms=%lld\n",
+              what, reason ? reason : "unknown", (long long)now_ms());
+      fclose(r);
+    }
+  }
   publish("REBOOT_ALLOWED action=%s reason=%s", what, reason);
   /* record the attempt so the min-interval rule can see it */
   mkdir(GATE_STATE_DIR, 0755);
@@ -680,8 +720,43 @@ static int gated_system_action_pre(const char *what, void (*pre_exec)(void *), v
   if (pre_exec) pre_exec(arg);
   pid_t pid = fork();
   if (pid == 0) {
-    execl("/usr/bin/systemctl", "systemctl", is_poweroff ? "poweroff" : "reboot", (char *)NULL);
+    /* --no-block enqueues the job without making this daemon wait for the
+       entire shutdown transaction; the timestamp above is the request time. */
+    mkdir("/run/nuxel", 0755);
+    int ef = open("/run/nuxel/reboot-exec", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (ef >= 0) {
+      dprintf(ef, "action=%s exec_at_ms=%lld\n", what, (long long)now_ms());
+      close(ef);
+    }
+    execl("/usr/bin/systemctl", "systemctl", "--no-block",
+          is_poweroff ? "poweroff" : "reboot", (char *)NULL);
     _exit(127);
+  }
+  if (pid > 0) {
+    audit("REBOOT_SPAWNED action=%s pid=%d at_ms=%lld", what, (int)pid, (long long)now_ms());
+    /* `systemctl --no-block` returns after systemd has accepted the job.  Wait
+     * for that bounded acknowledgement so the UI can distinguish "queued" from
+     * "accepted"; the helper itself is what systemd stops, not this check. */
+    int status = 0, accepted = 0;
+    int64_t deadline = now_ms() + 750;
+    while (now_ms() < deadline) {
+      pid_t w = waitpid(pid, &status, WNOHANG);
+      if (w == pid) { accepted = WIFEXITED(status) && WEXITSTATUS(status) == 0; break; }
+      usleep(20000);
+    }
+    FILE *r = fopen("/run/nuxel/power-action.result", "w");
+    if (r) {
+      fprintf(r, "state=%s action=%s at_ms=%lld\n",
+              accepted ? "accepted" : "spawned-unconfirmed", what, (long long)now_ms());
+      fclose(r);
+    }
+    if (accepted) {
+      audit("REBOOT_ACCEPTED action=%s pid=%d at_ms=%lld", what, (int)pid, (long long)now_ms());
+      publish("REBOOT_ACCEPTED action=%s", what);
+      osd_publish("power", is_poweroff ? "Power-off accepted" : "Restart accepted", 100, 100);
+    } else {
+      audit("REBOOT_ACCEPT_UNCONFIRMED action=%s pid=%d at_ms=%lld", what, (int)pid, (long long)now_ms());
+    }
   }
   return 1;
 }
@@ -749,6 +824,18 @@ static void perform(const char *action, const char *source) {
   if (!strcmp(action, "sound-mode-cycle")) { sound_mode_cycle(); return; }
   if (!strcmp(action, "flashlight")) { flashlight_request(); return; }
   if (!strcmp(action, "verbose-boot-note")) { verbose_boot_note_once(); return; }
+  if (!strcmp(action, "systemctl-suspend") || !strcmp(action, "suspend")) {
+    /* logind CanSuspend returned "yes" on this device.  Suspend is not a reboot,
+     * so it is intentionally outside the reboot gate; it still goes through the
+     * one userspace systemd path and is timestamped. */
+    audit("SUSPEND_REQUEST at_ms=%lld", (long long)now_ms());
+    fifo_send(WLFB_FIFO, "screen-off\n");
+    display_on = 0;
+    pid_t sp = fork();
+    if (sp == 0) { execl("/usr/bin/systemctl", "systemctl", "suspend", (char *)NULL); _exit(127); }
+    if (sp > 0) audit("SUSPEND_SPAWNED pid=%d", (int)sp);
+    return;
+  }
   if (!strcmp(action, "reboot-request")) { gated_system_action("systemctl-reboot"); return; }
   if (!strcmp(action, "systemctl-reboot")) { gated_system_action("systemctl-reboot"); return; }
   if (!strcmp(action, "systemctl-poweroff")) { gated_system_action("systemctl-poweroff"); return; }
@@ -1203,6 +1290,14 @@ int main(int argc, char **argv) {
   int touch_pending_down = 0;
   int touch_pending_up = 0;
   int touch_active = 0;
+  /* PWNAGE-80000: swipe-down on the keyboard's top edge dismisses the OSK.
+   * This is armed only while nuxel-pwa-host publishes keyboard_visible=1, only
+   * for a contact that starts in the lower half of the panel, and only for a
+   * predominantly vertical downward movement.  It never affects a one-finger
+   * scroll while the keyboard is closed. */
+  int kb_swipe_armed = 0;
+  int32_t kb_start_x = 0, kb_start_y = 0;
+  int64_t kb_start_ms = 0;
 
   publish("MANAGER_READY device=%s touch=%s", sel.key_path,
           sel.touch_fd >= 0 ? sel.touch_path : "none");
@@ -1317,7 +1412,35 @@ int main(int argc, char **argv) {
           else if (!strcmp(q, "menu-close")) { fsm.menu_open = 0; osd_menu(0, 0); }
           else if (!strcmp(q, "menu-down")) { if (fsm.menu_open) { fsm.menu_index = (fsm.menu_index + 1) % nuxel_fsm_menu_count; osd_menu(1, fsm.menu_index); } }
           else if (!strcmp(q, "menu-up")) { if (fsm.menu_open) { fsm.menu_index = (fsm.menu_index - 1 + nuxel_fsm_menu_count) % nuxel_fsm_menu_count; osd_menu(1, fsm.menu_index); } }
-          else if (!strcmp(q, "menu-select")) { if (fsm.menu_open) menu_select(&fsm, t); }
+          else if (!strncmp(q, "menu-select", 11)) {
+            /* PWNAGE-80000: the native/HTML power-menu surface addresses a row
+             * explicitly (`menu-select 3`).  The old parser only accepted the
+             * bare word, so every finger tap was logged CTRL_UNKNOWN and did
+             * nothing.  Accept a numeric index or an entry id; the FSM remains
+             * the single owner of menu state. */
+            int selected = -1;
+            const char *arg = (q[11] == ' ') ? q + 12 : NULL;
+            if (arg && *arg) {
+              char *end = NULL;
+              long v = strtol(arg, &end, 10);
+              if (end && *end == 0 && v >= 0 && v < nuxel_fsm_menu_count) selected = (int)v;
+              else {
+                for (int mi = 0; mi < nuxel_fsm_menu_count; mi++)
+                  if (!strcmp(nuxel_fsm_menu[mi].id, arg)) { selected = mi; break; }
+              }
+            }
+            if (selected >= 0) {
+              fsm.menu_open = 1;
+              fsm.menu_index = selected;
+              fsm.menu_last_activity_ms = t;
+              audit("CTRL_MENU_SELECT index=%d id=%s", selected, nuxel_fsm_menu[selected].id);
+              menu_select(&fsm, t);
+            } else if (!arg || !*arg) {
+              if (fsm.menu_open) menu_select(&fsm, t);
+            } else {
+              audit("CTRL_MENU_SELECT_INVALID '%s'", arg);
+            }
+          }
           else if (!strncmp(q, "action ", 7)) perform(q + 7, "control-fifo");
           else if (!strcmp(q, "reload")) { cfg_load_actions(); gate_load(); }
           else if (*q) audit("CTRL_UNKNOWN '%s'", q);
@@ -1379,12 +1502,31 @@ int main(int argc, char **argv) {
             phase = NUXEL_FSM_TOUCH_DOWN;
             touch_pending_down = 0;
             touch_active = 1;
+            kb_swipe_armed = 0;
+            char *kv = slurp("/run/nuxel-keyboard.visible", 0);
+            if (kv && atoi(kv) == 1 && mt.axis_max_y > 0 &&
+                mt.y > mt.axis_max_y / 2 && mt.y < mt.axis_max_y * 9 / 10) {
+              kb_swipe_armed = 1;
+              kb_start_x = mt.x; kb_start_y = mt.y; kb_start_ms = t;
+              audit("KB_SWIPE_ARM x=%d y=%d max=%d", mt.x, mt.y, mt.axis_max_y);
+            }
+            /* slurp() returns its static buffer; it is not heap-owned. */
           } else if (touch_pending_up) {
             phase = NUXEL_FSM_TOUCH_UP;
             touch_pending_up = 0;
             touch_active = 0;
+            kb_swipe_armed = 0;
           } else if (touch_active) {
             phase = NUXEL_FSM_TOUCH_MOVE;
+            if (kb_swipe_armed && (t - kb_start_ms) < 900 &&
+                mt.axis_max_y > 0 &&
+                mt.y - kb_start_y > mt.axis_max_y * 12 / 100 &&
+                abs(mt.x - kb_start_x) < mt.axis_max_x * 20 / 100) {
+              kb_swipe_armed = 0;
+              fifo_send(HOST_FIFO, "action hide-keyboard\n");
+              audit("KB_SWIPE_DOWN_DISMISS start_y=%d y=%d dy=%d max=%d",
+                    kb_start_y, mt.y, mt.y - kb_start_y, mt.axis_max_y);
+            }
           } else {
             continue;              /* stray SYN outside a contact: ignore */
           }

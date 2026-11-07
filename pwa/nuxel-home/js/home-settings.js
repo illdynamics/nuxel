@@ -110,7 +110,7 @@
             document.body.appendChild(panel);
         }
         const launcher = global.launcher;
-        const settings = launcher ? launcher.settings : { gridColumns: 4, gridRows: 5, dockColumns: 5 };
+        const settings = launcher ? launcher.settings : { gridColumns: 4, gridRows: 5, drawerColumns: 3, dockColumns: 5 };
         const appearance = read();
         // PWNAGE-43000: this panel is static once built.  Rebuilding it on
         // every open re-decoded the dock artwork and reparsed every control,
@@ -121,11 +121,20 @@
             const setChk = (sel, val) => { const e = panel.querySelector(sel); if (e) e.checked = !!val; };
             setVal('[data-grid-columns]', settings.gridColumns);
             setVal('[data-grid-rows]', settings.gridRows);
+            setVal('[data-drawer-columns]', settings.drawerColumns || 3);
             setVal('[data-desktop-count]', settings.desktopCount || 2);
+            var defSel = panel.querySelector('[data-default-desktop]');
+            if (defSel) {
+                defSel.innerHTML = options(1, settings.desktopCount || 2, settings.defaultDesktop || 1);
+                defSel.value = String(settings.defaultDesktop || 1);
+            }
+            var nameInput = panel.querySelector('[data-desktop-name]');
+            if (nameInput) nameInput.value = (settings.desktopNames || {})[String((launcher ? launcher.currentPage : 0) + 1)] || '';
             setChk('[data-home-locked]', settings.homeLocked === true);
             setVal('[data-battery-style]', appearance.batteryStyle || 'inside');
             setChk('[data-system-monitor-enabled]', appearance.systemMonitorEnabled !== false);
             setVal('[data-system-monitor-interval]', Number(appearance.systemMonitorInterval || 3));
+            setVal('[data-gpu-memory-display]', appearance.gpuMemoryDisplay || 'amount-percent');
             setChk('[data-system-monitor-detailed]', appearance.systemMonitorDetailed !== false);
             const wd = panel.querySelector('[data-widget-desktop]');
             if (wd) { wd.min = '1'; wd.max = String(settings.desktopCount || 2); }
@@ -159,10 +168,18 @@
             '</div><label class="wallpaper-upload">Choose photo<input type="file" accept="image/*" data-wallpaper-file></label>' +
             '<h3>Home grid</h3><div class="home-setting-row"><label>Columns <select data-grid-columns>' + options(3, 6, settings.gridColumns) + '</select></label>' +
             '<label>Rows <select data-grid-rows>' + options(4, 7, settings.gridRows) + '</select></label></div>' +
-            '<p class="home-setting-hint">Default: 4 columns × 5 rows.</p>' +
+            '<p class="home-setting-hint">Default: 4 columns × 5 rows. Home keeps this count in portrait and landscape.</p>' +
+            '<h3>Apps drawer</h3><div class="home-setting-row"><label>Columns <select data-drawer-columns>' + options(3, 6, settings.drawerColumns || 3) + '</select></label></div>' +
+            '<p class="home-setting-hint">Independent from the Home grid. Default: 4 columns.</p>' +
             '<h3>Home layout</h3>' +
             '<div class="home-setting-row"><label>Lock icon layout <input type="checkbox" data-home-locked' + (settings.homeLocked ? ' checked' : '') + '></label>' +
             '<label>Desktops <select data-desktop-count>' + options(1, 8, settings.desktopCount || 2) + '</select></label></div>' +
+            '<h3>Desktops</h3>' +
+            '<div class="home-setting-row"><button type="button" data-add-desktop>＋ Add desktop</button><button type="button" data-remove-desktop>− Remove desktop</button></div>' +
+            '<div class="home-setting-row"><label>Default desktop <select data-default-desktop>' + options(1, settings.desktopCount || 2, settings.defaultDesktop || 1) + '</select></label></div>' +
+            '<div class="home-setting-row"><label>Name current desktop <input type="text" maxlength="40" data-desktop-name value="' + ((settings.desktopNames || {})[String((launcher ? launcher.currentPage : 0) + 1)] || '').replace(/"/g, '&quot;') + '"></label><button type="button" data-desktop-rename>Rename</button></div>' +
+            '<div class="home-setting-row"><button type="button" data-desktop-left>← Move desktop left</button><button type="button" data-desktop-right>Move desktop right →</button></div>' +
+            '<p class="home-setting-hint">Removing a desktop moves its shortcuts/widgets targets to remaining desktops; content is never silently erased. Default desktop is where the Home button returns.</p>' +
             '<h3>Navigation bar artwork</h3>' +
             '<p class="home-setting-hint">Shown behind Back, Home and Recents only. The app dock stays transparent. BG2 is the default; tap to preview immediately.</p>' +
             '<div class="dock-background-choices" role="group" aria-label="Dock background">' +
@@ -176,7 +193,10 @@
             '<label>Show hardware meters <input type="checkbox" data-system-monitor-enabled' + (appearance.systemMonitorEnabled !== false ? ' checked' : '') + '></label>' +
             '<label>Refresh interval <select data-system-monitor-interval>' + [1, 2, 3, 5, 10].map(v => '<option value="' + v + '"' + (Number(appearance.systemMonitorInterval || 3) === v ? ' selected' : '') + '>' + v + ' seconds</option>').join('') + '</select></label>' +
             '<label>Detailed values <input type="checkbox" data-system-monitor-detailed' + (appearance.systemMonitorDetailed !== false ? ' checked' : '') + '></label>' +
-            '<p class="home-setting-hint">3 seconds is recommended. One-second updates can use more battery.</p></div>' +
+            '<label>GPU memory display <select data-gpu-memory-display>' +
+            [['amount-percent','Amount + percentage (default)'],['percentage','Percentage only'],['amount','Amount only']].map(v => '<option value="' + v[0] + '"' + ((appearance.gpuMemoryDisplay || 'amount-percent') === v[0] ? ' selected' : '') + '>' + v[1] + '</option>').join('') +
+            '</select></label>' +
+            '<p class="home-setting-hint">The S10+ Mali GPU uses shared system RAM; there is no dedicated VRAM capacity. The percentage is the tracked GPU allocation against total RAM, and is shown as N/A when that pair is unavailable. 3 seconds is the recommended refresh interval.</p></div>' +
             '<h3>Widgets</h3>' +
             '<div class="home-setting-row"><label>Enable widgets <input type="checkbox" data-widgets-enabled' + (widgetsEnabled ? ' checked' : '') + '></label>' +
             '<label>Desktop (1-based) <input type="number" min="1" max="' + (settings.desktopCount || 2) + '" value="' + widgetDesktopDefault() + '" data-widget-desktop></label></div>' +
@@ -222,16 +242,55 @@
             const data = read(); data.systemMonitorDetailed = event.target.checked; save(data);
             global.NuxelSystemMonitor && global.NuxelSystemMonitor.configure(data);
         };
+        panel.querySelector('[data-gpu-memory-display]').onchange = event => {
+            const data = read(); data.gpuMemoryDisplay = event.target.value; save(data);
+            global.NuxelSystemMonitor && global.NuxelSystemMonitor.configure(data);
+        };
         const update = () => launcher && launcher.updateHomeSettings({
             gridColumns: Number(panel.querySelector('[data-grid-columns]').value),
             gridRows: Number(panel.querySelector('[data-grid-rows]').value),
+            drawerColumns: Number(panel.querySelector('[data-drawer-columns]').value),
             desktopCount: Number(panel.querySelector('[data-desktop-count]').value),
             homeLocked: panel.querySelector('[data-home-locked]').checked,
         });
         panel.querySelector('[data-grid-columns]').onchange = update;
         panel.querySelector('[data-grid-rows]').onchange = update;
+        panel.querySelector('[data-drawer-columns]').onchange = update;
         panel.querySelector('[data-desktop-count]').onchange = update;
         panel.querySelector('[data-home-locked]').onchange = update;
+        const addDesktop = panel.querySelector('[data-add-desktop]');
+        if (addDesktop) addDesktop.onclick = () => {
+            const count = Math.min(8, Number((launcher && launcher.settings.desktopCount) || 2) + 1);
+            updateHomeSettingsCount(count);
+        };
+        const removeDesktop = panel.querySelector('[data-remove-desktop]');
+        if (removeDesktop) removeDesktop.onclick = () => {
+            const count = Math.max(1, Number((launcher && launcher.settings.desktopCount) || 2) - 1);
+            updateHomeSettingsCount(count);
+        };
+        function updateHomeSettingsCount(count) {
+            if (!launcher) return;
+            const ok = launcher.updateHomeSettings({ desktopCount: count });
+            if (ok) {
+                const sel = panel.querySelector('[data-desktop-count]');
+                if (sel) sel.value = String(count);
+                const def = panel.querySelector('[data-default-desktop]');
+                if (def) def.innerHTML = options(1, count, Math.min(count, Number(launcher.settings.defaultDesktop) || 1));
+            }
+        }
+        const defDesktop = panel.querySelector('[data-default-desktop]');
+        if (defDesktop) defDesktop.onchange = () => {
+            if (launcher) launcher.updateHomeSettings({ defaultDesktop: Number(defDesktop.value) });
+        };
+        const nameBtn = panel.querySelector('[data-desktop-rename]');
+        if (nameBtn) nameBtn.onclick = () => {
+            const input = panel.querySelector('[data-desktop-name]');
+            if (launcher && input) launcher.renameDesktop(input.value);
+        };
+        const leftBtn = panel.querySelector('[data-desktop-left]');
+        if (leftBtn) leftBtn.onclick = () => { if (launcher) launcher.moveDesktop(-1); };
+        const rightBtn = panel.querySelector('[data-desktop-right]');
+        if (rightBtn) rightBtn.onclick = () => { if (launcher) launcher.moveDesktop(1); };
         const lockSel = panel.querySelector('[data-lock-after-off]');
         if (lockSel) {
             const applyLockDelay = (ms) => {
@@ -304,16 +363,96 @@
         return out;
     }
     function close() { const panel = document.getElementById('home-settings'); if (panel) panel.hidden = true; try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {} }
+    function closeContextMenu() {
+        const menu = document.getElementById('nuxel-home-context');
+        if (menu) menu.remove();
+    }
+    function openContextMenu(x, y) {
+        closeContextMenu();
+        const menu = document.createElement('div');
+        menu.id = 'nuxel-home-context';
+        menu.className = 'home-context-menu';
+        menu.setAttribute('role', 'menu');
+        const mk = (label, hint, fn) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.setAttribute('role', 'menuitem');
+            b.innerHTML = '<strong>' + label + '</strong><small>' + hint + '</small>';
+            b.addEventListener('click', function (ev) { ev.stopPropagation(); closeContextMenu(); fn(); });
+            menu.appendChild(b);
+        };
+        mk('Home Settings', 'Wallpaper, grid, desktops and widgets', open);
+        mk('Widgets', 'Choose a real widget for either desktop', openWidgetPicker);
+        document.body.appendChild(menu);
+        const rect = menu.getBoundingClientRect();
+        menu.style.left = Math.max(8, Math.min((x || 12), window.innerWidth - rect.width - 8)) + 'px';
+        menu.style.top = Math.max(8, Math.min((y || 12), window.innerHeight - rect.height - 8)) + 'px';
+        setTimeout(function () { document.addEventListener('pointerdown', function once(ev) {
+            if (menu.contains(ev.target)) return;
+            closeContextMenu();
+            document.removeEventListener('pointerdown', once, true);
+        }, { capture: true, once: true }); }, 0);
+    }
+    function openWidgetPicker() {
+        closeContextMenu();
+        let picker = document.getElementById('nuxel-widget-picker');
+        if (picker) picker.remove();
+        picker = document.createElement('section');
+        picker.id = 'nuxel-widget-picker';
+        picker.className = 'widget-picker';
+        picker.setAttribute('role', 'dialog'); picker.setAttribute('aria-modal', 'true');
+        const registry = global.NuxelWidgets && global.NuxelWidgets.registry
+            ? global.NuxelWidgets.registry() : [];
+        const count = Math.max(1, Number((global.launcher && global.launcher.settings || {}).desktopCount) || 2);
+        const current = Math.max(1, Number(global.launcher && global.launcher.currentPage || 0) + 1);
+        picker.innerHTML = '<div class="widget-picker-card"><header><div><p class="eyebrow">HOME WIDGETS</p>' +
+            '<h2>Choose a widget</h2></div><button type="button" data-widget-close aria-label="Close">✕</button></header>' +
+            '<label class="widget-target">Place on desktop <select data-widget-desktop>' +
+            Array.from({length: count}, (_, i) => '<option value="' + (i + 1) + '"' + ((i + 1) === current ? ' selected' : '') + '>Desktop ' + (i + 1) + '</option>').join('') +
+            '</select></label><div class="widget-picker-list">' +
+            (registry.length ? registry.map(function (w) {
+                return '<button type="button" class="widget-choice" data-widget-type="' + w.id + '">' +
+                    '<strong>' + w.name + '</strong><span>' + (w.description || '') + '</span>' +
+                    '<small>Sizes: ' + (w.sizes || []).map(function (s) { return s[0] + '×' + s[1]; }).join(', ') + '</small></button>';
+            }).join('') : '<p>No widget providers are registered.</p>') +
+            '</div></div>';
+        document.body.appendChild(picker);
+        picker.querySelector('[data-widget-close]').onclick = function () { picker.remove(); };
+        picker.addEventListener('click', function (ev) { if (ev.target === picker) picker.remove(); });
+        picker.querySelectorAll('[data-widget-type]').forEach(function (btn) {
+            btn.onclick = function () {
+                const type = btn.dataset.widgetType;
+                const desktop = Number(picker.querySelector('[data-widget-desktop]').value) || 1;
+                const item = global.NuxelWidgets && global.NuxelWidgets.add(type, { desktop: desktop });
+                if (!item) { alert('That widget could not be created. Notes needs at least one saved note.'); return; }
+                picker.remove();
+                if (global.launcher && global.launcher.currentPage !== desktop - 1) {
+                    global.launcher.currentPage = desktop - 1;
+                    global.launcher._renderAppGrid();
+                    global.NuxelWidgets.renderPage(global.launcher.currentPage);
+                }
+                try { document.dispatchEvent(new CustomEvent('nuxel:widgets-changed')); } catch (e) {}
+            };
+        });
+    }
     function bindLongPress() {
         let timer = null, start = null;
         document.addEventListener('pointerdown', event => {
             if (event.button !== undefined && event.button !== 0) return;
-            if (event.target.closest && event.target.closest('.app-item, #system-navigation, #status-bar, #dock, #quick-settings, .home-settings')) return;
+            if (event.target.closest && event.target.closest('.app-item, #system-navigation, #status-bar, #dock, #quick-settings, .home-settings, .home-context-menu, .widget-picker')) return;
             start = { x: event.clientX, y: event.clientY, id: event.pointerId };
-            timer = setTimeout(() => { timer = null; open(); if (global.NuxelHost && global.NuxelHost.available) global.NuxelHost.action('haptics-long'); }, 550);
+            timer = setTimeout(() => {
+                timer = null;
+                openContextMenu(event.clientX || start.x, event.clientY || start.y);
+                if (global.NuxelHost && global.NuxelHost.available) global.NuxelHost.action('haptics-long');
+            }, 550);
         });
-        document.addEventListener('pointermove', event => { if (start && event.pointerId === start.id && (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8)) { clearTimeout(timer); timer = null; } });
+        document.addEventListener('pointermove', event => { if (start && event.pointerId === start.id && (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8)) { clearTimeout(timer); timer = null; start = null; } });
         ['pointerup', 'pointercancel'].forEach(type => document.addEventListener(type, () => { clearTimeout(timer); timer = null; start = null; }));
+        document.addEventListener('contextmenu', event => {
+            if (!event.target.closest || event.target.closest('.app-item, #system-navigation, #status-bar, #dock')) return;
+            event.preventDefault();
+            openContextMenu(event.clientX, event.clientY);
+        });
     }
     // PWNAGE-37000B: build the panel once during an idle slice so the first
     // owner tap is not charged the 120-170 ms DOM+image-decode cost.  open()
@@ -334,6 +473,6 @@
             return false;
         }
     }
-    global.NuxelHomeSettings = { open, close, apply, prime, dockChoice, dockPaths: DOCKS };
+    global.NuxelHomeSettings = { open, close, apply, prime, dockChoice, dockPaths: DOCKS, openWidgetPicker, openContextMenu };
     document.addEventListener('DOMContentLoaded', () => { apply(); bindLongPress(); });
 })(window);

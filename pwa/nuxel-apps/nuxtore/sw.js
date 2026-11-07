@@ -1,9 +1,9 @@
 // NuxTore service worker — offline-first: the catalog and the whole UI must work
 // with no network at all (this app never makes a network request anyway).
-const CACHE = 'nuxel-nuxtore-v2-p45000';
+const CACHE = 'nuxel-nuxtore-v3-p82000';
 const ASSETS = [
-  './', './index.html', './css/nuxtore.css',
-  './js/nuxtore.js', './js/nuxtore-catalog.js', './js/nuxtore-crypto.js',
+  './', './index.html', './css/nuxtore.css?v=p82000',
+  './js/nuxtore.js?v=p82000', './js/nuxtore-catalog.js?v=p82000', './js/nuxtore-crypto.js?v=p82000',
   './manifest.json', './catalog/nuxtore-catalog.json',
   './catalog/schema/nuxtore-catalog.schema.json', './catalog/schema/bundle.schema.json',
   './icons/icon-48.png', './icons/icon-72.png', './icons/icon-96.png',

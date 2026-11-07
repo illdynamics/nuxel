@@ -51,6 +51,7 @@ WAIT_SECONDS = 180
 LOG = os.environ.get('NUXEL_SOUND_LOG', '/var/log/nuxel/sound-cues.log')
 ROUTE_CHECK = os.environ.get('NUXEL_AUDIO_ROUTE_CHECK', '/usr/lib/nuxel/nuxel-audio-route.sh')
 SOUND_AT_CAP = 1.0  # owner-approved ceiling (100%)
+SOUNDCTL = os.environ.get('NUXEL_SOUNDCTL', '/usr/libexec/nuxel/nuxel-soundctl')
 
 
 def audio_route_ready():
@@ -99,6 +100,32 @@ def normal_sound_mode():
         return SOUND_MODE.read_text().strip() not in ('silent', 'vibrate')
     except OSError:
         return True
+
+
+def play_via_manager(event, percentage):
+    """Ask the pre-initialized sound manager to play an assigned action.
+
+    This is the fast path: soundd owns one persistent pw-cat stream and decodes
+    the cue once, so no route check, CS35L41 warmup, player fork or MP3 decoder
+    starts on a volume-key repeat.  A missing daemon falls back to the historic
+    path below and is logged honestly.
+    """
+    if not (os.path.isfile(SOUNDCTL) and os.access(SOUNDCTL, os.X_OK)):
+        return False
+    try:
+        proc = subprocess.run([SOUNDCTL, '--json', 'play', event],
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True, timeout=5,
+                              env=dict(os.environ, XDG_RUNTIME_DIR='/run/nuxel-wayland'))
+        out = (proc.stdout or '').strip()
+        ok = proc.returncode == 0 and '"success": true' in out
+        record(event, 'soundd_queued' if ok else 'soundd_refused',
+               pcm_gain_percent=percentage, audible='unverified',
+               detail=out[-400:])
+        return ok
+    except (OSError, subprocess.SubprocessError) as exc:
+        record(event, 'soundd_unavailable', detail=str(exc), audible='unverified')
+        return False
 
 
 def play(event, percentage):
@@ -240,11 +267,15 @@ def do_boot():
         # Only one attempt per boot even if playback fails. Prevents repeated
         # loud restart loops when the audio device is broken or unavailable.
         done_file.write_text(str(int(time.time())) + '\n')
+        if play_via_manager('boot', BOOT_PCM_PERCENT):
+            return 0
         return play('boot', BOOT_PCM_PERCENT)
 
 
 def do_volume(level):
     RUNTIME.mkdir(parents=True, exist_ok=True)
+    if play_via_manager('volume', 100):
+        return 0
     lock_path = RUNTIME / 'volume-sound.lock'
     with lock_path.open('a+') as fd:
         try:

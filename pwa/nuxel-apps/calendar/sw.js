@@ -1,9 +1,9 @@
-const CACHE_NAME = 'nuxel-calendar-v2-p54000';
+const CACHE_NAME = 'nuxel-calendar-v7-p82000';
 const ASSETS = [
   '/',
   '/index.html',
-  '/css/calendar.css',
-  '/js/calendar.js',
+  '/css/calendar.css?v=p82000',
+  '/js/calendar.js?v=p82000',
   '/manifest.json',
   '/icons/icon-48.png',
   '/icons/icon-72.png',

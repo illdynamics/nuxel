@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
 <meta name="nuxel-app-id" content="nuxel-settings">
 <title>Nuxel Settings</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="../../nuxel-common/theme.css">
+<link rel="stylesheet" href="../../nuxel-common/theme.css?v=p85000">
 <link rel="stylesheet" href="settings.css">
+    <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
 <header class="hdr">
@@ -26,6 +27,7 @@
   <button class="tab" data-tab="sensors">Sensors</button>
   <button class="tab" data-tab="graphics">Graphics</button>
   <button class="tab" data-tab="sound">Sound</button>
+  <button class="tab" data-tab="theme">Appearance</button>
   <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
   <button class="tab" data-tab="location">Location &amp; Maps</button>
   <button class="tab" data-tab="power">Power</button>
@@ -34,6 +36,9 @@
   <button class="tab" data-tab="fingerprint">Fingerprint</button>
   <button class="tab" data-tab="security">Security</button>
   <button class="tab" data-tab="software">Software</button>
+  <button class="tab" data-tab="apps">Apps</button>
+  <button class="tab" data-tab="permissions">Permissions</button>
+  <button class="tab" data-tab="services">Services</button>
   <button class="tab" data-tab="dev">Developer</button>
 </nav>
 
@@ -237,6 +242,36 @@
       </div>
       <pre id="volume-state" class="state">—</pre>
     </div>
+    <div class="card" id="microphone-card">
+      <h3>Microphone</h3>
+      <p class="hint">The selected source and 0–100% level come from the real PipeWire WDMA1 capture source.
+        The slider is labelled digital input gain unless a writable ALSA capture-gain control is found.
+        The meter only runs after you tap Test microphone.</p>
+      <div class="row wrap">
+        <label>Input level <input id="mic-volume" type="range" min="0" max="100" step="1" value="100"> <output id="mic-volume-val">100%</output></label>
+        <button id="mic-mute">Mute</button>
+        <button id="mic-test" class="primary">Test microphone</button>
+      </div>
+      <div class="mic-meter" aria-hidden="true"><i id="mic-meter-fill"></i></div>
+      <label class="check"><input id="mic-noise-suppression" type="checkbox" disabled> Noise suppression</label>
+      <pre id="mic-state" class="state" role="status" aria-live="polite">Reading capture source…</pre>
+      <p id="mic-detail" class="hint">—</p>
+    </div>
+    <div class="card" id="sound-manager-card">
+      <h3>Sound assignments</h3>
+      <p class="hint">One central manager owns every sound. Files are discovered automatically from
+        <code>~/Sounds</code> and the shipped sound library. Each action can use a supplied sound,
+        a newly added file, or a custom file selected with Browse. Choices persist across reboot.</p>
+      <div id="sound-assignments" class="sound-assignments"></div>
+      <div class="row wrap">
+        <button id="sound-refresh">Refresh sound list</button>
+        <button id="sound-browse">Browse custom sound…</button>
+        <button id="sound-test-volume">Preview volume sound</button>
+      </div>
+      <input id="sound-file-input" type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.opus,.aac" hidden>
+      <pre id="sound-manager-state" class="state" role="status" aria-live="polite">Reading sound library…</pre>
+      <p id="sound-import-state" class="hint">—</p>
+    </div>
     <div class="card">
       <h3>Haptics</h3>
       <p class="hint">The request path is the shared Nuxel haptics owner. A dispatched request is
@@ -335,8 +370,47 @@
   <!-- ── THEME (PWNAGE-30000) ────────────────────────────────────────── -->
   <section id="tab-theme" class="panel">
     <h2>Appearance</h2>
+    <div class="card" id="appearance-card">
+      <h3>System appearance</h3>
+      <p class="hint">System default follows the desktop color-scheme setting. Light and Dark apply
+        through the GTK/libadwaita color-scheme setting and the GTK theme — never by injecting
+        <code>GTK_THEME</code> into every process. Flatpak GTK apps receive the setting through the
+        portal/theme extension when one is installed.</p>
+      <label>Mode
+        <select id="appearance-mode">
+          <option value="system">System default</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+      <label>GTK theme
+        <select id="appearance-theme">
+          <option value="Adwaita">Adwaita</option>
+          <option value="Adwaita-dark">Adwaita Dark</option>
+        </select>
+      </label>
+      <div class="row"><button id="appearance-apply" class="primary">Apply appearance</button>
+        <button id="appearance-refresh">Refresh</button></div>
+      <pre id="appearance-state" class="state" role="status" aria-live="polite">Reading appearance providers…</pre>
+      <p id="appearance-detail" class="hint">—</p>
+    </div>
+    <div class="card" id="motion-card">
+      <h3>Motion</h3>
+      <p class="hint">Short, restrained transitions for the launcher, panels and app feedback.
+        Reduced keeps only essential feedback; Off is near-instant. The system
+        <code>prefers-reduced-motion</code> setting is honored unless Full is explicitly selected.</p>
+      <label>Transition style
+        <select id="motion-mode">
+          <option value="system">Follow system</option>
+          <option value="full">Full (subtle)</option>
+          <option value="reduced">Reduced</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
+      <p id="motion-state" class="state" role="status" aria-live="polite">—</p>
+    </div>
     <div class="card">
-      <h3>Theme</h3>
+      <h3>Nuxel theme</h3>
       <p class="hint">One shared token system for every Nuxel app and the launcher. Selecting a
         theme applies immediately and persists across restarts.</p>
       <div id="theme-cards" class="theme-cards"></div>
@@ -546,21 +620,63 @@
       <pre id="dev-input" class="state">—</pre>
     </div>
   </section>
+  <section id="tab-apps" class="panel">
+    <h2>Apps</h2>
+    <p class="hint">Choose the orientation each installed app opens in, and jump straight
+      to its permission controls.</p>
+    <div id="apps-list" class="apps-list"></div>
+    <p class="hint" id="apps-state">Loading apps…</p>
+  </section>
+
+  <section id="tab-permissions" class="panel">
+    <h2>Permissions</h2>
+    <p class="hint">Control what each installed app can access. A permission is only granted
+      when the central policy service confirms it; anything offline or unsupported is denied.</p>
+    <label class="apps-select-label">App
+      <select id="permissions-app-select" aria-label="Select app"></select>
+    </label>
+    <div id="permissions-detail" class="permissions-detail"></div>
+    <p class="hint" id="permissions-state">Select an app to review its permissions.</p>
+  </section>
+
+  <!-- ── SERVICES ───────────────────────────────────────────────────── -->
+  <section id="tab-services" class="panel">
+    <h2>Services</h2>
+    <p class="hint">Read-only systemd inventory first. Unlock to control allowlisted Nuxel units. System-essential services are marked and protected; their restart/reload requires confirmation.</p>
+    <div class="card">
+      <div class="row">
+        <button id="services-unlock" class="primary">UNLOCK SERVICES</button>
+        <button id="services-refresh">Refresh</button>
+        <button id="services-daemon-reload">daemon-reload</button>
+        <button id="services-daemon-reexec">daemon-reexec</button>
+      </div>
+      <p id="services-state" class="hint"></p>
+      <p id="services-toast" class="hint hidden"></p>
+    </div>
+    <div id="services-actions" hidden>
+      <div id="services-list" class="services-list"></div>
+    </div>
+  </section>
 </main>
 
-<script src="../../nuxel-common/theme.js"></script>
+<script src="../../nuxel-common/theme.js?v=p85000"></script>
 <script src="../../nuxel-common/haptics.js"></script>
 <script src="../../nuxel-common/maps-core.js"></script>
 <script src="../../nuxel-common/geolocation.js"></script>
 <script src="../../nuxel-common/statusbar-icons.js?v=p52000"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="settings.js?v=p52000"></script>
+<script src="apps-permissions-settings.js?v=p86000"></script>
 <script src="theme-settings.js?v=p50002"></script>
+<script src="sound-settings.js?v=p81000"></script>
+<script src="mic-settings.js?v=p84000"></script>
+<script src="appearance-settings.js?v=p85000"></script>
 <script src="wifi-settings.js?v=p50002"></script>
 <script src="location-maps.js"></script>
 <script src="hardware-settings.js?v=p52000"></script>
 <script src="pwange45000-settings.js?v=p50002"></script>
 <script src="driver-diagnostics.js?v=p50002"></script>
 <script src="graphics-diagnostics.js?v=p52000"></script>
+<script src="services-settings.js?v=p88000"></script>
 </body>
 </html>

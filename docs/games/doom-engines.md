@@ -1,20 +1,15 @@
 # Nuxel Doom engine comparison
 
-Nuxel ships three deliberately separate Doom paths so usability can be
-compared honestly. They share the same read-only WAD catalogue but not the same
-input or rendering model.
+Nuxel exposes exactly one user-facing Doom package: **Nuxel Doom** from NuXtore.
+It contains a complete Chocolate Doom 3.0 WebAssembly engine, the touch HUD,
+WAD catalogue, import flow and legal notices. There is no separate Chocolate
+Doom app entry and no separate engine installation step.
 
-| | Nuxel Doom | Chocolate Doom | UZDoom |
-|---|---|---|---|
-| Package | `org.nuxel.Doom` | `org.nuxel.Doom.Chocolate` | `org.nuxel.Doom.UZDoom` |
-| Engine | Chocolate Doom 3.0 WASM | Chocolate Doom 3.1.1 native | UZDoom 5.0.3 native |
-| Maps | Real WAD maps | Real WAD maps | Real WAD maps |
-| Rendering | Software renderer inside WebAssembly, canvas presentation | Native software renderer | Software renderer forced on this image |
-| Touch HUD | **Yes** (joystick, aim, fire, use, weapons, run, menu) | No (keyboard/gamepad) | No (keyboard/gamepad) |
-| Edge-gesture nav | **Yes** (DOM + native strip) | **Yes** (native 14 px strip) | **Yes** (native 14 px strip) |
-| Audio | Web Audio, optional | Native SDL/PipeWire path, experimental | Native, music disabled |
-| Save state | Engine config in MEMFS for the session; WAD progress via engine save slots | `~/.config/nuxel/doom-native/saves` | `~/.config/nuxel/doom-native/uzdoom.ini`/saves |
-| Best for | Phone play with thumbs | Vanilla-faithful comparison | Modern map/detail comparison |
+The image may additionally contain Fedora's native Chocolate Doom 3.1.1 as an
+optional internal comparison runtime. Nuxel Doom opens it directly through the
+bridge when it is present; it is not a NuXtore prerequisite, never appears as a
+second app/package, and its absence does not affect the bundled WASM engine.
+The UZDoom and Crispy Doom comparison paths were removed at the owner's request.
 
 ## Nuxel Doom (WASM)
 
@@ -31,11 +26,11 @@ input or rendering model.
 - Start options: `PLAY DOOM` (`-warp 1 1` for Doom 1, `-warp 1` for Doom 2)
   and `TITLE SCREEN` (in-game menu).
 
-## Native Chocolate Doom
+## Native Chocolate Doom (optional internal comparison)
 
 - Entry: `/usr/lib/nuxel/nuxel-doom-engine chocolate`
-- Package source: Fedora 43 `chocolate-doom 3.1.1`
-- Install/remove: NuXtore package `org.nuxel.Doom.Chocolate`
+- Package source: Fedora 43 `chocolate-doom 3.1.1`, when the image provides it
+- Install/remove: not a NuXtore app; Nuxel Doom calls this target directly
 - WAD: first IWAD found in `~/doom`, then `/usr/share/doom`
 - Input: keyboard or Bluetooth gamepad; this path deliberately does not draw a
   touch HUD over a native surface.
@@ -44,25 +39,9 @@ input or rendering model.
 - Config: `~/.config/nuxel/doom-native/chocolate-doom.cfg`
 - Saves: `~/.config/nuxel/doom-native/saves`
 
-## Native UZDoom
-
-- Entry: `/usr/lib/nuxel/nuxel-doom-engine uzdoom`
-- Engine: UZDoom 5.0.3 (`7910df7102033fd7754a317f3254f24101135926`),
-  GPL-3.0-or-later
-- Install/remove: NuXtore package `org.nuxel.Doom.UZDoom` — the package ships
-  the native aarch64 `uzdoom` binary plus its three required PK3s and licences
-  under `pwa/nuxel-apps/doom-uzdoom/engine/`
-- Build: native aarch64 from the pinned UZDoom source with
-  `tools/s10plus/a33/doom-engines/build-uzdoom.sh`; no x86 AppImage is used
-- Rendering: `+vid_renderer 0` (software) because the S10+ vendor kernel has no
-  usable `/dev/dri` node. The app is honest about this and does not claim GPU
-  acceleration.
-- Music is disabled; the S10+ image has no working OPL/MIDI route.
-- Config: `~/.config/nuxel/doom-native/uzdoom.ini`
-
-## Why three apps instead of a hidden engine switch?
+## Why one package with an internal optional comparison runtime?
 
 A single app with hidden engine switching makes failures look like one broken
-feature and makes uninstall rules ambiguous. Separate NuXtore packages give
-each engine its own install/remove lifecycle, app id, icon and honest status.
-Nuxel Doom remains the default because it is the only path designed for thumbs.
+feature. A second user-facing package makes users install the engine twice and
+creates two icons for the same game. Nuxel Doom owns the complete bundled engine
+and exposes the native runtime only as an optional comparison inside the app.

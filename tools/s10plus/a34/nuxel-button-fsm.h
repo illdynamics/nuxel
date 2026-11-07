@@ -265,6 +265,7 @@ static const nuxel_fsm_menu_entry nuxel_fsm_menu[] = {
   { "screenshot",    "Take screenshot",   "screenshot",            1, NULL },
   { "restart",       "Restart",           "systemctl-reboot",      1, "gate-closed-owner-absent" },
   { "power-off",     "Power off",         "systemctl-poweroff",    1, "gate-closed-owner-absent" },
+  { "suspend",       "Suspend",           "systemctl-suspend",     1, NULL },
   { "reboot-verbose","Reboot Verbose",    "reboot-verbose",        1, "gate-closed-owner-absent" },
   { "reboot-safe-mode","Safe Mode",       "reboot-safe-mode",      1, "gate-closed-owner-absent" },
   { "reboot-diag",   "Reboot Diag",       "reboot-diag",           1, "gate-closed-owner-absent" },

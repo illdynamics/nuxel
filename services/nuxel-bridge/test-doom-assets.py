@@ -69,8 +69,10 @@ def main():
     src = (HERE / "src" / "api.py").read_text()
     check("bridge exposes the read-only WAD catalogue", "/api/v1/doom/wads" in src)
     check("bridge streams by digest, not path", "/api/v1/doom/wad" in src and "parse_qs(parsed.query).get('id'" in src)
-    check("bridge knows both native comparison engines",
-          "org.nuxel.Doom.Chocolate" in src and "org.nuxel.Doom.UZDoom" in src)
+    check("bridge exposes only the Chocolate Doom native engine",
+          "org.nuxel.Doom.Chocolate" in src and
+          "org.nuxel.Doom.UZDoom" not in src and
+          "org.nuxel.Doom.Crispy" not in src)
     wrapper = (HERE.parent.parent / "tools" / "s10plus" / "a33" / "doom-engines" / "nuxel-doom-engine")
     check("engine wrapper exists", wrapper.is_file())
     if wrapper.is_file():

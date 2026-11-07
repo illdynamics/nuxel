@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
 <meta name="theme-color" content="#0a1628">
 <meta name="nuxel-app-id" content="org.nuxel.PenguInterface">
 <link rel="manifest" href="manifest.json">
 <title>PenguInterface</title>
 <link rel="stylesheet" href="css/pengu.css">
+    <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
 <header class="hdr"><h1>PenguInterface</h1><span id="badge" class="badge">profile: loading</span><span class="grow"></span><button id="close" class="ghost">Close</button></header>
@@ -16,8 +17,35 @@
   <p class="hint">Read-only compatibility profile. Values below come from the shipped, schema-validated <code>profile.json</code>; nothing here changes hardware state.</p>
   <section id="device" class="card"></section>
   <section id="caps" class="card"></section>
+
+  <h2 class="sect">Spoofing</h2>
+  <p class="hint">App-scoped identity spoofing. Real values are shown first; apply stores a profile under /run/nuxel/spoof and is only injected for the selected app launches. Reset removes everything and verifies the system is unchanged.</p>
+  <section class="card">
+    <div class="row"><span>Current user agent</span><b id="spoof-ua-current">—</b></div>
+    <div class="row"><span>Real uname</span><b id="spoof-real-uname">—</b></div>
+    <div class="row"><span>Real /etc/os-release</span><b id="spoof-real-os">—</b></div>
+    <div class="row"><span>LD_PRELOAD library</span><b id="spoof-lib">—</b></div>
+    <p id="spoof-status" class="hint">—</p>
+    <label class="field">Spoof user agent <input id="spoof-ua-input" type="text" placeholder="Mozilla/5.0 ..."></label>
+    <label class="field">Target apps (comma-separated app ids) <input id="spoof-targets" type="text" placeholder="org.nuxel.BrowserNative"></label>
+    <label class="field">Spoof /etc/os-release <textarea id="spoof-os-release" rows="4" placeholder="NAME=&quot;SpoofOS&quot; ..."></textarea></label>
+    <div class="grid2">
+      <label class="field">sysname <input id="spoof-uname-sysname" type="text" value="Linux"></label>
+      <label class="field">nodename <input id="spoof-uname-nodename" type="text" value="nuxel-spoof"></label>
+      <label class="field">release <input id="spoof-uname-release" type="text" value="6.1.0-nuxel-spoof"></label>
+      <label class="field">version <input id="spoof-uname-version" type="text" value="#1 SMP PREEMPT_DYNAMIC"></label>
+      <label class="field">machine <input id="spoof-uname-machine" type="text" value="aarch64"></label>
+    </div>
+    <div class="row">
+      <button id="spoof-apply" class="primary">Apply spoof</button>
+      <button id="spoof-refresh">Refresh</button>
+      <button id="spoof-reset" class="danger">Reset all spoofs</button>
+    </div>
+    <p id="spoof-toast" class="hint" role="status"></p>
+  </section>
   <p id="report" class="state" role="status"></p>
 </main>
 <script src="js/pengu.js"></script>
+<script src="js/spoof.js"></script>
 </body>
 </html>

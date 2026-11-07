@@ -6,7 +6,7 @@
   "category": "games",
   "type": "pwa",
   "url": "/pwa/nuxel-apps/doom/index.html",
-  "description": "Real Chocolate Doom WAD engine with touch-first controls, Freedoom support and native engine comparison",
+  "description": "Real Chocolate Doom WAD engine with touch-first controls, Freedoom support, user WAD import and an internal native comparison runtime",
   "capabilities": [],
   "docked": false,
   "network": "none",

@@ -22,8 +22,13 @@
   const WALLPAPER = { w: 768, h: 1376 };
   /* The illustrated penguin's approximate opaque bounds in wallpaper pixels,
      measured from the shipped asset.  Only the vertical extent matters here:
-     the lockhead must land below PENGUIN_BOTTOM_Y. */
+     the lockhead must land below PENGUIN_BOTTOM_Y, and the scheduler penguins
+     (timer over the illustration, alarm between illustration and handle) are
+     measured from these same constants rather than hardcoded viewport px. */
+  const PENGUIN_TOP_Y = 470;
   const PENGUIN_BOTTOM_Y = 990;
+  const PENGUIN_CENTER_Y = Math.round((PENGUIN_TOP_Y + PENGUIN_BOTTOM_Y) / 2);
+  const ALARM_GAP = 12;        /* logical px below the wallpaper penguin */
   const MIN_SPACING = 32;      /* logical px between the penguin and the handle */
   const THRESHOLD_FRACTION = 0.22; /* of viewport height, per mission 11 */
   const DRAG_SLOP = 4;         /* px before a contact is a drag */
@@ -134,20 +139,39 @@
       return imageY * scale - cropY;
     }
 
+    _positionClockLanes(penguinBottomCss, handleTop) {
+      if (!this.el) return;
+      const penguinSize = Math.max(72, Math.min(104, (global.innerWidth || 360) * 0.17));
+      const timerCenterY = this._coverCssY(PENGUIN_CENTER_Y);
+      const alarmCenterY = Math.min(
+        Math.max(penguinBottomCss + ALARM_GAP + penguinSize / 2, timerCenterY + penguinSize),
+        handleTop - penguinSize / 2 - ALARM_GAP);
+      this.el.style.setProperty('--lockscreen-timer-center-y', Math.round(timerCenterY) + 'px');
+      this.el.style.setProperty('--lockscreen-alarm-center-y', Math.round(alarmCenterY) + 'px');
+      this._trace('lanes timerY=' + Math.round(timerCenterY) + ' alarmY=' + Math.round(alarmCenterY) +
+                  ' penguinBottom=' + Math.round(penguinBottomCss) + ' handleTop=' + Math.round(handleTop));
+    }
+
     _positionHandle() {
       const vw = global.innerWidth || 360;
       const vh = global.innerHeight || 760;
       const handleSize = Math.max(96, Math.min(124, vw * 0.3));
+      const penguinSize = Math.max(72, Math.min(104, vw * 0.17));
       const penguinBottomCss = this._coverCssY(PENGUIN_BOTTOM_Y);
-      /* Rest the handle clearly below the wallpaper penguin, with real spacing,
-         while keeping it inside the visible lockscreen. */
-      const desiredTop = Math.min(Math.max(penguinBottomCss + MIN_SPACING, vh * 0.62), vh - handleSize - 24);
+      /* Reserve a lane for the alarm penguin between the illustrated penguin
+         and the lockhead, so all three (timer, alarm, handle) coexist without
+         overlap and the handle never covers the illustration. */
+      const alarmBottomCss = penguinBottomCss + ALARM_GAP + penguinSize;
+      const desiredTop = Math.min(
+        Math.max(alarmBottomCss + MIN_SPACING, vh * 0.62),
+        vh - handleSize - 24);
       this.handle.style.width = handleSize + 'px';
       this.handle.style.height = handleSize + 'px';
       this.wrap.style.top = desiredTop + 'px';
       this.wrap.style.bottom = 'auto';
       this.baseTop = desiredTop;
       this.restY = 0;
+      this._positionClockLanes(penguinBottomCss, desiredTop);
       this._trace('position top=' + Math.round(desiredTop) + ' penguinBottom=' + Math.round(penguinBottomCss) +
                   ' vh=' + vh + ' handle=' + handleSize);
     }
@@ -455,6 +479,7 @@
       this._updateTouchWarning();
       this._startIndicators();
       this._wiggleOnce(this._displayOff() ? 2500 : 900);
+      try { document.dispatchEvent(new CustomEvent('nuxel:lockscreen-shown')); } catch (e) {}
       this._trace('show version=' + VERSION + ' reason=' + (reason || 'unknown') +
                   ' locked=1 visible=1 threshold=' + this._effectiveThreshold());
     }

@@ -1,10 +1,10 @@
 // Nuxel Calculator service worker - cache-first (the app is fully offline).
-const CACHE_NAME = 'nuxel-recorder-v1';
+const CACHE_NAME = 'nuxel-recorder-v2-p82000';
 const ASSETS = [
   './',
   './index.html',
-  './css/recorder.css',
-  './js/recorder.js',
+  './css/recorder.css?v=p82000',
+  './js/recorder.js?v=p82000',
   './manifest.json',
   '../../nuxel-common/bridge.js',
   './icons/icon-48.png',

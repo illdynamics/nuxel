@@ -265,12 +265,36 @@
     var rebooting = (e.action === 'restart' || e.action === 'poweroff');
     if (rebooting) showRebootOverlay(e.action === 'poweroff' ? 'Powering off…' : 'Rebooting Nuxel…');
     action(e.action, { entry: e.id }).then(function (r) {
+      var requested = !!(r && r.ok !== false && !r.offline);
       if (out) {
         out.textContent = (r && r.offline) ? 'host unavailable — no action taken'
           : (r && r.ok === false) ? (e.label + ' refused: ' + (r.error || r.reason || 'unknown'))
-          : e.label + ' accepted';
+          : (rebooting
+              ? e.label + ' queued; waiting for the backend verdict…'
+              : e.label + ' accepted');
       }
-      if (rebooting && r && r.ok === false) {
+      if (rebooting && requested) {
+        var tries = 0;
+        var pollVerdict = function () {
+          call('config.get', { name: 'power-action-result' }).then(function (v) {
+            var text = String((v && (v.text || v.value)) || '');
+            if (/state=accepted/.test(text)) {
+              if (out) out.textContent = e.label + ' accepted by systemd';
+              return;
+            }
+            if (/state=(refused|spawned-unconfirmed)/.test(text)) {
+              if (out) out.textContent = e.label + ' not confirmed: ' + text.trim();
+              return;
+            }
+            if (++tries < 12) setTimeout(pollVerdict, 100);
+            else if (out) out.textContent = e.label + ' queued; backend verdict was not observed before shutdown';
+          }).catch(function () {
+            if (++tries < 12) setTimeout(pollVerdict, 100);
+          });
+        };
+        setTimeout(pollVerdict, 100);
+      }
+      if (rebooting && !requested) {
         var o = document.getElementById('nuxel-reboot-overlay');
         if (o) o.hidden = true;
       }

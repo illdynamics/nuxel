@@ -34,6 +34,7 @@ import pwd
 import re
 import shutil
 import stat
+import struct
 import subprocess
 import tempfile
 import time
@@ -50,6 +51,7 @@ DEFAULT_DATA_DIR = "/var/lib/nuxel/app-data"
 # Media extensions Gallery can browser without guessing file types from bytes.
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".heic", ".heif", ".avif"}
 VIDEO_EXTS = {".mp4", ".m4v", ".mov", ".webm", ".mkv", ".avi", ".3gp"}
+AUDIO_EXTS = {".wav", ".mp3", ".m4a", ".aac", ".ogg", ".oga", ".opus", ".flac"}
 THUMB_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
@@ -257,6 +259,131 @@ class PwaStore:
                                               "contacts": remaining,
                                               "updated_at": int(time.time())})
         return {"success": True, "deleted": True, "count": len(remaining)}
+
+    # ---- notes (~/Notes) ---------------------------------------------------
+    @property
+    def notes_root(self) -> Path:
+        root = self.files_root / "Notes"
+        self._mkdir(root)
+        try:
+            os.chmod(root, 0o700)
+            self._chown(root)
+        except OSError:
+            pass
+        return root
+
+    @staticmethod
+    def _note_id(value: str) -> str:
+        raw = str(value or "").strip()
+        raw = re.sub(r"[^A-Za-z0-9._-]+", "-", raw).strip(".-")
+        if not raw:
+            raw = "note-%d" % int(time.time() * 1000)
+        return raw[:100]
+
+    def _note_path(self, note_id: str) -> Path:
+        safe = self._note_id(note_id)
+        if safe != str(note_id or "").strip():
+            raise StoreError("invalid note id")
+        root = self.notes_root.resolve()
+        path = (root / (safe + ".json")).resolve()
+        if path.parent != root:
+            raise StoreError("note path escapes ~/Notes")
+        return path
+
+    def notes_list(self) -> dict:
+        root = self.notes_root
+        rows = []
+        try:
+            entries = sorted(root.iterdir(), key=lambda p: p.name.lower())
+        except OSError as exc:
+            return {"success": False, "error": "cannot read ~/Notes: %s" % exc,
+                    "error_code": "READ_ERROR", "notes": []}
+        for path in entries:
+            if path.name.startswith(".") or path.suffix.lower() != ".json":
+                continue
+            if not path.is_file() or path.is_symlink():
+                continue
+            try:
+                doc = self._read_json(path, None)
+            except StoreError:
+                continue
+            if not isinstance(doc, dict):
+                continue
+            note = {
+                "id": str(doc.get("id") or path.stem),
+                "title": str(doc.get("title") or "Untitled"),
+                "body": str(doc.get("body") or ""),
+                "createdAt": doc.get("createdAt") or doc.get("created_at"),
+                "updatedAt": doc.get("updatedAt") or doc.get("updated_at"),
+                "pinned": bool(doc.get("pinned")),
+                "tags": doc.get("tags") if isinstance(doc.get("tags"), list) else [],
+                "path": "/Notes/" + path.name,
+                "absolute_path": str(path),
+                "size": path.stat().st_size,
+            }
+            try:
+                os.chmod(path, 0o600)
+                self._chown(path)
+            except OSError:
+                pass
+            rows.append(note)
+        rows.sort(key=lambda n: str(n.get("updatedAt") or ""), reverse=True)
+        return {"success": True, "notes": rows, "count": len(rows),
+                "dir": str(root), "format": "json-file-per-note"}
+
+    def notes_save(self, note: dict) -> dict:
+        if not isinstance(note, dict):
+            raise StoreError("note must be an object")
+        note_id = self._note_id(note.get("id") or note.get("title") or "")
+        path = self._note_path(note_id)
+        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        doc = {
+            "schema_version": 1,
+            "id": note_id,
+            "title": str(note.get("title") or "Untitled").strip()[:300] or "Untitled",
+            "body": str(note.get("body") or ""),
+            "createdAt": note.get("createdAt") or note.get("created_at") or now,
+            "updatedAt": now,
+            "pinned": bool(note.get("pinned")),
+            "tags": [str(t)[:40] for t in (note.get("tags") or []) if isinstance(t, (str, int, float))][:32],
+            "reminder": note.get("reminder") if isinstance(note.get("reminder"), dict) else None,
+        }
+        self._write_json(path, doc)
+        os.chmod(path, 0o600)
+        self._chown(path)
+        saved_note = {
+            "id": note_id, "title": doc["title"], "body": doc["body"],
+            "createdAt": doc["createdAt"], "updatedAt": doc["updatedAt"],
+            "pinned": doc["pinned"], "tags": doc["tags"],
+            "path": "/Notes/" + path.name, "absolute_path": str(path),
+        }
+        return {"success": True, "saved": True, "note": saved_note,
+                "dir": str(self.notes_root)}
+
+    def notes_delete(self, note_id: str) -> dict:
+        path = self._note_path(note_id)
+        if not path.exists():
+            return {"success": False, "error": "note not found", "error_code": "NOT_FOUND"}
+        try:
+            path.unlink()
+        except OSError as exc:
+            return {"success": False, "error": "delete failed: %s" % exc,
+                    "error_code": "WRITE_ERROR"}
+        return {"success": True, "deleted": True, "id": note_id}
+
+    def notes_rename(self, note_id: str, title: str) -> dict:
+        path = self._note_path(note_id)
+        try:
+            doc = self._read_json(path, None)
+        except StoreError as exc:
+            return {"success": False, "error": str(exc)}
+        if not isinstance(doc, dict):
+            return {"success": False, "error": "note not found", "error_code": "NOT_FOUND"}
+        doc["title"] = str(title or "Untitled").strip()[:300] or "Untitled"
+        doc["updatedAt"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        self._write_json(path, doc)
+        self._chown(path)
+        return {"success": True, "renamed": True, "note": doc}
 
     # ---- file manager ------------------------------------------------------
     def _fs_path(self, path: str, follow_final: bool = True) -> Path:
@@ -479,6 +606,118 @@ class PwaStore:
                 "absolute_path": str(target),
                 "data_b64": base64.b64encode(data).decode("ascii")}
 
+    def storage_waveform(self, path: str, buckets: int = 240) -> dict:
+        """Return downsampled peak/RMS buckets for a recorded audio file.
+
+        Recordings are PCM WAV, so this reads only the RIFF header/frames and
+        never loads the whole file.  The result is a small fixed-size UI model
+        (peak[] and rms[] in 0..1), suitable for a mobile canvas even for a
+        10-minute recording.
+        """
+        target = self._fs_path(path)
+        if not target.is_file():
+            return {"success": False, "error": "not a file", "error_code": "NOT_FOUND"}
+        try:
+            buckets = max(16, min(1024, int(buckets or 240)))
+        except (TypeError, ValueError):
+            buckets = 240
+        try:
+            with open(target, "rb") as fh:
+                header = fh.read(12)
+                if len(header) < 12 or header[:4] != b"RIFF" or header[8:12] != b"WAVE":
+                    return {"success": False, "error": "not a RIFF/WAVE file",
+                            "error_code": "UNSUPPORTED_FORMAT"}
+                fmt = {}
+                data_offset = data_size = None
+                while True:
+                    ch = fh.read(8)
+                    if len(ch) < 8:
+                        break
+                    cid = ch[:4]
+                    size = struct.unpack("<I", ch[4:8])[0]
+                    if cid == b"fmt ":
+                        raw = fh.read(size)
+                        if len(raw) < 16:
+                            return {"success": False, "error": "short fmt chunk"}
+                        tag, channels, rate, _byte_rate, block_align, bits = struct.unpack("<HHIIHH", raw[:16])
+                        fmt = {"format": tag, "channels": channels, "sample_rate": rate,
+                               "block_align": block_align, "bits": bits}
+                    elif cid == b"data":
+                        data_offset = fh.tell()
+                        data_size = size
+                        fh.seek(size, os.SEEK_CUR)
+                    else:
+                        fh.seek(size + (size & 1), os.SEEK_CUR)
+                    if size & 1 and cid != b"data":
+                        pass
+                if not fmt or data_offset is None:
+                    return {"success": False, "error": "WAV has no fmt/data chunk",
+                            "error_code": "INVALID_WAV"}
+                if fmt["format"] not in (1, 3) or fmt["bits"] not in (16, 24, 32):
+                    return {"success": False, "error": "unsupported WAV PCM layout",
+                            "error_code": "UNSUPPORTED_WAV"}
+                channels = max(1, int(fmt["channels"]))
+                block_align = max(1, int(fmt["block_align"]))
+                frame_count = max(0, int(data_size) // block_align)
+                if frame_count == 0:
+                    return {"success": True, "path": str(target), "duration": 0.0,
+                            "buckets": buckets, "peak": [0.0] * buckets,
+                            "rms": [0.0] * buckets, "sample_rate": fmt["sample_rate"],
+                            "channels": channels}
+                frames_per_bucket = max(1, (frame_count + buckets - 1) // buckets)
+                peak = [0.0] * buckets
+                rms = [0.0] * buckets
+                # Stream frames through a bounded cursor; no whole-file read.
+                cursor = data_offset
+                block_frames = 16384
+                done = 0
+                while done < frame_count:
+                    n = min(block_frames, frame_count - done)
+                    fh.seek(cursor)
+                    raw = fh.read(n * block_align)
+                    if not raw:
+                        break
+                    usable = len(raw) // block_align
+                    for f in range(usable):
+                        idx = (done + f) // frames_per_bucket
+                        if idx >= buckets:
+                            idx = buckets - 1
+                        base = f * block_align
+                        # Use the first channel only for a stable display; a
+                        # stereo file's envelope is dominated by both channels.
+                        if fmt["bits"] == 16:
+                            sample = struct.unpack_from("<h", raw, base)[0] / 32768.0
+                        elif fmt["bits"] == 24:
+                            b0, b1, b2 = raw[base:base + 3]
+                            v = b0 | (b1 << 8) | (b2 << 16)
+                            if v & 0x800000:
+                                v -= 1 << 24
+                            sample = v / 8388608.0
+                        else:
+                            sample = struct.unpack_from("<i", raw, base)[0] / 2147483648.0
+                        a = abs(sample)
+                        if a > peak[idx]:
+                            peak[idx] = a
+                        rms[idx] += sample * sample
+                    done += usable
+                    cursor += usable * block_align
+                for i in range(buckets):
+                    frames = min(frames_per_bucket, max(0, frame_count - i * frames_per_bucket))
+                    if frames > 0:
+                        rms[i] = (rms[i] / frames) ** 0.5
+                    else:
+                        rms[i] = 0.0
+                    peak[i] = max(0.0, min(1.0, peak[i]))
+                    rms[i] = max(0.0, min(1.0, rms[i]))
+                return {"success": True, "path": str(target),
+                        "duration": round(frame_count / float(fmt["sample_rate"] or 1), 3),
+                        "buckets": buckets, "peak": peak, "rms": rms,
+                        "sample_rate": fmt["sample_rate"], "channels": channels,
+                        "format": "wav", "size": target.stat().st_size}
+        except (OSError, struct.error) as exc:
+            return {"success": False, "error": "waveform read failed: %s" % exc,
+                    "error_code": "READ_ERROR"}
+
     def storage_archive_create(self, sources, dest: str) -> dict:
         if not isinstance(sources, list) or not sources:
             raise StoreError("choose at least one file or folder to compress")
@@ -555,7 +794,8 @@ class PwaStore:
         /api/v1/storage/file).  Nothing is invented when the folders are empty.
         """
         self._mkdir(self.files_root)
-        folders = [self.files_root / name for name in ("Gallery", "Pictures", "Videos", "DCIM")]
+        folders = [self.files_root / name for name in
+                   ("Gallery", "Pictures", "Videos", "DCIM", "VoiceRecordings")]
         items = []
         seen = set()
         for base in folders:
@@ -575,6 +815,8 @@ class PwaStore:
                         kind = "photo"
                     elif ext in VIDEO_EXTS:
                         kind = "video"
+                    elif ext in AUDIO_EXTS:
+                        kind = "audio"
                     else:
                         continue
                     path = Path(dirpath) / name
@@ -664,7 +906,7 @@ class PwaStore:
                 raise StoreError("media file is empty (failed capture)")
         except OSError as exc:
             raise StoreError("media stat failed: %s" % exc)
-        if resolved.suffix.lower() not in (IMAGE_EXTS | VIDEO_EXTS):
+        if resolved.suffix.lower() not in (IMAGE_EXTS | VIDEO_EXTS | AUDIO_EXTS):
             raise StoreError("unsupported media type")
         # Refuse to decode a file a symlink swapped after validation.
         if resolved.is_symlink():
@@ -738,6 +980,10 @@ class PwaStore:
             # Photos are already stills; the grid can use the normal file URL.
             return {"success": True, "thumbnail": False, "kind": "photo",
                     "path": path, "mime": mimetypes.guess_type(target.name)[0]}
+        if target.suffix.lower() in AUDIO_EXTS:
+            return {"success": True, "thumbnail": False, "kind": "audio",
+                    "path": path, "mime": mimetypes.guess_type(target.name)[0],
+                    "waveform": "/api/v1/storage/waveform?path=" + str(path)}
         try:
             key = self._thumbnail_key(target)
         except OSError as exc:

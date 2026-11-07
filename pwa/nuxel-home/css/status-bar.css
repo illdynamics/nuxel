@@ -661,17 +661,29 @@
 
 /* Lightning bolt only while the canonical provider says ACTIVE charging.
    'Full' is externally powered, not charging, and never lights this. */
-.battery-icon.charging::after {
+.battery-icon.charging::after,
+.battery-icon .battery-zaps i {
     content: '';
     position: absolute;
-    left: 50%; top: 50%;
-    width: 10px; height: 13px;
-    z-index: 1;
-    transform: translate(-50%, -50%);
-    background: #fff7b0;
+    top: 50%;
+    width: 7px; height: 11px;
+    z-index: 2;
+    transform: translateY(-50%);
+    background: #ffd43b;
     clip-path: polygon(62% 0, 20% 56%, 46% 56%, 36% 100%, 82% 42%, 54% 42%, 72% 0);
-    filter: none;
+    filter: drop-shadow(0 0 1px rgba(255, 212, 59, .85));
 }
+.battery-icon.charging::after { left: 4px; }
+.battery-icon .battery-zaps {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+.battery-icon .battery-zaps i { left: 12px; }
+.battery-icon .battery-zaps i:nth-child(2) { left: 20px; }
+/* Three zaps need the full cell; the percentage remains in the title/aria. */
+.battery-icon.charging .battery-inside-pct { opacity: 0; }
 
 /* ---- PWNAGE-44000: expanded Quick Settings connection strip ------------ */
 .qs-expand-toggle {
@@ -897,3 +909,13 @@ body.lockscreen-active #status-bar {
 /* PWNAGE-54000: a selected-but-blocked Auto mode must never look green. */
 .qs-item[data-degraded="true"] { border-color: #f59e0b !important; }
 .qs-item[data-degraded="true"] .qs-label::after { content: " !"; color: #fbbf24; }
+
+/* PWNAGE-80000 Recents lifecycle gestures.  Swipe left = graceful close,
+ * swipe right = explicit force-kill.  The transform is only on the card, never
+ * on the scroll container, so vertical scrolling and every other app gesture
+ * keep their normal meaning. */
+.recents-card { touch-action: pan-y; transition: transform .16s ease, opacity .16s ease, border-color .16s ease; border-left: 3px solid transparent; }
+.recents-card.swiping { transition: none; }
+.recents-card.closing { opacity: .62; border-left-color: #f59e0b; }
+.recents-card.closing .recents-label span { color: #fbbf24; }
+.recents-close { min-height: 34px; padding: 0 12px; border: 1px solid rgba(147,197,253,.45); border-radius: 10px; background: rgba(20,48,72,.85); color: #dbeafe; }

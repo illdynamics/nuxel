@@ -1,207 +1,427 @@
 #!/usr/bin/env python3
-"""nuxel-v4l2-probe.py — read-only V4L2 enumeration + bounded single-frame capture.
+"""nuxel-v4l2-probe.py — corrected V4L2 enumeration + bounded capture (PWNAGE-83000).
 
-A minimal, dependency-free V4L2 diagnostic for the Samsung S10+ (beyond2lte)
-Exynos FIMC-IS camera stack, run directly on the phone (no v4l-utils needed).
+The previous revision advertised multi-planar capture capability
+(V4L2_CAP_VIDEO_CAPTURE_MPLANE) but then used the SINGLE-planar buffer type
+(V4L2_BUF_TYPE_VIDEO_CAPTURE = 1) and single-planar structs on those nodes,
+which is an ABI mismatch on FIMC-IS.  This revision selects the buffer type
+from the node's device_caps:
 
-Safety: this program performs ONLY standard V4L2 ioctls on the nodes it is told
-to inspect.  It never writes device registers, never touches /dev/fb0, never
-flashes anything, and (unless --capture is given) never starts a stream.
+    single-planar node -> V4L2_BUF_TYPE_VIDEO_CAPTURE + v4l2_pix_format
+                          + v4l2_buffer (offset)
+    multi-planar node  -> V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE (9)
+                          + v4l2_pix_format_mplane + v4l2_buffer with
+                          m.planes / v4l2_plane array
 
-Modes:
-  probe                        (default) QUERYCAP + ENUM_FMT for every /dev/video*
-  probe --capture DEV OUT      bounded single-frame capture (MMAP, 1 buffer)
-
-Exit codes:
-  0 = probe completed (see per-node state)
-  1 = usage error
-  2 = capture failed (stream/format) — details on stderr
+Struct layouts are defined with ctypes so AArch64 alignment is correct, and
+ioctl numbers are computed from the real struct sizes with the asm-generic
+_IOC macros.  The program remains read-only unless --capture is given.
 """
 from __future__ import annotations
-import argparse, fcntl, mmap, os, struct, sys, time
 
-# --- linux/ioctl.h (asm-generic) -------------------------------------------
-_IOC_NRBITS = 8; _IOC_TYPEBITS = 8; _IOC_SIZEBITS = 14
-_IOC_NRSHIFT = 0
-_IOC_TYPESHIFT = _IOC_NRSHIFT + _IOC_NRBITS
-_IOC_SIZESHIFT = _IOC_TYPESHIFT + _IOC_TYPEBITS
-_IOC_DIRSHIFT = _IOC_SIZESHIFT + _IOC_SIZEBITS
-_IOC_NONE, _IOC_WRITE, _IOC_READ = 0, 1, 2
-def _ioc(d, t, nr, size):
-    return (d << _IOC_DIRSHIFT) | (ord(t) << _IOC_TYPESHIFT) | (nr << _IOC_NRSHIFT) | (size << _IOC_SIZESHIFT)
-def _ior(t, nr, size): return _ioc(_IOC_READ, t, nr, size)
-def _iow(t, nr, size): return _ioc(_IOC_WRITE, t, nr, size)
-def _iowr(t, nr, size): return _ioc(_IOC_READ | _IOC_WRITE, t, nr, size)
+import argparse
+import ctypes
+import ctypes.util
+import fcntl
+import mmap
+import os
+import struct
+import sys
+import time
 
-# --- linux/videodev2.h (kernel 4.14) ----------------------------------------
-V = 'V'
-# v4l2_capability
-CAP_FMT = '16s32s32sIII3I'
-VIDIOC_QUERYCAP = _ior(V, 0, struct.calcsize(CAP_FMT))
-# v4l2_fmtdesc
-FMT_FMT = 'III32sI4I'
-VIDIOC_ENUM_FMT = _iowr(V, 2, struct.calcsize(FMT_FMT))
-# v4l2_format + v4l2_pix_format
-PIX_FMT = 'IIIIIIIIIIII'   # width,height,pixfmt,field,bpl,sizeimage,colorspace,priv,flags,ycbcr_enc,quantization,xfer
-FORMAT_FMT = 'I' + PIX_FMT
-VIDIOC_S_FMT = _iowr(V, 5, struct.calcsize(FORMAT_FMT))
-VIDIOC_G_FMT = _iowr(V, 4, struct.calcsize(FORMAT_FMT))
-# v4l2_requestbuffers
-REQBUFS_FMT = 'IIII'       # count,type,memory,reserved
-VIDIOC_REQBUFS = _iowr(V, 8, struct.calcsize(REQBUFS_FMT))
-# v4l2_buffer (non-mplane)
-BUF_FMT = 'IIIIIIIIII' + 'I' + 'I' + 'III'  # placeholder — see build below
-def _buf_fmt():
-    # index,type,bytesused,flags,field,timestamp(2xlong),timecode(2xI),sequence,memory,offset,length,reserved2,input,reserved
-    return 'IIIIII4sIIIIIIIII'
-BUF_FMT = _buf_fmt()
-VIDIOC_QUERYBUF = _iowr(V, 9, struct.calcsize(BUF_FMT))
-VIDIOC_QBUF = _iowr(V, 15, struct.calcsize(BUF_FMT))
-VIDIOC_DQBUF = _iowr(V, 17, struct.calcsize(BUF_FMT))
-STREAMON_FMT = 'I'
-VIDIOC_STREAMON = _iow(V, 18, struct.calcsize(STREAMON_FMT))
-VIDIOC_STREAMOFF = _iow(V, 19, struct.calcsize(STREAMON_FMT))
-
+VIDEO_MAX_PLANES = 8
 V4L2_BUF_TYPE_VIDEO_CAPTURE = 1
+V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE = 9
 V4L2_MEMORY_MMAP = 1
 V4L2_FIELD_ANY = 0
 V4L2_CAP_VIDEO_CAPTURE = 0x00000001
 V4L2_CAP_VIDEO_CAPTURE_MPLANE = 0x00001000
 V4L2_CAP_STREAMING = 0x04000000
 
-def fourcc(v):
-    return struct.unpack('<I', v)[0]
+# --- asm-generic ioctl number construction ---------------------------------
+_IOC_NRBITS = 8
+_IOC_TYPEBITS = 8
+_IOC_SIZEBITS = 14
+_IOC_NRSHIFT = 0
+_IOC_TYPESHIFT = _IOC_NRSHIFT + _IOC_NRBITS
+_IOC_SIZESHIFT = _IOC_TYPESHIFT + _IOC_TYPEBITS
+_IOC_DIRSHIFT = _IOC_SIZESHIFT + _IOC_SIZEBITS
+_IOC_NONE, _IOC_WRITE, _IOC_READ = 0, 1, 2
+
+
+def _ioc(direction, typechar, nr, size):
+    return ((direction << _IOC_DIRSHIFT) | (ord(typechar) << _IOC_TYPESHIFT)
+            | (nr << _IOC_NRSHIFT) | (size << _IOC_SIZESHIFT))
+
+
+def _ior(t, nr, size): return _ioc(_IOC_READ, t, nr, size)
+def _iow(t, nr, size): return _ioc(_IOC_WRITE, t, nr, size)
+def _iowr(t, nr, size): return _ioc(_IOC_READ | _IOC_WRITE, t, nr, size)
+
+
+# --- ctypes struct definitions (kernel 4.14 UAPI, aarch64) -----------------
+class v4l2_capability(ctypes.Structure):
+    _fields_ = [
+        ("driver", ctypes.c_uint8 * 16),
+        ("card", ctypes.c_uint8 * 32),
+        ("bus_info", ctypes.c_uint8 * 32),
+        ("version", ctypes.c_uint32),
+        ("capabilities", ctypes.c_uint32),
+        ("device_caps", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32 * 3),
+    ]
+
+
+class v4l2_fmtdesc(ctypes.Structure):
+    _fields_ = [
+        ("index", ctypes.c_uint32),
+        ("type", ctypes.c_uint32),
+        ("flags", ctypes.c_uint32),
+        ("description", ctypes.c_uint8 * 32),
+        ("pixelformat", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32 * 4),
+    ]
+
+
+class v4l2_pix_format(ctypes.Structure):
+    _fields_ = [
+        ("width", ctypes.c_uint32),
+        ("height", ctypes.c_uint32),
+        ("pixelformat", ctypes.c_uint32),
+        ("field", ctypes.c_uint32),
+        ("bytesperline", ctypes.c_uint32),
+        ("sizeimage", ctypes.c_uint32),
+        ("colorspace", ctypes.c_uint32),
+        ("priv", ctypes.c_uint32),
+        ("flags", ctypes.c_uint32),
+        ("ycbcr_enc", ctypes.c_uint32),
+        ("quantization", ctypes.c_uint32),
+        ("xfer_func", ctypes.c_uint32),
+    ]
+
+
+class v4l2_plane_pix_format(ctypes.Structure):
+    _fields_ = [
+        ("sizeimage", ctypes.c_uint32),
+        ("bytesperline", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint16 * 6),
+    ]
+
+
+class v4l2_pix_format_mplane(ctypes.Structure):
+    _fields_ = [
+        ("width", ctypes.c_uint32),
+        ("height", ctypes.c_uint32),
+        ("pixelformat", ctypes.c_uint32),
+        ("field", ctypes.c_uint32),
+        ("colorspace", ctypes.c_uint32),
+        ("plane_fmt", v4l2_plane_pix_format * VIDEO_MAX_PLANES),
+        ("num_planes", ctypes.c_uint8),
+        ("flags", ctypes.c_uint8),
+        ("ycbcr_enc", ctypes.c_uint8),
+        ("quantization", ctypes.c_uint8),
+        ("xfer_func", ctypes.c_uint8),
+        ("reserved", ctypes.c_uint8 * 7),
+    ]
+
+
+class _v4l2_format_union(ctypes.Union):
+    _fields_ = [
+        ("pix", v4l2_pix_format),
+        ("pix_mp", v4l2_pix_format_mplane),
+        ("raw", ctypes.c_uint8 * 208),
+    ]
+
+
+class v4l2_format(ctypes.Structure):
+    _anonymous_ = ("fmt",)
+    _fields_ = [
+        ("type", ctypes.c_uint32),
+        ("fmt", _v4l2_format_union),
+    ]
+
+
+class v4l2_requestbuffers(ctypes.Structure):
+    _fields_ = [
+        ("count", ctypes.c_uint32),
+        ("type", ctypes.c_uint32),
+        ("memory", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32 * 2),
+    ]
+
+
+class v4l2_timecode(ctypes.Structure):
+    _fields_ = [
+        ("type", ctypes.c_uint32),
+        ("flags", ctypes.c_uint32),
+        ("frames", ctypes.c_uint8),
+        ("seconds", ctypes.c_uint8),
+        ("minutes", ctypes.c_uint8),
+        ("hours", ctypes.c_uint8),
+        ("userbits", ctypes.c_uint8 * 4),
+    ]
+
+
+class v4l2_plane(ctypes.Structure):
+    class _m(ctypes.Union):
+        _fields_ = [
+            ("mem_offset", ctypes.c_uint32),
+            ("userptr", ctypes.c_ulong),
+            ("fd", ctypes.c_int32),
+        ]
+    _fields_ = [
+        ("bytesused", ctypes.c_uint32),
+        ("length", ctypes.c_uint32),
+        ("m", _m),
+        ("data_offset", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32 * 11),
+    ]
+
+
+class v4l2_buffer(ctypes.Structure):
+    class _m(ctypes.Union):
+        _fields_ = [
+            ("offset", ctypes.c_uint32),
+            ("userptr", ctypes.c_ulong),
+            ("planes", ctypes.POINTER(v4l2_plane)),
+            ("fd", ctypes.c_int32),
+        ]
+    _fields_ = [
+        ("index", ctypes.c_uint32),
+        ("type", ctypes.c_uint32),
+        ("bytesused", ctypes.c_uint32),
+        ("flags", ctypes.c_uint32),
+        ("field", ctypes.c_uint32),
+        ("timestamp", ctypes.c_long * 2),
+        ("timecode", v4l2_timecode),
+        ("sequence", ctypes.c_uint32),
+        ("memory", ctypes.c_uint32),
+        ("m", _m),
+        ("length", ctypes.c_uint32),
+        ("reserved2", ctypes.c_uint32),
+        ("request_fd", ctypes.c_int32),
+    ]
+
+
+# --- ioctl numbers ---------------------------------------------------------
+V = "V"
+VIDIOC_QUERYCAP = _ior(V, 0, ctypes.sizeof(v4l2_capability))
+VIDIOC_ENUM_FMT = _iowr(V, 2, ctypes.sizeof(v4l2_fmtdesc))
+VIDIOC_S_FMT = _iowr(V, 5, ctypes.sizeof(v4l2_format))
+VIDIOC_G_FMT = _iowr(V, 4, ctypes.sizeof(v4l2_format))
+VIDIOC_REQBUFS = _iowr(V, 8, ctypes.sizeof(v4l2_requestbuffers))
+VIDIOC_QUERYBUF = _iowr(V, 9, ctypes.sizeof(v4l2_buffer))
+VIDIOC_QBUF = _iowr(V, 15, ctypes.sizeof(v4l2_buffer))
+VIDIOC_DQBUF = _iowr(V, 17, ctypes.sizeof(v4l2_buffer))
+VIDIOC_STREAMON = _iow(V, 18, ctypes.sizeof(ctypes.c_uint32))
+VIDIOC_STREAMOFF = _iow(V, 19, ctypes.sizeof(ctypes.c_uint32))
+
+
+def _ioctl(fd, req, arg):
+    fcntl.ioctl(fd, req, arg, True)
+
 
 def fourcc_str(v):
-    b = struct.pack('<I', v)
-    return ''.join(chr(x) if 32 <= x < 127 else '.' for x in b)
+    return struct.pack("<I", v).decode("latin1")
+
 
 def pstr(b):
-    return b.split(b'\0', 1)[0].decode('utf-8', 'replace')
+    return bytes(b).split(b"\0", 1)[0].decode("utf-8", "replace")
+
+
+def _buf_type(is_mplane):
+    return V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE if is_mplane else V4L2_BUF_TYPE_VIDEO_CAPTURE
+
 
 def probe_node(path):
     fd = os.open(path, os.O_RDWR | os.O_NONBLOCK)
     try:
-        cap = bytearray(struct.calcsize(CAP_FMT))
-        fcntl.ioctl(fd, VIDIOC_QUERYCAP, cap, True)
-        driver, card, bus, version, capabilities, device_caps, *_ = struct.unpack(CAP_FMT, cap)
-        info = {
-            'path': path, 'driver': pstr(driver), 'card': pstr(card), 'bus': pstr(bus),
-            'version': version, 'caps': capabilities, 'device_caps': device_caps,
-            'is_capture': bool(device_caps & V4L2_CAP_VIDEO_CAPTURE),
-            'is_mplane': bool(device_caps & V4L2_CAP_VIDEO_CAPTURE_MPLANE),
-            'streaming': bool(device_caps & V4L2_CAP_STREAMING),
-            'formats': [],
-        }
-        is_cap = info['is_capture'] or info['is_mplane']
+        cap = v4l2_capability()
+        _ioctl(fd, VIDIOC_QUERYCAP, cap)
+        is_mplane = bool(cap.device_caps & V4L2_CAP_VIDEO_CAPTURE_MPLANE)
+        is_cap = bool(cap.device_caps & V4L2_CAP_VIDEO_CAPTURE) or is_mplane
+        formats = []
         if is_cap:
-            idx = 0
-            while idx < 64:
-                f = bytearray(struct.calcsize(FMT_FMT))
-                struct.pack_into(FMT_FMT, f, 0, idx, V4L2_BUF_TYPE_VIDEO_CAPTURE, 0, b'', 0, 0, 0, 0, 0)
+            bt = _buf_type(is_mplane)
+            for idx in range(64):
+                f = v4l2_fmtdesc()
+                f.index = idx
+                f.type = bt
                 try:
-                    fcntl.ioctl(fd, VIDIOC_ENUM_FMT, f, True)
+                    _ioctl(fd, VIDIOC_ENUM_FMT, f)
                 except OSError:
                     break
-                _i, _t, _fl, desc, pix, *_ = struct.unpack(FMT_FMT, f)
-                info['formats'].append((fourcc_str(pix), pstr(desc)))
-                idx += 1
-        return info
+                formats.append((fourcc_str(f.pixelformat), pstr(f.description)))
+        return {
+            "path": path,
+            "driver": pstr(cap.driver),
+            "card": pstr(cap.card),
+            "bus": pstr(cap.bus_info),
+            "caps": cap.capabilities,
+            "device_caps": cap.device_caps,
+            "is_capture": is_cap,
+            "is_mplane": is_mplane,
+            "streaming": bool(cap.device_caps & V4L2_CAP_STREAMING),
+            "formats": formats,
+        }
     finally:
         os.close(fd)
 
+
 def capture_one(path, out, fourcc_value, w, h, timeout=15.0):
-    """Bounded single-frame MMAP capture.  Returns (ok, detail)."""
+    """Bounded single-frame capture.  Chooses the correct ABI per node."""
     fd = os.open(path, os.O_RDWR | os.O_NONBLOCK)
     try:
-        # set format
-        fmt = bytearray(struct.calcsize(FORMAT_FMT))
-        pix = (w, h, fourcc_value, V4L2_FIELD_ANY, 0, 0, 0, 0, 0, 0, 0, 0)
-        struct.pack_into(FORMAT_FMT, fmt, 0, V4L2_BUF_TYPE_VIDEO_CAPTURE, *pix)
-        fcntl.ioctl(fd, VIDIOC_S_FMT, fmt, True)
-        got = struct.unpack(FORMAT_FMT, fmt)
-        gw, gh, gpix, gfield, gbpl, gsize = got[1], got[2], got[3], got[4], got[5], got[6]
-        # request 1 buffer
-        rb = bytearray(struct.calcsize(REQBUFS_FMT))
-        struct.pack_into(REQBUFS_FMT, rb, 0, 1, V4L2_BUF_TYPE_VIDEO_CAPTURE, V4L2_MEMORY_MMAP, 0)
-        fcntl.ioctl(fd, VIDIOC_REQBUFS, rb, True)
-        nbuf = struct.unpack(REQBUFS_FMT, rb)[0]
-        if nbuf < 1:
-            return False, "REQBUFS returned %d buffers" % nbuf
-        # query buffer -> mmap
-        qb = bytearray(struct.calcsize(BUF_FMT))
-        fcntl.ioctl(fd, VIDIOC_QUERYBUF, qb, True)
-        # our BUF_FMT layout: index(0) type(1) bytesused(2) flags(3) field(4) ts(5=8bytes? we used 4s at index5..6)
-        idx_v, _type, _used, _flags, _field = struct.unpack_from(BUF_FMT, qb, 0)[:5]
-        # offset is field index 9 in our layout (after ts/timecode/sequence/memory)
-        _off = struct.unpack_from(BUF_FMT, qb, 9 * 4)[0]
-        _len = struct.unpack_from(BUF_FMT, qb, 10 * 4)[0]
-        if _len <= 0:
-            _len = gsize
-        buf = mmap.mmap(fd, _len, mmap.MAP_SHARED, mmap.PROT_READ | mmap.PROT_WRITE, offset=_off)
-        # qbuf
-        struct.pack_into(BUF_FMT, qb, 0, 0, V4L2_BUF_TYPE_VIDEO_CAPTURE, 0, 0, V4L2_FIELD_ANY, b'\0'*4, 0, 0, 0, V4L2_MEMORY_MMAP, _off, _len, 0, 0, 0)
-        fcntl.ioctl(fd, VIDIOC_QBUF, qb, True)
-        # streamon
-        fcntl.ioctl(fd, VIDIOC_STREAMON, struct.pack(STREAMON_FMT, V4L2_BUF_TYPE_VIDEO_CAPTURE), True)
-        # dqbuf with deadline
+        cap = v4l2_capability()
+        _ioctl(fd, VIDIOC_QUERYCAP, cap)
+        is_mplane = bool(cap.device_caps & V4L2_CAP_VIDEO_CAPTURE_MPLANE)
+        bt = _buf_type(is_mplane)
+
+        fmt = v4l2_format()
+        fmt.type = bt
+        if is_mplane:
+            fmt.fmt.pix_mp.width = w
+            fmt.fmt.pix_mp.height = h
+            fmt.fmt.pix_mp.pixelformat = fourcc_value
+            fmt.fmt.pix_mp.field = V4L2_FIELD_ANY
+            fmt.fmt.pix_mp.num_planes = 1
+        else:
+            fmt.fmt.pix.width = w
+            fmt.fmt.pix.height = h
+            fmt.fmt.pix.pixelformat = fourcc_value
+            fmt.fmt.pix.field = V4L2_FIELD_ANY
+        _ioctl(fd, VIDIOC_S_FMT, fmt)
+
+        nplanes = int(fmt.fmt.pix_mp.num_planes) if is_mplane else 1
+        if nplanes < 1:
+            return False, "driver reported 0 planes"
+
+        req = v4l2_requestbuffers()
+        req.count = 1
+        req.type = bt
+        req.memory = V4L2_MEMORY_MMAP
+        _ioctl(fd, VIDIOC_REQBUFS, req)
+        if req.count < 1:
+            return False, "REQBUFS returned %d buffers" % req.count
+
+        # Query buffer; for mplane the kernel expects a populated planes array.
+        planes = (v4l2_plane * nplanes)()
+        qb = v4l2_buffer()
+        qb.index = 0
+        qb.type = bt
+        qb.memory = V4L2_MEMORY_MMAP
+        if is_mplane:
+            qb.m.planes = ctypes.cast(planes, ctypes.POINTER(v4l2_plane))
+            qb.length = nplanes
+        _ioctl(fd, VIDIOC_QUERYBUF, qb)
+
+        maps = []
+        if is_mplane:
+            for i in range(nplanes):
+                plen = int(planes[i].length)
+                off = int(planes[i].m.mem_offset)
+                if plen <= 0:
+                    plen = int(fmt.fmt.pix_mp.plane_fmt[i].sizeimage)
+                maps.append(mmap.mmap(fd, plen, mmap.MAP_SHARED,
+                                      mmap.PROT_READ | mmap.PROT_WRITE, offset=off))
+            length_total = sum(int(planes[i].length) for i in range(nplanes))
+        else:
+            length = int(qb.length)
+            off = int(qb.m.offset)
+            maps.append(mmap.mmap(fd, length, mmap.MAP_SHARED,
+                                  mmap.PROT_READ | mmap.PROT_WRITE, offset=off))
+            length_total = length
+
+        # Queue buffer.
+        qb.bytesused = 0
+        qb.flags = 0
+        qb.field = V4L2_FIELD_ANY
+        qb.index = 0
+        qb.type = bt
+        qb.memory = V4L2_MEMORY_MMAP
+        if is_mplane:
+            planes[0].bytesused = 0
+            qb.m.planes = ctypes.cast(planes, ctypes.POINTER(v4l2_plane))
+            qb.length = nplanes
+        _ioctl(fd, VIDIOC_QBUF, qb)
+
+        _ioctl(fd, VIDIOC_STREAMON, ctypes.c_uint32(bt))
+
         deadline = time.time() + timeout
-        dq = bytearray(struct.calcsize(BUF_FMT))
-        struct.pack_into(BUF_FMT, dq, 0, 0, V4L2_BUF_TYPE_VIDEO_CAPTURE, 0, 0, V4L2_FIELD_ANY, b'\0'*4, 0, 0, 0, V4L2_MEMORY_MMAP, _off, _len, 0, 0, 0)
-        got_frame = False
+        got = False
         while time.time() < deadline:
+            dq = v4l2_buffer()
+            dq.type = bt
+            dq.memory = V4L2_MEMORY_MMAP
+            if is_mplane:
+                dq.m.planes = ctypes.cast(planes, ctypes.POINTER(v4l2_plane))
+                dq.length = nplanes
             try:
-                fcntl.ioctl(fd, VIDIOC_DQBUF, dq, True)
-                got_frame = True
+                _ioctl(fd, VIDIOC_DQBUF, dq)
+                got = True
                 break
             except OSError as e:
-                if e.errno in (11,):  # EAGAIN
-                    time.sleep(0.05); continue
+                if e.errno == 11:
+                    time.sleep(0.05)
+                    continue
                 raise
-        # streamoff regardless
+
         try:
-            fcntl.ioctl(fd, VIDIOC_STREAMOFF, struct.pack(STREAMON_FMT, V4L2_BUF_TYPE_VIDEO_CAPTURE), True)
+            _ioctl(fd, VIDIOC_STREAMOFF, ctypes.c_uint32(bt))
         except OSError:
             pass
-        if not got_frame:
+
+        if not got:
             return False, "DQBUF timed out after %.1fs (no frame produced)" % timeout
-        bytesused = struct.unpack_from(BUF_FMT, dq, 2)[0] or _len
-        data = bytes(buf[:bytesused])
-        with open(out, 'wb') as fh:
+
+        chunks = []
+        for m in maps:
+            chunks.append(m[:])
+        data = b"".join(chunks)
+        # Honour bytesused when it is sane.
+        used = int(dq.bytesused) if not is_mplane else int(planes[0].bytesused)
+        if used and 0 < used <= len(data):
+            data = data[:used]
+        with open(out, "wb") as fh:
             fh.write(data)
-        return True, "captured %d bytes (%s %dx%d bpl=%d sizeimage=%d) -> %s" % (bytesused, fourcc_str(gpix), gw, gh, gbpl, gsize, out)
+        return True, "captured %d bytes mplane=%s (%dx%d) -> %s" % (len(data), is_mplane, w, h, out)
     finally:
         os.close(fd)
+
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument('--capture', nargs=2, metavar=('DEV', 'OUT'), help='bounded single-frame capture')
-    ap.add_argument('--fourcc', default='NV12', help='capture fourcc (default NV12)')
-    ap.add_argument('--width', type=int, default=640)
-    ap.add_argument('--height', type=int, default=480)
-    ap.add_argument('--timeout', type=float, default=15.0)
-    ap.add_argument('nodes', nargs='*', help='specific /dev/video* nodes to probe (default: all)')
+    ap.add_argument("--capture", nargs=2, metavar=("DEV", "OUT"))
+    ap.add_argument("--fourcc", default="NV12")
+    ap.add_argument("--width", type=int, default=640)
+    ap.add_argument("--height", type=int, default=480)
+    ap.add_argument("--timeout", type=float, default=15.0)
+    ap.add_argument("nodes", nargs="*")
     args = ap.parse_args(argv)
 
     if args.capture:
         dev, out = args.capture
-        ok, detail = capture_one(dev, out, fourcc(args.fourcc.encode()), args.width, args.height, args.timeout)
-        print('%s %s' % ('CAPTURED' if ok else 'CAPTURE_FAILED', detail))
+        ok, detail = capture_one(dev, out, struct.unpack("<I", args.fourcc.encode().ljust(4, b"\0"))[0],
+                                 args.width, args.height, args.timeout)
+        print("%s %s" % ("CAPTURED" if ok else "CAPTURE_FAILED", detail))
         return 0 if ok else 2
 
     nodes = args.nodes or sorted(
-        ('/dev/' + f for f in os.listdir('/dev') if f.startswith('video')),
-        key=lambda p: int(''.join(ch for ch in p if ch.isdigit()) or '0'))
+        ("/dev/" + f for f in os.listdir("/dev") if f.startswith("video")),
+        key=lambda p: int("".join(ch for ch in p if ch.isdigit()) or "0"))
     for p in nodes:
         try:
             info = probe_node(p)
         except OSError as e:
-            print('%-16s OPEN_FAILED %s' % (p, e)); continue
-        fmtstr = ' '.join('%s(%s)' % (fc, dsc) for fc, dsc in info['formats']) or '(none/not-a-capture-node)'
-        print('%-16s driver=%-28s card=%-28s caps=0x%08x dcaps=0x%08x stream=%s fmt=[%s]' % (
-            info['path'], info['driver'], info['card'], info['caps'], info['device_caps'],
-            info['streaming'], fmtstr))
+            print("%-16s OPEN_FAILED %s" % (p, e))
+            continue
+        fmtstr = " ".join("%s(%s)" % (fc, dsc) for fc, dsc in info["formats"]) or "(none)"
+        plane = "mplane" if info["is_mplane"] else ("single" if info["is_capture"] else "-")
+        print("%-16s driver=%-24s card=%-24s caps=0x%08x dcaps=0x%08x stream=%s %s fmt=[%s]" % (
+            info["path"], info["driver"], info["card"], info["caps"], info["device_caps"],
+            info["streaming"], plane, fmtstr))
     return 0
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

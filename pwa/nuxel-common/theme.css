@@ -1,6 +1,43 @@
 /* Nuxel shared theme tokens (PWNAGE-30000).
    Load this BEFORE an app's own stylesheet.  Apps reference var(--nx-*) so the
    launcher Settings theme switch applies immediately without a reload. */
+
+/* PWNAGE-85000 motion tokens.  Short, restrained, transform/opacity-only.
+   The software compositor does not guarantee GPU acceleration, so these stay
+   deliberately small and never animate layout geometry. */
+:root {
+  --nx-motion-press: 90ms;
+  --nx-motion-fast: 140ms;
+  --nx-motion-standard: 180ms;
+  --nx-motion-navigation: 200ms;
+  --nx-motion-emphasis: 230ms;
+  --nx-ease-standard: cubic-bezier(.2,.8,.2,1);
+  --nx-ease-exit: cubic-bezier(.4,0,1,1);
+}
+:root[data-motion="reduced"] {
+  --nx-motion-press: 70ms;
+  --nx-motion-fast: 90ms;
+  --nx-motion-standard: 100ms;
+  --nx-motion-navigation: 110ms;
+  --nx-motion-emphasis: 120ms;
+}
+:root[data-motion="off"] {
+  --nx-motion-press: 0ms;
+  --nx-motion-fast: 0ms;
+  --nx-motion-standard: 0ms;
+  --nx-motion-navigation: 0ms;
+  --nx-motion-emphasis: 0ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Explicit 'full' is the user's opt-in; everything else follows the OS. */
+  :root:not([data-motion="full"]) {
+    --nx-motion-press: 70ms;
+    --nx-motion-fast: 90ms;
+    --nx-motion-standard: 100ms;
+    --nx-motion-navigation: 110ms;
+    --nx-motion-emphasis: 120ms;
+  }
+}
 :root,
 :root[data-theme="nuxel-grove"] {
   --nx-theme: "Nuxel Grove";
@@ -53,7 +90,16 @@
   padding: 8px 14px;
   font-size: 14px;
 }
-.nx-btn:active { background: var(--nx-primary); color: var(--nx-primary-contrast); }
+.nx-btn {
+  transition: transform var(--nx-motion-press) var(--nx-ease-standard),
+              background-color var(--nx-motion-press) linear,
+              color var(--nx-motion-press) linear;
+}
+.nx-btn:active { background: var(--nx-primary); color: var(--nx-primary-contrast); transform: scale(.98); }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .nx-btn { transition: none; }
+}
+:root[data-motion="off"] .nx-btn { transition: none; }
 .nx-btn.primary {
   background: var(--nx-primary);
   border-color: var(--nx-primary);
@@ -99,3 +145,27 @@ input, select, textarea, button {
   max-height: calc(100dvh - 24px);
   overflow: auto;
 }
+
+/* PWNAGE-81000 appearance: light/dark are applied through the desktop
+   color-scheme/GTK theme.  These token overrides keep Nuxel's own PWA surfaces
+   coherent without injecting a global GTK_THEME into other processes. */
+:root[data-appearance="light"] {
+  --nx-bg: #f7f9fc;
+  --nx-bg-2: #eef3f9;
+  --nx-surface: #ffffff;
+  --nx-surface-2: #e9eff7;
+  --nx-text: #122033;
+  --nx-text-dim: #4f6480;
+  --nx-border: #c8d5e4;
+  --nx-primary: #1f6feb;
+  --nx-primary-strong: #1759c4;
+  --nx-primary-contrast: #ffffff;
+  --nx-accent: #1f6feb;
+  --nx-focus: #2d7ff9;
+  --nx-danger: #c62828;
+  --nx-warning: #a15c00;
+  --nx-success: #1b7f4a;
+  --nx-overlay: rgba(247, 249, 252, 0.82);
+  color-scheme: light;
+}
+:root[data-appearance="dark"] { color-scheme: dark; }

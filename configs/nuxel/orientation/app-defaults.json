@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "comment": "Per-app default orientation for Nuxel. When an app opens, the launcher applies its default orientation; returning Home restores the global default. Values are orientation modes: portrait, reverse-portrait, landscape, reverse-landscape. Apps not listed here inherit the global default. This is a launch preference, not a permission.",
+  "default": "portrait",
+  "apps": {
+    "app.legcord.Legcord": "landscape",
+    "dev.vencord.Vesktop": "landscape",
+    "org.nuxel.Doom": "landscape",
+    "org.nuxel.DoomLauncher": "landscape"
+  }
+}

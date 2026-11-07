@@ -9,6 +9,7 @@ const vm = require('vm');
 
 const ROOT = path.join(__dirname, '../../..');
 const SRC = path.join(ROOT, 'pwa/nuxel-home/js/widgets.js');
+const LAYOUT_SRC = path.join(ROOT, 'pwa/nuxel-home/js/desktop-layout.js');
 let failures = 0;
 function check(name, cond, extra) {
   console.log((cond ? 'PASS ' : 'FAIL ') + name + (cond ? '' : '  ' + (extra === undefined ? '' : extra)));
@@ -16,6 +17,7 @@ function check(name, cond, extra) {
 }
 
 const src = fs.readFileSync(SRC, 'utf8');
+const LEGACY_KEY = 'nuxel.widgets';
 function makeSandbox() {
   const store = {};
   const els = {};
@@ -64,13 +66,16 @@ function makeSandbox() {
       elementFromPoint: () => null,
       addEventListener() {},
     },
-    Date, Math,
+    Date, Math, CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init && init.detail; } },
+    setInterval: () => 1, clearInterval() {}, setTimeout: () => 1, clearTimeout() {},
+    removeEventListener() {},
   };
   sandbox.window = sandbox;
   sandbox.launcher = { currentPage: 0, settings: { gridColumns: 4, desktopCount: 2 } };
   sandbox.appRegistry = { launchApp() {} };
   sandbox.__store = store;
   vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(LAYOUT_SRC, 'utf8'), sandbox);
   vm.runInContext(src, sandbox);
   return sandbox;
 }
@@ -78,7 +83,7 @@ function makeSandbox() {
 const s = makeSandbox();
 const W = s.NuxelWidgets;
 check('widget module exposes NuxelWidgets', !!W);
-check('widgets default enabled, empty, schema 2', W.state().enabled === true && W.state().items.length === 0 && W.state().schema_version === 2);
+check('widgets default enabled, empty, unified schema', W.state().enabled === true && W.state().items.length === 0 && W.state().schema_version === 1 && W.state().layout_key === 'nuxel.desktopLayout.v1');
 
 s.__store[W.NOTES_KEY] = JSON.stringify([
   { id: 'note-1', title: 'PWNAGE-44000 Notes Widget Test', body: 'Hello from desktop two', updatedAt: new Date().toISOString() },
@@ -131,17 +136,18 @@ check('deleted note leaves a reselect state, not stale text', layer.children[0].
 const before = W.state().items.length;
 check('add() with no notes returns null', W.add('notes', { desktop: 2 }) === null && W.state().items.length === before);
 
-// Schema-1 migration keeps the user's desktop number.
-s.__store[W.KEY] = JSON.stringify({ enabled: true, items: [{ id: 'old', type: 'notes', desktop: 2, noteId: 'note-1', w: 2, h: 2 }] });
-const migrated = W.state();
-check('schema 1 -> 2 migration preserves desktop 2', migrated.schema_version === 2 && migrated.items[0].desktop === 2);
+// Legacy widget document migration is lossless.
+const legacySandbox = makeSandbox();
+legacySandbox.__store[LEGACY_KEY] = JSON.stringify({ enabled: true, items: [{ id: 'old', type: 'notes', desktop: 2, noteId: 'note-1', w: 2, h: 2 }] });
+const LW = legacySandbox.NuxelWidgets;
+check('legacy one-based widget desktop migrates to unified desktop 2', LW.state().items[0].desktop === 2 && LW.state().items[0].id === 'old');
 
 W.setEnabled(false);
 s.launcher.currentPage = 1;
 W.renderPage(1);
 check('disabled widgets hide the layer', s.document.getElementById('widgets-layer').hidden === true);
 W.setEnabled(true);
-W.remove('old');
-check('remove() deletes the widget from persisted state', W.state().items.find(w => w.id === 'old') === undefined);
+W.remove(item.id);
+check('remove() deletes the widget from persisted state', W.state().items.find(w => w.id === item.id) === undefined);
 
 process.exit(failures ? 1 : 0);

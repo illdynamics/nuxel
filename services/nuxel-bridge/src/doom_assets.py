@@ -16,6 +16,9 @@ import os
 import re
 import time
 from typing import Any, Dict, List, Optional
+import base64
+import binascii
+import re as _re
 
 ALLOWED_ROOTS = (
     "/home/nuxel/doom",
@@ -27,6 +30,9 @@ ALLOWED_ROOTS = (
 )
 SUFFIXES = (".wad",)
 MAX_WAD_BYTES = 1024 * 1024 * 1024  # 1 GiB: reject absurd files, not player WADs
+MAX_IMPORT_BYTES = 256 * 1024 * 1024  # explicit user import bound (base64-decoded)
+IMPORT_ROOT = "/home/nuxel/doom/imported"
+IMPORT_NAME_RE = _re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.wad$")
 ID_RE = re.compile(r"^[0-9a-f]{64}$")
 CACHE_TTL = 5.0
 _CACHE: Dict[str, Any] = {"at": 0.0, "items": [], "by_id": {}}
@@ -182,3 +188,59 @@ def read_bytes(wad_id: str) -> Optional[bytes]:
     if len(data) > MAX_WAD_BYTES:
         return None
     return data
+
+
+def import_bytes(data: bytes, filename: str, license_ack: bool) -> Dict[str, Any]:
+    """Validate and store a user-supplied WAD in the private import directory.
+
+    The caller must explicitly acknowledge that it owns the rights to the file.
+    Only a regular ``.wad`` name is accepted; the stored name is derived from
+    the SHA-256, so no caller path can escape IMPORT_ROOT.  Freedoom/commercial
+    licensing is never inferred from a filename.
+    """
+    if not license_ack:
+        return {"success": False, "error": "license_ack_required",
+                "detail": "the user must confirm they own the rights to this WAD"}
+    if not isinstance(filename, str) or not IMPORT_NAME_RE.match(filename):
+        return {"success": False, "error": "invalid_wad_name",
+                "detail": "filename must be a plain .wad name (letters, digits, . _ -)"}
+    if not isinstance(data, (bytes, bytearray)) or len(data) < 12:
+        return {"success": False, "error": "invalid_wad"}
+    if len(data) > MAX_IMPORT_BYTES:
+        return {"success": False, "error": "wad_too_large",
+                "detail": "import limit is %d bytes" % MAX_IMPORT_BYTES}
+    if data[:4] not in (b"IWAD", b"PWAD"):
+        return {"success": False, "error": "not_a_wad"}
+    count = int.from_bytes(data[4:8], "little")
+    offset = int.from_bytes(data[8:12], "little")
+    if count <= 0 or count > 65535 or offset < 12 or offset >= len(data):
+        return {"success": False, "error": "invalid_wad_directory"}
+    digest = hashlib.sha256(data).hexdigest()
+    os.makedirs(IMPORT_ROOT, exist_ok=True)
+    stem = os.path.splitext(os.path.basename(filename))[0]
+    safe_stem = _re.sub(r"[^A-Za-z0-9._-]", "_", stem)[:48] or "imported"
+    dest = os.path.join(IMPORT_ROOT, "%s-%s.wad" % (safe_stem, digest[:16]))
+    tmp = dest + ".tmp"
+    try:
+        with open(tmp, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, dest)
+    except OSError as exc:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        return {"success": False, "error": "write_failed", "detail": str(exc)}
+    try:
+        import pwd
+        pw = pwd.getpwnam("nuxel")
+        os.chown(dest, pw.pw_uid, pw.pw_gid)
+        os.chmod(dest, 0o640)
+    except (KeyError, OSError):
+        os.chmod(dest, 0o640)
+    refresh(force=True)
+    item = _CACHE.get("by_id", {}).get(digest)
+    return {"success": True, "id": digest, "file": os.path.basename(dest),
+            "name": _pretty(dest), "size": len(data),
+            "tags": (item or {}).get("tags", []),
+            "license_ack": True}

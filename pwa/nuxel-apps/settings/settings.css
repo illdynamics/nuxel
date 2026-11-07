@@ -131,3 +131,85 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 @media (orientation: landscape) {
   .statusbar-icon-list { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 }
+
+/* PWNAGE-81000 central sound assignments */
+.sound-assignments { display: grid; gap: 12px; margin: 10px 0; }
+.sound-assignment-row { display: grid; gap: 6px; padding: 10px; border: 1px solid rgba(125,211,252,.22); border-radius: 12px; background: rgba(8,30,52,.55); }
+.sound-assignment-label { font-weight: 600; color: #e2f2ff; }
+.sound-assignment-controls { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; align-items: center; }
+.sound-assignment-controls select { min-width: 0; width: 100%; }
+.sound-assignment-controls button { min-height: 38px; padding: 0 10px; }
+.sound-assignment-meta { font-size: 11px; color: #9fc8e8; overflow-wrap: anywhere; }
+@media (max-width: 420px) {
+  .sound-assignment-controls { grid-template-columns: minmax(0,1fr) auto; }
+  .sound-assignment-controls button:last-child { grid-column: 1 / -1; }
+}
+
+/* PWNAGE-84000: scoped Settings tab rail scrollbar suppression. */
+.tabs {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-padding-inline: 16px;
+}
+.tabs::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.tabs .tab { scroll-margin-inline: 16px; }
+
+/* PWNAGE-84000 microphone controls. */
+.mic-meter { height: 10px; margin: 10px 0; border-radius: 999px; overflow: hidden; background: #07111f; border: 1px solid rgba(125,211,252,.2); }
+.mic-meter > i { display: block; width: 0%; height: 100%; background: linear-gradient(90deg,#22c55e,#eab308 72%,#ef4444); transition: width .12s linear; }
+#mic-noise-suppression:disabled + span { opacity: .6; }
+
+/* ---- Apps & Permissions tabs (PWNAGE-86000) ---- */
+.apps-list, .permissions-detail { display: flex; flex-direction: column; gap: 8px; }
+.app-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-card, #122952);
+  border: 1px solid var(--border-subtle, rgba(59,130,246,.15));
+  border-radius: 12px; padding: 10px 12px; min-width: 0;
+}
+.app-row-info { flex: 1 1 auto; min-width: 0; }
+.app-row-name { font-size: 14px; font-weight: 600; }
+.app-row-id { font-size: 11px; color: var(--text-secondary, #b8c7e0); overflow-wrap: anywhere; }
+.app-orientation-select {
+  background: var(--bg-card-hover, #1a3466); color: var(--text-primary, #fff);
+  border: 1px solid var(--border-subtle, rgba(59,130,246,.15)); border-radius: 8px;
+  padding: 8px; font-size: 13px; max-width: 11em;
+}
+.apps-select-label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-secondary, #b8c7e0); margin: 8px 0; }
+.apps-select-label select {
+  background: var(--bg-card, #122952); color: var(--text-primary, #fff);
+  border: 1px solid var(--border-subtle, rgba(59,130,246,.15)); border-radius: 8px;
+  padding: 10px; font-size: 14px; width: 100%;
+}
+.perm-head { font-size: 15px; margin: 4px 2px 10px; }
+.perm-app-id { font-size: 11px; color: var(--text-secondary, #b8c7e0); }
+.perm-group { font-size: 12px; font-weight: 700; color: var(--text-accent, #60a5fa); margin: 12px 2px 4px; }
+.perm-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-card, #122952);
+  border: 1px solid var(--border-subtle, rgba(59,130,246,.15));
+  border-radius: 12px; padding: 10px 12px; min-width: 0;
+}
+.perm-row-text { flex: 1 1 auto; min-width: 0; }
+.perm-row-name { font-size: 14px; font-weight: 600; }
+.perm-row-desc { font-size: 11px; color: var(--text-secondary, #b8c7e0); }
+.toggle {
+  flex: 0 0 auto; min-width: 5.4em; text-align: center;
+  background: var(--bg-card-hover, #1a3466); color: var(--text-secondary, #b8c7e0);
+  border: 1px solid var(--border-subtle, rgba(59,130,246,.15));
+  border-radius: 999px; padding: 8px 10px; font-size: 12px; font-weight: 700;
+}
+.toggle.on { background: var(--accent-light, #3b82f6); color: #fff; }
+.toggle:disabled { opacity: .75; }
+.perm-note { font-size: 11px; color: var(--text-secondary, #b8c7e0); margin-top: 10px; }
+
+/* PWNAGE-88000 Services section */
+.services-list { display: flex; flex-direction: column; gap: 8px; }
+.svc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid rgba(125,211,252,.16); border-radius: 10px; background: rgba(10,22,40,.4); }
+.svc-row.essential { border-color: rgba(255,167,80,.4); }
+.svc-info { min-width: 0; }
+.svc-name { font-weight: 700; overflow-wrap: anywhere; }
+.svc-state { font-size: 12px; color: #9fb0c8; }
+.svc-row.essential .svc-name::after { content: ' ●'; color: #ffb066; }
+.svc-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.svc-actions button { padding: 6px 9px; font-size: 12px; }

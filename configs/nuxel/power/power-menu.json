@@ -57,7 +57,7 @@
       "requires_owner_confirmation": false,
       "gate": "/etc/nuxel/buttons/reboot-gate.json",
       "execution": "systemctl reboot",
-      "refusal_reason": "refused by reboot-gate.json (disabled, not allowed, cooldown or hourly cap)",
+      "refusal_reason": "refused only when the live reboot gate denies the action (disabled, per-action flag, short debounce, hourly cap, or rollback path missing); the UI always exposes the option and reports the backend verdict",
       "note": "A restart must return to Nuxel. The gate enforces a cooldown and an hourly cap; after three failed returns, stop rebooting and change diagnostic strategy."
     },
     {
@@ -70,7 +70,17 @@
       "requires_owner_confirmation": false,
       "gate": "/etc/nuxel/buttons/reboot-gate.json",
       "execution": "systemctl poweroff",
-      "refusal_reason": "refused by reboot-gate.json (disabled or poweroff not allowed)"
+      "refusal_reason": "refused only when the live reboot gate denies the action (disabled, per-action flag, short debounce, hourly cap, or rollback path missing); the UI always exposes the option and reports the backend verdict"
+    },
+    {
+      "id": "suspend",
+      "label": "Suspend",
+      "icon": "suspend",
+      "action": "systemctl-suspend",
+      "trigger_allowed": true,
+      "requires_owner_confirmation": false,
+      "execution": "systemctl suspend",
+      "note": "logind CanSuspend=yes on this handset. The panel is blanked first and logind performs the suspend."
     },
     {
       "id": "reboot-verbose",
@@ -176,7 +186,7 @@
       "dispatch": "bootloader",
       "trigger_allowed": false,
       "requires_owner_confirmation": true,
-      "refusal_reason": "NO_FLASH_INVARIANT — entering Recovery means leaving Linux for the Samsung bootloader. This mission triggers no bootloader interface of any kind.",
+      "refusal_reason": "NO_FLASH_INVARIANT \u2014 entering Recovery means leaving Linux for the Samsung bootloader. This mission triggers no bootloader interface of any kind.",
       "note": "The entry exists so the menu is honest about the device's capabilities; it is offline-tested as a REFUSAL and is never triggered by any automated path."
     },
     {
@@ -187,7 +197,7 @@
       "dispatch": "bootloader",
       "trigger_allowed": false,
       "requires_owner_confirmation": true,
-      "refusal_reason": "NO_FLASH_INVARIANT — Download Mode exists only to flash, and this mission performs no flashing of any kind (no Heimdall/Odin/wrappers, no partition writes).",
+      "refusal_reason": "NO_FLASH_INVARIANT \u2014 Download Mode exists only to flash, and this mission performs no flashing of any kind (no Heimdall/Odin/wrappers, no partition writes).",
       "note": "Present for completeness and offline-tested as a refusal; never triggered."
     }
   ],

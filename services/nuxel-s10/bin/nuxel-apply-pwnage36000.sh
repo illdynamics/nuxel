@@ -264,25 +264,13 @@ services() {
     # Bootcap is a 24 s diagnostic capture.  It must not hold multi-user.target
     # or compete with the display bridge on a normal boot.
     run "disable bootcap unit" systemctl disable nuxel-bootcap.service
-    run "enable services" systemctl enable bluetooth.service nuxel-bluetooth.service geoclue.service \
+    # Bluetooth and its HCI transport are deliberately NOT enabled or started
+    # here.  The owner's ON/OFF intent lives in /var/lib/nuxel/interfaces.json
+    # and nuxel-interface-state.service restores it before the launcher.  A
+    # legacy apply run must never power a default-off radio back on.
+    run "enable services" systemctl enable geoclue.service \
         nuxel-wifi.service nuxel-device-permissions.service nuxel-audio-route.service \
         nuxel-charger-mode-recovery.service
-    run "rfkill bluetooth" rfkill unblock bluetooth
-    # nuxel-bluetooth.service is ordered Before=bluetooth.service and is still
-    # running its one-time patchram download when this transient unit executes.
-    # Restarting it here made systemd stop the active service, wait the 30 s
-    # SIGTERM timeout, abort, and re-run the whole bring-up.  That put the
-    # patchram download behind multi-user.target (measured 2026-10-29: 51 s
-    # userspace).  Leave the bring-up alone once it is active; only start it
-    # when the unit is genuinely not running.
-    if ! systemctl is-active --quiet nuxel-bluetooth.service; then
-        run "start bluetooth bring-up" systemctl start nuxel-bluetooth.service
-    else
-        say "bluetooth bring-up already active; not restarting"
-    fi
-    if ! systemctl is-active --quiet bluetooth.service; then
-        run "start bluetooth" systemctl start bluetooth.service
-    fi
     run "restart geoclue" systemctl restart geoclue.service
     run "restart wifi" systemctl restart nuxel-wifi.service
     run "start audio route" systemctl start nuxel-audio-route.service
@@ -292,7 +280,7 @@ services() {
     # passwords, or start a second supplicant.  A manual OFF is respected until
     # the next normal boot.  This installer therefore leaves the boot policy to
     # the unit and never rewrites saved profiles.
-    say "bluetooth: $(hciconfig 2>&1 | head -2 | tr '\n' ' ')"
+    say "bluetooth: deferred to nuxel-interface-state (persisted owner choice)"
     say "wifi: $(ip -4 -brief addr show wlan0 2>/dev/null | awk '{print $3}')"
     say "audio: $(nuxel-audio-status 2>&1 | tr '\n' ' ')"
     say "gps: $(nuxel-gps-status 2>&1 | tr '\n' ' ')"

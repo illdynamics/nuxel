@@ -11,7 +11,14 @@
   const SLOP = 14, DISTANCE = 56, TOP_EDGE = 40;
   let start = null, consumed = false;
   const scrollable = target => target && target.closest && target.closest('input,textarea,select,[contenteditable=true],[data-gesture-scroll],.search-results,.recents-list,.quick-settings,.folder-sheet,#drawer-list');
-  function state() { return window.nuxel && window.nuxel.appSession && window.nuxel.appSession.state === 'ACTIVE' ? 'APP' : 'HOME'; }
+  function state() {
+    if (window.nuxel && window.nuxel.appSession && window.nuxel.appSession.state === 'ACTIVE') {
+      // An invisible foreground surface must never refuse the Applications
+      // drawer.  Consult the foreground-visibility truth, not only the string.
+      return (window.nuxel.isForegroundVisible && window.nuxel.isForegroundVisible()) ? 'APP' : 'HOME';
+    }
+    return 'HOME';
+  }
   function down(e) {
     if (e.isPrimary === false || scrollable(e.target) || document.body.classList.contains('launcher-dragging') || e.target.closest('#system-navigation,#dock,#home-settings,.pwa-frame,#status-bar')) return;
     start = { id: e.pointerId, x: e.clientX, y: e.clientY, topEdge: e.clientY <= TOP_EDGE, at: performance.now() };

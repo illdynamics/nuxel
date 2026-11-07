@@ -1,0 +1,6 @@
+NAME="Windows 11"
+VERSION="22H2"
+ID=windows
+ID_LIKE=winnt
+PRETTY_NAME="Windows 11 Wonk Edition"
+VERSION_ID="22H2"

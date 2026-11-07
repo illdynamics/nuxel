@@ -1,0 +1,126 @@
+===wl-fb state===
+1794053494 FRAMES_OK total=21673 fps_1s=1 failures=0 blits=7217 present_skipped=14447 blit_avg_ms=1 pan_avg_ms=9 capture_avg_ms=7 compare_avg_ms=3 damage=122-150 damage_runs=2 damage_blits=6978 damage_avg_ms=0 idle_ms=9004 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=7218 decon_pan_failed=0
+===display===
+DISPLAY_ON
+brightness=12800
+actual_brightness=183
+bl_power=4
+saved_brightness=12800
+max_brightness=48600
+owner=nuxel-wl-fb
+===lock-state===
+{
+  "locked": false,
+  "owner": "security_provider",
+  "reason": "swipe",
+  "schema_version": 1,
+  "updated_at": 1794053388.2600121
+}
+===clockd state===
+{
+  "active_occurrences": [],
+  "alarms": [],
+  "capabilities": {
+    "audio_owner": "nuxel-soundd",
+    "rtc_policy": "capability reported; no RTC write performed",
+    "rtc_wake_from_suspend_verified": false,
+    "rtc_wakealarm": {
+      "path": "/sys/class/rtc/rtc0/wakealarm",
+      "present": true,
+      "value": "",
+      "writable": true
+    },
+    "screen_off_awake_alarm": true
+  },
+  "next": null,
+  "revision": 57,
+  "schema_version": 2,
+  "snoozed_occurrences": [],
+  "timer": {
+    "deadline_ms": null,
+    "duration_ms": 60000,
+    "label": "Timer",
+    "remaining_ms": 300000,
+    "run_id": "timer-940e765407e7",
+    "started_at": "2026-11-06T22:33:01+00:00",
+    "state": "acknowledged",
+    "updated_at": "2026-11-06T22:34:07+00:00"
+  },
+  "updated": 1794039760.9981961,
+  "updated_iso": "2026-11-07T08:22:40+00:00"
+}
+
+===navdock===
+{"schema_version":1,"visible":true,"mapped":true,"desired":true,"strip":false,"lock":"unlocked","home_ready":true,"fifo_ready":true,"width":360,"height":62,"scale":2,"reason":"show-idempotent"}
+===statusbar===
+{"schema_version":1,"ready":true,"visible":false,"reason":"home","foreground_app_id":"","locked":false,"width":360,"height":12,"scale":2,"strip":true,"revealed":false,"error":"","owner":"nuxel-statusbar"}
+===preload overlay===
+{
+  "boot_id": "5074a100-8cfd-4061-bb06-6c6c618d788c",
+  "elapsed_s": 6.298,
+  "milestone": "PWNAGE-31000",
+  "pid": 6472,
+  "reason": "video-eof-and-presentation-ready",
+  "schema_version": 1,
+  "state": "done",
+  "updated_at": "2026-11-07T09:22:14+0100",
+  "video_eof": true
+}
+===preload receipt===
+{
+  "asset": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+  "asset_bytes": 7630092,
+  "asset_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+  "audio": "disabled",
+  "boot_id": "5074a100-8cfd-4061-bb06-6c6c618d788c",
+  "bounded": false,
+  "controller_pid": 6472,
+  "display_lost": false,
+  "duration_s": 6.016,
+  "elapsed_s": 6.299,
+  "eof_at_s": 6.279,
+  "final_frame_grace_ms": 1500,
+  "final_frame_hold_s": 0.0,
+  "finished_at": "2026-11-07T09:22:14+0100",
+  "framebuffer_owner": "nuxel-wl-fb",
+  "fullscreen": true,
+  "hard_timeout_ms": 15000,
+  "input_ready": true,
+  "max_display_ms": 12000,
+  "milestone": "PWNAGE-31000",
+  "presentation_ready": true,
+  "readiness": {
+    "boot_os": true,
+    "critical": true,
+    "detail": {
+      "display_off": false,
+      "display_state": "DISPLAY_ON",
+      "display_state_fresh": true,
+      "display_state_path": "/var/lib/nuxel/display",
+      "home_state_path": "/run/nuxel-home.state",
+      "launcher_ready_path": "/run/nuxel-launcher-ready",
+      "touch_last_line": "2026-11-07T08:22:01Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0.4095] tsp_before='mutual:1, hover:0, co",
+      "touch_state_path": "/run/nuxel-touch-arm.state",
+      "wlfb_state": "1794039734 FRAMES_OK total=65 fps_1s=3 failures=0 blits=14 present_skipped=50 blit_avg_ms=2 pan_avg_ms=10 capture_avg_ms=5 compare_avg_ms=0 damage=120-1400 damage_runs=1 damage_blits=13 damage_avg_ms=",
+      "wlfb_state_path": "/run/nuxel-wl-fb.state"
+    },
+    "display_on": true,
+    "input_ready": true,
+    "launcher_ready": true,
+    "presentation_ready": true,
+    "ready": true,
+    "touch_settled": true,
+    "touch_unknown": false,
+    "wlfb_ready": true
+  },
+  "readiness_ready_at_s": 0.0,
+  "reason": "video-eof-and-presentation-ready",
+  "schema_version": 1,
+  "started_at": "2026-11-07T09:22:03+0100",
+  "unlock_actions": 0,
+  "verdict": "PLAYED",
+  "video_eof": true,
+  "video_held": false
+}
+===foreground===
+locked=0 native=0 app_id=

@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
 <meta name="theme-color" content="#061a18">
 <meta name="nuxel-app-id" content="org.nuxel.Downloader">
 <link rel="manifest" href="manifest.json">
 <title>Nuxel Downloader</title>
-<link rel="stylesheet" href="css/downloader.css">
+<link rel="stylesheet" href="css/downloader.css?v=p84000">
+    <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
 <header class="hdr">
@@ -27,6 +28,36 @@
 
 <main>
   <section id="tab-queue" class="panel active">
+    <div class="card" id="ytdlp-card">
+      <h3>Media download (yt-dlp)</h3>
+      <p class="hint">Paste a supported site/video URL. The host validates it, extracts metadata, shows the
+        available title, thumbnail and duration, then runs the real <code>yt-dlp</code> engine into
+        <code>~/Downloads</code>. MP3 extraction requires FFmpeg.</p>
+      <div class="row"><input id="md-url" type="url" inputmode="url" placeholder="https://…" style="flex:1"></div>
+      <div class="row wrap" style="margin-top:8px">
+        <label>Format
+          <select id="md-format"><option value="mp3">MP3 (audio)</option><option value="mp4">MP4 (video)</option></select>
+        </label>
+        <label>Cookies
+          <select id="md-cookies"><option value="none">No cookies</option><option value="chrome">Chrome</option><option value="firefox">Firefox</option><option value="nuxel" disabled>Nuxel (unavailable)</option></select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="md-fetch" class="primary">Validate &amp; fetch metadata</button>
+        <button id="md-start" disabled>Download</button>
+        <button id="md-cancel" disabled>Cancel</button>
+        <button id="md-open" disabled>Open ~/Downloads</button>
+      </div>
+      <div id="md-meta" class="hidden" style="margin-top:10px">
+        <img id="md-thumb" alt="" style="max-width:100%;max-height:180px;border-radius:10px" referrerpolicy="no-referrer">
+        <p id="md-title" class="li-sub" style="font-weight:600;color:inherit"></p>
+        <p id="md-info" class="li-sub"></p>
+        <pre id="md-formats" class="state" style="max-height:150px;overflow:auto"></pre>
+      </div>
+      <div class="bar" style="margin-top:10px"><i id="md-bar" style="width:0%"></i></div>
+      <p id="md-state" class="hint" role="status" aria-live="polite">—</p>
+      <p id="md-error" class="hint" style="color:#ffb4b4"></p>
+    </div>
     <div class="card">
       <h3>Add a download</h3>
       <div class="row"><input id="add-url" type="url" inputmode="url" placeholder="https://example.org/file.mp3" disabled></div>
@@ -110,7 +141,8 @@
 <div id="toast" class="toast"></div>
 
 <script type="module" src="../../nuxel-common/bridge.js"></script>
-<script src="js/download-queue.js"></script>
-<script src="js/downloader.js"></script>
+<script src="js/download-queue.js?v=p84000"></script>
+<script src="js/downloader.js?v=p84000"></script>
+<script src="js/media-downloader.js?v=p84000"></script>
 </body>
 </html>

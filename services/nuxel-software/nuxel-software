@@ -257,8 +257,6 @@ class SoftwareWindow(Gtk.Window):
         self.log.set_selectable(True)
         box.pack_start(self.log, False, False, 0)
 
-        self.refresh()
-
     # ---- status helpers -------------------------------------------------
 
     def _flatpak_status(self):
@@ -556,12 +554,31 @@ class SoftwareWindow(Gtk.Window):
             GLib.idle_add(self.refresh)
 
 
-def main():
+def main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(description="Nuxel Software (RPM + Flatpak)")
+    ap.add_argument("--version", action="version", version="nuxel-software 0.7.7-beta")
+    ap.add_argument("--backend-check", action="store_true",
+                    help="print backend availability and exit")
+    args = ap.parse_args(argv)
+    if args.backend_check:
+        ok, reason = SoftwareWindow._flatpak_status(None)
+        print(json.dumps({
+            "rpm": shutil.which("rpm") is not None,
+            "pkcon": shutil.which("pkcon") is not None,
+            "flatpak": shutil.which("flatpak") is not None,
+            "flatpak_sandbox": ok, "flatpak_reason": reason,
+        }, indent=2))
+        return 0
     win = SoftwareWindow()
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
+    # Keep the first frame responsive: discovery is already threaded, but let
+    # GTK paint the window before the worker starts competing for CPU/caches.
+    GLib.idle_add(win.refresh)
     Gtk.main()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

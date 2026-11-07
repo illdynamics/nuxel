@@ -39,6 +39,7 @@ body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-t
 .empty-state { color: var(--text2); text-align: center; padding: 20px; font-size: 14px; }
 
 .event-editor { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); z-index: 10; display: flex; flex-direction: column; }
+.event-editor.hidden { display: none !important; }
 .editor-header { display: flex; align-items: center; padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top)); background: var(--bg2); }
 .editor-header h2 { flex: 1; font-size: 18px; padding: 0 8px; }
 .btn-primary { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -59,3 +60,8 @@ body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-t
 .check { display: flex; align-items: center; gap: 8px; color: var(--nx-text-dim); font-size: 14px; }
 .editor-input:disabled { opacity: .5; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: var(--nx-surface-2); color: var(--nx-text); border: 1px solid var(--nx-border); border-radius: 999px; padding: 8px 14px; font-size: 13px; z-index: 30; }
+
+/* PWNAGE-84000 event → alarm / reminder shortcuts. */
+.event-quick { display:flex; gap:6px; margin-top:7px; flex-wrap:wrap; }
+.event-quick button { min-height:34px; padding:5px 10px; border-radius:9px; border:1px solid var(--nx-border); background:var(--nx-surface-2); color:var(--nx-text); font-size:11px; }
+.event-quick button:active { transform:scale(.97); }

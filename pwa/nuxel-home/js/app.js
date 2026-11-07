@@ -61,6 +61,10 @@ class NuxelHome {
         this._lastActionAt = 0;
         this._suppressBackUntil = 0;
         this._backBusy = false;
+        this._pwaBackStrikes = 0;
+        this._fgInvisibleCount = 0;
+        this._keyboardLikelyOpen = false;
+        this._nativeKeyboardVisible = false;
         // v0.7.7-beta: every cold boot starts in portrait while the lockscreen
         // is up.  The previous orientation mode is remembered and restored only
         // after a successful unlock, so rotation becomes available again once
@@ -81,6 +85,67 @@ class NuxelHome {
         this._inputTrace(`app:lifecycle id=${app && app.id || 'home'} state=${state}`);
     }
 
+    /* Foreground visibility truth, independent of the ACTIVE string.  A PWA
+       that is ACTIVE but whose iframe is hidden/backgrounded/zero-sized must
+       never block the Applications drawer or hold the glass invisibly. */
+    _foregroundSurfaceVisible() {
+        const { app, frame, state } = this.appSession;
+        if (state !== 'ACTIVE' || !app) return false;
+        if (frame) {
+            try {
+                if (frame.__nuxelBackgrounded) return false;
+                if (frame.getAttribute && frame.getAttribute('data-nuxel-backgrounded') === 'true') return false;
+                if (frame.hidden) return false;
+                const rect = frame.getBoundingClientRect();
+                const vw = window.innerWidth || 360;
+                const vh = window.innerHeight || 760;
+                if (!rect || rect.width < 1 || rect.height < 1) return false;
+                if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= vw || rect.top >= vh) return false;
+                const cs = window.getComputedStyle(frame);
+                if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) return false;
+                const doc = frame.contentDocument;
+                if (doc && doc.hidden) return false;
+                return true;
+            } catch (e) {
+                // Cross-origin frames cannot be inspected; treat as visible so a
+                // healthy foreign app is never destroyed by mistake.
+                return true;
+            }
+        }
+        // Native/flatpak apps own a separate Wayland surface that cannot be
+        // inspected synchronously; the native Back reconciliation path is the
+        // authority for those.
+        return true;
+    }
+
+    isForegroundVisible() {
+        return this._foregroundSurfaceVisible();
+    }
+
+    /* Bounded watchdog: an invisible foreground PWA is backgrounded within 1-2 s
+       so holding Back to force-kill is never the only recovery. */
+    _watchForegroundVisibility() {
+        if (this._fgWatchdog) return;
+        this._fgWatchdog = setInterval(() => {
+            if (this.appSession.state !== 'ACTIVE' || !this.appSession.app || !this.appSession.frame) {
+                this._fgInvisibleCount = 0;
+                return;
+            }
+            if (this._foregroundSurfaceVisible()) {
+                this._fgInvisibleCount = 0;
+                return;
+            }
+            this._fgInvisibleCount++;
+            this._inputTrace('foreground-visibility invisible count=' + this._fgInvisibleCount);
+            if (this._fgInvisibleCount >= 2) {
+                this._fgInvisibleCount = 0;
+                this._backgroundForegroundApp();
+                this.home();
+                this._inputTrace('foreground-visibility watchdog recovered invisible app');
+            }
+        }, 1000);
+    }
+
     _inputTrace(message) {
         try {
             const handler = window.webkit && window.webkit.messageHandlers.nuxelDiag;
@@ -98,6 +163,19 @@ class NuxelHome {
             if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.attach(doc);
             if (window.NuxelImmersive) window.NuxelImmersive.attach(doc);
             doc.__nuxelObserved = true;
+            const editable = el => {
+                try {
+                    const tag = String((el && el.tagName) || '').toUpperCase();
+                    return !!(el && (el.isContentEditable || tag === 'TEXTAREA' ||
+                        (tag === 'INPUT' && !/^(button|checkbox|radio|submit|reset|file|range|color)$/i.test(String(el.type || 'text')))));
+                } catch (e) { return false; }
+            };
+            doc.addEventListener('focusin', event => { if (editable(event.target)) this._keyboardLikelyOpen = true; }, { capture: true, passive: true });
+            doc.addEventListener('focusout', () => {
+                setTimeout(() => {
+                    try { this._keyboardLikelyOpen = editable(doc.activeElement); } catch (e) { this._keyboardLikelyOpen = false; }
+                }, 80);
+            }, { capture: true, passive: true });
             doc.addEventListener('contextmenu', event => event.preventDefault());
             let lastMove = 0;
             const label = el => el && ((el.id || el.tagName || '').replace(/[^a-zA-Z0-9_.:-]/g, '').slice(0, 80)) || '-';
@@ -116,47 +194,106 @@ class NuxelHome {
         } catch (e) { /* cross-origin applications are deliberately not inspected */ }
     }
 
-    _removeAppSurface() {
-        const { app, frame } = this.appSession;
-        if (frame && frame.releasePointerCapture) {
-            try {
-                const captures = frame.__nuxelPointerCaptures || [];
-                captures.forEach(id => frame.releasePointerCapture(id));
-            } catch (e) { /* the frame may already have been detached */ }
+    _removeAppSurface(appId = null) {
+        const ids = appId ? [appId] : Array.from(this.appSurfaces.keys());
+        for (const id of ids) {
+            const surface = this.appSurfaces.get(id);
+            if (!surface) continue;
+            try { if (surface.frame && surface.frame.contentWindow) surface.frame.contentWindow.stop(); } catch (e) {}
+            [surface.frame, surface.bar, surface.status].forEach(el => {
+                if (!el) return;
+                try { el.remove(); } catch (e) {}
+            });
+            this.appSurfaces.delete(id);
         }
-        const surface = app && this.appSurfaces.get(app.id);
-        if (surface) {
-            [surface.frame, surface.bar, surface.status].forEach(el => { if (el) el.remove(); });
-            this.appSurfaces.delete(app.id);
-        }
+        // A stale node that lost its Map entry is still a full-screen iframe and
+        // can keep an invisible modal/input layer alive.  Remove only nodes that
+        // are no longer owned by a live background session; removing every
+        // surface here would silently destroy every tab in Recents.
         try {
+            const live = new Set();
+            this.appSurfaces.forEach(surface => {
+                [surface.frame, surface.bar, surface.status].forEach(el => { if (el) live.add(el); });
+            });
+            document.querySelectorAll('.pwa-frame,.pwa-app-status,.pwa-app-bar').forEach(el => {
+                if (!live.has(el)) el.remove();
+            });
+        } catch (e) {}
+        try {
+            if (document.exitPointerLock) document.exitPointerLock();
             if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-        } catch (e) { /* a torn-down WebKit frame may no longer expose activeElement */ }
+        } catch (e) {}
     }
 
-    _closeAppSurface() {
+    _closeAppSurface(reason) {
+        const app = this.appSession.app;
+        const appId = app && app.id;
         this.appGeneration++;
-        if (this.appSession.app && this.appSession.app.id === 'org.nuxel.Terminal' &&
+        if (app && app.id === 'org.nuxel.Terminal' &&
             !this.appSession.frame && window.NuxelHost && window.NuxelHost.available) {
             Promise.resolve(window.NuxelHost.action('close-terminal')).catch(error => {
                 console.error('[Nuxel] Terminal close failed:', error);
             });
         }
-        if (this.appSession.state !== 'CLOSED') this._setAppState('CLOSING');
-        this._removeAppSurface();
+        // Keyboard/IME focus, pointer grabs and transient overlays belong to the
+        // closing app.  Release them before the compositor is asked to repaint.
+        try { this._dismissKeyboard(); } catch (e) {}
+        if (this.appSession.state !== 'CLOSED') this._setAppState('CLOSING', app, this.appSession.frame);
+        this._removeAppSurface(appId || null);
+        ['#nuxel-power-menu'].forEach(sel => {
+            try { document.querySelectorAll(sel).forEach(el => el.remove()); } catch (e) {}
+        });
         this._setAppState('CLOSED', null, null);
+        this._nativeKeyboardVisible = false;
+        this._keyboardLikelyOpen = false;
+        if (this.sessions) {
+            if (appId) this.sessions.close(appId);
+            else this.sessions.home();
+        }
+        try {
+            window.dispatchEvent(new CustomEvent('nuxel:app-closed', {
+                detail: { appId: appId || null, reason: reason || 'close' },
+            }));
+        } catch (e) {}
+        try {
+            if (window.NuxelZoomPolicy && window.NuxelZoomPolicy.reset) window.NuxelZoomPolicy.reset(window);
+        } catch (e) {}
+        try {
+            const host = window.NuxelHost;
+            if (host && host.available && typeof host.action === 'function') {
+                Promise.resolve(host.action('after-app-close')).catch(() => {});
+            }
+        } catch (e) {}
+        this._inputTrace(`app:closed id=${appId || 'none'} reason=${reason || 'close'}`);
+    }
+
+    _notifyAppFrame(type, reason) {
+        const frame = this.appSession.frame;
+        if (!frame || !frame.contentWindow) return;
+        try {
+            frame.contentWindow.postMessage({ type, reason: reason || type }, window.location.origin);
+        } catch (e) { /* a cross-origin or torn-down frame is ignored */ }
     }
 
     _backgroundForegroundApp() {
         const { app, frame } = this.appSession;
         if (!app || this.appSession.state === 'CLOSED') return false;
+        // Tell a same-origin app to suspend its runtime before the surface is
+        // removed from hit-testing.  Doom uses this to pause the WASM loop;
+        // document.visibilitychange alone was not delivered while the parent
+        // lockscreen covered a still-ACTIVE iframe (measured 136% CPU).
+        this._notifyAppFrame('nuxel:suspend', 'background');
         // A native application owns a separate top-level Wayland surface, not a
-        // DOM iframe.  Returning early here (the pre-A45 behaviour) left the
-        // Terminal window in front of Home: the penguin/Home tap ran, the
-        // launcher repainted underneath it, and the glass did not change.
-        // Close that surface through the host's narrow, typed action instead.
+        // DOM iframe.  Home/lock must only MINIMIZE it: calling
+        // _closeAppSurface() retired the launcher session (and a Terminal PTY)
+        // even though the owner merely pressed Power or Home.  Keep the process
+        // and its session alive so it is still running after unlock and the
+        // same window can be resumed instead of spawning a second copy.
         if (!frame) {
-            this._closeAppSurface();
+            this._setAppState('BACKGROUND', app, null);
+            if (this.sessions && app) this.sessions.home();
+            this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' }, 4000);
+            this._inputTrace(`app:backgrounded id=${app.id} native=1 preserved=1`);
             return true;
         }
         const surface = this.appSurfaces.get(app.id);
@@ -182,6 +319,12 @@ class NuxelHome {
         if (typeof frame.setAttribute === 'function') frame.setAttribute('data-nuxel-backgrounded', 'true');
         this._setAppState('BACKGROUND', app, frame);
         if (this.sessions && app) this.sessions.home();
+        try {
+            const host = window.NuxelHost;
+            if (host && host.available && typeof host.action === 'function') {
+                Promise.resolve(host.action('force-redraw')).catch(() => {});
+            }
+        } catch (e) {}
         return true;
     }
 
@@ -196,11 +339,14 @@ class NuxelHome {
         // edge gesture reveals them.  Native apps still use their own dock.
         this._setNavDock(false);
         if (surface.frame) {
+            try { this._installPwaHistoryProbe(surface.frame); } catch (e) {}
             surface.frame.__nuxelBackgrounded = false;
             if (typeof surface.frame.removeAttribute === 'function') surface.frame.removeAttribute('data-nuxel-backgrounded');
             this._observeAppFrame(surface.frame, app);
         }
         this._setAppState('ACTIVE', app, surface.frame);
+        // The surface is visible again; let the app resume a paused runtime.
+        this._notifyAppFrame('nuxel:resume', 'resume');
         // A game or any app may gain focus without owning an editable field.
         // Never let a stale IME surface ride along with the app launch.
         this._dismissKeyboard();
@@ -220,6 +366,19 @@ class NuxelHome {
             recents: null,
             qs: window.qs || null,
         };
+        // The native host publishes the actual OSK visibility, including for
+        // native toplevels and frames this controller cannot inspect directly.
+        // Back's first precedence rule therefore remains truthful everywhere.
+        try {
+            if (window.NuxelHost && typeof window.NuxelHost.onEvent === 'function') {
+                window.NuxelHost.onEvent((name, detail) => {
+                    if (name !== 'keyboard-visible' || !detail) return;
+                    this._nativeKeyboardVisible = detail.visible === true ||
+                        detail.visible === 1 || detail.visible === '1';
+                    if (this._nativeKeyboardVisible) this._keyboardLikelyOpen = true;
+                });
+            }
+        } catch (e) {}
 
         // Bind global events
         this._bindGlobalEvents();
@@ -236,6 +395,7 @@ class NuxelHome {
         try {
             if (window.appRegistry && window.appRegistry.refreshFromBridge) {
                 window.appRegistry.refreshFromBridge();
+                if (window.appRegistry.startBridgeWatch) window.appRegistry.startBridgeWatch(5000);
             }
         } catch (e) { /* first paint must not depend on the bridge */ }
 
@@ -496,6 +656,18 @@ class NuxelHome {
     }
 
     _bindGlobalEvents() {
+        const topEditable = el => {
+            try {
+                const tag = String((el && el.tagName) || '').toUpperCase();
+                return !!(el && (el.isContentEditable || tag === 'TEXTAREA' ||
+                    (tag === 'INPUT' && !/^(button|checkbox|radio|submit|reset|file|range|color)$/i.test(String(el.type || 'text')))));
+            } catch (e) { return false; }
+        };
+        document.addEventListener('focusin', e => { if (topEditable(e.target)) this._keyboardLikelyOpen = true; }, { capture: true, passive: true });
+        document.addEventListener('focusout', () => {
+            setTimeout(() => { this._keyboardLikelyOpen = topEditable(document.activeElement); }, 80);
+        }, { capture: true, passive: true });
+
         // Handle incoming calls
         document.addEventListener('call:incoming', (event) => {
             this._showIncomingCall(event.detail);
@@ -599,6 +771,14 @@ class NuxelHome {
             else if (action === 'stop') this.stopLoading();
             else if (action === 'reload-launcher') this.reloadLauncher();
             else if (action === 'recents') this.recentsToggle();
+            else if (action === 'all-apps') {
+                this._dismissLauncherChrome();
+                if (window.launcher) window.launcher.openDrawer();
+            }
+            else if (action === 'notifications-panel') {
+                this._dismissLauncherChrome();
+                if (this.components.qs) this.components.qs.open();
+            }
             else if (action === 'search' && this.components.search) this.components.search.open();
             else if (action === 'settings') appRegistry.launchApp('nuxel-settings');
         };
@@ -708,7 +888,11 @@ class NuxelHome {
         try { NuxelKeyringRelay.attach(frame, app.id); } catch (e) {}
         // PWA chrome is immersive by default: no native dock over the app.  The
         // bottom swipe reveals it (immersive.js -> nuxel.setNavVisible).
-        this._setNavDock(false);
+        // Calendar is a normal app with persistent Nuxel navigation.  Every
+        // other PWA is immersive by default.  The native dock reserves its
+        // exclusive zone, so the OSK sits above the three buttons.
+        const persistentNav = app.id === 'org.nuxel.Calendar';
+        this._setNavDock(persistentNav);
         this._setAppState('LAUNCHING', app, frame);
 
         const status = document.createElement('div');
@@ -726,6 +910,7 @@ class NuxelHome {
         frame.addEventListener('load', () => {
             if (this.appSession.frame !== frame) return;
             status.remove();
+            try { this._installPwaHistoryProbe(frame); } catch (e) {}
             if (frame.__nuxelBackgrounded || this.appSession.state === 'BACKGROUND') {
                 // Home was pressed while this document was loading.  Keep it
                 // hidden; Recents can still resume the completed session.
@@ -734,7 +919,7 @@ class NuxelHome {
             }
             this._setAppState('ACTIVE', app, frame);
             this._observeAppFrame(frame, app);
-            this._setNavDock(false);
+            this._setNavDock(app.id === 'org.nuxel.Calendar');
             this._dismissKeyboard();
         }, { once: true });
         frame.addEventListener('error', () => {
@@ -782,6 +967,43 @@ class NuxelHome {
             return;
         }
 
+        // Lock/Home/minimize never terminate a native process.  Before
+        // spawning anything, ask the compositor for its real toplevel inventory
+        // and activate that exact window if it is still alive.  This is what
+        // makes "lock, unlock, tap the icon again" resume the running app
+        // instead of creating a second instance (and a second window).
+        this._findLiveNativeWindow(app).then((win) => {
+            if (!win) return this._execNativeLaunch(app, target);
+            const surfaceTarget = win.app_id || target;
+            return this._httpBridge('POST', '/api/v1/windows/activate', {
+                app_id: surfaceTarget,
+            }, 6000).then((res) => {
+                if (!res || res.success === false) return this._execNativeLaunch(app, target);
+                if (this.appSession.app && this.appSession.app.id !== app.id) return;
+                console.log('[Nuxel] native resumed:', surfaceTarget);
+                this._setAppState('ACTIVE', app, null);
+                if (this.sessions) this.sessions.register(app, null);
+                this._inputTrace('native:resumed id=' + app.id + ' surface=' + surfaceTarget);
+            });
+        }).catch(() => this._execNativeLaunch(app, target));
+    }
+
+    _findLiveNativeWindow(app) {
+        const target = app.nativeAppId || app.flatpak_id || app.id;
+        const ids = [target, app.id, app.nativeAppId, app.flatpak_id].filter(Boolean);
+        const wantedTitle = String(app.name || '').trim().toLowerCase();
+        return this._httpBridge('GET', '/api/v1/windows/list', null, 4000).then((list) => {
+            const windows = (list && Array.isArray(list.windows)) ? list.windows : [];
+            return windows.find((win) => {
+                if (!win || win.home) return false;
+                if (ids.indexOf(win.app_id) >= 0) return true;
+                const title = String(win.title || '').toLowerCase();
+                return !!(wantedTitle && title.indexOf(wantedTitle) >= 0);
+            }) || null;
+        });
+    }
+
+    _execNativeLaunch(app, target) {
         // The authoritative launch authority is the HTTP bridge's CLOSED-verb
         // /apps/exec endpoint: it resolves the target from its fixed allowlist /
         // canonical registry and never executes a client-supplied path.
@@ -795,6 +1017,7 @@ class NuxelHome {
                 err.detail = (res && res.detail) || null;
                 throw err;
             }
+            if (this.appSession.app && this.appSession.app.id !== app.id) return;
             console.log('[Nuxel] native launched:', target, res.pid || '');
             // Native apps own a separate top-level Wayland surface, so the
             // launcher records the session without an iframe.
@@ -802,6 +1025,7 @@ class NuxelHome {
             if (this.sessions) this.sessions.register(app, null);
         }).catch((error) => {
             console.error('[Nuxel] native launch failed:', error);
+            if (this.appSession.app && this.appSession.app.id !== app.id) return;
             this._setAppState('FAILED', app, null);
             const detail = error && (error.detail || error.message);
             const toast = document.createElement('div');
@@ -891,58 +1115,146 @@ class NuxelHome {
     // Public system-navigation contract.  Keep these methods on the Home
     // controller rather than making the button bar reach into individual app
     // iframes: Back/Home/Recents must work identically for every PWA.
+
+    /* An app-declared Back state is the most precise source of truth.  Apps
+       opt in with window.NuxelBack={canGoBack,back}; Calendar and Doom use it
+       so a hidden editor/pause control can never be clicked by mistake. */
+    _pwaExplicitBack(win) {
+        try {
+            const api = win && win.NuxelBack;
+            if (!api || typeof api.canGoBack !== 'function') return null;
+            const can = api.canGoBack() === true;
+            if (!can) return 'root';
+            if (typeof api.back !== 'function') return 'root';
+            const handled = api.back();
+            return handled === false ? 'root' : 'handled';
+        } catch (e) { return null; }
+    }
+
+    /* Only a genuinely visible, enabled Back control counts.  The old
+       querySelector() selected Calendar's hidden editor Back and Doom's hidden
+       in-game MENU button, making a single Back appear to do nothing. */
+    _visibleBackControl(doc) {
+        try {
+            const win = doc && doc.defaultView;
+            const nodes = doc.querySelectorAll('[data-action="back"], [data-nav="back"], .settings-back');
+            for (const el of nodes) {
+                if (!el || el.disabled) continue;
+                if (el.closest('[hidden], [aria-hidden="true"]')) continue;
+                if (el.getAttribute('aria-hidden') === 'true') continue;
+                const cs = win && win.getComputedStyle ? win.getComputedStyle(el) : null;
+                if (cs && (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0)) continue;
+                const rect = typeof el.getBoundingClientRect === 'function' ? el.getBoundingClientRect() : null;
+                if (!rect || rect.width <= 0 || rect.height <= 0) continue;
+                return el;
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    /* Same-document history entries are the real Back stack for a WebKit PWA.
+       A bare history.length is monotonic (and therefore sticky after one Back),
+       so track depth through pushState/replaceState and popstate instead. */
+    _installPwaHistoryProbe(frame) {
+        try {
+            const win = frame && frame.contentWindow;
+            const hist = win && win.history;
+            if (!win || !hist || typeof hist.pushState !== 'function' || win.__nuxelHistoryProbe) return;
+            win.__nuxelHistoryProbe = true;
+            frame.__nuxelNavDepth = 0;
+            const marker = state => (state && typeof state === 'object' && Number.isFinite(Number(state.__nuxelDepth)))
+                ? Math.max(0, Number(state.__nuxelDepth)) : null;
+            const withDepth = (state, depth) => (state && typeof state === 'object' && !Array.isArray(state))
+                ? Object.assign({}, state, { __nuxelDepth: depth })
+                : { __nuxelValue: state, __nuxelDepth: depth };
+            try {
+                hist.replaceState(withDepth(hist.state, 0), '', win.location.href);
+            } catch (e) {}
+            const push = hist.pushState;
+            const replace = hist.replaceState;
+            hist.pushState = function (state, title, url) {
+                const depth = (frame.__nuxelNavDepth || 0) + 1;
+                const result = push.call(hist, withDepth(state, depth), title, url);
+                frame.__nuxelNavDepth = depth;
+                return result;
+            };
+            hist.replaceState = function (state, title, url) {
+                const depth = frame.__nuxelNavDepth || 0;
+                return replace.call(hist, withDepth(state, depth), title, url);
+            };
+            win.addEventListener('popstate', event => {
+                const depth = marker(event && event.state);
+                if (depth !== null) frame.__nuxelNavDepth = depth;
+                else if (frame.__nuxelBackPending) frame.__nuxelNavDepth = Math.max(0, (frame.__nuxelNavDepth || 0) - 1);
+                frame.__nuxelBackPending = false;
+            }, true);
+        } catch (e) { /* cross-origin frames are deliberately not inspected */ }
+    }
+
+    _pwaBack(frame) {
+        try {
+            const win = frame && frame.contentWindow;
+            const doc = frame && frame.contentDocument;
+            if (!win || !doc) return 'root';
+            this._installPwaHistoryProbe(frame);
+            const explicit = this._pwaExplicitBack(win);
+            if (explicit) return explicit;
+            /* The Navigation API exposes a real canGoBack flag where WebKit
+               provides it; it updates after Back, unlike history.length. */
+            try {
+                if (win.navigation && typeof win.navigation.canGoBack === 'boolean') {
+                    if (win.navigation.canGoBack) { win.navigation.back(); return 'handled'; }
+                }
+            } catch (e) {}
+            if ((frame.__nuxelNavDepth || 0) > 0) {
+                frame.__nuxelBackPending = true;
+                win.history.back();
+                return 'handled';
+            }
+            const control = this._visibleBackControl(doc);
+            if (control) { control.click(); return 'handled'; }
+        } catch (e) { /* cross-origin iframe: no authority to read history */ }
+        return 'root';
+    }
+
     back() {
         if (this._isLocked()) return;
+        // PWNAGE-80000 precedence: keyboard -> in-app Back -> graceful close.
+        // A normal single Back never force-kills anything.
+        if (this._keyboardVisible()) {
+            this._inputTrace('back:keyboard-dismiss');
+            this._dismissKeyboard();
+            return;
+        }
         if (this.components.search && this.components.search.isOpen) { this.components.search.close(); return; }
         if (this.components.qs && this.components.qs.isOpen) { this.components.qs.collapseOrClose(); return; }
         if (window.recents && window.recents.isOpen) { window.recents.close('back'); return; }
         const folder = document.querySelector('.folder-sheet'); if (folder) { folder.remove(); return; }
         if (window.launcher && window.launcher.drawerOpen) { window.launcher.closeDrawer(); return; }
-        if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.visible()) { window.NuxelTouchKeyboard.hide(); return; }
-        // The working keyboard is the compositor's Stevia OSK, not the DOM
-        // fallback.  Back must first remove text-input focus, which asks the
-        // compositor to hide its keyboard while preserving the typed value.
-        if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.nativeProvider) {
-            const field = this._activeEditable();
-            if (field) { this._blurActiveField(); return; }
-        }
+
         const frame = this.appSession.frame;
         if (frame && this.appSession.state === 'ACTIVE') {
-            // Same-origin PWAs use their own browser history.  Track the
-            // baseline history length when the app surface first loads, so a
-            // just-opened app (or one that has returned to its root) minimises
-            // to Home instead of navigating back to about:blank or a stale
-            // in-app entry and appearing to stay foreground while the dock
-            // paints over it.
-            try {
-                const win = frame.contentWindow;
-                const hist = win && win.history;
-                if (hist) {
-                    if (typeof frame.__nuxelNavBase !== 'number') {
-                        frame.__nuxelNavBase = hist.length;
-                    }
-                    if (hist.length > frame.__nuxelNavBase) {
-                        frame.__nuxelNavBase = hist.length - 1;
-                        hist.back();
-                        return;
+            const target = this._pwaBack(frame);
+            if (target === 'handled') {
+                this._inputTrace('back:pwa-app-control');
+                if (this._foregroundSurfaceVisible()) {
+                    this._pwaBackStrikes = 0;
+                } else {
+                    this._pwaBackStrikes++;
+                    if (this._pwaBackStrikes >= 2) {
+                        this._pwaBackStrikes = 0;
+                        this._backgroundForegroundApp();
+                        this.home();
+                        this._inputTrace('back:pwa-invisible-bounded-recovery');
                     }
                 }
-                const doc = frame.contentDocument;
-                const back = doc && doc.querySelector('[data-action="back"], [data-nav="back"], .settings-back');
-                if (back) { back.click(); return; }
-            } catch (err) { /* cross-origin iframe: no authority to read history */ }
-            // PWNAGE-54000: Back is the system Back contract.  When the app
-            // itself has no further history step, close the foreground app
-            // gracefully by returning to Home.  This is a normal background
-            // transition (state is preserved); it is not a kill or a crash.
-            this._inputTrace('back:pwa-at-root-close-to-home');
-            this.home();
+                return;
+            }
+            this._pwaBackStrikes = 0;
+            this._inputTrace('back:pwa-at-root-graceful-close');
+            this.gracefulCloseForeground('back-root');
             return;
         }
-        // Native apps own a separate top-level Wayland surface (browser,
-        // camera, ...): Back must first navigate that app's own history before
-        // it may background to Home.  The bridge drives the foreground native
-        // app's back contract and reports whether it was handled or at root.
         if (!frame && this.appSession.app && this.appSession.state === 'ACTIVE' &&
             (this.appSession.app.type === 'native' || this.appSession.app.type === 'flatpak')) {
             if (this._backBusy) return;
@@ -950,24 +1262,17 @@ class NuxelHome {
             this._inputTrace('back:native-request');
             this._httpBridge('POST', '/api/v1/apps/back', {
                 app_id: 'org.nuxel.Home', source: 'short-back',
-            }).then((res) => {
+            }, 4000).then((res) => {
                 this._backBusy = false;
-                if (res && res.handled) {
-                    this._inputTrace('back:native-handled');
-                    return;   // app stays foreground, unobscured
-                }
+                if (res && res.handled) { this._inputTrace('back:native-handled'); return; }
                 if (res && res.at_root && res.foreground) {
-                    // The native app has no internal back step: close it
-                    // gracefully by returning Home (the app keeps its data and
-                    // is not killed; the compositor's close path is long-Back).
-                    this._inputTrace('back:native-at-root-close-to-home');
-                    this.home();
+                    this._inputTrace('back:native-at-root-graceful-close');
+                    this.gracefulCloseForeground('back-native-root');
                     return;
                 }
-                // No foreground native surface (it already closed): return Home.
                 this._inputTrace('back:native-no-foreground');
                 this.home();
-            });
+            }).catch(() => { this._backBusy = false; this.home(); });
             return;
         }
         this.home();
@@ -1051,6 +1356,11 @@ class NuxelHome {
         } catch (e) {}
         this._blurActiveField();
         if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+        // Locking must suspend a foreground game/app.  The lockscreen is only
+        // a visual overlay; leaving the app ACTIVE kept Doom's main loop and
+        // WebKit's compositor running behind it.  Backgrounding preserves the
+        // iframe/session so unlocking can resume the exact game state.
+        try { this._backgroundForegroundApp(); } catch (e) {}
         this._setNavDock(false);
         if (this.lockscreen) this.lockscreen.show(reason);
         // Persist the authoritative locked state in the root bridge; the JS
@@ -1060,9 +1370,12 @@ class NuxelHome {
                 window.NuxelSecurityLock.lock(reason || 'screen-lock');
             }
         } catch (e) { /* fail closed: the overlay remains */ }
-        /* A lock always blanks the panel: idempotent for a display-off lock. */
+        /* A lock always blanks the panel: idempotent for a display-off lock.
+         * Ask for a full compositor/framebuffer frame as well, so a stale app
+         * surface cannot leave a coloured band above the lockscreen. */
         const host = window.NuxelHost;
         if (host && host.available && typeof host.action === 'function') {
+            Promise.resolve(host.action('force-redraw')).catch(() => {});
             Promise.resolve(host.action('screen-off')).catch(() => {});
         }
     }
@@ -1084,7 +1397,15 @@ class NuxelHome {
         // the Home surface has been requested.  One animation frame lets the
         // lockscreen removal commit before the layer-shell surface maps.
         const raf = window.requestAnimationFrame || ((fn) => setTimeout(fn, 0));
-        raf(() => this._setNavDock(true));
+        raf(() => {
+            this._setNavDock(true);
+            try {
+                const host = window.NuxelHost;
+                if (host && host.available && typeof host.action === 'function') {
+                    Promise.resolve(host.action('force-redraw')).catch(() => {});
+                }
+            } catch (e) {}
+        });
         /* The system monitor pauses while the panel is locked or display-off.
            The boot-lock path never passed through a display ON transition, so
            its poll loop stayed stopped after unlock (a real startup race).
@@ -1213,6 +1534,7 @@ class NuxelHome {
             this._applyBootOrientation();
         }
         this._watchDisplayForLock();
+        this._watchForegroundVisibility();
     }
 
     /* Boot orientation contract (v0.7.7-beta).
@@ -1281,11 +1603,13 @@ class NuxelHome {
         const read = () => {
             const host = window.NuxelHost;
             if (!host || !host.available || typeof host.statusRead !== 'function') return;
+            /* PWNAGE-85000: the wl-fb state document is authoritative again
+               after the launcher resize re-entry fix.  Do not block this 5 s
+               watcher on a bridge RPC that may not have a token yet; a stalled
+               RPC would leave body.display-off unset and keep the 1 Hz
+               lockscreen indicator poll running while the panel is blanked. */
             Promise.resolve(host.statusRead('wlfb-state')).then((r) => {
                 const t = (r && (r.text || r.value)) || '';
-                /* The running bridge publishes `display=off` in its frame
-                   status line; older display-state documents used DISPLAY_OFF.
-                   Accept both so an idle/power screen-off always re-locks. */
                 const off = /(^|[\s;])display=off([\s;]|$)/i.test(t) || /^DISPLAY_OFF\b/m.test(t);
                 document.body.classList.toggle('display-off', off);
                 document.body.dataset.displayOff = off ? '1' : '0';
@@ -1296,16 +1620,24 @@ class NuxelHome {
                 } else if (this._lastDisplayOff === true && window.NuxelSystemMonitor && window.NuxelSystemMonitor.configure) {
                     window.NuxelSystemMonitor.configure();
                 }
-                /* A wake is an event, not a reason to wait for the next poll.
-                   Dispatch it ONLY on an actual OFF -> ON transition: the old
-                   unconditional dispatch every 2 s re-ran battery, touch and
-                   status reads forever while the display was already on. */
                 const woke = (this._lastDisplayOff === true && !off);
                 if (woke) {
                     try {
                         document.dispatchEvent(new CustomEvent('nuxel:display-on'));
                         if (this.lockscreen && typeof this.lockscreen.refreshIndicators === 'function') {
                             this.lockscreen.refreshIndicators();
+                        }
+                        // PWNAGE-88000 zero-flash: re-assert the locked
+                        // presentation and force a compositor repaint so the
+                        // post-wake screencopy is the lockscreen, not the
+                        // desktop.  Never show the lockscreen over an unlocked
+                        // session; the security provider is authority.
+                        if (this._isLocked() && this.lockscreen && typeof this.lockscreen.show === 'function') {
+                            this.lockscreen.show('display-on');
+                        }
+                        const host = window.NuxelHost;
+                        if (host && host.available && typeof host.action === 'function') {
+                            Promise.resolve(host.action('force-redraw')).catch(() => {});
                         }
                     } catch (e) {}
                 }
@@ -1327,27 +1659,136 @@ class NuxelHome {
         try { if (frame && frame.contentWindow) frame.contentWindow.stop(); } catch (e) {}
     }
 
-    reloadLauncher() { window.location.reload(); }
+    reloadLauncher() {
+        // One full compositor/framebuffer frame before the document reloads, so
+        // a stale top band cannot survive the reload transition.
+        try {
+            const host = window.NuxelHost;
+            if (host && host.available && typeof host.action === 'function') {
+                Promise.resolve(host.action('force-redraw')).catch(() => {});
+            }
+        } catch (e) {}
+        window.location.reload();
+    }
 
-    terminateForeground() {
-        // The launcher is never a session, so a held Back can only terminate a
-        // foreground app.  On Home this intentionally does nothing.
+    /* Graceful close: ask the app/compositor to close, bound the wait, and
+     * leave a CLOSING state visible in Recents when it refuses.  This never
+     * force-kills. */
+    gracefulCloseForeground(reason) {
         const app = this.appSession.app;
-        this._suppressBackUntil = Date.now() + 500;
-        if (!app) return;
-        if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
-        if (this.sessions) this.sessions.close(app.id);
-        // A native app owns a separate top-level Wayland surface (browser,
-        // camera, ...): clearing the DOM session does not close that surface.
-        // Route the close through the compositor's fixed verb, which closes
-        // ONLY the activated non-Home toplevel and never kills Home/daemons.
-        if (!this.appSession.frame) {
-            this._httpBridge('POST', '/api/v1/apps/close-foreground', {
-                app_id: 'org.nuxel.Home', source: 'long-back',
+        if (!app) { this.home(); return Promise.resolve(false); }
+        return this.gracefulCloseApp(app.id, reason || 'back-root');
+    }
+
+    gracefulCloseApp(appId, reason) {
+        const app = (this.appSession.app && this.appSession.app.id === appId)
+            ? this.appSession.app : (appRegistry.getApp(appId) || { id: appId, name: appId });
+        const isForeground = !!(this.appSession.app && this.appSession.app.id === appId &&
+            ['ACTIVE', 'LAUNCHING', 'CLOSING'].indexOf(this.appSession.state) >= 0);
+        const surface = this.appSurfaces.get(appId);
+        const frame = isForeground ? this.appSession.frame : (surface && surface.frame) || null;
+        const session = this.sessions && this.sessions.get(appId);
+        if (session) session.state = 'closing';
+        if (isForeground) this._setAppState('CLOSING', app, frame);
+        this._dismissKeyboard();
+        /* A background PWA is not a native app merely because appSession does
+           not currently point at its iframe.  Classify by the app contract and
+           keep the stored surface so Recents can tear the PWA down correctly. */
+        const native = app.type === 'native' || app.type === 'flatpak' || (isForeground && !frame);
+        this._inputTrace(`app:graceful-start id=${appId} native=${native ? 1 : 0} reason=${reason || 'close'}`);
+        if (native) {
+            const target = app.nativeAppId || app.id;
+            const endpoint = isForeground ? '/api/v1/apps/close-foreground' : '/api/v1/apps/close';
+            const payload = isForeground
+                ? { app_id: 'org.nuxel.Home', source: reason || 'graceful-close' }
+                : { app_id: target, source: reason || 'graceful-close' };
+            return this._httpBridge('POST', endpoint, payload, 4000)
+              .then(() => new Promise(resolve => setTimeout(resolve, 1200)))
+              .then(() => this._httpBridge('GET', '/api/v1/windows/list', null, 3000))
+              .then((list) => {
+                const still = !!(list && Array.isArray(list.windows) && list.windows.some(w =>
+                    w && !w.home && (w.app_id === target || w.app_id === app.id)));
+                if (still) {
+                    if (session) session.state = 'closing';
+                    this._inputTrace(`app:graceful-timeout id=${appId} (swipe right to force-kill)`);
+                    this._notifySessions();
+                    return false;
+                }
+                this._finishGracefulClose(appId, reason);
+                return true;
+            }).catch(() => {
+                if (session) session.state = 'closing';
+                this._notifySessions();
+                return false;
             });
         }
-        this._closeAppSurface();
+        // PWA: give the document one bounded turn to flush/cancel, then remove
+        // the iframe.  There is no native process to leave hung in this case.
+        try {
+            if (frame && frame.contentWindow) {
+                frame.contentWindow.postMessage({ type: 'nuxel:close-request' }, window.location.origin);
+            }
+        } catch (e) {}
+        return new Promise(resolve => setTimeout(() => {
+            this._finishGracefulClose(appId, reason);
+            resolve(true);
+        }, 250));
+    }
+
+    _finishGracefulClose(appId, reason) {
+        if (this.appSession.app && this.appSession.app.id === appId) {
+            this._closeAppSurface('graceful:' + (reason || 'close'));
+            this.home();
+        } else {
+            if (this.sessions) this.sessions.close(appId);
+            this._removeAppSurface(appId);
+            this._notifySessions();
+        }
+    }
+
+    _notifySessions() {
+        try { document.dispatchEvent(new CustomEvent('nuxel:sessions-changed', { detail: this.sessions ? this.sessions.list() : [] })); } catch (e) {}
+        try { if (window.recents && window.recents.isOpen && window.recents._render) window.recents._render(); } catch (e) {}
+    }
+
+    /* Force-kill is exactly the long-Back behaviour: release every keyboard,
+     * focus, modal and compositor resource, then stop the app (never Home or a
+     * daemon).  It is the explicit second-stage action in Recents. */
+    forceKillForeground(reason) {
+        const app = this.appSession.app;
+        if (!app) return false;
+        this._suppressBackUntil = Date.now() + 500;
+        this._dismissKeyboard();
+        const appId = app.id;
+        const native = !this.appSession.frame || app.type === 'native' || app.type === 'flatpak';
+        this._closeAppSurface('force:' + (reason || 'long-back'));
+        if (native) {
+            const target = app.nativeAppId || app.id;
+            this._httpBridge('POST', '/api/v1/apps/force-close', {
+                app_id: target, source: reason || 'long-back',
+            }, 5000).catch(() => {});
+        }
         this.home();
+        this._inputTrace(`app:force-killed id=${appId} reason=${reason || 'long-back'}`);
+        return true;
+    }
+
+    forceKillApp(appId, reason) {
+        if (this.appSession.app && this.appSession.app.id === appId) return this.forceKillForeground(reason);
+        const app = appRegistry.getApp(appId) || { id: appId };
+        if (this.sessions) this.sessions.close(appId);
+        this._removeAppSurface(appId);
+        const target = app.nativeAppId || appId;
+        this._httpBridge('POST', '/api/v1/apps/force-close', {
+            app_id: target, source: reason || 'recents-force',
+        }, 5000).catch(() => {});
+        this._notifySessions();
+        this._inputTrace(`app:force-killed-background id=${appId}`);
+        return true;
+    }
+
+    terminateForeground() {
+        return this.forceKillForeground('long-back');
     }
 
     /* Public chrome controls used by immersive.js.  A PWA can hide the native
@@ -1381,6 +1822,14 @@ class NuxelHome {
         if (!host || !host.available || typeof host.action !== 'function') return;
         try { Promise.resolve(host.action(visible ? 'nav-show' : 'nav-hide')).catch(() => {}); }
         catch (e) { /* the native dock FIFO may not exist yet; next lock retries */ }
+    }
+
+    _keyboardVisible() {
+        if (this._nativeKeyboardVisible) return true;
+        try { if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.visible()) return true; } catch (e) {}
+        if (document.body && document.body.classList && document.body.classList.contains('touch-keyboard-open')) return true;
+        const field = this._activeEditable();
+        return !!(field && this._keyboardLikelyOpen);
     }
 
     _activeEditable() {
@@ -1423,13 +1872,18 @@ class NuxelHome {
                 window.NuxelTouchKeyboard.hide();
             }
         } catch (e) {}
-        // The compositor keyboard belongs to whichever client owns text-input
-        // focus.  Ask the trusted host to raise Home/minimize the native app,
-        // which makes phoc send text-input leave to the app and closes Stevia.
+        this._keyboardLikelyOpen = false;
+        this._nativeKeyboardVisible = false;
+        // A PWA/Home keyboard is closed by the blur above.  Only a native
+        // top-level app needs the compositor focus bounce, and that helper now
+        // restores the same app instead of raising Home over it.
         try {
+            const app = this.appSession.app;
+            const nativeForeground = !!(app && !this.appSession.frame &&
+                (app.type === 'native' || app.type === 'flatpak'));
             const host = window.NuxelHost;
-            if (host && host.available && typeof host.action === 'function') {
-                Promise.resolve(host.action('dismiss-keyboard')).catch(() => {});
+            if (nativeForeground && host && host.available && typeof host.action === 'function') {
+                Promise.resolve(host.action('hide-keyboard')).catch(() => {});
             }
         } catch (e) {}
         try { window.dispatchEvent(new CustomEvent('nuxel:dismiss-keyboard')); } catch (e) {}

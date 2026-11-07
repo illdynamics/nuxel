@@ -868,6 +868,32 @@ class DisplayProvider:
             return "not_set"
         return "unknown"
 
+    def panel_state(self):
+        """Truthful panel on/off state for the Home wake/lock watcher.
+
+        ``/run/nuxel-wl-fb.state`` is also used for transient repaint receipts,
+        so it can lose the ``display=off`` marker.  The backlight ``bl_power``
+        node is the authoritative blanking state on this panel.
+        """
+        bl_power = self._read("/sys/class/backlight/panel/bl_power")
+        brightness = self._read("/sys/class/backlight/panel/brightness")
+        state_text = self._read("/run/nuxel-wl-fb.state") or ""
+        off = False
+        try:
+            if bl_power is not None and int(bl_power) != 0:
+                off = True
+        except (TypeError, ValueError):
+            pass
+        if not off and ("display=off" in state_text or "DISPLAY_SLEEP" in state_text):
+            off = True
+        return {
+            "success": True,
+            "off": off,
+            "bl_power": bl_power,
+            "brightness": brightness,
+            "source": "panel-backlight",
+        }
+
     def get_status(self):
         drm_entries = self._list("/sys/class/drm")
         typec_ports = [p for p in self._list("/sys/class/typec") if p.startswith("port")]
@@ -945,12 +971,16 @@ def _find_bluetooth_rfkill(root):
     return None
 
 
-def bluetooth_set_power(enabled, root="/", timeout=15.0):
+def bluetooth_set_power(enabled, root="/", timeout=15.0, persist=True):
     """Real Bluetooth power bring-up attempt (root-only, bounded).
 
     Unblock/block rfkill (which powers the BCM4375's BT rail) and start/stop
     bluetooth.service.  It returns what actually happened; the authoritative
     controller state is read back by the caller from the D-Bus bridge.
+
+    The requested state is also written to the durable interface document when
+    ``persist`` is true and this is the real root (``root='/'``).  Unit tests
+    inject a fake root and must not touch the host's /var/lib/nuxel.
     """
     enabled = bool(enabled)
     steps = []
@@ -968,25 +998,56 @@ def bluetooth_set_power(enabled, root="/", timeout=15.0):
     else:
         steps.append("no bluetooth rfkill node (radio not visible to kernel)")
 
-    unit = "start" if enabled else "stop"
-    try:
-        proc = subprocess.run(
-            ["/usr/bin/systemctl", unit, "bluetooth.service"],
-            capture_output=True, text=True, timeout=timeout,
-            env={"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C"},
-        )
-        if proc.returncode != 0:
-            errors.append("systemctl %s bluetooth.service rc=%d: %s"
-                          % (unit, proc.returncode,
-                             (proc.stderr or proc.stdout or "").strip()[:200]))
-        else:
-            steps.append("bluetooth.service %s" % ("started" if enabled else "stopped"))
-    except (OSError, subprocess.SubprocessError) as exc:
-        errors.append("systemctl %s failed: %s" % (unit, exc))
+    # The transport attach (patchram + btattach) and BlueZ are one power
+    # domain.  Keeping nuxel-bluetooth.service running while the owner wants
+    # Bluetooth OFF would re-power the radio after every reboot and on every
+    # service restart, so both units are managed together:
+    #   ON  -> rfkill unblock, attach HCI first, then start BlueZ
+    #   OFF -> stop BlueZ first, detach HCI, then soft-block rfkill
+    verb = "start" if enabled else "stop"
+    units = (("nuxel-bluetooth.service", "bluetooth.service") if enabled
+             else ("bluetooth.service", "nuxel-bluetooth.service"))
+    for unit_name in units:
+        try:
+            proc = subprocess.run(
+                ["/usr/bin/systemctl", verb, unit_name],
+                capture_output=True, text=True, timeout=timeout,
+                env={"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C"},
+            )
+            if proc.returncode != 0:
+                errors.append("systemctl %s %s rc=%d: %s"
+                              % (verb, unit_name, proc.returncode,
+                                 (proc.stderr or proc.stdout or "").strip()[:200]))
+            else:
+                steps.append("%s %s" % (unit_name, "started" if enabled else "stopped"))
+        except (OSError, subprocess.SubprocessError) as exc:
+            errors.append("systemctl %s %s failed: %s" % (verb, unit_name, exc))
+    if enabled and not any("nuxel-bluetooth.service" in e for e in errors):
+        # BlueZ can start a fraction before btattach has published hci0.  Give
+        # the adapter a bounded moment to appear so the caller's readback is
+        # meaningful (this never invents an adapter; it still reports failure).
+        import glob
+        deadline = time.monotonic() + min(8.0, float(timeout or 15.0))
+        while time.monotonic() < deadline and not glob.glob("/sys/class/bluetooth/hci*"):
+            time.sleep(0.1)
+
+    persisted = None
+    if persist and root == "/":
+        try:
+            import interface_state
+            interface_state.set_desired(
+                "bluetooth", enabled,
+                source="hw_providers.bluetooth_set_power")
+            persisted = True
+            steps.append("desired state persisted")
+        except Exception as exc:  # noqa: BLE001 - never mask the hardware result
+            persisted = False
+            errors.append("persist desired state failed: %s" % exc)
 
     return {
         "success": not errors,
         "requested": enabled,
+        "persisted": persisted,
         "steps": steps,
         "error": "; ".join(errors) if errors else None,
     }

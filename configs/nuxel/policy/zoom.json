@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "comment": "Central Nuxel zoom policy (PWNAGE-80000). Default is deny. The Permission Manager will own this document when it gains a zoom permission; no UI toggle is exposed yet. An app may only opt in with an explicit entry such as {\"org.example.App\": {\"zoom\": true}}.",
+  "default": "deny",
+  "apps": {}
+}

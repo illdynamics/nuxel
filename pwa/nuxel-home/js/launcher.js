@@ -9,9 +9,10 @@ class Launcher {
 
         this.currentPage = 0;
         this.appsPerPage = 20;
-        this.settings = { gridColumns: 4, gridRows: 5, dockColumns: 4, desktopCount: 2, homeLocked: false };
-        /* Portrait is rendered three icons wide (owner request).  The saved
-           preference stays untouched so landscape keeps its configured width. */
+        this.settings = { gridColumns: 4, gridRows: 5, drawerColumns: 3, dockColumns: 4, desktopCount: 2, homeLocked: false, defaultDesktop: 1, desktopNames: {} };
+        /* Home and the All Apps drawer are independent grids.  The Home grid
+           always honours the saved column count; the drawer has its own saved
+           count so changing one never silently changes the other. */
         this.effectiveGridColumns = 4;
         this.hiddenAppIds = new Set();
         this.appSizes = {};
@@ -28,6 +29,7 @@ class Launcher {
         this.dragStartY = 0;
         this.dragStartTime = 0;
         this.longPressTimer = null;
+        this.moveArmed = false;
         this.hasMoved = false;
         this.lastPointerX = 0;
         this.lastPointerY = 0;
@@ -52,6 +54,7 @@ class Launcher {
         this._loadOrder();
         this._loadLayout();
         this._applyLayout();
+        this._ensureDesktopLayout();
         this._renderAll();
         this._bindPointerEvents();
         this._bindOrientation();
@@ -92,11 +95,12 @@ class Launcher {
                 entries: this.layout ? this.layout.snapshot().entries : this.savedEntries,
                 pageAssignments: this.pageAssignments,
             }));
+            if (this.desktopLayout) this.desktopLayout.save();
         } catch (e) { console.warn('Could not save launcher layout:', e); }
     }
 
-    /* A phone held upright gets three app columns; landscape (and a desktop
-       window wider than it is tall) keeps the owner's configured width. */
+    /* Retained for callers that need the current orientation; Home column
+       count is now an explicit user setting and is never overridden by it. */
     _isPortrait() {
         try {
             if (window.matchMedia) {
@@ -117,12 +121,19 @@ class Launcher {
         };
         this.settings.gridColumns = clamp(this.settings.gridColumns, 3, 6, 4);
         this.settings.gridRows = clamp(this.settings.gridRows, 4, 7, 5);
+        this.settings.drawerColumns = clamp(this.settings.drawerColumns, 3, 6, 3);
         this.settings.dockColumns = 4; // Four original fixed dock shortcuts.
         this.settings.desktopCount = clamp(this.settings.desktopCount, 1, 8, 2);
         this.settings.homeLocked = this.settings.homeLocked === true;
-        this.effectiveGridColumns = this._isPortrait() ? 3 : this.settings.gridColumns;
+        this.settings.defaultDesktop = clamp(this.settings.defaultDesktop, 1, this.settings.desktopCount, 1);
+        if (!this.settings.desktopNames || typeof this.settings.desktopNames !== 'object') this.settings.desktopNames = {};
+        // Home settings are authoritative in every orientation.  The old
+        // portrait-only three-column override made a 4-column setting render
+        // as three and is intentionally gone.
+        this.effectiveGridColumns = this.settings.gridColumns;
         this.appsPerPage = this.effectiveGridColumns * this.settings.gridRows;
         document.documentElement.style.setProperty('--home-columns', this.effectiveGridColumns);
+        document.documentElement.style.setProperty('--drawer-columns', this.settings.drawerColumns);
         document.documentElement.style.setProperty('--dock-columns', this.settings.dockColumns);
     }
 
@@ -130,14 +141,45 @@ class Launcher {
         if (this._orientationWired) return;
         this._orientationWired = true;
         let pending = null;
+        let suppressResize = false;
         const reflow = () => {
+            /* The synthetic resize below is a notification to other widgets,
+               not a request to run this reflow again.  Without this guard the
+               resize listener re-entered forever, calling reset-zoom/repaint at
+               ~5 Hz even while the panel was blanked. */
+            if (suppressResize) return;
             if (pending !== null) clearTimeout(pending);
             pending = setTimeout(() => {
                 pending = null;
                 const before = this.effectiveGridColumns;
+                const drawerBefore = this.settings.drawerColumns;
                 this._applyLayout();
-                if (this.effectiveGridColumns !== before) this._renderAll();
-            }, 120);
+                // A rotation can leave WebKit page scale, cached layout or the
+                // drawer's intrinsic size from the previous viewport.  Reset the
+                // central zoom policy, rebuild the cached drawer, and force the
+                // grid to a fresh layout even when the column count is unchanged.
+                try {
+                    if (window.NuxelZoomPolicy && window.NuxelZoomPolicy.reset) window.NuxelZoomPolicy.reset(window);
+                    const host = window.NuxelHost;
+                    if (host && host.available && typeof host.action === 'function') {
+                        Promise.resolve(host.action('reset-zoom')).catch(() => {});
+                    }
+                } catch (e) {}
+                if (this.drawerOpen || this.drawerList) this._renderDrawerApps(true);
+                if (this.drawerList) {
+                    this.drawerList.style.gridTemplateColumns = 'repeat(' + this.settings.drawerColumns + ', minmax(0, 1fr))';
+                    this.drawerList.scrollTop = 0;
+                    try { void this.drawerList.offsetHeight; } catch (e) {}
+                }
+                try { document.documentElement.style.setProperty('--viewport-width', window.innerWidth + 'px'); } catch (e) {}
+                if (this.effectiveGridColumns !== before || drawerBefore !== this.settings.drawerColumns) this._renderAll();
+                try {
+                    suppressResize = true;
+                    try { window.dispatchEvent(new Event('resize')); }
+                    finally { suppressResize = false; }
+                } catch (e) {}
+                try { document.dispatchEvent(new CustomEvent('nuxel:orientation-reflow', { detail: { columns: this.settings.drawerColumns, width: window.innerWidth, height: window.innerHeight } })); } catch (e) {}
+            }, 160);
         };
         try {
             if (window.matchMedia) {
@@ -148,12 +190,15 @@ class Launcher {
         } catch (e) { /* optional */ }
         try { window.addEventListener('orientationchange', reflow, { passive: true }); } catch (e) {}
         try { window.addEventListener('resize', reflow, { passive: true }); } catch (e) {}
+        try { if (window.visualViewport) window.visualViewport.addEventListener('resize', reflow, { passive: true }); } catch (e) {}
     }
 
     updateHomeSettings(next) {
         const desired = Object.assign({}, this.settings, next || {});
         const desiredColumns = Math.max(3, Math.min(6, Number(desired.gridColumns) || 4));
-        const effectiveColumns = this._isPortrait() ? Math.min(3, desiredColumns) : desiredColumns;
+        desired.gridColumns = desiredColumns;
+        desired.drawerColumns = Math.max(3, Math.min(6, Number(desired.drawerColumns) || 3));
+        const effectiveColumns = desiredColumns;
         const cap = effectiveColumns * (Number(desired.gridRows) || 5);
         const wanted = Number(desired.desktopCount) || 2;
         const occupied = this._entries().length;
@@ -171,11 +216,47 @@ class Launcher {
                 this.pageAssignments[entry.id] = free; counts[free]++;
             }
         }
+        desired.defaultDesktop = Math.max(1, Math.min(wanted, Number(desired.defaultDesktop) || 1));
         this.settings = desired;
         this._applyLayout();
+        if (this.desktopLayout) this.desktopLayout.setGeometry(this.settings.gridColumns, this.settings.gridRows, this.settings.desktopCount);
         this.currentPage = Math.min(this.currentPage, this.settings.desktopCount - 1);
         this._saveLayout();
         this._renderAll();
+        return true;
+    }
+
+    moveDesktop(direction) {
+        const from = Number(this.currentPage) || 0;
+        const to = from + (Number(direction) < 0 ? -1 : 1);
+        if (to < 0 || to >= this.settings.desktopCount) return false;
+        const swap = (from, to) => {
+            const fromIds = this._entries().filter(e => Number(this.pageAssignments[e.id]) === from).map(e => e.id);
+            const toIds = this._entries().filter(e => Number(this.pageAssignments[e.id]) === to).map(e => e.id);
+            fromIds.forEach(id => { this.pageAssignments[id] = to; });
+            toIds.forEach(id => { this.pageAssignments[id] = from; });
+        };
+        swap(from, to);
+        const names = this.settings.desktopNames || {};
+        const a = names[from + 1], b = names[to + 1];
+        if (b) names[from + 1] = b; else delete names[from + 1];
+        if (a) names[to + 1] = a; else delete names[to + 1];
+        this.settings.desktopNames = names;
+        if (Number(this.settings.defaultDesktop) === from + 1) this.settings.defaultDesktop = to + 1;
+        else if (Number(this.settings.defaultDesktop) === to + 1) this.settings.defaultDesktop = from + 1;
+        this.currentPage = to;
+        this._saveLayout();
+        this._renderAll();
+        return true;
+    }
+
+    renameDesktop(name) {
+        const page = (Number(this.currentPage) || 0) + 1;
+        this.settings.desktopNames = this.settings.desktopNames || {};
+        const clean = String(name || '').trim().slice(0, 40);
+        if (clean) this.settings.desktopNames[page] = clean;
+        else delete this.settings.desktopNames[page];
+        this._saveLayout();
         return true;
     }
 
@@ -192,7 +273,8 @@ class Launcher {
         // desktop, no drawer, no edit mode, no transient folder sheet, and the
         // page scrolled back to the top.  It never depends on the page the user
         // happened to be on when they pressed the penguin/Home button.
-        this.currentPage = 0;
+        this.currentPage = Math.max(0, Math.min(this.settings.desktopCount - 1,
+            (Number(this.settings.defaultDesktop) || 1) - 1));
         this.exitEditMode();
         this.closeDrawer();
         document.querySelectorAll('.folder-sheet').forEach(el => el.remove());
@@ -227,15 +309,82 @@ class Launcher {
 
     _ensureLayout() {
         const ids = this._getOrderedApps().map(app => app.id);
-        if (!this.layout || ids.some(id => !this.layout.appIds.includes(id))) {
+        if (!this.layout) {
             this.layout = new window.NuxelHomeLayout(ids, this.savedEntries ? { entries: this.savedEntries } : { order: this.appOrder });
             this.savedEntries = null;
+        } else {
+            const added = ids.some(id => !this.layout.appIds.includes(id));
+            const removed = this.layout.appIds.some(id => !ids.includes(id));
+            if (added || removed) {
+                // A locked Home keeps the owner's exact layout.  New installs
+                // remain in the All Apps drawer and join Home after unlock.
+                if (!this.isHomeLocked()) {
+                    this.layout = new window.NuxelHomeLayout(ids, { entries: this.layout.snapshot().entries });
+                }
+            }
         }
         this.layout.entries.forEach((entry, index) => {
             const id = typeof entry === 'string' ? entry : entry.id;
             if (this.pageAssignments[id] === undefined) this.pageAssignments[id] = Math.floor(index / this.appsPerPage);
         });
         return this.layout;
+    }
+
+    _ensureDesktopLayout() {
+        if (!window.NuxelDesktopLayout) return null;
+        const apps = this._getOrderedApps().map(app => app.id);
+        if (!this.desktopLayout) {
+            let legacyWidgets = null;
+            try { legacyWidgets = JSON.parse(localStorage.getItem('nuxel.widgets') || 'null'); } catch (e) {}
+            this.desktopLayout = window.NuxelDesktopLayout.load({
+                columns: this.settings.gridColumns,
+                rows: this.settings.gridRows,
+                desktopCount: this.settings.desktopCount,
+                apps: apps,
+                appOrder: apps,
+                pageAssignments: this.pageAssignments,
+                legacyWidgets: legacyWidgets
+            });
+        }
+        this.desktopLayout.setGeometry(this.settings.gridColumns, this.settings.gridRows, this.settings.desktopCount);
+        this.desktopLayout.ensureApps(apps, this.pageAssignments, Array.from(this.hiddenAppIds));
+        this._ensureLayout();
+        const folderEntries = this.layout ? this.layout.entries.filter(e => e && e.type === 'folder') : [];
+        const folderIds = new Set(folderEntries.map(e => e.id));
+        this.desktopLayout.entities.slice().forEach(e => {
+            if (e.type === 'folder' && !folderIds.has(e.id)) this.desktopLayout.remove(e.id);
+        });
+        folderEntries.forEach(e => {
+            if (!this.desktopLayout.entity(e.id)) {
+                const desktop = Number(this.pageAssignments[e.id]);
+                const d = Number.isInteger(desktop) ? Math.max(0, Math.min(this.settings.desktopCount - 1, desktop)) : 0;
+                const spot = this.desktopLayout.findFree(d, 1, 1, null);
+                if (spot) this.desktopLayout.entities.push({ id: e.id, type: 'folder', ref: e.id, desktop: d, x: spot.x, y: spot.y, w: 1, h: 1 });
+            }
+        });
+        this.desktopLayout.entities.forEach(e => {
+            if (e.type === 'app' || e.type === 'folder') this.pageAssignments[e.type === 'app' ? e.ref : e.ref] = e.desktop;
+        });
+        return this.desktopLayout;
+    }
+
+    _renderGridPosition(node, id) {
+        if (!this.desktopLayout) return;
+        const e = this.desktopLayout.entity(id);
+        if (!e) return;
+        node.style.gridColumn = (e.x + 1) + ' / span ' + e.w;
+        node.style.gridRow = (e.y + 1) + ' / span ' + e.h;
+    }
+
+    _dropGridCoordinates(clientX, clientY) {
+        if (!this.appList) return { x: 0, y: 0 };
+        const rect = this.appList.getBoundingClientRect();
+        const colW = rect.width / Math.max(1, this.settings.gridColumns);
+        const rowH = rect.height / Math.max(1, this.settings.gridRows);
+        return {
+            x: Math.max(0, Math.min(this.settings.gridColumns - 1, Math.floor((clientX - rect.left) / colW))),
+            y: Math.max(0, Math.min(this.settings.gridRows - 1, Math.floor((clientY - rect.top) / rowH)))
+        };
     }
 
     _entries() {
@@ -247,7 +396,11 @@ class Launcher {
     }
 
     _pageEntries(page) {
-        return this._entries().filter(entry => Number(this.pageAssignments[entry.id]) === page);
+        this._ensureDesktopLayout();
+        return this._entries().filter(entry => {
+            const e = this.desktopLayout && this.desktopLayout.entity(entry.id);
+            return e ? e.desktop === page : Number(this.pageAssignments[entry.id]) === page;
+        });
     }
 
     _pageCount() {
@@ -263,7 +416,9 @@ class Launcher {
         this.appSizes = {};
         this.pageAssignments = {};
         this.layout = null;
-        this.settings = { gridColumns: 4, gridRows: 5, dockColumns: 4, desktopCount: 2, homeLocked: false };
+        this.desktopLayout = null;
+        try { localStorage.removeItem(window.NuxelDesktopLayout ? window.NuxelDesktopLayout.KEY : 'nuxel.desktopLayout.v1'); } catch (e) {}
+        this.settings = { gridColumns: 4, gridRows: 5, drawerColumns: 3, dockColumns: 4, desktopCount: 2, homeLocked: false, defaultDesktop: 1, desktopNames: {} };
         this._applyLayout();
         this._renderAll();
     }
@@ -277,11 +432,52 @@ class Launcher {
     }
 
     _renderDock() {
+        // Stable identities: registry refreshes happen every few seconds and
+        // used to replace all four dock nodes, causing the intermittent bottom
+        // row flicker.  Reuse each app's node and only move/update what really
+        // changed.
         if (!this.dockItems) return;
         const docked = appRegistry.getDockedApps().filter(app => !this.hiddenAppIds.has(app.id));
-        this.dockItems.innerHTML = docked.map((app, i) =>
-            '<div class="app-item press-effect" data-app-id="' + app.id + '" data-index="' + i + '" tabindex="0" role="button" aria-label="' + app.name + '"><div class="app-icon app-category-' + app.category + '" style="background: ' + app.color + '33; color: ' + app.color + '">' + this._appIcon(app) + '</div></div>'
-        ).join('');
+        const sig = docked.map(app => [app.id, app.name, app.icon, app.color, app.category].join(':')).join('|');
+        const children = Array.from(this.dockItems.children);
+        const order = children.map(el => el.dataset.appId).filter(Boolean);
+        const wanted = docked.map(app => app.id);
+        if (sig === this._dockSignature && order.join('|') === wanted.join('|') && children.length === wanted.length) return;
+        const existing = new Map(children.map(el => [el.dataset.appId, el]));
+        this._dockSignature = sig;
+        docked.forEach((app, i) => {
+            let node = existing.get(app.id);
+            if (!node) {
+                node = document.createElement('div');
+                node.className = 'app-item press-effect';
+                node.dataset.appId = app.id;
+                node.tabIndex = 0;
+                node.setAttribute('role', 'button');
+                const icon = document.createElement('div');
+                icon.className = 'app-icon app-category-' + app.category;
+                node.appendChild(icon);
+                node.__nuxelIcon = icon;
+            }
+            node.dataset.index = i;
+            node.setAttribute('aria-label', app.name);
+            const icon = node.__nuxelIcon || node.querySelector('.app-icon');
+            if (icon) {
+                const itemSig = [app.name, app.icon, app.color, app.category].join(':');
+                if (icon.dataset.signature !== itemSig) {
+                    icon.className = 'app-icon app-category-' + app.category;
+                    icon.style.background = app.color + '33';
+                    icon.style.color = app.color;
+                    icon.innerHTML = this._appIcon(app);
+                    icon.dataset.signature = itemSig;
+                }
+            }
+            if (this.dockItems.children[i] !== node) {
+                this.dockItems.insertBefore(node, this.dockItems.children[i] || null);
+            }
+        });
+        for (const el of Array.from(this.dockItems.children)) {
+            if (!wanted.includes(el.dataset.appId)) el.remove();
+        }
     }
 
     _renderAppGrid() {
@@ -305,7 +501,13 @@ class Launcher {
             :
             '<div class="app-item" data-size="' + (this.appSizes[app.id] || 'normal') + '" data-app-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '" title="' + (app.description || '') + '"><div class="app-icon app-category-' + app.category + '" style="background: ' + app.color + '33; color: ' + app.color + '">' + this._appIcon(app) + '</div><span class="app-label">' + app.name + '</span></div>'
         ).join('');
-
+        this.appList.style.gridTemplateColumns = 'repeat(' + this.settings.gridColumns + ', minmax(0, 1fr))';
+        this.appList.style.gridTemplateRows = 'repeat(' + this.settings.gridRows + ', var(--home-row-height, 86px))';
+        this.appList.querySelectorAll('.app-item').forEach(node => {
+            const id = node.dataset.appId || node.dataset.folderId;
+            if (id) this._renderGridPosition(node, id);
+        });
+        if (window.NuxelWidgets) { try { window.NuxelWidgets.renderPage(this.currentPage); } catch (e) {} }
         this._updatePageDots(totalPages);
     }
 
@@ -327,21 +529,35 @@ class Launcher {
         return el;
     }
 
+    _dockAppIds() {
+        // The four pinned desktop shortcuts are Home chrome, never drawer
+        // entries.  The static IDs are a fail-safe for a stale canonical
+        // registry that has not published docked=true yet; the registry set is
+        // authoritative for any future dock change.
+        const ids = new Set(appRegistry.getDockedApps().map((app) => app.id));
+        ['nuxel-dialer', 'nuxel-messages', 'nuxel-settings', 'org.nuxel.Terminal']
+            .forEach((id) => ids.add(id));
+        return ids;
+    }
+
     _renderDrawerApps(force) {
-        // Drawer is authoritative ALL apps, not a duplicate of the current Home
-        // page. Hidden shortcuts are still discoverable and may be restored.
+        // Drawer is the authoritative ALL-apps list, EXCEPT the four pinned
+        // dock shortcuts.  The previous implementation rendered every app and
+        // therefore duplicated the dock inside the drawer.  Hidden shortcuts
+        // remain discoverable and may be restored.
         const list = this._drawerContainer();
         if (!list) return;
-        const apps = appRegistry.getAllApps();
+        const dockedIds = this._dockAppIds();
+        const apps = appRegistry.getAllApps().filter((app) => !dockedIds.has(app.id));
         // Rebuild only when the registry output actually changes (install,
         // rename, icon/colour edit).  Normal opens are a class/hidden toggle.
         const signature = apps.map((app) =>
-            [app.id, app.name, app.icon, app.color, app.category, app.type].join(':')
+            [app.id, app.name, app.icon, app.color, app.category, app.type, app.docked ? '1' : '0'].join(':')
         ).join('|');
         if (!force && signature === this._drawerSignature && list.childElementCount) return;
         this._drawerSignature = signature;
         list.innerHTML = apps.map((app) =>
-            '<div class="app-item drawer-app" data-app-id="' + app.id + '" role="button" tabindex="0" aria-label="' + app.name + '">' +
+            '<div class="app-item drawer-app" data-app-id="' + app.id + '" data-drawer-entry="1" role="button" tabindex="0" aria-label="' + app.name + '">' +
             '<div class="app-icon" style="background:' + app.color + '33">' + this._appIcon(app) + '</div>' +
             '<span class="app-label">' + app.name + '</span></div>'
         ).join('');
@@ -528,6 +744,16 @@ class Launcher {
         this._scrollDirty = false;
         this.hasMoved = false;
 
+        // Move arms an explicit drag: the next press on the selected icon
+        // begins a real grid drag without the long-press hold.
+        if (this.moveArmed && this.selectedAppId && item.dataset.appId === this.selectedAppId &&
+            !item.closest('#dock-items')) {
+            this.moveArmed = false;
+            document.body.classList.remove('move-armed');
+            this._startDrag(item, e);
+            return;
+        }
+
         const afterHold = (fn) => {
             this.longPressTimer = setTimeout(() => {
                 this.longPressTimer = null;
@@ -554,10 +780,10 @@ class Launcher {
             return;
         }
         afterHold(() => {
-            // The originating event object is gone by now. Use the last seen
-            // pointer coordinates, never a stale event field.
+            // PWNAGE-88000: long-press shows a stable action row (Resize /
+            // Remove / Move / Desktop N / Done).  Drag no longer auto-starts
+            // here; the Move button arms an explicit drag.
             this._enterEditMode(item.dataset.appId);
-            this._startDrag(item, { clientX: this.lastPointerX, clientY: this.lastPointerY, pointerId: this.pressedPointer });
         });
     }
 
@@ -717,19 +943,30 @@ class Launcher {
     _updateDrag(e) {
         if (!this.dragGhost) return;
         this.dragState = 'DROP_TARGET';
-        const edge = e.clientX < 22 ? -1 : e.clientX > innerWidth - 22 ? 1 : 0;
+        // Edge dwell: 26 px entry, 34 px exit (hysteresis).  The page changes
+        // after 1000 ms while the finger stays in the edge strip; the drag ghost
+        // remains attached and the new desktop is immediately a valid drop
+        // target.  A visible edge indicator makes the intent clear.
+        let edge = 0;
+        if (this._dragEdge === -1 && e.clientX <= 34) edge = -1;
+        else if (this._dragEdge === 1 && e.clientX >= innerWidth - 34) edge = 1;
+        else if (e.clientX < 26) edge = -1;
+        else if (e.clientX > innerWidth - 26) edge = 1;
         if (edge !== this._dragEdge) {
             clearTimeout(this._dragPageTimer);
             this._dragEdge = edge;
+            document.body.classList.toggle('edge-dwell-left', edge === -1);
+            document.body.classList.toggle('edge-dwell-right', edge === 1);
             if (edge) this._dragPageTimer = setTimeout(() => {
                 if (!this.isDragging) return;
                 const next = this.currentPage + edge;
                 if (next >= 0 && next < this._pageCount()) {
                     this.currentPage = next; this._renderAppGrid();
+                    if (window.NuxelWidgets) window.NuxelWidgets.renderPage(this.currentPage);
                     this.folderHover = null; this._positionedThisDrag = false;
                     this._dropIndex = -1;
                 }
-            }, 550);
+            }, 1000);
         }
         this.dragGhost.style.left = (e.clientX - 32) + 'px';
         this.dragGhost.style.top = (e.clientY - 32) + 'px';
@@ -816,6 +1053,7 @@ class Launcher {
         const snapshot = this._dragSnapshot;
         this.isDragging = false;
         clearTimeout(this._dragPageTimer); this._dragEdge = 0;
+        document.body.classList.remove('edge-dwell-left', 'edge-dwell-right');
         this._releasePointer();
 
         if (this.dragData && this.dragData.el && this.dragData.el.isConnected) {
@@ -845,6 +1083,10 @@ class Launcher {
         } else if (this.dragData) {
             const id = this.dragData.id;
             this.pageAssignments[id] = this.currentPage;
+            if (e && this.desktopLayout) {
+                const point = this._dropGridCoordinates(e.clientX, e.clientY);
+                this.desktopLayout.move(id, this.currentPage, point.x, point.y);
+            }
             if (folder && folder.dataset.appId) {
                 if (this._ensureLayout().createFolder(id, folder.dataset.appId)) {
                     const created = this._ensureLayout().entries.find(entry => entry && entry.type === 'folder' && entry.items.includes(id));
@@ -890,10 +1132,17 @@ class Launcher {
             bar.className = 'launcher-edit-toolbar';
             document.body.appendChild(bar);
         }
-        bar.innerHTML = '<button type="button" data-edit="size">Resize</button><button type="button" class="danger" data-edit="remove">Remove</button><button type="button" data-edit="settings">Home settings</button><button type="button" data-edit="done">Done</button>';
+        const desktopLabel = (this.settings.desktopNames && this.settings.desktopNames[this.currentPage]) ||
+            ('Desktop ' + (this.currentPage + 1));
+        bar.innerHTML = '<button type="button" data-edit="size">Resize</button>' +
+            '<button type="button" class="danger" data-edit="remove">Remove</button>' +
+            '<button type="button" data-edit="move">Move</button>' +
+            '<button type="button" data-edit="desktop">' + this._esc(desktopLabel) + '</button>' +
+            '<button type="button" data-edit="done">Done</button>';
         bar.querySelector('[data-edit="size"]').onclick = () => this.toggleSelectedSize();
         bar.querySelector('[data-edit="remove"]').onclick = () => this.removeSelected();
-        bar.querySelector('[data-edit="settings"]').onclick = () => window.NuxelHomeSettings && window.NuxelHomeSettings.open();
+        bar.querySelector('[data-edit="move"]').onclick = () => this.armMove();
+        bar.querySelector('[data-edit="desktop"]').onclick = () => this.openDesktopPicker();
         bar.querySelector('[data-edit="done"]').onclick = () => this.exitEditMode();
     }
 
@@ -923,9 +1172,67 @@ class Launcher {
 
     exitEditMode() {
         this.editMode = false; this.selectedAppId = null;
-        document.body.classList.remove('launcher-editing');
+        this.moveArmed = false;
+        document.body.classList.remove('launcher-editing', 'move-armed');
         const bar = document.getElementById('launcher-edit-toolbar');
         if (bar) bar.remove();
+    }
+
+    _esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
+    armMove() {
+        if (!this.selectedAppId) return;
+        this.moveArmed = true;
+        document.body.classList.add('move-armed');
+        const item = document.querySelector('.app-item[data-app-id="' + CSS.escape(this.selectedAppId) + '"]');
+        if (item) item.classList.add('selected-for-edit');
+        try {
+            if (window.NuxelOSD && typeof window.NuxelOSD.show === 'function') {
+                window.NuxelOSD.show('Drag the highlighted icon to a new cell');
+            }
+        } catch (e) {}
+        const bar = document.getElementById('launcher-edit-toolbar');
+        if (bar) bar.querySelector('[data-edit="move"]').textContent = 'Drag now…';
+    }
+
+    openDesktopPicker() {
+        if (!this.selectedAppId) return;
+        let menu = document.getElementById('nuxel-desktop-picker');
+        if (!menu) {
+            menu = document.createElement('div');
+            menu.id = 'nuxel-desktop-picker';
+            menu.className = 'launcher-edit-toolbar desktop-picker';
+            document.body.appendChild(menu);
+        }
+        menu.replaceChildren();
+        const count = Number(this.settings.desktopCount) || 2;
+        for (let i = 0; i < count; i++) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            const name = (this.settings.desktopNames && this.settings.desktopNames[i]) || ('Desktop ' + (i + 1));
+            b.textContent = name;
+            b.onclick = () => {
+                this._moveSelectedToDesktop(i);
+                menu.remove();
+            };
+            menu.appendChild(b);
+        }
+    }
+
+    _moveSelectedToDesktop(desktopIndex) {
+        const id = this.selectedAppId;
+        if (!id || !this.desktopLayout) return;
+        const moved = this.desktopLayout.move(id, desktopIndex, 0, 0);
+        if (moved) {
+            this.pageAssignments[id] = desktopIndex;
+            this._saveLayout();
+            this._renderAll();
+            this._selectForEdit(id);
+        }
     }
 
     _openFolder(id) {

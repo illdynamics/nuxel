@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
 <meta name="theme-color" content="#0a1628">
 <meta name="nuxel-app-id" content="org.nuxel.DevMgmt">
 <link rel="manifest" href="manifest.json">
 <title>DevMgmt</title>
-<link rel="stylesheet" href="css/devmgmt.css">
+<link rel="stylesheet" href="css/devmgmt.css?v=p82000">
+    <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
 <header class="hdr">
@@ -22,6 +23,7 @@
 <nav class="tabs">
   <button class="tab active" data-tab="device">Device</button>
   <button class="tab" data-tab="display">Display</button>
+  <button class="tab" data-tab="graphics">Graphics</button>
   <button class="tab" data-tab="input">Input</button>
   <button class="tab" data-tab="power">Power</button>
   <button class="tab" data-tab="storage">Storage</button>
@@ -34,6 +36,17 @@
 
   <section id="tab-device" class="panel active"></section>
   <section id="tab-display" class="panel"></section>
+  <section id="tab-graphics" class="panel">
+    <div class="card">
+      <h3>Graphics acceleration stages</h3>
+      <p class="hint">Each stage is measured separately. Mali rendering alone never means the GUI is fully
+        accelerated: WebKit transport, DRM/GBM and the final fbdev copy are independent capabilities.</p>
+      <div class="row"><button id="graphics-refresh">Refresh graphics diagnostics</button></div>
+      <pre id="graphics-verdict" class="state" role="status" aria-live="polite">Reading graphics stages…</pre>
+      <div id="graphics-stages" class="graphics-stages"></div>
+      <p id="graphics-detail" class="hint">—</p>
+    </div>
+  </section>
   <section id="tab-input" class="panel"></section>
   <section id="tab-power" class="panel"></section>
   <section id="tab-storage" class="panel"></section>
@@ -79,7 +92,7 @@
 
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="../_shared/sysinfo.js"></script>
-<script src="js/devmgmt-parsers.js"></script>
-<script src="js/devmgmt.js"></script>
+<script src="js/devmgmt-parsers.js?v=p82000"></script>
+<script src="js/devmgmt.js?v=p82000"></script>
 </body>
 </html>

@@ -1,9 +1,10 @@
-"""PWNAGE-41000 Wi-Fi boot-radio regression tests.
+"""Wi-Fi boot-radio regression tests.
 
-PWNAGE-37000 made the boot unit preserve a disabled radio.  PWNAGE-41000
-supersedes that policy: every normal boot must enable the Wi-Fi radio through
-NetworkManager and verify the readback.  Manual OFF remains respected for the
-current session, and NetworkManager remains the single radio/connection owner.
+NetworkManager owns the durable radio state.  The boot helper must preserve a
+persisted OFF, enable a fresh/default-ON image, and verify every readback
+through NetworkManager.  It never rewrites saved profiles or starts a second
+supplicant.  This restores the owner-controlled policy while keeping the
+PWNAGE-41000 readiness, rfkill and readback hardening.
 """
 from __future__ import annotations
 
@@ -24,7 +25,7 @@ def _active_lines(script: str) -> list[str]:
             if line.strip() and not line.lstrip().startswith("#")]
 
 
-def test_wifi_up_enables_radio_at_boot():
+def test_wifi_up_enables_baseline_radio_and_verifies_readback():
     script = _read(HELPER)
     active = _active_lines(script)
     assert any(line.startswith("nmcli radio wifi on") for line in active)
@@ -32,6 +33,14 @@ def test_wifi_up_enables_radio_at_boot():
     # The boot default must be verified by reading NetworkManager back, never
     # assumed from the set command's exit status.
     assert "Wi-Fi radio verification failed" in script
+
+
+def test_wifi_up_preserves_a_persisted_disabled_radio():
+    script = _read(HELPER)
+    disabled = script.index('if [ "$radio" = "disabled" ]')
+    enable = script.index("nmcli radio wifi on")
+    assert disabled < enable
+    assert "leaving OFF" in script
 
 
 def test_wifi_up_handles_networkmanager_not_yet_ready():
@@ -74,9 +83,9 @@ def test_apply_script_policy_is_default_on_without_profile_rewrites():
     assert "nmcli radio wifi on" not in script
 
 
-def test_wifi_unit_describes_boot_default_on():
+def test_wifi_unit_describes_persisted_radio_policy():
     unit = _read(UNIT)
-    assert "radio ON by default" in unit
+    assert "restores NetworkManager persisted radio state" in unit
     assert "WantedBy=multi-user.target" in unit
     assert "ExecStart=/usr/lib/nuxel/nuxel-wifi-up.sh" in unit
 
