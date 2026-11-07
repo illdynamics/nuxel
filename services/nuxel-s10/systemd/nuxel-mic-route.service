@@ -8,13 +8,20 @@ StartLimitIntervalSec=0
 [Service]
 Type=oneshot
 ExecStartPre=/bin/sh -c 'for i in $(seq 1 50); do [ -e /proc/asound/card0 ] && exit 0; sleep 0.2; done; exit 1'
-ExecStart=/usr/lib/nuxel/nuxel-mic-route.sh --wait 180
+# PWNAGE-89000: nuxel-mic-route.path only fires after nuxel-audio-route.sh has
+# atomically published /run/nuxel-audio-route.ready.  The old --wait 180 made
+# this oneshot spend ~37 s in the boot transaction waiting for the same event.
+ExecStart=/usr/lib/nuxel/nuxel-mic-route.sh
 RemainAfterExit=yes
 Restart=on-failure
 RestartSec=10
 TimeoutStartSec=200
+Nice=10
+IOSchedulingClass=idle
 StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+# PWNAGE-89000: microphone capture is not needed to paint the lockscreen.  The
+# route-state path unit starts this after the playback route is actually ready,
+# so it no longer adds ~37 s to multi-user.target on every boot.

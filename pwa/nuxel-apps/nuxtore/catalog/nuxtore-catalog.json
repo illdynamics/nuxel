@@ -19,13 +19,13 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "NuxTore",
       "requires": [],
-      "sha256": "5ca379f60bbb8d33d0d2d0e78cfac3160e1786fad5f6fec2638aeb737730ac81",
+      "sha256": "8159fc97addb0eac3cff73e222c967796ba490c63cac3462e3c4e0f938de9e47",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "xSbLmknz8pqRXdO2lH3TRE8CYJbnJpeP1mhoZezoSJeNFW0wTX4k6rPqkuo+hfPdxPxkuR5bUpBoxTZftQD0Cg=="
+        "value": "6UBUQLXPixLmcihjpc4HSMNH6/yuZKWXpXpc2m4UVdkTcdf9wv5QYihCE87d6OtYJe4E0D00/bEjDa6l3xUkAQ=="
       },
-      "size_bytes": 195257,
+      "size_bytes": 199520,
       "source": {
         "provenance": "built in this repository during beta finalization (A32 baseline); no external publisher, no network fetch",
         "type": "local-bundle",
@@ -79,7 +79,7 @@
       ],
       "category": "media",
       "description": "Adds URLs to a persistent queue and downloads them with resume, per-item checksums and a hard legal-use notice gate. No Google, Apple or Android service is contacted at any point.",
-      "file_count": 19,
+      "file_count": 20,
       "id": "org.nuxel.Downloader",
       "install": {
         "app_id": "org.nuxel.Downloader",
@@ -93,13 +93,13 @@
         "network:optional",
         "storage:downloads"
       ],
-      "sha256": "078fff1f6392958be7775c10484cf35feb68b25f806296d5a0fe18ad8fea5244",
+      "sha256": "12054ec6fbc0ac2b3f6e5f87b027b0d7fc97faf79e5728028e82b67807d1998d",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "SnIYRQ1W4OQ1AtvHqveCIq8t1r32quA1FZes/kF+ZAhhZbckTqWhKILagZA9czobxmkxqfcW3ClfvxGWhC4kBg=="
+        "value": "4DrvX207n+aEA/xKSwcWmWE+NvXXIbsruWx2rLoqjCet0tBZep01UWrzi8H9gb4dE49m+9SwI/WZcLw4v/+/Dw=="
       },
-      "size_bytes": 92388,
+      "size_bytes": 104724,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -234,13 +234,13 @@
       "requires": [
         "sysfs:read"
       ],
-      "sha256": "e4eaf594340c3917ef36c263b55d73c83d677c7f49819be8d6be5305ecd54741",
+      "sha256": "1235076a73e65c0e259c1b62a0b326eeebc59debfb9c21bf696dc3938f04bf61",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "haR6+9GUkjTzRzqMb+h/wy+4tNKHC2pzSDSabVtZNNcHyHVGgdATPVemPnNQQsphdOkHrhfOna+qMjOXbgV5AA=="
+        "value": "5alAe+rw7NGhlGUUdcR/n4eY6RdCYNizqZjkavEvIbqXwVwtDFkFCvBkZ+hU9TZRoWrqtt37cC9N7azpCX/EBA=="
       },
-      "size_bytes": 125218,
+      "size_bytes": 133816,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -319,13 +319,13 @@
           "/home/nuxel/doom"
         ]
       },
-      "sha256": "f9e6eaefd4af4cea59f405baafbf4925da317f982546f2b3a067dcaf43879c67",
+      "sha256": "fdd296a5b60c5b0ba1d1179a52d5118651f370bd21216bf9a50052073fc750af",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "YvNaLSW8I17pwYSXH2fzSxhZe+QQIXki47wubJLLVgmyc777tYsA2LuRPwPHwIbvnLxL+YMeOYa/9TchADfQCw=="
+        "value": "HIU60z/hDx501LDzURrt80WiFWgzpTDBw6I1uXxk9ciU88OPN/NXwSuh1EL4WptBvBEiXC2sUi/kpabpmDxpAg=="
       },
-      "size_bytes": 3237359,
+      "size_bytes": 3252898,
       "source": {
         "provenance": "Chocolate Doom 3.0 WebAssembly from cloudflare/doom-wasm (GPL-2.0-or-later), pinned commit 65e0d3ae; original Nuxel launcher and touch HUD; no commercial assets",
         "type": "local-bundle",
@@ -352,7 +352,7 @@
       ],
       "category": "system",
       "description": "Maps a device codename to its capabilities, quirks and required configuration documents, with strict isolation so one device's profile can never leak into another's.",
-      "file_count": 16,
+      "file_count": 17,
       "id": "org.nuxel.PenguInterface",
       "install": {
         "app_id": "org.nuxel.PenguInterface",
@@ -363,13 +363,13 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "PenguInterface",
       "requires": [],
-      "sha256": "82db5bd545040a4ad7a28821c3117a3ac4e17458cd44c603209581c0afda6bda",
+      "sha256": "5e2bb0ba339215aa10eb28e074a55fad429be1901593f7faa4b6a703a4904897",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "RtfBh+3I0QokN6CMiFzY96ROkQA7snOJ2qkkT5R4Lzj6w/1d7oPPJ1D9Ult0+2xnLVGTHmlyzP9f7E2v3Dc5Ag=="
+        "value": "nbkNabdSCRH66mqbgynWxKmsAs5ejvtxepy9Voh+dWVAT8BnElYtahuyZiJxW/alRhtnVQbZgfhMpjNX2TcxBg=="
       },
-      "size_bytes": 95788,
+      "size_bytes": 102305,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -431,8 +431,8 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "Unsigned Demo Package",
       "requires": [],
-      "sha256": "5ca379f60bbb8d33d0d2d0e78cfac3160e1786fad5f6fec2638aeb737730ac81",
-      "size_bytes": 195257,
+      "sha256": "8159fc97addb0eac3cff73e222c967796ba490c63cac3462e3c4e0f938de9e47",
+      "size_bytes": 199520,
       "source": {
         "provenance": "test fixture \u2014 no publisher claims, no signature",
         "type": "local-bundle",

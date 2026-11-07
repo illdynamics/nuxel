@@ -6,8 +6,8 @@
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/css/devmgmt.css",
-    "sha256": "0f8de47ebd852c147d04e9be64e6031dd0a7c72797e054eb4c3dba4c6d8515e3",
-    "size": 2920
+    "sha256": "33def8bde91028db15c6da75f29fe3ddd1d6d8920ee03d0d0afc8f75a8c227a9",
+    "size": 4062
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/icons/icon-128.png",
@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/index.html",
-    "sha256": "426f0287598e3210c5a27fe45178fe9112103bfa766c41259095ad13df2bbe6a",
-    "size": 3985
+    "sha256": "85b06d98023c7d13f51d9a1feeabc625750f76c53b6d446f7527f84170004915",
+    "size": 4744
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/js/devmgmt-parsers.js",
@@ -71,8 +71,8 @@
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/js/devmgmt.js",
-    "sha256": "552d5dcb0f967c760f0eceb6df1e021112cb67a5b4011411a0bd170731e55db3",
-    "size": 15613
+    "sha256": "c59db9652f1467d07395ce569c2573972e89cdb6be91295878825bbec0ba4a3c",
+    "size": 22276
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/manifest.json",
@@ -81,8 +81,8 @@
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/sw.js",
-    "sha256": "4e6d1222ea4563c02ddd384e1a36aadf39ebe19fbbcad768cb80b54905f50c1c",
-    "size": 740
+    "sha256": "a3a732624af6169a6b8ad48c9ceccee4459512efb5d3290b5cecf6f227547ce2",
+    "size": 774
   },
   {
     "path": "pwa/nuxel-apps/devmgmt/tests/test-parsers.js",

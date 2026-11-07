@@ -103,6 +103,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify committed boot cue assets and version lockstep
+        run: |
+          # v0.7.8-beta never reached a release because the rootfs build found
+          # assets/nuxel-boot-audio.mp3 only in an untracked working tree.  Fail
+          # in the cheap prepare job, before the kernel/rootfs matrix starts.
+          git ls-files --error-unmatch assets/nuxel-boot-audio.mp3 assets/nuxel-sounds/nuxel-boot-audio.mp3 assets/nuxel-pow.mp3
+          test -s assets/nuxel-boot-audio.mp3
+          test -s assets/nuxel-pow.mp3
+          cmp assets/nuxel-boot-audio.mp3 assets/nuxel-sounds/nuxel-boot-audio.mp3
+          sha256sum assets/nuxel-boot-audio.mp3
+          python3 tests/pwnage90000/test_release_assets.py
+
       - name: Resolve tag and device list
         id: v
         env:

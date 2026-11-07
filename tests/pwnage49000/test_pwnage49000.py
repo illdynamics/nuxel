@@ -74,7 +74,7 @@ def test_navdock_long_back_uses_distinct_one_shot_haptic():
 def test_short_back_root_is_noop_home_is_distinct():
     js = read("pwa/nuxel-home/js/app.js")
     assert "back:pwa-at-root" in js
-    assert "back:native-at-root-close-to-home" in js
+    assert "back:native-at-root-graceful-close" in js
     assert "back:native-no-foreground" in js
     assert "this.appSession.app.type === 'flatpak'" in js
 
@@ -109,9 +109,9 @@ def test_cache_version_bumped():
     assert cache in sw
     assert cache in manifest_text
     html = read("pwa/nuxel-home/index.html")
-    assert "status-bar.css?v=p52000" in html
-    assert "status-bar.js?v=p56000" in html
-    assert "app.js?v=p77000" in html
+    assert "status-bar.css?v=p80000" in html
+    assert "status-bar.js?v=p80000" in html
+    assert "app.js?v=p85000" in html
 
 
 if __name__ == "__main__":

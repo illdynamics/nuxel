@@ -30,7 +30,13 @@ def test_assets_layout_and_install_source():
     assert lib.is_dir()
     for name in ("nuxel-pow.mp3", "nuxel-alarm.mp3", "nuxel-boot-audio.mp3"):
         assert (lib / name).is_file(), name
-    assert not (ROOT / "assets/nuxel-pow.mp3").exists()
+    # The image and live-install contracts use the canonical runtime names
+    # /usr/share/nuxel/assets/nuxel-{pow,boot-audio}.mp3.  Keep those copies
+    # byte-identical to the sound-library sources instead of leaving the build
+    # to fail on a missing cue (the v0.7.8 release failure class).
+    for name in ("nuxel-pow.mp3", "nuxel-boot-audio.mp3"):
+        assert (ROOT / "assets" / name).is_file(), name
+        assert (ROOT / "assets" / name).read_bytes() == (lib / name).read_bytes(), name
     install = read("services/nuxel-sound/install-sound-library.sh")
     assert "assets/nuxel-sounds" in install and "nuxel-sounds/library" not in install
     assert "for src in \"$SRC\"/*" in install

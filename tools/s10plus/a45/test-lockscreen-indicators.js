@@ -98,9 +98,9 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
   const iUsb = index.indexOf('lockscreen-indicator-usb');
   check('live-console indicator is the middle status light', iCharge < iLive && iLive < iUsb,
         `order charging=${iCharge} live=${iLive} usb=${iUsb}`);
-  check('console transport artwork is the PWNAGE-46000 cache revision',
+  check('console transport artwork carries the current cache revision',
         ['serial', 'usb', 'wlan'].every(k => index.includes(
-          `/assets/nuxel-console-${k}.png?v=p46000`)));
+          `/assets/nuxel-console-${k}.png?v=p80000`)));
   check('index.html loads lockscreen-indicators.js before lockscreen.js',
         index.indexOf('lockscreen-indicators.js') >= 0 &&
         index.indexOf('lockscreen-indicators.js') < index.indexOf('js/lockscreen.js'));
@@ -245,8 +245,8 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
     await flush();
     check('connected WLAN console keeps the base live-console indicator on',
           h.nodes['lockscreen-indicator-live'].classList.contains('active'));
-    check('base live-console indicator names service readiness',
-          h.nodes['lockscreen-indicator-live'].dataset.liveReason === 'service-ready');
+    check('base live-console indicator names the external session',
+          h.nodes['lockscreen-indicator-live'].dataset.liveReason === 'external-session');
     check('connected WLAN console lights the WLAN transport',
           h.nodes['lockscreen-transport-wlan'].classList.contains('active'));
     ind.stop();
@@ -262,8 +262,8 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
     const ind = new h.sandbox.NuxelLockscreenIndicators();
     ind.start();
     await flush();
-    check('idle WLAN listener keeps the base indicator on (service ready)',
-          h.nodes['lockscreen-indicator-live'].classList.contains('active'));
+    check('idle WLAN listener leaves the base indicator dark (no external session)',
+          !h.nodes['lockscreen-indicator-live'].classList.contains('active'));
     check('idle WLAN listener never lights a transport icon',
           !h.nodes['lockscreen-transport-wlan'].classList.contains('active'));
     check('idle WLAN listener leaves the WLAN transport dark',

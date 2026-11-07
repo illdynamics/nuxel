@@ -33,6 +33,7 @@ VOLUME_CAP=${NUXEL_AUDIO_VOLUME_CAP:-1.0}
 DEFAULT_VOLUME=${NUXEL_AUDIO_DEFAULT_VOLUME:-0.50}
 VOLUME_INIT=/run/nuxel-audio-default-volume-applied
 STATE=/run/nuxel-audio-route.state
+READY=/run/nuxel-audio-route.ready
 ABOX=/sys/devices/platform/18c50000.abox
 VERSION="$ABOX/calliope_version"
 CHECK_ONLY=0
@@ -47,6 +48,7 @@ fail_state() {
     reason=$1
     say "NOT READY: $reason"
     [ "$CHECK_ONLY" -eq 1 ] && exit 1
+    rm -f "$READY" 2>/dev/null || true
     printf 'state=deferred\ncard=%s\nreason=%s\nat=%s\n' "${C:-?}" "$reason" "$(date -u +%FT%TZ)" >"$STATE" 2>/dev/null || true
     exit 0
 }
@@ -231,6 +233,7 @@ if [ "$CHECK_ONLY" -eq 1 ]; then
     exit 0
 fi
 
+rm -f "$READY" 2>/dev/null || true
 printf 'state=pending\ncard=%s\nat=%s\n' "$C" "$(date -u +%FT%TZ)" >"$STATE" 2>/dev/null || true
 calliope_ready || fail_state "Calliope core firmware is not MUB0"
 
@@ -357,5 +360,10 @@ sink_rate_ok || fail_state 'static PipeWire sink stopped running at 48000 Hz'
 
 printf 'state=applied\ncard=%s\ncalliope=MUB0\ndsp1=2/2\nroute=verified\nsink=%s\nrate=48000\ndefault=%s\nvolume_cap=%s\nat=%s\n' \
     "$C" "$SINK" "$SINK" "$VOLUME_CAP" "$(date -u +%FT%TZ)" >"$STATE"
+# Atomic readiness receipt for event-driven consumers (microphone route, boot
+# cue).  It is created only after every route/DSP/sink check above passed.
+ready_tmp="$READY.tmp.$$"
+printf 'ready=1\ncard=%s\nsink=%s\nat=%s\n' "$C" "$SINK" "$(date -u +%FT%TZ)" >"$ready_tmp" 2>/dev/null \
+    && mv -f "$ready_tmp" "$READY" 2>/dev/null || rm -f "$ready_tmp" 2>/dev/null || true
 say "route applied and verified"
 exit 0

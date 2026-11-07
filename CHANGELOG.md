@@ -6,6 +6,48 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.9-beta] - 2026-11-07 - *Boot-audio release repair, fast sound control plane, durable alarms*
+
+This release supersedes **v0.7.8-beta**, whose release workflow failed before it
+could publish because `assets/nuxel-boot-audio.mp3` existed only as an
+untracked working-tree file. The canonical cue is now committed at
+`assets/nuxel-boot-audio.mp3`, byte-identical to the sound-library copy, wired
+into the phone rootfs, checked by the rootfs verifier, included in the live
+userspace payload, and gated in the Release workflow before the expensive build
+matrix starts. The same cue is installed and active on the S10+ handset.
+
+### Fixed
+
+- **Committed boot cue asset.** `assets/nuxel-boot-audio.mp3` is now tracked and
+  checked by `tests/pwnage90000/test_release_assets.py`; the release prepare job
+  fails closed if it is missing, untracked, empty or differs from
+  `assets/nuxel-sounds/nuxel-boot-audio.mp3`.
+- **Version lockstep.** `VERSION`, the PWA manifests, bridge/portal/notification
+  host versions, systemd environment pins, launcher status bar and service
+  worker cache now all report `0.7.9-beta` / `v079-release`.
+- **NuxTore catalogue integrity.** Bundle manifests and Ed25519 signatures were
+  restaged from the current app sources so the release verifier no longer sees
+  stale digests.
+- **Release-test drift.** Boot-cue gating, power-menu count, live-console
+  semantics, native top-bar touch bounds, immersive top-pull and Back trace
+  contracts were updated to the behavior shipped in v0.7.9-beta.
+
+### Changed
+
+- **PWNAGE-89000 boot readiness.** `nuxel-soundd` exposes its control socket
+  before PipeWire/ABOX hardware is ready (`Type=notify`, no 40 s
+  `nuxel-audio-route.sh --wait` in `ExecStartPre`). Alarm/timer cues are
+  durable, token-deduplicated and resumed after a daemon restart.
+- **Event-driven audio consumers.** `nuxel-audio-route.sh` publishes an atomic
+  `/run/nuxel-audio-route.ready` receipt; boot sound and microphone routing are
+  path-triggered from that receipt, and the boot cue plays once per boot.
+- **Parallel boot path.** `nuxel-web`, interface-state and device-permission
+  ordering no longer serializes first paint behind the HTTP bridge or radio
+  restore; `nuxel-audio-session` is pulled in asynchronously by `soundd`.
+- **Measured result on the S10+:** `multi-user.target` median improved from
+  45.648 s to 12.547 s, and sound-control readiness from 49.596 s to 8.825 s,
+  with zero `pw-cat` restart storms across the final measured boots.
+
 ## [v0.7.7-beta] - 2026-11-04 - *Real WAD engine, Chocolate Doom + UZDoom comparison, global immersive chrome*
 
 **This is the release where Nuxel Doom becomes a real Doom.** The old

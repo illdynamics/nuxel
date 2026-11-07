@@ -36,6 +36,7 @@ from pathlib import Path
 STATE_FILE = Path(os.environ.get("NUXEL_CLOCK_STATE_FILE", "/var/lib/nuxel/clock/state.json"))
 RUNTIME_STATE = Path(os.environ.get("NUXEL_CLOCK_STATE", "/run/nuxel/clockd.state"))
 SOCKET = Path(os.environ.get("NUXEL_CLOCK_SOCKET", "/run/nuxel/clockd.sock"))
+SOUNDD_SOCKET = Path(os.environ.get("NUXEL_SOUNDD_SOCKET", "/run/nuxel/soundd.sock"))
 LEGACY_SCHEDULE = Path(os.environ.get("NUXEL_CLOCK_SCHEDULE", "/var/lib/nuxel/clock/schedule.json"))
 RTC_WAKEALARM = Path(os.environ.get("NUXEL_CLOCK_WAKEALARM", "/sys/class/rtc/rtc0/wakealarm"))
 SOUNDCTL = os.environ.get("NUXEL_SOUNDCTL", "/usr/libexec/nuxel/nuxel-soundctl")
@@ -44,6 +45,10 @@ SESSION_RUNTIME = os.environ.get("NUXEL_SESSION_RUNTIME", "/run/nuxel-wayland")
 NOTIFY = os.environ.get("NUXEL_NOTIFY", "/usr/bin/notify-send")
 SCHEMA = 2
 MAX_OCCURRENCES = 256
+# Durable cue delivery is retried with bounded backoff while the occurrence is
+# ringing.  Waiting is event-driven (soundd socket/health), never an alarm sleep.
+CUE_BACKOFF_MS = (250, 500, 1000, 2000, 5000, 10000)
+CUE_RECONCILE_MS = 5000
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(message)s")
@@ -145,9 +150,12 @@ class ClockDaemon:
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self.stop_requested = False
+        self._cue_wake = threading.Event()
+        self._last_health_check = 0
         self.state = self._load_state()
         self._migrate_legacy()
         self._normalise()
+        self._rearm_ringing_cues()
         self._save()
 
     # ---- persistence ----------------------------------------------------
@@ -320,6 +328,23 @@ class ClockDaemon:
             _atomic_json(STATE_FILE, self.state)
             self._publish()
 
+    def _rearm_ringing_cues(self) -> None:
+        """Resume durable cue delivery after a clockd restart.
+
+        soundd deduplicates by occurrence token, so re-sending an already playing
+        alarm is an acknowledgement rather than a second playback.  If soundd
+        also restarted, its persisted queue and this re-send restore the cue.
+        """
+        with self._lock:
+            for occ in self.state.get("occurrences") or []:
+                if occ.get("state") != "ringing":
+                    continue
+                occ["cue_state"] = "pending"
+                occ["cue_attempts"] = 0
+                occ["cue_next_attempt_ms"] = 0
+                occ["cue_last_error"] = "daemon restart: re-arming durable cue"
+                occ.pop("soundd_instance", None)
+
     def _publish(self) -> None:
         active = [o for o in self.state.get("occurrences", []) if o.get("state") == "ringing"]
         snoozed = [o for o in self.state.get("occurrences", []) if o.get("state") == "snoozed"]
@@ -347,17 +372,123 @@ class ClockDaemon:
         except (OSError, ValueError, subprocess.SubprocessError) as exc:
             return {"success": False, "error": str(exc)}
 
-    def _ring(self, occ: dict) -> None:
-        token = str(occ.get("token") or occ.get("id"))
-        kind = "timer" if occ.get("kind") == "timer" else "alarm"
-        setting_key = "timer_sound" if kind == "timer" else "alarm_sound"
-        sound = self.state["settings"].get(setting_key)
-        args = ["play", kind, "--loop", "--token", token]
-        if sound:
-            args += ["--path", sound]
+    def _soundd_health(self, timeout: float = 2.0) -> dict:
+        """Read soundd's control/backend state without starting any player."""
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            sock.connect(str(SOUNDD_SOCKET))
+            sock.sendall(b'{"cmd":"health"}\n')
+            buf = b""
+            while b"\n" not in buf:
+                chunk = sock.recv(65536)
+                if not chunk:
+                    break
+                buf += chunk
+            sock.close()
+            doc = json.loads(buf.split(b"\n", 1)[0].decode("utf-8") or "{}")
+            return doc if isinstance(doc, dict) else {"success": False}
+        except (OSError, ValueError) as exc:
+            return {"success": False, "error": str(exc)}
+
+    def _cue_backoff_ms(self, attempts: int) -> int:
+        return CUE_BACKOFF_MS[min(max(attempts - 1, 0), len(CUE_BACKOFF_MS) - 1)]
+
+    def _cue_send(self, ident: str) -> None:
+        with self._lock:
+            occ = next((o for o in self.state.get("occurrences", [])
+                        if o.get("id") == ident), None)
+            if occ is None or occ.get("state") != "ringing" or occ.get("cue_state") == "accepted":
+                return
+            token = str(occ.get("token") or occ.get("id"))
+            kind = "timer" if occ.get("kind") == "timer" else "alarm"
+            setting_key = "timer_sound" if kind == "timer" else "alarm_sound"
+            sound = self.state["settings"].get(setting_key)
+            args = ["play", kind, "--loop", "--token", token]
+            if sound:
+                args += ["--path", sound]
+            occ["cue_state"] = "sending"
+            occ["cue_attempts"] = int(occ.get("cue_attempts") or 0) + 1
+            occ["cue_last_attempt_ms"] = _now_ms()
+            attempt = occ["cue_attempts"]
         result = self._soundctl(*args)
-        if not result.get("success"):
-            log.warning("sound cue failed token=%s: %s", token, result)
+        now = _now_ms()
+        with self._lock:
+            occ = next((o for o in self.state.get("occurrences", [])
+                        if o.get("id") == ident), None)
+            if occ is None or occ.get("state") != "ringing":
+                return
+            if result.get("success"):
+                player = result.get("player") if isinstance(result.get("player"), dict) else {}
+                occ["cue_state"] = "accepted"
+                occ["cue_ack_ms"] = now
+                occ["cue_last_error"] = None
+                occ["soundd_instance"] = player.get("instance_id") or result.get("instance_id")
+                log.info("cue accepted token=%s attempt=%d duplicate=%s",
+                         token, attempt, bool(result.get("duplicate")))
+            else:
+                occ["cue_state"] = "pending"
+                occ["cue_last_error"] = str(result.get("error") or result)[:240]
+                occ["cue_next_attempt_ms"] = now + self._cue_backoff_ms(attempt)
+                log.warning("cue deferred token=%s attempt=%d retry_in=%dms: %s",
+                            token, attempt, self._cue_backoff_ms(attempt),
+                            occ["cue_last_error"])
+            self._save()
+
+    def _cue_loop(self) -> None:
+        while not self.stop_requested:
+            now = _now_ms()
+            due: list[str] = []
+            accepted: list[dict] = []
+            with self._lock:
+                for occ in self.state.get("occurrences") or []:
+                    if occ.get("state") != "ringing":
+                        continue
+                    if occ.get("cue_state") == "accepted":
+                        accepted.append(dict(occ))
+                    elif occ.get("cue_state") != "sending" and \
+                            int(occ.get("cue_next_attempt_ms") or 0) <= now:
+                        due.append(str(occ.get("id")))
+            for ident in due:
+                self._cue_send(ident)
+
+            # Reconcile accepted cues if soundd restarted or lost the stream.
+            # One health request per interval; no library scan and no player.
+            if accepted and now - self._last_health_check >= CUE_RECONCILE_MS:
+                self._last_health_check = now
+                health = self._soundd_health()
+                with self._lock:
+                    player = health.get("player") if isinstance(health.get("player"), dict) else {}
+                    active_token = player.get("active_token")
+                    pending_token = player.get("pending_token")
+                    instance = health.get("instance_id") or player.get("instance_id")
+                    for snapshot in accepted:
+                        occ = next((o for o in self.state.get("occurrences", [])
+                                    if o.get("id") == snapshot.get("id")), None)
+                        if occ is None or occ.get("state") != "ringing" or occ.get("cue_state") != "accepted":
+                            continue
+                        token = str(occ.get("token") or occ.get("id"))
+                        changed_instance = bool(instance and occ.get("soundd_instance") and
+                                                instance != occ.get("soundd_instance"))
+                        missing = health.get("success") and token not in (active_token, pending_token)
+                        unavailable = not health.get("success")
+                        if changed_instance or missing or unavailable:
+                            occ["cue_state"] = "pending"
+                            occ["cue_next_attempt_ms"] = now + 250
+                            occ["cue_last_error"] = ("soundd restarted" if changed_instance else
+                                                     "soundd unavailable" if unavailable else
+                                                     "cue is no longer active")
+                            if instance:
+                                occ["soundd_instance"] = instance
+                            log.warning("cue re-armed token=%s reason=%s", token, occ["cue_last_error"])
+                            self._save()
+                            self._cue_wake.set()
+            self._cue_wake.wait(0.5)
+            self._cue_wake.clear()
+
+    def _ring(self, occ: dict) -> None:
+        # Audio is delivered by the durable cue worker.  Keep vibration and the
+        # critical notification immediate; neither blocks scheduler readiness.
         if self.state["settings"].get("vibrate", True) and occ.get("vibrate", True):
             try:
                 fd = os.open(str(HAPTICS), os.O_WRONLY | os.O_NONBLOCK)
@@ -368,6 +499,7 @@ class ClockDaemon:
             except OSError:
                 pass
         self._notify(occ)
+        self._cue_wake.set()
 
     def _stop_sound(self, occ: dict) -> None:
         token = str(occ.get("token") or occ.get("id"))
@@ -462,7 +594,13 @@ class ClockDaemon:
             return
         occ["state"] = "ringing"
         occ["fired_ms"] = _now_ms()
-        # Persist before audio so a crash cannot duplicate the same occurrence.
+        occ["cue_state"] = "pending"
+        occ["cue_attempts"] = 0
+        occ["cue_next_attempt_ms"] = 0
+        occ["cue_last_error"] = None
+        occ.pop("soundd_instance", None)
+        # Persist the occurrence and its pending cue before audio so a crash
+        # cannot duplicate the same occurrence or silently lose the cue.
         self._save()
         self._ring(occ)
         log.info("RING kind=%s id=%s label=%s", occ.get("kind"), occ.get("id"), occ.get("label"))
@@ -471,6 +609,8 @@ class ClockDaemon:
         occ = self._find_occ(ident)
         self._stop_sound(occ)
         occ["state"] = "dismissed"
+        occ["cue_state"] = "dismissed"
+        occ["cue_next_attempt_ms"] = None
         occ["dismissed_ms"] = _now_ms()
         self.state["revision"] = int(self.state.get("revision") or 1) + 1
         self._save()
@@ -490,6 +630,8 @@ class ClockDaemon:
         mins = max(1, min(60, mins))
         self._stop_sound(occ)
         occ["state"] = "dismissed"
+        occ["cue_state"] = "dismissed"
+        occ["cue_next_attempt_ms"] = None
         occ["snoozed_ms"] = _now_ms()
         link = self._occurrence(kind="alarm", alarm_id=occ.get("alarm_id"),
                                 key="%s@snooze@%d" % (occ.get("key"), _now_ms()),
@@ -707,6 +849,8 @@ class ClockDaemon:
                     if occ.get("kind") == "timer" and occ.get("state") == "ringing":
                         self._stop_sound(occ)
                         occ["state"] = "dismissed"
+                        occ["cue_state"] = "dismissed"
+                        occ["cue_next_attempt_ms"] = None
                         occ["dismissed_ms"] = now
                 timer.update({"remaining_ms": 0, "deadline_ms": None,
                               "state": "acknowledged" if timer.get("state") == "completed" else "idle",
@@ -908,6 +1052,7 @@ class ClockDaemon:
         signal.signal(signal.SIGTERM, _term)
         signal.signal(signal.SIGINT, _term)
         threading.Thread(target=self._socket_loop, daemon=True, name="nuxel-clockd-api").start()
+        threading.Thread(target=self._cue_loop, daemon=True, name="nuxel-clockd-cues").start()
         self._publish()
         log.info("scheduler ready alarms=%d timer=%s", len(self.state.get("alarms") or []),
                  (self.state.get("timer") or {}).get("state"))

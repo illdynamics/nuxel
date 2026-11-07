@@ -33,6 +33,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 
 ACTIONS = ["volume", "boot", "alarm", "timer", "message", "notification", "other"]
@@ -60,7 +61,9 @@ USER_DIR = HOME / "Sounds"
 SHARED_DIR = Path(os.environ.get("NUXEL_SOUND_LIBRARY", "/usr/share/nuxel/sounds"))
 ASSIGN_FILE = Path(os.environ.get("NUXEL_SOUND_ASSIGNMENTS", "/var/lib/nuxel/sound/assignments.json"))
 PROBE_CACHE_FILE = Path(os.environ.get("NUXEL_SOUND_PROBE_CACHE", "/var/lib/nuxel/sound/metadata-cache.json"))
+QUEUE_FILE = Path(os.environ.get("NUXEL_SOUND_QUEUE", "/var/lib/nuxel/sound/durable-queue.json"))
 SOCKET_PATH = Path(os.environ.get("NUXEL_SOUNDD_SOCKET", "/run/nuxel/soundd.sock"))
+ROUTE_STATE = Path(os.environ.get("NUXEL_AUDIO_ROUTE_STATE", "/run/nuxel-audio-route.state"))
 RUNTIME = Path(os.environ.get("NUXEL_RUNTIME", "/run/nuxel"))
 PW_RUNTIME = os.environ.get("NUXEL_PW_RUNTIME", "/run/nuxel-wayland")
 WARMUP = "/usr/lib/nuxel/nuxel-audio-warmup"
@@ -257,6 +260,7 @@ def decode_pcm(path: Path, gain: float = 1.0) -> bytes:
 class SoundPlayer:
     def __init__(self) -> None:
         self.lock = threading.Condition()
+        self.instance_id = uuid.uuid4().hex
         self.active = None
         self.pending = None
         self.running = True
@@ -274,18 +278,29 @@ class SoundPlayer:
         self._last_cue_finished_at = None
         self._last_cue_action = None
         self._last_write_restart = 0.0
+        self.on_finished = None
         self.thread = threading.Thread(target=self._loop, name="nuxel-sound-player", daemon=True)
 
     def start(self) -> None:
         self.thread.start()
 
-    def play(self, cue: dict) -> None:
+    def play(self, cue: dict) -> bool:
         cue = dict(cue)
         cue.setdefault("loop", False)
         cue.setdefault("token", None)
         cue.setdefault("action", "other")
         cue["requested_monotonic"] = time.monotonic()
         with self.lock:
+            token = cue.get("token")
+            # Retry/idempotency contract: clockd may re-send the same durable
+            # occurrence token after a transient socket failure or a daemon
+            # restart.  A token owns at most one cue.  Re-sending it while it is
+            # pending or active is an acknowledgement, never a second playback.
+            if token and ((self.active or {}).get("token") == token or
+                          (self.pending or {}).get("token") == token):
+                logging.info("duplicate cue ignored token=%s action=%s", token,
+                             cue.get("action"))
+                return False
             # A volume slider can produce many events while one short cue is
             # still playing.  A newer volume cue supersedes the active one
             # instead of queueing behind it and sounding stale.  Alarm/timer
@@ -298,6 +313,7 @@ class SoundPlayer:
         logging.info("cue queued action=%s path=%s loop=%s token=%s bytes=%d",
                      cue.get("action"), cue.get("path"), cue.get("loop"),
                      cue.get("token"), len(cue.get("pcm") or b""))
+        return True
 
     def stop(self, token: str | None = None, action: str | None = None) -> None:
         with self.lock:
@@ -324,11 +340,14 @@ class SoundPlayer:
             active = self.active or {}
             pending = self.pending or {}
             return {
+                "instance_id": self.instance_id,
                 "running": self.running,
                 "stream_alive": bool(self.proc and self.proc.poll() is None),
+                "backend_ready": bool(self.proc and self.proc.poll() is None and not self.last_error),
                 "active_action": active.get("action"),
                 "active_token": active.get("token"),
                 "pending_action": pending.get("action"),
+                "pending_token": pending.get("token"),
                 "restarts": self.restarts,
                 "last_error": self.last_error,
                 "stream_ready_at": self._stream_ready_at,
@@ -348,6 +367,32 @@ class SoundPlayer:
             "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         })
         return env
+
+    def _pw_socket_ready(self) -> bool:
+        """Cheap, side-effect-free backend gate.
+
+        The control plane is up before nuxel-audio-session/PipeWire.  Do not
+        fork pw-cat into a socket-less session: it fails with a broken pipe and
+        used to respawn twice a second for the whole audio boot window.
+        """
+        try:
+            return Path(PW_RUNTIME, "pipewire-0").is_socket()
+        except OSError:
+            return False
+
+    def _route_pending(self) -> bool:
+        """True while the S10+ ABOX/CS35L41 route has not verified.
+
+        The state document exists as soon as the route service starts (state=
+        pending/deferred); only state=applied proves the speaker path can accept
+        PCM.  If the document is absent entirely (non-S10 host or a manual
+        test), do not invent a dependency: allow the normal PipeWire path.
+        """
+        try:
+            text = ROUTE_STATE.read_text(errors="replace")
+        except OSError:
+            return False
+        return not ("state=applied" in text and "calliope=MUB0" in text)
 
     def _warm_once(self) -> None:
         if not (Path(WARMUP).exists() and os.access(WARMUP, os.X_OK)):
@@ -372,6 +417,12 @@ class SoundPlayer:
                 return True
             if not Path(PW_CAT).exists():
                 self.last_error = "pw-cat missing"
+                return False
+            if not self._pw_socket_ready():
+                self.last_error = "pipewire socket not ready"
+                return False
+            if self._route_pending():
+                self.last_error = "audio route pending"
                 return False
             # The sink can take a moment to appear during boot.  The old loop
             # retried every 10 ms and logged/spawned ~20 processes in a second.
@@ -407,6 +458,7 @@ class SoundPlayer:
                 self.started_at = time.time()
                 self._stream_ready_at = time.time()
                 self._start_backoff = 0.0
+                self.last_error = None
                 logging.info("persistent pw-cat stream started pid=%s latency=%s pipe_bytes=%s",
                              self.proc.pid, STREAM_LATENCY, pipe_bytes or "default")
                 return True
@@ -428,8 +480,7 @@ class SoundPlayer:
         except OSError:
             pass
         self.proc = None
-        if self.restarts > 1:
-            self._start_backoff = min(2.0, max(0.5, self._start_backoff * 2))
+        self._start_backoff = min(5.0, max(0.5, self._start_backoff * 2 or 0.5))
         self._last_start_attempt = time.monotonic()
         self._start_stream()
 
@@ -437,15 +488,19 @@ class SoundPlayer:
         if not self.running:
             return
         if not self.proc or self.proc.poll() is not None:
-            now = time.monotonic()
-            if now - self._last_write_restart < 0.5:
-                time.sleep(FRAME_MS / 1000.0)
+            if not self._pw_socket_ready():
+                self.last_error = "pipewire socket not ready"
+                time.sleep(0.2)
                 return
-            self._last_write_restart = now
-            self._start_backoff = min(2.0, max(0.5, self._start_backoff * 2 or 0.5))
-            self._last_start_attempt = 0.0
+            if self._route_pending():
+                self.last_error = "audio route pending"
+                time.sleep(0.5)
+                return
+            self._last_write_restart = time.monotonic()
             if not self._start_stream():
-                time.sleep(FRAME_MS / 1000.0)
+                # _start_stream owns the exponential backoff.  Sleep here so a
+                # missing sink cannot turn this loop into a busy spawn storm.
+                time.sleep(min(0.5, max(0.02, self._start_backoff)))
                 return
         try:
             view = memoryview(data)
@@ -463,6 +518,14 @@ class SoundPlayer:
             self._restart_stream()
 
     def _loop(self) -> None:
+        # Control-plane readiness is independent of this worker.  Wait for the
+        # real PipeWire socket and the applied ABOX route before invoking
+        # speaker warm-up or pw-cat.  Queued alarm/boot cues stay durable in the
+        # manager and play as soon as this gate opens.
+        while self.running and (not self._pw_socket_ready() or self._route_pending()):
+            time.sleep(0.25)
+        if not self.running:
+            return
         self._warm_once()
         self._start_stream()
         silence = b"\x00" * FRAME_BYTES
@@ -488,6 +551,11 @@ class SoundPlayer:
                             if self.active is active:
                                 self.active = None
                         self._last_cue_finished_at = time.time()
+                        if self.on_finished:
+                            try:
+                                self.on_finished(active.get("token"))
+                            except Exception:  # noqa: BLE001
+                                logging.exception("cue completion callback failed")
                         active = None
                         pos = 0
                 if active is not None:
@@ -541,6 +609,13 @@ class SoundManager:
         # plain metadata; no user audio or personal content is copied.
         self.probe_cache: dict[str, tuple[float, int, dict]] = self._load_probe_cache()
         self.load_assignments()
+        # Alarm/timer cues are persisted by stable token so a soundd restart
+        # resumes the same occurrence instead of dropping it.  The player's
+        # token dedupe above prevents a concurrent clockd retry from playing it
+        # twice.
+        self.durable_lock = threading.Lock()
+        self.durable = self._load_durable_queue()
+        self.player.on_finished = self._cue_finished
         # Do not block daemon startup on 70+ ffprobe forks.  The socket is the
         # latency-critical interface; a background scan fills the library while
         # the first ordinary state request can still use cached metadata.
@@ -786,6 +861,105 @@ class SoundManager:
         except OSError:
             self.assign_mtime = time.time()
 
+    # ---- durable alarm/timer cue queue ----------------------------------
+    def _load_durable_queue(self) -> dict[str, dict]:
+        out: dict[str, dict] = {}
+        try:
+            doc = json.loads(QUEUE_FILE.read_text())
+            rows = doc.get("cues") if isinstance(doc, dict) else None
+        except (OSError, ValueError, TypeError):
+            return out
+        if not isinstance(rows, list):
+            return out
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            token = str(row.get("token") or "")
+            action = str(row.get("action") or "")
+            if not token or action not in ("alarm", "timer"):
+                continue
+            out[token] = {
+                "token": token,
+                "action": action,
+                "path": str(row.get("path") or "") or None,
+                "loop": bool(row.get("loop", True)),
+                "requested_ms": int(row.get("requested_ms") or 0),
+            }
+        if out:
+            logging.info("loaded %d durable alarm/timer cue(s) from %s",
+                         len(out), QUEUE_FILE)
+        return out
+
+    def _save_durable_queue(self) -> None:
+        with self.durable_lock:
+            rows = sorted(self.durable.values(), key=lambda r: r.get("requested_ms") or 0)
+        try:
+            _atomic_json(QUEUE_FILE, {"schema_version": 1, "cues": rows})
+        except OSError as exc:
+            logging.warning("could not persist durable sound queue: %s", exc)
+
+    def _persist_durable_cue(self, token: str | None, action: str,
+                             path: str | None, loop: bool) -> None:
+        if not token or action not in ("alarm", "timer"):
+            return
+        with self.durable_lock:
+            self.durable[token] = {
+                "token": token,
+                "action": action,
+                "path": str(path) if path else None,
+                "loop": bool(loop),
+                "requested_ms": int(time.time() * 1000),
+            }
+        self._save_durable_queue()
+
+    def _remove_durable_cue(self, token: str | None) -> None:
+        if not token:
+            return
+        with self.durable_lock:
+            existed = self.durable.pop(token, None) is not None
+        if existed:
+            self._save_durable_queue()
+
+    def _cue_finished(self, token: str | None) -> None:
+        # A looping alarm never reaches this path; a short non-loop cue does.
+        self._remove_durable_cue(token)
+
+    def stop_cue(self, token: str | None = None, action: str | None = None) -> dict:
+        self.player.stop(token, action)
+        if token:
+            self._remove_durable_cue(token)
+        elif action in ("alarm", "timer"):
+            with self.durable_lock:
+                victims = [t for t, row in self.durable.items()
+                           if row.get("action") == action]
+            for victim in victims:
+                self._remove_durable_cue(victim)
+        return {"success": True, "stopped": True}
+
+    def resume_durable_queue(self) -> None:
+        with self.durable_lock:
+            rows = list(self.durable.values())
+        for row in rows:
+            try:
+                self.play_action(row["action"], row.get("path"),
+                                 bool(row.get("loop", True)), row["token"])
+            except Exception:  # noqa: BLE001
+                logging.exception("could not resume durable cue token=%s", row.get("token"))
+
+    def health(self) -> dict:
+        with self.durable_lock:
+            depth = len(self.durable)
+        player = self.player.status()
+        return {
+            "success": True,
+            "control_ready": True,
+            "backend_ready": player.get("backend_ready", False),
+            "audio_route_ready": not self.player._route_pending(),
+            "instance_id": self.player.instance_id,
+            "queue_depth": depth,
+            "player": player,
+        }
+
     def maybe_reload(self) -> None:
         try:
             mtime = ASSIGN_FILE.stat().st_mtime
@@ -817,6 +991,8 @@ class SoundManager:
 
     def state(self) -> dict:
         self.maybe_reload()
+        with self.durable_lock:
+            queue_depth = len(self.durable)
         return {
             "success": True,
             "actions": [{"id": a, "label": ACTION_LABELS[a]} for a in ACTIONS],
@@ -824,6 +1000,8 @@ class SoundManager:
             "sounds": self.scan(),
             "dirs": [str(p) for p in self.library_roots()],
             "player": self.player.status(),
+            "control_ready": True,
+            "queue_depth": queue_depth,
             "prewarm": self.prewarm_state,
             "ffmpeg": Path(FFMPEG).exists(),
             "ffprobe": Path(FFPROBE).exists(),
@@ -896,10 +1074,12 @@ class SoundManager:
         except RuntimeError as exc:
             return {"success": False, "error": "decode failed", "detail": str(exc),
                     "path": str(source)}
-        self.player.play({"action": action, "path": str(source), "pcm": pcm,
-                          "loop": bool(loop), "token": token})
-        return {"success": True, "queued": True, "action": action,
-                "path": str(source), "bytes": len(pcm),
+        self._persist_durable_cue(token, action, str(source), bool(loop))
+        accepted = self.player.play({"action": action, "path": str(source), "pcm": pcm,
+                                     "loop": bool(loop), "token": token})
+        return {"success": True, "queued": bool(accepted),
+                "duplicate": not bool(accepted), "action": action,
+                "path": str(source), "bytes": len(pcm), "token": token,
                 "queue_ms": round((time.monotonic() - started) * 1000, 2),
                 "player": self.player.status()}
 
@@ -914,6 +1094,8 @@ def handle(req: dict) -> dict:
     cmd = str(req.get("cmd") or "").strip()
     if cmd in ("state", "status", "list"):
         return MANAGER.state()
+    if cmd == "health":
+        return MANAGER.health()
     if cmd == "rescan":
         MANAGER.scan(force=True)
         return MANAGER.state()
@@ -929,8 +1111,7 @@ def handle(req: dict) -> dict:
                                    req.get("path"), bool(req.get("loop")),
                                    req.get("token"))
     if cmd == "stop":
-        MANAGER.player.stop(req.get("token"), req.get("action"))
-        return {"success": True, "stopped": True}
+        return MANAGER.stop_cue(req.get("token"), req.get("action"))
     if cmd == "import":
         return MANAGER.import_file(str(req.get("name") or "sound.mp3"),
                                    str(req.get("data_b64") or ""))
@@ -975,8 +1156,32 @@ def server_loop(sock: socket.socket) -> None:
         threading.Thread(target=serve_connection, args=(conn,), daemon=True).start()
 
 
+def sd_notify(message: str) -> None:
+    """Best-effort sd_notify(3) without adding a Python dependency."""
+    address = os.environ.get("NOTIFY_SOCKET")
+    if not address:
+        return
+    if address.startswith("@"):
+        address = "\0" + address[1:]
+    sock = None
+    try:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        sock.settimeout(1.0)
+        sock.connect(address)
+        sock.sendall(message.encode("utf-8"))
+    except OSError as exc:
+        logging.warning("sd_notify failed: %s", exc)
+    finally:
+        if sock is not None:
+            try:
+                sock.close()
+            except OSError:
+                pass
+
+
 def main() -> int:
     global MANAGER
+    started_monotonic = time.monotonic()
     USER_DIR.mkdir(parents=True, exist_ok=True)
     try:
         import pwd
@@ -988,11 +1193,14 @@ def main() -> int:
     MANAGER = SoundManager()
     MANAGER.player.start()
     threading.Thread(target=MANAGER.scan, name="nuxel-sound-scan", daemon=True).start()
+    threading.Thread(target=MANAGER.resume_durable_queue,
+                     name="nuxel-sound-resume-queue", daemon=True).start()
 
     stop_event = threading.Event()
 
     def _stop(_signum, _frame):
         stop_event.set()
+        sd_notify("STOPPING=1")
         MANAGER.player.shutdown()
 
     signal.signal(signal.SIGTERM, _stop)
@@ -1010,8 +1218,14 @@ def main() -> int:
     os.chmod(SOCKET_PATH, 0o660)
     sock.listen(16)
     sock.settimeout(1.0)
+    ready_ms = round((time.monotonic() - started_monotonic) * 1000, 1)
     logging.info("nuxel-soundd ready socket=%s dirs=%s", SOCKET_PATH,
                  [str(p) for p in MANAGER.library_roots()])
+    # Service readiness means only that the control socket/durable queue can
+    # accept work.  Hardware/backend readiness is reported separately through
+    # health()/player.backend_ready and continues asynchronously.
+    sd_notify("READY=1\nSTATUS=control API ready in %.1f ms; audio backend initializing" % ready_ms)
+    logging.info("control API READY in %.1f ms (audio backend continues asynchronously)", ready_ms)
     thread = threading.Thread(target=server_loop, args=(sock,), daemon=True)
     thread.start()
     while not stop_event.is_set():

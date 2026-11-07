@@ -6,8 +6,8 @@
   },
   {
     "path": "pwa/nuxel-apps/penguinterface/css/pengu.css",
-    "sha256": "99d1156c2862abdeb85944582fbd76ec11b617e512b8497aa55dd1665616e717",
-    "size": 1073
+    "sha256": "5e44f51844dbf196abd579fcee37358c63f1f7d5d8f395c735d474353002b364",
+    "size": 1776
   },
   {
     "path": "pwa/nuxel-apps/penguinterface/icons/icon-128.png",
@@ -61,13 +61,18 @@
   },
   {
     "path": "pwa/nuxel-apps/penguinterface/index.html",
-    "sha256": "20a78aa2383d7dfaf370250698875e67ccd63adae668778945ff44d1696afd2d",
-    "size": 1155
+    "sha256": "da9635f81008bf969b74fd9600b728a93b5c9f1d6df91d99d390ecb54dcba09d",
+    "size": 3181
   },
   {
     "path": "pwa/nuxel-apps/penguinterface/js/pengu.js",
     "sha256": "41079b99cb1319adbab6a25344e6d1a3349cbd3fe75c59db24f3169b510df3ce",
     "size": 2510
+  },
+  {
+    "path": "pwa/nuxel-apps/penguinterface/js/spoof.js",
+    "sha256": "5f0107ca3f0ae06ab440ac2bab8f2fd37efedfd7d39a7a6d9067562e98f3501b",
+    "size": 3788
   },
   {
     "path": "pwa/nuxel-apps/penguinterface/manifest.json",

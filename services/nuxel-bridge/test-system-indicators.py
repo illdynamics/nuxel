@@ -67,11 +67,19 @@ class FakeSystem:
                                                    "bluetooth-indicator.json"),
         })
 
+    def _invalidate(self) -> None:
+        # get_indicators() is cached for the real 1 Hz lockscreen poll.  A
+        # synthetic fixture mutation is a new state and must bypass that cache.
+        cache = getattr(mod, "_INDICATOR_CACHE", None)
+        if isinstance(cache, dict):
+            cache.clear()
+
     def write(self, rel: str, value: str) -> None:
         full = os.path.join(self.root, rel)
         os.makedirs(os.path.dirname(full), exist_ok=True)
         with open(full, "w") as fh:
             fh.write(value)
+        self._invalidate()
 
     def link(self, rel: str, target: str) -> None:
         full = os.path.join(self.root, rel)
@@ -79,6 +87,7 @@ class FakeSystem:
         if os.path.lexists(full):
             os.unlink(full)
         os.symlink(target, full)
+        self._invalidate()
 
     def battery(self, status: str, capacity: str = "71") -> None:
         self.write("power_supply/battery/type", "Battery")
@@ -103,6 +112,7 @@ class FakeSystem:
         path = os.path.join(self.udc, "10c00000.dwc3", "current_speed")
         if os.path.exists(path):
             os.unlink(path)
+        self._invalidate()
 
     def console_process(self, pid: int = 4242, tty: bool = True,
                         command: str = "/opt/nuxel/nuxel-console /newroot") -> None:
@@ -113,6 +123,7 @@ class FakeSystem:
 
     def remove_console_process(self, pid: int = 4242) -> None:
         shutil.rmtree(os.path.join(self.proc, str(pid)), ignore_errors=True)
+        self._invalidate()
 
 
     def typec_role(self, role: str | None) -> None:
@@ -122,6 +133,7 @@ class FakeSystem:
         if role is None:
             shutil.rmtree(self.typec, ignore_errors=True)
             os.makedirs(self.typec, exist_ok=True)
+            self._invalidate()
             return
         os.makedirs(path, exist_ok=True)
         self.write("typec/port0/data_role", role + "\n")
@@ -131,6 +143,7 @@ class FakeSystem:
         if state is None:
             shutil.rmtree(self.debugfs, ignore_errors=True)
             os.makedirs(self.debugfs, exist_ok=True)
+            self._invalidate()
             return
         os.makedirs(path, exist_ok=True)
         self.write("debugfs/10c00000.dwc3/link_state", state + "\n")
@@ -141,6 +154,7 @@ class FakeSystem:
             self.write("tty/ttyGS0/dev", "254:0\n")
         elif os.path.exists(path):
             os.unlink(path)
+        self._invalidate()
 
     def reset(self) -> None:
         for name in os.listdir(self.root):
@@ -153,9 +167,11 @@ class FakeSystem:
                      self.android_usb, self.typec, self.debugfs,
                      os.path.join(self.run, "nuxel")):
             os.makedirs(path, exist_ok=True)
+        self._invalidate()
 
     def cleanup(self) -> None:
         shutil.rmtree(self.root, ignore_errors=True)
+        self._invalidate()
 
 
 def state() -> tuple:

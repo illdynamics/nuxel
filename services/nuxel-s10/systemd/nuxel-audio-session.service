@@ -20,5 +20,9 @@ SendSIGKILL=yes
 StandardOutput=journal
 StandardError=journal
 
+# PWNAGE-89000: audio-session is pulled in by nuxel-soundd (and the deferred
+# boot cue/ABOX path), but it is not a user-visible boot prerequisite.  Keeping
+# it out of multi-user.target.wants prevents the target from serializing behind
+# the two ABOX-triggered PipeWire restarts.  Playback/alarm readiness continues
+# in the background and soundd accepts/queues cues meanwhile.
 [Install]
-WantedBy=multi-user.target
