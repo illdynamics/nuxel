@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <title>NuxTore</title>
 <link rel="stylesheet" href="../../nuxel-common/theme.css">
-<link rel="stylesheet" href="css/nuxtore.css">
+<link rel="stylesheet" href="css/nuxtore.css?v=p82000">
     <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
@@ -22,7 +22,7 @@
 </header>
 
 <div class="toolbar">
-  <input id="search" type="search" placeholder="Search packages, categories, provenance">
+  <input id="search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search packages, categories, provenance">
   <select id="category" aria-label="Category filter">
     <option value="">All categories</option>
   </select>
@@ -53,12 +53,15 @@
       <div class="row">
         <button id="fp-refresh">Refresh discovery</button>
         <button id="fp-update-all" class="ghost">Update apps + runtimes</button>
-        <input id="fp-search" type="search" placeholder="Search installed or Flathub aarch64 apps" style="flex:1;min-width:120px">
+        <input id="fp-search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search installed or Flathub aarch64 apps" style="flex:1;min-width:120px">
       </div>
     </div>
     <div class="card" id="fp-progress" hidden>
-      <h3>Progress</h3>
+      <h3>Software transaction</h3>
+      <div id="fp-tx-status" class="hint" role="status" aria-live="polite">—</div>
+      <div class="bar" style="margin:8px 0"><i id="fp-tx-bar" style="width:0%"></i></div>
       <pre class="log" id="fp-progress-log"></pre>
+      <div class="row" id="fp-tx-actions"></div>
     </div>
     <div id="fp-installed"></div>
     <div class="card"><h3>Available on Flathub — aarch64 refs only</h3>
@@ -134,9 +137,9 @@ python3 pwa/nuxel-apps/nuxtore/tools/nuxtore-stage.py --check</pre>
 <script src="../../nuxel-common/theme.js"></script>
 <script src="../../nuxel-common/haptics.js"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
-<script src="js/nuxtore-crypto.js"></script>
-<script src="js/nuxtore-catalog.js"></script>
-<script src="js/nuxtore.js"></script>
-<script src="js/nuxtore-flatpak.js"></script>
+<script src="js/nuxtore-crypto.js?v=p82000"></script>
+<script src="js/nuxtore-catalog.js?v=p82000"></script>
+<script src="js/nuxtore.js?v=p82000"></script>
+<script src="js/nuxtore-flatpak.js?v=p82000"></script>
 </body>
 </html>

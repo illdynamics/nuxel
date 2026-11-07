@@ -147,6 +147,10 @@ def main():
     start_url = normalize(os.environ.get("NUXEL_BROWSER_URL", "https://www.google.nl"))
     win = Gtk.Window(title="Nuxel Browser")
     win.set_default_size(360, 760)
+    # PWNAGE-88000: fill the actual phone viewport instead of a fixed 360x760
+    # desktop-sized default.  Phoc honors maximize and sizes the toplevel to the
+    # current output; a mobile UA is set on the view below for responsive sites.
+    win.maximize()
     # A65-15: drop the redundant per-app GTK titlebar. The browser's own top
     # toolbar is the only chrome; global Back/Home/Tabs remain system-owned.
     win.set_decorated(False)
@@ -205,7 +209,14 @@ def main():
         chrome.pack_start(w, False, False, 0)
     vbox.pack_start(chrome, False, False, 0)
 
-    view = WebKit2.WebView()
+    wsettings = WebKit2.Settings()
+    # Responsive mobile UA (real WebKit, mobile form-factor hint).  This is the
+    # browser's own view only; no global UA override is applied to the bridge.
+    wsettings.set_user_agent(
+        "Mozilla/5.0 (Linux; Android 14; SM-G975F) AppleWebKit/605.1.15 "
+        "(KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1 "
+        "NuxelBrowser/0.7.8")
+    view = WebKit2.WebView.new_with_settings(wsettings)
     view.set_hexpand(True); view.set_vexpand(True)
     vbox.pack_start(view, True, True, 0)
 

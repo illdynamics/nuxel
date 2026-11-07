@@ -35,6 +35,7 @@
  * swipe, mirroring the nav dock's bottom-edge reveal.  Home and the lockscreen
  * never map either state. */
 #define BAR_STRIP_HEIGHT 12
+#define BAR_STRIP_INPUT_HEIGHT 40  /* visual grabber stays thin; the edge band is wider for gesture reliability */
 #define BAR_REVEAL_DISTANCE 16
 #define BAR_AUTOHIDE_MS 4500
 #define STATE_FILE "/run/nuxel-statusbar.state"
@@ -258,6 +259,18 @@ static void draw_location(cairo_t *cr, double cx, double cy) {
   cairo_fill(cr);
 }
 
+static void draw_bolt(cairo_t *cr, double x, double y, double w, double h) {
+  cairo_move_to(cr, x + w * 0.62, y);
+  cairo_line_to(cr, x + w * 0.20, y + h * 0.56);
+  cairo_line_to(cr, x + w * 0.46, y + h * 0.56);
+  cairo_line_to(cr, x + w * 0.36, y + h);
+  cairo_line_to(cr, x + w * 0.82, y + h * 0.42);
+  cairo_line_to(cr, x + w * 0.54, y + h * 0.42);
+  cairo_line_to(cr, x + w * 0.72, y);
+  cairo_close_path(cr);
+  cairo_fill(cr);
+}
+
 static void draw_battery(cairo_t *cr, double x, double cy, int level, int chg) {
   const double w = 27.0, h = 13.0;
   double top = cy - h / 2.0;
@@ -274,15 +287,11 @@ static void draw_battery(cairo_t *cr, double x, double cy, int level, int chg) {
     cairo_fill(cr);
   }
   if (chg) {
-    cairo_set_source_rgba(cr, 1.0, 0.96, 0.68, 1.0);
-    cairo_move_to(cr, x + w * 0.55, top + 1.0);
-    cairo_line_to(cr, x + w * 0.30, top + h * 0.55);
-    cairo_line_to(cr, x + w * 0.50, top + h * 0.55);
-    cairo_line_to(cr, x + w * 0.40, top + h - 1.0);
-    cairo_line_to(cr, x + w * 0.72, top + h * 0.40);
-    cairo_line_to(cr, x + w * 0.52, top + h * 0.40);
-    cairo_close_path(cr);
-    cairo_fill(cr);
+    /* Three yellow zaps, matching the Home DOM battery indicator. */
+    cairo_set_source_rgba(cr, 1.0, 0.84, 0.18, 1.0);
+    draw_bolt(cr, x + 1.8, top + 1.2, 7.0, h - 2.4);
+    draw_bolt(cr, x + 9.9, top + 1.2, 7.0, h - 2.4);
+    draw_bolt(cr, x + 18.0, top + 1.2, 7.0, h - 2.4);
   }
 }
 
@@ -407,7 +416,7 @@ static void bar_create(void) {
   if (layer_surface || !compositor || !layer_shell || !output) return;
   if (!surface) surface = wl_compositor_create_surface(compositor);
   if (!surface) return;
-  int32_t h = strip_mode ? BAR_STRIP_HEIGHT : BAR_HEIGHT;
+  int32_t h = strip_mode ? BAR_STRIP_INPUT_HEIGHT : BAR_HEIGHT;
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(
       layer_shell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "nuxel-statusbar");
   zwlr_layer_surface_v1_set_anchor(layer_surface,
@@ -418,13 +427,6 @@ static void bar_create(void) {
       strip_mode ? 0 : BAR_HEIGHT);
   zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
       ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
-  if (!strip_mode) {
-    /* The full bar is presentation only; the top-edge reveal strip below it is
-     * the only touch owner. */
-    struct wl_region *empty = wl_compositor_create_region(compositor);
-    wl_surface_set_input_region(surface, empty);
-    wl_region_destroy(empty);
-  }
   height = h;
   zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
   wl_surface_commit(surface);
@@ -459,7 +461,7 @@ static void bar_reveal(void) {
   if (layer_surface) bar_hide();
   strip_mode = 0;
   bar_revealed = 1;
-  reveal_deadline = now_ms() + BAR_AUTOHIDE_MS;
+  reveal_deadline = 0; /* toggle: stays revealed until swiped down again */
   bar_create();
   audit("STATUSBAR_GESTURE_REVEAL");
   publish_state(1, "native_reveal", "", 0, NULL);
@@ -475,7 +477,7 @@ static void layer_configure(void *d, struct zwlr_layer_surface_v1 *ls,
                             uint32_t serial, uint32_t w, uint32_t h) {
   (void)d;
   if ((int32_t)w > 0) width = (int32_t)w;
-  height = strip_mode ? BAR_STRIP_HEIGHT : BAR_HEIGHT;
+  height = strip_mode ? BAR_STRIP_INPUT_HEIGHT : BAR_HEIGHT;
   zwlr_layer_surface_v1_ack_configure(ls, serial);
   configured = 1;
   render();
@@ -499,7 +501,7 @@ static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
                           uint32_t time, struct wl_surface *surf, int32_t id,
                           wl_fixed_t x, wl_fixed_t y) {
   (void)d; (void)t; (void)serial; (void)time; (void)surf; (void)id; (void)x;
-  if (!strip_mode) return;
+  if (!strip_mode && !bar_revealed) return;
   touch_down = 1;
   down_y = last_y = wl_fixed_to_int(y);
 }
@@ -510,6 +512,10 @@ static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t 
   if (strip_mode && touch_down && (last_y - down_y) >= BAR_REVEAL_DISTANCE) {
     touch_down = 0;
     bar_reveal();
+  } else if (!strip_mode && bar_revealed && touch_down &&
+             (down_y - last_y) >= BAR_REVEAL_DISTANCE) {
+    touch_down = 0;
+    bar_strip();
   }
 }
 static void touch_up_cb(void *d, struct wl_touch *t, uint32_t serial,

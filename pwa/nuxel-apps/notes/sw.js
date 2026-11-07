@@ -1,10 +1,10 @@
-const CACHE_NAME = 'nuxel-notes-v2-p44000';
+const CACHE_NAME = 'nuxel-notes-v3-p82000';
 const ASSETS = [
   '/',
   '/index.html',
-  '/css/notes.css',
-  '/js/notes.js',
-  '/js/notes-io.js',
+  '/css/notes.css?v=p82000',
+  '/js/notes.js?v=p82000',
+  '/js/notes-io.js?v=p82000',
   '../../nuxel-common/bridge.js',
   '/manifest.json',
   '/icons/icon-48.png',

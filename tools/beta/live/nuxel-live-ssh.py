@@ -389,9 +389,9 @@ def main(argv=None):
         shell = adapter.remote_shell()
         if not shell:
             raise tl.TransportUnavailable("the remote account has no usable shell")
-        print("# transport %s; account %s; shell %s; exit status is the shell's"
+        print("# transport %s; account %s; shell %s; registered Tri-Link console"
               % (transport, target.user, shell), file=sys.stderr)
-        return adapter.interactive(shell)
+        return adapter.interactive(shell, transport=transport)
 
     # No action: report status, never open an accidental shell.
     report = adapter.preflight()

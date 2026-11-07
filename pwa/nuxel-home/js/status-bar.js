@@ -139,7 +139,8 @@ class StatusBar {
 
     _setProviderVisible(element, visible) {
         if (!element) return;
-        this._providerVisible[element.id] = !!visible;
+        if (!this._providerVisible) this._providerVisible = {};
+        if (element.id) this._providerVisible[element.id] = !!visible;
         const def = window.NuxelStatusBarIcons && window.NuxelStatusBarIcons.byElement(element.id);
         const pref = def ? this._prefVisible(def.id) : true;
         element.hidden = !(visible && pref);
@@ -699,6 +700,7 @@ class StatusBar {
         if (!el) return;
         const ind = this.state.indicators;
         let label = '';
+        let state = '';
         let visible = false;
         if (ind) {
             const usb = ind.usb_data || {};
@@ -707,23 +709,23 @@ class StatusBar {
             const charging = ind.charging || {};
             // Deterministic precedence: active file transfer > active USB
             // console > active charge > enumerated data link.
-            if (transfer.active === true) { label = 'file'; visible = true; }
-            else if (transports.usb && transports.usb.active === true) { label = 'term'; visible = true; }
-            else if (charging.charging === true && (usb.pc_connected === true || charging.external_power === true)) { label = 'chrg'; visible = true; }
-            else if (usb.pc_connected === true) { label = ''; visible = true; }
+            if (transfer.active === true) { label = 'file'; state = 'file'; visible = true; }
+            else if (transports.usb && transports.usb.active === true) { label = 'term'; state = 'term'; visible = true; }
+            else if (charging.charging === true && (usb.pc_connected === true || charging.external_power === true)) { state = 'chrg'; visible = true; }
+            else if (usb.pc_connected === true) { visible = true; }
         }
         this.state.usbLabel = label;
         this._setProviderVisible(el, visible);
-        el.dataset.state = visible ? (label || 'connected') : 'unknown';
+        el.dataset.state = visible ? (state || 'connected') : 'unknown';
         const tag = el.querySelector('.usb-label');
         if (tag) tag.textContent = label;
         if (!visible) {
             el.setAttribute('aria-label', 'USB not connected');
             el.title = 'USB: no wired data link reported';
         } else {
-            const detail = label === 'file' ? 'File transfer endpoint active'
-                : label === 'term' ? 'USB console active'
-                : label === 'chrg' ? 'Charging over USB'
+            const detail = state === 'file' ? 'File transfer endpoint active'
+                : state === 'term' ? 'USB console active'
+                : state === 'chrg' ? 'Charging over USB (status text hidden)'
                 : 'USB data link to host';
             el.setAttribute('aria-label', 'USB: ' + detail);
             el.title = 'USB: ' + detail;
@@ -816,9 +818,11 @@ class StatusBar {
             ? Math.round(capacity / 1000) + ' mAh'
             : 'capacity unavailable';
         try { this.elements.battery.title = 'Battery ' + (level === null ? '—' : level + '%') + ' · ' + capacityLabel; } catch (e) {}
+        const zaps = charging ? '<span class="battery-zaps" aria-hidden="true"><i></i><i></i></span>' : '';
         this.elements.battery.innerHTML = '<span class="battery-icon' + (charging ? ' charging' : '') + '">' +
             '<span class="battery-level ' + levelClass + '" style="width:' + width + '%"></span>' +
-            (inside ? '<span class="battery-inside-pct">' + (level === null ? '—' : level + '%') + '</span>' : '') + '</span>';
+            (inside ? '<span class="battery-inside-pct">' + (level === null ? '—' : level + '%') + '</span>' : '') +
+            zaps + '</span>';
         if (this.elements.batteryPct) {
             this.elements.batteryPct.textContent = '';
             this._providerVisible['status-battery-pct'] = false;

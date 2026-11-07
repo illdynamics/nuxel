@@ -93,7 +93,44 @@ HARD_UNSUPPORTED = (
     "lockdown",
     "root",
     "sudo",
+
 )
+
+# ---------------------------------------------------------------------------
+# Policy defaults (Section 2.2). The exact initial decisions, in ONE place.
+#   mirroring  -> allow for every installed app (owner can turn it off)
+#   zoom       -> deny for every app
+#   casting    -> deny for every app
+#   fullscreen -> allow ONLY for the audited compatibility allowlist
+#   microphone -> allow ONLY for org.nuxel.Recorder (explicit owner instruction)
+#   everything else -> deny (fail closed)
+# ---------------------------------------------------------------------------
+FULLSCREEN_ALLOWLIST = (
+    "org.nuxel.Doom",             # Nuxel Doom WebAssembly engine: explicit Fullscreen API
+    "org.nuxel.Doom.Chocolate",   # native Chocolate Doom engine enters fullscreen
+)
+
+MICROPHONE_ALLOWLIST = (
+    "org.nuxel.Recorder",
+)
+
+DEFAULT_DENY = "deny"
+DEFAULT_ALLOW = "allow"
+
+
+def default_decision(app_id, capability_id):
+    """Return the default decision for a capability with no explicit record.
+
+    These are the ONLY allow-by-default cases. Every other grant-required
+    capability fails closed (deny). A capability declaration is never a grant.
+    """
+    if capability_id == "mirroring":
+        return DEFAULT_ALLOW
+    if capability_id == "microphone" and app_id in MICROPHONE_ALLOWLIST:
+        return DEFAULT_ALLOW
+    if capability_id == "fullscreen" and app_id in FULLSCREEN_ALLOWLIST:
+        return DEFAULT_ALLOW
+    return DEFAULT_DENY
 
 
 def _now():
@@ -281,10 +318,56 @@ class Store(object):
         grant = grants.get(cap_id)
         if not isinstance(grant, dict):
             return False
+        if grant.get("decision") == "deny":
+            # An explicit deny record is never a grant.
+            return False
         if grant.get("duration") == "once" and consume_once:
             self.revoke(app_id, cap_id, reason="once-consumed")
             return True
         return True
+
+    def is_denied(self, app_id, capability):
+        """True when an explicit persistent deny record exists."""
+        cap_id, _why = self.registry.resolve(capability)
+        if cap_id is None:
+            return False
+        grant = self.get_grants(app_id).get(cap_id)
+        return isinstance(grant, dict) and grant.get("decision") == "deny"
+
+    def decide(self, app_id, capability, consume_once=False):
+        """Authoritative policy decision for one app + capability.
+
+        Order of precedence:
+          1. unknown/unsupported capability  -> deny (fail closed)
+          2. not a grant-required resource   -> allow (intrinsic baseline)
+          3. explicit grant                  -> allow
+          4. explicit deny                   -> deny
+          5. policy default                  -> allow/deny (see default_decision)
+        Every error path denies.
+        """
+        cap_id, why = self.registry.resolve(capability)
+        if cap_id is None:
+            return {"decision": DEFAULT_DENY, "app_id": app_id,
+                    "capability": capability, "source": "invalid",
+                    "reason": why or "unknown capability"}
+        enf = self.registry.enforcement_of(cap_id)
+        if enf.get("verdict") == "NOT_SUPPORTED_ON_DEVICE":
+            return {"decision": DEFAULT_DENY, "app_id": app_id,
+                    "capability": cap_id, "source": "unsupported",
+                    "reason": enf.get("limitation") or "unsupported on this device"}
+        if not enf.get("grant_required", True):
+            return {"decision": DEFAULT_ALLOW, "app_id": app_id,
+                    "capability": cap_id, "source": "intrinsic",
+                    "reason": "not a grant-required resource"}
+        if self.is_granted(app_id, cap_id, consume_once=consume_once):
+            return {"decision": DEFAULT_ALLOW, "app_id": app_id,
+                    "capability": cap_id, "source": "grant"}
+        if self.is_denied(app_id, cap_id):
+            return {"decision": DEFAULT_DENY, "app_id": app_id,
+                    "capability": cap_id, "source": "explicit-deny"}
+        decision = default_decision(app_id, cap_id)
+        return {"decision": decision, "app_id": app_id,
+                "capability": cap_id, "source": "policy-default"}
 
     # ---- state (reviewable extended record) ------------------------------
     def get_state(self, app_id):
@@ -372,6 +455,27 @@ class Store(object):
         self.audit("grant", app_id, cap_id, duration=duration,
                    enforceable=enforce["enforceable"],
                    enforces_against=enforce["enforces_against"])
+        return record
+
+    def deny(self, app_id, capability, reason="user"):
+        """Persist an explicit deny record (survives reboot)."""
+        cap_id, why = self.registry.resolve(capability)
+        if cap_id is None:
+            raise UnsupportedCapability(why)
+        grants = self.get_grants(app_id)
+        record = {
+            "decision": "deny",
+            "updated_at": _now(),
+            "portal_type": self.registry.capability(cap_id).get("portal_type") or cap_id,
+        }
+        if reason:
+            record["reason"] = reason
+        grants[cap_id] = record
+        self.write_grants(app_id, grants)
+        state = self.get_state(app_id)
+        state.setdefault("grants", {})[cap_id] = record
+        self.write_state(app_id, state)
+        self.audit("deny", app_id, cap_id, reason=reason)
         return record
 
     def revoke(self, app_id, capability, reason="user"):
@@ -1235,31 +1339,25 @@ def sync(root, store, registry, apply_shipped_defaults=False, dry_run=False):
         written.append(app_id)
 
     if apply_shipped_defaults:
-        reg_path = os.path.join(root, "configs/nuxel/app-registry/app_registry.json")
-        if os.path.isfile(reg_path):
-            try:
-                with open(reg_path, "r") as fh:
-                    reg = json.load(fh)
-            except (ValueError, IOError, OSError):
-                reg = {"apps": []}
-            for app in reg.get("apps", []):
-                app_id = app.get("app_id")
-                if not app_id:
-                    continue
-                for token in app.get("default_capabilities", []) or []:
-                    cap_id, why = registry.resolve(token)
-                    if cap_id is None:
-                        continue
-                    enf = registry.enforcement_of(cap_id)
-                    if enf["verdict"] in ("NOT_SUPPORTED_ON_DEVICE",):
-                        continue
-                    if dry_run:
-                        granted.append((app_id, cap_id, "dry-run"))
-                        continue
-                    store.grant(app_id, cap_id, duration="always",
-                                evidence=["shipped default from "
-                                          "configs/nuxel/app-registry/app_registry.json"])
-                    granted.append((app_id, cap_id, "granted"))
+        # New policy (Section 2.2): old default_capabilities are declarations,
+        # not owner consent, and are NOT inherited. The only intentional
+        # initial grants are the explicitly authorized seeds. Mirroring is a
+        # computed default (default_decision), never an explicit grant.
+        seeds = []
+        for app_id in MICROPHONE_ALLOWLIST:
+            seeds.append((app_id, "microphone"))
+        for app_id in FULLSCREEN_ALLOWLIST:
+            seeds.append((app_id, "fullscreen"))
+        for app_id, cap_id in seeds:
+            enf = registry.enforcement_of(cap_id)
+            if enf["verdict"] in ("NOT_SUPPORTED_ON_DEVICE",):
+                continue
+            if dry_run:
+                granted.append((app_id, cap_id, "dry-run"))
+                continue
+            store.grant(app_id, cap_id, duration="always",
+                        evidence=["explicit policy seed (Section 2.2)"])
+            granted.append((app_id, cap_id, "granted"))
     return {"recorded": written, "shipped_defaults": granted, "dry_run": dry_run}
 
 
@@ -1376,14 +1474,17 @@ def _cmd_revoke_all(args, store, registry, root):
 
 
 def _cmd_check(args, store, registry, root):
-    granted = store.is_granted(args.app_id, args.capability, consume_once=True)
-    enf = registry.enforcement_of(registry.resolve(args.capability)[0] or args.capability)
-    if granted:
-        print("granted: %s %s (enforceable=%s against %s)"
-              % (args.app_id, args.capability, enf["enforceable"],
-                 enf["enforces_against"]))
+    result = store.decide(args.app_id, args.capability, consume_once=True)
+    cap_id = result.get("capability", args.capability)
+    enf = registry.enforcement_of(cap_id)
+    if result["decision"] == "allow":
+        print("allowed: %s %s (source=%s enforceable=%s against=%s)"
+              % (args.app_id, args.capability, result.get("source"),
+                 enf["enforceable"], enf["enforces_against"]))
         return EXIT_OK
-    print("denied: %s %s" % (args.app_id, args.capability))
+    print("denied: %s %s (source=%s reason=%s)"
+          % (args.app_id, args.capability, result.get("source"),
+             result.get("reason", "")))
     return EXIT_DENIED
 
 

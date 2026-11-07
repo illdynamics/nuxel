@@ -43,6 +43,133 @@ APP_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 ALLOWED_REMOTES = {"flathub", "fedora"}
 ALLOWED_SCOPES = {"system", "user"}
 MAX_LOG_BYTES = 64 * 1024
+TRANSACTION_STATES = ("idle", "queued", "resolving", "downloading", "installing",
+                      "verifying", "completed", "removing", "removed", "failed",
+                      "cancelled")
+
+# Renderer policy (PWNAGE-85000).  The sandbox runtime has no DRM render node
+# on this 4.14 vendor kernel, so a verified software path is the conservative
+# default.  An app may only be promoted to ``auto``/``verified-hardware`` after
+# it has been checked on the actual phone (window presents, input works, no
+# renderer crash).  Never add broad device grants to make a GPU path possible.
+RENDERER_ENV_SOFTWARE = (
+    "LIBGL_ALWAYS_SOFTWARE=1",
+    "GALLIUM_DRIVER=llvmpipe",
+    "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe",
+    "GSK_RENDERER=cairo",
+)
+DEFAULT_RENDERER_POLICY = {
+    "mode": "software-fallback",
+    "reason": "conservative default: verified software path on the 4.14 kbase stack",
+}
+RENDERER_POLICIES = {
+    # Verified on the live phone in PWNAGE-85000: GTK4/libadwaita selects its
+    # own renderer and the window process stays connected to Wayland.
+    "org.gnome.TextEditor": {
+        "mode": "auto",
+        "reason": "GTK4/libadwaita; live A/B verified window + Wayland connection",
+    },
+    # Explicitly kept on the known-good fallback until an owner-visible render
+    # and scroll check proves otherwise.
+    "app.legcord.Legcord": {
+        "mode": "software-fallback",
+        "reason": "Electron/Chromium; no DRM render node, software compositing verified",
+    },
+    "dev.vencord.Vesktop": {
+        "mode": "software-fallback",
+        "reason": "Electron/Chromium; software compositing verified (GPU process blocks window)",
+    },
+    "org.mozilla.firefox": {
+        "mode": "software-fallback",
+        "reason": "Gecko software path verified; GPU path unproven in sandbox",
+    },
+    "com.stremio.Stremio": {
+        "mode": "software-fallback",
+        "reason": "Electron; software path is the verified fallback",
+    },
+    "org.signal.Signal": {
+        "mode": "software-fallback",
+        "reason": "Electron; software path is the verified fallback",
+    },
+    "com.sindresorhus.Caprine": {
+        "mode": "software-fallback",
+        "reason": "Electron; no DRM render node, software compositing verified",
+    },
+    "org.ferdium.Ferdium": {
+        "mode": "software-fallback",
+        "reason": "Electron; software compositing is the verified path",
+    },
+    "com.github.IsmaelMartinez.teams_for_linux": {
+        "mode": "software-fallback",
+        "reason": "Electron; inner Chromium sandbox/GPU unavailable on vendor kernel",
+    },
+    "com.rtosta.zapzap": {
+        "mode": "software-fallback",
+        "reason": "QtWebEngine; inner sandbox and GPU disabled, software compositing",
+    },
+    "org.telegram.desktop": {
+        "mode": "software-fallback",
+        "reason": "Qt/Wayland; software GL path verified, focus resolved by app_surface",
+    },
+    "org.videolan.VLC": {
+        "mode": "software-fallback",
+        "reason": "KDE/Qt runtime; software path is the verified fallback",
+    },
+    "io.mpv.Mpv": {
+        "mode": "software-fallback",
+        "reason": "mpv Wayland; software path avoids untested runtime EGL",
+    },
+}
+
+# Electron/Chromium apps validated on the live S10+.  This list is a fast path
+# only; is_electron() also detects future Electron Flatpaks by their BaseApp
+# metadata so newly installed Electron apps inherit the same launch flags.
+ELECTRON_KNOWN_IDS = {
+    "app.legcord.Legcord", "dev.vencord.Vesktop",
+    "com.stremio.Stremio", "org.signal.Signal",
+    "com.sindresorhus.Caprine", "org.ferdium.Ferdium",
+    "com.github.IsmaelMartinez.teams_for_linux",
+}
+
+# QtWebEngine/PyQt apps hit the same Flatpak Chromium-sandbox limitation as
+# Electron: the portal host-spawn path cannot resolve the requesting PID on the
+# vendor 4.14 kernel.  These env vars disable only the *inner* Chromium
+# sandbox; the Flatpak/bwrap sandbox remains authoritative.
+QT_WEBENGINE_KNOWN_IDS = {"com.rtosta.zapzap"}
+
+ELECTRON_ENV = (
+    "ELECTRON_OZONE_PLATFORM_HINT=wayland",
+    "ZYPAK_ZYGOTE_STRATEGY_SPAWN=0",
+)
+ELECTRON_APP_ARGS = (
+    "--ozone-platform=wayland",
+    "--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer",
+    "--disable-gpu",
+    "--no-sandbox",
+    "--disable-dev-shm-usage",
+)
+QT_WEBENGINE_ENV = (
+    "QTWEBENGINE_DISABLE_SANDBOX=1",
+    # QtWebEngine reads Chromium switches from this variable, not from the
+    # application argv.  Software compositing is required because the sandbox
+    # runtime has no DRM render node on this kernel.
+    "QTWEBENGINE_CHROMIUM_FLAGS=--no-sandbox --disable-gpu "
+    "--disable-gpu-compositing --disable-dev-shm-usage",
+)
+
+# Small caches so a launch does not pay for repeated ``flatpak info -m``
+# probes.  Entries are per app id only; no client-supplied data is cached.
+_ELECTRON_CACHE: Dict[str, bool] = {}
+_QTWEBENGINE_CACHE: Dict[str, bool] = {}
+
+def renderer_policy(app_id: str) -> Dict[str, Any]:
+    """Return the explicit, evidence-backed renderer policy for one app."""
+    policy = dict(DEFAULT_RENDERER_POLICY)
+    policy.update(RENDERER_POLICIES.get(app_id, {}))
+    policy["app_id"] = app_id
+    policy["env"] = list(RENDERER_ENV_SOFTWARE) if policy.get("mode") == "software-fallback" else []
+    return policy
+
 
 
 def _base_env(scope: str = "system", user_bus: bool = False) -> Dict[str, str]:
@@ -62,8 +189,6 @@ def _base_env(scope: str = "system", user_bus: bool = False) -> Dict[str, str]:
             "XDG_CURRENT_DESKTOP": "Nuxel",
             "WAYLAND_DISPLAY": "wayland-0",
             "GDK_BACKEND": "wayland",
-            "GSK_RENDERER": "cairo",
-            "LIBGL_ALWAYS_SOFTWARE": "1",
             "XDG_DATA_DIRS": "/var/lib/flatpak/exports/share:/usr/local/share:/usr/share",
         })
     else:
@@ -77,7 +202,7 @@ def _base_env(scope: str = "system", user_bus: bool = False) -> Dict[str, str]:
     return env
 
 
-def _user_argv(argv: List[str]) -> List[str]:
+def _user_argv(argv: List[str], unit: Optional[str] = None) -> List[str]:
     """Wrap an argv so systemd executes it as nuxel.
 
     The HTTP bridge runs with NoNewPrivileges=yes; ``runuser`` is denied there
@@ -85,10 +210,11 @@ def _user_argv(argv: List[str]) -> List[str]:
     a transient unit as the real user, which is the same mechanism the existing
     native-app launch path uses.  No shell is involved.
     """
-    unit = "nuxel-fp-%s" % uuid.uuid4().hex[:8]
+    unit = unit or ("nuxel-fp-%s" % uuid.uuid4().hex[:8])
     return [
         "/usr/bin/systemd-run", "--unit=" + unit, "--collect", "--quiet",
-        "--wait", "--pipe", "--uid=nuxel", "--gid=nuxel",
+        "--wait", "--pipe", "--property=TimeoutStopSec=1s",
+        "--uid=nuxel", "--gid=nuxel",
         "--property=SupplementaryGroups=audio",
         "--setenv=HOME=" + USER_HOME,
         "--setenv=USER=nuxel",
@@ -104,7 +230,7 @@ def _user_argv(argv: List[str]) -> List[str]:
     ] + list(argv)
 
 
-def _system_job_argv(argv: List[str]) -> List[str]:
+def _system_job_argv(argv: List[str], unit: Optional[str] = None) -> List[str]:
     """Run a root Flatpak transaction in a transient system unit.
 
     The HTTP bridge itself is ProtectSystem=strict with PrivateTmp; it cannot
@@ -112,10 +238,10 @@ def _system_job_argv(argv: List[str]) -> List[str]:
     system manager's transient unit runs in the normal host filesystem view,
     exactly like the existing native-app launch path.
     """
-    unit = "nuxel-fp-%s" % uuid.uuid4().hex[:8]
+    unit = unit or ("nuxel-fp-%s" % uuid.uuid4().hex[:8])
     return [
         "/usr/bin/systemd-run", "--unit=" + unit, "--collect", "--quiet",
-        "--wait", "--pipe",
+        "--wait", "--pipe", "--property=TimeoutStopSec=1s",
         "--setenv=HOME=/root",
         "--setenv=USER=root",
         "--setenv=LOGNAME=root",
@@ -244,6 +370,12 @@ class FlatpakProvider:
         self._jobs: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.Lock()
         self._cache: Dict[str, Tuple[float, Any]] = {}
+        # Installed-ref cache: launch must not enumerate both Flatpak scopes
+        # (and traverse every icon/desktop file) on every tap.  TTL is a safety
+        # net; transactions invalidate it immediately.
+        self._installed_lock = threading.Lock()
+        self._installed_cache: Optional[Tuple[float, Dict[str, Any]]] = None
+        self._installed_ttl = 60.0
 
     # ---- read-only evidence -------------------------------------------------
 
@@ -411,7 +543,42 @@ class FlatpakProvider:
             })
         return {"success": True, "scope": scope, "apps": apps}
 
-    def list_installed(self) -> Dict[str, Any]:
+    def invalidate_installed(self) -> None:
+        """Drop the installed-ref cache after any transaction/prune.
+
+        The Electron/QtWebEngine probes are keyed by app id too; clear them so
+        an app installed or upgraded from Software is reclassified on its next
+        launch instead of inheriting a stale profile from the bridge lifetime.
+        """
+        with self._installed_lock:
+            self._installed_cache = None
+        _ELECTRON_CACHE.clear()
+        _QTWEBENGINE_CACHE.clear()
+
+    @staticmethod
+    def _installed_app_present(app_id: str) -> bool:
+        """Cheap truth check that an app deployment still exists.
+
+        The cached list can be at most one TTL old.  This per-app filesystem
+        check prevents a removed app from remaining launchable just because the
+        cache was warm; a missing deployment is reported honestly.
+        """
+        roots = (
+            SYSTEM_INSTALL + "/app/" + app_id + "/current/active",
+            USER_HOME + "/.local/share/flatpak/app/" + app_id + "/current/active",
+        )
+        for path in roots:
+            if os.path.isdir(path) or os.path.islink(path):
+                return True
+        return False
+
+    def list_installed(self, force: bool = False) -> Dict[str, Any]:
+        now = time.monotonic()
+        with self._installed_lock:
+            if not force and self._installed_cache is not None:
+                cached_at, cached = self._installed_cache
+                if now - cached_at < self._installed_ttl:
+                    return cached
         merged: Dict[str, Dict[str, Any]] = {}
         errors = []
         for scope in ("system", "user"):
@@ -427,15 +594,31 @@ class FlatpakProvider:
                     merged[aid]["also_system"] = True
                     continue
                 merged[aid] = app
-        return {"success": True, "apps": sorted(merged.values(), key=lambda a: a["name"].lower()),
-                "errors": errors}
+        doc = {"success": True,
+               "apps": sorted(merged.values(), key=lambda a: a["name"].lower()),
+               "errors": errors,
+               "cached_at": time.time()}
+        with self._installed_lock:
+            # A failed inventory is retried sooner than a clean one.
+            self._installed_ttl = 60.0 if not errors else 5.0
+            self._installed_cache = (time.monotonic(), doc)
+        return doc
 
     def installed_ids(self) -> set:
         return {a["id"] for a in self.list_installed().get("apps", [])}
 
     def is_installed(self, app_id: Any) -> bool:
         aid = _valid_app_id(app_id)
-        return bool(aid and aid in self.installed_ids())
+        if not aid:
+            return False
+        ids = self.installed_ids()
+        if aid in ids and self._installed_app_present(aid):
+            return True
+        # Cache may be stale (install/uninstall event missed) or the app was
+        # removed between cache fill and launch.  Refresh exactly once.
+        self.invalidate_installed()
+        ids = self.installed_ids()
+        return bool(aid in ids and self._installed_app_present(aid))
 
     def remote_ls(self, remote: str = "flathub", arch: str = "aarch64",
                   query: str = "", limit: int = 600) -> Dict[str, Any]:
@@ -506,32 +689,94 @@ class FlatpakProvider:
     # ---- lifecycle jobs -----------------------------------------------------
 
     def _job_start(self, argv: List[str], scope: str,
-                   verify: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+                   verify: Optional[Dict[str, str]] = None,
+                   operation: str = "install",
+                   app_id: Optional[str] = None) -> Dict[str, Any]:
+        """Start one backend transaction and return its stable transaction id.
+
+        A request being accepted is never reported as completion.  The worker
+        advances through the explicit transaction states, streams the real
+        Flatpak output into a bounded log, and verifies the installed ref before
+        it may report completed/removed.
+        """
         jid = uuid.uuid4().hex[:16]
+        unit = "nuxel-fp-%s" % jid[:8]
         try:
             os.makedirs("/run/nuxel", exist_ok=True)
         except OSError:
             pass
         log_path = "/run/nuxel/flatpak-%s.log" % jid
+        now = time.time()
+        tx = {
+            "id": jid, "transaction_id": jid, "app_id": app_id or (verify or {}).get("app_id"),
+            "operation": operation, "state": "queued", "progress": 0.0,
+            "message": "Transaction queued", "result": None, "error": None,
+            "argv": list(argv), "scope": scope, "unit": unit,
+            "rc": None, "started": now, "updated": now, "finished": None,
+            "log": log_path, "verify": verify or {}, "cancel_requested": False,
+        }
         with self._lock:
-            self._jobs[jid] = {
-                "id": jid, "argv": list(argv), "scope": scope,
-                "state": "running", "rc": None, "started": time.time(),
-                "finished": None, "log": log_path, "verify": verify or {},
-            }
-        def _worker():
+            self._jobs[jid] = tx
+
+        def _set(state: Optional[str] = None, message: Optional[str] = None,
+                 progress: Optional[float] = None, **extra) -> None:
+            with self._lock:
+                job = self._jobs.get(jid)
+                if job is None:
+                    return
+                if state is not None:
+                    job["state"] = state
+                if message is not None:
+                    job["message"] = message
+                if progress is not None:
+                    job["progress"] = max(0.0, min(100.0, float(progress)))
+                job.update(extra)
+                job["updated"] = time.time()
+
+        def _classify(line: str) -> None:
+            low = line.lower()
+            pct = re.search(r"(\d{1,3}(?:\.\d+)?)\s*%", line)
+            prog = float(pct.group(1)) if pct else None
+            if "download" in low or "fetch" in low:
+                _set("downloading", line.strip()[-240:], prog)
+            elif "install" in low or "deploy" in low:
+                _set("installing", line.strip()[-240:], prog)
+            elif "check" in low or "verif" in low:
+                _set("verifying", line.strip()[-240:], prog)
+            elif "uninstall" in low or "remov" in low:
+                _set("removing", line.strip()[-240:], prog)
+            elif "resolv" in low or "lookup" in low:
+                _set("resolving", line.strip()[-240:], prog)
+            elif prog is not None:
+                _set(None, line.strip()[-240:], prog)
+
+        def _worker() -> None:
             rc = 127
+            proc = None
+            with self._lock:
+                if self._jobs.get(jid, {}).get("cancel_requested"):
+                    return
             try:
-                env = _base_env(scope=scope, user_bus=(scope == "user"))
-                cmd = _user_argv(argv) if scope == "user" else _system_job_argv(argv)
+                _set("resolving", "Resolving remote and runtime dependencies")
+                env = _base_env(scope=scope, user_bus=scope == "user")
+                cmd = _user_argv(argv, unit) if scope == "user" else _system_job_argv(argv, unit)
                 with open(log_path, "wb") as lf:
-                    proc = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT,
-                                            stdin=subprocess.DEVNULL, env=env)
-                    try:
-                        rc = proc.wait(timeout=1800)
-                    except subprocess.TimeoutExpired:
-                        proc.kill()
-                        rc = 124
+                    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT,
+                                            stdin=subprocess.DEVNULL, env=env,
+                                            start_new_session=True)
+                    with self._lock:
+                        job = self._jobs.get(jid)
+                        if job is not None:
+                            job["pid"] = proc.pid
+                            job["updated"] = time.time()
+                    assert proc.stdout is not None
+                    for raw in iter(proc.stdout.readline, b""):
+                        line = raw.decode("utf-8", "replace")
+                        lf.write(raw)
+                        lf.flush()
+                        _classify(line)
+                    rc = proc.wait()
             except OSError as exc:
                 try:
                     with open(log_path, "a") as lf:
@@ -539,31 +784,127 @@ class FlatpakProvider:
                 except OSError:
                     pass
                 rc = 127
-            # systemd-run --wait can report rc=1 for a unit that has already
-            # completed its Flatpak transaction.  The postcondition is the
-            # authority: an install is done when flatpak list contains the app,
-            # an uninstall is done when it no longer does.
-            state = "done" if rc == 0 else "failed"
-            verified = None
-            v = verify or {}
-            if v.get("kind") in ("install", "uninstall") and v.get("app_id"):
+            finally:
                 try:
-                    installed = self.is_installed(v["app_id"])
-                    verified = bool(installed)
-                    if v["kind"] == "install" and installed:
-                        state = "done"
-                    elif v["kind"] == "uninstall" and not installed:
-                        state = "done"
-                except Exception:
+                    if proc is not None and proc.stdout is not None:
+                        proc.stdout.close()
+                except OSError:
                     pass
+
             with self._lock:
                 job = self._jobs.get(jid)
-                if job is not None:
-                    job.update({"state": state, "rc": rc,
-                                "verified_installed": verified,
-                                "finished": time.time()})
+                if job is None:
+                    return
+                cancelled = bool(job.get("cancel_requested"))
+                self.invalidate_installed()
+                kind = (verify or {}).get("kind")
+                target = (verify or {}).get("app_id")
+            if kind == "install":
+                _set("verifying", "Verifying the installed Flatpak ref", 95)
+            elif kind == "uninstall":
+                _set("verifying", "Verifying the ref is gone from flatpak list", 95)
+            verified = None
+            verify_error = None
+            if kind in ("install", "uninstall", "update") and target:
+                try:
+                    installed = self.is_installed(target)
+                    verified = bool(installed)
+                    if kind == "install" and not installed:
+                        verify_error = "postcondition failed: %s is not installed" % target
+                    elif kind == "uninstall" and installed:
+                        verify_error = "postcondition failed: %s is still installed" % target
+                except Exception as exc:  # noqa: BLE001
+                    verify_error = "postcondition check failed: %s" % exc
+            with self._lock:
+                job = self._jobs.get(jid)
+                if job is None:
+                    return
+                job["rc"] = rc
+                job["verified_installed"] = verified
+                job["finished"] = time.time()
+                job["pid"] = None
+                job["updated"] = time.time()
+                if cancelled:
+                    job["state"] = "cancelled"
+                    job["message"] = "Cancelled by operator"
+                    job["error"] = "cancelled"
+                elif kind == "uninstall" and verified is False:
+                    job["state"] = "removed"
+                    job["progress"] = 100.0
+                    job["message"] = "%s removed; flatpak list no longer contains the ref" % target
+                    job["result"] = "removed"
+                    job["error"] = None
+                elif kind == "install" and verified is True:
+                    job["state"] = "completed"
+                    job["progress"] = 100.0
+                    job["message"] = "%s installed and verified in flatpak list" % target
+                    job["result"] = "installed"
+                    job["error"] = None
+                elif rc == 0 and not verify_error:
+                    job["state"] = "completed"
+                    job["progress"] = 100.0
+                    job["message"] = "Transaction completed"
+                    job["result"] = "completed"
+                    job["error"] = None
+                else:
+                    job["state"] = "failed"
+                    job["message"] = verify_error or ("Flatpak transaction failed (rc=%s)" % rc)
+                    job["error"] = verify_error or ("rc=%s" % rc)
+                self._jobs[jid] = job
+            self._save_jobs()
+
         threading.Thread(target=_worker, name="nuxel-flatpak-job", daemon=True).start()
-        return {"success": True, "job": jid, "state": "running", "log": log_path}
+        return {"success": True, "transaction_id": jid, "job": jid,
+                "state": "queued", "operation": operation, "app_id": app_id,
+                "transaction": dict(tx), "log": log_path}
+
+    def _save_jobs(self) -> None:
+        """Persist transaction metadata (never logs, cookies or credentials)."""
+        try:
+            os.makedirs("/var/lib/nuxel/flatpak", exist_ok=True)
+            path = "/var/lib/nuxel/flatpak/transactions.json"
+            with self._lock:
+                rows = []
+                for job in self._jobs.values():
+                    row = {k: v for k, v in job.items()
+                           if k not in ("argv", "verify")}
+                    rows.append(row)
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump({"schema_version": 1, "transactions": rows[-80:]},
+                          fh, indent=2, sort_keys=True)
+                fh.write("\n")
+            os.replace(tmp, path)
+        except OSError:
+            pass
+
+    def cancel(self, job_id: Any) -> Dict[str, Any]:
+        if not isinstance(job_id, str) or not re.match(r"^[0-9a-f]{16}$", job_id):
+            return {"success": False, "error": "invalid_job_id"}
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return {"success": False, "error": "unknown_job"}
+            job["cancel_requested"] = True
+            job["state"] = "cancelled"
+            job["message"] = "Cancellation requested"
+            job["updated"] = time.time()
+            unit = job.get("unit")
+            pid = job.get("pid")
+        if unit:
+            try:
+                subprocess.run(["/usr/bin/systemctl", "stop", unit],
+                               capture_output=True, timeout=8)
+            except (OSError, subprocess.SubprocessError):
+                pass
+        if pid:
+            try:
+                os.killpg(int(pid), 15)
+            except OSError:
+                pass
+        self._save_jobs()
+        return {"success": True, "cancelled": True, "transaction_id": job_id,
+                "state": "cancelled"}
 
     def job(self, job_id: Any) -> Dict[str, Any]:
         if not isinstance(job_id, str) or not re.match(r"^[0-9a-f]{16}$", job_id):
@@ -595,7 +936,7 @@ class FlatpakProvider:
         if self.is_installed(aid):
             return {"success": True, "app_id": aid, "state": "already_installed"}
         argv = _flatpak(scope) + ["install", "-y", "--noninteractive", remote, aid]
-        return self._job_start(argv, scope, {"kind": "install", "app_id": aid})
+        return self._job_start(argv, scope, {"kind": "install", "app_id": aid}, operation="install", app_id=aid)
 
     def update(self, app_id: Any = None, scope: str = "system") -> Dict[str, Any]:
         if scope not in ALLOWED_SCOPES:
@@ -609,7 +950,8 @@ class FlatpakProvider:
                 return {"success": False, "error": "not_installed", "app_id": aid}
             argv.append(aid)
         return self._job_start(argv, scope,
-                               {"kind": "update", "app_id": aid} if app_id is not None else None)
+                               {"kind": "update", "app_id": aid} if app_id is not None else None,
+                               operation="update", app_id=aid if app_id is not None else None)
 
     def uninstall(self, app_id: Any, scope: Optional[str] = None) -> Dict[str, Any]:
         aid = _valid_app_id(app_id)
@@ -624,7 +966,52 @@ class FlatpakProvider:
         if scope not in ALLOWED_SCOPES:
             return {"success": False, "error": "scope_not_allowed", "scope": scope}
         argv = _flatpak(scope) + ["uninstall", "-y", "--noninteractive", aid]
-        return self._job_start(argv, scope, {"kind": "uninstall", "app_id": aid})
+        return self._job_start(argv, scope, {"kind": "uninstall", "app_id": aid}, operation="uninstall", app_id=aid)
+
+    def _metadata(self, app_id: str) -> str:
+        try:
+            proc = subprocess.run([FLATPAK, "info", "-m", app_id],
+                                  capture_output=True, text=True, timeout=10)
+            return (proc.stdout or "") + "\n" + (proc.stderr or "")
+        except (OSError, subprocess.TimeoutExpired):
+            return ""
+
+    def is_electron(self, app_id: Any) -> bool:
+        """Detect Electron/Chromium Flatpaks so the launcher can apply the
+        Wayland/software/sandbox flags Chromium needs on this 4.14 kernel.
+
+        Detection is by the Flathub Electron BaseApp metadata
+        (``base=app/org.electronjs.Electron...``), not by a hardcoded app list,
+        so newly installed Electron apps inherit the flags automatically.
+        """
+        aid = _valid_app_id(app_id)
+        if not aid:
+            return False
+        if aid in ELECTRON_KNOWN_IDS:
+            return True
+        if aid in _ELECTRON_CACHE:
+            return _ELECTRON_CACHE[aid]
+        meta = self._metadata(aid)
+        found = "base=app/org.electronjs.Electron" in meta
+        _ELECTRON_CACHE[aid] = found
+        return found
+
+    def is_qtwebengine(self, app_id: Any) -> bool:
+        """Detect QtWebEngine/PyQt Flatpaks that need the inner-sandbox bypass."""
+        aid = _valid_app_id(app_id)
+        if not aid:
+            return False
+        if aid in QT_WEBENGINE_KNOWN_IDS:
+            return True
+        if aid in _QTWEBENGINE_CACHE:
+            return _QTWEBENGINE_CACHE[aid]
+        meta = self._metadata(aid)
+        low = meta.lower()
+        found = ("QTWEBENGINEPROCESS_PATH" in meta
+                 or "org.riverbankcomputing.pyqt" in low
+                 or "qtwebengine" in low)
+        _QTWEBENGINE_CACHE[aid] = found
+        return found
 
     def launch_argv(self, app_id: Any) -> Optional[List[str]]:
         aid = _valid_app_id(app_id)
@@ -638,20 +1025,41 @@ class FlatpakProvider:
         # picker when launched without arguments and carries the Freedoom path.
         if aid == CRISPY_DOOM_APP_ID:
             return [CRISPY_DOOM_WRAPPER]
-        # The host's Mali/kbase EGL stack is not a DRM device and cannot be
-        # assumed inside a Flatpak runtime.  Force the runtime's own software
-        # path so GTK/Electron/WebKit apps can create a Wayland surface; GPU
-        # acceleration is a separate, explicitly reported capability.
-        return [
-            FLATPAK, "run",
-            "--env=LIBGL_ALWAYS_SOFTWARE=1",
-            "--env=GALLIUM_DRIVER=llvmpipe",
-            "--env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe",
-            "--env=GSK_RENDERER=cairo",
-            "--env=GDK_BACKEND=wayland",
-            "--env=MOZ_ENABLE_WAYLAND=1",
-            aid,
-        ]
+        # Per-application policy.  The default remains the verified software
+        # fallback; an app is only switched to ``auto`` after an on-device
+        # render/input check.  GPU acceleration is never claimed from a
+        # renderer string alone.
+        policy = renderer_policy(aid)
+        argv = [FLATPAK, "run"]
+        for item in policy.get("env", []):
+            argv.append("--env=" + item)
+        argv.append("--env=GDK_BACKEND=wayland")
+        argv.append("--env=QT_QPA_PLATFORM=wayland")
+        # PWNAGE-88000: Flatpak GTK apps must honour the dark Nuxel theme
+        # (Archive Manager, Firefox and other GNOME-runtime apps) instead of
+        # remaining light.  The runtime bundles Adwaita:dark; this is per-launch
+        # and never leaks into the bridge or unrelated system services.
+        argv.append("--env=GTK_APPLICATION_PREFER_DARK_THEME=1")
+        argv.append("--env=GTK_THEME=Adwaita:dark")
+        if aid == "org.mozilla.firefox":
+            argv.append("--env=MOZ_ENABLE_WAYLAND=1")
+
+        electron = self.is_electron(aid)
+        qtwebengine = False if electron else self.is_qtwebengine(aid)
+        if electron:
+            for item in ELECTRON_ENV:
+                argv.append("--env=" + item)
+        elif qtwebengine:
+            for item in QT_WEBENGINE_ENV:
+                argv.append("--env=" + item)
+
+        argv.append(aid)
+        if electron:
+            # Chromium switches must follow the application id.  The Flatpak
+            # sandbox stays enabled; --no-sandbox only stops the inner Chromium
+            # sandbox that cannot initialize on this vendor kernel.
+            argv.extend(ELECTRON_APP_ARGS)
+        return argv
 
     # ---- RPC surface --------------------------------------------------------
 
@@ -681,13 +1089,26 @@ class FlatpakProvider:
                                       params.get("scope"))
             if verb == "job":
                 return self.job(params.get("job_id"))
+            if verb == "cancel":
+                return self.cancel(params.get("job_id"))
+            if verb in ("transactions", "activity"):
+                with self._lock:
+                    rows = [{k: v for k, v in j.items() if k not in ("argv", "verify")}
+                            for j in self._jobs.values()]
+                return {"success": True, "transactions": sorted(
+                    rows, key=lambda j: j.get("started", 0), reverse=True)}
             if verb == "launch":
                 argv = self.launch_argv(params.get("app_id"))
                 if not argv:
                     return {"success": False, "error": "not_installed",
                             "app_id": params.get("app_id")}
+                aid = _valid_app_id(params.get("app_id")) or ""
                 return {"success": True, "app_id": params.get("app_id"),
-                        "argv": argv, "launchable": True}
+                        "argv": argv, "launchable": True,
+                        "renderer": renderer_policy(aid)}
+            if verb == "renderer":
+                aid = _valid_app_id(params.get("app_id")) or ""
+                return {"success": True, "policy": renderer_policy(aid)}
             if verb == "refresh":
                 return {"success": True, "installed": self.list_installed(),
                         "status": self.status()}

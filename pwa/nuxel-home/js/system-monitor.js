@@ -7,7 +7,7 @@
   var DEFAULT_INTERVAL = 10;
   var ALLOWED_INTERVALS = [1, 2, 3, 5, 10];
   var timer = null, serial = 0, activeRequest = 0;
-  var config = { enabled: true, interval: DEFAULT_INTERVAL, detailed: true };
+  var config = { enabled: true, interval: DEFAULT_INTERVAL, detailed: true, gpuMemoryDisplay: 'amount-percent' };
   var widget;
 
   function appearance() {
@@ -17,9 +17,12 @@
   function normalize(input) {
     input = input || {};
     var interval = Number(input.systemMonitorInterval || input.interval || DEFAULT_INTERVAL);
+    var gpuMode = String(input.gpuMemoryDisplay || 'amount-percent');
+    if (['amount-percent','percentage','amount'].indexOf(gpuMode) < 0) gpuMode = 'amount-percent';
     return { enabled: input.systemMonitorEnabled !== false && input.enabled !== false,
       interval: ALLOWED_INTERVALS.indexOf(interval) >= 0 ? interval : DEFAULT_INTERVAL,
-      detailed: input.systemMonitorDetailed !== false && input.detailed !== false };
+      detailed: input.systemMonitorDetailed !== false && input.detailed !== false,
+      gpuMemoryDisplay: gpuMode };
   }
   function homeVisible() {
     // BACKGROUND means an app iframe is hidden and Home is on the glass; it is
@@ -70,20 +73,30 @@
     meter('memory', data.memory_percent, data.memory_status === 'ok');
     meter('gpu', data.gpu_percent, data.gpu_status === 'ok');
 
-    // This SoC has NO dedicated VRAM.  The Mali driver tracks allocations in
-    // shared system RAM (debugfs used_pages on this kernel).  MemTotal is a
-    // budget REFERENCE/upper bound, not GPU capacity.  Never present it as VRAM.
+    // The Mali driver tracks allocations in shared system RAM (debugfs
+    // used_pages on this kernel).  MemTotal is the budget REFERENCE/upper bound,
+    // not dedicated GPU capacity; the VRAM cell reports the tracked amount only.
     var gpuUsed = Number(data.gpu_memory_kib);
     var gpuTotal = Number(data.gpu_memory_total_kib);
     var gpuMemoryOk = (data.gpu_memory_status === 'ok_shared_budget_reference' || data.gpu_memory_status === 'ok') &&
       Number.isFinite(gpuUsed) && Number.isFinite(gpuTotal) && gpuTotal > 0;
-    meter('gpu-memory', gpuMemoryOk ? (gpuUsed / gpuTotal) * 100 : null,
-      gpuMemoryOk, gpuMemoryOk ? memAmount(gpuUsed) : null);
+    var gpuPct = gpuMemoryOk ? (gpuUsed / gpuTotal) * 100 : null;
+    var mode = config.gpuMemoryDisplay || 'amount-percent';
+    var amount = Number.isFinite(gpuUsed) ? memAmount(gpuUsed) : null;
+    var display = null;
+    if (gpuMemoryOk) {
+      if (mode === 'percentage') display = gpuPct.toFixed(1) + '% of RAM';
+      else if (mode === 'amount') display = amount;
+      else display = amount + ' · ' + gpuPct.toFixed(1) + '%';
+    } else if (amount) {
+      display = mode === 'percentage' ? 'N/A' : amount;
+    }
+    meter('gpu-memory', gpuPct, gpuMemoryOk, display);
 
     detail('cpu', mhz(data.cpu_frequency_mhz));
     detail('memory', data.memory_status === 'ok' && Number.isFinite(Number(data.memory_used_kib)) && Number.isFinite(Number(data.memory_total_kib)) ? gib(data.memory_used_kib) + '/' + gib(data.memory_total_kib) : 'N/A');
     detail('gpu', mhz(data.gpu_frequency_mhz));
-    detail('gpu-memory', gpuMemoryOk ? memAmount(gpuUsed) + ' / ' + memAmount(gpuTotal) + ' RAM budget' : 'N/A (shared RAM)');
+    detail('gpu-memory', gpuMemoryOk ? (mode === 'amount' ? 'shared system RAM (percentage unavailable by setting)' : 'of ' + memAmount(gpuTotal) + ' shared system RAM') : 'percentage unavailable (no allocation/budget pair)');
   }
   // PWNAGE-52000: the GPU meter label must not imply whole-GUI acceleration.
   // We ask the authoritative graphics provider (bounded, low frequency) and
@@ -163,7 +176,7 @@
   function configure(input) {
     config = normalize(input || appearance());
     if (gpuLabelTimer !== null) { global.clearTimeout(gpuLabelTimer); gpuLabelTimer = null; }
-    if (widget) { widget.hidden = !config.enabled; widget.dataset.detailed = config.detailed ? 'true' : 'false'; }
+    if (widget) { widget.hidden = !config.enabled; widget.dataset.detailed = config.detailed ? 'true' : 'false'; widget.dataset.gpuMemoryDisplay = config.gpuMemoryDisplay; }
     stop();
     if (shouldPoll()) { poll(); refreshGpuLabel(true); }
   }
@@ -177,6 +190,7 @@
     configure(appearance());
   }
   global.NuxelSystemMonitor = { configure: configure, stop: stop, _normalize: normalize, _shouldPoll: shouldPoll,
+    _config: function () { return config; },
     _gpuLabel: function () { return gpuLabelState; }, _setGpuLabel: setGpuLabel };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

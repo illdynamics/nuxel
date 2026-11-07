@@ -529,13 +529,15 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
 
     if not pc_connected:
         # Fail closed on detach even if the daemon and its lease are still alive.
-        # The BASE penguin still follows the background service; the serial
-        # transport icon uses usb_session_active (always false without a link).
+        # `active` is the indicator predicate, not "the service exists": a
+        # prestarted nuxel-console daemon with no host session must never light
+        # the generic live-console penguin.  The transport icons below carry
+        # the type; service_armed remains available for diagnostics only.
         return {
-            "active": bool(service_armed),
+            "active": False,
             "service_armed": service_armed,
             "transport_connected": False,
-            "session_active": session_active,
+            "session_active": bool(session_active),
             "usb_session_active": False,
             "source": "service:armed" if service_armed else "inactive:no-usb-data-link",
             "pids": sorted(set(pids)),
@@ -545,10 +547,10 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
     tty_registered = any(os.path.exists(os.path.join(ttyroot, name)) for name in ttynames)
     if not tty_registered:
         return {
-            "active": bool(service_armed),
+            "active": False,
             "service_armed": service_armed,
             "transport_connected": False,
-            "session_active": session_active,
+            "session_active": bool(session_active),
             "usb_session_active": False,
             "source": "service:armed" if service_armed else "inactive:console-tty-missing",
             "pids": sorted(set(pids)),
@@ -556,7 +558,7 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
 
     if not session_active:
         return {
-            "active": bool(service_armed),
+            "active": False,
             "service_armed": service_armed,
             "transport_connected": True,
             "session_active": False,
@@ -717,7 +719,9 @@ def _pid_has_pty(pid: int, proc_root: str = "/proc") -> bool:
             target = os.readlink(os.path.join(fdroot, fd))
         except OSError:
             continue
-        if target.startswith("/dev/pts/"):
+        # The bridge's ProtectSystem/chroot mount resolves a slave PTY as
+        # "/newroot/dev/pts/N"; accept the same node under any mount prefix.
+        if target.startswith("/dev/pts/") or "/dev/pts/" in target:
             return True
     return False
 
@@ -739,6 +743,50 @@ def _is_descendant(pid: int, ancestor: int, proc_root: str = "/proc") -> bool:
 
 _SHELLS = {"bash", "sh", "zsh", "fish", "dash", "ash", "ksh"}
 _CONSOLE_UID = 1000  # nuxel
+
+_CONSOLE_ENV_MARKERS = ("NUXEL_TRI_LINK_CONSOLE", "NUXEL_CONSOLE_SESSION")
+_CONSOLE_REGISTRY_DIR = "/run/nuxel/tri-link-sessions"
+
+
+def _pid_environ(pid: int, procroot: str) -> Dict[str, str]:
+    try:
+        with open(os.path.join(procroot, str(pid), "environ"), "rb") as fh:
+            raw = fh.read(32768)
+    except OSError:
+        return {}
+    out: Dict[str, str] = {}
+    for item in raw.split(b"\0"):
+        key, sep, value = item.partition(b"=")
+        if sep:
+            out[key.decode("utf-8", "replace")] = value.decode("utf-8", "replace")
+    return out
+
+
+def _console_session_registered(pid: int, procroot: str) -> bool:
+    """True only for an explicitly registered Tri-Link console session.
+
+    Registration is deliberately affirmative: the host-side Tri-Link launcher
+    exports NUXEL_TRI_LINK_CONSOLE=1 (inherited by the interactive shell) and
+    the phone-side wrapper writes /run/nuxel/tri-link-sessions/<pid>.json with
+    pid + start_ticks.  A bare sshd process, an ordinary `ssh host command`,
+    SFTP, a background service or the agent's own administrative connection is
+    NOT a console session and never lights the indicator.
+    """
+    env = _pid_environ(pid, procroot)
+    for key in _CONSOLE_ENV_MARKERS:
+        if str(env.get(key, "")).lower() in ("1", "true", "yes", "on"):
+            return True
+    runroot = _root("NUXEL_RUN", "/run")
+    reg = os.path.join(runroot, "nuxel", "tri-link-sessions", "%d.json" % pid)
+    try:
+        import json as _json
+        doc = _json.loads(_read(reg) or "{}")
+    except (OSError, ValueError, TypeError):
+        return False
+    if not isinstance(doc, dict) or int(doc.get("pid", 0) or 0) != pid:
+        return False
+    ticks = doc.get("start_ticks")
+    return not ticks or _proc_start_ticks(pid, procroot) == int(ticks)
 
 
 def _wifi_ipv4_addresses(proc_root: str = "/proc") -> List[str]:
@@ -766,17 +814,82 @@ def _wifi_ipv4_addresses(proc_root: str = "/proc") -> List[str]:
     return out
 
 
+def wlan_console_diagnostics(proc_root: str = "/proc") -> Dict[str, Any]:
+    """Bounded evidence for why a WLAN console is/is not counted."""
+    wifi = _wifi_ipv4_addresses(proc_root)
+    socks = []
+    try:
+        for sock in _tcp_established(proc_root, 22):
+            socks.append({"inode": sock.get("inode"), "local_ip": sock.get("local_ip")})
+    except Exception as exc:  # noqa: BLE001
+        socks = [{"error": str(exc)}]
+    candidates = []
+    try:
+        for pid in [int(x) for x in _list_dir(proc_root) if x.isdigit()]:
+            st = _pid_stat(pid, proc_root)
+            comm = str(st.get("comm") or "")
+            if comm not in _SHELLS and "tri-link" not in _cmdline(str(pid), proc_root):
+                continue
+            fd_targets = []
+            try:
+                fdroot = os.path.join(proc_root, str(pid), "fd")
+                for fd in _list_dir(fdroot)[:8]:
+                    try:
+                        fd_targets.append(os.readlink(os.path.join(fdroot, fd)))
+                    except OSError as exc:
+                        fd_targets.append("ERR:%s" % exc)
+            except Exception as exc:  # noqa: BLE001
+                fd_targets = ["LISTERR:%s" % exc]
+            candidates.append({
+                "pid": pid, "comm": comm,
+                "pty": _pid_has_pty(pid, proc_root),
+                "fd_targets": fd_targets,
+                "registered": _console_session_registered(pid, proc_root),
+                "uid": _pid_uid(pid, proc_root),
+                "cmdline": _cmdline(str(pid), proc_root)[:160],
+                "parent": st.get("ppid"),
+            })
+    except Exception as exc:  # noqa: BLE001
+        candidates = [{"error": str(exc)}]
+    return {"wifi_addresses": wifi, "established": socks,
+            "candidates": candidates[:20]}
+
+
+def _cleanup_console_registry(procroot: str = "/proc") -> None:
+    runroot = _root("NUXEL_RUN", "/run")
+    d = os.path.join(runroot, "nuxel", "tri-link-sessions")
+    for name in _list_dir(d):
+        if not name.endswith(".json"):
+            continue
+        path = os.path.join(d, name)
+        try:
+            import json as _json
+            doc = _json.loads(_read(path) or "{}")
+            pid = int(doc.get("pid", 0) or 0)
+            ticks = doc.get("start_ticks")
+        except (OSError, ValueError, TypeError):
+            pid, ticks = 0, None
+        if not pid or not _pid_is_alive(pid, procroot) or \
+                (ticks and _proc_start_ticks(pid, procroot) != int(ticks)):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+
 def wlan_console_sessions(proc_root: str = "/proc",
                           wifi_addresses: Optional[List[str]] = None
                           ) -> List[Dict[str, Any]]:
     """Prove interactive WLAN SSH sessions from /proc, without guessing.
 
     A session requires ALL of: ESTABLISHED TCP/22 on a local Wi-Fi IPv4
-    address, an sshd process holding that exact socket inode, and a live
-    descendant owned by uid 1000 (nuxel) running an interactive shell with a
-    /dev/pts pty.  Listeners, port forwards, SFTP-only and one-shot commands
-    have no such shell/pty and therefore never count.
+    address, an sshd process holding that exact socket inode, a live
+    descendant running an interactive shell with a /dev/pts pty, AND an
+    explicit Tri-Link registration (env marker or validated lease).  Listeners,
+    port forwards, SFTP-only commands, one-shot maintenance commands and the
+    agent's own administrative connection therefore never count.
     """
+    _cleanup_console_registry(proc_root)
     wifi = wifi_addresses if wifi_addresses is not None else _wifi_ipv4_addresses(proc_root)
     if not wifi:
         return []
@@ -804,13 +917,13 @@ def wlan_console_sessions(proc_root: str = "/proc",
             st = meta.get(pid, {})
             if str(st.get("comm") or "") not in _SHELLS:
                 continue
-            if _pid_uid(pid, proc_root) != _CONSOLE_UID:
-                continue
             if not _pid_has_pty(pid, proc_root):
                 continue
             if not _interactive_shell_cmdline(pid, proc_root):
                 continue
             if not _is_descendant(pid, owner, proc_root):
+                continue
+            if not _console_session_registered(pid, proc_root):
                 continue
             shell = pid
             break
@@ -938,6 +1051,7 @@ def console_transports(serial_live: Optional[Dict[str, Any]] = None) -> Dict[str
         wlan_source = "wlan:interactive-pty-session"
 
     usb_session = bool(serial_live.get("usb_session_active"))
+    wlan_diag = wlan_console_diagnostics() if not sessions else {}
     return {
         "serial": {
             "active": usb_session,
@@ -956,6 +1070,7 @@ def console_transports(serial_live: Optional[Dict[str, Any]] = None) -> Dict[str
             "source": wlan_source,
             "sessions": len(sessions),
             "interactive_sessions": len(sessions),
+            "diagnostics": wlan_diag,
         },
     }
 
@@ -1018,15 +1133,118 @@ def sound_mode_state() -> Dict[str, Any]:
             "note": "selected sound mode; physical vibration is not claimed"}
 
 
+
+def clock_scheduler_state() -> Dict[str, Any]:
+    """Project real nuxel-clockd runtime state for the lockscreen.
+
+    This is a read-only projection: no synthetic alarm/timer is ever invented.
+    If the daemon state is missing/unreadable the caller receives available=False
+    and the UI must not show a scheduler penguin as if it were armed.
+    """
+    path = _root("NUXEL_CLOCK_STATE", "/run/nuxel/clockd.state")
+    doc = _read_state_file(path)
+    if not doc:
+        return {"available": False, "source": "unavailable:" + path,
+                "alarm_visible": False, "alarm_ringing": False,
+                "timer_visible": False, "timer_ringing": False,
+                "occurrences": [], "active_occurrences": []}
+    alarms = doc.get("alarms") if isinstance(doc.get("alarms"), list) else []
+    occurrences = doc.get("occurrences") if isinstance(doc.get("occurrences"), list) else []
+    active = doc.get("active_occurrences") if isinstance(doc.get("active_occurrences"), list) else []
+    snoozed = doc.get("snoozed_occurrences") if isinstance(doc.get("snoozed_occurrences"), list) else []
+    timer = doc.get("timer") if isinstance(doc.get("timer"), dict) else {}
+    enabled_future = [a for a in alarms if isinstance(a, dict) and a.get("enabled")]
+    alarm_ringing = any(isinstance(o, dict) and o.get("kind") == "alarm" and o.get("state") == "ringing"
+                        for o in active)
+    timer_ringing = any(isinstance(o, dict) and o.get("kind") == "timer" and o.get("state") == "ringing"
+                        for o in active)
+    timer_active = timer.get("state") in ("running", "paused", "completed")
+    return {
+        "available": True,
+        "source": path,
+        "revision": doc.get("revision"),
+        "alarm_visible": bool(enabled_future or alarm_ringing or snoozed),
+        "alarm_ringing": alarm_ringing,
+        "alarm_snoozed": bool(snoozed),
+        "timer_visible": bool(timer_active or timer_ringing),
+        "timer_ringing": timer_ringing,
+        "timer_state": timer.get("state"),
+        "timer_run_id": timer.get("run_id"),
+        "next": doc.get("next"),
+        "occurrences": [o for o in active + snoozed if isinstance(o, dict)],
+        "active_occurrences": [o for o in active if isinstance(o, dict)],
+        "snooze_enabled": bool((doc.get("settings") or {}).get("snooze_enabled", True)),
+        "snooze_minutes": (doc.get("settings") or {}).get("snooze_minutes", 9),
+        "capabilities": doc.get("capabilities") or {},
+    }
+
+
+_INDICATOR_CACHE: Dict[str, Any] = {"at": 0.0, "doc": None}
+_INDICATOR_TTL_ON_S = 2.0
+_INDICATOR_TTL_OFF_S = 10.0
+
+
+def _panel_off() -> bool:
+    try:
+        with open("/sys/class/backlight/panel/bl_power", "r") as fh:
+            return int(fh.read().strip() or "0") != 0
+    except (OSError, ValueError):
+        return False
+
+
 def get_indicators() -> Dict[str, Any]:
+    """Return the lockhead indicator projection, briefly cached.
+
+    The lockscreen polls this at 1 Hz.  Re-reading every sysfs/proc endpoint
+    each second was measured at ~22% bridge CPU while the panel was blanked.
+    Charging/USB/console state changes are event-driven elsewhere; a short
+    cache is truthful and prevents a screen-off polling busy loop.  When the
+    panel is off the TTL is longer because nothing is visible.
+    """
+    import time as _time
+    now = _time.monotonic()
+    panel_off = _panel_off()
+    ttl = _INDICATOR_TTL_OFF_S if panel_off else _INDICATOR_TTL_ON_S
+    cached = _INDICATOR_CACHE.get("doc")
+    if (isinstance(cached, dict) and cached.get("display_off") == panel_off
+            and now - float(_INDICATOR_CACHE.get("at") or 0.0) < ttl):
+        return cached
+    doc = dict(_get_indicators_uncached())
+    doc["display_off"] = panel_off
+    _INDICATOR_CACHE["at"] = _time.monotonic()
+    _INDICATOR_CACHE["doc"] = doc
+    return doc
+
+
+def _get_indicators_uncached() -> Dict[str, Any]:
     power = power_state()
     usb = usb_connection()
     console = live_console(bool(usb["pc_connected"]))
     transports = console_transports(console)
+    # The generic live-console penguin is an ACTIVITY indicator, not a service
+    # badge.  It may light only while an actual external console session exists:
+    # USB CDC-ACM/serial OR a registered Wi-Fi SSH Tri-Link session.  The
+    # console-type icon underneath remains the authoritative transport view.
+    external_console_active = bool(
+        transports["serial"].get("active") or
+        transports["wlan"].get("active") or
+        transports["usb"].get("active")
+    )
+    console = dict(console)
+    console["active"] = external_console_active
+    if transports["wlan"].get("active"):
+        console["source"] = "session:wlan:registered"
+    elif transports["usb"].get("active"):
+        console["source"] = "session:usb"
+    elif not console.get("session_active"):
+        console["source"] = "inactive:no-external-console-session"
+    # For the USB serial transport keep live_console()'s proc/lease evidence.
     mode = connection_mode_state()
     bluetooth = bluetooth_indicator()
     sound = sound_mode_state()
+    clock = clock_scheduler_state()
     return {
+        "clock_scheduler": clock,
         "sound_mode": sound,
         "bluetooth": {
             "powered": bluetooth["powered"],
@@ -1075,6 +1293,7 @@ def get_indicators() -> Dict[str, Any]:
                 "source": transports["wlan"]["source"],
                 "sessions": transports["wlan"].get("sessions", 0),
                 "interactive_sessions": transports["wlan"].get("interactive_sessions", 0),
+                "diagnostics": transports["wlan"].get("diagnostics", {}),
             },
         },
         "file_transfer": {

@@ -661,17 +661,29 @@
 
 /* Lightning bolt only while the canonical provider says ACTIVE charging.
    'Full' is externally powered, not charging, and never lights this. */
-.battery-icon.charging::after {
+.battery-icon.charging::after,
+.battery-icon .battery-zaps i {
     content: '';
     position: absolute;
-    left: 50%; top: 50%;
-    width: 10px; height: 13px;
-    z-index: 1;
-    transform: translate(-50%, -50%);
-    background: #fff7b0;
+    top: 50%;
+    width: 7px; height: 11px;
+    z-index: 2;
+    transform: translateY(-50%);
+    background: #ffd43b;
     clip-path: polygon(62% 0, 20% 56%, 46% 56%, 36% 100%, 82% 42%, 54% 42%, 72% 0);
-    filter: none;
+    filter: drop-shadow(0 0 1px rgba(255, 212, 59, .85));
 }
+.battery-icon.charging::after { left: 4px; }
+.battery-icon .battery-zaps {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+.battery-icon .battery-zaps i { left: 12px; }
+.battery-icon .battery-zaps i:nth-child(2) { left: 20px; }
+/* Three zaps need the full cell; the percentage remains in the title/aria. */
+.battery-icon.charging .battery-inside-pct { opacity: 0; }
 
 /* ---- PWNAGE-44000: expanded Quick Settings connection strip ------------ */
 .qs-expand-toggle {

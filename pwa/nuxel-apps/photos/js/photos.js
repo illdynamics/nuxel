@@ -25,7 +25,7 @@
     toast: document.getElementById('toast')
   };
 
-  var state = { items: [], filter: '', album: '', index: 0, online: false, cache: {}, order: [] };
+  var state = { items: [], filter: '', album: '', index: 0, online: false, cache: {}, order: [], gridScroll: 0, viewerOpen: false };
   var sharedObserver = null;
   var FILE_BASE = 'http://127.0.0.1:8080/api/v1/storage/file?path=';
   var THUMB_BASE = 'http://127.0.0.1:8080/api/v1/storage/thumbnail?path=';
@@ -52,7 +52,7 @@
       id: 'storage:' + (raw.path || i),
       source: 'storage',
       name: raw.name || String(raw.path || '').split('/').pop() || ('Media ' + (i + 1)),
-      kind: raw.kind || (/(video|mp4|webm|mov|mkv)/i.test(raw.mime || raw.name || '') ? 'video' : 'photo'),
+      kind: raw.kind || (/(video|mp4|webm|mov|mkv)/i.test(raw.mime || raw.name || '') ? 'video' : (/(audio|wav|mp3|ogg|flac|m4a|opus)/i.test(raw.mime || raw.name || '') ? 'audio' : 'photo')),
       taken: taken,
       size: raw.size || null,
       mime: raw.mime || null,
@@ -154,6 +154,27 @@
   // decoder per cell.  The server generates a real JPEG frame (ffmpeg/mpv/
   // GStreamer, whichever is installed) and caches it by path+size+mtime.
   function thumbEl(item) {
+    if (item.kind === 'audio') {
+      var aw = document.createElement('div');
+      aw.className = 'thumb-wrap audio-thumb';
+      var ac = document.createElement('canvas');
+      ac.width = 300; ac.height = 120; ac.className = 'media';
+      aw.appendChild(ac);
+      var ab = document.createElement('span');
+      ab.className = 'video-badge'; ab.textContent = '♪';
+      aw.appendChild(ab);
+      var wf = 'http://127.0.0.1:8080/api/v1/storage/waveform?buckets=80&path=' + encodeURIComponent(item.path || '');
+      fetch(wf, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (doc) {
+        if (!doc || !doc.success || !Array.isArray(doc.peak)) return;
+        var c = ac.getContext('2d'); c.fillStyle = '#150e20'; c.fillRect(0, 0, ac.width, ac.height);
+        var n = doc.peak.length || 1, bw = ac.width / n;
+        for (var i = 0; i < n; i++) {
+          var h = Math.max(1, (doc.peak[i] || 0) * (ac.height - 12));
+          c.fillStyle = '#c084fc'; c.fillRect(i * bw, (ac.height - h) / 2, Math.max(1, bw - 1), h);
+        }
+      }).catch(function () {});
+      return aw;
+    }
     if (item.kind === 'video') {
       var wrap = document.createElement('div');
       wrap.className = 'thumb-wrap';
@@ -223,6 +244,14 @@
   }
 
   function mediaEl(item, url, full) {
+    if (item.kind === 'audio') {
+      var a = document.createElement('audio');
+      a.src = url; a.controls = true; a.preload = 'metadata'; a.className = 'media';
+      a.addEventListener('error', function () {
+        a.replaceWith(placeholder('Audio playback unavailable in WebKit; the file is still stored.'));
+      }, { once: true });
+      return a;
+    }
     if (item.kind === 'video') {
       var v = document.createElement('video');
       v.src = url;
@@ -306,11 +335,11 @@
       var cell = document.createElement('div');
       cell.className = 'cell';
       cell.dataset.id = item.id;
-      var ph = placeholder(item.kind === 'video' ? 'video' : '…');
+      var ph = placeholder(item.kind === 'video' ? 'video' : (item.kind === 'audio' ? '♪ audio' : '…'));
       cell.appendChild(ph);
       var cap = document.createElement('div');
       cap.className = 'cap';
-      cap.textContent = (item.kind === 'video' ? '▶ ' : '') + item.name;
+      cap.textContent = (item.kind === 'video' ? '▶ ' : (item.kind === 'audio' ? '♪ ' : '')) + item.name;
       cell.appendChild(cap);
       var loaded = false;
       var loadMedia = function () {
@@ -366,13 +395,28 @@
   function openViewer(item) {
     state.order = visible();
     state.index = Math.max(0, state.order.indexOf(item));
+    state.gridScroll = els.grid ? els.grid.scrollTop : 0;
+    state.viewerOpen = true;
     paintViewer();
     els.viewer.classList.remove('hidden');
   }
 
+  function stopViewerMedia() {
+    try {
+      var nodes = els.viewerMedia ? els.viewerMedia.querySelectorAll('video') : [];
+      for (var i = 0; i < nodes.length; i++) {
+        var v = nodes[i];
+        try { v.pause(); } catch (e) {}
+        try { v.removeAttribute('src'); v.load(); } catch (e) {}
+      }
+      if (els.viewerMedia) els.viewerMedia.innerHTML = '';
+    } catch (e) {}
+  }
+
   async function paintViewer() {
     var item = state.order[state.index];
-    if (!item) { els.viewer.classList.add('hidden'); return; }
+    if (!item) { closeViewer(); return; }
+    stopViewerMedia();
     els.viewerTitle.textContent = item.name + '  (' + (state.index + 1) + '/' + state.order.length + ')';
     els.viewerMedia.innerHTML = '<div class="noimg">loading…</div>';
     var url = await mediaUrl(item);
@@ -397,7 +441,23 @@
     els.viewerInfo.textContent = lines.join('\n');
   }
 
-  function closeViewer() { els.viewer.classList.add('hidden'); }
+  function closeViewer() {
+    stopViewerMedia();
+    els.viewer.classList.add('hidden');
+    state.viewerOpen = false;
+    try { if (els.grid) els.grid.scrollTop = state.gridScroll || 0; } catch (e) {}
+  }
+
+  /* Central-home Back contract.  When a preview is open, Back closes ONLY the
+     preview and restores the gallery grid scroll position; Gallery stays the
+     foreground app and its process/document is never torn down.  Video
+     playback is paused and its source released before the viewer is hidden. */
+  try {
+    window.NuxelBack = {
+      canGoBack: function () { return !!state.viewerOpen; },
+      back: function () { closeViewer(); return true; }
+    };
+  } catch (e) {}
 
   document.getElementById('close').addEventListener('click', closeViewer);
   document.getElementById('prev').addEventListener('click', closeViewer);

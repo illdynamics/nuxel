@@ -15,8 +15,10 @@
     available: [],
     query: '',
     job: null,
+    transaction: null,
     busy: false,
-    lastError: null
+    lastError: null,
+    retry: null
   };
 
   function $(id) { return document.getElementById(id); }
@@ -144,33 +146,78 @@
     renderAvailable();
   }
 
-  function setProgress(text) {
-    var box = $('fp-progress'), log = $('fp-progress-log');
-    if (!box || !log) return;
-    box.hidden = !text;
-    log.textContent = text || '';
+  function txLabel(tx) {
+    if (!tx) return '';
+    var name = tx.app_id || 'application';
+    var op = (tx.operation || 'operation').toUpperCase();
+    var state = String(tx.state || 'idle').toUpperCase();
+    return name + ' · ' + op + ' · ' + state;
   }
-
+  function actionButton(label, fn, disabled) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = label; b.disabled = !!disabled;
+    b.addEventListener('click', fn);
+    return b;
+  }
+  function renderTransaction(tx) {
+    state.transaction = tx || null;
+    var box = $('fp-progress'), log = $('fp-progress-log');
+    var status = $('fp-tx-status'), bar = $('fp-tx-bar'), actions = $('fp-tx-actions');
+    if (!box) return;
+    box.hidden = !tx;
+    if (!tx) { if (log) log.textContent = ''; if (status) status.textContent = '—'; if (actions) actions.replaceChildren(); return; }
+    var pct = Math.max(0, Math.min(100, Number(tx.progress || 0)));
+    if (status) {
+      status.textContent = txLabel(tx) + '\n' + (tx.message || '') +
+        (tx.result ? '\nResult: ' + tx.result : '') +
+        (tx.error ? '\nFailure: ' + tx.error : '') +
+        '\nTransaction: ' + (tx.transaction_id || tx.id || '—');
+    }
+    if (bar) bar.style.width = pct + '%';
+    if (log) log.textContent = (tx.log_tail || '').slice(-6000);
+    if (actions) {
+      actions.replaceChildren();
+      var terminal = ['completed','removed','failed','cancelled'].indexOf(String(tx.state)) >= 0;
+      if (!terminal) actions.appendChild(actionButton('Cancel transaction', function () { cancel(tx); }));
+      if (tx.state === 'failed' || tx.state === 'cancelled') {
+        if (state.retry) actions.appendChild(actionButton('Retry', function () { var r = state.retry; state.retry = null; r(); }));
+      }
+      if (tx.state === 'completed' || tx.state === 'removed') {
+        actions.appendChild(actionButton('Refresh list & launcher exports', function () { refresh(); }));
+      }
+    }
+  }
+  function setProgress(text) {
+    var box = $('fp-progress'), log = $('fp-progress-log'), status = $('fp-tx-status');
+    if (!box) return;
+    if (text) box.hidden = false;
+    if (log) log.textContent = text || '';
+    if (status && !state.transaction) status.textContent = text || '—';
+  }
   async function poll(jobId) {
     state.job = jobId;
-    for (var i = 0; i < 600; i++) {
+    for (var i = 0; i < 1800; i++) {
       var j = await call('job', { job_id: jobId });
-      if (!j || j.success === false) { setProgress('Job status failed: ' + ((j && j.error) || 'unknown')); return j; }
-      setProgress((j.state || 'running') + ' (rc=' + (j.rc === null ? '—' : j.rc) + ')\n' + (j.log_tail || ''));
-      if (j.state === 'done' || j.state === 'failed') {
+      if (!j || j.success === false) { setProgress('Transaction status failed: ' + ((j && j.error) || 'unknown')); return j; }
+      renderTransaction(j);
+      if (['completed','removed','failed','cancelled'].indexOf(String(j.state)) >= 0) {
         await refresh();
-        if (j.state === 'failed') {
-          state.lastError = 'Flatpak job failed: rc=' + j.rc;
-          if ($('fp-status')) $('fp-status').textContent = state.lastError;
-        }
+        if (j.state === 'failed') state.lastError = j.message || j.error || 'transaction failed';
         return j;
       }
-      await new Promise(function (r) { setTimeout(r, 1000); });
+      await new Promise(function (r) { setTimeout(r, 700); });
     }
-    setProgress('Job did not finish within the polling window; it may still be running.');
+    setProgress('Transaction is still running; reopen this panel to resume polling.');
     return null;
   }
-
+  async function cancel(tx) {
+    if (!tx || !(tx.transaction_id || tx.id)) return;
+    var r = await call('cancel', { job_id: tx.transaction_id || tx.id });
+    if (!r || r.success === false) {
+      state.lastError = (r && (r.detail || r.error)) || 'cancel refused';
+      if ($('fp-status')) $('fp-status').textContent = state.lastError;
+    }
+  }
   async function refresh() {
     if (state.busy) return;
     state.busy = true;
@@ -188,7 +235,6 @@
       state.lastError = (avail && avail.success === false) ? (avail.error || 'remote-ls failed') : null;
       render();
       if (state.lastError && $('fp-status')) $('fp-status').textContent = 'Remote error: ' + state.lastError;
-      // The Home launcher reads the same canonical registry; refresh it too.
       try {
         if (window.parent && window.parent.appRegistry && window.parent.appRegistry.refreshFromBridge) {
           window.parent.appRegistry.refreshFromBridge();
@@ -201,25 +247,30 @@
       state.busy = false;
     }
   }
-
   async function install(id) {
-    setProgress('Requesting install of ' + id + '…');
+    setProgress('Queueing install of ' + id + '…');
+    state.retry = function () { install(id); };
     var r = await call('install', { app_id: id, remote: 'flathub', scope: 'system' });
-    if (!r || r.success === false) { setProgress('Install refused: ' + ((r && (r.detail || r.error)) || 'unknown')); return; }
+    if (!r || r.success === false) { renderTransaction(null); setProgress('Install refused: ' + ((r && (r.detail || r.error)) || 'unknown')); return; }
     if (r.state === 'already_installed') { await refresh(); setProgress(''); return; }
+    if (r.transaction) renderTransaction(r.transaction);
     if (r.job) await poll(r.job);
   }
   async function update(id) {
-    setProgress('Requesting update of ' + (id || 'all installed Flatpak apps and runtimes') + '…');
+    setProgress('Queueing update of ' + (id || 'all installed Flatpak apps and runtimes') + '…');
+    state.retry = function () { update(id); };
     var r = await call('update', id ? { app_id: id, scope: 'system' } : { scope: 'system' });
-    if (!r || r.success === false) { setProgress('Update refused: ' + ((r && (r.detail || r.error)) || 'unknown')); return; }
+    if (!r || r.success === false) { renderTransaction(null); setProgress('Update refused: ' + ((r && (r.detail || r.error)) || 'unknown')); return; }
+    if (r.transaction) renderTransaction(r.transaction);
     if (r.job) await poll(r.job);
   }
   async function uninstall(id) {
     if (!window.confirm('Uninstall ' + id + '? User data is preserved unless Flatpak itself removes it.')) return;
-    setProgress('Requesting uninstall of ' + id + '…');
+    setProgress('Queueing removal of ' + id + '…');
+    state.retry = function () { uninstall(id); };
     var r = await call('uninstall', { app_id: id });
-    if (!r || r.success === false) { setProgress('Uninstall refused: ' + ((r && (r.detail || r.error)) || 'unknown')); return; }
+    if (!r || r.success === false) { renderTransaction(null); setProgress('Uninstall refused: ' + ((r && (r.detail || r.error)) || 'unknown')); return; }
+    if (r.transaction) renderTransaction(r.transaction);
     if (r.job) await poll(r.job);
   }
   async function launch(id) {

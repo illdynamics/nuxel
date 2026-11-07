@@ -115,7 +115,7 @@ class NfcProvider:
             return out
         return _service_off_status()
 
-    def set_enabled(self, enabled: bool) -> Dict[str, Any]:
+    def set_enabled(self, enabled: bool, persist: bool = True) -> Dict[str, Any]:
         out = _rpc("enable" if enabled else "disable", {"enabled": bool(enabled)},
                    timeout_s=8.0 if enabled else 4.0)
         if out is None:
@@ -124,6 +124,18 @@ class NfcProvider:
             st["error"] = "nfc_service_unavailable"
             st["error_code"] = "SERVICE_UNAVAILABLE"
             return st
+        # Persist only a state the controller actually accepted.  A failed
+        # enable must not silently become the next boot's desired state.
+        if persist and out.get("success") is not False:
+            try:
+                import interface_state
+                interface_state.set_desired(
+                    "nfc", bool(enabled),
+                    source="nfc_provider.NfcProvider")
+                out["persisted"] = True
+            except Exception as exc:  # noqa: BLE001
+                out["persisted"] = False
+                out["persist_error"] = str(exc)
         return out
 
     def test_tag(self, timeout_s: float = 10.0, read_ndef: bool = True) -> Dict[str, Any]:

@@ -452,9 +452,11 @@ body.preload-ready #preload-cover {
 /* A43: prevent accidental zoom gestures on the launcher without disabling scrolling inside apps. */
 html:has(#app-grid), body:has(#app-grid) { overscroll-behavior: none; }
 body:not(.app-drawer-open) #app-grid { touch-action:pan-x pan-y; }
+/* PWNAGE-81000: the desktop dock is outside the drawer while it is open. */
+body.app-drawer-open #dock { display:none !important; visibility:hidden !important; pointer-events:none !important; }
 /* PERF: no persistent layer for the hidden Quick Settings panel. */
 #quick-settings { }
-#quick-settings:not(.hidden) { animation:nuxel-shade-enter .20s cubic-bezier(.2,.8,.2,1) both; }
+#quick-settings:not(.hidden) { animation:nuxel-shade-enter var(--nx-motion-standard, .2s) var(--nx-ease-standard, cubic-bezier(.2,.8,.2,1)) both; }
 @keyframes nuxel-shade-enter { from { opacity:.7; transform:translate3d(0,-18px,0); } to {opacity:1;transform:translate3d(0,0,0);} }
 @media(prefers-reduced-motion:reduce){#quick-settings:not(.hidden){animation:none}}
 
@@ -496,10 +498,12 @@ body[data-app-state="FAILED"] #app-grid { display: none; }
    bar.  Real fullscreen apps (Nuxel Doom) hide the top bar by default and use
    the whole panel.  Home and the lockscreen are never put in this state. */
 #status-bar {
-    transition: transform .18s ease, opacity .18s ease;
+    transition: transform var(--nx-motion-fast, .18s) var(--nx-ease-standard, ease),
+                opacity var(--nx-motion-fast, .18s) var(--nx-ease-standard, ease);
 }
 .system-navigation {
-    transition: transform .18s ease, opacity .18s ease;
+    transition: transform var(--nx-motion-fast, .18s) var(--nx-ease-standard, ease),
+                opacity var(--nx-motion-fast, .18s) var(--nx-ease-standard, ease);
 }
 body.app-status-hidden:not(.app-status-revealed) #status-bar {
     transform: translateY(-110%);
@@ -523,7 +527,10 @@ body.app-nav-revealed #system-navigation {
     pointer-events: auto;
     z-index: 300;
 }
-body.app-nav-hidden:not(.app-nav-revealed)::after {
+/* One bottom affordance only: the DOM pill is the fallback for a VM/desktop
+   run without the native nav dock.  When the native dock is present its thin
+   grabber is the single owner, so never paint a second stripe on top of it. */
+html:not(.native-nav-present) body.app-nav-hidden:not(.app-nav-revealed)::after {
     content: '';
     position: fixed;
     left: 50%;
@@ -557,4 +564,48 @@ html.nuxel-boot-locked #system-navigation {
     transform: none !important;
     opacity: 0 !important;
     pointer-events: none !important;
+}
+
+/* PWNAGE-81000: shell light appearance.  Portrait geometry is untouched; only
+   colour tokens change.  System default keeps the established navy shell. */
+:root[data-appearance="light"] {
+    --bg-primary: #f4f7fb;
+    --bg-secondary: #e9eff7;
+    --bg-card: #ffffff;
+    --bg-card-hover: #edf3fa;
+    --bg-accent: rgba(255, 255, 255, 0.9);
+    --text-primary: #122033;
+    --text-secondary: #4b607b;
+    --text-accent: #1f6feb;
+    --accent: #1f6feb;
+    --accent-light: #2d7ff9;
+    --accent-glow: rgba(31, 111, 235, 0.24);
+    --border-subtle: rgba(31, 111, 235, 0.22);
+}
+:root[data-appearance="light"] body { color: var(--text-primary); }
+:root[data-appearance="light"] .app-grid-header,
+:root[data-appearance="light"] .system-monitor { color: #122033; }
+
+/* PWNAGE-85000 idle guard: a blanked/locked panel must not keep WebKit's
+   compositor producing frames.  Pause every animation/transition and detach
+   the large Home layers while display-off; the panel is dark, and the layers
+   are restored synchronously when the display wakes. */
+body.display-off {
+    background: #000;
+}
+body.display-off *,
+body.display-off *::before,
+body.display-off *::after {
+    animation-play-state: paused !important;
+    transition: none !important;
+}
+/* PWNAGE-88000 zero-flash: never detach #lockscreen / its handle while the
+   panel is dark.  The panel is already off; keeping the lockscreen rendered
+   means a wake capture always has the correct pixels and the stale desktop
+   cannot be scanned out.  Only the desktop layers are detached. */
+body.display-off #app-grid,
+body.display-off #dock,
+body.display-off #status-bar,
+body.display-off .system-navigation {
+    visibility: hidden !important;
 }

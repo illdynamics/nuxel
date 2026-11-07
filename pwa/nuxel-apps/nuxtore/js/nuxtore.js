@@ -459,14 +459,34 @@
   }
 
   // ---- wiring --------------------------------------------------------------
+  function blurKeyboard() {
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+    try {
+      var p = window.parent;
+      if (p && p !== window && p.nuxel && typeof p.nuxel.dismissKeyboard === 'function') p.nuxel.dismissKeyboard();
+    } catch (e) {}
+  }
   document.querySelectorAll('.tab').forEach(function (t) {
     t.addEventListener('click', function () {
       document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); });
       document.querySelectorAll('.panel').forEach(function (x) { x.classList.remove('active'); });
       t.classList.add('active');
       el('tab-' + t.dataset.tab).classList.add('active');
+      blurKeyboard();
     });
   });
+  // The Software app must never open with a retained OSK.  Clear focus on
+  // load, tab changes and teardown; Back's keyboard-first handling belongs to
+  // the shared Home dispatcher.
+  setTimeout(blurKeyboard, 0);
+  setTimeout(blurKeyboard, 200);
+  window.addEventListener('pagehide', blurKeyboard);
+  document.addEventListener('nuxel:dismiss-keyboard', blurKeyboard);
+  try {
+    window.parent.postMessage({ type: 'nuxel:immersive', active: false }, window.location.origin);
+    window.parent.postMessage({ type: 'nuxel:nav-visible', active: true }, window.location.origin);
+    if (window.parent && window.parent.nuxel && window.parent.nuxel.setNavVisible) window.parent.nuxel.setNavVisible(true);
+  } catch (e) {}
   el('search').addEventListener('input', render);
   el('category').addEventListener('change', render);
   el('sortmode').addEventListener('change', render);

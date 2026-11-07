@@ -483,6 +483,7 @@ class AppRegistry {
         // able to disappear again when the user presses Remove; static built-in
         // apps are never removed by a registry refresh.
         this.canonicalDynamicIds = new Set();
+        this.lastRegistryDelta = { added: 0, removed: 0 };
         this._loadState();
     }
 
@@ -496,12 +497,15 @@ class AppRegistry {
         const canonical = (id) => aliases[id] || id;
         const incoming = Array.isArray(doc && doc.apps) ? doc.apps : [];
         let changed = false;
+        let added = 0, removed = 0;
         const incomingIds = new Set();
         for (const raw of incoming) {
             if (!raw || !raw.id) continue;
             const id = canonical(raw.id);
             incomingIds.add(id);
             if (id !== raw.id) changed = true;
+            const known = this.apps.has(id);
+            if (!known) { added++; changed = true; }
             const prev = this.apps.get(id) || {};
             const merged = Object.assign({}, prev, raw, { id });
             if (!merged.name) merged.name = id;
@@ -514,11 +518,12 @@ class AppRegistry {
         // touching the offline static baseline.
         for (const id of Array.from(this.canonicalDynamicIds)) {
             if (!incomingIds.has(id) && !Object.prototype.hasOwnProperty.call(NUXEL_APPS, id)) {
-                if (this.apps.delete(id)) changed = true;
+                if (this.apps.delete(id)) { changed = true; removed++; }
             }
         }
         this.canonicalDynamicIds = new Set(Array.from(incomingIds)
             .filter(id => !Object.prototype.hasOwnProperty.call(NUXEL_APPS, id)));
+        this.lastRegistryDelta = { added, removed };
         // Drop legacy case variants if both somehow exist.
         for (const legacy of Object.keys(aliases)) {
             if (legacy !== aliases[legacy] && this.apps.has(legacy)) {
@@ -551,9 +556,42 @@ class AppRegistry {
             } catch (e) { return 0; }
         }
         const n = this.applyCanonicalRegistry(doc);
-        try { if (window.launcher && window.launcher._renderDrawerApps) window.launcher._renderDrawerApps(true); } catch (e) {}
-        try { document.dispatchEvent(new CustomEvent('nuxel:app-registry-changed', { detail: { count: n, source: 'flatpak+registry' } })); } catch (e) {}
+        const delta = this.lastRegistryDelta || { added: 0, removed: 0 };
+        if (delta.added || delta.removed) {
+            try {
+                if (window.launcher) {
+                    if (window.launcher._renderDrawerApps) window.launcher._renderDrawerApps(true);
+                    if (window.launcher._renderAppGrid) window.launcher._renderAppGrid();
+                }
+            } catch (e) {}
+        }
+        try { document.dispatchEvent(new CustomEvent('nuxel:app-registry-changed', { detail: { count: n, added: delta.added, removed: delta.removed, source: 'flatpak+registry' } })); } catch (e) {}
         return n;
+    }
+
+    /* Software installs happen in a separate foreground app.  Poll while Home
+       is alive and refresh immediately whenever Home becomes visible again, so
+       a newly installed Flatpak reaches the drawer (and Home when unlocked)
+       without a reboot. */
+    startBridgeWatch(intervalMs) {
+        if (this._bridgeWatchTimer) return;
+        const interval = Math.max(2000, Number(intervalMs) || 5000);
+        this._bridgeWatchTimer = setInterval(() => {
+            if (typeof document !== 'undefined' && document.hidden) return;
+            this.refreshFromBridge();
+        }, interval);
+        if (typeof document !== 'undefined' && document.addEventListener) {
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) this.refreshFromBridge();
+            });
+            document.addEventListener('app:lifecycle', (ev) => {
+                if (ev && ev.detail && ev.detail.state === 'CLOSED') this.refreshFromBridge();
+            });
+        }
+        if (typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('focus', () => this.refreshFromBridge());
+            window.addEventListener('nuxel:app-closed', () => this.refreshFromBridge());
+        }
     }
 
     getAllApps() {

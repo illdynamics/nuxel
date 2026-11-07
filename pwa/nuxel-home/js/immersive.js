@@ -100,8 +100,17 @@
       if (!s) return;
       const dx = x - s.x, dy = y - s.y;
       if (Math.abs(dy) < DISTANCE || Math.abs(dy) < Math.abs(dx) * 1.1) return;
-      if (s.kind === 'nav' && dy < 0) setNavVisible(true);
-      else if (s.kind === 'status' && dy > 0) setStatusVisible(true);
+      if (s.kind === 'nav' && dy < 0) {
+        // Toggle: first upward swipe reveals the triple buttons, the next
+        // upward swipe on the revealed dock collapses them again (no timer).
+        const revealed = document.body.classList.contains('app-nav-revealed');
+        setNavVisible(!revealed, 0);
+      } else if (s.kind === 'status') {
+        // Swipe down from the top edge expands the top bar; swipe up collapses
+        // it again. Swiping down again simply opens it normally.
+        if (dy > 0) setStatusVisible(true, 0);
+        else if (dy < 0) setStatusVisible(false, 0);
+      }
     }
 
     doc.addEventListener('pointerdown', function (e) {

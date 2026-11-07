@@ -1362,7 +1362,18 @@ class BluetoothConnector:
     def get_status(self):
         rfkill = self._rfkill()
         hci = self._hci_devices()
-        adapters = self._bluez_adapters()
+        # Reading the persisted owner choice also keeps a default-OFF status
+        # poll from D-Bus-activating BlueZ (which made bluetooth.service look
+        # enabled after every boot even though the radio was off).  When the
+        # HCI transport is detached and the desired state is OFF there is no
+        # adapter to ask about.
+        desired = None
+        try:
+            import interface_state
+            desired = interface_state.get('bluetooth')
+        except Exception:
+            desired = None
+        adapters = self._bluez_adapters() if (hci or desired is not False) else []
         driver = self._kernel_bt_driver()
         hci_transport = self._kernel_hci_transport()
 
@@ -1376,7 +1387,7 @@ class BluetoothConnector:
         if rfkill['hard_blocked']:
             state = 'hardware_blocked'
         elif not adapter_present:
-            state = 'service_unavailable'
+            state = 'off' if desired is False else 'service_unavailable'
         elif powered is True:
             state = 'on'
         elif powered is False:
@@ -1387,7 +1398,9 @@ class BluetoothConnector:
         firmware = self._firmware_status()
 
         detail = []
-        if not adapter_present:
+        if not adapter_present and desired is False:
+            detail.append('Bluetooth OFF (persisted owner choice); HCI transport not attached')
+        elif not adapter_present:
             detail.append('no hci0 registered (no BlueZ adapter)')
         if driver in ('none', 'unknown'):
             detail.append('kernel BT controller driver: ' + driver)
@@ -1409,6 +1422,8 @@ class BluetoothConnector:
         blocker = None
         if rfkill['hard_blocked']:
             blocker = 'RFKILL_HARD_BLOCKED'
+        elif not adapter_present and desired is False:
+            blocker = None
         elif not adapter_present and hci_transport is False:
             blocker = 'BLOCKED_KERNEL'
         elif not adapter_present and not firmware['present']:
@@ -1423,6 +1438,7 @@ class BluetoothConnector:
         return {
             'success': True,
             'state': state,
+            'desired_powered': desired,
             'adapter_present': adapter_present,
             'powered': powered,
             'discovering': discovering,
@@ -1500,6 +1516,18 @@ class BluetoothConnector:
         readback['success'] = (readback['powered'] == enabled)
         if not readback['success']:
             readback['error'] = err or ('adapter did not confirm Powered=%s' % enabled)
+        # Direct D-Bus callers use this path.  The root HTTP bridge also writes
+        # the same document; a non-root bridge may fail here, and that is
+        # reported instead of turning a successful radio change into a lie.
+        if readback['success']:
+            try:
+                import interface_state
+                interface_state.set_desired('bluetooth', enabled,
+                                            source='bridge.BluetoothConnector')
+                readback['persisted'] = True
+            except Exception as exc:  # noqa: BLE001
+                readback['persisted'] = False
+                readback['persist_error'] = str(exc)
         return readback
 
 
@@ -1946,9 +1974,9 @@ class PortalClient:
         if not self.connected:
             self.connect()
         if not self.connected:
-            # Fallback: grant automatically if portal not available
-            logger.warning(f"Portal not available, auto-granting {capability} for {app_id}")
-            return {'granted': True, 'duration': 'session'}
+            # Fail closed: no broker means no grant.
+            logger.warning(f"Portal not available, denying {capability} for {app_id}")
+            return {'granted': False, 'duration': None, 'reason': 'portal_unavailable'}
         
         portal_type = CAPABILITY_PORTAL_MAP.get(capability, capability)
         
@@ -1989,11 +2017,10 @@ class PortalClient:
             elif portal_type == 'background':
                 result_json = self.portal_iface.RequestBackgroundExecution(app_id,
                                                                                timeout=PORTAL_DBUS_TIMEOUT_SECONDS)
-            elif portal_type == 'network':
-                result_json = json.dumps({'granted': True, 'duration': 'session'})
             else:
-                logger.warning(f'No specific portal handler for {portal_type}, auto-granting')
-                result_json = json.dumps({'granted': True, 'duration': 'session'})
+                logger.warning(f'No specific portal handler for {portal_type}, denying')
+                result_json = json.dumps({'granted': False, 'duration': None,
+                                          'reason': 'no_portal_handler'})
             return json.loads(result_json)
         except Exception as e:
             logger.error(f"Portal request failed: {e}")
@@ -2150,12 +2177,12 @@ class NuxelBridgeService(dbus.service.Object):
         self.capability_grants[app_id][capability] = duration
     
     def _check_capability(self, app_id, capability):
-        """Check if an app has a granted capability, consulting portal if needed."""
-        # Always-true capabilities (no permission needed)
-        always_ok = {'phone:status', 'notifications:send', 'notifications:receive', 'storage:persistent'}
-        if capability in always_ok:
-            return True
-        
+        """Check if an app has a granted capability, consulting portal if needed.
+
+        There is deliberately no hardcoded always-allow set: intrinsic
+        non-sensitive capabilities are represented in the canonical registry,
+        and every grant-required capability must be granted by the broker.
+        """
         # Check in-memory cache first
         grants = self.capability_grants.get(app_id, {})
         if capability in grants:

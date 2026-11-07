@@ -7,8 +7,9 @@ Imports the real bridge module with dbus absent (macOS/offline host) and proves:
     fresh instance (reboot-equivalent readback);
   * get_status reports `enabled` as a policy fact independent of a fix, and
     never manufactures coordinates;
-  * BluetoothConnector reports a concrete `service_unavailable` blocker (not a
-    generic 'unavailable on this build') when no adapter is present.
+  * a default-OFF Bluetooth state is reported as OFF without D-Bus-activating
+    BlueZ, while an explicitly desired ON with no adapter still reports a
+    concrete `service_unavailable` blocker.
 """
 from __future__ import annotations
 
@@ -101,10 +102,24 @@ def main() -> int:
     bc._hci_devices = lambda: []
     bc._bluez_adapters = lambda: []
     bc._kernel_bt_driver = lambda: 'none'
+    state_path = os.path.join(tmp, "interfaces.json")
+    os.environ.pop("NUXEL_INTERFACE_STATE", None)
     bst = bc.get_status()
     check(bst["adapter_present"] is False, "offline host has no Bluetooth adapter")
+    check(bst["state"] == "off",
+          "a missing state document is the default-OFF state, not a fake adapter")
+    check(bst.get("blocker") is None,
+          "default-OFF does not report a hardware blocker")
+    check("persisted owner choice" in (bst.get("detail") or ""),
+          "OFF state explains that the radio is intentionally down")
+
+    # Explicitly desired ON but no adapter: report the concrete blocker.
+    os.environ["NUXEL_INTERFACE_STATE"] = state_path
+    with open(state_path, "w") as fh:
+        json.dump({"schema_version": 1, "interfaces": {"bluetooth": {"enabled": True}}}, fh)
+    bst = bc.get_status()
     check(bst["state"] == "service_unavailable",
-          "no-adapter state is a concrete 'service_unavailable', not generic build placeholder")
+          "desired ON with no adapter is a concrete 'service_unavailable'")
     check(isinstance(bst.get("detail"), str) and "no hci0" in (bst.get("detail") or ""),
           "blocker names the missing hci0 controller")
 

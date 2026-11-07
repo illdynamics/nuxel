@@ -100,6 +100,10 @@ set_ctl 'ASRC1IN1L=LHPF1'    'ASRC1IN1L Input 1' 58 || fail 'main-mic ASRC faile
 set_ctl 'ISRC1INT1=ASRC1IN1L' 'ISRC1INT1 Input 1' 104 || fail 'main-mic ISRC failed'
 set_ctl 'AIF1TX1=ISRC1INT1'  'AIF1TX1 Input 1' 112 || fail 'AIF1TX1 failed'
 set_ctl 'AIF1TX2=ISRC1INT1'  'AIF1TX2 Input 1' 112 || fail 'AIF1TX2 failed'
+# Main-microphone input gain: IN3L Digital Volume is the real CS47L93
+# capture preamp (dBscale -64..+31.5 dB; 128 == 0 dB).  +16 dB keeps
+# voice well above the room floor while leaving headroom below clip.
+set_ctl 'IN3L gain +16dB'    'IN3L Digital Volume' 160 || fail 'main-mic gain failed'
 set_ctl 'DMIC1 on'           'DMIC1 Switch' on || fail 'DMIC1 switch failed'
 
 printf 'state=applied\ncard=%s\npcm=hw:%s,13\nroute=uaif0-nsrc0-sifm0-wdma1\nat=%s\n' \

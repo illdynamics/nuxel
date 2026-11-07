@@ -986,6 +986,9 @@ static int ctrl_fd = -1;
 static int display_on = 1;
 static int force_present = 1;   /* A47: always paint the first frame after wake */
 static int force_full_frames = 0; /* PWNAGE-80000: one-shot full reproject after app close/reload/rotation */
+static int wake_pending = 0;   /* PWNAGE-88000: two-phase wake, unblank after fresh frame commit */
+static int wake_generation = 0;
+static int wake_tries = 0;
 static int saved_brightness = -1;
 static int max_brightness = -1;
 
@@ -1044,12 +1047,20 @@ static void display_set(int on, const char *why) {
     /* FBIOBLANK(POWERDOWN) disables DECON on this vendor kernel. Re-enable
        the panel through the complete, measured recovery sequence and force a
        fresh screencopy/FBIOPAN_DISPLAY in the next presentation iteration. */
-    bl_power_write(0, "screen-on");
-    panel_assert("screen-on");
-    backlight_write(b);
+    /* PWNAGE-88000 zero-flash wake: do NOT unblank here.  Mark the panel for
+       wake and force a full fresh frame commit; the ownership loop unblanks
+       only after the first post-wake frame has been captured and committed
+       (or after a bounded fallback).  This removes the stale-DECON desktop
+       flash that was visible because the backlight was turned on before a
+       fresh frame existed. */
     display_on = 1;
     force_present = 1;
-    st("DISPLAY_ON why=%s brightness=%d bl_power=%d", why, b, read_int_file(BL_POWER));
+    force_full_frames = 2;
+    wake_pending = 1;
+    wake_generation++;
+    wake_tries = 0;
+    st("DISPLAY_WAKE_PREPARE why=%s brightness=%d gen=%d", why, b, wake_generation);
+    return;
   } else if (!on && display_on) {
     int cur = read_int_file(BACKLIGHT);
     if (cur > 0) saved_brightness = cur;
@@ -1690,6 +1701,7 @@ int main(int argc, char **argv) {
   const char *fpsenv = getenv("NUXEL_TARGET_FPS");
   if (fpsenv) { int v = atoi(fpsenv); if (v >= 1 && v <= 120) fps_target = v; }
   int consec_fail = 0;
+  int last_pan_rc = 1;   /* last frame commit result (0 = committed ok) */
   unsigned long long blit_ns_sum = 0, pan_ns_sum = 0;
   unsigned long long capture_ns_sum = 0, compare_ns_sum = 0;
   unsigned long long capture_n = 0, compare_n = 0;
@@ -1734,6 +1746,7 @@ int main(int argc, char **argv) {
     clock_gettime(CLOCK_MONOTONIC, &t_ready);
     capture_ns_sum += ts_ns(&t_ready) - ts_ns(&t_start);
     capture_n++;
+    last_pan_rc = 1;   /* reset: only a successful commit below clears this */
     if (frame_failed) { failures++; consec_fail++; }
     else if (!display_on) {
       /* Defensive only: the top of the loop blocks while off.  If a queued frame
@@ -1783,9 +1796,11 @@ int main(int argc, char **argv) {
         if (partial) { damage_blits++; damage_blit_ns_sum += g_blit_ns; }
         if (pan_rc != 0) { failures++; consec_fail++; }
         else consec_fail = 0;
+        last_pan_rc = pan_rc;
       } else {
         present_skipped++;
         consec_fail = 0;
+        last_pan_rc = 1;   /* no fresh commit happened this iteration */
       }
       frames++;
       publish_orientation_proof(frame_buf.w, frame_buf.h, frame_buf.data != NULL);
@@ -1793,6 +1808,34 @@ int main(int argc, char **argv) {
     zwlr_screencopy_frame_v1_destroy(frame);
     /* PWNAGE-60000: keep frame_buf.wl mapped for the next capture.  The copy
        completed before the ready event, so the buffer is reusable. */
+
+    /* PWNAGE-88000 two-phase wake: the panel stays dark until a fresh post-wake
+       frame has actually committed to /dev/fb0 (or until a bounded fallback).
+       This is the only place the steady-state loop turns the backlight back on,
+       so the stale desktop can never be scanned out on wake. */
+    if (wake_pending) {
+      if (last_pan_rc == 0) {
+        int wb = saved_brightness;
+        if (wb < 0) wb = max_brightness > 0 ? max_brightness / 2 : 255;
+        bl_power_write(0, "wake-frame-committed");
+        panel_assert("post-wake");
+        backlight_write(wb);
+        wake_pending = 0;
+        wake_tries = 0;
+        display_publish();
+        st("DISPLAY_WAKE_COMMIT gen=%d brightness=%d pan_ok=1", wake_generation, wb);
+      } else if (++wake_tries >= 8) {
+        int wb = saved_brightness;
+        if (wb < 0) wb = max_brightness > 0 ? max_brightness / 2 : 255;
+        bl_power_write(0, "wake-fallback");
+        panel_assert("post-wake-fallback");
+        backlight_write(wb);
+        wake_pending = 0;
+        wake_tries = 0;
+        display_publish();
+        st("DISPLAY_WAKE_FALLBACK gen=%d tries=%d brightness=%d", wake_generation, wake_tries, wb);
+      }
+    }
 
     /* Full mode re-assertion ONLY on measured capture/pan failures (A35).
        Steady state MUST run FBIOPAN_DISPLAY after each blit, but MUST NOT

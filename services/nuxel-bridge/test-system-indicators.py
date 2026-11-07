@@ -284,10 +284,10 @@ def main() -> int:
         check(ind["live_console"]["source"] in
               ("inactive:no-usb-data-link", "service:armed"),
               "detached console reports the missing USB data link")
-        # The base penguin follows the background service even while the USB
-        # transport icon is off.
-        check(ind["live_console"]["active"] is True,
-              "armed service keeps the BASE penguin on after detach")
+        # The generic indicator is activity-only: an armed service with no
+        # host session must stay dark after detach.
+        check(ind["live_console"]["active"] is False,
+              "armed service alone does NOT keep the BASE penguin on")
         fake.remove_console_process(4545)
 
         # 10. Console process alive but gadget gone: do not keep a stale "on".

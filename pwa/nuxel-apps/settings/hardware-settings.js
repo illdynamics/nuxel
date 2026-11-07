@@ -281,7 +281,7 @@
     var btn = $('audio-test');
     if (btn) btn.disabled = true;
     setText('test-audio-state', 'Playing nuxel-pow.mp3 through the selected output…');
-    return call('audio', 'test-audio', { asset: '/usr/share/nuxel/assets/nuxel-pow.mp3', gain_percent: 100 }).then(function (r) {
+    return call('audio', 'test-audio', { action: 'other', gain_percent: 100 }).then(function (r) {
       testAudioBusy = false;
       if (btn) btn.disabled = false;
       if (r && r.success === false) {
@@ -309,7 +309,7 @@
     if (volumeSoundTimer) clearTimeout(volumeSoundTimer);
     volumeSoundTimer = setTimeout(function () {
       volumeSoundTimer = null;
-      call('audio', 'play-sound', { asset: '/usr/share/nuxel/assets/nuxel-pow.mp3', gain_percent: 100 }).catch(function () {});
+      call('sound', 'play', { action: 'volume' }).catch(function () {});
     }, 120);
   }
   function setVolume(delta) {

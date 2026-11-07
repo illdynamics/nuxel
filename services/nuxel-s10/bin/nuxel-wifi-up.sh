@@ -1,11 +1,12 @@
 #!/bin/sh
-# Nuxel S10+ Wi-Fi boot policy: Wi-Fi radio ON after every normal boot.
+# Nuxel S10+ Wi-Fi boot policy: restore the radio state NetworkManager saved.
 #
-# PWNAGE-41000 supersedes the PWNAGE-37000 owner-controlled policy.  The boot
-# unit now enables NetworkManager's Wi-Fi radio by default, then verifies that
-# NetworkManager applied it.  A manual OFF during a session remains respected
-# until the next normal boot; NetworkManager is still the single owner of the
-# radio and of every saved profile.
+# NetworkManager already persists WirelessEnabled in
+# /var/lib/NetworkManager/NetworkManager.state.  This boot helper must therefore
+# NOT force Wi-Fi back ON: an owner who turned the radio OFF expects it to stay
+# OFF after a reboot, exactly like Bluetooth/NFC/GNSS.  On a fresh image the
+# NetworkManager default is ON, so the first boot still brings Wi-Fi up.
+# NetworkManager remains the single owner of the radio and every saved profile.
 #
 # This unit deliberately does NOT:
 #   * block rfkill (a stale software block is cleared after the radio
@@ -38,6 +39,14 @@ if ! command -v nmcli >/dev/null 2>&1; then
     exit 0
 fi
 
+radio=$(read_radio)
+if [ "$radio" = "disabled" ]; then
+    # This is the persisted owner choice, not a stale failure.  Leave rfkill
+    # and every profile untouched; a later UI toggle will enable the radio.
+    say "Wi-Fi radio=disabled in persisted NetworkManager state; leaving OFF"
+    exit 0
+fi
+
 # A software block can survive a userspace-only radio off.  Clear only that
 # stale soft block before asking NetworkManager to enable the radio; never
 # block the radio and never touch a hardware block.
@@ -52,12 +61,10 @@ if command -v rfkill >/dev/null 2>&1 && \
     exit 1
 fi
 
-radio=$(read_radio)
 if [ "$radio" != "enabled" ]; then
-    # Enable through NetworkManager.  This is the boot default, not a session
-    # preference: an owner turning Wi-Fi off later is not overridden until the
-    # next boot.
-    say "Wi-Fi radio=${radio:-unknown}; enabling boot default via NetworkManager"
+    # Enable through NetworkManager.  This is the fresh-image default; a
+    # persisted OFF was handled above and is never overridden here.
+    say "Wi-Fi radio=${radio:-unknown}; enabling baseline via NetworkManager"
     nmcli radio wifi on >/dev/null 2>&1 || true
 
     # Verify the readback.  Do not claim success from the set command alone.

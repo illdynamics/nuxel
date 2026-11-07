@@ -29,6 +29,8 @@ input, select { font-family: inherit; font-size: 13px; background: var(--bg2); c
 .toolbar { display: flex; gap: 8px; align-items: center; padding: 8px 14px; background: var(--bg2); border-top: 1px solid #12233f; }
 .toolbar input[type=search] { flex: 1; min-width: 80px; }
 
+.tabs { flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.tabs::-webkit-scrollbar { display:none; }
 .tabs { display: flex; gap: 4px; padding: 6px 10px 0; background: var(--bg2); overflow-x: auto; }
 .tab { background: none; color: var(--text2); font-size: 13px; padding: 8px 10px; border-bottom: 2px solid transparent; white-space: nowrap; }
 .tab.active { color: var(--text); font-weight: 700; border-bottom-color: var(--accent2); }

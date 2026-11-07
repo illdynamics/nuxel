@@ -35,6 +35,8 @@
       document.querySelectorAll('.panel').forEach(function (x) { x.classList.remove('active'); });
       t.classList.add('active');
       document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+      try { t.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }
+      catch (e) { try { t.scrollIntoView(false); } catch (e2) {} }
     });
   });
   // ---------- power tab (battery modes + power menu) ----------

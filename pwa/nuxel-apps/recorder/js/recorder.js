@@ -21,11 +21,14 @@
   }
   function save(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
 
-  var settings = load(SET_KEY, { saveLocation: '/VoiceRecordings', maxSeconds: 600 });
+  var settings = load(SET_KEY, { saveLocation: '/Gallery/Recordings', maxSeconds: 600 });
   var recordings = load(REC_KEY, []);
   var stream = null, ctx = null, node = null, gain = null, startedAt = 0, timerId = null;
   var recording = false;
   var chunks = [];
+  var livePeaks = [];
+  var liveRms = [];
+  var WAVE_BUCKETS = 240;
   var homePath = '/home/nuxel';
 
   function bridgeCall(ns, verb, params) {
@@ -62,7 +65,7 @@
 
   function logicalLocation(value) {
     var v = String(value || '').trim();
-    if (!v) return '/VoiceRecordings';
+    if (!v) return '/Gallery/Recordings';
     if (homePath && (v === homePath || v.indexOf(homePath + '/') === 0)) {
       v = v.slice(homePath.length) || '/';
     }
@@ -195,6 +198,52 @@
     return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0') + '.' + tenths;
   }
 
+  function downsampleWave(peak, rms) {
+    if (peak.length <= WAVE_BUCKETS) return { peak: peak, rms: rms };
+    var np = [], nr = [];
+    for (var i = 0; i < peak.length; i += 2) {
+      np.push(Math.max(peak[i], peak[i + 1] || 0));
+      nr.push(Math.sqrt(((rms[i] || 0) * (rms[i] || 0) + (rms[i + 1] || 0) * (rms[i + 1] || 0)) / 2));
+    }
+    return downsampleWave(np, nr);
+  }
+  function addWaveBlock(input) {
+    var peak = 0, sum = 0;
+    for (var i = 0; i < input.length; i++) {
+      var v = input[i] || 0, a = v < 0 ? -v : v;
+      if (a > peak) peak = a;
+      sum += v * v;
+    }
+    livePeaks.push(Math.min(1, peak));
+    liveRms.push(Math.min(1, Math.sqrt(sum / Math.max(1, input.length))));
+    var d = downsampleWave(livePeaks, liveRms);
+    livePeaks = d.peak; liveRms = d.rms;
+  }
+  function drawWave(canvas, peak, rms, progress) {
+    if (!canvas || !canvas.getContext) return;
+    var ctx2 = canvas.getContext('2d');
+    var w = canvas.width || 600, h = canvas.height || 90;
+    ctx2.clearRect(0, 0, w, h);
+    ctx2.fillStyle = '#150e20'; ctx2.fillRect(0, 0, w, h);
+    var n = Math.max(1, peak.length);
+    var bw = Math.max(1, w / n);
+    for (var i = 0; i < n; i++) {
+      var a = Math.max(0, Math.min(1, peak[i] || 0));
+      var r = Math.max(0, Math.min(1, (rms || [])[i] || 0));
+      var bh = Math.max(1, a * (h - 12));
+      var y = (h - bh) / 2;
+      var played = progress != null && (i / n) <= progress;
+      ctx2.fillStyle = played ? '#c084fc' : 'rgba(192,132,252,.55)';
+      ctx2.fillRect(i * bw, y, Math.max(1, bw - 1), bh);
+      var rh = Math.max(1, r * (h - 12));
+      ctx2.fillStyle = played ? 'rgba(74,222,128,.9)' : 'rgba(74,222,128,.35)';
+      ctx2.fillRect(i * bw, (h - rh) / 2, Math.max(1, bw - 1), rh);
+    }
+  }
+  function drawLiveMeter() {
+    drawWave(el.meter, livePeaks.slice(-WAVE_BUCKETS), liveRms.slice(-WAVE_BUCKETS), null);
+  }
+
   el.rec.addEventListener('click', async function () {
     if (recording) { stopRecording(); return; }
     if (!stream) await probeMic();
@@ -209,9 +258,12 @@
       gain = ctx.createGain();
       gain.gain.value = el.monitor.checked ? 1 : 0;
       chunks = [];
+      livePeaks = []; liveRms = [];
       node.onaudioprocess = function (ev) {
         var input = ev.inputBuffer.getChannelData(0);
         chunks.push(new Float32Array(input));
+        addWaveBlock(input);
+        drawLiveMeter();
       };
       source.connect(node);
       node.connect(gain);
@@ -259,13 +311,19 @@
     var path = (logical === '/' ? '' : logical) + '/' + name;
     var actual = homePath.replace(/\/$/, '') + path;
     var b64 = bytesToB64(wav);
+    var peakMax = livePeaks.reduce(function (m, v) { return Math.max(m, v || 0); }, 0);
+    var rmsMax = liveRms.reduce(function (m, v) { return Math.max(m, v || 0); }, 0);
     var saved = { id: 'rec-' + Date.now(), name: name, path: actual, logicalPath: path,
-                  durationMs: durationMs, size: wav.length, at: Date.now() };
-    var res = await bridgeCall('storage', 'write-file', { path: path, data_b64: b64 });
+                  durationMs: durationMs, size: wav.length, at: Date.now(),
+                  samples: flat.length, sampleRate: sampleRate,
+                  signal: { peak: peakMax, rms: rmsMax, silent: peakMax <= 0.0005 },
+                  waveform: { peak: livePeaks, rms: liveRms, buckets: livePeaks.length } };
+    var res = await bridgeCall('storage', 'write-file', { path: path, data_b64: b64, overwrite: false });
     if (res && res.success !== false) {
       saved.stored = 'bridge';
       if (res.absolute_path) saved.path = res.absolute_path;
       toast('Saved ' + name + ' to ' + saved.path + ' (' + (wav.length / 1024).toFixed(1) + ' KiB WAV)');
+      try { document.dispatchEvent(new CustomEvent('nuxel:media-changed', { detail: { path: saved.path } })); } catch (e) {}
     } else {
       saved.stored = 'local';
       saved.error = (res && res.error) || 'filesystem write failed';
@@ -285,6 +343,22 @@
     gain = null;
   }
 
+  function waveformFor(rec, canvas) {
+    if (rec.waveform && Array.isArray(rec.waveform.peak) && rec.waveform.peak.length) {
+      drawWave(canvas, rec.waveform.peak, rec.waveform.rms || [], null);
+      return;
+    }
+    var logical = rec.logicalPath || logicalLocation(rec.path || '');
+    bridgeCall('storage', 'waveform', { path: logical, buckets: WAVE_BUCKETS }).then(function (res) {
+      if (!res || res.success === false || !Array.isArray(res.peak)) {
+        canvas.title = 'Waveform unavailable: ' + ((res && (res.error || res.detail)) || 'unknown');
+        return;
+      }
+      rec.waveform = { peak: res.peak, rms: res.rms || [], buckets: res.buckets || res.peak.length };
+      save(REC_KEY, recordings);
+      drawWave(canvas, res.peak, res.rms || [], null);
+    });
+  }
   function renderList() {
     el.count.textContent = String(recordings.length);
     el.list.innerHTML = '';
@@ -293,7 +367,7 @@
       var left = document.createElement('div');
       var n = document.createElement('div'); n.textContent = r.name;
       var d = document.createElement('div'); d.className = 'li-sub';
-      d.textContent = new Date(r.at).toLocaleString() + ' · ' + fmt(r.durationMs) + ' · ' + (r.size / 1024).toFixed(1) + ' KiB';
+      d.textContent = new Date(r.at).toLocaleString() + ' · ' + fmt(r.durationMs) + ' · ' + ((r.size || 0) / 1024).toFixed(1) + ' KiB';
       left.appendChild(n); left.appendChild(d);
       var actions = document.createElement('div');
       var del = document.createElement('button'); del.textContent = 'Delete';
@@ -312,6 +386,28 @@
       });
       actions.appendChild(del);
       li.appendChild(left); li.appendChild(actions);
+      var wave = document.createElement('canvas');
+      wave.className = 'waveform';
+      wave.width = 600; wave.height = 76;
+      wave.setAttribute('aria-label', 'Waveform for ' + r.name);
+      li.appendChild(wave);
+      var logical = r.logicalPath || logicalLocation(r.path || '');
+      var audio = document.createElement('audio');
+      audio.controls = true;
+      audio.preload = 'metadata';
+      audio.src = 'http://127.0.0.1:8080/api/v1/storage/file?path=' + encodeURIComponent(logical);
+      audio.addEventListener('timeupdate', function () {
+        var dur = audio.duration || (r.durationMs / 1000) || 1;
+        drawWave(wave, (r.waveform && r.waveform.peak) || [], (r.waveform && r.waveform.rms) || [], dur ? (audio.currentTime / dur) : 0);
+      });
+      wave.addEventListener('click', function (ev) {
+        var rect = wave.getBoundingClientRect();
+        var pct = rect.width ? Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width)) : 0;
+        var dur = audio.duration || (r.durationMs / 1000) || 0;
+        if (dur > 0) { try { audio.currentTime = pct * dur; } catch (e) {} }
+      });
+      li.appendChild(audio);
+      waveformFor(r, wave);
       el.list.appendChild(li);
     });
   }
@@ -355,8 +451,12 @@
   function bootRecorder() {
     renderList();
     resolveHome();
-    el.micBadge.textContent = 'microphone: press Start to check';
-    status(['Microphone access is checked when you press Start recording.']);
+    el.micBadge.textContent = 'microphone: ready to check';
+    el.capability.textContent = 'Microphone access is checked when you press Start recording.';
+    status(['Microphone access is checked when you press Start recording.',
+            'The live waveform is computed from actual captured PCM samples.',
+            'Recordings are saved under ~/Gallery/Recordings and indexed by Gallery.']);
+    try { document.body.classList.add('recorder-ready'); } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootRecorder, { once: true });
   else bootRecorder();

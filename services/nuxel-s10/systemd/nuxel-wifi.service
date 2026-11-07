@@ -1,5 +1,5 @@
 [Unit]
-Description=Nuxel Wi-Fi boot policy (radio ON by default via NetworkManager)
+Description=Nuxel Wi-Fi boot policy (restores NetworkManager persisted radio state)
 After=NetworkManager.service network.target
 Wants=NetworkManager.service
 StartLimitIntervalSec=0

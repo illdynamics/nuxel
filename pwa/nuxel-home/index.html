@@ -15,14 +15,14 @@
     <link rel="icon" type="image/png" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Nuxel</title>
-    <link rel="stylesheet" href="../nuxel-common/theme.css?v=a81">
-    <link rel="stylesheet" href="css/style.css?v=p80000">
-    <link rel="stylesheet" href="css/launcher.css?v=p80000">
+    <link rel="stylesheet" href="../nuxel-common/theme.css?v=p85000">
+    <link rel="stylesheet" href="css/style.css?v=p85000">
+    <link rel="stylesheet" href="css/launcher.css?v=p87000">
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/status-bar.css?v=p80000">
     <link rel="stylesheet" href="css/home-settings.css?v=p80000">
-    <link rel="stylesheet" href="css/widgets.css?v=a81">
-    <link rel="stylesheet" href="css/lockscreen.css?v=p80000">
+    <link rel="stylesheet" href="css/widgets.css?v=p82000">
+    <link rel="stylesheet" href="css/lockscreen.css?v=p87000">
     <link rel="preload" as="image" href="assets/nuxel-preload-cover.jpg">
     <script>
     // PWNAGE-36000: in phone boot mode the separate mpv preloading-screen
@@ -101,7 +101,7 @@
                 <div class="system-meter" data-meter="cpu"><span class="system-meter-label">CPU</span><span class="system-meter-value">--</span><span class="system-meter-detail">-- MHz</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
                 <div class="system-meter" data-meter="memory"><span class="system-meter-label">MEM</span><span class="system-meter-value">--</span><span class="system-meter-detail">-- GiB</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
                 <div class="system-meter" data-meter="gpu"><span class="system-meter-label">GPU</span><span class="system-meter-value">--</span><span class="system-meter-detail">-- MHz</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
-                <div class="system-meter" data-meter="gpu-memory" title="Tracked Mali GPU allocations in shared system RAM; not dedicated VRAM."><span class="system-meter-label">GPU MEM (shared)</span><span class="system-meter-value">--</span><span class="system-meter-detail">tracked / RAM budget</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
+                <div class="system-meter" data-meter="gpu-memory" title="VRAM: Mali GPU allocations tracked in shared system RAM. The total is the RAM budget, not dedicated VRAM."><span class="system-meter-label">VRAM</span><span class="system-meter-value">--</span><span class="system-meter-detail">of RAM</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
             </section>
             <div class="app-grid-indicator">
                 <span class="dot active"></span>
@@ -264,6 +264,23 @@
              state.  These are supplement-only indicators; the generic live
              console indicator above keeps its existing meaning and also lights
              for a WLAN-only live console (PWNAGE-46000). -->
+        <!-- Durable scheduler indicators.  These are driven only by the
+             nuxel-clockd projection in /api/v1/system/indicators; they are
+             not page-owned alarm timers. -->
+        <div id="lockscreen-clock-lanes" class="lockscreen-clock-lanes" aria-label="Alarm and timer controls">
+            <div id="lockscreen-timer-lane" class="lockscreen-clock-lane timer-lane" role="group" aria-label="Timer controls">
+                <span id="lockscreen-timer-indicator" class="lockscreen-clock-penguin timer-penguin" role="button" tabindex="0" aria-label="Timer — tap to stop" aria-hidden="true">
+                    <img src="/assets/nuxel-timer.png?v=p84000" alt="" draggable="false">
+                </span>
+                <span id="lockscreen-timer-hint" class="lockscreen-clock-hint">tap to stop</span>
+            </div>
+            <div id="lockscreen-alarm-lane" class="lockscreen-clock-lane alarm-lane" role="group" aria-label="Alarm controls">
+                <span id="lockscreen-alarm-indicator" class="lockscreen-clock-penguin alarm-penguin" role="button" tabindex="0" aria-label="Alarm" aria-hidden="true">
+                    <img src="/assets/nuxel-alarm.png?v=p84000" alt="" draggable="false">
+                </span>
+                <span id="lockscreen-alarm-hint" class="lockscreen-clock-hint">swipe left to snooze · right to stop</span>
+            </div>
+        </div>
         <div class="lockscreen-transports" id="lockscreen-transports"
              role="status" aria-label="Console transports and file transfer"
              data-serial-source="" data-usb-source="" data-wlan-source="" data-transfer-source="">
@@ -348,12 +365,13 @@
         document.addEventListener('dblclick', function (event) { event.preventDefault(); }, {passive:false});
     })();
     </script>
-    <script src="../nuxel-common/theme.js?v=a81"></script>
+    <script src="../nuxel-common/theme.js?v=p85000"></script>
     <script src="../nuxel-common/haptics.js?v=a81"></script>
     <script src="../nuxel-common/geolocation.js?v=p80000"></script>
     <script src="js/apps.js?v=p80000"></script>
     <script src="js/layout-model.js"></script>
-    <script src="js/launcher.js?v=p80000"></script>
+    <script src="js/desktop-layout.js?v=p84000"></script>
+    <script src="js/launcher.js?v=p85000"></script>
     <script src="../nuxel-common/statusbar-icons.js?v=p80000"></script>
     <script src="js/status-bar.js?v=p80000"></script>
     <script src="js/search.js"></script>
@@ -372,16 +390,17 @@
     <script src="js/bootlog.js?v=p80000"></script>
     <script src="js/touch-keyboard.js?v=p80000"></script>
     <script src="js/security-lock.js?v=p80000"></script>
-    <script src="js/lockscreen-indicators.js?v=p80000"></script>
+    <script src="js/lockscreen-indicators.js?v=p85000"></script>
+    <script src="js/lockscreen-clock.js?v=p87000"></script>
     <script src="js/lockscreen.js?v=p80000"></script>
     <script src="js/navigation.js?v=p80000"></script>
     <script src="js/gestures.js?v=p80000"></script>
-    <script src="js/widgets.js?v=a81"></script>
-    <script src="js/home-settings.js?v=p80000"></script>
-    <script src="js/system-monitor.js?v=p80000"></script>
+    <script src="js/widgets.js?v=p82000"></script>
+    <script src="js/home-settings.js?v=p82000"></script>
+    <script src="js/system-monitor.js?v=p82000"></script>
     <script src="js/scroll-indicators.js"></script>
     <script src="js/immersive.js?v=p80000"></script>
     <!-- A44: one-shot in-engine icon/WebKit/cache health report to nuxelDiag. -->
-    <script src="js/app.js?v=p80000b"></script>
+    <script src="js/app.js?v=p85000"></script>
 </body>
 </html>

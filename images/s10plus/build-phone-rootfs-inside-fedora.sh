@@ -263,11 +263,19 @@ if pkg-config --exists gtk+-3.0 webkit2gtk-4.1; then
       $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) || true
 fi
 
-# A34 button manager: SYN_REPORT touch translation, power menu, Bixby cancel.
+# A45 button manager: SYN_REPORT touch translation, power menu, Bixby cancel,
+# PipeWire absolute volume steps and the central-sound cue fast path.  The
+# shared FSM header remains in a34; compiling the old a34 source here silently
+# dropped all owner-facing volume fixes from fresh images.
 gcc $CFLAGS_COMMON $(pkg-config --cflags alsa) -I /nuxel/tools/s10plus/a34 \
     -o "$B/nuxel-button-manager" \
-    /nuxel/tools/s10plus/a34/nuxel-button-manager.c \
+    /nuxel/tools/s10plus/a45/nuxel-button-manager.c \
     $(pkg-config --libs alsa)
+
+# Minimal-latency soundd client (C, not the slower Python fallback).  The
+# volume key path and clock scheduler both depend on this exact binary.
+gcc -O2 -Wall -Wextra -Werror -std=gnu11 \
+    -o "$B/nuxel-soundctl" /nuxel/services/nuxel-sound/nuxel-soundctl.c
 
 # Current capability-based libinput path shim for the 4.14/udevd-less kernel.
 gcc $CFLAGS_COMMON -shared -fPIC -o "$B/libnuxel-libinput-path.so" \
@@ -280,14 +288,15 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -o "$B/nuxel-metricsd" \
     /nuxel/services/nuxel-metrics/nuxel-metricsd.c
 
 for _b in nuxel-wl-fb nuxel-wl-snapshot nuxel-screenshot nuxel-pwa-host \
-          nuxel-button-manager libnuxel-libinput-path.so nuxel-metricsd \
-          nuxel-navdock nuxel-statusbar nuxel-osd nuxel-foreign-toplevel; do
+          nuxel-button-manager nuxel-soundctl libnuxel-libinput-path.so \
+          nuxel-metricsd nuxel-navdock nuxel-statusbar nuxel-osd \
+          nuxel-foreign-toplevel; do
   file "$B/$_b" | grep -q 'ARM aarch64' || { echo "ERROR: $_b is not aarch64" >&2; exit 1; }
 done
 sha256sum "$B"/nuxel-wl-fb "$B"/nuxel-wl-snapshot "$B"/nuxel-screenshot "$B"/nuxel-pwa-host \
-          "$B"/nuxel-button-manager "$B"/libnuxel-libinput-path.so \
-          "$B"/nuxel-metricsd "$B"/nuxel-navdock "$B"/nuxel-statusbar \
-          "$B"/nuxel-osd "$B"/nuxel-foreign-toplevel \
+          "$B"/nuxel-button-manager "$B"/nuxel-soundctl \
+          "$B"/libnuxel-libinput-path.so "$B"/nuxel-metricsd "$B"/nuxel-navdock \
+          "$B"/nuxel-statusbar "$B"/nuxel-osd "$B"/nuxel-foreign-toplevel \
   | tee /tmp/nuxel-current-userspace.sha256
 
 # Keep Nuxel's native phone-specific bits; do not import the G7 Power staging.
@@ -346,8 +355,23 @@ for _cue in nuxel-boot-audio.mp3 nuxel-pow.mp3; do
 done
 install -Dm0755 /nuxel/tools/s10plus/a33/nuxel-sound-cue.py \
     "$STAGE/usr/libexec/nuxel/nuxel-sound-cue"
+install -Dm0755 /nuxel/services/nuxel-sound/nuxel-soundd.py \
+    "$STAGE/usr/libexec/nuxel/nuxel-soundd"
+install -Dm0755 "$B/nuxel-soundctl" "$STAGE/usr/libexec/nuxel/nuxel-soundctl"
+install -Dm0755 /nuxel/services/nuxel-sound/install-sound-library.sh \
+    "$STAGE/usr/libexec/nuxel/install-sound-library"
+install -Dm0755 /nuxel/services/nuxel-clock/nuxel-clockd.py \
+    "$STAGE/usr/libexec/nuxel/nuxel-clockd"
+install -Dm0644 /nuxel/services/nuxel-sound/nuxel-soundd.service \
+    "$STAGE/etc/systemd/system/nuxel-soundd.service"
+install -Dm0644 /nuxel/services/nuxel-clock/nuxel-clockd.service \
+    "$STAGE/etc/systemd/system/nuxel-clockd.service"
 install -Dm0644 /nuxel/services/nuxel-session/systemd/nuxel-boot-sound.service \
     "$STAGE/etc/systemd/system/nuxel-boot-sound.service"
+ln -sf ../nuxel-soundd.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-soundd.service"
+ln -sf ../nuxel-clockd.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-clockd.service"
 # A40/A44 metrics daemon + socket activation. This is the same collector the
 # live userspace reports through /metrics; without it a fresh image would lose
 # the CPU/MEM/GPU/VRAM meters.
@@ -715,6 +739,12 @@ install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-abox-firmware-reload-boot.sh
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-route.sh "$STAGE/usr/lib/nuxel/nuxel-audio-route.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-mic-route.sh "$STAGE/usr/lib/nuxel/nuxel-mic-route.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-wifi-up.sh "$STAGE/usr/lib/nuxel/nuxel-wifi-up.sh"
+# Durable interface ON/OFF intent shared by Settings, Quick Settings and the
+# boot restore.  Bluetooth/NFC/GNSS default OFF; Wi-Fi keeps NetworkManager as
+# its owner and is not re-enabled when the owner persisted it OFF.
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-interface-state "$STAGE/usr/lib/nuxel/nuxel-interface-state"
+install -Dm0644 /nuxel/docs/interface-state.md "$STAGE/usr/share/doc/nuxel/interface-state.md"
+ln -sfn /usr/lib/nuxel/nuxel-interface-state "$STAGE/usr/local/bin/nuxel-interface-state"
 # PWNAGE-52000: the existing boot-mode guard classifies charger/LPM and
 # publishes /run/nuxel-bootmode.{state,json}.  It never reboots by itself
 # (allow_reboot=false); the one-shot fallback below consumes its state.
@@ -744,6 +774,8 @@ install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route-retry.servic
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route.timer "$STAGE/etc/systemd/system/nuxel-audio-route.timer"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mic-route.service "$STAGE/etc/systemd/system/nuxel-mic-route.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wifi.service "$STAGE/etc/systemd/system/nuxel-wifi.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-bluetooth.service "$STAGE/etc/systemd/system/nuxel-bluetooth.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-interface-state.service "$STAGE/etc/systemd/system/nuxel-interface-state.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-charger-mode-recovery.service "$STAGE/etc/systemd/system/nuxel-charger-mode-recovery.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-device-permissions.service "$STAGE/etc/systemd/system/nuxel-device-permissions.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mtp.service "$STAGE/etc/systemd/system/nuxel-mtp.service"
@@ -779,6 +811,16 @@ ln -sf ../nuxel-mic-route.service "$STAGE/etc/systemd/system/multi-user.target.w
 install -d "$STAGE/etc/systemd/system/timers.target.wants"
 ln -sf ../nuxel-audio-route.timer "$STAGE/etc/systemd/system/timers.target.wants/nuxel-audio-route.timer"
 ln -sf ../nuxel-wifi.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wifi.service"
+ln -sf ../nuxel-interface-state.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-interface-state.service"
+# Bluetooth is OFF on a fresh boot.  Remove the package/older-image autostart
+# links so the radio is not powered before nuxel-interface-state restores the
+# owner's persisted choice.  The D-Bus alias remains, so an explicit ON can
+# still start BlueZ.
+rm -f "$STAGE/etc/systemd/system/bluetooth.target.wants/bluetooth.service" \
+      "$STAGE/etc/systemd/system/bluetooth.target.wants/nuxel-bluetooth.service" \
+      "$STAGE/etc/systemd/system/multi-user.target.wants/bluetooth.service" \
+      "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-bluetooth.service" \
+      "$STAGE/etc/systemd/system/dbus-org.bluez.service"
 ln -sf ../nuxel-charger-mode-recovery.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-charger-mode-recovery.service"
 ln -sf ../nuxel-device-permissions.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-device-permissions.service"
 ln -sf ../nuxel-usb-mode-monitor.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-usb-mode-monitor.service"

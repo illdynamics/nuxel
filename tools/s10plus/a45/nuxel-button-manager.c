@@ -447,7 +447,22 @@ static void osd_volume(void) {
  * The helper reads the real current mixer state; it never bypasses the 25%
  * bring-up cap. The wrapper is optional on older deployed phone revisions. */
 static void cue_volume_preview(int pct) {
-  if (pct <= 0 || access("/usr/libexec/nuxel/nuxel-sound-cue", X_OK) != 0) return;
+  if (pct <= 0) return;
+  /* The shared sound-mode contract still wins: normal only. */
+  char mode[32] = "";
+  int mf = open(SOUND_MODE_FILE, O_RDONLY | O_CLOEXEC);
+  if (mf >= 0) {
+    ssize_t mn = read(mf, mode, sizeof mode - 1);
+    close(mf);
+    if (mn > 0) {
+      mode[mn] = 0;
+      char *nl = strchr(mode, '\n');
+      if (nl) *nl = 0;
+      if (!strcmp(mode, "silent") || !strcmp(mode, "vibrate")) return;
+    }
+  }
+  if (access("/usr/libexec/nuxel/nuxel-soundctl", X_OK) != 0 &&
+      access("/usr/libexec/nuxel/nuxel-sound-cue", X_OK) != 0) return;
   /* One preview per gesture: holding the key used to spawn a fresh pow for
    * every autorepeat event, which the owner rightly called "pow nonstop". */
   static int64_t last_cue_ms = 0;
@@ -463,6 +478,13 @@ static void cue_volume_preview(int pct) {
     if (player < 0) _exit(1);
     if (player == 0) {
       setsid();
+      /* Fast path: the C soundctl only formats one JSON line and writes it
+       * to the already-running soundd stream (measured 12-17 ms).  The old
+       * Python cue path cost ~130-180 ms and is retained only as a fallback. */
+      if (access("/usr/libexec/nuxel/nuxel-soundctl", X_OK) == 0) {
+        execl("/usr/libexec/nuxel/nuxel-soundctl", "nuxel-soundctl",
+              "play", "volume", (char *)NULL);
+      }
       execl("/usr/libexec/nuxel/nuxel-sound-cue", "nuxel-sound-cue",
             "volume", "--level", b, (char *)NULL);
       _exit(127);
@@ -539,6 +561,11 @@ static int pwctl_volume_step(int dir) {
 }
 
 static void volume_step(int dir) {
+  /* Latency rule (PWNAGE-81000): emit the assigned volume cue immediately on
+   * the key event, in parallel with the mixer update.  wpctl get/set/get can
+   * take 100-150 ms on this phone; waiting for it put the cue well outside the
+   * 100 ms target even though the cue itself is a 12-17 ms socket write. */
+  cue_volume_preview(100);
   if (pwctl_volume_step(dir)) return;
   if (mixer_open_dev() < 0 || !selem) { osd_volume(); return; }
   long step = nuxel_fsm_volume_step(vol_min, vol_max);   /* same formula as A32 */
@@ -550,9 +577,6 @@ static void volume_step(int dir) {
   vol_cur = v;
   audit("VOLUME_STEP dir=%d value=%ld step=%ld ceiling=%ld capped=%d", dir, v, step, ceiling, mixer_capped);
   osd_volume();
-  /* Preview at the successfully selected ALSA mixer level (not previous). */
-  int pct = (vol_max > vol_min) ? (int)(((vol_cur - vol_min) * 100) / (vol_max - vol_min)) : 0;
-  cue_volume_preview(pct);
 }
 
 static void volume_mute_toggle(void) {

@@ -42,6 +42,7 @@
  * that reveals the three buttons on an upward swipe.  Home keeps the full
  * dock.  The lockscreen never maps either state. */
 #define NAV_STRIP_HEIGHT 14
+#define NAV_STRIP_INPUT_HEIGHT 40  /* visual handle stays thin; the edge band is wider for messenger-app gestures */
 #define NAV_REVEAL_DISTANCE 18
 #define NAV_AUTOHIDE_MS 4500
 #define HOST_FIFO  "/run/nuxel-pwa-host.cmd"
@@ -143,6 +144,22 @@ static int home_ready(void) {
   return access(LAUNCHER_READY, F_OK) == 0;
 }
 
+/* PWNAGE-81000: a downward swipe on the visible navigation dock dismisses the
+ * compositor OSK.  This keeps the triple buttons reachable while the keyboard
+ * is open (the layer-shell exclusive zone already reserves their band) and
+ * gives the owner the documented swipe-down gesture without a second gesture
+ * implementation inside each app. */
+static int keyboard_visible(void) {
+  char b[16];
+  int fd = open("/run/nuxel-keyboard.visible", O_RDONLY | O_CLOEXEC);
+  if (fd < 0) return 0;
+  ssize_t n = read(fd, b, sizeof b - 1);
+  close(fd);
+  if (n <= 0) return 0;
+  b[n] = 0;
+  return b[0] == '1';
+}
+
 static void dock_resolve_startup(void) {
   int st = lock_state_read();
   if (st == 2 && home_ready()) {
@@ -212,6 +229,11 @@ static void render_frame(void) {
       for (int x = hx; x < hx + handle_w && x < bw; x++) row[x] = colour;
     }
   } else {
+    /* Opaque Nuxel mat behind the three buttons (matches nuxel-statusbar's
+     * dark colour family, fully opaque so no app content bleeds through). */
+    unsigned int mat = 0xFF0B121Fu;  /* premultiplied opaque #0B121F */
+    for (size_t i = 0; i < (size_t)bw * (size_t)bh; i++) px[i] = mat;
+
     int cell = bw / 3;
     int art_px = NAV_ART_SIZE * scale;   /* art square size in buffer px */
 
@@ -241,7 +263,7 @@ static void render_frame(void) {
 /* ---- native dock lifecycle ------------------------------------------------ */
 static void dock_create(void) {
   if (surface || !compositor || !shm || !layer_shell || !output) return;
-  int logical_h = strip_mode ? NAV_STRIP_HEIGHT : NAV_HEIGHT;
+  int logical_h = strip_mode ? NAV_STRIP_INPUT_HEIGHT : NAV_HEIGHT;
   surface = wl_compositor_create_surface(compositor);
   if (!surface) { audit("DOCK_SURFACE_FAIL"); return; }
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(
@@ -321,7 +343,7 @@ static void dock_gesture_reveal(void) {
   if (dock_visible && !strip_mode) return;
   dock_visible = 1;
   strip_mode = 0;
-  reveal_deadline = now_ms() + NAV_AUTOHIDE_MS;
+  reveal_deadline = 0; /* toggle: stays revealed until swiped up again */
   if (surface) dock_destroy();
   dock_create();
   audit("NAV_DOCK_GESTURE_REVEAL");
@@ -489,6 +511,12 @@ static void touch_up_cb(void *d, struct wl_touch *t, uint32_t serial,
   if (long_fired) { long_fired = 0; return; }   /* never double-fire */
   if (strip_mode) return;   /* the strip only recognises an upward swipe */
   int dx = last_x - down_x, dy = last_y - down_y;
+  /* Swipe down on the revealed dock: dismiss the keyboard before any app
+     navigation/closing.  The host owns the actual OSK focus bounce. */
+  if (keyboard_visible() && dy >= NAV_REVEAL_DISTANCE) {
+    forward("hide-keyboard");
+    return;
+  }
   /* A tap is a mostly-stationary contact: treat drags as non-actions. */
   if (dx < TAP_SLOP_PX && dx > -TAP_SLOP_PX &&
       dy < TAP_SLOP_PX && dy > -TAP_SLOP_PX)
@@ -502,6 +530,10 @@ static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t 
   if (strip_mode && touch_down && (down_y - last_y) >= NAV_REVEAL_DISTANCE) {
     touch_down = 0;
     dock_gesture_reveal();
+  } else if (!strip_mode && !dock_desired && touch_down &&
+             (last_y - down_y) >= NAV_REVEAL_DISTANCE) {
+    touch_down = 0;
+    dock_hide();
   }
 }
 static void touch_frame_cb(void *d, struct wl_touch *t) { (void)d; (void)t; }

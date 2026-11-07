@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p80000">
-  <link rel="stylesheet" href="css/doom.css?v=p80000">
+  <link rel="stylesheet" href="css/doom.css?v=p84000">
     <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
@@ -24,31 +24,40 @@
     <div class="hud-cell wide"><span>WAD</span><strong id="hud-wad">FREEDOOM</strong></div>
   </section>
 
-  <!-- Touch controls. Every button is translated into a real engine key. -->
+  <!-- Twin analog thumb-stick HUD.  Each stick owns an independent pointer
+       id; both FIRE buttons feed one reference-counted engine action.  The
+       Use/Map cluster lives top-left and the −/+/Menu cluster top-right,
+       clear of the centered in-game HUD. -->
   <section id="controls" class="controls" hidden aria-label="Touch controls">
-    <div id="joy-zone" class="joy-zone" aria-label="Movement joystick">
-      <div id="joy-base" class="joy-base"><div id="joy-knob" class="joy-knob"></div></div>
+    <div class="top-actions" aria-label="Top action clusters">
+      <div class="top-cluster top-left" aria-label="Use and map">
+        <button id="use-button" class="action-button" type="button" aria-label="Use">USE</button>
+        <button id="look-map" class="action-button" type="button" aria-label="Toggle the Doom automap">MAP</button>
+      </div>
+      <div class="top-cluster top-right" aria-label="Weapons and menu">
+        <button id="weapon-prev" class="action-button" type="button" aria-label="Previous weapon">−</button>
+        <button id="weapon-next" class="action-button" type="button" aria-label="Next weapon">＋</button>
+        <button id="hud-menu" class="action-button" type="button" aria-label="Engine pause menu">MENU</button>
+      </div>
     </div>
-    <div id="look-zone" class="look-zone" aria-label="Drag to aim"></div>
-    <!-- Right-hand look pad: hold left/right to turn, tap MAP for the automap
-         and MENU for the in-game menu. Chocolate Doom has no vertical aim, so
-         this pad deliberately does not invent a look-up/down axis. -->
-    <div id="look-pad" class="look-pad" aria-label="Look D-pad">
-      <span class="look-title" aria-hidden="true">LOOK</span>
-      <button id="look-left" class="look-key left" type="button" aria-label="Turn left">◀</button>
-      <button id="look-map" class="look-key map" type="button" aria-label="Toggle automap">MAP</button>
-      <button id="look-menu" class="look-key menu" type="button" aria-label="Open game menu">☰</button>
-      <button id="look-right" class="look-key right" type="button" aria-label="Turn right">▶</button>
+    <div class="twin-controls">
+      <div class="twin-side" aria-label="Movement controls">
+        <div id="move-stick" class="thumbstick" role="group" aria-label="Movement joystick">
+          <div class="thumbstick-base" aria-hidden="true"><span class="thumbstick-ring"></span></div>
+          <div id="move-knob" class="thumbstick-knob" aria-hidden="true"></div>
+          <span class="thumbstick-label">MOVE</span>
+        </div>
+        <button id="fire-left" class="fire-button" type="button" aria-label="Fire with left thumb">FIRE</button>
+      </div>
+      <div class="twin-side" aria-label="Aim controls">
+        <div id="aim-stick" class="thumbstick" role="group" aria-label="Aim joystick">
+          <div class="thumbstick-base" aria-hidden="true"><span class="thumbstick-ring"></span></div>
+          <div id="aim-knob" class="thumbstick-knob" aria-hidden="true"></div>
+          <span class="thumbstick-label">AIM</span>
+        </div>
+        <button id="fire-right" class="fire-button" type="button" aria-label="Fire with right thumb">FIRE</button>
+      </div>
     </div>
-    <div class="action-cluster" aria-label="Action buttons">
-      <button id="btn-fire" class="action fire" type="button" aria-label="Fire">FIRE</button>
-      <button id="btn-use" class="action use" type="button" aria-label="Use or open door">USE</button>
-      <button id="btn-next" class="action small" type="button" aria-label="Next weapon">WPN +</button>
-      <button id="btn-prev" class="action small" type="button" aria-label="Previous weapon">WPN −</button>
-      <button id="btn-run" class="action small" type="button" aria-label="Toggle run">RUN</button>
-      <button id="btn-pause" class="action small" type="button" aria-label="Pause" data-action="back">MENU</button>
-    </div>
-    <div class="aim-hint" aria-hidden="true">DRAG TO AIM</div>
   </section>
 
   <!-- Launch / engine and WAD selection -->
@@ -75,7 +84,7 @@
 
       <p class="section-label">2 · START</p>
       <div class="campaigns" aria-label="Start options">
-        <button class="campaign primary" type="button" data-start="episode">
+        <button id="start-episode" class="campaign primary" type="button" data-start="episode">
           <span class="campaign-art" aria-hidden="true">▶</span>
           <span><strong>PLAY DOOM</strong><small id="start-subtitle">WARP TO FIRST MAP</small></span>
         </button>
@@ -118,13 +127,17 @@
       <div class="setting-grid">
         <button id="set-sound" class="toggle" type="button" aria-pressed="true"><span>SOUND</span><strong>ON</strong></button>
         <button id="set-haptics" class="toggle" type="button" aria-pressed="true"><span>HAPTICS</span><strong>ON</strong></button>
-        <button id="set-strafe" class="toggle" type="button" aria-pressed="true"><span>STRAFE JOYSTICK</span><strong>ON</strong></button>
-        <button id="set-hand" class="toggle" type="button" aria-pressed="false"><span>LEFT HANDED</span><strong>OFF</strong></button>
+        <button id="set-hand" class="toggle" type="button" aria-pressed="false"><span>MIRROR PADS</span><strong>OFF</strong></button>
       </div>
-      <div class="sensitivity">
-        <span>TURN SENSITIVITY</span>
-        <div><button id="set-sens-down" type="button" aria-label="Lower turn sensitivity">−</button><output id="sens-value">1.0</output><button id="set-sens-up" type="button" aria-label="Raise turn sensitivity">+</button></div>
+      <div class="sensitivity" aria-label="Aim sensitivity">
+        <span>AIM SENSITIVITY</span>
+        <div>
+          <button id="sens-down" type="button" aria-label="Decrease aim sensitivity">−</button>
+          <output id="sens-value">3×</output>
+          <button id="sens-up" type="button" aria-label="Increase aim sensitivity">＋</button>
+        </div>
       </div>
+      <p class="fineprint">Both circular sticks use the same dead zone, response curve and size. MOVE walks/strafes; AIM turns left/right with analog ramp (vertical is neutral because classic Doom has no true pitch axis here). Either FIRE button holds the same fire action.</p>
       <p id="audio-note" class="fineprint">Audio starts after the first tap. If the phone audio route is not ready, the engine continues silently; nothing is faked.</p>
       <button id="btn-settings-done" class="primary wide" type="button">DONE</button>
     </div>
@@ -167,6 +180,7 @@
   </section>
 </main>
 
-<script src="js/doom.js?v=p80000"></script>
+<script type="module" src="../../nuxel-common/bridge.js?v=p82006"></script>
+<script src="js/doom.js?v=p84000"></script>
 </body>
 </html>

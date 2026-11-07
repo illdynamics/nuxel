@@ -61,14 +61,7 @@ body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-t
 .editor-input:disabled { opacity: .5; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: var(--nx-surface-2); color: var(--nx-text); border: 1px solid var(--nx-border); border-radius: 999px; padding: 8px 14px; font-size: 13px; z-index: 30; }
 
-/* PWNAGE-80000 time keypad: digits plus the required HH:MM separator. */
-.time-keypad { position: sticky; bottom: 0; z-index: 40; margin: 10px 0 4px; padding: 10px; border: 1px solid rgba(96,165,250,.45); border-radius: 16px; background: rgba(8,20,38,.98); box-shadow: 0 2px 8px rgba(0,0,0,.5); }
-.time-keypad[hidden] { display: none !important; }
-.time-keypad-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #9fd0ff; font-size: 12px; }
-.time-keypad-head span { flex: 1; }
-.time-keypad-head button, .time-keypad button { min-height: 44px; border: 1px solid rgba(147,197,253,.35); border-radius: 10px; background: #122952; color: #eaf4ff; font: 600 16px/1 system-ui, sans-serif; }
-.time-keypad-head button { padding: 0 12px; font-size: 12px; }
-.time-keypad-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.time-keypad-grid .sep { color: #93c5fd; }
-.time-keypad-done { width: 100%; margin-top: 8px; min-height: 46px; background: #2563eb !important; }
-.time-keypad button:active { transform: scale(.97); }
+/* PWNAGE-84000 event → alarm / reminder shortcuts. */
+.event-quick { display:flex; gap:6px; margin-top:7px; flex-wrap:wrap; }
+.event-quick button { min-height:34px; padding:5px 10px; border-radius:9px; border:1px solid var(--nx-border); background:var(--nx-surface-2); color:var(--nx-text); font-size:11px; }
+.event-quick button:active { transform:scale(.97); }

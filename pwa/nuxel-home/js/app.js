@@ -61,6 +61,8 @@ class NuxelHome {
         this._lastActionAt = 0;
         this._suppressBackUntil = 0;
         this._backBusy = false;
+        this._pwaBackStrikes = 0;
+        this._fgInvisibleCount = 0;
         this._keyboardLikelyOpen = false;
         this._nativeKeyboardVisible = false;
         // v0.7.7-beta: every cold boot starts in portrait while the lockscreen
@@ -81,6 +83,67 @@ class NuxelHome {
             detail: { state, appId: app && app.id ? app.id : null },
         }));
         this._inputTrace(`app:lifecycle id=${app && app.id || 'home'} state=${state}`);
+    }
+
+    /* Foreground visibility truth, independent of the ACTIVE string.  A PWA
+       that is ACTIVE but whose iframe is hidden/backgrounded/zero-sized must
+       never block the Applications drawer or hold the glass invisibly. */
+    _foregroundSurfaceVisible() {
+        const { app, frame, state } = this.appSession;
+        if (state !== 'ACTIVE' || !app) return false;
+        if (frame) {
+            try {
+                if (frame.__nuxelBackgrounded) return false;
+                if (frame.getAttribute && frame.getAttribute('data-nuxel-backgrounded') === 'true') return false;
+                if (frame.hidden) return false;
+                const rect = frame.getBoundingClientRect();
+                const vw = window.innerWidth || 360;
+                const vh = window.innerHeight || 760;
+                if (!rect || rect.width < 1 || rect.height < 1) return false;
+                if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= vw || rect.top >= vh) return false;
+                const cs = window.getComputedStyle(frame);
+                if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) return false;
+                const doc = frame.contentDocument;
+                if (doc && doc.hidden) return false;
+                return true;
+            } catch (e) {
+                // Cross-origin frames cannot be inspected; treat as visible so a
+                // healthy foreign app is never destroyed by mistake.
+                return true;
+            }
+        }
+        // Native/flatpak apps own a separate Wayland surface that cannot be
+        // inspected synchronously; the native Back reconciliation path is the
+        // authority for those.
+        return true;
+    }
+
+    isForegroundVisible() {
+        return this._foregroundSurfaceVisible();
+    }
+
+    /* Bounded watchdog: an invisible foreground PWA is backgrounded within 1-2 s
+       so holding Back to force-kill is never the only recovery. */
+    _watchForegroundVisibility() {
+        if (this._fgWatchdog) return;
+        this._fgWatchdog = setInterval(() => {
+            if (this.appSession.state !== 'ACTIVE' || !this.appSession.app || !this.appSession.frame) {
+                this._fgInvisibleCount = 0;
+                return;
+            }
+            if (this._foregroundSurfaceVisible()) {
+                this._fgInvisibleCount = 0;
+                return;
+            }
+            this._fgInvisibleCount++;
+            this._inputTrace('foreground-visibility invisible count=' + this._fgInvisibleCount);
+            if (this._fgInvisibleCount >= 2) {
+                this._fgInvisibleCount = 0;
+                this._backgroundForegroundApp();
+                this.home();
+                this._inputTrace('foreground-visibility watchdog recovered invisible app');
+            }
+        }, 1000);
     }
 
     _inputTrace(message) {
@@ -204,16 +267,33 @@ class NuxelHome {
         this._inputTrace(`app:closed id=${appId || 'none'} reason=${reason || 'close'}`);
     }
 
+    _notifyAppFrame(type, reason) {
+        const frame = this.appSession.frame;
+        if (!frame || !frame.contentWindow) return;
+        try {
+            frame.contentWindow.postMessage({ type, reason: reason || type }, window.location.origin);
+        } catch (e) { /* a cross-origin or torn-down frame is ignored */ }
+    }
+
     _backgroundForegroundApp() {
         const { app, frame } = this.appSession;
         if (!app || this.appSession.state === 'CLOSED') return false;
+        // Tell a same-origin app to suspend its runtime before the surface is
+        // removed from hit-testing.  Doom uses this to pause the WASM loop;
+        // document.visibilitychange alone was not delivered while the parent
+        // lockscreen covered a still-ACTIVE iframe (measured 136% CPU).
+        this._notifyAppFrame('nuxel:suspend', 'background');
         // A native application owns a separate top-level Wayland surface, not a
-        // DOM iframe.  Returning early here (the pre-A45 behaviour) left the
-        // Terminal window in front of Home: the penguin/Home tap ran, the
-        // launcher repainted underneath it, and the glass did not change.
-        // Close that surface through the host's narrow, typed action instead.
+        // DOM iframe.  Home/lock must only MINIMIZE it: calling
+        // _closeAppSurface() retired the launcher session (and a Terminal PTY)
+        // even though the owner merely pressed Power or Home.  Keep the process
+        // and its session alive so it is still running after unlock and the
+        // same window can be resumed instead of spawning a second copy.
         if (!frame) {
-            this._closeAppSurface();
+            this._setAppState('BACKGROUND', app, null);
+            if (this.sessions && app) this.sessions.home();
+            this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' }, 4000);
+            this._inputTrace(`app:backgrounded id=${app.id} native=1 preserved=1`);
             return true;
         }
         const surface = this.appSurfaces.get(app.id);
@@ -265,6 +345,8 @@ class NuxelHome {
             this._observeAppFrame(surface.frame, app);
         }
         this._setAppState('ACTIVE', app, surface.frame);
+        // The surface is visible again; let the app resume a paused runtime.
+        this._notifyAppFrame('nuxel:resume', 'resume');
         // A game or any app may gain focus without owning an editable field.
         // Never let a stale IME surface ride along with the app launch.
         this._dismissKeyboard();
@@ -313,6 +395,7 @@ class NuxelHome {
         try {
             if (window.appRegistry && window.appRegistry.refreshFromBridge) {
                 window.appRegistry.refreshFromBridge();
+                if (window.appRegistry.startBridgeWatch) window.appRegistry.startBridgeWatch(5000);
             }
         } catch (e) { /* first paint must not depend on the bridge */ }
 
@@ -884,6 +967,43 @@ class NuxelHome {
             return;
         }
 
+        // Lock/Home/minimize never terminate a native process.  Before
+        // spawning anything, ask the compositor for its real toplevel inventory
+        // and activate that exact window if it is still alive.  This is what
+        // makes "lock, unlock, tap the icon again" resume the running app
+        // instead of creating a second instance (and a second window).
+        this._findLiveNativeWindow(app).then((win) => {
+            if (!win) return this._execNativeLaunch(app, target);
+            const surfaceTarget = win.app_id || target;
+            return this._httpBridge('POST', '/api/v1/windows/activate', {
+                app_id: surfaceTarget,
+            }, 6000).then((res) => {
+                if (!res || res.success === false) return this._execNativeLaunch(app, target);
+                if (this.appSession.app && this.appSession.app.id !== app.id) return;
+                console.log('[Nuxel] native resumed:', surfaceTarget);
+                this._setAppState('ACTIVE', app, null);
+                if (this.sessions) this.sessions.register(app, null);
+                this._inputTrace('native:resumed id=' + app.id + ' surface=' + surfaceTarget);
+            });
+        }).catch(() => this._execNativeLaunch(app, target));
+    }
+
+    _findLiveNativeWindow(app) {
+        const target = app.nativeAppId || app.flatpak_id || app.id;
+        const ids = [target, app.id, app.nativeAppId, app.flatpak_id].filter(Boolean);
+        const wantedTitle = String(app.name || '').trim().toLowerCase();
+        return this._httpBridge('GET', '/api/v1/windows/list', null, 4000).then((list) => {
+            const windows = (list && Array.isArray(list.windows)) ? list.windows : [];
+            return windows.find((win) => {
+                if (!win || win.home) return false;
+                if (ids.indexOf(win.app_id) >= 0) return true;
+                const title = String(win.title || '').toLowerCase();
+                return !!(wantedTitle && title.indexOf(wantedTitle) >= 0);
+            }) || null;
+        });
+    }
+
+    _execNativeLaunch(app, target) {
         // The authoritative launch authority is the HTTP bridge's CLOSED-verb
         // /apps/exec endpoint: it resolves the target from its fixed allowlist /
         // canonical registry and never executes a client-supplied path.
@@ -897,6 +1017,7 @@ class NuxelHome {
                 err.detail = (res && res.detail) || null;
                 throw err;
             }
+            if (this.appSession.app && this.appSession.app.id !== app.id) return;
             console.log('[Nuxel] native launched:', target, res.pid || '');
             // Native apps own a separate top-level Wayland surface, so the
             // launcher records the session without an iframe.
@@ -904,6 +1025,7 @@ class NuxelHome {
             if (this.sessions) this.sessions.register(app, null);
         }).catch((error) => {
             console.error('[Nuxel] native launch failed:', error);
+            if (this.appSession.app && this.appSession.app.id !== app.id) return;
             this._setAppState('FAILED', app, null);
             const detail = error && (error.detail || error.message);
             const toast = document.createElement('div');
@@ -1115,8 +1237,20 @@ class NuxelHome {
             const target = this._pwaBack(frame);
             if (target === 'handled') {
                 this._inputTrace('back:pwa-app-control');
+                if (this._foregroundSurfaceVisible()) {
+                    this._pwaBackStrikes = 0;
+                } else {
+                    this._pwaBackStrikes++;
+                    if (this._pwaBackStrikes >= 2) {
+                        this._pwaBackStrikes = 0;
+                        this._backgroundForegroundApp();
+                        this.home();
+                        this._inputTrace('back:pwa-invisible-bounded-recovery');
+                    }
+                }
                 return;
             }
+            this._pwaBackStrikes = 0;
             this._inputTrace('back:pwa-at-root-graceful-close');
             this.gracefulCloseForeground('back-root');
             return;
@@ -1222,6 +1356,11 @@ class NuxelHome {
         } catch (e) {}
         this._blurActiveField();
         if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+        // Locking must suspend a foreground game/app.  The lockscreen is only
+        // a visual overlay; leaving the app ACTIVE kept Doom's main loop and
+        // WebKit's compositor running behind it.  Backgrounding preserves the
+        // iframe/session so unlocking can resume the exact game state.
+        try { this._backgroundForegroundApp(); } catch (e) {}
         this._setNavDock(false);
         if (this.lockscreen) this.lockscreen.show(reason);
         // Persist the authoritative locked state in the root bridge; the JS
@@ -1395,6 +1534,7 @@ class NuxelHome {
             this._applyBootOrientation();
         }
         this._watchDisplayForLock();
+        this._watchForegroundVisibility();
     }
 
     /* Boot orientation contract (v0.7.7-beta).
@@ -1463,11 +1603,13 @@ class NuxelHome {
         const read = () => {
             const host = window.NuxelHost;
             if (!host || !host.available || typeof host.statusRead !== 'function') return;
+            /* PWNAGE-85000: the wl-fb state document is authoritative again
+               after the launcher resize re-entry fix.  Do not block this 5 s
+               watcher on a bridge RPC that may not have a token yet; a stalled
+               RPC would leave body.display-off unset and keep the 1 Hz
+               lockscreen indicator poll running while the panel is blanked. */
             Promise.resolve(host.statusRead('wlfb-state')).then((r) => {
                 const t = (r && (r.text || r.value)) || '';
-                /* The running bridge publishes `display=off` in its frame
-                   status line; older display-state documents used DISPLAY_OFF.
-                   Accept both so an idle/power screen-off always re-locks. */
                 const off = /(^|[\s;])display=off([\s;]|$)/i.test(t) || /^DISPLAY_OFF\b/m.test(t);
                 document.body.classList.toggle('display-off', off);
                 document.body.dataset.displayOff = off ? '1' : '0';
@@ -1478,16 +1620,24 @@ class NuxelHome {
                 } else if (this._lastDisplayOff === true && window.NuxelSystemMonitor && window.NuxelSystemMonitor.configure) {
                     window.NuxelSystemMonitor.configure();
                 }
-                /* A wake is an event, not a reason to wait for the next poll.
-                   Dispatch it ONLY on an actual OFF -> ON transition: the old
-                   unconditional dispatch every 2 s re-ran battery, touch and
-                   status reads forever while the display was already on. */
                 const woke = (this._lastDisplayOff === true && !off);
                 if (woke) {
                     try {
                         document.dispatchEvent(new CustomEvent('nuxel:display-on'));
                         if (this.lockscreen && typeof this.lockscreen.refreshIndicators === 'function') {
                             this.lockscreen.refreshIndicators();
+                        }
+                        // PWNAGE-88000 zero-flash: re-assert the locked
+                        // presentation and force a compositor repaint so the
+                        // post-wake screencopy is the lockscreen, not the
+                        // desktop.  Never show the lockscreen over an unlocked
+                        // session; the security provider is authority.
+                        if (this._isLocked() && this.lockscreen && typeof this.lockscreen.show === 'function') {
+                            this.lockscreen.show('display-on');
+                        }
+                        const host = window.NuxelHost;
+                        if (host && host.available && typeof host.action === 'function') {
+                            Promise.resolve(host.action('force-redraw')).catch(() => {});
                         }
                     } catch (e) {}
                 }
@@ -1533,7 +1683,8 @@ class NuxelHome {
     gracefulCloseApp(appId, reason) {
         const app = (this.appSession.app && this.appSession.app.id === appId)
             ? this.appSession.app : (appRegistry.getApp(appId) || { id: appId, name: appId });
-        const isForeground = !!(this.appSession.app && this.appSession.app.id === appId);
+        const isForeground = !!(this.appSession.app && this.appSession.app.id === appId &&
+            ['ACTIVE', 'LAUNCHING', 'CLOSING'].indexOf(this.appSession.state) >= 0);
         const surface = this.appSurfaces.get(appId);
         const frame = isForeground ? this.appSession.frame : (surface && surface.frame) || null;
         const session = this.sessions && this.sessions.get(appId);

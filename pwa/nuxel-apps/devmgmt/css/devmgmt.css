@@ -12,8 +12,9 @@ button { font-family:inherit; font-size:13px; color:var(--text); background:var(
   border-radius:8px; padding:8px 12px; cursor:pointer; }
 button:active { transform:translateY(1px); }
 button.ghost { background:none; color:var(--text2); }
-.tabs { display:flex; gap:2px; padding:6px 10px 0; background:var(--bg2); overflow-x:auto; }
-.tab { background:none; color:var(--text2); padding:8px 10px; font-size:13px; border-bottom:2px solid transparent; white-space:nowrap; }
+.tabs { display:flex; flex-wrap:nowrap; gap:2px; padding:6px 10px 0; background:var(--bg2); overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch; scroll-padding: 6px 10px; }
+.tabs::-webkit-scrollbar { display:none; }
+.tab { flex:0 0 auto; flex-shrink:0; min-width:max-content; background:none; color:var(--text2); padding:8px 10px; font-size:13px; line-height:1.25; border-bottom:2px solid transparent; white-space:nowrap; }
 .tab.active { color:var(--text); font-weight:700; border-bottom-color:var(--accent); }
 main { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px 22px; }
 .panel { display:none; } .panel.active { display:block; }
@@ -34,3 +35,15 @@ ul.reqs { margin:6px 0 0 18px; font-size:12px; color:var(--text2); line-height:1
 .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
 .statusbar { font-size:11px; color:var(--text2); padding:6px 14px calc(6px + env(safe-area-inset-bottom));
   background:var(--bg2); border-top:1px solid #12233f; display:flex; gap:12px; flex-wrap:wrap; }
+
+/* PWNAGE-81000 graphics acceleration stages */
+.graphics-stages { display: grid; gap: 8px; margin-top: 10px; }
+.gfx-stage { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 10px; padding: 9px 10px; border: 1px solid rgba(125,211,252,.2); border-radius: 10px; background: rgba(8,30,52,.5); }
+.gfx-stage-name { font-weight: 600; color: #e2f2ff; }
+.gfx-stage-status { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.gfx-stage-status.ok { color: #062018; background: #3beaa1; }
+.gfx-stage-status.partial { color: #241500; background: #ffb454; }
+.gfx-stage-status.bad { color: #fff; background: #b3261e; }
+.gfx-stage-status.degraded { color: #241500; background: #ffd166; }
+.gfx-stage-status.untested { color: #dbeafe; background: #334155; }
+.gfx-stage-detail { grid-column: 1 / -1; color: #9fc8e8; font-size: 11px; overflow-wrap: anywhere; }

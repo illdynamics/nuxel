@@ -6,3 +6,14 @@ main{padding:14px;max-width:760px;margin:0 auto}.card{background:#0e1f36;border:
 .card h2{font-size:16px;margin:0 0 8px}.row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid #17304e;font-size:14px}
 .row:last-child{border-bottom:0}.state-tag{font-weight:600}.ok{color:#7ee29a}.blocked{color:#ffb36b}.fallback{color:#8fd4ff}.unsupported{color:#ff9a9a}
 .hint{color:#9fb7d4;font-size:13px}.state{color:#9fb7d4;font-size:13px}code{color:#bfe0ff}
+
+/* PWNAGE-88000 spoof panel */
+.sect{font-size:16px;margin:14px 0 8px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;margin:8px 0;color:#cfe3ff}
+.field input,.field textarea{background:#0a1628;border:1px solid #2c4a72;border-radius:8px;color:#e8f1ff;padding:8px;font:13px/1.4 ui-monospace,Menlo,monospace;min-height:40px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row button,.grid2 .field{margin:0}
+button{background:#173356;color:#e8f1ff;border:1px solid #365b84;border-radius:9px;padding:8px 12px;min-height:40px}
+button.primary{background:#0e7c66;border-color:#16a085}
+button.danger{background:#5b1f24;border-color:#a03a3a;color:#ffd7d7}
+b{word-break:break-all}

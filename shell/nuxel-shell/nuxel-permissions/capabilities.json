@@ -641,6 +641,90 @@
       "limitation": "Removal deletes the app's unit and its /var/app/<id> tree, which the app itself cannot write outside its sandbox; the deletion is performed by the same root helper that installs. Data deletion is not recoverable from the phone, so the UI requires an explicit confirmation and records it.",
       "verdict": "IMPLEMENTED_NOT_DEPLOYED",
       "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.NuxTore"
+    },
+    {
+      "id": "zoom",
+      "aliases": [
+        "zoom:app",
+        "pinch-zoom"
+      ],
+      "portal_type": "zoom",
+      "title": "Two-finger app zoom",
+      "description": "Allow Nuxel's two-finger pinch/drag gesture to scale this app's whole interface.",
+      "risk": "low",
+      "group": "display",
+      "mechanisms": [
+        "portal"
+      ],
+      "enforceable": "yes",
+      "enforces_against": "some-apps",
+      "grant_required": true,
+      "limitation": "Userspace host-gesture gating only. An app's own internal zoom (e.g. Maps pinch, browser page zoom) is a separate app feature and is never blocked by this permission.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "shell/nuxel-shell/nuxel-permissions/tests/test-permissions.py"
+    },
+    {
+      "id": "fullscreen",
+      "aliases": [
+        "fullscreen:exclusive",
+        "immersive"
+      ],
+      "portal_type": "fullscreen",
+      "title": "Exclusive fullscreen",
+      "description": "Allow this app to request app-controlled exclusive fullscreen / hide system chrome.",
+      "risk": "low",
+      "group": "display",
+      "mechanisms": [
+        "portal"
+      ],
+      "enforceable": "yes",
+      "enforces_against": "some-apps",
+      "grant_required": true,
+      "limitation": "Userspace gate at the shell/host boundary. Normal shell-managed app presentation is unaffected, and emergency system navigation stays available.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "shell/nuxel-shell/nuxel-permissions/tests/test-permissions.py"
+    },
+    {
+      "id": "casting",
+      "aliases": [
+        "casting:create",
+        "cast"
+      ],
+      "portal_type": "casting",
+      "title": "Casting",
+      "description": "Allow this app to initiate Nuxel casting to an external receiver (future feature).",
+      "risk": "medium",
+      "group": "display",
+      "mechanisms": [
+        "portal"
+      ],
+      "enforceable": "no",
+      "enforces_against": "nobody",
+      "grant_required": true,
+      "limitation": "No casting transport is implemented yet. A stored preference is saved for a future broker and does not make casting operational; do not confuse it with mirroring.",
+      "verdict": "NOT_IMPLEMENTED",
+      "test": "shell/nuxel-shell/nuxel-permissions/tests/test-permissions.py"
+    },
+    {
+      "id": "mirroring",
+      "aliases": [
+        "mirroring:external",
+        "screen-mirror"
+      ],
+      "portal_type": "mirroring",
+      "title": "Screen mirroring",
+      "description": "Show this app on a connected mirrored external display.",
+      "risk": "medium",
+      "group": "display",
+      "mechanisms": [
+        "portal"
+      ],
+      "enforceable": "yes",
+      "enforces_against": "some-apps",
+      "grant_required": true,
+      "limitation": "Userspace gate at the mirror/compositor output boundary. The handset's local panel is never blanked; denial blanks only the external mirror.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "shell/nuxel-shell/nuxel-permissions/tests/test-permissions.py"
     }
   ],
   "unsupported_manifest_tokens": [
