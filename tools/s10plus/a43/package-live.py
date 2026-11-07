@@ -62,6 +62,8 @@ items.update({
     'configs/nuxel/security/remote-access.json',
     'configs/dbus/org.nuxel.Bridge.conf',
     'services/nuxel-bridge/dbus/org.nuxel.Bridge.conf',
+    'assets/nuxel-boot-audio.mp3',
+    'assets/nuxel-pow.mp3',
     'assets/nuxel-bottom-bar.jpg',
     'assets/nuxel-bottom-bar2.png',
     'assets/nuxel-applications-icon-pack/05-05_live-console.png',

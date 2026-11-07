@@ -3,9 +3,9 @@
  * The Home PWA draws its own DOM status bar.  Native Wayland clients
  * (Firefox, VLC, Signal, Stremio) are fullscreen and cover that DOM surface.
  * This layer-shell OVERLAY surface keeps the same Nuxel top strip visible:
- * clock on the left, Wi-Fi/battery on the right.  It uses an empty input
- * region, so taps pass through to the client underneath (the Home DOM status
- * bar remains the Quick Settings gesture owner while Home is visible).
+ * clock on the left, Wi-Fi/battery on the right.  Over a native app it
+ * collapses to a bounded top-edge gesture strip, expands on a downward swipe,
+ * and collapses again on the next upward swipe so taps reach the app.
  *
  * Scope is deliberately tiny: it reads /sys and /proc, renders with cairo/Pango
  * into a wl_shm buffer, and never touches /dev/fb0, storage or the USB gadget.

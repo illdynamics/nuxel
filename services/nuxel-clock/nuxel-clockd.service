@@ -1,9 +1,10 @@
 [Unit]
 Description=Nuxel background alarm and timer scheduler
 Documentation=file:/usr/share/doc/nuxel/CLOCK.md
-# PWNAGE-88000: clockd only delegates audio to nuxel-soundd at fire time;
-# it does not need soundd ready at startup, so it must not serialize behind the
-# 40+ s soundd ExecStartPre (audio route wait) on boot.  Wants still starts it.
+# PWNAGE-89000: clockd only delegates audio to nuxel-soundd at fire time.
+# soundd's readiness contract is its control socket/durable queue; its audio
+# backend initializes asynchronously.  Wants pulls soundd in, but no After edge
+# may serialize the alarm scheduler behind hardware/DSP readiness.
 After=local-fs.target
 Wants=nuxel-soundd.service
 StartLimitIntervalSec=60

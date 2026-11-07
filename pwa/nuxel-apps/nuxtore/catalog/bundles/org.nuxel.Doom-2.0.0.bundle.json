@@ -11,8 +11,8 @@
   },
   {
     "path": "pwa/nuxel-apps/doom/css/doom.css",
-    "sha256": "d56835a68caa0680b354a20f6a9e53b6a7169b3a7010243751aac1acac314968",
-    "size": 16961
+    "sha256": "1cdd4272d6af9691f4b7229ff350d3491ef4206f88a8acbcb7552d059a0e3e02",
+    "size": 18451
   },
   {
     "path": "pwa/nuxel-apps/doom/engine/COPYING.md",
@@ -86,13 +86,13 @@
   },
   {
     "path": "pwa/nuxel-apps/doom/index.html",
-    "sha256": "36adfd70a5bbb7298f49842eb4a134769a6b2e1f9f16100a66c451d3caca1e0a",
-    "size": 10314
+    "sha256": "004262b9a1a33079f36b62ece2e4959532c70dd6988f4517df3a1b2ca42a40d7",
+    "size": 10896
   },
   {
     "path": "pwa/nuxel-apps/doom/js/doom.js",
-    "sha256": "ff9568535d2d06ac346f4dbc246c42d7b6b84d4c1dc7cc9ac823f544376d1229",
-    "size": 35757
+    "sha256": "ab6a26e03e3ff027ff31c4e23a9bb6aaa632002252184596ec2474aa8d9add7d",
+    "size": 46438
   },
   {
     "path": "pwa/nuxel-apps/doom/manifest.json",
@@ -101,12 +101,12 @@
   },
   {
     "path": "pwa/nuxel-apps/doom/sw.js",
-    "sha256": "4dcb77088087f09ced73447a15a559a559336536d73c4040d22146a5cabb6c33",
-    "size": 1480
+    "sha256": "028fb467c674132c5897b7cbffc7f15247ae03e4876b14eabfce6bf9ca74bdc1",
+    "size": 1763
   },
   {
     "path": "pwa/nuxel-apps/doom/tests/test-doom.js",
-    "sha256": "421f299c14ecddcfaea921f31ac331ec3d5d9eae5b1a4ef9c94681b8401a1d43",
-    "size": 7767
+    "sha256": "235a4a81c481d2911bd8d7eb7a9e346abf109fdd85b242afbbafb573ec0643a1",
+    "size": 10270
   }
 ]

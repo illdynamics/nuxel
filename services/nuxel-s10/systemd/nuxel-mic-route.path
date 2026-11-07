@@ -1,0 +1,14 @@
+[Unit]
+Description=Start Nuxel microphone route when the playback route state appears
+Documentation=file:/usr/share/doc/nuxel/AUDIO.md
+
+[Path]
+# nuxel-audio-route.sh writes this receipt only after the playback route is
+# applied and verified.  PathChanged fires once when the receipt appears; the
+# path unit starts well before the ~40 s audio hardware window, so this is
+# event-driven and removes the old 180 s foreground wait.
+PathChanged=/run/nuxel-audio-route.ready
+Unit=nuxel-mic-route.service
+
+[Install]
+WantedBy=paths.target

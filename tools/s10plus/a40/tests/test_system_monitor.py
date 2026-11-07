@@ -67,9 +67,10 @@ def main():
             'Home settings expose persisted monitor controls')
     require('ListenStream=127.0.0.1:8624' in SOCKET.read_text() and 'DynamicUser=yes' in SERVICE.read_text(),
             'endpoint is loopback-only and unprivileged')
-    require('ConditionPathExists=/run/nuxel-audio-route.state' in BOOT_SOUND.read_text()
+    require('ConditionPathExists=/run/nuxel-audio-route.ready' in BOOT_SOUND.read_text()
+            and 'ConditionPathExists=!/run/nuxel-boot-sound.played' in BOOT_SOUND.read_text()
             and 'ConditionPathExists=/var/lib/nuxel/audio/speaker-verified' not in BOOT_SOUND.read_text(),
-            'boot audio is gated on the live audio-route state, never the stale verified marker')
+            'boot audio is gated on the applied-route receipt and plays once per boot')
     require("try-restart', 'nuxel-metrics.service" in INSTALLER.read_text(),
             'updated collector is restarted when an older socket instance is resident')
     require('verify_running_payload' in INSTALLER.read_text() and 'served hash mismatch' in INSTALLER.read_text()

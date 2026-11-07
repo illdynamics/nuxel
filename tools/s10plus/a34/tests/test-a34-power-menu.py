@@ -52,9 +52,9 @@ with tempfile.TemporaryDirectory() as td:
                 'refusal': parts[5].split('=', 1)[1],
             })
 
-check('configured menu has 15 entries', len(entries) == 15, len(entries))
-check('active A34 MENU_COUNT is 15', count == 15, count)
-check('active A34 table length is 15', len(menu) == 15, len(menu))
+check('configured menu has 16 entries', len(entries) == 16, len(entries))
+check('active A34 MENU_COUNT is 16', count == 16, count)
+check('active A34 table length is 16', len(menu) == 16, len(menu))
 for i, (want, got) in enumerate(zip(entries, menu)):
     check('entry %d id %s' % (i, want['id']), want['id'] == got['id'], got['id'])
     check('entry %d action %s' % (i, want['action']), want['action'] == got['action'], got['action'])

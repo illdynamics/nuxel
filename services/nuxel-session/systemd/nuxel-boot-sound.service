@@ -3,11 +3,12 @@ Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
 After=nuxel-wayland.service nuxel-wl-fb.service sound.target nuxel-button-manager.service
 Wants=nuxel-wayland.service nuxel-wl-fb.service
 ConditionPathExists=/usr/share/nuxel/assets/nuxel-pow.mp3
-# Cheap early gate on the *live* route state.  nuxel-audio-route.service writes
-# this file before it exits, so a boot where the route script never ran at all
-# does not start the cue.  The state file is only a gate, never proof: the cue
-# below re-runs the read-only --check immediately before playback.
-ConditionPathExists=/run/nuxel-audio-route.state
+# PWNAGE-89000: wait for the applied-route receipt, not the pending state
+# document.  This service is event-triggered by nuxel-boot-sound.path, so it is
+# no longer a 30+ s oneshot inside the initial boot transaction.  The played
+# marker prevents a later route re-apply from replaying the boot cue.
+ConditionPathExists=/run/nuxel-audio-route.ready
+ConditionPathExists=!/run/nuxel-boot-sound.played
 # The sound-cue binary records audibility as unverified; no physical claim is
 # made here.
 
@@ -21,6 +22,7 @@ Type=oneshot
 # open forever. The cue is cosmetic; the ABOX timer can finish later.
 ExecStartPre=-/usr/lib/nuxel/nuxel-audio-route.sh --check
 ExecStart=/usr/libexec/nuxel/nuxel-sound-cue boot
+ExecStartPost=/usr/bin/touch /run/nuxel-boot-sound.played
 # The cue process itself repeats the read-only `nuxel-audio-route.sh --check`
 # readiness gate immediately before playback; a stale state file is
 # deliberately NOT sufficient.
@@ -39,4 +41,5 @@ StandardError=journal
 # Deliberately NOT Restart=always: play once, not on every bridge crash.
 
 [Install]
-WantedBy=nuxel-wayland.service
+# Enabled through nuxel-boot-sound.path (paths.target), not through the Wayland
+# session: the cue must not hold the compositor/launcher transaction open.

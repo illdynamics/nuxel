@@ -1,0 +1,197 @@
+{
+  "baseline": {
+    "audio_route_ready_s": 48.122,
+    "clockd_scheduler_ready_s": 8.125,
+    "first_nuxel_frame_s": 6.492,
+    "input_manager_ready_s": 11.862,
+    "kernel_s": 3.44,
+    "launcher_display_owner_s": 15.778,
+    "lockscreen_launcher_ready_s": 15.339,
+    "multi_user_absolute_s": 49.088,
+    "multi_user_userspace_s": 45.648,
+    "note": "baseline: 3 boots for systemd phases; UI/API markers from the 13:56Z full baseline journal",
+    "soundd_control_api_ready_s": 49.596,
+    "soundd_restarts": null,
+    "total_s": 49.927,
+    "userspace_s": 46.465
+  },
+  "comparison": {
+    "first_nuxel_frame_s": {
+      "baseline": 6.492,
+      "delta_pct": -2.71,
+      "delta_s": -0.176,
+      "final_max": 6.472,
+      "final_median": 6.316,
+      "final_min": 6.235,
+      "final_range": 0.237,
+      "n_final": 4
+    },
+    "input_manager_ready_s": {
+      "baseline": 11.862,
+      "delta_pct": -17.11,
+      "delta_s": -2.03,
+      "final_max": 10.022,
+      "final_median": 9.832,
+      "final_min": 9.778,
+      "final_range": 0.243,
+      "n_final": 4
+    },
+    "kernel_s": {
+      "baseline": 3.44,
+      "delta_pct": 0.06,
+      "delta_s": 0.002,
+      "final_max": 3.475,
+      "final_median": 3.442,
+      "final_min": 3.397,
+      "final_range": 0.078,
+      "n_final": 4
+    },
+    "launcher_display_owner_s": {
+      "baseline": 15.778,
+      "delta_pct": -8.18,
+      "delta_s": -1.29,
+      "final_max": 14.863,
+      "final_median": 14.488,
+      "final_min": 14.445,
+      "final_range": 0.418,
+      "n_final": 4
+    },
+    "lockscreen_launcher_ready_s": {
+      "baseline": 15.339,
+      "delta_pct": -8.74,
+      "delta_s": -1.341,
+      "final_max": 14.296,
+      "final_median": 13.998,
+      "final_min": 13.94,
+      "final_range": 0.356,
+      "n_final": 4
+    },
+    "multi_user_absolute_s": {
+      "baseline": 49.088,
+      "delta_pct": -67.48,
+      "delta_s": -33.124,
+      "final_max": 18.277,
+      "final_median": 15.964,
+      "final_min": 14.373,
+      "final_range": 3.904,
+      "n_final": 4
+    },
+    "multi_user_userspace_s": {
+      "baseline": 45.648,
+      "delta_pct": -72.51,
+      "delta_s": -33.101,
+      "final_max": 14.83,
+      "final_median": 12.547,
+      "final_min": 10.898,
+      "final_range": 3.932,
+      "n_final": 4
+    },
+    "soundd_control_api_ready_s": {
+      "baseline": 49.596,
+      "delta_pct": -82.21,
+      "delta_s": -40.771,
+      "final_max": 9.021,
+      "final_median": 8.825,
+      "final_min": 8.731,
+      "final_range": 0.29,
+      "n_final": 4
+    },
+    "total_s": {
+      "baseline": 49.927,
+      "delta_pct": -68.02,
+      "delta_s": -33.962,
+      "final_max": 18.278,
+      "final_median": 15.965,
+      "final_min": 14.379,
+      "final_range": 3.899,
+      "n_final": 4
+    },
+    "userspace_s": {
+      "baseline": 46.465,
+      "delta_pct": -73.0,
+      "delta_s": -33.918,
+      "final_max": 14.83,
+      "final_median": 12.547,
+      "final_min": 10.904,
+      "final_range": 3.926,
+      "n_final": 4
+    }
+  },
+  "final": {
+    "audio_route_hardware_ready_s": 45.26,
+    "boot_cue_latency_ms_median": 67.775,
+    "clockd_scheduler_ready_s": 8.101,
+    "soundd_control_api_ready_s": 8.824749,
+    "soundd_restarts_max": 0
+  },
+  "per_boot": [
+    {
+      "audio_route_ready": true,
+      "backend_ready": true,
+      "boot": 2,
+      "boot_cue_latency_ms": 65.32,
+      "first_nuxel_frame_s": 6.472074,
+      "input_manager_ready_s": 9.885037,
+      "kernel_s": 3.447,
+      "launcher_display_owner_s": 14.482666,
+      "lockscreen_launcher_ready_s": 14.004068,
+      "multi_user_absolute_s": 18.277,
+      "multi_user_userspace_s": 14.83,
+      "soundd_control_api_ready_s": 8.872,
+      "soundd_restarts": 0,
+      "total_s": 18.278,
+      "userspace_s": 14.83
+    },
+    {
+      "audio_route_ready": true,
+      "backend_ready": true,
+      "boot": 3,
+      "boot_cue_latency_ms": 86.33,
+      "first_nuxel_frame_s": 6.293196,
+      "input_manager_ready_s": 9.778603,
+      "kernel_s": 3.438,
+      "launcher_display_owner_s": 14.494265,
+      "lockscreen_launcher_ready_s": 13.992295,
+      "multi_user_absolute_s": 15.793,
+      "multi_user_userspace_s": 12.355,
+      "soundd_control_api_ready_s": 8.730565,
+      "soundd_restarts": 0,
+      "total_s": 15.794,
+      "userspace_s": 12.355
+    },
+    {
+      "audio_route_ready": true,
+      "backend_ready": true,
+      "boot": 4,
+      "boot_cue_latency_ms": 8.49,
+      "first_nuxel_frame_s": 6.234895,
+      "input_manager_ready_s": 9.778157,
+      "kernel_s": 3.397,
+      "launcher_display_owner_s": 14.445265,
+      "lockscreen_launcher_ready_s": 13.940059,
+      "multi_user_absolute_s": 16.136,
+      "multi_user_userspace_s": 12.739,
+      "soundd_control_api_ready_s": 8.777498,
+      "soundd_restarts": 0,
+      "total_s": 16.136,
+      "userspace_s": 12.739
+    },
+    {
+      "audio_route_ready": true,
+      "backend_ready": true,
+      "boot": 5,
+      "boot_cue_latency_ms": 70.23,
+      "first_nuxel_frame_s": 6.338399,
+      "input_manager_ready_s": 10.021549,
+      "kernel_s": 3.475,
+      "launcher_display_owner_s": 14.863017,
+      "lockscreen_launcher_ready_s": 14.29614,
+      "multi_user_absolute_s": 14.373,
+      "multi_user_userspace_s": 10.898,
+      "soundd_control_api_ready_s": 9.020601,
+      "soundd_restarts": 0,
+      "total_s": 14.379,
+      "userspace_s": 10.904
+    }
+  ]
+}

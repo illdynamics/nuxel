@@ -1064,7 +1064,7 @@
     }
   ],
   "notes": {
-    "revision": "v0.7.7-beta+p80000: registry_version 14 keeps Nuxel Doom as the WAD-engine 2.0 package. The standalone Chocolate Doom comparison app entry was removed because Nuxel Doom bundles its own complete WASM engine; Chocolate Doom 3.1.1 remains an internal optional comparison runtime, not a separate user-facing requirement. registry_version 13 added the NuxTore-installable Nuxel Doom payload.",
+    "revision": "v0.7.9-beta: registry_version 14 keeps Nuxel Doom as the WAD-engine 2.0 package. The standalone Chocolate Doom comparison app entry was removed because Nuxel Doom bundles its own complete WASM engine; Chocolate Doom 3.1.1 remains an internal optional comparison runtime, not a separate user-facing requirement. registry_version 13 added the NuxTore-installable Nuxel Doom payload.",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
     "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
     "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently.",

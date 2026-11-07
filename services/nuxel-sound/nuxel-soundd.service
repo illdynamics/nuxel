@@ -1,26 +1,35 @@
 [Unit]
 Description=Nuxel central sound manager (persistent PipeWire cue stream)
 Documentation=file:/usr/share/doc/nuxel/SOUNDS.md
-After=local-fs.target nuxel-audio-session.service
+After=local-fs.target
 Wants=nuxel-audio-session.service
 StartLimitIntervalSec=60
 StartLimitBurst=8
 
 [Service]
-Type=simple
+# PWNAGE-89000: the control socket is the readiness contract.  The daemon binds
+# and listens before it talks to PipeWire, so alarms can be accepted/queued while
+# the S10+ ABOX/CS35L41 hardware route is still initializing.  The worker reports
+# backend state separately through the socket; it never fakes hardware readiness.
+Type=notify
+NotifyAccess=main
 Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
 Environment=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
 Environment=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native
+# PWNAGE-89000 ROOT CAUSE: this used to be
+#   ExecStartPre=-/usr/lib/nuxel/nuxel-audio-route.sh --wait 200
+# which held the whole service (and multi-user.target) for 40+ s while the ABOX
+# core firmware and both CS35L41 DSP1s booted.  Route readiness is now handled
+# asynchronously by nuxel-audio-route.service/timer and the sound worker.
 # Idempotent: installs newly supplied files, preserves owner-edited files and
 # creates the assignments document only when it is absent.
-ExecStartPre=-/usr/lib/nuxel/nuxel-audio-route.sh --wait 200
 ExecStartPre=/usr/libexec/nuxel/install-sound-library
 ExecStart=/usr/libexec/nuxel/nuxel-soundd
 Restart=on-failure
 RestartSec=2
 TimeoutStopSec=5
-TimeoutStartSec=240
+TimeoutStartSec=30
 KillMode=control-group
 SendSIGKILL=yes
 StandardOutput=journal

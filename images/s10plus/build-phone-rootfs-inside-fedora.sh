@@ -413,8 +413,13 @@ install -Dm0644 /nuxel/services/nuxel-haptics/nuxel-haptics.service \
     "$STAGE/etc/systemd/system/nuxel-haptics.service"
 install -Dm0755 /nuxel/services/nuxel-haptics/nuxel-haptics-sleep \
     "$STAGE/usr/libexec/nuxel/nuxel-haptics-sleep"
-ln -sf ../nuxel-boot-sound.service \
-    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-boot-sound.service"
+# PWNAGE-89000: the boot cue is triggered by nuxel-boot-sound.path only
+# after /run/nuxel-audio-route.ready exists.  It must not be a direct boot want.
+install -d "$STAGE/etc/systemd/system/paths.target.wants"
+install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-boot-sound.path \
+    "$STAGE/etc/systemd/system/nuxel-boot-sound.path"
+ln -sf ../nuxel-boot-sound.path \
+    "$STAGE/etc/systemd/system/paths.target.wants/nuxel-boot-sound.path"
 ln -sfn pwa/nuxel-home "$STAGE/usr/share/nuxel/nuxel-home"
 install -m 0755 /nuxel/tools/s10plus/nuxel-fb-phone-aarch64 "$STAGE/usr/bin/nuxel-fb-phone"
 install -m 0644 /nuxel/assets/nuxel-background.png "$STAGE/usr/share/nuxel/nuxel-background.png"
@@ -773,6 +778,7 @@ install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route.service "$ST
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route-retry.service "$STAGE/etc/systemd/system/nuxel-audio-route-retry.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route.timer "$STAGE/etc/systemd/system/nuxel-audio-route.timer"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mic-route.service "$STAGE/etc/systemd/system/nuxel-mic-route.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mic-route.path "$STAGE/etc/systemd/system/nuxel-mic-route.path"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wifi.service "$STAGE/etc/systemd/system/nuxel-wifi.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-bluetooth.service "$STAGE/etc/systemd/system/nuxel-bluetooth.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-interface-state.service "$STAGE/etc/systemd/system/nuxel-interface-state.service"
@@ -805,10 +811,15 @@ for _svc in nuxel-boot-sound nuxel-bridge nuxel-button-manager nuxel-http-bridge
   install -m 0644 "/nuxel/services/nuxel-s10/systemd/fast-stop/$_svc.service.d.conf" \
       "$STAGE/etc/systemd/system/$_svc.service.d/20-fast-stop.conf"
 done
-ln -sf ../nuxel-audio-session.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-audio-session.service"
-ln -sf ../nuxel-audio-route.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-audio-route.service"
-ln -sf ../nuxel-mic-route.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-mic-route.service"
-install -d "$STAGE/etc/systemd/system/timers.target.wants"
+# PWNAGE-89000: soundd owns the audio-session pull-in; audio-route is a
+# Wayland-session background task; microphone capture is event-driven by
+# nuxel-mic-route.path after the applied-route receipt.  None of these belong
+# in multi-user.target.wants.
+install -d "$STAGE/etc/systemd/system/nuxel-wayland.service.wants" \
+           "$STAGE/etc/systemd/system/paths.target.wants" \
+           "$STAGE/etc/systemd/system/timers.target.wants"
+ln -sf ../nuxel-audio-route.service "$STAGE/etc/systemd/system/nuxel-wayland.service.wants/nuxel-audio-route.service"
+ln -sf ../nuxel-mic-route.path "$STAGE/etc/systemd/system/paths.target.wants/nuxel-mic-route.path"
 ln -sf ../nuxel-audio-route.timer "$STAGE/etc/systemd/system/timers.target.wants/nuxel-audio-route.timer"
 ln -sf ../nuxel-wifi.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wifi.service"
 ln -sf ../nuxel-interface-state.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-interface-state.service"

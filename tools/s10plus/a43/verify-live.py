@@ -37,6 +37,7 @@ with tarfile.open(payload, 'r:gz') as tf:
         'pwa/nuxel-home/css/style.css',
         'pwa/nuxel-apps/settings/wifi-settings.js',
         'pwa/nuxel-common/app-registry.json',
+        'assets/nuxel-boot-audio.mp3',
         'services/nuxel-bridge/src/bridge.py',
         'services/nuxel-bridge/src/api.py',
         'services/nuxel-metrics/nuxel-metrics.service',
