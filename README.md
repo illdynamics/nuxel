@@ -3,9 +3,19 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.7.7-beta** — _The penguin has a shotgun and a real WAD engine._
+**v0.8.0-beta** — _Firewall, permissions and a release pipeline that ships._
 
-> **v0.7.7-beta (2026-11-04).** **Nuxel Doom is now a real WAD engine.**
+> **v0.8.0-beta (2026-11-08).** The S10+ userspace gains a real **Firewall**
+> control center (authoritative policy model, native iptables backend and honest
+> unsupported reporting) and a **Permissions** manager backed by the central
+> `nuxel-permd` service. Launcher foreground handoff is hardened so a late
+> Terminal acknowledgement can no longer replay a stale app launch. The Release
+> workflow now installs its asset-test dependencies (`python3-pil`) before the
+> image matrix, so the long S10+ build can reach the publish gate. The canonical
+> boot cue remains committed at `assets/nuxel-boot-audio.mp3`, byte-identical to
+> the sound-library copy and verified by the release `prepare` job.
+>
+> **Previously in v0.7.7-beta:** **Nuxel Doom is now a real WAD engine.**
 > The old lookalike raycaster is gone: `org.nuxel.Doom` runs the **Chocolate
 > Doom 3.0 engine compiled to WebAssembly**, loads Freedoom or an imported WAD
 > through a read-only bridge catalogue, and renders the actual DOOM maps with
@@ -291,7 +301,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
   rootfs builder now installs the audio warm-up, GeoClue agent, desktop entries
   and Python D-Bus dependencies a fresh image needs.
 - **Release tooling.** Launcher cache `v66-v074-release`; whole-repo lockstep
-  at `v0.7.7-beta`; registry revision 14 with the remote-desktop, Clipper and native phone apps.
+  at `v0.8.0-beta`; registry revision 16 with the Firewall, Permissions, remote-desktop, Clipper and native phone apps.
 
 ## What's new in v0.2.1
 
@@ -743,7 +753,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.7.7-beta
+## Honest Status — v0.8.0-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**
@@ -1029,7 +1039,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.7-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.8.0-beta + readiness |
 | [docs/features/README.md](docs/features/README.md) | Canonical feature-status matrix with evidence anchors |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |

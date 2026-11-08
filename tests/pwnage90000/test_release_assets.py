@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v0.7.9 release-asset + version lockstep gate.
+"""v0.8.0 release-asset + version lockstep gate.
 
 This is intentionally dependency-free so the Release workflow can run it in the
 lightweight `prepare` job before the expensive kernel/rootfs matrix.  It makes
@@ -44,7 +44,8 @@ check("package.json version", f'"version": "{EXPECTED[1:]}"' in text("pwa/nuxel-
 bridge = json.loads(text("pwa/nuxel-common/bridge-version.json"))
 check("bridge-version host_version", bridge.get("host_version") == EXPECTED[1:])
 for rel in ("pwa/nuxel-home/manifest.json", "pwa/nuxel-apps/settings/manifest.json",
-            "pwa/nuxel-apps/nuxtore/manifest.json"):
+            "pwa/nuxel-apps/nuxtore/manifest.json", "pwa/nuxel-apps/firewall/manifest.json",
+            "pwa/nuxel-apps/permissions/manifest.json"):
     doc = json.loads(text(rel))
     nuxel = doc.get("nuxel", {})
     check(f"{rel} pwa_version", nuxel.get("pwa_version") == EXPECTED[1:], nuxel.get("pwa_version"))
@@ -58,6 +59,31 @@ for rel in ("services/nuxel-bridge/systemd/nuxel-bridge.service",
 manifest = json.loads(text("pwa/nuxel-home/manifest.json"))
 cache = manifest["nuxel"]["cache_version"]
 check("service-worker cache version", f"const CACHE_VERSION = '{cache}'" in text("pwa/nuxel-home/sw.js"))
+
+# ---- whole-repo version lockstep beyond the PWA/systemd surfaces ----------
+for rel in ("device/g7power/APKBUILD", "device/google-pixel-10-pro-xl/APKBUILD",
+            "device/s10plus/APKBUILD"):
+    check(f"{rel} pkgver", f'pkgver="{EXPECTED[1:]}"' in text(rel))
+for rel in ("pwa/launcher/meson.build", "shell/nuxel-home-native/meson.build",
+            "shell/nuxel-shell/meson.build"):
+    check(f"{rel} project version", f"version: '{EXPECTED[1:]}'" in text(rel))
+check("nuxel-home-native Python version",
+      f'__version__ = "{EXPECTED[1:]}"' in text("shell/nuxel-home-native/nuxel_home/__init__.py"))
+check("nuxel-home-native startup banner",
+      f"Starting Nuxel Home v{EXPECTED[1:]}" in text("shell/nuxel-home-native/nuxel_home/main.py"))
+check("nuxel-settings about version",
+      f"Nuxel OS v{EXPECTED[1:]}" in text("shell/nuxel-shell/nuxel-settings/main.c"))
+check("nuxel-browser user agent",
+      f"NuxelBrowser/{EXPECTED[1:]}" in text("shell/nuxel-browser-native/nuxel_browser_native.py"))
+check("VM snapshot version pins",
+      text("vm/nuxel-vm-snapshot.sh").count(f'"nuxel_version": "{EXPECTED[1:]}"') >= 2)
+check("Home metainfo release entry",
+      f'<release version="{EXPECTED[1:]}"' in text("shell/nuxel-home-native/data/org.nuxel.Home.metainfo.xml"))
+check("OTA builder default version",
+      f'VERSION="{EXPECTED}"' in text("images/build-ota.sh"))
+check("release workflow installs Pillow for the image checks",
+      "python3-pil" in text(".github/workflows/release.yml") and
+      "import pytest, PIL" in text(".github/workflows/release.yml"))
 
 # ---- boot cue asset is real, tracked and wired into every release path -----
 cue = ROOT / "assets/nuxel-boot-audio.mp3"

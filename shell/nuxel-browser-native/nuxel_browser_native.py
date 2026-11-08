@@ -215,7 +215,7 @@ def main():
     wsettings.set_user_agent(
         "Mozilla/5.0 (Linux; Android 14; SM-G975F) AppleWebKit/605.1.15 "
         "(KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1 "
-        "NuxelBrowser/0.7.8")
+        "NuxelBrowser/0.8.0-beta")
     view = WebKit2.WebView.new_with_settings(wsettings)
     view.set_hexpand(True); view.set_vexpand(True)
     vbox.pack_start(view, True, True, 0)
