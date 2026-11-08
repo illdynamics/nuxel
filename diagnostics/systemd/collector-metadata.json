@@ -1,0 +1,69 @@
+{
+  "assets": {
+    "SYSTEMD-BOOT.svg": {
+      "bytes": 118392,
+      "path": "SYSTEMD-BOOT.svg",
+      "sha256": "26b882147d9acfdeb18c105803ec8d4f8cfff7e9acd9d2e686ad4d4f8ac5053a"
+    },
+    "SYSTEMD-SHUTDOWN.svg": {
+      "bytes": 16642,
+      "path": "SYSTEMD-SHUTDOWN.svg",
+      "sha256": "1d0da9bd619769db1ddacfbafd24f19189aa48a026be1a03578def5fc4046593"
+    },
+    "boot-blame.txt": {
+      "bytes": 2328,
+      "path": "boot-blame.txt",
+      "sha256": "789a85b0050b34f7e7af6649bc6aa447c91895cf1b7189b35665dac50bbe2f35"
+    },
+    "boot-critical-chain.txt": {
+      "bytes": 1127,
+      "path": "boot-critical-chain.txt",
+      "sha256": "15a451359872412f9292bfe0a5b3f5ef6807b4cfcfc3545d4e63842f70d885b7"
+    },
+    "boot-failed.txt": {
+      "bytes": 78,
+      "path": "boot-failed.txt",
+      "sha256": "bd6d982788044ded18e2cfb9e12ee3c24230f32751faffa02a66a76b9b9a504c"
+    },
+    "boot-list-units.txt": {
+      "bytes": 25701,
+      "path": "boot-list-units.txt",
+      "sha256": "5615fc05187e6b8b5fd83d8650db180dc43af7f3a089882d434b4bf65074ce28"
+    },
+    "boot-metadata-inputs.txt": {
+      "bytes": 351,
+      "path": "boot-metadata-inputs.txt",
+      "sha256": "d351f0ed99f111a049c52d79e677bfd97f8becfdc64c14e72fc1b71866702007"
+    },
+    "boot-systemd-analyze.txt": {
+      "bytes": 183,
+      "path": "boot-systemd-analyze.txt",
+      "sha256": "6fb639ef85c226ff6eb1953b441bf600cf0864e2bec958e536551e21cb091e2a"
+    },
+    "boot-units.tsv": {
+      "bytes": 3325,
+      "path": "boot-units.tsv",
+      "sha256": "d516574756173ed03f6808e1ca30e63757caa3d4803a2a1a928aef80d43be653"
+    },
+    "boots.txt": {
+      "bytes": 9264,
+      "path": "boots.txt",
+      "sha256": "a09d76924e12dc82328a38fef3224e2433425f8cd40e11e46e9accfc8724dcab"
+    },
+    "shutdown-journal-summary.txt": {
+      "bytes": 68189,
+      "path": "shutdown-journal-summary.txt",
+      "sha256": "43b77cb49aa73708bd389aa599798ecb45e55b346c02e5d3d21769b182866705"
+    }
+  },
+  "boot": "current",
+  "boot_id": "5ab43e24-41c6-45c9-9f92-50d10ca58a8b",
+  "collected_at_utc": "2026-11-08T09:06:13.428595+00:00",
+  "hostname": "2001-1c00-4d09-8a00-162b-e49d-dc7c-4128",
+  "kernel": "4.14.253-gf7194c1d15ed-dirty",
+  "model": "Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820",
+  "plot": true,
+  "schema_version": 1,
+  "shutdown_status": "CAPTURED",
+  "systemd_version": "systemd 258 (258.11-1.fc43)"
+}

@@ -47,8 +47,9 @@ DEFAULT_TRANSPORT = {
     "xrdp": "wlan",
     "scrcpy": "android-adb-usb",
 }
-FIXED_PORTS = {"vnc": 5900, "xrdp": 3389}
-BIND_ADDRESS = "0.0.0.0"
+FIXED_PORTS = {"vnc": 15900, "xrdp": 13389}
+BIND_ADDRESS = "trusted-lan-ipv4"
+VNC_PAM_FILE = Path(os.environ.get("NUXEL_VNC_PAM", "/etc/pam.d/wayvnc"))
 
 KNOWN_BAD_USB_KERNELS = {"4.14.253"}
 USB_PANIC_EVIDENCE = "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/"
@@ -99,6 +100,37 @@ def _wayland_env() -> Dict[str, str]:
 
 def _kernel_release() -> str:
     return _read("/proc/sys/kernel/osrelease") or ""
+
+
+def _base_release(release: str) -> str:
+    """Strip vendor suffixes such as -gf7194c1d15ed-dirty from a release."""
+    m = re.match(r"^(\d+\.\d+\.\d+)", release or "")
+    return m.group(1) if m else (release or "")
+
+
+def _kernel_config_text(release: str = "") -> str:
+    path = Path("/proc/config.gz")
+    if path.is_file():
+        try:
+            import gzip
+            with gzip.open(path, "rt", errors="replace") as fh:
+                return fh.read()
+        except OSError:
+            pass
+    release = release or _kernel_release()
+    try:
+        return Path("/boot/config-" + release).read_text(errors="replace")
+    except OSError:
+        return ""
+
+
+def _parse_kernel_config(text: str) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for line in (text or "").splitlines():
+        if line.startswith("CONFIG_") and "=" in line:
+            k, v = line.split("=", 1)
+            out[k] = v.strip()
+    return out
 
 
 def _private_ipv4(addr: str) -> bool:
@@ -175,8 +207,17 @@ def network_state() -> Dict[str, Any]:
     }
 
 
-def usb_network_status(release: Optional[str] = None) -> Dict[str, Any]:
+def usb_network_status(release: Optional[str] = None,
+                       kernel_config: Optional[str] = None) -> Dict[str, Any]:
+    """Read-only per-mode USB gadget truth.  Never mutates configfs.
+
+    Compile-time options are not runtime safety proof.  NCM is blocked on the
+    recorded 4.14.253 kernel; RNDIS is compiled but UNVERIFIED; ECM is absent.
+    """
     release = release if release is not None else _kernel_release()
+    base = _base_release(release)
+    cfg = _parse_kernel_config(kernel_config if kernel_config is not None
+                               else _kernel_config_text(release))
     gadget_root = Path("/sys/kernel/config/usb_gadget")
     functions: List[str] = []
     try:
@@ -186,53 +227,169 @@ def usb_network_status(release: Optional[str] = None) -> Dict[str, Any]:
                 functions.extend(sorted(p.name for p in froot.iterdir()))
     except OSError:
         pass
-    net_functions = [f for f in functions if f.startswith(("ncm", "ecm", "rndis"))]
-    if re.sub(r"[-+].*$", "", release) in KNOWN_BAD_USB_KERNELS:
-        return {
-            "available": False,
-            "status": "BLOCKED_KERNEL_PANIC",
-            "reason": ("NCM teardown panicked this kernel (ncm_free_inst -> "
-                       "misc_deregister); USB network RDP/VNC is not offered."),
+    try:
+        net_interfaces = sorted(p.name for p in Path("/sys/class/net").iterdir())
+    except OSError:
+        net_interfaces = []
+    net_ifaces = [i for i in net_interfaces if i.startswith(("usb", "ncm", "rndis"))]
+    compiled = {
+        "ncm": cfg.get("CONFIG_USB_F_NCM") == "y" and cfg.get("CONFIG_USB_CONFIGFS_NCM") == "y",
+        "rndis": cfg.get("CONFIG_USB_F_RNDIS") == "y" and cfg.get("CONFIG_USB_CONFIGFS_RNDIS") == "y",
+        "ecm": cfg.get("CONFIG_USB_CONFIGFS_ECM") == "y",
+        "ecm_subset": cfg.get("CONFIG_USB_CONFIGFS_ECM_SUBSET") == "y",
+        "eem": cfg.get("CONFIG_USB_CONFIGFS_EEM") == "y",
+        "configfs": cfg.get("CONFIG_USB_CONFIGFS") == "y",
+        "dwc3": cfg.get("CONFIG_USB_DWC3") == "y" or "CONFIG_USB_DWC3_DUAL_ROLE" in cfg,
+    }
+    acm = any(name.startswith("acm.") for name in functions)
+    modes: Dict[str, Dict[str, Any]] = {
+        "ncm": {
+            "compiled": compiled["ncm"],
+            "safe_on_current_kernel": False if base in KNOWN_BAD_USB_KERNELS else "UNVERIFIED",
+            "status": "BLOCKED_KNOWN_PANIC" if base in KNOWN_BAD_USB_KERNELS else "NEEDS_VALIDATION",
             "evidence": USB_PANIC_EVIDENCE,
-            "kernel_release": release,
-            "gadget_functions": functions,
-            "net_functions": net_functions,
-            "mutated": False,
-        }
-    if not net_functions:
-        return {
-            "available": False,
-            "status": "NOT_SUPPORTED_ON_DEVICE",
-            "reason": "No USB network function is configured (CDC-ACM serial only).",
-            "kernel_release": release,
-            "gadget_functions": functions,
-            "net_functions": [],
-            "mutated": False,
-        }
+        },
+        "rndis": {
+            "compiled": compiled["rndis"],
+            "safe_on_current_kernel": "UNVERIFIED",
+            "status": "NEEDS_VALIDATION" if compiled["rndis"] else "BLOCKED_KERNEL",
+            "host_driver": "Linux rndis_host; macOS requires a reviewed userspace driver",
+        },
+        "ecm": {
+            "compiled": compiled["ecm"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["ecm"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["ecm"] else "BLOCKED_KERNEL",
+        },
+        "ecm_subset": {
+            "compiled": compiled["ecm_subset"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["ecm_subset"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["ecm_subset"] else "BLOCKED_KERNEL",
+        },
+        "eem": {
+            "compiled": compiled["eem"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["eem"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["eem"] else "BLOCKED_KERNEL",
+        },
+    }
+    if not compiled["configfs"] or not compiled["dwc3"]:
+        status = "BLOCKED_KERNEL"
+        reason = "kernel lacks configfs or DWC3 gadget support"
+    elif not any(compiled[k] for k in ("ncm", "rndis", "ecm")):
+        status = "BLOCKED_KERNEL"
+        reason = "no USB network gadget function is compiled in"
+    elif base in KNOWN_BAD_USB_KERNELS:
+        status = "BLOCKED_KERNEL_PANIC"
+        reason = ("NCM teardown panicked this vendor kernel (ncm_free_inst -> "
+                  "misc_deregister). RNDIS/ECM are compiled but remain UNVERIFIED; "
+                  "USB remote desktop is not offered.")
+    else:
+        status = "NEEDS_VALIDATION"
+        reason = "USB network modes exist but no mode is physically verified on this host"
     return {
         "available": False,
-        "status": "UNVERIFIED",
-        "reason": "A USB network function exists but this module will not use it without a physical macOS test.",
+        "status": status,
+        "reason": reason,
+        "evidence": USB_PANIC_EVIDENCE,
         "kernel_release": release,
+        "kernel_base_release": base,
+        "compiled": compiled,
+        "modes": modes,
+        "selected_mode": None,
         "gadget_functions": functions,
-        "net_functions": net_functions,
+        "net_functions": [f for f in functions if f.startswith(("ncm", "ecm", "rndis", "eem"))],
+        "device_interfaces": net_ifaces,
+        "acm_preserved": acm,
+        "ssh_listener": _port_listening_local(22),
+        "ssh_authenticated_probe": "unknown",
         "mutated": False,
     }
 
 
-def _listener(port: int) -> bool:
+def _port_listening_local(port: int) -> bool:
     rc, out, _ = _run(["ss", "-ltnH"], timeout=3)
     if rc != 0:
-        out = _read("/proc/net/tcp") or ""
-        needle = ":%04X" % port
-        return any(needle in line for line in out.splitlines()[1:])
+        try:
+            out = Path("/proc/net/tcp").read_text()
+        except OSError:
+            return False
     for line in out.splitlines():
+        if line.strip().startswith("State"):
+            continue
         parts = line.split()
-        if len(parts) >= 4:
-            local = parts[3]
-            if local.endswith(":%d" % port):
-                return True
+        if len(parts) >= 4 and parts[3].endswith(":%d" % port):
+            return True
     return False
+
+def _listener_addresses(port: int) -> List[str]:
+    """Local listen addresses for ``port`` (empty when ss/proc has none)."""
+    found: List[str] = []
+    rc, out, _ = _run(["ss", "-ltnH"], timeout=3)
+    if rc == 0 and out.strip():
+        for line in out.splitlines():
+            parts = line.split()
+            if len(parts) >= 4:
+                host, _, got = parts[3].rpartition(":")
+                if got == str(port):
+                    found.append(host.strip("[]"))
+        return found
+    for name in ("/proc/net/tcp", "/proc/net/tcp6"):
+        try:
+            lines = Path(name).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 4 or parts[3] != "0A":
+                continue
+            host_hex, _, port_hex = parts[1].rpartition(":")
+            if int(port_hex, 16) != port:
+                continue
+            if len(host_hex) == 8:
+                octets = [int(host_hex[i:i + 2], 16) for i in (6, 4, 2, 0)]
+                found.append(".".join(str(o) for o in octets))
+            else:
+                found.append("::")
+    return found
+
+
+def _listener(port: int, address: Optional[str] = None) -> bool:
+    addrs = _listener_addresses(port)
+    return address in addrs if address is not None else bool(addrs)
+
+
+def _cert_fingerprint(path: Optional[str]) -> Optional[str]:
+    if not path or not Path(path).is_file():
+        return None
+    rc, out, _ = _run(["openssl", "x509", "-in", str(path), "-noout",
+                       "-fingerprint", "-sha256"], timeout=3)
+    if rc != 0:
+        return None
+    m = re.search(r"=([0-9A-Fa-f:]+)", out)
+    return m.group(1) if m else None
+
+
+def _wayvnc_config() -> Dict[str, Any]:
+    try:
+        text = VNC_CONFIG.read_text()
+    except OSError:
+        return {"configured": False}
+    values: Dict[str, str] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            values[k.strip()] = v.strip()
+    return {
+        "configured": bool(values),
+        "address": values.get("address"),
+        "port": int(values["port"]) if values.get("port", "").isdigit() else None,
+        "enable_auth": values.get("enable_auth", "").lower() == "true",
+        "enable_pam": values.get("enable_pam", "").lower() == "true",
+        "certificate_file": values.get("certificate_file"),
+        "private_key_file": values.get("private_key_file"),
+        "rsa_private_key_file": values.get("rsa_private_key_file"),
+        "relax_encryption": values.get("relax_encryption", "").lower() == "true",
+    }
 
 
 def _systemctl_active(unit: str) -> bool:
@@ -348,11 +505,24 @@ def _vnc_status() -> Dict[str, Any]:
     protocols = wayland_protocols()
     missing = [p for p in VNC_REQUIRED_PROTOCOLS if p not in set(protocols.get("protocols") or [])]
     active = _systemctl_active(VNC_SERVICE)
-    listening = _listener(FIXED_PORTS["vnc"])
-    clients = _vnc_clients() if listening else {"count": 0, "available": False}
+    addrs = _listener_addresses(FIXED_PORTS["vnc"])
+    listening = bool(addrs)
+    cfg = _wayvnc_config()
+    configured_address = cfg.get("address")
+    listener_address = addrs[0] if len(addrs) == 1 else None
+    listener_verified = bool(active and listening and configured_address in addrs)
+    clients = _vnc_clients() if listening else {"count": None, "available": False}
+    auth_enabled = bool(cfg.get("enable_auth") and cfg.get("enable_pam"))
+    cert_fp = _cert_fingerprint(cfg.get("certificate_file"))
+    security_verified = bool(
+        auth_enabled and not cfg.get("relax_encryption")
+        and cfg.get("certificate_file") and cfg.get("private_key_file")
+        and cert_fp and listener_verified and not missing)
+    unit_text = _read("/etc/systemd/system/nuxel-remote-vnc.service") or ""
+    input_enabled = "--disable-input" not in unit_text
+    pam_ok = _read(VNC_PAM_FILE) is not None and "user = nuxel" in (_read(VNC_PAM_FILE) or "")
     if not version:
-        state = "UNSUPPORTED"
-        reason = "wayvnc is not installed"
+        state, reason = "UNSUPPORTED", "wayvnc is not installed"
     elif missing:
         state = "UNSUPPORTED"
         reason = "Phoc does not advertise: " + ", ".join(missing)
@@ -360,15 +530,18 @@ def _vnc_status() -> Dict[str, Any]:
         state = "ERROR"
         reason = ("A wayvnc listener is open but the managed unit is not active; "
                   "stop the unmanaged process and use the Bridge start action")
-    elif clients.get("count", 0) > 0:
+    elif active and listening and not auth_enabled:
+        state = "ERROR"
+        reason = "The effective wayvnc config has authentication disabled; refusing to report READY"
+    elif clients.get("count"):
         state = "CONNECTED"
-        reason = "An authenticated SSH-tunnel VNC client is connected"
+        reason = "An authenticated direct-LAN VNC client is connected"
     elif not active or not listening:
         state = "OFF"
         reason = "Service is stopped by default"
     else:
         state = "WAITING_FOR_CLIENT"
-        reason = "wayvnc is ready and capturing the active Phoc output"
+        reason = "Authenticated wayvnc is capturing the active Phoc output"
     st = _state_doc().get("vnc", {})
     return {
         "service": "vnc",
@@ -380,22 +553,35 @@ def _vnc_status() -> Dict[str, Any]:
         "preferred_transport": _preferred("vnc"),
         "active_transport": "wlan" if active else None,
         "interface": (network_state().get("interface") if active else None),
-        "bind_address": BIND_ADDRESS,
+        "bind_address": configured_address or (network_state().get("address") if active else None),
+        "configured_bind_address": configured_address,
+        "listener_address": listener_address,
+        "listener_addresses": addrs,
         "port": FIXED_PORTS["vnc"],
-        "listener_verified": listening,
-        "authenticated_clients": int(clients.get("count", 0)),
+        "protocol": "tcp",
+        "listener_verified": listener_verified,
+        "authenticated_clients": clients.get("count"),
         "clients": clients.get("clients", []),
         "client_status_available": bool(clients.get("available")),
-        "authentication": "PAM_RSA_AES",
-        "encrypted": True,
-        "encrypted_detail": "RSA-AES (security type 5/129) with PAM authentication for the local nuxel account",
-        "tls_fingerprint": None,
+        "authentication": "PAM + VeNCrypt TLS/RSA-AES" if auth_enabled else "UNAUTHENTICATED",
+        "authentication_mode": "PAM" if auth_enabled else "none",
+        "encrypted": bool(auth_enabled and cert_fp),
+        "encryption_mode": "TLS (VeNCrypt) + RSA-AES" if auth_enabled else "none",
+        "encrypted_detail": ("TLS certificate and RSA-AES credentials with PAM for the local "
+                             "nuxel account" if auth_enabled else "authentication is disabled"),
+        "tls_fingerprint": cert_fp,
+        "certificate_fingerprint": cert_fp,
+        "security_verified": security_verified,
+        "input_enabled": input_enabled,
+        "wayland_protocols_ok": not missing,
+        "privacy_gate_ok": security_verified,
+        "pam_policy_ok": pam_ok,
         "installed": bool(version),
         "version": version,
         "protocols": protocols,
         "missing_protocols": missing,
         "started_at": st.get("started_at"),
-        "last_error": None if version and not missing else reason,
+        "last_error": None if version and not missing and auth_enabled else reason,
         "usb": usb_network_status(),
     }
 
@@ -404,21 +590,34 @@ def _xrdp_status() -> Dict[str, Any]:
     xrdp = _which("xrdp")
     xorg = _which("Xorg")
     active = _systemctl_active("xrdp.service") and _systemctl_active("xrdp-sesman.service")
-    listening = _listener(FIXED_PORTS["xrdp"])
+    addrs = _listener_addresses(FIXED_PORTS["xrdp"])
+    listening = bool(addrs)
     sessions = _xrdp_sessions()
     fp = _xrdp_fingerprint()
+    xrdp_ini = _read("/etc/xrdp/xrdp.ini") or ""
+    tls_required = "security_layer=tls" in xrdp_ini
+    configured_address = None
+    m = re.search(r"^port=tcp://([^:]+):%d$" % FIXED_PORTS["xrdp"], xrdp_ini, re.M)
+    if m:
+        configured_address = m.group(1) or None
+    listener_address = addrs[0] if len(addrs) == 1 else None
+    listener_verified = bool(active and listening and (configured_address is None
+                                                       or configured_address in addrs))
+    security_verified = bool(active and listener_verified and tls_required and fp)
     if not xrdp or not xorg:
-        state = "UNSUPPORTED"
-        reason = "xrdp or Xorg is not installed"
+        state, reason = "UNSUPPORTED", "xrdp or Xorg is not installed"
+    elif listening and not active:
+        state, reason = "ERROR", "An xrdp listener is open but sesman/xrdp units are not both active"
+    elif active and listening and not tls_required:
+        state, reason = "ERROR", "The effective xrdp config is not TLS-only; refusing to report READY"
     elif not active or not listening:
-        state = "OFF"
-        reason = "Service is stopped by default"
+        state, reason = "OFF", "Service is stopped by default"
     elif sessions.get("count", 0) > 0:
         state = "CONNECTED"
         reason = "An authenticated separate X11 session is active"
     else:
         state = "WAITING_FOR_CLIENT"
-        reason = "xrdp is listening for the owner's RDP client"
+        reason = "TLS xrdp is listening for the owner's RDP client"
     st = _state_doc().get("xrdp", {})
     return {
         "service": "xrdp",
@@ -430,15 +629,24 @@ def _xrdp_status() -> Dict[str, Any]:
         "preferred_transport": _preferred("xrdp"),
         "active_transport": "wlan" if active else None,
         "interface": (network_state().get("interface") if active else None),
-        "bind_address": BIND_ADDRESS,
+        "bind_address": configured_address or (network_state().get("address") if active else None),
+        "configured_bind_address": configured_address,
+        "listener_address": listener_address,
+        "listener_addresses": addrs,
         "port": FIXED_PORTS["xrdp"],
-        "listener_verified": listening,
+        "protocol": "tcp",
+        "listener_verified": listener_verified,
         "authenticated_clients": int(sessions.get("count", 0)),
         "active_users": sessions.get("users", []),
-        "authentication": "PAM_TLS",
-        "encrypted": True,
+        "authentication": "PAM + TLS 1.2/1.3",
+        "authentication_mode": "PAM",
+        "encrypted": bool(tls_required and fp),
+        "encryption_mode": "TLS 1.2/1.3" if tls_required else "none",
         "encrypted_detail": "TLS 1.2/1.3 with PAM authentication for the local nuxel account",
         "tls_fingerprint": fp,
+        "certificate_fingerprint": fp,
+        "security_verified": security_verified,
+        "tls_required": tls_required,
         "installed": bool(xrdp and xorg),
         "version": "xrdp 0.10.6.1 / xorgxrdp 0.10.5" if xrdp else None,
         "started_at": st.get("started_at"),
@@ -501,7 +709,8 @@ def _scrcpy_status() -> Dict[str, Any]:
     elif not targets and native_nuxel:
         state = "NOT_APPLICABLE_NATIVE_NUXEL"
         reason = ("scrcpy supports Android ADB targets. This handset runs native "
-                  "Nuxel Linux, not Android; use VNC Screen Sharing for native Nuxel.")
+                  "Nuxel Linux, not Android; use the authenticated native VNC "
+                  "screen mirror on TCP 15900.")
     elif not targets:
         state, reason = "NO_ANDROID_TARGET", "No Android ADB target is attached"
     elif not scrcpy:
@@ -535,7 +744,12 @@ def _scrcpy_status() -> Dict[str, Any]:
         "scrcpy_version": scrcpy,
         "native_nuxel": native_nuxel,
         "native_nuxel_note": ("scrcpy is not a native Nuxel screen-sharing protocol. "
-                              "Use VNC Screen Sharing to mirror the Phoc session."),
+                              "Use the authenticated VNC mirror on TCP 15900."),
+        "native_mirror": {
+            "service": "vnc", "host": network_state().get("address"),
+            "port": FIXED_PORTS["vnc"], "protocol": "tcp",
+            "direct_lan": True, "session_mode": "current-wayland-session",
+        },
         "usb": usb_network_status(),
     }
 
@@ -547,7 +761,7 @@ def get_status(service: Optional[str] = None) -> Dict[str, Any]:
     selected = {service: services[service]()} if service else {k: fn() for k, fn in services.items()}
     net = network_state()
     active = any(s.get("listener_verified") for s in selected.values()) or any(
-        s.get("authenticated_clients", 0) > 0 for s in selected.values())
+        (s.get("authenticated_clients") or 0) > 0 for s in selected.values())
     return {
         "success": True,
         "schema": SCHEMA,
@@ -564,10 +778,12 @@ def get_status(service: Optional[str] = None) -> Dict[str, Any]:
         "policy": {
             "off_by_default": True,
             "lan_scoped": True,
-            "loopback_listener": False,
+            "listener_scope": "trusted-wlan-ipv4",
+            "wildcard_listener": False,
             "direct_lan_listener": True,
             "requires_ssh_tunnel": False,
-            "vnc_unauthenticated": True,
+            "vnc_unauthenticated": False,
+            "vnc_authenticated": True,
             "usb_status": usb_network_status().get("status"),
         },
         "timestamp": time.time(),
@@ -614,12 +830,18 @@ def connection_info(service: str) -> Dict[str, Any]:
         return {"success": False, "error": "unknown service", "error_code": "INVALID_SERVICE"}
     net = network_state()
     host = net.get("address")
+    if service == "scrcpy":
+        return {
+            "success": True, "service": "scrcpy", "native": True,
+            "host": host, "port": FIXED_PORTS["vnc"], "protocol": "tcp",
+            "session": "current-wayland-session",
+            "detail": ("Native Nuxel is not an Android ADB target. Use the authenticated "
+                       "VNC mirror for the active Phoc session."),
+            "targets": _scrcpy_status().get("targets", []),
+            "ssh_tunnel_command": None, "password_included": False,
+        }
     port = FIXED_PORTS.get(service)
     fp = _xrdp_fingerprint() if service == "xrdp" else None
-    if service == "scrcpy":
-        return {"success": True, "service": "scrcpy",
-                "detail": "scrcpy targets Android ADB devices only; native Nuxel is not an Android target.",
-                "targets": _scrcpy_status().get("targets", [])}
     jump_url = f"{'rdp' if service == 'xrdp' else 'vnc'}://{host}:{port}" if host else None
     return {
         "success": True,
@@ -629,17 +851,22 @@ def connection_info(service: str) -> Dict[str, Any]:
         "interface": net.get("interface"),
         "trusted_lan": net.get("trusted_lan"),
         "port": port,
-        "bind_address": BIND_ADDRESS,
+        "protocol": "tcp",
+        "bind_address": host,
+        "bind_mode": "trusted-lan-ipv4",
+        "direct_lan": True,
         "ssh_tunnel_command": None,
         "jump_url": jump_url,
         "username": "nuxel",
         "password_included": False,
         "tls_fingerprint": fp,
-        "note": ("Direct owner-network listener. RDP uses TLS; VNC uses VeNCrypt TLS; "
-                 "both authenticate with PAM as the local nuxel account. Keep the LAN/ZeroTier "
-                 "network trusted; never port-forward 3389/5900 to the Internet."),
+        "session_mode": ("separate-x11-session" if service == "xrdp"
+                         else "current-wayland-session"),
+        "note": ("Direct owner-LAN listener on the current trusted WLAN IPv4 address. "
+                 "RDP uses TLS + PAM; VNC uses VeNCrypt TLS/RSA-AES + PAM. No SSH "
+                 "tunnel is required on the trusted LAN. Never port-forward 13389/15900 "
+                 "to the Internet."),
     }
-
 
 def handle(action: str, params: Optional[Dict[str, Any]] = None,
            app_id: Optional[str] = None) -> Dict[str, Any]:
@@ -669,9 +896,11 @@ def handle(action: str, params: Optional[Dict[str, Any]] = None,
             return {"success": False, "error": "transport not allowed for this service",
                     "error_code": "INVALID_TRANSPORT"}
         if transport == "usb":
-            return {"success": False, "error": "USB network is blocked on this kernel",
-                    "error_code": "BLOCKED_KERNEL_PANIC",
-                    "usb": usb_network_status()}
+            usb = usb_network_status()
+            return {"success": False,
+                    "error": "USB network is not validated on this kernel/host",
+                    "error_code": usb.get("status", "USB_MODE_UNVERIFIED"),
+                    "usb": usb}
         _write_preferences(service, transport)
         return {"success": True, "service": service, "preferred_transport": transport}
     if action in ("start", "stop"):
@@ -686,8 +915,11 @@ def handle(action: str, params: Optional[Dict[str, Any]] = None,
                 return {"success": False, "error": "transport not allowed for this service",
                         "error_code": "INVALID_TRANSPORT"}
             if transport == "usb":
-                return {"success": False, "error": "USB network is blocked on this kernel",
-                        "error_code": "BLOCKED_KERNEL_PANIC", "usb": usb_network_status()}
+                usb = usb_network_status()
+                return {"success": False,
+                        "error": "USB network is not validated on this kernel/host",
+                        "error_code": usb.get("status", "USB_MODE_UNVERIFIED"),
+                        "usb": usb}
         result = _helper(action, service)
         result.setdefault("success", False)
         result["status"] = get_status(service).get("services", {}).get(service)

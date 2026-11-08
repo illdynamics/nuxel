@@ -1,0 +1,18 @@
+[Unit]
+Description=Nuxel software watchdog keep-alive (softdog.soft_margin=100)
+Documentation=file:/usr/share/doc/nuxel/
+# The initramfs starts a softdog keeper, but after switch_root the path to
+# /dev/watchdog can change.  This unit guarantees the software watchdog is fed
+# once systemd is up, preventing the ~100 s softdog panic/reset.  It is safe to
+# run alongside the initramfs keeper: a busy /dev/watchdog just makes the write
+# fail silently and this loop retries every 10 s.
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c 'while :; do printf x > /dev/watchdog 2>/dev/null || true; sleep 10; done'
+Restart=always
+RestartSec=1
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

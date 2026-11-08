@@ -1,0 +1,23 @@
+[Unit]
+Description=Nuxel persistent interface state (Bluetooth/NFC/GNSS restore)
+Documentation=file:/usr/share/doc/nuxel/interface-state.md
+# Bluetooth is intentionally not pulled in here: nuxel-bluetooth.service owns
+# the H4 transport, while BlueZ itself is started only when the persisted state
+# says ON.  A first boot therefore stays OFF instead of powering the radio up
+# and then stopping it again.
+After=local-fs.target nuxel-nfcd.service NetworkManager.service nuxel-wifi.service
+Wants=nuxel-nfcd.service
+Before=nuxel-wayland.service
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-interface-state restore
+RemainAfterExit=yes
+TimeoutStartSec=45
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

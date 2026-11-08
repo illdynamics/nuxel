@@ -1,0 +1,96 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-07T15:25:45Z
+65fefa8d-5b43-4296-a8b5-4be2e3e4513a
+up 0 minutes
+Startup finished in 3.438s (kernel) + 12.355s (userspace) = 15.794s 
+multi-user.target reached after 12.355s in userspace.
+===
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @12.355s
+└─avahi-daemon.service @12.330s +23ms
+  └─network-online.target @12.328s
+    └─NetworkManager-wait-online.service @6.388s +5.939s
+      └─NetworkManager.service @4.178s +2.206s
+        └─dbus-daemon.service @4.033s
+          └─basic.target @4.030s
+            └─sockets.target @4.028s
+              └─systemd-logind-varlink.socket @4.028s +179us
+                └─sysinit.target @4.017s
+                  └─systemd-timesyncd.service @3.767s +249ms
+                    └─systemd-tmpfiles-setup.service @3.289s +472ms
+                      └─systemd-journal-flush.service @2.925s +347ms
+                        └─systemd-journald.service @2.299s +624ms
+                          └─systemd-journald.socket @2.285s +259us
+                            └─system.slice @2.262s
+                              └─-.slice @2.262s
+===
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @12.355s
+└─avahi-daemon.service @12.330s +23ms
+  └─network-online.target @12.328s
+    └─NetworkManager-wait-online.service @6.388s +5.939s
+      └─NetworkManager.service @4.178s +2.206s
+        └─dbus-daemon.service @4.033s
+          └─basic.target @4.030s
+            └─sockets.target @4.028s
+              └─systemd-logind-varlink.socket @4.028s +179us
+                └─sysinit.target @4.017s
+                  └─systemd-timesyncd.service @3.767s +249ms
+                    └─systemd-tmpfiles-setup.service @3.289s +472ms
+                      └─systemd-journal-flush.service @2.925s +347ms
+                        └─systemd-journald.service @2.299s +624ms
+                          └─systemd-journald.socket @2.285s +259us
+                            └─system.slice @2.262s
+                              └─-.slice @2.262s
+===
+5.939s NetworkManager-wait-online.service
+5.023s nuxel-fallback.service
+3.046s nuxel-audio-route.service
+2.206s NetworkManager.service
+1.263s nuxel-device-permissions.service
+1.194s nuxel-soundd.service
+1.019s nuxel-wl-fb.service
+ 819ms polkit.service
+ 759ms systemd-hostnamed.service
+ 751ms nuxel-interface-state.service
+ 648ms systemd-udev-trigger.service
+ 624ms systemd-journald.service
+ 491ms rtkit-daemon.service
+ 489ms nuxel-bootmode-guard.service
+ 472ms systemd-tmpfiles-setup.service
+ 417ms nuxel-orientationd.service
+ 360ms sshd.service
+ 352ms systemd-user-sessions.service
+ 347ms systemd-journal-flush.service
+ 249ms systemd-timesyncd.service
+ 246ms systemd-logind.service
+ 205ms nuxel-wifi.service
+ 177ms ModemManager.service
+ 169ms geoclue.service
+ 143ms systemd-tmpfiles-setup-dev-early.service
+ 114ms authselect-apply-changes.service
+  96ms nuxel-bootmode-oneshot.service
+  94ms nuxel-charger-mode-recovery.service
+  89ms systemd-network-generator.service
+  85ms systemd-tmpfiles-setup-dev.service
+  78ms nuxel-network-udev-seed.service
+  74ms systemd-sysctl.service
+  48ms wpa_supplicant.service
+  43ms sys-kernel-debug.mount
+  42ms sys-kernel-tracing.mount
+===
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.

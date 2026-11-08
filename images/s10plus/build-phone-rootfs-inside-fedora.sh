@@ -798,6 +798,11 @@ install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-wayland-stop.sh "$STAGE/usr/
 install -d "$STAGE/etc/systemd/system/geoclue.service.d"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/geoclue.service.d/10-nuxel-network.conf \
     "$STAGE/etc/systemd/system/geoclue.service.d/10-nuxel-network.conf"
+# PWNAGE-91000: keep avahi off the network-online critical path while preserving
+# interface ordering and bounded failure recovery.
+install -d "$STAGE/etc/systemd/system/avahi-daemon.service.d"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/avahi-daemon.service.d/10-nuxel-boot-order.conf \
+    "$STAGE/etc/systemd/system/avahi-daemon.service.d/10-nuxel-boot-order.conf"
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-geoclue-agent.service \
     "$STAGE/etc/systemd/system/nuxel-geoclue-agent.service"
 install -d "$STAGE/etc/systemd/system/nuxel-abox-firmware-reload.service.d" \
@@ -998,39 +1003,27 @@ install -m 0644 /nuxel/configs/nuxel/firewall/policy.schema.json \
 # verify-service-graph.py can prove install + enablement from the script text.
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-bridge.service             "$STAGE/etc/systemd/system/nuxel-bridge.service"
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-http-bridge.service        "$STAGE/etc/systemd/system/nuxel-http-bridge.service"
-# PWNAGE-47000 GUI remote access: separate provider, on-demand services and
-# loopback-only listeners.  Nothing here is enabled at boot.
+# PWNAGE-47000/92000 GUI remote access: separate provider, on-demand services,
+# trusted-WLAN bindings on RDP 13389 / VNC 15900.  Nothing starts at boot.
 install -d "$STAGE/usr/local/libexec/nuxel" "$STAGE/etc/nuxel/remote-desktop/vnc" \
          "$STAGE/etc/nuxel/remote-desktop/xrdp" "$STAGE/var/lib/nuxel/remote-desktop" \
          "$STAGE/usr/share/nuxel/remote-desktop"
 install -m 0755 /nuxel/services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl \
     "$STAGE/usr/local/libexec/nuxel/nuxel-remote-desktop-ctl"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/config/wayvnc.conf.example \
-    "$STAGE/etc/nuxel/remote-desktop/vnc/wayvnc.conf"
+    "$STAGE/etc/nuxel/remote-desktop/vnc/wayvnc.conf.example"
+install -m 0644 /nuxel/services/nuxel-remote-desktop/config/wayvnc.pam \
+    "$STAGE/etc/pam.d/wayvnc"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.service \
     "$STAGE/etc/systemd/system/nuxel-remote-vnc.service"
-# XRDP is a SEPARATE X11 session.  The account has no sudo, no root login and
-# no access to the active Wayland runtime socket.
-# Create gid 3003 before any supplementary-group lookup.  The Android 4.14
-# paranoid-network policy requires it for AF_INET sockets, and both the
-# restricted remote account and the interactive nuxel account use it.
+# XRDP is a SEPARATE X11 session run as the canonical local owner account
+# `nuxel` (uid 1000).  The retired `nuxel-remote` account is intentionally not
+# created: PAM and the session launcher both refuse any other identity.
+# The Android 4.14 paranoid-network policy requires gid 3003 for AF_INET.
 chroot "$STAGE" /usr/sbin/groupadd -f -g 3003 inet
-chroot "$STAGE" /usr/sbin/useradd --create-home --shell /bin/bash nuxel-remote 2>/dev/null || true
-chroot "$STAGE" /usr/sbin/usermod -aG inet nuxel-remote
-# PWNAGE-47000: every image gets its own strong RDP password for the
-# restricted account.  The value is never echoed by this script; it is written
-# only to a root-only 0600 file inside the image so the owner can read it once.
-install -d -m 0700 "$STAGE/etc/nuxel/remote-desktop/xrdp"
-_rdpw="$(openssl rand -hex 14)"
-[ "${#_rdpw}" -eq 28 ] || { echo 'ERROR: RDP credential generation failed' >&2; exit 1; }
-printf 'nuxel-remote:%s\n' "$_rdpw" | chroot "$STAGE" /usr/sbin/chpasswd
-( umask 077; printf '%s\n' "$_rdpw" > "$STAGE/etc/nuxel/remote-desktop/xrdp/credential" )
-chmod 0600 "$STAGE/etc/nuxel/remote-desktop/xrdp/credential"
-chown 0:0 "$STAGE/etc/nuxel/remote-desktop/xrdp/credential"
-unset _rdpw
-[ -s "$STAGE/etc/nuxel/remote-desktop/xrdp/credential" ] || {
-  echo 'ERROR: RDP credential file missing' >&2; exit 1; }
-install -d "$STAGE/home/nuxel-remote/.config/openbox" "$STAGE/home/nuxel-remote/.mozilla/firefox/xrdp"
+chroot "$STAGE" /usr/sbin/usermod -aG inet nuxel
+install -d "$STAGE/home/nuxel/.config/openbox" "$STAGE/home/nuxel/.mozilla/firefox/xrdp"
+chown -R 1000:1000 "$STAGE/home/nuxel/.config/openbox" "$STAGE/home/nuxel/.mozilla/firefox/xrdp"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/config/xrdp.ini \
     "$STAGE/etc/xrdp/xrdp.ini"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/config/sesman.ini \
@@ -1051,12 +1044,28 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 825 -subj '/CN=nuxel-remote-desk
     -keyout "$STAGE/etc/xrdp/nuxel-key.pem" -out "$STAGE/etc/xrdp/nuxel-cert.pem" >/dev/null 2>&1
 chmod 0640 "$STAGE/etc/xrdp/nuxel-key.pem" "$STAGE/etc/xrdp/nuxel-cert.pem"
 chgrp xrdp "$STAGE/etc/xrdp/nuxel-key.pem" "$STAGE/etc/xrdp/nuxel-cert.pem" 2>/dev/null || true
+# Per-image VNC material.  The controller regenerates only if these are absent;
+# authentication is mandatory, so a failure here fails the image build.
+install -d -m 0700 "$STAGE/etc/nuxel/remote-desktop/vnc"
+openssl req -x509 -newkey rsa:2048 -nodes -days 825 -subj '/CN=nuxel-vnc' \
+    -addext 'subjectAltName=DNS:nuxel,DNS:localhost,IP:127.0.0.1' \
+    -keyout "$STAGE/etc/nuxel/remote-desktop/vnc/tls_key.pem" \
+    -out "$STAGE/etc/nuxel/remote-desktop/vnc/tls_cert.pem" >/dev/null 2>&1
+ssh-keygen -q -m pem -t rsa -b 2048 -N '' \
+    -f "$STAGE/etc/nuxel/remote-desktop/vnc/rsa_key.pem" >/dev/null 2>&1
+chmod 0600 "$STAGE/etc/nuxel/remote-desktop/vnc/tls_key.pem" \
+             "$STAGE/etc/nuxel/remote-desktop/vnc/rsa_key.pem"
+chmod 0644 "$STAGE/etc/nuxel/remote-desktop/vnc/tls_cert.pem"
 # Clean-rootfs assertions: the supported binaries, unit and configs must exist.
 for _rd in /usr/bin/wayvnc /usr/bin/wayvncctl /usr/bin/xrdp /usr/libexec/Xorg \
            /usr/bin/openbox /usr/bin/firefox /usr/local/bin/nuxel-xrdp-session \
            /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl \
            /etc/systemd/system/nuxel-remote-vnc.service \
-           /etc/nuxel/remote-desktop/vnc/wayvnc.conf \
+           /etc/nuxel/remote-desktop/vnc/wayvnc.conf.example \
+           /etc/nuxel/remote-desktop/vnc/tls_cert.pem \
+           /etc/nuxel/remote-desktop/vnc/tls_key.pem \
+           /etc/nuxel/remote-desktop/vnc/rsa_key.pem \
+           /etc/pam.d/wayvnc \
            /etc/xrdp/xrdp.ini \
            /etc/xrdp/sesman.ini /etc/xrdp/xorg-nuxel.conf; do
   [ -e "$STAGE$_rd" ] || { echo "ERROR: remote-desktop missing $_rd" >&2; exit 1; }
@@ -1171,6 +1180,9 @@ NUXEL_NOTIFY_GID="$(awk -F: '$1=="nuxel-notifications"{print $3; exit}' "$STAGE/
   echo 'ERROR: nuxel-notifications group missing from staged group' >&2; exit 1; }
 chown 0:"$NUXEL_NOTIFY_GID" "$STAGE/var/lib/nuxel"
 chmod 0771 "$STAGE/var/lib/nuxel"
+# PWNAGE-91000: persistent PenguInterface spoof profiles (global + per app).
+install -d -m 0755 "$STAGE/var/lib/nuxel/spoof"
+chown "$NUXEL_BRIDGE_UID:$NUXEL_BRIDGE_GID" "$STAGE/var/lib/nuxel/spoof"
 setfacl -m "u:${NUXEL_BRIDGE_UID}:r-x" "$STAGE/var/lib/nuxel"
 setfacl -m "u:${NUXEL_UID}:r-x" "$STAGE/var/lib/nuxel"
 setfacl -m "u:${NUXEL_BRIDGE_UID}:rwx" "$STAGE/var/lib/nuxel/permissions"

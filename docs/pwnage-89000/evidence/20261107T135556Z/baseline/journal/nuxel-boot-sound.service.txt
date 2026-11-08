@@ -1,0 +1,35 @@
+[   11.247127] fedora systemd[1]: nuxel-boot-sound.service - Nuxel startup cue after confirmed boot-animation to launcher handoff skipped, unmet condition check ConditionPathExists=/run/nuxel-audio-route.state
+[   34.675323] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-boot-sound.service - Nuxel startup cue after confirmed boot-animation to launcher handoff...
+[   34.695873] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[7872]: 2026-11-07T13:40:11Z nuxel-audio-route: readiness failed: Calliope core is not MUB0
+[   34.713925] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[7899]: 2026-11-07T13:40:11Z nuxel-audio-route: readiness failed: Calliope core is not MUB0
+[   47.248991] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-sound-cue[7912]: {"audible": "unverified", "detail": "", "event": "boot", "pcm_gain_percent": 100, "result": "soundd_refused", "time": 1794058823}
+[   49.872561] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-sound-cue[7912]: {"alsa_device": "default", "audible": "unverified", "detail": "", "event": "boot", "exit_code": 0, "output": "pipewire", "pcm_gain_percent": 100, "result": "player_ok", "time": 1794058826}
+[   49.924872] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Deactivated successfully.
+[   49.925258] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Unit process 10564 (timeout) remains running after unit stopped.
+[   49.925490] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Unit process 10569 (pw-play) remains running after unit stopped.
+[   49.926368] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Finished nuxel-boot-sound.service - Nuxel startup cue after confirmed boot-animation to launcher handoff.
+[ 1005.874185] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1007.751787] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1009.510515] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1025.440972] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1027.132866] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1028.754818] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1030.388296] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1032.084991] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1033.782312] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1035.410793] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1037.119987] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1038.882544] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1040.377903] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1042.029080] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1043.639069] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1045.248753] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1046.982340] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1101.660845] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1140.282205] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1170.956813] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1186.100098] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1187.381528] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1188.625196] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1191.450018] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory
+[ 1193.917332] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Failed to get CPU usage: No such file or directory

@@ -1,0 +1,58 @@
+# PWNAGE-92000 baseline audit (read-only)
+captured_utc=2026-11-08T09:49:57Z
+  ## uname
+  Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+  ## boot_id
+  7c9fdaef-9a9d-4968-a76e-c541dbfcea0b
+  ## usb gadget
+  10c00000.dwc3
+  total 0
+  drwxr-xr-x. 2 root root 0 Nov  8 10:23 acm.usb0
+  total 0
+  -rw-r--r--. 1 root root 4096 Nov  8 10:50 MaxPower
+  lrwxrwxrwx. 1 root root    0 Nov  8 10:23 acm.usb0 -> ../../../../usb_gadget/nuxel/functions/acm.usb0
+  -rw-r--r--. 1 root root 4096 Nov  8 10:50 bmAttributes
+  drwxr-xr-x. 3 root root    0 Nov  8 10:23 strings
+  ## interfaces
+  lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+  mcps0            DOWN           <> 
+  umts_dm0         DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  rmnet0           DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  rmnet1           DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  rmnet2           DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  rmnet3           DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  rmnet4           DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  rmnet5           DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  rmnet6           DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  rmnet7           DOWN           <POINTOPOINT,MULTICAST,NOARP> 
+  ip_vti0@NONE     DOWN           0.0.0.0 <NOARP> 
+  ip6_vti0@NONE    DOWN           :: <NOARP> 
+  sit0@NONE        DOWN           0.0.0.0 <NOARP> 
+  ip6tnl0@NONE     DOWN           :: <NOARP> 
+  p2p0             DOWN           aa:db:03:b2:a1:d2 <BROADCAST,MULTICAST> 
+  wlan0            UP             96:42:b9:be:f3:7d <BROADCAST,MULTICAST,UP,LOWER_UP> 
+  wlan1            DORMANT        2a:47:12:f3:73:cd <NO-CARRIER,BROADCAST,MULTICAST,UP,LOWER_UP> 
+  ## addresses
+  1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+  17: wlan0    inet 192.168.178.167/24 brd 192.168.178.255 scope global dynamic noprefixroute wlan0\       valid_lft 84817sec preferred_lft 84817sec
+  ## routes
+  default via 192.168.178.1 dev wlan0 proto dhcp src 192.168.178.167 metric 600 
+  192.168.178.0/24 dev wlan0 proto kernel scope link src 192.168.178.167 metric 600 
+  ## listeners
+  State  Recv-Q Send-Q Local Address:Port Peer Address:Port
+  LISTEN 0      128        127.0.0.1:5037      0.0.0.0:*   
+  LISTEN 0      5          127.0.0.1:8080      0.0.0.0:*   
+  LISTEN 0      128        127.0.0.1:8624      0.0.0.0:*   
+  LISTEN 0      128          0.0.0.0:22        0.0.0.0:*   
+  LISTEN 0      5          127.0.0.1:8000      0.0.0.0:*   
+  LISTEN 0      128             [::]:22           [::]:*   
+  ## kernel usb config
+  CONFIG_USB_DWC3=y
+  CONFIG_USB_F_NCM=y
+  CONFIG_USB_F_RNDIS=y
+  CONFIG_USB_CONFIGFS=y
+  CONFIG_USB_CONFIGFS_NCM=y
+  # CONFIG_USB_CONFIGFS_ECM is not set
+  # CONFIG_USB_CONFIGFS_ECM_SUBSET is not set
+  CONFIG_USB_CONFIGFS_RNDIS=y
+  # CONFIG_USB_CONFIGFS_EEM is not set

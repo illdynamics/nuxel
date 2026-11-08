@@ -1,0 +1,60 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-07T14:03:38Z
+a07b9299-c05c-467a-bb08-9c94f0d80a36
+up 0 minutes
+Startup finished in 3.440s (kernel) + 45.565s (userspace) = 49.005s 
+multi-user.target reached after 45.186s in userspace.
+---
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @45.186s
+└─nuxel-mic-route.service @8.357s +36.826s
+  └─nuxel-audio-route.service @37.333s +4.505s
+    └─nuxel-device-permissions.service @4.027s +865ms
+      └─basic.target @4.000s
+        └─sockets.target @3.998s
+          └─systemd-logind-varlink.socket @3.998s +251us
+            └─sysinit.target @3.984s
+              └─systemd-timesyncd.service @3.737s +238ms
+                └─systemd-tmpfiles-setup.service @3.309s +422ms
+                  └─systemd-journal-flush.service @3.076s +229ms
+                    └─systemd-journald.service @2.453s +620ms
+                      └─systemd-journald.socket @2.439s +224us
+                        └─system.slice @2.414s
+                          └─-.slice @2.414s
+---
+Id=multi-user.target
+ActiveEnterTimestampMonotonic=48626927
+
+Id=nuxel-wayland.service
+ActiveEnterTimestampMonotonic=9897251
+
+Id=nuxel-wl-fb.service
+ActiveEnterTimestampMonotonic=11425655
+
+Id=nuxel-soundd.service
+ActiveEnterTimestampMonotonic=46989538
+
+Id=nuxel-clockd.service
+ActiveEnterTimestampMonotonic=7464903
+
+Id=nuxel-audio-session.service
+ActiveEnterTimestampMonotonic=40630792
+
+Id=nuxel-mic-route.service
+ActiveEnterTimestampMonotonic=48624145
+
+Id=nuxel-boot-sound.service
+ActiveEnterTimestampMonotonic=0
+
+Id=nuxel-abox-firmware-reload.service
+ActiveEnterTimestampMonotonic=45287324

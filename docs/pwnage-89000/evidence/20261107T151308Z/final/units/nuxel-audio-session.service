@@ -1,0 +1,28 @@
+[Unit]
+Description=Nuxel standalone PipeWire/WirePlumber audio session
+Documentation=file:/usr/share/doc/nuxel/AUDIO.md
+After=local-fs.target
+StartLimitIntervalSec=60
+StartLimitBurst=8
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
+Environment=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native
+ExecStart=/usr/lib/nuxel/nuxel-audio-session.sh
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=8
+KillMode=control-group
+SendSIGKILL=yes
+StandardOutput=journal
+StandardError=journal
+
+# PWNAGE-89000: audio-session is pulled in by nuxel-soundd (and the deferred
+# boot cue/ABOX path), but it is not a user-visible boot prerequisite.  Keeping
+# it out of multi-user.target.wants prevents the target from serializing behind
+# the two ABOX-triggered PipeWire restarts.  Playback/alarm readiness continues
+# in the background and soundd accepts/queues cues meanwhile.
+[Install]

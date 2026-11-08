@@ -1,0 +1,8 @@
+$ systemd-analyze time
+rc=0
+--- stdout ---
+Startup finished in 3.430s (kernel) + 12.713s (userspace) = 16.143s 
+multi-user.target reached after 12.712s in userspace.
+
+--- stderr ---
+

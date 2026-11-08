@@ -1,0 +1,26 @@
+[    7.853101] fedora systemd[1]: Started nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+[ 1005.236810] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1007.126208] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1008.951466] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1024.872170] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1026.589303] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1028.154668] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1029.873929] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1031.512380] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1033.198598] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1034.927753] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1036.658308] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1038.272758] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1039.994199] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1041.455630] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1043.102990] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1044.834589] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1046.342169] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1105.402961] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1145.320761] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1174.923358] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1186.119424] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1187.396965] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1188.643601] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1190.523462] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+[ 1193.778240] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory

@@ -1,0 +1,128 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===== nuxel-wayland
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=7630524
+ActiveEnterTimestampMonotonic=7653540
+Result=success
+ExecMainStartTimestampMonotonic=7652785
+===== nuxel-wl-fb
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=8098814
+ActiveEnterTimestampMonotonic=9118504
+Result=success
+ExecMainStartTimestampMonotonic=9117473
+===== nuxel-web
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=7549916
+ActiveEnterTimestampMonotonic=7549916
+Result=success
+ExecMainStartTimestampMonotonic=7549610
+===== nuxel-http-bridge
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=8815959
+ActiveEnterTimestampMonotonic=8815959
+Result=success
+ExecMainStartTimestampMonotonic=8815286
+===== nuxel-bridge
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=8813657
+ActiveEnterTimestampMonotonic=8813657
+Result=success
+ExecMainStartTimestampMonotonic=8812989
+===== nuxel-device-permissions
+ActiveState=active
+SubState=exited
+InactiveExitTimestampMonotonic=7497281
+ActiveEnterTimestampMonotonic=8761232
+Result=success
+ExecMainStartTimestampMonotonic=7496548
+===== nuxel-interface-state
+ActiveState=active
+SubState=exited
+InactiveExitTimestampMonotonic=10212757
+ActiveEnterTimestampMonotonic=10964307
+Result=success
+ExecMainStartTimestampMonotonic=10212207
+===== nuxel-touch-arm
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=7539193
+ActiveEnterTimestampMonotonic=7539193
+Result=success
+ExecMainStartTimestampMonotonic=7538406
+===== nuxel-button-manager
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=9125681
+ActiveEnterTimestampMonotonic=9125681
+Result=success
+ExecMainStartTimestampMonotonic=9124968
+===== nuxel-soundd
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=7535496
+ActiveEnterTimestampMonotonic=8730128
+Result=success
+ExecMainStartTimestampMonotonic=8600217
+===== nuxel-clockd
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=7493849
+ActiveEnterTimestampMonotonic=7493849
+Result=success
+ExecMainStartTimestampMonotonic=7492592
+===== nuxel-audio-session
+ActiveState=failed
+SubState=failed
+InactiveExitTimestampMonotonic=7483311
+ActiveEnterTimestampMonotonic=7483311
+Result=signal
+ExecMainStartTimestampMonotonic=7482585
+===== nuxel-audio-route
+ActiveState=inactive
+SubState=dead
+InactiveExitTimestampMonotonic=8764408
+ActiveEnterTimestampMonotonic=11810702
+Result=success
+ExecMainStartTimestampMonotonic=8763544
+===== nuxel-mic-route
+ActiveState=inactive
+SubState=dead
+InactiveExitTimestampMonotonic=0
+ActiveEnterTimestampMonotonic=0
+Result=success
+ExecMainStartTimestampMonotonic=0
+===== nuxel-boot-sound
+ActiveState=inactive
+SubState=dead
+InactiveExitTimestampMonotonic=0
+ActiveEnterTimestampMonotonic=0
+Result=success
+ExecMainStartTimestampMonotonic=0
+===== nuxel-abox-firmware-reload
+ActiveState=activating
+SubState=start
+InactiveExitTimestampMonotonic=20016308
+ActiveEnterTimestampMonotonic=0
+Result=success
+ExecMainStartTimestampMonotonic=20015529
+===== nuxel-fallback
+ActiveState=inactive
+SubState=dead
+InactiveExitTimestampMonotonic=9143991
+ActiveEnterTimestampMonotonic=0
+Result=exec-condition
+ExecMainStartTimestampMonotonic=0

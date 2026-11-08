@@ -26,9 +26,13 @@ need_user() {
 need_user nuxel-bridge
 need_user nuxel-notifications
 
-mkdir -p /var/lib/nuxel/permissions /var/log/nuxel
+mkdir -p /var/lib/nuxel/permissions /var/lib/nuxel/spoof /var/log/nuxel
 chown nuxel:nuxel /var/lib/nuxel/permissions
 chmod 0770 /var/lib/nuxel/permissions
+# PWNAGE-91000: persistent PenguInterface spoof profiles (global + per app).
+# Owned by the bridge identity so API writes do not need broader ACLs.
+chown nuxel-bridge:nuxel-bridge /var/lib/nuxel/spoof
+chmod 0755 /var/lib/nuxel/spoof
 # The portal owns this store as nuxel; the bridge needs group-only write access
 # to persist the grants it successfully brokers.  Do not make it world writable.
 usermod -a -G nuxel nuxel-bridge

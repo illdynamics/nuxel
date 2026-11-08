@@ -1,0 +1,135 @@
+{
+  "captured": "2026-11-06T18:05Z",
+  "flatpak": {
+    "api_launch_accepted_s": {
+      "p50": 0.038,
+      "p95": 0.0397,
+      "samples": [
+        0.036157,
+        0.039895
+      ]
+    },
+    "app_process_start_s": {
+      "p50": 2.596,
+      "p95": 2.8686,
+      "samples": [
+        2.329,
+        2.445,
+        2.596,
+        2.855,
+        2.872
+      ]
+    },
+    "close_s": {
+      "p50": 0.056,
+      "samples": [
+        0.056
+      ]
+    },
+    "first_visible_change_s": {
+      "method": "screencopy hash change + close-action window title",
+      "observed": 2.4,
+      "window_verified": true
+    },
+    "list_installed": {
+      "cached_ms": 0.0,
+      "cold_ms": 195.5,
+      "is_installed_ms": 0.3
+    },
+    "overrides_empty": true,
+    "portal": {
+      "a11y_bus_ok": true,
+      "document_portal_ok": true,
+      "no_noreply_errors": true
+    },
+    "provider_launch_s": {
+      "p50": 0.02,
+      "p95": 0.662,
+      "samples": [
+        0.538,
+        0.02,
+        0.015,
+        0.017,
+        0.693
+      ]
+    },
+    "sandbox_init_s": {
+      "p50": 0.728,
+      "p95": 0.7878,
+      "samples": [
+        0.795,
+        0.728,
+        0.71,
+        0.687,
+        0.759
+      ]
+    },
+    "sandbox_weakened": false,
+    "user_identity": "nuxel (uid 1000), user bus /run/user/1000/bus, wayland-0"
+  },
+  "remaining": {
+    "screen_off_cpu_not_zero": true,
+    "screen_off_indicator_poll_hz": 1.0,
+    "vesktop_legcord_login": "NOT_TESTED",
+    "visual_motion": "NEEDS_OWNER_TEST"
+  },
+  "renderer_policy": {
+    "auto_apps": [
+      "org.gnome.TextEditor"
+    ],
+    "default": "software-fallback",
+    "software_apps": [
+      "io.mpv.Mpv",
+      "org.videolan.VLC",
+      "org.mozilla.firefox",
+      "app.legcord.Legcord",
+      "dev.vencord.Vesktop",
+      "com.stremio.Stremio",
+      "org.signal.Signal"
+    ]
+  },
+  "schema": "nuxel.pwnage85000.candidate/1",
+  "whole_device": {
+    "bridge_cpu_pct": {
+      "api": 0.0,
+      "bridge": 0.3,
+      "note": "system_indicators cached 10 s when panel off"
+    },
+    "memory": {
+      "available": "5.9Gi",
+      "swap": "0B",
+      "used": "1.3Gi"
+    },
+    "repeated_user_scope_list_jobs": {
+      "count": 1,
+      "window_s": 120
+    },
+    "screen_off": {
+      "client_indicator_stop": "DEPLOYED: lockscreen-indicators.js stops 1 Hz timer on display_off; running page still on old script until next reload/reboot",
+      "indicator_cache": "10 s TTL when panel off; bridge API 22.3% -> 0.0%",
+      "phoc_pct": 1.3,
+      "pwa_host_pct": 2.7,
+      "pwa_host_repaint_writes_per_6s": 0,
+      "state": "DISPLAY_SLEEP display=off capture=stopped",
+      "total_pct": 14.9,
+      "webkit_pct": 10.0,
+      "wlfb_pct": 0.1
+    },
+    "screen_on_idle": {
+      "phoc_pct": 2.5,
+      "pwa_host_pct": 2.7,
+      "total_pct": 17.1,
+      "webkit_pct": 11.0,
+      "wlfb_pct": 0.9
+    },
+    "thermal_c": {
+      "battery_pct": 11,
+      "charging": false,
+      "zones": [
+        43.0,
+        41.0,
+        40.0
+      ]
+    }
+  }
+}

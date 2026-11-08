@@ -1,0 +1,120 @@
+[    7.850863] fedora systemd[1]: Starting nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream)...
+[    7.911470] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:44Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[    8.921271] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:45Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[    9.931438] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:46Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   10.943795] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:47Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   11.953129] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:48Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   12.965360] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:49Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   13.972958] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:50Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   14.982835] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:51Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   15.991516] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:52Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   16.999572] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:53Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   18.010638] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:54Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   19.026124] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:55Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   20.034707] fedora nuxel-audio-route.sh[5387]: 2026-11-07T13:39:56Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   21.050743] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:39:57Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   22.060607] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:39:58Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   23.073446] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:39:59Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   24.082412] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:00Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   25.090753] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:01Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   26.099396] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:02Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   27.107452] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:03Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   28.115955] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:04Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   29.124316] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:05Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   30.132397] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:06Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   31.140337] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:07Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   32.148442] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:08Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   33.156836] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:09Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   34.164948] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:10Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   35.173034] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:11Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   36.180614] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:12Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   37.188495] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:13Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   38.197196] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:14Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   39.205964] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:15Z nuxel-audio-route: waiting for readiness: Calliope core is not MUB0
+[   40.232373] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:16Z nuxel-audio-route: waiting for readiness: both CS35L41 DSP1 protection DSPs are not booted+running
+[   41.261081] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:17Z nuxel-audio-route: waiting for readiness: both CS35L41 DSP1 protection DSPs are not booted+running
+[   42.296088] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:18Z nuxel-audio-route: waiting for readiness: both CS35L41 DSP1 protection DSPs are not booted+running
+[   43.371700] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:19Z nuxel-audio-route: waiting for readiness: both CS35L41 DSP1 protection DSPs are not booted+running
+[   44.412333] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:20Z nuxel-audio-route: waiting for readiness: both CS35L41 DSP1 protection DSPs are not booted+running
+[   45.491828] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:21Z nuxel-audio-route: verify ABOX RDMA1_EN=0 expected 1
+[   45.520225] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:21Z nuxel-audio-route: verify ABOX SPKAMP_EN=0 expected 1
+[   45.549468] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:21Z nuxel-audio-route: verify ABOX SPKAMP_A=0 expected 2 (RDMA1)
+[   45.579326] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:21Z nuxel-audio-route: verify ABOX SPKAMP_B=0 expected 2 (RDMA1)
+[   45.610446] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:21Z nuxel-audio-route: verify Left AMP Enable Switch=on
+[   45.645225] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Right AMP Enable Switch=on
+[   45.668377] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Left AMP Mute=1 (Unmuted)
+[   45.726936] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Right AMP Mute=1 (Unmuted)
+[   45.776737] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Left AMP PCM Gain=12 (GAIN_CTRL=0x193)
+[   45.796594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Right AMP PCM Gain=12 (GAIN_CTRL=0x193)
+[   45.823000] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Left DSP1 Firmware=9 (Protection)
+[   45.840199] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Right DSP1 Firmware=9 (Protection)
+[   45.856607] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Left DSP1 Preload Switch=on
+[   45.879651] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Right DSP1 Preload Switch=on
+[   45.900971] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Left PCM Source=0 (ASP)
+[   45.920817] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify Right PCM Source=0 (ASP)
+[   45.943229] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX SPUS IN1=0 (RDMA)
+[   45.964297] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX SPUS OUT1=0 (SIFS1)
+[   45.984685] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX SIFS1=1 (SPUS OUT1)
+[   46.008105] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX UAIF1 SPK=2 (SIFS1)
+[   46.032637] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX SIFS1 OUT Switch=on
+[   46.075238] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX UAIF1 Switch=on
+[   46.102040] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX UAIF1 Rate=48000 (48 kHz)
+[   46.149367] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX UAIF1 Width=16 (16 bit)
+[   46.174877] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: verify ABOX UAIF1 Channel=2 (2 ch)
+[   46.182463] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:22Z nuxel-audio-route: waiting for readiness: one or more route controls are not applied
+[   47.251846] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify ABOX RDMA1_EN=1
+[   47.276238] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify ABOX SPKAMP_EN=1
+[   47.298074] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify ABOX SPKAMP_A=2 (RDMA1)
+[   47.312803] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify ABOX SPKAMP_B=2 (RDMA1)
+[   47.330658] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Left AMP Enable Switch=on
+[   47.344296] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Right AMP Enable Switch=on
+[   47.360446] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Left AMP Mute=1 (Unmuted)
+[   47.384538] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Right AMP Mute=1 (Unmuted)
+[   47.422471] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Left AMP PCM Gain=12 (GAIN_CTRL=0x193)
+[   47.455906] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Right AMP PCM Gain=12 (GAIN_CTRL=0x193)
+[   47.502656] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Left DSP1 Firmware=9 (Protection)
+[   47.532907] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Right DSP1 Firmware=9 (Protection)
+[   47.561523] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Left DSP1 Preload Switch=on
+[   47.582553] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Right DSP1 Preload Switch=on
+[   47.605186] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:23Z nuxel-audio-route: verify Left PCM Source=0 (ASP)
+[   47.636775] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify Right PCM Source=0 (ASP)
+[   47.659690] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX SPUS IN1=0 (RDMA)
+[   47.692065] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX SPUS OUT1=0 (SIFS1)
+[   47.730408] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX SIFS1=1 (SPUS OUT1)
+[   47.763069] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX UAIF1 SPK=2 (SIFS1)
+[   47.790178] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX SIFS1 OUT Switch=on
+[   47.817968] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX UAIF1 Switch=on
+[   47.853477] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX UAIF1 Rate=48000 (48 kHz)
+[   47.879796] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX UAIF1 Width=16 (16 bit)
+[   47.914266] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: verify ABOX UAIF1 Channel=2 (2 ch)
+[   48.122432] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5387]: 2026-11-07T13:40:24Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=1.0
+[   49.426053] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 install-sound-library[10552]: installed 0 supplied sound file(s) in /home/nuxel/Sounds and /usr/share/nuxel/sounds; preserved 0 custom file(s)
+[   49.443872] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream).
+[   49.596825] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11003]: 2026-11-07 14:40:25,970 INFO nuxel-soundd ready socket=/run/nuxel/soundd.sock dirs=['/home/nuxel/Sounds', '/usr/share/nuxel/sounds']
+[   49.669737] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11003]: 2026-11-07 14:40:26,042 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+[   50.326481] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11003]: 2026-11-07 14:40:26,699 INFO audio path warmed once; persistent stream keeps it live
+[   50.328725] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11003]: 2026-11-07 14:40:26,702 INFO persistent pw-cat stream started pid=11077 latency=40ms pipe_bytes=8192
+[   50.905747] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11003]: 2026-11-07 14:40:27,277 INFO sound prewarm complete: alarm=ok, boot=ok, message=ok, notification=ok, other=ok, timer=ok, volume=ok
+[ 1005.028501] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1006.978348] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1008.826432] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1024.747257] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1026.443818] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1028.044411] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1029.732339] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1031.354122] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1033.053908] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1034.804981] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1036.502071] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1038.152875] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1039.909227] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1041.353679] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1042.981306] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1044.684491] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1046.203866] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1133.838936] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1186.186076] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1187.459056] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1188.703894] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1190.354085] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[ 1193.521593] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory

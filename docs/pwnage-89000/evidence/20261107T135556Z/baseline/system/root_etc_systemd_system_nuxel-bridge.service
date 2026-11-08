@@ -1,0 +1,80 @@
+[Unit]
+Description=Nuxel Bridge - PWA to Native Phone Service Mediator
+Documentation=https://github.com/nuxel/nuxel/docs/architecture.md
+# DEPENDENCY DIRECTION (measured A33): the bridge CALLS the notification hub
+# (SendNotification -> org.nuxel.Notifications on the system bus), so the hub must
+# be up first. The previous revision had `Before=nuxel-notifications.service`
+# here while nuxel-notifications.service had `Before=nuxel-bridge.service`,
+# which is a real ordering CYCLE (tools/s10plus/a33/verify-service-graph.py
+# failed on it). The hub is the producer, the bridge is the consumer:
+#   nuxel-notifications.service -> nuxel-bridge.service
+Wants=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service
+# PWNAGE-32000 (boot regression): network-online.target previously pulled the
+# whole launcher chain behind NetworkManager-wait-online.service, which waits
+# a full minute (timeout) before multi-user.target reaches the UI.  The bridge
+# is a D-Bus mediator and does not need the network to be online to start;
+# network connectivity is consumed asynchronously by the apps that need it.
+After=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service
+Before=phosh.service
+# Restart-burst bound ([Unit], not [Service]).
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-bridge
+# The bridge refuses to answer a PWA whose bridge_version does not match the
+# pinned value in pwa/nuxel-common/bridge-version.json; publish it so the pin is
+# visible in `systemctl show -p Environment`.
+#   NUXEL_BRIDGE_PROTOCOL_VERSION = the pinned PWA<->host contract ("1")
+#   NUXEL_BRIDGE_VERSION          = the host implementation version
+Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
+Environment=NUXEL_BRIDGE_VERSION=0.7.7-beta
+Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
+Restart=on-failure
+RestartSec=5
+RestartMaxDelaySec=30
+
+# Security hardening
+User=nuxel-bridge
+Group=nuxel-bridge
+# The portal owns the shared capability store as the graphical `nuxel` user.
+# The bridge also persists the grants it brokers, so grant it only group access
+# to that one directory rather than running the bridge as root.
+SupplementaryGroups=nuxel
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SecureBits=keep-caps
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictNamespaces=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service @dbus
+SystemCallErrorNumber=EPERM
+LockPersonality=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+ProcSubset=pid
+RemoveIPC=true
+DevicePolicy=closed
+KeyringMode=private
+RuntimeDirectory=nuxel-bridge
+StateDirectory=nuxel-bridge
+CacheDirectory=nuxel-bridge
+# Permission grants and the HTTP-bridge token live in the shared Nuxel data dir
+# (configs/nuxel/paths.conf: NUXEL_DATA_DIR=/var/lib/nuxel).
+ReadWritePaths=/var/lib/nuxel /var/log/nuxel
+
+# D-Bus access
+# Sockets: D-Bus uses system bus socket, no extra sockets needed
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,65 @@
+[Unit]
+Description=Nuxel Portal Daemon
+Documentation=https://nuxel.org/docs/portal
+# PWNAGE-32000 (boot regression): network.target pulls NetworkManager (which
+# waits for the vendor Wi-Fi wlan0.device) into the launcher chain.  The
+# portal is a local consent daemon and does not need network.target.
+After=dbus.service
+Before=phosh.service nuxel-bridge.service
+Wants=dbus.service
+
+# Portal must be running before any apps or bridge can request permissions
+# It mediates ALL hardware access through user-consent GTK4 dialogs
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-portal
+Restart=on-failure
+RestartSec=5
+# MEASURED (2026-08-19): the portal must run as the graphical 'nuxel' user
+# (uid 1000).  It forwards every consent request to org.nuxel.PhoshAgent on the
+# SESSION bus, and the user bus rejects cross-uid connections while root cannot
+# reach the session bus at all.  configs/dbus/org.nuxel.Portal.conf allows the
+# 'nuxel' user (and root, for older deployments) to own org.nuxel.Portal.
+User=nuxel
+Group=nuxel
+# /var/lib/nuxel is 0770 root:nuxel-notifications.  The portal owns
+# /var/lib/nuxel/permissions, so it needs traverse access to the parent even if
+# a deployed image lost the per-user ACL from an older build.  This group grants
+# traverse only; the permissions directory remains nuxel:nuxel 0770.
+SupplementaryGroups=nuxel-notifications
+
+# Security hardening for portal daemon
+# relaxed from strict to full — GTK4/Wayland/DBus need /usr access
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+PrivateDevices=no
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictRealtime=yes
+LockPersonality=yes
+
+# Portal needs D-Bus, GTK4, libadwaita, Wayland, and /var/lib/nuxel
+ReadWritePaths=/var/lib/nuxel/permissions /run/user
+ReadOnlyPaths=/etc/dbus-1 /usr/share
+
+# Session-bus access (the Phosh agent lives on the user bus).
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+# The Bounded consent window: a request with no answer inside this window is
+# DENIED.  Must stay below nuxel-bridge's PORTAL_DBUS_TIMEOUT_SECONDS (120).
+Environment=NUXEL_PORTAL_TIMEOUT_SECONDS=30
+Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
+
+# AppArmorProfile was REMOVED here: the S10+ 4.14 vendor kernel does not
+# provably enable AppArmor (Nuxel has no verified AppArmor policy load path on
+# this device), and declaring a profile that is never enforced is a cosmetic
+# switch that lies about enforcement.  See docs/beta-finalization/system/
+# SERVICE-GRAPH.md and the security threat model.  No enforcement is claimed.
+
+[Install]
+WantedBy=multi-user.target

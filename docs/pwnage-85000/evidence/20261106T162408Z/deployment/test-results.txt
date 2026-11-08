@@ -1,0 +1,13 @@
+PWNAGE-85000 automated tests (local repo)
+Command: python3 -m pytest -q tests/pwnage85000 tests/pwnage37000/test_butterscotch_perf.py tests/pwnage84000
+Result: 90 passed
+
+New suites:
+  tests/pwnage85000/test_flatpak_launch_perf.py  9 passed
+  tests/pwnage85000/test_motion_contract.py      7 passed
+
+Known pre-existing legacy failures (files not changed by this campaign):
+  tests/pwnage37000/test_boot_butterscotch.py::test_abox_unit_does_not_want_multi_user
+  tests/pwnage37000/test_butterscotch_smooth.py::test_lockscreen_has_no_infinite_indicator_animation
+  tests/pwnage37000/test_pwnage37000.py::test_home_css_has_no_giant_panel_shadows (lockscreen.css 28px shadow)
+  tests/pwnage37000/test_pwnage37000.py::test_a29_and_a45_session_scripts_are_identical

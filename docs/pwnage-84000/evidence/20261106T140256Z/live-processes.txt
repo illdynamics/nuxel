@@ -1,0 +1,540 @@
+=== ps ===
+   3474 root     sh              sh /usr/lib/nuxel/nuxel-postboot.sh 20
+   3506 root     nuxel-console   /opt/nuxel/nuxel-console /newroot
+   3507 root     nuxel-console   /opt/nuxel/nuxel-console /newroot
+   5377 nuxel-b+ python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+   5379 root     python3         python3 /usr/lib/nuxel/nuxel-hapticsd.py
+   5385 root     python3         /usr/bin/python3 -m nuxel_nfc.daemon daemon
+   5386 nuxel-n+ python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+   5393 nuxel    python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+   5394 root     python3         python3 /usr/libexec/nuxel/nuxel-soundd
+   5395 root     python3         python3 /usr/libexec/nuxel/nuxel-clockd
+   5398 root     nuxel-touch-arm /usr/lib/nuxel/nuxel-touch-arm
+   5399 root     bash            bash /usr/lib/nuxel/nuxel-usb-mode.sh monitor
+   5869 nuxel-b+ python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+   5870 root     python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+   5871 nuxel    python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-web-server.py
+   5877 root     nuxel-wayland-g /bin/sh /usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+   5924 root     python3         python3 /usr/libexec/nuxel/nuxel-orientationd daemon
+   5942 root     phoc            /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+   6098 root     nuxel-pwa-host  /usr/lib/nuxel/nuxel-pwa-host
+   6134 root     nuxel-wl-fb     /usr/lib/nuxel/nuxel-wl-fb
+   6136 root     nuxel-button-ma /usr/lib/nuxel/nuxel-button-manager
+   6198 root     nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6200 root     nuxel-osd       /usr/lib/nuxel/nuxel-osd
+   6205 root     nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6206 root     nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6207 root     nuxel-navdock   /usr/lib/nuxel/nuxel-navdock
+   6208 root     nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6210 root     nuxel-foreign-t /usr/lib/nuxel/nuxel-foreign-toplevel watch-lock
+   6211 root     nuxel-statusbar /usr/lib/nuxel/nuxel-statusbar
+   6217 root     dbus-daemon     dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+   6250 nuxel    dbus-daemon     dbus-daemon --session --fork --address=unix:path=/run/user/1000/bus --nopidfile
+   6257 root     runuser         runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal-gtk
+   6261 nuxel    xdg-desktop-por /usr/libexec/xdg-desktop-portal-gtk
+   6283 root     dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   6428 root     runuser         runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal
+   6430 root     nuxel-session.s [nuxel-session.s] <defunct>
+   6979 nuxel    xdg-desktop-por /usr/libexec/xdg-desktop-portal
+   6991 nuxel    xdg-permission- /usr/libexec/xdg-permission-store
+   7164 root     dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   7174 root     WebKitNetworkPr /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 21
+   7175 root     WebKitWebProces /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 24
+   8362 root     nuxel-audio-ses /bin/sh /usr/lib/nuxel/nuxel-audio-session.sh
+   8366 root     pipewire        pipewire
+   8368 root     wireplumber     wireplumber
+   8369 root     pipewire-pulse  pipewire-pulse
+  16381 nuxel    bwrap.real      /usr/libexec/bwrap.real --args 3 -- startvesktop --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu
+  16416 nuxel    bwrap.real      /usr/libexec/bwrap.real --args 3 -- /usr/bin/xdg-dbus-proxy --args=67
+  16417 nuxel    xdg-dbus-proxy  /usr/bin/xdg-dbus-proxy --args=67
+  16425 nuxel    bwrap.real      /usr/libexec/bwrap.real --args 3 -- startvesktop --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu
+  16430 nuxel    bash            bash /app/bin/startvesktop --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu
+  16432 nuxel    vesktop.bin     /app/bin/vesktop/vesktop.bin --enable-speech-dispatcher --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu
+  16444 nuxel    vesktop.bin     /app/bin/vesktop/vesktop.bin --type=zygote --no-zygote-sandbox
+  16446 nuxel    zypak-sandbox   /app/bin/vesktop/chrome-sandbox /app/bin/vesktop/vesktop.bin --type=zygote
+  16448 nuxel    cat             cat
+  16449 nuxel    cat             cat
+  16512 nuxel    vesktop.bin     /app/bin/vesktop/vesktop.bin --type=gpu-process --ozone-platform=wayland --enable-crash-reporter=43aeca82-2c92-49c0-b536-20bde916dcb2,no_channel --user-data-dir=/home/nuxel/.var/app/dev.vencord.Vesktop/config/vesktop --gpu-preferences=YAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAASAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --use-gl=disabled --shared-files --field-trial-handle=3,i,8876101015160327429,5041258494370099185,262144 --enable-features=PdfUseShowSaveFilePicker,UseOzonePlatform --disable-features=DropInputEventsWhilePaintHolding,HardwareMediaKeyHandling,LocalNetworkAccessChecks,MediaSessionService,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation,WaylandWpColorManagerV1 --variations-seed-version --pseudonymization-salt-handle=7,i,2705607976655647453,892831683053893013,4 --trace-process-track-uuid=3190708988185955192
+  16518 nuxel    vesktop.bin     /app/bin/vesktop/vesktop.bin --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --enable-crash-reporter=43aeca82-2c92-49c0-b536-20bde916dcb2,no_channel --user-data-dir=/home/nuxel/.var/app/dev.vencord.Vesktop/config/vesktop --standard-schemes=vesktop --secure-schemes=vesktop --cors-schemes=vesktop --fetch-schemes=vesktop --streaming-schemes=vesktop --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,8876101015160327429,5041258494370099185,262144 --enable-features=PdfUseShowSaveFilePicker,UseOzonePlatform --disable-features=DropInputEventsWhilePaintHolding,HardwareMediaKeyHandling,LocalNetworkAccessChecks,MediaSessionService,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation,WaylandWpColorManagerV1 --variations-seed-version --pseudonymization-salt-handle=7,i,2705607976655647453,892831683053893013,4 --trace-process-track-uuid=3190708989122997041
+  16520 nuxel    vesktop.bin     /app/bin/vesktop/vesktop.bin --type=broker
+  22110 nuxel    python3         python3 /usr/lib/nuxel/nuxel-software
+  36744 root     fusermount3     fusermount3 --auto-unmount -- /run/nuxel-wayland/doc
+=== session files ===
+total 0
+drwxr-x---.  8 root  nuxel  300 Nov  6 14:14 .
+drwxr-xr-x. 20 root  root  1340 Nov  6 15:03 ..
+drwx------.  2 root  root    60 Nov  6 13:51 at-spi
+srwxrwxrwx.  1 root  root     0 Nov  6 13:51 bus
+drwx------.  3 root  root    60 Nov  6 13:51 dbus-1
+drwx------.  2 nuxel nuxel   60 Nov  6 13:51 dconf
+dr-x------.  2 root  root     0 Jan  1  1970 doc
+drwx------.  2 root  root    60 Nov  6 13:51 keyring
+srwxr-xr-x.  1 root  root     0 Nov  6 13:51 pipewire-0
+srwxr-xr-x.  1 root  root     0 Nov  6 13:51 pipewire-0-manager
+-rw-r-----.  1 root  root     0 Nov  6 13:51 pipewire-0-manager.lock
+-rw-r-----.  1 root  root     0 Nov  6 13:51 pipewire-0.lock
+drwx------.  2 root  root    80 Nov  6 13:51 pulse
+srw-rw----.  1 root  nuxel    0 Nov  6 13:51 wayland-0
+-rw-r-----.  1 root  nuxel    0 Nov  6 13:51 wayland-0.lock
+---
+total 80
+drwxr-xr-x.  4 root root   400 Nov  6 15:03 .
+drwxr-xr-x. 20 root root  1340 Nov  6 15:03 ..
+-rw-r--r--.  1 root root    11 Nov  6 13:51 boot-sound-attempted
+-rw-r--r--.  1 root root     0 Nov  6 13:51 boot-sound.lock
+-rw-r--r--.  1 root root   282 Nov  6 15:03 clockd.state
+-rw-r--r--.  1 root root    50 Nov  6 14:19 flatpak-65b65b8c7d7c4ee2.log
+-rw-r--r--.  1 root root    26 Nov  6 15:03 foreground.state
+-rw-------.  1 root root   588 Nov  6 13:51 graphics-gpu-probe.json
+-rw-r--r--.  1 root root   160 Nov  6 15:03 lock-enforcement.state
+drwx------.  2 root root    80 Nov  6 13:51 nfc
+-rw-r--r--.  1 root root 25088 Nov  6 13:51 preload-cinema-mpv.log
+-rw-r--r--.  1 root root    79 Nov  6 13:51 preload-cinema.done
+-rw-r--r--.  1 root root     5 Nov  6 13:51 preload-cinema.lock
+-rw-r--r--.  1 root root   279 Nov  6 13:51 preload-cinema.overlay
+-rw-r--r--.  1 root root  2011 Nov  6 13:51 preload-cinema.receipt
+drwx------.  2 root root    60 Nov  6 15:00 security
+-rw-r--r--.  1 root root   141 Nov  6 15:03 shell-chrome.json
+-rw-r--r--.  1 root root     5 Nov  6 13:51 shell-chrome.owner
+srw-rw----.  1 root root     0 Nov  6 13:51 soundd.sock
+-rw-r--r--.  1 root root    56 Nov  6 13:51 verbose-boot
+=== units ===
+# /etc/systemd/system/nuxel-wayland.service
+[Unit]
+Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+# Bounded restarts (mission 16): never spin into a process storm.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+After=nuxel-touch-arm.service seatd.service
+Wants=nuxel-touch-arm.service seatd.service
+Before=nuxel-wl-fb.service nuxel-fallback.service
+
+[Service]
+Type=simple
+# phoc from the phone image, wlroots 0.19 headless backend + pixman renderer:
+# the only Wayland output this kernel (CONFIG_DRM unset) can offer.
+# A31: the libinput backend must be requested explicitly (A29 asked for 'headless'
+# alone, so wlroots never even attempted an input backend) and it needs a backend
+# session - seatd provides it (LIBSEAT_BACKEND=seatd).  Both were measured as the
+# missing link between "sec_ts produces data" and "the compositor sees a finger".
+Environment=WLR_BACKENDS=headless,libinput
+# A31: the handset has NO VT (/dev/tty0, /sys/class/vtconsole, /proc/consoles all
+# absent), so a VT-bound seat can never activate - seatd's seat was measured to
+# time out ('backend.c:105 Timeout waiting session to become active') while libseat's
+# noop backend satisfies wlroots' session requirement.  Device access is then granted
+# by the preloaded shim for /dev/input paths only.
+Environment=LIBSEAT_BACKEND=noop
+# If the panel node is absent (the handset booted in CHARGER MODE, where sec_ts
+# never binds at all - measured A29b/A31) wlroots would otherwise fail the whole
+# backend and phoc would restart-loop.  The shim records what it actually found in
+# /run/nuxel-libinput-path.state, so 'zero devices' stays visible evidence.
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+# A31: the udev daemon is masked on this image (it cannot register workers on 4.14
+# and forks unboundedly - measured A26 and re-measured this cycle), so libinput's
+# udev backend discovers zero devices.  The preloaded shim redirects ONLY libinput's
+# discovery step to its path backend and adds the real /dev/input/eventN node that
+# carries INPUT_PROP_DIRECT (the panel's sec_touchscreen).  Real evdev, real
+# libinput parsing, real wl_touch - no synthesised events.  See
+# tools/s10plus/a31/nuxel-libinput-path.c.
+Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
+Environment=WLR_RENDERER=pixman
+Environment=WLR_HEADLESS_OUTPUTS=1
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
+ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
+# PWNAGE-48000 routed the compositor through a GPU-first launcher.  The wrapper
+# exports the Mali-G76/panfrost kbase path and falls back to pixman on failure;
+# it invokes the EXACT measured phoc command below, so no measured setting is
+# lost - only wrapped.
+ExecStart=/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/nuxel-wayland.service.d/05-start-after-web.conf
+[Unit]
+After=nuxel-web.service
+Wants=nuxel-web.service
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+
+# /etc/systemd/system/nuxel-wayland.service.d/30-fast-stop.conf
+# PWNAGE-37000 BUTTERSCOTCH boot-latency fix.
+#
+# The ABOX firmware-reload service stops nuxel-wayland.service before cycling
+# the audio DSP, then restarts it. On this 4.14 vendor kernel the default
+# 90 s stop timeout let phoc/WebKit/PipeWire sit in final-sigterm for ~46 s
+# before systemd aborted the stop. That single stop is the largest measured
+# component of the S10+ cold-boot "spinning penguin" delay.
+#
+# The session is restarted immediately afterwards by the ABOX wrapper, so a
+# short, deterministic stop is the correct behaviour: TERM the whole cgroup,
+# then SIGKILL what remains after 8 s. Normal shutdown also benefits because
+# the compositor no longer hangs the reboot for up to 90 s.
+[Service]
+TimeoutStopSec=8
+SendSIGKILL=yes
+KillMode=control-group
+
+# /etc/systemd/system/nuxel-wayland.service.d/40-bounded-stop.conf
+# PWNAGE-51000/62000: the compositor is the only unit that consumed its full
+# stop timeout during a normal reboot.  The measured failure was the old
+# ExecStop signalling only MAINPID/direct children: the wrapper exits first,
+# phoc is reparented, and pkill -P no longer sees it.  Signal the exact unit
+# cgroup (cgroup v2 system.slice path), wait 0.5 s, then KILL what remains.
+# Bounded, unit-specific, and no global timeout is changed.
+[Service]
+TimeoutStopSec=2
+ExecStop=/usr/lib/nuxel/nuxel-wayland-stop.sh
+KillMode=control-group
+SendSIGKILL=yes
+
+# /etc/systemd/system/nuxel-wayland.service.d/50-kbase-egl.conf
+# PWNAGE-53000: load the kbase Mesa EGL build by absolute path.
+# Without this, glvnd follows /usr/lib64/libEGL_mesa.so.0 and a Mesa package
+# update can silently point it back at the stock (llvmpipe-capable) library.
+[Service]
+Environment=__EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json
+Environment=LIBGL_DRIVERS_PATH=/usr/lib64/dri
+
+# /etc/systemd/system/nuxel-wayland.service.d/90-doom-diag.conf
+[Service]
+Environment=NUXEL_INPUT_DIAG=1
+
+# /etc/systemd/system/nuxel-clockd.service
+[Unit]
+Description=Nuxel background alarm and timer scheduler
+Documentation=file:/usr/share/doc/nuxel/CLOCK.md
+After=local-fs.target nuxel-soundd.service
+Wants=nuxel-soundd.service
+StartLimitIntervalSec=60
+StartLimitBurst=8
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+ExecStart=/usr/libexec/nuxel/nuxel-clockd
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+KillMode=control-group
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+
+# /etc/systemd/system/nuxel-soundd.service
+[Unit]
+Description=Nuxel central sound manager (persistent PipeWire cue stream)
+Documentation=file:/usr/share/doc/nuxel/SOUNDS.md
+After=local-fs.target nuxel-audio-session.service
+Wants=nuxel-audio-session.service
+StartLimitIntervalSec=60
+StartLimitBurst=8
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
+Environment=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native
+ExecStart=/usr/libexec/nuxel/nuxel-soundd
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+KillMode=control-group
+SendSIGKILL=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+
+# /etc/systemd/system/nuxel-app-prewarm.service
+[Unit]
+Description=Nuxel GTK/Flatpak font, icon and desktop cache prewarm
+After=local-fs.target
+Before=graphical.target
+ConditionPathExists=/usr/bin/fc-cache
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-app-prewarm
+TimeoutStartSec=180
+Nice=10
+IOSchedulingClass=idle
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+=== install tree ===
+total 4088
+drwxr-xr-x. 16   501 games  77824 Nov  6 13:51 .
+drwxr-xr-x. 39   501 games   4096 Nov  5 20:52 ..
+-rwxr-xr-x.  1   501 games    212 Nov  1 12:20 ._nuxel-charger-mode-recovery.sh
+drwxr-xr-x   2 root  root    4096 Nov  4 11:28 __pycache__
+-rwxr-xr-x   1 root  root     723 Oct 25 20:14 a73-logger.sh
+-rwxr-xr-x   1 root  root    1984 Oct 25 20:13 a74-logger.sh
+-rw-r--r--   1 root  root  125914 Nov  1 10:27 api.py
+-rw-r--r--   1 root  root    1399 Oct 22 19:28 elfsym.py
+-rwxr-xr-x.  1 root  root   74280 Nov  1 17:37 libnuxel-libinput-path.so
+-rwxr-xr-x.  1 root  root   74280 Nov  1 17:33 libnuxel-libinput-path.so.p54000-prev
+-rwxr-xr-x.  1 root  root   73984 Nov  1 16:49 libnuxel-libinput-path.so.p54000-prev2
+-rwxr-xr-x   1 root  root    5114 Oct 31 00:01 nuxel-abox-firmware-reload-boot.sh
+-rwxr-xr-x   1 root  root    3804 Oct 29 22:53 nuxel-abox-firmware-reload.sh
+-rwxr-xr-x   1 root  root   13389 Sep 15 03:14 nuxel-anim-pack.py
+-rwxr-xr-x   1 root  root    1216 Sep 15 03:10 nuxel-animation-claim
+-rwxr-xr-x   1 root  root   18019 Oct 30 22:46 nuxel-audio-route.sh
+-rwxr-xr-x   1 root  root    5660 Oct 29 18:57 nuxel-audio-route.sh.bak-1793299204
+-rwxr-xr-x   1 root  root   14633 Oct 30 13:44 nuxel-audio-route.sh.bak-1793364293
+-rwxr-xr-x   1 root  root   15335 Oct 30 20:51 nuxel-audio-route.sh.bak-1793390000
+-rwxr-xr-x   1 root  root    5955 Oct 29 19:40 nuxel-audio-route.sh.bak-20261029T205535
+-rwxr-xr-x.  1 root  root    2033 Nov  1 11:38 nuxel-audio-session.sh
+-rwxr-xr-x.  1 root  root    1104 Nov  4 00:11 nuxel-audio-stop.sh
+-rwxr-xr-x   1 root  root    3801 Oct 30 23:06 nuxel-audio-warmup
+-rwxr-xr-x   1 root  root    2402 Oct 28 12:58 nuxel-bcm4375-patchram.py
+-rwxr-xr-x   1 root  root     453 Oct 28 12:58 nuxel-bluetooth-up
+drwxr-xr-x.  3   501 games 212992 Nov  6 11:01 nuxel-bridge
+drwxr-xr-x   3 root  root    4096 Oct 28 17:15 nuxel-browser-native
+-rwxr-xr-x   1 root  root   72384 Oct 17 14:17 nuxel-button-fsm-sim
+-rwxr-xr-x.  1 root  root   77736 Nov  5 20:57 nuxel-button-manager
+-rwxr-xr-x   1 root  root   77360 Oct 21 08:38 nuxel-button-manager.bak-20261029T204632
+-rwxr-xr-x   1 root  root   77360 Oct 20 22:52 nuxel-button-manager.prev
+-rwxr-xr-x   1 root  root   75984 Sep 15 02:35 nuxel-button-manager.prev-a32
+drwxr-xr-x   3 root  root    4096 Oct 28 17:15 nuxel-camera-native
+drwxr-xr-x   2 root  root    4096 Sep 15 02:49 nuxel-camera-portal
+-rwxr-xr-x.  1   501 games   3806 Nov  1 12:20 nuxel-charger-mode-recovery.sh
+drwxr-xr-x   2 root  root    4096 Sep 15 02:46 nuxel-console
+-rwxr-xr-x   1 root  root    1692 Sep 15 02:46 nuxel-console-free
+-rwxr-xr-x.  1 root  root    1973 Nov  4 10:44 nuxel-crispy-doom
+-rwxr-xr-x   1 root  root     130 Oct 30 22:57 nuxel-cs35l41-apply.sh
+-rwxr-xr-x   1 root  root    1157 Oct 30 22:39 nuxel-cs35l41-apply.sh.bak-warmup-1793397445
+-rwxr-xr-x   1 nuxel nuxel   1422 Oct 28 16:47 nuxel-device-permissions.sh
+-rwxr-xr-x   1 nuxel nuxel    836 Oct 28 16:22 nuxel-device-permissions.sh.pre-36000
+-rwxr-xr-x.  1 root  root    1132 Nov  6 13:51 nuxel-device-permissions.sh.real-36000
+-rwxr-xr-x.  1 root  root    3360 Nov  4 12:45 nuxel-doom-engine
+-rwxr-xr-x.  1 root  root   24956 Nov  4 10:48 nuxel-doom-launcher
+-rwxr-xr-x.  1 root  root   73064 Nov  1 15:27 nuxel-egl-wayland-probe
+-rwxr-xr-x.  1 root  root     804 Nov  4 10:46 nuxel-flatpak-doom
+-rwxr-xr-x.  1 root  root    1731 Nov  4 10:28 nuxel-flatpak-doom.bak-pre-soundfix
+-rwxr-xr-x.  1 root  root     374 Nov  1 11:37 nuxel-flatpak-firefox
+-rwxr-xr-x.  1 root  root     506 Nov  1 11:37 nuxel-flatpak-signal
+-rwxr-xr-x.  1 root  root     462 Nov  1 11:37 nuxel-flatpak-stremio
+-rwxr-xr-x   1 root  root     166 Oct 31 00:35 nuxel-flatpak-vlc
+-rwxr-xr-x   1 root  root     585 Oct 31 00:41 nuxel-focus-app.sh
+-rwxr-xr-x.  1 root  root   75728 Nov  5 14:41 nuxel-foreign-toplevel
+-rw-r--r--   1 root  root    6667 Oct 22 19:33 nuxel-ft.py
+-rw-r--r--   1 root  root    6233 Oct 22 19:34 nuxel-ft2.py
+-rwxr-xr-x.  1 root  root   29344 Nov  3 20:26 nuxel-gpu-status
+-rwxr-xr-x.  1 root  root   26991 Nov  3 20:26 nuxel-graphics-profile
+-rwxr-xr-x   1 root  root    1142 Oct 28 17:36 nuxel-gstreamer-guard.sh
+-rwxr-xr-x.  1 root  root   72440 Nov  1 15:27 nuxel-gtk3-gl-probe
+-rwxr-xr-x.  1 root  root   72192 Nov  3 20:26 nuxel-gtk4-gsk-probe
+-rwxr-xr-x   1 root  root    4802 Oct 19 09:05 nuxel-hapticsd.py
+-rwxr-xr-x   1 root  root    1073 Sep 15 02:46 nuxel-home-kiosk
+-rwxr-xr-x   1 root  root    2007 Oct 28 17:15 nuxel-home-layout.sh
+drwxr-xr-x   3 root  root    4096 Sep 15 02:39 nuxel-home-native
+-rwxr-xr-x.  1 root  root   73736 Nov  3 20:26 nuxel-kbase-egl-probe
+-rwxr-xr-x   1 root  root     517 Sep 15 02:36 nuxel-launcher-ready-wait
+-rwxr-xr-x.  1 root  root   72976 Nov  1 12:32 nuxel-metricsd
+-rwxr-xr-x   1 root  root   73064 Oct 21 13:45 nuxel-metricsd.prev
+-rwxr-xr-x.  1 root  root    4426 Nov  1 13:51 nuxel-mic-route.sh
+-rwxr-xr-x.  1   501 games  35104 Nov  1 09:18 nuxel-mtp-server
+-rwxr-xr-x.  1 root  root   77872 Nov  4 12:45 nuxel-navdock
+-rwxr-xr-x   1 root  root  141704 Oct 20 22:13 nuxel-navdock.prev
+drwxr-xr-x.  3 root  root    4096 Nov  4 02:23 nuxel-nfc
+drwxr-xr-x.  2 root  root    4096 Oct 31 19:25 nuxel-notifications
+-rwxr-xr-x.  1 root  root   79080 Nov  5 16:05 nuxel-osd
+drwxr-xr-x   2 root  root    4096 Sep 15 02:47 nuxel-permissions
+drwxr-xr-x.  2 root  root    4096 Nov  1 17:37 nuxel-portal
+-rwxr-xr-x   1 root  root    5240 Nov  6 13:50 nuxel-postboot.sh
+-rwxr-xr-x.  1 root  root   54940 Nov  4 00:11 nuxel-preload-cinema
+-rwxr-xr-x.  1 nuxel nuxel  39363 Oct 28 11:10 nuxel-preload-cinema.nuxel-orig
+-rwxr-xr-x   1 root  root   37285 Oct 28 10:50 nuxel-preload-cinema.nuxel-rollback
+-rwxr-xr-x   1 root  root   37285 Oct 28 10:50 nuxel-preload-cinema.nuxel-rollback.pre-deploy-20261028T105440-2833780
+-rwxr-xr-x   1 root  root   39320 Oct 28 10:54 nuxel-preload-cinema.nuxel-rollback.pre-deploy-20261028T105710-2836090
+-rwxr-xr-x   1 nuxel nuxel  47499 Oct 28 16:22 nuxel-preload-cinema.pre-36000
+-rwxr-xr-x.  1 root  root  148696 Nov  5 16:23 nuxel-pwa-host
+-rwxr-xr-x   1 root  root   79816 Oct 28 17:15 nuxel-pwa-host.bak-pwnage39000-20261030T120317Z
+-rwxr-xr-x.  1 root  root   81504 Nov  1 17:33 nuxel-pwa-host.p54000-prev
+-rwxr-xr-x   1 root  root   78336 Oct 20 22:57 nuxel-pwa-host.prev
+-rwxr-xr-x   1 root  root   74760 Sep 15 02:31 nuxel-pwa-host.prev-a32
+-rwxr-xr-x   1 root  root   79816 Oct 28 17:15 nuxel-pwa-host.running-pwnage39000-20261030T120317Z
+-rwxr-xr-x   1 root  root     537 Oct 22 20:16 nuxel-rx.py
+-rwxr-xr-x.  1 root  root   74152 Nov  1 00:47 nuxel-screenshot
+-rwxr-xr-x.  1 root  root    1201 Nov  4 00:11 nuxel-security-lock-rpc
+-rwxr-xr-x.  1 root  root   21079 Nov  4 10:35 nuxel-session.sh
+-rwxr-xr-x.  1 root  root   20854 Nov  4 00:11 nuxel-session.sh.bak-pre-portal-doc
+-rwxr-xr-x.  1 root  root   14278 Nov  1 09:00 nuxel-session.sh.nuxel-kbase-bak
+-rwxr-xr-x.  1 root  root    4075 Oct 28 10:06 nuxel-session.sh.nuxel-orig
+-rwxr-xr-x   1 root  root    3505 Oct 20 22:42 nuxel-session.sh.nuxel-rollback
+/usr/share/nuxel/probes/keyboard-probe.html
+/usr/share/nuxel/probes/touch-probe.html
+/usr/share/nuxel/nuxel-background.png
+/usr/share/nuxel/nuxel-apps/doom/index.html
+/usr/share/nuxel/nuxel-apps/doom/app.json
+/usr/share/nuxel/nuxel-apps/doom/sw.js
+/usr/share/nuxel/nuxel-apps/doom/manifest.json
+/usr/share/nuxel/remote-desktop/launcher.html
+/usr/share/nuxel/pwa/nuxel-apps/._mail
+/usr/share/nuxel/pwa/nuxel-apps/._files
+/usr/share/nuxel/pwa/nuxel-apps/._settings
+/usr/share/nuxel/pwa/nuxel-apps/._console-usb
+/usr/share/nuxel/pwa/nuxel-apps/._media
+/usr/share/nuxel/pwa/nuxel-apps/.DS_Store
+/usr/share/nuxel/pwa/nuxel-apps/._console-wifi
+/usr/share/nuxel/pwa/nuxel-apps/._authenticator
+/usr/share/nuxel/pwa/nuxel-apps/snekbyte-a58-stage-1792688928.zip
+/usr/share/nuxel/pwa/nuxel-apps/._calendar
+/usr/share/nuxel/pwa/nuxel-apps/._camera-gallery
+/usr/share/nuxel/pwa/nuxel-apps/snekbyte-a58-stage-1792688770.zip
+/usr/share/nuxel/pwa/nuxel-apps/._photos
+/usr/share/nuxel/pwa/nuxel-apps/._weather
+/usr/share/nuxel/pwa/nuxel-apps/._calculator
+/usr/share/nuxel/pwa/nuxel-apps/._cleanup
+/usr/share/nuxel/pwa/nuxel-apps/._snekbyte
+/usr/share/nuxel/pwa/nuxel-apps/._notes
+/usr/share/nuxel/pwa/nuxel-apps/._nuxtore
+/usr/share/nuxel/pwa/nuxel-apps/._downloader
+/usr/share/nuxel/pwa/nuxel-apps/.__shared
+/usr/share/nuxel/pwa/nuxel-apps/._clock
+/usr/share/nuxel/pwa/nuxel-apps/._recorder
+/usr/share/nuxel/pwa/nuxel-apps/._terminal
+/usr/share/nuxel/pwa/nuxel-apps/._devmgmt
+/usr/share/nuxel/pwa/nuxel-apps/._.DS_Store
+/usr/share/nuxel/pwa/nuxel-apps/._maps
+/usr/share/nuxel/pwa/nuxel-apps/._console
+/usr/share/nuxel/pwa/nuxel-apps/._browser
+/usr/share/nuxel/pwa/nuxel-apps/._penguinterface
+/usr/share/nuxel/pwa/nuxel-apps/snekbyte-a58-stage-1792689812.zip
+/usr/share/nuxel/pwa/nuxel-apps/._rootcontrol
+/usr/share/nuxel/pwa/._nuxel-common
+/usr/share/nuxel/pwa/nuxel-home/index.html.a59-bak
+/usr/share/nuxel/pwa/nuxel-home/._colour-test.html
+/usr/share/nuxel/pwa/nuxel-home/index.html.pwnage-32000-bak
+/usr/share/nuxel/pwa/nuxel-home/manifest.json.pwnage-32000-bak
+/usr/share/nuxel/pwa/nuxel-home/keyboard-provider.json
+/usr/share/nuxel/pwa/nuxel-home/colour-test.html
+/usr/share/nuxel/pwa/nuxel-home/sw.js.pwnage-32000-bak
+/usr/share/nuxel/pwa/nuxel-home/index.html
+/usr/share/nuxel/pwa/nuxel-home/._index.html.a59-bak
+/usr/share/nuxel/pwa/nuxel-home/._css
+/usr/share/nuxel/pwa/nuxel-home/._icons
+/usr/share/nuxel/pwa/nuxel-home/._tests
+/usr/share/nuxel/pwa/nuxel-home/sw.js
+/usr/share/nuxel/pwa/nuxel-home/manifest.json
+/usr/share/nuxel/pwa/nuxel-home/._assets
+/usr/share/nuxel/pwa/nuxel-home/._sw.js.a59-bak
+/usr/share/nuxel/pwa/nuxel-home/sw.js.a59-bak
+/usr/share/nuxel/pwa/nuxel-home/._keyboard-provider.json
+/usr/share/nuxel/pwa/nuxel-home/._js
+/usr/share/nuxel/pwa/._flatpak
+/usr/share/nuxel/pwa/._nuxel-apps
+/usr/share/nuxel/pwa/._.
+/usr/share/nuxel/pwa/launcher/._README.md
+/usr/share/nuxel/pwa/launcher/._nuxel-pwa-launcher.c
+/usr/share/nuxel/pwa/launcher/meson.build
+/usr/share/nuxel/pwa/launcher/nuxel-pwa.conf.in
+/usr/share/nuxel/pwa/launcher/nuxel-pwa-launcher.c
+/usr/share/nuxel/pwa/launcher/._nuxel-pwa.conf.in
+/usr/share/nuxel/pwa/launcher/README.md
+/usr/share/nuxel/pwa/._nuxel-home
+/usr/share/nuxel/pwa/flatpak/._README.md
+/usr/share/nuxel/pwa/flatpak/org.nuxel.Home.json
+/usr/share/nuxel/pwa/flatpak/._nuxel-launcher.sh
+/usr/share/nuxel/pwa/flatpak/._org.nuxel.Mail.json
+/usr/share/nuxel/pwa/flatpak/._org.nuxel.Home.json
+/usr/share/nuxel/pwa/flatpak/nuxel-launcher.sh
+/usr/share/nuxel/pwa/flatpak/org.nuxel.Calendar.json
+/usr/share/nuxel/pwa/flatpak/org.nuxel.Mail.json
+/usr/share/nuxel/pwa/flatpak/README.md
+/usr/share/nuxel/pwa/flatpak/org.nuxel.Platform.json
+/usr/share/nuxel/pwa/flatpak/._org.nuxel.Calendar.json
+/usr/share/nuxel/pwa/flatpak/._org.nuxel.Platform.json
+/usr/share/nuxel/pwa/._launcher
+/usr/share/nuxel/pwa/nuxel-common/._theme.css
+/usr/share/nuxel/pwa/nuxel-common/remote-desktop.js
+/usr/share/nuxel/pwa/nuxel-common/zoom-policy.js
+/usr/share/nuxel/pwa/nuxel-common/bridge.js.nuxel-rollback.pre-n28000-tri-link-apply
+/usr/share/nuxel/pwa/nuxel-common/bridge-version.json
+/usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback
+/usr/share/nuxel/pwa/nuxel-common/package.json.nuxel-rollback
+/usr/share/nuxel/pwa/nuxel-common/geolocation.js.bak-pwnage42000-20261031T000116Z
+/usr/share/nuxel/pwa/nuxel-common/geolocation.js
+/usr/share/nuxel/pwa/nuxel-common/theme.js
+/usr/share/nuxel/pwa/nuxel-common/bridge.js.bak-pwnage42000-20261031T000116Z
+/usr/share/nuxel/pwa/nuxel-common/app-registry.json
+/usr/share/nuxel/pwa/nuxel-common/._theme.js
+/usr/share/nuxel/pwa/nuxel-common/responsive.css
+/usr/share/nuxel/pwa/nuxel-common/haptics.js
+/usr/share/nuxel/pwa/nuxel-common/theme.css
+=== web root ===
+drwxr-xr-x 7 501 games 4096 Nov  5 20:52 /usr/share/nuxel/pwa
+/usr/share/nuxel/nuxel-home/index.html
+/usr/share/nuxel/pwnage53000/index.html

@@ -1,0 +1,10 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"device":"beyond2lte","tool":"nuxel-sensors-diag","classes":{"accelerometer":{"state":"present-unreadable","evidence":"/sys/bus/iio/devices/iio:device1"},"gyroscope":{"state":"present-unreadable","evidence":"/sys/bus/iio/devices/iio:device4"},"magnetometer":{"state":"present-unreadable","evidence":"/sys/bus/iio/devices/iio:device2"},"proximity":{"state":"present-unreadable","evidence":"/sys/bus/iio/devices/iio:device11"},"ambient_light":{"state":"present-unreadable","evidence":"hub-input:ssp_context"},"barometer":{"state":"present-unreadable","evidence":"/sys/bus/iio/devices/iio:device7"},"heart_rate":{"state":"present-unreadable","evidence":"input:"},"grip":{"state":"present-unreadable","evidence":"input:"},"hall":{"state":"present-unreadable","evidence":"input:"}},"owner_test":"docs/beta-finalization/manual-proof/14-sensors.md","observed_motion_verified":false}

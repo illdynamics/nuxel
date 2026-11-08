@@ -1,0 +1,28 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Id=nuxel-boot-sound.path
+ActiveState=active
+SubState=waiting
+Paths=/run/nuxel-audio-route.ready (PathChanged)
+Result=success
+
+Id=nuxel-mic-route.path
+ActiveState=active
+SubState=waiting
+Paths=/run/nuxel-audio-route.ready (PathChanged)
+Result=success
+===
+cat: /run/nuxel-audio-route.ready: No such file or directory
+state=deferred
+card=0
+reason=Calliope core firmware is not MUB0
+at=2026-11-07T15:25:39Z
+===
+marker-absent

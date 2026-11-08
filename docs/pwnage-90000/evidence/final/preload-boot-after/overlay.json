@@ -1,0 +1,11 @@
+{
+  "boot_id": "0112a081-e031-4758-91f7-cba82ab759cf",
+  "elapsed_s": 6.342,
+  "milestone": "PWNAGE-31000",
+  "pid": 6731,
+  "reason": "video-eof-and-presentation-ready",
+  "schema_version": 1,
+  "state": "done",
+  "updated_at": "2026-11-08T09:55:47+0100",
+  "video_eof": true
+}

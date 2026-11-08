@@ -1,0 +1,25 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+===
+  nuxel-abox-firmware-reload.service       loaded    active   exited  Nuxel S10+ ABOX Calliope core-firmware reload
+  nuxel-audio-route-retry.service          loaded    inactive dead    Nuxel S10+ ABOX playback route — deferred retry run
+  nuxel-audio-route.service                loaded    active   exited  Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)
+  nuxel-audio-session.service              loaded    active   running Nuxel standalone PipeWire/WirePlumber audio session
+  nuxel-boot-sound.service                 loaded    inactive dead    Nuxel startup cue after confirmed boot-animation to launcher handoff
+  nuxel-clockd.service                     loaded    active   running Nuxel background alarm and timer scheduler
+  nuxel-interface-state.service            loaded    active   exited  Nuxel persistent interface state (Bluetooth/NFC/GNSS restore)
+  nuxel-mic-route.service                  loaded    active   exited  Nuxel S10+ built-in microphone capture route (UAIF0 -> WDMA1)
+  nuxel-soundd.service                     loaded    active   running Nuxel central sound manager (persistent PipeWire cue stream)
+  nuxel-wayland.service                    loaded    active   running Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+  nuxel-web.service                        loaded    active   running Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+  nuxel-wl-fb.service                      loaded    active   running Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)

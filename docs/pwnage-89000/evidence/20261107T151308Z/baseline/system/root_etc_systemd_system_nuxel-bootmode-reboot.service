@@ -1,0 +1,26 @@
+# Nuxel charger/LPM guarded normal-reboot path (briq-01c) — SHIPPED DISABLED.
+#
+# Enable this ONLY to let a charger-mode boot recover itself with one normal
+# reboot. Both of the following are required; neither alone is enough:
+#   1. "allow_reboot": true in /etc/nuxel/touch/bootmode-guard.json
+#   2. this unit enabled (systemctl enable nuxel-bootmode-reboot.service)
+# The command is always `systemctl reboot` (userspace, systemd PID 1). It is
+# suppressed by: an owner-test/capture lock, the reboot cooldown, an uptime below
+# the floor, or an unknown/disconnected charger. There is no path here that
+# writes a partition, a bootloader, a DTB, a modem or an EFS.
+[Unit]
+Description=Nuxel charger/LPM guarded normal reboot (opt-in)
+Documentation=file:/usr/share/doc/nuxel/touch/CHARGER-MODE-ROOTCAUSE.md
+After=nuxel-bootmode-guard.service
+Requires=nuxel-bootmode-guard.service
+ConditionPathExists=/proc/cmdline
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-bootmode-guard.py --reboot --i-understand-this-reboots-the-phone
+# 13 = print-only (nothing executed), 12 = suppressed by a gate: both are normal.
+SuccessExitStatus=0 10 11 12 13 2
+TimeoutStartSec=40
+
+[Install]
+WantedBy=multi-user.target

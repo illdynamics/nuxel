@@ -1,22 +1,22 @@
 # Nuxel GUI Tri-Link — Quickstart
 
-_Status: 2026-11-01 · Nuxel v0.8.0-beta · S10+ (beyond2lte, Exynos 9820)_
-_PWNAGE-47000 live acceptance: Jump Desktop 9.1.21 on macOS 15.7.9 (arm64)._
+_Status: 2026-11-08 · Nuxel v0.8.1-beta · S10+ (beyond2lte, Exynos 9820)_
+_PWNAGE-92000 live acceptance: direct LAN RFB and RDP TLS probes on macOS 15.7.9 (arm64). Jump Desktop VNC compatibility must be re-tested; the server stays secure either way._
 
 The GUI Tri-Link is **separate** from the serial/WLAN/USB SSH Tri-Link.
 
 | App | What it is | Default route | State |
 |---|---|---|---|
-| **VNC Screen Sharing** | `wayvnc` attached to the real Phoc/Wayland session | Direct Wi-Fi / ZeroTier | works; no SSH tunnel; unauthenticated RFB, trusted network only |
-| **XRDP Remote Desktop** | `xrdp` + `xorgxrdp` **separate X11 session** (not a phone-screen mirror) | Direct Wi-Fi / ZeroTier | works; TLS + PAM login as local `nuxel` |
+| **VNC Screen Sharing** | `wayvnc` attached to the real Phoc/Wayland session | Direct Wi-Fi | works; no SSH tunnel; **PAM + VeNCrypt TLS/RSA-AES required** |
+| **XRDP Remote Desktop** | `xrdp` + `xorgxrdp` **separate X11 session** (not a phone-screen mirror) | Direct Wi-Fi | works; TLS + PAM login as local `nuxel` |
 | **scrcpy (Android)** | official scrcpy for real Android ADB targets only | USB ADB | no Android target on native Nuxel — honest `NOT_APPLICABLE_NATIVE_NUXEL` |
 | Serial/Wi-Fi/USB SSH consoles | existing Tri-Link recovery tools | unchanged | preserved |
 
-> **Direct owner-network access.** Both listeners bind `0.0.0.0` and are meant
-> only for the trusted LAN and, later, ZeroTier. RDP is protected by TLS + PAM.
-> VNC is unauthenticated because Jump Desktop 9.1.21 cannot negotiate wayvnc
-> 0.9.1's RSA-AES/VeNCrypt and this build has no VNC password auth. Do not
-> port-forward 3389/5900 to the Internet.
+> **Direct owner-network access.** The privileged controller binds both listeners
+> to the current **trusted WLAN IPv4 address**, not `0.0.0.0`. RDP is TLS 1.2/1.3
+> + PAM. VNC is PAM + VeNCrypt TLS/RSA-AES; unauthenticated RFB is disabled. No
+> SSH tunnel is required on the owner LAN. Do not port-forward 13389/15900 to
+> the Internet.
 
 ---
 
@@ -35,8 +35,8 @@ ssh -i ~/.ssh/wicked_wqn_id_rsa nuxel@<PHONE_IP> \
   'sudo -n /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl start xrdp'
 
 # 3. No tunnel. In Jump Desktop use the saved profiles:
-#      nux-vnc  -> <PHONE_IP>:5900
-#      nux-rdp  -> <PHONE_IP>:3389  (user: nuxel)
+#      nux-vnc  -> <PHONE_IP>:15900 (PAM + VeNCrypt TLS/RSA-AES)
+#      nux-rdp  -> <PHONE_IP>:13389 (TLS + PAM, user: nuxel)
 ```
 
 Stop everything:
@@ -55,14 +55,18 @@ ssh -i ~/.ssh/wicked_wqn_id_rsa nuxel@<PHONE_IP> \
 - The owner key `~/.ssh/wicked_wqn_id_rsa` and the pinned host key
   `configs/nuxel/security/ssh/known_hosts` (SHA256
   `LegjMkabj0ig6rTzMMiiekWQLzCJt0LsJUeTm3c7JGs`).
-- Jump Desktop 9.1.21 (or another secure RDP/VNC viewer) on the Mac.
+- A secure RDP viewer and a secure VNC viewer on the Mac. Jump Desktop 9.1.21
+  previously failed to negotiate wayvnc 0.9.1's RSA-AES/VeNCrypt modes; re-test
+  the current Jump version. If it still fails, use another client that supports
+  VeNCrypt TLS or RSA-AES. Never disable VNC authentication to accommodate a
+  client.
 - No Jump Desktop Connect host agent is installed on Nuxel; Nuxel runs its own
   xrdp/wayvnc servers.
 
-The SSH and RDP account is the local `nuxel` user (uid 1000). It has password
-`enf0rcer` for this lab session. The retired `nuxel-remote` account remains on
-the image but is no longer used by the Jump profile. Do not put the password in
-a `.rdp` file, PWA storage, URL, QR code or log.
+The SSH/RDP/VNC account is the local `nuxel` user (uid 1000). Use its local
+account password in the client's secure credential store. The retired
+`nuxel-remote` account is not created or accepted. Do not put the password in a
+`.rdp` file, PWA storage, URL, QR code or log.
 
 ---
 
@@ -70,9 +74,9 @@ a `.rdp` file, PWA storage, URL, QR code or log.
 
 Open **Applications** and choose:
 
-- **VNC Screen Sharing** — Start/Stop, current Wi-Fi address, port 5900,
-  transport `Wi-Fi` (USB shows `BLOCKED_KERNEL_PANIC`).
-- **XRDP Remote Desktop** — Start/Stop, port 3389, transport `Wi-Fi`,
+- **VNC Screen Sharing** — Start/Stop, current Wi-Fi address, port 15900,
+  transport `Wi-Fi` (USB shows `NEEDS_VALIDATION`).
+- **XRDP Remote Desktop** — Start/Stop, port 13389, transport `Wi-Fi`,
   explicitly labelled **Separate remote X11 session**.
 - **scrcpy (Android)** — target detection only; native Nuxel is not Android.
 
@@ -87,7 +91,8 @@ sudo -n /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl status
 ```
 
 Useful fields: `state`, `bind_address`, `port`, `listener_verified`,
-`authenticated_clients`, `session_mode`, `tls_fingerprint`, `usb.status`,
+`authenticated_clients`, `session_mode`, `authentication_mode`, `encrypted`,
+`security_verified`, `certificate_fingerprint`, `usb.status`,
 `network.address`, and `privacy.indicator`.
 
 ---
@@ -98,15 +103,15 @@ Saved Jump Desktop connections:
 
 | Jump profile | Protocol | Address | Notes |
 |---|---|---|---|
-| `nux-vnc` | VNC | `192.168.178.167:5900` | wayvnc mirrors the real Phoc screen; no VNC password |
-| `nux-rdp` | RDP | `192.168.178.167:3389` | TLS, PAM user `nuxel`, password `enf0rcer` |
+| `nux-vnc` | VNC | `<PHONE_IP>:15900` | wayvnc mirrors the real Phoc screen; PAM + VeNCrypt TLS/RSA-AES |
+| `nux-rdp` | RDP | `<PHONE_IP>:13389` | TLS 1.2/1.3, PAM user `nuxel`, separate X11 session |
 
 - SSH is still used only for administration, with
   `~/.ssh/wicked_wqn_id_rsa`; it is not in either Jump connection.
 - RDP's TLS certificate is self-signed. Accept it once in Jump and keep the
   saved certificate; verify the fingerprint on the phone if it changes.
-- Use the phone's current IPv4 (discovered live). `192.168.178.167` was the
-  address during this run.
+- Use the phone's current IPv4 (discovered live from the app/status). Never
+  hardcode a historical address.
 - The RDP profile creates a **separate X11 desktop** (Openbox + Nuxel launcher +
   Firefox). It does not mirror the physical Phoc screen and never owns
   `/dev/fb0`. Use `nux-vnc` to see the real phone screen.
@@ -134,36 +139,38 @@ On the phone itself, `scripts/nuxel-scrcpy.sh --list` prints
 
 ---
 
-## 5. Verified live acceptance (2026-10-31)
+## 5. Verified live acceptance (2026-11-08, PWNAGE-92000)
 
-- **VNC:** Jump Desktop handshake `RFB 003.008`, WayVNC 720×1520, one client;
-  Mac window and phone screenshot show the same Nuxel screen; a Jump pointer
-  click opened the Applications drawer on the phone; prior keyboard marker
-  `MANAGEDVNC` was typed through Jump into the Nuxel search field.
-- **XRDP:** Jump Desktop TLS 1.3, desktop 1512×916, PAM login as
-  `nuxel-remote`, Xorg `:10` + `xrdp-sesexec` + Firefox kiosk launcher;
-  keyboard marker `PWNAGERDPINPUT` reached the remote Firefox find bar.
-- **Independence:** Phoc remained PID 5811 and `nuxel-wl-fb` remained the only
-  `/dev/fb0` owner during the RDP session.
-- **scrcpy:** `NOT_APPLICABLE_NATIVE_NUXEL`; ADB 37.0.1 available, zero Android
-  targets; no fake READY state.
-- **Bridge truth:** `vnc=CONNECTED(1)`, `xrdp=CONNECTED(1)`,
-  `scrcpy=NOT_APPLICABLE_NATIVE_NUXEL`, `usb=BLOCKED_KERNEL_PANIC`.
+- **VNC:** direct LAN listener `192.168.178.167:15900`; RFB banner
+  `RFB 003.008`; offered security types `129` (VeNCrypt) and `5` (RSA-AES);
+  type `1` (None) was **not offered**. Effective config had `enable_auth=true`
+  and `enable_pam=true`.
+- **XRDP:** direct LAN listener `192.168.178.167:13389`; RDP negotiation
+  completed and the socket upgraded to **TLS 1.3** with
+  `TLS_AES_256_GCM_SHA384`; `security_layer=tls` and `autorun=Xorg`.
+- **Stop/Stop All:** both listeners closed; `ss` showed no 13389/15900/3389/5900
+  listener and the managed units were inactive.
+- **Independence:** stopping remote access never targeted Phoc or `nuxel-wl-fb`.
+- **scrcpy:** `NOT_APPLICABLE_NATIVE_NUXEL`; native Nuxel links to the VNC
+  mirror. No fake ADB target.
+- **USB:** NCM `BLOCKED_KNOWN_PANIC`, RNDIS `NEEDS_VALIDATION`; no configfs
+  mutation. See `REPORT-USBNET.md`.
 
-Evidence: `docs/beta-finalization/live/evidence/pwnage-47000/`.
+Evidence: `docs/beta-finalization/live/evidence/pwnage-92000/`.
 
 ---
 
 ## 6. Security rules
 
-- Listeners bind directly for the trusted owner LAN / future ZeroTier network.
-- XRDP uses TLS + PAM as local `nuxel`. VNC has no authentication; treat 5900
-  as LAN/ZeroTier-only and never expose it to the Internet.
+- Listeners bind to the current trusted WLAN IPv4 address on TCP 13389/15900.
+- XRDP uses TLS + PAM as local `nuxel`. VNC uses PAM + VeNCrypt TLS/RSA-AES;
+  unauthenticated RFB is disabled. Never expose either port to the Internet.
 - No root desktop, no cellular/public exposure, no UPnP or router forwarding.
 - VNC mirrors the real lockscreen; remote input goes through Phoc virtual-input
   protocols and cannot bypass the Nuxel lock.
-- USB network RDP/VNC stays `BLOCKED_KERNEL_PANIC` on 4.14.253. Do not retry
-  NCM, mutate configfs or rebind the UDC.
+- USB network stays mode-aware: NCM `BLOCKED_KNOWN_PANIC` on 4.14.253, RNDIS
+  `NEEDS_VALIDATION`, ECM absent. Do not retry NCM, mutate configfs or rebind
+  the UDC without the recovery plan in `REPORT-USBNET.md`.
 - `System → Remote Access → Stop all` (Bridge `stop-all`) is the kill switch.
 
 ---
@@ -175,7 +182,7 @@ Evidence: `docs/beta-finalization/live/evidence/pwnage-47000/`.
 | Phone stuck on the spinning Nuxel animation after a package update | An enforcing SELinux policy was installed and PID 1 runs in `kernel_t`. `/etc/selinux/config` must say `SELINUX=permissive` (image guard included). Reboot and verify `getenforce` is `Permissive`. |
 | SSH local forward opens but the remote end resets | The unprivileged account is missing group `inet` (gid 3003). This kernel is `CONFIG_ANDROID_PARANOID_NETWORK=y`; run `usermod -aG inet nuxel` and open a **new** SSH session. `nuxel-remote` needs it too. |
 | VNC refused / no banner | Check `systemctl status nuxel-remote-vnc`, `wayvncctl client-list`, and that `/run/nuxel-wayland/wayland-0` exists. The server is root-owned on this image. |
-| RDP login loops | Use `nuxel` / `enf0rcer`; verify `/etc/xrdp/xrdp.ini` binds `:3389`; read `/var/log/xrdp-sesman.log`. |
+| RDP login loops | Use the local `nuxel` account; verify `/etc/xrdp/xrdp.ini` binds the current WLAN IP on `:13389`; read `/var/log/xrdp-sesman.log`. |
 | RDP shows a black screen | Check `pgrep -a Xorg` for `:10` and `/var/log/xrdp-sesman.log` for `X server :10 is working`. The launcher needs Firefox/Openbox. |
-| Jump VNC security error | The direct listener is `enable_auth=false`; confirm the phone is serving `address=0.0.0.0`, port `5900`, and that Jump is connecting to `192.168.178.167:5900` (no tunnel). |
-| USB toggle | Permanently blocked until a non-NCM USB network route is independently proven on the 4.14.253 kernel and macOS. |
+| VNC security error | Confirm the effective config has `enable_auth=true`, `enable_pam=true`, port `15900`, and that the client supports VeNCrypt TLS or RSA-AES. Do not disable authentication. If Jump cannot negotiate, use a compatible secure client. |
+| USB toggle | Blocked pending mode-specific source review, host driver support and physical validation; see `REPORT-USBNET.md`. |

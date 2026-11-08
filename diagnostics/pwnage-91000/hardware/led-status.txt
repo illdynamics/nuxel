@@ -1,0 +1,10 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"device":"beyond2lte","tool":"nuxel-led-diag","classes":{"flashlight":{"present":true,"path":"/sys/class/leds/torch-sec1","on":false,"state":"OK"},"notification":{"present":false,"path":"","on":false,"state":"NOT_SUPPORTED_ON_DEVICE"},"edge_lighting":{"present":false,"kind":"display_overlay","hardware_led":false,"state":"NOT_SUPPORTED_ON_DEVICE_AS_LED"}},"flashlight_verified":false,"owner_test":"docs/beta-finalization/manual-proof/09-flashlight.md","max_on_ms":600000}

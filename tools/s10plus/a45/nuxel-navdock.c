@@ -402,8 +402,22 @@ static void cmd_read_pending(void) {
  * or hide it forever after unlock. */
 static void dock_tick(void) {
   static int last_st = -2, last_home = -1;
+  static int last_keyboard = -1;
   int st = lock_state_read();
   int home = home_ready();
+  int kb = keyboard_visible();
+  /* PWNAGE-90000 OSK: the compositor's OSK is itself an overlay layer.  When
+   * it appears while the app owns the glass, re-map the thin gesture strip so
+   * it is the last-mapped overlay and remains reachable at the physical bottom
+   * edge.  The strip is transparent, tiny and never clears keyboard focus. */
+  if (kb != last_keyboard) {
+    last_keyboard = kb;
+    if (st == 2 && strip_mode && surface) {
+      dock_destroy();
+      dock_create();
+      audit("NAV_DOCK_KEYBOARD_REMAP visible=%d strip=%d", kb, strip_mode);
+    }
+  }
   if (st != last_st || home != last_home) {
     publish_state("tick");
     last_st = st;

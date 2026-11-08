@@ -1,6 +1,6 @@
 # Nuxel Tri-Link Consoles — Quickstart
 
-_Status as of 2026-11-01 · Nuxel v0.8.0-beta_
+_Status as of 2026-11-08 · Nuxel v0.8.1-beta_
 
 A step-by-step guide to the three Nuxel S10+ console entries:
 
@@ -8,15 +8,15 @@ A step-by-step guide to the three Nuxel S10+ console entries:
 |---|---|---|---|
 | **Serial Live Console** | USB CDC-ACM serial | Framed root recovery console over the USB cable | **READY** |
 | **Wi-Fi SSH Console** | WLAN + SSH | Key-only OpenSSH shell over the phone's Wi-Fi address | **READY** when the app reports it |
-| **USB SSH Console** | USB network + SSH | SSH over a USB NCM/RNDIS/ECM network gadget | **BLOCKED** on kernel 4.14.253 |
+| **USB SSH Console** | USB network + SSH | SSH over a USB NCM/RNDIS/ECM network gadget | **NEEDS VALIDATION**; NCM blocked on 4.14.253 |
 
 > **Read this first:** the three phone apps are **status panels**, not an
 > in-phone terminal. They show the real phone-side endpoint, run read-only
 > checks and print the exact host command. The interactive shell, file transfer
 > and recovery commands run on the **development host**.
 
-The verified host for this quickstart is Fedora 43. Commands are run from the
-repository root:
+The host adapters support Linux and macOS. The PWNAGE-92000 audit host was
+macOS 15.7.9 arm64. Commands are run from the repository root:
 
 ```sh
 cd /x/nuxel
@@ -86,6 +86,8 @@ On Linux, the serial node is normally `/dev/ttyACM0`, owned by
 | **SETUP REQUIRED** | The transport exists but is not fully provisioned or listening. |
 | **UNAVAILABLE** | The transport cannot currently be used. Read the detail and checks. |
 | **UNAVAILABLE · KERNEL BLOCKER** | The running kernel is known to be unsafe for this transport. Do not force it. |
+| **NEEDS VALIDATION** | A mode is compiled but its teardown/host path is not physically proven. Not READY. |
+| **LINK UP · SSH PROBE UNVERIFIED** | An interface and sshd exist, but no host key-authenticated command was recorded. |
 
 A READY app is **not** proof that the host can connect. Confirm from the host
 with `--status`, then open the shell.

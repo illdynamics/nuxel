@@ -49,6 +49,12 @@ HOST_MAC = "02:6e:75:78:65:02"
 #: phone.  This is a real hard blocker, not a test limitation.  The code remains
 #: available for a future kernel, but apply refuses by default on this release.
 KNOWN_BAD_NCM_KERNELS = {"4.14.253"}
+USB_MODES = ("ncm", "rndis", "ecm", "ecm_subset", "eem")
+
+
+def _base_release(release: str) -> str:
+    m = re.match(r"^(\d+\.\d+\.\d+)", release or "")
+    return m.group(1) if m else (release or "")
 
 
 class UsbNetError(Exception):
@@ -67,7 +73,10 @@ def _write(path, value: str) -> None:
 
 
 def _run(cmd, check=False) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, capture_output=True, text=True, check=check)
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, check=check)
+    except OSError as exc:
+        return subprocess.CompletedProcess(cmd, 127, "", str(exc))
 
 
 def _ip_state() -> dict:
@@ -121,39 +130,90 @@ def capability(gadget: Path, kernel_config: str,
                known_bad_kernels: set[str] | None = None) -> dict:
     cfg = tl.parse_kernel_config(kernel_config)
     release = kernel_release or os.uname().release
+    base = _base_release(release)
     bad = set(KNOWN_BAD_NCM_KERNELS if known_bad_kernels is None else known_bad_kernels)
-    compiled = cfg.get("CONFIG_USB_F_NCM") == "y" and cfg.get("CONFIG_USB_CONFIGFS_NCM") == "y"
+    compiled = {
+        "ncm": cfg.get("CONFIG_USB_F_NCM") == "y" and cfg.get("CONFIG_USB_CONFIGFS_NCM") == "y",
+        "rndis": cfg.get("CONFIG_USB_F_RNDIS") == "y" and cfg.get("CONFIG_USB_CONFIGFS_RNDIS") == "y",
+        "ecm": cfg.get("CONFIG_USB_CONFIGFS_ECM") == "y",
+        "ecm_subset": cfg.get("CONFIG_USB_CONFIGFS_ECM_SUBSET") == "y",
+        "eem": cfg.get("CONFIG_USB_CONFIGFS_EEM") == "y",
+        "configfs": cfg.get("CONFIG_USB_CONFIGFS") == "y",
+        "dwc3": cfg.get("CONFIG_USB_DWC3") == "y" or "CONFIG_USB_DWC3_DUAL_ROLE" in cfg,
+    }
     udc = _read(gadget / "UDC")
     funcs = sorted(p.name for p in (gadget / "functions").iterdir()
                    if p.is_dir()) if (gadget / "functions").is_dir() else []
-    link = None
-    try:
-        link = str(_link_path(gadget))
-    except UsbNetError:
-        pass
     net = Path("/sys/class/net")
     ifaces = sorted(p.name for p in net.iterdir()) if net.is_dir() else []
+    modes = {
+        "ncm": {
+            "compiled": compiled["ncm"],
+            "safe_on_current_kernel": False if base in bad else "UNVERIFIED",
+            "status": "BLOCKED_KNOWN_PANIC" if base in bad else "NEEDS_VALIDATION",
+            "evidence": "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/",
+        },
+        "rndis": {
+            "compiled": compiled["rndis"],
+            "safe_on_current_kernel": "UNVERIFIED",
+            "status": "NEEDS_VALIDATION" if compiled["rndis"] else "BLOCKED_KERNEL",
+            "host_requirement": "Linux rndis_host; macOS needs a reviewed userspace driver",
+        },
+        "ecm": {
+            "compiled": compiled["ecm"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["ecm"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["ecm"] else "BLOCKED_KERNEL",
+        },
+        "ecm_subset": {
+            "compiled": compiled["ecm_subset"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["ecm_subset"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["ecm_subset"] else "BLOCKED_KERNEL",
+        },
+        "eem": {
+            "compiled": compiled["eem"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["eem"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["eem"] else "BLOCKED_KERNEL",
+        },
+    }
+    acm = any(name.startswith("acm.") for name in funcs)
+    if not compiled["configfs"] or not compiled["dwc3"]:
+        state = "BLOCKED_KERNEL"
+        reason = "kernel lacks configfs or DWC3 gadget support"
+    elif not any(compiled[k] for k in ("ncm", "rndis", "ecm")):
+        state = "BLOCKED_KERNEL"
+        reason = "no USB network gadget function is compiled in"
+    elif base in bad:
+        state = "NEEDS_VALIDATION"
+        reason = ("NCM is BLOCKED_KNOWN_PANIC on this kernel (ncm_free_inst -> "
+                  "misc_deregister). RNDIS/ECM are UNVERIFIED; no apply is allowed.")
+    else:
+        state = "NEEDS_VALIDATION"
+        reason = "a compiled mode still requires source review, host support and physical proof"
     return {
-        "compiled_ncm": compiled,
+        "status": state,
+        "reason": reason,
+        "compiled": compiled,
+        "compiled_ncm": compiled["ncm"],
+        "modes": modes,
+        "preferred_mode": None if base in bad else (
+            "rndis" if compiled["rndis"] else ("ncm" if compiled["ncm"] else
+                                               ("ecm" if compiled["ecm"] else None))),
+        "selected_mode": None,
         "gadget_present": gadget.is_dir(),
         "bound_udc": udc,
         "functions": funcs,
-        "ncm_link": link,
-        "has_ncm_function": "ncm.usb0" in funcs,
-        "has_usb0": "usb0" in ifaces,
+        "has_ncm_function": any(name.startswith("ncm.") for name in funcs),
+        "has_rndis_function": any(name.startswith("rndis.") for name in funcs),
+        "has_acm_function": acm,
+        "acm_preserved": acm,
+        "has_usb0": any(name.startswith(("usb", "ncm", "rndis")) for name in ifaces),
         "interfaces": ifaces,
         "kernel_release": release,
-        "known_bad_kernel": release in bad,
-        "blocked_reason": ("the live 4.14.253 NCM/configfs path panicked the kernel "
-                           "(pstore Panic#2; watchdog reboot) during NUXEL-26000; "
-                           "do not retry without a fixed kernel/gadget stack"
-                           if release in bad else ""),
-        "status": ("BLOCKED_KERNEL_PANIC" if release in bad else
-                   ("AVAILABLE" if "usb0" in ifaces else
-                    ("SUPPORTED_NOT_ENABLED" if compiled and gadget.is_dir() and udc else
-                     "BLOCKED"))),
+        "kernel_base_release": base,
+        "known_bad_kernel": base in bad,
+        "blocked_reason": reason if base in bad else "",
+        "mutated": False,
     }
-
 
 def _rebind(gadget: Path, udc: str) -> None:
     _write(gadget / "UDC", "\n")
@@ -173,14 +233,20 @@ def _wait_iface(name: str, seconds: float = 20.0) -> bool:
 
 def apply(gadget: Path, state_dir: Path, run_dir: Path, rollback_seconds: int,
           kernel_config: str, *, allow_serial_risk: bool,
-          kernel_release: str | None = None,
-          allow_unsafe_kernel: bool = False) -> dict:
+          kernel_release: str | None = None, mode: str = "ncm") -> dict:
+    if mode not in USB_MODES:
+        raise UsbNetError("unsupported USB mode: %s" % mode)
     if not allow_serial_risk:
         raise UsbNetError("refusing --apply without --i-understand-serial-may-reenumerate")
     cap = capability(gadget, kernel_config, kernel_release=kernel_release)
-    if cap["known_bad_kernel"] and not allow_unsafe_kernel:
-        raise UsbNetError("BLOCKED_KERNEL_PANIC: %s (use --allow-unsafe-kernel only "
-                          "for a deliberate experiment)" % cap["blocked_reason"])
+    if mode == "ncm" and cap["known_bad_kernel"]:
+        raise UsbNetError("BLOCKED_KNOWN_PANIC: %s" % cap["blocked_reason"])
+    if mode != "ncm":
+        gate = cap["modes"].get(mode, {})
+        raise UsbNetError(
+            "%s is %s on this kernel/host. No configfs mutation is permitted until its "
+            "vendor teardown path is source-reviewed and a physical recovery test is "
+            "approved. See REPORT-USBNET.md." % (mode, gate.get("status", "UNVERIFIED")))
     if not cap["compiled_ncm"]:
         raise UsbNetError("kernel lacks CONFIG_USB_F_NCM/CONFIG_USB_CONFIGFS_NCM")
     if not cap["gadget_present"] or not cap["bound_udc"]:
@@ -351,11 +417,55 @@ def status(gadget: Path, state_dir: Path, run_dir: Path, kernel_config: str) -> 
             doc[name] = json.loads((state_dir / name).read_text())
         except (OSError, ValueError):
             doc[name] = None
+    doc["read_only"] = True
+    return doc
+
+
+def preflight(gadget: Path, kernel_config: str, mode: str = "auto") -> dict:
+    cap = capability(gadget, kernel_config)
+    if mode == "auto":
+        mode = cap.get("preferred_mode") or "ncm"
+    selected = cap.get("modes", {}).get(mode, {})
+    allowed = bool(mode == "ncm" and not cap.get("known_bad_kernel")
+                   and selected.get("status") != "BLOCKED_KERNEL")
+    plan = {
+        "mode": mode,
+        "selected_mode": mode if allowed else None,
+        "allowed": allowed,
+        "status": selected.get("status", "UNSUPPORTED"),
+        "expected_reenumeration": True,
+        "device_ip": USB_IP,
+        "host_ip": USB_HOST_IP,
+        "subnet": USB_SUBNET,
+        "acm_preserved": cap.get("acm_preserved"),
+        "gadget_functions_before": cap.get("functions"),
+        "udc_before": cap.get("bound_udc"),
+        "host_requirement": selected.get("host_requirement", "Linux or verified macOS driver"),
+        "blocker": None if allowed else cap.get("reason"),
+        "mutated": False,
+    }
+    if mode == "ncm" and cap.get("known_bad_kernel"):
+        plan["status"] = "BLOCKED_KNOWN_PANIC"
+        plan["allowed"] = False
+        plan["blocker"] = cap.get("blocked_reason")
+    return plan
+
+
+def diagnose(gadget: Path, kernel_config: str) -> dict:
+    doc = status(gadget, Path(DEFAULT_STATE), Path(DEFAULT_RUN), kernel_config)
+    doc["diagnose"] = {
+        "uname": os.uname().release,
+        "interfaces": _run(["ip", "-4", "-o", "addr", "show"]).stdout.strip(),
+        "routes": _run(["ip", "-4", "route", "show"]).stdout.strip(),
+        "sshd": _run(["systemctl", "is-active", "sshd.service"]).stdout.strip(),
+        "host_hint": ("Linux: nuxel-usb-net-host.sh --status; macOS: verify the USB "
+                      "device and a reviewed NCM/RNDIS userspace driver before applying."),
+    }
     return doc
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="opt-in USB CDC-NCM alongside the serial console")
+    ap = argparse.ArgumentParser(description="mode-aware USB network helper; read-only by default")
     ap.add_argument("--gadget", default=DEFAULT_GADGET)
     ap.add_argument("--state-dir", default=DEFAULT_STATE)
     ap.add_argument("--run-dir", default=DEFAULT_RUN)
@@ -366,16 +476,22 @@ def main(argv=None):
     ap.add_argument("--rollback", action="store_true")
     ap.add_argument("--timer", action="store_true")
     ap.add_argument("--status", action="store_true")
+    ap.add_argument("--preflight", action="store_true")
+    ap.add_argument("--diagnose", action="store_true")
+    ap.add_argument("--mode", choices=("auto",) + USB_MODES, default="auto")
     ap.add_argument("--i-understand-serial-may-reenumerate", action="store_true")
-    ap.add_argument("--allow-unsafe-kernel", action="store_true",
-                    help="EXPERIMENT ONLY: override the known-bad 4.14.253 block")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--allow-unsafe-kernel", action="store_true",
+                    help="removed: NCM teardown is never overridden on a known-bad kernel")
     args = ap.parse_args(argv)
     gadget = Path(args.gadget)
     state_dir = Path(args.state_dir)
     run_dir = Path(args.run_dir)
     kernel = tl.read_kernel_config(args.kernel_config)
     try:
+        if args.allow_unsafe_kernel:
+            raise UsbNetError("--allow-unsafe-kernel was removed; NCM teardown is never "
+                              "retried on a known-bad kernel")
         if args.timer:
             time.sleep(max(1, args.rollback_seconds))
             if not (run_dir / "nuxel-usb-net.confirmed").exists():
@@ -388,7 +504,11 @@ def main(argv=None):
         elif args.apply:
             doc = apply(gadget, state_dir, run_dir, args.rollback_seconds, kernel,
                         allow_serial_risk=args.i_understand_serial_may_reenumerate,
-                        allow_unsafe_kernel=args.allow_unsafe_kernel)
+                        mode=args.mode)
+        elif args.preflight:
+            doc = preflight(gadget, kernel, args.mode)
+        elif args.diagnose:
+            doc = diagnose(gadget, kernel)
         else:
             doc = status(gadget, state_dir, run_dir, kernel)
     except (UsbNetError, OSError) as e:
@@ -398,8 +518,9 @@ def main(argv=None):
         print(json.dumps(doc, indent=2, sort_keys=True))
     else:
         print("# usb-net: %s" % doc.get("status"))
-        for k in ("compiled_ncm", "bound_udc", "functions", "has_usb0",
-                  "rollback_seconds", "timer_pid", "errors"):
+        for k in ("reason", "compiled", "modes", "preferred_mode", "bound_udc",
+                  "functions", "has_usb0", "acm_preserved", "rollback_seconds",
+                  "timer_pid", "errors"):
             if k in doc:
                 print("# %s: %s" % (k, doc[k]))
     return 0

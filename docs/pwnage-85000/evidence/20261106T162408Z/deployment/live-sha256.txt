@@ -1,0 +1,17 @@
+b012b0e46c02624bb929bbb12dd14bd6028d19242536fbb2ecbfd9de009326f1  /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py
+313fe21733a9b03443cb8d59e642baca8c25acf5131cd3d7848046409bac5c13  /usr/lib/nuxel/nuxel-bridge/api.py
+3ddf302619cca4107fd5b8933b4a8984b771c911a1fbf1132d25622516234f34  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+0931a5df1464044594f794ad58eef45be8762f63ce49ebb7bacfd3a647dba459  /usr/lib/nuxel/nuxel-bridge/system_indicators.py
+29b0b0f8e93e8dc732a5156053458e69bd84475ba02ec5643edc21828efeb320  /etc/systemd/system/nuxel-fuse-access.service
+b079a5d94978dd75f124ab34582d0d6742d70d74e751317b6a738fd0d5b6b262  /etc/tmpfiles.d/nuxel-portal-doc.conf
+54db182e3ff0985180d5be4b073c1675514bf01bc77545b59fc1681617da40e7  /usr/share/nuxel/pwa/nuxel-common/theme.css
+fd6d2ea53bf797aeff3d12a0072dd13d73b35cd2764b1c9fc3e7253cd3cfee73  /usr/share/nuxel/pwa/nuxel-common/theme.js
+c100e729c8114cc64b72347f7975cafda02100a32312da4e752bf0fb4bf2d0f7  /usr/share/nuxel/pwa/nuxel-home/css/style.css
+925d2e7f5388bf27e0e6cdb4550528cc7469b0a8efe243136caca82bc13dd090  /usr/share/nuxel/pwa/nuxel-home/css/launcher.css
+b1c70e9de9cf084421e83f0f5bfe1025e99113f530e12b1ba5da7140297bacea  /usr/share/nuxel/pwa/nuxel-home/js/app.js
+7fde5e713cd89f57f4d54d330a3b4422db2ef9bdb22555d40f87b2b6c3898c3a  /usr/share/nuxel/pwa/nuxel-home/js/launcher.js
+04ce9dacc89c87d77ea738ab66099d2c2bd8da1059644bb1dd57f9f983e8d38a  /usr/share/nuxel/pwa/nuxel-home/js/lockscreen-indicators.js
+a9bd9ba40d2d44c0a1fb700a03174377851cc937167808f251273cb03288d96c  /usr/share/nuxel/pwa/nuxel-home/index.html
+39713d52c904c00171c2d500c1ffa1cf744442af7480171f2b3a7c960010bca2  /usr/share/nuxel/pwa/nuxel-home/sw.js
+7bf7455fabf5593c69125c56e75875d8317a9e6fa58c1560d49140a1bfa91a04  /usr/share/nuxel/pwa/nuxel-apps/settings/index.html
+69667e74dd4ab5823d1a294ae5e33d316f130708dc75b231673a7cc5856e7c48  /usr/share/nuxel/pwa/nuxel-apps/settings/appearance-settings.js

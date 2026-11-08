@@ -23,7 +23,7 @@
     }
   ],
   "nuxel": {
-    "bridge_version": "1", "pwa_version": "0.8.0-beta",
+    "bridge_version": "1", "pwa_version": "0.8.1-beta",
     "capabilities": [
       "location:read",
       "location:manage"

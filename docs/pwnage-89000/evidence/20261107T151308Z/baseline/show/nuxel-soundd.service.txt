@@ -1,0 +1,37 @@
+Id=nuxel-soundd.service
+Requires=system.slice sysinit.target
+Requisite=
+Wants=nuxel-audio-session.service
+BindsTo=
+PartOf=
+RequiredBy=
+WantedBy=nuxel-clockd.service multi-user.target
+Conflicts=shutdown.target
+Before=shutdown.target multi-user.target
+After=system.slice sysinit.target basic.target nuxel-audio-session.service local-fs.target systemd-journald.socket
+Triggers=
+TriggeredBy=
+Description=Nuxel central sound manager (persistent PipeWire cue stream)
+LoadState=loaded
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-soundd.service
+SourcePath=
+DropInPaths=/usr/lib/systemd/system/service.d/10-timeout-abort.conf
+InactiveExitTimestampMonotonic=7850810
+ActiveEnterTimestampMonotonic=49443801
+Type=simple
+Restart=on-failure
+NotifyAccess=none
+TimeoutStartUSec=4min
+TimeoutStopUSec=5s
+RemainAfterExit=no
+BusName=
+Result=success
+ExecMainStartTimestampMonotonic=49442320
+ExecMainExitTimestampMonotonic=0
+ExecMainPID=11003
+ExecMainStatus=0
+ExecStartPre={ path=/usr/lib/nuxel/nuxel-audio-route.sh ; argv[]=/usr/lib/nuxel/nuxel-audio-route.sh --wait 200 ; ignore_errors=yes ; start_time=[n/a] ; stop_time=[Sat 2026-11-07 14:40:24 CET] ; pid=5387 ; code=exited ; status=0 }
+ExecStartPre={ path=/usr/libexec/nuxel/install-sound-library ; argv[]=/usr/libexec/nuxel/install-sound-library ; ignore_errors=no ; start_time=[Sat 2026-11-07 14:40:24 CET] ; stop_time=[Sat 2026-11-07 14:40:25 CET] ; pid=10552 ; code=exited ; status=0 }
+ExecStart={ path=/usr/libexec/nuxel/nuxel-soundd ; argv[]=/usr/libexec/nuxel/nuxel-soundd ; ignore_errors=no ; start_time=[Sat 2026-11-07 14:40:25 CET] ; stop_time=[n/a] ; pid=11003 ; code=(null) ; status=0/0 }

@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 16;
+const NUXEL_REGISTRY_VERSION = 18;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -495,13 +495,38 @@ const NUXEL_APP_ICON_ASSETS = {
     'org.gnome.Software': '/assets/native-app-icons/org.gnome.Software.svg?v=p50000',
 };
 
-function nuxelAppIcon(app) {
-    const src = (app && (app.iconAsset || NUXEL_APP_ICON_ASSETS[app.id])) || '';
-    if (!src) return '<span>' + ((app && app.icon) || '📱') + '</span>';
-    const name = String((app && app.name) || 'App').replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
-    return '<img src="' + src + '" alt="' + name + '" width="48" height="48" loading="lazy" fetchpriority="low" draggable="false" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="nuxel-icon-fallback" hidden>' + ((app && app.icon) || '📱') + '</span>';
+/* PWNAGE-90000: immutable built-in icon manifest.
+   Every URL here is a repository-owned, versioned asset (the ?v= marker is the
+   invalidation key).  Mutable owner artwork is deliberately NOT in this map. */
+function nuxelBuiltinIcon(app) {
+    return (app && (app.iconAsset || NUXEL_APP_ICON_ASSETS[app.id])) || '';
 }
-try { window.NuxelAppIcon = nuxelAppIcon; } catch (e) { /* non-DOM registry test */ }
+
+/* Render a stable image node with an immediate, correct fallback glyph.
+   `opts.priority === 'visible'` is used only for the current desktop page and
+   the dock; hidden drawer entries stay lazy/low priority. */
+function nuxelAppIcon(app, opts) {
+    const src = nuxelBuiltinIcon(app);
+    const glyph = String((app && app.icon) || '📱');
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
+    if (!src) {
+        return '<span class="nuxel-icon-fallback" data-icon-state="fallback" aria-hidden="true">' + esc(glyph) + '</span>';
+    }
+    const visible = !!(opts && opts.priority === 'visible');
+    const name = esc((app && app.name) || 'App');
+    const loading = visible ? 'eager' : 'lazy';
+    const priority = visible ? 'high' : 'low';
+    return '<span class="nuxel-icon-fallback" data-icon-state="fallback" aria-hidden="true">' + esc(glyph) + '</span>' +
+        '<img class="nuxel-icon-img" src="' + esc(src) + '" alt="' + name + '" width="48" height="48" ' +
+        'loading="' + loading + '" fetchpriority="' + priority + '" draggable="false" decoding="async" ' +
+        'data-icon-src="' + esc(src) + '" data-icon-state="pending" ' +
+        'onload="this.dataset.iconState=\'loaded\';var f=this.previousElementSibling;if(f)f.hidden=true" ' +
+        'onerror="this.dataset.iconState=\'error\';var f=this.previousElementSibling;if(f)f.hidden=false">';
+}
+try {
+    window.NuxelAppIcon = nuxelAppIcon;
+    window.NuxelIconManifest = Object.freeze(Object.assign({}, NUXEL_APP_ICON_ASSETS));
+} catch (e) { /* non-DOM registry test */ }
 
 // App state management
 class AppRegistry {

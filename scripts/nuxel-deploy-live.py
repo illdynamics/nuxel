@@ -64,6 +64,31 @@ def targets_for(source: str):
     if source.startswith("services/nuxel-portal/src/"):
         rel = source[len("services/nuxel-portal/src/"):]
         return [("/usr/lib/nuxel/nuxel-portal/" + rel, 0o644)]
+    if source == "services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl":
+        return [("/usr/local/libexec/nuxel/nuxel-remote-desktop-ctl", 0o755)]
+    if source == "services/nuxel-remote-desktop/bin/nuxel-xrdp-session":
+        return [("/usr/local/bin/nuxel-xrdp-session", 0o755)]
+    if source == "services/nuxel-remote-desktop/bin/nuxel-orientation-remote-sync":
+        return [("/usr/libexec/nuxel/nuxel-orientation-remote-sync", 0o755)]
+    if source.startswith("services/nuxel-remote-desktop/config/"):
+        name = os.path.basename(source)
+        mapping = {
+            "xrdp.ini": ("/etc/xrdp/xrdp.ini", 0o644),
+            "sesman.ini": ("/etc/xrdp/sesman.ini", 0o644),
+            "xorg.conf": ("/etc/xrdp/xorg-nuxel.conf", 0o644),
+            "xrdp-sesman.pam": ("/etc/pam.d/xrdp-sesman", 0o644),
+            "wayvnc.pam": ("/etc/pam.d/wayvnc", 0o644),
+            "wayvnc.conf.example": ("/etc/nuxel/remote-desktop/vnc/wayvnc.conf.example", 0o644),
+            "launcher.html": ("/usr/share/nuxel/remote-desktop/launcher.html", 0o644),
+        }
+        return [mapping[name]] if name in mapping else []
+    if source == "services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.service":
+        return [("/etc/systemd/system/nuxel-remote-vnc.service", 0o644)]
+    if source.startswith("services/nuxel-s10/systemd/"):
+        rel = source[len("services/nuxel-s10/systemd/"):]
+        return [("/etc/systemd/system/" + rel, 0o644)]
+    if source == "services/nuxel-preload-cinema/nuxel-preload-cinema":
+        return [("/usr/lib/nuxel/nuxel-preload-cinema", 0o755)]
     if source.startswith("services/nuxel-firewall/nuxel_firewall/"):
         rel = source[len("services/nuxel-firewall/nuxel_firewall/"):]
         return [("/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/" + rel, 0o644)]
@@ -229,6 +254,9 @@ def main(argv=None) -> int:
         'grep -m1 "static get VERSION" /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js; '
         'grep -m1 "host_version" /usr/share/nuxel/pwa/nuxel-common/bridge-version.json; '
         'test -f /usr/share/nuxel/pwa/nuxel-home/js/qs-firewall.js; '
+        'test -x /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl; '
+        'test -f /etc/pam.d/wayvnc; '
+        'grep -q "port=tcp://.*:13389" /etc/xrdp/xrdp.ini; '
         'test -f /usr/lib/nuxel/nuxel-firewall/nuxel_firewall/provider.py; '
         'test -x /usr/bin/nuxel-firewall; '
         'systemctl is-active nuxel-bridge nuxel-http-bridge nuxel-web nuxel-soundd nuxel-clockd; '

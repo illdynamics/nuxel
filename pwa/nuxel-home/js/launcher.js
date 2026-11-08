@@ -467,7 +467,7 @@ class Launcher {
                     icon.className = 'app-icon app-category-' + app.category;
                     icon.style.background = app.color + '33';
                     icon.style.color = app.color;
-                    icon.innerHTML = this._appIcon(app);
+                    icon.innerHTML = this._appIcon(app, { priority: 'visible' });
                     icon.dataset.signature = itemSig;
                 }
             }
@@ -496,19 +496,113 @@ class Launcher {
         if (this.drawerList) this.drawerList.hidden = true;
         this.appList.hidden = false;
 
-        this.appList.innerHTML = page.map(app => app.type === 'folder'
-            ? '<div class="app-item app-folder" data-folder-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '"><div class="app-icon folder-icon">' + app.apps.slice(0, 4).map(a => this._appIcon(a)).join('') + '</div><span class="app-label">' + app.name + '</span></div>'
-            :
-            '<div class="app-item" data-size="' + (this.appSizes[app.id] || 'normal') + '" data-app-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '" title="' + (app.description || '') + '"><div class="app-icon app-category-' + app.category + '" style="background: ' + app.color + '33; color: ' + app.color + '">' + this._appIcon(app) + '</div><span class="app-label">' + app.name + '</span></div>'
-        ).join('');
-        this.appList.style.gridTemplateColumns = 'repeat(' + this.settings.gridColumns + ', minmax(0, 1fr))';
-        this.appList.style.gridTemplateRows = 'repeat(' + this.settings.gridRows + ', var(--home-row-height, 86px))';
-        this.appList.querySelectorAll('.app-item').forEach(node => {
+        // PWNAGE-90000: reconcile keyed nodes instead of replacing the whole
+        // page.  A registry/status refresh must not discard decoded <img> nodes
+        // or trigger a second network/decode pass on first unlock.
+        const wanted = page.map((app) => app.type === 'folder' ? 'f:' + app.id : 'a:' + app.id);
+        const existing = new Map();
+        Array.from(this.appList.children).forEach((node) => {
+            const key = node.dataset.folderId ? 'f:' + node.dataset.folderId
+                : node.dataset.appId ? 'a:' + node.dataset.appId : '';
+            if (key && !existing.has(key)) existing.set(key, node);
+            else node.remove();
+        });
+        page.forEach((app, index) => {
+            const key = app.type === 'folder' ? 'f:' + app.id : 'a:' + app.id;
+            let node = existing.get(key);
+            if (!node) {
+                node = this._createGridNode(app);
+            } else {
+                this._updateGridNode(node, app);
+            }
+            const current = this.appList.children[index];
+            if (current !== node) this.appList.insertBefore(node, current || null);
             const id = node.dataset.appId || node.dataset.folderId;
             if (id) this._renderGridPosition(node, id);
         });
+        for (const node of Array.from(this.appList.children)) {
+            const key = node.dataset.folderId ? 'f:' + node.dataset.folderId
+                : node.dataset.appId ? 'a:' + node.dataset.appId : '';
+            if (!wanted.includes(key)) node.remove();
+        }
+        this.appList.style.gridTemplateColumns = 'repeat(' + this.settings.gridColumns + ', minmax(0, 1fr))';
+        this.appList.style.gridTemplateRows = 'repeat(' + this.settings.gridRows + ', var(--home-row-height, 86px))';
         if (window.NuxelWidgets) { try { window.NuxelWidgets.renderPage(this.currentPage); } catch (e) {} }
         this._updatePageDots(totalPages);
+    }
+
+    _gridSignature(app) {
+        if (app.type === 'folder') {
+            return ['folder', app.id, app.name, (app.apps || []).map((a) => a.id).join(',')].join(':');
+        }
+        const iconSrc = (window.NuxelIconManifest && window.NuxelIconManifest[app.id])
+            || app.iconAsset || '';
+        return ['app', app.id, app.name, app.description || '', app.category || '',
+                app.color || '', this.appSizes[app.id] || 'normal',
+                iconSrc, app.icon || ''].join(':');
+    }
+
+    _createGridNode(app) {
+        const node = document.createElement('div');
+        if (app.type === 'folder') {
+            node.className = 'app-item app-folder';
+            node.dataset.folderId = app.id;
+            node.tabIndex = 0;
+            node.setAttribute('role', 'button');
+            const icon = document.createElement('div');
+            icon.className = 'app-icon folder-icon';
+            node.appendChild(icon);
+            const label = document.createElement('span');
+            label.className = 'app-label';
+            node.appendChild(label);
+        } else {
+            node.className = 'app-item';
+            node.dataset.appId = app.id;
+            node.tabIndex = 0;
+            node.setAttribute('role', 'button');
+            const icon = document.createElement('div');
+            icon.className = 'app-icon app-category-' + (app.category || 'default');
+            node.appendChild(icon);
+            const label = document.createElement('span');
+            label.className = 'app-label';
+            node.appendChild(label);
+        }
+        this._updateGridNode(node, app, true);
+        return node;
+    }
+
+    _updateGridNode(node, app, force) {
+        if (!node) return;
+        const sig = this._gridSignature(app);
+        if (!force && node.dataset.gridSignature === sig) return;
+        node.dataset.gridSignature = sig;
+        node.setAttribute('aria-label', app.name);
+        if (app.type === 'folder') {
+            const icon = node.querySelector('.app-icon');
+            if (icon) {
+                const inner = app.apps.slice(0, 4).map((a) => this._appIcon(a)).join('');
+                if (icon.innerHTML !== inner) icon.innerHTML = inner;
+            }
+        } else {
+            node.dataset.size = this.appSizes[app.id] || 'normal';
+            node.title = app.description || '';
+            const icon = node.querySelector('.app-icon');
+            if (icon) {
+                icon.className = 'app-icon app-category-' + (app.category || 'default');
+                icon.style.background = (app.color || '') + '33';
+                icon.style.color = app.color || '';
+                // Only rebuild the icon subtree when the actual source/glyph
+                // changed.  Ordinary re-renders keep the decoded <img> node.
+                const iconSig = [app.name, app.icon, app.color, app.category,
+                                 app.iconAsset || ''].join(':');
+                if (icon.dataset.iconSignature !== iconSig) {
+                    icon.innerHTML = this._appIcon(app, { priority: 'visible' });
+                    icon.dataset.iconSignature = iconSig;
+                }
+            }
+        }
+        const label = node.querySelector('.app-label');
+        if (label && label.textContent !== app.name) label.textContent = app.name;
     }
 
     _drawerContainer() {
@@ -585,8 +679,8 @@ class Launcher {
         return true;
     }
 
-    _appIcon(app) {
-        if (window.NuxelAppIcon) return window.NuxelAppIcon(app);
+    _appIcon(app, opts) {
+        if (window.NuxelAppIcon) return window.NuxelAppIcon(app, opts);
         return '<span>' + app.icon + '</span>';
     }
 

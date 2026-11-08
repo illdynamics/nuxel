@@ -1057,6 +1057,17 @@ def run(argv: list[str] | None = None) -> int:
         stop_reason = "video-eof-and-presentation-ready"
         bounded = False
         display_lost = False
+        # PWNAGE-90000 presentation instrumentation / watchdog.
+        playback_time = 0.0
+        last_pt = -1.0
+        last_pt_change_at = t0
+        clock_samples = 0
+        clock_advances = 0
+        stall_count = 0
+        recovery_nudges = 0
+        first_frame_s: float | None = None
+        pause_seen = False
+        last_timepos_log = 0.0
         while True:
             now = time.monotonic()
             elapsed = now - t0
@@ -1083,28 +1094,75 @@ def run(argv: list[str] | None = None) -> int:
             if reply and reply.get("error") == "success":
                 eof = bool(reply.get("data"))
 
+            # Low-rate monotonic playback clock sampling.  A playing clock that
+            # does not visibly advance is a presentation stall, not an EOF.
+            pt_value = playback_time
+            pt_reply = ipc.command(["get_property", "playback-time"], timeout=0.35)
+            if pt_reply and pt_reply.get("error") == "success":
+                v = pt_reply.get("data")
+                try:
+                    pt_value = float(v) if v is not None else playback_time
+                except (TypeError, ValueError):
+                    pass
+            pause_reply = ipc.command(["get_property", "pause"], timeout=0.35)
+            paused = False
+            if pause_reply and pause_reply.get("error") == "success":
+                paused = bool(pause_reply.get("data"))
+                pause_seen = pause_seen or paused
+            clock_samples += 1
+            if pt_value > last_pt + 0.001:
+                clock_advances += 1
+                last_pt = pt_value
+                last_pt_change_at = now
+            playback_time = pt_value
+
             # Publish the first presented frame only after the display bridge
             # is genuinely scanning.  Before nuxel-wl-fb owns /dev/fb0 the
             # panel still shows the pre-boot framebuffer; releasing the cover
             # on mpv's playback-time alone produced the owner-reported
             # "one second of lockscreen" flash (measured 2026-10-28).
             readiness = read_readiness(cfg, t0)
-            if overlay_state["state"] == "starting":
-                pt_reply = ipc.command(["get_property", "playback-time"], timeout=0.35)
-                if pt_reply and pt_reply.get("error") == "success":
-                    pt = pt_reply.get("data")
-                    try:
-                        pt_value = float(pt) if pt is not None else 0.0
-                    except (TypeError, ValueError):
-                        pt_value = 0.0
-                    if pt_value > 0.0 and readiness.wlfb_ready:
-                        mark_overlay("covered", first_frame_s=round(pt_value, 3),
-                                     elapsed_s=round(elapsed, 3),
-                                     wlfb_ready=True)
-                        log.log("INFO", "overlay_covered",
-                                first_frame_s=round(pt_value, 3),
-                                elapsed_s=round(elapsed, 3),
-                                wlfb_ready=True)
+            if overlay_state["state"] == "starting" and pt_value > 0.0 and readiness.wlfb_ready:
+                first_frame_s = pt_value
+                mark_overlay("covered", first_frame_s=round(pt_value, 3),
+                             elapsed_s=round(elapsed, 3),
+                             wlfb_ready=True)
+                log.log("INFO", "overlay_covered",
+                        first_frame_s=round(pt_value, 3),
+                        elapsed_s=round(elapsed, 3),
+                        wlfb_ready=True)
+
+            # Watchdog: distinguish a deliberate static section from a real
+            # decoder/presentation stall.  The clip's authored static tail is
+            # near the end; a stall before duration-0.5 s is suspicious.  One
+            # bounded recovery nudge (seek to the current time + unpause) is
+            # attempted; the player instance is never duplicated.
+            if (overlay_state["state"] == "covered" and not eof and not paused and
+                    duration is not None and pt_value < max(0.0, duration - 0.5) and
+                    now - last_pt_change_at > 1.5):
+                stall_count += 1
+                log.log("WARN", "P90_PRELOAD_STALL",
+                        pt=round(pt_value, 3),
+                        stalled_s=round(now - last_pt_change_at, 3),
+                        recovery_nudges=recovery_nudges)
+                if recovery_nudges < 1:
+                    recovery_nudges += 1
+                    ipc.command(["seek", max(0.0, pt_value), "absolute", "exact"], timeout=0.35)
+                    ipc.command(["set_property", "pause", False], timeout=0.35)
+                    log.log("WARN", "P90_PRELOAD_RECOVERY", action="seek-unpause",
+                            pt=round(pt_value, 3))
+                    last_pt_change_at = now
+                else:
+                    # Do not spin: escalate once in the log and keep the bounded
+                    # fail-open path.  The receipt records the stall.
+                    last_pt_change_at = now
+
+            if now - last_timepos_log >= 1.0:
+                last_timepos_log = now
+                log.log("INFO", "P90_PRELOAD_TIMEPOS",
+                        pt=round(pt_value, 3), eof=eof, pause=paused,
+                        samples=clock_samples, advances=clock_advances,
+                        stalls=stall_count)
             if eof and eof_at is None:
                 eof_at = elapsed
                 log.log("INFO", "video_eof", elapsed_s=round(elapsed, 3))
@@ -1204,6 +1262,14 @@ def run(argv: list[str] | None = None) -> int:
             "hard_timeout_ms": int(cfg.get("hard_timeout_ms")),
             "audio": "disabled",
             "fullscreen": True,
+            "video_output": str(cfg.get("video_output") or "wlshm"),
+            "first_frame_s": (round(first_frame_s, 3) if first_frame_s is not None else None),
+            "playback_time_s": round(playback_time, 3),
+            "clock_samples": clock_samples,
+            "clock_advances": clock_advances,
+            "stall_count": stall_count,
+            "recovery_nudges": recovery_nudges,
+            "pause_seen": bool(pause_seen),
         })
         log.log("INFO", "controller_done", verdict="PLAYED", reason=stop_reason)
         return 0

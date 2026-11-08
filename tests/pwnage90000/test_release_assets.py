@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-EXPECTED = "v0.8.0-beta"
+EXPECTED = "v0.8.1-beta"
 
 failures: list[str] = []
 
@@ -39,7 +39,7 @@ def tracked(rel: str) -> bool:
 
 
 # ---- canonical version and lockstep ---------------------------------------
-check("VERSION is v0.8.0-beta", text("VERSION").strip() == EXPECTED)
+check("VERSION is v0.8.1-beta", text("VERSION").strip() == EXPECTED)
 check("package.json version", f'"version": "{EXPECTED[1:]}"' in text("pwa/nuxel-common/package.json"))
 bridge = json.loads(text("pwa/nuxel-common/bridge-version.json"))
 check("bridge-version host_version", bridge.get("host_version") == EXPECTED[1:])

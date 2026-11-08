@@ -1,0 +1,37 @@
+Id=nuxel-wl-fb.service
+Requires=system.slice sysinit.target
+Requisite=
+Wants=nuxel-wayland.service
+BindsTo=
+PartOf=
+RequiredBy=
+WantedBy=nuxel-fallback.service nuxel-button-manager.service multi-user.target nuxel-boot-sound.service
+Conflicts=shutdown.target
+Before=multi-user.target nuxel-boot-sound.service shutdown.target nuxel-button-manager.service nuxel-fallback.service nuxel-abox-firmware-reload.timer
+After=nuxel-wayland.service nuxel-orientationd.service basic.target system.slice sysinit.target systemd-journald.socket
+Triggers=
+TriggeredBy=
+Description=Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+LoadState=loaded
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-wl-fb.service
+SourcePath=
+DropInPaths=/etc/systemd/system/nuxel-wl-fb.service.d/10-display-priority.conf /usr/lib/systemd/system/service.d/10-timeout-abort.conf /etc/systemd/system/nuxel-wl-fb.service.d/15-idle-fps.conf /etc/systemd/system/nuxel-wl-fb.service.d/20-fast-stop.conf /etc/systemd/system/nuxel-wl-fb.service.d/25-reboot-hold.conf
+InactiveExitTimestampMonotonic=10897535
+ActiveEnterTimestampMonotonic=11233887
+Type=simple
+Restart=on-failure
+NotifyAccess=none
+TimeoutStartUSec=45s
+TimeoutStopUSec=5s
+RemainAfterExit=no
+BusName=
+Result=success
+ExecMainStartTimestampMonotonic=11232990
+ExecMainExitTimestampMonotonic=0
+ExecMainPID=6114
+ExecMainStatus=0
+ExecStartPre={ path=/usr/lib/nuxel/nuxel-wait-wayland ; argv[]=/usr/lib/nuxel/nuxel-wait-wayland /run/nuxel-wayland 30 ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+ExecStart={ path=/usr/lib/nuxel/nuxel-wl-fb ; argv[]=/usr/lib/nuxel/nuxel-wl-fb ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+ExecStop={ path=/usr/lib/nuxel/nuxel-wl-fb-hold.sh ; argv[]=/usr/lib/nuxel/nuxel-wl-fb-hold.sh ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }

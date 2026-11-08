@@ -1,0 +1,101 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-07T15:24:21Z
+25c730cb-5ac2-4a5a-8e50-a4dc569e8daa
+up 0 minutes
+Startup finished in 3.447s (kernel) + 14.830s (userspace) = 18.278s 
+multi-user.target reached after 14.830s in userspace.
+===
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @14.830s
+└─avahi-daemon.service @14.811s +17ms
+  └─network-online.target @14.810s
+    └─NetworkManager-wait-online.service @6.815s +7.993s
+      └─NetworkManager.service @4.238s +2.218s
+        └─dbus-daemon.service @4.115s
+          └─basic.target @4.112s
+            └─sockets.target @4.111s
+              └─systemd-logind-varlink.socket @4.111s +345us
+                └─sysinit.target @4.098s
+                  └─systemd-timesyncd.service @3.837s +260ms
+                    └─systemd-tmpfiles-setup.service @3.380s +451ms
+                      └─systemd-journal-flush.service @3.099s +273ms
+                        └─systemd-journald.service @2.474s +623ms
+                          └─systemd-journald.socket @2.461s +224us
+                            └─system.slice @2.445s
+                              └─-.slice @2.445s
+===
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @14.830s
+└─avahi-daemon.service @14.811s +17ms
+  └─network-online.target @14.810s
+    └─NetworkManager-wait-online.service @6.815s +7.993s
+      └─NetworkManager.service @4.238s +2.218s
+        └─dbus-daemon.service @4.115s
+          └─basic.target @4.112s
+            └─sockets.target @4.111s
+              └─systemd-logind-varlink.socket @4.111s +345us
+                └─sysinit.target @4.098s
+                  └─systemd-timesyncd.service @3.837s +260ms
+                    └─systemd-tmpfiles-setup.service @3.380s +451ms
+                      └─systemd-journal-flush.service @3.099s +273ms
+                        └─systemd-journald.service @2.474s +623ms
+                          └─systemd-journald.socket @2.461s +224us
+                            └─system.slice @2.445s
+                              └─-.slice @2.445s
+===
+7.993s NetworkManager-wait-online.service
+5.029s nuxel-fallback.service
+3.038s nuxel-audio-route.service
+2.218s NetworkManager.service
+1.324s nuxel-device-permissions.service
+1.252s nuxel-soundd.service
+1.027s nuxel-wl-fb.service
+ 763ms polkit.service
+ 648ms systemd-udev-trigger.service
+ 623ms systemd-journald.service
+ 613ms systemd-hostnamed.service
+ 520ms nuxel-bootmode-guard.service
+ 463ms nuxel-interface-state.service
+ 451ms systemd-tmpfiles-setup.service
+ 448ms rtkit-daemon.service
+ 420ms nuxel-orientationd.service
+ 371ms sshd.service
+ 368ms systemd-user-sessions.service
+ 313ms ModemManager.service
+ 273ms systemd-journal-flush.service
+ 260ms systemd-timesyncd.service
+ 230ms systemd-logind.service
+ 201ms geoclue.service
+ 176ms nuxel-wifi.service
+ 122ms systemd-tmpfiles-setup-dev-early.service
+ 111ms authselect-apply-changes.service
+ 102ms nuxel-bootmode-oneshot.service
+ 100ms nuxel-charger-mode-recovery.service
+  83ms nuxel-network-udev-seed.service
+  77ms systemd-sysctl.service
+  72ms systemd-tmpfiles-setup-dev.service
+  64ms wpa_supplicant.service
+  60ms systemd-network-generator.service
+  51ms nuxel-usb-mode-restore.service
+  46ms nuxel-fuse-access.service
+===
+  UNIT                        LOAD   ACTIVE SUB    DESCRIPTION
+● nuxel-audio-session.service loaded failed failed Nuxel standalone PipeWire/WirePlumber audio session
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+1 loaded units listed.

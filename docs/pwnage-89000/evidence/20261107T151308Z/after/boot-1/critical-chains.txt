@@ -1,0 +1,177 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===== nuxel-wayland.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-wayland.service +19ms
+└─nuxel-device-permissions.service @4.480s +892ms
+  └─basic.target @4.457s
+    └─sockets.target @4.456s
+      └─systemd-logind-varlink.socket @4.456s +182us
+        └─sysinit.target @4.438s
+          └─systemd-timesyncd.service @4.181s +256ms
+            └─systemd-tmpfiles-setup.service @3.713s +463ms
+              └─systemd-journal-flush.service @3.066s +643ms
+                └─systemd-journald.service @2.437s +625ms
+                  └─systemd-journald.socket @2.420s +233us
+                    └─system.slice @2.405s
+                      └─-.slice @2.405s
+===== nuxel-wl-fb.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-wl-fb.service +1.264s
+└─nuxel-orientationd.service @5.410s +564ms
+  └─nuxel-wayland.service @5.377s +19ms
+    └─nuxel-device-permissions.service @4.480s +892ms
+      └─basic.target @4.457s
+        └─sockets.target @4.456s
+          └─systemd-logind-varlink.socket @4.456s +182us
+            └─sysinit.target @4.438s
+              └─systemd-timesyncd.service @4.181s +256ms
+                └─systemd-tmpfiles-setup.service @3.713s +463ms
+                  └─systemd-journal-flush.service @3.066s +643ms
+                    └─systemd-journald.service @2.437s +625ms
+                      └─systemd-journald.socket @2.420s +233us
+                        └─system.slice @2.405s
+                          └─-.slice @2.405s
+===== nuxel-web.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-web.service @4.526s
+└─basic.target @4.457s
+  └─sockets.target @4.456s
+    └─systemd-logind-varlink.socket @4.456s +182us
+      └─sysinit.target @4.438s
+        └─systemd-timesyncd.service @4.181s +256ms
+          └─systemd-tmpfiles-setup.service @3.713s +463ms
+            └─systemd-journal-flush.service @3.066s +643ms
+              └─systemd-journald.service @2.437s +625ms
+                └─systemd-journald.socket @2.420s +233us
+                  └─system.slice @2.405s
+                    └─-.slice @2.405s
+===== nuxel-touch-arm.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-touch-arm.service @4.513s
+└─basic.target @4.457s
+  └─sockets.target @4.456s
+    └─systemd-logind-varlink.socket @4.456s +182us
+      └─sysinit.target @4.438s
+        └─systemd-timesyncd.service @4.181s +256ms
+          └─systemd-tmpfiles-setup.service @3.713s +463ms
+            └─systemd-journal-flush.service @3.066s +643ms
+              └─systemd-journald.service @2.437s +625ms
+                └─systemd-journald.socket @2.420s +233us
+                  └─system.slice @2.405s
+                    └─-.slice @2.405s
+===== seatd.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+seatd.service @4.534s
+└─basic.target @4.457s
+  └─sockets.target @4.456s
+    └─systemd-logind-varlink.socket @4.456s +182us
+      └─sysinit.target @4.438s
+        └─systemd-timesyncd.service @4.181s +256ms
+          └─systemd-tmpfiles-setup.service @3.713s +463ms
+            └─systemd-journal-flush.service @3.066s +643ms
+              └─systemd-journald.service @2.437s +625ms
+                └─systemd-journald.socket @2.420s +233us
+                  └─system.slice @2.405s
+                    └─-.slice @2.405s
+===== nuxel-bootmode-oneshot.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-bootmode-oneshot.service +83ms
+└─basic.target @4.457s
+  └─sockets.target @4.456s
+    └─systemd-logind-varlink.socket @4.456s +182us
+      └─sysinit.target @4.438s
+        └─systemd-timesyncd.service @4.181s +256ms
+          └─systemd-tmpfiles-setup.service @3.713s +463ms
+            └─systemd-journal-flush.service @3.066s +643ms
+              └─systemd-journald.service @2.437s +625ms
+                └─systemd-journald.socket @2.420s +233us
+                  └─system.slice @2.405s
+                    └─-.slice @2.405s
+===== nuxel-device-permissions.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-device-permissions.service +892ms
+└─basic.target @4.457s
+  └─sockets.target @4.456s
+    └─systemd-logind-varlink.socket @4.456s +182us
+      └─sysinit.target @4.438s
+        └─systemd-timesyncd.service @4.181s +256ms
+          └─systemd-tmpfiles-setup.service @3.713s +463ms
+            └─systemd-journal-flush.service @3.066s +643ms
+              └─systemd-journald.service @2.437s +625ms
+                └─systemd-journald.socket @2.420s +233us
+                  └─system.slice @2.405s
+                    └─-.slice @2.405s
+===== nuxel-interface-state.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-interface-state.service +436ms
+└─nuxel-wifi.service @7.829s +233ms
+  └─network.target @6.854s
+    └─NetworkManager.service @4.581s +2.272s
+      └─dbus-daemon.service @4.460s
+        └─basic.target @4.457s
+          └─sockets.target @4.456s
+            └─systemd-logind-varlink.socket @4.456s +182us
+              └─sysinit.target @4.438s
+                └─systemd-timesyncd.service @4.181s +256ms
+                  └─systemd-tmpfiles-setup.service @3.713s +463ms
+                    └─systemd-journal-flush.service @3.066s +643ms
+                      └─systemd-journald.service @2.437s +625ms
+                        └─systemd-journald.socket @2.420s +233us
+                          └─system.slice @2.405s
+                            └─-.slice @2.405s
+===== nuxel-soundd.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-soundd.service +1.140s
+└─basic.target @4.457s
+  └─sockets.target @4.456s
+    └─systemd-logind-varlink.socket @4.456s +182us
+      └─sysinit.target @4.438s
+        └─systemd-timesyncd.service @4.181s +256ms
+          └─systemd-tmpfiles-setup.service @3.713s +463ms
+            └─systemd-journal-flush.service @3.066s +643ms
+              └─systemd-journald.service @2.437s +625ms
+                └─systemd-journald.socket @2.420s +233us
+                  └─system.slice @2.405s
+                    └─-.slice @2.405s
+===== nuxel-clockd.service
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-clockd.service @4.478s
+└─basic.target @4.457s
+  └─sockets.target @4.456s
+    └─systemd-logind-varlink.socket @4.456s +182us
+      └─sysinit.target @4.438s
+        └─systemd-timesyncd.service @4.181s +256ms
+          └─systemd-tmpfiles-setup.service @3.713s +463ms
+            └─systemd-journal-flush.service @3.066s +643ms
+              └─systemd-journald.service @2.437s +625ms
+                └─systemd-journald.socket @2.420s +233us
+                  └─system.slice @2.405s
+                    └─-.slice @2.405s

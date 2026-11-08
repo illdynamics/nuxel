@@ -1,0 +1,118 @@
+# /etc/systemd/system/nuxel-wayland.service
+[Unit]
+Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+# Bounded restarts (mission 16): never spin into a process storm.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+After=nuxel-touch-arm.service seatd.service
+Wants=nuxel-touch-arm.service seatd.service
+Before=nuxel-wl-fb.service nuxel-fallback.service
+
+[Service]
+Type=simple
+# phoc from the phone image, wlroots 0.19 headless backend + pixman renderer:
+# the only Wayland output this kernel (CONFIG_DRM unset) can offer.
+# A31: the libinput backend must be requested explicitly (A29 asked for 'headless'
+# alone, so wlroots never even attempted an input backend) and it needs a backend
+# session - seatd provides it (LIBSEAT_BACKEND=seatd).  Both were measured as the
+# missing link between "sec_ts produces data" and "the compositor sees a finger".
+Environment=WLR_BACKENDS=headless,libinput
+# A31: the handset has NO VT (/dev/tty0, /sys/class/vtconsole, /proc/consoles all
+# absent), so a VT-bound seat can never activate - seatd's seat was measured to
+# time out ('backend.c:105 Timeout waiting session to become active') while libseat's
+# noop backend satisfies wlroots' session requirement.  Device access is then granted
+# by the preloaded shim for /dev/input paths only.
+Environment=LIBSEAT_BACKEND=noop
+# If the panel node is absent (the handset booted in CHARGER MODE, where sec_ts
+# never binds at all - measured A29b/A31) wlroots would otherwise fail the whole
+# backend and phoc would restart-loop.  The shim records what it actually found in
+# /run/nuxel-libinput-path.state, so 'zero devices' stays visible evidence.
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+# A31: the udev daemon is masked on this image (it cannot register workers on 4.14
+# and forks unboundedly - measured A26 and re-measured this cycle), so libinput's
+# udev backend discovers zero devices.  The preloaded shim redirects ONLY libinput's
+# discovery step to its path backend and adds the real /dev/input/eventN node that
+# carries INPUT_PROP_DIRECT (the panel's sec_touchscreen).  Real evdev, real
+# libinput parsing, real wl_touch - no synthesised events.  See
+# tools/s10plus/a31/nuxel-libinput-path.c.
+Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
+Environment=WLR_RENDERER=pixman
+Environment=WLR_HEADLESS_OUTPUTS=1
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
+ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
+# PWNAGE-48000 routed the compositor through a GPU-first launcher.  The wrapper
+# exports the Mali-G76/panfrost kbase path and falls back to pixman on failure;
+# it invokes the EXACT measured phoc command below, so no measured setting is
+# lost - only wrapped.
+ExecStart=/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/nuxel-wayland.service.d/05-start-after-web.conf
+[Unit]
+After=nuxel-web.service
+Wants=nuxel-web.service
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+
+# /etc/systemd/system/nuxel-wayland.service.d/30-fast-stop.conf
+# PWNAGE-37000 BUTTERSCOTCH boot-latency fix.
+#
+# The ABOX firmware-reload service stops nuxel-wayland.service before cycling
+# the audio DSP, then restarts it. On this 4.14 vendor kernel the default
+# 90 s stop timeout let phoc/WebKit/PipeWire sit in final-sigterm for ~46 s
+# before systemd aborted the stop. That single stop is the largest measured
+# component of the S10+ cold-boot "spinning penguin" delay.
+#
+# The session is restarted immediately afterwards by the ABOX wrapper, so a
+# short, deterministic stop is the correct behaviour: TERM the whole cgroup,
+# then SIGKILL what remains after 8 s. Normal shutdown also benefits because
+# the compositor no longer hangs the reboot for up to 90 s.
+[Service]
+TimeoutStopSec=8
+SendSIGKILL=yes
+KillMode=control-group
+
+# /etc/systemd/system/nuxel-wayland.service.d/40-bounded-stop.conf
+# PWNAGE-51000/62000: the compositor is the only unit that consumed its full
+# stop timeout during a normal reboot.  The measured failure was the old
+# ExecStop signalling only MAINPID/direct children: the wrapper exits first,
+# phoc is reparented, and pkill -P no longer sees it.  Signal the exact unit
+# cgroup (cgroup v2 system.slice path), wait 0.5 s, then KILL what remains.
+# Bounded, unit-specific, and no global timeout is changed.
+[Service]
+TimeoutStopSec=2
+ExecStop=/usr/lib/nuxel/nuxel-wayland-stop.sh
+KillMode=control-group
+SendSIGKILL=yes
+
+# /etc/systemd/system/nuxel-wayland.service.d/50-kbase-egl.conf
+# PWNAGE-53000: load the kbase Mesa EGL build by absolute path.
+# Without this, glvnd follows /usr/lib64/libEGL_mesa.so.0 and a Mesa package
+# update can silently point it back at the stock (llvmpipe-capable) library.
+[Service]
+Environment=__EGL_VENDOR_LIBRARY_FILENAMES=/etc/nuxel/egl-kbase.json
+Environment=LIBGL_DRIVERS_PATH=/usr/lib64/dri
+
+# /etc/systemd/system/nuxel-wayland.service.d/90-doom-diag.conf
+[Service]
+Environment=NUXEL_INPUT_DIAG=1

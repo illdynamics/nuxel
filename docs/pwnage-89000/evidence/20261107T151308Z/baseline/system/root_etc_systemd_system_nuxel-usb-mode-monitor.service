@@ -1,0 +1,15 @@
+[Unit]
+Description=Nuxel USB mode host-disconnect monitor
+After=nuxel-mtp.service
+Wants=nuxel-mtp.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/nuxel/nuxel-usb-mode.sh monitor
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

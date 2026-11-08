@@ -45,6 +45,7 @@
 #define LOCK_STATE "/run/nuxel/security/lock-state.json"
 #define LOCATION_POLICY "/var/lib/nuxel/permissions/location-policy.json"
 #define FT_BIN "/usr/lib/nuxel/nuxel-foreign-toplevel"
+#define HOST_FIFO "/run/nuxel-pwa-host.cmd"
 
 static struct wl_display *display;
 static struct wl_registry *registry;
@@ -456,6 +457,17 @@ static void bar_strip(void) {
   publish_state(0, "native_strip", "", 0, NULL);
 }
 
+/* PWNAGE-90000: the compact bar's SECOND downward pull must open the real
+ * expanded Quick Settings through the launcher's authoritative controller.
+ * The statusbar never invents its own shade state. */
+static void send_host_action(const char *action) {
+  int fd = open(HOST_FIFO, O_WRONLY | O_NONBLOCK);
+  if (fd < 0) { audit("STATUSBAR_HOST_FIFO_OPEN_FAIL action=%s errno=%d", action, errno); return; }
+  dprintf(fd, "action %s\n", action);
+  close(fd);
+  audit("STATUSBAR_HOST_ACTION %s", action);
+}
+
 static void bar_reveal(void) {
   if (!strip_mode) return;
   if (layer_surface) bar_hide();
@@ -513,8 +525,16 @@ static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t 
     touch_down = 0;
     bar_reveal();
   } else if (!strip_mode && bar_revealed && touch_down &&
-             (down_y - last_y) >= BAR_REVEAL_DISTANCE) {
+             (last_y - down_y) >= BAR_REVEAL_DISTANCE) {
+    /* Second downward pull: expanded Quick Settings (same owner as Home). */
     touch_down = 0;
+    send_host_action("quick-settings");
+  } else if (!strip_mode && bar_revealed && touch_down &&
+             (down_y - last_y) >= BAR_REVEAL_DISTANCE) {
+    /* Upward swipe dismisses the compact/expanded shade through the same
+       Quick Settings owner, then collapses the native bar to its strip. */
+    touch_down = 0;
+    send_host_action("quick-settings-close");
     bar_strip();
   }
 }

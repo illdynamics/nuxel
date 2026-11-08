@@ -1020,11 +1020,16 @@ def usb_host_presence(net_root: str | Path = "/sys/class/net") -> tuple[str | No
 
 
 def usb_capability(kernel_config: str, gadget_root: str | Path = "/sys/kernel/config/usb_gadget",
-                   net_root: str | Path = "/sys/class/net") -> dict[str, Any]:
+                   net_root: str | Path = "/sys/class/net",
+                   kernel_release: str | None = None,
+                   known_bad_ncm: set[str] | None = None) -> dict[str, Any]:
     cfg = parse_kernel_config(kernel_config)
     functions = gadget_function_names(gadget_root)
     links = gadget_links(gadget_root)
     current = sorted({f for names in functions.values() for f in names})
+    release = kernel_release or os.uname().release
+    base = re.sub(r"^(\d+\.\d+\.\d+).*$", r"\1", release)
+    bad = known_bad_ncm if known_bad_ncm is not None else {"4.14.253"}
     compiled = {
         "ncm": cfg.get("CONFIG_USB_CONFIGFS_NCM") == "y" and cfg.get("CONFIG_USB_F_NCM") == "y",
         "rndis": cfg.get("CONFIG_USB_CONFIGFS_RNDIS") == "y" and cfg.get("CONFIG_USB_F_RNDIS") == "y",
@@ -1036,29 +1041,55 @@ def usb_capability(kernel_config: str, gadget_root: str | Path = "/sys/kernel/co
     }
     has_net_function = any(n.startswith(("ncm.", "rndis.", "ecm.", "eem.")) for n in current)
     host_iface = usb_host_gadget_interface(net_root)
+    modes = {
+        "ncm": {"compiled": compiled["ncm"],
+                "safe_on_current_kernel": False if base in bad else "UNVERIFIED",
+                "status": "BLOCKED_KNOWN_PANIC" if base in bad else "NEEDS_VALIDATION"},
+        "rndis": {"compiled": compiled["rndis"],
+                  "safe_on_current_kernel": "UNVERIFIED",
+                  "status": "NEEDS_VALIDATION" if compiled["rndis"] else "BLOCKED_KERNEL"},
+        "ecm": {"compiled": compiled["ecm"],
+                "safe_on_current_kernel": "UNVERIFIED" if compiled["ecm"] else False,
+                "status": "NEEDS_VALIDATION" if compiled["ecm"] else "BLOCKED_KERNEL"},
+        "ecm_subset": {"compiled": compiled["ecm_subset"],
+                       "safe_on_current_kernel": "UNVERIFIED" if compiled["ecm_subset"] else False,
+                       "status": "NEEDS_VALIDATION" if compiled["ecm_subset"] else "BLOCKED_KERNEL"},
+        "eem": {"compiled": compiled["eem"],
+                "safe_on_current_kernel": "UNVERIFIED" if compiled["eem"] else False,
+                "status": "NEEDS_VALIDATION" if compiled["eem"] else "BLOCKED_KERNEL"},
+    }
+    # Never select NCM on the known-panic release, even when RNDIS is compiled.
+    preferred = None if base in bad else (
+        "ncm" if compiled["ncm"] else ("rndis" if compiled["rndis"] else
+                                        ("ecm" if compiled["ecm"] else None)))
     if not compiled["configfs"] or not compiled["dwc3"]:
-        status = "BLOCKED_KERNEL"
-    elif not (compiled["ncm"] or compiled["rndis"] or compiled["ecm"]):
-        status = "BLOCKED_KERNEL"
+        state = "BLOCKED_KERNEL"
+    elif not any(compiled[k] for k in ("ncm", "rndis", "ecm")):
+        state = "BLOCKED_KERNEL"
+    elif base in bad:
+        state = "NEEDS_VALIDATION"
     elif host_iface:
-        status = "AVAILABLE"
+        state = "AVAILABLE"
     elif has_net_function:
-        status = "FUNCTION_PRESENT_NO_HOST_IFACE"
+        state = "FUNCTION_PRESENT_NO_HOST_IFACE"
     else:
-        status = "SUPPORTED_NOT_ENABLED"
+        state = "SUPPORTED_NOT_ENABLED"
     return {
-        "status": status,
+        "status": state,
+        "kernel_release": release,
+        "kernel_base_release": base,
         "compiled": compiled,
+        "modes": modes,
         "functions": functions,
         "links": links,
         "current_functions": current,
         "host_gadget_interface": host_iface,
         "interfaces": net_interfaces(net_root),
-        "preferred_mode": ("ncm" if compiled["ncm"] else
-                           ("rndis" if compiled["rndis"] else
-                            ("ecm" if compiled["ecm"] else None))),
+        "preferred_mode": preferred,
+        "selected_mode": None,
+        "acm_preserved": any(n.startswith("acm.") for n in current),
+        "mutated": False,
     }
-
 
 def read_kernel_config(path: str | Path = "/proc/config.gz") -> str:
     p = Path(path)

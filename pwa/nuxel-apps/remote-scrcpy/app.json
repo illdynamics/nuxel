@@ -8,7 +8,7 @@
   "url": "/pwa/nuxel-apps/remote-scrcpy/index.html",
   "entry": "pwa/nuxel-apps/remote-scrcpy/index.html",
   "manifest": "pwa/nuxel-apps/remote-scrcpy/manifest.json",
-  "description": "Official Android ADB mirroring only \u00b7 USB ADB preferred \u00b7 Wi-Fi/TCP-IP optional \u00b7 not native Nuxel",
+  "description": "Android ADB mirroring only; native Nuxel uses the authenticated VNC mirror on TCP 15900",
   "capabilities": [],
   "bridge_version": "1",
   "docked": false,

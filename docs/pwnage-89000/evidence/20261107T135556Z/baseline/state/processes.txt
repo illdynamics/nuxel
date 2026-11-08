@@ -1,0 +1,351 @@
+    PID    PPID     ELAPSED PSR %CPU %MEM COMMAND         COMMAND
+      1       0       20:03   5 14.6  0.5 systemd         sbin/init
+      2       0       20:03   3  0.0  0.0 kthreadd        [kthreadd]
+      6       2       20:03   0  0.0  0.0 mm_percpu_wq    [mm_percpu_wq]
+      7       2       20:03   0  0.0  0.0 ksoftirqd/0     [ksoftirqd/0]
+      8       2       20:03   3  0.4  0.0 rcu_preempt     [rcu_preempt]
+      9       2       20:03   3  0.1  0.0 rcu_sched       [rcu_sched]
+     10       2       20:03   0  0.0  0.0 rcu_bh          [rcu_bh]
+     11       2       20:03   0  0.0  0.0 migration/0     [migration/0]
+     12       2       20:03   0  0.0  0.0 tz_worker_threa [tz_worker_threa]
+     13       2       20:03   0  0.0  0.0 sec_audio_dbg_s [sec_audio_dbg_s]
+     14       2       20:03   0  0.0  0.0 watchdog/0      [watchdog/0]
+     15       2       20:03   0  0.0  0.0 cpuhp/0         [cpuhp/0]
+     16       2       20:03   1  0.0  0.0 cpuhp/1         [cpuhp/1]
+     17       2       20:03   1  0.0  0.0 watchdog/1      [watchdog/1]
+     18       2       20:03   1  0.0  0.0 tz_worker_threa [tz_worker_threa]
+     19       2       20:03   1  0.0  0.0 migration/1     [migration/1]
+     20       2       20:03   1  0.0  0.0 ksoftirqd/1     [ksoftirqd/1]
+     23       2       20:03   2  0.0  0.0 cpuhp/2         [cpuhp/2]
+     24       2       20:03   2  0.0  0.0 watchdog/2      [watchdog/2]
+     25       2       20:03   2  0.0  0.0 tz_worker_threa [tz_worker_threa]
+     26       2       20:03   2  0.0  0.0 migration/2     [migration/2]
+     27       2       20:03   2  0.0  0.0 ksoftirqd/2     [ksoftirqd/2]
+     30       2       20:03   3  0.0  0.0 cpuhp/3         [cpuhp/3]
+     31       2       20:03   3  0.0  0.0 watchdog/3      [watchdog/3]
+     32       2       20:03   3  0.0  0.0 tz_worker_threa [tz_worker_threa]
+     33       2       20:03   3  0.0  0.0 migration/3     [migration/3]
+     34       2       20:03   3  0.0  0.0 ksoftirqd/3     [ksoftirqd/3]
+     36       2       20:03   3  0.0  0.0 kworker/3:0H    [kworker/3:0H]
+     37       2       20:03   4  0.0  0.0 cpuhp/4         [cpuhp/4]
+     38       2       20:03   4  0.0  0.0 watchdog/4      [watchdog/4]
+     39       2       20:03   4  0.0  0.0 tz_worker_threa [tz_worker_threa]
+     40       2       20:03   4  0.0  0.0 migration/4     [migration/4]
+     41       2       20:03   4  0.0  0.0 ksoftirqd/4     [ksoftirqd/4]
+     42       2       20:03   4  0.0  0.0 kworker/4:0     [kworker/4:0]
+     43       2       20:03   4  0.0  0.0 kworker/4:0H    [kworker/4:0H]
+     44       2       20:03   5  0.0  0.0 cpuhp/5         [cpuhp/5]
+     45       2       20:03   5  0.0  0.0 watchdog/5      [watchdog/5]
+     46       2       20:03   5  0.0  0.0 tz_worker_threa [tz_worker_threa]
+     47       2       20:03   5  0.0  0.0 migration/5     [migration/5]
+     48       2       20:03   5  0.0  0.0 ksoftirqd/5     [ksoftirqd/5]
+     50       2       20:03   5  0.0  0.0 kworker/5:0H    [kworker/5:0H]
+     51       2       20:03   6  0.0  0.0 cpuhp/6         [cpuhp/6]
+     52       2       20:03   6  0.0  0.0 watchdog/6      [watchdog/6]
+     53       2       20:03   6  0.0  0.0 tz_worker_threa [tz_worker_threa]
+     54       2       20:03   6  0.0  0.0 migration/6     [migration/6]
+     55       2       20:03   6  0.0  0.0 ksoftirqd/6     [ksoftirqd/6]
+     56       2       20:03   6  0.0  0.0 kworker/6:0     [kworker/6:0]
+     58       2       20:03   7  0.0  0.0 cpuhp/7         [cpuhp/7]
+     59       2       20:03   7  0.0  0.0 watchdog/7      [watchdog/7]
+     60       2       20:03   7  0.0  0.0 tz_worker_threa [tz_worker_threa]
+     61       2       20:03   7  0.0  0.0 migration/7     [migration/7]
+     62       2       20:03   7  0.0  0.0 ksoftirqd/7     [ksoftirqd/7]
+     65       2       20:03   0  0.0  0.0 kdevtmpfs       [kdevtmpfs]
+     66       2       20:03   1  0.0  0.0 netns           [netns]
+     86       2       20:03   5  0.0  0.0 kworker/5:1     [kworker/5:1]
+    276       2       20:03   1  0.0  0.0 irq/141-158d000 [irq/141-158d000]
+    404       2       20:03   0  0.0  0.0 irq/206-1590000 [irq/206-1590000]
+    405       2       20:03   0  0.0  0.0 acpm_update_log [acpm_update_log]
+    990       2       20:03   3  0.0  0.0 khungtaskd      [khungtaskd]
+    991       2       20:03   1  0.0  0.0 oom_reaper      [oom_reaper]
+    992       2       20:03   0  0.0  0.0 writeback       [writeback]
+    994       2       20:03   0  0.0  0.0 kcompactd0      [kcompactd0]
+    995       2       20:03   1  0.0  0.0 ksmd            [ksmd]
+    996       2       20:03   0  0.0  0.0 crypto          [crypto]
+    998       2       20:03   2  0.0  0.0 kblockd         [kblockd]
+   1036       2       20:03   0  0.0  0.0 scsi_srpmb_work [scsi_srpmb_work]
+   1040       2       20:03   0  0.0  0.0 spi1            [spi1]
+   1043       2       20:03   7  0.0  0.0 spi2            [spi2]
+   1048       2       20:03   1  0.0  0.0 spi7            [spi7]
+   1051       2       20:03   2  0.0  0.0 spi17           [spi17]
+   1154       2       20:03   1  0.0  0.0 irq/275-dp-pmic [irq/275-dp-pmic]
+   1159       2       20:03   0  0.0  0.0 fw_update       [fw_update]
+   1168       2       20:03   1  0.0  0.0 irq/318-max7770 [irq/318-max7770]
+   1181       2       20:03   2  0.7  0.0 kworker/u17:1   [kworker/u17:1]
+   1188       2       20:03   1  0.0  0.0 irq/370-s2mps19 [irq/370-s2mps19]
+   1239       2       20:02   1  0.0  0.0 irq/386-s2mps20 [irq/386-s2mps20]
+   1264       2       20:02   0  0.0  0.0 ion_system_heap [ion_system_heap]
+   1266       2       20:02   0  0.0  0.0 devfreq_wq      [devfreq_wq]
+   1289       2       20:02   0  0.0  0.0 cfg80211        [cfg80211]
+   1312       2       20:02   0  0.0  0.0 watchdogd       [watchdogd]
+   1316       2       20:02   0  0.0  0.0 rbin            [rbin]
+   1317       2       20:02   0  0.0  0.0 rbin_shrink     [rbin_shrink]
+   1318       2       20:02   1  0.0  0.0 vfw_heap        [vfw_heap]
+   1319       2       20:02   0  0.0  0.0 vnfw_heap       [vnfw_heap]
+   1320       2       20:02   1  0.0  0.0 vframe_heap     [vframe_heap]
+   1321       2       20:02   0  0.0  0.0 vscaler_heap    [vscaler_heap]
+   1322       2       20:02   1  0.0  0.0 gpu_buffer      [gpu_buffer]
+   1337       2       20:02   0  0.0  0.0 thermal_check   [thermal_check]
+   1344       2       20:02   1  0.0  0.0 kworker/1:2     [kworker/1:2]
+   1345       2       20:02   0  0.0  0.0 mptcp_wq        [mptcp_wq]
+   1391       2       20:02   1  0.0  0.0 kauditd         [kauditd]
+   1397       2       20:02   1  0.0  0.0 kswapd0         [kswapd0]
+   1486       2       20:02   0  0.0  0.0 ecryptfs-kthrea [ecryptfs-kthrea]
+   1578       2       20:02   0  0.0  0.0 pcie_wq         [pcie_wq]
+   1583       2       20:02   0  0.0  0.0 disp-det        [disp-det]
+   1584       2       20:02   1  0.0  0.0 err-fg          [err-fg]
+   1585       2       20:02   0  0.0  0.0 conn-det        [conn-det]
+   1586       2       20:02   1  0.0  0.0 dim-flash       [dim-flash]
+   1587       2       20:02   0  0.0  0.0 panel-condition [panel-condition]
+   1646       2       20:02   1  0.0  0.0 irq/262-ppmpu   [irq/262-ppmpu]
+   1647       2       20:02   0  0.0  0.0 irq/263-ppmpu   [irq/263-ppmpu]
+   1648       2       20:02   1  0.0  0.0 irq/264-ppmpu   [irq/264-ppmpu]
+   1649       2       20:02   0  0.0  0.0 irq/265-ppmpu   [irq/265-ppmpu]
+   1650       2       20:02   1  0.0  0.0 irq/266-ppmpu   [irq/266-ppmpu]
+   1651       2       20:02   0  0.0  0.0 irq/267-ppmpu   [irq/267-ppmpu]
+   1652       2       20:02   1  0.0  0.0 irq/268-ppmpu   [irq/268-ppmpu]
+   1653       2       20:02   2  0.0  0.0 irq/269-ppmpu   [irq/269-ppmpu]
+   1670       2       20:02   1  0.0  0.0 hwrng           [hwrng]
+   1677       2       20:02   0  0.0  0.0 g2dscheduler    [g2dscheduler]
+   1681       2       20:02   1  0.0  0.0 g3d_dvfs        [g3d_dvfs]
+   1682       2       20:02   3  0.0  0.0 kworker/u18:1   [kworker/u18:1]
+   1683       2       20:02   0  0.0  0.0 kbase_job_fault [kbase_job_fault]
+   1815       2       20:02   0  0.0  0.0 memory_wq       [memory_wq]
+   1817       2       20:02   2  0.0  0.0 ree_time        [ree_time]
+   1822       2       20:02   1  0.0  0.0 tzlog           [tzlog]
+   1823       2       20:02   0  0.0  0.0 tz_iwsock       [tz_iwsock]
+   1836       2       20:02   2  0.0  0.0 cirrus_pwr_wq   [cirrus_pwr_wq]
+   1857       2       20:02   2  0.0  0.0 irq/422-madera  [irq/422-madera ]
+   1871       2       20:02   2  0.0  0.0 irq/425-sec-nfc [irq/425-sec-nfc]
+   1874       2       20:02   0  0.0  0.0 irq/424-sec-nfc [irq/424-sec-nfc]
+   1881       2       20:02   2  0.0  0.0 scsi_eh_0       [scsi_eh_0]
+   1882       2       20:02   0  0.0  0.0 scsi_tmf_0      [scsi_tmf_0]
+   2014       2       20:02   1  0.0  0.0 uether          [uether]
+   2048       2       20:02   3  0.0  0.0 irq/431-sec_ts  [irq/431-sec_ts]
+   2082       2       20:02   1  0.0  0.0 irq/168-188d000 [irq/168-188d000]
+   2089       2       20:02   0  0.0  0.0 mfc/watchdog    [mfc/watchdog]
+   2090       2       20:02   0  0.0  0.0 mfc/idle        [mfc/idle]
+   2091       2       20:02   0  0.0  0.0 mfc/butler      [mfc/butler]
+   2104       2       20:02   1  0.0  0.0 jsqz            [jsqz]
+   2182       2       20:02   0  0.0  0.0 dm_bufio_cache  [dm_bufio_cache]
+   2187       2       20:02   0  3.3  0.0 sugov:0         [sugov:0]
+   2189       2       20:02   2  1.9  0.0 sugov:4         [sugov:4]
+   2191       2       20:02   3  2.2  0.0 sugov:6         [sugov:6]
+   2201       2       20:02   6  0.0  0.0 dw-mci-card     [dw-mci-card]
+   2202       2       20:02   6  0.0  0.0 dw_mci_clk_ctrl [dw_mci_clk_ctrl]
+   2263       2       20:02   5  0.0  0.0 ovr_work        [ovr_work]
+   2299       2       20:02   7  0.0  0.0 sec_abc_wq      [sec_abc_wq]
+   2303       2       20:02   4  0.0  0.0 bootc_wq        [bootc_wq]
+   2308       2       20:02   3  0.0  0.0 simpleinteracti [simpleinteracti]
+   2313       2       20:02   6  0.0  0.0 simpleinteracti [simpleinteracti]
+   2317       2       20:02   7  0.0  0.0 simpleinteracti [simpleinteracti]
+   2321       2       20:02   7  0.0  0.0 simpleinteracti [simpleinteracti]
+   2325       2       20:02   6  0.0  0.0 simpleinteracti [simpleinteracti]
+   2329       2       20:02   6  0.0  0.0 simpleinteracti [simpleinteracti]
+   2333       2       20:02   7  0.0  0.0 simpleinteracti [simpleinteracti]
+   2337       2       20:02   6  0.0  0.0 simpleinteracti [simpleinteracti]
+   2341       2       20:02   6  0.0  0.0 simpleinteracti [simpleinteracti]
+   2345       2       20:02   6  0.0  0.0 simpleinteracti [simpleinteracti]
+   2351       2       20:02   7  0.0  0.0 irq/436-jig-irq [irq/436-jig-irq]
+   2355       2       20:02   7  0.0  0.0 max77705-charge [max77705-charge]
+   2361       2       20:02   6  0.0  0.0 mfc_workqueue   [mfc_workqueue]
+   2362       2       20:02   7  0.0  0.0 irq/437-wpd-det [irq/437-wpd-det]
+   2379       2       20:02   6  0.0  0.0 op_wait         [op_wait]
+   2380       2       20:02   6  0.0  0.0 op_send         [op_send]
+   2381       2       20:02   6  0.0  0.0 ccic_irq_event  [ccic_irq_event]
+   2387       2       20:02   6  0.0  0.0 typec_manager_e [typec_manager_e]
+   2388       2       20:02   6  0.0  0.0 typec_manager_m [typec_manager_m]
+   2390       2       20:02   6  0.0  0.0 max77705_pd     [max77705_pd]
+   2398       2       20:02   7  0.0  0.0 irq/440-qbt_ipc [irq/440-qbt_ipc]
+   2400       2       20:02   6  0.0  0.0 qbt2000_debug_w [qbt2000_debug_w]
+   2406       2       20:02   7  0.0  0.0 irq/441-sx9330_ [irq/441-sx9330_]
+   2412       2       20:02   7  0.0  0.0 bcm477x_wq      [bcm477x_wq]
+   2419       2       20:02   6  0.0  0.0 ssp_bbd_on_pack [ssp_bbd_on_pack]
+   2421       2       20:02   6  0.0  0.0 ssp_bbd_mcu_rea [ssp_bbd_mcu_rea]
+   2454       2       20:02   7  0.0  0.0 ssp_debug_wq    [ssp_debug_wq]
+   2470       2       20:02   7  0.0  0.0 ssp_batch_wq    [ssp_batch_wq]
+   2472       2       20:02   7  0.0  0.0 ssp_motor_wq    [ssp_motor_wq]
+   2473       2       20:02   6  0.0  0.0 BBD_LHD_KILLER  [BBD_LHD_KILLER]
+   2480       2       20:02   7  0.0  0.0 irq/445-hrm_sen [irq/445-hrm_sen]
+   2484       2       20:02   1  0.0  0.0 sec_haptic      [sec_haptic]
+   2498       2       20:02   7  0.0  0.0 irq/421-cs35l41 [irq/421-cs35l41]
+   2500       2       20:01   7  0.0  0.0 irq/421-cs35l41 [irq/421-cs35l41]
+   2513       2       20:01   6  0.0  0.0 irq/448-1551000 [irq/448-1551000]
+   2514       2       20:01   7  0.0  0.0 irq/449-1551000 [irq/449-1551000]
+   2515       2       20:01   6  0.0  0.0 irq/450-1551000 [irq/450-1551000]
+   2516       2       20:01   7  0.0  0.0 irq/451-1551000 [irq/451-1551000]
+   2517       2       20:01   6  0.0  0.0 irq/452-1551000 [irq/452-1551000]
+   2518       2       20:01   7  0.0  0.0 irq/453-1551000 [irq/453-1551000]
+   2519       2       20:01   6  0.0  0.0 irq/454-1551000 [irq/454-1551000]
+   2520       2       20:01   7  0.0  0.0 irq/455-1551000 [irq/455-1551000]
+   2521       2       20:01   6  0.0  0.0 irq/456-1551000 [irq/456-1551000]
+   2522       2       20:01   7  0.0  0.0 irq/457-1551000 [irq/457-1551000]
+   2537       2       20:01   7  0.0  0.0 abox_ipc        [abox_ipc]
+   2538       2       20:01   6  0.0  0.0 abox_qos        [abox_qos]
+   2568       2       20:01   1  0.0  0.0 irq/438-wpc-irq [irq/438-wpc-irq]
+   2663       2       20:01   7  0.0  0.0 ipv6_addrconf   [ipv6_addrconf]
+   3169       2       20:01   7  0.0  0.0 dsim0-wq        [dsim0-wq]
+   3173       2       20:01   3  0.0  0.0 panel-bl-thread [panel-bl-thread]
+   3179       2       20:01   7  0.0  0.0 130b0000.displa [130b0000.displa]
+   3180       2       20:01   6  0.0  0.0 130b0000.displa [130b0000.displa]
+   3187       2       20:01   2  0.0  0.0 devfreq_change  [devfreq_change]
+   3188       2       20:01   2  0.0  0.0 decon0-vsync    [decon0-vsync]
+   3189       2       20:01   0  0.0  0.0 decon0-fsync    [decon0-fsync]
+   3190       2       20:01   0  0.0  0.0 decon_doze_susp [decon_doze_susp]
+   3191       2       20:01   6  0.0  0.0 decon_doze_wake [decon_doze_wake]
+   3192       2       20:01   0  0.0  0.0 decon_hiber     [decon_hiber]
+   3194       2       20:01   6  0.0  0.0 decon0          [decon0]
+   3196       2       20:01   7  0.0  0.0 decon2-vsync    [decon2-vsync]
+   3198       2       20:01   6  0.0  0.0 decon2          [decon2]
+   3238       2       20:01   6  0.0  0.0 usb_notify      [usb_notify]
+   3243       2       20:01   7  0.0  0.0 irq/463-flip_co [irq/463-flip_co]
+   3249       2       20:01   3  0.0  0.0 irq/464-certify [irq/464-certify]
+   3272       2       20:01   6  0.0  0.0 battery         [battery]
+   3288       2       20:01   4  0.0  0.0 score_mmu_free  [score_mmu_free]
+   3289       2       20:01   6  0.0  0.0 score_unmap_wor [score_unmap_wor]
+   3290       2       20:01   4  0.0  0.0 score_scq       [score_scq]
+   3297       2       20:01   5  0.0  0.0 blkdev_flush_wq [blkdev_flush_wq]
+   3334       1       20:01   2  0.0  0.0 init            /bin/sh /init
+   3431       2       20:01   3  0.0  0.0 jbd2/sda31-8    [jbd2/sda31-8]
+   3432       2       20:01   7  0.0  0.0 ext4-rsv-conver [ext4-rsv-conver]
+   3437       2       20:01   7  0.0  0.0 kworker/7:1H    [kworker/7:1H]
+   3468       1       20:01   0  0.0  0.0 sh              sh /usr/lib/nuxel/nuxel-postboot.sh 20
+   3504       1       20:01   2  0.0  0.0 nuxel-console   /opt/nuxel/nuxel-console /newroot
+   3505       1       20:01   5  0.0  0.0 nuxel-console   /opt/nuxel/nuxel-console /newroot
+   3506    3505       20:01   6  0.0  0.0 sh              /bin/sh -i
+   3516       2       20:01   4  0.0  0.0 dhd_rx_pktpool_ [dhd_rx_pktpool_]
+   3517       2       20:01   7  0.0  0.0 dhd_watchdog_th [dhd_watchdog_th]
+   3518       2       20:01   1  0.3  0.0 dhd_rpm_state_t [dhd_rpm_state_t]
+   3567       1       19:57   1  2.0  1.2 systemd-journal /usr/lib/systemd/systemd-journald
+   5359       1       19:56   2  0.0  0.0 systemd-timesyn /usr/lib/systemd/systemd-timesyncd
+   5365       1       19:56   7  1.7  0.0 dbus-daemon     /usr/bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+   5371       1       19:55   3  0.3  0.2 python3         python3 /usr/libexec/nuxel/nuxel-clockd
+   5375       1       19:55   5  0.0  0.3 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+   5376       1       19:55   3  0.0  0.1 python3         python3 /usr/lib/nuxel/nuxel-hapticsd.py
+   5378       1       19:55   0  0.0  0.2 python3         /usr/bin/python3 -m nuxel_nfc.daemon daemon
+   5379       1       19:55   3  0.0  0.3 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+   5385       1       19:55   7  0.0  0.3 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+   5389       1       19:55   2  0.0  0.0 nuxel-touch-arm /usr/lib/nuxel/nuxel-touch-arm
+   5391       1       19:55   0  0.1  0.0 bash            bash /usr/lib/nuxel/nuxel-usb-mode.sh monitor
+   5394       1       19:55   3  0.0  0.0 sh              /bin/sh -c while :; do printf x > /dev/watchdog 2>/dev/null || true; sleep 10; done
+   5401       1       19:55   2  0.0  0.1 polkitd         /usr/lib/polkit-1/polkitd --no-debug --log-level=notice
+   5404       1       19:55   5  0.0  0.0 seatd           /usr/bin/seatd -g seat
+   5407       1       19:55   1  0.4  0.1 systemd-logind  /usr/lib/systemd/systemd-logind
+   5408       1       19:55   6  0.0  0.0 ydotoold        /usr/bin/ydotoold
+   5425       1       19:55   0  0.3  0.2 NetworkManager  /usr/bin/NetworkManager --no-daemon
+   5499       1       19:55   0  0.0  0.1 wpa_supplicant  /usr/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant.conf -u -s
+   5788       1       19:55   1  0.0  0.1 ModemManager    /usr/bin/ModemManager
+   5824       1       19:54   0  0.1  0.4 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+   5826       1       19:54   1  0.3  0.3 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-web-server.py
+   5846       2       19:54   3  0.0  0.0 irq/466-dhdpcie [irq/466-dhdpcie]
+   5854       2       19:54   1  0.0  0.0 dhd_logtrace_th [dhd_logtrace_th]
+   5857       2       19:53   6  0.0  0.0 dhd_eventd      [dhd_eventd]
+   5867       1       19:53   2  0.0  0.0 sshd            sshd: /usr/sbin/sshd -D [listener] 0 of 10-60 startups
+   5936       1       19:53   7  0.0  0.0 nuxel-wayland-g /bin/sh /usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+   6030    5936       19:53   0  2.2  1.2 phoc            /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+   6032       2       19:52   7  0.0  0.0 kbase_event     [kbase_event]
+   6037       1       19:52   2  0.2  0.2 python3         python3 /usr/libexec/nuxel/nuxel-orientationd daemon
+   6114       1       19:52   1  0.8  0.1 nuxel-wl-fb     /usr/lib/nuxel/nuxel-wl-fb
+   6119       1       19:52   2  0.1  0.0 nuxel-button-ma /usr/lib/nuxel/nuxel-button-manager
+   6186    6030       19:52   0  4.3  1.6 nuxel-pwa-host  /usr/lib/nuxel/nuxel-pwa-host
+   6359       1       19:51   3  7.6  0.5 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+   6399    6186       19:51   7  0.0  0.0 python3         [python3] <defunct>
+   6409    6186       19:51   5  0.0  0.0 nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6410    6186       19:51   3  0.1  0.0 nuxel-osd       /usr/lib/nuxel/nuxel-osd
+   6411    6186       19:51   1  0.0  0.0 dbus-run-sessio dbus-run-session -- /usr/bin/phosh-osk-stevia
+   6414    6411       19:51   0  0.0  0.0 dbus-daemon     dbus-daemon --nofork --print-address 4 --session
+   6423    6409       19:51   6  0.0  0.0 nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6424    6409       19:51   2  0.0  0.0 nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6425    6423       19:51   0  0.0  0.0 nuxel-navdock   /usr/lib/nuxel/nuxel-navdock
+   6426    6409       19:51   3  0.0  0.0 nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6427    6424       19:51   1  0.0  0.0 nuxel-statusbar /usr/lib/nuxel/nuxel-statusbar
+   6429    6426       19:51   2  0.2  0.0 nuxel-foreign-t /usr/lib/nuxel/nuxel-foreign-toplevel watch-lock
+   6450    6411       19:51   5  0.1  0.7 phosh-osk-stevi /usr/bin/phosh-osk-stevia
+   6451       1       19:51   3  0.0  0.0 dbus-daemon     dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+   6472       1       19:51   3  0.0  0.1 gnome-keyring-d /usr/bin/gnome-keyring-daemon --start --foreground --components=secrets
+   6509       1       19:51   6  0.0  0.0 dbus-daemon     dbus-daemon --session --fork --address=unix:path=/run/user/1000/bus --nopidfile
+   6522    6186       19:51   7  0.0  0.0 runuser         runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal-gtk
+   6538    6522       19:51   0  0.0  0.2 xdg-desktop-por /usr/libexec/xdg-desktop-portal-gtk
+   6545       1       19:51   5  0.0  0.0 at-spi-bus-laun /usr/libexec/at-spi-bus-launcher
+   6558    6545       19:51   0  0.0  0.0 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   6562       1       19:51   0  0.0  0.0 at-spi-bus-laun /usr/libexec/at-spi-bus-launcher
+   6568    6562       19:51   1  0.0  0.0 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   6572       1       19:51   1  0.0  0.0 at-spi2-registr /usr/libexec/at-spi2-registryd --use-gnome-session
+   6619    6186       19:50   4  0.0  0.0 runuser         runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal
+   6622    6186       19:50   0  0.0  0.0 nuxel-session.s [nuxel-session.s] <defunct>
+   6655    6619       19:50   6  0.0  0.1 xdg-desktop-por /usr/libexec/xdg-desktop-portal
+   6732       1       19:50   5  0.0  0.0 xdg-permission- /usr/libexec/xdg-permission-store
+   6769       1       19:50   1  0.0  0.0 xdg-document-po /usr/libexec/xdg-document-portal
+   6806    6769       19:50   2  0.0  0.0 fusermount3     fusermount3 -o rw,nosuid,nodev,fsname=portal,auto_unmount,subtype=portal -- /run/nuxel-wayland/doc
+   6855       1       19:50   6  0.0  0.0 rtkit-daemon    /usr/libexec/rtkit-daemon
+   7035       1       19:49   4  0.0  0.0 at-spi-bus-laun /usr/libexec/at-spi-bus-launcher
+   7041    7035       19:49   0  0.0  0.0 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   7052       2       19:49   7  0.0  0.0 kbase_event     [kbase_event]
+   7056    6186       19:49   0  1.9  0.7 WebKitNetworkPr /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 21
+   7057    6186       19:49   2 11.9  5.6 WebKitWebProces /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 24
+   7059       1       19:49   3  0.0  0.0 at-spi2-registr /usr/libexec/at-spi2-registryd --use-gnome-session
+   7091       2       19:49   6  0.0  0.0 kbase_event     [kbase_event]
+   7191       1       19:47   2  0.1  0.1 adb             adb -L tcp:5037 fork-server server --reply-fd 4
+   7370       1       19:44   0  0.0  0.0 avahi-daemon    avahi-daemon: running [fedora.local]
+   7371    7370       19:44   2  0.0  0.0 avahi-daemon    avahi-daemon: chroot helper
+   7372       2       19:44   3  0.0  0.0 kworker/3:2     [kworker/3:2]
+   7403       2       19:43   2  0.0  0.0 kworker/2:2H    [kworker/2:2H]
+   8522       1       19:21   1  0.0  0.0 nuxel-audio-ses /bin/sh /usr/lib/nuxel/nuxel-audio-session.sh
+   8526    8522       19:21   3  1.4  0.1 pipewire        pipewire
+   8529    8522       19:21   2  0.0  0.1 wireplumber     wireplumber
+   8530    8522       19:21   2  0.0  0.1 pipewire-pulse  pipewire-pulse
+  11003       1       19:14   0  1.3  0.3 python3         python3 /usr/libexec/nuxel/nuxel-soundd
+  11077   11003       19:13   3  0.8  0.0 pw-cat          /usr/bin/pw-cat --playback --raw --format s16 --rate 48000 --channels 2 --latency 40ms --volume 1.0 -P {"node.suspend-on-idle":false,"session.suspend-timeout-seconds":0} -
+  12330       2       18:25   0  0.5  0.0 kworker/u17:3   [kworker/u17:3]
+  16036       2       14:46   0  0.0  0.0 kworker/0:0H    [kworker/0:0H]
+  16100       2       14:41   1  0.0  0.0 kworker/1:1H    [kworker/1:1H]
+  16374       2       14:23   5  0.0  0.0 kworker/5:0     [kworker/5:0]
+  16525       2       14:13   0  0.0  0.0 kworker/u16:1   [kworker/u16:1]
+  16527       2       14:13   3  0.0  0.0 kworker/u16:2   [kworker/u16:2]
+  16763       2       13:57   0  0.2  0.0 kworker/0:0     [kworker/0:0]
+  16972       2       13:43   7  0.0  0.0 kworker/7:0     [kworker/7:0]
+  17344       2       13:18   3  0.7  0.0 kworker/u17:0   [kworker/u17:0]
+  17383       2       13:17   2  0.0  0.0 kworker/2:0     [kworker/2:0]
+  17440       2       13:13   6  0.0  0.0 kworker/6:0H    [kworker/6:0H]
+  17928       2       12:19   0  0.1  0.0 kworker/u18:4   [kworker/u18:4]
+  20275       2       09:26   1  0.0  0.0 kworker/1:2H    [kworker/1:2H]
+  20416       2       09:16   2  0.0  0.0 kworker/2:1H    [kworker/2:1H]
+  20425       2       09:15   0  0.0  0.0 kworker/0:2H    [kworker/0:2H]
+  20650       2       09:00   3  0.0  0.0 kworker/3:2H    [kworker/3:2H]
+  20690       2       08:57   4  0.0  0.0 kworker/4:1     [kworker/4:1]
+  21887       2       07:35   7  0.0  0.0 kworker/7:2     [kworker/7:2]
+  21932       2       07:32   0  0.0  0.0 kworker/0:1     [kworker/0:1]
+  22032       2       07:32   6  0.0  0.0 kworker/6:2     [kworker/6:2]
+  22367       2       07:30   1  0.0  0.0 kworker/1:0     [kworker/1:0]
+  22948       2       06:51   5  0.0  0.0 kworker/5:2     [kworker/5:2]
+  23068       2       06:43   1  0.0  0.0 kworker/u18:2   [kworker/u18:2]
+  23069       2       06:43   1  0.0  0.0 kworker/u18:3   [kworker/u18:3]
+  23118       2       06:41   4  0.0  0.0 kworker/4:2H    [kworker/4:2H]
+  23537       2       06:10   3  0.0  0.0 kworker/3:1     [kworker/3:1]
+  23860       2       05:48   2  0.0  0.0 kworker/2:1     [kworker/2:1]
+  24534       2       05:03   6  0.0  0.0 kworker/6:1H    [kworker/6:1H]
+  24537       2       05:02   5  0.0  0.0 kworker/5:2H    [kworker/5:2H]
+  24538       2       05:02   7  0.0  0.0 kworker/7:0H    [kworker/7:0H]
+  25388       2       04:05   1  0.0  0.0 kworker/1:0H    [kworker/1:0H]
+  25520       2       03:56   2  0.0  0.0 kworker/2:0H    [kworker/2:0H]
+  25661       2       03:46   0  0.0  0.0 kworker/0:1H    [kworker/0:1H]
+  25828       2       03:35   3  0.0  0.0 kworker/3:1H    [kworker/3:1H]
+  25863       2       03:32   0  0.6  0.0 kworker/u17:2   [kworker/u17:2]
+  26649       2       02:33   5  0.0  0.0 kworker/5:3     [kworker/5:3]
+  26670       2       02:28   7  0.0  0.0 kworker/7:1     [kworker/7:1]
+  26674       2       02:27   6  0.1  0.0 kworker/6:1     [kworker/6:1]
+  27405       2       01:37   0  0.1  0.0 kworker/0:2     [kworker/0:2]
+  27475       2       01:32   1  0.0  0.0 kworker/1:1     [kworker/1:1]
+  27588       2       01:25   4  0.0  0.0 kworker/4:1H    [kworker/4:1H]
+  28431    6037       00:29   5  0.3  0.0 python3         [python3] <defunct>
+  28596    5867       00:18   3  0.4  0.1 sshd-session    sshd-session: root [priv]
+  28600   28596       00:18   0  0.0  0.0 sshd-session    sshd-session: root@notty
+  28601   28600       00:18   0  0.7  0.0 bash            bash -c set +e T=/var/tmp/p89000-baseline-20261107T135556Z for tgt in default.target multi-user.target graphical.target; do timeout -k 2 20 systemctl list-dependencies --all --plain --no-pager $tgt >"$T/graph/list-dependencies-plain-$tgt.txt" 2>&1; echo "rc=$? target=$tgt timeout_or_status" >>"$T/graph/list-dependencies-plain-$tgt.txt"; done timeout -k 2 120 systemd-analyze dot --order --require >"$T/graph/units-before.dot" 2>"$T/graph/units-before.dot.err"; echo rc=$? >"$T/graph/units-before.dot.rc" timeout -k 2 120 systemd-analyze plot >"$T/graph/boot-before.svg" 2>"$T/graph/plot.err"; echo rc=$? >"$T/graph/plot.rc" timeout -k 2 120 systemd-analyze dump >"$T/graph/systemd-dump-before.txt" 2>"$T/graph/dump.err"; echo rc=$? >"$T/graph/dump.rc" for u in nuxel-soundd.service nuxel-audio-session.service nuxel-clockd.service nuxel-wayland.service nuxel-wl-fb.service nuxel-ui.service nuxel-touch-arm.service nuxel-bootmode-oneshot.service nuxel-boot-sound.service seatd.service; do   systemctl cat $u >"$T/units/cat-$u.txt" 2>&1   systemctl show $u -p Id -p Description -p LoadState -p ActiveState -p SubState -p Result -p Type -p RemainAfterExit -p NotifyAccess -p BusName -p ExecCondition -p ExecStartPre -p ExecStart -p ExecStartPost -p ExecStop -p ExecStopPost -p TimeoutStartUSec -p TimeoutStopUSec -p Restart -p RestartSec -p After -p Before -p Wants -p Requires -p Requisite -p BindsTo -p PartOf -p Conflicts -p TriggeredBy -p Triggers -p WantedBy -p RequiredBy -p InactiveExitTimestampMonotonic -p ActiveEnterTimestampMonotonic -p ExecMainStartTimestampMonotonic -p ExecMainExitTimestampMonotonic -p ExecMainPID -p ExecMainStatus -p FragmentPath -p SourcePath -p DropInPaths >"$T/show/$u.txt" 2>&1 done journalctl -b -o short-monotonic --no-pager >"$T/journal/full-boot.txt" 2>&1 for u in nuxel-soundd.service nuxel-audio-session.service nuxel-clockd.service nuxel-wayland.service nuxel-wl-fb.service nuxel-ui.service nuxel-touch-arm.service nuxel-boot-sound.service; do journalctl -b -u $u -o short-monotonic --no-pager >"$T/journal/$u.txt" 2>&1; done journalctl -b -u systemd-journald.service -u systemd-timesyncd.service -u systemd-tmpfiles-setup.service -u systemd-journal-flush.service -o short-monotonic --no-pager >"$T/journal/early.txt" 2>&1 find /etc/systemd/system -maxdepth 3 \( -type f -o -type l \) -printf '%M %u:%g %p -> %l\n' 2>/dev/null | sort >"$T/system/etc-systemd-tree.txt" find /etc/systemd/system /usr/lib/systemd/system -maxdepth 2 -type d \( -name '*.wants' -o -name '*.requires' \) 2>/dev/null | sort | while read d; do echo "[$d]"; find "$d" -maxdepth 1 -type l -printf '%f -> %l\n'; done >"$T/system/enablement.txt" for f in /etc/systemd/system/nuxel-*.service /etc/systemd/system/nuxel-*.service.d/*.conf /usr/lib/systemd/system/nuxel-*.service /usr/lib/systemd/system/nuxel-*.service.d/*.conf; do [ -e "$f" ] || continue; dest="$T/system/root$(echo "$f" | tr / _)"; cp -a "$f" "$dest"; done sha256sum /etc/systemd/system/nuxel-* /usr/lib/systemd/system/nuxel-* /usr/libexec/nuxel/* /usr/lib/nuxel/nuxel-audio-session.sh /usr/lib/nuxel/nuxel-audio-route.sh /usr/lib/nuxel/nuxel-audio-warmup 2>/dev/null >"$T/system/checksums-before.txt" ls -la /run/nuxel /run/nuxel-wayland >"$T/state/runtime.txt" 2>&1 cat /run/nuxel-audio-route.state /run/nuxel-audio-default-volume-applied /run/nuxel/clockd.state 2>/dev/null >"$T/state/runtime-states.txt" timeout 10 /usr/libexec/nuxel/nuxel-soundctl --json status >"$T/state/soundctl-status.json" 2>"$T/state/soundctl-status.err"; echo rc=$? >>"$T/state/soundctl-status.err" timeout 10 /usr/libexec/nuxel/nuxel-soundctl --json state >"$T/state/soundctl-state.json" 2>"$T/state/soundctl-state.err"; echo rc=$? >>"$T/state/soundctl-state.err" ss -ltnp >"$T/state/listeners-tcp.txt" 2>&1 ss -lxnp 2>/dev/null | grep -E 'nuxel|pipewire|pulse' >"$T/state/listeners-unix.txt" 2>&1 ps -eo pid,ppid,etime,psr,pcpu,pmem,comm,args --sort=start_time >"$T/state/processes.txt" 2>&1 cd /var/tmp && tar czf p89000-baseline-20261107T135556Z.tar.gz p89000-baseline-20261107T135556Z echo tar=/var/tmp/p89000-baseline-20261107T135556Z.tar.gz du -h /var/tmp/p89000-baseline-20261107T135556Z.tar.gz
+  28710    3468       00:11   2  0.0  0.0 sleep           sleep 30
+  28712       1       00:11   4  1.7  0.1 systemd-hostnam /usr/lib/systemd/systemd-hostnamed
+  28776    6409       00:09   0  0.0  0.0 sleep           sleep 10
+  28853    5394       00:05   3  0.0  0.0 sleep           sleep 10
+  28906    3334       00:01   3  0.0  0.0 init            /bin/sh /init
+  29135    5391       00:00   3  0.0  0.0 sleep           sleep 1
+  29287   28601       00:00   4  200  0.0 ps              ps -eo pid,ppid,etime,psr,pcpu,pmem,comm,args --sort=start_time

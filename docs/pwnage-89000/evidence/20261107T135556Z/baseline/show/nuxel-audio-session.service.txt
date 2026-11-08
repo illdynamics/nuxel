@@ -1,0 +1,36 @@
+Id=nuxel-audio-session.service
+Requires=system.slice sysinit.target
+Requisite=
+Wants=
+BindsTo=
+PartOf=
+RequiredBy=
+WantedBy=nuxel-soundd.service nuxel-abox-firmware-reload.service nuxel-mic-route.service nuxel-boot-sound.service multi-user.target
+Conflicts=shutdown.target
+Before=multi-user.target nuxel-mic-route.service nuxel-abox-firmware-reload.service nuxel-boot-sound.service shutdown.target nuxel-soundd.service
+After=sysinit.target systemd-journald.socket local-fs.target basic.target system.slice
+Triggers=
+TriggeredBy=
+Description=Nuxel standalone PipeWire/WirePlumber audio session
+LoadState=loaded
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-audio-session.service
+SourcePath=
+DropInPaths=/etc/systemd/system/nuxel-audio-session.service.d/10-stop-bound.conf /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+InactiveExitTimestampMonotonic=42582146
+ActiveEnterTimestampMonotonic=42582146
+Type=simple
+Restart=on-failure
+NotifyAccess=none
+TimeoutStartUSec=45s
+TimeoutStopUSec=2s
+RemainAfterExit=no
+BusName=
+Result=success
+ExecMainStartTimestampMonotonic=42575653
+ExecMainExitTimestampMonotonic=0
+ExecMainPID=8522
+ExecMainStatus=0
+ExecStart={ path=/usr/lib/nuxel/nuxel-audio-session.sh ; argv[]=/usr/lib/nuxel/nuxel-audio-session.sh ; ignore_errors=no ; start_time=[Sat 2026-11-07 14:40:18 CET] ; stop_time=[n/a] ; pid=8522 ; code=(null) ; status=0/0 }
+ExecStop={ path=/usr/lib/nuxel/nuxel-audio-stop.sh ; argv[]=/usr/lib/nuxel/nuxel-audio-stop.sh ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }

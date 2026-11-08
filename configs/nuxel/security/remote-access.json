@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-31",
+  "updated": "2026-11-08",
   "enabled": false,
   "description": "Remote-access policy for Nuxel. OFF by default. When enabled, access is restricted to the owner console path, never to the open network.",
   "indicator": {
@@ -80,50 +80,61 @@
     "services": {
       "xrdp": {
         "provider": "xrdp + xorgxrdp",
-        "port": 3389,
-        "bind": "0.0.0.0",
+        "port": 13389,
+        "bind": "current-wlan-ipv4",
         "session": "separate-x11-session",
         "account": "nuxel",
         "root_login": false,
         "tls": true,
         "default_transport": "wlan",
-        "usb": "BLOCKED_KERNEL_PANIC",
-        "note": "TLS + PAM as the local nuxel account; direct LAN/ZeroTier access; no SSH tunnel required."
+        "usb": "MODE_AWARE_BLOCKED_PENDING_VALIDATION",
+        "note": "TLS + PAM as the local nuxel account. The privileged controller binds TCP 13389 to the current trusted WLAN IPv4 address; no SSH tunnel is required on the owner LAN.",
+        "protocol": "tcp",
+        "bind_mode": "trusted-lan",
+        "tls_required": true,
+        "authentication": "pam"
       },
       "vnc": {
         "provider": "wayvnc",
-        "port": 5900,
-        "bind": "0.0.0.0",
+        "port": 15900,
+        "bind": "current-wlan-ipv4",
         "session": "current-wayland-session",
         "capture": "zwlr_screencopy_manager_v1",
         "input": [
           "zwlr_virtual_pointer_manager_v1",
           "zwp_virtual_keyboard_manager_v1"
         ],
-        "encryption": "none (trusted LAN/ZeroTier only)",
+        "encryption": "VeNCrypt TLS + RSA-AES",
         "default_transport": "wlan",
-        "usb": "BLOCKED_KERNEL_PANIC",
-        "note": "Jump Desktop 9.1.21 cannot negotiate wayvnc 0.9.1 RSA-AES/VeNCrypt and this build has no VNC password auth; do not expose 5900 to the Internet."
+        "usb": "MODE_AWARE_BLOCKED_PENDING_VALIDATION",
+        "note": "wayvnc enable_auth=true and enable_pam=true with per-device TLS and RSA-AES material. VNC mirrors the active Phoc session and never runs unauthenticated on the LAN.",
+        "protocol": "tcp",
+        "bind_mode": "trusted-lan",
+        "enable_auth": true,
+        "enable_pam": true,
+        "tls_required": true,
+        "authentication": "pam"
       },
       "scrcpy": {
         "provider": "official scrcpy + Android ADB",
         "targets": "Android API 21+ only",
-        "native_nuxel": "NOT_APPLICABLE_NATIVE_NUXEL",
+        "native_nuxel": "USE_NATIVE_VNC_MIRROR",
         "default_transport": "android-adb-usb",
         "optional_transport": "android-adb-tcpip",
-        "waydroid": "not installed and not installed automatically"
+        "waydroid": "not installed and not installed automatically",
+        "native_mirror": "vnc on TCP 15900 (authenticated native Nuxel screen sharing)"
       }
     },
     "allowed_interfaces": [
-      "wlan0",
-      "0.0.0.0",
-      "127.0.0.1"
+      "wlan0"
     ],
     "forbidden": [
       "root desktop login",
+      "unauthenticated VNC or allow_broken_crypto",
+      "wildcard RDP/VNC binding without a proven firewall boundary",
       "USB NCM teardown on kernel 4.14.253",
       "cellular/rmnet/public Internet exposure",
-      "Internet port-forwarding of 3389/5900",
+      "Internet port-forwarding of 13389/15900",
       "storing service passwords in PWA localStorage, URLs, QR codes or logs"
     ],
     "indicator": {
@@ -139,10 +150,26 @@
       "vnc_max_fps": 20
     },
     "usb_network": {
-      "status": "BLOCKED_KERNEL_PANIC",
+      "status": "BLOCKED_PENDING_MODE_VALIDATION",
       "kernel": "4.14.253",
       "evidence": "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/",
-      "note": "Do not retry NCM, mutate configfs or rebind the UDC. USB RDP/VNC requires an independently safe non-NCM route and a macOS host test before it may be offered."
+      "note": "NCM teardown panicked 4.14.253. RNDIS is compiled but has not been source-reviewed or physically proven safe on this vendor kernel. No configfs mutation is permitted until REPORT-USBNET.md gates are met.",
+      "modes": {
+        "ncm": {
+          "compiled": true,
+          "safe_on_current_kernel": false,
+          "status": "BLOCKED_KNOWN_PANIC"
+        },
+        "rndis": {
+          "compiled": true,
+          "safe_on_current_kernel": "UNVERIFIED",
+          "status": "NEEDS_VALIDATION"
+        },
+        "ecm": {
+          "compiled": false,
+          "status": "BLOCKED_KERNEL"
+        }
+      }
     },
     "notes": "VNC mirrors the actual Phoc session and must respect the Nuxel lock policy. XRDP is a separate X session and never claims to mirror the physical display. Direct listeners are for the owner LAN / ZeroTier only."
   }

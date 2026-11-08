@@ -1,0 +1,52 @@
+# /etc/systemd/system/nuxel-audio-session.service
+[Unit]
+Description=Nuxel standalone PipeWire/WirePlumber audio session
+Documentation=file:/usr/share/doc/nuxel/AUDIO.md
+After=local-fs.target
+StartLimitIntervalSec=60
+StartLimitBurst=8
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
+Environment=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native
+ExecStart=/usr/lib/nuxel/nuxel-audio-session.sh
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=8
+KillMode=control-group
+SendSIGKILL=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/nuxel-audio-session.service.d/10-stop-bound.conf
+# PWNAGE-62000: measured reboot evidence showed the shell exiting but PipeWire
+# children ignoring SIGTERM, consuming the full 4 s final-sigterm timeout.
+# Stop this unit's exact cgroup with a bounded TERM->KILL helper.  This is a
+# unit-specific bound; global systemd timeouts are untouched.
+[Service]
+TimeoutStopSec=2
+ExecStop=/usr/lib/nuxel/nuxel-audio-stop.sh
+KillMode=control-group
+SendSIGKILL=yes
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort

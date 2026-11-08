@@ -1,0 +1,10 @@
+NEXT                             LEFT LAST                              PASSED UNIT                             ACTIVATES
+Sat 2026-11-07 14:59:02 CET  1min 58s -                                      - dnf-makecache.timer              dnf-makecache.service
+Sat 2026-11-07 15:02:07 CET      5min Sat 2026-11-07 14:52:07 CET 4min 57s ago nuxel-audio-route.timer          nuxel-audio-route-retry.service
+Sun 2026-11-08 00:00:00 CET        9h Sat 2026-11-07 00:00:00 CET            - unbound-anchor.timer             unbound-anchor.service
+Sun 2026-11-08 01:00:00 CET       10h Sun 2026-11-01 01:00:03 CET            - raid-check.timer                 raid-check.service
+Sun 2026-11-08 14:54:36 CET       23h Sat 2026-11-07 14:54:36 CET 2min 28s ago systemd-tmpfiles-clean.timer     systemd-tmpfiles-clean.service
+Mon 2026-11-09 00:59:43 CET 1 day 10h Mon 2026-11-02 00:34:56 CET            - fstrim.timer                     fstrim.service
+-                                   - Sat 2026-11-07 14:39:56 CET    17min ago nuxel-abox-firmware-reload.timer nuxel-abox-firmware-reload.service
+
+7 timers listed.

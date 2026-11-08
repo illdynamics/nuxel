@@ -1,0 +1,38 @@
+Id=nuxel-wayland.service
+Requires=system.slice sysinit.target
+Requisite=
+Wants=nuxel-boot-sound.service nuxel-touch-arm.service seatd.service nuxel-web.service nuxel-audio-route.service
+BindsTo=
+PartOf=
+RequiredBy=
+WantedBy=nuxel-wl-fb.service multi-user.target nuxel-abox-firmware-reload.service nuxel-boot-sound.service nuxel-fallback.service nuxel-orientationd.service
+Conflicts=shutdown.target
+Before=nuxel-orientationd.service nuxel-wl-fb.service nuxel-abox-firmware-reload.timer multi-user.target nuxel-abox-firmware-reload.service nuxel-boot-sound.service nuxel-fuse-access.service shutdown.target nuxel-fallback.service
+After=systemd-journald.socket nuxel-interface-state.service sysinit.target nuxel-touch-arm.service system.slice nuxel-bootmode-oneshot.service nuxel-web.service seatd.service basic.target nuxel-device-permissions.service
+Triggers=
+TriggeredBy=
+Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+LoadState=loaded
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-wayland.service
+SourcePath=
+DropInPaths=/etc/systemd/system/nuxel-wayland.service.d/05-start-after-web.conf /usr/lib/systemd/system/service.d/10-timeout-abort.conf /etc/systemd/system/nuxel-wayland.service.d/30-fast-stop.conf /etc/systemd/system/nuxel-wayland.service.d/40-bounded-stop.conf /etc/systemd/system/nuxel-wayland.service.d/50-kbase-egl.conf /etc/systemd/system/nuxel-wayland.service.d/90-doom-diag.conf
+InactiveExitTimestampMonotonic=10337479
+ActiveEnterTimestampMonotonic=10354136
+Type=simple
+Restart=on-failure
+NotifyAccess=none
+TimeoutStartUSec=45s
+TimeoutStopUSec=2s
+RemainAfterExit=no
+BusName=
+Result=success
+ExecMainStartTimestampMonotonic=10353755
+ExecMainExitTimestampMonotonic=0
+ExecMainPID=5936
+ExecMainStatus=0
+ExecStartPre={ path=/bin/mkdir ; argv[]=/bin/mkdir -p /run/nuxel-wayland ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+ExecStartPre={ path=/bin/chmod ; argv[]=/bin/chmod 700 /run/nuxel-wayland ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+ExecStart={ path=/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh ; argv[]=/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+ExecStop={ path=/usr/lib/nuxel/nuxel-wayland-stop.sh ; argv[]=/usr/lib/nuxel/nuxel-wayland-stop.sh ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }

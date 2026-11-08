@@ -1,0 +1,451 @@
+=== identity ===
+uid=0(root) gid=0(root) groups=0(root) context=unconfined_u:unconfined_r:unconfined_t:s0
+uid=0
+nuxel:1000:1000:/home/nuxel:/bin/bash
+nuxel-remote:1001:1001:/home/nuxel-remote:/bin/bash
+=== uname ===
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+eb73a20e-2cfe-4a6b-8387-68a340709e5f
+NAME="Fedora Linux"
+VERSION="43 (Forty Three)"
+RELEASE_TYPE=stable
+ID=fedora
+VERSION_ID=43
+VERSION_CODENAME=""
+PRETTY_NAME="Fedora Linux 43 (Forty Three)"
+ANSI_COLOR="0;38;2;60;110;180"
+LOGO=fedora-logo-icon
+CPE_NAME="cpe:/o:fedoraproject:fedora:43"
+DEFAULT_HOSTNAME="fedora"
+HOME_URL="https://fedoraproject.org/"
+DOCUMENTATION_URL="https://docs.fedoraproject.org/en-US/fedora/f43/"
+SUPPORT_URL="https://ask.fedoraproject.org/"
+BUG_REPORT_URL="https://bugzilla.redhat.com/"
+REDHAT_BUGZILLA_PRODUCT="Fedora"
+REDHAT_BUGZILLA_PRODUCT_VERSION=43
+REDHAT_SUPPORT_PRODUCT="Fedora"
+REDHAT_SUPPORT_PRODUCT_VERSION=43
+SUPPORT_END=2026-12-02
+=== sessions ===
+SESSION UID USER SEAT LEADER CLASS TTY IDLE SINCE
+No sessions.
+EnableWallMessages=yes
+NAutoVTs=6
+KillUserProcesses=no
+RebootToFirmwareSetup=no
+RebootToBootLoaderMenu=18446744073709551615
+IdleHint=yes
+IdleSinceHint=1793969464348526
+IdleSinceHintMonotonic=7983038
+DelayInhibited=sleep
+InhibitDelayMaxUSec=5s
+UserStopDelayUSec=10s
+SleepOperation=suspend-then-hibernate suspend hibernate
+HandlePowerKey=poweroff
+HandlePowerKeyLongPress=ignore
+HandleRebootKey=reboot
+HandleRebootKeyLongPress=poweroff
+HandleSuspendKey=suspend
+HandleSuspendKeyLongPress=hibernate
+HandleHibernateKey=hibernate
+HandleHibernateKeyLongPress=ignore
+HandleLidSwitch=suspend
+HandleLidSwitchDocked=ignore
+HandleSecureAttentionKey=secure-attention-key
+HoldoffTimeoutUSec=30s
+IdleAction=ignore
+IdleActionUSec=30min
+PreparingForShutdown=no
+PreparingForSleep=no
+Docked=no
+LidClosed=no
+OnExternalPower=no
+RemoveIPC=yes
+RuntimeDirectorySize=778043392
+RuntimeDirectoryInodesMax=189952
+InhibitorsMax=8192
+NCurrentInhibitors=2
+SessionsMax=8192
+NCurrentSessions=0
+StopIdleSessionUSec=infinity
+--- phoc
+5942 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+--- nuxel-home
+--- nuxel-bridge
+--- nuxel-http-bridge
+--- pipewire
+pgrep: pattern that searches for process name longer than 15 characters will result in zero matches
+Try `pgrep -f' option to match against the complete command line.
+8366 pipewire
+8369 pipewire-pulse
+--- wireplumber
+8368 wireplumber
+--- nuxel-clockd
+--- nuxel-soundd
+--- nuxel-notifications
+pgrep: pattern that searches for process name longer than 15 characters will result in zero matches
+Try `pgrep -f' option to match against the complete command line.
+=== env ===
+PID=5942
+USER=root
+XDG_RUNTIME_DIR=/run/nuxel-wayland
+XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share/:/usr/share/
+PID=42177
+USER=root
+LOGNAME=root
+HOME=/root
+PID=42203
+bash: line 7: /proc/42203/environ: No such file or directory
+=== systemd failed ===
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+=== services running ===
+  UNIT                                     LOAD   ACTIVE SUB     DESCRIPTION
+  avahi-daemon.service                     loaded active running Avahi mDNS/DNS-SD Stack
+  bluetooth.service                        loaded active running Bluetooth service
+  dbus-daemon.service                      loaded active running D-Bus System Message Bus
+  ModemManager.service                     loaded active running Modem Manager
+  NetworkManager.service                   loaded active running Network Manager
+  nuxel-app-software-1793970956640.service loaded active running [systemd-run] /usr/lib/nuxel/nuxel-software
+  nuxel-app-vesktop-1793970323384.service  loaded active running [systemd-run] /usr/bin/flatpak run --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GALLIUM_DRIVER=llvmpipe --env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe --env=GSK_RENDERER=cairo --env=GDK_BACKEND=wayland --env=MOZ_ENABLE_WAYLAND=1 dev.vencord.Vesktop --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu
+  nuxel-audio-session.service              loaded active running Nuxel standalone PipeWire/WirePlumber audio session
+  nuxel-bluetooth.service                  loaded active running Nuxel BCM4375 Bluetooth HCI bring-up (patchram + H4 attach)
+  nuxel-bridge.service                     loaded active running Nuxel Bridge - PWA to Native Phone Service Mediator
+  nuxel-button-manager.service             loaded active running Nuxel hardware button and gesture manager (single owner of gpio_keys)
+  nuxel-clockd.service                     loaded active running Nuxel background alarm and timer scheduler
+  nuxel-geoclue-agent.service              loaded active running Nuxel GeoClue2 agent for the nuxel-bridge UID
+  nuxel-haptics.service                    loaded active running Nuxel Samsung timed-output haptics service
+  nuxel-http-bridge.service                loaded active running Nuxel HTTP Bridge API
+  nuxel-nfcd.service                       loaded active running Nuxel NFC controller service (Samsung sec-nfc transport)
+  nuxel-notifications.service              loaded active running Nuxel Notification Hub
+  nuxel-orientationd.service               loaded active running Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+  nuxel-portal.service                     loaded active running Nuxel Portal Daemon
+  nuxel-soundd.service                     loaded active running Nuxel central sound manager (persistent PipeWire cue stream)
+  nuxel-touch-arm.service                  loaded active running Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+  nuxel-usb-mode-monitor.service           loaded active running Nuxel USB mode host-disconnect monitor
+  nuxel-watchdog-keep.service              loaded active running Nuxel software watchdog keep-alive (softdog.soft_margin=100)
+  nuxel-wayland.service                    loaded active running Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+  nuxel-web.service                        loaded active running Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+  nuxel-wl-fb.service                      loaded active running Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+  polkit.service                           loaded active running Authorization Manager
+  rtkit-daemon.service                     loaded active running RealtimeKit Scheduling Policy Service
+  seatd.service                            loaded active running Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+  sshd.service                             loaded active running OpenSSH server daemon
+  systemd-journald.service                 loaded active running Journal Service
+  systemd-logind.service                   loaded active running User Login Management
+  systemd-timesyncd.service                loaded active running Network Time Synchronization
+  wpa_supplicant.service                   loaded active running WPA supplicant
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+34 loaded units listed.
+=== clock units ===
+● nuxel-clockd.service - Nuxel background alarm and timer scheduler
+     Loaded: loaded (/etc/systemd/system/nuxel-clockd.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: active (running) since Fri 2026-11-06 13:51:04 CET; 1h 12min ago
+ Invocation: bfe014fb5a1841578d68a0935a6a6ae4
+       Docs: file:/usr/share/doc/nuxel/CLOCK.md
+   Main PID: 5395 (python3)
+      Tasks: 1 (limit: 8164)
+     Memory: 10.5M
+     CGroup: /system.slice/nuxel-clockd.service
+             └─5395 python3 /usr/libexec/nuxel/nuxel-clockd
+
+Nov 06 13:51:04 fedora systemd[1]: Started nuxel-clockd.service - Nuxel background alarm and timer scheduler.
+Nov 06 13:51:04 fedora nuxel-clockd[5395]: 2026-11-06 13:51:04,327 INFO schedule loaded alarms=0 timer=True
+Nov 06 15:03:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-clockd.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream)
+     Loaded: loaded (/etc/systemd/system/nuxel-soundd.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: active (running) since Fri 2026-11-06 13:51:04 CET; 1h 12min ago
+ Invocation: 350a2e08308d46c78a7732eb32780b8c
+       Docs: file:/usr/share/doc/nuxel/SOUNDS.md
+   Main PID: 5394 (python3)
+      Tasks: 4 (limit: 8164)
+     Memory: 98.9M
+     CGroup: /system.slice/nuxel-soundd.service
+             ├─5394 python3 /usr/libexec/nuxel/nuxel-soundd
+             └─8428 /usr/bin/pw-cat --playback --raw --format s16 --rate 48000 --channels 2 --latency 40ms --volume 1.0 -
+
+Nov 06 15:02:40 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:02:40,837 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:02:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:02:45,867 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:02:50 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:02:50,857 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:02:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:02:55,857 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:03:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:03:00,873 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:03:05 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:03:05,869 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:03:10 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:03:10,869 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:03:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:03:15,898 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:03:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5394]: 2026-11-06 15:03:20,891 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+Nov 06 15:03:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-mic-route.service - Nuxel S10+ built-in microphone capture route (UAIF0 -> WDMA1)
+     Loaded: loaded (/etc/systemd/system/nuxel-mic-route.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: active (exited) since Fri 2026-11-06 13:51:45 CET; 1h 11min ago
+ Invocation: 454f454f4cbc44bd9f4d0c587c75f1c4
+    Process: 6692 ExecStart=/usr/lib/nuxel/nuxel-mic-route.sh --wait 180 (code=exited, status=0/SUCCESS)
+   Main PID: 6692 (code=exited, status=0/SUCCESS)
+
+Nov 06 13:51:44 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:44Z nuxel-mic-route: ok   SIFM0 min 8000
+Nov 06 13:51:44 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:44Z nuxel-mic-route: ok   WDMA1 gate on
+Nov 06 13:51:44 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:44Z nuxel-mic-route: ok   LHPF1=IN3L
+Nov 06 13:51:44 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:44Z nuxel-mic-route: ok   ASRC1IN1L=LHPF1
+Nov 06 13:51:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:45Z nuxel-mic-route: ok   ISRC1INT1=ASRC1IN1L
+Nov 06 13:51:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:45Z nuxel-mic-route: ok   AIF1TX1=ISRC1INT1
+Nov 06 13:51:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:45Z nuxel-mic-route: ok   AIF1TX2=ISRC1INT1
+Nov 06 13:51:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:45Z nuxel-mic-route: ok   DMIC1 on (already set)
+Nov 06 13:51:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[6692]: 2026-11-06T12:51:45Z nuxel-mic-route: microphone route applied (hw:0,13 WDMA1)
+Nov 06 13:51:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Finished nuxel-mic-route.service - Nuxel S10+ built-in microphone capture route (UAIF0 -> WDMA1).
+
+● nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator
+     Loaded: loaded (/etc/systemd/system/nuxel-bridge.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-bridge.service.d
+             └─20-fast-stop.conf
+     Active: active (running) since Fri 2026-11-06 13:51:05 CET; 1h 12min ago
+ Invocation: c54f9b8753df434690036de56d6e9b9b
+       Docs: https://github.com/nuxel/nuxel/docs/architecture.md
+   Main PID: 5869 (python3)
+      Tasks: 1 (limit: 8164)
+     Memory: 23.7M
+     CGroup: /system.slice/nuxel-bridge.service
+             └─5869 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+
+Nov 06 13:51:08 fedora systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Nov 06 13:51:08 fedora systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Nov 06 13:51:08 fedora systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Nov 06 13:51:08 fedora systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Nov 06 13:51:08 fedora systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Nov 06 13:51:08 fedora systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Nov 06 13:51:09 fedora systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Nov 06 13:51:09 fedora systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Nov 06 13:51:11 fedora nuxel-bridge[5869]: 2026-11-06 13:51:11,191 [INFO] nuxel-bridge: NetworkManager connected
+Nov 06 15:03:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Failed to get CPU usage: No such file or directory
+
+● nuxel-http-bridge.service - Nuxel HTTP Bridge API
+     Loaded: loaded (/etc/systemd/system/nuxel-http-bridge.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+             /etc/systemd/system/nuxel-http-bridge.service.d
+             └─20-fast-stop.conf
+     Active: active (running) since Fri 2026-11-06 13:51:05 CET; 1h 12min ago
+ Invocation: 2f6774146b7e4e70b598f68c5521c8f6
+   Main PID: 5870 (python3)
+      Tasks: 7 (limit: 8164)
+     Memory: 72.4M
+     CGroup: /system.slice/nuxel-http-bridge.service
+             ├─5870 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+             └─7348 adb -L tcp:5037 fork-server server --reply-fd 4
+
+Nov 06 15:03:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:11,787 [INFO] nuxel-http-bridge: 127.0.0.1 - "POST /api/v1/rpc HTTP/1.1" 200 -
+Nov 06 15:03:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:11,803 [INFO] nuxel-http-bridge: 127.0.0.1 - "POST /api/v1/rpc HTTP/1.1" 200 -
+Nov 06 15:03:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:11,833 [INFO] nuxel-http-bridge: 127.0.0.1 - "POST /api/v1/rpc HTTP/1.1" 200 -
+Nov 06 15:03:12 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:12,676 [INFO] nuxel-http-bridge: 127.0.0.1 - "POST /api/v1/rpc HTTP/1.1" 200 -
+Nov 06 15:03:14 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:14,306 [INFO] nuxel-http-bridge: 127.0.0.1 - "POST /api/v1/rpc HTTP/1.1" 200 -
+Nov 06 15:03:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:15,844 [INFO] nuxel-http-bridge: 127.0.0.1 - "OPTIONS /api/v1/rpc HTTP/1.1" 204 -
+Nov 06 15:03:15 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:15,906 [INFO] nuxel-http-bridge: 127.0.0.1 - "POST /api/v1/rpc HTTP/1.1" 200 -
+Nov 06 15:03:19 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:19,291 [INFO] nuxel-http-bridge: 127.0.0.1 - "POST /api/v1/rpc HTTP/1.1" 200 -
+Nov 06 15:03:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[5870]: 2026-11-06 15:03:20,896 [INFO] nuxel-http-bridge: 127.0.0.1 - "POST /api/v1/rpc HTTP/1.1" 200 -
+Nov 06 15:03:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-http-bridge.service: Failed to get CPU usage: No such file or directory
+=== packages ===
+gtk3-3.24.52-1.fc43.aarch64
+gtk4-4.20.4-1.fc43.aarch64
+libadwaita-1.8.8-1.fc43.aarch64
+webkit2gtk4.1-2.54.1-1.fc43.aarch64
+flatpak-1.16.6-2.fc43.aarch64
+yt-dlp-2026.08.19-1.fc43.noarch
+package ffmpeg is not installed
+python3-3.14.7-1.fc43.aarch64
+pipewire-1.4.11-1.fc43.aarch64
+wireplumber-0.5.14-1.fc43.aarch64
+/usr/bin/yt-dlp
+2026.08.19
+/usr/bin/ffmpeg
+/usr/bin/ffprobe
+=== flatpak ===
+Flatpak 1.16.6
+app.legcord.Legcord	1.3.1	stable	aarch64	flathub
+com.stremio.Stremio	1.2.2	stable	aarch64	flathub
+dev.vencord.Vesktop	1.6.8	stable	aarch64	flathub
+io.mpv.Mpv	v0.41.0	stable	aarch64	flathub
+org.gnome.TextEditor	51.0	stable	aarch64	flathub
+org.mozilla.firefox	159.0	stable	aarch64	flathub
+org.signal.Signal	8.33.0	stable	aarch64	flathub
+org.videolan.VLC	3.0.24	stable	aarch64	flathub
+fedora	system,oci
+flathub	system
+=== apps ===
+package legcord is not installed
+package vesktop is not installed
+=== audio ===
+--- nodes
+=== alsa ===
+ 0 [beyondmadera   ]: beyond-madera - beyond-madera
+                      beyond-madera
+ 1 [aboxvdma       ]: abox_vdma - abox_vdma
+                      abox_vdma
+ 2 [aboxdump       ]: abox_dump - abox_dump
+                      abox_dump
+**** List of CAPTURE Hardware Devices ****
+card 0: beyondmadera [beyond-madera], device 12: WDMA0 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 13: WDMA1 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 14: WDMA2 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 15: WDMA3 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 16: WDMA4 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 17: WDMA5 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 18: WDMA6 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 19: WDMA7 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 20: VTS-Trigger snd-soc-dummy-dai-20 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 21: VTS-Record snd-soc-dummy-dai-21 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 1: aboxvdma [abox_vdma], device 0: calliope2_play_0 snd-soc-dummy-dai-0 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 1: aboxvdma [abox_vdma], device 20: calliope2_rec_0 snd-soc-dummy-dai-20 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 1: aboxvdma [abox_vdma], device 21: calliope2_rec_1 snd-soc-dummy-dai-21 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 1: aboxvdma [abox_vdma], device 22: calliope2_rec_2 snd-soc-dummy-dai-22 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 1: aboxvdma [abox_vdma], device 23: calliope2_rec_3 snd-soc-dummy-dai-23 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 0: rd0 snd-soc-dummy-dai-0 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 1: rd1 snd-soc-dummy-dai-1 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 2: rd2 snd-soc-dummy-dai-2 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 3: rd3 snd-soc-dummy-dai-3 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 4: rd7 snd-soc-dummy-dai-4 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 5: wr0 snd-soc-dummy-dai-5 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 6: wr1 snd-soc-dummy-dai-6 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 7: wr3 snd-soc-dummy-dai-7 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 8: wr4 snd-soc-dummy-dai-8 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 9: rda snd-soc-dummy-dai-9 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 10: rd4 snd-soc-dummy-dai-10 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 11: wr2 snd-soc-dummy-dai-11 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 12: dbg snd-soc-dummy-dai-12 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 13: dec snd-soc-dummy-dai-13 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 14: src snd-soc-dummy-dai-14 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 15: ef1 snd-soc-dummy-dai-15 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 16: om0 snd-soc-dummy-dai-16 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 17: om1 snd-soc-dummy-dai-17 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 18: om2 snd-soc-dummy-dai-18 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 19: ef2 snd-soc-dummy-dai-19 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 20: ef3 snd-soc-dummy-dai-20 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 21: dm1 snd-soc-dummy-dai-21 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 22: dm2 snd-soc-dummy-dai-22 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 23: dm3 snd-soc-dummy-dai-23 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 24: tx0 snd-soc-dummy-dai-24 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 25: uou snd-soc-dummy-dai-25 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 26: uin snd-soc-dummy-dai-26 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 27: fm0 snd-soc-dummy-dai-27 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 28: dv1 snd-soc-dummy-dai-28 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 29: dv2 snd-soc-dummy-dai-29 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 30: dv3 snd-soc-dummy-dai-30 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 31: si0 snd-soc-dummy-dai-31 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 32: si1 snd-soc-dummy-dai-32 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: aboxdump [abox_dump], device 34: arc snd-soc-dummy-dai-34 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+state=applied
+card=0
+pcm=hw:0,13
+route=uaif0-nsrc0-sifm0-wdma1
+at=2026-11-06T12:51:45Z
+=== theme ===

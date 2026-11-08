@@ -1,0 +1,158 @@
+== boot ==
+0112a081-e031-4758-91f7-cba82ab759cf
+up 0 minutes
+== sampler ==
+55 /run/nuxel/p90-boot-grim.jsonl
+{"i":0,"hash":"0d84e1eaf989ae90"}
+{"i":1,"hash":"0d84e1eaf989ae90"}
+{"i":2,"hash":"0d84e1eaf989ae90"}
+{"i":3,"hash":"0d84e1eaf989ae90"}
+{"i":4,"hash":"0d84e1eaf989ae90"}
+{"i":5,"hash":"0d84e1eaf989ae90"}
+{"i":6,"hash":"0d84e1eaf989ae90"}
+{"i":7,"hash":"0d84e1eaf989ae90"}
+{"i":8,"hash":"0d84e1eaf989ae90"}
+{"i":9,"hash":"0d84e1eaf989ae90"}
+{"i":10,"hash":"0d84e1eaf989ae90"}
+{"i":11,"hash":"0d84e1eaf989ae90"}
+{"i":12,"hash":"0d84e1eaf989ae90"}
+{"i":13,"hash":"0d84e1eaf989ae90"}
+{"i":14,"hash":"0d84e1eaf989ae90"}
+{"i":15,"hash":"0d84e1eaf989ae90"}
+{"i":16,"hash":"0d84e1eaf989ae90"}
+{"i":17,"hash":"0d84e1eaf989ae90"}
+{"i":18,"hash":"0d84e1eaf989ae90"}
+{"i":19,"hash":"0d84e1eaf989ae90"}
+{"i":20,"hash":"0d84e1eaf989ae90"}
+{"i":21,"hash":"0d84e1eaf989ae90"}
+{"i":22,"hash":"0d84e1eaf989ae90"}
+{"i":23,"hash":"bb9b856fa25bf170"}
+{"i":24,"hash":"bb9b856fa25bf170"}
+{"i":25,"hash":"bb9b856fa25bf170"}
+{"i":26,"hash":"bb9b856fa25bf170"}
+{"i":27,"hash":"bb9b856fa25bf170"}
+{"i":28,"hash":"bb9b856fa25bf170"}
+{"i":29,"hash":"46b9262e68261f9f"}
+{"i":30,"hash":"46b9262e68261f9f"}
+{"i":31,"hash":"46b9262e68261f9f"}
+{"i":32,"hash":"46b9262e68261f9f"}
+{"i":33,"hash":"62790fafeb6cedd9"}
+{"i":34,"hash":"5aa08caa42381450"}
+{"i":35,"hash":"cfa2428dd4af9c09"}
+{"i":36,"hash":"f4cfcc2f67a2dd2b"}
+{"i":37,"hash":"52593488b0ccbc4f"}
+{"i":38,"hash":"19a3fc1f0cd082bb"}
+{"i":39,"hash":"9d23a9e5245e587b"}
+{"i":40,"hash":"e74d27167563e55f"}
+{"i":41,"hash":"bda9606664fb9777"}
+{"i":42,"hash":"cc7f7cbe247f6a93"}
+{"i":43,"hash":"ea63b9e5b8534183"}
+{"i":44,"hash":"36f14063e56a4006"}
+{"i":45,"hash":"cff0ea21f6bd429b"}
+{"i":46,"hash":"434b2420c4f91e8b"}
+{"i":47,"hash":"5f8719230e2b50e1"}
+{"i":48,"hash":"46b9262e68261f9f"}
+{"i":49,"hash":"46b9262e68261f9f"}
+{"i":50,"hash":"46b9262e68261f9f"}
+{"i":51,"hash":"46b9262e68261f9f"}
+{"i":52,"hash":"46b9262e68261f9f"}
+{"i":53,"hash":"46b9262e68261f9f"}
+{"i":54,"hash":"46b9262e68261f9f"}
+== shots ==
+f00-0d84e1eaf989ae90.png
+f23-bb9b856fa25bf170.png
+f29-46b9262e68261f9f.png
+f33-62790fafeb6cedd9.png
+f34-5aa08caa42381450.png
+f35-cfa2428dd4af9c09.png
+f36-f4cfcc2f67a2dd2b.png
+f37-52593488b0ccbc4f.png
+f38-19a3fc1f0cd082bb.png
+f39-9d23a9e5245e587b.png
+f40-e74d27167563e55f.png
+f41-bda9606664fb9777.png
+f42-cc7f7cbe247f6a93.png
+f43-ea63b9e5b8534183.png
+f44-36f14063e56a4006.png
+f45-cff0ea21f6bd429b.png
+f46-434b2420c4f91e8b.png
+f47-5f8719230e2b50e1.png
+f48-46b9262e68261f9f.png
+mpv.log
+overlay.json
+receipt.json
+== receipt ==
+{
+  "asset": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+  "asset_bytes": 7630092,
+  "asset_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+  "audio": "disabled",
+  "boot_id": "0112a081-e031-4758-91f7-cba82ab759cf",
+  "bounded": false,
+  "clock_advances": 48,
+  "clock_samples": 49,
+  "controller_pid": 6731,
+  "display_lost": false,
+  "duration_s": 6.016,
+  "elapsed_s": 6.343,
+  "eof_at_s": 6.324,
+  "final_frame_grace_ms": 1500,
+  "final_frame_hold_s": 0.0,
+  "finished_at": "2026-11-08T09:55:47+0100",
+  "first_frame_s": 0.125,
+  "framebuffer_owner": "nuxel-wl-fb",
+  "fullscreen": true,
+  "hard_timeout_ms": 15000,
+  "input_ready": true,
+  "max_display_ms": 12000,
+  "milestone": "PWNAGE-31000",
+  "pause_seen": true,
+  "playback_time_s": 5.958,
+  "presentation_ready": true,
+  "readiness": {
+    "boot_os": true,
+    "critical": true,
+    "detail": {
+      "display_off": false,
+      "display_state": "DISPLAY_ON",
+      "display_state_fresh": true,
+      "display_state_path": "/var/lib/nuxel/display",
+      "home_state_path": "/run/nuxel-home.state",
+      "launcher_ready_path": "/run/nuxel-launcher-ready",
+      "touch_last_line": "2026-11-08T08:55:34Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0.4095] tsp_before='mutual:1, hover:0, co",
+      "touch_state_path": "/run/nuxel-touch-arm.state",
+      "wlfb_state": "1794128147 FRAMES_OK total=127 fps_1s=21 failures=0 blits=109 present_skipped=17 blit_avg_ms=2 pan_avg_ms=8 capture_avg_ms=6 compare_avg_ms=1 damage=120-1400 damage_runs=1 damage_blits=106 damage_avg_",
+      "wlfb_state_path": "/run/nuxel-wl-fb.state"
+    },
+    "display_on": true,
+    "input_ready": true,
+    "launcher_ready": true,
+    "presentation_ready": true,
+    "ready": true,
+    "touch_settled": true,
+    "touch_unknown": false,
+    "wlfb_ready": true
+  },
+  "readiness_ready_at_s": 0.0,
+  "reason": "video-eof-and-presentation-ready",
+  "recovery_nudges": 0,
+  "schema_version": 1,
+  "stall_count": 0,
+  "started_at": "2026-11-08T09:55:35+0100",
+  "unlock_actions": 0,
+  "verdict": "PLAYED",
+  "video_eof": true,
+  "video_held": false,
+  "video_output": "wlshm"
+}
+
+== wlfb ==
+1794128176 FRAMES_OK total=200 fps_1s=1 failures=0 blits=124 present_skipped=75 blit_avg_ms=2 pan_avg_ms=9 capture_avg_ms=5 compare_avg_ms=1 damage=108-321 damage_runs=1 damage_blits=121 damage_avg_ms
+
+== sampler unit ==
+    Process: 6146 ExecStart=/usr/local/bin/p90-grim-boot.sh (code=exited, status=0/SUCCESS)
+   Main PID: 6146 (code=exited, status=0/SUCCESS)
+
+Nov 08 09:55:33 fedora systemd[1]: Starting p90-grim-boot.service - P90 one-shot cold-boot composited frame sampler (diagnostic)...
+Nov 08 09:55:50 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: p90-grim-boot.service: Deactivated successfully.
+Nov 08 09:55:50 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Finished p90-grim-boot.service - P90 one-shot cold-boot composited frame sampler (diagnostic).

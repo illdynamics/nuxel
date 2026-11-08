@@ -1,0 +1,183 @@
+[/etc/systemd/system/NetworkManager.service.requires]
+nuxel-network-udev-seed.service -> /etc/systemd/system/nuxel-network-udev-seed.service
+[/etc/systemd/system/basic.target.wants]
+rpmdb-rebuild.service -> /usr/lib/systemd/system/rpmdb-rebuild.service
+[/etc/systemd/system/bluetooth.target.wants]
+[/etc/systemd/system/default.target.wants]
+ydotool.service -> /usr/lib/systemd/system/ydotool.service
+[/etc/systemd/system/factory-reset.target.wants]
+systemd-tpm2-clear.service -> /usr/lib/systemd/system/systemd-tpm2-clear.service
+[/etc/systemd/system/getty.target.wants]
+getty@tty1.service -> /usr/lib/systemd/system/getty@.service
+[/etc/systemd/system/graphical.target.wants]
+rtkit-daemon.service -> /usr/lib/systemd/system/rtkit-daemon.service
+udisks2.service -> /usr/lib/systemd/system/udisks2.service
+[/etc/systemd/system/multi-user.target.wants]
+nuxel-button-manager.service -> /etc/systemd/system/nuxel-button-manager.service
+nuxel-web.service -> /etc/systemd/system/nuxel-web.service
+nuxel-bootmode-guard.service -> /etc/systemd/system/nuxel-bootmode-guard.service
+remote-fs.target -> /usr/lib/systemd/system/remote-fs.target
+nuxel-portal.service -> /etc/systemd/system/nuxel-portal.service
+authselect-apply-changes.service -> /usr/lib/systemd/system/authselect-apply-changes.service
+nuxel-fuse-access.service -> /etc/systemd/system/nuxel-fuse-access.service
+nuxel-wl-fb.service -> /etc/systemd/system/nuxel-wl-fb.service
+nuxel-haptics.service -> /etc/systemd/system/nuxel-haptics.service
+flatpak-add-fedora-repos.service -> /usr/lib/systemd/system/flatpak-add-fedora-repos.service
+nuxel-device-permissions.service -> /etc/systemd/system/nuxel-device-permissions.service
+nuxel-clockd.service -> /etc/systemd/system/nuxel-clockd.service
+dbus-daemon.service -> /usr/lib/systemd/system/dbus-daemon.service
+nuxel-bridge.service -> /etc/systemd/system/nuxel-bridge.service
+nuxel-nfcd.service -> /etc/systemd/system/nuxel-nfcd.service
+nuxel-wayland.service -> /etc/systemd/system/nuxel-wayland.service
+nuxel-orientationd.service -> /etc/systemd/system/nuxel-orientationd.service
+nuxel-mic-route.service -> ../nuxel-mic-route.service
+nuxel-usb-mode-monitor.service -> /etc/systemd/system/nuxel-usb-mode-monitor.service
+nuxel-bootmode-oneshot.service -> /etc/systemd/system/nuxel-bootmode-oneshot.service
+nuxel-app-prewarm.service -> /etc/systemd/system/nuxel-app-prewarm.service
+nuxel-soundd.service -> /etc/systemd/system/nuxel-soundd.service
+nuxel-usb-mode-restore.service -> /etc/systemd/system/nuxel-usb-mode-restore.service
+mdmonitor.service -> /usr/lib/systemd/system/mdmonitor.service
+nuxel-notifications.service -> /etc/systemd/system/nuxel-notifications.service
+nuxel-mtp.service -> /etc/systemd/system/nuxel-mtp.service
+ModemManager.service -> /usr/lib/systemd/system/ModemManager.service
+nuxel-watchdog-keep.service -> /etc/systemd/system/nuxel-watchdog-keep.service
+nuxel-charger-mode-recovery.service -> /etc/systemd/system/nuxel-charger-mode-recovery.service
+nuxel-geoclue-agent.service -> /etc/systemd/system/nuxel-geoclue-agent.service
+nuxel-http-bridge.service -> /etc/systemd/system/nuxel-http-bridge.service
+nuxel-fallback.service -> /etc/systemd/system/nuxel-fallback.service
+nuxel-interface-state.service -> /etc/systemd/system/nuxel-interface-state.service
+geoclue.service -> /usr/lib/systemd/system/geoclue.service
+avahi-daemon.service -> /usr/lib/systemd/system/avahi-daemon.service
+nuxel-audio-session.service -> /etc/systemd/system/nuxel-audio-session.service
+nuxel-touch-arm.service -> /etc/systemd/system/nuxel-touch-arm.service
+NetworkManager.service -> /usr/lib/systemd/system/NetworkManager.service
+sshd.service -> /usr/lib/systemd/system/sshd.service
+nuxel-wifi.service -> /etc/systemd/system/nuxel-wifi.service
+[/etc/systemd/system/network-online.target.wants]
+NetworkManager-wait-online.service -> /usr/lib/systemd/system/NetworkManager-wait-online.service
+[/etc/systemd/system/nuxel-wayland.service.wants]
+nuxel-boot-sound.service -> /etc/systemd/system/nuxel-boot-sound.service
+nuxel-audio-route.service -> /etc/systemd/system/nuxel-audio-route.service
+[/etc/systemd/system/sockets.target.wants]
+avahi-daemon.socket -> /usr/lib/systemd/system/avahi-daemon.socket
+systemd-journald-audit.socket -> /usr/lib/systemd/system/systemd-journald-audit.socket
+dbus.socket -> /usr/lib/systemd/system/dbus.socket
+nuxel-metrics.socket -> /etc/systemd/system/nuxel-metrics.socket
+systemd-userdbd.socket -> /usr/lib/systemd/system/systemd-userdbd.socket
+[/etc/systemd/system/sysinit.target.wants]
+fips-crypto-policy-overlay.service -> /usr/lib/systemd/system/fips-crypto-policy-overlay.service
+selinux-autorelabel-mark.service -> /usr/lib/systemd/system/selinux-autorelabel-mark.service
+systemd-confext.service -> /usr/lib/systemd/system/systemd-confext.service
+systemd-sysext.service -> /usr/lib/systemd/system/systemd-sysext.service
+systemd-boot-clear-sysfail.service -> /usr/lib/systemd/system/systemd-boot-clear-sysfail.service
+systemd-network-generator.service -> /usr/lib/systemd/system/systemd-network-generator.service
+systemd-timesyncd.service -> /usr/lib/systemd/system/systemd-timesyncd.service
+[/etc/systemd/system/systemd-journald.service.wants]
+systemd-journald-audit.socket -> /usr/lib/systemd/system/systemd-journald-audit.socket
+[/etc/systemd/system/timers.target.wants]
+nuxel-audio-route.timer -> /etc/systemd/system/nuxel-audio-route.timer
+raid-check.timer -> /usr/lib/systemd/system/raid-check.timer
+unbound-anchor.timer -> /usr/lib/systemd/system/unbound-anchor.timer
+nuxel-abox-firmware-reload.timer -> /etc/systemd/system/nuxel-abox-firmware-reload.timer
+fstrim.timer -> /usr/lib/systemd/system/fstrim.timer
+dnf-makecache.timer -> /usr/lib/systemd/system/dnf-makecache.timer
+[/usr/lib/systemd/system/basic.target.wants]
+[/usr/lib/systemd/system/dbus.target.wants]
+[/usr/lib/systemd/system/default.target.wants]
+[/usr/lib/systemd/system/factory-reset.target.wants]
+systemd-factory-reset-request.service -> ../systemd-factory-reset-request.service
+systemd-pcrphase-factory-reset.service -> ../systemd-pcrphase-factory-reset.service
+[/usr/lib/systemd/system/initrd-root-device.target.wants]
+remote-cryptsetup.target -> ../remote-cryptsetup.target
+remote-veritysetup.target -> ../remote-veritysetup.target
+remote-integritysetup.target -> ../remote-integritysetup.target
+[/usr/lib/systemd/system/initrd-root-fs.target.wants]
+systemd-repart.service -> ../systemd-repart.service
+[/usr/lib/systemd/system/initrd.target.wants]
+systemd-confext-initrd.service -> ../systemd-confext-initrd.service
+systemd-battery-check.service -> ../systemd-battery-check.service
+systemd-sysext-initrd.service -> ../systemd-sysext-initrd.service
+systemd-pcrphase-initrd.service -> ../systemd-pcrphase-initrd.service
+systemd-bsod.service -> ../systemd-bsod.service
+[/usr/lib/systemd/system/local-fs.target.wants]
+tmp.mount -> ../tmp.mount
+[/usr/lib/systemd/system/multi-user.target.wants]
+systemd-ask-password-wall.path -> ../systemd-ask-password-wall.path
+systemd-logind.service -> ../systemd-logind.service
+systemd-user-sessions.service -> ../systemd-user-sessions.service
+getty.target -> ../getty.target
+[/usr/lib/systemd/system/remote-fs.target.wants]
+[/usr/lib/systemd/system/runlevel1.target.wants]
+[/usr/lib/systemd/system/runlevel2.target.wants]
+[/usr/lib/systemd/system/runlevel3.target.wants]
+[/usr/lib/systemd/system/runlevel4.target.wants]
+[/usr/lib/systemd/system/runlevel5.target.wants]
+[/usr/lib/systemd/system/sockets.target.wants]
+systemd-pcrlock.socket -> ../systemd-pcrlock.socket
+systemd-sysext.socket -> ../systemd-sysext.socket
+systemd-bootctl.socket -> ../systemd-bootctl.socket
+systemd-udevd-kernel.socket -> ../systemd-udevd-kernel.socket
+systemd-factory-reset.socket -> ../systemd-factory-reset.socket
+systemd-logind-varlink.socket -> ../systemd-logind-varlink.socket
+systemd-udevd-control.socket -> ../systemd-udevd-control.socket
+systemd-journald.socket -> ../systemd-journald.socket
+systemd-ask-password.socket -> ../systemd-ask-password.socket
+systemd-journald-dev-log.socket -> ../systemd-journald-dev-log.socket
+systemd-creds.socket -> ../systemd-creds.socket
+systemd-udevd-varlink.socket -> ../systemd-udevd-varlink.socket
+systemd-pcrextend.socket -> ../systemd-pcrextend.socket
+systemd-hostnamed.socket -> ../systemd-hostnamed.socket
+systemd-coredump.socket -> ../systemd-coredump.socket
+[/usr/lib/systemd/system/sound.target.wants]
+alsa-state.service -> ../alsa-state.service
+alsa-restore.service -> ../alsa-restore.service
+[/usr/lib/systemd/system/storage-target-mode.target.wants]
+systemd-pcrphase-storage-target-mode.service -> ../systemd-pcrphase-storage-target-mode.service
+[/usr/lib/systemd/system/sysinit.target.wants]
+ldconfig.service -> ../ldconfig.service
+systemd-hibernate-clear.service -> ../systemd-hibernate-clear.service
+veritysetup.target -> ../veritysetup.target
+systemd-sysusers.service -> ../systemd-sysusers.service
+proc-sys-fs-binfmt_misc.automount -> ../proc-sys-fs-binfmt_misc.automount
+systemd-tmpfiles-setup-dev-early.service -> ../systemd-tmpfiles-setup-dev-early.service
+cryptsetup.target -> ../cryptsetup.target
+sys-kernel-debug.mount -> ../sys-kernel-debug.mount
+systemd-tpm2-setup.service -> ../systemd-tpm2-setup.service
+systemd-binfmt.service -> ../systemd-binfmt.service
+systemd-sysctl.service -> ../systemd-sysctl.service
+systemd-random-seed.service -> ../systemd-random-seed.service
+systemd-hwdb-update.service -> ../systemd-hwdb-update.service
+systemd-journal-catalog-update.service -> ../systemd-journal-catalog-update.service
+integritysetup.target -> ../integritysetup.target
+dev-hugepages.mount -> ../dev-hugepages.mount
+sys-kernel-config.mount -> ../sys-kernel-config.mount
+systemd-pcrphase-sysinit.service -> ../systemd-pcrphase-sysinit.service
+systemd-modules-load.service -> ../systemd-modules-load.service
+systemd-firstboot.service -> ../systemd-firstboot.service
+sys-kernel-tracing.mount -> ../sys-kernel-tracing.mount
+imports.target -> ../imports.target
+systemd-pcrphase.service -> ../systemd-pcrphase.service
+systemd-update-utmp.service -> ../systemd-update-utmp.service
+systemd-journald.service -> ../systemd-journald.service
+systemd-journal-flush.service -> ../systemd-journal-flush.service
+sys-fs-fuse-connections.mount -> ../sys-fs-fuse-connections.mount
+systemd-boot-random-seed.service -> ../systemd-boot-random-seed.service
+systemd-repart.service -> ../systemd-repart.service
+dev-mqueue.mount -> ../dev-mqueue.mount
+systemd-tmpfiles-setup-dev.service -> ../systemd-tmpfiles-setup-dev.service
+systemd-pcrmachine.service -> ../systemd-pcrmachine.service
+systemd-tmpfiles-setup.service -> ../systemd-tmpfiles-setup.service
+kmod-static-nodes.service -> ../kmod-static-nodes.service
+systemd-udev-trigger.service -> ../systemd-udev-trigger.service
+systemd-tpm2-setup-early.service -> ../systemd-tpm2-setup-early.service
+systemd-ask-password-console.path -> ../systemd-ask-password-console.path
+systemd-udevd.service -> ../systemd-udevd.service
+systemd-machine-id-commit.service -> ../systemd-machine-id-commit.service
+systemd-update-done.service -> ../systemd-update-done.service
+[/usr/lib/systemd/system/syslog.target.wants]
+[/usr/lib/systemd/system/system-update.target.wants]
+dnf-system-upgrade.service -> ../dnf-system-upgrade.service
+dnf5-offline-transaction.service -> ../dnf5-offline-transaction.service
+packagekit-offline-update.service -> ../packagekit-offline-update.service
+[/usr/lib/systemd/system/timers.target.wants]
+systemd-tmpfiles-clean.timer -> ../systemd-tmpfiles-clean.timer

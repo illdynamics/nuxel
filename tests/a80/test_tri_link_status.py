@@ -132,17 +132,22 @@ def test_serial_unavailable_without_gadget_function(tmp_path):
     assert "not present" in st["detail"]
 
 
-def test_usb_ssh_blocks_the_known_panicking_kernel(tmp_path):
+def test_usb_ssh_reports_mode_specific_blocks_not_a_fake_ready(tmp_path):
     mod = load_module()
-    cfg = ("CONFIG_USB_CONFIGFS=y\nCONFIG_USB_F_NCM=y\nCONFIG_USB_CONFIGFS_NCM=y\n")
+    cfg = ("CONFIG_USB_CONFIGFS=y\nCONFIG_USB_F_NCM=y\nCONFIG_USB_CONFIGFS_NCM=y\n"
+           "CONFIG_USB_F_RNDIS=y\nCONFIG_USB_CONFIGFS_RNDIS=y\n")
     net = tmp_path / "sys/class/net"
     (net / "usb0").mkdir(parents=True)
     proc = tmp_path / "proc"
     write(proc / "net/tcp", "0: 00000000:0016 00000000:0000 0A 00000000:00000000\n")
-    st = mod.usb_status(release="4.14.253", gadget_root=tmp_path / "gadget",
-                        net_root=net, proc_root=proc, kernel_config=cfg)
-    assert st["status"] == "BLOCKED_KERNEL_PANIC"
-    assert "panicked" in st["detail"]
+    st = mod.usb_status(release="4.14.253-gf7194c1d15ed-dirty",
+                        gadget_root=tmp_path / "gadget", net_root=net,
+                        proc_root=proc, kernel_config=cfg)
+    assert st["status"] == "NEEDS_VALIDATION"
+    assert st["kernel_base_release"] == "4.14.253"
+    assert st["modes"]["ncm"]["status"] == "BLOCKED_KNOWN_PANIC"
+    assert st["modes"]["rndis"]["status"] == "NEEDS_VALIDATION"
+    assert st["ssh_authenticated_probe"] is False
     assert "n26000-usb-ncm-panic" in st["detail"]
 
 
@@ -163,7 +168,8 @@ def test_usb_ssh_never_claims_ready_without_interface_or_ssh(tmp_path):
     write(proc / "net/tcp", "0: 00000000:0016 00000000:0000 0A 00000000:00000000\n")
     st = mod.usb_status(release="4.14.254", gadget_root=tmp_path / "gadget",
                         net_root=net, proc_root=proc, kernel_config=cfg)
-    assert st["status"] == "AVAILABLE"
+    assert st["status"] == "LINK_UP_UNVERIFIED"
+    assert st["ssh_authenticated_probe"] is False
 
 
 def test_get_status_returns_all_three_and_no_secret_material(tmp_path):

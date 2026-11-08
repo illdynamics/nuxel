@@ -1,0 +1,50 @@
+# Nuxel permission daemon - owns the durable per-capability grant store
+# (briq-05a). Install as /etc/systemd/system/nuxel-permd.service together with
+# shell/nuxel-shell/nuxel-permissions/nuxel-permd.py and
+# configs/nuxel/.../capabilities.json -> /etc/nuxel/permissions/capabilities.json
+#
+# Honest notes about the confinement used here on the target device
+# (Linux 4.14.253, Samsung Exynos 9820):
+#   * MemoryMax / TasksMax / PrivateTmp / ProtectSystem work (cgroup v2 and
+#     mount namespaces exist in 4.14).
+#   * DeviceAllow is a NO-OP: it needs the BPF device controller
+#     (CONFIG_BPF_LSM), which this kernel does not have. systemd warns and
+#     proceeds without device ACLs. It is therefore NOT listed below, because
+#     listing it would imply a boundary that does not exist.
+#   * ProtectKernelTunables=yes makes /proc/sys read-only for the daemon. That is
+#     real on 4.14 (mount namespace, not Landlock).
+[Unit]
+Description=Nuxel permission daemon (grant store + enforcement review)
+Documentation=file:/usr/share/doc/nuxel/security/PERMISSIONS.md
+After=dbus.service nuxel-bridge.service
+Before=nuxel-portal.service
+Wants=nuxel-bridge.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-permd.py serve --bind 127.0.0.1 --port 8765
+# Writes through the HTTP API require this token; without it the API is
+# read-only by design (fail-closed, no cosmetic switch).
+EnvironmentFile=-/etc/nuxel/permd.env
+Restart=on-failure
+RestartSec=2s
+User=root
+StateDirectory=nuxel-permissions
+RuntimeDirectory=nuxel
+# Store location is explicit so a mis-set environment cannot silently move it.
+Environment=NUXEL_PERMISSIONS_DIR=/var/lib/nuxel/permissions
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/nuxel/permissions /run/nuxel
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=no
+RestrictRealtime=yes
+MemoryMax=128M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

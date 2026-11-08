@@ -1,0 +1,8 @@
+1d3610b0402acd5dae3eb4bc957ef6aee6a85e1b2a5aa1491f602df9d571a263  services/nuxel-bridge/src/flatpak_provider.py
+5d1506bcc849084782ec4299f9df5ecf8fb6f0758e97716fd4f0dcd345158a84  services/nuxel-bridge/src/api.py
+82d13bc2d9ede250bee9cedf987fadf91df3d366b8e77bd0f27325e59f93236d  pwa/nuxel-common/theme.css
+0a623e04eacb4d6255e23939f661ed90b9ea86e3e03192c457cab32e80e1f7c3  pwa/nuxel-common/theme.js
+e0b48f2eb00fc1752177cf8384f363bf13114a19f6949b11f4ecfc5bc8dd1bcf  pwa/nuxel-home/css/style.css
+da850f29231368299f5173ad6de9f38e5722dc3d5e8bb3f7d4088a424ef0d3cb  pwa/nuxel-home/css/launcher.css
+fc9688ff71bbdaff4dafcae6d6ef1b0da47ce58919239d40942948197994890b  pwa/nuxel-apps/settings/index.html
+376e31d750644fb4ef525d0dfdc33039b3ee5cc95b2b043b02e651582382eef8  pwa/nuxel-apps/settings/settings.js

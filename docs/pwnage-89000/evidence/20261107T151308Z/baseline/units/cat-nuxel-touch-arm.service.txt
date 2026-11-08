@@ -1,0 +1,46 @@
+# /etc/systemd/system/nuxel-touch-arm.service
+[Unit]
+Description=Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=300
+StartLimitBurst=10
+# The controller must be armed before any other reader (libinput in the
+# compositor) opens the panel node, otherwise the driver's first-open
+# short-circuit is the only path taken.
+Before=nuxel-wayland.service nuxel-ui.service
+After=systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/nuxel/nuxel-touch-arm
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+
+# /etc/systemd/system/nuxel-touch-arm.service.d/20-fast-stop.conf
+[Service]
+TimeoutStopSec=5
+KillMode=control-group
+SendSIGKILL=yes

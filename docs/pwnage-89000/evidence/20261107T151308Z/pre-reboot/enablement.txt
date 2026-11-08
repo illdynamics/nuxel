@@ -1,0 +1,28 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+/etc/systemd/system/nuxel-wayland.service.wants:
+total 28
+drwxr-xr-x   2 root root   4096 Nov  7 16:17 .
+drwxr-xr-x. 31  501 games 20480 Nov  7 16:17 ..
+lrwxrwxrwx   1 root root     45 Oct 29 23:01 nuxel-audio-route.service -> /etc/systemd/system/nuxel-audio-route.service
+
+/etc/systemd/system/paths.target.wants:
+total 28
+drwxr-xr-x.  2 root root   4096 Nov  7 16:17 .
+drwxr-xr-x. 31  501 games 20480 Nov  7 16:17 ..
+lrwxrwxrwx.  1 root root     24 Nov  7 16:17 nuxel-boot-sound.path -> ../nuxel-boot-sound.path
+lrwxrwxrwx.  1 root root     23 Nov  7 16:17 nuxel-mic-route.path -> ../nuxel-mic-route.path
+===
+enabled
+enabled
+enabled
+enabled
+enabled
+===

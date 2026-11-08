@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1188" viewBox="0 0 1200 1188" font-family="monospace">
+<rect width="100%" height="100%" fill="#0b0f14"/>
+<text x="20" y="30" fill="#e8eef6" font-size="18">Nuxel shutdown journal timeline (monotonic 114.299s → 115.924s, span 1.625s)</text>
+<line x1="260" y1="50" x2="1160" y2="50" stroke="#22303f" stroke-width="1"/>
+<line x1="260.00" y1="50" x2="260.00" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="260.00" cy="70" r="3" fill="#5ac8fa"/>
+<text x="20" y="74" fill="#8fa3b8" font-size="11">114.299s</text>
+<text x="268.00" y="74" fill="#e8eef6" font-size="11">[  114.299253] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-logind[5410]: System is rebooting.</text>
+<line x1="294.66" y1="50" x2="294.66" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="294.66" cy="96" r="3" fill="#5ac8fa"/>
+<text x="20" y="100" fill="#8fa3b8" font-size="11">114.362s</text>
+<text x="302.66" y="100" fill="#e8eef6" font-size="11">2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping avahi-daemon.service - Avahi mDNS/DNS-SD Stack...</text>
+<line x1="295.46" y1="50" x2="295.46" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="295.46" cy="122" r="3" fill="#5ac8fa"/>
+<text x="20" y="126" fill="#8fa3b8" font-size="11">114.363s</text>
+<text x="303.46" y="126" fill="#e8eef6" font-size="11">opping nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys)...</text>
+<line x1="296.24" y1="50" x2="296.24" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="296.24" cy="148" r="3" fill="#5ac8fa"/>
+<text x="20" y="152" fill="#8fa3b8" font-size="11">114.365s</text>
+<text x="304.24" y="152" fill="#e8eef6" font-size="11">-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-clockd.service - Nuxel background alarm and timer scheduler...</text>
+<line x1="296.95" y1="50" x2="296.95" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="296.95" cy="174" r="3" fill="#5ac8fa"/>
+<text x="20" y="178" fill="#8fa3b8" font-size="11">114.366s</text>
+<text x="304.95" y="178" fill="#e8eef6" font-size="11">162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-haptics.service - Nuxel Samsung timed-output haptics service...</text>
+<line x1="297.37" y1="50" x2="297.37" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="297.37" cy="200" r="3" fill="#5ac8fa"/>
+<text x="20" y="204" fill="#8fa3b8" font-size="11">114.367s</text>
+<text x="305.37" y="204" fill="#e8eef6" font-size="11">1-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-http-bridge.service - Nuxel HTTP Bridge API...</text>
+<line x1="298.12" y1="50" x2="298.12" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="298.12" cy="226" r="3" fill="#5ac8fa"/>
+<text x="20" y="230" fill="#8fa3b8" font-size="11">114.368s</text>
+<text x="306.12" y="230" fill="#e8eef6" font-size="11">c7c-4128 systemd[1]: Stopping nuxel-nfcd.service - Nuxel NFC controller service (Samsung sec-nfc transport)...</text>
+<line x1="298.43" y1="50" x2="298.43" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="298.43" cy="252" r="3" fill="#5ac8fa"/>
+<text x="20" y="256" fill="#8fa3b8" font-size="11">114.369s</text>
+<text x="306.43" y="256" fill="#e8eef6" font-size="11">28 systemd[1]: Stopping nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream)...</text>
+<line x1="299.14" y1="50" x2="299.14" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="299.14" cy="278" r="3" fill="#5ac8fa"/>
+<text x="20" y="282" fill="#8fa3b8" font-size="11">114.370s</text>
+<text x="307.14" y="282" fill="#e8eef6" font-size="11">e49d-dc7c-4128 systemd[1]: Stopping nuxel-usb-mode-monitor.service - Nuxel USB mode host-disconnect monitor...</text>
+<line x1="299.39" y1="50" x2="299.39" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="299.39" cy="304" r="3" fill="#5ac8fa"/>
+<text x="20" y="308" fill="#8fa3b8" font-size="11">114.370s</text>
+<text x="307.39" y="308" fill="#e8eef6" font-size="11">emd[1]: Stopping nuxel-watchdog-keep.service - Nuxel software watchdog keep-alive (softdog.soft_margin=100)...</text>
+<line x1="300.00" y1="50" x2="300.00" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="300.00" cy="330" r="3" fill="#5ac8fa"/>
+<text x="20" y="334" fill="#8fa3b8" font-size="11">114.371s</text>
+<text x="308.00" y="334" fill="#e8eef6" font-size="11">-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping rtkit-daemon.service - RealtimeKit Scheduling Policy Service...</text>
+<line x1="300.11" y1="50" x2="300.11" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="300.11" cy="356" r="3" fill="#5ac8fa"/>
+<text x="20" y="360" fill="#8fa3b8" font-size="11">114.372s</text>
+<text x="308.11" y="360" fill="#e8eef6" font-size="11">4.371682] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping sshd.service - OpenSSH server daemon...</text>
+<line x1="300.29" y1="50" x2="300.29" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="300.29" cy="382" r="3" fill="#5ac8fa"/>
+<text x="20" y="386" fill="#8fa3b8" font-size="11">114.372s</text>
+<text x="308.29" y="386" fill="#e8eef6" font-size="11">] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-hostnamed.service - Hostname Service...</text>
+<line x1="300.56" y1="50" x2="300.56" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="300.56" cy="408" r="3" fill="#5ac8fa"/>
+<text x="20" y="412" fill="#8fa3b8" font-size="11">114.372s</text>
+<text x="308.56" y="412" fill="#e8eef6" font-size="11">2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-logind.service - User Login Management...</text>
+<line x1="304.66" y1="50" x2="304.66" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="304.66" cy="434" r="3" fill="#5ac8fa"/>
+<text x="20" y="438" fill="#8fa3b8" font-size="11">114.380s</text>
+<text x="312.66" y="438" fill="#e8eef6" font-size="11">0-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-random-seed.service - Load/Save OS Random Seed...</text>
+<line x1="307.05" y1="50" x2="307.05" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="307.05" cy="460" r="3" fill="#5ac8fa"/>
+<text x="20" y="464" fill="#8fa3b8" font-size="11">114.384s</text>
+<text x="315.05" y="464" fill="#e8eef6" font-size="11">c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-user-sessions.service - Permit User Sessions...</text>
+<line x1="307.28" y1="50" x2="307.28" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="307.28" cy="486" r="3" fill="#5ac8fa"/>
+<text x="20" y="490" fill="#8fa3b8" font-size="11">114.385s</text>
+<text x="315.28" y="490" fill="#e8eef6" font-size="11">625] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping ydotool.service - Starts ydotoold service...</text>
+<line x1="309.76" y1="50" x2="309.76" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="309.76" cy="512" r="3" fill="#5ac8fa"/>
+<text x="20" y="516" fill="#8fa3b8" font-size="11">114.389s</text>
+<text x="317.76" y="516" fill="#e8eef6" font-size="11">4128 systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...</text>
+<line x1="347.00" y1="50" x2="347.00" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="347.00" cy="538" r="3" fill="#5ac8fa"/>
+<text x="20" y="542" fill="#8fa3b8" font-size="11">114.456s</text>
+<text x="355.00" y="542" fill="#e8eef6" font-size="11">6347] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping NetworkManager.service - Network Manager...</text>
+<line x1="347.58" y1="50" x2="347.58" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="347.58" cy="564" r="3" fill="#5ac8fa"/>
+<text x="20" y="568" fill="#8fa3b8" font-size="11">114.457s</text>
+<text x="355.58" y="568" fill="#e8eef6" font-size="11">d-dc7c-4128 systemd[1]: Stopping nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator...</text>
+<line x1="347.75" y1="50" x2="347.75" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="347.75" cy="590" r="3" fill="#5ac8fa"/>
+<text x="20" y="594" fill="#8fa3b8" font-size="11">114.458s</text>
+<text x="355.75" y="594" fill="#e8eef6" font-size="11">57690] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping wpa_supplicant.service - WPA supplicant...</text>
+<line x1="379.96" y1="50" x2="379.96" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="379.96" cy="616" r="3" fill="#5ac8fa"/>
+<text x="20" y="620" fill="#8fa3b8" font-size="11">114.516s</text>
+<text x="387.96" y="620" fill="#e8eef6" font-size="11">128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -&gt; /dev/fb0 AMOLED)...</text>
+<line x1="380.35" y1="50" x2="380.35" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="380.35" cy="642" r="3" fill="#5ac8fa"/>
+<text x="20" y="646" fill="#8fa3b8" font-size="11">114.517s</text>
+<text x="388.35" y="646" fill="#e8eef6" font-size="11">4.516563] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping ModemManager.service - Modem Manager...</text>
+<line x1="380.55" y1="50" x2="380.55" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="380.55" cy="668" r="3" fill="#5ac8fa"/>
+<text x="20" y="672" fill="#8fa3b8" font-size="11">114.517s</text>
+<text x="388.55" y="672" fill="#e8eef6" font-size="11">-dc7c-4128 systemd[1]: Stopping nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID...</text>
+<line x1="380.68" y1="50" x2="380.68" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="380.68" cy="694" r="3" fill="#5ac8fa"/>
+<text x="20" y="698" fill="#8fa3b8" font-size="11">114.517s</text>
+<text x="388.68" y="698" fill="#e8eef6" font-size="11">c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-notifications.service - Nuxel Notification Hub...</text>
+<line x1="380.80" y1="50" x2="380.80" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="380.80" cy="720" r="3" fill="#5ac8fa"/>
+<text x="20" y="724" fill="#8fa3b8" font-size="11">114.517s</text>
+<text x="388.80" y="724" fill="#e8eef6" font-size="11">72] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-portal.service - Nuxel Portal Daemon...</text>
+<line x1="417.28" y1="50" x2="417.28" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="417.28" cy="746" r="3" fill="#5ac8fa"/>
+<text x="20" y="750" fill="#8fa3b8" font-size="11">114.583s</text>
+<text x="425.28" y="750" fill="#e8eef6" font-size="11">583232] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping polkit.service - Authorization Manager...</text>
+<line x1="476.88" y1="50" x2="476.88" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="476.88" cy="772" r="3" fill="#5ac8fa"/>
+<text x="20" y="776" fill="#8fa3b8" font-size="11">114.691s</text>
+<text x="484.88" y="776" fill="#e8eef6" font-size="11">2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping dbus-daemon.service - D-Bus System Message Bus...</text>
+<line x1="493.32" y1="50" x2="493.32" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="493.32" cy="798" r="3" fill="#5ac8fa"/>
+<text x="20" y="802" fill="#8fa3b8" font-size="11">114.721s</text>
+<text x="501.32" y="802" fill="#e8eef6" font-size="11">: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...</text>
+<line x1="908.67" y1="50" x2="908.67" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="908.67" cy="824" r="3" fill="#5ac8fa"/>
+<text x="20" y="828" fill="#8fa3b8" font-size="11">115.470s</text>
+<text x="916.67" y="828" fill="#e8eef6" font-size="11">d[1]: Stopping nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop-&gt;start, then hold open)...</text>
+<line x1="908.81" y1="50" x2="908.81" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="908.81" cy="850" r="3" fill="#5ac8fa"/>
+<text x="20" y="854" fill="#8fa3b8" font-size="11">115.471s</text>
+<text x="916.81" y="854" fill="#e8eef6" font-size="11">7c-4128 systemd[1]: Stopping nuxel-web.service - Nuxel PWA Static Web Server (nuxel-home launcher on :8000)...</text>
+<line x1="908.93" y1="50" x2="908.93" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="908.93" cy="876" r="3" fill="#5ac8fa"/>
+<text x="20" y="880" fill="#8fa3b8" font-size="11">115.471s</text>
+<text x="916.93" y="880" fill="#e8eef6" font-size="11">128 systemd[1]: Stopping seatd.service - Nuxel seat daemon (seatd) — backend session for wlroots/phoc input...</text>
+<line x1="950.74" y1="50" x2="950.74" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="950.74" cy="902" r="3" fill="#5ac8fa"/>
+<text x="20" y="906" fill="#8fa3b8" font-size="11">115.546s</text>
+<text x="958.74" y="906" fill="#e8eef6" font-size="11">4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-timesyncd.service - Network Time Synchronization...</text>
+<line x1="952.45" y1="50" x2="952.45" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="952.45" cy="928" r="3" fill="#5ac8fa"/>
+<text x="20" y="932" fill="#8fa3b8" font-size="11">115.550s</text>
+<text x="960.45" y="932" fill="#e8eef6" font-size="11">-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-update-utmp.service - Record System Boot/Shutdown in UTMP...</text>
+<line x1="978.07" y1="50" x2="978.07" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="978.07" cy="954" r="3" fill="#5ac8fa"/>
+<text x="20" y="958" fill="#8fa3b8" font-size="11">115.596s</text>
+<text x="986.07" y="958" fill="#e8eef6" font-size="11">595807] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Unmounting tmp.mount - Temporary Directory /tmp...</text>
+<line x1="1009.07" y1="50" x2="1009.07" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="1009.07" cy="980" r="3" fill="#5ac8fa"/>
+<text x="20" y="984" fill="#8fa3b8" font-size="11">115.652s</text>
+<text x="1017.07" y="984" fill="#e8eef6" font-size="11">.651784] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target shutdown.target - System Shutdown.</text>
+<line x1="1009.16" y1="50" x2="1009.16" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="1009.16" cy="1006" r="3" fill="#5ac8fa"/>
+<text x="20" y="1010" fill="#8fa3b8" font-size="11">115.652s</text>
+<text x="1017.16" y="1010" fill="#e8eef6" font-size="11">944] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target final.target - Late Shutdown Services.</text>
+<line x1="1009.56" y1="50" x2="1009.56" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="1009.56" cy="1032" r="3" fill="#5ac8fa"/>
+<text x="20" y="1036" fill="#8fa3b8" font-size="11">115.653s</text>
+<text x="1017.56" y="1036" fill="#e8eef6" font-size="11"> 115.652669] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target reboot.target - System Reboot.</text>
+<line x1="1098.06" y1="50" x2="1098.06" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="1098.06" cy="1058" r="3" fill="#5ac8fa"/>
+<text x="20" y="1062" fill="#8fa3b8" font-size="11">115.812s</text>
+<text x="1106.06" y="1062" fill="#e8eef6" font-size="11">62b-e49d-dc7c-4128 systemd-shutdown[1]: Using hardware watchdog /dev/watchdog0: 'S3C2410 Watchdog', version 0.</text>
+<line x1="1098.12" y1="50" x2="1098.12" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="1098.12" cy="1084" r="3" fill="#5ac8fa"/>
+<text x="20" y="1088" fill="#8fa3b8" font-size="11">115.813s</text>
+<text x="1106.12" y="1088" fill="#e8eef6" font-size="11">00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Failed to set watchdog hardware timeout to 10min: Invalid argument</text>
+<line x1="1104.54" y1="50" x2="1104.54" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="1104.54" cy="1110" r="3" fill="#5ac8fa"/>
+<text x="20" y="1114" fill="#8fa3b8" font-size="11">115.824s</text>
+<text x="1112.54" y="1114" fill="#e8eef6" font-size="11">15.824161] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Syncing filesystems and block devices.</text>
+<line x1="1131.91" y1="50" x2="1131.91" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="1131.91" cy="1136" r="3" fill="#5ac8fa"/>
+<text x="20" y="1140" fill="#8fa3b8" font-size="11">115.874s</text>
+<text x="1139.91" y="1140" fill="#e8eef6" font-size="11">=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=&quot;systemd-sh</text>
+<line x1="1160.00" y1="50" x2="1160.00" y2="1172" stroke="#2b4a6b" stroke-width="1"/>
+<circle cx="1160.00" cy="1162" r="3" fill="#5ac8fa"/>
+<text x="20" y="1166" fill="#8fa3b8" font-size="11">115.924s</text>
+<text x="1150.00" y="1166" fill="#e8eef6" font-size="11">924306] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Sending SIGTERM to remaining processes...</text>
+</svg>

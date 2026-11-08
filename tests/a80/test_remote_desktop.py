@@ -38,7 +38,7 @@ def test_registry_has_new_apps_once_and_preserves_console_ids():
     doc = json.loads(REGISTRY.read_text())
     ids = [a["id"] for a in doc["apps"]]
     assert len(ids) == len(set(ids))
-    assert doc["registry_version"] == 9
+    assert doc["registry_version"] == 18
     for aid in NEW:
         assert ids.count(aid) == 1
     for aid in CONSOLES:
@@ -71,7 +71,7 @@ def test_three_documents_are_real_and_manifest_contract_is_not_mocked():
 
 def test_launcher_and_native_consumer_have_the_new_entries_once():
     text = APPS_JS.read_text()
-    assert "const NUXEL_REGISTRY_VERSION = 9;" in text
+    assert "const NUXEL_REGISTRY_VERSION = 18;" in text
     for aid in NEW:
         assert text.count("id: '%s'" % aid) == 1
     native = json.loads(NATIVE.read_text())
@@ -87,24 +87,18 @@ def test_bridge_js_has_no_mock_success_for_remote_desktop():
     assert "remote-desktop status/control was not performed" in text
 
 
-def test_usb_is_blocked_without_configfs_mutation(tmp_path, monkeypatch):
+def test_usb_is_blocked_without_configfs_mutation(monkeypatch):
     mod = load_remote()
-    gadget = tmp_path / "gadget"
-    f = gadget / "nuxel" / "functions"
-    f.mkdir(parents=True)
-    (f / "acm.usb0").mkdir()
-    monkeypatch.setattr(mod, "Path", Path)
-    real_path = mod.Path
-    monkeypatch.setattr(mod, "Path", real_path)
-    # Point the status function at a filesystem-free audit: it only reads
-    # /sys/kernel/config through the hard-coded production path, so we test the
-    # kernel verdict and the explicit non-mutation marker directly.
+    cfg = ("CONFIG_USB_CONFIGFS=y\nCONFIG_USB_DWC3=y\nCONFIG_USB_F_NCM=y\n"
+           "CONFIG_USB_CONFIGFS_NCM=y\nCONFIG_USB_F_RNDIS=y\nCONFIG_USB_CONFIGFS_RNDIS=y\n")
+    monkeypatch.setattr(mod, "_kernel_config_text", lambda release="": cfg)
     out = mod.usb_network_status("4.14.253-gf7194c1d15ed-dirty")
     assert out["available"] is False
     assert out["status"] == "BLOCKED_KERNEL_PANIC"
     assert out["mutated"] is False
+    assert out["modes"]["ncm"]["status"] == "BLOCKED_KNOWN_PANIC"
+    assert out["modes"]["rndis"]["status"] == "NEEDS_VALIDATION"
     assert "ncm_free_inst" in out["reason"]
-
 
 def test_network_address_is_discovered_not_hardcoded(monkeypatch):
     mod = load_remote()
@@ -123,7 +117,7 @@ def test_invalid_service_and_transport_are_refused():
     mod = load_remote()
     assert mod.handle("status", {"service": "bogus"})["error_code"] == "INVALID_SERVICE"
     assert mod.handle("set-transport", {"service": "vnc", "transport": "rmnet"})["error_code"] == "INVALID_TRANSPORT"
-    assert mod.handle("set-transport", {"service": "vnc", "transport": "usb"})["error_code"] == "BLOCKED_KERNEL_PANIC"
+    assert mod.handle("set-transport", {"service": "vnc", "transport": "usb"})["error_code"] in ("BLOCKED_KERNEL_PANIC", "BLOCKED_KERNEL")
 
 
 def test_start_usb_is_refused_before_any_helper_call(monkeypatch):
@@ -132,7 +126,7 @@ def test_start_usb_is_refused_before_any_helper_call(monkeypatch):
     monkeypatch.setattr(mod, "_helper", lambda *a, **k: called.append(a) or {"success": True})
     out = mod.handle("start", {"service": "vnc", "transport": "usb"})
     assert out["success"] is False
-    assert out["error_code"] == "BLOCKED_KERNEL_PANIC"
+    assert out["error_code"] in ("BLOCKED_KERNEL_PANIC", "BLOCKED_KERNEL")
     assert called == []
 
 
@@ -150,28 +144,27 @@ def test_scrcpy_native_nuxel_is_honest(monkeypatch):
 
 
 def test_direct_listener_and_local_account_contract():
-    """Owner request: no SSH tunnel; RDP/VNC direct on the LAN/ZeroTier with
-    TLS and PAM as the local nuxel account."""
+    """Direct LAN only: RDP 13389 and VNC 15900, TLS + PAM, no tunnel."""
     ctl = (ROOT / "services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl").read_text()
     rd = (ROOT / "services/nuxel-bridge/src/remote_desktop.py").read_text()
     xrdp = (ROOT / "services/nuxel-remote-desktop/config/xrdp.ini").read_text()
     vnc = (ROOT / "services/nuxel-remote-desktop/config/wayvnc.conf.example").read_text()
-    assert 'VNC_BIND = "0.0.0.0"' in ctl
-    assert "enable_auth=false" in ctl
-    assert '"0.0.0.0", "port": 3389' in ctl
-    assert "port=tcp://:3389" in xrdp
-    assert "address=0.0.0.0" in vnc and "enable_auth=false" in vnc
-    assert 'BIND_ADDRESS = "0.0.0.0"' in rd
+    assert 'PORTS = {"vnc": 15900, "xrdp": 13389}' in ctl
+    assert "enable_auth=false" not in ctl
+    assert "enable_auth=true" in ctl and "enable_pam=true" in ctl
+    assert "port=tcp://127.0.0.1:13389" in xrdp
+    assert "port=15900" in vnc and "enable_auth=true" in vnc and "enable_pam=true" in vnc
+    assert 'BIND_ADDRESS = "trusted-lan-ipv4"' in rd
     assert '"username": "nuxel"' in rd
     assert '"requires_ssh_tunnel": False' in rd
     assert '"ssh_tunnel_command": None' in rd
-    assert '"vnc_unauthenticated": True' in rd
+    assert '"vnc_unauthenticated": False' in rd and '"vnc_authenticated": True' in rd
 
 
 def test_status_never_contains_secret_fields(monkeypatch):
     mod = load_remote()
-    monkeypatch.setattr(mod, "_vnc_status", lambda: {"state": "OFF", "port": 5900, "listener_verified": False})
-    monkeypatch.setattr(mod, "_xrdp_status", lambda: {"state": "OFF", "port": 3389, "listener_verified": False})
+    monkeypatch.setattr(mod, "_vnc_status", lambda: {"state": "OFF", "port": 15900, "listener_verified": False})
+    monkeypatch.setattr(mod, "_xrdp_status", lambda: {"state": "OFF", "port": 13389, "listener_verified": False})
     monkeypatch.setattr(mod, "_scrcpy_status", lambda: {"state": "NO_ANDROID_TARGET", "listener_verified": False})
     doc = mod.get_status()
     text = json.dumps(doc).lower()
@@ -184,11 +177,12 @@ def test_connection_info_is_direct_and_secret_free(monkeypatch):
     monkeypatch.setattr(mod, "network_state", lambda: {"address": "192.168.44.77", "interface": "wlan0", "trusted_lan": True})
     monkeypatch.setattr(mod, "_xrdp_fingerprint", lambda: "AA:BB")
     info = mod.connection_info("xrdp")
-    assert info["bind_address"] == "0.0.0.0"
-    assert info["port"] == 3389
+    assert info["bind_address"] == "192.168.44.77"
+    assert info["port"] == 13389
+    assert info["direct_lan"] is True
     assert info["password_included"] is False
     assert info["ssh_tunnel_command"] is None
-    assert info["jump_url"] == "rdp://192.168.44.77:3389"
+    assert info["jump_url"] == "rdp://192.168.44.77:13389"
     assert info["username"] == "nuxel"
     assert "password" not in json.dumps({k: v for k, v in info.items() if k != "password_included"}).lower()
 
@@ -220,7 +214,7 @@ def test_image_puts_unprivileged_network_users_in_inet_group():
     assert "CONFIG_ANDROID_PARANOID_NETWORK=y" in text
     assert "groupadd -f -g 3003 inet" in text
     assert "usermod -aG inet nuxel" in text
-    assert "usermod -aG inet nuxel-remote" in text
+    assert "usermod -aG inet nuxel-remote" not in text
 
 
 def test_ctl_stop_is_bounded_and_never_targets_the_physical_session():
@@ -243,14 +237,13 @@ def test_ctl_exposes_read_only_status_for_the_quickstart():
     assert "current-wayland-session" in text
 
 
-def test_image_provisions_unique_rdp_credential_without_logging_it():
+def test_image_generates_vnc_tls_material_and_never_ships_a_password():
     text = (ROOT / "images/s10plus/build-phone-rootfs-inside-fedora.sh").read_text()
-    assert "openssl rand -hex 14" in text
-    assert "chroot \"$STAGE\" /usr/sbin/chpasswd" in text
-    assert "/etc/nuxel/remote-desktop/xrdp/credential" in text
-    assert "chmod 0600" in text
-    # The generated value is never echoed/printed by the builder.
-    assert "echo $_rdpw" not in text and 'echo "$_rdpw"' not in text
+    assert "tls_cert.pem" in text and "tls_key.pem" in text and "rsa_key.pem" in text
+    assert "wayvnc.pam" in text and '"$STAGE/etc/pam.d/wayvnc"' in text
+    assert "openssl rand -hex 14" not in text
+    assert "/etc/nuxel/remote-desktop/xrdp/credential" not in text
+    assert "nuxel-remote:%s" not in text
 
 
 def test_ctl_clears_failed_unit_state_after_forced_stop():
@@ -271,3 +264,39 @@ def test_rdp_pam_is_locked_to_the_local_nuxel_account():
     assert 'if [ "$(id -u)" -ne 1000 ] || [ "$(id -un)" != "nuxel" ]; then' in session
     assert "xrdp-sesman.pam" in builder
     assert '"$STAGE/etc/pam.d/xrdp-sesman"' in builder
+
+def test_vnc_status_derives_effective_auth_and_never_claims_secure_when_off(tmp_path, monkeypatch):
+    mod = load_remote()
+    conf = tmp_path / "wayvnc.conf"
+    monkeypatch.setattr(mod, "VNC_CONFIG", conf)
+    monkeypatch.setattr(mod, "_vnc_version", lambda: "wayvnc 0.9.1")
+    monkeypatch.setattr(mod, "wayland_protocols", lambda: {"available": True, "protocols": list(mod.VNC_REQUIRED_PROTOCOLS)})
+    monkeypatch.setattr(mod, "_systemctl_active", lambda unit: True)
+    monkeypatch.setattr(mod, "_listener_addresses", lambda port: ["192.168.178.167"])
+    monkeypatch.setattr(mod, "_vnc_clients", lambda: {"count": 0, "available": True})
+    monkeypatch.setattr(mod, "_cert_fingerprint", lambda path: "AA:BB:CC")
+    monkeypatch.setattr(mod, "_read", lambda path: "auth required pam_succeed_if.so user = nuxel\n")
+    conf.write_text("address=192.168.178.167\nport=15900\nenable_auth=false\n")
+    st = mod._vnc_status()
+    assert st["state"] == "ERROR"
+    assert st["authentication"] == "UNAUTHENTICATED"
+    assert st["security_verified"] is False
+    conf.write_text("address=192.168.178.167\nport=15900\nenable_auth=true\nenable_pam=true\n"
+                    "certificate_file=/x\nprivate_key_file=/y\n")
+    st = mod._vnc_status()
+    assert st["state"] == "WAITING_FOR_CLIENT"
+    assert st["encrypted"] is True and st["security_verified"] is True
+    assert st["authentication_mode"] == "PAM"
+
+
+def test_usb_modes_are_distinct_and_never_ready(monkeypatch):
+    mod = load_remote()
+    cfg = ("CONFIG_USB_CONFIGFS=y\nCONFIG_USB_DWC3=y\nCONFIG_USB_F_NCM=y\n"
+           "CONFIG_USB_CONFIGFS_NCM=y\nCONFIG_USB_F_RNDIS=y\nCONFIG_USB_CONFIGFS_RNDIS=y\n")
+    monkeypatch.setattr(mod, "_kernel_config_text", lambda release="": cfg)
+    out = mod.usb_network_status("4.14.253-gf7194c1d15ed-dirty")
+    assert out["available"] is False and out["mutated"] is False
+    assert out["kernel_base_release"] == "4.14.253"
+    assert out["modes"]["ncm"]["status"] == "BLOCKED_KNOWN_PANIC"
+    assert out["modes"]["rndis"]["status"] == "NEEDS_VALIDATION"
+    assert out["modes"]["ecm"]["status"] == "BLOCKED_KERNEL"

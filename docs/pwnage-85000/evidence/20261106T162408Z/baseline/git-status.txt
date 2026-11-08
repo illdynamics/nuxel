@@ -1,0 +1,127 @@
+ D assets/nuxel-alarm.mp3
+ D assets/nuxel-boot-audio.mp3
+ D assets/nuxel-pow.mp3
+ M images/s10plus/build-phone-rootfs-inside-fedora.sh
+ M pwa/nuxel-apps/calendar/css/calendar.css
+ M pwa/nuxel-apps/calendar/index.html
+ M pwa/nuxel-apps/calendar/js/calendar.js
+ M pwa/nuxel-apps/calendar/sw.js
+ M pwa/nuxel-apps/clock/index.html
+ M pwa/nuxel-apps/clock/js/clock.js
+ M pwa/nuxel-apps/devmgmt/css/devmgmt.css
+ M pwa/nuxel-apps/devmgmt/index.html
+ M pwa/nuxel-apps/devmgmt/js/devmgmt.js
+ M pwa/nuxel-apps/devmgmt/sw.js
+ M pwa/nuxel-apps/doom/css/doom.css
+ M pwa/nuxel-apps/doom/index.html
+ M pwa/nuxel-apps/doom/js/doom.js
+ M pwa/nuxel-apps/doom/sw.js
+ M pwa/nuxel-apps/doom/tests/test-doom.js
+ M pwa/nuxel-apps/downloader/index.html
+ M pwa/nuxel-apps/notes/css/notes.css
+ M pwa/nuxel-apps/notes/index.html
+ M pwa/nuxel-apps/notes/js/notes.js
+ M pwa/nuxel-apps/notes/sw.js
+ M pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.NuxTore-1.0.0.bundle.json
+ M pwa/nuxel-apps/nuxtore/css/nuxtore.css
+ M pwa/nuxel-apps/nuxtore/index.html
+ M pwa/nuxel-apps/nuxtore/js/nuxtore-flatpak.js
+ M pwa/nuxel-apps/nuxtore/js/nuxtore.js
+ M pwa/nuxel-apps/nuxtore/sw.js
+ M pwa/nuxel-apps/photos/index.html
+ M pwa/nuxel-apps/photos/js/photos.js
+ M pwa/nuxel-apps/recorder/css/recorder.css
+ M pwa/nuxel-apps/recorder/index.html
+ M pwa/nuxel-apps/recorder/js/recorder.js
+ M pwa/nuxel-apps/recorder/sw.js
+ M pwa/nuxel-apps/settings/hardware-settings.js
+ M pwa/nuxel-apps/settings/index.html
+ M pwa/nuxel-apps/settings/settings.css
+ M pwa/nuxel-apps/settings/settings.js
+ M pwa/nuxel-common/theme.css
+ M pwa/nuxel-common/theme.js
+ M pwa/nuxel-home/css/launcher.css
+ M pwa/nuxel-home/css/lockscreen.css
+ M pwa/nuxel-home/css/status-bar.css
+ M pwa/nuxel-home/css/style.css
+ M pwa/nuxel-home/css/widgets.css
+ M pwa/nuxel-home/index.html
+ M pwa/nuxel-home/js/app.js
+ M pwa/nuxel-home/js/apps.js
+ M pwa/nuxel-home/js/home-settings.js
+ M pwa/nuxel-home/js/launcher.js
+ M pwa/nuxel-home/js/lockscreen-indicators.js
+ M pwa/nuxel-home/js/lockscreen.js
+ M pwa/nuxel-home/js/status-bar.js
+ M pwa/nuxel-home/js/system-monitor.js
+ M pwa/nuxel-home/js/widgets.js
+ M pwa/nuxel-home/manifest.json
+ M pwa/nuxel-home/sw.js
+ M pwa/nuxel-home/tests/test-status-indicators.js
+ M pwa/nuxel-home/tests/test-widgets.js
+ M services/nuxel-bridge/src/api.py
+ M services/nuxel-bridge/src/bridge.py
+ M services/nuxel-bridge/src/flatpak_provider.py
+ M services/nuxel-bridge/src/hw_providers.py
+ M services/nuxel-bridge/src/nfc_provider.py
+ M services/nuxel-bridge/src/pwa_store.py
+ M services/nuxel-bridge/src/system_indicators.py
+ M services/nuxel-bridge/test-bluetooth-location.py
+ M services/nuxel-bridge/test-system-indicators.py
+ M services/nuxel-s10/bin/nuxel-apply-pwnage36000.sh
+ M services/nuxel-s10/bin/nuxel-mic-route.sh
+ M services/nuxel-s10/bin/nuxel-wifi-up.sh
+ M services/nuxel-s10/systemd/nuxel-wifi.service
+ M services/nuxel-software/nuxel-software
+ M tests/pwnage37000/test_wifi_owner_controlled.py
+ M tests/pwnage52000/test_graphics_status.py
+ M tools/beta/live/nuxel-live-ssh.py
+ M tools/beta/live/nuxel_tri_link.py
+ M tools/s10plus/a33/nuxel-sound-cue.py
+ M tools/s10plus/a45/nuxel-button-manager.c
+ M tools/s10plus/a45/nuxel-navdock.c
+ M tools/s10plus/a45/nuxel-statusbar.c
+ M tools/s10plus/a52/nuxel-v4l2-probe.py
+ M tools/s10plus/verify-fedora-phone-rootfs.py
+?? .pwnage81000/
+?? .pwnage82000/
+?? .pwnage84000-evidence-path
+?? .pwnage85000-evidence-path
+?? NUXEL-PERMISSION-MANAGER-FULL-IMPLEMENTATION-PROMPT.md
+?? assets/nuxel-alarm.png
+?? assets/nuxel-sounds/
+?? assets/nuxel-timer.png
+?? docs/interface-state.md
+?? docs/pwnage-84000/
+?? docs/pwnage-85000/
+?? evidence/pwnage-82000/
+?? flat.md
+?? full-pwnage-81000.md
+?? full-pwnage-82000.md
+?? full-pwnage-83000.md
+?? full-pwnage-84000.md
+?? full-pwnage-85000.md
+?? pwa/nuxel-apps/downloader/js/media-downloader.js
+?? pwa/nuxel-apps/settings/appearance-settings.js
+?? pwa/nuxel-apps/settings/mic-settings.js
+?? pwa/nuxel-apps/settings/sound-settings.js
+?? pwa/nuxel-home/js/desktop-layout.js
+?? pwa/nuxel-home/js/lockscreen-clock.js
+?? pwnage-81000.md
+?? pwnage-82000.md
+?? pwnage-83000.md
+?? pwnage-84000.md
+?? pwnage-85000.md
+?? services/nuxel-bridge/src/interface_state.py
+?? services/nuxel-bridge/src/mic_provider.py
+?? services/nuxel-clock/
+?? services/nuxel-s10/bin/nuxel-interface-state
+?? services/nuxel-s10/systemd/nuxel-bluetooth.service
+?? services/nuxel-s10/systemd/nuxel-interface-state.service
+?? services/nuxel-session/nuxel-app-prewarm
+?? services/nuxel-session/nuxel-app-prewarm.service
+?? services/nuxel-session/nuxel-tri-link-session
+?? services/nuxel-sound/
+?? tests/pwnage81000/
+?? tests/pwnage82000/
+?? tests/pwnage84000/

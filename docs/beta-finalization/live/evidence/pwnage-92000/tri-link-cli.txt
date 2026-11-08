@@ -1,0 +1,23 @@
+# WLAN SSH Tri-Link CLI (public-key, pinned host key)
+# wlan   AVAILABLE nuxel@192.168.178.167:22 account=nuxel host key verified; public-key auth ok
+#   tool:ssh     OK           
+#   tool:scp     OK           
+#   tool:ssh-keyscan OK           
+#   tool:ssh-keygen OK           
+#   private-key  OK           /Users/wicked/.ssh/wicked_wqn_id_rsa
+#   private-key-mode OK           0600
+#   host-key     OK           pinned key matches the phone
+#   tcp          OK           tcp connect ok
+#   auth         OK           publickey accepted
+#   remote-shell OK           /usr/bin/bash
+
+# explicit USB transport (must not fall back)
+# usb    UNREACHABLE nuxel@10.15.19.82:22 account=nuxel tcp connect timed out
+#   tool:ssh     OK           
+#   tool:scp     OK           
+#   tool:ssh-keyscan OK           
+#   tool:ssh-keygen OK           
+#   private-key  OK           /Users/wicked/.ssh/wicked_wqn_id_rsa
+#   private-key-mode OK           0600
+#   host-key     UNVERIFIED   could not fetch a key to compare (ssh-keyscan unavailable/failed)
+#   tcp          FAIL         tcp connect timed out

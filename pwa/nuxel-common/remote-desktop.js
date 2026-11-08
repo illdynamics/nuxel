@@ -121,11 +121,12 @@ export function startRemoteApp(cfg) {
     row('Preferred', (svc.preferred_transport || '—').toUpperCase());
     row('Active', svc.active_transport ? String(svc.active_transport).toUpperCase() : '—');
     row('Phone LAN', doc.network && doc.network.address ? doc.network.address + ' (' + (doc.network.interface || '?') + ')' : 'not discovered');
-    row('Listener', svc.bind_address ? svc.bind_address + ':' + svc.port + (svc.listener_verified ? ' ✓' : ' (closed)') : '—');
-    row('Auth', svc.authentication || '—');
-    row('Encrypted', svc.encrypted ? 'yes · ' + (svc.encrypted_detail || '') : 'no');
+    row('Listener', svc.bind_address ? svc.bind_address + ':' + svc.port + (svc.listener_verified ? ' ✓' : ' (configured; not listening)') : '—');
+    row('Auth', (svc.authentication_mode || svc.authentication || '—') + (svc.security_verified ? ' · verified' : svc.listener_verified ? ' · unverified' : ''));
+    row('Encrypted', svc.encrypted ? 'yes · ' + (svc.encryption_mode || svc.encrypted_detail || '') : 'no');
     if (svc.version) row('Version', svc.version);
-    if (svc.tls_fingerprint) row('TLS SHA-256', svc.tls_fingerprint);
+    if (svc.tls_fingerprint || svc.certificate_fingerprint) row('TLS SHA-256', svc.tls_fingerprint || svc.certificate_fingerprint);
+    if (cfg.service === 'vnc') row('Remote input', svc.input_enabled ? 'enabled' : 'disabled');
     if (cfg.service !== 'scrcpy') row('Clients', String(svc.authenticated_clients || 0) + (svc.client_status_available === false ? ' (provider unavailable)' : ''));
     if (svc.active_users && svc.active_users.length) row('Remote users', svc.active_users.join(', '));
     if (svc.started_at) row('Started', new Date(svc.started_at * 1000).toLocaleString());
@@ -135,6 +136,7 @@ export function startRemoteApp(cfg) {
       row('scrcpy', svc.scrcpy_available ? (svc.scrcpy_version || 'available') : 'no official Fedora 43 aarch64 package');
     }
     if (svc.usb) row('USB route', svc.usb.status + (svc.usb.reason ? ' · ' + svc.usb.reason : ''));
+    if (cfg.service === 'scrcpy' && svc.native_mirror) row('Native mirror', (svc.native_mirror.host || 'unknown') + ':' + svc.native_mirror.port + ' over TCP');
 
     (cfg.transports || []).forEach((t) => {
       const b = el('button', (svc.preferred_transport === t.id ? 'selected' : ''));
@@ -197,7 +199,7 @@ export function startRemoteApp(cfg) {
   async function doStart() {
     if (!confirmedStart) {
       const ok = await confirmDialog('Start ' + cfg.title + '?',
-        cfg.confirmText || 'This exposes remote control of this phone over the selected transport while it is running. The listener is authenticated and restricted to the owner LAN/tunnel. Nuxel never starts it at boot.');
+        cfg.confirmText || 'This exposes remote control of this phone on the trusted owner LAN while it is running. The listener is authenticated, encrypted and bound to the current WLAN IPv4 address. Nuxel never starts it at boot.');
       if (!ok) return;
       confirmedStart = true;
     }
@@ -223,11 +225,14 @@ export function startRemoteApp(cfg) {
     const r = await remoteCall('connection-info');
     const text = r && r.success ? [
       'Nuxel ' + cfg.title,
-      'Session: ' + (last && last.services[cfg.service] ? last.services[cfg.service].session_mode_label : ''),
-      r.ssh_tunnel_command ? 'SSH tunnel (Mac): ' + r.ssh_tunnel_command : '',
-      r.jump_url ? 'Jump Desktop URL: ' + r.jump_url : '',
+      'Session: ' + (r.session_mode || (last && last.services[cfg.service] ? last.services[cfg.service].session_mode_label : '')),
+      r.host ? 'Direct LAN host: ' + r.host : '',
+      r.port ? 'Direct LAN port: ' + r.port + '/TCP' : '',
+      r.host && r.port ? 'Connect to: ' + r.host + ':' + r.port : '',
+      'Tunnel: not required on the trusted LAN',
+      r.username ? 'Login account: ' + r.username + ' (use its local password)' : '',
       r.tls_fingerprint ? 'TLS SHA-256: ' + r.tls_fingerprint : '',
-      'Password: not included; set it in the secure provider flow.',
+      r.native ? 'Use a secure VNC client for the native Phoc screen.' : '',
     ].filter(Boolean).join('\n') : 'Connection details unavailable';
     const ok = await copyText(text);
     copy.textContent = ok ? 'Copied' : 'Copy failed';

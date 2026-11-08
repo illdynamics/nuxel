@@ -9,7 +9,7 @@ _Executed and verified 2026-10-31 on the MacBook and the Nuxel S10+._
 | Phone IPv4 | `192.168.178.167` (`wlan0`, DHCP) |
 | `nux-vnc` Jump profile | `192.168.178.167:5900`, VNC, **no SSH tunnel** |
 | `nux-rdp` Jump profile | `192.168.178.167:3389`, RDP, **no SSH tunnel** |
-| RDP login | local `nuxel` account, password `enf0rcer` |
+| RDP login | local `nuxel` account, password `<owner-account-password>` |
 | RDP TLS certificate | self-signed; SHA-256 `04:8C:7B:9F:ED:CA:2B:ED:97:D0:B5:68:E9:23:3D:B8:D6:AB:75:79:99:D0:02:AC:14:03:5B:FF:77:A4:E4:5D` |
 | SSH administration | `nuxel@192.168.178.167` with `~/.ssh/wicked_wqn_id_rsa` |
 | VNC server | `wayvnc`, listening on `0.0.0.0:5900` |
@@ -27,12 +27,12 @@ _Executed and verified 2026-10-31 on the MacBook and the Nuxel S10+._
 - `xrdp` now listens directly on `0.0.0.0:3389`, still with TLS and PAM.
 - The xrdp session launcher was moved to the local `nuxel` HOME. RDP therefore
   logs in as the same identity as SSH/VNC (`/home/nuxel`), not `nuxel-remote`.
-- `nuxel` was unlocked with password `enf0rcer` so RDP/PAM can authenticate it.
+- `nuxel` was unlocked with password `<owner-account-password>` so RDP/PAM can authenticate it.
 - `wayvnc` now listens on `0.0.0.0:5900` with `enable_auth=false`.
 
 ## Login credentials
 
-- RDP: username `nuxel`, password `enf0rcer` (local phone account).
+- RDP: username `nuxel`, password `<owner-account-password>` (local phone account).
 - VNC: no password.
 - SSH: username `nuxel`, key `~/.ssh/wicked_wqn_id_rsa` (no SSH password).
 

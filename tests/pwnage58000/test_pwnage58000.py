@@ -17,8 +17,8 @@ SCRIPT = ROOT / "services/nuxel-performance/bin/nuxel-perf-tune.sh"
 JOURNALD = ROOT / "configs/nuxel/performance/journald.conf"
 ROOTFS_VERIFIER = ROOT / "tools/s10plus/verify-fedora-phone-rootfs.py"
 SERVICE_GRAPH = ROOT / "tools/s10plus/a33/verify-service-graph.py"
-FULL_PROMPT = ROOT / "full-pwnage-58000.md"
-KICKSTART_PROMPT = ROOT / "pwnage-58000.md"
+FULL_PROMPT = ROOT / "prompts/full-pwnage-58000.md"
+KICKSTART_PROMPT = ROOT / "prompts/pwnage-58000.md"
 
 
 def read(path: Path) -> str:

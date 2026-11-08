@@ -1,0 +1,22 @@
+[Unit]
+Description=Nuxel MTP responder (user storage over the vendor f_mtp gadget)
+Documentation=file:/usr/share/doc/nuxel/USB-FILE-TRANSFER.md
+After=local-fs.target
+ConditionPathExists=/dev/mtp_usb
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/nuxel/nuxel-mtp-server
+Restart=on-failure
+RestartSec=2
+# The responder must be reaped with the mode transition; it holds the MTP
+# gadget channel, not a filesystem or block device.
+TimeoutStopSec=8
+KillMode=control-group
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

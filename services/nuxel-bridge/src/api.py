@@ -171,7 +171,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.0-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.1-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -1401,6 +1401,17 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             gfx_env = self._graphics_env_for(target_id)
             for key, value in sorted(gfx_env.items()):
                 cmd.append("--setenv=%s=%s" % (key, value))
+            # PWNAGE-91000: per-app or global identity spoof.  The runtime
+            # profile is scoped to this app, so concurrent apps with different
+            # spoofs cannot race on one shared os-release file.  Flatpak
+            # sandboxes ignore host LD_PRELOAD, so they are not claimed here.
+            try:
+                spoof_env = self._spoof_launch_env(target_id)
+            except Exception as exc:  # noqa: BLE001 - spoofing must not block launch
+                logger.warning("spoof environment failed for %s: %s", target_id, exc)
+                spoof_env = {}
+            for key, value in sorted(spoof_env.items()):
+                cmd.append("--setenv=%s=%s" % (key, value))
         if use_x11:
             cmd += ["--setenv=DISPLAY=:0", "--setenv=QT_QPA_PLATFORM=xcb",
                     "--setenv=QT_X11_NO_MITSHM=1"]
@@ -1650,11 +1661,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 continue
         return stopped
 
-    def _send_native_back_key(self, app_id):
+    def _send_native_back_key(self, app_id, key=None):
         env = dict(os.environ)
         env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
                     "WAYLAND_DISPLAY": "wayland-0"})
-        if app_id == "vlc":
+        key = key or ("escape" if app_id == "vlc" else "alt-left")
+        if key == "escape":
             argv = ["/usr/bin/wtype", "-k", "Escape"]
         else:
             argv = ["/usr/bin/wtype", "-M", "alt", "-k", "Left", "-m", "alt"]
@@ -1669,21 +1681,62 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                            (proc.stderr or b"").decode("utf-8", "replace")[:300])
         return proc.returncode == 0
 
-    def _native_back_action(self):
-        """Short Back for the foreground native app: navigate the app's own
-        history first, and only report at-root when it has no more back step.
+    # PWNAGE-90000 Back adapter registry.
+    #
+    # A key injection proves delivery, not history depth: the result therefore
+    # says handled+verified:false and NEVER claims at_root.  Only an app-owned
+    # state document (the native browser FIFO) can confirm at_root.  Unknown
+    # apps return status=unsupported and stay foreground; absence of an adapter
+    # is not evidence that the app has no internal Back step.
+    NATIVE_BACK_SHORTCUTS = {
+        "org.mozilla.firefox": ("alt-left", "explicit-shortcut"),
+        "org.nuxel.BrowserNative": ("alt-left", "explicit-shortcut"),
+        "com.stremio.Stremio": ("alt-left", "explicit-shortcut"),
+        "org.gnome.FileRoller": ("alt-left", "explicit-shortcut"),
+        "org.gnome.Loupe": ("alt-left", "explicit-shortcut"),
+        "org.gnome.Papers": ("alt-left", "explicit-shortcut"),
+        "org.videolan.VLC": ("escape", "explicit-shortcut"),
+        "vlc": ("escape", "explicit-shortcut"),
+    }
 
-        The compositor's foreign-toplevel manager reports the activated
-        non-Home toplevel.  Only the native browser owns an in-app history the
-        shell can drive (via its control FIFO); any other native app reports
-        at-root so the launcher's short Back falls through to Home.
+    @staticmethod
+    def _back_result(status, foreground, handled=False, at_root=False,
+                     method="none", detail=None, request_id=None, session=None,
+                     verified=False):
+        doc = {
+            "success": status not in ("failed",),
+            "foreground": foreground,
+            "status": status,
+            "handled": bool(handled),
+            "at_root": bool(at_root),
+            "method": method,
+            "verified": bool(verified),
+        }
+        if detail:
+            doc["detail"] = str(detail)[:200]
+        if request_id is not None:
+            doc["request_id"] = request_id
+        if session is not None:
+            doc["session"] = session
+        return doc
 
-        Keyboard precedence is global: if the compositor OSK is visible, the
-        first Back dismisses it and does not navigate or close the app."""
+    def _native_back_action(self, request_id=None, session=None):
+        """Short Back for the foreground native/Flatpak app.
+
+        Typed result contract:
+          handled     a real in-app navigation action was delivered
+          at_root     app-owned state confirms there is no further Back step
+          unsupported no verified adapter/state API; keep the app foreground
+          failed      the adapter ran but delivery failed
+          pending     a request is already in flight
+        Keyboard dismissal keeps global precedence.
+        """
+        t0 = time.monotonic()
         if self._keyboard_visible():
             self._hide_keyboard_native()
-            return ({"success": True, "handled": True, "at_root": False,
-                     "foreground": None, "method": "osk-dismiss"}, 200)
+            return (self._back_result("handled", None, handled=True,
+                                      method="osk-dismiss", request_id=request_id,
+                                      session=session), 200)
         env = dict(os.environ)
         env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
                     "WAYLAND_DISPLAY": "wayland-0"})
@@ -1692,64 +1745,77 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                                   env=env, capture_output=True, timeout=10)
         except (OSError, subprocess.TimeoutExpired) as exc:
             logger.error("native back list failed: %s", exc)
-            return ({"success": False, "error": "back_list_failed",
-                     "detail": str(exc)}, 500)
+            return (self._back_result("failed", None, detail="back_list_failed",
+                                      request_id=request_id, session=session), 500)
         out = (proc.stdout or b"").decode("utf-8", "replace")
         foreground = None
         for line in out.splitlines():
             if line.startswith("WIN ") and " act=1 " in line and "app_id=nuxel-pwa-host" not in line:
                 foreground = line
         if not foreground:
-            # No foreground native app: already Home, nothing to navigate back.
-            return ({"success": True, "handled": False, "at_root": True,
-                     "foreground": None}, 200)
+            return (self._back_result("at_root", None, at_root=True,
+                                      method="home", detail="no foreground native app",
+                                      request_id=request_id, session=session,
+                                      verified=True), 200)
         app_id = ""
         m = re.search(r"app_id=(\S+)", foreground)
         if m:
             app_id = m.group(1)
-        # Native browsers and the native browser PWA expose no foreign-toplevel
-        # history API.  Send the application's own Back shortcut into the
-        # focused Wayland client.  This is a real key event (wtype uses
-        # zwp_virtual_keyboard_manager_v1), not a guessed state transition.
-        if app_id in ("org.mozilla.firefox", "org.nuxel.BrowserNative",
-                      "com.stremio.Stremio", "org.gnome.FileRoller",
-                      "org.gnome.Loupe", "org.gnome.Papers"):
-            ok = self._send_native_back_key(app_id)
-            return ({"success": True, "handled": bool(ok), "at_root": not ok,
-                     "foreground": app_id, "method": "key-alt-left"}, 200)
-        if app_id == "vlc":
-            ok = self._send_native_back_key(app_id)
-            return ({"success": True, "handled": bool(ok), "at_root": not ok,
-                     "foreground": app_id, "method": "key-escape"}, 200)
-        if "browser" not in app_id.lower():
-            return ({"success": True, "handled": False, "at_root": True,
-                     "foreground": app_id}, 200)
-        # Browser: read its published navigation state and, if it can go back,
-        # send `back` over its control FIFO.
-        state = {}
-        try:
-            with open("/run/nuxel-browser.state", "r") as f:
-                state = json.loads(f.read())
-        except (OSError, ValueError):
+        logger.info("native back request app=%s request_id=%s session=%s elapsed_ms=%.1f",
+                    app_id, request_id, session,
+                    (time.monotonic() - t0) * 1000.0)
+
+        shortcut = self.NATIVE_BACK_SHORTCUTS.get(app_id)
+        if shortcut:
+            key, method = shortcut
+            ok = self._send_native_back_key(app_id, key=key)
+            if not ok:
+                return (self._back_result("failed", app_id, method=method,
+                                          detail="key delivery failed",
+                                          request_id=request_id, session=session), 200)
+            return (self._back_result("handled", app_id, handled=True,
+                                      method=method, verified=False,
+                                      detail="key delivered; app state not exposed",
+                                      request_id=request_id, session=session), 200)
+
+        # The in-tree native browser publishes its real navigation state.
+        if "browser" in app_id.lower() or app_id == "org.nuxel.BrowserNative":
             state = {}
-        can_go_back = bool(state.get("can_go_back", False))
-        if not can_go_back:
-            return ({"success": True, "handled": False, "at_root": True,
-                     "foreground": app_id, "can_go_back": False}, 200)
-        ctrl = "/run/nuxel-browser.cmd"
-        try:
-            fd = os.open(ctrl, os.O_WRONLY | os.O_NONBLOCK)
             try:
-                os.write(fd, b"back\n")
-            finally:
-                os.close(fd)
-        except OSError as exc:
-            logger.error("native back fifo write failed: %s", exc)
-            return ({"success": False, "error": "back_fifo_write_failed",
-                     "detail": str(exc)}, 500)
-        logger.info("native back handled foreground=%s", app_id)
-        return ({"success": True, "handled": True, "at_root": False,
-                 "foreground": app_id}, 200)
+                with open("/run/nuxel-browser.state", "r") as f:
+                    state = json.loads(f.read())
+            except (OSError, ValueError):
+                return (self._back_result("unsupported", app_id,
+                                          method="app-protocol",
+                                          detail="browser state unavailable",
+                                          request_id=request_id, session=session), 200)
+            if not bool(state.get("can_go_back", False)):
+                return (self._back_result("at_root", app_id, at_root=True,
+                                          method="app-protocol", verified=True,
+                                          request_id=request_id, session=session), 200)
+            ctrl = "/run/nuxel-browser.cmd"
+            try:
+                fd = os.open(ctrl, os.O_WRONLY | os.O_NONBLOCK)
+                try:
+                    os.write(fd, b"back\n")
+                finally:
+                    os.close(fd)
+            except OSError as exc:
+                logger.error("native back fifo write failed: %s", exc)
+                return (self._back_result("failed", app_id, method="app-protocol",
+                                          detail="back fifo write failed",
+                                          request_id=request_id, session=session), 500)
+            logger.info("native back handled foreground=%s method=app-protocol", app_id)
+            return (self._back_result("handled", app_id, handled=True,
+                                      method="app-protocol", verified=True,
+                                      request_id=request_id, session=session), 200)
+
+        # No adapter and no state API: be truthful.  The launcher keeps the app
+        # foreground and shows a subtle notice instead of unexpectedly hiding it.
+        return (self._back_result("unsupported", app_id,
+                                  method="none",
+                                  detail="no verified in-app Back adapter",
+                                  request_id=request_id, session=session), 200)
 
     def _list_toplevels(self):
         """Return the compositor's real toplevel inventory (read-only).
@@ -4083,99 +4149,359 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     "enabled": enabled, "enabled_state": enabled_state}
         return {"success": False, "error": "unknown service verb: " + verb}
 
-    # ---- PenguInterface spoofing (PWNAGE-88000) ---------------------------
-    SPOOF_DIR = "/run/nuxel/spoof"
-    SPOOF_PROFILE = "/run/nuxel/spoof/profile.json"
+    # ---- PenguInterface spoofing (PWNAGE-88000 / PWNAGE-91000) -----------
+    # Owner config is persistent so per-app fields survive a reboot.  Runtime
+    # injection artifacts are written under /run only when an app is launched.
+    SPOOF_STATE_DIR = os.environ.get("NUXEL_SPOOF_STATE_DIR", "/var/lib/nuxel/spoof")
+    SPOOF_RUNTIME_DIR = os.environ.get("NUXEL_SPOOF_RUNTIME_DIR", "/run/nuxel/spoof")
+    SPOOF_STATE = os.path.join(SPOOF_STATE_DIR, "profile.json")
+    SPOOF_LEGACY_PROFILE = "/run/nuxel/spoof/profile.json"
     SPOOF_OS_RELEASE = "/run/nuxel/spoof/os-release"
     SPOOF_LIB = "/usr/lib/nuxel/spoof/libnuxel-spoof.so"
+    SPOOF_DEFAULT_UNAME = {
+        "sysname": "Linux",
+        "nodename": "nuxel-spoof",
+        "release": "6.1.0-nuxel-spoof",
+        "version": "#1 SMP PREEMPT_DYNAMIC",
+        "machine": "aarch64",
+    }
+
+    @classmethod
+    def _spoof_clean_uname(cls, raw):
+        raw = raw if isinstance(raw, dict) else {}
+        out = {}
+        for key, default in cls.SPOOF_DEFAULT_UNAME.items():
+            value = raw.get(key)
+            text = str(value).strip() if value not in (None, "") else default
+            out[key] = text[:200]
+        return out
+
+    @classmethod
+    def _spoof_norm_config(cls, raw, enabled=None):
+        """Return one normalized spoof config, or None for an empty document."""
+        if not isinstance(raw, dict):
+            return None
+        ua = str(raw.get("ua") or "").strip()[:4096]
+        os_release = raw.get("os_release")
+        if os_release is None:
+            os_release = raw.get("os_release_text")
+        os_release = str(os_release).strip("\n") if os_release else ""
+        if len(os_release) > 16384:
+            os_release = os_release[:16384]
+        if enabled is None:
+            enabled = bool(raw.get("enabled", True))
+        cfg = {
+            "enabled": bool(enabled),
+            "ua": ua or None,
+            "os_release": os_release or None,
+            "uname": cls._spoof_clean_uname(raw.get("uname")),
+        }
+        try:
+            if raw.get("updated") is not None:
+                cfg["updated"] = int(raw.get("updated"))
+        except (TypeError, ValueError):
+            pass
+        return cfg
+
+    @classmethod
+    def _spoof_norm_doc(cls, raw):
+        """Normalize v1 (targets list) and v2 (global + apps map) documents."""
+        doc = {"schema_version": 2, "global": None, "apps": {}}
+        if not isinstance(raw, dict):
+            return doc
+        global_cfg = cls._spoof_norm_config(raw.get("global"))
+        if global_cfg:
+            doc["global"] = global_cfg
+        apps = raw.get("apps")
+        if isinstance(apps, dict):
+            for aid, cfg in apps.items():
+                if not isinstance(aid, str) or not APP_ID_RE.match(aid):
+                    continue
+                clean = cls._spoof_norm_config(cfg)
+                if clean:
+                    doc["apps"][aid] = clean
+        if doc["global"] is not None or doc["apps"]:
+            return doc
+        # An explicit v2 document can legitimately be empty after a reset.
+        # Do not reinterpret it as a legacy top-level config.
+        if raw.get("schema_version") == 2 or "global" in raw or "apps" in raw:
+            return doc
+        # Legacy v1: top-level enabled/ua/os_release/uname + targets[].
+        legacy = cls._spoof_norm_config(raw)
+        if legacy and legacy.get("enabled"):
+            targets = raw.get("targets") if isinstance(raw.get("targets"), list) else []
+            ids = []
+            for target in targets:
+                if isinstance(target, str) and APP_ID_RE.match(target[:120]):
+                    ids.append(target[:120])
+            if ids:
+                for target in ids:
+                    doc["apps"][target] = dict(legacy)
+            else:
+                doc["global"] = legacy
+        return doc
+
+    def _spoof_load_doc(self):
+        for path in (self.SPOOF_STATE, self.SPOOF_LEGACY_PROFILE):
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    return self._spoof_norm_doc(json.load(fh))
+            except (OSError, ValueError):
+                continue
+        return {"schema_version": 2, "global": None, "apps": {}}
+
+    def _spoof_save_doc(self, doc):
+        """Write the persistent store and the legacy /run mirror atomically."""
+        doc = self._spoof_norm_doc(doc)
+        wrote = False
+        last_error = None
+        for directory in (self.SPOOF_STATE_DIR, self.SPOOF_RUNTIME_DIR):
+            if not directory:
+                continue
+            try:
+                os.makedirs(directory, mode=0o755, exist_ok=True)
+                tmp = os.path.join(directory, "profile.json.tmp")
+                with open(tmp, "w", encoding="utf-8") as fh:
+                    json.dump(doc, fh, indent=2, sort_keys=True)
+                    fh.write("\n")
+                os.chmod(tmp, 0o644)
+                os.replace(tmp, os.path.join(directory, "profile.json"))
+                wrote = True
+            except OSError as exc:
+                last_error = exc
+                logger.warning("spoof store write failed for %s: %s", directory, exc)
+        if not wrote:
+            raise OSError(str(last_error) if last_error else "no writable spoof store")
+        return doc
+
+    @staticmethod
+    def _spoof_scope_key(scope, app_id=None):
+        if scope == "global" or not app_id:
+            return "global"
+        return re.sub(r"[^A-Za-z0-9_.-]", "_", str(app_id))[:100] or "app"
+
+    @staticmethod
+    def _spoof_effective(doc, app_id=None):
+        """Per-app config wins; otherwise the global config applies."""
+        if isinstance(app_id, str) and app_id:
+            cfg = (doc.get("apps") or {}).get(app_id)
+            if isinstance(cfg, dict) and cfg.get("enabled"):
+                return (cfg, "app")
+        cfg = doc.get("global")
+        if isinstance(cfg, dict) and cfg.get("enabled"):
+            return (cfg, "global")
+        return (None, None)
+
+    def _spoof_remove_runtime(self, scope, app_id=None):
+        key = self._spoof_scope_key(scope, app_id)
+        for name in ("profile." + key + ".json", "os-release." + key):
+            path = os.path.join(self.SPOOF_RUNTIME_DIR, name)
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
 
     def _real_identity(self):
         identity = {"os_release": {}, "uname": ""}
         try:
-            for line in open("/etc/os-release", "r", encoding="utf-8").read().splitlines()[:8]:
-                if "=" in line:
-                    k, _, v = line.partition("=")
-                    identity["os_release"][k] = v.strip().strip('"')
+            with open("/etc/os-release", "r", encoding="utf-8") as fh:
+                for line in fh.read().splitlines()[:8]:
+                    if "=" in line:
+                        key, _, value = line.partition("=")
+                        identity["os_release"][key] = value.strip().strip('"')
         except OSError as exc:
             identity["os_release"] = {"error": str(exc)}
         try:
-            proc = subprocess.run(["/usr/bin/uname", "-a"], capture_output=True, text=True, timeout=5)
+            proc = subprocess.run(["/usr/bin/uname", "-a"], capture_output=True,
+                                  text=True, timeout=5)
             identity["uname"] = (proc.stdout or proc.stderr or "").strip()
         except (OSError, subprocess.TimeoutExpired) as exc:
             identity["uname"] = str(exc)
         return identity
 
-    def _spoof_state(self):
-        state = {"enabled": False, "ua": None, "targets": [], "os_release": None,
-                 "uname": None, "lib": os.path.exists(self.SPOOF_LIB),
-                 "real": self._real_identity()}
-        try:
-            with open(self.SPOOF_PROFILE, "r", encoding="utf-8") as fh:
-                doc = json.load(fh)
-            if isinstance(doc, dict):
-                state["enabled"] = bool(doc.get("enabled"))
-                state["ua"] = doc.get("ua")
-                state["targets"] = doc.get("targets") if isinstance(doc.get("targets"), list) else []
-                state["os_release"] = doc.get("os_release")
-                state["uname"] = doc.get("uname")
-        except (OSError, ValueError):
-            pass
+    def _spoof_state(self, app_id=None):
+        doc = self._spoof_load_doc()
+        effective, effective_scope = self._spoof_effective(doc, app_id)
+        global_cfg = doc.get("global") if isinstance(doc.get("global"), dict) else None
+        targets = sorted([aid for aid, cfg in (doc.get("apps") or {}).items()
+                          if isinstance(cfg, dict) and cfg.get("enabled")])
+        state = {
+            "schema_version": 2,
+            "enabled": bool((global_cfg and global_cfg.get("enabled")) or targets),
+            "global": global_cfg,
+            "apps": doc.get("apps") or {},
+            "targets": targets,
+            # Legacy single-config fields for older clients.
+            "ua": (global_cfg or {}).get("ua"),
+            "os_release": (global_cfg or {}).get("os_release"),
+            "uname": (global_cfg or {}).get("uname"),
+            "lib": os.path.exists(self.SPOOF_LIB),
+            "state_path": self.SPOOF_STATE,
+            "real": self._real_identity(),
+        }
+        if isinstance(app_id, str) and app_id:
+            state["app_id"] = app_id
+            state["effective"] = effective
+            state["effective_scope"] = effective_scope
         return state
+
+    def _spoof_app_list(self):
+        """Return the canonical launchable app list for the selector."""
+        info = self._load_app_registry()
+        out = []
+        for app in info.get("apps") or []:
+            if not isinstance(app, dict):
+                continue
+            aid = app.get("id")
+            if not isinstance(aid, str) or not APP_ID_RE.match(aid):
+                continue
+            out.append({
+                "id": aid,
+                "name": app.get("name") or aid,
+                "type": app.get("type") or "unknown",
+                "status": app.get("status") or "",
+                "flatpak": bool(app.get("flatpak_id")),
+            })
+        out.sort(key=lambda item: (item["name"].lower(), item["id"]))
+        return {"success": True, "available": bool(info.get("available")),
+                "source": info.get("source"), "error": info.get("error"),
+                "apps": out}
+
+    def _spoof_launch_env(self, app_id):
+        """Prepare a per-launch profile and return LD_PRELOAD environment.
+
+        This is the only place spoof state is materialized at runtime, so a
+        status/UI read never writes files.  The profile is scoped so two apps
+        with different configs can run concurrently.
+        """
+        doc = self._spoof_load_doc()
+        cfg, scope = self._spoof_effective(doc, app_id)
+        if not cfg:
+            return {}
+        key = self._spoof_scope_key(scope, app_id)
+        try:
+            os.makedirs(self.SPOOF_RUNTIME_DIR, mode=0o755, exist_ok=True)
+            os_release_text = cfg.get("os_release")
+            if not os_release_text:
+                try:
+                    with open("/etc/os-release", "r", encoding="utf-8") as fh:
+                        os_release_text = fh.read()
+                except OSError:
+                    os_release_text = ""
+            os_path = os.path.join(self.SPOOF_RUNTIME_DIR, "os-release." + key)
+            with open(os_path, "w", encoding="utf-8") as fh:
+                fh.write(str(os_release_text).rstrip() + "\n")
+            os.chmod(os_path, 0o644)
+            runtime_doc = dict(cfg.get("uname") or self.SPOOF_DEFAULT_UNAME)
+            runtime_doc["os_release"] = os_path
+            profile_path = os.path.join(self.SPOOF_RUNTIME_DIR, "profile." + key + ".json")
+            tmp = profile_path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(runtime_doc, fh, indent=2, sort_keys=True)
+                fh.write("\n")
+            os.chmod(tmp, 0o644)
+            os.replace(tmp, profile_path)
+        except OSError as exc:
+            logger.warning("spoof runtime prepare failed for %s: %s", app_id, exc)
+            return {}
+        logger.info("spoof injected app=%s scope=%s profile=%s", app_id, scope, profile_path)
+        return {"LD_PRELOAD": self.SPOOF_LIB, "NUXEL_SPOOF_PROFILE": profile_path}
 
     def _spoof_rpc(self, app_id, verb, params):
         params = params if isinstance(params, dict) else {}
         if app_id not in ("org.nuxel.PenguInterface", "org.nuxel.Settings", "nuxel-settings", "org.nuxel.Home"):
             return {"success": False, "error": "capability_denied", "detail": "spoofing is owner-only"}
         if verb in ("status", "get"):
-            return {"success": True, "spoof": self._spoof_state()}
+            target = params.get("app_id") or params.get("target") or None
+            return {"success": True, "spoof": self._spoof_state(target)}
+        if verb in ("apps", "targets", "list-apps", "list-targets"):
+            return self._spoof_app_list()
         if verb == "reset":
-            for path in (self.SPOOF_PROFILE, self.SPOOF_OS_RELEASE):
-                try:
-                    os.unlink(path)
-                except OSError:
-                    pass
-            # Verify the underlying system is unchanged outside the spoof scope.
-            return {"success": True, "reset": True, "real": self._real_identity()}
+            scope = str(params.get("scope") or "").lower()
+            target = params.get("app_id") or params.get("target")
+            doc = self._spoof_load_doc()
+            if scope == "all" or params.get("all") is True:
+                doc = {"schema_version": 2, "global": None, "apps": {}}
+                self._spoof_save_doc(doc)
+                for name in list(os.listdir(self.SPOOF_RUNTIME_DIR)) if os.path.isdir(self.SPOOF_RUNTIME_DIR) else []:
+                    if name.startswith(("profile.", "os-release.")):
+                        try:
+                            os.unlink(os.path.join(self.SPOOF_RUNTIME_DIR, name))
+                        except OSError:
+                            pass
+                return {"success": True, "reset": "all", "spoof": self._spoof_state()}
+            if scope in ("", "app", "per-app", "per_app") and isinstance(target, str) and target:
+                existed = (doc.get("apps") or {}).pop(target, None) is not None
+                self._spoof_save_doc(doc)
+                self._spoof_remove_runtime("app", target)
+                return {"success": True, "reset": "app", "app_id": target,
+                        "existed": existed, "spoof": self._spoof_state(target)}
+            if scope == "global":
+                existed = doc.get("global") is not None
+                doc["global"] = None
+                self._spoof_save_doc(doc)
+                self._spoof_remove_runtime("global")
+                return {"success": True, "reset": "global", "existed": existed,
+                        "spoof": self._spoof_state()}
+            if scope == "" and not target:
+                # Legacy callers (pre-PWNAGE-91000 UI) sent no scope: reset all.
+                doc = {"schema_version": 2, "global": None, "apps": {}}
+                self._spoof_save_doc(doc)
+                return {"success": True, "reset": "all", "legacy": True,
+                        "spoof": self._spoof_state()}
+            return {"success": False, "error": "reset_scope_required",
+                    "detail": "pass scope=app with app_id, scope=global, or scope=all"}
         if verb in ("set", "apply"):
-            ua = str(params.get("ua") or "").strip()
-            targets = params.get("targets")
-            if not isinstance(targets, list):
-                targets = []
-            targets = [str(t)[:120] for t in targets]
-            os_release_text = str(params.get("os_release_text") or "").strip()
-            uname_fields = params.get("uname") if isinstance(params.get("uname"), dict) else {}
-            enabled = bool(params.get("enabled", True))
-            doc = {
-                "schema_version": 1, "enabled": enabled,
-                "ua": ua or None, "targets": targets,
+            ua = str(params.get("ua") or "").strip()[:4096]
+            os_release_text = params.get("os_release_text")
+            if os_release_text is None:
+                os_release_text = params.get("os_release")
+            os_release_text = str(os_release_text).strip("\n")[:16384] if os_release_text else ""
+            uname_fields = params.get("uname")
+            config = {
+                "enabled": bool(params.get("enabled", True)),
+                "ua": ua or None,
                 "os_release": os_release_text or None,
-                "uname": {
-                    "sysname": str(uname_fields.get("sysname") or "Linux")[:200],
-                    "nodename": str(uname_fields.get("nodename") or "nuxel-spoof")[:200],
-                    "release": str(uname_fields.get("release") or "6.1.0-nuxel-spoof")[:200],
-                    "version": str(uname_fields.get("version") or "#1 SMP PREEMPT_DYNAMIC")[:200],
-                    "machine": str(uname_fields.get("machine") or "aarch64")[:120],
-                },
+                "uname": self._spoof_clean_uname(uname_fields),
+                "updated": int(time.time()),
             }
+            doc = self._spoof_load_doc()
+            scope = str(params.get("scope") or "").lower()
+            targets = params.get("targets")
+            changed = []
+            if scope == "global" or params.get("global") is True:
+                doc["global"] = config
+                changed = ["global"]
+                applied_scope = "global"
+            elif scope in ("app", "per-app", "per_app") or isinstance(targets, list):
+                if isinstance(targets, list):
+                    ids = [str(t)[:120] for t in targets if isinstance(t, str)]
+                else:
+                    ids = [str(params.get("app_id") or params.get("target") or "")[:120]]
+                ids = [aid for aid in ids if APP_ID_RE.match(aid)]
+                if not ids:
+                    return {"success": False, "error": "app_id_required",
+                            "detail": "select an app id or use global scope"}
+                for aid in ids:
+                    doc["apps"][aid] = dict(config)
+                changed = ids
+                applied_scope = "app"
+            else:
+                target = params.get("app_id") or params.get("target")
+                if isinstance(target, str) and APP_ID_RE.match(target):
+                    doc["apps"][target] = dict(config)
+                    changed = [target]
+                    applied_scope = "app"
+                else:
+                    doc["global"] = config
+                    changed = ["global"]
+                    applied_scope = "global"
             try:
-                os.makedirs(self.SPOOF_DIR, exist_ok=True)
-                tmp = self.SPOOF_PROFILE + ".tmp"
-                with open(tmp, "w", encoding="utf-8") as fh:
-                    json.dump(doc, fh, indent=2, sort_keys=True)
-                    fh.write("\n")
-                os.chmod(tmp, 0o644)
-                os.replace(tmp, self.SPOOF_PROFILE)
-                if os_release_text:
-                    tmp2 = self.SPOOF_OS_RELEASE + ".tmp"
-                    with open(tmp2, "w", encoding="utf-8") as fh:
-                        fh.write(os_release_text.rstrip() + "\n")
-                    os.chmod(tmp2, 0o644)
-                    os.replace(tmp2, self.SPOOF_OS_RELEASE)
-                elif os.path.exists(self.SPOOF_OS_RELEASE):
-                    os.unlink(self.SPOOF_OS_RELEASE)
+                self._spoof_save_doc(doc)
             except OSError as exc:
                 return {"success": False, "error": "write_failed", "detail": str(exc)}
-            return {"success": True, "spoof": self._spoof_state()}
+            return {"success": True, "scope": applied_scope, "changed": changed,
+                    "spoof": self._spoof_state(changed[0] if applied_scope == "app" else None)}
         return {"success": False, "error": "unknown spoof verb: " + verb}
 
     def _handle_rpc(self, app_id, body):
@@ -5074,7 +5400,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
 
         elif path == '/api/v1/apps/back':
             # Short Back: in-app navigation first; only at root may Home follow.
-            result, code = self._native_back_action()
+            result, code = self._native_back_action(
+                request_id=body.get('request_id'), session=body.get('session'))
             self._send_json(result, code)
 
         elif path == '/api/v1/windows/list':

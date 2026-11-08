@@ -61,6 +61,8 @@ class NuxelHome {
         this._lastActionAt = 0;
         this._suppressBackUntil = 0;
         this._backBusy = false;
+        this._backRequestId = 0;
+        this._backApplyGeneration = 0;
         this._pwaBackStrikes = 0;
         this._fgInvisibleCount = 0;
         this._keyboardLikelyOpen = false;
@@ -430,6 +432,25 @@ class NuxelHome {
        after the launcher is interactive, and never delays first paint. */
     _warmLauncherChrome() {
         const warm = () => {
+            // PWNAGE-90000: the visible desktop and dock must be decoded before
+            // the hidden drawer.  They are already in the DOM; decode them in a
+            // bounded idle pass and never refetch immutable icons.
+            const decodeVisible = () => {
+                const roots = [document.getElementById('app-list'), document.getElementById('dock')];
+                let budget = 24;
+                roots.forEach((root) => {
+                    if (!root || !root.querySelectorAll) return;
+                    root.querySelectorAll('img').forEach((img) => {
+                        if (budget <= 0 || !img || !img.decode) return;
+                        budget--;
+                        try {
+                            const p = img.decode();
+                            if (p && p.catch) p.catch(() => {});
+                        } catch (e) {}
+                    });
+                });
+            };
+            decodeVisible();
             try {
                 if (window.launcher && window.launcher._renderDrawerApps) {
                     // Build the cached drawer markup without showing it.
@@ -481,6 +502,29 @@ class NuxelHome {
     }
 
     _finishBootSplash() {
+        // PWNAGE-90000: an ordinary owner-requested launcher reload is NOT a
+        // boot.  It must never replay the boot animation, preload cover,
+        // power-menu overlay or the dark-blue splash rectangle.  reloadLauncher
+        // leaves a one-shot sessionStorage marker for exactly this transition.
+        let launcherReload = false;
+        try {
+            launcherReload = !!window.sessionStorage.getItem('nuxel:launcher-reload');
+            if (launcherReload) window.sessionStorage.removeItem('nuxel:launcher-reload');
+        } catch (e) {}
+        if (launcherReload) {
+            const splash = document.getElementById('boot-splash');
+            if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+            const cover = document.getElementById('preload-cover');
+            if (cover) { cover.hidden = true; cover.style.display = 'none'; }
+            document.querySelectorAll('.nuxel-reboot-overlay, #nuxel-reboot-overlay, .toast').forEach((el) => {
+                try { el.remove(); } catch (e) {}
+            });
+            try { document.documentElement.classList.remove('nuxel-boot-os'); } catch (e) {}
+            this._preloadCoverDone = true;
+            document.body.classList.add('ready', 'preload-ready');
+            this._inputTrace('reload:clean-document-first-frame');
+            return;
+        }
         // The nuxel-boot-animation.mp4 plays as a fullscreen splash while the
         // app boots. Fade it out once the app is initialized AND the animation
         // has had a chance to play (full playthrough or ~3s minimum), so the
@@ -779,6 +823,8 @@ class NuxelHome {
                 return;
             }
             if (action === 'home') this.home();
+            else if (action === 'quick-settings') this.openQuickSettings();
+            else if (action === 'quick-settings-close') this.closeQuickSettings();
             else if (action === 'back') this.back();
             else if (action === 'back-long' || action === 'terminate') this.terminateForeground();
             else if (action === 'forward') this.forward();
@@ -1230,19 +1276,58 @@ class NuxelHome {
         } catch (e) { /* cross-origin frames are deliberately not inspected */ }
     }
 
-    _pwaBack(frame) {
+    /* PWNAGE-90000 truthful PWA Back protocol.
+       An app may expose window.NuxelBack {canGoBack(), back()} or answer the
+       correlated `nuxel:back-request` postMessage.  Absence of a response is
+       NOT an at-root claim.  Only a real navigation stack (Navigation API /
+       tracked same-document depth) or an explicit at_root declaration returns
+       at_root; anything else returns unsupported so the app stays foreground. */
+    _pwaBackProtocol(frame) {
+        const win = frame && frame.contentWindow;
+        if (!win) return Promise.resolve(null);
+        const origin = window.location.origin;
+        const requestId = ++this._backRequestId;
+        return new Promise((resolve) => {
+            let settled = false;
+            const finish = (value) => {
+                if (settled) return;
+                settled = true;
+                window.removeEventListener('message', onMessage, true);
+                resolve(value);
+            };
+            const onMessage = (event) => {
+                if (event.source !== win || event.origin !== origin) return;
+                const doc = event.data;
+                if (!doc || doc.type !== 'nuxel:back-result' || doc.requestId !== requestId) return;
+                if (doc.status === 'handled') finish('handled');
+                else if (doc.status === 'at_root') finish('at_root');
+                else finish('unsupported');
+            };
+            window.addEventListener('message', onMessage, true);
+            try {
+                win.postMessage({ type: 'nuxel:back-request', requestId: requestId,
+                                  session: this.appGeneration }, origin);
+            } catch (e) { finish(null); return; }
+            setTimeout(() => finish(null), 320);
+        });
+    }
+
+    async _pwaBack(frame) {
         try {
             const win = frame && frame.contentWindow;
             const doc = frame && frame.contentDocument;
-            if (!win || !doc) return 'root';
+            if (!win || !doc) return 'unsupported';
             this._installPwaHistoryProbe(frame);
             const explicit = this._pwaExplicitBack(win);
-            if (explicit) return explicit;
-            /* The Navigation API exposes a real canGoBack flag where WebKit
-               provides it; it updates after Back, unlike history.length. */
+            if (explicit === 'handled') return 'handled';
+            if (explicit === 'root') return 'at_root';
+            const declared = await this._pwaBackProtocol(frame);
+            if (declared) return declared;
+            // Navigation API is real history state, not a guess.
             try {
                 if (win.navigation && typeof win.navigation.canGoBack === 'boolean') {
                     if (win.navigation.canGoBack) { win.navigation.back(); return 'handled'; }
+                    return 'at_root';
                 }
             } catch (e) {}
             if ((frame.__nuxelNavDepth || 0) > 0) {
@@ -1250,16 +1335,61 @@ class NuxelHome {
                 win.history.back();
                 return 'handled';
             }
+            // Migration aid for existing apps that render a real Back control.
+            // This is still evidence of an in-app action, not a root claim.
             const control = this._visibleBackControl(doc);
             if (control) { control.click(); return 'handled'; }
-        } catch (e) { /* cross-origin iframe: no authority to read history */ }
-        return 'root';
+            // Confirmed initial document: same URL that was loaded and no
+            // tracked pushState.  This is real evidence of root (not a guess),
+            // and keeps simple static PWAs from becoming trapped foreground.
+            try {
+                const initial = String(frame.src || '');
+                if (initial && win.location.href === initial &&
+                    (frame.__nuxelNavDepth || 0) === 0) {
+                    return 'at_root';
+                }
+            } catch (e) {}
+            // Cross-origin or navigated documents with no readable stack are
+            // honestly unsupported, not a confirmed root.
+            return 'unsupported';
+        } catch (e) { return 'unsupported'; }
+    }
+
+    _backNotice(text) {
+        try {
+            document.querySelectorAll('.nuxel-back-notice').forEach((el) => el.remove());
+            const t = document.createElement('div');
+            t.className = 'toast nuxel-back-notice';
+            t.textContent = text;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2600);
+        } catch (e) {}
+    }
+
+    /* One authoritative Home transition used by short Back at a confirmed app
+       root and by the Penguin/Home button.  It preserves the app process and
+       its document/session, releases every pointer/timer owned by the departing
+       foreground surface, and makes Home touchable immediately. */
+    _returnToHome(reason) {
+        this.appGeneration++;
+        try { this._dismissKeyboard(); } catch (e) {}
+        try { if (document.exitPointerLock) document.exitPointerLock(); } catch (e) {}
+        try {
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        } catch (e) {}
+        try { this._backgroundForegroundApp(); } catch (e) {}
+        try { if (window.NuxelImmersive) window.NuxelImmersive.reset(); } catch (e) {}
+        this.home();
+        const raf = window.requestAnimationFrame || ((fn) => setTimeout(fn, 0));
+        raf(() => { try { this._setNavDock(true); } catch (e) {} });
+        this._inputTrace('home:transition reason=' + (reason || 'back'));
     }
 
     back() {
         if (this._isLocked()) return;
-        // PWNAGE-80000 precedence: keyboard -> in-app Back -> graceful close.
-        // A normal single Back never force-kills anything.
+        // PWNAGE-90000 precedence: system overlays -> keyboard -> in-app Back
+        // -> confirmed app root -> Home.  A short Back never force-closes an
+        // app, and an unknown app capability is never reported as root.
         if (this._keyboardVisible()) {
             this._inputTrace('back:keyboard-dismiss');
             this._dismissKeyboard();
@@ -1273,48 +1403,72 @@ class NuxelHome {
 
         const frame = this.appSession.frame;
         if (frame && this.appSession.state === 'ACTIVE') {
-            const target = this._pwaBack(frame);
-            if (target === 'handled') {
-                this._inputTrace('back:pwa-app-control');
-                if (this._foregroundSurfaceVisible()) {
-                    this._pwaBackStrikes = 0;
-                } else {
-                    this._pwaBackStrikes++;
-                    if (this._pwaBackStrikes >= 2) {
-                        this._pwaBackStrikes = 0;
-                        this._backgroundForegroundApp();
-                        this.home();
-                        this._inputTrace('back:pwa-invisible-bounded-recovery');
-                    }
+            const generation = this.appGeneration;
+            this._pwaBack(frame).then((status) => {
+                if (generation !== this.appGeneration) return;
+                if (status === 'handled') {
+                    this._inputTrace('back:pwa-handled');
+                    return;
                 }
-                return;
-            }
-            this._pwaBackStrikes = 0;
-            this._inputTrace('back:pwa-at-root-graceful-close');
-            this.gracefulCloseForeground('back-root');
+                if (status === 'at_root') {
+                    this._inputTrace('back:pwa-at-root-home');
+                    this._returnToHome('back-pwa-root');
+                    return;
+                }
+                this._inputTrace('back:pwa-unsupported');
+                this._backNotice("Back isn't supported in this app");
+            }).catch(() => {
+                if (generation === this.appGeneration) {
+                    this._inputTrace('back:pwa-error');
+                    this._backNotice("Back isn't supported in this app");
+                }
+            });
             return;
         }
         if (!frame && this.appSession.app && this.appSession.state === 'ACTIVE' &&
             (this.appSession.app.type === 'native' || this.appSession.app.type === 'flatpak')) {
             if (this._backBusy) return;
             this._backBusy = true;
+            const generation = this.appGeneration;
+            const requestId = 'back-' + Date.now() + '-' + (++this._backRequestId);
             this._inputTrace('back:native-request');
             this._httpBridge('POST', '/api/v1/apps/back', {
                 app_id: 'org.nuxel.Home', source: 'short-back',
+                request_id: requestId, session: generation,
             }, 4000).then((res) => {
                 this._backBusy = false;
-                if (res && res.handled) { this._inputTrace('back:native-handled'); return; }
-                if (res && res.at_root && res.foreground) {
-                    this._inputTrace('back:native-at-root-graceful-close');
-                    this.gracefulCloseForeground('back-native-root');
+                if (generation !== this.appGeneration) return;
+                const status = res && (res.status ||
+                    (res.handled ? 'handled' : (res.at_root ? 'at_root' : 'unsupported')));
+                if (status === 'handled' && res.handled !== false) {
+                    this._inputTrace('back:native-handled method=' + (res.method || '?'));
+                    return;
+                }
+                if (status === 'at_root') {
+                    // Confirmed app root: preserve the process, show Home.
+                    this._inputTrace('back:native-at-root-home');
+                    this._returnToHome('back-native-root');
+                    return;
+                }
+                if (status === 'unsupported' || status === 'failed' || status === 'pending') {
+                    this._inputTrace('back:native-' + status);
+                    this._backNotice(res && res.detail
+                        ? String(res.detail).slice(0, 120)
+                        : "Back isn't supported in this app");
                     return;
                 }
                 this._inputTrace('back:native-no-foreground');
-                this.home();
-            }).catch(() => { this._backBusy = false; this.home(); });
+                this._returnToHome('back-no-foreground');
+            }).catch(() => {
+                this._backBusy = false;
+                if (generation === this.appGeneration) {
+                    this._inputTrace('back:native-error');
+                    this._backNotice("Back isn't supported in this app");
+                }
+            });
             return;
         }
-        this.home();
+        this._returnToHome('back-home');
     }
 
     home() {
@@ -1347,6 +1501,26 @@ class NuxelHome {
             this._inputTrace(`home:error ${error && error.message ? error.message : error}`);
             console.error('[Nuxel] Home failed:', error);
         }
+    }
+
+    /* Native top-edge second pull (nuxel-statusbar -> pwa-host) and the PWA
+       top-edge state machine both land here.  The Quick Settings controller
+       stays the single owner of the shade. */
+    openQuickSettings() {
+        if (this._isLocked()) return;
+        if (window.NuxelImmersive) window.NuxelImmersive.revealStatus();
+        const qs = this.components.qs;
+        if (!qs) return;
+        if (!qs.isOpen) qs.open();
+        qs.expand();
+        this._inputTrace('qs:open-expanded source=native-top-edge');
+    }
+
+    closeQuickSettings() {
+        const qs = this.components.qs;
+        if (!qs || !qs.isOpen) return;
+        qs.close();
+        this._inputTrace('qs:closed source=native-top-edge');
     }
 
     recentsToggle() {
@@ -1705,15 +1879,33 @@ class NuxelHome {
     }
 
     reloadLauncher() {
-        // One full compositor/framebuffer frame before the document reloads, so
-        // a stale top band cannot survive the reload transition.
+        // PWNAGE-90000: one explicit reload lifecycle.  Mark the reload (so the
+        // new document does not replay boot chrome), synchronously retire every
+        // transient overlay that belongs to the old document, release input
+        // capture, hide the opaque preload cover, then reload after one frame.
+        try { window.sessionStorage.setItem('nuxel:launcher-reload', String(Date.now())); } catch (e) {}
+        try {
+            this._dismissKeyboard();
+            this._closeOverlays();
+        } catch (e) {}
+        try {
+            document.querySelectorAll('#nuxel-reboot-overlay, .nuxel-reboot-overlay, #boot-splash, .toast, .pwa-app-status')
+                .forEach((el) => { try { el.remove(); } catch (e) {} });
+            const cover = document.getElementById('preload-cover');
+            if (cover) { cover.hidden = true; cover.style.display = 'none'; }
+            if (window.NuxelImmersive) window.NuxelImmersive.reset();
+            if (document.exitPointerLock) document.exitPointerLock();
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+            document.body.classList.add('launcher-reloading');
+        } catch (e) {}
         try {
             const host = window.NuxelHost;
             if (host && host.available && typeof host.action === 'function') {
                 Promise.resolve(host.action('force-redraw')).catch(() => {});
             }
         } catch (e) {}
-        window.location.reload();
+        const raf = window.requestAnimationFrame || ((fn) => setTimeout(fn, 16));
+        raf(() => { try { window.location.reload(); } catch (e) {} });
     }
 
     /* Graceful close: ask the app/compositor to close, bound the wait, and

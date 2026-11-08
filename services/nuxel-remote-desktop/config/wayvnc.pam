@@ -1,0 +1,7 @@
+#%PAM-1.0
+# wayvnc authenticates against the local Nuxel account only.
+# Root and every other local identity are refused; there is no passwordless path.
+auth       required     pam_succeed_if.so user = nuxel
+account    required     pam_succeed_if.so user = nuxel
+auth       include      password-auth
+account    include      password-auth

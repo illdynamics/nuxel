@@ -1,0 +1,223 @@
+-rw------- root:root /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf -> 
+-rw------- root:root /etc/systemd/system/nuxel-bridge.service.d/20-fast-stop.conf -> 
+-rw------- root:root /etc/systemd/system/nuxel-button-manager.service.d/20-fast-stop.conf -> 
+-rw------- root:root /etc/systemd/system/nuxel-http-bridge.service.d/20-fast-stop.conf -> 
+-rw------- root:root /etc/systemd/system/nuxel-touch-arm.service.d/20-fast-stop.conf -> 
+-rw------- root:root /etc/systemd/system/nuxel-web.service.d/20-fast-stop.conf -> 
+-rw------- root:root /etc/systemd/system/nuxel-wl-fb.service.d/20-fast-stop.conf -> 
+-rw-r--r-- 501:games /etc/systemd/system/._nuxel-charger-mode-recovery.service -> 
+-rw-r--r-- 501:games /etc/systemd/system/._nuxel-metrics.service -> 
+-rw-r--r-- 501:games /etc/systemd/system/nuxel-app-prewarm.service -> 
+-rw-r--r-- 501:games /etc/systemd/system/nuxel-charger-mode-recovery.service -> 
+-rw-r--r-- 501:games /etc/systemd/system/nuxel-metrics.service -> 
+-rw-r--r-- 501:games /etc/systemd/system/nuxel-soundd.service -> 
+-rw-r--r-- root:root /etc/systemd/system/NetworkManager-wait-online.service.d/99-nuxel-timeout.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/avahi-daemon.service.d/10-nuxel-boot-order.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/geoclue.service.d/10-nuxel-network.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-abox-firmware-reload.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-abox-firmware-reload.service.d/10-boot-priority.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-abox-firmware-reload.timer -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-animation.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-audio-route-retry.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-audio-route.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-audio-route.timer -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-audio-route.timer.bak-pwnage39000-20261030T115809Z -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-audio-session.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-audio-session.service.d/10-stop-bound.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bluetooth.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-boot-sound.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-boot-sound.service.d/20-warmup-keepalive.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-boot-sound.service.d/30-defer-abox.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-boot-sound.service.d/40-after-pipewire.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-boot-sound.service.d/99-p80000-fast-stop.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bootcap.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bootmode-guard.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bootmode-reboot.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.bak-pre-warnings -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261027T214530-2399261 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T095324-2716875 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T095726-2718843 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T100242-2721366 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T100542-2722856 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release2 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release3 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release4 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-button-manager.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-button-manager.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-button-manager.service.prev -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-button-manager.service.prev-a32 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-camera-portal.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-charger-mode-recovery.service.disabled-50000 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-clockd.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-console.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-device-permissions.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-fallback.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-fallback.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-firstlight.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-fuse-access.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-geoclue-agent.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-haptics-bridge.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-haptics.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service.nuxel-a68-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback.pre-deploy-20261027T214530-2399261 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback.pre-v070-delta-release -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback.pre-v070-delta-release2 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback.pre-v070-delta-release3 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback.pre-v070-delta-release4 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-interface-state.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-keyboard-apply.path -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-keyboard-apply.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-metrics.socket -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-mic-route.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-microsd-automount.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-mtp.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-network-udev-seed.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-nfcd.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-notifications.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-notifications.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-notifications.service.nuxel-rollback.pre-deploy-20261027T214530-2399261 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-notifications.service.nuxel-rollback.pre-v070-delta-release -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-notifications.service.nuxel-rollback.pre-v070-delta-release2 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-notifications.service.nuxel-rollback.pre-v070-delta-release3 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-notifications.service.nuxel-rollback.pre-v070-delta-release4 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-orientationd.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-permd.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-portal.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-portal.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-portal.service.nuxel-rollback.pre-deploy-20261028T095324-2716875 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-portal.service.nuxel-rollback.pre-deploy-20261028T095726-2718843 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-portal.service.nuxel-rollback.pre-deploy-20261028T100242-2721366 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-portal.service.nuxel-rollback.pre-deploy-20261028T100542-2722856 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-portal.service.p54000-prev -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-power-mode.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-power-mode.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-preload-cinema.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-remote-vnc.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-rtc-check.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-rtc-check.timer -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-soundd.service.bak-1793991963 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-touch-arm.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-touch-arm.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-ui-fallback.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-ui.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-usb-mode-monitor.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-usb-mode-restore.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-verbose-boot.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-watchdog-keep.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service.d/05-start-after-web.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service.d/30-fast-stop.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service.d/40-bounded-stop.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service.d/50-kbase-egl.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service.d/90-doom-diag.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service.nuxel-kbase-bak -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wayland.service.nuxel-rollback.pre-deploy-20261027T214530-2399261 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-web.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-web.service.nuxel-a63-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-web.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-web.service.nuxel-rollback.pre-deploy-20261028T095324-2716875 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-web.service.nuxel-rollback.pre-deploy-20261028T095726-2718843 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-web.service.nuxel-rollback.pre-deploy-20261028T100242-2721366 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-web.service.nuxel-rollback.pre-deploy-20261028T100542-2722856 -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wifi.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wl-fb.service -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wl-fb.service.d/10-display-priority.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wl-fb.service.d/15-idle-fps.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wl-fb.service.d/25-reboot-hold.conf -> 
+-rw-r--r-- root:root /etc/systemd/system/nuxel-wl-fb.service.nuxel-rollback -> 
+-rw-r--r-- root:root /etc/systemd/system/seatd.service -> 
+-rw-r--r-- root:root /etc/systemd/system/seatd.service.nuxel-rollback -> 
+-rwxr-xr-x root:root /etc/systemd/system/nuxel-bootmode-oneshot.service -> 
+lrwxrwxrwx root:root /etc/systemd/system/NetworkManager.service.requires/nuxel-network-udev-seed.service -> /etc/systemd/system/nuxel-network-udev-seed.service
+lrwxrwxrwx root:root /etc/systemd/system/basic.target.wants/rpmdb-rebuild.service -> /usr/lib/systemd/system/rpmdb-rebuild.service
+lrwxrwxrwx root:root /etc/systemd/system/ctrl-alt-del.target -> /usr/lib/systemd/system/reboot.target
+lrwxrwxrwx root:root /etc/systemd/system/dbus-org.freedesktop.Avahi.service -> /usr/lib/systemd/system/avahi-daemon.service
+lrwxrwxrwx root:root /etc/systemd/system/dbus-org.freedesktop.ModemManager1.service -> /usr/lib/systemd/system/ModemManager.service
+lrwxrwxrwx root:root /etc/systemd/system/dbus-org.freedesktop.nm-dispatcher.service -> /usr/lib/systemd/system/NetworkManager-dispatcher.service
+lrwxrwxrwx root:root /etc/systemd/system/dbus-org.freedesktop.timesync1.service -> /usr/lib/systemd/system/systemd-timesyncd.service
+lrwxrwxrwx root:root /etc/systemd/system/dbus.service -> /usr/lib/systemd/system/dbus-daemon.service
+lrwxrwxrwx root:root /etc/systemd/system/default.target -> /usr/lib/systemd/system/multi-user.target
+lrwxrwxrwx root:root /etc/systemd/system/default.target.wants/ydotool.service -> /usr/lib/systemd/system/ydotool.service
+lrwxrwxrwx root:root /etc/systemd/system/factory-reset.target.wants/systemd-tpm2-clear.service -> /usr/lib/systemd/system/systemd-tpm2-clear.service
+lrwxrwxrwx root:root /etc/systemd/system/getty.target.wants/getty@tty1.service -> /usr/lib/systemd/system/getty@.service
+lrwxrwxrwx root:root /etc/systemd/system/graphical.target.wants/rtkit-daemon.service -> /usr/lib/systemd/system/rtkit-daemon.service
+lrwxrwxrwx root:root /etc/systemd/system/graphical.target.wants/udisks2.service -> /usr/lib/systemd/system/udisks2.service
+lrwxrwxrwx root:root /etc/systemd/system/messagebus.service -> /usr/lib/systemd/system/dbus-daemon.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/ModemManager.service -> /usr/lib/systemd/system/ModemManager.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/NetworkManager.service -> /usr/lib/systemd/system/NetworkManager.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/authselect-apply-changes.service -> /usr/lib/systemd/system/authselect-apply-changes.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/avahi-daemon.service -> /usr/lib/systemd/system/avahi-daemon.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/dbus-daemon.service -> /usr/lib/systemd/system/dbus-daemon.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/flatpak-add-fedora-repos.service -> /usr/lib/systemd/system/flatpak-add-fedora-repos.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/geoclue.service -> /usr/lib/systemd/system/geoclue.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/mdmonitor.service -> /usr/lib/systemd/system/mdmonitor.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-app-prewarm.service -> /etc/systemd/system/nuxel-app-prewarm.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-audio-session.service -> /etc/systemd/system/nuxel-audio-session.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-bootmode-guard.service -> /etc/systemd/system/nuxel-bootmode-guard.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-bootmode-oneshot.service -> /etc/systemd/system/nuxel-bootmode-oneshot.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-bridge.service -> /etc/systemd/system/nuxel-bridge.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-button-manager.service -> /etc/systemd/system/nuxel-button-manager.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-charger-mode-recovery.service -> /etc/systemd/system/nuxel-charger-mode-recovery.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-clockd.service -> /etc/systemd/system/nuxel-clockd.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-device-permissions.service -> /etc/systemd/system/nuxel-device-permissions.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-fallback.service -> /etc/systemd/system/nuxel-fallback.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-fuse-access.service -> /etc/systemd/system/nuxel-fuse-access.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-geoclue-agent.service -> /etc/systemd/system/nuxel-geoclue-agent.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-haptics.service -> /etc/systemd/system/nuxel-haptics.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-http-bridge.service -> /etc/systemd/system/nuxel-http-bridge.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-interface-state.service -> /etc/systemd/system/nuxel-interface-state.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-mic-route.service -> ../nuxel-mic-route.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-mtp.service -> /etc/systemd/system/nuxel-mtp.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-nfcd.service -> /etc/systemd/system/nuxel-nfcd.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-notifications.service -> /etc/systemd/system/nuxel-notifications.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-orientationd.service -> /etc/systemd/system/nuxel-orientationd.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-portal.service -> /etc/systemd/system/nuxel-portal.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-soundd.service -> /etc/systemd/system/nuxel-soundd.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-touch-arm.service -> /etc/systemd/system/nuxel-touch-arm.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-usb-mode-monitor.service -> /etc/systemd/system/nuxel-usb-mode-monitor.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-usb-mode-restore.service -> /etc/systemd/system/nuxel-usb-mode-restore.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-watchdog-keep.service -> /etc/systemd/system/nuxel-watchdog-keep.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-wayland.service -> /etc/systemd/system/nuxel-wayland.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-web.service -> /etc/systemd/system/nuxel-web.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-wifi.service -> /etc/systemd/system/nuxel-wifi.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/nuxel-wl-fb.service -> /etc/systemd/system/nuxel-wl-fb.service
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/remote-fs.target -> /usr/lib/systemd/system/remote-fs.target
+lrwxrwxrwx root:root /etc/systemd/system/multi-user.target.wants/sshd.service -> /usr/lib/systemd/system/sshd.service
+lrwxrwxrwx root:root /etc/systemd/system/network-online.target.wants/NetworkManager-wait-online.service -> /usr/lib/systemd/system/NetworkManager-wait-online.service
+lrwxrwxrwx root:root /etc/systemd/system/nuxel-wayland.service.wants/nuxel-audio-route.service -> /etc/systemd/system/nuxel-audio-route.service
+lrwxrwxrwx root:root /etc/systemd/system/nuxel-wayland.service.wants/nuxel-boot-sound.service -> /etc/systemd/system/nuxel-boot-sound.service
+lrwxrwxrwx root:root /etc/systemd/system/sockets.target.wants/avahi-daemon.socket -> /usr/lib/systemd/system/avahi-daemon.socket
+lrwxrwxrwx root:root /etc/systemd/system/sockets.target.wants/dbus.socket -> /usr/lib/systemd/system/dbus.socket
+lrwxrwxrwx root:root /etc/systemd/system/sockets.target.wants/nuxel-metrics.socket -> /etc/systemd/system/nuxel-metrics.socket
+lrwxrwxrwx root:root /etc/systemd/system/sockets.target.wants/systemd-journald-audit.socket -> /usr/lib/systemd/system/systemd-journald-audit.socket
+lrwxrwxrwx root:root /etc/systemd/system/sockets.target.wants/systemd-userdbd.socket -> /usr/lib/systemd/system/systemd-userdbd.socket
+lrwxrwxrwx root:root /etc/systemd/system/sysinit.target.wants/fips-crypto-policy-overlay.service -> /usr/lib/systemd/system/fips-crypto-policy-overlay.service
+lrwxrwxrwx root:root /etc/systemd/system/sysinit.target.wants/selinux-autorelabel-mark.service -> /usr/lib/systemd/system/selinux-autorelabel-mark.service
+lrwxrwxrwx root:root /etc/systemd/system/sysinit.target.wants/systemd-boot-clear-sysfail.service -> /usr/lib/systemd/system/systemd-boot-clear-sysfail.service
+lrwxrwxrwx root:root /etc/systemd/system/sysinit.target.wants/systemd-confext.service -> /usr/lib/systemd/system/systemd-confext.service
+lrwxrwxrwx root:root /etc/systemd/system/sysinit.target.wants/systemd-network-generator.service -> /usr/lib/systemd/system/systemd-network-generator.service
+lrwxrwxrwx root:root /etc/systemd/system/sysinit.target.wants/systemd-sysext.service -> /usr/lib/systemd/system/systemd-sysext.service
+lrwxrwxrwx root:root /etc/systemd/system/sysinit.target.wants/systemd-timesyncd.service -> /usr/lib/systemd/system/systemd-timesyncd.service
+lrwxrwxrwx root:root /etc/systemd/system/systemd-journald.service.wants/systemd-journald-audit.socket -> /usr/lib/systemd/system/systemd-journald-audit.socket
+lrwxrwxrwx root:root /etc/systemd/system/systemd-udevd-control.socket -> /dev/null
+lrwxrwxrwx root:root /etc/systemd/system/systemd-udevd-kernel.socket -> /dev/null
+lrwxrwxrwx root:root /etc/systemd/system/systemd-udevd-varlink.socket -> /dev/null
+lrwxrwxrwx root:root /etc/systemd/system/systemd-udevd.service -> /dev/null
+lrwxrwxrwx root:root /etc/systemd/system/systemd-userdbd.service -> /dev/null
+lrwxrwxrwx root:root /etc/systemd/system/systemd-userdbd.socket -> /dev/null
+lrwxrwxrwx root:root /etc/systemd/system/timers.target.wants/dnf-makecache.timer -> /usr/lib/systemd/system/dnf-makecache.timer
+lrwxrwxrwx root:root /etc/systemd/system/timers.target.wants/fstrim.timer -> /usr/lib/systemd/system/fstrim.timer
+lrwxrwxrwx root:root /etc/systemd/system/timers.target.wants/nuxel-abox-firmware-reload.timer -> /etc/systemd/system/nuxel-abox-firmware-reload.timer
+lrwxrwxrwx root:root /etc/systemd/system/timers.target.wants/nuxel-audio-route.timer -> /etc/systemd/system/nuxel-audio-route.timer
+lrwxrwxrwx root:root /etc/systemd/system/timers.target.wants/raid-check.timer -> /usr/lib/systemd/system/raid-check.timer
+lrwxrwxrwx root:root /etc/systemd/system/timers.target.wants/unbound-anchor.timer -> /usr/lib/systemd/system/unbound-anchor.timer

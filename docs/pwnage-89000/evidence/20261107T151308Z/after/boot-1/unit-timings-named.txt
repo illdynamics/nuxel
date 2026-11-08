@@ -1,0 +1,119 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===== nuxel-wayland
+Wants=nuxel-web.service seatd.service nuxel-audio-route.service nuxel-touch-arm.service
+Before=nuxel-wl-fb.service nuxel-orientationd.service nuxel-abox-firmware-reload.service nuxel-fuse-access.service nuxel-boot-sound.service nuxel-fallback.service multi-user.target shutdown.target nuxel-abox-firmware-reload.timer
+After=nuxel-touch-arm.service nuxel-bootmode-oneshot.service systemd-journald.socket seatd.service system.slice sysinit.target nuxel-device-permissions.service nuxel-web.service basic.target
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=8869232
+ActiveEnterTimestampMonotonic=8889209
+Result=success
+ExecMainStartTimestampMonotonic=8888428
+ExecMainExitTimestampMonotonic=0
+===== nuxel-web
+Wants=tmp.mount nuxel-http-bridge.service
+Before=shutdown.target nuxel-wayland.service multi-user.target
+After=-.mount system.slice sysinit.target tmp.mount systemd-journald.socket systemd-tmpfiles-setup.service basic.target
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=8018403
+ActiveEnterTimestampMonotonic=8018403
+Result=success
+ExecMainStartTimestampMonotonic=8017938
+ExecMainExitTimestampMonotonic=0
+===== nuxel-touch-arm
+Wants=systemd-udev-settle.service
+Before=multi-user.target nuxel-wayland.service nuxel-ui.service shutdown.target
+After=sysinit.target system.slice systemd-udev-settle.service systemd-journald.socket basic.target
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=8004986
+ActiveEnterTimestampMonotonic=8004986
+Result=success
+ExecMainStartTimestampMonotonic=8004534
+ExecMainExitTimestampMonotonic=0
+===== seatd
+Wants=tmp.mount
+Before=nuxel-wayland.service shutdown.target
+After=system.slice systemd-tmpfiles-setup.service systemd-journald.socket basic.target -.mount systemd-udev-settle.service tmp.mount sysinit.target
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=8026709
+ActiveEnterTimestampMonotonic=8026709
+Result=success
+ExecMainStartTimestampMonotonic=8026264
+ExecMainExitTimestampMonotonic=0
+===== nuxel-bootmode-oneshot
+Wants=
+Before=nuxel-wayland.service multi-user.target shutdown.target nuxel-ui.service
+After=sysinit.target systemd-journald.socket basic.target system.slice local-fs.target
+ActiveState=active
+SubState=exited
+InactiveExitTimestampMonotonic=7962817
+ActiveEnterTimestampMonotonic=8046471
+Result=success
+ExecMainStartTimestampMonotonic=7962083
+ExecMainExitTimestampMonotonic=8046342
+===== nuxel-device-permissions
+Wants=
+Before=nuxel-audio-route.service multi-user.target nuxel-bluetooth.service nuxel-wayland.service shutdown.target
+After=sysinit.target basic.target system.slice systemd-journald.socket local-fs.target
+ActiveState=active
+SubState=exited
+InactiveExitTimestampMonotonic=7972187
+ActiveEnterTimestampMonotonic=8864445
+Result=success
+ExecMainStartTimestampMonotonic=7971683
+ExecMainExitTimestampMonotonic=8864206
+===== nuxel-interface-state
+Wants=nuxel-nfcd.service
+Before=shutdown.target multi-user.target
+After=nuxel-wifi.service sysinit.target NetworkManager.service nuxel-nfcd.service local-fs.target systemd-journald.socket basic.target system.slice
+ActiveState=active
+SubState=exited
+InactiveExitTimestampMonotonic=10761712
+ActiveEnterTimestampMonotonic=11197842
+Result=success
+ExecMainStartTimestampMonotonic=10760939
+ExecMainExitTimestampMonotonic=11197655
+===== nuxel-soundd
+Wants=nuxel-audio-session.service
+Before=shutdown.target multi-user.target
+After=local-fs.target systemd-journald.socket system.slice sysinit.target basic.target
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=8001564
+ActiveEnterTimestampMonotonic=9142329
+Result=success
+ExecMainStartTimestampMonotonic=8770256
+ExecMainExitTimestampMonotonic=0
+===== nuxel-clockd
+Wants=nuxel-soundd.service
+Before=shutdown.target multi-user.target
+After=system.slice systemd-journald.socket sysinit.target local-fs.target basic.target
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=7969896
+ActiveEnterTimestampMonotonic=7969896
+Result=success
+ExecMainStartTimestampMonotonic=7969416
+ExecMainExitTimestampMonotonic=0
+===== nuxel-wl-fb
+Wants=nuxel-wayland.service
+Before=nuxel-boot-sound.service shutdown.target multi-user.target nuxel-fallback.service nuxel-button-manager.service nuxel-abox-firmware-reload.timer
+After=system.slice systemd-journald.socket sysinit.target nuxel-wayland.service nuxel-orientationd.service basic.target
+ActiveState=active
+SubState=running
+InactiveExitTimestampMonotonic=9469441
+ActiveEnterTimestampMonotonic=10734099
+Result=success
+ExecMainStartTimestampMonotonic=10733539
+ExecMainExitTimestampMonotonic=0

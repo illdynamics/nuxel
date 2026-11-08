@@ -1,0 +1,21 @@
+[Unit]
+Description=Nuxel BCM4375 Bluetooth HCI bring-up (patchram + H4 attach)
+After=systemd-modules-load.service local-fs.target
+Before=bluetooth.service
+# No Wants=bluetooth.service: BlueZ is on-demand and nuxel-interface-state
+# restores the owner's persisted ON/OFF choice.  Attaching HCI here keeps the
+# controller available without powering a default-off radio every boot.
+ConditionPathExists=/dev/ttySAC1
+ConditionPathExists=/lib/firmware/BCM4375B1.hcd
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/nuxel/nuxel-bluetooth-up
+Restart=on-failure
+RestartSec=3
+
+# Deliberately no [Install] section: this transport is started by
+# nuxel-interface-state (or the Bluetooth toggle) only when the persisted
+# desired state is ON.

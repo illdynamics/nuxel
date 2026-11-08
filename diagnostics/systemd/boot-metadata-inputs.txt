@@ -1,0 +1,15 @@
+$ /proc os-release device-tree
+rc=0
+--- stdout ---
+{
+  "boot_id": "5ab43e24-41c6-45c9-9f92-50d10ca58a8b",
+  "uptime_s": "502.06 3597.04",
+  "kernel": "4.14.253-gf7194c1d15ed-dirty",
+  "architecture": "aarch64",
+  "journal_persistent": true,
+  "root_fs": "ext4",
+  "model": "Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820"
+}
+
+--- stderr ---
+

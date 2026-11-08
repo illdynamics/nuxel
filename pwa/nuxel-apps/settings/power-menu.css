@@ -52,6 +52,8 @@ button.ghost{background:transparent;padding:8px 10px}
 @media (prefers-reduced-motion:reduce){.shake{animation:none}}
 code{background:var(--card-2);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:12px}
 
+/* PWNAGE-90000: transient outgoing-only restart surface (neutral black).
+   It is destroyed on pagehide; no acceptance text is ever written here. */
 /* PWNAGE-43000: immediate reboot acknowledgement.  The menu used to stay on
    screen (or go blank) while systemd stopped units; this overlay is painted
    before the request is sent and remains until the session is torn down. */
@@ -63,7 +65,7 @@ code{background:var(--card-2);border:1px solid var(--line);border-radius:6px;pad
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: #04121f;
+  background: #000;
   color: #eaf4ff;
 }
 .nuxel-reboot-overlay[hidden] { display: none; }

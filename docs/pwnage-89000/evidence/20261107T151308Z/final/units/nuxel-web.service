@@ -1,0 +1,58 @@
+[Unit]
+Description=Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+Documentation=https://nuxel.org
+# PWNAGE-32000 (boot regression): the static server is loopback-only and must
+# not wait for network.target/NetworkManager to reach the launcher.
+# PWNAGE-89000: the PWA document itself is static.  The bridge/API are pulled in
+# concurrently and the launcher retries bridge calls after the document is
+# painted.  Ordering web behind nuxel-http-bridge added ~3 s to first paint.
+Wants=nuxel-http-bridge.service
+# The docroot is resolved by the shim: /usr/share/nuxel on the phone rootfs,
+# /home/nuxel/nuxel on the flash-free deploy mirror (or $NUXEL_WEBROOT).
+ConditionPathExists=/usr/bin/nuxel-web
+# Restart-burst bound.  These keys belong to [Unit]; in [Service] systemd
+# ignores them (measured journal: "Unknown key 'StartLimitIntervalSec'").
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# /etc/nuxel/web.conf is written by the rootfs builder (NUXEL_WEBROOT,
+# NUXEL_WEB_PORT, NUXEL_WEB_BIND). It is loaded here so the documented docroot
+# override is real rather than inert; the leading '-' keeps the unit valid when
+# the file is absent (VM / development hosts).
+EnvironmentFile=-/etc/nuxel/web.conf
+# Serve the FULL Nuxel PWA tree from the repo mirror the deploy staged at
+# /home/nuxel/nuxel. Serving from the repo ROOT (not pwa/nuxel-home) is
+# REQUIRED so the shared bridge client pwa/nuxel-common/bridge.js resolves via
+# the PWA's relative `../nuxel-common/bridge.js` reference (the design enforced
+# by pwa/nuxel-common/verify-wiring.js). The home launcher is therefore served
+# at /pwa/nuxel-home/index.html. Runs as the nuxel user so the PWA tree is
+# readable.
+User=nuxel
+Group=nuxel
+# The S10+ 4.14 Android-derived kernel enables the legacy AID_INET gate:
+# unprivileged processes need numeric gid 3003 to create AF_INET sockets.
+# Keep the static server unprivileged and grant only that socket capability.
+SupplementaryGroups=inet
+Environment=NUXEL_WEB_PORT=8000
+Environment=NUXEL_WEB_BIND=127.0.0.1
+ExecStart=/usr/bin/nuxel-web
+Restart=on-failure
+RestartSec=2
+
+# Hardening (localhost-only; PWA static content is read-only)
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+ReadOnlyPaths=/
+ReadOnlyPaths=/usr/share/nuxel
+# The handset serves /usr/share/nuxel and does not carry the VM/deploy mirror.
+# A missing optional mirror must not fail mount-namespace setup (226/NAMESPACE).
+ReadWritePaths=-/home/nuxel/nuxel
+
+[Install]
+WantedBy=multi-user.target

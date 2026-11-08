@@ -1,0 +1,6 @@
+$ systemctl --failed --no-legend --plain
+rc=0
+--- stdout ---
+
+--- stderr ---
+
