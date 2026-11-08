@@ -329,6 +329,17 @@ Installed version after deploy: `host_version = 0.8.2-beta`; status bar `0.8.2-b
 
 ---
 
+
+### Local podman build note
+
+The GitHub Release workflow's `build s10plus` job is the authoritative podman
+build (`podman run --platform linux/arm64 fedora:43` on Ubuntu).  A local macOS
+podman-machine attempt was also made with the direct CLI (no podman API), but
+the existing machine returned `database disk image is malformed` and then
+`machine is not running` even after a hard stop/start.  That is a host VM
+failure, not a source failure; the live phone was deployed from the exact
+repository payload via `scripts/nuxel-deploy-live.py`.
+
 ## 11. PASS / FAIL / BLOCKED matrix
 
 | Area | Harness | Physical | Notes |
