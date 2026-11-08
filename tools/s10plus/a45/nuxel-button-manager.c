@@ -518,12 +518,33 @@ static int pwctl_volume_get(int *out_pct) {
   return 1;
 }
 
+/* Remember what the mixer looked like before the press.  A Power+Volume chord
+ * that was recognised after the volume key already fired uses this to undo the
+ * plain step, so a combo never changes volume as a side effect. */
+static int vol_step_path = -1;       /* 1 = PipeWire, 0 = ALSA, -1 = none */
+static int vol_step_before_pw = -1;
+static long vol_step_before_alsa = -1;
+
+static int pwctl_volume_set(int pct) {
+  if (pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
+  char cmd[320];
+  snprintf(cmd, sizeof cmd,
+           "env " PW_ENV " /usr/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ %.3f",
+           pct / 100.0);
+  int rc = system(cmd);
+  if (rc != 0) { audit("WPCTL_VOLUME_SET_FAIL pct=%d rc=%d", pct, rc); return 0; }
+  return 1;
+}
+
 static int pwctl_volume_step(int dir) {
   int before = -1;
   if (!pwctl_volume_get(&before)) {
     audit("VOLUME_STEP_PIPEWIRE_NO_READBACK dir=%d", dir);
     return 0;
   }
+  vol_step_path = 1;
+  vol_step_before_pw = before;
   /* Absolute 5% steps with the SAME safety ceiling the Settings bridge uses.
    * The old relative `5%+` path ignored volume_cap_percent and let a key press
    * move the sink from 25% to 30%, above the mandated output ceiling. */
@@ -573,10 +594,36 @@ static void volume_step(int dir) {
   long v = vol_cur + (dir > 0 ? step : -step);
   if (v > ceiling) { v = ceiling; if (dir > 0) mixer_capped = 1; }
   if (v < vol_min) v = vol_min;
+  vol_step_path = 0;
+  vol_step_before_alsa = vol_cur;
   if (snd_mixer_selem_set_playback_volume_all(selem, v) < 0) { audit("VOLUME_SET_FAIL value=%ld", v); return; }
   vol_cur = v;
   audit("VOLUME_STEP dir=%d value=%ld step=%ld ceiling=%ld capped=%d", dir, v, step, ceiling, mixer_capped);
   osd_volume();
+}
+
+static void volume_restore(void) {
+  /* Silent undo: no OSD and no cue.  The owner never wanted a volume change;
+   * the chord outranks the single-key class. */
+  if (vol_step_path == 1 && vol_step_before_pw >= 0) {
+    int target = vol_step_before_pw;
+    if (pwctl_volume_set(target)) {
+      audit("VOLUME_RESTORE source=pipewire value=%d reason=power-volume-chord", target);
+      publish("VOLUME_RESTORE source=pipewire value=%d", target);
+    }
+  } else if (vol_step_path == 0 && vol_step_before_alsa >= 0) {
+    if (mixer_open_dev() >= 0 && selem) {
+      long target = vol_step_before_alsa;
+      if (snd_mixer_selem_set_playback_volume_all(selem, target) == 0) {
+        vol_cur = target;
+        audit("VOLUME_RESTORE source=alsa value=%ld reason=power-volume-chord", target);
+        publish("VOLUME_RESTORE source=alsa value=%ld", target);
+      }
+    }
+  }
+  vol_step_path = -1;
+  vol_step_before_pw = -1;
+  vol_step_before_alsa = -1;
 }
 
 static void volume_mute_toggle(void) {
@@ -820,6 +867,7 @@ static void perform(const char *action, const char *source) {
   }
   if (!strcmp(action, "volume-up") || !strcmp(action, "volume-up-autorepeat")) { volume_step(+1); return; }
   if (!strcmp(action, "volume-down") || !strcmp(action, "volume-down-autorepeat")) { volume_step(-1); return; }
+  if (!strcmp(action, "volume-restore")) { volume_restore(); return; }
   if (!strcmp(action, "volume-mute")) { volume_mute_toggle(); return; }
   if (!strcmp(action, "sound-mode-cycle")) { sound_mode_cycle(); return; }
   if (!strcmp(action, "flashlight")) { flashlight_request(); return; }

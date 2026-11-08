@@ -5,8 +5,9 @@ BOOT plays ONCE per boot only after the bridge's *actual* UI ownership receipt
 and a live `nuxel-audio-route.sh --check` readiness probe (Calliope MUB0, both
 CS35L41 DSP1s booted/running, every route control, the 48 kHz static sink, the
 default sink, and the volume ceiling).  VOLUME is launched after a successful
-PipeWire default-sink change by the button manager.  Both cues play
-nuxel-pow.mp3 at 100% decoder gain into the verified default sink (owner policy: 100% ceiling, 50% default), so
+PipeWire default-sink change by the button manager.  BOOT plays the supplied
+nuxel-boot-audio.mp3 and VOLUME plays nuxel-pow.mp3, both at 100% decoder gain
+into the verified default sink (owner policy: 100% ceiling, 50% default), so
 there is exactly one attenuation stage.  Failures are logged, never faked; a
 player exit code is never recorded as audible.
 """
@@ -42,9 +43,9 @@ if not PLAYER:
     else:
         PLAYER = shutil.which('mpg123')
 ALSA_DEVICE = os.environ.get('NUXEL_SOUND_ALSA_DEVICE', '').strip()
-# PWNAGE-38000 requires the confirmation cue to use the same nuxel-pow.mp3
-# asset as the volume feedback and the Test Audio button.
-BOOT_FILE = 'nuxel-pow.mp3'
+# The supplied boot cue is the long nuxel-boot-audio.mp3; short interactive
+# feedback (volume / Test Audio) keeps using nuxel-pow.mp3.
+BOOT_FILE = 'nuxel-boot-audio.mp3'
 VOL_FILE = 'nuxel-pow.mp3'
 BOOT_PCM_PERCENT = 100
 WAIT_SECONDS = 180

@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 14;
+const NUXEL_REGISTRY_VERSION = 16;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -151,6 +151,30 @@ const NUXEL_APPS = {
         capabilities: [],
         docked: true,
     },
+    'org.nuxel.Firewall': {
+        id: 'org.nuxel.Firewall',
+        name: 'Firewall',
+        icon: '🛡️',
+        color: '#3ea6ff',
+        category: 'security',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/firewall/index.html',
+        description: 'Firewall control center',
+        capabilities: ['system:inspect', 'network:manage'],
+        docked: false,
+    },
+    'org.nuxel.Permissions': {
+        id: 'org.nuxel.Permissions',
+        name: 'Permissions',
+        icon: '🔐',
+        color: '#4caf50',
+        category: 'security',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/permissions/index.html',
+        description: 'Permission manager (same policy service as Settings)',
+        capabilities: ['system:inspect'],
+        docked: false,
+    },
     'org.nuxel.Terminal': {
         id: 'org.nuxel.Terminal',
         name: 'Terminal',
@@ -290,6 +314,13 @@ const NUXEL_APPS = {
         category: 'media', type: 'pwa',
         url: '/pwa/nuxel-apps/recorder/index.html',
         description: 'Voice recorder', capabilities: ['storage:persistent'], docked: false,
+    },
+    'org.nuxel.Doom': {
+        id: 'org.nuxel.Doom', name: 'Nuxel Doom', icon: '🎮', color: '#ff7a2f',
+        category: 'games', type: 'pwa',
+        url: '/pwa/nuxel-apps/doom/index.html',
+        description: 'Chocolate Doom WebAssembly — Freedoom and imported WADs',
+        capabilities: [], docked: false,
     },
     'org.nuxel.SnekByte': {
         id: 'org.nuxel.SnekByte', name: 'SnekByte', icon: '🐍', color: '#66BB6A',
@@ -575,7 +606,7 @@ class AppRegistry {
        without a reboot. */
     startBridgeWatch(intervalMs) {
         if (this._bridgeWatchTimer) return;
-        const interval = Math.max(2000, Number(intervalMs) || 5000);
+        const interval = Math.max(10000, Number(intervalMs) || 30000);
         this._bridgeWatchTimer = setInterval(() => {
             if (typeof document !== 'undefined' && document.hidden) return;
             this.refreshFromBridge();

@@ -108,11 +108,21 @@ jobs:
           # v0.7.8-beta never reached a release because the rootfs build found
           # assets/nuxel-boot-audio.mp3 only in an untracked working tree.  Fail
           # in the cheap prepare job, before the kernel/rootfs matrix starts.
-          git ls-files --error-unmatch assets/nuxel-boot-audio.mp3 assets/nuxel-sounds/nuxel-boot-audio.mp3 assets/nuxel-pow.mp3
+          git ls-files --error-unmatch \
+            assets/nuxel-boot-audio.mp3 \
+            assets/nuxel-sounds/nuxel-boot-audio.mp3 \
+            assets/nuxel-pow.mp3 \
+            assets/nuxel-sounds/nuxel-pow.mp3
           test -s assets/nuxel-boot-audio.mp3
           test -s assets/nuxel-pow.mp3
           cmp assets/nuxel-boot-audio.mp3 assets/nuxel-sounds/nuxel-boot-audio.mp3
-          sha256sum assets/nuxel-boot-audio.mp3
+          cmp assets/nuxel-pow.mp3 assets/nuxel-sounds/nuxel-pow.mp3
+          sha256sum assets/nuxel-boot-audio.mp3 assets/nuxel-pow.mp3
+          # The rootfs builder installs this document into the phone image.
+          # v0.7.9's build died on it after the expensive rootfs stage because
+          # it existed only in the developer tree; fail cheaply here instead.
+          git ls-files --error-unmatch docs/interface-state.md
+          test -s docs/interface-state.md
           python3 tests/pwnage90000/test_release_assets.py
 
       - name: Resolve tag and device list

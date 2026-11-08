@@ -47,6 +47,7 @@ ROOT="${NUXEL_ROOT:-/}"
 DOC_DEFAULT="/etc/nuxel/keyboard/keyboard.json"
 LOG_DEFAULT="/var/log/nuxel/keyboard.log"
 STATE_DEFAULT="/run/nuxel-keyboard.state"
+MARKER_DEFAULT="/run/nuxel-text-input-v1.enabled"
 JSON=0
 DRY=0
 CMD=""
@@ -70,6 +71,7 @@ abs() { case "$1" in /*) printf '%s%s' "$ROOT" "$1" ;; *) printf '%s/%s' "$ROOT"
 DOC="${NUXEL_KEYBOARD_DOC:-$DOC_DEFAULT}"
 LOG="${NUXEL_KEYBOARD_LOG:-$LOG_DEFAULT}"
 STATE="${NUXEL_KEYBOARD_STATE:-$STATE_DEFAULT}"
+MARKER="${NUXEL_TEXT_INPUT_V1_MARKER:-$MARKER_DEFAULT}"
 : "${NUXEL_DIAG_SAFE_TOOLS:=python3}"
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/nuxel-kbd-work.XXXXXX")" || { echo "nuxel-keyboard-apply: mktemp failed" >&2; exit 1; }
@@ -102,7 +104,8 @@ DEFAULTS_JSON='{
   "keyboard.numeric_layout": true, "keyboard.height_dp": 300,
   "keyboard.key_repeat": true, "keyboard.key_repeat_delay_ms": 500,
   "keyboard.key_repeat_interval_ms": 30, "keyboard.haptics": true,
-  "keyboard.clipboard": true, "keyboard.hardware_passthrough": true
+  "keyboard.clipboard": true, "keyboard.hardware_passthrough": true,
+  "keyboard.text_input_v1": false
 }'
 
 load_table() {   # writes KEY<TAB>VALUE<TAB>source into $WORK/table.tsv
@@ -130,7 +133,8 @@ RANGES = {"keyboard.height_dp": (160, 560),
           "keyboard.key_repeat_interval_ms": (10, 200)}
 TYPES = {"keyboard.enabled": bool, "keyboard.auto_show": bool, "keyboard.numeric_layout": bool,
          "keyboard.key_repeat": bool, "keyboard.haptics": bool, "keyboard.clipboard": bool,
-         "keyboard.hardware_passthrough": bool, "keyboard.layout": str,
+         "keyboard.hardware_passthrough": bool, "keyboard.text_input_v1": bool,
+         "keyboard.layout": str,
          "keyboard.height_dp": int, "keyboard.key_repeat_delay_ms": int,
          "keyboard.key_repeat_interval_ms": int}
 bad = []
@@ -178,7 +182,8 @@ probe_osk() {
   for cand in usr/bin/squeekboard usr/libexec/squeekboard; do
     if [ -x "$ROOT/$cand" ]; then OSK="squeekboard"; OSK_PATH="/$cand"; return; fi
   done
-  for cand in usr/bin/stevia usr/libexec/stevia usr/libexec/stevia-osk \
+  for cand in usr/bin/phosh-osk-stevia usr/libexec/phosh-osk-stevia \
+              usr/bin/stevia usr/libexec/stevia usr/libexec/stevia-osk \
               usr/lib64/stevia/stevia usr/share/stevia/stevia; do
     if [ -x "$ROOT/$cand" ]; then OSK="stevia"; OSK_PATH="/$cand"; return; fi
   done
@@ -242,14 +247,55 @@ gs_set() {  # schema key value
   run_tool gsettings set "$1" "$2" "$3" >/dev/null 2>&1
 }
 
+# The v1 compatibility global lives in phoc, but its on/off state is a keyboard
+# document setting.  This applier is the single writer of the marker phoc polls,
+# so Settings and the console share one path and the state file records whether
+# the running compositor actually carries the shim.
+phoc_binary() {
+  local p
+  for p in "$ROOT/usr/sbin/phoc" "$ROOT/usr/bin/phoc"; do
+    if [ -f "$p" ]; then printf '%s\n' "$p"; return 0; fi
+  done
+  return 1
+}
+
+phoc_has_text_input_v1() {
+  local phoc
+  phoc="$(phoc_binary)" || return 1
+  grep -aq 'nuxel-text-input-v1.enabled' "$phoc" 2>/dev/null
+}
+
+apply_text_input_v1() {
+  local want="$1" marker marker_value
+  marker="$(abs "$MARKER")"
+  if [ "$want" = "true" ]; then marker_value=1; else marker_value=0; fi
+  if [ "$DRY" = 1 ]; then
+    say "  would set $marker=$want"
+    res keyboard.text_input_v1 "dry-run"
+    return 0
+  fi
+  if ! phoc_has_text_input_v1; then
+    res keyboard.text_input_v1 "not_applied:phoc-without-v1-shim"
+    return 0
+  fi
+  mkdir -p "$(dirname "$marker")" 2>/dev/null || true
+  if printf '%s\n' "$marker_value" >"$marker.tmp.$$" 2>/dev/null && mv -f "$marker.tmp.$$" "$marker" 2>/dev/null; then
+    res keyboard.text_input_v1 "applied:phoc-marker"
+  else
+    rm -f "$marker.tmp.$$" 2>/dev/null
+    res keyboard.text_input_v1 "not_applied:marker-unwritable"
+  fi
+}
+
 apply_keyboard() {
-  local enabled auto layout numeric height repeat delay interval clip haptics passthru
+  local enabled auto layout numeric height repeat delay interval clip haptics passthru text_input_v1
   enabled="$(cfg keyboard.enabled)";   auto="$(cfg keyboard.auto_show)"
   layout="$(cfg keyboard.layout)";     numeric="$(cfg keyboard.numeric_layout)"
   height="$(cfg keyboard.height_dp)";  repeat="$(cfg keyboard.key_repeat)"
   delay="$(cfg keyboard.key_repeat_delay_ms)"; interval="$(cfg keyboard.key_repeat_interval_ms)"
   clip="$(cfg keyboard.clipboard)";    haptics="$(cfg keyboard.haptics)"
   passthru="$(cfg keyboard.hardware_passthrough)"
+  text_input_v1="$(cfg keyboard.text_input_v1)"
 
   # --- enable / show-on-focus: the switch phosh's OSK manager watches -------
   if [ "$OSK" = "none" ]; then
@@ -301,6 +347,19 @@ apply_keyboard() {
     if [ "$numeric" = "true" ]; then res keyboard.numeric_layout "provider-managed:squeekboard-numeric-view"
     else res keyboard.numeric_layout "not_applied:disabled-by-setting"; fi
   elif [ "$OSK" = "stevia" ]; then
+    # ydotoold exposes a uinput keyboard.  Stevia treats any attached keyboard
+    # as a reason to suppress the OSK, which makes a touch-only phone unable to
+    # raise its keyboard after such a device exists.  The owner requirement is
+    # "always get a keyboard when tapping a field", so ignore hw keyboards.
+    if gs_ok mobi.phosh.osk; then
+      if gs_set mobi.phosh.osk ignore-hw-keyboards true; then
+        res keyboard.ignore_hw_keyboards "applied"
+      else
+        res keyboard.ignore_hw_keyboards "not_applied:gsettings-write-failed"
+      fi
+    else
+      res keyboard.ignore_hw_keyboards "not_applied:no-osk-schema"
+    fi
     # stevia 0.54 sizes and lays out from its own provider/theme: there is no
     # user height or layout-file knob. Those two are reported as managed by the
     # provider rather than pretend-applied, and the Settings UI shows that text.
@@ -335,7 +394,10 @@ apply_keyboard() {
   if [ "$passthru" = "true" ]; then res keyboard.hardware_passthrough "observed:${HWKBD}"
   else res keyboard.hardware_passthrough "not_applied:disabled-by-setting"; fi
 
-  log "apply root=$ROOT osk=$OSK compositor=$COMPOSITOR enabled=$(res_get keyboard.enabled) layout=$(res_get keyboard.layout)"
+  # --- opt-in legacy text-input v1 shim (Electron/Chromium 122) -------------
+  apply_text_input_v1 "$text_input_v1"
+
+  log "apply root=$ROOT osk=$OSK compositor=$COMPOSITOR enabled=$(res_get keyboard.enabled) layout=$(res_get keyboard.layout) text_input_v1=$(res_get keyboard.text_input_v1)"
 }
 
 write_state() {
@@ -355,7 +417,7 @@ write_state() {
     echo "hardware_keyboard_name=$HWKBD_NAME"
     for k in keyboard.enabled keyboard.auto_show keyboard.layout keyboard.numeric_layout \
              keyboard.height_dp keyboard.key_repeat keyboard.haptics keyboard.clipboard \
-             keyboard.hardware_passthrough; do
+             keyboard.hardware_passthrough keyboard.text_input_v1; do
       echo "${k}=$(res_get "$k")"
     done
     if [ "$OSK" = "none" ]; then echo "verdict=NO_OSK_INSTALLED"; else echo "verdict=OSK_CONFIGURED"; fi
@@ -384,7 +446,7 @@ json_status() {
   first=1
   for k in keyboard.enabled keyboard.auto_show keyboard.layout keyboard.numeric_layout \
            keyboard.height_dp keyboard.key_repeat keyboard.haptics keyboard.clipboard \
-           keyboard.hardware_passthrough; do
+           keyboard.hardware_passthrough keyboard.text_input_v1; do
     [ "$first" = 1 ] || printf ','; first=0
     printf '"%s":"%s"' "$k" "$(res_get "$k")"
   done
@@ -404,7 +466,7 @@ cmd_apply() {
     local k
     for k in keyboard.enabled keyboard.auto_show keyboard.layout keyboard.numeric_layout \
              keyboard.height_dp keyboard.key_repeat keyboard.haptics keyboard.clipboard \
-             keyboard.hardware_passthrough; do
+             keyboard.hardware_passthrough keyboard.text_input_v1; do
       printf '  %-32s %s\n' "$k" "$(res_get "$k")"
     done
     say "  evidence: $(abs "$STATE")"
@@ -442,7 +504,7 @@ cmd_set() {   # set <key> <value> — validated, atomic, then re-applied
   local key="${1:-}" value="${2:-}"
   [ -n "$key" ] || die "set needs <key> <value>"
   case "$key" in
-    keyboard.enabled|keyboard.auto_show|keyboard.numeric_layout|keyboard.key_repeat|keyboard.haptics|keyboard.clipboard|keyboard.hardware_passthrough)
+    keyboard.enabled|keyboard.auto_show|keyboard.numeric_layout|keyboard.key_repeat|keyboard.haptics|keyboard.clipboard|keyboard.hardware_passthrough|keyboard.text_input_v1)
       case "$value" in true|false) ;; *) die "$key must be true or false (got '$value')" ;; esac ;;
     keyboard.layout)
       [ "${#value}" -ge 2 ] && [ "${#value}" -le 16 ] || die "keyboard.layout must be 2-16 characters" ;;
@@ -500,7 +562,7 @@ selftest() {
   ck() { checks=$((checks+1)); if [ "$1" = 0 ]; then echo "PASS $2"; else echo "FAIL $2"; fails=$((fails+1)); fi; }
 
   mkdir -p "$tmp/etc/nuxel/keyboard" "$tmp/run" "$tmp/var/log/nuxel" "$tmp/usr/bin" \
-           "$tmp/sys/class/input" "$tmp/home/nuxel"
+           "$tmp/usr/sbin" "$tmp/sys/class/input" "$tmp/home/nuxel"
 
   # 1. missing document -> defaults, no provider, honest verdicts
   NUXEL_ROOT="$tmp" "$SELF_PATH" apply >/dev/null 2>&1
@@ -537,6 +599,9 @@ exit 0
 EOF
   chmod +x "$tmp/usr/bin/gsettings"
   printf '#!/bin/sh\nexit 0\n' >"$tmp/usr/bin/stevia"; chmod +x "$tmp/usr/bin/stevia"
+  # A phoc stub carrying the marker string proves the applier writes the v1
+  # marker only when the running compositor actually has the shim.
+  printf '#!/bin/sh\n# nuxel-text-input-v1.enabled\nexit 0\n' >"$tmp/usr/sbin/phoc"; chmod +x "$tmp/usr/sbin/phoc"
   mkdir -p "$tmp/run/user/1000"; : >"$tmp/run/user/1000/wayland-0"
   WAYLAND_DISPLAY=wayland-0 NUXEL_ROOT="$tmp" "$SELF_PATH" apply >/dev/null 2>&1
   ck $? "apply with a stevia provider and a writable gsettings exits 0"
@@ -548,6 +613,9 @@ EOF
   grep -q '^text_input=zwp_text_input_manager_v3$' "$tmp/run/nuxel-keyboard.state"
   ck $? "the text-input protocol is reported as the path this stack uses"
   grep -q 'screen-keyboard-enabled true' "$tmp/gsettings.calls"; ck $? "the enable switch really reached gsettings"
+  grep -q '^keyboard.text_input_v1=applied:phoc-marker$' "$tmp/run/nuxel-keyboard.state"
+  ck $? "the v1 shim setting reaches a phoc that carries the marker consumer"
+  grep -qx '0' "$tmp/run/nuxel-text-input-v1.enabled"; ck $? "the shipped default keeps the v1 compatibility global off"
 
   # 5. set: valid change is durable and re-applied
   NUXEL_ROOT="$tmp" "$SELF_PATH" set keyboard.layout de >/dev/null 2>&1
@@ -555,6 +623,11 @@ EOF
   python3 -c "import json,sys; sys.exit(0 if json.load(open('$tmp/etc/nuxel/keyboard/keyboard.json'))['keyboard.layout']=='de' else 1)"
   ck $? "the new layout is durable in the document"
   grep -q "('xkb', 'de')" "$tmp/gsettings.calls"; ck $? "the new layout reached the compositor input sources"
+  NUXEL_ROOT="$tmp" "$SELF_PATH" set keyboard.text_input_v1 true >/dev/null 2>&1
+  ck $? "set keyboard.text_input_v1 true succeeds"
+  grep -qx '1' "$tmp/run/nuxel-text-input-v1.enabled"; ck $? "enabling the setting flips the phoc marker to 1"
+  NUXEL_ROOT="$tmp" "$SELF_PATH" set keyboard.text_input_v1 false >/dev/null 2>&1
+  grep -qx '0' "$tmp/run/nuxel-text-input-v1.enabled"; ck $? "disabling the setting flips the phoc marker back to 0"
 
   # 6. set: unknown key and bad value are refused
   NUXEL_ROOT="$tmp" "$SELF_PATH" set keyboard.facepalm true >/dev/null 2>&1

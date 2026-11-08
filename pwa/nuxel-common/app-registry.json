@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry/1",
-  "registry_version": 14,
+  "registry_version": 16,
   "bridge_version": "1",
   "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
   "url_base": "http://127.0.0.1:8000",
@@ -189,6 +189,45 @@
       ],
       "bridge_version": "1",
       "docked": true
+    },
+    {
+      "id": "org.nuxel.Firewall",
+      "name": "Firewall",
+      "icon": "\ud83d\udee1\ufe0f",
+      "color": "#3ea6ff",
+      "category": "security",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/firewall/index.html",
+      "entry": "pwa/nuxel-apps/firewall/index.html",
+      "manifest": "pwa/nuxel-apps/firewall/manifest.json",
+      "description": "Firewall control center: direction policy, inbound services, app egress matrix and safe apply/rollback",
+      "capabilities": [
+        "system:inspect",
+        "network:manage"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented",
+      "runtime_state": "Live kernel has no nftables and no cgroup net match; only iptables (owner-UID) global policy is available. Per-app matrix is unsupported on the S10+."
+    },
+    {
+      "id": "org.nuxel.Permissions",
+      "name": "Permissions",
+      "icon": "\ud83d\udd10",
+      "color": "#4caf50",
+      "category": "security",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/permissions/index.html",
+      "entry": "pwa/nuxel-apps/permissions/index.html",
+      "manifest": "pwa/nuxel-apps/permissions/manifest.json",
+      "description": "Permission manager wrapper around the central permD policy service (same source of truth as Settings)",
+      "capabilities": [
+        "system:inspect"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented",
+      "runtime_state": "Owner-facing wrapper over nuxel-permd; toggles grant/revoke through the bridge and are enforced by the central policy service."
     },
     {
       "id": "org.nuxel.Terminal",
@@ -478,6 +517,23 @@
       "docked": false,
       "id": "org.nuxel.SnekByte",
       "bridge_version": "1"
+    },
+    {
+      "id": "org.nuxel.Doom",
+      "name": "Nuxel Doom",
+      "icon": "\ud83c\udfae",
+      "color": "#ff7a2f",
+      "category": "games",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/doom/index.html",
+      "entry": "pwa/nuxel-apps/doom/index.html",
+      "manifest": "pwa/nuxel-apps/doom/manifest.json",
+      "description": "Chocolate Doom WebAssembly with touch-first controls, Freedoom and imported WADs",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Sound is ON by default. Freedoom Phase 1/2 and FreeDM stream from the local read-only WAD catalogue; the engine AudioContext is resumed after start so the first game is not silent."
     },
     {
       "id": "org.mozilla.firefox",
@@ -1035,11 +1091,13 @@
       "note": "Per-app permission states, global kill switches, kernel-confinement reality (Linux 4.14: no Landlock). No tree path is claimed here on purpose: this is the concept-level inventory, and a path guess would make the verifier report a directory that will not exist."
     },
     {
-      "app": "Firewall manager",
+      "app": "Firewall",
       "owner_group": "bg-05-security-permissions",
       "ledger_briq": "briq-05b-firewall-app",
-      "status": "not-started",
-      "note": "One authoritative backend (firewalld or UFW), blocklists, hosts editor with atomic writes."
+      "status": "implemented",
+      "note": "One authoritative policy model (services/nuxel-firewall) with a native iptables backend for the S10+ (no kernel nftables) and honest unsupported reporting for per-app cgroup attribution.",
+      "app_path": "pwa/nuxel-apps/firewall",
+      "backend_path": "services/nuxel-firewall/nuxel_firewall"
     },
     {
       "app": "VPN, Tor and remote access",
@@ -1064,10 +1122,11 @@
     }
   ],
   "notes": {
-    "revision": "v0.7.9-beta: registry_version 14 keeps Nuxel Doom as the WAD-engine 2.0 package. The standalone Chocolate Doom comparison app entry was removed because Nuxel Doom bundles its own complete WASM engine; Chocolate Doom 3.1.1 remains an internal optional comparison runtime, not a separate user-facing requirement. registry_version 13 added the NuxTore-installable Nuxel Doom payload.",
+    "revision": "v0.8.0-beta: registry_version 14 keeps Nuxel Doom as the WAD-engine 2.0 package. The standalone Chocolate Doom comparison app entry was removed because Nuxel Doom bundles its own complete WASM engine; Chocolate Doom 3.1.1 remains an internal optional comparison runtime, not a separate user-facing requirement. registry_version 13 added the NuxTore-installable Nuxel Doom payload.",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
     "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
     "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently.",
+    "registry_version_16_doom_restored": "Nuxel Doom (org.nuxel.Doom) is back in apps[] as an installed launcher app after registry v14/v15 dropped it from the Home grid while keeping only the NuxTore catalogue entry. The app payload, WASM engine and Freedoom WADs were still on disk; only its launcher registration was missing.",
     "registry_version_9_gui_tri_link": "org.nuxel.RemoteDesktopXRDP (separate X11 RDP/TLS session), org.nuxel.RemoteDesktopVNC (active Phoc Wayland screen sharing) and org.nuxel.ScrcpyMirror (Android ADB only) are distinct from the serial/SSH console entries and use the separate system.remote-desktop Bridge namespace."
   }
 }

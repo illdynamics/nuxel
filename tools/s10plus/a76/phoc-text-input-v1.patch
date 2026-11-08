@@ -1,0 +1,1239 @@
+--- a/protocols/meson.build	2026-04-03 21:45:23
++++ b/protocols/meson.build	2026-11-07 19:17:47
+@@ -13,6 +13,7 @@
+   [wl_protocol_dir, 'staging/ext-image-copy-capture/ext-image-copy-capture-v1.xml'],
+   [wl_protocol_dir, 'unstable/pointer-constraints/pointer-constraints-unstable-v1.xml'],
+   [wl_protocol_dir, 'unstable/text-input/text-input-unstable-v3.xml'],
++  ['text-input-unstable-v1.xml'],
+   [wl_protocol_dir, 'unstable/xdg-decoration/xdg-decoration-unstable-v1.xml'],
+   ['gtk-shell.xml'],
+   ['phoc-device-state-unstable-v1.xml'],
+--- a/protocols/text-input-unstable-v1.xml	1970-01-01 01:00:00
++++ b/protocols/text-input-unstable-v1.xml	2026-11-07 19:17:06
+@@ -0,0 +1,385 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<protocol name="text_input_unstable_v1">
++
++  <copyright>
++    Copyright © 2012, 2013 Intel Corporation
++
++    Permission is hereby granted, free of charge, to any person obtaining a
++    copy of this software and associated documentation files (the "Software"),
++    to deal in the Software without restriction, including without limitation
++    the rights to use, copy, modify, merge, publish, distribute, sublicense,
++    and/or sell copies of the Software, and to permit persons to whom the
++    Software is furnished to do so, subject to the following conditions:
++
++    The above copyright notice and this permission notice (including the next
++    paragraph) shall be included in all copies or substantial portions of the
++    Software.
++
++    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++    DEALINGS IN THE SOFTWARE.
++  </copyright>
++
++  <interface name="zwp_text_input_v1" version="1">
++    <description summary="text input">
++      An object used for text input. Adds support for text input and input
++      methods to applications. A text_input object is created from a
++      wl_text_input_manager and corresponds typically to a text entry in an
++      application.
++
++      Requests are used to activate/deactivate the text_input object and set
++      state information like surrounding and selected text or the content type.
++      The information about entered text is sent to the text_input object via
++      the pre-edit and commit events. Using this interface removes the need
++      for applications to directly process hardware key events and compose text
++      out of them.
++
++      Text is generally UTF-8 encoded, indices and lengths are in bytes.
++
++      Serials are used to synchronize the state between the text input and
++      an input method. New serials are sent by the text input in the
++      commit_state request and are used by the input method to indicate
++      the known text input state in events like preedit_string, commit_string,
++      and keysym. The text input can then ignore events from the input method
++      which are based on an outdated state (for example after a reset).
++
++      Warning! The protocol described in this file is experimental and
++      backward incompatible changes may be made. Backward compatible changes
++      may be added together with the corresponding interface version bump.
++      Backward incompatible changes are done by bumping the version number in
++      the protocol and interface names and resetting the interface version.
++      Once the protocol is to be declared stable, the 'z' prefix and the
++      version number in the protocol and interface names are removed and the
++      interface version number is reset.
++    </description>
++
++    <request name="activate">
++      <description summary="request activation">
++	Requests the text_input object to be activated (typically when the
++	text entry gets focus).
++
++	The seat argument is a wl_seat which maintains the focus for this
++	activation. The surface argument is a wl_surface assigned to the
++	text_input object and tracked for focus lost. The enter event
++	is emitted on successful activation.
++      </description>
++      <arg name="seat" type="object" interface="wl_seat"/>
++      <arg name="surface" type="object" interface="wl_surface"/>
++    </request>
++
++    <request name="deactivate">
++      <description summary="request deactivation">
++	Requests the text_input object to be deactivated (typically when the
++	text entry lost focus). The seat argument is a wl_seat which was used
++	for activation.
++      </description>
++      <arg name="seat" type="object" interface="wl_seat"/>
++    </request>
++
++    <request name="show_input_panel">
++      <description summary="show input panels">
++	Requests input panels (virtual keyboard) to show.
++      </description>
++    </request>
++
++    <request name="hide_input_panel">
++      <description summary="hide input panels">
++	Requests input panels (virtual keyboard) to hide.
++      </description>
++    </request>
++
++    <request name="reset">
++      <description summary="reset">
++	Should be called by an editor widget when the input state should be
++	reset, for example after the text was changed outside of the normal
++	input method flow.
++      </description>
++    </request>
++
++    <request name="set_surrounding_text">
++      <description summary="sets the surrounding text">
++	Sets the plain surrounding text around the input position. Text is
++	UTF-8 encoded. Cursor is the byte offset within the
++	surrounding text. Anchor is the byte offset of the
++	selection anchor within the surrounding text. If there is no selected
++	text anchor, then it is the same as cursor.
++      </description>
++      <arg name="text" type="string"/>
++      <arg name="cursor" type="uint"/>
++      <arg name="anchor" type="uint"/>
++    </request>
++
++    <enum name="content_hint" bitfield="true">
++      <description summary="content hint">
++	Content hint is a bitmask to allow to modify the behavior of the text
++	input.
++      </description>
++      <entry name="none" value="0x0" summary="no special behaviour"/>
++      <entry name="default" value="0x7" summary="auto completion, correction and capitalization"/>
++      <entry name="password" value="0xc0" summary="hidden and sensitive text"/>
++      <entry name="auto_completion" value="0x1" summary="suggest word completions"/>
++      <entry name="auto_correction" value="0x2" summary="suggest word corrections"/>
++      <entry name="auto_capitalization" value="0x4" summary="switch to uppercase letters at the start of a sentence"/>
++      <entry name="lowercase" value="0x8" summary="prefer lowercase letters"/>
++      <entry name="uppercase" value="0x10" summary="prefer uppercase letters"/>
++      <entry name="titlecase" value="0x20" summary="prefer casing for titles and headings (can be language dependent)"/>
++      <entry name="hidden_text" value="0x40" summary="characters should be hidden"/>
++      <entry name="sensitive_data" value="0x80" summary="typed text should not be stored"/>
++      <entry name="latin" value="0x100" summary="just latin characters should be entered"/>
++      <entry name="multiline" value="0x200" summary="the text input is multiline"/>
++    </enum>
++
++    <enum name="content_purpose">
++      <description summary="content purpose">
++	The content purpose allows to specify the primary purpose of a text
++	input.
++
++	This allows an input method to show special purpose input panels with
++	extra characters or to disallow some characters.
++      </description>
++      <entry name="normal" value="0" summary="default input, allowing all characters"/>
++      <entry name="alpha" value="1" summary="allow only alphabetic characters"/>
++      <entry name="digits" value="2" summary="allow only digits"/>
++      <entry name="number" value="3" summary="input a number (including decimal separator and sign)"/>
++      <entry name="phone" value="4" summary="input a phone number"/>
++      <entry name="url" value="5" summary="input an URL"/>
++      <entry name="email" value="6" summary="input an email address"/>
++      <entry name="name" value="7" summary="input a name of a person"/>
++      <entry name="password" value="8" summary="input a password (combine with password or sensitive_data hint)"/>
++      <entry name="date" value="9" summary="input a date"/>
++      <entry name="time" value="10" summary="input a time"/>
++      <entry name="datetime" value="11" summary="input a date and time"/>
++      <entry name="terminal" value="12" summary="input for a terminal"/>
++    </enum>
++
++    <request name="set_content_type">
++      <description summary="set content purpose and hint">
++	Sets the content purpose and content hint. While the purpose is the
++	basic purpose of an input field, the hint flags allow to modify some
++	of the behavior.
++
++	When no content type is explicitly set, a normal content purpose with
++	default hints (auto completion, auto correction, auto capitalization)
++	should be assumed.
++      </description>
++      <arg name="hint" type="uint" enum="content_hint" />
++      <arg name="purpose" type="uint" enum="content_purpose" />
++    </request>
++
++    <request name="set_cursor_rectangle">
++      <arg name="x" type="int"/>
++      <arg name="y" type="int"/>
++      <arg name="width" type="int"/>
++      <arg name="height" type="int"/>
++    </request>
++
++    <request name="set_preferred_language">
++      <description summary="sets preferred language">
++	Sets a specific language. This allows for example a virtual keyboard to
++	show a language specific layout. The "language" argument is an RFC-3066
++	format language tag.
++
++	It could be used for example in a word processor to indicate the
++	language of the currently edited document or in an instant message
++	application which tracks languages of contacts.
++      </description>
++      <arg name="language" type="string"/>
++    </request>
++
++    <request name="commit_state">
++      <arg name="serial" type="uint" summary="used to identify the known state"/>
++    </request>
++
++    <request name="invoke_action">
++      <arg name="button" type="uint"/>
++      <arg name="index" type="uint"/>
++    </request>
++
++    <event name="enter">
++      <description summary="enter event">
++	Notify the text_input object when it received focus. Typically in
++	response to an activate request.
++      </description>
++      <arg name="surface" type="object" interface="wl_surface"/>
++    </event>
++
++    <event name="leave">
++      <description summary="leave event">
++	Notify the text_input object when it lost focus. Either in response
++	to a deactivate request or when the assigned surface lost focus or was
++	destroyed.
++      </description>
++    </event>
++
++    <event name="modifiers_map">
++      <description summary="modifiers map">
++	Transfer an array of 0-terminated modifier names. The position in
++	the array is the index of the modifier as used in the modifiers
++	bitmask in the keysym event.
++      </description>
++      <arg name="map" type="array"/>
++    </event>
++
++    <event name="input_panel_state">
++      <description summary="state of the input panel">
++	Notify when the visibility state of the input panel changed.
++      </description>
++      <arg name="state" type="uint"/>
++    </event>
++
++    <event name="preedit_string">
++      <description summary="pre-edit">
++	Notify when a new composing text (pre-edit) should be set around the
++	current cursor position. Any previously set composing text should
++	be removed.
++
++	The commit text can be used to replace the preedit text on reset
++	(for example on unfocus).
++
++	The text input should also handle all preedit_style and preedit_cursor
++	events occurring directly before preedit_string.
++      </description>
++      <arg name="serial" type="uint" summary="serial of the latest known text input state"/>
++      <arg name="text" type="string"/>
++      <arg name="commit" type="string"/>
++    </event>
++
++    <enum name="preedit_style">
++      <entry name="default" value="0" summary="default style for composing text"/>
++      <entry name="none" value="1" summary="style should be the same as in non-composing text"/>
++      <entry name="active" value="2"/>
++      <entry name="inactive" value="3"/>
++      <entry name="highlight" value="4"/>
++      <entry name="underline" value="5"/>
++      <entry name="selection" value="6"/>
++      <entry name="incorrect" value="7"/>
++    </enum>
++
++    <event name="preedit_styling">
++      <description summary="pre-edit styling">
++	Sets styling information on composing text. The style is applied for
++	length bytes from index relative to the beginning of the composing
++	text (as byte offset). Multiple styles can
++	be applied to a composing text by sending multiple preedit_styling
++	events.
++
++	This event is handled as part of a following preedit_string event.
++      </description>
++      <arg name="index" type="uint"/>
++      <arg name="length" type="uint"/>
++      <arg name="style" type="uint" enum="preedit_style" />
++    </event>
++
++    <event name="preedit_cursor">
++      <description summary="pre-edit cursor">
++	Sets the cursor position inside the composing text (as byte
++	offset) relative to the start of the composing text. When index is a
++	negative number no cursor is shown.
++
++	This event is handled as part of a following preedit_string event.
++      </description>
++      <arg name="index" type="int"/>
++    </event>
++
++    <event name="commit_string">
++      <description summary="commit">
++	Notify when text should be inserted into the editor widget. The text to
++	commit could be either just a single character after a key press or the
++	result of some composing (pre-edit). It could also be an empty text
++	when some text should be removed (see delete_surrounding_text) or when
++	the input cursor should be moved (see cursor_position).
++
++	Any previously set composing text should be removed.
++      </description>
++      <arg name="serial" type="uint" summary="serial of the latest known text input state"/>
++      <arg name="text" type="string"/>
++    </event>
++
++    <event name="cursor_position">
++      <description summary="set cursor to new position">
++	Notify when the cursor or anchor position should be modified.
++
++	This event should be handled as part of a following commit_string
++	event.
++      </description>
++      <arg name="index" type="int"/>
++      <arg name="anchor" type="int"/>
++    </event>
++
++    <event name="delete_surrounding_text">
++      <description summary="delete surrounding text">
++	Notify when the text around the current cursor position should be
++	deleted.
++
++	Index is relative to the current cursor (in bytes).
++	Length is the length of deleted text (in bytes).
++
++	This event should be handled as part of a following commit_string
++	event.
++      </description>
++      <arg name="index" type="int"/>
++      <arg name="length" type="uint"/>
++    </event>
++
++    <event name="keysym">
++      <description summary="keysym">
++	Notify when a key event was sent. Key events should not be used
++	for normal text input operations, which should be done with
++	commit_string, delete_surrounding_text, etc. The key event follows
++	the wl_keyboard key event convention. Sym is an XKB keysym, state a
++	wl_keyboard key_state. Modifiers are a mask for effective modifiers
++	(where the modifier indices are set by the modifiers_map event)
++      </description>
++      <arg name="serial" type="uint" summary="serial of the latest known text input state"/>
++      <arg name="time" type="uint"/>
++      <arg name="sym" type="uint"/>
++      <arg name="state" type="uint"/>
++      <arg name="modifiers" type="uint"/>
++    </event>
++
++    <event name="language">
++      <description summary="language">
++	Sets the language of the input text. The "language" argument is an
++	RFC-3066 format language tag.
++      </description>
++      <arg name="serial" type="uint" summary="serial of the latest known text input state"/>
++      <arg name="language" type="string"/>
++    </event>
++
++    <enum name="text_direction">
++      <entry name="auto" value="0" summary="automatic text direction based on text and language"/>
++      <entry name="ltr" value="1" summary="left-to-right"/>
++      <entry name="rtl" value="2" summary="right-to-left"/>
++    </enum>
++
++    <event name="text_direction">
++      <description summary="text direction">
++	Sets the text direction of input text.
++
++	It is mainly needed for showing an input cursor on the correct side of
++	the editor when there is no input done yet and making sure neutral
++	direction text is laid out properly.
++      </description>
++      <arg name="serial" type="uint" summary="serial of the latest known text input state"/>
++      <arg name="direction" type="uint" enum="text_direction" />
++    </event>
++  </interface>
++
++  <interface name="zwp_text_input_manager_v1" version="1">
++    <description summary="text input manager">
++      A factory for text_input objects. This object is a global singleton.
++    </description>
++
++    <request name="create_text_input">
++      <description summary="create text input">
++	Creates a new text_input object.
++      </description>
++      <arg name="id" type="new_id" interface="zwp_text_input_v1"/>
++    </request>
++  </interface>
++
++</protocol>
+--- a/src/input-method-relay.c	2026-04-03 21:45:23
++++ b/src/input-method-relay.c	2026-11-07 19:20:52
+@@ -7,7 +7,11 @@
+ #include "input-method-relay.h"
+ 
+ #include "text-input-unstable-v3-protocol.h"
++#include "text-input-unstable-v1-protocol.h"
+ 
++#include <gio/gio.h>
++#include <wlr/types/wlr_compositor.h>
++
+ #include <gmobile.h>
+ 
+ #include <assert.h>
+@@ -34,7 +38,52 @@
+   struct wl_listener destroy;
+ } PhocTextInput;
+ 
++/* Legacy zwp_text_input_v1 compatibility adapter.  It deliberately lives
++ * beside the v3 relay instead of replacing it: apps that bind v3 (GTK,
++ * WebKitGTK/PWAs) keep the existing path untouched, while Electron/Chromium
++ * builds that only know the removed v1 protocol get a translation to the same
++ * input-method-v2/Stevia backend. */
++typedef struct {
++  char *text;
++  uint32_t cursor;
++  uint32_t anchor;
++  bool has_surrounding;
++  uint32_t hint;
++  uint32_t purpose;
++  bool has_content_type;
++  int32_t cursor_rect[4];
++  bool has_cursor_rectangle;
++  char *preferred_language;
++} PhocTextInputV1State;
+ 
++typedef struct _PhocTextInputV1 {
++  PhocInputMethodRelay *relay; /* NULL until a client activates on a seat */
++  struct wl_resource *resource;
++  struct wlr_surface *focused_surface;
++  bool current_enabled;
++  uint32_t serial;
++  PhocTextInputV1State pending;
++  PhocTextInputV1State current;
++  struct wl_list link;         /* relay->text_inputs_v1 (only when attached) */
++  struct wl_list manager_link; /* text_input_manager_v1->inputs */
++  struct wl_listener focused_surface_destroy;
++} PhocTextInputV1;
++
++static PhocTextInputV1 *relay_get_focused_v1 (PhocInputMethodRelay *relay);
++static void text_input_v1_handle_im_commit (PhocTextInputV1 *v1,
++                                            struct wlr_input_method_v2 *context);
++static void text_input_v1_send_im_done (PhocTextInputV1 *v1);
++static void text_input_v1_submit_preedit (PhocInputMethodRelay *relay,
++                                          PhocTextInputV1 *v1);
++static void text_input_v1_unset_focus (PhocInputMethodRelay *relay,
++                                       PhocTextInputV1 *v1);
++static void text_input_v1_activate (PhocTextInputV1 *v1,
++                                    struct wlr_surface *surface);
++static void show_osk_for_focused_v1 (PhocTextInputV1 *v1);
++static void hide_osk (void);
++static void text_input_manager_v1_init (struct wl_display *display);
++
++
+ static void
+ elevate_osk (struct wlr_surface *surface)
+ {
+@@ -82,12 +131,19 @@
+ handle_im_commit (struct wl_listener *listener, void *data)
+ {
+   PhocInputMethodRelay *relay = wl_container_of (listener, relay, input_method_commit);
+-  PhocTextInput *text_input = relay_get_focused_text_input (relay);
++  struct wlr_input_method_v2 *context = data;
++  PhocTextInputV1 *v1 = relay_get_focused_v1 (relay);
+ 
++  if (v1) {
++    g_assert (context == relay->input_method);
++    text_input_v1_handle_im_commit (v1, context);
++    return;
++  }
++
++  PhocTextInput *text_input = relay_get_focused_text_input (relay);
+   if (!text_input)
+     return;
+ 
+-  struct wlr_input_method_v2 *context = data;
+   g_assert (context == relay->input_method);
+   if (context->current.preedit.text) {
+     wlr_text_input_v3_send_preedit_string (text_input->input,
+@@ -453,6 +509,18 @@
+     wlr_text_input_v3_send_enter (text_input->input, text_input->pending_focused_surface);
+     text_input_clear_pending_focused_surface (text_input);
+   }
++
++  /* A v1 input has already received enter (v1 has no useful pending state),
++   * so when Stevia returns we only need to tell it the focused field again. */
++  PhocTextInputV1 *v1;
++  wl_list_for_each (v1, &relay->text_inputs_v1, link) {
++    if (!v1->focused_surface || !v1->current_enabled)
++      continue;
++    wlr_input_method_v2_send_activate (relay->input_method);
++    text_input_v1_send_im_done (v1);
++    show_osk_for_focused_v1 (v1);
++    zwp_text_input_v1_send_input_panel_state (v1->resource, 1);
++  }
+ }
+ 
+ 
+@@ -464,6 +532,8 @@
+   g_assert (PHOC_IS_SEAT (seat));
+   relay->seat = seat;
+   wl_list_init (&relay->text_inputs);
++  wl_list_init (&relay->text_inputs_v1);
++  text_input_manager_v1_init (phoc_server_get_wl_display (phoc_server_get_default ()));
+ 
+   relay->text_input_new.notify = relay_handle_new_text_input;
+   wl_signal_add (&desktop->text_input->events.text_input, &relay->text_input_new);
+@@ -518,6 +588,12 @@
+       }
+     }
+   }
++
++  PhocTextInputV1 *v1;
++  wl_list_for_each (v1, &relay->text_inputs_v1, link) {
++    if (v1->focused_surface && v1->focused_surface != surface)
++      text_input_v1_unset_focus (relay, v1);
++  }
+ }
+ 
+ /**
+@@ -547,9 +623,100 @@
+     if (focused == surface && text_input->input->current_enabled)
+       return true;
+   }
++
++  PhocTextInputV1 *v1;
++  wl_list_for_each (v1, &relay->text_inputs_v1, link) {
++    if (!v1->focused_surface)
++      continue;
++    struct wlr_surface *focused = wlr_surface_get_root_surface (v1->focused_surface);
++    if (focused == surface && v1->current_enabled)
++      return true;
++  }
+   return false;
+ }
+ 
++static GDBusConnection *osk_bus_connection = NULL;
++static gint64 osk_last_show_us = 0;
++
++static void
++osk_set_visible (gboolean visible, gboolean throttle)
++{
++  g_autoptr (GError) err = NULL;
++  g_autofree char *address = NULL;
++  gint64 now;
++
++  if (throttle) {
++    /* Multi-touch gestures deliver several down events; one D-Bus call is enough. */
++    now = g_get_monotonic_time ();
++    if (now - osk_last_show_us < 250000)
++      return;
++    osk_last_show_us = now;
++  }
++
++  if (!g_file_get_contents ("/run/nuxel-osk.bus", &address, NULL, NULL) || !address) {
++    address = g_strdup ("unix:path=/run/nuxel-wayland/bus");
++  } else {
++    g_strstrip (address);
++  }
++  if (!address || !*address)
++    return;
++
++  if (osk_bus_connection == NULL || g_dbus_connection_is_closed (osk_bus_connection)) {
++    g_clear_object (&osk_bus_connection);
++    osk_bus_connection = g_dbus_connection_new_for_address_sync (
++      address,
++      G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
++      G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION,
++      NULL, NULL, &err);
++    if (!osk_bus_connection) {
++      g_debug ("OSK bus %s unavailable: %s", address, err ? err->message : "unknown");
++      return;
++    }
++  }
++
++  g_dbus_connection_call (osk_bus_connection,
++                          "sm.puri.OSK0",
++                          "/sm/puri/OSK0",
++                          "sm.puri.OSK0",
++                          "SetVisible",
++                          g_variant_new ("(b)", visible),
++                          NULL,
++                          G_DBUS_CALL_FLAGS_NONE,
++                          1000,
++                          NULL, NULL, NULL);
++}
++
++static void
++hide_osk (void)
++{
++  osk_set_visible (FALSE, FALSE);
++}
++
++/* A focused text field can already have text-input enabled while the OSK is
++ * folded (the OSK's own swipe-down gesture only hides its surface; it never
++ * disables the client's text-input).  Tapping that same field therefore emits
++ * no new enable/activate event and the keyboard never returns.  Every touch or
++ * button press on the focused text-input surface re-asserts visibility through
++ * the OSK's documented sm.puri.OSK0.SetVisible method. */
++static void
++show_osk_for_focused_text_input (PhocTextInput *text_input)
++{
++  if (!text_input || !text_input->input || !text_input->input->current_enabled)
++    return;
++
++  osk_set_visible (TRUE, TRUE);
++}
++
++static void
++show_osk_for_focused_v1 (PhocTextInputV1 *v1)
++{
++  if (!v1 || !v1->current_enabled || !v1->focused_surface)
++    return;
++
++  osk_set_visible (TRUE, TRUE);
++}
++
++
+ /**
+  * phoc_input_method_relay_im_submit:
+  * @self: The relay
+@@ -569,6 +736,15 @@
+   if (!self->input_method)
+     return;
+ 
++  PhocTextInputV1 *v1 = relay_get_focused_v1 (self);
++  if (v1) {
++    if (v1->focused_surface == surface) {
++      text_input_v1_submit_preedit (self, v1);
++      show_osk_for_focused_v1 (v1);
++    }
++    return;
++  }
++
+   text_input = relay_get_focused_text_input (self);
+   if (!text_input)
+     return;
+@@ -577,4 +753,583 @@
+     return;
+ 
+   submit_preedit (self, text_input);
++  show_osk_for_focused_text_input (text_input);
++}
++
++
++/* ============================================================================
++ * zwp_text_input_v1 -> zwp_text_input_v3 / input-method-v2 compatibility
++ *
++ * Chromium/Electron builds before the v3 migration still bind the removed
++ * zwp_text_input_v1 manager.  They never see v3, so Stevia never gets an
++ * activate request and the on-screen keyboard cannot be raised.  This adapter
++ * exposes v1 only when the Nuxel setting is enabled and translates the small,
++ * well-defined v1 subset onto the SAME input-method-v2 relay Stevia already
++ * serves for v3.  v3 clients and the normal keyboard path are untouched.
++ * ========================================================================== */
++
++#define NUXEL_TEXT_INPUT_V1_MARKER "/run/nuxel-text-input-v1.enabled"
++#define NUXEL_TEXT_INPUT_V1_POLL_MS 500
++
++typedef struct {
++  struct wl_display *display;
++  struct wl_global *global;
++  struct wl_event_source *timer;
++  bool enabled;
++  struct wl_list inputs; /* PhocTextInputV1.manager_link */
++} PhocTextInputManagerV1;
++
++static PhocTextInputManagerV1 *text_input_manager_v1;
++
++static void
++text_input_v1_state_clear (PhocTextInputV1State *state)
++{
++  g_clear_pointer (&state->text, g_free);
++  g_clear_pointer (&state->preferred_language, g_free);
++  memset (state, 0, sizeof (*state));
++}
++
++static void
++text_input_v1_state_copy (PhocTextInputV1State *dst, const PhocTextInputV1State *src)
++{
++  text_input_v1_state_clear (dst);
++  dst->text = g_strdup (src->text);
++  dst->cursor = src->cursor;
++  dst->anchor = src->anchor;
++  dst->has_surrounding = src->has_surrounding;
++  dst->hint = src->hint;
++  dst->purpose = src->purpose;
++  dst->has_content_type = src->has_content_type;
++  memcpy (dst->cursor_rect, src->cursor_rect, sizeof (dst->cursor_rect));
++  dst->has_cursor_rectangle = src->has_cursor_rectangle;
++  dst->preferred_language = g_strdup (src->preferred_language);
++}
++
++static PhocTextInputV1 *
++relay_get_focused_v1 (PhocInputMethodRelay *relay)
++{
++  if (!relay || !text_input_manager_v1 || !text_input_manager_v1->enabled)
++    return NULL;
++
++  PhocTextInputV1 *v1;
++  wl_list_for_each (v1, &relay->text_inputs_v1, link) {
++    if (v1->focused_surface)
++      return v1;
++  }
++  return NULL;
++}
++
++static void
++text_input_v1_send_im_done (PhocTextInputV1 *v1)
++{
++  PhocInputMethodRelay *relay = v1 ? v1->relay : NULL;
++  struct wlr_input_method_v2 *input_method = relay ? relay->input_method : NULL;
++
++  if (!input_method || !v1->current_enabled || !v1->focused_surface)
++    return;
++
++  if (v1->current.has_surrounding) {
++    wlr_input_method_v2_send_surrounding_text (input_method,
++                                               v1->current.text ? v1->current.text : "",
++                                               v1->current.cursor,
++                                               v1->current.anchor);
++  }
++  wlr_input_method_v2_send_text_change_cause (input_method,
++                                              ZWP_TEXT_INPUT_V3_CHANGE_CAUSE_OTHER);
++  if (v1->current.has_content_type) {
++    wlr_input_method_v2_send_content_type (input_method,
++                                           v1->current.hint,
++                                           v1->current.purpose);
++  }
++  wlr_input_method_v2_send_done (input_method);
++}
++
++static void
++text_input_v1_handle_im_commit (PhocTextInputV1 *v1,
++                                struct wlr_input_method_v2 *context)
++{
++  if (!v1 || !context || !v1->current_enabled || !v1->focused_surface)
++    return;
++
++  if (context->current.preedit.text) {
++    if (context->current.preedit.cursor_begin >= 0)
++      zwp_text_input_v1_send_preedit_cursor (v1->resource,
++                                             context->current.preedit.cursor_begin);
++    zwp_text_input_v1_send_preedit_string (v1->resource,
++                                           v1->serial,
++                                           context->current.preedit.text,
++                                           "");
++  }
++  if (context->current.commit_text)
++    zwp_text_input_v1_send_commit_string (v1->resource,
++                                          v1->serial,
++                                          context->current.commit_text);
++  if (context->current.delete.before_length
++      || context->current.delete.after_length) {
++    uint32_t before = context->current.delete.before_length;
++    uint32_t after = context->current.delete.after_length;
++    uint32_t length = before + after;
++    if (length < before)
++      length = G_MAXUINT32;
++    zwp_text_input_v1_send_delete_surrounding_text (v1->resource,
++                                                    -(int32_t)before,
++                                                    length);
++  }
++}
++
++static void
++text_input_v1_submit_preedit (PhocInputMethodRelay *relay, PhocTextInputV1 *v1)
++{
++  struct wlr_input_method_v2_preedit_string *preedit;
++
++  if (!relay || !v1 || !relay->input_method)
++    return;
++
++  preedit = &relay->input_method->current.preedit;
++  if (gm_str_is_null_or_empty (preedit->text))
++    return;
++
++  zwp_text_input_v1_send_commit_string (v1->resource, v1->serial, preedit->text);
++  g_clear_pointer (&preedit->text, g_free);
++  wlr_input_method_v2_send_text_change_cause (relay->input_method,
++                                              ZWP_TEXT_INPUT_V3_CHANGE_CAUSE_OTHER);
++  wlr_input_method_v2_send_done (relay->input_method);
++}
++
++static void
++text_input_v1_focused_surface_destroy (struct wl_listener *listener, void *data)
++{
++  PhocTextInputV1 *v1 = wl_container_of (listener, v1, focused_surface_destroy);
++
++  (void)data;
++
++  if (v1->relay && v1->relay->input_method && v1->current_enabled)
++    wlr_input_method_v2_send_deactivate (v1->relay->input_method);
++  v1->current_enabled = false;
++  v1->focused_surface = NULL;
++  wl_list_remove (&v1->focused_surface_destroy.link);
++  wl_list_init (&v1->focused_surface_destroy.link);
++  zwp_text_input_v1_send_input_panel_state (v1->resource, 0);
++}
++
++static void
++text_input_v1_unset_focus (PhocInputMethodRelay *relay, PhocTextInputV1 *v1)
++{
++  if (!v1)
++    return;
++  if (!relay) {
++    v1->current_enabled = false;
++    return;
++  }
++
++  if (relay->input_method && v1->current_enabled && v1->focused_surface) {
++    wlr_input_method_v2_send_deactivate (relay->input_method);
++    text_input_v1_send_im_done (v1);
++  }
++  v1->current_enabled = false;
++  if (v1->focused_surface) {
++    zwp_text_input_v1_send_input_panel_state (v1->resource, 0);
++    zwp_text_input_v1_send_leave (v1->resource);
++    wl_list_remove (&v1->focused_surface_destroy.link);
++    wl_list_init (&v1->focused_surface_destroy.link);
++    v1->focused_surface = NULL;
++  }
++}
++
++static void
++text_input_v1_activate (PhocTextInputV1 *v1, struct wlr_surface *surface)
++{
++  if (!v1 || !surface)
++    return;
++  if (!text_input_manager_v1 || !text_input_manager_v1->enabled)
++    return;
++
++  if (v1->focused_surface && v1->focused_surface != surface)
++    text_input_v1_unset_focus (v1->relay, v1);
++
++  if (!v1->focused_surface) {
++    v1->focused_surface = surface;
++    v1->focused_surface_destroy.notify = text_input_v1_focused_surface_destroy;
++    wl_signal_add (&surface->events.destroy, &v1->focused_surface_destroy);
++    v1->current_enabled = true;
++    zwp_text_input_v1_send_enter (v1->resource, surface->resource);
++
++    /* Make the v1 input the only focused text input on this seat. */
++    phoc_input_method_relay_set_focus (v1->relay, surface);
++
++    if (v1->relay->input_method) {
++      wlr_input_method_v2_send_activate (v1->relay->input_method);
++      text_input_v1_send_im_done (v1);
++      show_osk_for_focused_v1 (v1);
++    }
++  } else if (v1->current_enabled && v1->relay->input_method) {
++    text_input_v1_send_im_done (v1);
++    show_osk_for_focused_v1 (v1);
++  }
++
++  zwp_text_input_v1_send_input_panel_state (v1->resource,
++                                            v1->relay->input_method ? 1 : 0);
++}
++
++static void
++text_input_v1_resource_destroy (struct wl_resource *resource)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1)
++    return;
++  wl_resource_set_user_data (resource, NULL);
++
++  if (v1->focused_surface) {
++    if (v1->relay && v1->relay->input_method && v1->current_enabled)
++      wlr_input_method_v2_send_deactivate (v1->relay->input_method);
++    v1->current_enabled = false;
++    wl_list_remove (&v1->focused_surface_destroy.link);
++    v1->focused_surface = NULL;
++  }
++  if (v1->relay)
++    wl_list_remove (&v1->link);
++  wl_list_remove (&v1->manager_link);
++  text_input_v1_state_clear (&v1->pending);
++  text_input_v1_state_clear (&v1->current);
++  g_free (v1);
++}
++
++static void
++text_input_v1_activate_request (struct wl_client *client,
++                                struct wl_resource *resource,
++                                struct wl_resource *seat_resource,
++                                struct wl_resource *surface_resource)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++  struct wlr_seat_client *seat_client;
++  struct wlr_surface *surface;
++
++  if (!v1)
++    return;
++  seat_client = wlr_seat_client_from_resource (seat_resource);
++  surface = wlr_surface_from_resource (surface_resource);
++  if (!seat_client || !surface) {
++    wl_resource_post_error (resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
++                            "activate requires a valid seat and surface");
++    return;
++  }
++  if (wl_resource_get_client (surface_resource) != client) {
++    wl_resource_post_error (resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
++                            "activate surface does not belong to this client");
++    return;
++  }
++
++  PhocSeat *seat = PHOC_SEAT (seat_client->seat->data);
++  if (!seat) {
++    wl_resource_post_error (resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
++                            "activate seat has no Phoc seat");
++    return;
++  }
++  if (v1->relay != &seat->im_relay) {
++    if (v1->relay)
++      text_input_v1_unset_focus (v1->relay, v1);
++    if (v1->relay)
++      wl_list_remove (&v1->link);
++    v1->relay = &seat->im_relay;
++    wl_list_insert (&v1->relay->text_inputs_v1, &v1->link);
++  }
++
++  text_input_v1_activate (v1, surface);
++}
++
++static void
++text_input_v1_deactivate_request (struct wl_client *client,
++                                  struct wl_resource *resource,
++                                  struct wl_resource *seat_resource)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++  struct wlr_seat_client *seat_client;
++
++  if (!v1 || !v1->relay)
++    return;
++  seat_client = wlr_seat_client_from_resource (seat_resource);
++  if (seat_client && seat_client->seat != v1->relay->seat->seat)
++    return;
++
++  text_input_v1_unset_focus (v1->relay, v1);
++  hide_osk ();
++}
++
++static void
++text_input_v1_show_input_panel_request (struct wl_client *client,
++                                        struct wl_resource *resource)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1 || !v1->focused_surface || !v1->current_enabled)
++    return;
++  show_osk_for_focused_v1 (v1);
++  zwp_text_input_v1_send_input_panel_state (v1->resource, 1);
++}
++
++static void
++text_input_v1_hide_input_panel_request (struct wl_client *client,
++                                        struct wl_resource *resource)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1)
++    return;
++  hide_osk ();
++  zwp_text_input_v1_send_input_panel_state (v1->resource, 0);
++}
++
++static void
++text_input_v1_reset_request (struct wl_client *client, struct wl_resource *resource)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1)
++    return;
++  text_input_v1_state_clear (&v1->pending);
++  text_input_v1_state_clear (&v1->current);
++  v1->serial = 0;
++}
++
++static void
++text_input_v1_set_surrounding_text_request (struct wl_client *client,
++                                            struct wl_resource *resource,
++                                            const char *text,
++                                            uint32_t cursor,
++                                            uint32_t anchor)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1)
++    return;
++  g_free (v1->pending.text);
++  v1->pending.text = g_strdup (text ? text : "");
++  v1->pending.cursor = cursor;
++  v1->pending.anchor = anchor;
++  v1->pending.has_surrounding = true;
++}
++
++static void
++text_input_v1_set_content_type_request (struct wl_client *client,
++                                        struct wl_resource *resource,
++                                        uint32_t hint,
++                                        uint32_t purpose)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1)
++    return;
++  v1->pending.hint = hint;
++  v1->pending.purpose = purpose;
++  v1->pending.has_content_type = true;
++}
++
++static void
++text_input_v1_set_cursor_rectangle_request (struct wl_client *client,
++                                            struct wl_resource *resource,
++                                            int32_t x,
++                                            int32_t y,
++                                            int32_t width,
++                                            int32_t height)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1)
++    return;
++  v1->pending.cursor_rect[0] = x;
++  v1->pending.cursor_rect[1] = y;
++  v1->pending.cursor_rect[2] = width;
++  v1->pending.cursor_rect[3] = height;
++  v1->pending.has_cursor_rectangle = true;
++}
++
++static void
++text_input_v1_set_preferred_language_request (struct wl_client *client,
++                                              struct wl_resource *resource,
++                                              const char *language)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1)
++    return;
++  g_free (v1->pending.preferred_language);
++  v1->pending.preferred_language = g_strdup (language);
++}
++
++static void
++text_input_v1_commit_state_request (struct wl_client *client,
++                                    struct wl_resource *resource,
++                                    uint32_t serial)
++{
++  PhocTextInputV1 *v1 = wl_resource_get_user_data (resource);
++
++  if (!v1)
++    return;
++  v1->serial = serial;
++  text_input_v1_state_copy (&v1->current, &v1->pending);
++  if (v1->current_enabled && v1->focused_surface)
++    text_input_v1_send_im_done (v1);
++}
++
++static void
++text_input_v1_invoke_action_request (struct wl_client *client,
++                                     struct wl_resource *resource,
++                                     uint32_t button,
++                                     uint32_t index)
++{
++  /* input-method-v2 has no equivalent action request.  Ignoring is safer than
++   * inventing a key or mutating the surrounding text. */
++}
++
++static const struct zwp_text_input_v1_interface text_input_v1_impl = {
++  .activate = text_input_v1_activate_request,
++  .deactivate = text_input_v1_deactivate_request,
++  .show_input_panel = text_input_v1_show_input_panel_request,
++  .hide_input_panel = text_input_v1_hide_input_panel_request,
++  .reset = text_input_v1_reset_request,
++  .set_surrounding_text = text_input_v1_set_surrounding_text_request,
++  .set_content_type = text_input_v1_set_content_type_request,
++  .set_cursor_rectangle = text_input_v1_set_cursor_rectangle_request,
++  .set_preferred_language = text_input_v1_set_preferred_language_request,
++  .commit_state = text_input_v1_commit_state_request,
++  .invoke_action = text_input_v1_invoke_action_request,
++};
++
++static void
++text_input_manager_v1_get_text_input (struct wl_client *client,
++                                      struct wl_resource *manager_resource,
++                                      uint32_t id)
++{
++  PhocTextInputManagerV1 *manager = wl_resource_get_user_data (manager_resource);
++  struct wl_resource *resource;
++  PhocTextInputV1 *v1;
++
++  if (!manager) {
++    wl_resource_post_error (manager_resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
++                            "text input manager has no state");
++    return;
++  }
++
++  resource = wl_resource_create (client, &zwp_text_input_v1_interface,
++                                 wl_resource_get_version (manager_resource), id);
++  if (!resource) {
++    wl_client_post_no_memory (client);
++    return;
++  }
++
++  v1 = g_new0 (PhocTextInputV1, 1);
++  v1->resource = resource;
++  wl_list_init (&v1->link);
++  wl_list_init (&v1->focused_surface_destroy.link);
++  wl_list_insert (&manager->inputs, &v1->manager_link);
++  wl_resource_set_implementation (resource, &text_input_v1_impl, v1,
++                                  text_input_v1_resource_destroy);
++}
++
++static const struct zwp_text_input_manager_v1_interface text_input_manager_v1_impl = {
++  .create_text_input = text_input_manager_v1_get_text_input,
++};
++
++static void
++text_input_manager_v1_bind (struct wl_client *client, void *data,
++                           uint32_t version, uint32_t id)
++{
++  struct wl_resource *resource = wl_resource_create (
++    client, &zwp_text_input_manager_v1_interface, version, id);
++
++  if (!resource) {
++    wl_client_post_no_memory (client);
++    return;
++  }
++  wl_resource_set_implementation (resource, &text_input_manager_v1_impl, data, NULL);
++}
++
++static const char *
++text_input_v1_marker_path (void)
++{
++  const char *path = g_getenv ("NUXEL_TEXT_INPUT_V1_MARKER");
++
++  return path && *path ? path : NUXEL_TEXT_INPUT_V1_MARKER;
++}
++
++static bool
++text_input_v1_marker_enabled (void)
++{
++  g_autofree char *contents = NULL;
++
++  if (!g_file_get_contents (text_input_v1_marker_path (), &contents, NULL, NULL))
++    return false;
++  g_strstrip (contents);
++  if (!contents || !*contents)
++    return false;
++  return contents[0] == '1' || contents[0] == 't' || contents[0] == 'T'
++         || contents[0] == 'y' || contents[0] == 'Y';
++}
++
++static void
++text_input_manager_v1_set_enabled (PhocTextInputManagerV1 *manager, bool enabled)
++{
++  if (!manager || manager->enabled == enabled)
++    return;
++  manager->enabled = enabled;
++
++  if (enabled) {
++    if (!manager->global) {
++      manager->global = wl_global_create (manager->display,
++                                          &zwp_text_input_manager_v1_interface,
++                                          1, manager, text_input_manager_v1_bind);
++    }
++    g_message ("zwp_text_input_v1 compatibility enabled");
++    return;
++  }
++
++  bool had_focus = false;
++  PhocTextInputV1 *v1;
++  wl_list_for_each (v1, &manager->inputs, manager_link) {
++    if (v1->focused_surface)
++      had_focus = true;
++    if (v1->relay)
++      text_input_v1_unset_focus (v1->relay, v1);
++    zwp_text_input_v1_send_input_panel_state (v1->resource, 0);
++  }
++  if (had_focus)
++    hide_osk ();
++
++  if (manager->global) {
++    wl_global_remove (manager->global);
++    wl_global_destroy (manager->global);
++    manager->global = NULL;
++  }
++  g_message ("zwp_text_input_v1 compatibility disabled");
++}
++
++static int
++text_input_manager_v1_poll (void *data)
++{
++  PhocTextInputManagerV1 *manager = data;
++
++  text_input_manager_v1_set_enabled (manager, text_input_v1_marker_enabled ());
++  if (manager->timer)
++    wl_event_source_timer_update (manager->timer, NUXEL_TEXT_INPUT_V1_POLL_MS);
++  return 0;
++}
++
++static void
++text_input_manager_v1_init (struct wl_display *display)
++{
++  if (text_input_manager_v1 || !display) {
++    return;
++  }
++
++  PhocTextInputManagerV1 *manager = g_new0 (PhocTextInputManagerV1, 1);
++  manager->display = display;
++  wl_list_init (&manager->inputs);
++  text_input_manager_v1 = manager;
++  text_input_manager_v1_set_enabled (manager, text_input_v1_marker_enabled ());
++
++  struct wl_event_loop *loop = wl_display_get_event_loop (display);
++  manager->timer = wl_event_loop_add_timer (loop, text_input_manager_v1_poll, manager);
++  if (manager->timer)
++    wl_event_source_timer_update (manager->timer, NUXEL_TEXT_INPUT_V1_POLL_MS);
+ }
+--- a/src/input-method-relay.h	2026-04-03 21:45:23
++++ b/src/input-method-relay.h	2026-11-07 19:18:36
+@@ -27,6 +27,7 @@
+   PhocSeat          *seat;
+ 
+   struct wl_list     text_inputs; /*  PhocTextInput::link */
++  struct wl_list     text_inputs_v1; /* PhocTextInputV1::link (compat adapter) */
+   struct wlr_input_method_v2 *input_method; /* doesn't have to be present */
+ 
+   struct wl_listener text_input_new;

@@ -612,25 +612,10 @@ do_rollback() {
 }
 
 do_flush() {
-    local keep_console=0
-    for arg in "$@"; do
-        [ "$arg" = "--keep-console" ] && keep_console=1
-    done
-    if [ "$keep_console" != "1" ]; then
-        die "flush without --keep-console is refused: the USB console path must always survive (invariant)"
-    fi
-    require_root
-    ensure_dirs
-    local snap="$STATE_DIR/pre-flush.nft"
-    nft_read list ruleset > "$snap" 2>/dev/null || true
-    nft_run flush ruleset || die "nft flush ruleset failed"
-    if ! nft_run -f "$GUARD_FILE"; then
-        log "guard re-load failed after flush; restoring $snap"
-        nft_run -f "$snap" || log "restore failed"
-        return 1
-    fi
-    ok "ruleset flushed; console guard re-loaded from $GUARD_FILE (console path intact)"
-    record_audit "flush" "keep-console=1 snapshot=$snap"
+    # The global `nft flush ruleset` is forbidden: it erases rules owned by
+    # unrelated software (firewalld, containers, VPN managers).  Nuxel only ever
+    # replaces its own objects, so a whole-ruleset flush has no safe use.
+    die "flush is refused: a global ruleset flush is forbidden (see services/nuxel-firewall for scoped rollback)"
 }
 
 do_console_verify() {

@@ -39,6 +39,13 @@ logger = logging.getLogger('nuxel-http-bridge')
 _DOWNLOAD_JOBS = {}
 _DOWNLOAD_LOCK = threading.Lock()
 
+# `flatpak list` is a real subprocess.  Home used to hit the registry every 5 s,
+# so the launcher paid that cost continuously even when nothing changed.  Cache
+# the installed-app result briefly; installs/removals are still visible within
+# this TTL and the PWA watcher's 30 s cadence.
+_FLATPAK_LIST_CACHE = {'at': 0.0, 'installed': None}
+_FLATPAK_LIST_TTL_S = float(os.environ.get('NUXEL_FLATPAK_LIST_TTL_S', '20'))
+
 # Lockhead indicators are computed in-process (sysfs + /proc), next to this file.
 # The import is deliberately after logger setup and failure is contained: an
 # unavailable sensor module yields a 503 and a dimmed UI, never invented state.
@@ -85,7 +92,7 @@ except Exception as _e:  # pragma: no cover - optional module
 for _modname in ('dnd_provider', 'nfc_provider', 'fingerprint_provider',
                  'security_provider', 'led_notification_provider', 'app_manager',
                  'software_provider', 'privacy_provider', 'flatpak_provider',
-                 'doom_assets'):
+                 'doom_assets', 'firewall_provider'):
     try:
         globals()[_modname] = __import__(_modname)
     except Exception as _e:  # pragma: no cover - optional module
@@ -164,7 +171,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.9-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.0-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -229,6 +236,155 @@ APP_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$")
 APP_ORIENTATION_DEFAULTS = "/etc/nuxel/orientation/app-defaults.json"
 APP_ORIENTATION_DEFAULT_MODE = "portrait"
 APP_ORIENTATION_MODES = ("portrait", "reverse-portrait", "landscape", "reverse-landscape")
+
+# The launcher, Settings and the focus watcher all read the same document.
+# These helpers are module-level so a background watcher can use them without
+# constructing a request handler.
+ORIENTATION_FOCUS_WATCH = None
+
+
+def load_app_orientation_defaults():
+    """Load the per-app orientation document, or a safe empty document."""
+    try:
+        with open(APP_ORIENTATION_DEFAULTS, "r") as fh:
+            doc = json.load(fh)
+        if isinstance(doc, dict) and isinstance(doc.get("apps"), dict):
+            return doc
+    except (OSError, ValueError):
+        pass
+    return {"schema_version": 1, "default": APP_ORIENTATION_DEFAULT_MODE, "apps": {}}
+
+
+def global_default_orientation_mode():
+    doc = load_app_orientation_defaults()
+    mode = doc.get("default", APP_ORIENTATION_DEFAULT_MODE)
+    return mode if mode in APP_ORIENTATION_MODES else APP_ORIENTATION_DEFAULT_MODE
+
+
+def explicit_orientation_for_app(app_id):
+    doc = load_app_orientation_defaults()
+    mode = (doc.get("apps") or {}).get(app_id)
+    return mode if mode in APP_ORIENTATION_MODES else None
+
+
+def _surface_matches_app(app_id, surface_id):
+    if not app_id or not surface_id:
+        return False
+    if app_id == surface_id:
+        return True
+    if app_surface is not None:
+        try:
+            if app_surface.surface_matches(app_id, surface_id):
+                return True
+        except Exception:
+            pass
+    # Conservative local fallback for the reverse-DNS -> product-id case.
+    a = re.sub(r"[^a-z0-9]", "", str(app_id).lower())
+    b = re.sub(r"[^a-z0-9]", "", str(surface_id).lower())
+    if not b or len(b) < 5:
+        return False
+    # Caprine -> com.sindresorhus.Caprine (suffix) and
+    # org.nuxel.Browser -> org.nuxel.BrowserNative (extra suffix).
+    return a.endswith(b) or a.startswith(b) or b.startswith(a)
+
+
+def orientation_mode_for_surface(surface_id):
+    """Resolve a compositor app_id to its configured default orientation.
+
+    Apps without an explicit entry inherit the document's global default.  The
+    PWA host is Home rather than an app, so it also uses the global default.
+    """
+    if not surface_id or surface_id in ("nuxel-pwa-host", "Nuxel"):
+        return global_default_orientation_mode()
+    doc = load_app_orientation_defaults()
+    for app_id, mode in (doc.get("apps") or {}).items():
+        if mode in APP_ORIENTATION_MODES and _surface_matches_app(app_id, surface_id):
+            return mode
+    return global_default_orientation_mode()
+
+
+def current_orientation_mode():
+    try:
+        with open("/run/nuxel-orientation/status.json", "r") as fh:
+            doc = json.load(fh)
+        mode = doc.get("mode")
+        if mode in APP_ORIENTATION_MODES:
+            return mode
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def set_orientation_mode(mode):
+    """Ask the single orientation owner to apply ``mode``."""
+    if mode not in APP_ORIENTATION_MODES:
+        return False
+    try:
+        proc = subprocess.run(
+            ["/usr/libexec/nuxel/nuxel-orientationd", "set", mode, "--apply"],
+            capture_output=True, timeout=15, text=True)
+        return proc.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def _toplevel_listing_text():
+    env = dict(os.environ)
+    env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                "WAYLAND_DISPLAY": "wayland-0"})
+    try:
+        proc = subprocess.run(
+            ["/usr/lib/nuxel/nuxel-foreign-toplevel", "list"],
+            env=env, capture_output=True, timeout=5, text=True)
+        return proc.stdout or ""
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def _active_toplevel_app_id(listing):
+    for line in (listing or "").splitlines():
+        if not line.startswith("WIN ") or " act=1 " not in line:
+            continue
+        m = re.search(r"app_id=(\S+)", line)
+        if m:
+            return m.group(1)
+    return None
+
+
+def _orientation_focus_watch_worker():
+    """Apply an app's default rotation whenever it becomes foreground.
+
+    This is the safety net for launches that do not pass through /apps/exec
+    (desktop entries, Flatpak exports, another app handing over a file).  It
+    only acts on foreground *changes*, so a manual rotation is never fought
+    while the same app stays in front.
+    """
+    last_active = object()
+    while True:
+        try:
+            active = _active_toplevel_app_id(_toplevel_listing_text())
+            if active != last_active:
+                last_active = active
+                if active:
+                    wanted = orientation_mode_for_surface(active)
+                    if wanted and wanted != current_orientation_mode():
+                        ok = set_orientation_mode(wanted)
+                        logger.info(
+                            "orientation focus-watch active=%s mode=%s applied=%s",
+                            active, wanted, ok)
+        except Exception as exc:  # never let the watcher kill the bridge
+            logger.warning("orientation focus-watch error: %s", exc)
+        time.sleep(0.75)
+
+
+def start_orientation_focus_watch():
+    global ORIENTATION_FOCUS_WATCH
+    if ORIENTATION_FOCUS_WATCH is not None:
+        return
+    ORIENTATION_FOCUS_WATCH = threading.Thread(
+        target=_orientation_focus_watch_worker,
+        name="nuxel-orientation-focus-watch", daemon=True)
+    ORIENTATION_FOCUS_WATCH.start()
 
 # Flatpak apps that also have a legacy static launcher entry.  The dynamic
 # provider is authoritative: when one is uninstalled its static entry is
@@ -606,7 +762,14 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             info["flatpak"] = {"available": False, "error": "provider unavailable"}
             return
         try:
-            installed = flatpak_provider.get_provider().list_installed()
+            now = time.monotonic()
+            cached = _FLATPAK_LIST_CACHE.get('installed')
+            if cached is None or (now - float(_FLATPAK_LIST_CACHE.get('at') or 0.0)) >= _FLATPAK_LIST_TTL_S:
+                installed = flatpak_provider.get_provider().list_installed()
+                _FLATPAK_LIST_CACHE['installed'] = installed
+                _FLATPAK_LIST_CACHE['at'] = now
+            else:
+                installed = cached
         except Exception as exc:  # noqa: BLE001
             info["flatpak"] = {"available": False, "error": str(exc)}
             return
@@ -985,14 +1148,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             return "/home/nuxel"
 
     def _load_app_orientation_defaults(self):
-        try:
-            with open(APP_ORIENTATION_DEFAULTS, "r") as fh:
-                doc = json.load(fh)
-            if isinstance(doc, dict) and isinstance(doc.get("apps"), dict):
-                return doc
-        except (OSError, ValueError):
-            pass
-        return {"schema_version": 1, "default": APP_ORIENTATION_DEFAULT_MODE, "apps": {}}
+        return load_app_orientation_defaults()
 
     def _save_app_orientation_defaults(self, doc):
         tmp = APP_ORIENTATION_DEFAULTS + ".tmp"
@@ -1001,42 +1157,30 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         os.replace(tmp, APP_ORIENTATION_DEFAULTS)
 
     def _app_orientation_default(self, app_id):
-        doc = self._load_app_orientation_defaults()
-        return doc.get("apps", {}).get(app_id)
+        return explicit_orientation_for_app(app_id)
 
     def _set_orientation(self, mode):
-        try:
-            proc = subprocess.run(
-                ["/usr/libexec/nuxel/nuxel-orientationd", "set", mode, "--apply"],
-                capture_output=True, timeout=15, text=True)
-            return proc.returncode == 0
-        except (OSError, subprocess.TimeoutExpired):
-            return False
+        return set_orientation_mode(mode)
 
     def _apply_app_default_orientation(self, app_id):
-        mode = self._app_orientation_default(app_id)
-        if mode in APP_ORIENTATION_MODES:
-            self._set_orientation(mode)
+        """Apply the explicit per-app mode, else the global default.
+
+        ``app_id`` may be a launcher id (com.example.App) or a compositor
+        surface id (Caprine).  Both forms occur on resume paths.
+        """
+        if not isinstance(app_id, str) or not app_id:
+            return False
+        mode = explicit_orientation_for_app(app_id)
+        if mode is None:
+            mode = orientation_mode_for_surface(app_id)
+        return self._set_orientation(mode)
 
     def _restore_home_orientation(self):
-        doc = self._load_app_orientation_defaults()
-        mode = doc.get("default", APP_ORIENTATION_DEFAULT_MODE)
-        if mode not in APP_ORIENTATION_MODES:
-            mode = APP_ORIENTATION_DEFAULT_MODE
-        self._set_orientation(mode)
+        return self._set_orientation(global_default_orientation_mode())
 
     def _toplevel_listing(self):
         """Return the trusted compositor toplevel listing (read-only)."""
-        env = dict(os.environ)
-        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
-                    "WAYLAND_DISPLAY": "wayland-0"})
-        try:
-            proc = subprocess.run(
-                ["/usr/lib/nuxel/nuxel-foreign-toplevel", "list"],
-                env=env, capture_output=True, timeout=5, text=True)
-            return proc.stdout or ""
-        except (OSError, subprocess.TimeoutExpired):
-            return ""
+        return _toplevel_listing_text()
 
     def _resolve_surface_id(self, app_id):
         """Resolve a launcher id to the compositor's actual Wayland app_id."""
@@ -1131,6 +1275,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         focused_surface = self._focus_existing_surface(surface_id)
         if focused_surface:
             logger.info("app already visible id=%s surface=%s", target_id, focused_surface)
+            self._apply_app_default_orientation(target_id)
             return ({"success": True, "launched": False, "already_running": True,
                      "focused": True, "app_id": target_id,
                      "surface_id": focused_surface, "action": "focus-existing",
@@ -1145,6 +1290,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 if focused_surface:
                     logger.info("app still starting, focused id=%s units=%s",
                                 target_id, active_units)
+                    self._apply_app_default_orientation(target_id)
                     return ({"success": True, "launched": True,
                              "already_running": True, "focused": True,
                              "app_id": target_id, "surface_id": focused_surface,
@@ -1152,6 +1298,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                              "outcome": "already_starting"}, 200)
             logger.info("app already starting (no surface yet) id=%s units=%s",
                         target_id, active_units)
+            self._apply_app_default_orientation(target_id)
             return ({"success": True, "launched": True, "already_running": True,
                      "focused": False, "surface_seen": False,
                      "app_id": target_id, "surface_id": surface_id,
@@ -1268,6 +1415,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 cmd += ["--uid=%s" % user, "--gid=%s" % user,
                         "--property=SupplementaryGroups=audio"]
         cmd += argv
+        # Apply the launch rotation BEFORE the compositor sees the new client.
+        # Rotating a GTK/Electron window while it is still creating its first
+        # surface races the resize and can crash it (observed as a GTK
+        # scale-factor SEGV in Caprine).  A pre-launch transform means the app
+        # is born in the configured orientation.
+        self._apply_app_default_orientation(target_id)
         t_exec_request = time.monotonic()
         try:
             proc = subprocess.run(cmd, capture_output=True, timeout=15)
@@ -1353,7 +1506,6 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             except OSError:
                 pass
         threading.Thread(target=_verify_launch, name="nuxel-app-verify", daemon=True).start()
-        self._apply_app_default_orientation(target_id)
         return ({"success": True, "launched": True, "app_id": target_id,
                  "unit": unit, "action": "exec", "argv": argv,
                  "process_alive": True, "surface_seen": False,
@@ -1671,6 +1823,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             return ({"success": False, "error": "activate_failed",
                      "detail": str(exc)}, 500)
         out = (proc.stdout or b"").decode("utf-8", "replace")
+        # Activating a backgrounded app is a foreground transition too.  The
+        # launcher's resume path passes the compositor surface id (Caprine),
+        # not the registry id, so resolve through the shared matcher.
+        self._apply_app_default_orientation(app_id or surface_id)
         return ({"success": True, "action": "activate", "app_id": app_id,
                  "surface_id": surface_id, "rc": proc.returncode,
                  "output": out.strip()}, 200)
@@ -2117,6 +2273,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             self._send_json(fingerprint_provider.handle('status', {}) if fingerprint_provider else {'success': False, 'error': 'fingerprint provider unavailable'})
         elif path == '/api/v1/system/security':
             self._send_json(security_provider.handle('status', {}) if security_provider else {'success': False, 'error': 'security provider unavailable'})
+        elif path == '/api/v1/firewall/status':
+            self._send_json(firewall_provider.handle('status', {}) if firewall_provider else {'success': False, 'error': 'firewall provider unavailable'})
         elif path == '/api/v1/system/led-notification':
             self._send_json(led_notification_provider.handle('status', {}) if led_notification_provider else {'success': False, 'error': 'led provider unavailable'})
         elif path == '/api/v1/system/software':
@@ -3668,6 +3826,18 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 "apps": dict(doc.get("apps", {}) or {}),
                 "modes": list(APP_ORIENTATION_MODES)}
 
+    def _app_apply_orientation_rpc(self, params):
+        """Apply an app's configured launch rotation now (PWA open/resume)."""
+        app_id = str(params.get("app_id", ""))
+        if not APP_ID_RE.match(app_id):
+            return {"success": False, "error": "invalid_app_id", "app_id": app_id}
+        mode = explicit_orientation_for_app(app_id)
+        if mode is None:
+            mode = global_default_orientation_mode()
+        ok = self._set_orientation(mode)
+        return {"success": bool(ok), "applied": bool(ok), "app_id": app_id,
+                "mode": mode}
+
     def _app_set_orientation_default_rpc(self, params):
         app_id = str(params.get("app_id", ""))
         mode = str(params.get("orientation", params.get("mode", "")))
@@ -3705,39 +3875,127 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 doc = json.loads(out)
             except ValueError:
                 doc = None
-        if isinstance(doc, dict):
-            doc["_rc"] = proc.returncode
-            return doc
+        if isinstance(doc, (dict, list)):
+            if isinstance(doc, dict):
+                doc["_rc"] = proc.returncode
+            return {"success": proc.returncode == 0, "rc": proc.returncode,
+                    "data": doc, "denied": proc.returncode != 0}
         return {"success": proc.returncode == 0, "rc": proc.returncode,
                 "stdout": out[-400:], "stderr": err[-400:],
                 "denied": proc.returncode != 0}
 
     def _permissions_rpc(self, app_id, verb, params):
         """Central permission policy (permD) facade. Fail closed: any
-        unavailable/malformed/unknown result is denied."""
+        unavailable/malformed/unknown result is denied. Only the owner-facing
+        permission surfaces (Settings / Home / Permission Manager) may mutate
+        policy; an ordinary app may only read its own grants/checks and never
+        claim another app's identity."""
         params = params if isinstance(params, dict) else {}
         target = str(params.get("app_id", app_id))
         cap = str(params.get("capability", ""))
         if not APP_ID_RE.match(target):
             return {"success": False, "error": "invalid_app_id", "denied": True}
+
+        owner_apps = {"nuxel-settings", "org.nuxel.Home", "org.nuxel.Permissions"}
+        is_owner = app_id in owner_apps
+        is_self = target == app_id
+
+        def _denied(code, detail):
+            return {"success": False, "error": code, "denied": True, "detail": detail}
+
+        def _envelope(res, fallback=None):
+            if not isinstance(res, dict):
+                return {"success": bool(fallback), "denied": not bool(fallback), "raw": res}
+            ok = res.get("success", fallback)
+            if ok is None:
+                ok = res.get("rc", 1) == 0
+            out = dict(res)
+            out.pop("_rc", None)
+            out.pop("data", None)
+            out.pop("stdout", None)
+            out.pop("stderr", None)
+            out["success"] = bool(ok)
+            out["denied"] = not bool(ok)
+            return out
+
         if verb in ("list", "get-app", "show"):
-            return self._permd(["show", target, "--json"])
+            if not (is_owner or is_self):
+                return _denied("capability_denied", "permission policy is owner-only")
+            res = self._permd(["show", target, "--json"])
+            doc = res.get("data") if isinstance(res, dict) else None
+            if not isinstance(doc, dict):
+                return _envelope(res, fallback=False)
+            grants = doc.get("grants", {})
+            if not isinstance(grants, dict):
+                grants = {}
+            enforcement = dict(doc.get("enforcement", {}) or {})
+            matrix_res = self._permd(["enforcement-matrix", "--json"])
+            matrix = matrix_res.get("data") if isinstance(matrix_res, dict) else None
+            if isinstance(matrix, dict):
+                for row in (matrix.get("capabilities") or []):
+                    if isinstance(row, dict) and row.get("id"):
+                        enforcement.setdefault(row["id"], row)
+            return {
+                "success": True,
+                "app_id": doc.get("app_id", target),
+                "capabilities": sorted(grants),
+                "grants": grants,
+                "declared": doc.get("declared", []),
+                "unsupported": doc.get("unsupported", []),
+                "enforcement": enforcement,
+                "decisions": doc.get("decisions", {}),
+                "kernel": doc.get("kernel", {}),
+            }
         if verb == "apps":
-            return self._permd(["list", "--json"])
+            if not is_owner:
+                return _denied("capability_denied", "permission inventory is owner-only")
+            res = self._permd(["list", "--json"])
+            data = res.get("data") if isinstance(res, dict) else None
+            return {"success": True, "apps": data if isinstance(data, list) else []}
         if verb == "check":
             if not cap:
-                return {"success": False, "error": "capability required", "denied": True}
+                return _denied("capability_required", "capability is required")
+            if not (is_owner or is_self):
+                return _denied("capability_denied", "cannot check another app's grants")
             return self._permd(["check", target, cap])
+
         if verb in ("grant", "request"):
             if not cap:
-                return {"success": False, "error": "capability required", "denied": True}
-            return self._permd(["grant", target, cap, "--duration", "always"])
-        if verb in ("deny", "revoke"):
+                return _denied("capability_required", "capability is required")
+            if not is_owner:
+                # This handset has no interactive PhoshAgent consent surface.
+                # Fail closed rather than silently auto-approving an app request.
+                return _denied("consent_unavailable",
+                               "no interactive consent surface; the owner grants permissions in Settings")
+            res = self._permd(["grant", target, cap, "--duration", "always"])
+            out = _envelope(res)
+            out["app_id"] = target
+            out["capability"] = cap
+            return out
+        if verb == "deny":
             if not cap:
-                return {"success": False, "error": "capability required", "denied": True}
-            return self._permd(["revoke", target, cap])
+                return _denied("capability_required", "capability is required")
+            if not is_owner:
+                return _denied("capability_denied", "only the owner may deny permissions")
+            res = self._permd(["deny", target, cap])
+            out = _envelope(res)
+            out["app_id"] = target
+            out["capability"] = cap
+            return out
+        if verb == "revoke":
+            if not cap:
+                return _denied("capability_required", "capability is required")
+            if not is_owner:
+                return _denied("capability_denied", "only the owner may revoke permissions")
+            res = self._permd(["revoke", target, cap])
+            out = _envelope(res)
+            out["app_id"] = target
+            out["capability"] = cap
+            return out
         if verb == "revoke-all":
-            return self._permd(["revoke-all", target])
+            if not is_owner:
+                return _denied("capability_denied", "only the owner may revoke permissions")
+            return _envelope(self._permd(["revoke-all", target]))
         return {"success": False, "error": "unknown permissions verb: " + verb,
                 "denied": True}
 
@@ -3941,6 +4199,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             return self._spoof_rpc(app_id, verb, params)
         if namespace == 'apps' and verb == 'orientation-defaults':
             return self._app_orientation_defaults_rpc(params)
+        if namespace == 'apps' and verb == 'apply-orientation':
+            return self._app_apply_orientation_rpc(params)
         if namespace == 'apps' and verb == 'set-orientation-default':
             if app_id not in ('org.nuxel.Settings', 'nuxel-settings', 'org.nuxel.Home'):
                 return {'success': False, 'error': 'capability_denied',
@@ -4232,13 +4492,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # process (never forwarded to the sandboxed D-Bus bridge) because they
         # read /dev/snd or write /sys/class/rfkill.
         if namespace in ('dnd', 'nfc', 'fingerprint', 'biometrics',
-                         'security', 'led-notification', 'apps', 'software', 'privacy'):
+                         'security', 'led-notification', 'apps', 'software', 'privacy', 'firewall'):
             mod = {'dnd': dnd_provider, 'nfc': nfc_provider,
                    'fingerprint': fingerprint_provider, 'biometrics': fingerprint_provider,
                    'security': security_provider,
                    'led-notification': led_notification_provider,
                    'apps': app_manager, 'software': software_provider,
-                   'privacy': privacy_provider}.get(namespace)
+                   'privacy': privacy_provider, 'firewall': firewall_provider}.get(namespace)
             if mod is None:
                 return {'success': False, 'error': namespace + ' provider unavailable',
                         'error_code': 'PROVIDER_UNAVAILABLE'}
@@ -4251,7 +4511,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return {"success": False, "error": "capability_denied",
                         "detail": "this app may not mutate the app registry, device lock or NFC reader"}
             try:
-                result = mod.handle(verb, params)
+                if namespace == 'firewall':
+                    result = mod.handle(verb, params, caller_app_id=app_id)
+                else:
+                    result = mod.handle(verb, params)
             except Exception as exc:  # noqa: BLE001
                 logger.warning('%s RPC %s failed: %s', namespace, verb, exc)
                 return {'success': False, 'error': str(exc), 'error_code': 'PROVIDER_ERROR'}
@@ -4747,7 +5010,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     self._send_json({'success': False, 'error': 'capability_denied',
                                      'detail': 'only Software, NuxTore or Home may change Flatpak installations'}, 403)
                     return
-            self._send_json(flatpak_provider.handle(verb, payload))
+            _result = flatpak_provider.handle(verb, payload)
+            if verb in ('install', 'update', 'uninstall') and isinstance(_result, dict) and _result.get('success'):
+                _FLATPAK_LIST_CACHE['installed'] = None
+                _FLATPAK_LIST_CACHE['at'] = 0.0
+            self._send_json(_result)
 
         elif path == '/api/v1/apps/activate':
             # The target is its OWN field: `app_id` in this API is the CALLER (used
@@ -4859,6 +5126,9 @@ def start_api_server(host=None, port=None, token=None):
     BridgeAPIHandler.server_token = token
 
     server = HTTPServer((host, port), BridgeAPIHandler)
+    # Keep every foreground native app on its configured launch rotation, even
+    # when it was started outside /apps/exec (desktop entry, Flatpak export).
+    start_orientation_focus_watch()
     logger.info("Nuxel Bridge API running on http://%s:%s", host, port)
     logger.info("API Token: %s", BridgeAPIHandler.server_token)
     logger.info("Mode: %s", HTTP_MODE)

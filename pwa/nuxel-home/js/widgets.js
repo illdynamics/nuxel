@@ -124,16 +124,27 @@
         el.appendChild(time); el.appendChild(date);
         var update = function () {
           var n = new Date();
+          // Minutes are all the widget shows.  The old seconds display forced a
+          // full WebKit/phoc/wl-fb composite every second on this software-
+          // rendered handset; this is the single largest idle cost we measured.
           time.textContent = String(n.getHours()).padStart(2, '0') + ':' +
-            String(n.getMinutes()).padStart(2, '0') + ':' + String(n.getSeconds()).padStart(2, '0');
+            String(n.getMinutes()).padStart(2, '0');
           date.textContent = n.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
         };
         update(); el.__nuxelClockUpdate = update;
-        if (!clockTimer) clockTimer = global.setInterval(function () {
-          document.querySelectorAll('.nx-widget-clock').forEach(function (node) {
-            if (node.__nuxelClockUpdate) node.__nuxelClockUpdate();
-          });
-        }, 1000);
+        if (!clockTimer) {
+          var scheduleMinute = function () {
+            var now = new Date();
+            var delay = Math.max(1000, 60000 - (now.getSeconds() * 1000 + now.getMilliseconds()));
+            clockTimer = global.setTimeout(function () {
+              document.querySelectorAll('.nx-widget-clock').forEach(function (node) {
+                if (node.__nuxelClockUpdate) node.__nuxelClockUpdate();
+              });
+              scheduleMinute();
+            }, delay);
+          };
+          scheduleMinute();
+        }
       }
     },
     calendar: {

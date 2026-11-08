@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="nuxel-app-id" content="org.nuxel.Permissions">
+<title>Nuxel Permission Manager</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="shield" aria-hidden="true">🔐</span>
+    <div><h1>Permission Manager</h1><p class="sub" id="policy-line">Reading central permD policy…</p></div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <label class="apps-select-label">App
+      <select id="app-select" aria-label="Select app"></select>
+    </label>
+    <p class="hint">This is a wrapper around the same policy service that Settings and the bridge enforce. Nothing is stored in this page.</p>
+  </div>
+
+  <div id="detail" class="permissions-detail"></div>
+  <p class="state" id="state">Select an app to review its permissions.</p>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

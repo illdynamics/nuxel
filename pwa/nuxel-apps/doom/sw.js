@@ -1,6 +1,6 @@
 // Nuxel Doom — offline-first shell cache. The WAD itself is streamed from the
 // read-only Nuxel bridge and is never cached here.
-const NAME = 'nuxel-doom-200-v10';
+const NAME = 'nuxel-doom-200-v11';
 const PREFIX = 'nuxel-doom-';
 const ASSETS = [
   './', './index.html', './app.json', './manifest.json',

@@ -49,7 +49,7 @@ class SoundCueTests(unittest.TestCase):
         self.assertEqual(self.invoke('boot').returncode,0)
         self.assertEqual(len(self.lines()),1)
         self.assertIn('-f 32768 ',self.lines()[0])
-        self.assertIn('nuxel-pow.mp3',self.lines()[0])
+        self.assertIn('nuxel-boot-audio.mp3',self.lines()[0])
         self.assertEqual(self.invoke('boot').returncode,0)
         self.assertEqual(len(self.lines()),1)
     def test_volume_uses_current_mixer_level_not_duplicate_gain(self):

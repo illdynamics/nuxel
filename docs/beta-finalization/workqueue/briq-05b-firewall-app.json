@@ -8,7 +8,7 @@
       "component": "bg-05-security-permissions",
       "component_title": "Priority 5 - Security, Permissions & Connectivity Controls",
       "priority": 5,
-      "state": "in_progress",
+      "state": "complete",
       "dependencies": [
         "briq-04b-service-definitions"
       ],
@@ -26,6 +26,20 @@
           "command": "test -e tools/s10plus/a33/nuxel-firewall.sh",
           "result": "present at seed time (presence is not a verdict)",
           "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "test",
+          "path": "services/nuxel-firewall/tests + tools/s10plus/a33/security-tests/test-firewall.sh",
+          "command": "python3 -m unittest discover -s services/nuxel-firewall/tests && bash tools/s10plus/a33/security-tests/test-firewall.sh",
+          "result": "27 python unit tests OK; 50 legacy firewall offline tests OK",
+          "at": "2026-11-07T19:40:00+01:00"
+        },
+        {
+          "kind": "live-observation",
+          "path": "live S10+",
+          "command": "backend-probe",
+          "result": "nftables_kernel=false, iptables_kernel=true, ip6tables_kernel=true, owner_match=true, cgroup_match=false, net_cls=true(cgroup2 unified memory+pids), nft/iptables/ufw/firewalld binaries absent; per-app enforceable_now=false (all app processes root)",
+          "at": "2026-11-07T19:38:00+01:00"
         }
       ],
       "intended_changes": [
@@ -38,12 +52,14 @@
       ],
       "risk": "medium",
       "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
-      "verdict": null,
-      "offline_ceiling": null,
+      "verdict": "implemented: services/nuxel-firewall (canonical policy + iptables/nftables/firewalld/ufw adapters + transaction), pwa/nuxel-apps/firewall, settings/QS integration. Live S10+ kernel has no nftables and no cgroup net match; iptables (owner-UID) global policy is the only supported path, per-app matrix is honestly unsupported on-device.",
+      "offline_ceiling": "verdict",
       "owner_action": "",
       "expected_files": [
-        "configs/nftables/",
-        "tools/s10plus/a33/nuxel-firewall.sh",
+        "services/nuxel-firewall/",
+        "configs/nuxel/firewall/policy.json",
+        "pwa/nuxel-apps/firewall/",
+        "services/nuxel-bridge/src/firewall_provider.py",
         "docs/beta-finalization/security/FIREWALL.md"
       ],
       "note": "seeded from the QonQrete plan; 2/3 expected file(s) already present in the tree",

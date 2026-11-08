@@ -319,15 +319,3 @@ Do not fabricate motor feedback or physical test results.
 **BUILD → DEPLOY → 90-SECOND TEST → FIX → RETEST.**
 
 **EXECUTE NOW. 🐧🔥**
-
-
-## ADDENDUM — ACTUAL ICONS AND TWO OWNER-PROVIDED MP3 CUES
-
-Use the supplied real assets, never emoji/placeholder art where a matching PNG exists:
-- `assets/button-left.png`, `button-middle.png`, `button-right.png` for Back/Home/Recents.
-- `assets/nuxel-applications-icon-pack/` for launcher/dock/search/Recents.
-- `assets/nuxel-quicksettings-icon-pack/` for Quick Settings.
-- `assets/nuxel-boot-audio.mp3`: 7.7-second cue, play ONCE when the *real* `/run/nuxel-anim-handoff` receipt confirms `owner=ui` and `stage=LAUNCHER_DISPLAY_OWNER`, **not** merely when the PWA loads or before the animation ends. Request 44% software PCM gain; preserve the device's existing 25% protective hardware-mixer ceiling until speaker routing is verified.
-- `assets/nuxel-pow.mp3`: short cue triggered nonblockingly after a successful physical volume-up/down mixer adjustment, at the *newly selected* real mixer level. Suppress overlapping cues and respect silent/vibrate mode.
-
-Deploy icon packs to the actual `nuxel-web` document root (`/usr/share/nuxel/assets/` on the Fedora image) and verify HTTP 200 for icon paths. Include all source assets and the audio helper/service in image builds, plus a safe live-deployment plan. Do not report audible sound unless the owner hears it. Do not bypass the existing protective ALSA cap or start a second haptics actuator owner.

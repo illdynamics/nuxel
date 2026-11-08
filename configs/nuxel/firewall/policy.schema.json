@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Nuxel Firewall Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "defaults"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "enabled": {"type": "boolean"},
+    "backend": {"enum": ["auto", "iptables", "nftables", "firewalld", "ufw"]},
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input": {"enum": ["allow", "deny"]},
+        "forward": {"enum": ["allow", "deny"]},
+        "output": {"enum": ["allow", "deny"]},
+        "ipv4": {"type": "boolean"},
+        "ipv6": {"type": "boolean"}
+      }
+    },
+    "app_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "outbound": {"enum": ["inherit_global", "allow", "deny"]},
+        "new_app_policy": {"enum": ["inherit", "allow", "deny"]}
+      }
+    },
+    "services": {"type": "object"},
+    "apps": {"type": "object"},
+    "networks": {"type": "object"},
+    "logging": {"type": "object"},
+    "safety": {"type": "object"},
+    "profiles": {"type": "object"}
+  }
+}

@@ -1,5 +1,11 @@
 #!/usr/sbin/nft -f
 # ============================================================================
+# SUPERSEDED: the authoritative corrected implementation is
+# services/nuxel-firewall/nuxel_firewall/backends/nftables.py and the iptables
+# backend in the same package.  This file is kept for reference only and no
+# longer issues a global `flush ruleset`.
+# ============================================================================
+# ============================================================================
 # Nuxel app firewall - DEVICE ruleset (Linux 4.14.253, S10+ / beyond2lte)
 # ============================================================================
 # Per-app network isolation for Nuxel.
@@ -23,11 +29,9 @@
 #     inside a file that begins with `flush ruleset` is exactly the ordering bug
 #     this layout avoids.
 #
-# Default posture: DROP. An app gets network only if an ACCEPT rule for its
-# classid exists. Root and processes outside any app classid are NOT constrained
+# Default posture: ACCEPT (outbound allow by default). Explicit per-app deny
+# rules (meta cgroup <classid> drop) must be injected by the corrected backend. Root and processes outside any app classid are NOT constrained
 # by this table (documented limitation - see docs/beta-finalization/security/FIREWALL.md).
-
-flush ruleset
 
 table inet nuxel_app_firewall {
     # ---------------------------------------------------------------- input --
@@ -67,7 +71,7 @@ table inet nuxel_app_firewall {
     #     nuxel-firewall.sh app-allow <app-id>,
     #   * or it is system traffic (classid 0) - see the honest note below.
     chain output {
-        type filter hook output priority -100; policy drop;
+        type filter hook output priority -100; policy accept;
 
         ct state established,related accept
         oif lo accept

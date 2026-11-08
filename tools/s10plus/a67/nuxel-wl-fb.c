@@ -1054,12 +1054,17 @@ static void display_set(int on, const char *why) {
        flash that was visible because the backlight was turned on before a
        fresh frame existed. */
     display_on = 1;
-    force_present = 1;
-    force_full_frames = 2;
+    force_present = 0;
+    force_full_frames = 0;
     wake_pending = 1;
     wake_generation++;
     wake_tries = 0;
     st("DISPLAY_WAKE_PREPARE why=%s brightness=%d gen=%d", why, b, wake_generation);
+    /* Publish the waking/on state BEFORE the backlight is restored so the PWA
+       host sees display-on and shows the lockscreen while the panel is still
+       dark.  The loop then waits for a REAL changed frame before unblanking,
+       instead of force-committing the stale pre-off desktop. */
+    display_publish();
     return;
   } else if (!on && display_on) {
     int cur = read_int_file(BACKLIGHT);
@@ -1756,7 +1761,7 @@ int main(int argc, char **argv) {
     else {
       int changed;
       clock_gettime(CLOCK_MONOTONIC, &t_cmp0);
-      if (force_full_frames > 0) {
+      if (force_full_frames > 0 && !wake_pending) {
         changed = 1;
         /* Refresh the baseline, then explicitly widen this frame to the full
          * source height.  This is what removes a stale top band/rectangle that
@@ -1767,7 +1772,7 @@ int main(int argc, char **argv) {
         force_present = 0;
         force_full_frames--;
         st("REPAINT_FULL remaining=%d src=%dx%d", force_full_frames, frame_buf.w, frame_buf.h);
-      } else if (force_present || !have_hash) {
+      } else if (!wake_pending && (force_present || !have_hash)) {
         changed = 1;
         /* Prime the damage baseline even when this frame is a forced repaint;
            if the baseline already exists, use its real dirty span. */
@@ -1782,6 +1787,13 @@ int main(int argc, char **argv) {
       clock_gettime(CLOCK_MONOTONIC, &t_cmp1);
       compare_ns_sum += ts_ns(&t_cmp1) - ts_ns(&t_cmp0);
       compare_n++;
+      if (wake_pending && changed) {
+        /* First real post-wake change: paint the complete new frame (usually
+           the lockscreen) rather than only the dirty rows, so no stale desktop
+           row survives the wake. */
+        damage_y0 = 0; damage_y1 = frame_buf.h;
+        dirty_reset(); dirty_add(0, frame_buf.h);
+      }
       if (changed) {
         force_present = 0;
         last_change_ms = mono_ms();
@@ -1817,21 +1829,25 @@ int main(int argc, char **argv) {
       if (last_pan_rc == 0) {
         int wb = saved_brightness;
         if (wb < 0) wb = max_brightness > 0 ? max_brightness / 2 : 255;
-        bl_power_write(0, "wake-frame-committed");
         panel_assert("post-wake");
+        bl_power_write(0, "wake-frame-committed");
         backlight_write(wb);
         wake_pending = 0;
         wake_tries = 0;
+        force_present = 0;
+        force_full_frames = 0;
         display_publish();
         st("DISPLAY_WAKE_COMMIT gen=%d brightness=%d pan_ok=1", wake_generation, wb);
-      } else if (++wake_tries >= 8) {
+      } else if (++wake_tries >= 60) {
         int wb = saved_brightness;
         if (wb < 0) wb = max_brightness > 0 ? max_brightness / 2 : 255;
-        bl_power_write(0, "wake-fallback");
         panel_assert("post-wake-fallback");
+        bl_power_write(0, "wake-fallback");
         backlight_write(wb);
         wake_pending = 0;
         wake_tries = 0;
+        force_present = 0;
+        force_full_frames = 0;
         display_publish();
         st("DISPLAY_WAKE_FALLBACK gen=%d tries=%d brightness=%d", wake_generation, wake_tries, wb);
       }
@@ -1888,6 +1904,7 @@ int main(int argc, char **argv) {
     if (idle > 500) pace = 8;
     if (idle > 2000) pace = 3;
     if (idle > 6000) pace = 1;
+    if (wake_pending) pace = fps_target;
     long pace_ns = 1000000000L / (pace > 0 ? pace : 1);
     long rest_ns = pace_ns - used_ns;
     if (rest_ns > 0) {

@@ -1,28 +1,59 @@
-|---|---|
-| Touch | **Samsung S6SY761** (`sec_ts`), I2C 0x48, firmware `y771`/`y771_d`, FOD *(was "Samsung/Synaptics, verify")* |    
-| Panel | **Samsung S6E3HA9** (`s6e3ha9_beyond2`), 3040×1440 |
-| Audio | **CS47L93** + **2× CS35L40** amps *(was "CS35L41" — that was wrong)* |
-| WiFi/BT | **BCM4375** confirmed (`samsung,brcm-wlan` node + teardown) |
-| NFC | **Samsung sec-nfc** (S3FWRN5-family) @ 0x27 + embedded SE |
+I've completed a substantial, verifiable portion of the work. Here's the honest status.
 
-## What I changed
+## Done and verified (on the device, via SSH)
 
-Updated all four files — `g7power-requirements.md`, `nuxel-g7power.md`, `s10plus-requirements.md`, `nuxel-s10plus.md`:     
+**1. Sound — diagnosed and confirmed working**
+- The boot-time `set_hw_params: Invalid argument` errors are a **boot race**: PipeWire opens `hw:0,1` (RDMA1) before `nuxel-audio-route.service` programs `RDMA1_EN`/CS35L41 DSP. It self-recovers through the existing `nuxel-abox-firmware-reload` → `nuxel-audio-route` → `nuxel-soundd` chain.      
+- Verified working both **before and after reboot**: route state `applied`, `calliope=MUB0`, `dsp1=2/2`, sink `alsa_output.hw_0_1` RUNNING at `s16le 2ch 48000Hz`, and a bounded 440 Hz tone played with `rc=0`.
 
-1. **Hardware profile tables** — filled in real IDs + sources instead of "verify on device".
-2. **Driver matrices** — fixed WiFi driver (wcn36xx, not ath10k), touch driver, audio amp model.
-3. **Kernel defconfig guidance** — `CONFIG_WCN36XX` + `CONFIG_QCOM_WCNSS_PIL` + `CONFIG_TOUCHSCREEN_ILI2117`.
-4. **"Verified facts" in both agent prompts** — touch/panel/audio/NFC/sensor IDs now stated as known.
-5. **Phase 0 / open-questions sections** — marked the now-resolved items, and shrank the "unknowns" to what's genuinely left.
+**2. Legcord & Vesktop — launch path confirmed and registered**
+- The real bridge (`/usr/lib/nuxel/nuxel-bridge/api.py` + `flatpak_provider.py`) **already** launches them correctly: per-user D-Bus bus `/run/user/1000/bus`, Electron `--ozone-platform=wayland`, `ZYPAK_ZYGOTE_STRATEGY_SPAWN=0`, and `--disable-gpu --no-sandbox`. `flatpak_provider.launch_argv()` returns the correct argv and reports both `installed: True`.
+- Added both to `/etc/nuxel/app-registry/app_registry.json` (45 apps now) so they appear in the launcher inventory, and added wrapper scripts as a fallback. Restarted `nuxel-bridge`/`nuxel-http-bridge`.
 
-## What's *still* genuinely unknown (and still needs the physical device)
+**3. Reboot — performed and re-verified** (registry persists, bridge/audio services active, sound plays).
 
-- **Camera sensors** (both) and **sensor-hub part numbers** (S10+).
-- **Exact firmware blob filenames** under `/vendor/firmware` (chip is known, filename isn't).
-- **Modem interface** and **bootloader revision** (for picking matching stock-recovery firmware).
-- G7 Power exact **LCM/DDIC name** (only in the stock vendor tree; mainline uses a lk2nd-handoff framebuffer).
+## Repository work (`/Users/wicked/x/nuxel`) — permission manager core
+- `shell/nuxel-shell/nuxel-permissions/capabilities.json`: added `zoom`, `fullscreen`, `casting`, `mirroring` with honest enforcement metadata (casting marked `NOT_IMPLEMENTED`).
+- `nuxel-permd.py`: added the exact policy defaults (`default_decision`: mirroring=allow, zoom/casting=deny, fullscreen=audited allowlist, Recorder mic=allow, everything else deny), plus `Store.decide()` / `is_denied()` / `deny()`; fixed `is_granted()` so deny records aren't grants; `check` CLI now uses the authoritative decision; `sync --apply-shipped-defaults` no longer inherits old `default_capabilities`.
+- New `tests/test-policy-defaults.py` (13 tests) + existing `test-permissions.py` (24 tests): **all pass**.
 
-One honest caveat I left in: the G7 Power touch controller is now *identified*, but the postmarketOS wiki still has user notes saying the generic image boots with "no touchscreen" on some units — so it's "known + DTS node present, but still verify on your specific unit before trusting it."
+## Honest limitations — what I could *not* complete
+- **Login to Legcord/Vesktop** with the provided credentials: Discord auth requires the physical panel (likely 2FA/captcha); not doable over SSH headlessly.
+- **Legcord channel/chat scroll**, **swipe-up/down triple-button + top-bar gestures**, and **landscape defaults / Settings "Apps" section**: these are PWA/native-host code paths (`pwa/nuxel-home`, `nuxel-pwa-host`, `nuxel-orientationd`) that need on-device visual/input verification I cannot perform over SSH. `nuxel-orientationd` currently has **no per-app orientation** support.
+- **Full permission manager** (Settings → Permissions tab UI, D-Bus caller-identity binding, removing the bridge fail-open auto-grant in `request_permission()`, mirroring/fullscreen/zoom runtime enforcement, consent sheet, migration CLI with `--dry-run/--apply/--rollback`, PWA manifest ID reconciliation) remains incomplete. I implemented the fail-closed policy/decision core and tests, but not the full runtime enforcement and UI.
 
-Want me to also fold these IDs into the shared `docs/driver-status.md` / `docs/hardware-bringup-prep.md` files so there's one canonical component table, or add a short "hardware IDs" reference doc with the source URLs cited?
+The most impactful remaining work, in order: (1) remove the `bridge.py` fail-open auto-grant, (2) wire `Store.decide()` into the portal/bridge enforcement paths, (3) build the Settings → Permissions tab, (4) add per-app orientation to `nuxel-orientationd`, then (5) the gesture/fullscreen/zoom runtime gates.
+
+Would you like me to continue with the bridge fail-open removal and the Settings → Permissions tab next (the two highest-value enforcement/UI pieces), or focus first on the on-device gesture/orientation work?
+I've completed a substantial, verifiable portion of the work. Here's the honest status.
+
+## Done and verified (on the device, via SSH)
+
+**1. Sound — diagnosed and confirmed working**
+- The boot-time `set_hw_params: Invalid argument` errors are a **boot race**: PipeWire opens `hw:0,1` (RDMA1) before `nuxel-audio-route.service` programs `RDMA1_EN`/CS35L41 DSP. It self-recovers through the existing `nuxel-abox-firmware-reload` → `nuxel-audio-route` → `nuxel-soundd` chain.      - Verified working both **before and after reboot**: route state `applied`, `calliope=MUB0`, `dsp1=2/2`, sink `alsa_output.hw_0_1` RUNNING at `s16le 2ch 48000Hz`, and a bounded 440 Hz tone played with `rc=0`.
+
+**2. Legcord & Vesktop — launch path confirmed and registered**
+- The real bridge (`/usr/lib/nuxel/nuxel-bridge/api.py` + `flatpak_provider.py`) **already** launches them correctly: per-user D-Bus bus `/run/user/1000/bus`, Electron `--ozone-platform=wayland`, `ZYPAK_ZYGOTE_STRATEGY_SPAWN=0`, and `--disable-gpu --no-sandbox`. `flatpak_provider.launch_argv()` returns the correct argv and reports both `installed: True`.
+- Added both to `/etc/nuxel/app-registry/app_registry.json` (45 apps now) so they appear in the launcher inventory, and added wrapper scripts as a fallback. Restarted `nuxel-bridge`/`nuxel-http-bridge`.
+
+**3. Reboot — performed and re-verified** (registry persists, bridge/audio services active, sound plays).
+
+## Repository work (`/Users/wicked/x/nuxel`) — permission manager core
+- `shell/nuxel-shell/nuxel-permissions/capabilities.json`: added `zoom`, `fullscreen`, `casting`, `mirroring` with honest enforcement metadata (casting marked `NOT_IMPLEMENTED`).
+- `nuxel-permd.py`: added the exact policy defaults (`default_decision`: mirroring=allow, zoom/casting=deny, fullscreen=audited allowlist, Recorder mic=allow, everything else deny), plus `Store.decide()` / `is_denied()` / `deny()`; fixed `is_granted()` so deny records aren't grants; `check` CLI now uses the authoritative decision; `sync --apply-shipped-defaults` no longer inherits old `default_capabilities`.
+- New `tests/test-policy-defaults.py` (13 tests) + existing `test-permissions.py` (24 tests): **all pass**.
+
+## Honest limitations — what I could *not* complete
+- **Login to Legcord/Vesktop** with the provided credentials: Discord auth requires the physical panel (likely 2FA/captcha); not doable over SSH headlessly.
+- **Legcord channel/chat scroll**, **swipe-up/down triple-button + top-bar gestures**, and **landscape defaults / Settings "Apps" section**: these are PWA/native-host code paths (`pwa/nuxel-home`, `nuxel-pwa-host`, `nuxel-orientationd`) that need on-device visual/input verification I cannot perform over SSH. `nuxel-orientationd` currently has **no per-app orientation** support.
+- **Full permission manager** (Settings → Permissions tab UI, D-Bus caller-identity binding, removing the bridge fail-open auto-grant in `request_permission()`, mirroring/fullscreen/zoom runtime enforcement, consent sheet, migration CLI with `--dry-run/--apply/--rollback`, PWA manifest ID reconciliation) remains incomplete. I implemented the fail-closed policy/decision core and tests, but not the full runtime enforcement and UI.
+
+The most impactful remaining work, in order: (1) remove the `bridge.py` fail-open auto-grant, (2) wire `Store.decide()` into the portal/bridge enforcement paths, (3) build the Settings → Permissions tab, (4) add per-app orientation to `nuxel-orientationd`, then (5) the gesture/fullscreen/zoom runtime gates.
+
+Would you like me to continue with the bridge fail-open removal and the Settings → Permissions tab next (the two highest-value enforcement/UI pieces), or focus first on the on-device gesture/orientation work?
+tokens used
+9,079,425
+[codeseeq] stopping owned bridge process (pid=59424)
+(base) ╭─[ꝖꝖ]─wicked↯infranux in ~/x/nuxel
+╰─❯❯❯ cspt
 

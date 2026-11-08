@@ -1,0 +1,44 @@
+:root {
+  --bg: #0a1628;
+  --panel: #12233c;
+  --panel2: #1a3050;
+  --ink: #e6f0ff;
+  --muted: #8aa3c7;
+  --accent: #3ea6ff;
+  --ok: #46d18c;
+  --warn: #ffb84d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.4 system-ui, -apple-system, sans-serif; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+.topbar { display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08); position: sticky; top: 0;
+  background: rgba(10,22,40,.92); backdrop-filter: blur(6px); z-index: 5; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.shield { font-size: 28px; }
+h1 { font-size: 19px; margin: 0; }
+.sub { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+main { padding: 12px; max-width: 620px; margin: 0 auto; }
+.card { background: var(--panel); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.hint { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+.state { color: var(--muted); font-size: 13px; }
+select { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,.16);
+  background: #08121f; color: var(--ink); font: inherit; }
+.permissions-detail { display: block; }
+.perm-head { margin: 4px 0 12px; }
+.perm-head strong { font-size: 16px; }
+.perm-app-id { color: var(--muted); font-size: 12px; margin-left: 8px; }
+.perm-group { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+  margin: 16px 0 6px; }
+.perm-row { display: flex; align-items: center; gap: 10px; padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06); }
+.perm-row:last-child { border-bottom: 0; }
+.perm-row-text { flex: 1; min-width: 0; }
+.perm-row-name { font-weight: 600; }
+.perm-row-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.toggle { border: 0; border-radius: 999px; padding: 8px 12px; min-width: 84px; font: inherit;
+  font-weight: 700; background: rgba(255,255,255,.12); color: var(--ink); cursor: pointer; }
+.toggle.on { background: var(--ok); color: #06210f; }
+.toggle:disabled { opacity: .45; cursor: not-allowed; }
+.perm-note { color: var(--muted); font-size: 12px; margin-top: 14px; }

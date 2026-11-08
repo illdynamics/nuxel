@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""nuxel-firewall entry point."""
+import os
+import sys
+
+# In the checkout this file lives at services/nuxel-firewall/bin/nuxel-firewall,
+# so the parent of its directory is the package root.  The phone image installs
+# the executable at /usr/bin/nuxel-firewall and the package at
+# /usr/lib/nuxel/nuxel-firewall; keep both layouts importable.
+_here = os.path.dirname(os.path.abspath(__file__))
+for _candidate in (os.path.dirname(_here), "/usr/lib/nuxel/nuxel-firewall"):
+    if os.path.isdir(os.path.join(_candidate, "nuxel_firewall")) and _candidate not in sys.path:
+        sys.path.insert(0, _candidate)
+
+from nuxel_firewall.cli import main
+
+if __name__ == "__main__":
+    sys.exit(main())

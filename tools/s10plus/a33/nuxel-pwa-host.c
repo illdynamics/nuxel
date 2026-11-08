@@ -687,6 +687,7 @@ static const struct cfgfile CFG[] = {
      tools/s10plus/a33/nuxel-keyboard-apply.sh (the single consumer of that
      document) and is read-only here - no new verb, no new write path, no change
      to the terminal, the buttons or the boot surface. */
+  { "keyboard",            "/etc/nuxel/keyboard/keyboard.json",             1 },
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
   { "lock-state",          "/run/nuxel/security/lock-state.json",            0 },
   { "navdock-state",       "/run/nuxel-navdock.state",                     0 },

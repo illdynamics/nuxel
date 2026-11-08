@@ -1,0 +1,8 @@
+# VolumeUp is pressed first, then Power.  The plain step is already sent; the
+# completed chord must undo it and must not also dispatch screen-toggle.
+0 key volume_up 1
+100 tick
+200 key power 1
+700 tick
+800 key power 0
+1000 key volume_up 0

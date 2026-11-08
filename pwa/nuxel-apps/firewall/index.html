@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="nuxel-app-id" content="org.nuxel.Firewall">
+<title>Nuxel Firewall</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="shield" id="shield" aria-hidden="true">🛡️</span>
+    <div><h1>Nuxel Firewall</h1><p class="sub" id="backend-line">Backend: checking…</p></div>
+  </div>
+</header>
+
+<main>
+  <section class="state-card" id="state-card" aria-live="polite">
+    <div class="big-state" id="big-state">UNKNOWN</div>
+    <p class="state-detail" id="state-detail">Contacting the firewall daemon…</p>
+    <div class="rollback-banner" id="rollback-banner" hidden>
+      <span class="pulse"></span><span id="rollback-text">Rollback in —</span>
+    </div>
+  </section>
+
+  <section class="summary card">
+    <h2>Policy summary</h2>
+    <ul class="kv">
+      <li><span>Incoming (new connections)</span><b id="sum-input">—</b></li>
+      <li><span>Forwarded / routed traffic</span><b id="sum-forward">—</b></li>
+      <li><span>Outgoing (apps &amp; system)</span><b id="sum-output">—</b></li>
+      <li><span>IPv4 / IPv6</span><b id="sum-families">—</b></li>
+      <li><span>Per-app attribution</span><b id="sum-perapp">—</b></li>
+    </ul>
+  </section>
+
+  <section class="actions card">
+    <div class="row wrap">
+      <button id="btn-dryrun" class="primary">Dry run</button>
+      <button id="btn-apply" class="danger">Apply + rollback</button>
+      <button id="btn-confirm" class="primary" disabled>Confirm</button>
+      <button id="btn-rollback" class="ghost" disabled>Rollback</button>
+      <button id="btn-refresh" class="ghost">Refresh</button>
+    </div>
+    <p class="hint">Dry run never changes kernel state. Apply arms a rollback timer before mutating; Confirm keeps the change and records last-known-good.</p>
+    <pre id="action-result" class="state" role="status">—</pre>
+  </section>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="apps">Apps</button>
+    <button class="tab" data-tab="inbound">Inbound</button>
+    <button class="tab" data-tab="rules">Rules</button>
+    <button class="tab" data-tab="advanced">Advanced</button>
+  </nav>
+
+  <section id="tab-apps" class="panel active">
+    <div class="card">
+      <div class="row">
+        <input id="app-search" type="search" placeholder="Search apps…">
+      </div>
+      <div class="perapp-banner" id="perapp-banner">Per-app enforcement: checking…</div>
+      <div class="matrix-head" id="matrix-head" aria-hidden="true">
+        <span class="appname">Application</span>
+        <span class="cell">LAN</span>
+        <span class="cell">Wi-Fi</span>
+        <span class="cell">Cellular</span>
+        <span class="cell">VPN</span>
+        <span class="cell">USB</span>
+        <span class="cell">Wired</span>
+      </div>
+      <ul class="applist" id="app-list"></ul>
+      <p class="hint">Network columns (LAN / Wi-Fi / Cellular / VPN / USB / Wired) require per-app kernel attribution. On this device all app processes share one UID, so per-app toggles are shown as unsupported, never green. When the backend reports per-app support, the first column becomes a real outbound toggle.</p>
+    </div>
+  </section>
+
+  <section id="tab-inbound" class="panel">
+    <div class="card">
+      <h2>Inbound services</h2>
+      <ul class="svclist" id="service-list"></ul>
+      <p class="hint">Inbound listeners are denied by default. Only explicit, source-restricted service rules are allowed.</p>
+    </div>
+  </section>
+
+  <section id="tab-rules" class="panel">
+    <div class="card">
+      <h2>Direction defaults</h2>
+      <ul class="kv">
+        <li><span>INPUT</span><b id="rule-input">—</b></li>
+        <li><span>FORWARD</span><b id="rule-forward">—</b></li>
+        <li><span>OUTPUT</span><b id="rule-output">—</b></li>
+      </ul>
+      <div class="row wrap">
+        <label>Outgoing default
+          <select id="outbound-mode">
+            <option value="allow">Allow by default</option>
+            <option value="deny">Block by default (allowlist)</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-advanced" class="panel">
+    <div class="card">
+      <h2>Backend diagnostics</h2>
+      <pre id="backend-diag" class="state">Checking…</pre>
+      <p class="hint">Status is derived from live kernel/backend readback, not from a saved JSON file.</p>
+    </div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

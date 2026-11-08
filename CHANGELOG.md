@@ -6,6 +6,54 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.8.0-beta] - 2026-11-08 - *Release-blocker repair, firewall/permissions surfaces, launcher handoff lockdown*
+
+This release finishes the v0.7.9 boot-audio repair and removes the remaining
+release-path blockers found by a full offline analysis pass. The canonical boot
+cue stays committed at `assets/nuxel-boot-audio.mp3` and is still gated by the
+Release `prepare` job before the kernel/rootfs matrix starts.
+
+### Fixed
+
+- **Rootfs build input was untracked.** `docs/interface-state.md` is installed
+  by `images/s10plus/build-phone-rootfs-inside-fedora.sh` but was never committed,
+  so the v0.7.9 Release build failed after the long rootfs stage with
+  `install: cannot stat '/nuxel/docs/interface-state.md'`. The document is now
+  tracked, and the Release `prepare` job checks it before any expensive build.
+- **Launcher swallowed/replayed stale app launches.** Switching from the native
+  Terminal to another app now explicitly retires the Terminal surface, and every
+  new foreground launch advances `appGeneration` so a late `open-terminal`
+  acknowledgement can no longer overwrite the app the owner actually opened.
+  Native launches now hide the previous foreground surface before mapping.
+- **Launcher registry lockstep.** `pwa/nuxel-home/manifest.json` was still on
+  registry revision 14 and omitted Firewall, Permissions and Nuxel Doom from
+  `apps_in_registry`; it now matches `pwa/nuxel-common/app-registry.json` (v16,
+  45 apps), and `sw.js`/manifest share cache namespace `v080-release`.
+- **NuxTore catalogue integrity.** Bundle manifests and Ed25519 signatures were
+  restaged from the current Doom sources, removing the `DIGEST_MISMATCH` the
+  release verifier reported.
+- **Release test drift.** The PWNAGE-49000 cache-buster guard, version lockstep
+  gate and service-worker precache list were updated for this revision.
+
+### Added
+
+- **Firewall control center** (`pwa/nuxel-apps/firewall`, `services/nuxel-firewall`,
+  `configs/nuxel/firewall`) with an authoritative policy model, native iptables
+  backend for the S10+ (no kernel nftables), honest unsupported reporting for
+  per-app cgroup attribution, and Settings/Quick Settings entry points.
+- **Permissions manager** (`pwa/nuxel-apps/permissions`) wrapping the central
+  `nuxel-permd` policy service shared with Settings.
+- **A75/A76 Phoc keyboard reshow and text-input v1 tooling** for the S10+.
+
+### Changed
+
+- Version lockstep is now **v0.8.0-beta** across `VERSION`, PWA manifests, the
+  bridge/portal/notification host versions, systemd pins, status bar, OTA
+  builder, launcher Meson package and service-worker cache.
+- The boot cue remains byte-identical in `assets/` and `assets/nuxel-sounds/`,
+  and remains part of the phone rootfs, live userspace payload and release
+  archive verification.
+
 ## [v0.7.9-beta] - 2026-11-07 - *Boot-audio release repair, fast sound control plane, durable alarms*
 
 This release supersedes **v0.7.8-beta**, whose release workflow failed before it

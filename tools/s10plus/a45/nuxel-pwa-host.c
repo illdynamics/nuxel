@@ -1160,6 +1160,7 @@ static const struct cfgfile CFG[] = {
      tools/s10plus/a33/nuxel-keyboard-apply.sh (the single consumer of that
      document) and is read-only here - no new verb, no new write path, no change
      to the terminal, the buttons or the boot surface. */
+  { "keyboard",            "/etc/nuxel/keyboard/keyboard.json",             1 },
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
   { "keyboard-visible",    "/run/nuxel-keyboard.visible",                  0 },
   { "lock-state",          "/run/nuxel/security/lock-state.json",            0 },
@@ -2343,7 +2344,26 @@ static gboolean ctl_in(GIOChannel *ch, GIOCondition cond, gpointer d) {
   for (char *q = buf; q && *q; ) {
     char *nl = strchr(q, '\n');
     if (nl) *nl = 0;
-    if (!strncmp(q, "open-terminal", 13)) term_open_window();
+    if (!strncmp(q, "sound-mode ", 11)) {
+      /* briq-03e writes the shared sound-mode file and then this line.  Relay
+       * the mode to the launcher immediately; the 15 s provider poll is only a
+       * safety net, never the user-visible latency. */
+      const char *mode = q + 11;
+      while (*mode == ' ' || *mode == '\t') mode++;
+      if (!strcmp(mode, "normal") || !strcmp(mode, "vibrate") || !strcmp(mode, "silent")) {
+        GString *g = g_string_new("");
+        g_string_append_printf(g,
+          "window.dispatchEvent(new CustomEvent('nuxel:sound-mode',{detail:{mode:'%s'}}));",
+          mode);
+        if (g_main_view)
+          webkit_web_view_evaluate_javascript(g_main_view, g->str, -1, NULL, NULL, NULL, NULL, NULL);
+        st("HOST_SOUND_MODE %s -> launcher status bar", mode);
+        g_string_free(g, TRUE);
+      } else {
+        st("HOST_SOUND_MODE_REFUSED %s", mode);
+      }
+    }
+    else if (!strncmp(q, "open-terminal", 13)) term_open_window();
     else if (!strncmp(q, "close-terminal", 14)) term_close_window();
     else if (!strncmp(q, "home", 4)) {
       action_perform("home", buf, sizeof buf);
@@ -2359,6 +2379,53 @@ static gboolean ctl_in(GIOChannel *ch, GIOCondition cond, gpointer d) {
     q = nl ? nl + 1 : NULL;
   }
   return TRUE;
+}
+
+/* The clock daemon replaces /run/nuxel/clockd.state atomically whenever an
+ * alarm/timer starts or stops ringing.  Watch the DIRECTORY (a file monitor on
+ * the replaced inode goes stale) and tell the lockscreen to refresh now. */
+static GFileMonitor *clock_monitor = NULL;
+static guint clock_dispatch_pending = 0;
+
+static gboolean clock_dispatch_idle(gpointer user_data) {
+  (void)user_data;
+  clock_dispatch_pending = 0;
+  if (g_main_view) {
+    static const char *js =
+      "window.dispatchEvent(new CustomEvent('nuxel:clock-state-changed'));";
+    webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+    st("HOST_CLOCK_STATE_CHANGED -> launcher lockscreen");
+  }
+  return G_SOURCE_REMOVE;
+}
+
+static void clock_monitor_changed(GFileMonitor *monitor, GFile *file,
+                                  GFile *other_file, GFileMonitorEvent event_type,
+                                  gpointer user_data) {
+  (void)monitor; (void)other_file; (void)event_type; (void)user_data;
+  if (!file) return;
+  char *name = g_file_get_basename(file);
+  if (name && !strcmp(name, "clockd.state")) {
+    /* A single atomic replace produces several GIO events (created/changed/
+     * changes-done-hint).  Coalesce them into one launcher refresh. */
+    if (!clock_dispatch_pending)
+      clock_dispatch_pending = g_timeout_add(80, clock_dispatch_idle, NULL);
+  }
+  g_free(name);
+}
+
+static void clock_watch_open(void) {
+  GFile *dir = g_file_new_for_path("/run/nuxel");
+  GError *err = NULL;
+  clock_monitor = g_file_monitor_directory(dir, G_FILE_MONITOR_NONE, NULL, &err);
+  if (clock_monitor) {
+    g_signal_connect(clock_monitor, "changed", G_CALLBACK(clock_monitor_changed), NULL);
+    st("HOST_CLOCK_WATCH_READY /run/nuxel/clockd.state");
+  } else {
+    st("HOST_CLOCK_WATCH_FAIL %s", err ? err->message : "unknown");
+    if (err) g_error_free(err);
+  }
+  g_object_unref(dir);
 }
 
 static void ctl_open(void) {
@@ -2873,6 +2940,7 @@ int main(int argc, char **argv) {
   g_main_window = win;
   g_main_view = WEBKIT_WEB_VIEW(v);
   ctl_open();
+  clock_watch_open();
   uevent_open();
   indicator_fallback_start();
   gtk_widget_show_all(win);
