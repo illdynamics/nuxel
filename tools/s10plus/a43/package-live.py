@@ -29,7 +29,7 @@ for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
              'pwa/nuxel-apps/permissions', 'pwa/nuxel-apps/penguinterface',
              'pwa/nuxel-apps/remote-xrdp', 'pwa/nuxel-apps/remote-vnc',
              'pwa/nuxel-apps/remote-scrcpy', 'pwa/nuxel-common',
-             'pwa/nuxel-apps/nuxtore/catalog',
+             'pwa/nuxel-apps/nuxtore',
              'services/nuxel-firewall/nuxel_firewall'):
     for path in (root / base).rglob('*'):
         if not path.is_file() or path.is_symlink():
