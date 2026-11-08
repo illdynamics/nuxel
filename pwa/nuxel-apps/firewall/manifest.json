@@ -1,0 +1,34 @@
+{
+  "name": "Nuxel Firewall",
+  "short_name": "Firewall",
+  "description": "Nuxel firewall control center: direction policy, inbound services, app egress matrix and safe apply/rollback.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "scope": "./",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "../../../assets/nuxel-applications-icon-pack/04-03_firewall.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "pwa_version": "0.8.0-beta",
+    "capabilities": [
+      "system:inspect",
+      "network:manage"
+    ],
+    "app_type": "settings",
+    "app_id": "org.nuxel.Firewall",
+    "offline_first": true,
+    "network": "none",
+    "registry_id": "org.nuxel.Firewall"
+  }
+}

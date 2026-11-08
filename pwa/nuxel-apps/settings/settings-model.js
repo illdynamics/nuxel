@@ -25,7 +25,7 @@
     // ---- documents this revision adds (each with a named consumer) ----
     'display': { path: '/etc/nuxel/display/display.json', consumer: 'nuxel-wl-fb display bridge (DPMS/timeout) via nuxelctl display', probe: 'wlfb-state' },
     'orientation': { path: '/etc/nuxel/orientation/orientation.json', consumer: 'nuxel-orientationd -> compositor transform (seven modes)', probe: 'orientation' },
-    'keyboard': { path: '/etc/nuxel/keyboard/keyboard.json', consumer: 'nuxel-keyboard-apply.sh -> stevia / phosh OSK over Wayland text-input-v3', probe: 'keyboard-state' },
+    'keyboard': { path: '/etc/nuxel/keyboard/keyboard.json', consumer: 'nuxel-keyboard-apply.sh -> stevia / phosh OSK over Wayland text-input-v3, plus the opt-in phoc text-input-v1 shim', probe: 'keyboard-state' },
     'time': { path: '/etc/nuxel/time/time.json', consumer: 'nuxelctl time / nuxel-time.sh (timesyncd+chrony, RTC check timer)', probe: 'time' },
     'power': { path: '/etc/nuxel/power/power.json', consumer: 'nuxelctl power + the power/battery component (cpufreq governor)', probe: 'power' },
     'privacy': { path: '/etc/nuxel/privacy/privacy.json', consumer: 'nuxel-portal + nuxel-bridge capability checks (permission store)', probe: 'permissions' },
@@ -70,6 +70,7 @@
     'keyboard.haptics_pulse_ms': { doc: 'keyboard', kind: 'number', default: 12, label: 'Haptic pulse (ms)' },
     'keyboard.clipboard': { doc: 'keyboard', kind: 'switch', default: true, label: 'Clipboard bar' },
     'keyboard.hardware_passthrough': { doc: 'keyboard', kind: 'switch', default: true, label: 'Physical keyboard passthrough' },
+    'keyboard.text_input_v1': { doc: 'keyboard', kind: 'switch', default: false, label: 'Legacy text-input v1 compatibility (Electron/Caprine)' },
     // System (mission 12/18/48)
     'time.auto': { doc: 'time', kind: 'switch', default: true, label: 'Automatic time (NTP)' },
     'time.timezone': { doc: 'time', kind: 'select', default: 'UTC', label: 'Time zone' },
@@ -203,7 +204,7 @@
     sound: ['sound.output_route', 'sound.notifications', 'sound.haptics'],
     input: ['keyboard.enabled', 'keyboard.auto_show', 'keyboard.layout', 'keyboard.numeric_layout',
             'keyboard.height_dp', 'keyboard.key_repeat', 'keyboard.haptics', 'keyboard.haptics_intensity', 'keyboard.haptics_pulse_ms', 'keyboard.clipboard',
-            'keyboard.hardware_passthrough'],
+            'keyboard.hardware_passthrough', 'keyboard.text_input_v1'],
     buttons: ['buttons.bixby_short', 'buttons.bixby_long', 'buttons.power_short', 'buttons.power_long',
               'buttons.volume_up', 'buttons.volume_down'],
     apps: ['apps.show_undeclared', 'apps.default_browser'],

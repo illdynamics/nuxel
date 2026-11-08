@@ -275,9 +275,12 @@ class NuxelHome {
         } catch (e) { /* a cross-origin or torn-down frame is ignored */ }
     }
 
-    _backgroundForegroundApp() {
+    _backgroundForegroundApp(replacing = false) {
         const { app, frame } = this.appSession;
         if (!app || this.appSession.state === 'CLOSED') return false;
+        // A new foreground intent invalidates callbacks from the app being
+        // backgrounded (a slow launch acknowledgement must not steal ACTIVE).
+        this.appGeneration++;
         // Tell a same-origin app to suspend its runtime before the surface is
         // removed from hit-testing.  Doom uses this to pause the WASM loop;
         // document.visibilitychange alone was not delivered while the parent
@@ -290,6 +293,17 @@ class NuxelHome {
         // and its session alive so it is still running after unlock and the
         // same window can be resumed instead of spawning a second copy.
         if (!frame) {
+            // When another app is taking the glass, retire Terminal's native
+            // GTK/WebKit window instead of merely minimizing it: a top-level
+            // Wayland surface would otherwise stay above the launcher/PWA
+            // frame.  Home, lock and recents pass replacing=false and must
+            // preserve the running Terminal PTY.
+            if (replacing && app.id === 'org.nuxel.Terminal' &&
+                window.NuxelHost && window.NuxelHost.available) {
+                Promise.resolve(window.NuxelHost.action('close-terminal')).catch(error => {
+                    console.error('[Nuxel] Terminal close failed:', error);
+                });
+            }
             this._setAppState('BACKGROUND', app, null);
             if (this.sessions && app) this.sessions.home();
             this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' }, 4000);
@@ -331,7 +345,7 @@ class NuxelHome {
     _resumeApp(app) {
         const surface = app && this.appSurfaces.get(app.id);
         if (!surface) return false;
-        if (this.appSession.app && this.appSession.app.id !== app.id) this._backgroundForegroundApp();
+        if (this.appSession.app && this.appSession.app.id !== app.id) this._backgroundForegroundApp(true);
         [surface.frame, surface.bar, surface.status].forEach(el => {
             if (el) el.hidden = false;
         });
@@ -395,7 +409,7 @@ class NuxelHome {
         try {
             if (window.appRegistry && window.appRegistry.refreshFromBridge) {
                 window.appRegistry.refreshFromBridge();
-                if (window.appRegistry.startBridgeWatch) window.appRegistry.startBridgeWatch(5000);
+                if (window.appRegistry.startBridgeWatch) window.appRegistry.startBridgeWatch(30000);
             }
         } catch (e) { /* first paint must not depend on the bridge */ }
 
@@ -828,6 +842,18 @@ class NuxelHome {
         }
     }
 
+    _applyAppOrientation(appId) {
+        // The bridge is the single owner of the compositor transform.  This
+        // covers PWA and native launches/resumes from the launcher; the bridge
+        // also applies it on /apps/exec and /windows/activate for other paths.
+        try {
+            if (typeof bridge !== 'undefined' && bridge && typeof bridge.call === 'function') {
+                Promise.resolve(bridge.call('apps', 'apply-orientation', { app_id: appId }))
+                    .catch(() => {});
+            }
+        } catch (e) { /* orientation must never block a launch */ }
+    }
+
     _openPwa(app, url) {
         console.log(`Opening PWA: ${app.name} at ${url}`);
         // A deep link, manifest shortcut or late startup callback must never
@@ -838,10 +864,14 @@ class NuxelHome {
             if (this._reconcileLockThenRetry(() => this._openPwa(app, url))) return;
             return;
         }
+        this._applyAppOrientation(app.id);
         this._dismissLauncherChrome();
         if (this._resumeApp(app)) return;
-        this._backgroundForegroundApp();
-        const generation = this.appGeneration;
+        this._backgroundForegroundApp(true);
+        // A new foreground app invalidates every in-flight launch callback
+        // (for example a slow Terminal acknowledgement) before it can claim
+        // ACTIVE over the app the owner actually opened.
+        const generation = ++this.appGeneration;
         this._setAppState('LAUNCHING', app, null);
 
         // A34 TOUCHDOWN: the terminal is a real PTY rendered in a SEPARATE
@@ -944,13 +974,16 @@ class NuxelHome {
             if (this._reconcileLockThenRetry(() => this._launchNative(app, url))) return;
             return;
         }
+        this._applyAppOrientation(app.id);
         this._dismissLauncherChrome();
         // Native applications are fullscreen top-level Wayland clients.  The
         // global contract is the same as for PWAs: no visible triple buttons
         // over the app.  nuxel-navdock keeps a 14 px bottom gesture strip
         // mapped instead; an upward swipe reveals Back/Home/Recents and then
         // auto-hides them.  Home and the lockscreen are the only exceptions.
+        this._backgroundForegroundApp(true);
         this._setNavDock(false);
+        const generation = ++this.appGeneration;
         const target = app.nativeAppId || app.id;
         this._setAppState('LAUNCHING', app, null);
 
@@ -973,19 +1006,23 @@ class NuxelHome {
         // makes "lock, unlock, tap the icon again" resume the running app
         // instead of creating a second instance (and a second window).
         this._findLiveNativeWindow(app).then((win) => {
-            if (!win) return this._execNativeLaunch(app, target);
+            if (generation !== this.appGeneration) return;
+            if (!win) return this._execNativeLaunch(app, target, generation);
             const surfaceTarget = win.app_id || target;
             return this._httpBridge('POST', '/api/v1/windows/activate', {
                 app_id: surfaceTarget,
             }, 6000).then((res) => {
-                if (!res || res.success === false) return this._execNativeLaunch(app, target);
+                if (generation !== this.appGeneration) return;
+                if (!res || res.success === false) return this._execNativeLaunch(app, target, generation);
                 if (this.appSession.app && this.appSession.app.id !== app.id) return;
                 console.log('[Nuxel] native resumed:', surfaceTarget);
                 this._setAppState('ACTIVE', app, null);
                 if (this.sessions) this.sessions.register(app, null);
                 this._inputTrace('native:resumed id=' + app.id + ' surface=' + surfaceTarget);
             });
-        }).catch(() => this._execNativeLaunch(app, target));
+        }).catch(() => {
+            if (generation === this.appGeneration) this._execNativeLaunch(app, target, generation);
+        });
     }
 
     _findLiveNativeWindow(app) {
@@ -1003,7 +1040,7 @@ class NuxelHome {
         });
     }
 
-    _execNativeLaunch(app, target) {
+    _execNativeLaunch(app, target, generation = null) {
         // The authoritative launch authority is the HTTP bridge's CLOSED-verb
         // /apps/exec endpoint: it resolves the target from its fixed allowlist /
         // canonical registry and never executes a client-supplied path.
@@ -1012,6 +1049,7 @@ class NuxelHome {
             app_id: 'org.nuxel.Home',
             source: 'launcher',
         }, 30000).then((res) => {
+            if (generation !== null && generation !== this.appGeneration) return;
             if (!res || res.success !== true) {
                 const err = new Error((res && (res.error || res.detail)) || 'launch refused');
                 err.detail = (res && res.detail) || null;
@@ -1024,6 +1062,7 @@ class NuxelHome {
             this._setAppState('ACTIVE', app, null);
             if (this.sessions) this.sessions.register(app, null);
         }).catch((error) => {
+            if (generation !== null && generation !== this.appGeneration) return;
             console.error('[Nuxel] native launch failed:', error);
             if (this.appSession.app && this.appSession.app.id !== app.id) return;
             this._setAppState('FAILED', app, null);
@@ -1600,6 +1639,7 @@ class NuxelHome {
        an unknown/stale OFF sample never does. */
     _watchDisplayForLock() {
         this._lastDisplayOff = null;
+        let watchTimer = null;
         const read = () => {
             const host = window.NuxelHost;
             if (!host || !host.available || typeof host.statusRead !== 'function') return;
@@ -1643,10 +1683,15 @@ class NuxelHome {
                 }
                 if (this._lastDisplayOff === false && off && !this._isLocked()) this._lock('display-off');
                 this._lastDisplayOff = off;
+                /* Fast wake detection: while the panel is off, sample the
+                   authoritative wl-fb state at 500 ms so the lockscreen is
+                   asserted before nuxel-wl-fb unblanks; once on, relax back
+                   to a 5 s background cadence. */
+                if (watchTimer) clearInterval(watchTimer);
+                watchTimer = setInterval(read, off ? 500 : 5000);
             }).catch(() => {});
         };
         read();
-        setInterval(read, 5000);
     }
 
     forward() {

@@ -1,0 +1,29 @@
+make me a super detailed full-pwnage-88000.md prompt  and add a pwnage-88000.md kickstarter prompt to execute this full-pwnage-88000.md prompt where you let the agent fix:
+
+- when I turn screen on to lockscreen I still see first 1-2sec of zoomed in desktop view before it snaps to lockscreen
+- fix doom sound and make it start with sound on by default
+- set up and configure waydroid and install service now mobile agent inside of it, as well as microsoft authenticator and aegis authenticator, see if those work properly hehe.
+- never dispaly anything behind the triple buttons when they are opened, but when they are closed again the space should be reoccupied same with the top bar collapsing/expanding
+- timer is sluggish counting down fix it
+- move the timer penguin on lockscreen to the center of the screen horizontally and vertically move it on top of the penguin from the lockscreen background
+- sometimes apps are still not visible or we quit it with back arrow button but still we cannot open apps drawer liek the app is still on foreground but invisible when I hold back button to kill then it works again
+- timer cant be set under a minute then it sets to 0:00 fix it
+- there is a second timer penguin appearing when it goes off sometimes above the old one remove it.
+- make sure that timer penguin shakes heavily when it goes off
+- move the alarm penguin on lockscreen to the center horizontally and put it below the timer penguin placement so just below the penguin on the background and above the lock/unlock penguin and make sure it shakes heavily as well when it goes off.
+- make sure alarms only go off when they are turned on, on and off are the other way around now.
+- no alarm penguin displaying at all now while turned on, only when going off.
+- do some more performance tweaks to make nuxel experience a lot smoother
+- fix any other issues you find when you deep analyze nuxel fully all flows.
+- try to minimize boot time more
+- fix playing nuxel-preloading-screen.mp4 still not playing the 6s vid fully anymore.
+- add a services section to settings where we can enable/disable/start/stop/reload/restart services and do a systemd daemon-reload and damon-reexec and please protect all system services with a button we have to press ot unlock fiddling with it marking it as system essential for all essential services that can break functionality when stopped.
+- I still have 1-2sec of zoomed in desktop screen bugged before seeing the actual lockscreen when I press the power button to turn the screen on.
+- make sure in the flatpak and native gtk+ apps I am able to swipe up the triple buttons in screen, and be able to swipe then back down, and same with top bar swipe down to get it on screen and swipe up to hide again. this still doesnt work properly mainly in the messenger apps I have installed. I also see 2 stripes on the bottom indicating we can swipe up I think its clashing there as well.
+- focus on the PenguInterface where we are able to spoof our user agent, see current user agent, spoof our /etc/os-release, spoof our uname output and use LD_PRELOAD for spoofing just like I did before on my fedora laptop, check ./spoof dir how we did that. also add a reset button to remove the spoofs.
+- make sure gtk+ and flatpak apps respect the adwaita-dark style they are still in light mode. (archive manager, firefox etc.)
+- make devmgmt app tabs not overlap text please, and make sure we can scroll the tabs without scrollbar as well if needed
+- properly make browser and mozilla firefox responsive as well
+- make sure all future apps we install via Software app are working instantly and we dont have to set flags all the time or investigate upon every app install. and make them properly responsive from the start as well figure some way to do this so we are all set.
+- make sure we can drag applications on the desktop to another spot on the grid, and also add a move button to the row we get when holding an app icon, where we now see Resize, Remove, Home settings and Done. swap Home settings there for Move and another button with just the number of current desktop it is displayed on and when we tap it we can switch it to desktop 2 or more if we have more etc. and do the same wiht widgets same way.
+- as for Nuxel Doom, fix it so that it always starts with sound on and make the sound work the sound currently does not workk also move the Use, -, +, Map and Menu menu to top left and top right please instead of centered above the doom HUD. and also increate sensitivity default value x3 for aiming. and make sure the buttons work as well the Use, -, +, Map and Menu.

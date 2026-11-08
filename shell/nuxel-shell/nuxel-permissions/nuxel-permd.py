@@ -1399,15 +1399,24 @@ def _cmd_show(args, store, registry, root):
     grants = store.get_grants(app_id)
     state = store.get_state(app_id)
     facts = kernel_facts(getattr(args, "fixture", None), getattr(args, "config", None))
+    # The Nuxel-specific controls are always reviewable even when an app does
+    # not declare them (zoom/fullscreen/casting/mirroring), plus microphone so
+    # the Recorder seed and every other app's default are visible in one place.
+    review_caps = sorted(set(list(grants) + state.get("declared", []) +
+                             ["zoom", "fullscreen", "casting", "mirroring",
+                              "microphone"]))
     enforcement = {}
-    for cap_id in sorted(set(list(grants) + state.get("declared", []))):
+    decisions = {}
+    for cap_id in review_caps:
         enf = downgrade_for_kernel(registry.enforcement_of(cap_id), facts)
         enf["granted"] = cap_id in grants
         enforcement[cap_id] = enf
+        decisions[cap_id] = store.decide(app_id, cap_id)
     payload = {"app_id": app_id, "store": store.dir, "grants": grants,
                "declared": state.get("declared", []),
                "unsupported": state.get("unsupported", []),
                "enforcement": enforcement,
+               "decisions": decisions,
                "kernel": {"release": facts.get("release"), "source": facts.get("source")}}
     if args.json:
         _print(payload, True)
@@ -1463,6 +1472,17 @@ def _cmd_revoke(args, store, registry, root):
         return EXIT_UNSUPPORTED
     print("%s %s from %s" % ("revoked" if existed else "no grant for",
                              args.capability, args.app_id))
+    return EXIT_OK
+
+
+def _cmd_deny(args, store, registry, root):
+    """Persist an explicit deny record (survives reboot; overrides allow defaults)."""
+    try:
+        rec = store.deny(args.app_id, args.capability)
+    except UnsupportedCapability as exc:
+        print("REFUSED: %s" % exc, file=sys.stderr)
+        return EXIT_UNSUPPORTED
+    print("denied %s for %s" % (args.capability, args.app_id))
     return EXIT_OK
 
 
@@ -1646,6 +1666,10 @@ def build_parser():
     sp.add_argument("app_id")
     sp.add_argument("capability")
 
+    sp = sub.add_parser("deny", help="persist an explicit deny for one capability")
+    sp.add_argument("app_id")
+    sp.add_argument("capability")
+
     sp = sub.add_parser("revoke-all", help="revoke every capability from one app")
     sp.add_argument("app_id")
 
@@ -1708,6 +1732,7 @@ def main(argv=None):
         "show": _cmd_show,
         "grant": _cmd_grant,
         "revoke": _cmd_revoke,
+        "deny": _cmd_deny,
         "revoke-all": _cmd_revoke_all,
         "check": _cmd_check,
         "review": _cmd_review,

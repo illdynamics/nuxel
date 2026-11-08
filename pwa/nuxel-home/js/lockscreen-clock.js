@@ -7,7 +7,7 @@
  */
 (function (global) {
   'use strict';
-  var POLL_MS = 1000;
+  var POLL_MS = 2000;   /* safety poll; the host also pushes clockd.state changes */
   var SWIPE_MIN = 68;
   var VELOCITY_MIN = 0.22;
 
@@ -80,8 +80,12 @@
     try {
       global.document.addEventListener('nuxel:lockscreen-shown', function () { self.locked = true; self.refresh(); }, { passive: true });
       global.document.addEventListener('nuxel:lockscreen-hidden', function () { self.locked = false; self.stop(); }, { passive: true });
-      global.document.addEventListener('nuxel:display-on', function () { self.refresh(); }, { passive: true });
+      global.document.addEventListener('nuxel:display-on', function () { if (self.locked) self.refresh(); }, { passive: true });
       global.document.addEventListener('visibilitychange', function () { if (!global.document.hidden && self.locked) self.refresh(); }, { passive: true });
+      /* nuxel-pwa-host watches /run/nuxel/clockd.state and dispatches this the
+         moment a ringing occurrence is published.  That makes the heavy shake
+         start immediately instead of waiting for the next poll tick. */
+      global.document.addEventListener('nuxel:clock-state-changed', function () { if (self.locked) self.refresh(); }, { passive: true });
     } catch (e) {}
   };
 
@@ -118,10 +122,12 @@
     if (this.alarm) {
       this.alarm.classList.toggle('ringing', !!clock.alarm_ringing);
       this.alarm.classList.toggle('snoozed', !clock.alarm_ringing && !!clock.alarm_snoozed);
+      if (this.alarmLane) this.alarmLane.classList.toggle('ringing', !!clock.alarm_ringing);
       this.alarm.setAttribute('aria-label', clock.alarm_ringing ? 'Alarm ringing — swipe left to snooze or right to stop' : 'Alarm set');
     }
     if (this.timer) {
       this.timer.classList.toggle('ringing', !!clock.timer_ringing);
+      if (this.timerLane) this.timerLane.classList.toggle('ringing', !!clock.timer_ringing);
       this.timer.setAttribute('aria-label', clock.timer_ringing ? 'Timer finished — tap to stop' : 'Timer running — tap to stop');
     }
     if (this.alarmHint) {

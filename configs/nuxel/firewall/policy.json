@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "enabled": false,
+  "backend": "auto",
+  "defaults": {
+    "input": "deny",
+    "forward": "deny",
+    "output": "allow",
+    "ipv4": true,
+    "ipv6": true
+  },
+  "app_defaults": {
+    "outbound": "inherit_global",
+    "new_app_policy": "inherit"
+  },
+  "services": {
+    "nuxel-ssh-owner": {
+      "protocol": "tcp",
+      "port": 22,
+      "bind_addresses": [],
+      "interfaces": [],
+      "source_cidrs": [],
+      "enabled": false,
+      "active": false,
+      "security_note": "Key-only SSH, source-restricted by sshd AllowUsers. Prepared at apply time from live sshd facts."
+    },
+    "nuxel-xrdp-owner-lan": {
+      "protocol": "tcp",
+      "port": 3389,
+      "bind_addresses": [],
+      "interfaces": ["wlan0"],
+      "source_cidrs": [],
+      "enabled": false,
+      "active": false,
+      "security_note": "XRDP TLS+PAM, trusted LAN/mesh only; OFF by default."
+    },
+    "nuxel-vnc-owner-lan": {
+      "protocol": "tcp",
+      "port": 5900,
+      "bind_addresses": [],
+      "interfaces": [],
+      "source_cidrs": ["127.0.0.1/32"],
+      "enabled": false,
+      "active": false,
+      "security_note": "UNENCRYPTED / no VNC password auth - loopback/SSH-tunnel only by default."
+    }
+  },
+  "apps": {},
+  "networks": {},
+  "logging": {
+    "blocked_log": false,
+    "rate": "10/minute"
+  },
+  "safety": {
+    "rollback_seconds": 60,
+    "require_confirm": true
+  },
+  "profiles": {
+    "default": {"name": "Default", "defaults": {"input": "deny", "forward": "deny", "output": "allow"}},
+    "strict-outbound": {"name": "Strict outbound", "defaults": {"input": "deny", "forward": "deny", "output": "deny"}},
+    "public-wifi": {"name": "Public Wi-Fi", "defaults": {"input": "deny", "forward": "deny", "output": "allow"}},
+    "offline": {"name": "Offline", "defaults": {"input": "deny", "forward": "deny", "output": "deny"}}
+  }
+}

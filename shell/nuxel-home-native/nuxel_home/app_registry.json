@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry.native-consumer/1",
-  "version": 14,
+  "version": 15,
   "generated_from": "pwa/nuxel-common/app-registry.json",
   "bridge_version": "1",
   "do_not_edit": "Rendered by tools/s10plus/a33/verify-app-registry.py --sync-native. Edit the canonical registry instead.",
@@ -154,6 +154,39 @@
       "capabilities": [
         "location:read",
         "location:manage"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Firewall",
+      "name": "Firewall",
+      "icon": "\ud83d\udee1\ufe0f",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/firewall/index.html",
+      "native_binary": null,
+      "color": "#3ea6ff",
+      "category": "security",
+      "description": "Firewall control center: direction policy, inbound services, app egress matrix and safe apply/rollback",
+      "capabilities": [
+        "system:inspect",
+        "network:manage"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Permissions",
+      "name": "Permissions",
+      "icon": "\ud83d\udd10",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/permissions/index.html",
+      "native_binary": null,
+      "color": "#4caf50",
+      "category": "security",
+      "description": "Permission manager wrapper around the central permD policy service (same source of truth as Settings)",
+      "capabilities": [
+        "system:inspect"
       ],
       "bridge_version": "1",
       "status": "implemented"
@@ -397,6 +430,20 @@
       "color": "#66BB6A",
       "category": "games",
       "description": "Nuxel Arcade",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Doom",
+      "name": "Nuxel Doom",
+      "icon": "\ud83c\udfae",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/doom/index.html",
+      "native_binary": null,
+      "color": "#ff7a2f",
+      "category": "games",
+      "description": "Chocolate Doom WebAssembly with touch controls, Freedoom and imported WADs",
       "capabilities": [],
       "bridge_version": "1",
       "status": "implemented"

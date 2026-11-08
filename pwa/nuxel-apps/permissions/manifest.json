@@ -1,0 +1,33 @@
+{
+  "name": "Nuxel Permission Manager",
+  "short_name": "Permissions",
+  "description": "Nuxel permission manager: a wrapper around the central permD policy service. Toggle per-app capabilities; Settings is the same source of truth.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "scope": "./",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "../../../assets/nuxel-applications-icon-pack/04-02_permissions.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "pwa_version": "0.8.0-beta",
+    "capabilities": [
+      "system:inspect"
+    ],
+    "app_type": "settings",
+    "app_id": "org.nuxel.Permissions",
+    "offline_first": true,
+    "network": "none",
+    "registry_id": "org.nuxel.Permissions"
+  }
+}

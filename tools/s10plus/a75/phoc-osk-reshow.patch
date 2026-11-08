@@ -1,0 +1,84 @@
+--- a/src/input-method-relay.c
++++ b/src/input-method-relay.c
+@@ -8,6 +8,8 @@
+ 
+ #include "text-input-unstable-v3-protocol.h"
+ 
++#include <gio/gio.h>
++
+ #include <gmobile.h>
+ 
+ #include <assert.h>
+@@ -550,6 +552,66 @@
+   return false;
+ }
+ 
++static GDBusConnection *osk_bus_connection = NULL;
++static gint64 osk_last_show_us = 0;
++
++
++/* A focused text field can already have text-input enabled while the OSK is
++ * folded (the OSK's own swipe-down gesture only hides its surface; it never
++ * disables the client's text-input).  Tapping that same field therefore emits
++ * no new enable/activate event and the keyboard never returns.  Every touch or
++ * button press on the focused text-input surface re-asserts visibility through
++ * the OSK's documented sm.puri.OSK0.SetVisible method. */
++static void
++show_osk_for_focused_text_input (PhocTextInput *text_input)
++{
++  g_autoptr (GError) err = NULL;
++  g_autofree char *address = NULL;
++  gint64 now;
++
++  if (!text_input || !text_input->input || !text_input->input->current_enabled)
++    return;
++
++  /* Multi-touch gestures deliver several down events; one D-Bus call is enough. */
++  now = g_get_monotonic_time ();
++  if (now - osk_last_show_us < 250000)
++    return;
++  osk_last_show_us = now;
++
++  if (!g_file_get_contents ("/run/nuxel-osk.bus", &address, NULL, NULL) || !address) {
++    address = g_strdup ("unix:path=/run/nuxel-wayland/bus");
++  } else {
++    g_strstrip (address);
++  }
++  if (!address || !*address)
++    return;
++
++  if (osk_bus_connection == NULL || g_dbus_connection_is_closed (osk_bus_connection)) {
++    g_clear_object (&osk_bus_connection);
++    osk_bus_connection = g_dbus_connection_new_for_address_sync (
++      address,
++      G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
++      G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION,
++      NULL, NULL, &err);
++    if (!osk_bus_connection) {
++      g_debug ("OSK bus %s unavailable: %s", address, err ? err->message : "unknown");
++      return;
++    }
++  }
++
++  g_dbus_connection_call (osk_bus_connection,
++                          "sm.puri.OSK0",
++                          "/sm/puri/OSK0",
++                          "sm.puri.OSK0",
++                          "SetVisible",
++                          g_variant_new ("(b)", TRUE),
++                          NULL,
++                          G_DBUS_CALL_FLAGS_NONE,
++                          1000,
++                          NULL, NULL, NULL);
++}
++
++
+ /**
+  * phoc_input_method_relay_im_submit:
+  * @self: The relay
+@@ -577,4 +639,5 @@
+     return;
+ 
+   submit_preedit (self, text_input);
++  show_osk_for_focused_text_input (text_input);
+ }

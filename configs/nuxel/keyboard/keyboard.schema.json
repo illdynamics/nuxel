@@ -55,6 +55,8 @@
     "keyboard.haptics_intensity_comment": {"type": "string"},
     "keyboard.clipboard": {"type": "boolean"},
     "keyboard.hardware_passthrough": {"type": "boolean"},
+    "keyboard.text_input_v1": {"type": "boolean"},
+    "keyboard.text_input_v1_comment": {"type": "string"},
     "set_by": {"type": "string"},
     "updated_at": {"type": "number"}
   },

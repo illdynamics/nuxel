@@ -81,6 +81,31 @@ def tables_in(text):
     return out
 
 
+
+
+def remove_tables(text, names):
+    """Remove every table block whose header is in `names` (scoped replace)."""
+    out = []
+    depth = 0
+    skip = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not skip and stripped.startswith("table "):
+            header = stripped
+            if header in names:
+                skip = True
+                depth = header.count("{") - header.count("}")
+                continue
+            out.append(line)
+            continue
+        if skip:
+            depth += stripped.count("{") - stripped.count("}")
+            if depth <= 0:
+                skip = False
+            continue
+        out.append(line)
+    return "\n".join(out) + ("\n" if out else "")
+
 def strip_table(text):
     """Drop 'table inet X {' ... matching '}' blocks (used by `delete table`)."""
     keep = []
@@ -229,8 +254,19 @@ def main(argv):
             live = strip_table(read_live())
             write_live((live.rstrip() + "\n" + text) if live.strip() else text)
         else:
+            # No global flush.  A full ruleset load (the `apply` path) declares
+            # the main Nuxel tables and atomically replaces the whole owned
+            # namespace; an individual template (killswitch/guard) only replaces
+            # the tables it declares.  This keeps the console-guard rollback test
+            # meaningful while leaving single-table loads scoped.
             live = read_live()
-            write_live(live.rstrip() + "\n\n" + text + "\n")
+            incoming = {h for h, _b in tables_in(text)}
+            if "nuxel_app_firewall" in text or "nuxel_ifaces" in text:
+                owned = {h for h, _b in tables_in(live) if "nuxel_" in h}
+                live = remove_tables(live, owned) if owned else live
+            else:
+                live = remove_tables(live, incoming) if incoming else live
+            write_live((live.rstrip() + "\n\n" + text + "\n") if live.strip() else text)
         return 0
 
     # ---- optional leading flags (e.g. -a for handles) ------------------------

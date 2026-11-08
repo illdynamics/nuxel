@@ -169,3 +169,17 @@ evidence/**/*.journal~
 
 # Local UZDoom source/build scratch (not a repository artifact)
 .uzdoom-build/
+
+# --- PWNAGE-91000 local-only deploy/repair scratch --------------------------
+# Host scratch from the handset repair passes.  These are never release inputs
+# and must not enter the repository history.
+.pwnage*/
+.pwnage*-evidence-path
+# Spoof helper build products (the .c/.js sources stay tracked).
+spoof/*.so
+spoof/node_modules/
+spoof/spoof/
+spoof/spoof.tar.gz
+# Ad-hoc sound-library extracts used while auditioning boot cues.
+assets/nuxel-sounds/full_*.mp3
+assets/nuxel-sounds/tight_*.mp3

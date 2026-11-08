@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "comment": "Nuxel on-screen / physical keyboard document (mission area 29, mission area 48 group 'Input'). Installed to /etc/nuxel/keyboard/keyboard.json. Read by tools/s10plus/a33/nuxel-keyboard-apply.sh, which either applies a key to a real component on this stack or records the honest reason it could not. This file is the document the Nuxel Settings app writes (pwa/nuxel-apps/settings/settings-model.js, DOCS.keyboard) and the document nuxelctl writes, so the UI and the console share ONE settings system.",
-  "consumer": "tools/s10plus/a33/nuxel-keyboard-apply.sh -> the installed OSK provider (stevia / stevia-phosh-osk-provider) through phoc's zwp_text_input_manager_v3, plus the GNOME/GTK input settings the WebKitGTK session reads",
+  "consumer": "tools/s10plus/a33/nuxel-keyboard-apply.sh -> the installed OSK provider (stevia / stevia-phosh-osk-provider) through phoc's zwp_text_input_manager_v3, plus the opt-in phoc zwp_text_input_manager_v1 compatibility shim, plus the GNOME/GTK input settings the WebKitGTK session reads",
   "probe": "keyboard-state (launcher host status.read -> /run/nuxel-keyboard.state, written by the applier)",
   "evidence": {
     "state_file": "/run/nuxel-keyboard.state",
@@ -34,6 +34,8 @@
   "keyboard.haptics_intensity_comment": "low=subtle (default), medium, high. Only meaningful as genuine amplitude when the actuator exposes a writable strength control; otherwise the daemon reports intensity_mode=duration and this is pulse feel, not amplitude.",
   "keyboard.clipboard": true,
   "keyboard.hardware_passthrough": true,
+  "keyboard.text_input_v1": false,
+  "keyboard.text_input_v1_comment": "Opt-in compatibility global in phoc for Electron/Chromium builds that still speak the removed zwp_text_input_v1 protocol (e.g. Caprine 2.61 / Chromium 122). The normal v3 path is unchanged. Applied by nuxel-keyboard-apply.sh writing /run/nuxel-text-input-v1.enabled; phoc polls it.",
   "set_by": "default",
   "updated_at": 0
 }

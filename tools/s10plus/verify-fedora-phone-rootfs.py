@@ -94,6 +94,19 @@ FILES=(
     '/etc/systemd/system/nuxel-bluetooth.service',
     '/etc/systemd/system/nuxel-interface-state.service',
     '/etc/systemd/system/multi-user.target.wants/nuxel-interface-state.service',
+    # PWNAGE-91000 firewall/permission surfaces: the bridge provider imports
+    # this package from <bridge-dir>/../../nuxel-firewall, and the CLI/policy
+    # are the recovery path the app and Settings call.
+    '/usr/bin/nuxel-firewall',
+    '/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/__init__.py',
+    '/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/provider.py',
+    '/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/policy.py',
+    '/etc/nuxel/firewall/policy.json',
+    '/etc/nuxel/firewall/policy.schema.json',
+    '/usr/share/nuxel/pwa/nuxel-apps/firewall/index.html',
+    '/usr/share/nuxel/pwa/nuxel-apps/firewall/manifest.json',
+    '/usr/share/nuxel/pwa/nuxel-apps/permissions/index.html',
+    '/usr/share/nuxel/pwa/nuxel-apps/permissions/manifest.json',
 )
 
 # Runtime-critical files copied verbatim by the rootfs builder.  Comparing the
@@ -157,6 +170,20 @@ SOURCE_PARITY = {
     '/etc/systemd/system/nuxel-bluetooth.service': 'services/nuxel-s10/systemd/nuxel-bluetooth.service',
     '/etc/systemd/system/nuxel-interface-state.service': 'services/nuxel-s10/systemd/nuxel-interface-state.service',
     '/usr/share/nuxel/pwa/nuxel-home/js/desktop-layout.js': 'pwa/nuxel-home/js/desktop-layout.js',
+    # PWNAGE-91000 firewall/permissions bytes must match the checkout exactly.
+    '/usr/bin/nuxel-firewall': 'services/nuxel-firewall/bin/nuxel-firewall',
+    '/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/__init__.py': 'services/nuxel-firewall/nuxel_firewall/__init__.py',
+    '/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/provider.py': 'services/nuxel-firewall/nuxel_firewall/provider.py',
+    '/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/policy.py': 'services/nuxel-firewall/nuxel_firewall/policy.py',
+    '/etc/nuxel/firewall/policy.json': 'configs/nuxel/firewall/policy.json',
+    '/etc/nuxel/firewall/policy.schema.json': 'configs/nuxel/firewall/policy.schema.json',
+    '/usr/share/nuxel/pwa/nuxel-apps/firewall/index.html': 'pwa/nuxel-apps/firewall/index.html',
+    '/usr/share/nuxel/pwa/nuxel-apps/firewall/manifest.json': 'pwa/nuxel-apps/firewall/manifest.json',
+    '/usr/share/nuxel/pwa/nuxel-apps/permissions/index.html': 'pwa/nuxel-apps/permissions/index.html',
+    '/usr/share/nuxel/pwa/nuxel-apps/permissions/manifest.json': 'pwa/nuxel-apps/permissions/manifest.json',
+    '/usr/share/nuxel/pwa/nuxel-home/js/qs-firewall.js': 'pwa/nuxel-home/js/qs-firewall.js',
+    '/usr/share/nuxel/pwa/nuxel-apps/settings/firewall-settings.js': 'pwa/nuxel-apps/settings/firewall-settings.js',
+    '/usr/share/nuxel/pwa/nuxel-apps/settings/keyboard-settings.js': 'pwa/nuxel-apps/settings/keyboard-settings.js',
     '/etc/systemd/system/nuxel-metrics.service': 'services/nuxel-metrics/nuxel-metrics.service',
     '/usr/lib/nuxel/nuxel-perf-tune.sh': 'services/nuxel-performance/bin/nuxel-perf-tune.sh',
     '/etc/systemd/system/nuxel-perf-tune.service': 'services/nuxel-performance/systemd/nuxel-perf-tune.service',

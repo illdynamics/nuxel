@@ -2,7 +2,7 @@
 Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
 After=nuxel-wayland.service nuxel-wl-fb.service sound.target nuxel-button-manager.service
 Wants=nuxel-wayland.service nuxel-wl-fb.service
-ConditionPathExists=/usr/share/nuxel/assets/nuxel-pow.mp3
+ConditionPathExists=/usr/share/nuxel/assets/nuxel-boot-audio.mp3
 # PWNAGE-89000: wait for the applied-route receipt, not the pending state
 # document.  This service is event-triggered by nuxel-boot-sound.path, so it is
 # no longer a 30+ s oneshot inside the initial boot transaction.  The played

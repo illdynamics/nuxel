@@ -68,7 +68,7 @@
     "chord": {
       "comment": "Both keys held together for this long, measured from the SECOND key press.",
       "hold_min_ms": 500,
-      "suppress_single_key_classes": "true (chord > long press > double press > single press)",
+      "suppress_single_key_classes": "true (chord > long press > double press > single press; a Power press that armed a chord never also dispatches power_short/screen-toggle, and a volume step sent before Power arrived is silently restored with volume-restore)",
       "emergency_note": "Samsung's own hardware reset/recovery combos are NEVER intercepted: the keypad is opened without EVIOCGRAB, so the kernel and the bootloader keep seeing every event. A Power+VolumeDown hold that reaches Samsung's own reset window resets the handset regardless of what this state machine does; the machine's screenshot fires once at 500 ms and no further class (including the 8 s reboot class) fires for the rest of that hold."
     }
   },
@@ -309,7 +309,7 @@
       "action remap to volume-up-autorepeat / volume-down-autorepeat",
       "volume_repeat_enabled"
     ],
-    "predictability_rule": "Exactly one step is emitted per press (on the press, like A32), so a press that turns out to be a long press still yields exactly one step and never two; a chord buffers the step and delivers it on release if the chord does not complete, so no press is lost."
+    "predictability_rule": "Exactly one step is emitted per press (on the press, like A32), so a press that turns out to be a long press still yields exactly one step and never two; a Power-first chord buffers the step and delivers it on release if the chord does not complete, while a Volume-first chord sends volume-restore so the mixer returns to its pre-press value. The Power release that was part of a chord attempt never emits the power_short action, so a screenshot/sound-mode combo cannot also blank the display."
   },
   "arbitration": {
     "comment": "Highest priority first. Every class above suppresses everything below it while it is decided.",
@@ -321,7 +321,7 @@
       "single_press (screen toggle / terminal / volume step)",
       "key_repeat_volume (opt-in only)"
     ],
-    "enforcement": "nuxel_fsm_feed(): a chord in progress skips the volume-hold class entirely, and when a chord fires it sets power_used_long, power_used_very_long and vol_used_long so no lower class can also act during that hold."
+    "enforcement": "nuxel_fsm_feed(): a chord in progress skips the volume-hold class entirely, and when a chord fires it sets power_used_long, power_used_very_long and vol_used_long so no lower class can also act during that hold. chord_restore_volume emits volume-restore for a volume-first press, and chord_was_armed suppresses power_short (screen-toggle) on release."
   },
   "early_boot": {
     "comment": "The one-time verbose-boot override. 'Early' is measured from the FIRST evdev event this manager sees, i.e. the start of Nuxel's userspace - not the kernel's boot.",

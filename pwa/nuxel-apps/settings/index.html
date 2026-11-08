@@ -29,12 +29,14 @@
   <button class="tab" data-tab="sound">Sound</button>
   <button class="tab" data-tab="theme">Appearance</button>
   <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
+  <button class="tab" data-tab="keyboard">Keyboard</button>
   <button class="tab" data-tab="location">Location &amp; Maps</button>
   <button class="tab" data-tab="power">Power</button>
   <button class="tab" data-tab="notifications">Notifications</button>
   <button class="tab" data-tab="nfc">NFC</button>
   <button class="tab" data-tab="fingerprint">Fingerprint</button>
   <button class="tab" data-tab="security">Security</button>
+  <button class="tab" data-tab="firewall">Firewall</button>
   <button class="tab" data-tab="software">Software</button>
   <button class="tab" data-tab="apps">Apps</button>
   <button class="tab" data-tab="permissions">Permissions</button>
@@ -314,6 +316,24 @@
 
 
   <!-- ── POWER (battery modes + power menu) ──────────────────────────── -->
+  <section id="tab-keyboard" class="panel">
+    <h2>Keyboard</h2>
+    <div class="card">
+      <h3>Legacy text-input v1 compatibility</h3>
+      <p class="hint">Electron/Chromium 122 applications such as Caprine 2.61 only speak
+        <code>zwp_text_input_v1</code>, which modern Phoc/wlroots no longer exposes. Enabling
+        this opt-in shim lets those apps raise the same Stevia keyboard that GTK apps and
+        Nuxel PWAs already use through <code>zwp_text_input_v3</code>. The normal keyboard and
+        v3 path are unchanged.</p>
+      <p class="hint">Applies to newly launched apps immediately. If an Electron app is
+        already running, close and reopen it so it can see the new protocol.</p>
+      <label class="check"><input id="keyboard-text-input-v1" type="checkbox">
+        Enable legacy text-input v1 shim (Caprine / Electron 29)</label>
+      <div class="row"><button id="keyboard-text-input-v1-refresh">Refresh state</button></div>
+      <pre id="keyboard-text-input-v1-state" class="state" role="status" aria-live="polite">Reading…</pre>
+    </div>
+  </section>
+
   <section id="tab-power" class="panel">
     <h2>Power</h2>
     <div class="card">
@@ -483,6 +503,71 @@
       </div>
       <p id="sec-result" class="state" role="status">—</p>
       <p class="hint">Fingerprint mode is refused unless the secure provider is ready and a PIN fallback has been verified.</p>
+    </div>
+  </section>
+
+  <!-- ── FIREWALL (briq-05b) ──────────────────────────────────────────── -->
+  <section id="tab-firewall" class="panel">
+    <h2>Firewall</h2>
+    <div class="card">
+      <h3>Firewall status</h3>
+      <p class="hint">Live readback from the authoritative firewall service. Inbound and forwarded traffic are denied by default; outgoing is allowed by default unless you switch to strict allowlist mode.</p>
+      <pre id="fw-settings-state" class="state" role="status">Checking firewall…</pre>
+      <div class="row wrap">
+        <button id="fw-settings-open" class="primary">Open Firewall app</button>
+        <button id="fw-settings-refresh" class="ghost">Refresh</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Direction defaults</h3>
+      <p class="hint">Global chain policies. Changing these does not apply anything until you Dry run / Apply.</p>
+      <div class="row wrap">
+        <label>Incoming
+          <select id="fw-input" data-direction="input">
+            <option value="deny">Deny by default</option>
+            <option value="allow">Allow</option>
+          </select>
+        </label>
+        <label>Forwarded
+          <select id="fw-forward" data-direction="forward">
+            <option value="deny">Deny by default</option>
+            <option value="allow">Allow</option>
+          </select>
+        </label>
+        <label>Outgoing
+          <select id="fw-output" data-direction="output">
+            <option value="allow">Allow by default</option>
+            <option value="deny">Block by default (allowlist)</option>
+          </select>
+        </label>
+      </div>
+      <div class="row wrap">
+        <button id="fw-save-defaults" class="primary">Save direction defaults</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Inbound services</h3>
+      <p class="hint">Inbound listeners are denied by default. Only the discovered SSH/XRDP/VNC owner rules are shown, sourced from sshd config and live sockets. Toggling a rule never weakens sshd authentication policy.</p>
+      <div id="fw-services" class="services-list"></div>
+    </div>
+
+    <div class="card">
+      <h3>Applications</h3>
+      <p class="hint">Per-app egress matrix. On this S10+ all app processes share one UID, so per-app outbound attribution is unsupported: rows are shown as unsupported rather than a fake green checkbox. When a backend supports per-app attribution, the same rows become real toggles.</p>
+      <div id="fw-apps" class="apps-list"></div>
+    </div>
+
+    <div class="card">
+      <h3>Apply</h3>
+      <div class="row wrap">
+        <button id="fw-dry-run" class="ghost">Dry run</button>
+        <button id="fw-apply" class="danger">Apply + rollback</button>
+        <button id="fw-confirm" class="primary" disabled>Confirm</button>
+        <button id="fw-rollback" class="ghost" disabled>Rollback</button>
+      </div>
+      <pre id="fw-action-result" class="state" role="status">—</pre>
     </div>
   </section>
 
@@ -666,7 +751,8 @@
 <script src="../../nuxel-common/statusbar-icons.js?v=p52000"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="settings.js?v=p52000"></script>
-<script src="apps-permissions-settings.js?v=p86000"></script>
+<script src="keyboard-settings.js?v=a76"></script>
+<script src="apps-permissions-settings.js?v=p86001"></script>
 <script src="theme-settings.js?v=p50002"></script>
 <script src="sound-settings.js?v=p81000"></script>
 <script src="mic-settings.js?v=p84000"></script>
@@ -678,5 +764,6 @@
 <script src="driver-diagnostics.js?v=p50002"></script>
 <script src="graphics-diagnostics.js?v=p52000"></script>
 <script src="services-settings.js?v=p88000"></script>
+<script src="firewall-settings.js?v=2"></script>
 </body>
 </html>

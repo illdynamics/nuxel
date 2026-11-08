@@ -123,14 +123,19 @@ fi
 check_eq "a failed apply leaves the live ruleset untouched" "$GOOD" "$(live)"
 
 echo
-echo "-- 6. flush can never take the console with it --"
+echo "-- 6. flush (global ruleset replacement) is always refused --"
 if "$TOOL" flush >/dev/null 2>&1; then
     bad "flush without --keep-console must be refused"
 else
     ok "flush without --keep-console is refused"
 fi
 check_eq "the refused flush changed nothing" "$GOOD" "$(live)"
-check "flush --keep-console leaves the guard loaded" bash -c "'$TOOL' flush --keep-console >/dev/null 2>&1 && grep -Eq '^[[:space:]]*table [a-z0-9]+ nuxel_console_guard[[:space:]]*\{' '$NUXEL_MOCK_NFT_STATE/ruleset.nft'"
+if "$TOOL" flush --keep-console >/dev/null 2>&1; then
+    bad "flush --keep-console must also be refused (no global flush)"
+else
+    ok "flush --keep-console is also refused (no global flush)"
+fi
+check_eq "the refused flush --keep-console changed nothing" "$GOOD" "$(live)"
 "$TOOL" apply >/dev/null 2>&1
 
 echo

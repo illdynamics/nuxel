@@ -980,6 +980,20 @@ for service in nuxel-bridge nuxel-portal nuxel-notifications; do
     install -m 0755 "$shim" "$STAGE/usr/bin/$(basename "$shim")"
   done
 done
+# Firewall package imported by nuxel-bridge/src/firewall_provider.py.  The
+# bridge computes its search root as <bridge-dir>/../../nuxel-firewall, i.e.
+# /usr/lib/nuxel/nuxel-firewall, so the package must land there exactly.
+install -d "$STAGE/usr/lib/nuxel/nuxel-firewall"
+cp -a /nuxel/services/nuxel-firewall/nuxel_firewall/.     "$STAGE/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/"
+# Never ship developer bytecode caches in the phone image.
+find "$STAGE/usr/lib/nuxel/nuxel-firewall" -name '__pycache__' -type d -prune -exec rm -rf {} +
+install -m 0755 /nuxel/services/nuxel-firewall/bin/nuxel-firewall \
+    "$STAGE/usr/bin/nuxel-firewall"
+install -d "$STAGE/etc/nuxel/firewall"
+install -m 0644 /nuxel/configs/nuxel/firewall/policy.json \
+    "$STAGE/etc/nuxel/firewall/policy.json"
+install -m 0644 /nuxel/configs/nuxel/firewall/policy.schema.json \
+    "$STAGE/etc/nuxel/firewall/policy.schema.json"
 # Units installed explicitly (not by glob) so the canonical set is greppable and
 # verify-service-graph.py can prove install + enablement from the script text.
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-bridge.service             "$STAGE/etc/systemd/system/nuxel-bridge.service"

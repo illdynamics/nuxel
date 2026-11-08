@@ -25,12 +25,16 @@ items = set()
 for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
              'pwa/nuxel-apps/console', 'pwa/nuxel-apps/console-usb',
              'pwa/nuxel-apps/console-wifi', 'pwa/nuxel-apps/maps',
-             'pwa/nuxel-apps/doom',
-             'pwa/nuxel-apps/nuxtore/catalog'):
+             'pwa/nuxel-apps/doom', 'pwa/nuxel-apps/firewall',
+             'pwa/nuxel-apps/permissions',
+             'pwa/nuxel-apps/nuxtore/catalog',
+             'services/nuxel-firewall/nuxel_firewall'):
     for path in (root / base).rglob('*'):
         if not path.is_file() or path.is_symlink():
             continue
-        if path.name in ('.keep',) or path.name.endswith(('.a59-bak', '.bak')):
+        if path.name in ('.keep',) or path.name.endswith(('.a59-bak', '.bak', '.pyc', '.pyo')):
+            continue
+        if '__pycache__' in path.parts or '.pytest_cache' in path.parts:
             continue
         items.add(path.relative_to(root).as_posix())
 items.update({
@@ -42,6 +46,10 @@ items.update({
     'services/nuxel-bridge/src/api.py',
     'services/nuxel-bridge/src/bridge.py',
     'services/nuxel-bridge/src/doom_assets.py',
+    'services/nuxel-bridge/src/firewall_provider.py',
+    'services/nuxel-firewall/bin/nuxel-firewall',
+    'configs/nuxel/firewall/policy.json',
+    'configs/nuxel/firewall/policy.schema.json',
     'tools/s10plus/a33/doom-engines/nuxel-doom-engine',
     'services/nuxel-bridge/src/hw_providers.py',
     'services/nuxel-bridge/src/tri_link_status.py',

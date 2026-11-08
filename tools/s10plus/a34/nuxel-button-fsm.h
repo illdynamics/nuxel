@@ -161,6 +161,7 @@ typedef struct {
   int     vol_held;                 /* 0 none, +1 up, -1 down             */
   int     vol_used_long;            /* the long-press class already fired  */
   int     vol_repeat_mode;          /* this hold is a key-repeat hold      */
+  int     vol_step_emitted;         /* this press already moved the mixer  */
   int64_t vol_down_ms, vol_next_repeat_ms;
 
   /* chords (priority above every single-key class) */
@@ -168,6 +169,7 @@ typedef struct {
   int     chord_fired;
   int64_t chord_start_ms;
   int     chord_step_pending;       /* +1/-1: a volume step buffered by a chord */
+  int     chord_restore_volume;     /* the chord must undo the step already sent */
 
   int     started;                  /* the FSM has seen its first event    */
   int64_t fsm_start_ms;             /* = t of that first event (userspace start) */
@@ -363,6 +365,14 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
     f->power_used_very_long = 1;
     f->vol_used_long = 1;
     if (f->menu_open) { f->menu_open = 0; f->menu_last_activity_ms = e->t_ms; EMIT("menu-close"); }
+    /* Volume-first chords already moved the mixer on the plain press.  Undo it
+     * before the chord action so Power+Volume never changes volume as a side
+     * effect.  The manager performs this silently (no OSD, no cue). */
+    if (f->chord_restore_volume) {
+      EMIT("volume-restore");
+      f->chord_restore_volume = 0;
+      f->vol_step_emitted = 0;
+    }
     EMIT(f->chord_armed > 0 ? c->chord_power_volume_up : c->chord_power_volume_down);
   }
 
@@ -388,6 +398,10 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
           f->chord_armed = f->vol_held > 0 ? 1 : -1;
           f->chord_fired = 0;
           f->chord_step_pending = 0;       /* the volume press already emitted its step */
+          /* A volume-first press has ALREADY changed the mixer.  Remember to
+           * undo that step if the chord completes; a plain volume press keeps
+           * its immediate response when Power is not part of the gesture. */
+          f->chord_restore_volume = f->vol_step_emitted ? 1 : 0;
           f->chord_start_ms = e->t_ms;
         }
         if (f->power_double_deferring) {   /* second press => it was a double */
@@ -422,20 +436,28 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
       }
       if (e->value == 0) {
         int64_t held = e->t_ms - f->power_down_ms;
+        int chord_was_armed = f->chord_armed;
         f->power_down = 0;
         if (f->chord_armed && !f->chord_fired) {
           /* the other key was released too early: no chord. Any buffered volume
            * step is delivered by the volume release below, so no press is lost. */
           f->chord_armed = 0;
+          f->chord_restore_volume = 0;
         } else if (f->chord_fired) {
           f->chord_armed = 0;            /* the chord already acted: release is inert */
+          f->chord_restore_volume = 0;
         }
         if (f->power_used_very_long) {
           /* the reboot class already fired on the hold; the release is inert  */
         } else if (f->power_used_long) {
           /* The long press already opened (or closed) the menu: the release that
              ends the hold must NOT dismiss a menu the user is about to use. */
-        } else if (held >= NUXEL_FSM_POWER_DEBOUNCE_MS) {
+        } else if (!chord_was_armed && held >= NUXEL_FSM_POWER_DEBOUNCE_MS) {
+          /* A Power press that was forming a chord must never also dispatch the
+           * Power short action (screen-toggle).  That was the measured bug:
+           * holding VolumeDown+Power turned the display off before the
+           * screenshot fired.  The short class stays available for a plain
+           * Power press because chord_was_armed is then 0. */
           if (f->power_pending_double_armed) {
             f->power_pending_double_armed = 0;
             EMIT(c->power_double);
@@ -480,6 +502,8 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
           f->chord_armed = dir > 0 ? 1 : -1;
           f->chord_fired = 0;
           f->chord_step_pending = dir;
+          f->chord_restore_volume = 0;
+          f->vol_step_emitted = 0;
           f->chord_start_ms = e->t_ms > f->power_down_ms ? e->t_ms : f->power_down_ms;
           f->vol_held = dir;
           f->vol_down_ms = e->t_ms;
@@ -489,6 +513,7 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
           f->vol_held = dir;
           f->vol_down_ms = e->t_ms;
           f->vol_used_long = 0;
+          f->vol_step_emitted = 1;
           /* The A32 cadence survives, but only when it is asked for: either the
            * owner remapped the long action to *-autorepeat, or the explicit
            * volume_repeat_enabled setting is on. */
@@ -504,13 +529,16 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
           f->vol_held = 0;
           if (f->chord_armed && !f->chord_fired) {
             f->chord_armed = 0;
+            f->chord_restore_volume = 0;
             if (f->chord_step_pending == dir) {
               f->chord_step_pending = 0;
               EMIT(dir > 0 ? c->volume_up : c->volume_down);
             }
           } else if (f->chord_fired) {
             f->chord_armed = 0;
+            f->chord_restore_volume = 0;
           }
+          f->vol_step_emitted = 0;
         }
       }
     }

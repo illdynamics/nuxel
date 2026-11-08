@@ -1,13 +1,13 @@
 [
   {
     "path": "pwa/nuxel-apps/nuxtore/app.json",
-    "sha256": "4fc00cbead3dc346f644c43c22541082adddfa461f7dfb1d4e9462bd57719469",
-    "size": 406
+    "sha256": "7105e3f764617c610815f78c2ddbb1289f80170eb35f828d25b1569c78ed7cc9",
+    "size": 421
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/css/nuxtore.css",
-    "sha256": "3a9f02d78e62d8a62daf09301b7a06da2ef3b131bb34ca76a0faef8a4329c417",
-    "size": 4773
+    "sha256": "a0cc283c883ba9fb66ab62cdfb9f324251b138b7921558fbc1db193683cf078e",
+    "size": 5928
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/icons/icon-128.png",
@@ -61,8 +61,8 @@
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/index.html",
-    "sha256": "aeee92fd2d56a849fcf5d45cfcf3f94dcf829e3b93e6bcb47c3847bf5ab057d2",
-    "size": 5321
+    "sha256": "8c3c3ac6e55004248fe56491b322572f2131d280020df923f6ba351cdba68eb3",
+    "size": 7003
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/js/nuxtore-catalog.js",
@@ -75,19 +75,24 @@
     "size": 4720
   },
   {
+    "path": "pwa/nuxel-apps/nuxtore/js/nuxtore-flatpak.js",
+    "sha256": "9e2edaf6ae8ea64c0a3f30320b9c519bc7ccb4b2900ae87b6c937207f3734f56",
+    "size": 14554
+  },
+  {
     "path": "pwa/nuxel-apps/nuxtore/js/nuxtore.js",
-    "sha256": "3d6184a00e062c5f5cc7c0c2fdebefb3e9689367f237532db082ca41b7ea75d0",
-    "size": 18904
+    "sha256": "7aed086e19029ca11b63a7686461778d23e65421c14201fc059aa24dbb391685",
+    "size": 26261
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/manifest.json",
-    "sha256": "8854e591f61aa8e3afbc3f0920159518fc2d93253a61b31e91ab86de4e80a0fc",
-    "size": 1637
+    "sha256": "fda545acb30ca1e7895256b080bbfe6eabe1730b93a6949920df7b98402dd23d",
+    "size": 1669
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/sw.js",
-    "sha256": "fc44a84037265202aa621a62cc9733c702c57e2b61d588de17ded4ba50b9a0e7",
-    "size": 1358
+    "sha256": "6684fd531ebfb93040e46953667a493731c717a938bf945b2aed517bcbc9972f",
+    "size": 1401
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/tests/test-catalog.js",
@@ -106,8 +111,8 @@
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/tools/nuxtore-stage.py",
-    "sha256": "28214ccc4bbd9c938417490026543a1483a4841a319a5a8cdef18e88dfd77571",
-    "size": 6392
+    "sha256": "5ed6237a01e83f3f0305b4ddadb0dbff7298d19ab27b0c89043c692f86fbc35c",
+    "size": 6666
   },
   {
     "path": "pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py",

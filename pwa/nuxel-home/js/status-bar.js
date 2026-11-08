@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.7.9-beta
+// Nuxel Status Bar — v0.8.0-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.7.9-beta'; }
+    static get VERSION() { return '0.8.0-beta'; }
 
     constructor() {
         this.state = {
@@ -246,6 +246,17 @@ class StatusBar {
             this._pollLocation();
             this._pollSystemIndicators();
             this._pollNotifications();
+        });
+
+        // The button manager writes the sound-mode FIFO; nuxel-pwa-host relays
+        // it here immediately.  Do not wait for the 15 s provider poll: the
+        // owner expects the square glyph to change on the same key chord.
+        document.addEventListener('nuxel:sound-mode', (ev) => {
+            const mode = ev && ev.detail && ev.detail.mode;
+            if (mode === 'normal' || mode === 'vibrate' || mode === 'silent') {
+                this.state.soundMode = mode;
+                this._renderSound();
+            }
         });
 
         // Listen for bridge push events if available

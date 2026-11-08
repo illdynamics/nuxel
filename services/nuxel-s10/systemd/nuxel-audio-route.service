@@ -1,6 +1,7 @@
 [Unit]
 Description=Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)
-After=sound.target
+After=sound.target nuxel-audio-session.service
+Wants=nuxel-audio-session.service
 ConditionPathExists=/dev/snd/controlC0
 StartLimitIntervalSec=0
 # The route script verifies calliope_version=MUB0 itself and defers if the

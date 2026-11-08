@@ -124,12 +124,55 @@
       return primeAudioCtx.state === 'running';
     } catch (e) { return false; }
   }
+  /* Emscripten creates its own AudioContext when SDL audio initialises.  That
+   * happens AFTER the PLAY tap (the WAD fetch runs first), so the engine's
+   * context can still be 'suspended' even though our primeAudio context is
+   * running.  Resume the engine context explicitly and keep trying after start
+   * and on the next trusted gesture.  Without this the game is silent on the
+   * handset until the owner happens to tap the canvas again. */
+  let engineAudioResumeTimer = null;
+  function engineAudioContext() {
+    try {
+      const m = window.Module;
+      return (m && m.SDL2 && m.SDL2.audioContext) || null;
+    } catch (e) { return null; }
+  }
+  function resumeEngineAudio() {
+    let ok = false;
+    try {
+      const ctx = engineAudioContext();
+      if (ctx) {
+        if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume();
+        ok = ctx.state === 'running';
+      }
+    } catch (e) { ok = false; }
+    return ok;
+  }
+  function scheduleEngineAudioResume() {
+    if (engineAudioResumeTimer !== null) clearTimeout(engineAudioResumeTimer);
+    const tries = [0, 120, 350, 800, 1600, 3000];
+    let i = 0;
+    const tick = function () {
+      if (!settings.sound) return;
+      resumeEngineAudio();
+      i++;
+      if (i < tries.length) engineAudioResumeTimer = setTimeout(tick, tries[i]);
+      else engineAudioResumeTimer = null;
+    };
+    engineAudioResumeTimer = setTimeout(tick, tries[0]);
+  }
   function surfaceAudioState() {
     const n = $('audio-note');
     if (!n) return;
     if (!settings.sound) { n.textContent = 'Sound is OFF. Enable it in Touch & Audio, then tap PLAY to unlock the speaker.'; return; }
-    if (audioUnlocked()) { n.textContent = 'Audio unlocked and running. Effects and music route to the phone speaker.'; }
-    else { n.textContent = 'Tap PLAY to enable audio. If WebKit blocks autoplay, the first tap unlocks it; the engine never fakes sound.'; }
+    const ctx = engineAudioContext();
+    if (audioUnlocked() || (ctx && ctx.state === 'running')) {
+      n.textContent = 'Audio unlocked and running. Effects and music route to the phone speaker.';
+    } else if (ctx) {
+      n.textContent = 'Engine audio is armed; the first tap on the game resumes it.';
+    } else {
+      n.textContent = 'Tap PLAY to enable audio. If WebKit blocks autoplay, the first tap unlocks it; the engine never fakes sound.';
+    }
   }
 
   // ---- settings -----------------------------------------------------------
@@ -397,6 +440,10 @@
       'use_mouse 0', 'grabmouse 0', 'fullscreen 0', 'aspect_ratio_correct 1',
       'window_width 640', 'window_height 400', 'show_endoom 0',
       'snd_samplerate 44100', 'use_libsamplerate 0',
+      // Sound is on by default.  Chocolate Doom stores both volumes on a
+      // 0..15 scale; write non-zero values so a fresh profile can never start
+      // silent because the config default was zero.
+      'sfx_volume 15', 'music_volume 8',
       // Chocolate Doom's config file stores DOS set-1 scan codes, not DOM
       // keyCodes.  The old `key_fire 17` was DOM Ctrl but DOS `W`, so the Fire
       // button (ControlLeft) never matched.  These explicit bindings are the
@@ -556,6 +603,9 @@
       setTimeout(function () { diagHud('start+600'); }, 600);
       $('hud-wad').textContent = String(selectedWad.name || 'WAD').toUpperCase().slice(0, 24);
       callMain(args);
+      /* SDL audio initialises inside callMain; resume the engine's own
+         AudioContext now that it exists, and again on the next real tap. */
+      scheduleEngineAudioResume();
       setProgress(1);
       setTimeout(function () { const b = $('engine-progress'); if (b) b.style.display = 'none'; }, 1200);
       setTimeout(dismissKeyboard, 250);
@@ -930,6 +980,13 @@
   }
 
   // ---- wiring -------------------------------------------------------------
+  // A real finger/key anywhere in the app is a valid autoplay gesture.  Resume
+  // the engine context even when the owner taps the HUD instead of PLAY.
+  ['pointerdown', 'touchstart', 'keydown'].forEach(function (kind) {
+    document.addEventListener(kind, function () {
+      if (engineStarted && settings.sound) { resumeEngineAudio(); surfaceAudioState(); }
+    }, { passive: true, capture: true });
+  });
   document.querySelectorAll('[data-start]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       startMode = btn.getAttribute('data-start') === 'title' ? 'title' : 'episode';
@@ -1039,6 +1096,7 @@
     }
     if (event.data.type === 'nuxel:resume') {
       resumeEngine();
+      scheduleEngineAudioResume();
       return;
     }
     if (event.data.type !== 'nuxel:close-request') return;
@@ -1078,6 +1136,8 @@
     aimDuty: aimDuty,
     primeAudio: primeAudio,
     audioUnlocked: audioUnlocked,
+    resumeEngineAudio: resumeEngineAudio,
+    engineAudioState: function () { const c = engineAudioContext(); return c ? c.state : 'absent'; },
     get sensitivity() { return settings.sensitivity; },
   };
 })();

@@ -40,7 +40,7 @@ import dbus.mainloop.glib
 from gi.repository import GLib
 from datetime import datetime
 
-NUXEL_NOTIFICATIONS_VERSION = "0.7.9-beta"
+NUXEL_NOTIFICATIONS_VERSION = "0.8.0-beta"
 
 logging.basicConfig(
     level=logging.INFO,

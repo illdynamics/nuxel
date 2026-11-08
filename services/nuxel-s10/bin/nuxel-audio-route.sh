@@ -150,12 +150,24 @@ pipewire_connectable() {
 }
 ensure_default_sink() {
     sink_present || { say "static sink $SINK absent"; return 1; }
-    if ! pw_env timeout 4 pactl set-default-sink "$SINK" >/dev/null 2>&1; then
-        say "pactl set-default-sink $SINK failed"
-        return 1
-    fi
-    default_sink_ok || { say "default sink readback is not $SINK"; return 1; }
-    say "default sink $SINK verified"
+    # The default node is WirePlumber metadata, not a PipeWire-core property.
+    # At boot this script can run while WirePlumber is still connecting, which
+    # used to make pactl return "Failure: Not supported" exactly once and leave
+    # the route deferred for the rest of the boot (no cues, 0/100 volume keys,
+    # monitor as default capture).  Retry briefly before declaring failure.
+    n=0
+    while [ "$n" -lt 40 ]; do
+        if pw_env timeout 4 pactl set-default-sink "$SINK" >/dev/null 2>&1; then
+            if default_sink_ok; then
+                say "default sink $SINK verified"
+                return 0
+            fi
+        fi
+        n=$((n + 1))
+        sleep 0.25
+    done
+    say "pactl set-default-sink $SINK failed (WirePlumber default-node metadata unavailable)"
+    return 1
 }
 sink_volume() {
     pw_env timeout 4 wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null \

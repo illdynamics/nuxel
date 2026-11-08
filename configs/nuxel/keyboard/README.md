@@ -112,3 +112,25 @@ Download Mode — see the NO-FLASHING invariant in
 diagnostic commands. In short: open Settings → Input, tap the probe page link or
 type in Files' search box, confirm the keyboard rises on focus and hides on
 blur, then press keys **with a finger** and confirm the characters appear.
+
+## Opt-in legacy `zwp_text_input_v1` shim (A76)
+
+Electron/Chromium builds that predate text-input-v3 (Caprine 2.61 bundles
+Chromium 122) only bind `zwp_text_input_v1`. The setting
+
+```json
+"keyboard.text_input_v1": false
+```
+
+is consumed by `nuxel-keyboard-apply.sh`, which writes
+`/run/nuxel-text-input-v1.enabled` (`1` or `0`). The A76 phoc build polls that
+marker and creates/removes the `zwp_text_input_manager_v1` global without a
+compositor restart. The adapter translates v1 activate/show/commit state to the
+same `zwp_input_method_v2`/Stevia path used by v3. The v3 path is untouched.
+
+Settings → Keyboard exposes the switch. The applier records
+`keyboard.text_input_v1=applied:phoc-marker` only when the running phoc binary
+contains the shim; an older phoc is reported as
+`not_applied:phoc-without-v1-shim`.
+
+Build/install on the phone: `tools/s10plus/a76/a76-build-phoc-text-input-v1.sh`.

@@ -81,6 +81,25 @@ def test_audio_session_and_mic_route_are_not_direct_boot_target_consumers():
     assert "ExecStart=/usr/lib/nuxel/nuxel-mic-route.sh\n" in active_mic
 
 
+def test_audio_session_waits_for_pipewire_core_and_supervises_wireplumber():
+    src = read("services/nuxel-s10/bin/nuxel-audio-session.sh")
+    # A socket inode is not enough: WirePlumber previously exited with
+    # "Failed to connect to PipeWire" and the default sink/source metadata was
+    # missing for the whole boot (no cues, 0/100% volume steps, monitor mic).
+    assert "pw-cli info 0" in src
+    assert "PipeWire:Interface:Core" in src
+    assert "start_wireplumber()" in src
+    assert "wireplumber exited rc=" in src
+    assert "pkill -TERM -x wireplumber" in src
+
+
+def test_audio_route_retries_default_sink_metadata():
+    src = read("services/nuxel-s10/bin/nuxel-audio-route.sh")
+    assert "WirePlumber default-node metadata unavailable" in src
+    assert "pactl set-default-sink" in src
+    assert "while [ \"$n\" -lt 40 ]" in src
+
+
 def test_static_launcher_and_radio_state_do_not_serialize_the_compositor():
     web = read("services/nuxel-web.service")
     active_web = "\n".join(line for line in web.splitlines()

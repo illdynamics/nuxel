@@ -224,8 +224,28 @@ fi
 if [ -x /usr/lib/nuxel/nuxel-osd ]; then
   nohup /usr/lib/nuxel/nuxel-osd </dev/null >/run/nuxel-osd.out 2>&1 &
 fi
+# Apply the keyboard document before Stevia starts.  Besides the gsettings the
+# applier normally owns, this writes the opt-in /run/nuxel-text-input-v1.enabled
+# marker phoc polls for the Electron/Chromium v1 compatibility global.  The
+# long-running path unit also re-runs the applier when Settings rewrites the
+# document; this early call makes the marker deterministic on every boot.
+if [ -x /usr/local/bin/nuxel-keyboard-apply.sh ]; then
+  XDG_RUNTIME_DIR=/run/nuxel-wayland WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+    timeout 20 /usr/local/bin/nuxel-keyboard-apply.sh apply >>"$LOG" 2>&1 || say "keyboard apply failed"
+elif [ -x /usr/libexec/nuxel/nuxel-keyboard-apply ]; then
+  XDG_RUNTIME_DIR=/run/nuxel-wayland WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+    timeout 20 /usr/libexec/nuxel/nuxel-keyboard-apply apply >>"$LOG" 2>&1 || say "keyboard apply failed"
+fi
 if [ -x /usr/bin/phosh-osk-stevia ]; then
-  nohup dbus-run-session -- /usr/bin/phosh-osk-stevia </dev/null >/run/stevia.out 2>&1 &
+  # ydotoold creates a uinput keyboard that Stevia would otherwise treat as a
+  # real hardware keyboard and suppress the OSK for.  A phone must always be
+  # able to raise the touch keyboard, so ignore attached keyboard devices.
+  XDG_RUNTIME_DIR=/run/nuxel-wayland gsettings set mobi.phosh.osk ignore-hw-keyboards true 2>/dev/null || true
+  # Publish the OSK's private session-bus address so phoc can re-assert
+  # sm.puri.OSK0.SetVisible(TRUE) when an already-focused text field is tapped
+  # after the keyboard was folded.  dbus-run-session creates the bus first.
+  rm -f /run/nuxel-osk.bus
+  nohup dbus-run-session -- sh -c 'printf "%s\n" "$DBUS_SESSION_BUS_ADDRESS" > /run/nuxel-osk.bus; exec /usr/bin/phosh-osk-stevia' </dev/null >/run/stevia.out 2>&1 &
 fi
 
 # PWNAGE-43000 AUDIO: PipeWire runs in its own systemd cgroup, not inside the
