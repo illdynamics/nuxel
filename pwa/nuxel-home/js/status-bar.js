@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.8.1-beta
+// Nuxel Status Bar — v0.8.2-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.8.1-beta'; }
+    static get VERSION() { return '0.8.2-beta'; }
 
     constructor() {
         this.state = {
@@ -109,6 +109,44 @@ class StatusBar {
             console.log('[status-bar] ' + line);
         } catch (e) { /* evidence must never break the bar */ }
         try { window.NUXEL_STATUS_BAR_VERSION = StatusBar.VERSION; } catch (e) {}
+    }
+
+    /* PWNAGE-94000: the native fullscreen adapter (nuxel-statusbar) renders
+       the SAME canonical model instead of inventing a second status bar.  The
+       launcher writes a tiny JSON document through the host's whitelisted
+       config channel; /run is the only destination and no app data is sent. */
+    _publishCanonicalModel(force) {
+        const now = Date.now();
+        if (!force && now - (this._modelAt || 0) < 5000) return;
+        const st = this.state || {};
+        const counts = st.notificationCounts || this._countNotifications(st.notifications);
+        const model = {
+            schema_version: 1,
+            time: this.elements.time ? String(this.elements.time.textContent || '') : '',
+            wifi: st.wifiConnected === true ? 'connected' : String(st.wifiState || 'unknown'),
+            wifi_on: st.wifiRadioOn === true,
+            battery: Number.isFinite(st.batteryLevel) ? st.batteryLevel : null,
+            charging: st.batteryCharging === true,
+            bluetooth: st.bluetoothOn === true,
+            bluetooth_state: String(st.bluetoothState || 'unknown'),
+            mobile: String(st.cellularState || 'unknown'),
+            signal: Number.isFinite(st.signalLevel) ? st.signalLevel : 0,
+            location: st.locationEnabled === true,
+            location_state: String(st.locationState || 'unknown'),
+            sound: String(st.soundMode || 'unknown'),
+            notifications: counts.unread || 0,
+            active_notifications: counts.active || 0,
+            usb: String(st.usbLabel || ''),
+        };
+        const text = JSON.stringify(model);
+        if (!force && text === this._modelKey) return;
+        this._modelKey = text;
+        this._modelAt = now;
+        try {
+            if (window.NuxelHost && window.NuxelHost.available && window.NuxelHost.configSet) {
+                Promise.resolve(window.NuxelHost.configSet('statusbar-model', text)).catch(() => {});
+            }
+        } catch (e) { /* the DOM bar remains authoritative if the host is absent */ }
     }
 
     // PWNAGE-52000: status-bar icon visibility is a user preference layered on
@@ -271,6 +309,7 @@ class StatusBar {
         window.addEventListener('resize', () => this._applySafeZones());
         window.addEventListener('orientationchange', () => setTimeout(() => this._applySafeZones(), 120));
         document.addEventListener('nuxel:safezones-changed', () => this._applySafeZones());
+        this._publishCanonicalModel(true);
     }
 
     _scheduleClock() {
@@ -483,6 +522,7 @@ class StatusBar {
             this.elements.time.textContent = text;
         }
         if (this.elements.time) this._setProviderVisible(this.elements.time, true);
+        this._publishCanonicalModel();
     }
 
     _renderSignal() {
@@ -703,12 +743,17 @@ class StatusBar {
             return;
         }
         const labels = {
-            normal: 'Sound mode: normal',
-            vibrate: 'Sound mode: vibrate (selected; haptics not claimed)',
-            silent: 'Sound mode: silent',
+            normal: 'Sound normal',
+            vibrate: 'Vibrate mode',
+            silent: 'Silent mode',
+        };
+        const details = {
+            normal: 'Speaker on · notifications may play sound',
+            vibrate: 'Speaker muted · vibration alerts enabled',
+            silent: 'Speaker muted · no vibration alert',
         };
         el.setAttribute('aria-label', labels[mode]);
-        el.title = labels[mode] + ' · Power + Volume Up cycles normal → vibrate → silent';
+        el.title = labels[mode] + ' · ' + details[mode] + ' · Power + Volume Up cycles normal → vibrate → silent';
         this._applySafeZones();
     }
 
@@ -723,16 +768,27 @@ class StatusBar {
             const usb = ind.usb_data || {};
             const transfer = ind.file_transfer || {};
             const transports = ind.console_transports || {};
-            const charging = ind.charging || {};
+            // PWNAGE-96000: the battery lightning is the ONLY charge indicator.
+            // A wall charger elevates charging.external_power but is not a USB
+            // data/host connection, so it must never light this glyph.  The
+            // provider's usb_data.pc_connected is already vetoed by UDC state,
+            // Type-C data role, speed and VBUS; do not derive it here.
             // Deterministic precedence: active file transfer > active USB
-            // console > active charge > enumerated data link.
+            // console > enumerated USB data link to a host.
             if (transfer.active === true) { label = 'file'; state = 'file'; visible = true; }
             else if (transports.usb && transports.usb.active === true) { label = 'term'; state = 'term'; visible = true; }
-            else if (charging.charging === true && (usb.pc_connected === true || charging.external_power === true)) { state = 'chrg'; visible = true; }
-            else if (usb.pc_connected === true) { visible = true; }
+            else if (usb.pc_connected === true) { state = 'connected'; visible = true; }
         }
         this.state.usbLabel = label;
+        const providerVisible = this._providerVisible['status-usb'] !== false;
+        const renderKey = (visible ? '1' : '0') + '|' + (state || 'unknown') + '|' +
+            label + '|' + (providerVisible ? '1' : '0');
         this._setProviderVisible(el, visible);
+        if (this._usbRenderKey === renderKey) {
+            this._applySafeZones();
+            return;
+        }
+        this._usbRenderKey = renderKey;
         el.dataset.state = visible ? (state || 'connected') : 'unknown';
         const tag = el.querySelector('.usb-label');
         if (tag) tag.textContent = label;
@@ -742,7 +798,6 @@ class StatusBar {
         } else {
             const detail = state === 'file' ? 'File transfer endpoint active'
                 : state === 'term' ? 'USB console active'
-                : state === 'chrg' ? 'Charging over USB (status text hidden)'
                 : 'USB data link to host';
             el.setAttribute('aria-label', 'USB: ' + detail);
             el.title = 'USB: ' + detail;
@@ -1030,10 +1085,12 @@ class StatusBar {
         this._assertNoOverlap();
     }
 
-    // ---- Notifications (same JSON source as the daemon) ----
-    // Build a bell indicator + dropdown in the status bar right cluster,
-    // populated from bridge.getNotifications() which mirrors the canonical
-    // /var/lib/nuxel/notifications.json persisted by the daemon.
+    // ---- Notifications: authoritative daemon store -----------------------
+    // The native notification hub is the single owner of persistence and
+    // read/archive state.  The status bar only renders its snapshot and asks
+    // the hub to commit actions; it never invents a count or a successful
+    // swipe.  The visible reminder list lives inside expanded Quick Settings
+    // below every control/status row and shares this same renderer.
 
     _buildNotificationsUI() {
         const right = document.querySelector('.status-right');
@@ -1044,6 +1101,10 @@ class StatusBar {
         wrap.className = 'status-icon status-notification';
         wrap.style.cssText = 'position:relative;width:16px;height:16px;display:inline-flex;cursor:pointer;';
         wrap.title = 'Notifications';
+        wrap.setAttribute('role', 'button');
+        wrap.setAttribute('tabindex', '0');
+        wrap.setAttribute('aria-haspopup', 'dialog');
+        wrap.setAttribute('aria-label', 'Notifications');
         wrap.innerHTML =
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
             '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
@@ -1055,110 +1116,326 @@ class StatusBar {
             'align-items:center;justify-content:center;padding:0 3px;';
         badge.textContent = '0';
         wrap.appendChild(badge);
-        wrap.setAttribute('role', 'button');
-        wrap.setAttribute('aria-haspopup', 'true');
-        wrap.addEventListener('click', (e) => { e.stopPropagation(); this._toggleNotificationsPanel(); });
+        const open = (e) => { if (e) e.stopPropagation(); this._openNotificationsInQuickSettings(); };
+        wrap.addEventListener('click', open);
+        wrap.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); }
+        });
         right.appendChild(wrap);
 
         this._notificationElements.button = wrap;
         this._notificationElements.badge = badge;
+        this._bindNotificationGestures();
+        // Refresh the visible list when Quick Settings expands; this keeps the
+        // notification card rendering tied to the real panel state.
+        document.addEventListener('nuxel:qs-state', (ev) => {
+            const state = ev && ev.detail && ev.detail.state;
+            if (state === 'expanded') {
+                // Refresh from the authoritative hub when the reminder list
+                // becomes visible; the 30 s safety poll alone left a newly
+                // received notification absent from an already-open panel.
+                this._pollNotifications();
+            }
+        });
     }
 
     async _pollNotifications() {
         if (this._statusInactive()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.getNotifications) {
+                this._setNotifications([], null, 'notification bridge unavailable');
                 return;
             }
             const res = await bridge.getNotifications();
-            const list = (res && res.notifications && Array.isArray(res.notifications))
-                ? res.notifications
-                : [];
-            this._setNotifications(list);
+            if (!res || res.success === false) {
+                // Keep the last good snapshot visible but never pretend the
+                // provider's failure is a fresh zero-count snapshot.
+                this._renderNotificationsPanel(res && res.error ? String(res.error) : 'notification provider unavailable');
+                return;
+            }
+            const list = Array.isArray(res.notifications) ? res.notifications : [];
+            this._setNotifications(list, res.counts || null, '');
         } catch (e) {
-            console.warn('StatusBar: notification poll failed:', e.message || e);
+            const msg = String((e && e.message) || e);
+            console.warn('StatusBar: notification poll failed:', msg);
+            this._renderNotificationsPanel(msg);
         }
     }
 
-    _setNotifications(notifications) {
-        if (!Array.isArray(notifications)) notifications = [];
-        this.state.notifications = notifications;
+    _setNotifications(notifications, counts, error) {
+        this.state.notifications = Array.isArray(notifications) ? notifications : [];
+        this.state.notificationCounts = counts || this._countNotifications(this.state.notifications);
+        this.state.notificationError = error || '';
         this._renderNotificationsBadge();
-        this._renderNotificationsPanel();
+        this._renderNotificationsPanel(this.state.notificationError);
+        this._publishCanonicalModel(true);
+        try {
+            document.dispatchEvent(new CustomEvent('nuxel:notifications-changed', {
+                detail: { notifications: this.state.notifications,
+                          counts: this.state.notificationCounts,
+                          error: this.state.notificationError },
+            }));
+        } catch (e) {}
+    }
+
+    _countNotifications(notifications) {
+        const list = Array.isArray(notifications) ? notifications : [];
+        const active = list.filter((n) => !n || !n.archived_at);
+        const unread = active.filter((n) => n && !n.read_at).length;
+        return { active: active.length, unread: unread, read: active.length - unread,
+                 archived: list.length - active.length, total: list.length };
     }
 
     _renderNotificationsBadge() {
         const badge = this._notificationElements.badge;
         if (!badge) return;
-        const count = this.state.notifications.length;
+        const counts = this.state.notificationCounts || this._countNotifications(this.state.notifications);
+        const count = Number(counts.unread) || 0;
         if (count > 0) {
             badge.textContent = count > 99 ? '99+' : String(count);
             badge.style.display = 'inline-flex';
+            badge.setAttribute('aria-label', count + ' unread notifications');
         } else {
             badge.style.display = 'none';
+            badge.setAttribute('aria-label', 'No unread notifications');
         }
     }
 
-    _toggleNotificationsPanel() {
-        const panel = this._notificationElements.panel;
-        if (!panel) {
-            this._renderNotificationsPanel();
+    _openNotificationsInQuickSettings() {
+        if (this._displayOff() || this._coveredByLock()) return;
+        if (window.qs && typeof window.qs.open === 'function') {
+            window.qs.open();
+            window.qs.expand();
         }
-        const p = this._notificationElements.panel;
-        if (p) {
-            const hidden = p.classList.toggle('open');
-            if (hidden) {
-                const closeListener = (ev) => {
-                    if (!p.contains(ev.target)) { p.classList.remove('open'); document.removeEventListener('click', closeListener); }
-                };
-                document.addEventListener('click', closeListener);
+        this._renderNotificationsPanel();
+    }
+
+    _renderNotificationsPanel(error) {
+        const list = document.getElementById('qs-notifications-list');
+        if (!list) return;
+        const section = document.getElementById('qs-notifications');
+        const empty = document.getElementById('qs-notifications-empty');
+        const errorEl = document.getElementById('qs-notifications-error');
+        const countEl = document.getElementById('qs-notifications-count');
+        const counts = this.state.notificationCounts || this._countNotifications(this.state.notifications);
+        if (countEl) {
+            const unread = Number(counts.unread) || 0;
+            const active = Number(counts.active) || 0;
+            countEl.textContent = active ? (unread ? unread + ' unread · ' + active + ' active'
+                                                 : active + ' reminder' + (active === 1 ? '' : 's'))
+                                         : '';
+        }
+        if (section) section.hidden = !(window.qs && window.qs.expanded);
+        if (errorEl) {
+            errorEl.hidden = !error;
+            errorEl.textContent = error ? ('Notifications unavailable: ' + error) : '';
+        }
+        const notifs = (this.state.notifications || []).filter((n) => n && !n.archived_at);
+        if (!notifs.length) {
+            list.innerHTML = '';
+            list.hidden = true;
+            if (empty) empty.hidden = !!error;
+            return;
+        }
+        if (empty) empty.hidden = true;
+        list.hidden = false;
+        list.innerHTML = notifs.map((n) => this._notificationCardHtml(n)).join('') +
+            '<div class="qs-notification-swipe-hint">Swipe left to archive · swipe right to mark read</div>';
+    }
+
+    _notificationCardHtml(n) {
+        const id = String(n.id == null ? '' : n.id);
+        const app = String(n.app_name || n.app_id || 'System');
+        const title = String(n.summary || n.title || '');
+        const body = String(n.body || '');
+        const t = n.timestamp ? new Date(n.timestamp) : null;
+        const valid = t && !isNaN(t.getTime());
+        let tstr = '';
+        if (valid) {
+            const ageS = Math.max(0, (Date.now() - t.getTime()) / 1000);
+            if (ageS < 60) tstr = 'now';
+            else if (ageS < 3600) tstr = Math.floor(ageS / 60) + 'm';
+            else if (ageS < 86400) tstr = Math.floor(ageS / 3600) + 'h';
+            else tstr = String(t.getDate()) + '/' + String(t.getMonth() + 1);
+        }
+        const appIcon = n.icon ? String(n.icon) : '';
+        const iconHtml = appIcon
+            ? '<span class="qs-notification-icon"><img src="' + escapeHtml(appIcon) + '" alt="" draggable="false" onerror="this.style.display=\'none\'"></span>'
+            : '<span class="qs-notification-icon" aria-hidden="true">🔔</span>';
+        const read = !!n.read_at;
+        return '<article class="qs-notification-card" id="qs-notification-' + escapeHtml(id) + '" role="listitem" tabindex="0" data-notification-id="' + escapeHtml(id) +
+            '" data-read="' + (read ? 'true' : 'false') + '" aria-label="' +
+            escapeHtml(app + ': ' + title + (read ? ' (read)' : ' (unread)')) + '">' +
+            iconHtml +
+            '<div class="qs-notification-body">' +
+            '<div class="qs-notification-app">' + escapeHtml(app) + '</div>' +
+            (title ? '<div class="qs-notification-title">' + escapeHtml(title) + '</div>' : '') +
+            (body ? '<div class="qs-notification-text">' + escapeHtml(body) + '</div>' : '') +
+            '<div class="qs-notification-actions">' +
+            '<button type="button" class="qs-notification-action read" data-notification-action="read" aria-label="Mark notification read">Mark read</button>' +
+            '<button type="button" class="qs-notification-action archive" data-notification-action="archive" aria-label="Archive notification">Archive</button>' +
+            '</div></div>' +
+            (tstr ? '<div class="qs-notification-meta">' + escapeHtml(tstr) + '</div>' : '') +
+            '</article>';
+    }
+
+    _bindNotificationGestures() {
+        const list = document.getElementById('qs-notifications-list');
+        if (!list || list.__nuxelNotifGestures) return;
+        list.__nuxelNotifGestures = true;
+        const THRESHOLD = 64;
+        const MAX_VERTICAL = 42;
+        let gesture = null;
+        let lastHandledAt = 0;
+
+        const cardFrom = (target) => target && target.closest ? target.closest('.qs-notification-card') : null;
+        const begin = (x, y, id, source, card) => {
+            if (!card) return;
+            gesture = { x, y, id, source, card, dx: 0, dy: 0, horizontal: false, committed: false };
+        };
+        const move = (x, y, id, source) => {
+            if (!gesture || gesture.source !== source) return;
+            if (id !== undefined && gesture.id !== undefined && id !== gesture.id) return;
+            gesture.dx = x - gesture.x;
+            gesture.dy = y - gesture.y;
+            if (!gesture.horizontal) {
+                if (Math.abs(gesture.dx) > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25) {
+                    gesture.horizontal = true;
+                    gesture.card.dataset.swiping = 'true';
+                } else if (Math.abs(gesture.dy) > MAX_VERTICAL) {
+                    gesture = null;   // vertical scroll owns this touch
+                    return;
+                }
             }
+            if (!gesture.horizontal) return;
+            // A diagonal drag that becomes a scroll must not archive/read.
+            if (Math.abs(gesture.dy) > 70) { cancel(source); return; }
+            const dx = Math.max(-120, Math.min(120, gesture.dx));
+            gesture.card.style.transform = 'translateX(' + dx + 'px)';
+            gesture.card.style.opacity = String(Math.max(0.45, 1 - Math.abs(dx) / 220));
+        };
+        const finish = (x, y, id, source) => {
+            if (!gesture || gesture.source !== source) return;
+            if (id !== undefined && gesture.id !== undefined && id !== gesture.id) return;
+            const g = gesture;
+            gesture = null;
+            g.card.dataset.swiping = 'false';
+            g.card.style.transform = '';
+            g.card.style.opacity = '';
+            if (!g.horizontal) return;
+            const now = performance.now();
+            if (now - lastHandledAt < 350) return;
+            const dx = x - g.x;
+            if (Math.abs(dx) < THRESHOLD) return;
+            lastHandledAt = now;
+            const idValue = g.card.getAttribute('data-notification-id');
+            if (dx < 0) this._archiveNotification(idValue, g.card);
+            else this._markNotificationRead(idValue, g.card);
+        };
+        const cancel = (source) => {
+            if (gesture && gesture.source === source) {
+                gesture.card.dataset.swiping = 'false';
+                gesture.card.style.transform = '';
+                gesture.card.style.opacity = '';
+            }
+            gesture = null;
+        };
+
+        list.addEventListener('pointerdown', (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
+            // Swipe actions are touch/pen gestures.  A mouse (including a
+            // diagnostic virtual pointer) must use the visible action buttons;
+            // otherwise a harmless pointer diagnostic could archive cards.
+            if (e.pointerType === 'mouse') return;
+            begin(e.clientX, e.clientY, e.pointerId, 'pointer', cardFrom(e.target));
+        }, { passive: true });
+        list.addEventListener('pointermove', (e) => move(e.clientX, e.clientY, e.pointerId, 'pointer'), { passive: true });
+        list.addEventListener('pointerup', (e) => finish(e.clientX, e.clientY, e.pointerId, 'pointer'), { passive: true });
+        list.addEventListener('pointercancel', () => cancel('pointer'), { passive: true });
+        list.addEventListener('touchstart', (e) => {
+            const t = e.changedTouches && e.changedTouches[0];
+            if (t) begin(t.clientX, t.clientY, t.identifier, 'touch', cardFrom(e.target));
+        }, { passive: true });
+        list.addEventListener('touchmove', (e) => {
+            const t = Array.from(e.changedTouches || []).find(x => gesture && x.identifier === gesture.id);
+            if (t) move(t.clientX, t.clientY, t.identifier, 'touch');
+        }, { passive: true });
+        list.addEventListener('touchend', (e) => {
+            if (!gesture || gesture.source !== 'touch') return;
+            const t = Array.from(e.changedTouches || []).find(x => x.identifier === gesture.id);
+            if (t) finish(t.clientX, t.clientY, t.identifier, 'touch');
+            else cancel('touch');
+        }, { passive: true });
+        list.addEventListener('touchcancel', () => cancel('touch'), { passive: true });
+
+        list.addEventListener('click', (e) => {
+            const button = e.target && e.target.closest ? e.target.closest('[data-notification-action]') : null;
+            if (!button) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const card = cardFrom(button);
+            if (!card) return;
+            const id = card.getAttribute('data-notification-id');
+            if (button.getAttribute('data-notification-action') === 'read') this._markNotificationRead(id, card);
+            else this._archiveNotification(id, card);
+        }, true);
+        list.addEventListener('keydown', (e) => {
+            const card = cardFrom(e.target);
+            if (!card) return;
+            const id = card.getAttribute('data-notification-id');
+            if (e.key === 'Enter') { e.preventDefault(); this._markNotificationRead(id, card); }
+            else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this._archiveNotification(id, card); }
+        });
+    }
+
+    _setNotificationError(message) {
+        const errorEl = document.getElementById('qs-notifications-error');
+        if (!errorEl) return;
+        errorEl.hidden = !message;
+        errorEl.textContent = message || '';
+    }
+
+    async _markNotificationRead(id, card) {
+        const nid = parseInt(id, 10);
+        if (!nid || !card) return;
+        if (card.getAttribute('data-read') === 'true') return;
+        if (card.getAttribute('data-pending') === 'true') return;
+        card.setAttribute('data-pending', 'true');
+        try {
+            const res = await bridge.markNotificationRead(nid);
+            if (!res || res.success === false) {
+                this._setNotificationError('Mark read failed: ' + ((res && (res.error || res.detail)) || 'provider did not confirm'));
+                return;
+            }
+            this._setNotificationError('');
+            await this._pollNotifications();
+        } catch (e) {
+            this._setNotificationError('Mark read failed: ' + String((e && e.message) || e));
+        } finally {
+            card.removeAttribute('data-pending');
         }
     }
 
-    _renderNotificationsPanel() {
-        const button = this._notificationElements.button;
-        if (!button) return;
-        let panel = this._notificationElements.panel;
-        if (!panel) {
-            panel = document.createElement('div');
-            panel.className = 'status-notif-panel';
-            panel.style.cssText =
-                'position:fixed;top:calc(var(--status-bar-height,40px) + 6px);right:14px;' +
-                'min-width:280px;max-width:92vw;max-height:70vh;overflow-y:auto;' +
-                'background:rgba(26,26,46,0.98);border:1px solid ' +
-                'rgba(255,255,255,0.08);border-radius:14px;box-shadow:0 2px 4px rgba(0,0,0,0.5);' +
-                'color:var(--text-primary, #e8e8f0);z-index:120;padding:10px 0;display:none;';
-            document.body.appendChild(panel);
-            this._notificationElements.panel = panel;
-        }
-        const notifs = this.state.notifications || [];
-        if (notifs.length === 0) {
-            panel.innerHTML = '<div style="padding:18px 20px;font-size:13px;color:var(--text-secondary,#9a9ab0);text-align:center;">No notifications</div>';
-        } else {
-            let html = '<div style="padding:4px 16px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-secondary,#9a9ab0);">Notifications</div>';
-            notifs.forEach((n) => {
-                const app = String(n.app_id || n.app_name || 'System');
-                const title = String(n.summary || n.title || '');
-                const body = String(n.body || '');
-                const time = n.timestamp ? new Date(n.timestamp) : null;
-                const tstr = time && !isNaN(time.getTime())
-                    ? String(time.getHours()).padStart(2, '0') + ':' + String(time.getMinutes()).padStart(2, '0')
-                    : '';
-                html +=
-                    '<div class="status-notif-item" style="display:flex;gap:10px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:default;">' +
-                    '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;' +
-                    'color:var(--text-accent,#7aa2ff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-                    escapeHtml(app) + '</div>' +
-                    (title ? '<div style="font-size:13px;font-weight:600;margin-top:1px;">' + escapeHtml(title) + '</div>' : '') +
-                    (body ? '<div style="font-size:12px;color:var(--text-secondary,#9a9ab0);margin-top:2px;' +
-                    'overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' +
-                    escapeHtml(body) + '</div>' : '') +
-                    '</div>' +
-                    (tstr ? '<div style="font-size:10px;color:var(--text-secondary,#9a9ab0);white-space:nowrap;">' + tstr + '</div>' : '') +
-                    '</div>';
-            });
-            panel.innerHTML = html;
+    async _archiveNotification(id, card) {
+        const nid = parseInt(id, 10);
+        if (!nid || !card) return;
+        if (card.getAttribute('data-pending') === 'true') return;
+        card.setAttribute('data-pending', 'true');
+        try {
+            const res = await bridge.archiveNotification(nid);
+            if (!res || res.success === false) {
+                this._setNotificationError('Archive failed: ' + ((res && (res.error || res.detail)) || 'provider did not confirm'));
+                return;
+            }
+            this._setNotificationError('');
+            card.setAttribute('data-archiving', 'true');
+            // Remove only after the hub confirmed the durable archive.
+            setTimeout(() => { try { card.remove(); } catch (e) {} }, 160);
+            await this._pollNotifications();
+        } catch (e) {
+            this._setNotificationError('Archive failed: ' + String((e && e.message) || e));
+        } finally {
+            card.removeAttribute('data-pending');
         }
     }
 

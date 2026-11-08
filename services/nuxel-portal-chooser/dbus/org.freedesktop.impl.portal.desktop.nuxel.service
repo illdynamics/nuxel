@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.freedesktop.impl.portal.desktop.nuxel
+Exec=/usr/libexec/nuxel/nuxel-portal-chooser

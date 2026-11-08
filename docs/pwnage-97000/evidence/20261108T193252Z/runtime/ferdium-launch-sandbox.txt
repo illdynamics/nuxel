@@ -1,0 +1,19 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+UNIT=p97000-ferdium-sandbox-1794167853
+Running as unit: p97000-ferdium-sandbox-1794167853.service; invocation ID: cf010edc1db643f6a89c237aae0afc09
+nuxel     567759 /app/Ferdium/ferdium --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --disable-dev-shm-usage
+nuxel     567768 /app/Ferdium/ferdium --type=zygote --no-zygote-sandbox
+WINDOWS=4
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=P96 iw=528 ih=1042 dpr=1.3636363636363635 sw=528 sh=1115 ow=528 oh=1115 — Mozilla Firefox app_id=org.mozilla.firefox max=1 min=0 act=0 fs=0
+SHOT_OK /tmp/p97000-ferdium-screen.ppm 720x1520 stride=2880 fmt=0x34324258

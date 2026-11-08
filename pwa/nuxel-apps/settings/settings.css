@@ -213,3 +213,15 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .svc-row.essential .svc-name::after { content: ' ●'; color: #ffb066; }
 .svc-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .svc-actions button { padding: 6px 9px; font-size: 12px; }
+
+
+/* PWNAGE-97000 File Handlers */
+.fh-mime-list { display: grid; gap: 8px; margin-top: 8px; }
+.fh-mime-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px;
+  border: 1px solid rgba(125,211,252,.16); border-radius: 10px; background: rgba(10,22,40,.4); }
+.fh-mime-row label { flex: 1 1 auto; min-width: 0; }
+.fh-mime-name { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.fh-mime-meta { font-size: 10px; color: var(--text-secondary, #b8c7e0); overflow-wrap: anywhere; }
+.fh-mime-row select { flex: 0 1 48%; min-width: 8em; }
+.fh-dirty #fh-state { color: #ffd166; }
+#fh-portal, #fh-test-result { white-space: pre-wrap; overflow-wrap: anywhere; }

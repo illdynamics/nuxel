@@ -64,6 +64,12 @@ def targets_for(source: str):
     if source.startswith("services/nuxel-portal/src/"):
         rel = source[len("services/nuxel-portal/src/"):]
         return [("/usr/lib/nuxel/nuxel-portal/" + rel, 0o644)]
+    if source == "services/nuxel-zsh/nuxel-banner.sh":
+        return [("/etc/profile.d/nuxel-banner.sh", 0o755)]
+    if source == "services/nuxel-zsh/nuxel.zsh":
+        return [("/usr/lib/nuxel/zsh/nuxel.zsh", 0o644)]
+    if source == "services/nuxel-remote-desktop/bin/nuxel-vnc-x11":
+        return [("/usr/libexec/nuxel/nuxel-vnc-x11", 0o755)]
     if source == "services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl":
         return [("/usr/local/libexec/nuxel/nuxel-remote-desktop-ctl", 0o755)]
     if source == "services/nuxel-remote-desktop/bin/nuxel-xrdp-session":
@@ -113,6 +119,31 @@ def targets_for(source: str):
             return [("/etc/systemd/system/" + name, 0o644)]
     if source.startswith("services/nuxel-bridge/dbus/"):
         return [("/etc/dbus-1/system.d/" + os.path.basename(source), 0o644)]
+    if source == "configs/nuxel/portals.conf":
+        return [("/etc/xdg-desktop-portal/portals.conf", 0o644),
+                ("/etc/nuxel/portals.conf", 0o644)]
+    if source == "services/nuxel-portal-chooser/src/nuxel_portal_chooser.py":
+        return [("/usr/libexec/nuxel/nuxel-portal-chooser", 0o755)]
+    if source.startswith("services/nuxel-portal-chooser/dbus/"):
+        return [("/usr/share/dbus-1/services/" + os.path.basename(source), 0o644)]
+    if source.startswith("services/nuxel-portal-chooser/xdg-desktop-portal/"):
+        return [("/usr/share/xdg-desktop-portal/portals/" + os.path.basename(source), 0o644)]
+    if source == "services/nuxel-portal-chooser/bin/nuxel-portal-status":
+        return [("/usr/bin/nuxel-portal-status", 0o755)]
+    if source == "services/nuxel-file-handlers/src/nuxel_file_handlers.py":
+        return [("/usr/lib/nuxel/nuxel_file_handlers.py", 0o644)]
+    if source == "services/nuxel-file-handlers/bin/nuxel-file-handlers":
+        return [("/usr/bin/nuxel-file-handlers", 0o755)]
+    if source == "services/nuxel-file-handlers/bin/nuxel-open-file":
+        return [("/usr/libexec/nuxel/nuxel-open-file", 0o755)]
+    if source.startswith("shell/config/") and source.endswith(".desktop"):
+        return [("/usr/share/applications/" + os.path.basename(source), 0o644)]
+    if source == "services/nuxel-s10/bin/nuxel-flatpak-firefox":
+        return [("/usr/lib/nuxel/nuxel-flatpak-firefox", 0o755)]
+    if source == "shell/nuxel-browser-native/nuxel_browser_native.py":
+        return [("/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py", 0o755)]
+    if source == "tools/s10plus/a45/nuxel-session.sh":
+        return [("/usr/lib/nuxel/nuxel-session.sh", 0o755)]
     if source.startswith("configs/nuxel/"):
         return [("/etc/nuxel/" + source[len("configs/nuxel/"):], 0o644)]
     if source.startswith("configs/dbus/"):
@@ -254,9 +285,12 @@ def main(argv=None) -> int:
         'grep -m1 "static get VERSION" /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js; '
         'grep -m1 "host_version" /usr/share/nuxel/pwa/nuxel-common/bridge-version.json; '
         'test -f /usr/share/nuxel/pwa/nuxel-home/js/qs-firewall.js; '
+        'test -f /usr/share/nuxel/pwa/nuxel-apps/network-manager/index.html; '
+        'test -f /usr/share/nuxel/pwa/nuxel-apps/devmgmt/js/devmgmt.js; '
+        'test -f /usr/lib/nuxel/nuxel-bridge/network_manager.py; '
         'test -x /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl; '
         'test -f /etc/pam.d/wayvnc; '
-        'grep -q "port=tcp://.*:13389" /etc/xrdp/xrdp.ini; '
+        'grep -q "port=tcp://.*:3389" /etc/xrdp/xrdp.ini; '
         'test -f /usr/lib/nuxel/nuxel-firewall/nuxel_firewall/provider.py; '
         'test -x /usr/bin/nuxel-firewall; '
         'systemctl is-active nuxel-bridge nuxel-http-bridge nuxel-web nuxel-soundd nuxel-clockd; '

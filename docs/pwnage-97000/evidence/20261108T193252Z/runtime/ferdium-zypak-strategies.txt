@@ -1,0 +1,37 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Running as unit: p97000-ferdium-strat-1.service; invocation ID: 13579fb225e94f769aef60c5134bbc43
+=== STRATEGY 1 ===
+nuxel     569090 /app/Ferdium/ferdium --ozone-platform=wayland --disable-gpu --disable-dev-shm-usage
+nuxel     569103 /app/Ferdium/ferdium --type=zygote --no-zygote-sandbox
+WINDOWS=4
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=P96 iw=528 ih=1042 dpr=1.3636363636363635 sw=528 sh=1115 ow=528 oh=1115 — Mozilla Firefox app_id=org.mozilla.firefox max=1 min=0 act=0 fs=0
+Nov 08 20:58:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started p97000-ferdium-strat-1.service - [systemd-run] /usr/bin/flatpak run --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GSK_RENDERER=cairo --env=GDK_BACKEND=wayland --env=GTK_THEME=Adwaita:dark --env=ZYPAK_ZYGOTE_STRATEGY_SPAWN=1 org.ferdium.Ferdium --ozone-platform=wayland --disable-gpu --disable-dev-shm-usage.
+Nov 08 20:58:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[569056]: nuxel-bwrap-compat: rewrote 28 fd-bind options
+Nov 08 20:58:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[569090]: [2 zypak-helper] Using spawn strategy test 1 as set by environment
+Nov 08 20:58:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[569090]: [2:1108/205854.647096:ERROR:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:45] drmGetDevices2() has not found any devices: No such file or directory (2)
+Nov 08 20:58:54 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[569090]: [2 preload-host-spawn-strategy] Failed to call Spawn: org.freedesktop.DBus.Error.InvalidArgs: Could not find requesting pid
+Running as unit: p97000-ferdium-strat-2.service; invocation ID: 58aa79733d7e409db685cd725e1a6f50
+=== STRATEGY 2 ===
+nuxel     569505 /app/Ferdium/ferdium --ozone-platform=wayland --disable-gpu --disable-dev-shm-usage
+nuxel     569511 /app/Ferdium/ferdium --type=zygote --no-zygote-sandbox
+WINDOWS=4
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=P96 iw=528 ih=1042 dpr=1.3636363636363635 sw=528 sh=1115 ow=528 oh=1115 — Mozilla Firefox app_id=org.mozilla.firefox max=1 min=0 act=0 fs=0
+Nov 08 20:59:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started p97000-ferdium-strat-2.service - [systemd-run] /usr/bin/flatpak run --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GSK_RENDERER=cairo --env=GDK_BACKEND=wayland --env=GTK_THEME=Adwaita:dark --env=ZYPAK_ZYGOTE_STRATEGY_SPAWN=2 org.ferdium.Ferdium --ozone-platform=wayland --disable-gpu --disable-dev-shm-usage.
+Nov 08 20:59:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[569468]: nuxel-bwrap-compat: rewrote 28 fd-bind options
+Nov 08 20:59:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[569505]: [2 zypak-helper] Using spawn strategy test 2 as set by environment
+Nov 08 20:59:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[569505]: [2:1108/205920.710735:ERROR:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:45] drmGetDevices2() has not found any devices: No such file or directory (2)
+Nov 08 20:59:20 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[569505]: [2 preload-host-spawn-strategy] Failed to call Spawn: org.freedesktop.DBus.Error.InvalidArgs: Could not find requesting pid

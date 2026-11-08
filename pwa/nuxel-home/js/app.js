@@ -84,6 +84,21 @@ class NuxelHome {
         document.dispatchEvent(new CustomEvent('app:lifecycle', {
             detail: { state, appId: app && app.id ? app.id : null },
         }));
+        // Native Home watchdog truth.  The host can read this even when the
+        // WebProcess is saturated by a foreground app; if Home does not move
+        // this out of ACTIVE within its bounded window, the host reloads a
+        // clean Home instead of leaving an unresponsive surface on the glass.
+        try {
+            const host = window.NuxelHost;
+            if (host && host.available && host.configSet) {
+                host.configSet('launcher-app', JSON.stringify({
+                    schema_version: 1,
+                    state: state,
+                    app_id: app && app.id ? app.id : null,
+                    updated: Date.now(),
+                })).catch(() => {});
+            }
+        } catch (e) {}
         this._inputTrace(`app:lifecycle id=${app && app.id || 'home'} state=${state}`);
     }
 
@@ -208,10 +223,35 @@ class NuxelHome {
             });
             this.appSurfaces.delete(id);
         }
-        // A stale node that lost its Map entry is still a full-screen iframe and
-        // can keep an invisible modal/input layer alive.  Remove only nodes that
-        // are no longer owned by a live background session; removing every
-        // surface here would silently destroy every tab in Recents.
+        this._sweepOrphanSurfaces();
+        try {
+            if (document.exitPointerLock) document.exitPointerLock();
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        } catch (e) {}
+    }
+
+    /* PWNAGE-94000: .pwa-frame is created with an INLINE `display:block
+       !important`.  An author stylesheet can never override an inline
+       !important declaration, so the old `hidden`/attribute CSS hide left a
+       backgrounded frame painted over Home and still hit-testable.  Hide/show
+       must write the same inline declaration. */
+    _setSurfaceDisplay(el, visible) {
+        if (!el) return;
+        try {
+            if (el.style) {
+                el.style.setProperty('display', visible ? 'block' : 'none', 'important');
+                el.style.setProperty('visibility', visible ? 'visible' : 'hidden', 'important');
+                el.style.setProperty('pointer-events', visible ? 'auto' : 'none', 'important');
+            }
+            el.hidden = !visible;
+        } catch (e) {}
+    }
+
+    /* A stale node that lost its Map entry is still a full-screen iframe and
+       can keep an invisible modal/input layer alive.  Remove only nodes that
+       are no longer owned by a live background session; removing every
+       surface here would silently destroy every tab in Recents. */
+    _sweepOrphanSurfaces() {
         try {
             const live = new Set();
             this.appSurfaces.forEach(surface => {
@@ -220,10 +260,6 @@ class NuxelHome {
             document.querySelectorAll('.pwa-frame,.pwa-app-status,.pwa-app-bar').forEach(el => {
                 if (!live.has(el)) el.remove();
             });
-        } catch (e) {}
-        try {
-            if (document.exitPointerLock) document.exitPointerLock();
-            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
         } catch (e) {}
     }
 
@@ -308,18 +344,20 @@ class NuxelHome {
             }
             this._setAppState('BACKGROUND', app, null);
             if (this.sessions && app) this.sessions.home();
-            this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' }, 4000);
+            // PWNAGE-93000: one authoritative Home request.  The previous path
+            // posted /apps/home here AND again from home(), racing two
+            // minimize/raise sequences.  Only a replacing transition (another
+            // app is taking the glass) needs an early minimize; ordinary
+            // Back/Home/lock transitions let home()/the lock watcher own it.
+            if (replacing) {
+                this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' }, 4000);
+            }
             this._inputTrace(`app:backgrounded id=${app.id} native=1 preserved=1`);
             return true;
         }
         const surface = this.appSurfaces.get(app.id);
-        if (surface) {
-            [surface.frame, surface.bar, surface.status].forEach(el => {
-                if (el) el.hidden = true;
-            });
-        } else {
-            frame.hidden = true;
-        }
+        const owned = surface ? [surface.frame, surface.bar, surface.status] : [frame];
+        owned.forEach(el => this._setSurfaceDisplay(el, false));
         // Returning to the launcher always restores the ordinary chrome.  A
         // fullscreen game must not leave the top bar or the nav strip hidden.
         if (window.NuxelImmersive) window.NuxelImmersive.reset();
@@ -348,9 +386,8 @@ class NuxelHome {
         const surface = app && this.appSurfaces.get(app.id);
         if (!surface) return false;
         if (this.appSession.app && this.appSession.app.id !== app.id) this._backgroundForegroundApp(true);
-        [surface.frame, surface.bar, surface.status].forEach(el => {
-            if (el) el.hidden = false;
-        });
+        [surface.frame, surface.bar, surface.status].forEach(el => this._setSurfaceDisplay(el, true));
+        this._sweepOrphanSurfaces();
         // A PWA owns the glass: its triple buttons start hidden and the bottom
         // edge gesture reveals them.  Native apps still use their own dock.
         this._setNavDock(false);
@@ -836,8 +873,10 @@ class NuxelHome {
                 if (window.launcher) window.launcher.openDrawer();
             }
             else if (action === 'notifications-panel') {
+                // The notification indicator now lives in the expanded Quick
+                // Settings reminder list, below every control/status row.
                 this._dismissLauncherChrome();
-                if (this.components.qs) this.components.qs.open();
+                this.openQuickSettings();
             }
             else if (action === 'search' && this.components.search) this.components.search.open();
             else if (action === 'settings') appRegistry.launchApp('nuxel-settings');
@@ -1381,8 +1420,147 @@ class NuxelHome {
         try { if (window.NuxelImmersive) window.NuxelImmersive.reset(); } catch (e) {}
         this.home();
         const raf = window.requestAnimationFrame || ((fn) => setTimeout(fn, 0));
-        raf(() => { try { this._setNavDock(true); } catch (e) {} });
+        raf(() => {
+            try { this._setNavDock(true); } catch (e) {}
+            try { this.restoreGeometry('return-to-home:' + (reason || 'back')); } catch (e) {}
+        });
         this._inputTrace('home:transition reason=' + (reason || 'back'));
+    }
+
+    /* PWNAGE-94000: ONE desktop geometry authority.  Every return-to-Home path
+       calls this function.  It removes stale immersive/panel/transform state,
+       restores the desktop scroll origin and measures the real viewport.  The
+       CSS variables remain the single source of the top-bar/dock/nav bands;
+       this reset never invents a second set of insets. */
+    restoreGeometry(reason) {
+        const report = { reason: reason || 'unspecified', before: null, after: null,
+                         appState: this.appSession ? this.appSession.state : 'unknown' };
+        // A viewport resize while an app or the OSK owns the glass is a normal
+        // event, not a Home restore.  Never tear down foreground chrome from a
+        // resize observer; only Home/BACKGROUND/CLOSED transitions reset it.
+        const st = this.appSession ? this.appSession.state : 'CLOSED';
+        if (st !== 'CLOSED' && st !== 'BACKGROUND') {
+            this._inputTrace('geometry:skip state=' + st + ' reason=' + report.reason);
+            return report;
+        }
+        try { if (this._keyboardVisible && this._keyboardVisible()) {
+            this._inputTrace('geometry:skip keyboard-open reason=' + report.reason);
+            return report;
+        } } catch (e) {}
+        try {
+            const sb = document.getElementById('status-bar');
+            const nav = document.getElementById('system-navigation');
+            const dock = document.getElementById('dock');
+            const grid = document.getElementById('app-grid');
+            const read = (el) => {
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                const cs = window.getComputedStyle(el);
+                return { x: Math.round(r.x), y: Math.round(r.y),
+                         w: Math.round(r.width), h: Math.round(r.height),
+                         transform: cs.transform, display: cs.display,
+                         visibility: cs.visibility, opacity: cs.opacity };
+            };
+            report.before = { scrollY: window.scrollY || 0,
+                              visualOffsetTop: window.visualViewport ? window.visualViewport.offsetTop : 0,
+                              statusBar: read(sb), dock: read(dock), nav: read(nav) };
+
+            // 1. End every app/panel transition state in the canonical order.
+            try { if (window.NuxelImmersive) window.NuxelImmersive.reset(); } catch (e) {}
+            try {
+                const qs = this.components && this.components.qs;
+                if (qs && typeof qs.closeAll === 'function' && qs.level > 0) qs.closeAll('geometry-reset');
+            } catch (e) {}
+            // 2. Stale keyboard/drag/root transforms are UI state, never layout.
+            document.body.classList.remove('touch-keyboard-open', 'launcher-dragging');
+            document.body.classList.remove('app-immersive', 'app-status-hidden', 'app-status-revealed',
+                                           'app-nav-hidden', 'app-nav-revealed');
+            try {
+                document.documentElement.style.transform = '';
+                document.body.style.transform = '';
+                if (sb) { sb.style.transform = ''; sb.style.webkitTransform = ''; }
+                if (nav) { nav.style.transform = ''; nav.style.webkitTransform = ''; }
+                if (dock) { dock.style.transform = ''; dock.style.webkitTransform = ''; }
+            } catch (e) {}
+            // 3. One deterministic scroll origin.  WebKit can retain a
+            //    keyboard pan after the focused field is gone; both the
+            //    document and the visual viewport return to zero here.
+            try { window.scrollTo(0, 0); } catch (e) {}
+            try { document.documentElement.scrollTop = 0; } catch (e) {}
+            try { document.body.scrollTop = 0; } catch (e) {}
+            // 4. Force one layout/paint at the restored origin.
+            try { void document.body.offsetHeight; } catch (e) {}
+            report.after = { scrollY: window.scrollY || 0,
+                             visualOffsetTop: window.visualViewport ? window.visualViewport.offsetTop : 0,
+                             innerWidth: window.innerWidth || 0,
+                             innerHeight: window.innerHeight || 0,
+                             statusBar: read(sb), dock: read(dock), nav: read(nav),
+                             grid: read(grid) };
+            this._inputTrace('geometry:restored ' + JSON.stringify(report));
+            try {
+                document.dispatchEvent(new CustomEvent('nuxel:geometry-restored', { detail: report }));
+            } catch (e) {}
+        } catch (e) {
+            this._inputTrace('geometry:error ' + (e && e.message ? e.message : e));
+        }
+        return report;
+    }
+
+    geometryReport() {
+        const rect = (id) => {
+            const el = document.getElementById(id);
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+        };
+        return {
+            innerWidth: window.innerWidth || 0,
+            innerHeight: window.innerHeight || 0,
+            dpr: window.devicePixelRatio || 1,
+            scrollX: window.scrollX || 0, scrollY: window.scrollY || 0,
+            visualViewport: window.visualViewport ? {
+                width: window.visualViewport.width, height: window.visualViewport.height,
+                offsetTop: window.visualViewport.offsetTop, offsetLeft: window.visualViewport.offsetLeft,
+                scale: window.visualViewport.scale,
+            } : null,
+            statusBar: rect('status-bar'), dock: rect('dock'),
+            navigation: rect('system-navigation'), appGrid: rect('app-grid'),
+            bodyClass: document.body.className,
+            topState: window.NuxelImmersive ? window.NuxelImmersive.topState : null,
+        };
+    }
+
+    /* Bounded, read-only post-transition evidence.  A hidden DOM overlay with
+       `pointer-events:auto` is diagnosed (never silently removed) so a future
+       regression is visible in the host log instead of being mistaken for a
+       compositor input grab. */
+    _verifyHomeInput() {
+        try {
+            const offenders = [];
+            const cx = Math.max(1, Math.round((window.innerWidth || 360) / 2));
+            const cy = Math.max(1, Math.round((window.innerHeight || 760) / 2));
+            const hit = document.elementFromPoint(cx, cy);
+            if (hit && hit.closest && hit.closest('.pwa-frame:not([hidden])')) {
+                offenders.push('iframe:' + (hit.id || hit.className));
+            }
+            document.querySelectorAll('.search-overlay,.recents-view,.folder-sheet,.pwa-app-status,.pwa-app-bar,#nuxel-reboot-overlay,.nuxel-reboot-overlay').forEach((el) => {
+                if (!el || el.hidden) return;
+                const cs = window.getComputedStyle ? window.getComputedStyle(el) : null;
+                if (cs && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.pointerEvents !== 'none') {
+                    offenders.push(el.id || el.className || el.tagName);
+                }
+            });
+            const geo = this.geometryReport();
+            const topEdge = document.elementFromPoint(cx, 2);
+            const bottomEdge = document.elementFromPoint(cx, Math.max(1, (window.innerHeight || 760) - 2));
+            this._inputTrace('home:input-check hit=' + (hit ? (hit.id || hit.tagName) : 'none') +
+                             ' top=' + (topEdge ? (topEdge.id || topEdge.tagName) : 'none') +
+                             ' bottom=' + (bottomEdge ? (bottomEdge.id || bottomEdge.tagName) : 'none') +
+                             ' focused=' + (document.hasFocus ? document.hasFocus() : '?') +
+                             ' offenders=' + (offenders.length ? offenders.join(',') : 'none') +
+                             ' geometry=' + JSON.stringify(geo));
+            return offenders;
+        } catch (e) { return []; }
     }
 
     back() {
@@ -1396,7 +1574,12 @@ class NuxelHome {
             return;
         }
         if (this.components.search && this.components.search.isOpen) { this.components.search.close(); return; }
-        if (this.components.qs && this.components.qs.isOpen) { this.components.qs.collapseOrClose(); return; }
+        if (this.components.qs && this.components.qs.level > 0) {
+            // Back is an upward-dismiss equivalent: close the whole panel in
+            // one transition instead of walking levels backwards.
+            this.components.qs.closeAll('back');
+            return;
+        }
         if (window.recents && window.recents.isOpen) { window.recents.close('back'); return; }
         const folder = document.querySelector('.folder-sheet'); if (folder) { folder.remove(); return; }
         if (window.launcher && window.launcher.drawerOpen) { window.launcher.closeDrawer(); return; }
@@ -1415,8 +1598,12 @@ class NuxelHome {
                     this._returnToHome('back-pwa-root');
                     return;
                 }
-                this._inputTrace('back:pwa-unsupported');
-                this._backNotice("Back isn't supported in this app");
+                this._inputTrace('back:pwa-unsupported-home');
+                // PWNAGE-93000: an app with no readable navigation stack can
+                // never be allowed to trap the user.  Return Home (preserving
+                // the iframe/session) instead of leaving an invisible ACTIVE
+                // surface over the desktop.
+                this._returnToHome('back-pwa-unsupported');
             }).catch(() => {
                 if (generation === this.appGeneration) {
                     this._inputTrace('back:pwa-error');
@@ -1450,11 +1637,20 @@ class NuxelHome {
                     this._returnToHome('back-native-root');
                     return;
                 }
-                if (status === 'unsupported' || status === 'failed' || status === 'pending') {
-                    this._inputTrace('back:native-' + status);
+                if (status === 'unsupported' || status === 'failed') {
+                    // No verified in-app adapter exists.  Minimize the app and
+                    // return Home; never kill it.  This is the single-Back
+                    // guarantee that prevents a fullscreen native surface from
+                    // staying mapped and swallowing the app-drawer gesture.
+                    this._inputTrace('back:native-' + status + '-home');
+                    this._returnToHome('back-native-' + status);
+                    return;
+                }
+                if (status === 'pending') {
+                    this._inputTrace('back:native-pending');
                     this._backNotice(res && res.detail
                         ? String(res.detail).slice(0, 120)
-                        : "Back isn't supported in this app");
+                        : 'Back is already in progress');
                     return;
                 }
                 this._inputTrace('back:native-no-foreground');
@@ -1486,6 +1682,7 @@ class NuxelHome {
         } catch (error) {
             this._inputTrace(`home:overlay-error ${error && error.message ? error.message : error}`);
         }
+        this._sweepOrphanSurfaces();
         try {
             // System Home always navigates to Desktop 1, never to the current
             // page.  It must work with no app, a loading app, a PWA iframe and
@@ -1495,7 +1692,29 @@ class NuxelHome {
             // toplevel (browser/camera/Firefox/…) WITHOUT killing it, then raise
             // the Home window. The pwa-host already closed the Terminal surface
             // on this path; this covers every other native window.
-            this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' });
+            const generation = this.appGeneration;
+            const homeResult = this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' });
+            Promise.resolve(homeResult).then((res) => {
+                if (generation !== this.appGeneration) return;
+                const converged = !res || res.converged !== false;
+                this._inputTrace(`home:backend converged=${converged ? 1 : 0} ` +
+                    `attempts=${res && res.attempts !== undefined ? res.attempts : '?'}`);
+                if (!converged) {
+                    // The backend already retried.  Do not claim an interactive
+                    // desktop: surface the truthful state and leave a notice.
+                    this._backNotice('Home surface is still busy; press Home again');
+                    return;
+                }
+                try {
+                    document.dispatchEvent(new CustomEvent('nuxel:home-ready', {
+                        detail: { reason: 'home-action', converged: true },
+                    }));
+                } catch (e) {}
+                this.restoreGeometry('home-ready');
+                this._verifyHomeInput();
+            }).catch(() => {
+                this._inputTrace('home:backend-error');
+            });
             this._inputTrace(`home:complete state=${this.appSession.state} page=${window.launcher ? window.launcher.currentPage : '?'}`);
         } catch (error) {
             this._inputTrace(`home:error ${error && error.message ? error.message : error}`);
@@ -1511,8 +1730,7 @@ class NuxelHome {
         if (window.NuxelImmersive) window.NuxelImmersive.revealStatus();
         const qs = this.components.qs;
         if (!qs) return;
-        if (!qs.isOpen) qs.open();
-        qs.expand();
+        qs.open();                 // LEVEL_EXPANDED
         this._inputTrace('qs:open-expanded source=native-top-edge');
     }
 
@@ -2138,6 +2356,19 @@ try { window.NuxelHome = NuxelHome; } catch (e) { /* non-window test context */ 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     window.nuxel = new NuxelHome();
+    // Geometry is restored on the event that proves Home is ready, not after
+    // a guessed delay.  Orientation/resize are also first-class events because
+    // WebKit can cache 100dvh across a rotation.
+    document.addEventListener('nuxel:home-ready', (ev) => {
+        try { window.nuxel.restoreGeometry('home-ready-event:' + ((ev && ev.detail && ev.detail.reason) || '')); } catch (e) {}
+    });
+    const onViewportChange = (why) => {
+        const raf = window.requestAnimationFrame || ((fn) => setTimeout(fn, 0));
+        raf(() => raf(() => { try { window.nuxel.restoreGeometry(why); } catch (e) {} }));
+    };
+    window.addEventListener('orientationchange', () => onViewportChange('orientationchange'));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => onViewportChange('visual-viewport-resize'));
+    window.addEventListener('resize', () => onViewportChange('window-resize'));
     // Same-origin app iframes (Settings, Cleanup, DevMgmt, Nuxtore, Root
     // Control) call this to return Home.  It did not exist anywhere, so their
     // own Close buttons fell through and did nothing (A34 owner test).

@@ -1,0 +1,5 @@
+# Live Settings → File Handlers "Test File Picker" RPC (autotest chooser)
+POST /api/v1/rpc
+{"app_id":"org.nuxel.Settings","namespace":"file-handlers","verb":"test-picker","params":{}}
+
+{"result": {"cancelled": false, "frontend": true, "request_path": "/org/freedesktop/portal/desktop/request/1_186/t", "response": 0, "results": {"uris": ["file:///home/nuxel/Documents/nuxel-file-handler-test.txt"]}, "success": true, "uris": ["file:///home/nuxel/Documents/nuxel-file-handler-test.txt"], "sample_file": "/home/nuxel/Documents/nuxel-file-handler-test.txt"}}

@@ -125,3 +125,15 @@
 - **Proved:** torch class/control path, forced OFF, no notification/RGB class, edge lighting is an overlay.
 - **Inferred:** display overlay is the only honest color/notification route on this board.
 - **Unknown:** physical torch visibility in this session; any board-variant LED differences.
+
+## 17. Reflash impact (controlled maintenance)
+
+| Question | Answer |
+|---|---|
+| Does the LED/flashlight work require a reflash? | **NO.** The torch is controlled through `/sys/class/leds/torch-sec1` and Nuxel's existing userspace policy. |
+| What about "Edge lighting"? | **NO reflash.** It is a display overlay on the curved AMOLED, not an LED; implement it in the Home PWA/notification layer. |
+| Can it be deployed over SSH now? | **YES.** Userspace/policy changes only. |
+| Batch with PWNAGE-93000? | **YES.** Ship in the same userspace payload; no separate flash. |
+| Controlled batch | No partition flash required. If an image rebuild is already happening, include the LED policy and edge-lighting UI then. |
+| Rollback | Revert the userspace files/policy; no partition restore needed. |
+| Risk if postponed | Torch/edge-lighting polish only; no hardware risk. |

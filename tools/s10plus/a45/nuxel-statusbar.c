@@ -30,14 +30,24 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 #define BAR_HEIGHT 36
-/* v0.7.7-beta: over a native fullscreen app the top bar is not kept visible.
- * It collapses to a 12 px top-edge gesture strip and expands on a downward
- * swipe, mirroring the nav dock's bottom-edge reveal.  Home and the lockscreen
- * never map either state. */
+/* PWNAGE-94000: this layer-shell client is the compositor-boundary
+ * PRESENTATION ADAPTER for the canonical Nuxel top bar.  It never invents a
+ * second bar: its data comes from /run/nuxel/statusbar-model.json, published by
+ * the Home DOM status bar, and it renders the same four levels:
+ *   0 strip (hidden), 1 standard bar, 2 expanded QS summary, 3 extended.
+ * The surface never sets an exclusive zone, so a fullscreen app is never
+ * resized while the panel is temporarily visible. */
 #define BAR_STRIP_HEIGHT 12
-#define BAR_STRIP_INPUT_HEIGHT 40  /* visual grabber stays thin; the edge band is wider for gesture reliability */
+#define BAR_STRIP_INPUT_PORTRAIT 40
+#define BAR_STRIP_INPUT_LANDSCAPE 56
 #define BAR_REVEAL_DISTANCE 16
 #define BAR_AUTOHIDE_MS 4500
+#define PANEL_EXPANDED_PORTRAIT 220
+#define PANEL_EXPANDED_LANDSCAPE 180
+#define PANEL_EXTENDED_PORTRAIT 470
+#define PANEL_EXTENDED_LANDSCAPE 300
+#define MODEL_FILE "/run/nuxel/statusbar-model.json"
+#define CMD_FIFO "/run/nuxel-statusbar.cmd"
 #define STATE_FILE "/run/nuxel-statusbar.state"
 #define LOG_FILE "/run/nuxel-statusbar.log"
 #define FG_STATE "/run/nuxel/foreground.state"
@@ -59,11 +69,13 @@ static struct wl_surface *surface;
 static struct zwlr_layer_surface_v1 *layer_surface;
 static int32_t width = 360, height = BAR_HEIGHT, scale = 2;
 static int configured = 0;
-static int strip_mode = 0;       /* mapped as the top gesture strip */
-static int bar_revealed = 0;     /* full bar revealed by a downward swipe */
+static int bar_level = 0;        /* 0 strip, 1 standard, 2 expanded, 3 extended */
+static int strip_mode = 1;       /* derived: bar_level == 0 */
 static int64_t reveal_deadline = 0;
 static int touch_down = 0;
 static int32_t down_y = 0, last_y = 0;
+static int cmd_fd = -1;
+static int32_t out_w = 720, out_h = 1520;
 
 static void audit(const char *fmt, ...) {
   FILE *f = fopen(LOG_FILE, "a");
@@ -78,7 +90,60 @@ static void audit(const char *fmt, ...) {
 static int session_locked(void);
 static int64_t now_ms(void);
 static void bar_strip(void);
-static void bar_reveal(void);
+static void bar_set_level(int level);
+static void bar_create(void);
+static void bar_hide(void);
+
+static int is_landscape(void) {
+  /* Logical viewport width (layer configure), not physical panel pixels. */
+  return width >= 500 || out_w > out_h;
+}
+
+static int strip_input_height(void) {
+  return is_landscape() ? BAR_STRIP_INPUT_LANDSCAPE : BAR_STRIP_INPUT_PORTRAIT;
+}
+
+static int bar_height_for_level(int level) {
+  if (level <= 0) return strip_input_height();
+  if (level == 1) return BAR_HEIGHT;
+  if (level == 2) return BAR_HEIGHT + (is_landscape() ? PANEL_EXPANDED_LANDSCAPE : PANEL_EXPANDED_PORTRAIT);
+  return BAR_HEIGHT + (is_landscape() ? PANEL_EXTENDED_LANDSCAPE : PANEL_EXTENDED_PORTRAIT);
+}
+
+/* Read one scalar/string field from the canonical model.  The document is a
+ * tiny, fixed-shape JSON written by the launcher; this parser deliberately
+ * never allocates or walks arbitrary nesting. */
+static int model_get(const char *key, char *out, size_t n) {
+  if (!key || !out || n < 2) return 0;
+  out[0] = 0;
+  FILE *f = fopen(MODEL_FILE, "r");
+  if (!f) return 0;
+  char b[2048];
+  size_t got = fread(b, 1, sizeof b - 1, f);
+  fclose(f);
+  b[got] = 0;
+  char pat[96];
+  snprintf(pat, sizeof pat, "\"%s\"", key);
+  char *p = strstr(b, pat);
+  if (!p) return 0;
+  p = strchr(p + strlen(pat), ':');
+  if (!p) return 0;
+  p++;
+  while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+  size_t i = 0;
+  if (*p == '"') {
+    p++;
+    while (*p && *p != '"' && i + 1 < n) {
+      if (*p == '\\' && p[1]) p++;
+      out[i++] = *p++;
+    }
+  } else {
+    while (*p && *p != ',' && *p != '}' && *p != '\n' && i + 1 < n) out[i++] = *p++;
+    while (i && (out[i-1] == ' ' || out[i-1] == '\t')) i--;
+  }
+  out[i] = 0;
+  return i > 0;
+}
 
 static void publish_state(int visible, const char *reason, const char *fg,
                           int locked, const char *error) {
@@ -90,11 +155,11 @@ static void publish_state(int visible, const char *reason, const char *fg,
     "{\"schema_version\":1,\"ready\":true,\"visible\":%s,"
     "\"reason\":\"%s\",\"foreground_app_id\":\"%s\","
     "\"locked\":%s,\"width\":%d,\"height\":%d,\"scale\":%d,"
-    "\"strip\":%s,\"revealed\":%s,"
+    "\"strip\":%s,\"revealed\":%s,\"level\":%d,"
     "\"error\":\"%s\",\"owner\":\"nuxel-statusbar\"}\n",
     visible ? "true" : "false", reason ? reason : "",
     fg ? fg : "", locked ? "true" : "false", width, height, scale,
-    strip_mode ? "true" : "false", bar_revealed ? "true" : "false",
+    strip_mode ? "true" : "false", bar_level > 0 ? "true" : "false", bar_level,
     error ? error : "");
   fclose(f);
   rename(tmp, STATE_FILE);
@@ -315,68 +380,150 @@ static void render(void) {
   cairo_t *cr = cairo_create(cs);
   cairo_scale(cr, scale, scale);
 
-  if (strip_mode) {
-    /* Transparent 12 px strip with a small grabber; the app keeps the glass. */
+  if (bar_level == 0) {
+    /* Hidden state: transparent edge band with a small grabber.  No top bar
+     * pixels and no permanently visible input surface. */
     cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-    double gw = 46.0, gh = 3.0;
+    double gw = is_landscape() ? 64.0 : 46.0, gh = 3.0;
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.38);
     cairo_rectangle(cr, (width - gw) / 2.0, 3.0, gw, gh);
     cairo_fill(cr);
-    struct wl_shm_pool *spool = wl_shm_create_pool(shm, fd, size);
-    struct wl_buffer *sbuf = wl_shm_pool_create_buffer(spool, 0, bw, bh, (int)stride,
-                                                      WL_SHM_FORMAT_ARGB8888);
-    wl_shm_pool_destroy(spool);
-    wl_surface_set_buffer_scale(surface, scale);
-    wl_surface_attach(surface, sbuf, 0, 0);
-    wl_surface_damage(surface, 0, 0, bw, bh);
-    wl_surface_commit(surface);
-    cairo_destroy(cr);
-    cairo_surface_destroy(cs);
-    munmap(px, size);
-    wl_buffer_destroy(sbuf);
-    close(fd);
-    return;
+  } else {
+    /* PWNAGE-96000: exact Home DOM design token
+     * (status-bar.css: rgba(26, 26, 46, 0.95)), not the older #0b121f. */
+    cairo_set_source_rgba(cr, 26.0 / 255.0, 26.0 / 255.0, 46.0 / 255.0, 0.95);
+    cairo_paint(cr);
+
+    char timebuf[32];
+    if (!model_get("time", timebuf, sizeof timebuf)) {
+      time_t t = time(NULL); struct tm tm; localtime_r(&t, &tm);
+      strftime(timebuf, sizeof timebuf, "%H:%M", &tm);
+    }
+    int lvl = battery_level();
+    int chg = battery_charging();
+    int loc_on = location_enabled();
+    int wifi_on = wifi_up();
+    char mval[64];
+    if (model_get("battery", mval, sizeof mval)) lvl = atoi(mval);
+    if (model_get("charging", mval, sizeof mval)) chg = !strcmp(mval, "true");
+    if (model_get("wifi_on", mval, sizeof mval)) wifi_on = !strcmp(mval, "true");
+    if (model_get("location", mval, sizeof mval)) loc_on = !strcmp(mval, "true");
+    char pctbuf[16];
+    snprintf(pctbuf, sizeof pctbuf, "%d%%", lvl >= 0 ? lvl : 0);
+
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    PangoFontDescription *desc = pango_font_description_from_string("Nuxel Sans 13");
+    pango_font_description_set_weight(desc, PANGO_WEIGHT_SEMIBOLD);
+    pango_layout_set_font_description(layout, desc);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+
+    pango_layout_set_text(layout, timebuf, -1);
+    int tw = 0, th = 0; pango_layout_get_pixel_size(layout, &tw, &th);
+    cairo_move_to(cr, 16, (BAR_HEIGHT - th) / 2.0 - 1);
+    pango_cairo_show_layout(cr, layout);
+
+    PangoFontDescription *pct_desc = pango_font_description_from_string("Nuxel Sans 12");
+    pango_layout_set_font_description(layout, pct_desc);
+    pango_layout_set_text(layout, pctbuf, -1);
+    pango_layout_get_pixel_size(layout, &tw, &th);
+    double pct_x = width - tw - 16.0;
+    cairo_move_to(cr, pct_x, (BAR_HEIGHT - th) / 2.0 - 1);
+    pango_cairo_show_layout(cr, layout);
+    pango_font_description_free(pct_desc);
+    pango_font_description_free(desc);
+    double battery_x = pct_x - 34.0;
+    draw_battery(cr, battery_x, BAR_HEIGHT / 2.0, lvl, chg);
+    double wifi_x = battery_x - 22.0;
+    draw_wifi(cr, wifi_x, BAR_HEIGHT / 2.0, wifi_on);
+    double loc_x = wifi_x - 20.0;
+    if (loc_on) draw_location(cr, loc_x, BAR_HEIGHT / 2.0);
+
+    /* Match status-bar.css border-bottom: 1px rgba(255,255,255,0.03). */
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.03);
+    cairo_rectangle(cr, 0, BAR_HEIGHT - 1.0, width, 1.0);
+    cairo_fill(cr);
+
+    /* The little grabber is the only decorative element; it makes the
+     * upward-dismiss gesture discoverable without stealing app pixels. */
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.30);
+    cairo_rectangle(cr, (width - 40.0) / 2.0, BAR_HEIGHT - 3.0, 40.0, 2.0);
+    cairo_fill(cr);
+
+    if (bar_level >= 2) {
+      char wifi[48] = "unknown", bt[48] = "unknown", sound[32] = "unknown";
+      char mobile[48] = "unknown", notif[32] = "0", usb[48] = "";
+      char loc[32] = "off";
+      model_get("wifi", wifi, sizeof wifi);
+      model_get("bluetooth", bt, sizeof bt);
+      model_get("sound", sound, sizeof sound);
+      model_get("mobile", mobile, sizeof mobile);
+      model_get("notifications", notif, sizeof notif);
+      model_get("usb", usb, sizeof usb);
+      model_get("location", loc, sizeof loc);
+      if (!strcmp(bt, "true")) snprintf(bt, sizeof bt, "on");
+      else if (!strcmp(bt, "false")) snprintf(bt, sizeof bt, "off");
+
+      PangoFontDescription *small = pango_font_description_from_string("Nuxel Sans 12");
+      PangoFontDescription *head = pango_font_description_from_string("Nuxel Sans Bold 10");
+      double y = BAR_HEIGHT + 9.0;
+
+      pango_layout_set_font_description(layout, head);
+      cairo_set_source_rgba(cr, 0.49, 0.72, 0.98, 1.0);
+      pango_layout_set_text(layout, bar_level >= 3 ? "EXTENDED QUICK SETTINGS" : "QUICK SETTINGS", -1);
+      pango_layout_get_pixel_size(layout, &tw, &th);
+      cairo_move_to(cr, 14, y);
+      pango_cairo_show_layout(cr, layout);
+      y += th + 7.0;
+
+      pango_layout_set_font_description(layout, small);
+      cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+      const char *rows[8];
+      int nrows = 0;
+      char rowbuf[8][160];
+      snprintf(rowbuf[nrows], sizeof rowbuf[nrows], "Wi-Fi: %s", wifi);
+      rows[nrows] = rowbuf[nrows]; nrows++;
+      snprintf(rowbuf[nrows], sizeof rowbuf[nrows], "Battery: %d%%%s",
+               lvl >= 0 ? lvl : 0, chg ? " (charging)" : "");
+      rows[nrows] = rowbuf[nrows]; nrows++;
+      snprintf(rowbuf[nrows], sizeof rowbuf[nrows], "Bluetooth: %s", bt);
+      rows[nrows] = rowbuf[nrows]; nrows++;
+      snprintf(rowbuf[nrows], sizeof rowbuf[nrows], "Sound: %s", sound);
+      rows[nrows] = rowbuf[nrows]; nrows++;
+      snprintf(rowbuf[nrows], sizeof rowbuf[nrows], "Unread notifications: %s", notif);
+      rows[nrows] = rowbuf[nrows]; nrows++;
+      if (bar_level >= 3) {
+        snprintf(rowbuf[nrows], sizeof rowbuf[nrows], "Mobile: %s", mobile);
+        rows[nrows] = rowbuf[nrows]; nrows++;
+        snprintf(rowbuf[nrows], sizeof rowbuf[nrows], "Location: %s", loc);
+        rows[nrows] = rowbuf[nrows]; nrows++;
+        snprintf(rowbuf[nrows], sizeof rowbuf[nrows], "USB: %s", usb[0] ? usb : "inactive");
+        rows[nrows] = rowbuf[nrows]; nrows++;
+      }
+      for (int i = 0; i < nrows; i++) {
+        if (y > height - 16) break;
+        pango_layout_set_text(layout, rows[i], -1);
+        pango_layout_get_pixel_size(layout, &tw, &th);
+        cairo_move_to(cr, 16, y);
+        pango_cairo_show_layout(cr, layout);
+        y += th + 9.0;
+      }
+      if (bar_level >= 3) {
+        pango_layout_set_font_description(layout, head);
+        cairo_set_source_rgba(cr, 0.72, 0.82, 0.95, 0.9);
+        pango_layout_set_text(layout, "Swipe up once to close the entire panel", -1);
+        pango_layout_get_pixel_size(layout, &tw, &th);
+        double yy = height - th - 12.0;
+        if (yy > y) { cairo_move_to(cr, 16, yy); pango_cairo_show_layout(cr, layout); }
+      }
+      pango_font_description_free(head);
+      pango_font_description_free(small);
+    }
+
+    g_object_unref(layout);
   }
 
-  /* Opaque Nuxel strip (matches the launcher's status-bar colour family). */
-  cairo_set_source_rgba(cr, 0.043, 0.071, 0.122, 0.96);
-  cairo_paint(cr);
-
-  char timebuf[16]; time_t t = time(NULL); struct tm tm; localtime_r(&t, &tm);
-  strftime(timebuf, sizeof timebuf, "%H:%M", &tm);
-  int lvl = battery_level();
-  int chg = battery_charging();
-  int loc_on = location_enabled();
-  int wifi_on = wifi_up();
-  char pctbuf[16];
-  snprintf(pctbuf, sizeof pctbuf, "%d%%", lvl >= 0 ? lvl : 0);
-
-  PangoLayout *layout = pango_cairo_create_layout(cr);
-  PangoFontDescription *desc = pango_font_description_from_string("Nuxel Sans 13");
-  pango_layout_set_font_description(layout, desc);
-  cairo_set_source_rgb(cr, 0.96, 0.98, 1.0);
-
-  pango_layout_set_text(layout, timebuf, -1);
-  int tw = 0, th = 0; pango_layout_get_pixel_size(layout, &tw, &th);
-  cairo_move_to(cr, 14, (height - th) / 2.0 - 1);
-  pango_cairo_show_layout(cr, layout);
-
-  pango_layout_set_text(layout, pctbuf, -1);
-  pango_layout_get_pixel_size(layout, &tw, &th);
-  double pct_x = width - tw - 12.0;
-  cairo_move_to(cr, pct_x, (height - th) / 2.0 - 1);
-  pango_cairo_show_layout(cr, layout);
-  double battery_x = pct_x - 34.0;
-  draw_battery(cr, battery_x, height / 2.0, lvl, chg);
-  double wifi_x = battery_x - 22.0;
-  draw_wifi(cr, wifi_x, height / 2.0, wifi_on);
-  double loc_x = wifi_x - 20.0;
-  if (loc_on) draw_location(cr, loc_x, height / 2.0);
-
-  pango_font_description_free(desc);
-  g_object_unref(layout);
   cairo_destroy(cr);
   cairo_surface_flush(cs);
 
@@ -390,7 +537,7 @@ static void render(void) {
   wl_surface_commit(surface);
   cairo_surface_destroy(cs);
   munmap(px, size);
-  wl_buffer_destroy(buf);   /* compositor has copied the SHM contents */
+  wl_buffer_destroy(buf);
   close(fd);
 }
 
@@ -407,7 +554,8 @@ static void bar_hide(void) {
     surface = NULL;
   }
   configured = 0;
-  bar_revealed = 0;
+  bar_level = 0;
+  strip_mode = 1;
   reveal_deadline = 0;
   audit("STATUSBAR_HIDDEN reason=lock_or_home");
   publish_state(0, "lock_home_or_preload", "", session_locked(), NULL);
@@ -417,15 +565,17 @@ static void bar_create(void) {
   if (layer_surface || !compositor || !layer_shell || !output) return;
   if (!surface) surface = wl_compositor_create_surface(compositor);
   if (!surface) return;
-  int32_t h = strip_mode ? BAR_STRIP_INPUT_HEIGHT : BAR_HEIGHT;
+  int32_t h = bar_height_for_level(bar_level);
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(
       layer_shell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "nuxel-statusbar");
   zwlr_layer_surface_v1_set_anchor(layer_surface,
       ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
       ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
   zwlr_layer_surface_v1_set_size(layer_surface, 0, (uint32_t)h);
-  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface,
-      strip_mode ? 0 : BAR_HEIGHT);
+  /* PWNAGE-94000: never reserve layout space.  The app stays exactly as it
+   * was; the panel is a temporary overlay and the Home CSS owns the only
+   * desktop inset calculation.  This removes the double-inset geometry class. */
+  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, 0);
   zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
       ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
   height = h;
@@ -435,26 +585,40 @@ static void bar_create(void) {
 }
 
 static void bar_show(void) {
-  /* Default native-foreground state is the strip, not the full bar.  A swipe
-   * sets bar_revealed=1, and only then does bar_show map the full overlay. */
-  if (!bar_revealed) { bar_strip(); return; }
-  strip_mode = 0;
-  reveal_deadline = 0;
-  if (layer_surface) bar_hide();
-  bar_revealed = 1;
+  /* Default native-foreground state is the hidden strip.  The panel is only
+   * mapped after a real downward gesture. */
+  if (bar_level <= 0) { bar_strip(); return; }
   bar_create();
-  audit("STATUSBAR_SHOWN locked=0");
+  audit("STATUSBAR_SHOWN level=%d", bar_level);
   publish_state(1, "native_foreground", "", 0, NULL);
 }
 
 static void bar_strip(void) {
   if (layer_surface) bar_hide();
+  bar_level = 0;
   strip_mode = 1;
-  bar_revealed = 0;
   reveal_deadline = 0;
   bar_create();
   audit("STATUSBAR_STRIP native_foreground");
   publish_state(0, "native_strip", "", 0, NULL);
+}
+
+static void bar_set_level(int level) {
+  if (level < 0) level = 0;
+  if (level > 3) level = 3;
+  if (level == bar_level && layer_surface) {
+    reveal_deadline = level == 1 ? now_ms() + BAR_AUTOHIDE_MS : 0;
+    render();
+    publish_state(1, "native_level", "", 0, NULL);
+    return;
+  }
+  if (layer_surface) bar_hide();
+  bar_level = level;
+  strip_mode = level == 0 ? 1 : 0;
+  reveal_deadline = level == 1 ? now_ms() + BAR_AUTOHIDE_MS : 0;
+  bar_create();
+  audit("STATUSBAR_LEVEL %d landscape=%d height=%d", bar_level, is_landscape(), height);
+  publish_state(level > 0, level ? "native_level" : "native_strip", "", 0, NULL);
 }
 
 /* PWNAGE-90000: the compact bar's SECOND downward pull must open the real
@@ -468,16 +632,6 @@ static void send_host_action(const char *action) {
   audit("STATUSBAR_HOST_ACTION %s", action);
 }
 
-static void bar_reveal(void) {
-  if (!strip_mode) return;
-  if (layer_surface) bar_hide();
-  strip_mode = 0;
-  bar_revealed = 1;
-  reveal_deadline = 0; /* toggle: stays revealed until swiped down again */
-  bar_create();
-  audit("STATUSBAR_GESTURE_REVEAL");
-  publish_state(1, "native_reveal", "", 0, NULL);
-}
 
 static int64_t now_ms(void) {
   struct timespec ts;
@@ -489,7 +643,7 @@ static void layer_configure(void *d, struct zwlr_layer_surface_v1 *ls,
                             uint32_t serial, uint32_t w, uint32_t h) {
   (void)d;
   if ((int32_t)w > 0) width = (int32_t)w;
-  height = strip_mode ? BAR_STRIP_INPUT_HEIGHT : BAR_HEIGHT;
+  height = bar_height_for_level(bar_level);
   zwlr_layer_surface_v1_ack_configure(ls, serial);
   configured = 1;
   render();
@@ -513,7 +667,7 @@ static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
                           uint32_t time, struct wl_surface *surf, int32_t id,
                           wl_fixed_t x, wl_fixed_t y) {
   (void)d; (void)t; (void)serial; (void)time; (void)surf; (void)id; (void)x;
-  if (!strip_mode && !bar_revealed) return;
+  if (!layer_surface) return;
   touch_down = 1;
   down_y = last_y = wl_fixed_to_int(y);
 }
@@ -521,18 +675,14 @@ static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t 
                             wl_fixed_t x, wl_fixed_t y) {
   (void)d; (void)t; (void)time; (void)id; (void)x;
   last_y = wl_fixed_to_int(y);
-  if (strip_mode && touch_down && (last_y - down_y) >= BAR_REVEAL_DISTANCE) {
+  if (!touch_down) return;
+  /* Deliberate landscape threshold: a 16 px motion is enough in either
+   * orientation, but a panel only advances ONE level per physical swipe. */
+  if ((last_y - down_y) >= BAR_REVEAL_DISTANCE) {
     touch_down = 0;
-    bar_reveal();
-  } else if (!strip_mode && bar_revealed && touch_down &&
-             (last_y - down_y) >= BAR_REVEAL_DISTANCE) {
-    /* Second downward pull: expanded Quick Settings (same owner as Home). */
-    touch_down = 0;
-    send_host_action("quick-settings");
-  } else if (!strip_mode && bar_revealed && touch_down &&
-             (down_y - last_y) >= BAR_REVEAL_DISTANCE) {
-    /* Upward swipe dismisses the compact/expanded shade through the same
-       Quick Settings owner, then collapses the native bar to its strip. */
+    if (bar_level < 3) bar_set_level(bar_level + 1);
+  } else if ((down_y - last_y) >= BAR_REVEAL_DISTANCE) {
+    /* Strict requirement: one upward swipe closes EVERY level atomically. */
     touch_down = 0;
     send_host_action("quick-settings-close");
     bar_strip();
@@ -567,7 +717,8 @@ static const struct wl_seat_listener seat_listener = {
 
 static void output_mode(void *d, struct wl_output *o, uint32_t flags,
                         int32_t w, int32_t h, int32_t refresh) {
-  (void)d; (void)o; (void)flags; (void)refresh; (void)w; (void)h;
+  (void)d; (void)o; (void)flags; (void)refresh;
+  if (w > 0 && h > 0) { out_w = w; out_h = h; }
 }
 static void output_scale(void *d, struct wl_output *o, int32_t s) {
   (void)d; (void)o; if (s > 0) scale = s;
@@ -600,6 +751,21 @@ static void reg_global(void *d, struct wl_registry *r, uint32_t name,
 static void reg_remove(void *d, struct wl_registry *r, uint32_t name) { (void)d;(void)r;(void)name; }
 static const struct wl_registry_listener reg_listener = { reg_global, reg_remove };
 
+static void process_cmd(const char *q) {
+  if (!q || !*q) return;
+  if (!strncmp(q, "level ", 6)) {
+    int n = atoi(q + 6);
+    audit("STATUSBAR_CMD level=%d", n);
+    bar_set_level(n);
+    return;
+  }
+  if (!strcmp(q, "strip") || !strcmp(q, "hide")) { bar_set_level(0); return; }
+  if (!strcmp(q, "standard")) { bar_set_level(1); return; }
+  if (!strcmp(q, "expanded")) { bar_set_level(2); return; }
+  if (!strcmp(q, "extended")) { bar_set_level(3); return; }
+  if (!strcmp(q, "status")) { publish_state(bar_level > 0, "status", "", 0, NULL); return; }
+}
+
 int main(void) {
   unlink(LOG_FILE);
   display = wl_display_connect(NULL);
@@ -615,6 +781,18 @@ int main(void) {
   wl_output_add_listener(output, &output_listener, NULL);
   if (seat) wl_seat_add_listener(seat, &seat_listener, NULL);
   wl_display_roundtrip(display);
+
+  /* Bounded operator/test control channel.  It only changes the panel LEVEL;
+   * it cannot inject input into any application and it is not a second UI
+   * state owner (the canonical model remains /run/nuxel/statusbar-model.json). */
+  unlink(CMD_FIFO);
+  if (mkfifo(CMD_FIFO, 0600) == 0) {
+    /* PWNAGE-94000: open the control FIFO read/write.  A read-only FIFO with
+     * no writer is permanently readable with POLLHUP, which turned the main
+     * loop into a 100%-CPU busy spin after the last test writer exited. */
+    cmd_fd = open(CMD_FIFO, O_RDWR | O_NONBLOCK | O_CLOEXEC);
+  }
+  audit("STATUSBAR_CMD_FIFO %s", cmd_fd >= 0 ? "ready" : "absent");
 
   /* The overlay owns presentation only while ALL of these are true:
      - the session is unlocked (never over the lockscreen; the DOM bar owns
@@ -639,8 +817,12 @@ int main(void) {
       if (wl_display_dispatch_pending(display) < 0) return 0;
     }
     wl_display_flush(display);
-    struct pollfd pf = { .fd = wl_display_get_fd(display), .events = POLLIN };
-    int pr = poll(&pf, 1, 250);
+    struct pollfd pf[2] = {
+      { .fd = wl_display_get_fd(display), .events = POLLIN, .revents = 0 },
+      { .fd = cmd_fd, .events = POLLIN, .revents = 0 },
+    };
+    int maxfd = (cmd_fd >= 0) ? 2 : 1;
+    int pr = poll(pf, (nfds_t)maxfd, 250);
     if (pr < 0) { wl_display_cancel_read(display); if (errno == EINTR) continue; return 0; }
     if (pr == 0) {
       wl_display_cancel_read(display);
@@ -671,19 +853,32 @@ int main(void) {
                       locked ? "locked" : preloading_active() ? "preload" : "home",
                       fg, locked, NULL);
       }
-      if (shown && !strip_mode && reveal_deadline && now_ms() >= reveal_deadline) {
+      if (shown && bar_level == 1 && reveal_deadline && now_ms() >= reveal_deadline) {
         bar_strip();
         audit("STATUSBAR_GESTURE_AUTOHIDE");
       }
       time_t now = time(NULL);
-      if (shown && now - last >= 10) { last = now; if (!strip_mode) render(); }
+      if (shown && now - last >= 10) { last = now; if (bar_level > 0) render(); }
       continue;
     }
-    if (pf.revents & POLLIN) {
+    if (pf[0].revents & POLLIN) {
       if (wl_display_read_events(display) < 0) return 0;
       if (wl_display_dispatch_pending(display) < 0) return 0;
     } else {
       wl_display_cancel_read(display);
+    }
+    if (cmd_fd >= 0 && (pf[1].revents & (POLLIN | POLLHUP | POLLERR))) {
+      char buf[512];
+      ssize_t n = read(cmd_fd, buf, sizeof buf - 1);
+      if (n > 0) {
+        buf[n] = 0;
+        for (char *q = buf; q && *q; ) {
+          char *nl = strchr(q, '\n');
+          if (nl) *nl = 0;
+          process_cmd(q);
+          q = nl ? nl + 1 : NULL;
+        }
+      }
     }
   }
 }

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="nuxel-app-id" content="org.nuxel.NetworkManager">
+<title>Network Manager</title>
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
+<link rel="stylesheet" href="style.css?v=p97000">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="glyph" aria-hidden="true">🌐</span>
+    <div><h1>Network Manager</h1><p class="sub" id="headline">Same NetworkManager connector as Settings</p></div>
+  </div>
+  <button id="close" class="ghost" aria-label="Close">✕</button>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="wifi">Wi-Fi</button>
+  <button class="tab" data-tab="dns">Private DNS</button>
+  <button class="tab" data-tab="vpn">VPN</button>
+  <button class="tab" data-tab="zerotier">ZeroTier</button>
+</nav>
+
+<main>
+  <section id="tab-wifi" class="panel active">
+    <div class="card">
+      <h2>Wi-Fi &amp; address</h2>
+      <p class="hint">This panel is the working Settings NetworkManager connector. It shows the
+        live IPv4/IPv6 address assigned to the phone and never invents a link state.</p>
+      <div class="row wrap">
+        <button id="wifi-refresh" class="primary">Refresh</button>
+        <button id="wifi-scan">Scan networks</button>
+        <button id="wifi-power">Turn Wi-Fi on/off</button>
+        <button id="wifi-disconnect">Disconnect</button>
+      </div>
+      <pre id="wifi-status" class="state" role="status">Checking NetworkManager...</pre>
+      <div id="wifi-list" class="wifi-list" aria-label="Discovered Wi-Fi networks"></div>
+      <form id="wifi-connect-form" hidden autocomplete="off">
+        <h3>Connect to <span id="wifi-target-label"></span></h3>
+        <input id="wifi-ssid" type="hidden"><input id="wifi-security" type="hidden">
+        <label>Wi-Fi password <input id="wifi-password" type="password" autocomplete="new-password" minlength="8" maxlength="63"></label>
+        <div class="row"><button type="submit" class="primary">Connect</button><button type="button" id="wifi-cancel">Cancel</button></div>
+      </form>
+      <p id="wifi-result" class="state" role="status" aria-live="polite">—</p>
+    </div>
+  </section>
+
+  <section id="tab-dns" class="panel">
+    <div class="card">
+      <h2>Private DNS</h2>
+      <p class="hint">Custom resolvers are applied to the active Wi-Fi profile with
+        <code>ipv4.ignore-auto-dns</code>/<code>ipv6.ignore-auto-dns</code>. When
+        systemd-resolved is running the same action also requests DNS-over-TLS.</p>
+      <pre id="dns-status" class="state">Reading DNS configuration…</pre>
+      <div class="row wrap">
+        <label>Provider
+          <select id="dns-provider">
+            <option value="cloudflare">Cloudflare (1.1.1.1 / 1.0.0.1)</option>
+            <option value="quad9">Quad9 (9.9.9.9 / 149.112.112.112)</option>
+            <option value="custom">Custom resolvers</option>
+            <option value="dhcp">Automatic (DHCP)</option>
+          </select>
+        </label>
+        <input id="dns-custom" type="text" placeholder="Custom IPv4/IPv6, comma separated" autocomplete="off">
+        <button id="dns-save" class="primary">Save private DNS</button>
+        <button id="dns-reset">Restore DHCP DNS</button>
+      </div>
+      <p id="dns-result" class="state" role="status" aria-live="polite">—</p>
+    </div>
+  </section>
+
+  <section id="tab-vpn" class="panel">
+    <div class="card">
+      <h2>VPN connections</h2>
+      <p class="hint">Import a WireGuard or OpenVPN profile. The bridge writes a mode-0600
+        temporary file and hands it to NetworkManager's fixed importer; it never runs a shell.
+        Credentials are not echoed back or logged.</p>
+      <pre id="vpn-status" class="state">Reading VPN connections…</pre>
+      <ul id="vpn-list" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>Import profile</h3>
+      <div class="row wrap">
+        <label>Type
+          <select id="vpn-kind">
+            <option value="wireguard">WireGuard</option>
+            <option value="openvpn">OpenVPN</option>
+          </select>
+        </label>
+        <input id="vpn-name" type="text" placeholder="Profile name (optional)" autocomplete="off">
+      </div>
+      <textarea id="vpn-config" rows="7" spellcheck="false" placeholder="Paste the WireGuard .conf or OpenVPN .ovpn contents here"></textarea>
+      <div class="row"><button id="vpn-import" class="primary">Import VPN profile</button></div>
+      <p id="vpn-result" class="state" role="status" aria-live="polite">—</p>
+    </div>
+  </section>
+
+  <section id="tab-zerotier" class="panel">
+    <div class="card">
+      <h2>ZeroTier</h2>
+      <p class="hint">zerotier-one is the system service. Joining a network is immediate; the
+        controller must authorize this device in ZeroTier Central before an address appears.</p>
+      <pre id="zt-status" class="state">Reading ZeroTier status…</pre>
+      <div class="row wrap">
+        <input id="zt-network" type="text" value="0cccb752f72ecf52" maxlength="16" autocomplete="off" aria-label="ZeroTier network id">
+        <button id="zt-join" class="primary">Join network</button>
+        <button id="zt-leave">Leave network</button>
+        <button id="zt-toggle">Enable/disable service</button>
+        <button id="zt-refresh">Refresh</button>
+      </div>
+      <p id="zt-result" class="state" role="status" aria-live="polite">—</p>
+      <div id="zt-networks"></div>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="../settings/wifi-settings.js?v=p50002"></script>
+<script type="module" src="js/network-manager.js?v=p97000"></script>
+</body>
+</html>

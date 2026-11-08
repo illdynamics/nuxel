@@ -95,6 +95,10 @@ portal_stack:
   - xdg-desktop-portal
   - xdg-desktop-portal-gtk
   - xdg-desktop-portal-gnome
+  - xdg-desktop-portal-wlr
+  # PWNAGE-97000: real frontend/backend verification and MIME default tools.
+  - xdg-utils
+  - desktop-file-utils
 
 security_hardening:
   # Sandboxing

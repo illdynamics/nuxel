@@ -128,3 +128,15 @@ The service must store templates only inside the secure provider, enforce anti-s
 - **Proved:** sensor/driver/nodes present, no secure provider, enrollment refused, PIN fallback preserved.
 - **Inferred:** the blocker is the missing TEE/trusted application, not the kernel driver.
 - **Unknown:** exact TA/firmware revision, anti-spoof behavior, secure storage interface, licensing.
+
+## 17. Reflash impact (controlled maintenance)
+
+| Question | Answer |
+|---|---|
+| Does completing fingerprint require a reflash? | **YES.** A vendor-authorised TEE trusted application/provider and secure storage must be part of the system/vendor image. |
+| Boot/kernel too? | Likely yes if the secure provider/TEE handshake requires firmware or vendor partition changes; the qbt2000 kernel driver itself is present. |
+| Can it be deployed over SSH now? | **NO.** A userspace-only matcher would be insecure and is explicitly rejected. |
+| Batch with PWNAGE-93000? | **YES.** Combine with the camera/GPS/NFC/USBNET reflash batch; PWNAGE-93000's userspace changes can ride along without a separate flash. |
+| Controlled batch | Vendor/TEE payload + system image; verify enrollment/authentication and PIN fallback on the inactive slot before switching. |
+| Rollback | Keep the previous slot and PIN fallback; never remove the fallback during the experiment. |
+| Risk if postponed | Fingerprint remains unavailable; PIN/swipe unlock continues to work. |

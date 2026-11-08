@@ -40,7 +40,8 @@ if [ -f "$SYS/include/pango-1.0/pango/pangocairo.h" ] || pkg-config --exists pan
   "$CC" "${COMMON[@]}" $(pkg-config --cflags pangocairo cairo 2>/dev/null) \
     -o "$OUT/nuxel-statusbar" \
     "$HERE/nuxel-statusbar.c" \
-    "$OUT/gen/wlr-layer-shell-unstable-v1-protocol.c" "${LIBS[@]}" \
+    "$OUT/gen/wlr-layer-shell-unstable-v1-protocol.c" \
+    "$OUT/gen/xdg-shell-protocol.c" "${LIBS[@]}" \
     $(pkg-config --libs pangocairo cairo 2>/dev/null)
   file "$OUT/nuxel-statusbar" | grep -q 'ARM aarch64'
 else

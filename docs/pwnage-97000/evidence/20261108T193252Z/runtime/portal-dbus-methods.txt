@@ -1,0 +1,165 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== PROBE3 ===
+REQUEST /org/freedesktop/portal/desktop/request/1_237/t
+CLOSE_SENT
+TIMEOUT
+=== MONITOR FileChooser/Request ===
+      <arg type="s" name="window" direction="in"/>
+      <arg type="a{sv}" name="options" direction="in"/>
+      <arg type="o" name="handle" direction="out"/>
+    </method>
+    <method name="QueryEndResponse">
+      <arg type="o" name="session_handle" direction="in"/>
+    </method>
+    <signal name="StateChanged">
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out1" value="QVariantMap"/>
+      <arg type="o" name="session_handle"/>
+      <arg type="a{sv}" name="state"/>
+    </signal>
+    <property type="u" name="version" access="read"/>
+  </interface>
+  <interface name="org.freedesktop.portal.Location">
+    <method name="CreateSession">
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QVariantMap"/>
+      <arg type="a{sv}" name="options" direction="in"/>
+      <arg type="o" name="handle" direction="out"/>
+--
+      <arg type="s" name="uri" direction="in"/>
+      <arg type="a{sv}" name="options" direction="in"/>
+      <arg type="o" name="handle" direction="out"/>
+    </method>
+    <method name="OpenFile">
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QVariantMap"/>
+      <arg type="s" name="parent_window" direction="in"/>
+      <arg type="h" name="fd" direction="in"/>
+      <arg type="a{sv}" name="options" direction="in"/>
+      <arg type="o" name="handle" direction="out"/>
+    </method>
+    <method name="OpenDirectory">
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QVariantMap"/>
+      <arg type="s" name="parent_window" direction="in"/>
+      <arg type="h" name="fd" direction="in"/>
+      <arg type="a{sv}" name="options" direction="in"/>
+      <arg type="o" name="handle" direction="out"/>
+    </method>
+    <method name="SchemeSupported">
+--
+    </method>
+    <property type="u" name="version" access="read"/>
+  </interface>
+  <interface name="org.freedesktop.portal.FileChooser">
+    <method name="OpenFile">
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QVariantMap"/>
+      <arg type="s" name="parent_window" direction="in"/>
+      <arg type="s" name="title" direction="in"/>
+      <arg type="a{sv}" name="options" direction="in"/>
+      <arg type="o" name="handle" direction="out"/>
+    </method>
+    <method name="SaveFile">
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QVariantMap"/>
+      <arg type="s" name="parent_window" direction="in"/>
+      <arg type="s" name="title" direction="in"/>
+      <arg type="a{sv}" name="options" direction="in"/>
+      <arg type="o" name="handle" direction="out"/>
+    </method>
+    <method name="SaveFiles">
+--
+    <property type="u" name="version" access="read"/>
+  </interface>
+</node>
+"
+method call time=1794167180.609899 sender=:1.237 -> destination=:1.232 serial=4 path=/org/freedesktop/portal/desktop; interface=org.freedesktop.portal.FileChooser; member=OpenFile
+   string ""
+   string "PWNAGE-97000 Harness"
+   array [
+      dict entry(
+         string "multiple"
+         variant             boolean false
+      )
+   ]
+method call time=1794167180.611004 sender=:1.232 -> destination=org.freedesktop.DBus serial=108 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=GetConnectionCredentials
+   string ":1.237"
+method return time=1794167180.611030 sender=org.freedesktop.DBus -> destination=:1.232 serial=86 reply_serial=108
+   array [
+      dict entry(
+         string "ProcessID"
+--
+         variant             array of bytes "unconfined_u:unconfined_r:unconfined_t:s0" + \0
+      )
+   ]
+method call time=1794167180.616388 sender=:1.232 -> destination=org.freedesktop.DBus serial=109 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=AddMatch
+   string "type='signal',sender='org.freedesktop.impl.portal.desktop.nuxel',interface='org.freedesktop.impl.portal.Request',path='/org/freedesktop/portal/desktop/request/1_237/t'"
+method return time=1794167180.616459 sender=org.freedesktop.DBus -> destination=:1.232 serial=87 reply_serial=109
+method call time=1794167180.616712 sender=:1.232 -> destination=org.freedesktop.DBus serial=110 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=StartServiceByName
+   string "org.freedesktop.impl.portal.desktop.nuxel"
+   uint32 0
+method return time=1794167180.616748 sender=org.freedesktop.DBus -> destination=:1.232 serial=88 reply_serial=110
+   uint32 2
+method call time=1794167180.618953 sender=:1.232 -> destination=org.freedesktop.DBus serial=111 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=GetNameOwner
+   string "org.freedesktop.impl.portal.desktop.nuxel"
+method return time=1794167180.619005 sender=org.freedesktop.DBus -> destination=:1.232 serial=89 reply_serial=111
+   string ":1.225"
+method call time=1794167180.621078 sender=:1.232 -> destination=:1.225 serial=112 path=/org/freedesktop/portal/desktop; interface=org.freedesktop.impl.portal.FileChooser; member=OpenFile
+   object path "/org/freedesktop/portal/desktop/request/1_237/t"
+   string ""
+   string ""
+   string "PWNAGE-97000 Harness"
+   array [
+      dict entry(
+         string "multiple"
+         variant             boolean false
+      )
+   ]
+method return time=1794167180.621185 sender=:1.232 -> destination=:1.237 serial=113 reply_serial=4
+   object path "/org/freedesktop/portal/desktop/request/1_237/t"
+method call time=1794167180.621632 sender=:1.237 -> destination=org.freedesktop.DBus serial=5 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=GetNameOwner
+   string "org.freedesktop.portal.Desktop"
+--
+    <method name="GetMachineId">
+      <arg type="s" name="machine_uuid" direction="out"/>
+    </method>
+  </interface>
+  <interface name="org.freedesktop.portal.Request">
+    <method name="Close"/>
+    <signal name="Response">
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out1" value="QVariantMap"/>
+      <arg type="u" name="response"/>
+      <arg type="a{sv}" name="results"/>
+    </signal>
+  </interface>
+</node>
+"
+method call time=1794167180.626833 sender=:1.237 -> destination=org.freedesktop.DBus serial=8 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=GetNameOwner
+   string ":1.232"
+method return time=1794167180.626879 sender=org.freedesktop.DBus -> destination=:1.237 serial=6 reply_serial=8
+   string ":1.232"
+method call time=1794167180.626967 sender=:1.237 -> destination=org.freedesktop.DBus serial=9 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=AddMatch
+   string "type='signal',sender=':1.232',path='/org/freedesktop/portal/desktop/request/1_237/t',interface='org.freedesktop.portal.Request',member='Response'"
+method return time=1794167180.626994 sender=org.freedesktop.DBus -> destination=:1.237 serial=7 reply_serial=9
+method call time=1794167183.319954 sender=:1.237 -> destination=:1.232 serial=10 path=/org/freedesktop/portal/desktop/request/1_237/t; interface=org.freedesktop.portal.Request; member=Close
+method call time=1794167183.323505 sender=:1.232 -> destination=:1.225 serial=115 path=/org/freedesktop/portal/desktop/request/1_237/t; interface=org.freedesktop.impl.portal.Request; member=Close
+method return time=1794167183.456483 sender=:1.225 -> destination=:1.232 serial=11 reply_serial=112
+   uint32 1
+   array [
+   ]
+method return time=1794167183.456558 sender=:1.225 -> destination=:1.232 serial=12 reply_serial=115
+method return time=1794167183.462571 sender=:1.232 -> destination=:1.237 serial=116 reply_serial=10
+method call time=1794167183.462620 sender=:1.232 -> destination=org.freedesktop.DBus serial=117 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=RemoveMatch
+   string "type='signal',sender='org.freedesktop.impl.portal.desktop.nuxel',interface='org.freedesktop.impl.portal.Request',path='/org/freedesktop/portal/desktop/request/1_237/t'"
+method return time=1794167183.462655 sender=org.freedesktop.DBus -> destination=:1.232 serial=90 reply_serial=117
+signal time=1794167201.441882 sender=org.freedesktop.DBus -> destination=:1.237 serial=8 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=NameLost
+   string ":1.237"
+signal time=1794167201.441926 sender=org.freedesktop.DBus -> destination=(null destination) serial=91 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=NameOwnerChanged
+   string ":1.237"
+   string ":1.237"
+   string ""
+
+Session terminated, killing shell...

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Files
+Comment=Nuxel file manager and directory browser
+Exec=/usr/libexec/nuxel/nuxel-open-file --app org.nuxel.Files %U
+TryExec=/usr/libexec/nuxel/nuxel-open-file
+Icon=/usr/share/nuxel/pwa/nuxel-apps/files/icons/icon.svg
+Terminal=false
+Categories=System;FileManager;FileTools;
+MimeType=inode/directory;
+StartupNotify=true

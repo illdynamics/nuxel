@@ -40,7 +40,7 @@ def load_provider():
 def main() -> int:
     mod = load_provider()
     provider = mod.FlatpakProvider.__new__(mod.FlatpakProvider)
-    installed = {mod.CRISPY_DOOM_APP_ID, "org.gnome.TextEditor"}
+    installed = {mod.CRISPY_DOOM_APP_ID, "org.gnome.TextEditor", "org.mozilla.firefox"}
     provider.is_installed = lambda app_id: app_id in installed
 
     argv = provider.launch_argv("io.github.fabiangreffrath.Doom")
@@ -52,8 +52,13 @@ def main() -> int:
     other = provider.launch_argv("org.gnome.TextEditor")
     check(other and other[0] == mod.FLATPAK and other[-1] == "org.gnome.TextEditor",
           "other Flatpaks keep the generic software-rendering launch (%r)" % (other,))
-    check(other and "--env=GSK_RENDERER=cairo" in other,
-          "other Flatpaks still force the cairo software path")
+    check(other and "--env=GSK_RENDERER=cairo" not in other and
+          "--env=LIBGL_ALWAYS_SOFTWARE=1" not in other,
+          "GTK4/libadwaita auto policy keeps the accelerated path")
+    soft = provider.launch_argv("org.mozilla.firefox")
+    check(soft and "--env=GSK_RENDERER=cairo" in soft and
+          "--env=LIBGL_ALWAYS_SOFTWARE=1" in soft,
+          "software-fallback apps keep the verified llvmpipe/cairo env")
 
     check(provider.launch_argv("io.github.fabiangreffrath.Doom;sh") is None,
           "path/shell-shaped ids are refused")

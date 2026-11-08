@@ -1,0 +1,16 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+f54a7e1c2319b8952c70b50dee1be94ad588ceec903e19f11ac9cf077cb6e5ab  root:root 755 58363 /usr/libexec/nuxel/nuxel-portal-chooser
+014c55f9eac756e96826d853d6fab0febbfc03a451be67ec170bafd815ccb3d1  root:root 644 44660 /usr/lib/nuxel/nuxel_file_handlers.py
+6e340639f9d6c6f8d0ce513592720108017727aa4ec31a3dc82f40bc6eb02024  root:root 644 303903 /usr/lib/nuxel/nuxel-bridge/api.py
+687587ac62e5d6ae9fad8006561462786069fd3f38ca94af567d842921b55cb9  root:root 644 49899 /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py
+1ad187a7fbf6e1de11373f56440590a69b0a975bc384e69c313ff8e19d7f864e  root:root 644 3315 /etc/systemd/system/nuxel-http-bridge.service
+084f385a5b51424c795d9c36596b73a3de752b48f5c3dab868a89b71e337f15a  root:root 644 562 /usr/share/applications/org.nuxel.Photos.desktop
+9b2da776db3b24968db42b58d366537f08441ee3149bd7833065c532ccdafc99  root:root 644 350 /usr/share/applications/org.nuxel.Files.desktop

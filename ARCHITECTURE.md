@@ -82,3 +82,23 @@ host ── USB ──► [CDC-ACM serial: recovery console, always preserved]
                   [RNDIS: compiled, NEEDS_VALIDATION]
                   [ECM/ECM-subset/EEM: not compiled]
 ```
+
+## Notification, icon-origin and Back-to-Home contracts (PWNAGE-93000)
+
+- **One notification store:** `nuxel-notifications.service` owns
+  `org.nuxel.Notifications` and `/var/lib/nuxel/notifications.json`. Native GTK
+  and Flatpak/portal traffic arrives through one `--session` FDO relay per real
+  session bus; relays forward to the system hub and never create a second store.
+- **Badge semantics:** unread, non-archived reminders. Read reminders remain in
+  expanded Quick Settings; archive hides them from the active list but keeps the
+  durable record.
+- **Icon origin:** Nuxel-owned apps use Nuxel artwork; GTK/RPM apps use
+  `/api/v1/apps/icon/<id>` (resolved from the real desktop entry); Flatpak apps
+  use their export icon. The PWA keeps exactly one image node per loaded tile.
+- **Back to Home:** short Back first gives overlays/keyboard/in-app history
+  precedence. An app with no verified adapter is minimized (not killed) and
+  Home is activated. The bridge clears fullscreen/maximized state, settles, and
+  verifies that no non-Home toplevel remains active before reporting success.
+- **Edge screen:** the curved panel and edge-aware `sec_ts` driver exist, but no
+  Nuxel edge panel/lighting/gesture is implemented yet. See `REPORT-EDGE.md`;
+  v1 is a userspace PWA/bridge feature and needs no reflash.

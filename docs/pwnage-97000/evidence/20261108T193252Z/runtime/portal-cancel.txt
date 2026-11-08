@@ -1,0 +1,15 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Running as unit: nuxel-chooser-p97000.service; invocation ID: d357082634d94a84ae9a1a9e86159ccb
+REQUEST /org/freedesktop/portal/desktop/request/1_245/t
+RESPONSE 1 {"uris": []} PATH /org/freedesktop/portal/desktop/request/1_245/t
+--- STATE ---
+{"autotest": "cancel", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 1, "errors": 0, "requests": 1, "selected": 0}, "duration_ms": 1867, "last_error": "NameError", "last_outcome": "cancelled", "last_request": {"app_id": "", "duration_ms": 1867, "kind": "open", "outcome": "cancelled", "selected_count": 0, "source": "cancelled"}, "last_source": "cancelled", "pid": 555952, "presented": false, "schema_version": 2, "selected_count": 0, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794167250.717245, "version": "1.1.0"}
+

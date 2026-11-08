@@ -131,3 +131,15 @@
 - **Proved:** five sensor modules bound; FIMC-IS nodes exist; firmware/setfiles missing; no media graph; no verified frame.
 - **Inferred:** the private FIMC-IS ioctl ABI is the usable interface; a libcamera handler is the least invasive path.
 - **Unknown:** exact vendor ABI revisions, setfile compatibility, 3P9 GPIO/MIPI fix, calibration quality.
+
+## 17. Reflash impact (controlled maintenance)
+
+| Question | Answer |
+|---|---|
+| Does completing camera require a reflash? | **YES.** Vendor sensor setfiles, Exynos ISP firmware/calibration and the libcamera FIMC-IS handler must live in the system image; a writable `/lib/firmware` paste is not a controlled production path. |
+| Boot/kernel too? | Only if the private FIMC-IS ioctl ABI/DT needs kernel changes; the current kernel already binds the sensors. |
+| Can it be deployed over SSH now? | **NO** for a complete camera. Userspace-only changes cannot create missing firmware/ISP frames. |
+| Batch with PWNAGE-93000? | **YES.** PWNAGE-93000 is already deployed over SSH and needs no flash; include its userspace payload in the same system image so one A/B flash carries both. |
+| Controlled batch | System image + (only if needed) boot/kernel. Flash the inactive A/B slot, verify camera enumeration/frame capture, then switch slots. |
+| Rollback | Before switching, preserve the current slot; fall back to the previous slot if camera/boot fails. |
+| Risk if postponed | No camera frames; no user-visible regression in unrelated features. |

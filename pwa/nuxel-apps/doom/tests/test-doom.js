@@ -44,8 +44,8 @@ check('WAD ids are digest-addressed, never raw paths in the URL',
 check('IWAD and PWAD composition is supported', /-iwad/.test(ui) && /-file/.test(ui));
 check('first map starts immediately for the PLAY path',
   /'-warp'/.test(ui) && /startMode === 'episode'/.test(ui));
-check('engine is started with an explicit pin-free 640x400 canvas',
-  /'-width', '640', '-height', '400'/.test(ui));
+check('engine is started with an explicit pin-free 320x200 canvas',
+  /'-width', '320', '-height', '200'/.test(ui));
 
 console.log('\nNuxel Doom — touch HUD');
 const inputTags = html.match(/<(input|textarea)\b[^>]*>/gi) || [];

@@ -1,0 +1,53 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+IMG=/home/nuxel/Gallery/nuxel-screenshot-20261101T075618680Z.png
+--- open request ---
+{"success": true, "queued": true, "launched": true, "app_id": "org.nuxel.Photos", "count": 1, "pending_path": "/home/nuxel/.local/state/nuxel/file-handlers-pending.json"}
+--- pending immediately ---
+{
+  "app_id": "org.nuxel.Photos",
+  "created_at": 1794168141.6195261,
+  "paths": [
+    "/home/nuxel/Gallery/nuxel-screenshot-20261101T075618680Z.png"
+  ],
+  "schema_version": 1
+}
+
+--- pending after 8s ---
+{
+  "app_id": "org.nuxel.Photos",
+  "created_at": 1794168141.6195261,
+  "paths": [
+    "/home/nuxel/Gallery/nuxel-screenshot-20261101T075618680Z.png"
+  ],
+  "schema_version": 1
+}
+--- launcher state tail ---
+1794157895 NUXEL_INPUT EVT app:launch id=org.gnome.FileRoller name=Archive Manager
+1794157895 NUXEL_INPUT EVT app:lifecycle id=org.gnome.FileRoller state=LAUNCHING ts=1794157895058
+1794157897 NUXEL_INPUT EVT app:lifecycle id=org.gnome.FileRoller state=ACTIVE ts=1794157897224
+1794158075 NUXEL_INPUT EVT app:lifecycle id=org.gnome.FileRoller state=CLOSING ts=1794158075381
+1794158075 NUXEL_INPUT EVT app:lifecycle id=home state=CLOSED ts=1794158075390
+1794158193 NUXEL_INPUT EVT app:launch id=com.stremio.Stremio name=Stremio
+1794158193 NUXEL_INPUT EVT app:lifecycle id=com.stremio.Stremio state=LAUNCHING ts=1794158193493
+1794158195 NUXEL_INPUT EVT app:lifecycle id=com.stremio.Stremio state=ACTIVE ts=1794158195189
+1794158382 NUXEL_INPUT EVT app:lifecycle id=com.stremio.Stremio state=CLOSING ts=1794158382833
+1794158382 NUXEL_INPUT EVT app:lifecycle id=home state=CLOSED ts=1794158382841
+1794167373 NUXEL_INPUT EVT app:launch id=nuxel-settings name=Settings
+1794167373 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=LAUNCHING ts=1794167373733
+1794167373 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=LAUNCHING ts=1794167373747
+1794167374 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=ACTIVE ts=1794167374048
+1794167759 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1794167759204
+1794167864 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1794167864241
+1794167869 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1794167869537
+1794168141 LAUNCH app_id=org.nuxel.Photos via launcher registry
+1794168141 NUXEL_INPUT EVT app:launch id=org.nuxel.Photos name=Gallery
+1794168141 NUXEL_INPUT EVT launch:blocked-locked app=org.nuxel.Photos ts=1794168141637
+SHOT_OK /tmp/p97000-gallery-open.ppm 720x1520 stride=2880 fmt=0x34324258

@@ -70,6 +70,6 @@
     "offline_first": true,
     "network": "none",
     "external_publish": false,
-    "pwa_version": "0.8.1-beta"
+    "pwa_version": "0.8.2-beta"
   }
 }

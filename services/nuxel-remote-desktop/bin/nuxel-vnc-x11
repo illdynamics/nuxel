@@ -1,0 +1,51 @@
+#!/bin/sh
+# Nuxel direct-LAN VNC launcher (TigerVNC Xvnc, VncAuth).
+#
+# The privileged controller is the only writer of xvnc.conf.  This wrapper
+# validates the address again before exec so a malformed config can never turn
+# into a wildcard listener.  No shell metacharacters are evaluated.
+set -eu
+CONF=/etc/nuxel/remote-desktop/vnc/xvnc.conf
+PASS=/etc/nuxel/remote-desktop/vnc/vnc.passwd
+[ -r "$CONF" ] || { echo "missing $CONF" >&2; exit 2; }
+ADDRESS=$(sed -n 's/^address=//p' "$CONF" | head -n 1)
+PORT=$(sed -n 's/^port=//p' "$CONF" | head -n 1)
+[ -n "$ADDRESS" ] || { echo "missing address" >&2; exit 2; }
+case "$ADDRESS" in
+  *[!0-9.]*) echo "invalid address" >&2; exit 2 ;;
+esac
+[ "$PORT" = "5900" ] || { echo "invalid port" >&2; exit 2; }
+[ -r "$PASS" ] || { echo "missing VNC password file" >&2; exit 2; }
+
+# Landscape geometry follows the phone's current logical landscape mode
+# (1520x720 on the S10+).  Only an explicit WxH with width >= height is
+# accepted, so a malformed hand-edited config can never turn into a portrait or
+# nonsensical desktop.
+GEOMETRY=$(sed -n 's/^geometry=//p' "$CONF" | head -n 1)
+case "$GEOMETRY" in
+  [0-9]*x[0-9]*) ;;
+  *) GEOMETRY=1520x720 ;;
+esac
+GW=${GEOMETRY%x*}; GH=${GEOMETRY#*x}
+case "$GW$GH" in *[!0-9]*) echo "invalid geometry" >&2; exit 2 ;; esac
+[ "$GW" -ge 640 ] && [ "$GH" -ge 360 ] && [ "$GW" -le 4096 ] && [ "$GH" -le 2304 ] \
+  || { echo "geometry out of range" >&2; exit 2; }
+[ "$GW" -ge "$GH" ] || { echo "VNC must use landscape geometry" >&2; exit 2; }
+
+# If the configured address is stale after a DHCP change, bind the current
+# trusted WLAN IPv4 instead of a wildcard.  The interface is fixed (wlan0);
+# the caller still cannot choose an address or port.
+CURRENT_WLAN=$(ip -4 -o addr show dev wlan0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -n 1)
+case "$CURRENT_WLAN" in
+  *[!0-9.]*|'') : ;;
+  *) ADDRESS="$CURRENT_WLAN" ;;
+esac
+case "$ADDRESS" in
+  ''|*[!0-9.]*) echo "invalid address" >&2; exit 2 ;;
+esac
+
+install -d -m 1777 /tmp/.X11-unix
+exec /usr/bin/Xvnc :2 \
+  -interface "$ADDRESS" -rfbport "$PORT" \
+  -SecurityTypes VncAuth -PasswordFile "$PASS" \
+  -geometry "$GEOMETRY" -depth 24 -AlwaysShared

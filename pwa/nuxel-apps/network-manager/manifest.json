@@ -1,0 +1,31 @@
+{
+  "name": "Nuxel Network Manager",
+  "short_name": "Network",
+  "description": "Wi-Fi addresses and the working NetworkManager connector, plus private DNS, VPN and ZeroTier.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "scope": "./",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "../../nuxel-home/assets/branding/nuxel-applications-icon-pack/03-06_vpn.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "pwa_version": "0.8.2-beta",
+    "capabilities": ["network:manage"],
+    "app_type": "settings",
+    "app_id": "org.nuxel.NetworkManager",
+    "offline_first": true,
+    "network": "none",
+    "registry_id": "org.nuxel.NetworkManager"
+  }
+}

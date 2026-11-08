@@ -52,11 +52,13 @@ else
   echo 'ERROR: Fedora 43 signing key missing; refusing unsigned RPM installation' >&2
   exit 1
 fi
-for spec in "fedora|$GPGKEY|1" "updates|$GPGKEY|1"; do
+for spec in "fedora|$GPGKEY|1" "updates|$GPGKEY|1" \
+            "zerotier|/nuxel/configs/nuxel/zerotier/RPM-GPG-KEY-zerotier|1"; do
   rid="${spec%%|*}"; rest="${spec#*|}"; key="${rest%%|*}"
   case "$rid" in
     fedora)  url='https://dl.fedoraproject.org/pub/fedora/linux/releases/$releasever/Everything/$basearch/os' ;;
     updates) url='https://dl.fedoraproject.org/pub/fedora/linux/updates/$releasever/Everything/$basearch' ;;
+    zerotier) url='https://download.zerotier.com/redhat/fc/$releasever' ;;
   esac
   {
     printf '[%s]\n' "$rid"
@@ -101,6 +103,7 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     openbox xterm firefox android-tools openssl \
     gnome-software PackageKit PackageKit-command-not-found lxpolkit xfce-polkit appstream \
     xdg-desktop-portal-gtk xdg-desktop-portal-wlr \
+    NetworkManager-openvpn wireguard-tools openvpn zerotier-one \
     chocolate-doom freedoom freedoom2 freedoom-freedm
 # PWNAGE-47000 BOOT SAFETY: Nuxel runs systemd PID 1 and the initramfs live
 # console from a kernel_t context.  The graphical remote-access packages
@@ -626,6 +629,28 @@ install -m 0755 /nuxel/tools/s10plus/a67/nuxel-gpu-status             "$STAGE/us
 # Crispy).  Nuxel Doom itself is the WebAssembly engine inside the PWA.
 install -m 0755 /nuxel/tools/s10plus/a33/doom-engines/nuxel-doom-engine "$STAGE/usr/lib/nuxel/nuxel-doom-engine"
 install -Dm0644 /nuxel/configs/nuxel/portals.conf                      "$STAGE/etc/xdg-desktop-portal/portals.conf"
+# PWNAGE-96000: protocol-correct Nuxel FileChooser backend (Gallery + Files).
+# org.nuxel.Portal remains the separate hardware-permission broker.
+install -Dm0755 /nuxel/services/nuxel-portal-chooser/src/nuxel_portal_chooser.py \
+    "$STAGE/usr/libexec/nuxel/nuxel-portal-chooser"
+install -Dm0755 /nuxel/services/nuxel-portal-chooser/bin/nuxel-portal-status \
+    "$STAGE/usr/bin/nuxel-portal-status"
+install -Dm0644 /nuxel/services/nuxel-portal-chooser/dbus/org.freedesktop.impl.portal.desktop.nuxel.service \
+    "$STAGE/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.nuxel.service"
+install -Dm0644 /nuxel/services/nuxel-portal-chooser/xdg-desktop-portal/nuxel.portal \
+    "$STAGE/usr/share/xdg-desktop-portal/portals/nuxel.portal"
+# PWNAGE-97000: shared policy library, Settings test client and MIME-open
+# helper.  Gallery/Files receive a real MIME-open handoff through the bridge.
+install -Dm0644 /nuxel/services/nuxel-file-handlers/src/nuxel_file_handlers.py \
+    "$STAGE/usr/lib/nuxel/nuxel_file_handlers.py"
+install -Dm0755 /nuxel/services/nuxel-file-handlers/bin/nuxel-file-handlers \
+    "$STAGE/usr/bin/nuxel-file-handlers"
+install -Dm0755 /nuxel/services/nuxel-file-handlers/bin/nuxel-open-file \
+    "$STAGE/usr/libexec/nuxel/nuxel-open-file"
+install -Dm0644 /nuxel/shell/config/org.nuxel.Photos.desktop \
+    "$STAGE/usr/share/applications/org.nuxel.Photos.desktop"
+install -Dm0644 /nuxel/shell/config/org.nuxel.Files.desktop \
+    "$STAGE/usr/share/applications/org.nuxel.Files.desktop"
 install -Dm0755 /nuxel/tools/s10plus/a45/nuxel-graphics-profile \
     "$STAGE/usr/lib/nuxel/nuxel-graphics-profile"
 install -Dm0644 /nuxel/configs/nuxel/graphics/graphics-profile.json \
@@ -769,6 +794,8 @@ install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-status "$STAGE/usr/loc
 for _w in firefox vlc signal stremio; do
   install -m 0755 "/nuxel/services/nuxel-s10/bin/nuxel-flatpak-$_w" "$STAGE/usr/lib/nuxel/nuxel-flatpak-$_w"
 done
+install -Dm0644 /nuxel/configs/nuxel/browser/firefox.json \
+    "$STAGE/etc/nuxel/browser/firefox.json"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-session.service "$STAGE/etc/systemd/system/nuxel-audio-session.service"
 install -d -m 0755 "$STAGE/etc/systemd/system/nuxel-audio-session.service.d"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-session.service.d/10-stop-bound.conf "$STAGE/etc/systemd/system/nuxel-audio-session.service.d/10-stop-bound.conf"
@@ -803,6 +830,9 @@ install -m 0644 /nuxel/services/nuxel-s10/systemd/geoclue.service.d/10-nuxel-net
 install -d "$STAGE/etc/systemd/system/avahi-daemon.service.d"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/avahi-daemon.service.d/10-nuxel-boot-order.conf \
     "$STAGE/etc/systemd/system/avahi-daemon.service.d/10-nuxel-boot-order.conf"
+install -d "$STAGE/etc/systemd/system/zerotier-one.service.d"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/zerotier-one.service.d/10-nuxel-tun.conf \
+    "$STAGE/etc/systemd/system/zerotier-one.service.d/10-nuxel-tun.conf"
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-geoclue-agent.service \
     "$STAGE/etc/systemd/system/nuxel-geoclue-agent.service"
 install -d "$STAGE/etc/systemd/system/nuxel-abox-firmware-reload.service.d" \
@@ -1020,8 +1050,10 @@ install -m 0644 /nuxel/services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.se
 # `nuxel` (uid 1000).  The retired `nuxel-remote` account is intentionally not
 # created: PAM and the session launcher both refuse any other identity.
 # The Android 4.14 paranoid-network policy requires gid 3003 for AF_INET.
+# Create the group name here; the nuxel account is created later (the earlier
+# usermod ran before useradd and aborted the v0.8.1 release).  Membership is
+# written directly to the staged /etc/group below, after useradd.
 chroot "$STAGE" /usr/sbin/groupadd -f -g 3003 inet
-chroot "$STAGE" /usr/sbin/usermod -aG inet nuxel
 install -d "$STAGE/home/nuxel/.config/openbox" "$STAGE/home/nuxel/.mozilla/firefox/xrdp"
 chown -R 1000:1000 "$STAGE/home/nuxel/.config/openbox" "$STAGE/home/nuxel/.mozilla/firefox/xrdp"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/config/xrdp.ini \
@@ -1135,6 +1167,7 @@ ln -sf ../nuxel-notifications.service "$STAGE/etc/systemd/system/multi-user.targ
 ln -sf ../nuxel-portal.service        "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-portal.service"
 ln -sf ../nuxel-bridge.service        "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-bridge.service"
 ln -sf ../nuxel-http-bridge.service   "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-http-bridge.service"
+ln -sf ../nuxel-remote-vnc.service  "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-remote-vnc.service"
 # BlueZ OBEX Object Push (Files -> Send) is D-Bus activated from
 # /usr/share/dbus-1/services/org.bluez.obex.service (Fedora ships the unit in
 # /usr/lib/systemd/user/).  No system-unit symlink is created; the bridge's

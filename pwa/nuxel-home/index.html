@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="css/style.css?v=p85000">
     <link rel="stylesheet" href="css/launcher.css?v=p87000">
     <link rel="stylesheet" href="css/search.css">
-    <link rel="stylesheet" href="css/status-bar.css?v=p91000">
+    <link rel="stylesheet" href="css/status-bar.css?v=p94000">
     <link rel="stylesheet" href="css/home-settings.css?v=p80000">
     <link rel="stylesheet" href="css/widgets.css?v=p82000">
     <link rel="stylesheet" href="css/lockscreen.css?v=p91000">
@@ -81,7 +81,21 @@
             <span id="status-nfc" class="status-icon nfc-icon" data-state="unknown" hidden
                   role="img" aria-label="NFC unknown" title="NFC diagnostics"></span>
             <span id="status-sound" class="status-icon sound-icon" data-mode="unknown"
-                  role="img" aria-label="Sound mode unknown" title="Sound mode unknown"></span>
+                  role="img" aria-label="Sound mode unknown" title="Sound mode unknown">
+                <svg class="sound-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path class="speaker-body" d="M3.5 9.2h3.4L11.8 5.4v13.2l-4.9-3.8H3.5z"/>
+                    <path class="sound-wave normal-wave" d="M14.6 8.1a5.4 5.4 0 0 1 0 7.8M17.2 5.7a9 9 0 0 1 0 12.6"/>
+                    <g class="vibrate-waves">
+                        <path d="M13.9 8.4l-1.5 3.6 1.5 3.6"/>
+                        <path d="M17.1 6.8l-1.9 5.2 1.9 5.2"/>
+                        <path d="M20.1 5.2l-2.2 6.8 2.2 6.8"/>
+                    </g>
+                    <path class="forbidden-line" d="M3.2 3.2L20.8 20.8"/>
+                    <g class="silent-cross">
+                        <path d="M15 9.5l5 5M20 9.5l-5 5"/>
+                    </g>
+                </svg>
+            </span>
             <span id="status-usb" class="status-icon usb-icon" data-state="unknown" hidden
                   role="img" aria-label="USB not connected"><span class="usb-label"></span></span>
             <span id="status-remote" class="status-icon remote-icon" hidden
@@ -209,6 +223,15 @@
             <div class="qs-detail qs-detail-wide" id="qs-detail-transports" data-state="unknown">
                 <span class="qs-detail-label">Console transports: unknown</span>
             </div>
+        </section>
+        <section id="qs-notifications" class="qs-notifications" hidden aria-label="Notifications">
+            <div class="qs-notifications-head">
+                <span class="qs-notifications-title">Notifications</span>
+                <span class="qs-notifications-count" id="qs-notifications-count" aria-live="polite"></span>
+            </div>
+            <div id="qs-notifications-list" class="qs-notifications-list" role="list"></div>
+            <div id="qs-notifications-empty" class="qs-notifications-empty" hidden>You're all caught up.</div>
+            <div id="qs-notifications-error" class="qs-notifications-error" hidden></div>
         </section>
     </div>
 
@@ -377,12 +400,13 @@
     <script src="js/desktop-layout.js?v=p84000"></script>
     <script src="js/launcher.js?v=p85000"></script>
     <script src="../nuxel-common/statusbar-icons.js?v=p80000"></script>
-    <script src="js/status-bar.js?v=p91000"></script>
+    <script src="js/status-bar.js?v=p94000"></script>
     <script src="js/search.js"></script>
     <script type="module" src="../nuxel-common/bridge.js"></script>
     <script src="js/bridge.js?v=a63"></script>
     <script src="js/recents.js?v=p80000"></script>
-    <script src="js/qs.js?v=p80000"></script>
+    <script src="js/topbar-machine.js?v=p94000"></script>
+    <script src="js/qs.js?v=p94000"></script>
 <script src="js/qs-firewall.js?v=1"></script>
     <!-- A32: host backend (settings/buttons/terminal) + status-bar safe zones.
          Both are inert without a host, so the VM/desktop launcher is unchanged. -->
@@ -404,8 +428,8 @@
     <script src="js/home-settings.js?v=p82000"></script>
     <script src="js/system-monitor.js?v=p82000"></script>
     <script src="js/scroll-indicators.js"></script>
-    <script src="js/immersive.js?v=p80000"></script>
+    <script src="js/immersive.js?v=p94000"></script>
     <!-- A44: one-shot in-engine icon/WebKit/cache health report to nuxelDiag. -->
-    <script src="js/app.js?v=p91000"></script>
+    <script src="js/app.js?v=p94000"></script>
 </body>
 </html>

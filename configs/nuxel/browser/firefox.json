@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "flatpak_render_verified": false,
+  "reason": "PWNAGE-96000 measured the installed org.mozilla.firefox 159 Flatpak mapping a black Wayland surface on the S10+ vendor 4.14 kernel/Mesa runtime (surface mean 48/255, 0.3% light pixels); the genuine Fedora aarch64 RPM painted the same page correctly (mean 214/255). Set true only after a verified Flatpak render probe.",
+  "rpm_fit": {
+    "devPixelsPerPx": "1.35",
+    "uidensity": 1,
+    "note": "Firefox desktop toolbar minimum is ~500 CSS px; S10+ portrait logical width is 360 px at scale 2. 1.35 keeps the real 1520x720/360x760 surfaces inside the panel without a global GTK scale change."
+  },
+  "verified_at": 0
+}

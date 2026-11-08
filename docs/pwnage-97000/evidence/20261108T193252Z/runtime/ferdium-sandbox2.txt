@@ -1,0 +1,32 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+UNIT=p97000-ferdium-sandbox2-1794167909
+Running as unit: p97000-ferdium-sandbox2-1794167909.service; invocation ID: 7eac85b88bac462f9a0fea5e2dae5626
+WINDOWS=4
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=P96 iw=528 ih=1042 dpr=1.3636363636363635 sw=528 sh=1115 ow=528 oh=1115 — Mozilla Firefox app_id=org.mozilla.firefox max=1 min=0 act=0 fs=0
+SHOT_OK /tmp/p97000-ferdium2.ppm 720x1520 stride=2880 fmt=0x34324258
+Nov 08 20:58:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started p97000-ferdium-sandbox2-1794167909.service - [systemd-run] /usr/bin/flatpak run --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GALLIUM_DRIVER=llvmpipe --env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe --env=GSK_RENDERER=cairo --env=GDK_BACKEND=wayland --env=GTK_APPLICATION_PREFER_DARK_THEME=1 --env=GTK_THEME=Adwaita:dark --env=ELECTRON_OZONE_PLATFORM_HINT=wayland --env=ZYPAK_ZYGOTE_STRATEGY_SPAWN=0 org.ferdium.Ferdium --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --disable-dev-shm-usage.
+Nov 08 20:58:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568579]: nuxel-bwrap-compat: rewrote 28 fd-bind options
+Nov 08 20:58:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568600]: [2 zypak-helper] Using spawn strategy test 0 as set by environment
+Nov 08 20:58:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568600]: [2:1108/205830.042743:ERROR:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:45] drmGetDevices2() has not found any devices: No such file or directory (2)
+Nov 08 20:58:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568600]: [2:1108/205830.057166:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+Nov 08 20:58:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568600]: [2:1108/205831.311215:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+Nov 08 20:58:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568600]: [2:1108/205831.311388:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+Nov 08 20:58:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568656]: [35:1108/205831.331971:ERROR:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:45] drmGetDevices2() has not found any devices: No such file or directory (2)
+Nov 08 20:58:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568600]: Checking for beta autoupdate feature for deb/rpm distributions
+Nov 08 20:58:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568600]: Found package-type: deb
+Nov 08 20:58:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568600]: [electron-webauthn-linux] WebAuthn support initialized
+Nov 08 20:58:37 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568606]: [7 zypak-sandbox] Dropping 0x5585f9c6a0 (3) because of connection closed
+Nov 08 20:58:37 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568606]: [7 zypak-sandbox] Host is gone, preparing to exit...
+Nov 08 20:58:37 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[568606]: [7 zypak-sandbox] Quitting Zygote...
+Nov 08 20:58:37 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: p97000-ferdium-sandbox2-1794167909.service: Main process exited, code=exited, status=139/n/a

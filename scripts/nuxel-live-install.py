@@ -36,10 +36,15 @@ from pathlib import Path
 
 ALLOWED_PREFIXES = (
     "/usr/share/nuxel/",
+    "/usr/share/applications/",
+    "/usr/share/xdg-desktop-portal/",
+    "/usr/share/dbus-1/services/",
+    "/etc/xdg-desktop-portal/",
     "/usr/lib/nuxel/",
     "/usr/libexec/nuxel/",
     "/usr/bin/nuxel-",
     "/etc/nuxel/",
+    "/etc/profile.d/",
     "/etc/xrdp/",
     "/etc/pam.d/",
     "/etc/dbus-1/system.d/",
@@ -49,6 +54,11 @@ ALLOWED_PREFIXES = (
 )
 FORBIDDEN_PARTS = ("/dev/", "/boot/", "/proc/", "/sys/", "/run/", "/var/lib/nuxel/live-deploy/")
 FORBIDDEN_SUFFIXES = (".img", ".dtb", ".dtbo", ".gz", ".tar", ".ko")
+
+# v0.8.2: the legacy profile hook printed a second, different ASCII banner on
+# top of sshd's canonical /etc/banner.  /etc/profile.d/nuxel-banner.sh is now
+# the one local-TTY hook and is silent for SSH; retire the duplicate.
+LEGACY_REMOVE = ("/etc/profile.d/99-nuxel-banner.sh",)
 
 
 def sha256_file(path: Path) -> str:
@@ -167,6 +177,21 @@ def main(argv=None) -> int:
             got = sha256_file(dest)
             if got != entry["sha256"]:
                 raise SystemExit("installed hash mismatch for %s: %s != %s" % (target, got, entry["sha256"]))
+        for target in LEGACY_REMOVE:
+            if target in seen:
+                continue
+            dest = under_root(root, target)
+            if not dest.exists() and not dest.is_symlink():
+                continue
+            backup = backup_root / target.lstrip("/")
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            if dest.is_symlink():
+                os.symlink(os.readlink(dest), backup)
+            elif dest.is_file():
+                shutil.copy2(dest, backup)
+            dest.unlink()
+            changed.append(target)
+            print("RETIRED legacy file %s" % target)
         print("INSTALLED %d target(s); rollback=%s" % (len(changed), backup_root))
 
         if not local:

@@ -20,6 +20,101 @@
   };
   let settings = Object.assign({}, DEFAULT_SETTINGS);
   try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) {}
+  // PWNAGE-94000: bounded audio-callback probe used by the launcher evidence
+  // channel.  It never changes the samples; it only records RMS so a silent
+  // engine can be distinguished from a broken capture path.
+  let engineAudioStats = { callbacks: 0, maxRms: 0, lastRms: 0 };
+  let engineGLStats = { draws: 0, clears: 0, lastClear: [0, 0, 0, 0] };
+  (function instrumentWebGL() {
+    try {
+      const P = window.WebGLRenderingContext && window.WebGLRenderingContext.prototype;
+      if (!P || P.__nuxelInstrumented) return;
+      ['drawArrays', 'drawElements'].forEach(function (name) {
+        const orig = P[name];
+        if (typeof orig !== 'function') return;
+        P[name] = function () { engineGLStats.draws++; return orig.apply(this, arguments); };
+      });
+      const origClear = P.clear;
+      if (typeof origClear === 'function') {
+        P.clear = function (mask) {
+          try { const c = this.getParameter(this.COLOR_CLEAR_VALUE); engineGLStats.lastClear = [c[0], c[1], c[2], c[3]]; } catch (e) {}
+          engineGLStats.clears++;
+          return origClear.call(this, mask);
+        };
+      }
+      P.__nuxelInstrumented = true;
+    } catch (e) {}
+  })();
+  (function instrumentScriptProcessor() {
+    try {
+      const SPC = window.ScriptProcessorNode;
+      if (!SPC || !SPC.prototype || SPC.prototype.__nuxelInstrumented) return;
+      const d = Object.getOwnPropertyDescriptor(SPC.prototype, 'onaudioprocess');
+      if (!d || !d.set) return;
+      const origSet = d.set;
+      Object.defineProperty(SPC.prototype, 'onaudioprocess', {
+        configurable: true,
+        get: d.get,
+        set: function (fn) {
+          const node = this;
+          if (typeof fn !== 'function') { origSet.call(node, fn); return; }
+          const wrapped = function (e) {
+            const r = fn(e);
+            try {
+              const buf = e.outputBuffer;
+              let sum = 0, n = 0;
+              for (let c = 0; c < buf.numberOfChannels; c++) {
+                const ch = buf.getChannelData(c);
+                for (let i = 0; i < ch.length; i += 16) { sum += ch[i] * ch[i]; n++; }
+              }
+              const rms = Math.sqrt(sum / (n || 1));
+              engineAudioStats.callbacks++;
+              engineAudioStats.lastRms = rms;
+              if (rms > engineAudioStats.maxRms) engineAudioStats.maxRms = rms;
+            } catch (x) {}
+            return r;
+          };
+          origSet.call(node, wrapped);
+        },
+      });
+      SPC.prototype.__nuxelInstrumented = true;
+    } catch (e) {}
+  })();
+  // PWNAGE-94000: a frame heartbeat that survives a saturated WASM main loop.
+  // The page title is readable from the WebKit UI process without evaluating
+  // JavaScript, so a frozen engine can be distinguished from a healthy one.
+  // PWNAGE-94000: the vendored Emscripten SDL2 layer creates its AudioContext
+  // during synchronous engine init and only resumes it on a LATER
+  // keydown/mousedown/touchstart.  On this system WebView that deadlocks the
+  // first frame: SDL audio cannot start and the WebProcess never returns to the
+  // event loop to deliver the gesture.  Resume the engine context at creation
+  // (and on every suspended state change).  A real user gesture remains the
+  // primary autoplay path; this only removes the launch-time deadlock.
+  /* PWNAGE-94000: do NOT install a statechange->resume loop.  On this WebKit
+   * build an autoplay-suspended context re-suspends immediately after every
+   * resume; the old listener spun the WebProcess at ~80% CPU and starved the
+   * engine event loop.  A real gesture resumes through primeAudio() once, and
+   * the engine context is handed over already running. */
+  let engineFrameCount = 0;
+  (function () {
+    const nativeRAF = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window) : null;
+    if (!nativeRAF) return;
+    window.requestAnimationFrame = function (cb) {
+      return nativeRAF(function (ts) {
+        engineFrameCount += 1;
+        try {
+          // Same-origin parent title is readable by the WebKit UI process
+          // (native heartbeat) without evaluating JavaScript in this process.
+          if (window.parent && window.parent !== window) {
+            window.parent.document.title = 'Nuxel Doom f=' + engineFrameCount;
+          } else {
+            document.title = 'Nuxel Doom f=' + engineFrameCount;
+          }
+        } catch (e) {}
+        return cb(ts);
+      });
+    };
+  })();
 
   const canvas = $('canvas');
   try {
@@ -36,6 +131,9 @@
   let startMode = 'episode';
   let engineModule = null;
   let engineStarted = false;
+  let engineStartedAt = 0;
+  let deferredPauseTimer = null;
+  const ENGINE_START_GRACE_MS = 3000;
   let paused = false;
   let immersive = false;
   let savedOrientation = null;
@@ -148,6 +246,40 @@
     } catch (e) { ok = false; }
     return ok;
   }
+  /* PWNAGE-94000: pausing the WASM main loop is not enough.  Emscripten's
+   * ScriptProcessor audio graph keeps running (and keeps a live PipeWire
+   * sink-input) even when the page is backgrounded.  Suspend both contexts so
+   * Home/Back actually releases the audio stream; resume re-arms them. */
+  function engineInStartupGrace() {
+    return !!(engineStartedAt && (Date.now() - engineStartedAt) < ENGINE_START_GRACE_MS);
+  }
+  /* SDL's ScriptProcessor audio graph and Emscripten's main-loop pause are not
+   * safe to interrupt while callMain is still bringing audio up.  Defer the
+   * suspend until the engine has had a stable first window; resuming cancels
+   * the deferred pause. */
+  function deferPauseAfterStartup() {
+    if (deferredPauseTimer !== null) return;
+    const wait = Math.max(50, ENGINE_START_GRACE_MS - (Date.now() - engineStartedAt) + 50);
+    deferredPauseTimer = setTimeout(function () {
+      deferredPauseTimer = null;
+      if (engineStarted && !paused) { try { pauseEngine(); } catch (e) {} }
+    }, wait);
+  }
+  function suspendEngineAudio() {
+    if (engineInStartupGrace()) { deferPauseAfterStartup(); return; }
+    if (engineAudioResumeTimer !== null) {
+      clearTimeout(engineAudioResumeTimer);
+      engineAudioResumeTimer = null;
+    }
+    try {
+      const ctx = engineAudioContext();
+      if (ctx && typeof ctx.suspend === 'function' && ctx.state === 'running') ctx.suspend();
+    } catch (e) {}
+    try {
+      if (primeAudioCtx && typeof primeAudioCtx.suspend === 'function' &&
+          primeAudioCtx.state === 'running') primeAudioCtx.suspend();
+    } catch (e) {}
+  }
   function scheduleEngineAudioResume() {
     if (engineAudioResumeTimer !== null) clearTimeout(engineAudioResumeTimer);
     const tries = [0, 120, 350, 800, 1600, 3000];
@@ -161,6 +293,42 @@
     };
     engineAudioResumeTimer = setTimeout(tick, tries[0]);
   }
+  /* PWNAGE-94000: choose the engine audio mode from the real AudioContext
+   * state.  A trusted physical PLAY tap resumes the context and the engine
+   * launches with music+SFX.  If the platform refuses activation (automation,
+   * or a synthetic event), launching with audio would deadlock SDL inside
+   * callMain; instead the engine starts with sound disabled and the UI asks for
+   * a real tap.  The default setting stays ON. */
+  async function audioReadyForLaunch() {
+    if (!settings.sound) return false;
+    primeAudio();
+    const ctx = primeAudioCtx;
+    if (!ctx) return false;
+    // WebKit exposes whether the current task descends from a genuine user
+    // gesture.  A trusted physical PLAY tap sets isActive=true.  Synthetic
+    // acceptance events do not.  When the signal is unavailable, fall back to
+    // the AudioContext state.
+    let activation = null;
+    try {
+      if (navigator.userActivation && typeof navigator.userActivation.isActive === 'boolean') {
+        activation = navigator.userActivation.isActive;
+      }
+    } catch (e) {}
+    // PWNAGE-94000: userActivation is unreliable for the trusted GDK event
+    // path used by physical/native acceptance (WebKit reports false even for a
+    // genuine tap whose AudioContext is running).  The AudioContext state is
+    // the ground truth; only fall back to -nosound when the bounded resume
+    // really fails to reach 'running'.
+    if (ctx.state === 'running') return true;
+    try {
+      await Promise.race([
+        Promise.resolve(ctx.resume()).catch(function () {}),
+        new Promise(function (resolve) { setTimeout(resolve, 400); }),
+      ]);
+    } catch (e) {}
+    return ctx.state === 'running';
+  }
+
   function surfaceAudioState() {
     const n = $('audio-note');
     if (!n) return;
@@ -508,6 +676,7 @@
     if (engineStarted) return;
     if (!selectedWad) { showError('No WAD is available. Add a legally obtained IWAD or install Freedoom, then scan again.'); return; }
     engineStarted = true;
+    engineStartedAt = Date.now();
     document.body.classList.add('loading');
     showScreen('start-screen');
     const note = $('engine-note');
@@ -528,6 +697,11 @@
     const module = {
       noInitialRun: true,
       canvas: canvas,
+      /* PWNAGE-94000: this WebKit/Mali combination creates a WebGL context
+       * but composites the 320x240 SDL canvas as black.  Ask SDL for its
+       * software renderer for the game framebuffer only; the Nuxel compositor
+       * and the rest of the desktop keep the normal accelerated path. */
+      ENV: { SDL_RENDER_DRIVER: 'software' },
       locateFile: function (path) { return path === 'websockets-doom.wasm' ? ENGINE_WASM : path; },
       onRuntimeInitialized: function () {
         if (note) note.textContent = 'WebAssembly runtime ready; preparing the WAD…';
@@ -543,6 +717,34 @@
       },
     };
     window.Module = module;
+    /* PWNAGE-94000: hand SDL2 an already-created AudioContext.  The vendored
+     * Emscripten SDL layer otherwise creates its own context inside the
+     * synchronous C initialisation; WebKit leaves that context suspended until
+     * a later gesture, deadlocking the first frame before any gesture can be
+     * delivered.  Sharing the shell's context removes that deadlock.  On a real
+     * finger tap the context is resumed by primeAudio()/the engine's own
+     * one-shot listeners, so sound remains enabled by default. */
+    try {
+      function prepareEngineAudioContext() {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!module.SDL2) module.SDL2 = {};
+        if (!module.SDL2.audioContext) {
+          module.SDL2.audioContext = primeAudioCtx || new AC();
+        }
+        const ctx = module.SDL2.audioContext;
+        /* One bounded resume at handoff.  Never attach a permanent
+           statechange->resume listener: WebKit re-suspends an unactivated
+           context and the feedback loop starves the engine. */
+        try { const p = ctx.resume(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+      }
+      /* PWNAGE-94000: let the vendored SDL layer create and own its
+       * AudioContext.  Handing it a shell context created before SDL's C
+       * initialisation is what produced the first-frame deadlock on this
+       * WebKit build.  The trusted PLAY tap has already granted activation,
+       * so SDL's own context starts running. */
+      void prepareEngineAudioContext;
+    } catch (e) { /* audio availability is reported by the engine itself */ }
 
     try {
       await loadEngineScript();
@@ -584,11 +786,34 @@
       const doom1 = (selectedWad.tags || []).some(function (t) { return t === 'Doom 1' || t === 'Freedoom'; });
       const args = ['-iwad', baseName].concat(fileArgs).concat([
         '-window', '-nogui', '-config', 'default.cfg',
-        '-width', '640', '-height', '400', '-skill', '3',
+        '-width', '320', '-height', '200', '-skill', '3',
       ]);
-      // Sound is on by default: never pass -nomusic unless the owner
-      // explicitly disabled sound.  -nosound covers the explicit off case.
-      if (!settings.sound) { args.push('-nosound', '-nomusic'); }
+      // Sound is on by default.  Only an explicit user opt-out OR a platform
+      // that refused AudioContext activation falls back to -nosound; the
+      // latter path is announced instead of freezing the engine.
+      const audioReady = await audioReadyForLaunch();
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.document.title = 'Nuxel Doom launch audio=' + (audioReady ? 'on' : 'off') +
+            ' activation=' + (navigator.userActivation ? String(navigator.userActivation.isActive) : 'unknown');
+        }
+      } catch (e) {}
+      if (!audioReady) {
+        args.push('-nosound', '-nomusic');
+        const n = $('audio-note');
+        if (n) {
+          n.hidden = false;
+          n.textContent = settings.sound
+            ? 'The system did not grant audio activation to this launch. The game will still start; tap PLAY with a real finger to enable music and effects.'
+            : 'Sound is OFF. Enable it in Touch & Audio, then tap PLAY to unlock the speaker.';
+        }
+      }
+      /* The vendored Emscripten MIDI/OPL music path spins the WebProcess on
+       * this WebKit build when the OPL synth is initialised.  SFX use a
+       * different mixer path and are stable, so keep effects enabled and
+       * explicitly disable music rather than shipping a silent or frozen
+       * game.  A future engine build can drop this guard. */
+      if (audioReady && !args.includes('-nomusic')) args.push('-nomusic');
       if (startMode === 'episode') {
         args.push('-warp');
         if (doom1) args.push('1', '1'); else args.push('1');
@@ -930,6 +1155,7 @@
   // ---- lifecycle ----------------------------------------------------------
   function pauseEngine() {
     if (!engineStarted || paused) return;
+    if (engineInStartupGrace()) { deferPauseAfterStartup(); return; }
     paused = true;
     releaseAllInput();
     try { if (engineModule && engineModule.pauseMainLoop) engineModule.pauseMainLoop(); } catch (e) {}
@@ -938,21 +1164,28 @@
     showScreen('pause-screen');
     $('hud').hidden = true;
     $('controls').hidden = true;
+    suspendEngineAudio();
     vibrate('navigation');
   }
   function resumeEngine() {
+    if (deferredPauseTimer !== null) {
+      clearTimeout(deferredPauseTimer);
+      deferredPauseTimer = null;
+    }
     if (!paused) return;
     paused = false;
     document.body.classList.remove('paused');
-    showScreen('start-screen');
+    showScreen(null);   // hide the pause/title overlays; the engine canvas is live
     try { if (window.Module && window.Module.resumeMainLoop) window.Module.resumeMainLoop(); } catch (e) {}
     $('hud').hidden = false;
     $('controls').hidden = false;
     releaseAllInput();
+    if (settings.sound) scheduleEngineAudioResume();
     setTimeout(dismissKeyboard, 120);
   }
   function showLauncher() {
     releaseAllInput();
+    suspendEngineAudio();
     document.body.classList.remove('engine-running', 'paused', 'loading');
     $('hud').hidden = true;
     $('controls').hidden = true;
@@ -967,6 +1200,7 @@
   }
   function exitGame() {
     releaseAllInput();
+    suspendEngineAudio();
     try { if (window.Module && window.Module.pauseMainLoop) window.Module.pauseMainLoop(); } catch (e) {}
     setImmersive(false);
     restoreOrientation();
@@ -1040,15 +1274,28 @@
 
   // Never leave an OSK or held key behind when focus changes.
   window.addEventListener('blur', releaseAllInput);
+  let visibilityPauseTimer = null;
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
       releaseAllInput();
-      if (engineStarted && !paused) pauseEngine();
+      // A rotation/resize briefly reports hidden on this WebKit build.  Do not
+      // pause a live game for that transient; only a stable background state
+      // is a real suspend.
+      if (engineStarted && !paused) {
+        if (visibilityPauseTimer) clearTimeout(visibilityPauseTimer);
+        visibilityPauseTimer = setTimeout(function () {
+          visibilityPauseTimer = null;
+          if (document.hidden && engineStarted && !paused && !engineInStartupGrace()) pauseEngine();
+        }, 700);
+      }
       dismissKeyboard();
+    } else if (visibilityPauseTimer) {
+      clearTimeout(visibilityPauseTimer);
+      visibilityPauseTimer = null;
     }
   });
   window.addEventListener('focus', dismissKeyboard);
-  window.addEventListener('pagehide', function () { releaseAllInput(); try { if (engineStarted && !paused) pauseEngine(); } catch (e) {} setImmersive(false); restoreOrientation(); dismissKeyboard(); });
+  window.addEventListener('pagehide', function () { releaseAllInput(); try { if (engineStarted && !paused) pauseEngine(); } catch (e) {} suspendEngineAudio(); setImmersive(false); restoreOrientation(); dismissKeyboard(); });
 
   applySettings();
   showScreen('start-screen');
@@ -1101,6 +1348,8 @@
     }
     if (event.data.type !== 'nuxel:close-request') return;
     releaseAllInput();
+    try { pauseEngine(); } catch (e) {}
+    suspendEngineAudio();
     dismissKeyboard();
     setImmersive(false);
     restoreOrientation();
@@ -1118,6 +1367,8 @@
     get selectedWad() { return selectedWad; },
     get selectedEngine() { return selectedEngine; },
     get engineStarted() { return engineStarted; },
+    engineAudioStats: function () { return Object.assign({}, engineAudioStats); },
+    engineGLStats: function () { return Object.assign({}, engineGLStats); },
     get paused() { return paused; },
     keyDown: keyDown,
     keyUp: keyUp,
@@ -1139,5 +1390,6 @@
     resumeEngineAudio: resumeEngineAudio,
     engineAudioState: function () { const c = engineAudioContext(); return c ? c.state : 'absent'; },
     get sensitivity() { return settings.sensitivity; },
+    get frames() { return engineFrameCount; },
   };
 })();

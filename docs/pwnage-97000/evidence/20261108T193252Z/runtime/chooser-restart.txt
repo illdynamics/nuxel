@@ -1,0 +1,44 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== BEFORE ===
+nuxel     505755 python3 /usr/libexec/nuxel/nuxel-portal-chooser
+Running as unit: nuxel-chooser-p97000.service; invocation ID: 4e4a840a1e8647c2946afadb7d3628f4
+=== AFTER ===
+nuxel     552973 python3 /usr/libexec/nuxel/nuxel-portal-chooser
+=== VERSION ===
+
+(nuxel-portal-chooser:553014): dbind-WARNING **: 20:44:23.635: Couldn't register with accessibility bus: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.
+org.freedesktop.impl.portal.desktop.nuxel 1.1.0
+=== STATE ===
+{"autotest": "", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 0, "selected": 0}, "duration_ms": 2124, "last_error": "NameError", "last_outcome": "idle", "last_source": "none", "pid": 552973, "presented": false, "schema_version": 2, "selected_count": 0, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794167060.632939, "version": "1.1.0"}
+
+  File "/usr/libexec/nuxel/nuxel-portal-chooser", line 775, in _run_request
+    autotest=self._autotest.split(":", 1)[0])
+             ^^^^^^^^^^^^^^
+AttributeError: 'NuxelFileChooser' object has no attribute '_autotest'
+
+2026-11-08T18:17:44Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=476696
+2026-11-08T18:51:39Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=504716
+2026-11-08T18:51:44Z REQUEST_ERROR NameError: name 'chooser' is not defined
+2026-11-08T18:51:44Z Traceback (most recent call last):
+  File "/usr/libexec/nuxel/nuxel-portal-chooser", line 769, in _run_request
+    chooser = NuxelChooserDialog(
+        self.bus, handle, kind, str(title or ""), options, matches, media)
+  File "/usr/libexec/nuxel/nuxel-portal-chooser", line 419, in __init__
+    audit(STATE_PATH, autotest=chooser._autotest.split(":", 1)[0])
+                               ^^^^^^^
+NameError: name 'chooser' is not defined
+
+2026-11-08T18:51:50Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=505755
+2026-11-08T19:43:54Z NAME_ALREADY_OWNED org.freedesktop.impl.portal.desktop.nuxel
+2026-11-08T19:44:20Z READY org.freedesktop.impl.portal.desktop.nuxel 1.1.0 pid=552973
+=== OWNERS ===
+org.freedesktop.impl.portal.desktop.nuxel                                                    552973 python3         nuxel :1.225        nuxel-chooser-p97000.service            -       -
+org.freedesktop.portal.Desktop                                                               552513 xdg-desktop-por nuxel :1.216        nuxel-xdg-portal-p97000.service         -       -

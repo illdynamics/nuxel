@@ -135,3 +135,15 @@
 - **Proved:** controller I2C/chardev, firmware present + hash, daemon OFF, kernel NFC class down, no tag read.
 - **Inferred:** native vendor transport over `/dev/sec-nfc` is the least invasive route.
 - **Unknown:** exact chip revision, firmware acceptance behavior, vendor frame format details, secure-element capabilities.
+
+## 17. Reflash impact (controlled maintenance)
+
+| Question | Answer |
+|---|---|
+| Does completing NFC require a reflash? | **YES.** The missing kernel NFC class/netlink support is a kernel change; the S3NRN82 firmware already present must remain in the system image. |
+| Boot/kernel too? | **YES** — boot/kernel is the primary gate; userspace `nuxel-nfcd` changes ride in the system image. |
+| Can it be deployed over SSH now? | **NO.** A running daemon with no kernel NFC class cannot read a tag. |
+| Batch with PWNAGE-93000? | **YES.** Put the kernel change in the next boot/kernel batch and the PWNAGE-93000 userspace in the same A/B system image. |
+| Controlled batch | Kernel/boot + system image together; verify `rfkill`/NFC class population, protocol exchange and a physical tag read. |
+| Rollback | Previous A/B slot; leave NFC OFF by default until a physical read succeeds. |
+| Risk if postponed | NFC remains OFF; no unrelated regression. |

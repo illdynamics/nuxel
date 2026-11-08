@@ -1,0 +1,43 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+rc=0
+Updating and loading repositories:
+Repositories loaded.
+Package             Arch    Version      Repository      Size
+Installing:
+ desktop-file-utils aarch64 0.28-2.fc43  fedora     318.3 KiB
+ xdg-utils          noarch  1.2.1-4.fc43 fedora     346.3 KiB
+Installing dependencies:
+ which              aarch64 2.23-3.fc43  fedora     123.4 KiB
+
+Transaction Summary:
+ Installing:         3 packages
+
+Total size of inbound packages is 189 KiB. Need to download 189 KiB.
+After this operation, 788 KiB extra will be used (install 788 KiB, remove 0 B).
+[1/3] desktop-file-utils-0:0.28-2.fc43. 100% | 134.8 KiB/s |  69.1 KiB |  00m01s
+[2/3] xdg-utils-0:1.2.1-4.fc43.noarch   100% | 143.2 KiB/s |  78.9 KiB |  00m01s
+[3/3] which-0:2.23-3.fc43.aarch64       100% |  74.3 KiB/s |  41.4 KiB |  00m01s
+--------------------------------------------------------------------------------
+[3/3] Total                             100% | 218.2 KiB/s | 189.4 KiB |  00m01s
+Running transaction
+[1/5] Verify package files              100% | 115.0   B/s |   3.0   B |  00m00s
+[2/5] Prepare transaction               100% |  10.0   B/s |   3.0   B |  00m00s
+[3/5] Installing which-0:2.23-3.fc43.aa 100% |   2.3 MiB/s | 125.6 KiB |  00m00s
+[4/5] Installing desktop-file-utils-0:0 100% |   7.9 MiB/s | 322.1 KiB |  00m00s
+ldconfig: /lib64/libwlroots-0.19.so is not a symbolic link
+
+[5/5] Installing xdg-utils-0:1.2.1-4.fc 100% | 574.9 KiB/s | 349.5 KiB |  00m01s
+Complete!
+--- verify ---
+/usr/bin/xdg-mime
+/usr/bin/update-desktop-database
+xdg-utils-1.2.1-4.fc43.noarch
+desktop-file-utils-0.28-2.fc43.aarch64

@@ -990,6 +990,27 @@ static int wake_pending = 0;   /* PWNAGE-88000: two-phase wake, unblank after fr
 static int wake_generation = 0;
 static int wake_tries = 0;
 static int saved_brightness = -1;
+
+/* PWNAGE-96000: presented-frame interval histogram (1 ms buckets, last second).
+ * Only frames that actually committed through FBIOPAN_DISPLAY are counted, so
+ * idle skipped captures cannot inflate the percentiles.  Diagnostic only; the
+ * pacing, idle backoff and panel commit path are unchanged. */
+#define PRESENT_HIST_BUCKETS 130
+static uint32_t present_hist[PRESENT_HIST_BUCKETS];
+static uint32_t present_hist_n;
+static int64_t last_present_ns;
+static int fps_target = 30;
+
+static int present_pct(int pct) {
+  if (!present_hist_n) return -1;
+  uint32_t target = (uint32_t)(((uint64_t)present_hist_n * (uint32_t)pct) / 100u);
+  uint32_t acc = 0;
+  for (int i = 0; i < PRESENT_HIST_BUCKETS; i++) {
+    acc += present_hist[i];
+    if (acc >= target) return i;
+  }
+  return PRESENT_HIST_BUCKETS - 1;
+}
 static int max_brightness = -1;
 
 static int read_int_file(const char *path) {
@@ -1103,6 +1124,10 @@ static void ctrl_pump(void) {
         st("REPAINT_REQUEST force_full_frames=%d why=control-fifo", force_full_frames);
       }
       else if (!strncmp(q, "status", 6))       display_publish();
+      else if (!strncmp(q, "fps ", 4)) {
+        int v = atoi(q + 4);
+        if (v >= 1 && v <= 120) { fps_target = v; st("FPS_TARGET %d", v); }
+      }
       q = nl ? nl + 1 : NULL;
     }
   }
@@ -1702,7 +1727,6 @@ int main(int argc, char **argv) {
   /* --- 5. normal ownership loop - paced, no periodic display reset (A31) --- */
   frames = 1;
   int fps = 0;
-  int fps_target = 30;
   const char *fpsenv = getenv("NUXEL_TARGET_FPS");
   if (fpsenv) { int v = atoi(fpsenv); if (v >= 1 && v <= 120) fps_target = v; }
   int consec_fail = 0;
@@ -1803,6 +1827,19 @@ int main(int argc, char **argv) {
         last_damage_runs = ndirty;
         int pan_rc = partial ? frame_blit_damage() : frame_blit_once();
         blits++;
+        {
+          struct timespec tp;
+          clock_gettime(CLOCK_MONOTONIC, &tp);
+          int64_t ns = ts_ns(&tp);
+          if (last_present_ns > 0) {
+            long ms = (long)((ns - last_present_ns) / 1000000LL);
+            if (ms < 0) ms = 0;
+            if (ms >= PRESENT_HIST_BUCKETS) ms = PRESENT_HIST_BUCKETS - 1;
+            present_hist[ms]++;
+            present_hist_n++;
+          }
+          last_present_ns = ns;
+        }
         blit_ns_sum += g_blit_ns;
         pan_ns_sum += g_pan_ns;
         if (partial) { damage_blits++; damage_blit_ns_sum += g_blit_ns; }
@@ -1865,14 +1902,19 @@ int main(int argc, char **argv) {
       int pan_ms = blits ? (int)(pan_ns_sum / blits / 1000000ull) : 0;
       int cap_ms = capture_n ? (int)(capture_ns_sum / capture_n / 1000000ull) : 0;
       int cmp_ms = compare_n ? (int)(compare_ns_sum / compare_n / 1000000ull) : 0;
-      st("FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d pan_avg_ms=%d capture_avg_ms=%d compare_avg_ms=%d damage=%d-%d damage_runs=%d damage_blits=%llu damage_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
+      int p50 = present_pct(50), p95 = present_pct(95), p99 = present_pct(99);
+      st("FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d pan_avg_ms=%d capture_avg_ms=%d compare_avg_ms=%d frame_p50_ms=%d frame_p95_ms=%d frame_p99_ms=%d presented_n=%u damage=%d-%d damage_runs=%d damage_blits=%llu damage_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
          frames, fps, failures, blits, present_skipped, avg_ms, pan_ms, cap_ms, cmp_ms,
+         p50, p95, p99, present_hist_n,
          damage_y0, damage_y1, last_damage_runs, damage_blits, dmg_ms,
          (long long)(mono_ms() - last_change_ms),
          o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
          display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override,
          decon_pan_ok, decon_pan_failed);
       publish_orientation_proof(frame_buf.w, frame_buf.h, frame_buf.data != NULL);
+      memset(present_hist, 0, sizeof present_hist);
+      present_hist_n = 0;
+      last_present_ns = 0;
       fps = 0;
       last = now;
       int intruder = painter_alive();

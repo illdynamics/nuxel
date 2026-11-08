@@ -1,0 +1,19 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"success": true, "queued": true, "launched": true, "app_id": "org.nuxel.Photos", "count": 1, "pending_path": "/home/nuxel/.local/state/nuxel/file-handlers-pending.json"}
+--- pending ---
+CONSUMED
+--- launcher tail ---
+1794168188 LAUNCH app_id=org.nuxel.Photos via launcher registry
+1794168188 NUXEL_INPUT EVT app:launch id=org.nuxel.Photos name=Gallery
+1794168188 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Photos state=LAUNCHING ts=1794168188922
+1794168188 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Photos state=LAUNCHING ts=1794168188935
+1794168189 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Photos state=ACTIVE ts=1794168189106
+SHOT_OK /tmp/p97000-gallery-open2.ppm 720x1520 stride=2880 fmt=0x34324258

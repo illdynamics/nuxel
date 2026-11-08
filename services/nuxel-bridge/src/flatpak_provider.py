@@ -141,19 +141,21 @@ ELECTRON_ENV = (
     "ELECTRON_OZONE_PLATFORM_HINT=wayland",
     "ZYPAK_ZYGOTE_STRATEGY_SPAWN=0",
 )
+# PWNAGE-97000: CONFIG_USER_NS is enabled on the live kernel and the Flatpak
+# sandbox is authoritative.  Never add --no-sandbox (or a QtWebEngine sandbox
+# bypass): file selection must work without weakening either the app's Flatpak
+# sandbox or Chromium's inner sandbox.
 ELECTRON_APP_ARGS = (
     "--ozone-platform=wayland",
     "--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer",
     "--disable-gpu",
-    "--no-sandbox",
     "--disable-dev-shm-usage",
 )
 QT_WEBENGINE_ENV = (
-    "QTWEBENGINE_DISABLE_SANDBOX=1",
     # QtWebEngine reads Chromium switches from this variable, not from the
     # application argv.  Software compositing is required because the sandbox
-    # runtime has no DRM render node on this kernel.
-    "QTWEBENGINE_CHROMIUM_FLAGS=--no-sandbox --disable-gpu "
+    # runtime has no DRM render node on this kernel.  The sandbox stays on.
+    "QTWEBENGINE_CHROMIUM_FLAGS=--disable-gpu "
     "--disable-gpu-compositing --disable-dev-shm-usage",
 )
 
@@ -1055,9 +1057,8 @@ class FlatpakProvider:
 
         argv.append(aid)
         if electron:
-            # Chromium switches must follow the application id.  The Flatpak
-            # sandbox stays enabled; --no-sandbox only stops the inner Chromium
-            # sandbox that cannot initialize on this vendor kernel.
+            # Chromium switches must follow the application id.  Both the
+            # Flatpak and inner Chromium sandboxes stay enabled.
             argv.extend(ELECTRON_APP_ARGS)
         return argv
 

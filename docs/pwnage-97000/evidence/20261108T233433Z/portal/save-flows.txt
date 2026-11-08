@@ -1,0 +1,42 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== SAVE FILE ===
+{"cancelled": false, "error": "DBusException: org.freedesktop.portal.Error.InvalidArgument: Expected type 's' for option 'current_name', got 'ay'", "method": "SaveFile", "request_path": "", "response": null, "results": null, "success": false}
+{"autotest": "save", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 0, "selected": 0}, "last_outcome": "idle", "last_source": "none", "pid": 89589, "presented": false, "schema_version": 2, "selected_count": 0, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181617.6691284, "version": "1.1.0"}
+
+-rw-------.  1 nuxel nuxel   93 Nov  9 00:36 nuxel-file-handler-test.txt
+-rw-r--r--.  1 nuxel nuxel   35 Nov  2 22:43 nuxel-flatpak-test.txt
+-rw-------.  1 nuxel nuxel    0 Nov  8 20:55 portal save café.txt
+-rw-------.  1 nuxel nuxel    0 Nov  8 20:55 portal-multi café.txt
+-rw-------.  1 nuxel nuxel    0 Nov  8 20:55 portal-multi one.txt
+=== SAVE FILES ===
+{"cancelled": false, "error": null, "method": "SaveFiles", "request_path": "/org/freedesktop/portal/desktop/request/1_312/t", "response": 0, "results": {"uris": ["file:///home/nuxel/Documents/portal-multi%20one%20(1).txt", "file:///home/nuxel/Documents/portal-multi%20caf%C3%A9%20(1).txt"]}, "success": true}
+{"autotest": "savefiles", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 1480, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 1480, "kind": "save_files", "outcome": "selected", "selected_count": 2, "source": "files"}, "last_source": "files", "pid": 89628, "presented": false, "schema_version": 2, "selected_count": 2, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181622.982681, "version": "1.1.0"}
+
+-rw-------.  1 nuxel nuxel    0 Nov  8 20:55 portal save café.txt
+-rw-------.  1 nuxel nuxel    0 Nov  9 00:47 portal-multi café (1).txt
+-rw-------.  1 nuxel nuxel    0 Nov  8 20:55 portal-multi café.txt
+-rw-------.  1 nuxel nuxel    0 Nov  9 00:47 portal-multi one (1).txt
+-rw-------.  1 nuxel nuxel    0 Nov  8 20:55 portal-multi one.txt
+DONE
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"cancelled": false, "error": null, "method": "SaveFile", "request_path": "/org/freedesktop/portal/desktop/request/1_319/t", "response": 0, "results": {"uris": ["file:///home/nuxel/Documents/portal-save-caf%C3%A9%20%F0%9F%96%BC%EF%B8%8F.txt"]}, "success": true}
+{"autotest": "save", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 1595, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 1595, "kind": "save", "outcome": "selected", "selected_count": 1, "source": "files"}, "last_source": "files", "pid": 89837, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181635.130164, "version": "1.1.0"}
+
+-rw-------.  1 nuxel nuxel    0 Nov  8 20:55 portal save café.txt
+SAVE_DONE

@@ -1,0 +1,25 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+  nuxel-app-ferdium-1794156588130.service  loaded    active     running   [systemd-run] /usr/bin/flatpak run --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GALLIUM_DRIVER=llvmpipe --env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe --env=GSK_RENDERER=cairo --env=GDK_BACKEND=wayland --env=QT_QPA_PLATFORM=wayland --env=GTK_APPLICATION_PREFER_DARK_THEME=1 --env=GTK_THEME=Adwaita:dark --env=ELECTRON_OZONE_PLATFORM_HINT=wayland --env=ZYPAK_ZYGOTE_STRATEGY_SPAWN=0 org.ferdium.Ferdium --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --no-sandbox --disable-dev-shm-usage
+{"success": true, "launched": true, "app_id": "org.ferdium.Ferdium", "unit": "nuxel-app-ferdium-1794167752869", "action": "exec", "argv": ["/usr/bin/flatpak", "run", "--env=LIBGL_ALWAYS_SOFTWARE=1", "--env=GALLIUM_DRIVER=llvmpipe", "--env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe", "--env=GSK_RENDERER=cairo", "--env=GDK_BACKEND=wayland", "--env=QT_QPA_PLATFORM=wayland", "--env=GTK_APPLICATION_PREFER_DARK_THEME=1", "--env=GTK_THEME=Adwaita:dark", "--env=ELECTRON_OZONE_PLATFORM_HINT=wayland", "--env=ZYPAK_ZYGOTE_STRATEGY_SPAWN=0", "org.ferdium.Ferdium", "--ozone-platform=wayland", "--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"], "process_alive": true, "surface_seen": false, "outcome": "launch_requested", "timing_ms": {"request_to_focus_probe": 160.114, "focus_probe_to_provider_lookup": 350.09, "provider_lookup_to_exec": 819.552, "systemd_run_accept": 54.746, "request_to_launch_accepted": 1384.501}}
+nuxel     562192 /app/Ferdium/ferdium --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --no-sandbox --disable-dev-shm-usage
+nuxel     562250 /app/Ferdium/ferdium --type=zygote --no-zygote-sandbox --no-sandbox
+nuxel     562253 /app/Ferdium/ferdium --type=zygote --no-sandbox
+nuxel     562613 /app/Ferdium/ferdium --type=gpu-process --no-sandbox --disable-dev-shm-usage --ozone-platform=wayland --enable-crash-reporter=b612fd9e-f127-467b-b496-062cfed2316a,no_channel --user-data-dir=/home/nuxel/.var/app/org.ferdium.Ferdium/config/Ferdium --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --use-gl=disabled --shared-files --field-trial-handle=3,i,10063083166202907101,16534505629092845932,262144 --enable-features=GlobalShortcutsPortalPreferredTrigger,PdfUseShowSaveFilePicker,UseOzonePlatform,WebRTCPipeWireCapturer --disable-features=CrossOriginOpenerPolicy,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=7,i,16272276331038817372,5214879072826505521,4 --trace-process-track-uuid=3190708988185955192
+nuxel     562617 /app/Ferdium/ferdium --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --no-sandbox --disable-dev-shm-usage --enable-crash-reporter=b612fd9e-f127-467b-b496-062cfed2316a,no_channel --user-data-dir=/home/nuxel/.var/app/org.ferdium.Ferdium/config/Ferdium --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,10063083166202907101,16534505629092845932,262144 --enable-features=GlobalShortcutsPortalPreferredTrigger,PdfUseShowSaveFilePicker,UseOzonePlatform,WebRTCPipeWireCapturer --disable-features=CrossOriginOpenerPolicy,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=7,i,16272276331038817372,5214879072826505521,4 --trace-process-track-uuid=3190708989122997041
+--- launch receipt ---
+
+--- toplevel ---
+WINDOWS=5
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=P96 iw=528 ih=1042 dpr=1.3636363636363635 sw=528 sh=1115 ow=528 oh=1115 — Mozilla Firefox app_id=org.mozilla.firefox max=1 min=0 act=0 fs=0
+WIN title=Ferdium app_id=ferdium max=1 min=0 act=0 fs=0

@@ -116,6 +116,30 @@
     render();
   }
 
+  /* MIME-open handoff from Settings > File Handlers / the Gallery desktop
+     entry.  The bridge validates the path against the same approved roots and
+     removes the one-shot request after this app acknowledges it. */
+  async function consumePendingOpen() {
+    var res = await call('file-handlers', 'consume-open', {}, null);
+    if (!res || res.success === false || !res.pending || !Array.isArray(res.paths)) return;
+    var opened = null;
+    res.paths.forEach(function (path, index) {
+      var storagePath = (Array.isArray(res.storage_paths) && res.storage_paths[index]) || path;
+      var name = String(storagePath).split('/').pop() || storagePath;
+      var mime = /(\.mp4|\.webm|\.mkv|\.mov)$/i.test(name) ? 'video/mp4' :
+                 (/(\.png)$/i.test(name) ? 'image/png' :
+                 (/(\.webp)$/i.test(name) ? 'image/webp' : 'image/jpeg'));
+      var row = normaliseStorage({ name: name, path: storagePath, mime: mime,
+        modified: Math.floor(Date.now() / 1000) }, state.items.length);
+      row.album = 'Opened file';
+      var existing = state.items.find(function (i) { return i.path === storagePath; });
+      if (!existing) state.items.unshift(row);
+      if (!opened) opened = existing || row;
+    });
+    render();
+    if (opened) openViewer(opened);
+  }
+
   function albumOf(item) { return item.album || 'Gallery'; }
 
   function fillAlbums() {
@@ -509,7 +533,8 @@
     if (!document.hidden) load();
   });
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load, { once: true });
-  else load();
+  function boot() { load().then(consumePendingOpen).catch(function () {}); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
   window.nuxelGallery = { load: load, items: function () { return state.items; }, visible: visible };
 })();

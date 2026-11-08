@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Gallery
+Comment=Nuxel Gallery — supported photos and videos
+Exec=/usr/libexec/nuxel/nuxel-open-file --app org.nuxel.Photos %U
+TryExec=/usr/libexec/nuxel/nuxel-open-file
+Icon=/usr/share/nuxel/pwa/nuxel-apps/photos/icons/icon-192.png
+Terminal=false
+Categories=Graphics;Viewer;Photography;
+MimeType=image/jpeg;image/png;image/webp;image/gif;image/bmp;image/tiff;image/heic;image/heif;image/avif;video/mp4;video/webm;video/x-matroska;video/quicktime;video/x-m4v;video/x-msvideo;video/3gpp;video/mpeg;
+StartupNotify=true

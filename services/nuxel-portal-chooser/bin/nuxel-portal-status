@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Truthful Nuxel FileChooser portal status (no paths or filenames)."""
+import json
+import os
+import sys
+from pathlib import Path
+
+
+def load_policy():
+    here = Path(__file__).resolve()
+    for base in (Path("/usr/lib/nuxel"), here.parents[2] / "nuxel-file-handlers" / "src",
+                 here.parents[1] / "nuxel-file-handlers" / "src"):
+        if (base / "nuxel_file_handlers.py").is_file():
+            sys.path.insert(0, str(base))
+            break
+    import nuxel_file_handlers as fh
+    return fh
+
+
+def main():
+    fh = load_policy()
+    uid = os.getuid()
+    if uid == 0:
+        user = fh.session_user()
+        if user is not None:
+            uid = user.pw_uid
+    state_path = os.environ.get("NUXEL_CHOOSER_STATE", "/run/user/%d/nuxel-portal-chooser.state" % uid)
+    try:
+        state = json.loads(Path(state_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        state = {"state": "not-running"}
+    doc = dict(state) if isinstance(state, dict) else {"state": "not-running"}
+    doc["chooser_state_path"] = state_path
+    doc["portal"] = fh.portal_status()
+    doc["filechooser_backend_config"] = doc["portal"].get("filechooser_backend")
+    doc["frontend_available"] = doc["portal"].get("frontend_available")
+    doc["filechooser_backend_available"] = doc["portal"].get("backend_available")
+    print(json.dumps(doc, indent=2, sort_keys=True))
+    return 0 if doc["portal"].get("frontend_available") else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

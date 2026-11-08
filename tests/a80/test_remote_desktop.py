@@ -38,7 +38,7 @@ def test_registry_has_new_apps_once_and_preserves_console_ids():
     doc = json.loads(REGISTRY.read_text())
     ids = [a["id"] for a in doc["apps"]]
     assert len(ids) == len(set(ids))
-    assert doc["registry_version"] == 18
+    assert doc["registry_version"] == 19
     for aid in NEW:
         assert ids.count(aid) == 1
     for aid in CONSOLES:
@@ -71,7 +71,7 @@ def test_three_documents_are_real_and_manifest_contract_is_not_mocked():
 
 def test_launcher_and_native_consumer_have_the_new_entries_once():
     text = APPS_JS.read_text()
-    assert "const NUXEL_REGISTRY_VERSION = 18;" in text
+    assert "const NUXEL_REGISTRY_VERSION = 19;" in text
     for aid in NEW:
         assert text.count("id: '%s'" % aid) == 1
     native = json.loads(NATIVE.read_text())
@@ -144,16 +144,16 @@ def test_scrcpy_native_nuxel_is_honest(monkeypatch):
 
 
 def test_direct_listener_and_local_account_contract():
-    """Direct LAN only: RDP 13389 and VNC 15900, TLS + PAM, no tunnel."""
+    """Direct LAN only: standard RDP 3389 and VNC 5900, no SSH tunnel."""
     ctl = (ROOT / "services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl").read_text()
+    wrapper = (ROOT / "services/nuxel-remote-desktop/bin/nuxel-vnc-x11").read_text()
     rd = (ROOT / "services/nuxel-bridge/src/remote_desktop.py").read_text()
     xrdp = (ROOT / "services/nuxel-remote-desktop/config/xrdp.ini").read_text()
-    vnc = (ROOT / "services/nuxel-remote-desktop/config/wayvnc.conf.example").read_text()
-    assert 'PORTS = {"vnc": 15900, "xrdp": 13389}' in ctl
+    assert 'PORTS = {"vnc": 5900, "xrdp": 3389}' in ctl
+    assert "vncpasswd" in ctl and "security_types=VncAuth" in ctl
+    assert "SecurityTypes VncAuth" in wrapper and "-rfbport" in wrapper
     assert "enable_auth=false" not in ctl
-    assert "enable_auth=true" in ctl and "enable_pam=true" in ctl
-    assert "port=tcp://127.0.0.1:13389" in xrdp
-    assert "port=15900" in vnc and "enable_auth=true" in vnc and "enable_pam=true" in vnc
+    assert "port=tcp://127.0.0.1:3389" in xrdp
     assert 'BIND_ADDRESS = "trusted-lan-ipv4"' in rd
     assert '"username": "nuxel"' in rd
     assert '"requires_ssh_tunnel": False' in rd
@@ -163,8 +163,8 @@ def test_direct_listener_and_local_account_contract():
 
 def test_status_never_contains_secret_fields(monkeypatch):
     mod = load_remote()
-    monkeypatch.setattr(mod, "_vnc_status", lambda: {"state": "OFF", "port": 15900, "listener_verified": False})
-    monkeypatch.setattr(mod, "_xrdp_status", lambda: {"state": "OFF", "port": 13389, "listener_verified": False})
+    monkeypatch.setattr(mod, "_vnc_status", lambda: {"state": "OFF", "port": 5900, "listener_verified": False})
+    monkeypatch.setattr(mod, "_xrdp_status", lambda: {"state": "OFF", "port": 3389, "listener_verified": False})
     monkeypatch.setattr(mod, "_scrcpy_status", lambda: {"state": "NO_ANDROID_TARGET", "listener_verified": False})
     doc = mod.get_status()
     text = json.dumps(doc).lower()
@@ -178,11 +178,11 @@ def test_connection_info_is_direct_and_secret_free(monkeypatch):
     monkeypatch.setattr(mod, "_xrdp_fingerprint", lambda: "AA:BB")
     info = mod.connection_info("xrdp")
     assert info["bind_address"] == "192.168.44.77"
-    assert info["port"] == 13389
+    assert info["port"] == 3389
     assert info["direct_lan"] is True
     assert info["password_included"] is False
     assert info["ssh_tunnel_command"] is None
-    assert info["jump_url"] == "rdp://192.168.44.77:13389"
+    assert info["jump_url"] == "rdp://192.168.44.77:3389"
     assert info["username"] == "nuxel"
     assert "password" not in json.dumps({k: v for k, v in info.items() if k != "password_included"}).lower()
 
@@ -234,7 +234,6 @@ def test_ctl_exposes_read_only_status_for_the_quickstart():
     assert 'if action == "status":' in text
     assert "NOT_APPLICABLE_NATIVE_NUXEL" in text
     assert "separate-x11-session" in text
-    assert "current-wayland-session" in text
 
 
 def test_image_generates_vnc_tls_material_and_never_ships_a_password():
@@ -267,26 +266,26 @@ def test_rdp_pam_is_locked_to_the_local_nuxel_account():
 
 def test_vnc_status_derives_effective_auth_and_never_claims_secure_when_off(tmp_path, monkeypatch):
     mod = load_remote()
-    conf = tmp_path / "wayvnc.conf"
+    conf = tmp_path / "xvnc.conf"
+    passwd = tmp_path / "vnc.passwd"
+    passwd.write_bytes(b"12345678")
     monkeypatch.setattr(mod, "VNC_CONFIG", conf)
-    monkeypatch.setattr(mod, "_vnc_version", lambda: "wayvnc 0.9.1")
-    monkeypatch.setattr(mod, "wayland_protocols", lambda: {"available": True, "protocols": list(mod.VNC_REQUIRED_PROTOCOLS)})
+    monkeypatch.setattr(mod, "_vnc_version", lambda: "TigerVNC Xvnc 1.16.2")
     monkeypatch.setattr(mod, "_systemctl_active", lambda unit: True)
     monkeypatch.setattr(mod, "_listener_addresses", lambda port: ["192.168.178.167"])
     monkeypatch.setattr(mod, "_vnc_clients", lambda: {"count": 0, "available": True})
-    monkeypatch.setattr(mod, "_cert_fingerprint", lambda path: "AA:BB:CC")
-    monkeypatch.setattr(mod, "_read", lambda path: "auth required pam_succeed_if.so user = nuxel\n")
-    conf.write_text("address=192.168.178.167\nport=15900\nenable_auth=false\n")
+    monkeypatch.setattr(mod, "_read", lambda path: "")
+    conf.write_text("address=192.168.178.167\nport=5900\nsecurity_types=None\n")
     st = mod._vnc_status()
     assert st["state"] == "ERROR"
     assert st["authentication"] == "UNAUTHENTICATED"
     assert st["security_verified"] is False
-    conf.write_text("address=192.168.178.167\nport=15900\nenable_auth=true\nenable_pam=true\n"
-                    "certificate_file=/x\nprivate_key_file=/y\n")
+    conf.write_text("address=192.168.178.167\nport=5900\n"
+                    "password_file=%s\nsecurity_types=VncAuth\n" % passwd)
     st = mod._vnc_status()
     assert st["state"] == "WAITING_FOR_CLIENT"
-    assert st["encrypted"] is True and st["security_verified"] is True
-    assert st["authentication_mode"] == "PAM"
+    assert st["encrypted"] is False and st["security_verified"] is True
+    assert st["authentication_mode"] == "VNC password"
 
 
 def test_usb_modes_are_distinct_and_never_ready(monkeypatch):

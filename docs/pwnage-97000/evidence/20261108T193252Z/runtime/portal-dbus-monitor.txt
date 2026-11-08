@@ -1,0 +1,17 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== PROBE ===
+REQUEST /org/freedesktop/portal/desktop/request/1_231/t
+CLOSE_SENT
+TIMEOUT
+=== MONITOR PORTAL ===
+=== JOURNAL ===
+Nov 08 20:43:53 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-xdg-portal-p97000.service - [systemd-run] /usr/libexec/xdg-desktop-portal.
+Nov 08 20:43:53 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 /usr/libexec/xdg-desktop-portal[552513]: Failed connect to PipeWire: Couldn't connect to PipeWire

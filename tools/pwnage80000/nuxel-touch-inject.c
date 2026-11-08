@@ -108,6 +108,8 @@ int main(int argc, char **argv) {
   if (mx && atoi(mx) > 0) max_x = atoi(mx);
   if (my && atoi(my) > 0) max_y = atoi(my);
   setup(max_x, max_y);
+  /* Give libinput/phoc time to enumerate the hotplugged virtual device. */
+  usleep(1200000);
   if (!strcmp(argv[1], "hold")) {
     unsigned secs = (unsigned)atoi(argv[2]);
     if (secs < 1) secs = 3;

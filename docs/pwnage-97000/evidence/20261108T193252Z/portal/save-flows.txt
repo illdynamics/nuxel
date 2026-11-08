@@ -1,0 +1,35 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Running as unit: nuxel-chooser-p97000-1794167707.service; invocation ID: 6bd28c4cd64f4bb88bdaa66db4dce457
+=== SAVE FILE ===
+REQUEST SaveFile /org/freedesktop/portal/desktop/request/1_283/t
+RESPONSE 0 {"uris": ["file:///home/nuxel/Documents/portal%20save%20caf%C3%A9.txt"]} PATH /org/freedesktop/portal/desktop/request/1_283/t
+--- created ---
+total 8
+-rw-r--r--. 1 nuxel nuxel 19 Nov  8 20:46 attachment test café 🖼️.txt
+-rw-r--r--. 1 nuxel nuxel 35 Nov  2 22:43 nuxel-flatpak-test.txt
+-rw-------. 1 nuxel nuxel  0 Nov  8 20:55 portal save café.txt
+--- state ---
+{"autotest": "save", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 1552, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 1552, "kind": "save", "outcome": "selected", "selected_count": 1, "source": "files"}, "last_source": "files", "pid": 561470, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794167712.3567781, "version": "1.1.0"}
+
+Running as unit: nuxel-chooser-p97000-1794167714.service; invocation ID: f2b74069745b4f99b2707f70c48a0b7f
+=== SAVE FILES ===
+REQUEST SaveFiles /org/freedesktop/portal/desktop/request/1_287/t
+RESPONSE 0 {"uris": ["file:///home/nuxel/Documents/portal-multi%20one.txt", "file:///home/nuxel/Documents/portal-multi%20caf%C3%A9.txt"]} PATH /org/freedesktop/portal/desktop/request/1_287/t
+--- created multi ---
+total 8
+-rw-r--r--. 1 nuxel nuxel 19 Nov  8 20:46 attachment test café 🖼️.txt
+-rw-r--r--. 1 nuxel nuxel 35 Nov  2 22:43 nuxel-flatpak-test.txt
+-rw-------. 1 nuxel nuxel  0 Nov  8 20:55 portal save café.txt
+-rw-------. 1 nuxel nuxel  0 Nov  8 20:55 portal-multi café.txt
+-rw-------. 1 nuxel nuxel  0 Nov  8 20:55 portal-multi one.txt
+--- state ---
+{"autotest": "savefiles", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 1524, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 1524, "kind": "save_files", "outcome": "selected", "selected_count": 2, "source": "files"}, "last_source": "files", "pid": 561586, "presented": false, "schema_version": 2, "selected_count": 2, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794167719.4458506, "version": "1.1.0"}
+

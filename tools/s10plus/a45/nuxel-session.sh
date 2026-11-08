@@ -102,6 +102,11 @@ LOG=/run/nuxel-session.log
 # VLC and the GNOME tools do not refuse a root session.  They need the
 # compositor socket and a user-owned XDG_RUNTIME_DIR; create that runtime view
 # without ever copying the socket or weakening the compositor directory.
+# The Flatpak X11 socket path is shared by native X11 clients.  A
+# root-owned 0755 directory makes bwrap fail with EACCES even though the
+# app has the x11 socket permission; keep the standard 1777 mode.
+mkdir -p /tmp/.X11-unix 2>/dev/null || true
+chmod 1777 /tmp/.X11-unix 2>/dev/null || true
 mkdir -p /run/user/1000 2>/dev/null || true
 chown 1000:1000 /run/user/1000 2>/dev/null || true
 chmod 0700 /run/user/1000 2>/dev/null || true
@@ -119,6 +124,31 @@ fi
 # because /run is a tmpfs.
 : > /run/nuxel-preload-session.owner 2>/dev/null || true
 say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
+
+# PWNAGE-93000: native GTK and Flatpak/portal apps publish notifications as
+# org.freedesktop.Notifications on their SESSION bus.  The authoritative Nuxel
+# hub lives on the system bus, so start one small FDO relay per real session bus
+# (root compositor bus + uid 1000 user bus).  Relays only forward; they never
+# create a second notification store.
+start_notification_relay() {
+  _bus="$1"; _runas="$2"; _label="$3"; _pidfile="/run/nuxel-notif-relay-$_label.pid"
+  [ -r /usr/lib/nuxel/nuxel-notifications/notifications.py ] || return 0
+  if [ -f "$_pidfile" ]; then
+    _old=$(cat "$_pidfile" 2>/dev/null || true)
+    case "$_old" in ''|*[!0-9]*) _old=0;; esac
+    if [ "$_old" -gt 1 ] && kill -0 "$_old" 2>/dev/null; then
+      say "notification relay $_label already running pid=$_old"
+      return 0
+    fi
+  fi
+  if [ "$_runas" = root ]; then
+    DBUS_SESSION_BUS_ADDRESS="$_bus" nohup /usr/bin/python3       /usr/lib/nuxel/nuxel-notifications/notifications.py --session       </dev/null >>"/run/nuxel-notif-relay-$_label.log" 2>&1 &
+  else
+    nohup runuser -u "$_runas" -- env DBUS_SESSION_BUS_ADDRESS="$_bus"       XDG_RUNTIME_DIR=/run/user/1000 HOME=/home/nuxel       /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py --session       </dev/null >>"/run/nuxel-notif-relay-$_label.log" 2>&1 &
+  fi
+  echo $! >"$_pidfile"
+  say "started notification relay $_label pid=$!"
+}
 
 DOCROOT=/usr/share/nuxel
 WEB_PORT=8000
@@ -281,6 +311,9 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
     say "session dbus unavailable"
   fi
 fi
+if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  start_notification_relay "$DBUS_SESSION_BUS_ADDRESS" root root
+fi
 # PWNAGE-56000: Flatpak needs a REAL per-user session bus and portals.  The
 # root-owned /run/nuxel-wayland/bus is for the compositor/native host; Flatpak
 # apps and xdg-desktop-portal must talk on /run/user/1000/bus so the document
@@ -300,6 +333,7 @@ fi
 if [ -S "$USER_BUS" ]; then
   chown nuxel:nuxel "$USER_BUS" 2>/dev/null || true
   chmod 0600 "$USER_BUS" 2>/dev/null || true
+  start_notification_relay "unix:path=$USER_BUS" nuxel user
 fi
 PORTAL_ENVV="XDG_RUNTIME_DIR=$USER_RUNTIME DBUS_SESSION_BUS_ADDRESS=unix:path=$USER_BUS XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0} GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel"
 if [ -S "$USER_BUS" ] && [ -x /usr/libexec/xdg-desktop-portal-gtk ]; then
@@ -307,22 +341,54 @@ if [ -S "$USER_BUS" ] && [ -x /usr/libexec/xdg-desktop-portal-gtk ]; then
     nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/xdg-desktop-portal-gtk       </dev/null >/run/nuxel-portal-gtk.log 2>&1 &
     say "started xdg-desktop-portal-gtk uid=nuxel pid=$!"
   fi
+  # PWNAGE-96000: the Nuxel FileChooser backend must be running before the
+  # frontend parses portals.conf.  It has ONE request/response contract and
+  # exposes Gallery + Files; it is not org.nuxel.Portal (hardware broker).
+  if [ -x /usr/libexec/nuxel/nuxel-portal-chooser ]; then
+    if ! pgrep -u nuxel -f "/usr/libexec/nuxel/nuxel-portal-chooser" >/dev/null 2>&1; then
+      nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/nuxel/nuxel-portal-chooser \
+        </dev/null >/run/nuxel-portal-chooser.out 2>&1 &
+      say "started Nuxel FileChooser backend uid=nuxel pid=$!"
+    fi
+  fi
   sleep 1
   if ! pgrep -u nuxel -f "^/usr/libexec/xdg-desktop-portal$" >/dev/null 2>&1; then
     nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/xdg-desktop-portal       </dev/null >/run/nuxel-portal.log 2>&1 &
     say "started xdg-desktop-portal uid=nuxel pid=$!"
   fi
+  # PWNAGE-94000: pre-start the DOCUMENT portal.  D-Bus activation of
+  # org.freedesktop.portal.Documents could leave the first caller waiting the
+  # full 30 s GetMountPoint timeout (measured: every `flatpak run` took 30.7 s,
+  # even with --command=/bin/true).  The standard portal is not a sandbox
+  # relaxation; it is the same portal Flatpak expects, started before the first
+  # app.  Wait for its real fuse mount with a bounded readiness check.
+  if [ -x /usr/libexec/xdg-document-portal ] && ! pgrep -u nuxel -f "^/usr/libexec/xdg-document-portal$" >/dev/null 2>&1; then
+    nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/xdg-document-portal \
+      </dev/null >/run/nuxel-document-portal.log 2>&1 &
+    say "started xdg-document-portal uid=nuxel pid=$!"
+  fi
+  i=0
+  while [ "$i" -lt 50 ]; do
+    grep -q " $USER_RUNTIME/doc " /proc/mounts && break
+    i=$((i + 1)); sleep 0.1
+  done
+  if grep -q " $USER_RUNTIME/doc " /proc/mounts; then
+    say "document portal mount ready $USER_RUNTIME/doc"
+  else
+    say "document portal mount not ready; Flatpak may pay the bounded D-Bus timeout"
+  fi
   (
     sleep 2
-    GTK=0; FRONT=0; WLR=0
+    GTK=0; FRONT=0; WLR=0; NUXEL=0
     NAMES=$(runuser -u nuxel -- env $PORTAL_ENVV busctl --user list --no-pager 2>/dev/null || true)
     # Require an ACTIVE PID, not merely an activatable name.  The wlr backend
     # appears as activatable but exits when it cannot reach PipeWire.
     echo "$NAMES" | awk '$1=="org.freedesktop.impl.portal.desktop.gtk" && $2 ~ /^[0-9]+$/ {f=1} END{exit !f}' && GTK=1
     echo "$NAMES" | awk '$1=="org.freedesktop.portal.Desktop" && $2 ~ /^[0-9]+$/ {f=1} END{exit !f}' && FRONT=1
     echo "$NAMES" | awk '$1=="org.freedesktop.impl.portal.desktop.wlr" && $2 ~ /^[0-9]+$/ {f=1} END{exit !f}' && WLR=1
-    printf '{"portal":%s,"gtk":%s,"wlr":%s,"screencast":"%s","bus":"%s","updated":%s}\n' \
-      "$FRONT" "$GTK" "$WLR" \
+    echo "$NAMES" | awk '$1=="org.freedesktop.impl.portal.desktop.nuxel" && $2 ~ /^[0-9]+$/ {f=1} END{exit !f}' && NUXEL=1
+    printf '{"portal":%s,"gtk":%s,"wlr":%s,"nuxel_filechooser":%s,"screencast":"%s","bus":"%s","updated":%s}\n' \
+      "$FRONT" "$GTK" "$WLR" "$NUXEL" \
       "$([ "$WLR" = 1 ] && echo available || echo 'unavailable (wlr backend cannot reach PipeWire)')" \
       "$USER_BUS" "$(date +%s)" > /run/nuxel-portal-ready.json 2>/dev/null || true
   ) &

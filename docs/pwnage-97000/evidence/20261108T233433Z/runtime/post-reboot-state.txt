@@ -1,0 +1,70 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+---uptime---
+ 00:51:56 up 0 min,  0 user,  load average: 5.00, 1.15, 0.38
+---version---
+  "host_version": "0.8.2-beta",
+  "note": "bridge_version is the PWA<->host PROTOCOL contract declared by every app manifest. host_version is the implementation version of the nuxel-bridge processes and is allowed to move without a manifest change."
+---services---
+active
+active
+active
+active
+inactive
+active
+---portal---
+{
+  "frontend_available": true,
+  "frontend_owner": "6771",
+  "filechooser_backend": "nuxel",
+  "backend_available": true,
+  "backend_owner": "6643",
+  "documents_portal_available": true,
+  "portals_conf": "/etc/xdg-desktop-portal/portals.conf",
+  "desktop": "Nuxel"
+}
+---vnc---
+{
+  "state": "OFF",
+  "active": false,
+  "bind_address": "10.20.30.16",
+  "port": 5900,
+  "authentication_mode": "VNC password (TigerVNC VncAuth)",
+  "geometry": "1520x720",
+  "landscape": true,
+  "vnc_password_configured": true
+}
+---xrandr---
+Can't open display :2
+---zt---
+200 info c1ab327d70 1.16.2 ONLINE
+200 listnetworks <nwid> <name> <mac> <status> <type> <dev> <ZT assigned ips>
+200 listnetworks 0cccb752f72ecf52  32:0e:85:c5:2f:c7 ACCESS_DENIED PRIVATE ztly5zthnf -
+---ip---
+{
+  "connected": true,
+  "wifi_state": "internet",
+  "ipv4_addresses": [
+    "10.20.30.16/24"
+  ],
+  "ipv6_addresses": [
+    "fd4e:3732:3532:0:78ce:d55e:e952:4dc3/64",
+    "2a02:a472:fcbc:0:1b0c:b777:2d3b:74ff/64",
+    "fe80::892f:ad34:9723:8904/64"
+  ],
+  "active_connection": "Nuxel Snoerbreuk"
+}
+---tun---
+crw-rw----. 1 root zerotier-one 10, 200 Jan  1  1970 /dev/net/tun
+ExecStartPre={ path=/bin/chgrp ; argv[]=/bin/chgrp zerotier-one /dev/net/tun ; ignore_errors=no ; start_time=[Mon 2026-11-09 00:51:45 CET] ; stop_time=[Mon 2026-11-09 00:51:45 CET] ; pid=7670 ; code=exited ; status=0 }
+ExecStartPre={ path=/bin/chmod ; argv[]=/bin/chmod 0660 /dev/net/tun ; ignore_errors=no ; start_time=[Mon 2026-11-09 00:51:45 CET] ; stop_time=[Mon 2026-11-09 00:51:45 CET] ; pid=7676 ; code=exited ; status=0 }
+---banner---
+banner /etc/banner
+ls: cannot access '/etc/profile.d/99-nuxel-banner.sh': No such file or directory

@@ -1,0 +1,57 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+UNIT=p97000-zapzap-1794167993
+Running as unit: p97000-zapzap-1794167993.service; invocation ID: 6f9cfd4599124b8e843ec6cb449adad4
+WINDOWS=4
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=P96 iw=528 ih=1042 dpr=1.3636363636363635 sw=528 sh=1115 ow=528 oh=1115 — Mozilla Firefox app_id=org.mozilla.firefox max=1 min=0 act=0 fs=0
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy lv_LV.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy mn-Cyrl_MN.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy mr_IN.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy nb_NO.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy ne_NP.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy nl_AW.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy nl_BE.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy nl_NL.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy nl_SR.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy nn_NO.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy oc_FR-lengadoc.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy oc_FR.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy or_IN.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy pl_PL.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy pt_BR.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy pt_PT.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy ro_RO.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy ru_RU.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy si_LK.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sk_SK.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sl_SI.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sq_AL.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sr-Latn_CS.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sr-Latn_RS.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sr_CS.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sr_RS.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sv.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sv_FI.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sv_SE.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy sw_TZ.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy ta_IN.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy te.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy te_IN.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy th_TH.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy tr.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy tr_TR.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy uk_UA.bdic: source is not a regular file
+Nov 08 20:59:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: Dictionary migration did not copy vi_VN.bdic: source is not a regular file
+Nov 08 20:59:56 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 flatpak[570001]: [2:47:1108/205956.949910:ERROR:../../../src/3rdparty/chromium/sandbox/linux/services/flatpak_sandbox.cc:575] Error calling Spawn(): org.freedesktop.DBus.Error.InvalidArgs: Could not find requesting pid
+Nov 08 21:00:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: p97000-zapzap-1794167993.service: Main process exited, code=exited, status=133/n/a
+SHOT_OK /tmp/p97000-zapzap.ppm 720x1520 stride=2880 fmt=0x34324258

@@ -20,6 +20,7 @@ import hmac
 import hashlib
 import time
 import os
+import sys
 import logging
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
@@ -46,6 +47,42 @@ _DOWNLOAD_LOCK = threading.Lock()
 _FLATPAK_LIST_CACHE = {'at': 0.0, 'installed': None}
 _FLATPAK_LIST_TTL_S = float(os.environ.get('NUXEL_FLATPAK_LIST_TTL_S', '20'))
 
+# PWNAGE-94000: launch-path measurements showed repeated registry/Flatpak
+# metadata probes on every tap.  Cache only the immutable-ish launch inputs
+# (allowlist argv, Flatpak classification, registry status) for a short TTL.
+# Installed-state truth is still re-checked by the provider; no sandbox flag is
+# cached or weakened.
+_LAUNCH_PLAN_CACHE = {}
+_LAUNCH_PLAN_TTL_S = float(os.environ.get('NUXEL_LAUNCH_PLAN_TTL_S', '30'))
+_LAUNCH_PLAN_LOCK = threading.Lock()
+
+
+def _norm_app_key(value):
+    return re.sub(r'[^a-z0-9]', '', str(value or '').lower())
+
+
+def surface_id_matches(want, candidates):
+    """Match a launcher id against published Wayland app_id/title strings.
+
+    Flatpak reverse-DNS ids (com.github.x.Teams) usually differ from the
+    client's app_id (teams-for-linux).  The same suffix normalization used by
+    nuxel-focus-app.sh is applied here so launch evidence does not report a
+    false timeout after the surface is already on the glass.
+    """
+    w = _norm_app_key(want)
+    if not w:
+        return None
+    last = _norm_app_key(str(want).rsplit('.', 1)[-1])
+    for cand in candidates:
+        c = _norm_app_key(cand)
+        if not c:
+            continue
+        if c == w or (last and c == last):
+            return cand
+        if len(c) >= 5 and (w.endswith(c) or c.endswith(w)):
+            return cand
+    return None
+
 # Lockhead indicators are computed in-process (sysfs + /proc), next to this file.
 # The import is deliberately after logger setup and failure is contained: an
 # unavailable sensor module yields a 503 and a dimmed UI, never invented state.
@@ -70,6 +107,11 @@ try:
 except Exception as _e:  # pragma: no cover - optional module
     remote_desktop = None
     logger.warning('remote_desktop unavailable: %s', _e)
+try:
+    import network_manager
+except Exception as _e:  # pragma: no cover - optional module
+    network_manager = None
+    logger.warning('network_manager unavailable: %s', _e)
 
 # Single privileged torch owner.  PWAs and the button manager request a state;
 # only this in-process provider writes the LED brightness node.
@@ -134,6 +176,26 @@ try:
 except Exception as _e:  # pragma: no cover - optional module
     pwa_store = None
     logger.warning('pwa_store unavailable: %s', _e)
+try:
+    import nuxel_file_handlers as file_handlers
+except Exception as _e:  # pragma: no cover - installed/dev fallback
+    _api_dir = os.path.dirname(os.path.abspath(__file__))
+    _candidates = [
+        os.path.dirname(_api_dir),  # /usr/lib/nuxel/api.py -> /usr/lib/nuxel
+        os.path.join(os.path.dirname(os.path.dirname(_api_dir)),
+                     'nuxel-file-handlers', 'src'),  # dev checkout
+    ]
+    file_handlers = None
+    for _base in _candidates:
+        if os.path.isfile(os.path.join(_base, 'nuxel_file_handlers.py')):
+            sys.path.insert(0, _base)
+            try:
+                import nuxel_file_handlers as file_handlers
+                break
+            except Exception as _e2:
+                logger.warning('nuxel_file_handlers import failed from %s: %s', _base, _e2)
+    if file_handlers is None:
+        logger.warning('nuxel_file_handlers unavailable: %s', _e)
 
 try:
     import mail_client
@@ -171,11 +233,147 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.1-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.2-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
 APP_REGISTRY_PATH = os.environ.get('NUXEL_APP_REGISTRY', '/etc/nuxel/app-registry/app_registry.json')
+
+# PWNAGE-93000: GTK/RPM applications must show their ORIGINAL icon, never the
+# Nuxel decorative pack.  Resolve the real desktop-entry Icon= through the icon
+# theme directories.  Flatpak exports are handled by flatpak_provider.icon();
+# this resolver covers Fedora RPM / GTK apps and is also a safe fallback.
+_DESKTOP_ICON_CACHE = {}
+_DESKTOP_ICON_DIRS = (
+    '/usr/share/icons/hicolor',
+    '/usr/share/icons/Adwaita',
+    '/usr/share/icons/gnome',
+    '/usr/local/share/icons/hicolor',
+    '/var/lib/flatpak/exports/share/icons/hicolor',
+)
+_DESKTOP_ICON_SIZES = ('512x512', '256x256', '128x128', '96x96', '64x64',
+                       '48x48', '32x32', 'scalable')
+_DESKTOP_APP_DIRS = (
+    '/usr/share/applications',
+    '/usr/local/share/applications',
+    '/var/lib/flatpak/exports/share/applications',
+    '/home/nuxel/.local/share/flatpak/exports/share/applications',
+    '/home/nuxel/.local/share/applications',
+)
+
+
+def _desktop_entry_for(app_id):
+    """Return the newest matching .desktop path for an app id, or None."""
+    if not isinstance(app_id, str) or not re.match(r'^[A-Za-z0-9][A-Za-z0-9._-]{1,127}$', app_id):
+        return None
+    candidates = []
+    for base in _DESKTOP_APP_DIRS:
+        candidates.append(os.path.join(base, app_id + '.desktop'))
+    # Flatpak per-app export tree.
+    for root in ('/var/lib/flatpak/app', '/home/nuxel/.local/share/flatpak/app'):
+        candidates.append(os.path.join(root, app_id, 'current/active/files/share/applications',
+                                      app_id + '.desktop'))
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    # Last resort: scan for X-Flatpak=<app_id>.
+    for base in _DESKTOP_APP_DIRS:
+        try:
+            for name in os.listdir(base):
+                if not name.endswith('.desktop'):
+                    continue
+                path = os.path.join(base, name)
+                try:
+                    with open(path, 'r', errors='replace') as fh:
+                        text = fh.read(16384)
+                except OSError:
+                    continue
+                if ('X-Flatpak=' + app_id) in text or ('\nStartupWMClass=' + app_id) in text:
+                    return path
+        except OSError:
+            continue
+    return None
+
+
+def _desktop_entry_icon_name(app_id):
+    path = _desktop_entry_for(app_id)
+    if not path:
+        return None
+    try:
+        with open(path, 'r', errors='replace') as fh:
+            for line in fh:
+                if line.startswith('Icon='):
+                    value = line.split('=', 1)[1].strip()
+                    return value or None
+                if line.startswith('[') and not line.startswith('[Desktop Entry]'):
+                    break
+    except OSError:
+        return None
+    return None
+
+
+def _resolve_icon_file(icon_name):
+    """Resolve an icon name/path to a real raster/vector file."""
+    if not icon_name:
+        return None
+    name = str(icon_name).strip().strip('"').strip("'")
+    if not name:
+        return None
+    if os.path.isabs(name) and os.path.isfile(name):
+        return name
+    bases = [name]
+    if '.' in os.path.basename(name):
+        bases.append(os.path.splitext(name)[0])
+    exts = ('png', 'svg', 'xpm', 'webp')
+    for base in bases:
+        for theme in _DESKTOP_ICON_DIRS:
+            for size in _DESKTOP_ICON_SIZES:
+                for ext in exts:
+                    path = os.path.join(theme, size, 'apps', base + '.' + ext)
+                    if os.path.isfile(path):
+                        return path
+        for ext in exts:
+            path = os.path.join('/usr/share/pixmaps', base + '.' + ext)
+            if os.path.isfile(path):
+                return path
+            path = os.path.join('/usr/local/share/pixmaps', base + '.' + ext)
+            if os.path.isfile(path):
+                return path
+    return None
+
+
+def resolve_desktop_icon(app_id):
+    """Resolve an app's original desktop icon.
+
+    Returns (bytes, mime, error).  The cache key includes mtime_ns so a package
+    update invalidates the entry instead of serving a permanently stale icon.
+    """
+    icon_name = _desktop_entry_icon_name(app_id)
+    path = _resolve_icon_file(icon_name)
+    if not path:
+        return None, None, ('desktop-entry-not-found' if not icon_name
+                            else 'icon-not-found:' + str(icon_name))
+    try:
+        st = os.stat(path)
+    except OSError as exc:
+        return None, None, str(exc)
+    key = (app_id, path, st.st_mtime_ns, st.st_size)
+    cached = _DESKTOP_ICON_CACHE.get(key)
+    if cached is not None:
+        return cached
+    try:
+        with open(path, 'rb') as fh:
+            data = fh.read(4 * 1024 * 1024)
+    except OSError as exc:
+        return None, None, str(exc)
+    mime = mimetypes.guess_type(path)[0] or 'application/octet-stream'
+    if path.endswith('.svg'):
+        mime = 'image/svg+xml'
+    # Bound the cache; icon files are small and change rarely.
+    if len(_DESKTOP_ICON_CACHE) > 256:
+        _DESKTOP_ICON_CACHE.clear()
+    _DESKTOP_ICON_CACHE[key] = (data, mime, None)
+    return data, mime, None
 
 # D-Bus bridge call timeout (seconds). Must comfortably exceed the portal's
 # consent timeout (NUXEL_PORTAL_TIMEOUT_SECONDS=30) plus slack so an in-flight
@@ -1051,7 +1249,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "nuxel-dialer": ["/usr/bin/nuxel-dialer"],
         "nuxel-messages": ["/usr/bin/nuxel-messages"],
         # PWNAGE-43000: Flatpak (aarch64) and native Fedora applications.
-        "org.mozilla.firefox": ["/usr/bin/firefox"],
+        # PWNAGE-96000: the sandbox-safe wrapper is the single launch authority
+        # for Firefox.  It owns the measured Flatpak-render gate and RPM fallback.
+        "org.mozilla.firefox": ["/usr/lib/nuxel/nuxel-flatpak-firefox"],
         # VLC 3.0.24's aarch64 Fedora build cannot create a Wayland video
         # output or load its Qt interface on this image.  The wrapper tries
         # VLC briefly and then hands the file to mpv, which is verified.
@@ -1162,6 +1362,20 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     def _set_orientation(self, mode):
         return set_orientation_mode(mode)
 
+    def _apply_orientation_if_needed(self, mode):
+        """Apply an orientation only when the live mode actually differs.
+
+        PWNAGE-94000 measured one orientationd subprocess on every app launch
+        even when the phone was already in the requested pose.  The status file
+        is the single orientation owner's own truth; reading it is cheap and
+        never fights a real user rotation.
+        """
+        if not mode:
+            return False
+        if current_orientation_mode() == mode:
+            return True
+        return self._set_orientation(mode)
+
     def _apply_app_default_orientation(self, app_id):
         """Apply the explicit per-app mode, else the global default.
 
@@ -1173,10 +1387,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         mode = explicit_orientation_for_app(app_id)
         if mode is None:
             mode = orientation_mode_for_surface(app_id)
-        return self._set_orientation(mode)
+        return self._apply_orientation_if_needed(mode)
 
     def _restore_home_orientation(self):
-        return self._set_orientation(global_default_orientation_mode())
+        return self._apply_orientation_if_needed(global_default_orientation_mode())
 
     def _toplevel_listing(self):
         """Return the trusted compositor toplevel listing (read-only)."""
@@ -1273,6 +1487,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # exhaust RAM; on this 7.2 GB device that made otherwise healthy apps
         # look unresponsive.  The probe is a single compositor inventory pass.
         focused_surface = self._focus_existing_surface(surface_id)
+        t_focus_probe = time.monotonic()
         if focused_surface:
             logger.info("app already visible id=%s surface=%s", target_id, focused_surface)
             self._apply_app_default_orientation(target_id)
@@ -1309,12 +1524,28 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # client command/path.  Static native_launch entries remain fallbacks
         # for an uninstalled RPM/wrapper.
         flatpak_argv = None
-        if flatpak_provider is not None:
+        plan = None
+        now_mono = time.monotonic()
+        with _LAUNCH_PLAN_LOCK:
+            cached = _LAUNCH_PLAN_CACHE.get(target_id)
+            if cached and (now_mono - cached[0]) < _LAUNCH_PLAN_TTL_S:
+                plan = dict(cached[1])
+        if plan is not None:
+            flatpak_argv = plan.get('flatpak_argv')
+        if flatpak_argv is None and flatpak_provider is not None:
             try:
                 flatpak_argv = flatpak_provider.get_provider().launch_argv(target_id)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("flatpak launch probe failed for %s: %s", target_id, exc)
+        # PWNAGE-96000: never bypass the Firefox wrapper.  It selects Flatpak
+        # only when the render-health gate says Flatpak paints on this device.
+        if target_id == "org.mozilla.firefox":
+            flatpak_argv = None
         is_flatpak = bool(flatpak_argv)
+        # Resolve the registry entry ONCE.  The previous path loaded the
+        # registry twice (before and after argv resolution), paying the Flatpak
+        # inventory cost twice on a cold tap.
+        _reg_app, _info = self._lookup_registry_app(target_id) if plan is None else (plan.get('reg_app'), {})
         t_probe = time.monotonic()
         argv = list(flatpak_argv) if flatpak_argv else self.NATIVE_LAUNCH.get(target_id)
         if argv and extra_args:
@@ -1332,7 +1563,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             else:
                 argv = list(argv) + [str(extra_args[0])]
         if not argv:
-            app, _info = self._lookup_registry_app(target_id)
+            app = _reg_app
             if app and app.get("type") == "native" and app.get("native_binary"):
                 # Registry-backed native entry: exec the registered binary only.
                 binary = app["native_binary"]
@@ -1344,7 +1575,6 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # A registry entry can be known-unsupported (e.g. Signal aarch64 has no
         # official RPM and Flatpak is blocked by CONFIG_USER_NS=n).  Refuse
         # before spawning anything and state the real reason.
-        _reg_app, _info = self._lookup_registry_app(target_id)
         if _reg_app and _reg_app.get("status") in ("unsupported", "blocked"):
             return ({"success": False, "error": "unsupported_on_device",
                      "app_id": target_id,
@@ -1372,7 +1602,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # Flatpak apps get the per-user portal bus.  Legacy native apps keep the
         # root session bus they have always used, avoiding a regression in the
         # custom PhoshAgent/AT-SPI path.
-        dbus_address = ("unix:path=/run/user/1000/bus" if is_flatpak
+        # PWNAGE-94000: EVERY app that runs as the real session user must use
+        # that user's session bus.  The old code used the root compositor bus
+        # for native session-user apps; libadwaita's Settings portal then read
+        # root's dconf (`default` / Adwaita) instead of nuxel's `prefer-dark`,
+        # which is why System Monitor stayed light.  Root-owned native tools
+        # keep the compositor bus they have always used.
+        dbus_address = ("unix:path=/run/user/1000/bus" if (is_flatpak or as_user)
                         else "unix:path=/run/nuxel-wayland/bus")
         use_x11 = (target_id == "org.videolan.VLC" and not is_flatpak)
         if use_x11 and not self._ensure_xwayland():
@@ -1388,6 +1624,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                "--setenv=QT_QPA_PLATFORM=wayland",
                "--setenv=GTK_APPLICATION_PREFER_DARK_THEME=1",
                "--setenv=GTK_THEME=Adwaita:dark",
+               "--setenv=GSETTINGS_BACKEND=dconf",
+               "--setenv=XDG_CURRENT_DESKTOP=Nuxel",
                "--setenv=DBUS_SESSION_BUS_ADDRESS=%s" % dbus_address,
                "--setenv=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native",
                "--setenv=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland",
@@ -1446,11 +1684,19 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                      "app_id": target_id, "detail": err or ("rc=%s" % proc.returncode)}, 500)
         t_accepted = time.monotonic()
         timing_ms = {
-            "request_to_provider_lookup": round((t_probe - t_start) * 1000.0, 3),
+            "request_to_focus_probe": round((t_focus_probe - t_start) * 1000.0, 3),
+            "focus_probe_to_provider_lookup": round((t_probe - t_focus_probe) * 1000.0, 3),
             "provider_lookup_to_exec": round((t_exec_request - t_probe) * 1000.0, 3),
             "systemd_run_accept": round((t_accepted - t_exec_request) * 1000.0, 3),
             "request_to_launch_accepted": round((t_accepted - t_start) * 1000.0, 3),
         }
+        if plan is None:
+            with _LAUNCH_PLAN_LOCK:
+                _LAUNCH_PLAN_CACHE[target_id] = (
+                    time.monotonic(),
+                    {"flatpak_argv": flatpak_argv, "reg_app": _reg_app,
+                     "is_flatpak": is_flatpak},
+                )
         # The Home surface is a fullscreen toplevel.  A newly launched native
         # app maps behind it unless we (a) leave Home fullscreen/minimize it and
         # (b) maximize the app.  Do that asynchronously once the toplevel exists;
@@ -1476,6 +1722,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             process_alive = False
             surface_seen = False
             outcome = "starting"
+            matched_surface = None
+            verify_start = time.monotonic()
+            surface_ms = None
             for _ in range(120):
                 try:
                     st = subprocess.run(
@@ -1495,19 +1744,30 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                         env=dict(os.environ, XDG_RUNTIME_DIR="/run/nuxel-wayland",
                                  WAYLAND_DISPLAY="wayland-0"),
                         capture_output=True, timeout=2, text=True)
-                    surface_seen = ("app_id=%s" % surface_id) in (tl.stdout or "")
+                    ids = re.findall(r"app_id=([^\s]+)", tl.stdout or "")
+                    titles = re.findall(r"title=([^\n]+?)\s+app_id=", tl.stdout or "")
+                    matched_surface = surface_id_matches(surface_id, ids + titles)
+                    surface_seen = bool(matched_surface)
                 except (OSError, subprocess.TimeoutExpired):
                     pass
                 if surface_seen:
                     outcome = "visible"
+                    surface_ms = round((time.monotonic() - t_start) * 1000.0, 3)
                     break
                 time.sleep(0.25)
-            logger.info("native app evidence id=%s unit=%s process_alive=%s surface_seen=%s outcome=%s",
-                        target_id, unit, process_alive, surface_seen, outcome)
+            if not surface_seen and outcome == "starting":
+                outcome = "no_surface_timeout"
+            logger.info("native app evidence id=%s unit=%s process_alive=%s surface_seen=%s "
+                        "surface=%s outcome=%s t3_surface_ms=%s",
+                        target_id, unit, process_alive, surface_seen,
+                        matched_surface or "-", outcome, surface_ms)
             try:
-                doc = {"app_id": target_id, "unit": unit, "argv": argv,
+                doc = {"schema_version": 2, "app_id": target_id, "unit": unit,
+                       "argv": argv, "is_flatpak": is_flatpak,
                        "process_alive": process_alive, "surface_seen": surface_seen,
-                       "outcome": outcome, "timing_ms": timing_ms,
+                       "matched_surface": matched_surface, "outcome": outcome,
+                       "timing_ms": dict(timing_ms, t3_surface=surface_ms,
+                                         verify_window=round((time.monotonic() - verify_start) * 1000.0, 3)),
                        "launch_epoch": time.time() - (time.monotonic() - t_start),
                        "updated_epoch": time.time()}
                 path = "/run/nuxel-app-launch.json"
@@ -1541,25 +1801,127 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         except (OSError, subprocess.TimeoutExpired):
             return False
 
+    _home_lock = threading.Lock()
+
+    def _toplevel_snapshot(self, env):
+        """Return a parsed compositor toplevel snapshot (read-only)."""
+        try:
+            proc = subprocess.run(
+                ["/usr/lib/nuxel/nuxel-foreign-toplevel", "list"],
+                env=env, capture_output=True, timeout=8)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return None, str(exc)
+        if proc.returncode != 0:
+            return None, "toplevel_list_rc=%s" % proc.returncode
+        windows = []
+        for line in (proc.stdout or b"").decode("utf-8", "replace").splitlines():
+            if not line.startswith("WIN "):
+                continue
+            item = {}
+            for part in line[4:].split(" "):
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                    item[k] = v
+            item["home"] = (item.get("app_id") == "nuxel-pwa-host" or
+                            item.get("title") == "Nuxel")
+            item["activated"] = item.get("act") == "1"
+            item["minimized"] = item.get("min") == "1"
+            item["fullscreen"] = item.get("fs") == "1"
+            item["maximized"] = item.get("max") == "1"
+            windows.append(item)
+        return windows, None
+
     def _home_action(self):
-        """Minimize every non-Home toplevel via wlr-foreign-toplevel (no kill)."""
+        """Return to Home and prove that no invisible app surface remains.
+
+        The compositor's ``home`` action is idempotent.  phoc does not implement
+        request_minimize, so nuxel-foreign-toplevel first clears fullscreen and
+        maximized state; this method then verifies the real toplevel inventory
+        and retries once if a non-Home window is still active/fullscreen.  It
+        never kills the application.
+        """
         if self._keyboard_visible():
             self._hide_keyboard_native()
         env = dict(os.environ)
         env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
                     "WAYLAND_DISPLAY": "wayland-0"})
         argv = ["/usr/lib/nuxel/nuxel-foreign-toplevel", "home"]
-        try:
-            proc = subprocess.run(argv, env=env, capture_output=True, timeout=10)
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            logger.error("home action failed: %s", exc)
-            return ({"success": False, "error": "home_action_failed",
-                     "detail": str(exc)}, 500)
-        out = (proc.stdout or b"").decode("utf-8", "replace")
-        logger.info("home action rc=%s out=%s", proc.returncode, out.strip())
+        started = time.time()
+        attempts = []
+        converged = False
+        last_out = ""
+        with self._home_lock:
+            for attempt in range(3):
+                try:
+                    proc = subprocess.run(argv, env=env, capture_output=True, timeout=10)
+                except (OSError, subprocess.TimeoutExpired) as exc:
+                    logger.error("home action failed: %s", exc)
+                    return ({"success": False, "error": "home_action_failed",
+                             "detail": str(exc)}, 500)
+                out = (proc.stdout or b"").decode("utf-8", "replace")
+                last_out = out.strip()
+                # The helper itself is event-driven: it waits on compositor
+                # state events until Home is active and no non-Home toplevel is
+                # active/fullscreen (bounded).  Do not add a fixed sleep here.
+                windows, err = self._toplevel_snapshot(env)
+                left_active = []
+                left_fullscreen = []
+                left_unminimized = []
+                home_active = False
+                if windows is not None:
+                    for w in windows:
+                        if w.get("home"):
+                            home_active = bool(w.get("activated")) and not bool(w.get("minimized"))
+                            continue
+                        if w.get("activated"):
+                            left_active.append(w.get("app_id") or w.get("title") or "?")
+                        if w.get("fullscreen"):
+                            left_fullscreen.append(w.get("app_id") or w.get("title") or "?")
+                        if not w.get("minimized"):
+                            left_unminimized.append(w.get("app_id") or w.get("title") or "?")
+                helper_settled = "settled=1" in last_out
+                attempts.append({
+                    "attempt": attempt + 1, "rc": proc.returncode,
+                    "stdout": last_out, "list_error": err,
+                    "home_active": home_active,
+                    "helper_settled": helper_settled,
+                    "left_active": left_active,
+                    "left_fullscreen": left_fullscreen,
+                    "left_unminimized": left_unminimized,
+                })
+                converged = (windows is not None and home_active and
+                             not left_active and not left_fullscreen)
+                logger.info("home action attempt=%d rc=%s converged=%s left_active=%s "
+                            "left_fullscreen=%s out=%s", attempt + 1, proc.returncode,
+                            converged, left_active, left_fullscreen, last_out)
+                if converged or proc.returncode != 0:
+                    break
         self._restore_home_orientation()
-        return ({"success": True, "action": "home", "rc": proc.returncode,
-                 "output": out.strip()}, 200)
+        receipt = {
+            "schema_version": 1,
+            "action": "home",
+            "started_epoch": started,
+            "finished_epoch": time.time(),
+            "converged": converged,
+            "input_clear": converged,
+            "attempts": attempts,
+            "foreground_state_file": "/run/nuxel/foreground.state",
+        }
+        try:
+            path = "/run/nuxel/home-transition.json"
+            with open(path + ".tmp", "w") as fh:
+                json.dump(receipt, fh, sort_keys=True)
+            os.replace(path + ".tmp", path)
+        except OSError as exc:
+            logger.warning("could not write home transition receipt: %s", exc)
+        # `success` is the transport result; `converged` is the real lifecycle
+        # truth.  The launcher must not claim Home is interactive when a foreign
+        # fullscreen surface is still above it.
+        return ({"success": True, "action": "home",
+                 "rc": attempts[-1]["rc"] if attempts else None,
+                 "converged": converged, "input_clear": converged,
+                 "attempts": len(attempts),
+                 "output": last_out}, 200)
 
     def _close_foreground_action(self):
         """Close the activated non-Home toplevel (long Back). Never closes Home
@@ -1789,7 +2151,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                                           method="app-protocol",
                                           detail="browser state unavailable",
                                           request_id=request_id, session=session), 200)
-            if not bool(state.get("can_go_back", False)):
+            # PWNAGE-96000: an open browser menu is a Back target.  The
+            # browser's own FIFO handler closes the popover before touching
+            # history, so Back never traps the user in an overlay.
+            if not bool(state.get("can_go_back", False)) and not bool(state.get("menu_open", False)):
                 return (self._back_result("at_root", app_id, at_root=True,
                                           method="app-protocol", verified=True,
                                           request_id=request_id, session=session), 200)
@@ -2292,6 +2657,15 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     self._send_json({'success': False, 'error': err or 'icon_not_found',
                                      'app_id': aid}, 404)
 
+        elif path.startswith('/api/v1/apps/icon/'):
+            aid = path.rsplit('/', 1)[-1]
+            data, mime, err = resolve_desktop_icon(aid)
+            if data is not None and mime:
+                self._send_bytes(data, mime)
+            else:
+                self._send_json({'success': False, 'error': err or 'icon_not_found',
+                                 'app_id': aid}, 404)
+
         elif path == '/api/v1/capabilities':
             result = self._call_bridge('GetCapabilities')
             self._send_json(result)
@@ -2425,6 +2799,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("network", "wifi-saved"): "NetworkWifiSaved",
         ("network", "wifi-forget"): "NetworkWifiForget",
         ("notifications", "list"): "GetNotifications",
+        ("notifications", "mark-read"): "MarkNotificationRead",
+        ("notifications", "mark-unread"): "MarkNotificationUnread",
+        ("notifications", "archive"): "ArchiveNotification",
+        ("notifications", "unarchive"): "UnarchiveNotification",
+        ("notifications", "counts"): "GetNotificationCounts",
+        ("notifications", "history"): "GetNotificationHistory",
         ("permissions", "list"): "GetAppCapabilities",
         ("sms", "list"): "SmsGetMessages",
         ("call", "end"): "CallEnd",
@@ -4504,6 +4884,304 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     "spoof": self._spoof_state(changed[0] if applied_scope == "app" else None)}
         return {"success": False, "error": "unknown spoof verb: " + verb}
 
+    def _notification_hub_call(self, method, params):
+        """Call the authoritative system-bus notification hub.
+
+        The hub owns persistence and read/archive state.  The bridge only
+        validates the request and forwards it; a provider failure is reported
+        truthfully and never replaced with a fabricated notification list.
+        """
+        mapping = {
+            "GetNotifications": ("GetNotifications", ()),
+            "GetNotificationHistory": ("GetAllNotifications", ()),
+            "GetNotificationCounts": ("GetNotificationCounts", ()),
+            "MarkNotificationRead": ("MarkRead", ("id",)),
+            "MarkNotificationUnread": ("MarkUnread", ("id",)),
+            "ArchiveNotification": ("Archive", ("id",)),
+            "UnarchiveNotification": ("Unarchive", ("id",)),
+        }
+        target, arg_names = mapping[method]
+        args = []
+        if arg_names:
+            raw = (params or {}).get(arg_names[0]) if isinstance(params, dict) else None
+            try:
+                nid = int(raw)
+            except (TypeError, ValueError):
+                return {"success": False, "error": "invalid notification id",
+                        "error_code": "INVALID_ID"}
+            if nid <= 0:
+                return {"success": False, "error": "invalid notification id",
+                        "error_code": "INVALID_ID"}
+            args.append(dbus.UInt32(nid))
+        try:
+            bus = dbus.SystemBus()
+            obj = bus.get_object('org.nuxel.Notifications', '/org/nuxel/Notifications')
+            iface = dbus.Interface(obj, 'org.nuxel.Notifications')
+            result = getattr(iface, target)(*args)
+            doc = json.loads(result)
+            if method in ("GetNotifications", "GetNotificationHistory") and isinstance(doc, dict):
+                doc.setdefault("notifications", [])
+            return doc
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("notifications.%s failed: %s", method, exc)
+            if method in ("GetNotifications", "GetNotificationHistory"):
+                return {"success": False, "notifications": [],
+                        "counts": {"active": 0, "unread": 0, "read": 0,
+                                   "archived": 0, "total": 0},
+                        "error": str(exc)}
+            return {"success": False, "error": str(exc)}
+
+    # ---- PWNAGE-97000: File Handlers / picker settings --------------------
+    FILE_HANDLERS_OWNERS = {"nuxel-settings", "org.nuxel.Settings", "org.nuxel.Home"}
+
+    def _file_handlers_authorized(self, app_id, verb):
+        if file_handlers is None:
+            return {"success": False, "error": "file_handlers_unavailable",
+                    "error_code": "PROVIDER_UNAVAILABLE"}
+        if verb in ("get", "status", "inventory", "ensure-defaults",
+                    "test-picker", "set", "reset", "mime-default", "mime-remove"):
+            if app_id not in self.FILE_HANDLERS_OWNERS:
+                return {"success": False, "error": "capability_denied",
+                        "error_code": "PERMISSION_DENIED",
+                        "detail": "File Handlers settings are owner-managed"}
+        return None
+
+    @staticmethod
+    def _pending_open_path():
+        home = file_handlers.session_home() if file_handlers is not None else "/home/nuxel"
+        return os.path.join(home, ".local", "state", "nuxel", "file-handlers-pending.json")
+
+    def _write_pending_open(self, app_id, paths, storage_paths=None):
+        target = self._pending_open_path()
+        os.makedirs(os.path.dirname(target), mode=0o700, exist_ok=True)
+        doc = {"schema_version": 1, "app_id": app_id, "paths": list(paths),
+               "storage_paths": list(storage_paths or []),
+               "created_at": time.time()}
+        tmp = target + ".%d.tmp" % os.getpid()
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(doc, fh, indent=2, sort_keys=True)
+            fh.write("\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, target)
+        if file_handlers is not None:
+            file_handlers._chown_session(target)
+            file_handlers._chown_session(os.path.dirname(target))
+        return target
+
+    def _consume_pending_open(self, app_id):
+        target = self._pending_open_path()
+        try:
+            with open(target, "r", encoding="utf-8") as fh:
+                doc = json.load(fh)
+        except FileNotFoundError:
+            return {"success": True, "pending": False, "paths": []}
+        except (OSError, ValueError) as exc:
+            return {"success": False, "error": "pending_open_unreadable",
+                    "detail": str(exc), "paths": []}
+        expected = doc.get("app_id") if isinstance(doc, dict) else None
+        if expected != app_id:
+            return {"success": True, "pending": False, "paths": [],
+                    "belongs_to_other_app": True}
+        raw_paths = doc.get("paths") if isinstance(doc, dict) else []
+        verified = []
+        for raw in raw_paths if isinstance(raw_paths, list) else []:
+            try:
+                p = file_handlers.canonical_selection(raw, must_exist=True)
+                if app_id == "org.nuxel.Photos" and not os.path.isfile(p):
+                    continue
+                verified.append(p)
+            except Exception:
+                continue
+        raw_storage = doc.get("storage_paths") if isinstance(doc, dict) else []
+        storage_verified = []
+        for raw in raw_storage if isinstance(raw_storage, list) else []:
+            value = str(raw or "")
+            if value.startswith("/") and ".." not in value.split("/"):
+                storage_verified.append(value)
+        try:
+            os.unlink(target)
+        except OSError:
+            pass
+        return {"success": True, "pending": bool(verified), "paths": verified,
+                "storage_paths": storage_verified, "app_id": app_id}
+
+    def _open_file_handler(self, app_id, paths):
+        """Queue a MIME-open request for Gallery/Files and activate the app."""
+        if file_handlers is None:
+            return {"success": False, "error": "file_handlers_unavailable",
+                    "error_code": "PROVIDER_UNAVAILABLE"}
+        if app_id not in ("org.nuxel.Photos", "org.nuxel.Files"):
+            return {"success": False, "error": "unsupported_file_handler",
+                    "error_code": "UNSUPPORTED_APP"}
+        if not isinstance(paths, list) or not paths or len(paths) > 64:
+            return {"success": False, "error": "invalid_paths",
+                    "error_code": "INVALID_PATHS"}
+        verified = []
+        for raw in paths:
+            try:
+                p = file_handlers.canonical_selection(raw, must_exist=True)
+                if app_id == "org.nuxel.Photos":
+                    mime = mimetypes.guess_type(p)[0] or ""
+                    if mime not in file_handlers.GALLERY_MIMES and \
+                       os.path.splitext(p)[1].lower() not in file_handlers.MEDIA_EXTS:
+                        raise file_handlers.FileHandlerError(
+                            "Gallery does not declare this file type",
+                            "UNSUPPORTED_MIME")
+                    if not os.path.isfile(p):
+                        raise file_handlers.FileHandlerError(
+                            "Gallery opens regular files only", "NOT_A_FILE")
+                verified.append(p)
+            except file_handlers.FileHandlerError as exc:
+                return {"success": False, "error": str(exc), "error_code": exc.code}
+        storage_paths = []
+        if app_id == "org.nuxel.Photos":
+            try:
+                app_store = self._app_store()
+                files_root = os.path.realpath(str(app_store.files_root))
+            except Exception:
+                files_root = os.path.realpath(file_handlers.session_home())
+            media_root = os.path.realpath(os.environ.get("NUXEL_MEDIA_DIR", "/var/lib/nuxel/media"))
+            for path in verified:
+                real = os.path.realpath(path)
+                if real == files_root or real.startswith(files_root + os.sep):
+                    storage_paths.append("/" + os.path.relpath(real, files_root).replace(os.sep, "/"))
+                    continue
+                if real == media_root or real.startswith(media_root + os.sep):
+                    # Camera-store media lives outside the PWA Files root.  It
+                    # is a real file, so materialize a stable read-only managed
+                    # copy in Gallery rather than returning a fake URI.
+                    dest_dir = os.path.join(files_root, "Gallery", "Opened")
+                    os.makedirs(dest_dir, mode=0o755, exist_ok=True)
+                    base = os.path.basename(real)
+                    dest = os.path.join(dest_dir, base)
+                    stem, ext = os.path.splitext(base)
+                    index = 1
+                    while os.path.exists(dest):
+                        dest = os.path.join(dest_dir, "%s (%d)%s" % (stem, index, ext))
+                        index += 1
+                    shutil.copy2(real, dest)
+                    os.chmod(dest, 0o644)
+                    file_handlers._chown_session(dest)
+                    file_handlers._chown_session(dest_dir)
+                    storage_paths.append("/" + os.path.relpath(dest, files_root).replace(os.sep, "/"))
+                    verified[verified.index(path)] = dest
+        pending = self._write_pending_open(app_id, verified, storage_paths)
+        launched = False
+        try:
+            fd = os.open("/run/nuxel-pwa-host.cmd", os.O_WRONLY | os.O_NONBLOCK)
+            try:
+                os.write(fd, ("launch %s\n" % app_id).encode("ascii"))
+                launched = True
+            finally:
+                os.close(fd)
+        except OSError as exc:
+            logger.warning("file-handler activation FIFO unavailable: %s", exc)
+        return {"success": True, "queued": True, "launched": launched,
+                "app_id": app_id, "count": len(verified),
+                "pending_path": pending}
+
+    def _file_handlers_rpc(self, app_id, verb, params):
+        denied = self._file_handlers_authorized(app_id, verb)
+        if denied is not None:
+            return denied
+        params = params if isinstance(params, dict) else {}
+        try:
+            if verb == "get":
+                return file_handlers.settings_view(file_handlers.load_settings())
+            if verb == "status":
+                return {"success": True, "portal": file_handlers.portal_status()}
+            if verb == "inventory":
+                return {"success": True,
+                        "apps": file_handlers.app_inventory(),
+                        "settings": file_handlers.settings_view(
+                            file_handlers.load_settings())}
+            if verb == "set":
+                document = params.get("settings", params.get("document", params))
+                return file_handlers.apply_settings(document)
+            if verb == "reset":
+                view = file_handlers.reset_settings()
+                file_handlers.ensure_default_handlers()
+                view["mime_catalog"] = file_handlers._mime_catalog()
+                return view
+            if verb == "ensure-defaults":
+                return {"success": True,
+                        "defaults": file_handlers.ensure_default_handlers(),
+                        "mime_catalog": file_handlers._mime_catalog()}
+            if verb == "mime-default":
+                result = file_handlers.set_mime_default(
+                    str(params.get("mime", "")), str(params.get("desktop_id", "")))
+                return {"success": True, "result": result,
+                        "mime_catalog": file_handlers._mime_catalog()}
+            if verb == "mime-remove":
+                result = file_handlers.remove_mime_default(str(params.get("mime", "")))
+                return {"success": True, "result": result,
+                        "mime_catalog": file_handlers._mime_catalog()}
+            if verb == "consume-open":
+                if app_id not in ("org.nuxel.Photos", "org.nuxel.Files"):
+                    return {"success": False, "error": "capability_denied",
+                            "error_code": "PERMISSION_DENIED"}
+                return self._consume_pending_open(app_id)
+            if verb == "test-picker":
+                sample = file_handlers.harness_test_document()
+                options = {
+                    "multiple": False,
+                    "filters": [["All files", [[0, "*"]]]],
+                    "current_folder": os.path.dirname(sample),
+                }
+                proc = self._user_run(
+                    ["/usr/bin/nuxel-file-handlers", "test-picker",
+                     "--options", json.dumps(options), "--timeout", "160"],
+                    timeout=180)
+                result = file_handlers.parse_test_picker_output(
+                    proc.stdout or "", proc.stderr or "", proc.returncode)
+                result["sample_file"] = sample
+                try:
+                    with open("/run/nuxel/file-handler-test.json", "w",
+                              encoding="utf-8") as fh:
+                        json.dump({"at": time.time(), "result": result}, fh,
+                                  indent=2, sort_keys=True)
+                except OSError:
+                    pass
+                return result
+            return {"success": False, "error": "unknown_file_handlers_verb",
+                    "verb": verb, "error_code": "UNKNOWN_VERB"}
+        except file_handlers.FileHandlerError as exc:
+            return {"success": False, "error": str(exc), "error_code": exc.code}
+        except (OSError, ValueError) as exc:
+            return {"success": False, "error": "file_handlers_failed",
+                    "detail": str(exc), "error_code": "FILE_HANDLERS_FAILED"}
+
+    # ---- Network Manager wrapper: private DNS, VPN, ZeroTier -------------
+    NETWORK_MANAGER_OWNERS = {"org.nuxel.NetworkManager", "nuxel-settings",
+                              "org.nuxel.Settings", "org.nuxel.Home"}
+    NETWORK_MANAGER_VERBS = {"dns", "dns-status", "dns-set", "dns-reset",
+                             "vpn-status", "vpn-import", "vpn-up", "vpn-down",
+                             "vpn-delete", "zerotier-status", "zerotier-join",
+                             "zerotier-leave", "zerotier-enabled"}
+
+    def _network_manager_rpc(self, app_id, verb, params):
+        if network_manager is None:
+            return {'success': False, 'error': 'network_manager_unavailable',
+                    'error_code': 'PROVIDER_UNAVAILABLE'}
+        if app_id not in self.NETWORK_MANAGER_OWNERS:
+            check = self._call_bridge('CheckPermission', app_id, 'network:manage')
+            if not (isinstance(check, dict) and check.get('granted')):
+                return {'success': False, 'error': 'capability_denied',
+                        'error_code': 'PERMISSION_DENIED',
+                        'detail': 'network:manage is required'}
+        try:
+            return network_manager.handle(verb, params)
+        except network_manager.NetworkManagerError as exc:
+            return {'success': False, 'error': str(exc), 'error_code': exc.code,
+                    'verb': verb}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning('network-manager RPC %s failed: %s', verb, exc)
+            return {'success': False, 'error': 'network_manager_failed',
+                    'detail': str(exc), 'error_code': 'NETWORK_MANAGER_FAILED',
+                    'verb': verb}
+
     def _handle_rpc(self, app_id, body):
         """Dispatch a generic bridge RPC (namespace/verb/params)."""
         namespace = body.get('namespace', '')
@@ -4511,6 +5189,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         params = body.get('params', {}) or {}
         if namespace == 'permissions':
             return self._permissions_rpc(app_id, verb, params)
+        if namespace == 'file-handlers':
+            return self._file_handlers_rpc(app_id, verb, params)
+        if namespace == 'network' and verb in self.NETWORK_MANAGER_VERBS:
+            return self._network_manager_rpc(app_id, verb, params)
         if namespace == 'downloader':
             return self._downloader_rpc(app_id, verb, params)
         if namespace == 'appearance':
@@ -5021,19 +5703,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if method is None:
             logger.warning("Unknown RPC %s.%s", namespace, verb)
             return {"success": False, "error": "Unknown RPC: %s.%s" % (namespace, verb), "code": 400}
-        # The notification hub is a separate system-bus service.  Its
-        # GetNotifications is the canonical live store; expose it as
-        # `notifications.list` so the launcher status bar does not poll into
-        # "Unknown RPC" every five seconds.
-        if method == "GetNotifications":
-            try:
-                bus = dbus.SystemBus()
-                obj = bus.get_object('org.nuxel.Notifications', '/org/nuxel/Notifications')
-                iface = dbus.Interface(obj, 'org.nuxel.Notifications')
-                return json.loads(iface.GetNotifications())
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("GetNotifications failed: %s", exc)
-                return {"success": False, "notifications": [], "error": str(exc)}
+        # The notification hub is a separate system-bus service.  It is the
+        # single authoritative store; never create a second one in the bridge.
+        if method in ("GetNotifications", "MarkNotificationRead",
+                      "MarkNotificationUnread", "ArchiveNotification",
+                      "UnarchiveNotification", "GetNotificationCounts",
+                      "GetNotificationHistory"):
+            return self._notification_hub_call(method, params)
         build = self.RPC_ARG_BUILDERS.get(method)
         if build is not None:
             try:
@@ -5341,6 +6017,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 _FLATPAK_LIST_CACHE['installed'] = None
                 _FLATPAK_LIST_CACHE['at'] = 0.0
             self._send_json(_result)
+
+        elif path == '/api/v1/file-handlers/open':
+            target = str(body.get('app_id') or '')
+            paths = body.get('paths') if isinstance(body.get('paths'), list) else []
+            result = self._open_file_handler(target, paths)
+            self._send_json(result, 200 if result.get('success') else 400)
 
         elif path == '/api/v1/apps/activate':
             # The target is its OWN field: `app_id` in this API is the CALLER (used

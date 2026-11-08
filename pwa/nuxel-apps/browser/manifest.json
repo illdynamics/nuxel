@@ -75,6 +75,8 @@
     "external_service_dependency": "none by default",
     "facilities": [
       "local Nuxel pages by default; external navigation is opt-in (network:outbound)"
-    ]
+    ],
+    "launcher_exposed": false,
+    "canonical_browser": "org.nuxel.BrowserNative"
   }
 }

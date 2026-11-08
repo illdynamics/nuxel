@@ -41,6 +41,7 @@
       var info = await bridgeCall('storage', 'home', {});
       if (info && info.success !== false && info.home) this.home = info.home;
       await this.refresh();
+      await this.consumePendingOpen();
     },
 
     bind: function () {
@@ -100,6 +101,32 @@
       el.promptInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') self.submitPrompt(); });
       el.confirmCancel.addEventListener('click', function () { el.confirmDialog.classList.add('hidden'); });
       el.confirmOk.addEventListener('click', function () { self.doDelete(); });
+    },
+
+    async consumePendingOpen() {
+      var res = await bridgeCall('file-handlers', 'consume-open', {});
+      if (!res || res.success === false || !res.pending || !Array.isArray(res.paths) || !res.paths.length) return false;
+      var abs = String(res.paths[0]);
+      var home = String(this.home || '/home/nuxel').replace(/\/$/, '');
+      var rel = abs.indexOf(home + '/') === 0 ? abs.slice(home.length) : abs;
+      if (!rel.startsWith('/')) return false;
+      var parts = rel.split('/').filter(Boolean);
+      var name = parts.pop();
+      this.cwd = '/' + parts.join('/');
+      await this.refresh();
+      if (!name) { this.status('Opened folder ' + abs); return true; }
+      var target = '/' + parts.concat([name]).join('/');
+      var found = this.entries.find(function (e) { return e.path === target; });
+      if (found) {
+        this.selecting = true;
+        this.selected.clear();
+        this.selected.add(target);
+        this.updateSelection();
+        this.status('Opened ' + name + ' from the system file handler');
+        return true;
+      }
+      this.status('Opened ' + abs + ' — the path is outside the visible file root');
+      return false;
     },
 
     async refresh() {
