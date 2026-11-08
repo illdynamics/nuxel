@@ -262,7 +262,11 @@ Joined network:
 - VNC is a separate X11/Openbox session on TCP `5900`, bound to `10.20.30.16` (not wildcard).
 - TigerVNC `VncAuth` with a real generated password.
 - Landscape geometry is enforced: `1520x720` (the S10+ current logical landscape).
-- `nuxel-remote-vnc.service` is enabled at boot; the wrapper falls back to the current `wlan0` IPv4 if the generated address is stale.
+- `nuxel-remote-vnc.service` is enabled at boot.  The first post-reboot check
+  exposed that it was attached to `graphical.target` while the phone boots
+  `multi-user.target`; the unit now uses `WantedBy=multi-user.target` and was
+  verified active on a second reboot.  The wrapper falls back to the current
+  `wlan0` IPv4 if the generated address is stale.
 - Jump Desktop profile `nux-vnc` was updated to `1520x720`, host `10.20.30.16`, port `5900`, user `nuxel`, saved password.
 
 The live Xvnc process and XRandR readback both report `1520x720`; the previous 1024x768 portrait/4:3 session is gone.
@@ -313,6 +317,13 @@ scripts/nuxel-deploy-live.py --host 10.20.30.16 --user root \
 - Installed targets: see `deploy/deploy-apply.txt`
 - Pre-deploy hashes: `deploy/pre-deploy-hashes.txt`
 - Rollback: `/var/lib/nuxel/live-deploy/rollback-20261108T233453Z/` with `COMMITTED`
+
+Release-CI hardening: the v0.8.1 rootfs build failed with
+`usermod: user 'nuxel' does not exist` because the inet-group usermod ran before
+useradd.  The early usermod was removed; membership is written directly to the
+staged `/etc/group` after the account exists.  The image builder also creates
+`/etc/systemd/system/zerotier-one.service.d/` before installing the TUN
+drop-in.  Both failures are covered by the PWNAGE-97000 contract tests.
 
 Installed version after deploy: `host_version = 0.8.2-beta`; status bar `0.8.2-beta`.
 
