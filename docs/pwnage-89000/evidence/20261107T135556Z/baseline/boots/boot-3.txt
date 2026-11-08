@@ -1,0 +1,80 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-07T14:05:12Z
+3ec21337-c62e-49a4-8bdd-a86b97df2768
+up 0 minutes
+Startup finished in 3.428s (kernel) + 47.394s (userspace) = 50.823s 
+multi-user.target reached after 45.648s in userspace.
+---
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @45.648s
+└─nuxel-soundd.service @4.117s +41.521s
+  └─nuxel-audio-session.service @39.025s
+    └─basic.target @4.043s
+      └─sockets.target @4.042s
+        └─systemd-logind-varlink.socket @4.042s +175us
+          └─sysinit.target @4.031s
+            └─systemd-timesyncd.service @3.761s +269ms
+              └─systemd-tmpfiles-setup.service @3.280s +475ms
+                └─systemd-journal-flush.service @2.947s +330ms
+                  └─systemd-journald.service @2.309s +635ms
+                    └─systemd-journald.socket @2.296s +226us
+                      └─system.slice @2.278s
+                        └─-.slice @2.278s
+---
+41.521s nuxel-soundd.service
+39.460s nuxel-boot-sound.service
+37.010s nuxel-mic-route.service
+27.285s nuxel-abox-firmware-reload.service
+ 6.379s NetworkManager-wait-online.service
+ 4.803s nuxel-audio-route.service
+ 4.017s nuxel-fallback.service
+ 3.076s nuxel-http-bridge.service
+ 2.701s nuxel-audio-route-retry.service
+ 2.000s NetworkManager.service
+ 1.033s nuxel-wl-fb.service
+  816ms nuxel-device-permissions.service
+  796ms polkit.service
+  644ms systemd-udev-trigger.service
+  635ms systemd-journald.service
+  583ms systemd-hostnamed.service
+  510ms rtkit-daemon.service
+  475ms systemd-tmpfiles-setup.service
+  357ms nuxel-bootmode-guard.service
+  330ms systemd-journal-flush.service
+---
+Id=multi-user.target
+ActiveEnterTimestampMonotonic=49077436
+
+Id=nuxel-wayland.service
+ActiveEnterTimestampMonotonic=9985993
+
+Id=nuxel-wl-fb.service
+ActiveEnterTimestampMonotonic=11330560
+
+Id=nuxel-soundd.service
+ActiveEnterTimestampMonotonic=49067416
+
+Id=nuxel-clockd.service
+ActiveEnterTimestampMonotonic=7503686
+
+Id=nuxel-audio-session.service
+ActiveEnterTimestampMonotonic=42454134
+
+Id=nuxel-mic-route.service
+ActiveEnterTimestampMonotonic=48723726
+
+Id=nuxel-boot-sound.service
+ActiveEnterTimestampMonotonic=0
+
+Id=nuxel-abox-firmware-reload.service
+ActiveEnterTimestampMonotonic=47308612

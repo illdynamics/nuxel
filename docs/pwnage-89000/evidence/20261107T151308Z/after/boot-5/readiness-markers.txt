@@ -1,0 +1,57 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+[    6.338399] fedora nuxel-init: NUXEL_MARKER MP4_FIRST_FRAME_READY
+[    6.405200] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[    7.665682] fedora systemd[1]: Started nuxel-boot-sound.path - Play the Nuxel boot cue once the audio route is actually ready.
+[    7.665771] fedora systemd[1]: Started nuxel-mic-route.path - Start Nuxel microphone route when the playback route state appears.
+[    8.100968] fedora nuxel-clockd[5375]: 2026-11-07 16:31:38,408 INFO scheduler ready alarms=0 timer=acknowledged
+[    9.018264] fedora nuxel-soundd[6062]: 2026-11-07 16:31:39,402 INFO nuxel-soundd ready socket=/run/nuxel/soundd.sock dirs=['/home/nuxel/Sounds', '/usr/share/nuxel/sounds']
+[    9.020601] fedora nuxel-soundd[6062]: 2026-11-07 16:31:39,404 INFO control API READY in 10.5 ms (audio backend continues asynchronously)
+[    9.911660] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[   10.021549] fedora nuxel-button-manager[6152]: MANAGER_READY key=/dev/input/event1 touch=/dev/input/event2 gestures=1 fsm_spec_v=1
+[   10.315478] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[   10.699390] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[   11.071181] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[   11.266389] fedora audit[6722]: AVC avc:  denied  { ioctl } for  pid=6722 comm="nuxel-audio-war" path="/usr/lib/nuxel/nuxel-audio-warmup" dev="sda31" ino=156773 ioctlcmd=0x542a scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:unlabeled_t:s0 tclass=file permissive=1
+[   11.339096] fedora nuxel-audio-session.sh[5370]: 2026-11-07T15:31:41Z nuxel-audio-session: pipewire socket ready pid=6712
+[   14.224697] fedora nuxel-soundd[6062]: 2026-11-07 16:31:44,609 WARNING warmup rc=1 nuxel-audio-warmup: speaker DAPM path did not power up
+[   14.296140] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794065504-LAUNCHER_READY_ANIMATION_OWNS_PANEL-6151 owner=anim stage=LAUNCHER_READY_ANIMATION_OWNS_PANEL terminal=0 loops=1/1 reason=launcher_ready
+[   14.863017] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794065505-LAUNCHER_DISPLAY_OWNER-6151 owner=ui stage=LAUNCHER_DISPLAY_OWNER terminal=1 loops=1/1 reason=launcher_display_owner
+[   14.863126] fedora unknown: 6,0;LAUNCHER_DISPLAY owner=nuxel-wl-fb receipt=1794065505-LAUNCHER_DISPLAY_OWNER-6151 loops=1/1
+[   16.301948] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[   39.987633] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-session.sh[8802]: 2026-11-07T15:32:10Z nuxel-audio-session: pipewire socket ready pid=8806
+[   44.262169] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[6062]: 2026-11-07 16:32:14,646 INFO persistent pw-cat stream started pid=9405 latency=40ms pipe_bytes=8192
+[   44.296185] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-boot-sound.service - Nuxel startup cue after confirmed boot-animation to launcher handoff...
+[   44.301475] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-mic-route.service - Nuxel S10+ built-in microphone capture route (UAIF0 -> WDMA1)...
+[   44.418718] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:14Z nuxel-mic-route: ok   NSRC0=UAIF0
+[   44.443682] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:14Z nuxel-mic-route: ok   SIFM0=WDMA (already set)
+[   44.547408] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:14Z nuxel-mic-route: ok   SIFM0 autoconfig
+[   44.618365] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   SIFM0 min 8000
+[   44.708246] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   WDMA1 gate on
+[   44.811052] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   LHPF1=IN3L
+[   44.923821] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   ASRC1IN1L=LHPF1
+[   44.988275] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   ISRC1INT1=ASRC1IN1L
+[   45.045810] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   AIF1TX1=ISRC1INT1
+[   45.132349] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   AIF1TX2=ISRC1INT1
+[   45.231838] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   IN3L gain +16dB
+[   45.257302] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: ok   DMIC1 on (already set)
+[   45.258865] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[9410]: 2026-11-07T15:32:15Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=1.0
+[   45.271334] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-mic-route.sh[9416]: 2026-11-07T15:32:15Z nuxel-mic-route: microphone route applied (hw:0,13 WDMA1)
+[   45.274416] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Finished nuxel-mic-route.service - Nuxel S10+ built-in microphone capture route (UAIF0 -> WDMA1).
+[   45.270389] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-mic-route comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[   46.109776] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[9798]: 2026-11-07T15:32:16Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=1.0
+[   47.237840] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[6062]: 2026-11-07 16:32:17,622 INFO cue queued action=boot path=/home/nuxel/Sounds/nuxel-boot-audio.mp3 loop=False token= bytes=1471876
+[   47.319913] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service: Deactivated successfully.
+[   47.320504] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Finished nuxel-boot-sound.service - Nuxel startup cue after confirmed boot-animation to launcher handoff.
+[   47.318389] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-boot-sound comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[   47.318388] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-boot-sound comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[   47.767483] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service - Nuxel startup cue after confirmed boot-animation to launcher handoff skipped, unmet condition check ConditionPathExists=!/run/nuxel-boot-sound.played
+[   90.554011] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service - Nuxel startup cue after confirmed boot-animation to launcher handoff skipped, unmet condition check ConditionPathExists=!/run/nuxel-boot-sound.played
+[   92.928743] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.service - Nuxel startup cue after confirmed boot-animation to launcher handoff skipped, unmet condition check ConditionPathExists=!/run/nuxel-boot-sound.played

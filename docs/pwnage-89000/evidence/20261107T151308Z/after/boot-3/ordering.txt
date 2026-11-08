@@ -1,0 +1,17 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Wants=seatd.service nuxel-touch-arm.service nuxel-audio-route.service nuxel-web.service
+After=seatd.service system.slice systemd-journald.socket nuxel-touch-arm.service basic.target nuxel-bootmode-oneshot.service sysinit.target nuxel-web.service
+===
+Wants=tmp.mount nuxel-http-bridge.service
+After=sysinit.target basic.target -.mount systemd-tmpfiles-setup.service systemd-journald.socket system.slice tmp.mount
+===
+Wants=nuxel-audio-session.service nuxel-wayland.service nuxel-wl-fb.service
+After=system.slice systemd-journald.socket nuxel-button-manager.service nuxel-audio-session.service basic.target sysinit.target nuxel-wl-fb.service sound.target nuxel-boot-sound.path nuxel-wayland.service

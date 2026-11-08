@@ -1,0 +1,35 @@
+=== HOST TESTS 2026-11-08T09:33:39Z ===
+................                                                         [100%]
+16 passed in 0.62s
+.....................                                                    [100%]
+21 passed in 0.60s
+...........                                                              [100%]
+11 passed in 0.59s
+.................                                                        [100%]
+17 passed in 0.60s
+=== STATIC CHECKS ===
+node spoof.js OK
+api.py AST OK
+provision sh OK
+build sh OK
+units=17 problems=0 warnings=5 verdict=OFFLINE_TESTED
+boot_id=7c9fdaef-9a9d-4968-a76e-c541dbfcea0b
+failed_units:
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+key_services:
+active
+active
+active
+active
+active
+active
+active
+active
+avahi_wants=
+spoof_status:
+enabled True apps ['org.mozilla.firefox'] global None lib True
+nfc:
+{"device":"beyond2lte","tool":"nuxel-nfc-diag","stages":{"controller":"chardev:/dev/sec-nfc","firmware":"found:/lib/firmware/nfc/sec_s3nrn82_firmware.bin","subsystem":"down","stack":"client:nuxel-nfc"},"first_failing_stage":"subsystem","state":"BLOCKED_KERNEL","tag_read_verified":false,"owner_test":"docs/beta-finalization/manual-proof/12-nfc.md"}
+enabled False apps {} global None

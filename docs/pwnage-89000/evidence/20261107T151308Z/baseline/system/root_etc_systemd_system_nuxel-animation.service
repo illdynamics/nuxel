@@ -1,0 +1,43 @@
+[Unit]
+Description=Nuxel userspace boot-animation phase (guarded: never a second /dev/fb0 owner)
+Documentation=file:/usr/share/doc/nuxel/BETA-FINALIZATION/system/SERVICE-GRAPH.md
+# --- WHY THIS UNIT IS GUARDED, AND WHY THAT IS THE POINT ---------------------
+# The shipped S10+ revision plays the boot animation from the INITRAMFS
+# (/opt/nuxel/nuxel-anim-player, carried in the BOOT container), and the handoff
+# to the launcher bridge must have exactly ONE framebuffer owner at every
+# instant (A31/A32, measured: a second opener runs decon_release and disables the
+# panel regulator).
+#
+# This rootfs unit therefore does not "also play the animation".  It exists so
+# the animation phase is a *declared, receipt-driven* step of the boot graph that
+# the rootfs builder installs reproducibly, and it refuses to run whenever any
+# other owner already holds the panel:
+#   * ConditionPathExists=!/usr/lib/nuxel/nuxel-wl-fb
+#       -> on the shipping image the launcher bridge is installed, so this unit
+#          is ALWAYS skipped (ConditionResult=no). It can only ever run on an
+#          image built without the launcher (NUXEL_ENABLE_LAUNCHER=0), exactly
+#          like the nuxel-ui drop-in.
+#   * ExecCondition=/usr/lib/nuxel/nuxel-animation-claim
+#       -> inspects real process state (no timeouts): it returns non-zero, and
+#          the unit is skipped, if nuxel-anim-player / nuxel-wl-fb / nuxel-ui is
+#          already running.
+# The two guards together mean enabling this unit cannot regress the A32 single
+# framebuffer owner invariant, and the handoff stays receipt-driven.
+StartLimitIntervalSec=60
+StartLimitBurst=3
+Conflicts=nuxel-wl-fb.service
+After=systemd-udev-settle.service
+Before=nuxel-wl-fb.service nuxel-fallback.service
+ConditionPathExists=!/usr/lib/nuxel/nuxel-wl-fb
+ConditionPathExists=/usr/bin/nuxel-anim-player
+
+[Service]
+Type=simple
+ExecCondition=/usr/lib/nuxel/nuxel-animation-claim
+ExecStart=/usr/bin/nuxel-anim-player
+Restart=no
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

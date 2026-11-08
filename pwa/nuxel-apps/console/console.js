@@ -35,6 +35,9 @@ const STATE_LABELS = {
   CHECKING: 'CHECKING',
   SETUP: 'SETUP REQUIRED',
   BLOCKED_KERNEL_PANIC: 'UNAVAILABLE · KERNEL BLOCKER',
+  NEEDS_VALIDATION: 'NEEDS VALIDATION',
+  LINK_UP_UNVERIFIED: 'LINK UP · SSH PROBE UNVERIFIED',
+  BLOCKED_KNOWN_PANIC: 'BLOCKED · KNOWN NCM PANIC',
   BLOCKED_KERNEL: 'UNAVAILABLE · KERNEL SUPPORT MISSING',
   SUPPORTED_NOT_ENABLED: 'SETUP REQUIRED',
   UNAVAILABLE: 'UNAVAILABLE',
@@ -46,7 +49,8 @@ function stateKey(status) {
   if (status === 'AVAILABLE' || status === 'READY') return 'ready';
   if (status === 'CHECKING') return 'checking';
   if (status.startsWith('BLOCKED')) return 'blocked';
-  if (status === 'SUPPORTED_NOT_ENABLED' || status === 'SETUP') return 'setup';
+  if (status === 'SUPPORTED_NOT_ENABLED' || status === 'SETUP' || status === 'NEEDS_VALIDATION') return 'setup';
+  if (status === 'LINK_UP_UNVERIFIED') return 'checking';
   return 'unavailable';
 }
 
@@ -160,6 +164,13 @@ export function startTriLinkConsole(mode) {
     row('Transport', cfg.transport.toUpperCase());
     row('Target', doc.target || 'not configured');
     row('Auth', doc.auth || 'not applicable');
+    if (doc.modes) {
+      Object.keys(doc.modes).forEach((name) => {
+        const m = doc.modes[name] || {};
+        row('Mode ' + name.toUpperCase(), (m.status || 'UNKNOWN') + (m.compiled === false ? ' · not compiled' : ''));
+      });
+    }
+    if (doc.acm_preserved !== undefined) row('CDC-ACM preserved', doc.acm_preserved ? 'yes' : 'NO');
     if (doc.host_command) {
       command.textContent = doc.host_command;
       command.classList.remove('hidden');
@@ -169,6 +180,12 @@ export function startTriLinkConsole(mode) {
       copy.disabled = true;
     }
     detail.textContent = doc.detail || 'No additional detail reported.';
+    if (doc.status === 'NEEDS_VALIDATION' || doc.status === 'LINK_UP_UNVERIFIED') {
+      const li = el('li');
+      li.appendChild(el('b', '', 'Blocker'));
+      li.appendChild(el('span', '', 'See REPORT-USBNET.md; READY is not claimed from compiled options or interface presence.'));
+      checks.appendChild(li);
+    }
     (doc.checks || []).forEach((check) => {
       const li = el('li');
       li.appendChild(el('b', '', check.name || '?'));

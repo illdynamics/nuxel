@@ -1,0 +1,20 @@
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+nuxel-wayland.service +16ms
+└─nuxel-interface-state.service @6.715s +157ms
+  └─nuxel-wifi.service @8.656s +202ms
+    └─network.target @6.505s
+      └─NetworkManager.service @4.449s +2.054s
+        └─dbus-daemon.service @4.352s
+          └─basic.target @4.339s
+            └─sockets.target @4.338s
+              └─systemd-logind-varlink.socket @4.338s +283us
+                └─sysinit.target @4.326s
+                  └─systemd-timesyncd.service @4.104s +221ms
+                    └─systemd-tmpfiles-setup.service @3.617s +480ms
+                      └─systemd-journal-flush.service @3.103s +508ms
+                        └─systemd-journald.service @2.471s +628ms
+                          └─systemd-journald.socket @2.456s +304us
+                            └─system.slice @2.439s
+                              └─-.slice @2.439s

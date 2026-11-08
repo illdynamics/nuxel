@@ -337,9 +337,12 @@ def _net_interfaces(net_root: Path | str = "/sys/class/net") -> List[str]:
 
 def _transport(status: str, *, target: str = "", detail: str = "",
                checks: Optional[List[Dict[str, str]]] = None,
-               command: str = "", auth: str = "") -> Dict[str, Any]:
-    return {"status": status, "target": target, "detail": detail,
-            "auth": auth, "host_command": command, "checks": checks or []}
+               command: str = "", auth: str = "",
+               **extra: Any) -> Dict[str, Any]:
+    doc = {"status": status, "target": target, "detail": detail,
+           "auth": auth, "host_command": command, "checks": checks or []}
+    doc.update(extra)
+    return doc
 
 
 def serial_status(*, gadget_root: Path | str = "/sys/kernel/config/usb_gadget",
@@ -415,12 +418,18 @@ def wifi_status(*, runner: Optional[Callable[..., subprocess.CompletedProcess]] 
                       detail=detail, command=command)
 
 
+def _base_release(release: str) -> str:
+    m = re.match(r"^(\d+\.\d+\.\d+)", release or "")
+    return m.group(1) if m else (release or "")
+
+
 def usb_status(*, release: str = "",
                gadget_root: Path | str = "/sys/kernel/config/usb_gadget",
                net_root: Path | str = "/sys/class/net",
                proc_root: Path | str = "/proc",
                kernel_config: Optional[str] = None) -> Dict[str, Any]:
     release = release or kernel_release(proc_root)
+    base = _base_release(release)
     cfg = parse_kernel_config(kernel_config if kernel_config is not None
                               else kernel_config_text(release, proc_root))
     functions = _usb_function_names(gadget_root)
@@ -430,37 +439,100 @@ def usb_status(*, release: str = "",
         "ncm": cfg.get("CONFIG_USB_CONFIGFS_NCM") == "y" and cfg.get("CONFIG_USB_F_NCM") == "y",
         "rndis": cfg.get("CONFIG_USB_CONFIGFS_RNDIS") == "y" and cfg.get("CONFIG_USB_F_RNDIS") == "y",
         "ecm": cfg.get("CONFIG_USB_CONFIGFS_ECM") == "y",
+        "ecm_subset": cfg.get("CONFIG_USB_CONFIGFS_ECM_SUBSET") == "y",
+        "eem": cfg.get("CONFIG_USB_CONFIGFS_EEM") == "y",
         "configfs": cfg.get("CONFIG_USB_CONFIGFS") == "y",
     }
+    modes = {
+        "ncm": {
+            "compiled": compiled["ncm"],
+            "safe_on_current_kernel": False if base in KNOWN_BAD_USB_KERNELS else "UNVERIFIED",
+            "status": "BLOCKED_KNOWN_PANIC" if base in KNOWN_BAD_USB_KERNELS else "NEEDS_VALIDATION",
+            "evidence": USB_PANIC_EVIDENCE,
+        },
+        "rndis": {
+            "compiled": compiled["rndis"],
+            "safe_on_current_kernel": "UNVERIFIED",
+            "status": "NEEDS_VALIDATION" if compiled["rndis"] else "BLOCKED_KERNEL",
+        },
+        "ecm": {
+            "compiled": compiled["ecm"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["ecm"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["ecm"] else "BLOCKED_KERNEL",
+        },
+        "ecm_subset": {
+            "compiled": compiled["ecm_subset"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["ecm_subset"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["ecm_subset"] else "BLOCKED_KERNEL",
+        },
+        "eem": {
+            "compiled": compiled["eem"],
+            "safe_on_current_kernel": "UNVERIFIED" if compiled["eem"] else False,
+            "status": "NEEDS_VALIDATION" if compiled["eem"] else "BLOCKED_KERNEL",
+        },
+    }
+    acm = any(f.startswith("acm.") for f in functions)
+    ssh_listening = _port_listening(SSH_PORT, proc_root)
     checks = [
-        {"name": "kernel", "status": "BLOCKED" if release in KNOWN_BAD_USB_KERNELS else "OK",
+        {"name": "kernel", "status": "BLOCKED_NCM" if base in KNOWN_BAD_USB_KERNELS else "OK",
          "detail": release or "unknown"},
         {"name": "configfs", "status": "OK" if compiled["configfs"] else "MISSING"},
         {"name": "net-function", "status": "OK" if any(compiled[k] for k in ("ncm", "rndis", "ecm")) else "MISSING",
          "detail": ", ".join(k for k in ("ncm", "rndis", "ecm") if compiled[k]) or "none compiled"},
+        {"name": "ncm-safety", "status": "BLOCKED" if base in KNOWN_BAD_USB_KERNELS else "UNVERIFIED",
+         "detail": "ncm_free_inst -> misc_deregister panic on 4.14.253" if base in KNOWN_BAD_USB_KERNELS else "not physically validated"},
+        {"name": "rndis-safety", "status": "UNVERIFIED" if compiled["rndis"] else "MISSING",
+         "detail": "compiled; source review and physical teardown test required"},
         {"name": "gadget-functions", "status": "OK" if any(f.startswith(("ncm.", "rndis.", "ecm.")) for f in functions) else "MISSING",
          "detail": ", ".join(functions) or "none"},
+        {"name": "acm-preserved", "status": "OK" if acm else "MISSING", "detail": "acm.usb0"},
         {"name": "usb-network", "status": "OK" if net_ifaces else "MISSING",
          "detail": ", ".join(net_ifaces) or "usb0/ncm0/rndis0 absent"},
+        {"name": "sshd-listen", "status": "OK" if ssh_listening else "MISSING",
+         "detail": "TCP 22"},
+        {"name": "ssh-auth-probe", "status": "UNKNOWN",
+         "detail": "phone-side status cannot prove the host key-authenticated probe"},
     ]
-    if release in KNOWN_BAD_USB_KERNELS:
-        return _transport(
-            "BLOCKED_KERNEL_PANIC", target="USB network", checks=checks,
-            detail=("unsupported on kernel %s: NCM configfs teardown panicked this build "
-                    "(ncm_free_inst); evidence: %s" % (release, USB_PANIC_EVIDENCE)))
+    common = {
+        "kernel_release": release, "kernel_base_release": base,
+        "compiled": compiled, "modes": modes, "selected_mode": None,
+        "gadget_functions": functions,
+        "gadget_network_function": next((f for f in functions if f.startswith(("ncm.", "rndis.", "ecm."))), None),
+        "device_interface": net_ifaces[0] if net_ifaces else None,
+        "host_interface": None,
+        "device_ip": None, "host_ip": None,
+        "acm_preserved": acm,
+        "ssh_listener": ssh_listening,
+        "ssh_authenticated_probe": False,
+        "mutated": False,
+    }
     if not compiled["configfs"] or not any(compiled[k] for k in ("ncm", "rndis", "ecm")):
         return _transport("BLOCKED_KERNEL", target="USB network", checks=checks,
-                          detail="the kernel does not provide a usable USB network gadget")
+                          detail="the kernel does not provide a usable USB network gadget",
+                          **common)
+    if base in KNOWN_BAD_USB_KERNELS:
+        return _transport(
+            "NEEDS_VALIDATION", target="USB network", checks=checks,
+            detail=("NCM is BLOCKED_KNOWN_PANIC on %s (ncm_free_inst). RNDIS is compiled "
+                    "but UNVERIFIED; no USB network transport is offered until source "
+                    "review and physical validation. Evidence: %s" % (release, USB_PANIC_EVIDENCE)),
+            **common)
     if not net_ifaces:
         return _transport("SUPPORTED_NOT_ENABLED", target="USB network", checks=checks,
-                          detail="kernel support exists, but no usb0/ncm0/rndis0 interface is present")
-    if not _port_listening(SSH_PORT, proc_root):
+                          detail="kernel support exists, but no usb0/ncm0/rndis0 interface is present",
+                          **common)
+    if not ssh_listening:
         return _transport("UNAVAILABLE", target="USB network", checks=checks,
-                          detail="USB network interface exists, but sshd is not listening")
-    return _transport("AVAILABLE", target="%s@usb-network:%d" % (DEFAULT_USER, SSH_PORT),
+                          detail="USB network interface exists, but sshd is not listening",
+                          **common)
+    return _transport("LINK_UP_UNVERIFIED", target="%s@usb-network:%d" % (DEFAULT_USER, SSH_PORT),
                       checks=checks, auth="publickey only",
-                      detail="USB network interface present; SSH endpoint is listening",
-                      command="./scripts/s10plus-debug-pack/nuxel-live-ssh.sh --transport usb --status")
+                      detail=("USB interface and sshd are present, but a host key-authenticated "
+                              "probe has not been recorded; READY is never claimed from "
+                              "interface presence alone"),
+                      command="./scripts/s10plus-debug-pack/nuxel-live-ssh.sh --transport usb --status",
+                      **common)
+
 
 
 def get_status(*, release: str = "",

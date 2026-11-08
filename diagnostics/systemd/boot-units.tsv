@@ -1,0 +1,56 @@
+$ systemctl show
+rc=0
+--- stdout ---
+nuxel-abox-firmware-reload.service	active	exited	success	27025.277	20139804	47165453
+nuxel-abox-firmware-reload.timer	active	running	success	NA		9103307
+nuxel-app-prewarm.service	active	exited	success	16.272	7560800	7577204
+nuxel-audio-route-retry.service	inactive	dead	success	2182.576	150054857	0
+nuxel-audio-route.service	active	exited	success	4695.093	42462967	47158726
+nuxel-audio-route.timer	active	waiting	success	NA		7422263
+nuxel-audio-session.service	active	running	success	NA	42425631	42428096
+nuxel-bluetooth.service	inactive	dead	success	NA	0	0
+nuxel-boot-sound.path	active	waiting	success	NA		7421918
+nuxel-boot-sound.service	inactive	dead	success	1042.174	49140268	0
+nuxel-bootmode-guard.service	active	exited	success	460.863	7449930	7911318
+nuxel-bootmode-oneshot.service	active	exited	success	118.18	7454187	7572770
+nuxel-bridge.service	active	running	success	NA	8654538	8655181
+nuxel-button-manager.service	active	running	success	NA	9108701	9109432
+nuxel-charger-mode-recovery.service	active	exited	success	115.196	7458301	7573878
+nuxel-clockd.service	active	running	success	NA	7459778	7460819
+nuxel-device-permissions.service	active	exited	success	1305.151	7464595	8770122
+nuxel-fallback.service	inactive	dead	exec-condition	NA	0	0
+nuxel-firstlight.service	inactive	dead	success	NA	0	0
+nuxel-fuse-access.service	active	exited	success	42.995	7634417	7677676
+nuxel-geoclue-agent.service	active	running	success	NA	7467518	7469048
+nuxel-haptics.service	active	running	success	NA	7472521	7473264
+nuxel-http-bridge.service	active	running	success	NA	8656717	8658940
+nuxel-interface-state.service	active	exited	success	435.905	10638645	11074766
+nuxel-metrics.service	inactive	dead	success	NA	0	0
+nuxel-metrics.socket	active	listening	success	NA		7429187
+nuxel-mic-route.path	active	running	success	NA		7422020
+nuxel-mic-route.service	active	exited	success	949.703	47217332	48167547
+nuxel-mtp.service	inactive	dead	success	NA	0	0
+nuxel-network-udev-seed.service	inactive	dead	success	84.676	7489918	0
+nuxel-nfcd.service	active	running	success	NA	7491945	7496516
+nuxel-notifications.service	active	running	success	NA	7500238	7500674
+nuxel-orientationd.service	active	running	success	NA	8041936	8044361
+nuxel-portal.service	active	running	success	NA	7502983	7504599
+nuxel-preload-cinema.service	inactive	dead	success	NA	0	0
+nuxel-session.service	inactive	dead	success	NA	0	0
+nuxel-soundd.service	active	running	success	NA	8642956	8785903
+nuxel-touch-arm.service	active	running	success	NA	7511668	7512479
+nuxel-ui.service	inactive	dead	success	NA	0	0
+nuxel-usb-mode-monitor.service	active	running	success	NA	7513904	7514577
+nuxel-usb-mode-restore.service	active	exited	success	53.272	7523323	7576803
+nuxel-watchdog-keep.service	active	running	success	NA	7525142	7525747
+nuxel-wayland.service	active	running	success	NA	7630032	7630879
+nuxel-web.service	active	running	success	NA	7527378	7529135
+nuxel-wifi.service	active	exited	success	233.689	11288660	11522584
+nuxel-wl-fb.service	active	running	success	NA	9086446	9086959
+run-nuxel\x2dwayland-doc.mount	active	mounted	success	NA		12357758
+seatd.service	active	running	success	NA	7538552	7539162
+systemd-journald.service	active	running	success	NA	5735875	6350140
+systemd-udevd.service	inactive	dead	success	NA	0	0
+
+--- stderr ---
+

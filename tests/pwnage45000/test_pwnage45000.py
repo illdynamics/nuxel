@@ -167,7 +167,7 @@ check('navdock generator resolves build-copy root', '_find_root' in gen and 'NUX
 check('navdock build copy does not write source fallbacks', 'NUXEL_NAVDOCK_SKIP_FALLBACK=1' in (ROOT/'images/s10plus/build-phone-rootfs-inside-fedora.sh').read_text())
 builder = (ROOT/'images/s10plus/build-phone-rootfs-inside-fedora.sh').read_text()
 check('rootfs builder has openssl for RDP credential generation', 'alsa-lib-devel git openssl' in builder)
-check('inet group exists before usermod', builder.find('groupadd -f -g 3003 inet') < builder.find('usermod -aG inet nuxel-remote'))
+check('inet group exists before usermod', builder.find('groupadd -f -g 3003 inet') < builder.find('usermod -aG inet nuxel'))
 check('PWA cache version agrees between sw.js and manifest', __import__('json').loads((ROOT/'pwa/nuxel-home/manifest.json').read_text())['nuxel']['cache_version'] in (ROOT/'pwa/nuxel-home/sw.js').read_text())
 qs = (ROOT / 'pwa/nuxel-home/js/qs.js').read_text()
 check('qs DND wired', "bridge.call('dnd', 'toggle'" in qs and "bridge.call('dnd', 'status'" in qs)

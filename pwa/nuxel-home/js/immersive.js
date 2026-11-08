@@ -87,6 +87,7 @@
     boundDocs.add(doc);
     let start = null;
     let touchStart = null;
+    let lastHandledAt = 0;
 
     function begin(x, y, id) {
       if (!allowed()) return null;
@@ -96,20 +97,67 @@
       if (y <= TOP_BAND) return { id: id, x: x, y: y, kind: 'status' };
       return null;
     }
+    function qsController() {
+      const n = home();
+      return (n && n.components && n.components.qs) || null;
+    }
+
     function finish(x, y, s) {
       if (!s) return;
       const dx = x - s.x, dy = y - s.y;
       if (Math.abs(dy) < DISTANCE || Math.abs(dy) < Math.abs(dx) * 1.1) return;
+      // WebKit may deliver pointer and touch for one physical gesture.  A
+      // completed gesture fires exactly once per settle window.
+      const now = performance.now();
+      if (now - lastHandledAt < 260) return;
+      lastHandledAt = now;
       if (s.kind === 'nav' && dy < 0) {
         // Toggle: first upward swipe reveals the triple buttons, the next
         // upward swipe on the revealed dock collapses them again (no timer).
         const revealed = document.body.classList.contains('app-nav-revealed');
         setNavVisible(!revealed, 0);
+        try {
+          document.dispatchEvent(new CustomEvent('nuxel:bottom-gesture', {
+            detail: { state: revealed ? 'hidden' : 'revealed' },
+          }));
+        } catch (e) {}
       } else if (s.kind === 'status') {
-        // Swipe down from the top edge expands the top bar; swipe up collapses
-        // it again. Swiping down again simply opens it normally.
-        if (dy > 0) setStatusVisible(true, 0);
-        else if (dy < 0) setStatusVisible(false, 0);
+        // PWNAGE-90000 top-edge state machine:
+        //   HIDDEN + down -> COMPACT_BAR (reveal normal top bar)
+        //   COMPACT_BAR + down -> EXPANDED_QUICK_SETTINGS
+        //   COMPACT_BAR/EXPANDED + up -> HIDDEN (upward dismiss always works)
+        // The Quick Settings controller is the single authoritative owner of
+        // the shade; this module only classifies the edge gesture.
+        const qs = qsController();
+        if (dy > 0) {
+          if (qs && qs.isOpen) {
+            qs.pull('down', { revealed: true });
+            return;
+          }
+          if (document.body.classList.contains('app-status-revealed')) {
+            if (qs) { qs.open(); qs.expand(); }
+            else {
+              try {
+                document.dispatchEvent(new CustomEvent('gesture:qs', {
+                  detail: { direction: 'down', revealed: true, source: 'top-edge' },
+                }));
+              } catch (e) {}
+            }
+            try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: 'expanded' } })); } catch (e) {}
+            return;
+          }
+          setStatusVisible(true, 0);
+          try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: 'compact' } })); } catch (e) {}
+        } else if (dy < 0) {
+          if (qs && qs.isOpen) {
+            // Upward swipe from the expanded/compact shade closes it.
+            qs.pull('up');
+            try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: 'hidden' } })); } catch (e) {}
+            return;
+          }
+          setStatusVisible(false, 0);
+          try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: 'hidden' } })); } catch (e) {}
+        }
       }
     }
 
@@ -193,10 +241,19 @@
     attach: attach,
     setImmersive: setImmersive,
     revealNav: function () { setNavVisible(true); },
-    revealStatus: function () { setStatusVisible(true); },
+    revealStatus: function () { setStatusVisible(true, 0); },
     setNavVisible: setNavVisible,
+    setStatusVisible: setStatusVisible,
     reset: resetChrome,
     get immersive() { return document.body.classList.contains('app-immersive'); },
+    get topState() {
+      if (document.body.classList.contains('app-status-revealed')) {
+        const qs = qsController();
+        return (qs && qs.isOpen && qs.expanded) ? 'expanded'
+          : (qs && qs.isOpen ? 'compact' : 'compact-bar');
+      }
+      return 'hidden';
+    },
   };
   attach(document);
 })(window);

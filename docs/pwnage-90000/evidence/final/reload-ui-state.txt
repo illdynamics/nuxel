@@ -1,0 +1,13 @@
+1794128580 HOST_ACTION quick-settings-close -> launcher page
+1794128591 HOST_ACTION reload-launcher -> launcher page
+1794128596 NUXEL_INPUT UI {"drawerOpen":false,"drawerHidden":true,"drawerChildren":49,"bodyClass":"lockscreen-active ready native-osk preload-ready display-off","session":"CLOSED","grid":true,"dock":true,"drawerDisplay":"none","drawerVis":"hidden","drawerOpacity":"1","drawerZ":"auto","drawerRect":{"x":0,"y":0,"w":0,"h":0},"drawerCols":"repeat(3, minmax(0px, 1fr))","drawerScroll":{"w":0,"h":0,"cw":0,"ch":0,"left":0,"top":0},"drawerItems":{"count":49,"first":{"x":0,"y":0,"w":0,"h":0,"right":0,"bottom":0},"last":{"x":0,"y":0,"w":0,"h":0,"right":0,"bottom":0}},"drawerVar":"3","homeVar":"4","visualViewport":{"w":360,"h":760,"scale":1,"offsetX":0,"offsetY":0},"docScroll":{"w":360,"h":760},"gridDisplay":"none","appListHidden":false,"lockEl":true,"lockHidden":false,"lockDisplay":"flex","lockClass":"lockscreen","docClass":"nuxel-boot-os nuxel-boot-locked nav-fallback-safe","hidden":false,"visibility":"visible","hasFocus":true,"appId":null,"cal":null,"overlays":{"frames":0,"iframes":0,"powerMenus":0,"osd":1,"folderSheets":0},"frame":null,"innerWidth":360,"innerHeight":760,"dpr":2}
+CLEANED
+== final owners ==
+      1 nuxel-foreign-t
+      1 nuxel-navdock
+      1 nuxel-osd
+      1 nuxel-pwa-host
+      1 nuxel-statusbar
+== backups ==
+5
+6

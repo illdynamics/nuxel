@@ -1,0 +1,35 @@
+wrote /tmp/SYSTEMD-GRAPH2.md and 11 asset(s) in /tmp/diag-systemd2
+shutdown=CAPTURED plot=yes
+RC=0
+== boot ==
+0112a081-e031-4758-91f7-cba82ab759cf
+Startup finished in 3.434s (kernel) + 46.908s (userspace) = 50.343s 
+multi-user.target reached after 22.266s in userspace.
+== back api ==
+{"success": true, "foreground": null, "status": "at_root", "handled": false, "at_root": true, "method": "home", "verified": true, "detail": "no foreground native app", "request_id": "p90-probe", "session": 7}
+== navdock/statusbar ==
+1794128139 NAV_DOCK_HIDE locked
+{"schema_version":1,"ready":true,"visible":false,"reason":"locked","foreground_app_id":"","locked":true,"width":360,"height":36,"scale":2,"strip":false,"revealed":false,"error":"","owner":"nuxel-statusbar"}
+== served pwa ==
+const CACHE_VERSION = 'v080-p90000';
+v080-p90000
+== flatpak ==
+app.legcord.Legcord	Legcord
+com.github.IsmaelMartinez.teams_for_linux	Portal for Teams
+com.rtosta.zapzap	ZapZap
+com.stremio.Stremio	Stremio
+dev.vencord.Vesktop	Vesktop
+io.mpv.Mpv	mpv
+org.ferdium.Ferdium	Ferdium
+org.gnome.TextEditor	Text Editor
+org.mozilla.firefox	Firefox
+org.signal.Signal	Signal Desktop
+org.telegram.desktop	Telegram
+org.videolan.VLC	VLC
+== binaries ==
+238c443877e6260e876398b7f739d978476b24b9035edd0b85fc42b0ee0cced2  /usr/lib/nuxel/nuxel-pwa-host
+978caa01738a00cfb6fbec0d6c6d4cadc443c4644c0257557074045aad7553ea  /usr/lib/nuxel/nuxel-foreign-toplevel
+6187d93140cdc19c15fa2f354061fdc15ad7772af4bf126c5894be9ef09c38f1  /usr/lib/nuxel/nuxel-navdock
+0b6882cb9e815f4e38d603c57a22b0de00108bef0e47019fcf6c5d90586a3a3e  /usr/lib/nuxel/nuxel-statusbar
+6457a5c48355d4e13e14662590c76b36197d655ff311d66215266b45e42fd170  /usr/lib/nuxel/nuxel-preload-cinema
+18e8781405e3fa66b2e1b34323c7766c40c6a23e1fa76f9a8da51cf3adcc695a  /usr/lib/nuxel/nuxel-bridge/api.py

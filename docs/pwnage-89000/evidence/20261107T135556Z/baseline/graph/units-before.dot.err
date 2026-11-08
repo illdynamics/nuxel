@@ -1,0 +1,6 @@
+   Color legend: black     = Requires
+                 dark blue = Requisite
+                 gold      = BindsTo
+                 dark grey = Wants
+                 red       = Conflicts
+                 green     = After

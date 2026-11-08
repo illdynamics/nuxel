@@ -1,0 +1,41 @@
+# /etc/systemd/system/nuxel-clockd.service
+[Unit]
+Description=Nuxel background alarm and timer scheduler
+Documentation=file:/usr/share/doc/nuxel/CLOCK.md
+# PWNAGE-88000: clockd only delegates audio to nuxel-soundd at fire time;
+# it does not need soundd ready at startup, so it must not serialize behind the
+# 40+ s soundd ExecStartPre (audio route wait) on boot.  Wants still starts it.
+After=local-fs.target
+Wants=nuxel-soundd.service
+StartLimitIntervalSec=60
+StartLimitBurst=8
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+ExecStart=/usr/libexec/nuxel/nuxel-clockd
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+KillMode=control-group
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort

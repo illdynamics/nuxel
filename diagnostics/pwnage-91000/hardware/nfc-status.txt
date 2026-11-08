@@ -1,0 +1,10 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"device":"beyond2lte","tool":"nuxel-nfc-diag","stages":{"controller":"chardev:/dev/sec-nfc","firmware":"missing","subsystem":"down","stack":"no-stack"},"first_failing_stage":"firmware","state":"BLOCKED_FIRMWARE","tag_read_verified":false,"owner_test":"docs/beta-finalization/manual-proof/12-nfc.md"}

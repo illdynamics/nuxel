@@ -1,0 +1,47 @@
+# /etc/systemd/system/nuxel-soundd.service
+[Unit]
+Description=Nuxel central sound manager (persistent PipeWire cue stream)
+Documentation=file:/usr/share/doc/nuxel/SOUNDS.md
+After=local-fs.target nuxel-audio-session.service
+Wants=nuxel-audio-session.service
+StartLimitIntervalSec=60
+StartLimitBurst=8
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
+Environment=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native
+# Idempotent: installs newly supplied files, preserves owner-edited files and
+# creates the assignments document only when it is absent.
+ExecStartPre=-/usr/lib/nuxel/nuxel-audio-route.sh --wait 200
+ExecStartPre=/usr/libexec/nuxel/install-sound-library
+ExecStart=/usr/libexec/nuxel/nuxel-soundd
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+TimeoutStartSec=240
+KillMode=control-group
+SendSIGKILL=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort

@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry/1",
-  "registry_version": 16,
+  "registry_version": 18,
   "bridge_version": "1",
   "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
   "url_base": "http://127.0.0.1:8000",
@@ -273,13 +273,13 @@
       "url": "/pwa/nuxel-apps/console-usb/index.html",
       "entry": "pwa/nuxel-apps/console-usb/index.html",
       "manifest": "pwa/nuxel-apps/console-usb/manifest.json",
-      "description": "SSH over the USB network gadget; unavailable on the current 4.14.253 NCM stack",
+      "description": "SSH over a real USB network gadget; mode-aware and blocked pending source/physical validation",
       "capabilities": [],
       "bridge_version": "1",
       "docked": false,
       "console_transport": "usb",
       "status": "implemented",
-      "runtime_state": "BLOCKED_KERNEL_PANIC on 4.14.253 (documented NCM teardown panic; no fake connection)"
+      "runtime_state": "NCM blocked on 4.14.253; RNDIS compiled but NEEDS VALIDATION; ACM serial preserved"
     },
     {
       "id": "org.nuxel.WiFiSSHConsole",
@@ -309,7 +309,7 @@
       "url": "/pwa/nuxel-apps/remote-xrdp/index.html",
       "entry": "pwa/nuxel-apps/remote-xrdp/index.html",
       "manifest": "pwa/nuxel-apps/remote-xrdp/manifest.json",
-      "description": "Separate authenticated RDP/TLS X11 session; Wi-Fi preferred, USB blocked by kernel evidence",
+      "description": "Separate authenticated RDP/TLS X11 session on direct LAN TCP 13389",
       "capabilities": [],
       "bridge_version": "1",
       "docked": false,
@@ -317,7 +317,7 @@
       "default_transport": "wlan",
       "session_mode": "separate-x11-session",
       "status": "implemented",
-      "runtime_state": "OFF by default; started only by explicit owner action"
+      "runtime_state": "OFF by default; TLS + PAM; bound to the current trusted WLAN IPv4 address"
     },
     {
       "id": "org.nuxel.RemoteDesktopVNC",
@@ -330,7 +330,7 @@
       "url": "/pwa/nuxel-apps/remote-vnc/index.html",
       "entry": "pwa/nuxel-apps/remote-vnc/index.html",
       "manifest": "pwa/nuxel-apps/remote-vnc/manifest.json",
-      "description": "VNC screen sharing of the actual Phoc/Wayland session; Wi-Fi preferred, USB blocked by kernel evidence",
+      "description": "Phoc/Wayland screen sharing with PAM + VeNCrypt TLS/RSA-AES on direct LAN TCP 15900",
       "capabilities": [],
       "bridge_version": "1",
       "docked": false,
@@ -338,7 +338,7 @@
       "default_transport": "wlan",
       "session_mode": "current-wayland-session",
       "status": "implemented",
-      "runtime_state": "OFF by default; started only by explicit owner action"
+      "runtime_state": "OFF by default; authentication/encryption verified from the effective config; bound to the current trusted WLAN IPv4 address"
     },
     {
       "id": "org.nuxel.ScrcpyMirror",
@@ -351,7 +351,7 @@
       "url": "/pwa/nuxel-apps/remote-scrcpy/index.html",
       "entry": "pwa/nuxel-apps/remote-scrcpy/index.html",
       "manifest": "pwa/nuxel-apps/remote-scrcpy/manifest.json",
-      "description": "Official scrcpy for real Android ADB targets only; native Nuxel is not an Android target",
+      "description": "Official scrcpy for real Android ADB targets only; native Nuxel uses the authenticated VNC mirror on TCP 15900",
       "capabilities": [],
       "bridge_version": "1",
       "docked": false,
@@ -359,7 +359,7 @@
       "default_transport": "android-adb-usb",
       "session_mode": "android-adb-target",
       "status": "implemented",
-      "runtime_state": "Android targets only; native Nuxel reports NOT_APPLICABLE_NATIVE_NUXEL"
+      "runtime_state": "Android targets only; native Nuxel reports NOT_APPLICABLE_NATIVE_NUXEL and links to the VNC mirror"
     },
     {
       "id": "org.nuxel.Browser",
@@ -1122,11 +1122,12 @@
     }
   ],
   "notes": {
-    "revision": "v0.8.0-beta: registry_version 14 keeps Nuxel Doom as the WAD-engine 2.0 package. The standalone Chocolate Doom comparison app entry was removed because Nuxel Doom bundles its own complete WASM engine; Chocolate Doom 3.1.1 remains an internal optional comparison runtime, not a separate user-facing requirement. registry_version 13 added the NuxTore-installable Nuxel Doom payload.",
+    "revision": "v0.8.1-beta (registry 18): registry_version 17 reflects direct-LAN RDP 13389 / VNC 15900, VNC PAM + TLS mandatory, and mode-aware USB status. ",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
     "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
     "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently.",
     "registry_version_16_doom_restored": "Nuxel Doom (org.nuxel.Doom) is back in apps[] as an installed launcher app after registry v14/v15 dropped it from the Home grid while keeping only the NuxTore catalogue entry. The app payload, WASM engine and Freedoom WADs were still on disk; only its launcher registration was missing.",
     "registry_version_9_gui_tri_link": "org.nuxel.RemoteDesktopXRDP (separate X11 RDP/TLS session), org.nuxel.RemoteDesktopVNC (active Phoc Wayland screen sharing) and org.nuxel.ScrcpyMirror (Android ADB only) are distinct from the serial/SSH console entries and use the separate system.remote-desktop Bridge namespace."
-  }
+  },
+  "revision": "v0.8.1-beta: registry_version 17 reflects direct-LAN RDP 13389 / VNC 15900, VNC PAM + TLS mandatory, and mode-aware USB status. "
 }

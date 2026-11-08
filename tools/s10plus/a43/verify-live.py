@@ -43,6 +43,7 @@ with tarfile.open(payload, 'r:gz') as tf:
         'pwa/nuxel-apps/permissions/manifest.json',
         'pwa/nuxel-home/js/qs-firewall.js',
         'pwa/nuxel-common/app-registry.json',
+        'pwa/nuxel-common/back.js',
         'services/nuxel-bridge/src/firewall_provider.py',
         'services/nuxel-firewall/nuxel_firewall/provider.py',
         'configs/nuxel/firewall/policy.json',

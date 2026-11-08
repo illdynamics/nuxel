@@ -1,0 +1,48 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+[    6.203824] fedora nuxel-init: NUXEL_MARKER INITRAMFS_EXECUTED
+[    6.206389] fedora nuxel-init: NUXEL_MARKER FIRSTLIGHT_ASSET_MISSING_NO_LEGACY_PAINT
+[    6.206428] fedora nuxel-init: NUXEL_MARKER ANIMATION_HOLD_DEFERRED
+[    6.207180] fedora nuxel-init: NUXEL_MARKER USERDATA_DISCOVERED
+[    6.207370] fedora nuxel-init: NUXEL_MARKER ROOTFS_MOUNTED
+[    6.210614] fedora unknown: NUXEL_MARKER SYSCALL_PROBE_DONE
+[    6.210708] fedora nuxel-init: NUXEL_MARKER FEDORA_BINARY_EXECUTED
+[    6.210802] fedora nuxel-init: NUXEL_MARKER SYSTEMD_LIB_VERIFIED_PRESENT
+[    6.210839] fedora nuxel-init: NUXEL_MARKER BOOT_STAGE_SYSTEM_STARTING
+[    6.210935] fedora nuxel-init: NUXEL_MARKER CGROUP2_MOUNTED
+[    6.210974] fedora nuxel-init: NUXEL_MARKER LIVE_CONSOLE_STARTED
+[    6.211210] fedora nuxel-init: NUXEL_MARKER UI_PINNED_KEEP
+[    6.211362] fedora nuxel-init: NUXEL_MARKER PHONE_UI_INSTALLED
+[    6.211382] fedora nuxel-init: NUXEL_MARKER FEDORA_MOUNTED
+[    6.211401] fedora nuxel-init: NUXEL_MARKER ORIGINAL_MP4_ANIMATION_STARTING
+[    6.234895] fedora nuxel-init: NUXEL_MARKER MP4_FIRST_FRAME_READY
+[    6.234914] fedora nuxel-init: NUXEL_MARKER MP4_PLAYER_ACTIVE
+[    6.234953] fedora nuxel-init: NUXEL_MARKER POSTBOOT_SUPERVISOR_STARTED
+[    6.234991] fedora nuxel-init: NUXEL_MARKER ROOTFS_HANDOFF_STARTED
+[    6.302189] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[    7.418195] fedora systemd[1]: Started nuxel-boot-sound.path - Play the Nuxel boot cue once the audio route is actually ready.
+[    7.418289] fedora systemd[1]: Started nuxel-mic-route.path - Start Nuxel microphone route when the playback route state appears.
+[    8.774964] fedora nuxel-soundd[6045]: 2026-11-07 16:27:03,165 INFO nuxel-soundd ready socket=/run/nuxel/soundd.sock dirs=['/home/nuxel/Sounds', '/usr/share/nuxel/sounds']
+[    8.777498] fedora nuxel-soundd[6045]: 2026-11-07 16:27:03,166 INFO control API READY in 12.6 ms (audio backend continues asynchronously)
+[    9.679945] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[    9.778157] fedora nuxel-button-manager[6147]: MANAGER_READY key=/dev/input/event1 touch=/dev/input/event2 gestures=1 fsm_spec_v=1
+[   10.079441] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[   10.453944] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[   10.851334] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+[   11.120807] fedora nuxel-audio-session.sh[5372]: 2026-11-07T15:27:05Z nuxel-audio-session: pipewire socket ready pid=6710
+[   11.268528] fedora audit[6808]: AVC avc:  denied  { ioctl } for  pid=6808 comm="nuxel-audio-war" path="/usr/lib/nuxel/nuxel-audio-warmup" dev="sda31" ino=156773 ioctlcmd=0x542a scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:unlabeled_t:s0 tclass=file permissive=1
+[   13.940059] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794065228-LAUNCHER_READY_ANIMATION_OWNS_PANEL-6146 owner=anim stage=LAUNCHER_READY_ANIMATION_OWNS_PANEL terminal=0 loops=1/1 reason=launcher_ready
+[   13.970669] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794065228-ANIM_TERMINAL_CONDITION-6146 owner=anim stage=ANIM_TERMINAL_CONDITION terminal=1 loops=1/1 reason=anim_min_cycle_reached
+[   13.970826] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794065228-ANIMATION_STOP_REQUESTED-6146 owner=anim stage=ANIMATION_STOP_REQUESTED terminal=1 loops=1/1 reason=anim_min_cycle_reached
+[   14.078942] fedora nuxel-soundd[6045]: 2026-11-07 16:27:08,469 WARNING warmup rc=1 nuxel-audio-warmup: speaker DAPM path did not power up
+[   14.205263] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794065228-ANIMATION_STOP_CONFIRMED-6146 owner=anim stage=ANIMATION_STOP_CONFIRMED terminal=1 loops=1/1 reason=animation_stop_confirmed
+[   14.445265] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794065228-LAUNCHER_DISPLAY_OWNER-6146 owner=ui stage=LAUNCHER_DISPLAY_OWNER terminal=1 loops=1/1 reason=launcher_display_owner
+[   14.445551] fedora unknown: 6,0;LAUNCHER_DISPLAY owner=nuxel-wl-fb receipt=1794065228-LAUNCHER_DISPLAY_OWNER-6146 loops=1/1
+[   20.036085] fedora systemd[1]: Configuration file /etc/systemd/system/nuxel-boot-sound.service.d/20-fast-stop.conf is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.

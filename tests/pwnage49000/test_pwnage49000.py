@@ -72,11 +72,14 @@ def test_navdock_long_back_uses_distinct_one_shot_haptic():
 
 
 def test_short_back_root_is_noop_home_is_distinct():
+    # PWNAGE-90000: a confirmed root backgrounds the app (process preserved)
+    # and returns Home; it is never a graceful close/kill.
     js = read("pwa/nuxel-home/js/app.js")
-    assert "back:pwa-at-root" in js
-    assert "back:native-at-root-graceful-close" in js
+    assert "back:pwa-at-root-home" in js
+    assert "back:native-at-root-home" in js
     assert "back:native-no-foreground" in js
     assert "this.appSession.app.type === 'flatpak'" in js
+    assert "gracefulCloseForeground('back-root')" not in js
 
 
 def test_lock_authority_reconciled_before_refusing_launch():

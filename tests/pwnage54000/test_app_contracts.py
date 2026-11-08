@@ -16,10 +16,12 @@ check("browser address bar selects all on tap/focus",
       "input.setSelectionRange(0, input.value.length)" in browser)
 
 appjs = (ROOT / "pwa/nuxel-home/js/app.js").read_text()
-check("PWA back at root closes gracefully to Home",
-      "back:pwa-at-root-close-to-home" in appjs and "this.home();" in appjs)
-check("native back at root closes gracefully to Home",
-      "back:native-at-root-close-to-home" in appjs)
+# PWNAGE-90000: confirmed root backgrounds (process preserved) and returns
+# Home via the single _returnToHome transition; it is not a close/kill.
+check("PWA back at root backgrounds to Home",
+      "back:pwa-at-root-home" in appjs and "_returnToHome" in appjs)
+check("native back at root backgrounds to Home",
+      "back:native-at-root-home" in appjs)
 
 cal = (ROOT / "pwa/nuxel-apps/calendar/index.html").read_text()
 check("calendar time fields request numeric keyboard",

@@ -42,9 +42,9 @@
 // lockstep bump.
 // PWNAGE-46000 bumps to v69-p46000 to remove the duplicate blue DOM keyboard
 // behind Stevia and allow the manifest/viewport to follow all seven modes.
-// v0.8.0 bumps to v080-release for the PWNAGE-91000 firewall/permissions
+// v0.8.0 / PWNAGE-90000: bump for the shell reliability changes
 // surfaces, the launcher handoff fixes and the release version lockstep.
-const CACHE_VERSION = 'v080-release';
+const CACHE_VERSION = 'v080-p90000';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -113,6 +113,10 @@ self.addEventListener('install', (event) => {
     console.log('[SW] Installing...', CACHE_VERSION);
     event.waitUntil(
         caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_ASSETS))
+            .then(() => Promise.allSettled(CRITICAL_ICONS.map((url) =>
+                caches.open(ICON_CACHE).then((cache) =>
+                    cache.add(new Request(url, { cache: 'reload' })))
+            )))
             .then(() => self.skipWaiting())
     );
 });
@@ -139,6 +143,32 @@ self.addEventListener('activate', (event) => {
 const IMAGE_RE = /\.(?:png|jpe?g|gif|webp|svg|ico)(?:\?|$)/i;
 const CODE_RE = /\.(?:js|css|json|html|webmanifest)(?:\?|$)/i;
 const OWNER_ART_RE = /^\/(?:assets\/(?:button-(?:left|middle|right)\.png$|nuxel-(?:applications|quicksettings)-icon-pack\/)|pwa\/nuxel-home\/assets\/branding\/)/;
+
+/* PWNAGE-90000 immutable icon policy.  Repository-owned built-in icon packs are
+   versioned in the URL (?v=...); a version bump is a new cache key.  These are
+   cache-first so first unlock never waits for the network.  Mutable owner
+   artwork (branding replacements, unversioned owner art) keeps the existing
+   network-first policy below. */
+const IMMUTABLE_ICON_DIRS = /^\/(?:assets\/(?:native-app-icons\/|nuxel-applications-icon-pack\/|nuxel-app-penguinterface)|pwa\/nuxel-home\/assets\/branding\/)/;
+function isImmutableIcon(url) {
+    return IMMUTABLE_ICON_DIRS.test(url.pathname) && /[?&]v=/.test(url.search + '&');
+}
+
+/* Visible Home/dock icons are precached at install time.  Failure of an
+   optional icon must not block the service worker or the launcher. */
+const CRITICAL_ICONS = [
+    '/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=p33000',
+    '/assets/nuxel-applications-icon-pack/02-03_day-calendar.png?v=p33000',
+    '/assets/nuxel-applications-icon-pack/02-06_file-explorer.png?v=p33000',
+    '/assets/nuxel-applications-icon-pack/02-09_notes.png?v=p33000',
+    '/assets/nuxel-applications-icon-pack/03-01_camera.png?v=p33000',
+    '/assets/nuxel-applications-icon-pack/03-02_gallery.png?v=p33000',
+    '/assets/nuxel-applications-icon-pack/03-04_video-player.png',
+    '/assets/nuxel-applications-icon-pack/03-05_maps.png?v=p33000',
+    '/assets/nuxel-applications-icon-pack/05-02_system-monitor.png',
+    '/assets/native-app-icons/firefox.png?v=p50000',
+    '/assets/native-app-icons/vlc.png?v=p50000',
+];
 
 function cacheable(response, kind) {
     if (!response || !response.ok || response.status !== 200) return false;
@@ -178,6 +208,23 @@ async function networkFirst(event, request, cacheName, kind, options) {
             });
         }
     })());
+}
+
+// Immutable/versioned icons: cache-first, then revalidate into the same
+// versioned namespace.  A 200 is the only value stored.
+async function cacheFirst(event, request, cacheName, kind) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    try {
+        const response = await fetch(request);
+        await cacheSuccessful(cacheName, request, response, kind);
+        return response;
+    } catch (error) {
+        return new Response('Nuxel asset unavailable while offline', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
+        });
+    }
 }
 
 // Fetch event: code and owner artwork are network-first; immutable media may be
@@ -224,7 +271,11 @@ self.addEventListener('fetch', (event) => {
     // App/navigation/toggle artwork is mutable during a live userspace deploy.
     // `no-store` also bypasses WebKit's HTTP cache, not just CacheStorage.
     if (request.destination === 'image' || IMAGE_RE.test(pathname) || OWNER_ART_RE.test(pathname)) {
-        networkFirst(event, request, ICON_CACHE, 'image', { cache: 'no-store' });
+        if (isImmutableIcon(url)) {
+            event.respondWith(cacheFirst(event, request, ICON_CACHE, 'image'));
+        } else {
+            networkFirst(event, request, ICON_CACHE, 'image', { cache: 'no-store' });
+        }
         return;
     }
 

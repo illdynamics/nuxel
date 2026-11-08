@@ -1,0 +1,58 @@
+[   10.337507] fedora systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+[   10.354174] fedora systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+[   10.799528] fedora phoc[6030]: [render/wlr_renderer.c:109] drmGetDevices2 failed: No such file or directory
+[   10.838789] fedora phoc[6030]: [EGL] command: eglQueryDevicesEXT, error: EGL_BAD_PARAMETER (0x300c), message: "Missing num_devices pointer"
+[   10.838807] fedora phoc[6030]: [render/egl.c:487] Failed to query EGL devices
+[   10.839205] fedora nuxel-wayland-gpu-wrapper.sh[6030]: MESA-LOADER: failed to retrieve device information
+[   10.860781] fedora phoc[6030]: [types/wlr_drm.c:211] Failed to get DRM FD from renderer
+[   10.861307] fedora phoc[6030]: [types/wlr_linux_dmabuf_v1.c:1169] Failed to get renderer DRM FD
+[   10.881011] fedora nuxel-wayland-gpu-wrapper.sh[6030]: Running compositor on wayland display 'wayland-0'
+[   10.997223] fedora phoc[6030]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+[   11.567950] fedora phoc[6030]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+[   12.360118] fedora gnome-keyring-daemon[6472]: couldn't access control socket: /run/nuxel-wayland/keyring/control: No such file or directory
+[   12.360166] fedora gnome-keyring-daemon[6472]: discover_other_daemon: 0
+[   12.399608] fedora runuser[6482]: pam_unix(runuser:session): session opened for user nuxel(uid=1000) by (uid=0)
+[   12.411364] fedora runuser[6482]: pam_unix(runuser:session): session closed for user nuxel
+[   12.473082] fedora runuser[6522]: pam_unix(runuser:session): session opened for user nuxel(uid=1000) by (uid=0)
+[   12.507969] fedora dbus-daemon[6509]: avc:  denied  { send_msg } for msgtype=method_call interface=org.freedesktop.DBus member=Hello dest=org.freedesktop.DBus spid=6538 scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclass=dbus permissive=1
+[   12.548296] fedora dbus-daemon[6509]: avc:  denied  { send_msg } for msgtype=method_call interface=org.freedesktop.DBus member=Hello dest=org.freedesktop.DBus spid=6562 scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclass=dbus permissive=1
+[   12.549475] fedora dbus-daemon[6509]: avc:  denied  { acquire_svc } for service=org.a11y.Bus spid=6562 scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclass=dbus permissive=1
+[   12.554248] fedora dbus-daemon[6509]: avc:  denied  { send_msg } for msgtype=method_return dest=:1.1 spid=6562 tpid=6538 scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:system_r:kernel_generic_helper_t:s0 tclass=dbus permissive=1
+[   12.554902] fedora dbus-daemon[6568]: avc:  denied  { send_msg } for msgtype=method_call interface=org.freedesktop.DBus member=Hello dest=org.freedesktop.DBus spid=6538 scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclass=dbus permissive=1
+[   12.605271] fedora dbus-daemon[6568]: avc:  denied  { send_msg } for msgtype=method_call interface=org.freedesktop.DBus member=Hello dest=org.freedesktop.DBus spid=6572 scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclass=dbus permissive=1
+[   12.605885] fedora dbus-daemon[6568]: avc:  denied  { acquire_svc } for service=org.a11y.atspi.Registry spid=6572 scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclass=dbus permissive=1
+[   12.606594] fedora dbus-daemon[6509]: avc:  denied  { acquire_svc } for service=org.freedesktop.impl.portal.desktop.gtk spid=6538 scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclass=dbus permissive=1
+[   12.610721] fedora dbus-daemon[6568]: avc:  denied  { send_msg } for msgtype=method_call interface=org.freedesktop.DBus.Properties member=Set dest=:1.0 spid=6572 tpid=6538 scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:system_r:kernel_generic_helper_t:s0 tclass=dbus permissive=1
+[   13.512166] fedora runuser[6619]: pam_unix(runuser:session): session opened for user nuxel(uid=1000) by (uid=0)
+[   13.975894] fedora nuxel-wayland-gpu-wrapper.sh[6186]: MESA-EGL: warning: nuxel: kbase=1 fd=16 driver=panfrost
+[   13.976427] fedora nuxel-wayland-gpu-wrapper.sh[6186]: MESA-LOADER: failed to retrieve device information
+[   13.979541] fedora nuxel-wayland-gpu-wrapper.sh[6186]: MESA-EGL: warning: nuxel: kbase screen up
+[   14.286171] fedora nuxel-wayland-gpu-wrapper.sh[7057]: MESA-LOADER: failed to retrieve device information
+[   15.506483] fedora runuser[7169]: pam_unix(runuser:session): session opened for user nuxel(uid=1000) by (uid=0)
+[   15.523897] fedora runuser[7169]: pam_unix(runuser:session): session closed for user nuxel
+[   16.708674] fedora phoc[6030]: Timeout (3000ms) expired with 1 configures pending
+[ 1004.893227] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1006.874086] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1008.751019] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1024.630004] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1026.335191] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1027.953458] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1029.628740] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1031.248925] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1032.965223] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1034.685009] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1036.378882] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1038.065170] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1039.805961] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1041.280417] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1042.912410] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1044.583842] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1046.109602] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1100.344470] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1139.130084] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1169.720385] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1186.080363] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1187.364956] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1188.602055] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1190.188198] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+[ 1193.629115] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory

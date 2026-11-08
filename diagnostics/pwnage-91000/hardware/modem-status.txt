@@ -1,0 +1,11 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+grep: //: Is a directory
+{"device":"beyond2lte","tool":"nuxel-modem-diag","modem":"samsung-shannon-lte","state":"NOT_SUPPORTED_ON_DEVICE","verdict":"NOT_SUPPORTED_ON_DEVICE","first_failing_stage":"host_transport","detail":"no CP host interface and no ModemManager plugin for the Samsung Shannon LTE modem","cp_nodes":[],"net_interfaces":[],"modemmanager_plugins":[],"mmcli":"","sim":"absent","signal_quality":null,"operator":null,"registration_state":null,"cellular_available":false,"data_connection":null,"registration_verified":false,"print_imsi_or_iccid":false,"owner_test":"docs/beta-finalization/manual-proof/16-sim-mobile-data.md"}

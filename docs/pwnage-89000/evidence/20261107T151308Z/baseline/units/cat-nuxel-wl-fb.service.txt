@@ -1,0 +1,71 @@
+# /etc/systemd/system/nuxel-wl-fb.service
+[Unit]
+Description=Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=120
+StartLimitBurst=6
+After=nuxel-wayland.service
+Wants=nuxel-wayland.service
+Before=nuxel-fallback.service nuxel-button-manager.service
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/usr/lib/nuxel/nuxel-wait-wayland /run/nuxel-wayland 30
+ExecStart=/usr/lib/nuxel/nuxel-wl-fb
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/nuxel-wl-fb.service.d/10-display-priority.conf
+# PWNAGE-43000 DISPLAY: the framebuffer bridge is the single scanout owner.
+# Giving it a small CPU advantage keeps touch feedback and the video->lock
+# handoff frame-paced even while the ABOX reload is running.
+[Service]
+Nice=-5
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+
+# /etc/systemd/system/nuxel-wl-fb.service.d/15-idle-fps.conf
+# PWNAGE-54000: cap the software scanout at 20 fps.  The panel is refreshed
+# from a full wlr-screencopy every frame; 30 fps kept two CPU cores busy even
+# when the UI was static and contributed to the 20-30% idle load.  20 fps
+# preserves motion smoothness while cutting that work by one fifth.
+[Service]
+Environment=NUXEL_TARGET_FPS=20
+
+# /etc/systemd/system/nuxel-wl-fb.service.d/20-fast-stop.conf
+[Service]
+TimeoutStopSec=5
+KillMode=control-group
+SendSIGKILL=yes
+
+# /etc/systemd/system/nuxel-wl-fb.service.d/25-reboot-hold.conf
+# PWNAGE-62000: the measured reboot journal shows nuxel-wl-fb stopping before
+# nuxel-wayland, leaving the panel black while the compositor still burns its
+# stop timeout.  When the owner requested a normal systemd reboot, keep the
+# last valid panel frame for a short bounded interval.  This ExecStop never
+# opens /dev/fb0 and never blocks an animation; it is a fixed 2 s hold only.
+[Service]
+ExecStop=/usr/lib/nuxel/nuxel-wl-fb-hold.sh
+TimeoutStopSec=5
+KillMode=control-group
+SendSIGKILL=yes

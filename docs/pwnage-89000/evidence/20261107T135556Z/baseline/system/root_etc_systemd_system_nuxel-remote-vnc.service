@@ -1,0 +1,28 @@
+[Unit]
+Description=Nuxel VNC screen sharing of the active Phoc/Wayland session (on-demand)
+Documentation=file:///usr/share/doc/nuxel/remote-desktop/README.md
+# The compositor creates /run/nuxel-wayland/wayland-0.  Never start at boot:
+# this unit has no [Install] WantedBy, and the Bridge starts it on explicit owner action.
+After=nuxel-wayland.service
+Requires=nuxel-wayland.service
+ConditionPathExists=/run/nuxel-wayland/wayland-0
+
+[Service]
+Type=simple
+# The Phoc session itself runs as root on this image; the Wayland socket is
+# root-owned 0700 under /run/nuxel-wayland.  This is the session user, not a
+# second compositor and not a framebuffer writer.
+User=root
+Group=root
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=XDG_SESSION_TYPE=wayland
+ExecStart=/usr/bin/wayvnc -C /etc/nuxel/remote-desktop/vnc/wayvnc.conf -f 20 -r
+Restart=no
+# No /dev/fb0 access: wayvnc is a Wayland client using wlr-screencopy and the
+# virtual pointer/keyboard protocols.
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/nuxel /run/nuxel-wayland /var/lib/nuxel

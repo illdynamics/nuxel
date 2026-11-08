@@ -171,6 +171,31 @@
     border-radius: var(--app-icon-radius);
 }
 
+/* PWNAGE-90000 first-paint icons: the correct fallback glyph paints in the
+   same frame the tile is created.  The immutable image fades in only after it
+   has decoded, with no layout shift and no blank/transparent well. */
+.app-item .app-icon .nuxel-icon-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    line-height: 1;
+    pointer-events: none;
+}
+.app-item .app-icon .nuxel-icon-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity .12s ease;
+}
+.app-item .app-icon .nuxel-icon-img[data-icon-state="loaded"] { opacity: 1; }
+.app-item .app-icon .nuxel-icon-img[data-icon-state="error"] { opacity: 0; }
+
 .app-item .app-label {
     font-size: 11px;
     color: var(--text-secondary);

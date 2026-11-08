@@ -40,8 +40,12 @@ ALLOWED_PREFIXES = (
     "/usr/libexec/nuxel/",
     "/usr/bin/nuxel-",
     "/etc/nuxel/",
+    "/etc/xrdp/",
+    "/etc/pam.d/",
     "/etc/dbus-1/system.d/",
     "/etc/systemd/system/",
+    "/usr/local/libexec/nuxel/",
+    "/usr/local/bin/nuxel-",
 )
 FORBIDDEN_PARTS = ("/dev/", "/boot/", "/proc/", "/sys/", "/run/", "/var/lib/nuxel/live-deploy/")
 FORBIDDEN_SUFFIXES = (".img", ".dtb", ".dtbo", ".gz", ".tar", ".ko")

@@ -1,0 +1,48 @@
+[    7.819871] fedora systemd[1]: Started nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   12.428558] fedora nuxel-audio-session.sh[5367]: 2026-11-07T13:39:48Z nuxel-audio-session: pipewire socket ready pid=6467
+[   19.811712] fedora pipewire[6467]: spa.alsa: set_hw_params: Invalid argument
+[   19.811980] fedora pipewire[6467]: pw.node: (alsa_output.hw_0_1-31) suspended -> error (Start error: Invalid argument)
+[   20.285195] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[   20.706926] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Main process exited, code=killed, status=9/KILL
+[   22.743501] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: State 'final-sigterm' timed out. Aborting.
+[   22.743701] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed with result 'signal'.
+[   22.744051] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   34.671869] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   34.687830] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-session.sh[7871]: 2026-11-07T13:40:11Z nuxel-audio-session: pipewire socket ready pid=7881
+[   36.307297] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[   36.721581] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Main process exited, code=killed, status=9/KILL
+[   38.743744] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: State 'stop-sigterm' timed out. Aborting.
+[   38.744038] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed with result 'signal'.
+[   38.744316] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   42.582314] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[   42.621582] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-session.sh[8522]: 2026-11-07T13:40:18Z nuxel-audio-session: pipewire socket ready pid=8526
+[   42.795282] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 pipewire[8526]: spa.alsa: set_hw_params: Invalid argument
+[   42.800205] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 pipewire[8526]: pw.node: (alsa_output.hw_0_1-31) suspended -> error (Start error: Invalid argument)
+[   43.677643] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 pipewire[8526]: spa.alsa: set_hw_params: Invalid argument
+[ 1006.471478] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1008.401405] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1010.114729] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1025.975706] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1027.636610] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1029.227474] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1030.989614] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1032.642177] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1034.280719] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1035.995463] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1037.734601] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1039.409759] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1040.971135] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1042.549947] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1044.145457] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1045.827661] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1047.527055] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1080.905278] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1101.669871] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1133.853820] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1140.290896] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1170.965855] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1185.992480] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1187.299567] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1188.534614] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1192.396288] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory
+[ 1193.551329] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Failed to get CPU usage: No such file or directory

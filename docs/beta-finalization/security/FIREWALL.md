@@ -34,7 +34,7 @@ per-app attribution is **unavailable** and is shown as unsupported, never green.
   sessions before any apply.
 - SSH (port 22 on the device) is prepared as `nuxel-ssh-owner` from live sshd
   `AllowUsers` CIDRs; apply refuses input-deny without a prepared SSH allowlist.
-- XRDP (3389) and VNC (5900) are OFF by default and only become active when a
+- XRDP (13389) and VNC (15900) are OFF by default and only become active when a
   real listener exists; VNC is loopback/SSH-tunnel-only by default.
 
 ## Safe apply / rollback

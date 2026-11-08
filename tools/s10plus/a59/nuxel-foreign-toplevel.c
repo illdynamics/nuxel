@@ -167,6 +167,10 @@ struct window {
 static struct window *windows;
 static void *g_display, *g_registry, *g_manager, *g_seat;
 static int have_manager;
+/* PWNAGE-90000: lock enforcement is edge-triggered.  A level-triggered
+   re-enforce every second raised Home over the playing preload surface, which
+   made phoc consider that surface invisible and stop its frame callbacks. */
+static int g_state_dirty;
 
 /* Seat events are informational; consuming them keeps the default queue
  * healthy while activate() still receives the seat object. */
@@ -190,14 +194,28 @@ static void on_title(void *d, void *h, const char *t) { (void)d; struct window *
 static void on_appid(void *d, void *h, const char *t) { (void)d; struct window *w=find_win(h); if(w) snprintf(w->app_id,sizeof w->app_id,"%s",t?t:""); }
 static void on_out_e(void *d, void *h, void *o) { (void)d;(void)h;(void)o; }
 static void on_out_l(void *d, void *h, void *o) { (void)d;(void)h;(void)o; }
+static int is_preload_window(const struct window *w) {
+    if (!w) return 0;
+    return !strcmp(w->app_id, "mpv") ||
+           strstr(w->title, "nuxel-preloading") != NULL ||
+           strstr(w->title, "preload") != NULL;
+}
 static void on_state(void *d, void *h, struct wl_array *a) {
     (void)d; struct window *w = find_win(h); if(!w) return;
+    int was_max = w->maximized, was_fs = w->fullscreen, was_act = w->activated;
     w->maximized=w->minimized=w->activated=w->fullscreen=0;
     uint32_t *p = (uint32_t*)a->data; size_t n = a->size/4;
     /* zwlr_foreign_toplevel_handle_v1.state: 0=maximized, 1=minimized,
        2=activated, 3=fullscreen.  An off-by-one here made windowed
        GTK/Flatpak apps invisible to the top bar and focus watcher. */
     for (size_t i=0;i<n;i++){ switch(p[i]){ case 0: w->maximized=1; break; case 1: w->minimized=1; break; case 2: w->activated=1; break; case 3: w->fullscreen=1; break; } }
+    /* Only a change that could cover the lockscreen needs re-enforcement.
+       The preload player is a trusted Nuxel overlay and is exempt. */
+    if (!is_preload_window(w) && strcmp(w->app_id, "nuxel-pwa-host") &&
+        ((w->maximized && !was_max) || (w->fullscreen && !was_fs) ||
+         (w->activated && !was_act))) {
+        g_state_dirty = 1;
+    }
 }
 static void on_done(void *d, void *h) { (void)d;(void)h; }
 static void on_closed(void *d, void *h) {
@@ -326,27 +344,50 @@ static void write_foreground(int locked, const char *active) {
     rename(tmp, FOREGROUND_STATE);
 }
 
+/* True while the trusted preload cinema owns the glass.  /run is per-boot, so
+   a document left by an older boot cannot qualify. */
+static int preload_active(void) {
+    FILE *f = fopen("/run/nuxel/preload-cinema.overlay", "r");
+    if (!f) return 0;
+    char b[1024];
+    size_t n = fread(b, 1, sizeof b - 1, f);
+    fclose(f); b[n] = 0;
+    return strstr(b, "\"state\": \"covered\"") != NULL ||
+           strstr(b, "\"state\":\"covered\"") != NULL ||
+           strstr(b, "\"state\": \"starting\"") != NULL ||
+           strstr(b, "\"state\":\"starting\"") != NULL;
+}
+
 static void enforce_locked(int locked) {
     int hidden = 0, raised = 0;
     const char *active = "";
+    /* The preload video is a trusted, audio-free Nuxel surface above the real
+       lockscreen.  Re-raising Home over it stops its frame callbacks.  The
+       security state stays locked; only the compositor restack is skipped. */
+    if (preload_active()) {
+        write_receipt(locked, 0, 0, "", "preload-overlay-active");
+        write_foreground(locked, NULL);
+        return;
+    }
     for (struct window *w = windows; w; w = w->next) {
         if (is_home(w)) continue;
         if (w->activated) active = w->app_id;
         /* phoc 0.54 does not implement request_minimize, but unsetting
            fullscreen/maximise is honoured and is enough to move the app out
-           of the top stacking layer.  set_minimized is retained for
-           compositors that do implement it. */
+           of the top stacking layer.  Only issue a request when the state
+           actually calls for it; repeating identical requests every second
+           caused GTK/Electron redraw and reinitialisation. */
         if (w->fullscreen) _marshal(w->handle, 9, NULL, handle_version(w->handle), 0);
         if (w->maximized) _marshal(w->handle, 1, NULL, handle_version(w->handle), 0);
-        _marshal(w->handle, 2, NULL, handle_version(w->handle), 0);
+        if (!w->minimized) _marshal(w->handle, 2, NULL, handle_version(w->handle), 0);
         hidden++;
     }
     for (struct window *w = windows; w; w = w->next) {
         if (!is_home(w)) continue;
-        _marshal(w->handle, 3, NULL, handle_version(w->handle), 0);  /* unset_minimized */
-        _marshal(w->handle, 9, NULL, handle_version(w->handle), 0);  /* unset_fullscreen */
-        _marshal(w->handle, 0, NULL, handle_version(w->handle), 0);  /* set_maximized */
-        if (g_seat) _marshal(w->handle, 4, NULL, handle_version(w->handle), 0, g_seat);
+        if (w->minimized) _marshal(w->handle, 3, NULL, handle_version(w->handle), 0);
+        if (w->fullscreen) _marshal(w->handle, 9, NULL, handle_version(w->handle), 0);
+        if (!w->maximized) _marshal(w->handle, 0, NULL, handle_version(w->handle), 0);
+        if (!w->activated && g_seat) _marshal(w->handle, 4, NULL, handle_version(w->handle), 0, g_seat);
         raised = 1;
     }
     if (g_display) _flush(g_display);   /* bounded: never block on a roundtrip */
@@ -363,14 +404,17 @@ static int watch_lock(void *dpy) {
         time_t now = time(NULL);
         int nonhome_active = 0;
         for (struct window *w = windows; w; w = w->next)
-            if (!is_home(w) && w->activated) { nonhome_active = 1; break; }
-        /* Fail closed: unknown is treated exactly like locked.  Re-enforce on
-           a lock transition, any non-Home activation, or once per second (a
-           bounded policy tick, not a busy loop). */
-        if (locked != 0 && (locked != last_locked || nonhome_active ||
-                            now - last_enforce >= 1)) {
-            enforce_locked(1);
-            last_enforce = now;
+            if (!is_home(w) && w->activated && !is_preload_window(w)) { nonhome_active = 1; break; }
+        /* Fail closed: unknown is treated exactly like locked.  Enforcement is
+           edge-triggered (lock transition, a late non-Home activation, or a
+           meaningful state change).  A level-triggered 1 s re-enforce raised
+           Home over the preload video and froze its frame callbacks. */
+        if (locked != 0 && (locked != last_locked || nonhome_active || g_state_dirty)) {
+            if (locked != last_locked || g_state_dirty || now - last_enforce >= 1) {
+                enforce_locked(1);
+                last_enforce = now;
+                g_state_dirty = 0;
+            }
         } else if (locked != 0) {
             write_foreground(1, NULL);
         } else {

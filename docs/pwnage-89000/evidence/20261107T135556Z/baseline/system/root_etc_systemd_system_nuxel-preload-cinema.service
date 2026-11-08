@@ -1,0 +1,50 @@
+[Unit]
+Description=Nuxel pre-lockscreen cinematic video (bounded, fail-open)
+Documentation=file:/usr/share/nuxel/doc/PWNAGE-31000.md
+# The compositor and the single framebuffer bridge must exist first.  Starting
+# this unit before them made the controller burn its 30 s display timeout on
+# slow boots (measured 2026-10-28 15:38: display-not-ready).  The launcher-side
+# first-frame cover handles the brief map race; this unit never owns /dev/fb0.
+After=nuxel-wayland.service nuxel-wl-fb.service
+Wants=nuxel-wayland.service nuxel-wl-fb.service
+# Never race the safe fallback surface.  A video problem must not delay it.
+Before=nuxel-fallback.service
+# One bounded attempt per boot.  A decode failure must not restart-loop.
+StartLimitIntervalSec=120
+StartLimitBurst=1
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+Environment=LIBGL_ALWAYS_SOFTWARE=1
+Environment=GDK_BACKEND=wayland
+Environment=HOME=/run/nuxel
+ExecStart=/usr/lib/nuxel/nuxel-preload-cinema
+Restart=no
+TimeoutStartSec=10
+TimeoutStopSec=8
+KillMode=control-group
+# A controller SIGKILL must not leave the mpv child behind.
+KillSignal=SIGTERM
+SendSIGKILL=yes
+# Best-effort socket cleanup; the controller also removes it in finally{}.
+ExecStopPost=-/bin/rm -f /run/nuxel/preload-cinema.sock
+# Logs go to /var/log/nuxel/preload-cinema.log and the journal.  The receipt is
+# /run/nuxel/preload-cinema.receipt.
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=full
+# mpv needs the Wayland socket and /dev/shm; do not hide them behind a private
+# tmp namespace.  The writable paths are optional so a missing log directory
+# cannot fail namespace setup.
+ReadWritePaths=-/run/nuxel -/var/log/nuxel -/var/lib/nuxel -/usr/share/nuxel/nuxel-home
+LockPersonality=yes
+
+# PWNAGE-36000: the session (nuxel-session.sh) starts the early controller
+# before nuxel-pwa-host.  Do NOT enable this unit at boot: a second controller
+# races the one-shot .done marker and can publish "fallback" before the
+# session controller starts, which releases the PWA cover early.  The unit is
+# kept for manual/systemd-only boots.
+# [Install]
+# WantedBy=multi-user.target

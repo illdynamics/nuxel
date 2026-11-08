@@ -1,0 +1,16 @@
+[Unit]
+Description=Nuxel one-shot boot mode consumer (verbose/safe/diag/debug flags)
+Documentation=file:/usr/share/doc/nuxel/
+After=local-fs.target
+Before=nuxel-wayland.service nuxel-ui.service
+ConditionPathExists=/var/lib/nuxel/boot
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/nuxel-bootmode-oneshot.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

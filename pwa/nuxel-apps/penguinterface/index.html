@@ -8,7 +8,7 @@
 <meta name="nuxel-app-id" content="org.nuxel.PenguInterface">
 <link rel="manifest" href="manifest.json">
 <title>PenguInterface</title>
-<link rel="stylesheet" href="css/pengu.css">
+<link rel="stylesheet" href="css/pengu.css?v=p91000">
     <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
@@ -19,15 +19,25 @@
   <section id="caps" class="card"></section>
 
   <h2 class="sect">Spoofing</h2>
-  <p class="hint">App-scoped identity spoofing. Real values are shown first; apply stores a profile under /run/nuxel/spoof and is only injected for the selected app launches. Reset removes everything and verifies the system is unchanged.</p>
+  <p class="hint">Identity spoofing with a global default or per-app overrides. Native app launches receive the selected profile; the values below show the effective identity before you apply. Configuration is owner-only and stored outside app data.</p>
   <section class="card">
     <div class="row"><span>Current user agent</span><b id="spoof-ua-current">—</b></div>
+    <div class="row"><span>Current uname</span><b id="spoof-effective-uname">—</b></div>
+    <div class="row"><span>Current /etc/os-release</span><b id="spoof-effective-os">—</b></div>
     <div class="row"><span>Real uname</span><b id="spoof-real-uname">—</b></div>
     <div class="row"><span>Real /etc/os-release</span><b id="spoof-real-os">—</b></div>
     <div class="row"><span>LD_PRELOAD library</span><b id="spoof-lib">—</b></div>
     <p id="spoof-status" class="hint">—</p>
+
+    <div class="scope-row">
+      <label><input type="radio" name="spoof-scope" id="spoof-scope-app" value="app" checked> Per app</label>
+      <label><input type="radio" name="spoof-scope" id="spoof-scope-global" value="global"> Global (all apps)</label>
+    </div>
+    <p id="spoof-global-warning" class="hint warn" hidden>Global is the default for every native app launched through Nuxel. It is an app-launch override, not a kernel or system-wide identity change.</p>
+    <label class="field" id="spoof-app-field">App id
+      <select id="spoof-app-select"><option value="">Loading app list…</option></select>
+    </label>
     <label class="field">Spoof user agent <input id="spoof-ua-input" type="text" placeholder="Mozilla/5.0 ..."></label>
-    <label class="field">Target apps (comma-separated app ids) <input id="spoof-targets" type="text" placeholder="org.nuxel.BrowserNative"></label>
     <label class="field">Spoof /etc/os-release <textarea id="spoof-os-release" rows="4" placeholder="NAME=&quot;SpoofOS&quot; ..."></textarea></label>
     <div class="grid2">
       <label class="field">sysname <input id="spoof-uname-sysname" type="text" value="Linux"></label>
@@ -39,13 +49,16 @@
     <div class="row">
       <button id="spoof-apply" class="primary">Apply spoof</button>
       <button id="spoof-refresh">Refresh</button>
-      <button id="spoof-reset" class="danger">Reset all spoofs</button>
+      <button id="spoof-reset" class="danger">Reset this app's spoof</button>
+    </div>
+    <div class="row">
+      <button id="spoof-reset-all" class="ghost">Reset all spoofs…</button>
     </div>
     <p id="spoof-toast" class="hint" role="status"></p>
   </section>
   <p id="report" class="state" role="status"></p>
 </main>
 <script src="js/pengu.js"></script>
-<script src="js/spoof.js"></script>
+<script src="js/spoof.js?v=p91000"></script>
 </body>
 </html>

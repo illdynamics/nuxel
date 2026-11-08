@@ -1,0 +1,49 @@
+# Nuxel verbose-boot early stage (S10+, A33, briq-02b)
+#
+# Runs in the EARLY userspace boot stage, before the framebuffer bridge and the
+# launcher, and owns exactly one thing: the decision of whether this boot is a
+# verbose boot, plus the state files that decision publishes.
+#
+# ORDERING
+#   Before=nuxel-wl-fb.service  the bridge reads /run/nuxel/verbose-boot and
+#                               /run/nuxel/anim-skip.request before it does the
+#                               animation handoff, so the decision must be on
+#                               disk first.
+#   Before=nuxel-pwa-host.service  the launcher reads the boot log in the same
+#                               boot (bootlog.js overlay).
+#
+# HONESTY
+#   This unit cannot change the kernel command line: that lives in the BOOT
+#   partition and changing it requires a flash, which this mission forbids.  It
+#   therefore controls the USERSPACE boot surface only (Nuxel's own boot log on
+#   the glass + the shortened animation) and says so in its status output.
+#   It never fails the boot: any error is recorded and the unit exits 0.
+[Unit]
+Description=Nuxel verbose-boot setting consumer (early userspace boot stage)
+Documentation=file:/usr/share/doc/nuxel/beta-finalization/boot/VERBOSE-BOOT.md
+DefaultDependencies=no
+After=local-fs.target systemd-journald.socket
+Before=nuxel-wl-fb.service nuxel-pwa-host.service nuxel-wayland.service
+Wants=local-fs.target
+ConditionPathExists=/etc/nuxel/boot/verbose-boot.json
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/nuxel/nuxel-verbose-boot
+# The setting is data, not a daemon: a failure here must never stop the boot.
+SuccessExitStatus=0 1
+TimeoutStartSec=20
+StandardOutput=kmsg+console
+StandardError=kmsg+console
+# Writes: /run/nuxel/verbose-boot, /run/nuxel/anim-skip.request,
+#         /var/lib/nuxel/verbose-boot, /var/log/nuxel/boot-stage.log
+ReadWritePaths=/run/nuxel /var/lib/nuxel /var/log/nuxel
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=sysinit.target

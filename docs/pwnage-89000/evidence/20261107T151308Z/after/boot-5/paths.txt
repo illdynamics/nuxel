@@ -1,0 +1,42 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Id=nuxel-boot-sound.path
+ActiveState=active
+SubState=waiting
+Paths=/run/nuxel-audio-route.ready (PathChanged)
+Result=success
+
+Id=nuxel-mic-route.path
+ActiveState=active
+SubState=running
+Paths=/run/nuxel-audio-route.ready (PathChanged)
+Result=success
+===
+ready=1
+card=0
+sink=alsa_output.hw_0_1
+at=2026-11-07T15:32:18Z
+state=applied
+card=0
+calliope=MUB0
+dsp1=2/2
+route=verified
+sink=alsa_output.hw_0_1
+rate=48000
+default=alsa_output.hw_0_1
+volume_cap=1.0
+at=2026-11-07T15:32:18Z
+state=applied
+card=0
+pcm=hw:0,13
+route=uaif0-nsrc0-sifm0-wdma1
+at=2026-11-07T15:32:15Z
+===
+marker-present

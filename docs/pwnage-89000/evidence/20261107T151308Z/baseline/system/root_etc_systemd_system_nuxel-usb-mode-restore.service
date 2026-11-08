@@ -1,0 +1,17 @@
+[Unit]
+Description=Nuxel USB mode restore from persistent selection
+After=nuxel-usb-mode-monitor.service
+Wants=nuxel-usb-mode-monitor.service
+ConditionPathExists=/var/lib/nuxel/usb-mode
+
+[Service]
+Type=oneshot
+# Only File Transfer needs an explicit restore; Charging is already the default
+# gadget state.  If the host is absent, the helper reports that honestly and
+# leaves the gadget configured with ACM.
+ExecStart=/bin/sh -c 'mode=$(cat /var/lib/nuxel/usb-mode 2>/dev/null || echo charging); [ "$mode" = file_transfer ] || exit 0; sleep 2; exec /usr/lib/nuxel/nuxel-usb-mode.sh file_transfer'
+TimeoutStartSec=20
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+# Nuxel charger/LPM boot-mode guard (briq-01c) — classify + publish, never act.
+#
+# Runs once per boot, early, and writes:
+#   /run/nuxel-bootmode.state   machine-readable state (key=value)
+#   /run/nuxel-bootmode.json    launcher-facing state (message + action)
+# It does NOT reboot and does NOT touch the panel.
+[Unit]
+Description=Nuxel boot-mode guard (charger/LPM detection for touch)
+Documentation=file:/usr/share/doc/nuxel/touch/CHARGER-MODE-ROOTCAUSE.md
+After=local-fs.target
+ConditionPathExists=/proc/cmdline
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/nuxel/nuxel-bootmode-guard.py --status --show-state
+# The guard must never be the reason the boot fails.
+SuccessExitStatus=0 10 11 12 13 2
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target

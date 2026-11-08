@@ -1,0 +1,7 @@
+State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess                           
+LISTEN 0      128        127.0.0.1:5037      0.0.0.0:*    users:(("adb",pid=7191,fd=10))   
+LISTEN 0      5          127.0.0.1:8080      0.0.0.0:*    users:(("python3",pid=6359,fd=3))
+LISTEN 0      128        127.0.0.1:8624      0.0.0.0:*    users:(("systemd",pid=1,fd=112)) 
+LISTEN 0      128          0.0.0.0:22        0.0.0.0:*    users:(("sshd",pid=5867,fd=6))   
+LISTEN 0      5          127.0.0.1:8000      0.0.0.0:*    users:(("python3",pid=5826,fd=3))
+LISTEN 0      128             [::]:22           [::]:*    users:(("sshd",pid=5867,fd=7))   

@@ -1,0 +1,14 @@
+[Unit]
+Description=Play the Nuxel boot cue once the audio route is actually ready
+Documentation=file:/usr/share/doc/nuxel/SOUNDS.md
+
+[Path]
+# nuxel-audio-route.sh creates this receipt only after the ABOX route and both
+# CS35L41 DSPs verify.  Use PathChanged, not PathExists: the receipt appears
+# once per boot and a persistent PathExists trigger would re-trigger a skipped
+# service until systemd's trigger limit.  The service marker is a second guard.
+PathChanged=/run/nuxel-audio-route.ready
+Unit=nuxel-boot-sound.service
+
+[Install]
+WantedBy=paths.target

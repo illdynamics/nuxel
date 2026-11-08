@@ -1,0 +1,33 @@
+# /etc/systemd/system/nuxel-bootmode-oneshot.service
+[Unit]
+Description=Nuxel one-shot boot mode consumer (verbose/safe/diag/debug flags)
+Documentation=file:/usr/share/doc/nuxel/
+After=local-fs.target
+Before=nuxel-wayland.service nuxel-ui.service
+ConditionPathExists=/var/lib/nuxel/boot
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/nuxel-bootmode-oneshot.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort

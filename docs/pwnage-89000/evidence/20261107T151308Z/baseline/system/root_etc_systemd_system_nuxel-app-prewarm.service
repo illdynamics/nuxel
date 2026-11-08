@@ -1,0 +1,16 @@
+[Unit]
+Description=Nuxel GTK/Flatpak font, icon and desktop cache prewarm
+After=local-fs.target
+Before=graphical.target
+ConditionPathExists=/usr/bin/fc-cache
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-app-prewarm
+TimeoutStartSec=180
+Nice=10
+IOSchedulingClass=idle
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

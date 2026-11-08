@@ -1,0 +1,90 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+soundd_after_stop=inactive
+--- while soundd down ---
+{
+  "active": [
+    {
+      "alarm_id": null,
+      "cue_attempts": 3,
+      "cue_last_attempt_ms": 1794065429596,
+      "cue_last_error": "{}",
+      "cue_next_attempt_ms": 1794065430601,
+      "cue_state": "pending",
+      "due_ms": 1794065428229,
+      "fired_ms": 1794065428521,
+      "id": "occ-93e1e6bbb1bc448b",
+      "key": "timer@timer-95b65fd45c68",
+      "kind": "timer",
+      "label": "p89000 outage test 2",
+      "snooze_audit": [],
+      "snoozed_from": null,
+      "state": "ringing",
+      "timezone": "CET",
+      "token": "clock-timer-46932ffd9626",
+      "vibrate": true
+    }
+  ],
+  "timer": {
+    "deadline_ms": 1794065427998,
+    "duration_ms": 4000,
+    "label": "p89000 outage test 2",
+    "remaining_ms": 0,
+    "run_id": "timer-95b65fd45c68",
+    "started_at": "2026-11-07T15:30:23+00:00",
+    "state": "completed",
+    "updated_at": "2026-11-07T15:30:28+00:00"
+  }
+}
+accepted_after_seconds=2
+--- after soundd restore ---
+{
+  "active": [
+    {
+      "alarm_id": null,
+      "cue_ack_ms": 1794065433092,
+      "cue_attempts": 5,
+      "cue_last_attempt_ms": 1794065432630,
+      "cue_last_error": null,
+      "cue_next_attempt_ms": 1794065432620,
+      "cue_state": "accepted",
+      "due_ms": 1794065428229,
+      "fired_ms": 1794065428521,
+      "id": "occ-93e1e6bbb1bc448b",
+      "key": "timer@timer-95b65fd45c68",
+      "kind": "timer",
+      "label": "p89000 outage test 2",
+      "snooze_audit": [],
+      "snoozed_from": null,
+      "soundd_instance": "b01bd4e6041c4bdb8303a8c53710d3c6",
+      "state": "ringing",
+      "timezone": "CET",
+      "token": "clock-timer-46932ffd9626",
+      "vibrate": true
+    }
+  ]
+}
+{"audio_route_ready": true, "backend_ready": true, "control_ready": true, "instance_id": "b01bd4e6041c4bdb8303a8c53710d3c6", "player": {"active_action": "timer", "active_token": "clock-timer-46932ffd9626", "backend_ready": true, "instance_id": "b01bd4e6041c4bdb8303a8c53710d3c6", "last_cue_action": "timer", "last_cue_finished_at": null, "last_cue_latency_ms": 2.37, "last_error": null, "pending_action": null, "pending_token": null, "pipe_buffer_bytes": 8192, "restarts": 0, "running": true, "stream_alive": true, "stream_latency": "40ms", "stream_ready_at": 1794065432.3086584}, "queue_depth": 1, "success": true}
+
+--- final ---
+{
+  "p89000_active": [],
+  "p89000_alarms": [],
+  "timer": {
+    "deadline_ms": null,
+    "duration_ms": 4000,
+    "label": "p89000 outage test 2",
+    "remaining_ms": 0,
+    "run_id": "timer-95b65fd45c68",
+    "started_at": "2026-11-07T15:30:23+00:00",
+    "state": "acknowledged",
+    "updated_at": "2026-11-07T15:30:33+00:00"
+  }
+}

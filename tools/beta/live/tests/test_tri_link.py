@@ -403,14 +403,17 @@ class TestUsbCapability(unittest.TestCase):
             doc = tl.usb_capability(cfg, g, net)
             self.assertEqual(doc["status"], "BLOCKED_KERNEL")
 
-    def test_present_host_interface_is_available(self):
+    def test_present_host_interface_on_known_bad_kernel_is_not_available(self):
         cfg = "CONFIG_USB_CONFIGFS=y\nCONFIG_USB_DWC3=y\nCONFIG_USB_F_NCM=y\n" \
-              "CONFIG_USB_CONFIGFS_NCM=y\n"
+              "CONFIG_USB_CONFIGFS_NCM=y\nCONFIG_USB_F_RNDIS=y\nCONFIG_USB_CONFIGFS_RNDIS=y\n"
         with tempfile.TemporaryDirectory() as d:
             g, net = self._tree(d, functions=("acm.usb0", "ncm.usb0"), host_iface=True)
-            doc = tl.usb_capability(cfg, g, net)
-            self.assertEqual(doc["status"], "AVAILABLE")
-            self.assertEqual(doc["host_gadget_interface"], "usb0")
+            doc = tl.usb_capability(cfg, g, net, kernel_release="4.14.253-gf7194c1d15ed-dirty")
+            self.assertEqual(doc["status"], "NEEDS_VALIDATION")
+            self.assertIsNone(doc["preferred_mode"])
+            self.assertEqual(doc["modes"]["ncm"]["status"], "BLOCKED_KNOWN_PANIC")
+            self.assertEqual(doc["modes"]["rndis"]["status"], "NEEDS_VALIDATION")
+            self.assertTrue(doc["acm_preserved"])
 
     def test_linux_host_without_usb_iface_is_definitive(self):
         with tempfile.TemporaryDirectory() as d:
@@ -558,9 +561,9 @@ class TestUsbNetHelper(unittest.TestCase):
             g = self._fake_gadget(d)
             with self.assertRaises(usbnet.UsbNetError) as cm:
                 usbnet.apply(g, Path(d) / "state", Path(d) / "run", 30,
-                             "CONFIG_USB_F_NCM=y\nCONFIG_USB_CONFIGFS_NCM=y\n",
+                             "CONFIG_USB_CONFIGFS=y\nCONFIG_USB_DWC3=y\nCONFIG_USB_F_NCM=y\nCONFIG_USB_CONFIGFS_NCM=y\n",
                              allow_serial_risk=True, kernel_release="4.14.253")
-            self.assertIn("BLOCKED_KERNEL_PANIC", str(cm.exception))
+            self.assertIn("BLOCKED_KNOWN_PANIC", str(cm.exception))
 
     def test_early_failure_does_not_rebind_the_udc(self):
         with tempfile.TemporaryDirectory() as d:
@@ -592,12 +595,12 @@ class TestUsbNetHelper(unittest.TestCase):
     def test_capability_reports_supported_not_enabled(self):
         with tempfile.TemporaryDirectory() as d:
             g = self._fake_gadget(d)
-            doc = usbnet.capability(g, "CONFIG_USB_F_NCM=y\nCONFIG_USB_CONFIGFS_NCM=y\n")
+            doc = usbnet.capability(g, "CONFIG_USB_CONFIGFS=y\nCONFIG_USB_DWC3=y\nCONFIG_USB_F_NCM=y\nCONFIG_USB_CONFIGFS_NCM=y\n")
             self.assertTrue(doc["compiled_ncm"])
             self.assertTrue(doc["gadget_present"])
             self.assertEqual(doc["bound_udc"], "10c00000.dwc3")
             self.assertFalse(doc["has_usb0"])
-            self.assertEqual(doc["status"], "SUPPORTED_NOT_ENABLED")
+            self.assertEqual(doc["status"], "NEEDS_VALIDATION")
 
     def test_confirm_removes_timer_and_writes_marker(self):
         with tempfile.TemporaryDirectory() as d:

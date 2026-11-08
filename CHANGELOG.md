@@ -6,6 +6,138 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+### PWNAGE-91000 systems + PenguInterface spoof
+
+### Added
+
+- **PenguInterface global + per-app spoofing.** The spoof panel now has a
+  Global scope, an app selector fed by the canonical registry, persistent
+  per-app field values across menu visits and reboot, scoped per-app/global
+  reset, and an explicit "reset all". Effective global values are shown in the
+  current UA/uname/os-release rows above the form.
+- **Launch-time spoof injection.** Non-Flatpak native launches receive a
+  per-scope runtime profile (`LD_PRELOAD` + `NUXEL_SPOOF_PROFILE`); the
+  os-release path/text bug in the old profile format was fixed.
+- `SYSTEMD-GRAPH.md`, `GPU-ACCEL-REPORT.md`, seven hardware reports and
+  `PWNAGE-91000-REPORT.md` with live S10+ evidence and rollback steps.
+
+### Changed
+
+- **avahi no longer pulls `network-online.target` into boot.** It orders after
+  `NetworkManager`/`wpa_supplicant` and keeps bounded restart semantics. The
+  ordered critical chain moved from `NM-wait-online` (5.774 s) to
+  `nuxel-wifi`, while the launcher-readiness fallback safety gate remains.
+- **NFC policy refresh.** The live `/etc/nuxel/nfc/nfc.json` was stale and
+  reported the verified S3NRN82 firmware as missing; the repo policy (151,852
+  bytes, SHA-256 `d315cd8b…`) is now deployed. The real first blocker is the
+  kernel NFC subsystem/netlink, not firmware.
+
+### Fixed
+
+- `nuxel-spoof` os-release redirection now points at a generated file instead
+  of parsing raw os-release text as a path.
+- Spoof resets are scoped; an empty v2 profile is no longer misinterpreted as a
+  legacy global config.
+- `/var/lib/nuxel/spoof` is provisioned for the bridge identity so profiles
+  persist across reboot.
+
+### PWNAGE-90000 shell reliability
+
+### Fixed
+
+- **Preload video froze after one second.** Root cause was compositor frame
+  scheduling, not mpv: the lock watcher re-raised/maximized the fullscreen Home
+  view every second, so phoc treated the playing preload surface as invisible
+  and stopped its frame callbacks. Lock enforcement is now edge-triggered,
+  exempts the trusted `/run/nuxel/preload-cinema.overlay` surface, and the
+  controller records clock/frame/stall telemetry. On the S10+ the clip now
+  advances through its full 6.016 s (15 consecutive distinct composited frames,
+  `clock_advances=48`, `stall_count=0`).
+- **Restart acknowledgement leaked into the next boot.** The power menu no
+  longer reports a reboot as "accepted", its overlay/result are destroyed on
+  pagehide/pagehide-equivalent transitions, and the overlay is neutral black.
+- **Reload launcher left stale boot/power layers.** Reloads now use an explicit
+  one-shot marker, retire transient overlays and the preload cover, and never
+  replay the boot splash or dark-blue rectangle.
+- **Short Back could hide the app but leave it as an input interceptor.** PWA
+  Back now uses a correlated `nuxel:back-request` protocol; native Back returns
+  typed `handled|at_root|unsupported|failed|pending` results. Only a confirmed
+  root backgrounds the app to Home; unknown capability stays foreground.
+- **Top-edge gestures.** First pull reveals the compact bar; second pull opens
+  expanded Quick Settings through the single owner; upward swipe always closes
+  compact/expanded. Native statusbar forwards the second pull to `pwa-host`.
+- **Bottom gesture with OSK.** The navdock strip re-maps above the keyboard when
+  OSK visibility changes without changing keyboard focus.
+- **First-paint icons.** Immutable versioned icons are cache-first/precached;
+  visible desktop/dock icons are eager/high priority with an immediate correct
+  fallback and stable keyed DOM nodes.
+- **systemd evidence.** Added `tools/diagnostics/nuxel-systemd-graph.py`,
+  root `SYSTEMD-GRAPH.md`, `diagnostics/systemd/SYSTEMD-BOOT.svg` and raw
+  boot/shutdown evidence from the S10+ (clean boot 16.143 s total; previous-boot
+  shutdown timeline captured).
+
+### Changed
+
+- Home service-worker cache namespace: `v080-p90000`.
+- Added `pwa/nuxel-common/back.js` and packaged it in live/image manifests.
+- Added `tools/pwnage90000/deploy-pwnage90000.sh` and
+  `tools/pwnage90000/rollback-pwnage90000.sh`.
+
+## [v0.8.1-beta] - 2026-11-08 - *Direct LAN RDP/VNC, truthful security state and mode-aware USB Tri-Link*
+
+### Added
+
+- **Direct LAN XRDP on TCP 13389.** TLS 1.2/1.3 only, PAM as the local `nuxel`
+  account, separate xorgxrdp X11 session, no SSH tunnel. The privileged
+  controller binds the listener to the current trusted WLAN IPv4 address and
+  writes the runtime `xrdp.ini` atomically.
+- **Direct LAN VNC on TCP 15900.** wayvnc with `enable_auth=true` and
+  `enable_pam=true`, per-device TLS and RSA-AES material, bound to the current
+  trusted WLAN IPv4 address. VNC mirrors the active Phoc/Wayland session.
+- **Mode-aware USB status.** `system.tri-link` and `system.remote-desktop` now
+  publish per-mode state: NCM `BLOCKED_KNOWN_PANIC`, RNDIS
+  `NEEDS_VALIDATION`, ECM `BLOCKED_KERNEL`, with ACM preservation and
+  `mutated:false`.
+- **Host USB adapter for macOS and Linux.** `nuxel-usb-net-host.sh` supports
+  `--status`, `--discover`, `--preflight`, `--apply`, `--remove`, `--diagnose`
+  and `--json`; it never installs a driver or changes the default route.
+- **REPORT-USBNET.md** with the NCM panic evidence, vendor-source RNDIS
+  teardown comparison, host limitation and safe next step.
+- **RELEASE-NOTES.md** and **ARCHITECTURE.md**; README now links to both.
+
+### Changed
+
+- The canonical remote-access policy, controller, Bridge, PWA, firewall docs and
+  tests agree on XRDP 13389 and VNC 15900. Historical 3389/5900 references are
+  removed from operational docs.
+- VNC status is derived from the effective config and certificate fingerprint.
+  Authentication-disabled or wildcard listeners report ERROR, never READY.
+- XRDP defaults to the installed `Xorg` backend (`autorun=Xorg`); the
+  uninstalled Xvnc/TigerVNC backend is no longer offered as the default.
+- The retired `nuxel-remote` image account and its generated password were
+  removed. Both RDP and VNC PAM policies accept only `nuxel` (uid 1000).
+- The production `--allow-unsafe-kernel` USB escape hatch was removed.
+- Repository version is now `v0.8.1-beta`, registry revision 18.
+
+### Fixed
+
+- Remote-desktop Bridge status no longer crashes when VNC client count is
+  unknown (`None > 0`).
+- Stop/Stop All verifies listener closure and terminates only managed remote X11
+  children; Phoc and `nuxel-wl-fb` are never targeted.
+- Existing PWNAGE-90000 shell reliability and PWNAGE-91000 PenguInterface spoof
+  fixes are included and deployed in this release.
+
+### Verification
+
+- Offline: 42 remote-desktop/Tri-Link tests and 51 USB/Tri-Link helper tests
+  passed; PWNAGE-45000 contract suite passed.
+- Live S10+: VNC 15900 offered RFB security types `129` and `5` with no
+  unauthenticated type; RDP 13389 negotiated TLS 1.3; both listeners closed on
+  `stop-all`.
+- USB physical data plane: **NOT RUN**; serial ACM and WLAN SSH remained the
+  verified recovery paths.
+
 ## [v0.8.0-beta] - 2026-11-08 - *Release-blocker repair, firewall/permissions surfaces, launcher handoff lockdown*
 
 This release finishes the v0.7.9 boot-audio repair and removes the remaining

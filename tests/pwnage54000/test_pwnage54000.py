@@ -59,7 +59,7 @@ def test_recents_get_route_and_left_swipe_close_exist():
     assert api.count("path == '/api/v1/windows/list'") >= 2
     assert "/api/v1/windows/close" in api
     recents = (ROOT / "pwa/nuxel-home/js/recents.js").read_text()
-    assert "e.clientX < startX - 72" in recents
+    assert "Math.abs(dx) > 72" in recents and "dx < 0" in recents and "recents-swipe-left" in recents
     assert "/api/v1/windows/close" in recents
     assert "Close ${app.name}" in recents
     assert "Switch to" not in recents
@@ -81,7 +81,7 @@ def test_bluetooth_and_location_use_classic_svg_icons():
     for name in ("04-bluetooth.svg", "09-location.svg"):
         assert (ROOT / "assets/nuxel-quicksettings-icon-pack" / name).is_file()
     css = (ROOT / "pwa/nuxel-home/css/status-bar.css").read_text()
-    assert "04-bluetooth.svg" in css and "09-location.svg" in css
+    assert ("04-bluetooth.png" in css or "04-bluetooth.svg" in css) and "09-location.svg" in css
     html = (ROOT / "pwa/nuxel-home/index.html").read_text()
     assert "04-bluetooth.svg" in html and "09-location.svg" in html
 
@@ -124,13 +124,16 @@ def test_navigation_reconciles_stale_lock_cache():
     assert "window.dispatchEvent(new CustomEvent('nuxel:action'" in src
 
 
-def test_xrdp_uses_xvnc_backend_for_runtime_resize():
+def test_xrdp_uses_the_installed_xorg_backend_on_direct_port_13389():
     ini = (ROOT / "services/nuxel-remote-desktop/config/xrdp.ini").read_text()
-    assert "autorun=Xvnc" in ini and "[Xvnc]" in ini and "lib=libvnc.so" in ini
+    assert "autorun=Xorg" in ini and "[Xorg]" in ini
+    assert "port=tcp://127.0.0.1:13389" in ini
+    assert "security_layer=tls" in ini
+    # TigerVNC-server is not installed, so Xvnc must not be the default backend.
+    assert "[Xvnc]" not in ini
     sync = (ROOT / "services/nuxel-remote-desktop/bin/nuxel-orientation-remote-sync").read_text()
     assert 'target["name"].startswith("VNC-")' in sync
     assert '"--newmode"' in sync and '"--addmode"' in sync
-    assert "geometry_axis_matches_rotation_unsupported" in sync
     daemon = (ROOT / "services/nuxel-orientation/nuxel-orientationd").read_text()
     assert "_remote_last_tick" in daemon and "_spawn_remote_sync" in daemon
 

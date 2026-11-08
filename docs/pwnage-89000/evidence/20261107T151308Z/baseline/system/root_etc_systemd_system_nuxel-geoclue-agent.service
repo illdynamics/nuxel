@@ -1,0 +1,31 @@
+[Unit]
+Description=Nuxel GeoClue2 agent for the nuxel-bridge UID
+Documentation=https://github.com/nuxel/nuxel/docs/beta-finalization/live/PWNAGE-42000-REPORT.md
+After=dbus.service
+Before=nuxel-bridge.service
+Wants=dbus.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+User=nuxel-bridge
+Group=nuxel-bridge
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

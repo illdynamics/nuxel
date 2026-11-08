@@ -1,0 +1,26 @@
+$ systemd-analyze critical-chain
+rc=0
+--- stdout ---
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @12.712s
+└─avahi-daemon.service @12.581s +25ms
+  └─network-online.target @12.579s
+    └─NetworkManager-wait-online.service @6.803s +5.774s
+      └─NetworkManager.service @4.163s +2.285s
+        └─dbus-daemon.service @4.010s
+          └─basic.target @4.003s
+            └─sockets.target @4.002s
+              └─systemd-logind-varlink.socket @4.001s +190us
+                └─sysinit.target @3.990s
+                  └─systemd-timesyncd.service @3.742s +248ms
+                    └─systemd-tmpfiles-setup.service @3.263s +473ms
+                      └─systemd-journal-flush.service @2.924s +336ms
+                        └─systemd-journald.service @2.305s +613ms
+                          └─systemd-journald.socket @2.289s +237us
+                            └─system.slice @2.272s
+                              └─-.slice @2.272s
+
+--- stderr ---
+

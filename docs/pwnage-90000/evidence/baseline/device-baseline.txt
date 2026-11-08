@@ -1,0 +1,270 @@
+== BOOT ==
+System:
+Not booted with EFI
+
+== BOOTID ==
+4e621e71-940c-4f87-a71f-3ec7ed82577b
+== UPTIME ==
+2026-11-08 08:48:32
+2082.02 15516.32
+== SYSTEMD VERSION ==
+systemd 258 (258.11-1.fc43)
++PAM +AUDIT +SELINUX -APPARMOR +IMA +IPE +SMACK +SECCOMP -GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN -IPTC +KMOD +LIBCRYPTSETUP +LIBCRYPTSETUP_PLUGINS +LIBFDISK +PCRE2 +PWQUALITY +P11KIT +QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD +BPF_FRAMEWORK +BTF +XKBCOMMON +UTMP +SYSVINIT +LIBARCHIVE
+== NUXEL DIRS ==
+/etc/nuxel:
+total 216
+drwxr-xr-x. 33 root root   4096 Nov  8 08:41 .
+drwxr-xr-x. 99  501 games  4096 Nov  8 08:48 ..
+-rw-r--r--   1 root root   4132 Sep 15 02:40 README.md
+drwxr-xr-x   2 root root   4096 Nov  8 08:41 app-registry
+drwxr-xr-x   2 root root   4096 Sep 15 02:40 audio
+-rw-r--r--   1 root root    295 Oct 28 16:55 banner
+drwxr-xr-x   3 root root   4096 Sep 15 02:40 bluetooth
+drwxr-xr-x   2 root root   4096 Nov  4 00:11 boot
+drwxr-xr-x   2 root root   4096 Nov  1 12:39 bootmode
+-rw-r--r--.  1 root root   1597 Nov  8 08:41 bridge-version.json
+-rw-r--r--   1 root root   1586 Sep 15 02:39 bridge-version.json.nuxel-rollback
+-rw-r--r--   1 root root   1586 Sep 15 02:39 bridge-version.json.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000
+-rw-r--r--   1 root root   1585 Oct 27 18:27 bridge-version.json.nuxel-rollback.pre-deploy-20261027T214530-2399261
+-rw-r--r--   1 root root   1585 Oct 27 14:54 bridge-version.json.nuxel-rollback.pre-v070-delta-release
+-rw-r--r--   1 root root   1585 Oct 27 14:54 bridge-version.json.nuxel-rollback.pre-v070-delta-release2
+-rw-r--r--   1 root root   1585 Oct 27 14:54 bridge-version.json.nuxel-rollback.pre-v070-delta-release3
+-rw-r--r--   1 root root   1585 Oct 27 14:54 bridge-version.json.nuxel-rollback.pre-v070-delta-release4
+drwxr-xr-x   2 root root   4096 Nov  5 16:06 buttons
+drwxr-xr-x   2 root root   4096 Sep 15 02:40 camera
+drwxr-xr-x   2 root root   4096 Sep 15 02:40 capabilities
+drwxr-xr-x.  3 root root   4096 Oct 14 17:45 device
+drwxr-xr-x   2 root root   4096 Nov  1 12:32 display
+-rw-r--r--.  1 root root    101 Nov  3 20:26 egl-kbase.json
+drwxr-xr-x.  2 root root   4096 Nov  8 08:41 firewall
+drwxr-xr-x   2 root root   4096 Nov  8 08:41 gnss
+drwxr-xr-x.  2 root root   4096 Nov  3 20:26 graphics
+drwxr-xr-x   2 root root   4096 Oct 19 09:05 haptics
+drwxr-xr-x   2 root root   4096 Nov  7 23:10 input
+drwxr-xr-x   2 root root   4096 Nov  7 19:25 keyboard
+-rw-------.  1 root root     65 Nov  3 12:24 keyring-launcher.secret
+drwxr-xr-x   2 root root   4096 Nov  1 10:27 leds
+drwxr-xr-x   2 root root   4096 Oct 31 19:25 nfc
+drwxr-xr-x.  2  501 games  4096 Oct 31 19:14 notifications
+-rw-r--r--.  1 root root    925 Oct 14 17:45 nuxel-beyond2lte.conf
+drwxr-xr-x   2 root root   4096 Nov  7 19:23 orientation
+-rw-r--r--   1 root root   2502 Sep 15 02:41 paths.conf
+drwxr-xr-x.  2 root root   4096 Nov  8 08:41 permissions
+-rw-r--r--   1 root root    534 Sep 15 02:36 phoc-phone.ini
+-rw-r--r--.  1 root root    301 Oct 14 17:45 phone-runtime-status
+drwxr-xr-x.  2 root root   4096 Nov  5 16:06 policy
+drwxr-xr-x   2 root root   4096 Nov  5 16:06 power
+drwxr-xr-x.  2  501 games  4096 Nov  2 08:26 privacy
+drwxr-xr-x.  5 root root   4096 Oct 31 16:39 remote-desktop
+drwxr-xr-x   3 root root   4096 Sep 15 02:47 sandbox
+drwxr-xr-x   3 root root  12288 Nov  8 08:41 security
+drwxr-xr-x   2 root root   4096 Sep 15 02:42 sensors
+drwxr-xr-x.  2 root root   4096 Nov  7 14:37 services
+-rw-r--r--   1 root root    657 Sep 15 02:06 statusbar-safezones.json
+drwxr-xr-x   2 root root   4096 Sep 15 02:42 time
+drwxr-xr-x   2 root root   4096 Nov  1 12:39 touch
+-rw-r--r--   1 root root    233 Oct 28 16:55 zsh.conf
+
+/run/nuxel:
+total 76
+drwxr-xr-x.  4 root root   400 Nov  8 09:23 .
+drwxr-xr-x. 20 root root  1440 Nov  8 09:23 ..
+-rw-r--r--.  1 root root    11 Nov  8 08:49 boot-sound-attempted
+-rw-r--r--.  1 root root     0 Nov  8 08:49 boot-sound.lock
+srw-------.  1 root root     0 Nov  8 08:48 clockd.sock
+-rw-r--r--.  1 root root  1177 Nov  8 08:48 clockd.state
+-rw-r--r--.  1 root root    57 Nov  8 09:04 flatpak-bcac7659c7214014.log
+-rw-r--r--.  1 root root    26 Nov  8 09:23 foreground.state
+-rw-------.  1 root root   588 Nov  8 08:48 graphics-gpu-probe.json
+-rw-r--r--.  1 root root   158 Nov  8 09:23 lock-enforcement.state
+drwx------.  2 root root    80 Nov  8 08:48 nfc
+-rw-r--r--.  1 root root 25088 Nov  8 08:48 preload-cinema-mpv.log
+-rw-r--r--.  1 root root    79 Nov  8 08:48 preload-cinema.done
+-rw-r--r--.  1 root root     5 Nov  8 08:48 preload-cinema.lock
+-rw-r--r--.  1 root root   279 Nov  8 08:48 preload-cinema.overlay
+-rw-r--r--.  1 root root  2011 Nov  8 08:48 preload-cinema.receipt
+drwx------.  2 root root    60 Nov  8 09:11 security
+-rw-r--r--.  1 root root   141 Nov  8 09:23 shell-chrome.json
+-rw-r--r--.  1 root root     5 Nov  8 08:48 shell-chrome.owner
+srw-rw----.  1 root root     0 Nov  8 08:48 soundd.sock
+
+/usr/share/nuxel:
+total 1920
+drwxr-xr-x.  19   501 games    4096 Nov  7 16:48 .
+== NUXEL VERSION ==
+v0.7.9-beta
+== UNITS ==
+  run-nuxel\x2dwayland-doc.mount           loaded    active     mounted   /run/nuxel-wayland/doc
+  nuxel-boot-sound.path                    loaded    active     waiting   Play the Nuxel boot cue once the audio route is actually ready
+  nuxel-mic-route.path                     loaded    active     running   Start Nuxel microphone route when the playback route state appears
+  flatpak-add-fedora-repos.service         loaded    inactive   dead      Add Fedora flatpak repositories
+  flatpak-system-helper.service            loaded    active     running   flatpak system helper
+  nuxel-abox-firmware-reload.service       loaded    active     exited    Nuxel S10+ ABOX Calliope core-firmware reload
+  nuxel-app-prewarm.service                loaded    active     exited    Nuxel GTK/Flatpak font, icon and desktop cache prewarm
+  nuxel-app-software-1794125003151.service loaded    active     running   [systemd-run] /usr/lib/nuxel/nuxel-software
+  nuxel-audio-route-retry.service          loaded    inactive   dead      Nuxel S10+ ABOX playback route — deferred retry run
+  nuxel-audio-route.service                loaded    active     exited    Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)
+  nuxel-audio-session.service              loaded    active     running   Nuxel standalone PipeWire/WirePlumber audio session
+  nuxel-bluetooth.service                  loaded    inactive   dead      Nuxel BCM4375 Bluetooth HCI bring-up (patchram + H4 attach)
+  nuxel-boot-sound.service                 loaded    inactive   dead      Nuxel startup cue after confirmed boot-animation to launcher handoff
+  nuxel-bootmode-guard.service             loaded    active     exited    Nuxel boot-mode guard (charger/LPM detection for touch)
+  nuxel-bootmode-oneshot.service           loaded    active     exited    Nuxel one-shot boot mode consumer (verbose/safe/diag/debug flags)
+  nuxel-bridge.service                     loaded    active     running   Nuxel Bridge - PWA to Native Phone Service Mediator
+  nuxel-button-manager.service             loaded    active     running   Nuxel hardware button and gesture manager (single owner of gpio_keys)
+  nuxel-charger-mode-recovery.service      loaded    active     exited    Nuxel charger/LPM boot recovery (normal reboot so touch binds)
+  nuxel-clockd.service                     loaded    active     running   Nuxel background alarm and timer scheduler
+  nuxel-device-permissions.service         loaded    active     exited    Nuxel device-node permissions (udev fallback for kernel 4.14)
+  nuxel-fallback.service                   loaded    inactive   dead      Nuxel fallback framebuffer UI (only when the launcher fails)
+  nuxel-firstlight.service                 loaded    inactive   dead      Nuxel S10+ first-light framebuffer hardware probe (not Phosh)
+  nuxel-fuse-access.service                loaded    active     exited    Nuxel user-session portal permissions
+  nuxel-geoclue-agent.service              loaded    active     running   Nuxel GeoClue2 agent for the nuxel-bridge UID
+  nuxel-haptics.service                    loaded    active     running   Nuxel Samsung timed-output haptics service
+  nuxel-http-bridge.service                loaded    active     running   Nuxel HTTP Bridge API
+  nuxel-interface-state.service            loaded    active     exited    Nuxel persistent interface state (Bluetooth/NFC/GNSS restore)
+  nuxel-metrics.service                    loaded    inactive   dead      Nuxel on-demand Home hardware metrics
+  nuxel-mic-route.service                  loaded    active     exited    Nuxel S10+ built-in microphone capture route (UAIF0 -> WDMA1)
+  nuxel-mtp.service                        loaded    inactive   dead      Nuxel MTP responder (user storage over the vendor f_mtp gadget)
+  nuxel-network-udev-seed.service          loaded    inactive   dead      Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi
+  nuxel-nfcd.service                       loaded    active     running   Nuxel NFC controller service (Samsung sec-nfc transport)
+  nuxel-notifications.service              loaded    active     running   Nuxel Notification Hub
+  nuxel-orientationd.service               loaded    active     running   Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+  nuxel-portal.service                     loaded    active     running   Nuxel Portal Daemon
+  nuxel-soundd.service                     loaded    active     running   Nuxel central sound manager (persistent PipeWire cue stream)
+  nuxel-touch-arm.service                  loaded    active     running   Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+  nuxel-ui.service                         loaded    inactive   dead      Nuxel Home launcher (fbdev-native platform adapter; the UTM PWA launcher on the S10+ panel)
+  nuxel-usb-mode-monitor.service           loaded    active     running   Nuxel USB mode host-disconnect monitor
+  nuxel-usb-mode-restore.service           loaded    active     exited    Nuxel USB mode restore from persistent selection
+  nuxel-watchdog-keep.service              loaded    active     running   Nuxel software watchdog keep-alive (softdog.soft_margin=100)
+  nuxel-wayland.service                    loaded    active     running   Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+  nuxel-web.service                        loaded    active     running   Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+  nuxel-wifi.service                       loaded    active     exited    Nuxel Wi-Fi boot policy (radio ON by default via NetworkManager)
+  nuxel-wl-fb.service                      loaded    active     running   Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+  seatd.service                            loaded    active     running   Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+  nuxel-metrics.socket                     loaded    active     listening Nuxel on-demand Home hardware metrics socket
+  nuxel-abox-firmware-reload.timer         loaded    active     running   Deferred Nuxel S10+ ABOX core-firmware reload after Home
+  nuxel-audio-route.timer                  loaded    active     waiting   Nuxel S10+ ABOX playback route — deferred retry after boot
+== SERVICE STATE ==
+active
+active
+active
+inactive
+inactive
+== PROCESSES ==
+   3469       1    2079 sh              sh /usr/lib/nuxel/nuxel-postboot.sh 20
+   3505       1    2079 nuxel-console   /opt/nuxel/nuxel-console /newroot
+   3506       1    2079 nuxel-console   /opt/nuxel/nuxel-console /newroot
+   5380       1    2073 python3         python3 /usr/libexec/nuxel/nuxel-clockd
+   5384       1    2073 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+   5386       1    2073 python3         python3 /usr/lib/nuxel/nuxel-hapticsd.py
+   5389       1    2073 python3         /usr/bin/python3 -m nuxel_nfc.daemon daemon
+   5394       1    2073 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+   5397       1    2073 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+   5401       1    2073 nuxel-touch-arm /usr/lib/nuxel/nuxel-touch-arm
+   5404       1    2073 bash            bash /usr/lib/nuxel/nuxel-usb-mode.sh monitor
+   5413       1    2073 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-web-server.py
+   5452       1    2073 nuxel-wayland-g /bin/sh /usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+   5701       1    2072 python3         python3 /usr/libexec/nuxel/nuxel-orientationd daemon
+   5877    5452    2072 phoc            /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+   6043       1    2072 python3         python3 /usr/libexec/nuxel/nuxel-soundd
+   6084       1    2072 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+   6087       1    2072 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+   6154       1    2071 nuxel-wl-fb     /usr/lib/nuxel/nuxel-wl-fb
+   6156       1    2071 nuxel-button-ma /usr/lib/nuxel/nuxel-button-manager
+   6180    5877    2071 nuxel-pwa-host  /usr/lib/nuxel/nuxel-pwa-host
+   6503    6180    2070 nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6506    6180    2070 nuxel-osd       /usr/lib/nuxel/nuxel-osd
+   6517    6503    2070 nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6518    6503    2070 nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6519    6503    2070 nuxel-shell-chr /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+   6522    6517    2070 nuxel-navdock   /usr/lib/nuxel/nuxel-navdock
+   6523    6518    2070 nuxel-statusbar /usr/lib/nuxel/nuxel-statusbar
+   6789    6180    2070 dbus-run-sessio dbus-run-session -- sh -c printf "%s\n" "$DBUS_SESSION_BUS_ADDRESS" > /run/nuxel-osk.bus; exec /usr/bin/phosh-osk-stevia
+   6815    6789    2070 phosh-osk-stevi /usr/bin/phosh-osk-stevia
+   6816       1    2070 dbus-daemon     dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+   6845    6839    2069 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   6900    6180    2069 runuser         runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal-gtk
+   6928    6918    2069 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   7401    6180    2068 runuser         runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal
+   7405    6180    2068 nuxel-session.s [nuxel-session.s] <defunct>
+   7530    7513    2068 fusermount3     fusermount3 -o rw,nosuid,nodev,fsname=portal,auto_unmount,subtype=portal -- /run/nuxel-wayland/doc
+   7796    7788    2066 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+   7802    6180    2066 WebKitNetworkPr /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 21
+   7805    6180    2066 WebKitWebProces /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 25
+   8811       1    2039 nuxel-audio-ses /bin/sh /usr/lib/nuxel/nuxel-audio-session.sh
+   8835    8811    2039 nuxel-audio-ses /bin/sh /usr/lib/nuxel/nuxel-audio-session.sh
+  19107       1    1190 python3         python3 /usr/lib/nuxel/nuxel-software
+  19998    6519    1128 nuxel-foreign-t /usr/lib/nuxel/nuxel-foreign-toplevel watch-lock
+  28715       1     185 flatpak-system- /usr/libexec/flatpak-system-helper
+== BOOT TIME ==
+Startup finished in 3.486s (kernel) + 14.099s (userspace) = 17.585s 
+multi-user.target reached after 14.099s in userspace.
+== JOURNAL PERSIST ==
+/var/log/journal
+== BOOTS ==
+ -4 9bf81509ecbf40eea56183fccb64a12e Sat 2026-11-07 22:45:22 CET Sat 2026-11-07 23:33:13 CET
+ -3 afefbf9e2dab41d1aaf82de6f1766487 Sat 2026-11-07 23:33:51 CET Sun 2026-11-08 00:06:54 CET
+ -2 b67f4a7b83944c68a0ded20053751434 Sun 2026-11-08 00:07:32 CET Sun 2026-11-08 01:02:50 CET
+ -1 22c1638c8888413a8fe4746088a125b3 Sun 2026-11-08 01:03:28 CET Sun 2026-11-08 08:48:00 CET
+  0 4e621e71940c4f87a71f3ec7ed82577b Sun 2026-11-08 08:48:38 CET Sun 2026-11-08 09:23:26 CET
+== FLATPAK LIST ==
+app.legcord.Legcord	Legcord	1.3.0	flathub	system
+com.github.IsmaelMartinez.teams_for_linux	Portal for Teams	2.28.0	flathub	system
+com.rtosta.zapzap	ZapZap	7.5.1	flathub	system
+com.stremio.Stremio	Stremio	1.2.2	flathub	system
+dev.vencord.Vesktop	Vesktop	1.6.5	flathub	system
+io.mpv.Mpv	mpv	v0.41.0	flathub	system
+org.ferdium.Ferdium	Ferdium	7.2.3	flathub	system
+org.gnome.TextEditor	Text Editor	51.0	flathub	system
+org.mozilla.firefox	Firefox	159.0	flathub	system
+org.signal.Signal	Signal Desktop	8.33.0	flathub	system
+org.telegram.desktop	Telegram	7.4	flathub	system
+org.videolan.VLC	VLC	3.0.24	flathub	system
+== BINARIES ==
+-rwxr-xr-x. 1 root root   66136 Nov  8 08:48 /usr/bin/nuxel-anim-player
+-rwxr-xr-x  1 root root     585 Oct 21 13:48 /usr/bin/nuxel-bridge
+-rwxr-xr-x  1 root root   69822 Oct 21 13:48 /usr/bin/nuxel-bridge.prev
+-rwxr-xr-x  1 root root    5818 Oct 21 19:57 /usr/bin/nuxel-cast-diag.sh
+-rwxr-xr-x. 1 root root   80472 Nov  1 19:03 /usr/bin/nuxel-contacts
+-rwxr-xr-x. 1 root root   78424 Nov  1 19:03 /usr/bin/nuxel-dialer
+-rwxr-xr-x. 1 root root    4712 Oct 14 17:45 /usr/bin/nuxel-fb-phone
+-rwxr-xr-x. 1 root root     716 Nov  8 08:41 /usr/bin/nuxel-firewall
+-rwxr-xr-x  1 root root    1456 Oct 31 06:51 /usr/bin/nuxel-flashlight-rpc
+-rwxr-xr-x  1 root root     262 Oct 21 13:48 /usr/bin/nuxel-http-bridge
+-rwxr-xr-x  1 root root   46074 Oct 21 13:48 /usr/bin/nuxel-http-bridge.prev
+-rwxr-xr-x. 1 root root   80840 Nov  1 19:03 /usr/bin/nuxel-messages
+lrwxrwxrwx. 1 root root      28 Nov  4 02:24 /usr/bin/nuxel-nfc -> /usr/libexec/nuxel/nuxel-nfc
+-rwxr-xr-x  1 root root     310 Sep 15 02:46 /usr/bin/nuxel-notifications
+-rwxr-xr-x  1 root root     260 Sep 15 02:46 /usr/bin/nuxel-portal
+-rwxr-xr-x  1 root root    5594 Oct 21 19:57 /usr/bin/nuxel-typec-diag.sh
+-rwxr-xr-x. 1 root root  721496 Oct 16 00:41 /usr/bin/nuxel-ui
+-rwxr-xr-x  1 root root    3532 Sep 15 02:46 /usr/bin/nuxel-web
+-rwxr-xr-x  1 root root    1287 Oct 19 16:03 /usr/local/bin/nuxel-a37-check
+-rwxr-xr-x  1 root root   31297 Oct 30 22:45 /usr/local/bin/nuxel-audio-diag.sh
+-rwxr-xr-x. 1 root root     804 Nov  8 08:48 /usr/local/bin/nuxel-audio-status
+-rwxr-xr-x  1 root root   10007 Sep 15 02:42 /usr/local/bin/nuxel-bluetooth-diag.sh
+-rwxr-xr-x  1 root root    3389 Sep 15 02:08 /usr/local/bin/nuxel-boot-stage-verbose.sh
+-rwxr-xr-x  1 root root    3389 Sep 15 02:42 /usr/local/bin/nuxel-boot-stage-verbose.sh.nuxel-rollback
+-rwxr-xr-x  1 root root    3171 Oct 28 16:22 /usr/local/bin/nuxel-bootcap
+-rwxr-xr-x  1 root root    1182 Oct 17 02:39 /usr/local/bin/nuxel-bootmode-oneshot.sh
+-rwxr-xr-x  1 root root     706 Oct 17 12:27 /usr/local/bin/nuxel-button-trace.sh
+-rwxr-xr-x. 1  501 games  17246 Oct 30 17:39 /usr/local/bin/nuxel-camera-diag.sh
+-rwxr-xr-x  1 root root    5818 Oct 27 18:26 /usr/local/bin/nuxel-cast-diag.sh
+lrwxrwxrwx. 1 root root      32 Nov  4 10:44 /usr/local/bin/nuxel-crispy-doom -> /usr/lib/nuxel/nuxel-crispy-doom
+-rwxr-xr-x  1 root root    2162 Oct 29 19:59 /usr/local/bin/nuxel-cs35.py
+-rwxr-xr-x  1 root root   13642 Oct 30 18:56 /usr/local/bin/nuxel-cs35l41-speaker-diag.sh
+-rwxr-xr-x  1 root root    2848 Oct 17 02:39 /usr/local/bin/nuxel-diag-pack.sh
+-rwxr-xr-x  1 root root    1756 Oct 17 12:26 /usr/local/bin/nuxel-display-frame-trace.sh
+-rwxr-xr-x. 1 root root   73912 Nov  1 15:20 /usr/local/bin/nuxel-dmabuf-negative
+lrwxrwxrwx. 1 root root      34 Nov  4 10:44 /usr/local/bin/nuxel-doom-launcher -> /usr/lib/nuxel/nuxel-doom-launcher
+-rwxr-xr-x  1 root root    3784 Sep 15 03:10 /usr/local/bin/nuxel-fb-owner-assert.sh
+-rwxr-xr-x  1 root root    1497 Oct 17 05:36 /usr/local/bin/nuxel-fb-snap.py
+-rwxr-xr-x  1 root root    1070 Oct 17 05:36 /usr/local/bin/nuxel-fb-snap.py.prev
+-rwxr-xr-x. 1 root root     245 Nov  7 20:52 /usr/local/bin/nuxel-firewall
+== PRELOAD ASSET ==
+b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1  /usr/share/nuxel/preload/nuxel-preloading-screen.mp4
+total 7452
+-rw-r--r-- 1 root root 7630092 Oct 28 09:25 nuxel-preloading-screen.mp4
+== MPV ==
+mpv v0.40.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+libplacebo version: v7.351.0
+FFmpeg version: 7.1.1 (runtime 7.1.5)

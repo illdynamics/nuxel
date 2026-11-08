@@ -20,7 +20,7 @@
   ],
   "nuxel": {
     "bridge_version": "1",
-    "pwa_version": "0.8.0-beta",
+    "pwa_version": "0.8.1-beta",
     "capabilities": [
       "system:inspect",
       "network:manage"

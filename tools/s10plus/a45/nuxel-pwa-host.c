@@ -1961,6 +1961,7 @@ static void action_perform(const char *action, char *result, size_t rn) {
   }
   if (!strcmp(action, "home") || !strcmp(action, "back") || !strcmp(action, "back-long") || !strcmp(action, "forward") ||
       !strcmp(action, "stop") || !strcmp(action, "reload-launcher") ||
+      !strcmp(action, "quick-settings") || !strcmp(action, "quick-settings-close") ||
       !strcmp(action, "search") || !strcmp(action, "settings") ||
       !strcmp(action, "recents") || !strcmp(action, "all-apps") ||
       !strcmp(action, "notifications-panel") ||
@@ -1981,6 +1982,8 @@ static void action_perform(const char *action, char *result, size_t rn) {
                               !strcmp(action, "forward") ? "'forward'" :
                               !strcmp(action, "stop") ? "'stop'" :
                               !strcmp(action, "reload-launcher") ? "'reload-launcher'" :
+                              !strcmp(action, "quick-settings") ? "'quick-settings'" :
+                              !strcmp(action, "quick-settings-close") ? "'quick-settings-close'" :
                               !strcmp(action, "search") ? "'search'" :
                               !strcmp(action, "settings") ? "'settings'" :
                               !strcmp(action, "recents") ? "'recents'" :

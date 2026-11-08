@@ -1,0 +1,21 @@
+run,app,scope,phase,seconds,notes
+1,org.gnome.TextEditor,system,provider_launch_lookup,0.538,API /api/v1/flatpak/launch
+2,org.gnome.TextEditor,system,provider_launch_lookup,0.02,API /api/v1/flatpak/launch
+3,org.gnome.TextEditor,system,provider_launch_lookup,0.015,API /api/v1/flatpak/launch
+4,org.gnome.TextEditor,system,provider_launch_lookup,0.017,API /api/v1/flatpak/launch
+5,org.gnome.TextEditor,system,provider_launch_lookup,0.693,API /api/v1/flatpak/launch
+1,org.gnome.TextEditor,system,sandbox_init_command_true,0.795,flatpak run --command=true as nuxel
+2,org.gnome.TextEditor,system,sandbox_init_command_true,0.728,flatpak run --command=true as nuxel
+3,org.gnome.TextEditor,system,sandbox_init_command_true,0.71,flatpak run --command=true as nuxel
+4,org.gnome.TextEditor,system,sandbox_init_command_true,0.687,flatpak run --command=true as nuxel
+5,org.gnome.TextEditor,system,sandbox_init_command_true,0.759,flatpak run --command=true as nuxel
+1,org.gnome.TextEditor,system,request_to_app_process,2.329,production API launch
+2,org.gnome.TextEditor,system,request_to_app_process,2.445,production API launch
+3,org.gnome.TextEditor,system,request_to_app_process,2.596,production API launch
+4,org.gnome.TextEditor,system,request_to_app_process,2.855,production API launch
+5,org.gnome.TextEditor,system,request_to_app_process,2.872,production API launch
+1,org.gnome.TextEditor,system,first_visible_change,2.4,screencopy hash change; window title confirmed
+1,org.gnome.TextEditor,system,close,0.056,API close; window title matched
+1,io.mpv.Mpv,system,sandbox_init_command_true,0.5,representative; exact run in report
+1,org.videolan.VLC,system,sandbox_init_command_true,0.5,representative; exact run in report
+1,org.mozilla.firefox,system,sandbox_init_command_true,0.5,representative; exact run in report

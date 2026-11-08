@@ -1,0 +1,44 @@
+{
+  "bridge_cpu_pct": {
+    "api": 13.1,
+    "bridge": 0.7
+  },
+  "captured": "2026-11-06T17:30Z",
+  "device": {
+    "arch": "aarch64",
+    "kernel": "4.14.253-gf7194c1d15ed-dirty",
+    "model": "Samsung Galaxy S10+ SM-G975F (beyond2lte)",
+    "os": "Fedora 43 ARM64",
+    "soc": "Exynos 9820"
+  },
+  "flatpak": {
+    "a11y_bus_timeout_observed": true,
+    "bwrap_setuid": false,
+    "document_portal_timeout_observed": true,
+    "reproduced_three_times": true,
+    "sandbox_init_owner_report_s": 30.7,
+    "sandbox_init_reproduced_s": 15.94,
+    "userns_ok": true,
+    "version": "1.16.6"
+  },
+  "provider_lookup": {
+    "source": "systemd transient unit stop-sigterm default 15 s + Flatpak list",
+    "user_scope_list_pre_fix_s": 16.0
+  },
+  "repeated_user_scope_list_jobs": {
+    "count": 5,
+    "window_s": 20
+  },
+  "schema": "nuxel.pwnage85000.baseline/1",
+  "services": {
+    "failed_units": 0,
+    "perf_tune": "inactive",
+    "prewarm": "active/exited at boot"
+  },
+  "ui": {
+    "pwa_host_repaint_writes_per_6s": 32,
+    "screen_off_pwa_host_pct": 20.0,
+    "screen_off_webkit_compositor_pct": 74.67,
+    "state_file": "REPAINT_REQUEST (display marker lost)"
+  }
+}

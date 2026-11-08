@@ -1,0 +1,28 @@
+# nuxel-microsd-automount — mount an inserted microSD card READ-ONLY.
+#
+# Started by udev (see 90-nuxel-microsd.rules) when an external card appears.
+# The tool it calls is the single policy owner for this subsystem:
+#   * never formats, never partitions, never repairs (safety.forbidden_tools);
+#   * never targets internal storage (mmcblk0 / /dev/block/* are refused);
+#   * mounts read-only unless the owner explicitly asked for rw;
+#   * refuses during the boot window, so a card seated at boot is NOT
+#     auto-mounted (diagnostics.auto_mount_on_boot = false);
+#   * is idempotent: an already-mounted card is left untouched;
+#   * exits 0 for "nothing to do", so an empty slot never produces a failed unit.
+#
+# There is no path here that writes a partition, a block device, a bootloader or
+# a modem/EFS/calibration area, and no path that triggers recovery or download
+# mode.
+[Unit]
+Description=Nuxel microSD auto-mount (read-only, insert only)
+Documentation=file:/usr/share/doc/nuxel/manual-proof/18-microsd.md
+ConditionPathExists=/usr/bin/nuxel-microsd-diag.sh
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nuxel-microsd-diag.sh automount
+TimeoutStartSec=60
+# A card that cannot be mounted is logged, not retried in a loop: a repeated
+# failing mount is exactly the "three same-mode failures -> change strategy" case.
+Restart=no

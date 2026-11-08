@@ -1,0 +1,29 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+nuxel-notifications.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+/etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Configuration file /etc/systemd/system/nuxel-bootmode-oneshot.service is marked executable. Please remove executable permission bits. Proceeding anyway.
+verify_rc=0
+===
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+===
+active
+active
+active
+active
+active
+active
+active
+===
+multi-user.target
+9532c9c3-4546-4587-951c-6c9d369d5be4

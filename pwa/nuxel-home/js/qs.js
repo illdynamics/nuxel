@@ -97,13 +97,17 @@ class QuickSettings {
     }
 
     _bindEvents() {
-        // Direction-aware gesture contract.  A pull-down on the status bar or
-        // inside the panel opens the compact shade; while it is open a further
-        // pull-down expands it and a pull-up closes the compact panel.  Once
-        // expanded, pull-down closes and pull-up is deliberately inert.
+        // PWNAGE-90000 direction-aware contract:
+        //   closed + down                 -> compact shade
+        //   compact + down                -> expanded Quick Settings
+        //   compact/expanded + up         -> closed (upward dismiss always)
+        //   expanded + down               -> closed
+        // `revealed` means the compact status bar was already revealed by the
+        // fullscreen top-edge gesture; the next down pull opens expanded QS.
         document.addEventListener('gesture:qs', (ev) => {
             const direction = ev && ev.detail && ev.detail.direction;
-            this.pull(direction);
+            const revealed = !!(ev && ev.detail && ev.detail.revealed);
+            this.pull(direction, { revealed });
         });
         this._bindPullGesture();
 
@@ -291,6 +295,7 @@ class QuickSettings {
         this._render();
         this.panel.classList.remove('hidden');
         this._setExpandedUI(false);
+        this._emitState();
         try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
         // Bounded refresh while the panel is visible.  Every timer is owned by
         // the panel and stopped in close(); a hidden panel never polls.
@@ -310,6 +315,7 @@ class QuickSettings {
         this.panel.classList.remove('expanded');
         this.panel.classList.add('hidden');
         this._setExpandedUI(false);
+        this._emitState();
         if (this._locationTimer) { clearInterval(this._locationTimer); this._locationTimer = null; }
         // Stale indicator responses are ignored by the generation check.
         this._indicatorGeneration = (this._indicatorGeneration || 0) + 1;
@@ -318,19 +324,24 @@ class QuickSettings {
     }
 
     // `direction` is 'up', 'down' or undefined (legacy cyclic pull).
-    // closed       + down -> open compact
+    // closed       + down -> open compact (or expanded from a revealed bar)
     // compact open + down -> expanded
     // compact open + up   -> closed
     // expanded     + down -> closed
-    // expanded     + up   -> no-op (the expanded panel owns its scroll)
-    pull() {
-        const direction = arguments.length ? arguments[0] : null;
+    // expanded     + up   -> closed (upward dismiss is never inert)
+    pull(direction, options) {
+        const revealed = !!(options && options.revealed);
         if (!this.isOpen) {
-            if (direction !== 'up') this.open();
+            if (direction === 'up') return;
+            this.open();
+            if (revealed && direction === 'down') this.expand();
             return;
         }
         if (direction === 'up') {
-            if (!this.expanded) this.close();
+            // Upward swipe closes the shade from BOTH compact and expanded.
+            // The scroll guard in _bindPullGesture keeps ordinary scrolling
+            // inside the details list from being treated as a dismiss.
+            this.close();
             return;
         }
         if (this.expanded) {
@@ -338,6 +349,20 @@ class QuickSettings {
             return;
         }
         this.expand();
+    }
+
+    // One state-change event keeps CSS, aria-expanded and native/Home chrome
+    // observers in lockstep.
+    _emitState() {
+        const state = !this.isOpen ? 'hidden' : (this.expanded ? 'expanded' : 'compact');
+        this.shadeState = state;
+        try {
+            this.panel.setAttribute('data-shade-state', state);
+            this.panel.setAttribute('aria-expanded', state === 'expanded' ? 'true' : 'false');
+        } catch (e) {}
+        try {
+            document.dispatchEvent(new CustomEvent('nuxel:qs-state', { detail: { state } }));
+        } catch (e) {}
     }
 
     // Swiping the Quick Settings panel itself follows the same contract as a
@@ -423,9 +448,19 @@ class QuickSettings {
         this.expanded = true;
         this.panel.classList.add('expanded');
         this._setExpandedUI(true);
+        this._emitState();
         this._syncIndicators();
     }
-    collapseOrClose() { if (this.expanded) { this.expanded = false; this.panel.classList.remove('expanded'); this._setExpandedUI(false); } else this.close(); }
+    collapseOrClose() {
+        if (this.expanded) {
+            this.expanded = false;
+            this.panel.classList.remove('expanded');
+            this._setExpandedUI(false);
+            this._emitState();
+        } else {
+            this.close();
+        }
+    }
 
     toggle() {
         if (this.isOpen) this.close();

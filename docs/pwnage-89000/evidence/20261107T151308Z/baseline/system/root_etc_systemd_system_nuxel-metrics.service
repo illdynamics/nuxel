@@ -1,0 +1,22 @@
+[Unit]
+Description=Nuxel on-demand Home hardware metrics
+Documentation=file:/usr/share/doc/nuxel/system-monitor.md
+After=network-pre.target
+
+[Service]
+ExecStart=/usr/lib/nuxel/nuxel-metricsd
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_INET AF_UNIX
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+# PWNAGE-52000: kbase's authoritative used_pages table lives under
+# /sys/kernel/debug (directory 0700 root).  The collector needs ONLY read/traverse
+# access; it never writes a kernel node.  Keep DynamicUser and grant the narrow
+# capability instead of running the whole collector as root.
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+AmbientCapabilities=CAP_DAC_READ_SEARCH
+

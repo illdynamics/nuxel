@@ -1,0 +1,128 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+0
+fedora
+Linux fedora 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+Fedora Linux 43 (Forty Three)
+systemd 258 (258.11-1.fc43)
+multi-user.target
+9532c9c3-4546-4587-951c-6c9d369d5be4
+up 0 minutes
+===
+Startup finished in 3.475s (kernel) + 10.904s (userspace) = 14.379s 
+multi-user.target reached after 10.898s in userspace.
+===
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @10.898s
+└─avahi-daemon.service @10.642s +24ms
+  └─network-online.target @10.640s
+    └─NetworkManager-wait-online.service @6.586s +4.052s
+      └─NetworkManager.service @4.336s +2.245s
+        └─dbus-daemon.service @4.208s
+          └─basic.target @4.204s
+            └─sockets.target @4.203s
+              └─systemd-logind-varlink.socket @4.202s +275us
+                └─sysinit.target @4.190s
+                  └─systemd-timesyncd.service @3.906s +283ms
+                    └─systemd-tmpfiles-setup.service @3.446s +453ms
+                      └─systemd-journal-flush.service @2.936s +506ms
+                        └─systemd-journald.service @2.315s +617ms
+                          └─systemd-journald.socket @2.296s +246us
+                            └─system.slice @2.282s
+                              └─-.slice @2.282s
+===
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @10.898s
+└─avahi-daemon.service @10.642s +24ms
+  └─network-online.target @10.640s
+    └─NetworkManager-wait-online.service @6.586s +4.052s
+      └─NetworkManager.service @4.336s +2.245s
+        └─dbus-daemon.service @4.208s
+          └─basic.target @4.204s
+            └─sockets.target @4.203s
+              └─systemd-logind-varlink.socket @4.202s +275us
+                └─sysinit.target @4.190s
+                  └─systemd-timesyncd.service @3.906s +283ms
+                    └─systemd-tmpfiles-setup.service @3.446s +453ms
+                      └─systemd-journal-flush.service @2.936s +506ms
+                        └─systemd-journald.service @2.315s +617ms
+                          └─systemd-journald.socket @2.296s +246us
+                            └─system.slice @2.282s
+                              └─-.slice @2.282s
+===
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+└─multi-user.target @10.898s
+  └─avahi-daemon.service @10.642s +24ms
+    └─network-online.target @10.640s
+      └─NetworkManager-wait-online.service @6.586s +4.052s
+        └─NetworkManager.service @4.336s +2.245s
+          └─dbus-daemon.service @4.208s
+            └─basic.target @4.204s
+              └─sockets.target @4.203s
+                └─systemd-logind-varlink.socket @4.202s +275us
+                  └─sysinit.target @4.190s
+                    └─systemd-timesyncd.service @3.906s +283ms
+                      └─systemd-tmpfiles-setup.service @3.446s +453ms
+                        └─systemd-journal-flush.service @2.936s +506ms
+                          └─systemd-journald.service @2.315s +617ms
+                            └─systemd-journald.socket @2.296s +246us
+                              └─system.slice @2.282s
+                                └─-.slice @2.282s
+===
+5.021s nuxel-fallback.service
+4.052s NetworkManager-wait-online.service
+3.044s nuxel-audio-route.service
+2.245s NetworkManager.service
+1.335s nuxel-device-permissions.service
+1.285s nuxel-soundd.service
+1.020s nuxel-wl-fb.service
+ 808ms nuxel-interface-state.service
+ 788ms polkit.service
+ 646ms systemd-udev-trigger.service
+ 617ms systemd-journald.service
+ 616ms systemd-hostnamed.service
+ 527ms nuxel-bootmode-guard.service
+ 506ms systemd-journal-flush.service
+ 468ms rtkit-daemon.service
+ 453ms systemd-tmpfiles-setup.service
+ 423ms nuxel-orientationd.service
+ 341ms ModemManager.service
+ 283ms systemd-timesyncd.service
+ 216ms systemd-logind.service
+ 194ms nuxel-wifi.service
+ 169ms geoclue.service
+ 132ms systemd-tmpfiles-setup-dev-early.service
+ 108ms authselect-apply-changes.service
+  99ms nuxel-bootmode-oneshot.service
+  97ms nuxel-charger-mode-recovery.service
+  83ms nuxel-network-udev-seed.service
+  77ms systemd-tmpfiles-setup-dev.service
+  74ms systemd-sysctl.service
+  73ms systemd-network-generator.service
+  50ms wpa_supplicant.service
+  48ms nuxel-usb-mode-restore.service
+  48ms nuxel-fuse-access.service
+  38ms nuxel-wayland.service
+  33ms sshd.service
+  32ms dev-mqueue.mount
+  31ms sys-kernel-debug.mount
+  30ms sys-kernel-tracing.mount
+  30ms systemd-user-sessions.service
+  28ms tmp.mount
+===
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.

@@ -1,0 +1,5 @@
+# Final deployed v0.8.1-beta acceptance — 2026-11-08T10:02:52Z
+# VNC RFB security-type probe, direct LAN 192.168.178.167:15900 (stops before auth)
+server_banner=b'RFB 003.008\n'
+security_types=[129, 5]
+unauthenticated_type_1_offered=False

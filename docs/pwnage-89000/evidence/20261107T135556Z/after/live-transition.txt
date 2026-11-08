@@ -1,0 +1,119 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+uptime_before=325.90
+soundd_restart_rc=0
+clockd_restart_rc=0
+Id=nuxel-soundd.service
+Wants=nuxel-audio-session.service
+After=local-fs.target sysinit.target basic.target systemd-journald.socket system.slice
+ActiveState=active
+SubState=running
+ActiveEnterTimestampMonotonic=327721791
+Type=notify
+Result=success
+ExecMainStartTimestampMonotonic=327571780
+ExecStartPre={ path=/usr/libexec/nuxel/install-sound-library ; argv[]=/usr/libexec/nuxel/install-sound-library ; ignore_errors=no ; start_time=[Sat 2026-11-07 15:09:45 CET] ; stop_time=[Sat 2026-11-07 15:09:46 CET] ; pid=16979 ; code=exited ; status=0 }
+
+Id=nuxel-clockd.service
+Wants=nuxel-soundd.service
+After=sysinit.target basic.target systemd-journald.socket local-fs.target system.slice
+ActiveState=active
+SubState=running
+ActiveEnterTimestampMonotonic=327986046
+Type=simple
+Result=success
+ExecMainStartTimestampMonotonic=327983047
+--- health request ---
+{"backend_ready": true, "control_ready": true, "instance_id": "5451fe60298441b4b07080b2d546f135", "player": {"active_action": null, "active_token": null, "backend_ready": true, "instance_id": "5451fe60298441b4b07080b2d546f135", "last_cue_action": null, "last_cue_finished_at": null, "last_cue_latency_ms": null, "last_error": null, "pending_action": null, "pending_token": null, "pipe_buffer_bytes": 8192, "restarts": 0, "running": true, "stream_alive": true, "stream_latency": "40ms", "stream_ready_at": 1794060587.534377}, "queue_depth": 0, "success": true}
+--- recent journals ---
+[   45.370237] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Right AMP Mute=1 (Unmuted)
+[   45.388696] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Left AMP PCM Gain=12 (GAIN_CTRL=0x193)
+[   45.415094] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Right AMP PCM Gain=12 (GAIN_CTRL=0x193)
+[   45.438945] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Left DSP1 Firmware=9 (Protection)
+[   45.463948] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Right DSP1 Firmware=9 (Protection)
+[   45.488931] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Left DSP1 Preload Switch=on
+[   45.520578] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Right DSP1 Preload Switch=on
+[   45.557382] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Left PCM Source=0 (ASP)
+[   45.570910] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify Right PCM Source=0 (ASP)
+[   45.608791] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify ABOX SPUS IN1=0 (RDMA)
+[   45.624375] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:04Z nuxel-audio-route: verify ABOX SPUS OUT1=0 (SIFS1)
+[   45.655487] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:05Z nuxel-audio-route: verify ABOX SIFS1=1 (SPUS OUT1)
+[   45.674391] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:05Z nuxel-audio-route: verify ABOX UAIF1 SPK=2 (SIFS1)
+[   45.714227] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:05Z nuxel-audio-route: verify ABOX SIFS1 OUT Switch=on
+[   45.742994] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:05Z nuxel-audio-route: verify ABOX UAIF1 Switch=on
+[   45.774052] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:05Z nuxel-audio-route: verify ABOX UAIF1 Rate=48000 (48 kHz)
+[   45.789977] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:05Z nuxel-audio-route: verify ABOX UAIF1 Width=16 (16 bit)
+[   45.807096] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:05Z nuxel-audio-route: verify ABOX UAIF1 Channel=2 (2 ch)
+[   45.821085] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:05Z nuxel-audio-route: waiting for readiness: one or more route controls are not applied
+[   46.886328] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX RDMA1_EN=1
+[   46.916369] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX SPKAMP_EN=1
+[   46.945206] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX SPKAMP_A=2 (RDMA1)
+[   46.987172] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX SPKAMP_B=2 (RDMA1)
+[   47.017471] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Left AMP Enable Switch=on
+[   47.054601] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Right AMP Enable Switch=on
+[   47.067561] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Left AMP Mute=1 (Unmuted)
+[   47.094719] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Right AMP Mute=1 (Unmuted)
+[   47.118176] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Left AMP PCM Gain=12 (GAIN_CTRL=0x193)
+[   47.140807] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Right AMP PCM Gain=12 (GAIN_CTRL=0x193)
+[   47.175704] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Left DSP1 Firmware=9 (Protection)
+[   47.205404] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Right DSP1 Firmware=9 (Protection)
+[   47.224802] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Left DSP1 Preload Switch=on
+[   47.250471] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Right DSP1 Preload Switch=on
+[   47.282467] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Left PCM Source=0 (ASP)
+[   47.312789] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify Right PCM Source=0 (ASP)
+[   47.348475] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX SPUS IN1=0 (RDMA)
+[   47.390300] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX SPUS OUT1=0 (SIFS1)
+[   47.423285] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX SIFS1=1 (SPUS OUT1)
+[   47.455243] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX UAIF1 SPK=2 (SIFS1)
+[   47.473975] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX SIFS1 OUT Switch=on
+[   47.501343] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX UAIF1 Switch=on
+[   47.525494] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX UAIF1 Rate=48000 (48 kHz)
+[   47.563632] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX UAIF1 Width=16 (16 bit)
+[   47.628394] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:06Z nuxel-audio-route: verify ABOX UAIF1 Channel=2 (2 ch)
+[   47.804916] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-audio-route.sh[5391]: 2026-11-07T14:05:07Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=1.0
+[   49.054357] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 install-sound-library[10844]: installed 0 supplied sound file(s) in /home/nuxel/Sounds and /usr/share/nuxel/sounds; preserved 0 custom file(s)
+[   49.067481] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream).
+[   49.285152] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11523]: 2026-11-07 15:05:08,653 INFO nuxel-soundd ready socket=/run/nuxel/soundd.sock dirs=['/home/nuxel/Sounds', '/usr/share/nuxel/sounds']
+[   49.312988] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11523]: 2026-11-07 15:05:08,680 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+[   49.812260] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11523]: 2026-11-07 15:05:09,179 INFO audio path warmed once; persistent stream keeps it live
+[   49.813380] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11523]: 2026-11-07 15:05:09,182 INFO persistent pw-cat stream started pid=11649 latency=40ms pipe_bytes=8192
+[   50.525619] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11523]: 2026-11-07 15:05:09,893 INFO sound prewarm complete: alarm=ok, boot=ok, message=ok, notification=ok, other=ok, timer=ok, volume=ok
+[   54.245763] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-clockd.service: Failed to get CPU usage: No such file or directory
+[   54.515479] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[   56.065294] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-clockd.service: Failed to get CPU usage: No such file or directory
+[   56.246394] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[   56.558198] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[   56.568480] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-clockd.service: Failed to get CPU usage: No such file or directory
+[  102.919776] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[  102.997988] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-clockd.service: Failed to get CPU usage: No such file or directory
+[  325.928725] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream)...
+[  325.946373] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[11523]: 2026-11-07 15:09:45,301 WARNING pw-cat stream write failed: [Errno 32] Broken pipe
+[  326.507868] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Deactivated successfully.
+[  326.508760] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream).
+[  326.521007] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream)...
+[  327.566706] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 install-sound-library[16979]: installed 0 supplied sound file(s) in /home/nuxel/Sounds and /usr/share/nuxel/sounds; preserved 0 custom file(s)
+[  327.721471] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[17228]: 2026-11-07 15:09:47,090 INFO nuxel-soundd ready socket=/run/nuxel/soundd.sock dirs=['/home/nuxel/Sounds', '/usr/share/nuxel/sounds']
+[  327.721852] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream).
+[  327.726624] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[17228]: 2026-11-07 15:09:47,090 INFO control API READY in 10.3 ms (audio backend continues asynchronously)
+[  327.750820] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-clockd.service - Nuxel background alarm and timer scheduler...
+[  327.789317] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[17228]: 2026-11-07 15:09:47,140 INFO sound library scan: 77 file(s), 0 metadata probe(s), 77 cached
+[  327.975579] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-clockd.service: Deactivated successfully.
+[  327.976198] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-clockd.service - Nuxel background alarm and timer scheduler.
+[  327.986131] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-clockd.service - Nuxel background alarm and timer scheduler.
+[  328.137879] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-clockd[17261]: 2026-11-07 15:09:47,506 INFO scheduler ready alarms=0 timer=acknowledged
+[  328.164336] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[17228]: 2026-11-07 15:09:47,532 INFO audio path warmed once; persistent stream keeps it live
+[  328.165833] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[17228]: 2026-11-07 15:09:47,534 INFO persistent pw-cat stream started pid=17289 latency=40ms pipe_bytes=8192
+[  328.853478] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[17228]: 2026-11-07 15:09:48,221 INFO sound prewarm complete: alarm=ok, boot=ok, message=ok, notification=ok, other=ok, timer=ok, volume=ok
+[  329.027968] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Failed to get CPU usage: No such file or directory
+[  329.045840] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-clockd.service: Failed to get CPU usage: No such file or directory
+--- failed ---
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.

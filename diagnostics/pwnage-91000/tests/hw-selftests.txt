@@ -1,0 +1,32 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== camera selftest ===
+FAIL selftest: zero fixtures
+0 fixtures checked
+rc=0
+=== gnss selftest ===
+SKIP selftest: no GNSS fixture corpus installed (host-only test; use tests/pwnage64000 or tools/s10plus/a33/tests)
+rc=0
+=== nfc selftest ===
+FAIL selftest: zero fixtures
+0 fixtures checked
+rc=0
+=== sensors selftest ===
+FAIL selftest: zero fixtures
+0 fixtures checked
+rc=0
+=== led selftest ===
+FAIL selftest: zero fixtures
+0 fixtures checked
+rc=0
+=== modem selftest ===
+FAIL selftest: zero fixtures
+0 fixtures checked
+rc=0

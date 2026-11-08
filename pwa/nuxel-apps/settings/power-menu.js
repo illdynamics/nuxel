@@ -231,20 +231,37 @@
     });
   }
 
+  // PWNAGE-90000: the outgoing session's power surface must never become
+  // part of the next boot.  This overlay is transient by construction: it is
+  // created only for the shutdown request, contains no acceptance verdict, and
+  // is destroyed on pagehide/beforeunload so the last framebuffer frame that
+  // nuxel-wl-fb-hold keeps cannot contain it.  Nothing is written to storage
+  // or notifications.
+  function clearPowerTransient(reason) {
+    var o = document.getElementById('nuxel-reboot-overlay');
+    if (o && o.parentNode) o.parentNode.removeChild(o);
+    var out = el('menu-result');
+    if (out) out.textContent = '';
+    try {
+      if (reason) document.dispatchEvent(new CustomEvent('nuxel:overlay-changed', { detail: { reason: reason } }));
+    } catch (err) {}
+  }
+
   function showRebootOverlay(label) {
     var o = document.getElementById('nuxel-reboot-overlay');
     if (!o) {
       o = document.createElement('div');
       o.id = 'nuxel-reboot-overlay';
       o.className = 'nuxel-reboot-overlay';
-      o.setAttribute('role', 'alert');
+      o.setAttribute('role', 'status');
+      o.setAttribute('aria-live', 'polite');
       o.innerHTML = '<div class="nuxel-reboot-card"><div class="nuxel-reboot-penguin">\uD83D\uDC27</div>' +
         '<div class="nuxel-reboot-title"></div><div class="nuxel-reboot-sub">The phone will restart in a moment.</div>' +
         '<div class="nuxel-reboot-bar"><i></i></div></div>';
       document.body.appendChild(o);
     }
     var t = o.querySelector('.nuxel-reboot-title');
-    if (t) t.textContent = label || 'Rebooting Nuxel…';
+    if (t) t.textContent = label || 'Restarting…';
     o.hidden = false;
     try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (err) {}
   }
@@ -266,37 +283,25 @@
     if (rebooting) showRebootOverlay(e.action === 'poweroff' ? 'Powering off…' : 'Rebooting Nuxel…');
     action(e.action, { entry: e.id }).then(function (r) {
       var requested = !!(r && r.ok !== false && !r.offline);
+      if (rebooting) {
+        // Request acceptance belongs to THIS session only.  It is not proof of
+        // a completed boot and must never be rendered as "accepted" over the
+        // next boot's preload.  Only a non-persistent status line is updated.
+        if (out) {
+          out.textContent = (r && r.offline) ? 'host unavailable — no action taken'
+            : (r && r.ok === false) ? (e.label + ' refused: ' + (r.error || r.reason || 'unknown'))
+            : e.label + ' requested; waiting for the backend verdict…';
+        }
+        if (!requested) {
+          var o = document.getElementById('nuxel-reboot-overlay');
+          if (o && o.parentNode) o.parentNode.removeChild(o);
+        }
+        return;
+      }
       if (out) {
         out.textContent = (r && r.offline) ? 'host unavailable — no action taken'
           : (r && r.ok === false) ? (e.label + ' refused: ' + (r.error || r.reason || 'unknown'))
-          : (rebooting
-              ? e.label + ' queued; waiting for the backend verdict…'
-              : e.label + ' accepted');
-      }
-      if (rebooting && requested) {
-        var tries = 0;
-        var pollVerdict = function () {
-          call('config.get', { name: 'power-action-result' }).then(function (v) {
-            var text = String((v && (v.text || v.value)) || '');
-            if (/state=accepted/.test(text)) {
-              if (out) out.textContent = e.label + ' accepted by systemd';
-              return;
-            }
-            if (/state=(refused|spawned-unconfirmed)/.test(text)) {
-              if (out) out.textContent = e.label + ' not confirmed: ' + text.trim();
-              return;
-            }
-            if (++tries < 12) setTimeout(pollVerdict, 100);
-            else if (out) out.textContent = e.label + ' queued; backend verdict was not observed before shutdown';
-          }).catch(function () {
-            if (++tries < 12) setTimeout(pollVerdict, 100);
-          });
-        };
-        setTimeout(pollVerdict, 100);
-      }
-      if (rebooting && !requested) {
-        var o = document.getElementById('nuxel-reboot-overlay');
-        if (o) o.hidden = true;
+          : e.label + ' accepted';
       }
     });
   }
@@ -325,6 +330,19 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  // Expose the load path for the offline test (no side effects).
-  window.NuxelPowerSurface = { load: loadDocs, defaults: { menu: DEFAULT_MENU, policy: DEFAULT_POLICY } };
+  // The outgoing page must not leave a power acceptance surface behind for the
+  // framebuffer hold to preserve into the next boot.  pagehide fires for a
+  // real navigation/teardown; beforeunload covers engines that only emit it.
+  window.addEventListener('pagehide', function () { clearPowerTransient('pagehide'); });
+  window.addEventListener('beforeunload', function () { clearPowerTransient('beforeunload'); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) clearPowerTransient('hidden');
+  });
+
+  // Expose the load path and the transient cleanup for offline tests.
+  window.NuxelPowerSurface = {
+    load: loadDocs,
+    clearTransient: clearPowerTransient,
+    defaults: { menu: DEFAULT_MENU, policy: DEFAULT_POLICY }
+  };
 })();

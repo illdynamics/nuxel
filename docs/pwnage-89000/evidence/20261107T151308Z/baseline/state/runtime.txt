@@ -1,0 +1,40 @@
+/run/nuxel:
+total 72
+drwxr-xr-x.  4 root root   380 Nov  7 14:59 .
+drwxr-xr-x. 20 root root  1340 Nov  7 14:59 ..
+-rw-r--r--.  1 root root    11 Nov  7 14:40 boot-sound-attempted
+-rw-r--r--.  1 root root     0 Nov  7 14:40 boot-sound.lock
+srw-------.  1 root root     0 Nov  7 14:39 clockd.sock
+-rw-r--r--.  1 root root   835 Nov  7 14:39 clockd.state
+-rw-r--r--.  1 root root    26 Nov  7 14:59 foreground.state
+-rw-------.  1 root root   588 Nov  7 14:39 graphics-gpu-probe.json
+-rw-r--r--.  1 root root   158 Nov  7 14:59 lock-enforcement.state
+drwx------.  2 root root    80 Nov  7 14:39 nfc
+-rw-r--r--.  1 root root 25088 Nov  7 14:39 preload-cinema-mpv.log
+-rw-r--r--.  1 root root    79 Nov  7 14:39 preload-cinema.done
+-rw-r--r--.  1 root root     5 Nov  7 14:39 preload-cinema.lock
+-rw-r--r--.  1 root root   279 Nov  7 14:39 preload-cinema.overlay
+-rw-r--r--.  1 root root  2011 Nov  7 14:39 preload-cinema.receipt
+drwx------.  2 root root    60 Nov  7 14:57 security
+-rw-r--r--.  1 root root   141 Nov  7 14:59 shell-chrome.json
+-rw-r--r--.  1 root root     5 Nov  7 14:39 shell-chrome.owner
+srw-rw----.  1 root root     0 Nov  7 14:40 soundd.sock
+
+/run/nuxel-wayland:
+ls: cannot access '/run/nuxel-wayland/doc': Permission denied
+total 0
+drwxr-x---.  8 root  nuxel  300 Nov  7 14:40 .
+drwxr-xr-x. 20 root  root  1340 Nov  7 14:59 ..
+drwx------.  2 nuxel nuxel   60 Nov  7 14:39 at-spi
+srwxrwxrwx.  1 root  root     0 Nov  7 14:39 bus
+drwx------.  3 root  root    60 Nov  7 14:39 dbus-1
+drwx------.  2 nuxel nuxel   60 Nov  7 14:39 dconf
+d??????????  ? ?     ?        ?            ? doc
+drwx------.  2 root  root    60 Nov  7 14:39 keyring
+srwxr-xr-x.  1 root  root     0 Nov  7 14:40 pipewire-0
+srwxr-xr-x.  1 root  root     0 Nov  7 14:40 pipewire-0-manager
+-rw-r-----.  1 root  root     0 Nov  7 14:39 pipewire-0-manager.lock
+-rw-r-----.  1 root  root     0 Nov  7 14:39 pipewire-0.lock
+drwxr-x---.  2 root  nuxel   80 Nov  7 14:40 pulse
+srw-rw----.  1 root  nuxel    0 Nov  7 14:39 wayland-0
+-rw-r-----.  1 root  nuxel    0 Nov  7 14:39 wayland-0.lock

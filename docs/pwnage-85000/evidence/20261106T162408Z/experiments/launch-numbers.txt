@@ -1,0 +1,4 @@
+flatpak provider lookup 5 runs: 0.538 0.020 0.015 0.017 0.693 s (p50 0.020, p95 0.662)
+sandbox init 5 runs: 0.795 0.728 0.710 0.687 0.759 s (p50 0.728, p95 0.788)
+app process 5 runs: 2.329 2.445 2.596 2.855 2.872 s (p50 2.596, p95 2.869)
+API accepted: 36.157, 39.895 ms; close 56 ms

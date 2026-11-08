@@ -1,0 +1,28 @@
+== identity ==
+5ab43e24-41c6-45c9-9f92-50d10ca58a8b
+up 8 minutes
+v0.7.9-beta
+== services ==
+active
+active
+active
+active
+active
+== single owners ==
+      1 nuxel-foreign-t
+      1 nuxel-navdock
+      1 nuxel-osd
+      1 nuxel-pwa-host
+      1 nuxel-statusbar
+== preload ==
+{'verdict': 'PLAYED', 'eof_at_s': 6.396, 'clock_advances': 48, 'clock_samples': 50, 'stall_count': 0, 'first_frame_s': 0.167, 'video_output': 'wlshm'}
+== binaries ==
+d5650e407faec9e9fbfc6e40d00380ce7a18ac840b33169ca9053116d71449be  /usr/lib/nuxel/nuxel-statusbar
+6187d93140cdc19c15fa2f354061fdc15ad7772af4bf126c5894be9ef09c38f1  /usr/lib/nuxel/nuxel-navdock
+978caa01738a00cfb6fbec0d6c6d4cadc443c4644c0257557074045aad7553ea  /usr/lib/nuxel/nuxel-foreign-toplevel
+238c443877e6260e876398b7f739d978476b24b9035edd0b85fc42b0ee0cced2  /usr/lib/nuxel/nuxel-pwa-host
+== rollback counts ==
+lib: 6
+pwa: 7
+== diag units ==
+none

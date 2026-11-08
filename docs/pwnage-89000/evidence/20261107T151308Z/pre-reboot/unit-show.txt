@@ -1,0 +1,91 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===== nuxel-soundd
+Wants=nuxel-audio-session.service
+WantedBy=nuxel-clockd.service multi-user.target
+After=systemd-journald.socket basic.target local-fs.target system.slice sysinit.target
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-soundd.service
+DropInPaths=/usr/lib/systemd/system/service.d/10-timeout-abort.conf
+InactiveExitTimestampMonotonic=771298036
+ActiveEnterTimestampMonotonic=772554454
+Result=success
+ExecMainStartTimestampMonotonic=772401936
+===== nuxel-clockd
+Wants=nuxel-soundd.service
+WantedBy=multi-user.target
+After=system.slice systemd-journald.socket sysinit.target local-fs.target basic.target
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-clockd.service
+DropInPaths=/usr/lib/systemd/system/service.d/10-timeout-abort.conf
+InactiveExitTimestampMonotonic=7836841
+ActiveEnterTimestampMonotonic=7836841
+Result=success
+ExecMainStartTimestampMonotonic=7836494
+===== nuxel-web
+Wants=nuxel-http-bridge.service tmp.mount
+WantedBy=nuxel-wayland.service multi-user.target
+After=sysinit.target basic.target -.mount tmp.mount systemd-journald.socket system.slice systemd-tmpfiles-setup.service
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-web.service
+DropInPaths=/usr/lib/systemd/system/service.d/10-timeout-abort.conf /etc/systemd/system/nuxel-web.service.d/20-fast-stop.conf
+InactiveExitTimestampMonotonic=772622526
+ActiveEnterTimestampMonotonic=772622526
+Result=success
+ExecMainStartTimestampMonotonic=772617515
+===== nuxel-wayland
+Wants=nuxel-audio-route.service nuxel-touch-arm.service nuxel-web.service seatd.service
+WantedBy=multi-user.target nuxel-orientationd.service nuxel-fallback.service nuxel-boot-sound.service nuxel-wl-fb.service nuxel-abox-firmware-reload.service
+After=nuxel-touch-arm.service systemd-journald.socket nuxel-bootmode-oneshot.service nuxel-web.service seatd.service nuxel-device-permissions.service system.slice sysinit.target basic.target
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-wayland.service
+DropInPaths=/etc/systemd/system/nuxel-wayland.service.d/05-start-after-web.conf /usr/lib/systemd/system/service.d/10-timeout-abort.conf /etc/systemd/system/nuxel-wayland.service.d/30-fast-stop.conf /etc/systemd/system/nuxel-wayland.service.d/40-bounded-stop.conf /etc/systemd/system/nuxel-wayland.service.d/50-kbase-egl.conf /etc/systemd/system/nuxel-wayland.service.d/90-doom-diag.conf
+InactiveExitTimestampMonotonic=11060439
+ActiveEnterTimestampMonotonic=11074614
+Result=success
+ExecMainStartTimestampMonotonic=11074245
+===== nuxel-interface-state
+Wants=nuxel-nfcd.service
+WantedBy=multi-user.target
+After=NetworkManager.service nuxel-nfcd.service basic.target local-fs.target system.slice systemd-journald.socket nuxel-wifi.service sysinit.target
+ActiveState=active
+SubState=exited
+FragmentPath=/etc/systemd/system/nuxel-interface-state.service
+DropInPaths=/usr/lib/systemd/system/service.d/10-timeout-abort.conf
+InactiveExitTimestampMonotonic=10403213
+ActiveEnterTimestampMonotonic=11052670
+Result=success
+ExecMainStartTimestampMonotonic=10402600
+===== nuxel-boot-sound.path
+Wants=
+WantedBy=paths.target
+After=sysinit.target -.mount
+ActiveState=active
+SubState=waiting
+FragmentPath=/etc/systemd/system/nuxel-boot-sound.path
+DropInPaths=
+InactiveExitTimestampMonotonic=807756506
+ActiveEnterTimestampMonotonic=807756506
+Result=success
+===== nuxel-mic-route.path
+Wants=
+WantedBy=paths.target
+After=sysinit.target -.mount
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/nuxel-mic-route.path
+DropInPaths=
+InactiveExitTimestampMonotonic=807762752
+ActiveEnterTimestampMonotonic=807762752
+Result=success

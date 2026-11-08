@@ -1,0 +1,20 @@
+[Unit]
+Description=Nuxel S10+ built-in microphone capture route (UAIF0 -> WDMA1)
+After=sound.target nuxel-audio-session.service nuxel-audio-route.service
+Wants=nuxel-audio-session.service nuxel-audio-route.service
+ConditionPathExists=/dev/snd/controlC0
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 50); do [ -e /proc/asound/card0 ] && exit 0; sleep 0.2; done; exit 1'
+ExecStart=/usr/lib/nuxel/nuxel-mic-route.sh --wait 180
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=200
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

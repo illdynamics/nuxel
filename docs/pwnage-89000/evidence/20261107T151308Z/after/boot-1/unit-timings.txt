@@ -1,0 +1,25 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+nuxel-wayland                      active running 8869232 8889209 success 8888428 
+nuxel-wl-fb                        active running 9469441 10734099 success 10733539 
+nuxel-web                          active running 8018403 8018403 success 8017938 
+nuxel-http-bridge                  active running 9233276 12485596 success 12485113 
+nuxel-bridge                       active running 9167499 9167499 success 9158686 
+nuxel-interface-state              active exited 10761712 11197842 success 10760939 
+nuxel-touch-arm                    active running 8004986 8004986 success 8004534 
+nuxel-button-manager               active running 10757409 10757409 success 10756928 
+nuxel-soundd                       active running 8001564 9142329 success 8770256 
+nuxel-clockd                       active running 7969896 7969896 success 7969416 
+nuxel-audio-session                active running 40675815 40675815 success 40674158 
+nuxel-audio-route                  active exited 40711512 45166823 success 40710258 
+nuxel-mic-route                    active exited 45190831 46336594 success 45206333 
+nuxel-boot-sound                   inactive dead 45184496 0 success 47206458 
+nuxel-abox-firmware-reload         active exited 20611996 45174871 success 20609936 
+nuxel-fallback                     inactive dead 10759428 0 exec-condition 0 

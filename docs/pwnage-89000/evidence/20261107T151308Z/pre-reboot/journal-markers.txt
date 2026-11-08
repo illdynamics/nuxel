@@ -1,0 +1,83 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+[    6.463987] fedora nuxel-init: NUXEL_MARKER INITRAMFS_EXECUTED
+[    6.467082] fedora nuxel-init: NUXEL_MARKER FIRSTLIGHT_ASSET_MISSING_NO_LEGACY_PAINT
+[    6.467120] fedora nuxel-init: NUXEL_MARKER ANIMATION_HOLD_DEFERRED
+[    6.467470] fedora nuxel-init: NUXEL_MARKER USERDATA_DISCOVERED
+[    6.467669] fedora nuxel-init: NUXEL_MARKER ROOTFS_MOUNTED
+[    6.470946] fedora unknown: NUXEL_MARKER SYSCALL_PROBE_DONE
+[    6.471024] fedora nuxel-init: NUXEL_MARKER FEDORA_BINARY_EXECUTED
+[    6.471122] fedora nuxel-init: NUXEL_MARKER SYSTEMD_LIB_VERIFIED_PRESENT
+[    6.471162] fedora nuxel-init: NUXEL_MARKER BOOT_STAGE_SYSTEM_STARTING
+[    6.471257] fedora nuxel-init: NUXEL_MARKER CGROUP2_MOUNTED
+[    6.471294] fedora nuxel-init: NUXEL_MARKER LIVE_CONSOLE_STARTED
+[    6.471534] fedora nuxel-init: NUXEL_MARKER UI_PINNED_KEEP
+[    6.471695] fedora nuxel-init: NUXEL_MARKER PHONE_UI_INSTALLED
+[    6.471714] fedora nuxel-init: NUXEL_MARKER FEDORA_MOUNTED
+[    6.471733] fedora nuxel-init: NUXEL_MARKER ORIGINAL_MP4_ANIMATION_STARTING
+[    6.496320] fedora nuxel-init: NUXEL_MARKER MP4_FIRST_FRAME_READY
+[    6.496339] fedora nuxel-init: NUXEL_MARKER MP4_PLAYER_ACTIVE
+[    6.496381] fedora nuxel-init: NUXEL_MARKER POSTBOOT_SUPERVISOR_STARTED
+[    6.496420] fedora nuxel-init: NUXEL_MARKER ROOTFS_HANDOFF_STARTED
+[    8.743644] fedora audit[6025]: AVC avc:  denied  { ioctl } for  pid=6025 comm="nuxel-audio-war" path="/usr/lib/nuxel/nuxel-audio-warmup" dev="sda31" ino=156773 ioctlcmd=0x542a scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:unlabeled_t:s0 tclass=file permissive=1
+[    8.756277] fedora nuxel-soundd[5979]: 2026-11-07 16:04:26,114 INFO control API READY in 9.6 ms (audio backend continues asynchronously)
+[   11.659830] fedora nuxel-soundd[5979]: 2026-11-07 16:04:29,019 WARNING warmup rc=1 nuxel-audio-warmup: speaker DAPM path did not power up
+[   11.660787] fedora nuxel-soundd[5979]: 2026-11-07 16:04:29,019 INFO persistent pw-cat stream started pid=6728 latency=40ms pipe_bytes=8192
+[   11.666553] fedora nuxel-soundd[5979]: 2026-11-07 16:04:29,025 INFO persistent pw-cat stream started pid=6730 latency=40ms pipe_bytes=8192
+[   11.672396] fedora nuxel-soundd[5979]: 2026-11-07 16:04:29,031 INFO persistent pw-cat stream started pid=6731 latency=40ms pipe_bytes=8192
+[   12.173306] fedora nuxel-soundd[5979]: 2026-11-07 16:04:29,532 INFO persistent pw-cat stream started pid=6789 latency=40ms pipe_bytes=8192
+[   12.681970] fedora nuxel-soundd[5979]: 2026-11-07 16:04:30,041 INFO persistent pw-cat stream started pid=6969 latency=40ms pipe_bytes=8192
+[   13.130130] fedora nuxel-button-manager[6849]: MANAGER_READY key=/dev/input/event1 touch=/dev/input/event2 gestures=1 fsm_spec_v=1
+[   15.703285] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794063873-LAUNCHER_READY_ANIMATION_OWNS_PANEL-6848 owner=anim stage=LAUNCHER_READY_ANIMATION_OWNS_PANEL terminal=0 loops=1/1 reason=launcher_ready
+[   15.736694] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794063873-ANIM_TERMINAL_CONDITION-6848 owner=anim stage=ANIM_TERMINAL_CONDITION terminal=1 loops=1/1 reason=anim_min_cycle_reached
+[   15.736885] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794063873-ANIMATION_STOP_REQUESTED-6848 owner=anim stage=ANIMATION_STOP_REQUESTED terminal=1 loops=1/1 reason=anim_min_cycle_reached
+[   15.903605] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794063873-ANIMATION_STOP_CONFIRMED-6848 owner=anim stage=ANIMATION_STOP_CONFIRMED terminal=1 loops=1/1 reason=animation_stop_confirmed
+[   16.161077] fedora unknown: 6,0;NUXEL_ANIM_HANDOFF receipt=1794063873-LAUNCHER_DISPLAY_OWNER-6848 owner=ui stage=LAUNCHER_DISPLAY_OWNER terminal=1 loops=1/1 reason=launcher_display_owner
+[   16.161271] fedora unknown: 6,0;LAUNCHER_DISPLAY owner=nuxel-wl-fb receipt=1794063873-LAUNCHER_DISPLAY_OWNER-6848 loops=1/1
+[   21.230461] fedora nuxel-soundd[5979]: 2026-11-07 16:04:38,589 INFO persistent pw-cat stream started pid=8016 latency=40ms pipe_bytes=8192
+[   21.730881] fedora nuxel-soundd[5979]: 2026-11-07 16:04:39,089 INFO persistent pw-cat stream started pid=8036 latency=40ms pipe_bytes=8192
+[   22.237625] fedora nuxel-soundd[5979]: 2026-11-07 16:04:39,596 INFO persistent pw-cat stream started pid=8052 latency=40ms pipe_bytes=8192
+[   22.740549] fedora nuxel-soundd[5979]: 2026-11-07 16:04:40,099 INFO persistent pw-cat stream started pid=8076 latency=40ms pipe_bytes=8192
+[   23.245057] fedora nuxel-soundd[5979]: 2026-11-07 16:04:40,604 INFO persistent pw-cat stream started pid=8099 latency=40ms pipe_bytes=8192
+[   23.746348] fedora nuxel-soundd[5979]: 2026-11-07 16:04:41,105 INFO persistent pw-cat stream started pid=8124 latency=40ms pipe_bytes=8192
+[   24.248134] fedora nuxel-soundd[5979]: 2026-11-07 16:04:41,607 INFO persistent pw-cat stream started pid=8137 latency=40ms pipe_bytes=8192
+[   24.749685] fedora nuxel-soundd[5979]: 2026-11-07 16:04:42,108 INFO persistent pw-cat stream started pid=8157 latency=40ms pipe_bytes=8192
+[   25.252817] fedora nuxel-soundd[5979]: 2026-11-07 16:04:42,611 INFO persistent pw-cat stream started pid=8167 latency=40ms pipe_bytes=8192
+[   25.753326] fedora nuxel-soundd[5979]: 2026-11-07 16:04:43,112 INFO persistent pw-cat stream started pid=8187 latency=40ms pipe_bytes=8192
+[   26.255861] fedora nuxel-soundd[5979]: 2026-11-07 16:04:43,614 INFO persistent pw-cat stream started pid=8199 latency=40ms pipe_bytes=8192
+[   26.757794] fedora nuxel-soundd[5979]: 2026-11-07 16:04:44,116 INFO persistent pw-cat stream started pid=8220 latency=40ms pipe_bytes=8192
+[   27.261935] fedora nuxel-soundd[5979]: 2026-11-07 16:04:44,620 INFO persistent pw-cat stream started pid=8230 latency=40ms pipe_bytes=8192
+[   27.763163] fedora nuxel-soundd[5979]: 2026-11-07 16:04:45,122 INFO persistent pw-cat stream started pid=8251 latency=40ms pipe_bytes=8192
+[   28.264863] fedora nuxel-soundd[5979]: 2026-11-07 16:04:45,623 INFO persistent pw-cat stream started pid=8276 latency=40ms pipe_bytes=8192
+[   28.766057] fedora nuxel-soundd[5979]: 2026-11-07 16:04:46,125 INFO persistent pw-cat stream started pid=8296 latency=40ms pipe_bytes=8192
+[   29.269441] fedora nuxel-soundd[5979]: 2026-11-07 16:04:46,628 INFO persistent pw-cat stream started pid=8305 latency=40ms pipe_bytes=8192
+[   29.770983] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:47,130 INFO persistent pw-cat stream started pid=8327 latency=40ms pipe_bytes=8192
+[   30.272133] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:47,631 INFO persistent pw-cat stream started pid=8340 latency=40ms pipe_bytes=8192
+[   30.772972] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:48,132 INFO persistent pw-cat stream started pid=8358 latency=40ms pipe_bytes=8192
+[   31.274324] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:48,633 INFO persistent pw-cat stream started pid=8382 latency=40ms pipe_bytes=8192
+[   31.776145] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:49,135 INFO persistent pw-cat stream started pid=8406 latency=40ms pipe_bytes=8192
+[   32.277141] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:49,636 INFO persistent pw-cat stream started pid=8426 latency=40ms pipe_bytes=8192
+[   32.778550] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:50,137 INFO persistent pw-cat stream started pid=8458 latency=40ms pipe_bytes=8192
+[   33.279751] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:50,638 INFO persistent pw-cat stream started pid=8482 latency=40ms pipe_bytes=8192
+[   33.781307] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:51,140 INFO persistent pw-cat stream started pid=8508 latency=40ms pipe_bytes=8192
+[   34.282978] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:51,641 INFO persistent pw-cat stream started pid=8527 latency=40ms pipe_bytes=8192
+[   34.784028] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:52,143 INFO persistent pw-cat stream started pid=8602 latency=40ms pipe_bytes=8192
+[   36.786671] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:54,145 INFO persistent pw-cat stream started pid=8694 latency=40ms pipe_bytes=8192
+[   37.289244] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:54,648 INFO persistent pw-cat stream started pid=8712 latency=40ms pipe_bytes=8192
+[   37.790987] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:55,149 INFO persistent pw-cat stream started pid=8827 latency=40ms pipe_bytes=8192
+[   38.293248] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:55,652 INFO persistent pw-cat stream started pid=8851 latency=40ms pipe_bytes=8192
+[   38.794236] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:56,153 INFO persistent pw-cat stream started pid=8968 latency=40ms pipe_bytes=8192
+[   39.296319] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:56,655 INFO persistent pw-cat stream started pid=9022 latency=40ms pipe_bytes=8192
+[   39.798465] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:57,157 INFO persistent pw-cat stream started pid=9050 latency=40ms pipe_bytes=8192
+[   40.304148] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:57,663 INFO persistent pw-cat stream started pid=9071 latency=40ms pipe_bytes=8192
+[   40.813887] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:04:58,172 INFO persistent pw-cat stream started pid=9136 latency=40ms pipe_bytes=8192
+[   44.796461] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[5979]: 2026-11-07 16:05:02,155 INFO cue queued action=boot path=/home/nuxel/Sounds/nuxel-boot-audio.mp3 loop=False token= bytes=1471876
+[  772.555323] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[19387]: 2026-11-07 16:17:09,913 INFO control API READY in 6.5 ms (audio backend continues asynchronously)
+[  773.136880] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-soundd[19387]: 2026-11-07 16:17:10,496 INFO persistent pw-cat stream started pid=19552 latency=40ms pipe_bytes=8192

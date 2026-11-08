@@ -1,0 +1,31 @@
+# Nuxel fallback display — the ORIGINAL MP4 boot animation, looping forever.
+#
+# NOT enabled by default.  It exists so the operator (or a future policy) can
+# guarantee a visible, Nuxel-branded screen when the phone UI is not available:
+#   systemctl stop nuxel-ui; systemctl start nuxel-ui-fallback
+# The boot path already has this property without it: the initramfs animation
+# player loops until the UI commits a frame, so "UI never starts" shows the
+# animation, and "UI dies" holds its last committed frame - never a black panel.
+[Unit]
+Description=Nuxel fallback display (original MP4 animation on the fbdev path)
+ConditionPathExists=/dev/fb0
+ConditionPathExists=/usr/share/nuxel/boot/nuxel-animation.nux
+After=systemd-udev-settle.service
+Conflicts=nuxel-ui.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-anim-player \
+    --file=/usr/share/nuxel/boot/nuxel-animation.nux \
+    --statedir=/var/lib/nuxel \
+    --state=animation-fallback \
+    --pid=fb-anim.pid \
+    --stopfile=anim-fallback-stop \
+    --verbose
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,252 @@
+$ systemctl list-units --all --no-legend --plain
+rc=0
+--- stdout ---
+proc-sys-fs-binfmt_misc.automount        loaded    inactive   dead      Arbitrary Executable File Formats File System Automount Point
+dev-sda31.device                         loaded    activating tentative /dev/sda31
+dev-tpm0.device                          loaded    inactive   dead      /dev/tpm0
+dev-tpmrm0.device                        loaded    inactive   dead      /dev/tpmrm0
+-.mount                                  loaded    active     mounted   Root Mount
+dev-hugepages.mount                      loaded    inactive   dead      Huge Pages File System
+dev-mqueue.mount                         loaded    active     mounted   POSIX Message Queue File System
+home.mount                               not-found inactive   dead      home.mount
+proc-sys-fs-binfmt_misc.mount            loaded    inactive   dead      Arbitrary Executable File Formats File System
+run-nuxel\x2dwayland-doc.mount           loaded    active     mounted   /run/nuxel-wayland/doc
+sys-fs-fuse-connections.mount            loaded    active     mounted   FUSE Control File System
+sys-kernel-config.mount                  loaded    active     mounted   Kernel Configuration File System
+sys-kernel-debug.mount                   loaded    active     mounted   Kernel Debug File System
+sys-kernel-tracing.mount                 loaded    active     mounted   Kernel Trace File System
+tmp.mount                                loaded    active     mounted   Temporary Directory /tmp
+nuxel-boot-sound.path                    loaded    active     waiting   Play the Nuxel boot cue once the audio route is actually ready
+nuxel-mic-route.path                     loaded    active     running   Start Nuxel microphone route when the playback route state appears
+systemd-ask-password-console.path        loaded    active     waiting   Dispatch Password Requests to Console Directory Watch
+systemd-ask-password-wall.path           loaded    active     waiting   Forward Password Requests to Wall Directory Watch
+init.scope                               loaded    active     running   System and Service Manager
+alsa-restore.service                     loaded    inactive   dead      Save/Restore Sound Card State
+alsa-state.service                       loaded    inactive   dead      Manage Sound Card State (restore and store)
+auditd.service                           not-found inactive   dead      auditd.service
+authselect-apply-changes.service         loaded    active     exited    Apply authselect changes
+avahi-daemon.service                     loaded    active     running   Avahi mDNS/DNS-SD Stack
+bluetooth.service                        loaded    inactive   dead      Bluetooth service
+dbus-daemon.service                      loaded    active     running   D-Bus System Message Bus
+display-manager.service                  not-found inactive   dead      display-manager.service
+dnf-makecache.service                    loaded    inactive   dead      dnf5 makecache
+emergency.service                        loaded    inactive   dead      Emergency Shell
+fips-crypto-policy-overlay.service       loaded    inactive   dead      Bind-mount FIPS crypto-policy in FIPS mode
+flatpak-add-fedora-repos.service         loaded    inactive   dead      Add Fedora flatpak repositories
+flatpak-system-helper.service            loaded    inactive   dead      flatpak system helper
+fstrim.service                           loaded    inactive   dead      Discard unused blocks on filesystems from /etc/fstab
+geoclue.service                          loaded    inactive   dead      Location Lookup Service
+getty@tty1.service                       loaded    inactive   dead      Getty on tty1
+initrd-cleanup.service                   loaded    inactive   dead      Cleaning Up and Shutting Down Daemons
+initrd-parse-etc.service                 loaded    inactive   dead      Mountpoints Configured in the Real Root
+initrd-switch-root.service               loaded    inactive   dead      Switch Root
+initrd-udevadm-cleanup-db.service        loaded    inactive   dead      Cleanup udev Database
+kmod-static-nodes.service                loaded    inactive   dead      Create List of Static Device Nodes
+ldconfig.service                         loaded    inactive   dead      Rebuild Dynamic Linker Cache
+mdmonitor.service                        loaded    inactive   dead      Software RAID monitoring and management
+ModemManager.service                     loaded    active     running   Modem Manager
+modprobe@configfs.service                loaded    inactive   dead      Load Kernel Module configfs
+modprobe@dm_mod.service                  loaded    inactive   dead      Load Kernel Module dm_mod
+modprobe@drm.service                     loaded    inactive   dead      Load Kernel Module drm
+modprobe@fuse.service                    loaded    inactive   dead      Load Kernel Module fuse
+modprobe@loop.service                    loaded    inactive   dead      Load Kernel Module loop
+NetworkManager-wait-online.service       loaded    active     exited    Network Manager Wait Online
+NetworkManager.service                   loaded    active     running   Network Manager
+nuxel-abox-firmware-reload.service       loaded    active     exited    Nuxel S10+ ABOX Calliope core-firmware reload
+nuxel-app-prewarm.service                loaded    active     exited    Nuxel GTK/Flatpak font, icon and desktop cache prewarm
+nuxel-audio-route-retry.service          loaded    inactive   dead      Nuxel S10+ ABOX playback route — deferred retry run
+nuxel-audio-route.service                loaded    active     exited    Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)
+nuxel-audio-session.service              loaded    active     running   Nuxel standalone PipeWire/WirePlumber audio session
+nuxel-bluetooth.service                  loaded    inactive   dead      Nuxel BCM4375 Bluetooth HCI bring-up (patchram + H4 attach)
+nuxel-boot-sound.service                 loaded    inactive   dead      Nuxel startup cue after confirmed boot-animation to launcher handoff
+nuxel-bootmode-guard.service             loaded    active     exited    Nuxel boot-mode guard (charger/LPM detection for touch)
+nuxel-bootmode-oneshot.service           loaded    active     exited    Nuxel one-shot boot mode consumer (verbose/safe/diag/debug flags)
+nuxel-bridge.service                     loaded    active     running   Nuxel Bridge - PWA to Native Phone Service Mediator
+nuxel-button-manager.service             loaded    active     running   Nuxel hardware button and gesture manager (single owner of gpio_keys)
+nuxel-charger-mode-recovery.service      loaded    active     exited    Nuxel charger/LPM boot recovery (normal reboot so touch binds)
+nuxel-clockd.service                     loaded    active     running   Nuxel background alarm and timer scheduler
+nuxel-device-permissions.service         loaded    active     exited    Nuxel device-node permissions (udev fallback for kernel 4.14)
+nuxel-fallback.service                   loaded    inactive   dead      Nuxel fallback framebuffer UI (only when the launcher fails)
+nuxel-firstlight.service                 loaded    inactive   dead      Nuxel S10+ first-light framebuffer hardware probe (not Phosh)
+nuxel-fuse-access.service                loaded    active     exited    Nuxel user-session portal permissions
+nuxel-geoclue-agent.service              loaded    active     running   Nuxel GeoClue2 agent for the nuxel-bridge UID
+nuxel-haptics.service                    loaded    active     running   Nuxel Samsung timed-output haptics service
+nuxel-http-bridge.service                loaded    active     running   Nuxel HTTP Bridge API
+nuxel-interface-state.service            loaded    active     exited    Nuxel persistent interface state (Bluetooth/NFC/GNSS restore)
+nuxel-metrics.service                    loaded    inactive   dead      Nuxel on-demand Home hardware metrics
+nuxel-mic-route.service                  loaded    active     exited    Nuxel S10+ built-in microphone capture route (UAIF0 -> WDMA1)
+nuxel-mtp.service                        loaded    inactive   dead      Nuxel MTP responder (user storage over the vendor f_mtp gadget)
+nuxel-network-udev-seed.service          loaded    inactive   dead      Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi
+nuxel-nfcd.service                       loaded    active     running   Nuxel NFC controller service (Samsung sec-nfc transport)
+nuxel-notifications.service              loaded    active     running   Nuxel Notification Hub
+nuxel-orientationd.service               loaded    active     running   Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+nuxel-portal.service                     loaded    active     running   Nuxel Portal Daemon
+nuxel-soundd.service                     loaded    active     running   Nuxel central sound manager (persistent PipeWire cue stream)
+nuxel-touch-arm.service                  loaded    active     running   Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+nuxel-ui.service                         loaded    inactive   dead      Nuxel Home launcher (fbdev-native platform adapter; the UTM PWA launcher on the S10+ panel)
+nuxel-usb-mode-monitor.service           loaded    active     running   Nuxel USB mode host-disconnect monitor
+nuxel-usb-mode-restore.service           loaded    active     exited    Nuxel USB mode restore from persistent selection
+nuxel-watchdog-keep.service              loaded    active     running   Nuxel software watchdog keep-alive (softdog.soft_margin=100)
+nuxel-wayland.service                    loaded    active     running   Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+nuxel-web.service                        loaded    active     running   Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+nuxel-wifi.service                       loaded    active     exited    Nuxel Wi-Fi boot policy (radio ON by default via NetworkManager)
+nuxel-wl-fb.service                      loaded    active     running   Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+phosh.service                            not-found inactive   dead      phosh.service
+plymouth-quit-wait.service               not-found inactive   dead      plymouth-quit-wait.service
+plymouth-start.service                   not-found inactive   dead      plymouth-start.service
+polkit.service                           loaded    active     running   Authorization Manager
+raid-check.service                       loaded    inactive   dead      RAID setup health check
+rc-local.service                         loaded    inactive   dead      /etc/rc.d/rc.local Compatibility
+rescue.service                           loaded    inactive   dead      Rescue Shell
+rpmdb-rebuild.service                    loaded    inactive   dead      RPM database rebuild
+rtkit-daemon.service                     loaded    active     running   RealtimeKit Scheduling Policy Service
+seatd.service                            loaded    active     running   Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+selinux-autorelabel-mark.service         loaded    inactive   dead      Mark the need to relabel after reboot
+ssh-host-keys-migration.service          loaded    inactive   dead      Update OpenSSH host key permissions
+sshd-keygen@ecdsa.service                loaded    inactive   dead      OpenSSH ecdsa Server Key Generation
+sshd-keygen@ed25519.service              loaded    inactive   dead      OpenSSH ed25519 Server Key Generation
+sshd-keygen@rsa.service                  loaded    inactive   dead      OpenSSH rsa Server Key Generation
+sshd.service                             loaded    active     running   OpenSSH server daemon
+syslog.service                           not-found inactive   dead      syslog.service
+systemd-ask-password-console.service     loaded    inactive   dead      Dispatch Password Requests to Console
+systemd-ask-password-wall.service        loaded    inactive   dead      Forward Password Requests to Wall
+systemd-battery-check.service            loaded    inactive   dead      Check battery level during early boot
+systemd-binfmt.service                   loaded    inactive   dead      Set Up Additional Binary Formats
+systemd-boot-clear-sysfail.service       loaded    inactive   dead      Clear SysFail Entry If The Boot Is Successful
+systemd-boot-random-seed.service         loaded    inactive   dead      Update Boot Loader Random Seed
+systemd-bsod.service                     loaded    inactive   dead      Display Boot-Time Emergency Messages In Full Screen
+systemd-confext-initrd.service           loaded    inactive   dead      Merge System Configuration Images into /etc/
+systemd-confext.service                  loaded    inactive   dead      Merge System Configuration Images into /etc/
+systemd-factory-reset-complete.service   loaded    inactive   dead      Mark the Factory Reset as Completed
+systemd-firstboot.service                loaded    inactive   dead      First Boot Wizard
+systemd-fsck-root.service                loaded    inactive   dead      File System Check on Root Device
+systemd-hibernate-clear.service          loaded    inactive   dead      Clear Stale Hibernate Storage Info
+systemd-hibernate-resume.service         loaded    inactive   dead      Resume from hibernation
+systemd-hostnamed.service                loaded    active     running   Hostname Service
+systemd-hwdb-update.service              loaded    inactive   dead      Rebuild Hardware Database
+systemd-journal-catalog-update.service   loaded    inactive   dead      Rebuild Journal Catalog
+systemd-journal-flush.service            loaded    active     exited    Flush Journal to Persistent Storage
+systemd-journald.service                 loaded    active     running   Journal Service
+systemd-logind.service                   loaded    active     running   User Login Management
+systemd-machine-id-commit.service        loaded    inactive   dead      Save Transient machine-id to Disk
+systemd-modules-load.service             loaded    active     exited    Load Kernel Modules
+systemd-network-generator.service        loaded    active     exited    Generate Network Units from Kernel Command Line
+systemd-pcrmachine.service               loaded    inactive   dead      TPM PCR Machine ID Measurement
+systemd-pcrphase-initrd.service          loaded    inactive   dead      TPM PCR Barrier (initrd)
+systemd-pcrphase-sysinit.service         loaded    inactive   dead      TPM PCR Barrier (Initialization)
+systemd-pcrphase.service                 loaded    inactive   dead      TPM PCR Barrier (User)
+systemd-quotacheck-root.service          loaded    inactive   dead      Root File System Quota Check
+systemd-random-seed.service              loaded    active     exited    Load/Save OS Random Seed
+systemd-remount-fs.service               loaded    active     exited    Remount Root and Kernel File Systems
+systemd-repart.service                   loaded    inactive   dead      Repartition Root Disk
+systemd-soft-reboot.service              loaded    inactive   dead      Reboot System Userspace
+systemd-sysctl.service                   loaded    active     exited    Apply Kernel Variables
+systemd-sysext-initrd.service            loaded    inactive   dead      Merge System Extension Images into /usr/ and /opt/
+systemd-sysext.service                   loaded    inactive   dead      Merge System Extension Images into /usr/ and /opt/
+systemd-sysusers.service                 loaded    inactive   dead      Create System Users
+systemd-timesyncd.service                loaded    active     running   Network Time Synchronization
+systemd-tmpfiles-clean.service           loaded    inactive   dead      Cleanup of Temporary Directories
+systemd-tmpfiles-setup-dev-early.service loaded    active     exited    Create Static Device Nodes in /dev gracefully
+systemd-tmpfiles-setup-dev.service       loaded    active     exited    Create Static Device Nodes in /dev
+systemd-tmpfiles-setup.service           loaded    active     exited    Create System Files and Directories
+systemd-tpm2-setup-early.service         loaded    inactive   dead      Early TPM SRK Setup
+systemd-tpm2-setup.service               loaded    inactive   dead      TPM SRK Setup
+systemd-udev-settle.service              loaded    active     exited    Wait for udev To Complete Device Initialization
+systemd-udev-trigger.service             loaded    active     exited    Coldplug All udev Devices
+systemd-udevd.service                    masked    inactive   dead      systemd-udevd.service
+systemd-update-done.service              loaded    inactive   dead      Update is Completed
+systemd-update-utmp.service              loaded    active     exited    Record System Boot/Shutdown in UTMP
+systemd-user-sessions.service            loaded    active     exited    Permit User Sessions
+systemd-vconsole-setup.service           loaded    inactive   dead      Virtual Console Setup
+udisks2.service                          loaded    inactive   dead      Disk Manager
+unbound-anchor.service                   loaded    inactive   dead      update of the root trust anchor for DNSSEC validation in unbound
+wpa_supplicant.service                   loaded    active     running   WPA supplicant
+ydotool.service                          loaded    active     running   Starts ydotoold service
+-.slice                                  loaded    active     active    Root Slice
+system-getty.slice                       loaded    active     active    Slice /system/getty
+system-modprobe.slice                    loaded    active     active    Slice /system/modprobe
+system-sshd\x2dkeygen.slice              loaded    active     active    Slice /system/sshd-keygen
+system.slice                             loaded    active     active    System Slice
+user.slice                               loaded    active     active    User and Session Slice
+avahi-daemon.socket                      loaded    active     running   Avahi mDNS/DNS-SD Stack Activation Socket
+dbus.socket                              loaded    active     running   D-Bus System Message Bus Socket
+nuxel-metrics.socket                     loaded    active     listening Nuxel on-demand Home hardware metrics socket
+sshd-unix-local.socket                   loaded    active     listening OpenSSH Server Socket (systemd-ssh-generator, AF_UNIX Local)
+syslog.socket                            loaded    inactive   dead      Syslog Socket
+systemd-ask-password.socket              loaded    active     listening Query the User Interactively for a Password
+systemd-bootctl.socket                   loaded    active     listening Boot Entries Service Socket
+systemd-coredump.socket                  loaded    active     listening Process Core Dump Socket
+systemd-creds.socket                     loaded    active     listening Credential Encryption/Decryption
+systemd-factory-reset.socket             loaded    active     listening Factory Reset Management
+systemd-hostnamed.socket                 loaded    active     running   Hostname Service Socket
+systemd-journald-audit.socket            loaded    active     running   Journal Audit Socket
+systemd-journald-dev-log.socket          loaded    active     running   Journal Socket (/dev/log)
+systemd-journald.socket                  loaded    active     running   Journal Sockets
+systemd-logind-varlink.socket            loaded    active     running   User Login Management Varlink Socket
+systemd-pcrextend.socket                 loaded    inactive   dead      TPM PCR Measurements
+systemd-pcrlock.socket                   loaded    inactive   dead      Make TPM PCR Policy
+systemd-sysext.socket                    loaded    active     listening System Extension Image Management
+systemd-udevd-control.socket             masked    inactive   dead      systemd-udevd-control.socket
+systemd-udevd-kernel.socket              masked    inactive   dead      systemd-udevd-kernel.socket
+systemd-udevd-varlink.socket             masked    inactive   dead      systemd-udevd-varlink.socket
+systemd-userdbd.socket                   masked    inactive   dead      systemd-userdbd.socket
+basic.target                             loaded    active     active    Basic System
+cryptsetup-pre.target                    loaded    inactive   dead      Local Encrypted Volumes (Pre)
+cryptsetup.target                        loaded    active     active    Local Encrypted Volumes
+emergency.target                         loaded    inactive   dead      Emergency Mode
+factory-reset-now.target                 loaded    inactive   dead      Factory Reset Execution
+final.target                             loaded    inactive   dead      Late Shutdown Services
+first-boot-complete.target               loaded    inactive   dead      First Boot Complete
+getty-pre.target                         loaded    inactive   dead      Preparation for Logins
+getty.target                             loaded    active     active    Login Prompts
+graphical.target                         loaded    inactive   dead      Graphical Interface
+imports.target                           loaded    active     active    Image Downloads
+initrd-fs.target                         loaded    inactive   dead      Initrd File Systems
+initrd-root-device.target                loaded    inactive   dead      Initrd Root Device
+initrd-root-fs.target                    loaded    inactive   dead      Initrd Root File System
+initrd-switch-root.target                loaded    inactive   dead      Switch Root
+initrd-usr-fs.target                     loaded    inactive   dead      Initrd /usr File System
+initrd.target                            loaded    inactive   dead      Initrd Default Target
+integritysetup-pre.target                loaded    inactive   dead      Local Integrity Protected Volumes (Pre)
+integritysetup.target                    loaded    active     active    Local Integrity Protected Volumes
+local-fs-pre.target                      loaded    active     active    Preparation for Local File Systems
+local-fs.target                          loaded    active     active    Local File Systems
+multi-user.target                        loaded    active     active    Multi-User System
+network-online.target                    loaded    active     active    Network is Online
+network-pre.target                       loaded    active     active    Preparation for Network
+network.target                           loaded    active     active    Network
+nss-user-lookup.target                   loaded    inactive   dead      User and Group Name Lookups
+paths.target                             loaded    active     active    Path Units
+remote-cryptsetup.target                 loaded    inactive   dead      Remote Encrypted Volumes
+remote-fs-pre.target                     loaded    inactive   dead      Preparation for Remote File Systems
+remote-fs.target                         loaded    active     active    Remote File Systems
+remote-integritysetup.target             loaded    inactive   dead      Remote Integrity Protected Volumes
+remote-veritysetup.target                loaded    inactive   dead      Remote Verity Protected Volumes
+rescue.target                            loaded    inactive   dead      Rescue Mode
+shutdown.target                          loaded    inactive   dead      System Shutdown
+sleep.target                             loaded    inactive   dead      Sleep
+slices.target                            loaded    active     active    Slice Units
+sockets.target                           loaded    active     active    Socket Units
+soft-reboot.target                       loaded    inactive   dead      Reboot System Userspace
+sound.target                             loaded    inactive   dead      Sound Card
+ssh-keygen.target                        not-found inactive   dead      ssh-keygen.target
+sshd-keygen.target                       loaded    active     active    sshd-keygen.target
+swap.target                              loaded    active     active    Swaps
+sysinit.target                           loaded    active     active    System Initialization
+time-set.target                          loaded    active     active    System Time Set
+time-sync.target                         loaded    inactive   dead      System Time Synchronized
+timers.target                            loaded    active     active    Timer Units
+tpm2.target                              loaded    inactive   dead      Trusted Platform Module
+umount.target                            loaded    inactive   dead      Unmount All Filesystems
+veritysetup-pre.target                   loaded    inactive   dead      Local Verity Protected Volumes (Pre)
+veritysetup.target                       loaded    active     active    Local Verity Protected Volumes
+dnf-makecache.timer                      loaded    active     waiting   dnf5 makecache
+fstrim.timer                             loaded    active     waiting   Discard unused filesystem blocks once a week
+nuxel-abox-firmware-reload.timer         loaded    active     running   Deferred Nuxel S10+ ABOX core-firmware reload after Home
+nuxel-audio-route.timer                  loaded    active     waiting   Nuxel S10+ ABOX playback route — deferred retry after boot
+raid-check.timer                         loaded    active     waiting   Weekly RAID setup health check
+systemd-tmpfiles-clean.timer             loaded    active     waiting   Daily Cleanup of Temporary Directories
+unbound-anchor.timer                     loaded    active     waiting   daily update of the root trust anchor for DNSSEC
+
+--- stderr ---
+

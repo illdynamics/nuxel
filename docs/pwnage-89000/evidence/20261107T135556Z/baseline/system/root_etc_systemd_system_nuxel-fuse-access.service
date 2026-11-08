@@ -1,0 +1,19 @@
+# PWNAGE-85000: the user-session document portal and accessibility bus must be
+# reachable by the real nuxel user.  devtmpfs creates /dev/fuse root:root 0600
+# on this image and udev is intentionally masked.  This oneshot grants only the
+# runtime directory traversal and the single FUSE device; it does not relax the
+# Flatpak sandbox or grant any other device.
+[Unit]
+Description=Nuxel user-session portal permissions
+After=nuxel-wayland.service
+PartOf=nuxel-wayland.service
+ConditionPathExists=/dev/fuse
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'install -d -o root -g nuxel -m 0750 /run/nuxel-wayland && install -d -o nuxel -g nuxel -m 0700 /run/nuxel-wayland/at-spi && { grep -q " /run/nuxel-wayland/doc " /proc/self/mountinfo || install -d -o nuxel -g nuxel -m 0700 /run/nuxel-wayland/doc; } && chgrp nuxel /dev/fuse && chmod 0660 /dev/fuse'
+RemainAfterExit=yes
+TimeoutStopSec=1s
+
+[Install]
+WantedBy=multi-user.target

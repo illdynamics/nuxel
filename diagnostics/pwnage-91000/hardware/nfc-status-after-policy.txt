@@ -1,0 +1,47 @@
+---DIAG-JSON---
+{"device":"beyond2lte","tool":"nuxel-nfc-diag","stages":{"controller":"chardev:/dev/sec-nfc","firmware":"found:/lib/firmware/nfc/sec_s3nrn82_firmware.bin","subsystem":"down","stack":"client:nuxel-nfc"},"first_failing_stage":"subsystem","state":"BLOCKED_KERNEL","tag_read_verified":false,"owner_test":"docs/beta-finalization/manual-proof/12-nfc.md"}
+---DIAG-TEXT---
+device   : beyond2lte   controller : sec-nfc (S3FWRN5-family) @ I2C 0x27 + eSE
+
+stages:
+  controller : chardev:/dev/sec-nfc
+  firmware   : found:/lib/firmware/nfc/sec_s3nrn82_firmware.bin
+  subsystem  : down   (kernel NFC class / netlink)
+  stack      : client:nuxel-nfc
+
+first failing stage : subsystem
+verdict             : BLOCKED_KERNEL
+  no controller/module bound on this kernel. This is where the honest reporting
+  ends: the vendor kernel may simply not expose the controller (NOT_SUPPORTED_ON_DEVICE
+  if no supported path exists). No UID is fabricated.
+---FIRMWARE-CMD---
+NFC firmware candidate inventory:
+  /lib/firmware/nfc:
+    FOUND  sec_s3nrn82_firmware.bin
+    -      nfc/sec_s3nrn82_firmware.bin
+    -      sec-nfc.fw
+    -      sec_nfc.fw
+    -      s3fwrn5.fw
+    -      s3fwrn5_firmware.fw
+    -      nfc/sec-nfc.fw
+    -      nfc/s3fwrn5.fw
+    -      sec_nfc_firmware.bin
+  /lib/firmware:
+    -      sec_s3nrn82_firmware.bin
+    FOUND  nfc/sec_s3nrn82_firmware.bin
+    -      sec-nfc.fw
+    -      sec_nfc.fw
+    -      s3fwrn5.fw
+    -      s3fwrn5_firmware.fw
+    -      nfc/sec-nfc.fw
+    -      nfc/s3fwrn5.fw
+    -      sec_nfc_firmware.bin
+  /vendor/firmware:
+    -      sec_s3nrn82_firmware.bin
+    FOUND  nfc/sec_s3nrn82_firmware.bin
+    -      sec-nfc.fw
+    -      sec_nfc.fw
+    -      s3fwrn5.fw
+    -      s3fwrn5_firmware.fw
+    -      nfc/sec-nfc.fw
+    -      nfc/s3fwrn5.fw

@@ -17,3 +17,10 @@ button{background:#173356;color:#e8f1ff;border:1px solid #365b84;border-radius:9
 button.primary{background:#0e7c66;border-color:#16a085}
 button.danger{background:#5b1f24;border-color:#a03a3a;color:#ffd7d7}
 b{word-break:break-all}
+
+/* PWNAGE-91000: global/per-app scope selector and app picker */
+.scope-row{display:flex;flex-wrap:wrap;gap:16px;margin:12px 0 4px;font-size:14px}
+.scope-row label{display:flex;align-items:center;gap:7px;min-height:40px}
+.scope-row input{width:18px;height:18px;margin:0}
+select{background:#0a1628;border:1px solid #2c4a72;border-radius:8px;color:#e8f1ff;padding:8px;font:13px/1.4 ui-monospace,Menlo,monospace;min-height:40px;width:100%}
+.warn{color:#ffb36b}

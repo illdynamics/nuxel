@@ -1,0 +1,27 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Fri Nov  6 17:08:40 UTC 2026
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+active
+active
+active
+active
+active
+active
+active
+ActiveState=active
+UnitFileState=enabled
+Result=success
+1793984919 DISPLAY_SLEEP total=108 failures=0 owner=nuxel-wl-fb display=off capture=stopped
+lock=/run/nuxel-fb-owner.lock holder=263798 holder_comm=nuxel-wl-fb live_nuxel_writer=1
+schema_version=1
+{"success": true, "service": "nuxel-http-bridge", "version": "0.7.7-beta", "bridge_version": "1", "registry": {"source": "/etc/nuxel/app-registry/app_registry.j

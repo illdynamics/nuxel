@@ -1,0 +1,447 @@
+status=CAPTURED
+reason=
+[  114.299253] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-logind[5410]: System is rebooting.
+[  114.361832] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping avahi-daemon.service - Avahi mDNS/DNS-SD Stack...
+[  114.363280] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys)...
+[  114.364688] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-clockd.service - Nuxel background alarm and timer scheduler...
+[  114.365977] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-haptics.service - Nuxel Samsung timed-output haptics service...
+[  114.366728] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-http-bridge.service - Nuxel HTTP Bridge API...
+[  114.368074] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-nfcd.service - Nuxel NFC controller service (Samsung sec-nfc transport)...
+[  114.368651] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream)...
+[  114.369933] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-usb-mode-monitor.service - Nuxel USB mode host-disconnect monitor...
+[  114.370372] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-watchdog-keep.service - Nuxel software watchdog keep-alive (softdog.soft_margin=100)...
+[  114.371477] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping rtkit-daemon.service - RealtimeKit Scheduling Policy Service...
+[  114.371682] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping sshd.service - OpenSSH server daemon...
+[  114.371996] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-hostnamed.service - Hostname Service...
+[  114.372496] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-logind.service - User Login Management...
+[  114.379884] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-random-seed.service - Load/Save OS Random Seed...
+[  114.384200] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-user-sessions.service - Permit User Sessions...
+[  114.384625] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping ydotool.service - Starts ydotoold service...
+[  114.389105] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session...
+[  114.456347] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping NetworkManager.service - Network Manager...
+[  114.457385] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator...
+[  114.457690] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping wpa_supplicant.service - WPA supplicant...
+[  114.515850] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+[  114.516563] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping ModemManager.service - Modem Manager...
+[  114.516911] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID...
+[  114.517147] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-notifications.service - Nuxel Notification Hub...
+[  114.517372] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-portal.service - Nuxel Portal Daemon...
+[  114.583232] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping polkit.service - Authorization Manager...
+[  114.690853] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping dbus-daemon.service - D-Bus System Message Bus...
+[  114.720541] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+[  115.470492] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)...
+[  115.470749] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-web.service - Nuxel PWA Static Web Server (nuxel-home launcher on :8000)...
+[  115.470972] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping seatd.service - Nuxel seat daemon (seatd) — backend session for wlroots/phoc input...
+[  115.546465] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-timesyncd.service - Network Time Synchronization...
+[  115.549549] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-update-utmp.service - Record System Boot/Shutdown in UTMP...
+[  115.595807] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Unmounting tmp.mount - Temporary Directory /tmp...
+[  115.651784] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target shutdown.target - System Shutdown.
+[  115.651944] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target final.target - Late Shutdown Services.
+[  115.652669] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target reboot.target - System Reboot.
+[  115.812475] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Using hardware watchdog /dev/watchdog0: 'S3C2410 Watchdog', version 0.
+[  115.812578] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Failed to set watchdog hardware timeout to 10min: Invalid argument
+[  115.824161] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Syncing filesystems and block devices.
+[  115.873594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SYSCALL arch=c00000b7 syscall=56 success=yes exit=4 a0=ffffffffffffff9c a1=7fafe0b098 a2=80101 a3=0 items=0 ppid=0 pid=1 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="systemd-sh
+[  115.924306] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Sending SIGTERM to remaining processes...
+
+--- raw previous-boot journal tail ---
+[  114.446229] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Over Temp Count Left:                0
+[  114.446904] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Abnormal Mute Left:                0
+[  114.447504] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Timestamp:                114440722995
+[  114.448087] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: beyond-madera sound: beyond_speaker ev: 4
+[  114.448684] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Values stored:
+[  114.449269] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Max Excursion Right:                0.0000
+[  114.449790] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Over Excursion Count Right:        0
+[  114.450394] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Max Temp Right:                        0.0000
+[  114.450914] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Over Temp Count Right:                0
+[  114.451515] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Abnormal Mute Right:                0
+[  114.452246] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cirrus cirrus_bd: Timestamp:                114443891918
+[  114.452907] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cs35l41 11-0041: cs35l41_main_amp_event PMD
+[  114.454054] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: cs35l41 11-0040: cs35l41_main_amp_event PMD
+[  114.454767] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target network-online.target - Network is Online.
+[  114.455041] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target network.target - Network.
+[  114.455222] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target remote-fs.target - Remote File Systems.
+[  114.455299] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target sshd-keygen.target.
+[  114.455460] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: NetworkManager-wait-online.service: Deactivated successfully.
+[  114.455748] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped NetworkManager-wait-online.service - Network Manager Wait Online.
+[  114.449595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=NetworkManager-wait-online comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.453594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=authselect-apply-changes comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.456347] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping NetworkManager.service - Network Manager...
+[  114.456409] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: authselect-apply-changes.service: Deactivated successfully.
+[  114.456644] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped authselect-apply-changes.service - Apply authselect changes.
+[  114.456695] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8460] caught SIGTERM, shutting down normally.
+[  114.460435] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: wlan1: Do not deauthenticate as part of interface deinit since WoWLAN is enabled
+[  114.457385] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator...
+[  114.457690] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping wpa_supplicant.service - WPA supplicant...
+[  114.463286] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8526] dhcp4 (wlan0): canceled DHCP transaction
+[  114.463312] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8527] dhcp4 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+[  114.463324] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8527] dhcp4 (wlan0): state changed no lease
+[  114.463548] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8529] dhcp6 (wlan0): canceled DHCP transaction
+[  114.463557] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8529] dhcp6 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+[  114.463569] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8529] dhcp6 (wlan0): state changed no lease
+[  114.463876] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8532] manager: NetworkManager state is now CONNECTED_SITE
+[  114.470189] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.470645] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 dbus-daemon[5365]: [system] Activating via systemd: service name='org.freedesktop.nm_dispatcher' unit='dbus-org.freedesktop.nm-dispatcher.service' requested by ':1.3' (uid=0 pid=5424 comm="/usr/bin/NetworkManager --no-daemon" label="system_u:system_r:kernel_t:s0")
+[  114.477174] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 dbus-daemon[5365]: [system] Activation via systemd failed for unit 'dbus-org.freedesktop.nm-dispatcher.service': Refusing activation, D-Bus is shutting down.
+[  114.483033] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+[  114.487287] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Deactivated successfully.
+[  114.488158] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator.
+[  114.485594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-bridge comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.494333] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-button-manager.service: Deactivated successfully.
+[  114.495046] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys).
+[  114.489594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-button-manager comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.500719] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-clockd.service: Deactivated successfully.
+[  114.497594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-clockd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.501503] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-clockd.service - Nuxel background alarm and timer scheduler.
+[  114.503585] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.8929] manager: startup complete
+[  114.507537] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.508158] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: ((../src/core/supplicant/nm-supplicant-manager.c:234)): assertion '<dropped>' failed
+[  114.512175] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.515850] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+[  114.516563] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping ModemManager.service - Modem Manager...
+[  114.516729] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 ModemManager[5881]: <msg> caught signal, shutting down...
+[  114.516911] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID...
+[  114.517147] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-notifications.service - Nuxel Notification Hub...
+[  114.517372] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-portal.service - Nuxel Portal Daemon...
+[  114.520242] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: wlan1: CTRL-EVENT-DSCP-POLICY clear_all
+[  114.520276] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: nl80211: deinit ifname=wlan1 disabled_11b_rates=0
+[  114.523122] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 ModemManager[5881]: <msg> ModemManager is shut down
+[  114.524097] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+[  114.536220] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: decon_release + : 0
+[  114.538228] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: decon-0 decon_disable +
+[  114.538416] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: _decon_disable: elapsed time to flush decon-0 thread: 0usec, remaining_frame: 0
+[  114.542985] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 NetworkManager[5424]: <info>  [1794128238.9322] exiting (success)
+[  114.545163] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: IPv6: ADDRCONF(NETDEV_CHANGE): wlan1: link becomes ready
+[  114.545334] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: wlan1: CTRL-EVENT-TERMINATING
+[  114.546359] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2
+[  114.545986] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-geoclue-agent.service: Deactivated successfully.
+[  114.546508] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID.
+[  114.541595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-geoclue-agent comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.547804] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: p2p-dev-wlan0: CTRL-EVENT-DSCP-POLICY clear_all
+[  114.550645] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-notifications.service: Deactivated successfully.
+[  114.551133] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-notifications.service - Nuxel Notification Hub.
+[  114.545594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-notifications comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.551960] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: p2p-dev-wlan0: CTRL-EVENT-DSCP-POLICY clear_all
+[  114.552066] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: nl80211: deinit ifname=p2p-dev-wlan0 disabled_11b_rates=0
+[  114.553207] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: _decon_disable elapsed time to disable interrupt: 16769usec
+[  114.553433] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: _decon_disable: elapsed time to stop decon reg: 16823usec
+[  114.553552] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: _decon_disable: elapsed time to stop dpp: 16830usec
+[  114.553631] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dsim-0 dsim_disable +
+[  114.553717] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: PANEL:INFO:panel_core_ioctl:PANEL_IOC_SLEEP_IN
+[  114.553793] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: copr_disable +
+[  114.553871] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: copr_disable -
+[  114.553945] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: mdnie mdnie: mdnie_disable: done
+[  114.556180] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: [VIB] off
+[  114.556203] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-portal.service: Deactivated successfully.
+[  114.556675] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-portal.service - Nuxel Portal Daemon.
+[  114.553594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-portal comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.560096] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.560463] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) _wl_cfgscan_cancel_scan : No scan in progress
+[  114.562829] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: ModemManager.service: Deactivated successfully.
+[  114.563269] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped ModemManager.service - Modem Manager.
+[  114.557594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=ModemManager comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.572284] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: ========== SHOW PANEL [EEh:ERR_FG] INFO ==========
+[  114.572739] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: * Reg Value : 0x00, Result : GOOD
+[  114.572853] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: ==================================================
+[  114.572946] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: ========== SHOW PANEL [05h:DSIE_CNT] INFO ==========
+[  114.573022] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: * Reg Value : 0x00, Result : GOOD
+[  114.573097] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: ====================================================
+[  114.573173] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_process_msgbuf_edl: WARNING! EDL watermark hit, num items=11; rd=31; wr=42; depth=256;
+[  114.573284] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: [Repeats 0 times]
+[  114.573380] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) _wl_cfg80211_del_if : del vif. wdev cfg_iftype:10
+[  114.573460] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_cfgp2p_del_p2p_disc_if : Enter
+[  114.573532] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+[  114.573612] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000006.867 EL:V02:3:4 56 3 0x77f4 96000000 37d
+[  114.573675] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000009.094 EL:V02:3:4 57 1 0x6fe4
+[  114.573744] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000016.155 EL:V02:3:4 57 1 0x6fe4
+[  114.573825] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000019.771 EL:V02:3:4 57 3 0x71d8 245a45 0
+[  114.573900] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000026.128 EL:V02:3:4 57 1 0x6fe4
+[  114.573988] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000040.150 EL:V02:3:4 57 1 0x6fe4
+[  114.574079] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000041.940 EL:V02:3:4 57 3 0x71d8 245a45 1
+[  114.574174] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000060.096 EL:V02:3:4 57 1 0x6fe4
+[  114.574245] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000060.229 EL:V02:3:4 57 3 0x71d8 245a45 0
+[  114.574316] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000063.266 EL:V02:3:4 57 3 0x71d8 245a45 0
+[  114.574391] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000088.141 EL:V02:3:4 57 1 0x6fe4
+[  114.574474] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000105.643 EL:V02:3:4 299 2 0xb9a1 1
+[  114.583232] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping polkit.service - Authorization Manager...
+[  114.585471] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: NetworkManager.service: Deactivated successfully.
+[  114.581594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=NetworkManager comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.586149] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped NetworkManager.service - Network Manager.
+[  114.585594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-haptics comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.587567] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-haptics.service: Deactivated successfully.
+[  114.588158] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-haptics.service - Nuxel Samsung timed-output haptics service.
+[  114.593598] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target network-pre.target - Preparation for Network.
+[  114.594152] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-network-generator.service: Deactivated successfully.
+[  114.594587] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-network-generator.service - Generate Network Units from Kernel Command Line.
+[  114.589594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-network-generator comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.600475] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFGP2P-INFO2) wl_cfgp2p_del_p2p_disc_if : P2P interface unregistered
+[  114.600366] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: p2p-dev-wlan0: CTRL-EVENT-TERMINATING
+[  114.601412] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.601339] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: wlan0: Do not deauthenticate as part of interface deinit since WoWLAN is enabled
+[  114.624751] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.628312] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.628692] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: polkit.service: Deactivated successfully.
+[  114.629536] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped polkit.service - Authorization Manager.
+[  114.625594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=polkit comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.636267] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: wlan0: CTRL-EVENT-DSCP-POLICY clear_all
+[  114.636314] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: nl80211: deinit ifname=wlan0 disabled_11b_rates=0
+[  114.664145] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.664700] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.664855] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.666393] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.668495] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 wpa_supplicant[5537]: wlan0: CTRL-EVENT-TERMINATING
+[  114.672982] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_cfg80211_disconnect : disconnect in connect state [1:0:1]. reason:3
+[  114.673186] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_cfg80211_disconnect : [wlan0] wl disassoc
+[  114.674791] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: wpa_supplicant.service: Deactivated successfully.
+[  114.675671] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped wpa_supplicant.service - WPA supplicant.
+[  114.669594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=wpa_supplicant comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.684466] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: wl_process_host_event: Link event 11, flags 0, status 0, role 0, del_sta 1
+[  114.684898] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: wl_process_host_event: Deleting STA 68:xx:xx:xx:x9:13
+[  114.685008] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_flow_rings_delete: ifindex 0
+[  114.685134] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_flow_ring_delete: Send Flow Delete Req RING ID 39 for peer 52:xx:xx:xx:xb:73 prio 1 ifindex 0
+[  114.685250] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_flow_ring_delete: Send Flow Delete Req RING ID 40 for peer ff:xx:xx:xx:xf:ff prio 0 ifindex 0
+[  114.685355] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_flow_ring_delete: Send Flow Delete Req RING ID 41 for peer 68:xx:xx:xx:x9:13 prio 3 ifindex 0
+[  114.685442] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: MACEVENT: WLC_E_DISASSOC, MAC 68:xx:xx:xx:x9:13
+[  114.685531] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_print_event_data : event_type (11), ifidx: 0 bssidx: 0 status:0 reason:8
+[  114.685642] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: wl_process_host_event: Link event 11, flags 0, status 0, role 0, del_sta 1
+[  114.685762] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: wl_process_host_event: Deleting STA 68:xx:xx:xx:x9:13
+[  114.685595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7036]: AVC avc:  denied  { dac_read_search } for  pid=7036 comm="dbus-daemon" capability=2  scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:system_r:kernel_generic_helper_t:s0 tclass=capability permissive=1
+[  114.685594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7036]: AVC avc:  denied  { dac_override } for  pid=7036 comm="dbus-daemon" capability=1  scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:system_r:kernel_generic_helper_t:s0 tclass=capability permissive=1
+[  114.685594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7036]: SYSCALL arch=c00000b7 syscall=35 success=yes exit=0 a0=ffffffffffffff9c a1=55c676fb20 a2=0 a3=7375622f69 items=0 ppid=7023 pid=7036 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="dbus-daemon" exe="/usr/bin/dbus-daemon" subj=system_u:system_r:kernel_generic_helper_t:s0 key=(null)
+[  114.685594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle=2F7573722F62696E2F646275732D6461656D6F6E002D2D636F6E6669672D66696C653D2F7573722F73686172652F64656661756C74732F61742D737069322F6163636573736962696C6974792E636F6E66002D2D6E6F666F726B002D2D7072696E742D61646472657373003133002D2D616464726573733D756E69783A706174
+[  114.695287] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_flow_rings_delete: ifindex 0
+[  114.690853] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping dbus-daemon.service - D-Bus System Message Bus...
+[  114.695694] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: MACEVENT: WLC_E_DISASSOC, MAC 68:xx:xx:xx:x9:13
+[  114.695826] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_print_event_data : event_type (11), ifidx: 0 bssidx: 0 status:0 reason:0
+[  114.695922] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: wl_process_host_event: Deleting all STA from assoc list and flowrings.
+[  114.696132] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_flow_rings_delete: ifindex 0
+[  114.696231] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: MACEVENT: WLC_E_LINK DOWN flags:0x0 status:0 reason:2
+[  114.696340] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_print_event_data : event_type (16), ifidx: 0 bssidx: 0 status:0 reason:2
+[  114.696446] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_flow_ring_delete_response_process: Flow Delete Response status = 0 Flow 39
+[  114.696560] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_set_rpm_state: 0
+[  114.696680] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_flow_ring_delete_response_process: Flow Delete Response status = 0 Flow 40
+[  114.696776] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_flow_ring_delete_response_process: Flow Delete Response status = 0 Flow 41
+[  114.696871] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_handle_assoc_events : [wlan0] Mode BSS. assoc_state:0 event:16 status:0 reason:2 e_idx:418 68:xx:xx:xx:x9:13
+[  114.696997] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_handle_sta_link_action : assoc_state:ASSOC_IDLE link action:LINK_DOWN
+[  114.697081] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_handle_link_down : Link down Reason: WLC_E_LINK
+[  114.697174] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_set_rpm_state: 1
+[  114.697290] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.697374] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: panel_sleep_in panel_state:NORMAL -> ON
+[  114.697492] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: PANEL:INFO:panel_core_ioctl:PANEL_IOC_SET_POWER
+[  114.701596] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=dbus-daemon comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.717397] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 runuser[7250]: pam_unix(runuser:session): session closed for user nuxel
+[  114.706036] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: dbus-daemon.service: Deactivated successfully.
+[  114.722880] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_get_bss_info : wpa_auth val 128 
+[  114.706838] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped dbus-daemon.service - D-Bus System Message Bus.
+[  114.723156] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_get_bss_info : BSSID:68:xx:xx:xx:x9:13 SSID ***** 
+[  114.715161] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+[  114.723378] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_get_bss_info : freq:5220, BW:80, RSSI:-56 dBm, Rate:585 Mbps, 11mode:4, stream:2,MU-MIMO:0, Passpoint:0, SNR:32, Noise:-93, 
+                                                               akm:0, roam:0, 11kv:3/1312 
+[  114.709594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-wl-fb comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.713594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7250]: AVC avc:  denied  { create } for  pid=7250 comm="runuser" scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:system_r:kernel_generic_helper_t:s0 tclass=netlink_audit_socket permissive=1
+[  114.713594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7250]: SYSCALL arch=c00000b7 syscall=198 success=yes exit=4 a0=10 a1=80003 a2=9 a3=0 items=0 ppid=6183 pid=7250 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="runuser" exe="/usr/bin/runuser" subj=system_u:system_r:kernel_generic_helper_t:s0 key=(null)
+[  114.713594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle=72756E75736572002D75006E7578656C002D2D00656E76005844475F52554E54494D455F4449523D2F72756E2F757365722F3130303000444255535F53455353494F4E5F4255535F414444524553533D756E69783A706174683D2F72756E2F757365722F313030302F627573005844475F43555252454E545F4445534B544F50
+[  114.713594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7250]: AVC avc:  denied  { nlmsg_relay } for  pid=7250 comm="runuser" scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:system_r:kernel_generic_helper_t:s0 tclass=netlink_audit_socket permissive=1
+[  114.713594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7250]: AVC avc:  denied  { audit_write } for  pid=7250 comm="runuser" capability=29  scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:system_r:kernel_generic_helper_t:s0 tclass=capability permissive=1
+[  114.713594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7250]: AUDIT1106 pid=7250 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_generic_helper_t:s0 msg='op=PAM:session_close grantors=pam_keyinit,pam_limits,pam_unix acct="nuxel" exe="/usr/bin/runuser" hostname=? addr=? terminal=? res=success'
+[  114.713594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7250]: SYSCALL arch=c00000b7 syscall=206 success=yes exit=156 a0=4 a1=7fc9c6a4d0 a2=9c a3=0 items=0 ppid=6183 pid=7250 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="runuser" exe="/usr/bin/runuser" subj=system_u:system_r:kernel_generic_helper_t:s0 key=(null)
+[  114.713593] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle=72756E75736572002D75006E7578656C002D2D00656E76005844475F52554E54494D455F4449523D2F72756E2F757365722F3130303000444255535F53455353494F4E5F4255535F414444524553533D756E69783A706174683D2F72756E2F757365722F313030302F627573005844475F43555252454E545F4445534B544F50
+[  114.713594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7250]: AUDIT1104 pid=7250 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_generic_helper_t:s0 msg='op=PAM:setcred grantors=pam_rootok acct="nuxel" exe="/usr/bin/runuser" hostname=? addr=? terminal=? res=success'
+[  114.717594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[6983]: AVC avc:  denied  { rmdir } for  pid=6983 comm="gnome-keyring-d" name="keyring" dev="tmpfs" ino=35220 scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:var_run_t:s0 tclass=dir permissive=1
+[  114.717594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[6983]: SYSCALL arch=c00000b7 syscall=35 success=yes exit=0 a0=ffffffffffffff9c a1=55ce4fd9b0 a2=200 a3=0 items=0 ppid=1 pid=6983 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="gnome-keyring-d" exe="/usr/bin/gnome-keyring-daemon" subj=system_u:system_r:kernel_generic_helper_t:s0 key=(null)
+[  114.717594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle=2F7573722F62696E2F676E6F6D652D6B657972696E672D6461656D6F6E002D2D7374617274002D2D666F726567726F756E64002D2D636F6D706F6E656E74733D73656372657473
+[  114.716187] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+[  114.729653] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_get_bss_info : GET_BSS: roam scan count invalid
+[  114.720541] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor)...
+[  114.729830] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_cfg8021_unlink_bss : bss unlinked
+[  114.729879] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: disable regulator(2:vdd1)
+[  114.729931] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_android_roamoff_dbg_dump : Last ROAM Disable(00)     0.000000
+[  114.729967] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_android_roamoff_dbg_dump : Last ROAM Enable(00)     0.000000
+[  114.730013] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_handle_link_down : [wlan0] Disconnect event sent to upper layerevent:16 e->reason=33554432 reason=2 ie_len=0 from 68:xx:xx:xx:x9:13
+[  114.730055] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_ioctl: SET PM to 2
+[  114.730102] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: disable regulator(1:vdd2)
+[  114.730135] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_post_linkdown_ops : link down. connection state bit status: [0:0:1:0]
+[  114.730180] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_prot_ioctl: SET PM to 2
+[  114.730220] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: disable regulator(0:vdd5)
+[  114.730261] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: __set_panel_power, power(off) gpio_reset(low)
+[  114.730300] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: AOD:INFO:aod_power_off : was called
+[  114.730343] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: panel_power_off panel_state:ON -> OFF
+[  114.730380] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dsim-0 dsim_disable - (state:ON -> OFF)
+[  114.730426] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: _decon_disable: elapsed time to disable dsim: 176784usec
+[  114.730464] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: exynos-decon 19030000.decon_f: pm_relax
+[  114.731297] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: _decon_disable: totol elapsed time: 176825usec
+[  114.731355] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: decon-0 decon_disable - (state:ON -> OFF)
+[  114.731398] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: decon_release - : 0
+[  114.731457] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000105.754 EL:V02:1:0 141 5 0x2e64 0 0 ffffff9c 0
+[  114.731512] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000105.752 EL:V02:3:4 56 4 0xbba0 0 68000000 913
+[  114.731548] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000105.754 EL:V02:3:4 56 4 0xbb98 0 8 25fc18
+[  114.731587] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: 000105.754 EL:V02:3:4 56 3 0x7a48 0 261646
+[  114.729595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7015]: AUDIT1106 pid=7015 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_generic_helper_t:s0 msg='op=PAM:session_close grantors=pam_keyinit,pam_limits,pam_unix acct="nuxel" exe="/usr/bin/runuser" hostname=? addr=? terminal=? res=success'
+[  114.729594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[7015]: AUDIT1104 pid=7015 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_generic_helper_t:s0 msg='op=PAM:setcred grantors=pam_rootok acct="nuxel" exe="/usr/bin/runuser" hostname=? addr=? terminal=? res=success'
+[  114.740872] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 4 1 0 0 0 0
+[  114.735524] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 runuser[7015]: pam_unix(runuser:session): session closed for user nuxel
+[  114.743908] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_cfg80211_wait_for_disconnection : Wait for disconnection done. status:0 wait_cnt:9
+[  114.744423] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO) wl_cfg80211_disconnect : Clearing disconnect IEs 
+[  114.777823] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[5964]: Session terminated: Child process killed by signal 15 (0)
+[  114.816577] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_wbtext_set_default : Setting ESTM wt
+[  114.834418] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: dhd_set_rpm_state: 1
+[  114.853595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-audio-session.service: Deactivated successfully.
+[  114.854582] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-audio-session.service - Nuxel standalone PipeWire/WirePlumber audio session.
+[  114.849595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-audio-session comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.857594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[6970]: AVC avc:  denied  { unlink } for  pid=6970 comm="dbus-daemon" name="dbus-lCGmQP2U2E" dev="tmpfs" ino=38239 scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:tmp_t:s0 tclass=sock_file permissive=1
+[  114.857594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[6970]: SYSCALL arch=c00000b7 syscall=35 success=yes exit=0 a0=ffffffffffffff9c a1=55bdfdcf30 a2=0 a3=31 items=0 ppid=1 pid=6970 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="dbus-daemon" exe="/usr/bin/dbus-daemon" subj=system_u:system_r:kernel_generic_helper_t:s0 key=(null)
+[  114.857594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle=646275732D6461656D6F6E002D2D6E6F666F726B002D2D7072696E742D616464726573730034002D2D73657373696F6E
+[  114.880121] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.891252] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-orientationd.service: Deactivated successfully.
+[  114.891860] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-orientationd.service - Nuxel orientation owner (seven-mode policy, transform, auto sensor).
+[  114.885594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-orientationd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  114.893547] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.894116] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+[  114.895214] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.909595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[12503]: AVC avc:  denied  { read } for  pid=12503 comm="fusermount3" name="passwd" dev="sda31" ino=3411694 scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:passwd_file_t:s0 tclass=file permissive=1
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[12503]: AVC avc:  denied  { open } for  pid=12503 comm="fusermount3" path="/etc/passwd" dev="sda31" ino=3411694 scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:passwd_file_t:s0 tclass=file permissive=1
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[12503]: SYSCALL arch=c00000b7 syscall=56 success=yes exit=3 a0=ffffffffffffff9c a1=7fa83bf6c8 a2=80000 a3=0 items=0 ppid=7392 pid=12503 auid=4294967295 uid=1000 gid=1000 euid=0 suid=0 fsuid=0 egid=1000 sgid=1000 fsgid=1000 tty=(none) ses=4294967295 comm="fusermount3" exe="/usr/bin/fusermount3" subj=system_u:system_r:kernel_generic_helper_t:s0 key=(null)
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle=66757365726D6F756E7433002D75002D71002D7A002D2D002F72756E2F6E7578656C2D7761796C616E642F646F63
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[12503]: AVC avc:  denied  { getattr } for  pid=12503 comm="fusermount3" path="/etc/passwd" dev="sda31" ino=3411694 scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:passwd_file_t:s0 tclass=file permissive=1
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[12503]: SYSCALL arch=c00000b7 syscall=80 success=yes exit=0 a0=3 a1=7fc1f8b7b8 a2=7fa82d688c a3=0 items=0 ppid=7392 pid=12503 auid=4294967295 uid=1000 gid=1000 euid=0 suid=0 fsuid=0 egid=1000 sgid=1000 fsgid=1000 tty=(none) ses=4294967295 comm="fusermount3" exe="/usr/bin/fusermount3" subj=system_u:system_r:kernel_generic_helper_t:s0 key=(null)
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle=66757365726D6F756E7433002D75002D71002D7A002D2D002F72756E2F6E7578656C2D7761796C616E642F646F63
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[12503]: AVC avc:  denied  { unmount } for  pid=12503 comm="fusermount3" scontext=system_u:system_r:kernel_generic_helper_t:s0 tcontext=system_u:object_r:fusefs_t:s0 tclass=filesystem permissive=1
+[  114.915630] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: run-nuxel\x2dwayland-doc.mount: Deactivated successfully.
+[  114.915739] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Unmounted run-nuxel\x2dwayland-doc.mount - /run/nuxel-wayland/doc.
+[  114.924844] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.928382] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[12503]: SYSCALL arch=c00000b7 syscall=39 success=yes exit=0 a0=55bf079343 a1=a a2=0 a3=7fc1f8bb08 items=0 ppid=7392 pid=12503 auid=4294967295 uid=1000 gid=1000 euid=0 suid=0 fsuid=0 egid=1000 sgid=1000 fsgid=1000 tty=(none) ses=4294967295 comm="fusermount3" exe="/usr/bin/fusermount3" subj=system_u:system_r:kernel_generic_helper_t:s0 key=(null)
+[  114.909594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle=66757365726D6F756E7433002D75002D71002D7A002D2D002F72756E2F6E7578656C2D7761796C616E642F646F63
+[  114.948438] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.948753] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.968073] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.968438] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.988621] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  114.988860] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.014632] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.015039] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.023403] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-soundd.service: Deactivated successfully.
+[  115.021594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-soundd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.024091] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-soundd.service - Nuxel central sound manager (persistent PipeWire cue stream).
+[  115.032790] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.033107] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.059794] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.060204] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.060343] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.060463] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.060589] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.060695] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: perf: interrupt took too long (6769 > 6457), lowering kernel.perf_event_max_sample_rate to 29500
+[  115.060874] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.060985] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.100853] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.101198] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+[  115.461595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-wayland comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.465594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-bootmode-oneshot comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.463500] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Deactivated successfully.
+[  115.473525] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 seatd[5408]: 00:01:47.686 [INFO] [seatd/seatd.c:218] seatd stopped
+[  115.464657] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+[  115.468908] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bootmode-oneshot.service: Deactivated successfully.
+[  115.469408] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-bootmode-oneshot.service - Nuxel one-shot boot mode consumer (verbose/safe/diag/debug flags).
+[  115.470492] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)...
+[  115.470749] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-web.service - Nuxel PWA Static Web Server (nuxel-home launcher on :8000)...
+[  115.470972] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping seatd.service - Nuxel seat daemon (seatd) — backend session for wlroots/phoc input...
+[  115.502612] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-web.service: Deactivated successfully.
+[  115.503838] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-web.service - Nuxel PWA Static Web Server (nuxel-home launcher on :8000).
+[  115.501595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-web comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.510162] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: seatd.service: Deactivated successfully.
+[  115.511055] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped seatd.service - Nuxel seat daemon (seatd) — backend session for wlroots/phoc input.
+[  115.505594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=seatd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.517736] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-touch-arm.service: Deactivated successfully.
+[  115.518767] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+[  115.513596] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-touch-arm comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.528604] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target basic.target - Basic System.
+[  115.529158] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target paths.target - Path Units.
+[  115.529288] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-boot-sound.path: Deactivated successfully.
+[  115.531428] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-boot-sound.path - Play the Nuxel boot cue once the audio route is actually ready.
+[  115.531809] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-mic-route.path: Deactivated successfully.
+[  115.533861] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-mic-route.path - Start Nuxel microphone route when the playback route state appears.
+[  115.534518] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target slices.target - Slice Units.
+[  115.535751] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Removed slice user.slice - User and Session Slice.
+[  115.535953] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target sockets.target - Socket Units.
+[  115.536269] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: avahi-daemon.socket: Deactivated successfully.
+[  115.536509] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Closed avahi-daemon.socket - Avahi mDNS/DNS-SD Stack Activation Socket.
+[  115.536766] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: dbus.socket: Deactivated successfully.
+[  115.536954] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Closed dbus.socket - D-Bus System Message Bus Socket.
+[  115.537518] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-metrics.socket: Deactivated successfully.
+[  115.538165] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Closed nuxel-metrics.socket - Nuxel on-demand Home hardware metrics socket.
+[  115.538349] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: sshd-unix-local.socket: Deactivated successfully.
+[  115.538476] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Closed sshd-unix-local.socket - OpenSSH Server Socket (systemd-ssh-generator, AF_UNIX Local).
+[  115.538630] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-hostnamed.socket: Deactivated successfully.
+[  115.538749] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Closed systemd-hostnamed.socket - Hostname Service Socket.
+[  115.538901] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-logind-varlink.socket: Deactivated successfully.
+[  115.539032] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Closed systemd-logind-varlink.socket - User Login Management Varlink Socket.
+[  115.539166] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target sysinit.target - System Initialization.
+[  115.539363] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target cryptsetup.target - Local Encrypted Volumes.
+[  115.539452] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-ask-password-console.path: Deactivated successfully.
+[  115.541665] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-ask-password-console.path - Dispatch Password Requests to Console Directory Watch.
+[  115.542096] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-ask-password-wall.path: Deactivated successfully.
+[  115.543897] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-ask-password-wall.path - Forward Password Requests to Wall Directory Watch.
+[  115.544634] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target imports.target - Image Downloads.
+[  115.544799] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target integritysetup.target - Local Integrity Protected Volumes.
+[  115.544926] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target veritysetup.target - Local Verity Protected Volumes.
+[  115.545045] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-sysctl.service: Deactivated successfully.
+[  115.545265] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-sysctl.service - Apply Kernel Variables.
+[  115.541594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-sysctl comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.545524] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-coredump.socket: Deactivated successfully.
+[  115.545686] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Closed systemd-coredump.socket - Process Core Dump Socket.
+[  115.545808] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-modules-load.service: Deactivated successfully.
+[  115.545919] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-modules-load.service - Load Kernel Modules.
+[  115.541594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-modules-load comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.546465] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-timesyncd.service - Network Time Synchronization...
+[  115.549549] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping systemd-update-utmp.service - Record System Boot/Shutdown in UTMP...
+[  115.560770] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+[  115.569595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[12524]: AUDIT1128 pid=12524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg=' comm="update-utmp" exe="/usr/lib/systemd/systemd-update-utmp" hostname=? addr=? terminal=? res=success'
+[  115.578340] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-update-utmp.service: Deactivated successfully.
+[  115.579247] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-update-utmp.service - Record System Boot/Shutdown in UTMP.
+[  115.573594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-update-utmp comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.581760] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-timesyncd.service: Deactivated successfully.
+[  115.582443] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-timesyncd.service - Network Time Synchronization.
+[  115.577594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-timesyncd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.592161] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-tmpfiles-setup.service: Deactivated successfully.
+[  115.589594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-tmpfiles-setup comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.592551] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-tmpfiles-setup.service - Create System Files and Directories.
+[  115.593081] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target local-fs.target - Local File Systems.
+[  115.593223] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target local-fs-pre.target - Preparation for Local File Systems.
+[  115.595807] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Unmounting tmp.mount - Temporary Directory /tmp...
+[  115.593594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-remount-fs comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.595916] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-remount-fs.service: Deactivated successfully.
+[  115.593594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-tmpfiles-setup-dev comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.596177] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-remount-fs.service - Remount Root and Kernel File Systems.
+[  115.593594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-tmpfiles-setup-dev-early comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.596505] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-tmpfiles-setup-dev.service: Deactivated successfully.
+[  115.596662] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-tmpfiles-setup-dev.service - Create Static Device Nodes in /dev.
+[  115.596894] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-tmpfiles-setup-dev-early.service: Deactivated successfully.
+[  115.597023] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped systemd-tmpfiles-setup-dev-early.service - Create Static Device Nodes in /dev gracefully.
+[  115.604183] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+[  115.649385] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: tmp.mount: Deactivated successfully.
+[  115.650184] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Unmounted tmp.mount - Temporary Directory /tmp.
+[  115.651575] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped target swap.target - Swaps.
+[  115.651784] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target shutdown.target - System Shutdown.
+[  115.651878] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target umount.target - Unmount All Filesystems.
+[  115.651944] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target final.target - Late Shutdown Services.
+[  115.652193] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: systemd-reboot.service: Deactivated successfully.
+[  115.652284] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Finished systemd-reboot.service - System Reboot.
+[  115.649594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-reboot comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.649594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=systemd-reboot comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+[  115.652669] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Reached target reboot.target - System Reboot.
+[  115.652776] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Shutting down.
+[  115.756679] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Using hardware watchdog /dev/watchdog0: 'S3C2410 Watchdog', version 0.
+[  115.756770] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Failed to set watchdog hardware timeout to 10min: Invalid argument
+[  115.760267] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 stop done, WTCON = 5c18
+[  115.808448] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 stop done, WTCON = 5c18
+[  115.810155] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: s3c2410-wdt 10060000.watchdog_cl2: s3c2410wdt_multistage_wdt_start: count=0x0000b32b, wtcon=00005c3c
+[  115.811364] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 start, WTCON = 5c39
+[  115.812475] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Using hardware watchdog /dev/watchdog0: 'S3C2410 Watchdog', version 0.
+[  115.812578] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Failed to set watchdog hardware timeout to 10min: Invalid argument
+[  115.812666] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 stop done, WTCON = 5c18
+[  115.824161] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Syncing filesystems and block devices.
+[  115.873595] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: AVC avc:  denied  { write } for  pid=1 comm="systemd-shutdow" name="core_pattern" dev="proc" ino=16632 scontext=system_u:system_r:kernel_t:s0 tcontext=system_u:object_r:usermodehelper_t:s0 tclass=file permissive=1
+[  115.873594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit[1]: SYSCALL arch=c00000b7 syscall=56 success=yes exit=4 a0=ffffffffffffff9c a1=7fafe0b098 a2=80101 a3=0 items=0 ppid=0 pid=1 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="systemd-shutdow" exe="/usr/lib/systemd/systemd-shutdown" subj=system_u:system_r:kernel_t:s0 key=(null)
+[  115.873594] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 audit: PROCTITLE proctitle="sbin/init"
+[  115.924306] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-shutdown[1]: Sending SIGTERM to remaining processes...
+[  115.925320] 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd-journald[3565]: Journal stopped

@@ -1,0 +1,105 @@
+=== receipt ===
+{
+  "asset": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+  "asset_bytes": 7630092,
+  "asset_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+  "audio": "disabled",
+  "boot_id": "175971b2-3209-4eca-a319-59440a719d2e",
+  "bounded": false,
+  "controller_pid": 6608,
+  "display_lost": false,
+  "duration_s": 6.016,
+  "elapsed_s": 6.379,
+  "eof_at_s": 6.345,
+  "final_frame_grace_ms": 1500,
+  "final_frame_hold_s": 0.0,
+  "finished_at": "2026-11-08T09:29:03+0100",
+  "framebuffer_owner": "nuxel-wl-fb",
+  "fullscreen": true,
+  "hard_timeout_ms": 15000,
+  "input_ready": true,
+  "max_display_ms": 12000,
+  "milestone": "PWNAGE-31000",
+  "presentation_ready": true,
+  "readiness": {
+    "boot_os": true,
+    "critical": true,
+    "detail": {
+      "display_off": false,
+      "display_state": "DISPLAY_ON",
+      "display_state_fresh": true,
+      "display_state_path": "/var/lib/nuxel/display",
+      "home_state_path": "/run/nuxel-home.state",
+      "launcher_ready_path": "/run/nuxel-launcher-ready",
+      "touch_last_line": "2026-11-08T08:28:50Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0.4095] tsp_before='mutual:1, hover:0, co",
+      "touch_state_path": "/run/nuxel-touch-arm.state",
+      "wlfb_state": "1794126543 FRAMES_OK total=72 fps_1s=3 failures=0 blits=15 present_skipped=56 blit_avg_ms=2 pan_avg_ms=5 capture_avg_ms=3 compare_avg_ms=1 damage=108-312 damage_runs=1 damage_blits=14 damage_avg_ms=2 ",
+      "wlfb_state_path": "/run/nuxel-wl-fb.state"
+    },
+    "display_on": true,
+    "input_ready": true,
+    "launcher_ready": true,
+    "presentation_ready": true,
+    "ready": true,
+    "touch_settled": true,
+    "touch_unknown": false,
+    "wlfb_ready": true
+  },
+  "readiness_ready_at_s": 0.0,
+  "reason": "video-eof-and-presentation-ready",
+  "schema_version": 1,
+  "started_at": "2026-11-08T09:28:51+0100",
+  "unlock_actions": 0,
+  "verdict": "PLAYED",
+  "video_eof": true,
+  "video_held": false
+}
+
+=== mpv first/last ===
+[   0.006][v][cplayer] mpv v0.40.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+[   0.007][v][cplayer] libplacebo version: v7.351.0
+[   0.007][v][cplayer] FFmpeg version: 7.1.1 (runtime 7.1.5)
+[   6.224][v][vf] filter input EOF
+[   6.224][v][vf] filter output EOF
+[   6.266][v][cplayer] using demuxer frame duration for last frame
+[   6.266][d][cplayer] video EOF (status=3)
+[   6.316][d][cplayer] video EOF (status=3)
+[   6.331][v][cplayer] video EOF reached
+[   6.331][d][cplayer] video EOF (status=4)
+[   6.395][d][cplayer] Run command: quit, flags=64, args=[code="0"]
+[   6.396][v][cplayer] EOF code: 5  
+[   6.396][d][vd] Uninit decoder.
+[   6.396][d][ffmpeg/video] libopenh264: [OpenH264] this = 0x0x55911ff390, Info:CWelsDecoder::~CWelsDecoder()
+[   6.396][d][ffmpeg/video] libopenh264: [OpenH264] this = 0x0x55911ff390, Info:CWelsDecoder::UninitDecoderCtx(), openh264 codec version = .
+=== preload log ===
+2026-11-08T01:03:39+0100 PRELOAD_CINEMA INFO overlay_covered elapsed_s=0.399 first_frame_s=0.125 wlfb_ready=1
+2026-11-08T01:03:45+0100 PRELOAD_CINEMA INFO video_eof elapsed_s=6.301
+2026-11-08T01:03:45+0100 PRELOAD_CINEMA INFO player_stopped pid=7964 reason=video-eof-and-presentation-ready
+2026-11-08T01:03:45+0100 PRELOAD_CINEMA INFO controller_done reason=video-eof-and-presentation-ready verdict=PLAYED
+2026-11-08T08:48:44+0100 PRELOAD_CINEMA INFO controller_start asset=/usr/share/nuxel/preload/nuxel-preloading-screen.mp4 config=/etc/nuxel/boot/preload-cinema.json early=1 enabled=1
+2026-11-08T08:48:44+0100 PRELOAD_CINEMA INFO asset_verified asset=/usr/share/nuxel/preload/nuxel-preloading-screen.mp4 bytes=7630092 duration_s=6.016 sha256=b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1
+2026-11-08T08:48:48+0100 PRELOAD_CINEMA INFO early_launcher_wait bound_ms=4000 elapsed_s=4.027 ready=0
+2026-11-08T08:48:49+0100 PRELOAD_CINEMA INFO early_display_wait bound_ms=20000 display_on=1 elapsed_s=1.712 ready=1 wlfb_ready=1
+2026-11-08T08:48:49+0100 PRELOAD_CINEMA INFO preflight_skipped reason=early-session-fast-path
+2026-11-08T08:48:49+0100 PRELOAD_CINEMA INFO player_starting asset=/usr/share/nuxel/preload/nuxel-preloading-screen.mp4 duration_s=6.016 pid=None vo=wlshm
+2026-11-08T08:48:49+0100 PRELOAD_CINEMA INFO player_started pid=7952
+2026-11-08T08:48:50+0100 PRELOAD_CINEMA INFO readiness boot_os=1 critical=1 display_on=1 launcher_ready=1 ready=1 touch_last=2026-11-08T07:48:43Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0.4095] tsp_before='mutual:1, hover:0, co touch_settled=1 touch_unknown=0 wlfb_ready=1
+2026-11-08T08:48:50+0100 PRELOAD_CINEMA INFO lockscreen_ready elapsed_s=0.0
+2026-11-08T08:48:50+0100 PRELOAD_CINEMA INFO overlay_covered elapsed_s=0.135 first_frame_s=0.042 wlfb_ready=1
+2026-11-08T08:48:56+0100 PRELOAD_CINEMA INFO video_eof elapsed_s=6.314
+2026-11-08T08:48:56+0100 PRELOAD_CINEMA INFO player_stopped pid=7952 reason=video-eof-and-presentation-ready
+2026-11-08T08:48:56+0100 PRELOAD_CINEMA INFO controller_done reason=video-eof-and-presentation-ready verdict=PLAYED
+2026-11-08T09:28:51+0100 PRELOAD_CINEMA INFO controller_start asset=/usr/share/nuxel/preload/nuxel-preloading-screen.mp4 config=/etc/nuxel/boot/preload-cinema.json early=1 enabled=1
+2026-11-08T09:28:51+0100 PRELOAD_CINEMA INFO asset_verified asset=/usr/share/nuxel/preload/nuxel-preloading-screen.mp4 bytes=7630092 duration_s=6.016 sha256=b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1
+2026-11-08T09:28:55+0100 PRELOAD_CINEMA INFO early_launcher_wait bound_ms=4000 elapsed_s=4.03 ready=0
+2026-11-08T09:28:56+0100 PRELOAD_CINEMA INFO early_display_wait bound_ms=20000 display_on=1 elapsed_s=1.311 ready=1 wlfb_ready=1
+2026-11-08T09:28:56+0100 PRELOAD_CINEMA INFO preflight_skipped reason=early-session-fast-path
+2026-11-08T09:28:56+0100 PRELOAD_CINEMA INFO player_starting asset=/usr/share/nuxel/preload/nuxel-preloading-screen.mp4 duration_s=6.016 pid=None vo=wlshm
+2026-11-08T09:28:56+0100 PRELOAD_CINEMA INFO player_started pid=8008
+2026-11-08T09:28:57+0100 PRELOAD_CINEMA INFO readiness boot_os=1 critical=1 display_on=1 launcher_ready=1 ready=1 touch_last=2026-11-08T08:28:50Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0.4095] tsp_before='mutual:1, hover:0, co touch_settled=1 touch_unknown=0 wlfb_ready=1
+2026-11-08T09:28:57+0100 PRELOAD_CINEMA INFO lockscreen_ready elapsed_s=0.0
+2026-11-08T09:28:57+0100 PRELOAD_CINEMA INFO overlay_covered elapsed_s=0.142 first_frame_s=0.042 wlfb_ready=1
+2026-11-08T09:29:03+0100 PRELOAD_CINEMA INFO video_eof elapsed_s=6.345
+2026-11-08T09:29:03+0100 PRELOAD_CINEMA INFO player_stopped pid=8008 reason=video-eof-and-presentation-ready
+2026-11-08T09:29:03+0100 PRELOAD_CINEMA INFO controller_done reason=video-eof-and-presentation-ready verdict=PLAYED
+=== session preload lines ===

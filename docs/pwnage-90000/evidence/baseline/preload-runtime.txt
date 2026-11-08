@@ -1,0 +1,190 @@
+=== preload-cinema.receipt ===
+{
+  "asset": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+  "asset_bytes": 7630092,
+  "asset_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+  "audio": "disabled",
+  "boot_id": "4e621e71-940c-4f87-a71f-3ec7ed82577b",
+  "bounded": false,
+  "controller_pid": 6492,
+  "display_lost": false,
+  "duration_s": 6.016,
+  "elapsed_s": 6.332,
+  "eof_at_s": 6.314,
+  "final_frame_grace_ms": 1500,
+  "final_frame_hold_s": 0.0,
+  "finished_at": "2026-11-08T08:48:56+0100",
+  "framebuffer_owner": "nuxel-wl-fb",
+  "fullscreen": true,
+  "hard_timeout_ms": 15000,
+  "input_ready": true,
+  "max_display_ms": 12000,
+  "milestone": "PWNAGE-31000",
+  "presentation_ready": true,
+  "readiness": {
+    "boot_os": true,
+    "critical": true,
+    "detail": {
+      "display_off": false,
+      "display_state": "DISPLAY_ON",
+      "display_state_fresh": true,
+      "display_state_path": "/var/lib/nuxel/display",
+      "home_state_path": "/run/nuxel-home.state",
+      "launcher_ready_path": "/run/nuxel-launcher-ready",
+      "touch_last_line": "2026-11-08T07:48:43Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0.4095] tsp_before='mutual:1, hover:0, co",
+      "touch_state_path": "/run/nuxel-touch-arm.state",
+      "wlfb_state": "1794124136 FRAMES_OK total=74 fps_1s=3 failures=0 blits=18 present_skipped=55 blit_avg_ms=1 pan_avg_ms=9 capture_avg_ms=4 compare_avg_ms=0 damage=108-321 damage_runs=1 damage_blits=17 damage_avg_ms=1 ",
+      "wlfb_state_path": "/run/nuxel-wl-fb.state"
+    },
+    "display_on": true,
+    "input_ready": true,
+    "launcher_ready": true,
+    "presentation_ready": true,
+    "ready": true,
+    "touch_settled": true,
+    "touch_unknown": false,
+    "wlfb_ready": true
+  },
+  "readiness_ready_at_s": 0.0,
+  "reason": "video-eof-and-presentation-ready",
+  "schema_version": 1,
+  "started_at": "2026-11-08T08:48:44+0100",
+  "unlock_actions": 0,
+  "verdict": "PLAYED",
+  "video_eof": true,
+  "video_held": false
+}
+
+=== preload-cinema.overlay ===
+{
+  "boot_id": "4e621e71-940c-4f87-a71f-3ec7ed82577b",
+  "elapsed_s": 6.331,
+  "milestone": "PWNAGE-31000",
+  "pid": 6492,
+  "reason": "video-eof-and-presentation-ready",
+  "schema_version": 1,
+  "state": "done",
+  "updated_at": "2026-11-08T08:48:56+0100",
+  "video_eof": true
+}
+
+=== preload-cinema.done ===
+2026-11-08T08:48:49+0100 boot_id=4e621e71-940c-4f87-a71f-3ec7ed82577b pid=6492
+
+=== preload-cinema.lock ===
+6492
+
+=== foreground.state ===
+locked=1 native=0 app_id=
+
+=== shell-chrome.json ===
+{"schema_version":1,"supervisor_pid":6503,"navdock_pid":6517,"statusbar_pid":6518,"lock_watch_pid":6519,"updated_at":"2026-11-08T08:23:28Z"}
+
+=== lock-enforcement.state ===
+{"schema_version":1,"updated_at":1794126213,"locked":true,"home_raised":true,"hidden_non_home":1,"active_app":"","error":"","owner":"nuxel-foreign-toplevel"}
+
+=== graphics-gpu-probe.json ===
+{"created": 1794124122, "egl_version": "1.5", "elapsed_ms": 318, "gl_version": "OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)", "key": {"boot_id": "4e621e71-940c-4f87-a71f-3ec7ed82577b", "egl": [66319, 1317152, 537128, 1793662411355997426], "gallium": [66319, 1317178, 27575608, 1793662411435997426], "policy": [66319, 1181612, 2639, 1793733978003984643], "probe": [66319, 1327496, 73736, 1793733977791984643], "vendor": [66319, 131043, 101, 1793733978047984643], "wlroots": [66319, 1317179, 1352608, 1793662411487997426]}, "ok": true, "rc": 0, "renderer": "Mali-G76 MC12 (Panfrost)"}
+
+=== mpv log (head 60) ===
+[   0.005][v][cplayer] mpv v0.40.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+[   0.006][v][cplayer] libplacebo version: v7.351.0
+[   0.006][v][cplayer] FFmpeg version: 7.1.1 (runtime 7.1.5)
+[   0.006][v][cplayer] FFmpeg library versions:
+[   0.006][v][cplayer]    libavcodec      61.19.101
+[   0.006][v][cplayer]    libavdevice     61.3.100
+[   0.006][v][cplayer]    libavfilter     10.4.100 (runtime 10.5.100)
+[   0.006][v][cplayer]    libavformat     61.7.100 (runtime 61.7.103)
+[   0.006][v][cplayer]    libavutil       59.39.100
+[   0.006][v][cplayer]    libswresample   5.3.100
+[   0.006][v][cplayer]    libswscale      8.3.100
+[   0.006][v][cplayer] Configuration: -Dalsa=enabled -Dbuild-date=false -Dcaca=enabled -Dcdda=enabled -Dcplayer=true -Dcplugins=enabled -Dcuda-hwaccel=enabled -Dcuda-interop=enabled -Ddmabuf-wayland=enabled -Ddrm=enabled -Ddvbin=enabled -Ddvdnav=enabled -Degl-drm=enabled -Degl-wayland=enabled -Degl-x11=enabled -Dgl-x11=enabled -Dvaapi-x11=enabled -Dvdpau-gl-x11=enabled -Dvdpau=enabled -Dx11=enabled -Dxv=enabled -Degl=enabled -Dgbm=enabled -Dgl=enabled -Dhtml-build=enabled -Diconv=enabled -Djack=enabled -Djavascript=enabled -Djpeg=enabled -Dlcms2=enabled -Dlibarchive=enabled -Dlibavdevice=enabled -Dlibbluray=enabled -Dlibmpv=true -Dlua=enabled -Dmanpage-build=enabled -Dopenal=enabled -Dopensles=disabled -Doss-audio=disabled -Dpipewire=enabled -Dplain-gl=enabled -Dpulse=enabled -Drubberband=enabled -Dsdl2-audio=enabled -Dsdl2-gamepad=enabled -Dsdl2-video=enabled -Dsdl2=enabled -Dshaderc=disabled -Dsndio=disabled -Dspirv-cross=disabled -Duchardet=enabled -Dvaapi-drm=enabled -Dvaapi-wayland=enabled -Dvaapi=enabled -Dvapoursynth=enabled -Dvector=enabled -Dvulkan=enabled -Dwayland=enabled -Dwerror=false -Dzimg=enabled -Dzlib=enabled -Dprefix=/usr -Dbindir=/usr/bin -Ddatadir=/usr/share -Dincludedir=/usr/include -Dinfodir=/usr/share/info -Dlibdir=/usr/lib64 -Dlibexecdir=/usr/libexec -Dlocaledir=/usr/share/locale -Dlocalstatedir=/var -Dmandir=/usr/share/man -Dsbindir=/usr/bin -Dsharedstatedir=/var/lib -Dsysconfdir=/etc -Dauto_features=auto -Dbuildtype=plain -Dwrap_mode=nodownload
+[   0.006][v][cplayer] List of enabled features: alsa caca cdda cplugins cuda-hwaccel cuda-interop dmabuf-interop-gl dmabuf-wayland drm dvbin dvdnav egl egl-drm egl-wayland egl-x11 ffmpeg ffnvcodec gbm gl gl-x11 glibc-thread-name glob glob-posix gpl iconv jack javascript jpeg lcms2 libarchive libass libavdevice libbluray libdl libplacebo linux-fstatfs lua-5.1 memfd-create memrchr openal pipewire posix posix-shm ppoll pthread-condattr-setclock pulse rubberband rubberband-3 sdl2 sdl2-audio sdl2-gamepad sdl2-video uchardet vaapi vaapi-drm vaapi-wayland vaapi-x11 vapoursynth vdpau vdpau-gl-x11 vector vk-khr-display vt.h vulkan wayland wayland-protocols-1-32 wayland-protocols-1-38 wayland-protocols-1-39 wayland-protocols-1-41 x11 xv zimg zimg-st428 zlib
+[   0.006][v][cplayer] Command line options: '--no-config' '--no-audio' '--mute=yes' '--vo=wlshm' '--fullscreen' '--no-border' '--osc=no' '--osd-bar=no' '--osd-level=0' '--input-default-bindings=no' '--input-terminal=no' '--input-vo-keyboard=no' '--no-input-cursor' '--cursor-autohide=no' '--keepaspect=yes' '--panscan=0' '--background-color=#000000' '--keep-open=yes' '--idle=yes' '--hwdec=no' '--vd-lavc-threads=4' '--really-quiet' '--no-terminal' '--log-file=/run/nuxel/preload-cinema-mpv.log' '--input-ipc-server=/run/nuxel/preload-cinema.sock' '--title=Nuxel' '--' '/usr/share/nuxel/preload/nuxel-preloading-screen.mp4'
+[   0.006][v][cplayer] mpv v0.40.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+[   0.006][v][cplayer] libplacebo version: v7.351.0
+[   0.006][v][cplayer] FFmpeg version: 7.1.1 (runtime 7.1.5)
+[   0.007][v][cplayer] FFmpeg library versions:
+[   0.007][v][cplayer]    libavcodec      61.19.101
+[   0.007][v][cplayer]    libavdevice     61.3.100
+[   0.007][v][cplayer]    libavfilter     10.4.100 (runtime 10.5.100)
+[   0.007][v][cplayer]    libavformat     61.7.100 (runtime 61.7.103)
+[   0.007][v][cplayer]    libavutil       59.39.100
+[   0.007][v][cplayer]    libswresample   5.3.100
+[   0.007][v][cplayer]    libswscale      8.3.100
+[   0.007][v][cplayer] Configuration: -Dalsa=enabled -Dbuild-date=false -Dcaca=enabled -Dcdda=enabled -Dcplayer=true -Dcplugins=enabled -Dcuda-hwaccel=enabled -Dcuda-interop=enabled -Ddmabuf-wayland=enabled -Ddrm=enabled -Ddvbin=enabled -Ddvdnav=enabled -Degl-drm=enabled -Degl-wayland=enabled -Degl-x11=enabled -Dgl-x11=enabled -Dvaapi-x11=enabled -Dvdpau-gl-x11=enabled -Dvdpau=enabled -Dx11=enabled -Dxv=enabled -Degl=enabled -Dgbm=enabled -Dgl=enabled -Dhtml-build=enabled -Diconv=enabled -Djack=enabled -Djavascript=enabled -Djpeg=enabled -Dlcms2=enabled -Dlibarchive=enabled -Dlibavdevice=enabled -Dlibbluray=enabled -Dlibmpv=true -Dlua=enabled -Dmanpage-build=enabled -Dopenal=enabled -Dopensles=disabled -Doss-audio=disabled -Dpipewire=enabled -Dplain-gl=enabled -Dpulse=enabled -Drubberband=enabled -Dsdl2-audio=enabled -Dsdl2-gamepad=enabled -Dsdl2-video=enabled -Dsdl2=enabled -Dshaderc=disabled -Dsndio=disabled -Dspirv-cross=disabled -Duchardet=enabled -Dvaapi-drm=enabled -Dvaapi-wayland=enabled -Dvaapi=enabled -Dvapoursynth=enabled -Dvector=enabled -Dvulkan=enabled -Dwayland=enabled -Dwerror=false -Dzimg=enabled -Dzlib=enabled -Dprefix=/usr -Dbindir=/usr/bin -Ddatadir=/usr/share -Dincludedir=/usr/include -Dinfodir=/usr/share/info -Dlibdir=/usr/lib64 -Dlibexecdir=/usr/libexec -Dlocaledir=/usr/share/locale -Dlocalstatedir=/var -Dmandir=/usr/share/man -Dsbindir=/usr/bin -Dsharedstatedir=/var/lib -Dsysconfdir=/etc -Dauto_features=auto -Dbuildtype=plain -Dwrap_mode=nodownload
+[   0.007][v][cplayer] List of enabled features: alsa caca cdda cplugins cuda-hwaccel cuda-interop dmabuf-interop-gl dmabuf-wayland drm dvbin dvdnav egl egl-drm egl-wayland egl-x11 ffmpeg ffnvcodec gbm gl gl-x11 glibc-thread-name glob glob-posix gpl iconv jack javascript jpeg lcms2 libarchive libass libavdevice libbluray libdl libplacebo linux-fstatfs lua-5.1 memfd-create memrchr openal pipewire posix posix-shm ppoll pthread-condattr-setclock pulse rubberband rubberband-3 sdl2 sdl2-audio sdl2-gamepad sdl2-video uchardet vaapi vaapi-drm vaapi-wayland vaapi-x11 vapoursynth vdpau vdpau-gl-x11 vector vk-khr-display vt.h vulkan wayland wayland-protocols-1-32 wayland-protocols-1-38 wayland-protocols-1-39 wayland-protocols-1-41 x11 xv zimg zimg-st428 zlib
+[   0.007][d][global] home path: '' -> '-'
+[   0.007][d][global] user path: '~~home/' -> ''
+[   0.007][d][global] user path: '~~old_home/' -> ''
+[   0.007][v][cplayer] Setting option 'config' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'audio' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'mute' = 'yes' (flags = 8)
+[   0.007][v][cplayer] Setting option 'vo' = 'wlshm' (flags = 8)
+[   0.007][v][cplayer] Setting option 'fullscreen' = '' (flags = 8)
+[   0.007][v][cplayer] Setting option 'border' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'osc' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'osd-bar' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'osd-level' = '0' (flags = 8)
+[   0.007][v][cplayer] Setting option 'input-default-bindings' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'input-terminal' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'input-vo-keyboard' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'input-cursor' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'cursor-autohide' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'keepaspect' = 'yes' (flags = 8)
+[   0.007][v][cplayer] Setting option 'panscan' = '0' (flags = 8)
+[   0.007][v][cplayer] Setting option 'background-color' = '#000000' (flags = 8)
+[   0.007][v][cplayer] Setting option 'keep-open' = 'yes' (flags = 8)
+[   0.007][v][cplayer] Setting option 'idle' = 'yes' (flags = 8)
+[   0.007][v][cplayer] Setting option 'hwdec' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'vd-lavc-threads' = '4' (flags = 8)
+[   0.007][v][cplayer] Setting option 'really-quiet' = '' (flags = 8)
+[   0.007][v][cplayer] Setting option 'terminal' = 'no' (flags = 8)
+[   0.007][v][cplayer] Setting option 'log-file' = '/run/nuxel/preload-cinema-mpv.log' (flags = 8)
+[   0.007][v][cplayer] Setting option 'input-ipc-server' = '/run/nuxel/preload-cinema.sock' (flags = 8)
+[   0.007][v][cplayer] Setting option 'title' = 'Nuxel' (flags = 8)
+[   0.010][d][ytdl_hook] Loading lua script @ytdl_hook.lua...
+[   0.010][d][stats] Loading lua script @stats.lua...
+[   0.010][d][console] Loading lua script @console.lua...
+[   0.011][d][auto_profiles] Loading lua script @auto_profiles.lua...
+=== mpv log tail ===
+[   0.315][v][vo/wlshm] Video scale: 0.666667/0.666667
+[   0.315][v][vo/wlshm] OSD borders: l=0 t=120 r=0 b=120
+[   0.315][v][vo/wlshm] Video borders: l=0 t=120 r=0 b=120
+[   0.315][v][cplayer] first video frame after restart shown
+[   0.315][d][cplayer] starting video playback
+[   0.315][v][cplayer] playback restart complete @ 0.000000, audio=eof, video=playing
+[   0.315][v][vo/wlshm] using 7 threads for scaling
+[   0.352][v][vo/wlshm] Using zimg.
+[   0.352][v][vo/wlshm] Window size: 720x1520 (Borders: l=0 t=0 r=0 b=0)
+[   0.352][v][vo/wlshm] Video source: 1080x1920 (1:1)
+[   0.352][v][vo/wlshm] Video display: (0, 0) 1080x1920 -> (0, 120) 720x1280
+[   0.352][v][vo/wlshm] Video scale: 0.666667/0.666667
+[   0.352][v][vo/wlshm] OSD borders: l=0 t=120 r=0 b=120
+[   0.352][v][vo/wlshm] Video borders: l=0 t=120 r=0 b=120
+[   0.353][v][vo/wlshm] using 6 threads for scaling
+[   0.384][v][vo/wlshm] Using zimg.
+[   0.817][v][vo/wlshm] Window size: 720x1520 (Borders: l=0 t=0 r=0 b=0)
+[   0.817][v][vo/wlshm] Video source: 1080x1920 (1:1)
+[   0.817][v][vo/wlshm] Video display: (0, 0) 1080x1920 -> (0, 120) 720x1280
+[   0.817][v][vo/wlshm] Video scale: 0.666667/0.666667
+[   0.817][v][vo/wlshm] OSD borders: l=0 t=120 r=0 b=120
+[   0.817][v][vo/wlshm] Video borders: l=0 t=120 r=0 b=120
+[   0.818][v][vo/wlshm] using 7 threads for scaling
+[   0.856][v][vo/wlshm] Using zimg.
+[   0.857][v][vo/wlshm] using 6 threads for scaling
+[   0.888][v][vo/wlshm] Using zimg.
+[   5.083][v][lavf] EOF reached.
+[   6.207][v][vf] filter input EOF
+[   6.207][v][vf] filter output EOF
+[   6.250][v][cplayer] using demuxer frame duration for last frame
+[   6.250][d][cplayer] video EOF (status=3)
+[   6.299][d][cplayer] video EOF (status=3)
+[   6.315][v][cplayer] video EOF reached
+[   6.315][d][cplayer] video EOF (status=4)
+[   6.364][d][cplayer] Run command: quit, flags=64, args=[code="0"]
+[   6.364][v][cplayer] EOF code: 5  
+[   6.364][d][vd] Uninit decoder.
+[   6.364][d][ffmpeg/video] libopenh264: [OpenH264] this = 0x0x55a9a0fdc0, Info:CWelsDecoder::~CWelsDecoder()
+[   6.364][d][ffmpeg/video] libopenh264: [OpenH264] this = 0x0x55a9a0fdc0, Info:CWelsDecoder::UninitDecoderCtx(), openh264 codec version = .
+[   6.364][d][ffmpeg/video] libopenh264: [OpenH264] this = 0x0x55a9a0fdc0, Info:CWelsDecoder::UninitDecoder(), verify memory usage (0 bytes) after free..

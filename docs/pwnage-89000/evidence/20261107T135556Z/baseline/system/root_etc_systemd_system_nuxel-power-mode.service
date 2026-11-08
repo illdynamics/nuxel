@@ -1,0 +1,28 @@
+[Unit]
+Description=Nuxel power profile applier (evidence-only, persisted profile)
+Documentation=file:/etc/nuxel/power/README.md
+After=local-fs.target systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+# One-shot and harmless: it re-applies the profile the owner chose, then exits.
+# It never touches the reboot gate and never powers the device off.
+ConditionPathExists=/etc/nuxel/power/power.json
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=NUXEL_POWER_NO_BLOCK=1
+# `apply` reads power.json, maps the persisted profile to a REAL governor and a
+# cgroup weight, refuses to write anything not listed in the policy, and logs
+# what it observed. Exit 0 even when no knob is writable (the report says so).
+ExecStart=/usr/libexec/nuxel/nuxel-power-diag.sh apply-persisted
+ExecStartPost=/usr/libexec/nuxel/nuxel-power-diag.sh report --quiet
+Nice=5
+# Only the runtime knobs named in power.json are ever written; the unit carries
+# no partition, block-device or bootloader surface (NO FLASHING invariant).
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
