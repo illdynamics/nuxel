@@ -1,0 +1,25 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+rc=139
+nuxel-bwrap-compat: rewrote 28 fd-bind options
+[2 zypak-helper] Using spawn strategy test 0 as set by environment
+[2:1108/205653.272089:ERROR:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:45] drmGetDevices2() has not found any devices: No such file or directory (2)
+[2:1108/205653.291565:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[2:1108/205654.645766:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[2:1108/205654.645954:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+
+DevTools listening on ws://127.0.0.1:9223/devtools/browser/0c2fffa9-ad23-451d-8211-0fe67663f5c5
+[34:1108/205654.706650:ERROR:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:45] drmGetDevices2() has not found any devices: No such file or directory (2)
+Checking for beta autoupdate feature for deb/rpm distributions
+Found package-type: deb
+[electron-webauthn-linux] WebAuthn support initialized
+[7 zypak-sandbox] Dropping 0x55b14f86a0 (3) because of connection closed
+[7 zypak-sandbox] Host is gone, preparing to exit...
+[7 zypak-sandbox] Quitting Zygote...

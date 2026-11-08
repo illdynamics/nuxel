@@ -1,0 +1,21 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+fad9b1cd3fc592a1d19ffc0e13f26ed4866f328ba6224d0fc572f1bb69d6f1f9  root:root 755 37759 /usr/libexec/nuxel/nuxel-portal-chooser
+698d6f0626a7f0fea542d4fc158899f3ac64b0a113ccc48a1d7a27861b3f84e6  root:root 755 2286 /usr/bin/nuxel-portal-status
+7e7cc9f47818661bd837cd7b258efe730148b59ff37ddbccf71cd178550e4ef5  root:root 644 108 /usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.nuxel.service
+3340e3d517c89f91ca2e78fd000870044ff3d04b4a8dd9b297304e33e7d95766  root:root 644 125 /usr/share/xdg-desktop-portal/portals/nuxel.portal
+de1c138d8b35dbb34e838839b978ffc4098700e050f1d27ab00c95b9469f37ff  root:root 644 1181 /etc/xdg-desktop-portal/portals.conf
+90b5bc080f6ab5bf7563413cca001135a6dec4b5b91d80be609ad28d46fd2abe  root:root 644 292359 /usr/lib/nuxel/nuxel-bridge/api.py
+3292b552fa034a3990e1bfabdbb4e24ae35d1d329d26e731fdb71e9a9ce0b0f4  root:root 644 43160 /etc/nuxel/app-registry/app_registry.json
+5fc88fb741f7a0990dbb3b36c0461a9ab8cdd699aec1e03e59b7e4e5675ee67a  root:root 644 41126 /usr/share/nuxel/pwa/nuxel-apps/settings/index.html
+376e31d750644fb4ef525d0dfdc33039b3ee5cc95b2b043b02e651582382eef8  root:root 644 44798 /usr/share/nuxel/pwa/nuxel-apps/settings/settings.js
+60d2d990697565e79921b200d45d07e6018d3f6e49f25b1cadd54119acdcfdfc  root:root 644 13256 /usr/share/nuxel/pwa/nuxel-apps/settings/settings.css
+e337dd569fd5b6cdef9978ba05fd04d5eafa2be45a36bb32ba2c30c3428d8050  UNKNOWN:games 644 21602 /usr/share/nuxel/pwa/nuxel-apps/photos/js/photos.js
+2ca623fa4c56eb4e159af9e3b38e428d290462a8c88e1959c8c0e66b3304d1b7  UNKNOWN:games 644 25109 /usr/share/nuxel/pwa/nuxel-apps/files/js/files.js

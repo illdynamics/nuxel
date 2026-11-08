@@ -3,9 +3,9 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.8.1-beta** — _Direct LAN RDP/VNC, truthful security status and a mode-aware USB Tri-Link._
+**v0.8.2-beta** — _Direct LAN RDP/VNC, truthful security status and a mode-aware USB Tri-Link._
 
-> **v0.8.1-beta (2026-11-08).** XRDP and VNC are directly reachable on the
+> **v0.8.2-beta (2026-11-09).** XRDP and VNC are directly reachable on the
 > owner LAN on **TCP 13389** and **TCP 15900**, bound to the current trusted WLAN
 > IPv4 address. XRDP is TLS + PAM in a separate X11 session; VNC is PAM +
 > VeNCrypt TLS/RSA-AES and mirrors the active Phoc session. Every bridge/UI
@@ -160,7 +160,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 See [RELEASE-NOTES.md](RELEASE-NOTES.md) for user-facing release notes and
 [CHANGELOG.md](CHANGELOG.md) for the complete engineering history.
 
-## Honest Status — v0.8.1-beta
+## Honest Status — v0.8.2-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**
@@ -447,7 +447,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 | Document | Description |
 |---|---|
 | [RELEASE-NOTES.md](RELEASE-NOTES.md) | User-facing release notes and current release summary |
-| [CHANGELOG.md](CHANGELOG.md) | Full engineering changelog — v0.1.0 to v0.8.1-beta |
+| [CHANGELOG.md](CHANGELOG.md) | Full engineering changelog — v0.1.0 to v0.8.2-beta |
 | [REPORT-USBNET.md](REPORT-USBNET.md) | Evidence-based USB network blocker report and next step |
 | [GUI-TRI-LINK-QUICKSTART.md](GUI-TRI-LINK-QUICKSTART.md) | Direct-LAN XRDP 13389 / VNC 15900 and native mirror quickstart |
 | [TRI-LINK-CLI-QUICKSTART.md](TRI-LINK-CLI-QUICKSTART.md) | Serial, Wi-Fi SSH and USB SSH host CLI quickstart |

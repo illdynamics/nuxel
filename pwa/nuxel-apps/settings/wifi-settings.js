@@ -67,7 +67,21 @@
         status.textContent = 'Wi-Fi unavailable: check S10+ driver/firmware, rfkill and NetworkManager. ' + ((wifiState && wifiState.error) || '');
         stopPolling();
       } else {
-        status.textContent = 'Radio: ' + (wifiState.wifi_enabled ? 'ON' : 'OFF') + '\nDevice: ' + (wifiState.wifi_available ? 'detected' : 'not detected') + '\nState: ' + honestStage(wifiState.wifi_stage) + '\nInternet check: ' + (wifiState.connectivity === 4 ? 'NetworkManager full' : 'not confirmed') + '\nInterface: ' + (wifiState.wifi_devices || []).map(x => x.interface).join(', ');
+        const devices = wifiState.wifi_devices || [];
+        const link = devices.find(x => (x.ipv4 || []).length) || devices[0] || {};
+        const ipv4 = (wifiState.ipv4_addresses || []).join(', ') ||
+          (link.ipv4 || []).join(', ') || 'not assigned';
+        const ipv6 = (wifiState.ipv6_addresses || []).join(', ') ||
+          (link.ipv6 || []).join(', ') || 'not assigned';
+        status.textContent = 'Radio: ' + (wifiState.wifi_enabled ? 'ON' : 'OFF') +
+          '\nDevice: ' + (wifiState.wifi_available ? 'detected' : 'not detected') +
+          '\nState: ' + honestStage(wifiState.wifi_stage) +
+          '\nInternet check: ' + (wifiState.connectivity === 4 ? 'NetworkManager full' : 'not confirmed') +
+          '\nInterface: ' + devices.map(x => x.interface).join(', ') +
+          '\nIP address: ' + ipv4 +
+          '\nIPv6 address: ' + ipv6 +
+          (link.active_connection ? '\nNetwork: ' + link.active_connection : '') +
+          (link.mac ? '\nMAC: ' + link.mac : '');
       }
     } catch (e) { status.textContent = 'Network status unavailable: ' + e.message; stopPolling(); }
   }
@@ -151,4 +165,7 @@
     if (ok && ok.success === false) { form.hidden = false; }
   });
   document.querySelectorAll('[data-tab=network]').forEach(tab => tab.addEventListener('click', refresh));
+  // Deliberate shared surface for the Network Manager wrapper app (v0.8.2).
+  // It reuses this exact connector and never creates a second Wi-Fi backend.
+  window.NuxelWifiSettings = { refresh: refresh, mutate: mutate, stopPolling: stopPolling };
 })();

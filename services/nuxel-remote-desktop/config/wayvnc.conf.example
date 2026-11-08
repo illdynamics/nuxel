@@ -1,5 +1,5 @@
 # Nuxel VNC screen sharing example.
-# Direct owner-LAN listener on TCP 15900.  The privileged controller generates
+# Direct owner-LAN listener on TCP 5900.  The privileged controller generates
 # the live file with the current WLAN IPv4 address, enable_auth=true and
 # enable_pam=true; this example is never used as an unauthenticated fallback.
 #
@@ -8,7 +8,7 @@
 #   enable_pam=true uses /etc/pam.d/wayvnc for the local nuxel account.
 #   rsa_private_key_file enables the RSA-AES security type.
 address=127.0.0.1
-port=15900
+port=5900
 enable_auth=true
 enable_pam=true
 certificate_file=/etc/nuxel/remote-desktop/vnc/tls_cert.pem

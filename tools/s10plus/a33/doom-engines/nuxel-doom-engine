@@ -53,13 +53,36 @@ WAD="$(find_iwad)" || {
     exit 1
 }
 
+# Sound is ON by default.  The handset has a working PipeWire/PulseAudio route
+# (the same one every other Nuxel app uses); do not hardcode an ALSA device and
+# do not ship a silent default.  Wait for the session Pulse socket with a
+# bounded readiness check rather than sleeping for a fixed period.
+PULSE_SOCKET="${PULSE_SERVER#unix:}"
+case "$PULSE_SOCKET" in /*) ;; *) PULSE_SOCKET=/run/nuxel-wayland/pulse/native ;; esac
+i=0
+while [ "$i" -lt 30 ] && [ ! -S "$PULSE_SOCKET" ]; do
+  i=$((i + 1)); sleep 0.1
+done
+[ -S "$PULSE_SOCKET" ] || echo "Nuxel Doom: audio socket not ready; starting with the engine's own fallback" >&2
+
+# A fresh profile must never start silent.  Chocolate Doom stores both volumes
+# on a 0..15 scale and rewrites this file on exit, so existing user choices win.
+if [ ! -s "$STATE/chocolate-doom.cfg" ]; then
+  cat > "$STATE/chocolate-doom.cfg" <<'CFG'
+snd_samplerate 44100
+snd_channels 2
+sfx_volume 15
+music_volume 8
+use_libsamplerate 0
+CFG
+fi
+
 case "$ENGINE" in
   nuxel|chocolate|chocolate-doom)
     BIN=/usr/bin/chocolate-doom
     [ -x "$BIN" ] || { echo "Chocolate Doom is not installed" >&2; exit 1; }
-    # Disable music: the handset has no working OPL/MIDI route in this image.
     exec "$BIN" -iwad "$WAD" -config "$STATE/chocolate-doom.cfg" \
-         -savedir "$STATE/saves" -nomusic "$@"
+         -savedir "$STATE/saves" "$@"
     ;;
   crispy)
     exec /usr/lib/nuxel/nuxel-crispy-doom -iwad "$WAD" -fullscreen "$@"

@@ -12,10 +12,10 @@ Security boundary:
     array (no shell);
   * no password, private key or ADB secret is ever returned or logged;
   * the VNC and XRDP listeners are bound for direct owner-LAN/ZeroTier access;
-    RDP uses TLS + PAM.  VNC is unauthenticated because Jump Desktop 9.1.21
-    cannot negotiate wayvnc 0.9.1's RSA-AES/VeNCrypt and this build offers no
-    VNC password auth.  USB network remains BLOCKED_KERNEL_PANIC on the
-    recorded 4.14.253 kernel and this module never mutates configfs.
+    RDP uses TLS + PAM; VNC uses TigerVNC Xvnc with a real 8-character VncAuth
+    password (the combination Jump Desktop negotiates).  USB network remains
+    BLOCKED_KERNEL_PANIC on the recorded 4.14.253 kernel and this module never
+    mutates configfs.
 """
 
 from __future__ import annotations
@@ -47,18 +47,18 @@ DEFAULT_TRANSPORT = {
     "xrdp": "wlan",
     "scrcpy": "android-adb-usb",
 }
-FIXED_PORTS = {"vnc": 15900, "xrdp": 13389}
+FIXED_PORTS = {"vnc": 5900, "xrdp": 3389}
 BIND_ADDRESS = "trusted-lan-ipv4"
-VNC_PAM_FILE = Path(os.environ.get("NUXEL_VNC_PAM", "/etc/pam.d/wayvnc"))
+VNC_PASS_FILE = Path(os.environ.get("NUXEL_VNC_PASS_FILE", "/etc/nuxel/remote-desktop/vnc/vnc.passwd"))
 
 KNOWN_BAD_USB_KERNELS = {"4.14.253"}
 USB_PANIC_EVIDENCE = "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/"
 HELPER = os.environ.get("NUXEL_REMOTE_CTL", "/usr/local/libexec/nuxel/nuxel-remote-desktop-ctl")
 STATE_DIR = Path(os.environ.get("NUXEL_REMOTE_STATE_DIR", "/run/nuxel/remote-desktop"))
 PREF_FILE = Path(os.environ.get("NUXEL_REMOTE_PREF_FILE", "/var/lib/nuxel/remote-desktop/preferences.json"))
-VNC_CONFIG = Path(os.environ.get("NUXEL_VNC_CONFIG", "/etc/nuxel/remote-desktop/vnc/wayvnc.conf"))
-VNC_CTL = os.environ.get("NUXEL_VNC_CTL", "/usr/bin/wayvncctl")
-VNC_SOCKET = os.environ.get("NUXEL_VNC_SOCKET", "/run/nuxel-wayland/wayvncctl")
+VNC_CONFIG = Path(os.environ.get("NUXEL_VNC_CONFIG", "/etc/nuxel/remote-desktop/vnc/xvnc.conf"))
+VNC_CTL = os.environ.get("NUXEL_VNC_CTL", "/usr/bin/Xvnc")
+VNC_SOCKET = os.environ.get("NUXEL_VNC_SOCKET", "")
 VNC_SERVICE = "nuxel-remote-vnc.service"
 XRDP_SERVICES = ("xrdp.service", "xrdp-sesman.service")
 XRDP_CERT = Path(os.environ.get("NUXEL_XRDP_CERT", "/etc/xrdp/nuxel-cert.pem"))
@@ -369,6 +369,7 @@ def _cert_fingerprint(path: Optional[str]) -> Optional[str]:
 
 
 def _wayvnc_config() -> Dict[str, Any]:
+    """Parse the Xvnc config (kept name for callers/tests)."""
     try:
         text = VNC_CONFIG.read_text()
     except OSError:
@@ -379,16 +380,25 @@ def _wayvnc_config() -> Dict[str, Any]:
         if line and not line.startswith("#") and "=" in line:
             k, v = line.split("=", 1)
             values[k.strip()] = v.strip()
+    password_file = values.get("password_file") or ""
+    password_ok = False
+    try:
+        password_ok = Path(password_file).is_file() and Path(password_file).stat().st_size >= 8
+    except OSError:
+        pass
     return {
         "configured": bool(values),
         "address": values.get("address"),
         "port": int(values["port"]) if values.get("port", "").isdigit() else None,
-        "enable_auth": values.get("enable_auth", "").lower() == "true",
-        "enable_pam": values.get("enable_pam", "").lower() == "true",
-        "certificate_file": values.get("certificate_file"),
-        "private_key_file": values.get("private_key_file"),
-        "rsa_private_key_file": values.get("rsa_private_key_file"),
-        "relax_encryption": values.get("relax_encryption", "").lower() == "true",
+        "security_types": values.get("security_types", ""),
+        "password_file": password_file,
+        "password_file_ok": password_ok,
+        "enable_auth": values.get("security_types") == "VncAuth" and password_ok,
+        "enable_pam": False,
+        "certificate_file": None,
+        "private_key_file": None,
+        "rsa_private_key_file": None,
+        "relax_encryption": False,
     }
 
 
@@ -422,35 +432,29 @@ VNC_REQUIRED_PROTOCOLS = (
 
 
 def _vnc_clients() -> Dict[str, Any]:
-    ctl = _which(VNC_CTL) or VNC_CTL
-    if not os.path.exists(ctl):
-        return {"count": 0, "available": False, "error": "wayvncctl missing"}
-    args = [ctl, "-j"]
-    if os.path.exists(VNC_SOCKET):
-        args.extend(["-S", VNC_SOCKET])
-    args.append("client-list")
-    rc, out, err = _run(args, timeout=3, env=_wayland_env())
+    """Count established TCP peers on the VNC port from /proc/ss."""
+    rc, out, _ = _run(["ss", "-tnH", "state", "established"], timeout=3)
     if rc != 0:
-        return {"count": 0, "available": False, "error": (err or out).strip()[:200]}
-    try:
-        doc = json.loads(out)
-    except json.JSONDecodeError:
-        return {"count": 0, "available": False, "error": "client-list was not JSON"}
-    clients = doc.get("clients") if isinstance(doc, dict) else doc
-    if not isinstance(clients, list):
-        clients = []
-    return {"count": len(clients), "available": True,
-            "clients": [{"id": c.get("id"), "address": c.get("address"),
-                         "username": c.get("username")}
-                        for c in clients if isinstance(c, dict)]}
+        return {"count": 0, "available": False, "error": "ss unavailable"}
+    clients = []
+    for line in out.splitlines():
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        if not fields[3].endswith(":5900"):
+            continue
+        peer = fields[4].rsplit(":", 1)[0].strip("[]") if len(fields) > 4 else None
+        clients.append({"address": peer, "id": None, "username": "nuxel"})
+    return {"count": len(clients), "available": True, "clients": clients}
 
 
 def _vnc_version() -> Optional[str]:
-    exe = _which("wayvnc")
+    exe = _which("Xvnc")
     if not exe:
         return None
-    rc, out, err = _run([exe, "--version"], timeout=3)
-    return (out or err).strip() or None
+    rc, out, err = _run([exe, "-version"], timeout=3)
+    text = (out or err).strip()
+    return text.splitlines()[0] if text else "TigerVNC Xvnc installed"
 
 
 def _xrdp_fingerprint() -> Optional[str]:
@@ -502,54 +506,46 @@ def _state_doc() -> Dict[str, Any]:
 
 def _vnc_status() -> Dict[str, Any]:
     version = _vnc_version()
-    protocols = wayland_protocols()
-    missing = [p for p in VNC_REQUIRED_PROTOCOLS if p not in set(protocols.get("protocols") or [])]
     active = _systemctl_active(VNC_SERVICE)
     addrs = _listener_addresses(FIXED_PORTS["vnc"])
     listening = bool(addrs)
     cfg = _wayvnc_config()
     configured_address = cfg.get("address")
     listener_address = addrs[0] if len(addrs) == 1 else None
-    listener_verified = bool(active and listening and configured_address in addrs)
+    listener_verified = bool(active and listening and (configured_address is None
+                                                       or configured_address in addrs))
     clients = _vnc_clients() if listening else {"count": None, "available": False}
-    auth_enabled = bool(cfg.get("enable_auth") and cfg.get("enable_pam"))
-    cert_fp = _cert_fingerprint(cfg.get("certificate_file"))
-    security_verified = bool(
-        auth_enabled and not cfg.get("relax_encryption")
-        and cfg.get("certificate_file") and cfg.get("private_key_file")
-        and cert_fp and listener_verified and not missing)
+    auth_enabled = bool(cfg.get("enable_auth"))
+    password_ok = bool(cfg.get("password_file_ok"))
+    security_verified = bool(auth_enabled and password_ok and listener_verified)
     unit_text = _read("/etc/systemd/system/nuxel-remote-vnc.service") or ""
     input_enabled = "--disable-input" not in unit_text
-    pam_ok = _read(VNC_PAM_FILE) is not None and "user = nuxel" in (_read(VNC_PAM_FILE) or "")
     if not version:
-        state, reason = "UNSUPPORTED", "wayvnc is not installed"
-    elif missing:
-        state = "UNSUPPORTED"
-        reason = "Phoc does not advertise: " + ", ".join(missing)
+        state, reason = "UNSUPPORTED", "TigerVNC Xvnc is not installed"
     elif listening and not active:
         state = "ERROR"
-        reason = ("A wayvnc listener is open but the managed unit is not active; "
+        reason = ("An Xvnc listener is open but the managed unit is not active; "
                   "stop the unmanaged process and use the Bridge start action")
     elif active and listening and not auth_enabled:
         state = "ERROR"
-        reason = "The effective wayvnc config has authentication disabled; refusing to report READY"
+        reason = "The effective VNC config does not have VncAuth enabled; refusing to report READY"
     elif clients.get("count"):
         state = "CONNECTED"
-        reason = "An authenticated direct-LAN VNC client is connected"
+        reason = "A password-authenticated direct-LAN VNC client is connected"
     elif not active or not listening:
         state = "OFF"
         reason = "Service is stopped by default"
     else:
         state = "WAITING_FOR_CLIENT"
-        reason = "Authenticated wayvnc is capturing the active Phoc output"
+        reason = "VNC password auth is listening on the separate X11/Openbox session"
     st = _state_doc().get("vnc", {})
     return {
         "service": "vnc",
-        "title": "VNC Screen Sharing",
+        "title": "VNC Remote Desktop",
         "state": state,
         "reason": reason,
-        "session_mode": "current-wayland-session",
-        "session_mode_label": "Mirrors the active Phoc/Wayland session",
+        "session_mode": "separate-x11-session",
+        "session_mode_label": "Separate X11/Openbox session (does not mirror the physical Phoc display)",
         "preferred_transport": _preferred("vnc"),
         "active_transport": "wlan" if active else None,
         "interface": (network_state().get("interface") if active else None),
@@ -563,28 +559,28 @@ def _vnc_status() -> Dict[str, Any]:
         "authenticated_clients": clients.get("count"),
         "clients": clients.get("clients", []),
         "client_status_available": bool(clients.get("available")),
-        "authentication": "PAM + VeNCrypt TLS/RSA-AES" if auth_enabled else "UNAUTHENTICATED",
-        "authentication_mode": "PAM" if auth_enabled else "none",
-        "encrypted": bool(auth_enabled and cert_fp),
-        "encryption_mode": "TLS (VeNCrypt) + RSA-AES" if auth_enabled else "none",
-        "encrypted_detail": ("TLS certificate and RSA-AES credentials with PAM for the local "
-                             "nuxel account" if auth_enabled else "authentication is disabled"),
-        "tls_fingerprint": cert_fp,
-        "certificate_fingerprint": cert_fp,
+        "authentication": "VNC password (TigerVNC VncAuth)" if auth_enabled else "UNAUTHENTICATED",
+        "authentication_mode": "VNC password" if auth_enabled else "none",
+        "vnc_password_configured": password_ok,
+        "encrypted": False,
+        "encryption_mode": "RFB VncAuth (challenge-response; no TLS)",
+        "encrypted_detail": ("VNC password challenge-response; suitable for the trusted owner LAN "
+                             "and ZeroTier only" if auth_enabled else "authentication is disabled"),
+        "tls_fingerprint": None,
+        "certificate_fingerprint": None,
         "security_verified": security_verified,
         "input_enabled": input_enabled,
-        "wayland_protocols_ok": not missing,
+        "wayland_protocols_ok": True,
         "privacy_gate_ok": security_verified,
-        "pam_policy_ok": pam_ok,
+        "pam_policy_ok": password_ok,
         "installed": bool(version),
         "version": version,
-        "protocols": protocols,
-        "missing_protocols": missing,
+        "protocols": {"available": True, "protocols": [], "source": "not required for Xvnc"},
+        "missing_protocols": [],
         "started_at": st.get("started_at"),
-        "last_error": None if version and not missing and auth_enabled else reason,
+        "last_error": None if version and auth_enabled else reason,
         "usb": usb_network_status(),
     }
-
 
 def _xrdp_status() -> Dict[str, Any]:
     xrdp = _which("xrdp")
@@ -710,7 +706,7 @@ def _scrcpy_status() -> Dict[str, Any]:
         state = "NOT_APPLICABLE_NATIVE_NUXEL"
         reason = ("scrcpy supports Android ADB targets. This handset runs native "
                   "Nuxel Linux, not Android; use the authenticated native VNC "
-                  "screen mirror on TCP 15900.")
+                  "screen mirror on TCP 5900.")
     elif not targets:
         state, reason = "NO_ANDROID_TARGET", "No Android ADB target is attached"
     elif not scrcpy:
@@ -744,11 +740,11 @@ def _scrcpy_status() -> Dict[str, Any]:
         "scrcpy_version": scrcpy,
         "native_nuxel": native_nuxel,
         "native_nuxel_note": ("scrcpy is not a native Nuxel screen-sharing protocol. "
-                              "Use the authenticated VNC mirror on TCP 15900."),
+                              "Use the VNC password-authenticated remote desktop on TCP 5900."),
         "native_mirror": {
             "service": "vnc", "host": network_state().get("address"),
             "port": FIXED_PORTS["vnc"], "protocol": "tcp",
-            "direct_lan": True, "session_mode": "current-wayland-session",
+            "direct_lan": True, "session_mode": "separate-x11-session",
         },
         "usb": usb_network_status(),
     }
@@ -834,9 +830,9 @@ def connection_info(service: str) -> Dict[str, Any]:
         return {
             "success": True, "service": "scrcpy", "native": True,
             "host": host, "port": FIXED_PORTS["vnc"], "protocol": "tcp",
-            "session": "current-wayland-session",
-            "detail": ("Native Nuxel is not an Android ADB target. Use the authenticated "
-                       "VNC mirror for the active Phoc session."),
+            "session": "separate-x11-session",
+            "detail": ("Native Nuxel is not an Android ADB target. Use the password-"
+                       "authenticated VNC remote desktop on TCP 5900."),
             "targets": _scrcpy_status().get("targets", []),
             "ssh_tunnel_command": None, "password_included": False,
         }
@@ -860,11 +856,10 @@ def connection_info(service: str) -> Dict[str, Any]:
         "username": "nuxel",
         "password_included": False,
         "tls_fingerprint": fp,
-        "session_mode": ("separate-x11-session" if service == "xrdp"
-                         else "current-wayland-session"),
+        "session_mode": "separate-x11-session",
         "note": ("Direct owner-LAN listener on the current trusted WLAN IPv4 address. "
-                 "RDP uses TLS + PAM; VNC uses VeNCrypt TLS/RSA-AES + PAM. No SSH "
-                 "tunnel is required on the trusted LAN. Never port-forward 13389/15900 "
+                 "RDP uses TLS + PAM; VNC uses TigerVNC VncAuth challenge-response. No SSH "
+                 "tunnel is required on the trusted LAN. Never port-forward 3389/5900 "
                  "to the Internet."),
     }
 

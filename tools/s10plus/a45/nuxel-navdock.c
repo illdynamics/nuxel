@@ -261,9 +261,15 @@ static void render_frame(void) {
 }
 
 /* ---- native dock lifecycle ------------------------------------------------ */
+static int strip_input_height(void) {
+  /* PWNAGE-94000: landscape thumbs need a wider bottom edge band.  The
+   * grabber stays 14 px tall; only the input region grows (56 vs 40 px). */
+  return (width >= 500 || out_w > out_h) ? 56 : NAV_STRIP_INPUT_HEIGHT;
+}
+
 static void dock_create(void) {
   if (surface || !compositor || !shm || !layer_shell || !output) return;
-  int logical_h = strip_mode ? NAV_STRIP_INPUT_HEIGHT : NAV_HEIGHT;
+  int logical_h = strip_mode ? strip_input_height() : NAV_HEIGHT;
   surface = wl_compositor_create_surface(compositor);
   if (!surface) { audit("DOCK_SURFACE_FAIL"); return; }
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(
@@ -370,8 +376,9 @@ static void cmd_pump(void) {
 
 static void process_command(const char *q) {
   if (!q || !*q) return;
-  if (!strcmp(q, "hide")) dock_hide();
+  if (!strcmp(q, "hide") || !strcmp(q, "strip")) dock_hide();
   else if (!strcmp(q, "show")) dock_show();
+  else if (!strcmp(q, "reveal")) dock_gesture_reveal();
   else if (!strcmp(q, "status")) {
     audit("NAV_DOCK_STATUS visible=%d surface=%d locked=%d",
           dock_visible, surface != NULL, lock_state_read());

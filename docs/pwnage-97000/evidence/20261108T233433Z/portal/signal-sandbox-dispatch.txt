@@ -1,0 +1,20 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+SIGNAL_PID=85433
+srwxr-xr-x. 1 nuxel nuxel 0 Nov  9 00:42 /proc/85433/root/run/flatpak/bus
+{"cancelled": false, "frontend": true, "request_path": "/org/freedesktop/portal/desktop/request/1_249/t", "response": 0, "results": {"uris": ["file:///run/user/1000/doc/d9a3d8d/nuxel-file-handler-test.txt"]}, "success": true, "uris": ["file:///run/user/1000/doc/d9a3d8d/nuxel-file-handler-test.txt"]}
+---state---
+{"autotest": "files", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2498, "last_outcome": "selected", "last_request": {"app_id": "org.signal.Signal", "duration_ms": 2498, "kind": "open", "outcome": "selected", "selected_count": 1, "source": "files"}, "last_source": "files", "pid": 85383, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181349.0214014, "version": "1.1.0"}
+---grant-inside-sandbox---
+URI=file:///run/user/1000/doc/d9a3d8d/nuxel-file-handler-test.txt
+nuxel-bwrap-compat: rewrote 27 fd-bind options
+Nuxel File Handler test 2026-11-08T23:36:10Z
+Select this harmless file to verify the picker.
+SIGNAL_TEST_DONE

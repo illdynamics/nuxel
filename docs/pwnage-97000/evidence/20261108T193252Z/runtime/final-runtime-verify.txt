@@ -1,0 +1,70 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+validate_rc=0
+Running as unit: nuxel-xdg-portal-p97000.service; invocation ID: 011ed8d0df5a4ae9823e396e16fec5d2
+Running as unit: nuxel-chooser-p97000-1794168116.service; invocation ID: eac17d8b35e844249ac0aa02ec5adfc9
+=== RPC GET ===
+{
+  "success": true,
+  "settings": {
+    "schema_version": 1,
+    "global_picker_policy": "ask",
+    "app_picker_overrides": {
+      "com.rtosta.zapzap": "inherit",
+      "org.ferdium.Ferdium": "inherit",
+      "org.signal.Signal": "inherit"
+    },
+    "mime_defaults": {}
+  },
+  "settings_path": "/home/nuxel/.config/nuxel/file-handlers.json",
+  "mimeapps_path": "/home/nuxel/.config/mimeapps.list",
+  "portal": {
+    "schema_version": 1,
+    "desktop": "Nuxel",
+    "portals_conf": "/etc/xdg-desktop-portal/portals.conf",
+    "filechooser_backend": "nuxel",
+    "filechooser_backend_descriptor": "/usr/share/xdg-desktop-portal/portals/nuxel.portal",
+    "frontend_available": true,
+    "frontend_owner": "572610",
+    "backend_available": true,
+    "backend_owner": "572616",
+    "nuxel_backend_owner": "572616",
+    "gtk_backend_owner": "369091",
+    "documents_portal_available": true,
+    "documents_portal_owner": "369248",
+    "bus_error": null,
+    "last_chooser": {
+      "autotest": "files",
+      "backend": "nuxel-portal-chooser",
+      "counts": {
+        "cancelled": 0,
+        "errors": 0,
+        "requests": 0,
+        "selected": 0
+      },
+      "last_outcome": "idle",
+      "last_source": "none",
+      "pid": 572616,
+      "presented": false,
+      "schema_version": 2,
+      "selected_count": 0,
+      "service": "org.freedesktop.impl.portal.desktop.nuxel",
+      "state": "ready",
+      "updated_at": 1794168117.2069285,
+      "version": "1.1.0"
+    },
+    "note": "org.nuxel.Portal is the hardware-permission broker; it is not the FileChooser frontend"
+  }
+}
+APPS 70
+=== RPC TEST PICKER ===
+{"result": {"success": false, "error": "test_client_failed", "rc": 0, "detail": "{\n  \"cancelled\": false,\n  \"frontend\": true,\n  \"request_path\": \"/org/freedesktop/portal/desktop/request/1_373/t\",\n  \"response\": 0,\n  \"results\": {\n    \"uris\": [\n      \"file:///home/nuxel/Documents/nuxel-file-handler-test.txt\"\n    ]\n  },\n  \"success\": true,\n  \"uris\": [\n    \"file:///home/nuxel/Documents/nuxel-file-handler-test.txt\"\n  ]\n}", "sample_file": "/home/nuxel/Documents/nuxel-file-handler-test.txt"}}
+=== STATUS VERSION ===
+org.freedesktop.impl.portal.desktop.nuxel 1.1.0

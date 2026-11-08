@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 18;
+const NUXEL_REGISTRY_VERSION = 19;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -173,6 +173,18 @@ const NUXEL_APPS = {
         url: '/pwa/nuxel-apps/permissions/index.html',
         description: 'Permission manager (same policy service as Settings)',
         capabilities: ['system:inspect'],
+        docked: false,
+    },
+    'org.nuxel.NetworkManager': {
+        id: 'org.nuxel.NetworkManager',
+        name: 'Network Manager',
+        icon: '🌐',
+        color: '#2F9EE8',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/network-manager/index.html',
+        description: 'Owner wrapper around the working NetworkManager Wi-Fi connector, plus private DNS, VPN and ZeroTier controls',
+        capabilities: ['network:manage'],
         docked: false,
     },
     'org.nuxel.Terminal': {
@@ -497,9 +509,69 @@ const NUXEL_APP_ICON_ASSETS = {
 
 /* PWNAGE-90000: immutable built-in icon manifest.
    Every URL here is a repository-owned, versioned asset (the ?v= marker is the
-   invalidation key).  Mutable owner artwork is deliberately NOT in this map. */
+   invalidation key).  Mutable owner artwork is deliberately NOT in this map.
+
+   PWNAGE-93000 icon-origin policy:
+     native Nuxel app   -> Nuxel artwork (this manifest / Nuxel iconAsset)
+     GTK app            -> original application icon (bridge desktop resolver)
+     Flatpak app        -> original application icon (flatpak export)
+     PWA/browser app    -> existing intended PWA icon policy
+     unknown app        -> safe glyph fallback only                      */
+function nuxelIsNuxelOwned(app) {
+    if (!app || app.flatpak_id) return false;
+    const id = String(app.id || '');
+    if (/^nuxel-/.test(id)) return true;
+    if (!/^org\.nuxel\./.test(id)) return false;
+    const bin = String(app.native_binary || '');
+    if (bin && /\.py$/.test(bin)) return true;          // Camera/Browser helpers
+    return ['native', 'pwa'].includes(String(app.type || ''));
+}
+
+function nuxelIsExternalNative(app) {
+    if (!app) return false;
+    if (app.flatpak_id) return true;
+    if (String(app.install_source || '').startsWith('flatpak:')) return true;
+    const bin = String(app.native_binary || '');
+    if (bin === '/usr/bin/flatpak' || /\/flatpak$/.test(bin)) return true;
+    if (nuxelIsNuxelOwned(app)) return false;
+    // A system desktop entry / RPM binary is a GTK-native app, not Nuxel art.
+    return String(app.type || '') === 'native' &&
+        !!(app.desktop_entry || app.native_binary || /^org\.gnome\.|^org\.mozilla\.|^org\.videolan\.|^com\./.test(String(app.id || '')));
+}
+
+function nuxelIconOrigin(app) {
+    if (!app) return 'unknown';
+    if (nuxelIsNuxelOwned(app)) return 'nuxel';
+    if (nuxelIsExternalNative(app)) {
+        return app.flatpak_id || String(app.install_source || '').startsWith('flatpak:')
+            ? 'flatpak' : 'gtk';
+    }
+    return 'pwa';
+}
+
+function nuxelOriginalIconSrc(app) {
+    const id = String((app && app.id) || '');
+    const candidate = String((app && app.iconAsset) || '');
+    // Never feed the Nuxel decorative pack back to a GTK/Flatpak app.  The
+    // bridge resolves the real desktop/flatpak icon into a stable URL.
+    if (candidate && !candidate.includes('/nuxel-applications-icon-pack/')) {
+        // The launcher document is served by :8000; bridge-only endpoints must
+        // be absolute or WebKit requests them from the static server (404 ->
+        // fallback glyph, which looked like a missing original icon).
+        if (candidate.startsWith('/api/v1/')) return 'http://127.0.0.1:8080' + candidate;
+        return candidate;
+    }
+    if (!id) return '';
+    return 'http://127.0.0.1:8080/api/v1/apps/icon/' + encodeURIComponent(id);
+}
+
 function nuxelBuiltinIcon(app) {
-    return (app && (app.iconAsset || NUXEL_APP_ICON_ASSETS[app.id])) || '';
+    if (!app) return '';
+    const kind = nuxelIconOrigin(app);
+    if (kind === 'nuxel' || kind === 'pwa') {
+        return app.iconAsset || NUXEL_APP_ICON_ASSETS[app.id] || '';
+    }
+    return nuxelOriginalIconSrc(app);
 }
 
 /* Render a stable image node with an immediate, correct fallback glyph.
@@ -520,11 +592,12 @@ function nuxelAppIcon(app, opts) {
         '<img class="nuxel-icon-img" src="' + esc(src) + '" alt="' + name + '" width="48" height="48" ' +
         'loading="' + loading + '" fetchpriority="' + priority + '" draggable="false" decoding="async" ' +
         'data-icon-src="' + esc(src) + '" data-icon-state="pending" ' +
-        'onload="this.dataset.iconState=\'loaded\';var f=this.previousElementSibling;if(f)f.hidden=true" ' +
+        'onload="this.dataset.iconState=\'loaded\';var f=this.previousElementSibling;if(f){f.hidden=true;f.remove();}" ' +
         'onerror="this.dataset.iconState=\'error\';var f=this.previousElementSibling;if(f)f.hidden=false">';
 }
 try {
     window.NuxelAppIcon = nuxelAppIcon;
+    window.NuxelIconOrigin = nuxelIconOrigin;
     window.NuxelIconManifest = Object.freeze(Object.assign({}, NUXEL_APP_ICON_ASSETS));
 } catch (e) { /* non-DOM registry test */ }
 

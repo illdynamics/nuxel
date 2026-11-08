@@ -140,7 +140,10 @@ def test_immutable_icon_cache_first_and_version_lockstep():
     manifest = json.loads(read("pwa/nuxel-home/manifest.json"))
     cache = manifest["nuxel"]["cache_version"]
     assert f"const CACHE_VERSION = '{cache}'" in sw
-    assert cache == "v080-p90000"
+    # PWNAGE-93000 advanced the service-worker namespace so the notification
+    # and sound-icon bundle cannot be served stale from a v080 cache.
+    assert cache.startswith("v") and "-p" in cache
+    assert cache != "v080-p90000"
 
 
 # ---- P90-02 preload ownership / instrumentation --------------------------

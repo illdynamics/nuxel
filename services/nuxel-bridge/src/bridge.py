@@ -27,6 +27,7 @@ import sys
 import json
 import logging
 import math
+import re
 import uuid
 import os
 try:
@@ -120,7 +121,7 @@ def read_battery_status():
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.1-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.2-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -710,6 +711,52 @@ class NetworkManagerConnector:
 
     # ------------------------------------------------------------- public API
 
+    def _interface_link_facts(self, interface):
+        """Live link facts from the kernel for one interface.
+
+        The Settings Wi-Fi panel and DevMgmt both show these; returning the
+        kernel's own address list avoids a second, guessed copy of the IP.
+        """
+        facts = {"mac": "", "ipv4": [], "ipv6": [], "state": ""}
+        try:
+            with open("/sys/class/net/%s/address" % interface, encoding="utf-8") as fh:
+                facts["mac"] = fh.read().strip()
+        except OSError:
+            pass
+        try:
+            with open("/sys/class/net/%s/operstate" % interface, encoding="utf-8") as fh:
+                facts["state"] = fh.read().strip()
+        except OSError:
+            pass
+        try:
+            proc = subprocess.run(["ip", "-o", "addr", "show", "dev", interface],
+                                  capture_output=True, text=True, timeout=3)
+            if proc.returncode == 0:
+                for line in proc.stdout.splitlines():
+                    m = re.search(r"\binet6?\s+([0-9A-Fa-f:.]+)/(\d+)", line)
+                    if not m:
+                        continue
+                    value = "%s/%s" % (m.group(1), m.group(2))
+                    if " inet6 " in (" " + line + " "):
+                        facts["ipv6"].append(value)
+                    else:
+                        facts["ipv4"].append(value)
+        except (OSError, subprocess.SubprocessError):
+            pass
+        return facts
+
+    def _active_connection_id(self, device_path):
+        try:
+            _, device_props = self._device(device_path)
+            conn_path = device_props.Get(self.DEV_IFACE, 'ActiveConnection')
+            if not conn_path or str(conn_path) == '/':
+                return ''
+            conn = self.bus.get_object(self.NM_BUS, conn_path)
+            props = dbus.Interface(conn, self.PROPS)
+            return str(props.Get('org.freedesktop.NetworkManager.Connection.Active', 'Id') or '')
+        except Exception:
+            return ''
+
     def get_status(self):
         if not self.connected and not self.connect():
             return {'available': False, 'connected': False,
@@ -726,8 +773,14 @@ class NetworkManagerConnector:
                 _, device_props = self._device(device_path)
                 interface = str(device_props.Get(self.DEV_IFACE, 'Interface'))
                 state = int(device_props.Get(self.DEV_IFACE, 'State'))
-                wifi_devices.append({'interface': interface, 'state': state,
-                                     'path': device_path})
+                link = self._interface_link_facts(interface)
+                wifi_devices.append({
+                    'interface': interface, 'state': state, 'path': device_path,
+                    'mac': link['mac'], 'operstate': link['state'],
+                    'ipv4': link['ipv4'], 'ipv6': link['ipv6'],
+                    'ipv4_address': link['ipv4'][0] if link['ipv4'] else '',
+                    'active_connection': self._active_connection_id(device_path),
+                })
             active = [row for row in wifi_devices if row['state'] == 100]
             highest_state = max((row['state'] for row in wifi_devices), default=None)
             # Device state -> honest lifecycle stage (NM DeviceState values).
@@ -765,6 +818,10 @@ class NetworkManagerConnector:
                 'wifi_state': wifi_state,
                 'wifi_stage': wifi_stage,
                 'wifi_devices': wifi_devices,
+                'active_connection': next((d.get('active_connection') for d in wifi_devices
+                                           if d.get('active_connection')), ''),
+                'ipv4_addresses': [a for d in wifi_devices for a in d.get('ipv4', [])],
+                'ipv6_addresses': [a for d in wifi_devices for a in d.get('ipv6', [])],
             }
         except Exception as e:
             return {'available': False, 'connected': False,
@@ -2677,7 +2734,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.8.1-beta...")
+    logger.info("Starting Nuxel Bridge v0.8.2-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

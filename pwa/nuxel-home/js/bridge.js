@@ -137,6 +137,18 @@
                 return { success: false, notifications: [] };
             }
         },
+        markNotificationRead: async function (id) {
+            return await shared().call('notifications', 'mark-read', { app_id: this.appId, id: id });
+        },
+        markNotificationUnread: async function (id) {
+            return await shared().call('notifications', 'mark-unread', { app_id: this.appId, id: id });
+        },
+        archiveNotification: async function (id) {
+            return await shared().call('notifications', 'archive', { app_id: this.appId, id: id });
+        },
+        unarchiveNotification: async function (id) {
+            return await shared().call('notifications', 'unarchive', { app_id: this.appId, id: id });
+        },
     };
 
     global.bridge = bridge;

@@ -1,6 +1,18 @@
 // Nuxel Home — App Launcher v0.1.1
 // Drag-and-drop reorder, persistent order, tap-to-launch
 
+// PWNAGE-96000: event-only drawer diagnostics through the existing nuxelDiag
+// channel.  No timer, no user content, no per-scroll logging.
+function nuxelDrawerPerf(fields) {
+    try {
+        const line = 'DRAWER_PERF ' + JSON.stringify(fields || {});
+        const diag = window.webkit && window.webkit.messageHandlers &&
+            window.webkit.messageHandlers.nuxelDiag;
+        if (diag) diag.postMessage(line);
+        else if (console && console.log) console.log('[perf] ' + line);
+    } catch (e) { /* diagnostics must never break the drawer */ }
+}
+
 class Launcher {
     constructor() {
         this.appList = document.getElementById('app-list');
@@ -639,6 +651,7 @@ class Launcher {
         // dock shortcuts.  The previous implementation rendered every app and
         // therefore duplicated the dock inside the drawer.  Hidden shortcuts
         // remain discoverable and may be restored.
+        const renderT0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const list = this._drawerContainer();
         if (!list) return;
         const dockedIds = this._dockAppIds();
@@ -648,13 +661,20 @@ class Launcher {
         const signature = apps.map((app) =>
             [app.id, app.name, app.icon, app.color, app.category, app.type, app.docked ? '1' : '0'].join(':')
         ).join('|');
-        if (!force && signature === this._drawerSignature && list.childElementCount) return;
+        if (!force && signature === this._drawerSignature && list.childElementCount) {
+            this._drawerLastRender = { ms: 0, rebuilt: false, nodes: list.childElementCount };
+            return;
+        }
         this._drawerSignature = signature;
         list.innerHTML = apps.map((app) =>
             '<div class="app-item drawer-app" data-app-id="' + app.id + '" data-drawer-entry="1" role="button" tabindex="0" aria-label="' + app.name + '">' +
             '<div class="app-icon" style="background:' + app.color + '33">' + this._appIcon(app) + '</div>' +
             '<span class="app-label">' + app.name + '</span></div>'
         ).join('');
+        this._drawerLastRender = {
+            ms: Math.round((((typeof performance !== 'undefined' ? performance.now() : Date.now()) - renderT0) * 10)) / 10,
+            rebuilt: true, nodes: list.childElementCount,
+        };
     }
 
     addToHome(appId, dropIndex) {
@@ -1346,6 +1366,7 @@ class Launcher {
 
     openDrawer() {
         if (this.drawerOpen) return;
+        const openT0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         this.drawerOpen = true;
         document.body.classList.add('app-drawer-open');
         this._renderDrawerApps();
@@ -1361,10 +1382,26 @@ class Launcher {
         }
         if (this.appList) this.appList.hidden = true;
         this._updatePageDots(this._pageCount());
-        if (window.NuxelWidgets) { try { window.NuxelWidgets.renderPage(this.currentPage); } catch (e) {} }
+        // PWNAGE-96000: do NOT re-render the Home widgets underneath the open
+        // drawer.  They are already rendered by _renderAppGrid/page changes and
+        // are fully covered here; rebuilding them added layout/paint work to
+        // every drawer open without a visible result.
         try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
+        const raf = (window.requestAnimationFrame || (fn => setTimeout(fn, 0)));
+        raf(() => raf(() => {
+            const r = this._drawerLastRender || {};
+            nuxelDrawerPerf({
+                event: 'open',
+                ms: Math.round((((typeof performance !== 'undefined' ? performance.now() : Date.now()) - openT0) * 10)) / 10,
+                render_ms: r.ms == null ? null : r.ms,
+                rebuilt: !!r.rebuilt,
+                nodes: this.drawerList ? this.drawerList.childElementCount : 0,
+                cache: this._drawerSignature ? true : false,
+            });
+        }));
     }
     closeDrawer() {
+        const closeT0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const wasOpen = this.drawerOpen;
         this.drawerOpen = false;
         document.body.classList.remove('app-drawer-open');
@@ -1376,6 +1413,8 @@ class Launcher {
             if (grid) grid.scrollTop = this._homeScrollTop || 0;
         }
         try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
+        if (wasOpen) nuxelDrawerPerf({ event: 'close',
+            ms: Math.round((((typeof performance !== 'undefined' ? performance.now() : Date.now()) - closeT0) * 10)) / 10 });
     }
     advanceDrawer() { if (!this.drawerOpen) this.openDrawer(); }
 

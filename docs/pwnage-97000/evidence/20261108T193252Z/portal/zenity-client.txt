@@ -1,0 +1,18 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Running as unit: nuxel-chooser-p97000-1794168065.service; invocation ID: 65dcbdc7f6fd4bf4ac3ce7dae6031958
+=== ZENITY PORTAL CLIENT ===
+
+(zenity:571660): Adwaita-WARNING **: 21:01:08.570: Using GtkSettings:gtk-application-prefer-dark-theme with libadwaita is unsupported. Please use AdwStyleManager:color-scheme instead.
+/home/nuxel/Documents/attachment test café 🖼️.txt
+zenity_rc=0
+=== STATE ===
+{"autotest": "files", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2443, "last_outcome": "selected", "last_request": {"app_id": "org.gnome.Zenity", "duration_ms": 2443, "kind": "open", "outcome": "selected", "selected_count": 1, "source": "files"}, "last_source": "files", "pid": 571607, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794168071.237914, "version": "1.1.0"}
+

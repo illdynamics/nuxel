@@ -1,0 +1,30 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== GALLERY SINGLE ===
+{"cancelled": false, "frontend": true, "request_path": "/org/freedesktop/portal/desktop/request/1_285/t", "response": 0, "results": {"uris": ["file:///home/nuxel/Gallery/nuxel-p97000-test.png"]}, "success": true, "uris": ["file:///home/nuxel/Gallery/nuxel-p97000-test.png"]}
+{"autotest": "gallery", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2128, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 2128, "kind": "open", "outcome": "selected", "selected_count": 1, "source": "gallery"}, "last_source": "gallery", "pid": 88567, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181587.3839304, "version": "1.1.0"}
+
+=== GALLERY MULTI ===
+{"cancelled": false, "frontend": true, "request_path": "/org/freedesktop/portal/desktop/request/1_289/t", "response": 0, "results": {"uris": ["file:///home/nuxel/Gallery/nuxel-p97000-test.png", "file:///home/nuxel/Gallery/nuxel-screenshot-20261108T224409029Z.png"]}, "success": true, "uris": ["file:///home/nuxel/Gallery/nuxel-p97000-test.png", "file:///home/nuxel/Gallery/nuxel-screenshot-20261108T224409029Z.png"]}
+{"autotest": "gallery-multi", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2203, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 2203, "kind": "open", "outcome": "selected", "selected_count": 2, "source": "gallery"}, "last_source": "gallery", "pid": 88721, "presented": false, "schema_version": 2, "selected_count": 2, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181592.2262957, "version": "1.1.0"}
+
+=== FILES SINGLE ===
+{"cancelled": false, "frontend": true, "request_path": "/org/freedesktop/portal/desktop/request/1_293/t", "response": 0, "results": {"uris": ["file:///home/nuxel/Documents/nuxel-file-handler-test.txt"]}, "success": true, "uris": ["file:///home/nuxel/Documents/nuxel-file-handler-test.txt"]}
+{"autotest": "files", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2489, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 2489, "kind": "open", "outcome": "selected", "selected_count": 1, "source": "files"}, "last_source": "files", "pid": 88885, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181597.2350953, "version": "1.1.0"}
+
+=== DIRECTORY ===
+{"cancelled": false, "frontend": true, "request_path": "/org/freedesktop/portal/desktop/request/1_297/t", "response": 0, "results": {"uris": ["file:///home/nuxel/Documents"]}, "success": true, "uris": ["file:///home/nuxel/Documents"]}
+{"autotest": "files", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2002, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 2002, "kind": "folder", "outcome": "selected", "selected_count": 1, "source": "files"}, "last_source": "files", "pid": 89159, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181601.7188964, "version": "1.1.0"}
+
+=== CANCEL ===
+{"cancelled": true, "frontend": true, "request_path": "/org/freedesktop/portal/desktop/request/1_301/t", "response": 1, "results": {"uris": []}, "success": false, "uris": []}
+{"autotest": "cancel", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 1, "errors": 0, "requests": 1, "selected": 0}, "duration_ms": 2199, "last_outcome": "cancelled", "last_request": {"app_id": "", "duration_ms": 2199, "kind": "open", "outcome": "cancelled", "selected_count": 0, "source": "cancelled"}, "last_source": "cancelled", "pid": 89333, "presented": false, "schema_version": 2, "selected_count": 0, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794181606.5275538, "version": "1.1.0"}
+
+DONE

@@ -3,6 +3,56 @@
 This file holds the release-by-release user-facing changes. The full engineering
 history remains in [CHANGELOG.md](CHANGELOG.md).
 
+## v0.8.2-beta — system file picker, File Handlers, Network Manager and landscape VNC (2026-11-09)
+
+### System file attachment picker
+
+- The XDG Desktop Portal FileChooser frontend/backend path is live. `OpenFile`,
+  `SaveFile`, `SaveFiles`, single/multi-select, image filters, directory mode,
+  Unicode/space names, cancellation and save collision handling were exercised
+  through the real frontend.
+- The Nuxel picker offers **Gallery** (`org.nuxel.Photos`) and **Files**
+  (`org.nuxel.Files`) sources. Flatpak callers receive Documents-portal grants
+  that are readable inside their sandbox.
+- `org.nuxel.Portal` remains the separate hardware-permission broker.
+
+### Settings → File Handlers
+
+- Global Ask/Gallery/Files policy, per-app overrides, MIME Open-with defaults,
+  portal health and a real Test File Picker.
+- Gallery is the default media handler; Files is the directory/file manager,
+  not a universal document decoder.
+
+### Network Manager wrapper
+
+- The existing working Wi-Fi Settings connector is wrapped in
+  `org.nuxel.NetworkManager`, not duplicated.
+- Live Wi-Fi IP is shown in both Settings and devmgmt.
+- Private DNS (Cloudflare/Quad9/custom/DHCP), WireGuard/OpenVPN import and
+  ZeroTier controls are included.
+- ZeroTier One is installed and the node joined `0cccb752f72ecf52`; approval is
+  performed by the owner in ZeroTier Central. `/dev/net/tun` is group-readable
+  by the service only (0660).
+
+### Landscape VNC and Jump Desktop
+
+- Direct-LAN TigerVNC `VncAuth` on TCP 5900, bound to the current WLAN IPv4.
+- Landscape 1520×720, enabled at boot, with a stale-address fallback.
+- Jump Desktop `nux-vnc` profile updated to the same landscape resolution.
+
+### One SSH banner
+
+- `/etc/banner` is the SSH banner. The duplicate
+  `/etc/profile.d/99-nuxel-banner.sh` hook was retired; an interactive SSH login
+  prints the banner exactly once.
+
+### Known blocker
+
+- Ferdium/Signal/ZapZap Electron/Qt windows cannot render under the current
+  zypak/Chromium inner-sandbox host-spawn path without `--no-sandbox` (forbidden).
+  Portal dispatch and sandbox document access pass; physical preview remains
+  blocked and is documented in `PWNAGE-97000-REPORT.md`.
+
 ## v0.8.1-beta — direct LAN remote desktop + truthful USB Tri-Link (2026-11-08)
 
 ### Direct LAN RDP and VNC

@@ -1,46 +1,55 @@
 #!/usr/bin/env python3
 """
-Nuxel Notifications — System notification daemon (Nuxel contract on system bus).
+Nuxel Notifications — canonical notification hub.
 
-This daemon runs on the SYSTEM bus as org.nuxel.Notifications.
-It stores notifications in memory and provides a simple JSON-based API
-for the HTTP bridge and Phosh agent to consume.
+The daemon runs on the SYSTEM bus as ``org.nuxel.Notifications`` and owns the
+durable notification store at ``/var/lib/nuxel/notifications.json``.
 
-No FDO spec methods. No PWA relay code. No threading.
+It has two roles:
 
-## On-disk persistence (briq-07)
+1. **System hub** (default): the single authoritative store used by the Home
+   launcher, Quick Settings, Recents, the HTTP bridge and every Nuxel app.
+2. **Session relay** (``--session``): exposes the freedesktop.org
+   ``org.freedesktop.Notifications`` interface on a *session* bus and forwards
+   every request to the system hub.  Native GTK and Flatpak (portal) apps call
+   ``org.freedesktop.Notifications`` on their session bus, so this relay is what
+   makes real application notifications reach Nuxel without creating a second
+   competing store.
 
-Delivered/active notifications are persisted to a single canonical JSON file so
-a service restart does not lose history:
+Canonical model
+---------------
+Every record supports: stable id, app id, app name, summary, body, timestamp,
+received time, read timestamp, archived timestamp, urgency, icon, actions,
+hints, source/provider and the freedesktop replacement id.
 
-    /var/lib/nuxel/notifications.json
+Lifecycle::
 
-The canonical single-file location is documented in `configs/nuxel/` and
-defaults to `/var/lib/nuxel/notifications.json`. It is resolved from (in order
-of precedence):
+    RECEIVED -> ACTIVE_UNREAD
+                  |  swipe right (MarkRead)   -> READ (still visible)
+                  +  swipe left  (Archive)    -> ARCHIVED (hidden)
+                  +  CloseNotification        -> removed from active store
 
-  1. `NUXEL_NOTIFICATIONS_FILE` environment variable (highest precedence)
-  2. legacy `NUXEL_NOTIFICATIONS_HISTORY_FILE` / `NUXEL_NOTIFICATIONS_DIR`
-     (migration fallback for existing installs; kept so previously persisted
-     history remains readable while it is re-written to the canonical file)
-  3. built-in default `/var/lib/nuxel/notifications.json`
+The badge policy is: **unread, non-archived notifications**.  Read reminders stay
+visible in the expanded Quick Settings list until archived.
 
-The store is capped at `NOTIFICATION_HISTORY_CAP` (default 200) entries, oldest
-evicted first, on both persist and reload. Restart survival is guaranteed by
-`_load_history()` on startup.
+Persistence survives Home/PWA reloads, the bridge restart, the notification
+daemon restart and device reboot.  History is capped (default 200) so the store
+cannot grow without bound.
 """
 
-import sys
+import argparse
 import json
 import logging
 import os
+import sys
+from datetime import datetime, timezone
+
 import dbus
 import dbus.service
 import dbus.mainloop.glib
 from gi.repository import GLib
-from datetime import datetime
 
-NUXEL_NOTIFICATIONS_VERSION = "0.8.1-beta"
+NUXEL_NOTIFICATIONS_VERSION = "0.9.3-beta"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,18 +60,10 @@ logger = logging.getLogger('nuxel-notifications')
 
 BUS_NAME = 'org.nuxel.Notifications'
 OBJECT_PATH = '/org/nuxel/Notifications'
+FDO_BUS_NAME = 'org.freedesktop.Notifications'
+FDO_OBJECT_PATH = '/org/freedesktop/Notifications'
 
-# On-disk notification history store. Persists delivered/active notifications
-# to a single canonical JSON file so that a service restart does not lose
-# history. Capped at NOTIFICATION_HISTORY_CAP entries (oldest evicted first) to
-# bound disk usage. The canonical single-file location (single source, briq-07)
-# is /var/lib/nuxel/notifications.json. It is resolved via:
-#   NUXEL_NOTIFICATIONS_FILE -> (legacy NUXEL_NOTIFICATIONS_HISTORY_FILE /
-#   NUXEL_NOTIFICATIONS_DIR migration fallback) -> default
-#     /var/lib/nuxel/notifications.json.
 NUXEL_PATHS_CONF = os.environ.get("NUXEL_PATHS_CONF", "/etc/nuxel/paths.conf")
-
-# Canonical single-file path (briq-07). Overridable via NUXEL_NOTIFICATIONS_FILE.
 _LEGACY_NOTIFICATIONS_DIR_DEFAULT = '/var/lib/nuxel/notifications'
 
 
@@ -72,16 +73,14 @@ def _load_history_file():
     Precedence (briq-07):
       1. NUXEL_NOTIFICATIONS_FILE environment variable
       2. legacy NUXEL_NOTIFICATIONS_HISTORY_FILE / NUXEL_NOTIFICATIONS_DIR
-         (kept for migration so previously persisted history.json under
-         /var/lib/nuxel/notifications/ remains readable)
-      3. built-in default /var/lib/nuxel/notifications.json
+      3. NUXEL_NOTIFICATIONS_FILE in /etc/nuxel/paths.conf
+      4. built-in default /var/lib/nuxel/notifications.json
     """
     canonical = '/var/lib/nuxel/notifications.json'
     env_file = os.environ.get('NUXEL_NOTIFICATIONS_FILE')
     if env_file:
         return env_file
 
-    # Migration fallback: an existing install pinned the dir/history file.
     legacy_file = os.environ.get('NUXEL_NOTIFICATIONS_HISTORY_FILE')
     if legacy_file:
         return legacy_file
@@ -110,8 +109,6 @@ def _load_history_file():
 HISTORY_FILE = _load_history_file()
 NOTIFICATION_HISTORY_CAP = int(os.environ.get('NUXEL_NOTIFICATIONS_HISTORY_CAP', '200') or '200')
 
-# Persistent DND state written by services/nuxel-bridge/src/dnd_provider.py.
-# DND suppresses interruption effects, never history.
 DND_STATE_FILE = os.environ.get('NUXEL_DND_STATE', '/var/lib/nuxel/notifications/dnd.json')
 
 
@@ -127,14 +124,7 @@ def _dnd_active():
         return False, None
 
 
-# Notification urgency map
-URGENCY_MAP = {
-    'low': 0,
-    'normal': 1,
-    'critical': 2,
-}
-
-# Auto-incrementing notification ID counter
+URGENCY_MAP = {'low': 0, 'normal': 1, 'critical': 2}
 _next_id = 1
 
 
@@ -146,58 +136,66 @@ def _make_id():
 
 
 def _bump_id_counter(new_minimum):
-    """Advance the module-level notification ID counter past a floor.
-
-    Used when loading persisted history so freshly-created notification IDs
-    never collide with IDs that were assigned before a restart. The counter is
-    only ever moved forward; it is never reset below a previously-seen ID.
-    """
     global _next_id
     if new_minimum > _next_id:
         _next_id = new_minimum
 
 
-def notification_dict(app_id, summary, body, urgency='normal'):
-    """Create a notification dictionary."""
+def _utcnow_iso():
+    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+
+
+def _normalise_urgency(value):
+    if isinstance(value, str):
+        value = value.lower()
+        if value in URGENCY_MAP:
+            return value
+    return 'normal'
+
+
+def notification_dict(app_id, summary, body, urgency='normal', app_name=None,
+                      icon=None, actions=None, hints=None, source='app',
+                      replaces_id=None):
+    """Create the canonical notification record."""
+    now = _utcnow_iso()
     return {
         'id': _make_id(),
-        'app_id': app_id,
-        'summary': summary,
-        'body': body,
-        'timestamp': datetime.now().isoformat(),
-        'urgency': urgency,
+        'app_id': str(app_id),
+        'app_name': str(app_name or app_id),
+        'summary': str(summary),
+        'body': str(body or ''),
+        'timestamp': now,
+        'received_at': now,
+        'read_at': None,
+        'archived_at': None,
+        'urgency': _normalise_urgency(urgency),
+        'icon': icon or '',
+        'actions': list(actions or []),
+        'hints': dict(hints or {}),
+        'source': source or 'app',
+        'replaces_id': replaces_id if isinstance(replaces_id, int) else None,
+        'suppressed': False,
     }
 
 
 class NuxelNotificationsService(dbus.service.Object):
-    """System bus notification daemon implementing org.nuxel.Notifications."""
+    """System-bus notification hub implementing org.nuxel.Notifications."""
 
     def __init__(self, bus, object_path):
         dbus.service.Object.__init__(self, bus, object_path)
-        self._notifications = {}  # {id: notification_dict}
-        # Load any previously persisted history so a restart does not lose it.
+        self._notifications = {}
         self._load_history()
-        logger.info("Nuxel Notifications service started on system bus")
+        logger.info("Nuxel Notifications hub started on system bus")
 
+    # ---- persistence -----------------------------------------------------
     def _persist_history(self):
-        """Write the current notification store to the on-disk history file.
-
-        Notifications are stored as a JSON array, capped at
-        NOTIFICATION_HISTORY_CAP entries (oldest evicted first).
-        """
         try:
             os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
-            entries = sorted(
-                self._notifications.values(),
-                key=lambda n: n.get('id', 0),
-            )
-            if len(entries) > NOTIFICATION_HISTORY_CAP:
-                entries = entries[-NOTIFICATION_HISTORY_CAP:]
-            # Evict oldest (lowest id) entries from the live store too so memory
-            # stays bounded in agreement with the on-disk cap.
+            entries = sorted(self._notifications.values(), key=lambda n: n.get('id', 0))
             if len(self._notifications) > NOTIFICATION_HISTORY_CAP:
                 for nid in sorted(self._notifications.keys())[:len(self._notifications) - NOTIFICATION_HISTORY_CAP]:
                     self._notifications.pop(nid, None)
+                entries = sorted(self._notifications.values(), key=lambda n: n.get('id', 0))
             tmp = HISTORY_FILE + '.tmp'
             fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
             with os.fdopen(fd, 'w') as f:
@@ -208,7 +206,6 @@ class NuxelNotificationsService(dbus.service.Object):
             logger.error("Failed to persist notification history: %s", e)
 
     def _load_history(self):
-        """Load persisted notification history on startup (best effort)."""
         if not os.path.exists(HISTORY_FILE):
             return
         try:
@@ -221,12 +218,23 @@ class NuxelNotificationsService(dbus.service.Object):
             for notif in entries:
                 if not isinstance(notif, dict):
                     continue
-                nid = int(notif.get('id', 0))
+                try:
+                    nid = int(notif.get('id', 0))
+                except (TypeError, ValueError):
+                    continue
+                # Migrate pre-0.9 records in place.
+                notif.setdefault('app_name', notif.get('app_id', ''))
+                notif.setdefault('received_at', notif.get('timestamp'))
+                notif.setdefault('read_at', None)
+                notif.setdefault('archived_at', None)
+                notif.setdefault('icon', '')
+                notif.setdefault('actions', [])
+                notif.setdefault('hints', {})
+                notif.setdefault('source', 'app')
+                notif.setdefault('urgency', 'normal')
                 restored[nid] = notif
                 if nid > max_id:
                     max_id = nid
-            # Advance the module-level counter past any restored id so new
-            # notifications never collide with history.
             if max_id >= _next_id:
                 _bump_id_counter(max_id + 1)
             total = len(restored)
@@ -238,14 +246,31 @@ class NuxelNotificationsService(dbus.service.Object):
         except (json.JSONDecodeError, OSError, ValueError, KeyError, NameError, TypeError) as e:
             logger.warning("Could not load notification history: %s", e)
 
+    # ---- helpers ---------------------------------------------------------
+    def _active(self):
+        return [n for n in self._notifications.values() if not n.get('archived_at')]
+
+    def _counts(self):
+        active = self._active()
+        unread = sum(1 for n in active if not n.get('read_at'))
+        return {
+            'active': len(active),
+            'unread': unread,
+            'read': len(active) - unread,
+            'archived': len(self._notifications) - len(active),
+            'total': len(self._notifications),
+        }
+
+    def _emit_changed(self):
+        try:
+            self.NotificationChanged(json.dumps(self._counts()))
+        except Exception:  # pragma: no cover - signals must never break a call
+            pass
+
+    # ---- D-Bus API -------------------------------------------------------
     @dbus.service.method(BUS_NAME, in_signature='', out_signature='s')
     def NotifyHistory(self):
-        """Return the persisted notification history as a JSON array.
-
-        This is the persisted on-disk history, capped at NOTIFICATION_HISTORY_CAP
-        entries, and is NOT cleared by CloseAllNotifications (which only clears
-        the live/active store).
-        """
+        """Return the durable on-disk history as a JSON array."""
         entries = []
         if os.path.exists(HISTORY_FILE):
             try:
@@ -260,129 +285,361 @@ class NuxelNotificationsService(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, in_signature='sss', out_signature='s')
     def Notify(self, app_id, summary, body):
-        """Send a notification.
+        """Simple Nuxel notification entry point."""
+        return self.SubmitNotification(json.dumps({
+            'app_id': app_id, 'app_name': app_id, 'summary': summary,
+            'body': body, 'urgency': 'normal', 'source': 'nuxel-api',
+        }))
 
-        Args:
-            app_id: Application identifier (e.g. 'org.nuxel.Calendar')
-            summary: Notification title/summary
-            body: Notification body text
+    @dbus.service.method(BUS_NAME, in_signature='s', out_signature='s')
+    def SubmitNotification(self, payload):
+        """Create or replace a notification from a JSON document.
 
-        Returns:
-            JSON string with success and notification id
+        Supported keys: app_id, app_name, summary, body, urgency, icon,
+        actions, hints, source, replaces_id, expire_timeout (seconds).
         """
-        if not summary or not app_id:
-            logger.warning("Notify called with empty app_id or summary")
+        try:
+            doc = json.loads(payload) if isinstance(payload, str) else dict(payload)
+        except (TypeError, ValueError) as exc:
+            logger.warning("SubmitNotification rejected invalid payload: %s", exc)
+            return json.dumps({"success": False, "error": "invalid-json"})
+        app_id = str(doc.get('app_id') or '').strip()
+        summary = str(doc.get('summary') or '').strip()
+        if not app_id or not summary:
+            logger.warning("SubmitNotification called with empty app_id or summary")
             return json.dumps({"success": False, "error": "app_id and summary required"})
 
-        notif = notification_dict(app_id, summary, body)
+        replaces = doc.get('replaces_id')
+        try:
+            replaces = int(replaces) if replaces not in (None, '', 0, '0') else None
+        except (TypeError, ValueError):
+            replaces = None
+        if replaces and replaces in self._notifications:
+            notif = self._notifications[replaces]
+            # A replacement keeps the id, read/archive state is reset because
+            # the application has published new content.
+            notif.update({
+                'app_id': app_id,
+                'app_name': str(doc.get('app_name') or app_id),
+                'summary': summary,
+                'body': str(doc.get('body') or ''),
+                'timestamp': _utcnow_iso(),
+                'received_at': _utcnow_iso(),
+                'read_at': None,
+                'archived_at': None,
+                'urgency': _normalise_urgency(doc.get('urgency')),
+                'icon': str(doc.get('icon') or ''),
+                'actions': list(doc.get('actions') or []),
+                'hints': dict(doc.get('hints') or {}),
+                'source': str(doc.get('source') or 'app'),
+                'replaces_id': replaces,
+            })
+        else:
+            notif = notification_dict(
+                app_id, summary, doc.get('body') or '',
+                urgency=doc.get('urgency') or 'normal',
+                app_name=doc.get('app_name'),
+                icon=doc.get('icon'),
+                actions=doc.get('actions'),
+                hints=doc.get('hints'),
+                source=doc.get('source') or 'app',
+                replaces_id=replaces,
+            )
+            self._notifications[notif['id']] = notif
+
         dnd, dnd_reason = _dnd_active()
+        notif['suppressed'] = bool(dnd)
         if dnd:
-            # Keep the record and id; only the interruption effects are
-            # suppressed.  Consumers must not replay a stale popup storm when
-            # DND is turned off.
-            notif['suppressed'] = True
             notif['suppression_reason'] = 'dnd'
             notif['dnd_mode'] = dnd_reason
         else:
-            notif['suppressed'] = False
-        self._notifications[notif['id']] = notif
+            notif.pop('suppression_reason', None)
+            notif.pop('dnd_mode', None)
 
         logger.info("Notification #%d from %s: %s%s", notif['id'], app_id, summary,
                     " (DND suppressed)" if dnd else "")
-
-        # Emit signal (including suppressed records so badges/history update).
         self.NotificationAdded(json.dumps(notif))
         self._persist_history()
+        self._emit_changed()
 
-        return json.dumps({"success": True, "id": notif['id'],
-                           "suppressed": bool(dnd)})
+        # Freedesktop expiry is an archive (history remains available).
+        try:
+            timeout = int(doc.get('expire_timeout') or 0)
+        except (TypeError, ValueError):
+            timeout = 0
+        if timeout > 0:
+            nid = notif['id']
+
+            def _expire():
+                rec = self._notifications.get(nid)
+                if rec and not rec.get('archived_at'):
+                    rec['archived_at'] = _utcnow_iso()
+                    rec['expired'] = True
+                    self._persist_history()
+                    self.NotificationClosed(nid, 1)
+                    self._emit_changed()
+                return GLib.SOURCE_REMOVE
+
+            GLib.timeout_add(timeout, _expire)
+
+        return json.dumps({"success": True, "id": notif['id'], "suppressed": bool(dnd),
+                           "counts": self._counts()})
 
     @dbus.service.method(BUS_NAME, in_signature='', out_signature='s')
     def GetNotifications(self):
-        """Return all stored notifications as a JSON list."""
-        result = sorted(
-            list(self._notifications.values()),
-            key=lambda n: n['id'],
-            reverse=True,
-        )
-        return json.dumps({"success": True, "notifications": result})
+        """Return active (non-archived) reminders, newest first, plus counts."""
+        result = sorted(self._active(), key=lambda n: n.get('id', 0), reverse=True)
+        return json.dumps({"success": True, "notifications": result,
+                           "counts": self._counts()})
+
+    @dbus.service.method(BUS_NAME, in_signature='', out_signature='s')
+    def GetAllNotifications(self):
+        """Return every durable record, newest first (diagnostics/history)."""
+        result = sorted(self._notifications.values(), key=lambda n: n.get('id', 0), reverse=True)
+        return json.dumps({"success": True, "notifications": result,
+                           "counts": self._counts()})
+
+    @dbus.service.method(BUS_NAME, in_signature='', out_signature='s')
+    def GetNotificationCounts(self):
+        return json.dumps({"success": True, "counts": self._counts()})
+
+    @dbus.service.method(BUS_NAME, in_signature='u', out_signature='s')
+    def MarkRead(self, notification_id):
+        rec = self._notifications.get(int(notification_id))
+        if not rec:
+            return json.dumps({"success": False, "error": "Notification not found"})
+        if not rec.get('read_at'):
+            rec['read_at'] = _utcnow_iso()
+        logger.info("Notification #%d marked read", rec['id'])
+        self._persist_history()
+        self._emit_changed()
+        return json.dumps({"success": True, "id": rec['id'], "read_at": rec['read_at'],
+                           "counts": self._counts()})
+
+    @dbus.service.method(BUS_NAME, in_signature='u', out_signature='s')
+    def MarkUnread(self, notification_id):
+        rec = self._notifications.get(int(notification_id))
+        if not rec:
+            return json.dumps({"success": False, "error": "Notification not found"})
+        rec['read_at'] = None
+        logger.info("Notification #%d marked unread", rec['id'])
+        self._persist_history()
+        self._emit_changed()
+        return json.dumps({"success": True, "id": rec['id'], "counts": self._counts()})
+
+    @dbus.service.method(BUS_NAME, in_signature='u', out_signature='s')
+    def Archive(self, notification_id):
+        rec = self._notifications.get(int(notification_id))
+        if not rec:
+            return json.dumps({"success": False, "error": "Notification not found"})
+        if not rec.get('archived_at'):
+            rec['archived_at'] = _utcnow_iso()
+        logger.info("Notification #%d archived", rec['id'])
+        self._persist_history()
+        self.NotificationClosed(rec['id'], 2)
+        self._emit_changed()
+        return json.dumps({"success": True, "id": rec['id'],
+                           "archived_at": rec['archived_at'], "counts": self._counts()})
+
+    @dbus.service.method(BUS_NAME, in_signature='u', out_signature='s')
+    def Unarchive(self, notification_id):
+        rec = self._notifications.get(int(notification_id))
+        if not rec:
+            return json.dumps({"success": False, "error": "Notification not found"})
+        rec['archived_at'] = None
+        logger.info("Notification #%d unarchived", rec['id'])
+        self._persist_history()
+        self._emit_changed()
+        return json.dumps({"success": True, "id": rec['id'], "counts": self._counts()})
 
     @dbus.service.method(BUS_NAME, in_signature='u', out_signature='s')
     def CloseNotification(self, notification_id):
-        """Close (remove) a single notification.
-
-        Args:
-            notification_id: Integer notification ID
-
-        Returns:
-            JSON string with success status
-        """
-        if notification_id in self._notifications:
-            del self._notifications[notification_id]
-            self.NotificationClosed(notification_id, 3)
-            self._persist_history()
-            logger.debug("Notification %d closed by request", notification_id)
-            return json.dumps({"success": True, "id": notification_id})
-        else:
+        nid = int(notification_id)
+        if nid not in self._notifications:
             return json.dumps({"success": False, "error": "Notification not found"})
+        rec = self._notifications.pop(nid)
+        logger.info("Notification #%d closed", rec['id'])
+        self._persist_history()
+        self.NotificationClosed(rec['id'], 3)
+        self._emit_changed()
+        return json.dumps({"success": True, "id": rec['id'], "counts": self._counts()})
 
     @dbus.service.method(BUS_NAME, in_signature='', out_signature='s')
     def CloseAllNotifications(self):
-        """Clear all stored notifications.
-
-        Returns:
-            JSON string with success status
-        """
         count = len(self._notifications)
-        for nid in list(self._notifications.keys()):
-            self.NotificationClosed(nid, 3)
+        ids = list(self._notifications.keys())
+        logger.info("CloseAllNotifications ids=%s", ids)
         self._notifications.clear()
         self._persist_history()
-        logger.info("All notifications cleared (%d removed)", count)
+        for nid in ids:
+            self.NotificationClosed(nid, 3)
+        self._emit_changed()
         return json.dumps({"success": True, "cleared": count})
 
     @dbus.service.signal(BUS_NAME, signature='s')
     def NotificationAdded(self, notification_json):
-        """Signal: a new notification was added."""
         pass
 
     @dbus.service.signal(BUS_NAME, signature='uu')
     def NotificationClosed(self, notification_id, reason):
-        """Signal: a notification was closed.
+        pass
 
-        Args:
-            notification_id: The ID of the closed notification
-            reason: 1=expired, 2=dismissed by user, 3=closed by request
-        """
+    @dbus.service.signal(BUS_NAME, signature='s')
+    def NotificationChanged(self, counts_json):
         pass
 
 
-def main():
-    """Start the nuxel-notifications daemon on the system bus."""
-    logger.info("Starting Nuxel Notifications v%s...", NUXEL_NOTIFICATIONS_VERSION)
+class FdoNotificationRelay(dbus.service.Object):
+    """Session-bus org.freedesktop.Notifications -> system hub relay."""
 
+    def __init__(self, bus, object_path=''):
+        dbus.service.Object.__init__(self, bus, object_path or FDO_OBJECT_PATH)
+        self._system = dbus.SystemBus()
+        self._hub = dbus.Interface(
+            self._system.get_object(BUS_NAME, OBJECT_PATH), BUS_NAME)
+        try:
+            self._system.add_signal_receiver(
+                self._on_hub_closed, signal_name='NotificationClosed',
+                dbus_interface=BUS_NAME, bus_name=BUS_NAME, path=OBJECT_PATH)
+        except Exception as exc:  # pragma: no cover - best effort signal mirror
+            logger.warning("FDO relay could not mirror hub signals: %s", exc)
+
+    def _on_hub_closed(self, notification_id, reason):
+        try:
+            self.NotificationClosed(int(notification_id), int(reason))
+        except Exception:
+            pass
+
+    @dbus.service.method(FDO_BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
+    def Notify(self, app_name, replaces_id, app_icon, summary, body, actions, hints, expire_timeout):
+        if not summary:
+            raise dbus.exceptions.DBusException('summary is required',
+                                                name='org.freedesktop.Notifications.Error.Invalid')
+        hint_doc = {}
+        for key, value in (hints or {}).items():
+            try:
+                if isinstance(value, dbus.Boolean):
+                    hint_doc[str(key)] = bool(value)
+                elif isinstance(value, (dbus.Int32, dbus.UInt32, dbus.Int64, dbus.UInt64)):
+                    hint_doc[str(key)] = int(value)
+                elif isinstance(value, (dbus.Double,)):
+                    hint_doc[str(key)] = float(value)
+                elif isinstance(value, dbus.String):
+                    hint_doc[str(key)] = str(value)
+                else:
+                    hint_doc[str(key)] = str(value)
+            except Exception:
+                continue
+        doc = {
+            'app_id': str(hint_doc.get('desktop-entry') or app_name or 'unknown'),
+            'app_name': str(app_name or 'Application'),
+            'summary': str(summary),
+            'body': str(body or ''),
+            'icon': str(app_icon or ''),
+            'actions': [str(a) for a in (actions or [])],
+            'hints': hint_doc,
+            'urgency': str(hint_doc.get('urgency', 'normal')),
+            'source': 'freedesktop',
+            'replaces_id': int(replaces_id) if replaces_id else None,
+            'expire_timeout': int(expire_timeout or 0),
+        }
+        try:
+            result = json.loads(self._hub.SubmitNotification(json.dumps(doc)))
+        except Exception as exc:
+            logger.error("FDO relay could not submit notification: %s", exc)
+            raise dbus.exceptions.DBusException(
+                'Nuxel notification hub unavailable',
+                name='org.freedesktop.Notifications.Error.Failed')
+        if not result.get('success'):
+            raise dbus.exceptions.DBusException(
+                str(result.get('error') or 'not accepted'),
+                name='org.freedesktop.Notifications.Error.Failed')
+        return dbus.UInt32(int(result.get('id') or 0))
+
+    @dbus.service.method(FDO_BUS_NAME, in_signature='u', out_signature='')
+    def CloseNotification(self, notification_id):
+        try:
+            self._hub.CloseNotification(dbus.UInt32(int(notification_id)))
+        except Exception as exc:
+            logger.warning("FDO relay close %s failed: %s", notification_id, exc)
+
+    @dbus.service.method(FDO_BUS_NAME, in_signature='', out_signature='as')
+    def GetCapabilities(self):
+        return dbus.Array(['body', 'body-markup', 'actions', 'persistence', 'icon-static'],
+                          signature='s')
+
+    @dbus.service.method(FDO_BUS_NAME, in_signature='', out_signature='ssss')
+    def GetServerInformation(self):
+        return (dbus.String('Nuxel'), dbus.String('Nuxel'),
+                dbus.String(NUXEL_NOTIFICATIONS_VERSION), dbus.String('1.2'))
+
+    @dbus.service.method(FDO_BUS_NAME, in_signature='', out_signature='s')
+    def GetNotifications(self):
+        """Non-standard convenience used by Nuxel diagnostics."""
+        return json.dumps(json.loads(self._hub.GetNotifications()))
+
+    @dbus.service.signal(FDO_BUS_NAME, signature='uu')
+    def NotificationClosed(self, notification_id, reason):
+        pass
+
+    @dbus.service.signal(FDO_BUS_NAME, signature='us')
+    def ActionInvoked(self, notification_id, action_key):
+        pass
+
+
+def run_hub():
+    logger.info("Starting Nuxel Notifications hub v%s...", NUXEL_NOTIFICATIONS_VERSION)
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
     bus = dbus.SystemBus()
-
     try:
+        # Keep the BusName object referenced for the whole process lifetime.
+        # Dropping it releases the well-known name immediately while the service
+        # process stays alive (measured: ServiceUnknown after restart).
         bus_name = dbus.service.BusName(BUS_NAME, bus)
         logger.info("Claimed D-Bus name: %s", BUS_NAME)
     except dbus.exceptions.NameExistsException:
-        logger.error("Bus name %s already taken", BUS_NAME)
-        sys.exit(1)
-
-    service = NuxelNotificationsService(bus, OBJECT_PATH)
-
-    logger.info("Nuxel Notifications running on system bus...")
-
+        # Another instance is already serving the hub; this is not an error for
+        # a restart race, but it must never silently create a second store.
+        logger.error("Bus name %s already taken; refusing to start a second store", BUS_NAME)
+        return 1
+    NuxelNotificationsService(bus, OBJECT_PATH)
+    logger.info("Nuxel Notifications hub running on system bus")
     loop = GLib.MainLoop()
     try:
         loop.run()
     except KeyboardInterrupt:
         logger.info("Shutting down...")
         loop.quit()
+    return 0
+
+
+def run_session_relay():
+    logger.info("Starting Nuxel FDO notification relay v%s...", NUXEL_NOTIFICATIONS_VERSION)
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    bus = dbus.SessionBus()
+    try:
+        bus_name = dbus.service.BusName(FDO_BUS_NAME, bus, do_not_queue=True)
+        logger.info("Claimed session D-Bus name: %s", FDO_BUS_NAME)
+    except dbus.exceptions.NameExistsException:
+        logger.error("Session bus %s already owned; the existing provider wins", FDO_BUS_NAME)
+        return 1
+    FdoNotificationRelay(bus)
+    logger.info("Nuxel FDO notification relay running on session bus")
+    loop = GLib.MainLoop()
+    try:
+        loop.run()
+    except KeyboardInterrupt:
+        loop.quit()
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Nuxel notification hub / FDO relay')
+    parser.add_argument('--session', action='store_true',
+                        help='run the org.freedesktop.Notifications relay on the session bus')
+    args = parser.parse_args()
+    return run_session_relay() if args.session else run_hub()
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

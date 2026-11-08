@@ -47,10 +47,10 @@
   </screenshots>
 
   <releases>
-    <release version="0.8.1-beta" date="2026-11-08">
-      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.8.1-beta</url>
+    <release version="0.8.2-beta" date="2026-11-08">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.8.2-beta</url>
       <description>
-        <p>Nuxel Home v0.8.1-beta — firewall and permissions control surfaces,
+        <p>Nuxel Home v0.8.2-beta — firewall and permissions control surfaces,
         launcher handoff hardening and release-pipeline repairs.</p>
         <ul>
           <li>Firewall control center with an authoritative policy model and native iptables backend</li>

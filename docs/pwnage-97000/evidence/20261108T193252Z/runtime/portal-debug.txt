@@ -1,0 +1,22 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Running as unit: nuxel-xdg-portal-p97000.service; invocation ID: 88cde9722ebe44a09bda0d41b6c3caee
+=== PROBE2 ===
+REQUEST /org/freedesktop/portal/desktop/request/1_234/t
+CLOSE_SENT
+TIMEOUT
+=== JOURNAL XDG ===
+Nov 08 20:45:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-xdg-portal-p97000.service - [systemd-run] /usr/libexec/xdg-desktop-portal...
+Nov 08 20:45:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-xdg-portal-p97000.service: Deactivated successfully.
+Nov 08 20:45:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-xdg-portal-p97000.service - [systemd-run] /usr/libexec/xdg-desktop-portal.
+Nov 08 20:45:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-xdg-portal-p97000.service - [systemd-run] /usr/libexec/xdg-desktop-portal.
+Nov 08 20:45:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 /usr/libexec/xdg-desktop-portal[554300]: Adding derived host app ''
+Nov 08 20:45:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 /usr/libexec/xdg-desktop-portal[554300]: Handling OpenFile
+Nov 08 20:45:48 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 /usr/libexec/xdg-desktop-portal[554300]: Handling Close

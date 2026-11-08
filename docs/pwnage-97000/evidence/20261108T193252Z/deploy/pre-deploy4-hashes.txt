@@ -1,0 +1,15 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+845997dad4969b5c06b2f19264f1c4777ab942f7775fca52916c864dfb9e963e  root:root 644 46307 /usr/lib/nuxel/nuxel_file_handlers.py
+6e340639f9d6c6f8d0ce513592720108017727aa4ec31a3dc82f40bc6eb02024  root:root 644 303903 /usr/lib/nuxel/nuxel-bridge/api.py
+6129fa863edeeec1d8a4ac60a82faf4a76d6ddb722e2a4793f865711904c3609  root:root 644 50039 /usr/lib/nuxel/nuxel-bridge/flatpak_provider.py
+24c500540a394731dae6ccdfaaa4fdd8b1f7c09d9784f344f002f83deb8fb3a4  root:root 644 22841 /usr/share/nuxel/pwa/nuxel-apps/photos/js/photos.js
+f0cc5efd0114e54c02f3167d77722a235aa1c882fe4ab8d3943811ded5180ba0  root:root 644 556 /usr/share/applications/org.nuxel.Photos.desktop
+640e414462652a1819df0215355f53cae13686be93e77d9ad73460dcd16f81d1  root:root 644 360 /usr/share/applications/org.nuxel.Files.desktop

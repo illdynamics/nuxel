@@ -1,0 +1,16 @@
+{
+  "id": "org.nuxel.NetworkManager",
+  "name": "Network Manager",
+  "icon": "../../nuxel-home/assets/branding/nuxel-applications-icon-pack/03-06_vpn.png",
+  "color": "#2F9EE8",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/network-manager/index.html",
+  "manifest": "pwa/nuxel-apps/network-manager/manifest.json",
+  "description": "Owner wrapper around the working NetworkManager Wi-Fi connector, plus private DNS, VPN and ZeroTier controls",
+  "capabilities": ["network:manage"],
+  "bridge_version": "1",
+  "docked": false,
+  "status": "implemented",
+  "network": "none"
+}

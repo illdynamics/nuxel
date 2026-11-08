@@ -1,17 +1,20 @@
 {
   "id": "org.nuxel.Browser",
   "name": "Browser",
-  "icon": "\ud83c\udf10",
+  "icon": "🌐",
   "color": "#101820",
   "category": "utilities",
   "type": "pwa",
   "url": "/pwa/nuxel-apps/browser/index.html",
   "manifest": "pwa/nuxel-apps/browser/manifest.json",
-  "description": "Local-first page viewer; external navigation is opt-in",
+  "description": "Legacy local-only page viewer; the launcher Browser opens org.nuxel.BrowserNative (real WebKitGTK)",
   "capabilities": [
     "network:outbound"
   ],
   "bridge_version": "1",
   "docked": false,
-  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)",
+  "launcher_exposed": false,
+  "legacy": true,
+  "superseded_by": "org.nuxel.BrowserNative"
 }

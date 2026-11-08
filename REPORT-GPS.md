@@ -128,3 +128,15 @@
 - **Proved:** SPI binding, BBD nodes, missing firmware/vendor runtime, SSP down, no NMEA, no fix.
 - **Inferred:** native BBD/LHD implementation is the cleanest long-term route.
 - **Unknown:** exact patch revision, protocol details, antenna performance, assistance requirements.
+
+## 17. Reflash impact (controlled maintenance)
+
+| Question | Answer |
+|---|---|
+| Does completing GNSS require a reflash? | **YES.** BCM4773 BBD patch/loader firmware and the vendor LHD/GPS runtime must be installed in the system image. |
+| Boot/kernel too? | The SPI transport already binds; a boot/kernel change is only needed if the loader path/DT changes. |
+| Can it be deployed over SSH now? | **NO** for receiver fixes; a transport node is not an NMEA source and no frame/fix exists. |
+| Batch with PWNAGE-93000? | **YES.** One system image can carry GNSS firmware/runtime plus PWNAGE-93000's userspace fixes. |
+| Controlled batch | System image first; add boot/kernel only if the loader requires it. Verify receiver-reported fix, not GeoClue network location. |
+| Rollback | Previous A/B slot; network location remains a separate, labelled fallback if present. |
+| Risk if postponed | No GNSS fix; unrelated navigation/UI remains functional. |

@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Open a real file or directory in Gallery/Files through the Nuxel bridge.
+
+Desktop entries call this with a validated application id and one or more file
+URIs (``%U``).  The helper never executes the URI or a shell command: it asks
+the loopback bridge to validate the path against approved roots, queue the open
+request for the PWA and activate the target app.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+ALLOWED_APPS = {"org.nuxel.Photos", "org.nuxel.Files"}
+API = os.environ.get("NUXEL_API_URL", "http://127.0.0.1:8080/api/v1")
+
+
+def _load_policy():
+    here = Path(__file__).resolve()
+    for base in (Path("/usr/lib/nuxel"), here.parents[2] / "src", here.parents[1] / "src"):
+        if (base / "nuxel_file_handlers.py").is_file():
+            sys.path.insert(0, str(base))
+            break
+    import nuxel_file_handlers as fh
+    return fh
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(prog="nuxel-open-file")
+    ap.add_argument("--app", required=True)
+    ap.add_argument("uris", nargs="*")
+    args = ap.parse_args(argv)
+    if args.app not in ALLOWED_APPS:
+        print("nuxel-open-file: unsupported app %s" % args.app, file=sys.stderr)
+        return 2
+    fh = _load_policy()
+    paths = []
+    for value in args.uris:
+        try:
+            path = fh.decode_file_uri(value) if value.startswith("file:") else value
+            paths.append(fh.canonical_selection(path, must_exist=True))
+        except fh.FileHandlerError as exc:
+            print("nuxel-open-file: refused %r: %s" % (value, exc), file=sys.stderr)
+            return 2
+    if not paths:
+        print("nuxel-open-file: no path supplied", file=sys.stderr)
+        return 2
+    body = json.dumps({"app_id": args.app, "paths": paths}).encode("utf-8")
+    req = urllib.request.Request(API + "/file-handlers/open", data=body,
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as response:
+            doc = json.loads(response.read().decode("utf-8") or "{}")
+    except (OSError, urllib.error.URLError, ValueError) as exc:
+        print("nuxel-open-file: bridge unavailable: %s" % exc, file=sys.stderr)
+        return 1
+    print(json.dumps(doc, sort_keys=True))
+    return 0 if doc.get("success") else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

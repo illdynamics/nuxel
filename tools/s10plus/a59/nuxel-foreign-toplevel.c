@@ -451,6 +451,36 @@ static int watch_lock(void *dpy) {
     }
 }
 
+/* Bounded, event-driven settle.  We poll the real compositor socket and
+ * dispatch state events; there is no fixed "hope it finished" sleep. */
+static int home_state_ok(void) {
+    int home_active = 0, bad = 0;
+    for (struct window *w = windows; w; w = w->next) {
+        int is_home = !strcmp(w->app_id, "nuxel-pwa-host") ||
+                      !strcmp(w->title, "Nuxel");
+        if (is_home) {
+            if (w->activated && !w->minimized) home_active = 1;
+            continue;
+        }
+        if (w->activated || w->fullscreen) bad = 1;
+    }
+    return home_active && !bad;
+}
+
+static int settle_compositor(int budget_ms) {
+    int elapsed = 0;
+    while (elapsed < budget_ms) {
+        struct pollfd pfd = { .fd = _get_fd(g_display), .events = POLLIN, .revents = 0 };
+        int pr = poll(&pfd, 1, 20);
+        elapsed += 20;
+        if (pr > 0 && (pfd.revents & POLLIN)) {
+            if (_dispatch(g_display) < 0) break;
+        }
+        if (home_state_ok()) return 1;
+    }
+    return home_state_ok();
+}
+
 int main(int argc, char **argv) {
     const char *mode = (argc > 1) ? argv[1] : "list";
     if (load_wayland()) return 2;
@@ -472,21 +502,70 @@ int main(int argc, char **argv) {
                w->title, w->app_id, w->maximized, w->minimized, w->activated, w->fullscreen);
 
     if (!strcmp(mode, "home")) {
-        int minimized=0, raised=0;
+        /* PWNAGE-93000: phoc 0.54 does not implement request_minimize.  The
+         * old home path only sent set_minimized to the app, so a fullscreen
+         * GTK/Flatpak toplevel stayed mapped above Home and kept its input
+         * region active.  The launcher looked normal but the app drawer swipe
+         * was consumed by the invisible surface.  Move every non-Home window
+         * out of the top stacking layer first (unset fullscreen + maximized),
+         * then minimize it, and only then raise/activate Home.  This mirrors
+         * enforce_locked(), which is already known to work on this compositor.
+         * The sequence is idempotent: requests are only sent for state that is
+         * actually set, and repeated Home actions are safe. */
+        int minimized=0, raised=0, fullscreen_cleared=0, maximized_cleared=0;
         for (struct window *w=windows;w;w=w->next) {
             int is_home = !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
-            if (is_home) {
-                _marshal(w->handle, 3, NULL, handle_version(w->handle), 0);  /* unset_minimized */
-                _marshal(w->handle, 0, NULL, handle_version(w->handle), 0);  /* set_maximized */
-                if (g_seat) _marshal(w->handle, 4, NULL, handle_version(w->handle), 0, g_seat); /* activate */
-                raised++;
-            } else {
+            if (is_home) continue;
+            if (w->fullscreen) {
+                _marshal(w->handle, 9, NULL, handle_version(w->handle), 0);  /* unset_fullscreen */
+                fullscreen_cleared++;
+            }
+            if (w->maximized) {
+                _marshal(w->handle, 1, NULL, handle_version(w->handle), 0);  /* unset_maximized */
+                maximized_cleared++;
+            }
+            if (!w->minimized) {
                 _marshal(w->handle, 2, NULL, handle_version(w->handle), 0);  /* set_minimized */
                 minimized++;
             }
         }
         _roundtrip(g_display);
-        printf("HOME_ACTION minimized=%d raised=%d\n", minimized, raised);
+        /* Wait for the app's configure/ack turn using the compositor's own
+         * state events, bounded to 400 ms.  A fixed sleep was both slower on
+         * a busy device and racy on a fast one. */
+        settle_compositor(400);
+        for (struct window *w=windows;w;w=w->next) {
+            int is_home = !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
+            if (!is_home) continue;
+            /* Re-assert the single canonical Home geometry: unminimized,
+             * maximized, activated.  Fullscreen is cleared because the layer
+             * shell chrome and Home viewport use the maximized usable area. */
+            if (w->minimized) _marshal(w->handle, 3, NULL, handle_version(w->handle), 0);
+            if (w->fullscreen) _marshal(w->handle, 9, NULL, handle_version(w->handle), 0);
+            _marshal(w->handle, 0, NULL, handle_version(w->handle), 0);  /* set_maximized */
+            if (g_seat) _marshal(w->handle, 4, NULL, handle_version(w->handle), 0, g_seat); /* activate */
+            raised++;
+        }
+        _roundtrip(g_display);
+        /* Second settle catches a client that re-presented itself within one
+         * frame after Home claimed activation. */
+        int settled = settle_compositor(350);
+        _roundtrip(g_display);
+        int left_active = 0, left_fullscreen = 0, left_unminimized = 0, home_active = 0;
+        for (struct window *w=windows;w;w=w->next) {
+            int is_home = !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
+            if (is_home) {
+                if (w->activated && !w->minimized) home_active = 1;
+                continue;
+            }
+            if (w->activated) left_active++;
+            if (w->fullscreen) left_fullscreen++;
+            if (!w->minimized) left_unminimized++;
+        }
+        printf("HOME_ACTION minimized=%d raised=%d fullscreen_cleared=%d maximized_cleared=%d "
+               "home_active=%d left_active=%d left_fullscreen=%d left_unminimized=%d settled=%d\n",
+               minimized, raised, fullscreen_cleared, maximized_cleared,
+               home_active, left_active, left_fullscreen, left_unminimized, settled);
     }
     /* PWNAGE-43000: bring a launched native app to the glass.  The Home
        surface is a FULLSCREEN toplevel, so a normal app window would otherwise

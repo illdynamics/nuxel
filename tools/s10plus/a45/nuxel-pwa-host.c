@@ -1167,6 +1167,11 @@ static const struct cfgfile CFG[] = {
   { "navdock-state",       "/run/nuxel-navdock.state",                     0 },
   { "navdock-json",        "/run/nuxel-navdock.json",                      0 },
   { "statusbar-json",      "/run/nuxel-statusbar.state",                   0 },
+  /* PWNAGE-94000: canonical status-bar model published by the DOM bar and
+     consumed by the native fullscreen presentation adapter. */
+  { "statusbar-model",     "/run/nuxel/statusbar-model.json",              1 },
+  /* PWNAGE-94000: launcher lifecycle truth for the native Home watchdog. */
+  { "launcher-app",        "/run/nuxel/launcher-app.json",                1 },
   { "shell-chrome",        "/run/nuxel/shell-chrome.json",                 0 },
   { "lock-enforcement",    "/run/nuxel/lock-enforcement.state",            0 },
   { "foreground",          "/run/nuxel/foreground.state",                  0 },
@@ -1639,6 +1644,7 @@ static void host_after_app_close(const char *why) {
       "(function(){try{"
       "if(window.NuxelZoomPolicy&&window.NuxelZoomPolicy.reset)window.NuxelZoomPolicy.reset(window);"
       "if(window.NuxelImmersive&&window.NuxelImmersive.reset)window.NuxelImmersive.reset();"
+      "if(window.nuxel&&window.nuxel.restoreGeometry)window.nuxel.restoreGeometry('host-after-app-close');"
       "try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(e){}"
       "try{window.dispatchEvent(new CustomEvent('nuxel:app-closed'));}catch(e){}"
       "try{window.dispatchEvent(new CustomEvent('nuxel:zoom-reset'));}catch(e){}"
@@ -1657,6 +1663,75 @@ static void host_after_app_close(const char *why) {
   }
   g_timeout_add(80, refocus_home_after_blur, NULL);
   st("HOST_AFTER_APP_CLOSE why=%s zoom=1 repaint=1 focus=home", why ? why : "unspecified");
+}
+
+static guint home_watchdog_source = 0;
+static int home_watchdog_was_active = 0;
+static char home_watchdog_app[128] = "";
+
+static int launcher_state_read(char *state, size_t sn, char *app, size_t an) {
+  char b[1024] = "";
+  FILE *f = fopen("/run/nuxel/launcher-app.json", "r");
+  if (f) {
+    size_t n = fread(b, 1, sizeof b - 1, f);
+    fclose(f);
+    b[n] = 0;
+  }
+  if (state && sn) state[0] = 0;
+  if (app && an) app[0] = 0;
+  const char *p = strstr(b, "\"state\"");
+  if (p && state && sn) {
+    p = strchr(p, ':');
+    if (p) {
+      p++;
+      while (*p == ' ' || *p == '\t') p++;
+      if (*p == '"') p++;
+      size_t i = 0;
+      while (*p && *p != '"' && i + 1 < sn) state[i++] = *p++;
+      state[i] = 0;
+    }
+  }
+  p = strstr(b, "\"app_id\"");
+  if (p && app && an) {
+    p = strchr(p, ':');
+    if (p) {
+      p++;
+      while (*p == ' ' || *p == '\t') p++;
+      if (*p == '"') p++;
+      size_t i = 0;
+      while (*p && *p != '"' && i + 1 < an) app[i++] = *p++;
+      app[i] = 0;
+    }
+  }
+  return b[0] ? 1 : 0;
+}
+
+static gboolean home_watchdog_cb(gpointer d) {
+  (void)d;
+  home_watchdog_source = 0;
+  char state[32] = "", app[128] = "";
+  launcher_state_read(state, sizeof state, app, sizeof app);
+  int active_now = !strcmp(state, "ACTIVE") || !strcmp(state, "LAUNCHING") || !strcmp(state, "CLOSING");
+  if (home_watchdog_was_active && active_now && app[0] && !strcmp(app, home_watchdog_app) && g_main_view) {
+    const char *url = getenv("NUXEL_HOME_URL");
+    if (!url || !*url) url = DEFAULT_URL;
+    st("HOST_HOME_WATCHDOG_RELOAD url=%s state=%s app=%s", url, state, app);
+    webkit_web_view_load_uri(g_main_view, url);
+    if (g_main_window) gtk_window_present(GTK_WINDOW(g_main_window));
+  } else {
+    st("HOST_HOME_WATCHDOG_OK state=%s app=%s armed_active=%d", state, app, home_watchdog_was_active);
+  }
+  return G_SOURCE_REMOVE;
+}
+
+static void arm_home_watchdog(void) {
+  if (home_watchdog_source) g_source_remove(home_watchdog_source);
+  char state[32] = "", app[128] = "";
+  launcher_state_read(state, sizeof state, app, sizeof app);
+  home_watchdog_was_active = !strcmp(state, "ACTIVE") || !strcmp(state, "LAUNCHING") || !strcmp(state, "CLOSING");
+  snprintf(home_watchdog_app, sizeof home_watchdog_app, "%s", app);
+  home_watchdog_source = g_timeout_add(2500, home_watchdog_cb, NULL);
+  st("HOST_HOME_WATCHDOG_ARMED 2500ms active=%d app=%s", home_watchdog_was_active, app);
 }
 
 static void action_perform(const char *action, char *result, size_t rn) {
@@ -1839,7 +1914,8 @@ static void action_perform(const char *action, char *result, size_t rn) {
      * exist in the launcher document and the direction is one of left/right. */
     char swipe_id[160] = "", dir[16] = "";
     if (sscanf(action + 9, "%159s %15s", swipe_id, dir) == 2) {
-      int valid = (*swipe_id != 0) && (!strcmp(dir, "left") || !strcmp(dir, "right"));
+      int valid = (*swipe_id != 0) && (!strcmp(dir, "left") || !strcmp(dir, "right") ||
+                  !strcmp(dir, "up") || !strcmp(dir, "down"));
       for (const char *p = swipe_id; valid && *p; p++) {
         if (!(isalnum((unsigned char)*p) || *p == '.' || *p == '-' || *p == '_' || *p == ':')) valid = 0;
       }
@@ -1848,11 +1924,12 @@ static void action_perform(const char *action, char *result, size_t rn) {
         snprintf(js, sizeof js,
           "(function(){try{var id='%s',dir='%s';var e=document.getElementById(id);"
           "if(!e||!e.getBoundingClientRect)return;var r=e.getBoundingClientRect();"
-          "var x=r.left+r.width/2,y=r.top+r.height/2,d=(dir==='right'?110:-110);"
-          "function pe(t,cx){try{return new PointerEvent(t,{bubbles:true,cancelable:true,composed:true,pointerId:7,pointerType:'touch',isPrimary:true,button:0,buttons:t==='pointerup'?0:1,clientX:cx,clientY:y});}"
-          "catch(q){return new MouseEvent(t,{bubbles:true,cancelable:true,clientX:cx,clientY:y,button:0});}}"
-          "e.dispatchEvent(pe('pointerdown',x));e.dispatchEvent(pe('pointermove',x+d/2));"
-          "e.dispatchEvent(pe('pointermove',x+d));e.dispatchEvent(pe('pointerup',x+d));"
+          "var x=r.left+r.width/2,y=r.top+r.height/2;"
+          "var dx=(dir==='right'?110:dir==='left'?-110:0),dy=(dir==='down'?110:dir==='up'?-110:0);"
+          "function pe(t,cx,cy){try{return new PointerEvent(t,{bubbles:true,cancelable:true,composed:true,pointerId:7,pointerType:'touch',isPrimary:true,button:0,buttons:t==='pointerup'?0:1,clientX:cx,clientY:cy});}"
+          "catch(q){return new MouseEvent(t,{bubbles:true,cancelable:true,clientX:cx,clientY:cy,button:0});}}"
+          "e.dispatchEvent(pe('pointerdown',x,y));e.dispatchEvent(pe('pointermove',x+dx/2,y+dy/2));"
+          "e.dispatchEvent(pe('pointermove',x+dx,y+dy));e.dispatchEvent(pe('pointerup',x+dx,y+dy));"
           "try{window.webkit.messageHandlers.nuxelDiag.postMessage('UI_SWIPE id='+id+' dir='+dir);}catch(q){}"
           "}catch(e){try{window.webkit.messageHandlers.nuxelDiag.postMessage('UI_SWIPE_ERROR '+e);}catch(q){}}})();",
           swipe_id, dir);
@@ -1864,6 +1941,116 @@ static void action_perform(const char *action, char *result, size_t rn) {
       }
     } else {
       snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_swipe_args\"}");
+    }
+    return;
+  }
+  if (!strncmp(action, "ui-edge-swipe ", 14)) {
+    /* Bounded evidence hook for the immersive top/bottom edge contract.  It
+     * dispatches pointer events on the element at the real edge coordinate;
+     * it never talks to the compositor seat and never injects into another
+     * application. */
+    char edge[16] = "", dir[16] = "";
+    if (sscanf(action + 14, "%15s %15s", edge, dir) == 2 &&
+        (!strcmp(edge, "top") || !strcmp(edge, "bottom")) &&
+        (!strcmp(dir, "up") || !strcmp(dir, "down")) && g_main_view) {
+      char js[1800];
+      snprintf(js, sizeof js,
+        "(function(){try{var edge='%s',dir='%s';var x=Math.round(innerWidth/2);"
+        "var y=(edge==='top')?6:(innerHeight-6);var d=(dir==='down')?120:-120;"
+        "var el=document.elementFromPoint(x,y)||document.body;"
+        "function pe(t,cy){try{return new PointerEvent(t,{bubbles:true,cancelable:true,composed:true,pointerId:9,pointerType:'touch',isPrimary:true,button:0,buttons:t==='pointerup'?0:1,clientX:x,clientY:cy});}"
+        "catch(q){return new MouseEvent(t,{bubbles:true,cancelable:true,clientX:x,clientY:cy,button:0});}}"
+        "el.dispatchEvent(pe('pointerdown',y));el.dispatchEvent(pe('pointermove',y+d/2));"
+        "el.dispatchEvent(pe('pointermove',y+d));el.dispatchEvent(pe('pointerup',y+d));"
+        "try{window.webkit.messageHandlers.nuxelDiag.postMessage('UI_EDGE_SWIPE edge='+edge+' dir='+dir);}catch(q){}"
+        "}catch(e){try{window.webkit.messageHandlers.nuxelDiag.postMessage('UI_EDGE_SWIPE_ERROR '+e);}catch(q){}}})();",
+        edge, dir);
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+      st("HOST_UI_EDGE_SWIPE edge=%s dir=%s", edge, dir);
+      snprintf(result, rn, "{\"ok\":true,\"action\":\"ui-edge-swipe\",\"edge\":\"%s\",\"dir\":\"%s\"}", edge, dir);
+      return;
+    }
+    snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_edge_swipe\"}");
+    return;
+  }
+  if (!strncmp(action, "ui-rect ", 8)) {
+    /* Read the real rect of an element in the launcher or a same-origin app
+     * iframe.  Used only by the root control FIFO for acceptance evidence. */
+    const char *id = action + 8;
+    int ok = *id != 0;
+    for (const char *p = id; *p; p++) {
+      if (!(isalnum((unsigned char)*p) || *p == '.' || *p == '-' || *p == '_' || *p == ':')) { ok = 0; break; }
+    }
+    if (ok && g_main_view) {
+      char js[1400], outbuf[512];
+      snprintf(js, sizeof js,
+        "(function(){try{function w(x){try{var e=x.document.getElementById('%s');"
+        "if(e){var r=e.getBoundingClientRect();window.webkit.messageHandlers.nuxelDiag.postMessage('UI_RECT '+JSON.stringify({id:'%s',x:r.x,y:r.y,w:r.width,h:r.height}));return true;}"
+        "var f=x.document.querySelectorAll('iframe');for(var i=0;i<f.length;i++){if(w(f[i].contentWindow))return true;}"
+        "}catch(q){}return false;}return w(window);}catch(e){}})();", id, id);
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+      snprintf(outbuf, sizeof outbuf, "{\"ok\":true,\"action\":\"ui-rect\",\"id\":\"%s\"}", id);
+      snprintf(result, rn, "%s", outbuf);
+      st("HOST_UI_RECT id=%s", id);
+    } else {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_rect_target\"}");
+    }
+    return;
+  }
+  if (!strncmp(action, "test-tap ", 9)) {
+    /* Root-only trusted verification tap.  Unlike a DOM PointerEvent, this is
+     * a real GDK button event processed by WebKit's UI process, so it grants
+     * the user activation a physical finger would.  It is never exposed to the
+     * bridge or to an application. */
+    int tx = -1, ty = -1;
+    if (sscanf(action + 9, "%d %d", &tx, &ty) == 2 && tx >= 0 && ty >= 0 && g_main_view) {
+      gtk_widget_grab_focus(GTK_WIDGET(g_main_view));
+      GdkWindow *gwin = gtk_widget_get_window(GTK_WIDGET(g_main_view));
+      gboolean ok = FALSE;
+      if (gwin) {
+        GdkDisplay *gdpy = gdk_window_get_display(gwin);
+        GdkSeat *gseat = gdpy ? gdk_display_get_default_seat(gdpy) : NULL;
+        GdkDevice *gdev = gseat ? gdk_seat_get_pointer(gseat) : NULL;
+        for (int phase = 0; phase < 3; phase++) {
+          GdkEvent *ev;
+          if (phase == 0) {
+            ev = gdk_event_new(GDK_MOTION_NOTIFY);
+            ev->motion.window = g_object_ref(gwin);
+            ev->motion.send_event = TRUE;
+            ev->motion.time = GDK_CURRENT_TIME;
+            ev->motion.x = tx; ev->motion.y = ty;
+            ev->motion.x_root = tx; ev->motion.y_root = ty;
+            ev->motion.state = 0;
+            if (gdev) ev->motion.device = (GdkDevice *)g_object_ref(gdev);
+          } else {
+            gboolean press = (phase == 1);
+            ev = gdk_event_new(press ? GDK_BUTTON_PRESS : GDK_BUTTON_RELEASE);
+            ev->button.window = g_object_ref(gwin);
+            ev->button.send_event = TRUE;
+            ev->button.time = GDK_CURRENT_TIME;
+            ev->button.x = tx; ev->button.y = ty;
+            ev->button.x_root = tx; ev->button.y_root = ty;
+            ev->button.button = 1;
+            ev->button.state = press ? 0 : GDK_BUTTON1_MASK;
+            if (gdev) ev->button.device = (GdkDevice *)g_object_ref(gdev);
+          }
+          gtk_widget_event(GTK_WIDGET(g_main_view), ev);
+          gdk_event_free(ev);
+        }
+        gdk_display_flush(gdpy);
+        ok = TRUE;
+      }
+      st("HOST_TEST_TAP x=%d y=%d ok=%d widget=%dx%d window=%dx%d scale=%d",
+         tx, ty, ok ? 1 : 0,
+         gtk_widget_get_allocated_width(GTK_WIDGET(g_main_view)),
+         gtk_widget_get_allocated_height(GTK_WIDGET(g_main_view)),
+         gwin ? gdk_window_get_width(gwin) : 0,
+         gwin ? gdk_window_get_height(gwin) : 0,
+         gtk_widget_get_scale_factor(GTK_WIDGET(g_main_view)));
+      snprintf(result, rn, "{\"ok\":%s,\"action\":\"test-tap\",\"x\":%d,\"y\":%d}",
+               ok ? "true" : "false", tx, ty);
+    } else {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_test_tap\"}");
     }
     return;
   }
@@ -1888,6 +2075,26 @@ static void action_perform(const char *action, char *result, size_t rn) {
     } else {
       snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_element_id\"}");
     }
+    return;
+  }
+  if (!strcmp(action, "doom-heartbeat") || !strcmp(action, "heartbeat")) {
+    const char *title = g_main_view ? webkit_web_view_get_title(g_main_view) : NULL;
+    st("HOST_HEARTBEAT title=%s", title ? title : "");
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"heartbeat\",\"title\":\"%s\"}",
+             title ? title : "");
+    return;
+  }
+  if (!strcmp(action, "restore-geometry") || !strcmp(action, "geometry-report")) {
+    if (g_main_view) {
+      const char *js =
+        "(function(){try{var r=(window.nuxel&&window.nuxel.restoreGeometry)?"
+        "window.nuxel.restoreGeometry('host-action'):{error:'no-geometry-owner'};"
+        "window.webkit.messageHandlers.nuxelDiag.postMessage('GEOMETRY_RESTORED '+JSON.stringify(r));"
+        "}catch(e){try{window.webkit.messageHandlers.nuxelDiag.postMessage('GEOMETRY_ERROR '+e);}catch(q){}}})();";
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+    }
+    wlfb_command("repaint");
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\"}", action);
     return;
   }
   if (!strcmp(action, "diag-ui")) {
@@ -1919,6 +2126,12 @@ static void action_perform(const char *action, char *result, size_t rn) {
         "cal:(function(){try{var f=Array.from(document.querySelectorAll('iframe')).find(function(x){return /calendar/.test(x.src||'');});if(!f||!f.contentDocument)return null;var d=f.contentDocument;var g=function(id){return d.getElementById(id);};var cs=function(e){return e?getComputedStyle(e):null;};var ed=g('event-editor'),kp=g('time-keypad'),st=g('event-start'),ad=g('event-all-day');var ca=d.defaultView.nuxelCalendar&&d.defaultView.nuxelCalendar.app?d.defaultView.nuxelCalendar.app():null;return {editorHidden:ed?ed.hidden:null,editorClass:ed?ed.className:null,editorDisplay:ed?cs(ed).display:null,keypadHidden:kp?kp.hidden:null,keypadClass:kp?kp.className:null,keypadDisplay:kp?cs(kp).display:null,start:st?st.value:null,startDisabled:st?st.disabled:null,allDay:ad?ad.checked:null,active:(d.activeElement&&d.activeElement.id)||'',app:!!ca,bound:ca?ca.bound:null,events:ca&&ca.events?ca.events.length:null,gridChildren:g('day-grid')?g('day-grid').children.length:null,keypadRect:kp?{x:kp.getBoundingClientRect().x,y:kp.getBoundingClientRect().y,w:kp.getBoundingClientRect().width,h:kp.getBoundingClientRect().height}:null};}catch(e){return 'ERR '+e;}})(),"
         "overlays:{frames:document.querySelectorAll('.pwa-frame').length,iframes:document.querySelectorAll('iframe').length,powerMenus:document.querySelectorAll('#nuxel-power-menu').length,osd:document.querySelectorAll('#nuxel-osd').length,folderSheets:document.querySelectorAll('.folder-sheet').length},"
         "frame:(function(){try{var f=Array.from(document.querySelectorAll('.pwa-frame')).find(function(x){return !x.hidden;});if(!f)return null;var w=f.contentWindow;return {src:String(f.src||''),navDepth:f.__nuxelNavDepth||0,historyLength:w.history?w.history.length:null,hasNavigation:!!w.navigation,navigationCanGoBack:(w.navigation&&typeof w.navigation.canGoBack==='boolean')?w.navigation.canGoBack:null,explicitBack:!!(w.NuxelBack&&w.NuxelBack.canGoBack),canGoBack:!!(w.NuxelBack&&w.NuxelBack.canGoBack&&w.NuxelBack.canGoBack())};}catch(e){return 'ERR '+e;}})(),"
+        "qs:(function(){var p=document.getElementById('quick-settings');return {open:!!(window.qs&&window.qs.isOpen),expanded:!!(window.qs&&window.qs.expanded),extended:!!(window.qs&&window.qs.extended),level:(window.qs&&typeof window.qs.level==='number')?window.qs.level:null,state:(window.qs&&window.qs.levelName)||null,class:p?String(p.className):null,hidden:p?p.hidden:null};})(),"
+        "geometry:(window.nuxel&&window.nuxel.geometryReport)?window.nuxel.geometryReport():null,"
+        "doom:(function(){try{var fs=document.querySelectorAll('iframe');for(var i=0;i<fs.length;i++){var w=fs[i].contentWindow,d=fs[i].contentDocument;if(!w||!d||!w.NuxelDoom)continue;var s={};try{s=JSON.parse(w.localStorage.getItem('nuxel.doom.wad.settings.v1')||'{}');}catch(e){}var an=d.getElementById('audio-note');var er=d.getElementById('error-message');var cv=d.getElementById('canvas');var vis=[];d.querySelectorAll('.screen').forEach(function(x){if(!x.hidden)vis.push(x.id);});return {running:d.body.classList.contains('engine-running'),paused:d.body.classList.contains('paused'),loading:d.body.classList.contains('loading'),screens:vis,canvas:cv?{w:cv.width,h:cv.height,cssW:Math.round(cv.getBoundingClientRect().width),cssH:Math.round(cv.getBoundingClientRect().height),px:(function(){try{var c=cv.getContext('2d');if(!c)return 'no2d';var d=c.getImageData(0,0,cv.width,cv.height).data;var nz=0,n=0;for(var i=0;i<d.length;i+=4*97){if(d[i]||d[i+1]||d[i+2])nz++;n++;}return nz+'/'+n;}catch(e){return 'err:'+e;}})()}:null,sound:s.sound,music:s.music,sfx:s.sfx,audioNote:an?String(an.textContent||''):null,audioState:w.NuxelDoom.engineAudioState?w.NuxelDoom.engineAudioState():null,audioStats:w.NuxelDoom.engineAudioStats?w.NuxelDoom.engineAudioStats():null,glStats:w.NuxelDoom.engineGLStats?w.NuxelDoom.engineGLStats():null,vis:d.visibilityState+','+(d.hidden?1:0),unlocked:w.NuxelDoom.audioUnlocked?w.NuxelDoom.audioUnlocked():null,error:er?String(er.textContent||''):null};}return null;}catch(e){return 'ERR '+e;}})(),"
+        "sound:(function(){var e=document.getElementById('status-sound');var svg=e?e.querySelector('svg.sound-glyph'):null;var disp=function(q){var n=e?e.querySelector(q):null;return n?getComputedStyle(n).display:null;};return {mode:e?e.dataset.mode:null,label:e?e.getAttribute('aria-label'):null,hidden:e?!!e.hidden:null,svg:!!svg,speaker:!!(e&&e.querySelector('.speaker-body')),wavesDisplay:disp('.sound-wave'),forbiddenDisplay:disp('.forbidden-line'),vibrateDisplay:disp('.vibrate-waves'),crossDisplay:disp('.silent-cross')};})(),"
+        "icons:(function(){var a=[];var want=['nuxel-dialer','org.nuxel.Clock','org.gnome.FileRoller','org.gnome.Loupe','org.gnome.Papers','org.gnome.SystemMonitor','org.gnome.TextEditor','org.videolan.VLC','org.mozilla.firefox','com.stremio.Stremio','org.signal.Signal'];var items=document.querySelectorAll('.drawer-list .app-item, .app-list .app-item');for(var i=0;i<items.length;i++){var e=items[i];var id=e.getAttribute('data-app-id');if(!id||want.indexOf(id)<0)continue;var img=e.querySelector('img.nuxel-icon-img');var app=window.appRegistry&&window.appRegistry.getApp?window.appRegistry.getApp(id):null;a.push({id:id,src:img?String(img.getAttribute('src')):'',imgs:e.querySelectorAll('img').length,origin:(window.NuxelIconOrigin&&app)?window.NuxelIconOrigin(app):null,state:img?(img.dataset.iconState||''):''});}return a;})(),"
+        "notifications:(function(){var s=document.getElementById('qs-notifications');var l=document.getElementById('qs-notifications-list');var b=document.querySelector('.status-notif-badge');var cards=l?l.querySelectorAll('.qs-notification-card'):[];var e=document.getElementById('qs-notifications-empty');var er=document.getElementById('qs-notifications-error');return {section:!!s,sectionHidden:s?s.hidden:null,listHidden:l?l.hidden:null,cards:cards.length,badge:b?String(b.textContent||''):null,badgeDisplay:b?getComputedStyle(b).display:null,emptyHidden:e?e.hidden:null,error:er&&!er.hidden?String(er.textContent||''):null};})(),"
         "innerWidth:window.innerWidth,innerHeight:window.innerHeight,dpr:window.devicePixelRatio}));"
         "}catch(e){try{window.webkit.messageHandlers.nuxelDiag.postMessage('UI_ERROR '+e);}catch(x){}}";
       webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
@@ -1995,6 +2208,7 @@ static void action_perform(const char *action, char *result, size_t rn) {
       webkit_web_view_evaluate_javascript(g_main_view, g->str, -1, NULL, NULL, NULL, NULL, NULL);
       g_string_free(g, TRUE);
     }
+    if (!strcmp(action, "home")) arm_home_watchdog();
     if (!strcmp(action, "unlock")) {
       /* Deliberately do NOT map the dock here.  _unlock() queues nav-show
          after the lockscreen hide and Home transition; that is the only path
@@ -2837,6 +3051,13 @@ static WebKitWebView *view_new(void) {
       "enable-back-forward-navigation-gestures", FALSE,
       "user-agent", "Mozilla/5.0 (Linux; aarch64) Nuxel/1.0 (S10+, like Gecko) WebKitGTK",
       NULL);
+  /* PWNAGE-94000: the Nuxel Doom WebAssembly engine initialises SDL/WebAudio
+   * immediately on launch.  WebKit's default autoplay gate leaves the
+   * AudioContext suspended and SDL's synchronous audio open then blocks the
+   * WebProcess (observed: frames frozen, 100%+ CPU, queued Home actions never
+   * ran).  Nuxel owns this system app WebView, so media playback is allowed
+   * without a synthetic gesture; sandboxing and app permissions are unchanged. */
+  webkit_settings_set_media_playback_requires_user_gesture(s, FALSE);
   WebKitUserContentManager *ucm = webkit_user_content_manager_new();
   if (os_owns_boot_animation()) {   /* forward decl used here; defined below main's help */
     WebKitUserStyleSheet *ss = webkit_user_style_sheet_new(POLICY_CSS,

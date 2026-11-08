@@ -1,0 +1,15 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Running as unit: nuxel-chooser-p97000-1794167727.service; invocation ID: baa3a2cc53244cfda4df5d4f8506e4e0
+REQUEST OpenFile /org/freedesktop/portal/desktop/request/1_291/t
+RESPONSE 0 {"uris": ["file:///home/nuxel"]} PATH /org/freedesktop/portal/desktop/request/1_291/t
+--- STATE ---
+{"autotest": "files", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2059, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 2059, "kind": "folder", "outcome": "selected", "selected_count": 1, "source": "files"}, "last_source": "files", "pid": 561746, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794167732.5820482, "version": "1.1.0"}
+

@@ -2,6 +2,21 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.8.2-beta] - 2026-11-09 - *System-wide FileChooser picker, File Handlers settings, Network Manager, ZeroTier and landscape VNC*
+
+### Added
+
+- **XDG FileChooser portal backend** with Gallery/Files sources, OpenFile/SaveFile/SaveFiles, cancellation, filters, multi-select, directory selection and per-request grants; `org.nuxel.Portal` remains a separate hardware-permission broker.
+- **Settings → File Handlers** with global/per-app picker policy, MIME Open-with defaults, portal health and a real test picker.
+- **Network Manager wrapper app** around the existing Wi-Fi connector, plus private DNS, WireGuard/OpenVPN import and ZeroTier controls.
+- **Landscape direct-LAN VNC** (TigerVNC VncAuth) with saved Jump Desktop profile support; Wi-Fi/devmgmt now show the live IPv4/IPv6 address.
+
+### Fixed
+
+- One SSH banner only: `/etc/banner` is the SSH banner; local interactive shells keep the Nuxel banner.
+- Release CI generates the A45 navigation-dock artwork before the PWNAGE-45000 gate so clean checkouts do not fail on a gitignored generated header.
+
+
 The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).

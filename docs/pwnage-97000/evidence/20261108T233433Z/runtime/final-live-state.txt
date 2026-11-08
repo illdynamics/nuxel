@@ -1,0 +1,102 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+---portal-health---
+{
+  "autotest": "",
+  "backend": "nuxel-portal-chooser",
+  "chooser_state_path": "/run/user/1000/nuxel-portal-chooser.state",
+  "counts": {
+    "cancelled": 0,
+    "errors": 0,
+    "requests": 0,
+    "selected": 0
+  },
+  "filechooser_backend_available": true,
+  "filechooser_backend_config": "nuxel",
+  "frontend_available": true,
+  "last_outcome": "idle",
+  "last_source": "none",
+  "pid": 89952,
+  "portal": {
+    "backend_available": true,
+    "backend_owner": "89952",
+    "bus_error": null,
+    "desktop": "Nuxel",
+    "documents_portal_available": true,
+    "documents_portal_owner": "7648",
+    "filechooser_backend": "nuxel",
+    "filechooser_backend_descriptor": "/usr/share/xdg-desktop-portal/portals/nuxel.portal",
+    "frontend_available": true,
+    "frontend_owner": "79490",
+    "gtk_backend_owner": "79498",
+    "last_chooser": {
+      "autotest": "",
+      "backend": "nuxel-portal-chooser",
+      "counts": {
+        "cancelled": 0,
+        "errors": 0,
+        "requests": 0,
+        "selected": 0
+      },
+      "last_outcome": "idle",
+      "last_source": "none",
+      "pid": 89952,
+      "presented": false,
+      "schema_version": 2,
+      "selected_count": 0,
+      "service": "org.freedesktop.impl.portal.desktop.nuxel",
+      "state": "ready",
+      "updated_at": 1794181636.73575,
+      "version": "1.1.0"
+    },
+    "note": "org.nuxel.Portal is the hardware-permission broker; it is not the FileChooser frontend",
+    "nuxel_backend_owner": "89952",
+    "portals_conf": "/etc/xdg-desktop-portal/portals.conf",
+    "schema_version": 1
+  },
+  "presented": false,
+  "schema_version": 2,
+  "selected_count": 0,
+  "service": "org.freedesktop.impl.portal.desktop.nuxel",
+  "state": "ready",
+  "updated_at": 1794181636.73575,
+  "version": "1.1.0"
+}
+---vnc---
+{"success": true, "ports": {"vnc": 5900, "xrdp": 3389}, "services": {"vnc": {"state": "WAITING_FOR_CLIENT", "reason": "VNC password auth is active on the separate X11/Openbox session", "active": true, "listener_verified": true, "configured_bind_address": "10.20.30.16", "bind_address": "10.20.30.16", "listener_addresses": ["10.20.30.16"], "port": 5900, "protocol": "tcp", "session_mode": "separate-x11-session", "transport": "wlan", "authentication_mode": "VNC password (TigerVNC VncAuth)", "encrypted": false, "vnc_password_configured": true, "geometry": "1520x720", "landscape": true, "security_verified": true, "input_enabled": true, "privacy_gate_ok": true}, "xrdp": {"state": "WAITING_FOR_CLIENT", "reason": "TLS xrdp is listening for the owner's RDP client", "active": true, "listener_verified": true, "configured_bind_address": "127.0.0.1", "bind_address": "127.0.0.1", "listener_addresses": ["10.20.30.16"], "port": 3389, "protocol": "tcp", "session_mode": "separate-x11-session", "transport": "wlan", "authentication_mode": "PAM + TLS 1.2/1.3", "encrypted": true, "security_verified": true}, "scrcpy": {"state": "NOT_APPLICABLE_NATIVE_NUXEL", "reason": "scrcpy supports Android ADB targets only; this handset is native Nuxel. Use the native screen-sharing route instead.", "native_mirror": {"service": "vnc", "host": "10.20.30.16", "port": 5900, "protocol": "tcp", "direct_lan": true}}}, "network": {"interface": "wlan0", "address": "10.20.30.16", "prefix": "24"}, "privacy": {"active": true}, "usb": {"kernel_release": "4.14.253-gf7194c1d15ed-dirty", "modes": {"ncm": {"status": "BLOCKED_KNOWN_PANIC"}, "rndis": {"status": "NEEDS_VALIDATION"}, "ecm": {"status": "BLOCKED_KERNEL"}}, "acm_preserved": true, "gadget_functions": ["acm.usb0"], "mutated": false}}
+---xrandr---
+Screen 0: minimum 32 x 32, current 1520 x 720, maximum 32768 x 32768
+VNC-0 connected 1520x720+0+0 0mm x 0mm
+   1520x720      59.95*+
+   1920x1200     59.88  
+---ip---
+{
+  "connected": true,
+  "wifi_state": "internet",
+  "ipv4_addresses": [
+    "10.20.30.16/24"
+  ],
+  "ipv6_addresses": [
+    "fd4e:3732:3532:0:78ce:d55e:e952:4dc3/64",
+    "2a02:a472:fcbc:0:1b0c:b777:2d3b:74ff/64",
+    "fe80::892f:ad34:9723:8904/64"
+  ],
+  "active_connection": "Nuxel Snoerbreuk"
+}
+---zerotier---
+200 info c1ab327d70 1.16.2 ONLINE
+200 listnetworks <nwid> <name> <mac> <status> <type> <dev> <ZT assigned ips>
+200 listnetworks 0cccb752f72ecf52  32:0e:85:c5:2f:c7 ACCESS_DENIED PRIVATE ztly5zthnf -
+---banner---
+banner /etc/banner
+ls: cannot access '/etc/profile.d/99-nuxel-banner.sh': No such file or directory
+---version---
+  "host_version": "0.8.2-beta",
+  "note": "bridge_version is the PWA<->host PROTOCOL contract declared by every app manifest. host_version is the implementation version of the nuxel-bridge processes and is allowed to move without a manifest change."

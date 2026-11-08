@@ -80,7 +80,7 @@
     "services": {
       "xrdp": {
         "provider": "xrdp + xorgxrdp",
-        "port": 13389,
+        "port": 3389,
         "bind": "current-wlan-ipv4",
         "session": "separate-x11-session",
         "account": "nuxel",
@@ -88,7 +88,7 @@
         "tls": true,
         "default_transport": "wlan",
         "usb": "MODE_AWARE_BLOCKED_PENDING_VALIDATION",
-        "note": "TLS + PAM as the local nuxel account. The privileged controller binds TCP 13389 to the current trusted WLAN IPv4 address; no SSH tunnel is required on the owner LAN.",
+        "note": "TLS + PAM as the local nuxel account. The privileged controller binds TCP 3389 to the current trusted WLAN IPv4 address; no SSH tunnel is required on the owner LAN.",
         "protocol": "tcp",
         "bind_mode": "trusted-lan",
         "tls_required": true,
@@ -96,7 +96,7 @@
       },
       "vnc": {
         "provider": "wayvnc",
-        "port": 15900,
+        "port": 5900,
         "bind": "current-wlan-ipv4",
         "session": "current-wayland-session",
         "capture": "zwlr_screencopy_manager_v1",
@@ -122,7 +122,7 @@
         "default_transport": "android-adb-usb",
         "optional_transport": "android-adb-tcpip",
         "waydroid": "not installed and not installed automatically",
-        "native_mirror": "vnc on TCP 15900 (authenticated native Nuxel screen sharing)"
+        "native_mirror": "vnc on TCP 5900 (authenticated native Nuxel screen sharing)"
       }
     },
     "allowed_interfaces": [
@@ -134,7 +134,7 @@
       "wildcard RDP/VNC binding without a proven firewall boundary",
       "USB NCM teardown on kernel 4.14.253",
       "cellular/rmnet/public Internet exposure",
-      "Internet port-forwarding of 13389/15900",
+      "Internet port-forwarding of 3389/5900",
       "storing service passwords in PWA localStorage, URLs, QR codes or logs"
     ],
     "indicator": {

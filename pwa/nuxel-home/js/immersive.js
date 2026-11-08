@@ -18,14 +18,30 @@
 (function (global) {
   'use strict';
 
-  const BOTTOM_BAND = 34;
-  const TOP_BAND = 48;
-  const DISTANCE = 42;
+  /* PWNAGE-94000: landscape needs a deliberate, wider edge band.  The phone
+   * is held in two hands and the dock/bar are physically farther from the
+   * thumb; portrait keeps the established 34/48 px bands.  These are logical
+   * CSS pixels in the WebKit viewport (the same coordinate space as
+   * clientX/clientY from wl_touch), not physical panel pixels. */
+  const BANDS = {
+    portrait:  { bottom: 34, top: 48, distance: 42 },
+    landscape: { bottom: 56, top: 56, distance: 32 },
+  };
+  function bands() {
+    return (global.innerWidth > global.innerHeight) ? BANDS.landscape : BANDS.portrait;
+  }
   let navTimer = 0;
   let statusTimer = 0;
   let boundDocs = new WeakSet();
 
   function home() { return global.nuxel || null; }
+  // Single shade-controller lookup for every path in this module (gesture,
+  // reset, topState).  Keeping it inside gestureDoc made resetChrome and the
+  // public topState getter reference an out-of-scope function.
+  function qsController() {
+    const n = home();
+    return (n && n.components && n.components.qs) || null;
+  }
   function activeState() {
     const state = document.body && document.body.dataset ? document.body.dataset.appState : '';
     return state === 'ACTIVE' || state === 'LAUNCHING';
@@ -76,9 +92,19 @@
 
   function resetChrome() {
     clearNavTimer(); clearStatusTimer();
+    // One authoritative reset: no stale panel level, transform, input region
+    // or hidden app chrome may survive a return to Home.
+    const qs = qsController();
+    if (qs && typeof qs.closeAll === 'function' && qs.level > 0) qs.closeAll('chrome-reset');
     document.body.classList.remove('app-nav-hidden', 'app-nav-revealed');
     document.body.classList.remove('app-status-hidden', 'app-status-revealed');
     document.body.classList.remove('app-immersive');
+    try {
+      const sb = document.getElementById('status-bar');
+      const nav = document.getElementById('system-navigation');
+      if (sb) sb.style.transform = '';
+      if (nav) nav.style.transform = '';
+    } catch (e) {}
   }
 
   function gestureDoc(doc) {
@@ -93,19 +119,16 @@
       if (!allowed()) return null;
       const h = doc.defaultView ? doc.defaultView.innerHeight : (doc.documentElement.clientHeight || 0);
       if (!h) return null;
-      if (y >= h - BOTTOM_BAND) return { id: id, x: x, y: y, kind: 'nav' };
-      if (y <= TOP_BAND) return { id: id, x: x, y: y, kind: 'status' };
+      const band = bands();
+      if (y >= h - band.bottom) return { id: id, x: x, y: y, kind: 'nav' };
+      if (y <= band.top) return { id: id, x: x, y: y, kind: 'status' };
       return null;
     }
-    function qsController() {
-      const n = home();
-      return (n && n.components && n.components.qs) || null;
-    }
-
     function finish(x, y, s) {
       if (!s) return;
       const dx = x - s.x, dy = y - s.y;
-      if (Math.abs(dy) < DISTANCE || Math.abs(dy) < Math.abs(dx) * 1.1) return;
+      const band = bands();
+      if (Math.abs(dy) < band.distance || Math.abs(dy) < Math.abs(dx) * 1.1) return;
       // WebKit may deliver pointer and touch for one physical gesture.  A
       // completed gesture fires exactly once per settle window.
       const now = performance.now();
@@ -122,39 +145,43 @@
           }));
         } catch (e) {}
       } else if (s.kind === 'status') {
-        // PWNAGE-90000 top-edge state machine:
-        //   HIDDEN + down -> COMPACT_BAR (reveal normal top bar)
-        //   COMPACT_BAR + down -> EXPANDED_QUICK_SETTINGS
-        //   COMPACT_BAR/EXPANDED + up -> HIDDEN (upward dismiss always works)
-        // The Quick Settings controller is the single authoritative owner of
-        // the shade; this module only classifies the edge gesture.
+        // PWNAGE-94000 progressive contract, owned by QuickSettings:
+        //   hidden + down   -> standard top bar
+        //   standard + down -> expanded Quick Settings
+        //   expanded + down -> extended Quick Settings
+        //   any level + up  -> hidden (atomic; one swipe, no reverse walk)
+        // The controller is the single authoritative shade owner.
         const qs = qsController();
         if (dy > 0) {
-          if (qs && qs.isOpen) {
-            qs.pull('down', { revealed: true });
+          /* The DOM status-bar pull already advanced the shade when the swipe
+             started inside the visible bar.  Applying it again on pointerup
+             turned the first pull into TWO levels (0 -> 2).  Exactly one owner
+             advances per physical swipe. */
+          if (window.__nuxelQsGestureConsumed) {
+            setStatusVisible(true, 0);
             return;
           }
-          if (document.body.classList.contains('app-status-revealed')) {
-            if (qs) { qs.open(); qs.expand(); }
-            else {
-              try {
-                document.dispatchEvent(new CustomEvent('gesture:qs', {
-                  detail: { direction: 'down', revealed: true, source: 'top-edge' },
-                }));
-              } catch (e) {}
+          if (qs) {
+            if (!qs.isOpen && !document.body.classList.contains('app-status-revealed')) {
+              // First downward swipe: standard Nuxel top bar only.
+              setStatusVisible(true, 0);
+              qs.showStandard('immersive-first-pull');
+            } else {
+              setStatusVisible(true, 0);
+              qs.advance('immersive-pull');
             }
-            try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: 'expanded' } })); } catch (e) {}
-            return;
+          } else {
+            setStatusVisible(true, 0);
+            try {
+              document.dispatchEvent(new CustomEvent('gesture:qs', {
+                detail: { direction: 'down', revealed: true, source: 'top-edge' },
+              }));
+            } catch (e) {}
           }
-          setStatusVisible(true, 0);
-          try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: 'compact' } })); } catch (e) {}
+          try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: qs ? qs.levelName : 'standard' } })); } catch (e) {}
         } else if (dy < 0) {
-          if (qs && qs.isOpen) {
-            // Upward swipe from the expanded/compact shade closes it.
-            qs.pull('up');
-            try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: 'hidden' } })); } catch (e) {}
-            return;
-          }
+          // One upward swipe always closes the entire panel.
+          if (qs) qs.closeAll('immersive-up');
           setStatusVisible(false, 0);
           try { document.dispatchEvent(new CustomEvent('nuxel:top-state', { detail: { state: 'hidden' } })); } catch (e) {}
         }
@@ -229,6 +256,16 @@
     }
   });
 
+  // The state machine is the single owner of bar visibility.  Level 0 hides
+  // the bar only while an app is immersive; the desktop bar is always shown.
+  document.addEventListener('nuxel:qs-state', function (event) {
+    const level = Number(event && event.detail && event.detail.level);
+    if (!isFinite(level)) return;
+    if (level >= 1) { setStatusVisible(true, 0); return; }
+    if (document.body.classList.contains('app-immersive')) setStatusVisible(false, 0);
+    else setStatusVisible(true, 0);
+  });
+
   // Tapping a revealed system button should not leave the strip up forever.
   document.addEventListener('pointerdown', function (e) {
     if (e.target && e.target.closest && e.target.closest('#system-navigation')) {
@@ -247,12 +284,16 @@
     reset: resetChrome,
     get immersive() { return document.body.classList.contains('app-immersive'); },
     get topState() {
-      if (document.body.classList.contains('app-status-revealed')) {
-        const qs = qsController();
-        return (qs && qs.isOpen && qs.expanded) ? 'expanded'
-          : (qs && qs.isOpen ? 'compact' : 'compact-bar');
-      }
-      return 'hidden';
+      const qs = qsController();
+      const immersive = document.body.classList.contains('app-immersive');
+      const revealed = document.body.classList.contains('app-status-revealed');
+      if (immersive && !revealed && (!qs || qs.level === 0)) return 'hidden';
+      if (qs && qs.level >= 2) return qs.levelName;
+      return 'standard';
+    },
+    get topLevel() {
+      const qs = qsController();
+      return qs ? qs.level : 0;
     },
   };
   attach(document);

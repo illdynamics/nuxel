@@ -7,7 +7,7 @@ setopt prompt_subst 2>/dev/null || true
 
 : ${NUXEL_ZSH_SYSTEM_CONF:=/etc/nuxel/zsh.conf}
 : ${NUXEL_ZSH_USER_CONF:=${XDG_CONFIG_HOME:-$HOME/.config}/nuxel/zsh.conf}
-: ${NUXEL_BANNER_FILE:=/etc/nuxel/banner}
+: ${NUXEL_BANNER_FILE:=/etc/banner}
 
 # Defaults (Option 1 is the fresh-install default).
 : ${NUXEL_PROMPT_STYLE:=1}
@@ -78,11 +78,14 @@ _nuxel_banner_once() {
     (( NUXEL_BANNER )) || return 0
     [[ -o interactive ]] || return 0
     [[ -t 1 ]] || return 0
+    # v0.8.2: sshd's Banner /etc/banner is the only SSH banner.  Printing the
+    # legacy /etc/nuxel/banner here duplicated it at the bottom of the login.
+    [[ -z ${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-} ]] || return 0
     [[ -n ${NUXEL_BANNER_SHOWN:-} ]] && return 0
     [[ -n ${NUXEL_BANNER_PRINTED:-} ]] && return 0
     NUXEL_BANNER_PRINTED=1
     export NUXEL_BANNER_SHOWN=1
-    local b=${NUXEL_BANNER_FILE:-/etc/nuxel/banner}
+    local b=${NUXEL_BANNER_FILE:-/etc/banner}
     if [[ ! -r $b ]]; then
         b=${(%):-%x}; b=${b:A:h}/nuxel-banner
     fi

@@ -1,0 +1,23 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+UNIT=p97000-ferdium-1794167785
+Running as unit: p97000-ferdium-1794167785.service; invocation ID: bf5f4f9c816e46e7ad3e95c8fe9d543a
+--- process ---
+--- endpoint ---
+curl: (7) Failed to connect to 127.0.0.1 port 9222 after 0 ms: Could not connect to server
+--- targets ---
+curl: (7) Failed to connect to 127.0.0.1 port 9222 after 0 ms: Could not connect to server
+
+--- toplevel ---
+WINDOWS=4
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+WIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=P96 iw=528 ih=1042 dpr=1.3636363636363635 sw=528 sh=1115 ow=528 oh=1115 — Mozilla Firefox app_id=org.mozilla.firefox max=1 min=0 act=0 fs=0

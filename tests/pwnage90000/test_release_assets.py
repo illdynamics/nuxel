@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-EXPECTED = "v0.8.1-beta"
+EXPECTED = "v0.8.2-beta"
 
 failures: list[str] = []
 
@@ -39,7 +39,7 @@ def tracked(rel: str) -> bool:
 
 
 # ---- canonical version and lockstep ---------------------------------------
-check("VERSION is v0.8.1-beta", text("VERSION").strip() == EXPECTED)
+check("VERSION is v0.8.2-beta", text("VERSION").strip() == EXPECTED)
 check("package.json version", f'"version": "{EXPECTED[1:]}"' in text("pwa/nuxel-common/package.json"))
 bridge = json.loads(text("pwa/nuxel-common/bridge-version.json"))
 check("bridge-version host_version", bridge.get("host_version") == EXPECTED[1:])
@@ -73,8 +73,10 @@ check("nuxel-home-native startup banner",
       f"Starting Nuxel Home v{EXPECTED[1:]}" in text("shell/nuxel-home-native/nuxel_home/main.py"))
 check("nuxel-settings about version",
       f"Nuxel OS v{EXPECTED[1:]}" in text("shell/nuxel-shell/nuxel-settings/main.c"))
+_browser = text("shell/nuxel-browser-native/nuxel_browser_native.py")
 check("nuxel-browser user agent",
-      f"NuxelBrowser/{EXPECTED[1:]}" in text("shell/nuxel-browser-native/nuxel_browser_native.py"))
+      f"NuxelBrowser/{EXPECTED[1:]}" in _browser or
+      ('NuxelBrowser/" + VERSION' in _browser and f'VERSION = "{EXPECTED[1:]}"' in _browser))
 check("VM snapshot version pins",
       text("vm/nuxel-vm-snapshot.sh").count(f'"nuxel_version": "{EXPECTED[1:]}"') >= 2)
 check("Home metainfo release entry",

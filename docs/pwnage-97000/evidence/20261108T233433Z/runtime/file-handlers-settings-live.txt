@@ -1,0 +1,157 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+---get---
+{
+  "success": true,
+  "settings": {
+    "schema_version": 1,
+    "global_picker_policy": "ask",
+    "app_picker_overrides": {
+      "com.rtosta.zapzap": "inherit",
+      "org.ferdium.Ferdium": "inherit",
+      "org.signal.Signal": "inherit"
+    },
+    "mime_defaults": {}
+  },
+  "settings_path": "/home/nuxel/.config/nuxel/file-handlers.json",
+  "mimeapps_path": "/home/nuxel/.config/mimeapps.list"
+}
+[
+  {
+    "id": "org.ferdium.Ferdium",
+    "name": "Ferdium",
+    "type": "flatpak",
+    "package_format": "flatpak",
+    "installed": true,
+    "source": "desktop-entry",
+    "desktop_id": "org.ferdium.Ferdium.desktop",
+    "desktop_entry": "/var/lib/flatpak/exports/share/applications/org.ferdium.Ferdium.desktop",
+    "exec": "/usr/bin/flatpak run --branch=stable --arch=aarch64 --command=ferdium --file-forwarding org.ferdium.Ferdium @@u %U @@",
+    "picker_policy": "inherit",
+    "effective_policy": "ask"
+  },
+  {
+    "id": "org.nuxel.Files",
+    "name": "Files",
+    "type": "pwa",
+    "package_format": "pwa",
+    "installed": true,
+    "source": "registry+desktop-entry",
+    "description": "File browser",
+    "desktop_id": "org.nuxel.Files.desktop",
+    "desktop_entry": "/usr/share/applications/org.nuxel.Files.desktop",
+    "exec": "/usr/libexec/nuxel/nuxel-open-file --app org.nuxel.Files %U",
+    "picker_policy": "inherit",
+    "effective_policy": "ask"
+  },
+  {
+    "id": "org.nuxel.Photos",
+    "name": "Gallery",
+    "type": "pwa",
+    "package_format": "pwa",
+    "installed": true,
+    "source": "registry+desktop-entry",
+    "description": "Photo and video gallery over real user media folders",
+    "desktop_id": "org.nuxel.Photos.desktop",
+    "desktop_entry": "/usr/share/applications/org.nuxel.Photos.desktop",
+    "exec": "/usr/libexec/nuxel/nuxel-open-file --app org.nuxel.Photos %U",
+    "picker_policy": "inherit",
+    "effective_policy": "ask"
+  },
+  {
+    "id": "org.signal.Signal",
+    "name": "Signal",
+    "type": "flatpak",
+    "package_format": "flatpak",
+    "installed": true,
+    "source": "desktop-entry",
+    "description": "Signal Desktop (Flatpak aarch64; verified unprivileged Bubblewrap sandbox)",
+    "desktop_id": "org.signal.Signal.desktop",
+    "desktop_entry": "/var/lib/flatpak/exports/share/applications/org.signal.Signal.desktop",
+    "exec": "/usr/bin/flatpak run --branch=stable --arch=aarch64 --command=signal-desktop --file-forwarding org.signal.Signal @@u %U @@",
+    "picker_policy": "inherit",
+    "effective_policy": "ask"
+  },
+  {
+    "id": "com.rtosta.zapzap",
+    "name": "ZapZap",
+    "type": "flatpak",
+    "package_format": "flatpak",
+    "installed": true,
+    "source": "desktop-entry",
+    "desktop_id": "com.rtosta.zapzap.desktop",
+    "desktop_entry": "/var/lib/flatpak/exports/share/applications/com.rtosta.zapzap.desktop",
+    "exec": "/usr/bin/flatpak run --branch=stable --arch=aarch64 --command=zapzap --file-forwarding com.rtosta.zapzap @@u %u @@",
+    "picker_policy": "inherit",
+    "effective_policy": "ask"
+  }
+]
+---ensure-defaults---
+{
+  "changed": [],
+  "mimeapps": "/home/nuxel/.config/mimeapps.list",
+  "effective": {
+    "image/webp": "org.nuxel.Photos.desktop",
+    "image/jpeg": "org.nuxel.Photos.desktop",
+    "image/png": "org.nuxel.Photos.desktop",
+    "image/gif": "org.nuxel.Photos.desktop",
+    "video/mp4": "org.nuxel.Photos.desktop",
+    "video/webm": "org.nuxel.Photos.desktop",
+    "video/x-matroska": "org.nuxel.Photos.desktop",
+    "inode/directory": "org.nuxel.Files.desktop",
+    "application/x-dia-diagram": "dia.desktop",
+    "text/x-vcard": "evolution.desktop",
+    "text/directory": "evolution.desktop",
+    "text/calendar": "evolution.desktop",
+    "application/x-cd-image": "gnome-disk-image-mounter.desktop",
+    "application/x-raw-disk-image": "gnome-disk-image-writer.desktop",
+    "application/x-raw-disk-image-xz-compressed": "gnome-disk-image-writer.desktop",
+    "image/x-compressed-xcf": "gimp.desktop",
+    "image/x-xcf": "gimp.desktop",
+    "image/x-psd": "gimp.desktop",
+    "image/x-fits": "gimp.desktop",
+    "application/vnd.ms-word": "libreoffice-writer.desktop",
+    "application/vnd.wordperfect": "libreoffice-writer.desktop",
+    "application/vnd.sun.xml.writer": "libreoffice-writer.desktop",
+    "application/vnd.sun.xml.writer.global": "libreoffice-writer.desktop",
+    "application/vnd.sun.xml.writer.template": "libreoffice-writer.desktop",
+    "application/vnd.stardivision.writer": "libreoffice-writer.desktop",
+    "application/vnd.oasis.opendocument.text": "libreoffice-writer.desktop",
+    "application/vnd.oasis.opendocument.text-template": "libreoffice-writer.desktop",
+    "application/vnd.oasis.opendocument.text-web": "libreoffice-writer.desktop",
+    "application/vnd.oasis.opendocument.text-master": "libreoffice-writer.desktop",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "libreoffice-writer.desktop",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.template": "libreoffice-writer.desktop",
+    "application/vnd.ms-excel": "libreoffice-calc.desktop",
+    "application/vnd.stardivision.calc": "libreoffice-calc.desktop",
+    "application/vnd.sun.xml.calc": "libreoffice-calc.desktop",
+    "application/vnd.sun.xml.calc.template": "libreoffice-calc.desktop",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "libreoffice-calc.desktop",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.template": "libreoffice-calc.desktop",
+    "application/vnd.oasis.opendocument.spreadsheet": "libreoffice-calc.desktop",
+    "application/vnd.oasis.opendocument.spreadsheet-template": "libreoffice-calc.desktop",
+    "application/vnd.ms-powerpoint": "libreoffice-impress.desktop",
+    "application/vnd.stardivision.impress": "libreoffice-impress.desktop",
+    "application/vnd.sun.xml.impress": "libreoffice-impress.desktop",
+    "application/vnd.sun.xml.impress.template": "libreoffice-impress.desktop",
+    "application/vnd.oasis.opendocument.presentation": "libreoffice-impress.desktop",
+    "application/vnd.oasis.opendocument.presentation-template": "libreoffice-impress.desktop",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "libreoffice-impress.desktop",
+    "application/vnd.openxmlformats-officedocument.presentationml.template": "libreoffice-impress.desktop",
+    "application/vnd.stardivision.draw": "libreoffice-draw.desktop",
+    "application/vnd.sun.xml.draw": "libreoffice-draw.desktop",
+    "application/vnd.sun.xml.draw.template": "libreoffice-draw.desktop",
+    "application/vnd.oasis.opendocument.graphics": "libreoffice-draw.desktop",
+    "application/vnd.oasis.opendocument.graphics-template": "libreoffice-draw.desktop",
+    "application/vnd.oasis.opendocument.formula": "libreoffice-math.desktop",
+    "application/vnd.sun.xml.math": "libreoffice-math.desktop",
+    "application/vnd.stardivision.math": "libreoffice-math.desktop",
+    "application/vnd.oasis.opendocument.database": "libreoffice-base.desktop",
+    "application/vnd.sun.

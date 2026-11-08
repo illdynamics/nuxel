@@ -1,0 +1,18 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+9da3713e4612d0ccd3abea8d7fc53db885d29bac202912f8de083865d4dd5a35  root:root 755 57494 /usr/libexec/nuxel/nuxel-portal-chooser
+9d0c3a4693e0fdfd56e1bd0459151c997ffa7b60bc13888ef13f35f24ebb419c  root:root 644 43176 /usr/lib/nuxel/nuxel_file_handlers.py
+4bfb78ac51c1f90b096872d9f8a6a2b1a79ce11bb3af60f7cc2705dd5302cbe7  root:root 644 303460 /usr/lib/nuxel/nuxel-bridge/api.py
+6c76358e88b5b2df7d4284027fea7ae68dc1eca4369b4d136684804c5314bcdd  root:root 644 3234 /etc/systemd/system/nuxel-http-bridge.service
+9cc50d8fa7537029a72c95dc3901a20fd00347b47b17a62232d6ad80a61478b7  root:root 644 44089 /usr/share/nuxel/pwa/nuxel-apps/settings/index.html
+45ed2e7b51b16e521e6d4c77ad923202208b0ad37a968449ee80aec0a280dc14  root:root 644 13959 /usr/share/nuxel/pwa/nuxel-apps/settings/file-handlers-settings.js
+24c500540a394731dae6ccdfaaa4fdd8b1f7c09d9784f344f002f83deb8fb3a4  root:root 644 22841 /usr/share/nuxel/pwa/nuxel-apps/photos/js/photos.js
+73ae7d385bcb4dba58564ccfbec91e7457a2e9211b1514dc5aff8d1d4e3d3283  root:root 644 26329 /usr/share/nuxel/pwa/nuxel-apps/files/js/files.js
+143a45eb188c8923b82200275b3a7546cf1a251a8d83de3100fce6c2cdf7e6f7  root:root 644 42661 /etc/nuxel/app-registry/app_registry.json

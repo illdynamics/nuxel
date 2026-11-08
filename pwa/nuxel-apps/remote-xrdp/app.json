@@ -8,7 +8,7 @@
   "url": "/pwa/nuxel-apps/remote-xrdp/index.html",
   "entry": "pwa/nuxel-apps/remote-xrdp/index.html",
   "manifest": "pwa/nuxel-apps/remote-xrdp/manifest.json",
-  "description": "Separate authenticated X11 session over RDP/TLS on direct LAN TCP 13389",
+  "description": "Separate authenticated X11 session over RDP/TLS on direct LAN TCP 3389",
   "capabilities": [],
   "bridge_version": "1",
   "docked": false,

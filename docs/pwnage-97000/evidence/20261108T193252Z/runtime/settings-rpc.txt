@@ -1,0 +1,42 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== PING ===
+{"status": "ok", "service": "nuxel-bridge", "version": "0.8.1-beta", "bridge_version": "1", "session": "2b72c711-6228-49ee-b120-07b8319cc387", "echo": "health"}
+=== FH GET ===
+{
+  "success": false
+}
+APPS 0
+=== STATUS ===
+{
+  "chooser_state_path": "/run/user/0/nuxel-portal-chooser.state",
+  "filechooser_backend_available": true,
+  "filechooser_backend_config": "nuxel",
+  "frontend_available": false,
+  "portal": {
+    "backend_available": true,
+    "backend_owner": "",
+    "bus_error": "Failed to connect to user scope bus via local transport: No such file or directory",
+    "desktop": "Nuxel",
+    "documents_portal_available": false,
+    "documents_portal_owner": "",
+    "filechooser_backend": "nuxel",
+    "filechooser_backend_descriptor": "/usr/share/xdg-desktop-portal/portals/nuxel.portal",
+    "frontend_available": false,
+    "frontend_owner": "",
+    "gtk_backend_owner": "",
+    "last_chooser": {},
+    "note": "org.nuxel.Portal is the hardware-permission broker; it is not the FileChooser frontend",
+    "nuxel_backend_owner": "",
+    "portals_conf": "/etc/xdg-desktop-portal/portals.conf",
+    "schema_version": 1
+  },
+  "state": "not-running"
+}

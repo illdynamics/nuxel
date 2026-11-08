@@ -6,10 +6,12 @@ one service name; it never accepts a command, path, address or port from the
 caller.  The listeners are bound to the *current trusted WLAN IPv4 address* on
 the owner-requested ports:
 
-  * XRDP: TCP 13389, TLS only, PAM as the local ``nuxel`` account, separate X11
-    session;
-  * VNC:  TCP 15900, wayvnc with ``enable_auth=true`` and PAM, TLS certificate
-    plus RSA-AES credentials, mirroring the active Phoc/Wayland session.
+  * XRDP: TCP 3389 (standard RDP), TLS only, PAM as the local ``nuxel``
+    account, separate X11 session;
+  * VNC:  TCP 5900 (standard RFB), TigerVNC Xvnc with VncAuth password
+    authentication, a separate X11/Openbox session.  This is the combination
+    Jump Desktop actually negotiates; wayvnc's VeNCrypt-only auth remains
+    available manually but is not the default remote-desktop profile.
 
 Binding a specific WLAN address (instead of 0.0.0.0) is the fail-closed LAN
 boundary on images without a firewall engine.  The USB network path is never
@@ -22,6 +24,7 @@ import fcntl
 import json
 import os
 import re
+import secrets
 import shutil
 import signal
 import socket
@@ -35,7 +38,10 @@ from typing import Any, Dict, List, Optional, Tuple
 STATE_DIR = Path("/run/nuxel/remote-desktop")
 PREF_DIR = Path("/var/lib/nuxel/remote-desktop")
 VNC_DIR = Path("/etc/nuxel/remote-desktop/vnc")
-VNC_CONF = VNC_DIR / "wayvnc.conf"
+VNC_CONF = VNC_DIR / "xvnc.conf"
+VNC_PASS = VNC_DIR / "vnc.passwd"
+VNC_PASSWORD_TXT = VNC_DIR / "password.txt"
+VNC_STARTUP = Path("/home/nuxel/.vnc/xstartup")
 VNC_CERT = VNC_DIR / "tls_cert.pem"
 VNC_KEY = VNC_DIR / "tls_key.pem"
 VNC_RSA_KEY = VNC_DIR / "rsa_key.pem"
@@ -47,7 +53,9 @@ XRDP_KEY = Path("/etc/xrdp/nuxel-key.pem")
 XRDP_PAM = Path("/etc/pam.d/xrdp-sesman")
 XRDP_UNITS = ("xrdp-sesman.service", "xrdp.service")
 SERVICES = ("vnc", "xrdp", "scrcpy")
-PORTS = {"vnc": 15900, "xrdp": 13389}
+PORTS = {"vnc": 5900, "xrdp": 3389}
+VNC_GEOMETRY_DEFAULT = "1520x720"
+VNC_GEOMETRY_RE = re.compile(r"^([0-9]{3,4})x([0-9]{3,4})$")
 WAYLAND_RUNTIME = Path("/run/nuxel-wayland")
 WAYLAND_DISPLAY = "wayland-0"
 VNC_REQUIRED_PROTOCOLS = (
@@ -279,23 +287,89 @@ def _ensure_xrdp_auth_material() -> str:
     return "ok"
 
 
+VNC_PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+
+
+def _ensure_vnc_password() -> str:
+    """Create an 8-character VNC password once; never log or return it."""
+    VNC_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(VNC_DIR, 0o755)
+    except OSError:
+        pass
+    if not VNC_PASS.is_file() or VNC_PASS.stat().st_size < 8:
+        if not shutil.which("vncpasswd"):
+            raise RuntimeError("vncpasswd is not installed")
+        password = "".join(secrets.choice(VNC_PASSWORD_ALPHABET) for _ in range(8))
+        proc = subprocess.run(["vncpasswd", "-f"], input=password,
+                              capture_output=True, text=True, timeout=10)
+        if proc.returncode != 0:
+            raise RuntimeError("vncpasswd failed: " + (proc.stderr or "").strip())
+        VNC_PASS.write_bytes(proc.stdout[:8])
+        os.chmod(VNC_PASS, 0o600)
+        try:
+            os.chown(VNC_PASS, 1000, 1000)
+        except OSError:
+            pass
+        # The owner can read the generated password from this mode-0600 file.
+        VNC_PASSWORD_TXT.write_text(password + "\n")
+        os.chmod(VNC_PASSWORD_TXT, 0o600)
+        try:
+            os.chown(VNC_PASSWORD_TXT, 1000, 1000)
+        except OSError:
+            pass
+    else:
+        os.chmod(VNC_PASS, 0o600)
+        try:
+            os.chown(VNC_PASS, 1000, 1000)
+        except OSError:
+            pass
+    return str(VNC_PASS)
+
+
+def _ensure_vnc_startup() -> None:
+    VNC_STARTUP.parent.mkdir(parents=True, exist_ok=True)
+    if not VNC_STARTUP.is_file():
+        VNC_STARTUP.write_text("#!/bin/sh\nexec openbox-session\n")
+        os.chmod(VNC_STARTUP, 0o755)
+        try:
+            os.chown(VNC_STARTUP, 1000, 1000)
+            os.chown(VNC_STARTUP.parent, 1000, 1000)
+        except OSError:
+            pass
+
+
+def _vnc_geometry() -> str:
+    """Return a validated landscape WxH for the separate X11 session."""
+    value = os.environ.get("NUXEL_VNC_GEOMETRY", VNC_GEOMETRY_DEFAULT).strip().lower()
+    match = VNC_GEOMETRY_RE.match(value)
+    if not match:
+        raise RuntimeError("invalid VNC geometry: %r" % value)
+    width, height = int(match.group(1)), int(match.group(2))
+    if width < 640 or height < 360 or width > 4096 or height > 2304:
+        raise RuntimeError("VNC geometry out of range")
+    if width < height:
+        raise RuntimeError("VNC geometry must be landscape")
+    return "%dx%d" % (width, height)
+
+
 def _write_vnc_config(address: str) -> None:
-    """Secure direct-LAN RFB: PAM + TLS + RSA-AES, never unauthenticated."""
-    _ensure_vnc_auth_material(address)
+    """Direct-LAN RFB with a real VNC password (VncAuth)."""
+    if not re.match(r"^\d{1,3}(?:\.\d{1,3}){3}$", address or ""):
+        raise RuntimeError("invalid VNC bind address")
+    password_file = _ensure_vnc_password()
+    _ensure_vnc_startup()
+    geometry = _vnc_geometry()
     text = (
         "# Nuxel - generated by nuxel-remote-desktop-ctl\n"
-        "# Direct owner-LAN listener. PAM authenticates the local nuxel account.\n"
-        "# TLS (VeNCrypt) and RSA-AES are both enabled; no plaintext/no-auth mode.\n"
+        "# Direct owner-LAN listener. TigerVNC VncAuth (password, 8 chars).\n"
         "address=%s\n"
         "port=%d\n"
-        "enable_auth=true\n"
-        "enable_pam=true\n"
-        "certificate_file=%s\n"
-        "private_key_file=%s\n"
-        "rsa_private_key_file=%s\n"
-        "use_relative_paths=false\n"
-    ) % (address, PORTS["vnc"], VNC_CERT, VNC_KEY, VNC_RSA_KEY)
-    _write_atomic(VNC_CONF, text, 0o600)
+        "password_file=%s\n"
+        "security_types=VncAuth\n"
+        "geometry=%s\n"
+    ) % (address, PORTS["vnc"], password_file, geometry)
+    _write_atomic(VNC_CONF, text, 0o644)
 
 
 def _write_xrdp_config(address: str) -> None:
@@ -326,8 +400,13 @@ def _write_xrdp_config(address: str) -> None:
     _write_atomic(XRDP_CONF, text, 0o644)
 
 
+def _is_landscape_geometry(value: str) -> bool:
+    match = VNC_GEOMETRY_RE.match(str(value or ""))
+    return bool(match and int(match.group(1)) >= int(match.group(2)))
+
+
 def _vnc_effective() -> Dict[str, Any]:
-    """Parse the effective wayvnc config without ever returning secrets."""
+    """Parse the effective Xvnc config without ever returning secrets."""
     try:
         text = VNC_CONF.read_text()
     except OSError:
@@ -339,15 +418,26 @@ def _vnc_effective() -> Dict[str, Any]:
             continue
         key, val = line.split("=", 1)
         values[key.strip()] = val.strip()
+    password_file = values.get("password_file") or ""
+    password_ok = False
+    try:
+        password_ok = (Path(password_file).is_file()
+                       and Path(password_file).stat().st_size >= 8)
+    except OSError:
+        pass
     return {
         "configured": bool(values),
         "address": values.get("address"),
         "port": int(values["port"]) if values.get("port", "").isdigit() else None,
-        "enable_auth": values.get("enable_auth", "").lower() == "true",
-        "enable_pam": values.get("enable_pam", "").lower() == "true",
-        "tls_certificate": values.get("certificate_file"),
-        "tls_private_key": values.get("private_key_file"),
-        "rsa_private_key": values.get("rsa_private_key_file"),
+        "geometry": values.get("geometry") or VNC_GEOMETRY_DEFAULT,
+        "landscape": _is_landscape_geometry(values.get("geometry") or VNC_GEOMETRY_DEFAULT),
+        "enable_auth": values.get("security_types") == "VncAuth" and password_ok,
+        "enable_pam": False,
+        "password_file": password_file,
+        "password_file_ok": password_ok,
+        "tls_certificate": None,
+        "tls_private_key": None,
+        "rsa_private_key": None,
     }
 
 
@@ -434,18 +524,14 @@ def status() -> Dict[str, Any]:
     xrdp_addrs = _listeners(PORTS["xrdp"])
     xrdp_listening = bool(xrdp_addrs)
 
-    vnc_secure = bool(
-        vnc_active and vnc_listening and vnc_cfg.get("enable_auth")
-        and vnc_cfg.get("enable_pam")
-        and Path(vnc_cfg.get("tls_certificate") or "").is_file()
-        and Path(vnc_cfg.get("tls_private_key") or "").is_file())
-    if not shutil.which("wayvnc"):
-        vnc_state, vnc_reason = "UNSUPPORTED", "wayvnc is not installed"
+    vnc_secure = bool(vnc_active and vnc_listening and vnc_cfg.get("enable_auth"))
+    if not shutil.which("Xvnc"):
+        vnc_state, vnc_reason = "UNSUPPORTED", "TigerVNC Xvnc is not installed"
     elif vnc_listening and not vnc_active:
-        vnc_state, vnc_reason = "ERROR", "A wayvnc listener is open but the managed unit is not active"
+        vnc_state, vnc_reason = "ERROR", "An Xvnc listener is open but the managed unit is not active"
     elif vnc_active and vnc_listening:
         vnc_state = "WAITING_FOR_CLIENT"
-        vnc_reason = "Authenticated wayvnc is capturing the active Phoc output"
+        vnc_reason = "VNC password auth is active on the separate X11/Openbox session"
     else:
         vnc_state, vnc_reason = "OFF", "Service is stopped by default"
 
@@ -473,12 +559,14 @@ def status() -> Dict[str, Any]:
                 "bind_address": (vnc_cfg.get("address") if vnc_active else net.get("address")),
                 "listener_addresses": vnc_addrs,
                 "port": PORTS["vnc"], "protocol": "tcp",
-                "session_mode": "current-wayland-session",
+                "session_mode": "separate-x11-session",
                 "transport": "wlan" if vnc_active else None,
-                "authentication_mode": ("PAM + VeNCrypt TLS/RSA-AES"
-                                        if vnc_cfg.get("enable_auth") and vnc_cfg.get("enable_pam")
-                                        else "UNAUTHENTICATED"),
-                "encrypted": bool(vnc_cfg.get("enable_auth") and vnc_cfg.get("tls_certificate")),
+                "authentication_mode": ("VNC password (TigerVNC VncAuth)"
+                                        if vnc_cfg.get("enable_auth") else "UNAUTHENTICATED"),
+                "encrypted": False,
+                "vnc_password_configured": bool(vnc_cfg.get("password_file_ok")),
+                "geometry": vnc_cfg.get("geometry"),
+                "landscape": vnc_cfg.get("landscape"),
                 "security_verified": vnc_secure,
                 "input_enabled": True,
                 "privacy_gate_ok": vnc_secure,
@@ -514,21 +602,17 @@ def status() -> Dict[str, Any]:
 
 
 def start_vnc() -> Dict[str, Any]:
-    if not shutil.which("wayvnc"):
-        return {"success": False, "error": "wayvnc is not installed",
+    if not shutil.which("Xvnc") or not shutil.which("vncpasswd"):
+        return {"success": False, "error": "TigerVNC Xvnc/vncpasswd is not installed",
                 "error_code": "UNSUPPORTED"}
     net = _network()
     address = net.get("address")
     if not address:
         return {"success": False, "error": "no trusted private WLAN IPv4 address; refusing wildcard exposure",
                 "error_code": "NO_TRUSTED_LAN"}
-    ready, why, protocols = _wayland_ready()
-    if not ready:
-        return {"success": False, "error": why, "error_code": "WAYLAND_UNSUPPORTED",
-                "protocols_checked": list(VNC_REQUIRED_PROTOCOLS)}
     try:
         _write_vnc_config(address)
-    except RuntimeError as exc:
+    except (RuntimeError, OSError) as exc:
         return {"success": False, "error": str(exc), "error_code": "AUTH_MATERIAL"}
     PREF_DIR.mkdir(parents=True, exist_ok=True)
     p = _run(["systemctl", "start", "--no-block", VNC_SERVICE], timeout=10)
@@ -539,17 +623,18 @@ def start_vnc() -> Dict[str, Any]:
         if _active(VNC_SERVICE) and _listener(PORTS["vnc"], address):
             st = _state()
             st["vnc"] = {"started_at": time.time(), "transport": "wlan",
-                         "session": "current-wayland-session",
+                         "session": "separate-x11-session",
                          "bind_address": address, "port": PORTS["vnc"]}
             _write_state(st)
             return {"success": True, "service": "vnc", "state": "READY",
                     "transport": "wlan", "bind_address": address,
-                    "port": PORTS["vnc"], "authentication_mode": "PAM + VeNCrypt TLS/RSA-AES",
+                    "port": PORTS["vnc"],
+                    "authentication_mode": "VNC password (TigerVNC VncAuth)",
                     "security_verified": True}
         time.sleep(0.25)
     _run(["systemctl", "stop", VNC_SERVICE], timeout=10)
     return {"success": False,
-            "error": "wayvnc did not open %s:%d with auth enabled" % (address, PORTS["vnc"]),
+            "error": "Xvnc did not open %s:%d with VncAuth" % (address, PORTS["vnc"]),
             "error_code": "START_TIMEOUT"}
 
 

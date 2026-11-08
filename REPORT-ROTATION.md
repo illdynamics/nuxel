@@ -130,3 +130,15 @@
 - **Proved:** sensor classes/IIO nodes exist, raw accel is zero, SSP is down, manual modes work, auto does not.
 - **Inferred:** the missing SSP/BBD runtime is the primary blocker; LSM6DSO may be hub-owned.
 - **Unknown:** exact sensor-hub patch revision, LSM6DSO power state, mount matrix/calibration, whether direct host access is physically possible.
+
+## 17. Reflash impact (controlled maintenance)
+
+| Question | Answer |
+|---|---|
+| Does completing auto-rotation require a reflash? | **PARTIAL / YES.** The SSP/BBD vendor runtime and firmware belong in the system image; the sensor transport is already enumerated. |
+| Boot/kernel too? | Only if the SSP driver/DT needs changes to bring the MCU out of `ssp_down`. |
+| Can it be deployed over SSH now? | **NO** for real auto-rotation; the MCU is not streaming and raw samples are zero. |
+| Batch with PWNAGE-93000? | **YES.** Combine with the GNSS/SSP reflash batch; PWNAGE-93000 userspace can be in the same image. |
+| Controlled batch | System image first; verify nonzero accelerometer samples and actual screen rotation, not just a written sysfs enable. |
+| Rollback | Previous A/B slot; manual/locked rotation and the seven-mode UI must remain usable. |
+| Risk if postponed | Auto-rotation stays unavailable; manual rotation still works. |

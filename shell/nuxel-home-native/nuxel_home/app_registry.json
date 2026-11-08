@@ -8,7 +8,7 @@
     {
       "id": "nuxel-dialer",
       "name": "Phone",
-      "icon": "\ud83d\udcde",
+      "icon": "📞",
       "kind": "native",
       "url": "nuxel-dialer://",
       "native_binary": "/usr/bin/nuxel-dialer",
@@ -27,7 +27,7 @@
     {
       "id": "nuxel-messages",
       "name": "Messages",
-      "icon": "\ud83d\udcac",
+      "icon": "💬",
       "kind": "native",
       "url": "nuxel-messages://",
       "native_binary": "/usr/bin/nuxel-messages",
@@ -45,7 +45,7 @@
     {
       "id": "nuxel-contacts",
       "name": "Contacts",
-      "icon": "\ud83d\udc64",
+      "icon": "👤",
       "kind": "native",
       "url": "nuxel-contacts://",
       "native_binary": "/usr/bin/nuxel-contacts",
@@ -62,7 +62,7 @@
     {
       "id": "nuxel-camera",
       "name": "Camera",
-      "icon": "\ud83d\udcf7",
+      "icon": "📷",
       "kind": "native",
       "url": "nuxel-camera://",
       "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
@@ -79,7 +79,7 @@
     {
       "id": "org.nuxel.Mail",
       "name": "Mail",
-      "icon": "\u2709\ufe0f",
+      "icon": "✉️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/mail/index.html",
       "native_binary": null,
@@ -97,7 +97,7 @@
     {
       "id": "org.nuxel.Calendar",
       "name": "Calendar",
-      "icon": "\ud83d\udcc5",
+      "icon": "📅",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/calendar/index.html",
       "native_binary": null,
@@ -114,7 +114,7 @@
     {
       "id": "org.nuxel.Notes",
       "name": "Notes",
-      "icon": "\ud83d\udcdd",
+      "icon": "📝",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/notes/index.html",
       "native_binary": null,
@@ -130,7 +130,7 @@
     {
       "id": "org.nuxel.Files",
       "name": "Files",
-      "icon": "\ud83d\udcc1",
+      "icon": "📁",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/files/index.html",
       "native_binary": null,
@@ -144,7 +144,7 @@
     {
       "id": "nuxel-settings",
       "name": "Settings",
-      "icon": "\u2699\ufe0f",
+      "icon": "⚙️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html",
       "native_binary": null,
@@ -161,7 +161,7 @@
     {
       "id": "org.nuxel.Firewall",
       "name": "Firewall",
-      "icon": "\ud83d\udee1\ufe0f",
+      "icon": "🛡️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/firewall/index.html",
       "native_binary": null,
@@ -178,7 +178,7 @@
     {
       "id": "org.nuxel.Permissions",
       "name": "Permissions",
-      "icon": "\ud83d\udd10",
+      "icon": "🔐",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/permissions/index.html",
       "native_binary": null,
@@ -192,9 +192,25 @@
       "status": "implemented"
     },
     {
+      "id": "org.nuxel.NetworkManager",
+      "name": "Network Manager",
+      "icon": "🌐",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/network-manager/index.html",
+      "native_binary": null,
+      "color": "#2F9EE8",
+      "category": "system",
+      "description": "Owner wrapper around the working NetworkManager Wi-Fi connector, plus private DNS, VPN and ZeroTier controls",
+      "capabilities": [
+        "network:manage"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
       "id": "org.nuxel.Terminal",
       "name": "Terminal",
-      "icon": "\ud83d\udda5\ufe0f",
+      "icon": "🖥️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/terminal/index.html",
       "native_binary": null,
@@ -210,7 +226,7 @@
     {
       "id": "org.nuxel.LiveConsole",
       "name": "Serial Live Console",
-      "icon": "\ud83d\udcdf",
+      "icon": "📟",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html",
       "native_binary": null,
@@ -224,7 +240,7 @@
     {
       "id": "org.nuxel.USBSSHConsole",
       "name": "USB SSH Console",
-      "icon": "\ud83d\udd0c",
+      "icon": "🔌",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html",
       "native_binary": null,
@@ -238,7 +254,7 @@
     {
       "id": "org.nuxel.WiFiSSHConsole",
       "name": "Wi-Fi SSH Console",
-      "icon": "\ud83d\udcf6",
+      "icon": "📶",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html",
       "native_binary": null,
@@ -252,7 +268,7 @@
     {
       "id": "org.nuxel.RemoteDesktopXRDP",
       "name": "XRDP Remote Desktop",
-      "icon": "\ud83d\udda5\ufe0f",
+      "icon": "🖥️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/remote-xrdp/index.html",
       "native_binary": null,
@@ -266,7 +282,7 @@
     {
       "id": "org.nuxel.RemoteDesktopVNC",
       "name": "VNC Screen Sharing",
-      "icon": "\ud83d\uddb5",
+      "icon": "🖵",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/remote-vnc/index.html",
       "native_binary": null,
@@ -280,7 +296,7 @@
     {
       "id": "org.nuxel.ScrcpyMirror",
       "name": "scrcpy (Android)",
-      "icon": "\ud83d\udcf1",
+      "icon": "📱",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/remote-scrcpy/index.html",
       "native_binary": null,
@@ -294,7 +310,7 @@
     {
       "id": "org.nuxel.Browser",
       "name": "Browser",
-      "icon": "\ud83c\udf10",
+      "icon": "🌐",
       "kind": "native",
       "url": "/pwa/nuxel-apps/browser/index.html",
       "native_binary": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
@@ -311,7 +327,7 @@
     {
       "id": "org.nuxel.Calculator",
       "name": "Calculator",
-      "icon": "\ud83e\uddee",
+      "icon": "🧮",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/calculator/index.html",
       "native_binary": null,
@@ -325,7 +341,7 @@
     {
       "id": "org.nuxel.Clock",
       "name": "Clock",
-      "icon": "\u23f0",
+      "icon": "⏰",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/clock/index.html",
       "native_binary": null,
@@ -342,7 +358,7 @@
     {
       "id": "org.nuxel.Photos",
       "name": "Gallery",
-      "icon": "\ud83d\uddbc\ufe0f",
+      "icon": "🖼️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/photos/index.html",
       "native_binary": null,
@@ -358,7 +374,7 @@
     {
       "id": "org.nuxel.Weather",
       "name": "Weather",
-      "icon": "\u26c5",
+      "icon": "⛅",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/weather/index.html",
       "native_binary": null,
@@ -375,7 +391,7 @@
     {
       "id": "org.nuxel.Maps",
       "name": "Maps",
-      "icon": "\ud83d\uddfa\ufe0f",
+      "icon": "🗺️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/maps/index.html",
       "native_binary": null,
@@ -393,7 +409,7 @@
     {
       "id": "org.nuxel.Nuxtore",
       "name": "NuxTore",
-      "icon": "\ud83d\udecd\ufe0f",
+      "icon": "🛍️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/nuxtore/index.html",
       "native_binary": null,
@@ -407,7 +423,7 @@
     {
       "id": "org.nuxel.Recorder",
       "name": "Recorder",
-      "icon": "\ud83c\udf99\ufe0f",
+      "icon": "🎙️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/recorder/index.html",
       "native_binary": null,
@@ -423,7 +439,7 @@
     {
       "id": "org.nuxel.SnekByte",
       "name": "SnekByte",
-      "icon": "\ud83d\udc0d",
+      "icon": "🐍",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/snekbyte/index.html",
       "native_binary": null,
@@ -437,7 +453,7 @@
     {
       "id": "org.nuxel.Doom",
       "name": "Nuxel Doom",
-      "icon": "\ud83c\udfae",
+      "icon": "🎮",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/doom/index.html",
       "native_binary": null,
@@ -451,7 +467,7 @@
     {
       "id": "org.mozilla.firefox",
       "name": "Firefox",
-      "icon": "\ud83e\udd8a",
+      "icon": "🦊",
       "kind": "native",
       "url": "org.mozilla.firefox://",
       "native_binary": "/usr/bin/firefox",
@@ -468,7 +484,7 @@
     {
       "id": "org.videolan.VLC",
       "name": "VLC",
-      "icon": "\ud83c\udfac",
+      "icon": "🎬",
       "kind": "native",
       "url": "org.videolan.VLC://",
       "native_binary": "/usr/lib/nuxel/nuxel-vlc-fallback",
@@ -484,24 +500,23 @@
     {
       "id": "org.signal.Signal",
       "name": "Signal",
-      "icon": "\ud83d\udcac",
+      "icon": "💬",
       "kind": "native",
       "url": "org.signal.Signal://",
       "native_binary": "/usr/lib/nuxel/nuxel-flatpak-signal",
       "color": "#3a76f0",
       "category": "communication",
-      "description": "Signal Desktop is NOT installed (no official aarch64 RPM; Flatpak available (user namespaces enabled))",
+      "description": "Signal Desktop (Flatpak aarch64; verified unprivileged Bubblewrap sandbox)",
       "capabilities": [
         "network:outbound",
         "storage:persistent"
       ],
-      "bridge_version": "1",
-      "status": "unsupported"
+      "bridge_version": "1"
     },
     {
       "id": "com.stremio.Stremio",
       "name": "Stremio",
-      "icon": "\ud83c\udf7f",
+      "icon": "🍿",
       "kind": "native",
       "url": "com.stremio.Stremio://",
       "native_binary": "/usr/lib/nuxel/nuxel-flatpak-stremio",
@@ -518,7 +533,7 @@
     {
       "id": "org.gnome.FileRoller",
       "name": "Archive Manager",
-      "icon": "\ud83d\udddc\ufe0f",
+      "icon": "🗜️",
       "kind": "native",
       "url": "org.gnome.FileRoller://",
       "native_binary": "/usr/bin/file-roller",
@@ -534,7 +549,7 @@
     {
       "id": "org.gnome.Loupe",
       "name": "Image Viewer",
-      "icon": "\ud83d\uddbc\ufe0f",
+      "icon": "🖼️",
       "kind": "native",
       "url": "org.gnome.Loupe://",
       "native_binary": "/usr/bin/loupe",
@@ -550,7 +565,7 @@
     {
       "id": "org.gnome.Papers",
       "name": "Document Viewer",
-      "icon": "\ud83d\udcc4",
+      "icon": "📄",
       "kind": "native",
       "url": "org.gnome.Papers://",
       "native_binary": "/usr/bin/papers",
@@ -566,7 +581,7 @@
     {
       "id": "org.gnome.SystemMonitor",
       "name": "System Monitor",
-      "icon": "\ud83d\udcc8",
+      "icon": "📈",
       "kind": "native",
       "url": "org.gnome.SystemMonitor://",
       "native_binary": "/usr/bin/gnome-system-monitor",
@@ -580,7 +595,7 @@
     {
       "id": "org.nuxel.Media",
       "name": "Media Player",
-      "icon": "\ud83c\udfac",
+      "icon": "🎬",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/media/index.html",
       "native_binary": null,
@@ -597,7 +612,7 @@
     {
       "id": "org.nuxel.Downloader",
       "name": "Media Downloader",
-      "icon": "\u2b07\ufe0f",
+      "icon": "⬇️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/downloader/index.html",
       "native_binary": null,
@@ -613,7 +628,7 @@
     {
       "id": "org.nuxel.Authenticator",
       "name": "Authenticator",
-      "icon": "\ud83d\udd10",
+      "icon": "🔐",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/authenticator/index.html",
       "native_binary": null,
@@ -630,7 +645,7 @@
     {
       "id": "org.nuxel.Vault",
       "name": "Vault",
-      "icon": "\ud83d\udd11",
+      "icon": "🔑",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/vault/index.html",
       "native_binary": null,
@@ -646,7 +661,7 @@
     {
       "id": "org.nuxel.Cleanup",
       "name": "Safe Cleanup",
-      "icon": "\ud83e\uddf9",
+      "icon": "🧹",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/cleanup/index.html",
       "native_binary": null,
@@ -662,7 +677,7 @@
     {
       "id": "org.nuxel.DevMgmt",
       "name": "DevMgmt",
-      "icon": "\ud83d\udee0\ufe0f",
+      "icon": "🛠️",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/devmgmt/index.html",
       "native_binary": null,
@@ -694,7 +709,7 @@
     {
       "id": "org.gnome.Software",
       "name": "Software",
-      "icon": "\ud83d\udecd\ufe0f",
+      "icon": "🛍️",
       "kind": "native",
       "url": "org.gnome.Software://",
       "native_binary": "/usr/lib/nuxel/nuxel-software",
@@ -708,7 +723,7 @@
     {
       "id": "org.nuxel.Clipper",
       "name": "Clipper",
-      "icon": "\ud83d\udccb",
+      "icon": "📋",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/clipper/index.html",
       "native_binary": null,

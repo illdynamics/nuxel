@@ -1,8 +1,150 @@
 #!/bin/sh
-# Flathub Firefox is installed.  Use it only when unprivileged user namespaces
-# really work on the running kernel; otherwise fall back to the genuine Fedora
-# aarch64 Firefox RPM.  Never weaken the sandbox.
-if command -v flatpak >/dev/null 2>&1 && unshare -Ur true >/dev/null 2>&1; then
-    exec flatpak run org.mozilla.firefox "$@"
+# Nuxel Firefox launcher — sandbox-safe Flatpak-to-RPM wrapper.
+#
+# The original policy is preserved: Flathub Firefox is used only when
+# unprivileged user namespaces work; otherwise the genuine Fedora aarch64 RPM
+# runs.  PWNAGE-96000 adds a RENDER-HEALTH gate because the installed Flatpak
+# Firefox 159 maps a black Wayland surface on this vendor 4.14 kernel/Mesa
+# runtime (measured: surface mean 48/255, 0.3% light pixels), while the RPM
+# paints the same page correctly (mean 214/255).  A future owner can re-enable
+# Flatpak only after a verified render probe sets flatpak_render_verified=true.
+#
+# No sandbox is weakened: no --filesystem=host, no --device=all, no
+# --no-sandbox.  The only app-specific change is a touch-density/profile fit
+# (devPixelsPerPx=1.35) because Firefox's desktop toolbar has a ~500px minimum
+# width and the S10+ logical portrait width is 360px.
+set -u
+
+CONFIG=/etc/nuxel/browser/firefox.json
+HOME_DIR=${HOME:-/home/nuxel}
+
+flatpak_render_verified() {
+  [ -r "$CONFIG" ] || return 1
+  python3 - "$CONFIG" <<'PY'
+import json, sys
+try:
+    doc = json.load(open(sys.argv[1], "r", encoding="utf-8"))
+except Exception:
+    sys.exit(1)
+sys.exit(0 if doc.get("flatpak_render_verified") is True else 1)
+PY
+}
+
+seed_profile_prefs() {
+  python3 - "$1" <<'PY'
+import glob, os, pwd, sys
+
+root = sys.argv[1]
+BEGIN = "// BEGIN NUXEL PWNAGE-96000 managed prefs"
+END = "// END NUXEL PWNAGE-96000 managed prefs"
+PREFS = [
+    'user_pref("layout.css.devPixelsPerPx", "1.35");',
+    'user_pref("browser.uidensity", 1);',
+    'user_pref("dom.w3c_touch_events.enabled", 1);',
+    'user_pref("apz.allow_zooming", true);',
+    'user_pref("browser.tabs.drawInTitlebar", false);',
+]
+if not os.path.isdir(root):
+    sys.exit(0)
+
+profiles = []
+default = None
+ini = os.path.join(root, "profiles.ini")
+try:
+    section = None
+    fields = {}
+    for raw in open(ini, "r", encoding="utf-8", errors="replace"):
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            if section and fields:
+                if section.startswith("Profile"):
+                    path = fields.get("Path")
+                    if path:
+                        if fields.get("IsRelative", "1") == "1":
+                            path = os.path.join(root, path)
+                        profiles.append(path)
+                        if fields.get("Default") == "1":
+                            default = path
+                elif section.startswith("Install") and fields.get("Default"):
+                    default = os.path.join(root, fields["Default"])
+            section, fields = line[1:-1], {}
+        elif "=" in line:
+            k, v = line.split("=", 1)
+            fields[k.strip()] = v.strip()
+    if section and fields:
+        if section.startswith("Profile") and fields.get("Path"):
+            path = fields["Path"]
+            if fields.get("IsRelative", "1") == "1":
+                path = os.path.join(root, path)
+            profiles.append(path)
+            if fields.get("Default") == "1":
+                default = path
+        elif section.startswith("Install") and fields.get("Default"):
+            default = os.path.join(root, fields["Default"])
+except OSError:
+    pass
+if not profiles:
+    profiles = [os.path.dirname(p) for p in glob.glob(os.path.join(root, "*", "prefs.js"))]
+if default and os.path.isdir(default):
+    target = default
+elif profiles:
+    profiles = [p for p in profiles if os.path.isdir(p)]
+    target = max(profiles, key=lambda p: os.path.getmtime(os.path.join(p, "prefs.js"))
+                 if os.path.exists(os.path.join(p, "prefs.js")) else 0) if profiles else None
+else:
+    target = None
+if not target:
+    sys.exit(0)
+path = os.path.join(target, "user.js")
+try:
+    lines = open(path, "r", encoding="utf-8", errors="replace").read().splitlines()
+except OSError:
+    lines = []
+out, skip = [], False
+for line in lines:
+    if line.strip() == BEGIN:
+        skip = True
+        continue
+    if line.strip() == END:
+        skip = False
+        continue
+    if not skip:
+        out.append(line)
+if out and out[-1].strip():
+    out.append("")
+out.append(BEGIN)
+out.extend(PREFS)
+out.append(END)
+tmp = path + ".nuxel.tmp"
+try:
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(out) + "\n")
+    os.chmod(tmp, 0o644)
+    if os.geteuid() == 0:
+        st = os.stat(target)
+        os.chown(tmp, st.st_uid, st.st_gid)
+    os.replace(tmp, path)
+except OSError as exc:
+    try:
+        os.unlink(tmp)
+    except OSError:
+        pass
+    sys.stderr.write("nuxel-firefox: profile prefs skipped: %s\n" % exc)
+PY
+}
+
+if command -v flatpak >/dev/null 2>&1 && unshare -Ur true >/dev/null 2>&1 && flatpak_render_verified; then
+  seed_profile_prefs "$HOME_DIR/.var/app/org.mozilla.firefox/.mozilla/firefox"
+  exec flatpak run \
+    --env=MOZ_ENABLE_WAYLAND=1 --env=GDK_BACKEND=wayland \
+    --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GALLIUM_DRIVER=llvmpipe \
+    --env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe --env=MOZ_WEBRENDER=1 \
+    org.mozilla.firefox "$@"
 fi
-exec /usr/bin/firefox "$@"
+
+# Measured-good RPM path.  The RPM is the genuine Fedora aarch64 package; its
+# internal sandbox policy is unchanged.
+seed_profile_prefs "$HOME_DIR/.mozilla/firefox"
+exec env MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland \
+  LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
+  MESA_LOADER_DRIVER_OVERRIDE=llvmpipe /usr/bin/firefox "$@"

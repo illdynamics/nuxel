@@ -134,3 +134,14 @@
 - **Proved:** `umts_*` nodes, no ModemManager modem/plugin, no data netdev, no SIM/registration, Shannon LTE identity.
 - **Inferred:** the missing CP protocol/plugin is the primary blocker.
 - **Unknown:** exact CP ABI, firmware readiness, SIM interface, whether public documentation is sufficient.
+
+## 17. Reflash impact (controlled maintenance)
+
+| Question | Answer |
+|---|---|
+| Does completing mobile networking require a reflash? | **PARTIAL / YES.** A Shannon ModemManager plugin and transport userspace belong in the system image; a boot/kernel change is likely if the CP transport/DT must be exposed. |
+| Can it be deployed over SSH now? | **NO** for cellular registration/data; the live transport exposes only opaque `umts_*` nodes and no modem. |
+| Batch with PWNAGE-93000? | **YES.** Add the modem plugin/userspace to the same system image; batch boot/kernel changes with NFC/USBNET. |
+| Controlled batch | Kernel/DT + system image together, because the transport and plugin must match. Verify SIM, registration and a data bearer, not just a D-Bus name. |
+| Rollback | Previous A/B slot; Wi-Fi remains independent and must stay untouched. |
+| Risk if postponed | No cellular data; Wi-Fi/USB networking remains functional. |

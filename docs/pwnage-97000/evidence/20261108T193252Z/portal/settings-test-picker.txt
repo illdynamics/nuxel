@@ -1,0 +1,14 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+rc=0
+{"result": {"success": false, "error": "test_client_failed", "rc": 1, "detail": "ERROR:dbus.connection:Unable to set arguments ('', 'PWNAGE-97000 Test Picker', dbus.Dictionary({'multiple': dbus.Boolean(False), 'filters': [['All files', [[0, '*']]]], 'current_folder': dbus.ByteArray(b'/home/nuxel/Documents\\x00')}, signature=dbus.Signature('sv'))) according to signature 'ssa{sv}': <class 'TypeError'>: Expected a string or unicode object", "sample_file": "/home/nuxel/Documents/nuxel-file-handler-test.txt"}}
+--- state ---
+{"autotest": "files", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2443, "last_outcome": "selected", "last_request": {"app_id": "org.gnome.Zenity", "duration_ms": 2443, "kind": "open", "outcome": "selected", "selected_count": 1, "source": "files"}, "last_source": "files", "pid": 571607, "presented": false, "schema_version": 2, "selected_count": 1, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794168071.237914, "version": "1.1.0"}
+

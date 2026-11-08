@@ -1,28 +1,29 @@
 [Unit]
-Description=Nuxel VNC screen sharing of the active Phoc/Wayland session (on-demand)
+Description=Nuxel VNC remote desktop (TigerVNC Xvnc, VncAuth, direct LAN)
 Documentation=file:///usr/share/doc/nuxel/remote-desktop/README.md
-# The compositor creates /run/nuxel-wayland/wayland-0.  Never start at boot:
-# this unit has no [Install] WantedBy, and the Bridge starts it on explicit owner action.
-After=nuxel-wayland.service
-Requires=nuxel-wayland.service
-ConditionPathExists=/run/nuxel-wayland/wayland-0
+# Enabled at boot and also startable by nuxel-remote-desktop-ctl.  It is a
+# separate X11/Openbox session, matching the RDP model; it does not touch the
+# physical Phoc/Wayland session or /dev/fb0.
+After=network-online.target NetworkManager-wait-online.service
+Wants=network-online.target NetworkManager-wait-online.service
 
 [Service]
 Type=simple
-# The Phoc session itself runs as root on this image; the Wayland socket is
-# root-owned 0700 under /run/nuxel-wayland.  This is the session user, not a
-# second compositor and not a framebuffer writer.
-User=root
-Group=root
-Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
-Environment=WAYLAND_DISPLAY=wayland-0
-Environment=XDG_SESSION_TYPE=wayland
-ExecStart=/usr/bin/wayvnc -C /etc/nuxel/remote-desktop/vnc/wayvnc.conf -f 20 -r
+User=nuxel
+Group=nuxel
+Environment=HOME=/home/nuxel
+Environment=XDG_SESSION_TYPE=x11
+# The wrapper validates geometry (landscape only) and falls back to the
+# current wlan0 IPv4 if the generated address is stale after a DHCP
+# change.  It never binds a wildcard address.
+ExecStart=/usr/libexec/nuxel/nuxel-vnc-x11
 Restart=no
-# No /dev/fb0 access: wayvnc is a Wayland client using wlr-screencopy and the
-# virtual pointer/keyboard protocols.
 PrivateDevices=yes
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/run/nuxel /run/nuxel-wayland /var/lib/nuxel
+ReadWritePaths=/home/nuxel/.vnc /run /tmp
+TimeoutStopFailureMode=abort
+
+[Install]
+WantedBy=multi-user.target

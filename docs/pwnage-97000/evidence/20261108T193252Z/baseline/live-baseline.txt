@@ -1,0 +1,325 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== IDENTITY ===
+Sun Nov  8 19:33:23 UTC 2026
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+NAME="Fedora Linux"
+VERSION="43 (Forty Three)"
+RELEASE_TYPE=stable
+ID=fedora
+VERSION_ID=43
+VERSION_CODENAME=""
+PRETTY_NAME="Fedora Linux 43 (Forty Three)"
+ANSI_COLOR="0;38;2;60;110;180"
+=== KERNEL USERNS ===
+CONFIG_USER_NS=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_SECCOMP=y
+# CONFIG_NET_NSH is not set
+unshare_rc=0
+=== PACKAGES ===
+xdg-desktop-portal-1.20.4-1.fc43.aarch64
+xdg-desktop-portal-gtk-1.15.3-2.fc43.aarch64
+xdg-desktop-portal-wlr-0.8.1-1.fc43.aarch64
+flatpak-1.16.6-2.fc43.aarch64
+bubblewrap-0.12.0-1.fc43.aarch64
+=== SESSION ===
+root      368783  368770 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+root      368794  368783 /usr/lib/nuxel/nuxel-pwa-host
+root      369084  368794 runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal-gtk
+nuxel     369091  369084 /usr/libexec/xdg-desktop-portal-gtk
+root      369181  368794 runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-document-portal
+nuxel     369244       1 /usr/libexec/xdg-permission-store
+nuxel     369248  369181 /usr/libexec/xdg-document-portal
+root      465880       1 runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal
+nuxel     465882  465880 /usr/libexec/xdg-desktop-portal
+root      480562       1 bash -c systemctl stop p96browser.service 2>/dev/null; sleep 2; systemctl reset-failed p96browser.service 2>/dev/null; rm -f /tmp/p96-ua.log; export XDG_RUNTIME_DIR=/run/nuxel-wayland WAYLAND_DISPLAY=wayland-0; printf "screen-on\n" > /run/nuxel-wl-fb.cmd; printf "action unlock\n" > /run/nuxel-pwa-host.cmd; sleep 2; systemd-run --unit=p96browser --collect --setenv=XDG_RUNTIME_DIR=/run/nuxel-wayland --setenv=WAYLAND_DISPLAY=wayland-0 --setenv=HOME=/root --setenv=GDK_BACKEND=wayland --setenv=GSK_RENDERER=cairo --setenv=LIBGL_ALWAYS_SOFTWARE=1 --setenv=WEBKIT_DISABLE_COMPOSITING_MODE=1 --setenv=NUXEL_BROWSER_SETTINGS=/tmp/p96-browser-settings.json --setenv=NUXEL_BROWSER_URL=http://127.0.0.1:8099/ /usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py >/dev/null; sleep 9; echo ---PERSIST_UA; cat /tmp/p96-ua.log; echo ---START_STATE; cat /run/nuxel-browser.state; echo; echo ---MENU; printf "menu\n" > /run/nuxel-browser.cmd; sleep 1; cat /run/nuxel-browser.state; echo; echo ---BACK; printf "back\n" > /run/nuxel-browser.cmd; sleep 1; cat /run/nuxel-browser.state; echo
+nuxel     505755       1 python3 /usr/libexec/nuxel/nuxel-portal-chooser
+=== BUS NAMES ===
+:1.0                                                                                         369091 xdg-desktop-por nuxel :1.0          nuxel-wayland.service                   -       -
+:1.1                                                                                         369091 xdg-desktop-por nuxel :1.1          nuxel-wayland.service                   -       -
+:1.190                                                                                       495896 firefox         nuxel :1.190        p96wrap.service                         -       -
+:1.2                                                                                         369082 python3         nuxel :1.2          nuxel-wayland.service                   -       -
+:1.202                                                                                       505755 python3         nuxel :1.202        nuxel-wayland.service                   -       -
+:1.203                                                                                       505755 python3         nuxel :1.203        nuxel-wayland.service                   -       -
+:1.204                                                                                       505755 python3         nuxel :1.204        nuxel-wayland.service                   -       -
+:1.206                                                                                       543020 busctl          nuxel :1.206        sshd.service                            -       -
+:1.25                                                                                        377124 xdg-dbus-proxy  nuxel :1.25         nuxel-app-ferdium-1794156588130.service -       -
+:1.26                                                                                        377124 xdg-dbus-proxy  nuxel :1.26         nuxel-app-ferdium-1794156588130.service -       -
+:1.28                                                                                        377124 xdg-dbus-proxy  nuxel :1.28         nuxel-app-ferdium-1794156588130.service -       -
+:1.3                                                                                         369101 at-spi-bus-laun nuxel :1.3          nuxel-wayland.service                   -       -
+:1.36                                                                                        395821 dconf-service   nuxel :1.36         nuxel-wayland.service                   -       -
+:1.4                                                                                         369114 at-spi2-registr nuxel :1.4          nuxel-wayland.service                   -       -
+:1.5                                                                                         369114 at-spi2-registr nuxel :1.5          nuxel-wayland.service                   -       -
+:1.61                                                                                        405438 xdg-dbus-proxy  nuxel :1.61         sshd.service                            -       -
+:1.64                                                                                        405438 xdg-dbus-proxy  nuxel :1.64         sshd.service                            -       -
+:1.65                                                                                        405438 xdg-dbus-proxy  nuxel :1.65         sshd.service                            -       -
+:1.67                                                                                        405438 xdg-dbus-proxy  nuxel :1.67         sshd.service                            -       -
+:1.68                                                                                        405438 xdg-dbus-proxy  nuxel :1.68         sshd.service                            -       -
+:1.7                                                                                         369244 xdg-permission- nuxel :1.7          nuxel-wayland.service                   -       -
+:1.8                                                                                         369248 xdg-document-po nuxel :1.8          nuxel-wayland.service                   -       -
+:1.89                                                                                        465882 xdg-desktop-por nuxel :1.89         sshd.service                            -       -
+ca.desrt.dconf                                                                               395821 dconf-service   nuxel :1.36         nuxel-wayland.service                   -       -
+com.stremio.Stremio                                                                          405438 xdg-dbus-proxy  nuxel :1.61         sshd.service                            -       -
+org.a11y.Bus                                                                                 369101 at-spi-bus-laun nuxel :1.3          nuxel-wayland.service                   -       -
+org.ferdium.Ferdium                                                                          377124 xdg-dbus-proxy  nuxel :1.28         nuxel-app-ferdium-1794156588130.service -       -
+org.freedesktop.DBus                                                                         369066 n/a             nuxel -             -                                       -       -
+org.freedesktop.Notifications                                                                369082 python3         nuxel :1.2          nuxel-wayland.service                   -       -
+org.freedesktop.impl.portal.PermissionStore                                                  369244 xdg-permission- nuxel :1.7          nuxel-wayland.service                   -       -
+org.freedesktop.impl.portal.Secret                                                                - -               -     (activatable) -                                       -       -
+org.freedesktop.impl.portal.desktop.gtk                                                      369091 xdg-desktop-por nuxel :1.0          nuxel-wayland.service                   -       -
+org.freedesktop.impl.portal.desktop.nuxel                                                    505755 python3         nuxel :1.204        nuxel-wayland.service                   -       -
+org.freedesktop.impl.portal.desktop.wlr                                                           - -               -     (activatable) -                                       -       -
+org.freedesktop.portal.Desktop                                                               465882 xdg-desktop-por nuxel :1.89         sshd.service                            -       -
+org.freedesktop.portal.Documents                                                             369248 xdg-document-po nuxel :1.8          nuxel-wayland.service                   -       -
+org.freedesktop.portal.Flatpak                                                                    - -               -     (activatable) -                                       -       -
+org.mozilla.firefox.L2hvbWUvbnV4ZWwvLm1vemlsbGEvZmlyZWZveC9jMHE0aGczci5kZWZhdWx0LXJlbGVhc2U_ 495896 firefox         nuxel :1.190        p96wrap.service                         -       -
+org.mpris.MediaPlayer2.Stremio                                                               405438 xdg-dbus-proxy  nuxel :1.65         sshd.service                            -       -
+=== PORTAL DESCRIPTORS ===
+total 20
+-rw-r--r--. 1 root root 100 Mar 18  2025 gnome-keyring.portal
+-rw-r--r--. 1 root root 458 Jul 25  2025 gtk.portal
+-rw-r--r--. 1 root root 125 Nov  8 19:10 nuxel.portal
+-rw-r--r--. 1 root root 100 Apr  5  2026 phosh-shell.portal
+-rw-r--r--. 1 root root 197 Dec  4  2025 wlr.portal
+[portal]
+DBusName=org.freedesktop.impl.portal.desktop.nuxel
+Interfaces=org.freedesktop.impl.portal.FileChooser;
+UseIn=Nuxel;
+=== PORTAL CONF ===
+# Nuxel / Phoc portal backend selection (PWNAGE-56000).
+#
+# The session bus is per-user (/run/user/1000/bus) and owned by nuxel.  The GTK
+# backend supplies FileChooser, Settings, Notification, Access, Email, Print,
+# Account, Inhibit and DynamicLauncher without pulling in GNOME Shell.
+#
+# FileChooser goes to the Nuxel backend: one request/response flow with
+# explicit Gallery and Files sources.  org.nuxel.Portal (the hardware
+# permission broker) is a different service and is NOT used here.
+#
+# Screenshot/ScreenCast are deliberately NOT mapped: the wlr backend starts but
+# cannot connect to this image's root-owned PipeWire socket, so advertising it
+# would be a false capability.  The truthful status is in
+# /run/nuxel-portal-ready.json and the Bridge Flatpak status API.
+[preferred]
+default=gtk
+org.freedesktop.impl.portal.FileChooser=nuxel
+org.freedesktop.impl.portal.Print=gtk
+org.freedesktop.impl.portal.Notification=gtk
+org.freedesktop.impl.portal.Inhibit=gtk
+org.freedesktop.impl.portal.Access=gtk
+org.freedesktop.impl.portal.Account=gtk
+org.freedesktop.impl.portal.Email=gtk
+org.freedesktop.impl.portal.DynamicLauncher=gtk
+org.freedesktop.impl.portal.Settings=gtk
+=== CHOOSER FILES ===
+fad9b1cd3fc592a1d19ffc0e13f26ed4866f328ba6224d0fc572f1bb69d6f1f9  /usr/libexec/nuxel/nuxel-portal-chooser
+698d6f0626a7f0fea542d4fc158899f3ac64b0a113ccc48a1d7a27861b3f84e6  /usr/bin/nuxel-portal-status
+7e7cc9f47818661bd837cd7b258efe730148b59ff37ddbccf71cd178550e4ef5  /usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.nuxel.service
+3340e3d517c89f91ca2e78fd000870044ff3d04b4a8dd9b297304e33e7d95766  /usr/share/xdg-desktop-portal/portals/nuxel.portal
+de1c138d8b35dbb34e838839b978ffc4098700e050f1d27ab00c95b9469f37ff  /etc/xdg-desktop-portal/portals.conf
+=== CHOOSER STATE ===
+{"autotest": "", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 1, "errors": 0, "requests": 1, "selected": 0}, "duration_ms": 22874, "last_error": "NameError", "last_outcome": "cancelled-by-portal", "last_request": {"app_id": "", "duration_ms": 22874, "kind": "open", "outcome": "cancelled-by-portal", "selected_count": 0, "source": "cancelled"}, "last_source": "cancelled", "pid": 505755, "presented": false, "schema_version": 1, "selected_count": 0, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794163933.2573686, "version": "1.0.0"}
+
+2026-11-08T18:10:02Z GTK_INIT_FAILED Gtk.init() takes exactly 0 arguments (1 given)
+2026-11-08T18:10:08Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=465711
+2026-11-08T18:10:23Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=465828
+2026-11-08T18:11:21Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=467179
+2026-11-08T18:12:13Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=468003
+2026-11-08T18:12:33Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=468652
+2026-11-08T18:12:51Z NAME_ALREADY_OWNED org.freedesktop.impl.portal.desktop.nuxel
+2026-11-08T18:13:08Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=469411
+2026-11-08T18:13:55Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=470264
+2026-11-08T18:14:28Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=470994
+2026-11-08T18:15:05Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=472188
+2026-11-08T18:15:34Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=473175
+2026-11-08T18:16:05Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=474114
+2026-11-08T18:16:45Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=475190
+2026-11-08T18:17:22Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=476200
+2026-11-08T18:17:23Z REQUEST_ERROR AttributeError: 'NuxelFileChooser' object has no attribute '_autotest'
+2026-11-08T18:17:23Z Traceback (most recent call last):
+  File "/usr/libexec/nuxel/nuxel-portal-chooser", line 775, in _run_request
+    autotest=self._autotest.split(":", 1)[0])
+             ^^^^^^^^^^^^^^
+AttributeError: 'NuxelFileChooser' object has no attribute '_autotest'
+
+2026-11-08T18:17:44Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=476696
+2026-11-08T18:51:39Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=504716
+2026-11-08T18:51:44Z REQUEST_ERROR NameError: name 'chooser' is not defined
+2026-11-08T18:51:44Z Traceback (most recent call last):
+  File "/usr/libexec/nuxel/nuxel-portal-chooser", line 769, in _run_request
+    chooser = NuxelChooserDialog(
+        self.bus, handle, kind, str(title or ""), options, matches, media)
+  File "/usr/libexec/nuxel/nuxel-portal-chooser", line 419, in __init__
+    audit(STATE_PATH, autotest=chooser._autotest.split(":", 1)[0])
+                               ^^^^^^^
+NameError: name 'chooser' is not defined
+
+2026-11-08T18:51:50Z READY org.freedesktop.impl.portal.desktop.nuxel 1.0.0 pid=505755
+=== APPS ===
+=== FLATPAK ===
+com.github.IsmaelMartinez.teams_for_linux	Portal for Teams	2.28.0	flathub
+com.rtosta.zapzap	ZapZap	7.5.1	flathub
+com.stremio.Stremio	Stremio	1.2.2	flathub
+dev.vencord.Vesktop	Vesktop	1.6.5	flathub
+io.mpv.Mpv	mpv	v0.41.0	flathub
+org.ferdium.Ferdium	Ferdium	7.2.3	flathub
+org.gnome.TextEditor	Text Editor	51.0	flathub
+org.mozilla.firefox	Firefox	159.0	flathub
+org.signal.Signal	Signal Desktop	8.33.0	flathub
+org.telegram.desktop	Telegram	7.4	flathub
+org.videolan.VLC	VLC	3.0.24	flathub
+=== FERDIUM SERVICES ===
+messenger/darkmode.css
+messenger/webview.js
+messenger/package.json
+messenger/index.js
+=== MIMEAPPS ===
+## /home/nuxel/.config/mimeapps.list
+## /etc/xdg/mimeapps.list
+## /etc/xdg/gnome-mimeapps.list
+## /usr/share/applications/mimeapps.list
+[Default Applications]
+application/x-dia-diagram=dia.desktop
+text/x-vcard=evolution.desktop
+text/directory=evolution.desktop
+text/calendar=evolution.desktop
+application/x-cd-image=gnome-disk-image-mounter.desktop
+application/x-raw-disk-image=gnome-disk-image-writer.desktop
+application/x-raw-disk-image-xz-compressed=gnome-disk-image-writer.desktop
+image/x-compressed-xcf=gimp.desktop
+image/x-xcf=gimp.desktop
+image/x-psd=gimp.desktop
+image/x-fits=gimp.desktop
+application/vnd.ms-word=libreoffice-writer.desktop
+application/vnd.wordperfect=libreoffice-writer.desktop
+application/vnd.sun.xml.writer=libreoffice-writer.desktop
+application/vnd.sun.xml.writer.global=libreoffice-writer.desktop
+application/vnd.sun.xml.writer.template=libreoffice-writer.desktop
+application/vnd.stardivision.writer=libreoffice-writer.desktop
+application/vnd.oasis.opendocument.text=libreoffice-writer.desktop
+application/vnd.oasis.opendocument.text-template=libreoffice-writer.desktop
+application/vnd.oasis.opendocument.text-web=libreoffice-writer.desktop
+application/vnd.oasis.opendocument.text-master=libreoffice-writer.desktop
+application/vnd.openxmlformats-officedocument.wordprocessingml.document=libreoffice-writer.desktop
+application/vnd.openxmlformats-officedocument.wordprocessingml.template=libreoffice-writer.desktop
+application/vnd.ms-excel=libreoffice-calc.desktop
+application/vnd.stardivision.calc=libreoffice-calc.desktop
+application/vnd.sun.xml.calc=libreoffice-calc.desktop
+application/vnd.sun.xml.calc.template=libreoffice-calc.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=libreoffice-calc.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.template=libreoffice-calc.desktop
+application/vnd.oasis.opendocument.spreadsheet=libreoffice-calc.desktop
+application/vnd.oasis.opendocument.spreadsheet-template=libreoffice-calc.desktop
+application/vnd.ms-powerpoint=libreoffice-impress.desktop
+application/vnd.stardivision.impress=libreoffice-impress.desktop
+application/vnd.sun.xml.impress=libreoffice-impress.desktop
+application/vnd.sun.xml.impress.template=libreoffice-impress.desktop
+application/vnd.oasis.opendocument.presentation=libreoffice-impress.desktop
+application/vnd.oasis.opendocument.presentation-template=libreoffice-impress.desktop
+application/vnd.openxmlformats-officedocument.presentationml.presentation=libreoffice-impress.desktop
+application/vnd.openxmlformats-officedocument.presentationml.template=libreoffice-impress.desktop
+application/vnd.stardivision.draw=libreoffice-draw.desktop
+application/vnd.sun.xml.draw=libreoffice-draw.desktop
+application/vnd.sun.xml.draw.template=libreoffice-draw.desktop
+application/vnd.oasis.opendocument.graphics=libreoffice-draw.desktop
+application/vnd.oasis.opendocument.graphics-template=libreoffice-draw.desktop
+application/vnd.oasis.opendocument.formula=libreoffice-math.desktop
+application/vnd.sun.xml.math=libreoffice-math.desktop
+application/vnd.stardivision.math=libreoffice-math.desktop
+application/vnd.oasis.opendocument.database=libreoffice-base.desktop
+application/vnd.sun.xml.base=libreoffice-base.desktop
+application/x-qw=gnome-gnucash.desktop
+application/x-gnucash=gnome-gnucash.desktop
+application/vnd.lotus-1-2-3=gnumeric.desktop
+application/x-oleo=gnumeric.desktop
+application/x-gnumeric=gnumeric.desktop
+application/x-xbase=gnumeric.desktop
+application/x-abiword=abiword.desktop
+application/x-catalog=gpk-install-catalog.desktop
+application/x-rpm=gpk-install-local-file.desktop
+text/csv=libreoffice-calc.desktop
+text/plain=org.gnome.gedit.desktop
+text/html=org.mozilla.firefox.desktop
+application/xhtml+xml=org.mozilla.firefox.desktop
+inode/directory=org.gnome.Nautilus.desktop
+x-content/blank-cd=brasero-nautilus.desktop
+x-content/blank-dvd=brasero-nautilus.desktop
+x-content/blank-bd=brasero-nautilus.desktop
+x-content/blank-hddvd=brasero-nautilus.desktop
+x-content/audio-cdda=rhythmbox.desktop
+x-content/audio-dvd=rhythmbox.desktop
+x-content/audio-player=rhythmbox.desktop
+x-content/image-dcf=shotwell.desktop
+x-content/image-picturecd=shotwell.desktop
+# URI scheme handlers
+x-scheme-handler/mailto=evolution.desktop
+x-scheme-handler/http=org.mozilla.firefox.desktop
+x-scheme-handler/https=org.mozilla.firefox.desktop
+application/mxf=org.gnome.Totem.desktop;
+application/ogg=org.gnome.Rhythmbox3.desktop;rhythmbox.desktop;org.gnome.Totem.desktop;
+application/ram=org.gnome.Totem.desktop;
+=== MEDIA SAMPLE ===
+/home/nuxel/Gallery/nuxel-screenshot-20261101T075618680Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122646880Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122513421Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261107T221550020Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261105T152710712Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122314844Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261107T221359301Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261103T081224397Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T101453228Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261105T152607024Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T162128763Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122453657Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261105T110111859Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T101556111Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T121902059Z.png
+/home/nuxel/Gallery/Recordings/recording-2026-11-07T15-01-43-144Z.wav
+/home/nuxel/Gallery/Recordings/recording-2026-11-06T13-14-53-819Z.wav
+/home/nuxel/Gallery/Recordings/recording-2026-11-07T22-55-11-147Z.wav
+/home/nuxel/Gallery/Recordings/recording-2026-11-07T22-55-06-446Z.wav
+/home/nuxel/Gallery/Recordings/recording-2026-11-06T16-18-33-372Z.wav
+/home/nuxel/Gallery/nuxel-screenshot-20261106T101516262Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122211246Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261107T221600872Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261107T221321500Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261031T055115Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261101T000825Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261105T143325209Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261103T231232686Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261101T080028159Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T101719518Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T162139943Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261101T100645585Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261101T115405211Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261103T080929179Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T101343756Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122703045Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122324931Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261107T213429158Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T101725522Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T101459273Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261103T132702940Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261103T080956642Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T121914155Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T100846928Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122922202Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T101414387Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122525004Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261102T081213747Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261102T212058308Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261106T122918091Z.png
+=== DESKTOP DEFAULTS ===
+inode/directory -> env: 'xdg-mime': No such file or directory
+image/jpeg -> env: 'xdg-mime': No such file or directory
+text/plain -> env: 'xdg-mime': No such file or directory

@@ -40,6 +40,7 @@
   <button class="tab" data-tab="software">Software</button>
   <button class="tab" data-tab="apps">Apps</button>
   <button class="tab" data-tab="permissions">Permissions</button>
+  <button class="tab" data-tab="file-handlers">File Handlers</button>
   <button class="tab" data-tab="services">Services</button>
   <button class="tab" data-tab="dev">Developer</button>
 </nav>
@@ -724,6 +725,61 @@
     <p class="hint" id="permissions-state">Select an app to review its permissions.</p>
   </section>
 
+  <!-- ── FILE HANDLERS ──────────────────────────────────────────────── -->
+  <section id="tab-file-handlers" class="panel">
+    <h2>File Handlers</h2>
+    <p class="hint">Choose which Nuxel source the system attachment picker prefers, set per-app
+      overrides, and review the real XDG FileChooser portal health. Changes are stored by the
+      Nuxel bridge, not by this page.</p>
+
+    <div class="card">
+      <h3>Attachment picker source</h3>
+      <label class="apps-select-label">Global preference
+        <select id="fh-global-policy" aria-label="Global attachment picker preference">
+          <option value="ask">Ask every time</option>
+          <option value="gallery">Prefer Gallery for images and videos</option>
+          <option value="files">Prefer Files for all file selections</option>
+        </select>
+      </label>
+      <p class="hint">Gallery is always available for media; Files is always one tap away. Per-app
+        overrides below win over this global preference.</p>
+      <div class="row">
+        <button id="fh-save" class="primary">Save File Handlers</button>
+        <button id="fh-reset" class="ghost">Reset to system defaults</button>
+        <button id="fh-refresh" class="ghost">Refresh</button>
+      </div>
+      <p id="fh-state" class="hint">Loading File Handlers…</p>
+    </div>
+
+    <div class="card">
+      <h3>Per-application picker source</h3>
+      <p class="hint">Overrides are keyed by the installed app ID discovered from the Nuxel registry
+        and installed desktop entries. Inherit follows the global preference.</p>
+      <div id="fh-apps" class="apps-list"></div>
+      <p id="fh-apps-state" class="hint">Loading apps…</p>
+    </div>
+
+    <div class="card">
+      <h3>Open-with defaults</h3>
+      <p class="hint">Defaults are written to your per-user mimeapps.list only when the selected
+        desktop entry actually declares that MIME type. Files is not made a universal opener.</p>
+      <div id="fh-mime-list" class="fh-mime-list"></div>
+      <p id="fh-mime-state" class="hint">Loading MIME handlers…</p>
+    </div>
+
+    <div class="card">
+      <h3>Portal health</h3>
+      <p class="hint">This is the live XDG portal state used by native and Flatpak applications.
+        org.nuxel.Portal is the separate hardware-permission broker and is not the FileChooser.</p>
+      <pre id="fh-portal" class="state">—</pre>
+      <div class="row">
+        <button id="fh-test" class="primary">Test File Picker</button>
+        <button id="fh-health" class="ghost">Refresh health</button>
+      </div>
+      <pre id="fh-test-result" class="state">The test opens the real FileChooser frontend and waits for the selected file to come back.</pre>
+    </div>
+  </section>
+
   <!-- ── SERVICES ───────────────────────────────────────────────────── -->
   <section id="tab-services" class="panel">
     <h2>Services</h2>
@@ -753,6 +809,7 @@
 <script src="settings.js?v=p52000"></script>
 <script src="keyboard-settings.js?v=a76"></script>
 <script src="apps-permissions-settings.js?v=p86001"></script>
+<script src="file-handlers-settings.js?v=p97000"></script>
 <script src="theme-settings.js?v=p50002"></script>
 <script src="sound-settings.js?v=p81000"></script>
 <script src="mic-settings.js?v=p84000"></script>

@@ -16,6 +16,19 @@
 // how the documented precedence (off > short > verbose_boot > standard) stays
 // visible instead of surprising the operator after a reboot.
 
+// PWNAGE-96000: bounded, event-only diagnostics.  It emits one line per
+// open/close/provider-sync transition through the existing nuxelDiag channel;
+// there is no timer and no user data (no SSID, address, credential or path).
+function nuxelPerfDiag(tag, fields) {
+    try {
+        const line = tag + ' ' + JSON.stringify(fields || {});
+        const diag = window.webkit && window.webkit.messageHandlers &&
+            window.webkit.messageHandlers.nuxelDiag;
+        if (diag) diag.postMessage(line);
+        else if (console && console.log) console.log('[perf] ' + line);
+    } catch (e) { /* diagnostics must never break the panel */ }
+}
+
 class QuickSettings {
     // A missing Wi-Fi field is NOT evidence that the radio is off.  Only an
     // explicit NetworkManager WirelessEnabled false (or wifi_state=disabled)
@@ -43,8 +56,21 @@ class QuickSettings {
 
     constructor() {
         this.panel = document.getElementById('quick-settings');
-        this.isOpen = false;
+        // PWNAGE-94000: ONE top-bar state machine.
+        //   0 TOPBAR_HIDDEN   (no panel; an immersive app may also hide the bar)
+        //   1 TOPBAR_STANDARD (desktop bar visible, panel closed)
+        //   2 TOPBAR_EXPANDED (Quick Settings tiles)
+        //   3 TOPBAR_EXTENDED (details + notification list)
+        // Opening is progressive, closing is atomic: any upward gesture goes
+        // straight to 0 (no per-level reverse walk).
+        this.level = 0;
         this.expanded = false;
+        this.extended = false;
+        this.isOpen = false;
+        this.shadeState = 'hidden';
+        // The DOM-free machine is the single owner of level transitions.
+        this.machine = (typeof window !== 'undefined' && window.NuxelTopBarMachine)
+            ? new window.NuxelTopBarMachine() : null;
         // null means UNKNOWN/CHECKING, never a fabricated OFF.
         this.state = {
             wifi: null,
@@ -288,81 +314,163 @@ class QuickSettings {
         setTimeout(() => t.remove(), 2600);
     }
 
-    open() {
-        if (this.isOpen) { this.expand(); return; }
-        this.isOpen = true;
-        this.expanded = false;
-        this._render();
-        this.panel.classList.remove('hidden');
-        this._setExpandedUI(false);
-        this._emitState();
-        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
-        // Bounded refresh while the panel is visible.  Every timer is owned by
-        // the panel and stopped in close(); a hidden panel never polls.
-        if (!this._locationTimer) {
-            this._locationTimer = setInterval(() => {
-                if (!this.isOpen) return;
-                this._syncLocation();
-                if (this.expanded) { this._syncIndicators(); this._syncPrivacy(); }
-            }, 5000);
-        }
+    // ---- progressive top-bar state machine --------------------------------
+    // Level 0 is hidden, level 1 is the standard desktop bar, level 2 is the
+    // expanded Quick Settings panel and level 3 is the extended panel.  The
+    // model is intentionally asymmetric: advance() moves one step at a time,
+    // while closeAll() removes every level at once.
+    static get LEVEL_HIDDEN() { return 0; }
+    static get LEVEL_STANDARD() { return 1; }
+    static get LEVEL_EXPANDED() { return 2; }
+    static get LEVEL_EXTENDED() { return 3; }
+
+    get levelName() {
+        return this.level <= 0 ? 'hidden'
+            : this.level === 1 ? 'standard'
+            : this.level === 2 ? 'expanded' : 'extended';
     }
 
-    close() {
-        if (!this.isOpen) return;
-        this.isOpen = false;
-        this.expanded = false;
-        this.panel.classList.remove('expanded');
-        this.panel.classList.add('hidden');
-        this._setExpandedUI(false);
-        this._emitState();
+    _setLevel(level, reason) {
+        const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        const wasOpen = this.isOpen;
+        let next = Math.max(0, Math.min(3, Number(level) || 0));
+        if (this.machine) {
+            this.machine.set(next, reason);
+            next = this.machine.level;
+        }
+        const changed = next !== this.level;
+        this.level = next;
+        this.expanded = next >= 2;
+        this.extended = next >= 3;
+        this.isOpen = next >= 2;
+        if (this.panel) {
+            this.panel.classList.toggle('hidden', next < 2);
+            this.panel.classList.toggle('expanded', next >= 2);
+            this.panel.classList.toggle('extended', next >= 3);
+        }
+        this._setExpandedUI(next);
+        this._emitState(reason);
+        if (next >= 2) {
+            this._ensureVisibleRefresh();
+            // PWNAGE-96000: this call was missing.  The panel's cache-first
+            // renderer (and its bounded post-paint provider refresh) existed but
+            // was never invoked on open, so a panel opened long after startup
+            // showed stale tiles.  It is still cache-first: the DOM is painted
+            // immediately and providers are refreshed after two animation frames.
+            this._render();
+        } else {
+            this._stopVisibleRefresh();
+        }
+        const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0;
+        if (next >= 2 && !wasOpen) {
+            const raf = (window.requestAnimationFrame || (fn => setTimeout(fn, 0)));
+            raf(() => raf(() => nuxelPerfDiag('QS_PERF', {
+                event: 'open', ms: Math.round(((typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0) * 10) / 10,
+                sync_ms: this._lastSyncMs || null,
+                level: next, reason: String(reason || ''),
+                tiles: this.panel ? this.panel.querySelectorAll('.qs-item').length : 0,
+                cache_first: true,
+            })));
+        } else if (next < 2 && wasOpen) {
+            nuxelPerfDiag('QS_PERF', { event: 'close', ms: Math.round(elapsed * 10) / 10,
+                                       level: next, reason: String(reason || '') });
+        }
+        return changed;
+    }
+
+    _ensureVisibleRefresh() {
+        if (this._locationTimer) return;
+        // Bounded refresh while the panel is visible.  Every timer is owned by
+        // the panel and stopped in closeAll(); a hidden panel never polls.
+        this._locationTimer = setInterval(() => {
+            if (!this.isOpen) return;
+            this._syncLocation();
+            this._syncIndicators();
+            this._syncPrivacy();
+        }, 5000);
+    }
+
+    _stopVisibleRefresh() {
         if (this._locationTimer) { clearInterval(this._locationTimer); this._locationTimer = null; }
         // Stale indicator responses are ignored by the generation check.
         this._indicatorGeneration = (this._indicatorGeneration || 0) + 1;
         this._privacyGeneration = (this._privacyGeneration || 0) + 1;
-        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
+    }
+
+    advance(reason) {
+        if (this.machine) {
+            const target = this.machine.nextLevel();
+            if (target === this.level) { this._emitState(reason || 'extended-hold'); return false; }
+            return this._setLevel(target, reason || 'advance');
+        }
+        if (this.level >= 3) { this._emitState(reason || 'extended-hold'); return false; }
+        if (this.level <= 0) return this._setLevel(1, reason || 'standard');
+        return this._setLevel(this.level + 1, reason || 'advance');
+    }
+
+    showStandard(reason) { return this._setLevel(1, reason || 'standard'); }
+
+    // Kept for callers that legitimately want the full panel at once (the
+    // hardware Quick Settings button and the notification bell).
+    open() { return this._setLevel(2, 'open'); }
+    expand() { return this._setLevel(Math.max(2, this.level + (this.level >= 2 ? 1 : 0)), 'expand'); }
+    extend() { return this._setLevel(3, 'extend'); }
+
+    // Atomic upward dismissal: every open level disappears in ONE transition.
+    close() { return this.closeAll('close'); }
+    closeAll(reason) {
+        if (this.level === 0 && !this.isOpen) {
+            if (this.machine) this.machine.closeAll(reason || 'close-all');
+            if (this.panel) this.panel.classList.add('hidden');
+            return false;
+        }
+        return this._setLevel(0, reason || 'close-all');
     }
 
     // `direction` is 'up', 'down' or undefined (legacy cyclic pull).
-    // closed       + down -> open compact (or expanded from a revealed bar)
-    // compact open + down -> expanded
-    // compact open + up   -> closed
-    // expanded     + down -> closed
-    // expanded     + up   -> closed (upward dismiss is never inert)
+    //   hidden/standard + down -> standard / expanded (one step only)
+    //   expanded + down         -> extended
+    //   any level + up          -> hidden (atomic)
     pull(direction, options) {
-        const revealed = !!(options && options.revealed);
-        if (!this.isOpen) {
-            if (direction === 'up') return;
-            this.open();
-            if (revealed && direction === 'down') this.expand();
+        const desktopBarVisible = !document.body.classList.contains('app-immersive') &&
+            !document.body.classList.contains('app-status-hidden');
+        if (direction === 'up') { this.closeAll('up'); return; }
+        if (direction === 'down') {
+            if (this.level >= 3) return;
+            if (this.level === 0 && desktopBarVisible) {
+                // The desktop already shows the standard bar, so the first
+                // physical pull there opens the panel instead of doing nothing.
+                this._setLevel(2, 'desktop-first-pull');
+                return;
+            }
+            this.advance('down');
             return;
         }
-        if (direction === 'up') {
-            // Upward swipe closes the shade from BOTH compact and expanded.
-            // The scroll guard in _bindPullGesture keeps ordinary scrolling
-            // inside the details list from being treated as a dismiss.
-            this.close();
-            return;
-        }
-        if (this.expanded) {
-            this.close();
-            return;
-        }
-        this.expand();
+        // Legacy cyclic pull: advance until extended, then dismiss.
+        if (this.level >= 3) this.closeAll('cyclic-close');
+        else this.advance('cyclic');
     }
 
     // One state-change event keeps CSS, aria-expanded and native/Home chrome
-    // observers in lockstep.
-    _emitState() {
-        const state = !this.isOpen ? 'hidden' : (this.expanded ? 'expanded' : 'compact');
+    // observers in lockstep.  `state` remains the legacy compact/expanded
+    // vocabulary for existing listeners; `level` is the authoritative value.
+    _emitState(reason) {
+        const state = this.levelName;
         this.shadeState = state;
         try {
             this.panel.setAttribute('data-shade-state', state);
-            this.panel.setAttribute('aria-expanded', state === 'expanded' ? 'true' : 'false');
+            this.panel.setAttribute('data-shade-level', String(this.level));
+            this.panel.setAttribute('aria-expanded', this.level >= 2 ? 'true' : 'false');
         } catch (e) {}
         try {
-            document.dispatchEvent(new CustomEvent('nuxel:qs-state', { detail: { state } }));
+            document.dispatchEvent(new CustomEvent('nuxel:qs-state', {
+                detail: { state, level: this.level, reason: reason || '' },
+            }));
+            document.dispatchEvent(new CustomEvent('nuxel:top-state', {
+                detail: { state, level: this.level, reason: reason || '' },
+            }));
         } catch (e) {}
+        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
     }
 
     // Swiping the Quick Settings panel itself follows the same contract as a
@@ -392,8 +500,8 @@ class QuickSettings {
             if (Math.abs(dy) < MIN_PULL || Math.abs(dx) > MAX_SKEW ||
                 Math.abs(dx) > Math.abs(dy) * 1.1 + 8) return;
             // A down-swipe while reading scrolled details belongs to the
-            // details scroller, not to the panel dismiss gesture.
-            if (dy > 0 && this.expanded && (panel.scrollTop || 0) > 0) return;
+            // details scroller, not to the panel expansion gesture.
+            if (dy > 0 && (panel.scrollTop || 0) > 0) return;
             const now = performance.now();
             if (now - lastHandledAt < 400) return;   // pointer+touch duplicate
             lastHandledAt = now;
@@ -427,44 +535,48 @@ class QuickSettings {
         }, true);
     }
 
-    _setExpandedUI(on) {
+    _setExpandedUI(level) {
+        if (typeof level !== 'number') level = this.level;
         const details = document.getElementById('qs-details');
         const privacy = document.getElementById('qs-privacy-row');
+        const notifications = document.getElementById('qs-notifications');
         const btn = document.getElementById('qs-expand-toggle');
-        if (details) details.hidden = !on;
-        if (privacy) privacy.hidden = !on;
+        const wantDetails = level >= 3;
+        const wantPrivacy = level >= 2;
+        if (details) details.hidden = !wantDetails;
+        if (privacy) privacy.hidden = !wantPrivacy;
+        // PWNAGE-93000: the real notification reminder list is a bounded
+        // section BELOW every control/status row, never part of the tiles.
+        if (notifications) notifications.hidden = !wantDetails;
         if (btn) {
-            btn.setAttribute('aria-expanded', on ? 'true' : 'false');
-            btn.textContent = on ? 'Hide connection status' : 'More connection status';
+            btn.setAttribute('aria-expanded', level >= 3 ? 'true' : 'false');
+            btn.textContent = level >= 3 ? 'Collapse extended settings'
+                : level >= 2 ? 'More connection status' : 'More connection status';
         }
         // PWNAGE-52000: privacy providers are read only while this row is
-        // actually visible in the fully expanded panel.
-        if (on) this._syncPrivacy();
-        else this._privacyGeneration = (this._privacyGeneration || 0) + 1;
+        // actually visible in the expanded panel.
+        if (!wantPrivacy) {
+            // Invalidates any in-flight result when the row is no longer shown.
+            this._privacyGeneration = (this._privacyGeneration || 0) + 1;
+        }
+        // When the row is visible the reads are started by _render() after the
+        // first paint, not synchronously in the open state transition.
+        if (wantDetails && window.statusBar && window.statusBar._renderNotificationsPanel) {
+            try { window.statusBar._renderNotificationsPanel(); } catch (e) {}
+        }
     }
 
-    expand() {
-        if (!this.isOpen) return this.open();
-        this.expanded = true;
-        this.panel.classList.add('expanded');
-        this._setExpandedUI(true);
-        this._emitState();
-        this._syncIndicators();
-    }
     collapseOrClose() {
-        if (this.expanded) {
-            this.expanded = false;
-            this.panel.classList.remove('expanded');
-            this._setExpandedUI(false);
-            this._emitState();
-        } else {
-            this.close();
-        }
+        // The explicit button walks down one level; the upward gesture
+        // (closeAll) remains the atomic full dismissal.
+        if (this.level >= 3) this._setLevel(2, 'collapse');
+        else if (this.level >= 2) this._setLevel(1, 'collapse');
+        else this.closeAll('collapse');
     }
 
     toggle() {
-        if (this.isOpen) this.close();
-        else this.open();
+        if (this.level >= 2) this.closeAll('toggle');
+        else this.advance('toggle');
     }
 
     async _toggle(id) {
@@ -1164,6 +1276,13 @@ class QuickSettings {
         const now = Date.now();
         const refresh = () => {
             if (!this.isOpen) return;
+            // Privacy/connection-detail providers are secondary to first paint.
+            // Start them only after the panel is already on screen; the panel is
+            // interactive from cached state before these requests leave.
+            if (this.expanded) {
+                this._syncPrivacy();
+                this._syncIndicators();
+            }
             if (!this._lastSyncAt || now - this._lastSyncAt > 15000) {
                 this._lastSyncAt = Date.now();
                 this._syncState();
@@ -1185,10 +1304,36 @@ class QuickSettings {
     }
 
     async _syncStateOnce(options) {
+        const syncT0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const preserveRadio = !!(options && options.preserveRadio);
         const retainRadio = preserveRadio && typeof this.state.wifi === 'boolean';
+        // Start the independent provider reads immediately.  Previously they
+        // waited for getPhoneStatus(), which is the slowest call (measured
+        // 1.8-2.4 s), so hydrating Bluetooth/location/DND/flashlight added its
+        // latency on top instead of overlapping it.  The panel is already
+        // painted from cache; this only shortens the truthful state hydration.
+        const timed = (name, promise) => {
+            const p0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+            return Promise.resolve(promise).then((v) => {
+                nuxelPerfDiag('QS_PERF', { event: 'provider', name: name,
+                    ms: Math.round((((typeof performance !== 'undefined' ? performance.now() : Date.now()) - p0) * 10)) / 10 });
+                return v;
+            }, (e) => {
+                nuxelPerfDiag('QS_PERF', { event: 'provider', name: name, error: true,
+                    ms: Math.round((((typeof performance !== 'undefined' ? performance.now() : Date.now()) - p0) * 10)) / 10 });
+                throw e;
+            });
+        };
+        const secondary = [timed('bluetooth', this._syncBluetooth()),
+                           timed('location', this._syncLocation()),
+                           timed('dnd', this._syncDnd()),
+                           timed('flashlight', this._syncFlashlight())];
+        const phoneT0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         try {
             const status = await bridge.getPhoneStatus();
+            const phoneMs = Math.round((((typeof performance !== 'undefined' ? performance.now() : Date.now()) - phoneT0) * 10)) / 10;
+            this._phoneStatusMs = phoneMs;
+            nuxelPerfDiag('QS_PERF', { event: 'provider', name: 'phone_status', ms: phoneMs });
             const hasNetwork = status && status.network &&
                 typeof status.network === 'object';
             if (hasNetwork) {
@@ -1211,10 +1356,12 @@ class QuickSettings {
             if (!preserveRadio) this.wifiConnected = null;
         }
         this._updateUI();
-        this._syncBluetooth();
-        this._syncLocation();
-        this._syncDnd();
-        this._syncFlashlight();
+        // Independent providers run concurrently; one slow radio never blocks
+        // the others.  Each keeps its own tri-state/generation guard.
+        try { await Promise.allSettled(secondary); } catch (e) {}
+        this._lastSyncMs = Math.round(((typeof performance !== 'undefined' ? performance.now() : Date.now()) - syncT0) * 10) / 10;
+        nuxelPerfDiag('QS_PERF', { event: 'sync', ms: this._lastSyncMs,
+                                   wifi: this.state.wifi, link: this.wifiConnected });
     }
 
     _wifiLinkLabel() {

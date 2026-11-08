@@ -47,7 +47,40 @@
     '/sys/bus/usb/devices/1-1/idProduct'
   ];
 
-  function render(res) {
+  async function networkFacts() {
+    var b = null;
+    try { b = window.NuxelBridge || (window.parent && window.parent.NuxelBridge) || null; }
+    catch (e) { b = null; }
+    if (!b || typeof b.call !== 'function') return null;
+    try {
+      var r = await b.call('phone', 'status', {});
+      return (r && r.network) || (r && r.result && r.result.network) || null;
+    } catch (e) { return null; }
+  }
+
+  function renderNetwork(net) {
+    var devices = (net && net.wifi_devices) || [];
+    var ipv4 = (net && net.ipv4_addresses) || [];
+    var ipv6 = (net && net.ipv6_addresses) || [];
+    var rows = devices.length ? devices.map(function (d) {
+      return '<li>' + esc(d.interface || 'interface') + ' — ' + esc(d.operstate || 'state not reported') +
+        (d.active_connection ? ' · ' + esc(d.active_connection) : '') +
+        ' · IPv4 ' + esc((d.ipv4 || []).join(', ') || 'not assigned') +
+        ' · IPv6 ' + esc((d.ipv6 || []).join(', ') || 'not assigned') +
+        (d.mac ? ' · MAC ' + esc(d.mac) : '') + '</li>';
+    }).join('') : '<li>No Wi-Fi interface reported by NetworkManager.</li>';
+    return '<div class="card"><h3>Network / Wi-Fi</h3>' +
+      kv([['connected', String(!!(net && net.connected))],
+          ['state', (net && net.wifi_state) || 'not reported'],
+          ['IPv4', ipv4.join(', ') || 'not assigned'],
+          ['IPv6', ipv6.join(', ') || 'not assigned'],
+          ['active network', (net && net.active_connection) || 'not reported']]) +
+      '<ul class="reqs">' + rows + '</ul>' +
+      '<p class="hint">Addresses are read from the live NetworkManager connector via the Nuxel bridge; ' +
+      'they are not parsed from a cached file.</p></div>';
+  }
+
+  function render(res, net) {
     var t = function (p) { return res[p] && res[p].ok ? res[p].text : null; };
     var src = S.sourceLabel(res);
     var badge = el('source-badge');
@@ -96,6 +129,7 @@
           ['MemAvailable', bytes(mem.availableBytes)], ['Cached', bytes(mem.cachedBytes)],
           ['SwapTotal', mem.swapTotalBytes === 0 ? '0 (no swap configured)' : bytes(mem.swapTotalBytes)]]) +
       '</div>' +
+      renderNetwork(net) +
       '<div class="card"><h3>Security state of this app process</h3>' +
       kv([['uid', st.uid || 'not reported'],
           ['effective capabilities', st.capEff && st.capEff.length ? st.capEff.join(', ') : 'none (unprivileged)'],
@@ -309,8 +343,9 @@
   async function refresh() {
     el('source-badge').textContent = 'source: reading…';
     var res = await S.readMany(PATHS);
-    window.__devmgmtLastRead = { at: new Date().toISOString(), result: res };
-    render(res);
+    var net = await networkFacts();
+    window.__devmgmtLastRead = { at: new Date().toISOString(), result: res, network: net };
+    render(res, net);
   }
 
   document.querySelectorAll('.tab').forEach(function (t) {

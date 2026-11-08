@@ -1,0 +1,28 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+de1c138d8b35dbb34e838839b978ffc4098700e050f1d27ab00c95b9469f37ff  /etc/xdg-desktop-portal/portals.conf
+de1c138d8b35dbb34e838839b978ffc4098700e050f1d27ab00c95b9469f37ff  /etc/nuxel/portals.conf
+3340e3d517c89f91ca2e78fd000870044ff3d04b4a8dd9b297304e33e7d95766  /usr/share/xdg-desktop-portal/portals/nuxel.portal
+7e7cc9f47818661bd837cd7b258efe730148b59ff37ddbccf71cd178550e4ef5  /usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.nuxel.service
+6ae1e1a8ef4ed89f94c6957dd7c1d675d40ed63d2974e2c8915c7f75c6ccec60  /usr/libexec/nuxel/nuxel-portal-chooser
+845997dad4969b5c06b2f19264f1c4777ab942f7775fca52916c864dfb9e963e  /usr/lib/nuxel/nuxel_file_handlers.py
+8080dfcdf0ffdcff4175fccc82a8ec3da5bc4150c5851d8319cc5b0018ad62d2  /usr/bin/nuxel-file-handlers
+1714604e6f6a92e70b3a4a06c551ac0f9b5c333591cbd45a8060eb3ca2216c23  /usr/libexec/nuxel/nuxel-open-file
+f0cc5efd0114e54c02f3167d77722a235aa1c882fe4ab8d3943811ded5180ba0  /usr/share/applications/org.nuxel.Photos.desktop
+640e414462652a1819df0215355f53cae13686be93e77d9ad73460dcd16f81d1  /usr/share/applications/org.nuxel.Files.desktop
+69d5bdaccf9fa4c4585a7b3247259407dd6d287e83b44e0870836d3a9bc1805e  /etc/systemd/system/nuxel-remote-vnc.service
+dcb8324d8e47239361f45fec2f52f8dec16a10c0b8d09a238f593011f02ab7ff  /usr/libexec/nuxel/nuxel-vnc-x11
+5943f06df6d0a4af0a9f9f9125e6dd1379eb5efa8e387bbe59dd1caf821eb5fc  /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl
+40f872a146cd84b939fc470938389b1a5eab7cd1753ce9a8bd0b8fab36d97575  /etc/profile.d/nuxel-banner.sh
+a879f30052e50555b5fab3e64bdb020bf4ba428dbf0ce166fb609c3b8478ec39  /etc/profile.d/99-nuxel-banner.sh
+a8567b3cd33a99b3759996efd7e533d6bfd1f3beef95331b4e1342804a5319ec  /usr/lib/nuxel/nuxel-bridge/api.py
+f4ec2036708a4a648b9cf93815334561bd706d7b075aff76230a58b5d2d26005  /usr/lib/nuxel/nuxel-bridge/network_manager.py
+ea439a57e679e61c8cd4b045f757c1e6ceb442e62594c2b6ae1685dcbe548bee  /usr/lib/nuxel/nuxel-session.sh
+a2bdd28d3ac8abf0ac95b86efbf9b5b9ff25c60137c48169827c864317dfcb14  /etc/nuxel/remote-desktop/vnc/xvnc.conf

@@ -1,0 +1,16 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Running as unit: nuxel-chooser-p97000-1794167688.service; invocation ID: 0ada3218b580436196e13b53a5636903
+UNIT=nuxel-chooser-p97000-1794167688
+REQUEST /org/freedesktop/portal/desktop/request/1_279/t
+RESPONSE 0 {"uris": ["file:///home/nuxel/Gallery/nuxel-screenshot-20261107T221600872Z.png", "file:///home/nuxel/Gallery/nuxel-screenshot-20261107T221550020Z.png"]} PATH /org/freedesktop/portal/desktop/request/1_279/t
+--- STATE ---
+{"autotest": "gallery-multi", "backend": "nuxel-portal-chooser", "counts": {"cancelled": 0, "errors": 0, "requests": 1, "selected": 1}, "duration_ms": 2188, "last_outcome": "selected", "last_request": {"app_id": "", "duration_ms": 2188, "kind": "open", "outcome": "selected", "selected_count": 2, "source": "gallery"}, "last_source": "gallery", "pid": 561248, "presented": false, "schema_version": 2, "selected_count": 2, "service": "org.freedesktop.impl.portal.desktop.nuxel", "state": "ready", "updated_at": 1794167694.2624416, "version": "1.1.0"}
+

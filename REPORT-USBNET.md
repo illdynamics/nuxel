@@ -273,3 +273,15 @@ Evidence: `docs/beta-finalization/live/evidence/pwnage-92000/tri-link-cli.txt`.
 - No macOS userspace driver was installed or evaluated physically.
 - No file transfer, deploy or USB remote-desktop transport was tested.
 - The serial console and WLAN SSH are the only verified recovery/transport paths.
+
+## 17. Reflash impact (controlled maintenance)
+
+| Question | Answer |
+|---|---|
+| Does completing USB networking require a reflash? | **PARTIAL / YES.** NCM/RNDIS/ECM gadget modes need kernel config/DT changes; the safe mode-aware helper belongs in the system image. |
+| Boot/kernel too? | **YES** for the data plane; the CDC-ACM recovery console must be preserved in every experiment. |
+| Can it be deployed over SSH now? | **NO** for the blocked NCM data plane; userspace alone cannot add a missing gadget function/avoid the known teardown panic. |
+| Batch with PWNAGE-93000? | **YES.** Put the kernel/gadget change in the next boot/kernel batch; PWNAGE-93000 userspace can ride in the same A/B system image. |
+| Controlled batch | Kernel/boot + system image, one mode at a time (RNDIS/ECM before any NCM retry), with serial recovery preserved and a rollback slot ready. |
+| Rollback | Previous A/B slot; always keep the ACM serial console as the recovery path. |
+| Risk if postponed | USB networking remains blocked; USB charging/serial recovery stays functional. |

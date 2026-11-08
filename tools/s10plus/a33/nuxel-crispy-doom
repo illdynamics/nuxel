@@ -38,9 +38,18 @@ if [ "${1:-}" = "--setup" ]; then
     exec "$APP/bin/crispy-doom-setup" "$@"
 fi
 
-# Sound is off by default: host sdl2-compat audio initialization invalidated
-# the SDL renderer on this image.  Set NUXEL_DOOM_SOUND=1 to experiment.
-if [ "${NUXEL_DOOM_SOUND:-0}" = "1" ]; then
-    exec "$APP/bin/crispy-doom" "$@"
+# Sound is ON by default.  Use the same session PulseAudio socket the rest of
+# Nuxel uses (PipeWire provides it); no ALSA device name is hardcoded.  A user
+# may still opt out explicitly with NUXEL_DOOM_SOUND=0, which is the only path
+# that adds -nosound.
+PULSE_SOCKET="${PULSE_SERVER#unix:}"
+case "$PULSE_SOCKET" in /*) ;; *) PULSE_SOCKET=/run/nuxel-wayland/pulse/native ;; esac
+i=0
+while [ "$i" -lt 30 ] && [ ! -S "$PULSE_SOCKET" ]; do
+    i=$((i + 1)); sleep 0.1
+done
+[ -S "$PULSE_SOCKET" ] || echo "Nuxel Crispy Doom: audio socket not ready; using SDL fallback" >&2
+if [ "${NUXEL_DOOM_SOUND:-1}" = "0" ]; then
+    exec "$APP/bin/crispy-doom" -nosound "$@"
 fi
-exec "$APP/bin/crispy-doom" -nosound "$@"
+exec "$APP/bin/crispy-doom" "$@"

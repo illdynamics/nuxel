@@ -1,0 +1,46 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+---services---
+nuxel-http-bridge=active
+nuxel-bridge=active
+nuxel-web=active
+nuxel-wayland=active
+nuxel-remote-vnc=active
+zerotier-one=active
+---vnc---
+{
+  "state": "WAITING_FOR_CLIENT",
+  "active": true,
+  "bind_address": "10.20.30.16",
+  "port": 5900,
+  "authentication_mode": "VNC password (TigerVNC VncAuth)",
+  "geometry": "1520x720",
+  "landscape": true,
+  "vnc_password_configured": true
+}
+---xrandr---
+Screen 0: minimum 32 x 32, current 1520 x 720, maximum 32768 x 32768
+VNC-0 connected 1520x720+0+0 0mm x 0mm
+   1520x720      59.95*+
+---portal---
+{
+  "frontend_available": true,
+  "filechooser_backend": "nuxel",
+  "backend_available": true,
+  "documents_portal_available": true,
+  "portals_conf": "/etc/xdg-desktop-portal/portals.conf"
+}
+---zt---
+200 info c1ab327d70 1.16.2 ONLINE
+200 listnetworks <nwid> <name> <mac> <status> <type> <dev> <ZT assigned ips>
+200 listnetworks 0cccb752f72ecf52  32:0e:85:c5:2f:c7 ACCESS_DENIED PRIVATE ztly5zthnf -
+---version---
+  "host_version": "0.8.2-beta",
+  "note": "bridge_version is the PWA<->host PROTOCOL contract declared by every app manifest. host_version is the implementation version of the nuxel-bridge processes and is allowed to move without a manifest change."
