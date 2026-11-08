@@ -244,17 +244,23 @@ jobs:
           # nuxel-verify, nuxel-hwprobe are statically linked aarch64 binaries)
           # hit on the first v0.4.0-alpha run.
           # python3-pytest is required by the PWNAGE-30000 acceptance
-          # step below; without it the release dies with "No module named pytest".
+          # step below; python3-pil is required by the PWNAGE-45000 image
+          # checks (tests/pwnage45000/test_pwnage45000.py imports PIL). A
+          # missing Pillow killed the v0.8.0-beta build after the whole image
+          # matrix had already run, so install both here and prove the import
+          # works before the expensive build starts.
           sudo apt-get install -y --no-install-recommends \
             build-essential gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
             libc6-dev-arm64-cross \
             gcc-arm-none-eabi binutils-arm-none-eabi \
             bc bison flex libssl-dev libelf-dev libncurses-dev \
             cpio gzip xz-utils zstd lz4 zip unzip rsync file kmod \
-            python3 python3-pip python3-pytest git curl wget ca-certificates \
+            python3 python3-pip python3-pytest python3-pil \
+            git curl wget ca-certificates \
             device-tree-compiler e2fsprogs fakeroot dosfstools \
             android-sdk-libsparse-utils uuid-runtime \
             ffmpeg
+          python3 -c 'import pytest, PIL; print("python deps:", pytest.__version__, "Pillow", PIL.__version__)'
 
       - name: Install arm64 emulation + podman (s10plus)
         if: matrix.device == 's10plus'
@@ -380,7 +386,7 @@ jobs:
           python3 -m pytest tests/pwnage30000 -q
           python3 tools/s10plus/a33/tests/test-core-apps.py --no-runtime
 
-      - name: v0.7.7-beta real WAD engine + immersive chrome acceptance
+      - name: v0.8.0-beta real WAD engine + immersive chrome acceptance
         if: matrix.device == 's10plus'
         run: |
           # The release must ship the exact Doom payload and catalogue that the

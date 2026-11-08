@@ -34,6 +34,15 @@ Release `prepare` job before the kernel/rootfs matrix starts.
   release verifier reported.
 - **Release test drift.** The PWNAGE-49000 cache-buster guard, version lockstep
   gate and service-worker precache list were updated for this revision.
+- **Release workflow dependency failure.** The v0.8.0-beta build reached the
+  PWNAGE-45000 asset checks after the full kernel/rootfs matrix and then died
+  with `ModuleNotFoundError: No module named 'PIL'`. The workflow now installs
+  `python3-pil` and proves `import pytest, PIL` before any expensive build step.
+- **Whole-repo version lockstep drift.** The device `APKBUILD`s, native shell
+  Meson/Python metadata, Settings About label, browser user agent, VM snapshot
+  tooling and Home AppStream metadata still reported v0.7.7/v0.7.8. They now all
+  report **v0.8.0-beta**, and `tests/pwnage90000/test_release_assets.py` gates
+  those surfaces so the next drift fails in the cheap prepare job.
 
 ### Added
 
