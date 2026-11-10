@@ -1,0 +1,311 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+1164597 /tmp/journal-k.txt
+=== attach boot lines ===
+3019:Nov 09 09:57:11 fedora kernel: max77705_muic_register_ccic_notifier: Registering CCIC_NOTIFY_DEV_MUIC.
+3087:Nov 09 09:57:11 fedora kernel: max77705: max77705_ccstat_irq_handler: initial time : SNK
+3088:Nov 09 09:57:11 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+3089:Nov 09 09:57:11 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_SINK
+3117:Nov 09 09:57:11 fedora kernel: max77705_muic_handle_ccic_notification: CCIC_NOTIFY_ID_RID
+3130:Nov 09 09:57:11 fedora kernel: type-c manager: manager_handle_ccic_notification: CCIC_NOTIFY_ATTACH
+3135:Nov 09 09:57:11 fedora kernel: max77705_muic_handle_ccic_notification: CCIC_NOTIFY_ID_ATTACH: Attached
+3236:Nov 09 09:57:11 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_SINK
+5226:Nov 09 09:57:11 fedora nuxel-init: USERDATA_DISCOVERED /dev/sda31
+5227:Nov 09 09:57:11 fedora nuxel-init: NUXEL_MARKER USERDATA_DISCOVERED
+5598:Nov 09 09:57:11 fedora kernel: sec-battery battery: usb_typec_handle_notification: battery->pdic_ps_rdy(1), hv_pdo(1)
+7282:Nov 09 09:57:14 fedora kernel: CFGP2P-INFO) wl_cfgp2p_generate_bss_mac : P2P Discovery address:aa:xx:xx:xx:x1:d2
+7303:Nov 09 09:57:14 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+7382:Nov 09 09:57:14 fedora kernel: CFGP2P-INFO) wl_cfgp2p_generate_bss_mac : P2P Discovery address:aa:xx:xx:xx:x1:d2
+7403:Nov 09 09:57:14 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+7404:Nov 09 09:57:14 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+7438:Nov 09 09:57:15 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+7439:Nov 09 09:57:15 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+7537:Nov 09 09:57:17 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x8, PD0:0x1, PD1:0x57 attached_dev:4
+9444:Nov 09 09:58:18 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+10925:Nov 09 09:59:19 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+12224:Nov 09 10:00:20 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+13530:Nov 09 10:01:22 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+14872:Nov 09 10:02:23 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+16855:Nov 09 10:03:25 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+17730:Nov 09 10:03:59 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+18112:Nov 09 10:04:26 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+19292:Nov 09 10:05:28 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+20456:Nov 09 10:06:29 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+21713:Nov 09 10:07:31 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+23093:Nov 09 10:08:32 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+24426:Nov 09 10:09:33 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+25869:Nov 09 10:10:35 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+26225:Nov 09 10:10:51 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+26227:Nov 09 10:10:51 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+26771:Nov 09 10:11:36 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+27931:Nov 09 10:12:38 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+29147:Nov 09 10:13:39 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+30285:Nov 09 10:14:41 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+31521:Nov 09 10:15:42 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+32732:Nov 09 10:16:43 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+34073:Nov 09 10:17:39 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+34075:Nov 09 10:17:39 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+34105:Nov 09 10:17:45 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+35119:Nov 09 10:18:46 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+36505:Nov 09 10:19:48 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+37884:Nov 09 10:20:49 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+39242:Nov 09 10:21:51 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+40657:Nov 09 10:22:52 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+42138:Nov 09 10:23:54 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+43058:Nov 09 10:24:28 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+43060:Nov 09 10:24:28 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+43341:Nov 09 10:24:55 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+44587:Nov 09 10:25:56 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+45893:Nov 09 10:26:58 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+47423:Nov 09 10:27:59 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+48912:Nov 09 10:29:01 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+50385:Nov 09 10:30:02 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+52027:Nov 09 10:31:04 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+52366:Nov 09 10:31:17 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+52368:Nov 09 10:31:17 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+53162:Nov 09 10:32:05 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+54528:Nov 09 10:33:07 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+55963:Nov 09 10:34:08 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+57416:Nov 09 10:35:09 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+58973:Nov 09 10:36:11 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+60509:Nov 09 10:37:12 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+61879:Nov 09 10:38:06 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+61881:Nov 09 10:38:06 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+61953:Nov 09 10:38:14 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+63129:Nov 09 10:39:15 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+64655:Nov 09 10:40:17 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+66193:Nov 09 10:41:18 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+67705:Nov 09 10:42:19 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+69230:Nov 09 10:43:21 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+70766:Nov 09 10:44:22 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+71625:Nov 09 10:44:55 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+71627:Nov 09 10:44:55 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+72005:Nov 09 10:45:24 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+73314:Nov 09 10:46:25 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+74662:Nov 09 10:47:27 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+76118:Nov 09 10:48:28 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+77624:Nov 09 10:49:30 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+79069:Nov 09 10:50:31 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+80613:Nov 09 10:51:32 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+80941:Nov 09 10:51:45 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+80943:Nov 09 10:51:45 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+81690:Nov 09 10:52:34 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+82934:Nov 09 10:53:35 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+84337:Nov 09 10:54:37 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+85816:Nov 09 10:55:38 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+87118:Nov 09 10:56:40 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+88436:Nov 09 10:57:41 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+89546:Nov 09 10:58:34 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+89548:Nov 09 10:58:34 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+89642:Nov 09 10:58:43 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+90731:Nov 09 10:59:44 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+91969:Nov 09 11:00:45 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+93297:Nov 09 11:01:47 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+94726:Nov 09 11:02:48 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+95917:Nov 09 11:03:50 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+97229:Nov 09 11:04:51 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+97975:Nov 09 11:05:24 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+97977:Nov 09 11:05:24 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+98430:Nov 09 11:05:53 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+99631:Nov 09 11:06:54 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+100880:Nov 09 11:07:55 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+102045:Nov 09 11:08:57 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+103156:Nov 09 11:09:58 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+104516:Nov 09 11:11:00 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+105926:Nov 09 11:12:01 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+106222:Nov 09 11:12:14 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+106224:Nov 09 11:12:14 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+106890:Nov 09 11:13:03 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+108153:Nov 09 11:14:04 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+109386:Nov 09 11:15:06 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+110600:Nov 09 11:16:07 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+111842:Nov 09 11:17:08 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+113239:Nov 09 11:18:10 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+114408:Nov 09 11:19:05 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+114410:Nov 09 11:19:05 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+114445:Nov 09 11:19:11 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+115550:Nov 09 11:20:13 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+117164:Nov 09 11:21:14 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+118740:Nov 09 11:22:16 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+120363:Nov 09 11:23:17 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+121964:Nov 09 11:24:19 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+123641:Nov 09 11:25:20 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+124463:Nov 09 11:25:54 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+124465:Nov 09 11:25:54 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+124767:Nov 09 11:26:21 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+126222:Nov 09 11:27:23 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+127562:Nov 09 11:28:24 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+129236:Nov 09 11:29:26 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+130880:Nov 09 11:30:27 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+132485:Nov 09 11:31:29 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+133971:Nov 09 11:32:30 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+134332:Nov 09 11:32:43 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+134334:Nov 09 11:32:43 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+135093:Nov 09 11:33:31 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+136658:Nov 09 11:34:33 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+138157:Nov 09 11:35:34 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+139763:Nov 09 11:36:36 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+141233:Nov 09 11:37:37 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+142829:Nov 09 11:38:39 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+144358:Nov 09 11:39:33 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+144360:Nov 09 11:39:33 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+144396:Nov 09 11:39:40 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+145445:Nov 09 11:40:42 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+147056:Nov 09 11:41:43 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+148646:Nov 09 11:42:44 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+150192:Nov 09 11:43:46 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+151641:Nov 09 11:44:47 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+153274:Nov 09 11:45:49 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+154203:Nov 09 11:46:21 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+154205:Nov 09 11:46:21 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+154514:Nov 09 11:46:50 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+155856:Nov 09 11:47:52 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+157301:Nov 09 11:48:53 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+158779:Nov 09 11:49:55 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+160502:Nov 09 11:50:56 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+161994:Nov 09 11:51:57 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+163401:Nov 09 11:52:59 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+163765:Nov 09 11:53:11 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+163767:Nov 09 11:53:11 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+164460:Nov 09 11:54:00 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+165777:Nov 09 11:55:02 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+167210:Nov 09 11:56:03 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+168521:Nov 09 11:57:05 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+169837:Nov 09 11:58:06 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+171025:Nov 09 11:59:07 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+172231:Nov 09 12:00:00 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+172233:Nov 09 12:00:00 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+172313:Nov 09 12:00:09 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+173573:Nov 09 12:01:10 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+175027:Nov 09 12:02:12 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+176298:Nov 09 12:03:13 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+177737:Nov 09 12:04:15 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+178942:Nov 09 12:05:16 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+180169:Nov 09 12:06:18 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+180961:Nov 09 12:06:51 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+180963:Nov 09 12:06:51 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+181228:Nov 09 12:07:19 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+182205:Nov 09 12:08:20 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+183456:Nov 09 12:09:22 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+184650:Nov 09 12:10:23 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+185889:Nov 09 12:11:25 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+187164:Nov 09 12:12:26 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x67, USBC2:0x31, BC:0x83, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:4
+188454:Nov 09 12:13:24 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_DETACHED ---
+188455:Nov 09 12:13:24 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : typec_unregister_partner
+188468:Nov 09 12:13:24 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_No_Connection
+188491:Nov 09 12:13:24 fedora kernel: type-c manager: manager_handle_ccic_notification: CCIC_NOTIFY_DETACH (pd=1, cable_type=5)
+188503:Nov 09 12:13:24 fedora kernel: max77705_muic_handle_ccic_notification: CCIC_NOTIFY_ID_ATTACH: Detached
+188607:Nov 09 12:13:24 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_No_Connection
+188693:Nov 09 12:13:24 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_No_Connection
+188856:Nov 09 12:13:28 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+189643:Nov 09 12:13:41 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+189645:Nov 09 12:13:41 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+190549:Nov 09 12:14:29 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+191666:Nov 09 12:15:31 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+192735:Nov 09 12:16:32 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+194016:Nov 09 12:17:33 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+195310:Nov 09 12:18:35 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+196980:Nov 09 12:19:36 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+198218:Nov 09 12:20:31 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+198220:Nov 09 12:20:31 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+198248:Nov 09 12:20:38 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+199233:Nov 09 12:21:39 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+200655:Nov 09 12:22:41 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+201909:Nov 09 12:23:42 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+203240:Nov 09 12:24:43 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+204430:Nov 09 12:25:45 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+205660:Nov 09 12:26:46 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+206393:Nov 09 12:27:20 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+206395:Nov 09 12:27:20 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+206615:Nov 09 12:27:48 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+207746:Nov 09 12:28:49 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+209136:Nov 09 12:29:51 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+210413:Nov 09 12:30:52 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+211707:Nov 09 12:31:54 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+213054:Nov 09 12:32:55 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+214435:Nov 09 12:33:56 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+214784:Nov 09 12:34:11 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+214786:Nov 09 12:34:11 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+215361:Nov 09 12:34:58 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+216582:Nov 09 12:35:59 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+217732:Nov 09 12:37:01 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+219018:Nov 09 12:38:02 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+220377:Nov 09 12:39:04 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+221616:Nov 09 12:40:05 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+222830:Nov 09 12:41:03 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+222832:Nov 09 12:41:03 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+222877:Nov 09 12:41:07 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+223672:Nov 09 12:42:08 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+224810:Nov 09 12:43:09 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+226068:Nov 09 12:44:11 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+227125:Nov 09 12:45:12 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+228390:Nov 09 12:46:14 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+229582:Nov 09 12:47:15 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+230377:Nov 09 12:47:52 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+230379:Nov 09 12:47:52 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+230561:Nov 09 12:48:17 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+231751:Nov 09 12:49:18 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+232749:Nov 09 12:50:19 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+233930:Nov 09 12:51:21 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+235170:Nov 09 12:52:22 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+236461:Nov 09 12:53:24 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+237826:Nov 09 12:54:25 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+238270:Nov 09 12:54:41 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+238272:Nov 09 12:54:41 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+238786:Nov 09 12:55:27 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+240050:Nov 09 12:56:28 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+241309:Nov 09 12:57:30 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+242541:Nov 09 12:58:31 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+243803:Nov 09 12:59:32 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+244966:Nov 09 13:00:34 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+246133:Nov 09 13:01:30 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+246135:Nov 09 13:01:30 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+246170:Nov 09 13:01:35 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+246991:Nov 09 13:02:37 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+248136:Nov 09 13:03:38 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+249416:Nov 09 13:04:40 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+250731:Nov 09 13:05:41 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+251932:Nov 09 13:06:43 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+253316:Nov 09 13:07:44 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+254048:Nov 09 13:08:21 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+254050:Nov 09 13:08:21 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+254279:Nov 09 13:08:45 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+255332:Nov 09 13:09:47 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+256537:Nov 09 13:10:48 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+257499:Nov 09 13:11:50 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+258793:Nov 09 13:12:51 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+259909:Nov 09 13:13:53 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+261101:Nov 09 13:14:54 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+261485:Nov 09 13:15:09 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+261487:Nov 09 13:15:09 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+262066:Nov 09 13:15:55 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+263058:Nov 09 13:16:57 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+264318:Nov 09 13:17:58 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+265678:Nov 09 13:19:00 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+266856:Nov 09 13:20:01 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+268113:Nov 09 13:21:03 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+269238:Nov 09 13:21:59 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+269240:Nov 09 13:21:59 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+269286:Nov 09 13:22:04 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+270001:Nov 09 13:23:06 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+271214:Nov 09 13:24:07 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+272510:Nov 09 13:25:08 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+273545:Nov 09 13:26:10 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+274712:Nov 09 13:27:11 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+275858:Nov 09 13:28:13 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+276593:Nov 09 13:28:49 fedora kernel: CFG80211-INFO2) wl_cfg80211_deinit_p2p_discovery : Disabling P2P Discovery Interface 
+276595:Nov 09 13:28:49 fedora kernel: CFGP2P-INFO2) wl_cfgp2p_disable_discovery :  do nothing, not initialized
+276809:Nov 09 13:29:14 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+277916:Nov 09 13:30:16 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+279053:Nov 09 13:31:17 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+280325:Nov 09 13:32:19 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+281520:Nov 09 13:33:20 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+282714:Nov 09 13:34:21 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0
+284085:Nov 09 13:35:23 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x07, USBC2:0x31, BC:0x00, CC0:0x0, CC1:0x1, PD0:0x0, PD1:0x47 attached_dev:0

@@ -8,7 +8,7 @@
 <title>Nuxel Settings</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="../../nuxel-common/theme.css?v=p85000">
-<link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="settings.css?v=p102000">
     <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
@@ -30,6 +30,7 @@
   <button class="tab" data-tab="theme">Appearance</button>
   <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
   <button class="tab" data-tab="keyboard">Keyboard</button>
+  <button class="tab" data-tab="mouse">Mouse &amp; Keyboard</button>
   <button class="tab" data-tab="location">Location &amp; Maps</button>
   <button class="tab" data-tab="power">Power</button>
   <button class="tab" data-tab="notifications">Notifications</button>
@@ -211,39 +212,55 @@
 
     <div class="card">
       <h3>External display (USB-C / HDMI)</h3>
-      <p class="hint">Actual DRM, Type-C and extcon state. Mirror and Desktop are only offered when
-        the kernel and compositor genuinely support an independent external output.</p>
-      <div class="row"><button id="display-refresh">Refresh connectors</button></div>
+      <p class="hint">Actual Type-C, USB-PD, DP Alt Mode and decon_t state. The kernel selects the
+        TV's supported timing (1920x1080p60 when advertised). Separate desktop is only offered when
+        the compositor genuinely exposes a second output.</p>
+      <div class="row">
+        <button id="display-refresh">Refresh connectors</button>
+        <button id="display-mode-mirror-portrait" class="primary">Mirror portrait</button>
+        <button id="display-mode-mirror-landscape">Mirror landscape</button>
+        <button id="display-mode-fullscreen">Fullscreen</button>
+        <button id="display-mode-desktop">Separate desktop</button>
+        <button id="display-mode-off">Internal only</button>
+        <button id="display-notify-test">Test notification</button>
+        <label for="display-rotation" class="hint" style="align-self:center">Rotation</label>
+        <select id="display-rotation">
+          <option value="0">0°</option>
+          <option value="90">90°</option>
+          <option value="180">180°</option>
+          <option value="270">270°</option>
+        </select>
+      </div>
       <pre id="external-display-state" class="state">Checking external connector path…</pre>
       <p id="external-display-detail" class="hint">—</p>
+      <p id="display-mode-result" class="hint">—</p>
     </div>
   </section>
 
   <!-- ── SOUND ────────────────────────────────────────────────────────── -->
   <section id="tab-sound" class="panel">
     <h2>Sound</h2>
-    <div class="card">
-      <h3>Audio devices &amp; service</h3>
-      <p class="hint">Real ALSA cards, playback/capture endpoints and audio-service state from the
-        Nuxel hardware provider. A listed card is not an audible claim.</p>
-      <div class="row">
-        <button id="audio-refresh">Refresh</button>
-        <button id="audio-test" class="primary">Test Audio</button>
+    <div class="card" id="sound-output-card">
+      <h3>Output</h3>
+      <p class="hint">Automatic prefers a verified USB-C HDMI/DisplayPort audio endpoint.
+        Selecting an output switches to manual mode; HDMI hotplug never overrides that choice.
+        Only real, currently usable physical outputs are listed.</p>
+      <div class="row wrap">
+        <button id="sound-output-refresh">Refresh outputs</button>
+        <button id="sound-output-auto" class="primary" aria-pressed="false">Automatic</button>
       </div>
-      <pre id="audio-state" class="state">Checking audio hardware…</pre>
-      <p id="test-audio-state" class="hint">Press Test Audio to play nuxel-pow.mp3 through the selected output.</p>
-    </div>
-    <div class="card">
-      <h3>Output volume &amp; mute</h3>
-      <p class="hint">Wired to the real ALSA mixer of this device (low-volume cap applied). If the
-        audio path exposes no writable playback control, the controls report unsupported instead of
-        pretending.</p>
-      <div class="row">
-        <button id="volume-down">Volume −</button>
-        <button id="volume-up">Volume +</button>
-        <button id="volume-mute">Mute</button>
+      <pre id="sound-output-state" class="state" role="status" aria-live="polite">Reading audio outputs…</pre>
+      <p id="sound-output-routing" class="hint">—</p>
+      <div id="sound-output-devices" class="sound-output-devices" role="radiogroup" aria-label="Available audio outputs"></div>
+      <div class="row wrap sound-output-controls">
+        <label>Volume
+          <input id="sound-output-volume" type="range" min="0" max="100" step="1" value="50">
+          <output id="sound-output-volume-val">50%</output>
+        </label>
+        <button id="sound-output-mute">Mute</button>
+        <button id="sound-output-test" class="primary" disabled>Test sound</button>
       </div>
-      <pre id="volume-state" class="state">—</pre>
+      <p id="sound-output-detail" class="hint">—</p>
     </div>
     <div class="card" id="microphone-card">
       <h3>Microphone</h3>
@@ -333,6 +350,70 @@
       <div class="row"><button id="keyboard-text-input-v1-refresh">Refresh state</button></div>
       <pre id="keyboard-text-input-v1-state" class="state" role="status" aria-live="polite">Reading…</pre>
     </div>
+  </section>
+
+  <section id="tab-mouse" class="panel">
+    <h2>Mouse &amp; keyboard</h2>
+    <div class="card">
+      <h3>Connected physical devices</h3>
+      <p class="hint">USB HID devices attached through the USB-C hub are discovered by
+        <code>libnuxel-libinput-path.so</code> by capability, not by node number. The panel's
+        own touchsurface stays on the touch path; the internal touchpad-emulation node and
+        power/volume keys are not turned into duplicate pointers or keyboards.</p>
+      <div class="row"><button id="pi-refresh">Refresh devices</button></div>
+      <pre id="pi-state" class="state" role="status" aria-live="polite">Reading…</pre>
+    </div>
+    <div class="card">
+      <h3>Mouse</h3>
+      <p class="hint">Applies live to every connected mouse through libinput and phoc.</p>
+      <label>Pointer speed <input id="pi-mouse-speed" type="range" min="-1" max="1" step="0.05" value="0"> <output id="pi-mouse-speed-val">0.00</output></label>
+      <label>Acceleration <select id="pi-mouse-accel">
+        <option value="default">Default</option>
+        <option value="flat">Flat</option>
+        <option value="adaptive">Adaptive</option>
+      </select></label>
+      <label class="check"><input id="pi-mouse-natural" type="checkbox"> Natural scrolling</label>
+      <label class="check"><input id="pi-mouse-left" type="checkbox"> Left-handed buttons</label>
+      <label class="check"><input id="pi-mouse-middle" type="checkbox"> Middle-click emulation</label>
+    </div>
+    <div class="card">
+      <h3>Touchpad</h3>
+      <p class="hint">Only devices libinput reports as touchpads receive tap, two-finger and
+        typing-suppression settings; a plain mouse ignores these controls.</p>
+      <label>Touchpad speed <input id="pi-touchpad-speed" type="range" min="-1" max="1" step="0.05" value="0"> <output id="pi-touchpad-speed-val">0.00</output></label>
+      <label>Acceleration <select id="pi-touchpad-accel">
+        <option value="default">Default</option>
+        <option value="flat">Flat</option>
+        <option value="adaptive">Adaptive</option>
+      </select></label>
+      <label class="check"><input id="pi-touchpad-natural" type="checkbox"> Natural scrolling</label>
+      <label class="check"><input id="pi-touchpad-tap" type="checkbox"> Tap to click</label>
+      <label class="check"><input id="pi-touchpad-two" type="checkbox"> Two-finger scrolling</label>
+      <label class="check"><input id="pi-touchpad-dwt" type="checkbox"> Disable while typing</label>
+      <label class="check"><input id="pi-touchpad-left" type="checkbox"> Left-handed buttons</label>
+      <div class="row"><button id="pi-save-pointer" class="primary">Save pointer settings</button></div>
+    </div>
+    <div class="card">
+      <h3>Physical keyboard</h3>
+      <p class="hint">These write the same <code>/etc/nuxel/keyboard/keyboard.json</code> used
+        by the on-screen keyboard. <code>nuxel-keyboard-apply.sh</code> applies the XKB layout and
+        repeat values to phoc; the physical key event path is never grabbed.</p>
+      <label>Layout <select id="pi-keyboard-layout">
+        <option value="us">US</option>
+        <option value="gb">GB</option>
+        <option value="de">DE</option>
+        <option value="fr">FR</option>
+        <option value="es">ES</option>
+        <option value="it">IT</option>
+        <option value="nl">NL</option>
+      </select></label>
+      <label class="check"><input id="pi-keyboard-repeat" type="checkbox"> Key repeat</label>
+      <label>Repeat delay (ms) <input id="pi-keyboard-delay" type="number" min="100" max="2000" step="50" value="500"></label>
+      <label>Repeat interval (ms) <input id="pi-keyboard-interval" type="number" min="10" max="200" step="5" value="30"></label>
+      <label class="check"><input id="pi-keyboard-passthrough" type="checkbox"> Physical keyboard passthrough</label>
+      <div class="row"><button id="pi-save-keyboard" class="primary">Save keyboard settings</button></div>
+    </div>
+    <p id="pi-message" class="state" role="status" aria-live="polite">—</p>
   </section>
 
   <section id="tab-power" class="panel">
@@ -811,12 +892,13 @@
 <script src="apps-permissions-settings.js?v=p86001"></script>
 <script src="file-handlers-settings.js?v=p97000"></script>
 <script src="theme-settings.js?v=p50002"></script>
-<script src="sound-settings.js?v=p81000"></script>
+<script src="sound-settings.js?v=p102000"></script>
 <script src="mic-settings.js?v=p84000"></script>
 <script src="appearance-settings.js?v=p85000"></script>
 <script src="wifi-settings.js?v=p50002"></script>
 <script src="location-maps.js"></script>
 <script src="hardware-settings.js?v=p52000"></script>
+<script src="physical-input-settings.js?v=p103000"></script>
 <script src="pwange45000-settings.js?v=p50002"></script>
 <script src="driver-diagnostics.js?v=p50002"></script>
 <script src="graphics-diagnostics.js?v=p52000"></script>

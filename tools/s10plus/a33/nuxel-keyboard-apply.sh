@@ -347,12 +347,14 @@ apply_keyboard() {
     if [ "$numeric" = "true" ]; then res keyboard.numeric_layout "provider-managed:squeekboard-numeric-view"
     else res keyboard.numeric_layout "not_applied:disabled-by-setting"; fi
   elif [ "$OSK" = "stevia" ]; then
-    # ydotoold exposes a uinput keyboard.  Stevia treats any attached keyboard
-    # as a reason to suppress the OSK, which makes a touch-only phone unable to
-    # raise its keyboard after such a device exists.  The owner requirement is
-    # "always get a keyboard when tapping a field", so ignore hw keyboards.
+    # Stevia hides the OSK when phoc reports a real hardware keyboard.  phoc
+    # deliberately excludes uinput/virtual keyboards (ydotoold, tests) from that
+    # report, so this setting can stay at its upstream default: touch-only use
+    # still raises the OSK, while an attached USB/Bluetooth keyboard suppresses
+    # it.  Keep the explicit write so a stale dconf value cannot resurrect the
+    # old "ignore every keyboard" behaviour.
     if gs_ok mobi.phosh.osk; then
-      if gs_set mobi.phosh.osk ignore-hw-keyboards true; then
+      if gs_set mobi.phosh.osk ignore-hw-keyboards false; then
         res keyboard.ignore_hw_keyboards "applied"
       else
         res keyboard.ignore_hw_keyboards "not_applied:gsettings-write-failed"

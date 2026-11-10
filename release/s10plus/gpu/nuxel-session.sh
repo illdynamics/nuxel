@@ -21,6 +21,8 @@
 # Software rendering is forced because this kernel has no DRM/EGL device.
 set -eu
 export XDG_SESSION_TYPE=wayland
+export XCURSOR_THEME=nuxel
+export XCURSOR_SIZE=32
 # phoc may create the Wayland socket just AFTER it starts this session command.
 # A one-shot chmod at startup raced that creation and left the socket 0755
 # root:root, so Firefox/VLC/GTK apps running as nuxel could not connect.  Watch
@@ -197,6 +199,7 @@ if [ -x /usr/lib/nuxel/nuxel-preload-cinema ]; then
   # the checked-in 4000/1200 values).
   NUXEL_PRELOAD_EARLY=1 \
   NUXEL_PRELOAD_WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+  NUXEL_PRELOAD_STATUS="$PRELOAD_STATUS_FILE" \
   nohup /usr/lib/nuxel/nuxel-preload-cinema --early \
       </dev/null >/run/nuxel-preload-cinema.out 2>&1 &
   say "starting pre-lockscreen cinema overlay pid=$!"
@@ -271,7 +274,7 @@ USER_BUS=$USER_RUNTIME/bus
 install -d -m 0700 -o nuxel -g nuxel "$USER_RUNTIME" 2>/dev/null || true
 if ! pgrep -u nuxel -f "dbus-daemon.*$USER_BUS" >/dev/null 2>&1; then
   [ -S "$USER_BUS" ] && rm -f "$USER_BUS" 2>/dev/null || true
-  if runuser -u nuxel -- dbus-daemon --session --fork --address="unix:path=$USER_BUS" --nopidfile >/run/nuxel-user-dbus.log 2>&1; then
+  if runuser -u nuxel -- env XDG_RUNTIME_DIR="$USER_RUNTIME" HOME=/home/nuxel dbus-daemon --session --fork --address="unix:path=$USER_BUS" --nopidfile >/run/nuxel-user-dbus.log 2>&1; then
     say "user session dbus $USER_BUS"
   else
     say "user session dbus unavailable"
@@ -283,6 +286,11 @@ if [ -S "$USER_BUS" ]; then
 fi
 PORTAL_ENVV="XDG_RUNTIME_DIR=$USER_RUNTIME DBUS_SESSION_BUS_ADDRESS=unix:path=$USER_BUS XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0} GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel"
 if [ -S "$USER_BUS" ] && [ -x /usr/libexec/xdg-desktop-portal-gtk ]; then
+  if [ -x /usr/libexec/flatpak-portal ] && ! pgrep -u nuxel -x flatpak-portal >/dev/null 2>&1; then
+    nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/flatpak-portal \
+      </dev/null >/run/nuxel-flatpak-portal.log 2>&1 &
+    say "started flatpak-portal uid=nuxel pid=$!"
+  fi
   if ! pgrep -u nuxel -f "/usr/libexec/xdg-desktop-portal-gtk" >/dev/null 2>&1; then
     nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/xdg-desktop-portal-gtk       </dev/null >/run/nuxel-portal-gtk.log 2>&1 &
     say "started xdg-desktop-portal-gtk uid=nuxel pid=$!"

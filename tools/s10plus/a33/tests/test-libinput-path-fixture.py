@@ -7,7 +7,9 @@ tools/s10plus/a33/tests/fixtures/.  No phone, no /dev/input, no libinput.
 
 What is asserted (the briq's acceptance):
   * a DIRECT multitouch panel is SELECTED, and it is selected by capability;
-  * a non-DIRECT device is REJECTED with the INPUT_PROP_DIRECT reason;
+  * a USB HID mouse and keyboard are SELECTED by REL_X/Y+button and by the
+    standard letter block; the panel's non-DIRECT touchpad emulation node and
+    gpio_keys are still REJECTED (no duplicate pointer, no power-key keyboard);
   * node numbers sort NUMERICALLY (event2 before event10, never lexical);
   * a DIRECT+ABS_MT device with a degenerate range is REJECTED;
   * device absence -> ZERO_DEVICES and exit status 0 (the compositor survives);
@@ -64,6 +66,23 @@ def main():
     check(any(l.startswith("SCAN_RESULT nodes=2 accepted=1") for l in out.splitlines()),
           "sec-ts-only: 2 nodes seen, 1 accepted", out)
 
+    # 1b. USB HID through a hub: pointer and keyboard accepted, internal
+    #     touchpad emulation and gpio_keys rejected.
+    rc, out, err = run(["--scan", os.path.join(FIX, "usb-hid")])
+    check(rc == 0, "usb-hid: exit 0", "rc=%d err=%s" % (rc, err.strip()[:200]))
+    check(selected(out) == ["/dev/input/event5", "/dev/input/event6"],
+          "usb-hid: exactly the HID mouse and keyboard are selected", out)
+    check(any("USB HID Mouse" in l and "accept: pointer" in l for l in out.splitlines()),
+          "usb-hid: the mouse is accepted by REL_X/Y + button", out)
+    check(any("USB HID Keyboard" in l and "accept: keyboard(letters=26)" in l for l in out.splitlines()),
+          "usb-hid: the keyboard is accepted by its letter block", out)
+    check(any("sec_touchpad" in l and "INPUT_PROP_DIRECT absent" in l for l in out.splitlines()),
+          "usb-hid: the non-DIRECT internal touchpad node stays rejected (no duplicate pointer)", out)
+    check(any("gpio_keys" in l and "INPUT_PROP_DIRECT absent" in l for l in out.splitlines()),
+          "usb-hid: gpio_keys also stays rejected (no power-key keyboard)", out)
+    check(any(l.startswith("SCAN_RESULT nodes=4 accepted=2") for l in out.splitlines()),
+          "usb-hid: 4 nodes seen, 2 accepted", out)
+
     # 2. capability, not node number: swap the roles and the answer follows the property
     rc, out, err = run(["--scan", os.path.join(FIX, "degenerate-range")])
     check(rc == 0, "degenerate-range: exit 0", err.strip()[:200])
@@ -93,9 +112,9 @@ def main():
                 "add event3\nadd event9\nremove event9\n")
     rc, out, err = run(["--hotplug", os.path.join(FIX, "hotplug"), ops])
     check(rc == 0, "hotplug: exit 0", err.strip()[:200])
-    check("HOTPLUG ADD event3 ACCEPT tracked=1" in out, "hotplug: first add tracks the panel", out)
+    check("HOTPLUG ADD event3 ACCEPT kind=touch tracked=1" in out, "hotplug: first add tracks the panel", out)
     check("HOTPLUG ADD event3 IGNORED already-tracked" in out, "hotplug: duplicate add is ignored", out)
-    check("HOTPLUG REMOVE event3 REMOVED tracked=0" in out, "hotplug: remove un-tracks the panel", out)
+    check("HOTPLUG REMOVE event3 MARKED_REMOVED tracked=0" in out, "hotplug: remove un-tracks the panel", out)
     check("HOTPLUG REMOVE event3 NOT_TRACKED" in out, "hotplug: second remove is ignored (absence is safe)", out)
     check("HOTPLUG ADD event9 REJECT reason=metadata-or-open-failed" in out,
           "hotplug: a node that cannot be probed is rejected, not tracked", out)

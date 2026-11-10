@@ -38,7 +38,7 @@ ProtectSystem=full
 # mpv needs the Wayland socket and /dev/shm; do not hide them behind a private
 # tmp namespace.  The writable paths are optional so a missing log directory
 # cannot fail namespace setup.
-ReadWritePaths=-/run/nuxel -/var/log/nuxel -/var/lib/nuxel -/usr/share/nuxel/nuxel-home
+ReadWritePaths=-/run/nuxel -/var/log/nuxel -/var/lib/nuxel -/usr/share/nuxel/nuxel-home -/usr/share/nuxel/pwa/nuxel-home
 LockPersonality=yes
 
 # PWNAGE-36000: the session (nuxel-session.sh) starts the early controller

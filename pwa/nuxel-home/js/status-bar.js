@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.8.2-beta
+// Nuxel Status Bar — v0.8.3-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.8.2-beta'; }
+    static get VERSION() { return '0.8.3-beta'; }
 
     constructor() {
         this.state = {
@@ -259,7 +259,7 @@ class StatusBar {
         // Poll notifications from the same JSON source (canonical
         // /var/lib/nuxel/notifications.json surfaced via the bridge).
         this._pollNotifications();
-        this._notifPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNotifications(); }, 30000);
+        this._notifPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNotifications(); }, 5000);
         // NFC: one provider read per visible interval; no separate duplicated
         // poller in Settings (Settings reads on tab selection).
         this._pollNfc();
@@ -1263,6 +1263,15 @@ class StatusBar {
             ? '<span class="qs-notification-icon"><img src="' + escapeHtml(appIcon) + '" alt="" draggable="false" onerror="this.style.display=\'none\'"></span>'
             : '<span class="qs-notification-icon" aria-hidden="true">🔔</span>';
         const read = !!n.read_at;
+        const actions = Array.isArray(n.actions) ? n.actions : [];
+        let customActions = '';
+        for (let ai = 0; ai + 1 < actions.length && ai < 8; ai += 2) {
+            const key = String(actions[ai] || '');
+            const label = String(actions[ai + 1] || key);
+            if (!key || !label) continue;
+            customActions += '<button type="button" class="qs-notification-action custom" ' +
+                'data-notification-action-key="' + escapeHtml(key) + '">' + escapeHtml(label) + '</button>';
+        }
         return '<article class="qs-notification-card" id="qs-notification-' + escapeHtml(id) + '" role="listitem" tabindex="0" data-notification-id="' + escapeHtml(id) +
             '" data-read="' + (read ? 'true' : 'false') + '" aria-label="' +
             escapeHtml(app + ': ' + title + (read ? ' (read)' : ' (unread)')) + '">' +
@@ -1272,6 +1281,7 @@ class StatusBar {
             (title ? '<div class="qs-notification-title">' + escapeHtml(title) + '</div>' : '') +
             (body ? '<div class="qs-notification-text">' + escapeHtml(body) + '</div>' : '') +
             '<div class="qs-notification-actions">' +
+            customActions +
             '<button type="button" class="qs-notification-action read" data-notification-action="read" aria-label="Mark notification read">Mark read</button>' +
             '<button type="button" class="qs-notification-action archive" data-notification-action="archive" aria-label="Archive notification">Archive</button>' +
             '</div></div>' +
@@ -1369,6 +1379,16 @@ class StatusBar {
         list.addEventListener('touchcancel', () => cancel('touch'), { passive: true });
 
         list.addEventListener('click', (e) => {
+            const custom = e.target && e.target.closest ? e.target.closest('[data-notification-action-key]') : null;
+            if (custom) {
+                e.preventDefault();
+                e.stopPropagation();
+                const c = cardFrom(custom);
+                if (!c) return;
+                this._invokeNotificationAction(c.getAttribute('data-notification-id'),
+                    custom.getAttribute('data-notification-action-key'), c);
+                return;
+            }
             const button = e.target && e.target.closest ? e.target.closest('[data-notification-action]') : null;
             if (!button) return;
             e.preventDefault();
@@ -1386,6 +1406,37 @@ class StatusBar {
             if (e.key === 'Enter') { e.preventDefault(); this._markNotificationRead(id, card); }
             else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this._archiveNotification(id, card); }
         });
+    }
+
+    async _invokeNotificationAction(id, action, card) {
+        const key = String(action || '');
+        if (key === 'settings') {
+            try { if (window.appRegistry) window.appRegistry.launchApp('nuxel-settings'); } catch (e) {}
+            return;
+        }
+        const displayModes = ['mirror', 'mirror-portrait', 'mirror-landscape',
+            'fullscreen', 'desktop', 'off'];
+        if (!displayModes.includes(key)) {
+            this._setNotificationError('Unsupported notification action: ' + key);
+            return;
+        }
+        if (typeof bridge === 'undefined' || !bridge || !bridge.setDisplayMode) {
+            this._setNotificationError('Display bridge unavailable');
+            return;
+        }
+        this._setNotificationError('Applying display mode (' + key + ')…');
+        try {
+            const res = await bridge.setDisplayMode(key);
+            if (!res || res.success === false) {
+                const detail = (res && (res.detail || res.error)) || 'display manager did not confirm';
+                this._setNotificationError('Display mode failed: ' + detail);
+            } else {
+                this._setNotificationError('');
+            }
+        } catch (e) {
+            this._setNotificationError('Display mode failed: ' + String((e && e.message) || e));
+        }
+        await this._pollNotifications();
     }
 
     _setNotificationError(message) {

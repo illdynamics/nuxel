@@ -1,0 +1,12 @@
+........F.....                                                           [100%]
+=================================== FAILURES ===================================
+________ test_notifications_render_below_qs_controls_in_expanded_panel _________
+/Users/wicked/x/nuxel/tests/pwnage93000/test_pwnage93000.py:271: in test_notifications_render_below_qs_controls_in_expanded_panel
+    assert "notifications.hidden = !on" in qs
+E   assert 'notifications.hidden = !on' in "// Nuxel Home - Quick Settings Panel (A32 base, A33 boot-diagnostics tile)\n// Manages the quick settings toggles.\n/...ttings.load('verbose-boot'); } catch (e) { /* offline is fine */ }\n    }\n    window.qs = new QuickSettings();\n});\n"
+        html       = '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=devic... icon/WebKit/cache health report to nuxelDiag. -->\n    <script src="js/app.js?v=p94000"></script>\n</body>\n</html>\n'
+        qs         = "// Nuxel Home - Quick Settings Panel (A32 base, A33 boot-diagnostics tile)\n// Manages the quick settings toggles.\n/...ttings.load('verbose-boot'); } catch (e) { /* offline is fine */ }\n    }\n    window.qs = new QuickSettings();\n});\n"
+        sb         = '// Nuxel Status Bar — v0.8.1-beta\n//\n// SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale\n// v...   return { \'&\': \'&amp;\', \'<\': \'&lt;\', \'>\': \'&gt;\', \'"\': \'&quot;\', "\'": \'&#39;\' }[c];\n    });\n}\n'
+=========================== short test summary info ============================
+FAILED tests/pwnage93000/test_pwnage93000.py::test_notifications_render_below_qs_controls_in_expanded_panel
+1 failed, 13 passed in 0.67s

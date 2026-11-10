@@ -1,0 +1,9 @@
+Performance measured on the live S10+ (Exynos 9820):
+  nuxel-displayd:  CPU 11.6%  RSS 21,520 KiB
+  nuxel-wl-fb-ext: CPU 41.0%  RSS 14,272 KiB  (20 fps, 1920x1080 full-frame
+                    screencopy + rotate + ARGB conversion)
+  decon_t frame-done IRQ: 120 in 2 s = ~60 Hz
+  reconnect recovery (HPD high -> first RUNNING frame): 0.95-1.17 s over
+                     five landscape cycles
+No busy polling: uevent netlink listener wakes the daemon immediately;
+0.2 s reconciliation poll remains as a bounded fallback.

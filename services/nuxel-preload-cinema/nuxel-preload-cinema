@@ -62,7 +62,29 @@ DEFAULT_RECEIPT = "/run/nuxel/preload-cinema.receipt"
 DEFAULT_LOG = "/var/log/nuxel/preload-cinema.log"
 DEFAULT_DONE = "/run/nuxel/preload-cinema.done"
 DEFAULT_OVERLAY = "/run/nuxel/preload-cinema.overlay"
-DEFAULT_STATUS = "/usr/share/nuxel/nuxel-home/preload-status.json"
+
+
+def _default_status_path(root: str | Path = "/usr/share/nuxel") -> str:
+    """Return the status file the LAUNCHER actually fetches.
+
+    The PWA is served from a docroot that has shipped in two layouts:
+        /usr/share/nuxel/pwa/nuxel-home   (layout A, the repo/VM tree)
+        /usr/share/nuxel/nuxel-home       (layout B, first handset image)
+    The launcher URL is /pwa/nuxel-home or /nuxel-home respectively, so the
+    same-origin status document must live beside index.html.  A hard-coded
+    layout-B path produced a 404 on every poll when the handset moved to
+    layout A, leaving the PWA's opaque first-frame cover (the static boot
+    penguin) up until the hard timeout.  Resolve the served directory
+    at runtime; NUXEL_PRELOAD_STATUS (passed by nuxel-session.sh) still wins.
+    """
+    root = Path(root)
+    for rel in ("pwa/nuxel-home", "nuxel-home"):
+        if (root / rel / "index.html").is_file():
+            return str(root / rel / "preload-status.json")
+    return str(root / "nuxel-home" / "preload-status.json")
+
+
+DEFAULT_STATUS = _default_status_path()
 DEFAULT_HOME_STATE = "/run/nuxel-home.state"
 DEFAULT_LAUNCHER_READY = "/run/nuxel-launcher-ready"
 DEFAULT_WLFB_STATE = "/run/nuxel-wl-fb.state"

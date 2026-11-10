@@ -1,0 +1,832 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+########## context around line 488061 ##########
+Nov 09 16:24:08 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:24:08 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:24:08 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:24:08 fedora kernel: dhd_runtimepm_state : runtime resume ended 
+Nov 09 16:24:09 fedora kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Nov 09 16:24:09 fedora kernel: Watchdog: s3c2410wdt_keepalive RTC 2026-11-09 15:24:09 UTC
+Nov 09 16:24:09 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+Nov 09 16:24:09 fedora kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Nov 09 16:24:09 fedora kernel: Watchdog: s3c2410wdt_keepalive RTC 2026-11-09 15:24:09 UTC
+Nov 09 16:24:09 fedora kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:24:09 fedora kernel: dhdpcie_bus_suspend: Entering suspend state
+Nov 09 16:24:09 fedora kernel: dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+Nov 09 16:24:09 fedora kernel: D2H_MB_DATA: D3 ACK
+Nov 09 16:24:09 fedora kernel: dhd_bus_handle_d3_ack: D3_ACK Recieved
+Nov 09 16:24:09 fedora kernel: dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+Nov 09 16:24:09 fedora kernel: dhdpcie_bus_suspend: Got D3 Ack 
+Nov 09 16:24:09 fedora kernel: dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+Nov 09 16:24:09 fedora kernel: dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+Nov 09 16:24:09 fedora kernel: dhdpcie_suspend_dev: Enter: TS(2611091524090593)
+Nov 09 16:24:09 fedora kernel: dhdpcie_suspend_dev: Disable L1ss EP side
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+Nov 09 16:24:09 fedora kernel: BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+Nov 09 16:24:09 fedora kernel: AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: ack message is ok
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+Nov 09 16:24:09 fedora kernel: SysMMU alloc num : 1017(Max:1494), lv2_alloc : 33, fault : 0
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+Nov 09 16:24:09 fedora kernel: dhd_runtimepm_state, update suspend states
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:24:09 fedora kernel: dhdpcie_bus_suspend: Entering resume state
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 16:24:09 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 69 1 0 0 0 0 0
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: D state: 0, b80400
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:30d8a11
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+Nov 09 16:24:09 fedora kernel: dhdpcie_resume_dev: Enter: TS(2611091524090643)
+Nov 09 16:24:09 fedora kernel: AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+Nov 09 16:24:09 fedora kernel: dhdpcie_resume_dev: Enable L1ss EP side
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+Nov 09 16:24:09 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+Nov 09 16:24:09 fedora kernel: dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+Nov 09 16:24:09 fedora kernel: dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+Nov 09 16:24:09 fedora kernel: dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+Nov 09 16:24:09 fedora kernel: dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+Nov 09 16:24:09 fedora kernel: dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+Nov 09 16:24:09 fedora kernel: dhd_bus_hostready: Ring Hostready:6403
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:24:09 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:24:09 fedora kernel: dhd_runtimepm_state : runtime resume ended 
+Nov 09 16:24:09 fedora kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Nov 09 16:24:09 fedora kernel: Watchdog: s3c2410wdt_keepalive RTC 2026-11-09 15:24:09 UTC
+Nov 09 16:24:09 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+Nov 09 16:24:09 fedora kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Nov 09 16:24:09 fedora kernel: Watchdog: s3c2410wdt_keepalive RTC 2026-11-09 15:24:09 UTC
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccpinstat_irq: CCPINSTAT (CC2_ACTIVE)
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccvnstat_irq: Vconn Enabled
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_SOURCE
+Nov 09 16:24:10 fedora kernel: typec_set_pwr_role pwr_role=0 role=1
+Nov 09 16:24:10 fedora kernel: usb_notify: send_otg_notify event=power_role_source(27) enable=1
+Nov 09 16:24:10 fedora kernel: usb_notify: extra_notifier_callback event=power_role_source(27)
+Nov 09 16:24:10 fedora kernel: usb_notify: extra_notify_state+ event=power_role_source(27), enable=on
+Nov 09 16:24:10 fedora kernel: host_notify: ndev name=usb_otg: state=source
+Nov 09 16:24:10 fedora kernel: host_notify: power_state (sink->source)
+Nov 09 16:24:10 fedora kernel: usb_notify: send_external_notify: cmd=power_role_notify(7), data=1
+Nov 09 16:24:10 fedora kernel: pdic_handle_usb_external_notifier_notification : action=7 , enable=1
+Nov 09 16:24:10 fedora kernel: usb_notify: send_external_notify: notify done(0x0)
+Nov 09 16:24:10 fedora kernel: usb_notify: extra_notify_state- event=power_role_source(27), cable=none
+Nov 09 16:24:10 fedora kernel: usb_notify: is_blocked type=1, disable_state=0
+Nov 09 16:24:10 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1, auto_vbus_en=0, must_block_host=0, swaped=0
+Nov 09 16:24:10 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1
+Nov 09 16:24:10 fedora kernel: max77705_set_otg: CHGIN-OTG on
+Nov 09 16:24:10 fedora kernel: max77705_otg_set_property : disable aicl : 0x9a
+Nov 09 16:24:10 fedora kernel: otg accessory power = 1
+Nov 09 16:24:10 fedora kernel: max77705: max77705_notify_dr_status: Data Role: DFP Power Role: SRC State: ATTACHED
+Nov 09 16:24:10 fedora kernel: max77705: max77705_clk_booster_set: [PDIC Booster] 1
+Nov 09 16:24:10 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:5 val:2147483647
+Nov 09 16:24:10 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:7 val:2147483647
+Nov 09 16:24:10 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:3 val:2147483647
+Nov 09 16:24:10 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:15 val:2147483647
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 4-1-1-1-0
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 1-3-1-1-0
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=1 typec_data_role=0 event=1
+Nov 09 16:24:10 fedora kernel: max77705: max77705_get_pd_support: TYPEC_CLASS: support_pd_role_swap is 1, usbc_data->pd_support : 0
+Nov 09 16:24:10 fedora kernel: usb_notify: send_otg_notify event=pd_contract(28) enable=0
+Nov 09 16:24:10 fedora kernel: usb_notify: extra_notifier_callback event=pd_contract(28)
+Nov 09 16:24:10 fedora kernel: usb_notify: extra_notify_state+ event=pd_contract(28), enable=off
+Nov 09 16:24:10 fedora kernel: usb_notify: extra_notify_state- event=pd_contract(28), cable=none
+Nov 09 16:24:10 fedora kernel: typec_set_pwr_opmode pwr_opmode=0 opmode=0
+Nov 09 16:24:10 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 16:24:10 fedora kernel: typec_set_data_role data_role=0 role=1
+Nov 09 16:24:10 fedora kernel: typec_register_partner
+Nov 09 16:24:10 fedora kernel: max77705: max77705_datarole_irq_handler:  DFP
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=MUIC, id=ID_ATTACH, attach=1, event=1
+Nov 09 16:24:10 fedora kernel: ccic_notifier_notify: src:5 dest:4 id:01 attach:01 cable_type:00 rprd:1
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_event_work src:CCIC dest:MUIC
+Nov 09 16:24:10 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_muic_event_notifier: id:ID_ATTACH sub1:01 sub2:01 sub3:00
+Nov 09 16:24:10 fedora kernel: max77705_muic_handle_ccic_ATTACH: src:5 dest:4 id:1 attach:1 cable_type:0 rprd:1
+Nov 09 16:24:10 fedora kernel: max77705_muic_handle_ccic_ATTACH: Attach, cable type=0
+Nov 09 16:24:10 fedora kernel: max77705_muic_handle_ccic_ATTACH: RPRD
+Nov 09 16:24:10 fedora kernel: max77705_muic_handle_ccic_ATTACH: do workqueue
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_muic_event_notifier: notify done(0x0)
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=USB, id=ID_USB, attach=Attached, drp=USB_ATTACH_DFP
+Nov 09 16:24:10 fedora kernel: ccic_notifier_notify: src:5 dest:1 id:03 sub1:1 sub2:01 sub3:00
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_event_work src:CCIC dest:USB
+Nov 09 16:24:10 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_notifier_notify: src:CCIC dest:USB id:ID_USB sub1:01 sub2:01 sub3:00
+Nov 09 16:24:10 fedora kernel: sec-battery battery: usb_typec_handle_notification: action (3) dump(0x5, 0x1, 0x03, 0x0001, 0x0001, 0x0000)
+Nov 09 16:24:10 fedora kernel: sec-battery battery: usb_typec_handle_notification: skip handler dest(1)
+Nov 09 16:24:10 fedora kernel: usb_notifier: ccic_usb_handle_notification: Turn On Host(DFP)
+Nov 09 16:24:10 fedora kernel: usb_notify: send_otg_notify event=host_id(2) enable=1
+Nov 09 16:24:10 fedora kernel: usb_notify: otg_notifier_callback event=host_id(2)
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_notifier_notify: notify done(0x0)
+Nov 09 16:24:10 fedora kernel: usb_notify: otg_notify_state+ event=host_id(2), enable=on
+Nov 09 16:24:10 fedora kernel: host_notify: ndev name=usb_otg: state=add
+Nov 09 16:24:10 fedora kernel: host_notify: host_state (none->add)
+Nov 09 16:24:10 fedora kernel: usb_notifier: exynos_set_host USB_HOST_ATTACHED
+Nov 09 16:24:10 fedora kernel: usb_notifier: check_usb_id_state id state = 0
+Nov 09 16:24:10 fedora kernel: usb_notifier: check_usb_id_state: get the 10c00000.usb platform_device
+Nov 09 16:24:10 fedora kernel: usb_notify: otg_notify_state- event=host_id, cable=host_id
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_handle_ccic_event
+Nov 09 16:24:10 fedora kernel: exynos-dwc3 10c00000.usb: dwc3_exynos_rsw_work
+Nov 09 16:24:10 fedora kernel: dwc3 10c00000.dwc3: Turn on host
+Nov 09 16:24:10 fedora kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=0 owner=0 (usb:0 dp:1) on=1
+Nov 09 16:24:10 fedora kernel: phy_exynos_usbdrd 10b00000.phy: USB PHY Conn Set
+Nov 09 16:24:10 fedora kernel: phy_exynos_usbdrd 10b00000.phy: Turn on LDO
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_detect_dev USBC1:0x07, USBC2:0x31, BC:0x00
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_detect_dev adc:0x7 vbvolt:0x0 chgtyp:0x0 spchgtyp:0x0 sysmsg:0x31 vbadc:0x0 dcdtmo:0x0 fakvb:0x0
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_update_adc_with_rid: adc(0x7->0x0) rid(7) rprd(1)
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_check_new_dev vps table match found at i(10), OTG
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_check_new_dev 0->3 switch_val[0x09]
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_detect_dev ATTACHED
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_handle_attach
+Nov 09 16:24:10 fedora kernel: max77705_muic: com_to_usb_ap
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_switch_path value(0x9)
+Nov 09 16:24:10 fedora kernel: muic_notifier_notify (3)Attach
+Nov 09 16:24:10 fedora kernel: muic_handle_cable_data_notification: MUIC uart type(0)
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_handle_muic_notification: src:4 attach:1, cable_type:3
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_handle_muic_notification: Cable(3) Attached 
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_event_work src:MUIC dest:BATTERY
+Nov 09 16:24:10 fedora kernel: [SSP] exynos_cpuidle_muic_notifier: dev=66036, action=1
+Nov 09 16:24:10 fedora kernel: usb_notifier: muic_usb_handle_notification action=1, attached_dev=3
+Nov 09 16:24:10 fedora kernel: type-c manager: manager_notifier_notify: src:MUIC dest:BATTERY id:ID_ATTACH sub1:01 sub2:00 sub3:03
+Nov 09 16:24:10 fedora kernel: muic_handle_dock_notification: ignore(3)
+Nov 09 16:24:10 fedora kernel: [SX9330]: sx9330_ccic_handle_notification accept cable = 3, attach = 1
+Nov 09 16:24:10 fedora kernel: muic_notifier_notify: notify done(0x0)
+Nov 09 16:24:10 fedora kernel: [SX9330]: sx9330_set_offset_calibration
+Nov 09 16:24:10 fedora kernel: max77705_muic: max77705_muic_handle_vbus <1>
+Nov 09 16:24:10 fedora kernel: vbus_notifier_handle: (1)->(1)
+Nov 09 16:24:10 fedora kernel: [SX9330]: sx9330_set_offset_calibration - TOPSTAT0 status: 0x0, retries: 0
+Nov 09 16:24:10 fedora kernel: exynos-dwc3 10c00000.usb: dwc3_exynos_runtime_resume
+Nov 09 16:24:10 fedora kernel: exynos_usbdrd_phy_link_rst
+Nov 09 16:24:10 fedora kernel: exynos_usbdrd_utmi_init: +++
+########## context around line 495912 ##########
+Nov 09 16:30:30 fedora kernel: sec_bat_check_step_charging
+Nov 09 16:30:30 fedora kernel: sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+Nov 09 16:30:30 fedora kernel: max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+Nov 09 16:30:30 fedora kernel: sec_bat_swelling_check: status(Discharging), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(280)'C
+Nov 09 16:30:30 fedora kernel: sec_bat_set_current_event: current event before(0x40004), after(0x40004)
+Nov 09 16:30:30 fedora kernel: sec_bat_set_current_event: current event before(0x40004), after(0x40000)
+Nov 09 16:30:30 fedora kernel: max77705 : [0xb1]0x1a, [0xb2]0x9f, [0xb3]0x80, [0xb4]0x78, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x4b, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0x92, [0xc1]0x10, [0xc2]0x00, [0xc3]0x60, 
+Nov 09 16:30:30 fedora kernel: max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+Nov 09 16:30:30 fedora kernel: sec_bat_monitor_work: Status(Discharging), mode(None), Health(Good), Cable(NONE, NONE, 0, 0), rp(0), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(NONE, 1000), sleep_mode(0), Cycle(-1)
+Nov 09 16:30:30 fedora kernel: sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+Nov 09 16:30:30 fedora kernel: sec_bat_get_property cable type = 1 sleep_mode = 0
+Nov 09 16:30:30 fedora kernel: max77705_fg_read_current: current=-175mA
+Nov 09 16:30:30 fedora kernel: max77705_fg_read_avg_current: avg_current=-282mA
+Nov 09 16:30:30 fedora kernel: max77705_fg_read_isys: isys_current=148mA
+Nov 09 16:30:30 fedora kernel: max77705_fg_read_isys_avg: isys_avg_current=265mA
+Nov 09 16:30:30 fedora kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:30:30 fedora kernel: dhdpcie_bus_suspend: Entering suspend state
+Nov 09 16:30:30 fedora kernel: dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+Nov 09 16:30:30 fedora kernel: D2H_MB_DATA: D3 ACK
+Nov 09 16:30:30 fedora kernel: dhd_bus_handle_d3_ack: D3_ACK Recieved
+Nov 09 16:30:30 fedora kernel: dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+Nov 09 16:30:30 fedora kernel: dhdpcie_bus_suspend: Got D3 Ack 
+Nov 09 16:30:30 fedora kernel: dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+Nov 09 16:30:30 fedora kernel: dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+Nov 09 16:30:30 fedora kernel: dhdpcie_suspend_dev: Enter: TS(2611091530300322)
+Nov 09 16:30:30 fedora kernel: dhdpcie_suspend_dev: Disable L1ss EP side
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+Nov 09 16:30:30 fedora kernel: BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0xc108 PCI_BAR1_WIN(0x84)=(0x0)
+Nov 09 16:30:30 fedora kernel: AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: ack message is ok
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+Nov 09 16:30:30 fedora kernel: SysMMU alloc num : 1060(Max:1494), lv2_alloc : 37, fault : 0
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+Nov 09 16:30:30 fedora kernel: dhd_runtimepm_state, update suspend states
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:30:30 fedora kernel: dhdpcie_bus_suspend: Entering resume state
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: D state: 0, 8c2c00
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:302f211
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+Nov 09 16:30:30 fedora kernel: dhdpcie_resume_dev: Enter: TS(2611091530300384)
+Nov 09 16:30:30 fedora kernel: AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+Nov 09 16:30:30 fedora kernel: dhdpcie_resume_dev: Enable L1ss EP side
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+Nov 09 16:30:30 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+Nov 09 16:30:30 fedora kernel: dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+Nov 09 16:30:30 fedora kernel: dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+Nov 09 16:30:30 fedora kernel: dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+Nov 09 16:30:30 fedora kernel: dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+Nov 09 16:30:30 fedora kernel: dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+Nov 09 16:30:30 fedora kernel: dhd_bus_hostready: Ring Hostready:6500
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:30:30 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Nov 09 16:30:30 fedora kernel: dhd_runtimepm_state : runtime resume ended 
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccpinstat_irq: CCPINSTAT (CC2_ACTIVE)
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccvnstat_irq: Vconn Enabled
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_SOURCE
+Nov 09 16:30:30 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 16:30:30 fedora kernel: usb_notify: send_otg_notify event=power_role_source(27) enable=1
+Nov 09 16:30:30 fedora kernel: usb_notify: extra_notifier_callback event=power_role_source(27)
+Nov 09 16:30:30 fedora kernel: usb_notify: extra_notify_state+ event=power_role_source(27), enable=on
+Nov 09 16:30:30 fedora kernel: host_notify: ndev name=usb_otg: state=source
+Nov 09 16:30:30 fedora kernel: host_notify: power_state (sink->source)
+Nov 09 16:30:30 fedora kernel: usb_notify: send_external_notify: cmd=power_role_notify(7), data=1
+Nov 09 16:30:30 fedora kernel: pdic_handle_usb_external_notifier_notification : action=7 , enable=1
+Nov 09 16:30:30 fedora kernel: usb_notify: send_external_notify: notify done(0x0)
+Nov 09 16:30:30 fedora kernel: usb_notify: extra_notify_state- event=power_role_source(27), cable=none
+Nov 09 16:30:30 fedora kernel: usb_notify: is_blocked type=1, disable_state=0
+Nov 09 16:30:30 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1, auto_vbus_en=0, must_block_host=0, swaped=0
+Nov 09 16:30:30 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1
+Nov 09 16:30:30 fedora kernel: max77705_set_otg: CHGIN-OTG on
+Nov 09 16:30:30 fedora kernel: max77705_otg_set_property : disable aicl : 0x9a
+Nov 09 16:30:30 fedora kernel: otg accessory power = 1
+Nov 09 16:30:30 fedora kernel: max77705: max77705_notify_dr_status: Data Role: DFP Power Role: SRC State: ATTACHED
+Nov 09 16:30:30 fedora kernel: max77705: max77705_clk_booster_set: [PDIC Booster] 1
+Nov 09 16:30:30 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:5 val:2147483647
+Nov 09 16:30:30 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:7 val:2147483647
+Nov 09 16:30:30 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:3 val:2147483647
+Nov 09 16:30:30 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:15 val:2147483647
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 4-1-1-1-0
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 1-3-1-1-0
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=1 typec_data_role=0 event=1
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=MUIC, id=ID_ATTACH, attach=1, event=1
+Nov 09 16:30:30 fedora kernel: ccic_notifier_notify: src:5 dest:4 id:01 attach:01 cable_type:00 rprd:1
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_event_work src:CCIC dest:MUIC
+Nov 09 16:30:30 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_muic_event_notifier: id:ID_ATTACH sub1:01 sub2:01 sub3:00
+Nov 09 16:30:30 fedora kernel: max77705_muic_handle_ccic_ATTACH: src:5 dest:4 id:1 attach:1 cable_type:0 rprd:1
+Nov 09 16:30:30 fedora kernel: max77705_muic_handle_ccic_ATTACH: Attach, cable type=0
+Nov 09 16:30:30 fedora kernel: max77705_muic_handle_ccic_ATTACH: RPRD
+Nov 09 16:30:30 fedora kernel: max77705_muic_handle_ccic_ATTACH: do workqueue
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_muic_event_notifier: notify done(0x0)
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_handle_ccic_event
+Nov 09 16:30:30 fedora kernel: max77705: max77705_get_pd_support: TYPEC_CLASS: support_pd_role_swap is 1, usbc_data->pd_support : 0
+Nov 09 16:30:30 fedora kernel: usb_notify: send_otg_notify event=pd_contract(28) enable=0
+Nov 09 16:30:30 fedora kernel: usb_notify: extra_notifier_callback event=pd_contract(28)
+Nov 09 16:30:30 fedora kernel: usb_notify: extra_notify_state+ event=pd_contract(28), enable=off
+Nov 09 16:30:30 fedora kernel: usb_notify: extra_notify_state- event=pd_contract(28), cable=none
+Nov 09 16:30:30 fedora kernel: typec_set_pwr_opmode pwr_opmode=0 opmode=0
+Nov 09 16:30:30 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 16:30:30 fedora kernel: typec_set_data_role data_role=1 role=1
+Nov 09 16:30:30 fedora kernel: typec_register_partner
+Nov 09 16:30:30 fedora kernel: max77705: max77705_datarole_irq_handler:  DFP
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=USB, id=ID_USB, attach=Attached, drp=USB_ATTACH_DFP
+Nov 09 16:30:30 fedora kernel: ccic_notifier_notify: src:5 dest:1 id:03 sub1:1 sub2:01 sub3:00
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_event_work src:CCIC dest:USB
+Nov 09 16:30:30 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_notifier_notify: src:CCIC dest:USB id:ID_USB sub1:01 sub2:01 sub3:00
+Nov 09 16:30:30 fedora kernel: sec-battery battery: usb_typec_handle_notification: action (3) dump(0x5, 0x1, 0x03, 0x0001, 0x0001, 0x0000)
+Nov 09 16:30:30 fedora kernel: sec-battery battery: usb_typec_handle_notification: skip handler dest(1)
+Nov 09 16:30:30 fedora kernel: usb_notifier: ccic_usb_handle_notification: Turn On Host(DFP)
+Nov 09 16:30:30 fedora kernel: usb_notify: send_otg_notify event=host_id(2) enable=1
+Nov 09 16:30:30 fedora kernel: usb_notify: otg_notifier_callback event=host_id(2)
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_notifier_notify: notify done(0x0)
+Nov 09 16:30:30 fedora kernel: usb_notify: otg_notify_state+ event=host_id(2), enable=on
+Nov 09 16:30:30 fedora kernel: host_notify: ndev name=usb_otg: state=add
+Nov 09 16:30:30 fedora kernel: host_notify: host_state (remove->add)
+Nov 09 16:30:30 fedora kernel: usb_notifier: exynos_set_host USB_HOST_ATTACHED
+Nov 09 16:30:30 fedora kernel: usb_notifier: check_usb_id_state id state = 0
+Nov 09 16:30:30 fedora kernel: usb_notifier: check_usb_id_state: get the 10c00000.usb platform_device
+Nov 09 16:30:30 fedora kernel: usb_notify: otg_notify_state- event=host_id, cable=host_id
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_detect_dev USBC1:0x07, USBC2:0x05, BC:0x00
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_detect_dev adc:0x7 vbvolt:0x0 chgtyp:0x0 spchgtyp:0x0 sysmsg:0x5 vbadc:0x0 dcdtmo:0x0 fakvb:0x0
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_update_adc_with_rid: adc(0x7->0x0) rid(7) rprd(1)
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_check_new_dev vps table match found at i(10), OTG
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_check_new_dev 0->3 switch_val[0x09]
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_detect_dev ATTACHED
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_handle_attach
+Nov 09 16:30:30 fedora kernel: max77705_muic: com_to_usb_ap
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_switch_path value(0x9)
+Nov 09 16:30:30 fedora kernel: exynos-dwc3 10c00000.usb: dwc3_exynos_rsw_work
+Nov 09 16:30:30 fedora kernel: dwc3 10c00000.dwc3: Turn on host
+Nov 09 16:30:30 fedora kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=0 owner=0 (usb:0 dp:1) on=1
+Nov 09 16:30:30 fedora kernel: phy_exynos_usbdrd 10b00000.phy: USB PHY Conn Set
+Nov 09 16:30:30 fedora kernel: phy_exynos_usbdrd 10b00000.phy: Turn on LDO
+Nov 09 16:30:30 fedora kernel: muic_notifier_notify (3)Attach
+Nov 09 16:30:30 fedora kernel: muic_handle_cable_data_notification: MUIC uart type(0)
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_handle_muic_notification: src:4 attach:1, cable_type:3
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_handle_muic_notification: Cable(3) Attached 
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_event_work src:MUIC dest:BATTERY
+Nov 09 16:30:30 fedora kernel: [SSP] exynos_cpuidle_muic_notifier: dev=66036, action=1
+Nov 09 16:30:30 fedora kernel: usb_notifier: muic_usb_handle_notification action=1, attached_dev=3
+Nov 09 16:30:30 fedora kernel: muic_handle_dock_notification: ignore(3)
+Nov 09 16:30:30 fedora kernel: muic_notifier_notify: notify done(0x0)
+Nov 09 16:30:30 fedora kernel: max77705_muic: max77705_muic_handle_vbus <1>
+Nov 09 16:30:30 fedora kernel: vbus_notifier_handle: (1)->(1)
+Nov 09 16:30:30 fedora kernel: type-c manager: manager_notifier_notify: src:MUIC dest:BATTERY id:ID_ATTACH sub1:01 sub2:00 sub3:03
+Nov 09 16:30:30 fedora kernel: [SX9330]: sx9330_ccic_handle_notification accept cable = 3, attach = 1
+Nov 09 16:30:30 fedora kernel: [SX9330]: sx9330_set_offset_calibration
+Nov 09 16:30:30 fedora kernel: [SX9330]: sx9330_set_offset_calibration - TOPSTAT0 status: 0x0, retries: 0
+Nov 09 16:30:30 fedora kernel: exynos-dwc3 10c00000.usb: dwc3_exynos_runtime_resume
+Nov 09 16:30:30 fedora kernel: exynos_usbdrd_phy_link_rst
+Nov 09 16:30:30 fedora kernel: exynos_usbdrd_utmi_init: +++
+########## context around line 943756 ##########
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:15 V1920X1080P60
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:31 V1920X1200P60RB
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:32 V1920X1200P60
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:33 V2560X1080P60
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:34 V2048X1536P60
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:20 V1920X1440P60
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:19 V2400X1200P90RELU
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:18 V2560X1440P60EXT
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:22 V2560X1440P59
+Nov 09 17:05:54 fedora kernel: Displayport: EDID: Video data block vic:1 V1440x2560P60
+Nov 09 17:05:54 fedora kernel: Displayport: Data block 1 of 3 bytes
+Nov 09 17:05:54 fedora kernel: Displayport: LPCM ch=2
+Nov 09 17:05:54 fedora kernel: Displayport: ch:0x2, sample:0x7, bitrate:0x7
+Nov 09 17:05:54 fedora kernel: Displayport: Data block 7 of 6 bytes
+Nov 09 17:05:54 fedora kernel: Displayport: Data block 3 of 13 bytes
+Nov 09 17:05:54 fedora kernel: Displayport: Data block 3 of 7 bytes
+Nov 09 17:05:54 fedora kernel: Displayport: Data block 7 of 4 bytes
+Nov 09 17:05:54 fedora kernel: Displayport: Data block 7 of 3 bytes
+Nov 09 17:05:54 fedora kernel: Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+Nov 09 17:05:54 fedora kernel: Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+Nov 09 17:05:54 fedora kernel: Displayport: invalid timing i:42, best:45
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V640X480P60
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V720X480P60
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V720X576P50
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V1280X720P50
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V1280X720P60
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V1280X1024P60
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V1920X1080P24
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V1920X1080P25
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V1920X1080P30
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V1920X1080P50
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V1920X1080P60
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V2560X1440P59
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V3840X2160P24
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V3840X2160P25
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V3840X2160P30
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V3840X2160P50
+Nov 09 17:05:54 fedora kernel: Displayport: unit test supported_videos : V3840X2160P60
+Nov 09 17:05:54 fedora kernel: Displayport: max video_format : V3840X2160P60
+Nov 09 17:05:54 fedora kernel: Displayport: returns true
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccpinstat_irq: CCPINSTAT (CC2_ACTIVE)
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccvnstat_irq: Vconn Enabled
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_SOURCE
+Nov 09 17:05:54 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 17:05:54 fedora kernel: usb_notify: send_otg_notify event=power_role_source(27) enable=1
+Nov 09 17:05:54 fedora kernel: usb_notify: extra_notifier_callback event=power_role_source(27)
+Nov 09 17:05:54 fedora kernel: usb_notify: extra_notify_state+ event=power_role_source(27), enable=on
+Nov 09 17:05:54 fedora kernel: host_notify: ndev name=usb_otg: state=source
+Nov 09 17:05:54 fedora kernel: host_notify: power_state (sink->source)
+Nov 09 17:05:54 fedora kernel: usb_notify: send_external_notify: cmd=power_role_notify(7), data=1
+Nov 09 17:05:54 fedora kernel: pdic_handle_usb_external_notifier_notification : action=7 , enable=1
+Nov 09 17:05:54 fedora kernel: usb_notify: send_external_notify: notify done(0x0)
+Nov 09 17:05:54 fedora kernel: usb_notify: extra_notify_state- event=power_role_source(27), cable=none
+Nov 09 17:05:54 fedora kernel: usb_notify: is_blocked type=1, disable_state=0
+Nov 09 17:05:54 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1, auto_vbus_en=0, must_block_host=0, swaped=0
+Nov 09 17:05:54 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1
+Nov 09 17:05:54 fedora kernel: max77705_set_otg: CHGIN-OTG on
+Nov 09 17:05:54 fedora kernel: max77705_otg_set_property : disable aicl : 0x9a
+Nov 09 17:05:54 fedora kernel: otg accessory power = 1
+Nov 09 17:05:54 fedora kernel: max77705: max77705_notify_dr_status: Data Role: DFP Power Role: SRC State: ATTACHED
+Nov 09 17:05:54 fedora kernel: max77705: max77705_clk_booster_set: [PDIC Booster] 1
+Nov 09 17:05:54 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:5 val:2147483647
+Nov 09 17:05:54 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:7 val:2147483647
+Nov 09 17:05:54 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:3 val:2147483647
+Nov 09 17:05:54 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:15 val:2147483647
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 4-1-1-1-0
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 1-3-1-1-0
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=1 typec_data_role=0 event=1
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=MUIC, id=ID_ATTACH, attach=1, event=1
+Nov 09 17:05:54 fedora kernel: ccic_notifier_notify: src:5 dest:4 id:01 attach:01 cable_type:00 rprd:1
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_event_work src:CCIC dest:MUIC
+Nov 09 17:05:54 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_muic_event_notifier: id:ID_ATTACH sub1:01 sub2:01 sub3:00
+Nov 09 17:05:54 fedora kernel: max77705_muic_handle_ccic_ATTACH: src:5 dest:4 id:1 attach:1 cable_type:0 rprd:1
+Nov 09 17:05:54 fedora kernel: max77705_muic_handle_ccic_ATTACH: Attach, cable type=0
+Nov 09 17:05:54 fedora kernel: max77705_muic_handle_ccic_ATTACH: RPRD
+Nov 09 17:05:54 fedora kernel: max77705_muic_handle_ccic_ATTACH: do workqueue
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_muic_event_notifier: notify done(0x0)
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_handle_ccic_event
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_detect_dev USBC1:0x07, USBC2:0x05, BC:0x00
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_detect_dev adc:0x7 vbvolt:0x0 chgtyp:0x0 spchgtyp:0x0 sysmsg:0x5 vbadc:0x0 dcdtmo:0x0 fakvb:0x0
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_update_adc_with_rid: adc(0x7->0x0) rid(7) rprd(1)
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_check_new_dev vps table match found at i(10), OTG
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_check_new_dev 0->3 switch_val[0x09]
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_detect_dev ATTACHED
+Nov 09 17:05:54 fedora kernel: max77705: max77705_get_pd_support: TYPEC_CLASS: support_pd_role_swap is 1, usbc_data->pd_support : 0
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_handle_attach
+Nov 09 17:05:54 fedora kernel: usb_notify: send_otg_notify event=pd_contract(28) enable=0
+Nov 09 17:05:54 fedora kernel: max77705_muic: com_to_usb_ap
+Nov 09 17:05:54 fedora kernel: usb_notify: extra_notifier_callback event=pd_contract(28)
+Nov 09 17:05:54 fedora kernel: usb_notify: extra_notify_state+ event=pd_contract(28), enable=off
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_switch_path value(0x9)
+Nov 09 17:05:54 fedora kernel: usb_notify: extra_notify_state- event=pd_contract(28), cable=none
+Nov 09 17:05:54 fedora kernel: typec_set_pwr_opmode pwr_opmode=0 opmode=0
+Nov 09 17:05:54 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 17:05:54 fedora kernel: typec_set_data_role data_role=1 role=1
+Nov 09 17:05:54 fedora kernel: typec_register_partner
+Nov 09 17:05:54 fedora kernel: max77705: max77705_datarole_irq_handler:  DFP
+Nov 09 17:05:54 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=USB, id=ID_USB, attach=Attached, drp=USB_ATTACH_DFP
+Nov 09 17:05:54 fedora kernel: ccic_notifier_notify: src:5 dest:1 id:03 sub1:1 sub2:01 sub3:00
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_event_work src:CCIC dest:USB
+Nov 09 17:05:54 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_notifier_notify: src:CCIC dest:USB id:ID_USB sub1:01 sub2:01 sub3:00
+Nov 09 17:05:54 fedora kernel: sec-battery battery: usb_typec_handle_notification: action (3) dump(0x5, 0x1, 0x03, 0x0001, 0x0001, 0x0000)
+Nov 09 17:05:54 fedora kernel: sec-battery battery: usb_typec_handle_notification: skip handler dest(1)
+Nov 09 17:05:54 fedora kernel: usb_notifier: ccic_usb_handle_notification: Turn On Host(DFP)
+Nov 09 17:05:54 fedora kernel: usb_notify: send_otg_notify event=host_id(2) enable=1
+Nov 09 17:05:54 fedora kernel: usb_notify: otg_notifier_callback event=host_id(2)
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_notifier_notify: notify done(0x0)
+Nov 09 17:05:54 fedora kernel: usb_notify: otg_notify_state+ event=host_id(2), enable=on
+Nov 09 17:05:54 fedora kernel: host_notify: ndev name=usb_otg: state=add
+Nov 09 17:05:54 fedora kernel: host_notify: host_state (remove->add)
+Nov 09 17:05:54 fedora kernel: usb_notifier: exynos_set_host USB_HOST_ATTACHED
+Nov 09 17:05:54 fedora kernel: usb_notifier: check_usb_id_state id state = 0
+Nov 09 17:05:54 fedora kernel: usb_notifier: check_usb_id_state: get the 10c00000.usb platform_device
+Nov 09 17:05:54 fedora kernel: usb_notify: otg_notify_state- event=host_id, cable=host_id
+Nov 09 17:05:54 fedora kernel: muic_notifier_notify (3)Attach
+Nov 09 17:05:54 fedora kernel: muic_handle_cable_data_notification: MUIC uart type(0)
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_handle_muic_notification: src:4 attach:1, cable_type:3
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_handle_muic_notification: Cable(3) Attached 
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_event_work src:MUIC dest:BATTERY
+Nov 09 17:05:54 fedora kernel: [SSP] exynos_cpuidle_muic_notifier: dev=66036, action=1
+Nov 09 17:05:54 fedora kernel: usb_notifier: muic_usb_handle_notification action=1, attached_dev=3
+Nov 09 17:05:54 fedora kernel: type-c manager: manager_notifier_notify: src:MUIC dest:BATTERY id:ID_ATTACH sub1:01 sub2:00 sub3:03
+Nov 09 17:05:54 fedora kernel: muic_handle_dock_notification: ignore(3)
+Nov 09 17:05:54 fedora kernel: [SX9330]: sx9330_ccic_handle_notification accept cable = 3, attach = 1
+Nov 09 17:05:54 fedora kernel: muic_notifier_notify: notify done(0x0)
+Nov 09 17:05:54 fedora kernel: [SX9330]: sx9330_set_offset_calibration
+Nov 09 17:05:54 fedora kernel: max77705_muic: max77705_muic_handle_vbus <1>
+Nov 09 17:05:54 fedora kernel: vbus_notifier_handle: (1)->(1)
+Nov 09 17:05:54 fedora kernel: exynos-dwc3 10c00000.usb: dwc3_exynos_rsw_work
+Nov 09 17:05:55 fedora kernel: dwc3 10c00000.dwc3: Turn on host
+Nov 09 17:05:55 fedora kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=0 owner=0 (usb:0 dp:1) on=1
+Nov 09 17:05:55 fedora kernel: phy_exynos_usbdrd 10b00000.phy: USB PHY Conn Set
+Nov 09 17:05:55 fedora kernel: phy_exynos_usbdrd 10b00000.phy: Turn on LDO
+Nov 09 17:05:55 fedora kernel: [SX9330]: sx9330_set_offset_calibration - TOPSTAT0 status: 0x0, retries: 0
+Nov 09 17:05:55 fedora kernel: [SX9330]: sx9330_set_offset_calibration - STAT1 status: 0x1, retries: 0
+Nov 09 17:05:55 fedora kernel: [SX9330]: sx9330_set_offset_calibration - done!
+Nov 09 17:05:55 fedora kernel: sec-battery battery: usb_typec_handle_notification: action (1) dump(0x4, 0x2, 0x01, 0x0001, 0x0000, 0x0003)
+Nov 09 17:05:55 fedora kernel: [sec_bat_cable_check]ATTACHED(3)
+Nov 09 17:05:55 fedora kernel: sec_bat_set_misc_event: misc event before(0x0), after(0x0)
+Nov 09 17:05:55 fedora kernel: sec_bat_set_misc_event: misc event before(0x0), after(0x0)
+Nov 09 17:05:55 fedora kernel: sec-battery battery: sec_bat_cable_work: Start
+Nov 09 17:05:55 fedora kernel: sec_bat_set_current_event: current event before(0x40000), after(0x40004)
+Nov 09 17:05:55 fedora kernel: sec_bat_change_default_current: cable_type: 34 input: 500 output: 2850
+Nov 09 17:05:55 fedora kernel: sec-battery battery: usb_typec_handle_notification: CMD[ATTACH], CABLE_TYPE[21]
+Nov 09 17:05:55 fedora kernel: type-c manager: manager_notifier_notify: notify done(0x0)
+Nov 09 17:05:55 fedora kernel: max77705_chg_set_property: float voltage(4350)
+########## context around line 1111355 ##########
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:31 V1920X1200P60RB
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:32 V1920X1200P60
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:33 V2560X1080P60
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:34 V2048X1536P60
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:20 V1920X1440P60
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:19 V2400X1200P90RELU
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:18 V2560X1440P60EXT
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:22 V2560X1440P59
+Nov 09 17:13:45 fedora kernel: Displayport: EDID: Video data block vic:1 V1440x2560P60
+Nov 09 17:13:45 fedora kernel: Displayport: Data block 1 of 3 bytes
+Nov 09 17:13:45 fedora kernel: Displayport: LPCM ch=2
+Nov 09 17:13:45 fedora kernel: Displayport: ch:0x2, sample:0x7, bitrate:0x7
+Nov 09 17:13:45 fedora kernel: Displayport: Data block 7 of 6 bytes
+Nov 09 17:13:45 fedora kernel: Displayport: Data block 3 of 13 bytes
+Nov 09 17:13:45 fedora kernel: Displayport: Data block 3 of 7 bytes
+Nov 09 17:13:45 fedora kernel: Displayport: Data block 7 of 4 bytes
+Nov 09 17:13:45 fedora kernel: Displayport: Data block 7 of 3 bytes
+Nov 09 17:13:45 fedora kernel: Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+Nov 09 17:13:45 fedora kernel: Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+Nov 09 17:13:45 fedora kernel: Displayport: invalid timing i:42, best:45
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V640X480P60
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V720X480P60
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V720X576P50
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V1280X720P50
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V1280X720P60
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V1280X1024P60
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V1920X1080P24
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V1920X1080P25
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V1920X1080P30
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V1920X1080P50
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V1920X1080P60
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V2560X1440P59
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V3840X2160P24
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V3840X2160P25
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V3840X2160P30
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V3840X2160P50
+Nov 09 17:13:45 fedora kernel: Displayport: unit test supported_videos : V3840X2160P60
+Nov 09 17:13:45 fedora kernel: Displayport: max video_format : V3840X2160P60
+Nov 09 17:13:45 fedora kernel: Displayport: returns true
+Nov 09 17:13:45 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 69 1 0 0 0 0 0
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccpinstat_irq: CCPINSTAT (CC2_ACTIVE)
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccvnstat_irq: Vconn Enabled
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_SOURCE
+Nov 09 17:13:45 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 17:13:45 fedora kernel: usb_notify: send_otg_notify event=power_role_source(27) enable=1
+Nov 09 17:13:45 fedora kernel: usb_notify: extra_notifier_callback event=power_role_source(27)
+Nov 09 17:13:45 fedora kernel: usb_notify: extra_notify_state+ event=power_role_source(27), enable=on
+Nov 09 17:13:45 fedora kernel: host_notify: ndev name=usb_otg: state=source
+Nov 09 17:13:45 fedora kernel: host_notify: power_state (sink->source)
+Nov 09 17:13:45 fedora kernel: usb_notify: send_external_notify: cmd=power_role_notify(7), data=1
+Nov 09 17:13:45 fedora kernel: pdic_handle_usb_external_notifier_notification : action=7 , enable=1
+Nov 09 17:13:45 fedora kernel: usb_notify: send_external_notify: notify done(0x0)
+Nov 09 17:13:45 fedora kernel: usb_notify: extra_notify_state- event=power_role_source(27), cable=none
+Nov 09 17:13:45 fedora kernel: usb_notify: is_blocked type=1, disable_state=0
+Nov 09 17:13:45 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1, auto_vbus_en=0, must_block_host=0, swaped=0
+Nov 09 17:13:45 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1
+Nov 09 17:13:45 fedora kernel: max77705_set_otg: CHGIN-OTG on
+Nov 09 17:13:45 fedora kernel: max77705_otg_set_property : disable aicl : 0x9a
+Nov 09 17:13:45 fedora kernel: otg accessory power = 1
+Nov 09 17:13:45 fedora kernel: max77705: max77705_notify_dr_status: Data Role: DFP Power Role: SRC State: ATTACHED
+Nov 09 17:13:45 fedora kernel: max77705: max77705_clk_booster_set: [PDIC Booster] 1
+Nov 09 17:13:45 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:5 val:2147483647
+Nov 09 17:13:45 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:7 val:2147483647
+Nov 09 17:13:45 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:3 val:2147483647
+Nov 09 17:13:45 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:15 val:2147483647
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 4-1-1-1-0
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 1-3-1-1-0
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=1 typec_data_role=0 event=1
+Nov 09 17:13:45 fedora kernel: max77705: max77705_get_pd_support: TYPEC_CLASS: support_pd_role_swap is 1, usbc_data->pd_support : 0
+Nov 09 17:13:45 fedora kernel: usb_notify: send_otg_notify event=pd_contract(28) enable=0
+Nov 09 17:13:45 fedora kernel: usb_notify: extra_notifier_callback event=pd_contract(28)
+Nov 09 17:13:45 fedora kernel: usb_notify: extra_notify_state+ event=pd_contract(28), enable=off
+Nov 09 17:13:45 fedora kernel: usb_notify: extra_notify_state- event=pd_contract(28), cable=none
+Nov 09 17:13:45 fedora kernel: typec_set_pwr_opmode pwr_opmode=0 opmode=0
+Nov 09 17:13:45 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 17:13:45 fedora kernel: typec_set_data_role data_role=1 role=1
+Nov 09 17:13:45 fedora kernel: typec_register_partner
+Nov 09 17:13:45 fedora kernel: max77705: max77705_datarole_irq_handler:  DFP
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=MUIC, id=ID_ATTACH, attach=1, event=1
+Nov 09 17:13:45 fedora kernel: ccic_notifier_notify: src:5 dest:4 id:01 attach:01 cable_type:00 rprd:1
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_event_work src:CCIC dest:MUIC
+Nov 09 17:13:45 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_muic_event_notifier: id:ID_ATTACH sub1:01 sub2:01 sub3:00
+Nov 09 17:13:45 fedora kernel: max77705_muic_handle_ccic_ATTACH: src:5 dest:4 id:1 attach:1 cable_type:0 rprd:1
+Nov 09 17:13:45 fedora kernel: max77705_muic_handle_ccic_ATTACH: Attach, cable type=0
+Nov 09 17:13:45 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=USB, id=ID_USB, attach=Attached, drp=USB_ATTACH_DFP
+Nov 09 17:13:45 fedora kernel: max77705_muic_handle_ccic_ATTACH: RPRD
+Nov 09 17:13:45 fedora kernel: max77705_muic_handle_ccic_ATTACH: do workqueue
+Nov 09 17:13:45 fedora kernel: ccic_notifier_notify: src:5 dest:1 id:03 sub1:1 sub2:01 sub3:00
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_event_work src:CCIC dest:USB
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_muic_event_notifier: notify done(0x0)
+Nov 09 17:13:45 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_notifier_notify: src:CCIC dest:USB id:ID_USB sub1:01 sub2:01 sub3:00
+Nov 09 17:13:45 fedora kernel: sec-battery battery: usb_typec_handle_notification: action (3) dump(0x5, 0x1, 0x03, 0x0001, 0x0001, 0x0000)
+Nov 09 17:13:45 fedora kernel: sec-battery battery: usb_typec_handle_notification: skip handler dest(1)
+Nov 09 17:13:45 fedora kernel: usb_notifier: ccic_usb_handle_notification: Turn On Host(DFP)
+Nov 09 17:13:45 fedora kernel: usb_notify: send_otg_notify event=host_id(2) enable=1
+Nov 09 17:13:45 fedora kernel: usb_notify: otg_notifier_callback event=host_id(2)
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_notifier_notify: notify done(0x0)
+Nov 09 17:13:45 fedora kernel: usb_notify: otg_notify_state+ event=host_id(2), enable=on
+Nov 09 17:13:45 fedora kernel: host_notify: ndev name=usb_otg: state=add
+Nov 09 17:13:45 fedora kernel: host_notify: host_state (remove->add)
+Nov 09 17:13:45 fedora kernel: usb_notifier: exynos_set_host USB_HOST_ATTACHED
+Nov 09 17:13:45 fedora kernel: usb_notifier: check_usb_id_state id state = 0
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_handle_ccic_event
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_detect_dev USBC1:0x07, USBC2:0x05, BC:0x00
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_detect_dev adc:0x7 vbvolt:0x0 chgtyp:0x0 spchgtyp:0x0 sysmsg:0x5 vbadc:0x0 dcdtmo:0x0 fakvb:0x0
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_update_adc_with_rid: adc(0x7->0x0) rid(7) rprd(1)
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_check_new_dev vps table match found at i(10), OTG
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_check_new_dev 0->3 switch_val[0x09]
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_detect_dev ATTACHED
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_handle_attach
+Nov 09 17:13:45 fedora kernel: max77705_muic: com_to_usb_ap
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_switch_path value(0x9)
+Nov 09 17:13:45 fedora kernel: muic_notifier_notify (3)Attach
+Nov 09 17:13:45 fedora kernel: muic_handle_cable_data_notification: MUIC uart type(0)
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_handle_muic_notification: src:4 attach:1, cable_type:3
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_handle_muic_notification: Cable(3) Attached 
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_event_work src:MUIC dest:BATTERY
+Nov 09 17:13:45 fedora kernel: [SSP] exynos_cpuidle_muic_notifier: dev=66036, action=1
+Nov 09 17:13:45 fedora kernel: usb_notifier: muic_usb_handle_notification action=1, attached_dev=3
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_notifier_notify: src:MUIC dest:BATTERY id:ID_ATTACH sub1:01 sub2:00 sub3:03
+Nov 09 17:13:45 fedora kernel: muic_handle_dock_notification: ignore(3)
+Nov 09 17:13:45 fedora kernel: [SX9330]: sx9330_ccic_handle_notification accept cable = 3, attach = 1
+Nov 09 17:13:45 fedora kernel: [SX9330]: sx9330_set_offset_calibration
+Nov 09 17:13:45 fedora kernel: muic_notifier_notify: notify done(0x0)
+Nov 09 17:13:45 fedora kernel: max77705_muic: max77705_muic_handle_vbus <1>
+Nov 09 17:13:45 fedora kernel: vbus_notifier_handle: (1)->(1)
+Nov 09 17:13:45 fedora kernel: [SX9330]: sx9330_set_offset_calibration - TOPSTAT0 status: 0x0, retries: 0
+Nov 09 17:13:45 fedora kernel: usb_notifier: check_usb_id_state: get the 10c00000.usb platform_device
+Nov 09 17:13:45 fedora kernel: usb_notify: otg_notify_state- event=host_id, cable=host_id
+Nov 09 17:13:45 fedora kernel: exynos-dwc3 10c00000.usb: dwc3_exynos_rsw_work
+Nov 09 17:13:45 fedora kernel: dwc3 10c00000.dwc3: Turn on host
+Nov 09 17:13:45 fedora kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=0 owner=0 (usb:0 dp:1) on=1
+Nov 09 17:13:45 fedora kernel: phy_exynos_usbdrd 10b00000.phy: USB PHY Conn Set
+Nov 09 17:13:45 fedora kernel: phy_exynos_usbdrd 10b00000.phy: Turn on LDO
+Nov 09 17:13:45 fedora kernel: [SX9330]: sx9330_set_offset_calibration - STAT1 status: 0x1, retries: 0
+Nov 09 17:13:45 fedora kernel: [SX9330]: sx9330_set_offset_calibration - done!
+Nov 09 17:13:45 fedora kernel: sec-battery battery: usb_typec_handle_notification: action (1) dump(0x4, 0x2, 0x01, 0x0001, 0x0000, 0x0003)
+Nov 09 17:13:45 fedora kernel: [sec_bat_cable_check]ATTACHED(3)
+Nov 09 17:13:45 fedora kernel: sec_bat_set_misc_event: misc event before(0x0), after(0x0)
+Nov 09 17:13:45 fedora kernel: sec_bat_set_misc_event: misc event before(0x0), after(0x0)
+Nov 09 17:13:45 fedora kernel: sec-battery battery: usb_typec_handle_notification: CMD[ATTACH], CABLE_TYPE[21]
+Nov 09 17:13:45 fedora kernel: type-c manager: manager_notifier_notify: notify done(0x0)
+Nov 09 17:13:45 fedora kernel: sec-battery battery: sec_bat_cable_work: Start
+Nov 09 17:13:45 fedora kernel: sec_bat_set_current_event: current event before(0x40000), after(0x40004)
+Nov 09 17:13:45 fedora kernel: sec_bat_change_default_current: cable_type: 34 input: 500 output: 2850
+Nov 09 17:13:45 fedora kernel: max77705_chg_set_property: float voltage(4350)
+########## context around line 1125819 ##########
+Nov 09 17:14:25 fedora kernel: max77705_charger_unlock: unlock err, chgprot(0x0), retry(0)
+Nov 09 17:14:25 fedora kernel: max77705_chg_set_property: float voltage(4350)
+Nov 09 17:14:25 fedora kernel: max77705_set_float_voltage: battery cv voltage 0x13
+Nov 09 17:14:25 fedora kernel: sec_bat_cable_work: float voltage = 4350
+Nov 09 17:14:25 fedora kernel: sec_bat_change_default_current: cable_type: 4 input: 475 output: 550
+Nov 09 17:14:25 fedora kernel: sec_bat_change_default_current: cable_type: 3 input: 1800 output: 2100
+Nov 09 17:14:25 fedora kernel: sec_bat_change_default_current: cable_type: 34 input: 500 output: 2850
+Nov 09 17:14:25 fedora kernel: sec_bat_set_current_event: current event before(0x40004), after(0x40004)
+Nov 09 17:14:25 fedora kernel: sec_bat_set_charge set Charging-Off mode
+Nov 09 17:14:25 fedora kernel: sec_bat_reset_step_charging
+Nov 09 17:14:25 fedora kernel: max77705_chg_set_mode_state: current_mode(0x4), state(1)
+Nov 09 17:14:25 fedora kernel: max77705_chg_set_mode_state: current_mode(0x4)
+Nov 09 17:14:25 fedora kernel: max77705_chg_set_mode_state: CNFG_00 (0x4)
+Nov 09 17:14:25 fedora kernel: max77705_get_input_current_type: reg:(0x13), charging_current:(500)
+Nov 09 17:14:25 fedora kernel: max77705_change_charge_path : CHG_CNFG_12(0x60)
+Nov 09 17:14:25 fedora kernel: max77705_set_sysovlo: check topsys irq mask(0xdf), enable(1)
+Nov 09 17:14:25 fedora kernel: max77705_get_input_current_type: reg:(0x13), charging_current:(500)
+Nov 09 17:14:25 fedora kernel: sec_bat_set_current_event: current event before(0x40004), after(0x40004)
+Nov 09 17:14:25 fedora kernel: [max77705_set_input_current] REG(0xc0) DATA(0x13), CURRENT(500)
+Nov 09 17:14:25 fedora kernel: [max77705_set_input_current] REG(0xc0) DATA(0x12), CURRENT(475)
+Nov 09 17:14:25 fedora kernel: [max77705_set_charge_current] REG(0xb9) DATA(0x0b), CURRENT(550)
+Nov 09 17:14:25 fedora kernel: sec_bat_set_charging_current: power(0), input(475), charge(550)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_cable_work: Status:Discharging, Sleep:No, Charging:No, Short Poll:No
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_cable_work: Polling time is reset to 30 sec.
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_cable_work: End
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_current: current=-325mA
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_avg_current: avg_current=-261mA
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(265), Temp-ADC(1947)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(274), Temp-ADC(1887)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(276), Temp-ADC(1868)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(265), Temp-ADC(1946)
+Nov 09 17:14:25 fedora kernel: max77705_fg_write_temp: temperature to (265, 0x1a80)
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_avg_current: avg_current=-261mA
+Nov 09 17:14:25 fedora kernel: max77705_get_fuelgauge_soc: soc(627)
+Nov 09 17:14:25 fedora kernel: max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(62.7), raw_soc(62.7)
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_rawsoc: raw capacity (0.01%) (6279)
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_qh : QH(-1000)
+Nov 09 17:14:25 fedora kernel: max77705_fg_get_atomic_capacity : NOW(62), OLD(65)
+Nov 09 17:14:25 fedora kernel: sec_bat_get_battery_info:Vnow(3900mV),Vavg(3906mV),Inow(-325mA),Iavg(-261mA),Isysavg(218mA),Imax(475mA),Ichg(550mA),SOC(64%),Tbat(265),Tusb(274),Tchg(276),Twpc(265)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_cisd_check: [CISD] CAP_NOM 3000mAh
+Nov 09 17:14:25 fedora kernel: sec_bat_check_step_charging
+Nov 09 17:14:25 fedora kernel: sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+Nov 09 17:14:25 fedora kernel: max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+Nov 09 17:14:25 fedora kernel: sec_bat_swelling_check: status(Discharging), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(265)'C
+Nov 09 17:14:25 fedora kernel: sec_bat_set_current_event: current event before(0x40004), after(0x40004)
+Nov 09 17:14:25 fedora kernel: sec_bat_set_current_event: current event before(0x40004), after(0x40000)
+Nov 09 17:14:25 fedora kernel: max77705 : [0xb1]0x1a, [0xb2]0x9f, [0xb3]0x80, [0xb4]0x78, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x4b, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0x92, [0xc1]0x10, [0xc2]0x00, [0xc3]0x60, 
+Nov 09 17:14:25 fedora kernel: max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+Nov 09 17:14:25 fedora kernel: sec_bat_monitor_work: Status(Discharging), mode(None), Health(Good), Cable(NONE, NONE, 0, 0), rp(0), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(NONE, 1000), sleep_mode(0), Cycle(-1)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+Nov 09 17:14:25 fedora kernel: sec_bat_get_property cable type = 1 sleep_mode = 0
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_current: current=-325mA
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_avg_current: avg_current=-261mA
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_isys: isys_current=226mA
+Nov 09 17:14:25 fedora kernel: max77705_fg_read_isys_avg: isys_avg_current=218mA
+Nov 09 17:14:25 fedora kernel: [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccpinstat_irq: CCPINSTAT (CC2_ACTIVE)
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccvnstat_irq: Vconn Enabled
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : cc_SOURCE
+Nov 09 17:14:25 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 17:14:25 fedora kernel: usb_notify: send_otg_notify event=power_role_source(27) enable=1
+Nov 09 17:14:25 fedora kernel: usb_notify: extra_notifier_callback event=power_role_source(27)
+Nov 09 17:14:25 fedora kernel: usb_notify: extra_notify_state+ event=power_role_source(27), enable=on
+Nov 09 17:14:25 fedora kernel: host_notify: ndev name=usb_otg: state=source
+Nov 09 17:14:25 fedora kernel: host_notify: power_state (sink->source)
+Nov 09 17:14:25 fedora kernel: usb_notify: send_external_notify: cmd=power_role_notify(7), data=1
+Nov 09 17:14:25 fedora kernel: pdic_handle_usb_external_notifier_notification : action=7 , enable=1
+Nov 09 17:14:25 fedora kernel: usb_notify: send_external_notify: notify done(0x0)
+Nov 09 17:14:25 fedora kernel: usb_notify: extra_notify_state- event=power_role_source(27), cable=none
+Nov 09 17:14:25 fedora kernel: usb_notify: is_blocked type=1, disable_state=0
+Nov 09 17:14:25 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1, auto_vbus_en=0, must_block_host=0, swaped=0
+Nov 09 17:14:25 fedora kernel: max77705_vbus_turn_on_ctrl : enable=1
+Nov 09 17:14:25 fedora kernel: max77705_set_otg: CHGIN-OTG on
+Nov 09 17:14:25 fedora kernel: max77705_otg_set_property : disable aicl : 0x9a
+Nov 09 17:14:25 fedora kernel: otg accessory power = 1
+Nov 09 17:14:25 fedora kernel: max77705: max77705_notify_dr_status: Data Role: DFP Power Role: SRC State: ATTACHED
+Nov 09 17:14:25 fedora kernel: max77705: max77705_clk_booster_set: [PDIC Booster] 1
+Nov 09 17:14:25 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:5 val:2147483647
+Nov 09 17:14:25 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:7 val:2147483647
+Nov 09 17:14:25 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:3 val:2147483647
+Nov 09 17:14:25 fedora kernel: max77705: set_qos: [PDIC Booster] add_req class:15 val:2147483647
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 4-1-1-1-0
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccic_event_work: usb: DIAES 1-3-1-1-0
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=1 typec_data_role=0 event=1
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=MUIC, id=ID_ATTACH, attach=1, event=1
+Nov 09 17:14:25 fedora kernel: ccic_notifier_notify: src:5 dest:4 id:01 attach:01 cable_type:00 rprd:1
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_event_work src:CCIC dest:MUIC
+Nov 09 17:14:25 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_muic_event_notifier: id:ID_ATTACH sub1:01 sub2:01 sub3:00
+Nov 09 17:14:25 fedora kernel: max77705_muic_handle_ccic_ATTACH: src:5 dest:4 id:1 attach:1 cable_type:0 rprd:1
+Nov 09 17:14:25 fedora kernel: max77705_muic_handle_ccic_ATTACH: Attach, cable type=0
+Nov 09 17:14:25 fedora kernel: max77705_muic_handle_ccic_ATTACH: RPRD
+Nov 09 17:14:25 fedora kernel: max77705_muic_handle_ccic_ATTACH: do workqueue
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_muic_event_notifier: notify done(0x0)
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_handle_ccic_event
+Nov 09 17:14:25 fedora kernel: max77705: max77705_get_pd_support: TYPEC_CLASS: support_pd_role_swap is 1, usbc_data->pd_support : 0
+Nov 09 17:14:25 fedora kernel: usb_notify: send_otg_notify event=pd_contract(28) enable=0
+Nov 09 17:14:25 fedora kernel: usb_notify: extra_notifier_callback event=pd_contract(28)
+Nov 09 17:14:25 fedora kernel: usb_notify: extra_notify_state+ event=pd_contract(28), enable=off
+Nov 09 17:14:25 fedora kernel: usb_notify: extra_notify_state- event=pd_contract(28), cable=none
+Nov 09 17:14:25 fedora kernel: typec_set_pwr_opmode pwr_opmode=0 opmode=0
+Nov 09 17:14:25 fedora kernel: typec_set_pwr_role pwr_role=1 role=1
+Nov 09 17:14:25 fedora kernel: typec_set_data_role data_role=1 role=1
+Nov 09 17:14:25 fedora kernel: typec_register_partner
+Nov 09 17:14:25 fedora kernel: max77705: max77705_datarole_irq_handler:  DFP
+Nov 09 17:14:25 fedora kernel: max77705: max77705_ccic_event_notifier: usb: dest=USB, id=ID_USB, attach=Attached, drp=USB_ATTACH_DFP
+Nov 09 17:14:25 fedora kernel: ccic_notifier_notify: src:5 dest:1 id:03 sub1:1 sub2:01 sub3:00
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_event_work src:CCIC dest:USB
+Nov 09 17:14:25 fedora kernel: ccic_notifier_notify: notify done(0x0)
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_notifier_notify: src:CCIC dest:USB id:ID_USB sub1:01 sub2:01 sub3:00
+Nov 09 17:14:25 fedora kernel: sec-battery battery: usb_typec_handle_notification: action (3) dump(0x5, 0x1, 0x03, 0x0001, 0x0001, 0x0000)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: usb_typec_handle_notification: skip handler dest(1)
+Nov 09 17:14:25 fedora kernel: usb_notifier: ccic_usb_handle_notification: Turn On Host(DFP)
+Nov 09 17:14:25 fedora kernel: usb_notify: send_otg_notify event=host_id(2) enable=1
+Nov 09 17:14:25 fedora kernel: usb_notify: otg_notifier_callback event=host_id(2)
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_notifier_notify: notify done(0x0)
+Nov 09 17:14:25 fedora kernel: usb_notify: otg_notify_state+ event=host_id(2), enable=on
+Nov 09 17:14:25 fedora kernel: host_notify: ndev name=usb_otg: state=add
+Nov 09 17:14:25 fedora kernel: host_notify: host_state (remove->add)
+Nov 09 17:14:25 fedora kernel: usb_notifier: exynos_set_host USB_HOST_ATTACHED
+Nov 09 17:14:25 fedora kernel: usb_notifier: check_usb_id_state id state = 0
+Nov 09 17:14:25 fedora kernel: usb_notifier: check_usb_id_state: get the 10c00000.usb platform_device
+Nov 09 17:14:25 fedora kernel: usb_notify: otg_notify_state- event=host_id, cable=host_id
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_detect_dev USBC1:0x07, USBC2:0x05, BC:0x00
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_detect_dev adc:0x7 vbvolt:0x0 chgtyp:0x0 spchgtyp:0x0 sysmsg:0x5 vbadc:0x0 dcdtmo:0x0 fakvb:0x0
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_update_adc_with_rid: adc(0x7->0x0) rid(7) rprd(1)
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_check_new_dev vps table match found at i(10), OTG
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_check_new_dev 0->3 switch_val[0x09]
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_detect_dev ATTACHED
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_handle_attach
+Nov 09 17:14:25 fedora kernel: max77705_muic: com_to_usb_ap
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_switch_path value(0x9)
+Nov 09 17:14:25 fedora kernel: exynos-dwc3 10c00000.usb: dwc3_exynos_rsw_work
+Nov 09 17:14:25 fedora kernel: dwc3 10c00000.dwc3: Turn on host
+Nov 09 17:14:25 fedora kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=0 owner=0 (usb:0 dp:1) on=1
+Nov 09 17:14:25 fedora kernel: phy_exynos_usbdrd 10b00000.phy: USB PHY Conn Set
+Nov 09 17:14:25 fedora kernel: phy_exynos_usbdrd 10b00000.phy: Turn on LDO
+Nov 09 17:14:25 fedora kernel: muic_notifier_notify (3)Attach
+Nov 09 17:14:25 fedora kernel: muic_handle_cable_data_notification: MUIC uart type(0)
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_handle_muic_notification: src:4 attach:1, cable_type:3
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_handle_muic_notification: Cable(3) Attached 
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_event_work src:MUIC dest:BATTERY
+Nov 09 17:14:25 fedora kernel: [SSP] exynos_cpuidle_muic_notifier: dev=66036, action=1
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_notifier_notify: src:MUIC dest:BATTERY id:ID_ATTACH sub1:01 sub2:00 sub3:03
+Nov 09 17:14:25 fedora kernel: usb_notifier: muic_usb_handle_notification action=1, attached_dev=3
+Nov 09 17:14:25 fedora kernel: muic_handle_dock_notification: ignore(3)
+Nov 09 17:14:25 fedora kernel: [SX9330]: sx9330_ccic_handle_notification accept cable = 3, attach = 1
+Nov 09 17:14:25 fedora kernel: [SX9330]: sx9330_set_offset_calibration
+Nov 09 17:14:25 fedora kernel: muic_notifier_notify: notify done(0x0)
+Nov 09 17:14:25 fedora kernel: max77705_muic: max77705_muic_handle_vbus <1>
+Nov 09 17:14:25 fedora kernel: vbus_notifier_handle: (1)->(1)
+Nov 09 17:14:25 fedora kernel: [SX9330]: sx9330_set_offset_calibration - TOPSTAT0 status: 0x0, retries: 0
+Nov 09 17:14:25 fedora kernel: [SX9330]: sx9330_set_offset_calibration - STAT1 status: 0x0, retries: 0
+Nov 09 17:14:25 fedora kernel: [SX9330]: sx9330_set_offset_calibration - done!
+Nov 09 17:14:25 fedora kernel: sec-battery battery: usb_typec_handle_notification: action (1) dump(0x4, 0x2, 0x01, 0x0001, 0x0000, 0x0003)
+Nov 09 17:14:25 fedora kernel: [sec_bat_cable_check]ATTACHED(3)
+Nov 09 17:14:25 fedora kernel: sec_bat_set_misc_event: misc event before(0x0), after(0x0)
+Nov 09 17:14:25 fedora kernel: sec_bat_set_misc_event: misc event before(0x0), after(0x0)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: usb_typec_handle_notification: CMD[ATTACH], CABLE_TYPE[21]
+Nov 09 17:14:25 fedora kernel: type-c manager: manager_notifier_notify: notify done(0x0)
+Nov 09 17:14:25 fedora kernel: sec-battery battery: sec_bat_cable_work: Start
+Nov 09 17:14:25 fedora kernel: sec_bat_set_current_event: current event before(0x40000), after(0x40004)
+Nov 09 17:14:25 fedora kernel: sec_bat_change_default_current: cable_type: 34 input: 500 output: 2850
+Nov 09 17:14:25 fedora kernel: max77705_chg_set_property: float voltage(4350)
+Nov 09 17:14:25 fedora kernel: exynos-dwc3 10c00000.usb: dwc3_exynos_runtime_resume

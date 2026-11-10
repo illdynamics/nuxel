@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="css/style.css?v=p85000">
     <link rel="stylesheet" href="css/launcher.css?v=p87000">
     <link rel="stylesheet" href="css/search.css">
-    <link rel="stylesheet" href="css/status-bar.css?v=p94000">
+    <link rel="stylesheet" href="css/status-bar.css?v=p106000">
     <link rel="stylesheet" href="css/home-settings.css?v=p80000">
     <link rel="stylesheet" href="css/widgets.css?v=p82000">
     <link rel="stylesheet" href="css/lockscreen.css?v=p91000">
@@ -48,6 +48,26 @@
     })();
     </script>
     <script src="../nuxel-common/zoom-policy.js?v=p80000"></script>
+    <script>
+    // Mouse users: never let a native WebKit title tooltip ("help text") stick
+    // over the launcher after boot.  Remove title attributes on pointer-over;
+    // aria-label remains for accessibility.
+    (function () {
+        'use strict';
+        function dropTitle(el) {
+            while (el && el.removeAttribute) {
+                if (el.hasAttribute && el.hasAttribute('title')) el.removeAttribute('title');
+                el = el.parentNode;
+            }
+        }
+        document.addEventListener('mouseover', function (e) { dropTitle(e.target); }, true);
+        document.addEventListener('mouseenter', function (e) { dropTitle(e.target); }, true);
+        document.addEventListener('DOMContentLoaded', function () {
+            var nodes = document.querySelectorAll('[title]');
+            for (var i = 0; i < nodes.length; i++) nodes[i].removeAttribute('title');
+        });
+    })();
+    </script>
 </head>
 <body>
     <!-- PWNAGE-36000 pre-lockscreen cover.  It is shown only in ?boot=os mode
@@ -400,7 +420,7 @@
     <script src="js/desktop-layout.js?v=p84000"></script>
     <script src="js/launcher.js?v=p85000"></script>
     <script src="../nuxel-common/statusbar-icons.js?v=p80000"></script>
-    <script src="js/status-bar.js?v=p94000"></script>
+    <script src="js/status-bar.js?v=p106000"></script>
     <script src="js/search.js"></script>
     <script type="module" src="../nuxel-common/bridge.js"></script>
     <script src="js/bridge.js?v=a63"></script>
@@ -430,6 +450,6 @@
     <script src="js/scroll-indicators.js"></script>
     <script src="js/immersive.js?v=p94000"></script>
     <!-- A44: one-shot in-engine icon/WebKit/cache health report to nuxelDiag. -->
-    <script src="js/app.js?v=p94000"></script>
+    <script src="js/app.js?v=p106000"></script>
 </body>
 </html>

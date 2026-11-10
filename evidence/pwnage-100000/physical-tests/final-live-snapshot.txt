@@ -1,0 +1,18 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== FINAL SNAPSHOT Mon Nov  9 17:49:04 CET 2026 ===
+services: displayd=active bridge=active wayland=active intfb=active
+ext: state RUNNING mode=mirror output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=640x480 fps=20 rot=0 frames=1300 nz=1123
+secdp=1 extcon=DP=1 ids=35a3:2003 ch_audio=71237634
+irq1: 130b0000.displayport=33782 19050000.decon_t=22374 19050000.decon_t=26 19050000.decon_t=0 
+irq2: 130b0000.displayport=33903 19050000.decon_t=22495 19050000.decon_t=26 19050000.decon_t=0 
+internal fb0: 1440,6080 active=active
+dp_error: "ERR_AUX":"0" "ERR_EDID":"0" "ERR_HDCP":"0" "ERR_LT_TRAIN":"0" "ERR_INF_IRQHPD":"0" "ADT_TYPE":"HDMI" "RESOLUTION":"X" "ADT_VID":"0x35a3" "ADT_PID":"0x2003" "DP_MODE":"MIRROR" 
+sysmmu: [Mon Nov  9 17:49:05 2026] SysMMU alloc num : 1022(Max:1224), lv2_alloc : 27, fault : 0

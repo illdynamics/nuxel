@@ -1,0 +1,52 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: notifier registered
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: CCIC_NOTIFY_ID_DP_CONNECT, 1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: VID:0x35A3, PID:0x2003
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Get direction from ccic 0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: aux vdd onoff = 1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: CCIC_NOTIFY_ID_DP_HPD, 0, 0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: hpd same state skip 0
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: CCIC_NOTIFY_ID_DP_LINK_CONF 3
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Get direction from ccic 0
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: CCIC_NOTIFY_ID_DP_HPD, 1, 0
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: displayport hpd changed 1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: displayport_reg_sw_reset
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: displayport_reg_init
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Read DPCD REV NUM 0_5 14 14 c4 01 00 1c
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Read DPCD REV NUM 6_B 01 81 00 01 00 01
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Read link status 41 00 00 00 00 00
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Branch revision: HW(0x0), SW(0x0, 0x0)
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: link training in hpd_changed
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DPCD_ADD_I2C_SPEED_CONTROL_CAPABILITES = 0x8
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: block_cnt = 2
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DPCD_ADD_I2C_SPEED_CONTROL_CAPABILITES = 0x8
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Full Link Training Start + : 14 c4
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: find max pclk : 148500000
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: set link late: 0x6, lane cnt:4
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Reduce_Link_Rate_Retry(0x6)
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: link_rate = 6
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: lane_cnt = 4
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Voltage_Swing_Retry 00 00 00 00
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: check voltage swing(0): val(17,17) 0/1, 0/1, 0/1, 0/1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Voltage_Swing_Retry 01 01 01 01
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EQ_Training_Start
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EQ_Training_Retry 01 01 01 01
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: lane_cr_done = f
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: lane_channel_eq_done = f
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: lane_symbol_locked_done = f
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: interlane_align_done = 1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Full Link Training Finish - : 06 04
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: LANE_SET [0] : 01 01 01 01
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: displayport_audio_init_config
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DFP type: HDMI(0x1C)
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: HPD status = 1
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: audio info = 0x43F0002
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: enable timeout

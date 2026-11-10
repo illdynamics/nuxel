@@ -1,0 +1,579 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== p94 manifests ===
+-rw-r--r--. 1 root root 2203 Nov  8 17:37 /root/p94/installed-20261108T173717.list
+--- /root/p94/installed-20261108T173717.list
+present /usr/share/nuxel/pwa/nuxel-home/index.html
+present /usr/share/nuxel/pwa/nuxel-home/sw.js
+present /usr/share/nuxel/pwa/nuxel-home/manifest.json
+present /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+present /usr/share/nuxel/pwa/nuxel-home/css/style.css
+present /usr/share/nuxel/pwa/nuxel-home/js/app.js
+present /usr/share/nuxel/pwa/nuxel-home/js/apps.js
+present /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+present /usr/share/nuxel/pwa/nuxel-home/js/qs.js
+present /usr/share/nuxel/pwa/nuxel-home/js/immersive.js
+present /usr/share/nuxel/pwa/nuxel-home/js/topbar-machine.js
+present /usr/share/nuxel/pwa/nuxel-home/js/bridge.js
+present /usr/share/nuxel/pwa/nuxel-home/js/gestures.js
+present /usr/share/nuxel/pwa/nuxel-home/js/navigation.js
+present /usr/share/nuxel/nuxel-home/index.html
+present /usr/share/nuxel/nuxel-home/sw.js
+present /usr/share/nuxel/nuxel-home/manifest.json
+present /usr/share/nuxel/nuxel-home/css/status-bar.css
+present /usr/share/nuxel/nuxel-home/css/style.css
+present /usr/share/nuxel/nuxel-home/js/app.js
+present /usr/share/nuxel/nuxel-home/js/apps.js
+present /usr/share/nuxel/nuxel-home/js/status-bar.js
+present /usr/share/nuxel/nuxel-home/js/qs.js
+present /usr/share/nuxel/nuxel-home/js/immersive.js
+present /usr/share/nuxel/nuxel-home/js/topbar-machine.js
+present /usr/share/nuxel/nuxel-home/js/bridge.js
+present /usr/share/nuxel/nuxel-home/js/gestures.js
+present /usr/share/nuxel/nuxel-home/js/navigation.js
+present /usr/share/nuxel/pwa/nuxel-apps/doom/index.html
+present /usr/share/nuxel/pwa/nuxel-apps/doom/js/doom.js
+present /usr/share/nuxel/nuxel-apps/doom/index.html
+present /usr/share/nuxel/nuxel-apps/doom/js/doom.js
+present /usr/lib/nuxel/nuxel-bridge/api.py
+present /usr/lib/nuxel/nuxel-session.sh
+present /usr/lib/nuxel/nuxel-foreign-toplevel
+present /usr/lib/nuxel/nuxel-navdock
+present /usr/lib/nuxel/nuxel-statusbar
+present /usr/lib/nuxel/nuxel-pwa-host
+present /usr/lib/nuxel/nuxel-doom-engine
+present /usr/lib/nuxel/nuxel-crispy-doom
+present /etc/gtk-3.0/settings.ini
+present /etc/gtk-4.0/settings.ini
+present /etc/dconf/profile/user
+present /etc/dconf/db/site.d/00-nuxel-dark
+present /etc/dconf/db/site
+present /var/lib/flatpak/overrides/global
+=== p94 build outputs ===
+total 264
+-rwxr-xr-x. 1 root root  75912 Nov  8 17:37 nuxel-foreign-toplevel
+-rwxr-xr-x. 1 root root  77816 Nov  8 17:37 nuxel-navdock
+-rwxr-xr-x. 1 root root 150184 Nov  8 17:37 nuxel-pwa-host
+-rwxr-xr-x. 1 root root  79312 Nov  8 17:37 nuxel-statusbar
+=== p93 backups ===
+2026-11-02 21:20:30.0000000000 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T122708
+2026-11-03 08:50:02.0000000000 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T122708
+2026-11-04 11:03:47.0000000000 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T122708
+2026-11-07 19:25:02.9239990090 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T122708
+2026-11-07 23:10:07.8679989340 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T122708
+2026-11-08 09:53:38.1239989300 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 09:53:38.1679989300 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 09:53:38.1919989300 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 09:53:38.2359989300 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 09:53:38.2559989300 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T122708
+2026-11-08 09:53:38.3959989300 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T122708
+2026-11-08 09:53:38.4199989300 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T122941
+2026-11-08 10:04:03.4559997350 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.6319981730 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.6439981730 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.6599981730 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.7559981730 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8439981730 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8519981730 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8519981730 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8519981730 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8519981730 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8599981730 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8639981730 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8639981730 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T122708
+2026-11-08 11:06:15.8679981730 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T122708
+2026-11-08 12:27:08.0799971390 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.1039971390 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.1239971390 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.1479971390 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.1679971390 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.1919971390 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.2159971390 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.2319971390 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.2519971390 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.2799971390 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.2999971390 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.3239971390 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.3479971390 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.3719971390 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.3959971390 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.4199971390 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.4479971390 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.4759971380 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.4999971380 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.5279971380 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.5599971380 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.5799971380 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.6119971380 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.6399971380 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:08.6599971380 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T122747
+2026-11-08 12:27:47.2839971110 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.3079971110 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.3319971110 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.3519971110 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.3799971110 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.3999971110 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.4199971110 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.4359971110 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.4599971110 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.4839971110 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.5039971110 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.5239971110 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.5439971110 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.5639971110 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.5879971110 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.6199971100 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.6559971100 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.6759971100 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.6919971100 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.7159971100 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.7359971100 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.7519971100 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.7759971100 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.8039971100 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:27:47.8279971100 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T122902
+2026-11-08 12:29:02.3719970570 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.3919970570 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.4159970570 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.4399970570 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.4639970570 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.4799970570 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.4999970570 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.5359970570 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.5639970570 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.5839970570 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.6079970570 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.6239970570 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.6439970570 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.6599970570 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.6759970570 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.6919970570 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.7039970570 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.7239970570 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.7399970570 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.7599970570 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.7839970570 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.7959970570 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.8199970570 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.8279970570 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:02.8479970570 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T122941
+2026-11-08 12:29:41.2119970290 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.2279970290 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.2439970290 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.2599970290 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.2799970290 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.3119970290 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.3359970290 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.3679970290 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.3919970290 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.4159970290 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.4399970290 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.4599970290 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.4799970290 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.4999970290 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.5319970290 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.5599970290 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.5959970290 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.6199970290 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.6519970290 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.6759970290 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.6999970290 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.7239970290 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.7479970290 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.7799970290 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.8039970290 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:29:41.8239970290 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T123021
+2026-11-08 12:30:21.8039970000 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.8199970000 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.8439970000 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.8599970000 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.8799970000 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.9039970000 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.9239970000 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.9439970000 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.9639970000 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.9839970000 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:21.9999970000 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.0279970000 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.0479970000 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.0719970000 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.0959970000 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.1239970000 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.1479970000 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.1679970000 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.1959970000 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.2239970000 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.2519970000 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.2719970000 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.2959970000 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.3159970000 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.3359970000 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:30:22.3599970000 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T123150
+2026-11-08 12:31:50.7119969370 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.7319969370 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.7559969370 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.7759969370 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.7919969370 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.8119969370 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.8319969370 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.8599969370 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.8839969370 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.9079969360 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.9279969360 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.9479969360 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.9679969360 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:50.9879969360 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.0199969360 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.0399969360 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.0759969360 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.0999969360 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.1199969360 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.1439969360 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.1719969360 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.1959969360 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.2279969360 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.2439969360 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.2679969360 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:31:51.2999969360 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T123237
+2026-11-08 12:32:37.3559969030 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.3799969030 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.3999969030 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.4159969030 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.4399969030 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.4679969030 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.4959969030 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.5159969030 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.5439969030 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.5639969030 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.5839969030 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.6079969030 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.6319969030 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.6479969030 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.6639969030 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.6799969030 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.6959969030 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.7039969030 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.7199969030 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.7319969030 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.7439969030 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.7559969030 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.7719969030 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.7839969030 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.7959969030 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:32:37.8119969030 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T123752
+2026-11-08 12:37:52.1599966780 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.1759966780 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.1919966780 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.2119966780 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.2319966780 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.2479966780 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.2679966780 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.2879966780 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.3039966780 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.3279966780 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.3559966780 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.3759966780 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.3999966780 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.4399966780 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.4639966780 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.4879966780 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.5079966780 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.5319966780 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.5519966780 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.5799966780 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.5999966780 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.6239966780 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.6559966780 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.6799966780 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.6999966780 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:37:52.7239966780 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T124006
+2026-11-08 12:40:06.8639965820 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:06.8839965820 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:06.9079965820 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:06.9319965820 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:06.9559965820 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:06.9759965820 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:06.9999965820 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.0199965820 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.0439965820 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.0799965820 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.1119965820 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.1319965820 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.1519965820 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.1759965820 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.2039965820 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.2279965810 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.2519965810 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.2759965810 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.2999965810 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.3199965810 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.3439965810 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.3719965810 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.4039965810 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.4279965810 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.4519965810 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:40:07.4799965810 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T124536
+2026-11-08 12:45:36.7959963460 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:36.8199963460 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:36.8399963460 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:36.8639963460 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:36.8879963460 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:36.9119963460 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:36.9319963460 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:36.9559963460 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:36.9799963460 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.0119963460 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.0359963460 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.0559963460 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.0759963460 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.1119963460 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.1279963460 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.1599963460 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.1879963450 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.2239963450 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.2519963450 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.2879963450 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.3159963450 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.3399963450 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.3679963450 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.3879963450 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.4079963450 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:45:37.4319963450 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T124616
+2026-11-08 12:46:16.8359963170 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:16.8519963170 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:16.8679963170 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:16.8959963170 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:16.9159963170 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:16.9359963170 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:16.9559963170 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:16.9759963170 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:16.9999963170 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.0239963170 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.0479963170 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.0719963170 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.0959963170 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.1279963170 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.1519963170 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.1759963170 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.2039963170 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.2319963170 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.2519963170 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.2759963170 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.3079963170 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.3439963170 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.3599963170 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.3799963170 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.4079963170 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:17.4399963170 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T124635
+2026-11-08 12:46:35.8439963040 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:35.8679963040 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:35.8879963030 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:35.9119963030 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:35.9319963030 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:35.9439963030 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:35.9639963030 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:35.9799963030 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:35.9999963030 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.0199963030 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.0399963030 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.0759963030 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.0999963030 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.1199963030 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.1359963030 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.1559963030 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.1839963030 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.2119963030 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.2359963030 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.2679963030 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.2919963030 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.3199963030 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.3399963030 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.3679963030 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.3999963030 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:46:36.4199963030 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T124713
+2026-11-08 12:47:13.4479962770 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.4719962770 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.4879962770 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.5039962770 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.5319962770 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.5479962770 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.5719962770 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.5999962770 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.6279962770 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.6439962760 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.6639962760 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.6879962760 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.7159962760 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.7399962760 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.7599962760 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.7839962760 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.7999962760 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.8199962760 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.8479962760 /etc/nuxel/app-registry/app_registry.json.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.8839962760 /usr/share/nuxel/pwa/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.9039962760 /usr/share/nuxel/nuxel-common/app-registry.json.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.9199962760 /usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.9519962760 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.9719962760 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:13.9919962760 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p93-20261108T125251
+2026-11-08 12:47:14.0119962760 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p93-20261108T125251
+=== p94 backups latest ===
+2026-11-08 17:16:59.7639888620 /usr/share/nuxel/nuxel-home/css/style.css.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:16:59.7919888620 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:16:59.8199888620 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:16:59.8479888620 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:16:59.8679888620 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:16:59.8999888620 /usr/share/nuxel/nuxel-home/js/immersive.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:16:59.9239888620 /usr/share/nuxel/nuxel-home/js/topbar-machine.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:16:59.9559888620 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:16:59.9879888620 /usr/share/nuxel/nuxel-home/js/gestures.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.0119888620 /usr/share/nuxel/nuxel-home/js/navigation.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.0399888620 /usr/share/nuxel/pwa/nuxel-apps/doom/index.html.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.0679888620 /usr/share/nuxel/pwa/nuxel-apps/doom/js/doom.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.0919888620 /usr/share/nuxel/nuxel-apps/doom/index.html.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.1199888620 /usr/share/nuxel/nuxel-apps/doom/js/doom.js.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.1439888620 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.1759888620 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.1959888620 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.2239888620 /usr/lib/nuxel/nuxel-navdock.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.2479888620 /usr/lib/nuxel/nuxel-statusbar.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.2679888620 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.2959888620 /usr/lib/nuxel/nuxel-doom-engine.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.3239888620 /usr/lib/nuxel/nuxel-crispy-doom.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.3559888620 /etc/gtk-3.0/settings.ini.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.3799888620 /etc/gtk-4.0/settings.ini.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.3999888620 /etc/dconf/profile/user.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.4279888620 /etc/dconf/db/site.d/00-nuxel-dark.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.4639888620 /var/lib/flatpak/overrides/global.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:17:00.5119888620 /etc/dconf/db/site.nuxel-rollback-p94-20261108T171849
+2026-11-08 17:18:50.0039887830 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.0279887830 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.0479887830 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.0759887830 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.0959887830 /usr/share/nuxel/pwa/nuxel-home/css/style.css.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.1199887830 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.1479887830 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.1719887830 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.1959887830 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.2119887830 /usr/share/nuxel/pwa/nuxel-home/js/immersive.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.2359887830 /usr/share/nuxel/pwa/nuxel-home/js/topbar-machine.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.2599887830 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.2879887830 /usr/share/nuxel/pwa/nuxel-home/js/gestures.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.3119887830 /usr/share/nuxel/pwa/nuxel-home/js/navigation.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.3359887830 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.3559887830 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.3839887830 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.4079887830 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.4359887830 /usr/share/nuxel/nuxel-home/css/style.css.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.4599887830 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.4959887830 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.5199887830 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.5479887830 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.5799887830 /usr/share/nuxel/nuxel-home/js/immersive.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.5999887830 /usr/share/nuxel/nuxel-home/js/topbar-machine.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.6279887830 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.6559887830 /usr/share/nuxel/nuxel-home/js/gestures.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.6719887830 /usr/share/nuxel/nuxel-home/js/navigation.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.6919887830 /usr/share/nuxel/pwa/nuxel-apps/doom/index.html.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.7119887830 /usr/share/nuxel/pwa/nuxel-apps/doom/js/doom.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.7279887830 /usr/share/nuxel/nuxel-apps/doom/index.html.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.7559887830 /usr/share/nuxel/nuxel-apps/doom/js/doom.js.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.7759887830 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.7959887830 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.8239887830 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.8439887830 /usr/lib/nuxel/nuxel-navdock.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.8679887830 /usr/lib/nuxel/nuxel-statusbar.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.8879887830 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.9159887830 /usr/lib/nuxel/nuxel-doom-engine.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.9399887830 /usr/lib/nuxel/nuxel-crispy-doom.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.9599887830 /etc/gtk-3.0/settings.ini.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:50.9839887830 /etc/gtk-4.0/settings.ini.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:51.0079887820 /etc/dconf/profile/user.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:51.0359887820 /etc/dconf/db/site.d/00-nuxel-dark.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:51.0839887820 /var/lib/flatpak/overrides/global.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:18:51.1199887820 /etc/dconf/db/site.nuxel-rollback-p94-20261108T172322
+2026-11-08 17:23:22.5959885880 /usr/share/nuxel/pwa/nuxel-home/index.html.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.6199885880 /usr/share/nuxel/pwa/nuxel-home/sw.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.6399885880 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.6599885880 /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.6999885880 /usr/share/nuxel/pwa/nuxel-home/css/style.css.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.7239885880 /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.7519885880 /usr/share/nuxel/pwa/nuxel-home/js/apps.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.7919885880 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.8159885880 /usr/share/nuxel/pwa/nuxel-home/js/qs.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.8559885880 /usr/share/nuxel/pwa/nuxel-home/js/immersive.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.8799885880 /usr/share/nuxel/pwa/nuxel-home/js/topbar-machine.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.8959885880 /usr/share/nuxel/pwa/nuxel-home/js/bridge.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.9439885880 /usr/share/nuxel/pwa/nuxel-home/js/gestures.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:22.9919885880 /usr/share/nuxel/pwa/nuxel-home/js/navigation.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.0159885880 /usr/share/nuxel/nuxel-home/index.html.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.0319885880 /usr/share/nuxel/nuxel-home/sw.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.0599885880 /usr/share/nuxel/nuxel-home/manifest.json.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.0839885880 /usr/share/nuxel/nuxel-home/css/status-bar.css.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.1119885880 /usr/share/nuxel/nuxel-home/css/style.css.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.1399885880 /usr/share/nuxel/nuxel-home/js/app.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.1679885880 /usr/share/nuxel/nuxel-home/js/apps.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.1919885880 /usr/share/nuxel/nuxel-home/js/status-bar.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.2159885880 /usr/share/nuxel/nuxel-home/js/qs.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.2359885880 /usr/share/nuxel/nuxel-home/js/immersive.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.2639885880 /usr/share/nuxel/nuxel-home/js/topbar-machine.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.2839885880 /usr/share/nuxel/nuxel-home/js/bridge.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.3159885880 /usr/share/nuxel/nuxel-home/js/gestures.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.3439885880 /usr/share/nuxel/nuxel-home/js/navigation.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.3639885880 /usr/share/nuxel/pwa/nuxel-apps/doom/index.html.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.3999885880 /usr/share/nuxel/pwa/nuxel-apps/doom/js/doom.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.4199885880 /usr/share/nuxel/nuxel-apps/doom/index.html.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.4359885880 /usr/share/nuxel/nuxel-apps/doom/js/doom.js.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.4639885880 /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.4839885880 /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.4999885880 /usr/lib/nuxel/nuxel-foreign-toplevel.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.5279885880 /usr/lib/nuxel/nuxel-navdock.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.5479885880 /usr/lib/nuxel/nuxel-statusbar.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.5919885880 /usr/lib/nuxel/nuxel-pwa-host.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.6119885880 /usr/lib/nuxel/nuxel-doom-engine.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.6439885870 /usr/lib/nuxel/nuxel-crispy-doom.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.6679885870 /etc/gtk-3.0/settings.ini.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.6879885870 /etc/gtk-4.0/settings.ini.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.7119885870 /etc/dconf/profile/user.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.7479885870 /etc/dconf/db/site.d/00-nuxel-dark.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.7799885870 /var/lib/flatpak/overrides/global.nuxel-rollback-p94-20261108T173717
+2026-11-08 17:23:23.8439885870 /etc/dconf/db/site.nuxel-rollback-p94-20261108T173717
+=== current target mtimes ===
+2026-11-08 17:37:17.699987991 +0100 28748 /usr/share/nuxel/pwa/nuxel-home/index.html
+2026-11-08 17:37:17.859987991 +0100 72030 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+2026-11-08 17:37:17.923987991 +0100 13454 /usr/share/nuxel/pwa/nuxel-home/js/immersive.js
+2026-11-08 17:37:17.947987991 +0100 3438 /usr/share/nuxel/pwa/nuxel-home/js/topbar-machine.js
+2026-11-08 17:37:17.831987991 +0100 41241 /usr/share/nuxel/pwa/nuxel-home/js/apps.js
+2026-11-08 17:37:18.235987991 +0100 72030 /usr/share/nuxel/nuxel-home/js/status-bar.js
+2026-11-08 17:37:18.279987991 +0100 13454 /usr/share/nuxel/nuxel-home/js/immersive.js
+2026-11-08 17:37:18.431987990 +0100 61579 /usr/share/nuxel/pwa/nuxel-apps/doom/js/doom.js
+2026-11-08 17:37:18.515987990 +0100 292359 /usr/lib/nuxel/nuxel-bridge/api.py
+2026-11-08 17:37:18.543987990 +0100 25102 /usr/lib/nuxel/nuxel-session.sh
+2026-11-08 17:37:18.663987990 +0100 150184 /usr/lib/nuxel/nuxel-pwa-host
+2026-11-08 17:37:18.635987990 +0100 79312 /usr/lib/nuxel/nuxel-statusbar
+2026-11-08 17:37:18.607987990 +0100 77816 /usr/lib/nuxel/nuxel-navdock
+2026-11-08 17:37:18.575987990 +0100 75912 /usr/lib/nuxel/nuxel-foreign-toplevel
+2026-11-08 17:37:18.743987990 +0100 106 /etc/gtk-3.0/settings.ini
+2026-11-08 17:37:18.775987990 +0100 106 /etc/gtk-4.0/settings.ini
+2026-11-08 17:37:18.867987990 +0100 73 /var/lib/flatpak/overrides/global
+=== p94 deploy markers in journal ===
+=== services after p94 ===
+active
+active
+active
+active
+active
+inactive
+=== statusbar cpu ===
+    PID %CPU %MEM     ELAPSED COMMAND
+ 368794  3.3  1.2       57:39 /usr/lib/nuxel/nuxel-pwa-host
+ 368882  0.0  0.0       57:39 /usr/lib/nuxel/nuxel-navdock
+ 368884  0.1  0.1       57:39 /usr/lib/nuxel/nuxel-statusbar
+ 369296  2.8  0.1       57:36 /usr/lib/nuxel/nuxel-wl-fb

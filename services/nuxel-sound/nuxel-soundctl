@@ -36,6 +36,16 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("status")
     sub.add_parser("list")
+    sub.add_parser("outputs")
+    sub.add_parser("diagnostics")
+    sub.add_parser("automatic")
+    p = sub.add_parser("select")
+    p.add_argument("id")
+    p = sub.add_parser("volume")
+    p.add_argument("percent", type=float)
+    p = sub.add_parser("mute")
+    p.add_argument("state", choices=("on", "off", "true", "false", "1", "0"))
+    sub.add_parser("test")
     p = sub.add_parser("play")
     p.add_argument("action", nargs="?", default="volume")
     p.add_argument("--path")
@@ -53,10 +63,29 @@ def main(argv=None) -> int:
     p.add_argument("--gain", type=float)
     p = sub.add_parser("import")
     p.add_argument("file")
-    opts = ap.parse_args(argv)
+    # Accept --json before or after the subcommand.  The live operator habit
+    # is `nuxel-audio-ctl outputs --json`; argparse otherwise rejects it.
+    args = list(sys.argv[1:] if argv is None else argv)
+    if "--json" in args:
+        args = ["--json"] + [a for a in args if a != "--json"]
+    opts = ap.parse_args(args)
 
     if opts.cmd in (None, "status", "list"):
         req = {"cmd": "state"}
+    elif opts.cmd == "outputs":
+        req = {"cmd": "outputs"}
+    elif opts.cmd == "diagnostics":
+        req = {"cmd": "diagnostics"}
+    elif opts.cmd == "automatic":
+        req = {"cmd": "set-routing", "mode": "automatic"}
+    elif opts.cmd == "select":
+        req = {"cmd": "select-output", "id": opts.id}
+    elif opts.cmd == "volume":
+        req = {"cmd": "set-volume", "percent": opts.percent}
+    elif opts.cmd == "mute":
+        req = {"cmd": "set-muted", "muted": opts.state in ("on", "true", "1")}
+    elif opts.cmd == "test":
+        req = {"cmd": "test-output"}
     elif opts.cmd == "play":
         req = {"cmd": "play", "action": opts.action, "path": opts.path,
                "loop": opts.loop, "token": opts.token}

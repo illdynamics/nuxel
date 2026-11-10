@@ -1,0 +1,98 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+PASS order=argb fmt=0x1 colour=black     src=0x00000000 out=0xff000000 decoded=0,0,0
+PASS order=argb fmt=0x1 colour=white     src=0x00ffffff out=0xffffffff decoded=255,255,255
+PASS order=argb fmt=0x1 colour=red       src=0x00ff0000 out=0xffff0000 decoded=255,0,0
+PASS order=argb fmt=0x1 colour=green     src=0x0000ff00 out=0xff00ff00 decoded=0,255,0
+PASS order=argb fmt=0x1 colour=blue      src=0x000000ff out=0xff0000ff decoded=0,0,255
+PASS order=argb fmt=0x1 colour=cyan      src=0x0000ffff out=0xff00ffff decoded=0,255,255
+PASS order=argb fmt=0x1 colour=magenta   src=0x00ff00ff out=0xffff00ff decoded=255,0,255
+PASS order=argb fmt=0x1 colour=yellow    src=0x00ffff00 out=0xffffff00 decoded=255,255,0
+PASS order=argb fmt=0x1 colour=midgrey   src=0x00808080 out=0xff808080 decoded=128,128,128
+PASS order=argb fmt=0x1 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=argb fmt=0x1 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+PASS order=argb fmt=0x0 colour=black     src=0x00000000 out=0xff000000 decoded=0,0,0
+PASS order=argb fmt=0x0 colour=white     src=0x00ffffff out=0xffffffff decoded=255,255,255
+PASS order=argb fmt=0x0 colour=red       src=0x00ff0000 out=0xffff0000 decoded=255,0,0
+PASS order=argb fmt=0x0 colour=green     src=0x0000ff00 out=0xff00ff00 decoded=0,255,0
+PASS order=argb fmt=0x0 colour=blue      src=0x000000ff out=0xff0000ff decoded=0,0,255
+PASS order=argb fmt=0x0 colour=cyan      src=0x0000ffff out=0xff00ffff decoded=0,255,255
+PASS order=argb fmt=0x0 colour=magenta   src=0x00ff00ff out=0xffff00ff decoded=255,0,255
+PASS order=argb fmt=0x0 colour=yellow    src=0x00ffff00 out=0xffffff00 decoded=255,255,0
+PASS order=argb fmt=0x0 colour=midgrey   src=0x00808080 out=0xff808080 decoded=128,128,128
+PASS order=argb fmt=0x0 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=argb fmt=0x0 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+PASS order=argb fmt=0x34324258 colour=black     src=0x00000000 out=0xff000000 decoded=0,0,0
+PASS order=argb fmt=0x34324258 colour=white     src=0x00ffffff out=0xffffffff decoded=255,255,255
+PASS order=argb fmt=0x34324258 colour=red       src=0x000000ff out=0xffff0000 decoded=255,0,0
+PASS order=argb fmt=0x34324258 colour=green     src=0x0000ff00 out=0xff00ff00 decoded=0,255,0
+PASS order=argb fmt=0x34324258 colour=blue      src=0x00ff0000 out=0xff0000ff decoded=0,0,255
+PASS order=argb fmt=0x34324258 colour=cyan      src=0x00ffff00 out=0xff00ffff decoded=0,255,255
+PASS order=argb fmt=0x34324258 colour=magenta   src=0x00ff00ff out=0xffff00ff decoded=255,0,255
+PASS order=argb fmt=0x34324258 colour=yellow    src=0x0000ffff out=0xffffff00 decoded=255,255,0
+PASS order=argb fmt=0x34324258 colour=midgrey   src=0x00808080 out=0xff808080 decoded=128,128,128
+PASS order=argb fmt=0x34324258 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=argb fmt=0x34324258 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+PASS order=argb fmt=0x34324241 colour=black     src=0x00000000 out=0xff000000 decoded=0,0,0
+PASS order=argb fmt=0x34324241 colour=white     src=0x00ffffff out=0xffffffff decoded=255,255,255
+PASS order=argb fmt=0x34324241 colour=red       src=0x000000ff out=0xffff0000 decoded=255,0,0
+PASS order=argb fmt=0x34324241 colour=green     src=0x0000ff00 out=0xff00ff00 decoded=0,255,0
+PASS order=argb fmt=0x34324241 colour=blue      src=0x00ff0000 out=0xff0000ff decoded=0,0,255
+PASS order=argb fmt=0x34324241 colour=cyan      src=0x00ffff00 out=0xff00ffff decoded=0,255,255
+PASS order=argb fmt=0x34324241 colour=magenta   src=0x00ff00ff out=0xffff00ff decoded=255,0,255
+PASS order=argb fmt=0x34324241 colour=yellow    src=0x0000ffff out=0xffffff00 decoded=255,255,0
+PASS order=argb fmt=0x34324241 colour=midgrey   src=0x00808080 out=0xff808080 decoded=128,128,128
+PASS order=argb fmt=0x34324241 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=argb fmt=0x34324241 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+PASS order=abgr fmt=0x1 colour=black     src=0x00000000 out=0xff000000 decoded=0,0,0
+PASS order=abgr fmt=0x1 colour=white     src=0x00ffffff out=0xffffffff decoded=255,255,255
+PASS order=abgr fmt=0x1 colour=red       src=0x00ff0000 out=0xff0000ff decoded=255,0,0
+PASS order=abgr fmt=0x1 colour=green     src=0x0000ff00 out=0xff00ff00 decoded=0,255,0
+PASS order=abgr fmt=0x1 colour=blue      src=0x000000ff out=0xffff0000 decoded=0,0,255
+PASS order=abgr fmt=0x1 colour=cyan      src=0x0000ffff out=0xffffff00 decoded=0,255,255
+PASS order=abgr fmt=0x1 colour=magenta   src=0x00ff00ff out=0xffff00ff decoded=255,0,255
+PASS order=abgr fmt=0x1 colour=yellow    src=0x00ffff00 out=0xff00ffff decoded=255,255,0
+PASS order=abgr fmt=0x1 colour=midgrey   src=0x00808080 out=0xff808080 decoded=128,128,128
+PASS order=abgr fmt=0x1 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=abgr fmt=0x1 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+PASS order=abgr fmt=0x0 colour=black     src=0x00000000 out=0xff000000 decoded=0,0,0
+PASS order=abgr fmt=0x0 colour=white     src=0x00ffffff out=0xffffffff decoded=255,255,255
+PASS order=abgr fmt=0x0 colour=red       src=0x00ff0000 out=0xff0000ff decoded=255,0,0
+PASS order=abgr fmt=0x0 colour=green     src=0x0000ff00 out=0xff00ff00 decoded=0,255,0
+PASS order=abgr fmt=0x0 colour=blue      src=0x000000ff out=0xffff0000 decoded=0,0,255
+PASS order=abgr fmt=0x0 colour=cyan      src=0x0000ffff out=0xffffff00 decoded=0,255,255
+PASS order=abgr fmt=0x0 colour=magenta   src=0x00ff00ff out=0xffff00ff decoded=255,0,255
+PASS order=abgr fmt=0x0 colour=yellow    src=0x00ffff00 out=0xff00ffff decoded=255,255,0
+PASS order=abgr fmt=0x0 colour=midgrey   src=0x00808080 out=0xff808080 decoded=128,128,128
+PASS order=abgr fmt=0x0 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=abgr fmt=0x0 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+PASS order=abgr fmt=0x34324258 colour=black     src=0x00000000 out=0xff000000 decoded=0,0,0
+PASS order=abgr fmt=0x34324258 colour=white     src=0x00ffffff out=0xffffffff decoded=255,255,255
+PASS order=abgr fmt=0x34324258 colour=red       src=0x000000ff out=0xff0000ff decoded=255,0,0
+PASS order=abgr fmt=0x34324258 colour=green     src=0x0000ff00 out=0xff00ff00 decoded=0,255,0
+PASS order=abgr fmt=0x34324258 colour=blue      src=0x00ff0000 out=0xffff0000 decoded=0,0,255
+PASS order=abgr fmt=0x34324258 colour=cyan      src=0x00ffff00 out=0xffffff00 decoded=0,255,255
+PASS order=abgr fmt=0x34324258 colour=magenta   src=0x00ff00ff out=0xffff00ff decoded=255,0,255
+PASS order=abgr fmt=0x34324258 colour=yellow    src=0x0000ffff out=0xff00ffff decoded=255,255,0
+PASS order=abgr fmt=0x34324258 colour=midgrey   src=0x00808080 out=0xff808080 decoded=128,128,128
+PASS order=abgr fmt=0x34324258 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=abgr fmt=0x34324258 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+PASS order=abgr fmt=0x34324241 colour=black     src=0x00000000 out=0xff000000 decoded=0,0,0
+PASS order=abgr fmt=0x34324241 colour=white     src=0x00ffffff out=0xffffffff decoded=255,255,255
+PASS order=abgr fmt=0x34324241 colour=red       src=0x000000ff out=0xff0000ff decoded=255,0,0
+PASS order=abgr fmt=0x34324241 colour=green     src=0x0000ff00 out=0xff00ff00 decoded=0,255,0
+PASS order=abgr fmt=0x34324241 colour=blue      src=0x00ff0000 out=0xffff0000 decoded=0,0,255
+PASS order=abgr fmt=0x34324241 colour=cyan      src=0x00ffff00 out=0xffffff00 decoded=0,255,255
+PASS order=abgr fmt=0x34324241 colour=magenta   src=0x00ff00ff out=0xffff00ff decoded=255,0,255
+PASS order=abgr fmt=0x34324241 colour=yellow    src=0x0000ffff out=0xff00ffff decoded=255,255,0
+PASS order=abgr fmt=0x34324241 colour=midgrey   src=0x00808080 out=0xff808080 decoded=128,128,128
+PASS order=abgr fmt=0x34324241 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=abgr fmt=0x34324241 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+colour selftest: PASS (0 failures)

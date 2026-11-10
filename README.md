@@ -3,9 +3,20 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.8.2-beta** — _Direct LAN RDP/VNC, truthful security status and a mode-aware USB Tri-Link._
+**v0.8.3-beta** — _Fully black screen-off, per-device completion percentages and a repaired release pipeline._
 
-> **v0.8.2-beta (2026-11-09).** XRDP and VNC are directly reachable on the
+> **v0.8.3-beta (2026-11-10).** Screen-off now paints and latches a black
+> framebuffer page, then drives brightness to 0, `bl_power=4`
+> (`FB_BLANK_POWERDOWN`) and `FBIOBLANK(POWERDOWN)` before re-asserting
+> powerdown. The S10+ AMOLED is genuinely dark instead of faintly lit, and the
+> black page is never shown after wake because the presenter forces a fresh
+> capture/commit. This release also repairs the v0.8.2 release gate
+> (immersive-chrome and native status-bar source contracts) and adds explicit
+> completion percentages for every device target. See
+> [RELEASE-NOTES.md](RELEASE-NOTES.md) and
+> [REPORT-PWNAGE-106000.md](REPORT-PWNAGE-106000.md).
+>
+> **Previously in v0.8.2-beta (2026-11-09).** XRDP and VNC are directly reachable on the
 > owner LAN on **TCP 13389** and **TCP 15900**, bound to the current trusted WLAN
 > IPv4 address. XRDP is TLS + PAM in a separate X11 session; VNC is PAM +
 > VeNCrypt TLS/RSA-AES and mirrors the active Phoc session. Every bridge/UI
@@ -160,7 +171,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 See [RELEASE-NOTES.md](RELEASE-NOTES.md) for user-facing release notes and
 [CHANGELOG.md](CHANGELOG.md) for the complete engineering history.
 
-## Honest Status — v0.8.2-beta
+## Honest Status — v0.8.3-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**
@@ -169,7 +180,10 @@ ext4 rootfs mounts, `switch_root` hands over to **systemd 258 as PID 1**, the
 service graph reaches `running`, and the panel shows the boot animation before
 the launcher takes ownership. The **touchscreen produces real finger contact
 events** through evdev → libinput → phoc → WebKit. Unlock → Home, app launching
-and the Tri-Link console entries are physically verified.
+and the Tri-Link console entries are physically verified. **Screen-off is now
+fully black:** the bridge latches a zeroed framebuffer page, writes
+`bl_power=4`, and issues `FBIOBLANK(POWERDOWN)` while keeping the single
+`/dev/fb0` owner; the wake path repaints a fresh frame.
 
 **Bluetooth is no longer a blocker.** `CONFIG_BT_HCIUART`/H4 and
 `btattach -P h4` register `hci0`; BlueZ reports the controller powered and a
@@ -236,6 +250,15 @@ shipped as the hash-pinned `release/s10plus/gpu/` input. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
 and [`docs/releases/v0.7.7-beta.md`](docs/releases/v0.7.7-beta.md).
 
+### Completion by device
+
+| Device | Completion | Verified now | Main remaining gap |
+|---|---:|---|---|
+| Google Pixel 10 Pro XL (`mustang`) | **5%** | UART/initramfs scaffolding and device inventory | No boot artifact yet |
+| Samsung Galaxy S10+ (`s10plus`) | **95%** | Boots Nuxel; touch, Bluetooth, speaker audio, network location and fully black screen-off are verified; release image built from repo sources | Satellite GNSS, camera, modem, sensors and full Phosh acceptance |
+| Motorola Moto G7 Power (`g7power`) | **40%** | lk2nd + boot + ext4 rootfs flashed to hardware | Display init unresolved; still stops at a black/flashy screen |
+| UTM VM (`vm/nuxel-vm-snapshot.sh`) | **70%** | Fedora 43 + Phosh at 720×1440, network and audio work | Development target, not a phone hardware target |
+
 | Area | Score | Notes |
 |---|---|---|
 | Design/docs | 85% | Architecture, security model, PWA spec, three device bundles, plus the A25–A34 hardware evidence set |
@@ -248,17 +271,18 @@ and [`docs/releases/v0.7.7-beta.md`](docs/releases/v0.7.7-beta.md).
 | Build system | 90% | Fail-closed CI builds the current boot image and **compiles the current userspace from repo sources**; artifact verification is content-based and the release also ships the captured phone bytes |
 | Flashable images | 90% | S10+ boot + Fedora rootfs and G7 Power lk2nd/boot/rootfs are byte-verified on hardware; S10+ boots |
 | Pixel 10 Pro XL (mustang) | 5% | UART/initramfs-level only; no boot artifact yet |
-| Galaxy S10+ (beyond2lte) | 94% | **Boots Nuxel; touchscreen, Bluetooth and speaker audio are verified working; network location works.** Display, animation, launcher, systemd service graph and single framebuffer owner are proven. Satellite GNSS, camera, modem, sensors and full Phosh acceptance remain open |
+| Galaxy S10+ (beyond2lte) | 95% | **Boots Nuxel; touchscreen, Bluetooth, speaker audio, network location and fully black screen-off are verified working.** Display, animation, launcher, systemd service graph and single framebuffer owner are proven. Satellite GNSS, camera, modem, sensors and full Phosh acceptance remain open |
 | Moto G7 Power (ocean) | 40% | Images flashed (lk2nd + boot + ext4 rootfs); still hangs at a black/flashy screen |
 | UTM VM | 70% | Boots Fedora 43 + Phosh at 720×1440 with working network and **audio** (local, gitignored artifact) |
 
-**Overall: ~76% MVP.** One of three phones (S10+) boots a Nuxel-built image,
-its display path is live, its touchscreen delivers real contacts, Bluetooth
-registers/powers/scans, and the speaker is owner-confirmed audible. Network
-location works; satellite GNSS, camera and modem bring-up and sustained app
-interaction are the remaining daily-driver gaps. G7 Power still hangs at a
-black screen; mustang is UART/initramfs level only. The UTM VM demo boots and
-works (display, network, sound).
+**Overall: ~78% MVP.** One of three phones (S10+ at **95%**) boots a Nuxel-built
+image, its display path is live, its touchscreen delivers real contacts,
+Bluetooth registers/powers/scans, the speaker is owner-confirmed audible,
+network location works, and screen-off is fully black. The G7 Power is at
+**40%** (flashed, display init unresolved); mustang is **5%** (UART/initramfs
+level only). The UTM VM demo at **70%** boots and works (display, network,
+sound). Satellite GNSS, camera and modem bring-up and sustained app interaction
+are the remaining daily-driver gaps.
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -274,7 +298,9 @@ works (display, network, sound).
 - A **bootable S10+** — the Galaxy S10+ runs the Nuxel kernel, embedded
   initramfs, Fedora 43 systemd userspace, the panel animation and the launcher.
   The **touchscreen delivers real finger contacts** through evdev, libinput,
-  phoc and WebKit. The open item is reliable **clickable** UI interaction.
+  phoc and WebKit, and **screen-off now blanks the AMOLED fully** (black page +
+  `bl_power=4` + `FBIOBLANK(POWERDOWN)`). The open item is reliable
+  **clickable** UI interaction.
 - **A reproducible, fail-closed release CI.** The S10+ job builds the A25 boot
   image and compiles the **current A34 TOUCHDOWN** userspace from repo sources
   inside the arm64 container, then runs the A34/A33 touch regression suites and
@@ -290,7 +316,8 @@ works (display, network, sound).
 
 ### What this repo IS NOT YET:
 - A fully interactive phone: S10+ sustained app interaction is not fully signed
-  off, and speaker audibility/microphone capture are not owner-confirmed.
+  off, and microphone capture is not owner-confirmed (speaker audibility is
+  owner-confirmed).
 - A flashable Pixel ROM (`mustang` has no boot artifact yet)
 - A daily-driver phone
 - A built Flatpak PWA runtime
@@ -367,11 +394,11 @@ is integration/wiring, not authoring.
 
 Nuxel supports multiple hardware targets. Select via `NUXEL_DEVICE` or `--device`:
 
-| Key | Device | Codename | Status |
-|---|---|---|---|
-| `mustang` | Google Pixel 10 Pro XL | mustang | Scaffold — no boot artifact yet |
-| `s10plus` | Samsung Galaxy S10+ (Exynos) | beyond2lte | **Boots Nuxel — touchscreen works; clickable UI pending; sound unproven** |
-| `g7power` | Motorola Moto G7 Power (ocean) | ocean | **Flashed to hardware** — powers on but stuck at a black/flashy screen |
+| Key | Device | Codename | Completion | Status |
+|---|---|---|---:|---|
+| `mustang` | Google Pixel 10 Pro XL | mustang | **5%** | Scaffold — no boot artifact yet |
+| `s10plus` | Samsung Galaxy S10+ (Exynos) | beyond2lte | **95%** | **Boots Nuxel** — touch, Bluetooth, speaker audio, network location and fully black screen-off verified |
+| `g7power` | Motorola Moto G7 Power (ocean) | ocean | **40%** | **Flashed to hardware** — powers on but stuck at a black/flashy screen |
 
 Every device-specific **build** artifact lives under a per-device directory
 keyed by `NUXEL_DEVICE`: `google-pixel-10-pro-xl/` (mustang), `s10plus/`,
@@ -447,7 +474,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 | Document | Description |
 |---|---|
 | [RELEASE-NOTES.md](RELEASE-NOTES.md) | User-facing release notes and current release summary |
-| [CHANGELOG.md](CHANGELOG.md) | Full engineering changelog — v0.1.0 to v0.8.2-beta |
+| [CHANGELOG.md](CHANGELOG.md) | Full engineering changelog — v0.1.0 to v0.8.3-beta |
+| [REPORT-PWNAGE-106000.md](REPORT-PWNAGE-106000.md) | Screen-off black-page fix, release-CI repair and per-device completion evidence |
 | [REPORT-USBNET.md](REPORT-USBNET.md) | Evidence-based USB network blocker report and next step |
 | [GUI-TRI-LINK-QUICKSTART.md](GUI-TRI-LINK-QUICKSTART.md) | Direct-LAN XRDP 13389 / VNC 15900 and native mirror quickstart |
 | [TRI-LINK-CLI-QUICKSTART.md](TRI-LINK-CLI-QUICKSTART.md) | Serial, Wi-Fi SSH and USB SSH host CLI quickstart |

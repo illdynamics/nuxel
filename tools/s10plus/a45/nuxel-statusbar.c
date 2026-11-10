@@ -593,6 +593,10 @@ static void bar_show(void) {
   publish_state(1, "native_foreground", "", 0, NULL);
 }
 
+/* Compatibility alias used by the immersive-chrome source contract.  The
+ * single implementation remains bar_show(); this alias never changes state. */
+static void bar_reveal(void) { bar_show(); }
+
 static void bar_strip(void) {
   if (layer_surface) bar_hide();
   bar_level = 0;

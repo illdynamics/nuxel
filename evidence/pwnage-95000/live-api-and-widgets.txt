@@ -1,0 +1,68 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== http status ===
+--- http://127.0.0.1:8080/api/v1/health
+http=200 bytes=217 time=0.002598
+{"success": true, "service": "nuxel-http-bridge", "version": "0.8.1-beta", "bridge_version": "1", "registry": {"source": "/etc/nuxel/app-registry/app_registry.json", "available": true}, "timestamp": 1794159389.085067}
+--- http://127.0.0.1:8080/api/v1/ping
+http=200 bytes=160 time=0.011240
+{"status": "ok", "service": "nuxel-bridge", "version": "0.8.1-beta", "bridge_version": "1", "session": "2b72c711-6228-49ee-b120-07b8319cc387", "echo": "health"}
+--- http://127.0.0.1:8000/
+http=403 bytes=46 time=0.001858
+nuxel-web: not served (no directory listings)
+
+--- http://127.0.0.1:8000/js/status-bar.js
+http=404 bytes=21 time=0.002470
+nuxel-web: not found
+
+=== api probes ===
+--- api/v1/system/indicators
+{"clock_scheduler": {"available": true, "source": "/run/nuxel/clockd.state", "revision": 111, "alarm_visible": false, "alarm_ringing": false, "alarm_snoozed": false, "timer_visible": false, "timer_ringing": false, "timer_state": "acknowledged", "timer_run_id": "timer-d947d4afb580", "next": null, "occurrences": [], "active_occurrences": [], "snooze_enabled": true, "snooze_minutes": 9, "capabilities": {"audio_owner": "nuxel-soundd", "rtc_policy": "capability reported; no RTC write performed", "rtc_wake_from_suspend_verified": false, "rtc_wakealarm": {"path": "/sys/class/rtc/rtc0/wakealarm", "present": true, "value": "", "writable": true}, "screen_off_awake_alarm": true}}, "sound_mode": {"mode": "normal", "selected": "normal", "source": "/var/lib/nuxel/audio/sound-mode", "haptics_verified": false, "note": "selected sound mode; physical vibration is not claimed"}, "bluetooth": {"powered": null, "state": "unknown", "discovering": false, "source": "unavailable:no-provider-state"}, "charging": {"external_power": false, "charging": false, "battery_level": 77, "source": "sysfs"}, "usb_data": {"pc_connected": false, "source": "sysfs:udc:10c00000.dwc3=not attached", "physical": ["typec:device
+--- api/v1/notifications/counts
+{"error": "Not found"}
+--- api/v1/notifications/history
+{"error": "Not found"}
+--- api/v1/apps
+{"error": "Not found"}
+--- api/v1/security/status
+{"error": "Not found"}
+--- api/v1/system/tri-link
+{"success": true, "schema": "nuxel.tri-link-status/1", "version": "28000", "kernel_release": "4.14.253-gf7194c1d15ed-dirty", "transports": {"serial": {"status": "AVAILABLE", "target": "USB CDC-ACM (/dev/ttyACM* on host)", "detail": "USB serial recovery path is present", "auth": "none (exclusive host console)", "host_command": "./scripts/s10plus-debug-pack/nuxel-live.sh --run 'uname -a'", "checks": [{"name": "acm-gadget", "status": "OK", "detail": "acm.usb0"}, {"name": "ttyGS0", "status": "OK"}, {"name": "udc", "status": "OK", "detail": "10c00000.dwc3=not attached"}, {"name": "console-lock", "status": "ABSENT", "detail": "/run/nuxel-console.lock"}]}, "wifi": {"status": "AVAILABLE", "target": "nuxel@192.168.178.167:22", "detail": "sshd is listening; SHA256:LegjMkabj0ig6rTzMMiiekWQLzCJt0LsJUeTm3c7JGs is verified on the host", "auth": "publickey only", "host_command": "./scripts/s10plus-debug-pack/nuxel-live-ssh.sh --transport wlan --host 192.168.178.167 --status", "checks": [{"name": "interface", "status": "OK", "detail": "wlan0 192.168.178.167"}, {"name": "sshd-listen", "status": "OK", "detail": "tcp/22"}, {"name": "authentication", "status": "OK", "detail": "publickey only"}, {"name
+--- api/v1/desktop/status
+{"error": "Not found"}
+=== notifications store ===
+type list
+count 7
+{'id': 3, 'app_name': 'org.nuxel.Clock', 'title': None, 'read_at': None, 'archived_at': '2026-11-08T17:00:32.442514', 'timestamp': '2026-10-31T21:06:17.044251'}
+{'id': 4, 'app_name': 'org.nuxel.Clock', 'title': None, 'read_at': None, 'archived_at': '2026-11-08T17:00:31.670766', 'timestamp': '2026-11-01T22:58:30.448651'}
+{'id': 5, 'app_name': 'org.nuxel.Clock', 'title': None, 'read_at': None, 'archived_at': '2026-11-08T17:00:30.927757', 'timestamp': '2026-11-03T00:01:19.320001'}
+{'id': 6, 'app_name': 'org.nuxel.Clock', 'title': None, 'read_at': None, 'archived_at': '2026-11-08T17:00:30.049207', 'timestamp': '2026-11-05T12:35:48.572549'}
+{'id': 7, 'app_name': 'org.nuxel.Clock', 'title': None, 'read_at': None, 'archived_at': '2026-11-08T17:00:29.046002', 'timestamp': '2026-11-06T13:49:40.106272'}
+=== dbus notification names ===
+--- system
+--- --address=unix:path=/run/nuxel-wayland/bus
+:1.2                                         369048 gnome-keyring-d root :1.2          nuxel-wayland.service     -       -
+:1.3                                         369045 python3         root :1.3          nuxel-wayland.service     -       -
+:1.4                                         368794 nuxel-pwa-host  root :1.4          nuxel-wayland.service     -       -
+:1.5                                         368794 nuxel-pwa-host  root :1.5          nuxel-wayland.service     -       -
+:1.6                                         369533 at-spi-bus-laun root :1.6          nuxel-wayland.service     -       -
+:1.7                                         369648 at-spi2-registr root :1.7          nuxel-wayland.service     -       -
+:1.8                                         369648 at-spi2-registr root :1.8          nuxel-wayland.service     -       -
+:1.9                                         368745 python3         root :1.9          nuxel-http-bridge.service -       -
+org.a11y.Bus                                 369533 at-spi-bus-laun root :1.6          nuxel-wayland.service     -       -
+org.freedesktop.Notifications                369045 python3         root :1.3          nuxel-wayland.service     -       -
+org.freedesktop.secrets                      369048 gnome-keyring-d root :1.2          nuxel-wayland.service     -       -
+org.gnome.keyring                            369048 gnome-keyring-d root :1.2          nuxel-wayland.service     -       -
+--- --address=unix:path=/run/user/1000/bus
+=== sound mode + notification live files ===
+--- /run/nuxel/home-transition.json
+{"action": "home", "attempts": [{"attempt": 1, "helper_settled": true, "home_active": true, "left_active": [], "left_fullscreen": [], "left_unminimized": ["ferdium", "com.stremio.Stremio"], "list_error": null, "rc": 0, "stdout": "WINDOWS=3\nWIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=0 fs=0\nWIN title=Ferdium - Messenger - (15) Messenger | Facebook app_id=ferdium max=1 min=0 act=0 fs=0\nWIN title=Stremio app_id=com.stremio.Stremio max=1 min=0 act=1 fs=0\nHOME_ACTION minimized=2 raised=1 fullscreen_cleared=0 maximized_cleared=2 home_active=1 left_active=0 left_fullscreen=0 left_unminimized=2 settled=1"}], "converged": true, "finished_epoch": 1794159113.79148, "foreground_state_file": "/run/nuxel/foreground.state", "input_clear": true, "schema_version": 1, "started_epoch": 1794159101.0128057}
+=== registry icon resolution ===
+http=200 bytes=13235 type=image/svg+xml

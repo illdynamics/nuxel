@@ -19,7 +19,7 @@
   <section id="caps" class="card"></section>
 
   <h2 class="sect">Spoofing</h2>
-  <p class="hint">Identity spoofing with a global default or per-app overrides. Native app launches receive the selected profile; the values below show the effective identity before you apply. Configuration is owner-only and stored outside app data.</p>
+  <p class="hint">Identity spoofing with a global default or per-app overrides. Use the Windows (Portal for Teams) preset to make Portal for Teams see a Windows 10 PC. The values below show the effective identity before you apply. Configuration is owner-only and stored outside app data.</p>
   <section class="card">
     <div class="row"><span>Current user agent</span><b id="spoof-ua-current">—</b></div>
     <div class="row"><span>Current uname</span><b id="spoof-effective-uname">—</b></div>
@@ -37,14 +37,18 @@
     <label class="field" id="spoof-app-field">App id
       <select id="spoof-app-select"><option value="">Loading app list…</option></select>
     </label>
-    <label class="field">Spoof user agent <input id="spoof-ua-input" type="text" placeholder="Mozilla/5.0 ..."></label>
-    <label class="field">Spoof /etc/os-release <textarea id="spoof-os-release" rows="4" placeholder="NAME=&quot;SpoofOS&quot; ..."></textarea></label>
+    <div class="row">
+      <button id="spoof-preset-windows" class="primary">Windows (Portal for Teams)</button>
+      <span class="small">Windows uname, UA and os-release preset for Portal for Teams.</span>
+    </div>
+    <label class="field">Spoof user agent <input id="spoof-ua-input" type="text" placeholder="Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..."></label>
+    <label class="field">Spoof /etc/os-release <textarea id="spoof-os-release" rows="4" placeholder="NAME=&quot;Windows 10&quot; ..."></textarea></label>
     <div class="grid2">
-      <label class="field">sysname <input id="spoof-uname-sysname" type="text" value="Linux"></label>
-      <label class="field">nodename <input id="spoof-uname-nodename" type="text" value="nuxel-spoof"></label>
-      <label class="field">release <input id="spoof-uname-release" type="text" value="6.1.0-nuxel-spoof"></label>
-      <label class="field">version <input id="spoof-uname-version" type="text" value="#1 SMP PREEMPT_DYNAMIC"></label>
-      <label class="field">machine <input id="spoof-uname-machine" type="text" value="aarch64"></label>
+      <label class="field">sysname <input id="spoof-uname-sysname" type="text" value="windows_nt"></label>
+      <label class="field">nodename <input id="spoof-uname-nodename" type="text" value="WIN-CLIENT"></label>
+      <label class="field">release <input id="spoof-uname-release" type="text" value="10.0"></label>
+      <label class="field">version <input id="spoof-uname-version" type="text" value="#1 SMP PREEMPT"></label>
+      <label class="field">machine <input id="spoof-uname-machine" type="text" value="amd64"></label>
     </div>
     <div class="row">
       <button id="spoof-apply" class="primary">Apply spoof</button>
@@ -59,6 +63,6 @@
   <p id="report" class="state" role="status"></p>
 </main>
 <script src="js/pengu.js"></script>
-<script src="js/spoof.js?v=p91000"></script>
+<script src="js/spoof.js?v=p100000"></script>
 </body>
 </html>

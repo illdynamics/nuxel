@@ -1,0 +1,56 @@
+{
+  "automatic_after": {
+    "current": "HDMI / USB-C display",
+    "current_id": "alsa:beyond-madera:dp-audio",
+    "fallback_id": "alsa:beyond-madera:rdma1",
+    "mode": "automatic",
+    "reason": "automatic: verified HDMI audio endpoint became available; selected HDMI / USB-C display",
+    "success": true
+  },
+  "legacy_audio_status": {
+    "backend": "pipewire",
+    "muted": false,
+    "policy_mode": "automatic",
+    "selected_output": "HDMI / USB-C display",
+    "success": true,
+    "volume_percent": 60
+  },
+  "manual_speaker": {
+    "current": "Phone speaker",
+    "current_id": "alsa:beyond-madera:rdma1",
+    "mode": "manual",
+    "preferred_id": "alsa:beyond-madera:rdma1",
+    "reason": "manual: retaining user-selected Phone speaker",
+    "success": true
+  },
+  "outputs_initial": {
+    "ch_hdmi_audio_hex": "0x043b0102",
+    "current": "HDMI / USB-C display",
+    "current_id": "alsa:beyond-madera:dp-audio",
+    "endpoints": [
+      [
+        "speaker",
+        "alsa:beyond-madera:rdma1",
+        true
+      ],
+      [
+        "hdmi",
+        "alsa:beyond-madera:dp-audio",
+        true
+      ]
+    ],
+    "fallback_id": "alsa:beyond-madera:rdma1",
+    "hdmi_available": true,
+    "mode": "automatic",
+    "reason": "automatic: verified HDMI audio endpoint became available; selected HDMI / USB-C display",
+    "success": true
+  },
+  "test_sound_current_output": {
+    "audible": "unverified",
+    "output": "HDMI / USB-C display",
+    "physical_confirmation": "not performed by software",
+    "queued": true,
+    "sink": "alsa_output.nuxel_hdmi",
+    "success": true
+  }
+}

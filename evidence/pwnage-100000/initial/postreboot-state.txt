@@ -1,0 +1,237 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== now ===
+Mon Nov  9 17:25:53 CET 2026
+4.14.253-gf7194c1d15ed-dirty
+0
+DP=0
+0
+0000:0000
+0
+cat: /sys/class/typec/port0-partner/supports_usb_power_delivery: No such file or directory
+=== dp_sec ===
+dex=0
+
+monitor_info=BNQ,0x7f54,0x5445
+
+forced_resolution=   0 : V640X480P60
+   1 : V720X480P60
+   2 : V720X576P50
+   3 : V1280X800P60RB
+   4 : V1280X720P50
+   5 : V1280X720P60EXT
+   6 : V1280X720P60
+   7 : V1366X768P60
+   8 : V1280X1024P60
+   9 : V1920X1080
+unit_test=1
+
+dp_error_info=
+=== recent attach/vdm ===
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V2560X1440P59
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P24
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P25
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P30
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P50
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: max video_format : V3840X2160P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: returns true
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: manufacturer : BNQ product : 7f54 serial num : 5445
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test edid parse
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: mon name: BenQ SW320, gamma: 2.20
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1920X1080P60, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X720P60, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X1024P60, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V2560X1440P59, dex: 2
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V720X480P60, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1920X1080P24, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X720P50, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V720X576P50, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P30, dex: 0
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P25, dex: 0
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P24, dex: 0
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: Max_TMDS_Character_Rate = 600 Mhz
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: 10 bpc support = 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: SMPTE_ST_2084 support(0)
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: HDR: EOTF(0x5) ST2084(0) GAMMA(SDR|) LUMI(max:96,avg:90,min:68)
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V3840X2160P60, dex: 0
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V3840X2160P50, dex: 0
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: invalid timing i:42, best:45
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V640X480P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V720X480P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V720X576P50
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X720P50
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X720P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X1024P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P24
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P25
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P30
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P50
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V2560X1440P59
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P24
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P25
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P30
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P50
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: max video_format : V3840X2160P60
+Nov 09 17:25:52 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: returns true
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: manufacturer : BNQ product : 7f54 serial num : 5445
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test edid parse
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: mon name: BenQ SW320, gamma: 2.20
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1920X1080P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X720P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X1024P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V2560X1440P59, dex: 2
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V720X480P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1920X1080P24, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X720P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V720X576P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P30, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P25, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P24, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: Max_TMDS_Character_Rate = 600 Mhz
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: 10 bpc support = 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: SMPTE_ST_2084 support(0)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: HDR: EOTF(0x5) ST2084(0) GAMMA(SDR|) LUMI(max:96,avg:90,min:68)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V3840X2160P60, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V3840X2160P50, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: invalid timing i:42, best:45
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V640X480P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V720X480P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V720X576P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X720P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X720P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X1024P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P24
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P25
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P30
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V2560X1440P59
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P24
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P25
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P30
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: max video_format : V3840X2160P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: returns true
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: manufacturer : BNQ product : 7f54 serial num : 5445
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test edid parse
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: mon name: BenQ SW320, gamma: 2.20
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1920X1080P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X720P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X1024P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V2560X1440P59, dex: 2
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V720X480P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1920X1080P24, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X720P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V720X576P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P30, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P25, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P24, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: Max_TMDS_Character_Rate = 600 Mhz
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: 10 bpc support = 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: SMPTE_ST_2084 support(0)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: HDR: EOTF(0x5) ST2084(0) GAMMA(SDR|) LUMI(max:96,avg:90,min:68)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V3840X2160P60, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V3840X2160P50, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: invalid timing i:42, best:45
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V640X480P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V720X480P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V720X576P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X720P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X720P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X1024P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P24
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P25
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P30
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V2560X1440P59
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P24
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P25
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P30
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: max video_format : V3840X2160P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: returns true
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: manufacturer : BNQ product : 7f54 serial num : 5445
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test edid parse
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: mon name: BenQ SW320, gamma: 2.20
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1920X1080P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X720P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X1024P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V2560X1440P59, dex: 2
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V720X480P60, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1920X1080P24, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V1280X720P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V720X576P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P30, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P25, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found: V3840X2160P24, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: Max_TMDS_Character_Rate = 600 Mhz
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: 10 bpc support = 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: SMPTE_ST_2084 support(0)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: HDR: EOTF(0x5) ST2084(0) GAMMA(SDR|) LUMI(max:96,avg:90,min:68)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V3840X2160P60, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V3840X2160P50, dex: 0
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: invalid timing i:42, best:45
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V640X480P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V720X480P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V720X576P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X720P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X720P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1280X1024P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P24
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P25
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P30
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V1920X1080P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V2560X1440P59
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P24
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P25
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P30
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P50
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: unit test supported_videos : V3840X2160P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: max video_format : V3840X2160P60
+Nov 09 17:25:53 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: returns true

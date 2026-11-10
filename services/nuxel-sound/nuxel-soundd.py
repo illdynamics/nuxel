@@ -36,6 +36,20 @@ import time
 import uuid
 from pathlib import Path
 
+# The policy module is installed at /usr/lib/nuxel/nuxel_audio_outputs.py.
+# Keep the source-tree path in sys.path for offline tests and developer runs.
+for _cand in ("/usr/lib/nuxel", os.path.dirname(os.path.abspath(__file__))):
+    if os.path.isdir(_cand) and _cand not in sys.path:
+        sys.path.insert(0, _cand)
+try:
+    from nuxel_audio_outputs import (AudioOutputManager, KIND_SPEAKER,
+                                     ROUTING_AUTOMATIC, ROUTING_MANUAL)
+except ImportError:  # pragma: no cover - startup reports the real error
+    AudioOutputManager = None  # type: ignore
+    KIND_SPEAKER = "speaker"
+    ROUTING_AUTOMATIC = "automatic"
+    ROUTING_MANUAL = "manual"
+
 ACTIONS = ["volume", "boot", "alarm", "timer", "message", "notification", "other"]
 ACTION_LABELS = {
     "volume": "Volume change",
@@ -278,6 +292,9 @@ class SoundPlayer:
         self._last_cue_finished_at = None
         self._last_cue_action = None
         self._last_write_restart = 0.0
+        # The ABOX/CS35L41 route gate is a speaker-path requirement.  HDMI,
+        # Bluetooth and USB outputs do not need the speaker DSP chain.
+        self.require_speaker_route = True
         self.on_finished = None
         self.thread = threading.Thread(target=self._loop, name="nuxel-sound-player", daemon=True)
 
@@ -388,6 +405,8 @@ class SoundPlayer:
         PCM.  If the document is absent entirely (non-S10 host or a manual
         test), do not invent a dependency: allow the normal PipeWire path.
         """
+        if not self.require_speaker_route:
+            return False
         try:
             text = ROUTE_STATE.read_text(errors="replace")
         except OSError:
@@ -616,11 +635,70 @@ class SoundManager:
         self.durable_lock = threading.Lock()
         self.durable = self._load_durable_queue()
         self.player.on_finished = self._cue_finished
+        self.audio = None
+        if AudioOutputManager is not None:
+            self.audio = AudioOutputManager(on_route=self._audio_route_changed)
         # Do not block daemon startup on 70+ ffprobe forks.  The socket is the
         # latency-critical interface; a background scan fills the library while
         # the first ordinary state request can still use cached metadata.
         self.prewarm_state = {"complete": False, "started": time.time(), "items": {}}
         threading.Thread(target=self.prewarm, name="nuxel-sound-prewarm", daemon=True).start()
+
+    def _audio_route_changed(self, endpoint) -> None:
+        """Keep the cue stream's speaker gate aligned with the active route."""
+        kind = (endpoint or {}).get("kind")
+        self.player.require_speaker_route = (kind == KIND_SPEAKER)
+
+    def audio_status(self) -> dict:
+        if self.audio is None:
+            return {"success": False, "error": "audio-output-manager-unavailable",
+                    "detail": "nuxel_audio_outputs.py is not installed"}
+        return self.audio.status()
+
+    def audio_diagnostics(self) -> dict:
+        if self.audio is None:
+            return {"success": False, "error": "audio-output-manager-unavailable"}
+        return self.audio.diagnostics()
+
+    def set_routing_mode(self, mode, preferred_id=None) -> dict:
+        if self.audio is None:
+            return {"success": False, "error": "audio-output-manager-unavailable"}
+        return self.audio.set_routing(mode, preferred_id)
+
+    def select_output(self, stable_id) -> dict:
+        if self.audio is None:
+            return {"success": False, "error": "audio-output-manager-unavailable"}
+        return self.audio.select_output(stable_id)
+
+    def set_output_volume(self, percent) -> dict:
+        if self.audio is None:
+            return {"success": False, "error": "audio-output-manager-unavailable"}
+        return self.audio.set_volume(percent)
+
+    def set_output_muted(self, muted) -> dict:
+        if self.audio is None:
+            return {"success": False, "error": "audio-output-manager-unavailable"}
+        return self.audio.set_muted(muted)
+
+    def test_output(self, path=None) -> dict:
+        """Play the standard Nuxel cue through the manager's current route."""
+        if self.audio is None:
+            return {"success": False, "error": "audio-output-manager-unavailable"}
+        status = self.audio.status()
+        if not status.get("current"):
+            return {"success": False, "error": "NO_CURRENT_OUTPUT",
+                    "detail": status.get("last_error") or "no output is routed",
+                    "audible": "unverified", "status": status}
+        result = self.play_action("other", path, loop=False,
+                                  token="test-output-%d" % time.time())
+        result.update({
+            "output": status["current"].get("description"),
+            "output_id": status["current"].get("stable_id"),
+            "sink": status["current"].get("node_name"),
+            "audible": "unverified",
+            "physical_confirmation": "not performed by software",
+        })
+        return result
 
     # ---- library ---------------------------------------------------------
     def prewarm(self) -> None:
@@ -958,6 +1036,7 @@ class SoundManager:
             "instance_id": self.player.instance_id,
             "queue_depth": depth,
             "player": player,
+            "audio_output": (self.audio.status() if self.audio is not None else None),
         }
 
     def maybe_reload(self) -> None:
@@ -1005,6 +1084,7 @@ class SoundManager:
             "prewarm": self.prewarm_state,
             "ffmpeg": Path(FFMPEG).exists(),
             "ffprobe": Path(FFPROBE).exists(),
+            "output_policy": (self.audio.status() if self.audio is not None else None),
         }
 
     def import_file(self, name: str, data_b64: str) -> dict:
@@ -1115,6 +1195,20 @@ def handle(req: dict) -> dict:
     if cmd == "import":
         return MANAGER.import_file(str(req.get("name") or "sound.mp3"),
                                    str(req.get("data_b64") or ""))
+    if cmd in ("outputs", "audio-status", "audio-outputs"):
+        return MANAGER.audio_status()
+    if cmd in ("diagnostics", "audio-diagnostics"):
+        return MANAGER.audio_diagnostics()
+    if cmd in ("set-routing", "routing"):
+        return MANAGER.set_routing_mode(req.get("mode"), req.get("preferred_id"))
+    if cmd in ("select-output", "set-output"):
+        return MANAGER.select_output(req.get("id") or req.get("stable_id"))
+    if cmd in ("set-volume", "set-output-volume"):
+        return MANAGER.set_output_volume(req.get("percent", req.get("volume")))
+    if cmd in ("set-muted", "set-output-muted"):
+        return MANAGER.set_output_muted(req.get("muted", False))
+    if cmd == "test-output":
+        return MANAGER.test_output(req.get("path"))
     if cmd == "ping":
         return {"success": True, "pong": True, "version": 1}
     return {"success": False, "error": "unknown command %s" % cmd}
@@ -1192,6 +1286,8 @@ def main() -> int:
         pass
     MANAGER = SoundManager()
     MANAGER.player.start()
+    if MANAGER.audio is not None:
+        MANAGER.audio.start()
     threading.Thread(target=MANAGER.scan, name="nuxel-sound-scan", daemon=True).start()
     threading.Thread(target=MANAGER.resume_durable_queue,
                      name="nuxel-sound-resume-queue", daemon=True).start()
@@ -1201,6 +1297,8 @@ def main() -> int:
     def _stop(_signum, _frame):
         stop_event.set()
         sd_notify("STOPPING=1")
+        if MANAGER.audio is not None:
+            MANAGER.audio.stop()
         MANAGER.player.shutdown()
 
     signal.signal(signal.SIGTERM, _stop)

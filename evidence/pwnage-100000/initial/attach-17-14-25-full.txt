@@ -1,0 +1,190 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+usb_notify: is_blocked type=1, disable_state=0
+max77705_vbus_turn_on_ctrl : enable=0, auto_vbus_en=0, must_block_host=0, swaped=0
+max77705_vbus_turn_on_ctrl : enable=0
+max77705_set_otg: CHGIN-OTG off
+otg accessory power = 0
+max77705: max77705_usbc_clear_queue: IN
+max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x59)
+max77705: dequeue_usbc_cmd: front->next = NULL
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_clear_queue: OUT
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_opcode_write: W->W opcode[0x54] write_length[1] read_length[1]
+max77705: front_usbc_cmd: Opcode(0x54)
+max77705: dequeue_usbc_cmd: Opcode(0x54) Response(0xff)
+max77705: max77705_usbc_cmd_run: No ISR
+max77705: max77705_i2c_opcode_write: opcode 0x54, write_length 2
+max77705: opcode_write: 00000000: 54 00
+max77705: max77705_usbc_disable_auto_vbus: TURN OFF THE AUTO VBUS
+max77705: max77705_usbc_opcode_write: W->W opcode[0x0c] write_length[1] read_length[1]
+max77705: front_usbc_cmd: Opcode(0xff)
+max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x54], read_op->opcode[0x0c]
+max77705: max77705_usbc_enable_audio: Enable Audio Detect
+max77705: max77705_set_enable_alternate_mode: is_first_booting  : 1 mode 8
+max77705: max77705_set_enable_alternate_mode: [ON BOOTING TIME] !!!alternate mode is started!
+max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+max77705: front_usbc_cmd: Opcode(0xff)
+max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x54], read_op->opcode[0x55]
+max77705: max77705_set_enable_alternate_mode: !![ON BOOTING TIME] SEND THE PACKET REGARDING IN CASE OF VR/DP 
+max77705: max77705_set_enable_alternate_mode: USBC1:0x07, USBC2:0x05, BC:0x00
+max77705: max77705_set_enable_alternate_mode: CC_STATUS0:0x0, CC_STATUS1:0x0, PD_STATUS0:0x0, PD_STATUS1:0x7
+max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x4, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x4, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+max77705: max77705_sysmsg_irq: IRQ(304)_OUT sysmsg: 3
+max77705: max77705_vir_altmode_irq: max77705_vir_altmode_irq
+max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+max77705: front_usbc_cmd: Opcode(0xff)
+max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x54], read_op->opcode[0x55]
+max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!
+max77705:max77705_irq_thread: irq[318] 318/276/14 irq_src=0x08 pmic_rev=0x05
+[MAX77705] irq_reg, complete [1], 80, 31, 0, 0, f0
+[MAX77705] dump_reg, 7, 5, 0, 10, 0, 0, 0, 47
+max77705_irq_thread ic_alt_mode=0
+max77705: max77705_apcmd_irq: IRQ(289)_IN
+max77705: max77705_apcmd_irq:  [IN] sysmsg : 5
+max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x54)
+max77705: max77705_usbc_cmd_run: Apcmdres ISR !!!
+max77705: max77705_i2c_opcode_read: opcode 0xff, read_length 2, ret_error 0
+max77705: opcode_read: 00000000: 54 00
+max77705: dequeue_usbc_cmd: Opcode(0x0c) Response(0xff)
+max77705: max77705_usbc_cmd_run: No ISR
+max77705: max77705_i2c_opcode_write: opcode 0xc, write_length 2
+max77705: opcode_write: 00000000: 0c 1f
+max77705: max77705_apcmd_irq: IRQ(289)_OUT
+max77705: max77705_vconnsc_irq: == WATER RUN-DRY DETECT ==
+max77705: max77705_ccstat_irq_handler: PLUG_DETACHED ---
+max77705: max77705_ccstat_irq_handler: ccstat : typec_unregister_partner
+typec_unregister_partner
+usb_notify: send_otg_notify event=pd_contract(28) enable=0
+usb_notify: extra_notifier_callback event=pd_contract(28)
+usb_notify: extra_notify_state+ event=pd_contract(28), enable=off
+usb_notify: extra_notify_state- event=pd_contract(28), cable=host_id
+max77705: max77705_notify_dr_status: Data Role: DFP Power Role: SRC State: DETACHED
+max77705: max77705_clk_booster_set: [PDIC Booster] 0
+max77705: max77705_clk_booster_set: [PDIC Booster]have already turned off
+max77705: max77705_ccic_event_work: usb: DIAES 4-1-0-0-0
+max77705: max77705_ccic_event_work: usb: DIAES 1-3-0-0-0
+max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=0 typec_data_role=0 event=0
+max77705: max77705_ccic_event_work: detach case
+max77705: max77705_ccstat_irq_handler: ccstat : cc_No_Connection
+max77705: max77705_usbc_clear_queue: IN
+max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x0c)
+max77705: dequeue_usbc_cmd: Opcode(0x55) Response(0xff)
+max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+max77705: dequeue_usbc_cmd: Opcode(0x55) Response(0xff)
+max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+max77705: dequeue_usbc_cmd: front->next = NULL
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_clear_queue: OUT
+usb_notify: send_otg_notify event=power_role_source(27) enable=0
+usb_notify: extra_notifier_callback event=power_role_source(27)
+usb_notify: extra_notify_state+ event=power_role_source(27), enable=off
+host_notify: ndev name=usb_otg: state=sink
+host_notify: power_state (source->sink)
+usb_notify: send_external_notify: cmd=power_role_notify(7), data=0
+pdic_handle_usb_external_notifier_notification : action=7 , enable=0
+usb_notify: send_external_notify: notify done(0x0)
+usb_notify: extra_notify_state- event=power_role_source(27), cable=host_id
+max77705_detach_pd : Detach PD CHARGER
+usb_notify: is_blocked type=1, disable_state=0
+max77705_vbus_turn_on_ctrl : enable=0, auto_vbus_en=0, must_block_host=0, swaped=0
+max77705_vbus_turn_on_ctrl : enable=0
+max77705_set_otg: CHGIN-OTG off
+otg accessory power = 0
+max77705: max77705_vir_altmode_irq: max77705_vir_altmode_irq
+max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+max77705: front_usbc_cmd: Opcode(0x55)
+max77705: dequeue_usbc_cmd: Opcode(0x55) Response(0xff)
+max77705: max77705_usbc_cmd_run: No ISR
+max77705: max77705_i2c_opcode_write: opcode 0x55, write_length 2
+max77705: opcode_write: 00000000: 55 03
+max77705: max77705_ccic_event_notifier: usb: dest=MUIC, id=ID_ATTACH, attach=0, event=0
+ccic_notifier_notify: src:5 dest:4 id:01 attach:00 cable_type:00 rprd:0
+type-c manager: manager_handle_ccic_notification: src:CCIC dest:MUIC id:ID_ATTACH attach/rid:0
+type-c manager: manager_handle_ccic_notification: CCIC_NOTIFY_DETACH (pd=0, cable_type=0)
+type-c manager: manager_event_work src:CCIC dest:MUIC
+ccic_notifier_notify: notify done(0x0)
+max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!
+type-c manager: manager_muic_event_notifier: id:ID_ATTACH sub1:00 sub2:00 sub3:00
+max77705_muic_handle_ccic_notification: Rcvd Noti=> action: 1 src:5 dest:4 id:1 sub[0 0 0]
+max77705_muic_handle_ccic_notification: CCIC_NOTIFY_ID_ATTACH: Detached
+max77705_muic_handle_ccic_ATTACH: src:5 dest:4 id:1 attach:0 cable_type:0 rprd:0
+max77705_muic_handle_ccic_detach
+max77705_muic_handle_ccic_ATTACH: do workqueue
+type-c manager: manager_muic_event_notifier: notify done(0x0)
+max77705: max77705_ccic_event_notifier: usb: dest=USB, id=ID_USB, attach=Detached, drp=USB_DETACH
+ccic_notifier_notify: src:5 dest:1 id:03 sub1:0 sub2:00 sub3:00
+type-c manager: manager_handle_ccic_notification: src:CCIC dest:USB id:ID_USB attach/rid:0
+type-c manager: manager_event_work src:CCIC dest:USB
+ccic_notifier_notify: notify done(0x0)
+type-c manager: manager_notifier_notify: src:CCIC dest:USB id:ID_USB sub1:00 sub2:00 sub3:00
+sec-battery battery: usb_typec_handle_notification: action (3) dump(0x5, 0x1, 0x03, 0x0000, 0x0000, 0x0000)
+sec-battery battery: usb_typec_handle_notification: skip handler dest(1)
+max77705:max77705_irq_thread: irq[318] 318/276/14 irq_src=0x08 pmic_rev=0x05
+usb_notifier: ccic_usb_handle_notification: Turn Off Host(DFP)
+usb_notify: send_otg_notify event=host_id(2) enable=0
+usb_notify: otg_notifier_callback event=host_id(2)
+type-c manager: manager_notifier_notify: notify done(0x0)
+usb_notify: otg_notify_state+ event=host_id(2), enable=off
+usb_notifier: exynos_set_host USB_HOST_DETACHED
+usb_notifier: check_usb_id_state id state = 1
+[MAX77705] irq_reg, complete [1], 80, 0, 0, 0, f0
+[MAX77705] dump_reg, 7, 5, 0, 10, 0, 1, 0, 7
+max77705_irq_thread ic_alt_mode=1
+max77705: max77705_apcmd_irq: IRQ(289)_IN
+max77705: max77705_apcmd_irq:  [IN] sysmsg : 5
+max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+max77705: dequeue_usbc_cmd: front->next = NULL
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_cmd_run: Apcmdres ISR !!!
+max77705: max77705_i2c_opcode_read: opcode 0xff, read_length 2, ret_error 0
+max77705: opcode_read: 00000000: 55 93
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_cmd_run: Queue, Empty
+max77705: max77705_recover_opcode: opcode = 0x55
+max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+max77705: front_usbc_cmd: Opcode(0x55)
+max77705: dequeue_usbc_cmd: Opcode(0x55) Response(0xff)
+max77705: max77705_usbc_cmd_run: No ISR
+max77705: max77705_i2c_opcode_write: opcode 0x55, write_length 2
+max77705: opcode_write: 00000000: 55 03
+max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!
+max77705: max77705_apcmd_irq: IRQ(289)_OUT
+max77705:max77705_irq_thread: irq[318] 318/276/14 irq_src=0x08 pmic_rev=0x05
+usb_notifier: check_usb_id_state: get the 10c00000.usb platform_device
+host_notify: ndev name=usb_otg: state=remove
+host_notify: host_state (add->remove)
+usb_notify: otg_notify_state end host
+usb_notify: send_external_notify: cmd=host_mode_device_added(8), data=0
+type-c manager: manager_external_notifier_notification EXTERNAL_NOTIFY_DEVICEADD, enable=0
+pdic_handle_usb_external_notifier_notification : action=8 , enable=0
+usb_notify: send_external_notify: notify done(0x0)
+usb_notify: otg_notify_state- event=host_id, cable=none
+max77705_muic: max77705_muic_handle_ccic_event
+exynos-dwc3 10c00000.usb: dwc3_exynos_rsw_work
+dwc3 10c00000.dwc3: Turn off host
+max77705_set_host_turn_on_event : current_set is 0!
+xhci_portsc_power_off, on=1 portsc_control_priority=0, prt=3
+xhci_portsc_power_off, Do not switch-on port
+usb_notify: unregister_usb_power_notify
+[MAX77705] irq_reg, complete [1], 80, 0, 0, 0, f0
+[MAX77705] dump_reg, 7, 5, 0, 10, 0, 1, 0, 47
+xhci-hcd xhci-hcd.10.auto: XHCI PLAT REMOVE
+xhci_plat_remove
+xhci-hcd xhci-hcd.10.auto: WAKE UNLOCK

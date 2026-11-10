@@ -1,0 +1,47 @@
+audio.status:
+{
+  "success": true,
+  "backend": "pipewire",
+  "selected_output": {
+    "id": 31,
+    "description": "S10+ speaker (RDMA1, 48 kHz)",
+    "default": true
+  },
+  "hdmi_audio": {
+    "available": false,
+    "dp_link": false,
+    "secdp": "0",
+    "extcon": "DP=0",
+    "ch_hdmi_audio": 0,
+    "pcm": "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1",
+    "pcm_present": true,
+    "sink": null,
+    "blockers": [
+      "DP link is not ready (secdp=0, extcon=DP=0)",
+      "DP audio infoframe is not active (ch_hdmi_audio=0)"
+    ],
+    "blocker": "DP link is not ready (secdp=0, extcon=DP=0); DP audio infoframe is not active (ch_hdmi_audio=0)"
+  },
+  "volume_supported": true
+}
+audio.set-output hdmi:
+{
+  "success": false,
+  "error": "HDMI_AUDIO_UNAVAILABLE",
+  "detail": "DP link is not ready (secdp=0, extcon=DP=0); DP audio infoframe is not active (ch_hdmi_audio=0)",
+  "hdmi_audio": {
+    "available": false,
+    "dp_link": false,
+    "secdp": "0",
+    "extcon": "DP=0",
+    "ch_hdmi_audio": 0,
+    "pcm": "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1",
+    "pcm_present": true,
+    "sink": null,
+    "blockers": [
+      "DP link is not ready (secdp=0, extcon=DP=0)",
+      "DP audio infoframe is not active (ch_hdmi_audio=0)"
+    ],
+    "blocker": "DP link is not ready (secdp=0, extcon=DP=0); DP audio infoframe is not active (ch_hdmi_audio=0)"
+  }
+}

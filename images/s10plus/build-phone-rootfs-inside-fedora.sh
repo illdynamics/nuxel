@@ -360,7 +360,11 @@ install -Dm0755 /nuxel/tools/s10plus/a33/nuxel-sound-cue.py \
     "$STAGE/usr/libexec/nuxel/nuxel-sound-cue"
 install -Dm0755 /nuxel/services/nuxel-sound/nuxel-soundd.py \
     "$STAGE/usr/libexec/nuxel/nuxel-soundd"
+install -Dm0644 /nuxel/services/nuxel-sound/nuxel_audio_outputs.py \
+    "$STAGE/usr/lib/nuxel/nuxel_audio_outputs.py"
 install -Dm0755 "$B/nuxel-soundctl" "$STAGE/usr/libexec/nuxel/nuxel-soundctl"
+install -Dm0755 /nuxel/services/nuxel-sound/nuxel-soundctl \
+    "$STAGE/usr/bin/nuxel-audio-ctl"
 install -Dm0755 /nuxel/services/nuxel-sound/install-sound-library.sh \
     "$STAGE/usr/libexec/nuxel/install-sound-library"
 install -Dm0755 /nuxel/services/nuxel-clock/nuxel-clockd.py \

@@ -1154,12 +1154,12 @@
     }
   ],
   "notes": {
-    "revision": "v0.8.2-beta: registry 19 reflects the Network Manager wrapper, direct-LAN RDP 3389 / VNC 5900, and PWNAGE-97000 File Handlers.",
+    "revision": "v0.8.3-beta: registry 19 retains the Network Manager wrapper, direct-LAN RDP/VNC and File Handlers; v0.8.3 adds fully black screen-off and release-CI repair.",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
     "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
     "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently.",
     "registry_version_16_doom_restored": "Nuxel Doom (org.nuxel.Doom) is back in apps[] as an installed launcher app after registry v14/v15 dropped it from the Home grid while keeping only the NuxTore catalogue entry. The app payload, WASM engine and Freedoom WADs were still on disk; only its launcher registration was missing.",
     "registry_version_9_gui_tri_link": "org.nuxel.RemoteDesktopXRDP (separate X11 RDP/TLS session), org.nuxel.RemoteDesktopVNC (active Phoc Wayland screen sharing) and org.nuxel.ScrcpyMirror (Android ADB only) are distinct from the serial/SSH console entries and use the separate system.remote-desktop Bridge namespace."
   },
-  "revision": "v0.8.2-beta: registry 19 adds the Network Manager wrapper (Wi-Fi IP, private DNS, VPN, ZeroTier), standard direct-LAN RDP 3389 / VNC 5900, and the PWNAGE-97000 File Handlers surface."
+  "revision": "v0.8.3-beta: registry 19; adds fully black AMOLED screen-off (black page + bl_power POWERDOWN) and the PWNAGE-106000 release-CI repair."
 }

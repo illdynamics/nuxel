@@ -1,0 +1,11 @@
+..........................F............                                  [100%]
+=================================== FAILURES ===================================
+_________________ test_row_is_revealed_only_in_expanded_state __________________
+/Users/wicked/x/nuxel/tests/pwnage52000/test_qs_privacy.py:22: in test_row_is_revealed_only_in_expanded_state
+    assert "privacy.hidden = !on" in js
+E   assert 'privacy.hidden = !on' in "// Nuxel Home - Quick Settings Panel (A32 base, A33 boot-diagnostics tile)\n// Manages the quick settings toggles.\n/...ttings.load('verbose-boot'); } catch (e) { /* offline is fine */ }\n    }\n    window.qs = new QuickSettings();\n});\n"
+        css        = '/* Nuxel Home - Status Bar Styles */\n\n.status-bar {\n    position: fixed;\n    top: 0;\n    left: 0;\n    right: 0;...   font-size: 9.5px;\n    color: var(--text-secondary, #9a9ab0);\n    text-align: right;\n    padding: 4px 2px 0;\n}\n'
+        js         = "// Nuxel Home - Quick Settings Panel (A32 base, A33 boot-diagnostics tile)\n// Manages the quick settings toggles.\n/...ttings.load('verbose-boot'); } catch (e) { /* offline is fine */ }\n    }\n    window.qs = new QuickSettings();\n});\n"
+=========================== short test summary info ============================
+FAILED tests/pwnage52000/test_qs_privacy.py::test_row_is_revealed_only_in_expanded_state
+1 failed, 38 passed in 0.78s

@@ -1,0 +1,1 @@
+CONFIG_INITRAMFS_SOURCE: '"/Users/wicked/x/nuxel/build/out/s10plus/a52-kernel/initramfs.cpio"' -> '"/root/kbuild/initramfs.cpio"'

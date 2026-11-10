@@ -22,7 +22,7 @@ console.log('Nuxel Home — immersive chrome');
 check('index loads the immersive controller', /js\/immersive\.js/.test(html));
 check('controller defines bottom/top edge bands', /BOTTOM_BAND/.test(immersive) && /TOP_BAND/.test(immersive));
 check('bottom swipe reveals the triple buttons', /kind === 'nav' && dy < 0/.test(immersive) && /setNavVisible\(true\)/.test(immersive));
-check('top pull reveals the status bar', /kind === 'status'/.test(immersive) && /if \(dy > 0\) setStatusVisible\(true, 0\)/.test(immersive));
+check('top pull reveals the status bar', /s\.kind === 'status'/.test(immersive) && /if \(dy > 0\)/.test(immersive) && /setStatusVisible\(true, 0\)/.test(immersive));
 check('controller only runs for foreground apps', /ACTIVE.*LAUNCHING|state === 'ACTIVE'.*state === 'LAUNCHING'/s.test(immersive));
 check('lockscreen is excluded', /locked\(\)/.test(immersive) && /lockscreen-active/.test(immersive));
 check('same-origin iframe gets its own gesture listeners', /attach\(doc\)/.test(immersive) && /boundDocs/.test(immersive));

@@ -1,0 +1,14 @@
+..............F.                                                         [100%]
+=================================== FAILURES ===================================
+__________________________ test_cache_version_bumped ___________________________
+/Users/wicked/x/nuxel/tests/pwnage49000/test_pwnage49000.py:115: in test_cache_version_bumped
+    assert "status-bar.css?v=p91000" in html
+E   assert 'status-bar.css?v=p91000' in '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=devic... icon/WebKit/cache health report to nuxelDiag. -->\n    <script src="js/app.js?v=p94000"></script>\n</body>\n</html>\n'
+        cache      = 'v094-p94000'
+        html       = '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=devic... icon/WebKit/cache health report to nuxelDiag. -->\n    <script src="js/app.js?v=p94000"></script>\n</body>\n</html>\n'
+        json       = <module 'json' from '/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/json/__init__.py'>
+        manifest_text = '{\n  "name": "Nuxel Home",\n  "short_name": "Nuxel",\n  "description": "Nuxel Phone Launcher - PWA-first phone OS",\n..../index.html#app=org.nuxel.WiFiSSHConsole",\n      "description": "Open the Wi-Fi SSH console status"\n    }\n  ]\n}\n'
+        sw         = '// Nuxel Home - Service Worker\n// Provides offline support, background sync, and push notification handling\n\n// Ca....delete(STATIC_CACHE),\n                caches.delete(ICON_CACHE),\n            ]));\n            break;\n    }\n});\n'
+=========================== short test summary info ============================
+FAILED tests/pwnage49000/test_pwnage49000.py::test_cache_version_bumped - ass...
+1 failed, 15 passed in 0.62s

@@ -1,0 +1,10 @@
+date=2026-11-08T17:39:43+01:00
+kernel=4.14.253-gf7194c1d15ed-dirty
+os="Fedora Linux 43 (Forty Three)"
+services=active active active active 
+statusbar={"schema_version":1,"ready":true,"visible":false,"reason":"home","foreground_app_id":"","locked":false,"width":360,"height":36,"scale":2,"strip":true,"revealed":false,"level":0,"error":"","owner":"nuxel-statusbar"}
+navdock={"schema_version":1,"visible":true,"mapped":true,"desired":true,"strip":false,"lock":"unlocked","home_ready":true,"fifo_ready":true,"width":360,"height":62,"scale":2,"reason":"show-idempotent"}
+    PID %CPU STAT COMMAND
+ 368882  0.0 S    nuxel-navdock
+ 368884  0.1 S    nuxel-statusbar
+sinks=64	31	63	PipeWire	s16le 2ch 48000Hz;

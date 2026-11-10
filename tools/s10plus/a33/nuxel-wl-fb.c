@@ -128,6 +128,7 @@
 #define DISP_STATE "/var/lib/nuxel/display"
 #define BACKLIGHT  "/sys/class/backlight/panel/brightness"
 #define BL_MAX     "/sys/class/backlight/panel/max_brightness"
+#define BL_POWER   "/sys/class/backlight/panel/bl_power"
 
 /* ---- A32 colour: the DECON order this panel actually uses -------------------
    Measured on the handset (A23, re-confirmed A32 from the live player log):
@@ -736,6 +737,7 @@ static int painter_alive(void) {
 }
 
 static void panel_assert(const char *why);
+static void panel_recover(const char *why);
 
 /* ---- A32: how far has the boot animation got? -------------------------------
    The initramfs player prints NUXEL_ANIM_LOOP=<n> at every loop start and
@@ -798,6 +800,18 @@ static void backlight_write(int v) {
   close(fd);
 }
 
+/* bl_power: 0 = FB_BLANK_UNBLANK, 4 = FB_BLANK_POWERDOWN.  The boot animation
+   player can leave the panel backlight powered down; force-unblank it when the
+   bridge takes ownership so the first UI frame is actually visible. */
+static void bl_power_write(int v, const char *why) {
+  int fd = open(BL_POWER, O_WRONLY);
+  if (fd < 0) { st("BL_POWER_WRITE_FAIL why=%s errno=%d", why, errno); return; }
+  char b[16];
+  int n = snprintf(b, sizeof b, "%d\n", v);
+  if (write(fd, b, (size_t)n) < 0) { /* best effort */ }
+  close(fd);
+}
+
 static void display_publish(void) {
   char b[192];
   snprintf(b, sizeof b,
@@ -837,6 +851,7 @@ static void ctrl_pump(void) {
       if (!strncmp(q, "screen-off", 10))       display_set(0, "control-fifo");
       else if (!strncmp(q, "screen-on", 9))    display_set(1, "control-fifo");
       else if (!strncmp(q, "screen-toggle", 13)) display_set(!display_on, "control-fifo");
+      else if (!strncmp(q, "display-reassert", 16)) panel_recover("control-fifo");
       else if (!strncmp(q, "status", 6))       display_publish();
       q = nl ? nl + 1 : NULL;
     }
@@ -860,6 +875,22 @@ static void panel_assert(const char *why) {
   st("DECON_ASSERT why=%s unblank=%ld vinfo=%ld pan=%ld", why, r1, r2, r3);
 }
 
+/* Strong panel recovery.  A plain FBIOBLANK/UNBLANK can be ignored while the
+ * animation player's close(/dev/fb0) is still releasing the DECON (measured:
+ * 14 s of "decon0 state(6), UNBLANK missed" after the handoff).  The manual
+ * POWER double-press that recovered the live handset did a backlight 0 ->
+ * restore cycle before the unblank, so reproduce that sequence here. */
+static void panel_recover(const char *why) {
+  int cur = read_int_file(BACKLIGHT);
+  int maxb = read_int_file(BL_MAX);
+  if (cur <= 0) cur = maxb > 0 ? maxb / 2 : 12800;
+  backlight_write(0);
+  usleep(40000);
+  bl_power_write(0, why);
+  backlight_write(cur);
+  panel_assert(why);
+}
+
 /* Wait (bounded) for the launcher's own readiness marker.  /run/nuxel-launcher-ready
    is written by nuxel-pwa-host only after WebKit COMMITTED the real page, so this
    is a graphical-readiness test, not a "the process exists" test (mission 10.3). */
@@ -875,8 +906,45 @@ static int wait_launcher_ready(int secs) {
   return 0;
 }
 
-static void frame_blit_once(void) {
+/* A35 FIX: on this command-mode Samsung DECON a mapped framebuffer write is
+ * NOT a presentation commit.  Both the boot-animation player and the native
+ * UI issue FBIOPAN_DISPLAY after painting each frame.  A31 accidentally
+ * removed that per-frame commit together with the expensive mode
+ * reconfiguration, which leaves the glass frozen on the last frame the boot
+ * animation pushed (the "spinning penguin" hang) even though the compositor,
+ * touch input and the external Type-C output are all alive.  Commit every
+ * painted frame here; keep FBIOPUT_VSCREENINFO/FBIOBLANK out of the steady
+ * state so the panel is not reconfigured on every frame. */
+static unsigned long long decon_pan_ok, decon_pan_failed;
+static unsigned int decon_pan_fail_streak;
+static int panel_commit_frame(void) {
+  fb.var.activate = FB_ACTIVATE_NOW;
+  fb.var.xoffset = 0;
+  fb.var.yoffset = 0;
+  errno = 0;
+  if (ioctl(fb.fd, FBIOPAN_DISPLAY, &fb.var) == 0) {
+    decon_pan_ok++;
+    decon_pan_fail_streak = 0;
+    return 0;
+  }
+  int saved_errno = errno;
+  decon_pan_failed++;
+  decon_pan_fail_streak++;
+  if (decon_pan_fail_streak == 1 || (decon_pan_fail_streak % 10) == 0)
+    st("DECON_PAN_FAILED errno=%d consecutive=%u total=%llu", saved_errno,
+       decon_pan_fail_streak, decon_pan_failed);
+  return -1;
+}
+
+static int frame_blit_once(void) {
   blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
+  int rc = panel_commit_frame();
+  /* Re-assert the DECON on the first failure of a streak and again every 10th
+     consecutive failure.  A released panel is recovered immediately; a panel
+     that is genuinely gone does not get a full mode reset every single frame. */
+  if (rc != 0 && (decon_pan_fail_streak == 1 || (decon_pan_fail_streak % 10) == 0))
+    panel_recover("pan-failed");
+  return rc;
 }
 
 /* Offline, deterministic colour test (mission 17).  Runs on any host, touches no
@@ -1022,7 +1090,7 @@ int main(int argc, char **argv) {
   int got = 0;
   for (int tries = 0; tries < 2000 && !got; tries++) {
     if (o->w <= 0) { wl_display_roundtrip(dpy); if (wl_display_dispatch(dpy) < 0) { st("WL_DISPATCH_FAIL"); return 5; } usleep(20000); continue; }
-    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
+    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 1, o->wl);
     frame_ready = frame_failed = have_pending = 0;
     zwlr_screencopy_frame_v1_add_listener(frame, &frame_listener, NULL);
     while (!frame_ready && !frame_failed) {
@@ -1208,7 +1276,30 @@ int main(int argc, char **argv) {
      written, replacing every stale animation pixel.  This is now the first time
      this process touches scanout memory. */
   panel_assert("post-stop");
-  frame_blit_once();
+  /* The animation player's close() may also leave the panel backlight powered
+     down.  Unblank it and make sure brightness is non-zero before the first UI
+     frame, otherwise the glass stays black until a physical Power press. */
+  bl_power_write(0, "launcher-first-frame");
+  {
+    int boot_brightness = read_int_file(BACKLIGHT);
+    if (boot_brightness <= 0) {
+      int boot_max = read_int_file(BL_MAX);
+      backlight_write(boot_max > 0 ? boot_max / 2 : 128);
+    }
+  }
+  /* The player's close(/dev/fb0) can run a few milliseconds AFTER
+     painter_alive() reports it gone.  If that happens after panel_assert(),
+     decon_release powers the panel off again and every following pan fails.
+     Pause past the close, then re-assert once more so the panel is genuinely
+     lit before nuxel-session starts the preload cinema. */
+  usleep(350000);
+  bl_power_write(0, "launcher-first-frame-settled");
+  panel_assert("post-stop-settled");
+  if (frame_blit_once() != 0) {
+    panel_recover("initial-frame-pan-failed");
+    if (frame_blit_once() != 0)
+      st("INITIAL_FRAME_COMMIT_FAILED owner=ui retry=1");
+  }
   wr_state(ANIM_STATE, "ANIM_STAGE=ANIMATION_STOPPED\nANIM_OWNER=nuxel-wl-fb\n");
   owner_record("LAUNCHER_DISPLAY_OWNER", 1, "single_owner_takeover");
   /* The handoff receipt the launcher/audit reads: ownership moved to the UI. */
@@ -1241,7 +1332,7 @@ int main(int argc, char **argv) {
     struct timespec t_start;
     clock_gettime(CLOCK_MONOTONIC, &t_start);
     ctrl_pump();                      /* A32: screen on/off + status requests */
-    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
+    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 1, o->wl);
     frame_ready = frame_failed = have_pending = 0;
     zwlr_screencopy_frame_v1_add_listener(frame, &frame_listener, NULL);
     while (!frame_ready && !frame_failed) {
@@ -1277,8 +1368,8 @@ int main(int argc, char **argv) {
     now = time(NULL);
     if (now != last) {
       int avg_ms = frames ? (int)(blit_ns_sum / (unsigned long long)frames / 1000000ull) : 0;
-      st("FRAMES_OK total=%d fps_1s=%d failures=%d blit_avg_ms=%d out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d",
-         frames, fps, failures, avg_ms, o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
+      st("FRAMES_OK total=%d fps_1s=%d failures=%d blit_avg_ms=%d pans=%llu pan_failed=%llu out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d",
+         frames, fps, failures, avg_ms, decon_pan_ok, decon_pan_failed, o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
          display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override);
       fps = 0;
       last = now;

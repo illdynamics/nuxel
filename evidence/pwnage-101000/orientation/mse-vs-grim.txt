@@ -1,0 +1,33 @@
+Orientation validation: raw screencopy buffer rotated in the bridge vs grim
+(grim applies the compositor wl_output transform to the same capture).
+
+Each orientation was captured in one controlled run (bridge stopped, grim +
+bridge --once with --dump-output), then the converted 1920x1080 output was
+cropped to its aspect-preserving content box, resized to grim's dimensions,
+and compared pixel-for-pixel.
+
+  effective=0   transform=0   (portrait):          MSE 160.42 mean diff 5.634
+  effective=90  transform=270 (landscape):         MSE  53.36 mean diff 2.917
+  effective=270 transform=90  (reverse landscape): MSE  53.36 mean diff 2.917
+  effective=180 transform=180 (reverse portrait):  MSE 150.70 mean diff 5.584
+
+The centre pixel matched exactly in every case:
+  portrait:          grim (21,60,89)   output (21,60,89)
+  landscape:         grim (20,54,83)   output (20,54,83)
+  reverse landscape: grim (20,54,83)   output (20,54,83)
+  reverse portrait:  grim (21,60,89)   output (21,60,89)
+
+The residual MSE is bilinear resampling from the letterboxed 1920x1080
+content box back to grim's logical size, not a rotation/colour error.
+
+Key measurement that fixed the sign:
+  raw 720x1520 rotated clockwise 270 == grim 1520x720 exactly (MSE 0.0)
+  at effective=90 / transform=270.  The bridge therefore applies the reported
+  transform value, not its inverse.
+
+Live transition sequence (same bridge PID 226894 throughout):
+  portrait          -> rot=0   orient_eff=0   orient_tf=0
+  landscape         -> rot=270 orient_eff=90  orient_tf=270
+  reverse-landscape -> rot=90  orient_eff=270 orient_tf=90
+  reverse-portrait  -> rot=180 orient_eff=180 orient_tf=180
+  portrait          -> rot=0   orient_eff=0   orient_tf=0

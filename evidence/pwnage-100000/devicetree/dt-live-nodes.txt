@@ -1,0 +1,62 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+#address-cells
+#size-cells
+BIG@10090000
+G3D@100A0000
+ISP@100A0000
+LITTLE@10090000
+MID@10090000
+__symbols__
+abc_hub
+abox-gic@18cf0000
+abox@18c50000
+acpm
+acpm_dvfs
+acpm_ipc
+acpm_tmu
+adc@15C40000
+aliases
+amba
+argos
+arm-pmu
+audio_codec_dummy
+audio_cpu_dummy
+battery
+bluetooth
+cable-info
+camif-wdma-top@170E0000
+camif-wdma-top@17140000
+camif-wdma@170A0000
+camif-wdma@170B0000
+camif-wdma@170C0000
+camif-wdma@170D0000
+camif-wdma@17100000
+camif-wdma@17110000
+camif-wdma@17120000
+camif-wdma@17130000
+certify_hall
+chipid@10000000
+chosen
+clock-controller@0x1a240000
+cmu_ewf
+---
+/sys/firmware/devicetree/base/hsi2c@15D60000/max77705@66
+/sys/firmware/devicetree/base/hsi2c@15D60000/max77705@66/max77705,fw_product_id
+/sys/firmware/devicetree/base/hsi2c@15D60000/max77705@66/max77705,wakeup
+/sys/firmware/devicetree/base/hsi2c@15D60000/max77705@66/max77705,support-audio
+/sys/firmware/devicetree/base/hsi2c@15D60000/max77705@66/max77705,irq-gpio
+/sys/firmware/devicetree/base/max77705-fuelgauge
+/sys/firmware/devicetree/base/pinctrl@15850000/max77705-irq
+/sys/firmware/devicetree/base/displayport@0x130B0000
+/sys/firmware/devicetree/base/aliases/displayport
+/sys/firmware/devicetree/base/__symbols__/displayport
+/sys/firmware/devicetree/base/__symbols__/displayport_adma
+/sys/firmware/devicetree/base/hsi2c@15D60000

@@ -82,10 +82,12 @@
  *   <linux/input.h>; the decision logic under test is identical either way.
  * ==========================================================================*/
 #define _GNU_SOURCE
+#include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -108,6 +110,7 @@
 #ifndef NUXEL_SHIM_SELFTEST
 #  include <dlfcn.h>
 #  include <pthread.h>
+#  include <sys/eventfd.h>
 #  ifdef NUXEL_HAVE_EVDEV
 #    include <sys/inotify.h>
 #    define NUXEL_HAVE_INOTIFY 1
@@ -117,13 +120,24 @@
 /* --- ABI constants (stable kernel ABI; local copies keep this file buildable
  *     on a host that has no kernel headers at all) ------------------------- */
 #define NUXEL_EV_KEY              0x01
+#define NUXEL_EV_REL              0x02
 #define NUXEL_EV_ABS              0x03
+#define NUXEL_REL_X               0x00
+#define NUXEL_REL_Y               0x01
+#define NUXEL_BTN_LEFT            0x110
+#define NUXEL_BTN_RIGHT           0x111
+#define NUXEL_BTN_MIDDLE          0x112
 #define NUXEL_BTN_TOUCH           0x14a
 #define NUXEL_ABS_X               0x00
 #define NUXEL_ABS_Y               0x01
 #define NUXEL_ABS_MT_SLOT         0x2f
 #define NUXEL_ABS_MT_POSITION_X   0x35
 #define NUXEL_ABS_MT_POSITION_Y   0x36
+#define NUXEL_KEY_ENTER           28
+#define NUXEL_KEY_A               30
+#define NUXEL_KEY_LEFTSHIFT       42
+#define NUXEL_KEY_Z               44
+#define NUXEL_KEY_SPACE           57
 #define NUXEL_INPUT_PROP_DIRECT   1
 
 /* linux/bitops.h's BITS_TO_LONGS is a kernel-internal helper and is NOT part of
@@ -133,7 +147,13 @@
 #ifdef NUXEL_HAVE_EVDEV
 /* Fail the build if a local constant ever drifts from the kernel header. */
 _Static_assert(NUXEL_EV_KEY == EV_KEY, "EV_KEY drift");
+_Static_assert(NUXEL_EV_REL == EV_REL, "EV_REL drift");
 _Static_assert(NUXEL_EV_ABS == EV_ABS, "EV_ABS drift");
+_Static_assert(NUXEL_REL_X == REL_X, "REL_X drift");
+_Static_assert(NUXEL_REL_Y == REL_Y, "REL_Y drift");
+_Static_assert(NUXEL_BTN_LEFT == BTN_LEFT, "BTN_LEFT drift");
+_Static_assert(NUXEL_BTN_RIGHT == BTN_RIGHT, "BTN_RIGHT drift");
+_Static_assert(NUXEL_BTN_MIDDLE == BTN_MIDDLE, "BTN_MIDDLE drift");
 _Static_assert(NUXEL_BTN_TOUCH == BTN_TOUCH, "BTN_TOUCH drift");
 _Static_assert(NUXEL_ABS_MT_POSITION_X == ABS_MT_POSITION_X, "ABS_MT_POSITION_X drift");
 _Static_assert(NUXEL_ABS_MT_POSITION_Y == ABS_MT_POSITION_Y, "ABS_MT_POSITION_Y drift");
@@ -141,6 +161,8 @@ _Static_assert(NUXEL_INPUT_PROP_DIRECT == INPUT_PROP_DIRECT, "INPUT_PROP_DIRECT 
 #endif
 
 #define STATE_FILE      "/run/nuxel-libinput-path.state"
+#define INPUT_DOC       "/etc/nuxel/input/input.json"
+#define INPUT_STATE     "/run/nuxel-input.state"
 #define ORIENT_INPUT_FILE "/run/nuxel-orientation/input.json"
 #define TOUCH_CAL_STATE "/run/nuxel-touch-calibration.state"
 #define DEV_INPUT_DIR   "/dev/input"
@@ -150,6 +172,8 @@ _Static_assert(NUXEL_INPUT_PROP_DIRECT == INPUT_PROP_DIRECT, "INPUT_PROP_DIRECT 
 #define NAME_MAX_       64
 #define MAX_TRACKED     64
 #define HQ_CAP          128
+#define RETRY_MAX       16
+#define RETRY_ATTEMPTS  8
 
 /* ==========================================================================
  * PART 1 — logging, bitmap decode, capability probe, decision, enumeration
@@ -183,27 +207,51 @@ static void st(const char *fmt, ...) {
 
 /* A candidate node and the decision made about it.  `path` is always composed at
  * runtime from DEV_INPUT_DIR + "/" + the directory entry name. */
+/* What a node proved it is.  A node can be more than one of these (a HID
+ * keyboard interface with media keys, for example), so these are flags. */
+enum cand_kind {
+  CAND_TOUCH    = 1,
+  CAND_POINTER  = 2,
+  CAND_KEYBOARD = 4
+};
+
 struct cand {
   char path[64];
+  char node[NAME_MAX_];       /* event entry name; the unique device key */
   char name[NAME_MAX_];
   int  direct;
   int  mt;                    /* ABS_MT_POSITION_X and ABS_MT_POSITION_Y present */
   int  btn;                   /* BTN_TOUCH */
   int  legacy_xy;             /* ABS_X and ABS_Y */
+  int  rel_x, rel_y;          /* REL_X and REL_Y */
+  int  btn_left;              /* BTN_LEFT (a real pointer button) */
+  int  btn_mouse;             /* BTN_LEFT/RIGHT/MIDDLE */
+  int  key_letters;           /* number of standard letter keys present */
+  int  kind;                  /* CAND_* */
   int  slot_max;
   int  x_min, x_max, y_min, y_max;
+  unsigned long long ino;     /* devtmpfs inode: distinguishes a re-created node */
   int  order;                 /* numeric part of the node name, for sorting */
   int  accept;
-  char reason[110];
+  /* USB grouping for the OSK policy: a mouse's macro-keyboard interfaces
+   * must not count as an attached keyboard, while a keyboard's interface 0
+   * must.  -1 means "not a USB interface" (Bluetooth, uinput, fixtures). */
+  char usb_product[64];
+  int  usb_ifnum;
+  int  hw_keyboard;
+  int  aux_keyboard;
+  char reason[160];
 };
 
 static void cand_init(struct cand *c, const char *entry) {
   memset(c, 0, sizeof *c);
   snprintf(c->path, sizeof c->path, "%s/%s", DEV_INPUT_DIR, entry);
+  snprintf(c->node, sizeof c->node, "%s", entry);
   c->x_min = c->y_min = 0;
   c->x_max = c->y_max = -1;
   c->slot_max = -1;
   c->order = -1;
+  c->usb_ifnum = -1;
 }
 
 /* Parse the numeric suffix of a node entry name (the prefix followed by a
@@ -249,6 +297,12 @@ static int bitmap_has(const unsigned long *words, int nwords, int bit) {
   return (int)((words[printed] >> (bit % 64)) & 1ul);
 }
 
+static int bitmap_count_range(const unsigned long *words, int nwords, int lo, int hi) {
+  int n = 0;
+  for (int bit = lo; bit <= hi; bit++) n += bitmap_has(words, nwords, bit);
+  return n;
+}
+
 /* An `absinfo` fixture line: "<NAME> <min> <max> <fuzz> <flat>". */
 static void fixture_abs(const char *root, const char *entry, struct cand *c) {
   char fn[512];
@@ -278,6 +332,16 @@ static int read_first_line(const char *path, char *out, size_t n) {
   return 0;
 }
 
+/* st_mtim is Linux; the offline selftest also builds on macOS where the same
+ * fields are named st_mtimespec.  One helper keeps the decision code portable. */
+static long long stat_mtime_ns(const struct stat *sb) {
+#if defined(__APPLE__)
+  return (long long)sb->st_mtimespec.tv_sec * 1000000000LL + sb->st_mtimespec.tv_nsec;
+#else
+  return (long long)sb->st_mtim.tv_sec * 1000000000LL + sb->st_mtim.tv_nsec;
+#endif
+}
+
 static int read_whole(const char *path, char *out, size_t n) {
   FILE *f = fopen(path, "r");
   if (!f) return -1;
@@ -285,6 +349,37 @@ static int read_whole(const char *path, char *out, size_t n) {
   fclose(f);
   out[got] = 0;
   return 0;
+}
+
+/* Read the USB product/interface grouping from the input node's sysfs link.
+ * The interface component looks like "1-1.4:1.0"; its parent "1-1.4" is the
+ * USB product.  This lets the compositor tell a keyboard from a mouse's
+ * auxiliary macro-keyboard interfaces without trusting vendor names. */
+static void usb_group_from_sysfs(const char *entry, struct cand *c) {
+  char link[512];
+  snprintf(link, sizeof link, "/sys/class/input/%s/device", entry);
+  /* The class symlink is only "../../inputNN"; resolve it to the full USB
+   * path so the product/interface components are visible. */
+  char *target = realpath(link, NULL);
+  if (!target) return;
+  char prev[64] = "";
+  char *save = NULL;
+  for (char *comp = strtok_r(target, "/", &save); comp;
+       comp = strtok_r(NULL, "/", &save)) {
+    char *colon = strchr(comp, ':');
+    char *dot = colon ? strchr(colon + 1, '.') : NULL;
+    if (colon && dot && !strchr(colon + 1, ':')) {
+      char *end = NULL;
+      long ifnum = strtol(dot + 1, &end, 10);
+      if (end && *end == 0 && ifnum >= 0 && ifnum < 256) {
+        snprintf(c->usb_product, sizeof c->usb_product, "%s", prev);
+        c->usb_ifnum = (int)ifnum;
+        break;
+      }
+    }
+    snprintf(prev, sizeof prev, "%s", comp);
+  }
+  free(target);
 }
 
 /* --- probe: fixture (synthetic sysfs/uevent tree) ------------------------- */
@@ -320,6 +415,19 @@ static int fixture_probe(const char *root, const char *entry, struct cand *c) {
   snprintf(fn, sizeof fn, "%s/sys/class/input/%s/device/capabilities/key", root, entry);
   nw = (read_whole(fn, buf, sizeof buf) == 0) ? decode_bitmap(buf, w, BITMAP_WORDS) : 0;
   c->btn = bitmap_has(w, nw, NUXEL_BTN_TOUCH);
+  c->btn_left = bitmap_has(w, nw, NUXEL_BTN_LEFT);
+  c->btn_mouse = c->btn_left || bitmap_has(w, nw, NUXEL_BTN_RIGHT) ||
+                 bitmap_has(w, nw, NUXEL_BTN_MIDDLE);
+  /* A physical keyboard always exposes the standard letter block.  Requiring
+   * several letters keeps volume/power/media keys (gpio_keys, Headset) out. */
+  c->key_letters = bitmap_count_range(w, nw, 16, 25) +   /* QWERTYUIOP */
+                   bitmap_count_range(w, nw, 30, 38) +   /* ASDFGHJKL  */
+                   bitmap_count_range(w, nw, 44, 50);    /* ZXCVBNM    */
+
+  snprintf(fn, sizeof fn, "%s/sys/class/input/%s/device/capabilities/rel", root, entry);
+  nw = (read_whole(fn, buf, sizeof buf) == 0) ? decode_bitmap(buf, w, BITMAP_WORDS) : 0;
+  c->rel_x = bitmap_has(w, nw, NUXEL_REL_X);
+  c->rel_y = bitmap_has(w, nw, NUXEL_REL_Y);
 
   fixture_abs(root, entry, c);
   return 0;
@@ -339,8 +447,11 @@ static int node_probe(const char *entry, struct cand *c) {
   cand_init(c, entry);
   c->order = node_order(entry);
   if (c->order < 0) return -1;
+  usb_group_from_sysfs(entry, c);
   int fd = open(c->path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
   if (fd < 0) return -1;
+  struct stat stbuf;
+  if (stat(c->path, &stbuf) == 0) c->ino = (unsigned long long)stbuf.st_ino;
 
   char nm[NAME_MAX_] = {0};
   if (ioctl(fd, EVIOCGNAME(sizeof nm - 1), nm) >= 0) snprintf(c->name, sizeof c->name, "%s", nm);
@@ -372,37 +483,112 @@ static int node_probe(const char *entry, struct cand *c) {
   }
 
   unsigned long keyb[NUXEL_WORDS(KEY_CNT)] = {0};
-  if (ioctl(fd, EVIOCGBIT(NUXEL_EV_KEY, sizeof keyb), keyb) >= 0)
+  if (ioctl(fd, EVIOCGBIT(NUXEL_EV_KEY, sizeof keyb), keyb) >= 0) {
     c->btn = !!(keyb[NUXEL_BTN_TOUCH / (8 * (int)sizeof(unsigned long))] &
                 (1ul << (NUXEL_BTN_TOUCH % (8 * (int)sizeof(unsigned long)))));
+    c->btn_left = !!(keyb[NUXEL_BTN_LEFT / (8 * (int)sizeof(unsigned long))] &
+                     (1ul << (NUXEL_BTN_LEFT % (8 * (int)sizeof(unsigned long)))));
+    int btn_right = !!(keyb[NUXEL_BTN_RIGHT / (8 * (int)sizeof(unsigned long))] &
+                       (1ul << (NUXEL_BTN_RIGHT % (8 * (int)sizeof(unsigned long)))));
+    int btn_middle = !!(keyb[NUXEL_BTN_MIDDLE / (8 * (int)sizeof(unsigned long))] &
+                        (1ul << (NUXEL_BTN_MIDDLE % (8 * (int)sizeof(unsigned long)))));
+    c->btn_mouse = c->btn_left || btn_right || btn_middle;
+    /* Kernel bitmaps are laid out in unsigned long words.  Counting the
+     * standard letter block (Q..P, A..L, Z..M) is a capability proof that a
+     * node is a real keyboard; power/volume/headset nodes have no letters. */
+    for (int k = 16; k <= 25; k++) c->key_letters += !!(keyb[k / (8 * (int)sizeof(unsigned long))] &
+                                                         (1ul << (k % (8 * (int)sizeof(unsigned long)))));
+    for (int k = 30; k <= 38; k++) c->key_letters += !!(keyb[k / (8 * (int)sizeof(unsigned long))] &
+                                                         (1ul << (k % (8 * (int)sizeof(unsigned long)))));
+    for (int k = 44; k <= 50; k++) c->key_letters += !!(keyb[k / (8 * (int)sizeof(unsigned long))] &
+                                                         (1ul << (k % (8 * (int)sizeof(unsigned long)))));
+  }
+
+  unsigned long relb[NUXEL_WORDS(REL_CNT)] = {0};
+  if (ioctl(fd, EVIOCGBIT(NUXEL_EV_REL, sizeof relb), relb) >= 0) {
+    c->rel_x = !!(relb[NUXEL_REL_X / (8 * (int)sizeof(unsigned long))] &
+                  (1ul << (NUXEL_REL_X % (8 * (int)sizeof(unsigned long)))));
+    c->rel_y = !!(relb[NUXEL_REL_Y / (8 * (int)sizeof(unsigned long))] &
+                  (1ul << (NUXEL_REL_Y % (8 * (int)sizeof(unsigned long)))));
+  }
   close(fd);
   return 0;
 }
 #endif
 
-/* --- the decision (capability only) ------------------------------------- */
+/* --- the decision (capability only) -------------------------------------
+ *
+ * The panel is still selected by DIRECT + multitouch, exactly as before, and
+ * only such a device receives the orientation calibration matrix.  USB HID
+ * pointers and keyboards are selected by their own capabilities:
+ *
+ *   pointer  : REL_X + REL_Y + a real button (BTN_LEFT/RIGHT/MIDDLE), or
+ *              ABS_X + ABS_Y + a real button for an absolute touchpad/tablet
+ *   keyboard : the standard letter block is present (>= 10 of Q..P/A..L/Z..M)
+ *
+ * Requiring a button keeps sensor nodes (hrm_sensor, ssp_context), the panel's
+ * non-DIRECT sec_touchpad emulation interface, gpio_keys and the headset button
+ * out of the pointer path.  Requiring letters keeps power/volume keys out of
+ * the keyboard path.  No node number and no device name is used.
+ */
 static void decide(struct cand *c) {
-  if (!c->direct) {
-    snprintf(c->reason, sizeof c->reason, "reject: INPUT_PROP_DIRECT absent (not a touch surface)");
-    c->accept = 0;
+  c->kind = 0;
+
+  if (c->direct) {
+    if (!(c->mt || (c->btn && c->legacy_xy))) {
+      snprintf(c->reason, sizeof c->reason,
+               "reject: no multitouch axes (ABS_MT_POSITION_X/Y) and no BTN_TOUCH+ABS_X/Y");
+      c->accept = 0;
+      return;
+    }
+    if (c->x_max <= c->x_min || c->y_max <= c->y_min) {
+      snprintf(c->reason, sizeof c->reason,
+               "reject: degenerate axis range x=%d..%d y=%d..%d", c->x_min, c->x_max, c->y_min, c->y_max);
+      c->accept = 0;
+      return;
+    }
+    c->kind |= CAND_TOUCH;
+  }
+
+  int has_rel_xy = c->rel_x && c->rel_y;
+  int has_abs_xy = c->legacy_xy;
+  if (((has_rel_xy || has_abs_xy) && c->btn_mouse)) c->kind |= CAND_POINTER;
+  if (c->key_letters >= 10) c->kind |= CAND_KEYBOARD;
+
+  if (c->kind & CAND_TOUCH) {
+    snprintf(c->reason, sizeof c->reason, "accept: DIRECT%s%s range x=%d..%d y=%d..%d slots=%d",
+             c->mt ? "+ABS_MT" : "+BTN_TOUCH", c->btn ? "+BTN_TOUCH" : "",
+             c->x_min, c->x_max, c->y_min, c->y_max, c->slot_max);
+    c->accept = 1;
     return;
   }
-  if (!(c->mt || (c->btn && c->legacy_xy))) {
+  if (!c->kind) {
     snprintf(c->reason, sizeof c->reason,
-             "reject: no multitouch axes (ABS_MT_POSITION_X/Y) and no BTN_TOUCH+ABS_X/Y");
+             "reject: INPUT_PROP_DIRECT absent (not a touch surface); no pointer/keyboard capability");
     c->accept = 0;
     return;
   }
-  if (c->x_max <= c->x_min || c->y_max <= c->y_min) {
-    snprintf(c->reason, sizeof c->reason,
-             "reject: degenerate axis range x=%d..%d y=%d..%d", c->x_min, c->x_max, c->y_min, c->y_max);
-    c->accept = 0;
-    return;
+
+  const char *axes = has_rel_xy ? "REL_X/Y+BTN" : "ABS_X/Y+BTN";
+  if ((c->kind & CAND_POINTER) && (c->kind & CAND_KEYBOARD)) {
+    snprintf(c->reason, sizeof c->reason, "accept: pointer(%s)+keyboard(letters=%d)", axes, c->key_letters);
+  } else if (c->kind & CAND_POINTER) {
+    snprintf(c->reason, sizeof c->reason, "accept: pointer(%s)", axes);
+  } else {
+    snprintf(c->reason, sizeof c->reason, "accept: keyboard(letters=%d)", c->key_letters);
   }
-  snprintf(c->reason, sizeof c->reason, "accept: DIRECT%s%s range x=%d..%d y=%d..%d slots=%d",
-           c->mt ? "+ABS_MT" : "+BTN_TOUCH", c->btn ? "+BTN_TOUCH" : "",
-           c->x_min, c->x_max, c->y_min, c->y_max, c->slot_max);
   c->accept = 1;
+}
+
+static const char *kind_name(int kind) {
+  if ((kind & CAND_TOUCH) && (kind & CAND_POINTER) && (kind & CAND_KEYBOARD)) return "touch+pointer+keyboard";
+  if ((kind & CAND_TOUCH) && (kind & CAND_POINTER)) return "touch+pointer";
+  if ((kind & CAND_TOUCH) && (kind & CAND_KEYBOARD)) return "touch+keyboard";
+  if ((kind & CAND_POINTER) && (kind & CAND_KEYBOARD)) return "pointer+keyboard";
+  if (kind & CAND_TOUCH) return "touch";
+  if (kind & CAND_POINTER) return "pointer";
+  if (kind & CAND_KEYBOARD) return "keyboard";
+  return "none";
 }
 
 /* --- enumeration -------------------------------------------------------- */
@@ -431,6 +617,35 @@ static int list_event_entries(const char *dir, char entries[][NAME_MAX_], int ma
 }
 
 /* Scan one root ("/dev/input" style container) and fill the accepted set. */
+/* Mark which accepted keyboard nodes represent a real external keyboard.
+ * A USB product whose interface 0 is a pointer is a mouse (or a pointer-first
+ * combo); its other interfaces are macro/media keyboard endpoints, not an
+ * external keyboard for OSK auto-hide.  A product with no pointer interface 0
+ * is a keyboard (including a keyboard with a built-in touchpad). */
+static void classify_keyboards(struct cand out[], int n) {
+  for (int i = 0; i < n; i++) {
+    if (!(out[i].kind & CAND_KEYBOARD))
+      continue;
+    int pointer_primary = 0;
+    if (out[i].usb_ifnum >= 0) {
+      for (int j = 0; j < n; j++) {
+        if (out[j].usb_ifnum == 0 && (out[j].kind & CAND_POINTER) &&
+            strcmp(out[i].usb_product, out[j].usb_product) == 0) {
+          pointer_primary = 1;
+          break;
+        }
+      }
+    }
+    if (out[i].usb_ifnum < 0 || !pointer_primary)
+      out[i].hw_keyboard = 1;
+    else
+      out[i].aux_keyboard = 1;
+    st("KEYBOARD_CLASS node=%s name='%s' product='%s' if=%d hw=%d aux=%d",
+       out[i].node, out[i].name, out[i].usb_product, out[i].usb_ifnum,
+       out[i].hw_keyboard, out[i].aux_keyboard);
+  }
+}
+
 static int scan_nodes(const char *fixture_root, struct cand out[], int maxout, int verbose) {
   char entries[MAX_NODES][NAME_MAX_];
   int n;
@@ -461,6 +676,7 @@ static int scan_nodes(const char *fixture_root, struct cand out[], int maxout, i
              c.slot_max, c.reason);
     if (c.accept && naccepted < maxout) out[naccepted++] = c;
   }
+  classify_keyboards(out, naccepted);
   st("SCAN_RESULT nodes=%d accepted=%d%s", n, naccepted, naccepted ? "" : " (ZERO_DEVICES: compositor stays up)");
   if (verbose) {
     printf("SCAN_RESULT nodes=%d accepted=%d\n", n, naccepted);
@@ -545,6 +761,122 @@ static int parse_input_state(const char *buf, float m[6], int *transform, int *a
 }
 
 /* ==========================================================================
+ * PART 1c — physical pointer settings (one document, one parser)
+ *
+ * /etc/nuxel/input/input.json is written by the Settings app.  The shim reads
+ * it directly and applies the values to every libinput pointer it accepts, so
+ * a mouse/touchpad works with the user's settings even if a GSettings change
+ * notification never reaches the compositor.  Phoc also consumes the same
+ * values through GSettings (nuxel-input-apply), so the compositor's own
+ * hotplug path cannot re-apply stale defaults over ours.
+ *
+ * Keyboard layout/repeat stay in /etc/nuxel/keyboard/keyboard.json: they are
+ * compositor (XKB) settings, not libinput device settings.
+ * ==========================================================================*/
+struct input_cfg {
+  int loaded;
+  double mouse_speed, touchpad_speed;
+  int mouse_profile, touchpad_profile;   /* 0 default, 1 flat, 2 adaptive */
+  int mouse_natural, mouse_left, mouse_middle;
+  int touchpad_natural, touchpad_tap, touchpad_twofinger, touchpad_dwt, touchpad_left;
+};
+
+static struct input_cfg g_input_cfg;
+static long long g_input_cfg_mtime_ns = -1;
+static long long g_input_cfg_last_poll_ms;
+
+static void input_cfg_defaults(struct input_cfg *c) {
+  memset(c, 0, sizeof *c);
+  c->mouse_profile = 0;
+  c->touchpad_profile = 0;
+  c->touchpad_natural = 1;
+  c->touchpad_tap = 1;
+  c->touchpad_twofinger = 1;
+  c->touchpad_dwt = 1;
+}
+
+static const char *json_value_ptr(const char *buf, const char *key) {
+  char pat[80];
+  snprintf(pat, sizeof pat, "\"%s\"", key);
+  const char *p = strstr(buf, pat);
+  if (!p) return NULL;
+  p = strchr(p, ':');
+  if (!p) return NULL;
+  p++;
+  while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+  return p;
+}
+
+static int json_bool_key(const char *buf, const char *key, int *out) {
+  const char *p = json_value_ptr(buf, key);
+  if (!p) return 0;
+  if (!strncmp(p, "true", 4)) { *out = 1; return 1; }
+  if (!strncmp(p, "false", 5)) { *out = 0; return 1; }
+  return 0;
+}
+
+static int json_num_key(const char *buf, const char *key, double lo, double hi, double *out) {
+  const char *p = json_value_ptr(buf, key);
+  if (!p) return 0;
+  char *end = NULL;
+  double v = strtod(p, &end);
+  if (end == p || v < lo || v > hi) return 0;
+  *out = v;
+  return 1;
+}
+
+static int input_profile(const char *buf, const char *key, int *out) {
+  const char *p = json_value_ptr(buf, key);
+  if (!p) return 0;
+  if (!strncmp(p, "\"default\"", 9)) { *out = 0; return 1; }
+  if (!strncmp(p, "\"flat\"", 6)) { *out = 1; return 1; }
+  if (!strncmp(p, "\"adaptive\"", 10)) { *out = 2; return 1; }
+  return 0;
+}
+
+/* Returns 0 whether the document is present or absent: absence means defaults,
+ * never a reason to stop the compositor. */
+static int input_cfg_load(void) {
+  input_cfg_defaults(&g_input_cfg);
+  const char *path = getenv("NUXEL_INPUT_DOC");
+  if (!path || !*path) path = INPUT_DOC;
+  struct stat sb;
+  if (stat(path, &sb) != 0) {
+    g_input_cfg.loaded = 0;
+    g_input_cfg_mtime_ns = -1;
+    st("INPUT_CFG_DEFAULTS path=%s (document absent; pointer defaults stay)", path);
+    return 0;
+  }
+  g_input_cfg_mtime_ns = stat_mtime_ns(&sb);
+  char buf[8192];
+  int fd = open(path, O_RDONLY | O_CLOEXEC);
+  if (fd < 0) { st("INPUT_CFG_OPEN_FAIL path=%s errno=%d", path, errno); return 0; }
+  ssize_t n = read(fd, buf, sizeof buf - 1);
+  close(fd);
+  if (n <= 0) { st("INPUT_CFG_READ_FAIL path=%s", path); return 0; }
+  buf[n] = 0;
+
+  json_num_key(buf, "mouse.speed", -1.0, 1.0, &g_input_cfg.mouse_speed);
+  json_num_key(buf, "touchpad.speed", -1.0, 1.0, &g_input_cfg.touchpad_speed);
+  input_profile(buf, "mouse.accel_profile", &g_input_cfg.mouse_profile);
+  input_profile(buf, "touchpad.accel_profile", &g_input_cfg.touchpad_profile);
+  json_bool_key(buf, "mouse.natural_scroll", &g_input_cfg.mouse_natural);
+  json_bool_key(buf, "mouse.left_handed", &g_input_cfg.mouse_left);
+  json_bool_key(buf, "mouse.middle_emulation", &g_input_cfg.mouse_middle);
+  json_bool_key(buf, "touchpad.natural_scroll", &g_input_cfg.touchpad_natural);
+  json_bool_key(buf, "touchpad.tap_to_click", &g_input_cfg.touchpad_tap);
+  json_bool_key(buf, "touchpad.two_finger_scroll", &g_input_cfg.touchpad_twofinger);
+  json_bool_key(buf, "touchpad.disable_while_typing", &g_input_cfg.touchpad_dwt);
+  json_bool_key(buf, "touchpad.left_handed", &g_input_cfg.touchpad_left);
+  g_input_cfg.loaded = 1;
+  st("INPUT_CFG_LOADED path=%s mouse.speed=%.2f mouse.natural=%d touchpad.speed=%.2f "
+     "touchpad.tap=%d touchpad.natural=%d",
+     path, g_input_cfg.mouse_speed, g_input_cfg.mouse_natural,
+     g_input_cfg.touchpad_speed, g_input_cfg.touchpad_tap, g_input_cfg.touchpad_natural);
+  return 1;
+}
+
+/* ==========================================================================
  * PART 2 — hotplug queue and the tracked-device table
  *
  * Pure logic on purpose: this is the part the offline tests exercise, and the
@@ -559,7 +891,7 @@ static pthread_mutex_t g_hq_lock = PTHREAD_MUTEX_INITIALIZER;
 #  define HQ_UNLOCK() pthread_mutex_unlock(&g_hq_lock)
 #endif
 
-struct tracked { char name[NAME_MAX_]; void *dev; int used; };
+struct tracked { char key[NAME_MAX_]; char name[NAME_MAX_]; void *dev; int kind; unsigned long long ino; int used; };
 static struct tracked g_tracked[MAX_TRACKED];
 
 static const char *g_fixture_root;   /* set only by the offline selftest */
@@ -571,37 +903,48 @@ static int tracked_count(void) {
   return n;
 }
 
-static int tracked_find(const char *name) {
+/* The tracked key is the event node entry (eventN), not the product name:
+ * one physical mouse can expose a pointer interface and two keyboard
+ * interfaces with the SAME product name.  Keying by name made the second and
+ * third interfaces untracked at startup and ignored on a replug. */
+static int tracked_find(const char *key) {
   for (int i = 0; i < MAX_TRACKED; i++)
-    if (g_tracked[i].used && !strcmp(g_tracked[i].name, name)) return i;
+    if (g_tracked[i].used && !strcmp(g_tracked[i].key, key)) return i;
   return -1;
 }
 
-static void *tracked_get(const char *name) {
-  int i = tracked_find(name);
+static void *tracked_get(const char *key) {
+  int i = tracked_find(key);
   return i >= 0 ? g_tracked[i].dev : NULL;
 }
 
-static int tracked_add(const char *name, void *dev) {
-  if (tracked_find(name) >= 0) return 0;
+static int tracked_add(const char *key, const char *name, void *dev, int kind,
+                       unsigned long long ino) {
+  if (tracked_find(key) >= 0) return 0;
   for (int i = 0; i < MAX_TRACKED; i++) {
     if (!g_tracked[i].used) {
+      snprintf(g_tracked[i].key, sizeof g_tracked[i].key, "%s", key);
       snprintf(g_tracked[i].name, sizeof g_tracked[i].name, "%s", name);
       g_tracked[i].dev = dev;
+      g_tracked[i].kind = kind;
+      g_tracked[i].ino = ino;
       g_tracked[i].used = 1;
       return 1;
     }
   }
-  st("TRACKED_TABLE_FULL name=%s (bounded at %d; extra device ignored)", name, MAX_TRACKED);
+  st("TRACKED_TABLE_FULL key=%s name=%s (bounded at %d; extra device ignored)", key, name, MAX_TRACKED);
   return 0;
 }
 
-static void *tracked_remove(const char *name) {
-  int i = tracked_find(name);
+static void *tracked_remove(const char *key) {
+  int i = tracked_find(key);
   if (i < 0) return NULL;
   void *dev = g_tracked[i].dev;
   g_tracked[i].used = 0;
   g_tracked[i].dev = NULL;
+  g_tracked[i].kind = 0;
+  g_tracked[i].ino = 0;
+  g_tracked[i].key[0] = 0;
   g_tracked[i].name[0] = 0;
   return dev;
 }
@@ -610,6 +953,22 @@ enum { HQ_ADD = 0, HQ_REMOVE = 1 };
 struct hq_ev { int op; char name[NAME_MAX_]; };
 static struct hq_ev g_hq[HQ_CAP];
 static int g_hq_head, g_hq_tail, g_hq_count;
+
+/* The compositor's event loop blocks in epoll; a queue push alone does not
+ * wake it.  The Wayland loop owns an eventfd registered by the interposer in
+ * PART 3, so one nonblocking write makes the compositor thread run hq_drain()
+ * (outside libinput_dispatch, which is the safe context for path_add_device). */
+#ifdef NUXEL_SHIM_SELFTEST
+static void wake_loop(void) { }
+#else
+static int g_wake_fd = -1;
+static void wake_loop(void) {
+  if (g_wake_fd < 0) return;
+  uint64_t one = 1;
+  ssize_t r = write(g_wake_fd, &one, sizeof one);
+  (void)r;
+}
+#endif
 
 static void hq_push(int op, const char *name) {
   HQ_LOCK();
@@ -623,6 +982,7 @@ static void hq_push(int op, const char *name) {
   g_hq_head = (g_hq_head + 1) % HQ_CAP;
   g_hq_count++;
   HQ_UNLOCK();
+  wake_loop();
 }
 
 static int hq_pop(struct hq_ev *out) {
@@ -643,6 +1003,72 @@ static void hq_drain(void) {
   struct hq_ev ev;
   while (hq_pop(&ev)) shim_apply(ev.op, ev.name);
 }
+
+/* A devtmpfs node can become visible a few milliseconds before evdev accepts
+ * an open (measured with a uinput keyboard).  A real USB HID interface can hit
+ * the same window.  Retry the ADD a bounded number of times from the watcher
+ * thread; never sleep on the compositor thread. */
+static long long mono_ms_now(void);   /* defined in PART 1b */
+struct retry_ent { char name[NAME_MAX_]; int attempts; long long due_ms; int used; };
+static struct retry_ent g_retry[RETRY_MAX];
+
+#ifdef NUXEL_SHIM_SELFTEST
+static void retry_schedule(const char *name) { (void)name; }
+static void retry_tick(void) { }
+#else
+static pthread_mutex_t g_retry_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void retry_schedule(const char *name) {
+  long long now = mono_ms_now();
+  int slot = -1;
+  pthread_mutex_lock(&g_retry_lock);
+  for (int i = 0; i < RETRY_MAX; i++) {
+    if (g_retry[i].used && !strcmp(g_retry[i].name, name)) { slot = i; break; }
+    if (slot < 0 && !g_retry[i].used) slot = i;
+  }
+  if (slot < 0) {
+    pthread_mutex_unlock(&g_retry_lock);
+    st("HOTPLUG_RETRY_TABLE_FULL node=%s", name);
+    return;
+  }
+  if (!g_retry[slot].used) {
+    snprintf(g_retry[slot].name, sizeof g_retry[slot].name, "%s", name);
+    g_retry[slot].attempts = 0;
+    g_retry[slot].used = 1;
+  } else {
+    g_retry[slot].attempts++;
+    if (g_retry[slot].attempts >= RETRY_ATTEMPTS) {
+      g_retry[slot].used = 0;
+      pthread_mutex_unlock(&g_retry_lock);
+      st("HOTPLUG_RETRY_GIVE_UP node=%s", name);
+      return;
+    }
+  }
+  g_retry[slot].due_ms = now + 200LL * (g_retry[slot].attempts + 1);
+  int attempt = g_retry[slot].attempts + 1;
+  pthread_mutex_unlock(&g_retry_lock);
+  st("HOTPLUG_RETRY_SCHEDULED node=%s attempt=%d", name, attempt);
+}
+
+static void retry_tick(void) {
+  char due[RETRY_MAX][NAME_MAX_];
+  int n = 0;
+  long long now = mono_ms_now();
+  pthread_mutex_lock(&g_retry_lock);
+  for (int i = 0; i < RETRY_MAX; i++) {
+    if (g_retry[i].used && g_retry[i].due_ms <= now) {
+      snprintf(due[n], NAME_MAX_, "%s", g_retry[i].name);
+      g_retry[i].used = 0;
+      n++;
+    }
+  }
+  pthread_mutex_unlock(&g_retry_lock);
+  for (int i = 0; i < n; i++) {
+    st("HOTPLUG_RETRY node=%s", due[i]);
+    hq_push(HQ_ADD, due[i]);
+  }
+}
+#endif
 
 static void watch_start(void);   /* PART 5; declared here because assign_seat uses it */
 
@@ -667,6 +1093,25 @@ static int g_aux_fd[MAX_TRACKED];
 extern int libinput_device_config_calibration_has_matrix(struct libinput_device *);
 extern int libinput_device_config_calibration_get_matrix(struct libinput_device *, float[6]);
 extern int libinput_device_config_calibration_set_matrix(struct libinput_device *, const float[6]);
+
+/* Physical pointer settings (libinput 1.30 symbols present in phoc's process). */
+extern int libinput_device_config_accel_is_available(struct libinput_device *);
+extern int libinput_device_config_accel_set_speed(struct libinput_device *, double);
+extern uint32_t libinput_device_config_accel_get_profiles(struct libinput_device *);
+extern int libinput_device_config_accel_set_profile(struct libinput_device *, int);
+extern int libinput_device_config_scroll_has_natural_scroll(struct libinput_device *);
+extern int libinput_device_config_scroll_set_natural_scroll_enabled(struct libinput_device *, int);
+extern uint32_t libinput_device_config_scroll_get_methods(struct libinput_device *);
+extern int libinput_device_config_scroll_set_method(struct libinput_device *, int);
+extern int libinput_device_config_left_handed_is_available(struct libinput_device *);
+extern int libinput_device_config_left_handed_set(struct libinput_device *, int);
+extern int libinput_device_config_middle_emulation_is_available(struct libinput_device *);
+extern int libinput_device_config_middle_emulation_set_enabled(struct libinput_device *, int);
+extern int libinput_device_config_tap_get_finger_count(struct libinput_device *);
+extern int libinput_device_config_tap_set_enabled(struct libinput_device *, int);
+extern int libinput_device_config_tap_set_drag_enabled(struct libinput_device *, int);
+extern int libinput_device_config_dwt_is_available(struct libinput_device *);
+extern int libinput_device_config_dwt_set_enabled(struct libinput_device *, int);
 
 static float g_touch_matrix[6] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};
 static float g_touch_applied[6] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};
@@ -766,24 +1211,43 @@ int libseat_close_device(struct libseat *seat, int fd) {
  * ==========================================================================*/
 static int db_seeded;
 
-static void seed_udev_db(const char *path) {
+static void seed_udev_db(const struct cand *c) {
   struct stat sb;
-  if (stat(path, &sb) < 0) { st("UDEVDB_STAT_FAIL %s errno=%d", path, errno); return; }
+  if (stat(c->path, &sb) < 0) { st("UDEVDB_STAT_FAIL %s errno=%d", c->path, errno); return; }
   if (mkdir("/run/udev", 0755) < 0 && errno != EEXIST) { /* fall through */ }
   if (mkdir(UDEV_DATA_DIR, 0755) < 0 && errno != EEXIST) { /* fall through */ }
   char fn[96];
   snprintf(fn, sizeof fn, "%s/c%u:%u", UDEV_DATA_DIR, (unsigned)major(sb.st_rdev), (unsigned)minor(sb.st_rdev));
-  if (access(fn, F_OK) == 0) return;            /* already initialized */
+  /* Always rewrite: an event node number can be reused by a different device after
+   * a hub reset (Razer node -> Keychron node).  Keeping the old file made
+   * libinput see stale ID_INPUT_MOUSE/KEYBOARD tags for the new node. */
   FILE *f = fopen(fn, "w");
   if (!f) { st("UDEVDB_WRITE_FAIL %s errno=%d", fn, errno); return; }
-  /* Properties libinput/quirks read, derived from what the node actually is. */
-  fprintf(f, "E:ID_INPUT=1\nE:ID_INPUT_TOUCHSCREEN=1\nE:ID_INPUT_WIDTH_MM=64\n"
-             "E:ID_INPUT_HEIGHT_MM=135\nE:ID_SEAT=seat0\n"
-             "E:DEVLINKS=%s/by-path/nuxel-touchscreen\n", DEV_INPUT_DIR);
+  /* Properties libinput/quirks read, derived from what the node actually is.
+   * A keyboard must NEVER be tagged ID_INPUT_TOUCHSCREEN; the old unconditional
+   * touch tag was harmless only because non-touch nodes were rejected. */
+  fprintf(f, "E:ID_INPUT=1\nE:ID_SEAT=seat0\n");
+  if (c->kind & CAND_TOUCH) {
+    fprintf(f, "E:ID_INPUT_TOUCHSCREEN=1\nE:ID_INPUT_WIDTH_MM=64\n"
+               "E:ID_INPUT_HEIGHT_MM=135\n"
+               "E:DEVLINKS=%s/by-path/nuxel-touchscreen\n", DEV_INPUT_DIR);
+  } else {
+    if (c->kind & CAND_POINTER) {
+      int touchpad = strstr(c->name, "ouchpad") != NULL || strstr(c->name, "rackpad") != NULL;
+      fprintf(f, "E:ID_INPUT_%s=1\nE:ID_INPUT_KEY=1\n",
+              touchpad ? "TOUCHPAD" : "MOUSE");
+    }
+    if (c->kind & CAND_KEYBOARD)
+      fprintf(f, "E:ID_INPUT_KEYBOARD=1\nE:ID_INPUT_KEY=1\n");
+    if (c->aux_keyboard)
+      fprintf(f, "E:NUXEL_INPUT_AUX_KEYBOARD=1\n");
+    else if (c->hw_keyboard)
+      fprintf(f, "E:NUXEL_INPUT_HW_KEYBOARD=1\n");
+  }
   fprintf(f, "I:%ld\n", (long)time(NULL) * 1000000L);   /* 'I' = initialized */
   fclose(f);
   db_seeded++;
-  st("UDEVDB_SEEDED %s (initialized marker; systemd-udevd cannot run on this kernel)", fn);
+  st("UDEVDB_SEEDED %s kind=%d (initialized marker; systemd-udevd cannot run on this kernel)", fn, c->kind);
 }
 
 /* --- the interposers wlroots calls -------------------------------------- */
@@ -793,8 +1257,11 @@ static int is_touch_screen_name(const char *name) {
   return strstr(name, "touch") != NULL || strstr(name, "Touch") != NULL;
 }
 
-static void calibrate_device(const char *name, void *dev, const float m[6], const char *why) {
-  if (!dev || !is_touch_screen_name(name)) return;
+static void calibrate_device(const char *name, void *dev, int kind, const float m[6], const char *why) {
+  /* The orientation matrix belongs to the touch surface only.  A USB mouse or
+   * keyboard must never receive it (the old name check was a safety net; the
+   * kind is now the authoritative gate). */
+  if (!dev || !(kind & CAND_TOUCH) || !is_touch_screen_name(name)) return;
   struct libinput_device *d = (struct libinput_device *)dev;
   if (!libinput_device_config_calibration_has_matrix(d)) {
     st("TOUCH_MATRIX_UNSUPPORTED device='%s' why=%s", name, why);
@@ -821,7 +1288,8 @@ static void calibrate_device(const char *name, void *dev, const float m[6], cons
 
 static void calibrate_all(const char *why) {
   for (int i = 0; i < MAX_TRACKED; i++) {
-    if (g_tracked[i].used) calibrate_device(g_tracked[i].name, g_tracked[i].dev, g_touch_matrix, why);
+    if (g_tracked[i].used)
+      calibrate_device(g_tracked[i].name, g_tracked[i].dev, g_tracked[i].kind, g_touch_matrix, why);
   }
   memcpy(g_touch_applied, g_touch_matrix, sizeof g_touch_applied);
 }
@@ -851,7 +1319,7 @@ static void calibration_tick_unlocked(void) {
     }
     return;
   }
-  long long mtime_ns = (long long)sb.st_mtim.tv_sec * 1000000000LL + sb.st_mtim.tv_nsec;
+  long long mtime_ns = stat_mtime_ns(&sb);
   if (mtime_ns == g_touch_state_mtime_ns &&
       matrix_equal(g_touch_applied, g_touch_matrix)) return;
   char buf[1024];
@@ -951,18 +1419,182 @@ static void calibration_watch_start(void) {
   else st("TOUCH_MATRIX_WATCH_THREAD_FAIL");
 }
 
-static void *shim_libinput_add(const char *path) {
-  seed_udev_db(path);
-  void *dev = libinput_path_add_device(g_li, path);
-  if (dev) {
-    /* Best-effort immediate calibration.  calibration_tick() re-applies after
-     * the orientation daemon publishes its first verified state. */
-    const char *base = strrchr(path, '/');
-    (void)base;
+/* Wayland event-loop bridge.  libinput_path_add_device() is only safe on the
+ * compositor thread outside libinput_dispatch(); this callback is that context.
+ * The watcher thread only queues and writes the eventfd. */
+struct wl_display;
+struct wl_event_loop;
+struct wl_event_source;
+extern struct wl_event_loop *wl_display_get_event_loop(struct wl_display *);
+extern struct wl_event_source *wl_event_loop_add_fd(struct wl_event_loop *, int,
+                                                   uint32_t, int (*)(int, uint32_t, void *), void *);
+#define NUXEL_WL_EVENT_READABLE 1u
+
+static int wake_event_cb(int fd, uint32_t mask, void *data) {
+  (void)mask; (void)data;
+  uint64_t v;
+  ssize_t r = read(fd, &v, sizeof v);
+  (void)r;
+  hq_drain();
+  return 0;
+}
+
+static void wake_register(struct wl_event_loop *loop) {
+  if (g_wake_fd >= 0 || !loop) return;
+  int fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+  if (fd < 0) { st("HOTPLUG_WAKE_UNAVAILABLE eventfd errno=%d", errno); return; }
+  struct wl_event_source *src = wl_event_loop_add_fd(loop, fd, NUXEL_WL_EVENT_READABLE,
+                                                     wake_event_cb, NULL);
+  if (!src) {
+    close(fd);
+    st("HOTPLUG_WAKE_REGISTER_FAIL loop=%p errno=%d (dispatch-only hotplug remains)", (void *)loop, errno);
+    return;
   }
+  g_wake_fd = fd;
+  st("HOTPLUG_WAKE_READY fd=%d loop=%p", fd, (void *)loop);
+}
+
+struct wl_event_loop *wl_display_get_event_loop(struct wl_display *display) {
+  static struct wl_event_loop *(*real)(struct wl_display *);
+  if (!real) real = dlsym(RTLD_NEXT, "wl_display_get_event_loop");
+  struct wl_event_loop *loop = real ? real(display) : NULL;
+  wake_register(loop);
+  return loop;
+}
+
+static void *shim_libinput_add(const struct cand *c) {
+  seed_udev_db(c);
+  void *dev = libinput_path_add_device(g_li, c->path);
   return dev;
 }
-static void shim_libinput_remove(void *dev) { libinput_path_remove_device((struct libinput_device *)dev); }
+
+/* libinput enum values (stable public ABI). */
+#define NUXEL_LI_ACCEL_FLAT      1
+#define NUXEL_LI_ACCEL_ADAPTIVE  2
+#define NUXEL_LI_SCROLL_TWO_FINGER 1
+#define NUXEL_LI_SCROLL_EDGE       2
+#define NUXEL_LI_TAP_ENABLED       1
+
+static void apply_pointer_settings(struct libinput_device *d, const char *name, int kind, const char *why) {
+  if (!d || !(kind & CAND_POINTER)) return;
+  int touchpad = libinput_device_config_tap_get_finger_count(d) > 0;
+  double speed = touchpad ? g_input_cfg.touchpad_speed : g_input_cfg.mouse_speed;
+  int profile = touchpad ? g_input_cfg.touchpad_profile : g_input_cfg.mouse_profile;
+  int natural = touchpad ? g_input_cfg.touchpad_natural : g_input_cfg.mouse_natural;
+  int left = touchpad ? g_input_cfg.touchpad_left : g_input_cfg.mouse_left;
+  int middle = g_input_cfg.mouse_middle;
+  int speed_rc = -1, profile_rc = -1, natural_rc = -1, left_rc = -1, middle_rc = -1;
+  int tap_rc = -1, drag_rc = -1, dwt_rc = -1, scroll_rc = -1;
+
+  if (libinput_device_config_accel_is_available(d)) {
+    speed_rc = libinput_device_config_accel_set_speed(d, speed);
+    if (profile) {
+      uint32_t profiles = libinput_device_config_accel_get_profiles(d);
+      int want = profile == 1 ? NUXEL_LI_ACCEL_FLAT : NUXEL_LI_ACCEL_ADAPTIVE;
+      if (profiles & (uint32_t)want)
+        profile_rc = libinput_device_config_accel_set_profile(d, want);
+    }
+  }
+  if (libinput_device_config_scroll_has_natural_scroll(d))
+    natural_rc = libinput_device_config_scroll_set_natural_scroll_enabled(d, natural);
+  if (libinput_device_config_left_handed_is_available(d))
+    left_rc = libinput_device_config_left_handed_set(d, left);
+  if (libinput_device_config_middle_emulation_is_available(d))
+    middle_rc = libinput_device_config_middle_emulation_set_enabled(d, middle);
+
+  if (touchpad) {
+    if (libinput_device_config_tap_get_finger_count(d) > 0) {
+      int tap = g_input_cfg.touchpad_tap;
+      tap_rc = libinput_device_config_tap_set_enabled(d, tap ? NUXEL_LI_TAP_ENABLED : 0);
+      drag_rc = libinput_device_config_tap_set_drag_enabled(d, tap ? NUXEL_LI_TAP_ENABLED : 0);
+    }
+    if (libinput_device_config_dwt_is_available(d))
+      dwt_rc = libinput_device_config_dwt_set_enabled(d, g_input_cfg.touchpad_dwt);
+    uint32_t methods = libinput_device_config_scroll_get_methods(d);
+    if (g_input_cfg.touchpad_twofinger && (methods & NUXEL_LI_SCROLL_TWO_FINGER))
+      scroll_rc = libinput_device_config_scroll_set_method(d, NUXEL_LI_SCROLL_TWO_FINGER);
+    else if (!g_input_cfg.touchpad_twofinger && (methods & NUXEL_LI_SCROLL_EDGE))
+      scroll_rc = libinput_device_config_scroll_set_method(d, NUXEL_LI_SCROLL_EDGE);
+  }
+
+  st("INPUT_APPLY_POINTER name='%s' why=%s touchpad=%d speed=%.2f profile=%d natural=%d "
+     "left=%d middle=%d tap=%d dwt=%d scroll=%d rc=%d/%d/%d/%d/%d/%d/%d/%d",
+     name, why, touchpad, speed, profile, natural, left, middle,
+     g_input_cfg.touchpad_tap, g_input_cfg.touchpad_dwt, g_input_cfg.touchpad_twofinger,
+     speed_rc, profile_rc, natural_rc, left_rc, middle_rc, tap_rc, drag_rc, dwt_rc);
+  (void)scroll_rc;
+}
+
+static void apply_all_pointer_settings(const char *why) {
+  for (int i = 0; i < MAX_TRACKED; i++) {
+    if (g_tracked[i].used && (g_tracked[i].kind & CAND_POINTER))
+      apply_pointer_settings((struct libinput_device *)g_tracked[i].dev,
+                             g_tracked[i].name, g_tracked[i].kind, why);
+  }
+}
+
+static void write_input_state(const char *why) {
+  char tmp[64];
+  snprintf(tmp, sizeof tmp, "%s.tmp.%d", INPUT_STATE, (int)getpid());
+  FILE *f = fopen(tmp, "w");
+  if (!f) { st("INPUT_STATE_WRITE_FAIL path=%s errno=%d", tmp, errno); return; }
+  int nptr = 0, nkbd = 0, ntouch = 0;
+  for (int i = 0; i < MAX_TRACKED; i++) {
+    if (!g_tracked[i].used) continue;
+    if (g_tracked[i].kind & CAND_POINTER) nptr++;
+    if (g_tracked[i].kind & CAND_KEYBOARD) nkbd++;
+    if (g_tracked[i].kind & CAND_TOUCH) ntouch++;
+  }
+  fprintf(f, "schema_version=1\nowner=libnuxel-libinput-path.so\nwhy=%s\n"
+             "updated_at=%ld\npointer_devices=%d\nkeyboard_devices=%d\ntouch_devices=%d\n",
+          why, (long)time(NULL), nptr, nkbd, ntouch);
+  int n = 0;
+  for (int i = 0; i < MAX_TRACKED; i++) {
+    if (!g_tracked[i].used) continue;
+    fprintf(f, "device.%d kind=%s node=%s name='%s'\n", n++,
+            kind_name(g_tracked[i].kind), g_tracked[i].key, g_tracked[i].name);
+  }
+  fprintf(f, "mouse.speed=%.2f\nmouse.accel_profile=%d\nmouse.natural_scroll=%d\n"
+             "mouse.left_handed=%d\nmouse.middle_emulation=%d\n"
+             "touchpad.speed=%.2f\ntouchpad.accel_profile=%d\ntouchpad.natural_scroll=%d\n"
+             "touchpad.tap_to_click=%d\ntouchpad.two_finger_scroll=%d\n"
+             "touchpad.disable_while_typing=%d\ntouchpad.left_handed=%d\n"
+             "verdict=READY\n",
+          g_input_cfg.mouse_speed, g_input_cfg.mouse_profile, g_input_cfg.mouse_natural,
+          g_input_cfg.mouse_left, g_input_cfg.mouse_middle, g_input_cfg.touchpad_speed,
+          g_input_cfg.touchpad_profile, g_input_cfg.touchpad_natural,
+          g_input_cfg.touchpad_tap, g_input_cfg.touchpad_twofinger,
+          g_input_cfg.touchpad_dwt, g_input_cfg.touchpad_left);
+  fclose(f);
+  if (rename(tmp, INPUT_STATE) != 0) {
+    st("INPUT_STATE_RENAME_FAIL path=%s errno=%d", INPUT_STATE, errno);
+    unlink(tmp);
+  }
+}
+
+static void input_cfg_tick(void) {
+  long long now = mono_ms_now();
+  if (now - g_input_cfg_last_poll_ms < 500) return;
+  g_input_cfg_last_poll_ms = now;
+  const char *path = getenv("NUXEL_INPUT_DOC");
+  if (!path || !*path) path = INPUT_DOC;
+  struct stat sb;
+  if (stat(path, &sb) != 0) {
+    if (g_input_cfg_mtime_ns != -1) {
+      g_input_cfg_mtime_ns = -1;
+      input_cfg_load();
+      apply_all_pointer_settings("document-removed");
+      write_input_state("document-removed");
+    }
+    return;
+  }
+  long long mtime_ns = stat_mtime_ns(&sb);
+  if (mtime_ns == g_input_cfg_mtime_ns) return;
+  if (input_cfg_load()) {
+    apply_all_pointer_settings("config-changed");
+    write_input_state("config-changed");
+  }
+}
 
 struct libinput *libinput_udev_create_context(const struct libinput_interface *iface,
                                               void *user_data, void *udev) {
@@ -977,19 +1609,27 @@ struct libinput *libinput_udev_create_context(const struct libinput_interface *i
 
 int libinput_udev_assign_seat(struct libinput *li, const char *seat_id) {
   g_li = li;
+  input_cfg_load();
   struct cand sel[MAX_NODES];
   int seen = scan_nodes(NULL, sel, MAX_NODES, 0);
-  int added = 0;
+  int added = 0, np = 0, nk = 0, nt = 0;
   for (int i = 0; i < seen; i++) {
-    void *dev = shim_libinput_add(sel[i].path);
-    st("PATH_ADD node=%s order=%d name='%s' accepted=%d", sel[i].path, sel[i].order, sel[i].name, dev != NULL);
-    if (dev && tracked_add(sel[i].name, dev)) {
+    void *dev = shim_libinput_add(&sel[i]);
+    st("PATH_ADD node=%s order=%d name='%s' kind=%s accepted=%d",
+       sel[i].path, sel[i].order, sel[i].name, kind_name(sel[i].kind), dev != NULL);
+    if (dev && tracked_add(sel[i].node, sel[i].name, dev, sel[i].kind, sel[i].ino)) {
       added++;
-      calibrate_device(sel[i].name, dev, g_touch_matrix, "device-add");
+      if (sel[i].kind & CAND_POINTER) { np++; apply_pointer_settings((struct libinput_device *)dev, sel[i].name, sel[i].kind, "device-add"); }
+      if (sel[i].kind & CAND_KEYBOARD) nk++;
+      if (sel[i].kind & CAND_TOUCH) {
+        nt++;
+        calibrate_device(sel[i].name, dev, sel[i].kind, g_touch_matrix, "device-add");
+      }
     }
   }
-  st("PATH_ASSIGN_SEAT seat='%s' direct_devices_seen=%d added=%d db_seeded=%d tracked=%d",
-     seat_id ? seat_id : "(null)", seen, added, db_seeded, tracked_count());
+  st("PATH_ASSIGN_SEAT seat='%s' direct_devices_seen=%d added=%d pointer=%d keyboard=%d touch=%d db_seeded=%d tracked=%d",
+     seat_id ? seat_id : "(null)", seen, added, np, nk, nt, db_seeded, tracked_count());
+  write_input_state("assign-seat");
   calibration_watch_start();
   watch_start();
   g_touch_force_apply = 1;
@@ -1014,6 +1654,7 @@ int libinput_dispatch(struct libinput *li) {
     pthread_mutex_unlock(&g_cal_lock);
   }
   hq_drain();
+  input_cfg_tick();
   return rc;
 }
 #endif /* !NUXEL_SHIM_SELFTEST */
@@ -1022,42 +1663,107 @@ int libinput_dispatch(struct libinput *li) {
  * PART 4 — shim_apply: the single place where a hotplug event becomes
  *          a libinput device (or an explained rejection)
  * ==========================================================================*/
+/* Does the event node exist right now, and what is its devtmpfs inode?
+ * During a hub reset the new node can be announced before the old node's
+ * delete notification.  Comparing the inode tells the two apart without
+ * guessing from timing or from the product name. */
+static int node_stat_ino(const char *name, unsigned long long *ino) {
+  char path[96];
+  snprintf(path, sizeof path, "%s/%s", DEV_INPUT_DIR, name);
+  struct stat sb;
+  if (stat(path, &sb) != 0) return 0;
+  *ino = (unsigned long long)sb.st_ino;
+  return 1;
+}
+
 static void shim_apply(int op, const char *name) {
   if (op == HQ_ADD) {
-    if (tracked_get(name)) {
-      st("HOTPLUG_ADD node=%s ignored=already-tracked", name);
-      if (g_hotplug_stdout) printf("HOTPLUG ADD %s IGNORED already-tracked\n", name);
-      return;
-    }
     struct cand c;
-    int rc = g_fixture_root ? fixture_probe(g_fixture_root, name, &c) : node_probe(name, &c);
+    int rc;
+    if (g_fixture_root) {
+      rc = fixture_probe(g_fixture_root, name, &c);
+      if (rc == 0) {
+        decide(&c);
+        c.hw_keyboard = !!(c.kind & CAND_KEYBOARD);
+      }
+    } else {
+      /* Re-scan the accepted set so the new node is classified with its USB
+       * siblings (a mouse's macro keyboard vs a real keyboard's interface 0). */
+      struct cand all[MAX_NODES];
+      int n = scan_nodes(NULL, all, MAX_NODES, 0);
+      int found = 0;
+      for (int i = 0; i < n; i++) {
+        if (strcmp(all[i].node, name) == 0) { c = all[i]; found = 1; break; }
+      }
+      if (!found) {
+        rc = node_probe(name, &c);
+        if (rc == 0) decide(&c);
+      } else {
+        rc = 0;
+      }
+    }
     if (rc != 0) {
       st("HOTPLUG_ADD node=%s rejected=metadata-or-open-failed", name);
       if (g_hotplug_stdout) printf("HOTPLUG ADD %s REJECT reason=metadata-or-open-failed\n", name);
+      retry_schedule(name);
       return;
     }
-    decide(&c);
     if (!c.accept) {
       st("HOTPLUG_ADD node=%s rejected=%s", c.path, c.reason);
       if (g_hotplug_stdout) printf("HOTPLUG ADD %s REJECT reason=\"%s\"\n", name, c.reason);
       return;
     }
+    int old = tracked_find(name);
+    if (old >= 0) {
+      if (g_tracked[old].ino == c.ino) {
+        st("HOTPLUG_ADD node=%s ignored=already-tracked ino=%llu", name, c.ino);
+        if (g_hotplug_stdout) printf("HOTPLUG ADD %s IGNORED already-tracked\n", name);
+        return;
+      }
+      /* Same event name, new devtmpfs inode: the hub re-created the node.
+       * Release the old tracking entry (libinput owns the dead fd) and add
+       * the new device.  A late REMOVE for the old inode is ignored below. */
+      st("HOTPLUG_REPLACE node=%s old_ino=%llu new_ino=%llu", name, g_tracked[old].ino, c.ino);
+      tracked_remove(name);
+    }
 #ifdef NUXEL_SHIM_SELFTEST
     void *dev = (void *)1;              /* the offline harness never calls libinput */
 #else
-    void *dev = shim_libinput_add(c.path);
+    void *dev = shim_libinput_add(&c);
 #endif
     if (dev) {
-      tracked_add(name, dev);
+      tracked_add(name, c.name, dev, c.kind, c.ino);
 #ifndef NUXEL_SHIM_SELFTEST
-      calibrate_device(name, dev, g_touch_matrix, "hotplug-add");
+      if (c.kind & CAND_TOUCH) calibrate_device(name, dev, c.kind, g_touch_matrix, "hotplug-add");
+      if (c.kind & CAND_POINTER) apply_pointer_settings((struct libinput_device *)dev, name, c.kind, "hotplug-add");
+      write_input_state("hotplug-add");
 #endif
-      st("HOTPLUG_ADD node=%s accepted=1 tracked=%d", c.path, tracked_count());
-      if (g_hotplug_stdout) printf("HOTPLUG ADD %s ACCEPT tracked=%d\n", name, tracked_count());
+      st("HOTPLUG_ADD node=%s kind=%s ino=%llu accepted=1 tracked=%d", c.path, kind_name(c.kind), c.ino, tracked_count());
+      if (g_hotplug_stdout) printf("HOTPLUG ADD %s ACCEPT kind=%s tracked=%d\n", name, kind_name(c.kind), tracked_count());
     } else {
       st("HOTPLUG_ADD node=%s accepted=0 (libinput_path_add_device returned NULL)", c.path);
       if (g_hotplug_stdout) printf("HOTPLUG ADD %s ADD_FAILED\n", name);
+      retry_schedule(name);
     }
+    return;
+  }
+
+  /* Removal.  A DELETE for the old inode can arrive after the new node was
+   * already added.  Only release our entry when the node is actually gone;
+   * if a replacement node is present, schedule its add instead. */
+  unsigned long long ino = 0;
+  int present = node_stat_ino(name, &ino);
+  int ti = tracked_find(name);
+  if (present) {
+    if (ti >= 0 && g_tracked[ti].ino == ino) {
+      st("HOTPLUG_REMOVE node=%s ignored=still-present ino=%llu", name, ino);
+      if (g_hotplug_stdout) printf("HOTPLUG REMOVE %s IGNORED still-present\n", name);
+      return;
+    }
+    st("HOTPLUG_REMOVE node=%s stale entry; replacement ino=%llu scheduled", name, ino);
+    if (ti >= 0) tracked_remove(name);
+    retry_schedule(name);
+    if (g_hotplug_stdout) printf("HOTPLUG REMOVE %s REPLACED tracked=%d\n", name, tracked_count());
     return;
   }
   void *dev = tracked_remove(name);
@@ -1067,10 +1773,16 @@ static void shim_apply(int op, const char *name) {
     return;
   }
 #ifndef NUXEL_SHIM_SELFTEST
-  shim_libinput_remove(dev);
+  /* Do NOT call libinput_path_remove_device() here.  This runs inside
+   * libinput_dispatch() on the compositor thread; libinput 1.30 crashes with
+   * SIGSEGV in libinput_path_remove_device when a pointer/keyboard is removed
+   * from that context (measured on the handset 2026-11-09).  The path backend
+   * owns the fd and observes ENODEV on its own next dispatch.  We release our
+   * tracking entry so a replug with the same event name can be added again. */
+  write_input_state("hotplug-remove");
 #endif
-  st("HOTPLUG_REMOVE node=%s removed tracked=%d", name, tracked_count());
-  if (g_hotplug_stdout) printf("HOTPLUG REMOVE %s REMOVED tracked=%d\n", name, tracked_count());
+  st("HOTPLUG_REMOVE node=%s marked-removed tracked=%d (libinput owns fd teardown)", name, tracked_count());
+  if (g_hotplug_stdout) printf("HOTPLUG REMOVE %s MARKED_REMOVED tracked=%d\n", name, tracked_count());
 }
 
 /* ==========================================================================
@@ -1091,7 +1803,11 @@ static void *watch_thread(void *arg) {
   for (;;) {
     ssize_t len = read(g_watch_fd, buf, sizeof buf);
     if (len <= 0) {
-      if (len < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) { usleep(200000); continue; }
+      if (len < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        retry_tick();
+        usleep(200000);
+        continue;
+      }
       if (len < 0 && errno == EINTR) continue;
       break;
     }
@@ -1103,6 +1819,7 @@ static void *watch_thread(void *arg) {
       int op = (ev->mask & (IN_CREATE | IN_MOVED_TO | IN_ATTRIB)) ? HQ_ADD : HQ_REMOVE;
       hq_push(op, ev->name);
     }
+    retry_tick();
   }
   st("HOTPLUG_WATCH_ENDED");
   return NULL;

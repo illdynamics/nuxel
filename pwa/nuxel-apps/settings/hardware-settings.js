@@ -180,35 +180,88 @@
   // ---- Displays ----------------------------------------------------------
   function renderDisplays(st) {
     if (!st || st.success === false) {
-      setText('external-display-state', 'External connector provider unavailable' +
+      setText('external-display-state', 'External display provider unavailable' +
         (st && st.timeout ? ' (timed out)' : '') +
         (st && st.error ? (': ' + st.error) : '') +
         '\nThe Graphics Acceleration block above is independent and remains usable.');
-      setText('external-display-detail', 'Connector discovery failed or exceeded its 4 s deadline. Press Refresh connectors to retry; no GPU state was changed.');
+      setText('external-display-detail', 'Display discovery failed or exceeded its deadline. Press Refresh connectors to retry; no GPU state was changed.');
       return;
     }
     var ports = (st.type_c_ports || []).map(function (p) {
       return (p.name || '?') + ' role=' + (p.data_role || '?') + '/' + (p.power_role || '?') +
-        (p.partner ? (' partner=' + p.partner) : ' (no partner)');
+        (p.partner ? ' partner=yes' : ' partner=no');
     });
     var ext = (st.extcon || []).map(function (e) { return (e.name || '?') + '=' + (e.state || '?'); });
+    var modes = (st.supported_modes || []).map(function (m) {
+      if (!m || !m.width || !m.height) return m && m.raw ? m.raw : null;
+      return m.width + 'x' + m.height + (m.refresh ? ('@' + m.refresh) : '');
+    }).filter(Boolean);
+    var extFb = st.external_fb || {};
+    var audio = st.audio || {};
+    var selected = st.selected_resolution || {};
+    var presetText = selected.width && selected.height
+      ? (selected.width + 'x' + selected.height + '@' + (selected.refresh || 60))
+      : 'auto';
     var lines = [
-      'state             : ' + (st.state || 'unknown'),
-      'DRM present       : ' + (st.drm_present ? 'yes' : 'no'),
-      'kernel CONFIG_DRM : ' + (st.drm_kernel || 'unknown'),
-      'kernel CONFIG_TYPEC: ' + (st.typec_kernel || 'unknown'),
-      'displayport driver: ' + (st.displayport_kernel || 'unknown'),
+      'hardware state    : ' + (st.hardware_state || st.state || 'unknown'),
+      'selected mode     : ' + (st.mode || 'off'),
+      'external timing   : ' + presetText,
+      'external rotation : ' + (st.rotation == null ? 0 : st.rotation) + '° ' +
+        '(' + (st.mode_fit || 'fit') + ')',
+      'Type-C partner    : ' + (st.partner ? 'yes' : 'no'),
+      'USB-PD identity   : ' + (st.pd_identity ? ((st.pd_ids || 'yes') + ' type=' + (st.pd_type == null ? '?' : st.pd_type)) : 'none'),
+      'DP Alt Mode link  : ' + (st.dp_link ? 'up' : 'down') + ' (secdp=' + (st.secdp == null ? '?' : st.secdp) + ', extcon DP=' + (st.extcon_dp ? '1' : '0') + ')',
+      'kernel DP driver  : ' + (st.displayport_kernel || 'unknown'),
+      'external fb       : ' + (st.external_fb_present ? ('/dev/fb1 via ' + (extFb.device || 'decon_t')) : 'missing'),
+      'EDID/fbdev modes  : ' + (modes.length ? modes.join(', ') : 'none reported'),
+      'display name      : ' + (st.display_name || 'not reported'),
+      'Mirror available  : ' + (st.mirror_supported ? 'yes' : 'no'),
+      'Desktop available : ' + (st.desktop_supported ? 'yes' : 'no'),
+      'mirror output     : ' + (st.mirror_output || 'none'),
+      'desktop output    : ' + (st.desktop_output || 'none'),
+      'HDMI audio        : ' + (audio.available ? 'available' : 'unavailable') +
+        (audio.blocker ? (' (' + audio.blocker + ')') : ''),
       'Type-C ports      : ' + (ports.length ? ports.join(', ') : 'none'),
-      'extcon            : ' + (ext.length ? ext.join(', ') : 'none'),
-      'Mirror supported  : ' + (st.mirror_supported ? 'yes' : 'no'),
-      'Desktop supported : ' + (st.desktop_supported ? 'yes' : 'no')
+      'extcon            : ' + (ext.length ? ext.join(', ') : 'none')
     ];
+    if (st.last_error) lines.push('last mode error   : ' + st.last_error);
     if (st.blocker) lines.push('blocker           : ' + st.blocker);
     setText('external-display-state', lines.join('\n'));
-    setText('external-display-detail', st.drm_present
-      ? 'An external DRM output path exists; further connector/mode enumeration is needed.'
-      : 'No DRM/KMS exists on this kernel (CONFIG_DRM is not set) and the image renders via the framebuffer backend. USB-C DisplayPort Alt Mode video therefore cannot be driven by userspace today — Mirror/Desktop are honestly unavailable, not hidden.');
+
+    var detail;
+    if (st.state === 'DP_LINK_READY' || st.state === 'MIRRORING' || st.state === 'SEPARATE_DESKTOP') {
+      detail = 'The DP link and decon_t path are ready at ' + presetText + '. Mirror portrait keeps the phone upright, mirror landscape rotates 90°, fullscreen crops to fill the TV, and Separate desktop requires a second compositor output.';
+    } else if (st.state === 'PARTNER_NO_PD') {
+      detail = 'A Type-C adapter is attached but it presents no USB-PD identity. DisplayPort Alt Mode is negotiated with USB-PD structured VDM, so no DP link can start. Use a USB-C DP Alt Mode adapter that supports USB PD; a charge-only or passive adapter cannot carry video.';
+    } else if (st.state === 'PD_NO_DP') {
+      detail = 'USB-PD identity is present but the DP Alt Mode VDM did not complete. The adapter/CCIC mux or link training is the failing stage; no framebuffer mode was changed.';
+    } else if (st.state === 'DP_NO_FB') {
+      detail = 'The DP link reports up but the decon_t external framebuffer is missing. This is a kernel/driver-path failure; userspace will not fabricate an output.';
+    } else if (st.state === 'DISCONNECTED') {
+      detail = 'No USB-C display adapter is attached. The built-in screen and its framebuffer remain untouched.';
+    } else {
+      detail = 'The display daemon is not reporting a ready external path. The exact blocker is listed above; no mode was applied.';
+    }
+    setText('external-display-detail', detail);
+
+    var choices = {};
+    (st.mode_choices || []).forEach(function (c) { choices[c.mode] = c.supported; });
+    var buttons = {
+      'display-mode-mirror-portrait': 'mirror-portrait',
+      'display-mode-mirror-landscape': 'mirror-landscape',
+      'display-mode-fullscreen': 'fullscreen',
+      'display-mode-desktop': 'desktop'
+    };
+    Object.keys(buttons).forEach(function (id) {
+      var b = $(id);
+      if (b) b.disabled = !(choices[buttons[id]] != null ? choices[buttons[id]] : st.mirror_supported);
+    });
+    var dBtn = $('display-mode-desktop');
+    if (dBtn) dBtn.disabled = !st.desktop_supported;
+    var rot = $('display-rotation');
+    if (rot) rot.value = String(st.rotation == null ? 0 : st.rotation);
   }
+
   function refreshDisplays() {
     var req = ++_displayReq;
     setText('external-display-state', 'Checking external connector path (bounded 4 s)…');
@@ -218,6 +271,42 @@
       if (st && st.success !== false) st.elapsed_ms = Date.now() - started;
       renderDisplays(st);
       return st;
+    });
+  }
+
+  function applyDisplayMode(mode) {
+    setText('display-mode-result', 'Applying display mode (' + mode + ')…');
+    return callBounded('display', 'set-mode', { mode: mode }, 22000).then(function (r) {
+      if (r && r.success === true) {
+        setText('display-mode-result', 'Display mode applied: ' + (r.mode || mode) +
+          (r.output ? (' on ' + r.output) : '') + '.');
+      } else {
+        var detail = (r && (r.detail || r.error)) || 'display manager did not confirm';
+        setText('display-mode-result', 'Display mode failed: ' + detail);
+      }
+      return refreshDisplays();
+    });
+  }
+
+  function setDisplayRotation(degrees) {
+    setText('display-mode-result', 'Setting external rotation to ' + degrees + '°…');
+    return callBounded('display', 'set-rotation', { rotation: Number(degrees) }, 12000).then(function (r) {
+      if (r && r.success === true) {
+        setText('display-mode-result', 'External rotation set to ' + r.rotation + '°.');
+      } else {
+        setText('display-mode-result', 'Rotation failed: ' +
+          ((r && (r.detail || r.error)) || 'display manager did not confirm'));
+      }
+      return refreshDisplays();
+    });
+  }
+
+  function testDisplayNotification() {
+    setText('display-mode-result', 'Submitting a test notification…');
+    return callBounded('display', 'notify-test', { display_name: 'Test display' }, 5000).then(function (r) {
+      setText('display-mode-result', r && r.success
+        ? 'Test notification submitted to the Nuxel notification hub. Open Quick Settings to see it.'
+        : ('Notification test failed: ' + ((r && (r.detail || r.error)) || 'unknown')));
     });
   }
 
@@ -251,11 +340,23 @@
       }).join(' | '));
     }
     if (st.selected_output) lines.push('selected       : ' + st.selected_output.description);
+    var hdmi = st.hdmi_audio || {};
+    lines.push('HDMI/DP audio  : ' + (hdmi.available ? 'available' : 'unavailable') +
+      (hdmi.pcm ? (' — ' + hdmi.pcm) : '') +
+      (hdmi.sink ? (' → ' + hdmi.sink.name) : ''));
+    if (hdmi.blocker) lines.push('HDMI blocker   : ' + hdmi.blocker);
     if (st.playback_available === false) lines.push('playback       : unavailable');
     setText('audio-state', lines.join('\n'));
+    var hdmiBtn = $('audio-output-hdmi');
+    if (hdmiBtn) hdmiBtn.disabled = !hdmi.available;
     return st;
   }
   function refreshAudio() {
+    // PWNAGE-102000: Settings -> Sound now owns output discovery, route
+    // selection, volume and mute through the authoritative nuxel-soundd
+    // policy.  This legacy diagnostics card is absent; do not issue an old
+    // provider refresh that could contend with the manager.
+    if (!$('audio-state')) return Promise.resolve(null);
     setText('audio-state', 'Checking audio hardware…');
     return call('audio', 'status', {}).then(function (st) {
       renderAudio(st);
@@ -343,6 +444,20 @@
     });
   }
 
+  function setAudioOutput(target) {
+    setText('test-audio-state', 'Selecting audio output: ' + target + '…');
+    return callBounded('audio', 'set-output', { output: target }, 8000).then(function (r) {
+      if (r && r.success === true) {
+        setText('test-audio-state', 'Audio output selected: ' + (r.output || target) +
+          (r.sink ? (' (' + r.sink + ')') : '') + '. Audiability must still be confirmed physically.');
+      } else {
+        setText('test-audio-state', 'Audio output failed: ' +
+          ((r && (r.detail || r.error)) || 'provider did not confirm'));
+      }
+      return refreshAudio();
+    });
+  }
+
   function bind() {
     var btRefresh = $('bt-refresh');
     if (btRefresh) btRefresh.addEventListener('click', refreshBluetooth);
@@ -354,10 +469,28 @@
     if (btList) btList.addEventListener('click', refreshBluetoothDevices);
     var dRef = $('display-refresh');
     if (dRef) dRef.addEventListener('click', refreshDisplays);
+    var dmPortrait = $('display-mode-mirror-portrait');
+    if (dmPortrait) dmPortrait.addEventListener('click', function () { applyDisplayMode('mirror-portrait'); });
+    var dmLandscape = $('display-mode-mirror-landscape');
+    if (dmLandscape) dmLandscape.addEventListener('click', function () { applyDisplayMode('mirror-landscape'); });
+    var dmFull = $('display-mode-fullscreen');
+    if (dmFull) dmFull.addEventListener('click', function () { applyDisplayMode('fullscreen'); });
+    var dmDesktop = $('display-mode-desktop');
+    if (dmDesktop) dmDesktop.addEventListener('click', function () { applyDisplayMode('desktop'); });
+    var dmOff = $('display-mode-off');
+    if (dmOff) dmOff.addEventListener('click', function () { applyDisplayMode('off'); });
+    var dNotify = $('display-notify-test');
+    if (dNotify) dNotify.addEventListener('click', testDisplayNotification);
+    var dRot = $('display-rotation');
+    if (dRot) dRot.addEventListener('change', function () { setDisplayRotation(dRot.value); });
     var aRef = $('audio-refresh');
     if (aRef) aRef.addEventListener('click', refreshAudio);
     var aTest = $('audio-test');
     if (aTest) aTest.addEventListener('click', testAudio);
+    var aHdmi = $('audio-output-hdmi');
+    if (aHdmi) aHdmi.addEventListener('click', function () { setAudioOutput('hdmi'); });
+    var aSpeaker = $('audio-output-speaker');
+    if (aSpeaker) aSpeaker.addEventListener('click', function () { setAudioOutput('speaker'); });
     var vDown = $('volume-down');
     if (vDown) vDown.addEventListener('click', function () { setVolume(-5); });
     var vUp = $('volume-up');

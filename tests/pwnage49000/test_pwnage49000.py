@@ -112,9 +112,9 @@ def test_cache_version_bumped():
     assert cache in sw
     assert cache in manifest_text
     html = read("pwa/nuxel-home/index.html")
-    assert "status-bar.css?v=p91000" in html
-    assert "status-bar.js?v=p91000" in html
-    assert "app.js?v=p91000" in html
+    assert "status-bar.css?v=p106000" in html
+    assert "status-bar.js?v=p106000" in html
+    assert "app.js?v=p106000" in html
 
 
 if __name__ == "__main__":

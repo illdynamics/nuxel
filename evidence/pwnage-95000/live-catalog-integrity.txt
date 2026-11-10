@@ -1,0 +1,39 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== live nuxtore verifier ===
+NuxTore catalog verification — /usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json
+  OK org.nuxel.Nuxtore        1.0.0    SIGNED_VERIFIED   25 files, 199520 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Media          1.0.0    SIGNED_VERIFIED   22 files, 152410 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Downloader     1.0.0    SIGNED_VERIFIED   20 files, 104724 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Authenticator  1.0.0    SIGNED_VERIFIED   24 files, 449466 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Vault          1.0.0    SIGNED_VERIFIED   21 files, 452861 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Cleanup        1.0.0    SIGNED_VERIFIED   19 files, 102687 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.DevMgmt        1.0.0    SIGNED_VERIFIED   18 files, 133816 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.SnekByte       1.0.0    SIGNED_VERIFIED   20 files, 210801 bytes; signed by nuxel-beta-dev-2026
+  !! org.nuxel.Doom           2.0.0    DIGEST_MISMATCH   22 files, 3255564 bytes; 2 of 22 listed files have a different digest
+  OK org.nuxel.PenguInterface 1.0.0    SIGNED_VERIFIED   17 files, 110082 bytes; signed by nuxel-beta-dev-2026
+  OK org.nuxel.Console        1.0.0    SIGNED_VERIFIED   15 files, 67352 bytes; signed by nuxel-beta-dev-2026
+  -- org.example.UnsignedDemo 0.0.1    UNSIGNED_REFUSED  25 files, 199520 bytes; no signature (unsigned package)
+  => INTEGRITY FAILURE
+rc=1
+=== doom bundle hashes ===
+bundle keys [{'path': 'pwa/nuxel-apps/doom/WAD-LICENSES.md', 'sha256': '3a4e5fce3b962164585f5004869ca7c690154321b0e3df3dd44153cfeef75b57', 'size': 1750}, {'path': 'pwa/nuxel-apps/doom/app.json', 'sha256': '0e2e0bcd590bc9227ba73c640c152b3c052fd6392a0677e3e88376aa43143bad', 'size': 637}, {'path': 'pwa/nuxel-apps/doom/css/doom.css', 'sha256': '1cdd4272d6af9691f4b7229ff350d3491ef4206f88a8acbcb7552d059a0e3e02', 'size': 18451}, {'path': 'pwa/nuxel-apps/doom/engine/COPYING.md', 'sha256': 'aef8b4222b79d0dbf6bf17cfff71c90a6a6bb8917a4162abe417b469ed22da2e', 'size': 17895}, {'path': 'pwa/nuxel-apps/doom/engine/PROVENANCE.md', 'sha256': 'b3b76f2141c4bffd861afb2b89238f4da4cc5d0045f0c2f915fbe18f0f54cd5b', 'size': 1106}, {'path': 'pwa/nuxel-apps/doom/engine/websockets-doom.js', 'sha256': 'a2909044a9fbc5529f941c8dbf93cc2931927690e0341c737545cf0b9cff23fb', 'size': 276667}, {'path': 'pwa/nuxel-apps/doom/engine/websockets-doom.wasm', 'sha256': '6366f83a58fe8596ce742a66dbf86871d315862c89c11e65b54935be03c7e6c4', 'size': 2283167}, {'path': 'pwa/nuxel-apps/doom/icons/icon-128.png', 'sha256': '6fe04a9189f0ec1def97bf0d3bdf164258b5e1303c554937a8e5076d6299853c', 'size': 44883}, {'path': 'pwa/nuxel-apps/doom/icons/icon-144.png', 'sha256': '76677166a27eee4c945ae126644e0992430165dcdd0fd6b225b9cee99be23396', 'size': 55700}, {'path': 'pwa/nuxel-apps/doom/icons/icon-152.png', 'sha256': '70b74c8f9dd97ec20c47420531ac9e8d7d6ca813224e20746bb1f528ebfda030', 'size': 59488}, {'path': 'pwa/nuxel-apps/doom/icons/icon-192.png', 'sha256': '2e4e67d8a27f26f6051677749955e3995c179bf522f87ab415cbfe94848b0d0a', 'size': 79504}, {'path': 'pwa/nuxel-apps/doom/icons/icon-384.png', 'sha256': 'c5567b51a79fa9cad036ebfe2c8ecf77124afb46e79dba85329ecc615a158db6', 'size': 196220}, {'path': 'pwa/nuxel-apps/doom/icons/icon-48.png', 'sha256': 'de49fe3c43159123a542f27dbf26bd5e7c21a6b803a26ef4a36bfff7acfa4ea1', 'size': 10828}, {'path': 'pwa/nuxel-apps/doom/icons/icon-512.png', 'sha256': '86b4f16f9858f7b2e082ff182a74c96f1ce935c7bcfdf196b7334378f522b2b7', 'size': 81083}, {'path': 'pwa/nuxel-apps/doom/icons/icon-72.png', 'sha256': '43606105ca3388bf607f5a9962ee2f213f6a9238fd8ad92f3bb05395ad44f9fb', 'size': 20163}, {'path': 'pwa/nuxel-apps/doom/icons/icon-96.png', 'sha256': 'b6558e0f878adb2531706c8b20a760913f94daee76ed98d1c129e3152a1d00d3', 'size': 30984}, {'path': 'pwa/nuxel-apps/doom/icons/icon.svg', 'sha256': 'bcf3d611d797d00bfc8af4ec4a566af24c9304f14e65f6f7a01a3052ac360976', 'size': 2591}, {'path': 'pwa/nuxel-apps/doom/index.html', 'sha256': 'c500c861d30c9e3dd4ee1b9045ca6b276300c715936bd23846e5871b3a69db57', 'size': 10896}, {'path': 'pwa/nuxel-apps/doom/js/doom.js', 'sha256': '44acef38cbd8178419abf4fca875e1445c7d2496f36f697db9d7cc87050c729a', 'size': 49104}, {'path': 'pwa/nuxel-apps/doom/manifest.json', 'sha256': 'fc891dd36d3c51a8d236dfd9cc5a0b8dbac1ff44b3b3809bee45be3d19b4e9d7', 'size': 2414}]
+ERR 'list' object has no attribute 'get'
+=== PWA served path ===
+--- http://127.0.0.1:8000/pwa/nuxel-home/index.html
+http=200 bytes=28748
+--- http://127.0.0.1:8000/pwa/nuxel-home/js/status-bar.js
+http=200 bytes=72030
+--- http://127.0.0.1:8000/api/v1/apps/registry
+http=404 bytes=21
+=== version mismatch ===
+usr_share_version=v0.7.9-beta
+pwa_manifest=0.8.1-beta
+bridge_version=0.8.1-beta 1

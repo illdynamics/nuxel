@@ -1,0 +1,50 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== live state 2026-11-09T19:34:17+01:00 ===
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+ 19:34:17 up 19 min,  0 user,  load average: 12.97, 12.55, 9.24
+=== service states ===
+nuxel-displayd=active
+nuxel-wl-fb-ext=active
+nuxel-wayland=active
+nuxel-wl-fb=active
+=== hashes ===
+295aece10f491c170ae2e31d62a7793c93c0c9a9eb9ab5ce93666e33558b1869  /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+93dfddf5c02cabe76b614b409b6139faf077b25b5d2d3e660e1e6475a075a701  /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext.c
+=== ext.state ===
+state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=480 nz=5700 color=argb orient_eff=0 orient_tf=0
+=== ext.log tail ===
+2026-11-09T19:33:41 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:43 nuxel-wl-fb-ext: frame 120 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:45 nuxel-wl-fb-ext: frame 140 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:47 nuxel-wl-fb-ext: frame 160 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:49 nuxel-wl-fb-ext: frame 180 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:50 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:52 nuxel-wl-fb-ext: frame 220 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:54 nuxel-wl-fb-ext: frame 240 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:56 nuxel-wl-fb-ext: frame 260 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:33:58 nuxel-wl-fb-ext: frame 280 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:00 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:02 nuxel-wl-fb-ext: frame 320 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:03 nuxel-wl-fb-ext: frame 340 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:05 nuxel-wl-fb-ext: frame 360 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:07 nuxel-wl-fb-ext: frame 380 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:09 nuxel-wl-fb-ext: frame 400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:11 nuxel-wl-fb-ext: frame 420 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:13 nuxel-wl-fb-ext: frame 440 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:15 nuxel-wl-fb-ext: frame 460 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:34:17 nuxel-wl-fb-ext: frame 480 src=720x1520 dst=1920x1080 nz=5700
+=== colour selftest ===
+PASS order=abgr fmt=0x34324241 colour=darkgrey  src=0x00202020 out=0xff202020 decoded=32,32,32
+PASS order=abgr fmt=0x34324241 colour=lightgrey src=0x00e0e0e0 out=0xffe0e0e0 decoded=224,224,224
+colour selftest: PASS (0 failures)
+=== decon2/dpp1 idma format (after fix) ===
+[ 1186.657520] ffffff800c2e1000: 00000004 00000001 02000000 ff000000 08700780 00000000 04380780 00000000
+[ 1186.657991] === DPP1 SFR DUMP ===

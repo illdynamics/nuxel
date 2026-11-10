@@ -1,0 +1,30 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+drwxr-xr-x. 3 root root 4096 Nov  9 22:45 /var/lib/nuxel/live-deploy/rollback-hdmi-audio-20261109T214436Z
+drwxr-xr-x. 3 root root 4096 Nov  9 22:45 /var/lib/nuxel/live-deploy/rollback-hdmi-audio-20261109T214523Z
+=== hashes ===
+ec368c4f03f87500ef6381ab6f92230ba42f79785b66fca9341f1e8ceba03d5c  /usr/lib/nuxel/nuxel_audio_outputs.py
+d24b22b69878bf68b1326f1064c8ffd65e1b7db00dddc07f07a23902c2fb918e  /usr/libexec/nuxel/nuxel-soundd
+a528c1982b489534cb7bc736c5bc8a43a92c463b140e5b11e99c92d816a48244  /usr/bin/nuxel-audio-ctl
+8d2bbc09b3f3728d4d0be5b55c57a9c5121d58e15723c6cbb803fd38e2d69355  /usr/lib/nuxel/nuxel-bridge/api.py
+8d8d5755afa6657ae5a46bd76a54313d9a9df13fa93463514bf0a61119831463  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+e42091bc162c1cb6d04f1aa82610f77914e787bc161be89b625645229d07e9ef  /usr/libexec/nuxel/nuxel-displayd
+4309ec9c6ced6112f08e43d8cc25a2cdc014c8735487944a5a0e0d784ca9ac09  /usr/share/nuxel/pwa/nuxel-apps/settings/sound-settings.js
+=== local source hashes ===
+ec368c4f03f87500ef6381ab6f92230ba42f79785b66fca9341f1e8ceba03d5c  services/nuxel-sound/nuxel_audio_outputs.py
+d24b22b69878bf68b1326f1064c8ffd65e1b7db00dddc07f07a23902c2fb918e  services/nuxel-sound/nuxel-soundd.py
+a528c1982b489534cb7bc736c5bc8a43a92c463b140e5b11e99c92d816a48244  services/nuxel-sound/nuxel-soundctl
+8d2bbc09b3f3728d4d0be5b55c57a9c5121d58e15723c6cbb803fd38e2d69355  services/nuxel-bridge/src/api.py
+8d8d5755afa6657ae5a46bd76a54313d9a9df13fa93463514bf0a61119831463  services/nuxel-bridge/src/hw_providers.py
+e42091bc162c1cb6d04f1aa82610f77914e787bc161be89b625645229d07e9ef  services/nuxel-display/bin/nuxel-displayd
+4309ec9c6ced6112f08e43d8cc25a2cdc014c8735487944a5a0e0d784ca9ac09  pwa/nuxel-apps/settings/sound-settings.js
+=== final live route ===
+automatic ACTIVE HDMI / USB-C display
+ch_hdmi_audio=0x043b0102 default_sink=alsa_output.nuxel_hdmi

@@ -7,10 +7,27 @@
  */
 (function () {
   'use strict';
-  var DEFAULTS = {
-    sysname: 'Linux', nodename: 'nuxel-spoof', release: '6.1.0-nuxel-spoof',
-    version: '#1 SMP PREEMPT_DYNAMIC', machine: 'aarch64'
+  // Windows identity used by the "Windows (Portal for Teams)" preset.
+  var TEAMS_APP_ID = 'com.github.IsmaelMartinez.teams_for_linux';
+  var DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36';
+  var WINDOWS_PORTAL = {
+    ua: DEFAULT_UA,
+    os_release: [
+      'NAME="Windows 10"',
+      'ID=windows',
+      'VERSION_ID=10',
+      'PRETTY_NAME="Windows 10 Enterprise"',
+      'ANSI_COLOR="0;34"',
+      'CPE_NAME="cpe:/o:microsoft:windows:10"',
+      'DEFAULT_HOSTNAME="WIN-CLIENT"',
+      ''
+    ].join('\n'),
+    uname: {
+      sysname: 'windows_nt', nodename: 'WIN-CLIENT', release: '10.0',
+      version: '#1 SMP PREEMPT', machine: 'amd64'
+    }
   };
+  var DEFAULTS = WINDOWS_PORTAL.uname;
   var cache = { spoof: {}, apps: [] };
 
   function $(id) { return document.getElementById(id); }
@@ -75,7 +92,7 @@
       ? (s.global || null)
       : ((s.apps || {})[selectedApp()] || null);
     var u = (cfg && cfg.uname) || DEFAULTS;
-    $('spoof-ua-input').value = (cfg && cfg.ua) || '';
+    $('spoof-ua-input').value = (cfg && cfg.ua) || DEFAULT_UA;
     $('spoof-os-release').value = (cfg && cfg.os_release) || '';
     $('spoof-uname-sysname').value = u.sysname || DEFAULTS.sysname;
     $('spoof-uname-nodename').value = u.nodename || DEFAULTS.nodename;
@@ -190,6 +207,34 @@
         .then(refresh);
     });
   }
+  function applyWindowsPreset() {
+    // Select Portal for Teams when the registry exposes it.
+    var sel = $('spoof-app-select');
+    if (sel) {
+      var found = false;
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === TEAMS_APP_ID) { sel.value = TEAMS_APP_ID; found = true; break; }
+      }
+      if (!found) {
+        var o = document.createElement('option');
+        o.value = TEAMS_APP_ID;
+        o.textContent = 'Portal for Teams — ' + TEAMS_APP_ID;
+        sel.appendChild(o);
+        sel.value = TEAMS_APP_ID;
+      }
+    }
+    var appScope = $('spoof-scope-app');
+    if (appScope) appScope.checked = true;
+    $('spoof-ua-input').value = WINDOWS_PORTAL.ua;
+    $('spoof-os-release').value = WINDOWS_PORTAL.os_release;
+    $('spoof-uname-sysname').value = WINDOWS_PORTAL.uname.sysname;
+    $('spoof-uname-nodename').value = WINDOWS_PORTAL.uname.nodename;
+    $('spoof-uname-release').value = WINDOWS_PORTAL.uname.release;
+    $('spoof-uname-version').value = WINDOWS_PORTAL.uname.version;
+    $('spoof-uname-machine').value = WINDOWS_PORTAL.uname.machine;
+    syncScopeUi();
+    apply();
+  }
   function apply() {
     var params = {
       enabled: true,
@@ -251,6 +296,8 @@
   }
   document.addEventListener('DOMContentLoaded', function () {
     $('spoof-apply').addEventListener('click', apply);
+    var preset = $('spoof-preset-windows');
+    if (preset) preset.addEventListener('click', applyWindowsPreset);
     $('spoof-reset').addEventListener('click', reset);
     $('spoof-reset-all').addEventListener('click', resetAll);
     $('spoof-refresh').addEventListener('click', refresh);

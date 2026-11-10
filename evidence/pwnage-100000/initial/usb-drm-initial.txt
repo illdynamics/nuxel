@@ -1,0 +1,47 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== lsusb ===
+bash: line 2: lsusb: command not found
+=== lsusb -t ===
+bash: line 3: lsusb: command not found
+=== usb devices ===
+total 0
+lrwxrwxrwx 1 root root 0 Nov  9 17:14 1-0:1.0 -> ../../../devices/platform/10c00000.usb/10c00000.dwc3/xhci-hcd.10.auto/usb1/1-0:1.0
+lrwxrwxrwx 1 root root 0 Nov  9 17:14 2-0:1.0 -> ../../../devices/platform/10c00000.usb/10c00000.dwc3/xhci-hcd.10.auto/usb2/2-0:1.0
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 usb1 -> ../../../devices/platform/10c00000.usb/10c00000.dwc3/xhci-hcd.10.auto/usb1
+lrwxrwxrwx 1 root root 0 Nov  9 17:14 usb2 -> ../../../devices/platform/10c00000.usb/10c00000.dwc3/xhci-hcd.10.auto/usb2
+=== usb gadget/config ===
+not attached
+10c00000.dwc3
+=== typec partner power ===
+/sys/class/typec/port0-partner/power/runtime_active_time=0
+/sys/class/typec/port0-partner/power/runtime_status=unsupported
+/sys/class/typec/port0-partner/power/autosuspend_delay_ms=
+/sys/class/typec/port0-partner/power/runtime_suspended_time=0
+/sys/class/typec/port0-partner/power/control=auto
+=== typec port0 power ===
+/sys/class/typec/port0/power/runtime_active_time=0
+/sys/class/typec/port0/power/runtime_status=unsupported
+/sys/class/typec/port0/power/autosuspend_delay_ms=
+/sys/class/typec/port0/power/runtime_suspended_time=0
+/sys/class/typec/port0/power/control=auto
+=== drm ===
+total 0
+drwxr-xr-x  2 root root    0 Nov  9 17:14 .
+drwxr-xr-x 93 root root    0 Nov  9 16:26 ..
+-r--r--r--  1 root root 4096 Nov  9 17:14 version
+/sys/class/drm/card*/status=
+=== fb ===
+1440,6080
+32
+640,960
+32
+crw-------. 1 root root 29, 0 Jan  1  1970 /dev/fb0
+crw-------. 1 root root 29, 1 Jan  1  1970 /dev/fb1

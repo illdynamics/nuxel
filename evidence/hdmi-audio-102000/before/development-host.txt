@@ -1,0 +1,163 @@
+=== host  ===
+/Users/wicked/x/nuxel
+feature/v0.8.2-beta-pwnage-97000
+b6154b67ec1e421729cea8053839ce9cfae9095d
+## feature/v0.8.2-beta-pwnage-97000...origin/feature/v0.8.2-beta-pwnage-97000
+ M CHANGELOG.md
+ M pwa/nuxel-apps/penguinterface/index.html
+ M pwa/nuxel-apps/penguinterface/js/spoof.js
+ M pwa/nuxel-apps/penguinterface/profile.json
+ M pwa/nuxel-apps/settings/hardware-settings.js
+ M pwa/nuxel-apps/settings/index.html
+ M pwa/nuxel-apps/settings/settings-model.js
+ M pwa/nuxel-common/bridge.js
+ M pwa/nuxel-home/css/status-bar.css
+ M pwa/nuxel-home/index.html
+ M pwa/nuxel-home/js/app.js
+ M pwa/nuxel-home/js/bridge.js
+ M pwa/nuxel-home/js/status-bar.js
+ M release/s10plus/gpu/nuxel-session.sh
+ M release/s10plus/gpu/nuxel-wayland-gpu-wrapper.sh
+ M scripts/nuxel-deploy-live.py
+ M scripts/nuxel-live-install.py
+ M services/nuxel-bridge/src/api.py
+ M services/nuxel-bridge/src/flatpak_provider.py
+ M services/nuxel-bridge/src/hw_providers.py
+ M services/nuxel-bridge/systemd/nuxel-http-bridge.service
+ M services/nuxel-bridge/test-hw-providers.py
+ M services/nuxel-notifications/src/notifications.py
+ M services/nuxel-preload-cinema/nuxel-preload-cinema
+ M services/nuxel-preload-cinema/nuxel-preload-cinema.service
+ M services/nuxel-remote-desktop/bin/nuxel-orientation-remote-sync
+ M services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl
+ M services/nuxel-remote-desktop/config/wayvnc.conf.example
+ M services/nuxel-remote-desktop/config/xrdp.ini
+ M services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.service
+ M tests/pwnage31000/test_preload_cinema.py
+ M tools/s10plus/a29/nuxel-session.sh
+ M tools/s10plus/a31/nuxel-libinput-path.c
+ M tools/s10plus/a33/README.md
+ M tools/s10plus/a33/nuxel-keyboard-apply.sh
+ M tools/s10plus/a33/nuxel-libinput-path.c
+ M tools/s10plus/a33/nuxel-pwa-host.c
+ M tools/s10plus/a33/nuxel-wl-fb.c
+ M tools/s10plus/a33/tests/run-touch-tests.sh
+ M tools/s10plus/a33/tests/test-libinput-path-fixture.py
+ M tools/s10plus/a43/package-live.py
+ M tools/s10plus/a45/nuxel-pwa-host.c
+ M tools/s10plus/a45/nuxel-session.sh
+ M tools/s10plus/a67/nuxel-wayland-gpu-wrapper.sh
+ M tools/s10plus/a67/nuxel-wl-fb.c
+?? PWNAGE-93000-REPORT.md
+?? REFLASH-PLAN.md
+?? REMEDIATION-PWNAGE-95000.md
+?? REPORT-EDGE.md
+?? REPORT-PORTAL-FOR-TEAMS.md
+?? REPORT-PWNAGE-100000.md
+?? REPORT-PWNAGE-101000.md
+?? REPORT-PWNAGE-102000.md
+?? REPORT-PWNAGE-103000.md
+?? REPORT-PWNAGE-104000.md
+?? REPORT-PWNAGE-105000.md
+?? REPORT-PWNAGE-94000.md
+?? REPORT-PWNAGE-95000.md
+?? REPORT-PWNAGE-99000.md
+?? configs/nuxel/input/README.md
+?? configs/nuxel/input/input.json
+?? configs/nuxel/input/nuxel-input-apply.path
+?? configs/nuxel/input/nuxel-input-apply.service
+?? docs/pwnage-96000/
+?? evidence/hdmi-audio-102000/
+?? evidence/pwnage-100000/
+?? evidence/pwnage-101000/
+?? evidence/pwnage-102000/
+?? evidence/pwnage-93000/
+?? evidence/pwnage-94000-after-back1.png
+?? evidence/pwnage-94000-before.png
+?? evidence/pwnage-94000-doom-now.png
+?? evidence/pwnage-94000-doom-playing.png
+?? evidence/pwnage-94000-sysmon-after.png
+?? evidence/pwnage-94000-sysmon-before.png
+?? evidence/pwnage-94000-texteditor-after.png
+?? evidence/pwnage-94000/
+?? evidence/pwnage-95000/
+?? evidence/pwnage-99000/
+?? evidence/teams-20261109/
+?? full-pwnage-10000.md
+?? full-pwnage-100000.md
+?? full-pwnage-101000.md
+?? full-pwnage-102000.md
+?? full-pwnage-11000.md
+?? full-pwnage-12000.md
+?? full-pwnage-93000.md
+?? full-pwnage-94000.md
+?? full-pwnage-95000.md
+?? full-pwnage-96000.md
+?? full-pwnage-99000.md
+?? index.html
+?? kernel/s10plus/patches/0010-nuxel-dp-shadow-timeout-recovery.patch
+?? kernel/s10plus/patches/0010-nuxel-dp-shadow-timeout-recovery.patch.required
+?? left_ptr.ppm
+?? nuxel-current.png
+?? p97000-ferdium-screen.png
+?? p97000-ferdium2.png
+?? p97000-fh2.png
+?? p97000-filehandlers.png
+?? p97000-gallery-open.png
+?? p97000-gallery-open2.png
+?? p97000-settings.png
+?? p97000-tabswipe.png
+?? p97000-tapbt.png
+?? p97000-tapbt2.png
+?? p97000-unlock.png
+?? p97000-zapzap.png
+?? profile.json
+?? pwa/nuxel-apps/settings/physical-input-settings.js
+?? pwa/nuxel-home/js/topbar-machine.js
+?? pwnage-10000.md
+?? pwnage-100000.md
+?? pwnage-101000.md
+?? pwnage-102000.md
+?? pwnage-11000.md
+?? pwnage-12000.md
+?? pwnage-93000.md
+?? pwnage-94000.md
+?? pwnage-95000.md
+?? pwnage-96000.md
+?? pwnage-97000.md
+?? pwnage-99000.md
+?? reflash-summary.md
+?? scripts/patch_teams_asar.py
+?? services/nuxel-bridge/src/asar_patch.py
+?? services/nuxel-bridge/src/remote_desktop.py.new
+?? services/nuxel-bridge/src/teams_emulatePlatform.js
+?? services/nuxel-display/
+?? services/nuxel-notifications/test-notifications-hints.py
+?? services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl.new
+?? services/nuxel-remote-desktop/bin/nuxel-vnc-loopback
+?? services/nuxel-remote-desktop/bin/nuxel-vnc-wayland
+?? services/nuxel-remote-desktop/systemd/nuxel-remote-vnc-loopback.service
+?? spoof.js
+?? spoof/electron-spoof-preload.js
+?? spoof/teams-app/
+?? spoofbird.md
+?? teams-visible.png
+?? teams.md
+?? teamsfix.md
+?? tests/pwnage93000/
+?? tests/pwnage94000/
+?? tests/pwnage96000/
+?? tools/pwnage93000/
+?? tools/pwnage94000/
+?? tools/s10plus/a33/nuxel-input-apply.sh
+?? tools/s10plus/a33/tests/fixtures/usb-hid/
+?? tools/s10plus/a33/tests/test-physical-input.py
+?? tools/s10plus/a67/wayvnc-force-wlr-screencopy.c
+?? tools/s10plus/a77/
+?? topbw.png
+=== tools ===
+Python 3.11.9
+Darwin infranux 24.6.0 Darwin Kernel Version 24.6.0: Tue Jul 21 20:51:05 PDT 2026; root:xnu-11417.140.69.711.44~1/RELEASE_ARM64_T6000 arm64
+ProductName:		macOS
+ProductVersion:		15.7.9
+BuildVersion:		24G830

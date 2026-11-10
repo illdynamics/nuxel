@@ -1,0 +1,122 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== final 2026-11-09T21:51:27Z ===
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+active
+active
+active
+active
+active
+active
+active
+=== dp ===
+1
+70975746
+DP=1
+00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1
+=== policy ===
+{
+  "fallback_id": "alsa:beyond-madera:rdma1",
+  "mode": "automatic",
+  "preferred_id": "alsa:beyond-madera:rdma1",
+  "preferred_name": "Phone speaker",
+  "schema": 1,
+  "updated": 1794261013
+}
+=== sinks ===
+31	alsa_output.hw_0_1	PipeWire	s16le 2ch 48000Hz	IDLE
+214	alsa_output.nuxel_hdmi	PipeWire	s16le 2ch 48000Hz	RUNNING
+alsa_output.nuxel_hdmi
+536870916	module-alsa-sink	sink_name=alsa_output.nuxel_hdmi device=hw:0,22 rate=48000 channels=2 format=s16le	
+1013	214	1012	PipeWire	s16le 2ch 48000Hz
+=== display ext ===
+state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=2620 nz=5701 color=argb orient_eff=0 orient_tf=0
+
+=== dmesg ===
+[ 2055.978087] dma_trigger: Start DP DMA request DMA On status = 0x0000001f
+[ 2055.978092] Displayport: audio config(1 ==> 3)
+[ 2055.978107] dma_trigger: Start DP DMA request DP Audio En status = 0x0004001f
+[ 2055.978112] [DP Audio] Entered dma_trigger --
+[ 2079.530082] [DP Audio] Entered dma_trigger ++
+[ 2079.530095] dma_trigger: Stop DP DMA request WAIT BUF FULL status = 0x0000001f
+[ 2079.530100] Displayport: audio config(3 ==> 2)
+[ 2079.530114] dma_trigger: Stop DP DMA request DMA Off status = 0x0000001f
+[ 2079.530133] dma_trigger: Stop DP DMA request DP Audio Dis status = 0x0000001f
+[ 2079.530137] Displayport: audio config(2 ==> 0)
+[ 2079.531154] Displayport: audio_infoframe: type and ch_cnt 01, SF and bit size 00, ch_allocation 00
+[ 2079.531165] dma_trigger: Stop DP DMA request End status = 0x0000001f
+[ 2079.531169] [DP Audio] Entered dma_trigger --
+[ 2082.592342] [DP Audio] Entered dma_trigger ++
+[ 2082.592352] dma_trigger: Start DP DMA request initial status = 0x0000001f
+[ 2082.592356] Displayport: audio config(0 ==> 1)
+[ 2082.592361] Displayport: audio_enable:1, ch:2, fs:2, bit:0, packed:2, word_len:0
+[ 2082.592412] Displayport: audio_infoframe: type and ch_cnt 01, SF and bit size 00, ch_allocation 00
+[ 2082.592428] dma_trigger: Start DP DMA request Low status = 0x0000001f
+[ 2082.592445] dma_trigger: Start DP DMA request DMA On status = 0x0000001f
+[ 2082.592449] Displayport: audio config(1 ==> 3)
+[ 2082.592459] dma_trigger: Start DP DMA request DP Audio En status = 0x0004001f
+[ 2082.592463] [DP Audio] Entered dma_trigger --
+[ 2101.483437] [DP Audio] Entered dma_trigger ++
+[ 2101.483453] dma_trigger: Stop DP DMA request WAIT BUF FULL status = 0x0000001f
+[ 2101.483458] Displayport: audio config(3 ==> 2)
+[ 2101.483471] dma_trigger: Stop DP DMA request DMA Off status = 0x0000001f
+[ 2101.483495] dma_trigger: Stop DP DMA request DP Audio Dis status = 0x0000001f
+[ 2101.483500] Displayport: audio config(2 ==> 0)
+[ 2101.484514] Displayport: audio_infoframe: type and ch_cnt 01, SF and bit size 00, ch_allocation 00
+[ 2101.484523] dma_trigger: Stop DP DMA request End status = 0x0000001f
+[ 2101.484526] [DP Audio] Entered dma_trigger --
+[ 2106.982382] [DP Audio] Entered dma_trigger ++
+[ 2106.982392] dma_trigger: Start DP DMA request initial status = 0x0000001f
+[ 2106.982397] Displayport: audio config(0 ==> 1)
+[ 2106.982402] Displayport: audio_enable:1, ch:2, fs:2, bit:0, packed:2, word_len:0
+[ 2106.982454] Displayport: audio_infoframe: type and ch_cnt 01, SF and bit size 00, ch_allocation 00
+[ 2106.982470] dma_trigger: Start DP DMA request Low status = 0x0000001f
+[ 2106.982489] dma_trigger: Start DP DMA request DMA On status = 0x0000001f
+[ 2106.982492] Displayport: audio config(1 ==> 3)
+[ 2106.982503] dma_trigger: Start DP DMA request DP Audio En status = 0x0004001f
+[ 2106.982506] [DP Audio] Entered dma_trigger --
+[ 2133.880952] [DP Audio] Entered dma_trigger ++
+[ 2133.880972] dma_trigger: Stop DP DMA request WAIT BUF FULL status = 0x0000001f
+[ 2133.880978] Displayport: audio config(3 ==> 2)
+[ 2133.880992] dma_trigger: Stop DP DMA request DMA Off status = 0x0000001f
+[ 2133.881017] dma_trigger: Stop DP DMA request DP Audio Dis status = 0x0000001f
+[ 2133.881021] Displayport: audio config(2 ==> 0)
+[ 2133.882037] Displayport: audio_infoframe: type and ch_cnt 01, SF and bit size 00, ch_allocation 00
+[ 2133.882046] dma_trigger: Stop DP DMA request End status = 0x0000001f
+[ 2133.882050] [DP Audio] Entered dma_trigger --
+[ 2134.158491] [DP Audio] Entered dma_trigger ++
+[ 2134.158505] dma_trigger: Start DP DMA request initial status = 0x0000001f
+[ 2134.158510] Displayport: audio config(0 ==> 1)
+[ 2134.158515] Displayport: audio_enable:1, ch:2, fs:2, bit:0, packed:2, word_len:0
+[ 2134.158566] Displayport: audio_infoframe: type and ch_cnt 01, SF and bit size 00, ch_allocation 00
+[ 2134.158583] dma_trigger: Start DP DMA request Low status = 0x0000001f
+[ 2134.158603] dma_trigger: Start DP DMA request DMA On status = 0x0000001f
+[ 2134.158607] Displayport: audio config(1 ==> 3)
+[ 2134.158617] dma_trigger: Start DP DMA request DP Audio En status = 0x0004001f
+[ 2134.158621] [DP Audio] Entered dma_trigger --
+[ 2170.036341] [DP Audio] Entered dma_trigger ++
+[ 2170.036358] dma_trigger: Stop DP DMA request WAIT BUF FULL status = 0x0000001f
+[ 2170.036363] Displayport: audio config(3 ==> 2)
+[ 2170.036377] dma_trigger: Stop DP DMA request DMA Off status = 0x0000001f
+[ 2170.036400] dma_trigger: Stop DP DMA request DP Audio Dis status = 0x0000001f
+[ 2170.036405] Displayport: audio config(2 ==> 0)
+[ 2170.037421] Displayport: audio_infoframe: type and ch_cnt 01, SF and bit size 00, ch_allocation 00
+[ 2170.037430] dma_trigger: Stop DP DMA request End status = 0x0000001f
+[ 2170.037434] [DP Audio] Entered dma_trigger --
+[ 2172.643393] [DP Audio] Entered dma_trigger ++
+[ 2172.643406] dma_trigger: Start DP DMA request initial status = 0x0000001f
+[ 2172.643411] Displayport: audio config(0 ==> 1)
+[ 2172.643418] Displayport: audio_enable:1, ch:2, fs:2, bit:0, packed:2, word_len:0
+[ 2172.643469] Displayport: audio_infoframe: type and ch_cnt 01, SF and bit size 00, ch_allocation 00
+[ 2172.643486] dma_trigger: Start DP DMA request Low status = 0x0000001f
+[ 2172.643504] dma_trigger: Start DP DMA request DMA On status = 0x0000001f
+[ 2172.643508] Displayport: audio config(1 ==> 3)
+[ 2172.643519] dma_trigger: Start DP DMA request DP Audio En status = 0x0004001f
+[ 2172.643523] [DP Audio] Entered dma_trigger --

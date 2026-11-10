@@ -36,6 +36,7 @@ from pathlib import Path
 
 ALLOWED_PREFIXES = (
     "/usr/share/nuxel/",
+    "/usr/share/doc/nuxel/",
     "/usr/share/applications/",
     "/usr/share/xdg-desktop-portal/",
     "/usr/share/dbus-1/services/",

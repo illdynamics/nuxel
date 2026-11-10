@@ -1,0 +1,343 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== attach-related ===
+55:[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+56:[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+58:[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+59:[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+79:[Mon Nov  9 17:14:52 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+83:[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1248
+84:[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+85:[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+86:[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+115:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+270:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+271:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+273:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+274:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+294:[Mon Nov  9 17:14:53 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+298:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+299:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+300:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+301:[Mon Nov  9 17:14:53 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+302:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+457:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+458:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+460:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+461:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+481:[Mon Nov  9 17:14:54 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+485:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+486:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+487:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+488:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+514:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+669:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+670:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+672:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+673:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+693:[Mon Nov  9 17:14:54 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+697:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+698:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+699:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+700:[Mon Nov  9 17:14:54 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+701:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+856:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+857:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+859:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+860:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+880:[Mon Nov  9 17:14:55 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+884:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+885:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+886:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+887:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+889:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1044:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+1045:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1047:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+1048:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+1095:[Mon Nov  9 17:14:55 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+1099:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1244
+1100:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+1101:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+1102:[Mon Nov  9 17:14:55 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+1112:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1267:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+1268:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1270:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+1271:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+1291:[Mon Nov  9 17:14:56 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+1295:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+1296:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+1297:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+1298:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+1299:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1454:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+1455:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1457:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+1458:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+1478:[Mon Nov  9 17:14:56 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+1482:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+1483:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+1484:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+1485:[Mon Nov  9 17:14:56 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+1489:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1644:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+1645:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1647:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+1648:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+1673:[Mon Nov  9 17:14:57 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+1677:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1244
+1678:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+1679:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+1680:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+1704:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1859:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+1860:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+1862:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+1863:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+1883:[Mon Nov  9 17:14:57 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+1887:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1246
+1888:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+1889:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+1890:[Mon Nov  9 17:14:57 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+1891:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2046:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+2047:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2049:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+2050:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+2070:[Mon Nov  9 17:14:58 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+2074:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1248
+2075:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+2076:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+2077:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+2078:[Mon Nov  9 17:14:58 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2233:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+2234:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2236:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+2237:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+2257:[Mon Nov  9 17:14:59 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+2261:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+2262:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+2263:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+2264:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+2288:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2443:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+2444:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2446:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+2447:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+2467:[Mon Nov  9 17:14:59 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+2470:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1248
+2472:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+2473:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+2474:[Mon Nov  9 17:14:59 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+2475:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2630:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+2631:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2633:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+2634:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+2654:[Mon Nov  9 17:15:00 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+2658:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1244
+2659:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+2660:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+2661:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+2662:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2817:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+2818:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+2820:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+2821:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+2841:[Mon Nov  9 17:15:00 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+2844:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1244
+2846:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+2847:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+2848:[Mon Nov  9 17:15:00 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+2849:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3005:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+3006:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3008:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+3009:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+3029:[Mon Nov  9 17:15:01 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+3033:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1247
+3034:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+3035:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+3036:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+3053:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3220:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+3221:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3223:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+3224:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+3244:[Mon Nov  9 17:15:01 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+3248:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1244
+3249:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+3250:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+3251:[Mon Nov  9 17:15:01 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+3262:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3417:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+3418:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3420:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+3421:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+3441:[Mon Nov  9 17:15:02 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+3444:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1247
+3446:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+3447:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+3448:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+3478:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3633:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+3634:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3636:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+3637:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+3657:[Mon Nov  9 17:15:02 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+3661:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+3662:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+3663:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+3664:[Mon Nov  9 17:15:02 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+3665:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3820:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+3821:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+3823:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+3824:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+3844:[Mon Nov  9 17:15:03 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+3848:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+3849:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+3850:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+3851:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+3852:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4007:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+4008:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4010:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+4011:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+4031:[Mon Nov  9 17:15:03 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+4034:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+4036:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+4037:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+4038:[Mon Nov  9 17:15:03 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+4039:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4194:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+4195:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4197:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+4198:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+4218:[Mon Nov  9 17:15:04 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+4222:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1249
+4223:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+4224:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+4225:[Mon Nov  9 17:15:04 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+4226:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4381:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+4382:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4384:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+4385:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+4405:[Mon Nov  9 17:15:05 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+4409:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1244
+4410:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+4411:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+4412:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+4413:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4568:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+4569:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4571:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+4572:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+4592:[Mon Nov  9 17:15:05 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+4596:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1244
+4597:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+4598:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+4599:[Mon Nov  9 17:15:05 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+4600:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4755:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+4756:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+4758:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+4759:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+4785:[Mon Nov  9 17:15:06 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+4788:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1245
+4790:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+4791:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+4792:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+4793:[Mon Nov  9 17:15:06 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+=== lines total ===
+10983 /tmp/dmesg-now.txt
+=== first 80 lines ===
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:96 V1280X720P60
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:93 V1366X768P60
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:94 V1280X1024P60
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:95 V1920X1080P24
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:16 V1920X1080P25
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:5 V1920X1080P30
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:4 V1600X900P59
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:3 V1600X900P60RB
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:2 V1920X1080P50
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:7 V1920X1080P60EXT
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:6 V1920X1080P59
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:15 V1920X1080P60
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:31 V1920X1200P60RB
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:32 V1920X1200P60
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:33 V2560X1080P60
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:34 V2048X1536P60
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:20 V1920X1440P60
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:19 V2400X1200P90RELU
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:18 V2560X1440P60EXT
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:22 V2560X1440P59
+[Mon Nov  9 17:14:52 2026] Displayport: EDID: Video data block vic:1 V1440x2560P60
+[Mon Nov  9 17:14:52 2026] Displayport: Data block 1 of 3 bytes
+[Mon Nov  9 17:14:52 2026] Displayport: LPCM ch=2
+[Mon Nov  9 17:14:52 2026] Displayport: ch:0x2, sample:0x7, bitrate:0x7
+[Mon Nov  9 17:14:52 2026] Displayport: Data block 7 of 6 bytes
+[Mon Nov  9 17:14:52 2026] Displayport: Data block 3 of 13 bytes
+[Mon Nov  9 17:14:52 2026] Displayport: Data block 3 of 7 bytes
+[Mon Nov  9 17:14:52 2026] Displayport: Data block 7 of 4 bytes
+[Mon Nov  9 17:14:52 2026] Displayport: Data block 7 of 3 bytes
+[Mon Nov  9 17:14:52 2026] Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+[Mon Nov  9 17:14:52 2026] Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+[Mon Nov  9 17:14:52 2026] Displayport: invalid timing i:42, best:45
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V640X480P60
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V720X480P60
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V720X576P50
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V1280X720P50
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V1280X720P60
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V1280X1024P60
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V1920X1080P24
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V1920X1080P25
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V1920X1080P30
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V1920X1080P50
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V1920X1080P60
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V2560X1440P59
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V3840X2160P24
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V3840X2160P25
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V3840X2160P30
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V3840X2160P50
+[Mon Nov  9 17:14:52 2026] Displayport: unit test supported_videos : V3840X2160P60
+[Mon Nov  9 17:14:52 2026] Displayport: max video_format : V3840X2160P60
+[Mon Nov  9 17:14:52 2026] Displayport: returns true
+[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+
+[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+[Mon Nov  9 17:14:52 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+[Mon Nov  9 17:14:52 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+[Mon Nov  9 17:14:52 2026] max77705: max77705_usbc_opcode_write: W->W opcode[0x59] write_length[1] read_length[3]
+[Mon Nov  9 17:14:52 2026] max77705: front_usbc_cmd: Opcode(0x59)
+[Mon Nov  9 17:14:52 2026] max77705: dequeue_usbc_cmd: Opcode(0x59) Response(0xff)
+[Mon Nov  9 17:14:52 2026] max77705: max77705_usbc_cmd_run: No ISR
+[Mon Nov  9 17:14:52 2026] max77705: max77705_i2c_opcode_write: opcode 0x59, write_length 2
+[Mon Nov  9 17:14:52 2026] max77705: opcode_write: 00000000: 59 01
+[Mon Nov  9 17:14:52 2026] max77705:max77705_irq_thread: irq[318] 318/276/14 irq_src=0x08 pmic_rev=0x05
+[Mon Nov  9 17:14:52 2026] [MAX77705] irq_reg, complete [1], 80, 0, 0, 0, f0
+[Mon Nov  9 17:14:52 2026] [MAX77705] dump_reg, 7, 5, 0, 10, 8a, 1, 0, 87
+[Mon Nov  9 17:14:52 2026] max77705_irq_thread ic_alt_mode=1
+[Mon Nov  9 17:14:52 2026] max77705: max77705_apcmd_irq: IRQ(289)_IN
+[Mon Nov  9 17:14:52 2026] max77705: max77705_apcmd_irq:  [IN] sysmsg : 5
+[Mon Nov  9 17:14:52 2026] max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x59)
+[Mon Nov  9 17:14:52 2026] max77705: dequeue_usbc_cmd: front->next = NULL
+[Mon Nov  9 17:14:52 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+[Mon Nov  9 17:14:52 2026] max77705: max77705_usbc_cmd_run: Apcmdres ISR !!!
+[Mon Nov  9 17:14:52 2026] max77705: max77705_i2c_opcode_read: opcode 0xff, read_length 4, ret_error 0
+[Mon Nov  9 17:14:52 2026] max77705: opcode_read: 00000000: 59 01 0a 06
+[Mon Nov  9 17:14:52 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+[Mon Nov  9 17:14:52 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)

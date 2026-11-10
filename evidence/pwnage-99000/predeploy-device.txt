@@ -1,0 +1,37 @@
+2026-11-09T15:44:57Z
+Linux fedora 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+NAME="Windows 10"
+ID=windows
+VERSION_ID=10
+PRETTY_NAME="Windows 10 Enterprise"
+ANSI_COLOR="0;34"
+CPE_NAME="cpe:/o:microsoft:windows:10"
+--- active units ---
+active
+active
+active
+active
+active
+active
+--- file hashes before ---
+3ddf302619cca4107fd5b8933b4a8984b771c911a1fbf1132d25622516234f34  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+8a5bae57d26bb46ae5fffb397e33a1f461b449a9deac6bcd036402e7cb26bea7  /usr/lib/nuxel/nuxel-bridge/api.py
+a189d860a03c8152e9236e345dfd404d3fed12820a824ae0705dc42191f855bd  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+dcaaa97deedaec5f6e9b93bd7c3740b9c80d51c005ea81c8a253a4881eaff85b  /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js
+ced52672bccd82aaa916360bc13146f0b69b2c5540ddc0337ea6d129132f0048  /usr/share/nuxel/pwa/nuxel-common/bridge.js
+--- display path ---
+/sys/class/switch/secdp/state=/sys/devices/virtual/switch/secdp/state0
+/sys/class/extcon/extcon0/state=/sys/devices/platform/130b0000.displayport/extcon/extcon0/stateDP=0
+/sys/class/sec/ccic/usbpd_ids=/sys/devices/virtual/sec/ccic/usbpd_ids0000:0000
+/sys/class/sec/ccic/usbpd_type=/sys/devices/virtual/sec/ccic/usbpd_type0
+/sys/class/graphics/fb1/device=/sys/devices/platform/19050000.decon_t
+--- outputs ---
+HEADLESS-1 "Headless output 1"
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Position: 0,0
+  Transform: normal
+  Scale: 2.000000
+  Adaptive Sync: disabled
+--- display.status before ---

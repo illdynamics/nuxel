@@ -154,6 +154,7 @@ if [ -x /usr/lib/nuxel/nuxel-preload-cinema ]; then
   NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS="${NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS:-6000}" \
   NUXEL_PRELOAD_EARLY_MAP_DELAY_MS="${NUXEL_PRELOAD_EARLY_MAP_DELAY_MS:-800}" \
   NUXEL_PRELOAD_WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+  NUXEL_PRELOAD_STATUS="$PRELOAD_STATUS_FILE" \
   nohup /usr/lib/nuxel/nuxel-preload-cinema --early \
       </dev/null >/run/nuxel-preload-cinema.out 2>&1 &
   say "starting pre-lockscreen cinema overlay pid=$!"

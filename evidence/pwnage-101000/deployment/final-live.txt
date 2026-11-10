@@ -1,0 +1,70 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-09T18:15:27Z
+== uptime ==
+ 19:15:27 up 0 min,  0 user,  load average: 8.94, 2.56, 0.88
+== ext ==
+state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=240 nz=4796 color=argb orient_eff=0 orient_tf=0
+== orientation ==
+portrait
+== status ==
+state          : DP_LINK_READY
+mode           : mirror-portrait
+generation     : 1
+rotation       : 0
+orientation    : portrait (effective=0 transform=0 external=0 auto=True)
+notification   : 61
+display        : Philips
+mirror         : ready
+separate       : unavailable
+mirror output  : HEADLESS-1
+desktop output : none
+blocker        : none
+== fb owners ==
+6152 /usr/lib/nuxel/nuxel-wl-fb
+8807 /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext --mode mirror-portrait --output HEADLESS-1 --fb /dev/fb1 --fps 20 --fit fit --color-order argb --auto-orientation --orientation-file /run/nuxel-wl-fb-orientation --resolution 1920x1080
+== fb devices ==
+crw-------. 1 root root 29, 0 Jan  1  1970 /dev/fb0
+crw-------. 1 root root 29, 1 Jan  1  1970 /dev/fb1
+2560
+== errors ==
+Nov 09 19:15:20 WIN-CLIENT kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Nov 09 19:15:23 WIN-CLIENT kernel: watchdog: watchdog0: watchdog did not stop!
+Nov 09 19:15:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+Nov 09 19:15:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: ack message is ok
+Nov 09 19:15:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+Nov 09 19:15:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Nov 09 19:15:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Nov 09 19:15:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+Nov 09 19:15:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+Nov 09 19:15:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: ack message is ok
+Nov 09 19:15:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+Nov 09 19:15:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Nov 09 19:15:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Nov 09 19:15:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+Nov 09 19:15:27 WIN-CLIENT kernel: audit: kauditd hold queue overflow
+Nov 09 19:15:27 WIN-CLIENT kernel: audit: kauditd hold queue overflow
+Nov 09 19:15:27 WIN-CLIENT kernel: audit: kauditd hold queue overflow
+Nov 09 19:15:27 WIN-CLIENT kernel: audit: kauditd hold queue overflow
+Nov 09 19:15:27 WIN-CLIENT kernel: audit: kauditd hold queue overflow
+Nov 09 19:15:27 WIN-CLIENT sshd-session[11323]: pam_systemd(sshd:session): Failed to acquire PID reference on ourselves: Function not implemented
+== oops ==
+[   17.425517] 6,0;NUXEL_ANIM_HANDOFF receipt=1794248088-ANIM_TERMINAL_CONDITION-6152 owner=anim stage=ANIM_TERMINAL_CONDITION terminal=1 loops=1/1 reason=anim_min_cycle_reached
+[   17.426052] 6,0;ANIMATION_STOP requested=1 painter_pid=3497 loops=1/1 reason=anim_min_cycle_reached
+[   17.426187] 6,0;NUXEL_ANIM_HANDOFF receipt=1794248088-ANIMATION_STOP_REQUESTED-6152 owner=anim stage=ANIMATION_STOP_REQUESTED terminal=1 loops=1/1 reason=anim_min_cycle_reached
+[   17.565767] NUXEL_ANIM_LOOPS=1
+[   17.567628] 6,0;NUXEL_ANIM_HANDOFF receipt=1794248088-ANIMATION_STOP_CONFIRMED-6152 owner=anim stage=ANIMATION_STOP_CONFIRMED terminal=1 loops=1/1 reason=animation_stop_confirmed
+[   17.816482] 6,0;NUXEL_ANIM_HANDOFF receipt=1794248089-LAUNCHER_DISPLAY_OWNER-6152 owner=ui stage=LAUNCHER_DISPLAY_OWNER terminal=1 loops=1/1 reason=launcher_display_owner
+[   17.816533] 6,0;LAUNCHER_DISPLAY owner=nuxel-wl-fb receipt=1794248089-LAUNCHER_DISPLAY_OWNER-6152 loops=1/1
+[   23.777669] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[   34.785409] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[   45.797477] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+== irq ==
+delta_2s=122

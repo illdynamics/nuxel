@@ -557,7 +557,7 @@ class SoftwareWindow(Gtk.Window):
 def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="Nuxel Software (RPM + Flatpak)")
-    ap.add_argument("--version", action="version", version="nuxel-software 0.8.2-beta")
+    ap.add_argument("--version", action="version", version="nuxel-software 0.8.3-beta")
     ap.add_argument("--backend-check", action="store_true",
                     help="print backend availability and exit")
     args = ap.parse_args(argv)

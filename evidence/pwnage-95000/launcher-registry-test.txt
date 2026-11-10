@@ -1,0 +1,186 @@
+PASS registry loaded
+PASS registry carries a machine-readable revision
+PASS registry has org.nuxel.Terminal
+PASS registry has nuxel-settings
+PASS registry has canonical org.nuxel.SnekByte
+PASS SnekByte uses the supplied launcher icon
+PASS old SnekByte recents id is migrated
+PASS A32 registry entry kept: nuxel-dialer
+PASS A32 registry entry kept: nuxel-messages
+PASS A32 registry entry kept: nuxel-contacts
+PASS A32 registry entry kept: org.nuxel.Mail
+PASS A32 registry entry kept: org.nuxel.Calendar
+PASS A32 registry entry kept: org.nuxel.Notes
+PASS A32 registry entry kept: org.nuxel.Files
+PASS A32 registry entry kept: nuxel-camera
+PASS entry nuxel-dialer is launchable (id/name/url/type/category)
+PASS entry nuxel-messages is launchable (id/name/url/type/category)
+PASS entry nuxel-contacts is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Clipper is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Mail is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calendar is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Browser is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Notes is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Files is launchable (id/name/url/type/category)
+PASS entry nuxel-camera is launchable (id/name/url/type/category)
+PASS entry nuxel-settings is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Firewall is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Permissions is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Terminal is launchable (id/name/url/type/category)
+PASS entry org.nuxel.LiveConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.USBSSHConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.WiFiSSHConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.RemoteDesktopXRDP is launchable (id/name/url/type/category)
+PASS entry org.nuxel.RemoteDesktopVNC is launchable (id/name/url/type/category)
+PASS entry org.nuxel.ScrcpyMirror is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calculator is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Clock is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Photos is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Weather is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Maps is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Nuxtore is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Recorder is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Doom is launchable (id/name/url/type/category)
+PASS entry org.nuxel.SnekByte is launchable (id/name/url/type/category)
+PASS entry org.mozilla.firefox is launchable (id/name/url/type/category)
+PASS entry org.videolan.VLC is launchable (id/name/url/type/category)
+PASS entry org.signal.Signal is launchable (id/name/url/type/category)
+PASS entry com.stremio.Stremio is launchable (id/name/url/type/category)
+PASS entry org.gnome.FileRoller is launchable (id/name/url/type/category)
+PASS entry org.gnome.Loupe is launchable (id/name/url/type/category)
+PASS entry org.gnome.Papers is launchable (id/name/url/type/category)
+PASS entry org.gnome.SystemMonitor is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Media is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Downloader is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Authenticator is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Vault is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Cleanup is launchable (id/name/url/type/category)
+PASS entry org.nuxel.DevMgmt is launchable (id/name/url/type/category)
+PASS entry org.nuxel.PenguInterface is launchable (id/name/url/type/category)
+PASS entry org.gnome.Software is launchable (id/name/url/type/category)
+PASS settings is a served PWA, not the native placeholder
+PASS terminal is a served PWA under the authoritative tree
+PASS every PWA url lives under /pwa/nuxel-apps/
+PASS registry entry org.nuxel.Clipper is served with a valid manifest
+PASS served asset exists for org.nuxel.Mail (/pwa/nuxel-apps/mail/index.html)
+PASS app manifest valid for org.nuxel.Mail
+PASS served asset exists for org.nuxel.Calendar (/pwa/nuxel-apps/calendar/index.html)
+PASS app manifest valid for org.nuxel.Calendar
+PASS served asset exists for org.nuxel.Notes (/pwa/nuxel-apps/notes/index.html)
+PASS app manifest valid for org.nuxel.Notes
+PASS served asset exists for org.nuxel.Files (/pwa/nuxel-apps/files/index.html)
+PASS app manifest valid for org.nuxel.Files
+PASS served asset exists for nuxel-settings (/pwa/nuxel-apps/settings/index.html)
+PASS app manifest valid for nuxel-settings
+PASS registry entry org.nuxel.Firewall is served with a valid manifest
+PASS registry entry org.nuxel.Permissions is served with a valid manifest
+PASS served asset exists for org.nuxel.Terminal (/pwa/nuxel-apps/terminal/index.html)
+PASS app manifest valid for org.nuxel.Terminal
+PASS registry entry org.nuxel.LiveConsole is served with a valid manifest
+PASS registry entry org.nuxel.USBSSHConsole is served with a valid manifest
+PASS registry entry org.nuxel.WiFiSSHConsole is served with a valid manifest
+PASS registry entry org.nuxel.RemoteDesktopXRDP is served with a valid manifest
+PASS registry entry org.nuxel.RemoteDesktopVNC is served with a valid manifest
+PASS registry entry org.nuxel.ScrcpyMirror is served with a valid manifest
+PASS registry entry org.nuxel.Calculator is served with a valid manifest
+PASS registry entry org.nuxel.Clock is served with a valid manifest
+PASS registry entry org.nuxel.Photos is served with a valid manifest
+PASS registry entry org.nuxel.Weather is served with a valid manifest
+PASS registry entry org.nuxel.Maps is served with a valid manifest
+PASS registry entry org.nuxel.Nuxtore is served with a valid manifest
+PASS registry entry org.nuxel.Recorder is served with a valid manifest
+PASS registry entry org.nuxel.Doom is served with a valid manifest
+PASS registry entry org.nuxel.SnekByte is served with a valid manifest
+PASS registry entry org.nuxel.Media is served with a valid manifest
+PASS registry entry org.nuxel.Downloader is served with a valid manifest
+PASS registry entry org.nuxel.Authenticator is served with a valid manifest
+PASS registry entry org.nuxel.Vault is served with a valid manifest
+PASS registry entry org.nuxel.Cleanup is served with a valid manifest
+PASS registry entry org.nuxel.DevMgmt is served with a valid manifest
+PASS registry entry org.nuxel.PenguInterface is served with a valid manifest
+PASS nuxel-apps/settings frontend is runnable (index.html + js)
+PASS launcher manifest.json parses
+PASS manifest carries nuxel.pwa_version
+PASS manifest carries nuxel.cache_version
+PASS manifest declares this tree the single source of truth
+PASS status-bar.js exposes a machine-readable VERSION
+PASS status-bar.js VERSION == manifest pwa_version (0.8.1-beta)
+PASS status-bar.js reports a newer revision than the stale v0.3.2 device copy
+PASS sw.js declares an explicit CACHE_VERSION
+PASS sw.js CACHE_VERSION == manifest cache_version (v094-p94000)
+PASS sw.js cache namespace advanced past the A32 baseline v3-a32
+PASS sw.js activate deletes the previous namespaces
+PASS sw.js keeps the A32 network-first rule for code assets
+PASS precache list contains ./js/status-bar.js
+PASS precache list contains ./js/qs.js
+PASS precache list contains ./js/safe-zones.js
+PASS precache list contains ./js/settings-store.js
+PASS precache list contains ./js/bootlog.js
+PASS precache list contains ./manifest.json
+PASS precache list contains ./assets/nuxel-background.png
+PASS every precached asset exists in the tree
+PASS index.html loads js/apps.js
+PASS index.html loads js/status-bar.js
+PASS index.html loads js/qs.js
+PASS index.html loads js/safe-zones.js
+PASS index.html loads js/settings-store.js
+PASS index.html loads js/app.js
+PASS manifest exposes shortcuts (Terminal/Settings/Console)
+PASS shortcut "Terminal" points at a registry id
+PASS shortcut "Settings" points at a registry id
+PASS shortcut "Serial Live Console" points at a registry id
+PASS shortcut "USB SSH Console" points at a registry id
+PASS shortcut "Wi-Fi SSH Console" points at a registry id
+PASS manifest settings_documents lists /etc/nuxel/boot/verbose-boot.json
+PASS manifest settings_documents lists /etc/nuxel/boot/animation-handoff.json
+PASS manifest settings_documents lists /etc/nuxel/display/statusbar-safezones.json
+PASS manifest settings_documents lists /etc/nuxel/input/buttons.json
+PASS manifest apps_in_registry matches the registry ids
+PASS manifest registry_version matches the registry revision
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/status-bar.js.orig
+PASS no stale duplicate launcher asset pwa/nuxel-home/status-bar.js
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/bundle.js
+PASS no v0.3.2 launcher version constant survives under pwa/nuxel-home/js
+PASS the registry is exposed to the launcher host (window.appRegistry)
+PASS the real controller booted and bound its events
+PASS activation dispatches app:launch for the requested id
+PASS activation records the app in the recents list
+PASS activation actually opens the app frame (real controller, not a mock)
+PASS the opened frame points at the app url from the registry
+PASS app content reserves the system status and native Home bar, below Quick Settings
+PASS opening an app enters LAUNCHING
+PASS the frame load transition enters ACTIVE
+PASS a hidden active app enters BACKGROUND
+PASS a visible background app returns ACTIVE
+PASS no redundant app-owned title bar is created
+FAIL Home backgrounds the frame and returns to the launcher  
+PASS Home preserves the resumable surface in BACKGROUND state
+FAIL activation leaves exactly one visible app surface  2
+PASS the logical "home" action closes overlays (return-home)
+PASS the launcher exposes the same-origin app close hook
+PASS the status bar wires a real vertical pull to gesture:qs
+PASS unanswered startup services cannot swallow app activation
+PASS Home closes the actual Quick Settings instance
+PASS switching from native Terminal requests host surface cleanup
+PASS late Terminal acknowledgement cannot overwrite the new app
+PASS an empty query returns no results
+PASS search finds the Terminal by name
+PASS a name match is ranked as a name match
+PASS search is case-insensitive
+PASS search matches the category too
+PASS a nonsense query returns nothing (no fake results)
+PASS the search UI delegates to the registry matcher (no second implementation)
+PASS the #app=<id> deeplink launches that registry app
+PASS an unknown deeplink is refused, not launched into a blank frame
+PASS every manifest shortcut id is launchable from the deeplink path
+PASS the launcher grid is a scrollable container
+PASS the grid keeps touch momentum scrolling on the phone
+PASS the app grid is a real CSS grid (4 columns as shipped)
+PASS the launcher page declares the fullscreen viewport-fit the cutout needs
+PASS the app grid container exists in the page
+PASS the search results list is scrollable too
+PASS Home grid honours the saved column count in portrait
+PASS Apps drawer has its own independent column setting
+PASS Home settings exposes a separate Apps drawer column selector
+
+2 FAILURES

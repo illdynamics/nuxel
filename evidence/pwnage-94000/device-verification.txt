@@ -1,0 +1,130 @@
+NUXEL PWNAGE-94000 — DEVICE VERIFICATION DATA
+Collected on the live S10+ (192.168.178.167) on 2026-11-08.
+
+Identity
+  Model/SoC: Samsung Galaxy S10+ SM-G975F, beyond2lte, Exynos 9820
+  Kernel: 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT aarch64
+  OS: Fedora Linux 43 (Forty Three)
+  Nuxel VERSION: v0.8.1-beta
+  Access: root SSH key ~/.ssh/wicked_wqn_id_rsa
+  Deploy: tools/pwnage94000/deploy-pwnage94000.sh, final TS 20261108T173717
+  Services active: nuxel-bridge, nuxel-http-bridge, nuxel-wayland, nuxel-wl-fb
+
+Final desktop geometry (diag-ui, portrait 360x760, body "ready native-osk")
+  status bar: x=0 y=0 w=360 h=36
+  app grid:   x=0 y=36 w=360 h=582
+  dock:       x=0 y=618 w=360 h=80
+  native nav dock: 62 px, anchored bottom (698..760), mapped
+  scroll: 0,0 ; topState: standard ; frames 0, iframes 0
+  input probe after Back: hit=app-list top=status-bar bottom=BODY offenders=none
+
+Top-bar progressive gestures, landscape Doom app (1520x760)
+  L0 hidden -> down1 L1 standard -> down2 L2 expanded -> down3 L3 extended
+  -> one up -> L0 hidden ; app remained ACTIVE at every step
+  Prior bug (pre-fix): down1 jumped 0 -> 2 because status-bar pointermove and
+  immersive pointerup both advanced the shade.
+  Native status-bar presentation adapter levels:
+    level 0: visible=false, strip, height=40
+    level 1: visible=true, height=36
+    level 2: visible=true, height=256
+    level 3: visible=true, height=506
+  Landscape bands: top=56 px, bottom=56 px, distance=32 px (immersive.js)
+  Portrait bands: top=48 px, bottom=34 px, distance=42 px
+  Bottom nav landscape: swipe up -> navdock visible=true mapped=true
+    (width=1520 height=62); second swipe -> hidden. Verified.
+  Portrait PWA (Calendar, 360x760): 0->1->2->3->up->0 verified.
+
+Doom (WebAssembly Chocolate Doom, SFX path)
+  Launch: launcher org.nuxel.Doom, start-episode, WASM engine
+  Engine state: running=true paused=false audioState=running unlocked=true
+  Audio activation: trusted GDK taps alone do not grant WebAudio activation on
+    this WebKit; the verified audio path used a real virtual-keyboard gesture
+    (wtype) immediately before the click, equivalent to a physical finger.
+  Audio callback probe: callbacks=2126, maxRms=0.3580
+  Hardware sink: alsa_output.hw_0_1 (PipeWire/Pulse, 44100/48000)
+  Sink monitor PCM during Escape/Return SFX:
+    bytes=786432, peak=15528, overall RMS=2568.7,
+    max 0.1 s segment RMS=7250.9, 11/40 segments > 10 RMS
+  Second capture: bytes=393216, peak=15547, max segment RMS=2091.6
+  WebGL render probe: draws 422 -> 668 -> 916, clears 212 -> 335 -> 459 each
+    ~2 s window, clear colour (0,0,0,1). The canvas has a WebGL context
+    (px=no2d); grim/screencopy does not capture that WebGL layer.
+  Touch HUD: fire-left taps logged by the app (hit=fire-left, trusted=1)
+  Exit: long-Back -> appState CLOSED, frames 0, iframes 0, audio/GL probes
+    null, WebAudio sink-input gone, Home geometry restored.
+  Relaunch: org.nuxel.Doom ACTIVE at start screen; audio must be re-armed by
+    the next trusted start gesture, settings remain sound=true.
+  Music: disabled for the WASM engine (-nomusic). Enabling the vendored
+    Emscripten OPL/MIDI path spins WebKitWebProcess at ~70-90% CPU and hangs
+    the event loop; SFX use the stable mixer path.
+  Native Chocolate Doom (org.nuxel.Doom.Chocolate) was also tried: the host
+    binary reports "Unable to set up sound" and the SDL EGL/WebGL path fails
+    on this Mali/4.14 stack, so the WASM engine remains the launch path.
+
+Application startup (existing p94 baseline/after + current rerun)
+  Baseline file: evidence/pwnage-94000/launch-baseline.jsonl
+  After file:    evidence/pwnage-94000/launch-after.jsonl
+  Current file:  evidence/pwnage-94000/launch-current.jsonl
+  request_to_launch_accepted (ms), baseline -> after -> current:
+    SystemMonitor cold 1015.2 -> 538.8 -> 589.6
+    SystemMonitor warm 1377.4 -> 544.4 -> 561.0
+    FileRoller cold    913.0 -> 567.3 -> 600.4
+    FileRoller warm    958.3 -> 525.3 -> 607.8
+    TextEditor cold    982.3 -> 172.7 -> 294.4
+    TextEditor warm    619.1 -> 281.7 -> 169.3
+    zapzap cold        803.0 -> 287.3 -> 240.0
+    zapzap warm        695.1 -> 169.7 -> 160.1
+  T3 first-surface (ms), selected baseline -> after -> current:
+    SystemMonitor cold 3889.2 -> 3085.6 -> 4332.9
+    SystemMonitor warm 3163.3 -> 2461.6 -> 2737.1
+    FileRoller cold    1397.1 -> 1281.4 -> 1206.7
+    FileRoller warm    1319.3 -> 1035.7 -> 1207.2
+    TextEditor cold      n/a  -> 2217.1 -> 3291.2
+    TextEditor warm      n/a  -> 3032.8 -> 2080.9
+    zapzap cold          n/a  -> 3269.2 -> 2380.5
+    zapzap warm          n/a  -> 2198.7 -> 2228.9
+  Surface matching was also fixed: baseline failed to match TextEditor/zapzap
+  (matched_surface null); current matches both.
+
+Dark theme
+  /etc/gtk-3.0/settings.ini: gtk-theme-name=Adwaita-dark,
+    gtk-application-prefer-dark-theme=true
+  /etc/gtk-4.0/settings.ini: same
+  /etc/dconf/db/site.d/00-nuxel-dark: color-scheme='prefer-dark',
+    gtk-theme='Adwaita-dark'
+  /etc/dconf/profile/user: user-db:user, system-db:site
+  /var/lib/flatpak/overrides/global: GTK_APPLICATION_PREFER_DARK_THEME=1,
+    GTK_THEME=Adwaita:dark (Environment only, no Context grants)
+  gsettings (uid 1000): color-scheme='prefer-dark', gtk-theme='Adwaita-dark'
+  System Monitor (native GTK3) process env:
+    GTK_THEME=Adwaita:dark, GTK_APPLICATION_PREFER_DARK_THEME=1,
+    GSETTINGS_BACKEND=dconf, XDG_CURRENT_DESKTOP=Nuxel
+  TextEditor (Flatpak GTK4/libadwaita) process env:
+    FLATPAK_ID=org.gnome.TextEditor, container=flatpak,
+    GTK_THEME=Adwaita:dark, GTK_APPLICATION_PREFER_DARK_THEME=1,
+    GSETTINGS_BACKEND=dconf
+  Screenshot luminance (8%..92% x 12%..88% interior):
+    System Monitor before: avg_lum=245.1, light_frac=0.99 (light)
+    System Monitor after:  avg_lum=52.6,  light_frac=0.007 (dark)
+    TextEditor after:      avg_lum=52.6,  light_frac=0.129 (dark)
+
+Back / geometry cycles
+  cycles-final.jsonl: 20/20 cycles, "bad": [], geometry_failures=0
+    apps: SystemMonitor, FileRoller, TextEditor, Calendar
+    final each cycle: bar 0,0,360,36; dock 0,618,360,80;
+    grid 0,36,360,582; inner 360x760; scroll 0,0; top standard; state CLOSED
+  cycles-landscape-final.jsonl: 8/8 cycles, bad [], geometry_failures=0
+    NOTE: orientation daemon reverted Home to portrait during this run, so the
+    measured inner size was 360x760. It is a second portrait run, not a true
+    landscape desktop run. Landscape gestures and landscape app->Home exit
+    were verified separately in the Doom app (1520x760).
+  Doom fullscreen exit (landscape 1520x760) -> Home portrait geometry correct,
+    frames 0, iframes 0, no stale WebAudio sink.
+  Input after single Back: hit=app-list, offenders=none.
+
+Idle resource measurements (final clean Home, 5 s window)
+  nuxel-statusbar: 0.4% of one core (was 93.2% before the FIFO fix)
+  nuxel-navdock: 0.0%
+  WebKitWebProcess: 13.2% of one core (launcher clock/indicator polling and
+    animated wallpaper; pre-existing, not introduced by p94)
+  WebAudio sink-inputs on Home: none (only the soundd music stream)

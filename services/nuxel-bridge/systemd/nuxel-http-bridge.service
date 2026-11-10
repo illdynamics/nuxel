@@ -29,6 +29,11 @@ PrivateDevices=no
 RestrictAddressFamilies=AF_INET AF_UNIX
 ReadOnlyPaths=/
 ReadWritePaths=/run/nuxel /run/nuxel-orientation /var/lib/nuxel /var/log/nuxel /var/cache/nuxel /home/nuxel /sys/kernel/config/usb_gadget /sys/class/leds /etc/nuxel/remote-desktop /etc/nuxel/app-registry /etc/nuxel/notifications /etc/nuxel/privacy /etc/nuxel/security /etc/nuxel/orientation
+# Teams renderer repair: the bridge rewrites the Flatpak app.asar once per
+# deployed build so upstream's UA-CH structuredClone crash and the AAD
+# desktop-SSO pagination spinner do not leave Portal for Teams on the
+# "Switch Edge profile" screen.  Only this app's deployment tree is writable.
+ReadWritePaths=-/var/lib/flatpak/app/com.github.IsmaelMartinez.teams_for_linux
 # PWNAGE-63000: the Nuxel Vault / Authenticator Secret Service provider is
 # started by this process through the supported PAM login path
 # (gnome-keyring-daemon --login --daemonize reads the master password from
@@ -49,7 +54,7 @@ Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 # shell use, so /api/v1/apps/registry cannot drift from the launcher.
 Environment=NUXEL_APP_REGISTRY=/etc/nuxel/app-registry/app_registry.json
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.8.2-beta
+Environment=NUXEL_BRIDGE_VERSION=0.8.3-beta
 Environment=NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000,http://localhost:8000
 Environment=NUXEL_SESSION_USER=nuxel
 Environment=NUXEL_SESSION_HOME=/home/nuxel

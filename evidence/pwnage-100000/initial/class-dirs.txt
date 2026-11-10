@@ -1,0 +1,66 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+### /sys/class/typec
+total 0
+drwxr-xr-x  2 root root 0 Nov  9 17:13 .
+drwxr-xr-x 93 root root 0 Nov  9 16:26 ..
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 port0 -> ../../devices/platform/15d60000.hsi2c/i2c-14/14-0066/max77705-usbc/typec/port0
+lrwxrwxrwx  1 root root 0 Nov  9 17:13 port0-partner -> ../../devices/platform/15d60000.hsi2c/i2c-14/14-0066/max77705-usbc/typec/port0/port0-partner
+### /sys/class/typec/port0
+lrwxrwxrwx 1 root root 0 Nov  9 16:26 /sys/class/typec/port0 -> ../../devices/platform/15d60000.hsi2c/i2c-14/14-0066/max77705-usbc/typec/port0
+### /sys/class/typec/port0-partner
+lrwxrwxrwx 1 root root 0 Nov  9 17:14 /sys/class/typec/port0-partner -> ../../devices/platform/15d60000.hsi2c/i2c-14/14-0066/max77705-usbc/typec/port0/port0-partner
+### /sys/class/sec/ccic
+lrwxrwxrwx 1 root root 0 Nov  9 16:30 /sys/class/sec/ccic -> ../../devices/virtual/sec/ccic
+### /sys/class/extcon
+total 0
+drwxr-xr-x  2 root root 0 Nov  9 16:26 .
+drwxr-xr-x 93 root root 0 Nov  9 16:26 ..
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 extcon0 -> ../../devices/platform/130b0000.displayport/extcon/extcon0
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 extcon1 -> ../../devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/extcon/extcon1
+### /sys/class/switch
+total 0
+drwxr-xr-x  2 root root 0 Nov  9 16:26 .
+drwxr-xr-x 93 root root 0 Nov  9 16:26 ..
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 ccic_dock -> ../../devices/virtual/switch/ccic_dock
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 ch_hdmi_audio -> ../../devices/virtual/switch/ch_hdmi_audio
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 dock -> ../../devices/virtual/switch/dock
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 secdp -> ../../devices/virtual/switch/secdp
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 secdp_msg -> ../../devices/virtual/switch/secdp_msg
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 uart3 -> ../../devices/virtual/switch/uart3
+### /sys/class/dp_sec
+total 0
+drwxr-xr-x  2 root root    0 Nov  9 16:27 .
+drwxr-xr-x 93 root root    0 Nov  9 16:26 ..
+-rw-r--r--  1 root root 4096 Nov  9 16:27 audio_test
+-rw-r--r--  1 root root 4096 Nov  9 16:27 dex
+-r--r--r--  1 root root 4096 Nov  9 16:27 dex_ver
+-rw-r--r--  1 root root 4096 Nov  9 16:27 dp_drm
+-rw-r--r--  1 root root 4096 Nov  9 16:27 dp_error_info
+--w-------  1 root root 4096 Nov  9 16:30 dp_sbu_sw_sel
+-rw-r--r--  1 root root 4096 Nov  9 16:30 dp_test
+-rw-r--r--  1 root root 4096 Nov  9 16:27 edid_test
+-rw-r--r--  1 root root 4096 Nov  9 16:27 forced_resolution
+-rw-r--r--  1 root root 4096 Nov  9 16:28 log_level
+-r--r--r--  1 root root 4096 Nov  9 16:27 monitor_info
+-rw-r--r--  1 root root 4096 Nov  9 16:27 phy_tune
+-rw-r--r--  1 root root 4096 Nov  9 16:27 reduced_resolution
+-r--r--r--  1 root root 4096 Nov  9 16:27 unit_test
+### /sys/class/graphics
+total 0
+drwxr-xr-x  2 root root 0 Nov  9 16:26 .
+drwxr-xr-x 93 root root 0 Nov  9 16:26 ..
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 fb0 -> ../../devices/platform/19030000.decon_f/graphics/fb0
+lrwxrwxrwx  1 root root 0 Nov  9 16:26 fb1 -> ../../devices/platform/19050000.decon_t/graphics/fb1
+### /sys/class/drm
+total 0
+drwxr-xr-x  2 root root    0 Nov  9 17:14 .
+drwxr-xr-x 93 root root    0 Nov  9 16:26 ..
+-r--r--r--  1 root root 4096 Nov  9 17:14 version

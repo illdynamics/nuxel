@@ -19,8 +19,21 @@ import os
 import re
 import select
 import subprocess
+import sys
 import threading
 import time
+
+# Shared with nuxel-soundd.  The deployed module lives at
+# /usr/lib/nuxel/nuxel_audio_outputs.py.
+for _cand in ("/usr/lib/nuxel",
+              os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "nuxel-sound"))):
+    if os.path.isdir(_cand) and _cand not in sys.path:
+        sys.path.insert(0, _cand)
+try:
+    from nuxel_audio_outputs import parse_dp_audio_info, parse_dp_pcm
+except ImportError:  # pragma: no cover - provider still reports raw evidence
+    parse_dp_audio_info = None  # type: ignore
+    parse_dp_pcm = None  # type: ignore
 
 from gnss_inventory import (
     PROTOCOL,
@@ -596,6 +609,71 @@ class AudioProvider:
         return {"success": True, "available": False, "sources": [],
                 "reason": "PipeWire capture session unavailable"}
 
+    def _hdmi_audio_status(self):
+        """Read the real DP/HDMI audio path (read-only, no dummy sink).
+
+        The S10+ exposes a ``DP Audio`` ALSA PCM through the Samsung DP driver,
+        and the driver publishes ``ch_hdmi_audio`` when the sink advertises
+        audio and the audio infoframe is active.  A visible PipeWire sink is
+        never invented here: if the DP link or the WirePlumber route is missing,
+        the blocker is reported instead.
+        """
+        pcm_text = self._read("/proc/asound/pcm") or ""
+        parsed_pcm = parse_dp_pcm(pcm_text) if parse_dp_pcm is not None else None
+        pcm_line = (parsed_pcm or {}).get("line")
+        ch_switch = self._read("/sys/class/switch/ch_hdmi_audio/state")
+        secdp = self._read("/sys/class/switch/secdp/state")
+        extcon = self._read("/sys/class/extcon/extcon0/state") or ""
+        dp_link = bool(secdp and secdp.strip() == "1" and "DP=1" in extcon)
+        try:
+            ch_value = int(ch_switch) if ch_switch is not None else None
+        except (TypeError, ValueError):
+            ch_value = None
+        if parse_dp_audio_info is not None:
+            audio_info = parse_dp_audio_info(ch_value, dp_link, bool(pcm_line))
+        else:
+            audio_info = {"available": bool(dp_link and pcm_line and ch_value and ch_value > 0),
+                          "reason": None, "raw": ch_value}
+        available = bool(audio_info.get("available"))
+        blockers = []
+        if not dp_link:
+            blockers.append("DP link is not ready (secdp=%s, extcon=%s)"
+                            % (secdp, extcon or "unknown"))
+        if not pcm_line:
+            blockers.append("kernel exposes no 'DP Audio' PCM in /proc/asound/pcm")
+        if pcm_line and not available:
+            blockers.append(str(audio_info.get("reason") or
+                                "DP sink advertises no usable LPCM endpoint (ch_hdmi_audio=%s)"
+                                % ch_switch))
+        sink = None
+        if available and self._pipewire_available():
+            proc, err = self._run_bounded(["pactl", "list", "short", "sinks"], timeout=4.0)
+            if not err and proc is not None and proc.returncode == 0:
+                for line in (proc.stdout or "").splitlines():
+                    cols = line.split("	")
+                    if len(cols) > 1 and re.search(r"(hdmi|displayport|dp)", cols[1], re.I):
+                        sink = {"id": cols[0], "name": cols[1],
+                                "sample_spec": cols[3] if len(cols) > 3 else None}
+                        break
+                if sink is None:
+                    blockers.append("DP link is active but PipeWire exposes no HDMI/DP sink")
+                    available = False
+        return {
+            "available": available,
+            "dp_link": dp_link,
+            "secdp": secdp,
+            "extcon": extcon,
+            "ch_hdmi_audio": ch_value,
+            "ch_hdmi_audio_hex": (None if ch_value is None else "0x%08x" % (ch_value & 0xffffffff)),
+            "audio_info": audio_info,
+            "pcm": pcm_line,
+            "pcm_present": bool(pcm_line),
+            "pcm_device": parsed_pcm,
+            "sink": sink,
+            "blockers": blockers,
+            "blocker": "; ".join(blockers) if blockers else None,
+        }
+
     # ---- public API ------------------------------------------------------
     def get_status(self):
         cards = self._cards()
@@ -641,6 +719,7 @@ class AudioProvider:
                 "mute_blocker": None,
                 "unmute_supported": bool(sinks),
                 "playback_available": bool(sinks),
+                "hdmi_audio": self._hdmi_audio_status(),
                 "detail": "PipeWire default sink: %s" % (selected["description"] if selected else "none"),
             }
 
@@ -679,6 +758,7 @@ class AudioProvider:
                              "(measured 2026-10-27); mute is not offered to avoid wedging the codec") if volume_control else None,
             "unmute_supported": False,
             "playback_available": bool(cards and playback),
+            "hdmi_audio": self._hdmi_audio_status(),
             "detail": "; ".join(detail) if detail else None,
             "mixer_error": mixer_error,
         }
@@ -777,6 +857,44 @@ class AudioProvider:
             "error": rerr,
         }
 
+    def set_output(self, target):
+        """Select a real output route; never create a phantom HDMI sink."""
+        target = str(target or "").strip().lower()
+        if target in ("speaker", "phone", "internal"):
+            ok = self._ensure_default_sink() if self._pipewire_available() else False
+            if not ok:
+                return {"success": False, "error": "SPEAKER_ROUTE_UNAVAILABLE",
+                        "detail": "the internal speaker sink could not be selected and verified"}
+            return {"success": True, "output": "speaker",
+                    "sink": "alsa_output.hw_0_1", "verified": True}
+        if target in ("hdmi", "displayport", "dp", "external"):
+            hdmi = self._hdmi_audio_status()
+            if not hdmi.get("available"):
+                return {"success": False, "error": "HDMI_AUDIO_UNAVAILABLE",
+                        "detail": hdmi.get("blocker") or "HDMI/DP audio is not available",
+                        "hdmi_audio": hdmi}
+            sink = hdmi.get("sink") or {}
+            name = sink.get("name")
+            if not name:
+                return {"success": False, "error": "HDMI_SINK_NOT_EXPOSED",
+                        "detail": hdmi.get("blocker") or "no HDMI/DP PipeWire sink",
+                        "hdmi_audio": hdmi}
+            proc, err = self._run_bounded(["pactl", "set-default-sink", name], timeout=4.0)
+            if err or proc is None or proc.returncode != 0:
+                return {"success": False, "error": "HDMI_ROUTE_FAILED",
+                        "detail": err or (proc.stderr or "").strip() or "set-default-sink failed",
+                        "sink": name}
+            proc, err = self._run_bounded(["pactl", "get-default-sink"], timeout=4.0)
+            readback = (proc.stdout or "").strip() if proc is not None and not err else ""
+            if readback != name:
+                return {"success": False, "error": "HDMI_ROUTE_NOT_CONFIRMED",
+                        "detail": "readback=%r expected=%r" % (readback, name),
+                        "sink": name}
+            return {"success": True, "output": "hdmi", "sink": name,
+                    "verified": True, "hdmi_audio": hdmi}
+        return {"success": False, "error": "INVALID_OUTPUT",
+                "detail": "output must be speaker or hdmi"}
+
     def _route_ready(self, timeout=30.0):
         """Read-only route readiness via the same probe the boot cue uses.
 
@@ -826,16 +944,17 @@ class AudioProvider:
                 "audible": "unverified"}
 
 class DisplayProvider:
-    """Honest USB-C/display path inventory (no DRM, no invented monitor).
+    """Authoritative USB-C / DisplayPort / HDMI inventory (read-only).
 
-    The S10+ image renders through the framebuffer backend (wl-fb/phoc) and its
-    kernel has ``CONFIG_DRM`` unset, so there are no DRM connectors and no
-    Mirror/Desktop output can be driven by userspace.  This provider records
-    that exact blocker plus the Type-C / extcon / framebuffer evidence.
+    The S10+ does not expose DRM/KMS.  Its real external path is the Samsung
+    vendor chain: max77705 Type-C -> USB-PD/DP Alt Mode VDM -> exynos-displayport
+    -> 19050000.decon_t -> /dev/fb1.  This provider reports that path as it is,
+    including the exact failing stage.  It never invents a monitor or a mode.
     """
 
-    def __init__(self, root="/"):
+    def __init__(self, root="/", control_status_path="/run/nuxel-display/status.json"):
         self.root = root
+        self.control_status_path = control_status_path
 
     def _abs(self, rel):
         return os.path.join(self.root, rel.lstrip("/")) if rel.startswith("/") else rel
@@ -868,13 +987,16 @@ class DisplayProvider:
             return "not_set"
         return "unknown"
 
-    def panel_state(self):
-        """Truthful panel on/off state for the Home wake/lock watcher.
+    def _control_status(self):
+        try:
+            with open(self.control_status_path, "r") as f:
+                doc = json.load(f)
+            return doc if isinstance(doc, dict) else {}
+        except (OSError, ValueError):
+            return {}
 
-        ``/run/nuxel-wl-fb.state`` is also used for transient repaint receipts,
-        so it can lose the ``display=off`` marker.  The backlight ``bl_power``
-        node is the authoritative blanking state on this panel.
-        """
+    def panel_state(self):
+        """Truthful panel on/off state for the Home wake/lock watcher."""
         bl_power = self._read("/sys/class/backlight/panel/bl_power")
         brightness = self._read("/sys/class/backlight/panel/brightness")
         state_text = self._read("/run/nuxel-wl-fb.state") or ""
@@ -894,64 +1016,186 @@ class DisplayProvider:
             "source": "panel-backlight",
         }
 
-    def get_status(self):
-        drm_entries = self._list("/sys/class/drm")
-        typec_ports = [p for p in self._list("/sys/class/typec") if p.startswith("port")]
-        ports = []
-        for p in typec_ports:
-            base = "/sys/class/typec/" + p
-            partner = self._read(base + "-partner/type")
-            ports.append({
-                "name": p,
-                "data_role": self._read(base + "/data_role"),
-                "power_role": self._read(base + "/power_role"),
-                "partner": partner,
-            })
-        extcon = []
-        for e in self._list("/sys/class/extcon"):
-            base = "/sys/class/extcon/" + e
-            name = self._read(base + "/name")
-            state = self._read(base + "/state")
-            extcon.append({"name": name, "state": state})
+    def _import_model(self):
+        try:
+            import nuxel_display  # type: ignore
+            return nuxel_display
+        except Exception:
+            pass
+        here = os.path.dirname(os.path.abspath(__file__))
+        candidates = (
+            "/usr/lib/nuxel/nuxel-display",
+            os.path.join(here, "..", "..", "nuxel-display", "lib"),
+            os.path.join(here, "..", "..", "..", "services", "nuxel-display", "lib"),
+        )
+        for cand in candidates:
+            cand = os.path.abspath(cand)
+            if os.path.isdir(cand) and cand not in sys.path:
+                sys.path.insert(0, cand)
+                try:
+                    import nuxel_display  # type: ignore
+                    return nuxel_display
+                except Exception:
+                    pass
+        return None
 
+    def get_status(self):
+        nd = self._import_model()
+        drm_class_entries = self._list("/sys/class/drm")
+        # /sys/class/drm/version exists whenever DRM core is built even when no
+        # KMS driver/connector is registered.  Only card*/connector entries
+        # prove a usable DRM output path.
+        drm_entries = [e for e in drm_class_entries if e.startswith("card")]
+        typec_ports = [p for p in self._list("/sys/class/typec")
+                       if p.startswith("port") and "-" not in p]
         drm_kernel = self._kernel_config("CONFIG_DRM")
+        drm_exynos_kernel = self._kernel_config("CONFIG_DRM_EXYNOS")
         typec_kernel = self._kernel_config("CONFIG_TYPEC")
         dp_kernel = self._kernel_config("CONFIG_EXYNOS_DISPLAYPORT")
+        ctl = self._control_status()
 
-        drm_present = bool(drm_entries)
-        mirror_supported = drm_present
-        desktop_supported = drm_present  # an independent workspace needs a DRM output too
-
-        blockers = []
-        if not drm_present:
-            blockers.append(
-                "no /sys/class/drm: kernel CONFIG_DRM=%s (S10+ image renders via "
-                "framebuffer, so no DRM connector/CRTC exists for USB-C DP Alt Mode)" % drm_kernel)
-        elif not typec_ports:
-            blockers.append("no /sys/class/typec port: USB-C role/Alt-Mode stack not exposed")
-        else:
-            partner_seen = any(p["partner"] for p in ports)
-            if not partner_seen:
-                blockers.append("no Type-C partner currently attached")
-
-        return {
+        # Legacy keys remain present for older Settings builds.
+        base = {
             "success": True,
-            "state": "external_display_detected" if drm_present else "no_external_display_path",
-            "drm_present": drm_present,
+            "drm_present": bool(drm_entries),
             "drm_entries": drm_entries,
+            "drm_class_entries": drm_class_entries,
             "drm_kernel": drm_kernel,
+            "drm_exynos_kernel": drm_exynos_kernel,
             "typec_kernel": typec_kernel,
             "displayport_kernel": dp_kernel,
-            "type_c_ports": ports,
-            "extcon": extcon,
-            "mirror_supported": mirror_supported,
-            "desktop_supported": desktop_supported,
-            "supported_modes": [],
-            "connector": None,
-            "blocker": "; ".join(blockers) if blockers else None,
-            "blockers": blockers,
+            "type_c_port_count": len(typec_ports),
         }
 
+        if nd is None:
+            # Honest fallback: the model module is missing.
+            ports = []
+            for p in typec_ports:
+                base_path = "/sys/class/typec/" + p
+                ports.append({
+                    "name": p,
+                    "data_role": self._read(base_path + "/data_role"),
+                    "power_role": self._read(base_path + "/power_role"),
+                    "partner": self._read(base_path + "-partner/type"),
+                })
+            blockers = []
+            if not drm_entries:
+                blockers.append(
+                    "no /sys/class/drm (CONFIG_DRM=%s); the S10+ external path is "
+                    "decon_t/fb1, but the nuxel-display model module is unavailable"
+                    % drm_kernel)
+            base.update({
+                "state": "MODEL_UNAVAILABLE",
+                "type_c_ports": ports,
+                "extcon": [],
+                "mirror_supported": False,
+                "desktop_supported": False,
+                "supported_modes": [],
+                "connector": None,
+                "blocker": "; ".join(blockers) if blockers else None,
+                "blockers": blockers,
+            })
+            return base
+
+        snap = nd.read_snapshot(self.root)
+        mode = nd.normalize_mode(ctl.get("mode") or "off") or "off"
+        hardware_state = snap.get("state")
+        if mode in (nd.MODE_MIRROR_PORTRAIT, nd.MODE_MIRROR_LANDSCAPE,
+                    nd.MODE_FULLSCREEN) and hardware_state == nd.DP_LINK_READY:
+            state = nd.MIRRORING
+        elif mode == nd.MODE_DESKTOP and hardware_state == nd.DP_LINK_READY:
+            state = nd.SEPARATE_DESKTOP
+        else:
+            state = hardware_state
+
+        desktop_supported = bool(ctl.get("desktop_supported"))
+        desktop_blocker = ctl.get("desktop_blocker")
+        if hardware_state == nd.DP_LINK_READY and not desktop_supported:
+            desktop_blocker = desktop_blocker or (
+                "Separate desktop needs a second compositor output; "
+                "only %s is currently exposed."
+                % (", ".join((ctl.get("outputs") or {}).get("enabled_names") or [])
+                   or "the phone output"))
+
+        blockers = list(snap.get("blockers") or [])
+        if desktop_blocker and desktop_blocker not in blockers:
+            blockers.append(desktop_blocker)
+        audio = snap.get("audio") or {}
+        if audio.get("blocker"):
+            blockers.append("HDMI audio: " + audio["blocker"])
+        blocker = "; ".join(blockers) if blockers else None
+        if not blocker and snap.get("state") != nd.DP_LINK_READY:
+            blocker = "external display is not ready"
+
+        # Only surface a monitor identity when the kernel reports a live DP
+        # link.  monitor_info is also written by the driver's unit-test EDID
+        # (BenQ SW320), so an unlinked value must never leak into the UI.
+        display_name = snap.get("display_name") if snap.get("dp_link") else None
+        external_modes = snap.get("external_modes") or []
+        supported_modes = [m for m in external_modes if m.get("width") and m.get("height")]
+
+        connector = None
+        if snap.get("dp_link"):
+            connector = {
+                "type": "displayport",
+                "name": "decon_t",
+                "fb": "/dev/fb1",
+                "status": "connected",
+                "mode_source": "fbdev",
+            }
+
+        payload = dict(base)
+        payload.update({
+            "schema": nd.SCHEMA,
+            "state": state,
+            "hardware_state": hardware_state,
+            "mode": mode,
+            "rotation": ctl.get("rotation", 0),
+            "mode_rotation": ctl.get("mode_rotation", ctl.get("rotation", 0)),
+            "mode_fit": ctl.get("mode_fit", "fit"),
+            "mode_choices": ctl.get("mode_choices") or snap.get("mode_choices") or [],
+            "selected_resolution": ctl.get("selected_resolution") or snap.get("selected_resolution"),
+            "dp_presets": ctl.get("dp_presets") or snap.get("dp_presets") or [],
+            "generation": ctl.get("generation"),
+            "notification_id": ctl.get("notification_id"),
+            "last_error": ctl.get("last_error"),
+            "display_name": display_name,
+            "monitor_info_raw": snap.get("monitor_info_raw"),
+            "partner": snap.get("partner"),
+            "pd_identity": snap.get("pd_identity"),
+            "pd_ids": snap.get("pd_ids"),
+            "pd_type": snap.get("pd_type"),
+            "dp_link": snap.get("dp_link"),
+            "secdp": snap.get("secdp"),
+            "secdp_msg": snap.get("secdp_msg"),
+            "extcon": snap.get("extcon") or [],
+            "extcon_dp": snap.get("extcon_dp"),
+            "type_c_ports": snap.get("typec_ports") or [],
+            "ccic": snap.get("ccic") or {},
+            "dp_sec": snap.get("dp_sec") or {},
+            "internal_fb": snap.get("internal_fb"),
+            "external_fb_present": snap.get("external_fb_present"),
+            "external_fb": snap.get("external_fb"),
+            "external_modes": external_modes,
+            "supported_modes": supported_modes,
+            "connector": connector,
+            "mirror_supported": bool(snap.get("mirror_supported")),
+            "desktop_supported": desktop_supported,
+            "desktop_blocker": desktop_blocker,
+            "mirror_output": (ctl.get("outputs") or {}).get("primary") and
+                             (ctl.get("outputs") or {}).get("primary", {}).get("name"),
+            "desktop_output": (ctl.get("outputs") or {}).get("external") and
+                              (ctl.get("outputs") or {}).get("external", {}).get("name"),
+            "audio": audio,
+            "blocker": blocker,
+            "blockers": blockers,
+            "safety": {
+                "internal_display_preserved": True,
+                "single_fb0_writer": True,
+                "compositor_restarted": False,
+            },
+        })
+        return payload
 
 def _find_bluetooth_rfkill(root):
     base = os.path.join(root, "sys/class/rfkill")

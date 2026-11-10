@@ -1,0 +1,30 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+<link rel="stylesheet" href="settings.css?v=p102000">
+    <div class="card" id="sound-output-card">
+        <button id="sound-output-refresh">Refresh outputs</button>
+        <button id="sound-output-auto" class="primary" aria-pressed="false">Automatic</button>
+      <pre id="sound-output-state" class="state" role="status" aria-live="polite">Reading audio outputs…</pre>
+      <p id="sound-output-routing" class="hint">—</p>
+      <div id="sound-output-devices" class="sound-output-devices" role="radiogroup" aria-label="Available audio outputs"></div>
+      <div class="row wrap sound-output-controls">
+          <input id="sound-output-volume" type="range" min="0" max="100" step="1" value="50">
+          <output id="sound-output-volume-val">50%</output>
+        <button id="sound-output-mute">Mute</button>
+        <button id="sound-output-test" class="primary" disabled>Test sound</button>
+      <p id="sound-output-detail" class="hint">—</p>
+<script src="sound-settings.js?v=p102000"></script>
+=== sound-settings verbs ===
+366:    return call('outputs', {}).then(function (doc) {
+391:    return call('set-routing', { mode: mode }).then(function (r) {
+399:    return call('select-output', { id: id }).then(function (r) {
+407:    return call('set-volume', { percent: pct }).then(function (r) {
+419:    return call('set-muted', { muted: want }).then(function (r) {
+432:    return call('test-output', {}).then(function (r) {

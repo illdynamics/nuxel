@@ -1,0 +1,24 @@
+[Unit]
+Description=Nuxel external display bridge (Wayland screencopy -> /dev/fb1)
+Documentation=file:/usr/share/doc/nuxel/HDMI-EXTERNAL-DISPLAY.md
+After=nuxel-wayland.service
+Wants=nuxel-wayland.service
+# Started on demand by nuxel-displayd after the user selects a real mode.
+ConditionPathExists=/run/nuxel-display/ext-start.sh
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+Environment=WAYLAND_DISPLAY=wayland-0
+ExecStartPre=/usr/lib/nuxel/nuxel-display/build-nuxel-wl-fb-ext.sh
+ExecStart=/run/nuxel-display/ext-start.sh
+StandardOutput=append:/run/nuxel-display/ext.log
+StandardError=append:/run/nuxel-display/ext.log
+Restart=no
+TimeoutStopSec=6
+KillMode=control-group
+SendSIGKILL=yes
+
+[Install]
+WantedBy=multi-user.target

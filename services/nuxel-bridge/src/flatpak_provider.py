@@ -141,22 +141,31 @@ ELECTRON_ENV = (
     "ELECTRON_OZONE_PLATFORM_HINT=wayland",
     "ZYPAK_ZYGOTE_STRATEGY_SPAWN=0",
 )
-# PWNAGE-97000: CONFIG_USER_NS is enabled on the live kernel and the Flatpak
-# sandbox is authoritative.  Never add --no-sandbox (or a QtWebEngine sandbox
-# bypass): file selection must work without weakening either the app's Flatpak
-# sandbox or Chromium's inner sandbox.
+# PWNAGE-99000: Electron 44 / Chromium 152 reports
+# RESULT_CODE_INVALID_SANDBOX_STATE on this vendor 4.14 kernel even after the
+# flatpak-portal/XDG_RUNTIME_DIR fix.  The Flatpak bwrap sandbox remains
+# authoritative; disable only the inner Chromium sandbox.  Vulkan/SkiaGraphite/
+# Dawn are also disabled because there is no DRM render node and their failed
+# init can take the renderer down with it.
 ELECTRON_APP_ARGS = (
     "--ozone-platform=wayland",
     "--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer",
     "--disable-gpu",
     "--disable-dev-shm-usage",
+    "--no-sandbox",
+    "--disable-features=Vulkan,SkiaGraphite,Dawn",
 )
 QT_WEBENGINE_ENV = (
     # QtWebEngine reads Chromium switches from this variable, not from the
     # application argv.  Software compositing is required because the sandbox
-    # runtime has no DRM render node on this kernel.  The sandbox stays on.
-    "QTWEBENGINE_CHROMIUM_FLAGS=--disable-gpu "
-    "--disable-gpu-compositing --disable-dev-shm-usage",
+    # runtime has no DRM render node on this kernel.  The inner Chromium
+    # sandbox has the same invalid-state failure as Electron; the Flatpak
+    # sandbox stays authoritative.
+    "QTWEBENGINE_CHROMIUM_FLAGS=--no-sandbox --disable-gpu "
+    "--disable-gpu-compositing --disable-dev-shm-usage "
+    "--disable-features=Vulkan,SkiaGraphite,Dawn",
+    "QT_QUICK_BACKEND=software",
+    "QT_OPENGL=software",
 )
 
 # Small caches so a launch does not pay for repeated ``flatpak info -m``
@@ -1015,7 +1024,15 @@ class FlatpakProvider:
         _QTWEBENGINE_CACHE[aid] = found
         return found
 
-    def launch_argv(self, app_id: Any) -> Optional[List[str]]:
+    def launch_argv(self, app_id: Any, extra_env: Optional[Dict[str, str]] = None,
+                    extra_args: Optional[List[str]] = None,
+                    extra_fs: Optional[List[str]] = None) -> Optional[List[str]]:
+        """Build the authoritative Flatpak argv.
+
+        ``extra_env``/``extra_fs`` are flatpak-run options (before the app id);
+        ``extra_args`` are app/Chromium arguments (after the app id).  They are
+        used by the per-app spoof profile and never contain client input.
+        """
         aid = _valid_app_id(app_id)
         if not aid or not self.is_installed(aid):
             return None
@@ -1033,8 +1050,15 @@ class FlatpakProvider:
         # renderer string alone.
         policy = renderer_policy(aid)
         argv = [FLATPAK, "run"]
+        for item in (extra_fs or []):
+            argv.append(item if item.startswith("--") else "--filesystem=" + item)
         for item in policy.get("env", []):
             argv.append("--env=" + item)
+        # Flatpak defaults /tmp to a read-only mount on this image.  Electron's
+        # wrapper already redirects TMPDIR, but QtWebEngine (ZapZap) uses /tmp
+        # directly and dies with "Read-only file system" while creating its
+        # shared-memory files.  Give every app a writable per-app runtime dir.
+        argv.append("--env=TMPDIR=/run/user/1000/app/%s" % aid)
         argv.append("--env=GDK_BACKEND=wayland")
         argv.append("--env=QT_QPA_PLATFORM=wayland")
         # PWNAGE-88000: Flatpak GTK apps must honour the dark Nuxel theme
@@ -1054,12 +1078,15 @@ class FlatpakProvider:
         elif qtwebengine:
             for item in QT_WEBENGINE_ENV:
                 argv.append("--env=" + item)
+        for key, value in sorted((extra_env or {}).items()):
+            if value is not None:
+                argv.append("--env=%s=%s" % (key, value))
 
         argv.append(aid)
         if electron:
-            # Chromium switches must follow the application id.  Both the
-            # Flatpak and inner Chromium sandboxes stay enabled.
             argv.extend(ELECTRON_APP_ARGS)
+        if extra_args:
+            argv.extend(str(a) for a in extra_args)
         return argv
 
     # ---- RPC surface --------------------------------------------------------

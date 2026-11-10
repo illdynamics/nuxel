@@ -1,0 +1,17 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+/dev/fb0 xres 1440 yres 3040 xres_virtual 1440 yres_virtual 6080 bpp 32 red (16, 8, 0) green (8, 8, 0) blue (0, 8, 0) transp (24, 8, 0)
+/dev/fb1 xres 640 yres 480 xres_virtual 640 yres_virtual 960 bpp 32 red (16, 8, 0) green (8, 8, 0) blue (0, 8, 0) transp (24, 8, 0)
+/sys/class/graphics/fb0/name = 
+/sys/class/graphics/fb1/name = 
+/sys/class/graphics/fb1/virtual_size = 640,960
+/sys/class/graphics/fb1/stride = 2560
+/sys/class/graphics/fb1/bits_per_pixel = 32
+/sys/class/graphics/fb1/modes = U:640x480p-0

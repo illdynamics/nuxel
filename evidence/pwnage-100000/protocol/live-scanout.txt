@@ -1,0 +1,88 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== date/uptime ===
+Mon Nov  9 17:44:47 CET 2026
+ 17:44:47 up 19 min,  0 user,  load average: 11.93, 11.86, 8.74
+=== services ===
+active
+active
+active
+active
+=== status ===
+state          : DP_LINK_READY
+mode           : mirror
+generation     : 1
+rotation       : 0
+notification   : 29
+display        : BNQ 0x7f54
+mirror         : ready
+separate       : unavailable
+mirror output  : HEADLESS-1
+desktop output : none
+blocker        : none
+=== ext.state ===
+state RUNNING mode=mirror output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=640x480 fps=20 rot=0 frames=200
+=== ext.log tail ===
+2026-11-09T17:43:14 nuxel-wl-fb-ext: fb /dev/fb1 unblanked
+2026-11-09T17:43:14 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (640x480, virtual 640x960)
+2026-11-09T17:43:14 nuxel-wl-fb-ext: map src=720x1520 dst=640x480 scale=0.316 content=227x480 offset=206,0 rot=0
+2026-11-09T17:43:14 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=640x480
+2026-11-09T17:43:14 nuxel-wl-fb-ext: stopped frames=1
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T17:44:29 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror
+2026-11-09T17:44:29 nuxel-wl-fb-ext: fb /dev/fb1 640x480 bpp=32 line=2560 virtual=640x960 order=R@0 G@8 B@16 A@24
+2026-11-09T17:44:29 nuxel-wl-fb-ext: ion dma-buf fd=8 len=2457600
+2026-11-09T17:44:29 nuxel-wl-fb-ext: fb /dev/fb1 unblanked
+2026-11-09T17:44:29 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (640x480, virtual 640x960)
+2026-11-09T17:44:29 nuxel-wl-fb-ext: map src=720x1520 dst=640x480 scale=0.316 content=227x480 offset=206,0 rot=0
+2026-11-09T17:44:29 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=640x480
+2026-11-09T17:44:37 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=640x480
+2026-11-09T17:44:44 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=640x480
+=== dp_error_info ===
+"ERR_AUX":"0","ERR_EDID":"0","ERR_HDCP":"0","ERR_LT_TRAIN":"0","ERR_INF_IRQHPD":"0","LINK_CFG":"C","ADT_HWID":"0x0","ADT_FWVER":"0x0","ADT_TYPE":"HDMI","MLANE_CNT":"4","MLINK_RATE":"20","CLANE_CNT":"4","CLINK_RATE":"6","HDCP_VER":"hdcp2","ORIENTATION":"CC1","RESOLUTION":"X","EDID":"00ffffffffffff0009d1547f45540000141b0103804628782edf50a35435b5260f5054a56b80d1c081c081008180a9c0b3000101010151d000a0f0703e8030203500ba892100001a000000ff005335483031383931534c300a20000000fd00184c1e8c3c000a202020202020000000fc0042656e512053573332300a20200142020345f15661605d5e5f100504030207060f1f202122141312160123090707e6060501605a446d030c001000384420006001020367d85dc401788001e40f030000e305c300023a801871382d40582c4500ba892100001e565e00a0a0a0295030203500ba892100001af45100a0f070198030203500ba892100001e00000000ab","ADT_VID":"0x35a3","ADT_PID":"0x2003","DP_MODE":"MIRROR","SINK_NAME":"BenQ SW320","AUD_CH":"-1","AUD_FREQ":"-1","AUD_BIT":"-1"
+=== switches ===
+secdp=1
+secdp_msg=0
+ch_hdmi_audio=71237634
+extcon0=DP=1
+ccic_ids=35a3:2003 state=3
+=== irq snapshot 1 ===
+199:      18394          0          0          0          0          0          1          0     GIC-0 280 Edge      130b0000.displayport
+203:       7315          0          0          0          0          0          0          0     GIC-0 227 Edge      19050000.decon_t
+204:         10          0          0          0          0          0          0          0     GIC-0 228 Edge      19050000.decon_t
+205:          0          0          0          0          0          0          0          0     GIC-0 229 Edge      19050000.decon_t
+=== irq snapshot 2 (+3s) ===
+199:      18574          0          0          0          0          0          1          0     GIC-0 280 Edge      130b0000.displayport
+203:       7495          0          0          0          0          0          0          0     GIC-0 227 Edge      19050000.decon_t
+204:         10          0          0          0          0          0          0          0     GIC-0 228 Edge      19050000.decon_t
+205:          0          0          0          0          0          0          0          0     GIC-0 229 Edge      19050000.decon_t
+=== dma-buf attached to displayport ===
+	Attached Devices:
+	130b0000.displayport
+=== decon2 event status ===
+-------------------DECON2 EVENT LOGGER ----------------------
+-- STATUS: Hibernation(on) BlockMode(on) Window_Update(off)
+-- Hibernation enter/exit count(0 0)
+-------------------------------------------------------------
+          Time              Event ID               Remarks
+-------------------------------------------------------------
+=== internal fb0 writer ===
+active
+1440,6080
+=== cpu ===
+    PID %CPU %MEM COMMAND
+  22821  9.9  0.0 nuxel-wl-fb-ext
+  22952  0.2  0.0 bash
+=== errors ===
+[Mon Nov  9 17:44:33 2026] SysMMU alloc num : 1054(Max:1224), lv2_alloc : 30, fault : 0
+[Mon Nov  9 17:44:39 2026] SysMMU alloc num : 1037(Max:1224), lv2_alloc : 29, fault : 0
+[Mon Nov  9 17:44:43 2026] SysMMU alloc num : 1036(Max:1224), lv2_alloc : 29, fault : 0
+[Mon Nov  9 17:44:45 2026] SysMMU alloc num : 1034(Max:1224), lv2_alloc : 29, fault : 0
+[Mon Nov  9 17:44:48 2026] SysMMU alloc num : 1018(Max:1224), lv2_alloc : 29, fault : 0

@@ -1,0 +1,24 @@
+.F.......F.....................                                          [100%]
+=================================== FAILURES ===================================
+_____________ test_status_json_is_valid_and_separates_presentation _____________
+/Users/wicked/x/nuxel/tests/pwnage60000/test_capabilities_60000.py:37: in test_status_json_is_valid_and_separates_presentation
+    assert p.returncode == 0, p.stderr
+E   AssertionError: 
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/tools/s10plus/a67/nuxel-gpu-status', '--json',... No such file or directory: \'/proc\'",\n  "schema": "nuxel.gpu-status/2",\n  "timestamp": 1794159763\n}\n', stderr='').returncode
+        p          = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/tools/s10plus/a67/nuxel-gpu-status', '--json',... No such file or directory: \'/proc\'",\n  "schema": "nuxel.gpu-status/2",\n  "timestamp": 1794159763\n}\n', stderr='')
+_________________ test_release_copies_match_canonical_sources __________________
+/Users/wicked/x/nuxel/tests/pwnage60000/test_gpu_manifest.py:85: in test_release_copies_match_canonical_sources
+    assert sha(GPU / name) == sha(source), name + " is stale; run sync-gpu-release-assets.sh"
+E   AssertionError: nuxel-session.sh is stale; run sync-gpu-release-assets.sh
+E   assert 'fe61581a46f9...1bbe2a85ed2e2' == 'fb09cf7293e6...9b82b09ab76c0'
+E     
+E     - fb09cf7293e6cf641e1a30acaceedcb64f54aa31539194de7049b82b09ab76c0
+E     + fe61581a46f95b725e90c0f76cd2e2ab4484db0f81cb017c9151bbe2a85ed2e2
+        name       = 'nuxel-session.sh'
+        pairs      = {'graphics-profile.json': PosixPath('/Users/wicked/x/nuxel/configs/nuxel/graphics/graphics-profile.json'), 'nuxel-gpu-...xel-graphics-profile'), 'nuxel-session.sh': PosixPath('/Users/wicked/x/nuxel/tools/s10plus/a45/nuxel-session.sh'), ...}
+        source     = PosixPath('/Users/wicked/x/nuxel/tools/s10plus/a45/nuxel-session.sh')
+=========================== short test summary info ============================
+FAILED tests/pwnage60000/test_capabilities_60000.py::test_status_json_is_valid_and_separates_presentation
+FAILED tests/pwnage60000/test_gpu_manifest.py::test_release_copies_match_canonical_sources
+2 failed, 29 passed in 2.68s

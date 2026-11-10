@@ -86,6 +86,7 @@ fi
 run_step "libinput shim: capability fixtures"      python3 "$HERE/test-libinput-path-fixture.py"
 run_step "libinput shim: A31/A33 parity"           python3 "$HERE/test-libinput-parity.py"
 run_step "libinput shim: the LD_PRELOAD invocation chain" python3 "$HERE/test-libinput-shim-invocation.py"
+run_step "physical mouse/keyboard: document, applier, Settings, host" python3 "$HERE/test-physical-input.py"
 run_step "touch tracer: layers, gate, boundedness" python3 "$HERE/test-touch-trace.py"
 run_step "MT frame parser: DOWN at SYN, tap != back, bottom swipe = home" run_mt_parser
 run_step "boot-mode guard: LPM detection + gates"  python3 "$HERE/test-bootmode-guard.py"

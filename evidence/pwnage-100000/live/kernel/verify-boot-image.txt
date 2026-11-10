@@ -1,0 +1,21 @@
+== build/out/s10plus/debug-candidates/p100000/nuxel-beyond2lte-boot-p100000-dp-recovery.img : PASS
+   size:                      57606144
+   sha256:                    11d13427a3df629f9ab86296c82abbcf6d798ef5c3f5a6bea8f0f9c67432ddac
+   header_field40:            1
+   header_size:               1648
+   kernel_size:               48658440
+   kernel_sha256:             e42813084477c71a45415466b4bf469e22f5c4ab45b078bb5c9d992148d5d3ff
+   kernel_headers:            {'text_offset': '0x80000', 'image_size': '0x363e000', 'flags': '0xa'}
+   ramdisk_size:              2424832
+   ramdisk_format:            lzma-alone/eos-marker/dict=0x800000
+   ramdisk_uncompressed_size: 8791372
+   ramdisk_sha256:            0dd0fb5a3d6895f28d8861d967382a0b87182d0f9c63b1d560393818b290f407
+   cpio:                      {'records': 84, 'trailer_offset': 8725712, 'logical_end': 8725836, 'init': {'mode': '0o100755', 'size': 77545, 'interpreter': '/bin/sh'}}
+   dtb_offset:                51087360
+   dtb_size:                  376101
+   partition_slack:           65536
+   WARN  appended DTB contains a stale /chosen linux,initrd-start placeholder (S-Boot overwrites it; do not count a change to it as a device-tree experiment)
+   WARN  appended DTB contains a stale /chosen linux,initrd-end placeholder (S-Boot overwrites it; do not count a change to it as a device-tree experiment)
+   note  arm64 Image image_size 0x363e000 exceeds the 48658440-byte payload (BSS is not stored in the file) — expected
+   note  arm64 Image flags=0xa (bit0 endian, bit1 page size, bit2/3 placement)
+   note  ramdisk: /bin/sh -> toybox

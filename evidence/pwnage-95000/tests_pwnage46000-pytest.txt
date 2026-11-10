@@ -1,0 +1,27 @@
+.........F..F                                                            [100%]
+=================================== FAILURES ===================================
+__________ test_lockscreen_live_console_is_middle_and_lights_for_wlan __________
+/Users/wicked/x/nuxel/tests/pwnage46000/test_rotation_contract.py:117: in test_lockscreen_live_console_is_middle_and_lights_for_wlan
+    assert "live.service_armed" in js
+E   AssertionError: assert 'live.service_armed' in '/* Nuxel lockhead status indicators (charging / PC / live console).\n *\n * Three INDEPENDENT indicators next to the ...) wrap.appendChild(this.container);\n  };\n\n  global.NuxelLockscreenIndicators = LockscreenIndicators;\n})(window);\n'
+        html       = '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=devic... icon/WebKit/cache health report to nuxelDiag. -->\n    <script src="js/app.js?v=p94000"></script>\n</body>\n</html>\n'
+        i_charge   = 18344
+        i_live     = 18669
+        i_usb      = 19011
+        js         = '/* Nuxel lockhead status indicators (charging / PC / live console).\n *\n * Three INDEPENDENT indicators next to the ...) wrap.appendChild(this.container);\n  };\n\n  global.NuxelLockscreenIndicators = LockscreenIndicators;\n})(window);\n'
+_______ test_every_rotation_capable_pwa_manifest_allows_any_orientation ________
+/Users/wicked/x/nuxel/tests/pwnage46000/test_rotation_contract.py:148: in test_every_rotation_capable_pwa_manifest_allows_any_orientation
+    assert doc.get("orientation", "any") == "any", (path, doc.get("orientation"))
+E   AssertionError: (PosixPath('/Users/wicked/x/nuxel/pwa/nuxel-apps/doom/manifest.json'), 'landscape')
+E   assert 'landscape' == 'any'
+E     
+E     - any
+E     + landscape
+        doc        = {'background_color': '#090607', 'capabilities': [], 'categories': ['games'], 'description': 'Real Chocolate Doom WAD e...bAssembly: Freedoom and imported WADs, multitouch movement, aim, fire, use, weapons, pause and offline launcher.', ...}
+        glob       = <module 'glob' from '/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/glob.py'>
+        manifests  = [PosixPath('/Users/wicked/x/nuxel/pwa/nuxel-home/manifest.json'), PosixPath('/Users/wicked/x/nuxel/pwa/nuxel-apps/maps.../pwa/nuxel-apps/devmgmt/manifest.json'), PosixPath('/Users/wicked/x/nuxel/pwa/nuxel-apps/calendar/manifest.json'), ...]
+        path       = PosixPath('/Users/wicked/x/nuxel/pwa/nuxel-apps/doom/manifest.json')
+=========================== short test summary info ============================
+FAILED tests/pwnage46000/test_rotation_contract.py::test_lockscreen_live_console_is_middle_and_lights_for_wlan
+FAILED tests/pwnage46000/test_rotation_contract.py::test_every_rotation_capable_pwa_manifest_allows_any_orientation
+2 failed, 11 passed in 0.65s

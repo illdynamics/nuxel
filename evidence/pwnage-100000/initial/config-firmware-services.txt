@@ -1,0 +1,73 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== config.gz ===
+-r--r--r--. 1 root root 39074 Nov  9 17:23 /proc/config.gz
+# CONFIG_DRM_EXYNOS is not set
+CONFIG_EXYNOS_DISPLAYPORT=y
+CONFIG_SND_SOC_SAMSUNG_DISPLAYPORT=y
+CONFIG_USB_TYPEC_MANAGER_NOTIFIER=y
+CONFIG_TYPEC=y
+# CONFIG_TYPEC_UCSI is not set
+# CONFIG_TYPEC_TCPM is not set
+CONFIG_MAX77705_CHECK_B2SOVRC=y
+# CONFIG_PHY_EXYNOS_DP_VIDEO is not set
+# CONFIG_PHY_EXYNOS_MIPI_VIDEO is not set
+# CONFIG_PHY_EXYNOS_PCIE is not set
+CONFIG_PHY_EXYNOS5_USBDRD=y
+CONFIG_PHY_EXYNOS_USBDRD=y
+CONFIG_PHY_EXYNOS_DEBUGFS=y
+CONFIG_PHY_EXYNOS_DP_DEBUGFS=y
+CONFIG_PHY_EXYNOS_MIPI=y
+# CONFIG_PHY_EXYNOS_DISPLAYPORT is not set
+CONFIG_CCIC_NOTIFIER=y
+# CONFIG_CCIC_S2MM003 is not set
+# CONFIG_CCIC_S2MM005 is not set
+CONFIG_CCIC_MAX77705=y
+CONFIG_CCIC_MAX77705_DEBUG=y
+# CONFIG_MAX77705_FW_PID03_SUPPORT is not set
+CONFIG_MAX77705_GRL_ENABLE=y
+# CONFIG_CCIC_ALTERNATE_MODE is not set
+# CONFIG_CCIC_LPM_ENABLE is not set
+# CONFIG_PDIC_PD30 is not set
+# CONFIG_COMBO_REDRIVER_PTN36502 is not set
+=== modules ===
+ls: cannot access '/lib/modules/4.14.253-gf7194c1d15ed-dirty': No such file or directory
+=== firmware ===
+ls: cannot access '/lib/firmware/maxim': No such file or directory
+=== services ===
+  nuxel-app-vesktop-1794234874714.service loaded active running [systemd-run] /usr/bin/flatpak run --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GALLIUM_DRIVER=llvmpipe --env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe --env=GSK_RENDERER=cairo --env=TMPDIR=/run/user/1000/app/dev.vencord.Vesktop --env=GDK_BACKEND=wayland --env=QT_QPA_PLATFORM=wayland --env=GTK_APPLICATION_PREFER_DARK_THEME=1 --env=GTK_THEME=Adwaita:dark --env=ELECTRON_OZONE_PLATFORM_HINT=wayland --env=ZYPAK_ZYGOTE_STRATEGY_SPAWN=0 dev.vencord.Vesktop --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --disable-dev-shm-usage --no-sandbox --disable-features=Vulkan,SkiaGraphite,Dawn
+  nuxel-app-zapzap-1794234885274.service  loaded active running [systemd-run] /usr/bin/flatpak run --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GALLIUM_DRIVER=llvmpipe --env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe --env=GSK_RENDERER=cairo --env=TMPDIR=/run/user/1000/app/com.rtosta.zapzap --env=GDK_BACKEND=wayland --env=QT_QPA_PLATFORM=wayland --env=GTK_APPLICATION_PREFER_DARK_THEME=1 --env=GTK_THEME=Adwaita:dark "--env=QTWEBENGINE_CHROMIUM_FLAGS=--no-sandbox --disable-gpu --disable-gpu-compositing --disable-dev-shm-usage --disable-features=Vulkan,SkiaGraphite,Dawn" --env=QT_QUICK_BACKEND=software --env=QT_OPENGL=software com.rtosta.zapzap
+  nuxel-audio-session.service             loaded active running Nuxel standalone PipeWire/WirePlumber audio session
+  nuxel-bridge.service                    loaded active running Nuxel Bridge - PWA to Native Phone Service Mediator
+  nuxel-button-manager.service            loaded active running Nuxel hardware button and gesture manager (single owner of gpio_keys)
+  nuxel-clockd.service                    loaded active running Nuxel background alarm and timer scheduler
+  nuxel-displayd.service                  loaded active running Nuxel external display manager (Type-C DP / decon_t / fb1)
+  nuxel-geoclue-agent.service             loaded active running Nuxel GeoClue2 agent for the nuxel-bridge UID
+  nuxel-haptics.service                   loaded active running Nuxel Samsung timed-output haptics service
+  nuxel-http-bridge.service               loaded active running Nuxel HTTP Bridge API
+  nuxel-metrics.service                   loaded active running Nuxel on-demand Home hardware metrics
+  nuxel-nfcd.service                      loaded active running Nuxel NFC controller service (Samsung sec-nfc transport)
+  nuxel-notifications.service             loaded active running Nuxel Notification Hub
+  nuxel-orientationd.service              loaded active running Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+  nuxel-portal.service                    loaded active running Nuxel Portal Daemon
+  nuxel-remote-vnc-loopback.service       loaded active running Nuxel VNC loopback mirror for XRDP (actual Phoc screen)
+  nuxel-remote-vnc.service                loaded active running Nuxel VNC remote desktop (wayvnc mirrors the active Phoc session)
+  nuxel-soundd.service                    loaded active running Nuxel central sound manager (persistent PipeWire cue stream)
+  nuxel-touch-arm.service                 loaded active running Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+  nuxel-usb-mode-monitor.service          loaded active running Nuxel USB mode host-disconnect monitor
+=== uptime/boot ===
+ 17:23:59 up  7:26,  0 user,  load average: 12.40, 12.10, 12.28
+f0210773-3589-47d4-a94e-8b73c48f33ff
+=== rollback dirs ===
+drwxr-xr-x. 4 root root 4096 Nov  9 16:45 /var/lib/nuxel/live-deploy/rollback-20261109T154500Z
+drwxr-xr-x. 4 root root 4096 Nov  9 16:52 /var/lib/nuxel/live-deploy/rollback-20261109T155151Z
+drwxr-xr-x. 4 root root 4096 Nov  9 16:54 /var/lib/nuxel/live-deploy/rollback-20261109T155403Z
+drwxr-xr-x. 4 root root 4096 Nov  9 16:55 /var/lib/nuxel/live-deploy/rollback-20261109T155448Z
+drwxr-xr-x. 4 root root 4096 Nov  9 16:55 /var/lib/nuxel/live-deploy/rollback-20261109T155518Z

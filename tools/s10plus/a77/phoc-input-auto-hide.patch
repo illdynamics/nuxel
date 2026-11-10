@@ -1,0 +1,178 @@
+--- a/src/seat.c
++++ b/src/seat.c
+@@ -33,6 +33,7 @@
+ #include <wlr/types/wlr_xcursor_manager.h>
+ 
+ #include <libinput.h>
++#include <linux/input.h>
+ #include <time.h>
+ 
+ enum {
+@@ -1882,9 +1883,21 @@
+ 
+   for (GSList *l = self->keyboards; l; l = l->next) {
+     PhocKeyboard *keyboard = PHOC_KEYBOARD (l->data);
++    struct libinput_device *ldev;
+ 
+-    if (phoc_input_device_get_is_keyboard (PHOC_INPUT_DEVICE (keyboard)))
+-      return TRUE;
++    if (!phoc_input_device_is_hw_keyboard (PHOC_INPUT_DEVICE (keyboard)))
++      continue;
++
++    /* uinput devices such as ydotoold are not external keyboards.  Treating
++     * them as hardware makes Stevia suppress the touch keyboard on a phone
++     * with no keyboard attached; only real buses (USB/Bluetooth/i2c) count. */
++    if (!phoc_input_device_get_is_libinput (PHOC_INPUT_DEVICE (keyboard)))
++      continue;
++    ldev = phoc_input_device_get_libinput_device_handle (PHOC_INPUT_DEVICE (keyboard));
++    if (ldev && libinput_device_get_id_bustype (ldev) == BUS_VIRTUAL)
++      continue;
++
++    return TRUE;
+   }
+ 
+   return FALSE;
+--- a/src/input-method-relay.c
++++ b/src/input-method-relay.c
+@@ -702,6 +702,11 @@
+ show_osk_for_focused_text_input (PhocTextInput *text_input)
+ {
+   if (!text_input || !text_input->input || !text_input->input->current_enabled)
++    return;
++
++  /* With a real keyboard attached the OSK stays folded.  Without this guard
++   * tapping an already focused field would force it back over the app. */
++  if (!text_input->relay || phoc_seat_has_hw_keyboard (text_input->relay->seat))
+     return;
+ 
+   osk_set_visible (TRUE, TRUE);
+@@ -713,6 +718,9 @@
+   if (!v1 || !v1->current_enabled || !v1->focused_surface)
+     return;
+ 
++  if (v1->relay && phoc_seat_has_hw_keyboard (v1->relay->seat))
++    return;
++
+   osk_set_visible (TRUE, TRUE);
+ }
+ 
+--- a/src/input-device.c
++++ b/src/input-device.c
+@@ -19,6 +19,10 @@
+ 
+ #include <linux/input-event-codes.h>
+ 
++#include <string.h>
++#include <sys/stat.h>
++#include <sys/sysmacros.h>
++
+ #define PHOC_INPUT_DEVICE_SELF(p) PHOC_PRIV_CONTAINER(PHOC_INPUT_DEVICE, PhocInputDevice, (p))
+ 
+ typedef struct udev_device udev_device;
+@@ -62,22 +66,49 @@
+ phoc_input_device_has_udev_property (PhocInputDevice *self, const char *prop_name)
+ {
+   struct libinput_device *dev_handle;
+-  g_autoptr (udev_device) udev_dev = NULL;
+-  const char *value;
++  const char *sysname;
++  struct stat st;
++  g_autofree char *path = NULL;
++  g_autofree char *fn = NULL;
++  g_autofree char *contents = NULL;
++  g_autofree char *needle = NULL;
++  g_autofree char *copy = NULL;
++  char *line, *saveptr = NULL;
++  gboolean found = FALSE;
+ 
++  if (!phoc_input_device_get_is_libinput (self))
++    return FALSE;
++
+   dev_handle = phoc_input_device_get_libinput_device_handle (self);
+-  udev_dev = libinput_device_get_udev_device (dev_handle);
++  if (!dev_handle)
++    return FALSE;
+ 
+-  if (!udev_dev)
++  /* libinput_device_get_udev_device() crashes for the path-backend devices
++   * this image uses (the udev daemon is masked and the Nuxel shim seeds the
++   * database itself).  Resolve the device number from the event node and read
++   * the same /run/udev/data file directly. */
++  sysname = libinput_device_get_sysname (dev_handle);
++  if (!sysname || !*sysname)
+     return FALSE;
++  path = g_strdup_printf ("/dev/input/%s", sysname);
++  if (stat (path, &st) != 0)
++    return FALSE;
++  fn = g_strdup_printf ("/run/udev/data/c%u:%u",
++                        major (st.st_rdev), minor (st.st_rdev));
++  if (!g_file_get_contents (fn, &contents, NULL, NULL))
++    return FALSE;
+ 
+-  value = udev_device_get_property_value (udev_dev, prop_name);
+-  if (g_strcmp0 (value, "1") == 0)
+-    return TRUE;
+-
+-  return FALSE;
++  needle = g_strdup_printf ("E:%s=1", prop_name);
++  copy = g_strdup (contents);
++  for (line = strtok_r (copy, "\n", &saveptr); line;
++       line = strtok_r (NULL, "\n", &saveptr)) {
++    if (g_strcmp0 (line, needle) == 0) {
++      found = TRUE;
++      break;
++    }
++  }
++  return found;
+ }
+-
+ 
+ static void
+ phoc_input_device_set_property (GObject      *object,
+@@ -337,6 +368,36 @@
+            libinput_device_get_name (ldev),
+            priv->is_keyboard ? "" : "not");
+   return !!priv->is_keyboard;
++}
++
++
++/**
++ * phoc_input_device_is_hw_keyboard:
++ * @self: The PhocInputDevice
++ *
++ * Returns: %TRUE if this device should count as an external keyboard for the
++ * on-screen-keyboard auto-hide policy.  The Nuxel libinput shim groups USB
++ * interfaces by product: a mouse's macro-keyboard endpoints are marked
++ * NUXEL_INPUT_AUX_KEYBOARD, while a real keyboard's interface is marked
++ * NUXEL_INPUT_HW_KEYBOARD.  Devices without those properties (Bluetooth,
++ * built-in, fixture) fall back to the capability test.
++ */
++gboolean
++phoc_input_device_is_hw_keyboard (PhocInputDevice *self)
++{
++  g_assert (PHOC_IS_INPUT_DEVICE (self));
++
++  /* Wayland virtual keyboards (Stevia, test clients) are not libinput devices
++   * and have no udev handle at all. */
++  if (!phoc_input_device_get_is_libinput (self))
++    return FALSE;
++
++  if (phoc_input_device_has_udev_property (self, "NUXEL_INPUT_AUX_KEYBOARD"))
++    return FALSE;
++  if (phoc_input_device_has_udev_property (self, "NUXEL_INPUT_HW_KEYBOARD"))
++    return TRUE;
++
++  return phoc_input_device_get_is_keyboard (self);
+ }
+ 
+ /**
+--- a/src/input-device.h
++++ b/src/input-device.h
+@@ -34,6 +34,7 @@
+ struct wlr_input_device *phoc_input_device_get_device                     (PhocInputDevice *self);
+ gboolean                 phoc_input_device_get_is_touchpad                (PhocInputDevice *self);
+ gboolean                 phoc_input_device_get_is_keyboard                (PhocInputDevice *self);
++gboolean                 phoc_input_device_is_hw_keyboard                (PhocInputDevice *self);
+ gboolean                 phoc_input_device_get_is_libinput                (PhocInputDevice *self);
+ struct libinput_device  *phoc_input_device_get_libinput_device_handle     (PhocInputDevice *self);
+ const char              *phoc_input_device_get_name                       (PhocInputDevice *self);

@@ -1,0 +1,11 @@
+CONFLICT /etc/dbus-1/system.d/org.nuxel.Bridge.conf ['configs/dbus/org.nuxel.Bridge.conf', 'services/nuxel-bridge/dbus/org.nuxel.Bridge.conf']
+{
+  "version": "v0.8.1-beta",
+  "payload_sha256": "79f013bbbf0a6e307cd6d36ed4c586e704a2fddfb8e0a626a460022708a4fb08",
+  "source_files": 422,
+  "targets": 423,
+  "match": 422,
+  "mismatch": 1
+}
+--- mismatches ---
+DIFF /usr/share/nuxel/pwa/nuxel-apps/doom/tests/test-doom.js pwa/nuxel-apps/doom/tests/test-doom.js b6e6dd2918bb 235a4a81c481

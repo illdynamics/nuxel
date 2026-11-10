@@ -225,3 +225,23 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .fh-mime-row select { flex: 0 1 48%; min-width: 8em; }
 .fh-dirty #fh-state { color: #ffd166; }
 #fh-portal, #fh-test-result { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* PWNAGE-102000: authoritative output routing. */
+.sound-output-devices { display: grid; gap: 8px; margin: 10px 0; }
+.sound-output-choice {
+  display: grid; gap: 3px; width: 100%; text-align: left; min-width: 0;
+  padding: 10px 12px; border-radius: 12px;
+  border: 1px solid rgba(125,211,252,.20);
+  background: rgba(8,30,52,.55); color: var(--nx-text, #e8eef6);
+}
+.sound-output-choice.selected {
+  border-color: var(--accent-light, #3b82f6);
+  box-shadow: 0 0 0 1px var(--accent-light, #3b82f6) inset;
+  background: rgba(30,64,120,.55);
+}
+.sound-output-choice:disabled, .sound-output-choice.unavailable { opacity: .55; }
+.sound-output-choice-label { font-weight: 650; overflow-wrap: anywhere; }
+.sound-output-choice-detail { font-size: 11px; color: var(--text-secondary, #b8c7e0); overflow-wrap: anywhere; }
+.sound-output-controls { align-items: end; }
+.sound-output-controls input[type="range"] { width: min(56vw, 22rem); }
+#sound-output-state, #sound-output-routing, #sound-output-detail { white-space: pre-wrap; }

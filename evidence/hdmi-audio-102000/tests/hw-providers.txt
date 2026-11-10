@@ -1,0 +1,45 @@
+  OK   audio status reports success for inventory
+  OK   a real card in /proc/asound is present
+  OK   one ALSA card parsed
+  OK   card name parsed from /proc/asound
+  OK   playback PCM parsed
+  OK   capture PCM parsed
+  OK   no volume control is invented without amixer
+  OK   discovers the observed playback control
+  OK   volume is supported when a real control exists
+  OK   current volume percent read from mixer
+  OK   volume request clamped to the low-volume cap
+  OK   set targets the discovered control
+  OK   scontrols discovery picks the real HPOUT1 Digital Volume control
+  OK   real control volume read back
+  OK   real control marks volume supported
+  OK   numid discovery picks the real control
+  OK   numid cget computes the real percentage (29/191)
+  OK   numid control marks volume supported
+  OK   numid cset succeeds
+  OK   volume write uses cset numid, not the hanging name path
+  OK   no card -> unavailable state
+  OK   no fabricated card
+  OK   no fabricated volume control
+  OK   unmute is refused rather than wedging the codec
+  OK   unmute refusal is typed
+  OK   no DRM entries on the S10+ path
+  OK   partner without PD is named exactly
+  OK   Mirror is not offered without the DP link
+  OK   Desktop is not offered without a second output
+  OK   blocker names the missing USB-PD identity
+  OK   decon_t fb1 is reported
+  OK   fb1 is tied to decon_t
+  OK   monitor_info is not trusted without a DP link
+  OK   Type-C port evidence is reported
+  OK   DP+fb1 is ready
+  OK   Mirror is offered when DP+fb1 are ready
+  OK   Desktop is offered when a second output is known
+  OK   live monitor identity is used
+  OK   fbdev mode list is exposed
+  OK   DP Audio PCM is reported
+  OK   power bring-up succeeds when rfkill + systemctl work
+  OK   rfkill soft block is cleared on enable
+  OK   bluetooth.service is started
+
+ALL PASS

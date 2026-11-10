@@ -1,0 +1,3394 @@
+{
+  "version": "v0.8.1-beta",
+  "payload_sha256": "79f013bbbf0a6e307cd6d36ed4c586e704a2fddfb8e0a626a460022708a4fb08",
+  "source_files": 422,
+  "targets": 423,
+  "match": 422,
+  "mismatch": 1,
+  "rows": [
+    {
+      "target": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf",
+      "source": "configs/dbus/org.nuxel.Bridge.conf",
+      "local_sha256": "7eddb60ce4291759a3a3de365d27df1c690cb0538dfc323bf37b1618c2cc1e21",
+      "bytes": 4087,
+      "remote_sha256": "7eddb60ce4291759a3a3de365d27df1c690cb0538dfc323bf37b1618c2cc1e21",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/app-registry/app_registry.json",
+      "source": "pwa/nuxel-common/app-registry.json",
+      "local_sha256": "3292b552fa034a3990e1bfabdbb4e24ae35d1d329d26e731fdb71e9a9ce0b0f4",
+      "bytes": 43160,
+      "remote_sha256": "3292b552fa034a3990e1bfabdbb4e24ae35d1d329d26e731fdb71e9a9ce0b0f4",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/bridge-version.json",
+      "source": "pwa/nuxel-common/bridge-version.json",
+      "local_sha256": "559830045d5749cae5086cd75e3bbdb02b1da5626de97e9a951c9db9b835d76c",
+      "bytes": 1597,
+      "remote_sha256": "559830045d5749cae5086cd75e3bbdb02b1da5626de97e9a951c9db9b835d76c",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/firewall/policy.json",
+      "source": "configs/nuxel/firewall/policy.json",
+      "local_sha256": "301ace9f9688ef2c64e4a6141be79b0850059e6d2b2cc7cea43f6849748b9f58",
+      "bytes": 1874,
+      "remote_sha256": "301ace9f9688ef2c64e4a6141be79b0850059e6d2b2cc7cea43f6849748b9f58",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/firewall/policy.schema.json",
+      "source": "configs/nuxel/firewall/policy.schema.json",
+      "local_sha256": "3e76735ef0cf5903ed465e26456eebfb650915afe1f9ea83d6a1fee8cb64d160",
+      "bytes": 1158,
+      "remote_sha256": "3e76735ef0cf5903ed465e26456eebfb650915afe1f9ea83d6a1fee8cb64d160",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/gnss/gnss.json",
+      "source": "configs/nuxel/gnss/gnss.json",
+      "local_sha256": "f402c54e103ffd0162969e76d8691f24a3ecd100e47cbb911ae1ddf909cab043",
+      "bytes": 8346,
+      "remote_sha256": "f402c54e103ffd0162969e76d8691f24a3ecd100e47cbb911ae1ddf909cab043",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/permissions/nuxel-settings.json",
+      "source": "configs/nuxel/permissions/nuxel-settings.json",
+      "local_sha256": "c0b7ec63e5b2cc58632b99c6a3ec2127d44d5231a98bd1eda4d5db7858970127",
+      "bytes": 1088,
+      "remote_sha256": "c0b7ec63e5b2cc58632b99c6a3ec2127d44d5231a98bd1eda4d5db7858970127",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/permissions/org.nuxel.Home.json",
+      "source": "configs/nuxel/permissions/org.nuxel.Home.json",
+      "local_sha256": "e777f5bd7f341131cdad7c0936b1972753ed92e21faf741040af77308890407c",
+      "bytes": 714,
+      "remote_sha256": "e777f5bd7f341131cdad7c0936b1972753ed92e21faf741040af77308890407c",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/permissions/org.nuxel.Maps.json",
+      "source": "configs/nuxel/permissions/org.nuxel.Maps.json",
+      "local_sha256": "5ae4dd9ddc54b128cf5cb036d63dbac2b22c42c713767ad86dee3817ea6ef587",
+      "bytes": 178,
+      "remote_sha256": "5ae4dd9ddc54b128cf5cb036d63dbac2b22c42c713767ad86dee3817ea6ef587",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/remote-desktop/vnc/wayvnc.conf.example",
+      "source": "services/nuxel-remote-desktop/config/wayvnc.conf.example",
+      "local_sha256": "e7cc379f18cb46137c7f5801c76028a568ec37d0b1ef513670291403195f4dbd",
+      "bytes": 759,
+      "remote_sha256": "e7cc379f18cb46137c7f5801c76028a568ec37d0b1ef513670291403195f4dbd",
+      "match": true
+    },
+    {
+      "target": "/etc/nuxel/security/remote-access.json",
+      "source": "configs/nuxel/security/remote-access.json",
+      "local_sha256": "903cf35d47d4e0ea13cae0d329775b87fa2b8f8f72582b5b1c254d2d1e921b58",
+      "bytes": 7521,
+      "remote_sha256": "903cf35d47d4e0ea13cae0d329775b87fa2b8f8f72582b5b1c254d2d1e921b58",
+      "match": true
+    },
+    {
+      "target": "/etc/pam.d/wayvnc",
+      "source": "services/nuxel-remote-desktop/config/wayvnc.pam",
+      "local_sha256": "7b21f5f735d422dbf81f680567ac0ced1320db1bfcc18af62cbce59dc3bc69ec",
+      "bytes": 339,
+      "remote_sha256": "7b21f5f735d422dbf81f680567ac0ced1320db1bfcc18af62cbce59dc3bc69ec",
+      "match": true
+    },
+    {
+      "target": "/etc/pam.d/xrdp-sesman",
+      "source": "services/nuxel-remote-desktop/config/xrdp-sesman.pam",
+      "local_sha256": "42cb4e78e7dec7a9fcbd4c34f539a409a9bf2f0999208ddab302e8dd4bfda675",
+      "bytes": 837,
+      "remote_sha256": "42cb4e78e7dec7a9fcbd4c34f539a409a9bf2f0999208ddab302e8dd4bfda675",
+      "match": true
+    },
+    {
+      "target": "/etc/systemd/system/avahi-daemon.service.d/10-nuxel-boot-order.conf",
+      "source": "services/nuxel-s10/systemd/avahi-daemon.service.d/10-nuxel-boot-order.conf",
+      "local_sha256": "c1202df4606f0c9686ded59d2997b14397941fcf8f7a105d4964f1acd02a7011",
+      "bytes": 778,
+      "remote_sha256": "c1202df4606f0c9686ded59d2997b14397941fcf8f7a105d4964f1acd02a7011",
+      "match": true
+    },
+    {
+      "target": "/etc/systemd/system/nuxel-boot-sound.service",
+      "source": "services/nuxel-session/systemd/nuxel-boot-sound.service",
+      "local_sha256": "ae37575b496fdbc3662d3f781999ee5c9100c7588ab77dc8572c451590ef35ef",
+      "bytes": 2436,
+      "remote_sha256": "ae37575b496fdbc3662d3f781999ee5c9100c7588ab77dc8572c451590ef35ef",
+      "match": true
+    },
+    {
+      "target": "/etc/systemd/system/nuxel-bridge.service",
+      "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+      "local_sha256": "e57a1d73ca98722abedcc18c4a851dd42bc33ac6a8144e681b77308e719b1ba0",
+      "bytes": 3165,
+      "remote_sha256": "e57a1d73ca98722abedcc18c4a851dd42bc33ac6a8144e681b77308e719b1ba0",
+      "match": true
+    },
+    {
+      "target": "/etc/systemd/system/nuxel-http-bridge.service",
+      "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+      "local_sha256": "6c76358e88b5b2df7d4284027fea7ae68dc1eca4369b4d136684804c5314bcdd",
+      "bytes": 3234,
+      "remote_sha256": "6c76358e88b5b2df7d4284027fea7ae68dc1eca4369b4d136684804c5314bcdd",
+      "match": true
+    },
+    {
+      "target": "/etc/systemd/system/nuxel-metrics.service",
+      "source": "services/nuxel-metrics/nuxel-metrics.service",
+      "local_sha256": "bbfca28651214263cc8a48edd44984e2fec25a7ba3774038e38cb86acab04f15",
+      "bytes": 751,
+      "remote_sha256": "bbfca28651214263cc8a48edd44984e2fec25a7ba3774038e38cb86acab04f15",
+      "match": true
+    },
+    {
+      "target": "/etc/systemd/system/nuxel-metrics.socket",
+      "source": "services/nuxel-metrics/nuxel-metrics.socket",
+      "local_sha256": "f27b4ebf265b80669a6bd05b2da7f975459d360f835f422e70512d90e9fecb10",
+      "bytes": 150,
+      "remote_sha256": "f27b4ebf265b80669a6bd05b2da7f975459d360f835f422e70512d90e9fecb10",
+      "match": true
+    },
+    {
+      "target": "/etc/systemd/system/nuxel-notifications.service",
+      "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+      "local_sha256": "e9b525ad04898febd4bce959564184270ea11868324dc1c5c1a4495bce06e53c",
+      "bytes": 1604,
+      "remote_sha256": "e9b525ad04898febd4bce959564184270ea11868324dc1c5c1a4495bce06e53c",
+      "match": true
+    },
+    {
+      "target": "/etc/systemd/system/nuxel-remote-vnc.service",
+      "source": "services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.service",
+      "local_sha256": "aecee41aba52642363835e820e25fcaaaec652cb61d5c1f651ce4508d36f8be2",
+      "bytes": 1151,
+      "remote_sha256": "aecee41aba52642363835e820e25fcaaaec652cb61d5c1f651ce4508d36f8be2",
+      "match": true
+    },
+    {
+      "target": "/etc/xrdp/sesman.ini",
+      "source": "services/nuxel-remote-desktop/config/sesman.ini",
+      "local_sha256": "dde046597b72bfd5c86cc1d96a721cc30d31f1a737a3b4a56e671232691c6a39",
+      "bytes": 8324,
+      "remote_sha256": "dde046597b72bfd5c86cc1d96a721cc30d31f1a737a3b4a56e671232691c6a39",
+      "match": true
+    },
+    {
+      "target": "/etc/xrdp/xorg-nuxel.conf",
+      "source": "services/nuxel-remote-desktop/config/xorg.conf",
+      "local_sha256": "a13707fa20736d2ce56283686b030f2769a0c2c9e20f99686336fc957342d0c1",
+      "bytes": 1710,
+      "remote_sha256": "a13707fa20736d2ce56283686b030f2769a0c2c9e20f99686336fc957342d0c1",
+      "match": true
+    },
+    {
+      "target": "/etc/xrdp/xrdp.ini",
+      "source": "services/nuxel-remote-desktop/config/xrdp.ini",
+      "local_sha256": "951e7372edd8de57383c2e2ff9e215edf5167cf1d5ab1f3d773c76392f701d20",
+      "bytes": 7259,
+      "remote_sha256": "951e7372edd8de57383c2e2ff9e215edf5167cf1d5ab1f3d773c76392f701d20",
+      "match": true
+    },
+    {
+      "target": "/usr/bin/nuxel-firewall",
+      "source": "services/nuxel-firewall/bin/nuxel-firewall",
+      "local_sha256": "2bee9a8ad3db25a175f05f9f8235e530fbeca2b242902fb0f5a2994a292c07f3",
+      "bytes": 716,
+      "remote_sha256": "2bee9a8ad3db25a175f05f9f8235e530fbeca2b242902fb0f5a2994a292c07f3",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+      "source": "services/nuxel-bridge/src/api.py",
+      "local_sha256": "90b5bc080f6ab5bf7563413cca001135a6dec4b5b91d80be609ad28d46fd2abe",
+      "bytes": 292359,
+      "remote_sha256": "90b5bc080f6ab5bf7563413cca001135a6dec4b5b91d80be609ad28d46fd2abe",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+      "source": "services/nuxel-bridge/src/bridge.py",
+      "local_sha256": "e1c950127deff8ba75f38bcf8810fbb3a8eb32982723e17f4628cd3585782ede",
+      "bytes": 124733,
+      "remote_sha256": "e1c950127deff8ba75f38bcf8810fbb3a8eb32982723e17f4628cd3585782ede",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-bridge/doom_assets.py",
+      "source": "services/nuxel-bridge/src/doom_assets.py",
+      "local_sha256": "b90035d7c94cd4a99606b9c5dcbdb48bbbbe57ceab73b1f5b155f29f20470918",
+      "bytes": 9053,
+      "remote_sha256": "b90035d7c94cd4a99606b9c5dcbdb48bbbbe57ceab73b1f5b155f29f20470918",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-bridge/firewall_provider.py",
+      "source": "services/nuxel-bridge/src/firewall_provider.py",
+      "local_sha256": "9c089cc377e8bc65595a13d709f2d0c7376eb89805f5f99f43636f905a97233f",
+      "bytes": 4233,
+      "remote_sha256": "9c089cc377e8bc65595a13d709f2d0c7376eb89805f5f99f43636f905a97233f",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-bridge/hw_providers.py",
+      "source": "services/nuxel-bridge/src/hw_providers.py",
+      "local_sha256": "3ddf302619cca4107fd5b8933b4a8984b771c911a1fbf1132d25622516234f34",
+      "bytes": 71533,
+      "remote_sha256": "3ddf302619cca4107fd5b8933b4a8984b771c911a1fbf1132d25622516234f34",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-bridge/media_store.py",
+      "source": "services/nuxel-bridge/src/media_store.py",
+      "local_sha256": "87029f4c186b850c1e0f0872b44e9c2132fec0a79ec6fc971804fea84a7234a0",
+      "bytes": 9839,
+      "remote_sha256": "87029f4c186b850c1e0f0872b44e9c2132fec0a79ec6fc971804fea84a7234a0",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-bridge/remote_desktop.py",
+      "source": "services/nuxel-bridge/src/remote_desktop.py",
+      "local_sha256": "81cf77e12e8b28a3a54e5c90ca742cac62dd1e3817546e8cb9050104b178f033",
+      "bytes": 38783,
+      "remote_sha256": "81cf77e12e8b28a3a54e5c90ca742cac62dd1e3817546e8cb9050104b178f033",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-bridge/tri_link_status.py",
+      "source": "services/nuxel-bridge/src/tri_link_status.py",
+      "local_sha256": "6fc7659d6cb7f5f9a9334ca7c6f80f5c2541ff536a3b89e757a2d11d54c9f551",
+      "bytes": 25976,
+      "remote_sha256": "6fc7659d6cb7f5f9a9334ca7c6f80f5c2541ff536a3b89e757a2d11d54c9f551",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-doom-engine",
+      "source": "tools/s10plus/a33/doom-engines/nuxel-doom-engine",
+      "local_sha256": "78d434b54999d6872c6e8d4a951ab127ce74d40a4c7e5f570b4a257d0aa3c326",
+      "bytes": 4243,
+      "remote_sha256": "78d434b54999d6872c6e8d4a951ab127ce74d40a4c7e5f570b4a257d0aa3c326",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/__init__.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/__init__.py",
+      "local_sha256": "894b6e1e49d8c15541886ad22c0f38e08ce60b704dceb1085b1f688a25eba14b",
+      "bytes": 491,
+      "remote_sha256": "894b6e1e49d8c15541886ad22c0f38e08ce60b704dceb1085b1f688a25eba14b",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/backends/__init__.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/backends/__init__.py",
+      "local_sha256": "1ab4018754a7caca48da6849b85e7d7f9e3592f31a71a3e40b4615677332e997",
+      "bytes": 595,
+      "remote_sha256": "1ab4018754a7caca48da6849b85e7d7f9e3592f31a71a3e40b4615677332e997",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/backends/base.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/backends/base.py",
+      "local_sha256": "5fe9ff489a67b00f2a5f6c2ba5eca2d1d3d2f9df4e18d9485785563572436c17",
+      "bytes": 1633,
+      "remote_sha256": "5fe9ff489a67b00f2a5f6c2ba5eca2d1d3d2f9df4e18d9485785563572436c17",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/backends/firewalld.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/backends/firewalld.py",
+      "local_sha256": "7473adaaf864e60d315baf0ce6b080661493e6cc4df0f52662ed21a23c4d14cd",
+      "bytes": 1216,
+      "remote_sha256": "7473adaaf864e60d315baf0ce6b080661493e6cc4df0f52662ed21a23c4d14cd",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/backends/iptables.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/backends/iptables.py",
+      "local_sha256": "985af696d0f8e7527034e2b4c729378b3bee2e86b3e6aa5b41820af6f9465cec",
+      "bytes": 14577,
+      "remote_sha256": "985af696d0f8e7527034e2b4c729378b3bee2e86b3e6aa5b41820af6f9465cec",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/backends/nftables.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/backends/nftables.py",
+      "local_sha256": "859ef6640f3194e941b72f36528e59ae56557878496a15132d3be97e4494f250",
+      "bytes": 3853,
+      "remote_sha256": "859ef6640f3194e941b72f36528e59ae56557878496a15132d3be97e4494f250",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/backends/ufw.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/backends/ufw.py",
+      "local_sha256": "3fd1e3db01a0464d09c08c70d10a78a368e672a77f135a4a2fc085d953755dfc",
+      "bytes": 1030,
+      "remote_sha256": "3fd1e3db01a0464d09c08c70d10a78a368e672a77f135a4a2fc085d953755dfc",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/cli.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/cli.py",
+      "local_sha256": "c88c5a61d4303370aa5b5869a9f6b7dfe08585d0cd0c2a59bd9385839d13440e",
+      "bytes": 7170,
+      "remote_sha256": "c88c5a61d4303370aa5b5869a9f6b7dfe08585d0cd0c2a59bd9385839d13440e",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/paths.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/paths.py",
+      "local_sha256": "5511de6f9943e81fdf59567c9cca79c7edfc6c7df9f714ffa1342edbc6e75394",
+      "bytes": 1169,
+      "remote_sha256": "5511de6f9943e81fdf59567c9cca79c7edfc6c7df9f714ffa1342edbc6e75394",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/policy.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/policy.py",
+      "local_sha256": "1ea650d7110d3c518661244e147cc0c2c78dcd9ba8660fe9d5d38f1a8030e80e",
+      "bytes": 4240,
+      "remote_sha256": "1ea650d7110d3c518661244e147cc0c2c78dcd9ba8660fe9d5d38f1a8030e80e",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/probe.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/probe.py",
+      "local_sha256": "77ec5a847679e536b7b43e9234b769825730e1eb091eed8089cd1158f2b6dc9f",
+      "bytes": 6594,
+      "remote_sha256": "77ec5a847679e536b7b43e9234b769825730e1eb091eed8089cd1158f2b6dc9f",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/provider.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/provider.py",
+      "local_sha256": "bc5cfa1c0cf7a81bf28d1f6cc7e9317e231d66768b2996e2e4bb1c148391161e",
+      "bytes": 8615,
+      "remote_sha256": "bc5cfa1c0cf7a81bf28d1f6cc7e9317e231d66768b2996e2e4bb1c148391161e",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/registry.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/registry.py",
+      "local_sha256": "8f9d208420c0d64b13730d5cd7f195f98366f202a7823c36a4cb4739f98bb23f",
+      "bytes": 2235,
+      "remote_sha256": "8f9d208420c0d64b13730d5cd7f195f98366f202a7823c36a4cb4739f98bb23f",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/remote.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/remote.py",
+      "local_sha256": "df591a71fd3d6eca0b071f86eebdc6bd7f19461f8fbf19e6e1ba3dd445ad6417",
+      "bytes": 6995,
+      "remote_sha256": "df591a71fd3d6eca0b071f86eebdc6bd7f19461f8fbf19e6e1ba3dd445ad6417",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/schema.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/schema.py",
+      "local_sha256": "de4cb2a53b50439152c62f1ba37f15a02c9d068647074ce6b084df74a6b68483",
+      "bytes": 9595,
+      "remote_sha256": "de4cb2a53b50439152c62f1ba37f15a02c9d068647074ce6b084df74a6b68483",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-firewall/nuxel_firewall/transaction.py",
+      "source": "services/nuxel-firewall/nuxel_firewall/transaction.py",
+      "local_sha256": "979823df7d958fcbb348f3c6427a50f22dbb4cbc51c1f41b9f9dec2fdd78c592",
+      "bytes": 10403,
+      "remote_sha256": "979823df7d958fcbb348f3c6427a50f22dbb4cbc51c1f41b9f9dec2fdd78c592",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py",
+      "source": "services/nuxel-notifications/src/notifications.py",
+      "local_sha256": "b67bc1df688ffa839ea7984889bdaef23f957a90a1cc1a6edcfb40ba4294e11f",
+      "bytes": 26649,
+      "remote_sha256": "b67bc1df688ffa839ea7984889bdaef23f957a90a1cc1a6edcfb40ba4294e11f",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-portal/portal.py",
+      "source": "services/nuxel-portal/src/portal.py",
+      "local_sha256": "6d405dbe93060e2f61bd63ea5670c09be5fba5e3de91067fd26330eb042a7cad",
+      "bytes": 23144,
+      "remote_sha256": "6d405dbe93060e2f61bd63ea5670c09be5fba5e3de91067fd26330eb042a7cad",
+      "match": true
+    },
+    {
+      "target": "/usr/lib/nuxel/nuxel-preload-cinema",
+      "source": "services/nuxel-preload-cinema/nuxel-preload-cinema",
+      "local_sha256": "6457a5c48355d4e13e14662590c76b36197d655ff311d66215266b45e42fd170",
+      "bytes": 58200,
+      "remote_sha256": "6457a5c48355d4e13e14662590c76b36197d655ff311d66215266b45e42fd170",
+      "match": true
+    },
+    {
+      "target": "/usr/libexec/nuxel/nuxel-orientation-remote-sync",
+      "source": "services/nuxel-remote-desktop/bin/nuxel-orientation-remote-sync",
+      "local_sha256": "80a1aa1b2013861ddc9f563b85670da0857b9485ac6a5760e050b98d41ca6865",
+      "bytes": 13237,
+      "remote_sha256": "80a1aa1b2013861ddc9f563b85670da0857b9485ac6a5760e050b98d41ca6865",
+      "match": true
+    },
+    {
+      "target": "/usr/libexec/nuxel/nuxel-sound-cue",
+      "source": "tools/s10plus/a33/nuxel-sound-cue.py",
+      "local_sha256": "e49c701e0c4b52a9aef856c1182edc47ccb18b4b3e5c4a874d74800b8dec6226",
+      "bytes": 14426,
+      "remote_sha256": "e49c701e0c4b52a9aef856c1182edc47ccb18b4b3e5c4a874d74800b8dec6226",
+      "match": true
+    },
+    {
+      "target": "/usr/local/bin/nuxel-xrdp-session",
+      "source": "services/nuxel-remote-desktop/bin/nuxel-xrdp-session",
+      "local_sha256": "024a236c44dabfacb0ac4b7a0cb83f428274b616f8f9e98b9508bbc88ccd30ab",
+      "bytes": 1576,
+      "remote_sha256": "024a236c44dabfacb0ac4b7a0cb83f428274b616f8f9e98b9508bbc88ccd30ab",
+      "match": true
+    },
+    {
+      "target": "/usr/local/libexec/nuxel/nuxel-remote-desktop-ctl",
+      "source": "services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl",
+      "local_sha256": "bff5e561a3c45bdbb151965ca0b403df2d3a167b2538f4f8f649a2d61f974329",
+      "bytes": 29506,
+      "remote_sha256": "bff5e561a3c45bdbb151965ca0b403df2d3a167b2538f4f8f649a2d61f974329",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+      "source": "assets/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+      "local_sha256": "76a730c35c6cdfdc6b6a636c9db357261626247d0cf959b723ffdbb17ba48f90",
+      "bytes": 8675,
+      "remote_sha256": "76a730c35c6cdfdc6b6a636c9db357261626247d0cf959b723ffdbb17ba48f90",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-05_live-console.png",
+      "source": "assets/nuxel-applications-icon-pack/05-05_live-console.png",
+      "local_sha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2",
+      "bytes": 10366,
+      "remote_sha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-07_web-window.png",
+      "source": "assets/nuxel-applications-icon-pack/05-07_web-window.png",
+      "local_sha256": "77b5e77bbbf5111ffe07f64f81dd8f8846af998ba38b265f826d6b258642e6b6",
+      "bytes": 9192,
+      "remote_sha256": "77b5e77bbbf5111ffe07f64f81dd8f8846af998ba38b265f826d6b258642e6b6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-04_casting-screen.png",
+      "source": "assets/nuxel-applications-icon-pack/06-04_casting-screen.png",
+      "local_sha256": "b10a79025ac113dc47462c87e1abfcd5893f3e91ef2ee90647ead42b6b4873c1",
+      "bytes": 8944,
+      "remote_sha256": "b10a79025ac113dc47462c87e1abfcd5893f3e91ef2ee90647ead42b6b4873c1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-05_usb-connection.png",
+      "source": "assets/nuxel-applications-icon-pack/06-05_usb-connection.png",
+      "local_sha256": "8f2b2cb963ba85462b517573940e2a54c38994fd22b69ddd5300193a8b9024d1",
+      "bytes": 14727,
+      "remote_sha256": "8f2b2cb963ba85462b517573940e2a54c38994fd22b69ddd5300193a8b9024d1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-boot-audio.mp3",
+      "source": "assets/nuxel-boot-audio.mp3",
+      "local_sha256": "cbacfcf706cf8e93dfa44c14cc7786c973d9af9995781243e2ae24cd6a178896",
+      "bytes": 123549,
+      "remote_sha256": "cbacfcf706cf8e93dfa44c14cc7786c973d9af9995781243e2ae24cd6a178896",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-bottom-bar.jpg",
+      "source": "assets/nuxel-bottom-bar.jpg",
+      "local_sha256": "858a23fd95eacc75d8a1b612b83e847ac2cb32dcddcac20e91207cbeeb630bd5",
+      "bytes": 62676,
+      "remote_sha256": "858a23fd95eacc75d8a1b612b83e847ac2cb32dcddcac20e91207cbeeb630bd5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-bottom-bar2.png",
+      "source": "assets/nuxel-bottom-bar2.png",
+      "local_sha256": "0aef669be89be2c8cf2bb5b327061962bce07a75bfd660bcd275c3e914a00809",
+      "bytes": 203435,
+      "remote_sha256": "0aef669be89be2c8cf2bb5b327061962bce07a75bfd660bcd275c3e914a00809",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-pow.mp3",
+      "source": "assets/nuxel-pow.mp3",
+      "local_sha256": "a46429a8accf09fb1dc2f95b397e8d3f7795354579e366ce43fab6456190a670",
+      "bytes": 6103,
+      "remote_sha256": "a46429a8accf09fb1dc2f95b397e8d3f7795354579e366ce43fab6456190a670",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/01-wifi.png",
+      "source": "assets/nuxel-quicksettings-icon-pack/01-wifi.png",
+      "local_sha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b",
+      "bytes": 33241,
+      "remote_sha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console-usb/app.json",
+      "source": "pwa/nuxel-apps/console-usb/app.json",
+      "local_sha256": "70647d22da9817c8ba4aa1e071bc815da9e2523259e09814ccccac2d84ffcdbf",
+      "bytes": 528,
+      "remote_sha256": "70647d22da9817c8ba4aa1e071bc815da9e2523259e09814ccccac2d84ffcdbf",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console-usb/icons/icon.svg",
+      "source": "pwa/nuxel-apps/console-usb/icons/icon.svg",
+      "local_sha256": "ca06cc37e2405f6a8f2f7e94cd1c396edc20b91e2453669d219b32c81b9b5f47",
+      "bytes": 786,
+      "remote_sha256": "ca06cc37e2405f6a8f2f7e94cd1c396edc20b91e2453669d219b32c81b9b5f47",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console-usb/index.html",
+      "source": "pwa/nuxel-apps/console-usb/index.html",
+      "local_sha256": "e4ed66d0cb858b5f3a8f3b06cef828f1c05561f5278dd29eda6680b8b4d9351d",
+      "bytes": 793,
+      "remote_sha256": "e4ed66d0cb858b5f3a8f3b06cef828f1c05561f5278dd29eda6680b8b4d9351d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console-usb/manifest.json",
+      "source": "pwa/nuxel-apps/console-usb/manifest.json",
+      "local_sha256": "9fb96ccd675e264d71e6489fce5d3ad3ba25a69a31783bc7774ca129b2071752",
+      "bytes": 977,
+      "remote_sha256": "9fb96ccd675e264d71e6489fce5d3ad3ba25a69a31783bc7774ca129b2071752",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console-wifi/app.json",
+      "source": "pwa/nuxel-apps/console-wifi/app.json",
+      "local_sha256": "2dc3ade2116e7c5b131fcf29705fc98c63836f20b6c6bf10b6983c04b8a3f6e5",
+      "bytes": 513,
+      "remote_sha256": "2dc3ade2116e7c5b131fcf29705fc98c63836f20b6c6bf10b6983c04b8a3f6e5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console-wifi/icons/icon.svg",
+      "source": "pwa/nuxel-apps/console-wifi/icons/icon.svg",
+      "local_sha256": "57da8f57c7ebe18a69e6bd4a2e5f1cd1aa239ef3bf881f3ddf1431a3ab0a1529",
+      "bytes": 586,
+      "remote_sha256": "57da8f57c7ebe18a69e6bd4a2e5f1cd1aa239ef3bf881f3ddf1431a3ab0a1529",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console-wifi/index.html",
+      "source": "pwa/nuxel-apps/console-wifi/index.html",
+      "local_sha256": "3001b3e7fd656ec44ad57f2e3b68c4759925f40dff646fe3224bc2a214400f37",
+      "bytes": 798,
+      "remote_sha256": "3001b3e7fd656ec44ad57f2e3b68c4759925f40dff646fe3224bc2a214400f37",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console-wifi/manifest.json",
+      "source": "pwa/nuxel-apps/console-wifi/manifest.json",
+      "local_sha256": "06fc0389ebb8e75eccb7d813b6162932d804cdada0cc3c334fc88c85a96105a5",
+      "bytes": 963,
+      "remote_sha256": "06fc0389ebb8e75eccb7d813b6162932d804cdada0cc3c334fc88c85a96105a5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/app.json",
+      "source": "pwa/nuxel-apps/console/app.json",
+      "local_sha256": "dcb31a1503c9ec12ecf84c1542e5bbe2bdb5fd750b2ec3cacb9a41744679b9ba",
+      "bytes": 534,
+      "remote_sha256": "dcb31a1503c9ec12ecf84c1542e5bbe2bdb5fd750b2ec3cacb9a41744679b9ba",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/console.css",
+      "source": "pwa/nuxel-apps/console/console.css",
+      "local_sha256": "4f985e8a57dee42278993e469bd38ac3b6cb47a122fd3bd7e4fe6e8937e5987a",
+      "bytes": 3191,
+      "remote_sha256": "4f985e8a57dee42278993e469bd38ac3b6cb47a122fd3bd7e4fe6e8937e5987a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/console.js",
+      "source": "pwa/nuxel-apps/console/console.js",
+      "local_sha256": "bc01c465f6f22c42c6d55a396870a39b23fba51845848ebf095a874bd15666c2",
+      "bytes": 9165,
+      "remote_sha256": "bc01c465f6f22c42c6d55a396870a39b23fba51845848ebf095a874bd15666c2",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-128.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-128.png",
+      "local_sha256": "e165a24f19a16a6bf4810e7277651d332ff3252b38ccaf92d2a67dadded7c037",
+      "bytes": 3900,
+      "remote_sha256": "e165a24f19a16a6bf4810e7277651d332ff3252b38ccaf92d2a67dadded7c037",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-144.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-144.png",
+      "local_sha256": "a2a4481f51570f486132259e0ab08d57ec2af2f109b3c9491aa10eb5250a9dc6",
+      "bytes": 4422,
+      "remote_sha256": "a2a4481f51570f486132259e0ab08d57ec2af2f109b3c9491aa10eb5250a9dc6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-152.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-152.png",
+      "local_sha256": "d480fc18fe460c20e795fea7defed41506bf39c5e039bafb0fbf447c89f17459",
+      "bytes": 4604,
+      "remote_sha256": "d480fc18fe460c20e795fea7defed41506bf39c5e039bafb0fbf447c89f17459",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-192.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-192.png",
+      "local_sha256": "e7cdb228b7ceb3baf3218edd9f7c269a179ec7f915be030765913a11ca0a2160",
+      "bytes": 5738,
+      "remote_sha256": "e7cdb228b7ceb3baf3218edd9f7c269a179ec7f915be030765913a11ca0a2160",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-384.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-384.png",
+      "local_sha256": "42463189c16b5040d4b125898d64e901a663ed266c0ba0956527dfb1164c7e65",
+      "bytes": 11530,
+      "remote_sha256": "42463189c16b5040d4b125898d64e901a663ed266c0ba0956527dfb1164c7e65",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-48.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-48.png",
+      "local_sha256": "395200d5e20520e0c5ecfb8fa4219afde5373dc5fb775e07c751828e1330ca0b",
+      "bytes": 1403,
+      "remote_sha256": "395200d5e20520e0c5ecfb8fa4219afde5373dc5fb775e07c751828e1330ca0b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-512.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-512.png",
+      "local_sha256": "3b329d853843aeb0dcacd0c648618718986bbda8a2882239cdaeb548fa6bc6af",
+      "bytes": 15753,
+      "remote_sha256": "3b329d853843aeb0dcacd0c648618718986bbda8a2882239cdaeb548fa6bc6af",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-72.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-72.png",
+      "local_sha256": "957c46f9fba2424112b1e6b84408bd9c4d29176b4dacbb9b49dc9ddb27039c65",
+      "bytes": 2056,
+      "remote_sha256": "957c46f9fba2424112b1e6b84408bd9c4d29176b4dacbb9b49dc9ddb27039c65",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-96.png",
+      "source": "pwa/nuxel-apps/console/icons/icon-96.png",
+      "local_sha256": "4e2cae66544e076e982f09d4589cb5ffcb316c79c383efc5697b25e89347801f",
+      "bytes": 2877,
+      "remote_sha256": "4e2cae66544e076e982f09d4589cb5ffcb316c79c383efc5697b25e89347801f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon.svg",
+      "source": "pwa/nuxel-apps/console/icons/icon.svg",
+      "local_sha256": "dc2d5a956cf51c38fd162facbe5d52127df1f1e892ef10c91841ac597d41b878",
+      "bytes": 401,
+      "remote_sha256": "dc2d5a956cf51c38fd162facbe5d52127df1f1e892ef10c91841ac597d41b878",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/index.html",
+      "source": "pwa/nuxel-apps/console/index.html",
+      "local_sha256": "680565be93a58e186d23dbcc9e73145ee0546eb6016021f9935b0a276ca973f3",
+      "bytes": 781,
+      "remote_sha256": "680565be93a58e186d23dbcc9e73145ee0546eb6016021f9935b0a276ca973f3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/console/manifest.json",
+      "source": "pwa/nuxel-apps/console/manifest.json",
+      "local_sha256": "11eade2b546f54d141dd42d0574e8f2f3c70300299f2d2fafc8c5ed475269211",
+      "bytes": 997,
+      "remote_sha256": "11eade2b546f54d141dd42d0574e8f2f3c70300299f2d2fafc8c5ed475269211",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/WAD-LICENSES.md",
+      "source": "pwa/nuxel-apps/doom/WAD-LICENSES.md",
+      "local_sha256": "3a4e5fce3b962164585f5004869ca7c690154321b0e3df3dd44153cfeef75b57",
+      "bytes": 1750,
+      "remote_sha256": "3a4e5fce3b962164585f5004869ca7c690154321b0e3df3dd44153cfeef75b57",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/app.json",
+      "source": "pwa/nuxel-apps/doom/app.json",
+      "local_sha256": "0e2e0bcd590bc9227ba73c640c152b3c052fd6392a0677e3e88376aa43143bad",
+      "bytes": 637,
+      "remote_sha256": "0e2e0bcd590bc9227ba73c640c152b3c052fd6392a0677e3e88376aa43143bad",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/css/doom.css",
+      "source": "pwa/nuxel-apps/doom/css/doom.css",
+      "local_sha256": "1cdd4272d6af9691f4b7229ff350d3491ef4206f88a8acbcb7552d059a0e3e02",
+      "bytes": 18451,
+      "remote_sha256": "1cdd4272d6af9691f4b7229ff350d3491ef4206f88a8acbcb7552d059a0e3e02",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/engine/COPYING.md",
+      "source": "pwa/nuxel-apps/doom/engine/COPYING.md",
+      "local_sha256": "aef8b4222b79d0dbf6bf17cfff71c90a6a6bb8917a4162abe417b469ed22da2e",
+      "bytes": 17895,
+      "remote_sha256": "aef8b4222b79d0dbf6bf17cfff71c90a6a6bb8917a4162abe417b469ed22da2e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/engine/PROVENANCE.md",
+      "source": "pwa/nuxel-apps/doom/engine/PROVENANCE.md",
+      "local_sha256": "b3b76f2141c4bffd861afb2b89238f4da4cc5d0045f0c2f915fbe18f0f54cd5b",
+      "bytes": 1106,
+      "remote_sha256": "b3b76f2141c4bffd861afb2b89238f4da4cc5d0045f0c2f915fbe18f0f54cd5b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/engine/websockets-doom.js",
+      "source": "pwa/nuxel-apps/doom/engine/websockets-doom.js",
+      "local_sha256": "a2909044a9fbc5529f941c8dbf93cc2931927690e0341c737545cf0b9cff23fb",
+      "bytes": 276667,
+      "remote_sha256": "a2909044a9fbc5529f941c8dbf93cc2931927690e0341c737545cf0b9cff23fb",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/engine/websockets-doom.wasm",
+      "source": "pwa/nuxel-apps/doom/engine/websockets-doom.wasm",
+      "local_sha256": "6366f83a58fe8596ce742a66dbf86871d315862c89c11e65b54935be03c7e6c4",
+      "bytes": 2283167,
+      "remote_sha256": "6366f83a58fe8596ce742a66dbf86871d315862c89c11e65b54935be03c7e6c4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-128.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-128.png",
+      "local_sha256": "6fe04a9189f0ec1def97bf0d3bdf164258b5e1303c554937a8e5076d6299853c",
+      "bytes": 44883,
+      "remote_sha256": "6fe04a9189f0ec1def97bf0d3bdf164258b5e1303c554937a8e5076d6299853c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-144.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-144.png",
+      "local_sha256": "76677166a27eee4c945ae126644e0992430165dcdd0fd6b225b9cee99be23396",
+      "bytes": 55700,
+      "remote_sha256": "76677166a27eee4c945ae126644e0992430165dcdd0fd6b225b9cee99be23396",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-152.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-152.png",
+      "local_sha256": "70b74c8f9dd97ec20c47420531ac9e8d7d6ca813224e20746bb1f528ebfda030",
+      "bytes": 59488,
+      "remote_sha256": "70b74c8f9dd97ec20c47420531ac9e8d7d6ca813224e20746bb1f528ebfda030",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-192.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-192.png",
+      "local_sha256": "2e4e67d8a27f26f6051677749955e3995c179bf522f87ab415cbfe94848b0d0a",
+      "bytes": 79504,
+      "remote_sha256": "2e4e67d8a27f26f6051677749955e3995c179bf522f87ab415cbfe94848b0d0a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-384.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-384.png",
+      "local_sha256": "c5567b51a79fa9cad036ebfe2c8ecf77124afb46e79dba85329ecc615a158db6",
+      "bytes": 196220,
+      "remote_sha256": "c5567b51a79fa9cad036ebfe2c8ecf77124afb46e79dba85329ecc615a158db6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-48.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-48.png",
+      "local_sha256": "de49fe3c43159123a542f27dbf26bd5e7c21a6b803a26ef4a36bfff7acfa4ea1",
+      "bytes": 10828,
+      "remote_sha256": "de49fe3c43159123a542f27dbf26bd5e7c21a6b803a26ef4a36bfff7acfa4ea1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-512.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-512.png",
+      "local_sha256": "86b4f16f9858f7b2e082ff182a74c96f1ce935c7bcfdf196b7334378f522b2b7",
+      "bytes": 81083,
+      "remote_sha256": "86b4f16f9858f7b2e082ff182a74c96f1ce935c7bcfdf196b7334378f522b2b7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-72.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-72.png",
+      "local_sha256": "43606105ca3388bf607f5a9962ee2f213f6a9238fd8ad92f3bb05395ad44f9fb",
+      "bytes": 20163,
+      "remote_sha256": "43606105ca3388bf607f5a9962ee2f213f6a9238fd8ad92f3bb05395ad44f9fb",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon-96.png",
+      "source": "pwa/nuxel-apps/doom/icons/icon-96.png",
+      "local_sha256": "b6558e0f878adb2531706c8b20a760913f94daee76ed98d1c129e3152a1d00d3",
+      "bytes": 30984,
+      "remote_sha256": "b6558e0f878adb2531706c8b20a760913f94daee76ed98d1c129e3152a1d00d3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/icons/icon.svg",
+      "source": "pwa/nuxel-apps/doom/icons/icon.svg",
+      "local_sha256": "bcf3d611d797d00bfc8af4ec4a566af24c9304f14e65f6f7a01a3052ac360976",
+      "bytes": 2591,
+      "remote_sha256": "bcf3d611d797d00bfc8af4ec4a566af24c9304f14e65f6f7a01a3052ac360976",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/index.html",
+      "source": "pwa/nuxel-apps/doom/index.html",
+      "local_sha256": "d382047d970bccb6a58d4b1eb8148c9748324f1c16735f59e69fa96b62757fa2",
+      "bytes": 10896,
+      "remote_sha256": "d382047d970bccb6a58d4b1eb8148c9748324f1c16735f59e69fa96b62757fa2",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/js/doom.js",
+      "source": "pwa/nuxel-apps/doom/js/doom.js",
+      "local_sha256": "eb7e1e3ab0ad555492bd5b3277adbe10f7e411fb073f4f0eb549b946747bcbfe",
+      "bytes": 61579,
+      "remote_sha256": "eb7e1e3ab0ad555492bd5b3277adbe10f7e411fb073f4f0eb549b946747bcbfe",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/manifest.json",
+      "source": "pwa/nuxel-apps/doom/manifest.json",
+      "local_sha256": "fc891dd36d3c51a8d236dfd9cc5a0b8dbac1ff44b3b3809bee45be3d19b4e9d7",
+      "bytes": 2414,
+      "remote_sha256": "fc891dd36d3c51a8d236dfd9cc5a0b8dbac1ff44b3b3809bee45be3d19b4e9d7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/sw.js",
+      "source": "pwa/nuxel-apps/doom/sw.js",
+      "local_sha256": "95aa8e211fb2925e29690190f6da8c36629f1b8bbfc8921c7749f5271a1b7f7f",
+      "bytes": 1763,
+      "remote_sha256": "95aa8e211fb2925e29690190f6da8c36629f1b8bbfc8921c7749f5271a1b7f7f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/doom/tests/test-doom.js",
+      "source": "pwa/nuxel-apps/doom/tests/test-doom.js",
+      "local_sha256": "b6e6dd2918bb0ec367745f94f79599effa2c78122c9d14fd4c95fdfc3f6b3edc",
+      "bytes": 10270,
+      "remote_sha256": "235a4a81c481d2911bd8d7eb7a9e346abf109fdd85b242afbbafb573ec0643a1",
+      "match": false
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/firewall/app.js",
+      "source": "pwa/nuxel-apps/firewall/app.js",
+      "local_sha256": "57a765960e4aa8c708ae7be21bc383acd539cd650fc03792afdfc68d5b6f36db",
+      "bytes": 11701,
+      "remote_sha256": "57a765960e4aa8c708ae7be21bc383acd539cd650fc03792afdfc68d5b6f36db",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/firewall/index.html",
+      "source": "pwa/nuxel-apps/firewall/index.html",
+      "local_sha256": "cfce257e9742dc8bc96d53e7d0ff4f4c13f0e85fa80dfd9c51bfccb721b8d1ba",
+      "bytes": 4768,
+      "remote_sha256": "cfce257e9742dc8bc96d53e7d0ff4f4c13f0e85fa80dfd9c51bfccb721b8d1ba",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/firewall/manifest.json",
+      "source": "pwa/nuxel-apps/firewall/manifest.json",
+      "local_sha256": "453b055986d970bc68786927281411df1df875ed9d31663470c23109fb68ea20",
+      "bytes": 874,
+      "remote_sha256": "453b055986d970bc68786927281411df1df875ed9d31663470c23109fb68ea20",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/firewall/style.css",
+      "source": "pwa/nuxel-apps/firewall/style.css",
+      "local_sha256": "200082619e24de24779a586e4c022f12b305c35ef9fd2159a24128e76f6e6408",
+      "bytes": 5331,
+      "remote_sha256": "200082619e24de24779a586e4c022f12b305c35ef9fd2159a24128e76f6e6408",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/app.json",
+      "source": "pwa/nuxel-apps/maps/app.json",
+      "local_sha256": "be8f8cb5fdda78d7227de921b6c6ea4425ae60c00c122fd50bf311a631e78f57",
+      "bytes": 537,
+      "remote_sha256": "be8f8cb5fdda78d7227de921b6c6ea4425ae60c00c122fd50bf311a631e78f57",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/css/maps.css",
+      "source": "pwa/nuxel-apps/maps/css/maps.css",
+      "local_sha256": "803c933290da3f3cd7c6a74e1d7f00b7a478d29e8923b495aa06d86153582ebb",
+      "bytes": 4092,
+      "remote_sha256": "803c933290da3f3cd7c6a74e1d7f00b7a478d29e8923b495aa06d86153582ebb",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-128.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-128.png",
+      "local_sha256": "8ede5f3ce48b354a5e02a30ebcb970648c6aa28f61ecb24de5ef944664e803db",
+      "bytes": 2168,
+      "remote_sha256": "8ede5f3ce48b354a5e02a30ebcb970648c6aa28f61ecb24de5ef944664e803db",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-144.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-144.png",
+      "local_sha256": "1ba09a6097fcb7bbc97ffe4fee358013a257f5e881fb0d23d2cb6942f61458ff",
+      "bytes": 2554,
+      "remote_sha256": "1ba09a6097fcb7bbc97ffe4fee358013a257f5e881fb0d23d2cb6942f61458ff",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-152.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-152.png",
+      "local_sha256": "debe6f2a711d23af22d9ac93ea7546b24140dbcc4cbab2372038b37ffeca02e9",
+      "bytes": 2642,
+      "remote_sha256": "debe6f2a711d23af22d9ac93ea7546b24140dbcc4cbab2372038b37ffeca02e9",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-192.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-192.png",
+      "local_sha256": "9e218d5187268dc5f727df51e9dce712f71ee24d5ae3e6968ef41393deffec9c",
+      "bytes": 3385,
+      "remote_sha256": "9e218d5187268dc5f727df51e9dce712f71ee24d5ae3e6968ef41393deffec9c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-384.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-384.png",
+      "local_sha256": "74d7a712ef5465c6f3d5e7912bbda1584dc821ba77e0c535a3095b94466e4660",
+      "bytes": 6864,
+      "remote_sha256": "74d7a712ef5465c6f3d5e7912bbda1584dc821ba77e0c535a3095b94466e4660",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-48.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-48.png",
+      "local_sha256": "f1cbb2e67dbdb75e1d33716ef0ecb85bdcccac0d340cab8aef536be9af735e88",
+      "bytes": 851,
+      "remote_sha256": "f1cbb2e67dbdb75e1d33716ef0ecb85bdcccac0d340cab8aef536be9af735e88",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-512.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-512.png",
+      "local_sha256": "309fb79208eaa00318d02c8e50333fea91891d8c01db826073bc430ccc246a4f",
+      "bytes": 8652,
+      "remote_sha256": "309fb79208eaa00318d02c8e50333fea91891d8c01db826073bc430ccc246a4f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-72.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-72.png",
+      "local_sha256": "c9a4234cddf234e5acd859a5f1f110ead1a70418480e26a912220f1920eab182",
+      "bytes": 1282,
+      "remote_sha256": "c9a4234cddf234e5acd859a5f1f110ead1a70418480e26a912220f1920eab182",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-96.png",
+      "source": "pwa/nuxel-apps/maps/icons/icon-96.png",
+      "local_sha256": "227711055267e8312b11957ed6139ebe009665a8882d1fa9ac9dc74b6ae913c3",
+      "bytes": 1614,
+      "remote_sha256": "227711055267e8312b11957ed6139ebe009665a8882d1fa9ac9dc74b6ae913c3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/index.html",
+      "source": "pwa/nuxel-apps/maps/index.html",
+      "local_sha256": "4ea25dbd318ad0f075fbcaca1f33f341957217ea08658a8eeeafa34a31987442",
+      "bytes": 4168,
+      "remote_sha256": "4ea25dbd318ad0f075fbcaca1f33f341957217ea08658a8eeeafa34a31987442",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/js/maps.js",
+      "source": "pwa/nuxel-apps/maps/js/maps.js",
+      "local_sha256": "4de52cf509099c531ff693c478c5c778af97efafcc264ddb5ca0bcf34a162749",
+      "bytes": 46898,
+      "remote_sha256": "4de52cf509099c531ff693c478c5c778af97efafcc264ddb5ca0bcf34a162749",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/manifest.json",
+      "source": "pwa/nuxel-apps/maps/manifest.json",
+      "local_sha256": "217eeaf1d3f6d2568452ffabae4224171476303b61c990073ed92836b61b98fa",
+      "bytes": 1786,
+      "remote_sha256": "217eeaf1d3f6d2568452ffabae4224171476303b61c990073ed92836b61b98fa",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/sw.js",
+      "source": "pwa/nuxel-apps/maps/sw.js",
+      "local_sha256": "940b91021b5e17bb103d65020948862b40c78a6d1434a0441460bde3b18ad51e",
+      "bytes": 1641,
+      "remote_sha256": "940b91021b5e17bb103d65020948862b40c78a6d1434a0441460bde3b18ad51e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/app.json",
+      "source": "pwa/nuxel-apps/nuxtore/app.json",
+      "local_sha256": "7105e3f764617c610815f78c2ddbb1289f80170eb35f828d25b1569c78ed7cc9",
+      "bytes": 421,
+      "remote_sha256": "7105e3f764617c610815f78c2ddbb1289f80170eb35f828d25b1569c78ed7cc9",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.example.UnsignedDemo-0.0.1.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.example.UnsignedDemo-0.0.1.bundle.json",
+      "local_sha256": "06adccc30fdbdec49cc087c64823a21556d86cd635833a79c8a248b5be0d9426",
+      "bytes": 4111,
+      "remote_sha256": "06adccc30fdbdec49cc087c64823a21556d86cd635833a79c8a248b5be0d9426",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Authenticator-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Authenticator-1.0.0.bundle.json",
+      "local_sha256": "e3683e867e57a6fed216d5e5732010100a345748075e4650e66f78b8c9913faf",
+      "bytes": 4074,
+      "remote_sha256": "e3683e867e57a6fed216d5e5732010100a345748075e4650e66f78b8c9913faf",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Cleanup-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Cleanup-1.0.0.bundle.json",
+      "local_sha256": "f9b2883cc288a1acf9c75d58bfa7ec15ebcda9bcc8a768a17eb1740e5c12e7b6",
+      "bytes": 3094,
+      "remote_sha256": "f9b2883cc288a1acf9c75d58bfa7ec15ebcda9bcc8a768a17eb1740e5c12e7b6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Console-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Console-1.0.0.bundle.json",
+      "local_sha256": "3d49ecf0af98993c71a28492450c01c98b7cb7e09a1bd95fc2a9af85645525a1",
+      "bytes": 2431,
+      "remote_sha256": "3d49ecf0af98993c71a28492450c01c98b7cb7e09a1bd95fc2a9af85645525a1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.DevMgmt-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.DevMgmt-1.0.0.bundle.json",
+      "local_sha256": "6026edc679e772bd8fa5c7469d32c771b7b9a0bc1e07b16101219b784801432e",
+      "bytes": 2927,
+      "remote_sha256": "6026edc679e772bd8fa5c7469d32c771b7b9a0bc1e07b16101219b784801432e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Doom-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Doom-1.0.0.bundle.json",
+      "local_sha256": "6f6d7f3704914f087050d6303131ee5dec8dc82c1d0f707a1e375ad6c56de7f4",
+      "bytes": 2873,
+      "remote_sha256": "6f6d7f3704914f087050d6303131ee5dec8dc82c1d0f707a1e375ad6c56de7f4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Doom-2.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Doom-2.0.0.bundle.json",
+      "local_sha256": "31654312698b7d2779cc83491e19640fbc310b42fc4e2aba0e210142994eb0aa",
+      "bytes": 3543,
+      "remote_sha256": "31654312698b7d2779cc83491e19640fbc310b42fc4e2aba0e210142994eb0aa",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Downloader-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Downloader-1.0.0.bundle.json",
+      "local_sha256": "bac2df55863103d5b817a513d73fe34c56bcb21e5935405586da873c57266b55",
+      "bytes": 3346,
+      "remote_sha256": "bac2df55863103d5b817a513d73fe34c56bcb21e5935405586da873c57266b55",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Media-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Media-1.0.0.bundle.json",
+      "local_sha256": "8841abf26adc5e3d98f784fa6bd3cc35cc175e31b9651c6adbfbf1393a44ebe1",
+      "bytes": 3554,
+      "remote_sha256": "8841abf26adc5e3d98f784fa6bd3cc35cc175e31b9651c6adbfbf1393a44ebe1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Nuxtore-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Nuxtore-1.0.0.bundle.json",
+      "local_sha256": "06adccc30fdbdec49cc087c64823a21556d86cd635833a79c8a248b5be0d9426",
+      "bytes": 4111,
+      "remote_sha256": "06adccc30fdbdec49cc087c64823a21556d86cd635833a79c8a248b5be0d9426",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.PenguInterface-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.PenguInterface-1.0.0.bundle.json",
+      "local_sha256": "903bcfce7094c1fe0fbf5d3547868b65bd3e7c7237acb9270aec4207f6939556",
+      "bytes": 2872,
+      "remote_sha256": "903bcfce7094c1fe0fbf5d3547868b65bd3e7c7237acb9270aec4207f6939556",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.SnekByte-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.SnekByte-1.0.0.bundle.json",
+      "local_sha256": "a95b72188ddc83e1906cec3ba62313f5f6fd17154e4fa99f46b794d3cfe727d8",
+      "bytes": 3289,
+      "remote_sha256": "a95b72188ddc83e1906cec3ba62313f5f6fd17154e4fa99f46b794d3cfe727d8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Vault-1.0.0.bundle.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/bundles/org.nuxel.Vault-1.0.0.bundle.json",
+      "local_sha256": "56b1cc48e1306c5d92f4a0e34ba5c3853f094b5b517a487de746f4021c323917",
+      "bytes": 3368,
+      "remote_sha256": "56b1cc48e1306c5d92f4a0e34ba5c3853f094b5b517a487de746f4021c323917",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/keys/nuxel-beta-dev-2026.ed25519.pub",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/keys/nuxel-beta-dev-2026.ed25519.pub",
+      "local_sha256": "c4731e43cfb45fe45a585baf699beefa3b2cf7b42121d6dcea7051bed00f9689",
+      "bytes": 65,
+      "remote_sha256": "c4731e43cfb45fe45a585baf699beefa3b2cf7b42121d6dcea7051bed00f9689",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/keys/nuxel-beta-dev.key.txt",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/keys/nuxel-beta-dev.key.txt",
+      "local_sha256": "469fd12add991da2fb3d287720a945460ce3f6c6b728dc78f801522a9488fbe4",
+      "bytes": 378,
+      "remote_sha256": "469fd12add991da2fb3d287720a945460ce3f6c6b728dc78f801522a9488fbe4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json",
+      "local_sha256": "e995d9e697fcd2b6b42c7d84efed0bbb408da38a3887e027e19740e33d445f6b",
+      "bytes": 18901,
+      "remote_sha256": "e995d9e697fcd2b6b42c7d84efed0bbb408da38a3887e027e19740e33d445f6b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/package-sources.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/package-sources.json",
+      "local_sha256": "800984a07b62a50a19f5c8cf170d81eb65e2c91ad225a238b3173b4829000552",
+      "bytes": 14082,
+      "remote_sha256": "800984a07b62a50a19f5c8cf170d81eb65e2c91ad225a238b3173b4829000552",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/schema/bundle.schema.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/schema/bundle.schema.json",
+      "local_sha256": "83a174a24b1061420a510cbcdd8824b034e7af2e8e93245fef8d5270248b99d7",
+      "bytes": 718,
+      "remote_sha256": "83a174a24b1061420a510cbcdd8824b034e7af2e8e93245fef8d5270248b99d7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/schema/nuxtore-catalog.schema.json",
+      "source": "pwa/nuxel-apps/nuxtore/catalog/schema/nuxtore-catalog.schema.json",
+      "local_sha256": "6a9cc0115695573987f7378e1898b7a9b7a73e2c515535cb3b63ac9732511caf",
+      "bytes": 4083,
+      "remote_sha256": "6a9cc0115695573987f7378e1898b7a9b7a73e2c515535cb3b63ac9732511caf",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/css/nuxtore.css",
+      "source": "pwa/nuxel-apps/nuxtore/css/nuxtore.css",
+      "local_sha256": "a0cc283c883ba9fb66ab62cdfb9f324251b138b7921558fbc1db193683cf078e",
+      "bytes": 5928,
+      "remote_sha256": "a0cc283c883ba9fb66ab62cdfb9f324251b138b7921558fbc1db193683cf078e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-128.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-128.png",
+      "local_sha256": "304553aef4d5743f2679c1e08791b0ed98b5dc1a63a6ebd7fd2d2a139780d964",
+      "bytes": 6163,
+      "remote_sha256": "304553aef4d5743f2679c1e08791b0ed98b5dc1a63a6ebd7fd2d2a139780d964",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-144.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-144.png",
+      "local_sha256": "ea5d25b4eac3b669e2bbcb0f9b7a436897f5e3e313a98fd7ae7f4cf03022a580",
+      "bytes": 6799,
+      "remote_sha256": "ea5d25b4eac3b669e2bbcb0f9b7a436897f5e3e313a98fd7ae7f4cf03022a580",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-152.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-152.png",
+      "local_sha256": "07de2231aafeb0c0d0284c7f39a1456b95c44199f29a52f58c76fee299ef00d7",
+      "bytes": 7140,
+      "remote_sha256": "07de2231aafeb0c0d0284c7f39a1456b95c44199f29a52f58c76fee299ef00d7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-192.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-192.png",
+      "local_sha256": "e535d53e3630f9bd03cc8a21a773cc5ef58914bc9d92f51164bd497d5c5b8b70",
+      "bytes": 9029,
+      "remote_sha256": "e535d53e3630f9bd03cc8a21a773cc5ef58914bc9d92f51164bd497d5c5b8b70",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-384.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-384.png",
+      "local_sha256": "afc9b55933fdfc9a04c61f024043dddb94be42033990647084733030432441a3",
+      "bytes": 18614,
+      "remote_sha256": "afc9b55933fdfc9a04c61f024043dddb94be42033990647084733030432441a3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-48.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-48.png",
+      "local_sha256": "967eb3dc032e2b49fae637aaf5ab584165ca5f2b17b666dd834b32ecde1e701c",
+      "bytes": 2224,
+      "remote_sha256": "967eb3dc032e2b49fae637aaf5ab584165ca5f2b17b666dd834b32ecde1e701c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-512.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-512.png",
+      "local_sha256": "c24ff4d15e8c8c5dd09d52aa05872ddcdba186084ac29e9ff899a33fd6293973",
+      "bytes": 24625,
+      "remote_sha256": "c24ff4d15e8c8c5dd09d52aa05872ddcdba186084ac29e9ff899a33fd6293973",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-72.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-72.png",
+      "local_sha256": "2e1da222295f8749e6a78082d056941ad4b7e0d8aa7ca611c47d7bacbb8fbe17",
+      "bytes": 3365,
+      "remote_sha256": "2e1da222295f8749e6a78082d056941ad4b7e0d8aa7ca611c47d7bacbb8fbe17",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-96.png",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon-96.png",
+      "local_sha256": "7b29f3f43a0b5f8f65e59843bcaff9fabffd72e2be96e071f02f7c627254bd59",
+      "bytes": 4640,
+      "remote_sha256": "7b29f3f43a0b5f8f65e59843bcaff9fabffd72e2be96e071f02f7c627254bd59",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon.svg",
+      "source": "pwa/nuxel-apps/nuxtore/icons/icon.svg",
+      "local_sha256": "f28c30f7f1e536e59840c0b5ad37aa7eb768a09864d0fe1891b4f90252220446",
+      "bytes": 401,
+      "remote_sha256": "f28c30f7f1e536e59840c0b5ad37aa7eb768a09864d0fe1891b4f90252220446",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/index.html",
+      "source": "pwa/nuxel-apps/nuxtore/index.html",
+      "local_sha256": "8c3c3ac6e55004248fe56491b322572f2131d280020df923f6ba351cdba68eb3",
+      "bytes": 7003,
+      "remote_sha256": "8c3c3ac6e55004248fe56491b322572f2131d280020df923f6ba351cdba68eb3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore-catalog.js",
+      "source": "pwa/nuxel-apps/nuxtore/js/nuxtore-catalog.js",
+      "local_sha256": "3f15bdacd9d52cff5e1d5b5a3ee7c1a390e97d01b3cf8af6ce2106f7490a7b6f",
+      "bytes": 14177,
+      "remote_sha256": "3f15bdacd9d52cff5e1d5b5a3ee7c1a390e97d01b3cf8af6ce2106f7490a7b6f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore-crypto.js",
+      "source": "pwa/nuxel-apps/nuxtore/js/nuxtore-crypto.js",
+      "local_sha256": "5188686f876631ffa2378a355e518a3fdb3b0ba3df68d751e19982bfb1e05409",
+      "bytes": 4720,
+      "remote_sha256": "5188686f876631ffa2378a355e518a3fdb3b0ba3df68d751e19982bfb1e05409",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore-flatpak.js",
+      "source": "pwa/nuxel-apps/nuxtore/js/nuxtore-flatpak.js",
+      "local_sha256": "9e2edaf6ae8ea64c0a3f30320b9c519bc7ccb4b2900ae87b6c937207f3734f56",
+      "bytes": 14554,
+      "remote_sha256": "9e2edaf6ae8ea64c0a3f30320b9c519bc7ccb4b2900ae87b6c937207f3734f56",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js",
+      "source": "pwa/nuxel-apps/nuxtore/js/nuxtore.js",
+      "local_sha256": "7aed086e19029ca11b63a7686461778d23e65421c14201fc059aa24dbb391685",
+      "bytes": 26261,
+      "remote_sha256": "7aed086e19029ca11b63a7686461778d23e65421c14201fc059aa24dbb391685",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/manifest.json",
+      "source": "pwa/nuxel-apps/nuxtore/manifest.json",
+      "local_sha256": "7dd9da6d1549748a769ad05443d52cb3d7013020029df37ea19754c76db0d728",
+      "bytes": 1669,
+      "remote_sha256": "7dd9da6d1549748a769ad05443d52cb3d7013020029df37ea19754c76db0d728",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/sw.js",
+      "source": "pwa/nuxel-apps/nuxtore/sw.js",
+      "local_sha256": "6684fd531ebfb93040e46953667a493731c717a938bf945b2aed517bcbc9972f",
+      "bytes": 1401,
+      "remote_sha256": "6684fd531ebfb93040e46953667a493731c717a938bf945b2aed517bcbc9972f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/tests/test-catalog.js",
+      "source": "pwa/nuxel-apps/nuxtore/tests/test-catalog.js",
+      "local_sha256": "9926bc3f05b77fbb78d11840ba128ccfb5b9695421eff7f75e13f4363a5d49d1",
+      "bytes": 6608,
+      "remote_sha256": "9926bc3f05b77fbb78d11840ba128ccfb5b9695421eff7f75e13f4363a5d49d1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/tests/test-catalog.py",
+      "source": "pwa/nuxel-apps/nuxtore/tests/test-catalog.py",
+      "local_sha256": "3ba2b5957bc89bc20fcbae664119ad17ec1305d13a0e31a84b8ebaabba4eeaf7",
+      "bytes": 10481,
+      "remote_sha256": "3ba2b5957bc89bc20fcbae664119ad17ec1305d13a0e31a84b8ebaabba4eeaf7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/tools/ed25519_ref.py",
+      "source": "pwa/nuxel-apps/nuxtore/tools/ed25519_ref.py",
+      "local_sha256": "a42086550266e6674adc9db775e69f0a645aed95ceabc1d31df5318dd3c73645",
+      "bytes": 4411,
+      "remote_sha256": "a42086550266e6674adc9db775e69f0a645aed95ceabc1d31df5318dd3c73645",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/tools/nuxtore-stage.py",
+      "source": "pwa/nuxel-apps/nuxtore/tools/nuxtore-stage.py",
+      "local_sha256": "5ed6237a01e83f3f0305b4ddadb0dbff7298d19ab27b0c89043c692f86fbc35c",
+      "bytes": 6666,
+      "remote_sha256": "5ed6237a01e83f3f0305b4ddadb0dbff7298d19ab27b0c89043c692f86fbc35c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py",
+      "source": "pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py",
+      "local_sha256": "e4b8f9fbf7e9d67cd8f41e889f069527a3711b05e5fe82fd3c49ba06dfe0f063",
+      "bytes": 8727,
+      "remote_sha256": "e4b8f9fbf7e9d67cd8f41e889f069527a3711b05e5fe82fd3c49ba06dfe0f063",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/nuxtore/tools/nuxtore_common.py",
+      "source": "pwa/nuxel-apps/nuxtore/tools/nuxtore_common.py",
+      "local_sha256": "9f1b147b4973567790be047e1a4c3341d8ddafc77889c68bad497d992ab828b3",
+      "bytes": 3493,
+      "remote_sha256": "9f1b147b4973567790be047e1a4c3341d8ddafc77889c68bad497d992ab828b3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/app.json",
+      "source": "pwa/nuxel-apps/penguinterface/app.json",
+      "local_sha256": "bbd739a715e35d3f11972dd5bb295dfe5fa25841d9d8623eab452b114d1382dd",
+      "bytes": 450,
+      "remote_sha256": "bbd739a715e35d3f11972dd5bb295dfe5fa25841d9d8623eab452b114d1382dd",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/css/pengu.css",
+      "source": "pwa/nuxel-apps/penguinterface/css/pengu.css",
+      "local_sha256": "085e5d31693950c0bf40059b98351feec4ea21cda0cc3c37cf082c6759521233",
+      "bytes": 2235,
+      "remote_sha256": "085e5d31693950c0bf40059b98351feec4ea21cda0cc3c37cf082c6759521233",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-128.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-128.png",
+      "local_sha256": "ef27ffa2db0aad40504d227131ccac4450235516c213645fd0f35bac1ba04bd1",
+      "bytes": 6566,
+      "remote_sha256": "ef27ffa2db0aad40504d227131ccac4450235516c213645fd0f35bac1ba04bd1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-144.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-144.png",
+      "local_sha256": "ad838cd09fc2d946e66d8fd38a7fd6da70e224ed80f1d1bdb84818dc572356c4",
+      "bytes": 7280,
+      "remote_sha256": "ad838cd09fc2d946e66d8fd38a7fd6da70e224ed80f1d1bdb84818dc572356c4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-152.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-152.png",
+      "local_sha256": "19225e834b092d037bee013bdf0d866441c57cfd7f92f95234261f010e0b6866",
+      "bytes": 7835,
+      "remote_sha256": "19225e834b092d037bee013bdf0d866441c57cfd7f92f95234261f010e0b6866",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-192.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-192.png",
+      "local_sha256": "11b30f919c37e1396132977ec20330e242558cd77f21a573f60e242738fb3b79",
+      "bytes": 9659,
+      "remote_sha256": "11b30f919c37e1396132977ec20330e242558cd77f21a573f60e242738fb3b79",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-384.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-384.png",
+      "local_sha256": "de687ca8fcc64d4ea34e256a2b298ea89b1f4a17d7a92ce74c6ca83e9634a55e",
+      "bytes": 19598,
+      "remote_sha256": "de687ca8fcc64d4ea34e256a2b298ea89b1f4a17d7a92ce74c6ca83e9634a55e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-48.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-48.png",
+      "local_sha256": "65e8c1eb90b0c21db8764db2a2c1847bb901a1deaa2e22e281563d2bcca5602d",
+      "bytes": 2268,
+      "remote_sha256": "65e8c1eb90b0c21db8764db2a2c1847bb901a1deaa2e22e281563d2bcca5602d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-512.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-512.png",
+      "local_sha256": "270ce6940d558c4cc55ef556a88a80a4d4e43cf81e4502cf4924fc8c1907c3c9",
+      "bytes": 26503,
+      "remote_sha256": "270ce6940d558c4cc55ef556a88a80a4d4e43cf81e4502cf4924fc8c1907c3c9",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-72.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-72.png",
+      "local_sha256": "63195fc54e43c7e4d5e2f675009cc4042a115c180fd6ff4b158ca397f550c01a",
+      "bytes": 3476,
+      "remote_sha256": "63195fc54e43c7e4d5e2f675009cc4042a115c180fd6ff4b158ca397f550c01a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-96.png",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon-96.png",
+      "local_sha256": "792727e70d265828e9211c765c8473dad8aa1dc4888c0040563840ba1608395a",
+      "bytes": 4918,
+      "remote_sha256": "792727e70d265828e9211c765c8473dad8aa1dc4888c0040563840ba1608395a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon.svg",
+      "source": "pwa/nuxel-apps/penguinterface/icons/icon.svg",
+      "local_sha256": "09b37f74c611cb00f775180ffc271ef07c8f531ccda6ed63519e9f804cef6945",
+      "bytes": 408,
+      "remote_sha256": "09b37f74c611cb00f775180ffc271ef07c8f531ccda6ed63519e9f804cef6945",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/index.html",
+      "source": "pwa/nuxel-apps/penguinterface/index.html",
+      "local_sha256": "4250df40ce3508c5087c441982b9263803c0eec7f97787265ccabaabb957e2a3",
+      "bytes": 3998,
+      "remote_sha256": "4250df40ce3508c5087c441982b9263803c0eec7f97787265ccabaabb957e2a3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/js/pengu.js",
+      "source": "pwa/nuxel-apps/penguinterface/js/pengu.js",
+      "local_sha256": "41079b99cb1319adbab6a25344e6d1a3349cbd3fe75c59db24f3169b510df3ce",
+      "bytes": 2510,
+      "remote_sha256": "41079b99cb1319adbab6a25344e6d1a3349cbd3fe75c59db24f3169b510df3ce",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/js/spoof.js",
+      "source": "pwa/nuxel-apps/penguinterface/js/spoof.js",
+      "local_sha256": "0f949618eea31b2e365373e5d63974a82b86ef11191cbde26ccd0599b563d9d6",
+      "bytes": 10289,
+      "remote_sha256": "0f949618eea31b2e365373e5d63974a82b86ef11191cbde26ccd0599b563d9d6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/manifest.json",
+      "source": "pwa/nuxel-apps/penguinterface/manifest.json",
+      "local_sha256": "9403654f8747f5f68c8373ba180bcac0393cf3200129706f22e612a7f8b55781",
+      "bytes": 824,
+      "remote_sha256": "9403654f8747f5f68c8373ba180bcac0393cf3200129706f22e612a7f8b55781",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/penguinterface/profile.json",
+      "source": "pwa/nuxel-apps/penguinterface/profile.json",
+      "local_sha256": "6cc9144dde574275e86b5179c526471a6f452ce76afcef82b1caee8d8dca7e1f",
+      "bytes": 1265,
+      "remote_sha256": "6cc9144dde574275e86b5179c526471a6f452ce76afcef82b1caee8d8dca7e1f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/permissions/app.js",
+      "source": "pwa/nuxel-apps/permissions/app.js",
+      "local_sha256": "a677bb5cea0bd6bb37b566cb605a802aba3350b664d5dbd4c54a3d22750771fd",
+      "bytes": 8917,
+      "remote_sha256": "a677bb5cea0bd6bb37b566cb605a802aba3350b664d5dbd4c54a3d22750771fd",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/permissions/index.html",
+      "source": "pwa/nuxel-apps/permissions/index.html",
+      "local_sha256": "4afd09da0ebb66643e65238f4339a22fa6778ffdebbbd421a84b3774d7c6f8d3",
+      "bytes": 1174,
+      "remote_sha256": "4afd09da0ebb66643e65238f4339a22fa6778ffdebbbd421a84b3774d7c6f8d3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/permissions/manifest.json",
+      "source": "pwa/nuxel-apps/permissions/manifest.json",
+      "local_sha256": "3087dfa8a8d20e79aa2aa16aad8f9455e1f4744b7bbdcedcc791527f245a993c",
+      "bytes": 907,
+      "remote_sha256": "3087dfa8a8d20e79aa2aa16aad8f9455e1f4744b7bbdcedcc791527f245a993c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/permissions/style.css",
+      "source": "pwa/nuxel-apps/permissions/style.css",
+      "local_sha256": "43f68498a4802221bd1f60b4a99f1d791b8dc44ba2de849b679a8dad1270d1f2",
+      "bytes": 2213,
+      "remote_sha256": "43f68498a4802221bd1f60b4a99f1d791b8dc44ba2de849b679a8dad1270d1f2",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-scrcpy/app.json",
+      "source": "pwa/nuxel-apps/remote-scrcpy/app.json",
+      "local_sha256": "80f1c6161d8fb9ea012839d67e70745103757cdc27da2226bd26f335255f8948",
+      "bytes": 560,
+      "remote_sha256": "80f1c6161d8fb9ea012839d67e70745103757cdc27da2226bd26f335255f8948",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-scrcpy/icons/icon.svg",
+      "source": "pwa/nuxel-apps/remote-scrcpy/icons/icon.svg",
+      "local_sha256": "74e2c6be0473f3859cf0c4fa42dc95edb7dbad30d6a900a4eeeda2bd21483b5d",
+      "bytes": 409,
+      "remote_sha256": "74e2c6be0473f3859cf0c4fa42dc95edb7dbad30d6a900a4eeeda2bd21483b5d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-scrcpy/index.html",
+      "source": "pwa/nuxel-apps/remote-scrcpy/index.html",
+      "local_sha256": "49e4d6e6a011f6f70e6fdbb215c0395e2c68a4f2e89e9f00cdd93cbb6bf21804",
+      "bytes": 712,
+      "remote_sha256": "49e4d6e6a011f6f70e6fdbb215c0395e2c68a4f2e89e9f00cdd93cbb6bf21804",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-scrcpy/js/remote-scrcpy.js",
+      "source": "pwa/nuxel-apps/remote-scrcpy/js/remote-scrcpy.js",
+      "local_sha256": "0e4985bd00adbde8045209f70078c25b2544df7787337f0a1936878156e51171",
+      "bytes": 815,
+      "remote_sha256": "0e4985bd00adbde8045209f70078c25b2544df7787337f0a1936878156e51171",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-scrcpy/manifest.json",
+      "source": "pwa/nuxel-apps/remote-scrcpy/manifest.json",
+      "local_sha256": "8fae5ed59b47a8cdbc40cc223d1fc39db79fd133edcbff1fa1f16280a35f8b91",
+      "bytes": 1139,
+      "remote_sha256": "8fae5ed59b47a8cdbc40cc223d1fc39db79fd133edcbff1fa1f16280a35f8b91",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-vnc/app.json",
+      "source": "pwa/nuxel-apps/remote-vnc/app.json",
+      "local_sha256": "0784f93405c6df13e94f6d752d17a946a21b29d646ab3ac2fb20b8d23f86b7b4",
+      "bytes": 555,
+      "remote_sha256": "0784f93405c6df13e94f6d752d17a946a21b29d646ab3ac2fb20b8d23f86b7b4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-vnc/icons/icon.svg",
+      "source": "pwa/nuxel-apps/remote-vnc/icons/icon.svg",
+      "local_sha256": "076d3f938248a38f88da44928f2e11b0b247c60b3b267ed938c3982d52d37a57",
+      "bytes": 459,
+      "remote_sha256": "076d3f938248a38f88da44928f2e11b0b247c60b3b267ed938c3982d52d37a57",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-vnc/index.html",
+      "source": "pwa/nuxel-apps/remote-vnc/index.html",
+      "local_sha256": "998f8e8f903573a8a272343dda93747b3585ab5f9d8dcf0638fc8956474fcc6e",
+      "bytes": 715,
+      "remote_sha256": "998f8e8f903573a8a272343dda93747b3585ab5f9d8dcf0638fc8956474fcc6e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-vnc/js/remote-vnc.js",
+      "source": "pwa/nuxel-apps/remote-vnc/js/remote-vnc.js",
+      "local_sha256": "50cfda375a70417c6513e053086b607e5fae876811a183a798dc3f0e685182c8",
+      "bytes": 1050,
+      "remote_sha256": "50cfda375a70417c6513e053086b607e5fae876811a183a798dc3f0e685182c8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-vnc/manifest.json",
+      "source": "pwa/nuxel-apps/remote-vnc/manifest.json",
+      "local_sha256": "716b90bf7c63d6e5235949c418ac620c4fd0caedf248a8ac5c15d031e2f71166",
+      "bytes": 1122,
+      "remote_sha256": "716b90bf7c63d6e5235949c418ac620c4fd0caedf248a8ac5c15d031e2f71166",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-xrdp/app.json",
+      "source": "pwa/nuxel-apps/remote-xrdp/app.json",
+      "local_sha256": "decdf7620cd2b6018f98257a4ea4a7ba85ebf179508b1697bbb99ac8154838d4",
+      "bytes": 544,
+      "remote_sha256": "decdf7620cd2b6018f98257a4ea4a7ba85ebf179508b1697bbb99ac8154838d4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-xrdp/icons/icon.svg",
+      "source": "pwa/nuxel-apps/remote-xrdp/icons/icon.svg",
+      "local_sha256": "5352812db448da0102de08fe1ccb83004693ee2eb9d6cff8a188698a062f4814",
+      "bytes": 409,
+      "remote_sha256": "5352812db448da0102de08fe1ccb83004693ee2eb9d6cff8a188698a062f4814",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-xrdp/index.html",
+      "source": "pwa/nuxel-apps/remote-xrdp/index.html",
+      "local_sha256": "ed93aaea84d70c3a689b1b9ce55b255045cb0ef58715248f8487dfd4f04074cf",
+      "bytes": 718,
+      "remote_sha256": "ed93aaea84d70c3a689b1b9ce55b255045cb0ef58715248f8487dfd4f04074cf",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-xrdp/js/remote-xrdp.js",
+      "source": "pwa/nuxel-apps/remote-xrdp/js/remote-xrdp.js",
+      "local_sha256": "6226afdb0a56d4adf2f71f5b9888164c3635ba51b91327fb730bb53310ddd92b",
+      "bytes": 987,
+      "remote_sha256": "6226afdb0a56d4adf2f71f5b9888164c3635ba51b91327fb730bb53310ddd92b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/remote-xrdp/manifest.json",
+      "source": "pwa/nuxel-apps/remote-xrdp/manifest.json",
+      "local_sha256": "38e5eb758979128194c907bd947184b3701102bbc967c89a7fdb762148c1cfe3",
+      "bytes": 1131,
+      "remote_sha256": "38e5eb758979128194c907bd947184b3701102bbc967c89a7fdb762148c1cfe3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/app.json",
+      "source": "pwa/nuxel-apps/settings/app.json",
+      "local_sha256": "8581d3e5eb89db72eda0f733156738c4f059cf5168c87715a4d3654e2f462d98",
+      "bytes": 641,
+      "remote_sha256": "8581d3e5eb89db72eda0f733156738c4f059cf5168c87715a4d3654e2f462d98",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/appearance-settings.js",
+      "source": "pwa/nuxel-apps/settings/appearance-settings.js",
+      "local_sha256": "69667e74dd4ab5823d1a294ae5e33d316f130708dc75b231673a7cc5856e7c48",
+      "bytes": 5987,
+      "remote_sha256": "69667e74dd4ab5823d1a294ae5e33d316f130708dc75b231673a7cc5856e7c48",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/apps-permissions-settings.js",
+      "source": "pwa/nuxel-apps/settings/apps-permissions-settings.js",
+      "local_sha256": "005a7be342c5d0497717302f02993a6f0e0cf20479f2c099723d42f37c63d6de",
+      "bytes": 13264,
+      "remote_sha256": "005a7be342c5d0497717302f02993a6f0e0cf20479f2c099723d42f37c63d6de",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/driver-diagnostics.js",
+      "source": "pwa/nuxel-apps/settings/driver-diagnostics.js",
+      "local_sha256": "71088c9b355d775890a35725746e1d85663ff4710766cbf5fb7a75b0b212c7a0",
+      "bytes": 2968,
+      "remote_sha256": "71088c9b355d775890a35725746e1d85663ff4710766cbf5fb7a75b0b212c7a0",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/firewall-settings.js",
+      "source": "pwa/nuxel-apps/settings/firewall-settings.js",
+      "local_sha256": "11795f9dfd43a88d79b9e3afb6189192f6002ddfd8935477ed31dfd3e1e3583a",
+      "bytes": 10962,
+      "remote_sha256": "11795f9dfd43a88d79b9e3afb6189192f6002ddfd8935477ed31dfd3e1e3583a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/graphics-diagnostics.js",
+      "source": "pwa/nuxel-apps/settings/graphics-diagnostics.js",
+      "local_sha256": "5f534fc83f4df4e746f7e55cf41e74dd1bff51210ab466de79292645817a6575",
+      "bytes": 7544,
+      "remote_sha256": "5f534fc83f4df4e746f7e55cf41e74dd1bff51210ab466de79292645817a6575",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js",
+      "source": "pwa/nuxel-apps/settings/hardware-settings.js",
+      "local_sha256": "dcaaa97deedaec5f6e9b93bd7c3740b9c80d51c005ea81c8a253a4881eaff85b",
+      "bytes": 19012,
+      "remote_sha256": "dcaaa97deedaec5f6e9b93bd7c3740b9c80d51c005ea81c8a253a4881eaff85b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/index.html",
+      "source": "pwa/nuxel-apps/settings/index.html",
+      "local_sha256": "5fc88fb741f7a0990dbb3b36c0461a9ab8cdd699aec1e03e59b7e4e5675ee67a",
+      "bytes": 41126,
+      "remote_sha256": "5fc88fb741f7a0990dbb3b36c0461a9ab8cdd699aec1e03e59b7e4e5675ee67a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/keyboard-settings.js",
+      "source": "pwa/nuxel-apps/settings/keyboard-settings.js",
+      "local_sha256": "f07357a6456c8fa20e8882e577e9650179130bdab7fbb2b8eacdd92de2a2df3a",
+      "bytes": 3699,
+      "remote_sha256": "f07357a6456c8fa20e8882e577e9650179130bdab7fbb2b8eacdd92de2a2df3a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/location-maps.js",
+      "source": "pwa/nuxel-apps/settings/location-maps.js",
+      "local_sha256": "3bf883d49c17d335f1ee9e44966f831ac83c342147721ae6e266d6db3610b4d6",
+      "bytes": 9923,
+      "remote_sha256": "3bf883d49c17d335f1ee9e44966f831ac83c342147721ae6e266d6db3610b4d6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/manifest.json",
+      "source": "pwa/nuxel-apps/settings/manifest.json",
+      "local_sha256": "bd6d12b3cb58da224410a8bcc210b8d217f32d4e99f2334246399ac6b1c9e602",
+      "bytes": 1429,
+      "remote_sha256": "bd6d12b3cb58da224410a8bcc210b8d217f32d4e99f2334246399ac6b1c9e602",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/mic-settings.js",
+      "source": "pwa/nuxel-apps/settings/mic-settings.js",
+      "local_sha256": "85f9c3f4b67a7834a9cb4d170240a1e40161079ab321d6b502f892a221bf42b2",
+      "bytes": 5448,
+      "remote_sha256": "85f9c3f4b67a7834a9cb4d170240a1e40161079ab321d6b502f892a221bf42b2",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/power-menu.css",
+      "source": "pwa/nuxel-apps/settings/power-menu.css",
+      "local_sha256": "75333d5335746a0dc98a111b8edfa37abef4968b0530624af34b56dcba2a2ccb",
+      "bytes": 4625,
+      "remote_sha256": "75333d5335746a0dc98a111b8edfa37abef4968b0530624af34b56dcba2a2ccb",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/power-menu.html",
+      "source": "pwa/nuxel-apps/settings/power-menu.html",
+      "local_sha256": "e4a0f55becbad9015fd70a6ed2c37790131e93c1ce8032724ef2b1b8dafa052f",
+      "bytes": 2746,
+      "remote_sha256": "e4a0f55becbad9015fd70a6ed2c37790131e93c1ce8032724ef2b1b8dafa052f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/power-menu.js",
+      "source": "pwa/nuxel-apps/settings/power-menu.js",
+      "local_sha256": "6b7b8878ff28751c21e5097821101807f7b28281c96d53a5b20d917fabf9061d",
+      "bytes": 16822,
+      "remote_sha256": "6b7b8878ff28751c21e5097821101807f7b28281c96d53a5b20d917fabf9061d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/pwange45000-settings.js",
+      "source": "pwa/nuxel-apps/settings/pwange45000-settings.js",
+      "local_sha256": "4b4620be2de11a655a297bcb8e3210a0c2c1ec3467bb6d3e0710092a3e70cb59",
+      "bytes": 13076,
+      "remote_sha256": "4b4620be2de11a655a297bcb8e3210a0c2c1ec3467bb6d3e0710092a3e70cb59",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/services-settings.js",
+      "source": "pwa/nuxel-apps/settings/services-settings.js",
+      "local_sha256": "d4b3edc8d1f4d0ec8eabd24f329952303c180051e03e787560309251087dae3b",
+      "bytes": 5888,
+      "remote_sha256": "d4b3edc8d1f4d0ec8eabd24f329952303c180051e03e787560309251087dae3b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/settings-model.js",
+      "source": "pwa/nuxel-apps/settings/settings-model.js",
+      "local_sha256": "fb1156b2a05e76c92460267fa2540592587f81b3c9b4ac4721d9adba63515914",
+      "bytes": 15497,
+      "remote_sha256": "fb1156b2a05e76c92460267fa2540592587f81b3c9b4ac4721d9adba63515914",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/settings.css",
+      "source": "pwa/nuxel-apps/settings/settings.css",
+      "local_sha256": "60d2d990697565e79921b200d45d07e6018d3f6e49f25b1cadd54119acdcfdfc",
+      "bytes": 13256,
+      "remote_sha256": "60d2d990697565e79921b200d45d07e6018d3f6e49f25b1cadd54119acdcfdfc",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/settings.js",
+      "source": "pwa/nuxel-apps/settings/settings.js",
+      "local_sha256": "376e31d750644fb4ef525d0dfdc33039b3ee5cc95b2b043b02e651582382eef8",
+      "bytes": 44798,
+      "remote_sha256": "376e31d750644fb4ef525d0dfdc33039b3ee5cc95b2b043b02e651582382eef8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/sound-settings.js",
+      "source": "pwa/nuxel-apps/settings/sound-settings.js",
+      "local_sha256": "cff813d1b95ab147da07f55420b928179e7662981b126bd38e30639eef8d08b2",
+      "bytes": 10318,
+      "remote_sha256": "cff813d1b95ab147da07f55420b928179e7662981b126bd38e30639eef8d08b2",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/theme-settings.js",
+      "source": "pwa/nuxel-apps/settings/theme-settings.js",
+      "local_sha256": "67579b9a7719bca818585463a21f204637b27d8464ca722948fe0bfa52147eb3",
+      "bytes": 3583,
+      "remote_sha256": "67579b9a7719bca818585463a21f204637b27d8464ca722948fe0bfa52147eb3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js",
+      "source": "pwa/nuxel-apps/settings/wifi-settings.js",
+      "local_sha256": "c636ce914fb4ea54fc23a8887a9a15e487030d76a9c0ceed4d838fbaa0d9af77",
+      "bytes": 7788,
+      "remote_sha256": "c636ce914fb4ea54fc23a8887a9a15e487030d76a9c0ceed4d838fbaa0d9af77",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json",
+      "source": "pwa/nuxel-common/app-registry.json",
+      "local_sha256": "3292b552fa034a3990e1bfabdbb4e24ae35d1d329d26e731fdb71e9a9ce0b0f4",
+      "bytes": 43160,
+      "remote_sha256": "3292b552fa034a3990e1bfabdbb4e24ae35d1d329d26e731fdb71e9a9ce0b0f4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/back.js",
+      "source": "pwa/nuxel-common/back.js",
+      "local_sha256": "8b0fef5c5d9cc4870b840b184f27e5867c007e2f2bfcd7730d8e582bcd76a8bd",
+      "bytes": 3561,
+      "remote_sha256": "8b0fef5c5d9cc4870b840b184f27e5867c007e2f2bfcd7730d8e582bcd76a8bd",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json",
+      "source": "pwa/nuxel-common/bridge-version.json",
+      "local_sha256": "559830045d5749cae5086cd75e3bbdb02b1da5626de97e9a951c9db9b835d76c",
+      "bytes": 1597,
+      "remote_sha256": "559830045d5749cae5086cd75e3bbdb02b1da5626de97e9a951c9db9b835d76c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/bridge.js",
+      "source": "pwa/nuxel-common/bridge.js",
+      "local_sha256": "ced52672bccd82aaa916360bc13146f0b69b2c5540ddc0337ea6d129132f0048",
+      "bytes": 32159,
+      "remote_sha256": "ced52672bccd82aaa916360bc13146f0b69b2c5540ddc0337ea6d129132f0048",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/geolocation.js",
+      "source": "pwa/nuxel-common/geolocation.js",
+      "local_sha256": "d8a216ec284d260fff6a6f6115fa9cd122bef1481e37eb794a089d9a2e854595",
+      "bytes": 17260,
+      "remote_sha256": "d8a216ec284d260fff6a6f6115fa9cd122bef1481e37eb794a089d9a2e854595",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/haptics.js",
+      "source": "pwa/nuxel-common/haptics.js",
+      "local_sha256": "088792268134bbcf01552a3f810ecdd2bc12160268076500e355532d7420b93c",
+      "bytes": 2831,
+      "remote_sha256": "088792268134bbcf01552a3f810ecdd2bc12160268076500e355532d7420b93c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/maps-core.js",
+      "source": "pwa/nuxel-common/maps-core.js",
+      "local_sha256": "0fdc67bba460bec9de45a8ff6b8cc4d60172399d813922c8266ca383d23bce84",
+      "bytes": 19460,
+      "remote_sha256": "0fdc67bba460bec9de45a8ff6b8cc4d60172399d813922c8266ca383d23bce84",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/package.json",
+      "source": "pwa/nuxel-common/package.json",
+      "local_sha256": "edaa809aa91e47c5557cbc14da20288438085fd07f392c17c9ae60579bc0cdea",
+      "bytes": 459,
+      "remote_sha256": "edaa809aa91e47c5557cbc14da20288438085fd07f392c17c9ae60579bc0cdea",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/remote-desktop.css",
+      "source": "pwa/nuxel-common/remote-desktop.css",
+      "local_sha256": "a2110db759586ff78381e2616d2a853bdc34d5aeab53065162ac1371be2b99e9",
+      "bytes": 4618,
+      "remote_sha256": "a2110db759586ff78381e2616d2a853bdc34d5aeab53065162ac1371be2b99e9",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/remote-desktop.js",
+      "source": "pwa/nuxel-common/remote-desktop.js",
+      "local_sha256": "114aff32c5899620b657ef52095b8c8559d84f1e7cc9326c2ae1f2e61e860727",
+      "bytes": 13621,
+      "remote_sha256": "114aff32c5899620b657ef52095b8c8559d84f1e7cc9326c2ae1f2e61e860727",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/responsive.css",
+      "source": "pwa/nuxel-common/responsive.css",
+      "local_sha256": "4d536ccf55c8e3e3579946c27b8ebe99320f2884a3f87c691ad27950ed07cda6",
+      "bytes": 1227,
+      "remote_sha256": "4d536ccf55c8e3e3579946c27b8ebe99320f2884a3f87c691ad27950ed07cda6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/statusbar-icons.js",
+      "source": "pwa/nuxel-common/statusbar-icons.js",
+      "local_sha256": "49ebe4cccb2e7b01e870cbd6b244b6e73b531f155472b4e4aa0ce9e4d84710c9",
+      "bytes": 5403,
+      "remote_sha256": "49ebe4cccb2e7b01e870cbd6b244b6e73b531f155472b4e4aa0ce9e4d84710c9",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/test-bridge.js",
+      "source": "pwa/nuxel-common/test-bridge.js",
+      "local_sha256": "360e9c1475fc0f837e325b8214b0764e6a8400e4f2283c76452fb093c761c59f",
+      "bytes": 12995,
+      "remote_sha256": "360e9c1475fc0f837e325b8214b0764e6a8400e4f2283c76452fb093c761c59f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/theme.css",
+      "source": "pwa/nuxel-common/theme.css",
+      "local_sha256": "54db182e3ff0985180d5be4b073c1675514bf01bc77545b59fc1681617da40e7",
+      "bytes": 5143,
+      "remote_sha256": "54db182e3ff0985180d5be4b073c1675514bf01bc77545b59fc1681617da40e7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/theme.js",
+      "source": "pwa/nuxel-common/theme.js",
+      "local_sha256": "fd6d2ea53bf797aeff3d12a0072dd13d73b35cd2764b1c9fc3e7253cd3cfee73",
+      "bytes": 5027,
+      "remote_sha256": "fd6d2ea53bf797aeff3d12a0072dd13d73b35cd2764b1c9fc3e7253cd3cfee73",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/verify-wiring.js",
+      "source": "pwa/nuxel-common/verify-wiring.js",
+      "local_sha256": "82489aa2cb177fbd1c2ec22c7af53aaaad757f3d351cbfb9d20bfba1c0aed099",
+      "bytes": 8501,
+      "remote_sha256": "82489aa2cb177fbd1c2ec22c7af53aaaad757f3d351cbfb9d20bfba1c0aed099",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-common/zoom-policy.js",
+      "source": "pwa/nuxel-common/zoom-policy.js",
+      "local_sha256": "c0cf4fc728c8fa494f943c8334db994efc55ca5fca10b5067fab1ca16d5ac59f",
+      "bytes": 4687,
+      "remote_sha256": "c0cf4fc728c8fa494f943c8334db994efc55ca5fca10b5067fab1ca16d5ac59f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-left.png",
+      "source": "pwa/nuxel-home/assets/branding/button-left.png",
+      "local_sha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+      "bytes": 357388,
+      "remote_sha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-middle.png",
+      "source": "pwa/nuxel-home/assets/branding/button-middle.png",
+      "local_sha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+      "bytes": 1142701,
+      "remote_sha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-right.png",
+      "source": "pwa/nuxel-home/assets/branding/button-right.png",
+      "local_sha256": "23257499b1617e95afd9b02a1bd99c86633f13e9f1f83d781b315d94873ee921",
+      "bytes": 1006632,
+      "remote_sha256": "23257499b1617e95afd9b02a1bd99c86633f13e9f1f83d781b315d94873ee921",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-01_terminal.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-01_terminal.png",
+      "local_sha256": "b23d3cbfe130bcb6ecaa209e2e51f303f01aed1c20fd40b3b448da33d605ce3d",
+      "bytes": 9402,
+      "remote_sha256": "b23d3cbfe130bcb6ecaa209e2e51f303f01aed1c20fd40b3b448da33d605ce3d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-02_snekbyte.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-02_snekbyte.png",
+      "local_sha256": "9859e38325b643735aed45d0a8b31d11c9f70551a2808fc66e2cf41db5163119",
+      "bytes": 13375,
+      "remote_sha256": "9859e38325b643735aed45d0a8b31d11c9f70551a2808fc66e2cf41db5163119",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-03_poop-o-meter.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-03_poop-o-meter.png",
+      "local_sha256": "6b113b3cd9559924b6c534a93d6154efcb08c1a0a25fa21ae2cd646e4e8b6c40",
+      "bytes": 5680,
+      "remote_sha256": "6b113b3cd9559924b6c534a93d6154efcb08c1a0a25fa21ae2cd646e4e8b6c40",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-04_authenticator.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-04_authenticator.png",
+      "local_sha256": "ba0fc865cc3c054e5bc86e8d0c3b684a6f1cf77e78824095e0553ab92d289bff",
+      "bytes": 10986,
+      "remote_sha256": "ba0fc865cc3c054e5bc86e8d0c3b684a6f1cf77e78824095e0553ab92d289bff",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-05_penguinterface.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-05_penguinterface.png",
+      "local_sha256": "c53c006b6e082b2b7bb81e23a34e51cd6e0246af27ae2f5d1f6af197a548c031",
+      "bytes": 11596,
+      "remote_sha256": "c53c006b6e082b2b7bb81e23a34e51cd6e0246af27ae2f5d1f6af197a548c031",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+      "local_sha256": "2b728648ca6ce4b58522496edad7ed647fbbe85f3f385ae7f643e20deb3f9e97",
+      "bytes": 9602,
+      "remote_sha256": "2b728648ca6ce4b58522496edad7ed647fbbe85f3f385ae7f643e20deb3f9e97",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-07_pixel-wings.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-07_pixel-wings.png",
+      "local_sha256": "a6ee6424e84660adaa68cb554950b60bb8d5deed805996a3f94e0bd19bc3b1ff",
+      "bytes": 10804,
+      "remote_sha256": "a6ee6424e84660adaa68cb554950b60bb8d5deed805996a3f94e0bd19bc3b1ff",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-08_phone.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-08_phone.png",
+      "local_sha256": "ba6e3c4ab20e966adebd86a58bc5e55d0dda7975e0d0ba6be0d80cf4c08ad93d",
+      "bytes": 8287,
+      "remote_sha256": "ba6e3c4ab20e966adebd86a58bc5e55d0dda7975e0d0ba6be0d80cf4c08ad93d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-09_browser-swirl.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-09_browser-swirl.png",
+      "local_sha256": "d29c012158ec6a85d7375cfc475d9e9feab44842b7b473710f053419023ed1c1",
+      "bytes": 12577,
+      "remote_sha256": "d29c012158ec6a85d7375cfc475d9e9feab44842b7b473710f053419023ed1c1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-10_document.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-10_document.png",
+      "local_sha256": "8c2d8c73a2143c728176ada52243f2055985a941bf104c57ffaa621391d2cc67",
+      "bytes": 8887,
+      "remote_sha256": "8c2d8c73a2143c728176ada52243f2055985a941bf104c57ffaa621391d2cc67",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-11_settings.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-11_settings.png",
+      "local_sha256": "e1475756010e3314ce9b2cf47286c719971bbd40b56ed2e46e6999854bc584c8",
+      "bytes": 11688,
+      "remote_sha256": "e1475756010e3314ce9b2cf47286c719971bbd40b56ed2e46e6999854bc584c8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+      "local_sha256": "76a730c35c6cdfdc6b6a636c9db357261626247d0cf959b723ffdbb17ba48f90",
+      "bytes": 8675,
+      "remote_sha256": "76a730c35c6cdfdc6b6a636c9db357261626247d0cf959b723ffdbb17ba48f90",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-01_messages.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-01_messages.png",
+      "local_sha256": "fe1f515772eafbe77f401791564ac501da23b9662576f01d5417c2fd00c4b347",
+      "bytes": 10074,
+      "remote_sha256": "fe1f515772eafbe77f401791564ac501da23b9662576f01d5417c2fd00c4b347",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-02_contacts.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-02_contacts.png",
+      "local_sha256": "a1d161080b61e2549dd1c6a6b3c32c197d204c58e587252286b667ca48a3b07f",
+      "bytes": 12754,
+      "remote_sha256": "a1d161080b61e2549dd1c6a6b3c32c197d204c58e587252286b667ca48a3b07f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-03_day-calendar.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-03_day-calendar.png",
+      "local_sha256": "e4460c41e03c82c51b95eda2e04e569588b61068e0e90977759249d58c1e4016",
+      "bytes": 10662,
+      "remote_sha256": "e4460c41e03c82c51b95eda2e04e569588b61068e0e90977759249d58c1e4016",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-04_reader.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-04_reader.png",
+      "local_sha256": "88e08fb8996d8800d65003b06e6ea7f7270550584b83cfd2ed7031437356010f",
+      "bytes": 12281,
+      "remote_sha256": "88e08fb8996d8800d65003b06e6ea7f7270550584b83cfd2ed7031437356010f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-05_folders.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-05_folders.png",
+      "local_sha256": "ee6562f1839ff3ac3bc6f88545cc3b7a6eb3dc7166bc625c88fd4371036d4e20",
+      "bytes": 8517,
+      "remote_sha256": "ee6562f1839ff3ac3bc6f88545cc3b7a6eb3dc7166bc625c88fd4371036d4e20",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-06_file-explorer.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-06_file-explorer.png",
+      "local_sha256": "94a22e4b05e0a7a7805e6f3d471639e541a923f379a055d5af9e57d7368d122d",
+      "bytes": 9866,
+      "remote_sha256": "94a22e4b05e0a7a7805e6f3d471639e541a923f379a055d5af9e57d7368d122d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-07_nuxtore.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-07_nuxtore.png",
+      "local_sha256": "8a91daf351204f2b78db0cf53b22645462d6893a0eb168f9c804df96061e69f4",
+      "bytes": 14608,
+      "remote_sha256": "8a91daf351204f2b78db0cf53b22645462d6893a0eb168f9c804df96061e69f4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-08_sync.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-08_sync.png",
+      "local_sha256": "9aa5f82017e3103ccb2c4d6c40bc86d5e4f93fe38c0048f76406a76b788ce109",
+      "bytes": 12623,
+      "remote_sha256": "9aa5f82017e3103ccb2c4d6c40bc86d5e4f93fe38c0048f76406a76b788ce109",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-09_notes.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-09_notes.png",
+      "local_sha256": "030d30414a1648135912e7353ec4ff6f00a8fcb5c5d2a88f726215defd62e283",
+      "bytes": 11257,
+      "remote_sha256": "030d30414a1648135912e7353ec4ff6f00a8fcb5c5d2a88f726215defd62e283",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-10_calendar-check.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-10_calendar-check.png",
+      "local_sha256": "2b165c23bf7ccd794c70f87b468ecb648ebf6bad40e1554dac1f32ea6e15b86b",
+      "bytes": 12620,
+      "remote_sha256": "2b165c23bf7ccd794c70f87b468ecb648ebf6bad40e1554dac1f32ea6e15b86b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-11_software-updates.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-11_software-updates.png",
+      "local_sha256": "72ff05afcdc2337b6d06cf1bcada4cabda52ba431cdc81fe7ec28a3d1c30175b",
+      "bytes": 13084,
+      "remote_sha256": "72ff05afcdc2337b6d06cf1bcada4cabda52ba431cdc81fe7ec28a3d1c30175b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-12_apps.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-12_apps.png",
+      "local_sha256": "85b7b81edb1402f00df4803bcfd84680433491f289182e106591ce914aa7a0e7",
+      "bytes": 12560,
+      "remote_sha256": "85b7b81edb1402f00df4803bcfd84680433491f289182e106591ce914aa7a0e7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-01_camera.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-01_camera.png",
+      "local_sha256": "89fa0c84db76ca083a51c882a562d78881f200651b050a2f377b00e045de5af1",
+      "bytes": 13653,
+      "remote_sha256": "89fa0c84db76ca083a51c882a562d78881f200651b050a2f377b00e045de5af1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-02_gallery.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-02_gallery.png",
+      "local_sha256": "ba6ca7fc18f622362b4ad336d3f344fcb960a2cf4386b12343782567a21466b7",
+      "bytes": 12260,
+      "remote_sha256": "ba6ca7fc18f622362b4ad336d3f344fcb960a2cf4386b12343782567a21466b7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-03_audio-player.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-03_audio-player.png",
+      "local_sha256": "e5e0cfd404ba492c57bec2a5903c10cd44db02f0a7db0709b89cb2b65e37b3bc",
+      "bytes": 10572,
+      "remote_sha256": "e5e0cfd404ba492c57bec2a5903c10cd44db02f0a7db0709b89cb2b65e37b3bc",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-04_video-player.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-04_video-player.png",
+      "local_sha256": "01954277879f9431c81abf9bca5ccec548e6a1deb9fa971b3c3dfb836252a218",
+      "bytes": 12044,
+      "remote_sha256": "01954277879f9431c81abf9bca5ccec548e6a1deb9fa971b3c3dfb836252a218",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-05_maps.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-05_maps.png",
+      "local_sha256": "78813c9510c8752c2f921d9791c8de77b8cf89e27f014b624f781f0be12481d8",
+      "bytes": 13994,
+      "remote_sha256": "78813c9510c8752c2f921d9791c8de77b8cf89e27f014b624f781f0be12481d8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-06_vpn.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-06_vpn.png",
+      "local_sha256": "0c7e3400c4f0a97151378488741f70150cc7ca117800f50025f8a02536454a6e",
+      "bytes": 14389,
+      "remote_sha256": "0c7e3400c4f0a97151378488741f70150cc7ca117800f50025f8a02536454a6e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-07_vpn-protected.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-07_vpn-protected.png",
+      "local_sha256": "827ba4b125074f36eaf8c0a78660ed1fbfc422d38cb82696f8b88944d4fcc22a",
+      "bytes": 15068,
+      "remote_sha256": "827ba4b125074f36eaf8c0a78660ed1fbfc422d38cb82696f8b88944d4fcc22a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-08_calendar.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-08_calendar.png",
+      "local_sha256": "e5bbc4b3a3ff3c284006211834c14ddcd0efe50191f93f0278778795cf353957",
+      "bytes": 10879,
+      "remote_sha256": "e5bbc4b3a3ff3c284006211834c14ddcd0efe50191f93f0278778795cf353957",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-09_brightness.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-09_brightness.png",
+      "local_sha256": "1ee93906798206de890686adb596caa10cb17a99796ecdb310823335534f44df",
+      "bytes": 9223,
+      "remote_sha256": "1ee93906798206de890686adb596caa10cb17a99796ecdb310823335534f44df",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-10_volume.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-10_volume.png",
+      "local_sha256": "305639f42b9b749d964ef7dd932e984548f78ecb9a5e7b15f3cb39b9f2c437b9",
+      "bytes": 7790,
+      "remote_sha256": "305639f42b9b749d964ef7dd932e984548f78ecb9a5e7b15f3cb39b9f2c437b9",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-11_battery.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-11_battery.png",
+      "local_sha256": "5a58228fc231c5ee45e5d67f1f9fb2b2a83ce82563ab808c1470d090429567f8",
+      "bytes": 7128,
+      "remote_sha256": "5a58228fc231c5ee45e5d67f1f9fb2b2a83ce82563ab808c1470d090429567f8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-12_settings-alternative.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-12_settings-alternative.png",
+      "local_sha256": "1aaad3699b8ef7481852786734372e7ca5d3e0ccec94d8ee66da62201d6c9f9e",
+      "bytes": 13585,
+      "remote_sha256": "1aaad3699b8ef7481852786734372e7ca5d3e0ccec94d8ee66da62201d6c9f9e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-01_tor-privacy-tool.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-01_tor-privacy-tool.png",
+      "local_sha256": "6851c02f64f044fdbd99531d5367ffc791f97993ed4b3e3b639f6f692c694e6a",
+      "bytes": 9656,
+      "remote_sha256": "6851c02f64f044fdbd99531d5367ffc791f97993ed4b3e3b639f6f692c694e6a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-02_permissions.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-02_permissions.png",
+      "local_sha256": "abb0aac5a3035684d4f962e38627e89a256dfffe3702baebdc614b4a5d22d38d",
+      "bytes": 12468,
+      "remote_sha256": "abb0aac5a3035684d4f962e38627e89a256dfffe3702baebdc614b4a5d22d38d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-03_firewall.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-03_firewall.png",
+      "local_sha256": "27fa2a24d9c044dfb89c0cdd0d03c75499bd9c6de6cec62eeb6ede7916b82c5b",
+      "bytes": 11878,
+      "remote_sha256": "27fa2a24d9c044dfb89c0cdd0d03c75499bd9c6de6cec62eeb6ede7916b82c5b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-04_system-settings.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-04_system-settings.png",
+      "local_sha256": "62669fc6f6daaa94b0fd98a150f445a44872ac9ff459b26d2f789a4b4e4a1229",
+      "bytes": 11981,
+      "remote_sha256": "62669fc6f6daaa94b0fd98a150f445a44872ac9ff459b26d2f789a4b4e4a1229",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-05_network-settings.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-05_network-settings.png",
+      "local_sha256": "75fea0f8e2adc902ff88d992991c0b5922b4eb99667146abcf1128e6eee3328a",
+      "bytes": 9351,
+      "remote_sha256": "75fea0f8e2adc902ff88d992991c0b5922b4eb99667146abcf1128e6eee3328a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-06_bluetooth-settings.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-06_bluetooth-settings.png",
+      "local_sha256": "0d237de9eece6ecafa18768990e7287c7e38c34fc51728f202bef182b4167852",
+      "bytes": 9069,
+      "remote_sha256": "0d237de9eece6ecafa18768990e7287c7e38c34fc51728f202bef182b4167852",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-07_system-info.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-07_system-info.png",
+      "local_sha256": "0a81ae4c9b7e717d6694ea8a3e90361769dea094934bb862982121371a027ab4",
+      "bytes": 7718,
+      "remote_sha256": "0a81ae4c9b7e717d6694ea8a3e90361769dea094934bb862982121371a027ab4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-08_information.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-08_information.png",
+      "local_sha256": "e1532f547f0e1c2b896c530c314066c07128bc800c31b0e79c8842abcdfbc8b9",
+      "bytes": 12035,
+      "remote_sha256": "e1532f547f0e1c2b896c530c314066c07128bc800c31b0e79c8842abcdfbc8b9",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-09_brightness-control.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-09_brightness-control.png",
+      "local_sha256": "3af2552a0b9556397f2b5e958a8274ece31d29ba4c1a91358218fe822fdb2bb5",
+      "bytes": 9890,
+      "remote_sha256": "3af2552a0b9556397f2b5e958a8274ece31d29ba4c1a91358218fe822fdb2bb5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-10_volume-control.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-10_volume-control.png",
+      "local_sha256": "89ac6fb987187ea12cfb2600070512c0a51ad4cc9523d70c5b5795c1df7e6814",
+      "bytes": 7727,
+      "remote_sha256": "89ac6fb987187ea12cfb2600070512c0a51ad4cc9523d70c5b5795c1df7e6814",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-11_battery-indicator.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-11_battery-indicator.png",
+      "local_sha256": "499fc20a5131128b6e9d310a2e52571b2ca60c61f8f53fe0245d8a2411e74245",
+      "bytes": 5303,
+      "remote_sha256": "499fc20a5131128b6e9d310a2e52571b2ca60c61f8f53fe0245d8a2411e74245",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-12_utilities.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-12_utilities.png",
+      "local_sha256": "c5157174a661ad78963907fd90455ee33446f5521c8e619681251b013431dc2c",
+      "bytes": 11410,
+      "remote_sha256": "c5157174a661ad78963907fd90455ee33446f5521c8e619681251b013431dc2c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-01_root-sudo-control.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-01_root-sudo-control.png",
+      "local_sha256": "cb2f2746a23c5fed3b270cdced2a628316e64141c6e1dd8cd9f9212bd8272851",
+      "bytes": 13576,
+      "remote_sha256": "cb2f2746a23c5fed3b270cdced2a628316e64141c6e1dd8cd9f9212bd8272851",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-02_system-monitor.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-02_system-monitor.png",
+      "local_sha256": "79028fd0deb88fe79659d761fda5530a3140e6aa99cd21763b1f3bd73dee9fda",
+      "bytes": 11359,
+      "remote_sha256": "79028fd0deb88fe79659d761fda5530a3140e6aa99cd21763b1f3bd73dee9fda",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-03_security-audit.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-03_security-audit.png",
+      "local_sha256": "1299fd4b61eaae90cfd0cfa8a2b77e29a18f46e1fa9f8c6e45c5585718a682bd",
+      "bytes": 12637,
+      "remote_sha256": "1299fd4b61eaae90cfd0cfa8a2b77e29a18f46e1fa9f8c6e45c5585718a682bd",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-04_developer-management.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-04_developer-management.png",
+      "local_sha256": "c3c1c44e06c2b122439eb16e2e17c047d591ddec8e55dd1e730c832ada523271",
+      "bytes": 12335,
+      "remote_sha256": "c3c1c44e06c2b122439eb16e2e17c047d591ddec8e55dd1e730c832ada523271",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-05_live-console.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-05_live-console.png",
+      "local_sha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2",
+      "bytes": 10366,
+      "remote_sha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-06_downloader.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-06_downloader.png",
+      "local_sha256": "c4d8c1594528b1eaa35a7b222a73ddc13c4ca08c972785f9a0cdee089cc31ba3",
+      "bytes": 8357,
+      "remote_sha256": "c4d8c1594528b1eaa35a7b222a73ddc13c4ca08c972785f9a0cdee089cc31ba3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-07_web-window.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-07_web-window.png",
+      "local_sha256": "77b5e77bbbf5111ffe07f64f81dd8f8846af998ba38b265f826d6b258642e6b6",
+      "bytes": 9192,
+      "remote_sha256": "77b5e77bbbf5111ffe07f64f81dd8f8846af998ba38b265f826d6b258642e6b6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-08_notepad.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-08_notepad.png",
+      "local_sha256": "f5e05b56ec9bae631661dcd249608fb7187bd5415dd53cf193190756e277f4dc",
+      "bytes": 12820,
+      "remote_sha256": "f5e05b56ec9bae631661dcd249608fb7187bd5415dd53cf193190756e277f4dc",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-09_clipboard.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-09_clipboard.png",
+      "local_sha256": "d159c288d7e297d26b07b36058e7b649d683fa8a4a2d9098430a9d0b9590b39d",
+      "bytes": 11164,
+      "remote_sha256": "d159c288d7e297d26b07b36058e7b649d683fa8a4a2d9098430a9d0b9590b39d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-10_transfer.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-10_transfer.png",
+      "local_sha256": "e635ccaddfd565ca30bb8de87928472ebe4068f87ea09092aef455ff8d2d942d",
+      "bytes": 10758,
+      "remote_sha256": "e635ccaddfd565ca30bb8de87928472ebe4068f87ea09092aef455ff8d2d942d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-11_terminal-alternative.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-11_terminal-alternative.png",
+      "local_sha256": "4a7a400228b625ca90823827de460f14cbd68c021a27f86b0894a1baa6461218",
+      "bytes": 8760,
+      "remote_sha256": "4a7a400228b625ca90823827de460f14cbd68c021a27f86b0894a1baa6461218",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-12_app-hub.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-12_app-hub.png",
+      "local_sha256": "348ae5743e542fe11f211bb8e9938a7c92b4167e828115bdeff8efb05afadf28",
+      "bytes": 11213,
+      "remote_sha256": "348ae5743e542fe11f211bb8e9938a7c92b4167e828115bdeff8efb05afadf28",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-01_recorder.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-01_recorder.png",
+      "local_sha256": "c417d2b6c309a04ee5ae3d66ed2f3962befcb667a00a978edf96a670227f7437",
+      "bytes": 6671,
+      "remote_sha256": "c417d2b6c309a04ee5ae3d66ed2f3962befcb667a00a978edf96a670227f7437",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-02_calculator.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-02_calculator.png",
+      "local_sha256": "a04e185440a91d1d1ea4b86d4c0d0793b62fbddbdd296e2208af13d598ed2a11",
+      "bytes": 10303,
+      "remote_sha256": "a04e185440a91d1d1ea4b86d4c0d0793b62fbddbdd296e2208af13d598ed2a11",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-03_clock.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-03_clock.png",
+      "local_sha256": "32e902705b66f4cd67a29e23bf581bbc9f683217a4544ea332951a6144014d66",
+      "bytes": 12815,
+      "remote_sha256": "32e902705b66f4cd67a29e23bf581bbc9f683217a4544ea332951a6144014d66",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-04_casting-screen.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-04_casting-screen.png",
+      "local_sha256": "b10a79025ac113dc47462c87e1abfcd5893f3e91ef2ee90647ead42b6b4873c1",
+      "bytes": 8944,
+      "remote_sha256": "b10a79025ac113dc47462c87e1abfcd5893f3e91ef2ee90647ead42b6b4873c1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-05_usb-connection.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-05_usb-connection.png",
+      "local_sha256": "8f2b2cb963ba85462b517573940e2a54c38994fd22b69ddd5300193a8b9024d1",
+      "bytes": 14727,
+      "remote_sha256": "8f2b2cb963ba85462b517573940e2a54c38994fd22b69ddd5300193a8b9024d1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-06_audio-mixer.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-06_audio-mixer.png",
+      "local_sha256": "5808a5c03367a5a6a064259dfbc03d535fb10fad6241883d51b0319e37329730",
+      "bytes": 7308,
+      "remote_sha256": "5808a5c03367a5a6a064259dfbc03d535fb10fad6241883d51b0319e37329730",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-08_workspace.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-08_workspace.png",
+      "local_sha256": "adb3a8e45a37ea7409448f17bc2b2fa972690da9b593391a1b5bb706b2a72a8b",
+      "bytes": 9744,
+      "remote_sha256": "adb3a8e45a37ea7409448f17bc2b2fa972690da9b593391a1b5bb706b2a72a8b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-09_game-controller.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-09_game-controller.png",
+      "local_sha256": "d0bf459351db48771b4d4768696d6979a7c0c713764930c847b368d57d89df58",
+      "bytes": 11407,
+      "remote_sha256": "d0bf459351db48771b4d4768696d6979a7c0c713764930c847b368d57d89df58",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-10_network-tools.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-10_network-tools.png",
+      "local_sha256": "1da85324ec8a0827afb372f859c574d79defd0c5ee5a143aba39764384aa2363",
+      "bytes": 10661,
+      "remote_sha256": "1da85324ec8a0827afb372f859c574d79defd0c5ee5a143aba39764384aa2363",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-11_linux-tux.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-11_linux-tux.png",
+      "local_sha256": "29e3db760fd5a842c84ca110c4583bfbf878686b0d137e7a2c45d88665dbc633",
+      "bytes": 11891,
+      "remote_sha256": "29e3db760fd5a842c84ca110c4583bfbf878686b0d137e7a2c45d88665dbc633",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-12_linux-tux-alternative.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-12_linux-tux-alternative.png",
+      "local_sha256": "8ee25e68c26a4453d62972f3713e015e97afa987ba6766f4e9374544610d6791",
+      "bytes": 12346,
+      "remote_sha256": "8ee25e68c26a4453d62972f3713e015e97afa987ba6766f4e9374544610d6791",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/01-wifi.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/01-wifi.png",
+      "local_sha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b",
+      "bytes": 33241,
+      "remote_sha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/02-mobile-signal.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/02-mobile-signal.png",
+      "local_sha256": "7ecf9d4fc640282bfef137e04ba2d189ef5c0bf78cac98159e01b37b5dcdc091",
+      "bytes": 25861,
+      "remote_sha256": "7ecf9d4fc640282bfef137e04ba2d189ef5c0bf78cac98159e01b37b5dcdc091",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/03-airplane-mode.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/03-airplane-mode.png",
+      "local_sha256": "db5825066b92cb6cf5924c7fc2e9f536ebf81159b0f40a1aded23d0efb7defdb",
+      "bytes": 29027,
+      "remote_sha256": "db5825066b92cb6cf5924c7fc2e9f536ebf81159b0f40a1aded23d0efb7defdb",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/04-bluetooth.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/04-bluetooth.png",
+      "local_sha256": "9a9b67f421d0ed2f83c086816b078c3be85bfdc3fc76a3743dd13c8509b2fda1",
+      "bytes": 34177,
+      "remote_sha256": "9a9b67f421d0ed2f83c086816b078c3be85bfdc3fc76a3743dd13c8509b2fda1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png",
+      "local_sha256": "ec61cea3f63380aa202c3595f52f513542c6d212324232898daca19960b60c88",
+      "bytes": 37714,
+      "remote_sha256": "ec61cea3f63380aa202c3595f52f513542c6d212324232898daca19960b60c88",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/06-vpn.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/06-vpn.png",
+      "local_sha256": "6d703c349bceb8d5ad969aab7eeb09c19d2f2ddc546e03dabaae04d7ce641839",
+      "bytes": 46885,
+      "remote_sha256": "6d703c349bceb8d5ad969aab7eeb09c19d2f2ddc546e03dabaae04d7ce641839",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/07-tor.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/07-tor.png",
+      "local_sha256": "6e8da052c5c5544b0bd686648fb01514de4792604b5c08c559d0d4437c5209be",
+      "bytes": 42204,
+      "remote_sha256": "6e8da052c5c5544b0bd686648fb01514de4792604b5c08c559d0d4437c5209be",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/08-nfc.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/08-nfc.png",
+      "local_sha256": "7a27e6dc1a039e6129bf213683054483fb9782f6f9a7645f7270e2f14f3d56a8",
+      "bytes": 35588,
+      "remote_sha256": "7a27e6dc1a039e6129bf213683054483fb9782f6f9a7645f7270e2f14f3d56a8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/09-location.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/09-location.png",
+      "local_sha256": "a9b62d842b00b4866d7154fce53f683f3f7ebcf36c0ee6e469c2e4303757c641",
+      "bytes": 40149,
+      "remote_sha256": "a9b62d842b00b4866d7154fce53f683f3f7ebcf36c0ee6e469c2e4303757c641",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/10-flashlight.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/10-flashlight.png",
+      "local_sha256": "3e4780671dafa2c81fc4bd844a6f022b429ff14a977688134a20c411efdbe38c",
+      "bytes": 29998,
+      "remote_sha256": "3e4780671dafa2c81fc4bd844a6f022b429ff14a977688134a20c411efdbe38c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/11-do-not-disturb.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/11-do-not-disturb.png",
+      "local_sha256": "1e53bd1b1ee385a51d897a2c49b370ce7f2442b9541f7b745441aa3927926fdf",
+      "bytes": 30803,
+      "remote_sha256": "1e53bd1b1ee385a51d897a2c49b370ce7f2442b9541f7b745441aa3927926fdf",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/12-volume.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/12-volume.png",
+      "local_sha256": "51b87b4999245c98085eaf7252d6546ef3c8f22c6ae46477d6bda1a6fed5dbc8",
+      "bytes": 32304,
+      "remote_sha256": "51b87b4999245c98085eaf7252d6546ef3c8f22c6ae46477d6bda1a6fed5dbc8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/13-vibrate.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/13-vibrate.png",
+      "local_sha256": "f516db8052ac18b7895c12bc13c874d1156344d4e3684eafe62af8581fd0e27b",
+      "bytes": 37124,
+      "remote_sha256": "f516db8052ac18b7895c12bc13c874d1156344d4e3684eafe62af8581fd0e27b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/14-mute.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/14-mute.png",
+      "local_sha256": "6cbac20323ea70c7e7f090305188ff83d0925ac753df06ec820643413afe3287",
+      "bytes": 32581,
+      "remote_sha256": "6cbac20323ea70c7e7f090305188ff83d0925ac753df06ec820643413afe3287",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/15-brightness.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/15-brightness.png",
+      "local_sha256": "d023e48fa2c07a8ba49c16b2966616d335f86e54e03b28be4f1b1de2bbb43671",
+      "bytes": 33164,
+      "remote_sha256": "d023e48fa2c07a8ba49c16b2966616d335f86e54e03b28be4f1b1de2bbb43671",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/16-adaptive-brightness.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/16-adaptive-brightness.png",
+      "local_sha256": "ca435e6e2c540531aa184f57de4cdb9cd9f9ae211c72ddd67ddc05036d94c595",
+      "bytes": 34619,
+      "remote_sha256": "ca435e6e2c540531aa184f57de4cdb9cd9f9ae211c72ddd67ddc05036d94c595",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/17-rotation-lock.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/17-rotation-lock.png",
+      "local_sha256": "99ede17594b30f04ed2904f7460335857e44f2d11a7335d4f4815ce76a0fef65",
+      "bytes": 37871,
+      "remote_sha256": "99ede17594b30f04ed2904f7460335857e44f2d11a7335d4f4815ce76a0fef65",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/18-night-light.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/18-night-light.png",
+      "local_sha256": "f185f1a7ff1bb9bba40cc720e1b4ff43b846aa6a42bb74d15875311c2194cc40",
+      "bytes": 30537,
+      "remote_sha256": "f185f1a7ff1bb9bba40cc720e1b4ff43b846aa6a42bb74d15875311c2194cc40",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/19-battery-saver.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/19-battery-saver.png",
+      "local_sha256": "f07f9c517f022e5ea035ec48428c17707ff92014a13fcde9b49a3f116a11c64b",
+      "bytes": 31065,
+      "remote_sha256": "f07f9c517f022e5ea035ec48428c17707ff92014a13fcde9b49a3f116a11c64b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/20-battery-charging.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/20-battery-charging.png",
+      "local_sha256": "3f0769393cc1c414b9ac5eb2fe186b8664bf5c20892721417972ab5ef3b48f01",
+      "bytes": 29266,
+      "remote_sha256": "3f0769393cc1c414b9ac5eb2fe186b8664bf5c20892721417972ab5ef3b48f01",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/21-sync.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/21-sync.png",
+      "local_sha256": "22487f70ae9a09dcd483801aa7a3ccbbb0fe1a870ce7b4553e85148350e3a195",
+      "bytes": 32900,
+      "remote_sha256": "22487f70ae9a09dcd483801aa7a3ccbbb0fe1a870ce7b4553e85148350e3a195",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/22-terminal.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/22-terminal.png",
+      "local_sha256": "57b852bd3eb0807c1837abe3e6deb033d06cf925e8b3b24c8374868391192e3f",
+      "bytes": 31072,
+      "remote_sha256": "57b852bd3eb0807c1837abe3e6deb033d06cf925e8b3b24c8374868391192e3f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/23-firewall.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/23-firewall.png",
+      "local_sha256": "c9aa81a6d6f8fde6075f858ed26111812d317bac665fc157a7ceb7df258e1c68",
+      "bytes": 40056,
+      "remote_sha256": "c9aa81a6d6f8fde6075f858ed26111812d317bac665fc157a7ceb7df258e1c68",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/24-microphone-muted.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/24-microphone-muted.png",
+      "local_sha256": "580ccd37d968447fe5cabadb95d923223a151799ccc98378aa7a5f17980b0a84",
+      "bytes": 35333,
+      "remote_sha256": "580ccd37d968447fe5cabadb95d923223a151799ccc98378aa7a5f17980b0a84",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/25-camera-disabled.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/25-camera-disabled.png",
+      "local_sha256": "0132c48a500a58155e02eae329d9f6fa528c200ed44ecfbd834803f8e0b909e5",
+      "bytes": 40753,
+      "remote_sha256": "0132c48a500a58155e02eae329d9f6fa528c200ed44ecfbd834803f8e0b909e5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/26-screenshot.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/26-screenshot.png",
+      "local_sha256": "e86943313e2aee81fbbead831cc1ece2c59d3eaa298ec0c3a95f24b015afef21",
+      "bytes": 28467,
+      "remote_sha256": "e86943313e2aee81fbbead831cc1ece2c59d3eaa298ec0c3a95f24b015afef21",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/27-screen-record.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/27-screen-record.png",
+      "local_sha256": "b0e9a4f6375f6c8b07bab76f6aaf3801da674f8667151a21343447dcbd7ec412",
+      "bytes": 28037,
+      "remote_sha256": "b0e9a4f6375f6c8b07bab76f6aaf3801da674f8667151a21343447dcbd7ec412",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/28-unlocked.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/28-unlocked.png",
+      "local_sha256": "292a546ce7f0fdc7fe5861b2288143247aa3b9b6fd0b371a032cf33b89b9cac3",
+      "bytes": 30749,
+      "remote_sha256": "292a546ce7f0fdc7fe5861b2288143247aa3b9b6fd0b371a032cf33b89b9cac3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/29-terminal-alternate.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/29-terminal-alternate.png",
+      "local_sha256": "34e095eeee848c5d14161f937410a8e3ab40bac1b3ed2d57f9b3e1bf18c3e0a1",
+      "bytes": 31974,
+      "remote_sha256": "34e095eeee848c5d14161f937410a8e3ab40bac1b3ed2d57f9b3e1bf18c3e0a1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/30-quick-settings.png",
+      "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/30-quick-settings.png",
+      "local_sha256": "1a5bcd1ebafd71f66cb719530d81c2a73d2a83f07643500723974674841be693",
+      "bytes": 39763,
+      "remote_sha256": "1a5bcd1ebafd71f66cb719530d81c2a73d2a83f07643500723974674841be693",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/button-left.png",
+      "source": "pwa/nuxel-home/assets/button-left.png",
+      "local_sha256": "2234a9fe40c39cf71a7c234a0c502185b65b410369f02a276edd3634a6befedd",
+      "bytes": 7522,
+      "remote_sha256": "2234a9fe40c39cf71a7c234a0c502185b65b410369f02a276edd3634a6befedd",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/button-middle.png",
+      "source": "pwa/nuxel-home/assets/button-middle.png",
+      "local_sha256": "cc279f3364f3f960dede11126ae34c643d6e89562dac23c79ff76b575e1b3e6c",
+      "bytes": 13788,
+      "remote_sha256": "cc279f3364f3f960dede11126ae34c643d6e89562dac23c79ff76b575e1b3e6c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/button-right.png",
+      "source": "pwa/nuxel-home/assets/button-right.png",
+      "local_sha256": "a4b125b3e28da8decf3a475d7cb2cda2ff3f7f35c350b866331ca402104b1158",
+      "bytes": 11361,
+      "remote_sha256": "a4b125b3e28da8decf3a475d7cb2cda2ff3f7f35c350b866331ca402104b1158",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-background.png",
+      "source": "pwa/nuxel-home/assets/nuxel-background.png",
+      "local_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+      "bytes": 1257938,
+      "remote_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-boot-animation.mp4",
+      "source": "pwa/nuxel-home/assets/nuxel-boot-animation.mp4",
+      "local_sha256": "280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c",
+      "bytes": 5474699,
+      "remote_sha256": "280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg",
+      "source": "pwa/nuxel-home/assets/nuxel-bottom-bar.jpg",
+      "local_sha256": "858a23fd95eacc75d8a1b612b83e847ac2cb32dcddcac20e91207cbeeb630bd5",
+      "bytes": 62676,
+      "remote_sha256": "858a23fd95eacc75d8a1b612b83e847ac2cb32dcddcac20e91207cbeeb630bd5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar2.png",
+      "source": "pwa/nuxel-home/assets/nuxel-bottom-bar2.png",
+      "local_sha256": "0aef669be89be2c8cf2bb5b327061962bce07a75bfd660bcd275c3e914a00809",
+      "bytes": 203435,
+      "remote_sha256": "0aef669be89be2c8cf2bb5b327061962bce07a75bfd660bcd275c3e914a00809",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-preload-cover.jpg",
+      "source": "pwa/nuxel-home/assets/nuxel-preload-cover.jpg",
+      "local_sha256": "e1320ed9bca88facbb596e99c41b323cdf2cc9e5432fe710367b31c8a034275c",
+      "bytes": 288802,
+      "remote_sha256": "e1320ed9bca88facbb596e99c41b323cdf2cc9e5432fe710367b31c8a034275c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/colour-test.html",
+      "source": "pwa/nuxel-home/colour-test.html",
+      "local_sha256": "1a1f15416829c1c8194ca6c638924156420104ac11095dd94458903b6dba574d",
+      "bytes": 7307,
+      "remote_sha256": "1a1f15416829c1c8194ca6c638924156420104ac11095dd94458903b6dba574d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/css/home-settings.css",
+      "source": "pwa/nuxel-home/css/home-settings.css",
+      "local_sha256": "5a5e5cee4548508ffcc356a2b1355b4867d4a70a1993ce6f351501381f49165f",
+      "bytes": 3303,
+      "remote_sha256": "5a5e5cee4548508ffcc356a2b1355b4867d4a70a1993ce6f351501381f49165f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/css/launcher.css",
+      "source": "pwa/nuxel-home/css/launcher.css",
+      "local_sha256": "fb263fe6df361f1773408d1ed75826558f4a368e589dafec88f6aa6a8278eed6",
+      "bytes": 20291,
+      "remote_sha256": "fb263fe6df361f1773408d1ed75826558f4a368e589dafec88f6aa6a8278eed6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/css/lockscreen.css",
+      "source": "pwa/nuxel-home/css/lockscreen.css",
+      "local_sha256": "aca9e02be4ed8c725a465aaa3086d86ea34397836678a61c576902ee564f0808",
+      "bytes": 24134,
+      "remote_sha256": "aca9e02be4ed8c725a465aaa3086d86ea34397836678a61c576902ee564f0808",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/css/search.css",
+      "source": "pwa/nuxel-home/css/search.css",
+      "local_sha256": "7854223714fe77cb7e69c62ca1ca9a1ffd02a41d7d3cc3014424f449ff4668f1",
+      "bytes": 5161,
+      "remote_sha256": "7854223714fe77cb7e69c62ca1ca9a1ffd02a41d7d3cc3014424f449ff4668f1",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/css/status-bar.css",
+      "source": "pwa/nuxel-home/css/status-bar.css",
+      "local_sha256": "0c5780f88c0a79b2cb3941017e72f1e9f8e747187019a983010ae716ada8fba7",
+      "bytes": 34227,
+      "remote_sha256": "0c5780f88c0a79b2cb3941017e72f1e9f8e747187019a983010ae716ada8fba7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/css/style.css",
+      "source": "pwa/nuxel-home/css/style.css",
+      "local_sha256": "6ac1f405ad718f16b5a7d30675f24578dddbde3daad74922af0574e63f62f3ee",
+      "bytes": 20434,
+      "remote_sha256": "6ac1f405ad718f16b5a7d30675f24578dddbde3daad74922af0574e63f62f3ee",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/css/widgets.css",
+      "source": "pwa/nuxel-home/css/widgets.css",
+      "local_sha256": "b8f2f649770c9491d90a08cbe5d7ca4de6e0198cce3d66efd967ea72bd6d5f9c",
+      "bytes": 4313,
+      "remote_sha256": "b8f2f649770c9491d90a08cbe5d7ca4de6e0198cce3d66efd967ea72bd6d5f9c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-128.png",
+      "source": "pwa/nuxel-home/icons/icon-128.png",
+      "local_sha256": "10e4414ee469b24878aab53efe3c62ef60975b793ae672eeb9d3f5d156334171",
+      "bytes": 4164,
+      "remote_sha256": "10e4414ee469b24878aab53efe3c62ef60975b793ae672eeb9d3f5d156334171",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-144.png",
+      "source": "pwa/nuxel-home/icons/icon-144.png",
+      "local_sha256": "99a73c616072eb70f30e2b0ab1704b6eb364ecd199933aa85caecdbf4ee03672",
+      "bytes": 5044,
+      "remote_sha256": "99a73c616072eb70f30e2b0ab1704b6eb364ecd199933aa85caecdbf4ee03672",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-152.png",
+      "source": "pwa/nuxel-home/icons/icon-152.png",
+      "local_sha256": "ec29f0eaca2b0584846a37b8090cb67af09451112d3ad9cc82347a4230ec24e3",
+      "bytes": 5251,
+      "remote_sha256": "ec29f0eaca2b0584846a37b8090cb67af09451112d3ad9cc82347a4230ec24e3",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-192.png",
+      "source": "pwa/nuxel-home/icons/icon-192.png",
+      "local_sha256": "e78e81d831cb310d1c4361ef07830b6f4aaca330c0b60aa12e798bdbb02f646e",
+      "bytes": 6837,
+      "remote_sha256": "e78e81d831cb310d1c4361ef07830b6f4aaca330c0b60aa12e798bdbb02f646e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-384.png",
+      "source": "pwa/nuxel-home/icons/icon-384.png",
+      "local_sha256": "544787195c748c442b562161451d2757d9e752dd0ac7612f99cf88ba738dd844",
+      "bytes": 15931,
+      "remote_sha256": "544787195c748c442b562161451d2757d9e752dd0ac7612f99cf88ba738dd844",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-48.png",
+      "source": "pwa/nuxel-home/icons/icon-48.png",
+      "local_sha256": "4e8202e16f2bcccb6d6f77cdfbefe04a2b4b08e9ef6147ab8a56b187ebdb9015",
+      "bytes": 1478,
+      "remote_sha256": "4e8202e16f2bcccb6d6f77cdfbefe04a2b4b08e9ef6147ab8a56b187ebdb9015",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-512.png",
+      "source": "pwa/nuxel-home/icons/icon-512.png",
+      "local_sha256": "3f72dea12870fe315349d24aac0326fb1352f38756682253b99a9276f0da248f",
+      "bytes": 23492,
+      "remote_sha256": "3f72dea12870fe315349d24aac0326fb1352f38756682253b99a9276f0da248f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-72.png",
+      "source": "pwa/nuxel-home/icons/icon-72.png",
+      "local_sha256": "27e890f30d925bf9fa08b4d1ea4ad6c4721530f3dda9077eb4d0aa4fb8898417",
+      "bytes": 2418,
+      "remote_sha256": "27e890f30d925bf9fa08b4d1ea4ad6c4721530f3dda9077eb4d0aa4fb8898417",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-96.png",
+      "source": "pwa/nuxel-home/icons/icon-96.png",
+      "local_sha256": "de2227e0254065590ff0171b773d0ab111fe9e9fc0668337b211ac84d59b49b5",
+      "bytes": 3043,
+      "remote_sha256": "de2227e0254065590ff0171b773d0ab111fe9e9fc0668337b211ac84d59b49b5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon.svg",
+      "source": "pwa/nuxel-home/icons/icon.svg",
+      "local_sha256": "63fce7256bcf6b1f761eae5b2e401d99e6bbdd5dfbe1694844bcb42a0caf89a5",
+      "bytes": 929,
+      "remote_sha256": "63fce7256bcf6b1f761eae5b2e401d99e6bbdd5dfbe1694844bcb42a0caf89a5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/index.html",
+      "source": "pwa/nuxel-home/index.html",
+      "local_sha256": "073611db95e86ea869a946565ad6d56cdcee6f5ad5b8f21be49ad33b337f668d",
+      "bytes": 28748,
+      "remote_sha256": "073611db95e86ea869a946565ad6d56cdcee6f5ad5b8f21be49ad33b337f668d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/app.js",
+      "source": "pwa/nuxel-home/js/app.js",
+      "local_sha256": "fcffc9942e7b181a024d8189bf1c5234b88f4bb970c73ee6963f97ed07e0b1b4",
+      "bytes": 123286,
+      "remote_sha256": "fcffc9942e7b181a024d8189bf1c5234b88f4bb970c73ee6963f97ed07e0b1b4",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/apps.js",
+      "source": "pwa/nuxel-home/js/apps.js",
+      "local_sha256": "69939f2600ceae1ee5c37c99c45e9f3fa9041da5cd73dc99eca2463ac88c0cce",
+      "bytes": 41241,
+      "remote_sha256": "69939f2600ceae1ee5c37c99c45e9f3fa9041da5cd73dc99eca2463ac88c0cce",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/bootlog.js",
+      "source": "pwa/nuxel-home/js/bootlog.js",
+      "local_sha256": "d917dd0184c5c4003d57be5511ced67810ac55a1314a10ff3aac55f8462eaf2b",
+      "bytes": 9576,
+      "remote_sha256": "d917dd0184c5c4003d57be5511ced67810ac55a1314a10ff3aac55f8462eaf2b",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/bridge.js",
+      "source": "pwa/nuxel-home/js/bridge.js",
+      "local_sha256": "0369f07dfb243cd1e4acdde9fe285741c6e9c10076eaa347ab66faff0156ba2a",
+      "bytes": 8130,
+      "remote_sha256": "0369f07dfb243cd1e4acdde9fe285741c6e9c10076eaa347ab66faff0156ba2a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/desktop-layout.js",
+      "source": "pwa/nuxel-home/js/desktop-layout.js",
+      "local_sha256": "89d08840a6efe45eaf30cdcbe1e3a9676e64a897a279d4118ea4e03b76780cb9",
+      "bytes": 15851,
+      "remote_sha256": "89d08840a6efe45eaf30cdcbe1e3a9676e64a897a279d4118ea4e03b76780cb9",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/gestures.js",
+      "source": "pwa/nuxel-home/js/gestures.js",
+      "local_sha256": "cac23cda1629e76af3a64fb92959bc33a05aa7d423660fa2ae363545d66f8e95",
+      "bytes": 5514,
+      "remote_sha256": "cac23cda1629e76af3a64fb92959bc33a05aa7d423660fa2ae363545d66f8e95",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/home-settings.js",
+      "source": "pwa/nuxel-home/js/home-settings.js",
+      "local_sha256": "bebddb0a430ad580010ad287005eb087164574d5fa25aff901298aaf80f7eedb",
+      "bytes": 33437,
+      "remote_sha256": "bebddb0a430ad580010ad287005eb087164574d5fa25aff901298aaf80f7eedb",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/host-bridge.js",
+      "source": "pwa/nuxel-home/js/host-bridge.js",
+      "local_sha256": "5bb295434ef404651817ccee384571a46e8015919f7dccbef588092b210fec4a",
+      "bytes": 6189,
+      "remote_sha256": "5bb295434ef404651817ccee384571a46e8015919f7dccbef588092b210fec4a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/immersive.js",
+      "source": "pwa/nuxel-home/js/immersive.js",
+      "local_sha256": "47dd49aa527e54ee43bb98a1f302360cb8b543a97651af6f5bb4b45f6ba0be7d",
+      "bytes": 13454,
+      "remote_sha256": "47dd49aa527e54ee43bb98a1f302360cb8b543a97651af6f5bb4b45f6ba0be7d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/launcher.js",
+      "source": "pwa/nuxel-home/js/launcher.js",
+      "local_sha256": "d63320854d24b00b9b425db1edda38a0246894d8653797ec6ec66765bbdccd56",
+      "bytes": 69058,
+      "remote_sha256": "d63320854d24b00b9b425db1edda38a0246894d8653797ec6ec66765bbdccd56",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/layout-model.js",
+      "source": "pwa/nuxel-home/js/layout-model.js",
+      "local_sha256": "d2bd5fb9a5bdab00572730e4d4ba472e22413f771557c79ed246920d064b7936",
+      "bytes": 4049,
+      "remote_sha256": "d2bd5fb9a5bdab00572730e4d4ba472e22413f771557c79ed246920d064b7936",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/lockscreen-clock.js",
+      "source": "pwa/nuxel-home/js/lockscreen-clock.js",
+      "local_sha256": "35d9067453900e2f4d382148d85c1c6f2ef8823e6e64aa7fa01c078658e34933",
+      "bytes": 11066,
+      "remote_sha256": "35d9067453900e2f4d382148d85c1c6f2ef8823e6e64aa7fa01c078658e34933",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/lockscreen-indicators.js",
+      "source": "pwa/nuxel-home/js/lockscreen-indicators.js",
+      "local_sha256": "04ce9dacc89c87d77ea738ab66099d2c2bd8da1059644bb1dd57f9f983e8d38a",
+      "bytes": 26503,
+      "remote_sha256": "04ce9dacc89c87d77ea738ab66099d2c2bd8da1059644bb1dd57f9f983e8d38a",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/lockscreen.js",
+      "source": "pwa/nuxel-home/js/lockscreen.js",
+      "local_sha256": "46bd0f8b3fd7d295bf7727f8584395b94eba0f7ef8945af1c9cc75ba8ef3efd6",
+      "bytes": 34807,
+      "remote_sha256": "46bd0f8b3fd7d295bf7727f8584395b94eba0f7ef8945af1c9cc75ba8ef3efd6",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/navigation.js",
+      "source": "pwa/nuxel-home/js/navigation.js",
+      "local_sha256": "f2df4a016d82786c4daf4a7cb38e21da001eb807c5ffb70c2083c8ff29451a07",
+      "bytes": 9255,
+      "remote_sha256": "f2df4a016d82786c4daf4a7cb38e21da001eb807c5ffb70c2083c8ff29451a07",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/osd.js",
+      "source": "pwa/nuxel-home/js/osd.js",
+      "local_sha256": "d8e22f59fa397209c6084aa693a07972fa89984f29738a99133e905a6f1dacbb",
+      "bytes": 9424,
+      "remote_sha256": "d8e22f59fa397209c6084aa693a07972fa89984f29738a99133e905a6f1dacbb",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/qs-firewall.js",
+      "source": "pwa/nuxel-home/js/qs-firewall.js",
+      "local_sha256": "9ccf6af1784fb82193e70489b9ec0780b9b64a20e161d942850e7f914d5345b5",
+      "bytes": 3003,
+      "remote_sha256": "9ccf6af1784fb82193e70489b9ec0780b9b64a20e161d942850e7f914d5345b5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/qs.js",
+      "source": "pwa/nuxel-home/js/qs.js",
+      "local_sha256": "f91c70add3b44f29045d68262728e8b88e12a6fdce70fbbfede094e763b53437",
+      "bytes": 67417,
+      "remote_sha256": "f91c70add3b44f29045d68262728e8b88e12a6fdce70fbbfede094e763b53437",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/recents.js",
+      "source": "pwa/nuxel-home/js/recents.js",
+      "local_sha256": "9c885d4b239117ccc4973b74c6a5f0b1c5e52015e5e039a635867d4b0aed9b5e",
+      "bytes": 11710,
+      "remote_sha256": "9c885d4b239117ccc4973b74c6a5f0b1c5e52015e5e039a635867d4b0aed9b5e",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/safe-zones.js",
+      "source": "pwa/nuxel-home/js/safe-zones.js",
+      "local_sha256": "0ef0c91a45b599881f4eea26fca2c08ffdde806ec52dd48472c042ecb5806a0f",
+      "bytes": 16055,
+      "remote_sha256": "0ef0c91a45b599881f4eea26fca2c08ffdde806ec52dd48472c042ecb5806a0f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/scroll-indicators.js",
+      "source": "pwa/nuxel-home/js/scroll-indicators.js",
+      "local_sha256": "a5d51cd76677f6ddb34b7d8782a5f5bbc17401dd615d5f372bdc3f600319b2c5",
+      "bytes": 2564,
+      "remote_sha256": "a5d51cd76677f6ddb34b7d8782a5f5bbc17401dd615d5f372bdc3f600319b2c5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/search.js",
+      "source": "pwa/nuxel-home/js/search.js",
+      "local_sha256": "b2d46748ccd1ba3e4be2257a9728236bd8102eb73ba37de496627ba3bd3015fc",
+      "bytes": 7832,
+      "remote_sha256": "b2d46748ccd1ba3e4be2257a9728236bd8102eb73ba37de496627ba3bd3015fc",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/security-lock.js",
+      "source": "pwa/nuxel-home/js/security-lock.js",
+      "local_sha256": "1856d79c25552961820594740c031e695bdb5f64d402d5d48cd9e8260377f23d",
+      "bytes": 7161,
+      "remote_sha256": "1856d79c25552961820594740c031e695bdb5f64d402d5d48cd9e8260377f23d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/settings-store.js",
+      "source": "pwa/nuxel-home/js/settings-store.js",
+      "local_sha256": "383e068515aba43da0026d6dc1e0250f34cd87f8f1d7014db2c7831cd18c9c1d",
+      "bytes": 13234,
+      "remote_sha256": "383e068515aba43da0026d6dc1e0250f34cd87f8f1d7014db2c7831cd18c9c1d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js",
+      "source": "pwa/nuxel-home/js/status-bar.js",
+      "local_sha256": "e372e3b9207d13c68ec6443cccc9d189ae770d2dd1c88789f231e114a93d7b99",
+      "bytes": 72030,
+      "remote_sha256": "e372e3b9207d13c68ec6443cccc9d189ae770d2dd1c88789f231e114a93d7b99",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/system-monitor.js",
+      "source": "pwa/nuxel-home/js/system-monitor.js",
+      "local_sha256": "2f593c65fb6a3a507b014ec02a146da86e6f41d188fd451973234daef8dd8881",
+      "bytes": 10658,
+      "remote_sha256": "2f593c65fb6a3a507b014ec02a146da86e6f41d188fd451973234daef8dd8881",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/topbar-machine.js",
+      "source": "pwa/nuxel-home/js/topbar-machine.js",
+      "local_sha256": "e27351494e0d8b16398b078197935946c6da553fbf7c9eec5693998ae04be6ae",
+      "bytes": 3438,
+      "remote_sha256": "e27351494e0d8b16398b078197935946c6da553fbf7c9eec5693998ae04be6ae",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js",
+      "source": "pwa/nuxel-home/js/touch-keyboard.js",
+      "local_sha256": "168dd89a6b6c0d45b2aec5443b09f990913aad46b54ce286195ced5b0316283c",
+      "bytes": 21514,
+      "remote_sha256": "168dd89a6b6c0d45b2aec5443b09f990913aad46b54ce286195ced5b0316283c",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/widgets.js",
+      "source": "pwa/nuxel-home/js/widgets.js",
+      "local_sha256": "01ad9c39d9cf9df203127c16b5a8d4b21679f9ba095b8552317ab861fc978cb8",
+      "bytes": 22784,
+      "remote_sha256": "01ad9c39d9cf9df203127c16b5a8d4b21679f9ba095b8552317ab861fc978cb8",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/keyboard-provider.json",
+      "source": "pwa/nuxel-home/keyboard-provider.json",
+      "local_sha256": "a83a3e172d6694fb9957bb5fb1856d613e1d61907a4b881723413b4b137ad951",
+      "bytes": 312,
+      "remote_sha256": "a83a3e172d6694fb9957bb5fb1856d613e1d61907a4b881723413b4b137ad951",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "source": "pwa/nuxel-home/manifest.json",
+      "local_sha256": "68415850c128ee1e647d46703851b074bbc41b876c2d8d3fcf6765305e8a5690",
+      "bytes": 5535,
+      "remote_sha256": "68415850c128ee1e647d46703851b074bbc41b876c2d8d3fcf6765305e8a5690",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js",
+      "source": "pwa/nuxel-home/sw.js",
+      "local_sha256": "77df385cb771357db90325273191f4c0ad2a2ca83120c165f591d0ab3ec0f16d",
+      "bytes": 18332,
+      "remote_sha256": "77df385cb771357db90325273191f4c0ad2a2ca83120c165f591d0ab3ec0f16d",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/tests/test-immersive-chrome.js",
+      "source": "pwa/nuxel-home/tests/test-immersive-chrome.js",
+      "local_sha256": "3dafb91e7b23f942bfceae8038e52162080ea89a5ea305c037cc6bdbe548371f",
+      "bytes": 5962,
+      "remote_sha256": "3dafb91e7b23f942bfceae8038e52162080ea89a5ea305c037cc6bdbe548371f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/tests/test-launcher-drag.js",
+      "source": "pwa/nuxel-home/tests/test-launcher-drag.js",
+      "local_sha256": "a58cd31106db210929e3acc0a60d7297ab713cc3db193bc0e638f2f10104cbb2",
+      "bytes": 4653,
+      "remote_sha256": "a58cd31106db210929e3acc0a60d7297ab713cc3db193bc0e638f2f10104cbb2",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/tests/test-qs-indicators.js",
+      "source": "pwa/nuxel-home/tests/test-qs-indicators.js",
+      "local_sha256": "79744f1ab10f9535e45b5571685a76c715dcf10da385730408c353c93923e12f",
+      "bytes": 5657,
+      "remote_sha256": "79744f1ab10f9535e45b5571685a76c715dcf10da385730408c353c93923e12f",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/tests/test-qs-wifi-state.js",
+      "source": "pwa/nuxel-home/tests/test-qs-wifi-state.js",
+      "local_sha256": "ed6dbc2300d370238895a79fe71ca820287126819745607e98904c2a745a68ae",
+      "bytes": 9305,
+      "remote_sha256": "ed6dbc2300d370238895a79fe71ca820287126819745607e98904c2a745a68ae",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/tests/test-status-indicators.js",
+      "source": "pwa/nuxel-home/tests/test-status-indicators.js",
+      "local_sha256": "71b4a7ea34e81ae9013d18b3f3ac74e4f0e9d4ff8a3e405a21a32a19840a20f7",
+      "bytes": 6509,
+      "remote_sha256": "71b4a7ea34e81ae9013d18b3f3ac74e4f0e9d4ff8a3e405a21a32a19840a20f7",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/tests/test-theme-haptics.js",
+      "source": "pwa/nuxel-home/tests/test-theme-haptics.js",
+      "local_sha256": "b75106ed6a1d28a9670016c98da60c4de047d6ca5394308b83132a30604d1ff5",
+      "bytes": 2607,
+      "remote_sha256": "b75106ed6a1d28a9670016c98da60c4de047d6ca5394308b83132a30604d1ff5",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/tests/test-widgets.js",
+      "source": "pwa/nuxel-home/tests/test-widgets.js",
+      "local_sha256": "cc546a451e224e7b62183012e9bb5c837b40e66757055f3e3bf35753cafe7106",
+      "bytes": 7101,
+      "remote_sha256": "cc546a451e224e7b62183012e9bb5c837b40e66757055f3e3bf35753cafe7106",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/tests/test-zoom-policy.js",
+      "source": "pwa/nuxel-home/tests/test-zoom-policy.js",
+      "local_sha256": "c17c66e1c71c303ac244cfdca5411dbab9a1484b47bc1552277658d3bc2d7783",
+      "bytes": 2020,
+      "remote_sha256": "c17c66e1c71c303ac244cfdca5411dbab9a1484b47bc1552277658d3bc2d7783",
+      "match": true
+    },
+    {
+      "target": "/usr/share/nuxel/remote-desktop/launcher.html",
+      "source": "services/nuxel-remote-desktop/config/launcher.html",
+      "local_sha256": "6ec98b90b166deefaac35dd81180682daaf5b1fc60f1a333a192013994527343",
+      "bytes": 2032,
+      "remote_sha256": "6ec98b90b166deefaac35dd81180682daaf5b1fc60f1a333a192013994527343",
+      "match": true
+    }
+  ]
+}

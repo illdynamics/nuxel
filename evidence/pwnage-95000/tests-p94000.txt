@@ -1,0 +1,108 @@
+PWNAGE-94000 — Workstream A: Doom
+  PASS WebAssembly Doom defaults sound ON
+  PASS default Chocolate Doom config uses non-zero effects volume
+  PASS default Chocolate Doom config uses non-zero music volume
+  PASS engine args only add -nosound when the owner opted out or audio activation was refused
+  PASS sound settings persist through the durable settings key
+  PASS native Chocolate Doom no longer forces -nomusic
+  PASS native wrapper seeds non-zero sfx/music volumes
+  PASS native wrapper uses a bounded audio readiness check, not a fixed sleep
+  PASS Crispy Doom defaults sound ON
+  PASS Crispy Doom only passes -nosound on explicit opt-out
+  PASS WAD catalogue is digest-addressed and path-free
+  PASS native Doom launches the installed engine wrapper
+
+PWNAGE-94000 — Workstream B: canonical top bar
+  PASS DOM-free top-bar machine exists
+  PASS first/second/third downward gestures reach 1/2/3  — [1, 2, 3, 3]
+  PASS one upward gesture from each level reaches 0  — [0, 0, 0]
+  PASS extended closes atomically to hidden  — [3, 0]
+  PASS QuickSettings delegates to the machine
+  PASS upward pull is atomic closeAll
+  PASS extended level is first-class
+  PASS notification list is gated by EXTENDED, not EXPANDED
+  PASS immersive edge gesture advances one level only
+  PASS immersive defers to the status-bar pull that already consumed the swipe
+  PASS immersive upward gesture closes the whole panel
+  PASS landscape top/bottom bands are wider than portrait
+  PASS old two-value fullscreen bar state is gone
+  PASS native adapter renders levels 0..3
+  PASS native adapter never reserves app viewport space
+  PASS native adapter is a presentation adapter over the canonical model
+  PASS native adapter has a bounded level control FIFO for evidence
+  PASS statusbar control FIFO is opened read/write so POLLHUP cannot busy-spin
+  PASS statusbar poll treats POLLHUP/POLLERR as readable control events
+  PASS landscape nav dock input band grows to 56 px
+  PASS status bar model is published by the DOM bar
+  PASS host whitelists the statusbar model output
+
+PWNAGE-94000 — Workstream C: startup performance
+  PASS launch-plan cache exists
+  PASS registry lookup is reused instead of repeated
+  PASS launch timings split the real phases
+  PASS T3 first-surface timing is recorded
+  PASS surface matching is normalized for Flatpak/Wayland id differences
+  PASS orientation subprocess is skipped when already in the requested pose
+  PASS launch evidence is written even on timeout
+  PASS duplicate launch guard remains present
+  PASS document portal is pre-started to avoid the 30 s Flatpak D-Bus timeout
+
+PWNAGE-94000 — Workstream D: global dark theme
+  PASS GTK3 system default is Adwaita-dark
+  PASS GTK3 prefers dark applications
+  PASS GTK4 system default is Adwaita-dark
+  PASS dconf site default is prefer-dark
+  PASS dconf profile keeps user preferences first
+  PASS Flatpak global override changes only the environment
+  PASS session-user native apps use the user portal bus
+  PASS launches force the dark preference and dconf backend
+  PASS Flatpak launch argv carries dark GTK environment
+
+PWNAGE-94000 — Workstream E: Back lifecycle
+  PASS home action has no fixed lifecycle sleep
+  PASS home action waits on compositor state events
+  PASS home convergence requires Home to be active
+  PASS short Back remains distinct from long Back
+  PASS single Back closes a Quick Settings panel atomically
+  PASS post-transition input check covers top/bottom edge hit targets
+  PASS host after-app-close asks the launcher for geometry restoration
+  PASS native Home watchdog reloads a stuck foreground PWA
+  PASS backgrounded PWA frames are hidden with inline !important, not CSS only
+  PASS background/resume paths drive the inline surface visibility helper
+  PASS Home sweeps orphan PWA frames that lost their owning session
+  PASS Doom suspends its AudioContext when the engine pauses
+  PASS Doom suspends audio on close-request and pagehide
+  PASS Doom re-arms audio when the engine resumes
+  PASS Doom launch decides audio from the real AudioContext, not userActivation alone
+  PASS Doom does not install a statechange->resume feedback loop
+  PASS Doom keeps SFX and disables the unstable MIDI path
+  PASS Doom exposes bounded audio/GL callback probes for device evidence
+
+PWNAGE-94000 — Workstream F: desktop geometry
+  PASS one launcher geometry restore owns the reset
+  PASS restore removes stale immersive/panel/transform state
+  PASS restore re-establishes the scroll origin
+  PASS geometry report measures bar, dock, nav and grid
+  PASS resize while an app owns the glass does not reset Home
+  PASS native status bar does not create a second inset
+  PASS desktop CSS keeps one inset variable per band
+  PASS dock and grid derive their positions from the shared nav inset
+  PASS host exposes restore-geometry for deterministic evidence
+  PASS host exposes a bounded immersive edge-gesture evidence hook
+  PASS system app WebView permits media without a synthetic autoplay gesture
+  PASS root-only trusted tap hook exists for physical-path verification
+  PASS ui-rect evidence hook exists
+
+PWNAGE-94000 — static checks
+  PASS python compiles: api.py
+  PASS python compiles: flatpak_provider.py
+  PASS javascript parses: topbar-machine.js
+  PASS javascript parses: qs.js
+  PASS javascript parses: immersive.js
+  PASS javascript parses: status-bar.js
+  PASS javascript parses: app.js
+  PASS shell parses: nuxel-doom-engine
+  PASS shell parses: nuxel-crispy-doom
+  PASS shell parses: nuxel-session.sh
+
+RESULT pass=93 fail=0

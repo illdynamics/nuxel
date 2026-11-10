@@ -31,7 +31,7 @@ CTRL_FIFO = "/run/nuxel-browser.cmd"
 SETTINGS_PATH = os.environ.get(
     "NUXEL_BROWSER_SETTINGS", "/var/lib/nuxel/browser/settings.json")
 SETTINGS_VERSION = 1
-VERSION = "0.8.2-beta"
+VERSION = "0.8.3-beta"
 
 UA_MOBILE = (
     "Mozilla/5.0 (Linux; Android 14; SM-G975F) AppleWebKit/605.1.15 "

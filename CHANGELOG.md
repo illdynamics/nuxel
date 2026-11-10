@@ -2,6 +2,44 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.8.3-beta] - 2026-11-10 - *Fully black screen-off, per-device completion docs and release-CI repair*
+
+### Fixed
+
+- **Screen-off is now fully black on the S10+ AMOLED.** `nuxel-wl-fb` (the
+  active A67 presenter compiled by the phone rootfs builder) now clears and
+  latches a black framebuffer page before it powers the panel down. The
+  screen-off sequence is: black page + `FBIOPAN_DISPLAY`, brightness 0,
+  `bl_power=4` (`FB_BLANK_POWERDOWN`), `FBIOBLANK(POWERDOWN)`, then a second
+  `bl_power=4` re-assert. This covers the measured vendor behaviour where
+  brightness 0 still reports `actual_brightness=2` and `bl_power=4` alone does
+  not clear the last DECON frame. The wake path still forces a fresh capture and
+  commit, so the black page is never shown after a successful wake.
+- **Release CI gate repaired.** The v0.8.2 `main` build failed in
+  `pwa/nuxel-home/tests/test-immersive-chrome.js` because the shipped
+  immersive controller used a combined `BANDS` object and the native status bar
+  used `bar_show`. The controller now exposes explicit `BOTTOM_BAND`/`TOP_BAND`
+  constants; the native bar exposes `bar_reveal`; and the top-pull contract
+  check follows the actual Quick Settings handoff instead of one historical
+  one-line layout.
+- **Regression coverage for the screen-off path.** The A35 DECON contract test
+  now requires the black-page latch, the zeroed visible framebuffer, the
+  powerdown call and the post-FBIOBLANK `bl_power` re-assert in the active A67
+  source that the rootfs builder compiles.
+
+### Changed
+
+- **Whole-repo version lockstep to `v0.8.3-beta`** across `VERSION`, device
+  `APKBUILD`s, PWA manifests and the service-worker cache namespace
+  (`v095-p106000`), bridge/portal/notification pins, native shell versions,
+  OTA builder, VM snapshot pins and the release-asset gate.
+- **README completion reporting now includes explicit per-device percentages**
+  for Galaxy S10+ (95%), Moto G7 Power (40%), Pixel 10 Pro XL (5%) and the UTM
+  VM (70%), in both the dedicated completion table and the multi-device target
+  table.
+- Added `REPORT-PWNAGE-106000.md` and `docs/releases/v0.8.3-beta.md` with the
+  root cause, evidence and deployment/release instructions.
+
 ## [v0.8.2-beta] - 2026-11-09 - *System-wide FileChooser picker, File Handlers settings, Network Manager, ZeroTier and landscape VNC*
 
 ### Added
@@ -15,6 +53,34 @@ All notable changes to the Nuxel Phone OS repository are documented here.
 
 - One SSH banner only: `/etc/banner` is the SSH banner; local interactive shells keep the Nuxel banner.
 - Release CI generates the A45 navigation-dock artwork before the PWNAGE-45000 gate so clean checkouts do not fail on a gitignored generated header.
+- **USB-C hub HID input:** `libnuxel-libinput-path.so` now accepts USB pointers and
+  keyboards by capability (not only DIRECT touch surfaces), tracks them by event
+  node/inode, wakes Phoc for idle hotplug, and no longer calls
+  `libinput_path_remove_device()` inside dispatch (which crashed libinput 1.30).
+  Settings gains **Mouse & Keyboard** with pointer/touchpad/keyboard controls and
+  a real GSettings applier. The separately attached keyboard on hub port 3 still
+  fails USB enumeration (`error -32` / `-71`) before Linux input exists; see
+  `REPORT-PWNAGE-103000.md` for the evidence and the port/power next steps.
+- **Visible Nuxel cursor + keyboard/OSK finalization:** both wlr-screencopy
+  framebuffer bridges now ask for the cursor overlay, so the pointer is visible
+  on the AMOLED and the external HDMI output; a generated Nuxel cyan Xcursor
+  theme (`cursor-theme=nuxel`, size 32) replaces Adwaita. The libinput shim
+  rewrites its seeded udev entry on every add (event nodes are reused after hub
+  resets), publishes `NUXEL_INPUT_HW_KEYBOARD`/`AUX_KEYBOARD` from USB interface
+  grouping, and Phoc uses those safe tags to distinguish a real Keychron
+  keyboard from the Razer mouse's macro-keyboard endpoints and ydotoold. Stevia
+  now auto-hides the OSK around a real keyboard while still raising it for
+  touch-only use; tapping an already-focused field no longer forces it back.
+  See `REPORT-PWNAGE-104000.md`.
+- **Boot poster no longer freezes the penguin:** the preload controller wrote
+  `preload-status.json` to the legacy `/usr/share/nuxel/nuxel-home` path while
+  this image serves the launcher from `/usr/share/nuxel/pwa/nuxel-home`, so the
+  PWA received 404 on every poll and kept its opaque first-frame cover (the
+  static penguin) up to the hard timeout. The controller now resolves the
+  served docroot, the session exports `NUXEL_PRELOAD_STATUS`, and the launcher
+  cover fails open after 4 s on a missing status document (15 s hard bound
+  instead of 40 s). Verified on reboot: `starting → covered → done`, video
+  frames on the panel, then the lockscreen. See `REPORT-PWNAGE-105000.md`.
 
 
 The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep

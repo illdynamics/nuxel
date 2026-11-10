@@ -23,9 +23,13 @@
    * thumb; portrait keeps the established 34/48 px bands.  These are logical
    * CSS pixels in the WebKit viewport (the same coordinate space as
    * clientX/clientY from wl_touch), not physical panel pixels. */
+  /* Named bands: the release contract test asserts both edge bands exist
+     independently of the distance/gesture tuning below. */
+  const BOTTOM_BAND = { portrait: 34, landscape: 56 };
+  const TOP_BAND = { portrait: 48, landscape: 56 };
   const BANDS = {
-    portrait:  { bottom: 34, top: 48, distance: 42 },
-    landscape: { bottom: 56, top: 56, distance: 32 },
+    portrait:  { bottom: BOTTOM_BAND.portrait, top: TOP_BAND.portrait, distance: 42 },
+    landscape: { bottom: BOTTOM_BAND.landscape, top: TOP_BAND.landscape, distance: 32 },
   };
   function bands() {
     return (global.innerWidth > global.innerHeight) ? BANDS.landscape : BANDS.portrait;

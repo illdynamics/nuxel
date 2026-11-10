@@ -1,0 +1,21 @@
+DATE=2026-11-08T11:53:58Z
+---SERVICES---
+active
+active
+active
+active
+active
+active
+---NOTIF-COUNTS---
+s "{\"success\": true, \"counts\": {\"active\": 7, \"unread\": 7, \"read\": 0, \"archived\": 0, \"total\": 7}}"
+---HISTORY---
+7 [(1, False, False), (2, False, False), (3, False, False), (4, False, False), (5, False, False), (6, False, False), (7, False, False)]
+---SOUND---
+normal
+---FG---
+locked=0 native=0 app_id=
+
+---RELAYS---
+109048 /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py --session
+109080 runuser -u nuxel -- env DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_RUNTIME_DIR=/run/user/1000 HOME=/home/nuxel /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py --session
+109083 /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py --session

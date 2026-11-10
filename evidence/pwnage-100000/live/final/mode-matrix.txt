@@ -1,0 +1,157 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+### mode matrix 2026-11-09T18:35:24+01:00
+===== set-mode mirror-portrait
+{
+  "success": true,
+  "mode": "mirror-portrait",
+  "rotation": 0,
+  "fit": "fit",
+  "resolution": {
+    "width": 1920,
+    "height": 1080,
+    "refresh": 60,
+    "name": "V1920X1080P60"
+  },
+  "ext_state": {
+    "state": "RUNNING",
+    "mode": "mirror-portrait",
+    "output": "HEADLESS-1",
+    "fb": "/dev/fb1",
+    "src": "720x1520",
+    "dst": "1920x1080",
+    "fps": "20",
+    "rot": "0",
+    "fit": "fit",
+    "frames": "1",
+    "nz": "5700"
+  },
+  "last_error": null
+}
+state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=1 nz=5700
+decon_t_irq_delta_1s=61
+bridge_pid=195542 fds=9
+===== set-mode mirror-landscape
+{
+  "success": true,
+  "mode": "mirror-landscape",
+  "rotation": 90,
+  "fit": "fit",
+  "resolution": {
+    "width": 1920,
+    "height": 1080,
+    "refresh": 60,
+    "name": "V1920X1080P60"
+  },
+  "ext_state": {
+    "state": "RUNNING",
+    "mode": "mirror-landscape",
+    "output": "HEADLESS-1",
+    "fb": "/dev/fb1",
+    "src": "720x1520",
+    "dst": "1920x1080",
+    "fps": "20",
+    "rot": "90",
+    "fit": "fit",
+    "frames": "1",
+    "nz": "17992"
+  },
+  "last_error": null
+}
+state RUNNING mode=mirror-landscape output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=90 fit=fit frames=1 nz=17992
+decon_t_irq_delta_1s=61
+bridge_pid=195608 fds=9
+===== set-mode fullscreen
+{
+  "success": true,
+  "mode": "fullscreen",
+  "rotation": 90,
+  "fit": "fill",
+  "resolution": {
+    "width": 1920,
+    "height": 1080,
+    "refresh": 60,
+    "name": "V1920X1080P60"
+  },
+  "ext_state": {
+    "state": "RUNNING",
+    "mode": "fullscreen",
+    "output": "HEADLESS-1",
+    "fb": "/dev/fb1",
+    "src": "720x1520",
+    "dst": "1920x1080",
+    "fps": "20",
+    "rot": "90",
+    "fit": "fill",
+    "frames": "1",
+    "nz": "21377"
+  },
+  "last_error": null
+}
+state RUNNING mode=fullscreen output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=90 fit=fill frames=1 nz=21377
+decon_t_irq_delta_1s=61
+bridge_pid=195694 fds=9
+===== set-mode mirror-portrait
+{
+  "success": true,
+  "mode": "mirror-portrait",
+  "rotation": 0,
+  "fit": "fit",
+  "resolution": {
+    "width": 1920,
+    "height": 1080,
+    "refresh": 60,
+    "name": "V1920X1080P60"
+  },
+  "ext_state": {
+    "state": "RUNNING",
+    "mode": "mirror-portrait",
+    "output": "HEADLESS-1",
+    "fb": "/dev/fb1",
+    "src": "720x1520",
+    "dst": "1920x1080",
+    "fps": "20",
+    "rot": "0",
+    "fit": "fit",
+    "frames": "1",
+    "nz": "5700"
+  },
+  "last_error": null
+}
+state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=1 nz=5700
+decon_t_irq_delta_1s=61
+bridge_pid=195755 fds=9
+===== final status
+{
+  "state": "DP_LINK_READY",
+  "mode": "mirror-portrait",
+  "rotation": 0,
+  "mode_fit": "fit",
+  "selected_resolution": {
+    "width": 1920,
+    "height": 1080,
+    "refresh": 60,
+    "name": "V1920X1080P60"
+  },
+  "display_name": "Philips",
+  "mirror_supported": true,
+  "desktop_supported": false,
+  "desktop_blocker": "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed.",
+  "last_error": null,
+  "blockers": [
+    "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed."
+  ]
+}
+===== dp error
+"ERR_AUX":"0","ERR_EDID":"0","ERR_HDCP":"0","ERR_LT_TRAIN":"0","ERR_INF_IRQHPD":"0","LINK_CFG":"C","ADT_HWID":"0x0","ADT_FWVER":"0x0","ADT_TYPE":"HDMI","MLANE_CNT":"4","MLINK_RATE":"20","CLANE_CNT":"4","CLINK_RATE":"6","HDCP_VER":"hdcp2","ORIENTATION":"CC1","RESOLUTION":"1920x1080p60.0","EDID":"00ffffffffffff00410c0000010101010b150103804024780af9aba2554a9a250f474a21080081800101010101010101010101010101023a801871382d40582c450080682100001e1b2150a051001e3048883500806821000018000000fc005048494c495053204654560a20000000fd00384c1e5311000a20202020202001c7020326714e0410202122140513041102150601260907031507508301000067030c003000b82d023a80d072382d40102c458080682100001e011d803e73382d407e2c458080682100001e011d80d0721c1620102c258080682100009e011d00bc52d01e20b828554080682100001e0000000000000000000000000000000000a7","ADT_VID":"0x35a3","ADT_PID":"0x2003","DP_MODE":"MIRROR","SINK_NAME":"PHILIPS FTV","AUD_CH":"-1","AUD_FREQ":"-1","AUD_BIT":"-1"
+
+===== internal display
+/sys/class/graphics/fb0/virtual_size = 1440,6080
+/sys/class/graphics/fb0/bits_per_pixel = 32

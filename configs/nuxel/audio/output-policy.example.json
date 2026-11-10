@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "mode": "automatic",
+  "preferred_id": null,
+  "preferred_name": null,
+  "fallback_id": "alsa:beyond-madera:rdma1",
+  "comment": "Example only. nuxel-soundd writes /var/lib/nuxel/audio/output-policy.json atomically. Stable identities, never card indexes or PipeWire node IDs."
+}

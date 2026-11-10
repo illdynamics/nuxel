@@ -1,0 +1,1076 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{
+  "audio": {
+    "available": false,
+    "blocker": "DP audio infoframe is not active (ch_hdmi_audio=70975746)",
+    "blockers": [
+      "DP audio infoframe is not active (ch_hdmi_audio=70975746)"
+    ],
+    "ch_hdmi_audio": 70975746,
+    "dp_audio_pcm": true,
+    "pcm": "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1"
+  },
+  "auto_orientation": true,
+  "blocker": null,
+  "blockers": [
+    "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed."
+  ],
+  "desktop_blocker": "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed.",
+  "desktop_output": null,
+  "desktop_supported": false,
+  "display_name": "Philips",
+  "dp_link": true,
+  "dp_presets": [
+    {
+      "height": 480,
+      "index": 0,
+      "name": "V640X480P60",
+      "refresh": 60,
+      "width": 640
+    },
+    {
+      "height": 480,
+      "index": 1,
+      "name": "V720X480P60",
+      "refresh": 60,
+      "width": 720
+    },
+    {
+      "height": 576,
+      "index": 2,
+      "name": "V720X576P50",
+      "refresh": 50,
+      "width": 720
+    },
+    {
+      "height": 800,
+      "index": 3,
+      "name": "V1280X800P60RB",
+      "refresh": 60,
+      "width": 1280
+    },
+    {
+      "height": 720,
+      "index": 4,
+      "name": "V1280X720P50",
+      "refresh": 50,
+      "width": 1280
+    },
+    {
+      "height": 720,
+      "index": 5,
+      "name": "V1280X720P60EXT",
+      "refresh": 60,
+      "width": 1280
+    },
+    {
+      "height": 720,
+      "index": 6,
+      "name": "V1280X720P60",
+      "refresh": 60,
+      "width": 1280
+    },
+    {
+      "height": 768,
+      "index": 7,
+      "name": "V1366X768P60",
+      "refresh": 60,
+      "width": 1366
+    },
+    {
+      "height": 1024,
+      "index": 8,
+      "name": "V1280X1024P60",
+      "refresh": 60,
+      "width": 1280
+    },
+    {
+      "height": 1080,
+      "index": 9,
+      "name": "V1920X1080P24",
+      "refresh": 24,
+      "width": 1920
+    },
+    {
+      "height": 1080,
+      "index": 10,
+      "name": "V1920X1080P25",
+      "refresh": 25,
+      "width": 1920
+    },
+    {
+      "height": 1080,
+      "index": 11,
+      "name": "V1920X1080P30",
+      "refresh": 30,
+      "width": 1920
+    },
+    {
+      "height": 900,
+      "index": 12,
+      "name": "V1600X900P59",
+      "refresh": 59,
+      "width": 1600
+    },
+    {
+      "height": 900,
+      "index": 13,
+      "name": "V1600X900P60RB",
+      "refresh": 60,
+      "width": 1600
+    },
+    {
+      "height": 1080,
+      "index": 14,
+      "name": "V1920X1080P50",
+      "refresh": 50,
+      "width": 1920
+    },
+    {
+      "height": 1080,
+      "index": 15,
+      "name": "V1920X1080P60EXT",
+      "refresh": 60,
+      "width": 1920
+    },
+    {
+      "height": 1080,
+      "index": 16,
+      "name": "V1920X1080P59",
+      "refresh": 59,
+      "width": 1920
+    },
+    {
+      "height": 1080,
+      "index": 17,
+      "name": "V1920X1080P60",
+      "refresh": 60,
+      "width": 1920
+    },
+    {
+      "height": 1200,
+      "index": 18,
+      "name": "V1920X1200P60RB",
+      "refresh": 60,
+      "width": 1920
+    },
+    {
+      "height": 1200,
+      "index": 19,
+      "name": "V1920X1200P60",
+      "refresh": 60,
+      "width": 1920
+    },
+    {
+      "height": 1080,
+      "index": 20,
+      "name": "V2560X1080P60",
+      "refresh": 60,
+      "width": 2560
+    },
+    {
+      "height": 1536,
+      "index": 21,
+      "name": "V2048X1536P60",
+      "refresh": 60,
+      "width": 2048
+    },
+    {
+      "height": 1440,
+      "index": 22,
+      "name": "V1920X1440P60",
+      "refresh": 60,
+      "width": 1920
+    },
+    {
+      "height": 1200,
+      "index": 23,
+      "name": "V2400X1200P90RELU",
+      "refresh": 90,
+      "width": 2400
+    },
+    {
+      "height": 1440,
+      "index": 24,
+      "name": "V2560X1440P60EXT",
+      "refresh": 60,
+      "width": 2560
+    },
+    {
+      "height": 1440,
+      "index": 25,
+      "name": "V2560X1440P59",
+      "refresh": 59,
+      "width": 2560
+    },
+    {
+      "height": 1440,
+      "index": 28,
+      "name": "V2560X1440P60",
+      "refresh": 60,
+      "width": 2560
+    },
+    {
+      "height": 1600,
+      "index": 29,
+      "name": "V2560X1600P60",
+      "refresh": 60,
+      "width": 2560
+    },
+    {
+      "height": 1600,
+      "index": 30,
+      "name": "V3200X1600P70",
+      "refresh": 70,
+      "width": 3200
+    },
+    {
+      "height": 1600,
+      "index": 31,
+      "name": "V3200X1600P72",
+      "refresh": 72,
+      "width": 3200
+    },
+    {
+      "height": 1440,
+      "index": 32,
+      "name": "V3440X1440P50",
+      "refresh": 50,
+      "width": 3440
+    },
+    {
+      "height": 1080,
+      "index": 33,
+      "name": "V3840X1080P60",
+      "refresh": 60,
+      "width": 3840
+    },
+    {
+      "height": 1200,
+      "index": 34,
+      "name": "V3840X1200P60",
+      "refresh": 60,
+      "width": 3840
+    },
+    {
+      "height": 1440,
+      "index": 35,
+      "name": "V3440X1440P60",
+      "refresh": 60,
+      "width": 3440
+    },
+    {
+      "height": 2160,
+      "index": 36,
+      "name": "V3840X2160P24",
+      "refresh": 24,
+      "width": 3840
+    },
+    {
+      "height": 2160,
+      "index": 37,
+      "name": "V3840X2160P25",
+      "refresh": 25,
+      "width": 3840
+    },
+    {
+      "height": 2160,
+      "index": 38,
+      "name": "V3840X2160P30",
+      "refresh": 30,
+      "width": 3840
+    },
+    {
+      "height": 2160,
+      "index": 39,
+      "name": "V4096X2160P24",
+      "refresh": 24,
+      "width": 4096
+    },
+    {
+      "height": 2160,
+      "index": 40,
+      "name": "V4096X2160P25",
+      "refresh": 25,
+      "width": 4096
+    },
+    {
+      "height": 2160,
+      "index": 41,
+      "name": "V4096X2160P30",
+      "refresh": 30,
+      "width": 4096
+    },
+    {
+      "height": 2160,
+      "index": 42,
+      "name": "V3840X2160P60EXT",
+      "refresh": 60,
+      "width": 3840
+    },
+    {
+      "height": 2160,
+      "index": 43,
+      "name": "V3840X2160P59RB",
+      "refresh": 59,
+      "width": 3840
+    },
+    {
+      "height": 2160,
+      "index": 44,
+      "name": "V3840X2160P50",
+      "refresh": 50,
+      "width": 3840
+    },
+    {
+      "height": 2160,
+      "index": 45,
+      "name": "V3840X2160P60",
+      "refresh": 60,
+      "width": 3840
+    },
+    {
+      "height": 3840,
+      "index": 46,
+      "name": "V2160X3840P72",
+      "refresh": 72,
+      "width": 2160
+    },
+    {
+      "height": 2160,
+      "index": 47,
+      "name": "V4096X2160P50",
+      "refresh": 50,
+      "width": 4096
+    },
+    {
+      "height": 2160,
+      "index": 48,
+      "name": "V4096X2160P60",
+      "refresh": 60,
+      "width": 4096
+    },
+    {
+      "height": 10,
+      "index": 49,
+      "name": "V640X10P60SACRC",
+      "refresh": 60,
+      "width": 640
+    }
+  ],
+  "extcon_dp": true,
+  "external_fb": {
+    "bits_per_pixel": 32,
+    "blank": "",
+    "device": "19050000.decon_t",
+    "mode": "",
+    "modes": [
+      {
+        "flags": "U",
+        "height": 480,
+        "raw": "U:640x480p-0",
+        "refresh": 0,
+        "source": "fbdev",
+        "width": 640
+      }
+    ],
+    "modes_raw": "U:640x480p-0",
+    "present": true,
+    "rotate": 0,
+    "state": 0,
+    "stride": 2560,
+    "virtual_size": "640,960"
+  },
+  "external_fb_present": true,
+  "external_modes": [
+    {
+      "flags": "U",
+      "height": 480,
+      "raw": "U:640x480p-0",
+      "refresh": 0,
+      "source": "fbdev",
+      "width": 640
+    }
+  ],
+  "generation": 7,
+  "hardware_state": "DP_LINK_READY",
+  "last_error": null,
+  "last_mode": "off",
+  "mirror_output": "HEADLESS-1",
+  "mirror_supported": true,
+  "mode": "off",
+  "mode_choices": [
+    {
+      "label": "Mirror portrait",
+      "mode": "mirror-portrait",
+      "supported": true
+    },
+    {
+      "label": "Mirror landscape",
+      "mode": "mirror-landscape",
+      "supported": true
+    },
+    {
+      "label": "Fullscreen",
+      "mode": "fullscreen",
+      "supported": true
+    },
+    {
+      "label": "Separate desktop",
+      "mode": "desktop",
+      "supported": false
+    }
+  ],
+  "mode_fit": "fit",
+  "mode_rotation": 0,
+  "notification_id": 60,
+  "notified_generation": 7,
+  "orientation": {
+    "applied": true,
+    "auto": false,
+    "available": true,
+    "effective_orientation": 0,
+    "external_rotation": 0,
+    "live": true,
+    "logical_height": 760,
+    "logical_width": 360,
+    "mode": "portrait",
+    "physical_height": 1520,
+    "physical_width": 720,
+    "presenter_file": "/run/nuxel-wl-fb-orientation",
+    "source": "/run/nuxel-orientation/status.json",
+    "transform": 0
+  },
+  "outputs": {
+    "enabled_names": [
+      "HEADLESS-1"
+    ],
+    "error": null,
+    "external": null,
+    "names": [
+      "HEADLESS-1"
+    ],
+    "primary": {
+      "description": "Headless output 1",
+      "enabled": true,
+      "height": 1520,
+      "name": "HEADLESS-1",
+      "position": "0,0",
+      "refresh": null,
+      "scale": 2.0,
+      "transform": "normal",
+      "width": 720
+    },
+    "success": true
+  },
+  "partner": true,
+  "pd_ids": "35a3:2003",
+  "pd_type": 0,
+  "restore": {
+    "attempts": 0,
+    "generation": 7,
+    "last_mode": "off",
+    "next_at": 0.0,
+    "pending": false,
+    "reason": ""
+  },
+  "rotation": 0,
+  "schema": "nuxel.display/2",
+  "secdp": 1,
+  "selected_resolution": {
+    "height": 1080,
+    "name": "V1920X1080P60",
+    "refresh": 60,
+    "width": 1920
+  },
+  "snapshot": {
+    "audio": {
+      "available": false,
+      "blocker": "DP audio infoframe is not active (ch_hdmi_audio=70975746)",
+      "blockers": [
+        "DP audio infoframe is not active (ch_hdmi_audio=70975746)"
+      ],
+      "ch_hdmi_audio": 70975746,
+      "dp_audio_pcm": true,
+      "pcm": "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1"
+    },
+    "blocker": null,
+    "blockers": [
+      "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed."
+    ],
+    "ccic": {
+      "present": true,
+      "state": 3,
+      "usbpd_ids": "35a3:2003",
+      "usbpd_type": 0
+    },
+    "desktop_blocker": "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed.",
+    "desktop_output": null,
+    "desktop_supported": false,
+    "display_name": "Philips",
+    "dp_link": true,
+    "dp_presets": [
+      {
+        "height": 480,
+        "index": 0,
+        "name": "V640X480P60",
+        "refresh": 60,
+        "width": 640
+      },
+      {
+        "height": 480,
+        "index": 1,
+        "name": "V720X480P60",
+        "refresh": 60,
+        "width": 720
+      },
+      {
+        "height": 576,
+        "index": 2,
+        "name": "V720X576P50",
+        "refresh": 50,
+        "width": 720
+      },
+      {
+        "height": 800,
+        "index": 3,
+        "name": "V1280X800P60RB",
+        "refresh": 60,
+        "width": 1280
+      },
+      {
+        "height": 720,
+        "index": 4,
+        "name": "V1280X720P50",
+        "refresh": 50,
+        "width": 1280
+      },
+      {
+        "height": 720,
+        "index": 5,
+        "name": "V1280X720P60EXT",
+        "refresh": 60,
+        "width": 1280
+      },
+      {
+        "height": 720,
+        "index": 6,
+        "name": "V1280X720P60",
+        "refresh": 60,
+        "width": 1280
+      },
+      {
+        "height": 768,
+        "index": 7,
+        "name": "V1366X768P60",
+        "refresh": 60,
+        "width": 1366
+      },
+      {
+        "height": 1024,
+        "index": 8,
+        "name": "V1280X1024P60",
+        "refresh": 60,
+        "width": 1280
+      },
+      {
+        "height": 1080,
+        "index": 9,
+        "name": "V1920X1080P24",
+        "refresh": 24,
+        "width": 1920
+      },
+      {
+        "height": 1080,
+        "index": 10,
+        "name": "V1920X1080P25",
+        "refresh": 25,
+        "width": 1920
+      },
+      {
+        "height": 1080,
+        "index": 11,
+        "name": "V1920X1080P30",
+        "refresh": 30,
+        "width": 1920
+      },
+      {
+        "height": 900,
+        "index": 12,
+        "name": "V1600X900P59",
+        "refresh": 59,
+        "width": 1600
+      },
+      {
+        "height": 900,
+        "index": 13,
+        "name": "V1600X900P60RB",
+        "refresh": 60,
+        "width": 1600
+      },
+      {
+        "height": 1080,
+        "index": 14,
+        "name": "V1920X1080P50",
+        "refresh": 50,
+        "width": 1920
+      },
+      {
+        "height": 1080,
+        "index": 15,
+        "name": "V1920X1080P60EXT",
+        "refresh": 60,
+        "width": 1920
+      },
+      {
+        "height": 1080,
+        "index": 16,
+        "name": "V1920X1080P59",
+        "refresh": 59,
+        "width": 1920
+      },
+      {
+        "height": 1080,
+        "index": 17,
+        "name": "V1920X1080P60",
+        "refresh": 60,
+        "width": 1920
+      },
+      {
+        "height": 1200,
+        "index": 18,
+        "name": "V1920X1200P60RB",
+        "refresh": 60,
+        "width": 1920
+      },
+      {
+        "height": 1200,
+        "index": 19,
+        "name": "V1920X1200P60",
+        "refresh": 60,
+        "width": 1920
+      },
+      {
+        "height": 1080,
+        "index": 20,
+        "name": "V2560X1080P60",
+        "refresh": 60,
+        "width": 2560
+      },
+      {
+        "height": 1536,
+        "index": 21,
+        "name": "V2048X1536P60",
+        "refresh": 60,
+        "width": 2048
+      },
+      {
+        "height": 1440,
+        "index": 22,
+        "name": "V1920X1440P60",
+        "refresh": 60,
+        "width": 1920
+      },
+      {
+        "height": 1200,
+        "index": 23,
+        "name": "V2400X1200P90RELU",
+        "refresh": 90,
+        "width": 2400
+      },
+      {
+        "height": 1440,
+        "index": 24,
+        "name": "V2560X1440P60EXT",
+        "refresh": 60,
+        "width": 2560
+      },
+      {
+        "height": 1440,
+        "index": 25,
+        "name": "V2560X1440P59",
+        "refresh": 59,
+        "width": 2560
+      },
+      {
+        "height": 1440,
+        "index": 28,
+        "name": "V2560X1440P60",
+        "refresh": 60,
+        "width": 2560
+      },
+      {
+        "height": 1600,
+        "index": 29,
+        "name": "V2560X1600P60",
+        "refresh": 60,
+        "width": 2560
+      },
+      {
+        "height": 1600,
+        "index": 30,
+        "name": "V3200X1600P70",
+        "refresh": 70,
+        "width": 3200
+      },
+      {
+        "height": 1600,
+        "index": 31,
+        "name": "V3200X1600P72",
+        "refresh": 72,
+        "width": 3200
+      },
+      {
+        "height": 1440,
+        "index": 32,
+        "name": "V3440X1440P50",
+        "refresh": 50,
+        "width": 3440
+      },
+      {
+        "height": 1080,
+        "index": 33,
+        "name": "V3840X1080P60",
+        "refresh": 60,
+        "width": 3840
+      },
+      {
+        "height": 1200,
+        "index": 34,
+        "name": "V3840X1200P60",
+        "refresh": 60,
+        "width": 3840
+      },
+      {
+        "height": 1440,
+        "index": 35,
+        "name": "V3440X1440P60",
+        "refresh": 60,
+        "width": 3440
+      },
+      {
+        "height": 2160,
+        "index": 36,
+        "name": "V3840X2160P24",
+        "refresh": 24,
+        "width": 3840
+      },
+      {
+        "height": 2160,
+        "index": 37,
+        "name": "V3840X2160P25",
+        "refresh": 25,
+        "width": 3840
+      },
+      {
+        "height": 2160,
+        "index": 38,
+        "name": "V3840X2160P30",
+        "refresh": 30,
+        "width": 3840
+      },
+      {
+        "height": 2160,
+        "index": 39,
+        "name": "V4096X2160P24",
+        "refresh": 24,
+        "width": 4096
+      },
+      {
+        "height": 2160,
+        "index": 40,
+        "name": "V4096X2160P25",
+        "refresh": 25,
+        "width": 4096
+      },
+      {
+        "height": 2160,
+        "index": 41,
+        "name": "V4096X2160P30",
+        "refresh": 30,
+        "width": 4096
+      },
+      {
+        "height": 2160,
+        "index": 42,
+        "name": "V3840X2160P60EXT",
+        "refresh": 60,
+        "width": 3840
+      },
+      {
+        "height": 2160,
+        "index": 43,
+        "name": "V3840X2160P59RB",
+        "refresh": 59,
+        "width": 3840
+      },
+      {
+        "height": 2160,
+        "index": 44,
+        "name": "V3840X2160P50",
+        "refresh": 50,
+        "width": 3840
+      },
+      {
+        "height": 2160,
+        "index": 45,
+        "name": "V3840X2160P60",
+        "refresh": 60,
+        "width": 3840
+      },
+      {
+        "height": 3840,
+        "index": 46,
+        "name": "V2160X3840P72",
+        "refresh": 72,
+        "width": 2160
+      },
+      {
+        "height": 2160,
+        "index": 47,
+        "name": "V4096X2160P50",
+        "refresh": 50,
+        "width": 4096
+      },
+      {
+        "height": 2160,
+        "index": 48,
+        "name": "V4096X2160P60",
+        "refresh": 60,
+        "width": 4096
+      },
+      {
+        "height": 10,
+        "index": 49,
+        "name": "V640X10P60SACRC",
+        "refresh": 60,
+        "width": 640
+      }
+    ],
+    "dp_sec": {
+      "audio_test": "channel: 0, bit rate: 0, sample rate: 0",
+      "dex": null,
+      "dp_drm": "DRM state 0",
+      "dp_test": "0: HPD test\n1: uevent test\n2: CTS power management test\n3: set lane count, link rate\n5: link training test\n6: unplug work test\n7: forced bist mode\n8: audio bist mode(on,ch,bit,fs)\n9: HDR support(0:off 1:on 2:dummy)\n\n# gpio oe 0, sel 1, direction 1",
+      "forced_resolution": "0 : V640X480P60\n   1 : V720X480P60\n   2 : V720X576P50\n   3 : V1280X800P60RB\n   4 : V1280X720P50\n   5 : V1280X720P60EXT\n   6 : V1280X720P60\n   7 : V1366X768P60\n   8 : V1280X1024P60\n   9 : V1920X1080P24\n  10 : V1920X1080P25\n  11 : V1920X1080P30\n  12 : V1600X900P59\n  13 : V1600X900P60RB\n  14 : V1920X1080P50\n  15 : V1920X1080P60EXT\n  16 : V1920X1080P59\n  17 : V1920X1080P60\n  18 : V1920X1200P60RB\n  19 : V1920X1200P60\n  20 : V2560X1080P60\n  21 : V2048X1536P60\n  22 : V1920X1440P60\n  23 : V2400X1200P90RELU\n  24 : V2560X1440P60EXT\n  25 : V2560X1440P59\n  26 : V1440x2560P60\n  27 : V1440x2560P75\n  28 : V2560X1440P60\n  29 : V2560X1600P60\n  30 : V3200X1600P70\n  31 : V3200X1600P72\n  32 : V3440X1440P50\n  33 : V3840X1080P60\n  34 : V3840X1200P60\n  35 : V3440X1440P60\n  36 : V3840X2160P24\n  37 : V3840X2160P25\n  38 : V3840X2160P30\n  39 : V4096X2160P24\n  40 : V4096X2160P25\n  41 : V4096X2160P30\n  42 : V3840X2160P60EXT\n  43 : V3840X2160P59RB\n  44 : V3840X2160P50\n  45 : V3840X2160P60\n  46 : V2160X3840P72\n  47 : V4096X2160P50\n  48 : V4096X2160P60\n  49 : V640X10P60SACRC\n  50 : VDUMMYTIMING",
+      "monitor_info": "PHL,0x0,0x1010101",
+      "present": true
+    },
+    "extcon": [
+      {
+        "dp": true,
+        "name": "130b0000.displayport",
+        "state": "DP=1"
+      },
+      {
+        "dp": false,
+        "name": "madera-extcon",
+        "state": "MECHANICAL=0\nMICROPHONE=0\nHEADPHONE=0"
+      }
+    ],
+    "extcon_dp": true,
+    "external_fb": {
+      "bits_per_pixel": 32,
+      "blank": "",
+      "device": "19050000.decon_t",
+      "mode": "",
+      "modes": [
+        {
+          "flags": "U",
+          "height": 480,
+          "raw": "U:640x480p-0",
+          "refresh": 0,
+          "source": "fbdev",
+          "width": 640
+        }
+      ],
+      "modes_raw": "U:640x480p-0",
+      "present": true,
+      "rotate": 0,
+      "state": 0,
+      "stride": 2560,
+      "virtual_size": "640,960"
+    },
+    "external_fb_present": true,
+    "external_modes": [
+      {
+        "flags": "U",
+        "height": 480,
+        "raw": "U:640x480p-0",
+        "refresh": 0,
+        "source": "fbdev",
+        "width": 640
+      }
+    ],
+    "framebuffers": {
+      "fb0": {
+        "bits_per_pixel": 32,
+        "blank": "",
+        "device": "19030000.decon_f",
+        "mode": "",
+        "modes": [
+          {
+            "flags": "U",
+            "height": 3040,
+            "raw": "U:1440x3040p-0",
+            "refresh": 0,
+            "source": "fbdev",
+            "width": 1440
+          }
+        ],
+        "modes_raw": "U:1440x3040p-0",
+        "present": true,
+        "rotate": 0,
+        "state": 0,
+        "stride": 5760,
+        "virtual_size": "1440,6080"
+      },
+      "fb1": {
+        "bits_per_pixel": 32,
+        "blank": "",
+        "device": "19050000.decon_t",
+        "mode": "",
+        "modes": [
+          {
+            "flags": "U",
+            "height": 480,
+            "raw": "U:640x480p-0",
+            "refresh": 0,
+            "source": "fbdev",
+            "width": 640
+          }
+        ],
+        "modes_raw": "U:640x480p-0",
+        "present": true,
+        "rotate": 0,
+        "state": 0,
+        "stride": 2560,
+        "virtual_size": "640,960"
+      }
+    },
+    "internal_fb": {
+      "bits_per_pixel": 32,
+      "blank": "",
+      "device": "19030000.decon_f",
+      "mode": "",
+      "modes": [
+        {
+          "flags": "U",
+          "height": 3040,
+          "raw": "U:1440x3040p-0",
+          "refresh": 0,
+          "source": "fbdev",
+          "width": 1440
+        }
+      ],
+      "modes_raw": "U:1440x3040p-0",
+      "present": true,
+      "rotate": 0,
+      "state": 0,
+      "stride": 5760,
+      "virtual_size": "1440,6080"
+    },
+    "mirror_output": "HEADLESS-1",
+    "mirror_supported": true,
+    "mode_choices": [
+      {
+        "label": "Mirror portrait",
+        "mode": "mirror-portrait",
+        "supported": true
+      },
+      {
+        "label": "Mirror landscape",
+        "mode": "mirror-landscape",
+        "supported": true
+      },
+      {
+        "label": "Fullscreen",
+        "mode": "fullscreen",
+        "supported": true
+      },
+      {
+        "label": "Separate desktop",
+        "mode": "desktop",
+        "supported": false
+      }
+    ],
+    "monitor_info_raw": "PHL,0x0,0x1010101",
+    "outputs": {
+      "enabled_names": [
+        "HEADLESS-1"
+      ],
+      "error": null,
+      "external": null,
+      "names": [
+        "HEADLESS-1"
+      ],
+      "primary": {
+        "description": "Headless output 1",
+        "enabled": true,
+        "height": 1520,
+        "name": "HEADLESS-1",
+        "position": "0,0",
+        "refresh": null,
+        "scale": 2.0,
+        "transform": "normal",
+        "width": 720
+      },
+      "success": true
+    },
+    "partner": true,
+    "pd_identity": true,
+    "pd_ids": "35a3:2003",
+    "pd_type": 0,
+    "schema": "nuxel.display/2",
+    "secdp": 1,
+    "secdp_msg": 0,
+    "selected_preset": {
+      "height": 1080,
+      "index": 17,
+      "name": "V1920X1080P60",
+      "refresh": 60,
+      "width": 1920
+    },
+    "selected_resolution": {
+      "height": 1080,
+      "name": "V1920X1080P60",
+      "refresh": 60,
+      "width": 1920
+    },
+    "state": "DP_LINK_READY",
+    "switches": {
+      "ccic_dock": 0,
+      "ch_hdmi_audio": 70975746,
+      "dock": 0,
+      "secdp": 1,
+      "secdp_msg": 0,
+      "uart3": 0
+    },
+    "timestamp": 1794247823.1128595,
+    "typec_ports": [
+      {
+        "data_role": "[host] device",
+        "name": "port0",
+        "partner": true,
+        "partner_accessory_mode": "none",
+        "partner_name": null,
+        "partner_pd": "yes",
+        "power_operation_mode": "usb_power_delivery",
+        "power_role": "[source] sink",
+        "usb_power_delivery_revision": "3"
+      }
+    ]
+  },
+  "state": "DP_LINK_READY",
+  "success": true,
+  "uevent_listener": true,
+  "updated": 1794247823.1138904
+}

@@ -1,12 +1,16 @@
 # Nuxel VNC screen sharing example.
-# Direct owner-LAN listener on TCP 5900.  The privileged controller generates
-# the live file with the current WLAN IPv4 address, enable_auth=true and
-# enable_pam=true; this example is never used as an unauthenticated fallback.
+# The privileged controller generates the live file with the current WLAN
+# IPv4 address and PAM as the local nuxel account.  There is no VNC password.
 #
-# wayvnc 0.9.1 syntax:
-#   enable_auth=true requires certificate_file + private_key_file.
-#   enable_pam=true uses /etc/pam.d/wayvnc for the local nuxel account.
-#   rsa_private_key_file enables the RSA-AES security type.
+# This build uses the patched wayvnc 0.10.2 from /opt/nuxel-wayvnc:
+#   enable_auth=true + enable_pam=true -> local username/password via PAM
+#   certificate_file/private_key_file -> VeNCrypt TLS
+#   rsa_private_key_file              -> RSA-AES
+#   relax_encryption=true             -> Apple DH, which Jump Desktop negotiates
+#
+# The launcher runs wayvnc without -R: in 0.10.2 -R disables the resizing that
+# live orientation changes rely on.  Client-initiated resizes are rejected in
+# the patched build so RDP/VNC can never change the phone's panel mode.
 address=127.0.0.1
 port=5900
 enable_auth=true
@@ -14,4 +18,5 @@ enable_pam=true
 certificate_file=/etc/nuxel/remote-desktop/vnc/tls_cert.pem
 private_key_file=/etc/nuxel/remote-desktop/vnc/tls_key.pem
 rsa_private_key_file=/etc/nuxel/remote-desktop/vnc/rsa_key.pem
+relax_encryption=true
 use_relative_paths=false

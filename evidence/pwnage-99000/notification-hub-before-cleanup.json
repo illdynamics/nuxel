@@ -1,0 +1,438 @@
+{
+  "success": true,
+  "notifications": [
+    {
+      "id": 32,
+      "app_id": "org.nuxel.Display",
+      "app_name": "Nuxel Display",
+      "summary": "External display connected",
+      "body": "BNQ 0x7f54 \u00b7 640x480\nChoose how to use the connected display.",
+      "timestamp": "2026-11-09T15:53:21.229869",
+      "received_at": "2026-11-09T15:53:21.229869",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "mirror",
+        "Mirror screen",
+        "desktop",
+        "Separate desktop",
+        "settings",
+        "Display settings"
+      ],
+      "hints": {
+        "nuxel.display.generation": 2,
+        "nuxel.display.state": "DP_LINK_READY",
+        "nuxel.display.modes": [
+          {
+            "raw": "U:640x480p-0",
+            "width": 640,
+            "height": 480,
+            "refresh": 0,
+            "flags": "U",
+            "source": "fbdev"
+          }
+        ],
+        "nuxel.display.display_name": "BNQ 0x7f54",
+        "nuxel.display.desktop_available": false,
+        "nuxel.display.blocker": null
+      },
+      "source": "nuxel-displayd",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 30,
+      "app_id": "org.nuxel.Display",
+      "app_name": "Nuxel Display",
+      "summary": "External display connected",
+      "body": "HTTP bridge test \u00b7 1920x1080@60\nChoose how to use the connected display.",
+      "timestamp": "2026-11-09T15:52:53.813969",
+      "received_at": "2026-11-09T15:52:53.813969",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "mirror",
+        "Mirror screen",
+        "desktop",
+        "Separate desktop",
+        "settings",
+        "Display settings"
+      ],
+      "hints": {
+        "nuxel.display.generation": 1,
+        "nuxel.display.state": "PARTNER_NO_PD",
+        "nuxel.display.modes": [
+          {
+            "raw": "1920x1080p-60",
+            "width": 1920,
+            "height": 1080,
+            "refresh": 60,
+            "flags": "U",
+            "source": "test"
+          }
+        ],
+        "nuxel.display.display_name": "HTTP bridge test",
+        "nuxel.display.desktop_available": false,
+        "nuxel.display.blocker": "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start."
+      },
+      "source": "nuxel-displayd",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 29,
+      "app_id": "org.nuxel.Display",
+      "app_name": "Nuxel Display",
+      "summary": "External display mode failed",
+      "body": "External display is not ready: Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start.",
+      "timestamp": "2026-11-09T15:52:47.173080",
+      "received_at": "2026-11-09T15:52:47.173080",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "mirror",
+        "Retry mirror",
+        "desktop",
+        "Try separate desktop",
+        "off",
+        "Internal only"
+      ],
+      "hints": {
+        "nuxel.display.generation": 0,
+        "nuxel.display.state": "PARTNER_NO_PD",
+        "nuxel.display.modes": [
+          {
+            "raw": "U:640x480p-0",
+            "width": 640,
+            "height": 480,
+            "refresh": 0,
+            "flags": "U",
+            "source": "fbdev"
+          }
+        ],
+        "nuxel.display.display_name": null,
+        "nuxel.display.desktop_available": false,
+        "nuxel.display.blocker": "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start."
+      },
+      "source": "nuxel-displayd",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 28,
+      "app_id": "org.nuxel.Display",
+      "app_name": "Nuxel Display",
+      "summary": "External display connected",
+      "body": "BenQ SW320 (test) \u00b7 1920x1080@60\nChoose how to use the connected display.",
+      "timestamp": "2026-11-09T15:49:01.755149",
+      "received_at": "2026-11-09T15:49:01.755149",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "mirror",
+        "Mirror screen",
+        "desktop",
+        "Separate desktop",
+        "settings",
+        "Display settings"
+      ],
+      "hints": {
+        "nuxel.display.generation": 1,
+        "nuxel.display.state": "PARTNER_NO_PD",
+        "nuxel.display.modes": [
+          {
+            "raw": "1920x1080p-60",
+            "width": 1920,
+            "height": 1080,
+            "refresh": 60,
+            "flags": "U",
+            "source": "test"
+          }
+        ],
+        "nuxel.display.display_name": "BenQ SW320 (test)",
+        "nuxel.display.desktop_available": false,
+        "nuxel.display.blocker": "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start."
+      },
+      "source": "nuxel-displayd",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 27,
+      "app_id": "org.nuxel.Test",
+      "app_name": "org.nuxel.Test",
+      "summary": "Test",
+      "body": "hello",
+      "timestamp": "2026-11-09T15:48:30.724943",
+      "received_at": "2026-11-09T15:48:30.724943",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [],
+      "hints": {},
+      "source": "nuxel-api",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 26,
+      "app_id": "org.nuxel.Display",
+      "app_name": "Nuxel Display",
+      "summary": "External display connected",
+      "body": "Test display \u00b7 1920x1080@60\nChoose how to use the connected display.",
+      "timestamp": "2026-11-09T15:46:11.559569",
+      "received_at": "2026-11-09T15:46:11.559569",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "mirror",
+        "Mirror screen",
+        "desktop",
+        "Separate desktop",
+        "settings",
+        "Display settings"
+      ],
+      "hints": {
+        "nuxel.display.generation": 1,
+        "nuxel.display.state": "PARTNER_NO_PD",
+        "nuxel.display.modes": [
+          {
+            "raw": "1920x1080p-60",
+            "width": 1920,
+            "height": 1080,
+            "refresh": 60,
+            "flags": "U",
+            "source": "test"
+          }
+        ],
+        "nuxel.display.display_name": "Test display",
+        "nuxel.display.desktop_available": false,
+        "nuxel.display.blocker": "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start."
+      },
+      "source": "nuxel-displayd",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 25,
+      "app_id": "com.rtosta.zapzap",
+      "app_name": "Application",
+      "summary": "Sheila",
+      "body": "Als hij zegt dat hij wol daten doe ik toch nooit",
+      "timestamp": "2026-11-09T15:08:26.338258",
+      "received_at": "2026-11-09T15:08:26.338258",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "default",
+        ""
+      ],
+      "hints": {
+        "nuxel.hints_truncated": true,
+        "nuxel.hints_bytes": 2803265,
+        "nuxel.hints_keys": [
+          "desktop-entry",
+          "image-data",
+          "urgency"
+        ]
+      },
+      "source": "freedesktop",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 23,
+      "app_id": "com.rtosta.zapzap",
+      "app_name": "Application",
+      "summary": "Sheila",
+      "body": "Jij bent my man",
+      "timestamp": "2026-11-09T15:07:35.739686",
+      "received_at": "2026-11-09T15:07:35.739686",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "default",
+        ""
+      ],
+      "hints": {
+        "nuxel.hints_truncated": true,
+        "nuxel.hints_bytes": 2803265,
+        "nuxel.hints_keys": [
+          "desktop-entry",
+          "image-data",
+          "urgency"
+        ]
+      },
+      "source": "freedesktop",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 20,
+      "app_id": "com.rtosta.zapzap",
+      "app_name": "Application",
+      "summary": "Sheila",
+      "body": "Hij wil da graag doen",
+      "timestamp": "2026-11-09T15:06:12.305950",
+      "received_at": "2026-11-09T15:06:12.305950",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "default",
+        ""
+      ],
+      "hints": {
+        "nuxel.hints_truncated": true,
+        "nuxel.hints_bytes": 2803265,
+        "nuxel.hints_keys": [
+          "desktop-entry",
+          "image-data",
+          "urgency"
+        ]
+      },
+      "source": "freedesktop",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 19,
+      "app_id": "com.rtosta.zapzap",
+      "app_name": "Application",
+      "summary": "Sheila",
+      "body": "Tsjaa ik heb nergens om gevraagd ook",
+      "timestamp": "2026-11-09T15:06:05.074067",
+      "received_at": "2026-11-09T15:06:05.074067",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "default",
+        ""
+      ],
+      "hints": {
+        "nuxel.hints_truncated": true,
+        "nuxel.hints_bytes": 2803265,
+        "nuxel.hints_keys": [
+          "desktop-entry",
+          "image-data",
+          "urgency"
+        ]
+      },
+      "source": "freedesktop",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 15,
+      "app_id": "com.rtosta.zapzap",
+      "app_name": "Application",
+      "summary": "Sheila",
+      "body": "Hij vroeg of ik hem wilde deblokkeren",
+      "timestamp": "2026-11-09T15:03:41.724208",
+      "received_at": "2026-11-09T15:03:41.724208",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "default",
+        ""
+      ],
+      "hints": {
+        "nuxel.hints_truncated": true,
+        "nuxel.hints_bytes": 2803265,
+        "nuxel.hints_keys": [
+          "desktop-entry",
+          "image-data",
+          "urgency"
+        ]
+      },
+      "source": "freedesktop",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 13,
+      "app_id": "com.rtosta.zapzap",
+      "app_name": "Application",
+      "summary": "Sheila",
+      "body": "Is al die tijd al niet geweest",
+      "timestamp": "2026-11-09T15:02:34.893518",
+      "received_at": "2026-11-09T15:02:34.893518",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "default",
+        ""
+      ],
+      "hints": {
+        "nuxel.hints_truncated": true,
+        "nuxel.hints_bytes": 2803265,
+        "nuxel.hints_keys": [
+          "desktop-entry",
+          "image-data",
+          "urgency"
+        ]
+      },
+      "source": "freedesktop",
+      "replaces_id": null,
+      "suppressed": false
+    },
+    {
+      "id": 12,
+      "app_id": "com.rtosta.zapzap",
+      "app_name": "Application",
+      "summary": "Sheila",
+      "body": "Hij blijft willen bestellen",
+      "timestamp": "2026-11-09T15:02:13.638248",
+      "received_at": "2026-11-09T15:02:13.638248",
+      "read_at": null,
+      "archived_at": null,
+      "urgency": "normal",
+      "icon": "",
+      "actions": [
+        "default",
+        ""
+      ],
+      "hints": {
+        "nuxel.hints_truncated": true,
+        "nuxel.hints_bytes": 2803265,
+        "nuxel.hints_keys": [
+          "desktop-entry",
+          "image-data",
+          "urgency"
+        ]
+      },
+      "source": "freedesktop",
+      "replaces_id": null,
+      "suppressed": false
+    }
+  ],
+  "counts": {
+    "active": 13,
+    "unread": 13,
+    "read": 0,
+    "archived": 9,
+    "total": 22
+  }
+}

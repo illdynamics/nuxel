@@ -126,6 +126,10 @@
             catch (e) { return { success: false }; }
         },
         sendNotification: function (title, body) { return shared().sendNotification(title, body); },
+        getDisplayStatus: function () { return shared().getDisplayStatus(); },
+        setDisplayMode: function (mode) { return shared().setDisplayMode(mode); },
+        getDisplayOutputs: function () { return shared().getDisplayOutputs(); },
+        notifyTestDisplay: function (name) { return shared().notifyTestDisplay(name); },
         // Read the notification store that the daemon persists to the canonical
         // JSON source /var/lib/nuxel/notifications.json (exposed via the bridge).
         // Returns { success, notifications } where notifications is the array of

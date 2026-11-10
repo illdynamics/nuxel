@@ -74,8 +74,8 @@ def main():
           "native top bar publishes state and prefers the persistent foreground watcher")
     check('bar_hide();' in statusbar and 'preloading_active()' in statusbar,
           "native top bar hides on lock/Home/Home-preload and late layer closure")
-    check("BAR_STRIP_INPUT_HEIGHT" in statusbar and "strip_mode" in statusbar and
-          "bar_revealed" in statusbar and "touch_down" in statusbar,
+    check("BAR_STRIP_HEIGHT" in statusbar and "strip_mode" in statusbar and
+          "bar_set_level" in statusbar and "touch_down" in statusbar,
           "native top bar bounds its touch band to the strip/reveal state")
     check("STATUSBAR_HIDDEN reason=lock_or_home" in statusbar,
           "existing lock/home hide receipt remains intact")

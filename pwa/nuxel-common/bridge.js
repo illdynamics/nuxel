@@ -564,6 +564,13 @@ export class NuxelBridgeClient {
             case 'audio.test-audio':
             case 'audio.play-sound':
             case 'audio.sinks':
+            case 'sound.outputs':
+            case 'sound.audio-status':
+            case 'sound.set-routing':
+            case 'sound.select-output':
+            case 'sound.set-volume':
+            case 'sound.set-muted':
+            case 'sound.test-output':
             case 'display.status':
             case 'location.status':
             case 'location.request':
@@ -665,6 +672,22 @@ export class NuxelBridgeClient {
 
     async sendNotification(title, body) {
         return this.call('notifications', 'send', { title, body });
+    }
+
+    async getDisplayStatus() {
+        return this.call('display', 'status', {});
+    }
+
+    async setDisplayMode(mode) {
+        return this.call('display', 'set-mode', { mode: String(mode || '') });
+    }
+
+    async getDisplayOutputs() {
+        return this.call('display', 'outputs', {});
+    }
+
+    async notifyTestDisplay(displayName) {
+        return this.call('display', 'notify-test', { display_name: displayName || 'Test display' });
     }
 
     async getCapabilities() {

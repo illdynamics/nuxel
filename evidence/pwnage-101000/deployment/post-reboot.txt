@@ -1,0 +1,59 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-09T18:15:17Z
+ 19:15:17 up 0 min,  0 user,  load average: 8.20, 2.20, 0.75
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+nuxel-orientationd       active
+nuxel-wayland            active
+nuxel-wl-fb              active
+nuxel-displayd           active
+nuxel-wl-fb-ext          active
+--- ext.state
+state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=120 nz=4796 color=argb orient_eff=0 orient_tf=0
+--- orientation
+transform=0
+presenter_rotation=0
+effective_orientation=0
+output=HEADLESS-1
+logical_width=360
+logical_height=760
+backend=wlr-randr
+applied=1
+--- status
+state          : DP_LINK_READY
+mode           : mirror-portrait
+generation     : 1
+rotation       : 0
+orientation    : portrait (effective=0 transform=0 external=0 auto=True)
+notification   : 61
+display        : Philips
+mirror         : ready
+separate       : unavailable
+mirror output  : HEADLESS-1
+desktop output : none
+blocker        : none
+--- irq
+decon_t delta_2s=121
+--- displayd boot restore
+Nov 09 19:14:42 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 19:14:42 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:14:42 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 19:14:42 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:14:42 nuxel-displayd: monitoring root=/ poll=0.20s state=DISCONNECTED auto_orientation=True
+Nov 09 19:14:42 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:14:42 nuxel-displayd: uevent listener active (NETLINK_KOBJECT_UEVENT)
+Nov 09 19:15:05 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:05 nuxel-displayd: event state_changed generation=0 state=PARTNER_NO_PD
+Nov 09 19:15:07 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:07 nuxel-displayd: event connected generation=1 state=DP_LINK_READY
+Nov 09 19:15:07 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:07 nuxel-displayd: notification #61: External display connected
+Nov 09 19:15:07 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:07 nuxel-displayd: restore scheduled generation=1 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:15:07 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:07 nuxel-displayd: restore attempt 1/3 generation=1 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:15:07 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:07 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=0 transform=0 external_rotation=0
+Nov 09 19:15:07 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:07 nuxel-displayd: notification #61: External display active
+Nov 09 19:15:07 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:07 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:15:07 WIN-CLIENT nuxel-displayd[6164]: 2026-11-09T19:15:07 nuxel-displayd: restore complete generation=1 mode=mirror-portrait in 0.26s
+--- internal unit
+6152 /usr/lib/nuxel/nuxel-wl-fb
