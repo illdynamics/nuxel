@@ -44,7 +44,7 @@
 // behind Stevia and allow the manifest/viewport to follow all seven modes.
 // v0.8.0 / PWNAGE-90000: bump for the shell reliability changes
 // surfaces, the launcher handoff fixes and the release version lockstep.
-const CACHE_VERSION = 'v094-p94000';
+const CACHE_VERSION = 'v095-p106000';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

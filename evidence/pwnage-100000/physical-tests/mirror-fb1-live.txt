@@ -1,0 +1,136 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== ext state file ===
+control.sock
+ext-start.sh
+ext.log
+ext.state
+status.json
+=== dp_drm ===
+DRM state 0
+=== ch_hdmi_audio ===
+71237634
+=== fb1 mode ===
+640,960
+32
+2560
+=== fb1 pixel stats ===
+/dev/fb1 ERR [Errno 19] No such device
+/dev/fb0 ERR [Errno 19] No such device
+=== kernel log after mirror start ===
+Nov 09 17:27:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:27:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3db6711
+Nov 09 17:27:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:27:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:08 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:08 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 17:27:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:27:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3ef5f11
+Nov 09 17:27:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:27:12 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:12 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:12 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:12 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:14
+Nov 09 17:27:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:27:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:39dc411
+Nov 09 17:27:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:27:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:16 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:16 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:16 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:16 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 17:27:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:27:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:377fb11
+Nov 09 17:27:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:27:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:14
+Nov 09 17:27:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:27:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3134211
+Nov 09 17:27:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:27:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:22 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 17:27:22 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:22 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:35da711
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: dex state: 0
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: DRM state 0
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: decon_release + : 2
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: decon_release - : 2
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: decon_release + : 0
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: decon-0 decon_disable +
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: _decon_disable: elapsed time to flush decon-0 thread: 0usec, remaining_frame: 0
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: _decon_disable elapsed time to disable interrupt: 16835usec
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: _decon_disable: elapsed time to stop decon reg: 16890usec
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: _decon_disable: elapsed time to stop dpp: 16900usec
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: _decon_disable: elapsed time to disable dsim: 159815usec
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-decon 19030000.decon_f: pm_relax
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: _decon_disable: totol elapsed time: 159862usec
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: decon-0 decon_disable - (state:ON -> OFF)
+Nov 09 17:27:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: decon_release - : 0

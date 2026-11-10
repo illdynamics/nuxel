@@ -1,0 +1,382 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== identity ===
+uid=0(root) gid=0(root) groups=0(root) context=unconfined_u:unconfined_r:unconfined_t:s0
+2001-1c00-4d09-8a00-162b-e49d-dc7c-4128
+Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820
+NAME="Fedora Linux"
+VERSION="43 (Forty Three)"
+RELEASE_TYPE=stable
+ID=fedora
+VERSION_ID=43
+VERSION_CODENAME=""
+PRETTY_NAME="Fedora Linux 43 (Forty Three)"
+ANSI_COLOR="0;38;2;60;110;180"
+LOGO=fedora-logo-icon
+CPE_NAME="cpe:/o:fedoraproject:fedora:43"
+DEFAULT_HOSTNAME="fedora"
+HOME_URL="https://fedoraproject.org/"
+DOCUMENTATION_URL="https://docs.fedoraproject.org/en-US/fedora/f43/"
+SUPPORT_URL="https://ask.fedoraproject.org/"
+BUG_REPORT_URL="https://bugzilla.redhat.com/"
+REDHAT_BUGZILLA_PRODUCT="Fedora"
+REDHAT_BUGZILLA_PRODUCT_VERSION=43
+REDHAT_SUPPORT_PRODUCT="Fedora"
+REDHAT_SUPPORT_PRODUCT_VERSION=43
+SUPPORT_END=2026-12-02
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+=== version surfaces ===
+--- /etc/nuxel-version
+MISSING
+--- /opt/nuxel/VERSION
+MISSING
+--- /usr/share/nuxel/VERSION
+-rw-r--r--. 1 root root 12 Nov  7 16:48 /usr/share/nuxel/VERSION
+v0.7.9-beta
+
+--- /usr/share/nuxel/pwa/nuxel-common/bridge-version.json
+-rw-r--r--. 1 root root 1597 Nov  8 11:06 /usr/share/nuxel/pwa/nuxel-common/bridge-version.json
+{
+  "schema": "nuxel.bridge-version/1",
+  "bridge_version": "1",
+  "host_version": "0.8.1-beta",
+  "policy": "reject-on-mismatch",
+  "pinned_on": "2026-11-07",
+  "app_manifest_field": "nuxel.bridge_version",
+  "http_header": "X-Nuxel-Bridge-Version",
+  "dbus_property": "org.nuxel.Bridge.BridgeVersion",
+  "canonical_registry": "pwa/nuxel-common/app-registry.json",
+  "enforcement": {
+    "pwa_client": "pwa/nuxel-common/bridge.js (NUXEL_BRIDGE_VERSION) \u2014 a ping that does not declare this version is a version MISMATCH, never a silent mock downgrade",
+    "http_bridge": "services/nuxel-bridge/src/api.py \u2014 /api/v1/ping and /api/v1/health publish bridge_version; a request carrying a mismatching X-Nuxel-Bridge-Version is answered 409 version_mismatch (loud, never silently rejected)",
+    "dbus_bridge": "services/nuxel-bridge/src/bridge.py \u2014 Ping() publishes bridge_version",
+    "verifier": "tools/s10plus/a33/verify-app-registry.py \u2014 asserts this file, bridge.js's NUXEL_BRIDGE_VERSION, every app manifest's nuxel.bridge_version and the installed systemd Environment= pins all agree"
+  },
+  "history": [
+    {
+      "bridge_version": "1",
+      "since": "A32/A33",
+      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+    }
+  ],
+  "note": "bridge_version is the PWA<->host PROTOCOL contract declared by every app manifest. host_version is the implementation version of the nuxel-bridge processes and is allowed to move without a manifest change."
+}
+
+--- /etc/nuxel/bridge-version.json
+-rw-r--r--. 1 root root 1597 Nov  8 11:06 /etc/nuxel/bridge-version.json
+{
+  "schema": "nuxel.bridge-version/1",
+  "bridge_version": "1",
+  "host_version": "0.8.1-beta",
+  "policy": "reject-on-mismatch",
+  "pinned_on": "2026-11-07",
+  "app_manifest_field": "nuxel.bridge_version",
+  "http_header": "X-Nuxel-Bridge-Version",
+  "dbus_property": "org.nuxel.Bridge.BridgeVersion",
+  "canonical_registry": "pwa/nuxel-common/app-registry.json",
+  "enforcement": {
+    "pwa_client": "pwa/nuxel-common/bridge.js (NUXEL_BRIDGE_VERSION) \u2014 a ping that does not declare this version is a version MISMATCH, never a silent mock downgrade",
+    "http_bridge": "services/nuxel-bridge/src/api.py \u2014 /api/v1/ping and /api/v1/health publish bridge_version; a request carrying a mismatching X-Nuxel-Bridge-Version is answered 409 version_mismatch (loud, never silently rejected)",
+    "dbus_bridge": "services/nuxel-bridge/src/bridge.py \u2014 Ping() publishes bridge_version",
+    "verifier": "tools/s10plus/a33/verify-app-registry.py \u2014 asserts this file, bridge.js's NUXEL_BRIDGE_VERSION, every app manifest's nuxel.bridge_version and the installed systemd Environment= pins all agree"
+  },
+  "history": [
+    {
+      "bridge_version": "1",
+      "since": "A32/A33",
+      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+    }
+  ],
+  "note": "bridge_version is the PWA<->host PROTOCOL contract declared by every app manifest. host_version is the implementation version of the nuxel-bridge processes and is allowed to move without a manifest change."
+}
+
+--- /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+-rw-r--r--. 1 root root 72030 Nov  8 17:37 /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+// Nuxel Status Bar — v0.8.1-beta
+//
+// SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
+// v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
+// phone silently ran older status-bar behaviour than the build everyone tested.
+// The version below is now a machine-readable constant that the launcher reports
+// on its own evidence channel and that
+// tools/s10plus/a33/tests/launcher-registry-test.js asserts against the repo - a
+// stale device copy is therefore DETECTED instead of tolerated, and the service
+// worker cache key (sw.js CACHE_VERSION) is bumped for the same revision so a
+// stale cached bundle is invalidated deterministically.
+// Real-wired to the HTTP bridge (/api/v1/phone/status) and to the same
+// notification JSON source the daemon persists (/var/lib/nuxel/notifications.json,
+// surfaced via the bridge as `notifications/list`). Polls every 5 seconds in
+// dev, resilient to bridge failures.
+
+class StatusBar {
+    // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
+    // (CACHE_VERSION) - the registry test fails if the three ever diverge.
+    static get VERSION() { return '0.8.1-beta'; }
+
+    constructor() {
+        this.state = {
+            // Never draw a carrier signal merely because Home has not received
+            // a hardware report yet.  In particular, a generic ethernet/Wi-Fi
+            // connection is not evidence of a registered modem or inserted SIM.
+            signalLevel: 0,
+            signalMax: 4,
+            mobileNetwork: false,
+            cellularState: 'unknown',
+            operator: '',
+            wifiConnected: false,
+            wifiState: 'unavailable',
+            // Radio power is distinct from link state.  null = unknown.
+            wifiRadioOn: null,
+            // Bluetooth is a real radio fact, independent of Wi-Fi.  null is
+            // UNKNOWN: the indicator stays hidden until a hardware-backed
+            // reading says the adapter is powered.
+=== rpm nuxel ===
+=== mounts/storage ===
+/ /dev/sda31 ext4 rw,relatime,seclabel,errors=remount-ro,data=ordered
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda31      111G   35G   72G  33% /
+               total        used        free      shared  buff/cache   available
+Mem:           7.2Gi       3.6Gi       170Mi       244Mi       3.8Gi       3.7Gi
+Swap:             0B          0B          0B
+=== failed units ===
+=== running nuxel units ===
+  NetworkManager.service                  loaded active running Network Manager
+  nuxel-app-ferdium-1794156588130.service loaded active running [systemd-run] /usr/bin/flatpak run --env=LIBGL_ALWAYS_SOFTWARE=1 --env=GALLIUM_DRIVER=llvmpipe --env=MESA_LOADER_DRIVER_OVERRIDE=llvmpipe --env=GSK_RENDERER=cairo --env=GDK_BACKEND=wayland --env=QT_QPA_PLATFORM=wayland --env=GTK_APPLICATION_PREFER_DARK_THEME=1 --env=GTK_THEME=Adwaita:dark --env=ELECTRON_OZONE_PLATFORM_HINT=wayland --env=ZYPAK_ZYGOTE_STRATEGY_SPAWN=0 org.ferdium.Ferdium --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --no-sandbox --disable-dev-shm-usage
+  nuxel-audio-session.service             loaded active running Nuxel standalone PipeWire/WirePlumber audio session
+  nuxel-bridge.service                    loaded active running Nuxel Bridge - PWA to Native Phone Service Mediator
+  nuxel-button-manager.service            loaded active running Nuxel hardware button and gesture manager (single owner of gpio_keys)
+  nuxel-clockd.service                    loaded active running Nuxel background alarm and timer scheduler
+  nuxel-geoclue-agent.service             loaded active running Nuxel GeoClue2 agent for the nuxel-bridge UID
+  nuxel-haptics.service                   loaded active running Nuxel Samsung timed-output haptics service
+  nuxel-http-bridge.service               loaded active running Nuxel HTTP Bridge API
+  nuxel-metrics.service                   loaded active running Nuxel on-demand Home hardware metrics
+  nuxel-nfcd.service                      loaded active running Nuxel NFC controller service (Samsung sec-nfc transport)
+  nuxel-notifications.service             loaded active running Nuxel Notification Hub
+  nuxel-orientationd.service              loaded active running Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+  nuxel-portal.service                    loaded active running Nuxel Portal Daemon
+  nuxel-soundd.service                    loaded active running Nuxel central sound manager (persistent PipeWire cue stream)
+  nuxel-touch-arm.service                 loaded active running Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+  nuxel-usb-mode-monitor.service          loaded active running Nuxel USB mode host-disconnect monitor
+  nuxel-watchdog-keep.service             loaded active running Nuxel software watchdog keep-alive (softdog.soft_margin=100)
+  nuxel-wayland.service                   loaded active running Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+  nuxel-web.service                       loaded active running Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+  nuxel-wl-fb.service                     loaded active running Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+  seatd.service                           loaded active running Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+=== nuxel unit files ===
+nuxel-abox-firmware-reload.service           static          -
+nuxel-animation.service                      disabled        disabled
+nuxel-app-ferdium-1794156588130.service      transient       -
+nuxel-app-prewarm.service                    enabled         disabled
+nuxel-audio-route-retry.service              static          -
+nuxel-audio-route.service                    enabled         disabled
+nuxel-audio-session.service                  static          -
+nuxel-bluetooth.service                      static          -
+nuxel-boot-sound.service                     static          -
+nuxel-bootcap.service                        static          -
+nuxel-bootmode-guard.service                 enabled         disabled
+nuxel-bootmode-oneshot.service               enabled         disabled
+nuxel-bootmode-reboot.service                disabled        disabled
+nuxel-bridge.service                         enabled         disabled
+nuxel-button-manager.service                 enabled         disabled
+nuxel-camera-portal.service                  disabled        disabled
+nuxel-charger-mode-recovery.service          enabled         disabled
+nuxel-clockd.service                         enabled         disabled
+nuxel-console.service                        disabled        disabled
+nuxel-device-permissions.service             enabled         disabled
+nuxel-fallback.service                       enabled         disabled
+nuxel-firstlight.service                     disabled        disabled
+nuxel-fuse-access.service                    enabled         disabled
+nuxel-geoclue-agent.service                  enabled         disabled
+nuxel-haptics-bridge.service                 disabled        disabled
+nuxel-haptics.service                        enabled         disabled
+nuxel-http-bridge.service                    enabled         disabled
+nuxel-interface-state.service                enabled         disabled
+nuxel-keyboard-apply.service                 static          -
+nuxel-metrics.service                        static          -
+nuxel-mic-route.service                      static          -
+nuxel-microsd-automount.service              static          -
+nuxel-mtp.service                            enabled         disabled
+nuxel-network-udev-seed.service              enabled         disabled
+nuxel-nfcd.service                           enabled         disabled
+nuxel-notifications.service                  enabled         disabled
+nuxel-orientationd.service                   enabled         disabled
+nuxel-permd.service                          disabled        disabled
+nuxel-portal.service                         enabled         disabled
+nuxel-power-mode.service                     disabled        disabled
+nuxel-preload-cinema.service                 static          -
+nuxel-remote-vnc.service                     static          -
+nuxel-rtc-check.service                      disabled        disabled
+nuxel-soundd.service                         enabled         disabled
+nuxel-touch-arm.service                      enabled         disabled
+nuxel-ui-fallback.service                    disabled        disabled
+nuxel-ui.service                             disabled        disabled
+nuxel-usb-mode-monitor.service               enabled         disabled
+nuxel-usb-mode-restore.service               enabled         disabled
+nuxel-verbose-boot.service                   disabled        disabled
+nuxel-watchdog-keep.service                  enabled         disabled
+nuxel-wayland.service                        enabled         disabled
+nuxel-web.service                            enabled         disabled
+nuxel-wifi.service                           enabled         disabled
+nuxel-wl-fb.service                          enabled         disabled
+xrdp-sesman.service                          disabled        disabled
+xrdp.service                                 disabled        disabled
+=== processes ===
+   3507 root        05:36:09 /opt/nuxel/nuxel-console /newroot
+   3508 root        05:36:09 /opt/nuxel/nuxel-console /newroot
+   5380 root        05:36:03 python3 /usr/libexec/nuxel/nuxel-clockd
+   5383 nuxel-b+    05:36:03 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+   5387 root        05:36:03 python3 /usr/lib/nuxel/nuxel-hapticsd.py
+   5391 root        05:36:03 /usr/bin/python3 -m nuxel_nfc.daemon daemon
+   5393 nuxel-n+    05:36:03 /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+   5397 nuxel       05:36:03 /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+   5401 root        05:36:03 /usr/lib/nuxel/nuxel-touch-arm
+   5403 root        05:36:03 bash /usr/lib/nuxel/nuxel-usb-mode.sh monitor
+   5410 nuxel       05:36:03 /usr/bin/python3 /usr/lib/nuxel/nuxel-web-server.py
+   5693 root        05:36:02 python3 /usr/libexec/nuxel/nuxel-orientationd daemon
+   6067 root        05:36:02 python3 /usr/libexec/nuxel/nuxel-soundd
+   6159 root        05:36:01 /usr/lib/nuxel/nuxel-button-manager
+   8774 root        05:35:29 /bin/sh /usr/lib/nuxel/nuxel-audio-session.sh
+   8778 root        05:35:29 pipewire
+   8797 root        05:35:29 /bin/sh /usr/lib/nuxel/nuxel-audio-session.sh
+   8798 root        05:35:29 pipewire-pulse
+   8800 root        05:35:29 wireplumber
+ 368744 nuxel-b+       56:19 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+ 368745 root           56:19 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+ 368770 root           56:18 /bin/sh /usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
+ 368783 root           56:18 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+ 368794 root           56:17 /usr/lib/nuxel/nuxel-pwa-host
+ 368872 root           56:17 /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+ 368873 root           56:17 /usr/lib/nuxel/nuxel-osd
+ 368879 root           56:17 /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+ 368880 root           56:17 /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+ 368881 root           56:17 /bin/sh /usr/lib/nuxel/nuxel-shell-chrome.sh
+ 368882 root           56:17 /usr/lib/nuxel/nuxel-navdock
+ 368884 root           56:17 /usr/lib/nuxel/nuxel-statusbar
+ 368885 root           56:17 /usr/lib/nuxel/nuxel-foreign-toplevel watch-lock
+ 369033 root           56:15 dbus-run-session -- sh -c printf "%s\n" "$DBUS_SESSION_BUS_ADDRESS" > /run/nuxel-osk.bus; exec /usr/bin/phosh-osk-stevia
+ 369036 root           56:15 dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+ 369045 root           56:15 /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py --session
+ 369072 nuxel          56:15 dbus-daemon --session --fork --address=unix:path=/run/user/1000/bus --nopidfile
+ 369073 root           56:15 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+ 369079 root           56:15 runuser -u nuxel -- env DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_RUNTIME_DIR=/run/user/1000 HOME=/home/nuxel /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py --session
+ 369082 nuxel          56:15 /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py --session
+ 369084 root           56:15 runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal-gtk
+ 369091 nuxel          56:15 /usr/libexec/xdg-desktop-portal-gtk
+ 369101 nuxel          56:15 /usr/libexec/at-spi-bus-launcher
+ 369111 nuxel          56:15 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+ 369114 nuxel          56:15 /usr/libexec/at-spi2-registryd --use-gnome-session
+ 369152 root           56:14 runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-desktop-portal
+ 369181 root           56:14 runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=wayland-0 GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/libexec/xdg-document-portal
+ 369186 nuxel          56:14 /usr/libexec/xdg-desktop-portal
+ 369205 root           56:14 [nuxel-session.s] <defunct>
+ 369244 nuxel          56:14 /usr/libexec/xdg-permission-store
+ 369248 nuxel          56:14 /usr/libexec/xdg-document-portal
+ 369296 root           56:14 /usr/lib/nuxel/nuxel-wl-fb
+ 369567 root           56:14 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+ 369644 root           56:13 /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 20
+ 369646 root           56:13 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 24
+ 377071 nuxel          43:50 /usr/libexec/bwrap.real --args 3 -- ferdium --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --no-sandbox --disable-dev-shm-usage
+ 377123 nuxel          43:50 /usr/libexec/bwrap.real --args 3 -- /usr/bin/xdg-dbus-proxy --args=65
+ 377124 nuxel          43:50 /usr/bin/xdg-dbus-proxy --args=65
+ 377148 nuxel          43:50 /usr/libexec/bwrap.real --args 3 -- ferdium --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --no-sandbox --disable-dev-shm-usage
+ 377150 nuxel          43:50 /app/Ferdium/ferdium --ozone-platform=wayland --enable-features=UseOzonePlatform,WebRTCPipeWireCapturer --disable-gpu --no-sandbox --disable-dev-shm-usage
+ 377171 nuxel          43:49 /app/Ferdium/ferdium --type=zygote --no-zygote-sandbox --no-sandbox
+ 377172 nuxel          43:49 /app/Ferdium/ferdium --type=zygote --no-sandbox
+ 377325 nuxel          43:47 /app/Ferdium/ferdium --type=gpu-process --no-sandbox --disable-dev-shm-usage --ozone-platform=wayland --enable-crash-reporter=b612fd9e-f127-467b-b496-062cfed2316a,no_channel --user-data-dir=/home/nuxel/.var/app/org.ferdium.Ferdium/config/Ferdium --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --use-gl=disabled --shared-files --field-trial-handle=3,i,15650203205945712108,8765706318111639289,262144 --enable-features=GlobalShortcutsPortalPreferredTrigger,PdfUseShowSaveFilePicker,UseOzonePlatform,WebRTCPipeWireCapturer --disable-features=CrossOriginOpenerPolicy,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=7,i,3348106318537173707,3218982586782101146,4 --trace-process-track-uuid=3190708988185955192
+ 377329 nuxel          43:47 /app/Ferdium/ferdium --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --no-sandbox --disable-dev-shm-usage --enable-crash-reporter=b612fd9e-f127-467b-b496-062cfed2316a,no_channel --user-data-dir=/home/nuxel/.var/app/org.ferdium.Ferdium/config/Ferdium --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,15650203205945712108,8765706318111639289,262144 --enable-features=GlobalShortcutsPortalPreferredTrigger,PdfUseShowSaveFilePicker,UseOzonePlatform,WebRTCPipeWireCapturer --disable-features=CrossOriginOpenerPolicy,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=7,i,3348106318537173707,3218982586782101146,4 --trace-process-track-uuid=3190708989122997041
+ 377368 nuxel          43:47 /app/Ferdium/ferdium --type=renderer --enable-crash-reporter=b612fd9e-f127-467b-b496-062cfed2316a,no_channel --user-data-dir=/home/nuxel/.var/app/org.ferdium.Ferdium/config/Ferdium --app-path=/app/Ferdium/resources/app.asar --no-sandbox --no-zygote --no-sandbox --disable-dev-shm-usage --ozone-platform=wayland --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=4 --time-ticks-at-unix-epoch=-1794139046374284 --launch-time-ticks=17544959307 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,15650203205945712108,8765706318111639289,262144 --enable-features=GlobalShortcutsPortalPreferredTrigger,PdfUseShowSaveFilePicker,UseOzonePlatform,WebRTCPipeWireCapturer --disable-features=CrossOriginOpenerPolicy,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=7,i,3348106318537173707,3218982586782101146,4 --trace-process-track-uuid=3190708990060038890
+ 377492 nuxel          43:41 /app/Ferdium/ferdium --type=renderer --enable-crash-reporter=b612fd9e-f127-467b-b496-062cfed2316a,no_channel --user-data-dir=/home/nuxel/.var/app/org.ferdium.Ferdium/config/Ferdium --app-path=/app/Ferdium/resources/app.asar --no-sandbox --no-zygote --enable-blink-features --disable-blink-features --no-sandbox --disable-dev-shm-usage --ozone-platform=wayland --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=7 --time-ticks-at-unix-epoch=-1794139046374284 --launch-time-ticks=17551173892 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,15650203205945712108,8765706318111639289,262144 --enable-features=GlobalShortcutsPortalPreferredTrigger,PdfUseShowSaveFilePicker,UseOzonePlatform,WebRTCPipeWireCapturer --disable-features=CrossOriginOpenerPolicy,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=7,i,3348106318537173707,3218982586782101146,4 --trace-process-track-uuid=3190708992871164437
+ 377527 nuxel          43:37 /app/Ferdium/ferdium --type=renderer --enable-crash-reporter=b612fd9e-f127-467b-b496-062cfed2316a,no_channel --user-data-dir=/home/nuxel/.var/app/org.ferdium.Ferdium/config/Ferdium --app-path=/app/Ferdium/resources/app.asar --enable-sandbox --enable-blink-features --disable-blink-features --no-sandbox --disable-dev-shm-usage --ozone-platform=wayland --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=9 --time-ticks-at-unix-epoch=-1794139046374284 --launch-time-ticks=17554449072 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,15650203205945712108,8765706318111639289,262144 --enable-features=GlobalShortcutsPortalPreferredTrigger,PdfUseShowSaveFilePicker,UseOzonePlatform,WebRTCPipeWireCapturer --disable-features=CrossOriginOpenerPolicy,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=7,i,3348106318537173707,3218982586782101146,4 --trace-process-track-uuid=3190708994745248135
+ 377622 nuxel          43:26 /app/Ferdium/ferdium --type=utility --utility-sub-type=audio.mojom.AudioService --lang=en-US --service-sandbox-type=none --no-sandbox --disable-dev-shm-usage --enable-crash-reporter=b612fd9e-f127-467b-b496-062cfed2316a,no_channel --user-data-dir=/home/nuxel/.var/app/org.ferdium.Ferdium/config/Ferdium --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,15650203205945712108,8765706318111639289,262144 --enable-features=GlobalShortcutsPortalPreferredTrigger,PdfUseShowSaveFilePicker,UseOzonePlatform,WebRTCPipeWireCapturer --disable-features=CrossOriginOpenerPolicy,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=7,i,3348106318537173707,3218982586782101146,4 --trace-process-track-uuid=3190708995682289984
+ 395821 nuxel          22:00 /usr/libexec/dconf-service
+ 403230 nuxel-m+       13:55 /usr/lib/nuxel/nuxel-metricsd
+ 405421 root           10:27 runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus WAYLAND_DISPLAY=wayland-0 XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share GDK_BACKEND=wayland LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel /usr/lib/nuxel/nuxel-flatpak-stremio
+ 405424 nuxel          10:27 /usr/libexec/bwrap.real --args 3 -- stremio
+ 405437 nuxel          10:27 /usr/libexec/bwrap.real --args 3 -- /usr/bin/xdg-dbus-proxy --args=71
+ 405438 nuxel          10:27 /usr/bin/xdg-dbus-proxy --args=71
+ 405441 nuxel          10:27 /usr/libexec/bwrap.real --args 3 -- stremio
+ 405442 nuxel          10:27 /app/libexec/stremio/stremio
+ 405445 nuxel          10:27 node /app/libexec/stremio/server.js
+ 405501 nuxel          10:26 /usr/libexec/webkitgtk-6.0/WebKitNetworkProcess 2 26
+ 405509 nuxel          10:26 /usr/libexec/webkitgtk-6.0/WebKitWebProcess 4 26
+ 410145 root           07:29 bash -c set +e; echo "--- touch-arm"; /usr/lib/nuxel/nuxel-touch-arm --help 2>&1 | head -60; echo rc=$?; echo "--- touch-capture"; sed -n "1,220p" /usr/lib/nuxel/touch-capture.py; echo "--- text probe"; /usr/lib/nuxel/nuxel-text-input-probe --help 2>&1 | head -60; echo "--- wtype help"; wtype --help 2>&1 | head -80; echo "--- wtype dry test"; XDG_RUNTIME_DIR=/run/nuxel-wayland WAYLAND_DISPLAY=wayland-0 wtype -k a; echo wtype_rc=$?
+ 410146 root           07:29 /usr/lib/nuxel/nuxel-touch-arm --help
+=== live deploy records ===
+total 52
+drwxr-xr-x.   8 root root                 4096 Nov  8 11:06 .
+drwxrwx---+ 289 root nuxel-notifications 20480 Nov  8 18:26 ..
+drwxr-xr-x.   4 root root                 4096 Nov  8 01:20 rollback-20261108T002014Z
+drwxr-xr-x.   4 root root                 4096 Nov  8 08:41 rollback-20261108T074112Z
+drwxr-xr-x.   4 root root                 4096 Nov  8 10:47 rollback-20261108T094657Z
+drwxr-xr-x.   4 root root                 4096 Nov  8 10:53 rollback-20261108T095232Z
+drwxr-xr-x.   4 root root                 4096 Nov  8 11:03 rollback-20261108T100229Z
+drwxr-xr-x.   4 root root                 4096 Nov  8 11:06 rollback-20261108T100546Z
+/var/lib/nuxel/live-deploy/rollback-20261108T002014Z/COMMITTED
+/var/lib/nuxel/live-deploy/rollback-20261108T074112Z/COMMITTED
+/var/lib/nuxel/live-deploy/rollback-20261108T094657Z/COMMITTED
+/var/lib/nuxel/live-deploy/rollback-20261108T095232Z/COMMITTED
+/var/lib/nuxel/live-deploy/rollback-20261108T100229Z/COMMITTED
+/var/lib/nuxel/live-deploy/rollback-20261108T100546Z/COMMITTED
+=== nuxel trees ===
+/usr/share/nuxel
+/usr/share/nuxel/applications
+/usr/share/nuxel/assets
+/usr/share/nuxel/assets/app-icons
+/usr/share/nuxel/assets/native-app-icons
+/usr/share/nuxel/assets/nuxel-applications-icon-pack
+/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack
+/usr/share/nuxel/assets/nuxel-sounds
+/usr/share/nuxel/boot
+/usr/share/nuxel/doc
+/usr/share/nuxel/mfc
+/usr/share/nuxel/nuxel-apps
+/usr/share/nuxel/nuxel-apps/doom
+/usr/share/nuxel/nuxel-apps/nuxtore
+/usr/share/nuxel/nuxel-common
+/usr/share/nuxel/nuxel-home
+/usr/share/nuxel/nuxel-home/assets
+/usr/share/nuxel/nuxel-home/css
+/usr/share/nuxel/nuxel-home/icons
+/usr/share/nuxel/nuxel-home/js
+/usr/share/nuxel/nuxel-home/tests
+/usr/share/nuxel/nuxel-sounds
+/usr/share/nuxel/nuxel-sounds/library
+/usr/share/nuxel/preload
+/usr/share/nuxel/probes
+/usr/share/nuxel/pwa
+/usr/share/nuxel/pwa/flatpak
+/usr/share/nuxel/pwa/launcher
+/usr/share/nuxel/pwa/nuxel-apps
+/usr/share/nuxel/pwa/nuxel-common
+/usr/share/nuxel/pwa/nuxel-home
+/usr/share/nuxel/pwnage53000
+/usr/share/nuxel/remote-desktop
+/usr/share/nuxel/runtime
+/usr/share/nuxel/shell
+/usr/share/nuxel/shell/nuxel-home-native
+/usr/share/nuxel/sounds
+=== nuxel installed file count ===
+3980
+=== session ===
+total 0
+drwxr-xr-x.  3 root  root    60 Nov  8 12:57 .
+drwxr-xr-x. 20 root  root  1600 Nov  8 18:33 ..
+drwx------.  9 nuxel nuxel  280 Nov  8 18:16 1000
+NUXEL_DEVICE=s10plus
+NUXEL_CODENAME=beyond2lte
+BASE_OS=fedora-43-aarch64
+INIT_SYSTEM=systemd
+PYTHON3=RPM-installed
+PHOSH=RPM-installed
+PHOC=RPM-installed
+GRAPHICAL_PHONE_SESSION=not-enabled-until-on-device-drm-testing
+MOTOROLA_OVERLAY=absent
+HARDWARE_BOOT_VERIFIED=false
+DISPLAY_DRIVER_VERIFIED=false

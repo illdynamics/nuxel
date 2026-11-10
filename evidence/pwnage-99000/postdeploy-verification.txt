@@ -1,0 +1,132 @@
+BUILD_OK path=/usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+=== date ===
+2026-11-09T15:54:45Z
+=== units ===
+active
+active
+active
+active
+active
+active
+=== display status (CLI) ===
+{
+  "success": true,
+  "schema": "nuxel.display/2",
+  "state": "PARTNER_NO_PD",
+  "hardware_state": "PARTNER_NO_PD",
+  "partner": true,
+  "external_fb_present": true,
+  "mode": "off",
+  "last_mode": "off",
+  "rotation": 0,
+  "generation": 0,
+  "notified_generation": null,
+  "notification_id": null,
+  "last_error": null,
+  "blocker": "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start.",
+  "blockers": [
+    "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start.",
+    "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed."
+  ],
+  "display_name": null,
+  "external_modes": [
+    {
+      "raw": "U:640x480p-0",
+      "width": 640,
+      "height": 480,
+      "refresh": 0,
+      "flags": "U",
+      "source": "fbdev"
+    }
+  ],
+  "mirror_supported": false,
+  "desktop_supported": false,
+  "desktop_blocker": "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed.",
+  "mirror_output": "HEADLESS-1",
+  "desktop_output": null,
+  "outputs": {
+    "primary": {
+      "name": "HEADLESS-1",
+      "description": "Headless output 1",
+      "enabled": true,
+      "width": 720,
+      "height": 1520,
+      "refresh": null,
+      "scale": 2.0,
+      "transform": "normal",
+      "position": "0,0"
+    },
+    "external": null,
+    "names": [
+      "HEADLESS-1"
+    ],
+    "enabled_names": [
+      "HEADLESS-1"
+    ],
+    "success": true,
+    "error": null
+  },
+  "audio": {
+    "available": false,
+    "dp_audio_pcm": true,
+    "pcm": "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1",
+    "ch_hdmi_audio": 0,
+    "blockers": [
+      "DP link is not ready, so no HDMI/DP audio route exists"
+    ],
+    "blocker": "DP link is not ready, so no HDMI/DP audio route exists"
+  },
+  "external_fb": {
+    "present": true,
+    "device": "19050000.decon_t",
+    "virtual_size": "640,960",
+    "stride": 2560,
+    "bits_per_pixel": 32,
+    "rotate": 0,
+    "blank": "",
+    "state": 0,
+    "mode": "",
+    "modes_raw": "U:640x480p-0",
+    "modes": [
+      {
+        "raw": "U:640x480p-0",
+        "width": 640,
+        "height": 480,
+        "refresh": 0,
+        "flags": "U",
+        "source": "fbdev"
+      }
+    ]
+  },
+  "pd_ids": "0000:0000",
+  "pd_type": 0,
+  "dp_link": false,
+  "secdp": 0,
+  "extcon_dp": false,
+  "updated": 1794239685.7092657
+}
+=== provider status (HTTP bridge) ===
+{"result": {"success": true, "drm_present": true, "drm_entries": ["version"], "drm_kernel": "y", "typec_kernel": "y", "displayport_kernel": "y", "type_c_port_count": 2, "schema": "nuxel.display/2", "state": "PARTNER_NO_PD", "hardware_state": "PARTNER_NO_PD", "mode": "off", "generation": 0, "notification_id": null, "last_error": null, "display_name": null, "monitor_info_raw": null, "partner": true, "pd_identity": false, "pd_ids": "0000:0000", "pd_type": 0, "dp_link": false, "secdp": 0, "secdp_msg": 0, "extcon": [{"name": "130b0000.displayport", "state": "DP=0", "dp": false}, {"name": "madera-extcon", "state": "MECHANICAL=0\nMICROPHONE=0\nHEADPHONE=0", "dp": false}], "extcon_dp": false, "type_c_ports": [{"name": "port0", "data_role": "[host] device", "power_role": "[source] sink", "power_operation_mode": "default", "usb_power_delivery_revision": "3", "partner": true, "partner_name": null, "partner_pd": "no", "partner_accessory_mode": "none"}], "ccic": {"present": true, "state": 3, "usbpd_ids": "0000:0000", "usbpd_type": 0, "rid": 7, "sbu_adc": "10 6", "cc_pin_status": 2, "cur_version": "1A.00", "src_version": "1A.00"}, "dp_sec": {"present": true, "dex": 0, "dp_drm": "DRM state 0", "monitor_info": "BNQ,0x7f54,0x5445", "forced_resolution": "0 : V640X480P60\n   1 : V720X480P60\n   2 : V720X576P50\n   3 : V1280X800P60RB\n   4 : V1280X720P50\n   5 : V1280X720P60EXT\n   6 : V1280X720P60\n   7 : V1366X768P60\n   8 : V1280X1024P60\n   9 : V1920X1080P24\n  10 : V1920X1080P25\n  11 : V1920X1080P30\n  12 : V1600X900P59\n  13 : V1600X900P60RB\n  14 : V1920X1080P50\n  15 : V1920X1080P60EXT\n  16 : V1920X1080P59\n  17 : V1920X1080P60\n  18 : V1920X1200P60RB\n  19 : V1920X1200P60\n  20 : V2560X1080P60\n  21 : V2048X1536P60\n  22 : V1920X1440P60\n  23 : V2400X1200P90RELU\n  24 : V2560X1440P60EXT\n  25 : V2560X1440P59\n  26 : V1440x2560P60\n  27 : V1440x2560P75\n  28 : V2560X1440P60\n  29 : V2560X1600P60\n  30 : V3200X1600P70\n  31 : V3200X1600P72\n  32 : V3440X1440P50\n  33 : V3840X1080P60\n  34 : V3840X1200P60\n  35 : V3440X1440P60\n  36 : V3840X2160P24\n  37 : V3840X2160P25\n  38 : V3840X2160P30\n  39 : V4096X2160P24\n  40 : V4096X2160P25\n  41 : V4096X2160P30\n  42 : V3840X2160P60EXT\n  43 : V3840X2160P59RB\n  44 : V3840X2160P50\n  45 : V3840X2160P60\n  46 : V2160X3840P72\n  47 : V4096X2160P50\n  48 : V4096X2160P60\n  49 : V640X10P60SACRC\n  50 : VDUMMYTIMING", "audio_test": "channel: 0, bit rate: 0, sample rate: 0", "unit_test": "1", "dp_test": "0: HPD test\n1: uevent test\n2: CTS power management test\n3: set lane count, link rate\n5: link training test\n6: unplug work test\n7: forced bist mode\n8: audio bist mode(on,ch,bit,fs)\n9: HDR support(0:off 1:on 2:dummy)\n\n# gpio oe 0, sel 1, direction 1"}, "internal_fb": {"present": true, "device": "19030000.decon_f", "virtual_size": "1440,6080", "stride": 5760, "bits_per_pixel": 32, "rotate": 0, "blank": "", "state": 0, "mode": "", "modes_raw": "U:1440x3040p-0", "modes": [{"raw": "U:1440x3040p-0", "width": 1440, "height": 3040, "refresh": 0, "flags": "U", "source": "fbdev"}]}, "external_fb_present": true, "external_fb": {"present": true, "device": "19050000.decon_t", "virtual_size": "640,960", "stride": 2560, "bits_per_pixel": 32, "rotate": 0, "blank": "", "state": 0, "mode": "", "modes_raw": "U:640x480p-0", "modes": [{"raw": "U:640x480p-0", "width": 640, "height": 480, "refresh": 0, "flags": "U", "source": "fbdev"}]}, "external_modes": [{"raw": "U:640x480p-0", "width": 640, "height": 480, "refresh": 0, "flags": "U", "source": "fbdev"}], "supported_modes": [{"raw": "U:640x480p-0", "width": 640, "height": 480, "refresh": 0, "flags": "U", "source": "fbdev"}], "connector": null, "mirror_supported": false, "desktop_supported": false, "desktop_blocker": "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed.", "mirror_output": "HEADLESS-1", "desktop_output": null, "audio": {"available": false, "dp_audio_pcm": true, "pcm": "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1", "ch_hdmi_audio": 0, "blockers": ["DP link is not ready, so no HDMI/DP audio route exists"], "blocker": "DP link is not ready, so no HDMI/DP audio route exists"}, "blocker": "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start.; Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed.; HDMI audio: DP link is not ready, so no HDMI/DP audio route exists", "blockers": ["Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start.", "Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed.", "HDMI audio: DP link is not ready, so no HDMI/DP audio route exists"], "safety": {"internal_display_preserved": true, "single_fb0_writer": true, "compositor_restarted": false}}}
+=== notification hub ===
+s "{\"success\": true, \"counts\": {\"active\": 7, \"unread\": 7, \"read\": 0, \"archived\": 9, \"total\": 16}}"
+-rw-------. 1 nuxel-notifications nuxel-notifications 9575 Nov  9 16:53 /var/lib/nuxel/notifications.json
+=== rotation control ===
+{
+  "success": true,
+  "rotation": 90,
+  "restarted": null
+}
+{
+  "success": true,
+  "rotation": 0,
+  "restarted": null
+}
+=== outputs ===
+HEADLESS-1 "Headless output 1"
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Position: 0,0
+  Transform: normal
+  Scale: 2.000000
+  Adaptive Sync: disabled

@@ -1,0 +1,327 @@
+=== displayport_drv.c: switch state + HPD handshake ===
+static void displayport_set_switch_state(struct displayport_device *displayport, int state)
+{
+	displayport_info("HPD status = %d\n", state);
+#if defined(CONFIG_EXTCON)
+	if (state) {
+#ifdef CONFIG_SAMSUNG_TUI
+		stui_cancel_session();
+#endif
+		extcon_set_state_sync(displayport->extcon_displayport, EXTCON_DISP_DP, 1);
+	} else {
+		extcon_set_state_sync(displayport->extcon_displayport, EXTCON_DISP_DP, 0);
+	}
+#else
+	displayport_info("Not compiled EXTCON driver\n");
+#endif
+#ifdef CONFIG_SWITCH
+	switch_set_state(&switch_secdp_hpd, state);
+#endif
+}
+
+void displayport_hpd_changed(int state)
+{
+	int ret;
+	int timeout = 0;
+	struct displayport_device *displayport = get_displayport_drvdata();
+
+	mutex_lock(&displayport->hpd_lock);
+	if (displayport->hpd_current_state == state) {
+		displayport_info("hpd same state skip %x\n", state);
+		mutex_unlock(&displayport->hpd_lock);
+		return;
+	}
+
+	displayport_info("displayport hpd changed %d\n", state);
+	displayport->hpd_current_state = state;
+
+	if (state) {
+		pm_runtime_get_sync(displayport->dev);
+		pm_stay_awake(displayport->dev);
+
+		displayport->bpc = BPC_8;	/*default setting*/
+		displayport->dyn_range = VESA_RANGE;
+		displayport->hpd_state = HPD_PLUG;
+		dp_hdcp_state = DP_CONNECT;
+		displayport->auto_test_mode = 0;
+		displayport->best_video = EDID_DEFAULT_TIMINGS_IDX;
+		/* PHY power on */
+		displayport_reg_sw_reset();
+		displayport_reg_init(); /* for AUX ch read/write. */
+		displayport->state = DISPLAYPORT_STATE_INIT;
+		usleep_range(10000, 11000);
+
+#ifdef CONFIG_SEC_DISPLAYPORT_BIGDATA
+		if (displayport->dex_state == DEX_ON)
+			secdp_bigdata_save_item(BD_DP_MODE, "DEX");
+		if (displayport->dex_state == DEX_OFF)
+			secdp_bigdata_save_item(BD_DP_MODE, "MIRROR");
+#endif
+
+		/* for Link CTS : (4.2.2.3) EDID Read */
+		if (displayport_link_status_read()) {
+			displayport_set_switch_poor_connect();
+			displayport_err("link_status_read fail\n");
+			goto HPD_FAIL;
+		}
+
+		if (displayport_read_branch_revision(displayport))
+			displayport_err("branch_revision_read fail\n");
+
+		displayport_info("link training in hpd_changed\n");
+		ret = displayport_link_training();
+		if (ret < 0) {
+			displayport_dbg("link training fail\n");
+			displayport_set_switch_poor_connect();
+			goto HPD_FAIL;
+		}
+
+		displayport_audio_init_config();
+
+		displayport->dfp_type = displayport_check_dfp_type();
+		/* Enable it! if you want to prevent output according to type
+		 * if (displayport->dfp_type != DFP_TYPE_DP &&
+		 *		displayport->dfp_type != DFP_TYPE_HDMI) {
+		 *	displayport_err("not supported DFT type\n");
+		 *	goto HPD_FAIL;
+		 * }
+		 */
+
+		if (displayport->bist_used == 0) {
+			displayport_set_switch_state(displayport, 1);
+			timeout = wait_event_interruptible_timeout(displayport->dp_wait,
+				(displayport->state == DISPLAYPORT_STATE_ON), msecs_to_jiffies(3000));
+#if defined(CONFIG_SND_SOC_SAMSUNG_DISPLAYPORT)
+			dp_ado_switch_set_state(edid_audio_informs());
+#endif
+			if (!timeout)
+				displayport_err("enable timeout\n");
+		} else
+			displayport_enable(displayport);
+
+=== decon_core.c: _decon_enable / decon_blank / decon_release ===
+int _decon_enable(struct decon_device *decon, enum decon_state state)
+{
+	struct decon_mode_info psr;
+	struct decon_param p;
+	int ret = 0;
+
+	if (IS_DECON_ON_STATE(decon)) {
+		decon_warn("%s decon-%d already on(%s) state\n", __func__,
+				decon->id, decon_state_names[decon->state]);
+		ret = decon_set_out_sd_state(decon, state);
+		if (ret < 0) {
+			decon_err("%s decon-%d failed to set subdev %s state\n",
+					__func__, decon->id, decon_state_names[state]);
+			return ret;
+		}
+		decon->state = state;
+		return 0;
+	}
+
+	pm_stay_awake(decon->dev);
+	dev_warn(decon->dev, "pm_stay_awake");
+
+#if defined(CONFIG_EXYNOS_BTS)
+	decon->bts.ops->bts_acquire_bw(decon);
+#endif
+
+	if (decon->dt.psr_mode != DECON_VIDEO_MODE) {
+		if (decon->res.pinctrl && decon->res.hw_te_on) {
+			if (pinctrl_select_state(decon->res.pinctrl,
+						decon->res.hw_te_on)) {
+				decon_err("failed to turn on Decon_TE\n");
+			}
+		}
+	}
+
+	ret = decon_set_out_sd_state(decon, state);
+	if (ret < 0) {
+static int decon_blank(int blank_mode, struct fb_info *info)
+{
+	struct decon_win *win = info->par;
+	struct decon_device *decon = win->decon;
+	int ret = 0;
+
+	decon_info("decon-%d %s mode: %d type (0: DSI, 1: eDP, 2:DP, 3: WB)\n",
+			decon->id,
+			blank_mode == FB_BLANK_UNBLANK ? "UNBLANK" : "POWERDOWN",
+			decon->dt.out_type);
+
+	if (IS_ENABLED(CONFIG_EXYNOS_VIRTUAL_DISPLAY)) {
+		decon_info("decon%d virtual display mode\n", decon->id);
+		return 0;
+	}
+
+	decon_hiber_block_exit(decon);
+
+	switch (blank_mode) {
+	case FB_BLANK_POWERDOWN:
+	case FB_BLANK_NORMAL:
+		DPU_EVENT_LOG(DPU_EVT_BLANK, &decon->sd, ktime_set(0, 0));
+		ret = decon_update_pwr_state(decon, DISP_PWR_OFF);
+		if (ret) {
+			decon_err("failed to disable decon\n");
+			goto blank_exit;
+		}
+		break;
+	case FB_BLANK_UNBLANK:
+		DPU_EVENT_LOG(DPU_EVT_UNBLANK, &decon->sd, ktime_set(0, 0));
+		ret = decon_update_pwr_state(decon, DISP_PWR_NORMAL);
+		if (ret) {
+			decon_err("failed to enable decon\n");
+			goto blank_exit;
+		}
+		break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+	default:
+		ret = -EINVAL;
+	}
+
+blank_exit:
+	decon_hiber_unblock(decon);
+	decon_info("%s -\n", __func__);
+	return ret;
+	int ret;
+
+	decon_info("%s + : %d\n", __func__, decon->id);
+#if defined(CONFIG_SEC_DISPLAYPORT_LOGGER)
+	if (decon->dt.out_type == DECON_OUT_DP)
+		dp_logger_print("decon release\n");
+#endif
+	if (decon->id && decon->dt.out_type == DECON_OUT_DSI) {
+		decon_get_out_sd(decon);
+		decon_info("output device of decon%d is changed to %s\n",
+				decon->id, decon->out_sd[0]->name);
+	}
+
+	if (decon->dt.out_type == DECON_OUT_DSI) {
+		decon_hiber_block_exit(decon);
+		ret = decon_update_pwr_state(decon, DISP_PWR_OFF);
+		if (ret)
+			decon_err("%s: decon%d failed to set DISP_PWR_OFF, ret %d\n",
+					__func__, decon->id, ret);
+		decon_hiber_unblock(decon);
+	}
+
+	if (decon->dt.out_type == DECON_OUT_DP) {
+		/* Unused DECON state is DECON_STATE_INIT */
+		if (IS_DECON_ON_STATE(decon))
+			decon_dp_disable(decon);
+	}
+
+	decon_info("%s - : %d\n", __func__, decon->id);
+
+	return 0;
+}
+
+
+=== decon.h: user ABI structs + ioctl ===
+struct decon_win_rect {
+	int x;
+	int y;
+	u32 w;
+	u32 h;
+};
+
+struct decon_rect {
+	u32 left;
+	u32 top;
+	u32 right;
+	u32 bottom;
+};
+
+struct dpp_params {
+	dma_addr_t addr[MAX_PLANE_CNT];
+	enum dpp_rotate rot;
+	enum dpp_csc_eq eq_mode;
+	enum dpp_comp_src comp_src;
+	enum dpp_hdr_standard hdr_std;
+	u32 min_luminance;
+	u32 max_luminance;
+};
+
+struct decon_frame {
+	int x;
+	int y;
+	u32 w;
+	u32 h;
+	u32 f_w;
+	u32 f_h;
+};
+
+struct decon_win_config {
+	enum {
+		DECON_WIN_STATE_DISABLED = 0,
+		DECON_WIN_STATE_COLOR,
+		DECON_WIN_STATE_BUFFER,
+		DECON_WIN_STATE_UPDATE,
+		DECON_WIN_STATE_CURSOR,
+		DECON_WIN_STATE_MRESOL = 0x10000,
+	} state;
+
+	/* Reusability:This struct is used for IDMA and ODMA */
+	union {
+		__u32 color;
+		struct {
+			int				fd_idma[3];
+			int				acq_fence;
+			int				rel_fence;
+			int				plane_alpha;
+			enum decon_blending		blending;
+			/*
+			 * TODO: idma_type will be changed to channel number in the future.
+			 *
+			 * Although the variable name is idma_type, it indicates
+			 * DPP channel number currently.
+			 */
+			enum decon_idma_type		idma_type;
+			enum decon_pixel_format		format;
+			struct dpp_params		dpp_parm;
+			/* no read area of IDMA */
+			struct decon_win_rect		block_area;
+			struct decon_win_rect		transparent_area;
+			struct decon_win_rect		opaque_area;
+			/* source framebuffer coordinates */
+			struct decon_frame		src;
+		};
+	};
+
+	/* destination OSD coordinates */
+	struct decon_frame dst;
+	bool protection;
+	bool compression;
+#ifdef CONFIG_EXYNOS_MCD_HDR
+	u32 wcg_mode;
+#define S3CFB_DECON_SELF_REFRESH	_IOW('F', 207, __u32)
+#define S3CFB_WIN_CONFIG_OLD		_IOW('F', 209, \
+						struct decon_win_config_data_old)
+#define S3CFB_WIN_CONFIG		_IOW('F', 209, \
+						struct decon_win_config_data)
+
+/* cursor async */
+#define DECON_WIN_CURSOR_POS		_IOW('F', 222, struct decon_user_window)
+#define S3CFB_POWER_MODE		_IOW('F', 223, __u32)
+#define EXYNOS_DISP_INFO		_IOW('F', 260, \
+						struct decon_disp_info)
+#define EXYNOS_DISP_RESTRICTIONS	_IOW('F', 261, \
+						struct dpp_restrictions_info)
+
+#define S3CFB_START_CRC			_IOW('F', 270, u32)
+#define S3CFB_SEL_CRC_BITS		_IOW('F', 271, u32)
+#define S3CFB_GET_CRC_DATA		_IOR('F', 272, u32)
+
+#define EXYNOS_GET_DISPLAYPORT_CONFIG		_IOW('F', 300, \
+						struct exynos_displayport_data)
+#define EXYNOS_SET_DISPLAYPORT_CONFIG		_IOW('F', 301, \
+						struct exynos_displayport_data)
+
+#define EXYNOS_DPU_DUMP		_IOW('F', 302, \
+						struct decon_win_config_data)
+
+/* HDR support */
+#define S3CFB_GET_HDR_CAPABILITIES _IOW('F', 400, struct decon_hdr_capabilities)
+#define S3CFB_GET_HDR_CAPABILITIES_NUM _IOW('F', 401, struct decon_hdr_capabilities_info)
+
+/* DPU aclk */

@@ -1,0 +1,49 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+3026:Nov 09 09:57:11 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 1 mode 1
+3028:Nov 09 09:57:11 fedora kernel: max77705: max77705_set_enable_alternate_mode: alternate mode is not ready!
+8324:Nov 09 09:57:39 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 1 mode a
+8325:Nov 09 09:57:39 fedora kernel: max77705: max77705_set_enable_alternate_mode: alternate mode is ready!
+8326:Nov 09 09:57:39 fedora kernel: max77705: max77705_set_enable_alternate_mode: [ON BOOTING TIME] !!!alternate mode is started!
+8334:Nov 09 09:57:39 fedora kernel: max77705: max77705_set_enable_alternate_mode: !![ON BOOTING TIME] SEND THE PACKET REGARDING IN CASE OF VR/DP 
+8336:Nov 09 09:57:39 fedora kernel: max77705: max77705_set_enable_alternate_mode: USBC1:0x67, USBC2:0x31, BC:0x83
+8337:Nov 09 09:57:39 fedora kernel: max77705: max77705_set_enable_alternate_mode: CC_STATUS0:0x71, CC_STATUS1:0x8, PD_STATUS0:0x1, PD_STATUS1:0x17
+8338:Nov 09 09:57:39 fedora kernel: max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+8341:Nov 09 09:57:39 fedora kernel: max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+495542:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 1 mode 8
+495543:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: [ON BOOTING TIME] !!!alternate mode is started!
+495547:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: !![ON BOOTING TIME] SEND THE PACKET REGARDING IN CASE OF VR/DP 
+495548:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: USBC1:0x07, USBC2:0x05, BC:0x00
+495549:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: CC_STATUS0:0x0, CC_STATUS1:0x0, PD_STATUS0:0x0, PD_STATUS1:0x7
+495550:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x4, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+495551:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x4, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+495553:Nov 09 16:30:30 fedora kernel: max77705: max77705_vir_altmode_irq: max77705_vir_altmode_irq
+495554:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+495558:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!
+495615:Nov 09 16:30:30 fedora kernel: max77705: max77705_vir_altmode_irq: max77705_vir_altmode_irq
+495616:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+495653:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!
+495714:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+495718:Nov 09 16:30:30 fedora kernel: max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!
+1125503:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 1 mode 8
+1125504:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: [ON BOOTING TIME] !!!alternate mode is started!
+1125508:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: !![ON BOOTING TIME] SEND THE PACKET REGARDING IN CASE OF VR/DP 
+1125509:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: USBC1:0x07, USBC2:0x05, BC:0x00
+1125510:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: CC_STATUS0:0x0, CC_STATUS1:0x0, PD_STATUS0:0x0, PD_STATUS1:0x7
+1125511:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x4, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+1125512:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x4, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+1125514:Nov 09 17:14:25 fedora kernel: max77705: max77705_vir_altmode_irq: max77705_vir_altmode_irq
+1125515:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+1125519:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!
+1125576:Nov 09 17:14:25 fedora kernel: max77705: max77705_vir_altmode_irq: max77705_vir_altmode_irq
+1125577:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+1125591:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!
+1125629:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 0 mode 8
+1125637:Nov 09 17:14:25 fedora kernel: max77705: max77705_set_enable_alternate_mode: [NO BOOTING TIME] !!!alternate mode is started!

@@ -1,0 +1,29 @@
+timestamp=2026-11-09T15:44:31Z
+commit=b6154b67ec1e421729cea8053839ce9cfae9095d
+branch=feature/v0.8.2-beta-pwnage-97000
+--- modified/untracked (relevant) ---
+ M pwa/nuxel-apps/settings/hardware-settings.js
+ M pwa/nuxel-home/css/status-bar.css
+ M pwa/nuxel-home/js/status-bar.js
+ M scripts/nuxel-deploy-live.py
+ M services/nuxel-bridge/src/api.py
+ M services/nuxel-bridge/src/flatpak_provider.py
+ M services/nuxel-bridge/src/hw_providers.py
+ M services/nuxel-bridge/systemd/nuxel-http-bridge.service
+ M services/nuxel-bridge/test-hw-providers.py
+ M tools/s10plus/a43/package-live.py
+?? services/nuxel-bridge/src/asar_patch.py
+?? services/nuxel-bridge/src/remote_desktop.py.new
+?? services/nuxel-bridge/src/teams_emulatePlatform.js
+?? services/nuxel-display/
+--- workstation diff stat (relevant) ---
+ pwa/nuxel-apps/settings/hardware-settings.js | 118 ++++++++--
+ pwa/nuxel-apps/settings/index.html           |  11 +-
+ pwa/nuxel-common/bridge.js                   |  16 ++
+ pwa/nuxel-home/js/bridge.js                  |   4 +
+ pwa/nuxel-home/js/status-bar.js              |  51 ++++-
+ scripts/nuxel-deploy-live.py                 |  27 +++
+ services/nuxel-bridge/src/api.py             | 230 +++++++++++++++++--
+ services/nuxel-bridge/src/hw_providers.py    | 323 ++++++++++++++++++++++-----
+ tools/s10plus/a43/package-live.py            |   9 +
+ 9 files changed, 698 insertions(+), 91 deletions(-)

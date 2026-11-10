@@ -1,0 +1,164 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+/sys/class/typec/port0/data_role = [host] device
+/sys/class/typec/port0/power_role = [source] sink
+/sys/class/typec/port0/port_type = [dual] source sink
+/sys/class/typec/port0/power_operation_mode = default
+/sys/class/typec/port0/usb_power_delivery_revision = 3
+/sys/class/typec/port0/usb_typec_revision = 1.2
+/sys/class/typec/port0/vconn_source = no
+/sys/class/typec/port0/supported_accessory_modes = none
+/sys/class/typec/port0-partner/supports_usb_power_delivery = no
+/sys/class/typec/port0-partner/accessory_mode = none
+=== ccic attrs ===
+acc_device_version = 0000
+
+booting_dry = 0
+
+cc_pin_status = 2
+
+ccic_control_option = cat: /sys/class/sec/ccic/ccic_control_option: No data available
+
+chip_name = max77705
+
+control_gpio = 1 0
+
+cur_version = 1A.00
+
+debug_opcode = cat: /sys/class/sec/ccic/debug_opcode: No data available
+
+dex_fan_uvdm = cat: /sys/class/sec/ccic/dex_fan_uvdm: Permission denied
+
+fw_update = cat: /sys/class/sec/ccic/fw_update: Permission denied
+
+fw_update_status = NORMAL
+
+lpm_mode = 0
+
+ram_test = 0
+
+rid = 7
+
+sbu_adc = 10 6
+
+src_version = 1A.00
+
+state = 3
+
+uevent = 
+usbpd_ids = 0000:0000
+
+usbpd_type = 0
+
+vsafe0v_status = 0
+
+water = 0
+
+=== switches ===
+/sys/class/switch/ccic_dock/name = ccic_dock
+
+/sys/class/switch/ccic_dock/state = 0
+
+/sys/class/switch/ccic_dock/uevent = 
+/sys/class/switch/ch_hdmi_audio/name = ch_hdmi_audio
+
+/sys/class/switch/ch_hdmi_audio/state = 0
+
+/sys/class/switch/ch_hdmi_audio/uevent = 
+/sys/class/switch/dock/name = dock
+
+/sys/class/switch/dock/state = 0
+
+/sys/class/switch/dock/uevent = 
+/sys/class/switch/secdp/name = secdp
+
+/sys/class/switch/secdp/state = 0
+
+/sys/class/switch/secdp/uevent = 
+/sys/class/switch/secdp_msg/name = secdp_msg
+
+/sys/class/switch/secdp_msg/state = 0
+
+/sys/class/switch/secdp_msg/uevent = 
+/sys/class/switch/uart3/name = uart3
+
+/sys/class/switch/uart3/state = 0
+
+/sys/class/switch/uart3/uevent = 
+=== extcon ===
+/sys/class/extcon/extcon0/name = 130b0000.displayport
+
+/sys/class/extcon/extcon0/state = DP=0
+
+/sys/class/extcon/extcon1/name = madera-extcon
+
+/sys/class/extcon/extcon1/state = MECHANICAL=0
+MICROPHONE=0
+HEADPHONE=0
+
+=== dp_sec ===
+audio_test = channel: 0, bit rate: 0, sample rate: 0
+
+dex = 0
+
+dex_ver = 0000
+
+dp_drm = DRM state 0
+
+dp_error_info = 
+dp_sbu_sw_sel = cat: /sys/class/dp_sec/dp_sbu_sw_sel: Permission denied
+
+dp_test = 0: HPD test
+1: uevent test
+2: CTS power management test
+3: set lane count, link rate
+5: link training test
+6: unplug work test
+7: forced bist mode
+8: audio bist mode(on,ch,bit,fs)
+9: HDR support(0:off 1:on 2:dummy)
+
+# gpio oe 0, sel 1, direction 1
+
+edid_test = invalid size test edid(0)
+
+forced_resolution =    0 : V640X480P60
+   1 : V720X480P60
+   2 : V720X576P50
+   3 : V1280X800P60RB
+   4 : V1280X720P50
+   5 : V1280X720P60EXT
+   6 : V1280X720P60
+   7 : V1366X768P60
+   8 : V1280X1024P60
+   9 : V1920X1080P24
+  10 : V1920X1080P25
+  11 : V1920X1080P30
+  12 : V1600X900P59
+  13 : V1600X900P60RB
+  14 : V1920X1080P50
+  15 : V1920X1080P60EXT
+  16 : V1920X1080P59
+  17 : V1920X1080P60
+  18 : V1920X1200P60RB
+  
+log_level = displayport log level 7
+
+monitor_info = BNQ,0x7f54,0x5445
+
+phy_tune = 
+/   21,   10,   42,   e5,   60,/   25,   14,   42,   e5,   60,/   26,   17,   43,   e5,   60,/   2b,   1c,   43,   e7,   60,
+/   26,   10,   42,   e7,   60,/   2b,   15,   42,   e7,   60,/   2b,   18,   43,   e7,   60,/   2b,   18,   43,   e7,   60,
+/   2a,   10,   42,   e7,   60,/   2b,   15,   43,   e7,   60,/   2b,   15,   43,   e7,   60,/   2b,   15,   43,   e7,   60,
+/   2b,   10,   43,   e7
+reduced_resolution = 0
+
+unit_test = 1
+

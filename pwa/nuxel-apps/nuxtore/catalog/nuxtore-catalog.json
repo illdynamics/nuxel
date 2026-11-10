@@ -19,11 +19,11 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "NuxTore",
       "requires": [],
-      "sha256": "141c6e54c1d7addc00cfb08b78bc6608a2ae6ebb513d52ec58f4fac5166161a4",
+      "sha256": "c5fb6b3e405e206fe2c533da2cff8aafdf5be3f2532bb8d8d56966b5f735fcf1",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "AkePlfQTe076zYQuUypOA89yWX2QJ1ioSgmMGpVAvyCm0ttorxdSZ6usinNlSITV++5BHBtD5v7vEjuSArBNDA=="
+        "value": "URM7ujem/xReNfOUIf4oPZYugnS+dPlbdasm2NyiGlH7doku5Iq9tEgVQUn6jhfOnGYeasCFNepLqsRVG6IcDw=="
       },
       "size_bytes": 199520,
       "source": {
@@ -234,13 +234,13 @@
       "requires": [
         "sysfs:read"
       ],
-      "sha256": "1235076a73e65c0e259c1b62a0b326eeebc59debfb9c21bf696dc3938f04bf61",
+      "sha256": "fba289c8c07957b82619b4fc61c471fee43f8a3baf8b44f33b29966733940876",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "5alAe+rw7NGhlGUUdcR/n4eY6RdCYNizqZjkavEvIbqXwVwtDFkFCvBkZ+hU9TZRoWrqtt37cC9N7azpCX/EBA=="
+        "value": "QOrIhxJRBxdZcw5SG4Msh7RhK2+OIFy1agY8TtxD+icUs1zVZYEbN088eRTL4zj5LUH+OS9t9vrjRupJMoo+Cg=="
       },
-      "size_bytes": 133816,
+      "size_bytes": 135604,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -319,13 +319,13 @@
           "/home/nuxel/doom"
         ]
       },
-      "sha256": "41385f93ae2c1e0a2b947d2de2bf33269ca93042fe84eff279ae129cae0a398e",
+      "sha256": "4d7673569d3e11a4721880d7cbe36a36053fc731a31254ccd406bb0ccfd160b4",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "+005isKAN+Evho71k2LTIjBshwqLxvEa0CIutH44SW5JndGbyILX0/JGjpEbSA4/hKagaM+9UAKTMWV5XqP+Ag=="
+        "value": "k5yugnSYuXfVVlkvCbKx5fPohLw44ng/yFAdcj9Ls+hWVmZjEYR3YPghP0odNJvs159efv6tz/Av0uln4I6oDw=="
       },
-      "size_bytes": 3255564,
+      "size_bytes": 3268039,
       "source": {
         "provenance": "Chocolate Doom 3.0 WebAssembly from cloudflare/doom-wasm (GPL-2.0-or-later), pinned commit 65e0d3ae; original Nuxel launcher and touch HUD; no commercial assets",
         "type": "local-bundle",
@@ -363,13 +363,13 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "PenguInterface",
       "requires": [],
-      "sha256": "97f17a527a470cf6d438edc2bdbf92550d65f6dc660df2aef7797942d71d8cb6",
+      "sha256": "88100b1a3295e290fe42417e403121c7bbcb59830d71a4e3c0984c6d7232c2a3",
       "signature": {
         "alg": "ed25519",
         "key_id": "nuxel-beta-dev-2026",
-        "value": "OeymB4J+z/d+eeei9Li6FchTq7yToJ+gyAvVEQdtttRsu/uFvaTnGS6UZd3lH3mS4GaN7AEbwts1ZOaUTMF0BA=="
+        "value": "TulRs3WOrg82bQAxgwO/4n0iKd2dhX+vksAnXSClqQR4B3yNIe2L4U0WVLjJ2fYdZOMCOu7p3+PLd343R2bqCw=="
       },
-      "size_bytes": 110082,
+      "size_bytes": 112744,
       "source": {
         "provenance": "Nuxel repository, beta finalization A33",
         "type": "local-bundle",
@@ -431,7 +431,7 @@
       "license": "GPL-3.0-or-later (Nuxel project)",
       "name": "Unsigned Demo Package",
       "requires": [],
-      "sha256": "141c6e54c1d7addc00cfb08b78bc6608a2ae6ebb513d52ec58f4fac5166161a4",
+      "sha256": "c5fb6b3e405e206fe2c533da2cff8aafdf5be3f2532bb8d8d56966b5f735fcf1",
       "size_bytes": 199520,
       "source": {
         "provenance": "test fixture \u2014 no publisher claims, no signature",

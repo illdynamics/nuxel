@@ -1,0 +1,661 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+[
+  {
+    "id": 26,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display active",
+    "body": "Mirroring the built-in screen to the external display.",
+    "timestamp": "2026-11-09T16:27:09.825254",
+    "received_at": "2026-11-09T16:27:09.825326",
+    "read_at": null,
+    "archived_at": "2026-11-09T16:31:43.183502",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "off",
+      "Internal only",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "BNQ 0x7f54",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 26,
+    "suppressed": false
+  },
+  {
+    "id": 27,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display connected",
+    "body": "BNQ 0x7f54 \u00b7 640x480\nChoose how to use the connected display.\nLast used: Mirror.",
+    "timestamp": "2026-11-09T16:31:47.114635",
+    "received_at": "2026-11-09T16:31:47.114635",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:15:40.951083",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "mirror",
+      "Mirror screen",
+      "desktop",
+      "Separate desktop",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 2,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "BNQ 0x7f54",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": null,
+    "suppressed": false
+  },
+  {
+    "id": 28,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display mode failed",
+    "body": "external bridge did not reach RUNNING (STOPPED)\n nuxel-wl-fb-ext: frame 5900 src=720x1520 dst=640x480\n2026-11-09T17:35:04 nuxel-wl-fb-ext: frame 6000 src=720x1520 dst=640x480\n2026-11-09T17:35:12 nuxel-wl-fb-ext: frame 6100 src=720x1520 dst=640x480\n2026-11-09T17:35:20 nuxel-wl-fb-ext: frame 6200 src=720x1520 dst=640x480\n2026-11-09T17:35:28 nuxel-wl-fb-ext: frame 6300 src=720x1520 dst=640x480\n2026-11-09T17:35:36 nuxel-wl-fb-ext: frame 6400 src=720x1520 dst=640x480\n2026-11-09T17:35:44 nuxel-wl-fb-ext: frame 6500 src=720x1520 dst=640x480\n2026-11-09T17:35:52 nuxel-wl-fb-ext: frame 6600 src=720x1520 dst=640x480\n2026-11-09T17:35:59 nuxel-wl-fb-ext: frame 6700 src=720x1520 dst=640x480\n2026-11-09T17:36:07 nuxel-wl-fb-ext: frame 6800 src=720x1520 dst=640x480\n2026-11-09T17:36:15 nuxel-wl-fb-ext: frame 6900 src=720x1520 dst=640x480\n2026-11-09T17:36:23 nuxel-wl-fb-ext: frame 7000 src=720x1520 dst=640x480\n2026-11-09T17:36:31 nuxel-wl-fb-ext: frame 7100 src=720x1520 dst=640x480\n2026-11-09T17:36:39 nuxel-wl-fb-ext: frame 7200 src=720x1520 dst=640x480\n2026-11-09T17:36:47 nuxel-wl-fb-ext: frame 7300 src=720x1520 dst=640x480\n2026-11-09T17:36:51 nuxel-wl-fb-ext: stopped frames=7352\nBUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext\n",
+    "timestamp": "2026-11-09T16:43:14.221323",
+    "received_at": "2026-11-09T16:43:14.221389",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:15:43.184311",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "mirror",
+      "Retry mirror",
+      "desktop",
+      "Try separate desktop",
+      "off",
+      "Internal only"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "BNQ 0x7f54",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 28,
+    "suppressed": false
+  },
+  {
+    "id": 29,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display active",
+    "body": "Mirroring the built-in screen to the external display.",
+    "timestamp": "2026-11-09T16:44:29.708921",
+    "received_at": "2026-11-09T16:44:29.708966",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:15:45.836794",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "off",
+      "Internal only",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "BNQ 0x7f54",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 29,
+    "suppressed": false
+  },
+  {
+    "id": 30,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display active",
+    "body": "Mirroring the built-in screen to the external display.",
+    "timestamp": "2026-11-09T16:47:09.718383",
+    "received_at": "2026-11-09T16:47:09.718475",
+    "read_at": null,
+    "archived_at": "2026-11-09T16:49:59.700175",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "off",
+      "Internal only",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "BNQ 0x7f54",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 30,
+    "suppressed": false
+  },
+  {
+    "id": 31,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display connected",
+    "body": "PHL \u00b7 640x480\nChoose how to use the connected display.\nLast used: Mirror.",
+    "timestamp": "2026-11-09T16:51:41.176159",
+    "received_at": "2026-11-09T16:51:41.176159",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:15:29.109927",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "mirror",
+      "Mirror screen",
+      "desktop",
+      "Separate desktop",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "PHL",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": null,
+    "suppressed": false
+  },
+  {
+    "id": 32,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display connected",
+    "body": "BenQ 0x7f54 \u00b7 640x480\nChoose how to use the connected display.\nLast used: Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:01:44.286534",
+    "received_at": "2026-11-09T17:01:44.286534",
+    "read_at": null,
+    "archived_at": null,
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "mirror-portrait",
+      "Mirror portrait",
+      "mirror-landscape",
+      "Mirror landscape",
+      "fullscreen",
+      "Fullscreen",
+      "desktop",
+      "Separate desktop"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "BenQ 0x7f54",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": null,
+    "suppressed": false
+  },
+  {
+    "id": 33,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display connected",
+    "body": "BenQ 0x7f54 \u00b7 640x480\nChoose how to use the connected display.\nLast used: Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:01:59.131869",
+    "received_at": "2026-11-09T17:01:59.131869",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:02:04.191117",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "mirror-portrait",
+      "Mirror portrait",
+      "mirror-landscape",
+      "Mirror landscape",
+      "fullscreen",
+      "Fullscreen",
+      "desktop",
+      "Separate desktop"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "BenQ 0x7f54",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": null,
+    "suppressed": false
+  },
+  {
+    "id": 34,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display mode failed",
+    "body": "external bridge did not reach RUNNING (STOPPED)\n1-09T18:02:43 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080\n2026-11-09T18:02:43 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)\n2026-11-09T18:02:43 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)\n2026-11-09T18:02:43 nuxel-wl-fb-ext: stopped frames=0\nBUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext\n2026-11-09T18:02:47 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=fullscreen\n2026-11-09T18:02:47 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered\n2026-11-09T18:02:47 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800\n2026-11-09T18:02:47 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080\n2026-11-09T18:02:47 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)\n2026-11-09T18:02:47 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.500 content=1920x1080 offset=0,0 rot=90 fit=fill\n2026-11-09T18:02:48 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=21377\n2026-11-09T18:02:52 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)\n2026-11-09T18:02:52 nuxel-wl-fb-ext: stopped frames=35\nBUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext\n",
+    "timestamp": "2026-11-09T17:02:52.709551",
+    "received_at": "2026-11-09T17:02:52.709589",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:15:27.523415",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "mirror-portrait",
+      "Retry as portrait",
+      "mirror-landscape",
+      "Retry as landscape",
+      "fullscreen",
+      "Retry fullscreen",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 2,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "Philips",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 34,
+    "suppressed": false
+  },
+  {
+    "id": 35,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display active",
+    "body": "Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:04:57.710142",
+    "received_at": "2026-11-09T17:04:57.710189",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:15:26.571395",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "off",
+      "Internal only",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "Philips",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 35,
+    "suppressed": false
+  },
+  {
+    "id": 36,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display connected",
+    "body": "Philips \u00b7 640x480\nChoose how to use the connected display.\nLast used: Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:27:52.317205",
+    "received_at": "2026-11-09T17:27:52.317205",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:28:23.097695",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "mirror-portrait",
+      "Mirror portrait",
+      "mirror-landscape",
+      "Mirror landscape",
+      "fullscreen",
+      "Fullscreen",
+      "desktop",
+      "Separate desktop"
+    ],
+    "hints": {
+      "nuxel.display.generation": 2,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "Philips",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": null,
+    "suppressed": false
+  },
+  {
+    "id": 37,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display active",
+    "body": "Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:32:56.869839",
+    "received_at": "2026-11-09T17:32:56.869886",
+    "read_at": null,
+    "archived_at": null,
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "off",
+      "Internal only",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 3,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "Philips",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 37,
+    "suppressed": false
+  },
+  {
+    "id": 38,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display active",
+    "body": "Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:33:28.441617",
+    "received_at": "2026-11-09T17:33:28.441668",
+    "read_at": null,
+    "archived_at": null,
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "off",
+      "Internal only",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "Philips",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 38,
+    "suppressed": false
+  },
+  {
+    "id": 39,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display active",
+    "body": "Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:34:15.901914",
+    "received_at": "2026-11-09T17:34:15.901956",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:34:25.991369",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "off",
+      "Internal only",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "Philips",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 39,
+    "suppressed": false
+  },
+  {
+    "id": 40,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display connected",
+    "body": "Philips \u00b7 640x480\nChoose how to use the connected display.\nLast used: Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:34:29.373253",
+    "received_at": "2026-11-09T17:34:29.373253",
+    "read_at": null,
+    "archived_at": null,
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "mirror-portrait",
+      "Mirror portrait",
+      "mirror-landscape",
+      "Mirror landscape",
+      "fullscreen",
+      "Fullscreen",
+      "desktop",
+      "Separate desktop"
+    ],
+    "hints": {
+      "nuxel.display.generation": 2,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "Philips",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": null,
+    "suppressed": false
+  },
+  {
+    "id": 41,
+    "app_id": "org.nuxel.Display",
+    "app_name": "Nuxel Display",
+    "summary": "External display active",
+    "body": "Mirroring the built-in screen upright on the external display.",
+    "timestamp": "2026-11-09T17:35:36.459119",
+    "received_at": "2026-11-09T17:35:36.459164",
+    "read_at": null,
+    "archived_at": "2026-11-09T17:37:04.706511",
+    "urgency": "normal",
+    "icon": "",
+    "actions": [
+      "off",
+      "Internal only",
+      "settings",
+      "Display settings"
+    ],
+    "hints": {
+      "nuxel.display.generation": 1,
+      "nuxel.display.state": "DP_LINK_READY",
+      "nuxel.display.modes": [
+        {
+          "raw": "U:640x480p-0",
+          "width": 640,
+          "height": 480,
+          "refresh": 0,
+          "flags": "U",
+          "source": "fbdev"
+        }
+      ],
+      "nuxel.display.display_name": "Philips",
+      "nuxel.display.desktop_available": false,
+      "nuxel.display.blocker": null
+    },
+    "source": "nuxel-displayd",
+    "replaces_id": 41,
+    "suppressed": false
+  }
+]

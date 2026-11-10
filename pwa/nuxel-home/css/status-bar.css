@@ -1132,6 +1132,8 @@ body.lockscreen-active #status-bar {
 }
 .qs-notification-action:active { background: rgba(255, 255, 255, 0.14); }
 .qs-notification-action.archive { color: #ffb1b1; }
+.qs-notification-action.custom { background: rgba(120, 190, 255, 0.18); border-color: rgba(120, 190, 255, 0.45); color: #d9efff; }
+.qs-notification-action.custom:active { background: rgba(120, 190, 255, 0.30); }
 .qs-notification-empty,
 .qs-notification-error {
     padding: 14px 10px;

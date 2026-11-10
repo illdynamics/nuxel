@@ -1,0 +1,4 @@
+2cbc5085d871d043baea6e64aec6c94df60adae18b86fa8696ad942f46b748fc  build/out/s10plus/debug-candidates/p100000/boot-current-s10plus.img
+11d13427a3df629f9ab86296c82abbcf6d798ef5c3f5a6bea8f0f9c67432ddac  build/out/s10plus/debug-candidates/p100000/nuxel-beyond2lte-boot-p100000-dp-recovery.img
+e42813084477c71a45415466b4bf469e22f5c4ab45b078bb5c9d992148d5d3ff  build/out/s10plus/debug-candidates/p100000/Image.patched-final
+bea30e7834f9c69faead19c35dcaeb3a4cc0f4c68313d75ebe21aa41d24ec2f0  kernel/s10plus/patches/0010-nuxel-dp-shadow-timeout-recovery.patch

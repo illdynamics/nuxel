@@ -1,0 +1,19 @@
+...s...Fs...........................                                     [100%]
+=================================== FAILURES ===================================
+_____________ test_helper_builds_natively_and_refuses_without_flag _____________
+/Users/wicked/x/nuxel/tests/pwnage61000/test_mfc_decode_source.py:39: in test_helper_builds_natively_and_refuses_without_flag
+    assert p.returncode == 0, p.stderr
+E   AssertionError: /Users/wicked/x/nuxel/tools/s10plus/a61/nuxel-mfc-decode.c:38:10: fatal error: 'linux/videodev2.h' file not found
+E        38 | #include <linux/videodev2.h>
+E           |          ^~~~~~~~~~~~~~~~~~~
+E     1 error generated.
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['/usr/bin/cc', '-O2', '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-format-truncation', '-...2.h' file not found\n   38 | #include <linux/videodev2.h>\n      |          ^~~~~~~~~~~~~~~~~~~\n1 error generated.\n").returncode
+        cc         = '/usr/bin/cc'
+        out        = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-123/test_helper_builds_natively_an0/nuxel-mfc-decode')
+        p          = CompletedProcess(args=['/usr/bin/cc', '-O2', '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-format-truncation', '-...2.h' file not found\n   38 | #include <linux/videodev2.h>\n      |          ^~~~~~~~~~~~~~~~~~~\n1 error generated.\n")
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-123/test_helper_builds_natively_an0')
+=========================== short test summary info ============================
+FAILED tests/pwnage61000/test_mfc_decode_source.py::test_helper_builds_natively_and_refuses_without_flag
+1 failed, 33 passed, 2 skipped in 1.17s

@@ -1,0 +1,18 @@
+# Apply /etc/nuxel/input/input.json to phoc's GSettings pointer handlers.
+[Unit]
+Description=Nuxel physical pointer apply (mouse/touchpad settings)
+Documentation=file:///usr/share/doc/nuxel/input/README.md
+After=graphical-session.target phoc.service
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/libexec/nuxel/nuxel-input-apply apply
+ExecReload=/usr/libexec/nuxel/nuxel-input-apply apply
+SuccessExitStatus=0
+StandardOutput=append:/var/log/nuxel/input.log
+StandardError=append:/var/log/nuxel/input.log
+
+[Install]
+WantedBy=graphical-session.target

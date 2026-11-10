@@ -1,0 +1,75 @@
+.............F..F....F.................................................. [ 63%]
+..........F............F..F..............                                [100%]
+=================================== FAILURES ===================================
+________________ test_audio_route_service_keeps_bounded_timeout ________________
+/Users/wicked/x/nuxel/tests/pwnage37000/test_bluetooth_audio_37000.py:108: in test_audio_route_service_keeps_bounded_timeout
+    assert "After=sound.target\n" in unit
+E   AssertionError: assert 'After=sound.target\n' in '[Unit]\nDescription=Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)\nAfter=sound.target nuxel-audio-session.ser...t=no\nTimeoutStartSec=45\nStandardOutput=journal\nStandardError=journal\n\n[Install]\nWantedBy=nuxel-wayland.service\n'
+        unit       = '[Unit]\nDescription=Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)\nAfter=sound.target nuxel-audio-session.ser...t=no\nTimeoutStartSec=45\nStandardOutput=journal\nStandardError=journal\n\n[Install]\nWantedBy=nuxel-wayland.service\n'
+___________________ test_abox_unit_does_not_want_multi_user ____________________
+/Users/wicked/x/nuxel/tests/pwnage37000/test_boot_butterscotch.py:25: in test_abox_unit_does_not_want_multi_user
+    assert "WantedBy=nuxel-wayland.service" in reload_unit
+E   AssertionError: assert 'WantedBy=nuxel-wayland.service' in '[Unit]\nDescription=Nuxel S10+ ABOX Calliope core-firmware reload\nDocumentation=https://nuxel.local/docs/pwnage-3800...ull it into nuxel-wayland.service: the 20-50 s PM reload is audio\n# hardware work, not a display/Home prerequisite.\n'
+        reload_unit = '[Unit]\nDescription=Nuxel S10+ ABOX Calliope core-firmware reload\nDocumentation=https://nuxel.local/docs/pwnage-3800...ull it into nuxel-wayland.service: the 20-50 s PM reload is audio\n# hardware work, not a display/Home prerequisite.\n'
+__________________ test_audio_route_does_not_block_multi_user __________________
+/Users/wicked/x/nuxel/tests/pwnage37000/test_boot_butterscotch.py:66: in test_audio_route_does_not_block_multi_user
+    assert "After=sound.target\n" in unit
+E   AssertionError: assert 'After=sound.target\n' in '[Unit]\nDescription=Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)\nAfter=sound.target nuxel-audio-session.ser...t=no\nTimeoutStartSec=45\nStandardOutput=journal\nStandardError=journal\n\n[Install]\nWantedBy=nuxel-wayland.service\n'
+        unit       = '[Unit]\nDescription=Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)\nAfter=sound.target nuxel-audio-session.ser...t=no\nTimeoutStartSec=45\nStandardOutput=journal\nStandardError=journal\n\n[Install]\nWantedBy=nuxel-wayland.service\n'
+_____________ test_lockscreen_has_no_infinite_indicator_animation ______________
+/Users/wicked/x/nuxel/tests/pwnage37000/test_butterscotch_smooth.py:42: in test_lockscreen_has_no_infinite_indicator_animation
+    assert "infinite" not in decl, block
+E   AssertionError: 
+E     .lockscreen-clock-penguin.ringing {
+E       border-color: rgba(255,123,62,.95);
+E       box-shadow: 0 0 0 2px rgba(255,123,62,.35), 0 12px 34px rgba(255,80,20,.38),
+E                   inset 0 1px 0 rgba(255,255,255,.18);
+E       
+E       animation: nuxel-clock-shake-heavy .18s linear infinite;
+E       will-change: transform;
+E     }
+E   assert 'infinite' not in '\n  border-...ransform;\n}'
+E     
+E     'infinite' is contained here:
+E       8s linear infinite;
+E     ?           ++++++++
+E         will-change: transform;
+E       }
+        block      = '\n.lockscreen-clock-penguin.ringing {\n  border-color: rgba(255,123,62,.95);\n  box-shadow: 0 0 0 2px rgba(255,123,62...0 rgba(255,255,255,.18);\n  \n  animation: nuxel-clock-shake-heavy .18s linear infinite;\n  will-change: transform;\n}'
+        css        = '/* Nuxel A45 Penguin Lockscreen — full-screen swipe-to-unlock surface.\n   The wallpaper is the owner-supplied nuxel-...splay-off .lockscreen-clock-penguin,\nbody.display-off .lockscreen-clock-penguin img { animation: none !important; }\n'
+        css_nc     = '\n#lockscreen {\n    position: fixed;\n    inset: 0;\n    z-index: 500;\n    background: #04121f;\n    touch-action: ...splay-off .lockscreen-clock-penguin,\nbody.display-off .lockscreen-clock-penguin img { animation: none !important; }\n'
+        decl       = '\n  border-color: rgba(255,123,62,.95);\n  box-shadow: 0 0 0 2px rgba(255,123,62,.35), 0 12px 34px rgba(255,80,20,.38...0 rgba(255,255,255,.18);\n  \n  animation: nuxel-clock-shake-heavy .18s linear infinite;\n  will-change: transform;\n}'
+___________________ test_home_css_has_no_giant_panel_shadows ___________________
+/Users/wicked/x/nuxel/tests/pwnage37000/test_pwnage37000.py:65: in test_home_css_has_no_giant_panel_shadows
+    assert int(blur) < 24, f"{rel} still has a large blur shadow ({blur}px)"
+E   AssertionError: pwa/nuxel-home/css/lockscreen.css still has a large blur shadow (28px)
+E   assert 28 < 24
+E    +  where 28 = int('28')
+        blur       = '28'
+        re         = <module 're' from '/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/re/__init__.py'>
+        rel        = 'pwa/nuxel-home/css/lockscreen.css'
+        text       = '/* Nuxel A45 Penguin Lockscreen — full-screen swipe-to-unlock surface.\n   The wallpaper is the owner-supplied nuxel-...splay-off .lockscreen-clock-penguin,\nbody.display-off .lockscreen-clock-penguin img { animation: none !important; }\n'
+________________ test_a29_and_a45_session_scripts_are_identical ________________
+/Users/wicked/x/nuxel/tests/pwnage37000/test_pwnage37000.py:92: in test_a29_and_a45_session_scripts_are_identical
+    assert a29 == a45, "A29/A45 session scripts drifted; the preload regression can return"
+E   AssertionError: A29/A45 session scripts drifted; the preload regression can return
+E   assert '#!/bin/sh\n#...el-pwa-host\n' == '#!/bin/sh\n#...el-pwa-host\n'
+E     
+E     Skipping 1215 identical leading characters in diff, use -v to show
+E       used.
+E       #
+E     - # Software rendering is forced because this kernel has no DRM/EGL device.
+E     + # GPU policy: the nuxel-wayland-gpu-wrapper exports NUXEL_GPU=1 when phoc is
+E     + # running on Mali-G76 through Mesa panfrost/kbase, and 0 on the pixman fallback....
+E     
+E     ...Full output truncated (446 lines hidden), use '-vv' to show
+        a29        = '#!/bin/sh\n# Nuxel phone session — runs INSIDE the phoc compositor (phoc -E ...).\n#\n# Composition (identical to the.../dev/snd 2>/dev/null || true\n\nsay "starting launcher host url=$NUXEL_HOME_URL"\nexec /usr/lib/nuxel/nuxel-pwa-host\n'
+        a45        = '#!/bin/sh\n# Nuxel phone session — runs INSIDE the phoc compositor (phoc -E ...).\n#\n# Composition (identical to the...will report the blocker"\nfi\n\nsay "starting launcher host url=$NUXEL_HOME_URL"\nexec /usr/lib/nuxel/nuxel-pwa-host\n'
+=========================== short test summary info ============================
+FAILED tests/pwnage37000/test_bluetooth_audio_37000.py::test_audio_route_service_keeps_bounded_timeout
+FAILED tests/pwnage37000/test_boot_butterscotch.py::test_abox_unit_does_not_want_multi_user
+FAILED tests/pwnage37000/test_boot_butterscotch.py::test_audio_route_does_not_block_multi_user
+FAILED tests/pwnage37000/test_butterscotch_smooth.py::test_lockscreen_has_no_infinite_indicator_animation
+FAILED tests/pwnage37000/test_pwnage37000.py::test_home_css_has_no_giant_panel_shadows
+FAILED tests/pwnage37000/test_pwnage37000.py::test_a29_and_a45_session_scripts_are_identical
+6 failed, 107 passed in 0.89s

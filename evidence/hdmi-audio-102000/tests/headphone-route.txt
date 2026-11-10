@@ -1,0 +1,62 @@
+PASS fixtures: all jack/USB-C route expectations match
+PASS fixture jack-none -> UNKNOWN
+PASS jack-none: audibility is NEEDS_OWNER_TEST (never inferred)
+PASS fixture jack-nocontrol -> UNKNOWN
+PASS jack-nocontrol: audibility is NEEDS_OWNER_TEST (never inferred)
+PASS fixture jack-removed -> Speaker
+PASS jack-removed: audibility is NEEDS_OWNER_TEST (never inferred)
+PASS fixture jack-inserted-headphones -> Headphones
+PASS jack-inserted-headphones: audibility is NEEDS_OWNER_TEST (never inferred)
+PASS fixture jack-inserted-headset -> Headset
+PASS jack-inserted-headset: audibility is NEEDS_OWNER_TEST (never inferred)
+PASS fixture jack-usbc-digital -> USB-C Headset (UAC)
+PASS jack-usbc-digital: audibility is NEEDS_OWNER_TEST (never inferred)
+PASS fixture jack-usbc-analog -> UNKNOWN_USBC_ACCESSORY
+PASS jack-usbc-analog: audibility is NEEDS_OWNER_TEST (never inferred)
+PASS a TRRS headset with a 'Headset Mic Jack' control is NOT misread as headphones
+PASS the headset fixture reports the mic as present
+PASS the detection rule only uses NAMES OBSERVED on the card (policy flag)
+PASS an unproven accessory state is REFUSED (nothing is changed)
+PASS an unknown USB-C accessory is REFUSED rather than routed blindly
+PASS a proven route is NOT applied without --yes (dry run, rc=2)
+PASS with --yes but no UCM tool, the switch is reported BLOCKED_EXTERNAL_RESOURCE
+PASS a BLOCKED route writes no jack-state file
+PASS policy keeps the on-unplug revert rule
+PASS policy keeps the 100% ceiling and the 50% default on every route change
+PASS watch is bounded and applies no route by itself
+PASS tone without --yes is refused (no unbounded burst, no accidental audibility claim)
+PASS one single implementation of the low-volume tone (headphone tool delegates)
+PASS manual-proof fragment has field 'Feature'
+PASS manual-proof fragment has field 'Why'
+PASS manual-proof fragment has field 'Preparation'
+PASS manual-proof fragment has field 'Exact action'
+PASS manual-proof fragment has field 'Expected result'
+PASS manual-proof fragment has field 'Failure symptoms'
+PASS manual-proof fragment has field 'Diagnostic'
+PASS manual-proof fragment has field 'PASS'
+PASS manual-proof fragment has field 'FAIL'
+PASS manual-proof fragment marks audibility NEEDS_OWNER_TEST
+PASS manual-proof fragment covers the 3.5 mm jack and the USB-C adapter
+PASS manual-proof fragment states this test must not gate other work
+PASS tool contains no flashing surface for '\\bdd\\s+if='
+PASS tool contains no flashing surface for '/dev/block'
+PASS tool contains no flashing surface for '\\bheimdall\\b'
+PASS tool contains no flashing surface for '\\bodind?\\b'
+PASS tool contains no flashing surface for 'fastboot'
+PASS tool contains no flashing surface for 'download mode'
+PASS tool contains no flashing surface for '\\bflash\\b'
+PASS the tool reports the USB device-role conflict (usb-role command)
+PASS the USB role is examined from the kernel's Type-C and gadget state, not guessed
+PASS no tool switches the port role (the live console is the only debug path)
+PASS 07-headphones.md documents 'role conflict'
+PASS 07-headphones.md documents 'live console'
+PASS 07-headphones.md documents 'recovery plan'
+PASS 07-headphones.md documents 'read-only'
+PASS 07-headphones.md documents 'ACTIVE (UAC) DAC'
+PASS 07-headphones.md documents 'NOT_SUPPORTED_ON_DEVICE'
+PASS 07-headphones.md documents 'BLOCKED_HARDWARE'
+PASS 07-headphones.md documents 'never Recovery/Download Mode'
+PASS usb-role runs and prints its refusal decision
+PASS usb-role names the owner procedure for the bounded experiment
+
+== 0 failing check(s) ==

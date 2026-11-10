@@ -1,0 +1,946 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:02:26 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:02:26 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:02:26 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:02:26 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:02:26 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:02:27 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:02:27 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:02:36 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:02:43 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:02:43 nuxel-wl-fb-ext: stopped frames=172
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:02:43 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-landscape
+2026-11-09T18:02:43 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:02:43 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:02:43 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:02:43 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:02:43 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:02:43 nuxel-wl-fb-ext: stopped frames=0
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:02:47 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=fullscreen
+2026-11-09T18:02:47 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:02:47 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:02:47 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:02:47 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:02:47 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.500 content=1920x1080 offset=0,0 rot=90 fit=fill
+2026-11-09T18:02:48 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=21377
+2026-11-09T18:02:52 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:02:52 nuxel-wl-fb-ext: stopped frames=35
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:02:52 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:02:52 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:02:52 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:02:52 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:02:52 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:02:52 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:02:52 nuxel-wl-fb-ext: stopped frames=0
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:03:21 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-landscape
+2026-11-09T18:03:21 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:03:21 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:03:21 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:03:21 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:03:22 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T18:03:22 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17992
+2026-11-09T18:03:25 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:03:25 nuxel-wl-fb-ext: stopped frames=27
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:03:25 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=fullscreen
+2026-11-09T18:03:25 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:03:25 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:03:25 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:03:25 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:03:25 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.500 content=1920x1080 offset=0,0 rot=90 fit=fill
+2026-11-09T18:03:25 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=21377
+2026-11-09T18:03:29 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:03:29 nuxel-wl-fb-ext: stopped frames=28
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:03:29 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:03:29 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:03:29 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:03:29 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:03:29 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:03:29 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:03:29 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:03:33 nuxel-wl-fb-ext: capture failed (1 consecutive)
+2026-11-09T18:03:33 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:03:33 nuxel-wl-fb-ext: stopped frames=38
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:03:33 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-landscape
+2026-11-09T18:03:33 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:03:33 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:03:33 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:03:33 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:03:33 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T18:03:33 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17992
+2026-11-09T18:03:37 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:03:37 nuxel-wl-fb-ext: stopped frames=27
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:03:37 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:03:37 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:03:37 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:03:37 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:03:37 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:03:37 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:03:37 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:03:46 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:03:55 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:04:05 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:04:14 nuxel-wl-fb-ext: frame 400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:04:24 nuxel-wl-fb-ext: frame 500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:04:33 nuxel-wl-fb-ext: frame 600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:04:42 nuxel-wl-fb-ext: frame 700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:04:52 nuxel-wl-fb-ext: frame 800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:04:57 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:04:57 nuxel-wl-fb-ext: stopped frames=854
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:04:57 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:04:57 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:04:57 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:04:57 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:04:57 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:04:57 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:04:57 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:05:06 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:05:16 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:05:25 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:05:34 nuxel-wl-fb-ext: frame 400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:05:44 nuxel-wl-fb-ext: frame 500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:05:53 nuxel-wl-fb-ext: frame 600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:06:03 nuxel-wl-fb-ext: frame 700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:06:12 nuxel-wl-fb-ext: frame 800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:06:21 nuxel-wl-fb-ext: frame 900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:06:31 nuxel-wl-fb-ext: frame 1000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:06:40 nuxel-wl-fb-ext: frame 1100 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:06:49 nuxel-wl-fb-ext: frame 1200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:06:58 nuxel-wl-fb-ext: frame 1300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:07:07 nuxel-wl-fb-ext: frame 1400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:07:17 nuxel-wl-fb-ext: frame 1500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:07:26 nuxel-wl-fb-ext: frame 1600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:07:36 nuxel-wl-fb-ext: frame 1700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:07:45 nuxel-wl-fb-ext: frame 1800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:07:54 nuxel-wl-fb-ext: frame 1900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:08:03 nuxel-wl-fb-ext: frame 2000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:08:11 nuxel-wl-fb-ext: frame 2100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:08:20 nuxel-wl-fb-ext: frame 2200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:08:28 nuxel-wl-fb-ext: frame 2300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:08:36 nuxel-wl-fb-ext: frame 2400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:08:45 nuxel-wl-fb-ext: frame 2500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:08:53 nuxel-wl-fb-ext: frame 2600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:09:01 nuxel-wl-fb-ext: frame 2700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:09:10 nuxel-wl-fb-ext: frame 2800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:09:18 nuxel-wl-fb-ext: frame 2900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:09:26 nuxel-wl-fb-ext: frame 3000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:09:34 nuxel-wl-fb-ext: frame 3100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:09:42 nuxel-wl-fb-ext: frame 3200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:09:51 nuxel-wl-fb-ext: frame 3300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:10:00 nuxel-wl-fb-ext: frame 3400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:10:09 nuxel-wl-fb-ext: frame 3500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:10:19 nuxel-wl-fb-ext: frame 3600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:10:28 nuxel-wl-fb-ext: frame 3700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:10:37 nuxel-wl-fb-ext: frame 3800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:10:45 nuxel-wl-fb-ext: frame 3900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:10:53 nuxel-wl-fb-ext: frame 4000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:11:01 nuxel-wl-fb-ext: frame 4100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:11:10 nuxel-wl-fb-ext: frame 4200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:11:18 nuxel-wl-fb-ext: frame 4300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:11:26 nuxel-wl-fb-ext: frame 4400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:11:34 nuxel-wl-fb-ext: frame 4500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:11:42 nuxel-wl-fb-ext: frame 4600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:11:50 nuxel-wl-fb-ext: frame 4700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:11:59 nuxel-wl-fb-ext: frame 4800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:12:07 nuxel-wl-fb-ext: frame 4900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:12:15 nuxel-wl-fb-ext: frame 5000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:12:23 nuxel-wl-fb-ext: frame 5100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:12:31 nuxel-wl-fb-ext: frame 5200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:12:40 nuxel-wl-fb-ext: frame 5300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:12:48 nuxel-wl-fb-ext: frame 5400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:12:57 nuxel-wl-fb-ext: frame 5500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:13:05 nuxel-wl-fb-ext: frame 5600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:13:13 nuxel-wl-fb-ext: frame 5700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:13:22 nuxel-wl-fb-ext: frame 5800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:13:30 nuxel-wl-fb-ext: frame 5900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:13:39 nuxel-wl-fb-ext: frame 6000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:13:47 nuxel-wl-fb-ext: frame 6100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:13:55 nuxel-wl-fb-ext: frame 6200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:14:04 nuxel-wl-fb-ext: frame 6300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:14:13 nuxel-wl-fb-ext: frame 6400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:14:21 nuxel-wl-fb-ext: frame 6500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:14:29 nuxel-wl-fb-ext: frame 6600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:14:38 nuxel-wl-fb-ext: frame 6700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:14:47 nuxel-wl-fb-ext: frame 6800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:14:55 nuxel-wl-fb-ext: frame 6900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:15:04 nuxel-wl-fb-ext: frame 7000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:15:12 nuxel-wl-fb-ext: frame 7100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:15:21 nuxel-wl-fb-ext: frame 7200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:15:30 nuxel-wl-fb-ext: frame 7300 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:15:39 nuxel-wl-fb-ext: frame 7400 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:15:48 nuxel-wl-fb-ext: frame 7500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:15:57 nuxel-wl-fb-ext: frame 7600 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:16:06 nuxel-wl-fb-ext: frame 7700 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:16:15 nuxel-wl-fb-ext: frame 7800 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:16:23 nuxel-wl-fb-ext: frame 7900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:16:32 nuxel-wl-fb-ext: frame 8000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:16:40 nuxel-wl-fb-ext: frame 8100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:16:49 nuxel-wl-fb-ext: frame 8200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:16:57 nuxel-wl-fb-ext: frame 8300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:17:06 nuxel-wl-fb-ext: frame 8400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:17:15 nuxel-wl-fb-ext: frame 8500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:17:23 nuxel-wl-fb-ext: frame 8600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:17:32 nuxel-wl-fb-ext: frame 8700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:17:41 nuxel-wl-fb-ext: frame 8800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:17:50 nuxel-wl-fb-ext: frame 8900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:17:58 nuxel-wl-fb-ext: frame 9000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:18:07 nuxel-wl-fb-ext: frame 9100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:18:16 nuxel-wl-fb-ext: frame 9200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:18:24 nuxel-wl-fb-ext: frame 9300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:18:33 nuxel-wl-fb-ext: frame 9400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:18:41 nuxel-wl-fb-ext: frame 9500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:18:50 nuxel-wl-fb-ext: frame 9600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:18:59 nuxel-wl-fb-ext: frame 9700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:19:07 nuxel-wl-fb-ext: frame 9800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:19:16 nuxel-wl-fb-ext: frame 9900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:19:25 nuxel-wl-fb-ext: frame 10000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:19:33 nuxel-wl-fb-ext: frame 10100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:19:42 nuxel-wl-fb-ext: frame 10200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:19:51 nuxel-wl-fb-ext: frame 10300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:19:59 nuxel-wl-fb-ext: frame 10400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:20:08 nuxel-wl-fb-ext: frame 10500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:20:16 nuxel-wl-fb-ext: frame 10600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:20:25 nuxel-wl-fb-ext: frame 10700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:20:34 nuxel-wl-fb-ext: frame 10800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:20:42 nuxel-wl-fb-ext: frame 10900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:20:51 nuxel-wl-fb-ext: frame 11000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:20:59 nuxel-wl-fb-ext: frame 11100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:21:08 nuxel-wl-fb-ext: frame 11200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:21:16 nuxel-wl-fb-ext: frame 11300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:21:25 nuxel-wl-fb-ext: frame 11400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:21:33 nuxel-wl-fb-ext: frame 11500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:21:42 nuxel-wl-fb-ext: frame 11600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:21:50 nuxel-wl-fb-ext: frame 11700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:21:59 nuxel-wl-fb-ext: frame 11800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:22:07 nuxel-wl-fb-ext: frame 11900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:22:16 nuxel-wl-fb-ext: frame 12000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:22:24 nuxel-wl-fb-ext: frame 12100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:22:33 nuxel-wl-fb-ext: frame 12200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:22:42 nuxel-wl-fb-ext: frame 12300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:22:51 nuxel-wl-fb-ext: frame 12400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:23:00 nuxel-wl-fb-ext: frame 12500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:23:08 nuxel-wl-fb-ext: frame 12600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:23:17 nuxel-wl-fb-ext: frame 12700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:23:26 nuxel-wl-fb-ext: frame 12800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:23:35 nuxel-wl-fb-ext: frame 12900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:23:43 nuxel-wl-fb-ext: frame 13000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:23:52 nuxel-wl-fb-ext: frame 13100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:24:01 nuxel-wl-fb-ext: frame 13200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:24:10 nuxel-wl-fb-ext: frame 13300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:24:19 nuxel-wl-fb-ext: frame 13400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:24:28 nuxel-wl-fb-ext: frame 13500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:24:37 nuxel-wl-fb-ext: frame 13600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:24:46 nuxel-wl-fb-ext: frame 13700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:24:55 nuxel-wl-fb-ext: frame 13800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:25:04 nuxel-wl-fb-ext: frame 13900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:25:13 nuxel-wl-fb-ext: frame 14000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:25:22 nuxel-wl-fb-ext: frame 14100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:25:31 nuxel-wl-fb-ext: frame 14200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:25:40 nuxel-wl-fb-ext: frame 14300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:25:49 nuxel-wl-fb-ext: frame 14400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:25:59 nuxel-wl-fb-ext: frame 14500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:26:08 nuxel-wl-fb-ext: frame 14600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:26:17 nuxel-wl-fb-ext: frame 14700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:26:25 nuxel-wl-fb-ext: frame 14800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:26:33 nuxel-wl-fb-ext: frame 14900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:26:42 nuxel-wl-fb-ext: frame 15000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:26:50 nuxel-wl-fb-ext: frame 15100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:26:58 nuxel-wl-fb-ext: frame 15200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:27:06 nuxel-wl-fb-ext: frame 15300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:27:14 nuxel-wl-fb-ext: frame 15400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:27:22 nuxel-wl-fb-ext: frame 15500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:27:30 nuxel-wl-fb-ext: frame 15600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:27:38 nuxel-wl-fb-ext: frame 15700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:27:39 nuxel-wl-fb-ext: DP link lost; stopping before submitting another frame
+2026-11-09T18:27:40 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:27:40 nuxel-wl-fb-ext: stopped frames=15714
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:32:56 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:32:56 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:32:56 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:32:56 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:32:56 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:32:56 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:32:56 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:33:05 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:33:15 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:33:24 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:33:26 nuxel-wl-fb-ext: capture failed (1 consecutive)
+2026-11-09T18:33:26 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:33:26 nuxel-wl-fb-ext: stopped frames=323
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:33:28 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:33:28 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:33:28 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:33:28 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:33:28 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:33:28 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:33:28 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:34:15 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:34:15 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:34:15 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:34:15 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:34:15 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:34:15 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:34:15 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:34:19 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:34:19 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:34:19 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:34:19 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:34:19 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:34:19 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:34:19 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:34:25 nuxel-wl-fb-ext: DP link lost; stopping before submitting another frame
+2026-11-09T18:34:25 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:34:25 nuxel-wl-fb-ext: stopped frames=65
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:34:59 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:34:59 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:34:59 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:34:59 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:34:59 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:34:59 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:34:59 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:35:03 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:35:03 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:35:03 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:35:03 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:35:03 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:35:03 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:35:03 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:35:13 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:35:21 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:35:24 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:35:24 nuxel-wl-fb-ext: stopped frames=228
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:35:24 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:35:24 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:35:24 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:35:24 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:35:24 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:35:24 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:35:24 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:35:28 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:35:28 nuxel-wl-fb-ext: stopped frames=39
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:35:28 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-landscape
+2026-11-09T18:35:28 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:35:28 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:35:28 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:35:28 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:35:28 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T18:35:28 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17992
+2026-11-09T18:35:32 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:35:32 nuxel-wl-fb-ext: stopped frames=29
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:35:32 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=fullscreen
+2026-11-09T18:35:32 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:35:32 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:35:32 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:35:32 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:35:32 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.500 content=1920x1080 offset=0,0 rot=90 fit=fill
+2026-11-09T18:35:32 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=21377
+2026-11-09T18:35:36 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:35:36 nuxel-wl-fb-ext: stopped frames=28
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:35:36 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:35:36 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:35:36 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:35:36 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:35:36 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:35:36 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:35:36 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:35:45 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:35:54 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:36:04 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:36:13 nuxel-wl-fb-ext: frame 400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:36:22 nuxel-wl-fb-ext: frame 500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:36:31 nuxel-wl-fb-ext: frame 600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:36:41 nuxel-wl-fb-ext: frame 700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:36:50 nuxel-wl-fb-ext: frame 800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:36:59 nuxel-wl-fb-ext: frame 900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:37:04 nuxel-wl-fb-ext: DP link lost; stopping before submitting another frame
+2026-11-09T18:37:04 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:37:04 nuxel-wl-fb-ext: stopped frames=952
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:37:47 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:37:47 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:37:47 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:37:47 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:37:47 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:37:47 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:37:47 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:37:57 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:38:05 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:38:05 nuxel-wl-fb-ext: stopped frames=194
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:38:08 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:38:08 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:38:08 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:38:08 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:38:08 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:38:08 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:38:08 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:38:17 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:38:24 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:38:24 nuxel-wl-fb-ext: stopped frames=173
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:38:28 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:38:28 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:38:28 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:38:28 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:38:28 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:38:28 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:38:28 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:38:38 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:38:45 nuxel-wl-fb-ext: capture failed (1 consecutive)
+2026-11-09T18:38:45 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:38:45 nuxel-wl-fb-ext: stopped frames=176
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:38:48 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:38:48 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:38:48 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:38:48 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:38:48 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:38:48 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:38:48 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:38:57 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:39:07 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:39:16 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:39:25 nuxel-wl-fb-ext: frame 400 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:39:34 nuxel-wl-fb-ext: frame 500 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:39:44 nuxel-wl-fb-ext: frame 600 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:39:53 nuxel-wl-fb-ext: frame 700 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:40:02 nuxel-wl-fb-ext: frame 800 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:40:12 nuxel-wl-fb-ext: frame 900 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:40:21 nuxel-wl-fb-ext: frame 1000 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:40:30 nuxel-wl-fb-ext: frame 1100 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:40:39 nuxel-wl-fb-ext: frame 1200 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:40:47 nuxel-wl-fb-ext: DP link lost; stopping before submitting another frame
+2026-11-09T18:40:47 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:40:47 nuxel-wl-fb-ext: stopped frames=1279
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:53:55 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:53:55 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:53:55 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:53:55 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:53:55 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:53:55 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:53:55 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:54:04 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:54:14 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:54:23 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:54:32 nuxel-wl-fb-ext: frame 400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:54:41 nuxel-wl-fb-ext: frame 500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:54:51 nuxel-wl-fb-ext: frame 600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:55:00 nuxel-wl-fb-ext: frame 700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:55:09 nuxel-wl-fb-ext: frame 800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:55:18 nuxel-wl-fb-ext: frame 900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:55:28 nuxel-wl-fb-ext: frame 1000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:55:37 nuxel-wl-fb-ext: frame 1100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:55:46 nuxel-wl-fb-ext: frame 1200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:55:55 nuxel-wl-fb-ext: frame 1300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:56:05 nuxel-wl-fb-ext: frame 1400 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:56:14 nuxel-wl-fb-ext: frame 1500 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:56:23 nuxel-wl-fb-ext: frame 1600 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:56:32 nuxel-wl-fb-ext: frame 1700 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:56:42 nuxel-wl-fb-ext: frame 1800 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:56:51 nuxel-wl-fb-ext: frame 1900 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:57:00 nuxel-wl-fb-ext: frame 2000 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:57:09 nuxel-wl-fb-ext: frame 2100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:57:19 nuxel-wl-fb-ext: frame 2200 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:57:28 nuxel-wl-fb-ext: frame 2300 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:57:34 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:57:34 nuxel-wl-fb-ext: stopped frames=2366
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:57:37 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:57:37 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:57:37 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:57:37 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:57:37 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:57:37 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:57:37 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T18:57:44 nuxel-wl-fb-ext: capture failed (1 consecutive)
+2026-11-09T18:57:44 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:57:44 nuxel-wl-fb-ext: stopped frames=72
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:57:47 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:57:47 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:57:47 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:57:47 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:57:47 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:57:47 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:57:47 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:57:56 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:58:06 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:58:09 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T18:58:09 nuxel-wl-fb-ext: stopped frames=231
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T18:58:12 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T18:58:12 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered
+2026-11-09T18:58:12 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T18:58:12 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T18:58:12 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T18:58:12 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T18:58:12 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:58:21 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:58:30 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:58:40 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:58:49 nuxel-wl-fb-ext: frame 400 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:58:58 nuxel-wl-fb-ext: frame 500 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:59:08 nuxel-wl-fb-ext: frame 600 src=720x1520 dst=1920x1080 nz=5699
+2026-11-09T18:59:17 nuxel-wl-fb-ext: frame 700 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:59:26 nuxel-wl-fb-ext: frame 800 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:59:35 nuxel-wl-fb-ext: frame 900 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:59:44 nuxel-wl-fb-ext: frame 1000 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T18:59:53 nuxel-wl-fb-ext: frame 1100 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:00:02 nuxel-wl-fb-ext: frame 1200 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:00:11 nuxel-wl-fb-ext: frame 1300 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:00:20 nuxel-wl-fb-ext: frame 1400 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:00:29 nuxel-wl-fb-ext: frame 1500 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:00:38 nuxel-wl-fb-ext: frame 1600 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:00:42 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:00:42 nuxel-wl-fb-ext: stopped frames=1647
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:00:43 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:00:43 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:00:43 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:00:44 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:00:44 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:00:44 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:00:44 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:00:44 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:00:55 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:00:55 nuxel-wl-fb-ext: stopped frames=93
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:00:57 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:00:57 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:00:57 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:00:57 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:00:57 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:00:57 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:00:57 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:00:57 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:06 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0 (updated)
+2026-11-09T19:01:06 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:01:09 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:10 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:01:10 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:01:21 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:26 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:01:26 nuxel-wl-fb-ext: stopped frames=243
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:01:26 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:01:26 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:01:26 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:01:26 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:01:26 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:01:26 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:01:26 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:01:26 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:29 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:31 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:34 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:34 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0 (updated)
+2026-11-09T19:01:34 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:01:36 nuxel-wl-fb-ext: frame 80 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:36 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:01:36 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:01:38 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:01:38 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:01:38 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:39 nuxel-wl-fb-ext: orientation effective=180 transform=180 external_rotation=180 (updated)
+2026-11-09T19:01:39 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=180 fit=fit
+2026-11-09T19:01:40 nuxel-wl-fb-ext: frame 120 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:41 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0 (updated)
+2026-11-09T19:01:41 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:01:42 nuxel-wl-fb-ext: frame 140 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:44 nuxel-wl-fb-ext: frame 160 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:46 nuxel-wl-fb-ext: frame 180 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:48 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:49 nuxel-wl-fb-ext: frame 220 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:51 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:01:51 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:01:51 nuxel-wl-fb-ext: frame 240 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:53 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:01:53 nuxel-wl-fb-ext: stopped frames=250
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:01:55 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:01:55 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:01:55 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:01:55 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:01:55 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:01:55 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:01:55 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:01:55 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:01:56 nuxel-wl-fb-ext: orientation effective=180 transform=180 external_rotation=180 (updated)
+2026-11-09T19:01:56 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=180 fit=fit
+2026-11-09T19:01:57 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:01:57 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:01:57 nuxel-wl-fb-ext: stopped frames=22
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:01:59 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:01:59 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:01:59 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:02:00 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:02:00 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:02:00 nuxel-wl-fb-ext: orientation effective=180 transform=180 external_rotation=180 (updated)
+2026-11-09T19:02:00 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=180 fit=fit
+2026-11-09T19:02:00 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:00 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0 (updated)
+2026-11-09T19:02:00 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:02:01 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:02 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:02:02 nuxel-wl-fb-ext: stopped frames=25
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:02:04 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:02:04 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:02:04 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:02:04 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:02:04 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:02:04 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0
+2026-11-09T19:02:04 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:02:04 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:05 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:02:05 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:02:06 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:07 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:02:07 nuxel-wl-fb-ext: stopped frames=22
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:02:09 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:02:09 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:02:09 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:02:09 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:02:09 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:02:09 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:02:09 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:02:09 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:11 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:14 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:17 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:19 nuxel-wl-fb-ext: frame 80 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:22 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:23 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:02:24 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:02:24 nuxel-wl-fb-ext: frame 120 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:25 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:02:25 nuxel-wl-fb-ext: stopped frames=128
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:02:28 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:02:28 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:02:28 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:02:28 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:02:28 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:02:28 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:02:28 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:02:28 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:31 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:33 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:36 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:37 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:02:37 nuxel-wl-fb-ext: stopped frames=66
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:02:37 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:02:37 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:02:37 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:02:37 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:02:37 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:02:37 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:02:37 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:02:37 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:39 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:02:39 nuxel-wl-fb-ext: stopped frames=19
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:02:39 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:02:39 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:02:39 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:02:40 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:02:40 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:02:40 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:02:40 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:02:40 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:40 nuxel-wl-fb-ext: orientation effective=180 transform=180 external_rotation=180 (updated)
+2026-11-09T19:02:40 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=180 fit=fit
+2026-11-09T19:02:42 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:42 nuxel-wl-fb-ext: capture failed (1 consecutive)
+2026-11-09T19:02:42 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:02:42 nuxel-wl-fb-ext: stopped frames=22
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:02:45 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:02:45 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:02:45 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:02:45 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:02:45 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:02:45 nuxel-wl-fb-ext: orientation effective=180 transform=180 external_rotation=180 (updated)
+2026-11-09T19:02:45 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=180 fit=fit
+2026-11-09T19:02:45 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:47 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:49 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:51 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:52 nuxel-wl-fb-ext: frame 80 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:02:53 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:02:53 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:02:55 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:02:55 nuxel-wl-fb-ext: stopped frames=97
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:02:56 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:02:56 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:02:56 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:02:56 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:02:56 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:02:56 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:02:56 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:02:56 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:02:58 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:01 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:03 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:06 nuxel-wl-fb-ext: frame 80 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:08 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:11 nuxel-wl-fb-ext: frame 120 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:14 nuxel-wl-fb-ext: frame 140 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:16 nuxel-wl-fb-ext: frame 160 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:19 nuxel-wl-fb-ext: frame 180 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:21 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:24 nuxel-wl-fb-ext: frame 220 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:03:25 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:03:25 nuxel-wl-fb-ext: stopped frames=227
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:05:29 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:05:29 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:05:29 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:05:29 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:05:29 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:05:29 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0
+2026-11-09T19:05:29 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:05:29 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:05:31 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:05:32 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:05:32 nuxel-wl-fb-ext: stopped frames=38
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:05:32 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:05:32 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:05:32 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:05:32 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:05:32 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:05:32 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0
+2026-11-09T19:05:33 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:05:33 nuxel-wl-fb-ext: DP link lost; stopping before submitting another frame
+2026-11-09T19:05:33 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:05:33 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:05:33 nuxel-wl-fb-ext: stopped frames=1
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:06:38 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:06:38 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:06:38 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:06:38 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:06:38 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:06:38 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0
+2026-11-09T19:06:38 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:06:38 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:40 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:42 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:43 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:06:43 nuxel-wl-fb-ext: stopped frames=54
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:06:44 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:06:44 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:06:44 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:06:44 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:06:44 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:06:44 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0
+2026-11-09T19:06:44 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:06:44 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:45 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:47 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:49 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:51 nuxel-wl-fb-ext: frame 80 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:53 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:06:53 nuxel-wl-fb-ext: stopped frames=98
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:06:53 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:06:53 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:06:53 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:06:53 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:06:53 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:06:53 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0
+2026-11-09T19:06:53 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:06:53 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:55 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:57 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:06:58 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:06:58 nuxel-wl-fb-ext: stopped frames=59
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:07:08 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:07:08 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:07:08 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:07:08 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:07:08 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:07:08 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0
+2026-11-09T19:07:08 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:07:08 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:07:10 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:07:12 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:07:13 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:07:15 nuxel-wl-fb-ext: frame 80 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:07:17 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:07:19 nuxel-wl-fb-ext: frame 120 src=720x1520 dst=1920x1080 nz=5700
+2026-11-09T19:07:20 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:07:20 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:07:21 nuxel-wl-fb-ext: frame 140 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:22 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:07:22 nuxel-wl-fb-ext: stopped frames=146
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:07:22 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:07:22 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:07:22 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:07:22 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:07:22 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:07:22 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:07:22 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:07:22 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:25 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:27 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:29 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:07:29 nuxel-wl-fb-ext: stopped frames=51
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:07:29 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:07:29 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:07:29 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:07:29 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:07:29 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:07:29 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:07:29 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:07:29 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:30 nuxel-wl-fb-ext: DP link lost after 5 consecutive checks; stopping before submitting another frame
+2026-11-09T19:07:30 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:07:30 nuxel-wl-fb-ext: stopped frames=5
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:07:35 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:07:35 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:07:35 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:07:35 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:07:35 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:07:35 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:07:36 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:07:36 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:38 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:41 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:43 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:07:43 nuxel-wl-fb-ext: stopped frames=58
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:07:52 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:07:52 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:07:52 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:07:52 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:07:52 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:07:52 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:07:52 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:07:52 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:55 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:07:57 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:00 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:00 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:08:00 nuxel-wl-fb-ext: stopped frames=60
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:08:09 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:08:09 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:08:09 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:08:09 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:08:09 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:08:09 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:08:09 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:08:09 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:12 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:14 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:17 nuxel-wl-fb-ext: capture failed (1 consecutive)
+2026-11-09T19:08:17 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:08:17 nuxel-wl-fb-ext: stopped frames=59
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:08:26 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:08:26 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:08:26 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:08:26 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:08:26 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:08:26 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:08:26 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:08:26 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:29 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:31 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:34 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:08:34 nuxel-wl-fb-ext: stopped frames=59
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:08:34 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:08:34 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:08:34 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:08:34 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:08:34 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:08:34 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:08:34 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:08:34 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:35 nuxel-wl-fb-ext: DP link lost after 5 consecutive checks; stopping before submitting another frame
+2026-11-09T19:08:35 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:08:35 nuxel-wl-fb-ext: stopped frames=5
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:08:40 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:08:40 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:08:40 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:08:40 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:08:40 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:08:40 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:08:41 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:08:41 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:43 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:46 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:48 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:51 nuxel-wl-fb-ext: frame 80 src=720x1520 dst=1920x1080 nz=17990
+2026-11-09T19:08:53 nuxel-wl-fb-ext: frame 100 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:08:56 nuxel-wl-fb-ext: frame 120 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:08:58 nuxel-wl-fb-ext: frame 140 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:09:01 nuxel-wl-fb-ext: frame 160 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:09:03 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0 (updated)
+2026-11-09T19:09:03 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:09:03 nuxel-wl-fb-ext: frame 180 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:05 nuxel-wl-fb-ext: orientation effective=90 transform=270 external_rotation=270 (updated)
+2026-11-09T19:09:05 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=270 fit=fit
+2026-11-09T19:09:05 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:09:07 nuxel-wl-fb-ext: orientation effective=270 transform=90 external_rotation=90 (updated)
+2026-11-09T19:09:07 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=1.263 content=1920x909 offset=0,85 rot=90 fit=fit
+2026-11-09T19:09:08 nuxel-wl-fb-ext: frame 220 src=720x1520 dst=1920x1080 nz=17993
+2026-11-09T19:09:09 nuxel-wl-fb-ext: orientation effective=180 transform=180 external_rotation=180 (updated)
+2026-11-09T19:09:09 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=180 fit=fit
+2026-11-09T19:09:10 nuxel-wl-fb-ext: frame 240 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:11 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0 (updated)
+2026-11-09T19:09:11 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:09:12 nuxel-wl-fb-ext: frame 260 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:13 nuxel-wl-fb-ext: frame 280 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:15 nuxel-wl-fb-ext: frame 300 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:17 nuxel-wl-fb-ext: frame 320 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:19 nuxel-wl-fb-ext: frame 340 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:21 nuxel-wl-fb-ext: frame 360 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:22 nuxel-wl-fb-ext: frame 380 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:24 nuxel-wl-fb-ext: frame 400 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:26 nuxel-wl-fb-ext: frame 420 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:28 nuxel-wl-fb-ext: frame 440 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:30 nuxel-wl-fb-ext: frame 460 src=720x1520 dst=1920x1080 nz=5701
+2026-11-09T19:09:30 nuxel-wl-fb-ext: fb1 powered down (DP stream disabled)
+2026-11-09T19:09:30 nuxel-wl-fb-ext: stopped frames=464

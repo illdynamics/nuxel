@@ -1,0 +1,26 @@
+DATE=2026-11-08T11:50:36Z
+KERNEL=4.14.253-gf7194c1d15ed-dirty
+HOSTNAME=2001-1c00-4d09-8a00-162b-e49d-dc7c-4128
+---SERVICES---
+active
+active
+active
+active
+active
+active
+---NOTIF-COUNTS---
+s "{\"success\": true, \"counts\": {\"active\": 8, \"unread\": 8, \"read\": 0, \"archived\": 3, \"total\": 11}}"
+---FDO-NAMES---
+org.nuxel.Notifications              103605 python3         nuxel-notifications :1.625        nuxel-notifications.service -       -
+org.freedesktop.Notifications                103958 python3         nuxel :1.3          nuxel-wayland.service -       -
+---SOUND---
+normal
+---TOWER---
+WINDOWS=1
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+---FG---
+locked=0 native=0 app_id=
+---HOME-RECEIPT---
+{"action": "home", "attempts": [{"attempt": 1, "left_active": [], "left_fullscreen": [], "left_unminimized": [], "list_error": null, "rc": 0, "stdout": "WINDOWS=1\nWIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0\nHOME_ACTION minimized=0 raised=1 fullscreen_cleared=0 maximized_cleared=0 left_active=0 left_fullscreen=0 left_unminimized=0"}], "converged": true, "finished_epoch": 1794138586.603352, "foreground_state_file": "/run/nuxel/foreground.state", "input_clear": true, "schema_version": 1, "started_epoch": 1794138585.5000474}
+---PWA-STATUS---
+1794138416 NUXEL_INPUT UI {"drawerOpen":true,"drawerHidden":false,"drawerChildren":49,"bodyClass":"ready native-osk app-drawer-open","session":"CLOSED","grid":true,"dock":true,"drawerDisplay":"grid","drawerVis":"visible","drawerOpacity":"1","drawerZ":"1","drawerRect":{"x":8,"y":66,"w":342,"h":1778},"drawerCols":"107.328125px 107.328125px 107.328125px","drawerScroll":{"w":342,"h":1778,"cw":342,"ch":1778,"left":0,"top":0},"drawerItems":{"count":49,"first":{"x":8,"y":66,"w":107.328125,"h":86,"right":115.328125,"bottom":152},"last":{"x":8,"y":1730,"w":107.328125,"h":86,"right":115.328125,"bottom":1816}},"drawerVar":"3","homeVar":"4","visualViewport":{"w":360,"h":760,"scale":1,"offsetX":0,"offsetY":0},"docScroll":{"w":360,"h":760},"gridDisplay":"block","appListHidden":true,"lockEl":true,"lockHidden":true,"lockDisplay":"none","lockClass":"lockscreen","docClass":"nuxel-boot-os native-nav-present nav-fallback-safe","hidden":false,"visibility":"visible","hasFocus":true,"appId":null,"cal":null,"overlays":{"frames":0,"iframes":0,"powerMenus":0,"osd":1,"folderSheets":0},"frame":null,"qs":{"open":false,"expanded":false,"class":"quick-settings hidden","hidden":false},"sound":{"mode":"normal","label":"Sound normal","hidden":false,"svg":true,"speaker":true,"wavesDisplay":"inline","forbiddenDisplay":"none","vibrateDisplay":"none","crossDisplay":"none"},"icons":[{"id":"org.signal.Signal","src":"http://127.0.0.1:8080/api/v1/flatpak/icon/org.signal.Signal","imgs":1,"origin":"flatpak","state":"loaded"},{"id":"org.videolan.VLC","src":"http://127.0.0.1:8080/api/v1/flatpak/icon/org.videolan.VLC","imgs":1,"origin":"flatpak","state":"loaded"},{"id":"org.gnome.FileRoller","src":"http://127.0.0.1:8080/api/v1/apps/icon/org.gnome.FileRoller","imgs":1,"origin":"gtk","state":"loaded"},{"id":"org.nuxel.Clock","src":"/assets/nuxel-applications-icon-pack/06-03_clock.png?v=p33000","imgs":1,"origin":"nuxel","state":"loaded"},{"id":"org.gnome.Papers","src":"http://127.0.0.1:8080/api/v1/apps/icon/org.gnome.Papers","imgs":1,"origin":"gtk","state":"loaded"},{"id":"org.mozilla.firefox","src":"http://127.0.0.1:8080/api/v1/flatpak/icon/org.mozilla.firefox","imgs":1,"origin":"flatpak","state":"loaded"},{"id":"org.gnome.Loupe","src":"http://127.0.0.1:8080/api/v1/apps/icon/org.gnome.Loupe","imgs":1,"origin":"gtk","state":"loaded"},{"id":"org.signal.Signal","src":"http://127.0.0.1:8080/api/v1/flatpak/icon/org.signal.Signal","imgs":1,"origin":"flatpak","state":"loaded"},{"id":"com.stremio.Stremio","src":"http://127.0.0.1:8080/api/v1/flatpak/icon/com.stremio.Stremio","imgs":1,"origin":"flatpak","state":"loaded"},{"id":"org.gnome.SystemMonitor","src":"http://127.0.0.1:8080/api/v1/apps/icon/org.gnome.SystemMonitor","imgs":1,"origin":"gtk","state":"loaded"},{"id":"org.gnome.TextEditor","src":"http://127.0.0.1:8080/api/v1/flatpak/icon/org.gnome.TextEditor","imgs":1,"origin":"flatpak","state":"loaded"},{"id":"org.videolan.VLC","src":"http://127.0.0.1:8080/api/v1/flatpak/icon/org.videolan.VLC","imgs":

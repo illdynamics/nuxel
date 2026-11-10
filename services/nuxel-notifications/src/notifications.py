@@ -108,6 +108,32 @@ def _load_history_file():
 
 HISTORY_FILE = _load_history_file()
 NOTIFICATION_HISTORY_CAP = int(os.environ.get('NUXEL_NOTIFICATIONS_HISTORY_CAP', '200') or '200')
+# Hints are application metadata.  A single app (measured: ZapZap) can attach
+# multi-megabyte hint payloads; persisting and emitting those as D-Bus signals
+# bloats the store and can disconnect the hub.  Bound them at the hub boundary.
+MAX_HINTS_BYTES = int(os.environ.get('NUXEL_NOTIFICATIONS_MAX_HINTS_BYTES', '65536') or '65536')
+
+
+def _bounded_hints(hints):
+    """Return JSON-safe hints within MAX_HINTS_BYTES.
+
+    Oversized hints are replaced by a small provenance record so the hub never
+    drops the notification itself and never emits a multi-megabyte signal.
+    """
+    if not isinstance(hints, dict):
+        return {}
+    try:
+        safe = dict(hints)
+        raw = json.dumps(safe, default=str)
+    except (TypeError, ValueError):
+        return {'nuxel.hints_error': 'unserializable'}
+    if len(raw) <= MAX_HINTS_BYTES:
+        return safe
+    return {
+        'nuxel.hints_truncated': True,
+        'nuxel.hints_bytes': len(raw),
+        'nuxel.hints_keys': sorted(str(k) for k in safe)[:24],
+    }
 
 DND_STATE_FILE = os.environ.get('NUXEL_DND_STATE', '/var/lib/nuxel/notifications/dnd.json')
 
@@ -215,6 +241,7 @@ class NuxelNotificationsService(dbus.service.Object):
                 return
             restored = {}
             max_id = 0
+            migrated = False
             for notif in entries:
                 if not isinstance(notif, dict):
                     continue
@@ -232,6 +259,11 @@ class NuxelNotificationsService(dbus.service.Object):
                 notif.setdefault('hints', {})
                 notif.setdefault('source', 'app')
                 notif.setdefault('urgency', 'normal')
+                old_hints = notif.get('hints') or {}
+                new_hints = _bounded_hints(old_hints)
+                if new_hints != old_hints:
+                    notif['hints'] = new_hints
+                    migrated = True
                 restored[nid] = notif
                 if nid > max_id:
                     max_id = nid
@@ -242,6 +274,9 @@ class NuxelNotificationsService(dbus.service.Object):
                 for nid in sorted(restored.keys())[:total - NOTIFICATION_HISTORY_CAP]:
                     restored.pop(nid, None)
             self._notifications = restored
+            if migrated:
+                self._persist_history()
+                logger.info("Compacted oversized notification hints in history")
             logger.info("Loaded %d notification(s) from history", len(self._notifications))
         except (json.JSONDecodeError, OSError, ValueError, KeyError, NameError, TypeError) as e:
             logger.warning("Could not load notification history: %s", e)
@@ -330,7 +365,7 @@ class NuxelNotificationsService(dbus.service.Object):
                 'urgency': _normalise_urgency(doc.get('urgency')),
                 'icon': str(doc.get('icon') or ''),
                 'actions': list(doc.get('actions') or []),
-                'hints': dict(doc.get('hints') or {}),
+                'hints': _bounded_hints(doc.get('hints') or {}),
                 'source': str(doc.get('source') or 'app'),
                 'replaces_id': replaces,
             })
@@ -341,7 +376,7 @@ class NuxelNotificationsService(dbus.service.Object):
                 app_name=doc.get('app_name'),
                 icon=doc.get('icon'),
                 actions=doc.get('actions'),
-                hints=doc.get('hints'),
+                hints=_bounded_hints(doc.get('hints') or {}),
                 source=doc.get('source') or 'app',
                 replaces_id=replaces,
             )

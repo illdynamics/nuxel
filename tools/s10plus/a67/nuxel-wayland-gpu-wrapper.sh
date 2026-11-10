@@ -16,6 +16,9 @@ FALLBACK=/run/nuxel-gpu-fallback
 
 export XDG_RUNTIME_DIR=/run/nuxel-wayland
 export XDG_SESSION_TYPE=wayland
+# Nuxel cyan cursor theme (installed under /usr/share/icons/nuxel).
+export XCURSOR_THEME=nuxel
+export XCURSOR_SIZE=32
 export WLR_BACKENDS=headless,libinput
 export WLR_HEADLESS_OUTPUTS=1
 export LIBSEAT_BACKEND=noop

@@ -1,0 +1,24 @@
+.F..FF.............                                                      [100%]
+=================================== FAILURES ===================================
+____________ test_boot_cue_waits_instead_of_failing_on_first_sample ____________
+/Users/wicked/x/nuxel/tests/pwnage40000/test_audio_persistence_40000.py:48: in test_boot_cue_waits_instead_of_failing_on_first_sample
+    assert "ExecStartPre=/usr/lib/nuxel/nuxel-audio-route.sh --wait 200" in unit
+E   AssertionError: assert 'ExecStartPre=/usr/lib/nuxel/nuxel-audio-route.sh --wait 200' in '[Unit]\nDescription=Nuxel startup cue after confirmed boot-animation to launcher handoff\nAfter=nuxel-wayland.service... (paths.target), not through the Wayland\n# session: the cue must not hold the compositor/launcher transaction open.\n'
+        unit       = '[Unit]\nDescription=Nuxel startup cue after confirmed boot-animation to launcher handoff\nAfter=nuxel-wayland.service... (paths.target), not through the Wayland\n# session: the cue must not hold the compositor/launcher transaction open.\n'
+_____________________ test_route_keeps_25_percent_ceiling ______________________
+/Users/wicked/x/nuxel/tests/pwnage40000/test_audio_persistence_40000.py:76: in test_route_keeps_25_percent_ceiling
+    assert 'VOLUME_CAP=${NUXEL_AUDIO_VOLUME_CAP:-0.25}' in route
+E   assert 'VOLUME_CAP=${NUXEL_AUDIO_VOLUME_CAP:-0.25}' in '#!/bin/sh\n# Nuxel S10+ ABOX playback route (RDMA1 -> SPUS -> SIFS1 -> UAIF1 -> CS35L41).\n#\n# The live unit has TWO...$ready_tmp" "$READY" 2>/dev/null || rm -f "$ready_tmp" 2>/dev/null || true\nsay "route applied and verified"\nexit 0\n'
+        route      = '#!/bin/sh\n# Nuxel S10+ ABOX playback route (RDMA1 -> SPUS -> SIFS1 -> UAIF1 -> CS35L41).\n#\n# The live unit has TWO...$ready_tmp" "$READY" 2>/dev/null || rm -f "$ready_tmp" 2>/dev/null || true\nsay "route applied and verified"\nexit 0\n'
+___________ test_abox_wrapper_starts_session_before_route_and_waits ____________
+/Users/wicked/x/nuxel/tests/pwnage40000/test_audio_persistence_40000.py:84: in test_abox_wrapper_starts_session_before_route_and_waits
+    assert start.index("nuxel-wayland.service") < start.index("nuxel-audio-route.service")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ValueError: substring not found
+        script     = '#!/usr/bin/env bash\n# Boot-time wrapper for nuxel-abox-firmware-reload.sh.\n#\n# The Wayland session starts PipeWire...iope core firmware NOT ready after $attempt attempt(s); restoring session honestly"\nfi\n\nstart_session\nexit "$rc"\n'
+        start      = '\n    log "restarting Nuxel standalone audio session"\n    # Start the audio session (its own cgroup) FIRST: it publi...art nuxel-audio-route.service 2>/dev/null || \\\n        log "audio route not ready yet; retry timer will re-apply it"'
+=========================== short test summary info ============================
+FAILED tests/pwnage40000/test_audio_persistence_40000.py::test_boot_cue_waits_instead_of_failing_on_first_sample
+FAILED tests/pwnage40000/test_audio_persistence_40000.py::test_route_keeps_25_percent_ceiling
+FAILED tests/pwnage40000/test_audio_persistence_40000.py::test_abox_wrapper_starts_session_before_route_and_waits
+3 failed, 16 passed in 0.64s

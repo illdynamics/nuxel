@@ -139,7 +139,7 @@ check('path traversal refused', bad['success'] is False)
 
 # ---- native launch contract ------------------------------------------------
 api = (SRC / 'api.py').read_text()
-check('firefox native binary', '"org.mozilla.firefox": ["/usr/bin/firefox"]' in api)
+check('firefox native binary', '"org.mozilla.firefox": ["/usr/lib/nuxel/nuxel-flatpak-firefox"]' in api)
 check('vlc native binary', '"org.videolan.VLC": ["/usr/lib/nuxel/nuxel-vlc-fallback"]' in api)
 check('wayland runtime corrected', 'runtime = "/run/user/1000" if as_user else "/run/nuxel-wayland"' in api and 'XDG_RUNTIME_DIR": "/run/nuxel-wayland"' in api)
 check('session-user runtime is user-owned', 'runtime = "/run/user/1000" if as_user' in api and '/run/user/1000/wayland-0' in (ROOT/'tools/s10plus/a45/nuxel-session.sh').read_text())
@@ -167,7 +167,9 @@ check('navdock generator resolves build-copy root', '_find_root' in gen and 'NUX
 check('navdock build copy does not write source fallbacks', 'NUXEL_NAVDOCK_SKIP_FALLBACK=1' in (ROOT/'images/s10plus/build-phone-rootfs-inside-fedora.sh').read_text())
 builder = (ROOT/'images/s10plus/build-phone-rootfs-inside-fedora.sh').read_text()
 check('rootfs builder has openssl for RDP credential generation', 'alsa-lib-devel git openssl' in builder)
-check('inet group exists before usermod', builder.find('groupadd -f -g 3003 inet') < builder.find('usermod -aG inet nuxel'))
+check('inet group exists before the direct nuxel membership edit',
+      builder.find('groupadd -f -g 3003 inet') >= 0 and
+      builder.find('groupadd -f -g 3003 inet') < builder.find('inet:x:3003:nuxel'))
 check('PWA cache version agrees between sw.js and manifest', __import__('json').loads((ROOT/'pwa/nuxel-home/manifest.json').read_text())['nuxel']['cache_version'] in (ROOT/'pwa/nuxel-home/sw.js').read_text())
 qs = (ROOT / 'pwa/nuxel-home/js/qs.js').read_text()
 check('qs DND wired', "bridge.call('dnd', 'toggle'" in qs and "bridge.call('dnd', 'status'" in qs)

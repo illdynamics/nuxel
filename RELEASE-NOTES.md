@@ -3,6 +3,37 @@
 This file holds the release-by-release user-facing changes. The full engineering
 history remains in [CHANGELOG.md](CHANGELOG.md).
 
+## v0.8.3-beta — fully black screen-off, per-device completion and a repaired release gate (2026-11-10)
+
+### Screen-off is actually off
+
+- Turning the S10+ screen off now paints and latches a **black framebuffer
+  page** before the panel is powered down. It then writes brightness 0,
+  `bl_power=4` (`FB_BLANK_POWERDOWN`) and issues `FBIOBLANK(POWERDOWN)`, with a
+  second powerdown re-assert after the ioctl.
+- This fixes the measured "off but still faintly lit" behaviour: brightness 0
+  alone left `actual_brightness=2`, and `bl_power=4` alone did not clear the
+  last latched DECON frame.
+- The bridge keeps its single `/dev/fb0` owner. Wake still forces a fresh
+  capture/commit, so the black page is never shown after wake.
+
+### Release pipeline
+
+- The v0.8.2 `main` release failed in the immersive-chrome/native status-bar
+  source contract. The shipped controller now defines explicit `BOTTOM_BAND` /
+  `TOP_BAND` constants, the native bar exposes `bar_reveal`, and the top-pull
+  contract follows the real Quick Settings handoff.
+- The A35 DECON contract test now fails closed if the black-page/powerdown
+  screen-off sequence is removed from the active A67 source.
+- The release-asset gate is bumped to `v0.8.3-beta` so the `prepare` job proves
+  version lockstep before the expensive image matrix starts.
+
+### Documentation
+
+- README now reports completion **per device**: Galaxy S10+ **95%**, Moto G7
+  Power **40%**, Pixel 10 Pro XL **5%** and the UTM VM **70%**.
+- Added `REPORT-PWNAGE-106000.md` and `docs/releases/v0.8.3-beta.md`.
+
 ## v0.8.2-beta — system file picker, File Handlers, Network Manager and landscape VNC (2026-11-09)
 
 ### System file attachment picker

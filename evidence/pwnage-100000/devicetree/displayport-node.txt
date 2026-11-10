@@ -1,0 +1,24 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+clock-names=aclk
+clocks=�
+compatible=samsung,exynos-displayport
+dp,aux_sw_oe=�
+dp,sbu_sw_sel={
+dp,usb_con_sel=�
+interrupts=�
+iommus=bcd
+linux,phandle=a
+name=displayport
+phandle=a
+pinctrl-0=NO
+pinctrl-names=default
+reg=��� �
+status=okay

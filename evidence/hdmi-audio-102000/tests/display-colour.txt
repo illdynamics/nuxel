@@ -1,0 +1,12 @@
+test-colour-format
+  OK   DEXT_FMT_BGRA8888 is defined
+  OK   caller BGRA_8888 is DECON enum value 3
+  OK   DEXT_FMT_RGBA8888 is defined
+  OK   caller RGBA_8888 is DECON enum value 2
+  OK   normal packing selects a DECON format
+  OK   normal 0xAARRGGBB packing selects caller BGRA_8888
+  OK   diagnostic packing selects a DECON format
+  OK   diagnostic 0xAABBGGRR packing selects caller RGBA_8888
+  OK   kernel translates caller BGRA -> IDMA ARGB
+  OK   kernel translates caller RGBA -> IDMA ABGR
+PASS colour-format contract

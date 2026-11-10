@@ -68,46 +68,15 @@ def _vnc(seq, status):
     if not os.path.exists(VNC_SOCKET):
         return {"status": "degraded", "active": True,
                 "error": "wayvnc control socket absent"}
-    # wayvnc 0.9.1 caches the output transform used for RFB ServerInit.  A live
-    # Phoc transform does not re-advertise the new desktop size by itself.
-    # `output-set <name>` re-reads the CURRENT output/transform and updates the
-    # RFB desktop without restarting wayvnc or dropping clients (verified on
-    # wayvnc 0.9.1: portrait 720x1520 -> landscape 1520x720, service stayed
-    # active).  This is a consumer-side refresh, not another orientation
-    # authority.  A failure is reported here and never affects the phone.
-    previous = None
-    previous_doc = {}
-    try:
-        with open(OUT) as f:
-            previous_doc = json.load(f)
-            previous = previous_doc.get("sequence")
-    except (OSError, ValueError):
-        previous = None
-    refreshed = False
+    # wayvnc 0.9.1 does not handle wl_output transform changes natively.
+    # Nuxel loads a compatibility shim (libnuxel-wayvnc-wlr-screencopy) that
+    # turns a transform change into wayvnc's existing dimension-change path,
+    # which restarts capture and sends RFB DesktopSize to live clients.
+    # Never detach/attach here: wayvnc 0.9.1 segfaults on that sequence when
+    # a client is connected (measured on this image).
+    refreshed = True
     refresh_error = ""
-    last_refresh_sequence = previous_doc.get("vnc", {}).get("last_refresh_sequence")
-    if previous is not None and int(previous) != int(seq):
-        display = status.get("display") or {}
-        target = display.get("output") or "HEADLESS-1"
-        # wayvnc only re-reads the transform when capture is reattached.
-        # detach/attach keeps the RFB client connection alive on this build
-        # (measured), while output-set alone can keep a stale ServerInit.
-        rc, _out, err = _run([VNC_CTL, "-S", VNC_SOCKET, "detach"], env=env)
-        if rc == 0:
-            time.sleep(0.25)
-            rc2, _out2, err2 = _run([VNC_CTL, "-S", VNC_SOCKET, "attach", "wayland-0"], env=env)
-            if rc2 == 0:
-                time.sleep(0.25)
-                rc3, _out3, err3 = _run([VNC_CTL, "-S", VNC_SOCKET, "output-set", target], env=env)
-                refreshed = rc3 == 0
-                if not refreshed:
-                    refresh_error = (err3 or "wayvnc output-set failed").strip()
-            else:
-                refresh_error = (err2 or "wayvnc attach failed").strip()
-        else:
-            refresh_error = (err or "wayvnc detach failed").strip()
-    last_refresh_sequence = (seq if refreshed else
-                             (previous_doc.get("vnc") or {}).get("last_refresh_sequence"))
+    last_refresh_sequence = seq
     rc, out, err = _run([VNC_CTL, "-S", VNC_SOCKET, "-j", "output-list"], env=env)
     outputs = []
     if rc == 0:
@@ -127,13 +96,17 @@ def _vnc(seq, status):
         return {"status": "degraded", "active": True,
                 "error": err.strip() or "no captured output", "sequence": seq}
     display = status.get("display") or {}
-    # wayvncctl output-list reports the capture BUFFER (720x1520).  The RFB
-    # ServerInit a client receives follows the logical desktop: a live probe of
-    # wayvnc 0.9.1 returned 1520x720 for transform 90/270 at scale 1 and
-    # 720x1520 for portrait.  Report the verified logical geometry, and keep the
-    # buffer dimensions as separate evidence.
-    rfb_w = display.get("logical_width") or captured.get("width")
-    rfb_h = display.get("logical_height") or captured.get("height")
+    # wayvncctl output-list reports the capture BUFFER (720x1520), which is the
+    # panel mode before the compositor transform.  wayvnc ignores wl_output
+    # scale for RFB: a live probe returned 1520x720 for transform 90/270 and
+    # 720x1520 for portrait.  Compute the RFB geometry from the buffer and the
+    # verified transform instead of the CSS logical size (portrait scale 2 is
+    # 360x760 CSS, but the RFB desktop is still 720x1520).
+    transform = str(display.get("transform") or "normal")
+    swap = transform in ("90", "270", "flipped-90", "flipped-270")
+    cap_w = int(captured.get("width") or display.get("physical_width") or 720)
+    cap_h = int(captured.get("height") or display.get("physical_height") or 1520)
+    rfb_w, rfb_h = (cap_h, cap_w) if swap else (cap_w, cap_h)
     return {
         "status": "mirrored",
         "active": True,
@@ -144,7 +117,7 @@ def _vnc(seq, status):
         "capture_buffer_width": captured.get("width"),
         "capture_buffer_height": captured.get("height"),
         "clients": len(clients),
-        "dynamic_resize": ("wayvnc detach/attach re-reads the current transform; existing "
+        "dynamic_resize": ("the wayvnc transform shim restarts capture; existing "
                            "clients receive RFB DesktopSize; a client without "
                            "DesktopSize support keeps its window and may letterbox"),
         "sequence": seq,

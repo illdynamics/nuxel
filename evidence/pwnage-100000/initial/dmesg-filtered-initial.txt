@@ -1,0 +1,311 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+dmesg lines: 10983
+=== ccic/pd/dp/usbc/typec messages ===
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found: V720X480P60, dex: 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 1440x480@60 - 18554(ps?), lm:114, rm:38, um:15, lm:4
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 1920x1080@24 - 13468(ps?), lm:148, rm:638, um:36, lm:4
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found: V1920X1080P24, dex: 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 1920x1080@50 - 13480(ps?), lm:148, rm:528, um:15, lm:5
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 1280x720@50 - 13468(ps?), lm:220, rm:440, um:20, lm:5
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found: V1280X720P50, dex: 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 720x576@50 - 37037(ps?), lm:68, rm:12, um:39, lm:5
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found: V720X576P50, dex: 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 640x480@60 - 39722(ps?), lm:48, rm:16, um:33, lm:10
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: find VSDB for HDMI 1.4
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Find HDMI_Video_present in VSDB
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Not support LATENCY_FILEDS_PRESETNT in VSDB
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Not support I_LATENCY_FILEDS_PRESETNT in VSDB
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: udmode_idx = 0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 3840x2160@30 - 297000000(ps?), lm:296, rm:176, um:72, lm:8
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found: V3840X2160P30, dex: 0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: udmode_idx = 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 3840x2160@25 - 297000000(ps?), lm:296, rm:1056, um:72, lm:8
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found: V3840X2160P25, dex: 0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: udmode_idx = 2
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 3840x2160@24 - 297000000(ps?), lm:296, rm:1276, um:72, lm:8
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found: V3840X2160P24, dex: 0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: find VSDB for HDMI 2.0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Max_TMDS_Character_Rate = 600 Mhz
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: 10 bpc support = 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: find HDR Metadata Data Block
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: SUPPORTED_EOTF = 0x5
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: SMPTE_ST_2084 support(0)
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: MAX_LUMI = 0x60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: MAX_AVERAGE_LUMI = 0x5a
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: MIN_LUMI = 0x44
+[Mon Nov  9 17:15:22 2026] Displayport: HDR: EOTF(0x5) ST2084(0) GAMMA(SDR|) LUMI(max:96,avg:90,min:68)
+[Mon Nov  9 17:15:22 2026] Displayport: Data block 2 of 22 bytes
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found(VDB): V3840X2160P60, dex: 0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:97 V1280X720P60EXT
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found(VDB): V3840X2160P50, dex: 0
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:96 V1280X720P60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:93 V1366X768P60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:94 V1280X1024P60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:95 V1920X1080P24
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:16 V1920X1080P25
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:5 V1920X1080P30
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:4 V1600X900P59
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:3 V1600X900P60RB
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:2 V1920X1080P50
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:7 V1920X1080P60EXT
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:6 V1920X1080P59
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:15 V1920X1080P60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:31 V1920X1200P60RB
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:32 V1920X1200P60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:33 V2560X1080P60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:34 V2048X1536P60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:20 V1920X1440P60
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:19 V2400X1200P90RELU
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:18 V2560X1440P60EXT
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:22 V2560X1440P59
+[Mon Nov  9 17:15:22 2026] Displayport: EDID: Video data block vic:1 V1440x2560P60
+[Mon Nov  9 17:15:22 2026] Displayport: Data block 1 of 3 bytes
+[Mon Nov  9 17:15:22 2026] Displayport: LPCM ch=2
+[Mon Nov  9 17:15:22 2026] Displayport: ch:0x2, sample:0x7, bitrate:0x7
+[Mon Nov  9 17:15:22 2026] Displayport: Data block 7 of 6 bytes
+[Mon Nov  9 17:15:22 2026] Displayport: Data block 3 of 13 bytes
+[Mon Nov  9 17:15:22 2026] Displayport: Data block 3 of 7 bytes
+[Mon Nov  9 17:15:22 2026] Displayport: Data block 7 of 4 bytes
+[Mon Nov  9 17:15:22 2026] Displayport: Data block 7 of 3 bytes
+[Mon Nov  9 17:15:22 2026] Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+[Mon Nov  9 17:15:22 2026] Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+[Mon Nov  9 17:15:22 2026] Displayport: invalid timing i:42, best:45
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V640X480P60
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V720X480P60
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V720X576P50
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V1280X720P50
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V1280X720P60
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V1280X1024P60
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V1920X1080P24
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V1920X1080P25
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V1920X1080P30
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V1920X1080P50
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V1920X1080P60
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V2560X1440P59
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V3840X2160P24
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V3840X2160P25
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V3840X2160P30
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V3840X2160P50
+[Mon Nov  9 17:15:22 2026] Displayport: unit test supported_videos : V3840X2160P60
+[Mon Nov  9 17:15:22 2026] Displayport: max video_format : V3840X2160P60
+[Mon Nov  9 17:15:22 2026] Displayport: returns true
+[Mon Nov  9 17:15:22 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+[Mon Nov  9 17:15:22 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+[Mon Nov  9 17:15:22 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+[Mon Nov  9 17:15:22 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+[Mon Nov  9 17:15:22 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+[Mon Nov  9 17:15:22 2026] max77705: max77705_usbc_opcode_write: W->W opcode[0x59] write_length[1] read_length[3]
+[Mon Nov  9 17:15:22 2026] max77705: front_usbc_cmd: Opcode(0x59)
+[Mon Nov  9 17:15:22 2026] max77705: dequeue_usbc_cmd: Opcode(0x59) Response(0xff)
+[Mon Nov  9 17:15:22 2026] max77705: max77705_usbc_cmd_run: No ISR
+[Mon Nov  9 17:15:22 2026] max77705: max77705_i2c_opcode_write: opcode 0x59, write_length 2
+[Mon Nov  9 17:15:22 2026] max77705: opcode_write: 00000000: 59 01
+[Mon Nov  9 17:15:22 2026] max77705:max77705_irq_thread: irq[318] 318/276/14 irq_src=0x08 pmic_rev=0x05
+[Mon Nov  9 17:15:22 2026] [MAX77705] irq_reg, complete [1], 80, 0, 0, 0, f0
+[Mon Nov  9 17:15:22 2026] [MAX77705] dump_reg, 7, 5, 0, 10, 8a, 1, 0, 87
+[Mon Nov  9 17:15:22 2026] max77705_irq_thread ic_alt_mode=1
+[Mon Nov  9 17:15:22 2026] max77705: max77705_apcmd_irq: IRQ(289)_IN
+[Mon Nov  9 17:15:22 2026] max77705: max77705_apcmd_irq:  [IN] sysmsg : 5
+[Mon Nov  9 17:15:22 2026] max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x59)
+[Mon Nov  9 17:15:22 2026] max77705: dequeue_usbc_cmd: front->next = NULL
+[Mon Nov  9 17:15:22 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+[Mon Nov  9 17:15:22 2026] max77705: max77705_usbc_cmd_run: Apcmdres ISR !!!
+[Mon Nov  9 17:15:22 2026] max77705: max77705_i2c_opcode_read: opcode 0xff, read_length 4, ret_error 0
+[Mon Nov  9 17:15:22 2026] max77705: opcode_read: 00000000: 59 01 0a 06
+[Mon Nov  9 17:15:22 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+[Mon Nov  9 17:15:22 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+[Mon Nov  9 17:15:22 2026] max77705: max77705_usbc_cmd_run: Queue, Empty
+[Mon Nov  9 17:15:22 2026] max77705: max77705_apcmd_irq: IRQ(289)_OUT
+[Mon Nov  9 17:15:22 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1244
+[Mon Nov  9 17:15:22 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+[Mon Nov  9 17:15:22 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+[Mon Nov  9 17:15:22 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+[Mon Nov  9 17:15:23 2026] Displayport: dex state: 0
+[Mon Nov  9 17:15:23 2026] Displayport: DRM state 0
+[Mon Nov  9 17:15:23 2026] Displayport: manufacturer : BNQ product : 7f54 serial num : 5445
+[Mon Nov  9 17:15:23 2026] Displayport: unit test
+[Mon Nov  9 17:15:23 2026] Displayport: unit test edid parse
+[Mon Nov  9 17:15:23 2026] EDID: found ext std timing 0 2byte:0xD1C0
+[Mon Nov  9 17:15:23 2026] EDID: found ext std timing 1 2byte:0x81C0
+[Mon Nov  9 17:15:23 2026] Displayport: mon name: BenQ SW320, gamma: 2.20
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 3840x2160@60 - 1875(ps?), lm:80, rm:48, um:54, lm:3
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 720x400@70 - 38210(ps?), lm:88, rm:17, um:13, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 640x480@60 - 39682(ps?), lm:48, rm:16, um:33, lm:10
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 640x480@75 - 31746(ps?), lm:120, rm:16, um:16, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 800x600@60 - 25000(ps?), lm:88, rm:40, um:23, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 800x600@75 - 20202(ps?), lm:160, rm:16, um:21, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 832x624@75 - 18715(ps?), lm:130, rm:43, um:24, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1024x768@60 - 15384(ps?), lm:160, rm:24, um:29, lm:3
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1024x768@75 - 12690(ps?), lm:176, rm:16, um:28, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1280x1024@75 - 7407(ps?), lm:248, rm:16, um:38, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1152x864@75 - 9259(ps?), lm:256, rm:64, um:32, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1920x1080@60 - 6734(ps?), lm:148, rm:88, um:36, lm:4
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V1920X1080P60, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1280x720@60 - 13468(ps?), lm:220, rm:110, um:20, lm:5
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V1280X720P60, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1280x800@60 - 11955(ps?), lm:202, rm:67, um:24, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1280x1024@60 - 9259(ps?), lm:248, rm:48, um:38, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V1280X1024P60, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1600x900@60 - 8429(ps?), lm:261, rm:92, um:28, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1680x1050@60 - 6809(ps?), lm:286, rm:106, um:33, lm:1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1920x1080@60 - 6734(ps?), lm:148, rm:88, um:36, lm:4
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 2560x1440@59 - 4140(ps?), lm:80, rm:48, um:33, lm:3
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V2560X1440P59, dex: 2
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 3840x2160@24 - 4766(ps?), lm:80, rm:48, um:17, lm:3
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1920x1080@60 - 13763(ps?), lm:148, rm:88, um:15, lm:2
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 720x480@60 - 37037(ps?), lm:60, rm:16, um:30, lm:9
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V720X480P60, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1440x480@60 - 18554(ps?), lm:114, rm:38, um:15, lm:4
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1920x1080@24 - 13468(ps?), lm:148, rm:638, um:36, lm:4
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V1920X1080P24, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1920x1080@50 - 13480(ps?), lm:148, rm:528, um:15, lm:5
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 1280x720@50 - 13468(ps?), lm:220, rm:440, um:20, lm:5
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V1280X720P50, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 720x576@50 - 37037(ps?), lm:68, rm:12, um:39, lm:5
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V720X576P50, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 0x0@0 - 0(ps?), lm:0, rm:0, um:0, lm:0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 640x480@60 - 39722(ps?), lm:48, rm:16, um:33, lm:10
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: find VSDB for HDMI 1.4
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Find HDMI_Video_present in VSDB
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Not support LATENCY_FILEDS_PRESETNT in VSDB
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Not support I_LATENCY_FILEDS_PRESETNT in VSDB
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: udmode_idx = 0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 3840x2160@30 - 297000000(ps?), lm:296, rm:176, um:72, lm:8
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V3840X2160P30, dex: 0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: udmode_idx = 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 3840x2160@25 - 297000000(ps?), lm:296, rm:1056, um:72, lm:8
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V3840X2160P25, dex: 0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: udmode_idx = 2
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 3840x2160@24 - 297000000(ps?), lm:296, rm:1276, um:72, lm:8
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found: V3840X2160P24, dex: 0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: find VSDB for HDMI 2.0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Max_TMDS_Character_Rate = 600 Mhz
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: 10 bpc support = 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: find HDR Metadata Data Block
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: SUPPORTED_EOTF = 0x5
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: SMPTE_ST_2084 support(0)
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: MAX_LUMI = 0x60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: MAX_AVERAGE_LUMI = 0x5a
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: MIN_LUMI = 0x44
+[Mon Nov  9 17:15:23 2026] Displayport: HDR: EOTF(0x5) ST2084(0) GAMMA(SDR|) LUMI(max:96,avg:90,min:68)
+[Mon Nov  9 17:15:23 2026] Displayport: Data block 2 of 22 bytes
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found(VDB): V3840X2160P60, dex: 0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:97 V1280X720P60EXT
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found(VDB): V3840X2160P50, dex: 0
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:96 V1280X720P60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:93 V1366X768P60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:94 V1280X1024P60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:95 V1920X1080P24
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:16 V1920X1080P25
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:5 V1920X1080P30
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:4 V1600X900P59
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:3 V1600X900P60RB
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:2 V1920X1080P50
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:7 V1920X1080P60EXT
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:6 V1920X1080P59
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:15 V1920X1080P60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found(VDB): V1920X1080P50, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:31 V1920X1200P60RB
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:32 V1920X1200P60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found(VDB): V1920X1080P25, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:33 V2560X1080P60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: found(VDB): V1920X1080P30, dex: 1
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:34 V2048X1536P60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:20 V1920X1440P60
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:19 V2400X1200P90RELU
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:18 V2560X1440P60EXT
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:22 V2560X1440P59
+[Mon Nov  9 17:15:23 2026] Displayport: EDID: Video data block vic:1 V1440x2560P60
+[Mon Nov  9 17:15:23 2026] Displayport: Data block 1 of 3 bytes
+[Mon Nov  9 17:15:23 2026] Displayport: LPCM ch=2
+[Mon Nov  9 17:15:23 2026] Displayport: ch:0x2, sample:0x7, bitrate:0x7
+[Mon Nov  9 17:15:23 2026] Displayport: Data block 7 of 6 bytes
+[Mon Nov  9 17:15:23 2026] Displayport: Data block 3 of 13 bytes
+[Mon Nov  9 17:15:23 2026] Displayport: Data block 3 of 7 bytes
+[Mon Nov  9 17:15:23 2026] Displayport: Data block 7 of 4 bytes
+[Mon Nov  9 17:15:23 2026] Displayport: Data block 7 of 3 bytes
+[Mon Nov  9 17:15:23 2026] Displayport: misc:0x4, Audio ch:0x2, sample:0x7, bit:0x7
+[Mon Nov  9 17:15:23 2026] Displayport: detail_timing_desc1: 3840*2160@60 (533290000, 1875ps)
+[Mon Nov  9 17:15:23 2026] Displayport: invalid timing i:42, best:45
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V640X480P60
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V720X480P60
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V720X576P50
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V1280X720P50
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V1280X720P60
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V1280X1024P60
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V1920X1080P24
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V1920X1080P25
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V1920X1080P30
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V1920X1080P50
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V1920X1080P60
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V2560X1440P59
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V3840X2160P24
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V3840X2160P25
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V3840X2160P30
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V3840X2160P50
+[Mon Nov  9 17:15:23 2026] Displayport: unit test supported_videos : V3840X2160P60
+[Mon Nov  9 17:15:23 2026] Displayport: max video_format : V3840X2160P60
+[Mon Nov  9 17:15:23 2026] Displayport: returns true
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 3
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_RID : 7
+[Mon Nov  9 17:15:23 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+[Mon Nov  9 17:15:23 2026] max77705: max77705_usbc_opcode_write: W->W opcode[0x59] write_length[1] read_length[3]
+[Mon Nov  9 17:15:23 2026] max77705: front_usbc_cmd: Opcode(0x59)
+[Mon Nov  9 17:15:23 2026] max77705: dequeue_usbc_cmd: Opcode(0x59) Response(0xff)
+[Mon Nov  9 17:15:23 2026] max77705: max77705_usbc_cmd_run: No ISR
+[Mon Nov  9 17:15:23 2026] max77705: max77705_i2c_opcode_write: opcode 0x59, write_length 2
+[Mon Nov  9 17:15:23 2026] max77705: opcode_write: 00000000: 59 01
+[Mon Nov  9 17:15:23 2026] max77705:max77705_irq_thread: irq[318] 318/276/14 irq_src=0x08 pmic_rev=0x05
+[Mon Nov  9 17:15:23 2026] [MAX77705] irq_reg, complete [1], 80, 0, 0, 0, f0
+[Mon Nov  9 17:15:23 2026] [MAX77705] dump_reg, 7, 5, 0, 10, 8a, 1, 0, 87
+[Mon Nov  9 17:15:23 2026] max77705_irq_thread ic_alt_mode=1
+[Mon Nov  9 17:15:23 2026] max77705: max77705_apcmd_irq: IRQ(289)_IN
+[Mon Nov  9 17:15:23 2026] max77705: max77705_apcmd_irq:  [IN] sysmsg : 5
+[Mon Nov  9 17:15:23 2026] max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x59)
+[Mon Nov  9 17:15:23 2026] max77705: dequeue_usbc_cmd: front->next = NULL
+[Mon Nov  9 17:15:23 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+[Mon Nov  9 17:15:23 2026] max77705: max77705_usbc_cmd_run: Apcmdres ISR !!!
+[Mon Nov  9 17:15:23 2026] max77705: max77705_i2c_opcode_read: opcode 0xff, read_length 4, ret_error 0
+[Mon Nov  9 17:15:23 2026] max77705: opcode_read: 00000000: 59 01 0a 06
+[Mon Nov  9 17:15:23 2026] max77705: max77705_response_selftest_read: SELFTEST CC = 1 SBU1 = 0xa, SBU2 = 0x6
+[Mon Nov  9 17:15:23 2026] max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+[Mon Nov  9 17:15:23 2026] max77705: max77705_usbc_cmd_run: Queue, Empty
+[Mon Nov  9 17:15:23 2026] max77705: max77705_apcmd_irq: IRQ(289)_OUT
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SBU_ADC : 10 6 timeout : 1247
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_PIN_STATUS : 2
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+[Mon Nov  9 17:15:23 2026] max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00

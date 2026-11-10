@@ -9,12 +9,15 @@ and never invent a monitor or a radio.
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "src")
+if SRC not in sys.path:
+    sys.path.insert(0, SRC)
 MODULE = os.path.join(SRC, "hw_providers.py")
 spec = importlib.util.spec_from_file_location("hw_providers", MODULE)
 mod = importlib.util.module_from_spec(spec)
@@ -169,20 +172,75 @@ def test_audio_missing_hardware():
     check(st["volume_supported"] is False, "no fabricated volume control")
 
 
-def test_display_no_drm_blocker():
+def _display_fixture(pd=False, dp=False):
     root = tempfile.mkdtemp(prefix="nx-display-")
-    # No /sys/class/drm -> the image renders via framebuffer.
     write(root, "sys/class/typec/port0/data_role", "host [device]\n")
     write(root, "sys/class/typec/port0/power_role", "source [sink]\n")
-    write(root, "sys/class/extcon/extcon0/name", "DisplayPort\n")
-    write(root, "sys/class/extcon/extcon0/state", "USB_DP=0\n")
-    dp = mod.DisplayProvider(root=root)
+    write(root, "sys/class/typec/port0-partner/supports_usb_power_delivery",
+          "yes\n" if pd else "no\n")
+    write(root, "sys/class/extcon/extcon0/name", "130b0000.displayport\n")
+    write(root, "sys/class/extcon/extcon0/state", "DP=%d\n" % (1 if dp else 0))
+    write(root, "sys/class/switch/secdp/state", "1\n" if dp else "0\n")
+    write(root, "sys/class/switch/ch_hdmi_audio/state", "0\n")
+    write(root, "sys/class/sec/ccic/state", "3\n")
+    write(root, "sys/class/sec/ccic/usbpd_ids",
+          "18d1:4ee7\n" if pd else "0000:0000\n")
+    write(root, "sys/class/sec/ccic/usbpd_type", "200\n" if pd else "0\n")
+    write(root, "sys/class/dp_sec/dex", "0\n")
+    write(root, "sys/class/dp_sec/monitor_info", "BNQ,0x7f54,0x5445\n" if dp else ",0x0,0x0\n")
+    write(root, "proc/asound/pcm",
+          "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1\n")
+    link = os.path.join(root, "sys/class/graphics/fb1/device")
+    os.makedirs(os.path.dirname(link), exist_ok=True)
+    os.symlink("../../devices/platform/19050000.decon_t", link)
+    write(root, "sys/class/graphics/fb1/virtual_size", "640,960\n")
+    write(root, "sys/class/graphics/fb1/stride", "2560\n")
+    write(root, "sys/class/graphics/fb1/bits_per_pixel", "32\n")
+    write(root, "sys/class/graphics/fb1/modes", "U:640x480p-0\n")
+    return root
+
+
+def test_display_partner_without_pd_blocker():
+    root = _display_fixture(pd=False, dp=False)
+    dp = mod.DisplayProvider(root=root,
+                             control_status_path=os.path.join(root, "no-status.json"))
     st = dp.get_status()
-    check(st["drm_present"] is False, "no DRM entries -> not present")
-    check(st["mirror_supported"] is False, "Mirror is not offered without DRM")
-    check(st["desktop_supported"] is False, "Desktop is not offered without DRM")
-    check("CONFIG_DRM" in (st["blocker"] or ""), "blocker names the missing kernel DRM path")
+    check(st["drm_present"] is False, "no DRM entries on the S10+ path")
+    check(st["state"] == "PARTNER_NO_PD", "partner without PD is named exactly")
+    check(st["mirror_supported"] is False, "Mirror is not offered without the DP link")
+    check(st["desktop_supported"] is False, "Desktop is not offered without a second output")
+    check("USB-PD identity" in (st["blocker"] or ""),
+          "blocker names the missing USB-PD identity")
+    check(st["external_fb_present"] is True, "decon_t fb1 is reported")
+    check(st["external_fb"]["device"] == "19050000.decon_t", "fb1 is tied to decon_t")
+    check(st["display_name"] is None, "monitor_info is not trusted without a DP link")
     check(len(st["type_c_ports"]) == 1, "Type-C port evidence is reported")
+
+
+def test_display_dp_ready_model():
+    root = _display_fixture(pd=True, dp=True)
+    control = os.path.join(root, "status.json")
+    with open(control, "w") as f:
+        json.dump({
+            "success": True,
+            "state": "DP_LINK_READY",
+            "mode": "off",
+            "generation": 1,
+            "desktop_supported": True,
+            "desktop_blocker": None,
+            "outputs": {"primary": {"name": "HEADLESS-1"},
+                        "external": {"name": "HEADLESS-2"},
+                        "enabled_names": ["HEADLESS-1", "HEADLESS-2"]},
+        }, f)
+    dp = mod.DisplayProvider(root=root, control_status_path=control)
+    st = dp.get_status()
+    check(st["state"] == "DP_LINK_READY", "DP+fb1 is ready")
+    check(st["mirror_supported"] is True, "Mirror is offered when DP+fb1 are ready")
+    check(st["desktop_supported"] is True, "Desktop is offered when a second output is known")
+    check(st["display_name"] == "BenQ 0x7f54", "live monitor identity is used")
+    check(st["supported_modes"] and st["supported_modes"][0]["width"] == 640,
+          "fbdev mode list is exposed")
+    check("DP Audio" in (st["audio"] or {}).get("pcm", ""), "DP Audio PCM is reported")
 
 
 def test_bluetooth_power_rfkill_and_service():
@@ -218,7 +276,8 @@ def main():
     test_audio_numid_path_avoids_hanging_name_sget()
     test_audio_missing_hardware()
     test_audio_unmute_refused()
-    test_display_no_drm_blocker()
+    test_display_partner_without_pd_blocker()
+    test_display_dp_ready_model()
     test_bluetooth_power_rfkill_and_service()
     print("\n" + ("ALL PASS" if not FAILURES else "%d FAILURES" % len(FAILURES)))
     return 1 if FAILURES else 0

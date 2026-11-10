@@ -1,0 +1,110 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+sec_bat_get_property cable type = 19 sleep_mode = 0
+[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+CFG80211-TRACE) __wl_cfg80211_scan : START SCAN
+dhd_set_rpm_state: 0
+CFG80211-INFO) wl_scan_prep : n_channels:38 n_ssids:1
+CFG80211-INFO) wl_run_escan : LEGACY_SCAN sync ID: 4, bssidx: 2
+s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Watchdog: s3c2410wdt_keepalive RTC 2026-11-09 08:57:37 UTC
+watchdog: watchdog0: watchdog did not stop!
+s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Watchdog: s3c2410wdt_keepalive RTC 2026-11-09 08:57:37 UTC
+max77705_fg_read_current: current=2831mA
+max77705_fg_read_avg_current: avg_current=2359mA
+sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(244), Temp-ADC(2042)
+sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(252), Temp-ADC(1985)
+sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(358), Temp-ADC(1524)
+sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(244), Temp-ADC(2042)
+max77705_fg_write_temp: temperature to (244, 0x1866)
+max77705_fg_read_vcell: VCELL(3727)mV, data(0xba5a)
+max77705_fg_read_avg_current: avg_current=2359mA
+max77705_get_fuelgauge_soc: soc(27)
+max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(2.7), raw_soc(2.7)
+max77705_fg_read_rawsoc: raw capacity (0.01%) (274)
+max77705_fg_read_qh : QH(29000)
+max77705_fg_get_atomic_capacity : NOW(2), OLD(2)
+sec_bat_get_battery_info:Vnow(3727mV),Vavg(3478mV),Inow(2831mA),Iavg(2359mA),Isysavg(778mA),Imax(1666mA),Ichg(2850mA),SOC(2%),Tbat(244),Tusb(252),Tchg(358),Twpc(244)
+sec_bat_check_step_charging
+calc_ttf: cc_time: 4050
+calc_ttf: cap: 4000, soc:   27, T:   5859, avg: 2359, cv soc:  829, i:    0, val: 2850
+sec-battery battery: sec_bat_calc_time_to_full: T:  5919 sec, passed time:     0, current: 2850
+max77705_chg_set_wdtmr_kick: WDT Kick
+max77705_get_charging_health: reg_data(0x3)
+max77705_get_charging_health: details00(0xe0)
+max77705_get_vbus_state: VBUS is valid. CHGIN < CHGIN_OVLO
+max77705_get_charging_health: vbus_state: 0x3, chg_dtls: 0x1, iin: 1609mA, vbyp: 8476mV, health: 1
+sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+max77705_get_float_voltage: battery cv reg : 0x3, float voltage val : 4150
+sec_bat_swelling_check: status(Charging), swell_mode(Swelling None), chg_block(0), low_temp_event(0x0), vfloat(4150)mV, temp(244)'C
+sec-battery battery: sec_bat_fullcharged_check: Charging Mode : Normal
+sec_bat_set_current_event: current event before(0x40004), after(0x40000)
+sec_bat_calculate_safety_time : EXPIRED_TIME(10800000), IP(14994000), CP(12397500), CURR(2850), STANDARD(2850)
+sec_bat_calculate_safety_time : CAL_EXPIRED_TIME(10800000) TIME NOW(32) TIME PREV(2)
+sec_bat_calculate_safety_time : REMAIN_TIME(10770000) CAL_REMAIN_TIME(10770000)
+sec_bat_check_mix_temp: mix_limit(0), temp(244), chg_temp(358), input_current(1666)
+sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+sec_bat_get_charging_current_by_siop: incurr(1666), chgcurr(3150)
+[max77705_set_input_current] REG(0xc0) DATA(0x41), CURRENT(1666)
+[max77705_set_charge_current] REG(0xb9) DATA(0x3f), CURRENT(3150)
+sec_bat_set_charging_current: power(14994), input(1666), charge(3150)
+max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x31, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x7f, [0xba]0x9d, [0xbb]0x03, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x02, [0xc0]0xc1, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68, 
+max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+sec-battery battery: sec_bat_set_polling: Polling time 10/30 sec.
+sec_bat_get_property cable type = 19 sleep_mode = 0
+max77705_fg_read_current: current=2831mA
+max77705_fg_read_avg_current: avg_current=2359mA
+sec_bat_get_property cable type = 19 sleep_mode = 0
+sec_bat_get_property cable type = 19 sleep_mode = 0
+sec_bat_get_property cable type = 19 sleep_mode = 0
+Displayport: notifier registered
+type-c manager: manager_notifier_register: listener=25 register
+ccic_notifier_init
+ccic_notifier_init already registered
+type-c manager: manager_set_alternate_mode : listener 25
+max77705: max77705_set_enable_alternate_mode: is_first_booting  : 1 mode a
+max77705: max77705_set_enable_alternate_mode: alternate mode is ready!
+max77705: max77705_set_enable_alternate_mode: [ON BOOTING TIME] !!!alternate mode is started!
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+max77705: front_usbc_cmd: Opcode(0x55)
+max77705: dequeue_usbc_cmd: Opcode(0x55) Response(0xff)
+max77705: max77705_usbc_cmd_run: No ISR
+max77705: max77705_i2c_opcode_write: opcode 0x55, write_length 2
+max77705: opcode_write: 00000000: 55 03
+max77705: max77705_set_enable_alternate_mode: !![ON BOOTING TIME] SEND THE PACKET REGARDING IN CASE OF VR/DP 
+max77705:max77705_irq_thread: irq[318] 318/276/14 irq_src=0x08 pmic_rev=0x05
+max77705: max77705_set_enable_alternate_mode: USBC1:0x67, USBC2:0x31, BC:0x83
+max77705: max77705_set_enable_alternate_mode: CC_STATUS0:0x71, CC_STATUS1:0x8, PD_STATUS0:0x1, PD_STATUS1:0x17
+max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+[MAX77705] irq_reg, complete [1], 80, 0, 0, 0, f0
+[MAX77705] dump_reg, 67, 31, 83, 10, 71, 9, 1, 57
+max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+max77705_irq_thread ic_alt_mode=1
+max77705: max77705_apcmd_irq: IRQ(289)_IN
+max77705: max77705_apcmd_irq:  [IN] sysmsg : 49
+max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+max77705: dequeue_usbc_cmd: front->next = NULL
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_cmd_run: Apcmdres ISR !!!
+max77705: max77705_i2c_opcode_read: opcode 0xff, read_length 2, ret_error 0
+max77705: opcode_read: 00000000: 55 13
+max77705: is_empty_usbc_cmd_queue: usbc_cmd_queue Empty(T)
+max77705: max77705_usbc_cmd_run: Queue, Empty
+max77705: max77705_apcmd_irq: IRQ(289)_OUT
+audit: audit_lost=1862 audit_rate_limit=0 audit_backlog_limit=64
+audit: kauditd hold queue overflow
+audit: audit_lost=1863 audit_rate_limit=0 audit_backlog_limit=64
+audit: kauditd hold queue overflow
+<keyctl> add_key succeeded(0). type: user, desc: invocation_id
+<keyctl> add_key succeeded(0). type: user, desc: invocation_id
+audit: audit_lost=1864 audit_rate_limit=0 audit_backlog_limit=64

@@ -661,7 +661,7 @@ class NuxelHome {
             setTimeout(resolve, 2500);
         });
         const endpoint = new URL('preload-status.json', window.location.href);
-        const timeoutMs = 40000;
+        const timeoutMs = 15000;
         // The controller can publish "covered" before this document has even
         // committed (mpv maps first, the PWA loads a few hundred ms later).
         // Releasing on the first poll then exposed the lockscreen while the
@@ -669,6 +669,7 @@ class NuxelHome {
         // bounded grace period so the first video frames are on the panel.
         const minHoldMs = 1400;
         let backoffMs = 100;
+        let statusMissingSince = 0;
         const schedule = (fn, delayMs) => {
             if (this._preloadCoverDone) return;
             setTimeout(fn, delayMs);
@@ -678,8 +679,22 @@ class NuxelHome {
             const elapsed = Date.now() - started;
             endpoint.searchParams.set('_', String(Date.now()));
             fetch(endpoint.toString(), { cache: 'no-store' })
-                .then((r) => (r && r.ok) ? r.json() : null)
+                .then((r) => {
+                    if (!r || !r.ok) {
+                        // The status document is missing (404) or the server is
+                        // not serving it.  This is not a slow controller, so a
+                        // stale/misrouted docroot must not hold the opaque boot
+                        // poster up for the whole timeout.  A few seconds is
+                        // enough to cover a normal session-start race.
+                        if (!statusMissingSince) statusMissingSince = Date.now();
+                        if (Date.now() - statusMissingSince >= 4000) reveal('status-missing');
+                        return null;
+                    }
+                    statusMissingSince = 0;
+                    return r.json();
+                })
                 .then((doc) => {
+                    if (this._preloadCoverDone) return;
                     backoffMs = 100;
                     const terminal = doc && (doc.state === 'fallback' || doc.state === 'done');
                     const covered = doc && doc.state === 'covered';
@@ -696,6 +711,8 @@ class NuxelHome {
                     schedule(poll, 100);
                 })
                 .catch(() => {
+                    if (!statusMissingSince) statusMissingSince = Date.now();
+                    if (Date.now() - statusMissingSince >= 6000) { reveal('status-unavailable'); return; }
                     if (elapsed >= timeoutMs) { reveal('timeout-fetch-error'); return; }
                     // A missing status file (404) or fetch error is the common
                     // warm-boot case. Back off instead of hammering nuxel-web
@@ -705,7 +722,7 @@ class NuxelHome {
                 });
         };
         poll();
-        setTimeout(() => reveal('hard-timeout'), 40000);
+        setTimeout(() => reveal('hard-timeout'), 15000);
     }
 
     async _registerServiceWorker() {
@@ -873,10 +890,15 @@ class NuxelHome {
                 if (window.launcher) window.launcher.openDrawer();
             }
             else if (action === 'notifications-panel') {
-                // The notification indicator now lives in the expanded Quick
+                // The notification indicator now lives in the extended Quick
                 // Settings reminder list, below every control/status row.
+                // `openQuickSettings()` only reaches level 2 (tiles); the
+                // notification list is level 3, so extend explicitly.
                 this._dismissLauncherChrome();
-                this.openQuickSettings();
+                if (window.NuxelImmersive) window.NuxelImmersive.revealStatus();
+                const qs = this.components.qs;
+                if (qs && typeof qs.extend === 'function') qs.extend();
+                else this.openQuickSettings();
             }
             else if (action === 'search' && this.components.search) this.components.search.open();
             else if (action === 'settings') appRegistry.launchApp('nuxel-settings');

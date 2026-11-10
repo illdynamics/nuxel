@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "comment": "Nuxel physical pointer document (USB HID mouse / touchpad). Installed to /etc/nuxel/input/input.json. Read by libnuxel-libinput-path.so (direct libinput device settings) and by nuxel-input-apply.sh (the same values through org.gnome.desktop.peripherals GSettings, which phoc consumes live). Keyboard layout and key repeat remain in /etc/nuxel/keyboard/keyboard.json because they are compositor/XKB settings, not libinput settings.",
+  "consumer": "libnuxel-libinput-path.so (libinput accel/scroll/tap/dwt) + nuxel-input-apply.sh -> GSettings -> phoc mouse/touchpad handlers",
+  "probe": "input-state (launcher host status.read -> /run/nuxel-input.state, written by the shim) and input-gsettings-state (/run/nuxel-input-gsettings.state, written by the applier)",
+  "mouse.speed": 0.4,
+  "mouse.accel_profile": "flat",
+  "mouse.natural_scroll": false,
+  "mouse.left_handed": false,
+  "mouse.middle_emulation": false,
+  "touchpad.speed": 0.0,
+  "touchpad.accel_profile": "default",
+  "touchpad.natural_scroll": true,
+  "touchpad.tap_to_click": true,
+  "touchpad.two_finger_scroll": true,
+  "touchpad.disable_while_typing": true,
+  "touchpad.left_handed": false,
+  "accel_profile_values": ["default", "flat", "adaptive"],
+  "set_by": "owner-request-20261109",
+  "updated_at": 1794258488
+}

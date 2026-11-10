@@ -1,0 +1,137 @@
+DATE=2026-11-08T11:26:47Z
+KERNEL=4.14.253-gf7194c1d15ed-dirty
+---NOTIFS---
+1610 /var/lib/nuxel/notifications.json
+[
+  {
+    "id": 1,
+    "app_id": "org.nuxel.Home",
+    "summary": "PWNAGE45000 DND test 2",
+    "body": "suppressed history check",
+    "timestamp": "2026-10-31T19:26:09.851304",
+    "urgency": "normal",
+    "suppressed": true,
+    "suppression_reason": "dnd",
+    "dnd_mode": "manual"
+  },
+  {
+    "id": 2,
+    "app_id": "org.nuxel.Home",
+    "summary": "post-reboot DND",
+    "body": "verify",
+    "timestamp": "2026-10-31T19:43:35.428798",
+    "urgency": "normal",
+    "suppressed": true,
+    "suppression_reason": "dnd",
+    "dnd_mode": "manual"
+  },
+  {
+    "id": 3,
+    "app_id": "org.nuxel.Clock",
+    "summary": "Timer finished",
+    "body": "Nuxel Clock",
+    "timestamp": "2026-10-31T21:06:17.044251",
+    "urgency": "normal",
+    "suppressed": false
+  },
+  {
+    "id": 4,
+    "app_id": "org.nuxel.Clock",
+    "summary": "Timer finished",
+    "body": "Nuxel Clock",
+    "timestamp": "2026-11-01T22:58:30.448651",
+    "urgency": "normal",
+    "suppressed": false
+  },
+  {
+    "id": 5,
+    "app_id": "org.nuxel.Clock",
+    "summary": "Timer finished",
+    "body": "Nuxel Clock",
+    "timestamp": "2026-11-03T00:01:19.320001",
+    "urgency": "normal",
+    "suppressed": false
+  },
+  {
+    "id": 6,
+    "app_id": "org.nuxel.Clock",
+    "summary": "Timer finished",
+    "body": "Nuxel Clock",
+    "timestamp": "2026-11-05T12:35:48.572549",
+    "urgency": "normal",
+    "suppressed": false
+  },
+  {
+    "id": 7,
+    "app_id": "org.nuxel.Clock",
+    "summary": "Timer finished",
+    "body": "Nuxel Clock",
+    "timestamp": "2026-11-06T13:49:40.106272",
+    "urgency": "normal",
+    "suppressed": false
+  }
+]---SOUND---
+normal
+---FG---
+locked=1 native=0 app_id=
+---WINDOWS---
+proxy 0x1c1c7be0 already has listener
+GLOBAL name=1 iface=wl_shm ver=2
+GLOBAL name=2 iface=zwp_linux_dmabuf_v1 ver=3
+GLOBAL name=3 iface=wl_data_device_manager ver=3
+GLOBAL name=4 iface=wl_compositor ver=6
+GLOBAL name=5 iface=wl_subcompositor ver=1
+GLOBAL name=6 iface=zxdg_output_manager_v1 ver=3
+GLOBAL name=7 iface=xdg_wm_base ver=6
+GLOBAL name=8 iface=zwlr_layer_shell_v1 ver=3
+GLOBAL name=9 iface=zphoc_layer_shell_effects_v1 ver=3
+GLOBAL name=10 iface=zwp_tablet_manager_v2 ver=1
+GLOBAL name=11 iface=wp_security_context_manager_v1 ver=1
+GLOBAL name=12 iface=zwlr_gamma_control_manager_v1 ver=1
+GLOBAL name=13 iface=zwlr_export_dmabuf_manager_v1 ver=1
+GLOBAL name=14 iface=org_kde_kwin_server_decoration_manager ver=1
+GLOBAL name=15 iface=zwp_primary_selection_device_manager_v1 ver=1
+GLOBAL name=16 iface=zwp_input_method_manager_v2 ver=1
+GLOBAL name=17 iface=zwp_text_input_manager_v3 ver=1
+GLOBAL name=18 iface=ext_idle_notifier_v1 ver=2
+GLOBAL name=19 iface=gtk_shell1 ver=3
+GLOBAL name=20 iface=phosh_private ver=7
+GLOBAL name=21 iface=xdg_activation_v1 ver=1
+GLOBAL name=22 iface=zwp_virtual_keyboard_manager_v1 ver=1
+GLOBAL name=23 iface=zwp_keyboard_shortcuts_inhibit_manager_v1 ver=1
+GLOBAL name=24 iface=zwlr_virtual_pointer_manager_v1 ver=2
+GLOBAL name=25 iface=zwlr_screencopy_manager_v1 ver=3
+GLOBAL name=26 iface=ext_image_copy_capture_manager_v1 ver=1
+GLOBAL name=27 iface=ext_output_image_capture_source_manager_v1 ver=1
+GLOBAL name=28 iface=zxdg_decoration_manager_v1 ver=1
+GLOBAL name=29 iface=xx_cutouts_manager_v1 ver=1
+GLOBAL name=30 iface=wp_viewporter ver=1
+GLOBAL name=31 iface=wp_single_pixel_buffer_manager_v1 ver=1
+GLOBAL name=32 iface=wp_fractional_scale_manager_v1 ver=1
+GLOBAL name=33 iface=zxdg_exporter_v1 ver=1
+GLOBAL name=34 iface=zxdg_importer_v1 ver=1
+GLOBAL name=35 iface=zxdg_exporter_v2 ver=1
+GLOBAL name=36 iface=zxdg_importer_v2 ver=1
+GLOBAL name=37 iface=zwp_pointer_constraints_v1 ver=1
+GLOBAL name=38 iface=wp_cursor_shape_manager_v1 ver=1
+GLOBAL name=39 iface=wp_alpha_modifier_v1 ver=1
+GLOBAL name=40 iface=wp_presentation ver=2
+GLOBAL name=41 iface=zwlr_foreign_toplevel_manager_v1 ver=3
+GLOBAL name=42 iface=ext_foreign_toplevel_list_v1 ver=1
+GLOBAL name=43 iface=zwp_relative_pointer_manager_v1 ver=1
+GLOBAL name=44 iface=zwp_pointer_gestures_v1 ver=3
+GLOBAL name=45 iface=zwlr_output_manager_v1 ver=4
+GLOBAL name=46 iface=zwlr_output_power_manager_v1 ver=1
+GLOBAL name=47 iface=zwlr_data_control_manager_v1 ver=2
+GLOBAL name=48 iface=wl_seat ver=9
+GLOBAL name=49 iface=zphoc_device_state_v1 ver=2
+GLOBAL name=50 iface=wl_output ver=4
+GLOBAL name=51 iface=zwp_text_input_manager_v1 ver=1
+WINDOWS=1
+WIN title=Nuxel app_id=nuxel-pwa-host max=1 min=0 act=1 fs=0
+---SERVICES---
+active
+active
+active
+active
+active

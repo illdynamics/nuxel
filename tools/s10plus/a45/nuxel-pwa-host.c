@@ -1162,6 +1162,13 @@ static const struct cfgfile CFG[] = {
      to the terminal, the buttons or the boot surface. */
   { "keyboard",            "/etc/nuxel/keyboard/keyboard.json",             1 },
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
+  /* Physical pointer document + the two honest consumers' state files:
+   * libnuxel-libinput-path.so applies it to libinput devices and writes
+   * /run/nuxel-input.state; nuxel-input-apply.sh mirrors it to phoc's
+   * GSettings handlers and writes /run/nuxel-input-gsettings.state. */
+  { "input",               "/etc/nuxel/input/input.json",                  1 },
+  { "input-state",         "/run/nuxel-input.state",                       0 },
+  { "input-gsettings-state", "/run/nuxel-input-gsettings.state",          0 },
   { "keyboard-visible",    "/run/nuxel-keyboard.visible",                  0 },
   { "lock-state",          "/run/nuxel/security/lock-state.json",            0 },
   { "navdock-state",       "/run/nuxel-navdock.state",                     0 },

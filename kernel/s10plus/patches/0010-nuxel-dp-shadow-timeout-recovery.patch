@@ -1,0 +1,46 @@
+diff --git a/drivers/video/fbdev/exynos/dpu20/decon_core.c b/drivers/video/fbdev/exynos/dpu20/decon_core.c
+index 290453425..6538a6c77 100644
+--- a/drivers/video/fbdev/exynos/dpu20/decon_core.c
++++ b/drivers/video/fbdev/exynos/dpu20/decon_core.c
+@@ -2557,6 +2557,20 @@ static void decon_update_regs(struct decon_device *decon,
+ 			if (decon_is_bypass(decon))
+ 				goto end;
+ #endif
++#if defined(CONFIG_EXYNOS_DISPLAYPORT)
++			/*
++			 * A DisplayPort sink can disappear between userspace's
++			 * link check and this register write.  That is an expected
++			 * unplug race, not fatal display corruption.  Recover the
++			 * same way decon_update_last_regs() does; the old buffers
++			 * and retire fence are still released at the end label.
++			 */
++			if (decon->dt.out_type == DECON_OUT_DP) {
++				decon_err("decon%d: DP register update failed; recovering\n",
++						decon->id);
++				goto end;
++			}
++#endif
+ #if defined(CONFIG_EXYNOS_AFBC_DEBUG)
+ 			decon_dump_afbc_handle(decon, old_dma_bufs);
+ #endif
+@@ -2600,6 +2614,20 @@ static void decon_update_regs(struct decon_device *decon,
+ #if defined(CONFIG_EXYNOS_COMMON_PANEL)
+ 			if (decon_is_bypass(decon))
+ 				goto end;
++#endif
++#if defined(CONFIG_EXYNOS_DISPLAYPORT)
++			/*
++			 * When the USB-C/DP cable is unplugged, decon_t can have one
++			 * in-flight shadow update whose VSTATUS/update-done will never
++			 * arrive.  The vendor driver BUG()s here, which turns a normal
++			 * cable removal into a full kernel panic.  decon_update_last_regs()
++			 * already treats this timeout as recoverable; do the same for DP.
++			 */
++			if (decon->dt.out_type == DECON_OUT_DP) {
++				decon_err("decon%d: DP shadow update timeout; recovering\n",
++						decon->id);
++				goto end;
++			}
+ #endif
+ 			decon_up_list_saved();
+ #if defined(CONFIG_EXYNOS_AFBC_DEBUG)

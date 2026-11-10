@@ -1,0 +1,11 @@
+.............F                                                           [100%]
+=================================== FAILURES ===================================
+___________ test_vesktop_uses_visible_software_compositing_fallback ____________
+/Users/wicked/x/nuxel/tests/pwnage82000/test_pwnage82000.py:203: in test_vesktop_uses_visible_software_compositing_fallback
+    assert marker in api
+E   assert 'target_id == "dev.vencord.Vesktop"' in '#!/usr/bin/env python3\n"""\nNuxel Bridge - REST API Compatibility Layer\n\nProvides a simple HTTP interface for PWAs...forever()\n    except KeyboardInterrupt:\n        print("\\nShutting down API server...")\n        server.shutdown()\n'
+        api        = '#!/usr/bin/env python3\n"""\nNuxel Bridge - REST API Compatibility Layer\n\nProvides a simple HTTP interface for PWAs...forever()\n    except KeyboardInterrupt:\n        print("\\nShutting down API server...")\n        server.shutdown()\n'
+        marker     = 'target_id == "dev.vencord.Vesktop"'
+=========================== short test summary info ============================
+FAILED tests/pwnage82000/test_pwnage82000.py::test_vesktop_uses_visible_software_compositing_fallback
+1 failed, 13 passed in 0.63s

@@ -233,7 +233,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.2-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.3-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -1525,16 +1525,64 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # for an uninstalled RPM/wrapper.
         flatpak_argv = None
         plan = None
+        # Resolve the owner's effective identity once for this launch.  Flatpak
+        # cannot inherit the host LD_PRELOAD, so the same profile is exposed as
+        # a read-only filesystem plus env/Chromium args.  Spoofed launches skip
+        # the argv cache because the owner may change the profile at any time.
+        spoof_env = {}
+        spoof_ua = ""
+        spoof_cfg = {}
+        try:
+            _spoof_doc = self._spoof_load_doc()
+            _spoof_eff, _spoof_scope = self._spoof_effective(_spoof_doc, target_id)
+            spoof_cfg = _spoof_eff if isinstance(_spoof_eff, dict) else {}
+            spoof_ua = str(spoof_cfg.get("ua") or "").strip()
+            if spoof_cfg:
+                spoof_env = self._spoof_launch_env(target_id) or {}
+                if not spoof_ua:
+                    spoof_ua = self.SPOOF_WINDOWS_UA
+        except Exception as exc:  # noqa: BLE001 - spoofing must never block launch
+            logger.warning("spoof profile resolution failed for %s: %s", target_id, exc)
+            spoof_env, spoof_ua, spoof_cfg = {}, "", {}
         now_mono = time.monotonic()
-        with _LAUNCH_PLAN_LOCK:
-            cached = _LAUNCH_PLAN_CACHE.get(target_id)
-            if cached and (now_mono - cached[0]) < _LAUNCH_PLAN_TTL_S:
-                plan = dict(cached[1])
+        if not spoof_cfg:
+            with _LAUNCH_PLAN_LOCK:
+                cached = _LAUNCH_PLAN_CACHE.get(target_id)
+                if cached and (now_mono - cached[0]) < _LAUNCH_PLAN_TTL_S:
+                    plan = dict(cached[1])
         if plan is not None:
             flatpak_argv = plan.get('flatpak_argv')
         if flatpak_argv is None and flatpak_provider is not None:
             try:
-                flatpak_argv = flatpak_provider.get_provider().launch_argv(target_id)
+                _provider = flatpak_provider.get_provider()
+                _extra_env = None
+                _extra_args = None
+                _extra_fs = None
+                if spoof_cfg:
+                    _extra_env = dict(spoof_env)
+                    _extra_env["ZYPAK_LD_PRELOAD"] = spoof_env.get(
+                        "LD_PRELOAD", "/run/nuxel/spoof/libnuxel-spoof.so")
+                    _extra_env["NUXEL_SPOOF_UA"] = spoof_ua
+                    _extra_env["NUXEL_SPOOF_PLATFORM"] = "Win32"
+                    _extra_fs = ["--filesystem=/run/nuxel/spoof:ro"]
+                    if _provider.is_electron(target_id):
+                        # Teams has native Windows Chromium emulation; write
+                        # its config before the process starts.  Also repair
+                        # the shipped renderer module so UA-CH and the AAD
+                        # pagination state are correct inside the app.
+                        self._ensure_teams_app_patch(target_id)
+                        self._write_teams_spoof_config(target_id, spoof_ua)
+                        _extra_args = ["--user-agent=" + spoof_ua]
+                    elif _provider.is_qtwebengine(target_id):
+                        _qt = ("--no-sandbox --disable-gpu --disable-gpu-compositing "
+                               "--disable-dev-shm-usage "
+                               "--disable-features=Vulkan,SkiaGraphite,Dawn")
+                        if spoof_ua:
+                            _qt += ' --user-agent="%s"' % spoof_ua.replace('"', '')
+                        _extra_env["QTWEBENGINE_CHROMIUM_FLAGS"] = _qt
+                flatpak_argv = _provider.launch_argv(
+                    target_id, extra_env=_extra_env,
+                    extra_args=_extra_args, extra_fs=_extra_fs)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("flatpak launch probe failed for %s: %s", target_id, exc)
         # PWNAGE-96000: never bypass the Firefox wrapper.  It selects Flatpak
@@ -1641,13 +1689,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 cmd.append("--setenv=%s=%s" % (key, value))
             # PWNAGE-91000: per-app or global identity spoof.  The runtime
             # profile is scoped to this app, so concurrent apps with different
-            # spoofs cannot race on one shared os-release file.  Flatpak
-            # sandboxes ignore host LD_PRELOAD, so they are not claimed here.
-            try:
-                spoof_env = self._spoof_launch_env(target_id)
-            except Exception as exc:  # noqa: BLE001 - spoofing must not block launch
-                logger.warning("spoof environment failed for %s: %s", target_id, exc)
-                spoof_env = {}
+            # spoofs cannot race on one shared os-release file.
             for key, value in sorted(spoof_env.items()):
                 cmd.append("--setenv=%s=%s" % (key, value))
         if use_x11:
@@ -1690,7 +1732,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             "systemd_run_accept": round((t_accepted - t_exec_request) * 1000.0, 3),
             "request_to_launch_accepted": round((t_accepted - t_start) * 1000.0, 3),
         }
-        if plan is None:
+        if plan is None and not spoof_cfg:
             with _LAUNCH_PLAN_LOCK:
                 _LAUNCH_PLAN_CACHE[target_id] = (
                     time.monotonic(),
@@ -4200,6 +4242,28 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             return self._sound_request({
                 "cmd": "import", "name": params.get("name") or "sound.mp3",
                 "data_b64": data}, timeout=20.0)
+        # PWNAGE-102000: output policy lives in nuxel-soundd, the single owner
+        # of PipeWire route changes.  These verbs never create a fake sink.
+        if verb in ("outputs", "audio-status", "audio-outputs"):
+            return self._sound_request({"cmd": "outputs"})
+        if verb in ("diagnostics", "audio-diagnostics"):
+            return self._sound_request({"cmd": "diagnostics"})
+        if verb in ("routing", "set-routing"):
+            return self._sound_request({
+                "cmd": "set-routing", "mode": params.get("mode"),
+                "preferred_id": params.get("preferred_id")})
+        if verb in ("select-output", "set-output"):
+            return self._sound_request({
+                "cmd": "select-output",
+                "id": params.get("id") or params.get("stable_id")})
+        if verb in ("set-volume", "set-output-volume"):
+            return self._sound_request({
+                "cmd": "set-volume", "percent": params.get("percent", params.get("volume"))})
+        if verb in ("set-muted", "set-output-muted"):
+            return self._sound_request({"cmd": "set-muted", "muted": params.get("muted", False)})
+        if verb == "test-output":
+            return self._sound_request({"cmd": "test-output", "path": params.get("path")},
+                                       timeout=12.0)
         return {"success": False, "error": "unknown sound verb: %s" % verb}
 
     def _clock_request(self, payload, timeout=5.0):
@@ -4538,13 +4602,28 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     SPOOF_LEGACY_PROFILE = "/run/nuxel/spoof/profile.json"
     SPOOF_OS_RELEASE = "/run/nuxel/spoof/os-release"
     SPOOF_LIB = "/usr/lib/nuxel/spoof/libnuxel-spoof.so"
+    SPOOF_PRELOAD = "/usr/lib/nuxel/spoof/electron-spoof-preload.js"
+    # Patched teams-for-linux renderer module.  It fixes upstream's
+    # structuredClone(NavigatorUAData) crash (which left UA-CH reporting Linux)
+    # and advances the AAD converged-login pagination past the desktop-SSO
+    # "Switch Edge profile" spinner.  Shipped next to api.py by the live deploy.
+    SPOOF_TEAMS_EMULATE = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "teams_emulatePlatform.js")
+    TEAMS_ASAR = ("/var/lib/flatpak/app/com.github.IsmaelMartinez."
+                  "teams_for_linux/current/active/files/teams-for-linux/"
+                  "resources/app.asar")
+    SPOOF_WINDOWS_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/152.0.0.0 Safari/537.36")
     SPOOF_DEFAULT_UNAME = {
-        "sysname": "Linux",
-        "nodename": "nuxel-spoof",
-        "release": "6.1.0-nuxel-spoof",
-        "version": "#1 SMP PREEMPT_DYNAMIC",
-        "machine": "aarch64",
+        "sysname": "windows_nt",
+        "nodename": "WIN-CLIENT",
+        "release": "10.0",
+        "version": "#1 SMP PREEMPT",
+        "machine": "amd64",
     }
+    _TEAMS_ASAR_PATCH_CACHE = {}
+    _TEAMS_ASAR_PATCH_LOCK = threading.Lock()
 
     @classmethod
     def _spoof_clean_uname(cls, raw):
@@ -4784,8 +4863,97 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         except OSError as exc:
             logger.warning("spoof runtime prepare failed for %s: %s", app_id, exc)
             return {}
+        # Flatpak cannot expose /usr (reserved).  Materialize the injector and
+        # profile under the per-boot runtime dir, which the launcher exposes as
+        # a read-only filesystem inside the sandbox.
+        runtime_lib = os.path.join(self.SPOOF_RUNTIME_DIR, "libnuxel-spoof.so")
+        runtime_preload = os.path.join(self.SPOOF_RUNTIME_DIR, "electron-spoof-preload.js")
+        try:
+            shutil.copy2(self.SPOOF_LIB, runtime_lib)
+            shutil.copy2(self.SPOOF_PRELOAD, runtime_preload)
+            os.chmod(runtime_lib, 0o644)
+            os.chmod(runtime_preload, 0o644)
+        except OSError as exc:
+            logger.warning("spoof runtime asset copy failed: %s", exc)
         logger.info("spoof injected app=%s scope=%s profile=%s", app_id, scope, profile_path)
-        return {"LD_PRELOAD": self.SPOOF_LIB, "NUXEL_SPOOF_PROFILE": profile_path}
+        return {"LD_PRELOAD": runtime_lib, "NUXEL_SPOOF_PROFILE": profile_path}
+
+    def _ensure_teams_app_patch(self, app_id):
+        """Idempotently install the renderer fixes into the Teams ASAR.
+
+        The Flatpak deployment is root-owned and is not part of the Nuxel
+        release payload, so this runs from the bridge (which is root) and is
+        re-applied whenever a Flatpak update replaces app.asar.  The archive
+        is only rewritten when the embedded module differs.
+        """
+        if app_id != "com.github.IsmaelMartinez.teams_for_linux":
+            return False
+        asar = self.TEAMS_ASAR
+        source = self.SPOOF_TEAMS_EMULATE
+        if not (os.path.isfile(asar) and os.path.isfile(source)):
+            return False
+        try:
+            with open(source, "rb") as fh:
+                patched = fh.read()
+            import asar_patch
+            current = asar_patch.read_file(asar, "app/browser/tools/emulatePlatform.js")
+            if current == patched:
+                return True
+            with self._TEAMS_ASAR_PATCH_LOCK:
+                current = asar_patch.read_file(asar, "app/browser/tools/emulatePlatform.js")
+                if current != patched:
+                    asar_patch.patch(asar, {"app/browser/tools/emulatePlatform.js": patched})
+                    logger.info("teams renderer patched: %s", asar)
+                self._TEAMS_ASAR_PATCH_CACHE["key"] = (os.path.getsize(asar), os.stat(asar).st_mtime_ns)
+            return True
+        except Exception as exc:  # noqa: BLE001 - spoofing must never block launch
+            logger.warning("teams renderer patch failed: %s", exc)
+            return False
+
+    def _write_teams_spoof_config(self, app_id, ua):
+        """Enable Teams' own Windows Chromium emulation for a spoofed launch.
+
+        Teams has first-class options for exactly this case:
+        platform.chromeUserAgent + platform.emulateWindowsChromium.  Setting
+        them in the app config is more reliable than a renderer preload because
+        Electron ignores NODE_OPTIONS in packaged apps.
+        """
+        if app_id != "com.github.IsmaelMartinez.teams_for_linux" or not ua:
+            return
+        cfg_dir = "/home/nuxel/.var/app/%s/config/teams-for-linux" % app_id
+        cfg_path = os.path.join(cfg_dir, "config.json")
+        try:
+            os.makedirs(cfg_dir, mode=0o755, exist_ok=True)
+            doc = {}
+            try:
+                with open(cfg_path, "r", encoding="utf-8") as fh:
+                    loaded = json.load(fh)
+                if isinstance(loaded, dict):
+                    doc = loaded
+            except (OSError, ValueError):
+                pass
+            platform = doc.get("platform")
+            if not isinstance(platform, dict):
+                platform = {}
+            platform["chromeUserAgent"] = ua
+            platform["emulateWindowsChromium"] = True
+            doc["platform"] = platform
+            # Keep the deprecated flat aliases in sync for older builds.
+            doc["chromeUserAgent"] = ua
+            doc["emulateWinChromiumPlatform"] = True
+            tmp = cfg_path + ".nuxel-spoof.tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(doc, fh, indent=2, sort_keys=True)
+                fh.write("\n")
+            os.chmod(tmp, 0o644)
+            try:
+                os.chown(tmp, 1000, 1000)
+            except OSError:
+                pass
+            os.replace(tmp, cfg_path)
+            logger.info("teams spoof config written: %s (Windows Chromium emulation)", cfg_path)
+        except OSError as exc:
+            logger.warning("teams spoof config write failed: %s", exc)
 
     def _spoof_rpc(self, app_id, verb, params):
         params = params if isinstance(params, dict) else {}
@@ -5544,26 +5712,74 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return {'success': False, 'error': 'audio provider unavailable'}
             if getattr(self, '_audio_provider', None) is None:
                 self._audio_provider = hw_providers.AudioProvider()
-            if verb == 'status':
-                st = self._audio_provider.get_status()
-                st['timestamp'] = time.time()
-                return st
-            if verb == 'set-volume':
-                return self._audio_provider.set_volume(
-                    params.get('volume') if isinstance(params, dict) else None)
+            # PWNAGE-102000: output routing is owned by nuxel-soundd.  Keep the
+            # legacy inventory fields for older clients, but overlay the
+            # authoritative routing decision, volume and mute.
+            if verb in ('status', 'sinks', 'outputs'):
+                policy = self._sound_request({'cmd': 'outputs'})
+                if policy.get('success'):
+                    st = self._audio_provider.get_status()
+                    cur = policy.get('current') or {}
+                    st.update({
+                        'backend': policy.get('backend'),
+                        'sound_server': policy.get('sound_server'),
+                        'outputs': policy.get('endpoints') or [],
+                        'selected_output': cur or None,
+                        'volume_percent': policy.get('volume_percent'),
+                        'volume_supported': policy.get('volume_supported'),
+                        'mute_supported': policy.get('mute_supported'),
+                        'muted': policy.get('muted'),
+                        'hdmi_audio': policy.get('hdmi') or {},
+                        'output_policy': policy,
+                        'timestamp': time.time(),
+                        'detail': 'output policy: %s' % ((policy.get('last_decision') or {}).get('reason') or 'ready'),
+                    })
+                    if verb == 'sinks':
+                        return {'success': True,
+                                'backend': st.get('backend'),
+                                'sound_server': st.get('sound_server'),
+                                'outputs': st.get('outputs', []),
+                                'selected_output': st.get('selected_output'),
+                                'capture_sources': st.get('capture_sources', []),
+                                'output_policy': policy}
+                    return st
+                if verb in ('sinks', 'outputs'):
+                    return policy
+            if verb in ('set-volume', 'setVolume'):
+                pct = params.get('volume', params.get('percent')) if isinstance(params, dict) else None
+                routed = self._sound_request({'cmd': 'set-volume', 'percent': pct})
+                if routed.get('success') or routed.get('error') != 'sound-manager-unavailable':
+                    return routed
+                return self._audio_provider.set_volume(pct)
             if verb == 'set-muted':
-                return self._audio_provider.set_muted(
-                    bool(params.get('muted', False)) if isinstance(params, dict) else False)
+                muted = bool(params.get('muted', False)) if isinstance(params, dict) else False
+                routed = self._sound_request({'cmd': 'set-muted', 'muted': muted})
+                if routed.get('success') or routed.get('error') != 'sound-manager-unavailable':
+                    return routed
+                return self._audio_provider.set_muted(muted)
             if verb == 'capture-route':
                 return self._audio_provider.capture_route()
-            if verb == 'sinks':
-                st = self._audio_provider.get_status()
-                return {'success': True,
-                        'backend': st.get('backend'),
-                        'sound_server': st.get('sound_server'),
-                        'outputs': st.get('outputs', []),
-                        'selected_output': st.get('selected_output'),
-                        'capture_sources': st.get('capture_sources', [])}
+            if verb in ('set-output', 'select-output'):
+                target = params.get('output') if isinstance(params, dict) else None
+                if target is None and isinstance(params, dict):
+                    target = params.get('target')
+                if target is None and isinstance(params, dict):
+                    target = params.get('id') or params.get('stable_id')
+                if verb == 'select-output' and isinstance(params, dict):
+                    target = params.get('id') or params.get('stable_id') or target
+                if isinstance(target, str):
+                    low = target.strip().lower()
+                    if low in ('speaker', 'phone', 'internal'):
+                        target = 'alsa:beyond-madera:rdma1'
+                    elif low in ('hdmi', 'displayport', 'dp', 'external'):
+                        target = 'alsa:beyond-madera:dp-audio'
+                if verb == 'select-output':
+                    return self._sound_request({'cmd': 'select-output', 'id': target})
+                return self._sound_request({'cmd': 'select-output', 'id': target})
+            if verb == 'set-routing':
+                return self._sound_request({
+                    'cmd': 'set-routing', 'mode': params.get('mode') if isinstance(params, dict) else None,
+                    'preferred_id': params.get('preferred_id') if isinstance(params, dict) else None})
             if verb in ('test-audio', 'play-sound'):
                 # PWNAGE-81000: the central sound manager keeps one initialized
                 # PipeWire stream and pre-decoded PCM.  The old path ran a route
@@ -5593,6 +5809,56 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             if hw_providers is None:
                 return {'success': False, 'error': 'display provider unavailable'}
             return hw_providers.DisplayProvider().get_status()
+        if namespace == 'display' and verb in ('set-mode', 'set-rotation', 'notify-test', 'outputs'):
+            # Mode changes are a device-management operation.  Only the
+            # first-party display surfaces (Home notification actions and
+            # Settings) may ask the authoritative display daemon to start or
+            # stop a real external output.
+            if app_id not in ('org.nuxel.Home', 'org.nuxel.Settings', 'nuxel-settings'):
+                return {'success': False, 'error': 'capability_denied',
+                        'error_code': 'CAPABILITY_DENIED',
+                        'detail': 'only Nuxel Home/Settings may change display mode'}
+            tool = '/usr/libexec/nuxel/nuxel-display-ctl'
+            if not os.path.exists(tool):
+                return {'success': False, 'error': 'DISPLAYD_UNAVAILABLE',
+                        'detail': 'nuxel-display-ctl is not installed'}
+            p = params if isinstance(params, dict) else {}
+            if verb == 'set-mode':
+                mode = str(p.get('mode') or '').strip().lower()
+                if mode not in ('mirror', 'mirror-portrait', 'mirror-landscape',
+                                'landscape', 'fullscreen', 'full', 'desktop', 'off'):
+                    return {'success': False, 'error': 'INVALID_MODE',
+                            'detail': 'mode must be mirror-portrait, mirror-landscape, '
+                                      'fullscreen, desktop or off'}
+                argv = [tool, 'set-mode', mode]
+            elif verb == 'set-rotation':
+                try:
+                    degrees = int(p.get('rotation', p.get('degrees')))
+                except (TypeError, ValueError):
+                    return {'success': False, 'error': 'INVALID_ROTATION',
+                            'detail': 'rotation must be 0, 90, 180 or 270'}
+                argv = [tool, 'set-rotation', str(degrees)]
+            elif verb == 'notify-test':
+                argv = [tool, 'notify-test']
+                name = p.get('display_name')
+                if isinstance(name, str) and name.strip():
+                    argv += ['--display-name', name.strip()[:120]]
+            else:
+                argv = [tool, 'outputs']
+            try:
+                proc = subprocess.run(argv, capture_output=True, text=True, timeout=20.0)
+            except (OSError, subprocess.SubprocessError) as exc:
+                return {'success': False, 'error': 'DISPLAYD_UNAVAILABLE',
+                        'detail': str(exc)}
+            try:
+                doc = json.loads(proc.stdout or '{}')
+            except ValueError:
+                doc = {'success': False, 'error': 'DISPLAYD_PROTOCOL_ERROR',
+                       'detail': (proc.stdout or proc.stderr or '')[:500]}
+            if not isinstance(doc, dict):
+                doc = {'success': False, 'error': 'DISPLAYD_PROTOCOL_ERROR'}
+            doc.setdefault('returncode', proc.returncode)
+            return doc
         if namespace == 'display' and verb in ('state', 'panel-state'):
             if hw_providers is None:
                 return {'success': False, 'error': 'display provider unavailable'}

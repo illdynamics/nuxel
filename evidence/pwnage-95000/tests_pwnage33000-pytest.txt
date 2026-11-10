@@ -1,0 +1,11 @@
+.....F.....                                                              [100%]
+=================================== FAILURES ===================================
+__________ test_recorder_loads_wav_encoder_and_uses_voice_recordings ___________
+/Users/wicked/x/nuxel/tests/pwnage33000/test_pwnage33000.py:87: in test_recorder_loads_wav_encoder_and_uses_voice_recordings
+    assert "saveLocation: '/VoiceRecordings'" in js
+E   assert "saveLocation: '/VoiceRecordings'" in '/* Nuxel Recorder (PWNAGE-30000)\n * One-tap voice recorder.  Capture uses the browser audio stack when it is\n * rea...mt,\n                           home: function () { return homePath; }, absoluteLocation: absoluteLocation };\n})();\n'
+        html       = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,...ript>\n<script src="js/recorder-wav.js"></script>\n<script src="js/recorder.js?v=p82000"></script>\n</body>\n</html>\n'
+        js         = '/* Nuxel Recorder (PWNAGE-30000)\n * One-tap voice recorder.  Capture uses the browser audio stack when it is\n * rea...mt,\n                           home: function () { return homePath; }, absoluteLocation: absoluteLocation };\n})();\n'
+=========================== short test summary info ============================
+FAILED tests/pwnage33000/test_pwnage33000.py::test_recorder_loads_wav_encoder_and_uses_voice_recordings
+1 failed, 10 passed in 0.69s

@@ -1,0 +1,269 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== i2c devices ===
+total 0
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 0-0010 -> ../../../devices/platform/10860000.hsi2c/i2c-0/0-0010
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 1-002d -> ../../../devices/platform/10870000.hsi2c/i2c-1/1-002d
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 1-0051 -> ../../../devices/platform/10870000.hsi2c/i2c-1/1-0051
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 10-0051 -> ../../../devices/platform/10990000.hsi2c/i2c-10/10-0051
+lrwxrwxrwx 1 root root 0 Nov  9 14:47 11-0040 -> ../../../devices/platform/109a0000.hsi2c/i2c-11/11-0040
+lrwxrwxrwx 1 root root 0 Nov  9 14:47 11-0041 -> ../../../devices/platform/109a0000.hsi2c/i2c-11/11-0041
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 12-0056 -> ../../../devices/platform/15d30000.hsi2c/i2c-12/12-0056
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 13-0060 -> ../../../devices/platform/15d50000.hsi2c/i2c-13/13-0060
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 14-0025 -> ../../../devices/platform/15d60000.hsi2c/i2c-14/14-0025
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 14-0036 -> ../../../devices/platform/15d60000.hsi2c/i2c-14/14-0036
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 14-0062 -> ../../../devices/platform/15d60000.hsi2c/i2c-14/14-0062
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 14-0066 -> ../../../devices/platform/15d60000.hsi2c/i2c-14/14-0066
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 14-0069 -> ../../../devices/platform/15d60000.hsi2c/i2c-14/14-0069
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 15-003b -> ../../../devices/platform/15d70000.hsi2c/i2c-15/15-003b
+lrwxrwxrwx 1 root root 0 Nov  9 09:57 16-0000 -> ../../../devices/platform/15970000.speedy/i2c-16/16-0000
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 16-0001 -> ../../../devices/platform/15970000.speedy/i2c-16/16-0001
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 16-0002 -> ../../../devices/platform/15970000.speedy/i2c-16/16-0002
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 16-000f -> ../../../devices/platform/15970000.speedy/i2c-16/16-000f
+lrwxrwxrwx 1 root root 0 Nov  9 09:57 17-0000 -> ../../../devices/platform/15980000.speedy1/i2c-17/17-0000
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 17-0001 -> ../../../devices/platform/15980000.speedy1/i2c-17/17-0001
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 17-000f -> ../../../devices/platform/15980000.speedy1/i2c-17/17-000f
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 2-0010 -> ../../../devices/platform/10880000.hsi2c/i2c-2/2-0010
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 3-000c -> ../../../devices/platform/10890000.hsi2c/i2c-3/3-000c
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 3-000f -> ../../../devices/platform/10890000.hsi2c/i2c-3/3-000f
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 3-0050 -> ../../../devices/platform/10890000.hsi2c/i2c-3/3-0050
+lrwxrwxrwx 1 root root 0 Nov  9 14:47 4-0048 -> ../../../devices/platform/104b0000.hsi2c/i2c-4/4-0048
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 5-0028 -> ../../../devices/platform/104f0000.hsi2c/i2c-5/5-0028
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 6-0010 -> ../../../devices/platform/108d0000.hsi2c/i2c-6/6-0010
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 6-002d -> ../../../devices/platform/108d0000.hsi2c/i2c-6/6-002d
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 7-0027 -> ../../../devices/platform/108e0000.hsi2c/i2c-7/7-0027
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 7-0057 -> ../../../devices/platform/108e0000.hsi2c/i2c-7/7-0057
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 8-000c -> ../../../devices/platform/108f0000.hsi2c/i2c-8/8-000c
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 8-0051 -> ../../../devices/platform/108f0000.hsi2c/i2c-8/8-0051
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 9-0059 -> ../../../devices/platform/10920000.hsi2c/i2c-9/9-0059
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-0 -> ../../../devices/platform/10860000.hsi2c/i2c-0
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-1 -> ../../../devices/platform/10870000.hsi2c/i2c-1
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-10 -> ../../../devices/platform/10990000.hsi2c/i2c-10
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-11 -> ../../../devices/platform/109a0000.hsi2c/i2c-11
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-12 -> ../../../devices/platform/15d30000.hsi2c/i2c-12
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-13 -> ../../../devices/platform/15d50000.hsi2c/i2c-13
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-14 -> ../../../devices/platform/15d60000.hsi2c/i2c-14
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-15 -> ../../../devices/platform/15d70000.hsi2c/i2c-15
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-16 -> ../../../devices/platform/15970000.speedy/i2c-16
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-17 -> ../../../devices/platform/15980000.speedy1/i2c-17
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-2 -> ../../../devices/platform/10880000.hsi2c/i2c-2
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-3 -> ../../../devices/platform/10890000.hsi2c/i2c-3
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-4 -> ../../../devices/platform/104b0000.hsi2c/i2c-4
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-5 -> ../../../devices/platform/104f0000.hsi2c/i2c-5
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-6 -> ../../../devices/platform/108d0000.hsi2c/i2c-6
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-7 -> ../../../devices/platform/108e0000.hsi2c/i2c-7
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-8 -> ../../../devices/platform/108f0000.hsi2c/i2c-8
+lrwxrwxrwx 1 root root 0 Nov  9 17:16 i2c-9 -> ../../../devices/platform/10920000.hsi2c/i2c-9
+=== platform drivers bound (usb/pd/ccic/phy/dp) ===
+-- exynos-displayport
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+-- exynos-dpp
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+-- exynos-mipi-phy
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+-- exynos5_usb3drd_phy
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- exynos_pd_dbg
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- max77705-charger
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- max77705-fuelgauge
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- max77705-haptic
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- max77705-usbc
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- phy_exynos_usbdrd
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- s2mpb02-led
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- s2mpb02-regulator
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+-- s2mps19-regulator
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+-- s2mps19-rtc
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- s2mps20-regulator
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+-- samsung-displayport-adma
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+-- usb_notifier
+--w------- 1 root root 4096 Nov  9 17:16 bind
+--w------- 1 root root 4096 Nov  9 17:16 uevent
+--w------- 1 root root 4096 Nov  9 17:16 unbind
+=== i2c drivers ===
+AK737X
+MCU_STM32
+S5K2L4
+S5K3J1
+S5K3M3
+S5K3P9
+S5K4HA
+SX9330
+ZC569
+cs35l41
+cs40l2x
+dummy
+fimc_is_eeprom_i2c
+ir-kbd-i2c
+max77705
+max77865
+mfc-charger
+pcal6524-gpio
+rtc6213n
+s2dos05-regulator
+s2mpb02
+s2mpb03-regulator
+s2mps19
+s2mps20
+sec-nfc
+sec_pmic
+sec_ts
+=== dmesg driver probes ===
+Nov 09 09:57:11 fedora kernel: max77705:max77705_i2c_probe
+Nov 09 09:57:11 fedora kernel: max77705:max77705_i2c_probe pmic_id:15, pmic_rev:2
+Nov 09 09:57:11 fedora kernel: max77705:max77705_i2c_probe device found: rev:5 ver:0
+Nov 09 09:57:11 fedora kernel: max77705: max77705_usbc_fw_update: FW: magic/cef166c1/ major/1a/ minor/0/ product_id/2/ rev/2/ id/15/
+Nov 09 09:57:11 fedora kernel: max77705: max77705_usbc_fw_update: FW: matched
+Nov 09 09:57:11 fedora kernel: max77705: max77705_usbc_fw_update: chip : 1A.00(PID 0x2), FW : 1A.00(PID 0x2)
+Nov 09 09:57:11 fedora kernel: max77705: max77705_usbc_fw_update: Don't need to update!
+Nov 09 09:57:11 fedora kernel: exynos_usbdrd_phy_probe: +++ (null) 10b00000.phy
+Nov 09 09:57:11 fedora kernel: phy_exynos_usbdrd 10b00000.phy: usbphy info: version:0x301, refclk:0x82
+Nov 09 09:57:11 fedora kernel: exynos_usbdrd_phy_probe: ---
+Nov 09 09:57:11 fedora kernel: max77705_fuelgauge_probe: max77705 Fuelgauge Driver Loading
+Nov 09 09:57:11 fedora kernel: max77705_fuelgauge_probe: SW/HW V empty init
+Nov 09 09:57:11 fedora kernel: [max77705_fuelgauge_probe]IRQ_BASE(276) FG_IRQ(288)
+Nov 09 09:57:11 fedora kernel: max77705_fuelgauge_probe: max77705 Fuelgauge Driver Loaded
+Nov 09 09:57:11 fedora kernel: max77705_charger_probe: max77705 Charger Driver Loading
+Nov 09 09:57:11 fedora kernel: max77705_charger_probe : device found : ver.0x2
+Nov 09 09:57:11 fedora kernel: max77705_charger_probe: MAX77705 Charger Driver Loaded
+Nov 09 09:57:11 fedora kernel: max77705: max77705_usbc_probe: Probing : 318
+Nov 09 09:57:11 fedora kernel: max77705: max77705_usbc_probe: created sysfs. ret=0
+Nov 09 09:57:11 fedora kernel: ccic_core_register_chip
+Nov 09 09:57:11 fedora kernel: max77705: max77705_usbc_probe: success typec_register_port port=0000000000000000
+Nov 09 09:57:11 fedora kernel: max77705: max77705_get_version_info: HW rev is 1Ah, FW rev is 1A.00!
+Nov 09 09:57:11 fedora kernel: max77705_muic: max77705_muic_probe
+Nov 09 09:57:11 fedora kernel: max77705_muic_register_ccic_notifier: Registering CCIC_NOTIFY_DEV_MUIC.
+Nov 09 09:57:11 fedora kernel: ccic_notifier_init already registered
+Nov 09 09:57:11 fedora kernel: ccic_notifier_register: listener=6 register
+Nov 09 09:57:11 fedora kernel: ccic_notifier_init already registered
+Nov 09 09:57:11 fedora kernel: max77705_muic_register_ccic_notifier: done.
+Nov 09 09:57:11 fedora kernel: max77705_muic: max77705_muic_probe: afc_disable: AFC enabled
+Nov 09 09:57:11 fedora kernel: max77705_muic: muic_register_usb_notifier
+Nov 09 09:57:11 fedora kernel: max77705_muic: muic_register_usb_notifier: done.
+Nov 09 09:57:11 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=0 typec_data_role=0 event=0
+Nov 09 09:57:11 fedora kernel: max77705_set_fw_noautoibus : OPCODE(0x57) W_LENGTH(1) R_LENGTH(0) AUTOIBUS(0x1)
+Nov 09 09:57:11 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=0 typec_data_role=0 event=2
+Nov 09 09:57:11 fedora kernel: ccic_misc_init - register success
+Nov 09 09:57:11 fedora kernel: usb_notify: usb_external_notify_register: listener=(pdic)2 register
+Nov 09 09:57:11 fedora kernel: max77705_usbc_probe : external notifier register done!
+Nov 09 09:57:11 fedora kernel: max77705: max77705_usbc_probe: probing Complete..
+Nov 09 09:57:11 fedora kernel: ccic_notifier_init already registered
+Nov 09 09:57:11 fedora kernel: exynos-displayport 130b0000.displayport: displayport_probe start
+Nov 09 09:57:11 fedora kernel: exynos-displayport 130b0000.displayport: Fault handler is registered for 190a0000.sysmmu
+Nov 09 09:57:11 fedora kernel: exynos-displayport 130b0000.displayport: Fault handler is registered for 190b0000.sysmmu
+Nov 09 09:57:11 fedora kernel: exynos-displayport 130b0000.displayport: Fault handler is registered for 190c0000.sysmmu
+Nov 09 09:57:11 fedora kernel: Displayport: displayport driver has been probed.
+Nov 09 09:57:11 fedora kernel: exynos-decon 19030000.decon_f: decon_probe start
+Nov 09 09:57:11 fedora kernel: decon_register_ext_irq: gpio(455)
+Nov 09 09:57:11 fedora kernel: decon0 registered successfully
+Nov 09 09:57:11 fedora kernel: exynos-decon 19050000.decon_t: decon_probe start
+Nov 09 09:57:11 fedora kernel: decon2 registered successfully
+Nov 09 09:57:11 fedora kernel: ccic_notifier_init already registered
+Nov 09 09:57:11 fedora kernel: ccic_notifier_init already registered
+Nov 09 09:57:11 fedora kernel: ccic_notifier_init already registered
+Nov 09 09:57:39 fedora kernel: Displayport: notifier registered
+Nov 09 09:57:39 fedora kernel: ccic_notifier_init already registered
+Nov 09 12:13:24 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : typec_unregister_partner
+Nov 09 12:13:24 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=0 typec_data_role=0 event=0
+Nov 09 16:24:10 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=1 typec_data_role=0 event=1
+Nov 09 16:30:28 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_ACC_DEVICE_VERSION : 0
+Nov 09 16:30:28 fedora kernel: sec ccic: driver has no data for `ccic_control_option' property
+Nov 09 16:30:28 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:30:28 fedora kernel: sec ccic: driver has no data for `debug_opcode' property
+Nov 09 16:30:28 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_FW_UPDATE_STATUS : NORMAL
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccstat_irq_handler: ccstat : typec_unregister_partner
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=0 typec_data_role=0 event=0
+Nov 09 16:30:30 fedora kernel: max77705: max77705_ccic_event_work: typec_register_partner, typec_power_role=1 typec_data_role=0 event=1
+Nov 09 16:30:33 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:30:33 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_FW_WATER : 0
+Nov 09 16:31:09 fedora kernel: sec ccic: driver has no data for `ccic_control_option' property
+Nov 09 16:45:53 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:53 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:53 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:53 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:54 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:54 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:54 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:54 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:55 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:55 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:55 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:55 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:56 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:56 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:56 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:56 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:57 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:57 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:57 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:57 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:58 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:58 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:59 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:59 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:45:59 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:45:59 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:00 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:00 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:00 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:00 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:01 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:01 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:01 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:01 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:02 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:02 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:02 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:02 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:03 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:03 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:03 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:03 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:04 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:04 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:04 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:04 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:05 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:05 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:05 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:05 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00
+Nov 09 16:46:06 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_CUR_VERSION : 1A.00
+Nov 09 16:46:06 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_SRC_VERSION : 1A.00

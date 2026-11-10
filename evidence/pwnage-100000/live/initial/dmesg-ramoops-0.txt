@@ -1,0 +1,241 @@
+Panic#2 Part1
+<6>[ 1475.398635]  [0:         decon2: 3199]     9227        0        0      43698946679 S(1)   1  ffffff80082eea10       7f8ced886c  ffffffc8f1d4c200              gdbus [do_sys_poll]
+<6>[ 1475.398647]  [0:         decon2: 3199]     9229        0        0      43626167371 S(1)   4  ffffff800832aea0       7f8ced886c  ffffffc8f1fb8000        data-loop.0 [SyS_epoll_wait]
+<6>[ 1475.398659]  [0:         decon2: 3199]    10425 209032704 1109032704    1475382049294 S(1)   3  ffffff800832aea0       7fbbbab1a0  ffffffc943e4c200 *           pw-cat [SyS_epoll_wait]
+<6>[ 1475.398670]  [0:         decon2: 3199]    12613        0 588000000    1345735553366 I(1026)   2  ffffff800813b6e0                0  ffffffc96cb1c200 *    kworker/u18:3 [worker_thread]
+<6>[ 1475.398680]  [0:         decon2: 3199]    14818        0 68000000    1475009790603 R(0)   0                 0                0  ffffffc959ad6300 *      kworker/0:0 [0]
+<4>[ 1475.398686]  [0:         decon2: 3199] Call trace:
+<4>[ 1475.398693]  [0:         decon2: 3199]  __switch_to+0xe4/0x160
+<4>[ 1475.398699]  [0:         decon2: 3199]  __schedule+0x2c8/0x900
+<4>[ 1475.398705]  [0:         decon2: 3199]  schedule+0x38/0xa0
+<4>[ 1475.398711]  [0:         decon2: 3199]  worker_thread+0xd4/0x3c4
+<4>[ 1475.398718]  [0:         decon2: 3199]  kthread+0x104/0x13c
+<4>[ 1475.398725]  [0:         decon2: 3199]  ret_from_fork+0x10/0x30
+<6>[ 1475.398729]  [0:         decon2: 3199] 
+<6>[ 1475.398741]  [0:         decon2: 3199]    14976        0 128000000    1474885620835 I(1026)   3  ffffff800813b6e0                0  ffffffc969bd2100 *      kworker/3:1 [worker_thread]
+<6>[ 1475.398753]  [0:         decon2: 3199]    17128        0 60000000    1475093696988 I(1026)   1  ffffff800813b6e0                0  ffffffc96c044200 *     kworker/1:2H [worker_thread]
+<6>[ 1475.398764]  [0:         decon2: 3199]    17146        0 16000000    1267844261086 I(1026)   2  ffffff800813b6e0                0  ffffffc96c045280 *     kworker/2:2H [worker_thread]
+<6>[ 1475.398775]  [0:         decon2: 3199]    17274        0 16000000    1295843008171 I(1026)   0  ffffff800813b6e0                0  ffffffc96c7a4200 *     kworker/0:1H [worker_thread]
+<6>[ 1475.398787]  [0:         decon2: 3199]    18204        0 188000000    1471962619153 I(1026)   2  ffffff800813b6e0                0  ffffffc96c7a6300 *    kworker/u18:1 [worker_thread]
+<6>[ 1475.398799]  [0:         decon2: 3199]    18273 40000000 240000000    1470093030545 S(1)   2  ffffff80082eea10       7f92d5b1a0  ffffffc94552a100 *   nuxel-metricsd [do_sys_poll]
+<6>[ 1475.398810]  [0:         decon2: 3199]    18670        0        0    1186687966088 I(1026)   5  ffffff800813b6e0                0  ffffffc967979080 *      kworker/5:2 [worker_thread]
+<6>[ 1475.398821]  [0:         decon2: 3199]    18707        0 24000000    1436897660710 I(1026)   3  ffffff800813b6e0                0  ffffffc959ad0000 *     kworker/3:2H [worker_thread]
+<6>[ 1475.398832]  [0:         decon2: 3199]    19234        0  4000000    1237686728547 I(1026)   2  ffffff800813b6e0                0  ffffffc96797d280 *      kworker/2:1 [worker_thread]
+<6>[ 1475.398843]  [0:         decon2: 3199]    19332        0 12000000    1475129952949 I(1026)   4  ffffff800813b6e0                0  ffffffc94d28c200 *      kworker/4:2 [worker_thread]
+<6>[ 1475.398854]  [0:         decon2: 3199]    19957        0        0    1235251329210 I(1026)   6  ffffff800813b6e0                0  ffffffc96c7e8000 *     kworker/6:1H [worker_thread]
+<6>[ 1475.398865]  [0:         decon2: 3199]    19958        0        0    1235327759710 I(1026)   7  ffffff800813b6e0                0  ffffffc94cbc4200 *     kworker/7:1H [worker_thread]
+<6>[ 1475.398876]  [0:         decon2: 3199]    20075        0        0    1236074059207 I(1026)   0  ffffff800813b6e0                0  ffffffc94d28e300 *      kworker/0:1 [worker_thread]
+<6>[ 1475.398888]  [0:         decon2: 3199]    20098        0  4000000    1304822466599 I(1026)   3  ffffff800813b6e0                0  ffffffc959ad5280 *      kworker/3:0 [worker_thread]
+<6>[ 1475.398900]  [0:         decon2: 3199]    20448        0 452000000    1470417219467 I(1026)   0  ffffff800813b6e0                0  ffffffc959ad2100 *    kworker/u18:2 [worker_thread]
+<6>[ 1475.398911]  [0:         decon2: 3199]    20844        0 52000000    1474553905567 I(1026)   0  ffffff800813b6e0                0  ffffffc959ad4200 *    kworker/u16:0 [worker_thread]
+<6>[ 1475.398922]  [0:         decon2: 3199]    20952        0 168000000    1460389708544 I(1026)   2  ffffff800813b6e0                0  ffffffc94d28b180 *    kworker/u16:3 [worker_thread]
+<6>[ 1475.398933]  [0:         decon2: 3199]    21055        0        0    1258864503351 I(1026)   1  ffffff800813b6e0                0  ffffffc94d28d280 *     kworker/1:0H [worker_thread]
+<6>[ 1475.398944]  [0:         decon2: 3199]    21123        0        0    1469009134588 I(1026)   2  ffffff800813b6e0                0  ffffffc959ad1080 *     kworker/2:1H [worker_thread]
+<6>[ 1475.398955]  [0:         decon2: 3199]    21135        0 32000000    1458999864818 I(1026)   0  ffffff800813b6e0                0  ffffffc94cbc3180 *     kworker/0:0H [worker_thread]
+<6>[ 1475.398966]  [0:         decon2: 3199]    21366        0        0    1456822126980 I(1026)   6  ffffff800813b6e0                0  ffffffc96c2da100 *      kworker/6:2 [worker_thread]
+<6>[ 1475.398978]  [0:         decon2: 3199]    21373  8000000        0    1353526127144 S(1)   3  ffffff80082eea10       7f9079b1a0  ffffffc8f6948000 *            pactl [do_sys_poll]
+<6>[ 1475.398989]  [0:         decon2: 3199]    21479        0        0    1301475497034 I(1026)   7  ffffff800813b6e0                0  ffffffc94cbc5280 *      kworker/7:0 [worker_thread]
+<6>[ 1475.399001]  [0:         decon2: 3199]    21857        0 56000000    1474533856144 I(1026)   1  ffffff800813b6e0                0  ffffffc94cbc1080 *      kworker/1:1 [worker_thread]
+<6>[ 1475.399012]  [0:         decon2: 3199]    22048        0        0    1402667472225 I(1026)   3  ffffff800813b6e0                0  ffffffc96d85c200 *     kworker/3:0H [worker_thread]
+<6>[ 1475.399022]  [0:         decon2: 3199]    22097        0 24000000    1475300352487 I(1026)   2  ffffff800813b6e0                0  ffffffc96ca03180 *      kworker/2:0 [worker_thread]
+<6>[ 1475.399033]  [0:         decon2: 3199]    22098        0        0    1366111191980 I(1026)   4  ffffff800813b6e0                0  ffffffc96c7a0000 *     kworker/4:0H [worker_thread]
+<6>[ 1475.399045]  [0:         decon2: 3199]    22653        0  4000000    1402683530110 I(1026)   6  ffffff800813b6e0                0  ffffffc96c7a3180 *     kworker/6:0H [worker_thread]
+<6>[ 1475.399056]  [0:         decon2: 3199]    22726        0  4000000    1235385828556 I(1026)   7  ffffff800813b6e0                0  ffffffc96ca02100 *     kworker/7:0H [worker_thread]
+<6>[ 1475.399067]  [0:         decon2: 3199]    22767        0        0    1235115350672 I(1026)   5  ffffff800813b6e0                0  ffffffc96ca04200 *     kworker/5:1H [worker_thread]
+<6>[ 1475.399078]  [0:         decon2: 3199]    23248        0        0    1276558361860 I(1026)   5  ffffff800813b6e0                0  ffffffc96c2de300 *      kworker/5:0 [worker_thread]
+<6>[ 1475.399090]  [0:         decon2: 3199]    23489        0        0    1460389708351 I(1026)   1  ffffff800813b6e0                0  ffffffc94cbc2100 *    kworker/u16:4 [worker_thread]
+<6>[ 1475.399101]  [0:         decon2: 3199]    23693        0 24000000    1474553602836 I(1026)   3  ffffff800813b6e0                0  ffffffc96ca01080 *      kworker/3:2 [worker_thread]
+<6>[ 1475.399113]  [0:         decon2: 3199]    23773 1685032704 -1262967296    1475031688372 S(1)   4  ffffff80081c478c       7f857a886c  ffffffc8a1efb180 *          python3 [futex_wait_queue_me]
+<6>[ 1475.399125]  [0:         decon2: 3199]    23778 24000000 24000000    1475202016410 S(1)   1  ffffff80082eea10       7f857a886c  ffffffc8f1cd8000    nuxel-display-c [do_sys_poll]
+<6>[ 1475.399136]  [0:         decon2: 3199]    23787        0        0    1236075981746 I(1026)   0  ffffff800813b6e0                0  ffffffc96ca05280 *      kworker/0:2 [worker_thread]
+<6>[ 1475.399148]  [0:         decon2: 3199]    23788        0        0    1236075986784 I(1026)   0  ffffff800813b6e0                0  ffffffc94cbc0000 *      kworker/0:3 [worker_thread]
+<6>[ 1475.399159]  [0:         decon2: 3199]    23810        0        0    1237687464047 I(1026)   2  ffffff800813b6e0                0  ffffffc96c2d9080 *      kworker/2:3 [worker_thread]
+<6>[ 1475.399171]  [0:         decon2: 3199]    23958        0        0    1475086139065 I(1026)   1  ffffff800813b6e0                0  ffffffc9693ae300 *     kworker/1:1H [worker_thread]
+<6>[ 1475.399182]  [0:         decon2: 3199]    24031        0  4000000    1469921946469 I(1026)   2  ffffff800813b6e0                0  ffffffc9691c3180 *     kworker/2:0H [worker_thread]
+<6>[ 1475.399192]  [0:         decon2: 3199]    24260        0        0    1474070138761 R(0)   0                 0                0  ffffffc9693ad280 *     kworker/0:2H [0]
+<4>[ 1475.399198]  [0:         decon2: 3199] Call trace:
+<4>[ 1475.399205]  [0:         decon2: 3199]  __switch_to+0xe4/0x160
+<4>[ 1475.399211]  [0:         decon2: 3199]  __schedule+0x2c8/0x900
+<4>[ 1475.399218]  [0:         decon2: 3199]  schedule+0x38/0xa0
+<4>[ 1475.399224]  [0:         decon2: 3199]  worker_thread+0xd4/0x3c4
+<4>[ 1475.399231]  [0:         decon2: 3199]  kthread+0x104/0x13c
+<4>[ 1475.399237]  [0:         decon2: 3199]  ret_from_fork+0x10/0x30
+<6>[ 1475.399242]  [0:         decon2: 3199] 
+<6>[ 1475.399252]  [0:         decon2: 3199]    24310        0        0    1362915076223 I(1026)   7  ffffff800813b6e0                0  ffffffc968b00000 *      kworker/7:1 [worker_thread]
+<6>[ 1475.399264]  [0:         decon2: 3199]    24349        0        0    1309154975928 I(1026)   3  ffffff800813b6e0                0  ffffffc968b01080 *      kworker/3:3 [worker_thread]
+<6>[ 1475.399276]  [0:         decon2: 3199]    24404 -192901888 281032704    1475385013602 S(1)   2  ffffff80082eea10       7fab2db1a0  ffffffc94c0a1080 *  nuxel-wl-fb-ext [do_sys_poll]
+<6>[ 1475.399287]  [0:         decon2: 3199]    24804        0 128000000    1475333814448 I(1026)   1  ffffff800813b6e0                0  ffffffc969306300 *    kworker/u17:3 [worker_thread]
+<6>[ 1475.399298]  [0:         decon2: 3199]    25264        0        0    1425172448716 I(1026)   4  ffffff800813b6e0                0  ffffffc95afec200 *     kworker/4:1H [worker_thread]
+<6>[ 1475.399309]  [0:         decon2: 3199]    25287        0        0    1366657721440 I(1026)   4  ffffff800813b6e0                0  ffffffc95afea100 *      kworker/4:1 [worker_thread]
+<6>[ 1475.399320]  [0:         decon2: 3199]    25548        0        0    1431280522847 I(1026)   3  ffffff800813b6e0                0  ffffffc9691c2100 *     kworker/3:1H [worker_thread]
+<6>[ 1475.399332]  [0:         decon2: 3199]    25991        0        0    1456841638634 I(1026)   6  ffffff800813b6e0                0  ffffffc95afeb180 *      kworker/6:0 [worker_thread]
+<6>[ 1475.399343]  [0:         decon2: 3199]    26017        0 36000000    1475086155603 I(1026)   1  ffffff800813b6e0                0  ffffffc9691c4200 *    kworker/u16:5 [worker_thread]
+<6>[ 1475.399356]  [0:         decon2: 3199]    26035        0        0    1463124187187 S(1)   4  ffffff80081b2db8       7fbaa9b1a0  ffffffc8a1efe300 *            sleep [hrtimer_nanosleep]
+<6>[ 1475.399368]  [0:         decon2: 3199]    26069        0  8000000    1469011266203 S(1)   1  ffffff80081b2db8       7fbbdeb1a0  ffffffc8f045e300 *            sleep [hrtimer_nanosleep]
+<6>[ 1475.399380]  [0:         decon2: 3199]    26129        0        0    1472682331343 S(1)   1  ffffff80081b2db8           468b30  ffffffc8a1efc200 *             init [hrtimer_nanosleep]
+<6>[ 1475.399392]  [0:         decon2: 3199]    26139  4000000        0    1473982465107 S(1)   4  ffffff80081b2db8       7faa00b1a0  ffffffc91fda8000 *            sleep [hrtimer_nanosleep]
+<6>[ 1475.399403]  [0:         decon2: 3199]    26143        0        0    1474961465603 I(1026)   1  ffffff800813b6e0                0  ffffffc96c334200 *      kworker/1:0 [worker_thread]
+<6>[ 1475.399416]  [0:         decon2: 3199]    26168        0        0    1474739886720 S(1)   2  ffffff80081b2db8       7f8e34b1a0  ffffffc8f20a9080 *            sleep [hrtimer_nanosleep]
+<6>[ 1475.399422]  [0:         decon2: 3199]  ----------------------------------------------------------------------------------------------------------------------------
+<0>[ 1475.399429]  [0:         decon2: 3199] linux_banner: Linux version 4.14.253-gf7194c1d15ed-dirty (wicked@infranux) (gcc version 15.2.0 (GCC)) #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026
+<0>[ 1475.399429]  [0:         decon2: 3199] 
+<0>[ 1475.399439]  [0:         decon2: 3199] sec_debug: sec_debug_panic_handler
+<0>[ 1475.399457]  [0:         decon2: 3199] sec_debug: set magic code (0x66262564)
+<0>[ 1475.399468]  [0:         decon2: 3199] sec_debug: set upload cause (0xc8)
+<6>[ 1475.399481]  [0:         decon2: 3199] 
+<6>[ 1475.399489]  [0:         decon2: 3199] cpu   user:65790 	nice:168 	system:55382 	idle:1049621 	iowait:2022 	irq:0 	softirq:2528 	 0 0 0
+<6>[ 1475.399495]  [0:         decon2: 3199] -------------------------------------------------------------------------------------------------------------
+<6>[ 1475.399503]  [0:         decon2: 3199] cpu0  user:12286 	nice:10 	system:10337 	idle:116782 	iowait:278 	irq:0 	softirq:1415 	 0 0 0
+<6>[ 1475.399510]  [0:         decon2: 3199] cpu1  user:12645 	nice:12 	system:10108 	idle:125043 	iowait:228 	irq:0 	softirq:306 	 0 0 0
+<6>[ 1475.399517]  [0:         decon2: 3199] cpu2  user:13700 	nice:13 	system:12661 	idle:121258 	iowait:278 	irq:0 	softirq:214 	 0 0 0
+<6>[ 1475.399525]  [0:         decon2: 3199] cpu3  user:14594 	nice:14 	system:16006 	idle:116500 	iowait:666 	irq:0 	softirq:158 	 0 0 0
+<6>[ 1475.399532]  [0:         decon2: 3199] cpu4  user:5391 	nice:17 	system:2553 	idle:139133 	iowait:161 	irq:0 	softirq:249 	 0 0 0
+<6>[ 1475.399539]  [0:         decon2: 3199] cpu5  user:2984 	nice:29 	system:985 	idle:143242 	iowait:91 	irq:0 	softirq:140 	 0 0 0
+<6>[ 1475.399546]  [0:         decon2: 3199] cpu6  user:2976 	nice:36 	system:1852 	idle:142434 	iowait:174 	irq:0 	softirq:28 	 0 0 0
+<6>[ 1475.399553]  [0:         decon2: 3199] cpu7  user:1210 	nice:34 	system:876 	idle:145226 	iowait:143 	irq:0 	softirq:14 	 0 0 0
+<6>[ 1475.399559]  [0:         decon2: 3199] -------------------------------------------------------------------------------------------------------------
+<6>[ 1475.399564]  [0:         decon2: 3199] 
+<6>[ 1475.399570]  [0:         decon2: 3199] irq : 4625041
+<6>[ 1475.399574]  [0:         decon2: 3199] -------------------------------------------------------------------------------------------------------------
+<6>[ 1475.399590]  [0:         decon2: 3199] irq-7    :   536733 mct_tick0
+<6>[ 1475.399596]  [0:         decon2: 3199] irq-8    :   515039 mct_tick1
+<6>[ 1475.399602]  [0:         decon2: 3199] irq-9    :   476425 mct_tick2
+<6>[ 1475.399609]  [0:         decon2: 3199] irq-10   :   438448 mct_tick3
+<6>[ 1475.399615]  [0:         decon2: 3199] irq-11   :    80341 mct_tick4
+<6>[ 1475.399621]  [0:         decon2: 3199] irq-12   :    38399 mct_tick5
+<6>[ 1475.399627]  [0:         decon2: 3199] irq-13   :    38502 mct_tick6
+<6>[ 1475.399635]  [0:         decon2: 3199] irq-14   :    26812 mct_tick7
+<6>[ 1475.399657]  [0:         decon2: 3199] irq-83   :        4 10430000.pinctrl
+<6>[ 1475.399664]  [0:         decon2: 3199] irq-84   :    59803 10830000.pinctrl
+<6>[ 1475.399684]  [0:         decon2: 3199] irq-141  :        2 158d0000.exynos-adv_tracer
+<6>[ 1475.399697]  [0:         decon2: 3199] irq-169  :    30351 18500000.mali
+<6>[ 1475.399703]  [0:         decon2: 3199] irq-171  :    16933 18500000.mali
+<6>[ 1475.399710]  [0:         decon2: 3199] irq-172  :    28502 arm-pmu
+<6>[ 1475.399716]  [0:         decon2: 3199] irq-173  :    27341 arm-pmu
+<6>[ 1475.399722]  [0:         decon2: 3199] irq-174  :    30987 arm-pmu
+<6>[ 1475.399728]  [0:         decon2: 3199] irq-175  :    36072 arm-pmu
+<6>[ 1475.399735]  [0:         decon2: 3199] irq-176  :    23391 arm-pmu
+<6>[ 1475.399741]  [0:         decon2: 3199] irq-177  :     9965 arm-pmu
+<6>[ 1475.399747]  [0:         decon2: 3199] irq-178  :    31889 arm-pmu
+<6>[ 1475.399753]  [0:         decon2: 3199] irq-179  :    13641 arm-pmu
+<6>[ 1475.399760]  [0:         decon2: 3199] irq-180  :      159 exynos-ocp
+<6>[ 1475.399767]  [0:         decon2: 3199] irq-182  :        2 tzdev_iwi_event
+<6>[ 1475.399773]  [0:         decon2: 3199] irq-184  :   168698 ufshcd
+<6>[ 1475.399780]  [0:         decon2: 3199] irq-185  :    67836 18cf1000.abox-gic
+<6>[ 1475.399786]  [0:         decon2: 3199] irq-186  :      719 19071000.dpp
+<6>[ 1475.399792]  [0:         decon2: 3199] irq-187  :      719 19071000.dpp
+<6>[ 1475.399799]  [0:         decon2: 3199] irq-188  :    26283 19076000.dpp
+<6>[ 1475.399805]  [0:         decon2: 3199] irq-189  :    26283 19076000.dpp
+<6>[ 1475.399813]  [0:         decon2: 3199] irq-198  :    29387 19080000.dsim
+<6>[ 1475.399820]  [0:         decon2: 3199] irq-199  :    37474 130b0000.displayport
+<6>[ 1475.399827]  [0:         decon2: 3199] irq-200  :      725 19030000.decon_f
+<6>[ 1475.399833]  [0:         decon2: 3199] irq-201  :      726 19030000.decon_f
+<6>[ 1475.399840]  [0:         decon2: 3199] irq-203  :    26252 19050000.decon_t
+<6>[ 1475.399846]  [0:         decon2: 3199] irq-204  :       31 19050000.decon_t
+<6>[ 1475.399854]  [0:         decon2: 3199] irq-212  :     2233 104b0000.hsi2c
+<6>[ 1475.399861]  [0:         decon2: 3199] irq-213  :      743 104f0000.hsi2c
+<6>[ 1475.399867]  [0:         decon2: 3199] irq-215  :       36 108e0000.hsi2c
+<6>[ 1475.399873]  [0:         decon2: 3199] irq-217  :      249 10920000.hsi2c
+<6>[ 1475.399880]  [0:         decon2: 3199] irq-219  :     3114 109a0000.hsi2c
+<6>[ 1475.399887]  [0:         decon2: 3199] irq-220  :       66 15d30000.hsi2c
+<6>[ 1475.399894]  [0:         decon2: 3199] irq-221  :      223 15d50000.hsi2c
+<6>[ 1475.399900]  [0:         decon2: 3199] irq-222  :   140355 15d60000.hsi2c
+<6>[ 1475.399906]  [0:         decon2: 3199] irq-223  :       44 15d70000.hsi2c
+<6>[ 1475.399915]  [0:         decon2: 3199] irq-234  :    13789 exynos-pcie
+<6>[ 1475.399922]  [0:         decon2: 3199] irq-239  :     1080 15c40000.adc
+<6>[ 1475.399928]  [0:         decon2: 3199] irq-240  :       50 dw-mci
+<6>[ 1475.399937]  [0:         decon2: 3199] irq-252  :     1086 10090000.BIG
+<6>[ 1475.399943]  [0:         decon2: 3199] irq-254  :        9 seclog
+<6>[ 1475.399949]  [0:         decon2: 3199] irq-256  :        8 ufs-srpmb
+<6>[ 1475.399962]  [0:         decon2: 3199] irq-285  :        2 wpc-int
+<6>[ 1475.399968]  [0:         decon2: 3199] irq-286  :        5 chgin-irq
+<6>[ 1475.399974]  [0:         decon2: 3199] irq-287  :        7 aicl-irq
+<6>[ 1475.399980]  [0:         decon2: 3199] irq-289  :     1956 usbc-apcmd-irq
+<6>[ 1475.399987]  [0:         decon2: 3199] irq-291  :        4 cc-vsafe0v-irq
+<6>[ 1475.399993]  [0:         decon2: 3199] irq-293  :        1 cc-vconnsc-irq
+<6>[ 1475.399999]  [0:         decon2: 3199] irq-294  :        4 cc-ccpinstat-irq
+<6>[ 1475.400005]  [0:         decon2: 3199] irq-296  :        4 cc-ccvcnstat-irq
+<6>[ 1475.400011]  [0:         decon2: 3199] irq-297  :        7 cc-ccstat-irq
+<6>[ 1475.400017]  [0:         decon2: 3199] irq-298  :        4 muic-vbusdet
+<6>[ 1475.400024]  [0:         decon2: 3199] irq-299  :     3716 muic-vbadc
+<6>[ 1475.400030]  [0:         decon2: 3199] irq-300  :        1 muic-dcdtmo
+<6>[ 1475.400036]  [0:         decon2: 3199] irq-302  :        1 muic-chgtyp
+<6>[ 1475.400041]  [0:         decon2: 3199] irq-304  :        1 usbc-sysmsg-irq
+<6>[ 1475.400048]  [0:         decon2: 3199] irq-305  :       32 pd-pdmsg-irq
+<6>[ 1475.400054]  [0:         decon2: 3199] irq-306  :        4 pd-psrdy-irq
+<6>[ 1475.400061]  [0:         decon2: 3199] irq-307  :        3 pd-datarole-irq
+<6>[ 1475.400068]  [0:         decon2: 3199] irq-310  :        3 usbc-vdm0-irq
+<6>[ 1475.400075]  [0:         decon2: 3199] irq-311  :        3 usbc-vdm1-irq
+<6>[ 1475.400082]  [0:         decon2: 3199] irq-312  :        3 usbc-vdm2-irq
+<6>[ 1475.400088]  [0:         decon2: 3199] irq-313  :        3 usbc-vdm3-irq
+<6>[ 1475.400094]  [0:         decon2: 3199] irq-314  :        3 usbc-vdm4-irq
+<6>[ 1475.400100]  [0:         decon2: 3199] irq-315  :        3 usbc-vdm5-irq
+<6>[ 1475.400106]  [0:         decon2: 3199] irq-316  :        5 usbc-vdm6-irq
+<6>[ 1475.400111]  [0:         decon2: 3199] irq-317  :        2 usbc-vir0-irq
+<6>[ 1475.400117]  [0:         decon2: 3199] irq-318  :     3968 max77705-irq
+<6>[ 1475.400149]  [0:         decon2: 3199] irq-420  :        1 panel0:conn-det
+<6>[ 1475.400156]  [0:         decon2: 3199] irq-422  :       11 madera IRQ
+<6>[ 1475.400162]  [0:         decon2: 3199] irq-423  :        1 BOOT_DONE
+<6>[ 1475.400168]  [0:         decon2: 3199] irq-424  :        1 sec-nfc
+<6>[ 1475.400177]  [0:         decon2: 3199] irq-430  :        6 gpio-keys: KEY_POWER
+<6>[ 1475.400183]  [0:         decon2: 3199] irq-431  :      464 sec_ts
+<6>[ 1475.400191]  [0:         decon2: 3199] irq-433  :        1 bt_host_wake
+<6>[ 1475.400197]  [0:         decon2: 3199] irq-434  :        1 tflash_det
+<6>[ 1475.400205]  [0:         decon2: 3199] irq-437  :        1 wpd-det-irq
+<6>[ 1475.400212]  [0:         decon2: 3199] irq-438  :        2 wpc-irq
+<6>[ 1475.400219]  [0:         decon2: 3199] irq-439  :        1 qbt_finger_detect
+<6>[ 1475.400226]  [0:         decon2: 3199] irq-440  :        1 qbt_ipc
+<6>[ 1475.400233]  [0:         decon2: 3199] irq-444  :        1 ssp-shub-int
+<6>[ 1475.400245]  [0:         decon2: 3199] irq-458  :    59760 19030000.decon_f
+<6>[ 1475.400253]  [0:         decon2: 3199] irq-460  :        1 HPDET
+<6>[ 1475.400259]  [0:         decon2: 3199] irq-461  :        1 JACKDET rise
+<6>[ 1475.400268]  [0:         decon2: 3199] irq-466  :      182 dhdpcie_host_wake
+<6>[ 1475.400279]  [0:         decon2: 3199] -------------------------------------------------------------------------------------------------------------
+<6>[ 1475.400284]  [0:         decon2: 3199] 
+<6>[ 1475.400289]  [0:         decon2: 3199] softirq : 3277401
+<6>[ 1475.400292]  [0:         decon2: 3199] -------------------------------------------------------------------------------------------------------------
+<6>[ 1475.400300]  [0:         decon2: 3199] softirq-0 :        3 HI
+<6>[ 1475.400305]  [0:         decon2: 3199] softirq-1 :  1040367 TIMER
+<6>[ 1475.400311]  [0:         decon2: 3199] softirq-2 :     1083 NET_TX
+<6>[ 1475.400316]  [0:         decon2: 3199] softirq-3 :    26982 NET_RX
+<6>[ 1475.400322]  [0:         decon2: 3199] softirq-4 :   148005 BLOCK
+<6>[ 1475.400327]  [0:         decon2: 3199] softirq-6 :    32601 TASKLET
+<6>[ 1475.400332]  [0:         decon2: 3199] softirq-7 :   899845 SCHED
+<6>[ 1475.400338]  [0:         decon2: 3199] softirq-9 :  1128515 RCU
+<6>[ 1475.400343]  [0:         decon2: 3199] -------------------------------------------------------------------------------------------------------------
+<6>[ 1475.400352]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> dbg_snapshot_panic_handler call -
+<6>[ 1475.400359]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> hung_task_panic call +
+<6>[ 1475.400366]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> hung_task_panic call -
+<6>[ 1475.400377]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> s3c2410wdt_panic_handler call +
+<6>[ 1475.400390]  [0:         decon2: 3199] s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+<6>[ 1475.400399]  [0:         decon2: 3199] Watchdog: s3c2410wdt_keepalive RTC 2026-11-09 16:50:06 UTC
+<6>[ 1475.400408]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> s3c2410wdt_panic_handler call -
+<6>[ 1475.400417]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> dump_kernel_offset call +
+<0>[ 1475.400423]  [0:         decon2: 3199] Kernel Offset: 0x70000 from 0xffffff8008000000
+<6>[ 1475.400431]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> dump_kernel_offset call -
+<6>[ 1475.400439]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> dump_cpu_hwcaps call +
+<0>[ 1475.400446]  [0:         decon2: 3199] CPU features: 0x1802230
+<6>[ 1475.400453]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> dump_cpu_hwcaps call -
+<6>[ 1475.400460]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> dump_mem_limit call +
+<0>[ 1475.400466]  [0:         decon2: 3199] Memory Limit: none
+<6>[ 1475.400473]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> dump_mem_limit call -
+<6>[ 1475.400483]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> itmon_logging_panic_handler call +
+<6>[ 1475.400496]  [0:         decon2: 3199] No found error in itmon_logging_panic_handler
+<6>[ 1475.400503]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> itmon_logging_panic_handler call -
+<6>[ 1475.400513]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> fimc_is_panic_handler call +
+<7>[ 1475.400520]  [0:         decon2: 3199] [@]### fimc_is_resource_dump dump start ###
+<7>[ 1475.400528]  [0:         decon2: 3199] [@]### fimc_is_resource_dump dump end ###
+<6>[ 1475.400535]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> fimc_is_panic_handler call -
+<6>[ 1475.400544]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> vts_panic_handler call +
+<6>[ 1475.400551]  [0:         decon2: 3199] vts_is_on : 0
+<6>[ 1475.400559]  [0:         decon2: 3199] samsung-vts 15510000.vts: exynos_vts_panic_handler: dump is skipped due to no power
+<6>[ 1475.400566]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> vts_panic_handler call -
+<6>[ 1475.400577]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> abox_panic_handler call +
+<6>[ 1475.400611]  [0:         decon2: 3199] samsung-abox 18c50000.abox: abox_core_enable(0)
+<6>[ 1475.400621]  [0:         decon2: 3199] samsung-abox 18c50000.abox: abox_core_power(0)
+<6>[ 1475.400630]  [0:         decon2: 3199] samsung-abox 18c50000.abox: abox_core_power(1)
+<6>[ 1475.750407]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> abox_panic_handler call -
+<6>[ 1475.750416]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> beyond_madera_panic_cb call +
+<6>[ 1475.750424]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> beyond_madera_panic_cb call -
+<6>[ 1475.750432]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> exynos_ehld_panic_handler call +
+<6>[ 1475.750439]  [0:         decon2: 3199] debug-snapshot: panic_notifier_list -> exynos_ehld_panic_handler call -

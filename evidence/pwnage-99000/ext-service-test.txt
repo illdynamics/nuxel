@@ -1,0 +1,22 @@
+ext_active=active
+state RUNNING mode=mirror output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=640x480 fps=20 rot=0 frames=1
+/dev/fb0 line 5760 sampled 17100 nonzero 17100 top [('080605', 1677), ('070605', 1260), ('1f120b', 1117), ('090706', 970), ('070505', 803)]
+/dev/fb1 line 2560 sampled 19200 nonzero 6840 top [('000000', 12360), ('080600', 959), ('070500', 669), ('070600', 635), ('090700', 513)]
+saved /tmp/nuxel-fb1-live.ppm /tmp/nuxel-fb0-live.ppm
+internal_wayland=active
+internal_bridge=active
+--- ext log tail ---
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T16:51:19 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror
+2026-11-09T16:51:19 nuxel-wl-fb-ext: fb /dev/fb1 640x480 bpp=32 line=2560 virtual=640x960 order=R@0 G@8 B@16 A@24
+2026-11-09T16:51:19 nuxel-wl-fb-ext: map src=720x1520 dst=640x480 scale=0.316 content=227x480 offset=206,0 rot=0
+2026-11-09T16:51:19 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=640x480
+2026-11-09T16:51:22 nuxel-wl-fb-ext: stopped frames=48
+BUILD_OK path=/usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T16:59:50 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror
+2026-11-09T16:59:50 nuxel-wl-fb-ext: fb /dev/fb1 640x480 bpp=32 line=2560 virtual=640x960 order=R@0 G@8 B@16 A@24
+2026-11-09T16:59:50 nuxel-wl-fb-ext: map src=720x1520 dst=640x480 scale=0.316 content=227x480 offset=206,0 rot=0
+2026-11-09T16:59:50 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=640x480
+ext_active_after_stop=inactive
+internal_wayland_after=active
+internal_bridge_after=active

@@ -1,0 +1,77 @@
+PASS fixtures: all audio pipeline verdicts match
+PASS fixture audio-nocard -> NO_CARD
+PASS audio-nocard: no stage is reported OK without observation
+PASS fixture audio-nofirmware -> BLOCKED_FIRMWARE
+PASS audio-nofirmware: no stage is reported OK without observation
+PASS fixture audio-nopcm -> NO_PCM
+PASS audio-nopcm: no stage is reported OK without observation
+PASS fixture audio-nocontrols -> NO_CONTROLS
+PASS audio-nocontrols: no stage is reported OK without observation
+PASS fixture audio-dacidle -> DAC_NOT_RUNNING
+PASS audio-dacidle: no stage is reported OK without observation
+PASS fixture audio-dapm-unverified -> OK_DAC_RUNNING
+PASS audio-dapm-unverified: no stage is reported OK without observation
+PASS fixture audio-ok -> OK_DAC_RUNNING
+PASS audio-ok: no stage is reported OK without observation
+PASS fixture audio-route-empty -> OK_DAC_RUNNING
+PASS audio-route-empty: no stage is reported OK without observation
+PASS audio-nocard: first broken stage is 'card'
+PASS audio-nofirmware: first broken stage is 'card'
+PASS audio-nopcm: first broken stage is 'pcm'
+PASS audio-nocontrols: first broken stage is 'controls'
+PASS audio-dacidle: first broken stage is 'dac_running'
+PASS a card with writable controls but a non-running PCM is DAC_NOT_RUNNING, never OK
+PASS the tool states that writability is not an acceptance criterion
+PASS tone without --yes is refused (no accidental burst)
+PASS tone with --yes but no renderer is BLOCKED_EXTERNAL_RESOURCE (nothing is faked)
+PASS tone refuses when the anchor card is absent
+PASS safe-volume refuses a level above the 100% policy ceiling
+PASS the reported softvol ceiling equals the policy cap
+PASS policy ceiling is the owner-approved 100% (25% cap retired)
+PASS policy first tone level is a small fraction of range
+PASS policy bans unbounded aplay invocations
+PASS ALSA softvol ceiling is installed config (max_dB = 0.0)
+PASS WirePlumber keeps UCM authoritative for beyond-madera and disables autosuspend
+PASS the shipped UCM profile carries empty sequences (no invented control names)
+PASS capture writes an evidence file and a generated UCM fragment
+PASS the generated fragment references a control OBSERVED on the card
+PASS every generated cset names a control present in the raw capture
+PASS a read-only detection control is never turned into a cset
+PASS every generated volume value is clamped to the 100% policy ceiling
+PASS manual-proof fragment has field 'Feature'
+PASS manual-proof fragment has field 'Why'
+PASS manual-proof fragment has field 'Preparation'
+PASS manual-proof fragment has field 'Exact action'
+PASS manual-proof fragment has field 'Expected result'
+PASS manual-proof fragment has field 'Failure symptoms'
+PASS manual-proof fragment has field 'Diagnostic'
+PASS manual-proof fragment has field 'PASS'
+PASS manual-proof fragment has field 'FAIL'
+PASS manual-proof fragment marks audibility NEEDS_OWNER_TEST
+PASS manual-proof fragment states writability is not an acceptance criterion
+PASS manual-proof fragment names the real codec/amp chain
+PASS capability manifest has audio items
+PASS no audio capability is claimed VERIFIED_ON_S10PLUS
+PASS audibility is NEEDS_OWNER_TEST in the manifest
+PASS sound-settings spec covers every required user-facing row
+PASS sound-settings spec keeps the 100% ceiling and amplifier protection rule
+PASS sound-settings spec states the shared sound-mode state file
+PASS sound-settings spec never claims audibility from a mixer write
+PASS per-app volume is honest about needing the session manager
+PASS nuxelctl audio settings --json emits exactly one parseable JSON object
+PASS settings on an empty root says the mixer is unavailable instead of guessing
+PASS mode writes the shared state file
+PASS mode on an empty root does NOT touch a mixer it cannot see
+PASS mode reads back what was set
+PASS an invalid mode is refused with a usage message
+PASS vibrate mode is recorded but not promoted into a haptic claim
+PASS the tool never hard-codes a mixer element name like 'Master'
+PASS tool contains no flashing surface for '\\bdd\\s+if='
+PASS tool contains no flashing surface for '/dev/block'
+PASS tool contains no flashing surface for '\\bheimdall\\b'
+PASS tool contains no flashing surface for '\\bodind?\\b'
+PASS tool contains no flashing surface for 'fastboot'
+PASS tool contains no flashing surface for 'download mode'
+PASS tool contains no flashing surface for '\\bflash\\b'
+
+== 0 failing check(s) ==

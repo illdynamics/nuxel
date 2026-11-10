@@ -47,6 +47,17 @@
   </screenshots>
 
   <releases>
+    <release version="0.8.3-beta" date="2026-11-10">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.8.3-beta</url>
+      <description>
+        <p>Nuxel Home v0.8.3-beta — fully black screen-off and release-CI repair.</p>
+        <ul>
+          <li>Screen-off now latches a black page before blanking the AMOLED panel</li>
+          <li>Panel powerdown is re-asserted after FBIOBLANK for a truly dark screen</li>
+          <li>Immersive-chrome and native status-bar release gates repaired</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.2-beta" date="2026-11-08">
       <url>https://github.com/illdynamics/nuxel/releases/tag/v0.8.2-beta</url>
       <description>

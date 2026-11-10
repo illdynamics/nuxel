@@ -1050,6 +1050,10 @@ static void display_publish(void) {
   wr_state(DISP_STATE, b);
 }
 
+/* Forward declaration: display_set() paints a black frame before it
+ * powers the panel down, but the DECON commit helper is defined below. */
+static int panel_commit_frame(const char *why);
+
 /* A35: request true panel blanking, not just a darkened backlight. The
  * framebuffer fd stays open, retaining the single DECON owner. The wake path
  * below performs the vendor-kernel's documented mode re-assertion. */
@@ -1059,6 +1063,28 @@ static int panel_blank_powerdown(const char *why) {
   int saved_errno = rc < 0 ? errno : 0;
   st("PANEL_POWERDOWN why=%s rc=%d errno=%d", why, rc, saved_errno);
   return rc;
+}
+
+/* PWNAGE-106000: make screen-off visually black in software as well as in
+ * hardware.  On this vendor panel, brightness=0 still leaves
+ * actual_brightness=2 and bl_power=4 does not clear the last latched DECON
+ * frame, so the retained launcher/lockscreen pixels can remain faintly
+ * visible.  Paint the visible framebuffer black, latch it through the normal
+ * FBIOPAN_DISPLAY path, and only then drop the backlight/power state.  The
+ * wake path forces a fresh capture/commit, so this black page is never shown
+ * after a successful wake. */
+static void panel_paint_black(const char *why) {
+  if (!fb.map || !fb.line || !fb.h) {
+    st("PANEL_BLACK_SKIP why=%s mapped=%d line=%u h=%u", why,
+       fb.map != NULL, fb.line, fb.h);
+    return;
+  }
+  size_t visible = (size_t)fb.line * (size_t)fb.h;
+  if (visible > fb.len) visible = fb.len;
+  memset(fb.map, 0, visible);
+  int rc = panel_commit_frame(why);
+  st("PANEL_BLACK why=%s bytes=%zu pan_rc=%d", why, visible, rc);
+  kmsg_write("PANEL_BLACK why=%s bytes=%zu pan_rc=%d", why, visible, rc);
 }
 
 static void display_set(int on, const char *why) {
@@ -1090,14 +1116,22 @@ static void display_set(int on, const char *why) {
   } else if (!on && display_on) {
     int cur = read_int_file(BACKLIGHT);
     if (cur > 0) saved_brightness = cur;
+    /* Latch a black page first: the last compositor frame must not remain
+       visible if the vendor backlight driver refuses a true powerdown. */
+    panel_paint_black("screen-off");
     backlight_write(0);
     bl_power_write(4, "screen-off");
     /* Backlight 0 alone left actual_brightness=2 in A34. Explicit fbdev
        POWERDOWN is the fallback needed for a truly dark AMOLED, and is
        restricted to user-requested screen-off (never the normal frame loop). */
     panel_blank_powerdown("screen-off");
+    /* Some vendor kernels reload bl_power from the panel state during
+       FBIOBLANK; re-assert POWERDOWN after the ioctl and log the readback. */
+    bl_power_write(4, "screen-off-post-blank");
     display_on = 0;
-    st("DISPLAY_OFF why=%s saved_brightness=%d bl_power=%d", why, saved_brightness, read_int_file(BL_POWER));
+    st("DISPLAY_OFF why=%s saved_brightness=%d bl_power=%d actual_brightness=%d black=1",
+       why, saved_brightness, read_int_file(BL_POWER),
+       read_int_file("/sys/class/backlight/panel/actual_brightness"));
   }
   display_publish();
 }
@@ -1502,7 +1536,7 @@ int main(int argc, char **argv) {
   int got = 0;
   for (int tries = 0; tries < 2000 && !got; tries++) {
     if (o->w <= 0) { wl_display_roundtrip(dpy); if (wl_display_dispatch(dpy) < 0) { st("WL_DISPATCH_FAIL"); return 5; } usleep(20000); continue; }
-    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
+    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 1, o->wl);
     frame_ready = frame_failed = have_pending = 0;
     zwlr_screencopy_frame_v1_add_listener(frame, &frame_listener, NULL);
     while (!frame_ready && !frame_failed) {
@@ -1762,7 +1796,7 @@ int main(int argc, char **argv) {
     struct timespec t_start, t_ready, t_cmp0, t_cmp1;
     clock_gettime(CLOCK_MONOTONIC, &t_start);
     ctrl_pump();                      /* A32: screen on/off + status requests */
-    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
+    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 1, o->wl);
     frame_ready = frame_failed = have_pending = 0;
     zwlr_screencopy_frame_v1_add_listener(frame, &frame_listener, NULL);
     while (!frame_ready && !frame_failed) {

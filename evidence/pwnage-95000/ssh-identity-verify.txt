@@ -1,0 +1,88 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== host keys ===
+256 SHA256:LegjMkabj0ig6rTzMMiiekWQLzCJt0LsJUeTm3c7JGs root@2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 (ED25519)
+3072 SHA256:IdLdh3dqI0gZtTygoNmnI3zRVQJYrB2/VnBfnSLfTfk root@2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 (RSA)
+256 SHA256:KTes1l5RvcIUqHpd7AJ73/SHQRLtn6Z4GK4iw59TOrQ root@2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 (ECDSA)
+=== remote model/serial ===
+Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820
+
+=== arch, boot id ===
+aarch64
+38d9b9ef-61de-4aee-ab57-c569d3ab6948
+=== init ===
+/usr/lib/systemd/systemd
+=== storage/mem ===
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda31      111G   35G   72G  33% /
+               total        used        free      shared  buff/cache   available
+Mem:           7.2Gi       3.6Gi       251Mi       254Mi       3.7Gi       3.7Gi
+Swap:             0B          0B          0B
+=== extra version/deploy records ===
+2026-10-19 22:18 /var/lib/nuxel/a40-monitor/20261019T201845Z/receipt.json
+2026-10-19 22:18 /var/lib/nuxel/a40-monitor/20261019T201855Z/receipt.json
+2026-10-19 23:51 /var/lib/nuxel/a40-monitor/20261019T215104Z/receipt.json
+2026-10-19 23:52 /var/lib/nuxel/a40-monitor/20261019T215157Z/receipt.json
+2026-10-20 02:46 /var/lib/nuxel/a40-monitor/20261020T004612Z/receipt.json
+2026-10-20 02:52 /var/lib/nuxel/a40-monitor/20261020T005242Z/receipt.json
+2026-10-20 02:56 /var/lib/nuxel/a40-monitor/20261020T005628Z/receipt.json
+2026-10-20 11:21 /var/lib/nuxel/a40-monitor/20261020T092143Z/receipt.json
+2026-10-21 19:54 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/settings.css.nuxel-rollback.pre-deploy-20261027T213506-2390765
+2026-10-25 17:28 /var/lib/nuxel/deploy.b64
+2026-10-25 17:28 /var/lib/nuxel/deploy.tmp
+2026-10-27 16:06 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/app.json.nuxel-rollback.pre-deploy-20261027T171642-2151826
+2026-10-27 16:06 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/app.json.nuxel-rollback.pre-deploy-20261027T172231-2153662
+2026-10-27 16:07 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/settings.js.nuxel-rollback.pre-deploy-20261027T171642-2151826
+2026-10-27 16:07 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/settings.js.nuxel-rollback.pre-deploy-20261027T172231-2153662
+2026-10-27 16:13 /var/lib/nuxel/permissions/nuxel-settings.json.nuxel-rollback.pre-deploy-20261027T171642-2151826
+2026-10-27 16:13 /var/lib/nuxel/permissions/nuxel-settings.json.nuxel-rollback.pre-deploy-20261027T172231-2153662
+2026-10-27 16:24 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/index.html.nuxel-rollback.pre-deploy-20261027T171642-2151826
+2026-10-27 16:24 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/index.html.nuxel-rollback.pre-deploy-20261027T172231-2153662
+2026-10-27 16:25 /var/backups/nuxel/p85000-20261106T163134Z/bridge/bridge.py.nuxel-rollback.pre-deploy-20261027T171642-2151826
+2026-10-27 16:25 /var/backups/nuxel/p85000-20261106T163134Z/bridge/bridge.py.nuxel-rollback.pre-deploy-20261027T172231-2153662
+2026-10-27 16:25 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/bridge.py.nuxel-rollback.pre-deploy-20261027T171642-2151826
+2026-10-27 16:25 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/bridge.py.nuxel-rollback.pre-deploy-20261027T172231-2153662
+2026-10-27 16:41 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261027T171642-2151826
+2026-10-27 16:41 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261027T172231-2153662
+2026-10-27 16:41 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261027T171642-2151826
+2026-10-27 16:41 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261027T172231-2153662
+2026-10-27 17:22 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/index.html.nuxel-rollback.pre-deploy-20261027T213506-2390765
+2026-10-27 17:23 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/hardware-settings.js.nuxel-rollback.pre-deploy-20261027T173523-2158083
+2026-10-27 17:23 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/settings/hardware-settings.js.nuxel-rollback.pre-deploy-20261027T173720-2158877
+2026-10-27 17:25 /var/backups/nuxel/p85000-20261106T163134Z/bridge/hw_providers.py.nuxel-rollback.pre-deploy-20261027T172836-2155608
+2026-10-27 17:25 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/hw_providers.py.nuxel-rollback.pre-deploy-20261027T172836-2155608
+2026-10-27 17:28 /var/backups/nuxel/p85000-20261106T163134Z/bridge/hw_providers.py.nuxel-rollback.pre-deploy-20261027T173432-2157638
+2026-10-27 17:28 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/hw_providers.py.nuxel-rollback.pre-deploy-20261027T173432-2157638
+2026-10-27 18:26 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261027T213506-2390765
+2026-10-27 18:26 /var/backups/nuxel/p85000-20261106T163134Z/bridge/bridge.py.nuxel-rollback.pre-deploy-20261027T214530-2399261
+2026-10-27 18:26 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261027T213506-2390765
+2026-10-27 18:26 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/bridge.py.nuxel-rollback.pre-deploy-20261027T214530-2399261
+2026-10-27 21:41 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261027T214530-2399261
+2026-10-27 21:41 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261027T214530-2399261
+2026-10-27 21:49 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261027T222442-2425280
+2026-10-27 21:49 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261027T222442-2425280
+2026-10-27 22:26 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261028T095324-2716875
+2026-10-27 22:26 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261028T095726-2718843
+2026-10-27 22:26 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261028T100242-2721366
+2026-10-27 22:26 /var/backups/nuxel/p85000-20261106T163134Z/bridge/api.py.nuxel-rollback.pre-deploy-20261028T100542-2722856
+2026-10-27 22:26 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261028T095324-2716875
+2026-10-27 22:26 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261028T095726-2718843
+2026-10-27 22:26 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261028T100242-2721366
+2026-10-27 22:26 /var/lib/nuxel/pwnage50000-backup-20261031T234423Z/nuxel-bridge/api.py.nuxel-rollback.pre-deploy-20261028T100542-2722856
+2026-11-03 12:37 /var/lib/nuxel/p63000-deploy.json
+2026-11-04 00:11 /var/lib/nuxel/diagnostics/pwnage62000-deploy.json
+2026-11-04 10:30 /var/backups/nuxel/p85000-20261106T163134Z/bridge/flatpak_provider.py.nuxel-rollback.pre-deploy-20261104T112828-3208175
+2026-11-08 01:20 /var/lib/nuxel/live-deploy/rollback-20261108T002014Z/COMMITTED
+2026-11-08 08:41 /var/lib/nuxel/live-deploy/rollback-20261108T074112Z/COMMITTED
+2026-11-08 10:47 /var/lib/nuxel/live-deploy/rollback-20261108T094657Z/COMMITTED
+2026-11-08 10:53 /var/lib/nuxel/live-deploy/rollback-20261108T095232Z/COMMITTED
+2026-11-08 11:03 /var/lib/nuxel/live-deploy/rollback-20261108T100229Z/COMMITTED
+2026-11-08 11:06 /var/lib/nuxel/live-deploy/rollback-20261108T100546Z/COMMITTED
+2026-11-08 17:37 /run/nuxel/preload-cinema.receipt

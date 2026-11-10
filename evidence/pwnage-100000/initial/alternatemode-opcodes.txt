@@ -1,0 +1,58 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== all 55 93 occurrences ===
+8333:Nov 09 09:57:39 fedora kernel: max77705: opcode_write: 00000000: 55 03
+495623:Nov 09 16:30:30 fedora kernel: max77705: opcode_write: 00000000: 55 03
+495708:Nov 09 16:30:30 fedora kernel: max77705: opcode_read: 00000000: 55 93
+495776:Nov 09 16:30:30 fedora kernel: max77705: opcode_write: 00000000: 55 03
+1125584:Nov 09 17:14:25 fedora kernel: max77705: opcode_write: 00000000: 55 03
+1125625:Nov 09 17:14:25 fedora kernel: max77705: opcode_read: 00000000: 55 93
+1125636:Nov 09 17:14:25 fedora kernel: max77705: opcode_write: 00000000: 55 03
+=== all opcode 0x55 writes and responses ===
+8328:Nov 09 09:57:39 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+8332:Nov 09 09:57:39 fedora kernel: max77705: max77705_i2c_opcode_write: opcode 0x55, write_length 2
+8333:Nov 09 09:57:39 fedora kernel: max77705: opcode_write: 00000000: 55 03
+8345:Nov 09 09:57:39 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+8350:Nov 09 09:57:39 fedora kernel: max77705: opcode_read: 00000000: 55 13
+495544:Nov 09 16:30:30 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+495546:Nov 09 16:30:30 fedora kernel: max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x54], read_op->opcode[0x55]
+495555:Nov 09 16:30:30 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+495557:Nov 09 16:30:30 fedora kernel: max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x54], read_op->opcode[0x55]
+495593:Nov 09 16:30:30 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+495595:Nov 09 16:30:30 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+495618:Nov 09 16:30:30 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+495622:Nov 09 16:30:30 fedora kernel: max77705: max77705_i2c_opcode_write: opcode 0x55, write_length 2
+495623:Nov 09 16:30:30 fedora kernel: max77705: opcode_write: 00000000: 55 03
+495665:Nov 09 16:30:30 fedora kernel: max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x55], read_op->opcode[0x06]
+495699:Nov 09 16:30:30 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+495708:Nov 09 16:30:30 fedora kernel: max77705: opcode_read: 00000000: 55 93
+495715:Nov 09 16:30:30 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+495717:Nov 09 16:30:30 fedora kernel: max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x06], read_op->opcode[0x55]
+495775:Nov 09 16:30:30 fedora kernel: max77705: max77705_i2c_opcode_write: opcode 0x55, write_length 2
+495776:Nov 09 16:30:30 fedora kernel: max77705: opcode_write: 00000000: 55 03
+495784:Nov 09 16:30:30 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+495789:Nov 09 16:30:30 fedora kernel: max77705: opcode_read: 00000000: 55 13
+1125505:Nov 09 17:14:25 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+1125507:Nov 09 17:14:25 fedora kernel: max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x54], read_op->opcode[0x55]
+1125516:Nov 09 17:14:25 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+1125518:Nov 09 17:14:25 fedora kernel: max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x54], read_op->opcode[0x55]
+1125554:Nov 09 17:14:25 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+1125556:Nov 09 17:14:25 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+1125579:Nov 09 17:14:25 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+1125583:Nov 09 17:14:25 fedora kernel: max77705: max77705_i2c_opcode_write: opcode 0x55, write_length 2
+1125584:Nov 09 17:14:25 fedora kernel: max77705: opcode_write: 00000000: 55 03
+1125620:Nov 09 17:14:25 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+1125625:Nov 09 17:14:25 fedora kernel: max77705: opcode_read: 00000000: 55 93
+1125631:Nov 09 17:14:25 fedora kernel: max77705: max77705_usbc_opcode_write: W->W opcode[0x55] write_length[1] read_length[1]
+1125635:Nov 09 17:14:25 fedora kernel: max77705: max77705_i2c_opcode_write: opcode 0x55, write_length 2
+1125636:Nov 09 17:14:25 fedora kernel: max77705: opcode_write: 00000000: 55 03
+1125680:Nov 09 17:14:25 fedora kernel: max77705: max77705_usbc_opcode_write: !!!current_cmd.opcode [0xff][0x55], read_op->opcode[0x06]
+1125722:Nov 09 17:14:25 fedora kernel: max77705: dequeue_usbc_cmd: Opcode(0xff) Response(0x55)
+1125736:Nov 09 17:14:25 fedora kernel: max77705: opcode_read: 00000000: 55 13

@@ -1,0 +1,51 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== post-reboot 2026-11-09T19:36:07+01:00 ===
+ 19:36:07 up 0 min,  0 user,  load average: 9.59, 2.71, 0.93
+nuxel-displayd=active
+nuxel-wl-fb-ext=active
+nuxel-wayland=active
+nuxel-wl-fb=active
+=== dp ===
+1
+DP=1
+=== ext.state ===
+state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=240 nz=4796 color=argb orient_eff=0 orient_tf=0
+
+=== ext.log head/tail ===
+BUILD_SKIP up-to-date /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext
+2026-11-09T19:35:47 nuxel-wl-fb-ext: capturing output HEADLESS-1 720x1520 mode=mirror-portrait
+2026-11-09T19:35:47 nuxel-wl-fb-ext: external mode 1920x1080 fb=/dev/fb1 line=7680 len=16588800 double-buffered decon_fmt=BGRA8888->IDMA_ARGB8888(R@16 G@8 B@0 A@24)
+2026-11-09T19:35:47 nuxel-wl-fb-ext: ion dma-buf fd=8 len=16588800
+2026-11-09T19:35:47 nuxel-wl-fb-ext: fb /dev/fb1 unblanked at 1920x1080
+2026-11-09T19:35:47 nuxel-wl-fb-ext: decon2 window 4 -> dma-buf fd=8 (1920x1080 double-buffered)
+2026-11-09T19:35:47 nuxel-wl-fb-ext: orientation effective=0 transform=0 external_rotation=0
+2026-11-09T19:35:47 nuxel-wl-fb-ext: map src=720x1520 dst=1920x1080 scale=0.711 content=512x1080 offset=704,0 rot=0 fit=fit
+2026-11-09T19:35:47 nuxel-wl-fb-ext: frame 1 src=720x1520 dst=1920x1080 nz=4796
+2026-11-09T19:35:49 nuxel-wl-fb-ext: frame 20 src=720x1520 dst=1920x1080 nz=4796
+2026-11-09T19:35:50 nuxel-wl-fb-ext: frame 40 src=720x1520 dst=1920x1080 nz=4796
+2026-11-09T19:35:51 nuxel-wl-fb-ext: frame 60 src=720x1520 dst=1920x1080 nz=4796
+2026-11-09T19:35:59 nuxel-wl-fb-ext: frame 160 src=720x1520 dst=1920x1080 nz=4796
+2026-11-09T19:36:01 nuxel-wl-fb-ext: frame 180 src=720x1520 dst=1920x1080 nz=4796
+2026-11-09T19:36:03 nuxel-wl-fb-ext: frame 200 src=720x1520 dst=1920x1080 nz=4796
+2026-11-09T19:36:04 nuxel-wl-fb-ext: frame 220 src=720x1520 dst=1920x1080 nz=4796
+2026-11-09T19:36:06 nuxel-wl-fb-ext: frame 240 src=720x1520 dst=1920x1080 nz=4796
+=== orientation ===
+transform=0
+presenter_rotation=0
+effective_orientation=0
+output=HEADLESS-1
+logical_width=360
+logical_height=760
+backend=wlr-randr
+applied=1
+=== idma register ===
+[   55.702380] ffffff800c2e1000: 00000004 00000001 02000000 ff000000 08700780 04380000 04380780 00000000
+[   55.702971] === DPP1 SFR DUMP ===

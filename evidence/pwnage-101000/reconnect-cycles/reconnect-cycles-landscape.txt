@@ -1,0 +1,17 @@
+baseline irq_delta_1s=61 orientation=transform=270 presenter_rotation=0 effective_orientation=90 output=HEADLESS-1 logical_width=1520 logical_height=720 backend=wlr-randr applied=1 
+--- cycle 1 start gen=2 2026-11-09T18:07:29Z
+  disconnected=PD_NO_DP off
+  recovered_in=1.15s generation=3 irq_delta_1s=62 state=state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 dst=1920x1080 fps=20 rot=270 fit=fit color=argb orient_eff=90 orient_tf=270
+--- cycle 2 start gen=3 2026-11-09T18:07:43Z
+  disconnected=PD_NO_DP off
+  recovered_in=1.17s generation=4 irq_delta_1s=62 state=state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 dst=1920x1080 fps=20 rot=270 fit=fit color=argb orient_eff=90 orient_tf=270
+--- cycle 3 start gen=4 2026-11-09T18:08:00Z
+  disconnected=PD_NO_DP off
+  recovered_in=0.95s generation=5 irq_delta_1s=62 state=state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 dst=1920x1080 fps=20 rot=270 fit=fit color=argb orient_eff=90 orient_tf=270
+--- cycle 4 start gen=5 2026-11-09T18:08:17Z
+  disconnected=PD_NO_DP off
+  recovered_in=1.13s generation=6 irq_delta_1s=61 state=state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 dst=1920x1080 fps=20 rot=270 fit=fit color=argb orient_eff=90 orient_tf=270
+--- cycle 5 start gen=6 2026-11-09T18:08:34Z
+  disconnected=PD_NO_DP off
+  recovered_in=1.16s generation=7 irq_delta_1s=60 state=state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 dst=1920x1080 fps=20 rot=270 fit=fit color=argb orient_eff=90 orient_tf=270
+--- all cycles complete 2026-11-09T18:08:48Z

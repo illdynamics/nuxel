@@ -1,0 +1,94 @@
+--- evidence/pwnage-102000/nuxel-wl-fb-ext.c.pre-bluefix	2026-11-09 19:33:52
++++ evidence/pwnage-102000/nuxel-wl-fb-ext.c.fixed	2026-11-09 19:33:52
+@@ -56,8 +56,21 @@
+ #define DEXT_MAX_PLANE_CNT 3
+ #define DEXT_WIN_IDX       4   /* decon_t DT default_win */
+ #define DEXT_IDMA_G1       1   /* DPU_DMA2CH(IDMA_G1) == 2 == decon_t default_ch */
+-#define DEXT_FMT_ARGB8888  0   /* DECON_PIXEL_FORMAT_ARGB_8888: R@16 G@8 B@0 */
+-#define DEXT_FMT_ABGR8888  1   /* DECON_PIXEL_FORMAT_ABGR_8888: R@0  G@8 B@16 */
++/* Caller-side DECON pixel-format IDs (the kernel's enum values).
++ *
++ * decon_set_win_config() runs dpu_translate_fmt_to_dpp() before programming
++ * the DPP:
++ *
++ *   caller BGRA_8888 (3) -> IDMA ARGB_8888 (0)  word 0xAARRGGBB, bytes B,G,R,A
++ *   caller RGBA_8888 (2) -> IDMA ABGR_8888 (1)  word 0xAABBGGRR, bytes R,G,B,A
++ *
++ * The normal bridge packing is 0xAARRGGBB (R@16 G@8 B@0 A@24), so it must
++ * pass caller BGRA_8888.  Passing ARGB_8888 here translated to IDMA BGRA
++ * (word B,G,R,A), which reads the opaque 0xff alpha byte as the blue channel
++ * and produces the measured all-blue overlay.  The diagnostic --color-order
++ * abgr packing is 0xAABBGGRR (R@0 G@8 B@16 A@24) and must pass caller RGBA. */
++#define DEXT_FMT_BGRA8888  3   /* caller BGRA -> IDMA ARGB (R@16 G@8 B@0 A@24) */
++#define DEXT_FMT_RGBA8888  2   /* caller RGBA -> IDMA ABGR (R@0  G@8 B@16 A@24) */
+ 
+ struct dext_win_rect { int x, y; uint32_t w, h; };
+ struct dext_dpp_params {
+@@ -155,10 +168,12 @@
+ static int link_watch = 1;
+ /* The external decon_t OUTFIFO is programmed with DECON_RGB pixel order
+  * (decon_reg_configure_lcd: only DSI-without-DSC selects DECON_BGR).  The
+- * internal AMOLED path uses ABGR input + BGR output; the DP path uses RGB
+- * output, so it needs the pre-swapped ARGB input packing to produce the same
+- * logical colours.  This is derived from the live driver source, not a guess.
+- * --color-order abgr retains the old packing for diagnostics. */
++ * normal path packs the bridge word as 0xAARRGGBB (memory bytes B,G,R,A) and
++ * asks decon_set_win_config() for caller-side BGRA_8888; the kernel translates
++ * that to IDMA ARGB_8888, whose 0xAARRGGBB layout is exactly this packing.
++ * --color-order abgr keeps the pre-swapped 0xAABBGGRR diagnostic packing
++ * (memory R,G,B,A) and therefore asks for caller-side RGBA_8888, which the
++ * kernel translates to IDMA ABGR_8888. */
+ static int color_order_argb = 1;
+ static int auto_orientation = 0;
+ static const char *orientation_path = "/run/nuxel-wl-fb-orientation";
+@@ -555,17 +570,19 @@
+     fb.line = fb.w * 4;
+     fb.len = (size_t)fb.line * fb.h * 2;   /* double buffered */
+     /* Decon input packing.  See the comment above color_order_argb.
+-     *  - DP OUTFIFO order is RGB: use ARGB_8888 (R@16 G@8 B@0).
+-     *  - Legacy/internal-style BGR output: use ABGR_8888 (R@0 G@8 B@16).
++     *  - Normal 0xAARRGGBB packing (R@16 G@8 B@0 A@24): caller BGRA_8888,
++     *    translated by the kernel to IDMA ARGB_8888.
++     *  - Diagnostic 0xAABBGGRR packing (R@0 G@8 B@16 A@24): caller RGBA_8888,
++     *    translated by the kernel to IDMA ABGR_8888.
+      * fb_var on this vendor kernel declares R@16/B@0 but the DECON does not
+      * program that order; it is only trusted behind an explicit diagnostic
+      * env override. */
+     if (color_order_argb) {
+         fb.r_off = 16; fb.g_off = 8; fb.b_off = 0;
+-        fb.decon_format = DEXT_FMT_ARGB8888;
++        fb.decon_format = DEXT_FMT_BGRA8888;
+     } else {
+         fb.r_off = 0; fb.g_off = 8; fb.b_off = 16;
+-        fb.decon_format = DEXT_FMT_ABGR8888;
++        fb.decon_format = DEXT_FMT_RGBA8888;
+     }
+     fb.a_off = 24;
+     const char *trust = getenv("NUXEL_EXT_FBVAR_ORDER");
+@@ -574,12 +591,13 @@
+         fb.g_off = fb.var.green.offset;
+         fb.b_off = fb.var.blue.offset;
+         fb.a_off = fb.var.transp.offset;
+-        fb.decon_format = DEXT_FMT_ABGR8888;
++        fb.decon_format = DEXT_FMT_BGRA8888;
+     }
+     fb.black = 0xff000000u;
+     logmsg("external mode %ux%u fb=%s line=%u len=%zu double-buffered "
+-           "decon_fmt=%s(R@%u G@%u B@%u A@%u)",
++           "decon_fmt=%s->IDMA_%s(R@%u G@%u B@%u A@%u)",
+            fb.w, fb.h, fb_path, fb.line, fb.len,
++           color_order_argb ? "BGRA8888" : "RGBA8888",
+            color_order_argb ? "ARGB8888" : "ABGR8888",
+            fb.r_off, fb.g_off, fb.b_off, fb.a_off);
+ 
+@@ -821,6 +839,10 @@
+         fb.g_off = 8u;
+         fb.b_off = color_order_argb ? 0u : 16u;
+         fb.a_off = 24u;
++        /* The caller-side format must match the word the bridge packs:
++         * 0xAARRGGBB -> BGRA_8888 -> IDMA ARGB_8888
++         * 0xAABBGGRR -> RGBA_8888 -> IDMA ABGR_8888. */
++        fb.decon_format = color_order_argb ? DEXT_FMT_BGRA8888 : DEXT_FMT_RGBA8888;
+         fb.black = 0xff000000u;
+         build_lut(WL_SHM_FORMAT_XRGB8888);
+         for (size_t fi = 0; fi < sizeof(formats)/sizeof(formats[0]); fi++) {

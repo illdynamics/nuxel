@@ -1,0 +1,44 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+--- /run/nuxel/preload-cinema.receipt
+{
+  "boot_id": "38d9b9ef-61de-4aee-ab57-c569d3ab6948",
+  "controller_pid": 368869,
+  "finished_at": "2026-11-08T17:37:21+0100",
+  "framebuffer_owner": "nuxel-wl-fb",
+  "marker": "/run/nuxel/preload-cinema.done",
+  "milestone": "PWNAGE-31000",
+  "reason": "one-shot-boot-marker-present",
+  "schema_version": 1,
+  "started_at": "2026-11-08T17:37:21+0100",
+  "unlock_actions": 0,
+  "verdict": "ALREADY_RAN"
+}
+
+=== preload process/service ===
+○ nuxel-preload-cinema.service - Nuxel pre-lockscreen cinematic video (bounded, fail-open)
+     Loaded: loaded (/etc/systemd/system/nuxel-preload-cinema.service; static)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: inactive (dead)
+       Docs: file:/usr/share/nuxel/doc/PWNAGE-31000.md
+=== runtime service/hashes ===
+active
+active
+active
+active
+active
+active
+active
+active
+fb09cf7293e6cf641e1a30acaceedcb64f54aa31539194de7049b82b09ab76c0  /usr/lib/nuxel/nuxel-session.sh
+e372e3b9207d13c68ec6443cccc9d189ae770d2dd1c88789f231e114a93d7b99  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+fcffc9942e7b181a024d8189bf1c5234b88f4bb970c73ee6963f97ed07e0b1b4  /usr/share/nuxel/pwa/nuxel-home/js/app.js
+90b5bc080f6ab5bf7563413cca001135a6dec4b5b91d80be609ad28d46fd2abe  /usr/lib/nuxel/nuxel-bridge/api.py

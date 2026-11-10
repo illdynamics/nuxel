@@ -1,0 +1,1136 @@
+#!/usr/bin/env python3
+"""nuxel-displayd - authoritative external-display manager for Nuxel S10+.
+
+Responsibilities
+----------------
+* monitor the real Type-C -> USB-PD/VDM -> DP -> decon_t (/dev/fb1) path;
+* emit exactly one actionable notification per new DP connection;
+* apply Mirror / Separate desktop through the external framebuffer bridge;
+* tear the external output down and restore internal-only on disconnect;
+* persist only user preference (never a stale "connected" flag).
+
+It never writes /dev/fb0 and never replaces the compositor.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import signal
+import socket
+import socketserver
+import stat
+import subprocess
+import sys
+import threading
+import time
+import traceback
+from typing import Any, Dict, Optional
+
+# Deployed module path first, repo-relative second (unit tests / dev).
+_HERE = os.path.dirname(os.path.abspath(__file__))
+for _cand in ("/usr/lib/nuxel/nuxel-display", os.path.join(_HERE, "..", "lib")):
+    if os.path.isdir(_cand) and _cand not in sys.path:
+        sys.path.insert(0, _cand)
+import nuxel_display as nd  # noqa: E402
+
+RUN_DIR = "/run/nuxel-display"
+STATE_DIR = "/var/lib/nuxel/external-display"
+EXT_UNIT = "nuxel-wl-fb-ext.service"
+INTERNAL_UNITS = ("nuxel-wayland.service", "nuxel-wl-fb.service")
+EXT_MARKER = "nuxel.external-display"
+# nuxel-orientationd is the single orientation authority.  Its runtime status
+# is authoritative; the persisted copy is only a fallback while the daemon is
+# starting.  The presenter file is written atomically for the C bridge.
+ORIENT_STATUS = "/run/nuxel-orientation/status.json"
+ORIENT_PERSISTED = "/var/lib/nuxel/orientation/state.json"
+ORIENT_PRESENTER = "/run/nuxel-wl-fb-orientation"
+AUDIO_INTERNAL_SINK = "alsa_output.hw_0_1"
+
+
+def log(msg: str) -> None:
+    sys.stderr.write("%s nuxel-displayd: %s\n" % (time.strftime("%Y-%m-%dT%H:%M:%S"), msg))
+    sys.stderr.flush()
+
+
+def _atomic_json(path: str, doc: Dict[str, Any]) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, sort_keys=True)
+        fh.write("\n")
+    os.replace(tmp, path)
+
+
+def _read_json(path: str) -> Optional[Dict[str, Any]]:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            doc = json.load(fh)
+        return doc if isinstance(doc, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+class NotificationClient:
+    """Thin wrapper over the canonical org.nuxel.Notifications hub."""
+
+    def submit(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            import dbus  # type: ignore
+            bus = dbus.SystemBus()
+            obj = bus.get_object("org.nuxel.Notifications", "/org/nuxel/Notifications")
+            iface = dbus.Interface(obj, "org.nuxel.Notifications")
+            result = iface.SubmitNotification(json.dumps(payload))
+            doc = json.loads(result)
+            return doc if isinstance(doc, dict) else {"success": False, "error": "bad hub response"}
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": str(exc)}
+
+    def archive(self, notification_id: Optional[int]) -> Dict[str, Any]:
+        if not notification_id:
+            return {"success": True, "archived": False}
+        try:
+            import dbus  # type: ignore
+            bus = dbus.SystemBus()
+            obj = bus.get_object("org.nuxel.Notifications", "/org/nuxel/Notifications")
+            iface = dbus.Interface(obj, "org.nuxel.Notifications")
+            doc = json.loads(iface.Archive(dbus.UInt32(int(notification_id))))
+            return doc if isinstance(doc, dict) else {"success": False}
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": str(exc)}
+
+
+class DisplayDaemon:
+    def __init__(self, root: str = "/", run_dir: str = RUN_DIR,
+                 state_dir: str = STATE_DIR, poll_interval: float = 0.2,
+                 notifier: Optional[NotificationClient] = None,
+                 runner=subprocess.run):
+        self.root = root
+        self.run_dir = run_dir
+        self.state_dir = state_dir
+        self.poll_interval = max(0.2, float(poll_interval))
+        self.notifier = notifier or NotificationClient()
+        self.runner = runner
+        self.lock = threading.RLock()
+        self.stop_event = threading.Event()
+        self.sm = nd.DisplayStateMachine()
+        self.snapshot: Dict[str, Any] = {}
+        self.outputs_info: Dict[str, Any] = {"primary": None, "external": None,
+                                             "names": [], "enabled_names": []}
+        self.notification_id: Optional[int] = None
+        self.last_error: Optional[str] = None
+        self.last_mode: str = nd.MODE_OFF
+        self.rotation: int = 0
+        self._last_seen_state: Optional[str] = None
+        self._stable_count = 0
+        self._outputs_at = 0.0
+        self._ext_failures = 0
+        self._last_ext_restart = 0.0
+        # A deliberate bridge restart powers decon_t down and back up; that
+        # can briefly clear the DP switch/extcon state.  Do not interpret our
+        # own transition as a cable unplug.
+        self._link_grace_until = 0.0
+        # Hot-plug restoration.  last_mode is the user's preference; an
+        # explicit "internal only" sets it to off and suppresses restoration.
+        self.auto_orientation = True
+        self.orientation_info: Dict[str, Any] = {}
+        self._explicit_off = False
+        self._restore_pending = False
+        self._restore_generation = 0
+        self._restore_attempts = 0
+        self._restore_next_at = 0.0
+        self._restore_reason = ""
+        self._wake = threading.Event()
+        self._uevent_stop = threading.Event()
+        self._uevent_thread: Optional[threading.Thread] = None
+        self._uevent_ready = False
+        self._audio_sink_before_disconnect: Optional[str] = None
+        self._audio_was_available = False
+        self._control_server: Optional[socketserver.UnixStreamServer] = None
+        self._control_thread: Optional[threading.Thread] = None
+        self._load_preference()
+        self._ensure_dirs()
+
+    # ---- paths / persistence --------------------------------------------
+    def _ensure_dirs(self) -> None:
+        os.makedirs(self.run_dir, exist_ok=True)
+        os.makedirs(self.state_dir, exist_ok=True)
+        try:
+            os.chmod(self.run_dir, 0o755)
+            os.chmod(self.state_dir, 0o700)
+        except OSError:
+            pass
+
+    @property
+    def status_path(self) -> str:
+        return os.path.join(self.run_dir, "status.json")
+
+    @property
+    def ext_state_path(self) -> str:
+        return os.path.join(self.run_dir, "ext.state")
+
+    @property
+    def ext_log_path(self) -> str:
+        return os.path.join(self.run_dir, "ext.log")
+
+    @property
+    def ext_start_path(self) -> str:
+        return os.path.join(self.run_dir, "ext-start.sh")
+
+    @property
+    def preference_path(self) -> str:
+        return os.path.join(self.state_dir, "state.json")
+
+    def _load_preference(self) -> None:
+        doc = _read_json(self.preference_path) or {}
+        mode = doc.get("last_mode")
+        self.last_mode = mode if mode in nd.VALID_MODES else nd.MODE_OFF
+        try:
+            rotation = int(doc.get("rotation", 0))
+        except (TypeError, ValueError):
+            rotation = 0
+        self.rotation = rotation if rotation in (0, 90, 180, 270) else 0
+        if isinstance(doc.get("auto_orientation"), bool):
+            self.auto_orientation = bool(doc["auto_orientation"])
+        self._explicit_off = (self.last_mode == nd.MODE_OFF)
+
+    def _save_preference(self) -> None:
+        if self.root != "/":
+            return
+        _atomic_json(self.preference_path, {
+            "schema": 2,
+            "last_mode": self.last_mode,
+            "rotation": self.rotation,
+            "auto_orientation": bool(self.auto_orientation),
+            "last_display_name": (self.snapshot or {}).get("display_name"),
+            "updated": time.time(),
+        })
+
+    # ---- authoritative orientation --------------------------------------
+    @staticmethod
+    def _transform_degrees(value: Any) -> Optional[int]:
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, int):
+            return value if value in (0, 90, 180, 270) else None
+        text = str(value or "").strip().lower()
+        if text.startswith("flipped-"):
+            text = text[len("flipped-"):]
+        elif text == "flipped":
+            return 180
+        if text in ("normal", ""):
+            return 0 if text == "normal" else None
+        try:
+            deg = int(text)
+        except (TypeError, ValueError):
+            return None
+        return deg if deg in (0, 90, 180, 270) else None
+
+    def read_orientation(self) -> Dict[str, Any]:
+        """Read nuxel-orientationd's current state; never invent a pose.
+
+        The compositor transform is what the bridge must undo.  A live
+        measurement (raw screencopy vs grim) showed that the presenter uses the
+        same clockwise transform value, not its inverse.
+        """
+        doc = _read_json(ORIENT_STATUS)
+        source = ORIENT_STATUS
+        if not doc:
+            doc = _read_json(ORIENT_PERSISTED) or {}
+            source = ORIENT_PERSISTED
+        display = doc.get("display") if isinstance(doc.get("display"), dict) else {}
+        effective = doc.get("effective_orientation", doc.get("last_orientation"))
+        try:
+            effective = int(effective)
+        except (TypeError, ValueError):
+            effective = None
+        transform = self._transform_degrees(display.get("transform", doc.get("transform")))
+        if transform is None and effective is not None:
+            transform = {0: 0, 90: 270, 180: 180, 270: 90}.get(effective)
+        if transform is None:
+            # No valid authority: keep the last verified value.
+            return self.orientation_info or {
+                "available": False, "effective_orientation": None,
+                "transform": None, "external_rotation": None,
+                "auto": False, "source": source,
+            }
+        info = {
+            "available": True,
+            "source": source,
+            "live": bool(doc.get("_daemon_live", source == ORIENT_STATUS)),
+            "mode": doc.get("mode"),
+            "auto": bool(doc.get("auto")),
+            "applied": bool(display.get("applied", doc.get("applied", False))),
+            "effective_orientation": effective,
+            "transform": transform,
+            "external_rotation": transform,
+            "logical_width": display.get("logical_width"),
+            "logical_height": display.get("logical_height"),
+            "physical_width": display.get("physical_width"),
+            "physical_height": display.get("physical_height"),
+            "presenter_file": ORIENT_PRESENTER,
+        }
+        if info != self.orientation_info:
+            self.orientation_info = info
+        return info
+
+    # ---- HDMI/DP audio endpoint lifecycle --------------------------------
+    def _pactl(self, argv, timeout: float = 1.0) -> Optional[str]:
+        if self.root != "/":
+            return None
+        env = dict(os.environ)
+        env.setdefault("XDG_RUNTIME_DIR", "/run/nuxel-wayland")
+        env.setdefault("PIPEWIRE_RUNTIME_DIR", "/run/nuxel-wayland")
+        try:
+            proc = self.runner(["pactl"] + list(argv), capture_output=True,
+                               text=True, timeout=float(timeout), env=env)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if proc.returncode != 0:
+            return None
+        return (proc.stdout or "").strip()
+
+    def _default_sink(self) -> Optional[str]:
+        return self._pactl(["get-default-sink"]) or None
+
+    def _list_sinks(self):
+        text = self._pactl(["list", "short", "sinks"]) or ""
+        return [line.split("\t")[1] for line in text.splitlines()
+                if "\t" in line]
+
+    def _set_default_sink(self, name: str) -> bool:
+        if not name:
+            return False
+        try:
+            return self._pactl(["set-default-sink", name]) is not None
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _handle_audio_transition(self, previous: Dict[str, Any],
+                                 current: Dict[str, Any]) -> None:
+        """Publish the audio transition without becoming a second policy owner.
+
+        nuxel-soundd owns PipeWire sink creation, default-node selection,
+        manual overrides and fallback.  The display daemon reports the real
+        independent HDMI-audio capability in its status only; touching pactl
+        here would race the authoritative manager and could override a manual
+        user selection.
+        """
+        prev_avail = bool((previous.get("audio") or {}).get("available"))
+        cur_avail = bool((current.get("audio") or {}).get("available"))
+        if prev_avail != cur_avail:
+            log("DP audio endpoint availability changed %s -> %s; "
+                "nuxel-soundd owns the routing decision" %
+                (prev_avail, cur_avail))
+        self._audio_was_available = cur_avail
+
+    # ---- hardware snapshot ----------------------------------------------
+    def refresh_outputs(self, force: bool = False) -> Dict[str, Any]:
+        now = time.time()
+        if not force and now - self._outputs_at < 3.0 and self.outputs_info.get("names"):
+            return self.outputs_info
+        doc = nd.run_wlr_randr(self.root)
+        self.outputs_info = nd.choose_outputs(doc.get("outputs") or [])
+        self.outputs_info["success"] = doc.get("success", False)
+        self.outputs_info["error"] = doc.get("error")
+        self._outputs_at = now
+        return self.outputs_info
+
+    def refresh_snapshot(self, force_outputs: bool = False,
+                         fresh: bool = False) -> Dict[str, Any]:
+        snap = nd.read_snapshot(self.root, fresh=fresh)
+        outputs = self.refresh_outputs(force_outputs)
+        primary = outputs.get("primary") or {}
+        external = outputs.get("external") or {}
+        snap["outputs"] = outputs
+        snap["mirror_output"] = primary.get("name")
+        snap["desktop_output"] = external.get("name")
+        snap["desktop_supported"] = bool(snap.get("mirror_supported") and external.get("name"))
+        if not snap.get("desktop_supported"):
+            reason = ("Separate desktop needs a second compositor output; "
+                      "only %s is currently exposed."
+                      % (", ".join(outputs.get("enabled_names") or []) or "no output"))
+            snap.setdefault("blockers", []).append(reason)
+            snap["desktop_blocker"] = reason
+        else:
+            snap["desktop_blocker"] = None
+        # Resolve the availability of each user-facing mode against the live
+        # compositor, not against a static capability flag.
+        choices = []
+        for item in snap.get("mode_choices") or []:
+            entry = dict(item)
+            entry["supported"] = bool(
+                snap.get("state") == nd.DP_LINK_READY and
+                (entry.get("mode") != nd.MODE_DESKTOP or snap.get("desktop_supported")))
+            choices.append(entry)
+        snap["mode_choices"] = choices
+        self.snapshot = snap
+        return snap
+
+    # ---- public status ---------------------------------------------------
+    def status(self) -> Dict[str, Any]:
+        with self.lock:
+            snap = self.snapshot or self.refresh_snapshot()
+            return {
+                "success": True,
+                "schema": nd.SCHEMA,
+                "state": self.sm.state,
+                "hardware_state": snap.get("state"),
+                "partner": snap.get("partner"),
+                "external_fb_present": snap.get("external_fb_present"),
+                "mode": self.sm.mode,
+                "last_mode": self.last_mode,
+                "rotation": self.rotation,
+                "mode_rotation": nd.mode_rotation(self.sm.mode) if self.sm.mode != nd.MODE_OFF else 0,
+                "mode_fit": nd.mode_fit(self.sm.mode) if self.sm.mode != nd.MODE_OFF else "fit",
+                "mode_choices": snap.get("mode_choices") or [],
+                "selected_resolution": snap.get("selected_resolution"),
+                "dp_presets": snap.get("dp_presets") or [],
+                "generation": self.sm.generation,
+                "notified_generation": self.sm.notified_generation,
+                "notification_id": self.notification_id,
+                "last_error": self.last_error,
+                "blocker": snap.get("blocker"),
+                "blockers": snap.get("blockers") or [],
+                "display_name": snap.get("display_name"),
+                "external_modes": snap.get("external_modes") or [],
+                "mirror_supported": snap.get("mirror_supported"),
+                "desktop_supported": snap.get("desktop_supported"),
+                "desktop_blocker": snap.get("desktop_blocker"),
+                "mirror_output": snap.get("mirror_output"),
+                "desktop_output": snap.get("desktop_output"),
+                "outputs": snap.get("outputs"),
+                "audio": snap.get("audio"),
+                "external_fb": snap.get("external_fb"),
+                "orientation": self.read_orientation(),
+                "auto_orientation": bool(self.auto_orientation),
+                "restore": {
+                    "pending": bool(self._restore_pending),
+                    "generation": self._restore_generation,
+                    "attempts": self._restore_attempts,
+                    "next_at": self._restore_next_at,
+                    "reason": self._restore_reason,
+                    "last_mode": self.last_mode,
+                },
+                "uevent_listener": bool(self._uevent_ready),
+                "pd_ids": snap.get("pd_ids"),
+                "pd_type": snap.get("pd_type"),
+                "dp_link": snap.get("dp_link"),
+                "secdp": snap.get("secdp"),
+                "extcon_dp": snap.get("extcon_dp"),
+                "updated": time.time(),
+            }
+
+    def publish_status(self) -> None:
+        doc = self.status()
+        doc["snapshot"] = self.snapshot
+        try:
+            if self.root == "/":
+                _atomic_json(self.status_path, doc)
+        except OSError as exc:
+            log("status write failed: %s" % exc)
+
+    # ---- notifications ---------------------------------------------------
+    def _submit(self, payload: Dict[str, Any]) -> Optional[int]:
+        doc = self.notifier.submit(payload)
+        if not doc.get("success"):
+            log("notification submit failed: %s" % (doc.get("error") or doc))
+            return None
+        try:
+            nid = int(doc.get("id"))
+        except (TypeError, ValueError):
+            return None
+        log("notification #%d: %s" % (nid, payload.get("summary")))
+        return nid
+
+    def _archive_current(self) -> None:
+        if self.notification_id:
+            self.notifier.archive(self.notification_id)
+            log("archived notification #%d" % self.notification_id)
+        self.notification_id = None
+
+    def _notify_connected(self) -> None:
+        if not self.sm.should_notify():
+            return
+        payload = nd.notification_payload(self.snapshot, self.sm.generation,
+                                          suggested_mode=self.last_mode)
+        nid = self._submit(payload)
+        if nid is not None:
+            self.notification_id = nid
+            self.sm.mark_notified()
+
+    def _notify_error(self, detail: str, mode: str) -> None:
+        payload = nd.notification_payload(self.snapshot, self.sm.generation,
+                                          error=detail,
+                                          replaces_id=self.notification_id)
+        nid = self._submit(payload)
+        if nid is not None:
+            self.notification_id = nid
+
+    def _notify_active_mode(self, mode: str) -> None:
+        payload = nd.notification_payload(self.snapshot, self.sm.generation,
+                                          suggested_mode=mode,
+                                          replaces_id=self.notification_id)
+        payload["summary"] = "External display active"
+        payload["body"] = nd.mode_body(self.snapshot, mode)
+        payload["actions"] = ["off", "Internal only", "settings", "Display settings"]
+        if mode == nd.MODE_DESKTOP:
+            payload["actions"] = ["mirror", "Switch to mirror", "off", "Internal only",
+                                  "settings", "Display settings"]
+        nid = self._submit(payload)
+        if nid is not None:
+            self.notification_id = nid
+
+    # ---- system commands -------------------------------------------------
+    def _systemctl(self, verb: str, unit: str, timeout: float = 10.0) -> Dict[str, Any]:
+        argv = ["systemctl", verb, unit]
+        try:
+            proc = self.runner(argv, capture_output=True, text=True,
+                               timeout=float(timeout))
+        except (OSError, subprocess.SubprocessError) as exc:
+            return {"success": False, "error": str(exc), "argv": argv}
+        return {"success": proc.returncode == 0,
+                "returncode": proc.returncode,
+                "stdout": (proc.stdout or "").strip()[:400],
+                "stderr": (proc.stderr or "").strip()[:400],
+                "argv": argv}
+
+    def _unit_active(self, unit: str) -> bool:
+        doc = self._systemctl("is-active", unit, timeout=5.0)
+        out = (doc.get("stdout") or "").strip()
+        if out == "active":
+            return True
+        if out in ("inactive", "failed", "deactivating", "maintenance"):
+            return False
+        # A systemctl timeout or an unexpected empty reply under load must not
+        # make the supervisor kill a healthy bridge that is publishing RUNNING.
+        return True
+
+    def _ext_state(self) -> Dict[str, Any]:
+        try:
+            with open(self.ext_state_path, "r", encoding="utf-8") as fh:
+                text = fh.read().strip()
+        except OSError:
+            return {}
+        doc: Dict[str, Any] = {}
+        tokens = text.split()
+        for i, token in enumerate(tokens):
+            if "=" in token:
+                key, value = token.split("=", 1)
+                doc[key] = value
+            elif token == "state" and i + 1 < len(tokens):
+                doc["state"] = tokens[i + 1]
+        return doc
+
+    def _write_ext_start(self, mode: str, output: str) -> None:
+        binary = "/usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext"
+        if self.root != "/":
+            binary = os.path.join(self.root, "usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext")
+        mode = nd.normalize_mode(mode)
+        argv = [binary, "--mode", mode, "--output", output, "--fb", "/dev/fb1",
+                "--fps", "20", "--fit", nd.mode_fit(mode)]
+        # The DP OUTFIFO uses DECON_RGB order (the DSI/AMOLED path uses BGR).
+        # The bridge therefore packs ARGB8888 words for the DP path.  This is
+        # the measured colour fix, not a blind channel swap.
+        argv += ["--color-order", "argb"]
+        if mode == nd.MODE_DESKTOP:
+            # An independent external desktop follows the TV's landscape mode;
+            # it must not inherit the phone's physical rotation.
+            argv += ["--rotate", str(self.rotation if not self.auto_orientation else 0)]
+        elif self.auto_orientation:
+            # The C bridge re-reads the live compositor transform every frame;
+            # no service restart is needed when the phone rotates.
+            argv += ["--auto-orientation", "--orientation-file", ORIENT_PRESENTER]
+        else:
+            argv += ["--rotate", str(self.rotation)]
+        preset = (self.snapshot or {}).get("selected_resolution")
+        if preset and preset.get("width") and preset.get("height"):
+            argv += ["--resolution", "%dx%d" % (preset["width"], preset["height"])]
+        script = "#!/bin/sh\nexec " + " ".join(nd.shlex.quote(a) for a in argv) + "\n"
+        tmp = self.ext_start_path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(script)
+        os.chmod(tmp, 0o700)
+        os.replace(tmp, self.ext_start_path)
+
+    def _mark_ext_starting(self) -> None:
+        """Reset a stale STOPPED/FAILED state before (re)starting the bridge.
+
+        The bridge publishes RUNNING only after its first captured frame.
+        Without this reset the readiness poll can read the previous run's
+        terminal state and stop the new bridge immediately.
+        """
+        tmp = self.ext_state_path + ".tmp"
+        try:
+            with open(tmp, "w", encoding="utf-8") as fh:
+                fh.write("state STARTING reason=daemon-start\n")
+            os.replace(tmp, self.ext_state_path)
+        except OSError:
+            pass
+
+    def _wait_ext_ready(self, timeout: float = 6.0) -> bool:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            st = self._ext_state()
+            if st.get("state") == "RUNNING":
+                return True
+            if st.get("state") in ("FAILED", "STOPPED"):
+                return False
+            # Do not keep waiting on a link that vanished during startup.
+            if st.get("reason") == "DP_LINK_LOST":
+                return False
+            time.sleep(0.1)
+        return False
+
+    def _restart_ext(self, mode: str, output: str) -> Dict[str, Any]:
+        """Stop the old bridge, reset the state, then start the new one.
+
+        A systemd ``restart`` can race with the old process's SIGTERM cleanup:
+        the old bridge writes STOPPED after the daemon wrote STARTING, so the
+        readiness poll aborts the new bridge.  Explicit stop -> mark -> start
+        keeps the state file monotonic across mode changes.
+        """
+        self._link_grace_until = time.monotonic() + 4.0
+        stopped = self._systemctl("stop", EXT_UNIT, timeout=10.0)
+        self._write_ext_start(mode, output)
+        self._mark_ext_starting()
+        started = self._systemctl("start", EXT_UNIT, timeout=12.0)
+        started["stopped"] = stopped
+        return started
+
+    def set_rotation(self, degrees: Any) -> Dict[str, Any]:
+        try:
+            value = int(degrees)
+        except (TypeError, ValueError):
+            return {"success": False, "error": "INVALID_ROTATION",
+                    "detail": "rotation must be 0, 90, 180 or 270"}
+        if value not in (0, 90, 180, 270):
+            return {"success": False, "error": "INVALID_ROTATION",
+                    "detail": "rotation must be 0, 90, 180 or 270"}
+        with self.lock:
+            self.rotation = value
+            # An explicit rotation is a manual override; automatic orientation
+            # remains available through set-auto-orientation.
+            self.auto_orientation = False
+            self._save_preference()
+            restarted = None
+            if self.sm.mode in (nd.MODE_MIRROR_PORTRAIT, nd.MODE_MIRROR_LANDSCAPE,
+                                nd.MODE_FULLSCREEN, nd.MODE_DESKTOP):
+                output = (self.snapshot.get("desktop_output")
+                          if self.sm.mode == nd.MODE_DESKTOP
+                          else self.snapshot.get("mirror_output"))
+                if output:
+                    restarted = self._restart_ext(self.sm.mode, output)
+            self.publish_status()
+            return {"success": True, "rotation": self.rotation,
+                    "auto_orientation": False, "restarted": restarted}
+
+    def set_auto_orientation(self, enabled: Any) -> Dict[str, Any]:
+        value = bool(enabled) if isinstance(enabled, bool) else (
+            str(enabled).strip().lower() in ("1", "true", "yes", "on", "auto"))
+        with self.lock:
+            self.auto_orientation = value
+            if value:
+                self.read_orientation()
+            self._save_preference()
+            restarted = None
+            if self.sm.mode in (nd.MODE_MIRROR_PORTRAIT, nd.MODE_MIRROR_LANDSCAPE,
+                                nd.MODE_FULLSCREEN):
+                output = self.snapshot.get("mirror_output")
+                if output:
+                    restarted = self._restart_ext(self.sm.mode, output)
+            self.publish_status()
+            return {"success": True, "auto_orientation": value,
+                    "orientation": self.orientation_info, "restarted": restarted}
+
+    def start_mode(self, mode: str) -> Dict[str, Any]:
+        mode = nd.normalize_mode(mode)
+        if not mode:
+            return {"success": False, "error": "INVALID_MODE",
+                    "detail": "mode must be one of %s" % (nd.VALID_MODES,)}
+        with self.lock:
+            snap = self.refresh_snapshot(force_outputs=True)
+            if mode == nd.MODE_OFF:
+                return self.stop_mode("user requested internal-only", remember=True)
+            detail = nd.mode_error(snap, mode)
+            if detail:
+                code = ("DESKTOP_OUTPUT_UNAVAILABLE" if mode == nd.MODE_DESKTOP and
+                        snap.get("state") == nd.DP_LINK_READY else "EXTERNAL_DISPLAY_NOT_READY")
+                self.last_error = detail
+                self._notify_error(detail, mode)
+                self.publish_status()
+                return {"success": False, "error": code, "detail": detail,
+                        "blocker": snap.get("blocker"),
+                        "state": snap.get("state")}
+            output = (snap.get("mirror_output")
+                      if mode in (nd.MODE_MIRROR_PORTRAIT, nd.MODE_MIRROR_LANDSCAPE,
+                                  nd.MODE_FULLSCREEN)
+                      else snap.get("desktop_output"))
+            if not output:
+                detail = ("No compositor output is available for %s" % mode)
+                self.last_error = detail
+                return {"success": False, "error": "OUTPUT_UNAVAILABLE", "detail": detail}
+            # Automatic orientation is the default.  Manual rotation keeps
+            # its explicit override until the user re-enables auto mode.
+            if not self.auto_orientation:
+                self.rotation = nd.mode_rotation(mode)
+            orient = self.read_orientation()
+            log("starting %s on output %s auto_orientation=%s effective=%s transform=%s external_rotation=%s" %
+                (mode, output, self.auto_orientation,
+                 orient.get("effective_orientation"), orient.get("transform"),
+                 orient.get("external_rotation")))
+            started = self._restart_ext(mode, output)
+            if not started.get("success"):
+                self.last_error = started.get("error") or started.get("stderr") or "systemctl restart failed"
+                self._notify_error(self.last_error or "external bridge failed to start", mode)
+                self.publish_status()
+                return {"success": False, "error": "EXT_BRIDGE_START_FAILED",
+                        "detail": self.last_error, "systemctl": started}
+            if not self._wait_ext_ready():
+                st = self._ext_state()
+                tail = ""
+                try:
+                    with open(self.ext_log_path, "r", encoding="utf-8", errors="replace") as fh:
+                        tail = fh.read()[-1200:]
+                except OSError:
+                    pass
+                self._systemctl("stop", EXT_UNIT, timeout=8.0)
+                self.last_error = ("external bridge did not reach RUNNING (%s)" %
+                                   (st.get("state") or "no state"))
+                self._notify_error(self.last_error + ("\n" + tail if tail else ""), mode)
+                self.sm.set_mode(nd.MODE_OFF)
+                self.publish_status()
+                return {"success": False, "error": "EXT_BRIDGE_NOT_READY",
+                        "detail": self.last_error, "ext_state": st, "log": tail}
+            # Regression guard: the internal compositor/bridge must stay active.
+            inactive = [u for u in INTERNAL_UNITS if not self._unit_active(u)]
+            if inactive:
+                self._systemctl("stop", EXT_UNIT, timeout=8.0)
+                self.last_error = "internal display regression: inactive %s" % ", ".join(inactive)
+                self.sm.set_mode(nd.MODE_OFF)
+                self.publish_status()
+                return {"success": False, "error": "INTERNAL_DISPLAY_REGRESSION",
+                        "detail": self.last_error}
+            self.sm.set_mode(mode)
+            self.last_mode = mode
+            self._explicit_off = False
+            self._restore_pending = False
+            self._restore_attempts = 0
+            self.last_error = None
+            self._save_preference()
+            self._notify_active_mode(mode)
+            self.publish_status()
+            log("mode=%s active on %s" % (mode, output))
+            return {"success": True, "mode": mode, "output": output,
+                    "rotation": self.rotation,
+                    "fit": nd.mode_fit(mode),
+                    "resolution": (self.snapshot or {}).get("selected_resolution"),
+                    "ext_state": self._ext_state(),
+                    "internal_units": {u: "active" for u in INTERNAL_UNITS}}
+
+    def stop_mode(self, reason: str = "stop", remember: bool = False) -> Dict[str, Any]:
+        """Stop the external bridge.
+
+        ``remember`` is true only for an explicit user "internal only" choice.
+        A cable disconnect must preserve last_mode so the next connection can
+        restore the picture automatically.
+        """
+        with self.lock:
+            doc = self._systemctl("stop", EXT_UNIT, timeout=8.0)
+            self.sm.set_mode(nd.MODE_OFF)
+            self._restore_pending = False
+            self._restore_attempts = 0
+            if remember:
+                self.last_mode = nd.MODE_OFF
+                self._explicit_off = True
+            self.last_error = None
+            self._save_preference()
+            self.publish_status()
+            log("external output stopped (%s, remember=%s, last_mode=%s)" %
+                (reason, remember, self.last_mode))
+            return {"success": True, "mode": nd.MODE_OFF, "reason": reason,
+                    "last_mode": self.last_mode, "systemctl": doc}
+
+    # ---- poll loop -------------------------------------------------------
+    def _supervise_ext(self) -> None:
+        """Restart or truthfully fail an external bridge that died.
+
+        The bridge can exit (capture failure, compositor restart, capture
+        timeout under load).  A successful systemctl start is not proof that
+        scan-out continues, so keep checking its published state.
+        """
+        if self.sm.mode == nd.MODE_OFF:
+            self._ext_failures = 0
+            return
+        st = self._ext_state()
+        state = st.get("state")
+        active = self._unit_active(EXT_UNIT)
+        if active and state == "RUNNING":
+            self._ext_failures = 0
+            return
+        if active and state in (None, "", "STARTING"):
+            return
+        # A SIGKILL leaves the last state file saying RUNNING even though no
+        # process exists.  The unit's real active state is authoritative.
+        if active and state not in ("STOPPED", "FAILED"):
+            return
+        now = time.monotonic()
+        if self._ext_failures < 2 and now - self._last_ext_restart >= 5.0:
+            output = (self.snapshot.get("desktop_output")
+                      if self.sm.mode == nd.MODE_DESKTOP
+                      else self.snapshot.get("mirror_output"))
+            if output:
+                self._last_ext_restart = now
+                self._ext_failures += 1
+                log("external bridge %s (%s); restart attempt %d" %
+                    (state, st.get("reason") or "unknown", self._ext_failures))
+                self._restart_ext(self.sm.mode, output)
+                if self._wait_ext_ready(timeout=3.0):
+                    log("external bridge restarted")
+                self.publish_status()
+                return
+        detail = ("External bridge stopped unexpectedly (%s); "
+                  "scan-out is not running." % (st.get("reason") or state))
+        self._systemctl("stop", EXT_UNIT, timeout=8.0)
+        self.sm.set_mode(nd.MODE_OFF)
+        self.last_error = detail
+        self._notify_error(detail, nd.MODE_OFF)
+        self._save_preference()
+        self.publish_status()
+        log(detail)
+
+    # ---- hot-plug restoration and uevent reconciliation -------------------
+    def _desired_restore_mode(self) -> Optional[str]:
+        if self._explicit_off:
+            return None
+        mode = nd.normalize_mode(self.last_mode)
+        if mode in (nd.MODE_MIRROR_PORTRAIT, nd.MODE_MIRROR_LANDSCAPE,
+                    nd.MODE_FULLSCREEN, nd.MODE_DESKTOP):
+            return mode
+        return None
+
+    def _schedule_restore(self, generation: int, reason: str,
+                          delay: float = 0.4) -> None:
+        mode = self._desired_restore_mode()
+        if not mode:
+            self._restore_pending = False
+            return
+        self._restore_pending = True
+        self._restore_generation = int(generation)
+        self._restore_attempts = 0
+        self._restore_reason = reason
+        self._restore_next_at = time.monotonic() + max(0.0, delay)
+        log("restore scheduled generation=%d mode=%s reason=%s" %
+            (generation, mode, reason))
+
+    def _cancel_restore(self, reason: str) -> None:
+        if self._restore_pending:
+            log("restore cancelled (%s) generation=%d" % (reason, self._restore_generation))
+        self._restore_pending = False
+        self._restore_attempts = 0
+        self._restore_next_at = 0.0
+        self._restore_reason = ""
+
+    def _run_restore_if_due(self) -> None:
+        if not self._restore_pending:
+            return
+        if self.sm.state != nd.DP_LINK_READY:
+            self._cancel_restore("link not ready")
+            return
+        if self.sm.generation != self._restore_generation:
+            self._cancel_restore("stale generation")
+            return
+        if time.monotonic() < self._restore_next_at:
+            return
+        mode = self._desired_restore_mode()
+        if not mode:
+            self._cancel_restore("no restore preference")
+            return
+        self._restore_attempts += 1
+        log("restore attempt %d/%d generation=%d mode=%s reason=%s" %
+            (self._restore_attempts, 3, self.sm.generation, mode,
+             self._restore_reason))
+        # Do not re-read every slow Samsung sysfs attribute here: the
+        # connected event already refreshed the snapshot and start_mode does
+        # its own output query.  A redundant fresh EDID/identity read used to
+        # add many seconds to recovery under load.
+        if self.snapshot.get("state") != nd.DP_LINK_READY:
+            self._cancel_restore("hardware left DP_LINK_READY")
+            return
+        started_at = time.monotonic()
+        result = self.start_mode(mode)
+        elapsed = time.monotonic() - started_at
+        if result.get("success"):
+            log("restore complete generation=%d mode=%s in %.2fs" %
+                (self.sm.generation, mode, elapsed))
+            self._cancel_restore("restored")
+            return
+        if self._restore_attempts >= 3:
+            detail = result.get("detail") or result.get("error") or "unknown"
+            log("restore failed after %d attempts: %s" % (self._restore_attempts, detail))
+            self._restore_pending = False
+            self.last_error = "external display restore failed: %s" % detail
+            self._notify_error(self.last_error, mode)
+            self.publish_status()
+            return
+        backoff = min(8.0, 2.0 ** self._restore_attempts)
+        self._restore_next_at = time.monotonic() + backoff
+        log("restore attempt failed (%s); retrying in %.1fs" %
+            (result.get("error") or result.get("detail"), backoff))
+
+    def start_uevent_listener(self) -> None:
+        if self.root != "/" or self._uevent_thread is not None:
+            return
+
+        def worker() -> None:
+            sock = None
+            try:
+                # Some Python builds do not export the netlink protocol
+                # constant even though the kernel ABI value is stable (15).
+                netlink_kobject = getattr(socket, "NETLINK_KOBJECT_UEVENT", 15)
+                sock = socket.socket(socket.AF_NETLINK, socket.SOCK_DGRAM,
+                                     netlink_kobject)
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1 << 20)
+                sock.bind((0, 1))
+                sock.settimeout(1.0)
+                self._uevent_ready = True
+                log("uevent listener active (NETLINK_KOBJECT_UEVENT)")
+                markers = ("SUBSYSTEM=extcon", "SUBSYSTEM=switch",
+                           "SUBSYSTEM=typec", "SUBSYSTEM=usb",
+                           "SUBSYSTEM=power_supply", "SUBSYSTEM=drm",
+                           "displayport", "decon", "max77705", "hdmi")
+                while (not self._uevent_stop.is_set() and
+                       not self.stop_event.is_set()):
+                    try:
+                        data = sock.recv(8192)
+                    except socket.timeout:
+                        continue
+                    except OSError:
+                        break
+                    text = data.decode("utf-8", "replace")
+                    if any(marker in text for marker in markers):
+                        self._wake.set()
+            except Exception as exc:  # noqa: BLE001
+                self._uevent_ready = False
+                log("uevent listener unavailable (%s); polling reconciliation remains active" % exc)
+            finally:
+                if sock is not None:
+                    try:
+                        sock.close()
+                    except OSError:
+                        pass
+
+        self._uevent_thread = threading.Thread(target=worker, name="nuxel-display-uevent",
+                                               daemon=True)
+        self._uevent_thread.start()
+
+    def stop_uevent_listener(self) -> None:
+        self._uevent_stop.set()
+        self._wake.set()
+
+    def _handle_events(self, events) -> None:
+        for event in events:
+            previous = self.snapshot or {}
+            log("event %s generation=%s state=%s" % (event["event"], event["generation"], event["state"]))
+            if event["event"] == "connected":
+                self.refresh_snapshot(force_outputs=True, fresh=True)
+                self.read_orientation()
+                self._notify_connected()
+                self._handle_audio_transition(previous, self.snapshot)
+                # The user's previous mode is restored only after the real DP
+                # link and decon_t framebuffer exist; no stale readiness flag.
+                self._schedule_restore(event["generation"], "hotplug-connected")
+            elif event["event"] == "disconnected":
+                self._archive_current()
+                self._cancel_restore("physical disconnect")
+                self._handle_audio_transition(previous, event.get("snapshot") or {})
+                if self.sm.mode != nd.MODE_OFF:
+                    # Preserve last_mode: this is a cable event, not a user
+                    # request to switch the external output off permanently.
+                    self.stop_mode("external display disconnected", remember=False)
+                self.snapshot = event["snapshot"]
+                self.last_error = None
+            self.publish_status()
+
+    def poll_once(self, now: Optional[float] = None) -> Optional[Dict[str, Any]]:
+        # Refresh the cached identity only when the link state changes; this
+        # keeps Samsung sysfs reads (which log) out of the 5 Hz poll loop.
+        self.read_orientation()
+        snap = self.refresh_snapshot()
+        state = snap.get("state")
+        if (state != nd.DP_LINK_READY and
+                time.monotonic() < self._link_grace_until):
+            # We are inside our own decon_t powerdown/re-enable window.
+            self.publish_status()
+            return None
+        if state != self._last_seen_state:
+            self._last_seen_state = state
+            self._stable_count = 0
+        else:
+            self._stable_count += 1
+        if self._stable_count < 1:  # one settled poll after a change
+            self.publish_status()
+            return None
+        events = self.sm.update(snap, now=now)
+        if events:
+            self._handle_events(events)
+        else:
+            self.publish_status()
+        self._run_restore_if_due()
+        self._supervise_ext()
+        return events[-1] if events else None
+
+    def run(self) -> int:
+        self.refresh_snapshot(force_outputs=True, fresh=True)
+        self.publish_status()
+        self.sm.update(self.snapshot, now=time.time())
+        # The first settled poll may itself be a ready connection.
+        if self.snapshot.get("state") == nd.DP_LINK_READY:
+            if self.sm.state != nd.DP_LINK_READY:
+                self.sm.state = nd.DP_LINK_READY
+                self.sm.generation += 1
+            self._notify_connected()
+            self._schedule_restore(self.sm.generation, "daemon-startup")
+            self.publish_status()
+        self.start_control_server()
+        self.start_uevent_listener()
+        log("monitoring root=%s poll=%.2fs state=%s auto_orientation=%s" %
+            (self.root, self.poll_interval, self.snapshot.get("state"),
+             self.auto_orientation))
+        try:
+            while not self.stop_event.is_set():
+                try:
+                    self.poll_once()
+                except Exception:  # noqa: BLE001 - a hardware read must not kill the daemon
+                    log("poll error: %s\n%s" % (sys.exc_info()[1], traceback.format_exc(limit=3)))
+                # uevents wake this immediately; the bounded wait is only a
+                # reconciliation fallback for missed kernel notifications.
+                self._wake.wait(self.poll_interval)
+                self._wake.clear()
+        finally:
+            self.stop_event.set()
+            self._wake.set()
+            self.stop_uevent_listener()
+            self.shutdown_control_server()
+            if self.sm.mode != nd.MODE_OFF:
+                self.stop_mode("daemon shutdown", remember=False)
+            self.publish_status()
+        return 0
+
+    # ---- control socket --------------------------------------------------
+    def handle_request(self, req: Dict[str, Any]) -> Dict[str, Any]:
+        cmd = str(req.get("cmd") or "status")
+        if cmd == "status":
+            return self.status()
+        if cmd == "outputs":
+            self.refresh_outputs(force=True)
+            return {"success": True, "outputs": self.outputs_info}
+        if cmd == "set-mode":
+            return self.start_mode(str(req.get("mode") or ""))
+        if cmd == "mode-choices":
+            return {"success": True,
+                    "choices": (self.snapshot or {}).get("mode_choices") or []}
+        if cmd == "set-rotation":
+            return self.set_rotation(req.get("rotation", req.get("degrees")))
+        if cmd == "set-auto-orientation":
+            return self.set_auto_orientation(req.get("enabled",
+                                            req.get("auto_orientation", True)))
+        if cmd == "stop":
+            return self.stop_mode("control request", remember=True)
+        if cmd == "notify-test":
+            # Synthetic notification for UI/verification only.  It never
+            # changes the hardware state or claims a real display.
+            snap = dict(self.snapshot or self.refresh_snapshot())
+            snap["display_name"] = req.get("display_name") or "Test display"
+            snap["external_modes"] = req.get("modes") or [
+                {"raw": "1920x1080p-60", "width": 1920, "height": 1080,
+                 "refresh": 60, "flags": "U", "source": "test"}]
+            snap["desktop_supported"] = bool(req.get("desktop_supported", False))
+            payload = nd.notification_payload(snap, self.sm.generation or 1,
+                                              suggested_mode=self.last_mode)
+            nid = self._submit(payload)
+            return {"success": nid is not None, "notification_id": nid,
+                    "synthetic": True, "real_state": self.sm.state}
+        if cmd == "shutdown":
+            self.stop_event.set()
+            return {"success": True}
+        return {"success": False, "error": "unknown command: " + cmd}
+
+    def start_control_server(self) -> None:
+        sock_path = os.path.join(self.run_dir, "control.sock")
+        try:
+            if os.path.exists(sock_path):
+                os.unlink(sock_path)
+        except OSError:
+            pass
+        daemon = self
+
+        class Handler(socketserver.StreamRequestHandler):
+            def handle(self):
+                try:
+                    line = self.rfile.readline(262144)
+                    req = json.loads(line.decode("utf-8") or "{}")
+                    if not isinstance(req, dict):
+                        raise ValueError("request must be an object")
+                    resp = daemon.handle_request(req)
+                except Exception as exc:  # noqa: BLE001
+                    resp = {"success": False, "error": "bad_request", "detail": str(exc)}
+                self.wfile.write((json.dumps(resp) + "\n").encode("utf-8"))
+
+        class Server(socketserver.ThreadingUnixStreamServer):
+            daemon_threads = True
+            allow_reuse_address = True
+
+        os.makedirs(self.run_dir, exist_ok=True)
+        srv = Server(sock_path, Handler)
+        try:
+            os.chmod(sock_path, 0o660)
+        except OSError:
+            pass
+        self._control_server = srv
+        self._control_thread = threading.Thread(target=srv.serve_forever,
+                                                name="nuxel-display-control", daemon=True)
+        self._control_thread.start()
+        log("control socket %s" % sock_path)
+
+    def shutdown_control_server(self) -> None:
+        if self._control_server is not None:
+            try:
+                self._control_server.shutdown()
+                self._control_server.server_close()
+            except Exception:  # noqa: BLE001
+                pass
+            self._control_server = None
+        try:
+            os.unlink(os.path.join(self.run_dir, "control.sock"))
+        except OSError:
+            pass
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", default="/")
+    ap.add_argument("--run-dir", default=RUN_DIR)
+    ap.add_argument("--state-dir", default=STATE_DIR)
+    ap.add_argument("--poll-interval", type=float, default=0.2)
+    ap.add_argument("--once", action="store_true", help="print one status JSON and exit")
+    ap.add_argument("--notify-test", action="store_true", help="submit a synthetic notification and exit")
+    args = ap.parse_args(argv)
+    daemon = DisplayDaemon(root=args.root, run_dir=args.run_dir,
+                           state_dir=args.state_dir, poll_interval=args.poll_interval)
+    if args.notify_test:
+        doc = daemon.handle_request({"cmd": "notify-test"})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+    if args.once:
+        daemon.refresh_snapshot(force_outputs=True)
+        print(json.dumps(daemon.status(), indent=2))
+        return 0
+    stop = lambda *_: daemon.stop_event.set()  # noqa: E731
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    return daemon.run()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,653 @@
+#!/usr/bin/env python3
+"""nuxel-displayd - authoritative external-display manager for Nuxel S10+.
+
+Responsibilities
+----------------
+* monitor the real Type-C -> USB-PD/VDM -> DP -> decon_t (/dev/fb1) path;
+* emit exactly one actionable notification per new DP connection;
+* apply Mirror / Separate desktop through the external framebuffer bridge;
+* tear the external output down and restore internal-only on disconnect;
+* persist only user preference (never a stale "connected" flag).
+
+It never writes /dev/fb0 and never replaces the compositor.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import signal
+import socket
+import socketserver
+import stat
+import subprocess
+import sys
+import threading
+import time
+import traceback
+from typing import Any, Dict, Optional
+
+# Deployed module path first, repo-relative second (unit tests / dev).
+_HERE = os.path.dirname(os.path.abspath(__file__))
+for _cand in ("/usr/lib/nuxel/nuxel-display", os.path.join(_HERE, "..", "lib")):
+    if os.path.isdir(_cand) and _cand not in sys.path:
+        sys.path.insert(0, _cand)
+import nuxel_display as nd  # noqa: E402
+
+RUN_DIR = "/run/nuxel-display"
+STATE_DIR = "/var/lib/nuxel/external-display"
+EXT_UNIT = "nuxel-wl-fb-ext.service"
+INTERNAL_UNITS = ("nuxel-wayland.service", "nuxel-wl-fb.service")
+EXT_MARKER = "nuxel.external-display"
+
+
+def log(msg: str) -> None:
+    sys.stderr.write("%s nuxel-displayd: %s\n" % (time.strftime("%Y-%m-%dT%H:%M:%S"), msg))
+    sys.stderr.flush()
+
+
+def _atomic_json(path: str, doc: Dict[str, Any]) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, sort_keys=True)
+        fh.write("\n")
+    os.replace(tmp, path)
+
+
+def _read_json(path: str) -> Optional[Dict[str, Any]]:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            doc = json.load(fh)
+        return doc if isinstance(doc, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+class NotificationClient:
+    """Thin wrapper over the canonical org.nuxel.Notifications hub."""
+
+    def submit(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            import dbus  # type: ignore
+            bus = dbus.SystemBus()
+            obj = bus.get_object("org.nuxel.Notifications", "/org/nuxel/Notifications")
+            iface = dbus.Interface(obj, "org.nuxel.Notifications")
+            result = iface.SubmitNotification(json.dumps(payload))
+            doc = json.loads(result)
+            return doc if isinstance(doc, dict) else {"success": False, "error": "bad hub response"}
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": str(exc)}
+
+    def archive(self, notification_id: Optional[int]) -> Dict[str, Any]:
+        if not notification_id:
+            return {"success": True, "archived": False}
+        try:
+            import dbus  # type: ignore
+            bus = dbus.SystemBus()
+            obj = bus.get_object("org.nuxel.Notifications", "/org/nuxel/Notifications")
+            iface = dbus.Interface(obj, "org.nuxel.Notifications")
+            doc = json.loads(iface.Archive(dbus.UInt32(int(notification_id))))
+            return doc if isinstance(doc, dict) else {"success": False}
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": str(exc)}
+
+
+class DisplayDaemon:
+    def __init__(self, root: str = "/", run_dir: str = RUN_DIR,
+                 state_dir: str = STATE_DIR, poll_interval: float = 0.5,
+                 notifier: Optional[NotificationClient] = None,
+                 runner=subprocess.run):
+        self.root = root
+        self.run_dir = run_dir
+        self.state_dir = state_dir
+        self.poll_interval = max(0.2, float(poll_interval))
+        self.notifier = notifier or NotificationClient()
+        self.runner = runner
+        self.lock = threading.RLock()
+        self.stop_event = threading.Event()
+        self.sm = nd.DisplayStateMachine()
+        self.snapshot: Dict[str, Any] = {}
+        self.outputs_info: Dict[str, Any] = {"primary": None, "external": None,
+                                             "names": [], "enabled_names": []}
+        self.notification_id: Optional[int] = None
+        self.last_error: Optional[str] = None
+        self.last_mode: str = nd.MODE_OFF
+        self.rotation: int = 0
+        self._last_seen_state: Optional[str] = None
+        self._stable_count = 0
+        self._outputs_at = 0.0
+        self._control_server: Optional[socketserver.UnixStreamServer] = None
+        self._control_thread: Optional[threading.Thread] = None
+        self._load_preference()
+        self._ensure_dirs()
+
+    # ---- paths / persistence --------------------------------------------
+    def _ensure_dirs(self) -> None:
+        os.makedirs(self.run_dir, exist_ok=True)
+        os.makedirs(self.state_dir, exist_ok=True)
+        try:
+            os.chmod(self.run_dir, 0o755)
+            os.chmod(self.state_dir, 0o700)
+        except OSError:
+            pass
+
+    @property
+    def status_path(self) -> str:
+        return os.path.join(self.run_dir, "status.json")
+
+    @property
+    def ext_state_path(self) -> str:
+        return os.path.join(self.run_dir, "ext.state")
+
+    @property
+    def ext_log_path(self) -> str:
+        return os.path.join(self.run_dir, "ext.log")
+
+    @property
+    def ext_start_path(self) -> str:
+        return os.path.join(self.run_dir, "ext-start.sh")
+
+    @property
+    def preference_path(self) -> str:
+        return os.path.join(self.state_dir, "state.json")
+
+    def _load_preference(self) -> None:
+        doc = _read_json(self.preference_path) or {}
+        mode = doc.get("last_mode")
+        self.last_mode = mode if mode in nd.VALID_MODES else nd.MODE_OFF
+        try:
+            rotation = int(doc.get("rotation", 0))
+        except (TypeError, ValueError):
+            rotation = 0
+        self.rotation = rotation if rotation in (0, 90, 180, 270) else 0
+
+    def _save_preference(self) -> None:
+        if self.root != "/":
+            return
+        _atomic_json(self.preference_path, {
+            "schema": 1,
+            "last_mode": self.last_mode,
+            "rotation": self.rotation,
+            "last_display_name": (self.snapshot or {}).get("display_name"),
+            "updated": time.time(),
+        })
+
+    # ---- hardware snapshot ----------------------------------------------
+    def refresh_outputs(self, force: bool = False) -> Dict[str, Any]:
+        now = time.time()
+        if not force and now - self._outputs_at < 3.0 and self.outputs_info.get("names"):
+            return self.outputs_info
+        doc = nd.run_wlr_randr(self.root)
+        self.outputs_info = nd.choose_outputs(doc.get("outputs") or [])
+        self.outputs_info["success"] = doc.get("success", False)
+        self.outputs_info["error"] = doc.get("error")
+        self._outputs_at = now
+        return self.outputs_info
+
+    def refresh_snapshot(self, force_outputs: bool = False) -> Dict[str, Any]:
+        snap = nd.read_snapshot(self.root)
+        outputs = self.refresh_outputs(force_outputs)
+        primary = outputs.get("primary") or {}
+        external = outputs.get("external") or {}
+        snap["outputs"] = outputs
+        snap["mirror_output"] = primary.get("name")
+        snap["desktop_output"] = external.get("name")
+        snap["desktop_supported"] = bool(snap.get("mirror_supported") and external.get("name"))
+        if not snap.get("desktop_supported"):
+            reason = ("Separate desktop needs a second compositor output; "
+                      "only %s is currently exposed."
+                      % (", ".join(outputs.get("enabled_names") or []) or "no output"))
+            snap.setdefault("blockers", []).append(reason)
+            snap["desktop_blocker"] = reason
+        else:
+            snap["desktop_blocker"] = None
+        self.snapshot = snap
+        return snap
+
+    # ---- public status ---------------------------------------------------
+    def status(self) -> Dict[str, Any]:
+        with self.lock:
+            snap = self.snapshot or self.refresh_snapshot()
+            return {
+                "success": True,
+                "schema": nd.SCHEMA,
+                "state": self.sm.state,
+                "hardware_state": snap.get("state"),
+                "partner": snap.get("partner"),
+                "external_fb_present": snap.get("external_fb_present"),
+                "mode": self.sm.mode,
+                "last_mode": self.last_mode,
+                "rotation": self.rotation,
+                "generation": self.sm.generation,
+                "notified_generation": self.sm.notified_generation,
+                "notification_id": self.notification_id,
+                "last_error": self.last_error,
+                "blocker": snap.get("blocker"),
+                "blockers": snap.get("blockers") or [],
+                "display_name": snap.get("display_name"),
+                "external_modes": snap.get("external_modes") or [],
+                "mirror_supported": snap.get("mirror_supported"),
+                "desktop_supported": snap.get("desktop_supported"),
+                "desktop_blocker": snap.get("desktop_blocker"),
+                "mirror_output": snap.get("mirror_output"),
+                "desktop_output": snap.get("desktop_output"),
+                "outputs": snap.get("outputs"),
+                "audio": snap.get("audio"),
+                "external_fb": snap.get("external_fb"),
+                "pd_ids": snap.get("pd_ids"),
+                "pd_type": snap.get("pd_type"),
+                "dp_link": snap.get("dp_link"),
+                "secdp": snap.get("secdp"),
+                "extcon_dp": snap.get("extcon_dp"),
+                "updated": time.time(),
+            }
+
+    def publish_status(self) -> None:
+        doc = self.status()
+        doc["snapshot"] = self.snapshot
+        try:
+            if self.root == "/":
+                _atomic_json(self.status_path, doc)
+        except OSError as exc:
+            log("status write failed: %s" % exc)
+
+    # ---- notifications ---------------------------------------------------
+    def _submit(self, payload: Dict[str, Any]) -> Optional[int]:
+        doc = self.notifier.submit(payload)
+        if not doc.get("success"):
+            log("notification submit failed: %s" % (doc.get("error") or doc))
+            return None
+        try:
+            nid = int(doc.get("id"))
+        except (TypeError, ValueError):
+            return None
+        log("notification #%d: %s" % (nid, payload.get("summary")))
+        return nid
+
+    def _archive_current(self) -> None:
+        if self.notification_id:
+            self.notifier.archive(self.notification_id)
+            log("archived notification #%d" % self.notification_id)
+        self.notification_id = None
+
+    def _notify_connected(self) -> None:
+        if not self.sm.should_notify():
+            return
+        payload = nd.notification_payload(self.snapshot, self.sm.generation,
+                                          suggested_mode=self.last_mode)
+        nid = self._submit(payload)
+        if nid is not None:
+            self.notification_id = nid
+            self.sm.mark_notified()
+
+    def _notify_error(self, detail: str, mode: str) -> None:
+        payload = nd.notification_payload(self.snapshot, self.sm.generation,
+                                          error=detail,
+                                          replaces_id=self.notification_id)
+        nid = self._submit(payload)
+        if nid is not None:
+            self.notification_id = nid
+
+    def _notify_active_mode(self, mode: str) -> None:
+        payload = nd.notification_payload(self.snapshot, self.sm.generation,
+                                          suggested_mode=mode,
+                                          replaces_id=self.notification_id)
+        payload["summary"] = "External display active"
+        payload["body"] = nd.mode_body(self.snapshot, mode)
+        payload["actions"] = ["off", "Internal only", "settings", "Display settings"]
+        if mode == nd.MODE_DESKTOP:
+            payload["actions"] = ["mirror", "Switch to mirror", "off", "Internal only",
+                                  "settings", "Display settings"]
+        nid = self._submit(payload)
+        if nid is not None:
+            self.notification_id = nid
+
+    # ---- system commands -------------------------------------------------
+    def _systemctl(self, verb: str, unit: str, timeout: float = 10.0) -> Dict[str, Any]:
+        argv = ["systemctl", verb, unit]
+        try:
+            proc = self.runner(argv, capture_output=True, text=True,
+                               timeout=float(timeout))
+        except (OSError, subprocess.SubprocessError) as exc:
+            return {"success": False, "error": str(exc), "argv": argv}
+        return {"success": proc.returncode == 0,
+                "returncode": proc.returncode,
+                "stdout": (proc.stdout or "").strip()[:400],
+                "stderr": (proc.stderr or "").strip()[:400],
+                "argv": argv}
+
+    def _unit_active(self, unit: str) -> bool:
+        doc = self._systemctl("is-active", unit, timeout=5.0)
+        return doc.get("stdout") == "active" or doc.get("returncode") == 0 and doc.get("stdout") == "active"
+
+    def _ext_state(self) -> Dict[str, Any]:
+        try:
+            with open(self.ext_state_path, "r", encoding="utf-8") as fh:
+                text = fh.read().strip()
+        except OSError:
+            return {}
+        doc: Dict[str, Any] = {}
+        tokens = text.split()
+        for i, token in enumerate(tokens):
+            if "=" in token:
+                key, value = token.split("=", 1)
+                doc[key] = value
+            elif token == "state" and i + 1 < len(tokens):
+                doc["state"] = tokens[i + 1]
+        return doc
+
+    def _write_ext_start(self, mode: str, output: str) -> None:
+        binary = "/usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext"
+        if self.root != "/":
+            binary = os.path.join(self.root, "usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext")
+        argv = [binary, "--mode", mode, "--output", output, "--fb", "/dev/fb1",
+                "--fps", "20", "--rotate", str(self.rotation)]
+        script = "#!/bin/sh\nexec " + " ".join(nd.shlex.quote(a) for a in argv) + "\n"
+        tmp = self.ext_start_path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(script)
+        os.chmod(tmp, 0o700)
+        os.replace(tmp, self.ext_start_path)
+
+    def _mark_ext_starting(self) -> None:
+        """Reset a stale STOPPED/FAILED state before (re)starting the bridge.
+
+        The bridge publishes RUNNING only after its first captured frame.
+        Without this reset the readiness poll can read the previous run's
+        terminal state and stop the new bridge immediately.
+        """
+        tmp = self.ext_state_path + ".tmp"
+        try:
+            with open(tmp, "w", encoding="utf-8") as fh:
+                fh.write("state STARTING reason=daemon-start\n")
+            os.replace(tmp, self.ext_state_path)
+        except OSError:
+            pass
+
+    def _wait_ext_ready(self, timeout: float = 6.0) -> bool:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            st = self._ext_state()
+            if st.get("state") == "RUNNING":
+                return True
+            if st.get("state") in ("FAILED", "STOPPED") and st.get("state") != "STARTING":
+                return False
+            time.sleep(0.1)
+        return False
+
+    def set_rotation(self, degrees: Any) -> Dict[str, Any]:
+        try:
+            value = int(degrees)
+        except (TypeError, ValueError):
+            return {"success": False, "error": "INVALID_ROTATION",
+                    "detail": "rotation must be 0, 90, 180 or 270"}
+        if value not in (0, 90, 180, 270):
+            return {"success": False, "error": "INVALID_ROTATION",
+                    "detail": "rotation must be 0, 90, 180 or 270"}
+        with self.lock:
+            self.rotation = value
+            self._save_preference()
+            restarted = None
+            if self.sm.mode in (nd.MODE_MIRROR, nd.MODE_DESKTOP):
+                output = self.snapshot.get("mirror_output") if self.sm.mode == nd.MODE_MIRROR else self.snapshot.get("desktop_output")
+                if output:
+                    self._write_ext_start(self.sm.mode, output)
+                    self._mark_ext_starting()
+                    restarted = self._systemctl("restart", EXT_UNIT, timeout=12.0)
+            self.publish_status()
+            return {"success": True, "rotation": self.rotation,
+                    "restarted": restarted}
+
+    def start_mode(self, mode: str) -> Dict[str, Any]:
+        if mode not in nd.VALID_MODES:
+            return {"success": False, "error": "INVALID_MODE",
+                    "detail": "mode must be one of %s" % (nd.VALID_MODES,)}
+        with self.lock:
+            snap = self.refresh_snapshot(force_outputs=True)
+            if mode == nd.MODE_OFF:
+                return self.stop_mode("user requested internal-only")
+            detail = nd.mode_error(snap, mode)
+            if detail:
+                code = ("DESKTOP_OUTPUT_UNAVAILABLE" if mode == nd.MODE_DESKTOP and
+                        snap.get("state") == nd.DP_LINK_READY else "EXTERNAL_DISPLAY_NOT_READY")
+                self.last_error = detail
+                self._notify_error(detail, mode)
+                self.publish_status()
+                return {"success": False, "error": code, "detail": detail,
+                        "blocker": snap.get("blocker"),
+                        "state": snap.get("state")}
+            output = snap.get("mirror_output") if mode == nd.MODE_MIRROR else snap.get("desktop_output")
+            if not output:
+                detail = ("No compositor output is available for %s" % mode)
+                self.last_error = detail
+                return {"success": False, "error": "OUTPUT_UNAVAILABLE", "detail": detail}
+            self._write_ext_start(mode, output)
+            self._mark_ext_starting()
+            log("starting %s on output %s" % (mode, output))
+            started = self._systemctl("restart", EXT_UNIT, timeout=12.0)
+            if not started.get("success"):
+                self.last_error = started.get("error") or started.get("stderr") or "systemctl restart failed"
+                self._notify_error(self.last_error or "external bridge failed to start", mode)
+                self.publish_status()
+                return {"success": False, "error": "EXT_BRIDGE_START_FAILED",
+                        "detail": self.last_error, "systemctl": started}
+            if not self._wait_ext_ready():
+                st = self._ext_state()
+                tail = ""
+                try:
+                    with open(self.ext_log_path, "r", encoding="utf-8", errors="replace") as fh:
+                        tail = fh.read()[-1200:]
+                except OSError:
+                    pass
+                self._systemctl("stop", EXT_UNIT, timeout=8.0)
+                self.last_error = ("external bridge did not reach RUNNING (%s)" %
+                                   (st.get("state") or "no state"))
+                self._notify_error(self.last_error + ("\n" + tail if tail else ""), mode)
+                self.sm.set_mode(nd.MODE_OFF)
+                self.publish_status()
+                return {"success": False, "error": "EXT_BRIDGE_NOT_READY",
+                        "detail": self.last_error, "ext_state": st, "log": tail}
+            # Regression guard: the internal compositor/bridge must stay active.
+            inactive = [u for u in INTERNAL_UNITS if not self._unit_active(u)]
+            if inactive:
+                self._systemctl("stop", EXT_UNIT, timeout=8.0)
+                self.last_error = "internal display regression: inactive %s" % ", ".join(inactive)
+                self.sm.set_mode(nd.MODE_OFF)
+                self.publish_status()
+                return {"success": False, "error": "INTERNAL_DISPLAY_REGRESSION",
+                        "detail": self.last_error}
+            self.sm.set_mode(mode)
+            self.last_mode = mode
+            self.last_error = None
+            self._save_preference()
+            self._notify_active_mode(mode)
+            self.publish_status()
+            log("mode=%s active on %s" % (mode, output))
+            return {"success": True, "mode": mode, "output": output,
+                    "ext_state": self._ext_state(),
+                    "internal_units": {u: "active" for u in INTERNAL_UNITS}}
+
+    def stop_mode(self, reason: str = "stop") -> Dict[str, Any]:
+        with self.lock:
+            doc = self._systemctl("stop", EXT_UNIT, timeout=8.0)
+            self.sm.set_mode(nd.MODE_OFF)
+            self.last_error = None
+            self._save_preference()
+            self.publish_status()
+            log("external output stopped (%s)" % reason)
+            return {"success": True, "mode": nd.MODE_OFF, "reason": reason,
+                    "systemctl": doc}
+
+    # ---- poll loop -------------------------------------------------------
+    def _handle_events(self, events) -> None:
+        for event in events:
+            log("event %s generation=%s state=%s" % (event["event"], event["generation"], event["state"]))
+            if event["event"] == "connected":
+                self.refresh_snapshot(force_outputs=True)
+                self._notify_connected()
+            elif event["event"] == "disconnected":
+                self._archive_current()
+                if self.sm.mode != nd.MODE_OFF:
+                    self.stop_mode("external display disconnected")
+                self.snapshot = event["snapshot"]
+                self.last_error = None
+            self.publish_status()
+
+    def poll_once(self, now: Optional[float] = None) -> Optional[Dict[str, Any]]:
+        snap = self.refresh_snapshot()
+        state = snap.get("state")
+        if state != self._last_seen_state:
+            self._last_seen_state = state
+            self._stable_count = 0
+        else:
+            self._stable_count += 1
+        if self._stable_count < 1:  # one settled poll after a change
+            self.publish_status()
+            return None
+        events = self.sm.update(snap, now=now)
+        if events:
+            self._handle_events(events)
+        else:
+            self.publish_status()
+        return events[-1] if events else None
+
+    def run(self) -> int:
+        self.refresh_snapshot(force_outputs=True)
+        self.publish_status()
+        self.sm.update(self.snapshot, now=time.time())
+        # The first settled poll may itself be a ready connection.
+        if self.snapshot.get("state") == nd.DP_LINK_READY:
+            if self.sm.state != nd.DP_LINK_READY:
+                self.sm.state = nd.DP_LINK_READY
+                self.sm.generation += 1
+            self._notify_connected()
+            self.publish_status()
+        self.start_control_server()
+        log("monitoring root=%s poll=%.2fs state=%s" % (self.root, self.poll_interval, self.snapshot.get("state")))
+        try:
+            while not self.stop_event.is_set():
+                try:
+                    self.poll_once()
+                except Exception:  # noqa: BLE001 - a hardware read must not kill the daemon
+                    log("poll error: %s\n%s" % (sys.exc_info()[1], traceback.format_exc(limit=3)))
+                self.stop_event.wait(self.poll_interval)
+        finally:
+            self.stop_event.set()
+            self.shutdown_control_server()
+            if self.sm.mode != nd.MODE_OFF:
+                self.stop_mode("daemon shutdown")
+            self.publish_status()
+        return 0
+
+    # ---- control socket --------------------------------------------------
+    def handle_request(self, req: Dict[str, Any]) -> Dict[str, Any]:
+        cmd = str(req.get("cmd") or "status")
+        if cmd == "status":
+            return self.status()
+        if cmd == "outputs":
+            self.refresh_outputs(force=True)
+            return {"success": True, "outputs": self.outputs_info}
+        if cmd == "set-mode":
+            return self.start_mode(str(req.get("mode") or ""))
+        if cmd == "set-rotation":
+            return self.set_rotation(req.get("rotation", req.get("degrees")))
+        if cmd == "stop":
+            return self.stop_mode("control request")
+        if cmd == "notify-test":
+            # Synthetic notification for UI/verification only.  It never
+            # changes the hardware state or claims a real display.
+            snap = dict(self.snapshot or self.refresh_snapshot())
+            snap["display_name"] = req.get("display_name") or "Test display"
+            snap["external_modes"] = req.get("modes") or [
+                {"raw": "1920x1080p-60", "width": 1920, "height": 1080,
+                 "refresh": 60, "flags": "U", "source": "test"}]
+            snap["desktop_supported"] = bool(req.get("desktop_supported", False))
+            payload = nd.notification_payload(snap, self.sm.generation or 1,
+                                              suggested_mode=self.last_mode)
+            nid = self._submit(payload)
+            return {"success": nid is not None, "notification_id": nid,
+                    "synthetic": True, "real_state": self.sm.state}
+        if cmd == "shutdown":
+            self.stop_event.set()
+            return {"success": True}
+        return {"success": False, "error": "unknown command: " + cmd}
+
+    def start_control_server(self) -> None:
+        sock_path = os.path.join(self.run_dir, "control.sock")
+        try:
+            if os.path.exists(sock_path):
+                os.unlink(sock_path)
+        except OSError:
+            pass
+        daemon = self
+
+        class Handler(socketserver.StreamRequestHandler):
+            def handle(self):
+                try:
+                    line = self.rfile.readline(262144)
+                    req = json.loads(line.decode("utf-8") or "{}")
+                    if not isinstance(req, dict):
+                        raise ValueError("request must be an object")
+                    resp = daemon.handle_request(req)
+                except Exception as exc:  # noqa: BLE001
+                    resp = {"success": False, "error": "bad_request", "detail": str(exc)}
+                self.wfile.write((json.dumps(resp) + "\n").encode("utf-8"))
+
+        class Server(socketserver.ThreadingUnixStreamServer):
+            daemon_threads = True
+            allow_reuse_address = True
+
+        os.makedirs(self.run_dir, exist_ok=True)
+        srv = Server(sock_path, Handler)
+        try:
+            os.chmod(sock_path, 0o660)
+        except OSError:
+            pass
+        self._control_server = srv
+        self._control_thread = threading.Thread(target=srv.serve_forever,
+                                                name="nuxel-display-control", daemon=True)
+        self._control_thread.start()
+        log("control socket %s" % sock_path)
+
+    def shutdown_control_server(self) -> None:
+        if self._control_server is not None:
+            try:
+                self._control_server.shutdown()
+                self._control_server.server_close()
+            except Exception:  # noqa: BLE001
+                pass
+            self._control_server = None
+        try:
+            os.unlink(os.path.join(self.run_dir, "control.sock"))
+        except OSError:
+            pass
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", default="/")
+    ap.add_argument("--run-dir", default=RUN_DIR)
+    ap.add_argument("--state-dir", default=STATE_DIR)
+    ap.add_argument("--poll-interval", type=float, default=0.5)
+    ap.add_argument("--once", action="store_true", help="print one status JSON and exit")
+    ap.add_argument("--notify-test", action="store_true", help="submit a synthetic notification and exit")
+    args = ap.parse_args(argv)
+    daemon = DisplayDaemon(root=args.root, run_dir=args.run_dir,
+                           state_dir=args.state_dir, poll_interval=args.poll_interval)
+    if args.notify_test:
+        doc = daemon.handle_request({"cmd": "notify-test"})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+    if args.once:
+        daemon.refresh_snapshot(force_outputs=True)
+        print(json.dumps(daemon.status(), indent=2))
+        return 0
+    stop = lambda *_: daemon.stop_event.set()  # noqa: E731
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    return daemon.run()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

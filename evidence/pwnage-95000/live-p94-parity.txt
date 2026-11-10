@@ -1,0 +1,80 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== p94 staged source present? ===
+35
+=== p94 source vs installed sha ===
+MATCH /usr/share/nuxel/pwa/nuxel-home/index.html
+MATCH /usr/share/nuxel/pwa/nuxel-home/sw.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/manifest.json
+MATCH /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+MATCH /usr/share/nuxel/pwa/nuxel-home/css/style.css
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/app.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/apps.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/qs.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/immersive.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/topbar-machine.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/bridge.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/gestures.js
+MATCH /usr/share/nuxel/pwa/nuxel-home/js/navigation.js
+MATCH /usr/share/nuxel/pwa/nuxel-apps/doom/index.html
+MATCH /usr/share/nuxel/pwa/nuxel-apps/doom/js/doom.js
+MATCH /usr/lib/nuxel/nuxel-bridge/api.py
+MATCH /usr/lib/nuxel/nuxel-session.sh
+--- configs/nuxel/gtk/gtk-3.0-settings.ini
+d78ff4e522f8708022576b683261322937edeff1ecd148b44933ee1e366eab2a  /tmp/p94stage/configs/nuxel/gtk/gtk-3.0-settings.ini
+--- configs/nuxel/gtk/gtk-4.0-settings.ini
+d78ff4e522f8708022576b683261322937edeff1ecd148b44933ee1e366eab2a  /tmp/p94stage/configs/nuxel/gtk/gtk-4.0-settings.ini
+--- configs/nuxel/dconf/profile-user
+379d5e7de56995a2c8fa4c5a4b5578ee8588bdade17e2cd6c2924cb0186881e8  /tmp/p94stage/configs/nuxel/dconf/profile-user
+--- configs/nuxel/dconf/db/site.d/00-nuxel-dark
+330686b73ed9bf5bbbc6c5a9b3177a98d0357610aa410ebc54846966ca95c7f2  /tmp/p94stage/configs/nuxel/dconf/db/site.d/00-nuxel-dark
+--- configs/nuxel/flatpak/global-override
+5206a1700c7265f4867b9787ccc02c4f1db5e8fa4f42377e63907228bf6108e6  /tmp/p94stage/configs/nuxel/flatpak/global-override
+MATCH /etc/gtk-3.0/settings.ini
+MATCH /etc/gtk-4.0/settings.ini
+MATCH /etc/dconf/profile/user
+MATCH /etc/dconf/db/site.d/00-nuxel-dark
+MATCH /var/lib/flatpak/overrides/global
+=== native built vs installed ===
+MATCH /usr/lib/nuxel/nuxel-foreign-toplevel
+MATCH /usr/lib/nuxel/nuxel-navdock
+MATCH /usr/lib/nuxel/nuxel-statusbar
+MATCH /usr/lib/nuxel/nuxel-pwa-host
+=== deployed source mtimes in stage ===
+2026-11-08 15:12:06.000000000 +0100 72030 /tmp/p94stage/pwa/nuxel-home/js/status-bar.js
+2026-11-08 17:22:46.000000000 +0100 13454 /tmp/p94stage/pwa/nuxel-home/js/immersive.js
+2026-11-08 15:16:22.000000000 +0100 3438 /tmp/p94stage/pwa/nuxel-home/js/topbar-machine.js
+2026-11-08 15:15:42.000000000 +0100 292359 /tmp/p94stage/services/nuxel-bridge/src/api.py
+=== 93000 source vs installed ===
+sha256sum: /tmp/p93stage/pwa/nuxel-home/index.html: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/index.html  073611db95e86ea869a946565ad6d56cdcee6f5ad5b8f21be49ad33b337f668d
+sha256sum: /tmp/p93stage/pwa/nuxel-home/manifest.json: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/manifest.json  68415850c128ee1e647d46703851b074bbc41b876c2d8d3fcf6765305e8a5690
+sha256sum: /tmp/p93stage/pwa/nuxel-home/sw.js: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/sw.js  77df385cb771357db90325273191f4c0ad2a2ca83120c165f591d0ab3ec0f16d
+sha256sum: /tmp/p93stage/pwa/nuxel-home/css/status-bar.css: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css  0c5780f88c0a79b2cb3941017e72f1e9f8e747187019a983010ae716ada8fba7
+sha256sum: /tmp/p93stage/pwa/nuxel-home/js/app.js: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/js/app.js  fcffc9942e7b181a024d8189bf1c5234b88f4bb970c73ee6963f97ed07e0b1b4
+sha256sum: /tmp/p93stage/pwa/nuxel-home/js/apps.js: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/js/apps.js  69939f2600ceae1ee5c37c99c45e9f3fa9041da5cd73dc99eca2463ac88c0cce
+sha256sum: /tmp/p93stage/pwa/nuxel-home/js/status-bar.js: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js  e372e3b9207d13c68ec6443cccc9d189ae770d2dd1c88789f231e114a93d7b99
+sha256sum: /tmp/p93stage/pwa/nuxel-home/js/qs.js: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/js/qs.js  f91c70add3b44f29045d68262728e8b88e12a6fdce70fbbfede094e763b53437
+sha256sum: /tmp/p93stage/pwa/nuxel-home/js/bridge.js: No such file or directory
+DIFF /usr/share/nuxel/pwa/nuxel-home/js/bridge.js  0369f07dfb243cd1e4acdde9fe285741c6e9c10076eaa347ab66faff0156ba2a
+sha256sum: /tmp/p93stage/services/nuxel-notifications/src/notifications.py: No such file or directory
+DIFF /usr/lib/nuxel/nuxel-notifications/notifications.py  b67bc1df688ffa839ea7984889bdaef23f957a90a1cc1a6edcfb40ba4294e11f
+sha256sum: /tmp/p93stage/services/nuxel-bridge/src/api.py: No such file or directory
+DIFF /usr/lib/nuxel/nuxel-bridge/api.py  90b5bc080f6ab5bf7563413cca001135a6dec4b5b91d80be609ad28d46fd2abe
+sha256sum: /tmp/p93stage/tools/s10plus/a45/nuxel-session.sh: No such file or directory
+DIFF /usr/lib/nuxel/nuxel-session.sh  fb09cf7293e6cf641e1a30acaceedcb64f54aa31539194de7049b82b09ab76c0

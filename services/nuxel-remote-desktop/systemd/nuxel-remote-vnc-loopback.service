@@ -1,0 +1,29 @@
+[Unit]
+Description=Nuxel VNC loopback mirror for XRDP (actual Phoc screen)
+Documentation=file:///usr/share/doc/nuxel/remote-desktop/README.md
+After=network-online.target nuxel-wayland.service
+Wants=network-online.target nuxel-wayland.service
+BindsTo=nuxel-wayland.service
+StartLimitIntervalSec=60
+StartLimitBurst=10
+
+[Service]
+Type=simple
+Environment=HOME=/root
+Environment=XDG_SESSION_TYPE=wayland
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=LD_LIBRARY_PATH=/opt/nuxel-wayvnc/lib64
+Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-wayvnc-wlr-screencopy.so
+ExecStartPre=/usr/lib/nuxel/nuxel-wait-wayland /run/nuxel-wayland 30
+ExecStart=/usr/libexec/nuxel/nuxel-vnc-loopback
+Restart=always
+RestartSec=2
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/run/nuxel-wayland
+TimeoutStopFailureMode=abort
+
+[Install]
+WantedBy=multi-user.target

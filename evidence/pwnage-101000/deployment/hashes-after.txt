@@ -1,0 +1,4 @@
+a85fa437a21b309ad5173099d79d6225fe5f3ceaeda7550027d3e8312109c4f4  /usr/libexec/nuxel/nuxel-displayd
+2b41c494993cf5f0207bdd566541ebd07ce691bba6abbb3d970f26ad1830f3de  /usr/libexec/nuxel/nuxel-display-ctl
+84005478d1c034d056e15db3a3445f7687c0639d0b4fb2f9ff8673111db67328  /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext.c
+9ecf10547ea23e2fd4bc5f83955954fa3311321657ff20ee09e48b1e5e88632c  /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext

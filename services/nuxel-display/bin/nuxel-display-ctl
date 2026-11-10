@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""nuxel-display-ctl - bounded client for nuxel-displayd.
+
+Usage:
+  nuxel-display-ctl status [--json]
+  nuxel-display-ctl set-mode mirror-portrait|mirror-landscape|fullscreen|desktop|off
+  nuxel-display-ctl notify-test [--display-name NAME]
+  nuxel-display-ctl outputs
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import socket
+import sys
+
+SOCKET = "/run/nuxel-display/control.sock"
+STATUS_FILE = "/run/nuxel-display/status.json"
+
+
+def call(req: dict, timeout: float = 15.0) -> dict:
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.settimeout(float(timeout))
+    try:
+        s.connect(SOCKET)
+    except OSError as exc:
+        return {"success": False, "error": "DISPLAYD_UNAVAILABLE", "detail": str(exc)}
+    try:
+        s.sendall((json.dumps(req) + "\n").encode("utf-8"))
+        data = b""
+        while not data.endswith(b"\n"):
+            chunk = s.recv(65536)
+            if not chunk:
+                break
+            data += chunk
+        return json.loads(data.decode("utf-8") or "{}")
+    except (OSError, ValueError) as exc:
+        return {"success": False, "error": "DISPLAYD_PROTOCOL_ERROR", "detail": str(exc)}
+    finally:
+        s.close()
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("command", choices=("status", "set-mode", "set-rotation",
+                                        "set-auto-orientation", "notify-test",
+                                        "outputs", "mode-choices", "stop"))
+    ap.add_argument("arg", nargs="?")
+    ap.add_argument("--json", action="store_true", dest="as_json")
+    ap.add_argument("--display-name", default="Test display")
+    args = ap.parse_args(argv)
+
+    if args.command == "status":
+        doc = call({"cmd": "status"})
+        if not doc.get("success") and doc.get("error") == "DISPLAYD_UNAVAILABLE":
+            try:
+                with open(STATUS_FILE, "r", encoding="utf-8") as fh:
+                    doc = json.load(fh)
+                doc.setdefault("success", True)
+                doc["source"] = "status-file"
+            except (OSError, ValueError):
+                pass
+        if args.as_json:
+            print(json.dumps(doc, indent=2))
+        else:
+            print("state          : %s" % doc.get("state"))
+            print("mode           : %s" % doc.get("mode"))
+            print("generation     : %s" % doc.get("generation"))
+            print("rotation       : %s" % doc.get("rotation"))
+            orient = doc.get("orientation") or {}
+            print("orientation    : %s (effective=%s transform=%s external=%s auto=%s)" %
+                  (orient.get("mode"), orient.get("effective_orientation"),
+                   orient.get("transform"), orient.get("external_rotation"),
+                   doc.get("auto_orientation")))
+            restore = doc.get("restore") or {}
+            if restore.get("pending"):
+                print("restoring      : %s attempts=%s" %
+                      (restore.get("last_mode"), restore.get("attempts")))
+            print("notification   : %s" % doc.get("notification_id"))
+            print("display        : %s" % (doc.get("display_name") or "unknown"))
+            print("mirror         : %s" % ("ready" if doc.get("mirror_supported") else "unavailable"))
+            print("separate       : %s" % ("ready" if doc.get("desktop_supported") else "unavailable"))
+            print("mirror output  : %s" % (doc.get("mirror_output") or "none"))
+            print("desktop output : %s" % (doc.get("desktop_output") or "none"))
+            print("blocker        : %s" % (doc.get("blocker") or "none"))
+            if doc.get("last_error"):
+                print("last error     : %s" % doc.get("last_error"))
+        return 0 if doc.get("success") else 1
+
+    if args.command == "set-mode":
+        mode = (args.arg or "").strip().lower()
+        if mode not in ("mirror", "mirror-portrait", "mirror-landscape",
+                        "landscape", "fullscreen", "full", "desktop", "off"):
+            print(json.dumps({"success": False, "error": "INVALID_MODE",
+                              "detail": "mode must be mirror-portrait, mirror-landscape, "
+                                        "fullscreen, desktop or off"}, indent=2))
+            return 2
+        doc = call({"cmd": "set-mode", "mode": mode})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+
+    if args.command == "set-rotation":
+        try:
+            degrees = int(args.arg or "")
+        except (TypeError, ValueError):
+            print(json.dumps({"success": False, "error": "INVALID_ROTATION",
+                              "detail": "rotation must be 0, 90, 180 or 270"}, indent=2))
+            return 2
+        doc = call({"cmd": "set-rotation", "rotation": degrees})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+
+    if args.command == "set-auto-orientation":
+        value = (args.arg or "true").strip().lower()
+        if value not in ("true", "false", "on", "off", "1", "0", "auto", "manual"):
+            print(json.dumps({"success": False, "error": "INVALID_VALUE",
+                              "detail": "expected true/false"}, indent=2))
+            return 2
+        doc = call({"cmd": "set-auto-orientation",
+                    "enabled": value in ("true", "on", "1", "auto")})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+    if args.command == "stop":
+        doc = call({"cmd": "stop"})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+
+    if args.command == "notify-test":
+        doc = call({"cmd": "notify-test", "display_name": args.display_name})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+
+    if args.command == "mode-choices":
+        doc = call({"cmd": "mode-choices"})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+
+    if args.command == "outputs":
+        doc = call({"cmd": "outputs"})
+        print(json.dumps(doc, indent=2))
+        return 0 if doc.get("success") else 1
+
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

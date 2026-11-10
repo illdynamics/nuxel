@@ -1,0 +1,9 @@
+#!/bin/sh
+# Nuxel XRDP screen mirror.  Loopback-only and unauthenticated because xrdp's
+# libvnc module connects locally; the RDP listener is the LAN-facing path.
+set -eu
+CONF=/etc/nuxel/remote-desktop/vnc/wayvnc-loopback.conf
+[ -r "$CONF" ] || { echo "missing $CONF" >&2; exit 2; }
+exec env LD_LIBRARY_PATH=/opt/nuxel-wayvnc/lib64 \
+    /opt/nuxel-wayvnc/bin/wayvnc -C "$CONF" \
+    -S /run/nuxel-wayland/wayvncctl-loopback -L info -f 15

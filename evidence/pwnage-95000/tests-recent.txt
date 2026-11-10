@@ -1,0 +1,211 @@
+PWNAGE-94000 — Workstream A: Doom
+  PASS WebAssembly Doom defaults sound ON
+  PASS default Chocolate Doom config uses non-zero effects volume
+  PASS default Chocolate Doom config uses non-zero music volume
+  PASS engine args only add -nosound when the owner opted out or audio activation was refused
+  PASS sound settings persist through the durable settings key
+  PASS native Chocolate Doom no longer forces -nomusic
+  PASS native wrapper seeds non-zero sfx/music volumes
+  PASS native wrapper uses a bounded audio readiness check, not a fixed sleep
+  PASS Crispy Doom defaults sound ON
+  PASS Crispy Doom only passes -nosound on explicit opt-out
+  PASS WAD catalogue is digest-addressed and path-free
+  PASS native Doom launches the installed engine wrapper
+
+PWNAGE-94000 — Workstream B: canonical top bar
+  PASS DOM-free top-bar machine exists
+  PASS first/second/third downward gestures reach 1/2/3  — [1, 2, 3, 3]
+  PASS one upward gesture from each level reaches 0  — [0, 0, 0]
+  PASS extended closes atomically to hidden  — [3, 0]
+  PASS QuickSettings delegates to the machine
+  PASS upward pull is atomic closeAll
+  PASS extended level is first-class
+  PASS notification list is gated by EXTENDED, not EXPANDED
+  PASS immersive edge gesture advances one level only
+  PASS immersive defers to the status-bar pull that already consumed the swipe
+  PASS immersive upward gesture closes the whole panel
+  PASS landscape top/bottom bands are wider than portrait
+  PASS old two-value fullscreen bar state is gone
+  PASS native adapter renders levels 0..3
+  PASS native adapter never reserves app viewport space
+  PASS native adapter is a presentation adapter over the canonical model
+  PASS native adapter has a bounded level control FIFO for evidence
+  PASS statusbar control FIFO is opened read/write so POLLHUP cannot busy-spin
+  PASS statusbar poll treats POLLHUP/POLLERR as readable control events
+  PASS landscape nav dock input band grows to 56 px
+  PASS status bar model is published by the DOM bar
+  PASS host whitelists the statusbar model output
+
+PWNAGE-94000 — Workstream C: startup performance
+  PASS launch-plan cache exists
+  PASS registry lookup is reused instead of repeated
+  PASS launch timings split the real phases
+  PASS T3 first-surface timing is recorded
+  PASS surface matching is normalized for Flatpak/Wayland id differences
+  PASS orientation subprocess is skipped when already in the requested pose
+  PASS launch evidence is written even on timeout
+  PASS duplicate launch guard remains present
+  PASS document portal is pre-started to avoid the 30 s Flatpak D-Bus timeout
+
+PWNAGE-94000 — Workstream D: global dark theme
+  PASS GTK3 system default is Adwaita-dark
+  PASS GTK3 prefers dark applications
+  PASS GTK4 system default is Adwaita-dark
+  PASS dconf site default is prefer-dark
+  PASS dconf profile keeps user preferences first
+  PASS Flatpak global override changes only the environment
+  PASS session-user native apps use the user portal bus
+  PASS launches force the dark preference and dconf backend
+  PASS Flatpak launch argv carries dark GTK environment
+
+PWNAGE-94000 — Workstream E: Back lifecycle
+  PASS home action has no fixed lifecycle sleep
+  PASS home action waits on compositor state events
+  PASS home convergence requires Home to be active
+  PASS short Back remains distinct from long Back
+  PASS single Back closes a Quick Settings panel atomically
+  PASS post-transition input check covers top/bottom edge hit targets
+  PASS host after-app-close asks the launcher for geometry restoration
+  PASS native Home watchdog reloads a stuck foreground PWA
+  PASS backgrounded PWA frames are hidden with inline !important, not CSS only
+  PASS background/resume paths drive the inline surface visibility helper
+  PASS Home sweeps orphan PWA frames that lost their owning session
+  PASS Doom suspends its AudioContext when the engine pauses
+  PASS Doom suspends audio on close-request and pagehide
+  PASS Doom re-arms audio when the engine resumes
+  PASS Doom launch decides audio from the real AudioContext, not userActivation alone
+  PASS Doom does not install a statechange->resume feedback loop
+  PASS Doom keeps SFX and disables the unstable MIDI path
+  PASS Doom exposes bounded audio/GL callback probes for device evidence
+
+PWNAGE-94000 — Workstream F: desktop geometry
+  PASS one launcher geometry restore owns the reset
+  PASS restore removes stale immersive/panel/transform state
+  PASS restore re-establishes the scroll origin
+  PASS geometry report measures bar, dock, nav and grid
+  PASS resize while an app owns the glass does not reset Home
+  PASS native status bar does not create a second inset
+  PASS desktop CSS keeps one inset variable per band
+  PASS dock and grid derive their positions from the shared nav inset
+  PASS host exposes restore-geometry for deterministic evidence
+  PASS host exposes a bounded immersive edge-gesture evidence hook
+  PASS system app WebView permits media without a synthetic autoplay gesture
+  PASS root-only trusted tap hook exists for physical-path verification
+  PASS ui-rect evidence hook exists
+
+PWNAGE-94000 — static checks
+  PASS python compiles: api.py
+  PASS python compiles: flatpak_provider.py
+  PASS javascript parses: topbar-machine.js
+  PASS javascript parses: qs.js
+  PASS javascript parses: immersive.js
+  PASS javascript parses: status-bar.js
+  PASS javascript parses: app.js
+  PASS shell parses: nuxel-doom-engine
+  PASS shell parses: nuxel-crispy-doom
+  PASS shell parses: nuxel-session.sh
+
+RESULT pass=93 fail=0
+mainloop: caught unexpected SystemExit!
+INTERNALERROR> Traceback (most recent call last):
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/main.py", line 289, in wrap_session
+INTERNALERROR>     session.exitstatus = doit(config, session) or 0
+INTERNALERROR>                          ^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/main.py", line 342, in _main
+INTERNALERROR>     config.hook.pytest_collection(session=session)
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+INTERNALERROR>     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+INTERNALERROR>     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_callers.py", line 167, in _multicall
+INTERNALERROR>     raise exception
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/logging.py", line 788, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/warnings.py", line 99, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/config/__init__.py", line 1450, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+INTERNALERROR>     res = hook_impl.function(*args)
+INTERNALERROR>           ^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/main.py", line 353, in pytest_collection
+INTERNALERROR>     session.perform_collect()
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/main.py", line 813, in perform_collect
+INTERNALERROR>     self.items.extend(self.genitems(node))
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/main.py", line 979, in genitems
+INTERNALERROR>     yield from self.genitems(subnode)
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/main.py", line 974, in genitems
+INTERNALERROR>     rep, duplicate = self._collect_one_node(node, handle_dupes)
+INTERNALERROR>                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/main.py", line 839, in _collect_one_node
+INTERNALERROR>     rep = collect_one_node(node)
+INTERNALERROR>           ^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/runner.py", line 567, in collect_one_node
+INTERNALERROR>     rep: CollectReport = ihook.pytest_make_collect_report(collector=collector)
+INTERNALERROR>                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+INTERNALERROR>     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+INTERNALERROR>     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_callers.py", line 167, in _multicall
+INTERNALERROR>     raise exception
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/capture.py", line 880, in pytest_make_collect_report
+INTERNALERROR>     rep = yield
+INTERNALERROR>           ^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+INTERNALERROR>     res = hook_impl.function(*args)
+INTERNALERROR>           ^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/runner.py", line 391, in pytest_make_collect_report
+INTERNALERROR>     call = CallInfo.from_call(
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/runner.py", line 344, in from_call
+INTERNALERROR>     result: TResult | None = func()
+INTERNALERROR>                              ^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/runner.py", line 389, in collect
+INTERNALERROR>     return list(collector.collect())
+INTERNALERROR>                 ^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/python.py", line 554, in collect
+INTERNALERROR>     self._register_setup_module_fixture()
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/python.py", line 567, in _register_setup_module_fixture
+INTERNALERROR>     self.obj, ("setUpModule", "setup_module")
+INTERNALERROR>     ^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/python.py", line 280, in obj
+INTERNALERROR>     self._obj = obj = self._getobj()
+INTERNALERROR>                       ^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/python.py", line 551, in _getobj
+INTERNALERROR>     return importtestmodule(self.path, self.config)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/python.py", line 498, in importtestmodule
+INTERNALERROR>     mod = import_path(
+INTERNALERROR>           ^^^^^^^^^^^^
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/pathlib.py", line 587, in import_path
+INTERNALERROR>     importlib.import_module(module_name)
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py", line 126, in import_module
+INTERNALERROR>     return _bootstrap._gcd_import(name[level:], package, level)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+INTERNALERROR>   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+INTERNALERROR>   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+INTERNALERROR>   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+INTERNALERROR>   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/_pytest/assertion/rewrite.py", line 186, in exec_module
+INTERNALERROR>     exec(co, module.__dict__)
+INTERNALERROR>   File "/Users/wicked/x/nuxel/tests/pwnage94000/test_pwnage94000.py", line 239, in <module>
+INTERNALERROR>     raise SystemExit(1 if FAIL else 0)
+INTERNALERROR> SystemExit: 0
+
+no tests ran in 0.84s

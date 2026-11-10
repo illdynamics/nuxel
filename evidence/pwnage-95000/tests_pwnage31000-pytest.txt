@@ -1,0 +1,193 @@
+FF...FFFFF......F..sssF.F.FFF.sFF................                        [100%]
+=================================== FAILURES ===================================
+_______________________ test_successful_play_and_cleanup _______________________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:272: in test_successful_play_and_cleanup
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        h          = <test_preload_cinema.Harness object at 0x10c92a150>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8112 reason=ipc-unavailable\n2026-11-08T18:41:36+0100 PRELOAD_CINEMA INFO player_stopped pid=8112 reason=finally\n')
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_successful_play_a...n0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8110, 'finished_at': '2026-11-08T18:41:36+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_successful_play_and_clean0')
+____________ test_overlay_cover_marker_is_published_before_release _____________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:304: in test_overlay_cover_marker_is_published_before_release
+    assert seen is not None, "first-frame cover state was never published"
+E   AssertionError: first-frame cover state was never published
+E   assert None is not None
+        deadline   = 204553.378180541
+        doc        = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_overlay_cover_marker_is_p0/nuxel-preloading-screen.mp4', 'boot_id': '', 'early': False, 'milestone': 'PWNAGE-31000', ...}
+        env        = {'ANSIBLE_CONFIG': 'ansible.cfg', 'ANSIBLE_COW_ACCEPTLIST': 'duck', 'ANSIBLE_COW_SELECTION': 'duck', 'ANSIBLE_FILES': 'files', ...}
+        err        = '2026-11-08T18:41:36+0100 PRELOAD_CINEMA INFO controller_start asset=/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080...pid=8116 reason=ipc-unavailable\n2026-11-08T18:41:38+0100 PRELOAD_CINEMA INFO player_stopped pid=8116 reason=finally\n'
+        h          = <test_preload_cinema.Harness object at 0x10ca01f10>
+        out        = ''
+        proc       = <Popen: returncode: 0 args: ['/usr/local/bin/python3', '/Users/wicked/x/nuxe...>
+        seen       = None
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_overlay_cover_marker_is_p0')
+_____________ test_readiness_before_video_completion_waits_for_eof _____________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:352: in test_readiness_before_video_completion_waits_for_eof
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        elapsed    = 2.167261333001079
+        h          = <test_preload_cinema.Harness object at 0x10ca4a1d0>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8125 reason=ipc-unavailable\n2026-11-08T18:41:43+0100 PRELOAD_CINEMA INFO player_stopped pid=8125 reason=finally\n')
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_readiness_before_...o0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8123, 'finished_at': '2026-11-08T18:41:43+0100', ...}
+        t0         = 204555.778571958
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_readiness_before_video_co0')
+___________ test_video_completion_before_readiness_holds_until_ready ___________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:369: in test_video_completion_before_readiness_holds_until_ready
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        env        = {'ANSIBLE_CONFIG': 'ansible.cfg', 'ANSIBLE_COW_ACCEPTLIST': 'duck', 'ANSIBLE_COW_SELECTION': 'duck', 'ANSIBLE_FILES': 'files', ...}
+        err        = '2026-11-08T18:41:43+0100 PRELOAD_CINEMA INFO controller_start asset=/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080...pid=8128 reason=ipc-unavailable\n2026-11-08T18:41:45+0100 PRELOAD_CINEMA INFO player_stopped pid=8128 reason=finally\n'
+        h          = <test_preload_cinema.Harness object at 0x10c50e610>
+        out        = ''
+        proc       = <Popen: returncode: 0 args: ['/usr/local/bin/python3', '/Users/wicked/x/nuxe...>
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_video_completion_...r0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8126, 'finished_at': '2026-11-08T18:41:45+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_video_completion_before_r0')
+_______________ test_slow_critical_startup_is_bounded_and_logged _______________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:382: in test_slow_critical_startup_is_bounded_and_logged
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        h          = <test_preload_cinema.Harness object at 0x10cf1d490>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8132 reason=ipc-unavailable\n2026-11-08T18:41:47+0100 PRELOAD_CINEMA INFO player_stopped pid=8132 reason=finally\n')
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_slow_critical_sta..._0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8130, 'finished_at': '2026-11-08T18:41:47+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_slow_critical_startup_is_0')
+______________ test_bound_pauses_moving_video_before_hard_timeout ______________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:395: in test_bound_pauses_moving_video_before_hard_timeout
+    assert r["bounded"] is True
+           ^^^^^^^^^^^^
+E   KeyError: 'bounded'
+        h          = <test_preload_cinema.Harness object at 0x10cf311d0>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8135 reason=ipc-unavailable\n2026-11-08T18:41:49+0100 PRELOAD_CINEMA INFO player_stopped pid=8135 reason=finally\n')
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_bound_pauses_movi...o0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8133, 'finished_at': '2026-11-08T18:41:49+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_bound_pauses_moving_video0')
+_______________ test_noncritical_service_failure_does_not_block ________________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:409: in test_noncritical_service_failure_does_not_block
+    assert h.receipt_doc()["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        h          = <test_preload_cinema.Harness object at 0x10c929d90>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8139 reason=ipc-unavailable\n2026-11-08T18:41:51+0100 PRELOAD_CINEMA INFO player_stopped pid=8139 reason=finally\n')
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_noncritical_service_failu0')
+_____________ test_playback_process_exit_falls_back_and_cleans_up ______________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:470: in test_playback_process_exit_falls_back_and_cleans_up
+    assert h.receipt_doc()["reason"] == "player-exited"
+E   AssertionError: assert 'player-ipc-unavailable' == 'player-exited'
+E     
+E     - player-exited
+E     + player-ipc-unavailable
+        h          = <test_preload_cinema.Harness object at 0x10cf2ca90>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8152 reason=ipc-unavailable\n2026-11-08T18:41:56+0100 PRELOAD_CINEMA INFO player_stopped pid=8152 reason=finally\n')
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_playback_process_exit_fal0')
+_________ test_late_display_handoff_is_waited_for_within_start_timeout _________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:556: in test_late_display_handoff_is_waited_for_within_start_timeout
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        env        = {'ANSIBLE_CONFIG': 'ansible.cfg', 'ANSIBLE_COW_ACCEPTLIST': 'duck', 'ANSIBLE_COW_SELECTION': 'duck', 'ANSIBLE_FILES': 'files', ...}
+        err        = '2026-11-08T18:42:00+0100 PRELOAD_CINEMA INFO controller_start asset=/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080...pid=8160 reason=ipc-unavailable\n2026-11-08T18:42:03+0100 PRELOAD_CINEMA INFO player_stopped pid=8160 reason=finally\n'
+        h          = <test_preload_cinema.Harness object at 0x10cee3cd0>
+        out        = ''
+        proc       = <Popen: returncode: 0 args: ['/usr/local/bin/python3', '/Users/wicked/x/nuxe...>
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_late_display_hand...w0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8157, 'finished_at': '2026-11-08T18:42:03+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_late_display_handoff_is_w0')
+____________ test_second_run_in_same_boot_is_skipped_before_player _____________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:574: in test_second_run_in_same_boot_is_skipped_before_player
+    assert h.receipt_doc()["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        first      = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8164 reason=ipc-unavailable\n2026-11-08T18:42:07+0100 PRELOAD_CINEMA INFO player_stopped pid=8164 reason=finally\n')
+        h          = <test_preload_cinema.Harness object at 0x10ca27590>
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_second_run_in_same_boot_i0')
+________________ test_touch_unknown_becomes_settled_after_grace ________________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:606: in test_touch_unknown_becomes_settled_after_grace
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        h          = <test_preload_cinema.Harness object at 0x10cef5910>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8172 reason=ipc-unavailable\n2026-11-08T18:42:09+0100 PRELOAD_CINEMA INFO player_stopped pid=8172 reason=finally\n')
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_touch_unknown_bec...t0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8170, 'finished_at': '2026-11-08T18:42:09+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_touch_unknown_becomes_set0')
+__________ test_touch_points_after_armed_ok_do_not_unsettle_readiness __________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:620: in test_touch_points_after_armed_ok_do_not_unsettle_readiness
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        h          = <test_preload_cinema.Harness object at 0x10cf58550>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8175 reason=ipc-unavailable\n2026-11-08T18:42:11+0100 PRELOAD_CINEMA INFO player_stopped pid=8175 reason=finally\n')
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_touch_points_afte..._0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8173, 'finished_at': '2026-11-08T18:42:11+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_touch_points_after_armed_0')
+_______________ test_no_touch_device_is_an_honest_settled_state ________________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:632: in test_no_touch_device_is_an_honest_settled_state
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        h          = <test_preload_cinema.Harness object at 0x10cf69bd0>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8180 reason=ipc-unavailable\n2026-11-08T18:42:13+0100 PRELOAD_CINEMA INFO player_stopped pid=8180 reason=finally\n')
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_no_touch_device_i...n0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8178, 'finished_at': '2026-11-08T18:42:13+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_no_touch_device_is_an_hon0')
+_________ test_early_mode_waits_for_launcher_and_display_before_start __________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:678: in test_early_mode_waits_for_launcher_and_display_before_start
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        h          = <test_preload_cinema.Harness object at 0x10cf28d10>
+        out        = CompletedProcess(args=['/usr/local/bin/python3', '/Users/wicked/x/nuxel/services/nuxel-preload-cinema/nuxel-preload-ci...id=8187 reason=ipc-unavailable\n2026-11-08T18:42:17+0100 PRELOAD_CINEMA INFO player_stopped pid=8187 reason=finally\n')
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_early_mode_waits_...n0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8186, 'finished_at': '2026-11-08T18:42:17+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_early_mode_waits_for_laun0')
+_________ test_early_mode_waits_for_the_display_bridge_before_playing __________
+/Users/wicked/x/nuxel/tests/pwnage31000/test_preload_cinema.py:714: in test_early_mode_waits_for_the_display_bridge_before_playing
+    assert r["verdict"] == "PLAYED"
+E   AssertionError: assert 'FALLBACK' == 'PLAYED'
+E     
+E     - PLAYED
+E     + FALLBACK
+        env        = {'ANSIBLE_CONFIG': 'ansible.cfg', 'ANSIBLE_COW_ACCEPTLIST': 'duck', 'ANSIBLE_COW_SELECTION': 'duck', 'ANSIBLE_FILES': 'files', ...}
+        err        = '2026-11-08T18:42:18+0100 PRELOAD_CINEMA INFO controller_start asset=/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080...pid=8189 reason=ipc-unavailable\n2026-11-08T18:42:21+0100 PRELOAD_CINEMA INFO player_stopped pid=8189 reason=finally\n'
+        h          = <test_preload_cinema.Harness object at 0x10cefb690>
+        out        = ''
+        proc       = <Popen: returncode: 0 args: ['/usr/local/bin/python3', '/Users/wicked/x/nuxe...>
+        r          = {'asset': '/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_early_mode_waits_..._0/nuxel-preloading-screen.mp4', 'boot_id': '', 'controller_pid': 8188, 'finished_at': '2026-11-08T18:42:21+0100', ...}
+        tmp_path   = PosixPath('/private/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/pytest-of-wicked/pytest-119/test_early_mode_waits_for_the_0')
+=========================== short test summary info ============================
+FAILED tests/pwnage31000/test_preload_cinema.py::test_successful_play_and_cleanup
+FAILED tests/pwnage31000/test_preload_cinema.py::test_overlay_cover_marker_is_published_before_release
+FAILED tests/pwnage31000/test_preload_cinema.py::test_readiness_before_video_completion_waits_for_eof
+FAILED tests/pwnage31000/test_preload_cinema.py::test_video_completion_before_readiness_holds_until_ready
+FAILED tests/pwnage31000/test_preload_cinema.py::test_slow_critical_startup_is_bounded_and_logged
+FAILED tests/pwnage31000/test_preload_cinema.py::test_bound_pauses_moving_video_before_hard_timeout
+FAILED tests/pwnage31000/test_preload_cinema.py::test_noncritical_service_failure_does_not_block
+FAILED tests/pwnage31000/test_preload_cinema.py::test_playback_process_exit_falls_back_and_cleans_up
+FAILED tests/pwnage31000/test_preload_cinema.py::test_late_display_handoff_is_waited_for_within_start_timeout
+FAILED tests/pwnage31000/test_preload_cinema.py::test_second_run_in_same_boot_is_skipped_before_player
+FAILED tests/pwnage31000/test_preload_cinema.py::test_touch_unknown_becomes_settled_after_grace
+FAILED tests/pwnage31000/test_preload_cinema.py::test_touch_points_after_armed_ok_do_not_unsettle_readiness
+FAILED tests/pwnage31000/test_preload_cinema.py::test_no_touch_device_is_an_honest_settled_state
+FAILED tests/pwnage31000/test_preload_cinema.py::test_early_mode_waits_for_launcher_and_display_before_start
+FAILED tests/pwnage31000/test_preload_cinema.py::test_early_mode_waits_for_the_display_bridge_before_playing
+15 failed, 30 passed, 4 skipped in 52.83s

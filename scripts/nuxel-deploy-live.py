@@ -70,6 +70,10 @@ def targets_for(source: str):
         return [("/usr/lib/nuxel/zsh/nuxel.zsh", 0o644)]
     if source == "services/nuxel-remote-desktop/bin/nuxel-vnc-x11":
         return [("/usr/libexec/nuxel/nuxel-vnc-x11", 0o755)]
+    if source == "services/nuxel-remote-desktop/bin/nuxel-vnc-wayland":
+        return [("/usr/libexec/nuxel/nuxel-vnc-wayland", 0o755)]
+    if source == "services/nuxel-remote-desktop/bin/nuxel-vnc-loopback":
+        return [("/usr/libexec/nuxel/nuxel-vnc-loopback", 0o755)]
     if source == "services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl":
         return [("/usr/local/libexec/nuxel/nuxel-remote-desktop-ctl", 0o755)]
     if source == "services/nuxel-remote-desktop/bin/nuxel-xrdp-session":
@@ -90,9 +94,29 @@ def targets_for(source: str):
         return [mapping[name]] if name in mapping else []
     if source == "services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.service":
         return [("/etc/systemd/system/nuxel-remote-vnc.service", 0o644)]
+    if source == "services/nuxel-remote-desktop/systemd/nuxel-remote-vnc-loopback.service":
+        return [("/etc/systemd/system/nuxel-remote-vnc-loopback.service", 0o644)]
     if source.startswith("services/nuxel-s10/systemd/"):
         rel = source[len("services/nuxel-s10/systemd/"):]
         return [("/etc/systemd/system/" + rel, 0o644)]
+    if source.startswith("services/nuxel-display/"):
+        rel = source[len("services/nuxel-display/"):]
+        name = os.path.basename(rel)
+        if rel in ("bin/nuxel-displayd", "bin/nuxel-display-ctl"):
+            return [("/usr/libexec/nuxel/" + name, 0o755)]
+        if rel == "bin/nuxel-wl-fb-ext.c":
+            return [("/usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext.c", 0o644)]
+        if rel == "bin/build-nuxel-wl-fb-ext.sh":
+            return [("/usr/lib/nuxel/nuxel-display/build-nuxel-wl-fb-ext.sh", 0o755)]
+        if rel.startswith("lib/"):
+            return [("/usr/lib/nuxel/nuxel-display/" + name, 0o644)]
+        if rel.startswith("protocol/"):
+            return [("/usr/lib/nuxel/nuxel-display/protocol/" + name, 0o644)]
+        if rel.startswith("systemd/"):
+            return [("/etc/systemd/system/" + name, 0o644)]
+        if rel == "README.md":
+            return [("/usr/share/doc/nuxel/HDMI-EXTERNAL-DISPLAY.md", 0o644)]
+        return []
     if source == "services/nuxel-preload-cinema/nuxel-preload-cinema":
         return [("/usr/lib/nuxel/nuxel-preload-cinema", 0o755)]
     if source.startswith("services/nuxel-firewall/nuxel_firewall/"):
@@ -102,6 +126,10 @@ def targets_for(source: str):
         return [("/usr/bin/nuxel-firewall", 0o755)]
     if source.startswith("services/nuxel-sound/"):
         name = os.path.basename(source)
+        if source == "services/nuxel-sound/nuxel_audio_outputs.py":
+            return [("/usr/lib/nuxel/nuxel_audio_outputs.py", 0o644)]
+        if source == "services/nuxel-sound/nuxel-soundctl":
+            return [("/usr/bin/nuxel-audio-ctl", 0o755)]
         if name.endswith(".py"):
             return [("/usr/libexec/nuxel/" + name[:-3], 0o755)]
         if name.endswith((".service", ".path", ".socket")):
@@ -293,6 +321,9 @@ def main(argv=None) -> int:
         'grep -q "port=tcp://.*:3389" /etc/xrdp/xrdp.ini; '
         'test -f /usr/lib/nuxel/nuxel-firewall/nuxel_firewall/provider.py; '
         'test -x /usr/bin/nuxel-firewall; '
+        'test -x /usr/libexec/nuxel/nuxel-display-ctl; '
+        'test -f /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext.c; '
+        'test -f /etc/systemd/system/nuxel-displayd.service; '
         'systemctl is-active nuxel-bridge nuxel-http-bridge nuxel-web nuxel-soundd nuxel-clockd; '
         'echo DEVICE_VERIFY_OK'
     )

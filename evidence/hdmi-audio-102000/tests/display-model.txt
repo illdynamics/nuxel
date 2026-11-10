@@ -1,0 +1,51 @@
+nuxel-display model tests
+  OK   two fb modes parsed
+  OK   1920x1080 parsed
+  OK   refresh parsed
+  OK   no partner -> DISCONNECTED
+  OK   no mirror without a partner
+  OK   blocker names the missing partner
+  OK   partner without PD -> PARTNER_NO_PD
+  OK   blocker explains the missing USB-PD identity
+  OK   mirror unavailable before VDM/DP
+  OK   monitor_info is not trusted without a DP link
+  OK   PD without DP -> PD_NO_DP
+  OK   mirror unavailable without DP
+  OK   DP link + fb1 -> DP_LINK_READY
+  OK   mirror offered when DP+fb1 are ready
+  OK   external fb1 reported
+  OK   fb1 is tied to decon_t
+  OK   fb1 mode parsed
+  OK   live monitor identity reported
+  OK   DP audio available from the EDID audio-info bitmask
+  OK   DP Audio PCM detected
+  OK   ready state has no blocker
+  OK   DP without decon_t fb -> DP_NO_FB
+  OK   no mirror without an external fb
+  OK   primary is the phone output
+  OK   second output is external
+  OK   no external output when only one exists
+  OK   initial disconnected is quiet
+  OK   first ready -> connected
+  OK   new generation should notify
+  OK   repeat ready does not re-notify
+  OK   duplicate ready polls produce no events
+  OK   loss of DP -> disconnected
+  OK   disconnect resets mode to off
+  OK   reconnect creates a new generation
+  OK   reconnect requires a new notification
+  OK   connection summary
+  OK   portrait action present
+  OK   landscape action present
+  OK   fullscreen action present
+  OK   desktop action present
+  OK   unavailable desktop action is not offered
+  OK   generation in hints
+  OK   detected display identity used in body
+  OK   error notification summary
+  OK   error detail preserved
+  OK   mirror refused before DP
+  OK   mirror allowed when DP ready
+  OK   desktop refused without a second output
+  OK   desktop allowed with two outputs
+ALL PASS

@@ -1,0 +1,32 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+3009:Nov 09 09:57:11 fedora kernel: muic_notifier_register: listener=0 register
+3011:Nov 09 09:57:11 fedora kernel: muic_notifier_register: listener=8 register
+3021:Nov 09 09:57:11 fedora kernel: type-c manager: manager_notifier_register: listener=21 register
+3025:Nov 09 09:57:11 fedora kernel: usb_notify: usb_external_notify_register: listener=(undefined)3 register
+3029:Nov 09 09:57:11 fedora kernel: vbus_notifier_register: listener=2 register
+3030:Nov 09 09:57:11 fedora kernel: ccic_notifier_register: listener=6 register
+3032:Nov 09 09:57:11 fedora kernel: muic_notifier_register: listener=7 register
+3083:Nov 09 09:57:11 fedora kernel: usb_notify: usb_external_notify_register: listener=(muic)0 register
+3160:Nov 09 09:57:11 fedora kernel: usb_notify: usb_external_notify_register: listener=(pdic)2 register
+3180:Nov 09 09:57:11 fedora kernel: type-c manager: manager_notifier_register: listener=27 register
+3283:Nov 09 09:57:11 fedora kernel: muic_notifier_register: listener=5 register
+4394:Nov 09 09:57:11 fedora kernel: muic_notifier_register: listener=5 register
+4432:Nov 09 09:57:11 fedora kernel: type-c manager: manager_notifier_register: listener=22 register
+4435:Nov 09 09:57:11 fedora kernel: type-c manager: manager_notifier_register: [USB] drp:USB_DETACH 
+4439:Nov 09 09:57:11 fedora kernel: type-c manager: manager_set_alternate_mode : listener 22
+4440:Nov 09 09:57:11 fedora kernel: muic_notifier_register: listener=2 register
+4442:Nov 09 09:57:11 fedora kernel: vbus_notifier_register: listener=2 register
+4838:Nov 09 09:57:11 fedora kernel: type-c manager: manager_notifier_register: listener=23 register
+4843:Nov 09 09:57:11 fedora kernel: type-c manager: manager_notifier_register: [BATTERY] id:ID_POWER_STATUS, cable_type=0 Attached
+4887:Nov 09 09:57:11 fedora kernel: type-c manager: manager_set_alternate_mode : listener 23
+4888:Nov 09 09:57:11 fedora kernel: vbus_notifier_register: listener=1 register
+8320:Nov 09 09:57:39 fedora kernel: type-c manager: manager_notifier_register: listener=25 register
+8323:Nov 09 09:57:39 fedora kernel: type-c manager: manager_set_alternate_mode : listener 25

@@ -1,0 +1,252 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== invalid output is refused, route unchanged ===
+{
+  "detail": "that output is not currently available",
+  "error": "OUTPUT_UNAVAILABLE",
+  "status": {
+    "backend": "pipewire",
+    "backend_available": true,
+    "current": {
+      "available": true,
+      "default": true,
+      "description": "HDMI / USB-C display",
+      "display_name": "BenQ 0x7f54",
+      "hardware_path": "hw:0,22",
+      "id": "alsa:beyond-madera:dp-audio",
+      "kind": "hdmi",
+      "muted": false,
+      "node_name": "alsa_output.nuxel_hdmi",
+      "object_id": 214,
+      "properties_source": "pipewire",
+      "reason": null,
+      "stable_id": "alsa:beyond-madera:dp-audio",
+      "state": "running",
+      "volume_percent": 60
+    },
+    "current_id": "alsa:beyond-madera:dp-audio",
+    "current_output": {
+      "available": true,
+      "default": true,
+      "description": "HDMI / USB-C display",
+      "display_name": "BenQ 0x7f54",
+      "hardware_path": "hw:0,22",
+      "id": "alsa:beyond-madera:dp-audio",
+      "kind": "hdmi",
+      "muted": false,
+      "node_name": "alsa_output.nuxel_hdmi",
+      "object_id": 214,
+      "properties_source": "pipewire",
+      "reason": null,
+      "stable_id": "alsa:beyond-madera:dp-audio",
+      "state": "running",
+      "volume_percent": 60
+    },
+    "endpoints": [
+      {
+        "available": true,
+        "default": false,
+        "description": "Phone speaker",
+        "display_name": null,
+        "hardware_path": "hw:0,1",
+        "id": "alsa:beyond-madera:rdma1",
+        "kind": "speaker",
+        "muted": false,
+        "node_name": "alsa_output.hw_0_1",
+        "object_id": 31,
+        "properties_source": "pipewire",
+        "reason": null,
+        "stable_id": "alsa:beyond-madera:rdma1",
+        "state": "idle",
+        "volume_percent": 60
+      },
+      {
+        "available": true,
+        "default": true,
+        "description": "HDMI / USB-C display",
+        "display_name": "BenQ 0x7f54",
+        "hardware_path": "hw:0,22",
+        "id": "alsa:beyond-madera:dp-audio",
+        "kind": "hdmi",
+        "muted": false,
+        "node_name": "alsa_output.nuxel_hdmi",
+        "object_id": 214,
+        "properties_source": "pipewire",
+        "reason": null,
+        "stable_id": "alsa:beyond-madera:dp-audio",
+        "state": "running",
+        "volume_percent": 60
+      }
+    ],
+    "fallback": {
+      "available": true,
+      "default": false,
+      "description": "Phone speaker",
+      "display_name": null,
+      "hardware_path": "hw:0,1",
+      "id": "alsa:beyond-madera:rdma1",
+      "kind": "speaker",
+      "muted": false,
+      "node_name": "alsa_output.hw_0_1",
+      "object_id": 31,
+      "properties_source": "pipewire",
+      "reason": null,
+      "stable_id": "alsa:beyond-madera:rdma1",
+      "state": "idle",
+      "volume_percent": 60
+    },
+    "fallback_active": false,
+    "fallback_id": "alsa:beyond-madera:rdma1",
+    "hdmi": {
+      "audio_info": {
+        "available": true,
+        "bit_rate_flags": 3,
+        "channel_mask": 2,
+        "channels": 2,
+        "dp_link": true,
+        "is_dp": true,
+        "pcm_present": true,
+        "raw": 70975746,
+        "reason": null,
+        "sample_rate_flags": 7,
+        "speaker_allocation": 1,
+        "valid": true,
+        "value_hex": "0x043b0102"
+      },
+      "available": true,
+      "blocker": null,
+      "blockers": [],
+      "ch_hdmi_audio": 70975746,
+      "ch_hdmi_audio_hex": "0x043b0102",
+      "display_name": "BenQ 0x7f54",
+      "display_state": "DP_LINK_READY",
+      "dp_link": true,
+      "extcon": "DP=1",
+      "pcm": {
+        "card": 0,
+        "device": 22,
+        "hw_path": "hw:0,22",
+        "line": "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1"
+      },
+      "pcm_present": true,
+      "secdp": "1",
+      "sink_name": "alsa_output.nuxel_hdmi"
+    },
+    "last_decision": {
+      "at": 1794260980.1886861,
+      "reason": "automatic: verified HDMI audio endpoint became available; selected HDMI / USB-C display",
+      "reason_code": "automatic-hdmi",
+      "target_id": "alsa:beyond-madera:dp-audio",
+      "target_sink": "alsa_output.nuxel_hdmi"
+    },
+    "last_error": null,
+    "last_event": null,
+    "last_event_at": 0.0,
+    "last_route": {
+      "changed": false,
+      "moved_streams": 0,
+      "sink": "alsa_output.nuxel_hdmi",
+      "success": true,
+      "volume_notes": []
+    },
+    "manual_override": false,
+    "mode": "automatic",
+    "mute_supported": true,
+    "muted": false,
+    "outputs": [
+      {
+        "available": true,
+        "default": false,
+        "description": "Phone speaker",
+        "display_name": null,
+        "hardware_path": "hw:0,1",
+        "id": "alsa:beyond-madera:rdma1",
+        "kind": "speaker",
+        "muted": false,
+        "node_name": "alsa_output.hw_0_1",
+        "object_id": 31,
+        "properties_source": "pipewire",
+        "reason": null,
+        "stable_id": "alsa:beyond-madera:rdma1",
+        "state": "idle",
+        "volume_percent": 60
+      },
+      {
+        "available": true,
+        "default": true,
+        "description": "HDMI / USB-C display",
+        "display_name": "BenQ 0x7f54",
+        "hardware_path": "hw:0,22",
+        "id": "alsa:beyond-madera:dp-audio",
+        "kind": "hdmi",
+        "muted": false,
+        "node_name": "alsa_output.nuxel_hdmi",
+        "object_id": 214,
+        "properties_source": "pipewire",
+        "reason": null,
+        "stable_id": "alsa:beyond-madera:dp-audio",
+        "state": "running",
+        "volume_percent": 60
+      }
+    ],
+    "preferred": {
+      "available": true,
+      "default": false,
+      "description": "Phone speaker",
+      "display_name": null,
+      "hardware_path": "hw:0,1",
+      "id": "alsa:beyond-madera:rdma1",
+      "kind": "speaker",
+      "muted": false,
+      "node_name": "alsa_output.hw_0_1",
+      "object_id": 31,
+      "properties_source": "pipewire",
+      "reason": null,
+      "stable_id": "alsa:beyond-madera:rdma1",
+      "state": "idle",
+      "volume_percent": 60
+    },
+    "preferred_available": true,
+    "preferred_id": "alsa:beyond-madera:rdma1",
+    "preferred_name": "Phone speaker",
+    "routing_mode": "automatic",
+    "schema": "nuxel.audio-outputs/1",
+    "selected_output": {
+      "available": true,
+      "default": true,
+      "description": "HDMI / USB-C display",
+      "display_name": "BenQ 0x7f54",
+      "hardware_path": "hw:0,22",
+      "id": "alsa:beyond-madera:dp-audio",
+      "kind": "hdmi",
+      "muted": false,
+      "node_name": "alsa_output.nuxel_hdmi",
+      "object_id": 214,
+      "properties_source": "pipewire",
+      "reason": null,
+      "stable_id": "alsa:beyond-madera:dp-audio",
+      "state": "running",
+      "volume_percent": 60
+    },
+    "sound_server": "pipewire",
+    "success": true,
+    "updated": 1794260980.2153332,
+    "volume_percent": 60,
+    "volume_supported": true
+  },
+  "success": false
+}
+rc=1
+before=alsa_output.nuxel_hdmi after=alsa_output.nuxel_hdmi
+=== manual selection persists across soundd restart ===
+before restart: manual alsa:beyond-madera:rdma1
+after restart:  manual alsa:beyond-madera:rdma1
+restored automatic: automatic alsa:beyond-madera:dp-audio
+alsa_output.nuxel_hdmi

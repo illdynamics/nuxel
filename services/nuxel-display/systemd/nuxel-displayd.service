@@ -1,0 +1,23 @@
+[Unit]
+Description=Nuxel external display manager (Type-C DP / decon_t / fb1)
+Documentation=file:/usr/share/doc/nuxel/HDMI-EXTERNAL-DISPLAY.md
+After=nuxel-notifications.service nuxel-wayland.service nuxel-wl-fb.service
+Wants=nuxel-notifications.service nuxel-wayland.service nuxel-wl-fb.service
+Before=nuxel-wl-fb-ext.service
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/nuxel/nuxel-displayd
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=12
+KillMode=mixed
+# The manager only reads sysfs/procfs and asks systemd to run the external
+# fb1 bridge on explicit user action.  It never touches /dev/fb0.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+{
+  "baseline": {
+    "goertzel_1k": 2471360.5,
+    "peak": 4212,
+    "rms": 877.1,
+    "samples": 37274
+  },
+  "baseline_file_bytes": 745472,
+  "conclusion": "NOT VERIFIED: microphone capture did not show a reproducible 1 kHz increase; no human listener available",
+  "method": "phone WDMA1 microphone captured ambient audio while a 1 kHz tone played to the HDMI sink",
+  "tone": {
+    "goertzel_1k": 43798.1,
+    "peak": 1100,
+    "rms": 216.3,
+    "samples": 48538
+  },
+  "tone_file_bytes": 970752
+}

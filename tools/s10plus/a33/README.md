@@ -36,6 +36,28 @@ sec_ts (S6SY761, i2c 4-0048)          kernel driver
 | `tests/test-capture-harness.py` | Covers `nuxel-touch-capture.sh`: `--commands` arms nothing, `CAPTURE_GATE=PASS` can only come from `gate.json`, and the bundle is never written inside the repository. |
 | `tests/test-libinput-shim-invocation.py` | Pins the deployment chain the A32 baseline uses, so a hardened shim that nothing preloads cannot pass: `LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so` on `nuxel-wayland.service`, the build flags of the A31/A32/A33 build scripts, A31/A33 source identity, the single-client tracked table, `ZERO_DEVICES` on absence, and the recorded deployed `.so` SHA-256. |
 
+### Physical USB HID (mouse / keyboard)
+
+The shim also accepts USB HID pointers (`REL_X/Y` + a real button) and keyboards
+(the standard letter block), while keeping the same DIRECT+multitouch touch
+selection and applying the orientation matrix only to the touchsurface. It
+tracks devices by event node **and devtmpfs inode**, so a hub re-enumeration that
+reuses `eventN` is a replace rather than a name collision. A Wayland `eventfd`
+wakes the compositor and drains the hotplug queue outside `libinput_dispatch()`
+(the context where `libinput_path_add_device()` is safe); the shim never calls
+`libinput_path_remove_device()` itself.
+
+Pointer settings live in `/etc/nuxel/input/input.json`, are applied directly to
+libinput by the shim, and are mirrored to Phoc's
+`org.gnome.desktop.peripherals` GSettings by `nuxel-input-apply.sh`. Settings →
+Mouse & Keyboard writes that document and the existing keyboard document.
+`tests/test-physical-input.py` and `tests/fixtures/usb-hid/` gate this chain.
+
+**Keyboard hardware caveat:** a keyboard that fails USB enumeration on a hub
+port (`device descriptor read/64, error -32` / `error -71`) never reaches this
+layer; see `REPORT-PWNAGE-103000.md` §F. Moving it to another hub port or
+connecting it directly is the hardware-side fix.
+
 ### The exact invocation the A32 baseline uses
 
 The interposer is preloaded by systemd on the compositor unit — not by a shell wrapper:

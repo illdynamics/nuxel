@@ -1,0 +1,10 @@
+# Re-apply when Settings atomically replaces the pointer document.
+[Unit]
+Description=Watch /etc/nuxel/input/input.json for Nuxel pointer changes
+
+[Path]
+PathChanged=/etc/nuxel/input/input.json
+Unit=nuxel-input-apply.service
+
+[Install]
+WantedBy=graphical-session.target

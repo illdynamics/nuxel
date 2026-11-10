@@ -1,0 +1,29 @@
+............F.........                                                   [100%]
+=================================== FAILURES ===================================
+________________ test_bridge_supervisor_restarts_a_dead_bridge _________________
+/Users/wicked/x/nuxel/services/nuxel-display/tests/test-display-daemon.py:176: in test_bridge_supervisor_restarts_a_dead_bridge
+    check(starts_after == starts_before + 1, "supervisor restarts a stopped bridge")
+        d          = <nuxel_displayd.DisplayDaemon object at 0x10ff6fe50>
+        f          = <_io.TextIOWrapper name='/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/nx-display-run-a0ww2rwb/ext.state' mode='w' encoding='UTF-8'>
+        notifier   = <test-display-daemon.FakeNotifier object at 0x10ff6d8d0>
+        r          = {'ext_state': {'mode': 'mirror', 'output': 'HEADLESS-1', 'state': 'RUNNING'}, 'fit': 'fit', 'internal_units': {'nuxel-wayland.service': 'active', 'nuxel-wl-fb.service': 'active'}, 'mode': 'mirror-portrait', ...}
+        root       = '/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/nx-display-model-eg810j5c'
+        run_dir    = '/var/folders/33/tdmn2xhs2mz2tchkmfzqkk080000gn/T/nx-display-run-a0ww2rwb'
+        runner     = <test-display-daemon.FakeRunner object at 0x10ff6f350>
+        starts_after = 1
+        starts_before = 1
+/Users/wicked/x/nuxel/services/nuxel-display/tests/test-display-daemon.py:38: in check
+    raise AssertionError(msg)
+E   AssertionError: supervisor restarts a stopped bridge
+        cond       = False
+        msg        = 'supervisor restarts a stopped bridge'
+----------------------------- Captured stdout call -----------------------------
+  OK   mirror starts for supervisor test
+  FAIL supervisor restarts a stopped bridge
+----------------------------- Captured stderr call -----------------------------
+2026-11-09T22:50:43 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=None transform=None external_rotation=None
+2026-11-09T22:50:43 nuxel-displayd: notification #1: External display active
+2026-11-09T22:50:43 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+=========================== short test summary info ============================
+FAILED services/nuxel-display/tests/test-display-daemon.py::test_bridge_supervisor_restarts_a_dead_bridge
+1 failed, 21 passed in 0.80s

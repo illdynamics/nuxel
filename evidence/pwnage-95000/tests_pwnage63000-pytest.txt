@@ -1,0 +1,26 @@
+.....................F...                                                [100%]
+=================================== FAILURES ===================================
+________________________ test_nuxtore_catalog_verifier _________________________
+/Users/wicked/x/nuxel/tests/pwnage63000/test_vault_app.py:126: in test_nuxtore_catalog_verifier
+    assert r.returncode == 0, r.stdout + r.stderr
+E   AssertionError: NuxTore catalog verification — /Users/wicked/x/nuxel/pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json
+E       OK org.nuxel.Nuxtore        1.0.0    SIGNED_VERIFIED   25 files, 199520 bytes; signed by nuxel-beta-dev-2026
+E       OK org.nuxel.Media          1.0.0    SIGNED_VERIFIED   22 files, 152410 bytes; signed by nuxel-beta-dev-2026
+E       OK org.nuxel.Downloader     1.0.0    SIGNED_VERIFIED   20 files, 104724 bytes; signed by nuxel-beta-dev-2026
+E       OK org.nuxel.Authenticator  1.0.0    SIGNED_VERIFIED   24 files, 449466 bytes; signed by nuxel-beta-dev-2026
+E       OK org.nuxel.Vault          1.0.0    SIGNED_VERIFIED   21 files, 452861 bytes; signed by nuxel-beta-dev-2026
+E       OK org.nuxel.Cleanup        1.0.0    SIGNED_VERIFIED   19 files, 102687 bytes; signed by nuxel-beta-dev-2026
+E       OK org.nuxel.DevMgmt        1.0.0    SIGNED_VERIFIED   18 files, 133816 bytes; signed by nuxel-beta-dev-2026
+E       OK org.nuxel.SnekByte       1.0.0    SIGNED_VERIFIED   20 files, 210801 bytes; signed by nuxel-beta-dev-2026
+E       !! org.nuxel.Doom           2.0.0    DIGEST_MISMATCH   22 files, 3255564 bytes; 3 of 22 listed files have a different digest
+E       OK org.nuxel.PenguInterface 1.0.0    SIGNED_VERIFIED   17 files, 110082 bytes; signed by nuxel-beta-dev-2026
+E       OK org.nuxel.Console        1.0.0    SIGNED_VERIFIED   15 files, 67352 bytes; signed by nuxel-beta-dev-2026
+E       -- org.example.UnsignedDemo 0.0.1    UNSIGNED_REFUSED  25 files, 199520 bytes; no signature (unsigned package)
+E       => INTEGRITY FAILURE
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['python3', '/Users/wicked/x/nuxel/pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py'], returncode=...0.1    UNSIGNED_REFUSED  25 files, 199520 bytes; no signature (unsigned package)\n  => INTEGRITY FAILURE\n', stderr='').returncode
+        r          = CompletedProcess(args=['python3', '/Users/wicked/x/nuxel/pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py'], returncode=...0.1    UNSIGNED_REFUSED  25 files, 199520 bytes; no signature (unsigned package)\n  => INTEGRITY FAILURE\n', stderr='')
+=========================== short test summary info ============================
+FAILED tests/pwnage63000/test_vault_app.py::test_nuxtore_catalog_verifier - A...
+1 failed, 24 passed in 1.12s

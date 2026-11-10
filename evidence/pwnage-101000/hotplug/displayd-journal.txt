@@ -1,0 +1,380 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Nov 09 17:50:39 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 17:50:39 WIN-CLIENT nuxel-displayd[6155]: 2026-11-09T17:50:39 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 17:50:39 WIN-CLIENT nuxel-displayd[6155]: 2026-11-09T17:50:39 nuxel-displayd: monitoring root=/ poll=0.50s state=PARTNER_NO_PD
+Nov 09 17:51:36 WIN-CLIENT nuxel-displayd[6155]: 2026-11-09T17:51:36 nuxel-displayd: event state_changed generation=0 state=DISCONNECTED
+Nov 09 17:51:41 WIN-CLIENT nuxel-displayd[6155]: 2026-11-09T17:51:41 nuxel-displayd: event connected generation=1 state=DP_LINK_READY
+Nov 09 17:51:41 WIN-CLIENT nuxel-displayd[6155]: 2026-11-09T17:51:41 nuxel-displayd: notification #31: External display connected
+Nov 09 17:53:55 WIN-CLIENT systemd[1]: nuxel-displayd.service: Failed to get CPU usage: No such file or directory
+Nov 09 18:01:43 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:01:43 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:01:43 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:01:43 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:01:44 WIN-CLIENT nuxel-displayd[18027]: 2026-11-09T18:01:44 nuxel-displayd: notification #32: External display connected
+Nov 09 18:01:44 WIN-CLIENT nuxel-displayd[18027]: 2026-11-09T18:01:44 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:01:44 WIN-CLIENT nuxel-displayd[18027]: 2026-11-09T18:01:44 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:01:58 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:01:58 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:01:58 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:01:58 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:01:59 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:01:59 nuxel-displayd: notification #33: External display connected
+Nov 09 18:01:59 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:01:59 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:01:59 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:01:59 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:02:04 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:04 nuxel-displayd: event disconnected generation=1 state=PD_NO_DP
+Nov 09 18:02:04 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:04 nuxel-displayd: archived notification #33
+Nov 09 18:02:12 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:12 nuxel-displayd: event connected generation=2 state=DP_LINK_READY
+Nov 09 18:02:12 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:12 nuxel-displayd: notification #34: External display connected
+Nov 09 18:02:26 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:26 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:02:27 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:27 nuxel-displayd: notification #34: External display active
+Nov 09 18:02:27 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:27 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:02:43 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:43 nuxel-displayd: starting mirror-landscape on output HEADLESS-1
+Nov 09 18:02:43 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:43 nuxel-displayd: notification #34: External display mode failed
+Nov 09 18:02:47 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:47 nuxel-displayd: starting fullscreen on output HEADLESS-1
+Nov 09 18:02:48 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:48 nuxel-displayd: notification #34: External display active
+Nov 09 18:02:48 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:48 nuxel-displayd: mode=fullscreen active on HEADLESS-1
+Nov 09 18:02:52 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:52 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:02:52 WIN-CLIENT nuxel-displayd[18162]: 2026-11-09T18:02:52 nuxel-displayd: notification #34: External display mode failed
+Nov 09 18:03:16 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:03:17 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:03:17 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:03:17 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:03:17 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:17 nuxel-displayd: notification #35: External display connected
+Nov 09 18:03:17 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:17 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:03:17 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:17 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:03:21 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:21 nuxel-displayd: starting mirror-landscape on output HEADLESS-1
+Nov 09 18:03:22 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:22 nuxel-displayd: notification #35: External display active
+Nov 09 18:03:22 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:22 nuxel-displayd: mode=mirror-landscape active on HEADLESS-1
+Nov 09 18:03:25 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:25 nuxel-displayd: starting fullscreen on output HEADLESS-1
+Nov 09 18:03:25 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:25 nuxel-displayd: notification #35: External display active
+Nov 09 18:03:26 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:25 nuxel-displayd: mode=fullscreen active on HEADLESS-1
+Nov 09 18:03:29 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:29 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:03:29 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:29 nuxel-displayd: notification #35: External display active
+Nov 09 18:03:29 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:29 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:03:33 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:33 nuxel-displayd: starting mirror-landscape on output HEADLESS-1
+Nov 09 18:03:33 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:33 nuxel-displayd: notification #35: External display active
+Nov 09 18:03:33 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:33 nuxel-displayd: mode=mirror-landscape active on HEADLESS-1
+Nov 09 18:03:37 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:36 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:03:37 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:37 nuxel-displayd: notification #35: External display active
+Nov 09 18:03:37 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:03:37 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:04:57 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:04:57 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:04:57 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:04:57 nuxel-displayd: notification #35: External display active
+Nov 09 18:04:57 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:04:57 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:27:40 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:27:40 nuxel-displayd: event disconnected generation=1 state=DISCONNECTED
+Nov 09 18:27:40 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:27:40 nuxel-displayd: archived notification #35
+Nov 09 18:27:51 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:27:51 nuxel-displayd: event state_changed generation=1 state=PD_NO_DP
+Nov 09 18:27:52 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:27:52 nuxel-displayd: event connected generation=2 state=DP_LINK_READY
+Nov 09 18:27:52 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:27:52 nuxel-displayd: notification #36: External display connected
+Nov 09 18:28:23 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:28:23 nuxel-displayd: event disconnected generation=2 state=DISCONNECTED
+Nov 09 18:28:23 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:28:23 nuxel-displayd: archived notification #36
+Nov 09 18:28:39 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:28:39 nuxel-displayd: event state_changed generation=2 state=PD_NO_DP
+Nov 09 18:28:40 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:28:40 nuxel-displayd: event connected generation=3 state=DP_LINK_READY
+Nov 09 18:28:40 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:28:40 nuxel-displayd: notification #37: External display connected
+Nov 09 18:32:56 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:32:56 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:32:56 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:32:56 nuxel-displayd: notification #37: External display active
+Nov 09 18:32:56 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:32:56 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:33:26 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:33:26 WIN-CLIENT nuxel-displayd[19336]: 2026-11-09T18:33:26 nuxel-displayd: external output stopped (daemon shutdown)
+Nov 09 18:33:26 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:33:26 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:33:26 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:33:27 WIN-CLIENT nuxel-displayd[194162]: 2026-11-09T18:33:27 nuxel-displayd: notification #38: External display connected
+Nov 09 18:33:27 WIN-CLIENT nuxel-displayd[194162]: 2026-11-09T18:33:27 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:33:27 WIN-CLIENT nuxel-displayd[194162]: 2026-11-09T18:33:27 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:33:28 WIN-CLIENT nuxel-displayd[194162]: 2026-11-09T18:33:27 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:33:28 WIN-CLIENT nuxel-displayd[194162]: 2026-11-09T18:33:28 nuxel-displayd: notification #38: External display active
+Nov 09 18:33:28 WIN-CLIENT nuxel-displayd[194162]: 2026-11-09T18:33:28 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:34:13 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:34:14 WIN-CLIENT nuxel-displayd[194162]: 2026-11-09T18:34:14 nuxel-displayd: external output stopped (daemon shutdown)
+Nov 09 18:34:14 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:34:14 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:34:14 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:34:14 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:14 nuxel-displayd: notification #39: External display connected
+Nov 09 18:34:14 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:14 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:34:14 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:14 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:34:15 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:15 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:34:15 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:15 nuxel-displayd: notification #39: External display active
+Nov 09 18:34:15 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:15 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:34:19 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:19 nuxel-displayd: external bridge RUNNING (unknown); restart attempt 1
+Nov 09 18:34:19 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:19 nuxel-displayd: external bridge restarted
+Nov 09 18:34:25 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:25 nuxel-displayd: event disconnected generation=1 state=DISCONNECTED
+Nov 09 18:34:26 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:26 nuxel-displayd: archived notification #39
+Nov 09 18:34:28 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:28 nuxel-displayd: event state_changed generation=1 state=PD_NO_DP
+Nov 09 18:34:29 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:29 nuxel-displayd: event connected generation=2 state=DP_LINK_READY
+Nov 09 18:34:29 WIN-CLIENT nuxel-displayd[194570]: 2026-11-09T18:34:29 nuxel-displayd: notification #40: External display connected
+Nov 09 18:34:58 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:34:58 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:34:58 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:34:58 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:34:58 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:34:58 nuxel-displayd: notification #41: External display connected
+Nov 09 18:34:58 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:34:58 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:34:58 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:34:58 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:34:59 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:34:59 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:35:00 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:00 nuxel-displayd: notification #41: External display active
+Nov 09 18:35:00 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:00 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:35:03 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:03 nuxel-displayd: external bridge RUNNING (unknown); restart attempt 1
+Nov 09 18:35:03 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:03 nuxel-displayd: external bridge restarted
+Nov 09 18:35:24 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:24 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:35:24 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:24 nuxel-displayd: notification #41: External display active
+Nov 09 18:35:24 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:24 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:35:28 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:28 nuxel-displayd: starting mirror-landscape on output HEADLESS-1
+Nov 09 18:35:28 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:28 nuxel-displayd: notification #41: External display active
+Nov 09 18:35:28 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:28 nuxel-displayd: mode=mirror-landscape active on HEADLESS-1
+Nov 09 18:35:32 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:32 nuxel-displayd: starting fullscreen on output HEADLESS-1
+Nov 09 18:35:32 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:32 nuxel-displayd: notification #41: External display active
+Nov 09 18:35:32 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:32 nuxel-displayd: mode=fullscreen active on HEADLESS-1
+Nov 09 18:35:36 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:36 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:35:36 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:36 nuxel-displayd: notification #41: External display active
+Nov 09 18:35:36 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:35:36 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:37:04 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:37:04 nuxel-displayd: event disconnected generation=1 state=DISCONNECTED
+Nov 09 18:37:04 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:37:04 nuxel-displayd: archived notification #41
+Nov 09 18:37:09 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:37:09 nuxel-displayd: event state_changed generation=1 state=PD_NO_DP
+Nov 09 18:37:10 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:37:10 nuxel-displayd: event connected generation=2 state=DP_LINK_READY
+Nov 09 18:37:10 WIN-CLIENT nuxel-displayd[195045]: 2026-11-09T18:37:10 nuxel-displayd: notification #42: External display connected
+Nov 09 18:37:39 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:37:40 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:37:40 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:37:40 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:37:40 WIN-CLIENT nuxel-displayd[197124]: 2026-11-09T18:37:40 nuxel-displayd: notification #43: External display connected
+Nov 09 18:37:40 WIN-CLIENT nuxel-displayd[197124]: 2026-11-09T18:37:40 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:37:40 WIN-CLIENT nuxel-displayd[197124]: 2026-11-09T18:37:40 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:37:41 WIN-CLIENT nuxel-displayd[197124]: 2026-11-09T18:37:41 nuxel-displayd: notification #44: External display connected
+Nov 09 18:37:47 WIN-CLIENT nuxel-displayd[197124]: 2026-11-09T18:37:47 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:37:47 WIN-CLIENT nuxel-displayd[197124]: 2026-11-09T18:37:47 nuxel-displayd: notification #43: External display active
+Nov 09 18:37:47 WIN-CLIENT nuxel-displayd[197124]: 2026-11-09T18:37:47 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:38:05 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:38:05 WIN-CLIENT nuxel-displayd[197124]: 2026-11-09T18:38:05 nuxel-displayd: external output stopped (daemon shutdown)
+Nov 09 18:38:05 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:38:05 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:38:05 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:38:06 WIN-CLIENT nuxel-displayd[197428]: 2026-11-09T18:38:06 nuxel-displayd: notification #45: External display connected
+Nov 09 18:38:06 WIN-CLIENT nuxel-displayd[197428]: 2026-11-09T18:38:06 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:38:06 WIN-CLIENT nuxel-displayd[197428]: 2026-11-09T18:38:06 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:38:08 WIN-CLIENT nuxel-displayd[197428]: 2026-11-09T18:38:08 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:38:08 WIN-CLIENT nuxel-displayd[197428]: 2026-11-09T18:38:08 nuxel-displayd: notification #45: External display active
+Nov 09 18:38:08 WIN-CLIENT nuxel-displayd[197428]: 2026-11-09T18:38:08 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:38:24 WIN-CLIENT nuxel-displayd[197428]: 2026-11-09T18:38:24 nuxel-displayd: external output stopped (control request)
+Nov 09 18:38:24 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:38:25 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:38:25 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:38:25 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:38:25 WIN-CLIENT nuxel-displayd[197714]: 2026-11-09T18:38:25 nuxel-displayd: notification #46: External display connected
+Nov 09 18:38:25 WIN-CLIENT nuxel-displayd[197714]: 2026-11-09T18:38:25 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:38:25 WIN-CLIENT nuxel-displayd[197714]: 2026-11-09T18:38:25 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:38:28 WIN-CLIENT nuxel-displayd[197714]: 2026-11-09T18:38:28 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:38:28 WIN-CLIENT nuxel-displayd[197714]: 2026-11-09T18:38:28 nuxel-displayd: notification #46: External display active
+Nov 09 18:38:28 WIN-CLIENT nuxel-displayd[197714]: 2026-11-09T18:38:28 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:38:45 WIN-CLIENT nuxel-displayd[197714]: 2026-11-09T18:38:45 nuxel-displayd: external output stopped (control request)
+Nov 09 18:38:45 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 18:38:45 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 18:38:45 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:38:45 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 18:38:46 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:38:46 nuxel-displayd: notification #47: External display connected
+Nov 09 18:38:46 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:38:46 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 18:38:46 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:38:46 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY
+Nov 09 18:38:48 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:38:48 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:38:48 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:38:48 nuxel-displayd: notification #47: External display active
+Nov 09 18:38:48 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:38:48 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:40:47 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:40:47 nuxel-displayd: event disconnected generation=1 state=DISCONNECTED
+Nov 09 18:40:47 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:40:47 nuxel-displayd: archived notification #47
+Nov 09 18:40:56 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:40:56 nuxel-displayd: event state_changed generation=1 state=PD_NO_DP
+Nov 09 18:40:57 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:40:57 nuxel-displayd: event connected generation=2 state=DP_LINK_READY
+Nov 09 18:40:57 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:40:57 nuxel-displayd: notification #48: External display connected
+Nov 09 18:47:46 WIN-CLIENT systemd[1]: nuxel-displayd.service: Failed to get CPU usage: No such file or directory
+Nov 09 18:53:55 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:53:55 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:53:55 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:53:55 nuxel-displayd: notification #48: External display active
+Nov 09 18:53:55 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:53:55 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:57:34 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:57:34 nuxel-displayd: external output stopped (control request)
+Nov 09 18:57:37 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:57:37 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:57:37 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:57:37 nuxel-displayd: notification #48: External display active
+Nov 09 18:57:37 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:57:37 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:57:44 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:57:44 nuxel-displayd: external output stopped (control request)
+Nov 09 18:57:47 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:57:47 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:57:47 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:57:47 nuxel-displayd: notification #48: External display active
+Nov 09 18:57:47 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:57:47 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 18:58:09 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:58:09 nuxel-displayd: external output stopped (control request)
+Nov 09 18:58:11 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:58:11 nuxel-displayd: starting mirror-portrait on output HEADLESS-1
+Nov 09 18:58:12 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:58:12 nuxel-displayd: notification #48: External display active
+Nov 09 18:58:12 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T18:58:12 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:00:42 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 19:00:42 WIN-CLIENT nuxel-displayd[197959]: 2026-11-09T19:00:42 nuxel-displayd: external output stopped (daemon shutdown)
+Nov 09 19:00:42 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 19:00:42 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 19:00:42 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 19:00:43 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:43 nuxel-displayd: notification #49: External display connected
+Nov 09 19:00:43 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:43 nuxel-displayd: restore scheduled generation=1 mode=mirror-portrait reason=daemon-startup
+Nov 09 19:00:43 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:43 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 19:00:43 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:43 nuxel-displayd: uevent listener unavailable (module 'socket' has no attribute 'NETLINK_KOBJECT_UEVENT'); polling reconciliation remains active
+Nov 09 19:00:43 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:43 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY auto_orientation=True
+Nov 09 19:00:43 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:43 nuxel-displayd: restore attempt 1/3 generation=1 mode=mirror-portrait reason=daemon-startup
+Nov 09 19:00:43 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:43 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:00:44 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:44 nuxel-displayd: notification #49: External display active
+Nov 09 19:00:44 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:44 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:00:44 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:44 nuxel-displayd: restore complete generation=1 mode=mirror-portrait
+Nov 09 19:00:49 WIN-CLIENT systemd[1]: nuxel-displayd.service: Failed to get CPU usage: No such file or directory
+Nov 09 19:00:55 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 19:00:55 WIN-CLIENT nuxel-displayd[218543]: 2026-11-09T19:00:55 nuxel-displayd: external output stopped (daemon shutdown, remember=False, last_mode=mirror-portrait)
+Nov 09 19:00:56 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 19:00:56 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 19:00:56 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 19:00:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:56 nuxel-displayd: notification #50: External display connected
+Nov 09 19:00:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:56 nuxel-displayd: restore scheduled generation=1 mode=mirror-portrait reason=daemon-startup
+Nov 09 19:00:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:56 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 19:00:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:56 nuxel-displayd: uevent listener active (NETLINK_KOBJECT_UEVENT)
+Nov 09 19:00:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:56 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY auto_orientation=True
+Nov 09 19:00:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:56 nuxel-displayd: restore attempt 1/3 generation=1 mode=mirror-portrait reason=daemon-startup
+Nov 09 19:00:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:56 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:00:57 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:57 nuxel-displayd: notification #50: External display active
+Nov 09 19:00:57 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:57 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:00:57 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:00:57 nuxel-displayd: restore complete generation=1 mode=mirror-portrait
+Nov 09 19:01:26 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:26 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:01:26 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:26 nuxel-displayd: notification #50: External display active
+Nov 09 19:01:26 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:26 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:01:53 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:53 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:01:55 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:55 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=270 transform=90 external_rotation=90
+Nov 09 19:01:55 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:55 nuxel-displayd: notification #50: External display active
+Nov 09 19:01:55 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:55 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:01:57 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:57 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:01:59 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:01:59 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=180 transform=180 external_rotation=180
+Nov 09 19:02:00 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:00 nuxel-displayd: notification #50: External display active
+Nov 09 19:02:00 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:00 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:02:02 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:02 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:02:04 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:04 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=0 transform=0 external_rotation=0
+Nov 09 19:02:04 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:04 nuxel-displayd: notification #50: External display active
+Nov 09 19:02:04 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:04 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:02:07 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:07 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:02:09 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:09 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:02:09 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:09 nuxel-displayd: notification #50: External display active
+Nov 09 19:02:09 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:09 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:02:25 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:25 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:02:28 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:28 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=270 transform=90 external_rotation=90
+Nov 09 19:02:29 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:29 nuxel-displayd: notification #50: External display active
+Nov 09 19:02:29 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:29 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:02:37 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:37 nuxel-displayd: external bridge RUNNING (unknown); restart attempt 1
+Nov 09 19:02:37 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:37 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:02:37 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:37 nuxel-displayd: external bridge restarted
+Nov 09 19:02:39 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:39 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=270 transform=90 external_rotation=90
+Nov 09 19:02:40 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:40 nuxel-displayd: notification #50: External display active
+Nov 09 19:02:40 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:40 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:02:42 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:42 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:02:45 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:45 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=180 transform=180 external_rotation=180
+Nov 09 19:02:45 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:45 nuxel-displayd: notification #50: External display active
+Nov 09 19:02:45 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:45 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:02:55 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:55 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:02:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:56 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=270 transform=90 external_rotation=90
+Nov 09 19:02:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:56 nuxel-displayd: notification #50: External display active
+Nov 09 19:02:56 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:02:56 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:03:25 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:03:25 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)
+Nov 09 19:03:27 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:03:27 nuxel-displayd: event disconnected generation=1 state=PD_NO_DP
+Nov 09 19:03:27 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:03:27 nuxel-displayd: archived notification #50
+Nov 09 19:03:37 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:03:37 nuxel-displayd: notification #51: External display mode failed
+Nov 09 19:03:52 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:03:52 nuxel-displayd: notification #51: External display mode failed
+Nov 09 19:04:09 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:04:09 nuxel-displayd: notification #51: External display mode failed
+Nov 09 19:04:28 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:04:28 nuxel-displayd: event connected generation=2 state=DP_LINK_READY
+Nov 09 19:04:28 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:04:28 nuxel-displayd: notification #52: External display connected
+Nov 09 19:04:32 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:04:32 nuxel-displayd: event disconnected generation=2 state=PD_NO_DP
+Nov 09 19:04:32 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:04:32 nuxel-displayd: archived notification #52
+Nov 09 19:05:12 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:12 nuxel-displayd: event connected generation=3 state=DP_LINK_READY
+Nov 09 19:05:12 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:12 nuxel-displayd: notification #53: External display connected
+Nov 09 19:05:28 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:28 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=0 transform=0 external_rotation=0
+Nov 09 19:05:29 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:29 nuxel-displayd: notification #53: External display active
+Nov 09 19:05:29 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:29 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:05:32 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:32 nuxel-displayd: external bridge RUNNING (unknown); restart attempt 1
+Nov 09 19:05:32 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:32 nuxel-displayd: external bridge restarted
+Nov 09 19:05:35 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:35 nuxel-displayd: notification #53: External display mode failed
+Nov 09 19:05:35 WIN-CLIENT nuxel-displayd[218832]: 2026-11-09T19:05:35 nuxel-displayd: External bridge stopped unexpectedly (error); scan-out is not running.
+Nov 09 19:06:37 WIN-CLIENT systemd[1]: Stopping nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1)...
+Nov 09 19:06:37 WIN-CLIENT systemd[1]: nuxel-displayd.service: Deactivated successfully.
+Nov 09 19:06:37 WIN-CLIENT systemd[1]: Stopped nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 19:06:37 WIN-CLIENT systemd[1]: Started nuxel-displayd.service - Nuxel external display manager (Type-C DP / decon_t / fb1).
+Nov 09 19:06:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:38 nuxel-displayd: notification #54: External display connected
+Nov 09 19:06:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:38 nuxel-displayd: restore scheduled generation=1 mode=mirror-portrait reason=daemon-startup
+Nov 09 19:06:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:38 nuxel-displayd: control socket /run/nuxel-display/control.sock
+Nov 09 19:06:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:38 nuxel-displayd: uevent listener active (NETLINK_KOBJECT_UEVENT)
+Nov 09 19:06:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:38 nuxel-displayd: monitoring root=/ poll=0.20s state=DP_LINK_READY auto_orientation=True
+Nov 09 19:06:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:38 nuxel-displayd: restore attempt 1/3 generation=1 mode=mirror-portrait reason=daemon-startup
+Nov 09 19:06:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:38 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=0 transform=0 external_rotation=0
+Nov 09 19:06:39 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:38 nuxel-displayd: notification #54: External display active
+Nov 09 19:06:39 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:39 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:06:39 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:39 nuxel-displayd: restore complete generation=1 mode=mirror-portrait in 0.43s
+Nov 09 19:06:43 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:43 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=0 transform=0 external_rotation=0
+Nov 09 19:06:44 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:44 nuxel-displayd: notification #54: External display active
+Nov 09 19:06:44 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:44 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:06:53 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:53 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=0 transform=0 external_rotation=0
+Nov 09 19:06:53 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:53 nuxel-displayd: notification #54: External display active
+Nov 09 19:06:53 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:53 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:06:59 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:59 nuxel-displayd: event disconnected generation=1 state=PD_NO_DP
+Nov 09 19:06:59 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:06:59 nuxel-displayd: archived notification #54
+Nov 09 19:07:07 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:07 nuxel-displayd: event connected generation=2 state=DP_LINK_READY
+Nov 09 19:07:07 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:07 nuxel-displayd: notification #55: External display connected
+Nov 09 19:07:07 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:07 nuxel-displayd: restore scheduled generation=2 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:07:08 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:08 nuxel-displayd: restore attempt 1/3 generation=2 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:07:08 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:08 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=0 transform=0 external_rotation=0
+Nov 09 19:07:08 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:08 nuxel-displayd: notification #55: External display active
+Nov 09 19:07:08 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:08 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:07:08 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:08 nuxel-displayd: restore complete generation=2 mode=mirror-portrait in 0.44s
+Nov 09 19:07:22 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:22 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:07:22 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:22 nuxel-displayd: notification #55: External display active
+Nov 09 19:07:22 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:22 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:07:29 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:29 nuxel-displayd: external bridge STOPPED (signal); restart attempt 1
+Nov 09 19:07:29 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:29 nuxel-displayd: external bridge restarted
+Nov 09 19:07:33 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:33 nuxel-displayd: event disconnected generation=2 state=PD_NO_DP
+Nov 09 19:07:33 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:33 nuxel-displayd: archived notification #55
+Nov 09 19:07:35 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:35 nuxel-displayd: event connected generation=3 state=DP_LINK_READY
+Nov 09 19:07:35 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:35 nuxel-displayd: notification #56: External display connected
+Nov 09 19:07:35 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:35 nuxel-displayd: restore scheduled generation=3 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:07:35 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:35 nuxel-displayd: restore attempt 1/3 generation=3 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:07:35 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:35 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:07:36 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:36 nuxel-displayd: notification #56: External display active
+Nov 09 19:07:36 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:36 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:07:36 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:36 nuxel-displayd: restore complete generation=3 mode=mirror-portrait in 0.43s
+Nov 09 19:07:43 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:43 nuxel-displayd: event disconnected generation=3 state=PD_NO_DP
+Nov 09 19:07:43 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:43 nuxel-displayd: archived notification #56
+Nov 09 19:07:52 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:52 nuxel-displayd: event connected generation=4 state=DP_LINK_READY
+Nov 09 19:07:52 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:52 nuxel-displayd: notification #57: External display connected
+Nov 09 19:07:52 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:52 nuxel-displayd: restore scheduled generation=4 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:07:52 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:52 nuxel-displayd: restore attempt 1/3 generation=4 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:07:52 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:52 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:07:53 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:53 nuxel-displayd: notification #57: External display active
+Nov 09 19:07:53 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:53 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:07:53 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:07:53 nuxel-displayd: restore complete generation=4 mode=mirror-portrait in 0.44s
+Nov 09 19:08:00 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:00 nuxel-displayd: event disconnected generation=4 state=PD_NO_DP
+Nov 09 19:08:00 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:00 nuxel-displayd: archived notification #57
+Nov 09 19:08:08 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:08 nuxel-displayd: event connected generation=5 state=DP_LINK_READY
+Nov 09 19:08:08 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:08 nuxel-displayd: notification #58: External display connected
+Nov 09 19:08:08 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:08 nuxel-displayd: restore scheduled generation=5 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:08:09 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:09 nuxel-displayd: restore attempt 1/3 generation=5 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:08:09 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:09 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:08:09 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:09 nuxel-displayd: notification #58: External display active
+Nov 09 19:08:09 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:09 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:08:09 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:09 nuxel-displayd: restore complete generation=5 mode=mirror-portrait in 0.43s
+Nov 09 19:08:17 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:17 nuxel-displayd: event disconnected generation=5 state=PD_NO_DP
+Nov 09 19:08:17 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:17 nuxel-displayd: archived notification #58
+Nov 09 19:08:25 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:25 nuxel-displayd: event connected generation=6 state=DP_LINK_READY
+Nov 09 19:08:25 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:25 nuxel-displayd: notification #59: External display connected
+Nov 09 19:08:25 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:25 nuxel-displayd: restore scheduled generation=6 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:08:26 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:26 nuxel-displayd: restore attempt 1/3 generation=6 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:08:26 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:26 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:08:26 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:26 nuxel-displayd: notification #59: External display active
+Nov 09 19:08:26 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:26 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:08:26 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:26 nuxel-displayd: restore complete generation=6 mode=mirror-portrait in 0.41s
+Nov 09 19:08:34 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:34 nuxel-displayd: external bridge STOPPED (signal); restart attempt 1
+Nov 09 19:08:34 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:34 nuxel-displayd: external bridge restarted
+Nov 09 19:08:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:38 nuxel-displayd: event disconnected generation=6 state=PD_NO_DP
+Nov 09 19:08:38 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:38 nuxel-displayd: archived notification #59
+Nov 09 19:08:40 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:40 nuxel-displayd: event connected generation=7 state=DP_LINK_READY
+Nov 09 19:08:40 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:40 nuxel-displayd: notification #60: External display connected
+Nov 09 19:08:40 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:40 nuxel-displayd: restore scheduled generation=7 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:08:40 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:40 nuxel-displayd: restore attempt 1/3 generation=7 mode=mirror-portrait reason=hotplug-connected
+Nov 09 19:08:40 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:40 nuxel-displayd: starting mirror-portrait on output HEADLESS-1 auto_orientation=True effective=90 transform=270 external_rotation=270
+Nov 09 19:08:41 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:41 nuxel-displayd: notification #60: External display active
+Nov 09 19:08:41 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:41 nuxel-displayd: mode=mirror-portrait active on HEADLESS-1
+Nov 09 19:08:41 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:08:41 nuxel-displayd: restore complete generation=7 mode=mirror-portrait in 0.39s
+Nov 09 19:09:30 WIN-CLIENT nuxel-displayd[225217]: 2026-11-09T19:09:30 nuxel-displayd: external output stopped (control request, remember=True, last_mode=off)

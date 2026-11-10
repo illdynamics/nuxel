@@ -1,0 +1,222 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== all PLUG events ===
+3088:Nov 09 09:57:11 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+188454:Nov 09 12:13:24 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_DETACHED ---
+488061:Nov 09 16:24:10 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+495575:Nov 09 16:30:30 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_DETACHED ---
+495912:Nov 09 16:30:30 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+942515:Nov 09 17:05:51 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_DETACHED ---
+943756:Nov 09 17:05:54 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+1109502:Nov 09 17:13:41 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_DETACHED ---
+1111355:Nov 09 17:13:45 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+1125536:Nov 09 17:14:25 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_DETACHED ---
+1125819:Nov 09 17:14:25 fedora kernel: max77705: max77705_ccstat_irq_handler: PLUG_ATTACHED +++
+=== recent tail (17:00+) ccic state changes ===
+Nov 09 17:15:27 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:27 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:27 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:28 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:28 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:28 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:28 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:29 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:29 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:29 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:30 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:30 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:30 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:31 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:31 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:31 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:31 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:32 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:32 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:32 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:32 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:32 fedora kernel: max77705_muic: max77705_muic_print_reg_log UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0, PMIC_MASK:0x2, WDT:2, POR:0
+Nov 09 17:15:33 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:33 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:33 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:33 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:34 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:34 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:34 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:35 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:35 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:35 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:36 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:36 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:36 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:36 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:37 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:37 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:37 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:37 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:38 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:38 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:38 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:38 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:39 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:39 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:39 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:39 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:40 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:40 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:41 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:41 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:41 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:41 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:42 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:42 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:42 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:42 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:43 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:43 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:43 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:43 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:44 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:44 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:44 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:44 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:45 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:45 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:45 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:45 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:46 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:46 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:47 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:47 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:47 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:47 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:48 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:48 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:48 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:48 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:49 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:49 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:49 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:49 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:50 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:50 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:50 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:50 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:51 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:51 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:51 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:51 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:52 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:52 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:53 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:53 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:53 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:53 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:54 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:54 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:54 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:54 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:55 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:55 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:55 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:55 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:56 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:56 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:56 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:56 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:57 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:57 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:57 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:57 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:58 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:58 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:59 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:59 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:59 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:15:59 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:00 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:00 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:00 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:00 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:01 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:01 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:01 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:01 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:02 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:02 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:02 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:02 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:03 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:03 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:03 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:04 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:04 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:04 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:05 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:05 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:05 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:05 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:06 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:06 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:06 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:06 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:07 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:07 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:07 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:07 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:08 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:08 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:08 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:08 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:09 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:09 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:09 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:10 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:10 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:10 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:11 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:11 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:11 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:11 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:12 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:12 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:12 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:12 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:13 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:13 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:13 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:13 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:14 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:14 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:14 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:14 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:15 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:15 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:16 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:16 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:16 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:16 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:17 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:17 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:17 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:17 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:18 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:18 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:18 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:18 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:19 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:19 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:19 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:19 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:20 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:20 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:20 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:20 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:21 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000
+Nov 09 17:16:21 fedora kernel: max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000

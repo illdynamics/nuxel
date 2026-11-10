@@ -1,0 +1,309 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 1 sleep_mode = 0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 1 sleep_mode = 0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: type-c manager: manager_set_alternate_mode : listener 25
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_set_enable_alternate_mode: is_first_booting  : 1 mode a
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_set_enable_alternate_mode: alternate mode is ready!
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_set_enable_alternate_mode: [ON BOOTING TIME] !!!alternate mode is started!
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_set_enable_alternate_mode: !![ON BOOTING TIME] SEND THE PACKET REGARDING IN CASE OF VR/DP 
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_set_enable_alternate_mode: USBC1:0x07, USBC2:0x31, BC:0x05
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_set_enable_alternate_mode: CC_STATUS0:0x88, CC_STATUS1:0x0, PD_STATUS0:0x0, PD_STATUS1:0x7
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_set_enable_alternate_mode: UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: send_otg_notify event=power_role_source(27) enable=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: extra_notify_state+ event=power_role_source(27), enable=on
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: host_notify: power_state (sink->source)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: pdic_handle_usb_external_notifier_notification : action=7 , enable=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_vbus_turn_on_ctrl : enable=1, auto_vbus_en=0, must_block_host=0, swaped=0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_vbus_turn_on_ctrl : enable=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_chg_set_mode_state: current_mode(0x4), state(3)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_chg_set_mode_state: current_mode(0xe)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_chg_set_mode_state: CNFG_00 (0xe)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: send_otg_notify event=pd_contract(28) enable=0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: extra_notify_state+ event=pd_contract(28), enable=off
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: typec_set_pwr_opmode pwr_opmode=0 opmode=0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: send_otg_notify event=host_id(2) enable=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: otg_notify_state+ event=host_id(2), enable=on
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_set_charge set Charging-Off mode
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=0 owner=0 (usb:0 dp:1) on=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_chg_set_mode_state: current_mode(0xe), state(1)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_chg_set_mode_state: current_mode(0xe)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_chg_set_mode_state: CNFG_00 (0xe)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos_usbdrd_phy_link_rst
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_set_sysovlo: check topsys irq mask(0xdf), enable(1)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_chg_set_property: enable aicl : 0x1a
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: send_otg_notify event=vbus_power(35) enable=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: extra_notify_state+ event=vbus_power(35), enable=on
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_swelling_check: status(Discharging), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(274)'C
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_chg_monitor_work: [CHG] MODE(0xe), B2SOVRC(0xc), otg_on(1)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_monitor_work: Status(Discharging), mode(None), Health(Good), Cable(OTG, OTG, 3, 0), rp(0), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(NONE, 1000), sleep_mode(0), Cycle(-1)
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: xhci-hcd xhci-hcd.10.auto: //[xhci_set_hc_event_deq_audio] Write event ring dequeue pointer = 0x9f8234000, preserving EHB bit
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: xhci-hcd xhci-hcd.10.auto: // [USB Audio] Set the interrupt modulation register
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: xhci-hcd xhci-hcd.10.auto: // [USB Audio] Enabling event ring interrupter ffffff802ce18480 by writing 0x2 to irq_pending
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3 10c00000.dwc3: USB_AUDIO_IPC : exynos_usb_audio_init
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: xhci-hcd xhci-hcd.10.auto: USB Audio offloading is supported
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: send_otg_notify event=pd_contract(28) enable=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: usb_notify: extra_notify_state+ event=pd_contract(28), enable=on
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: typec_set_pwr_opmode pwr_opmode=0 opmode=3
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_process_alternate_mode: mode : 0x1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_process_alternate_mode: mode : 0x2
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_discover_mode_irq: IRQ(312)_IN
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_receive_alternate_message: : bFLAG_Vdm_Discover_MODEs
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_process_alternate_mode: mode : 0x4
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_discover_mode_irq: IRQ(312)_OUT
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_process_discover_mode: vendor_id = 0xff01 , svid_1 = 0x0000
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_process_discover_mode: pDP_DIS_MODE->MSG_HEADER.DATA = 0x264F264F
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_process_discover_mode: pDP_DIS_MODE->DATA_MSG_VDM_HEADER.DATA = 0xFF018043
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_process_discover_mode: pDP_DIS_MODE->DATA_MSG_MODE_VDO_DP.DATA = 0x00000C05
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_process_discover_mode: 2. support DFP_D 0x0000000c
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_irq_execute: ignore Enter_Mode
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_enter_mode_irq: IRQ(313)_IN
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_receive_alternate_message: : bFLAG_Vdm_Enter_Mode
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_process_alternate_mode: mode : 0x8
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_enter_mode_irq: IRQ(313)_OUT
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_vdm_process_enter_mode: EnterMode ACK.
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_process_alternate_mode: mode : 0x40
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_ccic_event_notifier: usb: dest=DP, id=ID_DP_HPD, attach=0, event=0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: type-c manager: manager_handle_ccic_notification: src:CCIC dest:DP id:ID_DP_HPD attach/rid:0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_process_alternate_mode: mode : 0x80
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: type-c manager: manager_notifier_notify: src:CCIC dest:DP id:ID_DP_HPD sub1:00 sub2:00 sub3:00
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: CCIC_NOTIFY_ID_DP_HPD, 0, 0
+Nov 09 17:26:05 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: hpd same state skip 0
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_ccic_event_notifier: usb: dest=DP, id=ID_DP_LINK_CONF, attach=3, event=0
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: type-c manager: manager_handle_ccic_notification: src:CCIC dest:DP id:ID_DP_LINK_CONF attach/rid:3
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: type-c manager: manager_notifier_notify: src:CCIC dest:DP id:ID_DP_LINK_CONF sub1:03 sub2:00 sub3:00
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: CCIC_NOTIFY_ID_DP_LINK_CONF 3
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_process_alternate_mode: mode : 0x20
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705: max77705_ccic_event_notifier: usb: dest=DP, id=ID_DP_HPD, attach=1, event=0
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: type-c manager: manager_handle_ccic_notification: src:CCIC dest:DP id:ID_DP_HPD attach/rid:1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: type-c manager: manager_notifier_notify: src:CCIC dest:DP id:ID_DP_HPD sub1:01 sub2:00 sub3:00
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: CCIC_NOTIFY_ID_DP_HPD, 1, 0
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: displayport hpd changed 1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3_exynos_phy_enable owner=1 (usb:0 dp:1) on=1 +
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=1 owner=1 (usb:0 dp:1) on=1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3_exynos_phy_enable -
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3_exynos_phy_enable owner=1 (usb:0 dp:1) on=1 +
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=3 owner=1 (usb:0 dp:1) on=1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3_exynos_phy_enable -
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Read link status 41 00 00 00 00 00
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: link training in hpd_changed
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Full Link Training Start + : 14 c4
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: set link late: 0x6, lane cnt:4
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Reduce_Link_Rate_Retry(0x6)
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: link_rate = 6
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3_exynos_phy_enable owner=1 (usb:0 dp:1) on=1 +
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3 10c00000.dwc3: dwc3_otg_phy_enable phy control=3 owner=1 (usb:0 dp:1) on=1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dwc3_exynos_phy_enable -
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: Full Link Training Finish - : 06 04
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: displayport_audio_init_config
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: HPD status = 1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:06 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:07 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:08 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:08 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:08 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:08 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: audio info = 0x43F0002
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: Displayport: enable timeout
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x2, id = 0x10, enable = 0)
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x12, id = 0x10, enable = 0)
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:09 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:18c5d11
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhdpcie_resume_dev: Enable L1ss EP side
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x12, id = 0x10, enable = 1)
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x2, id = 0x10, enable = 1)
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:10 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x2, id = 0x10, enable = 0)
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x12, id = 0x10, enable = 0)
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: abox_enable
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox-gic 18cf1000.abox-gic: abox_gic_enable_irq
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: new extra firmware AP_AUDIO_SLSI.bin
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: AP_AUDIO_SLSI.bin is loaded
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: new extra firmware APBargeIn_AUDIO_SLSI.bin
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: APBargeIn_AUDIO_SLSI.bin is loaded
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: new extra firmware APDV_AUDIO_SLSI.bin
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: APDV_AUDIO_SLSI.bin is loaded
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: new extra firmware APBiBF_AUDIO_SLSI.bin
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: APBiBF_AUDIO_SLSI.bin is loaded
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: new extra firmware APTV_AUDIO_SLSI.bin
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: APTV_AUDIO_SLSI.bin is loaded
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: new extra firmware APSV_AUDIO_SLSI.bin
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: samsung-abox 18c50000.abox: APSV_AUDIO_SLSI.bin is loaded
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:33a2d11
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhdpcie_resume_dev: Enable L1ss EP side
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x12, id = 0x10, enable = 1)
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x2, id = 0x10, enable = 1)
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:11 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:12 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:12 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x2, id = 0x10, enable = 0)
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x12, id = 0x10, enable = 0)
+Nov 09 17:26:13 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:35b6611
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhdpcie_resume_dev: Enable L1ss EP side
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x12, id = 0x10, enable = 1)
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x2, id = 0x10, enable = 1)
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:14 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel:  RDMA1: ASoC: no backend DAIs enabled for RDMA1
+Nov 09 17:26:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:15 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel:  RDMA1: ASoC: no backend DAIs enabled for RDMA1
+Nov 09 17:26:16 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:16 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:16 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:16 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:17 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:18 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0F000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #2 2
+Nov 09 17:26:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:19 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:20 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x2, id = 0x2, enable = 1)
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x2, enable = 1)
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:21 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:22 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:22 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:22 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:22 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:22 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 09 17:26:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+Nov 09 17:26:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+Nov 09 17:26:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 09 17:26:23 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3b13d11
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhdpcie_resume_dev: Enable L1ss EP side
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:25 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:25 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:25 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:25 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:25 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: sec_bat_get_property cable type = 21 sleep_mode = 0
+Nov 09 17:26:25 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:25 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:26 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:26 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: max77705_irq_thread ic_alt_mode=1
+Nov 09 17:26:26 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 09 17:26:26 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+Nov 09 17:26:26 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)

@@ -1,0 +1,26 @@
+Colour root-cause model (source frame: evidence/pwnage-101000/source-format/raw-landscape.ppm)
+
+Old conversion (pre-fix):
+  * build_lut() filled lut_hi[x] from (x >> 16), which is zero for every
+    x in 0..65535, so convert_word() dropped the red channel for the
+    XRGB8888/ARGB8888 path.
+  * The external decon_t OUTFIFO is programmed with DECON_RGB order
+    (decon_reg_configure_lcd: only DSI-without-DSC selects DECON_BGR), while
+    the bridge packed ABGR8888 (R@0 G@8 B@16). The result is a second R/B
+    swap on the DP output.
+  * Net physical result for a source pixel (R,G,B):
+        (B, G, 0)
+    A dark-blue wallpaper therefore becomes orange/red; green content stays
+    green; neutral white remains neutral. This matches the supplied photo.
+
+New conversion:
+  * lut_hi[x] = (x & 0xff) << lut_r, so red survives.
+  * DP path packs ARGB8888 (R@16 G@8 B@0 A@24) to compensate the DP RGB
+    OUTFIFO order.
+  * Net physical result: (R,G,B).
+
+Measured non-black means from the same frame:
+  old predicted: R=64.2 G=51.6 B=0.0   (red/orange dominant)
+  new predicted: R=43.3 G=51.6 B=64.2 (blue dominant, matches grim UI)
+  user photo TV crop: R=170.3 G=41.7 B=24.6 (red/orange dominant)
+The photo's dominant chroma is consistent with the old model, not the new one.

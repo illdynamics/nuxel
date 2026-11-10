@@ -1,0 +1,47 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{
+  "id": 47,
+  "summary": "External display connected",
+  "body": "Philips \u00b7 1920x1080@60\nChoose how to use the connected display.\nLast used: Mirroring the built-in screen upright on the external display.",
+  "actions": [
+    "mirror-portrait",
+    "Mirror portrait",
+    "mirror-landscape",
+    "Mirror landscape",
+    "fullscreen",
+    "Fullscreen",
+    "settings",
+    "Display settings"
+  ],
+  "hints": {
+    "nuxel.display.generation": 1,
+    "nuxel.display.state": "DP_LINK_READY",
+    "nuxel.display.modes": [
+      {
+        "raw": "U:640x480p-0",
+        "width": 640,
+        "height": 480,
+        "refresh": 0,
+        "flags": "U",
+        "source": "fbdev"
+      }
+    ],
+    "nuxel.display.selected_resolution": {
+      "width": 1920,
+      "height": 1080,
+      "refresh": 60,
+      "name": "V1920X1080P60"
+    },
+    "nuxel.display.display_name": "Philips",
+    "nuxel.display.desktop_available": false,
+    "nuxel.display.blocker": null
+  }
+}

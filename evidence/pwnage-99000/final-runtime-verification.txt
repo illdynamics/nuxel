@@ -1,0 +1,84 @@
+2026-11-09T16:00:13Z
+=== identity / units ===
+fedora
+Linux fedora 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+active
+active
+active
+active
+active
+active
+=== provider status (HTTP bridge, org.nuxel.Home) ===
+{
+  "state": "PARTNER_NO_PD",
+  "drm_present": false,
+  "drm_class_entries": [
+    "version"
+  ],
+  "drm_kernel": "y",
+  "drm_exynos_kernel": "not_set",
+  "type_c_port_count": 1,
+  "partner": true,
+  "pd_identity": false,
+  "pd_ids": "0000:0000",
+  "pd_type": 0,
+  "dp_link": false,
+  "secdp": 0,
+  "extcon_dp": false,
+  "external_fb_present": true,
+  "external_modes": [
+    {
+      "raw": "U:640x480p-0",
+      "width": 640,
+      "height": 480,
+      "refresh": 0,
+      "flags": "U",
+      "source": "fbdev"
+    }
+  ],
+  "mirror_supported": false,
+  "desktop_supported": false,
+  "rotation": 0,
+  "audio": {
+    "available": false,
+    "dp_audio_pcm": true,
+    "pcm": "00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1",
+    "ch_hdmi_audio": 0,
+    "blockers": [
+      "DP link is not ready, so no HDMI/DP audio route exists"
+    ],
+    "blocker": "DP link is not ready, so no HDMI/DP audio route exists"
+  },
+  "blocker": "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start.; Separate desktop needs a second compositor output; only HEADLESS-1 is currently exposed.; HDMI audio: DP link is not ready, so no HDMI/DP audio route exists"
+}
+=== daemon status ===
+{
+  "state": "PARTNER_NO_PD",
+  "hardware_state": "PARTNER_NO_PD",
+  "partner": true,
+  "external_fb_present": true,
+  "mode": "off",
+  "rotation": 0,
+  "generation": 0,
+  "mirror_supported": false,
+  "desktop_supported": false,
+  "blocker": "Type-C partner has no USB-PD identity (usbpd_ids=0000:0000, usbpd_type=0); DisplayPort Alt Mode is negotiated with a structured VDM over USB-PD, so the DP link cannot start."
+}
+=== hub stability ===
+s "{\"success\": true, \"counts\": {\"active\": 7, \"unread\": 7, \"read\": 0, \"archived\": 9, \"total\": 16}}"
+Result=success
+NRestarts=0
+ExecMainStatus=0
+-rw-------. 1 nuxel-notifications nuxel-notifications 9575 Nov  9 16:53 /var/lib/nuxel/notifications.json
+=== rotation control ===
+rotation_readback_90=90
+=== framebuffer nodes ===
+crw-------. 1 root root 29, 0 Jan  1  1970 /dev/fb0
+crw-------. 1 root root 29, 1 Jan  1  1970 /dev/fb1
+=== installed hashes ===
+cf3d6e9b0036faf0342b679412d28ac6ca32efbecc3340ad184d795203bac827  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+7ad1b29c0261ab8315ece0d71cc20119ff9fe4382b91c6c3f6704791ac3bdebf  /usr/lib/nuxel/nuxel-notifications/notifications.py
+744351d9b4e7b5377adb76ce303674fa6a98e006e780146d1004172c776173a0  /usr/libexec/nuxel/nuxel-displayd
+cb7c662d55fb261aa4355fbafc8be337f4f11e0d6f1826a9b93f2c7743e3ae7f  /usr/share/nuxel/pwa/nuxel-home/js/app.js
+5c3b8c304a03c97a3bcfadd0a33e15db73a768321380c12299d384de5a8510f3  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+bafc99c18d655b3e6adb4e148723afce083fd790f158f94e7caa2a6091d83402  /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js

@@ -1,0 +1,13 @@
+rotation transition evidence 2026-11-09T18:09:02Z
+pid_before=226894
+portrait pid=226894 state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=180 nz=5701 color=argb orient_eff=0 orient_tf=0
+landscape pid=226894 state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=270 fit=fit frames=200 nz=17993 color=argb orient_eff=90 orient_tf=270
+reverse-landscape pid=226894 state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=90 fit=fit frames=220 nz=17993 color=argb orient_eff=270 orient_tf=90
+reverse-portrait pid=226894 state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=180 fit=fit frames=240 nz=5701 color=argb orient_eff=180 orient_tf=180
+portrait pid=226894 state RUNNING mode=mirror-portrait output=HEADLESS-1 fb=/dev/fb1 src=720x1520 dst=1920x1080 fps=20 rot=0 fit=fit frames=260 nz=5701 color=argb orient_eff=0 orient_tf=0
+pid_after=226894
+== performance ==
+displayd PID 225217 CPU 11.6% MEM 0.2% RSS 21520
+bridge PID 226894 CPU 41.0% MEM 0.1% RSS 14272
+decon_t irq_delta_2s=120 (~60 Hz)
+audio: DP Audio PCM 00-22 present; ch_hdmi_audio=70975746 (infoframe not active)

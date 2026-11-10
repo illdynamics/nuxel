@@ -766,3 +766,30 @@ def test_systemd_fallback_yields_to_session_without_done_marker(tmp_path):
     assert r["verdict"] == "YIELD_SESSION"
     assert not h.done.exists()
     assert "yield_session" in h.log.read_text(encoding="utf-8")
+
+def test_default_status_path_follows_the_served_docroot(tmp_path):
+    """A status document beside the wrong layout is a permanent 404.
+
+    The S10+ serves the launcher at /pwa/nuxel-home; the controller used to
+    hard-code the legacy /nuxel-home docroot.  The launcher then never saw
+    starting/covered/done and held its opaque first-frame penguin poster up to
+    the hard timeout.  Pin the layout resolution so that regression cannot
+    return silently.
+    """
+    import runpy
+
+    # Execute the controller (not as __main__) to inspect its layout helper.
+    namespace = runpy.run_path(str(CONTROLLER), run_name="nuxel_preload_cinema_under_test")
+    default_status_path = namespace["_default_status_path"]
+
+    root = tmp_path / "docroot"
+    (root / "pwa" / "nuxel-home").mkdir(parents=True)
+    (root / "pwa" / "nuxel-home" / "index.html").write_text("", encoding="utf-8")
+    assert default_status_path(root) == str(
+        root / "pwa" / "nuxel-home" / "preload-status.json")
+
+    legacy = tmp_path / "legacy"
+    (legacy / "nuxel-home").mkdir(parents=True)
+    (legacy / "nuxel-home" / "index.html").write_text("", encoding="utf-8")
+    assert default_status_path(legacy) == str(
+        legacy / "nuxel-home" / "preload-status.json")
