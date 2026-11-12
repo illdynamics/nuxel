@@ -191,6 +191,51 @@ class TestEnforcePlan(TempStoreCase):
         # the app registry's classid is authoritative when present
         self.assertEqual(plan["sandbox"]["cgroup_classid"], 16973825)
 
+    def test_standalone_location_delegate_record_is_an_allow(self):
+        # First-party seed grants store location:read / location:manage as
+        # separate delegate records with no resource-level ``location`` entry.
+        # Such a record must decide allow for EXACTLY that token, otherwise the
+        # owner sees "Location is switched off" on a healthy grant.
+        for cap in ("location:read", "location:manage"):
+            self.store.write_grants("org.nuxel.Maps", {
+                cap: {"duration": "always", "portal_type": "location"}})
+            decision = self.store.decide("org.nuxel.Maps", cap)
+            self.assertEqual(decision["decision"], "allow", cap)
+            self.assertEqual(decision["source"], "delegate-grant", cap)
+        # The sibling delegate was never granted, so it stays denied.
+        self.assertEqual(
+            self.store.decide("org.nuxel.Maps", "location:manage")["decision"],
+            "allow")
+        self.store.write_grants("org.nuxel.Maps", {
+            "location:read": {"duration": "always", "portal_type": "location"}})
+        self.assertEqual(
+            self.store.decide("org.nuxel.Maps", "location:manage")["decision"],
+            "deny")
+
+    def test_regrant_refreshes_stale_resource_facts(self):
+        # A record granted under an older registry kept its old limitation text
+        # forever, so the permission UI showed an outdated verdict after an
+        # update even though a fresh grant had just been made.
+        self.store.write_grants("org.nuxel.Weather", {
+            "location": {"duration": "always", "limitation": "OUTDATED",
+                         "verdict": "BLOCKED_HARDWARE", "delegate": "location:read"}})
+        self.store.grant("org.nuxel.Weather", "location:read")
+        resource = self.store.get_grants("org.nuxel.Weather")["location"]
+        self.assertNotEqual(resource.get("limitation"), "OUTDATED")
+        self.assertIn("limitation", resource)
+
+    def test_delegate_deny_beats_a_standalone_record(self):
+        self.store.write_grants("org.nuxel.Weather", {
+            "location:read": {"decision": "deny", "portal_type": "location",
+                              "reason": "user", "updated_at": 1},
+            "location:manage": {"duration": "always", "portal_type": "location"}})
+        self.assertEqual(
+            self.store.decide("org.nuxel.Weather", "location:read")["decision"],
+            "deny")
+        self.assertEqual(
+            self.store.decide("org.nuxel.Weather", "location:manage")["decision"],
+            "allow")
+
     def test_no_grant_means_isolated_and_no_devices(self):
         plan = permd.enforce_plan(REPO, self.store, self.registry, "nuxel-messages")
         self.assertEqual(plan["sandbox"]["network_class"], "isolated")

@@ -1,20 +1,12 @@
-// Nuxel Home - Quick Settings Panel (A32 base, A33 boot-diagnostics tile)
-// Manages the quick settings toggles.
+// Nuxel Home - Quick Settings Panel
+// Manages the quick settings toggles: radios, privacy and connection state.
 //
-// A33 adds the BOOT DIAGNOSTICS tile (briq-02b; extended in the bg-02
-// verification pass).  It is built here rather than in index.html on purpose:
-// the tile must not exist at all on a build without the setting store, and
-// building it in JS keeps the A32 markup/screenshot surface byte-identical when
-// the feature is off.  The tile reads and writes the SAME durable document the
-// console writes (`nuxelctl verbose-boot on|off|animation|verbosity`) and the
-// consumer reads at boot (/etc/nuxel/boot/verbose-boot.json), so the UI, the
-// console and the early boot stage cannot disagree.
-//
-//   tap        = verbose boot on/off (show the boot log on the glass)
-//   long press = cycle the animation policy standard -> short -> off
-// The tile always shows the EFFECTIVE animation policy and its reason, which is
-// how the documented precedence (off > short > verbose_boot > standard) stays
-// visible instead of surprising the operator after a reboot.
+// Removed by owner request (2026-11-12):
+//   * the Settings tile  -> Settings is launched from Home
+//   * the Verbose boot tile -> the switch lives in Settings -> Developer
+// The verbose-boot store/sync helpers below remain because the Settings panel
+// writes the same durable document (`nuxelctl verbose-boot …`,
+// /etc/nuxel/boot/verbose-boot.json); only the QS tile is gone.
 
 // PWNAGE-96000: bounded, event-only diagnostics.  It emits one line per
 // open/close/provider-sync transition through the existing nuxelDiag channel;
@@ -159,8 +151,11 @@ class QuickSettings {
             rotateTile.addEventListener('pointerleave', () => { if (rt) clearTimeout(rt); });
         }
 
-        // A33: the verbose-boot tile (created dynamically, see header comment)
-        this._buildVerboseBootTile();
+        // The verbose-boot switch lives only in Settings -> Developer.  It is
+        // deliberately NOT a Quick Settings tile (owner request): this panel is
+        // for radios/privacy, not boot diagnostics.
+        // PWNAGE-107000: USB networking / tethering tile.
+        this._buildUsbTetherTile();
 
         const expandBtn = document.getElementById('qs-expand-toggle');
         if (expandBtn) expandBtn.addEventListener('click', (ev) => {
@@ -168,14 +163,22 @@ class QuickSettings {
             if (this.expanded) this.collapseOrClose(); else this.expand();
         });
 
-        // Settings button
-        const settingsBtn = document.getElementById('qs-settings');
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => {
+        // PWNAGE-103000: Edge panel + Edge lighting.  Both are real surfaces:
+        // the panel opens the canonical app/notification sidebar; the lighting
+        // tile previews the display effect (long-press = on/off) and never
+        // touches the torch or any notification state.
+        const edgePanelTile = document.getElementById('qs-edge-panel');
+        if (edgePanelTile) {
+            edgePanelTile.addEventListener('click', () => {
                 this.close();
-                appRegistry.launchApp('nuxel-settings');
+                if (window.NuxelEdgeLighting && window.NuxelEdgeLighting.togglePanel) {
+                    window.NuxelEdgeLighting.togglePanel('left');
+                }
             });
         }
+        this._buildEdgeLightingTile();
+
+        // No Settings tile: the owner reaches Settings from the home screen.
     }
 
     // ---- A33: boot diagnostics --------------------------------------------
@@ -187,27 +190,112 @@ class QuickSettings {
     // so the precedence rule (off > short > verbose_boot > standard) is visible
     // in the panel instead of being a surprise after a reboot.
     _buildVerboseBootTile() {
-        const panel = this.panel;
-        if (!panel || document.getElementById('qs-verbose-boot')) return;
-        const rows = panel.querySelectorAll('.qs-row:not(.qs-privacy-row)');
-        const row = rows[rows.length - 1] || panel;
-        const tile = document.createElement('div');
-        tile.className = 'qs-item';
-        tile.id = 'qs-verbose-boot';
-        tile.dataset.enabled = 'false';
-        tile.dataset.animation = 'standard';
-        tile.title = 'Verbose boot: tap to show the Nuxel boot log on the glass; long-press to cycle the animation policy (standard / short / off)';
-        tile.innerHTML = '<span class="qs-icon verbose-icon"></span><span class="qs-label">Verbose<br>boot</span>';
+        // RETIRED from Quick Settings (owner request).  The toggle moved to
+        // Settings -> Developer and the tile is no longer created; this method
+        // is kept as the single documented no-op entry point so any older
+        // caller cannot resurrect the tile by accident.
+        return;
+    }
+
+    _buildEdgeLightingTile() {
+        const tile = document.getElementById('qs-edge-lighting');
+        const api = window.NuxelEdgeLighting;
+        if (!tile || !api) return;
+        const sync = () => {
+            const st = api.status ? api.status() : null;
+            const cfg = (st && st.settings) || api.getSettings();
+            const on = !!cfg.enabled;
+            tile.dataset.enabled = on ? 'true' : 'false';
+            const label = tile.querySelector('.qs-label');
+            if (label) label.innerHTML = (api.EFFECT_LABELS[cfg.effect] || cfg.effect) + '<br>' + (on ? 'on' : 'off');
+            tile.title = 'Edge lighting: ' + (api.EFFECT_LABELS[cfg.effect] || cfg.effect) +
+                (on ? ' (tap = preview, long-press = off)' : ' (off; tap = preview, long-press = on)') +
+                ' \u00b7 AMOLED display effect, not an LED';
+        };
         tile.addEventListener('click', () => {
-            // A long press already acted: swallow the click it produces.
-            if (this._vbLongPressFired) { this._vbLongPressFired = false; return; }
-            this._toggleVerboseBoot();
+            if (this._elLongPressFired) { this._elLongPressFired = false; return; }
+            const cfg = api.getSettings();
+            api.preview(cfg.effect);
+            this._osdNotice('Edge lighting preview: ' + (api.EFFECT_LABELS[cfg.effect] || cfg.effect));
         });
-        this._bindLongPress(tile, () => this._cycleAnimationMode());
-        const settingsTile = document.getElementById('qs-settings');
-        if (settingsTile && settingsTile.parentNode === row) row.insertBefore(tile, settingsTile);
-        else row.appendChild(tile);
-        this._syncVerboseBoot();
+        this._bindLongPress(tile, () => {
+            this._elLongPressFired = true;
+            const cfg = api.getSettings();
+            api.applySettings({ enabled: !cfg.enabled }).then((res) => {
+                this._osdNotice(cfg.enabled ? 'Edge lighting off' : 'Edge lighting on');
+                sync();
+            });
+        });
+        sync();
+        document.addEventListener('nuxel:edge-lighting-changed', sync);
+    }
+
+    // ---- PWNAGE-107000: USB networking / tethering ------------------------
+    // One tile drives the dedicated /api/v1/usb-net helper:
+    //   tap        -> toggles the current mode off/on (usbnet when turning on)
+    //   long press -> cycles  off -> usbnet -> tether -> off
+    // The label always reports the REAL helper state; a provider error or a
+    // missing kernel function is shown honestly and never painted as ON.
+    _buildUsbTetherTile() {
+        const tile = document.getElementById('qs-usb-tether');
+        if (!tile) return;
+        const MODES = ['off', 'usbnet', 'tether'];
+        const LABELS = { off: 'USB Net\nOff', usbnet: 'USB Net\nHost', tether: 'Tether\nNAT' };
+        const _setState = (st) => {
+            const active = !!(st && st.active);
+            const mode = active ? (st.mode || 'off') : 'off';
+            tile.dataset.enabled = active ? 'true' : 'false';
+            tile.dataset.mode = mode;
+            const label = tile.querySelector('.qs-label');
+            if (label) label.innerHTML = (LABELS[mode] || (mode + '<br>')) + '<br>' + (active ? 'on' : 'off');
+            const sub = st && st.function ? (' · ' + st.function) : '';
+            tile.title = 'USB networking/tethering: ' + (active ? (st.mode + sub + ' active') : 'off') +
+                ' (tap = on/off, long-press = cycle usbnet/tether/off)';
+        };
+        const _sync = async () => {
+            // "checking" is trustworthy ambiguity; never guess before the call.
+            tile.dataset.enabled = 'unknown';
+            try {
+                const r = await bridge.call('usb-net', 'status', {});
+                _setState(r);
+            } catch (e) {
+                const label = tile.querySelector('.qs-label');
+                if (label) label.innerHTML = 'USB Net<br>unavail';
+                tile.dataset.enabled = 'unknown';
+                tile.title = 'USB networking/tethering unavailable: ' + (e && e.message ? e.message : 'provider error');
+            }
+        };
+        const _apply = async (mode) => {
+            try {
+                const r = await bridge.call('usb-net', 'set-mode', { mode: mode, function: 'ecm' });
+                if (r && r.success) {
+                    this._osdNotice(mode === 'off' ? 'USB networking off' :
+                        (mode === 'usbnet' ? 'USB networking on (host link)' : 'USB tethering on (NAT)'));
+                    await _sync();
+                } else {
+                    this._osdNotice('USB net ' + mode + ' failed: ' + ((r && (r.error || r.last_error || r.detail)) || 'helper did not confirm'));
+                    await _sync();
+                }
+            } catch (e) {
+                this._osdNotice('USB net ' + mode + ': provider unavailable');
+                await _sync();
+            }
+        };
+        tile.addEventListener('click', () => {
+            if (this._utLongPressFired) { this._utLongPressFired = false; return; }
+            const cur = tile.dataset.mode || 'off';
+            const next = (cur === 'off') ? 'usbnet' : 'off';
+            _apply(next);
+        });
+        this._bindLongPress(tile, () => {
+            this._utLongPressFired = true;
+            const cur = tile.dataset.mode || 'off';
+            const idx = MODES.indexOf(cur);
+            const next = MODES[(idx + 1) % MODES.length];
+            _apply(next);
+        });
+        _sync();
+        document.addEventListener('nuxel:usb-net-changed', _sync);
     }
 
     // A long press that cannot double-fire, cannot fire on a scroll and cannot
@@ -412,7 +500,15 @@ class QuickSettings {
 
     // Kept for callers that legitimately want the full panel at once (the
     // hardware Quick Settings button and the notification bell).
-    open() { return this._setLevel(2, 'open'); }
+    open() {
+        // PWNAGE-103000: the shade and the Edge panel are mutually exclusive
+        // surfaces; whichever opens last owns the screen.
+        if (window.NuxelEdgeLighting && window.NuxelEdgeLighting.isPanelOpen &&
+            window.NuxelEdgeLighting.isPanelOpen()) {
+            window.NuxelEdgeLighting.closePanel('quick-settings');
+        }
+        return this._setLevel(2, 'open');
+    }
     expand() { return this._setLevel(Math.max(2, this.level + (this.level >= 2 ? 1 : 0)), 'expand'); }
     extend() { return this._setLevel(3, 'extend'); }
 
@@ -673,9 +769,13 @@ class QuickSettings {
         const nfcSupported = nfc.success !== false && nfc.supported === true;
         this._setPrivacyTile('qs-nfc', nfcSupported,
             nfcSupported && nfc.enabled === true,
-            'NFC<br>' + (nfcSupported ? (nfc.enabled === true ? 'on' : 'off') : 'unsupported'),
-            nfcSupported ? 'NFC provider state; tap to toggle' :
-            ('NFC unsupported/blocked: ' + (nfc.blocker || nfc.state || 'provider unavailable')));
+            'NFC<br>' + (nfcSupported
+                ? (nfc.enabled === true ? 'on' : (nfc.state === 'TAG_PRESENT' ? 'tag' : 'off'))
+                : 'unsupported'),
+            nfcSupported
+                ? ('NFC ' + (nfc.state || (nfc.enabled ? 'on' : 'off')) +
+                   '; tap to toggle. Tags are read in Settings.')
+                : ('NFC unsupported/blocked: ' + (nfc.blocker || nfc.state || 'provider unavailable')));
 
         const fp = this.privacy.fingerprint || {};
         const sec = this.privacy.security || {};
@@ -1242,21 +1342,27 @@ class QuickSettings {
         const el = document.getElementById('qs-location');
         if (el) el.dataset.pending = 'true';
         try {
-            let result = await bridge.call('location', 'set-enabled', { enabled: !!enabled });
+            // Home owns this device-wide control through its per-app
+            // location:manage grant.  Asking permissions.request here is wrong:
+            // it targets the caller and returns the raw RPC envelope, whose
+            // denied response is truthy, so the old code could continue to a
+            // second denied call.  If an owner has explicitly revoked the
+            // grant, report the exact permission instead of pretending to hold
+            // an interactive consent surface on this handset.
+            const check = await bridge.call('permissions', 'check', { capability: 'location:manage' });
+            if (check && check.denied === true) {
+                throw new Error('Location control permission is denied (enable it in Settings › Permissions)');
+            }
+            const result = await bridge.call('location', 'set-enabled', { enabled: !!enabled });
             if (result && result.error_code === 'CAPABILITY_DENIED') {
-                const grant = await bridge.requestCapability('location:manage', 'Toggle location policy');
-                if (grant === false || (grant && grant.granted === false)) {
-                    throw new Error((grant && grant.error) || 'Location control permission denied');
-                }
-                result = await bridge.call('location', 'set-enabled', { enabled: !!enabled });
+                throw new Error('Location control permission is not granted (Settings › Permissions)');
             }
             if (!result || result.success !== true) {
                 throw new Error((result && (result.error || result.detail)) || 'Location policy did not confirm');
             }
-            this.state.location = Boolean(result.enabled);
+            await this._syncLocation();
             this._updateUI();
             this._hapticSwitch();
-            this._syncLocation();
             document.dispatchEvent(new CustomEvent('nuxel:location-policy', {
                 detail: { enabled: this.state.location }, bubbles: true,
             }));

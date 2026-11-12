@@ -1,5 +1,5 @@
 [Unit]
-Description=Nuxel NFC controller service (Samsung sec-nfc transport)
+Description=Nuxel NFC controller service (S3NRN82 kernel NCI)
 Documentation=file:/usr/share/doc/nuxel/PWNAGE-65000.md
 StartLimitIntervalSec=120
 StartLimitBurst=5
@@ -14,23 +14,39 @@ RuntimeDirectory=nuxel/nfc
 RuntimeDirectoryMode=0700
 StateDirectory=nuxel/nfc
 StateDirectoryMode=0700
+ExecStartPre=/usr/bin/python3 /usr/lib/nuxel/nuxel-nfc/nfcd-preflight.py
 ExecStart=/usr/bin/python3 -m nuxel_nfc.daemon daemon
 Environment=PYTHONPATH=/usr/lib/nuxel/nuxel-nfc
 Environment=PYTHONUNBUFFERED=1
+# The per-app NFC gate reads the shared permD grant store.  With a custom
+# ReadWritePaths= the root is otherwise writable, so name the store read-only
+# explicitly (measured: without this the daemon saw a different /var/lib/nuxel
+# and refused every granted app).
+Environment=NUXEL_PERMISSIONS_DIR=/var/lib/nuxel/permissions
 Restart=on-failure
 RestartSec=3
 TimeoutStartSec=15
 TimeoutStopSec=10
-User=root
-Group=root
+# The unit runs as the session user (like nuxel-portal and the consent surface)
+# so the shared permD grant store — written by Settings / the consent agent as
+# UID 1000 — is readable under the sandbox.  As root with ProtectSystem=strict
+# and this unit's restrictive umask the store read was denied even at EUID 0
+# (measured 2026-11-12), which silently turned every NFC grant into EPERM.
+User=nuxel
+Group=nuxel
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
 PrivateDevices=no
 DevicePolicy=closed
+# Kernel NCI is the production controller interface (s3fwrn5_i2c).
+# /dev/sec-nfc remains read/write for the explicit diagnostic fallback, but is
+# never selected automatically when nfc0 exists.
+DeviceAllow=/dev/nfc0 rw
 DeviceAllow=/dev/sec-nfc rw
-RestrictAddressFamilies=AF_UNIX
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+BindReadOnlyPaths=/var/lib/nuxel/permissions
 ReadWritePaths=/run/nuxel/nfc /var/lib/nuxel/nfc /var/log/nuxel
 CapabilityBoundingSet=
 AmbientCapabilities=

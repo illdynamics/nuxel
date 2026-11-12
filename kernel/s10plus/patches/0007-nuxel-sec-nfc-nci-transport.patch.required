@@ -1,0 +1,1 @@
+Required with CONFIG_NFC_S3FWRN5_I2C: this patch frames NCI writes with per-packet parity, validates real DT resources, and removes the legacy "sec-nfc" I2C id_table match when the S3FWRN5 NCI driver is built, so the NCI driver binds 7-0027. Without it the raw vendor transport owns the controller and no /dev/nfc0 exists.

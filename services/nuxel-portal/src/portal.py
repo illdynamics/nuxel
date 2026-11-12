@@ -95,6 +95,8 @@ PORTAL_PHONE_STATUS = 'phone_status'
 PORTAL_LOCATION = 'location'
 PORTAL_CAMERA = 'camera'
 PORTAL_MICROPHONE = 'microphone'
+# NFC tag access (read/write tag contents, observe tag presence).
+PORTAL_NFC = 'nfc'
 PORTAL_SETTINGS = 'settings'
 PORTAL_CALENDAR = 'calendar'
 PORTAL_BLUETOOTH = 'bluetooth'
@@ -111,6 +113,7 @@ PORTAL_DESCRIPTIONS = {
     PORTAL_LOCATION: 'Access GPS location',
     PORTAL_CAMERA: 'Use camera',
     PORTAL_MICROPHONE: 'Use microphone',
+    PORTAL_NFC: 'Use NFC tags',
     PORTAL_SETTINGS: 'Change system settings',
     PORTAL_CALENDAR: 'Access your calendar',
     PORTAL_BLUETOOTH: 'Use Bluetooth',
@@ -129,6 +132,7 @@ PORTAL_RISK_LEVELS = {
     PORTAL_LOCATION: 'high',
     PORTAL_CAMERA: 'high',
     PORTAL_MICROPHONE: 'high',
+    PORTAL_NFC: 'high',
     PORTAL_SETTINGS: 'medium',
     PORTAL_CALENDAR: 'medium',
     PORTAL_BLUETOOTH: 'medium',
@@ -146,6 +150,7 @@ PORTAL_ICONS = {
     PORTAL_LOCATION: 'mark-location-symbolic',
     PORTAL_CAMERA: 'camera-photo-symbolic',
     PORTAL_MICROPHONE: 'audio-input-microphone-symbolic',
+    PORTAL_NFC: 'nfc-symbolic',
     PORTAL_SETTINGS: 'preferences-system-symbolic',
     PORTAL_CALENDAR: 'office-calendar-symbolic',
     PORTAL_BLUETOOTH: 'bluetooth-symbolic',
@@ -223,22 +228,43 @@ class PermissionStore:
                 logger.info(f"Revoked all permissions for {app_id}")
 
     def check_grants(self, app_id, portal_type):
-        """Check if a permission is currently granted."""
-        grants = self.get_grants(app_id)
-        grant = grants.get(portal_type)
-        if grant is None:
-            return False
-        if grant.get('duration') == 'once':
-            # One-time grants are consumed on check
-            self.revoke_grant(app_id, portal_type)
-            return True
-        return True
+        """Check if a permission is currently granted (non-consuming).
+
+        A ``once`` grant must survive until the caller actually acts on it
+        (RequestMicrophone consumes it); a read-only status query consuming
+        it would make the toggle flicker off under a live recorder.
+        """
+        return self.get_grant(app_id, portal_type) is not None
 
     def has_always_grant(self, app_id, portal_type):
         """Check if an app has an 'always' grant."""
+        grant = self.get_grant(app_id, portal_type)
+        return grant is not None and grant.get('duration') == 'always'
+
+    def get_grant(self, app_id, portal_type):
+        """Return the current grant record (delegate aliases included)."""
         grants = self.get_grants(app_id)
         grant = grants.get(portal_type)
-        return grant is not None and grant.get('duration') == 'always'
+        if isinstance(grant, dict):
+            if grant.get('decision') == 'deny':
+                return None
+            return grant
+        # permD stores a delegate (location:read) as its own token.  Resolve
+        # the portal type the same way permD's registry does so the two
+        # surfaces see one decision.
+        for name, value in grants.items():
+            if not isinstance(value, dict) or value.get('decision') == 'deny':
+                continue
+            if name == portal_type or name.split(':', 1)[0] == portal_type:
+                return value
+            if value.get('portal_type') == portal_type:
+                return value
+        return None
+
+    def consume_once(self, app_id, portal_type, grant):
+        """One-time grants are spent as soon as they are answered."""
+        if grant and grant.get('duration') == 'once':
+            self.revoke_grant(app_id, portal_type)
 
 
 class NuxelPortalService(dbus.service.Object):
@@ -467,9 +493,27 @@ class NuxelPortalService(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, in_signature='s', out_signature='s')
     def RequestMicrophone(self, app_id):
-        """Request user consent to use the microphone."""
-        result = self._call_phosh_agent(app_id, PORTAL_MICROPHONE)
-        return json.dumps(result)
+        """Request user consent to use the microphone.
+
+        A stored grant is the authoritative answer: an ``always`` grant is
+        returned without prompting, and a ``once`` grant is consumed here (in
+        the same store the Settings/Permission Manager read), so the toggle
+        and the request path can never disagree.
+        """
+        return json.dumps(self._consent_for(app_id, PORTAL_MICROPHONE))
+
+    def _consent_for(self, app_id, portal_type):
+        current = self.permissions.get_grant(app_id, portal_type)
+        if current is not None:
+            self.permissions.consume_once(app_id, portal_type, current)
+            return {'granted': True,
+                    'duration': current.get('duration', 'always'),
+                    'source': 'store'}
+        if PORTAL_AUTO_GRANT:
+            result = {'granted': True, 'duration': 'always'}
+        else:
+            result = self._call_phosh_agent(app_id, portal_type)
+        return result
 
     @dbus.service.method(BUS_NAME, in_signature='ss', out_signature='s')
     def RequestSettingsChange(self, app_id, setting):
@@ -500,6 +544,11 @@ class NuxelPortalService(dbus.service.Object):
         """Request user consent to access the calendar."""
         result = self._call_phosh_agent(app_id, PORTAL_CALENDAR)
         return json.dumps(result)
+
+    @dbus.service.method(BUS_NAME, in_signature='s', out_signature='s')
+    def RequestNfcAccess(self, app_id):
+        """Request user consent to use NFC (read/write tags)."""
+        return json.dumps(self._consent_for(app_id, PORTAL_NFC))
 
     @dbus.service.method(BUS_NAME, in_signature='s', out_signature='s')
     def RequestBluetoothAccess(self, app_id):

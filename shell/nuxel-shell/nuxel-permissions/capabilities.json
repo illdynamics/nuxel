@@ -291,8 +291,8 @@
       "enforceable": "partial",
       "enforces_against": "unprivileged-app",
       "grant_required": true,
-      "limitation": "No GNSS bring-up on the S10+ yet (see manual proof 13-gps) -> the data path is BLOCKED_HARDWARE; the grant gate is implemented and refusal is enforced by the portal only.",
-      "verdict": "BLOCKED_HARDWARE",
+      "limitation": "The per-app read/control gate is enforced by nuxel-bridge. Position currently comes from GeoClue network/Wi-Fi location; the BCM4773 satellite receiver is silent (see docs/hardware/gps/GPS-BLOCKERS.md B0).",
+      "verdict": "PARTIAL",
       "test": "tools/s10plus/a33/verify-permissions.py; manual proof 13-gps"
     },
     {
@@ -320,6 +320,30 @@
       "limitation": "ALSA/PipeWire capture access is DAC-gated (/dev/snd/*). The portal gate is a userspace broker; a recorder that bypasses the portal is only stopped by DAC/AppArmor. The S10+ capture path itself is NOT yet verified (see manual proof 06-audio).",
       "verdict": "NEEDS_OWNER_TEST",
       "test": "tools/s10plus/a33/verify-permissions.py --app pwa/nuxel-apps/notes (mismatch demo); manual proof 06-audio"
+    },
+    {
+      "id": "nfc",
+      "aliases": [
+        "nfc:read",
+        "nfc:scan",
+        "nfc:tag",
+        "tag:read"
+      ],
+      "portal_type": "nfc",
+      "title": "NFC",
+      "description": "Use the NFC controller to read/discover tags",
+      "risk": "medium",
+      "group": "hardware",
+      "mechanisms": [
+        "portal",
+        "sandbox-profile"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "The nuxel-nfcd socket is root-owned and every scan/read/write request is authorized against this grant; the kernel /dev/nfc0 node itself is DAC-gated (root-only). A process that opens the controller node directly is only stopped by DAC.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "nuxel-nfc scan; toggle NFC in the Permission Manager, then confirm the daemon refuses the request"
     },
     {
       "id": "network",

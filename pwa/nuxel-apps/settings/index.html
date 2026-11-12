@@ -23,6 +23,7 @@
   <button class="tab" data-tab="displays">Displays</button>
   <button class="tab" data-tab="network">Wi-Fi</button>
   <button class="tab" data-tab="mobile">Mobile network</button>
+  <button class="tab" data-tab="usbnet">USB network</button>
   <button class="tab" data-tab="camera">Camera</button>
   <button class="tab" data-tab="sensors">Sensors</button>
   <button class="tab" data-tab="graphics">Graphics</button>
@@ -538,6 +539,20 @@
       <div class="row wrap" id="led-color-buttons"></div>
       <p id="led-result" class="state" role="status">—</p>
     </div>
+    <div class="card">
+      <h3>Edge lighting</h3>
+      <p class="hint">Display effect for incoming notifications (Wave by default, theme accent colour).
+        The S10+ has no notification LED and the camera flash is never used for alerts.</p>
+      <pre id="edge-lighting-state" class="state" role="status">Checking Edge lighting…</pre>
+      <p id="edge-lighting-capability" class="hint">—</p>
+      <div class="row wrap">
+        <button id="edge-lighting-open">Open Edge FX</button>
+        <button id="edge-lighting-preview">Preview</button>
+        <button id="edge-lighting-toggle">On / off</button>
+        <button id="edge-panel-open">Open Edge panel</button>
+      </div>
+      <p id="edge-lighting-result" class="state" role="status">—</p>
+    </div>
   </section>
 
   <!-- ── NFC (PWNAGE-45000) ───────────────────────────────────────────── -->
@@ -545,12 +560,21 @@
     <h2>NFC</h2>
     <div class="card">
       <h3>Controller &amp; reader</h3>
-      <p class="hint">Real kernel/driver/firmware/userspace state. Expected S10+ controller: Samsung sec-nfc / S3FWRN5 family at I2C 0x27. Only a physical tag read proves reader operation; payment/emulation is not claimed.</p>
+      <p class="hint">Real kernel NCI, controller and userspace state for this phone: Samsung S3NRN82 (S3FWRN5-compatible NCI) at I2C 0x27, path hsi2c@108E0000 / i2c-7 / 7-0027. Only a physical tag read proves reader operation; payment, card emulation and secure-element access are not supported.</p>
       <div class="row"><button id="nfc-refresh">Refresh diagnostics</button><button id="nfc-toggle" class="primary">Enable / disable</button></div>
       <pre id="nfc-state" class="state" role="status">Checking NFC…</pre>
       <p id="nfc-detail" class="hint">—</p>
-      <div class="row"><button id="nfc-test" disabled>Test tag read</button></div>
-      <p id="nfc-test-result" class="state">Tag test requires a supported reader.</p>
+      <div class="row"><button id="nfc-test" disabled>Scan / test tag read</button></div>
+      <p id="nfc-test-result" class="state">Tag test requires NFC to be enabled.</p>
+    </div>
+    <div class="card">
+      <h3>Write an expendable NDEF tag</h3>
+      <p class="hint">This overwrites the presented Type 2 tag's NDEF message and then reads it back. The lock, OTP and CC pages are never written. Writes always need an explicit confirmation and are refused for read-only tags and non-Type-2 tags.</p>
+      <div class="row"><label for="nfc-write-kind">Record</label><select id="nfc-write-kind" disabled><option value="text">Text</option><option value="uri">URI</option></select></div>
+      <div class="row"><input id="nfc-write-value" type="text" maxlength="200" placeholder="Text or https:// URI" disabled aria-label="NDEF value"></div>
+      <div class="row"><label><input id="nfc-write-confirm" type="checkbox" disabled> I confirm this is an expendable writable tag</label></div>
+      <div class="row"><button id="nfc-write" disabled>Write and verify</button></div>
+      <p id="nfc-write-result" class="state">Scan a tag first.</p>
     </div>
   </section>
 
@@ -680,6 +704,25 @@
         A CP node or netdev is a transport, never proof of registration or data.</p>
       <div class="row"><button id="mobile-refresh" class="primary">Refresh driver status</button></div>
       <pre id="mobile-state" class="state" role="status" aria-live="polite">Checking mobile transport…</pre>
+    </div>
+  </section>
+
+  <!-- ── USB NETWORKING / TETHERING (PWNAGE-107000) ───────────────────── -->
+  <section id="tab-usbnet" class="panel">
+    <h2>USB network</h2>
+    <div class="card">
+      <h3>USB networking &amp; tethering</h3>
+      <p class="hint">Share the phone&#39;s data over a USB cable. USB networking gives the host
+        a point-to-point link; USB tethering shares the phone&#39;s Wi&#8209;Fi/cellular connection
+        over NAT (host subnet 10.42.0.0/24). The CDC&#8209;ACM serial recovery console is kept in
+        every mode.</p>
+      <div class="row wrap">
+        <button id="usbnet-refresh" class="primary">Refresh status</button>
+        <button id="usbnet-usbnet">Enable USB networking</button>
+        <button id="usbnet-tether">Enable USB tethering</button>
+        <button id="usbnet-off">Disable</button>
+      </div>
+      <pre id="usbnet-state" class="state" role="status" aria-live="polite">Checking USB networking…</pre>
     </div>
   </section>
 
@@ -888,8 +931,9 @@
 <script src="../../nuxel-common/statusbar-icons.js?v=p52000"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="settings.js?v=p52000"></script>
+<script src="edge-lighting-settings.js?v=p103000"></script>
 <script src="keyboard-settings.js?v=a76"></script>
-<script src="apps-permissions-settings.js?v=p86001"></script>
+<script src="apps-permissions-settings.js?v=p108001"></script>
 <script src="file-handlers-settings.js?v=p97000"></script>
 <script src="theme-settings.js?v=p50002"></script>
 <script src="sound-settings.js?v=p102000"></script>
@@ -904,5 +948,6 @@
 <script src="graphics-diagnostics.js?v=p52000"></script>
 <script src="services-settings.js?v=p88000"></script>
 <script src="firewall-settings.js?v=2"></script>
+<script src="usb-network-settings.js?v=p107000"></script>
 </body>
 </html>

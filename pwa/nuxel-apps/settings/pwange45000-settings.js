@@ -82,19 +82,48 @@
   function loadLed() { var t = loadToken.led = Date.now(); return call('led-notification', 'status', {}).then(function (st) { if (loadToken.led === t) renderLed(st); }); }
 
   // ---- NFC ----------------------------------------------------------------
+  var lastNfcTag = null;
   function renderNfc(st) {
     if (!st || st.success === false) { setText('nfc-state', 'NFC provider unavailable' + (st && st.error ? ': ' + st.error : '')); return; }
+    if (st.nfc && typeof st.nfc === 'object' && st.nfc.state) st = st.nfc;  // /system/nfc vs hardware-state envelope
     setText('nfc-state', json({
       supported: st.supported, enabled: st.enabled, state: st.state,
       controller: st.controller, firmware: st.firmware, userspace: st.userspace,
-      mode: st.mode, blocker: st.blocker, tag_test_supported: st.tag_test_supported
+      mode: st.mode, blocker: st.blocker, tag_test_supported: st.tag_test_supported,
+      tag_writes_supported: st.tag_writes_supported,
+      write_requires_confirmation: st.write_requires_confirmation
     }));
     setText('nfc-detail', st.blocker || 'NFC reader is ready; present a tag for the physical proof.');
     var t = $('nfc-toggle'), test = $('nfc-test');
     if (t) { t.disabled = !st.supported; t.textContent = st.supported ? (st.enabled ? 'Disable NFC' : 'Enable NFC') : 'NFC unavailable'; }
-    if (test) test.disabled = !st.tag_test_supported;
+    if (test) test.disabled = !(st.tag_test_supported && st.enabled);
+    syncNfcWriteControls(st);
   }
-  function loadNfc() { var t = loadToken.nfc = Date.now(); return call('nfc', 'status', {}).then(function (st) { if (loadToken.nfc === t) renderNfc(st); }); }
+  function syncNfcWriteControls(st) {
+    var kind = $('nfc-write-kind'), value = $('nfc-write-value'), confirm = $('nfc-write-confirm'), btn = $('nfc-write');
+    var tag = lastNfcTag || {};
+    var writable = !!(tag.writable === true || (tag.type2 && tag.type2.writable === true));
+    var ready = !!(st && st.enabled && writable && confirm && confirm.checked);
+    if (btn) {
+      btn.disabled = !ready;
+      btn.title = !st || !st.enabled ? 'Enable NFC and scan a tag first'
+        : (!writable ? 'The presented tag is not a writable Type 2 tag'
+          : (!confirm || !confirm.checked ? 'Confirm the overwrite first' : 'Write the selected NDEF record'));
+    }
+    if (kind) kind.disabled = !writable;
+    if (value) value.disabled = !writable;
+    if (confirm) confirm.disabled = !writable;
+  }
+  function loadNfc() {
+    var t = loadToken.nfc = Date.now();
+    return call('nfc', 'status', {}).then(function (st) {
+      if (loadToken.nfc !== t) return;
+      // A provider error is still a real result; never replace it with a mock.
+      renderNfc(st);
+    }, function (err) {
+      if (loadToken.nfc === t) renderNfc({ success: false, error: String(err && err.message || err) });
+    });
+  }
   function toggleNfc() {
     var b = $('nfc-toggle'); if (b) b.disabled = true;
     call('nfc', 'toggle', {}).then(function (r) {
@@ -105,8 +134,38 @@
   }
   function testNfc() {
     setText('nfc-test-result', 'Waiting up to 15 s for a tag…');
-    call('nfc', 'test-tag', {}).then(function (r) {
-      setText('nfc-test-result', r && r.success ? ('Tag UID: ' + (r.uid || 'unknown')) : ('Tag test refused: ' + ((r && (r.error || r.blocker)) || 'unsupported')));
+    call('nfc', 'test-tag', { timeout_s: 15, read_ndef: true }).then(function (r) {
+      if (r && r.success && r.tag) {
+        lastNfcTag = r.tag;
+        var nd = r.tag.ndef || {};
+        var txt = (nd.records || []).map(function (x) { return x.kind + ': ' + x.preview; }).join(' | ');
+        setText('nfc-test-result', 'Tag UID: ' + (r.tag.uid || 'unknown') +
+          (r.tag.technology ? (' · ' + r.tag.technology) : '') +
+          (txt ? ('\n' + txt) : '') +
+          (r.tag.ndef_error ? ('\nNDEF: ' + r.tag.ndef_error) : '') +
+          (r.tag.writable ? '\nWritable Type 2 tag: write workflow available.' : '\nTag is not writable.'));
+      } else {
+        setText('nfc-test-result', 'Tag test refused: ' + ((r && (r.error || r.blocker)) || 'unsupported'));
+      }
+      loadNfc();
+    });
+  }
+  function writeNfc() {
+    var kind = $('nfc-write-kind'), value = $('nfc-write-value'), confirm = $('nfc-write-confirm');
+    if (!lastNfcTag) { setText('nfc-write-result', 'Scan the expendable tag first.'); return; }
+    if (!confirm || !confirm.checked) { setText('nfc-write-result', 'Confirm that this expendable tag may be overwritten.'); return; }
+    var v = value ? value.value : '';
+    if (!v) { setText('nfc-write-result', 'Enter the text or URI to write.'); return; }
+    setText('nfc-write-result', 'Writing and verifying read-back…');
+    call('nfc', 'write', { confirm: true, kind: kind ? kind.value : 'text', value: v, language: 'en' }).then(function (r) {
+      if (r && r.success && r.verified) {
+        setText('nfc-write-result', 'Write verified by read-back: ' + (r.written || kind.value) + ' record.');
+        if (r.tag) lastNfcTag = r.tag;
+        if (confirm) confirm.checked = false;
+      } else {
+        setText('nfc-write-result', 'Write failed: ' + ((r && (r.error || r.error_code)) || 'unknown error'));
+      }
+      loadNfc();
     });
   }
 
@@ -230,6 +289,9 @@
   wire('nfc-refresh', loadNfc);
   wire('nfc-toggle', toggleNfc);
   wire('nfc-test', testNfc);
+  wire('nfc-write', writeNfc);
+  var nfcConfirm = $('nfc-write-confirm');
+  if (nfcConfirm) nfcConfirm.addEventListener('change', function () { syncNfcWriteControls(null); });
   wire('fp-refresh', loadFp);
   wire('sec-apply', applySecurity);
   wire('software-refresh', loadSoftware);

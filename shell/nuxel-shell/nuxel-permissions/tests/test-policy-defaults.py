@@ -141,6 +141,34 @@ def test_intrinsic_non_sensitive_resources_do_not_require_grant():
     assert store.decide("org.nuxel.Browser", "clock_status")["decision"] == "allow"
 
 
+def test_location_read_and_control_are_independent_delegates():
+    """The two owner toggles must not erase each other in permD.
+
+    permD stores one ``location`` resource record and records the delegate
+    that wrote it.  An explicit deny of the other delegate has to stay
+    effective, while the granted delegate remains allowed after a restart.
+    """
+    tmp, store = make_store()
+    store.grant("org.nuxel.Maps", "location:read", duration="always")
+    assert store.decide("org.nuxel.Maps", "location:read")["decision"] == "allow"
+
+    # A read grant is a separate delegate record, so granting control must not
+    # erase read access from the same shared permD resource.
+    store.grant("org.nuxel.Maps", "location:manage", duration="always")
+    assert store.decide("org.nuxel.Maps", "location:manage")["decision"] == "allow"
+    assert store.decide("org.nuxel.Maps", "location:read")["decision"] == "allow"
+    store.deny("org.nuxel.Maps", "location:read")
+    assert store.decide("org.nuxel.Maps", "location:read")["decision"] == "deny"
+    assert store.decide("org.nuxel.Maps", "location:manage")["decision"] == "allow"
+
+    store.deny("org.nuxel.Maps", "location:manage")
+    assert store.decide("org.nuxel.Maps", "location:manage")["decision"] == "deny"
+    store.grant("org.nuxel.Maps", "location:read", duration="always")
+    fresh = reload_store(tmp)
+    assert fresh.decide("org.nuxel.Maps", "location:read")["decision"] == "allow"
+    assert fresh.decide("org.nuxel.Maps", "location:manage")["decision"] == "deny"
+
+
 def _run_all():
     tests = [v for k, v in sorted(globals().items())
              if k.startswith("test_") and callable(v)]

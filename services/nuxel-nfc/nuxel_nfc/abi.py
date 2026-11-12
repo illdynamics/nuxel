@@ -75,11 +75,17 @@ CONTROLLER_I2C = "/sys/bus/i2c/devices/7-0027"
 SEC_NFC_CLASS = "/sys/class/sec_nfc"
 GENERIC_NFC_CLASS = "/sys/class/nfc"
 
-# This is a published NCI 1.0/2.0 controller family mapping.  It is deliberately
-# *not* advertised as verified hardware support until a physical tag read is
-# recorded by the owner.
-PROTOCOL_NAME = "NCI 1.0/2.0 over Samsung sec-nfc misc transport"
+# Kernel NCI is the production path: the S3NRN82 on 7-0027 is an
+# S3FWRN5-compatible NCI part, so s3fwrn5_i2c -> nfc/nci exposes /dev/nfc0.
+# The /dev/sec-nfc misc transport is a diagnostic fallback and must never
+# claim protocol support until a real command/response exchange succeeds.
+PROTOCOL_NAME = "NCI 1.0/2.0 via kernel s3fwrn5_i2c (nfc0)"
 PROTOCOL_VERIFIED = False
+KERNEL_NCI_DEVICE = os.environ.get("NUXEL_NFC_NCI", "/dev/nfc0")
+# net/nfc exposes nfcN here; this kernel's nfc class has no chardev, so this
+# (plus the generic-netlink "nfc" family) is the device's real user ABI.
+NFC_SYSFS_CLASS = os.environ.get("NUXEL_NFC_SYSFS", "/sys/class/nfc")
+NFC_SOCKET_PATH = os.environ.get("NUXEL_NFC_SOCKET", "/run/nuxel/nfc/nfc.sock")
 
 ERROR_MAP = {
     16: "BUSY",              # EBUSY: another process owns /dev/sec-nfc

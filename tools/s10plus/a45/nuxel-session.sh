@@ -350,11 +350,23 @@ if [ -S "$USER_BUS" ]; then
         WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
         XDG_CURRENT_DESKTOP=Nuxel \
         XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share \
+        PULSE_SERVER="unix:/run/nuxel-wayland/pulse/native" \
+        PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland \
         >/dev/null 2>&1 || true
   fi
   start_notification_relay "unix:path=$USER_BUS" nuxel user
+  # The in-app permission consent surface owns org.nuxel.PhoshAgent on the
+  # same per-user bus the portal broker calls over.  Start it after the bus is
+  # up so the name is claimed for THIS session (systemd starts it at boot too;
+  # starting an already-active unit is a no-op).
+  systemctl --no-block start nuxel-consent-agent.service 2>/dev/null || \
+    say "consent agent unavailable; permission prompts will be denied"
 fi
-PORTAL_ENVV="XDG_RUNTIME_DIR=$USER_RUNTIME DBUS_SESSION_BUS_ADDRESS=unix:path=$USER_BUS XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0} GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland HOME=/home/nuxel"
+# PULSE_SERVER is exported here (and published to D-Bus activation above) so
+# Flatpak/Electron apps that inherit the session environment can enumerate the
+# S10+ microphone.  Without it, Chromium-based voice notes see no capture
+# device even though the PipeWire source exists (Ferdium, Teams, ZapZap, Signal).
+PORTAL_ENVV="XDG_RUNTIME_DIR=$USER_RUNTIME DBUS_SESSION_BUS_ADDRESS=unix:path=$USER_BUS XDG_CURRENT_DESKTOP=Nuxel XDG_DATA_DIRS=/var/lib/flatpak/exports/share:/usr/local/share:/usr/share WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0} GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native HOME=/home/nuxel"
 if [ -S "$USER_BUS" ] && [ -x /usr/libexec/xdg-desktop-portal-gtk ]; then
   if [ -x /usr/libexec/flatpak-portal ] && ! pgrep -u nuxel -x flatpak-portal >/dev/null 2>&1; then
     nohup runuser -u nuxel -- env $PORTAL_ENVV /usr/libexec/flatpak-portal \
@@ -435,10 +447,56 @@ if [ -S /run/nuxel-wayland/pulse/native ]; then
   chmod 0750 /run/nuxel-wayland/pulse 2>/dev/null || true
   chgrp nuxel /run/nuxel-wayland/pulse/native 2>/dev/null || true
   chmod 0770 /run/nuxel-wayland/pulse/native 2>/dev/null || true
-  ln -sfn /run/nuxel-wayland/pulse /run/user/1000/pulse 2>/dev/null || true
-  chown -h nuxel:nuxel /run/user/1000/pulse 2>/dev/null || true
+  # Flatpak --socket=pulseaudio resolves the socket through the per-user
+  # pulse/ directory (not through /run/nuxel-wayland).  0770 on the socket is
+  # useless to a non-root client if this directory stays 0700 root:root, so
+  # the link lives in a group-nuxel directory of its own.
+  [ -L /run/user/1000/pulse ] && rm -f /run/user/1000/pulse 2>/dev/null
+  mkdir -p /run/user/1000/pulse 2>/dev/null || true
+  chown nuxel:nuxel /run/user/1000/pulse 2>/dev/null || true
+  chmod 0750 /run/user/1000/pulse 2>/dev/null || true
+  rm -f /run/user/1000/pulse/native 2>/dev/null
+  ln -s /run/nuxel-wayland/pulse/native /run/user/1000/pulse/native 2>/dev/null || true
+  chown -h nuxel:nuxel /run/user/1000/pulse/native 2>/dev/null || true
   say "flatpak pulse socket linked for nuxel"
 fi
+# PWNAGE-109000 (owner: "apps do not see the microphone"): the audio server
+# runs in the ROOT compositor runtime and re-creates pulse/ on every boot.
+# Signal/Ferdium/Telegram run as uid 1000 and Electron/ZapZap through the
+# Flatpak portal; both reach it only if the DIRECTORY and socket stay
+# group-nuxel after PulseAudio/PipeWire started.  The one-shot block above
+# raced the daemon start on this image, so re-assert (and keep re-asserting
+# for the session lifetime) instead of claiming once.  Nothing here widens
+# access to non-members: the directory is 0750 root:nuxel, the socket 0770.
+_assert_audio_socket() {
+  # A self-referencing link makes PulseAudio/PipeWire fail with ELOOP forever.
+  [ -L /run/nuxel-wayland/pulse/native ] && rm -f /run/nuxel-wayland/pulse/native 2>/dev/null
+  [ -d /run/nuxel-wayland/pulse ] || return 0
+  chgrp nuxel /run/nuxel-wayland/pulse 2>/dev/null || true
+  chmod 0750 /run/nuxel-wayland/pulse 2>/dev/null || true
+  if [ -S /run/nuxel-wayland/pulse/native ]; then
+    chgrp nuxel /run/nuxel-wayland/pulse/native 2>/dev/null || true
+    chmod 0770 /run/nuxel-wayland/pulse/native 2>/dev/null || true
+  fi
+  # Flatpak --socket=pulseaudio maps the host socket into the sandbox; the
+  # standard per-user path must resolve to the same socket.
+  [ -L /run/user/1000/pulse ] && rm -f /run/user/1000/pulse 2>/dev/null
+  mkdir -p /run/user/1000/pulse 2>/dev/null || true
+  chown nuxel:nuxel /run/user/1000/pulse 2>/dev/null || true
+  chmod 0750 /run/user/1000/pulse 2>/dev/null || true
+  rm -f /run/user/1000/pulse/native 2>/dev/null
+  ln -s /run/nuxel-wayland/pulse/native /run/user/1000/pulse/native 2>/dev/null || true
+  chown -h nuxel:nuxel /run/user/1000/pulse/native 2>/dev/null || true
+}
+(
+  i=0
+  while [ "$i" -lt 600 ]; do
+    _assert_audio_socket
+    i=$((i + 1))
+    sleep 1
+  done
+) &
+say "audio socket permissions asserted for nuxel (continuous)"
 
 # PWNAGE-45000: a real graphical polkit agent for GNOME Software/PackageKit.
 # It runs as the session user (uid 1000) on the shared session bus and Wayland

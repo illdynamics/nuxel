@@ -1,0 +1,878 @@
+diff --git a/drivers/nfc/s3fwrn5/core.c b/drivers/nfc/s3fwrn5/core.c
+index 64b58455e..fc27392ee 100644
+--- a/drivers/nfc/s3fwrn5/core.c
++++ b/drivers/nfc/s3fwrn5/core.c
+@@ -49,6 +49,12 @@ static int s3fwrn5_firmware_update(struct s3fwrn5_info *info)
+ 
+ 	need_update = s3fwrn5_fw_check_version(&info->fw_info,
+ 		info->ndev->manufact_specific_info);
++	/* NUXEL: measured decision inputs (the image is only flashed when the
++	 * hardware target byte matches, see firmware.c). */
++	dev_info(&info->ndev->nfc_dev->dev,
++		 "fw image version 0x%08x, controller 0x%08x, update=%d\n",
++		 info->fw_info.fw.version, info->ndev->manufact_specific_info,
++		 need_update);
+ 	if (!need_update)
+ 		goto out;
+ 
+@@ -129,11 +135,19 @@ static int s3fwrn5_nci_post_setup(struct nci_dev *ndev)
+ 	s3fwrn5_set_mode(info, S3FWRN5_MODE_NCI);
+ 	s3fwrn5_set_wake(info, true);
+ 
++	dev_info(&info->ndev->nfc_dev->dev,
++		 "NCI mode entered; sending CORE_RESET\n");
+ 	ret = nci_core_reset(info->ndev);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(&info->ndev->nfc_dev->dev,
++			"CORE_RESET failed: %d\n", ret);
+ 		goto out;
++	}
+ 
+ 	ret = nci_core_init(info->ndev);
++	if (ret < 0)
++		dev_err(&info->ndev->nfc_dev->dev,
++			"CORE_INIT failed: %d\n", ret);
+ 
+ out:
+ 	return ret;
+diff --git a/drivers/nfc/s3fwrn5/firmware.c b/drivers/nfc/s3fwrn5/firmware.c
+index 43c801e72..c3ef75da4 100644
+--- a/drivers/nfc/s3fwrn5/firmware.c
++++ b/drivers/nfc/s3fwrn5/firmware.c
+@@ -110,7 +110,19 @@ static int s3fwrn5_fw_get_bootinfo(struct s3fwrn5_fw_info *fw_info,
+ 		goto out;
+ 	}
+ 
+-	memcpy(bootinfo, rsp->data + S3FWRN5_FW_HDR_SIZE, 10);
++	{
++		/*
++		 * NUXEL: copy the whole measured reply body (23 bytes) into the
++		 * zeroed struct; only fields that fit are taken, so a shorter
++		 * upstream reply stays valid.
++		 */
++		size_t body = hdr->len > 0 ? hdr->len : 0;
++
++		memset(bootinfo, 0, sizeof(*bootinfo));
++		if (body > sizeof(*bootinfo))
++			body = sizeof(*bootinfo);
++		memcpy(bootinfo, rsp->data + S3FWRN5_FW_HDR_SIZE, body);
++	}
+ 
+ out:
+ 	kfree_skb(rsp);
+@@ -334,26 +346,37 @@ static void s3fwrn5_fw_release_firmware(struct s3fwrn5_fw_info *fw_info)
+ 	release_firmware(fw_info->fw.fw);
+ }
+ 
++static const struct {
++	u8 version[4];
++	u32 base_addr;
++} s3fwrn5_hw_match[] = {
++	{{0x05, 0x00, 0x00, 0x00}, 0x00005000},
++	{{0x05, 0x00, 0x00, 0x01}, 0x00003000},
++	{{0x05, 0x00, 0x00, 0x02}, 0x00003000},
++	{{0x05, 0x00, 0x00, 0x03}, 0x00003000},
++	{{0x05, 0x00, 0x00, 0x05}, 0x00003000},
++	/*
++	 * NUXEL (SM-G975F, S3NRN82): measured GET_BOOTINFO reply
++	 * 82.00.01.00, sector=4096 page=512 frame=262 buf=65535.  The
++	 * S3NRN82 is an S3FWRN5-family part with the same firmware protocol,
++	 * but its bootloader reports this vendor hardware tag.  The base
++	 * address is the same 0x3000 as the upstream 05.00.00.0x entries (the
++	 * image header of the shipped sec_s3nrn82_firmware.bin, byte-identical
++	 * to the pinned vendor blob, carries the same 0x25-sector layout).
++	 */
++	{{0x82, 0x00, 0x01, 0x00}, 0x00003000},
++};
++
+ static int s3fwrn5_fw_get_base_addr(
+ 	struct s3fwrn5_fw_cmd_get_bootinfo_rsp *bootinfo, u32 *base_addr)
+ {
+ 	int i;
+-	struct {
+-		u8 version[4];
+-		u32 base_addr;
+-	} match[] = {
+-		{{0x05, 0x00, 0x00, 0x00}, 0x00005000},
+-		{{0x05, 0x00, 0x00, 0x01}, 0x00003000},
+-		{{0x05, 0x00, 0x00, 0x02}, 0x00003000},
+-		{{0x05, 0x00, 0x00, 0x03}, 0x00003000},
+-		{{0x05, 0x00, 0x00, 0x05}, 0x00003000}
+-	};
+-
+-	for (i = 0; i < ARRAY_SIZE(match); ++i)
+-		if (bootinfo->hw_version[0] == match[i].version[0] &&
+-			bootinfo->hw_version[1] == match[i].version[1] &&
+-			bootinfo->hw_version[3] == match[i].version[3]) {
+-			*base_addr = match[i].base_addr;
++
++	for (i = 0; i < ARRAY_SIZE(s3fwrn5_hw_match); ++i)
++		if (bootinfo->hw_version[0] == s3fwrn5_hw_match[i].version[0] &&
++			bootinfo->hw_version[1] == s3fwrn5_hw_match[i].version[1] &&
++			bootinfo->hw_version[3] == s3fwrn5_hw_match[i].version[3]) {
++			*base_addr = s3fwrn5_hw_match[i].base_addr;
+ 			return 0;
+ 		}
+ 
+@@ -388,13 +411,25 @@ int s3fwrn5_fw_setup(struct s3fwrn5_fw_info *fw_info)
+ 			"Failed to get bootinfo, ret=%02x\n", ret);
+ 		goto err;
+ 	}
++	dev_info(&fw_info->ndev->nfc_dev->dev,
++		 "bootinfo hw=%02x.%02x.%02x.%02x sector=%u page=%u frame=%u buf=%u\n",
++		 bootinfo.hw_version[0], bootinfo.hw_version[1],
++		 bootinfo.hw_version[2], bootinfo.hw_version[3],
++		 bootinfo.sector_size, bootinfo.page_size,
++		 bootinfo.frame_max_size, bootinfo.hw_buffer_size);
+ 
+ 	/* Match hardware version to obtain firmware base address */
+ 
+ 	ret = s3fwrn5_fw_get_base_addr(&bootinfo, &fw_info->base_addr);
+ 	if (ret < 0) {
++		/* NUXEL: report the raw boot info so the accept table can be
++		 * extended from measurement instead of guessing. */
+ 		dev_err(&fw_info->ndev->nfc_dev->dev,
+-			"Unknown hardware version\n");
++			"Unknown hardware version %02x.%02x.%02x.%02x (sector=%u page=%u frame=%u buf=%u)\n",
++			bootinfo.hw_version[0], bootinfo.hw_version[1],
++			bootinfo.hw_version[2], bootinfo.hw_version[3],
++			bootinfo.sector_size, bootinfo.page_size,
++			bootinfo.frame_max_size, bootinfo.hw_buffer_size);
+ 		goto err;
+ 	}
+ 
+diff --git a/drivers/nfc/s3fwrn5/firmware.h b/drivers/nfc/s3fwrn5/firmware.h
+index 1ec0647ab..671112292 100644
+--- a/drivers/nfc/s3fwrn5/firmware.h
++++ b/drivers/nfc/s3fwrn5/firmware.h
+@@ -49,13 +49,26 @@ struct s3fwrn5_fw_header {
+ 
+ #define S3FWRN5_FW_CMD_GET_BOOTINFO		0x01
+ 
++/*
++ * NUXEL: measured reply body on the S3NRN82 bootloader (23 bytes):
++ *   hw=82.00.01.00 sector=1000 page=0200 frame=0106 01 ... buffer=ffff
++ * The 10-byte upstream layout (u16 fields) does not describe this part; the
++ * full body is captured so the firmware decision can be made from this
++ * measurement (the dump is printed when the hardware is not in the flash
++ * table).  Field order: 4-byte hw tag, u32 sector, u16 page, u16 frame,
++ * u8, 4 bytes, u16 buffer (zero-extended into u32), 4 bytes.
++ */
+ struct s3fwrn5_fw_cmd_get_bootinfo_rsp {
+ 	__u8 hw_version[4];
+-	__u16 sector_size;
++	__u32 sector_size;
+ 	__u16 page_size;
+ 	__u16 frame_max_size;
+-	__u16 hw_buffer_size;
++	__u8 reserved0;
++	__u8 reserved1[4];
++	__u32 hw_buffer_size;
++	__u8 reserved2[4];
+ };
++#define S3FWRN5_FW_BOOTINFO_SIZE sizeof(struct s3fwrn5_fw_cmd_get_bootinfo_rsp)
+ 
+ #define S3FWRN5_FW_CMD_ENTER_UPDATE_MODE	0x02
+ 
+diff --git a/drivers/nfc/s3fwrn5/i2c.c b/drivers/nfc/s3fwrn5/i2c.c
+index da7ca08d1..19695f429 100644
+--- a/drivers/nfc/s3fwrn5/i2c.c
++++ b/drivers/nfc/s3fwrn5/i2c.c
+@@ -23,10 +23,13 @@
+ #include <linux/of_gpio.h>
+ #include <linux/of_irq.h>
+ #include <linux/module.h>
++#include <linux/clk.h>
++#include <linux/regulator/consumer.h>
+ 
+ #include <net/nfc/nfc.h>
+ 
+ #include "s3fwrn5.h"
++#include "firmware.h"
+ 
+ #define S3FWRN5_I2C_DRIVER_NAME "s3fwrn5_i2c"
+ 
+@@ -39,6 +42,16 @@ struct s3fwrn5_i2c_phy {
+ 
+ 	int gpio_en;
+ 	int gpio_fw_wake;
++	/* NUXEL: input GPIO behind client->irq, sampled by the handshake. */
++	int irq_gpio;
++	/* NUXEL: pins use the vendor active-low VEN / FIRM=bootloader wiring. */
++	bool board_pins;
++	/* NUXEL: optional 26 MHz "oscclk_nfc" the controller requests. */
++	struct clk *clk;
++	/* NUXEL: vendor "VDD_NFC_1P8" rail (sec-nfc,nfc_pvdd). */
++	struct regulator *pvdd;
++	/* NUXEL: true once nci_probe() is done and frames may be delivered. */
++	bool ndev_ready;
+ 
+ 	struct mutex mutex;
+ 
+@@ -50,6 +63,16 @@ static void s3fwrn5_i2c_set_wake(void *phy_id, bool wake)
+ {
+ 	struct s3fwrn5_i2c_phy *phy = phy_id;
+ 
++	/*
++	 * NUXEL (beyond2lte): FIRM high selects the bootloader, so it must
++	 * NEVER be used as a wake line.  The stand-alone S3FWRN5 has a
++	 * dedicated FW_WAKE pin and uses this path.  Driving it after a
++	 * set_mode(NCI) would drop the part back into FW mode (visible as
++	 * "CORE_RESET never answered" when testing this board).
++	 */
++	if (phy->board_pins)
++		return;
++
+ 	mutex_lock(&phy->mutex);
+ 	gpio_set_value(phy->gpio_fw_wake, wake);
+ 	msleep(S3FWRN5_EN_WAIT_TIME/2);
+@@ -67,15 +90,32 @@ static void s3fwrn5_i2c_set_mode(void *phy_id, enum s3fwrn5_mode mode)
+ 
+ 	phy->mode = mode;
+ 
+-	gpio_set_value(phy->gpio_en, 1);
+-	gpio_set_value(phy->gpio_fw_wake, 0);
+-	if (mode == S3FWRN5_MODE_FW)
+-		gpio_set_value(phy->gpio_fw_wake, 1);
+-
+-	if (mode != S3FWRN5_MODE_COLD) {
+-		msleep(S3FWRN5_EN_WAIT_TIME);
+-		gpio_set_value(phy->gpio_en, 0);
+-		msleep(S3FWRN5_EN_WAIT_TIME/2);
++	if (phy->board_pins) {
++		/*
++		 * NUXEL (beyond2lte): vendor wiring has VEN active-low
++		 * (0 = rail on) and FIRM high = bootloader mode.  Sequence
++		 * copied from sec_nfc_set_mode(); the upstream reset pulse
++		 * (EN=1 for 150 ms then 0) would cut this part's rail.
++		 */
++		gpio_set_value(phy->gpio_en, 1);
++		gpio_set_value(phy->gpio_fw_wake,
++			       mode == S3FWRN5_MODE_FW);
++		if (mode != S3FWRN5_MODE_COLD) {
++			msleep(S3FWRN5_EN_WAIT_TIME);
++			gpio_set_value(phy->gpio_en, 0);
++			msleep(S3FWRN5_EN_WAIT_TIME / 2);
++		}
++	} else {
++		gpio_set_value(phy->gpio_en, 1);
++		gpio_set_value(phy->gpio_fw_wake, 0);
++		if (mode == S3FWRN5_MODE_FW)
++			gpio_set_value(phy->gpio_fw_wake, 1);
++
++		if (mode != S3FWRN5_MODE_COLD) {
++			msleep(S3FWRN5_EN_WAIT_TIME);
++			gpio_set_value(phy->gpio_en, 0);
++			msleep(S3FWRN5_EN_WAIT_TIME/2);
++		}
+ 	}
+ 
+ 	phy->irq_skip = true;
+@@ -143,8 +183,12 @@ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
+ 	hdr_size = (phy->mode == S3FWRN5_MODE_NCI) ?
+ 		NCI_CTRL_HDR_SIZE : S3FWRN5_FW_HDR_SIZE;
+ 	ret = i2c_master_recv(phy->i2c_dev, hdr, hdr_size);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_info_ratelimited(&phy->i2c_dev->dev,
++				     "NUXEL nci read: header recv failed %d (mode=%d)\n",
++				     ret, phy->mode);
+ 		return ret;
++	}
+ 
+ 	if (ret < hdr_size)
+ 		return -EBADMSG;
+@@ -169,9 +213,39 @@ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
+ 	}
+ 
+ out:
++	dev_info_ratelimited(&phy->i2c_dev->dev,
++			     "NUXEL nci rx: %*ph  mode=%d\n",
++			     (int)min_t(size_t, skb->len, 16), skb->data,
++			     phy->mode);
+ 	return s3fwrn5_recv_frame(phy->ndev, skb, phy->mode);
+ }
+ 
++/*
++ * NUXEL: read one firmware-protocol reply (header + payload) and drop it.
++ * Used only for the probe handshake reply, before nci_post_setup() runs.
++ */
++static int s3fwrn5_i2c_discard_reply(struct s3fwrn5_i2c_phy *phy)
++{
++	struct s3fwrn5_fw_header hdr;
++	u8 junk[16];
++	size_t left;
++	int ret;
++
++	ret = i2c_master_recv(phy->i2c_dev, (u8 *)&hdr, sizeof(hdr));
++	if (ret != sizeof(hdr))
++		return ret < 0 ? ret : -EBADMSG;
++	left = hdr.len;
++	while (left) {
++		size_t n = left > sizeof(junk) ? sizeof(junk) : left;
++
++		ret = i2c_master_recv(phy->i2c_dev, junk, n);
++		if (ret != (int)n)
++			return ret < 0 ? ret : -EBADMSG;
++		left -= n;
++	}
++	return 0;
++}
++
+ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+ {
+ 	struct s3fwrn5_i2c_phy *phy = phy_id;
+@@ -184,15 +258,37 @@ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+ 
+ 	mutex_lock(&phy->mutex);
+ 
+-	if (phy->irq_skip)
++	if (phy->irq_skip) {
++		/* NUXEL diagnostic: an IRQ during a mode-switch pulse is expected
++		 * once (irq_skip), but a burst of them means the part is
++		 * answering while the stack is not listening. */
++		dev_dbg(&phy->i2c_dev->dev, "NUXEL irq: skipped (mode=%d)\n",
++			phy->mode);
+ 		goto out;
++	}
+ 
+ 	switch (phy->mode) {
+ 	case S3FWRN5_MODE_NCI:
+ 	case S3FWRN5_MODE_FW:
++		/*
++		 * NUXEL: the probe handshake runs after request_irq() but
++		 * before the NCI device can accept frames.  Consume and drop
++		 * that one bootloader reply; nci_post_setup() issues its own
++		 * GET_BOOTINFO over this same IRQ path afterwards.
++		 */
++		if (!phy->ndev_ready) {
++			ret = s3fwrn5_i2c_discard_reply(phy);
++			break;
++		}
+ 		ret = s3fwrn5_i2c_read(phy);
++		if (ret < 0)
++			dev_info_ratelimited(&phy->i2c_dev->dev,
++					     "NUXEL irq: read failed %d (mode=%d)\n",
++					     ret, phy->mode);
+ 		break;
+ 	case S3FWRN5_MODE_COLD:
++		dev_info_ratelimited(&phy->i2c_dev->dev,
++				     "NUXEL irq in COLD mode ignored\n");
+ 		ret = -EREMOTEIO;
+ 		break;
+ 	}
+@@ -203,25 +299,238 @@ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int s3fwrn5_i2c_parse_dt(struct i2c_client *client)
++static int s3fwrn5_i2c_parse_dt(struct i2c_client *client,
++				struct s3fwrn5_i2c_phy *phy)
+ {
+-	struct s3fwrn5_i2c_phy *phy = i2c_get_clientdata(client);
+ 	struct device_node *np = client->dev.of_node;
++	int ret;
+ 
+ 	if (!np)
+ 		return -ENODEV;
+ 
+ 	phy->gpio_en = of_get_named_gpio(np, "s3fwrn5,en-gpios", 0);
++	if (!gpio_is_valid(phy->gpio_en)) {
++		phy->gpio_en = of_get_named_gpio(np, "sec-nfc,ven-gpio", 0);
++		/* VEN on this wiring is active-low: mark the board style. */
++		phy->board_pins = gpio_is_valid(phy->gpio_en);
++	}
+ 	if (!gpio_is_valid(phy->gpio_en))
+ 		return -ENODEV;
+ 
+ 	phy->gpio_fw_wake = of_get_named_gpio(np, "s3fwrn5,fw-gpios", 0);
++	if (!gpio_is_valid(phy->gpio_fw_wake)) {
++		phy->gpio_fw_wake = of_get_named_gpio(np, "sec-nfc,firm-gpio", 0);
++		/*
++		 * NUXEL: on this vendor wiring FIRM is the bootloader strap and
++		 * the IRQ line (sec-nfc,irq-gpio) is a separate input GPIO.
++		 * s3fwrn5_i2c_set_wake() must never toggle FIRM; keep the board
++		 * flag tied to this node shape.
++		 */
++		if (gpio_is_valid(phy->gpio_fw_wake))
++			phy->board_pins = true;
++	}
+ 	if (!gpio_is_valid(phy->gpio_fw_wake))
+ 		return -ENODEV;
+ 
++	ret = of_get_named_gpio(np, "sec-nfc,irq-gpio", 0);
++	if (!gpio_is_valid(ret))
++		ret = of_get_named_gpio(np, "s3fwrn5,irq-gpios", 0);
++	phy->irq_gpio = ret;
++
++	/*
++	 * NUXEL (beyond2lte): the controller's reference clock is the SoC
++	 * "oscclk_nfc" output (DT clocks/clock-names), gated by hardware on the
++	 * clk_req line (sec-nfc,clk_req-gpio).  The vendor driver enables the
++	 * gate interrupt on every mode switch; without the clock the part never
++	 * answers NCI.  A board without these properties (plain S3FWRN5) keeps
++	 * clk == NULL and this is a no-op.
++	 */
++	/*
++	 * NUXEL: the vendor node also names its 1.8 V NFC rail
++	 * (sec-nfc,nfc_pvdd = "VDD_NFC_1P8"); sec_nfc enables it around every
++	 * mode switch.  Keep it enabled while the transport owns the part.
++	 */
++	if (of_find_property(np, "sec-nfc,ldo_control", NULL)) {
++		const char *name = NULL;
++
++		of_property_read_string(np, "sec-nfc,nfc_pvdd", &name);
++		if (name && *name) {
++			phy->pvdd = regulator_get(NULL, name);
++			if (IS_ERR(phy->pvdd)) {
++				dev_info(&client->dev,
++					 "NUXEL: nfc rail %s unavailable (%ld)\n",
++					 name, PTR_ERR(phy->pvdd));
++				phy->pvdd = NULL;
++			}
++		}
++	}
++
++	phy->clk = devm_clk_get(&client->dev, "oscclk_nfc");
++	if (IS_ERR(phy->clk)) {
++		if (PTR_ERR(phy->clk) == -ENOENT || PTR_ERR(phy->clk) == -ENODEV) {
++			phy->clk = NULL;
++		} else {
++			dev_err(&client->dev, "NUXEL: oscclk_nfc unavailable: %ld\n",
++				PTR_ERR(phy->clk));
++			return PTR_ERR(phy->clk);
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * NUXEL: probe-time readiness handshake.
++ *
++ * The S3NRN82 on beyond2lte sits at I2C 0x27 on every DTBO revision with the
++ * vendor "sec-nfc" compatible.  This driver registers at device_initcall()
++ * (after nfc_init(), see the bottom of this file) and sec_nfc yields one probe
++ * pass (-EPROBE_DEFER), so this transport is the preferred owner.  Matching
++ * the node still proves nothing about whether the part can currently be
++ * driven by this NCI transport, so probe verifies it:
++ *
++ *   1. enter bootloader (FW) mode and write GET_BOOTINFO;
++ *   2. wait for the IRQ line to assert and read the RSP frame directly over
++ *      I2C, checking type=RSP and the 23-byte measured boot-info layout;
++ *   3. drop that reply here (the NCI stack is not up yet) and leave the part
++ *      in COLD mode.  nci_post_setup() repeats GET_BOOTINFO later through the
++ *      normal IRQ path when nfc0 is opened.
++ *
++ * Any failure fails probe, so the kernel retries the remaining drivers
++ * (sec_nfc) instead of leaving a dead nfc0 registered.
++ */
++struct s3fwrn5_bootinfo {
++	u8 hw_version[4];
++	u32 sector_size;
++	u16 page_size;
++	u16 frame_max_size;
++	u8 reserved0;
++	u8 reserved1[4];
++	u32 hw_buffer_size;
++	u8 reserved2[4];
++} __packed;
++#define S3FWRN5_BOOTINFO_MIN_LEN 14
++
++static int s3fwrn5_i2c_read_bootinfo(struct s3fwrn5_i2c_phy *phy,
++				     struct s3fwrn5_bootinfo *info)
++{
++	struct s3fwrn5_fw_header rsp;
++	u8 body[sizeof(*info)];
++	size_t want;
++	int ret;
++
++	ret = i2c_master_recv(phy->i2c_dev, (u8 *)&rsp, sizeof(rsp));
++	if (ret != sizeof(rsp))
++		return ret < 0 ? ret : -EBADMSG;
++
++	/*
++	 * The RSP type carries the alternating parity bit, exactly the same
++	 * convention as the command frames (bit 7 toggles per message).  Only
++	 * the low 7 bits identify the message class.
++	 */
++	if ((rsp.type & 0x7f) != S3FWRN5_FW_MSG_RSP)
++		return -EPROTO;
++	if (rsp.len > sizeof(body) || rsp.len < sizeof(u32))
++		return -EPROTO;
++
++	want = rsp.len;
++	memset(body, 0, sizeof(body));
++	if (want) {
++		ret = i2c_master_recv(phy->i2c_dev, body, want);
++		if (ret != (int)want)
++			return ret < 0 ? ret : -EBADMSG;
++	}
++
++	memcpy(info, body, min_t(size_t, sizeof(*info), sizeof(body)));
++	if (rsp.len < 4 || info->hw_version[0] == 0x00 ||
++	    info->hw_version[0] == 0xff)
++		return -ENODEV;
++
+ 	return 0;
+ }
+ 
++/*
++ * NUXEL: vendor "NPT" power-on sequence (sec_nfc.c: SEC_NFC_SET_NPT_MODE
++ * CMD_ON).  Measured on this board: without it the part never raises its IRQ
++ * after a mode switch even though i2c_master_send() reports success.  VEN is
++ * asserted (active-low: 0), the rail settles, and only then FIRM is raised to
++ * select the bootloader.  Runs before set_mode() so set_mode()'s own pulse is
++ * applied on top of an awake part.
++ */
++static void s3fwrn5_i2c_board_power_on(struct s3fwrn5_i2c_phy *phy)
++{
++	gpio_set_value(phy->gpio_fw_wake, 0);
++	gpio_set_value(phy->gpio_en, 0);        /* VEN asserted (active-low) */
++	usleep_range(20000, 25000);             /* vendor NPT waits 20 ms */
++	gpio_set_value(phy->gpio_fw_wake, 1);   /* FIRM high = bootloader */
++}
++
++static int s3fwrn5_i2c_nci_ready(struct s3fwrn5_i2c_phy *phy)
++{
++	struct s3fwrn5_bootinfo info;
++	struct s3fwrn5_fw_header req = {
++		.type = S3FWRN5_FW_MSG_CMD,
++		.code = S3FWRN5_FW_CMD_GET_BOOTINFO,
++		.len = 0,
++	};
++	struct sk_buff *skb;
++	int ret, i;
++
++	if (phy->board_pins) {
++		/* Force the mode switch to run its pulse on an awake part. */
++		phy->mode = S3FWRN5_MODE_COLD;
++		s3fwrn5_i2c_board_power_on(phy);
++	}
++	s3fwrn5_i2c_set_mode(phy, S3FWRN5_MODE_FW);
++	s3fwrn5_i2c_set_wake(phy, false);
++
++	skb = alloc_skb(sizeof(req), GFP_KERNEL);
++	if (!skb) {
++		ret = -ENOMEM;
++		goto out_mode;
++	}
++	skb_put_data(skb, &req, sizeof(req));
++	phy->irq_skip = false;
++	ret = s3fwrn5_i2c_write(phy, skb);
++	kfree_skb(skb);
++	phy->irq_skip = true;
++	if (ret < 0)
++		goto out_mode;
++
++	/*
++	 * The bootloader protocol allows up to 1 s for the reply.  The S3NRN82
++	 * bootloader is slower than the S3FWRN5 datasheet figure on this board
++	 * (the vendor transport waits with no timeout at all), so poll the full
++	 * second and read the reply as soon as the IRQ line is asserted.
++	 */
++	ret = -ENXIO;
++	for (i = 0; i < 200; i++) {
++		msleep(10);
++		if (gpio_get_value(phy->irq_gpio)) {
++			ret = s3fwrn5_i2c_read_bootinfo(phy, &info);
++			if (ret == 0)
++				break;
++		}
++	}
++	if (ret < 0) {
++		dev_info(&phy->i2c_dev->dev,
++			 "NUXEL: bootloader did not answer GET_BOOTINFO (%d)\n",
++			 ret);
++		goto out_mode;
++	}
++
++	dev_info(&phy->i2c_dev->dev,
++		 "NUXEL: bootinfo hw=%02x.%02x.%02x.%02x sector=%u page=%u\n",
++		 info.hw_version[0], info.hw_version[1], info.hw_version[2],
++		 info.hw_version[3], info.sector_size, info.page_size);
++	ret = 0;
++
++out_mode:
++	phy->ndev_ready = true;
++	s3fwrn5_i2c_set_mode(phy, S3FWRN5_MODE_COLD);
++	return ret;
++}
++
+ static int s3fwrn5_i2c_probe(struct i2c_client *client,
+ 				  const struct i2c_device_id *id)
+ {
+@@ -239,10 +548,27 @@ static int s3fwrn5_i2c_probe(struct i2c_client *client,
+ 	phy->i2c_dev = client;
+ 	i2c_set_clientdata(client, phy);
+ 
+-	ret = s3fwrn5_i2c_parse_dt(client);
+-	if (ret < 0)
+-		return ret;
++	dev_info(&client->dev, "NUXEL s3fwrn5_i2c probe begin\n");
+ 
++	ret = s3fwrn5_i2c_parse_dt(client, phy);
++	if (ret < 0) {
++		dev_err(&client->dev, "NUXEL s3fwrn5_i2c parse_dt failed: %d\n", ret);
++		return ret;
++	}
++	dev_info(&client->dev, "NUXEL s3fwrn5_i2c gpio en=%d fw=%d irq=%d\n",
++		 phy->gpio_en, phy->gpio_fw_wake, phy->i2c_dev->irq);
++
++	/*
++	 * NUXEL: the board node is the vendor sec-nfc@27 node.  Its EN line is
++	 * the NFC rail enable (not the upstream reset), and the bootloader can
++	 * leave it high.  Start both pins low so set_mode() owns every edge.
++	 */
++	/*
++	 * NUXEL: on the vendor wiring VEN starts de-asserted (rail off) and
++	 * FIRM low; set_mode() then sequences them.  The upstream defaults
++	 * (EN high = asserted, which is rail-off here) are kept for other
++	 * boards.
++	 */
+ 	ret = devm_gpio_request_one(&phy->i2c_dev->dev, phy->gpio_en,
+ 		GPIOF_OUT_INIT_HIGH, "s3fwrn5_en");
+ 	if (ret < 0)
+@@ -253,23 +579,83 @@ static int s3fwrn5_i2c_probe(struct i2c_client *client,
+ 	if (ret < 0)
+ 		return ret;
+ 
++	if (gpio_is_valid(phy->irq_gpio)) {
++		ret = devm_gpio_request_one(&phy->i2c_dev->dev, phy->irq_gpio,
++					    GPIOF_IN, "s3fwrn5_irq");
++		if (ret < 0)
++			return ret;
++	}
++
++	if (phy->pvdd) {
++		ret = regulator_enable(phy->pvdd);
++		dev_info(&client->dev, "NUXEL: nfc rail enabled (%d)\n", ret);
++		if (ret)
++			phy->pvdd = NULL;
++	}
++
++	if (phy->clk) {
++		/* NUXEL: measured — prepare/enable succeed but this vclk reports
++		 * 0 Hz until a rate is programmed and the CLKOUT mux is set, and
++		 * the controller cannot answer NCI without its reference clock.
++		 * Set the S3NRN82's 26 MHz reference explicitly, then verify. */
++		ret = clk_prepare_enable(phy->clk);
++		if (ret) {
++			dev_err(&client->dev,
++				"NUXEL: enabling oscclk_nfc failed: %d\n", ret);
++			return ret;
++		}
++		if (clk_get_rate(phy->clk) == 0) {
++			ret = clk_set_rate(phy->clk, 26000000);
++			dev_info(&client->dev,
++				 "NUXEL: oscclk_nfc set_rate(26 MHz) = %d\n", ret);
++		}
++		dev_info(&client->dev, "NUXEL: oscclk_nfc enabled (%lu Hz)\n",
++			 clk_get_rate(phy->clk));
++	}
++
+ 	ret = s3fwrn5_probe(&phy->ndev, phy, &phy->i2c_dev->dev, &i2c_phy_ops,
+ 		S3FWRN5_I2C_MAX_PAYLOAD);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(&client->dev, "NUXEL s3fwrn5_probe failed: %d\n", ret);
+ 		return ret;
++	}
+ 
++	/*
++	 * NUXEL (beyond2lte): the vendor transport waits for a RISING edge on
++	 * the same IRQ (sec_nfc.c: IRQF_TRIGGER_RISING).  The board DT carries
++	 * "interrupts = <2 0 0>" and the controller pulses the line per frame,
++	 * so a level-triggered handler never fires for the second frame (the
++	 * line is already low again).  Matches the vendor behaviour.
++	 */
+ 	ret = devm_request_threaded_irq(&client->dev, phy->i2c_dev->irq, NULL,
+-		s3fwrn5_i2c_irq_thread_fn, IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
++		s3fwrn5_i2c_irq_thread_fn,
++		IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+ 		S3FWRN5_I2C_DRIVER_NAME, phy);
+-	if (ret)
++	if (ret) {
++		dev_err(&client->dev, "NUXEL s3fwrn5_i2c request_irq failed: %d\n", ret);
+ 		s3fwrn5_remove(phy->ndev);
++		return ret;
++	}
++	phy->irq_skip = true;
++
++	ret = s3fwrn5_i2c_nci_ready(phy);
++	if (ret < 0) {
++		dev_info(&client->dev,
++			 "NUXEL s3fwrn5_i2c: NCI bootloader probe failed (%d); handing node back\n",
++			 ret);
++		s3fwrn5_remove(phy->ndev);
++		return ret;
++	}
++	dev_info(&client->dev, "NUXEL s3fwrn5_i2c: bootloader handshake OK\n");
++
++	dev_info(&client->dev, "NUXEL s3fwrn5_i2c probe success\n");
+ 
+ 	return ret;
+ }
+ 
+ static int s3fwrn5_i2c_remove(struct i2c_client *client)
+ {
+-	struct s3fwrn5_i2c_phy *phy = i2c_get_clientdata(client);
++	struct s3fwrn5_i2c_phy *phy = client->dev.driver_data;
+ 
+ 	s3fwrn5_remove(phy->ndev);
+ 
+@@ -284,6 +670,15 @@ MODULE_DEVICE_TABLE(i2c, s3fwrn5_i2c_id_table);
+ 
+ static const struct of_device_id of_s3fwrn5_i2c_match[] = {
+ 	{ .compatible = "samsung,s3fwrn5-i2c", },
++	/*
++	 * NUXEL (beyond2lte): the board DTS names the S3NRN82 node "sec-nfc@27"
++	 * with compatible "sec-nfc" and Samsung's sec-nfc,ven/firm-gpio property
++	 * spelling.  That node is this NCI controller; the legacy raw driver
++	 * (sec_nfc.c) cannot speak NCI and leaves the chip unregistered from
++	 * the kernel NFC stack.  Binding it here gives the standard
++	 * /sys/class/nfc + /dev/nfc0 ABI.
++	 */
++	{ .compatible = "sec-nfc", },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, of_s3fwrn5_i2c_match);
+@@ -299,7 +694,39 @@ static struct i2c_driver s3fwrn5_i2c_driver = {
+ 	.id_table = s3fwrn5_i2c_id_table,
+ };
+ 
+-module_i2c_driver(s3fwrn5_i2c_driver);
++/*
++ * NUXEL registration.
++ *
++ * This driver must (a) be registered after net/nfc's nfc_init() has
++ * registered the "nfc" class (nci_register_device() -> device_add() ->
++ * get_device_parent() dereferences nfc_class's parent, which only exists
++ * after class_register(); booting earlier panicked at 0.65 s with a NULL
++ * deref in _raw_spin_lock/get_device_parent) and (b) be registered before
++ * the legacy sec_nfc driver so it is the preferred match for the vendor
++ * "sec-nfc" node.
++ *
++ * This tree's module_init() is subsys_initcall() (level 4) - the same level
++ * as nfc_init - and drivers/nfc links before net/nfc, so a plain module_init()
++ * here loses that race (measured: panic in nfc_register_device at 0.65 s).
++ * Registration therefore happens at device_initcall (level 6), after every
++ * subsys_initcall has run, and sec_nfc defers one probe pass (-EPROBE_DEFER,
++ * sec_nfc.c) so the NCI transport still owns 7-0027.
++ */
++static int __init s3fwrn5_i2c_init(void)
++{
++	int ret;
++
++	ret = i2c_add_driver(&s3fwrn5_i2c_driver);
++	pr_info("NUXEL s3fwrn5_i2c: driver registered (rc=%d)\n", ret);
++	return ret;
++}
++device_initcall(s3fwrn5_i2c_init);
++
++static void __exit s3fwrn5_i2c_exit(void)
++{
++	i2c_del_driver(&s3fwrn5_i2c_driver);
++}
++module_exit(s3fwrn5_i2c_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("I2C driver for Samsung S3FWRN5");
+diff --git a/drivers/nfc/sec_nfc.c b/drivers/nfc/sec_nfc.c
+index 68bf86b6c..e9989e550 100644
+--- a/drivers/nfc/sec_nfc.c
++++ b/drivers/nfc/sec_nfc.c
+@@ -1158,11 +1158,59 @@ MODULE_DEVICE_TABLE(i2c, sec_nfc_id_table);
+ #define SEC_NFC_INIT(driver)	i2c_add_driver(driver)
+ #define SEC_NFC_EXIT(driver)	i2c_del_driver(driver)
+ 
++#ifdef CONFIG_NFC_S3FWRN5_I2C
++/*
++ * NUXEL: the S3NRN82 on this board runs NCI firmware, so s3fwrn5_i2c is the
++ * one owner of 7-0027.  s3fwrn5_i2c is registered at subsys_initcall() so it
++ * is present in the driver list before any I2C client is probed; this driver
++ * is registered with the default module_init() and therefore gets its chance
++ * only afterwards.  Still, driver match order in i2c_device_match() follows
++ * driver registration, so to make the outcome independent of link/init
++ * ordering this probe defers exactly once: the deferred probe queue re-runs
++ * after every driver that was registered before it has had its turn, which
++ * includes s3fwrn5_i2c.
++ *
++ * This driver does not need to know whether s3fwrn5_i2c succeeded: that
++ * driver verifies the NCI bootloader handshake and FAILS its probe on a part
++ * it cannot drive (s3fwrn5/i2c.c), so either it claims the node or it is out
++ * of the way by the time this probe runs the second time.
++ */
++static bool sec_nfc_deferred;
++
++static bool sec_nfc_nci_defer(void)
++{
++	if (sec_nfc_deferred)
++		return false;
++
++	sec_nfc_deferred = true;
++	return true;
++}
++#endif
++
+ static int sec_nfc_probe(struct i2c_client *client,
+ 		const struct i2c_device_id *id)
+ {
+ 	int ret = 0;
+ 
++#ifdef CONFIG_NFC_S3FWRN5_I2C
++	/*
++	 * Yield once to s3fwrn5_i2c.  The second probe (after the deferred
++	 * queue) reaches this point only when the NCI driver declined or
++	 * failed, and the legacy transport then keeps the node working.
++	 *
++	 * The first pass can run before late_initcall (this tree defers I2C
++	 * client probing until then), i.e. before s3fwrn5_i2c has registered:
++	 * return -EPROBE_DEFER unconditionally, never -ENODEV here.  A delayed
++	 * worker re-queues deferred probes after every built-in initcall, so
++	 * the second pass happens with all drivers present.
++	 */
++	if (sec_nfc_nci_defer()) {
++		NFC_LOG_INFO("yielding 7-0027 to s3fwrn5_i2c for one probe pass\n");
++		pr_info("NUXEL sec_nfc: deferring to s3fwrn5_i2c\n");
++		return -EPROBE_DEFER;
++	}
++#endif
++
+ 	nfc_logger_init();
+ 
+ 	ret = __sec_nfc_probe(&client->dev);
+@@ -1184,20 +1232,23 @@ static int sec_nfc_remove(struct i2c_client *client)
+ }
+ 
+ static struct i2c_device_id sec_nfc_id_table[] = {
+-#ifdef CONFIG_NFC_S3FWRN5_I2C
+-	{ },
+-#else
+ 	{ SEC_NFC_DRIVER_NAME, 0 },
+-#endif
+ 	{ }
+ };
+ 
+ /*
+- * NUXEL: the S3NRN82 on this board runs NCI firmware and s3fwrn5_i2c owns
+- * 7-0027.  The legacy raw vendor transport must not claim the same node from
+- * its I2C device-id table either: i2c_device_match() accepts that table as
+- * well as the OF table, and it won before the NCI driver could probe
+- * (measured on the first combined boot).
++ * NUXEL: the S3NRN82 on this board runs NCI firmware, so s3fwrn5_i2c is the
++ * preferred owner of 7-0027 when CONFIG_NFC_S3FWRN5_I2C is built.  But this
++ * driver must not simply refuse the node: i2c_device_match() accepts the
++ * OF compatible as a fallback, so an unconditional stand-down would leave
++ * the controller with no driver at all if the NCI probe cannot run (firmware
++ * missing, GPIO conflict, NCI driver not present in the boot image).
++ *
++ * sec_nfc_probe() below defers (-EPROBE_DEFER) only while the NCI driver is
++ * registered and still has the I2C ID/OF match for this address, and then
++ * lets the NCI driver claim the node.  If the NCI driver is absent or has no
++ * match, this legacy raw transport binds instead, so NFC hardware never
++ * silently disappears.
+  */
+ static const struct of_device_id nfc_match_table[] = {
+ 	{ .compatible = SEC_NFC_DRIVER_NAME,},

@@ -1,0 +1,72 @@
+diff --git a/arch/arm64/boot/dts/samsung/exynos9820-beyond2lte_eur_open_04.dts b/arch/arm64/boot/dts/samsung/exynos9820-beyond2lte_eur_open_04.dts
+index 248cc3800..fd8fc021d 100644
+--- a/arch/arm64/boot/dts/samsung/exynos9820-beyond2lte_eur_open_04.dts
++++ b/arch/arm64/boot/dts/samsung/exynos9820-beyond2lte_eur_open_04.dts
+@@ -7177,7 +7177,15 @@
+ 			clock-frequency = <0x61a80>;
+ 
+ 			sec-nfc@27 {
+-				compatible = "sec-nfc";
++				/*
++				 * NUXEL: this I2C 0x27 node is the S3NRN82 NFC controller,
++				 * driven by the upstream NCI driver (s3fwrn5_i2c).  Keep the
++				 * vendor property names readable by that driver (see
++				 * drivers/nfc/s3fwrn5/i2c.c) and give it the NCI-compatible
++				 * string; the legacy raw sec_nfc transport stands down when
++				 * CONFIG_NFC_S3FWRN5_I2C is built.
++				 */
++				compatible = "sec-nfc", "samsung,s3fwrn5-i2c";
+ 				reg = <0x27>;
+ 				interrupts = <0x2 0x0 0x0>;
+ 				interrupt-parent = <0xffffffff>;
+diff --git a/drivers/nfc/s3fwrn5/i2c.c b/drivers/nfc/s3fwrn5/i2c.c
+index da7ca08d1..d3f382d4d 100644
+--- a/drivers/nfc/s3fwrn5/i2c.c
++++ b/drivers/nfc/s3fwrn5/i2c.c
+@@ -212,10 +212,14 @@ static int s3fwrn5_i2c_parse_dt(struct i2c_client *client)
+ 		return -ENODEV;
+ 
+ 	phy->gpio_en = of_get_named_gpio(np, "s3fwrn5,en-gpios", 0);
++	if (!gpio_is_valid(phy->gpio_en))
++		phy->gpio_en = of_get_named_gpio(np, "sec-nfc,ven-gpio", 0);
+ 	if (!gpio_is_valid(phy->gpio_en))
+ 		return -ENODEV;
+ 
+ 	phy->gpio_fw_wake = of_get_named_gpio(np, "s3fwrn5,fw-gpios", 0);
++	if (!gpio_is_valid(phy->gpio_fw_wake))
++		phy->gpio_fw_wake = of_get_named_gpio(np, "sec-nfc,firm-gpio", 0);
+ 	if (!gpio_is_valid(phy->gpio_fw_wake))
+ 		return -ENODEV;
+ 
+@@ -243,8 +247,13 @@ static int s3fwrn5_i2c_probe(struct i2c_client *client,
+ 	if (ret < 0)
+ 		return ret;
+ 
++	/*
++	 * NUXEL: the board node is the vendor sec-nfc@27 node.  Its EN line is
++	 * the NFC rail enable (not the upstream reset), and the bootloader can
++	 * leave it high.  Start both pins low so set_mode() owns every edge.
++	 */
+ 	ret = devm_gpio_request_one(&phy->i2c_dev->dev, phy->gpio_en,
+-		GPIOF_OUT_INIT_HIGH, "s3fwrn5_en");
++		GPIOF_OUT_INIT_LOW, "s3fwrn5_en");
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -284,6 +293,16 @@ MODULE_DEVICE_TABLE(i2c, s3fwrn5_i2c_id_table);
+ 
+ static const struct of_device_id of_s3fwrn5_i2c_match[] = {
+ 	{ .compatible = "samsung,s3fwrn5-i2c", },
++	/*
++	 * NUXEL (beyond2lte): the board DTS names the S3NRN82 node "sec-nfc@27"
++	 * with compatible "sec-nfc" and Samsung's sec-nfc,ven/firm-gpio property
++	 * spelling.  That node is this NCI controller; the legacy raw driver
++	 * (sec_nfc.c) cannot speak NCI and leaves the chip unregistered from
++	 * the kernel NFC stack.  Binding it here gives the standard
++	 * /sys/class/nfc + /dev/nfc0 ABI.  The legacy driver's id table stands
++	 * down under CONFIG_NFC_S3FWRN5_I2C (see sec_nfc.c).
++	 */
++	{ .compatible = "sec-nfc", },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, of_s3fwrn5_i2c_match);

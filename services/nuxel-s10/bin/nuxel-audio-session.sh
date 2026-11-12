@@ -72,6 +72,41 @@ WIRE_PID=$!
 # is reachable; it will publish the same default sink/source that WirePlumber
 # selects.
 pipewire-pulse >/run/nuxel-pipewire-pulse.out 2>&1 &
+
+# NUXEL (owner: "apps do not see the microphone"): the audio server runs as
+# root in the compositor runtime.  Its pulse/ directory and socket are created
+# 0700 root:root, which makes them unreachable for every app that runs as the
+# unprivileged session user (all Flatpaks incl. Ferdium/ZapZap/Teams, Signal,
+# Firefox, ...) - the mic worked as root and every app got "Connection
+# refused".  Publish the socket read/write for the nuxel group and expose it
+# at the standard per-user path.  Re-assert continuously: PulseAudio/PipeWire
+# may recreate the directory after a restart.
+(
+  while [ -d /run/nuxel-wayland ]; do
+    if [ -d /run/nuxel-wayland/pulse ]; then
+      chgrp nuxel /run/nuxel-wayland/pulse 2>/dev/null || true
+      chmod 0750 /run/nuxel-wayland/pulse 2>/dev/null || true
+      # A self-referencing "native" link (created by an earlier helper that
+      # followed its own link) makes PulseAudio/PipeWire fail permanently with
+      # ELOOP, so clear it on every pass.
+      if [ -L /run/nuxel-wayland/pulse/native ]; then
+        rm -f /run/nuxel-wayland/pulse/native 2>/dev/null
+      fi
+      if [ -S /run/nuxel-wayland/pulse/native ]; then
+        chgrp nuxel /run/nuxel-wayland/pulse/native 2>/dev/null || true
+        chmod 0770 /run/nuxel-wayland/pulse/native 2>/dev/null || true
+        if [ -L /run/user/1000/pulse ]; then rm -f /run/user/1000/pulse 2>/dev/null; fi
+        mkdir -p /run/user/1000/pulse 2>/dev/null || true
+        chown nuxel:nuxel /run/user/1000/pulse 2>/dev/null || true
+        chmod 0750 /run/user/1000/pulse 2>/dev/null || true
+        rm -f /run/user/1000/pulse/native 2>/dev/null
+        ln -s /run/nuxel-wayland/pulse/native /run/user/1000/pulse/native 2>/dev/null || true
+        chown -h nuxel:nuxel /run/user/1000/pulse/native 2>/dev/null || true
+      fi
+    fi
+    sleep 2
+  done
+) &
 PULSE_PID=$!
 
 # systemd stops this unit before the ABOX core-firmware reload and on every

@@ -2530,6 +2530,54 @@ static void purge_path(const char *path, const char *why) {
   st("CACHE_PURGE removed %s (%s) still_present=%d", path, why, access(path, F_OK) == 0);
 }
 
+#define VERIFY_FILE "/run/nuxel-location-verify.json"
+#define VERIFY_APP "org.nuxel.Maps"
+
+/* Root-console acceptance probe for the Maps current-position marker.
+ *
+ * This is deliberately opt-in (`NUXEL_VERIFY_LOCATION=1`, set only for an
+ * explicit SSH verification run) and cannot reach arbitrary script: it runs
+ * the SAME launcher registry action and the SAME Maps `locate` button that a
+ * physical tap uses, then records what the real page shows.  The marker is a
+ * canvas draw; this probe reports the draw inputs page-side and the window
+ * manager captures the actual glass separately. */
+static gboolean location_verify_cb(gpointer d);
+
+static gboolean location_verify_cb(gpointer d) {
+  (void)d;
+  if (!g_main_view || access(VERIFY_FILE, F_OK) == 0) return G_SOURCE_REMOVE;
+  /* Re-running is intentional: a launch can land after the first timer.  The
+   * launcher guard prevents a duplicate Maps surface; the report always comes
+   * from the real iframe and overwrites the previous NO_MAPS_FRAME evidence. */
+  const char *js =
+    "try{"
+    "if(!window.__nuxelVerifyLoc){window.__nuxelVerifyLoc=1;"
+    "var a=window.appRegistry;if(a&&a.getApp&&a.getApp('" VERIFY_APP "')){a.launchApp('" VERIFY_APP "');}"
+    "setTimeout(function(){try{var b=document.getElementById('locate');if(b)b.click();}catch(e){}},1800);"
+    "setTimeout(function(){try{var fr=document.querySelector('iframe.pwa-frame');if(fr&&fr.contentWindow&&!fr.dataset.verify){var d=fr.contentDocument;if(d){var b=d.getElementById('locate');if(b){fr.dataset.verify='1';b.click();}}}}catch(e){}},2600);"
+    "setTimeout(function(){try{var fr=document.querySelector('iframe.pwa-frame');var w=fr&&fr.contentWindow;"
+    "if(!w){var out0={schema_version:1,app_id:'" VERIFY_APP "',maps_loaded:false,locate_button:false,provider_state:null,fix:null,verdict:'NO_MAPS_FRAME',frame:!!fr,launcher_state:document.body.dataset.appState||null,ts:Date.now()/1000};window.webkit.messageHandlers.nuxelDiag.postMessage('LOCATION_VERIFY '+JSON.stringify(out0));"
+    "setTimeout(function(){try{var A=window.appRegistry;if(A&&A.getApp&&A.getApp('" VERIFY_APP "')){A.launchApp('" VERIFY_APP "');}}catch(e){}},500);return;}"
+    "var mm=w.nuxelMaps||{};var p=mm.provider&&mm.provider();var f=p&&p.fix;"
+    "var st=w.document&&w.document.getElementById('provider-state');"
+    "var out={schema_version:1,app_id:'" VERIFY_APP "',maps_loaded:!!w.nuxelMaps,locate_button:!!(w.document&&w.document.getElementById('locate')),provider_state:p?(p.state||null):null,fix:f?{lat:f.lat,lon:f.lon,accuracy:f.accuracy,kind:f.kind,gnss:!!f.gnss,network:!!f.network,fresh:!!f.fresh,age_s:f.ageSeconds}:null,provider_text:st?String(st.textContent||''):null,ts:Date.now()/1000};"
+    "var ok=!!(f&&p.state==='fixed'&&typeof f.lat==='number'&&typeof f.lon==='number');out.marker_fix=ok?{lat:f.lat,lon:f.lon}:null;out.verdict=ok?'FIXED':'NO_FRESH_FIX';"
+    "window.webkit.messageHandlers.nuxelDiag.postMessage('LOCATION_VERIFY '+JSON.stringify(out));"
+    "}catch(e){try{window.webkit.messageHandlers.nuxelDiag.postMessage('LOCATION_VERIFY '+JSON.stringify({schema_version:1,verdict:'PROBE_ERROR',detail:String(e)}));}catch(q){}}},5200);"
+    "}"
+    "}catch(e){}";
+  webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+  /* First report even if Maps is still launching: that distinguishes a slow
+   * frame from a permission/provider failure instead of leaving no evidence. */
+  g_timeout_add_seconds(2, location_verify_cb, NULL);
+  g_timeout_add_seconds(8, location_verify_cb, NULL);
+  g_timeout_add_seconds(16, location_verify_cb, NULL);
+  /* A launch can take longer than one timer window; retry once without
+   * duplicating the probe (the guard also reports an existing evidence file). */
+  g_timeout_add_seconds(16, location_verify_cb, NULL);
+  return G_SOURCE_REMOVE;
+}
+
 static void purge_launcher_cache(void) {
   const char *keep = getenv("NUXEL_KEEP_CACHE");
   if (keep && keep[0] == '1') { st("CACHE_PURGE skipped (NUXEL_KEEP_CACHE=1)"); return; }
@@ -2901,7 +2949,14 @@ static void on_diag_message(WebKitUserContentManager *m, WebKitJavascriptResult 
   (void)m; (void)d;
   JSCValue *v = webkit_javascript_result_get_js_value(r);
   char *s = v ? jsc_value_to_string(v) : NULL;
-  if (s) { st("NUXEL_INPUT %s", s); g_free(s); }
+  if (s) {
+    if (!strncmp(s, "LOCATION_VERIFY ", 16)) {
+      FILE *f = fopen(VERIFY_FILE, "w");
+      if (f) { fputs(s + 16, f); fputc('\n', f); fclose(f); }
+    }
+    st("NUXEL_INPUT %s", s);
+    g_free(s);
+  }
 }
 
 static gboolean on_load_failed(WebKitWebView *v, WebKitLoadEvent ev, gchar *uri, GError *err, gpointer d) {
@@ -2915,6 +2970,9 @@ static void on_load_changed(WebKitWebView *v, WebKitLoadEvent ev, gpointer d) {
   if (ev == WEBKIT_LOAD_FINISHED) {
     const gchar *uri = webkit_web_view_get_uri(v);
     st("NUXEL_HOME_READY uri=%s", uri ? uri : "?");
+    if (getenv("NUXEL_VERIFY_LOCATION") && getenv("NUXEL_VERIFY_LOCATION")[0] == '1') {
+      if (!access(VERIFY_FILE, F_OK)) g_timeout_add(250, location_verify_cb, NULL);
+    }
     FILE *f = fopen(READY, "w");
     if (f) { fprintf(f, "%s\n", uri ? uri : ""); fclose(f); }
   } else if (ev == WEBKIT_LOAD_COMMITTED) {
@@ -2990,6 +3048,10 @@ static void on_permission(WebKitWebView *v, WebKitPermissionRequest *r, gpointer
     gboolean recorder_page = uri &&
         (g_strstr_len(uri, -1, "/pwa/nuxel-apps/recorder/") != NULL);
     gboolean host_grant = g_mic_grant_until_us > g_get_monotonic_time();
+    /* PWNAGE-109000: any trusted local app (not only the Recorder page) may
+       capture audio after it obtained the one-shot host grant.  The grant was
+       already gated on from_trusted above; the permission manager writes the
+       durable decision.  This makes voice notes work in every bundled app. */
     if (!video && (recorder_page || host_grant)) {
       allow = TRUE;
       if (host_grant) g_mic_grant_until_us = 0;  /* one-shot */
@@ -2999,7 +3061,7 @@ static void on_permission(WebKitWebView *v, WebKitPermissionRequest *r, gpointer
     } else if (video) {
       reason = "denied-camera-backend-deferred";
     } else {
-      reason = "denied-microphone-not-recorder";
+      reason = "denied-microphone-no-host-grant";
     }
   } else {
     reason = "denied-not-required-by-launcher";
@@ -3078,7 +3140,7 @@ static WebKitWebView *view_new(void) {
     webkit_user_script_unref(ps);
     st("NUXEL_BOOT_POLICY host-enforced=1 css=1 dom_removal=1 (phone launch mode)");
   }
-  if (diag) {
+  if (diag || (getenv("NUXEL_VERIFY_LOCATION") && getenv("NUXEL_VERIFY_LOCATION")[0] == '1')) {
     webkit_user_content_manager_register_script_message_handler(ucm, "nuxelDiag");
     g_signal_connect(ucm, "script-message-received::nuxelDiag", G_CALLBACK(on_diag_message), NULL);
     WebKitUserScript *us = webkit_user_script_new(DIAG_JS,
@@ -3176,6 +3238,11 @@ int main(int argc, char **argv) {
   indicator_fallback_start();
   gtk_widget_show_all(win);
   gtk_window_fullscreen(GTK_WINDOW(win));
+  if (getenv("NUXEL_VERIFY_LOCATION") && getenv("NUXEL_VERIFY_LOCATION")[0] == '1') {
+    unlink(VERIFY_FILE);
+    g_timeout_add_seconds(9, location_verify_cb, NULL);
+    st("LOCATION_VERIFY armed app=" VERIFY_APP " evidence=" VERIFY_FILE);
+  }
 
   st("NUXEL_HOME_BOOT_OWNER os_animation=%d splash_removed_by_launcher=%d",
      os_owns_boot_animation(), os_owns_boot_animation());

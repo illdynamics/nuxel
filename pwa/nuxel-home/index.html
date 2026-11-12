@@ -16,6 +16,7 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Nuxel</title>
     <link rel="stylesheet" href="../nuxel-common/theme.css?v=p85000">
+    <link rel="stylesheet" href="css/edge-lighting.css?v=p103000">
     <link rel="stylesheet" href="css/style.css?v=p85000">
     <link rel="stylesheet" href="css/launcher.css?v=p87000">
     <link rel="stylesheet" href="css/search.css">
@@ -178,8 +179,20 @@
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/09-location.svg?v=p80000" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Location</span>
             </div>
+            <div class="qs-item" id="qs-usb-tether" data-enabled="unknown" data-mode="off" title="USB networking / tethering (tap = on/off, long-press = cycle usbnet/tether/off)">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png?v=p107000" alt="" onerror="this.hidden=true">
+                <span class="qs-label">USB Net<br>checking</span>
+            </div>
         </div>
         <div class="qs-row">
+            <div class="qs-item" id="qs-edge-panel" data-enabled="true" title="Edge panel: app and notification sidebar (also opens with a deliberate inward side swipe)">
+                <span class="qs-icon edge-panel-icon" aria-hidden="true"></span>
+                <span class="qs-label">Edge</span>
+            </div>
+            <div class="qs-item" id="qs-edge-lighting" data-enabled="true" title="Edge lighting: notification display effect (tap = preview, long-press = on/off)">
+                <span class="qs-icon edge-lighting-icon" aria-hidden="true"></span>
+                <span class="qs-label">Edge<br>light</span>
+            </div>
             <div class="qs-item" id="qs-dnd" data-enabled="false">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">DND</span>
@@ -191,10 +204,6 @@
             <div class="qs-item" id="qs-rotate" data-enabled="false">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Rotate</span>
-            </div>
-            <div class="qs-item" id="qs-settings" data-enabled="true">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/30-quick-settings.png?v=a44" alt="" onerror="this.hidden=true">
-                <span class="qs-label">Settings</span>
             </div>
             <div class="qs-item" id="qs-firewall" data-enabled="unknown">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/23-firewall.png?v=1" alt="" onerror="this.hidden=true">
@@ -413,6 +422,8 @@
     })();
     </script>
     <script src="../nuxel-common/theme.js?v=p85000"></script>
+    <script src="js/edge-panel-gesture.js?v=p103000"></script>
+    <script src="js/edge-lighting.js?v=p103000b"></script>
     <script src="../nuxel-common/haptics.js?v=a81"></script>
     <script src="../nuxel-common/geolocation.js?v=p80000"></script>
     <script src="js/apps.js?v=p91000"></script>

@@ -55,9 +55,73 @@ def targets_for(source: str):
         return out
     if source.startswith("assets/"):
         return [("/usr/share/nuxel/" + source, 0o644)]
+    if source == "services/nuxel-bridge/src/nfc_provider.py":
+        return [("/usr/lib/nuxel/nuxel-bridge/nfc_provider.py", 0o644)]
+    if source == "services/nuxel-nfc/nfc_provider.py":
+        # The nfc-daemon tree's copy of the same client.  Both installed trees
+        # must carry identical bytes (measured: a stale bridge copy rejected
+        # the new app_id argument), so the payload ships both files.
+        return [("/usr/lib/nuxel/nuxel-nfc/nfc_provider.py", 0o644)]
+    if source == "services/nuxel-bridge/src/interface_state.py":
+        return [("/usr/lib/nuxel/nuxel-bridge/interface_state.py", 0o644),
+                ("/usr/lib/nuxel/nuxel-interface-state.d/interface_state.py", 0o644)]
+    if source == "services/nuxel-s10/bin/nuxel-hardware-state":
+        return [("/usr/lib/nuxel/nuxel-hardware-state", 0o755)]
+    if source.startswith("services/nuxel-nfc/nuxel_nfc/"):
+        rel = source[len("services/nuxel-nfc/nuxel_nfc/"):]
+        return [("/usr/lib/nuxel/nuxel-nfc/nuxel_nfc/" + rel, 0o644)]
+    if source == "services/nuxel-nfc/nfcd-preflight.py":
+        return [("/usr/lib/nuxel/nuxel-nfc/nfcd-preflight.py", 0o755)]
+    if source == "services/nuxel-nfc/nuxel-nfc":
+        return [("/usr/bin/nuxel-nfc", 0o755)]
+    if source == "services/nuxel-nfc/90-nuxel-nfc.rules":
+        return [("/usr/lib/udev/rules.d/90-nuxel-nfc.rules", 0o644)]
+    if source.startswith("services/nuxel-nfc/systemd/"):
+        rel = source[len("services/nuxel-nfc/systemd/"):]
+        return [("/usr/lib/systemd/system/" + rel, 0o644)]
+    if source == "services/nuxel-s10/bin/nuxel-interface-state":
+        return [("/usr/lib/nuxel/nuxel-interface-state", 0o755)]
     if source.startswith("services/nuxel-bridge/src/"):
         rel = source[len("services/nuxel-bridge/src/"):]
         return [("/usr/lib/nuxel/nuxel-bridge/" + rel, 0o644)]
+    if source.startswith("services/nuxel-gnss/src/"):
+        rel = source[len("services/nuxel-gnss/src/"):]
+        return [("/usr/lib/nuxel/nuxel-gnss/" + rel, 0o755)]
+    if source.startswith("services/nuxel-gnss/systemd/"):
+        name = os.path.basename(source)
+        return [("/etc/systemd/system/" + name, 0o644)]
+    if source.startswith("configs/nuxel/permissions/") and source.endswith(".json"):
+        # These are seed grants for first-party apps, not the live store: the
+        # live store is the owner's authoritative data and is only ever written
+        # by permD/Settings.  The bridge seeds an absent record from this tree.
+        return [("/usr/share/nuxel/permissions/" + os.path.basename(source), 0o644)]
+    if source == "shell/nuxel-shell/nuxel-permissions/nuxel-permd.py":
+        # The unit's ExecStart is /usr/bin/nuxel-permd.py; install the same
+        # bytes there (the lib copy stays for the tooling/imports).
+        return [("/usr/lib/nuxel/nuxel-permissions/nuxel-permd.py", 0o755),
+                ("/usr/bin/nuxel-permd.py", 0o755)]
+    if source.startswith("docs/hardware/gps/") and (
+            source.endswith(".md") or source.endswith(".sh")):
+        mode = 0o755 if source.endswith(".sh") else 0o644
+        return [("/usr/share/doc/nuxel/docs/hardware/gps/" + os.path.basename(source), mode)]
+    if source == "shell/nuxel-shell/nuxel-permissions/systemd/nuxel-permd.service":
+        return [("/etc/systemd/system/nuxel-permd.service", 0o644)]
+    if source == "shell/nuxel-shell/nuxel-permissions/capabilities.json":
+        return [("/usr/lib/nuxel/nuxel-permissions/capabilities.json", 0o644),
+                ("/etc/nuxel/permissions/capabilities.json", 0o644)]
+    if source == "services/nuxel-consent/nuxel_consentd.py":
+        return [("/usr/lib/nuxel/nuxel-consent/nuxel_consentd.py", 0o755)]
+    if source == "services/nuxel-consent/systemd/nuxel-consent-agent.service":
+        return [("/etc/systemd/system/nuxel-consent-agent.service", 0o644)]
+    if source == "services/nuxel-consent/dbus/org.nuxel.PhoshAgent.conf":
+        # Session policy (own the name as uid 1000) and a system-bus policy so
+        # the root HTTP bridge can reach the same agent.
+        return [("/etc/dbus-1/session.d/org.nuxel.PhoshAgent.conf", 0o644),
+                ("/etc/dbus-1/system.d/org.nuxel.PhoshAgent.conf", 0o644)]
+    if source == "services/nuxel-notifications/dbus/org.nuxel.PhoshAgent.service":
+        return [("/usr/share/dbus-1/services/org.nuxel.PhoshAgent.service", 0o644)]
+    if source == "services/nuxel-notifications/dbus/org.nuxel.Notifications.service":
+        return [("/usr/share/dbus-1/services/org.nuxel.Notifications.service", 0o644)]
     if source.startswith("services/nuxel-notifications/src/"):
         rel = source[len("services/nuxel-notifications/src/"):]
         return [("/usr/lib/nuxel/nuxel-notifications/" + rel, 0o644)]
@@ -168,6 +232,8 @@ def targets_for(source: str):
         return [("/usr/share/applications/" + os.path.basename(source), 0o644)]
     if source == "services/nuxel-s10/bin/nuxel-flatpak-firefox":
         return [("/usr/lib/nuxel/nuxel-flatpak-firefox", 0o755)]
+    if source == "services/nuxel-s10/bin/nuxel-audio-perms.sh":
+        return [("/usr/lib/nuxel/nuxel-audio-perms.sh", 0o755)]
     if source == "shell/nuxel-browser-native/nuxel_browser_native.py":
         return [("/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py", 0o755)]
     if source == "tools/s10plus/a45/nuxel-session.sh":
@@ -216,7 +282,70 @@ def load_payload(payload: Path):
     return manifest, sorted(by_target.values(), key=lambda x: x["target"])
 
 
-def stage(payload: Path, manifest: dict, plan: list[dict]) -> Path:
+def _stage_payload_impl(payload: Path, manifest: dict, plan: list[dict]) -> Path:
+    work = Path(tempfile.mkdtemp(prefix="nuxel-live-stage-"))
+    (work / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
+    with tarfile.open(payload, "r:gz") as tf:
+        sources = {e["source"] for e in plan}
+        for source in sources:
+            member = tf.getmember("files/" + source)
+            data = tf.extractfile(member).read()
+            dest = work / "files" / source
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(data)
+            if sha256_file(dest) != next(e["sha256"] for e in plan if e["source"] == source):
+                raise SystemExit("staged hash mismatch: " + source)
+    out = work / ("nuxel-%s-live-deploy.tar.gz" % manifest["version"].lstrip("v"))
+    with tarfile.open(out, "w:gz") as tf:
+        tf.add(work / "plan.json", arcname="plan.json")
+        tf.add(work / "files", arcname="files")
+    return out
+
+
+def permission_store_gid(args, host: str) -> int | None:
+    """Return nuxel-bridge's gid on the phone, if that account exists.
+
+    First-party grant files are read by BOTH the bridge and permD.  permD runs
+    as root, the bridge deliberately does not, so a root-only 0600 source file
+    would deploy an invisible grant and reproduce the dead Location toggle.  The
+    installer is root-only; this value only selects the group of files already
+    inside that protected store.
+    """
+    cmd = subprocess.run(
+        ssh_base(args, host) + ["getent group nuxel-bridge | cut -d: -f3 || true"],
+        capture_output=True, text=True, timeout=20)
+    value = (cmd.stdout or "").strip()
+    return int(value) if value.isdigit() else None
+
+
+def ensure_permd_state_acl(args, host: str) -> None:
+    """Let the consent surface (uid nuxel) write permD's state sidecars.
+
+    The consent agent runs as ``nuxel`` and calls nuxel-permd.py to record the
+    owner's decision.  The grant file itself is nuxel-owned, but the
+    review/enforce sidecars under state/ are root-owned on the handset, so a
+    permission grant from the on-screen prompt used to fail with
+    PermissionError while the same grant from Settings worked.  Grant only
+    the state dirs (an ACL, no world write) and keep the files root-owned.
+    """
+    acl = (
+        "setfacl -m u:nuxel:rwx /var/lib/nuxel/permissions/state "
+        "/var/lib/nuxel/permissions/state/enforce 2>/dev/null || true; "
+        "setfacl -d -m u:nuxel:rwx /var/lib/nuxel/permissions/state "
+        "/var/lib/nuxel/permissions/state/enforce 2>/dev/null || true; "
+        "setfacl -m u:nuxel:rw /var/lib/nuxel/permissions/state/audit.log "
+        "2>/dev/null || true"
+    )
+    result = subprocess.run(ssh_base(args, host) + ["sudo -n sh -c " + shlex.quote(acl)],
+                            capture_output=True, text=True)
+    print("PERMD_STATE_ACL %s" % ("OK" if result.returncode == 0 else "WARN rc=%d" % result.returncode))
+
+
+def stage(payload: Path, manifest: dict, plan: list[dict],
+          permission_gid: int | None = None) -> Path:
+    for item in plan:
+        if item["target"].startswith("/usr/share/nuxel/permissions/"):
+            item["gid"] = permission_gid
     work = Path(tempfile.mkdtemp(prefix="nuxel-live-stage-"))
     (work / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
     with tarfile.open(payload, "r:gz") as tf:
@@ -286,7 +415,10 @@ def main(argv=None) -> int:
     for item in plan:
         print("  %-64s -> %s (%04o)" % (item["source"], item["target"], item["mode"]))
 
-    staged = stage(payload, manifest, plan)
+    permission_gid = permission_store_gid(args, args.host)
+    print("PERMISSION_STORE_GID %s" % (permission_gid if permission_gid is not None else "unresolved"))
+    ensure_permd_state_acl(args, args.host)
+    staged = stage(payload, manifest, plan, permission_gid)
     print("STAGED %s (%d bytes, sha256 %s)" % (staged, staged.stat().st_size, sha256_file(staged)))
     if not args.apply:
         print("DRY_RUN complete; pass --apply to deploy to %s@%s" % (args.user, args.host))
@@ -324,6 +456,12 @@ def main(argv=None) -> int:
         'test -x /usr/libexec/nuxel/nuxel-display-ctl; '
         'test -f /usr/lib/nuxel/nuxel-display/nuxel-wl-fb-ext.c; '
         'test -f /etc/systemd/system/nuxel-displayd.service; '
+        'grep -q "ExecStartPre=+/bin/sh" /etc/systemd/system/nuxel-bridge.service; '
+        'grep -q "Location control" /usr/share/nuxel/pwa/nuxel-apps/settings/apps-permissions-settings.js; '
+        'test -x /usr/bin/nuxel-permd.py; '
+        'systemctl is-active nuxel-permd; '
+        'test -f /usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py; '
+        'test -f /etc/systemd/system/nuxel-gnss-lhd.service; '
         'systemctl is-active nuxel-bridge nuxel-http-bridge nuxel-web nuxel-soundd nuxel-clockd; '
         'echo DEVICE_VERIFY_OK'
     )

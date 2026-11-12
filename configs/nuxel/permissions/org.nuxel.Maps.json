@@ -1,4 +1,10 @@
 {
+  "location:manage": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "location",
+    "source": "first-party-system-grant: Maps can enable the global location policy before requesting its own position"
+  },
   "location:read": {
     "duration": "always",
     "granted_at": 0,
