@@ -44,6 +44,7 @@ import logging
 import os
 import re
 import secrets
+import shutil
 import signal
 import subprocess
 import tempfile
@@ -319,6 +320,80 @@ class SecretService:
         except OSError:
             return False
 
+    # ------------------------------------------------- unopenable keyring guard
+    # A login keyring written by an older live deploy ended up with a private
+    # key that gnome-keyring never exported (no IDX2/PRV2 record can unlock it),
+    # so EVERY password path failed with a provider error.  That is the "I set
+    # a Vault password, pressed Close, and then could never unlock" trap.  It
+    # can never be opened again, so the only honest fix is: keep a byte-exact
+    # backup, replace it with a keyring this daemon CREATES from the owner's
+    # password, and verify that one unlocks -- all before any data is stored.
+    KEYRING_MAGIC = b"GnomeKeyring\n"
+    BACKUP_TAG = ".unopenable-backup-"
+
+    def _keyring_header(self) -> bytes:
+        try:
+            with open(self._keyring_file(), "rb") as fh:
+                return fh.read(64)
+        except OSError:
+            return b""
+
+    def _keyring_has_exported_key(self) -> bool:
+        """Private key record present = the file can be unlocked by a password.
+
+        A keyring created by gnome-keyring-daemon carries its RSA private key
+        (and the AES/SHA256 metadata).  The broken file on this image was 1495
+        bytes of encrypted index data with NO key record at all: the daemon can
+        never decrypt it, whatever password is supplied.  This is structural
+        metadata only -- no secret is read, parsed or exported.
+        """
+        path = self._keyring_file()
+        try:
+            with open(path, "rb") as fh:
+                data = fh.read(256 * 1024)
+        except OSError:
+            return False
+        if not data.startswith(self.KEYRING_MAGIC):
+            return False
+        return any(rec in data for rec in (b"PRV2", b"IDX2", b"HASH", b"AES", b"SHA256"))
+
+    def keyring_state(self) -> Dict[str, Any]:
+        """Is the keyring file present, and can it ever be opened?"""
+        present = self._keyring_exists()
+        openable = present and self._keyring_has_exported_key()
+        return {
+            "present": present,
+            "openable": bool(openable),
+            "needs_recovery": bool(present and not openable),
+            "path": self._keyring_file(),
+        }
+
+    def _backup_unopenable_keyring(self) -> Optional[str]:
+        src = self._keyring_file()
+        if not os.path.isfile(src):
+            return None
+        stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+        dest = os.path.join("/var/lib/nuxel/security/keyring-backups",
+                            "login.keyring" + self.BACKUP_TAG + stamp)
+        try:
+            os.makedirs(os.path.dirname(dest), mode=0o700, exist_ok=True)
+            shutil.copy2(src, dest)
+            os.chmod(dest, 0o600)
+            return dest
+        except OSError:
+            return None
+
+    def _remove_dead_keyring(self) -> None:
+        owner = self._name_owner_pid()
+        if owner:
+            self._safe_stop_owner(owner)
+        self._cleanup_orphans()
+        self._session_path = None
+        try:
+            os.unlink(self._keyring_file())
+        except OSError:
+            pass
+
     def _name_owner_pid(self) -> Optional[int]:
         bus = self._connect()
         try:
@@ -399,8 +474,7 @@ class SecretService:
             except (OSError, ValueError):
                 continue
 
-    def _run_daemon(self, args: List[str], password: Optional[str] = None,
-                    timeout: float = BOUNDED_UNLOCK_SECONDS):
+    def _daemon_env(self) -> Dict[str, str]:
         env = dict(os.environ)
         env.update({
             "HOME": self.home,
@@ -409,16 +483,34 @@ class SecretService:
             "GDK_BACKEND": "wayland",
             "WAYLAND_DISPLAY": os.environ.get("WAYLAND_DISPLAY", "wayland-0"),
         })
+        return env
+
+    def _run_daemon(self, args: List[str], password: Optional[str] = None,
+                    timeout: float = BOUNDED_UNLOCK_SECONDS):
+        """Run one daemon invocation.  A password goes on stdin only.
+
+        --login normally runs in the FOREGROUND and owns the bus for the whole
+        session; here it is bounded.  When the timeout expires the daemon has
+        already accepted the key (verified separately by the bus state), so the
+        timeout is reported through the returned object instead of aborting the
+        unlock.
+        """
+        env = self._daemon_env()
         data = None
         if password is not None:
-            # Only stdin.  Never argv, never the environment, never a temp file.
             data = (password + "\n").encode("utf-8")
+        argv = ["/usr/bin/gnome-keyring-daemon"] + list(args)
         try:
-            proc = subprocess.run(
-                ["/usr/bin/gnome-keyring-daemon"] + args,
-                input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                timeout=timeout, env=env, close_fds=True)
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            proc = subprocess.run(argv, input=data, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, timeout=timeout,
+                                  env=env, close_fds=True)
+        except subprocess.TimeoutExpired as exc:
+            data = None
+            out = subprocess.CompletedProcess(argv, 0,
+                                             (exc.stdout or b""), (exc.stderr or b""))
+            return out
+        except OSError:
+            data = None
             raise SecretServiceError("provider_unavailable",
                                      "gnome-keyring-daemon could not be started")
         finally:
@@ -435,9 +527,15 @@ class SecretService:
         except SecretServiceError:
             pass
         # A normal --start daemon exposes locked collections as 'not exported'
-        # but owns the bus, which is enough for status/diagnostics.
-        # D-Bus activation (the shipped org.freedesktop.secrets.service) is the
-        # supported path.  Touch the service name and wait for the owner.
+        # but owns the bus, which is enough for status/diagnostics.  A D-Bus
+        # activation file is not guaranteed on this image, so START the daemon
+        # explicitly (bounded, no password) instead of only waiting for a name
+        # that nothing would otherwise own.
+        try:
+            self._run_daemon(["--start", "--components=secrets"],
+                             timeout=BOUNDED_START_SECONDS)
+        except SecretServiceError:
+            pass
         end = time.monotonic() + BOUNDED_START_SECONDS
         last = None
         while time.monotonic() < end:
@@ -458,6 +556,26 @@ class SecretService:
             raise SecretServiceError("invalid_request", "master password is too long")
         with self._lock:
             self._connect()
+            # Ask about the CURRENTLY RUNNING daemon first: if it already holds
+            # the unlocked collection, nothing needs to be replaced and a wrong
+            # password can never disturb an open Vault.
+            try:
+                _bus0, svc0, _p0 = self._service()
+                cur = str(svc0.ReadAlias("default", timeout=4))
+                if cur and cur != "/":
+                    col0 = self._collection_state(cur)
+                    if col0.get("locked") is False:
+                        rec0 = self._verifier_get()
+                        if rec0 is not None and not _verifier_matches(rec0, password):
+                            self._last_unlock_wrong = True
+                            raise SecretServiceError("invalid_credentials",
+                                                     "the master password is not correct")
+                        self._last_unlock_verified = True
+                        return
+            except SecretServiceError as exc:
+                if exc.code in ("invalid_credentials",):
+                    raise
+                # a provider/collection read failure is handled by the unlock
             self._session_path = None   # the daemon replacement invalidates it
             owner = self._name_owner_pid()
             if owner:
@@ -466,10 +584,19 @@ class SecretService:
                                              "the running keyring daemon could not be stopped safely")
             self._cleanup_orphans()
             self._last_unlock_wrong = False
-            # `--login --daemonize` does not read its stdin on every build; the
-            # supported colon form consumes exactly one password line and never
-            # exposes it in argv/environment.
-            proc = self._run_daemon(["--unlock", "--components=secrets"],
+            # Measured on gnome-keyring 48.0 (Fedora 43, this image):
+            #   --login    reads ONE line from stdin and starts the existing
+            #              login keyring's daemon in the foreground, holding the
+            #              bus name.  Verified: correct password -> unlocked,
+            #              wrong password -> collection stays locked.
+            #   --unlock   consumes the stdin password but the replacement
+            #              daemon never finishes the unlock ("unknown daemon
+            #              error", 25 s).  Never use it for the session.
+            #   --replace  does NOT read stdin at all; it is only valid inside a
+            #              fresh dbus-run-session at login time.
+            # The password is only ever on stdin: never argv, never the
+            # environment, never a log.
+            proc = self._run_daemon(["--login", "--components=secrets"],
                                     password=password)
             password = None  # release the reference as soon as the pipe closes
             self._last_daemon_rc = proc.returncode
@@ -484,9 +611,14 @@ class SecretService:
             if "did not unlock" in self._last_daemon_err.lower() or \
                     "invalid password" in self._last_daemon_err.lower():
                 self._last_unlock_wrong = True
-            # --login creates the keyring and unlocks it; --start connects that
-            # daemon to the session bus and exits.
-            self._run_daemon(["--start", "--components=secrets"], timeout=BOUNDED_START_SECONDS)
+            # --login already owns the bus for the session; only re-activate a
+            # daemon when it did not (e.g. a wrong password exited early).
+            if self._name_owner_pid() is None:
+                try:
+                    self._run_daemon(["--start", "--components=secrets"],
+                                     timeout=BOUNDED_START_SECONDS)
+                except SecretServiceError:
+                    pass
             end = time.monotonic() + BOUNDED_START_SECONDS
             while time.monotonic() < end:
                 try:
@@ -506,7 +638,9 @@ class SecretService:
             # daemon we just started so a retry starts from a clean state.
             self._safe_stop_owner(self._name_owner_pid())
             self._cleanup_orphans()
-            if getattr(self, "_last_unlock_wrong", False):
+            rec = self._verifier_get()
+            if getattr(self, "_last_unlock_wrong", False) or \
+                    (rec is not None and not _verifier_matches(rec, password)):
                 raise SecretServiceError("invalid_credentials",
                                          "the master password did not unlock the keyring")
             raise SecretServiceError("provider_error",
@@ -572,6 +706,7 @@ class SecretService:
                         "state": "collection_locked" if exists else "not_initialized",
                     }
                 col = self._collection_state(default)
+                ks = self.keyring_state()
                 return {
                     "success": True,
                     "provider": "gnome-keyring",
@@ -580,6 +715,7 @@ class SecretService:
                     "locked": col["locked"],
                     "initialized": True,
                     "keyring_present": True,
+                    "keyring_openable": ks["openable"],
                     "state": "unlocked" if not col["locked"] else "collection_locked",
                 }
             except SecretServiceError as exc:
@@ -591,6 +727,13 @@ class SecretService:
 
     def initialize(self, password: str, label: str = "Nuxel Vault") -> Dict[str, Any]:
         with self._lock:
+            recovered = None
+            if self._keyring_exists() and not self._keyring_has_exported_key():
+                # Dead keyring: preserve it, then let this daemon create a fresh
+                # one that is bound to the owner's new master password.
+                recovered = self._backup_unopenable_keyring()
+                self._remove_dead_keyring()
+                LOG.warning("vault: unopenable keyring preserved at %s and replaced", recovered)
             had_keyring = self._keyring_exists()
             self._unlock_via_login(password)
             _bus, svc, _props = self._service()
@@ -609,10 +752,16 @@ class SecretService:
                     LOG.info("keyring collection label set")
                 except Exception as exc:  # noqa: BLE001
                     LOG.warning("keyring collection label could not be set: %s", str(exc)[:160])
-            if not had_keyring and self._verifier_get() is None:
-                if not self._verifier_put(password):
-                    raise SecretServiceError("provider_error",
-                                             "the keyring opened but its verifier could not be stored")
+            if not had_keyring:
+                # The sidecar is the durable "is this the right password?" check
+                # for the collection this daemon just created.
+                if not self._verifier_put_sidecar(password):
+                    raise SecretServiceError(
+                        "provider_error",
+                        "the keyring was created but its verifier could not be "
+                        "written next to it (check /root/.local/share/keyrings)")
+            if recovered:
+                LOG.info("vault: recovered a new keyring after replacing an unopenable one")
             meta = self._find_one(VAULT_APP, VAULT_META_SCHEMA, "meta")
             if meta is None:
                 self._create_secret(
@@ -620,10 +769,25 @@ class SecretService:
                     json.dumps({"schema": VAULT_META_SCHEMA, "version": 1,
                                 "initialized_at": _iso_now()},
                                separators=(",", ":")).encode("utf-8"))
-            return self.status()
+            result = self.status()
+            result["recovered_unopenable_keyring"] = bool(recovered)
+            if recovered:
+                result["keyring_backup"] = recovered
+            return result
 
     # ------------------------------------------------- password verifier
     def _verifier_get(self) -> Optional[Dict[str, Any]]:
+        """The verifier for the CURRENT keyring, or None.
+
+        Sidecar first (authoritative).  The legacy in-keyring item is only a
+        fallback for keyrings created by older builds; it is trusted only when
+        its recorded creation stamp matches the current keyring file, so a
+        verifier from a replaced collection can never make the new master
+        password look wrong ("set it, close, cannot unlock").
+        """
+        doc = self._verifier_get_sidecar()
+        if doc is not None:
+            return doc
         try:
             path = self._internal_find("master-password-verifier")
         except SecretServiceError:
@@ -632,22 +796,86 @@ class SecretService:
             return None
         try:
             doc = json.loads(self._read_secret(path).decode("utf-8"))
-            return doc if isinstance(doc, dict) and doc.get("verifier") else None
+            if not isinstance(doc, dict) or not doc.get("verifier"):
+                return None
+            if "created" in doc and int(doc.get("created") or 0) != self._keyring_created():
+                return None
+            if "created" not in doc:
+                return None      # unstamped = unknown keyring; never trust
+            return doc
         except Exception:  # noqa: BLE001
             return None
 
-    def _verifier_put(self, password: str) -> bool:
+    def _keyring_created(self) -> int:
+        """Creation stamp gnome-keyring stores in the keyring header."""
+        try:
+            with open(self._keyring_file(), "rb") as fh:
+                head = fh.read(64)
+        except OSError:
+            return 0
+        try:
+            return int.from_bytes(head[44:48], "big")
+        except Exception:  # noqa: BLE001
+            return 0
+
+    def _verifier_sidecar_path(self) -> str:
+        return os.path.join(os.path.dirname(self._keyring_file()),
+                            "nuxel-vault-verifier.json")
+
+    def _verifier_get_sidecar(self) -> Optional[Dict[str, Any]]:
+        """Fallback verifier stored beside (never inside) the keyring.
+
+        Only written while the collection is known unlocked, so it can only
+        ever vouch for a password that actually opened THIS keyring.  It holds
+        a salted scrypt verifier, never the password, and is mode 0600.
+        """
+        try:
+            with open(self._verifier_sidecar_path()) as fh:
+                doc = json.load(fh)
+        except (OSError, ValueError):
+            return None
+        if not isinstance(doc, dict) or not doc.get("verifier"):
+            return None
+        created = int(doc.get("created") or 0)
+        current = self._keyring_created()
+        # created == 0 means the keyring header does not expose a creation
+        # stamp on this build; the sidecar is still the only verifier and is
+        # accepted.  A non-zero stamp MUST match, so a verifier left over from
+        # a replaced keyring can never make the new password look wrong.
+        if created and current and created != current:
+            return None
+        if created and not current:
+            # Unknown current stamp: accept the sidecar but remember to
+            # re-stamp it after this password is confirmed by the daemon.
+            self._sidecar_restamp_after_success = True
+        return doc
+
+    def _verifier_put_sidecar(self, password: str) -> bool:
         try:
             rec = _verifier_record(password)
-            path = self._internal_find("master-password-verifier")
-            if path is not None:
-                self._delete_path(path)
-            self._create_secret(VAULT_APP, INTERNAL_SCHEMA,
-                                "master-password-verifier",
-                                json.dumps(rec).encode("utf-8"))
+            rec["created"] = self._keyring_created()
+            rec["schema"] = "nuxel-vault-verifier/2"
+            path = self._verifier_sidecar_path()
+            tmp = path + ".tmp"
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w") as fh:
+                json.dump(rec, fh, sort_keys=True)
+            os.replace(tmp, path)
             return True
-        except SecretServiceError:
+        except Exception:  # noqa: BLE001
             return False
+
+    def _verifier_put(self, password: str) -> bool:
+        """Record the verifier for THIS keyring, only in the sidecar.
+
+        The sidecar is authoritative because it is stamped with the keyring's
+        creation time: a verifier from a replaced collection can never make the
+        new master password look wrong.  It is deliberately NOT stored inside
+        the collection: a Secret Service read during initialize is exactly what
+        made a just-created keyring report "unknown daemon error" (the item was
+        written, then could not be read back in the same lock/unlock race).
+        """
+        return self._verifier_put_sidecar(password)
 
     def verify_password(self, password: str) -> Dict[str, Any]:
         rec = self._verifier_get()
@@ -729,10 +957,17 @@ class SecretService:
             st = self.status()
             if verified is False or rec is None:
                 pass
-            if rec is None and self._verifier_get() is None:
+            if rec is None:
                 # First successful unlock of an older keyring: record the
-                # verifier now so future failures are distinguishable.
+                # verifier now so future failures are distinguishable.  This
+                # only ever happens after the password actually opened the
+                # collection.
                 self._verifier_put(password)
+            elif getattr(self, "_sidecar_restamp_after_success", False):
+                # The password just opened the collection; stamp the sidecar
+                # with the current keyring so a later mismatch is meaningful.
+                self._sidecar_restamp_after_success = False
+                self._verifier_put_sidecar(password)
             return st
 
     def lock(self) -> Dict[str, Any]:
@@ -854,18 +1089,25 @@ class SecretService:
                 payload = self._read_item_payload(str(path), VAULT_APP)
             except SecretServiceError:
                 continue
-            if not payload or payload.get("schema") == VAULT_META_SCHEMA:
+            # Only real Vault entries are listed.  The scope also holds the
+            # internal records (meta marker, verifier, fingerprint HMAC key);
+            # they are not user items and must never reach the UI -- one missing
+            # "type" used to abort the WHOLE listing, which looked like an
+            # empty, broken Vault.
+            if not payload or payload.get("schema") != VAULT_SCHEMA:
+                continue
+            if payload.get("type") not in ("login", "note") or not isinstance(payload.get("title"), str):
                 continue
             items.append({
                 "id": payload["id"],
                 "type": payload["type"],
                 "title": payload["title"],
-                "url": payload["url"],
-                "username": payload["username"],
-                "tags": payload["tags"],
-                "favorite": payload["favorite"],
-                "created_at": payload["created_at"],
-                "updated_at": payload["updated_at"],
+                "url": payload.get("url", ""),
+                "username": payload.get("username", ""),
+                "tags": payload.get("tags") or [],
+                "favorite": bool(payload.get("favorite")),
+                "created_at": payload.get("created_at", ""),
+                "updated_at": payload.get("updated_at", ""),
                 "has_notes": bool(payload.get("notes")),
                 "has_password": bool(payload.get("password")),
             })

@@ -19,12 +19,16 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'a80';
+  const VERSION = 'a81';
   const DOTS = 9;
   const PATTERN_DOT = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
     x: 50 + (i % 3) * 100, y: 50 + Math.floor(i / 3) * 100,
   }));
   const MIN_PIN = 4;
+  /* Master-password hint for the owner: the S10+ lockscreen PIN is the same
+     four digits used twice (3838 -> 38383838).  Only a wrong-password error is
+     annotated; the value is never sent anywhere and no attempt is made here. */
+  const PIN_HINT = 'Hint: the Vault password can be your lockscreen PIN entered twice (e.g. 3838 → 38383838).';
   /* The S10+ scanner is the oval under the bottom third of the panel.  These
      proportions come from /sys/class/fingerprint/fingerprint/position
      (13.77,0.00,9.00,4.00,14.80,14.80,13.00,13.00,5.00) and match the area
@@ -87,11 +91,12 @@
       this.onVault = options.onVault || null;
       this.onRequestPin = options.onRequestPin || null;
 
-      /* preview=true paints the fingerprint presentation on the live glass
-         for layout verification even on an image without the TEE provider.
-         It can NEVER unlock: tryFingerprint refuses unless the bridge reports
-         provider_ready, and the bridge itself reports no match. */
-      this.preview = !!options.preview;
+      /* No preview may override the hardware truth.  The fingerprint surface
+         (artwork over the under-display scanner) is shown only when the bridge
+         reports a READY secure provider.  On this handset no userspace matcher
+         exists, so the lock screen states that plainly and the PIN below is
+         the working path -- it never paints a scanner that cannot read. */
+      this.preview = false;
       this.mode = 'swipe';
       this.effectiveMode = 'swipe';
       this.status = null;
@@ -114,69 +119,121 @@
 
     /* ------------------------------------------------------------- pattern */
     _penguinHeadSvg() {
-      return '<img class="lockscreen-pattern-penguin" src="/assets/nuxel-lockhead.png?v=a80"'
+      return '<img class="lockscreen-pattern-penguin" src="/assets/nuxel-lockhead.png?v=a81"'
         + ' alt="" draggable="false" aria-hidden="true">';
     }
 
+    /* The matrix is a CSS grid (3 columns x 3 rows).  Each dot's real drawn
+       centre is measured from its own box, and the trail SVG uses a 0..300
+       viewBox, so the same two helpers give both pixel hit-testing and SVG
+       coordinates on any screen size. */
+    _dotElsFor(container) {
+      if (!container) return [];
+      return Array.prototype.slice.call(
+        container.querySelectorAll('.lockscreen-pattern-dot'));
+    }
+
+    _makeDot(i, container) {
+      const d = document.createElement('div');
+      d.className = 'lockscreen-pattern-dot';
+      d.dataset.dot = String(i);
+      d.setAttribute('role', 'button');
+      d.setAttribute('aria-label', 'Dot ' + (i + 1));
+      d.innerHTML = this._penguinHeadSvg();
+      container.appendChild(d);
+      return d;
+    }
+
     _buildPattern() {
-      if (!this.patternDots) return;
-      this.patternDots.innerHTML = '';
-      this.dotEls = [];
-      for (let i = 0; i < DOTS; i++) {
-        const d = document.createElement('div');
-        d.className = 'lockscreen-pattern-dot';
-        d.dataset.dot = String(i);
-        d.setAttribute('role', 'button');
-        d.setAttribute('aria-label', 'Dot ' + (i + 1));
-        d.style.left = PATTERN_DOT[i].x + '%';
-        d.style.top = PATTERN_DOT[i].y + '%';
-        d.innerHTML = this._penguinHeadSvg();
-        this.patternDots.appendChild(d);
-        this.dotEls.push(d);
+      if (this.patternDots) {
+        this.patternDots.innerHTML = '';
+        this.dotEls = [];
+        for (let i = 0; i < DOTS; i++) this.dotEls.push(this._makeDot(i, this.patternDots));
       }
-      const s = this.setupEl && el('lockscreen-setup-dots');
+      const s = el('lockscreen-setup-dots');
       if (s) {
         s.innerHTML = '';
         this.setupDotEls = [];
-        for (let i = 0; i < DOTS; i++) {
-          const d = document.createElement('div');
-          d.className = 'lockscreen-pattern-dot';
-          d.dataset.dot = String(i);
-          d.style.left = PATTERN_DOT[i].x + '%';
-          d.style.top = PATTERN_DOT[i].y + '%';
-          d.innerHTML = this._penguinHeadSvg();
-          s.appendChild(d);
-          this.setupDotEls.push(d);
+        for (let i = 0; i < DOTS; i++) this.setupDotEls.push(this._makeDot(i, s));
+      }
+    }
+
+    /* SVG viewBox coordinate (0..300) for a dot's drawn centre. */
+    _svgPoint(container, dotIndex) {
+      const dots = this._dotElsFor(container);
+      const box = container.getBoundingClientRect();
+      const d = dots[dotIndex];
+      if (!d || !box.width || !box.height) return [0, 0];
+      const r = d.getBoundingClientRect();
+      return [(r.left + r.width / 2 - box.left) / box.width * 300,
+              (r.top + r.height / 2 - box.top) / box.height * 300];
+    }
+
+    _dotAtIn(container, ev) {
+      if (!container) return -1;
+      const box = container.getBoundingClientRect();
+      if (!box.width || !box.height) return -1;
+      const dots = this._dotElsFor(container);
+      let best = -1;
+      let bestDist = Infinity;
+      for (let i = 0; i < dots.length; i++) {
+        const r = dots[i].getBoundingClientRect();
+        if (!r.width || !r.height) continue;
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const dist = Math.hypot(ev.clientX - cx, ev.clientY - cy);
+        /* A generous Android-style hit slop: half the dot plus a third of the
+           dot again.  Dots are never closer than their own width. */
+        if (dist <= r.width * 0.82 && dist < bestDist) { best = i; bestDist = dist; }
+      }
+      /* Nearest-dot fallback while the finger is inside the matrix: a drag
+         that passes close to a dot still connects it, like Android. */
+      if (best < 0) {
+        for (let i = 0; i < dots.length; i++) {
+          const r = dots[i].getBoundingClientRect();
+          if (!r.width) continue;
+          const dist = Math.hypot(ev.clientX - (r.left + r.width / 2),
+                                  ev.clientY - (r.top + r.height / 2));
+          if (dist <= r.width * 1.05 && dist < bestDist) { best = i; bestDist = dist; }
         }
       }
+      return best;
     }
 
-    _localXY(ev) {
-      const rect = this.patternEl.getBoundingClientRect();
-      return { x: ev.clientX - rect.left, y: ev.clientY - rect.top, w: rect.width, h: rect.height };
-    }
-
-    _dotAt(ev) {
-      const p = this._localXY(ev);
-      const gx = p.x / p.w * 300, gy = p.y / p.h * 300;
-      for (let i = 0; i < DOTS; i++) {
-        const d = PATTERN_DOT[i];
-        if (Math.hypot(gx - d.x, gy - d.y) <= 34) return i;
-      }
-      return -1;
-    }
+    _dotAt(ev) { return this._dotAtIn(this.patternEl, ev); }
 
     _drawTrail(points) {
       if (!this.trail) return;
-      this.trail.setAttribute('points', points.map((p) => p.join(',')).join(' '));
+      this.trail.setAttribute('points',
+        points.map((p) => (Math.round(p[0] * 10) / 10) + ',' + (Math.round(p[1] * 10) / 10)).join(' '));
+    }
+
+    _paintSequence(container, list) {
+      const dots = this._dotElsFor(container);
+      dots.forEach((d) => d.classList.remove('active'));
+      list.forEach((i) => { if (dots[i]) dots[i].classList.add('active'); });
+      this._drawTrail(list.map((j) => this._svgPoint(container, j)));
     }
 
     _appendDot(i) {
       if (this.sequence.includes(i)) return;
       this.sequence.push(i);
-      this.dotEls[i].classList.add('active');
+      if (this.dotEls && this.dotEls[i]) this.dotEls[i].classList.add('active');
       buzz(8);
-      this._drawTrail(this.sequence.map((j) => [PATTERN_DOT[j].x, PATTERN_DOT[j].y]));
+      this._drawTrail(this.sequence.map((j) => this._svgPoint(this.patternEl, j)));
+    }
+
+    /* Follow the finger between dots, exactly like the Android pattern trail:
+       append the current position while the finger is inside the matrix. */
+    _drawLiveTrail(ev) {
+      if (!this.trail || !this.patternEl || !this.sequence.length) return;
+      const box = this.patternEl.getBoundingClientRect();
+      if (!box.width || !box.height) return;
+      const x = Math.max(0, Math.min(300, (ev.clientX - box.left) / box.width * 300));
+      const y = Math.max(0, Math.min(300, (ev.clientY - box.top) / box.height * 300));
+      const pts = this.sequence.map((j) => this._svgPoint(this.patternEl, j));
+      pts.push([x, y]);
+      this._drawTrail(pts);
     }
 
     _resetPattern() {
@@ -224,6 +281,7 @@
         ev.preventDefault();
         const i = this._dotAt(ev);
         if (i >= 0) this._appendDot(i);
+        this._drawLiveTrail(ev);
       };
       const up = (ev) => {
         if (!this.drawing) return;
@@ -280,23 +338,37 @@
         /* Act on pointerdown (like Android's keypad): it gives immediate
            feedback and works even when a synthetic release is delivered over a
            different element.  The click handler is kept as a dedup fallback. */
-        const activate = (ev) => {
+        const activate = (ev, via) => {
           const key = ev.target && ev.target.closest ? ev.target.closest('.lockscreen-key') : null;
           if (!key || this.busy) return;
           const now = Date.now();
-          const id = key.id || key.dataset.pin || '';
+          /* A real finger press produces pointerdown AND the compatibility
+             click (and the host's trusted tap does too).  One physical press
+             must append exactly one digit, so a press that is followed by its
+             own click is consumed once.  Different keys in quick succession
+             are never collapsed. */
+          const pid = ev.pointerId !== undefined ? ev.pointerId : 'mouse';
+          const stamp = key.id || key.dataset.pin || '';
+          if (via === 'click') {
+            if (this._pressKey === stamp && this._pressPointer === pid &&
+                now - (this._pressAt || 0) < 700) {
+              this._pressKey = null; this._pressPointer = null; this._pressAt = 0;
+              return;
+            }
+          } else {
+            this._pressKey = stamp; this._pressPointer = pid; this._pressAt = now;
+          }
+          const id = stamp;
           if (id === 'lockscreen-pin-del') { this.pin = this.pin.slice(0, -1); this._paintPin(); return; }
           if (id === 'lockscreen-pin-cancel') { this._showMode(this.mode); return; }
           if (id === 'lockscreen-pin-enter') { this._submitPin(); return; }
           const d = key.dataset.pin;
           if (d !== undefined && this.pin.length < 16) {
-            if (this._lastKey === d && now - (this._lastKeyAt || 0) < 120) return;
-            this._lastKey = d; this._lastKeyAt = now;
             this.pin += d; this._paintPin(); buzz(6);
           }
         };
-        this.pinpad.addEventListener('pointerdown', activate);
-        this.pinpad.addEventListener('click', activate);
+        this.pinpad.addEventListener('pointerdown', (ev) => activate(ev, 'pointer'));
+        this.pinpad.addEventListener('click', (ev) => activate(ev, 'click'));
       }
       const key = (ev) => {
         if (this.effectiveMode !== 'pin' || this.busy) return;
@@ -332,7 +404,7 @@
     _trace(msg) {
       try {
         const handler = global.webkit && global.webkit.messageHandlers.nuxelDiag;
-        if (handler) handler.postMessage('LOCKS[a80] ' + msg);
+        if (handler) handler.postMessage('LOCKS[a81] ' + msg);
       } catch (e) { /* observation only */ }
     }
 
@@ -466,9 +538,9 @@
           if (i >= 0 && !this.setup.seq.includes(i)) {
             this.setup.seq.push(i);
             this.setupDotEls[i].classList.add('active');
-            this._drawSetupTrail();
             buzz(6);
           }
+          this._drawSetupTrail(ev);
         });
         p.addEventListener('pointerup', () => {
           if (!this.setup || !this.setup.drawing) return;
@@ -478,21 +550,19 @@
       }
     }
 
-    _dotAtIn(container, ev) {
-      if (!container) return -1;
-      const r = container.getBoundingClientRect();
-      const gx = (ev.clientX - r.left) / r.width * 300;
-      const gy = (ev.clientY - r.top) / r.height * 300;
-      for (let i = 0; i < DOTS; i++) {
-        if (Math.hypot(gx - PATTERN_DOT[i].x, gy - PATTERN_DOT[i].y) <= 34) return i;
+    _drawSetupTrail(ev) {
+      if (!this.setupTrail || !this.setup || !this.setupPatternEl) return;
+      const pts = this.setup.seq.map((j) => this._svgPoint(this.setupPatternEl, j));
+      if (ev && pts.length) {
+        const box = this.setupPatternEl.getBoundingClientRect();
+        if (box.width && box.height) {
+          pts.push([
+            Math.max(0, Math.min(300, (ev.clientX - box.left) / box.width * 300)),
+            Math.max(0, Math.min(300, (ev.clientY - box.top) / box.height * 300)),
+          ]);
+        }
       }
-      return -1;
-    }
-
-    _drawSetupTrail() {
-      if (!this.setupTrail || !this.setup) return;
-      this.setupTrail.setAttribute('points',
-        this.setup.seq.map((j) => PATTERN_DOT[j].x + ',' + PATTERN_DOT[j].y).join(' '));
+      this.setupTrail.setAttribute('points', pts.map((p) => p.join(',')).join(' '));
     }
 
     _setupStep(pattern) {
@@ -533,8 +603,10 @@
         const why = (res && (res.detail || res.error)) || 'unknown error';
         if (/vault/i.test(why)) {
           if (this.setupErrorEl) {
-            this.setupErrorEl.textContent = 'Set the Vault master password first (' + why
-              + '). Opening the Vault…';
+            const locked = /unlock|locked|collection/i.test(why);
+            this.setupErrorEl.textContent = (locked
+              ? 'Fingerprint mode needs the Vault unlocked: set (or unlock) the Vault master password, then try again. '
+              : 'Set the Vault master password first, then try again. ') + PIN_HINT;
           }
           try { if (global.NuxelBridge && global.NuxelBridge.activateApp) global.NuxelBridge.activateApp('org.nuxel.Vault', 'lockscreen-setup'); } catch (e) {}
         } else if (this.setupErrorEl) {
@@ -551,12 +623,18 @@
       if (this.el) this.el.hidden = false;
     }
 
-    /* Compact geometry readout for console verification (no secret data). */
+    /* Compact geometry readout for console verification (no secret data).
+       `build` lets an acceptance check prove WHICH surface is loaded (a stale
+       cached bundle and a fresh one both answer here), and `trail` is the
+       points actually painted on the SVG right now. */
     describe() {
-      const out = { mode: this.mode, effective: this.effectiveMode, visible: this.isVisible(),
+      const trailEl = this.trail;
+      const out = { build: VERSION, mode: this.mode, effective: this.effectiveMode,
+                    visible: this.isVisible(),
                     status: this.status ? { mode: this.status.mode, pinned: this.status.pin_fallback_set,
                       fp: this.status.fingerprint, policy: this.status.attempt_policy } : null,
-                    pinLen: this.pin.length, seq: this.sequence.slice() };
+                    pinLen: this.pin.length, seq: this.sequence.slice(),
+                    trail: trailEl ? String(trailEl.getAttribute('points') || '') : '' };
       const box = (id) => { const e = document.getElementById(id); if (!e) return null;
         const r = e.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; };
       out.patternRect = box('lockscreen-pattern');
@@ -586,13 +664,8 @@
 
     /* Root-console helper: paint the fingerprint presentation for layout
        verification (preview only; it can never unlock). */
-    previewFingerprint(on) {
-      this.preview = !!on;
-      if (on) {
-        this.mode = 'fingerprint';
-        this._showMode('fingerprint');
-        this._fpMessage('Touch the scanner to unlock');
-      }
+    previewFingerprint() {
+      /* Kept for API compatibility; it performs no visual override. */
       return this.describe();
     }
 
@@ -624,21 +697,29 @@
         const st = this.status || {};
         const mode = st.mode || 'swipe';
         this.mode = mode;
-        if (mode === 'fingerprint' && (st.pin_fallback_set || this.preview)) {
-          this.effectiveMode = 'fingerprint';
-        } else if (mode === 'fingerprint') {
-          /* No fallback: never hide the only usable path. */
-          this.effectiveMode = 'pin';
+        const fp = st.fingerprint || {};
+        if (mode === 'fingerprint') {
+          /* Keep the requested fingerprint presentation (artwork on the
+             scanner) when the PIN fallback exists so the owner sees the real
+             state.  Without a ready provider the surface states that plainly
+             and the PIN button below it is the way in. */
+          if (st.pin_fallback_set) {
+            this.effectiveMode = 'fingerprint';
+          } else {
+            /* No fallback: never hide the only usable path. */
+            this.effectiveMode = 'pin';
+          }
         } else {
           this.effectiveMode = mode;
         }
         this._showMode(this.effectiveMode);
         if (this.effectiveMode === 'fingerprint') {
-          const enrolled = !!(st.fingerprint && st.fingerprint.enrolled);
-          const ready = !!(st.fingerprint && st.fingerprint.provider_ready);
-          this._fpMessage(!enrolled ? 'No fingerprint registered — use PIN'
-            : (ready ? 'Touch the scanner to unlock'
-               : 'Scanner provider unavailable on this build — use PIN'));
+          const enrolled = !!fp.enrolled;
+          const ready = !!fp.provider_ready;
+          this._fpMessage(!ready
+            ? 'Fingerprint scanner unavailable on this build (' + (fp.blocker || 'no secure provider') + ') — use PIN'
+            : (!enrolled ? 'No fingerprint registered — use PIN or set one up in Settings'
+               : 'Touch the scanner to unlock'));
         }
       });
     }

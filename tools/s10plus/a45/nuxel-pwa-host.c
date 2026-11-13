@@ -2004,6 +2004,37 @@ static void action_perform(const char *action, char *result, size_t rn) {
     }
     return;
   }
+  if (!strncmp(action, "ui-probe ", 9)) {
+    /* Root-console verification hook (A80).  Evaluates ONE read-only
+     * expression and posts the JSON result to the diag log.  Like the other
+     * UI hooks it is reachable only through the root-only control FIFO and
+     * never accepts arbitrary statements: the expression is restricted to
+     * property paths plus a leading/bracketed call of the form
+     *   window.nuxel.lockscreen.auth.describe()
+     *   document.getElementById("id")
+     * which is all the acceptance matrix needs. */
+    const char *expr = action + 9;
+    int ok = *expr != 0;
+    for (const char *p = expr; ok && *p; p++) {
+      if (!(isalnum((unsigned char)*p) || *p == '.' || *p == '-' || *p == '_' ||
+            *p == '(' || *p == ')' || *p == '"' || *p == '#' || *p == ' ' || *p == ':')) ok = 0;
+    }
+    if (ok && strstr(expr, "eval") == NULL && strstr(expr, "fetch") == NULL &&
+        strstr(expr, "Function") == NULL && strstr(expr, "=>") == NULL &&
+        strstr(expr, ";") == NULL && g_main_view) {
+      char js[1400];
+      snprintf(js, sizeof js,
+        "(function(){try{var r=(%s);window.webkit.messageHandlers.nuxelDiag.postMessage('A80_PROBE '+JSON.stringify(r===undefined?null:r));}"
+        "catch(e){window.webkit.messageHandlers.nuxelDiag.postMessage('A80_PROBE_ERROR '+e);}})();",
+        expr);
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+      st("HOST_UI_PROBE expr=%s", expr);
+      snprintf(result, rn, "{\"ok\":true,\"action\":\"ui-probe\"}");
+    } else {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_probe\"}");
+    }
+    return;
+  }
   if (!strncmp(action, "test-tap ", 9)) {
     /* Root-only trusted verification tap.  Unlike a DOM PointerEvent, this is
      * a real GDK button event processed by WebKit's UI process, so it grants
@@ -2602,6 +2633,93 @@ static void purge_launcher_cache(void) {
 /* --- control FIFO: the hardware-button manager's entry point -------------- */
 static GIOChannel *ctl_chan;
 
+/* ui-eval <nonce> <expression>
+ *
+ * Root-console acceptance hook (A80/A81).  The control FIFO is root-only; this
+ * evaluates ONE read-only expression in the launcher page and posts the JSON
+ * result back as   A80_PROBE <nonce> <json>   in /run/nuxel-home.state.  The
+ * nonce lets a script read exactly its own answer instead of guessing which
+ * line is new.  Function calls, property access and method calls are allowed
+ * (the acceptance harness drives the SAME state machine a finger does), but
+ * no statements, arrows or assignments: the expression cannot contain ';',
+ * '=>' or '='.  Nothing here can unlock by itself - the bridge still verifies
+ * every credential. */
+static gboolean ui_eval_ok(const char *expr) {
+  if (!expr || !*expr) return FALSE;
+  if (strstr(expr, ";") || strstr(expr, "=>") || strstr(expr, "=")) return FALSE;
+  if (strstr(expr, "eval") || strstr(expr, "fetch") || strstr(expr, "Function")) return FALSE;
+  for (const char *p = expr; *p; p++) {
+    unsigned char c = (unsigned char)*p;
+    if (isalnum(c) || c == '.' || c == '_' || c == '-' || c == '(' || c == ')' ||
+        c == '[' || c == ']' || c == '"' || c == '\'' || c == ' ' || c == ',' ||
+        c == '{' || c == '}' || c == ':' || c == '+' || c == '*' || c == '?' ||
+        c == '!' || c == '|' || c == '&' || c == '<' || c == '>' || c == '%' ||
+        c == '/' || c == '#') continue;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+static char *ui_eval_nonce;
+static GMainLoop *ui_eval_loop;
+static gboolean ui_eval_done_flag;
+
+static gboolean ui_eval_timeout(gpointer d) {
+  (void)d;
+  if (!ui_eval_done_flag && ui_eval_nonce) {
+    st("A80_PROBE %s ERR timeout", ui_eval_nonce);
+    g_free(ui_eval_nonce);
+    ui_eval_nonce = NULL;
+    ui_eval_done_flag = TRUE;
+    if (ui_eval_loop) g_main_loop_quit(ui_eval_loop);
+  }
+  return G_SOURCE_REMOVE;
+}
+
+static void ui_eval_reply(GObject *src, GAsyncResult *res, gpointer user_data) {
+  (void)user_data;
+  if (ui_eval_done_flag) return;   /* the timeout already answered */
+  GError *err = NULL;
+  WebKitJavascriptResult *jr = webkit_web_view_run_javascript_finish(WEBKIT_WEB_VIEW(src), res, &err);
+  char *json = NULL;
+  if (err) {
+    json = g_strdup_printf("ERR %s", err->message);
+    g_error_free(err);
+  } else if (jr) {
+    JSCValue *val = webkit_javascript_result_get_js_value(jr);
+    /* This WebKit build's jsc_value_to_json returns a JSON string. */
+    json = val ? jsc_value_to_json(val, 0) : NULL;
+    if (!json) json = g_strdup("null");
+    webkit_javascript_result_unref(jr);
+  } else {
+    json = g_strdup("null");
+  }
+  for (char *p = json; p && *p; p++) if (*p == '\n' || *p == '\r') *p = ' ';
+  st("A80_PROBE %s %s", ui_eval_nonce ? ui_eval_nonce : "-", json);
+  g_free(json);
+  g_free(ui_eval_nonce);
+  ui_eval_nonce = NULL;
+  ui_eval_done_flag = TRUE;
+  if (ui_eval_loop) g_main_loop_quit(ui_eval_loop);
+}
+
+/* Evaluate one expression in the launcher page and log its JSON value.  A
+   nested main loop keeps WebKit/GTK processing while waiting, with a hard
+   timeout so a wedged page can never hang the host. */
+static gboolean ui_eval_blocking(const char *nonce, const char *expr, int timeout_ms) {
+  if (!g_main_view) return FALSE;
+  ui_eval_nonce = g_strdup(nonce);
+  ui_eval_done_flag = FALSE;
+  ui_eval_loop = g_main_loop_new(NULL, FALSE);
+  guint tid = g_timeout_add((guint)timeout_ms, ui_eval_timeout, NULL);
+  webkit_web_view_run_javascript(g_main_view, expr, NULL, ui_eval_reply, NULL);
+  if (!ui_eval_done_flag) g_main_loop_run(ui_eval_loop);
+  g_source_remove(tid);
+  g_main_loop_unref(ui_eval_loop);
+  ui_eval_loop = NULL;
+  return TRUE;
+}
+
 static gboolean ctl_in(GIOChannel *ch, GIOCondition cond, gpointer d) {
   (void)d;
   if (cond & (G_IO_HUP | G_IO_ERR)) return TRUE;
@@ -2633,6 +2751,21 @@ static gboolean ctl_in(GIOChannel *ch, GIOCondition cond, gpointer d) {
         g_string_free(g, TRUE);
       } else {
         st("HOST_SOUND_MODE_REFUSED %s", mode);
+      }
+    }
+    else if (!strncmp(q, "ui-eval ", 8)) {
+      char nonce[64] = {0};
+      char *expr = q + 8;
+      int n = 0;
+      while (*expr && *expr != ' ' && n < (int)sizeof nonce - 1) nonce[n++] = *expr++;
+      nonce[n] = 0;
+      while (*expr == ' ') expr++;
+      if (nonce[0] && strspn(nonce, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-") == strlen(nonce) &&
+          ui_eval_ok(expr) && g_main_view) {
+        st("HOST_UI_EVAL nonce=%s", nonce);
+        ui_eval_blocking(nonce, expr, 4000);
+      } else {
+        st("A80_PROBE %s ERR invalid-ui-eval", nonce[0] ? nonce : "-");
       }
     }
     else if (!strncmp(q, "open-terminal", 13)) term_open_window();

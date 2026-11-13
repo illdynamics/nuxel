@@ -47,6 +47,8 @@ ReadWritePaths=-/var/lib/flatpak/app/com.github.IsmaelMartinez.teams_for_linux
 # every unlock after a lock failed.  /root stays read-only under
 # ProtectSystem=strict; the daemon only reads the existing keyring.  The
 # fingerprint enrollment record lives in /var/lib/nuxel/security (writable).
+# An unopenable legacy keyring is preserved byte-exact under
+# /var/lib/nuxel/security/keyring-backups before it is replaced.
 # The lockhead Bluetooth indicator is a provider-state document consumed by
 # both the native host and this service.  /run/nuxel already holds the
 # connection-mode and USB-mode state, so it is the canonical runtime location.

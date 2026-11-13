@@ -671,6 +671,7 @@
     <div class="card" id="sec-fingerprint-card">
       <h3>Fingerprint unlock</h3>
       <p class="hint">The fingerprint record is stored securely in the Nuxel Vault, so the Vault must be set up and unlocked first. The scanner needs the OEM trusted application; when it is missing the scanner is shown as unavailable and the PIN fallback always works.</p>
+      <p class="hint" id="sec-fp-why">On this Galaxy S10+ image the QBT2000 ultrasonic sensor is bound to the Samsung TEE (TrustZone): the kernel exposes only diagnostic sysfs, no frame or match path, and the vendor HAL that talks to the secure matcher is not part of a Nuxel rootfs. Enrolling here would therefore record an enrollment that could never be matched — so setup stays disabled and the PIN remains the unlock method until a TEE/HAL provider exists.</p>
       <pre id="sec-fp-state" class="state" role="status">Checking fingerprint…</pre>
       <div class="ceremony" id="sec-fp-ceremony" hidden>
         <div class="finger-oval" id="sec-fp-oval" role="button" tabindex="0" aria-label="Simulate scanner touch">

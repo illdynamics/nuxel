@@ -76,6 +76,13 @@ items.update({
     'services/nuxel-bridge/src/hw_providers.py',
     'services/nuxel-bridge/src/tri_link_status.py',
     'services/nuxel-bridge/src/remote_desktop.py',
+    # A80/A81 lockscreen + Vault: these bridge modules were live-deployed
+    # earlier but were NOT in the payload, so the phone kept running the
+    # image's old copies.  They are part of the userspace delta now.
+    'services/nuxel-bridge/src/security_provider.py',
+    'services/nuxel-bridge/src/fingerprint_provider.py',
+    'services/nuxel-bridge/src/secret_service.py',
+    'services/nuxel-bridge/src/keyring_api.py',
     'services/nuxel-zsh/nuxel-banner.sh',
     'services/nuxel-zsh/nuxel.zsh',
     'services/nuxel-remote-desktop/bin/nuxel-vnc-x11',

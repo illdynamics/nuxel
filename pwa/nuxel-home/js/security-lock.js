@@ -61,6 +61,9 @@
 
   function promptSecret(status) {
     return new Promise(function (resolve) {
+      /* Hard guard: while the lock-screen credential surface exists, no
+         legacy prompt may be created at all. */
+      if (overlayOwnsCredential() || window.NuxelLockscreenAuth) { resolve(null); return; }
       var el = ensurePrompt();
       var input = document.getElementById('nlp-secret');
       var err = document.getElementById('nlp-error');
@@ -77,7 +80,7 @@
         input.type = 'password'; input.inputMode = 'numeric';
       } else {
         title.textContent = 'Enter PIN';
-        hint.textContent = 'At least 6 digits';
+        hint.textContent = 'Use the PIN you set (4 or more digits)';
         input.type = 'password'; input.inputMode = 'numeric';
       }
       input.value = ''; err.textContent = '';
@@ -102,28 +105,60 @@
     return st;
   }
 
+  /* A80: the authoritative credential surface is the lockscreen overlay
+     (#lockscreen-auth: pattern matrix / keypad / fingerprint).  It verifies
+     against the bridge itself before it asks Home to complete the unlock.
+
+     This legacy prompt must therefore NEVER open while that surface is up:
+     the old code re-prompted here after the overlay had already accepted a
+     PIN, which produced a second "Enter PIN" sheet ("At least 6 digits")
+     on top of the just-unlocked phone.  When the surface owns the credential,
+     verifyUnlock just reports the bridge truth: the caller reconciles. */
+  function overlayOwnsCredential() {
+    try {
+      var box = document.getElementById('lockscreen-auth');
+      if (!box || box.hidden) return false;
+      var sw = document.getElementById('lockscreen-auth-switch');
+      // The setup sheet hides #lockscreen-auth; never prompt during setup.
+      if (sw && !sw.hidden) return true;
+      var pad = document.getElementById('lockscreen-pinpad');
+      var pat = document.getElementById('lockscreen-pattern');
+      var fp = document.getElementById('lockscreen-fingerprint');
+      return !!((pad && !pad.hidden) || (pat && !pat.hidden) || (fp && !fp.hidden));
+    } catch (e) { return false; }
+  }
+
+  /* verifyUnlock is the HOST/NAV gate, not a credential collector.
+   *
+   * Every credential is entered on the lock screen surface (pattern matrix,
+   * keypad or fingerprint) and verified there against the root bridge.  This
+   * function therefore only reports the bridge's authoritative state:
+   *
+   *   unlocked -> {ok:true}   let the host/nav transition proceed
+   *   locked   -> {ok:false}  the overlay owns the unlock; the caller keeps
+   *                           the session locked (it will re-render the
+   *                           credential surface, never a second prompt)
+   *
+   * It NEVER opens a prompt of its own.  The old implementation opened a
+   * legacy text-input sheet here ("Enter PIN", "At least 6 digits"), which is
+   * exactly the unexplained second PIN request the owner saw after a correct
+   * unlock -- the phone was unlocked, then the host's nav gate asked again.
+   */
   async function verifyUnlock() {
     var st = await status();
     if (!st || st.success === false) {
-      return { ok: false, error: 'lock-provider-unavailable', detail: (st && st.error) || 'security provider unavailable' };
+      return { ok: false, error: 'lock-provider-unavailable',
+        detail: (st && st.error) || 'security provider unavailable' };
     }
     if (st.rate_limit && st.rate_limit.locked_out) {
-      return { ok: false, error: 'rate_limited', detail: 'Try again in ' + st.rate_limit.remaining_s + ' s' };
+      return { ok: false, error: 'rate_limited',
+        detail: 'Try again in ' + st.rate_limit.remaining_s + ' s' };
     }
-    var secret = '';
-    if (st.mode !== 'swipe') {
-      secret = await promptSecret(st);
-      if (secret === null) return { ok: false, error: 'cancelled' };
+    if (st.locked === false) {
+      return { ok: true, state: 'UNLOCKED', mode: st.mode, via: 'bridge-authority' };
     }
-    var res = await call('security', 'unlock', { secret: secret });
-    if (res && res.success === true && res.unlocked === true) {
-      cache = null;
-      try { document.dispatchEvent(new CustomEvent('nuxel:security-unlocked', { detail: { mode: st.mode } })); } catch (e) {}
-      return { ok: true, state: 'UNLOCKED', mode: st.mode };
-    }
-    var msg = (res && (res.error || res.detail)) || 'invalid credential';
-    if (res && res.error === 'rate_limited') msg = 'Too many attempts; wait ' + (res.remaining_s || 30) + ' s';
-    return { ok: false, error: 'credential-rejected', detail: msg, remaining_s: res && res.remaining_s };
+    return { ok: false, error: 'credential-required-on-lockscreen',
+      detail: 'Enter the credential on the lock screen' };
   }
 
   async function lock(reason) {

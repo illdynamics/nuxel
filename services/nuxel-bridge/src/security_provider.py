@@ -280,9 +280,14 @@ class SecurityProvider:
             failures = int(cred.get("failures", 0) or 0)
             locked_until = float(cred.get("locked_until", 0) or 0)
             fp_ready = False
+            fp_blocker = None
+            fp_vault = None
             try:
                 import fingerprint_provider
-                fp_ready = bool(fingerprint_provider.handle("status", {}).get("ready"))
+                _fp = fingerprint_provider.handle("status", {})
+                fp_ready = bool(_fp.get("ready"))
+                fp_blocker = _fp.get("blocker")
+                fp_vault = _fp.get("vault_state")
             except Exception:
                 fp_ready = False
             bio = self.biometric_status(fp_ready)
@@ -303,7 +308,9 @@ class SecurityProvider:
                 "fingerprint": {"provider_ready": fp_ready,
                                 "selectable": bool(fp_ready and cred.get("fallback_pin_verifier")),
                                 "enrolled": bool(bio.get("enrolled")),
-                                "enabled": bool(bio.get("enabled"))},
+                                "enabled": bool(bio.get("enabled")),
+                                "blocker": fp_blocker,
+                                "vault_state": fp_vault},
                 "attempt_policy": policy["attempt_policy"],
                 "attempt_policy_source": policy.get("source"),
                 "unlimited_attempts": not enabled,

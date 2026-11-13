@@ -190,10 +190,24 @@
         lastNfcTag = tag;
         syncNfcWriteControls({ enabled: true });
       } else {
-        var why = (r && (r.error_code || r.error || r.detail)) || 'no tag';
-        nfcSet('nfc-dbg-result', 'NO TAG READ');
-        nfcLog('No tag read: ' + why
-          + (why === 'NO_TAG' ? ' — re-hold the card flat on the back of the phone.' : ''));
+        var code = (r && (r.error_code || r.error)) || 'no tag';
+        var detail = (r && r.detail) || '';
+        nfcSet('nfc-dbg-result', code === 'NO_TAG' ? 'NO TAG READ' : 'NOT READ');
+        if (code === 'NFC_NOT_GRANTED' || code === 'capability_denied') {
+          nfcLog('NFC access is not granted to this app yet. Grant "NFC" in Settings → Permissions, then press Test again.');
+        } else if (/DEV_UP|NOT_ACK|firmware/i.test(String(code) + ' ' + String(detail))) {
+          /* The controller answered the kernel but refused NCI DEV_UP: this is
+             a controller-firmware condition, not a missing card.  Say so, so
+             nobody keeps waving a bank card at a radio that is not running. */
+          nfcLog('Controller did not accept DEV_UP: ' + (detail || code)
+            + ' — this is a radio-firmware error reported by the kernel, not a tag problem.');
+        } else if (/NOT_ENABLED|OFF/i.test(String(code))) {
+          nfcLog('NFC is off. Enable it with the button above, then press Test.');
+        } else {
+          nfcLog('No tag read: ' + code
+            + (code === 'NO_TAG' ? ' — re-hold the card flat on the back of the phone.' : '')
+            + (detail ? ' (' + detail + ')' : ''));
+        }
       }
       loadNfc();
     }, function (err) {
@@ -260,9 +274,16 @@
     };
     setText('sec-fp-state', json(state));
     var start = $('sec-fp-start');
-    if (start) start.textContent = st.enrolled ? 'Re-enroll fingerprint' : 'Set up fingerprint';
+    /* Setup stays disabled unless a real secure matcher is present: recording
+       an "enrolled" flag without a scanner would be a lie the owner would only
+       discover at the lock screen. */
+    if (start) {
+      start.textContent = st.enrolled ? 'Re-enroll fingerprint' : 'Set up fingerprint';
+      start.disabled = !(st.ready && st.vault_state === 'ready');
+      start.title = st.ready ? '' : 'No secure fingerprint provider is available on this build';
+    }
     var enable = $('sec-fp-unlock-enable');
-    if (enable) enable.disabled = !(st.enrolled && st.vault_state === 'ready');
+    if (enable) enable.disabled = !(st.ready && st.enrolled && st.vault_state === 'ready');
     var del = $('sec-fp-delete');
     if (del) del.disabled = !st.enrolled;
   }
@@ -274,14 +295,52 @@
       if (loadToken.fp === t) renderFp({ success: false, error: String(err && err.message || err) });
     });
   }
+  /* Open the Vault from Settings.  A refusal is shown, never swallowed: the
+     owner must know the Vault did not open and why. */
+  function openVaultForFp(target) {
+    var id = target || 'org.nuxel.Vault';
+    try {
+      if (window.NuxelBridge && typeof window.NuxelBridge.activateApp === 'function') {
+        Promise.resolve(window.NuxelBridge.activateApp(id, 'fingerprint-setup'))
+          .then(function (r) {
+            if (r && r.success === false) setText('sec-fp-result', 'Could not open ' + id + ': ' + (r.error || 'refused'));
+          }, function (e) {
+            setText('sec-fp-result', 'Could not open ' + id + ': ' + ((e && (e.detail || e.message)) || e));
+          });
+      } else {
+        setText('sec-fp-result', 'Open the Vault app from Home to set/unlock the master password.');
+      }
+    } catch (e) {
+      setText('sec-fp-result', 'Could not open the Vault: ' + e);
+    }
+  }
   function startFpEnrollment() {
+    /* The Vault requirement is checked FIRST and stated explicitly: no master
+       password -> say so and offer the Vault; locked -> say so and unlock it. */
+    var vaultErr = fpState && fpState.vault_state && fpState.vault_state !== 'ready'
+      ? fpState.vault_state : null;
+    if (vaultErr) {
+      var vmsg = vaultErr === 'set_vault_password'
+        ? 'Set a Vault master password first: enrollments are stored in the Vault.'
+        : 'Unlock the Vault first: enrollments are stored in the Vault.';
+      setText('sec-fp-result', vmsg + ' Hint: your lockscreen PIN entered twice also works (e.g. 3838 → 38383838).');
+      openVaultForFp();
+      return;
+    }
+    if (fpState && fpState.ready !== true) {
+      setText('sec-fp-result', 'Enrollment needs a working scanner: '
+        + ((fpState.blocker) || 'the secure fingerprint provider is unavailable on this build.'));
+      return;
+    }
     setText('sec-fp-result', 'Starting the secure enrollment ceremony…');
     call('fingerprint', 'ceremony-start', { label: 'Fingerprint' }).then(function (r) {
       if (!r || r.success !== true) {
         var msg = (r && (r.detail || r.error)) || 'unavailable';
         setText('sec-fp-result', 'Enrollment refused: ' + msg);
-        if (r && r.guidance && r.guidance.open_app) setText('sec-fp-result',
-          'Enrollment refused: ' + msg + '  → open ' + r.guidance.open_app + ' to set that up.');
+        if (r && (r.error === 'vault_locked' || r.error === 'vault_password_required' || r.error === 'vault_unavailable')) {
+          setText('sec-fp-result', 'Enrollment refused: ' + msg + ' Hint: your lockscreen PIN entered twice also works (e.g. 3838 → 38383838).');
+          if (r.guidance && r.guidance.open_app) openVaultForFp(r.guidance.open_app);
+        }
         return;
       }
       fpCeremony = r;

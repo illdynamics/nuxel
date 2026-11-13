@@ -135,6 +135,61 @@ check('credential unlock commits through Home', 'completeCredentialUnlock' in AP
 check('mode changes refresh the lockscreen', 'refreshLockscreenAuth' in APP)
 check('lockscreen syncs the auth mode', '_syncAuthMode' in LOCK)
 
+# ---- A81 security fixes (owner-reported defects) --------------------------
+# The running image's gnome-keyring 48 only APPLIES a stdin password through
+# --login; --replace never reads stdin and --unlock never completes.  Shipping
+# the wrong one made every Vault unlock fail with "unknown daemon error".
+_unlock_fn = SVC.split('def _unlock_via_login')[1].split('\n    def ')[0]
+check('keyring unlock uses --login with the password on stdin',
+      '["--login", "--components=secrets"]' in _unlock_fn and
+      '["--unlock"' not in _unlock_fn and '["--replace"' not in _unlock_fn)
+check('keyring password is never passed on argv or env',
+      '"--unlock-password-file"' not in SVC and 'password=password' in SVC)
+check('unknown Vault password is reported precisely',
+      'invalid_credentials' in SVC and 'the master password is not correct' in SVC)
+check('an unopenable keyring is detected structurally',
+      '_keyring_has_exported_key' in SVC and 'needs_recovery' in SVC)
+check('an unopenable keyring is backed up before replacement',
+      '_backup_unopenable_keyring' in SVC and 'keyring-backups' in SVC)
+check('initialize recovers an unopenable keyring',
+      'recovered = self._backup_unopenable_keyring()' in SVC)
+check('verifier is stamped with the keyring creation time',
+      'created' in SVC and '_keyring_created()' in SVC)
+check('verifier sidecar is mode 0600',
+      '0o600' in SVC and 'nuxel-vault-verifier.json' in SVC)
+check('listing skips internal records instead of failing',
+      'payload.get("type") not in ("login", "note")' in SVC and
+      'payload.get("schema") != VAULT_SCHEMA' in SVC)
+
+# The live payload must actually contain the modules it claims to deploy: the
+# phone kept running old bridge copies because these were missing.
+PKG = (ROOT / 'tools/s10plus/a43/package-live.py').read_text()
+for mod in ('secret_service.py', 'keyring_api.py', 'security_provider.py',
+            'fingerprint_provider.py'):
+    check('payload ships bridge module ' + mod,
+          "'services/nuxel-bridge/src/%s'" % mod in PKG)
+
+# Keypad: one physical press (pointerdown + its click) is one digit.
+check('keypad consumes the click that belongs to a pointerdown',
+      "_pressKey" in AUTH and "via === 'click'" in AUTH)
+check('keypad no longer uses the 120 ms same-digit collapse',
+      '_lastKey' not in AUTH)
+
+# The legacy PIN sheet must never open over the credential surface.
+LEGACY = (ROOT / 'pwa/nuxel-home/js/security-lock.js').read_text()
+check('legacy PIN sheet is suppressed while the lock surface owns the credential',
+      'overlayOwnsCredential' in LEGACY)
+import re as _re
+_legacy_code = _re.sub(r'/\*.*?\*/|//[^\n]*', '', LEGACY, flags=_re.S)
+check('legacy PIN sheet no longer claims a 6-digit minimum',
+      'At least 6 digits' not in _legacy_code)
+check('legacy prompt can never be created while the lock surface exists',
+      'window.NuxelLockscreenAuth) { resolve(null)' in LEGACY)
+
+# Fingerprint surface never paints a scanner that cannot read.
+check('fingerprint artwork requires a ready secure provider',
+      'this.preview = false' in AUTH)
+
 print()
 if fails:
     print('A80 TESTS: %d FAILURE(S): %s' % (len(fails), ', '.join(fails)))
