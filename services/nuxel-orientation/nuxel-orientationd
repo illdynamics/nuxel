@@ -1308,7 +1308,9 @@ def main(argv=None):
         if not argv:
             return 2
         mode = argv[0]
-        apply_now = "--apply" in argv
+        # `set <mode>` is the documented owner command and must rotate: only
+        # an explicit --no-apply (policy-only switch) skips the transform.
+        apply_now = "--no-apply" not in argv
         trial = "--trial" in argv
         seconds = None
         for i, arg in enumerate(argv):
