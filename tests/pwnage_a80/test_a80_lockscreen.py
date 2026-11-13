@@ -74,12 +74,13 @@ check('fingerprint overlay has a status line and PIN fallback',
 check('fingerprint scanner is not presented as swipe', 'SCANNER' in AUTH)
 
 # ---- setup: two entries ----------------------------------------------------
-check('lockscreen setup flow present', 'id="lockscreen-setup"' in HTML)
-check('setup requires a second identical draw',
-      'Now draw the same pattern again' in AUTH and 'pattern_confirmation_mismatch' in SEC)
+check('no credential setup sheet on the lock screen',
+      'id="lockscreen-setup"' not in HTML and '_wireSetup' not in AUTH and
+      "openSetup() {\n      if (!this.setupEl)" not in AUTH)
 check('server refuses a single-entry pattern',
       'pattern_confirmation_required' in SEC)
-check('client sends both entries', 'pattern_confirm' in AUTH)
+check('Settings is the only client that sets a pattern and sends both entries',
+      'pattern_confirm' not in AUTH and 'pattern_confirm: first' in SETJS)
 check('settings pattern editor present', 'id="sec-pattern-editor"' in SET)
 check('settings sends both entries', 'pattern_confirm: first' in SETJS)
 check('settings PIN uses two entries', 'id="sec-pin2"' in SET and 'pin_confirm' in SETJS)
@@ -169,22 +170,54 @@ for mod in ('secret_service.py', 'keyring_api.py', 'security_provider.py',
     check('payload ships bridge module ' + mod,
           "'services/nuxel-bridge/src/%s'" % mod in PKG)
 
-# Keypad: one physical press (pointerdown + its click) is one digit.
-check('keypad consumes the click that belongs to a pointerdown',
-      "_pressKey" in AUTH and "via === 'click'" in AUTH)
-check('keypad no longer uses the 120 ms same-digit collapse',
-      '_lastKey' not in AUTH)
+# Keypad: one physical press (pointerdown + touchstart + pointerup + touchend +
+# click) is exactly one digit.  The click is the ONLY activation; pointer/touch
+# start only arm an idle fallback that a pointerup/touchend cancels.
+_pin_code = AUTH[AUTH.index('_wirePin() {'):AUTH.index('_paintPin() {')]
+check('keypad activates on release (click) only',
+      _pin_code.count("this.pin += d") == 1 and
+      'this.pinpad.onclick' in _pin_code and
+      "addEventListener('pointerdown'" not in _pin_code and
+      "addEventListener('touchstart'" not in _pin_code)
+check('keypad no longer dedups by per-contact pointerId',
+      '_pressPointer' not in AUTH and "_pressKey" not in AUTH and
+      '_lastKey' not in AUTH and 'releaseSeen' not in _pin_code)
+check('keypad keeps the keyboard path', "'keydown'" in _pin_code)
+# Executable regression: a full touch press (pointerdown, touchstart, pointerup,
+# touchend, click) appends exactly one digit, as do per-contact pointerIds.
+import shutil as _shutil, subprocess as _sp
+_node = _shutil.which('node')
+if _node:
+    _r = _sp.run([_node, str(ROOT / 'tests/pwnage_a80/keypad_press_simulation.js')],
+                 capture_output=True, text=True, timeout=60)
+    check('keypad press simulation (jsdom) passes', _r.returncode == 0,
+          _r.stdout[-400:] + _r.stderr[-400:])
+else:
+    check('keypad press simulation (jsdom) passes', False, 'node not available')
 
-# The legacy PIN sheet must never open over the credential surface.
+# The legacy second "enter PIN" overlay does not exist any more at all.
 LEGACY = (ROOT / 'pwa/nuxel-home/js/security-lock.js').read_text()
-check('legacy PIN sheet is suppressed while the lock surface owns the credential',
-      'overlayOwnsCredential' in LEGACY)
 import re as _re
 _legacy_code = _re.sub(r'/\*.*?\*/|//[^\n]*', '', LEGACY, flags=_re.S)
-check('legacy PIN sheet no longer claims a 6-digit minimum',
+check('legacy PIN overlay is removed, not merely suppressed',
+      'ensurePrompt' not in LEGACY and 'nuxel-lock-prompt' not in LEGACY and
+      'nlp-secret' not in LEGACY and 'Enter PIN' not in _legacy_code)
+check('promptSecret never creates a prompt', 'function promptSecret() { return Promise.resolve(null); }' in LEGACY)
+check('legacy sheet no longer claims a 6-digit minimum',
       'At least 6 digits' not in _legacy_code)
-check('legacy prompt can never be created while the lock surface exists',
-      'window.NuxelLockscreenAuth) { resolve(null)' in LEGACY)
+
+# The lock screen offers no way to SET a credential and no static instructions.
+check('no "Set up pattern / PIN" control on the lock screen',
+      'id="lockscreen-auth-switch"' in HTML and
+      'hidden disabled aria-hidden="true"' in
+      HTML[HTML.index('id="lockscreen-auth-switch"'):HTML.index('id="lockscreen-auth-switch"') + 400])
+check('auth switch is never shown by the lockscreen',
+      "if (sw) sw.hidden = true;" in LOCK)
+check('lockscreen setup entry points refuse',
+      'set-credential-in-settings' in LOCK and 'set-credential-in-settings' in AUTH)
+check('no top-centre title/instructions on the credential surface',
+      '<div class="lockscreen-auth-head" hidden' in HTML and
+      'Draw pattern' not in AUTH and 'Use the keypad' not in AUTH)
 
 # Fingerprint surface never paints a scanner that cannot read.
 check('fingerprint artwork requires a ready secure provider',

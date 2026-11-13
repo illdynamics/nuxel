@@ -19,7 +19,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'a81';
+  const VERSION = 'a82';
   const DOTS = 9;
   const PATTERN_DOT = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
     x: 50 + (i % 3) * 100, y: 50 + Math.floor(i / 3) * 100,
@@ -86,7 +86,6 @@
       this.fpRing = el('lockscreen-fingerprint-ring');
       this.fpArt = el('lockscreen-fingerprint-art');
       this.pinFallback = el('lockscreen-pin-fallback');
-      this.setupEl = el('lockscreen-setup');
       this.onUnlock = options.onUnlock || null;
       this.onVault = options.onVault || null;
       this.onRequestPin = options.onRequestPin || null;
@@ -113,7 +112,6 @@
       this._wirePattern();
       this._wirePin();
       this._wireFingerprint();
-      this._wireSetup();
       this._wireFallback();
     }
 
@@ -149,12 +147,6 @@
         this.patternDots.innerHTML = '';
         this.dotEls = [];
         for (let i = 0; i < DOTS; i++) this.dotEls.push(this._makeDot(i, this.patternDots));
-      }
-      const s = el('lockscreen-setup-dots');
-      if (s) {
-        s.innerHTML = '';
-        this.setupDotEls = [];
-        for (let i = 0; i < DOTS; i++) this.setupDotEls.push(this._makeDot(i, s));
       }
     }
 
@@ -324,7 +316,6 @@
       if (this.busy) return;
       this.busy = true;
       const secret = String(pattern);
-      this.hintEl.textContent = 'Checking…';
       this._trace('auth-submit via=pattern seq=' + secret.length);
       bridgeCall('security', 'unlock', { secret })
         .then((res) => { this._trace('auth-raw ' + JSON.stringify(res).slice(0, 240)); return this._afterCredential(res, secret, 'pattern'); })
@@ -335,40 +326,28 @@
     /* ---------------------------------------------------------------- PIN */
     _wirePin() {
       if (this.pinpad) {
-        /* Act on pointerdown (like Android's keypad): it gives immediate
-           feedback and works even when a synthetic release is delivered over a
-           different element.  The click handler is kept as a dedup fallback. */
-        const activate = (ev, via) => {
-          const key = ev.target && ev.target.closest ? ev.target.closest('.lockscreen-key') : null;
+        /* Exactly ONE handler for the whole press, with Android's click
+           semantics: the key fires on release (click).  WebKit delivers one
+           physical touch press as pointerdown + touchstart + pointerup +
+           touchend + click, with per-contact pointerIds, so any activation on
+           pointerdown (the old code) had to then cancel the click - and that
+           dedup could not see the click's contact, so the digit landed twice
+           ("3" -> "33").  One click listener cannot double-count: every press
+           produces exactly one click, however many event families precede it.
+           Keyboard input stays on its own path. */
+        this.pinpad.onclick = (ev) => {
+          const key = ev && ev.target && ev.target.closest
+            ? ev.target.closest('.lockscreen-key') : null;
           if (!key || this.busy) return;
-          const now = Date.now();
-          /* A real finger press produces pointerdown AND the compatibility
-             click (and the host's trusted tap does too).  One physical press
-             must append exactly one digit, so a press that is followed by its
-             own click is consumed once.  Different keys in quick succession
-             are never collapsed. */
-          const pid = ev.pointerId !== undefined ? ev.pointerId : 'mouse';
-          const stamp = key.id || key.dataset.pin || '';
-          if (via === 'click') {
-            if (this._pressKey === stamp && this._pressPointer === pid &&
-                now - (this._pressAt || 0) < 700) {
-              this._pressKey = null; this._pressPointer = null; this._pressAt = 0;
-              return;
-            }
-          } else {
-            this._pressKey = stamp; this._pressPointer = pid; this._pressAt = now;
-          }
-          const id = stamp;
+          const id = key.id || key.dataset.pin || '';
           if (id === 'lockscreen-pin-del') { this.pin = this.pin.slice(0, -1); this._paintPin(); return; }
-          if (id === 'lockscreen-pin-cancel') { this._showMode(this.mode); return; }
+          if (id === 'lockscreen-pin-cancel') { this.showAuthoritative(); return; }
           if (id === 'lockscreen-pin-enter') { this._submitPin(); return; }
           const d = key.dataset.pin;
           if (d !== undefined && this.pin.length < 16) {
             this.pin += d; this._paintPin(); buzz(6);
           }
         };
-        this.pinpad.addEventListener('pointerdown', (ev) => activate(ev, 'pointer'));
-        this.pinpad.addEventListener('click', (ev) => activate(ev, 'click'));
       }
       const key = (ev) => {
         if (this.effectiveMode !== 'pin' || this.busy) return;
@@ -392,7 +371,6 @@
         return;
       }
       this.busy = true;
-      this.hintEl.textContent = 'Checking…';
       const secret = this.pin;
       this._trace('auth-submit via=pin len=' + secret.length);
       bridgeCall('security', 'unlock', { secret })
@@ -501,127 +479,17 @@
     }
 
     /* --------------------------------------------------------------- setup */
-    _wireSetup() {
-      this.setupErrorEl = el('lockscreen-setup-error');
-      const cancel = el('lockscreen-setup-cancel');
-      if (cancel) cancel.addEventListener('click', () => this.closeSetup());
-      this.setupPatternEl = el('lockscreen-setup-pattern');
-      this.setupTrail = el('lockscreen-setup-trail');
-    }
-
+    /* Lock-screen credential setup was REMOVED (A82).  A pattern/PIN is only
+       set or changed in Settings -> Security, never on the glass.  openSetup()
+       therefore never paints a sheet; it reports the owner-facing reason if a
+       stale caller still asks.  closeSetup() stays a no-op so old callers that
+       pair the two calls cannot throw. */
     openSetup() {
-      if (!this.setupEl) return;
-      this.setup = { first: null, second: null, drawing: false, seq: [] };
-      this.setupEl.hidden = false;
-      if (this.el) this.el.hidden = true;
-      if (this.setupErrorEl) this.setupErrorEl.textContent = '';
-      el('lockscreen-setup-hint').textContent = 'Draw a pattern, then draw it again';
-      const p = this.setupPatternEl;
-      if (p && !p._wiredSetup) {
-        p._wiredSetup = true;
-        p.addEventListener('pointerdown', (ev) => {
-          if (this.setup && this.setup.drawing) return;
-          const i = this._dotAtIn(this.setupPatternEl, ev);
-          if (i < 0) return;
-          ev.preventDefault();
-          this.setup.drawing = true;
-          this.setup.seq = [i];
-          this.setupDotEls.forEach((d) => d.classList.remove('active', 'mismatch'));
-          this.setupDotEls[i].classList.add('active');
-          this._drawSetupTrail();
-          try { p.setPointerCapture(ev.pointerId); } catch (e) {}
-        });
-        p.addEventListener('pointermove', (ev) => {
-          if (!this.setup || !this.setup.drawing) return;
-          ev.preventDefault();
-          const i = this._dotAtIn(this.setupPatternEl, ev);
-          if (i >= 0 && !this.setup.seq.includes(i)) {
-            this.setup.seq.push(i);
-            this.setupDotEls[i].classList.add('active');
-            buzz(6);
-          }
-          this._drawSetupTrail(ev);
-        });
-        p.addEventListener('pointerup', () => {
-          if (!this.setup || !this.setup.drawing) return;
-          this.setup.drawing = false;
-          if (this.setup.seq.length) this._setupStep(this.setup.seq.join('-'));
-        });
-      }
+      this._error('Set your pattern or PIN in Settings → Security.');
+      return { ok: false, error: 'set-credential-in-settings' };
     }
 
-    _drawSetupTrail(ev) {
-      if (!this.setupTrail || !this.setup || !this.setupPatternEl) return;
-      const pts = this.setup.seq.map((j) => this._svgPoint(this.setupPatternEl, j));
-      if (ev && pts.length) {
-        const box = this.setupPatternEl.getBoundingClientRect();
-        if (box.width && box.height) {
-          pts.push([
-            Math.max(0, Math.min(300, (ev.clientX - box.left) / box.width * 300)),
-            Math.max(0, Math.min(300, (ev.clientY - box.top) / box.height * 300)),
-          ]);
-        }
-      }
-      this.setupTrail.setAttribute('points', pts.map((p) => p.join(',')).join(' '));
-    }
-
-    _setupStep(pattern) {
-      const s = this.setup;
-      if (!s) return;
-      if (s.first === null) {
-        s.first = pattern;
-        el('lockscreen-setup-hint').textContent = 'Now draw the same pattern again';
-        this.setupDotEls.forEach((d) => d.classList.remove('active'));
-        if (this.setupTrail) this.setupTrail.setAttribute('points', '');
-        return;
-      }
-      s.second = pattern;
-      if (s.second !== s.first) {
-        if (this.setupErrorEl) this.setupErrorEl.textContent = 'The patterns did not match. Start again.';
-        s.first = null; s.second = null;
-        el('lockscreen-setup-hint').textContent = 'Draw a pattern, then draw it again';
-        this.setupDotEls.forEach((d) => d.classList.add('mismatch'));
-        global.setTimeout(() => this.setupDotEls.forEach((d) => d.classList.remove('active', 'mismatch')), 500);
-        return;
-      }
-      /* Identical twice: now store it through the root bridge.  The bridge
-         repeats the two-entry refusal server-side. */
-      const current = this.status && this.status.mode && this.status.mode !== 'swipe' ? 'current' : null;
-      let currentSecret = '';
-      if (current) currentSecret = this._pendingCurrent || '';
-      this.busy = true;
-      bridgeCall('security', 'set-pattern', {
-        pattern: s.first, pattern_confirm: s.second, current_secret: currentSecret || undefined,
-      }).then((res) => {
-        this.busy = false;
-        if (res && res.success) {
-          this.closeSetup();
-          this.refresh().then(() => this.show());
-          this._error('Pattern set. Session locked — draw it to unlock.');
-          return;
-        }
-        const why = (res && (res.detail || res.error)) || 'unknown error';
-        if (/vault/i.test(why)) {
-          if (this.setupErrorEl) {
-            const locked = /unlock|locked|collection/i.test(why);
-            this.setupErrorEl.textContent = (locked
-              ? 'Fingerprint mode needs the Vault unlocked: set (or unlock) the Vault master password, then try again. '
-              : 'Set the Vault master password first, then try again. ') + PIN_HINT;
-          }
-          try { if (global.NuxelBridge && global.NuxelBridge.activateApp) global.NuxelBridge.activateApp('org.nuxel.Vault', 'lockscreen-setup'); } catch (e) {}
-        } else if (this.setupErrorEl) {
-          this.setupErrorEl.textContent = 'Could not set the pattern: '
-            + ((res && (res.detail || res.error)) || 'unknown error');
-        }
-        s.first = null; s.second = null;
-      });
-    }
-
-    closeSetup() {
-      this.setup = null;
-      if (this.setupEl) this.setupEl.hidden = true;
-      if (this.el) this.el.hidden = false;
-    }
+    closeSetup() { this.setup = null; }
 
     /* Compact geometry readout for console verification (no secret data).
        `build` lets an acceptance check prove WHICH surface is loaded (a stale
@@ -743,17 +611,13 @@
       this.fpEl.hidden = mode !== 'fingerprint';
       this.pinFallback.hidden = mode === 'pin';
       if (mode === 'pattern') this.pinFallback.hidden = false;
-      if (mode === 'pattern') {
-        this.titleEl.textContent = 'Draw pattern';
-        this.hintEl.textContent = 'Connect at least 4 dots';
-      } else if (mode === 'pin') {
-        this.titleEl.textContent = 'Enter PIN';
-        this.hintEl.textContent = 'Use the keypad';
-      } else {
-        this.titleEl.textContent = 'Fingerprint';
-        this.hintEl.textContent = 'Touch the scanner';
-        this._positionScanner();
-      }
+      /* The head (title/hint) is never painted on the lock screen: the owner
+         asked for no "draw pattern / enter pin" instructions.  Only transient
+         status (Checking…, the error when a save is asked for from the glass)
+         is written there, and the element stays hidden. */
+      if (this.titleEl) this.titleEl.textContent = '';
+      if (this.hintEl) this.hintEl.textContent = '';
+      if (mode === 'fingerprint') this._positionScanner();
     }
 
     _wireFallback() {
@@ -768,9 +632,19 @@
     showPinFallback() {
       /* The PIN button is the fallback for pattern/fingerprint modes.  The
          credential is the stored PIN in both cases; the server verifies it
-         against the PIN/mode-aware verifier. */
+         against the PIN/mode-aware verifier.  A82: `this.mode` is the
+         authoritative mode from the last status, so re-showing it here after
+         a Cancel restores the real surface (a Cancel used to leave the keypad
+         up because this passed the transient effective mode instead). */
       this._showMode('pin');
-      if (this.hintEl) this.hintEl.textContent = 'Enter your PIN';
+    }
+
+    /* Return from the PIN fallback to the authoritative mode (pattern /
+       fingerprint / swipe).  Used by Cancel and by a Settings mode change. */
+    showAuthoritative() {
+      if (this.mode === 'pin') return this.showPinFallback();
+      if (this.mode === 'swipe') { this._showMode('swipe'); return; }
+      return this.show();
     }
 
     _error(text) { if (this.errorEl) this.errorEl.textContent = String(text || ''); }

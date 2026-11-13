@@ -18,7 +18,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'a81';
+  const VERSION = 'a82';
   const WALLPAPER = { w: 768, h: 1376 };
   /* The illustrated penguin's approximate opaque bounds in wallpaper pixels,
      measured from the shipped asset.  Only the vertical extent matters here:
@@ -86,7 +86,6 @@
       this._startTouchWarning();
       this._initIndicators();
       this._initAuth();
-      this._bindAuthSwitch();
       this._positionHandle();
       try {
         document.addEventListener('nuxel:display-on', () => {
@@ -126,10 +125,12 @@
       if (this.wrap) this.wrap.hidden = !visible;
       if (this.hint) this.hint.hidden = !visible;
       if (this.el) this.el.classList.toggle('lockscreen-credentialed', !visible);
-      /* The switcher is the user's own "Set up pattern / PIN" entry point on
-         the lock screen; visible exactly when a credential mode is active. */
+      /* There is deliberately NO "Set up pattern / PIN" entry point on the lock
+         screen any more: credentials are set/changed in Settings -> Security
+         only.  The element remains in the DOM (hidden, disabled, inert) for
+         stale callers, and the auth surface never paints it. */
       const sw = document.getElementById('lockscreen-auth-switch');
-      if (sw) sw.hidden = visible || !!(this.auth && this.auth.setup && !this.auth.setupEl.hidden);
+      if (sw) sw.hidden = true;
     }
 
     /* Ask the credential surface to render the current authoritative mode.
@@ -151,26 +152,18 @@
       });
     }
 
-    openAuthSetup() { this.openPatternSetup(); }
+    /* Lock-screen credential setup was removed: a pattern/PIN may only be set
+       from Settings -> Security.  These stay as explicit, honest refusals so a
+       stale caller (or a console) cannot reopen a setup sheet on the glass. */
+    openAuthSetup() { return { ok: false, error: 'set-credential-in-settings' }; }
 
     requestPinFallback() {
       if (this.auth) this.auth.showPinFallback();
     }
 
-    openPatternSetup() {
-      if (this.auth) this.auth.openSetup();
-    }
+    openPatternSetup() { return this.openAuthSetup(); }
 
     authVisible() { return !!(this.auth && this.auth.isVisible()); }
-
-    _bindAuthSwitch() {
-      const sw = document.getElementById('lockscreen-auth-switch');
-      if (!sw || sw._wired) return;
-      sw._wired = true;
-      sw.addEventListener('click', () => {
-        if (this.auth && typeof this.auth.openSetup === 'function') this.auth.openSetup();
-      });
-    }
 
     /* A68 status indicators (charging / PC-connected / live console).  They
        are three independent state machines driven by real Linux state; each one

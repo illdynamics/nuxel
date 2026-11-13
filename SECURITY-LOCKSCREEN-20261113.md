@@ -151,3 +151,47 @@ success.
 * Pre-existing, unrelated failures in `launcher-registry-test.js` (registry
   ids/version) and the LED diag test reproduce with the earlier uncommitted
   work stashed; they are not caused by this change.
+
+## Follow-up (A82) — owner feedback after the first fix
+
+Live build `a82` (SW cache `v102-a82-lockscreen`), deployed over SSH with
+`scripts/nuxel-deploy-live.py --apply` and verified on the handset.
+
+### 1. The PIN still registered every digit twice — root cause found
+The A81 dedup compared the click against the pointerdown's `pointerId`.  A real
+press arrives as **pointerdown + touchstart + pointerup + touchend + click**,
+and WebKit retargets the pointer events per contact (`pointerId` -1, 0, 1, …,
+even 2147483647 on this kernel).  The compatibility click carries no
+`pointerId` at all, so the key match never held: pointerdown appended the digit
+and the click appended the **same** digit again.  Reproduced on-device with the
+exact sequence: one press of "1" produced `"11"`, "3838" would have been
+"33883388".  Longer touches made it worse: a held press was also counted by an
+idle fallback and then again by its release.
+
+Fix: the keypad now has exactly **one** activation handler — the click (release),
+which WebKit delivers exactly once per press whatever the event family before
+it.  Keyboard input keeps its own path.  Verified on the device: full touch
+presses of 1, 3, 1, 3 produced `"1"`, `"13"`, `"131"`, `"1313"`; pointer+click
+and click-only presses also produce one digit.  `tests/pwnage_a80/
+keypad_press_simulation.js` (jsdom) drives every sequence from the device log
+and runs from `test_a80_lockscreen.py`; static checks reject any return to
+pointerdown activation.
+
+### 2. The second "enter PIN" overlay — deleted, not hidden
+`security-lock.js` no longer contains `ensurePrompt()` or any DOM builder for
+the old sheet (`#nuxel-lock-prompt`, "Enter PIN", "At least 6 digits").
+`promptSecret()` always resolves `null`; there is no path that can create it.
+Credentials are entered only on the lock surface; the Vault password only in
+the Vault's own password field.  Verified live: no such node exists.
+
+### 3. "Set up pattern / PIN" on the lock screen — removed
+The button is hidden, disabled and inert, `openSetup()`/`openPatternSetup()`
+only return `set-credential-in-settings`, and the whole `#lockscreen-setup`
+sheet is deleted from `index.html` (pattern/PIN changes only in
+Settings → Security).  The lock surface no longer paints the top-centre
+"Draw pattern / Enter PIN" title or its instructions (the element is hidden and
+left empty; only the transient error line is ever shown).
+
+Also fixed while verifying: Cancel on the keypad used to leave the keypad up
+(it passed the transient effective mode); it now restores the authoritative
+mode.  `manifest.json` cache_version now agrees with `sw.js`.

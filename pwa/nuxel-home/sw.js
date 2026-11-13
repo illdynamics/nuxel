@@ -57,11 +57,13 @@
 // v099-p108000-location-permissions: Quick Settings reports a revoked
 // location:manage grant honestly, and Settings renders Location read and
 // Location control as separate per-app toggles.
-// v101-a81-lockscreen: pattern/PIN/fingerprint credential surface rework
-// (responsive 3x3 penguin matrix with a live trail, keypad single-press fix,
-// no second legacy PIN sheet after an unlock).  Without this bump the launcher
-// kept serving the a80 JS from the v100 cache after a live deploy.
-const CACHE_VERSION = 'v101-a81-lockscreen';
+// v102-a82-lockscreen: ONE digit per keypad press on every input path (click
+// owns the activation; pointerdown/touchstart only arm it), no legacy "enter
+// PIN" sheet at all, no "Set up pattern / PIN" button and no in-lockscreen
+// setup sheet (Settings -> Security only), and no top-centre title/instructions
+// on the credential surface.  Without this bump the launcher kept serving the
+// previous JS from the v101 cache after a live deploy.
+const CACHE_VERSION = 'v102-a82-lockscreen';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -83,6 +85,7 @@ const PRECACHE_ASSETS = [
     './css/lockscreen.css',
     './js/lockscreen.js',
     './js/security-lock.js',
+    './js/lockscreen-auth.js',
     './js/lockscreen-indicators.js',
     './js/apps.js',
     './js/layout-model.js',

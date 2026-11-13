@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="css/status-bar.css?v=p106000">
     <link rel="stylesheet" href="css/home-settings.css?v=p80000">
     <link rel="stylesheet" href="css/widgets.css?v=p82000">
-    <link rel="stylesheet" href="css/lockscreen.css?v=a81">
+    <link rel="stylesheet" href="css/lockscreen.css?v=a82">
     <link rel="preload" as="image" href="assets/nuxel-preload-cover.jpg">
     <script>
     // PWNAGE-36000: in phone boot mode the separate mpv preloading-screen
@@ -380,9 +380,14 @@
              fingerprint -> nuxel-fingerprint.png aligned on the S10+ scanner + PIN button
              The swipe penguin handle is hidden in pattern/pin/fingerprint modes. -->
         <div id="lockscreen-auth" class="lockscreen-auth" hidden>
-            <div class="lockscreen-auth-head">
-                <div id="lockscreen-auth-title" class="lockscreen-auth-title">Unlock</div>
-                <div id="lockscreen-auth-hint" class="lockscreen-auth-hint">Draw your pattern</div>
+            <!-- No heading/instructions here on purpose: the owner enters the
+                 pattern/PIN directly on the surface and the Vault password in
+                 the Vault's own field.  The head element stays in the DOM
+                 (hidden) because the auth module still writes status text to
+                 it; it is never painted. -->
+            <div class="lockscreen-auth-head" hidden aria-hidden="true">
+                <div id="lockscreen-auth-title" class="lockscreen-auth-title"></div>
+                <div id="lockscreen-auth-hint" class="lockscreen-auth-hint"></div>
             </div>
 
             <div id="lockscreen-pattern" class="lockscreen-pattern" hidden
@@ -428,26 +433,11 @@
             <div id="lockscreen-auth-error" class="lockscreen-auth-error" role="alert"></div>
             <button type="button" id="lockscreen-pin-fallback" class="lockscreen-pin-fallback"
                     hidden>PIN</button>
+            <!-- No "Set up pattern / PIN" entry point on the lock screen: a
+                 credential can only be set/changed from Settings -> Security.
+                 The id is kept (hidden, inert) for stale callers. -->
             <button type="button" id="lockscreen-auth-switch" class="lockscreen-pin-fallback auth-switch"
-                    hidden>Set up pattern / PIN</button>
-        </div>
-
-        <!-- A80 first-time pattern setup.  The SAME pattern must be drawn twice
-             before it is stored; the bridge refuses any single-entry change. -->
-        <div id="lockscreen-setup" class="lockscreen-auth lockscreen-setup" hidden>
-            <div class="lockscreen-auth-head">
-                <div class="lockscreen-auth-title">Set a pattern</div>
-                <div id="lockscreen-setup-hint" class="lockscreen-auth-hint">Draw a pattern, then draw it again</div>
-            </div>
-            <div id="lockscreen-setup-pattern" class="lockscreen-pattern" role="application"
-                 aria-label="Draw the new pattern">
-                <svg id="lockscreen-setup-svg" class="lockscreen-pattern-svg" viewBox="0 0 300 300" aria-hidden="true">
-                    <polyline id="lockscreen-setup-trail" class="lockscreen-pattern-trail" points="" fill="none"/>
-                </svg>
-                <div id="lockscreen-setup-dots" class="lockscreen-pattern-dots"></div>
-            </div>
-            <div id="lockscreen-setup-error" class="lockscreen-auth-error" role="alert"></div>
-            <button type="button" id="lockscreen-setup-cancel" class="lockscreen-pin-fallback">Cancel</button>
+                    hidden disabled aria-hidden="true" tabindex="-1">Set up pattern / PIN</button>
         </div>
 
         <div class="lockscreen-touch-warning" id="lockscreen-touch-warning"
@@ -525,10 +515,10 @@
     <script src="js/osd.js?v=p80000"></script>
     <script src="js/bootlog.js?v=p80000"></script>
     <script src="js/touch-keyboard.js?v=p80000"></script>
-    <script src="js/security-lock.js?v=a81"></script>
+    <script src="js/security-lock.js?v=a82"></script>
     <script src="js/lockscreen-indicators.js?v=p85000"></script>
     <script src="js/lockscreen-clock.js?v=p91000"></script>
-    <script src="js/lockscreen-auth.js?v=a81"></script>
+    <script src="js/lockscreen-auth.js?v=a82"></script>
     <script src="js/lockscreen.js?v=a81"></script>
     <script src="js/navigation.js?v=p80000"></script>
     <script src="js/gestures.js?v=p80000"></script>
