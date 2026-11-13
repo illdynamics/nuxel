@@ -1,0 +1,1 @@
+NFC reader open must not depend on TEE eSE state; -EBUSY here disables all NFC

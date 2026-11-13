@@ -1,0 +1,65 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH] nfc: sec_nfc: do not gate the NFC reader on the eSE/TEE state
+
+On SM-G975F (beyond2lte) the S3NRN82 NFC controller at I2C 0x27 is healthy,
+but /dev/sec-nfc cannot be opened.  CONFIG_ESE_SECURE makes sec_nfc_open()
+call tz_tee_ese_secure_check(); the TEE on this image reports the embedded
+Secure Element (eSE, Samsung Pay) is not secured and the vendor driver then
+returns -EBUSY, so the NFC reader is disabled by an unrelated payment check.
+
+Nuxel does not support payment/eSE.  Record the eSE as "not secured"
+without invoking the TEE (measured: the TEE call result 0xffff000d also
+reaches the kernel open path as a bogus pointer and panics with oops=panic)
+and keep the NFC reader usable.  An eSE consumer must still consult
+nfc_ese_secured itself, so no payment functionality is enabled.
+
+Also reject an open without driver data instead of dereferencing NULL.
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+ drivers/nfc/sec_nfc.c | 30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
+
+--- a/drivers/nfc/sec_nfc.c
++++ b/drivers/nfc/sec_nfc.c
+@@ -644,21 +644,28 @@
+ 
+ 	NFC_LOG_INFO("%s\n", __func__);
+ 
+ #ifdef CONFIG_ESE_SECURE
+-	if (nfc_ese_secured == NOT_CHECKED) {
+-		ret = tz_tee_ese_secure_check();
+-		if (ret) {
+-			nfc_ese_secured = ESE_NOT_SECURED;
+-			NFC_LOG_ERR("eSE spi is not Secured\n"); 
+-			return -EBUSY;
+-		}
+-		nfc_ese_secured = ESE_SECURED;
+-	} else if (nfc_ese_secured == ESE_NOT_SECURED) { 
+-		NFC_LOG_ERR("eSE spi is not Secured\n"); 
+-		return -EBUSY;
+-	}
++	/*
++	 * NUXEL (SM-G975F, beyond2lte): the TEE eSE check gates the *embedded
++	 * Secure Element* (Samsung Pay / payment), not the NFC reader.  The TEE
++	 * on this Nuxel image reports the eSE is not secured, and the vendor
++	 * driver then refuses to open the *NFC* misc device at all.  Nuxel does
++	 * not support payment/eSE, so the eSE state is recorded as "not
++	 * secured" without invoking the TEE (the call also trips the kernel
++	 * open path on this image, see nfc3.md), and the NFC reader stays
++	 * usable.  Any eSE consumer must check nfc_ese_secured itself.
++	 */
++	if (nfc_ese_secured == NOT_CHECKED)
++		nfc_ese_secured = ESE_NOT_SECURED;
++	if (nfc_ese_secured == ESE_NOT_SECURED)
++		NFC_LOG_DBG("NUXEL: eSE not secured; NFC reader path continues\n");
+ #endif
++
++	if (!info) {
++		NFC_LOG_ERR("NUXEL: open() without driver data\n");
++		return -ENODEV;
++	}
+ 
+ 	mutex_lock(&info->mutex);
+ 	if (info->mode != SEC_NFC_MODE_OFF) {
+ 		NFC_LOG_ERR("open() nfc is busy\n");

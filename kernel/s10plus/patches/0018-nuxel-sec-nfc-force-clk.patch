@@ -1,0 +1,49 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH] nfc: sec_nfc: force the NFC reference clock on for active modes
+
+This S3NRN82 does not assert its clk_req line before it has been clocked,
+so sec_nfc's clk_req-IRQ-driven clock gating leaves oscclk_nfc permanently
+off.  Every I2C transaction to 0x27 then NACKs (-ENXIO) even though the
+part is powered (VEN asserted, VDD_NFC_1P8 on).  Measured on SM-G975F:
+IRQ 458 (clk_req) never fires after a mode switch and gpio22 stays 0.
+
+Enable oscclk_nfc explicitly for every non-OFF mode; the clk_req handler
+keeps owning dynamic gating afterwards.
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+ drivers/nfc/sec_nfc.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+--- a/drivers/nfc/sec_nfc.c
++++ b/drivers/nfc/sec_nfc.c
+@@ -533,12 +533,29 @@
+ 	if (mode == SEC_NFC_MODE_BOOTLOADER)
+ 		if (pdata->firm)
+ 			gpio_set_value(pdata->firm, SEC_NFC_FW_ON);
+ 
+ 	if (mode != SEC_NFC_MODE_OFF) {
++		int cret;
++
+ 		msleep(SEC_NFC_VEN_WAIT_TIME);
+ 		gpio_set_value(pdata->ven, SEC_NFC_PW_ON);
++		/*
++		 * NUXEL (beyond2lte): this S3NRN82 does not assert clk_req
++		 * before it is clocked, so waiting for the clk_req IRQ leaves
++		 * the 26 MHz reference permanently off and every I2C write
++		 * NACKs (-ENXIO).  Force the reference clock on for every
++		 * non-OFF mode; the clk_req handler keeps owning dynamic
++		 * gating afterwards.
++		 */
++		if (pdata->clk) {
++			cret = clk_prepare_enable(pdata->clk);
++			if (!cret)
++				info->clk_state = true;
++			NFC_LOG_INFO("NUXEL: force oscclk_nfc enable = %d (%lu Hz)\n",
++				     cret, (unsigned long)clk_get_rate(pdata->clk));
++		}
+ 		sec_nfc_clk_ctl_enable(info);
+ 		enable_irq_wake(info->i2c_info.i2c_dev->irq);
+ 		msleep(SEC_NFC_VEN_WAIT_TIME/2);
+ 	} else {
+ 		sec_nfc_clk_ctl_disable(info);
