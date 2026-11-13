@@ -1,11 +1,70 @@
 diff --git a/drivers/nfc/s3fwrn5/core.c b/drivers/nfc/s3fwrn5/core.c
-index 64b58455e..fc27392ee 100644
+index 64b58455e..d239624e7 100644
 --- a/drivers/nfc/s3fwrn5/core.c
 +++ b/drivers/nfc/s3fwrn5/core.c
-@@ -49,6 +49,12 @@ static int s3fwrn5_firmware_update(struct s3fwrn5_info *info)
+@@ -18,6 +18,7 @@
+  */
  
- 	need_update = s3fwrn5_fw_check_version(&info->fw_info,
- 		info->ndev->manufact_specific_info);
+ #include <linux/module.h>
++#include <linux/delay.h>
+ #include <net/nfc/nci_core.h>
+ 
+ #include "s3fwrn5.h"
+@@ -36,24 +37,64 @@ static int s3fwrn5_firmware_update(struct s3fwrn5_info *info)
+ 	bool need_update;
+ 	int ret;
+ 
+-	s3fwrn5_fw_init(&info->fw_info, "sec_s3fwrn5_firmware.bin");
++	/*
++	 * NUXEL (S3NRN82): the controller on this board is the S3NRN82, whose
++	 * vendor image is sec_s3nrn82_firmware.bin (shipped in
++	 * /vendor/firmware/nfc, shipped hash d315cd8b…).  Upstream only knows
++	 * the stand-alone S3FWRN5 name; try the board image first and keep the
++	 * upstream name as the generic fallback.
++	 */
++	static const char * const fw_names[] = {
++		"sec_s3nrn82_firmware.bin",
++		"sec_s3fwrn5_firmware.bin",
++		"nfc/sec_s3nrn82_firmware.bin",
++	};
++	int i;
+ 
+ 	/* Update firmware */
+ 
+ 	s3fwrn5_set_wake(info, false);
+ 	s3fwrn5_set_mode(info, S3FWRN5_MODE_FW);
+ 
+-	ret = s3fwrn5_fw_setup(&info->fw_info);
++	ret = -ENOENT;
++	for (i = 0; i < ARRAY_SIZE(fw_names); i++) {
++		s3fwrn5_fw_init(&info->fw_info, fw_names[i]);
++		ret = s3fwrn5_fw_setup(&info->fw_info);
++		if (ret == 0) {
++			dev_info(&info->ndev->nfc_dev->dev,
++				 "NUXEL: firmware image %s\n", fw_names[i]);
++			break;
++		}
++		dev_info(&info->ndev->nfc_dev->dev,
++			 "NUXEL: firmware image %s unavailable (%d)\n",
++			 fw_names[i], ret);
++		s3fwrn5_fw_cleanup(&info->fw_info);
++		s3fwrn5_set_mode(info, S3FWRN5_MODE_FW);
++	}
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 
+-	need_update = s3fwrn5_fw_check_version(&info->fw_info,
+-		info->ndev->manufact_specific_info);
++	/*
++	 * NUXEL (S3NRN82): the controller's own firmware revision is only
++	 * known after an NCI CORE_RESET; at first bring-up there is none, so
++	 * the shipped image is downloaded unconditionally once.  A controlled
++	 * update can still skip an identical/older image below.
++	 */
++	need_update = info->force_fw_update ||
++		s3fwrn5_fw_check_version(&info->fw_info,
++			info->ndev->manufact_specific_info);
 +	/* NUXEL: measured decision inputs (the image is only flashed when the
 +	 * hardware target byte matches, see firmware.c). */
 +	dev_info(&info->ndev->nfc_dev->dev,
@@ -15,14 +74,78 @@ index 64b58455e..fc27392ee 100644
  	if (!need_update)
  		goto out;
  
-@@ -129,11 +135,19 @@ static int s3fwrn5_nci_post_setup(struct nci_dev *ndev)
+ 	dev_info(&info->ndev->nfc_dev->dev, "Detected new firmware version\n");
+ 
++	info->force_fw_update = false;
+ 	ret = s3fwrn5_fw_download(&info->fw_info);
+ 	if (ret < 0)
+ 		goto out;
+@@ -75,12 +116,19 @@ static int s3fwrn5_firmware_update(struct s3fwrn5_info *info)
+ static int s3fwrn5_nci_open(struct nci_dev *ndev)
+ {
+ 	struct s3fwrn5_info *info = nci_get_drvdata(ndev);
+-
+-	if (s3fwrn5_get_mode(info) != S3FWRN5_MODE_COLD)
+-		return  -EBUSY;
+-
+-	s3fwrn5_set_mode(info, S3FWRN5_MODE_NCI);
+-	s3fwrn5_set_wake(info, true);
++	enum s3fwrn5_mode mode = s3fwrn5_get_mode(info);
++
++	/*
++	 * NUXEL: nfc0 is opened again for every post_setup retry.  The part is
++	 * then already in NCI mode inside a held session; that is not EBUSY.
++	 */
++	if (mode != S3FWRN5_MODE_COLD && mode != S3FWRN5_MODE_NCI)
++		return -EBUSY;
++
++	if (mode == S3FWRN5_MODE_COLD) {
++		s3fwrn5_set_mode(info, S3FWRN5_MODE_NCI);
++		s3fwrn5_set_wake(info, true);
++	}
+ 
+ 	return 0;
+ }
+@@ -118,7 +166,15 @@ static int s3fwrn5_nci_send(struct nci_dev *ndev, struct sk_buff *skb)
+ static int s3fwrn5_nci_post_setup(struct nci_dev *ndev)
+ {
+ 	struct s3fwrn5_info *info = nci_get_drvdata(ndev);
+-	int ret;
++	int ret, i;
++
++	/*
++	 * NUXEL (S3NRN82): hold the rail and the 26 MHz reference for the
++	 * whole setup.  Firmware flash writes and the NCI switch must not see
++	 * the clock gated between frames, and the controller keeps its
++	 * bootloader session between UPDATE_SECTOR frames.
++	 */
++	s3fwrn5_session_begin(info);
+ 
+ 	ret = s3fwrn5_firmware_update(info);
+ 	if (ret < 0)
+@@ -129,17 +185,140 @@ static int s3fwrn5_nci_post_setup(struct nci_dev *ndev)
  	s3fwrn5_set_mode(info, S3FWRN5_MODE_NCI);
  	s3fwrn5_set_wake(info, true);
  
+-	ret = nci_core_reset(info->ndev);
+-	if (ret < 0)
 +	dev_info(&info->ndev->nfc_dev->dev,
 +		 "NCI mode entered; sending CORE_RESET\n");
- 	ret = nci_core_reset(info->ndev);
--	if (ret < 0)
++	/*
++	 * NUXEL (S3NRN82): right after a firmware download the controller
++	 * needs a moment to bring its NCI runtime up; the first frame can be
++	 * NACKed because the part has not yet accepted its I2C address.
++	 * Retry the reset instead of failing the NFC device.
++	 */
++	for (i = 0; i < 5; i++) {
++		ret = nci_core_reset(info->ndev);
++		if (ret == 0)
++			break;
++		dev_info(&info->ndev->nfc_dev->dev,
++			 "CORE_RESET attempt %d/5 failed: %d\n", i + 1, ret);
++		/* NUXEL: let the part release a stretched SCL before retrying. */
++		msleep(1000);
++	}
 +	if (ret < 0) {
 +		dev_err(&info->ndev->nfc_dev->dev,
 +			"CORE_RESET failed: %d\n", ret);
@@ -35,12 +158,245 @@ index 64b58455e..fc27392ee 100644
 +			"CORE_INIT failed: %d\n", ret);
  
  out:
++	s3fwrn5_session_end(info);
  	return ret;
+ }
+ 
++/*
++ * NUXEL (S3NRN82): the controller has no firmware in NCI runtime mode (it only
++ * answers its bootloader) and nothing opens nfc0 until an app asks for NFC, so
++ * the NCI setup (firmware download + CORE_RESET + discovery) is driven once
++ * from probe through the generic NFC netlink API.  That path performs exactly
++ * the open/close a userspace service would, so it needs no NCI internals.
++ */
++static int s3fwrn5_nci_dev_up(struct nci_dev *ndev)
++{
++	struct nfc_dev *nfc_dev = ndev->nfc_dev;
++	int ret;
++
++	/*
++	 * nfc_core exports nfc_dev_up()/nfc_dev_down(): they take the device
++	 * lock, honour the rfkill state and keep dev_up consistent, exactly as
++	 * NFC_CMD_DEV_UP/DOWN from userspace would.
++	 */
++	ret = nfc_dev_up(nfc_dev);
++	if (ret == -EALREADY)
++		return 0;
++
++	return ret;
++}
++
++#define S3FWRN5_SETUP_RETRY_MAX 12
++
++static void s3fwrn5_nci_setup_work(struct work_struct *work)
++{
++	struct s3fwrn5_info *info = container_of(work, struct s3fwrn5_info,
++						 setup_work);
++	int ret;
++
++	/*
++	 * NUXEL (S3NRN82): this runs from a workqueue, never from probe.  The
++	 * controller is still in bootloader mode here; the NCI open performs
++	 * the firmware download (custom image signature), CORE_RESET and
++	 * CORE_INIT.  Firmware lives in /vendor/firmware, mounted by the NCI
++	 * firmware loader at open time.  If the part is not ready yet (power
++	 * rail settling after boot), retry with backoff instead of giving up.
++	 */
++	/*
++	 * NUXEL: bootloader readiness handshake for nfc0, on the workqueue
++	 * (a GET_BOOTINFO + S3NRN82 bootinfo check).  Advisory only.
++	 */
++	ret = s3fwrn5_nci_dev_up(info->ndev);
++	if (ret < 0 && info->setup_attempts == 0 && info->ctrl_ready_check) {
++		/* NUXEL: first failure — probe the bootloader once for the log. */
++		dev_info(&info->ndev->nfc_dev->dev,
++			 "NUXEL: CORE_RESET failed (%d); probing bootloader\n", ret);
++		info->ctrl_ready_check(info->phy_id);
++	}
++	if (ret < 0) {
++		if (info->setup_attempts++ < S3FWRN5_SETUP_RETRY_MAX) {
++			dev_info(&info->ndev->nfc_dev->dev,
++				 "NUXEL: NCI setup attempt %d failed (%d); retrying in 3 s\n",
++				 info->setup_attempts, ret);
++			schedule_delayed_work(&info->setup_retry,
++					      msecs_to_jiffies(3000));
++			return;
++		}
++		dev_err(&info->ndev->nfc_dev->dev,
++			"NUXEL: NCI setup failed after %d attempts (%d)\n",
++			info->setup_attempts, ret);
++		return;
++	}
++
++	dev_info(&info->ndev->nfc_dev->dev,
++		 "NUXEL: NCI runtime ready (firmware + CORE_RESET + CORE_INIT)\n");
++	/* Release the setup's own reference; the NFC service does its own up. */
++	nfc_dev_down(info->ndev->nfc_dev);
++}
++
++static void s3fwrn5_nci_setup_retry_work(struct work_struct *work)
++{
++	struct s3fwrn5_info *info = container_of(to_delayed_work(work),
++						 struct s3fwrn5_info,
++						 setup_retry);
++
++	s3fwrn5_nci_setup_work(&info->setup_work);
++}
++
++/*
++ * NUXEL: nci_open_device() sends its own CORE_RESET before post_setup, so the
++ * bootloader is probed here, as NCI init, while the transport is still in
++ * bootloader mode.  This is the diagnostic that tells whether the controller
++ * answers at all; it must not block for more than the caller's timeout.
++ */
++static int s3fwrn5_nci_init(struct nci_dev *ndev)
++{
++	/*
++	 * NUXEL (S3NRN82): the controller answers exactly one frame per power
++	 * cycle, so the session must spend it on the real NCI CORE_RESET that
++	 * nci_open_device() issues next.  The bootloader readiness check is
++	 * only run when that reset answers nothing (see the retry worker).
++	 */
++	(void)ndev;
++	return 0;
++}
++
+ static struct nci_ops s3fwrn5_nci_ops = {
++	.init = s3fwrn5_nci_init,
+ 	.open = s3fwrn5_nci_open,
+ 	.close = s3fwrn5_nci_close,
+ 	.send = s3fwrn5_nci_send,
+@@ -182,9 +361,27 @@ int s3fwrn5_probe(struct nci_dev **ndev, void *phy_id, struct device *pdev,
+ 	}
+ 
+ 	info->fw_info.ndev = info->ndev;
++	/*
++	 * NUXEL: initialise the firmware protocol here, so the IRQ path can
++	 * never call complete() on an uninitialised completion (measured boot
++	 * loop: bootloader reply before s3fwrn5_fw_init()).  fw_init() only
++	 * resets software state; the download re-inits it again.
++	 */
++	s3fwrn5_fw_init(&info->fw_info, "sec_s3nrn82_firmware.bin");
++	/* NUXEL: the controller's own revision is unknown before a reset. */
++	info->force_fw_update = true;
+ 
+ 	*ndev = info->ndev;
+ 
++	/*
++	 * NUXEL: switch the controller to NCI runtime once at boot, outside of
++	 * probe and initcalls, so a slow NFC bring-up can never stall the boot
++	 * path (UFS/RPMB) and a failed attempt can be retried.
++	 */
++	INIT_WORK(&info->setup_work, s3fwrn5_nci_setup_work);
++	INIT_DELAYED_WORK(&info->setup_retry, s3fwrn5_nci_setup_retry_work);
++	schedule_work(&info->setup_work);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL(s3fwrn5_probe);
 diff --git a/drivers/nfc/s3fwrn5/firmware.c b/drivers/nfc/s3fwrn5/firmware.c
-index 43c801e72..c3ef75da4 100644
+index 43c801e72..c0ca0d5f4 100644
 --- a/drivers/nfc/s3fwrn5/firmware.c
 +++ b/drivers/nfc/s3fwrn5/firmware.c
-@@ -110,7 +110,19 @@ static int s3fwrn5_fw_get_bootinfo(struct s3fwrn5_fw_info *fw_info,
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <linux/completion.h>
++#include <linux/delay.h>
+ #include <linux/firmware.h>
+ #include <crypto/hash.h>
+ #include <crypto/sha.h>
+@@ -32,21 +33,19 @@ struct s3fwrn5_fw_version {
+ 	__u8 target;
+ };
+ 
+-static int s3fwrn5_fw_send_msg(struct s3fwrn5_fw_info *fw_info,
+-	struct sk_buff *msg, struct sk_buff **rsp)
++static int s3fwrn5_fw_wait_reply(struct s3fwrn5_fw_info *fw_info,
++	struct sk_buff **rsp)
+ {
+-	struct s3fwrn5_info *info =
+-		container_of(fw_info, struct s3fwrn5_info, fw_info);
+ 	long ret;
+ 
+-	reinit_completion(&fw_info->completion);
+-
+-	ret = s3fwrn5_write(info, msg);
+-	if (ret < 0)
+-		return ret;
+-
++	/*
++	 * NUXEL: keep the upstream 1 s for the fast commands, but allow more
++	 * time while the controller is writing flash (S3NRN82 bootloader).
++	 */
+ 	ret = wait_for_completion_interruptible_timeout(
+-		&fw_info->completion, msecs_to_jiffies(1000));
++		&fw_info->completion,
++		msecs_to_jiffies(fw_info->custom_format ?
++				 S3FWRN5_FW_CUSTOM_REPLY_TIMEOUT_MS : 1000));
+ 	if (ret < 0)
+ 		return ret;
+ 	else if (ret == 0)
+@@ -61,6 +60,58 @@ static int s3fwrn5_fw_send_msg(struct s3fwrn5_fw_info *fw_info,
+ 	return 0;
+ }
+ 
++static int s3fwrn5_fw_send_msg(struct s3fwrn5_fw_info *fw_info,
++	struct sk_buff *msg, struct sk_buff **rsp)
++{
++	struct s3fwrn5_info *info =
++		container_of(fw_info, struct s3fwrn5_info, fw_info);
++	int ret;
++
++	reinit_completion(&fw_info->completion);
++
++	ret = s3fwrn5_write(info, msg);
++	if (ret < 0)
++		return ret;
++
++	return s3fwrn5_fw_wait_reply(fw_info, rsp);
++}
++
++/*
++ * NUXEL: send one firmware frame built in a single buffer.  Transports that
++ * can transfer the whole frame in one transaction get the byte stream (a
++ * 256-byte data packet is 260 bytes, which this board's i2c core refuses to
++ * queue as a msg); others get the historical skb path.
++ */
++static int s3fwrn5_fw_send_frame(struct s3fwrn5_fw_info *fw_info, u8 type,
++	u8 code, const void *data, u16 len)
++{
++	struct s3fwrn5_info *info = nci_get_drvdata(fw_info->ndev);
++	u8 *frame;
++	int ret;
++
++	if (!info->phy_ops->write_bulk)
++		return -ENOTSUPP;
++
++	frame = kmalloc(S3FWRN5_FW_HDR_SIZE + len, GFP_KERNEL);
++	if (!frame)
++		return -ENOMEM;
++
++	frame[0] = type | fw_info->parity;
++	fw_info->parity ^= 0x80;
++	frame[1] = code;
++	frame[2] = len & 0xff;
++	frame[3] = len >> 8;
++	if (len)
++		memcpy(frame + S3FWRN5_FW_HDR_SIZE, data, len);
++
++	reinit_completion(&fw_info->completion);
++	ret = info->phy_ops->write_bulk(info->phy_id, frame,
++					S3FWRN5_FW_HDR_SIZE + len);
++	kfree(frame);
++
++	return ret < 0 ? ret : 0;
++}
++
+ static int s3fwrn5_fw_prep_msg(struct s3fwrn5_fw_info *fw_info,
+ 	struct sk_buff **msg, u8 type, u8 code, const void *data, u16 len)
+ {
+@@ -110,7 +161,19 @@ static int s3fwrn5_fw_get_bootinfo(struct s3fwrn5_fw_info *fw_info,
  		goto out;
  	}
  
@@ -61,8 +417,141 @@ index 43c801e72..c3ef75da4 100644
  
  out:
  	kfree_skb(rsp);
-@@ -334,26 +346,37 @@ static void s3fwrn5_fw_release_firmware(struct s3fwrn5_fw_info *fw_info)
- 	release_firmware(fw_info->fw.fw);
+@@ -151,13 +214,18 @@ static int s3fwrn5_fw_enter_update_mode(struct s3fwrn5_fw_info *fw_info,
+ 
+ 	/* Send hashcode data */
+ 
+-	ret = s3fwrn5_fw_prep_msg(fw_info, &msg, S3FWRN5_FW_MSG_DATA, 0,
+-		hash_data, hash_size);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = s3fwrn5_fw_send_msg(fw_info, msg, &rsp);
+-	kfree_skb(msg);
++	ret = s3fwrn5_fw_send_frame(fw_info, S3FWRN5_FW_MSG_DATA, 0,
++				    hash_data, hash_size);
++	if (ret == -ENOTSUPP) {
++		ret = s3fwrn5_fw_prep_msg(fw_info, &msg, S3FWRN5_FW_MSG_DATA,
++			0, hash_data, hash_size);
++		if (ret < 0)
++			return ret;
++		ret = s3fwrn5_fw_send_msg(fw_info, msg, &rsp);
++		kfree_skb(msg);
++	} else if (ret == 0) {
++		ret = s3fwrn5_fw_wait_reply(fw_info, &rsp);
++	}
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -171,13 +239,18 @@ static int s3fwrn5_fw_enter_update_mode(struct s3fwrn5_fw_info *fw_info,
+ 
+ 	/* Send signature data */
+ 
+-	ret = s3fwrn5_fw_prep_msg(fw_info, &msg, S3FWRN5_FW_MSG_DATA, 0,
+-		sig_data, sig_size);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = s3fwrn5_fw_send_msg(fw_info, msg, &rsp);
+-	kfree_skb(msg);
++	ret = s3fwrn5_fw_send_frame(fw_info, S3FWRN5_FW_MSG_DATA, 0,
++				    sig_data, sig_size);
++	if (ret == -ENOTSUPP) {
++		ret = s3fwrn5_fw_prep_msg(fw_info, &msg, S3FWRN5_FW_MSG_DATA,
++			0, sig_data, sig_size);
++		if (ret < 0)
++			return ret;
++		ret = s3fwrn5_fw_send_msg(fw_info, msg, &rsp);
++		kfree_skb(msg);
++	} else if (ret == 0) {
++		ret = s3fwrn5_fw_wait_reply(fw_info, &rsp);
++	}
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -185,6 +258,15 @@ static int s3fwrn5_fw_enter_update_mode(struct s3fwrn5_fw_info *fw_info,
+ 	if (hdr->code != S3FWRN5_FW_RET_SUCCESS)
+ 		ret = -EPROTO;
+ 
++	/*
++	 * NUXEL (S3NRN82): the controller acknowledges the signature frame
++	 * before it has committed it to flash.  Give it time before the
++	 * first sector update, otherwise the bootloader silently ignores the
++	 * UPDATE_SECTOR frames that follow (measured: stale reply frames).
++	 */
++	if (ret == 0)
++		msleep(S3FWRN5_FW_UPDATE_SETTLE_MS);
++
+ out:
+ 	kfree_skb(rsp);
+ 	return ret;
+@@ -223,13 +305,19 @@ static int s3fwrn5_fw_update_sector(struct s3fwrn5_fw_info *fw_info,
+ 	/* Send data split into 256-byte packets */
+ 
+ 	for (i = 0; i < 16; ++i) {
+-		ret = s3fwrn5_fw_prep_msg(fw_info, &msg,
+-			S3FWRN5_FW_MSG_DATA, 0, data+256*i, 256);
+-		if (ret < 0)
+-			break;
+-
+-		ret = s3fwrn5_fw_send_msg(fw_info, msg, &rsp);
+-		kfree_skb(msg);
++		ret = s3fwrn5_fw_send_frame(fw_info, S3FWRN5_FW_MSG_DATA, 0,
++					    data + 256 * i, 256);
++		if (ret == -ENOTSUPP) {
++			ret = s3fwrn5_fw_prep_msg(fw_info, &msg,
++				S3FWRN5_FW_MSG_DATA, 0, data + 256 * i, 256);
++			if (ret < 0)
++				break;
++
++			ret = s3fwrn5_fw_send_msg(fw_info, msg, &rsp);
++			kfree_skb(msg);
++		} else if (ret == 0) {
++			ret = s3fwrn5_fw_wait_reply(fw_info, &rsp);
++		}
+ 		if (ret < 0)
+ 			break;
+ 
+@@ -242,6 +330,15 @@ static int s3fwrn5_fw_update_sector(struct s3fwrn5_fw_info *fw_info,
+ 		kfree_skb(rsp);
+ 	}
+ 
++	/*
++	 * NUXEL (S3NRN82): the ACK of the last 256-byte packet is sent when
++	 * the controller has accepted the packet into its 4 KiB flash buffer,
++	 * not when the sector write completes.  Pace the next command; the
++	 * bootloader otherwise answers with the previous frame (measured as
++	 * a stale 14-byte bootinfo reply on every following UPDATE_SECTOR).
++	 */
++	msleep(S3FWRN5_FW_SECTOR_SETTLE_MS);
++
+ 	return ret;
+ 
+ err:
+@@ -299,10 +396,14 @@ static int s3fwrn5_fw_request_firmware(struct s3fwrn5_fw_info *fw_info)
+ 	u32 custom_sig_off;
+ 	int ret;
+ 
++	fw->fw = NULL;
+ 	ret = request_firmware(&fw->fw, fw_info->fw_name,
+ 		&fw_info->ndev->nfc_dev->dev);
+-	if (ret < 0)
++	if (ret < 0) {
++		/* NUXEL: keep cleanup/release_firmware(NULL) safe on retries. */
++		fw->fw = NULL;
+ 		return ret;
++	}
+ 
+ 	if (fw->fw->size < S3FWRN5_FW_IMAGE_HEADER_SIZE) {
+ 		release_firmware(fw->fw);
+@@ -331,29 +432,42 @@ static int s3fwrn5_fw_request_firmware(struct s3fwrn5_fw_info *fw_info)
+ 
+ static void s3fwrn5_fw_release_firmware(struct s3fwrn5_fw_info *fw_info)
+ {
+-	release_firmware(fw_info->fw.fw);
++	if (fw_info->fw.fw)
++		release_firmware(fw_info->fw.fw);
++	fw_info->fw.fw = NULL;
  }
  
 +static const struct {
@@ -115,7 +604,7 @@ index 43c801e72..c3ef75da4 100644
  			return 0;
  		}
  
-@@ -388,13 +411,25 @@ int s3fwrn5_fw_setup(struct s3fwrn5_fw_info *fw_info)
+@@ -388,22 +502,59 @@ int s3fwrn5_fw_setup(struct s3fwrn5_fw_info *fw_info)
  			"Failed to get bootinfo, ret=%02x\n", ret);
  		goto err;
  	}
@@ -142,11 +631,80 @@ index 43c801e72..c3ef75da4 100644
  		goto err;
  	}
  
+ 	fw_info->sector_size = bootinfo.sector_size;
+ 
+-	fw_info->sig_size = s3fwrn5_fw_is_custom(&bootinfo) ?
+-		fw_info->fw.custom_sig_size : fw_info->fw.sig_size;
+-	fw_info->sig = s3fwrn5_fw_is_custom(&bootinfo) ?
+-		fw_info->fw.custom_sig : fw_info->fw.sig;
++	/*
++	 * NUXEL (S3NRN82): a custom-format image is signed with its CUSTOM
++	 * signature only; sending the standard signature as well makes the
++	 * controller reject the update.  Standard parts keep the historical
++	 * behaviour (both signatures are derived from the same header fields
++	 * there, so this is byte-identical for them).
++	 */
++	/*
++	 * The bootloader's own GET_BOOTINFO is authoritative for the format:
++	 * hw_version[2] is non-zero exactly when the controller runs a custom
++	 * image.  This matches the image header flags at offsets 0x10/0x11 of
++	 * the firmware file (standard/custom), which the S3NRN82 blob sets to
++	 * 0x45/0x09.
++	 */
++	fw_info->custom_format = bootinfo.hw_version[2] != 0;
++	if (fw_info->custom_format) {
++		fw_info->sig = fw_info->fw.custom_sig;
++		fw_info->sig_size = fw_info->fw.custom_sig_size;
++	} else {
++		fw_info->sig = fw_info->fw.sig;
++		fw_info->sig_size = fw_info->fw.sig_size;
++	}
++	dev_info(&fw_info->ndev->nfc_dev->dev,
++		 "fw image: %s format, image_off=0x%x sectors=%u sig=%u custom_sig=%u\n",
++		 fw_info->custom_format ? "custom" : "standard",
++		 (unsigned int)((const u8 *)fw_info->fw.image -
++				(const u8 *)fw_info->fw.fw->data),
++		 fw_info->fw.image_sectors, fw_info->fw.sig_size,
++		 fw_info->fw.custom_sig_size);
+ 
+ 	return 0;
+ 
+@@ -521,7 +672,16 @@ int s3fwrn5_fw_recv_frame(struct nci_dev *ndev, struct sk_buff *skb)
+ 	struct s3fwrn5_info *info = nci_get_drvdata(ndev);
+ 	struct s3fwrn5_fw_info *fw_info = &info->fw_info;
+ 
+-	BUG_ON(fw_info->rsp);
++	/*
++	 * NUXEL: a late or duplicate bootloader frame must never panic the
++	 * phone (measured: the S3NRN82 replays its GET_BOOTINFO reply when a
++	 * request is re-sent after an I2C recovery).  The newer reply replaces
++	 * the unconsumed one; the waiter below takes exactly one skb.
++	 */
++	if (fw_info->rsp) {
++		kfree_skb(fw_info->rsp);
++		fw_info->rsp = NULL;
++	}
+ 
+ 	fw_info->rsp = skb;
+ 
 diff --git a/drivers/nfc/s3fwrn5/firmware.h b/drivers/nfc/s3fwrn5/firmware.h
-index 1ec0647ab..671112292 100644
+index 1ec0647ab..41af0ca11 100644
 --- a/drivers/nfc/s3fwrn5/firmware.h
 +++ b/drivers/nfc/s3fwrn5/firmware.h
-@@ -49,13 +49,26 @@ struct s3fwrn5_fw_header {
+@@ -45,17 +45,39 @@ struct s3fwrn5_fw_header {
+ 	__u16 len;
+ };
+ 
++/*
++ * NUXEL: flash-pipeline settling times.  The S3NRN82 bootloader ACKs a
++ * frame before the write behind it is committed; without these waits the
++ * following UPDATE_SECTOR command gets the stale previous reply.
++ */
++#define S3FWRN5_FW_UPDATE_SETTLE_MS		20
++#define S3FWRN5_FW_SECTOR_SETTLE_MS		20
++#define S3FWRN5_FW_CUSTOM_REPLY_TIMEOUT_MS	5000
++
+ #define S3FWRN5_FW_CMD_RESET			0x00
  
  #define S3FWRN5_FW_CMD_GET_BOOTINFO		0x01
  
@@ -175,11 +733,26 @@ index 1ec0647ab..671112292 100644
  
  #define S3FWRN5_FW_CMD_ENTER_UPDATE_MODE	0x02
  
+@@ -94,6 +116,14 @@ struct s3fwrn5_fw_info {
+ 	u32 sig_size;
+ 	u32 sector_size;
+ 	u32 base_addr;
++	/*
++	 * NUXEL: the bootloader reports its firmware format in the
++	 * GET_BOOTINFO hw_version[2] byte (0 = standard, non-zero = custom).
++	 * A custom image (the S3NRN82 reports 0x01) is verified by the
++	 * controller against the CUSTOM signature inside the image, so the
++	 * standard signature must not be sent for it.
++	 */
++	bool custom_format;
+ 
+ 	struct completion completion;
+ 	struct sk_buff *rsp;
 diff --git a/drivers/nfc/s3fwrn5/i2c.c b/drivers/nfc/s3fwrn5/i2c.c
-index da7ca08d1..19695f429 100644
+index da7ca08d1..78f3df008 100644
 --- a/drivers/nfc/s3fwrn5/i2c.c
 +++ b/drivers/nfc/s3fwrn5/i2c.c
-@@ -23,10 +23,13 @@
+@@ -23,15 +23,20 @@
  #include <linux/of_gpio.h>
  #include <linux/of_irq.h>
  #include <linux/module.h>
@@ -193,7 +766,14 @@ index da7ca08d1..19695f429 100644
  
  #define S3FWRN5_I2C_DRIVER_NAME "s3fwrn5_i2c"
  
-@@ -39,6 +42,16 @@ struct s3fwrn5_i2c_phy {
+ #define S3FWRN5_I2C_MAX_PAYLOAD 32
+ #define S3FWRN5_EN_WAIT_TIME 150
++/* NUXEL: vendor sec_nfc SEC_NFC_VEN_WAIT_TIME on this board is 20 ms. */
++#define S3FWRN5_BOARD_VEN_WAIT_MS 20
+ 
+ struct s3fwrn5_i2c_phy {
+ 	struct i2c_client *i2c_dev;
+@@ -39,6 +44,27 @@ struct s3fwrn5_i2c_phy {
  
  	int gpio_en;
  	int gpio_fw_wake;
@@ -205,12 +785,23 @@ index da7ca08d1..19695f429 100644
 +	struct clk *clk;
 +	/* NUXEL: vendor "VDD_NFC_1P8" rail (sec-nfc,nfc_pvdd). */
 +	struct regulator *pvdd;
-+	/* NUXEL: true once nci_probe() is done and frames may be delivered. */
++	/*
++	 * NUXEL (S3NRN82): a "hold" is one power/clock session that spans a
++	 * whole NCI setup (bootloader firmware download + NCI switch), not
++	 * just one mode switch.  The clk_req IRQ is kept disabled while held
++	 * because this part NACKs the next I2C read if its 26 MHz reference
++	 * is gated between frames (measured: write ACK, then -EREMOTEIO).
++	 */
++	int hold;
++	bool clk_on;
++	/* NUXEL: signalled by the IRQ thread when it has consumed a frame. */
++	struct completion irq_done;
++	/* NUXEL: true once the firmware protocol is ready for IRQ frames. */
 +	bool ndev_ready;
  
  	struct mutex mutex;
  
-@@ -50,6 +63,16 @@ static void s3fwrn5_i2c_set_wake(void *phy_id, bool wake)
+@@ -50,6 +76,16 @@ static void s3fwrn5_i2c_set_wake(void *phy_id, bool wake)
  {
  	struct s3fwrn5_i2c_phy *phy = phy_id;
  
@@ -227,33 +818,37 @@ index da7ca08d1..19695f429 100644
  	mutex_lock(&phy->mutex);
  	gpio_set_value(phy->gpio_fw_wake, wake);
  	msleep(S3FWRN5_EN_WAIT_TIME/2);
-@@ -67,15 +90,32 @@ static void s3fwrn5_i2c_set_mode(void *phy_id, enum s3fwrn5_mode mode)
+@@ -67,21 +103,153 @@ static void s3fwrn5_i2c_set_mode(void *phy_id, enum s3fwrn5_mode mode)
  
  	phy->mode = mode;
  
 -	gpio_set_value(phy->gpio_en, 1);
--	gpio_set_value(phy->gpio_fw_wake, 0);
--	if (mode == S3FWRN5_MODE_FW)
--		gpio_set_value(phy->gpio_fw_wake, 1);
--
--	if (mode != S3FWRN5_MODE_COLD) {
--		msleep(S3FWRN5_EN_WAIT_TIME);
--		gpio_set_value(phy->gpio_en, 0);
--		msleep(S3FWRN5_EN_WAIT_TIME/2);
++	/*
++	 * NUXEL: a session holds the rail and reference clock across modes.
++	 * COLD must still really power the part down, otherwise the next
++	 * session's bootloader entry is not a reset (the vendor NPT needs the
++	 * rail to drop).  IRQ frames are ignored during the session anyway
++	 * (see the clk-held check in the IRQ handler).
++	 */
++	if (phy->hold)
++		goto held;
++
 +	if (phy->board_pins) {
 +		/*
 +		 * NUXEL (beyond2lte): vendor wiring has VEN active-low
 +		 * (0 = rail on) and FIRM high = bootloader mode.  Sequence
-+		 * copied from sec_nfc_set_mode(); the upstream reset pulse
-+		 * (EN=1 for 150 ms then 0) would cut this part's rail.
++		 * copied from sec_nfc_set_mode(): rail off, FIRM, wait the
++		 * vendor 20 ms, rail on, wait 20 ms.  The part's rail is cut
++		 * between sessions so the next bootloader entry is a real
++		 * reset.
 +		 */
 +		gpio_set_value(phy->gpio_en, 1);
 +		gpio_set_value(phy->gpio_fw_wake,
 +			       mode == S3FWRN5_MODE_FW);
 +		if (mode != S3FWRN5_MODE_COLD) {
-+			msleep(S3FWRN5_EN_WAIT_TIME);
++			msleep(S3FWRN5_BOARD_VEN_WAIT_MS);
 +			gpio_set_value(phy->gpio_en, 0);
-+			msleep(S3FWRN5_EN_WAIT_TIME / 2);
++			msleep(S3FWRN5_BOARD_VEN_WAIT_MS);
 +		}
 +	} else {
 +		gpio_set_value(phy->gpio_en, 1);
@@ -266,10 +861,185 @@ index da7ca08d1..19695f429 100644
 +			gpio_set_value(phy->gpio_en, 0);
 +			msleep(S3FWRN5_EN_WAIT_TIME/2);
 +		}
++	}
++
++	phy->irq_skip = true;
++	goto out;
++
++held:
++	/* NUXEL: rail and reference clock stay up for the whole session. */
++	if (phy->board_pins)
++		gpio_set_value(phy->gpio_fw_wake, mode == S3FWRN5_MODE_FW);
++	else
++		gpio_set_value(phy->gpio_fw_wake, 0);
++
++	phy->irq_skip = true;
++
++out:
++	mutex_unlock(&phy->mutex);
++}
++
++/*
++ * NUXEL (S3NRN82): session power/clock control.
++ *
++ * The controller is powered and clocked for a whole NCI setup (bootloader
++ * firmware download -> NCI switch -> CORE_RESET), not per mode switch.  The
++ * reference clock is kept enabled for the session: the clk_req line toggles
++ * per I2C frame and this part NACKs the next read when the 26 MHz is gated
++ * between frames.  The clock is only turned off when the session ends and the
++ * part is in COLD mode.
++ */
++/*
++ * NUXEL: wake the controller from COLD for a session.  A warm part stays
++ * in NCI runtime, so switching back to NCI has to be a real reset: the rail
++ * is dropped first.  Called by the session code before set_mode(), with the
++ * same lock ordering as set_mode() itself (never while holding it).
++ */
++static void s3fwrn5_i2c_power_cycle(struct s3fwrn5_i2c_phy *phy)
++{
++	if (!phy->board_pins)
++		return;
++
++	mutex_lock(&phy->mutex);
++	gpio_set_value(phy->gpio_en, 1);	/* rail off (VEN active-low) */
+ 	gpio_set_value(phy->gpio_fw_wake, 0);
+-	if (mode == S3FWRN5_MODE_FW)
+-		gpio_set_value(phy->gpio_fw_wake, 1);
++	msleep(S3FWRN5_BOARD_VEN_WAIT_MS);
++	phy->mode = S3FWRN5_MODE_COLD;
++	mutex_unlock(&phy->mutex);
++}
++
++static void s3fwrn5_i2c_session_begin(struct s3fwrn5_i2c_phy *phy)
++{
++	mutex_lock(&phy->mutex);
++	phy->hold++;
++	mutex_unlock(&phy->mutex);
++
++	/* NUXEL: a new session always starts from a real power cycle. */
++	s3fwrn5_i2c_power_cycle(phy);
++
++	if (phy->clk && !phy->clk_on) {
++		int ret = clk_prepare_enable(phy->clk);
+ 
+-	if (mode != S3FWRN5_MODE_COLD) {
+-		msleep(S3FWRN5_EN_WAIT_TIME);
+-		gpio_set_value(phy->gpio_en, 0);
+-		msleep(S3FWRN5_EN_WAIT_TIME/2);
++		if (ret) {
++			dev_err(&phy->i2c_dev->dev,
++				"NUXEL: enabling oscclk_nfc failed: %d\n", ret);
++		} else {
++			phy->clk_on = true;
++			dev_info(&phy->i2c_dev->dev,
++				 "NUXEL: oscclk_nfc on for session\n");
++		}
  	}
  
++	if (phy->pvdd) {
++		int ret = regulator_enable(phy->pvdd);
++
++		if (ret == 0 || ret == -EALREADY)
++			dev_info(&phy->i2c_dev->dev,
++				 "NUXEL: VDD_NFC_1P8 on (%d)\n", ret);
++		else
++			dev_info(&phy->i2c_dev->dev,
++				 "NUXEL: VDD_NFC_1P8 enable failed (%d)\n", ret);
++	}
++
++	/*
++	 * NUXEL: bring the controller out of COLD while the IRQ is still
++	 * skipped.  A session that starts with the part powered off would
++	 * otherwise take its IRQ (and the reply frame) before set_mode() has
++	 * powered the rail, yielding an I2C timeout on a part with no power.
++	 */
  	phy->irq_skip = true;
-@@ -143,8 +183,12 @@ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
++	s3fwrn5_i2c_set_mode(phy, S3FWRN5_MODE_FW);
++	s3fwrn5_i2c_set_wake(phy, false);
++}
+ 
+-out:
++static void s3fwrn5_i2c_session_end(struct s3fwrn5_i2c_phy *phy)
++{
++	mutex_lock(&phy->mutex);
++	if (phy->hold > 0)
++		phy->hold--;
+ 	mutex_unlock(&phy->mutex);
++
++	/* Only idle the part when no outer session is still using it. */
++	if (phy->hold)
++		return;
++
++	s3fwrn5_i2c_set_mode(phy, S3FWRN5_MODE_COLD);
++	if (phy->clk && phy->clk_on) {
++		clk_disable_unprepare(phy->clk);
++		phy->clk_on = false;
++	}
++	if (phy->pvdd)
++		regulator_disable(phy->pvdd);
+ }
+ 
+ static enum s3fwrn5_mode s3fwrn5_i2c_get_mode(void *phy_id)
+@@ -125,11 +293,58 @@ static int s3fwrn5_i2c_write(void *phy_id, struct sk_buff *skb)
+ 	return 0;
+ }
+ 
++/*
++ * NUXEL (S3NRN82): write one complete firmware-protocol frame (header +
++ * payload) as a single I2C transfer.  The per-frame skb path is fine for NCI
++ * and for the short bootloader commands, but the kernel's i2c core rejects a
++ * 260-byte message on this adapter, which is the size of a 256-byte firmware
++ * data packet.  The controller only starts processing a frame when it has been
++ * received completely, so the frame is sent in one transaction.
++ *
++ * Returns the number of bytes written (frame length) or a negative errno.
++ */
++static int s3fwrn5_i2c_write_bulk(void *phy_id, const u8 *data, size_t len)
++{
++	struct s3fwrn5_i2c_phy *phy = phy_id;
++	int ret;
++
++	if (len == 0 || len > U16_MAX)
++		return -EINVAL;
++
++	mutex_lock(&phy->mutex);
++	ret = i2c_master_send(phy->i2c_dev, data, len);
++	mutex_unlock(&phy->mutex);
++
++	if (ret == -EREMOTEIO) {
++		/* The part may still be in standby from the previous frame. */
++		usleep_range(20000, 25000);
++		mutex_lock(&phy->mutex);
++		ret = i2c_master_send(phy->i2c_dev, data, len);
++		mutex_unlock(&phy->mutex);
++	}
++	if (ret < 0) {
++		dev_err_ratelimited(&phy->i2c_dev->dev,
++				    "NUXEL fw: %zu-byte frame write failed %d (mode=%d)\n",
++				    len, ret, phy->mode);
++		return ret;
++	}
++	dev_info_ratelimited(&phy->i2c_dev->dev,
++			     "NUXEL tx %zu: %*ph (mode=%d)\n", len,
++			     (int)min_t(size_t, len, 16), data, phy->mode);
++	if ((size_t)ret != len)
++		return -EREMOTEIO;
++
++	return ret;
++}
++
+ static const struct s3fwrn5_phy_ops i2c_phy_ops = {
+ 	.set_wake = s3fwrn5_i2c_set_wake,
+ 	.set_mode = s3fwrn5_i2c_set_mode,
+ 	.get_mode = s3fwrn5_i2c_get_mode,
+ 	.write = s3fwrn5_i2c_write,
++	.write_bulk = s3fwrn5_i2c_write_bulk,
++	.session_begin = s3fwrn5_i2c_session_begin,
++	.session_end = s3fwrn5_i2c_session_end,
+ };
+ 
+ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
+@@ -143,8 +358,12 @@ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
  	hdr_size = (phy->mode == S3FWRN5_MODE_NCI) ?
  		NCI_CTRL_HDR_SIZE : S3FWRN5_FW_HDR_SIZE;
  	ret = i2c_master_recv(phy->i2c_dev, hdr, hdr_size);
@@ -283,7 +1053,7 @@ index da7ca08d1..19695f429 100644
  
  	if (ret < hdr_size)
  		return -EBADMSG;
-@@ -169,9 +213,39 @@ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
+@@ -169,6 +388,10 @@ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
  	}
  
  out:
@@ -294,61 +1064,44 @@ index da7ca08d1..19695f429 100644
  	return s3fwrn5_recv_frame(phy->ndev, skb, phy->mode);
  }
  
-+/*
-+ * NUXEL: read one firmware-protocol reply (header + payload) and drop it.
-+ * Used only for the probe handshake reply, before nci_post_setup() runs.
-+ */
-+static int s3fwrn5_i2c_discard_reply(struct s3fwrn5_i2c_phy *phy)
-+{
-+	struct s3fwrn5_fw_header hdr;
-+	u8 junk[16];
-+	size_t left;
-+	int ret;
-+
-+	ret = i2c_master_recv(phy->i2c_dev, (u8 *)&hdr, sizeof(hdr));
-+	if (ret != sizeof(hdr))
-+		return ret < 0 ? ret : -EBADMSG;
-+	left = hdr.len;
-+	while (left) {
-+		size_t n = left > sizeof(junk) ? sizeof(junk) : left;
-+
-+		ret = i2c_master_recv(phy->i2c_dev, junk, n);
-+		if (ret != (int)n)
-+			return ret < 0 ? ret : -EBADMSG;
-+		left -= n;
-+	}
-+	return 0;
-+}
-+
- static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
- {
- 	struct s3fwrn5_i2c_phy *phy = phy_id;
-@@ -184,15 +258,37 @@ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+@@ -184,44 +407,218 @@ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
  
  	mutex_lock(&phy->mutex);
  
 -	if (phy->irq_skip)
++	/*
++	 * NUXEL: while a session holds the reference clock on, clk_req is
++	 * meaningless for gating — nothing here is driven by it any more.
++	 */
++	if (phy->hold) {
++		dev_dbg(&phy->i2c_dev->dev, "NUXEL irq: ignored (clk held)\n");
+ 		goto out;
++	}
++
 +	if (phy->irq_skip) {
 +		/* NUXEL diagnostic: an IRQ during a mode-switch pulse is expected
 +		 * once (irq_skip), but a burst of them means the part is
 +		 * answering while the stack is not listening. */
 +		dev_dbg(&phy->i2c_dev->dev, "NUXEL irq: skipped (mode=%d)\n",
 +			phy->mode);
- 		goto out;
++		goto out;
 +	}
  
  	switch (phy->mode) {
  	case S3FWRN5_MODE_NCI:
  	case S3FWRN5_MODE_FW:
 +		/*
-+		 * NUXEL: the probe handshake runs after request_irq() but
-+		 * before the NCI device can accept frames.  Consume and drop
-+		 * that one bootloader reply; nci_post_setup() issues its own
-+		 * GET_BOOTINFO over this same IRQ path afterwards.
++		 * NUXEL: until the first s3fwrn5_fw_init() has run (the probe
++		 * readiness check runs before it), the firmware completion is
++		 * not initialised and s3fwrn5_fw_recv_frame() would BUG_ON().
++		 * The readiness check reads the reply synchronously, so an IRQ
++		 * arriving this early is simply not ours to consume.
 +		 */
 +		if (!phy->ndev_ready) {
-+			ret = s3fwrn5_i2c_discard_reply(phy);
-+			break;
++			dev_info_ratelimited(&phy->i2c_dev->dev,
++					     "NUXEL irq: ignored before firmware setup (mode=%d)\n",
++					     phy->mode);
++			goto out;
 +		}
  		ret = s3fwrn5_i2c_read(phy);
 +		if (ret < 0)
@@ -362,7 +1115,11 @@ index da7ca08d1..19695f429 100644
  		ret = -EREMOTEIO;
  		break;
  	}
-@@ -203,25 +299,238 @@ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+ 
+ out:
+ 	mutex_unlock(&phy->mutex);
++	complete(&phy->irq_done);
+ 
  	return IRQ_HANDLED;
  }
  
@@ -445,98 +1202,19 @@ index da7ca08d1..19695f429 100644
 +		}
 +	}
 +
-+	return 0;
-+}
-+
-+/*
-+ * NUXEL: probe-time readiness handshake.
-+ *
-+ * The S3NRN82 on beyond2lte sits at I2C 0x27 on every DTBO revision with the
-+ * vendor "sec-nfc" compatible.  This driver registers at device_initcall()
-+ * (after nfc_init(), see the bottom of this file) and sec_nfc yields one probe
-+ * pass (-EPROBE_DEFER), so this transport is the preferred owner.  Matching
-+ * the node still proves nothing about whether the part can currently be
-+ * driven by this NCI transport, so probe verifies it:
-+ *
-+ *   1. enter bootloader (FW) mode and write GET_BOOTINFO;
-+ *   2. wait for the IRQ line to assert and read the RSP frame directly over
-+ *      I2C, checking type=RSP and the 23-byte measured boot-info layout;
-+ *   3. drop that reply here (the NCI stack is not up yet) and leave the part
-+ *      in COLD mode.  nci_post_setup() repeats GET_BOOTINFO later through the
-+ *      normal IRQ path when nfc0 is opened.
-+ *
-+ * Any failure fails probe, so the kernel retries the remaining drivers
-+ * (sec_nfc) instead of leaving a dead nfc0 registered.
-+ */
-+struct s3fwrn5_bootinfo {
-+	u8 hw_version[4];
-+	u32 sector_size;
-+	u16 page_size;
-+	u16 frame_max_size;
-+	u8 reserved0;
-+	u8 reserved1[4];
-+	u32 hw_buffer_size;
-+	u8 reserved2[4];
-+} __packed;
-+#define S3FWRN5_BOOTINFO_MIN_LEN 14
-+
-+static int s3fwrn5_i2c_read_bootinfo(struct s3fwrn5_i2c_phy *phy,
-+				     struct s3fwrn5_bootinfo *info)
-+{
-+	struct s3fwrn5_fw_header rsp;
-+	u8 body[sizeof(*info)];
-+	size_t want;
-+	int ret;
-+
-+	ret = i2c_master_recv(phy->i2c_dev, (u8 *)&rsp, sizeof(rsp));
-+	if (ret != sizeof(rsp))
-+		return ret < 0 ? ret : -EBADMSG;
-+
-+	/*
-+	 * The RSP type carries the alternating parity bit, exactly the same
-+	 * convention as the command frames (bit 7 toggles per message).  Only
-+	 * the low 7 bits identify the message class.
-+	 */
-+	if ((rsp.type & 0x7f) != S3FWRN5_FW_MSG_RSP)
-+		return -EPROTO;
-+	if (rsp.len > sizeof(body) || rsp.len < sizeof(u32))
-+		return -EPROTO;
-+
-+	want = rsp.len;
-+	memset(body, 0, sizeof(body));
-+	if (want) {
-+		ret = i2c_master_recv(phy->i2c_dev, body, want);
-+		if (ret != (int)want)
-+			return ret < 0 ? ret : -EBADMSG;
-+	}
-+
-+	memcpy(info, body, min_t(size_t, sizeof(*info), sizeof(body)));
-+	if (rsp.len < 4 || info->hw_version[0] == 0x00 ||
-+	    info->hw_version[0] == 0xff)
-+		return -ENODEV;
-+
  	return 0;
  }
  
 +/*
-+ * NUXEL: vendor "NPT" power-on sequence (sec_nfc.c: SEC_NFC_SET_NPT_MODE
-+ * CMD_ON).  Measured on this board: without it the part never raises its IRQ
-+ * after a mode switch even though i2c_master_send() reports success.  VEN is
-+ * asserted (active-low: 0), the rail settles, and only then FIRM is raised to
-+ * select the bootloader.  Runs before set_mode() so set_mode()'s own pulse is
-+ * applied on top of an awake part.
++ * NUXEL: bootloader readiness handshake.
++ *
++ * This probes the part with GET_BOOTINFO and verifies the reply carries the
++ * measured S3NRN82 hardware tag and plausible sector/page sizes.  It runs on
++ * a workqueue after probe: doing it inside the device_initcall starved the
++ * UFS/RPMB worker and boot-looped the phone.
 + */
-+static void s3fwrn5_i2c_board_power_on(struct s3fwrn5_i2c_phy *phy)
-+{
-+	gpio_set_value(phy->gpio_fw_wake, 0);
-+	gpio_set_value(phy->gpio_en, 0);        /* VEN asserted (active-low) */
-+	usleep_range(20000, 25000);             /* vendor NPT waits 20 ms */
-+	gpio_set_value(phy->gpio_fw_wake, 1);   /* FIRM high = bootloader */
-+}
-+
 +static int s3fwrn5_i2c_nci_ready(struct s3fwrn5_i2c_phy *phy)
 +{
-+	struct s3fwrn5_bootinfo info;
 +	struct s3fwrn5_fw_header req = {
 +		.type = S3FWRN5_FW_MSG_CMD,
 +		.code = S3FWRN5_FW_CMD_GET_BOOTINFO,
@@ -545,13 +1223,15 @@ index da7ca08d1..19695f429 100644
 +	struct sk_buff *skb;
 +	int ret, i;
 +
-+	if (phy->board_pins) {
-+		/* Force the mode switch to run its pulse on an awake part. */
-+		phy->mode = S3FWRN5_MODE_COLD;
-+		s3fwrn5_i2c_board_power_on(phy);
-+	}
++	/*
++	 * NUXEL: the S3NRN82 answers exactly one frame per power cycle, so a
++	 * real reset must precede the probe: drop the rail, then enter the
++	 * bootloader (VENDOR NPT order: VEN, wait, FIRM).
++	 */
++	s3fwrn5_i2c_power_cycle(phy);
 +	s3fwrn5_i2c_set_mode(phy, S3FWRN5_MODE_FW);
 +	s3fwrn5_i2c_set_wake(phy, false);
++	msleep(S3FWRN5_BOARD_VEN_WAIT_MS);
 +
 +	skb = alloc_skb(sizeof(req), GFP_KERNEL);
 +	if (!skb) {
@@ -559,51 +1239,61 @@ index da7ca08d1..19695f429 100644
 +		goto out_mode;
 +	}
 +	skb_put_data(skb, &req, sizeof(req));
-+	phy->irq_skip = false;
++	reinit_completion(&phy->irq_done);
 +	ret = s3fwrn5_i2c_write(phy, skb);
 +	kfree_skb(skb);
-+	phy->irq_skip = true;
-+	if (ret < 0)
-+		goto out_mode;
-+
-+	/*
-+	 * The bootloader protocol allows up to 1 s for the reply.  The S3NRN82
-+	 * bootloader is slower than the S3FWRN5 datasheet figure on this board
-+	 * (the vendor transport waits with no timeout at all), so poll the full
-+	 * second and read the reply as soon as the IRQ line is asserted.
-+	 */
-+	ret = -ENXIO;
-+	for (i = 0; i < 200; i++) {
-+		msleep(10);
-+		if (gpio_get_value(phy->irq_gpio)) {
-+			ret = s3fwrn5_i2c_read_bootinfo(phy, &info);
-+			if (ret == 0)
-+				break;
-+		}
-+	}
 +	if (ret < 0) {
 +		dev_info(&phy->i2c_dev->dev,
-+			 "NUXEL: bootloader did not answer GET_BOOTINFO (%d)\n",
-+			 ret);
++			 "NUXEL: GET_BOOTINFO write failed (%d)\n", ret);
 +		goto out_mode;
 +	}
++	/*
++	 * NUXEL: read the reply as soon as the IRQ handler has taken the
++	 * frame.  The controller releases SCL only briefly after answering,
++	 * so the probe must not add its own delay before the read.
++	 */
 +
-+	dev_info(&phy->i2c_dev->dev,
-+		 "NUXEL: bootinfo hw=%02x.%02x.%02x.%02x sector=%u page=%u\n",
-+		 info.hw_version[0], info.hw_version[1], info.hw_version[2],
-+		 info.hw_version[3], info.sector_size, info.page_size);
-+	ret = 0;
++	/*
++	 * NUXEL: wait on the IRQ, not only on the level of the line.  The
++	 * level drops before the handler reads the frame, so polling the line
++	 * alone can miss a reply that is already being delivered (measured:
++	 * the bootinfo was logged, yet the probe timed out).
++	 */
++	reinit_completion(&phy->irq_done);
++	for (i = 0; i < 200; i++) {
++		if (wait_for_completion_timeout(&phy->irq_done,
++						msecs_to_jiffies(10)) ||
++		    gpio_get_value(phy->irq_gpio))
++			break;
++	}
++	if (i == 200) {
++		dev_info(&phy->i2c_dev->dev,
++			 "NUXEL: bootloader did not answer GET_BOOTINFO (irq line=%d, ven=%d firm=%d)\n",
++			 gpio_get_value(phy->irq_gpio),
++			 gpio_get_value(phy->gpio_en),
++			 gpio_get_value(phy->gpio_fw_wake));
++		ret = -ENXIO;
++	} else {
++		ret = 0;
++	}
 +
 +out_mode:
-+	phy->ndev_ready = true;
 +	s3fwrn5_i2c_set_mode(phy, S3FWRN5_MODE_COLD);
++	s3fwrn5_i2c_set_wake(phy, false);
 +	return ret;
 +}
 +
  static int s3fwrn5_i2c_probe(struct i2c_client *client,
  				  const struct i2c_device_id *id)
  {
-@@ -239,10 +548,27 @@ static int s3fwrn5_i2c_probe(struct i2c_client *client,
+@@ -233,16 +630,34 @@ static int s3fwrn5_i2c_probe(struct i2c_client *client,
+ 		return -ENOMEM;
+ 
+ 	mutex_init(&phy->mutex);
++	init_completion(&phy->irq_done);
+ 	phy->mode = S3FWRN5_MODE_COLD;
+ 	phy->irq_skip = true;
+ 
  	phy->i2c_dev = client;
  	i2c_set_clientdata(client, phy);
  
@@ -634,7 +1324,7 @@ index da7ca08d1..19695f429 100644
  	ret = devm_gpio_request_one(&phy->i2c_dev->dev, phy->gpio_en,
  		GPIOF_OUT_INIT_HIGH, "s3fwrn5_en");
  	if (ret < 0)
-@@ -253,23 +579,83 @@ static int s3fwrn5_i2c_probe(struct i2c_client *client,
+@@ -253,23 +668,84 @@ static int s3fwrn5_i2c_probe(struct i2c_client *client,
  	if (ret < 0)
  		return ret;
  
@@ -653,23 +1343,22 @@ index da7ca08d1..19695f429 100644
 +	}
 +
 +	if (phy->clk) {
-+		/* NUXEL: measured — prepare/enable succeed but this vclk reports
-+		 * 0 Hz until a rate is programmed and the CLKOUT mux is set, and
-+		 * the controller cannot answer NCI without its reference clock.
-+		 * Set the S3NRN82's 26 MHz reference explicitly, then verify. */
++		/*
++		 * NUXEL (beyond2lte): "oscclk_nfc" is CAL vclk OSC_NFC, a CLKOUT
++		 * whose source is selected in the PMU (VCLK_CLKOUT1).  It has no
++		 * settable rate: cal_clk_setrate() answers "Un-support clk type"
++		 * (-EINVAL) and cal_vclk_set_rate() then returns -EAGAIN, while
++		 * cal_vclk_recalc_rate() reports no rate at all.  Prepare/enable
++		 * runs ra_enable_clkout(), which is the whole operation.  No
++		 * set_rate here, and the reported rate is not a health signal.
++		 */
 +		ret = clk_prepare_enable(phy->clk);
 +		if (ret) {
 +			dev_err(&client->dev,
 +				"NUXEL: enabling oscclk_nfc failed: %d\n", ret);
 +			return ret;
 +		}
-+		if (clk_get_rate(phy->clk) == 0) {
-+			ret = clk_set_rate(phy->clk, 26000000);
-+			dev_info(&client->dev,
-+				 "NUXEL: oscclk_nfc set_rate(26 MHz) = %d\n", ret);
-+		}
-+		dev_info(&client->dev, "NUXEL: oscclk_nfc enabled (%lu Hz)\n",
-+			 clk_get_rate(phy->clk));
++		dev_info(&client->dev, "NUXEL: oscclk_nfc prepared/enabled\n");
 +	}
 +
  	ret = s3fwrn5_probe(&phy->ndev, phy, &phy->i2c_dev->dev, &i2c_phy_ops,
@@ -678,8 +1367,16 @@ index da7ca08d1..19695f429 100644
 +	if (ret < 0) {
 +		dev_err(&client->dev, "NUXEL s3fwrn5_probe failed: %d\n", ret);
  		return ret;
+-
 +	}
- 
++	/*
++	 * NUXEL: s3fwrn5_probe() has now initialised the firmware protocol
++	 * (completion included), so firmware-protocol frames must reach it
++	 * from here on.  Before this point the IRQ handler leaves them alone.
++	 */
++	phy->ndev_ready = true;
++	s3fwrn5_set_ready_check(phy->ndev, s3fwrn5_i2c_nci_ready);
++
 +	/*
 +	 * NUXEL (beyond2lte): the vendor transport waits for a RISING edge on
 +	 * the same IRQ (sec_nfc.c: IRQF_TRIGGER_RISING).  The board DT carries
@@ -700,16 +1397,11 @@ index da7ca08d1..19695f429 100644
 +	}
 +	phy->irq_skip = true;
 +
-+	ret = s3fwrn5_i2c_nci_ready(phy);
-+	if (ret < 0) {
-+		dev_info(&client->dev,
-+			 "NUXEL s3fwrn5_i2c: NCI bootloader probe failed (%d); handing node back\n",
-+			 ret);
-+		s3fwrn5_remove(phy->ndev);
-+		return ret;
-+	}
-+	dev_info(&client->dev, "NUXEL s3fwrn5_i2c: bootloader handshake OK\n");
-+
++	/*
++	 * NUXEL: probe never fails because of the controller.  /dev/nfc0 must
++	 * exist for the NFC service; the bootloader handshake runs on a
++	 * workqueue (never in this initcall) and its result is advisory.
++	 */
 +	dev_info(&client->dev, "NUXEL s3fwrn5_i2c probe success\n");
  
  	return ret;
@@ -722,7 +1414,7 @@ index da7ca08d1..19695f429 100644
  
  	s3fwrn5_remove(phy->ndev);
  
-@@ -284,6 +670,15 @@ MODULE_DEVICE_TABLE(i2c, s3fwrn5_i2c_id_table);
+@@ -284,6 +760,15 @@ MODULE_DEVICE_TABLE(i2c, s3fwrn5_i2c_id_table);
  
  static const struct of_device_id of_s3fwrn5_i2c_match[] = {
  	{ .compatible = "samsung,s3fwrn5-i2c", },
@@ -738,7 +1430,7 @@ index da7ca08d1..19695f429 100644
  	{}
  };
  MODULE_DEVICE_TABLE(of, of_s3fwrn5_i2c_match);
-@@ -299,7 +694,39 @@ static struct i2c_driver s3fwrn5_i2c_driver = {
+@@ -299,7 +784,39 @@ static struct i2c_driver s3fwrn5_i2c_driver = {
  	.id_table = s3fwrn5_i2c_id_table,
  };
  
@@ -779,11 +1471,479 @@ index da7ca08d1..19695f429 100644
  
  MODULE_LICENSE("GPL");
  MODULE_DESCRIPTION("I2C driver for Samsung S3FWRN5");
+diff --git a/drivers/nfc/s3fwrn5/s3fwrn5.h b/drivers/nfc/s3fwrn5/s3fwrn5.h
+index 7d5e51603..325a97073 100644
+--- a/drivers/nfc/s3fwrn5/s3fwrn5.h
++++ b/drivers/nfc/s3fwrn5/s3fwrn5.h
+@@ -21,6 +21,7 @@
+ #define __LOCAL_S3FWRN5_H_
+ 
+ #include <linux/nfc.h>
++#include <linux/workqueue.h>
+ 
+ #include <net/nfc/nci_core.h>
+ 
+@@ -37,6 +38,15 @@ struct s3fwrn5_phy_ops {
+ 	void (*set_mode)(void *id, enum s3fwrn5_mode);
+ 	enum s3fwrn5_mode (*get_mode)(void *id);
+ 	int (*write)(void *id, struct sk_buff *skb);
++	/*
++	 * NUXEL: optional transport extensions.  write_bulk() sends one
++	 * complete firmware frame in a single I2C transaction (the i2c core
++	 * rejects the 260-byte frame the firmware protocol needs); the
++	 * session hooks hold rail + reference clock across a whole NCI setup.
++	 */
++	int (*write_bulk)(void *id, const u8 *data, size_t len);
++	void (*session_begin)(void *id);
++	void (*session_end)(void *id);
+ };
+ 
+ struct s3fwrn5_info {
+@@ -50,6 +60,15 @@ struct s3fwrn5_info {
+ 	struct s3fwrn5_fw_info fw_info;
+ 
+ 	struct mutex mutex;
++
++	/* NUXEL: boot-time NCI runtime setup (firmware download + reset). */
++	struct work_struct setup_work;
++	struct delayed_work setup_retry;
++	int setup_attempts;
++	/* NUXEL: bootloader GET_BOOTINFO check, run from the setup worker. */
++	int (*ctrl_ready_check)(void *id);
++	/* NUXEL: download the image once even without a known revision. */
++	bool force_fw_update;
+ };
+ 
+ static inline int s3fwrn5_set_mode(struct s3fwrn5_info *info,
+@@ -89,6 +108,31 @@ static inline int s3fwrn5_write(struct s3fwrn5_info *info, struct sk_buff *skb)
+ 	return info->phy_ops->write(info->phy_id, skb);
+ }
+ 
++static inline void s3fwrn5_set_ready_check(struct nci_dev *ndev,
++					   int (*fn)(void *id))
++{
++	struct s3fwrn5_info *info = nci_get_drvdata(ndev);
++
++	if (info)
++		info->ctrl_ready_check = fn;
++}
++
++static inline int s3fwrn5_session_begin(struct s3fwrn5_info *info)
++{
++	if (!info->phy_ops->session_begin)
++		return -ENOTSUPP;
++
++	info->phy_ops->session_begin(info->phy_id);
++
++	return 0;
++}
++
++static inline void s3fwrn5_session_end(struct s3fwrn5_info *info)
++{
++	if (info->phy_ops->session_end)
++		info->phy_ops->session_end(info->phy_id);
++}
++
+ int s3fwrn5_probe(struct nci_dev **ndev, void *phy_id, struct device *pdev,
+ 	const struct s3fwrn5_phy_ops *phy_ops, unsigned int max_payload);
+ void s3fwrn5_remove(struct nci_dev *ndev);
 diff --git a/drivers/nfc/sec_nfc.c b/drivers/nfc/sec_nfc.c
-index 68bf86b6c..e9989e550 100644
+index b87dc2fee..c63dbb5f7 100644
 --- a/drivers/nfc/sec_nfc.c
 +++ b/drivers/nfc/sec_nfc.c
-@@ -1158,11 +1158,59 @@ MODULE_DEVICE_TABLE(i2c, sec_nfc_id_table);
+@@ -75,6 +75,7 @@ struct sec_nfc_i2c_info {
+ 	wait_queue_head_t read_wait;
+ 	size_t buflen;
+ 	u8 *buf;
++	u8 parity;
+ };
+ 
+ struct sec_nfc_info {
+@@ -145,6 +146,9 @@ static int nfc_state_print(struct sec_nfc_info *info)
+ 	int irq = gpio_get_value(info->pdata->irq);
+ 	int pvdd = 0;
+ 
++	if (!pdata->nfc_pvdd)
++		return -ENODEV;
++
+ 	regulator_nfc_pvdd = regulator_get(NULL, pdata->nfc_pvdd);
+ 	if (IS_ERR(regulator_nfc_pvdd) || regulator_nfc_pvdd == NULL) {
+ 		NFC_LOG_ERR("%s - nfc_pvdd regulator_get fail\n", __func__);
+@@ -256,6 +260,7 @@ static ssize_t sec_nfc_write(struct file *file, const char __user *buf,
+ 	struct sec_nfc_info *info = container_of(file->private_data,
+ 						struct sec_nfc_info, miscdev);
+ 	int ret = 0;
++	int wire = 0;
+ 
+ 	NFC_LOG_DBG("write() count %d\n", (u32)count);
+ 
+@@ -287,30 +292,74 @@ static ssize_t sec_nfc_write(struct file *file, const char __user *buf,
+ 		goto out;
+ 	}
+ 
+-	/* Skip interrupt during power switching
+-	 * It is released after first write
++	/*
++	 * NUXEL NFC transport:
++	 *
++	 * The uapi says this file is an unframed NCI (or firmware-mode)
++	 * byte stream.  The vendor driver wrote the caller's buffer as one
++	 * I2C transfer without the per-packet parity bit that the controller
++	 * requires.  The only historical user also mangled bit 7 of byte 0 by
++	 * hand, and could corrupt a multi-byte write because it alternated
++	 * after every partial write() call.
++	 *
++	 * Frame every write here so header/payload boundaries are preserved:
++	 *   normal NCI mode : bit 7 toggles per control packet,
++	 *   bootloader mode : fixed parity 0 (the vendor wrote 0x80 there only
++	 *                     because their mode sequence left the bit set).
++	 * Reads are always plain I2C.  Callers therefore see standard NCI
++	 * bytes and never have to mutate frame headers.
+ 	 */
+-	NFC_LOG_REC("write(%d)\n", count);
+-	mutex_lock(&info->i2c_info.read_mutex);
+-	ret = i2c_master_send(info->i2c_info.i2c_dev, info->i2c_info.buf, count);
+-	if (info->i2c_info.read_irq == SEC_NFC_SKIP)
+-		info->i2c_info.read_irq = SEC_NFC_NONE;
+-	mutex_unlock(&info->i2c_info.read_mutex);
++	while (wire < count) {
++		u8 frame[SEC_NFC_MAX_BUFFER_SIZE];
++		size_t avail = count - wire;
++		size_t hdr = info->mode == SEC_NFC_MODE_BOOTLOADER ? 4 : 3;
++		size_t plen;
++		size_t flen;
++
++		if (avail < hdr) {
++			NFC_LOG_ERR("write() truncated frame (%zu bytes)\n", avail);
++			ret = -EINVAL;
++			goto write_error;
++		}
++		if (hdr == 4)
++			plen = ((size_t)info->i2c_info.buf[wire + 2]) |
++			       ((size_t)info->i2c_info.buf[wire + 3] << 8);
++		else
++			plen = info->i2c_info.buf[wire + 2];
++		flen = hdr + plen;
++		if (flen > avail || flen > sizeof(frame)) {
++			NFC_LOG_ERR("write() bad frame length %zu/%zu\n", flen, avail);
++			ret = -EINVAL;
++			goto write_error;
++		}
+ 
+-	if (ret == -EREMOTEIO) {
+-		NFC_LOG_ERR("write failed: return: %d count: %d\n",
+-			ret, (u32)count);
+-		ret = -ERESTART;
+-		goto write_error;
+-	}
++		memcpy(frame, info->i2c_info.buf + wire, flen);
++		if (info->mode == SEC_NFC_MODE_BOOTLOADER)
++			frame[0] &= 0x7f;
++		else
++			frame[0] = (frame[0] & 0x7f) | info->i2c_info.parity;
++
++		/* Skip interrupt during power switching; released by this write. */
++		NFC_LOG_REC("write(%zu)\n", flen);
++		mutex_lock(&info->i2c_info.read_mutex);
++		ret = i2c_master_send(info->i2c_info.i2c_dev, frame, flen);
++		if (info->i2c_info.read_irq == SEC_NFC_SKIP)
++			info->i2c_info.read_irq = SEC_NFC_NONE;
++		mutex_unlock(&info->i2c_info.read_mutex);
+ 
+-	if (ret != count) {
+-		NFC_LOG_ERR("write failed: return: %d count: %d\n",
+-			ret, (u32)count);
+-		ret = -EREMOTEIO;
+-		goto write_error;
++		if (ret == -EREMOTEIO || ret != flen) {
++			NFC_LOG_ERR("write failed: return: %d count: %zu\n",
++				ret, flen);
++			ret = ret == -EREMOTEIO ? -ERESTART : -EREMOTEIO;
++			goto write_error;
++		}
++
++		if (info->mode != SEC_NFC_MODE_BOOTLOADER)
++			info->i2c_info.parity ^= 0x80;
++		wire += flen;
+ 	}
+ 
++	ret = count;
+ 	goto out;
+ 
+ write_error:
+@@ -356,6 +405,9 @@ static int sec_nfc_regulator_onoff(struct sec_nfc_platform_data *data, int onoff
+ 	int rc = 0;
+ 	struct regulator *regulator_nfc_pvdd;
+ 
++	if (!data->nfc_pvdd)
++		return -ENODEV;
++
+ 	regulator_nfc_pvdd = regulator_get(NULL, data->nfc_pvdd);
+ 	if (IS_ERR(regulator_nfc_pvdd) || regulator_nfc_pvdd == NULL) {
+ 		NFC_LOG_ERR("nfc_pvdd regulator_get fail\n");
+@@ -401,6 +453,12 @@ int sec_nfc_i2c_probe(struct i2c_client *client)
+ 
+ 	NFC_LOG_INFO("probe() start\n");
+ 
++	if (!gpio_is_valid(pdata->irq) || client->irq <= 0) {
++		NFC_LOG_ERR("probe() invalid IRQ (%d) or IRQ GPIO (%d)\n",
++			    client->irq, pdata->irq);
++		return -ENODEV;
++	}
++
+ 	info->i2c_info.buflen = SEC_NFC_MAX_BUFFER_SIZE;
+ 	info->i2c_info.buf = kzalloc(SEC_NFC_MAX_BUFFER_SIZE, GFP_KERNEL);
+ 	if (!info->i2c_info.buf) {
+@@ -425,8 +483,7 @@ int sec_nfc_i2c_probe(struct i2c_client *client)
+ 			info);
+ 	if (ret < 0) {
+ 		NFC_LOG_ERR("probe() failed to register IRQ handler\n");
+-		kfree(info->i2c_info.buf);
+-		return ret;
++		goto err_irq_handler;
+ 	}
+ 
+ 	if (of_get_property(dev->of_node, "sec-nfc,ldo_control", NULL)) {
+@@ -443,7 +500,11 @@ int sec_nfc_i2c_probe(struct i2c_client *client)
+ 	NFC_LOG_INFO("probe() success\n");
+ 	return 0;
+ 
++err_irq_handler:
++	gpio_free(pdata->irq);
+ err_irq_req:
++	kfree(info->i2c_info.buf);
++	info->i2c_info.buf = NULL;
+ 	return ret;
+ }
+ 
+@@ -466,10 +527,19 @@ static irqreturn_t sec_nfc_clk_irq_thread(int irq, void *dev_id)
+ 			NFC_LOG_ERR("clock enable failed\n");
+ 			return IRQ_HANDLED;
+ 		}
+-	} else
+-		clk_disable_unprepare(pdata->clk);
+-
+-	info->clk_state = value;
++		info->clk_state = true;
++	} else {
++		/*
++		 * NUXEL (beyond2lte): the clk_req line toggles per frame and
++		 * this part NACKs the very next I2C read if the 26 MHz reference
++		 * is gated between frames (measured: write ACK, reply IRQ, then
++		 * -EREMOTEIO on read).  Keep the reference on for the whole
++		 * open session; sec_nfc_clk_ctl_disable() turns it off when the
++		 * device is closed or switched to OFF.
++		 */
++		if (!info->clk_ctl)
++			info->clk_state = false;
++	}
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -484,7 +554,8 @@ void sec_nfc_clk_ctl_enable(struct sec_nfc_info *info)
+ 	if (!pdata->clk)
+ 		return;
+ 
+-	info->clk_state = false;
++	/* NUXEL: do not clear clk_state — sec_nfc_set_mode() may have already
++	 * force-enabled the reference clock for this session. */
+ 	enable_irq(pdata->clk_irq);
+ 	info->clk_ctl = true;
+ }
+@@ -535,8 +606,25 @@ static void sec_nfc_set_mode(struct sec_nfc_info *info,
+ 			gpio_set_value(pdata->firm, SEC_NFC_FW_ON);
+ 
+ 	if (mode != SEC_NFC_MODE_OFF) {
++		int cret;
++
+ 		msleep(SEC_NFC_VEN_WAIT_TIME);
+ 		gpio_set_value(pdata->ven, SEC_NFC_PW_ON);
++		/*
++		 * NUXEL (beyond2lte): this S3NRN82 does not assert clk_req
++		 * before it is clocked, so waiting for the clk_req IRQ leaves
++		 * the 26 MHz reference permanently off and every I2C write
++		 * NACKs (-ENXIO).  Force the reference clock on for every
++		 * non-OFF mode; the clk_req handler keeps owning dynamic
++		 * gating afterwards.
++		 */
++		if (pdata->clk) {
++			cret = clk_prepare_enable(pdata->clk);
++			if (!cret)
++				info->clk_state = true;
++			NFC_LOG_INFO("NUXEL: force oscclk_nfc enable = %d (%lu Hz)\n",
++				     cret, (unsigned long)clk_get_rate(pdata->clk));
++		}
+ 		sec_nfc_clk_ctl_enable(info);
+ 		enable_irq_wake(info->i2c_info.i2c_dev->irq);
+ 		msleep(SEC_NFC_VEN_WAIT_TIME/2);
+@@ -645,20 +733,27 @@ static int sec_nfc_open(struct inode *inode, struct file *file)
+ 	NFC_LOG_INFO("%s\n", __func__);
+ 
+ #ifdef CONFIG_ESE_SECURE
+-	if (nfc_ese_secured == NOT_CHECKED) {
+-		ret = tz_tee_ese_secure_check();
+-		if (ret) {
+-			nfc_ese_secured = ESE_NOT_SECURED;
+-			NFC_LOG_ERR("eSE spi is not Secured\n"); 
+-			return -EBUSY;
+-		}
+-		nfc_ese_secured = ESE_SECURED;
+-	} else if (nfc_ese_secured == ESE_NOT_SECURED) { 
+-		NFC_LOG_ERR("eSE spi is not Secured\n"); 
+-		return -EBUSY;
+-	}
++	/*
++	 * NUXEL (SM-G975F, beyond2lte): the TEE eSE check gates the *embedded
++	 * Secure Element* (Samsung Pay / payment), not the NFC reader.  The TEE
++	 * on this Nuxel image reports the eSE is not secured, and the vendor
++	 * driver then refuses to open the *NFC* misc device at all.  Nuxel does
++	 * not support payment/eSE, so the eSE state is recorded as "not
++	 * secured" without invoking the TEE (the call also trips the kernel
++	 * open path on this image, see nfc3.md), and the NFC reader stays
++	 * usable.  Any eSE consumer must check nfc_ese_secured itself.
++	 */
++	if (nfc_ese_secured == NOT_CHECKED)
++		nfc_ese_secured = ESE_NOT_SECURED;
++	if (nfc_ese_secured == ESE_NOT_SECURED)
++		NFC_LOG_DBG("NUXEL: eSE not secured; NFC reader path continues\n");
+ #endif
+ 
++	if (!info) {
++		NFC_LOG_ERR("NUXEL: open() without driver data\n");
++		return -ENODEV;
++	}
++
+ 	mutex_lock(&info->mutex);
+ 	if (info->mode != SEC_NFC_MODE_OFF) {
+ 		NFC_LOG_ERR("open() nfc is busy\n");
+@@ -668,6 +763,7 @@ static int sec_nfc_open(struct inode *inode, struct file *file)
+ 	}
+ 
+ 	sec_nfc_set_mode(info, SEC_NFC_MODE_OFF);
++	info->i2c_info.parity = 0;
+ 
+ out:
+ 	mutex_unlock(&info->mutex);
+@@ -734,9 +830,22 @@ static int sec_nfc_parse_dt(struct device *dev,
+ 	pdata->firm = of_get_named_gpio(np, "sec-nfc,firm-gpio", 0);
+ 	pdata->wake = pdata->firm;
+ 	pdata->irq = of_get_named_gpio(np, "sec-nfc,irq-gpio", 0);
++	pdata->clk = NULL;
++	pdata->clk_irq = -1;
++	pdata->nfc_pvdd = NULL;
++
++	if (!gpio_is_valid(pdata->ven) || !gpio_is_valid(pdata->firm) ||
++	    !gpio_is_valid(pdata->irq)) {
++		NFC_LOG_ERR("parse_dt() missing ven/firm/irq GPIO\n");
++		return -EINVAL;
++	}
+ 
+ 	if (of_get_property(dev->of_node, "sec-nfc,nfc_ap_clk", NULL)) {
+ 		pdata->clk_req = of_get_named_gpio(np, "sec-nfc,clk_req-gpio", 0);
++		if (!gpio_is_valid(pdata->clk_req)) {
++			NFC_LOG_ERR("parse_dt() invalid clk_req GPIO\n");
++			return -EINVAL;
++		}
+ 		NFC_LOG_INFO("parse_dt() clk_req : %d\n", pdata->clk_req);
+ 	}
+ 
+@@ -744,7 +853,7 @@ static int sec_nfc_parse_dt(struct device *dev,
+ 		if (of_property_read_string(np, "sec-nfc,nfc_pvdd",
+ 					&pdata->nfc_pvdd) < 0) {
+ 			NFC_LOG_ERR("parse_dt() get nfc_pvdd error\n");
+-			pdata->nfc_pvdd = NULL;
++			return -EINVAL;
+ 		}
+ 	}
+ 
+@@ -960,15 +1069,23 @@ static int __sec_nfc_probe(struct device *dev)
+ 		pdata->clk = clk_get(dev, "oscclk_nfc");
+ 		if (IS_ERR(pdata->clk)) {
+ 			NFC_LOG_ERR("probe() clk not found\n");
++			pdata->clk = NULL;
+ 			goto err_gpio_clk_parse;
+ 		}
+ 		pdata->clk_irq = gpio_to_irq(pdata->clk_req);
++		if (pdata->clk_irq < 0) {
++			pdata->clk_irq = -1;
++			goto err_gpio_clk_parse;
++		}
+ 
+ 		ret = request_threaded_irq(pdata->clk_irq, NULL, sec_nfc_clk_irq_thread,
+ 				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 				SEC_NFC_DRIVER_NAME, info);
+-		if (ret < 0)
++		if (ret < 0) {
+ 			NFC_LOG_ERR("probe() failed to register CLK REQ IRQ handler\n");
++			pdata->clk_irq = -1;
++			goto err_gpio_clk_parse;
++		}
+ 		disable_irq(pdata->clk_irq);
+ 	}
+ 
+@@ -1001,7 +1118,14 @@ static int __sec_nfc_probe(struct device *dev)
+ 			NFC_LOG_ERR("NFC: failed to create attr_test\n");
+ 	}
+ #endif
+-	nfc_class = class_create(THIS_MODULE, "nfc");
++	/*
++	 * NUXEL: with CONFIG_NFC=y the generic NFC core already registers
++	 * /sys/class/nfc.  Creating a second class with the same name makes
++	 * sysfs_warn_dup() BUG and panics the kernel during early boot
++	 * (measured 2026-11-01).  Keep the vendor support attribute under a
++	 * device-private class name instead of colliding with the subsystem.
++	 */
++	nfc_class = class_create(THIS_MODULE, "sec_nfc");
+ 	if (IS_ERR(&nfc_class))
+ 		NFC_LOG_ERR("NFC: failed to create nfc class\n");
+ 	else {
+@@ -1017,7 +1141,12 @@ static int __sec_nfc_probe(struct device *dev)
+ err_gpio_firm:
+ 	gpio_free(pdata->ven);
+ err_gpio_ven:
+-	free_irq(pdata->clk_irq, info);
++	if (pdata->clk_irq >= 0)
++		free_irq(pdata->clk_irq, info);
++	if (pdata->clk) {
++		clk_put(pdata->clk);
++		pdata->clk = NULL;
++	}
+ err_gpio_clk_parse:
+ 	misc_deregister(&info->miscdev);
+ err_dev_reg:
+@@ -1037,18 +1166,23 @@ static int __sec_nfc_remove(struct device *dev)
+ 
+ 	NFC_LOG_DBG("remove\n");
+ 
+-	misc_deregister(&info->miscdev);
+ 	sec_nfc_set_mode(info, SEC_NFC_MODE_OFF);
+-	free_irq(client->irq, info);
+-	free_irq(pdata->clk_irq, info);
+-	gpio_free(pdata->irq);
+-	gpio_set_value(pdata->firm, 0);
+-	gpio_free(pdata->ven);
+-	if (pdata->firm)
++	misc_deregister(&info->miscdev);
++	if (client->irq > 0)
++		free_irq(client->irq, info);
++	if (pdata->clk_irq >= 0)
++		free_irq(pdata->clk_irq, info);
++	if (pdata->clk)
++		clk_put(pdata->clk);
++	if (gpio_is_valid(pdata->irq))
++		gpio_free(pdata->irq);
++	if (gpio_is_valid(pdata->firm))
+ 		gpio_free(pdata->firm);
++	if (gpio_is_valid(pdata->ven))
++		gpio_free(pdata->ven);
+ 
+ 	wake_lock_destroy(&info->nfc_wake_lock);
+-
++	kfree(info->i2c_info.buf);
+ 	kfree(info);
+ 
+ 	return 0;
+@@ -1058,21 +1192,72 @@ MODULE_DEVICE_TABLE(i2c, sec_nfc_id_table);
  #define SEC_NFC_INIT(driver)	i2c_add_driver(driver)
  #define SEC_NFC_EXIT(driver)	i2c_del_driver(driver)
  
@@ -843,24 +2003,26 @@ index 68bf86b6c..e9989e550 100644
  	nfc_logger_init();
  
  	ret = __sec_nfc_probe(&client->dev);
-@@ -1184,20 +1232,23 @@ static int sec_nfc_remove(struct i2c_client *client)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (sec_nfc_i2c_probe(client))
++	ret = sec_nfc_i2c_probe(client);
++	if (ret) {
+ 		__sec_nfc_remove(&client->dev);
++		return ret;
++	}
+ 
+-	return ret;
++	return 0;
  }
  
- static struct i2c_device_id sec_nfc_id_table[] = {
--#ifdef CONFIG_NFC_S3FWRN5_I2C
--	{ },
--#else
- 	{ SEC_NFC_DRIVER_NAME, 0 },
--#endif
+ static int sec_nfc_remove(struct i2c_client *client)
+@@ -1085,6 +1270,20 @@ static struct i2c_device_id sec_nfc_id_table[] = {
  	{ }
  };
  
- /*
-- * NUXEL: the S3NRN82 on this board runs NCI firmware and s3fwrn5_i2c owns
-- * 7-0027.  The legacy raw vendor transport must not claim the same node from
-- * its I2C device-id table either: i2c_device_match() accepts that table as
-- * well as the OF table, and it won before the NCI driver could probe
-- * (measured on the first combined boot).
++/*
 + * NUXEL: the S3NRN82 on this board runs NCI firmware, so s3fwrn5_i2c is the
 + * preferred owner of 7-0027 when CONFIG_NFC_S3FWRN5_I2C is built.  But this
 + * driver must not simply refuse the node: i2c_device_match() accepts the
@@ -873,6 +2035,42 @@ index 68bf86b6c..e9989e550 100644
 + * lets the NCI driver claim the node.  If the NCI driver is absent or has no
 + * match, this legacy raw transport binds instead, so NFC hardware never
 + * silently disappears.
-  */
++ */
  static const struct of_device_id nfc_match_table[] = {
  	{ .compatible = SEC_NFC_DRIVER_NAME,},
+ 	{},
+diff --git a/include/net/nfc/nfc.h b/include/net/nfc/nfc.h
+index bbdc73a32..b4d23a2e8 100644
+--- a/include/net/nfc/nfc.h
++++ b/include/net/nfc/nfc.h
+@@ -288,6 +288,10 @@ int nfc_targets_found(struct nfc_dev *dev,
+ 		      struct nfc_target *targets, int ntargets);
+ int nfc_target_lost(struct nfc_dev *dev, u32 target_idx);
+ 
++/* NUXEL: exported for transports that bring the controller up themselves. */
++int nfc_dev_up(struct nfc_dev *dev);
++int nfc_dev_down(struct nfc_dev *dev);
++
+ int nfc_dep_link_is_up(struct nfc_dev *dev, u32 target_idx,
+ 		       u8 comm_mode, u8 rf_mode);
+ 
+diff --git a/net/nfc/core.c b/net/nfc/core.c
+index c699d64a0..4120027c3 100644
+--- a/net/nfc/core.c
++++ b/net/nfc/core.c
+@@ -140,6 +140,7 @@ int nfc_dev_up(struct nfc_dev *dev)
+ 	device_unlock(&dev->dev);
+ 	return rc;
+ }
++EXPORT_SYMBOL(nfc_dev_up);
+ 
+ /**
+  * nfc_dev_down - turn off the NFC device
+@@ -178,6 +179,7 @@ int nfc_dev_down(struct nfc_dev *dev)
+ 	device_unlock(&dev->dev);
+ 	return rc;
+ }
++EXPORT_SYMBOL(nfc_dev_down);
+ 
+ static int nfc_rfkill_set_block(void *data, bool blocked)
+ {
