@@ -104,3 +104,32 @@ an isolated Bionic root — no Bionic runtime exists anywhere on this device.
    auto test should show a 90°/270° result).
 
 Nothing in this report claims a sensor reading that was not measured.
+
+## Final live verification (22:00 CET)
+
+```
+$ uname -v
+#78 SMP PREEMPT Fri Nov 13 21:47:16 CET 2026
+$ systemctl is-system-running
+running
+$ systemctl --failed            (none)
+$ uptime                       up, load normal
+$ df -h /                      47G/111G used
+$ free -m                      5.7 GiB available
+
+# rotation (live compositor read-back, screen capture dimensions)
+portrait           -> Transform: normal, grim 720x1520     PASS
+landscape          -> Transform: 270,    grim 1520x720      PASS
+reverse-portrait   -> Transform: 180                        PASS
+reverse-landscape  -> Transform: 90                         PASS
+auto*              -> blocked_sensor_unavailable (honest)   selectable
+
+# SSP hub (measured)
+vdd_mcu_1p8 num_users   = 0  (enable returned 0; rail on from bootloader)
+spi 10970000.spi PM     = suspended (fixed: re-inits on resume — clock re-set confirmed)
+HSI_CTRL / RNGDMA reads = 0xFFFFFFFF  (hub not driving MISO)
+accelerometer raw_data  = 0,0,0
+gyro raw_data           = 0,0,0
+```
+
+`ssh nuxel` works from this Mac (alias added to ~/.ssh/config).
