@@ -136,3 +136,19 @@ handshake ran before the clock was reliably held on, so it declined and
 * Permission capabilities deployed with `microphone` + `nfc` entries; Quick
   Settings "Settings"/"Verbose boot" tiles remain removed (`_buildVerboseBootTile`
   is a documented no-op).
+
+### Final honest state (end of 2026-11-13 second session)
+NFC tag reading is **NOT yet working**.  What changed vs. the start of the
+session: the chip is no longer "0 Hz / never answers" — it is now proven to
+power, clock and answer its bootloader; the remaining gap is the firmware/
+mailbox transition into NCI runtime, which the `sec_nfc` raw transport cannot
+complete (it replays the bootinfo frame and then errors).
+
+**No device reflash of the rootfs was needed or done.**  Only the `boot`
+partition was rewritten via `dd` from Nuxel itself (verified hashes each time),
+so no TWRP round-trip is required.
+
+**Next round (one boot image):** rework `s3fwrn5_i2c` to own 7-0027 with
+`oscclk_nfc` held across probe + bootloader handshake + firmware download
+(the driver already has `s3fwrn5_fw_download` and the NCI switch).  Keep the
+0018/0019 clock-hold technique.  Gate on the same `verify-boot-image.py`.
