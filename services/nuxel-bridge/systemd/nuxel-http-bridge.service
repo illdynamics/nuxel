@@ -40,14 +40,13 @@ ReadWritePaths=-/run/nuxel-wayland
 ReadWritePaths=-/var/lib/flatpak/app/com.github.IsmaelMartinez.teams_for_linux
 # PWNAGE-63000 / A80: the Nuxel Vault / Authenticator Secret Service provider is
 # started by this process through gnome-keyring-daemon.  It only needs the
-# session runtime dir writable (its control socket lives in
+# session runtime dir writable (the daemon control socket lives in
 # /run/nuxel-wayland/keyring, created by nuxel-session.sh before this unit
-# starts).  Do NOT bind-mount the keyring file directory separately: a
-# read-only bind on /root/.local/share/keyrings made the daemon unable to
-# rebind and every unlock after a lock failed with a misleading
-# "invalid_credentials".  /root is otherwise read-only under
-# ProtectSystem=strict, and the daemon only reads the existing keyring.
-# (The enrollment record lives in /var/lib/nuxel/security, which is writable.)
+# starts).  Do NOT bind the keyring file directory separately: a read-only bind
+# on /root/.local/share/keyrings left the daemon unable to rebind its socket, so
+# every unlock after a lock failed.  /root stays read-only under
+# ProtectSystem=strict; the daemon only reads the existing keyring.  The
+# fingerprint enrollment record lives in /var/lib/nuxel/security (writable).
 # The lockhead Bluetooth indicator is a provider-state document consumed by
 # both the native host and this service.  /run/nuxel already holds the
 # connection-mode and USB-mode state, so it is the canonical runtime location.
