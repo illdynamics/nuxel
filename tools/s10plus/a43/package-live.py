@@ -35,6 +35,7 @@ for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
              'pwa/nuxel-apps/nuxtore', 'pwa/nuxel-apps/photos',
              'pwa/nuxel-apps/files',
              'services/nuxel-firewall/nuxel_firewall',
+             'pwa/nuxel-apps/vault',
              'services/nuxel-nfc'):
     for path in (root / base).rglob('*'):
         if not path.is_file() or path.is_symlink():

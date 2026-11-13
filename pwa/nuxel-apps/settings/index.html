@@ -8,7 +8,7 @@
 <title>Nuxel Settings</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="../../nuxel-common/theme.css?v=p85000">
-<link rel="stylesheet" href="settings.css?v=p102000">
+<link rel="stylesheet" href="settings.css?v=pssp-force-1">
     <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
@@ -567,6 +567,32 @@
       <div class="row"><button id="nfc-test" disabled>Scan / test tag read</button></div>
       <p id="nfc-test-result" class="state">Tag test requires NFC to be enabled.</p>
     </div>
+    <div class="card" id="nfc-debug-card">
+      <h3>NFC debug window</h3>
+      <p class="hint">Read-only. Hold a public-transport card, bank card or any NFC tag against the phone's NFC area (the upper back of the phone), then press <b>Test</b>. Nothing is written and no tag data is stored: UID, technologies and the NDEF summary are shown here for this test only.</p>
+      <div class="row wrap">
+        <button id="nfc-test2" class="primary">Test</button>
+        <button id="nfc-debug-cancel">Stop</button>
+        <button id="nfc-debug-clear" class="ghost">Clear log</button>
+        <label class="inline">Duration
+          <select id="nfc-debug-duration">
+            <option value="10">10 s</option>
+            <option value="20" selected>20 s</option>
+            <option value="30">30 s</option>
+          </select>
+        </label>
+      </div>
+      <pre id="nfc-debug-out" class="state nfc-debug-out" role="log" aria-live="polite">NFC debug ready.</pre>
+      <dl id="nfc-debug-fields" class="nfc-debug-fields">
+        <dt>State</dt><dd id="nfc-dbg-state">—</dd>
+        <dt>Controller</dt><dd id="nfc-dbg-controller">—</dd>
+        <dt>Result</dt><dd id="nfc-dbg-result">—</dd>
+        <dt>UID</dt><dd id="nfc-dbg-uid">—</dd>
+        <dt>Technology</dt><dd id="nfc-dbg-tech">—</dd>
+        <dt>NDEF</dt><dd id="nfc-dbg-ndef">—</dd>
+      </dl>
+    </div>
+
     <div class="card">
       <h3>Write an expendable NDEF tag</h3>
       <p class="hint">This overwrites the presented Type 2 tag's NDEF message and then reads it back. The lock, OTP and CC pages are never written. Writes always need an explicit confirmation and are refused for read-only tags and non-Type-2 tags.</p>
@@ -578,16 +604,16 @@
     </div>
   </section>
 
-  <!-- ── FINGERPRINT (PWNAGE-45000) ───────────────────────────────────── -->
+  <!-- ── FINGERPRINT (PWNAGE-45000 / A80) — enrollment lives in the Security
+       tab next to the PIN it depends on. ─────────────────────────────── -->
   <section id="tab-fingerprint" class="panel">
     <h2>Fingerprint</h2>
     <div class="card">
       <h3>Secure biometric provider</h3>
-      <p class="hint">The S10+ sensor is ultrasonic under-display. Enrollment is enabled only after a verified secure/TEE provider exists. Templates never leave the provider; PIN fallback is mandatory.</p>
-      <div class="row"><button id="fp-refresh">Refresh</button></div>
+      <p class="hint">The S10+ sensor is ultrasonic under-display. Enrollment is kept in the Nuxel Vault and requires its master password. Matching runs only inside the OEM trusted application; templates never leave it and a match is never simulated.</p>
+      <div class="row"><button id="fp-refresh">Refresh</button><button id="fp-security-tab">Enrollment &amp; PIN →</button></div>
       <pre id="fp-state" class="state" role="status">Checking fingerprint provider…</pre>
       <p id="fp-detail" class="hint">—</p>
-      <div class="row"><button id="fp-enroll" disabled>Enroll fingerprint</button><button id="fp-test" disabled>Test verification</button></div>
       <p id="fp-result" class="state">—</p>
     </div>
   </section>
@@ -595,20 +621,78 @@
   <!-- ── SECURITY LOCK (PWNAGE-45000) ─────────────────────────────────── -->
   <section id="tab-security" class="panel">
     <h2>Security</h2>
+
     <div class="card">
       <h3>Screen lock method</h3>
-      <p class="hint">The credential verifier is owned by the root bridge (scrypt, constant-time, persistent rate limit). A JavaScript overlay cannot unlock the session by itself.</p>
+      <p class="hint">The credential verifier is owned by the root bridge (scrypt, constant-time comparison). A JavaScript overlay cannot unlock the session by itself. The current mode is applied immediately and the session locks.</p>
       <pre id="sec-state" class="state" role="status">Checking lock policy…</pre>
       <div class="row wrap" id="sec-modes"></div>
-      <div id="sec-credential-form">
-        <label>Current credential (required when changing) <input id="sec-current" type="password" autocomplete="off"></label>
-        <label>New PIN / pattern <input id="sec-secret" type="password" autocomplete="new-password" inputmode="numeric"></label>
-        <label>PIN fallback (fingerprint mode only) <input id="sec-fallback" type="password" autocomplete="new-password" inputmode="numeric"></label>
-        <label class="check"><input id="sec-downgrade" type="checkbox"> I understand selecting Swipe removes the current credential</label>
-        <div class="row"><button id="sec-apply" class="primary">Apply lock method</button></div>
+    </div>
+
+    <div class="card" id="sec-pin-card">
+      <h3>PIN code</h3>
+      <p class="hint">This PIN is the fallback for the fingerprint and, in PIN mode, the unlock code. Enter it twice; nothing is stored unless both entries match.</p>
+      <label>Current credential (if one is already set) <input id="sec-current" type="password" autocomplete="off" inputmode="numeric"></label>
+      <label>New PIN <input id="sec-pin" type="password" autocomplete="new-password" inputmode="numeric" placeholder="At least 4 digits"></label>
+      <label>Repeat new PIN <input id="sec-pin2" type="password" autocomplete="new-password" inputmode="numeric" placeholder="Repeat"></label>
+      <div class="row wrap">
+        <button id="sec-pin-set" class="primary">Set PIN</button>
+        <button id="sec-pin-mode">Use PIN to unlock</button>
       </div>
-      <p id="sec-result" class="state" role="status">—</p>
-      <p class="hint">Fingerprint mode is refused unless the secure provider is ready and a PIN fallback has been verified.</p>
+      <p id="sec-pin-result" class="state" role="status">—</p>
+    </div>
+
+    <div class="card" id="sec-pattern-card">
+      <h3>Pattern lock</h3>
+      <p class="hint">Draw the pattern, then draw the same pattern again. It is only enabled after two identical entries, so a mis-drawn pattern can never dead-lock the phone. The 3×3 matrix uses the same penguin dots as the lockscreen.</p>
+      <div class="pattern-editor" id="sec-pattern-editor">
+        <svg id="sec-pattern-svg" viewBox="0 0 300 300" aria-hidden="true">
+          <polyline id="sec-pattern-trail" points="" fill="none"></polyline>
+        </svg>
+        <div id="sec-pattern-dots" class="pattern-editor-dots"></div>
+      </div>
+      <div class="row wrap">
+        <button id="sec-pattern-clear">Redraw</button>
+        <button id="sec-pattern-set" class="primary" disabled>Set pattern</button>
+      </div>
+      <p id="sec-pattern-status" class="state" role="status">Draw a pattern (at least 4 dots).</p>
+    </div>
+
+    <div class="card" id="sec-attempts-card">
+      <h3>Failed attempts</h3>
+      <p class="hint">Unlimited allows any number of mistakes: the correct code is always accepted and the phone can never be locked out. Limited re-enables the growing delay after repeated failures.</p>
+      <div class="row wrap">
+        <button id="sec-policy-unlimited" class="primary">Unlimited (recommended for now)</button>
+        <button id="sec-policy-limited">Limited with delay</button>
+      </div>
+      <p id="sec-policy-result" class="state" role="status">—</p>
+    </div>
+
+    <div class="card" id="sec-fingerprint-card">
+      <h3>Fingerprint unlock</h3>
+      <p class="hint">The fingerprint record is stored securely in the Nuxel Vault, so the Vault must be set up and unlocked first. The scanner needs the OEM trusted application; when it is missing the scanner is shown as unavailable and the PIN fallback always works.</p>
+      <pre id="sec-fp-state" class="state" role="status">Checking fingerprint…</pre>
+      <div class="ceremony" id="sec-fp-ceremony" hidden>
+        <div class="finger-oval" id="sec-fp-oval" role="button" tabindex="0" aria-label="Simulate scanner touch">
+          <img src="/assets/nuxel-fingerprint.png" alt="">
+          <span id="sec-fp-edge-label">Touch at an edge</span>
+        </div>
+        <div class="row wrap">
+          <button data-edge="left">Left edge</button>
+          <button data-edge="right">Right edge</button>
+          <button data-edge="top">Top edge</button>
+          <button data-edge="bottom">Bottom edge</button>
+        </div>
+        <p id="sec-fp-ceremony-status" class="state">0 / 2 touches</p>
+        <button id="sec-fp-commit" class="primary" disabled>Finish enrollment</button>
+      </div>
+      <div class="row wrap">
+        <button id="sec-fp-start" disabled>Set up fingerprint</button>
+        <button id="sec-fp-delete">Delete fingerprint</button>
+        <button id="sec-fp-unlock-enable">Enable fingerprint unlock</button>
+        <button id="sec-fp-vault">Open Vault</button>
+      </div>
+      <p id="sec-fp-result" class="state" role="status">—</p>
     </div>
   </section>
 
@@ -933,7 +1017,7 @@
 <script src="settings.js?v=p52000"></script>
 <script src="edge-lighting-settings.js?v=p103000"></script>
 <script src="keyboard-settings.js?v=a76"></script>
-<script src="apps-permissions-settings.js?v=p108001"></script>
+<script src="apps-permissions-settings.js?v=pssp-force-1"></script>
 <script src="file-handlers-settings.js?v=p97000"></script>
 <script src="theme-settings.js?v=p50002"></script>
 <script src="sound-settings.js?v=p102000"></script>

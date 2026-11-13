@@ -437,6 +437,19 @@ class NuxelHome {
         this._bindGlobalEvents();
 
         // A45 Penguin lockscreen + boot lock + display-off re-lock.
+        try {
+            document.addEventListener('nuxel:security-mode-changed', () => {
+                this.refreshLockscreenAuth();
+            });
+            window.addEventListener('message', (ev) => {
+                try {
+                    if (ev.origin !== window.location.origin) return;
+                    if (ev.data && ev.data.type === 'nuxel-security-mode-changed') {
+                        this.refreshLockscreenAuth();
+                    }
+                } catch (e) { /* observation only */ }
+            });
+        } catch (e) { /* observation only */ }
         this._initLockscreen();
 
         this.initialized = true;
@@ -1898,6 +1911,40 @@ class NuxelHome {
             this._inputTrace(`unlock:home-error ${error && error.message ? error.message : error}`);
             console.error('[Nuxel] post-unlock Home failed:', error);
         }
+    }
+
+    /* A80: the credential surface (pattern/PIN/fingerprint) already verified
+       against the root bridge.  Commit the same unlock transition the penguin
+       path uses, and only after the bridge said the session is unlocked. */
+    completeCredentialUnlock(instance, request) {
+        const ls = this.lockscreen;
+        if (!ls || ls !== instance) return Promise.resolve({ ok: false, error: 'inactive-lockscreen' });
+        const via = (request && request.via) || 'credential';
+        if (!ls.isLocked()) {
+            return Promise.resolve({ ok: true, state: 'UNLOCKED', via: via });
+        }
+        const res = request && request.result;
+        if (!res || res.unlocked !== true) {
+            return Promise.resolve({ ok: false, error: 'credential-not-verified' });
+        }
+        const host = window.NuxelHost;
+        const done = () => this._unlock(via + '-verified');
+        if (host && host.available && typeof host.action === 'function') {
+            return Promise.resolve(host.action('unlock')).then((hr) => {
+                if (hr && hr.ok === false) return { ok: false, error: 'backend-unlock-failed' };
+                return done();
+            }).catch(() => ({ ok: false, error: 'backend-unlock-error' }));
+        }
+        return Promise.resolve(done());
+    }
+
+    /* A80: Settings can switch the lock mode or set a pattern while Home is
+       locked; re-render the credential surface from the bridge truth. */
+    refreshLockscreenAuth() {
+        if (this.lockscreen && typeof this.lockscreen.refreshAuthMode === 'function') {
+            return this.lockscreen.refreshAuthMode();
+        }
+        return Promise.resolve(null);
     }
 
     /* The ONLY path from the penguin gesture into the authoritative lock state.

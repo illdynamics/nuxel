@@ -134,7 +134,7 @@ except Exception as _e:  # pragma: no cover - optional module
 for _modname in ('dnd_provider', 'nfc_provider', 'fingerprint_provider',
                  'security_provider', 'led_notification_provider', 'app_manager',
                  'software_provider', 'privacy_provider', 'flatpak_provider',
-                 'doom_assets', 'firewall_provider'):
+                 'doom_assets', 'firewall_provider', 'edge_lighting_provider'):
     try:
         globals()[_modname] = __import__(_modname)
     except Exception as _e:  # pragma: no cover - optional module
@@ -148,6 +148,14 @@ try:
 except Exception as _e:  # pragma: no cover - optional module
     usb_mode = None
     logger.warning('usb_mode unavailable: %s', _e)
+
+# USB networking + tethering (ECM/RNDIS/NCM gadget + optional NAT).  Reports
+# only what the dedicated helper actually confirmed; never fakes success.
+try:
+    import usb_tethering
+except Exception as _e:  # pragma: no cover - optional module
+    usb_tethering = None
+    logger.warning('usb_tethering unavailable: %s', _e)
 
 # One normalization rule for Wayland app ids.  Flatpak/reverse-DNS launcher ids
 # often differ from the compositor's xdg_toplevel app_id (e.g.
@@ -465,6 +473,30 @@ def explicit_orientation_for_app(app_id):
     return mode if mode in APP_ORIENTATION_MODES else None
 
 
+def forced_orientation_for_app(app_id):
+    """Return the mode when the owner marked this app's mode as FORCED.
+
+    Force means: the app starts in that orientation and the compositor
+    transform is re-asserted whenever the app is foreground, so a sensor
+    auto-rotation or a stray set-mode cannot change it while the app is in
+    front.  Without force the mode is only the initial launch pose and the
+    owner (or Auto mode) may rotate afterwards.
+    """
+    doc = load_app_orientation_defaults()
+    forced = doc.get("force") or {}
+    mode = forced.get(app_id) if isinstance(forced, dict) else None
+    return mode if mode in APP_ORIENTATION_MODES else None
+
+
+def forced_orientation_entry(app_id):
+    """Return (mode, forced) for the Settings UI without inventing values."""
+    mode = explicit_orientation_for_app(app_id)
+    forced = forced_orientation_for_app(app_id)
+    return {"app_id": app_id, "orientation": mode,
+            "force": forced is not None,
+            "forced_orientation": forced}
+
+
 def _surface_matches_app(app_id, surface_id):
     if not app_id or not surface_id:
         return False
@@ -555,16 +587,27 @@ def _orientation_focus_watch_worker():
     This is the safety net for launches that do not pass through /apps/exec
     (desktop entries, Flatpak exports, another app handing over a file).  It
     only acts on foreground *changes*, so a manual rotation is never fought
-    while the same app stays in front.
+    while the same app stays in front.  A FORCED app is the exception: its
+    mode is re-asserted every tick, which is what makes the lock hold.
     """
     last_active = object()
     while True:
         try:
             active = _active_toplevel_app_id(_toplevel_listing_text())
+            # A forced app owns the pose for as long as it is foreground: check
+            # every tick so neither auto-rotation nor any caller can flip it.
+            forced = forced_orientation_for_app(active) if active else None
+            if forced and forced != current_orientation_mode():
+                ok = set_orientation_mode(forced)
+                logger.info("orientation focus-watch FORCE active=%s mode=%s applied=%s",
+                            active, forced, ok)
             if active != last_active:
                 last_active = active
                 if active:
-                    wanted = orientation_mode_for_surface(active)
+                    # Launch pose only.  A forced app is handled every tick by
+                    # the branch above; an unforced one may still be rotated by
+                    # the owner or by Auto without the watcher fighting it.
+                    wanted = forced or orientation_mode_for_surface(active)
                     if wanted and wanted != current_orientation_mode():
                         ok = set_orientation_mode(wanted)
                         logger.info(
@@ -604,7 +647,7 @@ TOKEN_FILE = os.path.join(TOKEN_DIR, 'token')
 # this per-device secret in a closure.  The Bridge reads the same root-only file.
 KEYRING_LAUNCHER_SECRET_FILE = os.environ.get(
     'NUXEL_KEYRING_SECRET_FILE', '/etc/nuxel/keyring-launcher.secret')
-KEYRING_LAUNCHER_APPS = {'org.nuxel.Vault', 'org.nuxel.Authenticator'}
+KEYRING_LAUNCHER_APPS = {'org.nuxel.Vault', 'org.nuxel.Authenticator', 'org.nuxel.Home'}
 
 # Per-session token registry: token -> {app_id, created, expires}
 SESSION_TOKENS = {}
@@ -661,6 +704,42 @@ def _get_cors_origin(origin_header):
     if origin_header and origin_header in ALLOWED_ORIGINS:
         return origin_header
     return None
+
+
+_CONSENT_PENDING_SCRIPT = (
+    "import dbus,json;"
+    "b=dbus.SessionBus();"
+    "i=dbus.Interface(b.get_object('org.nuxel.PhoshAgent','/org/nuxel/PhoshAgent'),"
+    "'org.nuxel.PhoshAgent');"
+    "print(str(i.ListPending()))"
+)
+_CONSENT_RESPOND_SCRIPT = (
+    "import dbus,json,sys;"
+    "b=dbus.SessionBus();"
+    "i=dbus.Interface(b.get_object('org.nuxel.PhoshAgent','/org/nuxel/PhoshAgent'),"
+    "'org.nuxel.PhoshAgent');"
+    "print(str(i.Respond(sys.argv[1], sys.argv[2])))"
+)
+
+
+def _nfc_store_grants(app_id, verb):
+    """True only when the shared store contains an explicit NFC grant."""
+    try:
+        import nfc_policy  # type: ignore
+    except ImportError:
+        from importlib import util as _util
+        path = "/usr/lib/nuxel/nuxel-nfc/nuxel_nfc/policy.py"
+        spec = _util.spec_from_file_location("nuxel_nfc.policy", path)
+        if spec is None or spec.loader is None:
+            return False
+        mod = _util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        nfc_policy = mod
+    try:
+        verdict = nfc_policy.authorize(app_id, verb)
+    except Exception:  # noqa: BLE001 - fail closed
+        return False
+    return bool(isinstance(verdict, dict) and verdict.get("allowed"))
 
 
 class BridgeAPIHandler(BaseHTTPRequestHandler):
@@ -1384,7 +1463,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         """
         if not isinstance(app_id, str) or not app_id:
             return False
-        mode = explicit_orientation_for_app(app_id)
+        mode = forced_orientation_for_app(app_id)
+        if mode is None:
+            mode = explicit_orientation_for_app(app_id)
         if mode is None:
             mode = orientation_mode_for_surface(app_id)
         return self._apply_orientation_if_needed(mode)
@@ -2727,6 +2808,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({'success': False, 'error': 'usb_mode unavailable'}, 503)
 
+        elif path in ('/api/v1/system/usb-net', '/api/v1/usb-net/status'):
+            if usb_tethering is not None:
+                try:
+                    self._send_json(usb_tethering.current_state())
+                except Exception as exc:  # noqa: BLE001
+                    logger.error('usb-net state read failed: %s', exc)
+                    self._send_json({'success': False, 'error': str(exc)}, 500)
+            else:
+                self._send_json({'success': False, 'error': 'usb_tethering unavailable'}, 503)
+
         elif path == '/api/v1/system/tri-link':
             if tri_link_status is not None:
                 try:
@@ -2759,6 +2850,22 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             self._send_json(firewall_provider.handle('status', {}) if firewall_provider else {'success': False, 'error': 'firewall provider unavailable'})
         elif path == '/api/v1/system/led-notification':
             self._send_json(led_notification_provider.handle('status', {}) if led_notification_provider else {'success': False, 'error': 'led provider unavailable'})
+        elif path == '/api/v1/edge-lighting':
+            # Read-only Edge Lighting status + honest capability model.
+            self._send_json(edge_lighting_provider.handle('status', {}) if edge_lighting_provider else {'success': False, 'error': 'edge lighting provider unavailable'})
+        elif path == '/api/v1/edge-lighting/events':
+            # Bounded journal poll for the Home edge renderer.  Read-only.
+            if edge_lighting_provider is None:
+                self._send_json({'success': False, 'events': [], 'error': 'edge lighting provider unavailable'})
+            else:
+                try:
+                    since = int((parse_qs(urlparse(self.path).query).get('since') or ['0'])[0])
+                except (TypeError, ValueError):
+                    since = 0
+                try:
+                    self._send_json(edge_lighting_provider.handle('events', {'since': since}))
+                except Exception as exc:  # noqa: BLE001
+                    self._send_json({'success': False, 'events': [], 'error': str(exc)}, 500)
         elif path == '/api/v1/system/software':
             self._send_json(software_provider.handle('status', {}) if software_provider else {'success': False, 'error': 'software provider unavailable'})
         elif path == '/api/v1/system/flashlight':
@@ -4334,6 +4441,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         return {"success": True,
                 "default": doc.get("default", APP_ORIENTATION_DEFAULT_MODE),
                 "apps": dict(doc.get("apps", {}) or {}),
+                "force": dict(doc.get("force", {}) or {}),
                 "modes": list(APP_ORIENTATION_MODES)}
 
     def _app_apply_orientation_rpc(self, params):
@@ -4344,26 +4452,53 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         mode = explicit_orientation_for_app(app_id)
         if mode is None:
             mode = global_default_orientation_mode()
+        mode = forced_orientation_for_app(app_id) or mode
         ok = self._set_orientation(mode)
         return {"success": bool(ok), "applied": bool(ok), "app_id": app_id,
-                "mode": mode}
+                "mode": mode,
+                "forced": forced_orientation_for_app(app_id) is not None}
 
     def _app_set_orientation_default_rpc(self, params):
         app_id = str(params.get("app_id", ""))
         mode = str(params.get("orientation", params.get("mode", "")))
+        force = params.get("force", None)
         if not APP_ID_RE.match(app_id):
             return {"success": False, "error": "invalid_app_id"}
         doc = self._load_app_orientation_defaults()
         apps = dict(doc.get("apps", {}) or {})
+        forced = dict(doc.get("force", {}) or {})
         if mode in APP_ORIENTATION_MODES:
             apps[app_id] = mode
         elif mode in ("", "default", "inherit"):
             apps.pop(app_id, None)
         else:
             return {"success": False, "error": "invalid_orientation", "mode": mode}
+        if force is not None:
+            if force and apps.get(app_id) in APP_ORIENTATION_MODES:
+                # Force only means something for an explicit mode; an inherited
+                # entry has nothing to pin, so it is never silently invented.
+                forced[app_id] = apps[app_id]
+            else:
+                forced.pop(app_id, None)
+        elif app_id in forced and forced[app_id] != apps.get(app_id):
+            # Changing the mode keeps a previously forced app forced at the new
+            # mode, but removing the mode removes the force too.
+            if apps.get(app_id) in APP_ORIENTATION_MODES:
+                forced[app_id] = apps[app_id]
+            else:
+                forced.pop(app_id, None)
         doc["apps"] = apps
+        doc["force"] = forced
         self._save_app_orientation_defaults(doc)
+        # A force toggle must take effect immediately for the foreground app,
+        # not only on the next focus change.
+        applied = False
+        if app_id in forced:
+            applied = self._apply_orientation_if_needed(forced[app_id])
         return {"success": True, "app_id": app_id, "orientation": apps.get(app_id),
+                "force": app_id in forced,
+                "forced_orientation": forced.get(app_id),
+                "applied": applied,
                 "default": doc.get("default", APP_ORIENTATION_DEFAULT_MODE)}
 
     def _permd(self, args):
@@ -4393,6 +4528,27 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         return {"success": proc.returncode == 0, "rc": proc.returncode,
                 "stdout": out[-400:], "stderr": err[-400:],
                 "denied": proc.returncode != 0}
+
+    SELF_REQUEST_FORBIDDEN = frozenset((
+        "location:manage", "bluetooth:manage", "network:manage",
+        "system:inspect", "shell:local-pty", "sms_send_raw",
+    ))
+
+    @staticmethod
+    def _forget_location_fix_if_needed(capability):
+        """Invalidate the cached position only when read/policy was revoked."""
+        if capability not in ('location', 'location:read', 'location:manage'):
+            return
+        # This optional post-revoke hook deliberately keeps the bridge protocol
+        # at version 1: an older peer that lacks it still enforces the denial
+        # from the persisted grant store; only its in-memory last fix is kept.
+        try:
+            bus = dbus.SystemBus()
+            bridge = bus.get_object('org.nuxel.Bridge', '/org/nuxel/Bridge', introspect=False)
+            iface = dbus.Interface(bridge, 'org.nuxel.Bridge')
+            iface.ForgetLocationFix(timeout=BRIDGE_DBUS_TIMEOUT_SECONDS)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("could not clear cached location after revoke: %s", exc)
 
     def _permissions_rpc(self, app_id, verb, params):
         """Central permission policy (permD) facade. Fail closed: any
@@ -4472,6 +4628,14 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if verb in ("grant", "request"):
             if not cap:
                 return _denied("capability_required", "capability is required")
+            # An app may only ever ask for access to its own user data.  The
+            # device-wide controls (location:manage, bluetooth:manage, …) mutate
+            # policy for every app and stay owner-only.  Without this boundary a
+            # third-party app could request a control token and hand itself the
+            # ability to switch the privacy policy off.
+            if is_self and not is_owner and cap in SELF_REQUEST_FORBIDDEN:
+                return _denied("capability_denied",
+                               "device-wide control is granted only by the owner permission manager")
             if not is_owner:
                 # This handset has no interactive PhoshAgent consent surface.
                 # Fail closed rather than silently auto-approving an app request.
@@ -4481,6 +4645,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             out = _envelope(res)
             out["app_id"] = target
             out["capability"] = cap
+            # A consent decision always means "reload the shared store now", so
+            # the very next Location/mic/NFC RPC sees it without a restart.
+            self._invalidate_capability_cache()
             return out
         if verb == "deny":
             if not cap:
@@ -4489,8 +4656,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return _denied("capability_denied", "only the owner may deny permissions")
             res = self._permd(["deny", target, cap])
             out = _envelope(res)
+            if out.get("success"):
+                self._forget_location_fix_if_needed(cap)
             out["app_id"] = target
             out["capability"] = cap
+            self._invalidate_capability_cache()
             return out
         if verb == "revoke":
             if not cap:
@@ -4499,15 +4669,104 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return _denied("capability_denied", "only the owner may revoke permissions")
             res = self._permd(["revoke", target, cap])
             out = _envelope(res)
+            if out.get("success"):
+                self._forget_location_fix_if_needed(cap)
             out["app_id"] = target
             out["capability"] = cap
+            self._invalidate_capability_cache()
             return out
         if verb == "revoke-all":
             if not is_owner:
                 return _denied("capability_denied", "only the owner may revoke permissions")
             return _envelope(self._permd(["revoke-all", target]))
+        # ---- in-app consent surface (nuxel-consentd) ---------------------
+        # The Home notification shade forwards the four consent buttons here.
+        # Only the Home/Settings/Permission Manager surfaces may resolve a
+        # prompt; an ordinary app must never answer its own consent card.
+        if verb in ("respond", "pending", "consent-status"):
+            if not is_owner:
+                return _denied("capability_denied",
+                               "only the owner surfaces may answer a consent prompt")
+            res = self._consent_rpc(verb, params)
+            res["app_id"] = target
+            return res
         return {"success": False, "error": "unknown permissions verb: " + verb,
                 "denied": True}
+
+    def _invalidate_capability_cache(self):
+        """Make the next authorization check re-read the shared grant store.
+
+        Settings and the consent prompt write permD's files; the running bridge
+        must not answer with its boot-time snapshot (the historical
+        "granted but still denied" bug).
+        """
+        # BridgeAPIHandler re-reads the shared store before every authorization
+        # check; this hook exists so a consent reply can also force the next
+        # read to happen immediately when a live service object is wired in.
+        service = getattr(self, 'bridge_service', None) or getattr(self, 'service', None)
+        reload_fn = getattr(service, 'reload_grants', None) if service is not None else None
+        if callable(reload_fn):
+            try:
+                reload_fn()
+                return True
+            except Exception as exc:  # noqa: BLE001 - never break a policy write
+                logger.warning('grant reload after policy write failed: %s', exc)
+        return False
+
+    def _nfc_granted_for(self, app_id, verb):
+        """Read the shared permD store for an ``nfc`` grant (fail closed)."""
+        return _nfc_store_grants(app_id, verb)
+
+    def _consent_rpc(self, verb, params):
+        """List/answer a pending consent prompt on the shared system bus.
+
+        The agent (nuxel-consent-agent) owns org.nuxel.PhoshAgent on BOTH the
+        per-user session bus (where nuxel-portal asks) and the system bus.  The
+        HTTP bridge runs as root and this image's session bus drops root's
+        Hello, so this path uses the system bus.
+        """
+        if verb == "consent-status":
+            return {"success": True, "owner": True, "surface": "org.nuxel.PhoshAgent"}
+        try:
+            bus = dbus.SystemBus()
+            obj = bus.get_object('org.nuxel.PhoshAgent', '/org/nuxel/PhoshAgent')
+            iface = dbus.Interface(obj, 'org.nuxel.PhoshAgent')
+            if verb == "pending":
+                return json.loads(str(iface.ListPending()))
+            if verb != "respond":
+                return {"success": False, "error": "unknown_consent_verb"}
+            request_id = str(params.get("request_id") or "")
+            action = str(params.get("action") or "").lower()
+            if action not in ("allow-once", "allow-always", "deny", "cancel"):
+                return {"success": False, "error": "invalid_action"}
+            if not request_id:
+                return {"success": False, "error": "request_id_required"}
+            return json.loads(str(iface.Respond(request_id, action)))
+        except dbus.exceptions.DBusException as exc:
+            return {"success": False, "error": "consent_unavailable",
+                    "detail": str(exc)[:300]}
+        except (ValueError, TypeError) as exc:
+            return {"success": False, "error": "consent_bad_reply",
+                    "detail": str(exc)[:300]}
+
+    @staticmethod
+    def _consent_env():
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("PYTHONPATH", "DBUS_SYSTEM_BUS_ADDRESS")}
+        env.update({"HOME": "/home/nuxel",
+                    "XDG_RUNTIME_DIR": "/run/user/1000",
+                    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus"})
+        return env
+
+    @staticmethod
+    def _phone_session_bus_address():
+        addr = os.environ.get("NUXEL_PHONE_SESSION_BUS")
+        if addr:
+            return addr
+        # The interactive consent surface and the nuxel-portal broker share the
+        # real per-user session bus.  /run/nuxel-wayland/bus is the
+        # compositor's root-only bus and refuses uid 1000 clients.
+        return "unix:path=/run/user/1000/bus"
 
     # ---- Settings -> Services (PWNAGE-88000) -------------------------------
     SERVICE_POLICY_PATH = "/etc/nuxel/services/service-policy.json"
@@ -5357,6 +5616,26 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         params = body.get('params', {}) or {}
         if namespace == 'permissions':
             return self._permissions_rpc(app_id, verb, params)
+        # USB networking + tethering: owner-facing surface only, backed by the
+        # dedicated helper; never fakes success.
+        if namespace == 'usb-net':
+            if app_id not in ('org.nuxel.Settings', 'nuxel-settings', 'org.nuxel.Home', 'org.nuxel.NetworkManager'):
+                return {'success': False, 'error': 'capability_denied',
+                        'detail': 'USB networking is owner-managed'}
+            if usb_tethering is None:
+                return {'success': False, 'error': 'usb_tethering unavailable',
+                        'error_code': 'PROVIDER_UNAVAILABLE'}
+            try:
+                if verb == 'status':
+                    return usb_tethering.current_state()
+                if verb == 'set-mode':
+                    mode = str((params or {}).get('mode', 'off'))
+                    function = str((params or {}).get('function', 'ecm'))
+                    return usb_tethering.set_mode(mode, function)
+            except Exception as exc:  # noqa: BLE001
+                return {'success': False, 'error': str(exc),
+                        'error_code': 'PROVIDER_ERROR'}
+            return {'success': False, 'error': 'unknown usb-net verb: %s' % verb}
         if namespace == 'file-handlers':
             return self._file_handlers_rpc(app_id, verb, params)
         if namespace == 'network' and verb in self.NETWORK_MANAGER_VERBS:
@@ -5568,6 +5847,20 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 except Exception as exc:  # noqa: BLE001
                     return {'success': False, 'error': str(exc)}
             return {'success': False, 'error': 'system_indicators unavailable'}
+        if namespace == 'edge-lighting':
+            # Settings/preview/status.  The privileged 'event' verb is accepted
+            # ONLY from the in-process system-bus watch, never from a PWA: a
+            # renderer must not be able to fabricate a "real notification".
+            if edge_lighting_provider is None:
+                return {'success': False, 'error': 'edge lighting provider unavailable'}
+            if verb == 'event':
+                return {'success': False, 'error': 'capability_denied',
+                        'detail': 'notification events are ingested from org.nuxel.Notifications only'}
+            try:
+                return edge_lighting_provider.handle(verb, params)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning('edge-lighting RPC %s failed: %s', verb, exc)
+                return {'success': False, 'error': str(exc)}
         if namespace == 'flashlight':
             if flashlight_provider is None:
                 return {'success': False, 'state': 'UNKNOWN',
@@ -5680,15 +5973,63 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                         'error_code': 'PROVIDER_UNAVAILABLE'}
             # Mutating lifecycle/lock verbs are restricted to the two local
             # owner surfaces.  Read-only status stays available to all local apps.
-            _owner_ok = app_id in ("org.nuxel.Nuxtore", "org.nuxel.NuxTore", "org.nuxel.Home", "nuxel-settings")
+            # "org.nuxel.Settings" is the app-registry id; "nuxel-settings" is
+            # the catalog/launcher alias.  Both are the owner Settings surface
+            # and must be able to turn the NFC radio on/off.
+            _owner_ok = app_id in ("org.nuxel.Nuxtore", "org.nuxel.NuxTore",
+                                   "org.nuxel.Home", "nuxel-settings",
+                                   "org.nuxel.Settings")
+            # PWNAGE-103000: Edge FX is allowed to uninstall/reinstall ITSELF
+            # through the canonical registry.  It writes only its own identity
+            # and can never touch another app's entry.
+            _self_registry = (namespace == "apps" and app_id == "nuxel-edge-fx" and
+                              verb in ("register", "unregister", "install", "remove") and
+                              str(params.get("app_id") or "") in ("nuxel-edge-fx", "org.nuxel.EdgeFX"))
+            if _self_registry:
+                if verb in ("unregister", "remove") and str(params.get("app_id")) not in ("nuxel-edge-fx", "org.nuxel.EdgeFX"):
+                    return {"success": False, "error": "capability_denied"}
+                _owner_ok = True
             if not _owner_ok and ((namespace == "apps" and verb in ("register", "unregister", "install", "remove")) or
-                                  (namespace == "security" and verb in ("set-mode", "set-credential", "set-pin", "set-pattern", "lock", "unlock")) or
-                                  (namespace == "nfc" and verb in ("set-enabled", "toggle", "test-tag", "scan", "read-tag", "read", "clear"))):
+                                  (namespace == "security" and verb in (
+                                      "set-mode", "set-credential", "set-pin", "set-pattern", "lock",
+                                      "set-attempt-policy", "set-biometric-unlock", "biometric-set",
+                                      "unlock-biometric")) or
+                                  (namespace in ("fingerprint", "biometrics") and verb in (
+                                      "enroll", "delete", "remove", "test", "verify", "cancel")) or
+                                  (namespace == "nfc" and verb in ("set-enabled", "toggle"))):
                 return {"success": False, "error": "capability_denied",
                         "detail": "this app may not mutate the app registry, device lock or NFC reader"}
+            # NFC tag access is a per-app GRANT, not an owner-only capability:
+            # nuxel-nfcd re-checks the same record before it touches the
+            # controller, so the answer here and there is one policy.
+            if namespace == "nfc" and verb in ("test-tag", "scan", "read-tag", "read", "clear", "write", "write-tag", "cancel"):
+                if not self._nfc_granted_for(app_id, verb):
+                    return {"success": False, "error": "capability_denied",
+                            "error_code": "NFC_NOT_GRANTED",
+                            "capability": "nfc", "app_id": app_id,
+                            "detail": "grant NFC to this app in Settings → Permissions"}
             try:
-                if namespace == 'firewall':
+                if namespace in ('fingerprint', 'biometrics') and \
+                        verb in ('test', 'verify', 'authenticate') and \
+                        params.get('unlock') is True and \
+                        app_id in ('org.nuxel.Home', 'org.nuxel.Settings', 'nuxel-settings'):
+                    # Lockscreen path: the trusted provider performs the real
+                    # scan; a verified match is consumed by the security
+                    # provider and a fresh result is never accepted without
+                    # the broker's authenticated flag.
+                    fresh = mod.handle(verb, dict(params, unlock=False))
+                    if not (isinstance(fresh, dict) and fresh.get('success')):
+                        result = fresh
+                    else:
+                        result = security_provider.handle('unlock-biometric',
+                                                          {'biometric_result': fresh})
+                        result = dict(result, biometric=fresh)
+                elif namespace == 'firewall':
                     result = mod.handle(verb, params, caller_app_id=app_id)
+                elif namespace == 'nfc':
+                    # Pass the authenticated caller so the daemon authorizes
+                    # tag access against that app's grant.
+                    result = mod.handle(verb, params, app_id=app_id)
                 else:
                     result = mod.handle(verb, params)
             except Exception as exc:  # noqa: BLE001
@@ -6228,6 +6569,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 result = usb_mode.set_mode(mode)
                 self._send_json(result, 200 if result.get('success') else 409)
 
+        elif path == '/api/v1/usb-net/set-mode':
+            if usb_tethering is None:
+                self._send_json({'success': False, 'error': 'usb_tethering unavailable'}, 503)
+            else:
+                payload = body if isinstance(body, dict) else {}
+                mode = str(payload.get('mode', 'off'))
+                function = str(payload.get('function', 'ecm'))
+                result = usb_tethering.set_mode(mode, function)
+                self._send_json(result, 200 if result.get('success') else 409)
+
         elif path == '/api/v1/rpc':
             result = self._handle_rpc(app_id, body)
             self._send_json({'result': result})
@@ -6375,6 +6726,83 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             self._send_json({'error': 'Not found'}, 404)
 
 
+# ---- Edge Lighting: canonical notification ingest (PWNAGE-103000) ----------
+# ONE system-bus receiver listens for the notification hub's NotificationAdded
+# signal and feeds the single Edge Lighting controller.  It is presentation
+# metadata only: the controller strips summary/body before anything reaches the
+# overlay, does not mark/read/archive anything, and never writes an LED.
+_EDGE_WATCH_LOCK = threading.Lock()
+_EDGE_WATCH_STARTED = False
+
+
+def start_edge_lighting_watch():
+    """Subscribe to org.nuxel.Notifications.NotificationAdded (system bus).
+
+    The HTTP server runs a blocking ``HTTPServer.serve_forever()`` with no GLib
+    loop, so this watch owns its OWN GLib main loop on its own thread.  Sharing
+    the API process's (absent) default context made signal callbacks silently
+    never run while the match rule itself was fine.
+    """
+    global _EDGE_WATCH_STARTED
+    with _EDGE_WATCH_LOCK:
+        if _EDGE_WATCH_STARTED or edge_lighting_provider is None:
+            return False
+        _EDGE_WATCH_STARTED = True
+
+    def _on_added(payload, *args, **kwargs):
+        try:
+            doc = json.loads(payload) if isinstance(payload, str) else dict(payload)
+        except (TypeError, ValueError) as exc:
+            logger.warning('edge-lighting: malformed notification payload: %s', exc)
+            return
+        logger.info('edge-lighting: NotificationAdded id=%s app=%s',
+                    doc.get('id'), doc.get('app_id'))
+        try:
+            threading.Thread(target=edge_lighting_provider.handle, args=('event', doc),
+                             name='nuxel-edge-event', daemon=True).start()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning('edge-lighting: event dispatch failed: %s', exc)
+
+    def _watch():
+        from gi.repository import GLib
+        delay = 2.0
+        while True:
+            try:
+                loop = GLib.MainLoop()
+                dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+                bus = dbus.SystemBus()
+                bus.add_signal_receiver(
+                    _on_added,
+                    signal_name='NotificationAdded',
+                    dbus_interface='org.nuxel.Notifications',
+                    bus_name='org.nuxel.Notifications',
+                    path='/org/nuxel/Notifications',
+                    # The callback may run on this dedicated loop's thread; the
+                    # provider itself is lock-protected.
+                    )
+                logger.info('edge-lighting: watching org.nuxel.Notifications.NotificationAdded')
+                try:
+                    status = edge_lighting_provider.handle('status', {})
+                    logger.info('edge-lighting: effect=%s enabled=%s settings=%s screen_modes=%s',
+                                status.get('config', {}).get('effect'),
+                                status.get('config', {}).get('enabled'),
+                                status.get('settings_path'),
+                                [m['id'] for m in status.get('capability', {}).get('screen_modes', [])
+                                 if m.get('available')])
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning('edge-lighting: initial status failed: %s', exc)
+                loop.run()      # never returns unless the loop is quit
+                return
+            except Exception as exc:  # noqa: BLE001
+                logger.warning('edge-lighting: system bus watch unavailable (%s); retry in %.0fs',
+                               exc, delay)
+            time.sleep(delay)
+            delay = min(60.0, delay * 2)
+
+    threading.Thread(target=_watch, name='nuxel-edge-watch', daemon=True).start()
+    return True
+
+
 def start_api_server(host=None, port=None, token=None):
     """Start the REST API server for bridge access.
 
@@ -6404,6 +6832,7 @@ def start_api_server(host=None, port=None, token=None):
     # Keep every foreground native app on its configured launch rotation, even
     # when it was started outside /apps/exec (desktop entry, Flatpak export).
     start_orientation_focus_watch()
+    start_edge_lighting_watch()
     logger.info("Nuxel Bridge API running on http://%s:%s", host, port)
     logger.info("API Token: %s", BridgeAPIHandler.server_token)
     logger.info("Mode: %s", HTTP_MODE)
@@ -6420,8 +6849,6 @@ if __name__ == '__main__':
         format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
         handlers=[logging.StreamHandler(sys.stderr)],
     )
-
-    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
     port = int(sys.argv[1]) if len(sys.argv) > 1 else HTTP_PORT
     token = sys.argv[2] if len(sys.argv) > 2 else None

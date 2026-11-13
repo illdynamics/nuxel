@@ -18,7 +18,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'a45.1';
+  const VERSION = 'a80';
   const WALLPAPER = { w: 768, h: 1376 };
   /* The illustrated penguin's approximate opaque bounds in wallpaper pixels,
      measured from the shipped asset.  Only the vertical extent matters here:
@@ -85,6 +85,8 @@
       this._startBattery();
       this._startTouchWarning();
       this._initIndicators();
+      this._initAuth();
+      this._bindAuthSwitch();
       this._positionHandle();
       try {
         document.addEventListener('nuxel:display-on', () => {
@@ -93,6 +95,81 @@
           this._updateTouchWarning();
         });
       } catch (e) { /* observation only */ }
+    }
+
+    /* A80 credential surface: pattern / PIN / fingerprint overlays.  The swipe
+       penguin is only the unlock gesture in swipe mode; in any credentialed
+       mode it is removed from the glass and the credential UI takes over. */
+    _initAuth() {
+      if (typeof global.NuxelLockscreenAuth !== 'function') {
+        this._trace('auth-init-missing: NuxelLockscreenAuth=' + typeof global.NuxelLockscreenAuth);
+        return;
+      }
+      try {
+        this.auth = new global.NuxelLockscreenAuth({
+          onUnlock: (request) => {
+            const controller = global.nuxel;
+            if (controller && typeof controller.completeCredentialUnlock === 'function') {
+              return controller.completeCredentialUnlock(this, request);
+            }
+            return { ok: false, error: 'no-authorized-controller' };
+          },
+          onSwipeMode: () => this._setSwipeAffordance(true),
+        });
+      } catch (err) {
+        this.auth = null;
+        this._trace('auth-init-failed ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    _setSwipeAffordance(visible) {
+      if (this.wrap) this.wrap.hidden = !visible;
+      if (this.hint) this.hint.hidden = !visible;
+      if (this.el) this.el.classList.toggle('lockscreen-credentialed', !visible);
+      /* The switcher is the user's own "Set up pattern / PIN" entry point on
+         the lock screen; visible exactly when a credential mode is active. */
+      const sw = document.getElementById('lockscreen-auth-switch');
+      if (sw) sw.hidden = visible || !!(this.auth && this.auth.setup && !this.auth.setupEl.hidden);
+    }
+
+    /* Ask the credential surface to render the current authoritative mode.
+       Returns a promise so callers can order it after the lock state write. */
+    _syncAuthMode() {
+      if (!this.auth) {
+        this.status_MODE_UNKNOWN = true;
+        return Promise.resolve(null);
+      }
+      return Promise.resolve(this.auth.show()).then((st) => {
+        this._trace('auth-sync mode=' + ((st && st.mode) || '-') +
+                    ' effective=' + (this.auth.effectiveMode || '-') +
+                    ' visible=' + (this.auth.isVisible ? (this.auth.isVisible() ? 1 : 0) : 'n/a'));
+        const mode = (st && st.mode) || this.auth.effectiveMode || 'swipe';
+        this.mode = mode;
+        this._setSwipeAffordance(mode === 'swipe');
+        if (mode === 'swipe' && this.wrap) this.wrap.hidden = false;
+        return st;
+      });
+    }
+
+    openAuthSetup() { this.openPatternSetup(); }
+
+    requestPinFallback() {
+      if (this.auth) this.auth.showPinFallback();
+    }
+
+    openPatternSetup() {
+      if (this.auth) this.auth.openSetup();
+    }
+
+    authVisible() { return !!(this.auth && this.auth.isVisible()); }
+
+    _bindAuthSwitch() {
+      const sw = document.getElementById('lockscreen-auth-switch');
+      if (!sw || sw._wired) return;
+      sw._wired = true;
+      sw.addEventListener('click', () => {
+        if (this.auth && typeof this.auth.openSetup === 'function') this.auth.openSetup();
+      });
     }
 
     /* A68 status indicators (charging / PC-connected / live console).  They
@@ -478,6 +555,10 @@
       this._updateBattery();
       this._updateTouchWarning();
       this._startIndicators();
+      /* A80: the authoritative lock mode decides whether the penguin gesture
+         or a credential surface is presented.  Fail closed: if the bridge
+         cannot answer, keep the swipe handle (it still re-verifies). */
+      Promise.resolve(this._syncAuthMode()).catch(() => this._setSwipeAffordance(true));
       this._wiggleOnce(this._displayOff() ? 2500 : 900);
       try { document.dispatchEvent(new CustomEvent('nuxel:lockscreen-shown')); } catch (e) {}
       this._trace('show version=' + VERSION + ' reason=' + (reason || 'unknown') +
@@ -503,6 +584,8 @@
       this.handle.style.transform = '';
       this.handle.style.opacity = '';
       this._stopIndicators();
+      if (this.auth) { try { this.auth.hide(); } catch (e) {} }
+      this._setSwipeAffordance(true);
       if (this.touchWarningEl) {
         this.touchWarningEl.hidden = true;
         try { this.touchWarningEl.classList.remove('visible'); } catch (e) {}
@@ -514,6 +597,13 @@
     }
 
     isLocked() { return this.locked; }
+
+    /* Called when Settings changes the lock mode while the session is locked
+       (or immediately after the credential is stored). */
+    refreshAuthMode() {
+      if (!this.locked) return Promise.resolve(null);
+      return this._syncAuthMode();
+    }
 
     _buzz() {
       try {

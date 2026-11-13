@@ -17,6 +17,7 @@ the local PWA origin and that the Referer path is the app's registered route.
 from __future__ import annotations
 
 import logging
+import secrets
 import threading
 import time
 from typing import Any, Dict, Optional, Tuple
@@ -39,7 +40,7 @@ AUTH_VERBS = {
     "authenticator-credential-status", "authenticator-credential-store",
     "authenticator-credential-get", "authenticator-credential-delete",
 }
-HOME_VERBS = {"status", "lock"}
+HOME_VERBS = {"status", "lock", "fingerprint-record-key"}
 
 ALLOWED = {
     VAULT_APP: VAULT_VERBS,
@@ -169,6 +170,12 @@ class KeyringAPI:
         except SecretServiceError as exc:
             if exc.code in ("invalid_credentials",):
                 _record_failure(app_id)
+            if exc.code not in ("invalid_credentials", "provider_unavailable",
+                                "user_cancelled", "timeout"):
+                # Any other provider fault is never a wrong-password signal.
+                # Log the bounded stage detail (no secret is ever included).
+                LOG.warning("keyring provider fault app=%s verb=%s code=%s detail=%s",
+                            app_id, verb, exc.code, str(exc.message)[:200])
             LOG.info("keyring app=%s verb=%s status=%s ms=%d", app_id, verb, exc.code,
                      int((time.monotonic() - started) * 1000))
             extra: Dict[str, Any] = {}
@@ -231,6 +238,15 @@ class KeyringAPI:
             if params.get("confirm") is not True:
                 return _error("invalid_request", "reset requires explicit confirmation")
             return p.reset_vault()
+        if verb == "fingerprint-record-key":
+            if app_id != "org.nuxel.Home":
+                return _error("permission_denied", "only Home may read the fingerprint record key")
+            got = p.internal_get("fingerprint-record-hmac")
+            if got.get("exists") and got.get("value"):
+                return {"success": True, "exists": True, "key": got["value"]}
+            key = secrets.token_hex(32)
+            p.internal_put("fingerprint-record-hmac", key)
+            return {"success": True, "exists": False, "key": key, "created": True}
         if verb == "authenticator-credential-status":
             return p.authenticator_status()
         if verb == "authenticator-credential-store":

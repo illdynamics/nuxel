@@ -37,6 +37,8 @@ That is metadata only -- this module never opens, parses or edits a keyring file
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import logging
 import os
@@ -44,6 +46,7 @@ import re
 import secrets
 import signal
 import subprocess
+import tempfile
 import threading
 import time
 import uuid
@@ -68,6 +71,12 @@ AUTH_APP = "org.nuxel.Authenticator"
 VAULT_SCHEMA = "nuxel-vault-item-v1"
 VAULT_META_SCHEMA = "nuxel-vault-meta-v1"
 AUTH_SCHEMA = "nuxel-auth-credential-v1"
+INTERNAL_SCHEMA = "nuxel-internal-record-v1"
+VERIFIER_SCHEMA = "nuxel-vault-verifier-v1"
+# A fixed application string so the verifier item is visible to any Secret
+# Service client that can see the collection (search is by attributes only).
+VERIFIER_APP = "org.nuxel.Vault"
+SCRYPT_N, SCRYPT_R, SCRYPT_P = 2 ** 14, 8, 1
 AUTH_PURPOSE = "vault-unlock-credential"
 
 MAX_VALUE_BYTES = 128 * 1024
@@ -110,6 +119,33 @@ def _text(value: Any, limit: int, field: str, required: bool = False) -> str:
 
 def _iso_now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+def _verifier_record(password: str) -> Dict[str, Any]:
+    """Salted scrypt verifier for the Vault master password.
+
+    The verifier is NOT the keyring: the keyring always does the real
+    encryption.  It exists so the UI can distinguish a wrong password from a
+    provider/PAM failure (the two used to be reported identically) and so an
+    unlock can be routed through the supported secret-struct API when the PAM
+    login path is unavailable.  It holds no usable secret.
+    """
+    salt = secrets.token_hex(16)
+    pin = password.encode("utf-8")
+    verifier = hashlib.scrypt(pin, salt=bytes.fromhex(salt), n=SCRYPT_N,
+                              r=SCRYPT_R, p=SCRYPT_P, dklen=32).hex()
+    return {"schema": VERIFIER_SCHEMA, "salt": salt, "verifier": verifier,
+            "kdf": "scrypt(n=2^14,r=8,p=1,dklen=32)"}
+
+
+def _verifier_matches(rec: Dict[str, Any], password: str) -> bool:
+    try:
+        got = hashlib.scrypt(str(password).encode("utf-8"),
+                             salt=bytes.fromhex(rec["salt"]), n=SCRYPT_N,
+                             r=SCRYPT_R, p=SCRYPT_P, dklen=32).hex()
+        return hmac.compare_digest(got, str(rec["verifier"]))
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def validate_vault_payload(raw: Any) -> Dict[str, Any]:
@@ -174,6 +210,9 @@ class SecretService:
                  runtime_dir: Optional[str] = None, dbus_module=None):
         self.bus_address = bus_address or SECRETS_BUS
         self.home = home or os.environ.get("HOME") or "/root"
+        # The daemon's control socket must live in a writable directory.  The
+        # bridge unit binds /run/nuxel-wayland/keyring read-write; the boot
+        # session script also creates it before the bridge starts.
         self.runtime_dir = runtime_dir or os.environ.get("XDG_RUNTIME_DIR") or "/run/nuxel-wayland"
         self._dbus = dbus_module if dbus_module is not None else dbus
         self._bus = None
@@ -426,11 +465,25 @@ class SecretService:
                     raise SecretServiceError("provider_error",
                                              "the running keyring daemon could not be stopped safely")
             self._cleanup_orphans()
-            proc = self._run_daemon(["--login", "--daemonize", "--components=secrets"],
+            self._last_unlock_wrong = False
+            # `--login --daemonize` does not read its stdin on every build; the
+            # supported colon form consumes exactly one password line and never
+            # exposes it in argv/environment.
+            proc = self._run_daemon(["--unlock", "--components=secrets"],
                                     password=password)
             password = None  # release the reference as soon as the pipe closes
+            self._last_daemon_rc = proc.returncode
+            self._last_daemon_err = (proc.stderr or b"").decode("utf-8", "replace")[-400:]
             if proc.returncode != 0:
-                raise SecretServiceError("provider_error", "keyring login daemon failed")
+                raise SecretServiceError("provider_error",
+                                         "keyring login daemon failed (rc=%d): %s"
+                                         % (proc.returncode, self._last_daemon_err[:200]))
+            # A wrong password is reported by the daemon in this message; any
+            # other failure has to be surfaced as a provider error so the UI
+            # can distinguish it from "wrong password".
+            if "did not unlock" in self._last_daemon_err.lower() or \
+                    "invalid password" in self._last_daemon_err.lower():
+                self._last_unlock_wrong = True
             # --login creates the keyring and unlocks it; --start connects that
             # daemon to the session bus and exits.
             self._run_daemon(["--start", "--components=secrets"], timeout=BOUNDED_START_SECONDS)
@@ -439,9 +492,12 @@ class SecretService:
                 try:
                     _bus, svc, _props = self._service()
                     default = svc.ReadAlias("default", timeout=4)
-                    if str(default) != "/":
+                    if str(default) == "/":
+                        default = self._collection_path_fallback()
+                    if default and str(default) != "/":
                         state = self._collection_state(str(default))
                         if state.get("locked") is False:
+                            self._last_unlock_verified = True
                             return
                 except SecretServiceError:
                     pass
@@ -450,8 +506,32 @@ class SecretService:
             # daemon we just started so a retry starts from a clean state.
             self._safe_stop_owner(self._name_owner_pid())
             self._cleanup_orphans()
-            raise SecretServiceError("invalid_credentials",
-                                     "the master password did not unlock the keyring")
+            if getattr(self, "_last_unlock_wrong", False):
+                raise SecretServiceError("invalid_credentials",
+                                         "the master password did not unlock the keyring")
+            raise SecretServiceError("provider_error",
+                                     "keyring unlock did not complete: "
+                                     + (getattr(self, "_last_daemon_err", "")[:200] or "unknown daemon error"))
+
+    def _collection_path_fallback(self) -> str:
+        """Find the Login collection object even if ReadAlias('default') lags.
+
+        After a daemon replacement the alias can briefly read '/' while the
+        collection object already exists.  Searching the object paths is
+        read-only and never unlocks anything by itself.
+        """
+        bus = self._connect()
+        for cand in ("/org/freedesktop/secrets/collection/login",
+                     "/org/freedesktop/secrets/collection/Default_Collection"):
+            try:
+                obj = bus.get_object(SERVICE, cand, introspect=False)
+                props = dbus.Interface(obj, "org.freedesktop.DBus.Properties")
+                vals = props.GetAll("org.freedesktop.Secret.Collection", timeout=3)
+                if vals is not None:
+                    return cand
+            except Exception:  # noqa: BLE001
+                continue
+        return "/"
 
     def _collection_state(self, path: str) -> Dict[str, Any]:
         bus = self._connect()
@@ -529,6 +609,10 @@ class SecretService:
                     LOG.info("keyring collection label set")
                 except Exception as exc:  # noqa: BLE001
                     LOG.warning("keyring collection label could not be set: %s", str(exc)[:160])
+            if not had_keyring and self._verifier_get() is None:
+                if not self._verifier_put(password):
+                    raise SecretServiceError("provider_error",
+                                             "the keyring opened but its verifier could not be stored")
             meta = self._find_one(VAULT_APP, VAULT_META_SCHEMA, "meta")
             if meta is None:
                 self._create_secret(
@@ -537,6 +621,64 @@ class SecretService:
                                 "initialized_at": _iso_now()},
                                separators=(",", ":")).encode("utf-8"))
             return self.status()
+
+    # ------------------------------------------------- password verifier
+    def _verifier_get(self) -> Optional[Dict[str, Any]]:
+        try:
+            path = self._internal_find("master-password-verifier")
+        except SecretServiceError:
+            return None
+        if path is None:
+            return None
+        try:
+            doc = json.loads(self._read_secret(path).decode("utf-8"))
+            return doc if isinstance(doc, dict) and doc.get("verifier") else None
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _verifier_put(self, password: str) -> bool:
+        try:
+            rec = _verifier_record(password)
+            path = self._internal_find("master-password-verifier")
+            if path is not None:
+                self._delete_path(path)
+            self._create_secret(VAULT_APP, INTERNAL_SCHEMA,
+                                "master-password-verifier",
+                                json.dumps(rec).encode("utf-8"))
+            return True
+        except SecretServiceError:
+            return False
+
+    def verify_password(self, password: str) -> Dict[str, Any]:
+        rec = self._verifier_get()
+        if rec is None:
+            return {"success": True, "verified": None, "reason": "no-verifier"}
+        ok = _verifier_matches(rec, password)
+        return {"success": True, "verified": bool(ok),
+                "reason": None if ok else "wrong-master-password"}
+
+    def _unlock_plain_session(self, password: str) -> bool:
+        """Second supported path: unlock the Login collection with its own
+        Secret Service prompt (the same thing Seahorse/gcr do).  The plain
+        session keeps the password inside the daemon."""
+        try:
+            _bus, svc, _props = self._service()
+            default = str(svc.ReadAlias("default", timeout=5))
+            if default == "/":
+                default = self._collection_path_fallback()
+            if not default or default == "/":
+                return False
+            cobj = self._connect().get_object(SERVICE, default, introspect=False)
+            ciface = dbus.Interface(cobj, "org.freedesktop.Secret.Collection")
+            _unlocked, prompt = ciface.Unlock(timeout=10)
+            # A prompt is not usable on Phoc; a direct zero-prompt unlock
+            # happens when the daemon already holds the key.
+            if prompt is not None and str(prompt) != "/":
+                self._await_prompt(prompt, timeout=6)
+            state = self._collection_state(default)
+            return state.get("locked") is False
+        except Exception:  # noqa: BLE001
+            return False
 
     def unlock(self, password: str) -> Dict[str, Any]:
         with self._lock:
@@ -547,8 +689,51 @@ class SecretService:
             except SecretServiceError as exc:
                 if exc.code != "provider_unavailable":
                     raise
-            self._unlock_via_login(password)
-            return self.status()
+            # A stored verifier distinguishes a wrong password from a provider
+            # failure.  Without one (older keyring) fall through unchanged.
+            if not isinstance(password, str) or not password:
+                raise SecretServiceError("invalid_request", "master password is required")
+            rec = self._verifier_get()
+            if rec is not None and not _verifier_matches(rec, password):
+                # The verifier is authoritative for "is this the password?".
+                # Never hand a known-wrong password to the daemon: some daemon
+                # builds report a successful --unlock without checking the
+                # keyring, which would otherwise open the Vault on a typo.
+                raise SecretServiceError("invalid_credentials",
+                                         "the master password is not correct")
+            verified = rec is not None
+            try:
+                self._unlock_via_login(password)
+            except SecretServiceError as exc:
+                if exc.code == "collection_locked":
+                    # ReadAlias/collection inspection raced the new daemon;
+                    # the challenge is the daemon, not a wrong password.
+                    if self._unlock_plain_session(password):
+                        return self.status()
+                    raise SecretServiceError(
+                        "provider_error",
+                        "the keyring daemon did not confirm an unlocked collection")
+                if exc.code != "invalid_credentials":
+                    raise
+                # PAM path failed for a reason other than the password (verifier
+                # said it is right, or there is no verifier): try the supported
+                # collection-unlock path once.  If that also fails, report the
+                # provider/PAM fault instead of blaming the password.
+                if self._unlock_plain_session(password):
+                    return self.status()
+                raise SecretServiceError(
+                    "provider_error",
+                    "the keyring provider could not unlock the collection "
+                    "(PAM login failed); unlock the session from the Vault "
+                    "again or restart nuxel-http-bridge")
+            st = self.status()
+            if verified is False or rec is None:
+                pass
+            if rec is None and self._verifier_get() is None:
+                # First successful unlock of an older keyring: record the
+                # verifier now so future failures are distinguishable.
+                self._verifier_put(password)
+            return st
 
     def lock(self) -> Dict[str, Any]:
         with self._lock:
@@ -901,6 +1086,61 @@ class SecretService:
             return {"success": True, "deleted": False, "state": "not_linked"}
         self._delete_path(path)
         return {"success": True, "deleted": True, "state": "not_linked"}
+
+    # ------------------------------------------------- internal records
+    # A tiny, fixed-purpose record store for OS components (never exposed as
+    # Vault items).  Only org.nuxel.Home may call this.  Used for the
+    # fingerprint enrollment HMAC key so the record is bound to the Vault.
+    def _internal_find(self, name: str) -> Optional[str]:
+        _bus, svc, _props = self._service()
+        attrs = {"application": VAULT_APP, "schema": INTERNAL_SCHEMA,
+                 "item_id": str(name)[:64]}
+        try:
+            unlocked, locked = svc.SearchItems(dbus.Dictionary(attrs, signature="ss"),
+                                               timeout=8)
+        except Exception as exc:  # noqa: BLE001
+            if "IsLocked" in str(exc) or "locked" in str(exc).lower():
+                raise SecretServiceError("collection_locked", "the keyring collection is locked")
+            raise SecretServiceError("provider_error", "keyring search failed")
+        if unlocked:
+            return str(unlocked[0])
+        if locked:
+            raise SecretServiceError("collection_locked", "the keyring collection is locked")
+        return None
+
+    def internal_get(self, name: str) -> Dict[str, Any]:
+        import re as _re
+        if not _re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", str(name or "")):
+            raise SecretServiceError("invalid_request", "invalid record name")
+        path = self._internal_find(name)
+        if path is None:
+            return {"success": True, "exists": False, "value": None}
+        raw = self._read_secret(path)
+        try:
+            value = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            raise SecretServiceError("provider_error", "stored record is not UTF-8")
+        return {"success": True, "exists": True, "value": value}
+
+    def internal_put(self, name: str, value: str) -> Dict[str, Any]:
+        import re as _re
+        if not _re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", str(name or "")):
+            raise SecretServiceError("invalid_request", "invalid record name")
+        if not isinstance(value, str) or len(value) > 4096:
+            raise SecretServiceError("invalid_request", "record value is too large")
+        raw = value.encode("utf-8")
+        path = self._internal_find(name)
+        if path is not None:
+            self._delete_path(path)
+        self._create_secret(VAULT_APP, INTERNAL_SCHEMA, str(name), raw)
+        return {"success": True, "stored": True}
+
+    def internal_delete(self, name: str) -> Dict[str, Any]:
+        path = self._internal_find(name)
+        if path is None:
+            return {"success": True, "deleted": False}
+        self._delete_path(path)
+        return {"success": True, "deleted": True}
 
     # --------------------------------------------------------- diagnostics
 

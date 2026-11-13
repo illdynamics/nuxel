@@ -290,6 +290,11 @@ fi
 # audio and never starts/stops with the ABOX reload, so this restores the bus
 # that the old in-session audio block used to create without re-coupling them.
 if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  # PWNAGE-A80: gnome-keyring-daemon's per-session control socket lives here.
+  # It must exist before any consumer's sandbox snapshot so the directory can
+  # be bound read-write; creating it lazily inside a ProtectSystem=strict
+  # service yields a read-only /run/nuxel-wayland and breaks the second unlock.
+  install -d -m 0700 /run/nuxel-wayland/keyring 2>/dev/null || true
   BUS_SOCKET=/run/nuxel-wayland/bus
   [ -S "$BUS_SOCKET" ] && rm -f "$BUS_SOCKET" 2>/dev/null || true
   if dbus-daemon --session --fork --address="unix:path=$BUS_SOCKET" --nopidfile >/run/nuxel-dbus.out 2>&1; then

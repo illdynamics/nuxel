@@ -255,6 +255,11 @@ def _handle_inner(p, verb, params, app_id):
         except (TypeError, ValueError):
             timeout = 10.0
         return p.test_tag(timeout, bool(params.get("read_ndef", True)))
+    if verb == "cancel":
+        out = _rpc("cancel", {}, timeout_s=3.0, app_id=app_id)
+        if out is None:
+            return {"success": False, "error": "nfc_service_unavailable"}
+        return out
     if verb in ("read", "last-tag"):
         return p.read_last()
     if verb in ("write", "write-tag"):

@@ -39,7 +39,9 @@ POWER_VERBS = frozenset(("enable", "set-enabled", "disable", "off"))
 # Verbs that expose or mutate tag contents, or observe tag presence.
 TAG_VERBS = frozenset(("scan", "read", "read-tag", "write", "write-tag", "clear",
                        # bridge-side alias for a one-shot scan
-                       "test-tag"))
+                       "test-tag",
+                       # abort an in-flight scan (tag data never crosses the bus)
+                       "cancel"))
 
 
 def _safe(app_id):

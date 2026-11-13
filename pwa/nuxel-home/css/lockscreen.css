@@ -646,3 +646,241 @@ html.nuxel-boot-locked #app-grid {
 }
 body.display-off .lockscreen-clock-penguin,
 body.display-off .lockscreen-clock-penguin img { animation: none !important; }
+
+/* ==========================================================================
+   A80 credential surface — pattern / PIN / fingerprint
+   The swipe penguin handle is hidden (.lockscreen-credentialed) whenever a
+   credential is required; the credential overlay is the only unlock path then.
+   ========================================================================== */
+#lockscreen.lockscreen-credentialed .lockscreen-handle-wrap,
+#lockscreen.lockscreen-credentialed .lockscreen-hint { display: none !important; }
+
+.lockscreen-auth {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 18px 18px 40px;
+    max-height: 68vh;
+    border-radius: 22px 22px 0 0;
+    background: linear-gradient(to top, rgba(3, 12, 22, .9), rgba(3, 12, 22, .72));
+    box-shadow: 0 -8px 26px rgba(0, 0, 0, .55);
+    box-sizing: border-box;
+    color: #eaf4ff;
+    touch-action: none;
+}
+.lockscreen-auth[hidden] { display: none !important; }
+.lockscreen-auth-head { text-align: center; pointer-events: none; margin-bottom: 2px; }
+.lockscreen-auth-title { font-size: 22px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.85); }
+.lockscreen-auth-hint { font-size: 13px; opacity: .85; margin-top: 3px; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.lockscreen-auth-error {
+    min-height: 18px; font-size: 13px; color: #ffb4b4; text-align: center;
+    text-shadow: 0 1px 3px rgba(0,0,0,.9); max-width: 320px;
+}
+
+/* ---------------------------------------------------------------- pattern */
+.lockscreen-pattern {
+    position: relative;
+    width: min(74vw, 300px);
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.lockscreen-pattern[hidden] { display: none !important; }
+.lockscreen-pattern-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+.lockscreen-pattern-trail {
+    stroke: #7fd0ff;
+    stroke-width: 7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: .9;
+    filter: drop-shadow(0 0 5px rgba(80, 180, 255, .85));
+}
+.lockscreen-pattern-trail.rejected { stroke: #ff6b6b; filter: drop-shadow(0 0 6px rgba(255,80,80,.9)); }
+.lockscreen-pattern-dots { position: absolute; inset: 0; }
+.lockscreen-pattern-dot {
+    position: absolute;
+    width: 76px;
+    height: 76px;
+    margin: -38px 0 0 -38px;
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 45%, rgba(20, 52, 84, .55), rgba(4, 18, 31, .35) 70%);
+    border: 2px solid rgba(140, 200, 255, .45);
+    transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+.lockscreen-pattern-dot.active {
+    border-color: #7fd0ff;
+    box-shadow: 0 0 14px rgba(90, 185, 255, .8), inset 0 0 10px rgba(90, 185, 255, .5);
+    transform: scale(1.04);
+}
+.lockscreen-pattern-dot.mismatch { border-color: #ff6b6b; box-shadow: 0 0 12px rgba(255,80,80,.7); }
+.lockscreen-pattern-penguin {
+    width: 72%;
+    height: 72%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
+    opacity: .95;
+}
+
+/* -------------------------------------------------------------------- PIN */
+.lockscreen-pinpad { width: min(82vw, 320px); display: flex; flex-direction: column; gap: 10px; }
+.lockscreen-pinpad[hidden] { display: none !important; }
+.lockscreen-pin-display {
+    height: 34px; font-size: 28px; letter-spacing: 9px; text-align: center;
+    color: #eaf4ff; text-shadow: 0 1px 3px rgba(0,0,0,.9); min-height: 34px;
+}
+.lockscreen-pin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.lockscreen-key {
+    min-height: 58px;
+    border-radius: 16px;
+    border: 1px solid rgba(140, 200, 255, .35);
+    background: rgba(8, 26, 44, .62);
+    color: #eaf4ff;
+    font-size: 24px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lockscreen-key:active { background: rgba(40, 90, 140, .8); transform: scale(.97); }
+.lockscreen-key.key-wide { font-size: 15px; font-weight: 500; }
+.lockscreen-key.key-enter {
+    width: 100%; min-height: 54px; font-size: 17px;
+    background: rgba(46, 112, 168, .85); border-color: rgba(150, 210, 255, .55);
+}
+
+/* ------------------------------------------------------------ fingerprint */
+.lockscreen-fingerprint {
+    --scanner-left: 22%;
+    --scanner-top: 74%;
+    --scanner-width: 56%;
+    --scanner-height: 18%;
+    position: absolute;
+    left: var(--scanner-left);
+    top: var(--scanner-top);
+    width: var(--scanner-width);
+    height: var(--scanner-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-46%);
+    touch-action: none;
+}
+.lockscreen-fingerprint[hidden] { display: none !important; }
+.lockscreen-fingerprint-ring {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% / 42%;
+}
+.lockscreen-fingerprint-art {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    opacity: .92;
+    filter: drop-shadow(0 0 10px rgba(90, 185, 255, .35));
+    transition: filter .2s ease, transform .2s ease;
+}
+.lockscreen-fingerprint-ring.scanning .lockscreen-fingerprint-art {
+    animation: nuxel-fp-scan 1.1s ease-in-out infinite;
+}
+.lockscreen-fingerprint-ring.accepted .lockscreen-fingerprint-art {
+    filter: drop-shadow(0 0 16px rgba(110, 255, 170, .9));
+    transform: scale(.96);
+}
+@keyframes nuxel-fp-scan {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(90,185,255,.3)); }
+    50% { filter: drop-shadow(0 0 20px rgba(120,210,255,.95)); }
+}
+.lockscreen-fingerprint-status {
+    position: absolute;
+    left: 50%;
+    bottom: -28px;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 86vw;
+    font-size: 13px;
+    text-align: center;
+    color: #dceeff;
+    text-shadow: 0 1px 3px rgba(0,0,0,.9);
+}
+
+/* -------------------------------------------------------------- PIN button */
+.lockscreen-pin-fallback {
+    position: relative;
+    z-index: 5;
+    min-width: 116px;
+    min-height: 46px;
+    padding: 0 22px;
+    border-radius: 23px;
+    border: 1px solid rgba(150, 210, 255, .55);
+    background: rgba(10, 30, 52, .78);
+    color: #eaf4ff;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lockscreen-pin-fallback[hidden] { display: none !important; }
+.lockscreen-pin-fallback:active { transform: scale(.97); background: rgba(40, 90, 140, .85); }
+
+/* ------------------------------------------------------ pattern setup flow */
+.lockscreen-setup { inset: 0; max-height: none; justify-content: center; padding-bottom: 64px; border-radius: 0; background: rgba(3, 12, 22, .82); }
+/* pattern/pin/fingerprint: no swipe penguin on the glass at all */
+#lockscreen.lockscreen-credentialed .lockscreen-handle-wrap,
+#lockscreen.lockscreen-credentialed .lockscreen-clock-lanes { display: none !important; }
+@media (max-height: 640px) {
+    .lockscreen-auth { padding-bottom: 24px; }
+    .lockscreen-pattern { width: min(64vw, 240px); }
+    .lockscreen-pattern-dot { width: 62px; height: 62px; margin: -31px 0 0 -31px; }
+    .lockscreen-key { min-height: 48px; font-size: 20px; }
+}
+
+/* A80 layout final: the credential panel owns the full glass so the keypad
+   never fights the swipe handle's absolute centring. */
+#lockscreen.lockscreen-credentialed .lockscreen-auth {
+    inset: 0 !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    padding: 24px 18px 60px !important;
+    background: linear-gradient(to top, rgba(3, 12, 22, .92), rgba(3, 12, 22, .55) 55%, rgba(3, 12, 22, .18)) !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+}
+#lockscreen.lockscreen-credentialed .lockscreen-pinpad { margin-top: auto; margin-bottom: 4px; }
+#lockscreen .lockscreen-pin-fallback,
+#lockscreen .lockscreen-key-enter { pointer-events: auto; }

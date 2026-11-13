@@ -374,6 +374,82 @@
                 <button type="button" class="connection-mode-dismiss" id="connection-mode-dismiss">Close</button>
             </div>
         </div>
+        <!-- A80 credential overlays.  Exactly one is visible per lock mode:
+             pattern  -> 9-dot matrix (penguin lock-heads as dots) + trail + PIN button
+             pin      -> numeric keypad
+             fingerprint -> nuxel-fingerprint.png aligned on the S10+ scanner + PIN button
+             The swipe penguin handle is hidden in pattern/pin/fingerprint modes. -->
+        <div id="lockscreen-auth" class="lockscreen-auth" hidden>
+            <div class="lockscreen-auth-head">
+                <div id="lockscreen-auth-title" class="lockscreen-auth-title">Unlock</div>
+                <div id="lockscreen-auth-hint" class="lockscreen-auth-hint">Draw your pattern</div>
+            </div>
+
+            <div id="lockscreen-pattern" class="lockscreen-pattern" hidden
+                 role="application" aria-label="Draw pattern to unlock">
+                <svg id="lockscreen-pattern-svg" class="lockscreen-pattern-svg"
+                     viewBox="0 0 300 300" aria-hidden="true">
+                    <polyline id="lockscreen-pattern-trail" class="lockscreen-pattern-trail"
+                              points="" fill="none"/>
+                </svg>
+                <div id="lockscreen-pattern-dots" class="lockscreen-pattern-dots"></div>
+            </div>
+
+            <div id="lockscreen-pinpad" class="lockscreen-pinpad" hidden>
+                <div id="lockscreen-pin-display" class="lockscreen-pin-display"
+                     role="status" aria-live="polite"></div>
+                <div class="lockscreen-pin-grid">
+                    <button type="button" class="lockscreen-key" data-pin="1">1</button>
+                    <button type="button" class="lockscreen-key" data-pin="2">2</button>
+                    <button type="button" class="lockscreen-key" data-pin="3">3</button>
+                    <button type="button" class="lockscreen-key" data-pin="4">4</button>
+                    <button type="button" class="lockscreen-key" data-pin="5">5</button>
+                    <button type="button" class="lockscreen-key" data-pin="6">6</button>
+                    <button type="button" class="lockscreen-key" data-pin="7">7</button>
+                    <button type="button" class="lockscreen-key" data-pin="8">8</button>
+                    <button type="button" class="lockscreen-key" data-pin="9">9</button>
+                    <button type="button" class="lockscreen-key key-wide" id="lockscreen-pin-cancel">Cancel</button>
+                    <button type="button" class="lockscreen-key" data-pin="0">0</button>
+                    <button type="button" class="lockscreen-key" id="lockscreen-pin-del" aria-label="Delete">⌫</button>
+                </div>
+                <button type="button" class="lockscreen-key key-enter" id="lockscreen-pin-enter">Unlock</button>
+            </div>
+
+            <div id="lockscreen-fingerprint" class="lockscreen-fingerprint" hidden>
+                <div id="lockscreen-fingerprint-ring" class="lockscreen-fingerprint-ring">
+                    <img id="lockscreen-fingerprint-art" class="lockscreen-fingerprint-art"
+                         src="/assets/nuxel-fingerprint.png?v=a80e" alt=""
+                         draggable="false">
+                </div>
+                <div id="lockscreen-fingerprint-status" class="lockscreen-fingerprint-status"
+                     role="status" aria-live="polite">Touch the scanner to unlock</div>
+            </div>
+
+            <div id="lockscreen-auth-error" class="lockscreen-auth-error" role="alert"></div>
+            <button type="button" id="lockscreen-pin-fallback" class="lockscreen-pin-fallback"
+                    hidden>PIN</button>
+            <button type="button" id="lockscreen-auth-switch" class="lockscreen-pin-fallback auth-switch"
+                    hidden>Set up pattern / PIN</button>
+        </div>
+
+        <!-- A80 first-time pattern setup.  The SAME pattern must be drawn twice
+             before it is stored; the bridge refuses any single-entry change. -->
+        <div id="lockscreen-setup" class="lockscreen-auth lockscreen-setup" hidden>
+            <div class="lockscreen-auth-head">
+                <div class="lockscreen-auth-title">Set a pattern</div>
+                <div id="lockscreen-setup-hint" class="lockscreen-auth-hint">Draw a pattern, then draw it again</div>
+            </div>
+            <div id="lockscreen-setup-pattern" class="lockscreen-pattern" role="application"
+                 aria-label="Draw the new pattern">
+                <svg id="lockscreen-setup-svg" class="lockscreen-pattern-svg" viewBox="0 0 300 300" aria-hidden="true">
+                    <polyline id="lockscreen-setup-trail" class="lockscreen-pattern-trail" points="" fill="none"/>
+                </svg>
+                <div id="lockscreen-setup-dots" class="lockscreen-pattern-dots"></div>
+            </div>
+            <div id="lockscreen-setup-error" class="lockscreen-auth-error" role="alert"></div>
+            <button type="button" id="lockscreen-setup-cancel" class="lockscreen-pin-fallback">Cancel</button>
+        </div>
+
         <div class="lockscreen-touch-warning" id="lockscreen-touch-warning"
              role="alert" aria-live="assertive" hidden>
             <strong>Touch unavailable</strong>
@@ -452,7 +528,8 @@
     <script src="js/security-lock.js?v=p80000"></script>
     <script src="js/lockscreen-indicators.js?v=p85000"></script>
     <script src="js/lockscreen-clock.js?v=p91000"></script>
-    <script src="js/lockscreen.js?v=p80000"></script>
+    <script src="js/lockscreen-auth.js?v=a80e"></script>
+    <script src="js/lockscreen.js?v=a80e"></script>
     <script src="js/navigation.js?v=p80000"></script>
     <script src="js/gestures.js?v=p80000"></script>
     <script src="js/widgets.js?v=p91000"></script>

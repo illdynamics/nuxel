@@ -101,6 +101,14 @@ async function boot() {
   showScreen('screen-boot');
   const st = await bridge('status');
   if (!st.success) {
+    if (st.state === 'collection_locked' || st.locked === true) {
+      /* Reachable-but-locked is the normal existing-vault state, not a fatal
+         provider error: show the password form instead of a dead end. */
+      state.keyringState = 'collection_locked';
+      showUnlockLayout('existing');
+      setBadge('locked', 'bad');
+      return;
+    }
     showProviderError(st);
     return;
   }
@@ -121,6 +129,18 @@ async function boot() {
   }
   showUnlockLayout('existing');
   setBadge('locked', 'bad');
+}
+
+/* A write that reports success is only trusted when the provider's live
+   status also reports the collection unlocked in the SAME session.  This is
+   what turns the old "close and it is suddenly set but cannot be unlocked"
+   failure into a clear, actionable provider error. */
+async function confirmUnlocked(context) {
+  const st = await bridge('status');
+  if (st && st.success !== false && (st.state === 'unlocked' || st.locked === false)) return st;
+  const detail = (st && (st.detail || st.error)) || 'the keyring did not report unlocked';
+  toast('The Vault could not stay unlocked: ' + detail);
+  return null;
 }
 
 async function enterMain() {
@@ -676,7 +696,14 @@ function switchTab(name) {
 }
 
 function wire() {
-  el('close').addEventListener('click', () => { lockUI('close', false); try { window.close(); } catch (e) {} });
+  el('close').addEventListener('click', async () => {
+    /* One release, awaited: Close means the keyring is locked.  The old
+       fire-and-forget close could race the initialize reply, which looked
+       like "it set itself after I pressed Close". */
+    try { await bridge('lock'); } catch (e) { /* the UI still locks */ }
+    lockUI('close', false);
+    try { window.close(); } catch (e) {}
+  });
   el('retry-provider').addEventListener('click', boot);
 
   el('create-go').addEventListener('click', async () => {
@@ -693,6 +720,11 @@ function wire() {
       el('create-pass').value = '';
       el('create-pass2').value = '';
       if (!res.success) { err.textContent = mapError(res); return; }
+      if (!(await confirmUnlocked('initialize'))) {
+        err.textContent = 'The master password was stored, but the keyring is not unlocked. '
+          + 'Reopen the Vault and unlock it; if it fails again the keyring provider needs a restart.';
+        return;
+      }
       await enterMain();
     } finally {
       state.busy = false;
@@ -719,6 +751,11 @@ function wire() {
       if (!res.success) {
         if (res.state === 'unavailable') showProviderError(res);
         else err.textContent = mapError(res);
+        return;
+      }
+      if (!(await confirmUnlocked('unlock'))) {
+        err.textContent = 'The keyring accepted the password but did not report unlocked. '
+          + 'Try again; if it repeats, the provider needs a restart.';
         return;
       }
       await enterMain();

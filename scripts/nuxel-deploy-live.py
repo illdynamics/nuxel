@@ -53,6 +53,9 @@ def targets_for(source: str):
         if source == "pwa/nuxel-common/bridge-version.json":
             out.append(("/etc/nuxel/bridge-version.json", 0o644))
         return out
+    if source.startswith("pwa/nuxel-apps/vault/"):
+        return [("/usr/share/nuxel/pwa/" + source, 0o644),
+                ("/usr/share/nuxel/" + source, 0o644)]
     if source.startswith("assets/"):
         return [("/usr/share/nuxel/" + source, 0o644)]
     if source == "services/nuxel-bridge/src/nfc_provider.py":
