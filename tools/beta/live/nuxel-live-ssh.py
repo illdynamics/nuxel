@@ -4,7 +4,7 @@
 Examples:
   nuxel-live-ssh.py --transport auto --discover
   nuxel-live-ssh.py --transport wlan --host 10.20.30.16 --shell
-  nuxel-live-ssh.py --transport usb --usb-host 10.15.19.82 --diagnose
+  nuxel-live-ssh.py --transport usb --usb-host 10.15.19.1 --diagnose
   nuxel-live-ssh.py --transport wlan --host 10.20.30.16 --exec 'systemctl is-active sshd'
   nuxel-live-ssh.py --transport wlan --host 10.20.30.16 --put ./x /var/tmp/x
   nuxel-live-ssh.py --transport serial --run 'uname -a'

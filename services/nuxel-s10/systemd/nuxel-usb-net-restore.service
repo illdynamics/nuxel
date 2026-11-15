@@ -1,0 +1,20 @@
+[Unit]
+Description=Nuxel USB networking restore (single owner, ACM-only on failure)
+After=network.target NetworkManager.service nuxel-bridge.service
+# Only an explicit owner selection of a USB network/tether composition is
+# restored.  A missing file, "off", "charging", or a half-written marker means
+# the safe ACM-only composition.  The owner journals the transition and rolls
+# back to ACM-only; it never recreates a half-built composition at boot.
+ConditionPathExists=/var/lib/nuxel/usb-mode
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# +: the owner runs as root (configfs, address, persisted lock).  It is the same
+# script every API/UI/restore/monitor path uses, so the transition is serialised
+# by its flock() and cannot race a boot-time API call.
+ExecStart=+/bin/sh -c 'mode=$(cat /var/lib/nuxel/usb-mode 2>/dev/null || echo charging); exec /usr/lib/nuxel/nuxel-usb-mode.sh recover; case "$mode" in usb_network) sleep 3; exec /usr/lib/nuxel/nuxel-usb-mode.sh usb_network ;; usb_tethering) sleep 3; exec /usr/lib/nuxel/nuxel-usb-mode.sh usb_tethering ;; *) exit 0 ;; esac'
+TimeoutStartSec=90
+
+[Install]
+WantedBy=multi-user.target

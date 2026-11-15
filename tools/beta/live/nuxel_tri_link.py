@@ -59,7 +59,7 @@ DEFAULT_USER = "nuxel"
 DEFAULT_PORT = 22
 DEFAULT_HOST_KEY_ALIAS = "nuxel-s10plus"
 DEFAULT_WLAN_HOST = "10.20.30.16"
-DEFAULT_USB_HOST = "10.15.19.82"
+DEFAULT_USB_HOST = "10.15.19.1"
 DEFAULT_USB_SUBNET = "10.15.19.0/24"
 DEFAULT_WLAN_SUBNET = "10.20.30.0/24"
 
@@ -691,7 +691,7 @@ class SshAdapter:
             "id": "id",
             "shell": "getent passwd %s | cut -d: -f7" % q(self.target.user),
             "wlan": "ip -4 -o addr show wlan0 2>/dev/null || true",
-            "usb": "ip -4 -o addr show usb0 2>/dev/null || true",
+            "usb": "ip -4 -o addr show 2>/dev/null | grep -E ' (usb|ncm|rndis)[0-9]* ' || true",
             "sshd": "systemctl is-active sshd.service 2>/dev/null || true",
             "sshd_effective": "sshd -T 2>/dev/null | grep -E '^(passwordauthentication|kbdinteractiveauthentication|allowusers|permitrootlogin) ' || true",
         }
@@ -1019,10 +1019,25 @@ def usb_host_presence(net_root: str | Path = "/sys/class/net") -> tuple[str | No
     return None, False
 
 
+#: The NCM lifecycle fix (kernel patch 0011) exposes this on the mirrorlink
+#: misc device.  It is the RUNNING build's safety verdict, replacing the old
+#: "4.14.253 is always blocked" rule.
+NCM_FIX_MARKER = "nuxel-ncm-lifecycle-fix-v2"
+NCM_FIX_PATH = "/sys/class/misc/usb_ncm/nuxel_fix"
+
+
+def ncm_lifecycle_fix(p: str | Path = NCM_FIX_PATH) -> bool:
+    try:
+        return Path(p).read_text().strip() == NCM_FIX_MARKER
+    except OSError:
+        return False
+
+
 def usb_capability(kernel_config: str, gadget_root: str | Path = "/sys/kernel/config/usb_gadget",
                    net_root: str | Path = "/sys/class/net",
                    kernel_release: str | None = None,
-                   known_bad_ncm: set[str] | None = None) -> dict[str, Any]:
+                   known_bad_ncm: set[str] | None = None,
+                   ncm_fix: bool | None = None) -> dict[str, Any]:
     cfg = parse_kernel_config(kernel_config)
     functions = gadget_function_names(gadget_root)
     links = gadget_links(gadget_root)
@@ -1030,6 +1045,8 @@ def usb_capability(kernel_config: str, gadget_root: str | Path = "/sys/kernel/co
     release = kernel_release or os.uname().release
     base = re.sub(r"^(\d+\.\d+\.\d+).*$", r"\1", release)
     bad = known_bad_ncm if known_bad_ncm is not None else {"4.14.253"}
+    fix = ncm_lifecycle_fix() if ncm_fix is None else ncm_fix
+    ncm_blocked = base in bad and not fix
     compiled = {
         "ncm": cfg.get("CONFIG_USB_CONFIGFS_NCM") == "y" and cfg.get("CONFIG_USB_F_NCM") == "y",
         "rndis": cfg.get("CONFIG_USB_CONFIGFS_RNDIS") == "y" and cfg.get("CONFIG_USB_F_RNDIS") == "y",
@@ -1043,8 +1060,10 @@ def usb_capability(kernel_config: str, gadget_root: str | Path = "/sys/kernel/co
     host_iface = usb_host_gadget_interface(net_root)
     modes = {
         "ncm": {"compiled": compiled["ncm"],
-                "safe_on_current_kernel": False if base in bad else "UNVERIFIED",
-                "status": "BLOCKED_KNOWN_PANIC" if base in bad else "NEEDS_VALIDATION"},
+                "safe_on_current_kernel": ("FIX_MARKER_PRESENT" if fix else
+                                           (False if base in bad else "UNVERIFIED")),
+                "status": ("NEEDS_PHYSICAL_SOAK" if fix else
+                           ("BLOCKED_KNOWN_PANIC" if base in bad else "NEEDS_VALIDATION"))},
         "rndis": {"compiled": compiled["rndis"],
                   "safe_on_current_kernel": "UNVERIFIED",
                   "status": "NEEDS_VALIDATION" if compiled["rndis"] else "BLOCKED_KERNEL"},
@@ -1059,14 +1078,14 @@ def usb_capability(kernel_config: str, gadget_root: str | Path = "/sys/kernel/co
                 "status": "NEEDS_VALIDATION" if compiled["eem"] else "BLOCKED_KERNEL"},
     }
     # Never select NCM on the known-panic release, even when RNDIS is compiled.
-    preferred = None if base in bad else (
+    preferred = None if ncm_blocked else (
         "ncm" if compiled["ncm"] else ("rndis" if compiled["rndis"] else
                                         ("ecm" if compiled["ecm"] else None)))
     if not compiled["configfs"] or not compiled["dwc3"]:
         state = "BLOCKED_KERNEL"
     elif not any(compiled[k] for k in ("ncm", "rndis", "ecm")):
         state = "BLOCKED_KERNEL"
-    elif base in bad:
+    elif ncm_blocked:
         state = "NEEDS_VALIDATION"
     elif host_iface:
         state = "AVAILABLE"
@@ -1088,6 +1107,7 @@ def usb_capability(kernel_config: str, gadget_root: str | Path = "/sys/kernel/co
         "preferred_mode": preferred,
         "selected_mode": None,
         "acm_preserved": any(n.startswith("acm.") for n in current),
+        "ncm_lifecycle_fix": bool(fix),
         "mutated": False,
     }
 

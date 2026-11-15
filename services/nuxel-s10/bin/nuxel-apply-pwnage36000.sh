@@ -220,6 +220,20 @@ files_only() {
     # SSH allowlist for the owner's current LAN.  Installed as a drop-in so the
     # 26000 Tri-Link policy keeps its public-key-only rules.
     [ -f "$STAGE/nuxel-s10/ssh/61-nuxel-lan38.conf" ] &&         inst "$STAGE/nuxel-s10/ssh/61-nuxel-lan38.conf" /etc/ssh/sshd_config.d/61-nuxel-lan38.conf 0644 || true
+    # NUXEL-105200: guarantee the LAN allowlist even when this stage has no
+    # 61-nuxel-lan38.conf (or an older copy).  The helper is idempotent and the
+    # sshd drop-in below runs it before every sshd start.
+    if [ -f "$STAGE/nuxel-s10/ssh/nuxel-ssh-lan-allow.sh" ]; then
+        inst "$STAGE/nuxel-s10/ssh/nuxel-ssh-lan-allow.sh" /usr/lib/nuxel/nuxel-ssh-lan-allow 0755 || true
+    fi
+    if [ -f "$STAGE/nuxel-s10/ssh/sshd.service.d-nuxel-lan-allow.conf" ]; then
+        install -d -m 0755 /etc/systemd/system/sshd.service.d 2>/dev/null || true
+        inst "$STAGE/nuxel-s10/ssh/sshd.service.d-nuxel-lan-allow.conf" /etc/systemd/system/sshd.service.d/20-nuxel-lan-allow.conf 0644 || true
+    fi
+    for _ssh_unit in sshd.service ssh.service; do
+        /usr/bin/systemctl daemon-reload >/dev/null 2>&1 || true
+        /usr/bin/systemctl try-restart "$_ssh_unit" >/dev/null 2>&1 && say "ssh: $_ssh_unit restarted with the LAN allowlist" && break
+    done
     [ -f "$STAGE/nuxel-s10/wireplumber/99-nuxel-s10.conf" ] && \
         inst "$STAGE/nuxel-s10/wireplumber/99-nuxel-s10.conf" /etc/wireplumber/wireplumber.conf.d/99-nuxel-s10.conf 0644 || true
     [ -f "$STAGE/nuxel-s10/pipewire/99-nuxel-s10.conf" ] && \

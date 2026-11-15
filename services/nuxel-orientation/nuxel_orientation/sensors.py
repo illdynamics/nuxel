@@ -50,7 +50,7 @@ class SourceUnavailable(Exception):
 class SensorReading:
     """One display-native gravity sample plus its provenance."""
 
-    __slots__ = ("x", "y", "z", "source", "available", "reason")
+    __slots__ = ("x", "y", "z", "source", "available", "reason", "gyro")
 
     def __init__(self, x, y, z, source="unknown", available=True, reason=""):
         self.x = float(x)
@@ -59,6 +59,7 @@ class SensorReading:
         self.source = source
         self.available = bool(available)
         self.reason = reason
+        self.gyro = None
 
     def vector(self):
         return (self.x, self.y, self.z)
@@ -70,6 +71,7 @@ class SensorReading:
             "source": self.source,
             "available": self.available,
             "reason": self.reason,
+            "gyro": list(self.gyro) if self.gyro else None,
         }
 
 
@@ -229,7 +231,13 @@ class SensorHubControl:
         linker = self._present(self.linker_paths)
         reason = ""
         if not raw_live:
-            if not lhd:
+            if os.path.exists("/sys/class/sensors/ssp_sensor/nuxel_bringup"):
+                # PWNAGE-SSP kernel present: the native bridge owns the
+                # transport; lhd is irrelevant.  Never blame a missing vendor
+                # daemon for a hub that the kernel itself is driving.
+                reason = ("BCM47752 MCU is not streaming after the kernel "
+                          "bring-up (see nuxel_hub_diag / nuxel-ssp-bridge log)")
+            elif not lhd:
                 reason = ("vendor Android lhd daemon is not installed; the "
                           "BCM47752 MCU cannot receive its BBD/LHD patch")
             elif not linker:
@@ -250,6 +258,8 @@ class SensorHubControl:
             "enable_bits": enable_bits,
             "mcu_powered": power_raw == "1",
             "lhd_present": bool(lhd),
+            "native_bridge_abi": os.path.exists(
+                "/sys/class/sensors/ssp_sensor/nuxel_bringup"),
             "lhd_path": lhd,
             "android_linker_present": bool(linker),
             "streaming": raw_live,
@@ -381,6 +391,67 @@ class SysfsAccelSource:
         return SensorReading(x, y, z, source="iio-sysfs-accel")
 
 
+HUB_ACCEL_RAW = "/sys/class/sensors/accelerometer_sensor/raw_data"
+HUB_GYRO_RAW = "/sys/class/sensors/gyro_sensor/raw_data"
+
+
+def _read_raw_vector(path):
+    """Read ``x,y,z`` (or ``x;y;z``) from a Samsung sensor class node."""
+    try:
+        with open(path) as f:
+            raw = f.read().strip()
+    except OSError as exc:
+        raise SourceUnavailable("%s unreadable: %s" % (path, exc))
+    parts = [p.strip() for p in raw.replace(";", ",").split(",")]
+    if len(parts) < 3:
+        raise SourceUnavailable("%s is malformed: %r" % (path, raw))
+    try:
+        return tuple(float(p) for p in parts[:3])
+    except ValueError:
+        raise SourceUnavailable("%s is not numeric: %r" % (path, raw))
+
+
+class SysfsGyroSource:
+    """Live angular velocity from the hub's gyroscope (rad/s).
+
+    Raw unit is the SSP int32 stream value.  The LSM6DSO full-scale used by the
+    hub's factory calibration is 2000 dps (0.07 dps/LSB per the kernel's
+    ``DEF_GYRO_SENS``); this source converts to rad/s.  It is used only as a
+    rate-of-change assist: absolute orientation always comes from gravity.
+    """
+
+    PATH = HUB_GYRO_RAW
+    DPS_PER_LSB = 0.07
+    DEG_TO_RAD = 0.017453292519943295
+
+    def __init__(self, path=None):
+        self.path = path or self.PATH
+
+    def read(self):
+        x, y, z = _read_raw_vector(self.path)
+        k = self.DPS_PER_LSB * self.DEG_TO_RAD
+        return (x * k, y * k, z * k)
+
+    def read_raw(self):
+        return _read_raw_vector(self.path)
+
+
+class AccelGyroSource(SysfsAccelSource):
+    """Accelerometer gravity + gyroscope rate from the same hub stream."""
+
+    def __init__(self, path=None, gyro_path=None, matrix=None):
+        SysfsAccelSource.__init__(self, path=path, matrix=matrix)
+        self.gyro = SysfsGyroSource(gyro_path)
+
+    def read(self):
+        reading = SysfsAccelSource.read(self)
+        try:
+            reading.gyro = self.gyro.read()
+        except SourceUnavailable:
+            reading.gyro = None
+        return reading
+
+
 class SensorProxySource:
     """Decode iio-sensor-proxy's D-Bus ``AccelerometerOrientation``.
 
@@ -468,6 +539,11 @@ def resolve_source(name, config=None):
     if name in ("iio-sysfs-accel", "sensor-hub"):
         hub_cfg = sensor_cfg.get("sensor_hub", {}) or {}
         return SysfsAccelSource(path=hub_cfg.get("raw_data"), matrix=matrix)
+    if name == "iio-sysfs-accel-gyro":
+        hub_cfg = sensor_cfg.get("sensor_hub", {}) or {}
+        return AccelGyroSource(path=hub_cfg.get("raw_data"),
+                               gyro_path=hub_cfg.get("gyro_raw_data"),
+                               matrix=matrix)
     if name == "iio-sensor-proxy":
         return SensorProxySource(reference=grav_ref)
     if name == "manual":
@@ -518,7 +594,7 @@ def probe_sources(config=None):
                     entry["reason"] = str(exc)
                 except Exception as exc:
                     entry["reason"] = "IIO accelerometer read failed: %s" % exc
-        elif name in ("iio-sysfs-accel", "sensor-hub"):
+        elif name in ("iio-sysfs-accel", "sensor-hub", "iio-sysfs-accel-gyro"):
             try:
                 hub = hub_control_from_config(cfg).status()
                 entry["hub"] = hub
@@ -530,7 +606,9 @@ def probe_sources(config=None):
                     entry["available"] = True
                     entry["auto_capable"] = True
                     entry["sample"] = reading.as_dict()
-                    entry["source"] = "iio-sysfs-accel"
+                    entry["source"] = ("iio-sysfs-accel-gyro"
+                                       if name == "iio-sysfs-accel-gyro"
+                                       else "iio-sysfs-accel")
                 else:
                     entry["reason"] = hub.get("reason") or (
                         "sensor-hub sample implausible (|g|=%.3f)" % mag)

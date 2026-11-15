@@ -38,8 +38,8 @@ import nuxel_tri_link as tl  # noqa: E402
 DEFAULT_GADGET = "/sys/kernel/config/usb_gadget/nuxel"
 DEFAULT_STATE = "/var/lib/nuxel/usb-net"
 DEFAULT_RUN = "/run"
-USB_IP = "10.15.19.82/24"
-USB_HOST_IP = "10.15.19.1/24"
+USB_IP = "10.15.19.1/24"
+USB_HOST_IP = "10.15.19.2/24"
 USB_SUBNET = "10.15.19.0/24"
 DEV_MAC = "02:6e:75:78:65:01"
 HOST_MAC = "02:6e:75:78:65:02"
@@ -49,6 +49,11 @@ HOST_MAC = "02:6e:75:78:65:02"
 #: phone.  This is a real hard blocker, not a test limitation.  The code remains
 #: available for a future kernel, but apply refuses by default on this release.
 KNOWN_BAD_NCM_KERNELS = {"4.14.253"}
+#: The running kernel proves it carries patches/0011-nuxel-usb-ncm-lifecycle.patch
+#: by exposing this value at /sys/class/misc/usb_ncm/nuxel_fix (the Samsung NCM
+#: mirrorlink misc device exists only while an NCM function is registered).
+NCM_FIX_MARKER = "nuxel-ncm-lifecycle-fix-v2"
+NCM_FIX_PATH = "/sys/class/misc/usb_ncm/nuxel_fix"
 USB_MODES = ("ncm", "rndis", "ecm", "ecm_subset", "eem")
 
 
@@ -85,14 +90,36 @@ def _ip_state() -> dict:
     return {"addr": addr, "route": route}
 
 
+def _overlaps(a: str, b: str) -> bool:
+    import ipaddress
+    try:
+        x = ipaddress.ip_interface(a)
+        y = ipaddress.ip_interface(b)
+    except ValueError:
+        return False
+    return x.version == y.version and x.network.overlaps(y.network)
+
+
 def subnet_in_use(state: dict, subnet: str = USB_SUBNET) -> str | None:
-    """Return the interface already owning the subnet, if any."""
-    want = subnet.split("/")[0].rsplit(".", 1)[0] + "."
-    for line in (state.get("route", "") + "\n" + state.get("addr", "")).splitlines():
-        if want in line:
-            m = re.search(r"\bdev\s+(\S+)", line)
-            if m and m.group(1) not in ("usb0", "ncm0", "rndis0"):
-                return m.group(1)
+    """Return the interface already routing/owning an overlapping subnet.
+
+    Real prefix overlap, not a string-prefix heuristic (spec 6.3 item 1).  The
+    gadget's own netdevs are excluded: they are what we are about to create.
+    """
+    for kind in ("route", "addr"):
+        for line in (state.get(kind) or "").splitlines():
+            fields = line.split()
+            dev = fields[fields.index("dev") + 1] if "dev" in fields else ""
+            if dev.startswith(("usb", "ncm", "rndis", "eem")):
+                continue
+            if "inet" in fields:
+                have = fields[fields.index("inet") + 1]
+            elif fields:
+                have = fields[0]
+            else:
+                continue
+            if _overlaps(have, subnet):
+                return dev or have
     return None
 
 
@@ -125,13 +152,32 @@ def _link_path(gadget: Path) -> Path:
     return configs[0] / "ncm.usb0"
 
 
+def ncm_lifecycle_fix_present(marker_path: str = NCM_FIX_PATH) -> bool:
+    """True when the RUNNING kernel exposes the NCM lifecycle-fix marker.
+
+    The kernel baseline (4.14.253) is not a safety verdict by itself; only the
+    build marker proves that ncm_function_init()/cleanup() are owned correctly.
+    """
+    try:
+        with open(marker_path, "r") as fh:
+            return fh.read().strip() == NCM_FIX_MARKER
+    except OSError:
+        return False
+
+
 def capability(gadget: Path, kernel_config: str,
                kernel_release: str | None = None,
-               known_bad_kernels: set[str] | None = None) -> dict:
+               known_bad_kernels: set[str] | None = None,
+               ncm_fix: bool | None = None) -> dict:
     cfg = tl.parse_kernel_config(kernel_config)
     release = kernel_release or os.uname().release
     base = _base_release(release)
     bad = set(KNOWN_BAD_NCM_KERNELS if known_bad_kernels is None else known_bad_kernels)
+    if ncm_fix is None:
+        ncm_fix = ncm_lifecycle_fix_present()
+    # A kernel known-bad by BASELINE is only acceptable when the same running
+    # kernel carries the lifecycle fix marker.
+    ncm_blocked = base in bad and not ncm_fix
     compiled = {
         "ncm": cfg.get("CONFIG_USB_F_NCM") == "y" and cfg.get("CONFIG_USB_CONFIGFS_NCM") == "y",
         "rndis": cfg.get("CONFIG_USB_F_RNDIS") == "y" and cfg.get("CONFIG_USB_CONFIGFS_RNDIS") == "y",
@@ -149,8 +195,11 @@ def capability(gadget: Path, kernel_config: str,
     modes = {
         "ncm": {
             "compiled": compiled["ncm"],
-            "safe_on_current_kernel": False if base in bad else "UNVERIFIED",
-            "status": "BLOCKED_KNOWN_PANIC" if base in bad else "NEEDS_VALIDATION",
+            "safe_on_current_kernel": (False if ncm_blocked else
+                                       ("FIX_MARKER_PRESENT" if ncm_fix else "UNVERIFIED")),
+            "status": ("BLOCKED_KNOWN_PANIC" if ncm_blocked else
+                       ("NEEDS_PHYSICAL_VALIDATION" if ncm_fix else "NEEDS_VALIDATION")),
+            "lifecycle_fix": bool(ncm_fix),
             "evidence": "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/",
         },
         "rndis": {
@@ -182,10 +231,15 @@ def capability(gadget: Path, kernel_config: str,
     elif not any(compiled[k] for k in ("ncm", "rndis", "ecm")):
         state = "BLOCKED_KERNEL"
         reason = "no USB network gadget function is compiled in"
-    elif base in bad:
+    elif ncm_blocked:
         state = "NEEDS_VALIDATION"
         reason = ("NCM is BLOCKED_KNOWN_PANIC on this kernel (ncm_free_inst -> "
-                  "misc_deregister). RNDIS/ECM are UNVERIFIED; no apply is allowed.")
+                  "misc_deregister) and no lifecycle-fix marker is present. "
+                  "RNDIS/ECM are UNVERIFIED; no apply is allowed.")
+    elif ncm_fix:
+        state = "NEEDS_PHYSICAL_VALIDATION"
+        reason = ("running kernel carries the NCM lifecycle fix; NCM still needs "
+                  "the physical create/teardown/ACM soak test")
     else:
         state = "NEEDS_VALIDATION"
         reason = "a compiled mode still requires source review, host support and physical proof"
@@ -194,10 +248,15 @@ def capability(gadget: Path, kernel_config: str,
         "reason": reason,
         "compiled": compiled,
         "compiled_ncm": compiled["ncm"],
+        "known_bad_kernel": ncm_blocked,
+        "ncm_lifecycle_fix": bool(ncm_fix),
+        "blocked_reason": reason if ncm_blocked else None,
         "modes": modes,
-        "preferred_mode": None if base in bad else (
-            "rndis" if compiled["rndis"] else ("ncm" if compiled["ncm"] else
-                                               ("ecm" if compiled["ecm"] else None))),
+        # macOS has a native CDC-NCM driver (AppleUSBDeviceNCM) but no ECM
+        # driver; NCM is the primary data plane whenever it is safe.
+        "preferred_mode": None if ncm_blocked else (
+            "ncm" if compiled["ncm"] else ("rndis" if compiled["rndis"] else
+                                           ("ecm" if compiled["ecm"] else None))),
         "selected_mode": None,
         "gadget_present": gadget.is_dir(),
         "bound_udc": udc,
@@ -210,8 +269,8 @@ def capability(gadget: Path, kernel_config: str,
         "interfaces": ifaces,
         "kernel_release": release,
         "kernel_base_release": base,
-        "known_bad_kernel": base in bad,
-        "blocked_reason": reason if base in bad else "",
+        "known_bad_kernel": ncm_blocked,
+        "blocked_reason": reason if ncm_blocked else "",
         "mutated": False,
     }
 
@@ -426,8 +485,8 @@ def preflight(gadget: Path, kernel_config: str, mode: str = "auto") -> dict:
     if mode == "auto":
         mode = cap.get("preferred_mode") or "ncm"
     selected = cap.get("modes", {}).get(mode, {})
-    allowed = bool(mode == "ncm" and not cap.get("known_bad_kernel")
-                   and selected.get("status") != "BLOCKED_KERNEL")
+    allowed = bool(selected.get("compiled") and selected.get("status") not in
+                   ("BLOCKED_KERNEL", "BLOCKED_KNOWN_PANIC"))
     plan = {
         "mode": mode,
         "selected_mode": mode if allowed else None,

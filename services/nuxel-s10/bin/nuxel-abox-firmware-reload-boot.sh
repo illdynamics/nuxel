@@ -78,6 +78,12 @@ start_session() {
     # ~27 s later.
     systemctl start nuxel-audio-route.service 2>/dev/null || \
         log "audio route not ready yet; retry timer will re-apply it"
+    # A88: the Flatpak Pulse relay is PartOf=nuxel-audio-session.service, so
+    # stop_session above stopped it.  Nothing started it again (measured on the
+    # 2026-11-14 clean reboot: relay inactive while its unit was enabled), and
+    # Flatpak apps then lost the microphone/Pulse socket.  Start it explicitly.
+    systemctl --no-block start nuxel-flatpak-pulse-relay.service 2>/dev/null || \
+        log "flatpak pulse relay did not start"
 }
 
 # Fast path: the kernel already loaded the core blobs (CONFIG_EXTRA_FIRMWARE, or

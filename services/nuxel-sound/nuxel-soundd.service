@@ -3,6 +3,14 @@ Description=Nuxel central sound manager (persistent PipeWire cue stream)
 Documentation=file:/usr/share/doc/nuxel/SOUNDS.md
 After=local-fs.target
 Wants=nuxel-audio-session.service
+# A88: do not open the speaker before the ABOX route has had its first run.
+# Measured 2026-11-14 (mid-session reboot): soundd started ~2 s before the route
+# applied, PipeWire's sink went to "error" (spa.alsa set_hw_params: Invalid
+# argument) and every later cue died with a broken pipe.  The route unit is
+# bounded (oneshot, TimeoutStartSec=45) and the daemon also self-heals a
+# wedged sink, so this ordering is a latency fix, never a hard dependency: a
+# deferred route still lets this unit start.
+After=nuxel-audio-route.service
 StartLimitIntervalSec=60
 StartLimitBurst=8
 
