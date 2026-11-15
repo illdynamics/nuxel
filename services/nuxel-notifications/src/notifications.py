@@ -41,7 +41,9 @@ import argparse
 import json
 import logging
 import os
+import socket
 import sys
+import threading
 from datetime import datetime, timezone
 
 import dbus
@@ -148,6 +150,41 @@ def _dnd_active():
         return enabled, (doc.get('reason') or ('manual' if enabled else 'off'))
     except (OSError, ValueError):
         return False, None
+
+
+# ---- notification cue (PWNAGE-SSP) ---------------------------------------
+# The hub is the single place that knows "a real notification was accepted".
+# It does not play audio itself: nuxel-soundd owns the one persistent PipeWire
+# stream and the per-action assignment (currently nuxel-pow.mp3).  The cue is
+# best-effort and never blocks, fails or delays notification delivery.
+SOUNDD_SOCKET = os.environ.get('NUXEL_SOUNDD_SOCKET', '/run/nuxel/soundd.sock')
+SOUND_ACTION = os.environ.get('NUXEL_NOTIFICATION_SOUND_ACTION', 'notification')
+
+
+def _play_notification_cue():
+    """Ask soundd for the notification assignment.  Never raises."""
+    def _run():
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(3.0)
+            sock.connect(SOUNDD_SOCKET)
+            sock.sendall((json.dumps({'cmd': 'play', 'action': SOUND_ACTION}) + '\n').encode())
+            buf = b''
+            while b'\n' not in buf:
+                chunk = sock.recv(65536)
+                if not chunk:
+                    break
+                buf += chunk
+            sock.close()
+            doc = json.loads(buf.split(b'\n', 1)[0].decode('utf-8')) if buf else {}
+            if not doc.get('success'):
+                logger.warning('notification cue refused: %s', doc.get('error') or doc)
+        except (OSError, ValueError) as exc:
+            logger.warning('notification cue unavailable: %s', exc)
+    try:
+        threading.Thread(target=_run, name='nuxel-notif-cue', daemon=True).start()
+    except Exception as exc:  # pragma: no cover - thread creation failure
+        logger.warning('notification cue thread failed: %s', exc)
 
 
 URGENCY_MAP = {'low': 0, 'normal': 1, 'critical': 2}
@@ -394,6 +431,11 @@ class NuxelNotificationsService(dbus.service.Object):
         logger.info("Notification #%d from %s: %s%s", notif['id'], app_id, summary,
                     " (DND suppressed)" if dnd else "")
         self.NotificationAdded(json.dumps(notif))
+        # One cue per NEW notification (not per replace/update, and not while
+        # DND suppresses delivery).  The edge FX overlay is driven separately
+        # by the same NotificationAdded signal.
+        if not dnd and not replaces:
+            _play_notification_cue()
         self._persist_history()
         self._emit_changed()
 

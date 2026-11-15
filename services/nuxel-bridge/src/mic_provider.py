@@ -84,26 +84,55 @@ def _save_state(doc: dict) -> None:
 
 
 def _sources():
+    """Parse `wpctl status` for the Audio/Sources rows.
+
+    Measured 2026-11-14 on the S10+ (tree-drawn output; the top-level `Audio`
+    header has NO branch glyph)::
+
+        Audio
+         ├─ Devices:
+         ├─ Sinks:
+         │  *   31. S10+ speaker (RDMA1, 48 kHz)        [vol: 0.50]
+         ├─ Sources:
+         │  *   32. S10+ microphone (WDMA1, 48 kHz)     [vol: 1.00]
+         ├─ Filters:
+        Settings
+         └─ Default Configured Devices:
+
+    The old parser required a branch glyph before `Sources:` AND broke on the
+    first subtree line, so the real microphone row was dropped: the provider
+    said "no capture source" while `wpctl status` listed it (the owner's
+    "microphone does not work").  Plain `in` checks keep this independent of
+    the tree glyphs, which differ between wireplumber versions.
+    """
     proc = _run([WPCTL, "status"], timeout=5)
     if not proc or proc.returncode != 0:
         return [], (proc.stderr.strip() if proc else "wpctl unavailable")
     rows = []
+    in_audio = False
     in_sources = False
     for line in (proc.stdout or "").splitlines():
-        if line.strip() == "Sources:":
-            in_sources = True
+        # lstrip with "│├└─ " strips the space between the tree glyphs too and
+        # leaves a trailing '-' (" ├─ Devices:" -> "Devices:-"); strip the glyph
+        # set first, then one separator space.
+        label = line.lstrip(" \u2502\u251c\u2514\u2500").lstrip(" \u2502\u251c\u2514\u2500").strip()
+        # Top-level sections print WITHOUT the colon ("Audio", "Video"), the
+        # sub-sections print with one ("Sources:").
+        header = label[:-1] if label.endswith(":") else label
+        if header in ("Audio", "Video", "Settings", "Clients", "Modules"):
+            in_audio = header == "Audio"
+            in_sources = False
             continue
-        if in_sources and re.match(r"^\s*[├└]", line) and "Sources:" not in line and not re.search(r"^\s*[│ ]*[├└]?\s*\*?\s*\d+\.", line):
-            # Header lines like Filters/Streams end the sources section.
-            if re.search(r"^\s*[├└]─\s*(Filters|Streams|Sinks|Devices):", line):
-                break
+        if header in ("Devices", "Sinks", "Sources", "Filters", "Streams"):
+            in_sources = in_audio and header == "Sources"
+            continue
         if not in_sources:
             continue
-        m = re.search(r"^\s*[│ ]*[├└]?\s*(\*)?\s*(\d+)\.\s+(.+?)\s+\[vol:\s*([0-9.]+)(?:\s+MUTED)?\]\s*$", line)
+        m = re.search(r"(\*)?\s*(\d+)\.\s+(.+?)\s+\[vol:\s*([0-9.]+)(\s+MUTED)?\]", line)
         if m:
             rows.append({"default": bool(m.group(1)), "id": int(m.group(2)),
                          "name": m.group(3).strip(), "volume": float(m.group(4)),
-                         "muted": "MUTED" in line})
+                         "muted": bool(m.group(5))})
     return rows, None
 
 
@@ -240,7 +269,15 @@ def set_mute(muted: bool) -> dict:
 
 
 def level(duration_ms: int = 280) -> dict:
-    """Capture a short private PCM window and return measured metrics only."""
+    """Capture a short private PCM window and return measured metrics only.
+
+    A84: pw-cat is a CONTINUOUS stream, so it never exits on its own and
+    subprocess.run() raises TimeoutExpired - with the captured audio in the
+    exception's stdout.  The old code treated that timeout as "capture failed"
+    and threw the data away, so the level test failed on a perfectly working
+    microphone.  Now the timeout is expected: keep the bounded window and
+    measure it.
+    """
     sources, err = _sources()
     source = next((s for s in sources if s["default"]), sources[0] if sources else None)
     if not source:
@@ -251,20 +288,30 @@ def level(duration_ms: int = 280) -> dict:
     argv = [PW_CAT, "--record", "--target", str(source["id"]), "--raw",
             "--format", "s16", "--rate", "48000", "--channels", "2",
             "--latency", "30ms", "-"]
+    data = b""
+    stderr_tail = ""
     try:
         proc = subprocess.run(argv, capture_output=True, timeout=duration_ms / 1000.0 + 2.0,
                               stdin=subprocess.DEVNULL, env=env)
+        data = proc.stdout or b""
+        stderr_tail = (proc.stderr or b"")[-300:].decode("utf-8", "replace")
+    except subprocess.TimeoutExpired as exc:
+        data = (exc.stdout or b"") if exc.stdout else b""
+        if not isinstance(data, (bytes, bytearray)):
+            data = str(data).encode("utf-8", "replace")
+        tail = (exc.stderr or b"") if exc.stderr else b""
+        if not isinstance(tail, (bytes, bytearray)):
+            tail = str(tail).encode("utf-8", "replace")
+        stderr_tail = tail[-300:].decode("utf-8", "replace")
     except (OSError, subprocess.SubprocessError) as exc:
         return {"success": False, "error": "capture failed", "detail": str(exc),
                 "error_code": "CAPTURE_FAILED"}
-    # A timeout is expected: pw-cat is a continuous stream.
-    data = proc.stdout or b""
     # Keep only a bounded window even if pw-cat drained more than requested.
     data = data[:48000 * 2 * 2]
     n = len(data) // 2
     if n <= 0:
         return {"success": False, "error": "capture returned no samples",
-                "error_code": "NO_SAMPLES", "stderr": (proc.stderr or b"")[-300:].decode("utf-8", "replace")}
+                "error_code": "NO_SAMPLES", "detail": stderr_tail or None}
     vals = struct.unpack("<%dh" % n, data[:n * 2])
     metrics = {}
     for ch, label in ((0, "left"), (1, "right")):
