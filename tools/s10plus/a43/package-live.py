@@ -172,6 +172,13 @@ items.update({
     'services/nuxel-s10/bin/nuxel-audio-session.sh',
     'services/nuxel-bridge/src/mic_provider.py',
     'services/nuxel-s10/bin/nuxel-flatpak-pulse-relay.py',
+    # v0.8.5: Flatpak app wrappers, the hotspot owner and the durable routing
+    # sysctls are part of the live payload so a deploy reproduces the image.
+    'services/nuxel-s10/bin/nuxel-flatpak-stremio',
+    'services/nuxel-s10/bin/nuxel-flatpak-signal',
+    'services/nuxel-network/nuxel-hotspot.py',
+    'services/nuxel-network/nuxel-hotspot.service',
+    'configs/nuxel/sysctl/90-nuxel-tether.conf',
     # v0.8.5: ECM owner link for SSH over the plugged-in USB cable.
     'services/nuxel-s10/bin/nuxel-usb-net-up.sh',
     'services/nuxel-s10/systemd/nuxel-usb-net-up.service',
