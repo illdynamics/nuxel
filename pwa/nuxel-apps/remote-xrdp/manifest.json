@@ -12,7 +12,7 @@
   ],
   "name": "XRDP Remote Desktop",
   "short_name": "XRDP Remote Desktop",
-  "description": "Separate authenticated X11 session over RDP/TLS \u00b7 Wi-Fi preferred \u00b7 USB blocked by kernel evidence",
+  "description": "RDP/TLS mirror of the live Phoc screen over Wi-Fi",
   "start_url": "/pwa/nuxel-apps/remote-xrdp/index.html",
   "scope": "/pwa/nuxel-apps/remote-xrdp/",
   "icons": [

@@ -5,6 +5,13 @@ Wants=dbus.service nuxel-bridge.service
 
 [Service]
 Type=simple
+# A84: the security provider persists "locked" in /run/nuxel/security and
+# fails closed when the file is missing.  /run is a tmpfs, so without this the
+# state was lost on every reboot: the lock came up with NO state and every
+# unlock (including swipe) was refused.  systemd now creates the directory
+# (0700 root) before the bridge starts.
+RuntimeDirectory=nuxel/security
+RuntimeDirectoryMode=0700
 ExecStart=/usr/bin/nuxel-http-bridge
 Restart=on-failure
 RestartSec=3
@@ -61,7 +68,7 @@ Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 # shell use, so /api/v1/apps/registry cannot drift from the launcher.
 Environment=NUXEL_APP_REGISTRY=/etc/nuxel/app-registry/app_registry.json
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.8.3-beta
+Environment=NUXEL_BRIDGE_VERSION=0.8.5-beta
 Environment=NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000,http://localhost:8000
 Environment=NUXEL_SESSION_USER=nuxel
 Environment=NUXEL_SESSION_HOME=/home/nuxel

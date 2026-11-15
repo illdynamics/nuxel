@@ -47,8 +47,18 @@ table inet nuxel_app_firewall {
                     time-exceeded, parameter-problem } limit rate 10/second accept
         icmpv6 type { echo-request, echo-reply, destination-unreachable,
                       time-exceeded, parameter-problem,
-                      neighbor-solicit, neighbor-advertise,
-                      router-solicit, router-advertise } accept
+                      nd-neighbor-solicit, nd-neighbor-advert,
+                      nd-router-solicit, nd-router-advert } accept
+
+        # Owner console: key-only SSH bound on all interfaces.  Restricted to
+        # the private LAN (RFC1918) and the two Nuxel link subnets; sshd
+        # additionally enforces key-only auth and its own AllowUsers CIDRs.
+        # v0.8.5 LIVE FIX: this rule was missing, so the default drop policy
+        # silently black-holed SSH even though sshd was listening and the Mac
+        # was on the same LAN.
+        ip saddr { 10.20.30.0/24, 10.15.19.0/24, 192.168.0.0/16,
+                   172.16.0.0/12, 10.0.0.0/8 } tcp dport 22 accept
+        ip6 saddr { fd00::/8, fe80::/10 } tcp dport 22 accept
 
         # Inbound is denied by policy for apps; only system services that
         # explicitly bind (D-Bus is a unix socket, not TCP) get through.
@@ -58,8 +68,21 @@ table inet nuxel_app_firewall {
     # -------------------------------------------------------------- forward --
     chain forward {
         type filter hook forward priority -100; policy drop;
-        # No routing between interfaces by default. The VPN path (tun0) is
-        # allowed only when the kill switch is explicitly enabled by the tool.
+        # v0.8.5 TETHERING/HOTSPOT: everything forwarded here is traffic the
+        # owner explicitly asked to share (USB tethering 10.15.19.0/24, the
+        # Wi-Fi hotspot 10.42.0.0/24, and the older 10.20.30.0/24 dev link).
+        # Without these ACCEPTs this chain's `policy drop` ran FIRST (priority
+        # -100) so the dedicated tether/hotspot chains at -50/-49 never saw
+        # the packet: a tethered host could ping the phone but no forwarded
+        # packet ever left it.  Masquerade stays in nuxel_tether / NUXEL_TETHER;
+        # this only permits the flows.
+        iifname { "usb0", "usb1", "rndis0", "ncm0", "eth0" } accept
+        oifname { "usb0", "usb1", "rndis0", "ncm0", "eth0" } ct state established,related accept
+        iifname { "wlan1", "p2p0" } accept
+        oifname { "wlan1", "p2p0" } ct state established,related accept
+        ip saddr { 10.15.19.0/24, 10.42.0.0/24, 10.20.30.0/24 } accept
+        ip daddr { 10.15.19.0/24, 10.42.0.0/24, 10.20.30.0/24 } ct state established,related accept
+        # Anything else is a forward the owner did not ask for.
         log prefix "NUXXEL-FWD-DROP: " limit rate 10/minute
     }
 
@@ -88,7 +111,7 @@ table inet nuxel_app_firewall {
                     time-exceeded, parameter-problem } accept
         icmpv6 type { echo-request, echo-reply, destination-unreachable,
                       time-exceeded, parameter-problem,
-                      neighbor-solicit, neighbor-advertise } accept
+                      nd-neighbor-solicit, nd-neighbor-advert } accept
 
         # --- per-app ACCEPT rules (injected at runtime) ---------------------
         # Deterministic classid per app, e.g.:
@@ -124,6 +147,13 @@ table inet nuxel_app_firewall {
         log prefix "NUXXEL-OUTPUT-DROP: " limit rate 10/minute
     }
 
+# v0.8.5: the renderer strips this NAT section on kernels without NAT-chain
+# support.  Its marker boundary is written by nuxel-firewall.sh (it converts
+# the NAT marker lines to internal tags before stripping the range), so the
+# stripped result no longer contains a dangling 'chain prerouting' opening
+# stub -- which had made the whole rendered ruleset invalid and left the
+# stale, unfixed ruleset live on the device.
+# __NUXEL_NAT_BEGIN__
     # ------------------------------------------------------------------ nat --
     chain prerouting {
         type nat hook prerouting priority -100; policy accept;
@@ -135,6 +165,7 @@ table inet nuxel_app_firewall {
         # (the phone is a client, not a router).
         oifname "tun0" masquerade
     }
+# __NUXEL_NAT_END__
 
     # Debug anchors: nuxel-firewall.sh app-list reads these to report which
     # apps are currently permitted, without parsing log files.
@@ -148,13 +179,23 @@ table inet nuxel_app_firewall {
 }
 
 # ---------------------------------------------------------------------------
-# Raw hardening: drop invalid and obviously spoofed packets before anything
-# else looks at them.
+# Raw hardening: reject obviously spoofed loopback traffic.
+#
+# v0.8.5 LIVE FIX: this chain used to start with `ct state invalid drop`.
+# On the live 4.14.253 kernel every inbound Wi-Fi frame (ARP/ICMP/TCP SYN)
+# reached the `prerouting` hook but was classified `ct state invalid` there
+# and dropped before the `input` hook -- ICMP and SSH were lost even though
+# the app-firewall input chain explicitly ACCEPTs them, and the device looked
+# like it "had no network access at all" while its own outbound traffic
+# worked.  The invalid-state test is therefore removed from the raw path; the
+# base input chain still fails closed on its default drop policy, and
+# established/related traffic is accepted there.  Measured on the device:
+# ping + SSH stay green with this table loaded, and go red the moment the
+# invalid drop is re-added.
 # ---------------------------------------------------------------------------
 table inet nuxel_raw {
     chain prerouting {
         type filter hook prerouting priority -300; policy accept;
-        ct state invalid drop
         iif lo ip daddr != 127.0.0.0/8 drop
         iif lo ip6 daddr != ::1/128 drop
     }

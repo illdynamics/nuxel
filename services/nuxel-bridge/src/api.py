@@ -157,6 +157,15 @@ except Exception as _e:  # pragma: no cover - optional module
     usb_tethering = None
     logger.warning('usb_tethering unavailable: %s', _e)
 
+# USB Internet tethering provider: owns ONLY the scoped nftables forwarding/NAT
+# path.  Kept separate from usb_tethering (gadget composition) so USB SSH and
+# Internet sharing can never be conflated or silently enabled together.
+try:
+    import usb_tether
+except Exception as _e:  # pragma: no cover - optional module
+    usb_tether = None
+    logger.warning('usb_tether unavailable: %s', _e)
+
 # One normalization rule for Wayland app ids.  Flatpak/reverse-DNS launcher ids
 # often differ from the compositor's xdg_toplevel app_id (e.g.
 # com.sindresorhus.Caprine -> Caprine, org.ferdium.Ferdium -> ferdium).  Every
@@ -241,7 +250,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.3-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.5-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -1494,6 +1503,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         """Return this app's active/activating transient nuxel-app-* units."""
         if not isinstance(app_id, str) or not APP_ID_RE.match(app_id):
             return []
+        # A85: the transient unit is named from the launcher suffix exactly as
+        # _exec_native_app() builds it ("nuxel-app-" + rsplit.last.lower()).
+        # org.gnome.FileRoller launches as ...-fileroller-<ms>, but this probe
+        # derived ...-fileroller- and never matched its own unit, so a second
+        # tap on Archive Manager (or any camelCase id) spawned a DUPLICATE
+        # instance instead of resuming the first one.
         suffix = app_id.rsplit(".", 1)[-1].lower()
         prefix = "nuxel-app-%s-" % suffix
         try:
@@ -1756,7 +1771,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                "--setenv=GSETTINGS_BACKEND=dconf",
                "--setenv=XDG_CURRENT_DESKTOP=Nuxel",
                "--setenv=DBUS_SESSION_BUS_ADDRESS=%s" % dbus_address,
-               "--setenv=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native",
+               # Flatpak apps are sandboxed with a private /run/user/0, so the
+               # compositor's Pulse socket is unreachable there.  They get the
+               # relay slot instead (nuxel-flatpak-pulse-relay mounts it into
+               # the sandbox); native apps keep the real socket directly.
+               ("--setenv=PULSE_SERVER=unix:/run/user/0/pulse/native"
+                if is_flatpak else
+                "--setenv=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native"),
                "--setenv=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland",
                "--setenv=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                "--setenv=HOME=%s" % home,
@@ -2817,6 +2838,41 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     self._send_json({'success': False, 'error': str(exc)}, 500)
             else:
                 self._send_json({'success': False, 'error': 'usb_tethering unavailable'}, 503)
+
+        elif path in ('/api/v1/system/usb-tether', '/api/v1/usb-tether/status'):
+            if usb_tether is not None:
+                try:
+                    self._send_json(usb_tether.status())
+                except Exception as exc:  # noqa: BLE001
+                    logger.error('usb-tether status failed: %s', exc)
+                    self._send_json({'success': False, 'error': str(exc)}, 500)
+            else:
+                self._send_json({'success': False, 'error': 'usb_tether unavailable'}, 503)
+
+        elif path in ('/api/v1/system/usb', '/api/v1/usb/status'):
+            # One coherent, read-only summary for Settings/Quick Settings:
+            # local USB link, Internet sharing and Wi-Fi AP are distinct.
+            doc = {'success': True, 'version': 1}
+            try:
+                doc['usb'] = usb_tethering.current_state() if usb_tethering else {
+                    'success': False, 'error': 'usb_tethering unavailable',
+                    'active': False, 'state': 'unknown'}
+            except Exception as exc:  # noqa: BLE001
+                doc['usb'] = {'success': False, 'error': str(exc), 'active': False,
+                              'state': 'error'}
+            try:
+                doc['usb_tether'] = usb_tether.status() if usb_tether else {
+                    'success': False, 'enabled': False, 'state': 'unknown'}
+            except Exception as exc:  # noqa: BLE001
+                doc['usb_tether'] = {'success': False, 'error': str(exc),
+                                     'enabled': False, 'state': 'error'}
+            try:
+                doc['wifi_hotspot'] = network_manager.hotspot_status() if network_manager else {
+                    'success': False, 'supported': False, 'state': 'unknown'}
+            except Exception as exc:  # noqa: BLE001
+                doc['wifi_hotspot'] = {'success': False, 'supported': False,
+                                       'state': 'error', 'reason': str(exc)}
+            self._send_json(doc)
 
         elif path == '/api/v1/system/tri-link':
             if tri_link_status is not None:
@@ -5586,7 +5642,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     NETWORK_MANAGER_VERBS = {"dns", "dns-status", "dns-set", "dns-reset",
                              "vpn-status", "vpn-import", "vpn-up", "vpn-down",
                              "vpn-delete", "zerotier-status", "zerotier-join",
-                             "zerotier-leave", "zerotier-enabled"}
+                             "zerotier-leave", "zerotier-enabled",
+                             "hotspot-status", "hotspot-start", "hotspot-stop"}
 
     def _network_manager_rpc(self, app_id, verb, params):
         if network_manager is None:
@@ -5626,16 +5683,56 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return {'success': False, 'error': 'usb_tethering unavailable',
                         'error_code': 'PROVIDER_UNAVAILABLE'}
             try:
-                if verb == 'status':
+                if verb in ('status', 'preflight'):
+                    if verb == 'preflight':
+                        return usb_tethering.preflight(str((params or {}).get('mode')
+                                                        or 'usb_network'))
                     return usb_tethering.current_state()
                 if verb == 'set-mode':
                     mode = str((params or {}).get('mode', 'off'))
-                    function = str((params or {}).get('function', 'ecm'))
+                    function = str((params or {}).get('function', 'ncm'))
                     return usb_tethering.set_mode(mode, function)
+                if verb == 'off':
+                    return usb_tethering.disable_all(source=app_id)
+                if verb == 'enable-for-host':
+                    # Explicit owner action: USB network + Internet share in
+                    # one step.  Still two distinct states in status, and
+                    # Internet stays unverified until the host reports proof.
+                    return usb_tethering.enable_for_host(
+                        (params or {}).get('upstream') or None)
             except Exception as exc:  # noqa: BLE001
                 return {'success': False, 'error': str(exc),
                         'error_code': 'PROVIDER_ERROR'}
-            return {'success': False, 'error': 'unknown usb-net verb: %s' % verb}
+            return {'success': False, 'error': 'unknown usb-net verb: %s' % verb,
+                    'error_code': 'UNKNOWN_VERB'}
+        if namespace == 'usb-tether':
+            if app_id not in ('org.nuxel.Settings', 'nuxel-settings', 'org.nuxel.Home',
+                              'org.nuxel.NetworkManager'):
+                return {'success': False, 'error': 'capability_denied',
+                        'detail': 'USB tethering is owner-managed'}
+            if usb_tether is None:
+                return {'success': False, 'error': 'usb_tether unavailable',
+                        'error_code': 'PROVIDER_UNAVAILABLE'}
+            try:
+                if verb == 'status':
+                    return usb_tether.status()
+                if verb == 'upstreams':
+                    return {'success': True, 'upstreams': usb_tether.upstream_candidates(),
+                            'vpn_armed': usb_tether._vpn_armed()}
+                if verb == 'start':
+                    return usb_tether.start(params.get('upstream') or None, source=app_id)
+                if verb == 'stop':
+                    return usb_tether.stop(source=app_id)
+                if verb == 'verify':
+                    return usb_tether.verify()
+                if verb == 'host-report':
+                    # Typed end-to-end evidence from the attached computer.
+                    return usb_tether.host_report(params if isinstance(params, dict) else {})
+            except Exception as exc:  # noqa: BLE001
+                return {'success': False, 'error': str(exc),
+                        'error_code': getattr(exc, 'code', 'PROVIDER_ERROR')}
+            return {'success': False, 'error': 'unknown usb-tether verb: %s' % verb,
+                    'error_code': 'UNKNOWN_VERB'}
         if namespace == 'file-handlers':
             return self._file_handlers_rpc(app_id, verb, params)
         if namespace == 'network' and verb in self.NETWORK_MANAGER_VERBS:
@@ -5992,6 +6089,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             if not _owner_ok and ((namespace == "apps" and verb in ("register", "unregister", "install", "remove")) or
                                   (namespace == "security" and verb in (
                                       "set-mode", "set-credential", "set-pin", "set-pattern", "lock",
+                                      "apply-preset", "preset",
                                       "set-attempt-policy", "set-biometric-unlock", "biometric-set",
                                       "unlock-biometric")) or
                                   (namespace in ("fingerprint", "biometrics") and verb in (
@@ -6573,16 +6671,77 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             if usb_tethering is None:
                 self._send_json({'success': False, 'error': 'usb_tethering unavailable'}, 503)
             else:
-                payload = body if isinstance(body, dict) else {}
-                mode = str(payload.get('mode', 'off'))
-                function = str(payload.get('function', 'ecm'))
-                result = usb_tethering.set_mode(mode, function)
-                self._send_json(result, 200 if result.get('success') else 409)
+                # Same capability check the /api/v1/rpc path already enforces:
+                # a set-mode call mutates configfs and must not be reachable
+                # from an unprivileged app.
+                check = self._call_bridge('CheckPermission', app_id, 'network:manage')
+                if not (isinstance(check, dict) and check.get('granted')):
+                    self._send_json({'success': False, 'error': 'capability_denied',
+                                     'error_code': 'PERMISSION_DENIED'}, 403)
+                else:
+                    payload = body if isinstance(body, dict) else {}
+                    mode = str(payload.get('mode', 'off'))
+                    function = str(payload.get('function', 'ncm'))
+                    result = usb_tethering.set_mode(mode, function)
+                    self._send_json(result, 200 if result.get('success') else 409)
+
+        elif path == '/api/v1/usb-tether/set':
+            if usb_tether is None:
+                self._send_json({'success': False, 'error': 'usb_tether unavailable'}, 503)
+            else:
+                check = self._call_bridge('CheckPermission', app_id, 'network:manage')
+                if not (isinstance(check, dict) and check.get('granted')):
+                    self._send_json({'success': False, 'error': 'capability_denied',
+                                     'error_code': 'PERMISSION_DENIED'}, 403)
+                else:
+                    payload = body if isinstance(body, dict) else {}
+                    action = str(payload.get('action', 'status'))
+                    try:
+                        if action == 'start':
+                            result = usb_tether.start(payload.get('upstream') or None)
+                        elif action == 'stop':
+                            result = usb_tether.stop()
+                        elif action == 'verify':
+                            result = usb_tether.verify()
+                        else:
+                            result = usb_tether.status()
+                    except Exception as exc:  # noqa: BLE001
+                        result = {'success': False, 'error': str(exc),
+                                  'error_code': getattr(exc, 'code', 'PROVIDER_ERROR')}
+                    self._send_json(result, 200 if result.get('success') else 409)
 
         elif path == '/api/v1/rpc':
             result = self._handle_rpc(app_id, body)
             self._send_json({'result': result})
             return
+
+        elif path == '/api/v1/system/reboot':
+            # Owner-requested reboot/deploy step.  Typed, permission-checked,
+            # double-confirmed (the literal string "reboot"), and never part of
+            # any USB transition.  Uses logind; refuses when unavailable.
+            check = self._call_bridge('CheckPermission', app_id, 'system:power')
+            if not (isinstance(check, dict) and check.get('granted')):
+                self._send_json({'success': False, 'error': 'capability_denied',
+                                 'error_code': 'PERMISSION_DENIED'}, 403)
+            elif str(body.get('confirm') or '') != 'reboot':
+                self._send_json({'success': False, 'error': 'confirmation_required',
+                                 'error_code': 'CONFIRMATION_REQUIRED',
+                                 'detail': "send {\"confirm\": \"reboot\"}"}, 400)
+            elif not os.path.exists('/run/systemd/system'):
+                self._send_json({'success': False, 'error': 'logind unavailable',
+                                 'error_code': 'UNAVAILABLE'}, 503)
+            else:
+                import subprocess as _sp
+                try:
+                    proc = _sp.run(['systemctl', 'reboot'], capture_output=True,
+                                   text=True, timeout=20, stdin=_sp.DEVNULL)
+                except (_sp.SubprocessError, OSError) as exc:
+                    proc = None
+                    err = str(exc)
+                else:
+                    err = (proc.stderr or proc.stdout or '').strip()[:400]
+                self._send_json({'success': proc is not None and proc.returncode == 0,
+                                 'action': 'reboot', 'detail': err})
 
         elif path == '/api/v1/capabilities/request':
             capability = body.get('capability', '')

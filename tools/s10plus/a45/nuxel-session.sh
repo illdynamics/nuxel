@@ -245,6 +245,18 @@ fi
 # top bar and the compositor-level lock enforcer.  The native bar hides itself
 # on Home and while locked, so it never duplicates Home's DOM bar; the dock is
 # the single Back/Penguin Home/Tabs surface over native and Flatpak apps.
+# A85: publish the authoritative boot lock state BEFORE the nav dock, status
+# bar and launcher start.  /run is a tmpfs, so lock-state.json did not exist at
+# boot until the first security/lock call: the dock read `unknown` and refused
+# to map (swipe-up triple buttons dead in Settings/VNC) and the launcher's boot
+# gate released the overlay (phone came up unlocked).  The provider decides the
+# value from the stored mode; this call is idempotent and bounded.
+say "publishing security boot state"
+if [ -x /usr/lib/nuxel/nuxel-security-state-rpc ]; then
+  /usr/lib/nuxel/nuxel-security-state-rpc 20 >>"$LOG" 2>&1 || say "security boot state failed"
+else
+  say "security boot state helper missing"
+fi
 say "starting supervised shell chrome (navdock + statusbar + lock enforcement)"
 if [ -x /usr/lib/nuxel/nuxel-shell-chrome.sh ]; then
   nohup /usr/lib/nuxel/nuxel-shell-chrome.sh </dev/null >/run/nuxel-shell-chrome.out 2>&1 &
@@ -331,6 +343,14 @@ fi
 USER_RUNTIME=/run/user/1000
 USER_BUS=$USER_RUNTIME/bus
 install -d -m 0700 -o nuxel -g nuxel "$USER_RUNTIME" 2>/dev/null || true
+# Flatpak itself creates $XDG_RUNTIME_DIR/.flatpak (per-instance dirs) and
+# refuses to start any app when a helper has already created it as ROOT; the
+# live phone hit exactly that ("Unable to lock .../.flatpak/<app>/.ref:
+# Permission denied" -> Stremio/messengers did not start; and the sandboxed
+# Pulse socket was never reachable).  Own both runtime trees as the session
+# user, but never follow symlinks.
+install -d -m 0700 -o nuxel -g nuxel "$USER_RUNTIME/.flatpak" "$USER_RUNTIME/app" 2>/dev/null || true
+find "$USER_RUNTIME/.flatpak" "$USER_RUNTIME/app" -xdev -exec chown -h nuxel:nuxel {} + 2>/dev/null || true
 if ! pgrep -u nuxel -f "dbus-daemon.*$USER_BUS" >/dev/null 2>&1; then
   [ -S "$USER_BUS" ] && rm -f "$USER_BUS" 2>/dev/null || true
   if runuser -u nuxel -- env XDG_RUNTIME_DIR="$USER_RUNTIME" HOME=/home/nuxel dbus-daemon --session --fork --address="unix:path=$USER_BUS" --nopidfile >/run/nuxel-user-dbus.log 2>&1; then

@@ -414,10 +414,24 @@
       d.classList.toggle('active', patternSeq.indexOf(Number(d.dataset.dot)) >= 0);
     });
     var set = $('sec-pattern-set');
-    if (set) set.disabled = patternSeq.length < 4;
-    setText('sec-pattern-status', patternSeq.length
-      ? 'Pattern: ' + patternSeq.join('-') + ' — draw it once more? No: press Set pattern, then confirm on the lockscreen.'
-      : 'Draw a pattern (at least 4 dots).');
+    if (set) {
+      /* NUXEL-105200: two-draw wizard.  Step 1 = first draw ("Continue"),
+         step 2 = the SAME pattern again ("Set pattern lock").  The button is
+         disabled until the current draw is long enough for its step. */
+      if (!wirePatternEditor._first) {
+        set.disabled = patternSeq.length < 4;
+        set.textContent = 'Continue';
+      } else {
+        set.disabled = patternSeq.length < 4;
+        set.textContent = 'Set pattern lock';
+      }
+    }
+    setText('sec-pattern-wizard-status', patternSeq.length < 4
+      ? ((wirePatternEditor._first ? 'Draw the SAME pattern again.' : 'Draw a pattern (at least 4 dots).') +
+         (patternSeq.length ? '  Used: ' + patternSeq.length + ' dots — add ' : '') )
+      : (wirePatternEditor._first
+          ? 'Now press "Set pattern lock" (or Cancel to start over).'
+          : 'Press "Continue", then draw the same pattern once more to confirm it.'));
   }
   function buildPatternEditor() {
     var box = $('sec-pattern-dots');
@@ -464,6 +478,9 @@
     ed.addEventListener('pointercancel', function () { patternDrawing = false; });
   }
 
+  function bindPatternPinCard() {
+    try { patternPin = $('sec-pin'); } catch (e) { patternPin = null; }
+  }
   function renderSecurity(st) {
     if (!st || st.success === false) { setText('sec-state', 'Security provider unavailable' + (st && st.error ? ': ' + st.error : '')); return; }
     setText('sec-state', json({
@@ -490,6 +507,18 @@
         box.appendChild(b);
       });
     }
+    ['unlock', 'pin', 'pattern', 'fingerprint'].forEach(function (kind) {
+      var b = $('sec-preset-' + kind);
+      if (!b) return;
+      var active = (kind === 'unlock') ? st.mode === 'swipe' : st.mode === kind;
+      b.classList.toggle('primary', active);
+    });
+    var isPattern = st.mode === 'pattern' || (st.credential_set && st.secret_kind === 'pattern');
+    var setupBtn = $('sec-pattern-setup'), wizard = $('sec-pattern-wizard');
+    if (setupBtn && (!wizard || wizard.hidden)) setupBtn.textContent = isPattern ? 'Change pattern lock' : 'Set up pattern lock';
+    setText('sec-pattern-status', isPattern
+      ? ('Pattern lock is configured' + (st.pin_fallback_set ? ' with a PIN fallback (Pattern + PIN).' : '. Press "Change pattern lock" to replace it.'))
+      : 'No pattern is configured. Press "Set up pattern lock" and draw it twice.');
     var pu = $('sec-policy-unlimited'), pl = $('sec-policy-limited');
     if (pu) pu.classList.toggle('primary', st.attempt_policy === 'unlimited');
     if (pl) pl.classList.toggle('primary', st.attempt_policy === 'limited');
@@ -521,9 +550,29 @@
   }
   function chooseMode(m) {
     selectedMode = m;
-    if (m === 'pattern') { wirePatternEditor(); patternSeq = []; drawPatternTrail(); setText('sec-result', 'Draw the pattern in the matrix, then press Set pattern (you will confirm it once more on the lockscreen).'); return; }
-    if (m === 'pin') { var p = $('sec-pin'); if (p) p.focus(); setText('sec-result', 'Enter the new PIN twice, then press Set PIN.'); return; }
-    if (m === 'fingerprint') { setText('sec-result', 'Set a PIN first, then register the fingerprint above and press Enable fingerprint unlock.'); return; }
+    /* A86: choosing a lock METHOD always establishes that method's credential
+       in the same step.  A method is never selected before its secret exists. */
+    if (m === 'pattern') {
+      openPatternSetup();
+      setText('sec-result', 'Draw the pattern twice in the wizard; the lock switches when it is saved.');
+      return;
+    }
+    if (m === 'pin') {
+      var pp = $('sec-pin'), pp2 = $('sec-pin2');
+      if (pp && pp.value && pp2 && pp2.value && pp.value === pp2.value) {
+        applyPreset('pin');
+      } else if (pp) {
+        pp.focus();
+        setText('sec-result', 'Enter the PIN twice, then press Set PIN (or PIN mode) to activate PIN unlock.');
+      }
+      return;
+    }
+    if (m === 'fingerprint') {
+      if (currentSecret() || presetValue('fingerprint').v) applyPreset('fingerprint');
+      setText('sec-result', 'Fingerprint mode needs a registered fingerprint and a PIN fallback; ' +
+        'enter that PIN twice above, register the fingerprint, then press Enable fingerprint unlock.');
+      return;
+    }
     var cur = currentSecret();
     if (!cur) { setText('sec-result', 'Enter the current unlock credential to switch to Swipe.'); return; }
     call('security', 'set-mode', { mode: 'swipe', confirm_downgrade: true, current_secret: cur }).then(function (r) {
@@ -534,6 +583,51 @@
     });
   }
   function currentSecret() { var e = $('sec-current'); return e ? e.value : ''; }
+  /* A84: one-tap lock presets.  Each sets the credential AND the mode in one
+     root-bridge call, so the owner never has to visit two cards. */
+  var patternPin = null;
+  function presetValue(kind) {
+    var pin = $('sec-pin'), p2 = $('sec-pin2');
+    var def = (kind === 'pattern' || kind === 'fingerprint') ? '3838' : '';
+    var v = pin && pin.value ? pin.value : def;
+    var v2 = p2 && p2.value ? p2.value : v;
+    return { v: v, v2: v2 };
+  }
+  function applyPreset(kind) {
+    if (kind !== 'unlock') {
+      var vals = presetValue(kind);
+      if (!vals.v) { setText('sec-preset-result', 'Type the PIN (twice) in the PIN code card first.'); return; }
+      if (vals.v !== vals.v2) { setText('sec-preset-result', 'The two PIN entries do not match.'); return; }
+    }
+    var params = { preset: kind };
+    if (kind === 'pin') { params.secret = presetValue(kind).v; params.secret_confirm = params.secret; }
+    if (kind === 'pattern') {
+      /* Never activate a pattern that was not confirmed twice.  The wizard is
+         the only path that stores/activates a pattern. */
+      openPatternSetup();
+      setText('sec-preset-result', 'Draw the pattern twice in the wizard below; the lock switches when it is saved.');
+      return;
+    }
+    if (kind === 'fingerprint') { params.secret = presetValue('fingerprint').v; }
+    var cur = currentSecret(); if (cur) params.current_secret = cur;
+    setText('sec-preset-result', 'Applying…');
+    call('security', 'apply-preset', params).then(function (r) {
+      if (r && r.success) {
+        var msg = {
+          unlock: 'Unlock directly: swipe the lockhead up and the phone opens.',
+          pin: 'PIN lock active: swipe the lockhead up, then enter the PIN.',
+          pattern: 'Pattern lock active: swipe the lockhead up, draw the pattern (PIN button for the PIN).',
+          fingerprint: 'Fingerprint lock active: the scanner with a PIN button.'
+        }[kind] || 'Lock updated.';
+        setText('sec-preset-result', msg);
+        var c = $('sec-current'); if (c) c.value = '';
+        announceMode(); loadSecurity();
+      } else {
+        setText('sec-preset-result', 'Refused: ' + ((r && (r.detail || r.error)) || 'unknown'));
+      }
+    }).catch(function (e) { setText('sec-preset-result', 'Failed: ' + (e && (e.message || e))); });
+  }
+
   function setPin() {
     var p = $('sec-pin'), p2 = $('sec-pin2');
     var v = p ? p.value : '', v2 = p2 ? p2.value : '';
@@ -553,12 +647,24 @@
     });
   }
   function usePinMode() {
+    /* A86: one step.  A typed (confirmed) PIN is stored and PIN mode activated;
+       with none typed, an ALREADY stored PIN is reused -- otherwise the owner
+       is asked for the new PIN now, never after the mode switch. */
+    var p = $('sec-pin'), p2 = $('sec-pin2');
+    var v = p ? p.value : '', v2 = p2 ? p2.value : '';
+    if (v) {
+      if (v !== v2) { setText('sec-pin-result', 'The two PIN entries do not match.'); return; }
+      applyPreset('pin');
+      return;
+    }
     call('security', 'status', {}).then(function (st) {
       if (!st || st.success === false) { setText('sec-pin-result', 'Security provider unavailable.'); return; }
       if (st.mode === 'pin') { setText('sec-pin-result', 'PIN unlock is already active.'); return; }
-      if (!st.pin_fallback_set) { setText('sec-pin-result', 'Set a PIN first (twice), then activate PIN unlock.'); return; }
-      /* Switching into PIN mode reuses the stored PIN; the current mode's
-         credential proves the owner before anything changes. */
+      if (!st.pin_fallback_set) {
+        setText('sec-pin-result', 'Enter the new PIN twice above first; the phone only switches to PIN once a PIN exists.');
+        if (p) p.focus();
+        return;
+      }
       call('security', 'set-mode', { mode: 'pin', secret: '', current_secret: currentSecret() || undefined })
         .then(function (r) {
           if (r && r.success) { setText('sec-pin-result', 'PIN unlock is now active.'); }
@@ -567,37 +673,80 @@
         });
     });
   }
+  /* NUXEL-105200: guided pattern setup.  Nothing is drawn or shown until the
+     owner presses "Set up pattern lock"; the matrix is the ONLY way to enter
+     the pattern (it is never printed into the page), and nothing is stored
+     until it has been drawn twice identically. */
+  function patternReset(keepOpen) {
+    wirePatternEditor._first = null;
+    patternSeq = [];
+    drawPatternTrail();
+    var w = $('sec-pattern-wizard'), opt = $('sec-pattern-options');
+    var set = $('sec-pattern-set');
+    if (set) { set.textContent = 'Continue'; set.disabled = true; }
+    if (opt) opt.hidden = true;
+    if (!keepOpen && w) w.hidden = true;
+    setText('sec-pattern-step', 'Step 1 of 2 — draw your pattern (at least 4 dots).');
+    setText('sec-pattern-wizard-status', 'Draw the pattern you want to use.');
+    var fb = $('sec-pattern-pin'); if (fb) fb.value = '';
+    var b = $('sec-pattern-setup');
+    if (b && !keepOpen) { b.disabled = false; b.textContent = 'Set up pattern lock'; }
+  }
+  function openPatternSetup() {
+    var w = $('sec-pattern-wizard');
+    if (!w) return;
+    w.hidden = false;
+    var b = $('sec-pattern-setup');
+    if (b) { b.disabled = true; b.textContent = 'Setting up…'; }
+    wirePatternEditor();
+    patternReset(true);
+    setText('sec-pattern-status', 'Follow the wizard: draw the pattern twice. Your currently set unlock code is not changed until the wizard finishes.');
+    var ed = $('sec-pattern-editor');
+    if (ed) { try { ed.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} }
+  }
   function setPatternFromEditor() {
-    if (patternSeq.length < 4) { setText('sec-pattern-status', 'Use at least 4 dots.'); return; }
     var first = patternSeq.join('-');
-    var cur = currentSecret();
-    setText('sec-pattern-status', 'Draw the SAME pattern again in the matrix to confirm.');
-    /* local second-entry: the user must redraw; enable confirm on next identical draw */
     if (!wirePatternEditor._first) {
+      if (patternSeq.length < 4) { setText('sec-pattern-wizard-status', 'Use at least 4 dots.'); return; }
       wirePatternEditor._first = first;
       patternSeq = []; drawPatternTrail();
-      $('sec-pattern-set').textContent = 'Confirm pattern';
+      setText('sec-pattern-step', 'Step 2 of 2 — draw the SAME pattern again.');
+      setText('sec-pattern-wizard-status', 'Draw the identical pattern to confirm it.');
       return;
     }
     if (wirePatternEditor._first !== first) {
-      setText('sec-pattern-status', 'The patterns did not match. Start again.');
-      wirePatternEditor._first = null; patternSeq = []; drawPatternTrail();
-      $('sec-pattern-set').textContent = 'Set pattern';
+      setText('sec-pattern-wizard-status', 'The two patterns did not match. Starting again — draw the pattern you want.');
+      patternReset(true);
+      setText('sec-pattern-step', 'Step 1 of 2 — draw your pattern (at least 4 dots).');
       return;
     }
     var params = { pattern: first, pattern_confirm: first };
+    var fb = $('sec-pattern-pin');
+    if (fb && fb.value) params.fallback_pin = fb.value;
+    var cur = currentSecret();
     if (cur) params.current_secret = cur;
+    var set = $('sec-pattern-set');
+    if (set) { set.disabled = true; set.textContent = 'Saving…'; }
     call('security', 'set-pattern', params).then(function (r) {
       if (r && r.success) {
-        setText('sec-pattern-status', 'Pattern set. The session is locked; draw the pattern on the lockscreen to unlock.');
-        wirePatternEditor._first = null; patternSeq = []; drawPatternTrail();
-        $('sec-pattern-set').textContent = 'Set pattern';
+        var withPin = r.pin_fallback_set || (fb && fb.value);
+        var msg = withPin
+          ? 'Pattern + PIN lock is set: swipe the lockhead up, draw the pattern, or tap the PIN button and type the PIN.'
+          : 'Pattern lock is set: swipe the lockhead up and draw the pattern.';
+        patternReset(false);
+        setText('sec-pattern-status', msg);
+        setText('sec-pattern-card-state', msg);
         var c = $('sec-current'); if (c) c.value = '';
         call('security', 'lock', { reason: 'pattern-set' }).then(function () { announceMode(); loadSecurity(); });
       } else {
-        setText('sec-pattern-status', 'Refused: ' + ((r && (r.detail || r.error)) || 'unknown'));
-        wirePatternEditor._first = null; $('sec-pattern-set').textContent = 'Set pattern';
+        var why = (r && (r.detail || r.error)) || 'unknown';
+        setText('sec-pattern-wizard-status', 'Refused: ' + why + ' — draw the pattern twice again.');
+        patternReset(true);
+        setText('sec-pattern-wizard-status', 'Refused: ' + why + ' — draw the pattern twice again.');
       }
+    }).catch(function (e) {
+      setText('sec-pattern-wizard-status', 'Setup failed: ' + (e && (e.message || e)) + '. Nothing was changed.');
+      patternReset(true);
     });
   }
   function setPolicy(policy) {
@@ -671,8 +820,16 @@
   wire('fp-refresh', loadFp);
   wire('sec-pin-set', setPin);
   wire('sec-pin-mode', usePinMode);
+  wire('sec-pattern-setup', openPatternSetup);
+  wire('sec-pattern-cancel', function () {
+    patternReset(false);
+    setText('sec-pattern-status', 'Pattern setup cancelled. Nothing was changed.');
+  });
   wire('sec-pattern-set', setPatternFromEditor);
-  wire('sec-pattern-clear', function () { wirePatternEditor._first = null; patternSeq = []; drawPatternTrail(); $('sec-pattern-set').textContent = 'Set pattern'; });
+  ['unlock', 'pin', 'pattern', 'fingerprint'].forEach(function (kind) {
+    wire('sec-preset-' + kind, function () { applyPreset(kind); });
+  });
+  wire('sec-pattern-clear', function () { patternReset(true); });
   wire('sec-policy-unlimited', function () { setPolicy('unlimited'); });
   wire('sec-policy-limited', function () { setPolicy('limited'); });
   wire('sec-fp-start', startFpEnrollment);

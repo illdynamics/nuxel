@@ -327,3 +327,28 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .nfc-debug-fields dt { color: var(--muted, #8aa4bd); }
 .nfc-debug-fields dd { margin: 0; word-break: break-word; }
 label.inline { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---- NUXEL-105200: pattern-lock setup wizard ------------------------------ */
+.pattern-setup[hidden] { display: none; }
+.pattern-options[hidden] { display: none; }
+.pattern-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(92vw, 34rem);
+  margin: 6px auto 0;
+}
+.pattern-options label { display: flex; flex-direction: column; gap: 4px; }
+#sec-pattern-wizard-status { text-align: center; }
+#sec-pattern-status { white-space: pre-wrap; }
+
+/* The phone is often held sideways while setting this up.  Keep the 3x3 matrix
+   fully reachable in landscape (short height): cap it by the viewport height
+   and move the action row beside it instead of below it. */
+@media (orientation: landscape) {
+  .pattern-setup { display: grid; grid-template-columns: auto minmax(14rem, 1fr); gap: 12px; align-items: start; }
+  .pattern-setup > .hint, .pattern-setup > #sec-pattern-wizard-status, .pattern-setup > .pattern-options { grid-column: 1 / -1; }
+  .pattern-setup > .row { flex-direction: column; align-items: stretch; }
+  .pattern-editor { width: min(42vh, 260px); max-width: 100%; margin: 0 auto; }
+  .pattern-dot { width: clamp(38px, 13vh, 74px); height: clamp(38px, 13vh, 74px); margin-top: calc(clamp(38px, 13vh, 74px) / -2); margin-left: calc(clamp(38px, 13vh, 74px) / -2); }
+}

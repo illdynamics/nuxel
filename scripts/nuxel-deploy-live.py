@@ -46,6 +46,8 @@ def sha256_file(path: Path) -> str:
 
 def targets_for(source: str):
     """Return [(absolute target, mode)] for a payload source path."""
+    if source == "services/nuxel-bridge/src/mic_provider.py":
+        return [("/usr/lib/nuxel/nuxel-bridge/mic_provider.py", 0o644)]
     if source.startswith("pwa/"):
         out = [("/usr/share/nuxel/" + source, 0o644)]
         if source == "pwa/nuxel-common/app-registry.json":
@@ -147,6 +149,8 @@ def targets_for(source: str):
         return [("/usr/local/bin/nuxel-xrdp-session", 0o755)]
     if source == "services/nuxel-remote-desktop/bin/nuxel-orientation-remote-sync":
         return [("/usr/libexec/nuxel/nuxel-orientation-remote-sync", 0o755)]
+    if source.startswith("services/nuxel-remote-desktop/systemd/xrdp.service.d/"):
+        return [("/etc/systemd/system/xrdp.service.d/" + os.path.basename(source), 0o644)]
     if source.startswith("services/nuxel-remote-desktop/config/"):
         name = os.path.basename(source)
         mapping = {
@@ -214,6 +218,14 @@ def targets_for(source: str):
             return [("/etc/systemd/system/" + name, 0o644)]
     if source.startswith("services/nuxel-bridge/dbus/"):
         return [("/etc/dbus-1/system.d/" + os.path.basename(source), 0o644)]
+    if source == "configs/nftables/systemd/nuxel-firewall.service":
+        return [("/etc/systemd/system/nuxel-firewall.service", 0o644)]
+    if source == "configs/nftables/nuxel-firewall-config.json":
+        return [("/etc/nftables/nuxel-firewall-config.json", 0o644)]
+    if source.startswith("configs/nftables/") and source.endswith(".nft"):
+        return [("/etc/nftables/" + os.path.basename(source), 0o644)]
+    if source == "tools/s10plus/a33/nuxel-firewall.sh":
+        return [("/usr/bin/nuxel-firewall.sh", 0o755)]
     if source == "configs/nuxel/portals.conf":
         return [("/etc/xdg-desktop-portal/portals.conf", 0o644),
                 ("/etc/nuxel/portals.conf", 0o644)]
@@ -235,16 +247,65 @@ def targets_for(source: str):
         return [("/usr/share/applications/" + os.path.basename(source), 0o644)]
     if source == "services/nuxel-s10/bin/nuxel-flatpak-firefox":
         return [("/usr/lib/nuxel/nuxel-flatpak-firefox", 0o755)]
+    if source == "services/nuxel-s10/bin/nuxel-abox-firmware-reload-boot.sh":
+        return [("/usr/lib/nuxel/nuxel-abox-firmware-reload-boot.sh", 0o755)]
     if source == "services/nuxel-s10/bin/nuxel-audio-perms.sh":
         return [("/usr/lib/nuxel/nuxel-audio-perms.sh", 0o755)]
+    if source == "services/nuxel-s10/bin/nuxel-usb-net-up.sh":
+        return [("/usr/lib/nuxel/nuxel-usb-net-up.sh", 0o755)]
+    if source == "services/nuxel-s10/bin/nuxel-audio-session.sh":
+        return [("/usr/lib/nuxel/nuxel-audio-session.sh", 0o755)]
+    if source == "services/nuxel-s10/bin/nuxel-flatpak-stremio":
+        return [("/usr/lib/nuxel/nuxel-flatpak-stremio", 0o755)]
+    if source == "services/nuxel-s10/bin/nuxel-flatpak-signal":
+        return [("/usr/lib/nuxel/nuxel-flatpak-signal", 0o755)]
+    if source == "services/nuxel-network/nuxel-hotspot.py":
+        return [("/usr/libexec/nuxel/nuxel-hotspot", 0o755)]
+    if source == "services/nuxel-network/nuxel-hotspot.service":
+        return [("/etc/systemd/system/nuxel-hotspot.service", 0o644)]
+    if source.startswith("configs/nuxel/sysctl/"):
+        return [("/etc/sysctl.d/" + os.path.basename(source), 0o644)]
+    if source == "services/nuxel-s10/bin/nuxel-flatpak-pulse-relay.py":
+        return [("/usr/lib/nuxel/nuxel-flatpak-pulse-relay.py", 0o755)]
+    if source == "services/nuxel-s10/systemd/nuxel-flatpak-pulse-relay.service":
+        return [("/etc/systemd/system/nuxel-flatpak-pulse-relay.service", 0o644)]
     if source == "shell/nuxel-browser-native/nuxel_browser_native.py":
         return [("/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py", 0o755)]
     if source == "tools/s10plus/a45/nuxel-session.sh":
         return [("/usr/lib/nuxel/nuxel-session.sh", 0o755)]
+    if source == "tools/s10plus/a45/nuxel-security-state-rpc":
+        return [("/usr/lib/nuxel/nuxel-security-state-rpc", 0o755)]
+    if source == "tools/s10plus/a45/nuxel-shell-chrome.sh":
+        return [("/usr/lib/nuxel/nuxel-shell-chrome.sh", 0o755)]
     if source.startswith("configs/nuxel/"):
         return [("/etc/nuxel/" + source[len("configs/nuxel/"):], 0o644)]
     if source.startswith("configs/dbus/"):
         return [("/etc/dbus-1/system.d/" + os.path.basename(source), 0o644)]
+    # --- camera (PWNAGE-CAM) -------------------------------------------------
+    # The native camera app, the private org.nuxel.Camera broker and the
+    # FIMC-IS capture client/diagnostic. The portal's systemd unit is a user
+    # unit (session bus/PipeWire), so it is installed under the user manager
+    # location, never into the system manager.
+    if source == "shell/nuxel-camera-native/nuxel_camera_native.py":
+        return [("/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py", 0o755)]
+    if source == "shell/nuxel-camera-native/org.nuxel.CameraNative.desktop":
+        return [("/usr/share/applications/org.nuxel.CameraNative.desktop", 0o644)]
+    if source == "shell/nuxel-camera-portal/nuxel_camera_portal.py":
+        return [("/usr/libexec/nuxel/nuxel-camera-portal", 0o755)]
+    if source == "shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service":
+        return [("/usr/lib/systemd/user/nuxel-camera-portal.service", 0o644)]
+    if source == "shell/nuxel-camera-portal/nuxel_camera_portal_impl.py":
+        return [("/usr/libexec/nuxel/nuxel-camera-portal-impl", 0o755)]
+    if source == "shell/nuxel-camera-portal/xdg-desktop-portal/nuxel-camera.portal":
+        return [("/usr/share/xdg-desktop-portal/portals/nuxel-camera.portal", 0o644)]
+    if source == "shell/nuxel-camera-portal/dbus/org.freedesktop.impl.portal.desktop.nuxel-camera.service":
+        return [("/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.nuxel-camera.service", 0o644)]
+    if source == "shell/nuxel-camera-portal/systemd/nuxel-camera-portal-impl.service":
+        return [("/usr/lib/systemd/user/nuxel-camera-portal-impl.service", 0o644)]
+    if source == "tools/s10plus/fimc-capture/nuxel-fimc-capture":
+        return [("/usr/libexec/nuxel/nuxel-fimc-capture", 0o755)]
+    if source == "tools/s10plus/a33/nuxel-camera-diag.sh":
+        return [("/usr/local/bin/nuxel-camera-diag.sh", 0o755)]
     if source == "tools/s10plus/a33/nuxel-sound-cue.py":
         return [("/usr/libexec/nuxel/nuxel-sound-cue", 0o755)]
     if source == "tools/s10plus/a33/doom-engines/nuxel-doom-engine":

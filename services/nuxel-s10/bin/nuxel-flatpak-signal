@@ -1,8 +1,23 @@
 #!/bin/sh
 # Signal Desktop has no official Fedora aarch64 RPM.  Launch the real Flathub
 # build only when the kernel actually permits an unprivileged user namespace.
-if command -v flatpak >/dev/null 2>&1 && unshare -Ur true >/dev/null 2>&1; then
-    exec flatpak run org.signal.Signal "$@"
+#
+# Single-instance guard: Signal's DBus/instance lock lives in the sandbox
+# runtime dir; starting a second copy after a fast double-tap produced a
+# silent no-window process.  Re-report success so the launcher focuses the
+# existing window instead.
+set -u
+APP=org.signal.Signal
+if ! command -v flatpak >/dev/null 2>&1; then
+    echo "Signal: flatpak is not installed" >&2
+    exit 2
 fi
-echo "Signal's Flatpak sandbox cannot start: the running kernel advertises CONFIG_USER_NS=y but denies user-namespace creation (vendor LOD_SEC/root gate). No setuid fallback or sandbox bypass is used." >&2
-exit 2
+if ! unshare -Ur true >/dev/null 2>&1; then
+    echo "Signal's Flatpak sandbox cannot start: this kernel denies unprivileged user namespaces. No setuid fallback or sandbox bypass is used." >&2
+    exit 2
+fi
+if flatpak ps --columns=application 2>/dev/null | grep -qx "$APP"; then
+    echo "Signal: already running"
+    exit 0
+fi
+exec flatpak run "$APP" "$@"

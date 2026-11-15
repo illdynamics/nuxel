@@ -65,6 +65,7 @@
   "nuxel": {
     "bridge_version": "1",
     "capabilities": [
+      "location:manage",
       "location:read",
       "storage:persistent",
       "network:outbound"

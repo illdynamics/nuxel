@@ -28,14 +28,45 @@
 #   nft list table inet nuxel_console_guard
 #   nft list ruleset | grep -c nuxel_console_guard
 
+# NUXEL-105200 (2026-11-14): the recovery plane is now THREE chains, one per
+# hook that can silently kill a console:
+#   * input  (-200)  : nothing may drop the console interfaces/ports;
+#   * output (-200)  : the phone's own replies must leave even while an app
+#                      chain is in a drop posture (unchanged behaviour);
+#   * prerouting (-300): runs BEFORE nuxel_raw (also -300, but declared later in
+#                      the same batch, so raw wins by order).  A raw chain that
+#                      classifies LAN/USB traffic as "invalid" (measured: the
+#                      4.14 kernel did exactly that for echo-replies, killing
+#                      ping+SSH) must not be able to drop it first.  console
+#                      traffic is accepted here, so no later chain sees it.
+#
+# A rule set that cannot load at all is ALSO a console outage: the loader then
+# keeps the previous (working) ruleset -- see tools/s10plus/a33/nuxel-firewall.sh
+# `console-verify` and the unit's soft-fail ordering.
 table inet nuxel_console_guard {
+    chain prerouting_guard {
+        type filter hook prerouting priority -300; policy accept;
+
+        # Anything arriving on a console interface, and anything addressed to
+        # the phone that is an established/related flow of a console session.
+        iifname { "usb0", "rndis0", "ncm0", "usb1", "eth0" } accept
+        iifname { "enp0s1", "enp0s2", "enp0s3", "enp0s4" } accept
+        iif lo accept
+        ct state established,related accept
+
+        # SSH (and the alt console port) is never dropped at any stage, from any
+        # interface.  Auth remains public-key-only in sshd.
+        tcp dport { 22, 2022 } accept
+    }
+
     chain guard {
         type filter hook input priority -200; policy accept;
 
         # The owner's console paths, highest priority, never dropped.
-        #  - usb0 / rndis0 / ncm0 : USB gadget networking used by the live host
-        #  - enp0s* / eth0        : VM (UTM) host bridge used for VM-only work
-        #  - wlanmon0             : never used for the console; listed for clarity
+        #  - usb0 / rndis0 / ncm0 / usb1 : USB gadget networking used by the host
+        #  - eth0 / enp0s*              : VM (UTM) host bridge used for VM work
+        #    (wlan0 intentionally NOT listed: the LAN path is the app table's
+        #    job, so a foreign Wi-Fi network cannot inherit console privileges)
         iifname { "usb0", "rndis0", "ncm0", "usb1", "eth0" } accept
         iifname { "enp0s1", "enp0s2", "enp0s3", "enp0s4" } accept
 
@@ -49,7 +80,7 @@ table inet nuxel_console_guard {
 
         # ICMP echo so the owner can see the device is alive.
         icmp type echo-request accept
-        icmpv6 type { echo-request, echo-reply, neighbor-solicit, neighbor-advertise } accept
+        icmpv6 type { echo-request, echo-reply, nd-neighbor-solicit, nd-neighbor-advert } accept
     }
 
     chain guard_out {

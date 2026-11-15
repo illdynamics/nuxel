@@ -1,7 +1,7 @@
 {
   "name": "Nuxel Weather",
   "short_name": "Weather",
-  "description": "Offline weather log: manual current conditions and forecast with import/export (no network provider)",
+  "description": "Live weather from Open-Meteo for a searched city or the current Nuxel location",
   "start_url": "/pwa/nuxel-apps/weather/index.html",
   "scope": "/pwa/nuxel-apps/weather/",
   "display": "fullscreen",
@@ -64,15 +64,17 @@
   "nuxel": {
     "bridge_version": "1",
     "capabilities": [
+      "location:read",
+      "location:manage",
       "storage:persistent",
       "network:outbound"
     ],
     "app_type": "weather",
     "offline_first": true,
-    "network": "none",
+    "network": "outbound-https",
     "storage": [
       "localStorage"
     ],
-    "data_source": "manual-entry-or-import"
+    "data_source": "open-meteo-api"
   }
 }

@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.8.3-beta
+// Nuxel Status Bar — v0.8.5-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.8.3-beta'; }
+    static get VERSION() { return '0.8.5-beta'; }
 
     constructor() {
         this.state = {
@@ -1154,12 +1154,48 @@ class StatusBar {
                 return;
             }
             const list = Array.isArray(res.notifications) ? res.notifications : [];
+            await this._ensureConsentCard(list);
             this._setNotifications(list, res.counts || null, '');
         } catch (e) {
             const msg = String((e && e.message) || e);
             console.warn('StatusBar: notification poll failed:', msg);
             this._renderNotificationsPanel(msg);
         }
+    }
+
+    // In-app permission consent: nuxel-consentd owns the decision, but the
+    // card must be visible the moment an app asks, even if the notification
+    // hub's own copy is suppressed (DND, expiry race, or a hub restart).  One
+    // GET per poll; the card carries the SAME Allow once / Allow always / Deny
+    // / Cancel action keys that _resolveConsentAction answers.
+    async _ensureConsentCard(list) {
+        if (typeof bridge === 'undefined' || !bridge || !bridge.call) return;
+        let pend = null;
+        try { pend = await bridge.call('permissions', 'pending', {}); } catch (e) { return; }
+        const rows = pend && Array.isArray(pend.pending) ? pend.pending : [];
+        if (!rows.length) return;
+        const have = new Set(list.map((n) => String(n && n.id)));
+        rows.forEach((row) => {
+            if (!row || !row.request_id) return;
+            const id = row.notification_id || row.request_id;
+            if (have.has(String(id))) return;
+            list.unshift({
+                id: id,
+                app_id: 'org.nuxel.Permissions',
+                app_name: 'Permission request',
+                summary: (row.app_name || row.app_id) + ' wants ' + (row.capability || 'access'),
+                body: 'Choose how long this lasts. The same decision is shown in Settings and the Permission Manager.',
+                timestamp: new Date().toISOString(),
+                urgency: 'critical',
+                actions: ['allow-once', 'Allow once', 'allow-always', 'Allow always',
+                          'deny', 'Deny', 'cancel', 'Cancel'],
+                hints: { 'x-nuxel-consent-id': row.request_id,
+                         'x-nuxel-app-id': row.app_id,
+                         'x-nuxel-capability': row.capability },
+                source: 'nuxel-consent',
+            });
+            have.add(String(id));
+        });
     }
 
     _setNotifications(notifications, counts, error) {
@@ -1408,8 +1444,61 @@ class StatusBar {
         });
     }
 
+    async _resolveConsentAction(id, key, card) {
+        let notif = null;
+        try {
+            if (typeof bridge !== 'undefined' && bridge && bridge.getNotifications) {
+                const res = await bridge.getNotifications();
+                const list = (res && (res.notifications || res.items)) || [];
+                notif = list.find((n) => n && String(n.id) === String(id)) || null;
+            }
+        } catch (e) {}
+        const hints = (notif && notif.hints) || {};
+        let requestId = hints['x-nuxel-consent-id'] || hints.consent_id || '';
+        if (!requestId) {
+            this._setNotificationError('Consent request has expired');
+            return;
+        }
+        this._setNotificationError(key === 'cancel' ? 'Cancelling…' : 'Applying…');
+        const doRespond = async () => {
+            if (typeof bridge !== 'undefined' && bridge && bridge.call) {
+                return bridge.call('permissions', 'respond', { request_id: requestId, action: key });
+            }
+            return { success: false, error: 'bridge unavailable' };
+        };
+        let res = await doRespond();
+        if (res && res.success === false && res.error === 'no_such_request') {
+            // The prompt may have timed out; fall back to a fresh pending prompt.
+            const pend = await bridge.call('permissions', 'pending', {});
+            const row = pend && Array.isArray(pend.pending)
+                ? pend.pending.find((r) => r && (r.request_id === requestId ||
+                    (r.app_id === hints['x-nuxel-app-id'] && r.capability === hints['x-nuxel-capability'])))
+                : null;
+            if (row && row.request_id) {
+                requestId = row.request_id;
+                res = await doRespond();
+            }
+        }
+        if (!res || res.success === false) {
+            const detail = (res && (res.detail || res.error)) || 'consent agent did not confirm';
+            this._setNotificationError('Permission action failed: ' + detail);
+            return;
+        }
+        this._setNotificationError('');
+        if (card && card.parentNode) {
+            try { card.setAttribute('data-read', 'true'); } catch (e) {}
+        }
+    }
+
     async _invokeNotificationAction(id, action, card) {
         const key = String(action || '');
+        // In-app permission consent card (nuxel-consentd).  The four choices
+        // are resolved against the SAME user agent that posted the prompt; the
+        // decision is written to the shared permission store, so Settings and
+        // the Permission Manager show the identical result on their next read.
+        if (['allow-once', 'allow-always', 'deny', 'cancel'].includes(key)) {
+            return this._resolveConsentAction(id, key, card);
+        }
         if (key === 'settings') {
             try { if (window.appRegistry) window.appRegistry.launchApp('nuxel-settings'); } catch (e) {}
             return;

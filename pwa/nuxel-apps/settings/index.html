@@ -622,9 +622,26 @@
   <section id="tab-security" class="panel">
     <h2>Security</h2>
 
+    <div class="card" id="sec-preset-card">
+      <h3>Lock screen</h3>
+      <p class="hint">The penguin lockhead is always shown. One tap below sets the whole lock:
+        <b>Unlock directly</b> — swipe the lockhead up and the phone is unlocked (no code);
+        <b>PIN</b> — the PIN keypad;
+        <b>Pattern</b> — the pattern matrix in the middle of the screen with a PIN button;
+        <b>Fingerprint</b> — the scanner with a PIN button (enters the PIN screen when the scanner cannot match).
+        Swiping or tapping the lockhead always surfaces that unlock screen. A JavaScript overlay cannot unlock the session by itself; the root bridge verifies every code (scrypt, constant-time).</p>
+      <div class="row wrap" id="sec-presets">
+        <button type="button" id="sec-preset-unlock" class="primary">Unlock directly (swipe only)</button>
+        <button type="button" id="sec-preset-pin">PIN keypad (3838)</button>
+        <button type="button" id="sec-preset-pattern">Pattern + PIN fallback</button>
+        <button type="button" id="sec-preset-fingerprint">Fingerprint + PIN button</button>
+      </div>
+      <p id="sec-preset-result" class="state" role="status">—</p>
+    </div>
+
     <div class="card">
       <h3>Screen lock method</h3>
-      <p class="hint">The credential verifier is owned by the root bridge (scrypt, constant-time comparison). A JavaScript overlay cannot unlock the session by itself. The current mode is applied immediately and the session locks.</p>
+      <p class="hint">Advanced: apply one mode without touching the stored credential. The current mode is applied immediately and the session locks.</p>
       <pre id="sec-state" class="state" role="status">Checking lock policy…</pre>
       <div class="row wrap" id="sec-modes"></div>
     </div>
@@ -644,18 +661,36 @@
 
     <div class="card" id="sec-pattern-card">
       <h3>Pattern lock</h3>
-      <p class="hint">Draw the pattern, then draw the same pattern again. It is only enabled after two identical entries, so a mis-drawn pattern can never dead-lock the phone. The 3×3 matrix uses the same penguin dots as the lockscreen.</p>
-      <div class="pattern-editor" id="sec-pattern-editor">
-        <svg id="sec-pattern-svg" viewBox="0 0 300 300" aria-hidden="true">
-          <polyline id="sec-pattern-trail" points="" fill="none"></polyline>
-        </svg>
-        <div id="sec-pattern-dots" class="pattern-editor-dots"></div>
-      </div>
+      <p class="hint">Pattern lock is not configured on this phone yet.</p>
       <div class="row wrap">
-        <button id="sec-pattern-clear">Redraw</button>
-        <button id="sec-pattern-set" class="primary" disabled>Set pattern</button>
+        <button type="button" id="sec-pattern-setup" class="primary">Set up pattern lock</button>
       </div>
-      <p id="sec-pattern-status" class="state" role="status">Draw a pattern (at least 4 dots).</p>
+      <p id="sec-pattern-status" class="state" role="status">No pattern is configured.</p>
+
+      <!-- NUXEL-105200: a guided two-draw wizard.  Nothing (no matrix, no PIN
+           field) is visible until the owner presses "Set up pattern lock"; the
+           pattern is only stored after it has been drawn twice identically and
+           the wizard itself is what activates the lock.  Layout adapts to the
+           phone's current orientation (landscape when the phone is sideways). -->
+      <div class="pattern-setup" id="sec-pattern-wizard" hidden>
+        <p class="hint" id="sec-pattern-step">Step 1 of 2 — draw your pattern (at least 4 dots).</p>
+        <div class="pattern-editor" id="sec-pattern-editor">
+          <svg id="sec-pattern-svg" viewBox="0 0 300 300" aria-hidden="true">
+            <polyline id="sec-pattern-trail" points="" fill="none"></polyline>
+          </svg>
+          <div id="sec-pattern-dots" class="pattern-editor-dots"></div>
+        </div>
+        <div class="row wrap">
+          <button type="button" id="sec-pattern-clear">Redraw</button>
+          <button type="button" id="sec-pattern-set" class="primary" disabled>Continue</button>
+          <button type="button" id="sec-pattern-cancel">Cancel</button>
+        </div>
+        <div class="pattern-options" id="sec-pattern-options" hidden>
+          <label>PIN fallback <input id="sec-pattern-pin" type="password" autocomplete="new-password" inputmode="numeric" placeholder="the PIN to type when you forget the pattern"></label>
+          <p class="hint">Optional. The lock becomes <b>Pattern + PIN</b>: draw the pattern on the boot/lock screen, or tap the PIN button and type this PIN.</p>
+        </div>
+        <p id="sec-pattern-wizard-status" class="state" role="status">Draw the pattern you want to use.</p>
+      </div>
     </div>
 
     <div class="card" id="sec-attempts-card">
@@ -797,17 +832,48 @@
     <h2>USB network</h2>
     <div class="card">
       <h3>USB networking &amp; tethering</h3>
-      <p class="hint">Share the phone&#39;s data over a USB cable. USB networking gives the host
-        a point-to-point link; USB tethering shares the phone&#39;s Wi&#8209;Fi/cellular connection
-        over NAT (host subnet 10.42.0.0/24). The CDC&#8209;ACM serial recovery console is kept in
-        every mode.</p>
+      <p class="hint">USB networking gives the attached computer a local point-to-point
+        link (phone 10.15.19.1, host 10.15.19.2) for USB SSH and file transfer. It does
+        <strong>not</strong> share Internet. The CDC&#8209;ACM serial recovery console is kept
+        in every mode.</p>
       <div class="row wrap">
         <button id="usbnet-refresh" class="primary">Refresh status</button>
         <button id="usbnet-usbnet">Enable USB networking</button>
-        <button id="usbnet-tether">Enable USB tethering</button>
+        <button id="usbnet-tether">Enable tether composition</button>
         <button id="usbnet-off">Disable</button>
       </div>
       <pre id="usbnet-state" class="state" role="status" aria-live="polite">Checking USB networking…</pre>
+    </div>
+    <div class="card">
+      <h3>USB Internet tethering</h3>
+      <p class="hint">Grants the attached computer Internet access through one selected
+        upstream, using narrowly scoped forwarding + NAT. Off by default. Refused while a VPN
+        kill switch is armed unless the VPN interface itself is selected.</p>
+      <div class="row wrap">
+        <label>Upstream <select id="usbtether-upstream"><option value="">(first usable)</option></select></label>
+        <button id="usbtether-enable" class="primary">Share Internet with attached computer</button>
+        <button id="usbtether-start">Start sharing (USB already on)</button>
+        <button id="usbtether-verify">Verify Internet</button>
+        <button id="usbtether-stop">Stop sharing</button>
+      </div>
+      <p class="hint">“Share Internet with attached computer” enables the USB network
+        composition <em>and</em> starts the scoped forwarding/NAT in one explicit owner
+        action. The host must be configured 10.15.19.2/24 (gateway 10.15.19.1) and prove
+        Internet itself; the phone shows “verified” only after that evidence arrives.</p>
+      <pre id="usbtether-state" class="state" role="status" aria-live="polite">Reading tethering state…</pre>
+    </div>
+    <div class="card">
+      <h3>Wi-Fi hotspot</h3>
+      <p class="hint">Only available when the Wi&#8209;Fi driver actually supports AP mode.
+        Unsupported hardware is reported as UNSUPPORTED, never shown as ON.</p>
+      <div class="row wrap">
+        <label>SSID <input id="hotspot-ssid" type="text" maxlength="32" autocomplete="off"></label>
+        <label>Password <input id="hotspot-password" type="password" maxlength="63"
+          autocomplete="new-password"></label>
+        <button id="hotspot-start">Start hotspot</button>
+        <button id="hotspot-stop">Stop hotspot</button>
+      </div>
+      <pre id="hotspot-state" class="state" role="status" aria-live="polite">Reading Wi-Fi capabilities…</pre>
     </div>
   </section>
 
@@ -1033,6 +1099,6 @@
 <script src="graphics-diagnostics.js?v=p52000"></script>
 <script src="services-settings.js?v=p88000"></script>
 <script src="firewall-settings.js?v=2"></script>
-<script src="usb-network-settings.js?v=p107000"></script>
+<script src="usb-network-settings.js?v=usbnet2601"></script>
 </body>
 </html>
