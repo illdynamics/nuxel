@@ -1,0 +1,86 @@
+Nuxel FIMC-IS: find firmware in the standard Linux firmware paths.
+
+The pinned 4.14.253 tree loads every FIMC-IS blob (fimc_is_lib.bin,
+fimc_is_rta.bin, the DDK <load_fw_name>, OIS/companion images) through
+request_binary(), which only looked at the Samsung Android locations
+(/system/vendor/firmware, /data/vendor/camera). Those do not exist on a Nuxel
+rootfs, so every load failed before request_firmware() was even reached, even
+with correct blobs at /lib/firmware (the request_firmware() fallback is only
+tried *after* the Android paths, and the driver logs the failure as an Android
+dump-path miss).
+
+This patch adds /lib/firmware and /usr/lib/firmware as *additional* file
+lookup paths inside request_binary(), tried after the unchanged Android paths
+and before request_firmware(). Each attempt is logged with its full path and
+return code ("path-linux load(%s) ret(%d)") so a missing or unreadable blob is
+unambiguous in dmesg. No blob content, name, CRC or ABI check is changed and
+nothing is fabricated.
+
+Requires the boot rootfs to provide an empty /lib/firmware before the camera
+group starts (images/s10plus stage), otherwise filp_open() returns ENOENT and
+the search continues exactly as before this patch.
+
+diff --git a/drivers/media/platform/exynos/fimc-is2/fimc-is-binary.c b/drivers/media/platform/exynos/fimc-is2/fimc-is-binary.c
+index 6e487be..a8a3b1f 100644
+--- a/drivers/media/platform/exynos/fimc-is2/fimc-is-binary.c
++++ b/drivers/media/platform/exynos/fimc-is2/fimc-is-binary.c
+@@ -268,6 +268,36 @@ int request_binary(struct fimc_is_binary *bin, const char *path,
+ 			return ret;
+ 	}
+ 
++#ifdef FIMC_IS_FW_LINUX_PATH
++	/*
++	 * Nuxel (patch 0022): the Android dump paths above do not exist on
++	 * Nuxel. Try the standard userspace firmware locations with the same
++	 * file reader before falling back to request_firmware(), naming each
++	 * attempt so a missing blob is unambiguous in dmesg.
++	 */
++	{
++		static const char *nuxel_paths[FIMC_IS_NUXEL_PATH_NUM] = {
++			FIMC_IS_FW_LINUX_PATH, FIMC_IS_FW_LINUX_ALT_PATH
++		};
++		int np;
++
++		for (np = 0; np < FIMC_IS_NUXEL_PATH_NUM; np++) {
++			filename = __getname();
++			if (unlikely(!filename))
++				return -ENOMEM;
++			snprintf(filename, PATH_MAX, "%s%s", nuxel_paths[np], name);
++			ret = get_filesystem_binary(filename, bin);
++			info("%s path-linux load(%s) ret(%d)\n", __func__, filename, ret);
++			__putname(filename);
++			if (!ret)
++				return 0;
++			/* leave no partial state for the next path/request_firmware */
++			bin->data = NULL;
++			bin->size = 0;
++		}
++	}
++#endif
++
+ 	/* ask to 'request_firmware' */
+ 	do {
+ 		ret = request_firmware(&bin->fw, name, device);
+diff --git a/drivers/media/platform/exynos/fimc-is2/include/fimc-is-binary.h b/drivers/media/platform/exynos/fimc-is2/include/fimc-is-binary.h
+index c536964..0a18913 100644
+--- a/drivers/media/platform/exynos/fimc-is2/include/fimc-is-binary.h
++++ b/drivers/media/platform/exynos/fimc-is2/include/fimc-is-binary.h
+@@ -21,6 +21,18 @@
+ #define FIMC_IS_FW_SDCARD			"/data/vendor/camera/fimc_is_fw.bin"
+ #define FIMC_IS_FW				"fimc_is_fw.bin"
+ #define FIMC_IS_LIB_PATH			"/system/vendor/firmware/"
++/*
++ * Nuxel (patch 0022): userspace Linux firmware paths for the same blobs.
++ * The pinned tree only reads the Samsung Android dump locations
++ * (/system/vendor/firmware, /data/vendor/camera). On Nuxel those do not exist,
++ * so every load_isp_binary() call failed before it could even try
++ * request_firmware(). These are tried AFTER the Android paths and are read
++ * with the same get_filesystem_binary() helper; request_firmware() remains the
++ * last fallback, so the stock path is unchanged.
++ */
++#define FIMC_IS_FW_LINUX_PATH			"/lib/firmware/"
++#define FIMC_IS_FW_LINUX_ALT_PATH		"/usr/lib/firmware/"
++#define FIMC_IS_NUXEL_PATH_NUM			(2)
+ #ifdef CONFIG_SAMSUNG_PRODUCT_SHIP
+ #define FIMC_IS_ISP_LIB_SDCARD_PATH		NULL
+ #else

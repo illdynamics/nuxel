@@ -789,7 +789,12 @@ install -Dm0644 /nuxel/configs/nuxel/touch/bootmode-guard.json "$STAGE/etc/nuxel
 ln -sf ../nuxel-bootmode-guard.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-bootmode-guard.service"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-charger-mode-recovery.sh "$STAGE/usr/lib/nuxel/nuxel-charger-mode-recovery.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-device-permissions.sh "$STAGE/usr/lib/nuxel/nuxel-device-permissions.sh"
+# The USB gadget has ONE owner (nuxel-usb-mode.sh) for every composition:
+# charging / file_transfer / usb_network / usb_tethering.  There is no second
+# network helper that edits the same configfs tree.
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-usb-mode.sh "$STAGE/usr/lib/nuxel/nuxel-usb-mode.sh"
+# PWNAGE-USBNET: USB network data plane (NCM + ACM) and its link monitor.
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-usb-net-monitor.sh "$STAGE/usr/lib/nuxel/nuxel-usb-net-monitor.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-mtp-server "$STAGE/usr/lib/nuxel/nuxel-mtp-server"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-vlc-fallback "$STAGE/usr/lib/nuxel/nuxel-vlc-fallback"
 install -m 0755 /nuxel/services/nuxel-software/nuxel-software "$STAGE/usr/lib/nuxel/nuxel-software"
@@ -817,6 +822,10 @@ install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-charger-mode-recovery.se
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-device-permissions.service "$STAGE/etc/systemd/system/nuxel-device-permissions.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mtp.service "$STAGE/etc/systemd/system/nuxel-mtp.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-mode-monitor.service "$STAGE/etc/systemd/system/nuxel-usb-mode-monitor.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-net-restore.service "$STAGE/etc/systemd/system/nuxel-usb-net-restore.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-net-monitor.service "$STAGE/etc/systemd/system/nuxel-usb-net-monitor.service"
+ln -sf ../nuxel-usb-net-monitor.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-usb-net-monitor.service"
+ln -sf ../nuxel-usb-net-restore.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-usb-net-restore.service"
 
 install -d -m 0755 "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wl-fb.service.d/15-idle-fps.conf "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d/15-idle-fps.conf"

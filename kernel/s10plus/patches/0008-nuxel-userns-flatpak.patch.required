@@ -1,3 +1,5 @@
-Required for Flatpak/bubblewrap: removes the Samsung current_chrooted() and
-LOD_SEC uid gates that return EPERM for every valid user-namespace request on
-the Nuxel switch_root layout.  Standard mapping and namespace checks remain.
+0008: user namespaces are a real, runtime-controlled capability.  Restores the
+upstream current_chrooted() check (replacing the retired unconditional EPERM),
+keeps the CONFIG_LOD_SEC uid gate, and adds kernel.unprivileged_userns_clone
+(default 0) so services/nuxel-firewall opts in when confinement is installed.
+Enforced by tools/s10plus/verify-kernel-userns.py in build-kernel.sh.

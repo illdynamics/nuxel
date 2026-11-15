@@ -1,0 +1,447 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH] nfc: s3fwrn5: S3NRN82 bootloader frame handling and NCI strap
+
+Measured on SM-G975F (beyond2lte, S3NRN82 at hsi2c 7-0027):
+
+  * After a session the part is powered off with an unread reply; switching
+    it to NCI then made the IRQ thread discard the reply interrupt without
+    reading the frame.  The controller kept that frame latched, so the NCI
+    CORE_RESET was either NACKed or wedged the hsi2c bus
+    ("SDA check timeout AT READ").  Every reply owed during a session is now
+    read, and a real NCI timeout is retried briefly inside the transport.
+  * A frame is classified by its header: a bootloader response (type RSP)
+    that arrives while the transport believes it is in NCI goes to the
+    firmware protocol instead of being parsed as an NCI header.  A reply
+    that is not a bootloader response marks the part as already running NCI
+    (so no flash is attempted and no 5 s bootloader timeout is burnt).
+  * The bootloader strap (FIRM) is now latched while rail and 26 MHz
+    reference are on, as the vendor NPT does (VEN on, clock on, 20 ms, then
+    FIRM), instead of being sampled with the rail off.  COLD drops VEN with
+    FIRM low and never powers the part up in bootloader mode.
+  * If the part is still in firmware mode after the download, post_setup
+    reports -EIO instead of issuing an NCI reset the part cannot answer
+    (which stretched SCL for the full NCI timeout on the shared bus).
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+diff --git a/drivers/nfc/s3fwrn5/core.c b/drivers/nfc/s3fwrn5/core.c
+index d239624e7..e9648c12c 100644
+--- a/drivers/nfc/s3fwrn5/core.c
++++ b/drivers/nfc/s3fwrn5/core.c
+@@ -74,6 +74,20 @@ static int s3fwrn5_firmware_update(struct s3fwrn5_info *info)
+ 	if (ret < 0)
+ 		goto out;
+ 
++	/*
++	 * NUXEL (S3NRN82): if the handshake was answered by the NCI runtime
++	 * rather than the bootloader, the part already has its firmware and
++	 * flashed it.  Do not wait out the (5 s) bootloader timeouts for a
++	 * flash that must not happen.
++	 */
++	if (info->fw_info.part_in_nci) {
++		dev_info(&info->ndev->nfc_dev->dev,
++			 "NUXEL: bootloader reported NCI traffic; firmware already running\n");
++		s3fwrn5_set_mode(info, S3FWRN5_MODE_NCI);
++		s3fwrn5_set_wake(info, true);
++		goto out;
++	}
++
+ 	/*
+ 	 * NUXEL (S3NRN82): the controller's own firmware revision is only
+ 	 * known after an NCI CORE_RESET; at first bring-up there is none, so
+@@ -155,6 +169,14 @@ static int s3fwrn5_nci_send(struct nci_dev *ndev, struct sk_buff *skb)
+ 		return -EINVAL;
+ 	}
+ 
++	/*
++	 * NUXEL (S3NRN82): an interrupt that was owed while the part was
++	 * switched from the bootloader to NCI is read before the next NCI
++	 * command.  Otherwise the controller still holds that reply and
++	 * NACKs the new command (or the hsi2c bus wedges).
++	 */
++	s3fwrn5_read_pending(info);
++
+ 	ret = s3fwrn5_write(info, skb);
+ 	if (ret < 0)
+ 		kfree_skb(skb);
+@@ -185,6 +207,21 @@ static int s3fwrn5_nci_post_setup(struct nci_dev *ndev)
+ 	s3fwrn5_set_mode(info, S3FWRN5_MODE_NCI);
+ 	s3fwrn5_set_wake(info, true);
+ 
++	/*
++	 * NUXEL: the part only leaves the bootloader after a completed flash
++	 * and the NCI switch.  If it is still in firmware mode here (the
++	 * download failed, or the strap was sampled while the rail was off
++	 * and the part already runs NCI), an NCI reset cannot be answered -
++	 * it would only stretch SCL for the full NCI timeout on the shared
++	 * hsi2c bus.  Report the real state instead of faking a retry.
++	 */
++	if (s3fwrn5_get_mode(info) != S3FWRN5_MODE_NCI) {
++		dev_err(&info->ndev->nfc_dev->dev,
++			"NUXEL: part stayed in firmware mode; NFC not initialised\n");
++		ret = -EIO;
++		goto out;
++	}
++
+ 	dev_info(&info->ndev->nfc_dev->dev,
+ 		 "NCI mode entered; sending CORE_RESET\n");
+ 	/*
+@@ -263,11 +300,20 @@ static void s3fwrn5_nci_setup_work(struct work_struct *work)
+ 	 * (a GET_BOOTINFO + S3NRN82 bootinfo check).  Advisory only.
+ 	 */
+ 	ret = s3fwrn5_nci_dev_up(info->ndev);
+-	if (ret < 0 && info->setup_attempts == 0 && info->ctrl_ready_check) {
+-		/* NUXEL: first failure — probe the bootloader once for the log. */
++	/*
++	 * NUXEL: a failed open has already power-cycled the part (the
++	 * session always ends with the rail off).  Probe the bootloader
++	 * *before* the next attempt instead of after the failed one: the
++	 * probe itself performs a rail cycle and an unread reply from it
++	 * would otherwise be delivered to the next session's CORE_RESET.
++	 */
++	if (ret < 0 && info->ctrl_ready_check &&
++	    info->setup_attempts < S3FWRN5_SETUP_RETRY_MAX) {
++		int probe = info->ctrl_ready_check(info->phy_id);
++
+ 		dev_info(&info->ndev->nfc_dev->dev,
+-			 "NUXEL: CORE_RESET failed (%d); probing bootloader\n", ret);
+-		info->ctrl_ready_check(info->phy_id);
++			 "NUXEL: CORE_RESET failed (%d); bootloader probe=%d\n",
++			 ret, probe);
+ 	}
+ 	if (ret < 0) {
+ 		if (info->setup_attempts++ < S3FWRN5_SETUP_RETRY_MAX) {
+diff --git a/drivers/nfc/s3fwrn5/firmware.c b/drivers/nfc/s3fwrn5/firmware.c
+index c0ca0d5f4..38ed7f57b 100644
+--- a/drivers/nfc/s3fwrn5/firmware.c
++++ b/drivers/nfc/s3fwrn5/firmware.c
+@@ -54,6 +54,24 @@ static int s3fwrn5_fw_wait_reply(struct s3fwrn5_fw_info *fw_info,
+ 	if (!fw_info->rsp)
+ 		return -EINVAL;
+ 
++	/*
++	 * NUXEL: the bootloader reply is a firmware-protocol frame (its
++	 * header type is RSP).  Anything else means the part already runs the
++	 * NCI firmware and is not answering this protocol (measured: an NCI
++	 * control frame leaks into the handshake when the strap was sampled
++	 * with the rail off).  Drop it instead of failing on a forged
++	 * firmware header.
++	 */
++	if (((u8)fw_info->rsp->data[0] & 0x7f) != S3FWRN5_FW_MSG_RSP) {
++		dev_info_ratelimited(&fw_info->ndev->nfc_dev->dev,
++			"NUXEL: non-firmware reply to the bootloader (0x%02x); part is in NCI\n",
++			(u8)fw_info->rsp->data[0]);
++		kfree_skb(fw_info->rsp);
++		fw_info->rsp = NULL;
++		fw_info->part_in_nci = true;
++		return -EPROTO;
++	}
++
+ 	*rsp = fw_info->rsp;
+ 	fw_info->rsp = NULL;
+ 
+diff --git a/drivers/nfc/s3fwrn5/firmware.h b/drivers/nfc/s3fwrn5/firmware.h
+index 41af0ca11..dca43aab7 100644
+--- a/drivers/nfc/s3fwrn5/firmware.h
++++ b/drivers/nfc/s3fwrn5/firmware.h
+@@ -124,6 +124,11 @@ struct s3fwrn5_fw_info {
+ 	 * standard signature must not be sent for it.
+ 	 */
+ 	bool custom_format;
++	/*
++	 * NUXEL: set when a reply shows NCI traffic instead of a bootloader
++	 * response; the part is already running its NCI firmware.
++	 */
++	bool part_in_nci;
+ 
+ 	struct completion completion;
+ 	struct sk_buff *rsp;
+diff --git a/drivers/nfc/s3fwrn5/i2c.c b/drivers/nfc/s3fwrn5/i2c.c
+index 78f3df008..54c7a0d1f 100644
+--- a/drivers/nfc/s3fwrn5/i2c.c
++++ b/drivers/nfc/s3fwrn5/i2c.c
+@@ -37,6 +37,11 @@
+ #define S3FWRN5_EN_WAIT_TIME 150
+ /* NUXEL: vendor sec_nfc SEC_NFC_VEN_WAIT_TIME on this board is 20 ms. */
+ #define S3FWRN5_BOARD_VEN_WAIT_MS 20
++/*
++ * NUXEL: the firmware strap is only sampled once the part has been stable
++ * with rail + reference clock (vendor NPT: VEN on, clock on, 20 ms, FIRM).
++ */
++#define S3FWRN5_BOARD_FIRM_HOLD_MS 30
+ 
+ struct s3fwrn5_i2c_phy {
+ 	struct i2c_client *i2c_dev;
+@@ -65,6 +70,8 @@ struct s3fwrn5_i2c_phy {
+ 	struct completion irq_done;
+ 	/* NUXEL: true once the firmware protocol is ready for IRQ frames. */
+ 	bool ndev_ready;
++	/* NUXEL: a NCI session owed a reply interrupt that was dropped. */
++	bool nci_pending;
+ 
+ 	struct mutex mutex;
+ 
+@@ -101,6 +108,25 @@ static void s3fwrn5_i2c_set_mode(void *phy_id, enum s3fwrn5_mode mode)
+ 	if (phy->mode == mode)
+ 		goto out;
+ 
++	/*
++	 * NUXEL: leaving NCI with an unread reply discards it (the rail is
++	 * dropped below or the part is reconfigured), so a pending marker
++	 * must not outlive the transaction that produced it.
++	 */
++	phy->nci_pending = false;
++	if (phy->hold && phy->board_pins) {
++		/*
++		 * NUXEL: inside a session the rail and the 26 MHz reference
++		 * stay on, so the bootloader strap (FIRM) is latched by the
++		 * part with power and clock present.  Deciding the strap
++		 * *while the rail is off* is what the vendor NPT avoids: the
++		 * S3NRN82 then keeps answering the firmware protocol after
++		 * the driver has switched to NCI (measured: NCI CORE_RESET is
++		 * NACKed, then the bootloader replies to the probe).
++		 */
++		gpio_set_value(phy->gpio_fw_wake, mode == S3FWRN5_MODE_FW);
++		msleep(S3FWRN5_BOARD_FIRM_HOLD_MS);
++	}
+ 	phy->mode = mode;
+ 
+ 	/*
+@@ -122,13 +148,21 @@ static void s3fwrn5_i2c_set_mode(void *phy_id, enum s3fwrn5_mode mode)
+ 		 * between sessions so the next bootloader entry is a real
+ 		 * reset.
+ 		 */
++		/*
++		 * COLD is the exception: the vendor NPT ("NFC OFF mode NPT")
++		 * drops VEN with FIRM still low, so the part is never powered
++		 * up with a bootloader strap.  That is the state the reader
++		 * must come back from at the start of every session.
++		 */
+ 		gpio_set_value(phy->gpio_en, 1);
+-		gpio_set_value(phy->gpio_fw_wake,
+-			       mode == S3FWRN5_MODE_FW);
+ 		if (mode != S3FWRN5_MODE_COLD) {
++			gpio_set_value(phy->gpio_fw_wake,
++				       mode == S3FWRN5_MODE_FW);
+ 			msleep(S3FWRN5_BOARD_VEN_WAIT_MS);
+ 			gpio_set_value(phy->gpio_en, 0);
+ 			msleep(S3FWRN5_BOARD_VEN_WAIT_MS);
++		} else {
++			gpio_set_value(phy->gpio_fw_wake, 0);
+ 		}
+ 	} else {
+ 		gpio_set_value(phy->gpio_en, 1);
+@@ -337,27 +371,88 @@ static int s3fwrn5_i2c_write_bulk(void *phy_id, const u8 *data, size_t len)
+ 	return ret;
+ }
+ 
++static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy);
++
++/*
++ * NUXEL (S3NRN82): read the reply the IRQ thread could not consume while the
++ * part was being switched to NCI.  Called from the NCI send path before a new
++ * command; a failure here is not fatal for the session (the sender reports
++ * the real I2C outcome).
++ */
++static int s3fwrn5_i2c_read_pending(void *phy_id)
++{
++	struct s3fwrn5_i2c_phy *phy = phy_id;
++	int ret = 0;
++
++	mutex_lock(&phy->mutex);
++	if (phy->nci_pending) {
++		phy->nci_pending = false;
++		ret = s3fwrn5_i2c_read(phy);
++		dev_info_ratelimited(&phy->i2c_dev->dev,
++				     "NUXEL: read pending pre-NCI reply (%d)\n",
++				     ret);
++	}
++	mutex_unlock(&phy->mutex);
++	return ret;
++}
++
+ static const struct s3fwrn5_phy_ops i2c_phy_ops = {
+ 	.set_wake = s3fwrn5_i2c_set_wake,
+ 	.set_mode = s3fwrn5_i2c_set_mode,
+ 	.get_mode = s3fwrn5_i2c_get_mode,
+ 	.write = s3fwrn5_i2c_write,
+ 	.write_bulk = s3fwrn5_i2c_write_bulk,
++	.read_pending = s3fwrn5_i2c_read_pending,
+ 	.session_begin = s3fwrn5_i2c_session_begin,
+ 	.session_end = s3fwrn5_i2c_session_end,
+ };
+ 
++/*
++ * NUXEL (S3NRN82): decide which protocol a received frame belongs to.
++ *
++ * The controller answers the bootloader handshake with a 4-byte firmware
++ * header of type RSP (0x01|parity), and the bootloader is still reachable
++ * right after a rail cycle.  If such a frame arrives once the transport
++ * believes it is in NCI mode it must go to the firmware protocol, not be
++ * parsed as an NCI header (which would hand garbage to nci_recv_frame and
++ * leave the firmware waiter without its reply).
++ */
++static int nuxel_frame_mode(struct s3fwrn5_i2c_phy *phy, const char *hdr)
++{
++	const u8 *h = (const u8 *)hdr;
++
++	if (phy->mode == S3FWRN5_MODE_FW)
++		return S3FWRN5_MODE_FW;
++	/* NCI data packets: MT 00 (data), 01 (command), 10/11 (control). */
++	if (h[0] <= 0x3f)
++		return S3FWRN5_MODE_NCI;
++	if ((h[0] & 0x7f) == S3FWRN5_FW_MSG_RSP)
++		return S3FWRN5_MODE_FW;
++
++	return S3FWRN5_MODE_NCI;
++}
++
+ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
+ {
+ 	struct sk_buff *skb;
+ 	size_t hdr_size;
+ 	size_t data_len;
+ 	char hdr[4];
+-	int ret;
++	int ret, frame_mode, retries;
+ 
+-	hdr_size = (phy->mode == S3FWRN5_MODE_NCI) ?
+-		NCI_CTRL_HDR_SIZE : S3FWRN5_FW_HDR_SIZE;
+-	ret = i2c_master_recv(phy->i2c_dev, hdr, hdr_size);
++	/*
++	 * NUXEL: the frame is already latched in the controller, so the read
++	 * must not race a mode switch.  A hsi2c timeout means the bus, not
++	 * the reply, needs a moment; retry a few times before giving up.
++	 */
++	for (retries = 0; retries < 3; retries++) {
++		hdr_size = (phy->mode == S3FWRN5_MODE_NCI) ?
++			NCI_CTRL_HDR_SIZE : S3FWRN5_FW_HDR_SIZE;
++		ret = i2c_master_recv(phy->i2c_dev, hdr, hdr_size);
++		if (ret == hdr_size)
++			break;
++		usleep_range(2000, 3000);
++	}
+ 	if (ret < 0) {
+ 		dev_info_ratelimited(&phy->i2c_dev->dev,
+ 				     "NUXEL nci read: header recv failed %d (mode=%d)\n",
+@@ -368,7 +463,8 @@ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
+ 	if (ret < hdr_size)
+ 		return -EBADMSG;
+ 
+-	data_len = (phy->mode == S3FWRN5_MODE_NCI) ?
++	frame_mode = nuxel_frame_mode(phy, hdr);
++	data_len = (frame_mode == S3FWRN5_MODE_NCI) ?
+ 		((struct nci_ctrl_hdr *)hdr)->plen :
+ 		((struct s3fwrn5_fw_header *)hdr)->len;
+ 
+@@ -389,10 +485,10 @@ static int s3fwrn5_i2c_read(struct s3fwrn5_i2c_phy *phy)
+ 
+ out:
+ 	dev_info_ratelimited(&phy->i2c_dev->dev,
+-			     "NUXEL nci rx: %*ph  mode=%d\n",
++			     "NUXEL nci rx: %*ph  mode=%d frame=%d\n",
+ 			     (int)min_t(size_t, skb->len, 16), skb->data,
+-			     phy->mode);
+-	return s3fwrn5_recv_frame(phy->ndev, skb, phy->mode);
++			     phy->mode, frame_mode);
++	return s3fwrn5_recv_frame(phy->ndev, skb, frame_mode);
+ }
+ 
+ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+@@ -407,19 +503,8 @@ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+ 
+ 	mutex_lock(&phy->mutex);
+ 
+-	/*
+-	 * NUXEL: while a session holds the reference clock on, clk_req is
+-	 * meaningless for gating — nothing here is driven by it any more.
+-	 */
+-	if (phy->hold) {
+-		dev_dbg(&phy->i2c_dev->dev, "NUXEL irq: ignored (clk held)\n");
+-		goto out;
+-	}
+-
+ 	if (phy->irq_skip) {
+-		/* NUXEL diagnostic: an IRQ during a mode-switch pulse is expected
+-		 * once (irq_skip), but a burst of them means the part is
+-		 * answering while the stack is not listening. */
++		/* A mode/rail switch is in progress; the line is not a frame. */
+ 		dev_dbg(&phy->i2c_dev->dev, "NUXEL irq: skipped (mode=%d)\n",
+ 			phy->mode);
+ 		goto out;
+@@ -432,15 +517,23 @@ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+ 		 * NUXEL: until the first s3fwrn5_fw_init() has run (the probe
+ 		 * readiness check runs before it), the firmware completion is
+ 		 * not initialised and s3fwrn5_fw_recv_frame() would BUG_ON().
+-		 * The readiness check reads the reply synchronously, so an IRQ
+-		 * arriving this early is simply not ours to consume.
+ 		 */
+ 		if (!phy->ndev_ready) {
+ 			dev_info_ratelimited(&phy->i2c_dev->dev,
+ 					     "NUXEL irq: ignored before firmware setup (mode=%d)\n",
+ 					     phy->mode);
+-			goto out;
++			break;
+ 		}
++		/*
++		 * NUXEL (S3NRN82): a session always ends with the part powered
++		 * off, which discards an unread frame.  An interrupt that is
++		 * still owed when the part was switched to NCI must be read
++		 * here: skipping the read leaves the controller holding the
++		 * reply, and the next transaction (CORE_RESET) is NACKed or
++		 * the hsi2c bus wedges ("SDA check timeout AT READ").
++		 */
++		if (phy->hold && phy->mode == S3FWRN5_MODE_NCI)
++			phy->nci_pending = true;
+ 		ret = s3fwrn5_i2c_read(phy);
+ 		if (ret < 0)
+ 			dev_info_ratelimited(&phy->i2c_dev->dev,
+@@ -450,7 +543,6 @@ static irqreturn_t s3fwrn5_i2c_irq_thread_fn(int irq, void *phy_id)
+ 	case S3FWRN5_MODE_COLD:
+ 		dev_info_ratelimited(&phy->i2c_dev->dev,
+ 				     "NUXEL irq in COLD mode ignored\n");
+-		ret = -EREMOTEIO;
+ 		break;
+ 	}
+ 
+@@ -549,8 +641,9 @@ static int s3fwrn5_i2c_parse_dt(struct i2c_client *client,
+  * a workqueue after probe: doing it inside the device_initcall starved the
+  * UFS/RPMB worker and boot-looped the phone.
+  */
+-static int s3fwrn5_i2c_nci_ready(struct s3fwrn5_i2c_phy *phy)
++static int s3fwrn5_i2c_nci_ready(void *phy_id)
+ {
++	struct s3fwrn5_i2c_phy *phy = phy_id;
+ 	struct s3fwrn5_fw_header req = {
+ 		.type = S3FWRN5_FW_MSG_CMD,
+ 		.code = S3FWRN5_FW_CMD_GET_BOOTINFO,
+diff --git a/drivers/nfc/s3fwrn5/s3fwrn5.h b/drivers/nfc/s3fwrn5/s3fwrn5.h
+index 325a97073..5ea6f4552 100644
+--- a/drivers/nfc/s3fwrn5/s3fwrn5.h
++++ b/drivers/nfc/s3fwrn5/s3fwrn5.h
+@@ -45,6 +45,12 @@ struct s3fwrn5_phy_ops {
+ 	 * session hooks hold rail + reference clock across a whole NCI setup.
+ 	 */
+ 	int (*write_bulk)(void *id, const u8 *data, size_t len);
++	/*
++	 * NUXEL: consume a reply interrupt that was owed while the part
++	 * switched from the bootloader to NCI (S3NRN82 holds the frame and
++	 * NACKs the next command until it is read).
++	 */
++	int (*read_pending)(void *id);
+ 	void (*session_begin)(void *id);
+ 	void (*session_end)(void *id);
+ };
+@@ -117,6 +123,12 @@ static inline void s3fwrn5_set_ready_check(struct nci_dev *ndev,
+ 		info->ctrl_ready_check = fn;
+ }
+ 
++static inline void s3fwrn5_read_pending(struct s3fwrn5_info *info)
++{
++	if (info->phy_ops->read_pending)
++		info->phy_ops->read_pending(info->phy_id);
++}
++
+ static inline int s3fwrn5_session_begin(struct s3fwrn5_info *info)
+ {
+ 	if (!info->phy_ops->session_begin)

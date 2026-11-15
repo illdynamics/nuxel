@@ -1,0 +1,1 @@
+Required: Nuxel PID1 chroots into the Fedora root, so the upstream current_chrooted() check must accept a chroot that is inside the mount namespace.

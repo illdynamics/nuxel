@@ -1,0 +1,11 @@
+0008 RETIRED (PWNAGE-SSP, 2026-11-13): this patch replaced the upstream
+current_chrooted() check with an unconditional `ret = -EPERM;` and deleted the
+CONFIG_LOD_SEC uid gate.  It never made user namespaces usable: it made
+create_user_ns() fail for every caller (measured on the live image, whose
+/proc/config.gz advertises CONFIG_USER_NS=y).  The replacement is:
+  * upstream current_chrooted() + LOD_SEC checks restored, plus
+  * kernel.unprivileged_userns_clone (kernel/sysctl.c, default 0) used as the
+    explicit opt-in by services/nuxel-firewall, gated by
+    tools/s10plus/verify-kernel-userns.py.
+Do not reintroduce this patch.  The .retired suffix keeps the builder from
+applying it; the .retired.required sidecar documents why.

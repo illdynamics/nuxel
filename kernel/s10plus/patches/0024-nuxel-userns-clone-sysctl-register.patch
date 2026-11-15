@@ -1,0 +1,40 @@
+Nuxel userns: register kernel.unprivileged_userns_clone in the sysctl table.
+
+0008-nuxel-userns-flatpak.patch declares and uses
+`int sysctl_unprivileged_userns_clone` in kernel/user_namespace.c and passes
+its own source gate, but never adds a proc entry for it.  The gate
+(tools/s10plus/verify-kernel-userns.py) and services/nuxel-firewall both rely
+on the knob existing under /proc/sys/kernel/unprivileged_userns_clone; without
+the registration the gate fails closed and the build stops.  Register it in
+kern_table[] and declare it extern, guarded by CONFIG_USER_NS.
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index ae187286572c..90ff345d93a5 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -103,6 +103,9 @@ int deny_new_usb __read_mostly = 0;
+ EXPORT_SYMBOL(deny_new_usb);
+ #endif
+ extern int suid_dumpable;
++#ifdef CONFIG_USER_NS
++extern int sysctl_unprivileged_userns_clone;
++#endif
+ #ifdef CONFIG_COREDUMP
+ extern int core_uses_pid;
+ extern char core_pattern[];
+@@ -312,6 +315,15 @@ static int max_extfrag_threshold = 1000;
+ #endif
+ 
+ static struct ctl_table kern_table[] = {
++#ifdef CONFIG_USER_NS
++	{
++		.procname	= "unprivileged_userns_clone",
++		.data		= &sysctl_unprivileged_userns_clone,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++#endif
+ 	{
+ 		.procname	= "sched_child_runs_first",
+ 		.data		= &sysctl_sched_child_runs_first,

@@ -1,0 +1,1 @@
+Required: NCM must not be usable without the owned mirrorlink lifecycle (userspace gates on the nuxel_fix marker).

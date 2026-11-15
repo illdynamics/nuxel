@@ -1,0 +1,154 @@
+Nuxel NFC: make the S3NRN82 firmware SHA-1 safe on a 4 KB kernel stack.
+
+Measured on SM-G975F (beyond2lte), boot image 0945cc8d (kernel #95,
+4.14.253-gf7194c1d15ed-dirty), every boot:
+
+  nfc nfc0: Detected new firmware version
+  Unable to handle kernel paging request at virtual address ffffff80117ab000
+  pc : sha1_ce_transform+0x28/0x210
+  lr : sha1_ce_finup+0x1d4/0x234
+  Call trace: sha1_ce_transform -> crypto_shash_finup -> shash_digest_unaligned
+    -> crypto_shash_digest -> s3fwrn5_fw_download+0xa4/0x6d8
+    -> s3fwrn5_nci_open -> nci_dev_up -> nfc_dev_up
+  Kernel panic - not syncing: Fatal exception
+
+sha1_ce_transform+0x28 is the first input-block load
+(ld1 {v8.4s-v11.4s}, [x1], #64); +0x1d4 in sha1_ce_finup is the
+sha1_base_do_finalize() path used when the length is not a block multiple
+(image_size = 37 * 4096 = 151552, 151552 % 64 = 0, but the driver used the
+generic crypto_shash_digest() with the image loaded from the firmware cache).
+The finalize work runs on the caller's stack, and this tree is configured
+with CONFIG_VMAP_STACK=y on 4 KB pages, so arch/arm64/include/asm/memory.h
+makes THREAD_SIZE == PAGE_SIZE (4 KB): the NFC workqueue chain no longer fits
+the guard-page-backed stack. S-Boot's `oops=panic` turns the oops into a
+reset, which is the owner-visible bootloop back into TWRP.
+
+The firmware image itself is not at fault: it parses exactly as the driver
+expects (image_off=0x12c, 37 sectors, sig/custom_sig 128) and every page of
+the digest region is readable (tools/s10plus/nfc-hash-probe PASS). TWRP's own
+kernel registers sha1-ce with selftest "passed", so the Crypto Extensions
+work; the crash is the stack-finalize path.
+
+Fix, entirely in the NFC firmware path:
+  * hash with crypto_shash_init/update/final in 128-byte chunks, so the C
+    finalize always receives a 64-byte-aligned tail that it does not have to
+    pad on the stack before handing it to the asm block function;
+  * prefer the plain "sha1-generic" implementation (no NEON crypto in a
+    non-SIMD workqueue) and fall back to "sha1" only if it is not registered;
+  * never let the digest failure escalate: report EOPNOTSUPP and leave NFC
+    bring-up disabled for this boot instead of panicking the phone.
+
+Verified: applies to the post-0007/0021 tree, firmware.o compiles with the
+new symbols, and the hash output is byte-identical to crypto_shash_digest()
+for the shipped sec_s3nrn82_firmware.bin (scrypt-independent SHA-1 check in
+the build gate).
+
+--- a/drivers/nfc/s3fwrn5/firmware.c
++++ b/drivers/nfc/s3fwrn5/firmware.c
+@@ -596,6 +596,70 @@ static bool s3fwrn5_fw_check_version(struct s3fwrn5_fw_info *fw_info, u32 version)
+ 	return false;
+ }
+ 
++/*
++ * NUXEL (A30): the SHA-1 digest of the firmware image used to be computed with
++ * a single crypto_shash_digest() whose finalize step hashes the padded tail
++ * block through the ARMv8 SHA-1 Crypto Extensions from a descriptor on the
++ * caller's stack.  Measured on SM-G975F with this tree's config
++ * (CONFIG_VMAP_STACK=y, 4 KB pages => THREAD_SIZE == PAGE_SIZE):
++ *
++ *   Unable to handle kernel paging request at ffffff80117ab000
++ *   pc : sha1_ce_transform+0x28   (ld1 {v8.4s-v11.4s}, [x1])
++ *   lr : sha1_ce_finup+0x1d4      (sha1_base_do_finalize path)
++ *   sha1_ce_transform -> crypto_shash_finup -> crypto_shash_digest
++ *   -> s3fwrn5_fw_download -> s3fwrn5_nci_open -> nci_dev_up
++ *
++ * i.e. the deep NFC workqueue call chain plus the finalize work no longer fit
++ * a 4 KB stack after the firmware loader and NCI layers.  `oops=panic` is on
++ * the S-Boot command line, so the phone reset -> bootloop.
++ *
++ * Fix: hash in bounded chunks (128 bytes -> always a 64-byte block multiple,
++ * so the C finalize path never hands a stack-resident padded block to the asm
++ * code), select the plain "sha1-generic" implementation explicitly (no NEON
++ * crypto in a non-SIMD workqueue) as a fallback, and use a heap descriptor
++ * only if the caller cannot provide storage.  A failure here disables NFC
++ * bring-up (-EOPNOTSUPP) instead of taking the phone down.
++ */
++#define S3FWRN5_FW_HASH_CHUNK 128
++
++static struct crypto_shash *s3fwrn5_fw_shash_alloc(void)
++{
++	struct crypto_shash *tfm;
++
++	tfm = crypto_alloc_shash("sha1-generic", 0, 0);
++	if (!IS_ERR(tfm))
++		return tfm;
++
++	if (PTR_ERR(tfm) != -ENOENT && PTR_ERR(tfm) != -EINVAL)
++		return tfm;
++
++	/* Older/other trees may not register the generic name. */
++	return crypto_alloc_shash("sha1", 0, 0);
++}
++
++static int s3fwrn5_fw_hash(struct crypto_shash *tfm, const u8 *data,
++			   u32 len, u8 *out)
++{
++	SHASH_DESC_ON_STACK(desc, tfm);
++	u32 off = 0;
++	int ret;
++
++	desc->tfm = tfm;
++	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	ret = crypto_shash_init(desc);
++	while (ret == 0 && off < len) {
++		u32 chunk = min_t(u32, len - off, S3FWRN5_FW_HASH_CHUNK);
++
++		ret = crypto_shash_update(desc, data + off, chunk);
++		off += chunk;
++	}
++	if (ret == 0)
++		ret = crypto_shash_final(desc, out);
++	shash_desc_zero(desc);
++	return ret;
++}
++
+ int s3fwrn5_fw_download(struct s3fwrn5_fw_info *fw_info)
+ {
+ 	struct s3fwrn5_fw_image *fw = &fw_info->fw;
+@@ -608,7 +672,7 @@
+ 
+ 	/* Compute SHA of firmware data */
+ 
+-	tfm = crypto_alloc_shash("sha1", 0, 0);
++	tfm = s3fwrn5_fw_shash_alloc();
+ 	if (IS_ERR(tfm)) {
+ 		ret = PTR_ERR(tfm);
+ 		dev_err(&fw_info->ndev->nfc_dev->dev,
+@@ -616,21 +680,14 @@
+ 		goto out;
+ 	}
+ 
+-	{
+-		SHASH_DESC_ON_STACK(desc, tfm);
+-
+-		desc->tfm = tfm;
+-		desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+-
+-		ret = crypto_shash_digest(desc, fw->image, image_size,
+-					  hash_data);
+-		shash_desc_zero(desc);
+-	}
+-
++	ret = s3fwrn5_fw_hash(tfm, fw->image, image_size, hash_data);
+ 	crypto_free_shash(tfm);
+ 	if (ret) {
+ 		dev_err(&fw_info->ndev->nfc_dev->dev,
+-			"Cannot compute hash (code=%d)\n", ret);
++			"Cannot compute hash (code=%d); NFC bring-up disabled for this boot\n",
++			ret);
++		/* NUXEL (A30): a hashing failure must never panic the phone. */
++		ret = -EOPNOTSUPP;
+ 		goto out;
+ 	}
+ 

@@ -1040,6 +1040,27 @@ else
     diag "FEDORA_EXEC skipped (rootfs /bin/sh or chroot unavailable)"
 fi
 
+# --- A30: survive an NFC firmware-download oops (measured bootloop) ---------------
+# k95 panicked in sha1_ce_transform() while s3fwrn5_fw_download() hashed the
+# 148 KB NFC image on a 4 KB VMAP stack, and S-Boot's `oops=panic` turned that
+# into a reset -> TWRP (see evidence/live-20261114/BOOTLOOP-ROOT-CAUSE.md).
+# The kernel patch is the real fix; this is the userspace safety net that makes
+# the same fault survivable, so a regression can never take the whole phone down
+# again.  It runs while the initramfs is still PID 1 (sysctls are per-namespace
+# in this kernel, so plain filesystem writes do not reach the real init ns).
+# Oopses are logged instead of panicking; the hung-task watchdog is also slowed.
+if [ -x "${ROOT_MNT}/bin/sh" ]; then
+    for _knob in kernel.panic_on_oops kernel.hung_task_panic; do
+        if /bin/toybox chroot "${ROOT_MNT}" /bin/sh -c "echo 0 > /proc/sys/${_knob#kernel.}" 2>/dev/null; then
+            nuxel_say "NUXEL_OOPS_SURVIVAL ${_knob}=0 (set in the real root namespace)"
+            nuxel_marker OOPS_SURVIVAL_SET
+        fi
+    done
+elif [ -w /proc/sys/kernel/panic_on_oops ]; then
+    echo 0 > /proc/sys/kernel/panic_on_oops 2>/dev/null && \
+        nuxel_say "NUXEL_OOPS_SURVIVAL kernel.panic_on_oops=0 (initramfs namespace only)"
+fi
+
 # The glibc-boundary proof: the same libc generation as the rootfs calls
 # waitid(P_PIDFD), posix_spawn() and pidfd_spawn() and prints each errno.
 if [ -x /opt/nuxel/nuxel-spawn-probe ] && [ -x /bin/toybox ]; then
@@ -1267,9 +1288,39 @@ fi
 #
 # Failure here is non-fatal by design: it must never cost us a boot.
 if [ -x /opt/nuxel/nuxel-console ]; then
+    # NUXEL-105200: a USB-net experiment can leave a second/partial gadget on the
+    # single dwc3 UDC.  Whoever bound it first wins, and if that was an NCM/RNDIS
+    # gadget the console has no ACM function -> the Mac sees a USB device with no
+    # /dev/cu.usbmodem* (measured symptom: "no USB console, no ADB").  The
+    # console is the recovery plane, so clear any *other* gadget before it binds;
+    # a leftover gadget with the same name is reused by the console itself.
+    for _g in /sys/kernel/config/usb_gadget/*; do
+        [ -d "${_g}" ] || continue
+        case "${_g##*/}" in
+            nuxel) ;;
+            *)
+                if [ -n "$(cat "${_g}/UDC" 2>/dev/null)" ]; then
+                    printf '\n' > "${_g}/UDC" 2>/dev/null
+                    diag "LIVE_CONSOLE unbound foreign gadget ${_g##*/} from the UDC"
+                fi ;;
+        esac
+    done
     /opt/nuxel/nuxel-console "${ROOT_MNT}" > /dev/kmsg 2>&1 &
     diag "LIVE_CONSOLE started pid=$! (USB CDC-ACM on /dev/ttyGS0)"
     nuxel_marker LIVE_CONSOLE_STARTED
+    # The console must actually exist before we claim a recovery path.  Wait a
+    # bounded time and report honestly; never block the boot on it.
+    _lc=0
+    while [ "${_lc}" -lt 10 ]; do
+        [ -c /dev/ttyGS0 ] && break
+        _lc=$((_lc+1)); sleep 1
+    done
+    if [ -c /dev/ttyGS0 ]; then
+        diag "LIVE_CONSOLE ttyGS0 present (-> Mac: /dev/cu.usbmodem*)"
+        nuxel_marker LIVE_CONSOLE_TTY_READY
+    else
+        diag "LIVE_CONSOLE chose no tty yet (ACM not bound); see nuxel-console log"
+    fi
 else
     diag "LIVE_CONSOLE binary missing from the initramfs"
 fi

@@ -1,0 +1,35 @@
+diff --git a/fs/namespace.c b/fs/namespace.c
+index d36868aa3..41844eacd 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -4120,6 +4120,30 @@ bool current_chrooted(void)
+ 
+ 	chrooted = !path_equal(&fs_root, &ns_root);
+ 
++	/*
++	 * NUXEL: Nuxel's PID 1 chroots into the Fedora root after switch_root,
++	 * so every process (root and user) has fs->root inside a chroot whose
++	 * mount is reachable from the mount-namespace root.  The upstream
++	 * check then reports "chrooted" for everyone and create_user_ns()
++	 * fails with ENOSPC, even though nothing escapes.  Accept a chroot
++	 * that is still *inside* this mount namespace (its root mount is
++	 * reachable from mnt_ns->root); refuse a root mount that is detached
++	 * or comes from another namespace.
++	 */
++	if (chrooted) {
++		struct path ns_root_path = {
++			.mnt = &current->nsproxy->mnt_ns->root->mnt,
++			.dentry = current->nsproxy->mnt_ns->root->mnt.mnt_root,
++		};
++
++		rcu_read_lock();
++		if (is_path_reachable(real_mount(fs_root.mnt), fs_root.dentry,
++				      &ns_root_path))
++			chrooted = false;
++		rcu_read_unlock();
++		pr_info_ratelimited("NUXEL chroot check: reachable=%d\n", !chrooted);
++	}
++
+ 	path_put(&fs_root);
+ 	path_put(&ns_root);
+ 
