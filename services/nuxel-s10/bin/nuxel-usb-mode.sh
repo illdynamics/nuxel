@@ -241,17 +241,63 @@ wait_mtp_ready() {
   return 1
 }
 
+# NUXEL-105200: the recovery console is an ACM function inside this gadget.
+# `to_charging` used to re-bind the UDC without checking that the ACM function
+# and its configfs link still exist.  If anything ever dropped them (an older
+# USB-net experiment, a partial teardown), the phone then enumerated as a
+# composite device with NO serial and no way back in over USB -- exactly the
+# "USB console is broken" report.  Ensure it, verify it, and repair it here.
+acm_ensure() {
+  local func="$GADGET/functions/acm.usb0"
+  local link="$GADGET/configs/$CONFIG/acm.usb0"
+  [ -d "$GADGET" ] || return 1
+  mkdir -p "$GADGET/strings/0x409" "$GADGET/configs/$CONFIG/strings/0x409" "$func" 2>/dev/null || true
+  [ -s "$GADGET/idVendor" ] || printf '0x1d6b\n' > "$GADGET/idVendor" 2>/dev/null || true
+  [ -s "$GADGET/idProduct" ] || printf '0x0104\n' > "$GADGET/idProduct" 2>/dev/null || true
+  [ -s "$GADGET/strings/0x409/manufacturer" ] || printf 'Nuxel\n' > "$GADGET/strings/0x409/manufacturer" 2>/dev/null || true
+  [ -s "$GADGET/strings/0x409/product" ] || printf 'S10+ console\n' > "$GADGET/strings/0x409/product" 2>/dev/null || true
+  [ -s "$GADGET/strings/0x409/serialnumber" ] || printf 'nuxel-beyond2lte\n' > "$GADGET/strings/0x409/serialnumber" 2>/dev/null || true
+  [ -d "$GADGET/functions/$FUNC" ] || mkdir -p "$GADGET/functions/$FUNC" 2>/dev/null || true
+  # The config link must point at a real function directory.
+  if [ ! -e "$link" ]; then
+    ln -sfn "$func" "$link" 2>/dev/null || true
+  fi
+  [ -d "$func" ] && [ -e "$link" ]
+}
+
+acm_verify() {
+  [ -d "$GADGET/functions/acm.usb0" ] || return 1
+  [ -e "$GADGET/configs/$CONFIG/acm.usb0" ] || return 1
+  # /dev/ttyGS0 (or ttyGS1..) is created by the ACM function.  Give the kernel a
+  # moment: the caller has already waited for `configured`.
+  local n=0
+  while [ "$n" -lt 30 ]; do
+    compgen -G '/dev/ttyGS[0-9]*' >/dev/null 2>&1 && return 0
+    n=$((n+1)); sleep 0.1
+  done
+  return 1
+}
+
 to_charging() {
   local why="${1:-user}"
   say_state "switching to Charging Mode (reason=$why)"
   remove_mtp_function
   # Re-bind the ACM-only gadget.  The Nuxel serial recovery console is the
   # default composition and is never removed by this helper.
+  acm_ensure || log "could not fully ensure acm.usb0; binding anyway"
   if ! bind_udc; then
     write_activation charging false "acm" "error:udc-bind" "could not bind $UDC_NAME"
     return 1
   fi
   wait_configured || true
+  if ! acm_verify; then
+    log "ACM serial did not appear after bind; re-creating the function once"
+    unbind_udc
+    rm -f "$GADGET/configs/$CONFIG/acm.usb0" 2>/dev/null || true
+    rmdir "$GADGET/functions/acm.usb0" 2>/dev/null || true
+    acm_ensure && bind_udc && wait_configured && acm_verify \
+      || log "ACM serial still missing (console recovery: use WiFi SSH)"
+  fi
   write_activation charging false "acm" "gadget:acm-console"
   write_selection charging false
   say_state "Charging Mode active (ACM console preserved; no storage exposed)"
@@ -328,15 +374,11 @@ status() {
 
 monitor() {
   # Keep the persisted state truthful after a physical eject/disconnect.  This
-  # is intentionally independent of the WebView.  A three-sample debounce keeps
-  # a transient re-enumeration from flapping the mode.  Only an active File
-  # Transfer session needs a 1 s cadence; while charging, a 5 s cadence halves
-  # nothing important but removes 80% of the wakeups from an idle bash poller.
+  # is intentionally independent of the WebView.  A three-second debounce keeps
+  # a transient re-enumeration from flapping the mode.
   local down=0
   while :; do
-    local interval=5
     if [ -r "$ACTIVATION" ] && grep -q '"mode": "file_transfer"' "$ACTIVATION" 2>/dev/null && grep -q '"active": true' "$ACTIVATION" 2>/dev/null; then
-      interval=1
       local typec_ok=1
       compgen -G '/sys/class/typec/port*' >/dev/null 2>&1 && ! typec_connected && typec_ok=0
       if [ "$(udc_state)" != configured ] || ! vbus_online || [ "$typec_ok" -eq 0 ]; then
@@ -352,7 +394,7 @@ monitor() {
     else
       down=0
     fi
-    sleep "$interval"
+    sleep 1
   done
 }
 

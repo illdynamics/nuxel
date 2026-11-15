@@ -195,6 +195,38 @@
 }
 .app-item .app-icon .nuxel-icon-img[data-icon-state="loaded"] { opacity: 1; }
 .app-item .app-icon .nuxel-icon-img[data-icon-state="error"] { opacity: 0; }
+/* PWNAGE-108000: never paint the fallback glyph behind a decoded icon.  This
+   is a pure-CSS guarantee independent of the inline onload handler: any icon
+   well whose image has finished loading hides its glyph sibling. */
+.app-item .app-icon:has(> img.nuxel-icon-img[data-icon-state="loaded"]) > .nuxel-icon-fallback,
+.app-item .app-icon .nuxel-icon-img[data-icon-state="loaded"] + .nuxel-icon-fallback {
+    display: none !important;
+}
+.app-item .app-icon > .nuxel-icon-fallback[data-icon-state="loaded"] { display: none !important; }
+/* v0.8.5 DOUBLE-ICON: a GTK/Flatpak icon is its own complete artwork.  The
+   fallback glyph (emoji or the Nuxel pack tile) must never be painted in the
+   same well: on every transparent SVG (Adwaita, Stremio, Signal) the glyph
+   showed through the real icon and read as a second application icon.  These
+   rules make the glyph structurally unpaintable for external icons while the
+   image is pending/loaded, and drop the coloured category backdrop so the
+   icon is not drawn on a second coloured tile either. */
+.app-item .app-icon[data-icon-origin="gtk"],
+.app-item .app-icon[data-icon-origin="flatpak"] {
+    background: transparent !important;
+    box-shadow: none;
+}
+.app-item .app-icon[data-icon-origin="gtk"] > .nuxel-icon-fallback,
+.app-item .app-icon[data-icon-origin="flatpak"] > .nuxel-icon-fallback {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+/* Same guarantee when the origin only lives on the glyph/image nodes (older
+   markup or a shell that re-inserted the nodes). */
+.app-item .app-icon > .nuxel-icon-fallback[data-icon-origin="gtk"],
+.app-item .app-icon > .nuxel-icon-fallback[data-icon-origin="flatpak"] {
+    display: none !important;
+}
 
 .app-item .app-label {
     font-size: 11px;
@@ -406,6 +438,13 @@ body.app-drawer-open .app-grid { overflow-y: auto; overflow-x: hidden; -webkit-o
     width: 100%; max-width: 100%; box-sizing: border-box;
 }
 .drawer-list .app-item { min-width: 0; max-width: 100%; }
+/* v0.8.5 PERF: the tint is a custom property resolved by CSS instead of an
+   inline background declaration on every tile.  External (GTK/Flatpak) icons
+   are complete artwork and keep a transparent well (see the double-icon
+   rules below), so the tint only shapes Nuxel/PWA tiles. */
+.app-item .app-icon { background: var(--app-tint, var(--bg-card)); }
+.app-item .app-icon[data-icon-origin="gtk"],
+.app-item .app-icon[data-icon-origin="flatpak"] { background: transparent !important; }
 .drawer-list .app-icon { width: min(var(--app-icon-size), 100%); height: auto; aspect-ratio: 1; max-width: 100%; }
 body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 10px; font-size: 14px; color: var(--text-secondary); -webkit-text-fill-color: var(--text-secondary); }
 
@@ -453,9 +492,18 @@ body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 
   contain-intrinsic-size: 92px 104px;
   contain: layout style paint;
 }
-.app-item img, .nuxel-icon-fallback {
-  width: 48px;
-  height: 48px;
+/* Icon assets fill their well (the well owns the size and radius).  The old
+ * fixed 48px rule here was declared AFTER the .app-icon rules and applied to
+ * the absolutely-positioned glyph as well, so GTK/Flatpak icons could render
+ * at 48px inside a 56-82px well and the glyph sat off-centre. */
+.app-item .app-icon img.nuxel-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.app-item .app-icon .nuxel-icon-fallback {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 @media (prefers-reduced-motion: reduce) {

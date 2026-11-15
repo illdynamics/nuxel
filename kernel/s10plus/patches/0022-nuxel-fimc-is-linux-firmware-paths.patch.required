@@ -1,0 +1,4 @@
+Nuxel FIMC-IS must find firmware at /lib/firmware, not only the Samsung
+Android dump paths. Verified to apply to the pinned f7194c1d tree and
+fimc-is-binary.o compiles with the marker strings (/lib/firmware/,
+/usr/lib/firmware/, "path-linux load").

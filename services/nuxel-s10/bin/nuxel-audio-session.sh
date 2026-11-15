@@ -20,6 +20,39 @@ while [ ! -S "$RUNTIME/bus" ] && [ "$n" -lt 100 ]; do n=$((n+1)); sleep 0.1; don
 chgrp -R audio /dev/snd 2>/dev/null || true
 chmod -R g+rw /dev/snd 2>/dev/null || true
 
+# A84: the PipeWire core socket is created root-owned with mode 0750, and the
+# runtime directory is root:nuxel 0750.  Only the root bridge could talk to
+# native PipeWire; apps/Flatpaks/recorders running as the session user had to
+# fall back to Pulse (or, with no native socket, failed to capture at all).
+# Grant the session group (nuxel) the same access the Wayland socket already
+# has: the directory is group-traversable, the socket group-rw.  The PA socket
+# was already root:nuxel 0660; this only removes the asymmetry.
+grant_session_socket() {
+  [ -S "$RUNTIME/pipewire-0" ] || return 0
+  # A POSIX ACL for exactly the session user, not a world/group bit: every
+  # local app already runs as nuxel, and unprivileged processes must not get
+  # the core socket.  The socket is then re-created on every PipeWire restart,
+  # so callers re-assert this (see the watcher below).
+  setfacl -m u:nuxel:rw "$RUNTIME/pipewire-0" 2>/dev/null || true
+  [ -S "$RUNTIME/pipewire-0-manager" ] && setfacl -m u:nuxel:rw "$RUNTIME/pipewire-0-manager" 2>/dev/null || true
+  setfacl -m u:nuxel:x "$RUNTIME" 2>/dev/null || true
+  log "pipewire socket granted to the session user (ACL)"
+}
+
+# PipeWire recreates pipewire-0 when it restarts (the ABOX firmware reload does
+# this at boot); watch for a new inode and re-apply the session ACL.
+watch_session_socket() {
+  last=""
+  while :; do
+    cur=$(stat -c '%i %U %a' "$RUNTIME/pipewire-0" 2>/dev/null || true)
+    if [ -n "$cur" ] && [ "$cur" != "$last" ]; then
+      grant_session_socket
+      last=$cur
+    fi
+    sleep 5
+  done
+}
+
 pipewire >/run/nuxel-pipewire.out 2>&1 &
 PIPE_PID=$!
 
@@ -47,6 +80,9 @@ if [ ! -S "$RUNTIME/pipewire-0" ]; then
   kill "$PIPE_PID" 2>/dev/null || true
   exit 1
 fi
+grant_session_socket
+watch_session_socket &
+WATCH_PID=$!
 if [ "$core_ready" -eq 1 ]; then
   log "pipewire core ready pid=$PIPE_PID"
 else
@@ -72,6 +108,53 @@ WIRE_PID=$!
 # is reachable; it will publish the same default sink/source that WirePlumber
 # selects.
 pipewire-pulse >/run/nuxel-pipewire-pulse.out 2>&1 &
+
+# NUXEL (owner: "apps do not see the microphone"): the audio server runs as
+# root in the compositor runtime.  Its pulse/ directory and socket are created
+# 0700 root:root, which makes them unreachable for every app that runs as the
+# unprivileged session user (all Flatpaks incl. Ferdium/ZapZap/Teams, Signal,
+# Firefox, ...) - the mic worked as root and every app got "Connection
+# refused".  Publish the socket read/write for the nuxel group and expose it
+# at the standard per-user path.  Re-assert continuously: PulseAudio/PipeWire
+# may recreate the directory after a restart.
+(
+  while [ -d /run/nuxel-wayland ]; do
+    if [ -d /run/nuxel-wayland/pulse ]; then
+      chgrp nuxel /run/nuxel-wayland/pulse 2>/dev/null || true
+      chmod 0750 /run/nuxel-wayland/pulse 2>/dev/null || true
+      # A self-referencing "native" link (created by an earlier helper that
+      # followed its own link) makes PulseAudio/PipeWire fail permanently with
+      # ELOOP, so clear it on every pass.
+      if [ -L /run/nuxel-wayland/pulse/native ]; then
+        rm -f /run/nuxel-wayland/pulse/native 2>/dev/null
+      fi
+      if [ -S /run/nuxel-wayland/pulse/native ]; then
+        chgrp nuxel /run/nuxel-wayland/pulse/native 2>/dev/null || true
+        chmod 0770 /run/nuxel-wayland/pulse/native 2>/dev/null || true
+        # The Flatpak relay publishes the sandbox-visible Pulse protocol slot
+        # at /run/user/0/pulse (host view is the sandbox's private runtime
+        # dir).  The relay recreates that directory 0750 root:root, which the
+        # sandboxed uid 1000 cannot traverse -> every app got "Connection
+        # refused" and no microphone.  Keep the directory traversable and the
+        # socket itself read/write for the session user.
+        if [ -d /run/user/0/pulse ]; then
+          chmod 0755 /run/user/0/pulse 2>/dev/null || true
+        fi
+        if [ -S /run/user/0/pulse/native ]; then
+          chmod 0777 /run/user/0/pulse/native 2>/dev/null || true
+        fi
+        if [ -L /run/user/1000/pulse ]; then rm -f /run/user/1000/pulse 2>/dev/null; fi
+        mkdir -p /run/user/1000/pulse 2>/dev/null || true
+        chown nuxel:nuxel /run/user/1000/pulse 2>/dev/null || true
+        chmod 0750 /run/user/1000/pulse 2>/dev/null || true
+        rm -f /run/user/1000/pulse/native 2>/dev/null
+        ln -s /run/nuxel-wayland/pulse/native /run/user/1000/pulse/native 2>/dev/null || true
+        chown -h nuxel:nuxel /run/user/1000/pulse/native 2>/dev/null || true
+      fi
+    fi
+    sleep 2
+  done
+) &
 PULSE_PID=$!
 
 # systemd stops this unit before the ABOX core-firmware reload and on every
@@ -79,7 +162,7 @@ PULSE_PID=$!
 # explicitly and bound the wait so a stop is deterministic (not an 8 s timeout).
 term() {
   trap - TERM INT
-  kill -TERM "$PULSE_PID" "$WIRE_PID" "$PIPE_PID" 2>/dev/null || true
+  kill -TERM "$WATCH_PID" "$PULSE_PID" "$WIRE_PID" "$PIPE_PID" 2>/dev/null || true
   pkill -TERM -x wireplumber 2>/dev/null || true
   n=0
   while [ "$n" -lt 30 ]; do

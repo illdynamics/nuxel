@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.freedesktop.impl.portal.desktop.nuxel
+Exec=/usr/libexec/nuxel/nuxel-camera-portal-impl
+SystemdService=nuxel-camera-portal-impl.service

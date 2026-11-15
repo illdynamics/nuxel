@@ -35,12 +35,18 @@ def _inventory():
 
 
 def _rpc(verb: str, params: Optional[Dict[str, Any]] = None,
-         timeout_s: float = 5.0) -> Optional[Dict[str, Any]]:
+         timeout_s: float = 5.0,
+         app_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.settimeout(timeout_s)
     try:
         s.connect(SOCKET_PATH)
-        s.sendall((json.dumps({"verb": verb, "params": params or {}}) + "\n").encode())
+        request = {"verb": verb, "params": params or {}}
+        if app_id:
+            # nuxel-nfcd authorizes every tag operation against this app's
+            # capability grant; an unidentified request is refused.
+            request["app_id"] = str(app_id)
+        s.sendall((json.dumps(request) + "\n").encode())
         buf = b""
         while not buf.endswith(b"\n"):
             chunk = s.recv(65536)
@@ -60,10 +66,14 @@ def _rpc(verb: str, params: Optional[Dict[str, Any]] = None,
 def _service_off_status() -> Dict[str, Any]:
     inv_mod = _inventory()
     inv = inv_mod.inventory() if inv_mod is not None else {}
+    kernel_nci = bool(inv.get("kernel_nfc_core") or
+                      os.path.exists("/dev/nfc0"))
     transport = bool(inv.get("vendor_transport_present"))
     fw_ok = bool(inv.get("firmware_file_verified"))
-    if not transport:
-        state, blocker = "BLOCKED_KERNEL", "sec-nfc transport /dev/sec-nfc is not present"
+    if kernel_nci:
+        state, blocker = "SERVICE_STOPPED", "nuxel-nfcd is not running; NFC remains OFF"
+    elif not transport:
+        state, blocker = "BLOCKED_KERNEL", "kernel NCI (/dev/nfc0) and sec-nfc transport are absent"
     elif not fw_ok:
         state, blocker = "BLOCKED_FIRMWARE", "verified sec_s3nrn82_firmware.bin is missing or has the wrong hash"
     else:
@@ -71,31 +81,36 @@ def _service_off_status() -> Dict[str, Any]:
     return {
         "success": True,
         "schema": SCHEMA,
-        "supported": transport,
+        "supported": bool(kernel_nci or transport),
         "ready": False,
         "enabled": False,
         "state": state,
         "verdict": state,
         "mode": "off",
         "controller": {
-            "expected": "Samsung sec-nfc / S3NRN82 (I2C 0x27)",
+            "expected": "Samsung S3NRN82 / S3FWRN5-compatible NCI (I2C 0x27)",
+            "kernel_nci": kernel_nci,
             "kernel_nfc": bool(inv.get("kernel_nfc_core")),
             "i2c_0x27": bool(inv.get("controller_present")),
-            "interfaces": [inv.get("transport", {}).get("path")] if transport else [],
-            "bound": transport,
+            "interfaces": (["/dev/nfc0"] if kernel_nci else []) +
+                          ([inv.get("transport", {}).get("path")] if transport else []),
+            "bound": bool(kernel_nci or transport),
         },
         "firmware": {"present": bool(inv.get("firmware", {}).get("present")),
                      "verified": fw_ok,
                      "runtime_verified": False,
-                     "sha256": inv.get("firmware", {}).get("sha256")},
+                     "sha256": inv.get("firmware", {}).get("sha256"),
+                     "note": "kernel NCI uses the on-controller NCI firmware; "
+                             "a matching vendor image is an artifact, not a runtime claim"},
         "transport": inv.get("transport", {}),
         "protocol": inv.get("protocol", ""),
         "protocol_verified": False,
         "userspace": {"daemon": False, "socket": False},
         "blocker": blocker,
         "detail": blocker,
-        "tag_test_supported": False,
-        "tag_writes_supported": False,
+        "tag_test_supported": bool(kernel_nci or transport),
+        "tag_writes_supported": True,
+        "write_requires_confirmation": True,
         "last_tag": None,
         "payment": {"supported": False,
                     "note": "card emulation/payment and secure-element access are not implemented"},
@@ -104,6 +119,13 @@ def _service_off_status() -> Dict[str, Any]:
 
 
 class NfcProvider:
+    # The bridge sets this to the authenticated caller id for the duration of
+    # one request so /run/nuxel/nfc/nfc.sock sees who is asking.
+    _caller_app_id: Optional[str] = None
+
+    def _as(self, app_id: Optional[str]):
+        return _CallerScope(self, app_id)
+
     def status(self) -> Dict[str, Any]:
         out = _rpc("status", {}, timeout_s=2.0)
         if out is not None:
@@ -140,7 +162,7 @@ class NfcProvider:
 
     def test_tag(self, timeout_s: float = 10.0, read_ndef: bool = True) -> Dict[str, Any]:
         out = _rpc("scan", {"timeout_s": float(timeout_s), "read_ndef": bool(read_ndef)},
-                   timeout_s=float(timeout_s) + 8.0)
+                   timeout_s=float(timeout_s) + 8.0, app_id=self._caller_app_id)
         if out is None:
             st = _service_off_status()
             st["success"] = False
@@ -151,18 +173,55 @@ class NfcProvider:
         return out
 
     def read_last(self) -> Dict[str, Any]:
-        out = _rpc("read", {}, timeout_s=2.0)
+        out = _rpc("read", {}, timeout_s=2.0, app_id=self._caller_app_id)
         if out is None:
             return {"success": False, "error": "nfc_service_unavailable",
                     "error_code": "SERVICE_UNAVAILABLE"}
         return out
 
+    def write_tag(self, kind: str, value: str, confirm: bool,
+                  language: str = "en") -> Dict[str, Any]:
+        """Write one NDEF record; caller must already have explicit consent."""
+        if confirm is not True:
+            return {"success": False,
+                    "error": "write requires explicit confirmation",
+                    "error_code": "CONFIRMATION_REQUIRED"}
+        out = _rpc("write", {"confirm": True, "kind": str(kind),
+                             "value": str(value),
+                             "language": str(language or "en")},
+                   timeout_s=8.0, app_id=self._caller_app_id)
+        if out is None:
+            st = _service_off_status()
+            st["success"] = False
+            st["error"] = "nfc_service_unavailable"
+            st["error_code"] = "SERVICE_UNAVAILABLE"
+            return st
+        return out
+
     def clear(self) -> Dict[str, Any]:
-        out = _rpc("clear", {}, timeout_s=2.0)
+        out = _rpc("clear", {}, timeout_s=2.0, app_id=self._caller_app_id)
         if out is None:
             return {"success": False, "error": "nfc_service_unavailable",
                     "error_code": "SERVICE_UNAVAILABLE"}
         return out
+
+
+class _CallerScope:
+    """Context manager that binds NfcProvider._caller_app_id to one caller."""
+
+    def __init__(self, provider, app_id):
+        self.provider = provider
+        self.app_id = app_id
+        self.previous = None
+
+    def __enter__(self):
+        self.previous = NfcProvider._caller_app_id
+        NfcProvider._caller_app_id = self.app_id
+        return self.provider
+
+    def __exit__(self, *exc):
+        NfcProvider._caller_app_id = self.previous
+        return False
 
 
 _PROVIDER: Optional[NfcProvider] = None
@@ -175,9 +234,15 @@ def get_provider() -> NfcProvider:
     return _PROVIDER
 
 
-def handle(verb: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def handle(verb: str, params: Optional[Dict[str, Any]] = None,
+           app_id: Optional[str] = None) -> Dict[str, Any]:
     params = params or {}
     p = get_provider()
+    with p._as(app_id):
+        return _handle_inner(p, verb, params, app_id)
+
+
+def _handle_inner(p, verb, params, app_id):
     if verb in ("status", "get", "diagnostics"):
         return p.status()
     if verb in ("set-enabled", "toggle"):
@@ -190,8 +255,18 @@ def handle(verb: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]
         except (TypeError, ValueError):
             timeout = 10.0
         return p.test_tag(timeout, bool(params.get("read_ndef", True)))
+    if verb == "cancel":
+        out = _rpc("cancel", {}, timeout_s=3.0, app_id=app_id)
+        if out is None:
+            return {"success": False, "error": "nfc_service_unavailable"}
+        return out
     if verb in ("read", "last-tag"):
         return p.read_last()
+    if verb in ("write", "write-tag"):
+        return p.write_tag(str(params.get("kind") or "text"),
+                           str(params.get("value") or ""),
+                           params.get("confirm") is True,
+                           str(params.get("language") or "en"))
     if verb == "clear":
         return p.clear()
     return {"success": False, "error": "unknown nfc verb", "verb": verb}

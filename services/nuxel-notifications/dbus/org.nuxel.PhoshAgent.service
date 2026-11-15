@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.nuxel.PhoshAgent
+Exec=/usr/bin/python3 /usr/lib/nuxel/nuxel-consent/nuxel_consentd.py

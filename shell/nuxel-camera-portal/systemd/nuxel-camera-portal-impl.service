@@ -1,0 +1,18 @@
+[Unit]
+Description=Nuxel standard XDG Camera portal backend (org.freedesktop.impl.portal.Camera)
+Documentation=file:///usr/share/doc/nuxel/PWNAGE-CAM-FIRMWARE-PROVENANCE.md
+# The private broker (org.nuxel.Camera) is independent; do not order them.
+After=pipewire.service
+PartOf=graphical-session.target
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.impl.portal.desktop.nuxel
+ExecStart=/usr/libexec/nuxel/nuxel-camera-portal-impl
+Restart=on-failure
+RestartSec=2
+# The PipeWire remote socket is 0600 for the session user; run as that user.
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+
+[Install]
+WantedBy=graphical-session.target

@@ -51,6 +51,10 @@ start_navdock() {
     rc=$?
     failures=$((failures + 1))
     log "navdock exited rc=$rc failures=$failures; restarting"
+    # A85: a navdock crash must not leave the triple-button dock unmapped for
+    # good.  The dock itself re-reads the state every 500 ms; make sure the
+    # state exists before it comes back (idempotent, bounded).
+    /usr/lib/nuxel/nuxel-security-state-rpc 10 >>/run/nuxel-lock-enforcement.log 2>&1 || true
     [ "$failures" -gt 3 ] && sleep 5 || sleep 1
   done
 }
@@ -85,6 +89,13 @@ start_lock_watch() {
     [ "$failures" -gt 3 ] && sleep 5 || sleep 1
   done
 }
+
+# A85: the nav dock starts BEFORE nuxel-session.sh has published the boot lock
+# state (this supervisor is backgrounded right after that step), so its first
+# ticks read a missing file and refuse to map.  Publish it here too, bounded and
+# idempotent: the provider decides the value from the stored credential mode.
+/usr/lib/nuxel/nuxel-security-state-rpc 40 >>/run/nuxel-lock-enforcement.log 2>&1 \
+  || log "security boot state not published yet (provider warming); dock stays fail-closed"
 
 start_navdock & navdock_pid=$!
 start_statusbar & statusbar_pid=$!

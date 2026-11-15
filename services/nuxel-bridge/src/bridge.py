@@ -121,7 +121,7 @@ def read_battery_status():
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.3-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.5-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -1792,17 +1792,69 @@ class LocationConnector:
             self._leases.pop(key, None)
         return bool(self._leases)
 
+    # After the policy is (re-)enabled a NEW provider answer is required.  Any
+    # fix older than this is treated as leftover state, not a current position.
+    FRESH_RESTART_SECONDS = float(os.environ.get('NUXEL_LOCATION_RESTART_FRESH_SECONDS', '15'))
+
+    def _fix_is_current(self):
+        """Is the remembered provider fix recent enough to share a lease?
+
+        Uses the cached fix (never a second provider read): a decision helper
+        must not consume a provider answer.
+        """
+        fix = self._current_fix_cached() if self._provider_ready() else None
+        if not fix or fix.get('age_seconds') is None:
+            return False
+        return fix['age_seconds'] <= self.FRESH_RESTART_SECONDS
+
+    def _current_fix_cached(self):
+        fix = self._last_fix
+        if not isinstance(fix, dict) or fix.get('timestamp') is None:
+            return None
+        age = max(0.0, time.time() - float(fix['timestamp']))
+        return dict(fix, age_seconds=age)
+
+    def _restart_provider(self):
+        """Drop the provider client and start a fresh acquisition."""
+        if self.geoclue is not None:
+            try:
+                if getattr(self.geoclue, 'connected', False):
+                    self.geoclue.stop_acquisition()
+            except Exception as exc:
+                logger.info('GeoClue stop before restart: %s', exc)
+            try:
+                self.geoclue._reset_client()
+            except Exception:
+                pass
+        self._acquisition_started_at = None
+        self._last_error = None
+        return self.start_acquisition()
+
     def begin_acquisition(self, app_id, max_seconds=None):
-        """Reference-counted acquisition for one authorized client."""
+        """Reference-counted acquisition for one authorized client.
+
+        A lease is only reused while the provider is actually running AND the
+        last answer is current.  Leases outlived provider restarts and policy
+        toggles, which made a newly opened app receive a stale fix instead of a
+        new acquisition.
+        """
         now = time.time()
         self._prune_leases(now)
         ttl = max(5.0, float(max_seconds or self.CLIENT_LEASE_SECONDS))
         if self._leases:
-            # Repeated polls from one app (watchPosition) refresh the same
-            # lease instead of accumulating an unbounded count.
+            if self._fix_is_current():
+                self._leases[app_id] = {'count': 1, 'expires': now + ttl}
+                return True, None
+        # A stale/absent fix means the provider needs a NEW acquisition, but
+        # only once per episode: a client that polls while GeoClue is still
+        # working must not tear down and remount the client on every call.
+        started = self._acquisition_started_at
+        if started is not None and (now - started) <= self.SEARCH_WINDOW_SECONDS:
             self._leases[app_id] = {'count': 1, 'expires': now + ttl}
             return True, None
-        ok, err = self.start_acquisition()
+        restart = self._provider_ready() or self._leases or self._last_fix is not None
+        self._leases.pop(app_id, None)
+        ok, err = self._restart_provider() if restart else self.start_acquisition()
         if ok:
             self._leases[app_id] = {'count': 1, 'expires': now + ttl}
         return ok, err
@@ -1877,8 +1929,11 @@ class LocationConnector:
             detail = gnss.get('blocker')
         # Only a fixed/stale state may expose a coordinate.  In particular a
         # provider that has just disappeared must not leave a "current" fix on
-        # screen merely because its last timestamp is still recent.
+        # screen merely because its last timestamp is still recent.  A caller
+        # without location:read gets provider STATE plus freshness, never the
+        # coordinate or its precision.
         expose = fix if state in ('fixed', 'stale') else None
+        coordinates = expose if include_coordinates else None
         return {
             'success': True,
             'state': state,
@@ -1903,9 +1958,9 @@ class LocationConnector:
             'freshness_evidence': bool(expose and expose.get('freshness_evidence')) if expose else False,
             'last_fix_timestamp': expose['timestamp'] if expose else None,
             'last_fix_age_s': expose['age_seconds'] if expose else None,
-            'accuracy': expose['accuracy'] if (expose and include_coordinates) else None,
-            'latitude': expose['latitude'] if (expose and include_coordinates) else None,
-            'longitude': expose['longitude'] if (expose and include_coordinates) else None,
+            'accuracy': coordinates.get('accuracy') if coordinates else None,
+            'latitude': coordinates.get('latitude') if coordinates else None,
+            'longitude': coordinates.get('longitude') if coordinates else None,
             'freshness_seconds': self.FRESH_SECONDS,
             'stale_after_seconds': self.STALE_SECONDS,
             'acquiring': state == 'searching',
@@ -1916,10 +1971,26 @@ class LocationConnector:
             'timestamp': now,
         }
 
+    def clear_cached_fix(self):
+        self._last_fix = None
+        self._last_error = None
+        self._acquisition_started_at = None
+        return {'success': True, 'cleared': True}
+
     def set_enabled(self, enabled):
         enabled = bool(enabled)
         self._write_policy(enabled)
         if enabled:
+            # Turning the policy ON is a fresh acquisition.  A provider left
+            # "connected" from an earlier session can hold a stale Location
+            # object; reconnect so the next read is a NEW provider answer
+            # instead of the pre-toggle coordinate.
+            if self.geoclue is not None:
+                try:
+                    self.geoclue._reset_client()
+                except Exception:
+                    pass
+            self._acquisition_started_at = None
             self.start_acquisition()
         else:
             if self.geoclue is not None and getattr(self.geoclue, 'connected', False):
@@ -2053,6 +2124,13 @@ class PortalClient:
             elif portal_type == 'camera':
                 result_json = self.portal_iface.RequestCamera(app_id,
                                                                   timeout=PORTAL_DBUS_TIMEOUT_SECONDS)
+            elif portal_type == 'microphone':
+                # On-screen consent (Allow once / always / Deny / Cancel).
+                result_json = self.portal_iface.RequestMicrophone(app_id,
+                                                                  timeout=PORTAL_DBUS_TIMEOUT_SECONDS)
+            elif portal_type == 'nfc':
+                result_json = self.portal_iface.RequestNfcAccess(app_id,
+                                                               timeout=PORTAL_DBUS_TIMEOUT_SECONDS)
             elif portal_type in ('screenshot', 'screencast'):
                 result_json = self.portal_iface.RequestDisplayAccess(app_id, portal_type,
                                                                          timeout=PORTAL_DBUS_TIMEOUT_SECONDS)
@@ -2088,6 +2166,15 @@ class PortalClient:
 # D-Bus Service Implementation
 # ============================================================
 
+# Seeding packaged first-party grant records into an absent live store is a
+# deployment concern.  A unit test that points PERMISSIONS_DIR at a temporary
+# directory without opting in must not have files written into it.
+SEED_FIRST_PARTY_GRANTS = os.environ.get(
+    'NUXEL_SEED_FIRST_PARTY_GRANTS', '1').strip().lower() not in ('0', 'false', 'no')
+SEED_GRANTS_DIR = os.environ.get('NUXEL_SEED_GRANTS_DIR',
+                                 '/usr/share/nuxel/permissions')
+
+
 class NuxelBridgeService(dbus.service.Object):
     """Main D-Bus service for Nuxel Bridge with portal integration."""
     
@@ -2096,6 +2183,8 @@ class NuxelBridgeService(dbus.service.Object):
         
         self.session_id = str(uuid.uuid4())
         self.capability_grants = self._load_all_grants()
+        self.capability_denies = {}
+        self.reload_grants()
         self.clients = {}
         self.portals = PortalClient()
         
@@ -2175,6 +2264,8 @@ class NuxelBridgeService(dbus.service.Object):
         policy_name = os.path.basename(os.environ.get(
             'NUXEL_LOCATION_POLICY',
             '/var/lib/nuxel/permissions/location-policy.json'))
+        if SEED_FIRST_PARTY_GRANTS:
+            self._seed_first_party_grants(permissions_dir, policy_name)
         if os.path.isdir(permissions_dir):
             for fname in os.listdir(permissions_dir):
                 if not fname.endswith('.json') or fname == policy_name:
@@ -2184,6 +2275,9 @@ class NuxelBridgeService(dbus.service.Object):
                     with open(os.path.join(permissions_dir, fname)) as f:
                         data = json.load(f)
                 except (json.JSONDecodeError, OSError) as exc:
+                    # A single unreadable stale file must never take Location,
+                    # Wi-Fi and Bluetooth down together.  Keep loading the
+                    # other grants and surface the specific file in the journal.
                     logger.warning('Ignoring unreadable capability grant file %s: %s', fname, exc)
                     continue
                 if not isinstance(data, dict):
@@ -2193,6 +2287,11 @@ class NuxelBridgeService(dbus.service.Object):
                 app_grants = {}
                 for cap, info in data.items():
                     if isinstance(info, dict):
+                        # An explicit deny is not a grant, but must remain
+                        # visible to authorization so a broader resource allow
+                        # cannot silently override the app's revoke.
+                        if info.get('decision') == 'deny':
+                            continue
                         app_grants[str(cap)] = info.get('duration', 'always')
                     elif info is True:
                         # Older grant stores used capability -> true.  Retain a
@@ -2225,13 +2324,133 @@ class NuxelBridgeService(dbus.service.Object):
         }
         
         os.makedirs(permissions_dir, exist_ok=True)
-        with open(path, 'w') as f:
+        tmp = path + '.tmp'
+        with open(tmp, 'w') as f:
             json.dump(grants, f, indent=2)
-        
+            f.flush()
+            os.fsync(f.fileno())
+
+        # Grant files are read by this service, permD and the portal under the
+        # documented shared-store ownership.  A root-owned 0600 file left behind
+        # by an older writer is unreadable after the next restart even though
+        # permD still reports the grant, so always publish a readable record.
+        try:
+            os.chmod(tmp, 0o640)
+            if os.geteuid() == 0:
+                import grp
+                try:
+                    gid = grp.getgrnam('nuxel-bridge').gr_gid
+                except KeyError:
+                    gid = -1
+                os.chown(tmp, -1, gid)
+        except OSError as exc:
+            logger.warning('Could not set shared grant permissions for %s: %s', path, exc)
+        os.replace(tmp, path)
+        # nuxel-nfcd (uid nuxel) enforces the nfc grant from this same store;
+        # give the service users read access on top of the group ownership.
+        if os.geteuid() == 0:
+            for user in ('nuxel-bridge', 'nuxel'):
+                try:
+                    subprocess.run(['setfacl', '-m', 'u:%s:r--' % user, path],
+                                   stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL, timeout=5)
+                except (OSError, subprocess.SubprocessError):
+                    pass
+
         # Update in-memory cache
         if app_id not in self.capability_grants:
             self.capability_grants[app_id] = {}
         self.capability_grants[app_id][capability] = duration
+
+    # Packaged, read-only first-party seed grants.  A grant the owner granted
+    # or revoked lives in PERMISSIONS_DIR and always wins; the seed only fills
+    # in an app that has no record yet (fresh install, wiped store).  This is
+    # what makes a first-party Location toggle work on a new handset without
+    # anyone hand-writing the store.
+    def _seed_first_party_grants(self, permissions_dir, policy_name):
+        seed_dir = SEED_GRANTS_DIR
+        if not os.path.isdir(seed_dir) or not os.path.isdir(permissions_dir):
+            return
+        try:
+            names = sorted(os.listdir(seed_dir))
+        except OSError:
+            return
+        for fname in names:
+            if not fname.endswith('.json') or fname == policy_name:
+                continue
+            dest = os.path.join(permissions_dir, fname)
+            if os.path.exists(dest):
+                continue
+            try:
+                with open(os.path.join(seed_dir, fname)) as f:
+                    data = json.load(f)
+                if not isinstance(data, dict):
+                    continue
+                tmp = dest + '.seed.tmp'
+                with open(tmp, 'w') as f:
+                    json.dump(data, f, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.chmod(tmp, 0o640)
+                try:
+                    import grp
+                    os.chown(tmp, -1, grp.getgrnam('nuxel-bridge').gr_gid)
+                except (KeyError, OSError):
+                    pass
+                os.replace(tmp, dest)
+                logger.info('Seeded first-party grant record %s', fname)
+            except (OSError, ValueError) as exc:
+                logger.warning('Could not seed grant record %s: %s', fname, exc)
+
+    def _load_deny_aware_grants(self):
+        """Load grants plus exact-token denies from the shared permD store."""
+        grants = self._load_all_grants()
+        deny_dir = PERMISSIONS_DIR
+        policy_name = os.path.basename(os.environ.get(
+            'NUXEL_LOCATION_POLICY',
+            '/var/lib/nuxel/permissions/location-policy.json'))
+        if not os.path.isdir(deny_dir):
+            return grants
+        for fname in os.listdir(deny_dir):
+            if not fname.endswith('.json') or fname == policy_name:
+                continue
+            app_id = fname[:-5].replace('_', '/')
+            try:
+                with open(os.path.join(deny_dir, fname)) as f:
+                    data = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            app_grants = grants.setdefault(app_id, {})
+            for cap, info in data.items():
+                if isinstance(info, dict) and info.get('decision') == 'deny':
+                    # Sentinel deny visible to _location_delegate_grants and
+                    # to _check_capability, without treating it as a grant.
+                    app_grants[str(cap)] = 'deny'
+        return grants
+
+    def reload_grants(self):
+        """Refresh grants from the shared store before an authorization check.
+
+        permD and Settings write the authoritative grant files; the bridge must
+        not keep the boot-time snapshot forever.  Without this, a grant created
+        by Settings after the bridge started was visible to permD but still
+        answered ``Capability not granted`` by Location/Bluetooth RPC until a
+        service restart.  Keep the previous snapshot if the store is temporarily
+        unreadable: an I/O error must not turn every existing grant into a deny.
+        """
+        try:
+            grants = self._load_deny_aware_grants()
+        except OSError as exc:
+            logger.warning('Grant store refresh failed; keeping last snapshot: %s', exc)
+            return self.capability_grants
+        self.capability_grants = grants
+        self.capability_denies = {
+            app_id: {cap for cap, value in caps.items() if value == 'deny'}
+            for app_id, caps in grants.items()
+        }
+        return self.capability_grants
     
     def _check_capability(self, app_id, capability):
         """Check if an app has a granted capability, consulting portal if needed.
@@ -2240,8 +2459,11 @@ class NuxelBridgeService(dbus.service.Object):
         non-sensitive capabilities are represented in the canonical registry,
         and every grant-required capability must be granted by the broker.
         """
-        # Check in-memory cache first
+        # The shared store is authoritative for grants written after startup.
+        self.reload_grants()
         grants = self.capability_grants.get(app_id, {})
+        if grants.get(capability) == 'deny':
+            return False
         if capability in grants:
             return True
         
@@ -2460,8 +2682,8 @@ class NuxelBridgeService(dbus.service.Object):
     def LocationGetStatus(self, app_id):
         # Status is a diagnostic surface.  State, age and the GNSS blocker are
         # useful to any local caller; coordinates/accuracy require location:read.
-        granted = 'location:read' in self.capability_grants.get(app_id, {})
-        return json.dumps(self.location.get_status(include_coordinates=granted))
+        return json.dumps(self.location.get_status(
+            include_coordinates=self._location_read_allowed(app_id)))
 
     @dbus.service.method(INTERFACE_NAME, in_signature='sb', out_signature='s')
     def LocationSetEnabled(self, app_id, enabled):
@@ -2471,10 +2693,48 @@ class NuxelBridgeService(dbus.service.Object):
                                'error_code': 'CAPABILITY_DENIED'})
         return json.dumps(self.location.set_enabled(bool(enabled)))
 
+    @staticmethod
+    def _location_delegate_grants(grants, capability):
+        """Resolve location:read/control from the shared permD resource.
+
+        permD stores ONE ``location`` record and records the delegate token in
+        ``delegate``.  The permission UI uses per-delegate deny records under
+        the exact token, so an explicit deny of one switch suppresses only that
+        switch; a grant of the other remains effective.
+        """
+        token = grants.get(capability)
+        if isinstance(token, str):
+            return token != 'deny'
+        if isinstance(token, dict):
+            return token.get('duration') not in (None, 'deny')
+        resource = grants.get('location')
+        if not isinstance(resource, dict) or resource.get('decision') == 'deny':
+            return False
+        delegate = resource.get('delegate')
+        if delegate:
+            return delegate == capability
+        # Historical resource records predate the delegate field.  A legacy
+        # location grant predates control, so it only authorizes a read.
+        return capability == 'location:read'
+
+    def _location_granted(self, app_id, capability):
+        """Location read and control are separate delegate capabilities."""
+        self.reload_grants()
+        return self._location_delegate_grants(
+            self.capability_grants.get(app_id, {}), capability)
+
+    def _location_read_allowed(self, app_id):
+        # During an in-flight acquisition the provider coordinate is already
+        # scoped to this app; a later permission revocation must not turn that
+        # same coordinate into an anonymous provider fix for the caller.
+        self.reload_grants()
+        return self._location_delegate_grants(
+            self.capability_grants.get(app_id, {}), 'location:read')
+
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
     def LocationAcquire(self, app_id):
         """Request acquisition without ever manufacturing a fix."""
-        if not self._check_capability(app_id, 'location:read'):
+        if not self._location_granted(app_id, 'location:read'):
             return json.dumps({'success': False,
                                'error': 'Capability not granted: location:read',
                                'error_code': 'CAPABILITY_DENIED'})
@@ -2484,11 +2744,30 @@ class NuxelBridgeService(dbus.service.Object):
                                'error_code': 'LOCATION_DISABLED',
                                'enabled': False, 'state': 'disabled'})
         ok, err = self.location.begin_acquisition(app_id)
-        st = self.location.get_status()
+        # Coordinates are a per-app read.  The shared resource grant records
+        # which delegate produced it; a read is granted unless that record is
+        # an explicit read deny.  This keeps the two UI toggles independent
+        # while still returning the provider fix Maps acquired under its own
+        # location:read grant.
+        st = self.location.get_status(include_coordinates=self._location_read_allowed(app_id))
         st['acquire_requested'] = bool(ok)
         if not ok:
             st['last_error'] = err or st.get('last_error')
         return json.dumps(st)
+
+    def forget_location_fix(self):
+        """Drop the cached provider fix after a read/policy revocation.
+
+        Turning access off must not leave a stale coordinate readable from the
+        permission manager's own diagnostic surface, and re-granting access must
+        require a fresh provider answer rather than resurrect a pre-revoke fix.
+        """
+        return self.location.clear_cached_fix()
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='', out_signature='s')
+    def ForgetLocationFix(self):
+        """Authority-only invalidation after a location read/policy revoke."""
+        return json.dumps(self.forget_location_fix())
 
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
     def LocationStop(self, app_id):
@@ -2734,7 +3013,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.8.3-beta...")
+    logger.info("Starting Nuxel Bridge v0.8.5-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

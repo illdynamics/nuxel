@@ -1,0 +1,254 @@
+#!/usr/bin/env bash
+# Nuxel USB network data-plane helper (runs ON the phone as root).
+#
+# Compositions (the CDC-ACM recovery console acm.usb0 is NEVER removed):
+#
+#   usbnet  ACM + CDC-NCM.  Local USB Ethernet / SSH only.  Never changes the
+#           phone default route, DNS, Wi-Fi or VPN.
+#   tether  ACM + CDC-NCM + explicit "--tether" marking.  Internet sharing
+#           itself is owned by usb_tether.py (scoped nftables), NOT here.
+#   off     ACM only.
+#
+# The phone owns 10.15.19.1/24 on the gadget interface; the attached host is
+# configured with 10.15.19.2/24 (see scripts/s10plus-debug-pack/nuxel-usb-net-host.sh).
+# Every mode is verified: UDC configured + kernel-created netdev + address.
+# Failure rolls back to ACM-only.
+set -uo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+GADGET=${NUXEL_USB_GADGET:-/sys/kernel/config/usb_gadget/nuxel}
+UDC_NAME=${NUXEL_UDC_NAME:-10c00000.dwc3}
+STATE_DIR=${NUXEL_USB_RUN_DIR:-/run/nuxel}
+NET_STATE="$STATE_DIR/usb-net"
+SELECTION="$NET_STATE/selection.json"
+ACTIVATION="$NET_STATE/state.json"
+PERSIST=${NUXEL_USB_NET_PERSIST:-/var/lib/nuxel/usb-net-mode}
+LOCK="$NET_STATE/transition.lock"
+
+PHONE_IP="10.15.19.1"
+HOST_IP="10.15.19.2"
+PREFIX=24
+SUBNET="10.15.19.0/24"
+DEV_MAC="02:6e:75:78:65:01"
+HOST_MAC="02:6e:75:78:65:02"
+NCM_FIX_FILE="/sys/class/misc/usb_ncm/nuxel_fix"
+LOG_TAG=nuxel-usb-net
+
+log() { printf '%s %s: %s\n' "$(date -u +%FT%TZ)" "$LOG_TAG" "$*" >&2; }
+json_escape() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+
+# Serialize every transition with the mode manager's own lock directory.
+take_lock() {
+  mkdir -p "$NET_STATE" 2>/dev/null || true
+  local n=0
+  while ! mkdir "$LOCK" 2>/dev/null; do
+    n=$((n+1))
+    if [ "$n" -ge 300 ]; then log "transition lock busy ($LOCK)"; return 1; fi
+    sleep 0.1
+  done
+  echo $$ > "$LOCK/pid"
+  trap 'rm -rf "$LOCK"' EXIT INT TERM
+}
+
+write_json() {  # file mode active iface label err upstream source tether
+  local f="$1" mode="$2" active="$3" iface="$4" label="$5" err="${6:-}" up="${7:-}" src="${8:-}" tether="${9:-false}"
+  mkdir -p "$(dirname "$f")"
+  local tmp="$f.tmp.$$"
+  {
+    printf '{\n'
+    printf '  "mode": "%s",\n'   "$(json_escape "$mode")"
+    printf '  "active": %s,\n'  "$active"
+    printf '  "interface": "%s",\n' "$(json_escape "$iface")"
+    printf '  "label": "%s",\n' "$(json_escape "$label")"
+    printf '  "upstream": "%s",\n' "$(json_escape "$up")"
+    printf '  "source": "%s",\n' "$(json_escape "$src")"
+    printf '  "tether_composition": %s,\n' "$tether"
+    if [ -n "$err" ]; then printf '  "error": "%s",\n' "$(json_escape "$err")"; else printf '  "error": null,\n'; fi
+    printf '  "udc": "%s",\n' "$(json_escape "$UDC_NAME")"
+    printf '  "phone_address": "%s/%s",\n' "$PHONE_IP" "$PREFIX"
+    printf '  "host_address": "%s/%s",\n' "$HOST_IP" "$PREFIX"
+    printf '  "updated_at": "%s"\n' "$(date -u +%FT%TZ)"
+    printf '}\n'
+  } > "$tmp"
+  mv -f "$tmp" "$f"
+}
+
+udc_state() { cat "/sys/class/udc/$UDC_NAME/state" 2>/dev/null || true; }
+udc_speed() { cat "/sys/class/udc/$UDC_NAME/current_speed" 2>/dev/null || true; }
+kernel_cfg() {
+  if [ -r /proc/config.gz ]; then zcat /proc/config.gz 2>/dev/null; elif [ -r "/boot/config-$(uname -r)" ]; then cat "/boot/config-$(uname -r)"; fi
+}
+ncm_fix_present() { [ -r "$NCM_FIX_FILE" ] && [ "$(cat "$NCM_FIX_FILE" 2>/dev/null)" = "nuxel-ncm-lifecycle-fix-v2" ]; }
+
+unbind_udc() {
+  if [ -w "$GADGET/UDC" ] && [ -n "$(cat "$GADGET/UDC" 2>/dev/null)" ]; then
+    printf '\n' > "$GADGET/UDC" 2>/dev/null || true
+  fi
+}
+bind_udc() { [ -w "$GADGET/UDC" ] || return 1; printf '%s\n' "$UDC_NAME" > "$GADGET/UDC" 2>/dev/null; }
+wait_configured() {
+  local i; for i in $(seq 1 100); do [ "$(udc_state)" = configured ] && return 0; sleep 0.1; done; return 1
+}
+
+# The kernel names the interface; never assume usb0.  Prefer the netdev that
+# did not exist before the bind and is an Ethernet device.
+discover_new_iface() {
+  local before="$1" f name
+  for f in /sys/class/net/*; do
+    name=${f##*/}
+    case "$name" in lo|wlan*|rmnet*|dummy*|usb_tether*) continue ;; esac
+    case " $before " in *" $name "*) continue ;; esac
+    [ "$(cat "$f/type" 2>/dev/null)" = "1" ] && { printf '%s\n' "$name"; return 0; }
+  done
+  return 1
+}
+
+# Refuse if the USB subnet is already routed/assigned elsewhere.  Uses real
+# prefixes from the kernel, never string prefix matching.
+subnet_conflict() {
+  local line
+  while read -r line; do
+    case "$line" in *" $SUBNET "*|*" $SUBNET"|*"$SUBNET "*) echo "route:$line"; return 0 ;; esac
+  done <<<"$(ip -4 route show 2>/dev/null)"
+  while read -r line; do
+    case "$line" in *"10.15.19."*) echo "addr:$line"; return 0 ;; esac
+  done <<<"$(ip -4 -o addr show 2>/dev/null | grep -v ' dev usb')"
+  return 1
+}
+
+net_functions() {
+  local f
+  for f in "$GADGET"/functions/*; do
+    [ -d "$f" ] || continue
+    case "${f##*/}" in ecm.*|rndis.*|ncm.*|eem.*) printf '%s\n' "${f##*/}" ;; esac
+  done
+}
+cfg_dir() {
+  local d
+  for d in "$GADGET"/configs/*; do [ -d "$d" ] && { echo "${d##*/}"; return 0; }; done
+  return 1
+}
+
+teardown_net() {
+  local fn cfg
+  cfg=$(cfg_dir || true)
+  unbind_udc
+  for fn in $(net_functions); do
+    [ -n "$cfg" ] && rm -f "$GADGET/configs/$cfg/$fn" 2>/dev/null
+    rmdir "$GADGET/functions/$fn" 2>/dev/null || log "could not remove $fn"
+  done
+}
+
+# On detach/explicit off, drop the tether forwarding path owned by
+# usb_tether.py.  It only deletes its own table and restores ip_forward; it
+# never touches the console guard or the app firewall.
+stop_tether_provider() {
+  local py=/usr/lib/nuxel/nuxel-bridge
+  if [ -d "$py" ]; then
+    ( cd "$py" && python3 -c 'import usb_tether; usb_tether.stop()' ) >/dev/null 2>&1 || true
+  fi
+}
+
+rollback_acm() {
+  local err="$1"
+  stop_tether_provider
+  teardown_net
+  bind_udc || log "ACM re-bind failed"
+  wait_configured || log "ACM gadget did not re-configure"
+  write_json "$ACTIVATION" "off" false "" "acm" "$err" "" "gadget:acm-console" false
+  printf '{"active":false,"mode":"off","error":"%s"}\n' "$(json_escape "$err")"
+}
+
+apply_usbnet() {
+  local tether_composition="${1:-false}" mode_label="${2:-usbnet}"
+  local fn="ncm.usb0" cfg iface before speed
+  kernel_cfg | grep -q '^CONFIG_USB_CONFIGFS_NCM=y$' || { write_json "$ACTIVATION" "$mode_label" false "" "ncm" "mode-not-compiled:ncm" "" "" "$tether_composition"; return 1; }
+  ncm_fix_present || { write_json "$ACTIVATION" "$mode_label" false "" "ncm" "ncm-lifecycle-fix-missing:running kernel is not the patched build" "" "" "$tether_composition"; return 1; }
+  [ -d "$GADGET" ] || { write_json "$ACTIVATION" "$mode_label" false "" "ncm" "error:no-gadget" "" "" "$tether_composition"; return 1; }
+  cfg=$(cfg_dir) || { write_json "$ACTIVATION" "$mode_label" false "" "ncm" "error:no-config" "" "" "$tether_composition"; return 1; }
+  local conflict; conflict=$(subnet_conflict || true)
+  [ -z "$conflict" ] || { write_json "$ACTIVATION" "$mode_label" false "" "ncm" "subnet-conflict:$conflict" "" "" "$tether_composition"; return 1; }
+  before=$(basename -a /sys/class/net/* 2>/dev/null | tr '\n' ' ')
+  teardown_net
+  if ! mkdir -p "$GADGET/functions/$fn"; then rollback_acm "error:configfs:create-ncm"; return 1; fi
+  # Only writable attributes; never ifname (read-only on this kernel).
+  for a in dev_addr host_addr; do
+    p="$GADGET/functions/$fn/$a"
+    if [ -w "$p" ]; then
+      [ "$a" = dev_addr ] && printf '%s\n' "$DEV_MAC" > "$p" 2>/dev/null || true
+      [ "$a" = host_addr ] && printf '%s\n' "$HOST_MAC" > "$p" 2>/dev/null || true
+    fi
+  done
+  if ! ln -sfn "$GADGET/functions/$fn" "$GADGET/configs/$cfg/$fn"; then rollback_acm "error:configfs:link-ncm"; return 1; fi
+  if ! bind_udc; then rollback_acm "error:udc-bind"; return 1; fi
+  if ! wait_configured; then rollback_acm "error:not-configured"; return 1; fi
+  iface=$(discover_new_iface "$before") || { rollback_acm "error:no-netdev"; return 1; }
+  if ! ip link set "$iface" up; then rollback_acm "error:link-up:$iface"; return 1; fi
+  if ! ip addr add "$PHONE_IP/$PREFIX" dev "$iface" 2>/dev/null; then
+    # Re-adding the same address is idempotent; anything else is a failure.
+    ip -4 addr show dev "$iface" | grep -q "inet $PHONE_IP/" || { rollback_acm "error:addr:$PHONE_IP"; return 1; }
+  fi
+  speed=$(udc_speed)
+  write_json "$ACTIVATION" "$mode_label" true "$iface" "ncm" "" "" "gadget:acm+ncm" "$tether_composition"
+  mkdir -p /var/lib/nuxel; printf '%s\n' "$mode_label" > "$PERSIST.tmp" && mv -f "$PERSIST.tmp" "$PERSIST"
+  log "USB network active: $iface $PHONE_IP/$PREFIX ncm acm preserved speed=$speed"
+  return 0
+}
+
+status() {
+  local sel=off active=false iface="" err="" tether=false netdevs="" ifname
+  [ -r "$SELECTION" ] && sel=$(sed -n 's/.*"mode"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SELECTION" | head -1)
+  [ -n "$sel" ] || sel=off
+  if [ -r "$ACTIVATION" ]; then
+    grep -q '"active": true' "$ACTIVATION" && active=true
+    ifname=$(sed -n 's/.*"interface"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ACTIVATION" | head -1)
+    err=$(sed -n 's/.*"error"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ACTIVATION" | head -1)
+    grep -q '"tether_composition": true' "$ACTIVATION" && tether=true
+    # Truth check against the live kernel, not just the recorded file.
+    if [ "$active" = true ] && { [ -z "$ifname" ] || [ ! -d "/sys/class/net/$ifname" ] || [ "$(udc_state)" != configured ]; }; then
+      active=false; err="degraded:link-lost"
+    fi
+  fi
+  for f in /sys/class/net/*; do
+    ifname=${f##*/}; case "$ifname" in lo|wlan*|rmnet*|dummy*) continue ;; esac
+    [ "$(cat "$f/type" 2>/dev/null)" = "1" ] && netdevs="$netdevs $ifname"
+  done
+  printf '{"selected":"%s","active":%s,"interface":"%s","mode":"ncm","function":"%s","tether_composition":%s,"udc_state":"%s","udc_speed":"%s","ncm_lifecycle_fix":%s,"phone_address":"%s/%s","host_address":"%s/%s","error":"%s","netdevs":"%s"}\n' \
+    "$sel" "$active" "$ifname" "$(net_functions | head -1)" "$tether" "$(udc_state)" "$(udc_speed)" \
+    "$(ncm_fix_present && echo true || echo false)" "$PHONE_IP" "$PREFIX" "$HOST_IP" "$PREFIX" "$err" "${netdevs# }"
+}
+
+case "${1:-}" in
+  usbnet)
+    take_lock || exit 1
+    write_json "$SELECTION" usbnet false "" ncm "" "" "" false
+    if apply_usbnet false usbnet; then
+      write_json "$SELECTION" usbnet true "" ncm "" "" "" false
+      printf '{"active":true,"mode":"usbnet","address":"%s/%s","host":"%s/%s"}\n' "$PHONE_IP" "$PREFIX" "$HOST_IP" "$PREFIX"
+    else
+      write_json "$SELECTION" off false "" ncm "activation-failed" "" "" false
+      exit 1
+    fi ;;
+  tether)
+    take_lock || exit 1
+    write_json "$SELECTION" tether false "" ncm "" "" "" true
+    if apply_usbnet true tether; then
+      write_json "$SELECTION" tether true "" ncm "" "" "" true
+      printf '{"active":true,"mode":"tether","address":"%s/%s","note":"Internet sharing is NOT enabled by this step; start usb-tether provider"}\n' "$PHONE_IP" "$PREFIX"
+    else
+      write_json "$SELECTION" off false "" ncm "activation-failed" "" "" false
+      exit 1
+    fi ;;
+  off)
+    take_lock || exit 1
+    stop_tether_provider
+    write_json "$SELECTION" off false "" ncm "" "" "" false
+    teardown_net
+    bind_udc || log "ACM bind failed"
+    wait_configured || true
+    write_json "$ACTIVATION" off false "" "acm" "" "" "gadget:acm-console" false
+    rm -f "$PERSIST" 2>/dev/null || true
+    printf '{"active":false,"mode":"off","acm_preserved":true}\n' ;;
+  status) status ;;
+  *) echo "usage: $0 {usbnet|tether|off|status}" >&2; exit 2 ;;
+esac

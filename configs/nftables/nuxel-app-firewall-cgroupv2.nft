@@ -27,13 +27,33 @@ table inet nuxel_app_firewall {
                     time-exceeded, parameter-problem } limit rate 10/second accept
         icmpv6 type { echo-request, echo-reply, destination-unreachable,
                       time-exceeded, parameter-problem,
-                      neighbor-solicit, neighbor-advertise,
-                      router-solicit, router-advertise } accept
+                      nd-neighbor-solicit, nd-neighbor-advert,
+                      nd-router-solicit, nd-router-advert } accept
+        # v0.8.5 LIVE FIX: owner console SSH (key-only; sshd also enforces its
+        # own AllowUsers CIDRs).  Without this the drop policy black-holes SSH.
+        ip saddr { 10.20.30.0/24, 10.15.19.0/24, 192.168.0.0/16,
+                   172.16.0.0/12, 10.0.0.0/8 } tcp dport 22 accept
+        ip6 saddr { fd00::/8, fe80::/10 } tcp dport 22 accept
         log prefix "NUXXEL-INPUT-DROP: " limit rate 10/minute
     }
 
     chain forward {
         type filter hook forward priority -100; policy drop;
+        # v0.8.5 TETHERING/HOTSPOT: everything forwarded here is traffic the
+        # owner explicitly asked to share (USB tethering 10.15.19.0/24, the
+        # Wi-Fi hotspot 10.42.0.0/24, and the older 10.20.30.0/24 dev link).
+        # Without these ACCEPTs this chain's `policy drop` ran FIRST (priority
+        # -100) so the dedicated tether/hotspot chains at -50/-49 never saw
+        # the packet: a tethered host could ping the phone but no forwarded
+        # packet ever left it.  Masquerade stays in nuxel_tether / NUXEL_TETHER;
+        # this only permits the flows.
+        iifname { "usb0", "usb1", "rndis0", "ncm0", "eth0" } accept
+        oifname { "usb0", "usb1", "rndis0", "ncm0", "eth0" } ct state established,related accept
+        iifname { "wlan1", "p2p0" } accept
+        oifname { "wlan1", "p2p0" } ct state established,related accept
+        ip saddr { 10.15.19.0/24, 10.42.0.0/24, 10.20.30.0/24 } accept
+        ip daddr { 10.15.19.0/24, 10.42.0.0/24, 10.20.30.0/24 } ct state established,related accept
+        # Anything else is a forward the owner did not ask for.
         log prefix "NUXXEL-FWD-DROP: " limit rate 10/minute
     }
 
@@ -48,7 +68,7 @@ table inet nuxel_app_firewall {
                     time-exceeded, parameter-problem } accept
         icmpv6 type { echo-request, echo-reply, destination-unreachable,
                       time-exceeded, parameter-problem,
-                      neighbor-solicit, neighbor-advertise } accept
+                      nd-neighbor-solicit, nd-neighbor-advert } accept
 
         # Per-app rules injected by nuxel-sandbox / nftables.sh, e.g.:
         #   socket cgroupv2 level 2 "app-nuxel-dialer" accept
@@ -60,6 +80,11 @@ table inet nuxel_app_firewall {
         log prefix "NUXXEL-OUTPUT-DROP: " limit rate 10/minute
     }
 
+# v0.8.5: the renderer strips this NAT section on kernels without NAT-chain
+# support.  Its marker boundary is written by nuxel-firewall.sh, so the
+# stripped result no longer contains a dangling 'chain prerouting' opening
+# stub (which had made the rendered ruleset invalid on the S10+).
+# __NUXEL_NAT_BEGIN__
     chain prerouting {
         type nat hook prerouting priority -100; policy accept;
     }
@@ -69,6 +94,8 @@ table inet nuxel_app_firewall {
         oifname "tun0" masquerade
     }
 
+# __NUXEL_NAT_END__
+
     chain app_allowed {
     }
 
@@ -76,10 +103,14 @@ table inet nuxel_app_firewall {
     }
 }
 
+# v0.8.5 LIVE FIX: no `ct state invalid drop` here.  On the live 4.14.253
+# kernel every inbound Wi-Fi packet is classified invalid at the prerouting
+# hook and was silently dropped before the input hook, so ICMP and SSH never
+# reached sshd even though the input chain accepts them.  The input chain's
+# default drop policy still fails closed.  See nuxel-app-firewall.nft.
 table inet nuxel_raw {
     chain prerouting {
         type filter hook prerouting priority -300; policy accept;
-        ct state invalid drop
         iif lo ip daddr != 127.0.0.0/8 drop
         iif lo ip6 daddr != ::1/128 drop
     }

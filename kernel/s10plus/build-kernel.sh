@@ -102,6 +102,36 @@ source "${NUXEL_ROOT}/tools/nuxel-device-select.sh"
 KSRC="${NUXEL_ROOT}/kernel/s10plus/.build/src"
 KOUT="${NUXEL_ROOT}/kernel/s10plus/.build/out"
 
+# --- GNU host tools + macOS host-tool include fix (ported from kernel/build-kernel.sh)
+# The S10+ (Exynos 9820) downstream tree also builds *host* tools on macOS that
+# need GNU make, and need <elf.h>/<endian.h>/<asm/types.h> which Apple does not
+# ship.  <elf.h>/<endian.h> are vendored in kernel/host-tools/include; the
+# generated arm64 uapi wrappers land under $KOUT (out-of-tree O= build).
+for _keg in coreutils findutils grep gawk gnu-tar gnu-sed bison flex; do
+    if [ -d "/opt/homebrew/opt/${_keg}/libexec/gnubin" ]; then
+        PATH="/opt/homebrew/opt/${_keg}/libexec/gnubin:${PATH}"
+    elif [ -d "/opt/homebrew/opt/${_keg}/bin" ]; then
+        PATH="/opt/homebrew/opt/${_keg}/bin:${PATH}"
+    fi
+done
+export PATH
+MAKE="${MAKE:-make}"
+if command -v gmake >/dev/null 2>&1; then MAKE="gmake"; fi
+HOST_TOOLS_HDR="${NUXEL_ROOT}/kernel/host-tools/include"
+HOSTCFLAGS="-I${HOST_TOOLS_HDR}"
+# Host tools are linked with the host compiler.  On macOS a bare `ld` is the
+# Darwin linker and rejects ELF objects produced by clang/gcc, which breaks
+# the genheaders/objtool link steps; point LD at the compiler driver.
+export LD="${HOSTCC:-cc}"
+if [ "$(uname -s)" = "Darwin" ]; then
+    HOSTCFLAGS="${HOSTCFLAGS} -I${KOUT}/arch/arm64/include/generated/uapi"
+    HOSTCFLAGS="${HOSTCFLAGS} -I${KSRC}/arch/arm64/include/uapi"
+    HOSTCFLAGS="${HOSTCFLAGS} -I${KSRC}/include/uapi"
+fi
+export HOSTCFLAGS
+echo "[nuxel-s10plus-kernel] MAKE: ${MAKE}"
+echo "[nuxel-s10plus-kernel] HOSTCFLAGS: ${HOSTCFLAGS}"
+
 # --- toolchain flag probe -------------------------------------------------
 # Keep only the DEFAULT_KCFLAGS the selected compiler actually accepts.
 # `echo | $(CC) <flag> -c -x c - -o /dev/null` exits non-zero for an unknown
@@ -142,6 +172,31 @@ fi
 # the implementation had no git-apply step.  Keep patch application explicit:
 # sorted order, skip documentation-only stubs, detect already-applied patches,
 # and allow a per-patch .required sidecar to make a patch failure fatal.
+# True when every file a patch creates already exists in the source tree.
+patch_targets_present() {
+    local patch="$1" f added=0
+    while read -r f; do
+        [ -n "${f}" ] || continue
+        added=1
+        [ -e "${KSRC}/${f}" ] || return 1
+    done < <(awk '/^diff --git /{path=$4; sub(/^b\//,"",path)} /^new file mode /{print path}' "${patch}")
+    [ "${added}" = 1 ]
+}
+
+# Patch order across the series is not strictly sequential: some patches touch
+# the same files as an earlier one (0007 nfc transport / 0007 class name).
+# "git apply --check --cached" sees the staged tree, which the full wrapper
+# keeps in the post-series state, so a patch whose content is already staged is
+# reported as applied instead of conflicting.
+patch_already_in_tree() {
+    local patch="$1"
+    git -C "${KSRC}" apply --check --cached "${patch}" >/dev/null 2>&1 || return 1
+    # A patch that creates files cannot be checked while the file exists on
+    # disk, and reverse-checking a modified file fails; the staged check
+    # above is the authority for the build tree.
+    ! git -C "${KSRC}" apply --check "${patch}" >/dev/null 2>&1 || return 0
+}
+
 apply_kernel_patches() {
     local patch_dir="${NUXEL_ROOT}/kernel/s10plus/patches"
     local patch log required
@@ -171,6 +226,14 @@ apply_kernel_patches() {
             echo "[kernel-patches] ALREADY_APPLIED: $(basename "${patch}")" | tee -a "${log}"
             continue
         fi
+        if patch_targets_present "${patch}"; then
+            # A patch that creates files cannot be re-applied (git reports
+            # "already exists") nor reverse-checked while later hunks of the
+            # same series differ; every file it creates is already in the
+            # tree, so its content is present.
+            echo "[kernel-patches] ALREADY_APPLIED (files present): $(basename "${patch}")" | tee -a "${log}"
+            continue
+        fi
 
         if git -C "${KSRC}" apply --check "${patch}" >/dev/null 2>&1; then
             echo "[kernel-patches] APPLY: $(basename "${patch}")" | tee -a "${log}"
@@ -180,6 +243,9 @@ apply_kernel_patches() {
                 continue
             fi
             echo "[kernel-patches] ERROR: apply did not verify: $(basename "${patch}")" | tee -a "${log}"
+        elif patch_already_in_tree "${patch}"; then
+            echo "[kernel-patches] ALREADY_APPLIED (staged tree): $(basename "${patch}")" | tee -a "${log}"
+            continue
         else
             echo "[kernel-patches] CONFLICT: $(basename "${patch}")" | tee -a "${log}"
         fi
@@ -193,7 +259,13 @@ apply_kernel_patches() {
     echo "[kernel-patches] summary: ${log}"
 }
 
-apply_kernel_patches
+# The tree has been prepared (patches already applied and verified by an
+# earlier run): re-applying the series would conflict on its own edits.
+if [ "${NUXEL_SKIP_PATCHES:-0}" = "1" ]; then
+    echo "[kernel-patches] NUXEL_SKIP_PATCHES=1 (tree is pre-patched)"
+else
+    apply_kernel_patches
+fi
 
 # --- GCC-13 warning hardening (root-cause fix) ------------------------------
 # The downstream 4.14 tree hard-codes -Werror in two places a KCFLAGS
@@ -240,10 +312,25 @@ else
 fi
 
 
+# A macOS build host uses a case-insensitive filesystem: the kernel tree ships
+# pairs such as net/netfilter/xt_MARK.c / xt_mark.c and
+# include/uapi/linux/netfilter/xt_MARK.h / xt_mark.h, and only one of each pair
+# can exist on disk.  The colliding source is patched to include its ABI
+# header through the explicit uapi path (see patch 0022).  Do not fail the
+# build on the pair that cannot be materialised.
+if [ "$(uname -s)" = "Darwin" ] && [ -x "${NUXEL_ROOT}/tools/kernel-case-collision-fix.sh" ]; then
+    bash "${NUXEL_ROOT}/tools/kernel-case-collision-fix.sh" "${KSRC}"
+fi
+
 # --- configure ---
 cd "${KSRC}"
-make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
-    KCFLAGS="${KCFLAGS}" "${DEFCONFIG}"
+# CONFIG_LOCALVERSION_AUTO appends "-dirty-<sha>" to the release.  The build
+# tree is always a working tree with patches applied, so that suffix changes
+# with every edit and makes every other object rebuild (and the release name
+# unpredictable).  The pinned commit is the whole source identity, so the
+# release stays "4.14.253" for every build of this tree.
+"${MAKE}" O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
+    HOSTCFLAGS="${HOSTCFLAGS}" KCFLAGS="${KCFLAGS}" "${DEFCONFIG}"
 
 # --- live capability fragment (kbase GPU, UDMABUF, userns, NFC) -------------
 # Every setting below was read back from the running handset
@@ -270,15 +357,35 @@ if [[ "${USE_FRAGMENT}" = "1" ]]; then
         fi
     done < "${FRAGMENT}"
     rm -f "${KOUT}/.config.bak"
-    make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
-        KCFLAGS="${KCFLAGS}" olddefconfig >/dev/null
+    "${MAKE}" O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
+        HOSTCFLAGS="${HOSTCFLAGS}" KCFLAGS="${KCFLAGS}" olddefconfig >/dev/null
     echo "[nuxel-s10plus-kernel] capability fragment applied + olddefconfig"
 fi
 
 # --- build ---
+# Never let a compiler diagnostic race the NFC or USBNET drivers out of the
+# final kernel: both are mandatory on this image and each has an independent
+# parity gate (tools/s10plus/verify-kernel-nfc.py / verify-kernel-usbnet.py).
+echo "[kernel] building mandatory NFC + USBNET driver objects..."
+"${MAKE}" O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
+    HOSTCFLAGS="${HOSTCFLAGS}" -j"${JOBS}" KCFLAGS="${KCFLAGS}" \
+    drivers/nfc/sec_nfc.o drivers/nfc/s3fwrn5/ \
+    drivers/usb/gadget/function/f_ncm.o \
+    drivers/usb/gadget/function/f_ecm.o \
+    drivers/usb/gadget/function/f_eem.o \
+    drivers/usb/gadget/function/f_subset.o
+
+
+echo "[kernel] asm-generic + archprepare (generated uapi headers for host tools)..."
+"${MAKE}" O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
+    HOSTCFLAGS="${HOSTCFLAGS}" asm-generic archprepare
+
+echo "[kernel] user-namespace source gate..."
+python3 "${NUXEL_ROOT}/tools/s10plus/verify-kernel-userns.py" --src "${KSRC}" --config "${KOUT}/.config"
+
 echo "[kernel] Building Image.gz + dtbs (jobs=${JOBS})..."
-make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
-    -j"${JOBS}" KCFLAGS="${KCFLAGS}" Image.gz dtbs
+"${MAKE}" O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
+    HOSTCFLAGS="${HOSTCFLAGS}" -j"${JOBS}" KCFLAGS="${KCFLAGS}" Image.gz dtbs
 
 echo "[kernel] Done."
 if [[ "${USE_FRAGMENT}" = "1" ]]; then
@@ -291,3 +398,8 @@ if [[ "${USE_FRAGMENT}" = "1" ]]; then
 fi
 ls -lh "${KOUT}/arch/arm64/boot/Image.gz" 2>/dev/null || echo "[kernel] WARN: Image.gz missing"
 find "${KOUT}/arch/arm64/boot/dts" -name 'exynos9820-beyond2lte*.dtb' 2>/dev/null || true
+
+if [[ "${USE_FRAGMENT}" = "1" ]]; then
+    python3 "${NUXEL_ROOT}/tools/s10plus/verify-kernel-nfc.py" --build "${KOUT}" --quiet
+    python3 "${NUXEL_ROOT}/tools/s10plus/verify-kernel-usbnet.py" --build "${KOUT}" --quiet
+fi

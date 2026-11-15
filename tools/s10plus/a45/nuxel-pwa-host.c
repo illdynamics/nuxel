@@ -1814,6 +1814,15 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\",\"pending\":true,\"backend\":\"button-manager-gate\"}", action);
     return;
   }
+  /* Wake without toggling.  A touch on the dark glass wakes the panel the
+     same way a short Power press does (the display bridge's control FIFO is
+     the one owner of the panel); it can never blank an already-lit screen. */
+  if (!strcmp(action, "screen-wake")) {
+    wlfb_command("screen-on");
+    st("HOST_ACTION screen-wake -> nuxel-wl-fb control fifo");
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"screen-wake\"}");
+    return;
+  }
   if (!strcmp(action, "screen-off") || !strcmp(action, "screen-on") || !strcmp(action, "screen-toggle")) {
     int fd = open("/run/nuxel-wl-fb.cmd", O_WRONLY | O_NONBLOCK);
     if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"bridge-fifo-absent\"}"); return; }
@@ -2001,6 +2010,37 @@ static void action_perform(const char *action, char *result, size_t rn) {
       st("HOST_UI_RECT id=%s", id);
     } else {
       snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_rect_target\"}");
+    }
+    return;
+  }
+  if (!strncmp(action, "ui-probe ", 9)) {
+    /* Root-console verification hook (A80).  Evaluates ONE read-only
+     * expression and posts the JSON result to the diag log.  Like the other
+     * UI hooks it is reachable only through the root-only control FIFO and
+     * never accepts arbitrary statements: the expression is restricted to
+     * property paths plus a leading/bracketed call of the form
+     *   window.nuxel.lockscreen.auth.describe()
+     *   document.getElementById("id")
+     * which is all the acceptance matrix needs. */
+    const char *expr = action + 9;
+    int ok = *expr != 0;
+    for (const char *p = expr; ok && *p; p++) {
+      if (!(isalnum((unsigned char)*p) || *p == '.' || *p == '-' || *p == '_' ||
+            *p == '(' || *p == ')' || *p == '"' || *p == '#' || *p == ' ' || *p == ':')) ok = 0;
+    }
+    if (ok && strstr(expr, "eval") == NULL && strstr(expr, "fetch") == NULL &&
+        strstr(expr, "Function") == NULL && strstr(expr, "=>") == NULL &&
+        strstr(expr, ";") == NULL && g_main_view) {
+      char js[1400];
+      snprintf(js, sizeof js,
+        "(function(){try{var r=(%s);window.webkit.messageHandlers.nuxelDiag.postMessage('A80_PROBE '+JSON.stringify(r===undefined?null:r));}"
+        "catch(e){window.webkit.messageHandlers.nuxelDiag.postMessage('A80_PROBE_ERROR '+e);}})();",
+        expr);
+      webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+      st("HOST_UI_PROBE expr=%s", expr);
+      snprintf(result, rn, "{\"ok\":true,\"action\":\"ui-probe\"}");
+    } else {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"invalid_probe\"}");
     }
     return;
   }
@@ -2530,6 +2570,54 @@ static void purge_path(const char *path, const char *why) {
   st("CACHE_PURGE removed %s (%s) still_present=%d", path, why, access(path, F_OK) == 0);
 }
 
+#define VERIFY_FILE "/run/nuxel-location-verify.json"
+#define VERIFY_APP "org.nuxel.Maps"
+
+/* Root-console acceptance probe for the Maps current-position marker.
+ *
+ * This is deliberately opt-in (`NUXEL_VERIFY_LOCATION=1`, set only for an
+ * explicit SSH verification run) and cannot reach arbitrary script: it runs
+ * the SAME launcher registry action and the SAME Maps `locate` button that a
+ * physical tap uses, then records what the real page shows.  The marker is a
+ * canvas draw; this probe reports the draw inputs page-side and the window
+ * manager captures the actual glass separately. */
+static gboolean location_verify_cb(gpointer d);
+
+static gboolean location_verify_cb(gpointer d) {
+  (void)d;
+  if (!g_main_view || access(VERIFY_FILE, F_OK) == 0) return G_SOURCE_REMOVE;
+  /* Re-running is intentional: a launch can land after the first timer.  The
+   * launcher guard prevents a duplicate Maps surface; the report always comes
+   * from the real iframe and overwrites the previous NO_MAPS_FRAME evidence. */
+  const char *js =
+    "try{"
+    "if(!window.__nuxelVerifyLoc){window.__nuxelVerifyLoc=1;"
+    "var a=window.appRegistry;if(a&&a.getApp&&a.getApp('" VERIFY_APP "')){a.launchApp('" VERIFY_APP "');}"
+    "setTimeout(function(){try{var b=document.getElementById('locate');if(b)b.click();}catch(e){}},1800);"
+    "setTimeout(function(){try{var fr=document.querySelector('iframe.pwa-frame');if(fr&&fr.contentWindow&&!fr.dataset.verify){var d=fr.contentDocument;if(d){var b=d.getElementById('locate');if(b){fr.dataset.verify='1';b.click();}}}}catch(e){}},2600);"
+    "setTimeout(function(){try{var fr=document.querySelector('iframe.pwa-frame');var w=fr&&fr.contentWindow;"
+    "if(!w){var out0={schema_version:1,app_id:'" VERIFY_APP "',maps_loaded:false,locate_button:false,provider_state:null,fix:null,verdict:'NO_MAPS_FRAME',frame:!!fr,launcher_state:document.body.dataset.appState||null,ts:Date.now()/1000};window.webkit.messageHandlers.nuxelDiag.postMessage('LOCATION_VERIFY '+JSON.stringify(out0));"
+    "setTimeout(function(){try{var A=window.appRegistry;if(A&&A.getApp&&A.getApp('" VERIFY_APP "')){A.launchApp('" VERIFY_APP "');}}catch(e){}},500);return;}"
+    "var mm=w.nuxelMaps||{};var p=mm.provider&&mm.provider();var f=p&&p.fix;"
+    "var st=w.document&&w.document.getElementById('provider-state');"
+    "var out={schema_version:1,app_id:'" VERIFY_APP "',maps_loaded:!!w.nuxelMaps,locate_button:!!(w.document&&w.document.getElementById('locate')),provider_state:p?(p.state||null):null,fix:f?{lat:f.lat,lon:f.lon,accuracy:f.accuracy,kind:f.kind,gnss:!!f.gnss,network:!!f.network,fresh:!!f.fresh,age_s:f.ageSeconds}:null,provider_text:st?String(st.textContent||''):null,ts:Date.now()/1000};"
+    "var ok=!!(f&&p.state==='fixed'&&typeof f.lat==='number'&&typeof f.lon==='number');out.marker_fix=ok?{lat:f.lat,lon:f.lon}:null;out.verdict=ok?'FIXED':'NO_FRESH_FIX';"
+    "window.webkit.messageHandlers.nuxelDiag.postMessage('LOCATION_VERIFY '+JSON.stringify(out));"
+    "}catch(e){try{window.webkit.messageHandlers.nuxelDiag.postMessage('LOCATION_VERIFY '+JSON.stringify({schema_version:1,verdict:'PROBE_ERROR',detail:String(e)}));}catch(q){}}},5200);"
+    "}"
+    "}catch(e){}";
+  webkit_web_view_evaluate_javascript(g_main_view, js, -1, NULL, NULL, NULL, NULL, NULL);
+  /* First report even if Maps is still launching: that distinguishes a slow
+   * frame from a permission/provider failure instead of leaving no evidence. */
+  g_timeout_add_seconds(2, location_verify_cb, NULL);
+  g_timeout_add_seconds(8, location_verify_cb, NULL);
+  g_timeout_add_seconds(16, location_verify_cb, NULL);
+  /* A launch can take longer than one timer window; retry once without
+   * duplicating the probe (the guard also reports an existing evidence file). */
+  g_timeout_add_seconds(16, location_verify_cb, NULL);
+  return G_SOURCE_REMOVE;
+}
+
 static void purge_launcher_cache(void) {
   const char *keep = getenv("NUXEL_KEEP_CACHE");
   if (keep && keep[0] == '1') { st("CACHE_PURGE skipped (NUXEL_KEEP_CACHE=1)"); return; }
@@ -2553,6 +2641,93 @@ static void purge_launcher_cache(void) {
 
 /* --- control FIFO: the hardware-button manager's entry point -------------- */
 static GIOChannel *ctl_chan;
+
+/* ui-eval <nonce> <expression>
+ *
+ * Root-console acceptance hook (A80/A81).  The control FIFO is root-only; this
+ * evaluates ONE read-only expression in the launcher page and posts the JSON
+ * result back as   A80_PROBE <nonce> <json>   in /run/nuxel-home.state.  The
+ * nonce lets a script read exactly its own answer instead of guessing which
+ * line is new.  Function calls, property access and method calls are allowed
+ * (the acceptance harness drives the SAME state machine a finger does), but
+ * no statements, arrows or assignments: the expression cannot contain ';',
+ * '=>' or '='.  Nothing here can unlock by itself - the bridge still verifies
+ * every credential. */
+static gboolean ui_eval_ok(const char *expr) {
+  if (!expr || !*expr) return FALSE;
+  if (strstr(expr, ";") || strstr(expr, "=>") || strstr(expr, "=")) return FALSE;
+  if (strstr(expr, "eval") || strstr(expr, "fetch") || strstr(expr, "Function")) return FALSE;
+  for (const char *p = expr; *p; p++) {
+    unsigned char c = (unsigned char)*p;
+    if (isalnum(c) || c == '.' || c == '_' || c == '-' || c == '(' || c == ')' ||
+        c == '[' || c == ']' || c == '"' || c == '\'' || c == ' ' || c == ',' ||
+        c == '{' || c == '}' || c == ':' || c == '+' || c == '*' || c == '?' ||
+        c == '!' || c == '|' || c == '&' || c == '<' || c == '>' || c == '%' ||
+        c == '/' || c == '#') continue;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+static char *ui_eval_nonce;
+static GMainLoop *ui_eval_loop;
+static gboolean ui_eval_done_flag;
+
+static gboolean ui_eval_timeout(gpointer d) {
+  (void)d;
+  if (!ui_eval_done_flag && ui_eval_nonce) {
+    st("A80_PROBE %s ERR timeout", ui_eval_nonce);
+    g_free(ui_eval_nonce);
+    ui_eval_nonce = NULL;
+    ui_eval_done_flag = TRUE;
+    if (ui_eval_loop) g_main_loop_quit(ui_eval_loop);
+  }
+  return G_SOURCE_REMOVE;
+}
+
+static void ui_eval_reply(GObject *src, GAsyncResult *res, gpointer user_data) {
+  (void)user_data;
+  if (ui_eval_done_flag) return;   /* the timeout already answered */
+  GError *err = NULL;
+  WebKitJavascriptResult *jr = webkit_web_view_run_javascript_finish(WEBKIT_WEB_VIEW(src), res, &err);
+  char *json = NULL;
+  if (err) {
+    json = g_strdup_printf("ERR %s", err->message);
+    g_error_free(err);
+  } else if (jr) {
+    JSCValue *val = webkit_javascript_result_get_js_value(jr);
+    /* This WebKit build's jsc_value_to_json returns a JSON string. */
+    json = val ? jsc_value_to_json(val, 0) : NULL;
+    if (!json) json = g_strdup("null");
+    webkit_javascript_result_unref(jr);
+  } else {
+    json = g_strdup("null");
+  }
+  for (char *p = json; p && *p; p++) if (*p == '\n' || *p == '\r') *p = ' ';
+  st("A80_PROBE %s %s", ui_eval_nonce ? ui_eval_nonce : "-", json);
+  g_free(json);
+  g_free(ui_eval_nonce);
+  ui_eval_nonce = NULL;
+  ui_eval_done_flag = TRUE;
+  if (ui_eval_loop) g_main_loop_quit(ui_eval_loop);
+}
+
+/* Evaluate one expression in the launcher page and log its JSON value.  A
+   nested main loop keeps WebKit/GTK processing while waiting, with a hard
+   timeout so a wedged page can never hang the host. */
+static gboolean ui_eval_blocking(const char *nonce, const char *expr, int timeout_ms) {
+  if (!g_main_view) return FALSE;
+  ui_eval_nonce = g_strdup(nonce);
+  ui_eval_done_flag = FALSE;
+  ui_eval_loop = g_main_loop_new(NULL, FALSE);
+  guint tid = g_timeout_add((guint)timeout_ms, ui_eval_timeout, NULL);
+  webkit_web_view_run_javascript(g_main_view, expr, NULL, ui_eval_reply, NULL);
+  if (!ui_eval_done_flag) g_main_loop_run(ui_eval_loop);
+  g_source_remove(tid);
+  g_main_loop_unref(ui_eval_loop);
+  ui_eval_loop = NULL;
+  return TRUE;
+}
 
 static gboolean ctl_in(GIOChannel *ch, GIOCondition cond, gpointer d) {
   (void)d;
@@ -2585,6 +2760,21 @@ static gboolean ctl_in(GIOChannel *ch, GIOCondition cond, gpointer d) {
         g_string_free(g, TRUE);
       } else {
         st("HOST_SOUND_MODE_REFUSED %s", mode);
+      }
+    }
+    else if (!strncmp(q, "ui-eval ", 8)) {
+      char nonce[64] = {0};
+      char *expr = q + 8;
+      int n = 0;
+      while (*expr && *expr != ' ' && n < (int)sizeof nonce - 1) nonce[n++] = *expr++;
+      nonce[n] = 0;
+      while (*expr == ' ') expr++;
+      if (nonce[0] && strspn(nonce, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-") == strlen(nonce) &&
+          ui_eval_ok(expr) && g_main_view) {
+        st("HOST_UI_EVAL nonce=%s", nonce);
+        ui_eval_blocking(nonce, expr, 4000);
+      } else {
+        st("A80_PROBE %s ERR invalid-ui-eval", nonce[0] ? nonce : "-");
       }
     }
     else if (!strncmp(q, "open-terminal", 13)) term_open_window();
@@ -2901,7 +3091,14 @@ static void on_diag_message(WebKitUserContentManager *m, WebKitJavascriptResult 
   (void)m; (void)d;
   JSCValue *v = webkit_javascript_result_get_js_value(r);
   char *s = v ? jsc_value_to_string(v) : NULL;
-  if (s) { st("NUXEL_INPUT %s", s); g_free(s); }
+  if (s) {
+    if (!strncmp(s, "LOCATION_VERIFY ", 16)) {
+      FILE *f = fopen(VERIFY_FILE, "w");
+      if (f) { fputs(s + 16, f); fputc('\n', f); fclose(f); }
+    }
+    st("NUXEL_INPUT %s", s);
+    g_free(s);
+  }
 }
 
 static gboolean on_load_failed(WebKitWebView *v, WebKitLoadEvent ev, gchar *uri, GError *err, gpointer d) {
@@ -2915,6 +3112,9 @@ static void on_load_changed(WebKitWebView *v, WebKitLoadEvent ev, gpointer d) {
   if (ev == WEBKIT_LOAD_FINISHED) {
     const gchar *uri = webkit_web_view_get_uri(v);
     st("NUXEL_HOME_READY uri=%s", uri ? uri : "?");
+    if (getenv("NUXEL_VERIFY_LOCATION") && getenv("NUXEL_VERIFY_LOCATION")[0] == '1') {
+      if (!access(VERIFY_FILE, F_OK)) g_timeout_add(250, location_verify_cb, NULL);
+    }
     FILE *f = fopen(READY, "w");
     if (f) { fprintf(f, "%s\n", uri ? uri : ""); fclose(f); }
   } else if (ev == WEBKIT_LOAD_COMMITTED) {
@@ -2990,6 +3190,10 @@ static void on_permission(WebKitWebView *v, WebKitPermissionRequest *r, gpointer
     gboolean recorder_page = uri &&
         (g_strstr_len(uri, -1, "/pwa/nuxel-apps/recorder/") != NULL);
     gboolean host_grant = g_mic_grant_until_us > g_get_monotonic_time();
+    /* PWNAGE-109000: any trusted local app (not only the Recorder page) may
+       capture audio after it obtained the one-shot host grant.  The grant was
+       already gated on from_trusted above; the permission manager writes the
+       durable decision.  This makes voice notes work in every bundled app. */
     if (!video && (recorder_page || host_grant)) {
       allow = TRUE;
       if (host_grant) g_mic_grant_until_us = 0;  /* one-shot */
@@ -2999,7 +3203,7 @@ static void on_permission(WebKitWebView *v, WebKitPermissionRequest *r, gpointer
     } else if (video) {
       reason = "denied-camera-backend-deferred";
     } else {
-      reason = "denied-microphone-not-recorder";
+      reason = "denied-microphone-no-host-grant";
     }
   } else {
     reason = "denied-not-required-by-launcher";
@@ -3078,7 +3282,7 @@ static WebKitWebView *view_new(void) {
     webkit_user_script_unref(ps);
     st("NUXEL_BOOT_POLICY host-enforced=1 css=1 dom_removal=1 (phone launch mode)");
   }
-  if (diag) {
+  if (diag || (getenv("NUXEL_VERIFY_LOCATION") && getenv("NUXEL_VERIFY_LOCATION")[0] == '1')) {
     webkit_user_content_manager_register_script_message_handler(ucm, "nuxelDiag");
     g_signal_connect(ucm, "script-message-received::nuxelDiag", G_CALLBACK(on_diag_message), NULL);
     WebKitUserScript *us = webkit_user_script_new(DIAG_JS,
@@ -3176,6 +3380,11 @@ int main(int argc, char **argv) {
   indicator_fallback_start();
   gtk_widget_show_all(win);
   gtk_window_fullscreen(GTK_WINDOW(win));
+  if (getenv("NUXEL_VERIFY_LOCATION") && getenv("NUXEL_VERIFY_LOCATION")[0] == '1') {
+    unlink(VERIFY_FILE);
+    g_timeout_add_seconds(9, location_verify_cb, NULL);
+    st("LOCATION_VERIFY armed app=" VERIFY_APP " evidence=" VERIFY_FILE);
+  }
 
   st("NUXEL_HOME_BOOT_OWNER os_animation=%d splash_removed_by_launcher=%d",
      os_owns_boot_animation(), os_owns_boot_animation());

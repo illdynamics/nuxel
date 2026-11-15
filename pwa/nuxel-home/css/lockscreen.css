@@ -7,6 +7,11 @@
     inset: 0;
     z-index: 500;
     background: #04121f;
+    /* A83 lock-screen input fix: touch-action:none on the whole glass cancels
+       the synthetic click for EVERY touch press, so the PIN keypad / pattern /
+       fingerprint buttons armed their pointer handlers but never fired their
+       `click` handler ("press Unlock, nothing happens").  The locked swipe
+       surface still gets `none`; a credentialed mode resets it below. */
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
@@ -646,3 +651,368 @@ html.nuxel-boot-locked #app-grid {
 }
 body.display-off .lockscreen-clock-penguin,
 body.display-off .lockscreen-clock-penguin img { animation: none !important; }
+
+/* ==========================================================================
+   A84 credential surface — pattern / PIN / fingerprint, with the lockhead
+   ALWAYS on the glass.
+   The lockhead (.lockscreen-handle-wrap) is never hidden.  In a credential
+   mode it is docked at the bottom below the panel and acts as the "open the
+   panel" affordance; the panel owns the centre of the glass.
+   `.lockscreen-panel-open` marks an open panel.  The old credential-mode class
+   that used to hide the lockhead is gone on purpose.
+   ========================================================================== */
+
+/* Panel: bottom sheet while closed (only its own lockhead showing), nearly
+   full glass while open.  The docked lockhead is positioned by JS directly
+   below `--lockscreen-panel-bottom`. */
+.lockscreen-auth {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 18px 18px 40px;
+    max-height: 68vh;
+    border-radius: 22px 22px 0 0;
+    background: linear-gradient(to top, rgba(3, 12, 22, .9), rgba(3, 12, 22, .72));
+    box-shadow: 0 -8px 26px rgba(0, 0, 0, .55);
+    box-sizing: border-box;
+    color: #eaf4ff;
+    touch-action: none;
+}
+.lockscreen-auth[hidden] { display: none !important; }
+.lockscreen-auth-head { text-align: center; pointer-events: none; margin-bottom: 2px; }
+.lockscreen-auth-title { font-size: 22px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.85); }
+.lockscreen-auth-hint { font-size: 13px; opacity: .85; margin-top: 3px; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.lockscreen-auth-error {
+    min-height: 18px; font-size: 13px; color: #ffb4b4; text-align: center;
+    text-shadow: 0 1px 3px rgba(0,0,0,.9); max-width: 320px;
+}
+
+/* Panel CLOSED: only the clock, wallpaper and the (always visible) lockhead.
+   Nothing of the credential UI is shown, so a fresh lock always starts with
+   the penguin to swipe. */
+#lockscreen .lockscreen-auth.lockscreen-auth-closed {
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
+
+/* Panel OPEN: the credential UI takes the glass (above the lockhead's dock) so
+   the keypad/matrix own the centre and never fight the swipe handle. */
+#lockscreen.lockscreen-panel-open .lockscreen-auth {
+    inset: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    /* A88: the credential surface (pattern matrix / PIN keypad) is centred on
+       the glass.  Exactly symmetric insets, so flex centring is the viewport
+       centre (the old 16px top / 16px bottom pair also kept a 17px scrollbar
+       gap on the side; equal insets remove that too). */
+    padding: 16px !important;
+    background: linear-gradient(to top, rgba(3, 12, 22, .94) 0%, rgba(3, 12, 22, .86) 42%, rgba(3, 12, 22, .30) 78%, rgba(3, 12, 22, .08) 100%) !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+}
+/* Landscape / short glass: keep a smaller bottom reserve for the dock. */
+@media (max-height: 640px) {
+    #lockscreen.lockscreen-panel-open .lockscreen-auth { padding-bottom: 16px !important; }
+    .lockscreen-auth { padding-bottom: 24px; }
+    .lockscreen-pattern { width: min(64vw, 240px) !important; }
+    .lockscreen-key { min-height: 48px; font-size: 20px; }
+    #lockscreen-pin-enter { min-height: 48px; }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+    #lockscreen.lockscreen-panel-open .lockscreen-auth { padding: 8px 18px 8px !important; }
+}
+
+/* The docked lockhead (panel open): still tappable/swipeable, but parked below
+   the panel's content area.  It is placed by JS at
+   top = innerHeight - size - 26; this rule only guarantees the size and that
+   it never sits above the panel's content. */
+#lockscreen.lockscreen-panel-open .lockscreen-handle-wrap {
+    z-index: 6;
+    /* A87: no lockhead below the PIN/pattern/fingerprint prompt.  JS also sets
+       [hidden]; this is the second, paint-level guard. */
+    display: none !important;
+}
+#lockscreen.lockscreen-panel-open .lockscreen-handle {
+    opacity: .92;
+}
+#lockscreen.lockscreen-panel-open .lockscreen-hint { display: none !important; }
+/* Pattern mode: the lockhead to the LEFT of the centred matrix is confusing on
+   a phone, so the hint area under it stays clear. */
+#lockscreen.lockscreen-panel-open .lockscreen-clock-lanes { display: none !important; }
+
+/* ---------------------------------------------------------------- pattern */
+/* A84: the 3x3 matrix lives in the CENTRE of the glass.  The panel is a
+   viewport-sized flex box with justify-content:center and the matrix has an
+   auto inline margin, so it is centred horizontally and vertically; the PIN
+   button and the error line are pinned below it (see the meta row). */
+.lockscreen-pattern {
+    position: relative;
+    width: min(72vw, 292px, calc(100dvh - 260px));
+    max-width: calc(100vw - 48px);
+    min-width: 168px;
+    aspect-ratio: 1 / 1;
+    margin: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.lockscreen-pattern[hidden] { display: none !important; }
+.lockscreen-pattern-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 3;
+}
+/* The trail glow is a one-shot while drawing (it is repainted only during a
+   drag), never on the idle glass. */
+.lockscreen-pattern-trail {
+    stroke: #7fd0ff;
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(80, 180, 255, .95));
+}
+.lockscreen-pattern-trail.rejected { stroke: #ff6b6b; filter: drop-shadow(0 0 7px rgba(255,80,80,.95)); }
+.lockscreen-pattern-dots {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    place-items: center;
+    padding: 6px;
+    box-sizing: border-box;
+}
+.lockscreen-pattern-dot {
+    position: relative;
+    width: clamp(44px, 19vw, 68px);
+    height: clamp(44px, 19vw, 68px);
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 45%, rgba(20, 52, 84, .85), rgba(4, 18, 31, .72) 72%);
+    border: 2px solid rgba(140, 200, 255, .55);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+    transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+    touch-action: none;
+}
+.lockscreen-pattern-dot.active {
+    border-color: #7fd0ff;
+    box-shadow: 0 0 16px rgba(90, 185, 255, .95), inset 0 0 10px rgba(90, 185, 255, .55);
+    transform: scale(1.06);
+}
+.lockscreen-pattern-dot.mismatch { border-color: #ff6b6b; box-shadow: 0 0 14px rgba(255,80,80,.8); }
+.lockscreen-pattern-penguin {
+    width: 74%;
+    height: 74%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
+    opacity: .97;
+}
+.lockscreen-pattern-dot.active .lockscreen-pattern-penguin {
+    filter: drop-shadow(0 0 4px rgba(150, 220, 255, .95));
+}
+
+/* -------------------------------------------------------------------- PIN */
+/* A88: the keypad is a centred block.  It is sized against BOTH viewport
+   axes (height included) so on a short landscape glass the Unlock button
+   never leaves the screen, and it never collapses to the top of the panel. */
+.lockscreen-pinpad {
+    width: min(82vw, 320px);
+    max-height: calc(100dvh - 32px);
+    display: flex; flex-direction: column; gap: 10px;
+    margin: auto; box-sizing: border-box;
+}
+.lockscreen-pinpad[hidden] { display: none !important; }
+.lockscreen-pin-display {
+    height: 34px; font-size: 28px; letter-spacing: 9px; text-align: center;
+    color: #eaf4ff; text-shadow: 0 1px 3px rgba(0,0,0,.9); min-height: 34px;
+}
+.lockscreen-pin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.lockscreen-key {
+    min-height: 58px;
+    border-radius: 16px;
+    border: 1px solid rgba(140, 200, 255, .35);
+    background: rgba(8, 26, 44, .62);
+    color: #eaf4ff;
+    font-size: 24px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lockscreen-key:active { background: rgba(40, 90, 140, .8); transform: scale(.97); }
+.lockscreen-key.key-wide { font-size: 15px; font-weight: 500; }
+.lockscreen-key.key-enter {
+    width: 100%; min-height: 54px; font-size: 17px;
+    background: rgba(46, 112, 168, .85); border-color: rgba(150, 210, 255, .55);
+}
+/* A83: press feedback independent of click synthesis. */
+#lockscreen .lockscreen-key {
+    -webkit-tap-highlight-color: rgba(120, 200, 255, .35);
+    transition: transform .06s ease, background .06s ease;
+}
+#lockscreen .lockscreen-key:active,
+#lockscreen .lockscreen-key.pressed {
+    background: rgba(40, 90, 140, .9) !important;
+    transform: scale(.97);
+}
+#lockscreen-pin-enter {
+    width: 100%;
+    min-height: 58px;
+    margin-top: 4px;
+    font-size: 18px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------ fingerprint */
+.lockscreen-fingerprint {
+    --scanner-left: 22%;
+    --scanner-top: 74%;
+    --scanner-width: 56%;
+    --scanner-height: 18%;
+    position: absolute;
+    left: var(--scanner-left);
+    top: var(--scanner-top);
+    width: var(--scanner-width);
+    height: var(--scanner-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-46%);
+    touch-action: none;
+}
+.lockscreen-fingerprint[hidden] { display: none !important; }
+.lockscreen-fingerprint-ring {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% / 42%;
+}
+.lockscreen-fingerprint-art {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    opacity: .92;
+    filter: drop-shadow(0 0 10px rgba(90, 185, 255, .35));
+    transition: filter .2s ease, transform .2s ease;
+}
+.lockscreen-fingerprint-ring.scanning .lockscreen-fingerprint-art {
+    animation: nuxel-fp-scan 1.1s ease-in-out infinite;
+}
+.lockscreen-fingerprint-ring.accepted .lockscreen-fingerprint-art {
+    filter: drop-shadow(0 0 16px rgba(110, 255, 170, .9));
+    transform: scale(.96);
+}
+@keyframes nuxel-fp-scan {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(90,185,255,.3)); }
+    50% { filter: drop-shadow(0 0 20px rgba(120,210,255,.95)); }
+}
+.lockscreen-fingerprint-status {
+    position: absolute;
+    left: 50%;
+    bottom: -28px;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 86vw;
+    font-size: 13px;
+    text-align: center;
+    color: #dceeff;
+    text-shadow: 0 1px 3px rgba(0,0,0,.9);
+}
+
+/* -------------------------------------------------------------- PIN button */
+/* A84: the fallback button is pinned BELOW the centred matrix/keypad, inside
+   the panel's bottom reserve (the meta row), clear of the docked lockhead. */
+.lockscreen-pin-fallback {
+    position: fixed;
+    left: 50%;
+    bottom: 152px;
+    transform: translateX(-50%);
+    z-index: 5;
+    min-width: 116px;
+    min-height: 46px;
+    padding: 0 22px;
+    border-radius: 23px;
+    border: 1px solid rgba(150, 210, 255, .55);
+    background: rgba(10, 30, 52, .78);
+    color: #eaf4ff;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lockscreen-pin-fallback[hidden] { display: none !important; }
+/* A88: the PIN fallback is part of the open panel.  It must never paint over
+   the swipe-only glass or while the panel is closed. */
+#lockscreen .lockscreen-auth.lockscreen-auth-closed .lockscreen-pin-fallback,
+#lockscreen:not(.lockscreen-panel-open) .lockscreen-pin-fallback { display: none !important; }
+.lockscreen-pin-fallback:active { transform: translateX(-50%) scale(.97); background: rgba(40, 90, 140, .85); }
+.lockscreen-auth-error {
+    position: fixed;
+    left: 50%;
+    bottom: 206px;
+    transform: translateX(-50%);
+    z-index: 5;
+}
+@media (max-height: 640px) {
+    .lockscreen-pin-fallback { bottom: 120px; }
+    .lockscreen-auth-error { bottom: 168px; }
+}
+#lockscreen .lockscreen-pin-fallback,
+#lockscreen .lockscreen-key-enter { pointer-events: auto; }
+
+/* ------------------------------------------------------ pattern setup flow */
+.lockscreen-setup { inset: 0; max-height: none; justify-content: center; padding-bottom: 64px; border-radius: 0; background: rgba(3, 12, 22, .82); }
+
+/* v0.8.5: no transient chrome over the lock screen.  A volume/power OSD or a
+   leftover power-menu card painted a top-centre blue-bordered rectangle that
+   stayed visible for a few seconds after locking from the power menu.  The
+   lock glass is authoritative: both overlays are hidden while it is shown. */
+body.lockscreen-active #nuxel-osd,
+body.lockscreen-active #nuxel-power-menu,
+body.nuxel-boot-locked #nuxel-osd,
+body.nuxel-boot-locked #nuxel-power-menu {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+}

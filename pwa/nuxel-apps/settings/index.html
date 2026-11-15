@@ -8,7 +8,7 @@
 <title>Nuxel Settings</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="../../nuxel-common/theme.css?v=p85000">
-<link rel="stylesheet" href="settings.css?v=p102000">
+<link rel="stylesheet" href="settings.css?v=pssp-force-1">
     <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
 </head>
 <body>
@@ -23,6 +23,7 @@
   <button class="tab" data-tab="displays">Displays</button>
   <button class="tab" data-tab="network">Wi-Fi</button>
   <button class="tab" data-tab="mobile">Mobile network</button>
+  <button class="tab" data-tab="usbnet">USB network</button>
   <button class="tab" data-tab="camera">Camera</button>
   <button class="tab" data-tab="sensors">Sensors</button>
   <button class="tab" data-tab="graphics">Graphics</button>
@@ -538,6 +539,20 @@
       <div class="row wrap" id="led-color-buttons"></div>
       <p id="led-result" class="state" role="status">—</p>
     </div>
+    <div class="card">
+      <h3>Edge lighting</h3>
+      <p class="hint">Display effect for incoming notifications (Wave by default, theme accent colour).
+        The S10+ has no notification LED and the camera flash is never used for alerts.</p>
+      <pre id="edge-lighting-state" class="state" role="status">Checking Edge lighting…</pre>
+      <p id="edge-lighting-capability" class="hint">—</p>
+      <div class="row wrap">
+        <button id="edge-lighting-open">Open Edge FX</button>
+        <button id="edge-lighting-preview">Preview</button>
+        <button id="edge-lighting-toggle">On / off</button>
+        <button id="edge-panel-open">Open Edge panel</button>
+      </div>
+      <p id="edge-lighting-result" class="state" role="status">—</p>
+    </div>
   </section>
 
   <!-- ── NFC (PWNAGE-45000) ───────────────────────────────────────────── -->
@@ -545,25 +560,60 @@
     <h2>NFC</h2>
     <div class="card">
       <h3>Controller &amp; reader</h3>
-      <p class="hint">Real kernel/driver/firmware/userspace state. Expected S10+ controller: Samsung sec-nfc / S3FWRN5 family at I2C 0x27. Only a physical tag read proves reader operation; payment/emulation is not claimed.</p>
+      <p class="hint">Real kernel NCI, controller and userspace state for this phone: Samsung S3NRN82 (S3FWRN5-compatible NCI) at I2C 0x27, path hsi2c@108E0000 / i2c-7 / 7-0027. Only a physical tag read proves reader operation; payment, card emulation and secure-element access are not supported.</p>
       <div class="row"><button id="nfc-refresh">Refresh diagnostics</button><button id="nfc-toggle" class="primary">Enable / disable</button></div>
       <pre id="nfc-state" class="state" role="status">Checking NFC…</pre>
       <p id="nfc-detail" class="hint">—</p>
-      <div class="row"><button id="nfc-test" disabled>Test tag read</button></div>
-      <p id="nfc-test-result" class="state">Tag test requires a supported reader.</p>
+      <div class="row"><button id="nfc-test" disabled>Scan / test tag read</button></div>
+      <p id="nfc-test-result" class="state">Tag test requires NFC to be enabled.</p>
+    </div>
+    <div class="card" id="nfc-debug-card">
+      <h3>NFC debug window</h3>
+      <p class="hint">Read-only. Hold a public-transport card, bank card or any NFC tag against the phone's NFC area (the upper back of the phone), then press <b>Test</b>. Nothing is written and no tag data is stored: UID, technologies and the NDEF summary are shown here for this test only.</p>
+      <div class="row wrap">
+        <button id="nfc-test2" class="primary">Test</button>
+        <button id="nfc-debug-cancel">Stop</button>
+        <button id="nfc-debug-clear" class="ghost">Clear log</button>
+        <label class="inline">Duration
+          <select id="nfc-debug-duration">
+            <option value="10">10 s</option>
+            <option value="20" selected>20 s</option>
+            <option value="30">30 s</option>
+          </select>
+        </label>
+      </div>
+      <pre id="nfc-debug-out" class="state nfc-debug-out" role="log" aria-live="polite">NFC debug ready.</pre>
+      <dl id="nfc-debug-fields" class="nfc-debug-fields">
+        <dt>State</dt><dd id="nfc-dbg-state">—</dd>
+        <dt>Controller</dt><dd id="nfc-dbg-controller">—</dd>
+        <dt>Result</dt><dd id="nfc-dbg-result">—</dd>
+        <dt>UID</dt><dd id="nfc-dbg-uid">—</dd>
+        <dt>Technology</dt><dd id="nfc-dbg-tech">—</dd>
+        <dt>NDEF</dt><dd id="nfc-dbg-ndef">—</dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h3>Write an expendable NDEF tag</h3>
+      <p class="hint">This overwrites the presented Type 2 tag's NDEF message and then reads it back. The lock, OTP and CC pages are never written. Writes always need an explicit confirmation and are refused for read-only tags and non-Type-2 tags.</p>
+      <div class="row"><label for="nfc-write-kind">Record</label><select id="nfc-write-kind" disabled><option value="text">Text</option><option value="uri">URI</option></select></div>
+      <div class="row"><input id="nfc-write-value" type="text" maxlength="200" placeholder="Text or https:// URI" disabled aria-label="NDEF value"></div>
+      <div class="row"><label><input id="nfc-write-confirm" type="checkbox" disabled> I confirm this is an expendable writable tag</label></div>
+      <div class="row"><button id="nfc-write" disabled>Write and verify</button></div>
+      <p id="nfc-write-result" class="state">Scan a tag first.</p>
     </div>
   </section>
 
-  <!-- ── FINGERPRINT (PWNAGE-45000) ───────────────────────────────────── -->
+  <!-- ── FINGERPRINT (PWNAGE-45000 / A80) — enrollment lives in the Security
+       tab next to the PIN it depends on. ─────────────────────────────── -->
   <section id="tab-fingerprint" class="panel">
     <h2>Fingerprint</h2>
     <div class="card">
       <h3>Secure biometric provider</h3>
-      <p class="hint">The S10+ sensor is ultrasonic under-display. Enrollment is enabled only after a verified secure/TEE provider exists. Templates never leave the provider; PIN fallback is mandatory.</p>
-      <div class="row"><button id="fp-refresh">Refresh</button></div>
+      <p class="hint">The S10+ sensor is ultrasonic under-display. Enrollment is kept in the Nuxel Vault and requires its master password. Matching runs only inside the OEM trusted application; templates never leave it and a match is never simulated.</p>
+      <div class="row"><button id="fp-refresh">Refresh</button><button id="fp-security-tab">Enrollment &amp; PIN →</button></div>
       <pre id="fp-state" class="state" role="status">Checking fingerprint provider…</pre>
       <p id="fp-detail" class="hint">—</p>
-      <div class="row"><button id="fp-enroll" disabled>Enroll fingerprint</button><button id="fp-test" disabled>Test verification</button></div>
       <p id="fp-result" class="state">—</p>
     </div>
   </section>
@@ -571,20 +621,115 @@
   <!-- ── SECURITY LOCK (PWNAGE-45000) ─────────────────────────────────── -->
   <section id="tab-security" class="panel">
     <h2>Security</h2>
+
+    <div class="card" id="sec-preset-card">
+      <h3>Lock screen</h3>
+      <p class="hint">The penguin lockhead is always shown. One tap below sets the whole lock:
+        <b>Unlock directly</b> — swipe the lockhead up and the phone is unlocked (no code);
+        <b>PIN</b> — the PIN keypad;
+        <b>Pattern</b> — the pattern matrix in the middle of the screen with a PIN button;
+        <b>Fingerprint</b> — the scanner with a PIN button (enters the PIN screen when the scanner cannot match).
+        Swiping or tapping the lockhead always surfaces that unlock screen. A JavaScript overlay cannot unlock the session by itself; the root bridge verifies every code (scrypt, constant-time).</p>
+      <div class="row wrap" id="sec-presets">
+        <button type="button" id="sec-preset-unlock" class="primary">Unlock directly (swipe only)</button>
+        <button type="button" id="sec-preset-pin">PIN keypad (3838)</button>
+        <button type="button" id="sec-preset-pattern">Pattern + PIN fallback</button>
+        <button type="button" id="sec-preset-fingerprint">Fingerprint + PIN button</button>
+      </div>
+      <p id="sec-preset-result" class="state" role="status">—</p>
+    </div>
+
     <div class="card">
       <h3>Screen lock method</h3>
-      <p class="hint">The credential verifier is owned by the root bridge (scrypt, constant-time, persistent rate limit). A JavaScript overlay cannot unlock the session by itself.</p>
+      <p class="hint">Advanced: apply one mode without touching the stored credential. The current mode is applied immediately and the session locks.</p>
       <pre id="sec-state" class="state" role="status">Checking lock policy…</pre>
       <div class="row wrap" id="sec-modes"></div>
-      <div id="sec-credential-form">
-        <label>Current credential (required when changing) <input id="sec-current" type="password" autocomplete="off"></label>
-        <label>New PIN / pattern <input id="sec-secret" type="password" autocomplete="new-password" inputmode="numeric"></label>
-        <label>PIN fallback (fingerprint mode only) <input id="sec-fallback" type="password" autocomplete="new-password" inputmode="numeric"></label>
-        <label class="check"><input id="sec-downgrade" type="checkbox"> I understand selecting Swipe removes the current credential</label>
-        <div class="row"><button id="sec-apply" class="primary">Apply lock method</button></div>
+    </div>
+
+    <div class="card" id="sec-pin-card">
+      <h3>PIN code</h3>
+      <p class="hint">This PIN is the fallback for the fingerprint and, in PIN mode, the unlock code. Enter it twice; nothing is stored unless both entries match.</p>
+      <label>Current credential (if one is already set) <input id="sec-current" type="password" autocomplete="off" inputmode="numeric"></label>
+      <label>New PIN <input id="sec-pin" type="password" autocomplete="new-password" inputmode="numeric" placeholder="At least 4 digits"></label>
+      <label>Repeat new PIN <input id="sec-pin2" type="password" autocomplete="new-password" inputmode="numeric" placeholder="Repeat"></label>
+      <div class="row wrap">
+        <button id="sec-pin-set" class="primary">Set PIN</button>
+        <button id="sec-pin-mode">Use PIN to unlock</button>
       </div>
-      <p id="sec-result" class="state" role="status">—</p>
-      <p class="hint">Fingerprint mode is refused unless the secure provider is ready and a PIN fallback has been verified.</p>
+      <p id="sec-pin-result" class="state" role="status">—</p>
+    </div>
+
+    <div class="card" id="sec-pattern-card">
+      <h3>Pattern lock</h3>
+      <p class="hint">Pattern lock is not configured on this phone yet.</p>
+      <div class="row wrap">
+        <button type="button" id="sec-pattern-setup" class="primary">Set up pattern lock</button>
+      </div>
+      <p id="sec-pattern-status" class="state" role="status">No pattern is configured.</p>
+
+      <!-- NUXEL-105200: a guided two-draw wizard.  Nothing (no matrix, no PIN
+           field) is visible until the owner presses "Set up pattern lock"; the
+           pattern is only stored after it has been drawn twice identically and
+           the wizard itself is what activates the lock.  Layout adapts to the
+           phone's current orientation (landscape when the phone is sideways). -->
+      <div class="pattern-setup" id="sec-pattern-wizard" hidden>
+        <p class="hint" id="sec-pattern-step">Step 1 of 2 — draw your pattern (at least 4 dots).</p>
+        <div class="pattern-editor" id="sec-pattern-editor">
+          <svg id="sec-pattern-svg" viewBox="0 0 300 300" aria-hidden="true">
+            <polyline id="sec-pattern-trail-glow" points="" fill="none"></polyline>
+            <polyline id="sec-pattern-trail" points="" fill="none"></polyline>
+          </svg>
+          <div id="sec-pattern-dots" class="pattern-editor-dots"></div>
+        </div>
+        <div class="row wrap">
+          <button type="button" id="sec-pattern-clear">Redraw</button>
+          <button type="button" id="sec-pattern-set" class="primary" disabled>Continue</button>
+          <button type="button" id="sec-pattern-cancel">Cancel</button>
+        </div>
+        <div class="pattern-options" id="sec-pattern-options" hidden>
+          <label>PIN fallback <input id="sec-pattern-pin" type="password" autocomplete="new-password" inputmode="numeric" placeholder="the PIN to type when you forget the pattern"></label>
+          <p class="hint">Optional. The lock becomes <b>Pattern + PIN</b>: draw the pattern on the boot/lock screen, or tap the PIN button and type this PIN.</p>
+        </div>
+        <p id="sec-pattern-wizard-status" class="state" role="status">Draw the pattern you want to use.</p>
+      </div>
+    </div>
+
+    <div class="card" id="sec-attempts-card">
+      <h3>Failed attempts</h3>
+      <p class="hint">Unlimited allows any number of mistakes: the correct code is always accepted and the phone can never be locked out. Limited re-enables the growing delay after repeated failures.</p>
+      <div class="row wrap">
+        <button id="sec-policy-unlimited" class="primary">Unlimited (recommended for now)</button>
+        <button id="sec-policy-limited">Limited with delay</button>
+      </div>
+      <p id="sec-policy-result" class="state" role="status">—</p>
+    </div>
+
+    <div class="card" id="sec-fingerprint-card">
+      <h3>Fingerprint unlock</h3>
+      <p class="hint">The fingerprint record is stored securely in the Nuxel Vault, so the Vault must be set up and unlocked first. The scanner needs the OEM trusted application; when it is missing the scanner is shown as unavailable and the PIN fallback always works.</p>
+      <p class="hint" id="sec-fp-why">On this Galaxy S10+ image the QBT2000 ultrasonic sensor is bound to the Samsung TEE (TrustZone): the kernel exposes only diagnostic sysfs, no frame or match path, and the vendor HAL that talks to the secure matcher is not part of a Nuxel rootfs. Enrolling here would therefore record an enrollment that could never be matched — so setup stays disabled and the PIN remains the unlock method until a TEE/HAL provider exists.</p>
+      <pre id="sec-fp-state" class="state" role="status">Checking fingerprint…</pre>
+      <div class="ceremony" id="sec-fp-ceremony" hidden>
+        <div class="finger-oval" id="sec-fp-oval" role="button" tabindex="0" aria-label="Simulate scanner touch">
+          <img src="/assets/nuxel-fingerprint.png" alt="">
+          <span id="sec-fp-edge-label">Touch at an edge</span>
+        </div>
+        <div class="row wrap">
+          <button data-edge="left">Left edge</button>
+          <button data-edge="right">Right edge</button>
+          <button data-edge="top">Top edge</button>
+          <button data-edge="bottom">Bottom edge</button>
+        </div>
+        <p id="sec-fp-ceremony-status" class="state">0 / 2 touches</p>
+        <button id="sec-fp-commit" class="primary" disabled>Finish enrollment</button>
+      </div>
+      <div class="row wrap">
+        <button id="sec-fp-start" disabled>Set up fingerprint</button>
+        <button id="sec-fp-delete">Delete fingerprint</button>
+        <button id="sec-fp-unlock-enable">Enable fingerprint unlock</button>
+        <button id="sec-fp-vault">Open Vault</button>
+      </div>
+      <p id="sec-fp-result" class="state" role="status">—</p>
     </div>
   </section>
 
@@ -680,6 +825,56 @@
         A CP node or netdev is a transport, never proof of registration or data.</p>
       <div class="row"><button id="mobile-refresh" class="primary">Refresh driver status</button></div>
       <pre id="mobile-state" class="state" role="status" aria-live="polite">Checking mobile transport…</pre>
+    </div>
+  </section>
+
+  <!-- ── USB NETWORKING / TETHERING (PWNAGE-107000) ───────────────────── -->
+  <section id="tab-usbnet" class="panel">
+    <h2>USB network</h2>
+    <div class="card">
+      <h3>USB networking &amp; tethering</h3>
+      <p class="hint">USB networking gives the attached computer a local point-to-point
+        link (phone 10.15.19.1, host 10.15.19.2) for USB SSH and file transfer. It does
+        <strong>not</strong> share Internet. The CDC&#8209;ACM serial recovery console is kept
+        in every mode.</p>
+      <div class="row wrap">
+        <button id="usbnet-refresh" class="primary">Refresh status</button>
+        <button id="usbnet-usbnet">Enable USB networking</button>
+        <button id="usbnet-tether">Enable tether composition</button>
+        <button id="usbnet-off">Disable</button>
+      </div>
+      <pre id="usbnet-state" class="state" role="status" aria-live="polite">Checking USB networking…</pre>
+    </div>
+    <div class="card">
+      <h3>USB Internet tethering</h3>
+      <p class="hint">Grants the attached computer Internet access through one selected
+        upstream, using narrowly scoped forwarding + NAT. Off by default. Refused while a VPN
+        kill switch is armed unless the VPN interface itself is selected.</p>
+      <div class="row wrap">
+        <label>Upstream <select id="usbtether-upstream"><option value="">(first usable)</option></select></label>
+        <button id="usbtether-enable" class="primary">Share Internet with attached computer</button>
+        <button id="usbtether-start">Start sharing (USB already on)</button>
+        <button id="usbtether-verify">Verify Internet</button>
+        <button id="usbtether-stop">Stop sharing</button>
+      </div>
+      <p class="hint">“Share Internet with attached computer” enables the USB network
+        composition <em>and</em> starts the scoped forwarding/NAT in one explicit owner
+        action. The host must be configured 10.15.19.2/24 (gateway 10.15.19.1) and prove
+        Internet itself; the phone shows “verified” only after that evidence arrives.</p>
+      <pre id="usbtether-state" class="state" role="status" aria-live="polite">Reading tethering state…</pre>
+    </div>
+    <div class="card">
+      <h3>Wi-Fi hotspot</h3>
+      <p class="hint">Only available when the Wi&#8209;Fi driver actually supports AP mode.
+        Unsupported hardware is reported as UNSUPPORTED, never shown as ON.</p>
+      <div class="row wrap">
+        <label>SSID <input id="hotspot-ssid" type="text" maxlength="32" autocomplete="off"></label>
+        <label>Password <input id="hotspot-password" type="password" maxlength="63"
+          autocomplete="new-password"></label>
+        <button id="hotspot-start">Start hotspot</button>
+        <button id="hotspot-stop">Stop hotspot</button>
+      </div>
+      <pre id="hotspot-state" class="state" role="status" aria-live="polite">Reading Wi-Fi capabilities…</pre>
     </div>
   </section>
 
@@ -888,8 +1083,9 @@
 <script src="../../nuxel-common/statusbar-icons.js?v=p52000"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="settings.js?v=p52000"></script>
+<script src="edge-lighting-settings.js?v=p103000"></script>
 <script src="keyboard-settings.js?v=a76"></script>
-<script src="apps-permissions-settings.js?v=p86001"></script>
+<script src="apps-permissions-settings.js?v=pssp-force-1"></script>
 <script src="file-handlers-settings.js?v=p97000"></script>
 <script src="theme-settings.js?v=p50002"></script>
 <script src="sound-settings.js?v=p102000"></script>
@@ -904,5 +1100,6 @@
 <script src="graphics-diagnostics.js?v=p52000"></script>
 <script src="services-settings.js?v=p88000"></script>
 <script src="firewall-settings.js?v=2"></script>
+<script src="usb-network-settings.js?v=usbnet2601"></script>
 </body>
 </html>

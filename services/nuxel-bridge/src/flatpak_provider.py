@@ -17,8 +17,10 @@ Design rules:
 """
 from __future__ import annotations
 
+import grp
 import json
 import os
+import pwd
 import re
 import shutil
 import subprocess
@@ -83,13 +85,21 @@ RENDERER_POLICIES = {
         "mode": "software-fallback",
         "reason": "Gecko software path verified; GPU path unproven in sandbox",
     },
+    # Stremio's Linux shell is a Rust GTK4 + WebKitGTK app (its video surface
+    # is libmpv), NOT Electron.  It must not receive Chromium/Electron env or
+    # argv (it rejects them with "Unknown option").  It renders through the
+    # runtime's own Mesa; WEBKIT_DISABLE_DMABUF_RENDERER=1 keeps WebKit from
+    # asking for a DMA-BUF transport this kernel cannot provide.
     "com.stremio.Stremio": {
         "mode": "software-fallback",
-        "reason": "Electron; software path is the verified fallback",
+        "reason": "GTK4/WebKitGTK shell; runtime llvmpipe, DMABUF renderer disabled",
+        "env": ["WEBKIT_DISABLE_DMABUF_RENDERER=1"],
     },
+    # Signal Desktop is Qt (QtWebEngine-era Electron fork), not Chromium-branded
+    # Electron: it takes no Chromium argv switches.
     "org.signal.Signal": {
         "mode": "software-fallback",
-        "reason": "Electron; software path is the verified fallback",
+        "reason": "Qt app; software compositing path",
     },
     "com.sindresorhus.Caprine": {
         "mode": "software-fallback",
@@ -124,12 +134,19 @@ RENDERER_POLICIES = {
 # Electron/Chromium apps validated on the live S10+.  This list is a fast path
 # only; is_electron() also detects future Electron Flatpaks by their BaseApp
 # metadata so newly installed Electron apps inherit the same launch flags.
+# com.stremio.Stremio is a GTK4/WebKitGTK shell and org.signal.Signal is Qt;
+# both were mis-listed here and received Chromium argv, which their own option
+# parsers reject (Stremio: "Unknown option --ozone-platform=wayland" -> exit 1,
+# i.e. the app "did not start").  Detection stays metadata/known-list based so
+# genuinely Electron apps keep their verified flags.
 ELECTRON_KNOWN_IDS = {
     "app.legcord.Legcord", "dev.vencord.Vesktop",
-    "com.stremio.Stremio", "org.signal.Signal",
     "com.sindresorhus.Caprine", "org.ferdium.Ferdium",
     "com.github.IsmaelMartinez.teams_for_linux",
 }
+# Non-Electron apps whose Flathub metadata mentions Electron terms but must
+# never receive Chromium argv/env.
+ELECTRON_OVERRIDE_OFF = {"com.stremio.Stremio", "org.signal.Signal"}
 
 # QtWebEngine/PyQt apps hit the same Flatpak Chromium-sandbox limitation as
 # Electron: the portal host-spawn path cannot resolve the requesting PID on the
@@ -173,12 +190,140 @@ QT_WEBENGINE_ENV = (
 _ELECTRON_CACHE: Dict[str, bool] = {}
 _QTWEBENGINE_CACHE: Dict[str, bool] = {}
 
+# Per-app writable TMPDIR under the session runtime dir.  The session user
+# owns everything here; the bridge still runs as nuxel-bridge, so the
+# directory is created group-writable (group nuxel, the session user) and
+# never world-writable.  Failure is non-fatal: the app still launches with
+# whatever TMPDIR flatpak accepts.
+APP_RUNTIME_ROOT = "/run/user/1000/app"
+
+# Flatpak keeps its per-instance runtime state in $XDG_RUNTIME_DIR/.flatpak and
+# creates it itself.  If a helper has already created that directory as ROOT
+# (observed on this image: root:root 0755), Flatpak running as uid 1000 dies
+# with "Unable to lock .../.flatpak/<app>/.ref: Permission denied" before the
+# app can start -- which is exactly the "Stremio does not start any more"
+# failure.  The directory tree must belong to the session user.
+FLATPAK_INSTANCE_ROOT = os.path.join(USER_RUNTIME, ".flatpak")
+
+# Sandbox-side path of the PulseAudio socket.  Flatpak's own
+# --socket=pulseaudio runtime hook creates /run/flatpak/pulse (an EMPTY,
+# private directory) and exports PULSE_SERVER pointing there.  The launcher
+# therefore maps its relay/session directory onto that exact path; the
+# sandbox sees the real socket at the path the runtime already advertises.
+FLATPAK_PULSE_DEST = "/run/flatpak/pulse"
+
+
+def _session_ids():
+    return pwd.getpwnam("nuxel").pw_uid, grp.getgrnam("nuxel").gr_gid
+
+
+def _chown_tree(path: str, uid: int, gid: int, limit: int = 4096) -> int:
+    """Re-own a small runtime tree without following symlinks."""
+    changed = 0
+    try:
+        st = os.lstat(path)
+        if st.st_uid != uid or st.st_gid != gid:
+            os.chown(path, uid, gid, follow_symlinks=False)
+            changed += 1
+    except OSError:
+        return changed
+    if not os.path.isdir(path) or os.path.islink(path):
+        return changed
+    try:
+        names = os.listdir(path)
+    except OSError:
+        return changed
+    for name in names[:limit]:
+        changed += _chown_tree(os.path.join(path, name), uid, gid, limit)
+    return changed
+
+
+def _ensure_flatpak_runtime_dirs() -> bool:
+    """Make Flatpak's private runtime dirs writable by the session user."""
+    try:
+        uid, gid = _session_ids()
+    except KeyError:
+        return False
+    ok = True
+    for root in (FLATPAK_INSTANCE_ROOT, APP_RUNTIME_ROOT):
+        try:
+            os.makedirs(root, mode=0o700, exist_ok=True)
+            st = os.stat(root)
+            if st.st_uid != uid or st.st_gid != gid:
+                os.chown(root, uid, gid)
+            os.chmod(root, 0o700)
+            _chown_tree(root, uid, gid)
+        except OSError:
+            ok = False
+    return ok
+
+
+def _ensure_app_runtime_dir(app_id: str) -> bool:
+    """Create the per-app runtime/TMPDIR directory for the sandboxed app."""
+    path = os.path.join(APP_RUNTIME_ROOT, app_id)
+    try:
+        os.makedirs(APP_RUNTIME_ROOT, mode=0o700, exist_ok=True)
+        uid, gid = _session_ids()
+        os.makedirs(path, mode=0o700, exist_ok=True)
+        st = os.stat(path)
+        if st.st_uid != uid or st.st_gid != gid:
+            os.chown(path, uid, gid)
+        os.chmod(path, 0o700)
+        return True
+    except (OSError, KeyError):
+        return False
+
+def _pulse_host_dir() -> str:
+    """Return the host directory containing the Pulse socket for sandboxes.
+
+    Prefer the session's own socket (/run/nuxel-wayland/pulse: the real
+    PipeWire-Pulse server every native app uses).  If that is somehow absent,
+    fall back to the flatpak relay slot, which proxies the same server.
+    """
+    session = os.path.join(SESSION_RUNTIME, "pulse")
+    if os.path.exists(os.path.join(session, "native")):
+        return session
+    return "/run/user/0/pulse"
+
+
+def ensure_flatpak_runtime_dirs() -> bool:
+    """Public entry point: called at launch and by the boot/session path."""
+    ok = _ensure_flatpak_runtime_dirs()
+    # The relay's client.conf and the session socket must be reachable at the
+    # sandbox path; the relay writes client.conf into its own slot, so make
+    # sure one exists next to whatever we are mounting.
+    host = _pulse_host_dir()
+    conf = os.path.join(host, "client.conf")
+    if not os.path.exists(conf):
+        try:
+            with open(conf, "w") as fh:
+                fh.write("# Generated by nuxel-flatpak-pulse-relay\n"
+                         "default-server = unix:%s/native\n"
+                         "autospawn = no\n"
+                         "daemon-binary = /bin/true\n"
+                         "enable-shm = no\n" % FLATPAK_PULSE_DEST)
+            os.chmod(conf, 0o644)
+        except OSError:
+            pass
+    return ok
+
+
 def renderer_policy(app_id: str) -> Dict[str, Any]:
     """Return the explicit, evidence-backed renderer policy for one app."""
     policy = dict(DEFAULT_RENDERER_POLICY)
     policy.update(RENDERER_POLICIES.get(app_id, {}))
     policy["app_id"] = app_id
-    policy["env"] = list(RENDERER_ENV_SOFTWARE) if policy.get("mode") == "software-fallback" else []
+    if policy.get("mode") == "software-fallback":
+        env = list(RENDERER_ENV_SOFTWARE)
+        # A per-app entry may add or replace variables (e.g. WebKit's DMABUF
+        # renderer switch for the GTK4/WebKitGTK shell apps).
+        for item in (policy.get("env") or []):
+            key = str(item).split("=", 1)[0]
+            env = [e for e in env if not e.startswith(key + "=")]
+            env.append(str(item))
+        policy["env"] = env
+    else:
+        policy["env"] = list(policy.get("env") or [])
     return policy
 
 
@@ -998,6 +1143,8 @@ class FlatpakProvider:
         aid = _valid_app_id(app_id)
         if not aid:
             return False
+        if aid in ELECTRON_OVERRIDE_OFF:
+            return False
         if aid in ELECTRON_KNOWN_IDS:
             return True
         if aid in _ELECTRON_CACHE:
@@ -1058,7 +1205,43 @@ class FlatpakProvider:
         # wrapper already redirects TMPDIR, but QtWebEngine (ZapZap) uses /tmp
         # directly and dies with "Read-only file system" while creating its
         # shared-memory files.  Give every app a writable per-app runtime dir.
-        argv.append("--env=TMPDIR=/run/user/1000/app/%s" % aid)
+        # The directory must exist and be owned by the session user; flatpak
+        # does not create it, and an absent TMPDIR made Electron/QtWebEngine
+        # fall back to the read-only /tmp (slow or failed first paint).
+        ensure_flatpak_runtime_dirs()
+        _ensure_app_runtime_dir(aid)
+        argv.append("--env=TMPDIR=%s/%s" % (APP_RUNTIME_ROOT, aid))
+        # A Flatpak sandbox remaps XDG_RUNTIME_DIR to its private /run/user/0
+        # (host: /root/.cache/.flatpak/<app>/xdg-run), so the session's
+        # PulseAudio socket is unreachable there.
+        #
+        # The live relay (nuxel-flatpak-pulse-relay) listens on the host at
+        # /run/user/0/pulse/native and forwards the byte stream to the real
+        # session server.  Mount its directory into the sandbox.
+        #
+        # IMPORTANT (measured on the live S10+, 2026-11-15): a Flatpak with
+        # --socket=pulseaudio (every messenger here declares it) has its own
+        # runtime hook create an EMPTY, private /run/flatpak/pulse and export
+        # PULSE_SERVER=unix:/run/flatpak/pulse/native.  Any sandboxed app then
+        # talks to a socket that does not exist: WhatsApp/Ferdium recorded
+        # "sped-up robot" audio and Signal had no microphone at all, while the
+        # native Recorder (direct session server) was fine.
+        #
+        # Flatpak 1.16 does NOT understand "src:dst" in --filesystem; it logs
+        # "Unexpected filesystem suffix ... ignoring" and silently mounts
+        # NOTHING.  The host directory therefore has to be mapped onto the
+        # runtime's own path as a separate mount:
+        #   --filesystem=$PULSE_HOST        (rw bind of the relay/session dir)
+        #   --filesystem=$PULSE_DEST        (the empty runtime dir, overlaid)
+        #   --filesystem=$PULSE_DEST/native (the actual socket)
+        # so the socket is visible where the runtime already points.  Verified
+        # on-device: `parec` inside the sandbox then streams the S10+ mic.
+        pulse_host = _pulse_host_dir()
+        argv.append("--filesystem=%s" % pulse_host)
+        argv.append("--filesystem=%s" % FLATPAK_PULSE_DEST)
+        argv.append("--filesystem=%s/native" % FLATPAK_PULSE_DEST)
+        argv.append("--env=PULSE_SERVER=unix:%s/native" % FLATPAK_PULSE_DEST)
+        argv.append("--env=PULSE_CLIENTCONFIG=%s/client.conf" % FLATPAK_PULSE_DEST)
         argv.append("--env=GDK_BACKEND=wayland")
         argv.append("--env=QT_QPA_PLATFORM=wayland")
         # PWNAGE-88000: Flatpak GTK apps must honour the dark Nuxel theme

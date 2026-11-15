@@ -441,6 +441,25 @@ class Launcher {
         this._renderDock();
         this._renderAppGrid();
         if (window.NuxelWidgets) window.NuxelWidgets.renderPage(this.currentPage);
+        this._settleIcons();
+    }
+
+    /* PWNAGE-108000: a dock/grid rerender can re-insert an icon node whose
+     * fallback glyph is still present (the image is already decoded, so no
+     * further load event fires).  Sweep immediately and once more on the next
+     * frame + after idle, which clears the "second icon behind the real one"
+     * for both GTK and Flatpak applications without ever hiding a *pending*
+     * glyph that is still the only thing painted. */
+    _settleIcons() {
+        const sweep = () => {
+            if (window.NuxelTagIconWells) window.NuxelTagIconWells();
+            if (window.NuxelAttachIconFallbacks) window.NuxelAttachIconFallbacks();
+            else if (window.NuxelSweepIconFallbacks) window.NuxelSweepIconFallbacks();
+        };
+        sweep();
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(sweep);
+        setTimeout(sweep, 250);
+        setTimeout(sweep, 1200);
     }
 
     _renderDock() {
@@ -601,7 +620,9 @@ class Launcher {
             const icon = node.querySelector('.app-icon');
             if (icon) {
                 icon.className = 'app-icon app-category-' + (app.category || 'default');
-                icon.style.background = (app.color || '') + '33';
+                // v0.8.5 PERF: one custom property instead of two inline
+                // style writes per tile on every grid reconciliation.
+                icon.style.setProperty('--app-tint', (app.color || '#60a5fa') + '33');
                 icon.style.color = app.color || '';
                 // Only rebuild the icon subtree when the actual source/glyph
                 // changed.  Ordinary re-renders keep the decoded <img> node.
@@ -610,6 +631,7 @@ class Launcher {
                 if (icon.dataset.iconSignature !== iconSig) {
                     icon.innerHTML = this._appIcon(app, { priority: 'visible' });
                     icon.dataset.iconSignature = iconSig;
+                    if (window.NuxelTagIconWells) window.NuxelTagIconWells(icon.parentElement || node);
                 }
             }
         }
@@ -668,9 +690,10 @@ class Launcher {
         this._drawerSignature = signature;
         list.innerHTML = apps.map((app) =>
             '<div class="app-item drawer-app" data-app-id="' + app.id + '" data-drawer-entry="1" role="button" tabindex="0" aria-label="' + app.name + '">' +
-            '<div class="app-icon" style="background:' + app.color + '33">' + this._appIcon(app) + '</div>' +
+            '<div class="app-icon" style="--app-tint:' + (app.color || '#60a5fa') + '33">' + this._appIcon(app) + '</div>' +
             '<span class="app-label">' + app.name + '</span></div>'
         ).join('');
+        if (window.NuxelTagIconWells) window.NuxelTagIconWells(list);
         this._drawerLastRender = {
             ms: Math.round((((typeof performance !== 'undefined' ? performance.now() : Date.now()) - renderT0) * 10)) / 10,
             rebuilt: true, nodes: list.childElementCount,

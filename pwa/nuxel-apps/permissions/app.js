@@ -20,7 +20,7 @@
     'catalog_read': 'App catalog (read)', 'app_install': 'Install apps',
     'app_remove': 'Remove apps', 'clipboard': 'Clipboard', 'display': 'Display ownership',
     'audio': 'Audio playback', 'clock_status': 'Clock & alarms', 'phone_status': 'Phone status',
-    'sms_send_raw': 'Raw modem access'
+    'sms_send_raw': 'Raw modem access', 'nfc': 'NFC'
   };
 
   function bridge() {
@@ -41,13 +41,26 @@
     try { return (window.parent && window.parent.appRegistry) || window.appRegistry || null; }
     catch (e) { return null; }
   }
+  // Fall back to the canonical registry published by the web root when the
+  // launcher-injected appRegistry is absent (standalone/headless open).
+  var canonicalApps = [];
+  function loadCanonicalApps() {
+    return fetch('/pwa/nuxel-common/app-registry.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (doc) {
+        var list = doc && (Array.isArray(doc.apps) ? doc.apps : (doc.registry && doc.registry.apps));
+        canonicalApps = Array.isArray(list) ? list.filter(function (a) { return a && a.id; }) : [];
+        return canonicalApps;
+      })
+      .catch(function () { canonicalApps = []; return canonicalApps; });
+  }
   function getAllApps() {
     var reg = appRegistry();
     if (reg && typeof reg.getAllApps === 'function') {
       var apps = reg.getAllApps();
-      if (Array.isArray(apps)) return apps;
+      if (Array.isArray(apps) && apps.length) return apps;
     }
-    return [];
+    return canonicalApps;
   }
   function $ (id) { return document.getElementById(id); }
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
@@ -156,7 +169,17 @@
       }
 
       NUXEL_CONTROLS.forEach(function (p) { addRow(p[0], p[1], p[2]); });
+      // Microphone and NFC are reviewable for every app even when the manifest
+      // does not list them: apps commonly ask for them only at runtime (voice
+      // notes, tag readers), and the toggle must exist before that request.
+      ['microphone', 'nfc'].forEach(function (cap) {
+        if (caps.indexOf(cap) !== -1) return;
+        addRow(cap, CAP_LABELS[cap] || cap,
+          cap === 'microphone' ? 'Allow this app to record audio from the microphone.'
+                               : 'Allow this app to use NFC and read or write tags.');
+      });
       var shown = {}; NUXEL_CONTROLS.forEach(function (p) { shown[p[0]] = true; });
+      shown.microphone = true; shown.nfc = true;
       var others = caps.filter(function (c) { return !shown[c]; });
       if (others.length) {
         var h = document.createElement('div'); h.className = 'perm-group';
@@ -186,6 +209,7 @@
     else { $('state').textContent = 'No installed apps found.'; }
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', populate);
-  else populate();
+  function boot() { loadCanonicalApps().then(populate); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();

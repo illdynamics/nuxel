@@ -4,9 +4,9 @@
   "device": {
     "model": "Samsung Galaxy S10+ SM-G975F",
     "codename": "beyond2lte",
-    "controller": "Samsung sec-nfc (S3FWRN5-family) @ I2C 0x27 + embedded secure element",
+    "controller": "Samsung S3NRN82 (S3FWRN5-compatible NCI) @ I2C 0x27",
     "source": "beyond2lte DTS (docs/hardware-ids.md)",
-    "transport": "Samsung sec_nfc misc character device /dev/sec-nfc (raw I2C; NOT a generic NCI adapter)"
+    "transport": "kernel NCI /dev/nfc0 via s3fwrn5_i2c (hsi2c@108E0000 / i2c-7 / 7-0027); legacy /dev/sec-nfc is diagnostic-only"
   },
   "evidence_sources": {
     "i2c_devices": [

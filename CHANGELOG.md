@@ -2,6 +2,60 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.8.5-beta] - 2026-11-15 - *Live repair: Flatpak apps, messenger microphones, tethering, hotspot, idle CPU and UI polish*
+
+### Fixed
+
+- **Flatpak apps could not start.** `/run/user/1000/.flatpak` was owned by
+  `root:root`, so every sandboxed app died with `Unable to lock …/.ref:
+  Permission denied`. The session script and the Flatpak provider now own that
+  tree as the session user at boot and before each launch. Stremio/Signal also
+  gained single-instance guards (Stremio aborts with `EADDRINUSE :11470`).
+- **Messenger microphones (WhatsApp/Ferdium "sped-up robot", Signal silent).**
+  `--filesystem=src:dst` is invalid for Flatpak 1.16 and was ignored, while
+  `--socket=pulseaudio` created an empty `/run/flatpak/pulse` exported as
+  `PULSE_SERVER`. The launcher now maps the live session Pulse socket onto that
+  path (three explicit mounts); `parec` inside the sandbox recorded 393 KB from
+  the S10+ mic with the launcher's exact argv.
+- **Tethering/hotspot forwarding.** The app-firewall forward chain (priority
+  −100, policy drop) ran before the tether/hotspot tables and had no allows; the
+  drop log was first and shadowed accepts. It now accepts the tether/hotspot
+  interfaces/subnets and logs last. `ip_forward` is durable
+  (`/etc/sysctl.d/90-nuxel-tether.conf`), the tether provider sets loose
+  `rp_filter` and no longer restores a stale value on stop.
+- **Hotspot from the app.** `network_manager.hotspot_*` no longer calls the
+  impossible `nmcli device wifi hotspot` path; it drives the hostapd+dnsmasq
+  owner and persists the owner's SSID/password. Test AP `NuxNet` is live on
+  `wlan1` with NAT on `wlan0`.
+- **Idle CPU.** The Broadcom DeX PCIe link (`14E4:4475`) re-linked ~4×/s and
+  burned softirq on every core; a device remove+rescan ended it (softirq
+  2000 → 27 ticks/10 s). Stale debug nftables tables removed; system idle CPU
+  ~12 %.
+- **Double GTK/Flatpak icons.** The fallback glyph behind partially transparent
+  app icons could still paint (and the coloured tile backdrop added a second
+  shape). External icons are now origin-tagged and their glyph/backdrop are
+  structurally unpaintable.
+- **Blue rectangle after locking from the power menu.** Transient OSD /
+  power-menu cards are hidden on every lock transition and while the lock glass
+  is up.
+- **Drawer/settings smoothness.** Delegated icon load handling (no per-tile
+  inline handlers), CSS custom-property tints, deferred sweeps, no drop-shadow
+  filter on the live pattern stroke, visible-only settings polling.
+
+### Documentation
+
+- `final-summary.md` rewritten from the live device: mobile networking, NFC,
+  auto-rotate sensors, fingerprint and camera with exact evidence and remaining
+  work. Full report: `docs/v0.8.5-beta/REPORT.md`.
+- Version bumped to `v0.8.5-beta` across userland, manifests and packaging.
+
+### Tests
+
+- `tests/pwnage_v085/test_v085_live_fixes.py` (8 contracts).
+- `tests/pwnage_usbnet/test_usb_tether_provider.py` updated for shared
+  forwarding stop semantics.
+
+
 ## [v0.8.3-beta] - 2026-11-10 - *Fully black screen-off, per-device completion docs and release-CI repair*
 
 ### Fixed

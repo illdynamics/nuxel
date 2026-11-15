@@ -144,12 +144,20 @@ export class NuxelBridgeClient {
     }
 
     async _init() {
-        if (this._initPromise) return this._initPromise;
+        // Only a SUCCESSFUL init is cached.  A transient failure (bridge
+        // restarting, HTTP 409 during boot) previously stayed sticky for the
+        // whole page lifetime and silently forced every later call into mock
+        // mode.
+        if (this._initPromise && (this.connected || this.versionMismatch)) return this._initPromise;
         this._initPromise = (async () => {
             try {
                 await this._verifyVersionPin();
                 await this._resolveToken();
-                const ping = await this._request('/ping', { message: 'init' });
+                // /ping is a read-only status endpoint on the host (GET).  It
+                // was POSTed here, answered 404 and put every app that raced
+                // this init into mock mode — which then reported a healthy
+                // bridge as "location provider is unavailable".
+                const ping = await this._request('/ping');
                 if (ping && (ping.status === 'ok' || ping.success === true)) {
                     this.hostVersion = ping.version || null;
                     const hostProto = ping.bridge_version;
@@ -321,6 +329,42 @@ export class NuxelBridgeClient {
         return this._request('/apps/recent', null, 'GET');
     }
 
+    /** Read-only GET through the one shared client (token + version pin). */
+    async request(endpoint, data, method) {
+        return this._request(endpoint, data || null, method || 'GET');
+    }
+
+    async get(endpoint) {
+        await this._init();
+        if (this.versionMismatch) {
+            throw new NuxelBridgeVersionError(this.versionMismatch.expected, this.versionMismatch.got);
+        }
+        return this._request(endpoint, null, 'GET');
+    }
+
+    /**
+     * Wait (bounded) until the shared bridge has finished initialising.
+     * Boot-time `call()`s used to run before the module's own load-time
+     * `_init()` had verified the version pin, which made the host answer 409
+     * and turned a healthy bridge into a fake "provider unavailable".  Resolves
+     * true when the client is ready or has definitively failed, false on
+     * timeout.
+     */
+    async whenReady(timeoutMs) {
+        const deadline = Date.now() + (timeoutMs || 15000);
+        while (Date.now() < deadline) {
+            if (this.versionMismatch) return true;    // definitive refusal
+            if (this.connected) return true;          // ready
+            // No successful init yet (a boot race, a bridge restart, or the
+            // module's own load-time init): drive ONE initialisation and wait
+            // for its outcome instead of reporting the app unavailable.
+            try { await this._init(); } catch (e) { /* retried below */ }
+            if (this.versionMismatch || this.connected) return true;
+            await new Promise((r) => setTimeout(r, 250));
+        }
+        return this.connected || !!this.versionMismatch;
+    }
+
     /* ---- Generic RPC with mock fallback ---- */
 
     async call(namespace, verb, params) {
@@ -334,6 +378,9 @@ export class NuxelBridgeClient {
             // skewed app look healthy. Fail the call instead.
             throw new NuxelBridgeVersionError(this.versionMismatch.expected, this.versionMismatch.got);
         }
+        // A late initialisation (or a recovered boot race) must not leave the
+        // client flagged as mock: every successful call clears both flags.
+        this.mockMode = false;
         const payload = { app_id: this.appId, namespace, verb, params: params || {} };
         try {
             const res = await this._request('/rpc', payload, 'POST');
@@ -514,6 +561,12 @@ export class NuxelBridgeClient {
     _mockCall(namespace, verb, params) {
         const key = [namespace, verb].join('.');
         switch (key) {
+            case 'permissions.respond':
+            case 'permissions.pending':
+            case 'permissions.consent-status':
+                // Consent state lives ONLY on the phone.  Answering a prompt
+                // from a mock could look like a grant the owner never made.
+                return { success: false, offline: true, error: 'permission consent requires the phone bridge' };
             case 'storage.write':
                 MOCK_STORE[params.key || params.path] = params.data;
                 return { success: true, mock: true };

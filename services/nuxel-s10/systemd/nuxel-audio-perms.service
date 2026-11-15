@@ -1,0 +1,19 @@
+# NUXEL: keep the audio server's pulse socket reachable for the session user.
+#
+# The audio server runs as root in /run/nuxel-wayland and creates pulse/ 0700
+# root:root.  Every app that runs as uid nuxel (all Flatpaks, Signal, Firefox)
+# then fails with "Connection refused" / no visible microphone, while root can
+# record.  This unit re-asserts group access and the standard per-user link on
+# every boot and after any audio restart, so the fix cannot silently regress.
+[Unit]
+Description=Nuxel audio socket permissions for the session user
+After=nuxel-audio-session.service nuxel-soundd.service
+Wants=nuxel-audio-session.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-audio-perms.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

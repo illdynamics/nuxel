@@ -59,11 +59,113 @@
   function condLabel(c) { return codes[c] || 'Unknown'; }
   function glyph(c) { return glyphs[c] || '☁'; }
 
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // permD has ONE decision contract: `check` answers either a JSON decision
+  // ({capability:{decision:"allow"|"deny"}}) or a CLI envelope
+  // ({success:true, stdout:"allowed: <app> <cap> ..."}).  A CLI success is not
+  // an object with `granted`, and treating it as "not granted" used to send a
+  // perfectly allowed check down the request path.
+  function permAllowed(res) {
+    if (!res || typeof res !== 'object') return false;
+    if (res.granted === true) return true;
+    if (res.denied === true || res.granted === false) return false;
+    if (res.success === true && typeof res.stdout === 'string') {
+      return /^\s*allowed:/i.test(res.stdout);
+    }
+    return false;
+  }
+
+  function permDenied(res) {
+    if (!res || typeof res !== 'object') return false;
+    if (res.denied === true || res.granted === false) return true;
+    if (res.success === false) return true;
+    if (typeof res.stdout === 'string' && /^\s*denied:/i.test(res.stdout)) return true;
+    return false;
+  }
+
+  function bridgeApi() {
+    if (window.NuxelBridge && typeof window.NuxelBridge.call === 'function') return window.NuxelBridge;
+    try { if (window.parent && window.parent.NuxelBridge) return window.parent.NuxelBridge; } catch (e) {}
+    return null;
+  }
+
   function bridgeCall(ns, verb, params) {
-    if (window.NuxelBridge && typeof window.NuxelBridge.call === 'function') {
-      return window.NuxelBridge.call(ns, verb, params).catch(function (e) { return { success: false, error: e && e.message }; });
+    var b = bridgeApi();
+    if (b) {
+      return b.call(ns, verb, params).catch(function (e) { return { success: false, error: e && e.message }; });
     }
     return Promise.resolve({ success: false, offline: true });
+  }
+
+  // Run a bridge RPC only after the shared client has finished initialising.
+  // The client used to answer from mock mode ("provider unavailable") when an
+  // early call raced its own boot; this wrapper makes the ordering explicit and
+  // retries once if that race still happened.  A real refusal is not retried.
+  function bridgeCallReady(ns, verb, params) {
+    var b = bridgeApi();
+    var ready = (b && typeof b.whenReady === 'function')
+      ? Promise.resolve(b.whenReady(15000)) : Promise.resolve(true);
+    return ready.then(function () { return bridgeCall(ns, verb, params); })
+      .then(function (res) {
+        var raced = res && res.success === false && res.offline === true &&
+          /provider is unavailable/.test(String(res.error || ''));
+        if (!raced || !b) return res;
+        if (b.mockMode) b.mockMode = false;
+        return bridgeCall(ns, verb, params);
+      });
+  }
+
+  // Ask permD for this app's own location read grant.  The grant is per app and
+  // revocable in Settings > Permissions; a refusal is surfaced, never assumed.
+  function requestLocationAccess() {
+    var b = bridgeApi();
+    if (!b) return Promise.resolve({ granted: false, error: 'Nuxel bridge is not available in this view' });
+    // Wait (bounded) for the shared bridge module to finish INITIALISING.  Its
+    // `call()` reports "provider unavailable" until _init resolves, which is
+    // NOT a permission denial and must not be shown as one.
+    function ready(n) {
+      if (b && typeof b.whenReady === 'function') return b.whenReady(15000);
+      var settled = b && (b.connected || b.mockMode || b.versionMismatch);
+      var initing = !!(b && b._initPromise) && !settled;
+      if (!initing || n <= 0) return Promise.resolve();
+      return sleep(250).then(function () { return ready(n - 1); });
+    }
+    return ready(40).then(function () {
+      return bridgeCallReady('permissions', 'check', { capability: 'location:read' });
+    }).then(function (check) {
+      if (permAllowed(check)) return { granted: true };
+      if (permDenied(check)) {
+        return { granted: false, error: 'Location read is denied for Weather (enable it in Settings > Permissions)' };
+      }
+      if (!b.requestCapability) return { granted: false, error: 'This build cannot request permissions' };
+      return Promise.resolve(b.requestCapability('location:read', 'Show weather for my current location'))
+        .then(function (res) {
+          if (res === true || (res && res.granted === true)) return { granted: true };
+          return { granted: false, error: (res && (res.detail || res.error)) || 'Location read was not granted' };
+        }, function (e) {
+          return { granted: false, error: (e && e.message) || 'Location read request failed' };
+        });
+    }, function (e) {
+      return { granted: false, error: (e && e.message) || 'Location permission check failed' };
+    });
+  }
+
+  // Enabling the global location policy is a device-wide action; Weather only
+  // does it on an explicit owner tap and only when it holds location:manage.
+  function ensureLocationPolicy() {
+    return bridgeCallReady('location', 'get-status', {}).then(function (status) {
+      if (status && status.enabled) return { enabled: true };
+      return bridgeCall('permissions', 'check', { capability: 'location:manage' }).then(function (check) {
+        if (!permAllowed(check)) {
+          return { enabled: false, error: 'Location control is not granted for Weather (Settings > Permissions)' };
+        }
+        return bridgeCall('location', 'set-enabled', { enabled: true }).then(function (res) {
+          if (res && res.success === true && res.enabled !== false) return { enabled: true };
+          return { enabled: false, error: (res && (res.error || res.detail)) || 'Location policy did not confirm' };
+        });
+      });
+    });
   }
 
   function fetchJson(url, timeoutMs) {
@@ -119,6 +221,7 @@
       latitude: place.latitude,
       longitude: place.longitude,
       timezone: doc.timezone || place.timezone,
+      source: place.source || 'place',
       current: {
         temp_c: cur.temperature_2m,
         feels_c: cur.apparent_temperature,
@@ -217,27 +320,99 @@
     }
   }
 
-  async function useMyLocation() {
-    statusText(['Asking the Nuxel location provider for a fix…']);
-    var res = await bridgeCall('location', 'request', {});
+  function locationFix(res) {
     var lat = res && (res.latitude != null ? res.latitude : res.lat);
     var lon = res && (res.longitude != null ? res.longitude : res.lon);
-    if (res && res.success !== false && lat != null && lon != null) {
-      await loadPlace({ name: 'Current location', admin: '', latitude: lat, longitude: lon, timezone: res.timezone });
-    } else {
-      renderCache();
-      statusText(['No usable location fix is available.', (res && res.error) ? 'Provider said: ' + res.error : 'Search for a city instead.']);
-      toast('Location unavailable — search for a city');
+    if (res && res.success !== false && lat != null && lon != null) return { lat: lat, lon: lon };
+    return null;
+  }
+
+
+  // Poll the SAME acquisition GeoClue was asked to start.  Only a provider
+  // 'fixed' state is accepted; a slow first fix (cold Wi-Fi/GNSS) is waited for
+  // a bounded time and never replaced with an invented coordinate.
+  async function acquireFix(timeoutMs) {
+    var deadline = Date.now() + (timeoutMs || 45000);
+    var last = null;
+    while (Date.now() < deadline) {
+      last = await bridgeCallReady('location', 'acquire', {});
+      var fix = locationFix(last);
+      if (fix) return { fix: fix, res: last };
+      if (last && last.error_code === 'CAPABILITY_DENIED') return { denied: true, res: last };
+      if (last && (last.error_code === 'LOCATION_DISABLED' || last.enabled === false)) return { disabled: true, res: last };
+      statusText(['Waiting for a provider fix…',
+        (last && last.state) ? ('state: ' + last.state) : 'no provider answer yet']);
+      await sleep(1500);
+    }
+    return { fix: null, res: last };
+  }
+
+  async function useMyLocation() {
+    var btn = el.useLocation;
+    if (btn) btn.disabled = true;
+    try {
+      statusText(['Asking the Nuxel location provider for a fix…']);
+      var access = await requestLocationAccess();
+      if (!access.granted) {
+        renderCache();
+        statusText(['Location permission is required.', access.error]);
+        toast('Location unavailable — search for a city');
+        return;
+      }
+      var policy = await ensureLocationPolicy();
+      if (!policy.enabled) {
+        renderCache();
+        statusText(['Location is switched off.', policy.error || 'Turn on Location to use your current position.']);
+        toast('Location is off — search for a city');
+        return;
+      }
+      var got = await acquireFix(45000);
+      var res = got.res;
+      if (got.denied) {
+        var retry = await requestLocationAccess();
+        if (retry.granted) {
+          got = await acquireFix(45000);
+          res = got.res;
+        } else {
+          res = { error: retry.error || res.error };
+        }
+      }
+      if (got.disabled) {
+        renderCache();
+        statusText(['Location was switched off while waiting.', 'Turn Location on and try again.']);
+        toast('Location is off');
+        return;
+      }
+      var fix = got.fix;
+      if (fix) {
+        await loadPlace({ name: 'Current location', admin: '', latitude: fix.lat, longitude: fix.lon,
+                          timezone: res.timezone, source: 'provider' });
+        if (el.nowPlace) el.nowPlace.title = 'Provider fix: ' + (res.fix_source || 'provider') +
+          (res.accuracy != null ? ' ±' + Math.round(res.accuracy) + ' m' : '');
+      } else {
+        renderCache();
+        statusText(['No usable location fix is available.',
+          (res && res.error) ? 'Provider said: ' + res.error : 'Search for a city instead.',
+          'Weather never invents coordinates; a manual city search always works.']);
+        toast('Location unavailable — search for a city');
+      }
+    } finally {
+      if (btn) btn.disabled = false;
     }
   }
 
   el.search.addEventListener('click', function () { searchCity(el.city.value.trim()); });
   el.city.addEventListener('keydown', function (e) { if (e.key === 'Enter') searchCity(el.city.value.trim()); });
-  el.useLocation.addEventListener('click', useMyLocation);
+  if (el.useLocation) el.useLocation.addEventListener('click', useMyLocation);
   el.refresh.addEventListener('click', function () {
     var c = cacheGet();
-    if (c && c.latitude != null) loadPlace({ name: c.place.split(',')[0], admin: '', latitude: c.latitude, longitude: c.longitude });
-    else searchCity(el.city.value.trim() || 'Eindhoven');
+    if (c && c.latitude != null) {
+      // A "Current location" result re-asks the provider only when the owner
+      // has auto-location enabled; otherwise the exact cached coordinates are
+      // re-fetched (they are real provider/picked coordinates, not invented).
+      if (c.source === 'provider' && settings.autoLoc !== false) { useMyLocation(); return; }
+      loadPlace({ name: c.place.split(',')[0], admin: '', latitude: c.latitude, longitude: c.longitude });
+    } else searchCity(el.city.value.trim() || 'Eindhoven');
   });
   el.unit.addEventListener('change', function () {
     settings.unit = el.unit.value; saveSettings();

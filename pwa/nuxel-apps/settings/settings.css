@@ -175,6 +175,12 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
   border: 1px solid var(--border-subtle, rgba(59,130,246,.15)); border-radius: 8px;
   padding: 8px; font-size: 13px; max-width: 11em;
 }
+.app-orientation-force {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-size: 12px; color: var(--text-secondary, #b8c7e0); cursor: pointer;
+}
+.app-orientation-force input { accent-color: var(--text-accent, #60a5fa); }
+.app-orientation-force input:disabled + span { opacity: .45; }
 .apps-select-label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-secondary, #b8c7e0); margin: 8px 0; }
 .apps-select-label select {
   background: var(--bg-card, #122952); color: var(--text-primary, #fff);
@@ -245,3 +251,115 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .sound-output-controls { align-items: end; }
 .sound-output-controls input[type="range"] { width: min(56vw, 22rem); }
 #sound-output-state, #sound-output-routing, #sound-output-detail { white-space: pre-wrap; }
+
+/* ---- A80 security: pattern editor, fingerprint ceremony ------------------ */
+.pattern-editor {
+  position: relative;
+  width: min(78vw, 300px);
+  aspect-ratio: 1 / 1;
+  margin: 10px auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pattern-editor svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#sec-pattern-trail {
+  stroke: #7fd0ff;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* v0.8.5 PERF: a drop-shadow filter on the live pattern stroke forced
+     WebKit's software rasteriser to re-filter the whole editor on every
+     pointer move (the same measured problem as the lock-screen handle).
+     The glow is a static translucent under-stroke instead (see -glow). */
+  filter: none;
+}
+#sec-pattern-trail-glow {
+  stroke: rgba(80, 180, 255, .35);
+  stroke-width: 15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.pattern-editor-dots { position: absolute; inset: 0; }
+.pattern-dot {
+  position: absolute;
+  width: 74px; height: 74px;
+  margin: -37px 0 0 -37px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid rgba(120, 170, 210, .45);
+  background: rgba(10, 30, 50, .35);
+}
+.pattern-dot.active { border-color: #7fd0ff; box-shadow: 0 0 12px rgba(90, 185, 255, .75); }
+.pattern-dot img { width: 72%; height: 72%; object-fit: contain; pointer-events: none; }
+
+.ceremony { margin-top: 10px; }
+.finger-oval {
+  position: relative;
+  width: min(70vw, 280px);
+  height: 130px;
+  margin: 8px auto 12px;
+  border-radius: 50% / 42%;
+  border: 2px dashed rgba(120, 180, 230, .6);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+.finger-oval img { width: 100%; height: 100%; object-fit: contain; opacity: .55; }
+.finger-oval span {
+  position: absolute; bottom: 6px; left: 0; right: 0;
+  text-align: center; font-size: 12px; color: var(--muted, #9ab);
+}
+
+/* ---- A80 NFC debug window ------------------------------------------------ */
+.nfc-debug-out {
+  min-height: 132px;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(4, 18, 31, .72);
+  border: 1px solid rgba(120, 170, 210, .35);
+}
+.nfc-debug-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+.nfc-debug-fields dt { color: var(--muted, #8aa4bd); }
+.nfc-debug-fields dd { margin: 0; word-break: break-word; }
+label.inline { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---- NUXEL-105200: pattern-lock setup wizard ------------------------------ */
+.pattern-setup[hidden] { display: none; }
+.pattern-options[hidden] { display: none; }
+.pattern-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(92vw, 34rem);
+  margin: 6px auto 0;
+}
+.pattern-options label { display: flex; flex-direction: column; gap: 4px; }
+#sec-pattern-wizard-status { text-align: center; }
+#sec-pattern-status { white-space: pre-wrap; }
+
+/* The phone is often held sideways while setting this up.  Keep the 3x3 matrix
+   fully reachable in landscape (short height): cap it by the viewport height
+   and move the action row beside it instead of below it. */
+@media (orientation: landscape) {
+  .pattern-setup { display: grid; grid-template-columns: auto minmax(14rem, 1fr); gap: 12px; align-items: start; }
+  .pattern-setup > .hint, .pattern-setup > #sec-pattern-wizard-status, .pattern-setup > .pattern-options { grid-column: 1 / -1; }
+  .pattern-setup > .row { flex-direction: column; align-items: stretch; }
+  .pattern-editor { width: min(42vh, 260px); max-width: 100%; margin: 0 auto; }
+  .pattern-dot { width: clamp(38px, 13vh, 74px); height: clamp(38px, 13vh, 74px); margin-top: calc(clamp(38px, 13vh, 74px) / -2); margin-left: calc(clamp(38px, 13vh, 74px) / -2); }
+}

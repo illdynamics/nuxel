@@ -11,9 +11,11 @@ nuxel-live-ssh.py.  This module describes the *phone* side they connect to:
 
   serial  USB CDC-ACM gadget + the single-owner console lock
   wifi    a non-loopback IPv4 interface + an sshd listener + key-only policy
-  usb     kernel/configfs USB-network capability (blocked on 4.14.253 by the
-          measured NCM teardown panic; the report and pstore evidence are
-          retained in the repository)
+  usb     kernel/configfs USB-network capability + the RUNNING kernel's NCM
+          lifecycle-fix marker.  On a build without the marker the measured
+          teardown panic (docs/beta-finalization/live/evidence/
+          n26000-usb-ncm-panic/) still applies and NCM is never reported ready;
+          the marker, not the version string, is the safety verdict.
 
 Every root and command runner is injectable for the offline tests.  A missing
 fact is returned as unavailable/unknown; it is never guessed into "connected".
@@ -40,6 +42,12 @@ VERSION = "28000"
 #: torn down.  This is a hard blocker and must never be presented as "ready".
 KNOWN_BAD_USB_KERNELS = {"4.14.253"}
 USB_PANIC_EVIDENCE = "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/"
+#: Exposed by the NCM lifecycle fix (kernel patch 0011) on the mirrorlink misc
+#: device.  Presence proves the RUNNING build carries the fix.
+NCM_FIX_MARKER = "nuxel-ncm-lifecycle-fix-v2"
+NCM_FIX_PATH = "/sys/class/misc/usb_ncm/nuxel_fix"
+#: The single gadget owner's activation record (written by nuxel-usb-mode.sh).
+USB_MODE_STATE = "/run/nuxel/usb-mode.state"
 
 DEFAULT_USER = "nuxel"
 SSH_PORT = 22
@@ -418,6 +426,22 @@ def wifi_status(*, runner: Optional[Callable[..., subprocess.CompletedProcess]] 
                       detail=detail, command=command)
 
 
+def ncm_lifecycle_fix(path: Path | str = NCM_FIX_PATH) -> bool:
+    return _read(path) == NCM_FIX_MARKER
+
+
+def _usb_mode_activation(path: Path | str = USB_MODE_STATE) -> Dict[str, Any]:
+    import json
+    raw = _read(path)
+    if not raw:
+        return {}
+    try:
+        doc = json.loads(raw)
+    except ValueError:
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
 def _base_release(release: str) -> str:
     m = re.match(r"^(\d+\.\d+\.\d+)", release or "")
     return m.group(1) if m else (release or "")
@@ -427,7 +451,9 @@ def usb_status(*, release: str = "",
                gadget_root: Path | str = "/sys/kernel/config/usb_gadget",
                net_root: Path | str = "/sys/class/net",
                proc_root: Path | str = "/proc",
-               kernel_config: Optional[str] = None) -> Dict[str, Any]:
+               kernel_config: Optional[str] = None,
+               fix_path: str = NCM_FIX_PATH,
+               activation_path: str = USB_MODE_STATE) -> Dict[str, Any]:
     release = release or kernel_release(proc_root)
     base = _base_release(release)
     cfg = parse_kernel_config(kernel_config if kernel_config is not None
@@ -473,14 +499,33 @@ def usb_status(*, release: str = "",
     }
     acm = any(f.startswith("acm.") for f in functions)
     ssh_listening = _port_listening(SSH_PORT, proc_root)
+    fix = ncm_lifecycle_fix(fix_path)
+    activation = _usb_mode_activation(activation_path)
+    act_mode = activation.get("mode") or "charging"
+    act_active = bool(activation.get("active")) and act_mode in ("usb_network", "usb_tethering")
+    act_iface = activation.get("interface") or ""
+    if act_active and act_iface:
+        net_ifaces = sorted(set(net_ifaces) | {act_iface})
+    # Baseline-4.14.253 NCM is only usable on a build carrying the fix marker.
+    ncm_blocked = compiled["ncm"] and base in KNOWN_BAD_USB_KERNELS and not fix
+    if fix:
+        modes["ncm"]["safe_on_current_kernel"] = "FIX_MARKER_PRESENT"
+        modes["ncm"]["status"] = "NEEDS_PHYSICAL_SOAK"
     checks = [
-        {"name": "kernel", "status": "BLOCKED_NCM" if base in KNOWN_BAD_USB_KERNELS else "OK",
+        {"name": "kernel", "status": "FIXED_MARKER" if fix else (
+            "BLOCKED_NCM" if base in KNOWN_BAD_USB_KERNELS else "OK"),
          "detail": release or "unknown"},
         {"name": "configfs", "status": "OK" if compiled["configfs"] else "MISSING"},
         {"name": "net-function", "status": "OK" if any(compiled[k] for k in ("ncm", "rndis", "ecm")) else "MISSING",
          "detail": ", ".join(k for k in ("ncm", "rndis", "ecm") if compiled[k]) or "none compiled"},
-        {"name": "ncm-safety", "status": "BLOCKED" if base in KNOWN_BAD_USB_KERNELS else "UNVERIFIED",
-         "detail": "ncm_free_inst -> misc_deregister panic on 4.14.253" if base in KNOWN_BAD_USB_KERNELS else "not physically validated"},
+        {"name": "ncm-safety", "status": ("FIX_MARKER_PRESENT" if fix else
+                                          "BLOCKED" if base in KNOWN_BAD_USB_KERNELS else "UNVERIFIED"),
+         "detail": ("running kernel exposes %s (patch 0011); physical teardown soak still required" % NCM_FIX_MARKER
+                    if fix else
+                    "ncm_free_inst -> misc_deregister panic on 4.14.253" if base in KNOWN_BAD_USB_KERNELS
+                    else "not physically validated")},
+        {"name": "usb-mode-owner", "status": "OK" if activation else "UNKNOWN",
+         "detail": "mode=%s active=%s interface=%s" % (act_mode, act_active, act_iface or "-")},
         {"name": "rndis-safety", "status": "UNVERIFIED" if compiled["rndis"] else "MISSING",
          "detail": "compiled; source review and physical teardown test required"},
         {"name": "gadget-functions", "status": "OK" if any(f.startswith(("ncm.", "rndis.", "ecm.")) for f in functions) else "MISSING",
@@ -510,16 +555,17 @@ def usb_status(*, release: str = "",
         return _transport("BLOCKED_KERNEL", target="USB network", checks=checks,
                           detail="the kernel does not provide a usable USB network gadget",
                           **common)
-    if base in KNOWN_BAD_USB_KERNELS:
+    if ncm_blocked:
         return _transport(
             "NEEDS_VALIDATION", target="USB network", checks=checks,
-            detail=("NCM is BLOCKED_KNOWN_PANIC on %s (ncm_free_inst). RNDIS is compiled "
-                    "but UNVERIFIED; no USB network transport is offered until source "
-                    "review and physical validation. Evidence: %s" % (release, USB_PANIC_EVIDENCE)),
+            detail=("the running %s kernel does not expose the NCM lifecycle fix; on this "
+                    "baseline that is BLOCKED_KNOWN_PANIC (ncm_free_inst). RNDIS is compiled "
+                    "but UNVERIFIED; no USB network transport is offered until the patched "
+                    "build is running. Evidence: %s" % (release, USB_PANIC_EVIDENCE)),
             **common)
     if not net_ifaces:
         return _transport("SUPPORTED_NOT_ENABLED", target="USB network", checks=checks,
-                          detail="kernel support exists, but no usb0/ncm0/rndis0 interface is present",
+                          detail="kernel support exists, but no USB network interface is present",
                           **common)
     if not ssh_listening:
         return _transport("UNAVAILABLE", target="USB network", checks=checks,

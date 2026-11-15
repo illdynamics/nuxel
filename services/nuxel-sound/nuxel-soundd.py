@@ -81,6 +81,15 @@ ROUTE_STATE = Path(os.environ.get("NUXEL_AUDIO_ROUTE_STATE", "/run/nuxel-audio-r
 RUNTIME = Path(os.environ.get("NUXEL_RUNTIME", "/run/nuxel"))
 PW_RUNTIME = os.environ.get("NUXEL_PW_RUNTIME", "/run/nuxel-wayland")
 WARMUP = "/usr/lib/nuxel/nuxel-audio-warmup"
+# A88: the ABOX speaker route is applied asynchronously a few seconds AFTER a
+# cold boot starts this daemon.  When PipeWire opened the sink before that,
+# the sink is wedged in "error" (spa.alsa set_hw_params: Invalid argument) and
+# every later pw-cat stream dies with a broken pipe - measured on the
+# 2026-11-14 mid-session reboot: the boot cue was queued but never became
+# audible.  Re-asserting the route repairs it (verified live: after the route
+# applied, a fresh stream plays at 13.9 ms and ALSA reads RUNNING).
+ROUTE_APPLY = "/usr/lib/nuxel/nuxel-audio-route.sh"
+ROUTE_HEAL_MIN_INTERVAL = 30.0
 LOG = os.environ.get("NUXEL_SOUNDD_LOG", "/var/log/nuxel/soundd.log")
 RATE = 48000
 CHANNELS = 2
@@ -282,7 +291,11 @@ class SoundPlayer:
         self.last_error = None
         self.started_at = None
         self.restarts = 0
-        self._start_lock = threading.Lock()
+        # Re-entrant: _start_stream() -> _restart_stream() -> _start_stream().
+        self._start_lock = threading.RLock()
+        # True only between Popen() and the end of a start attempt.  A broken
+        # pipe seen in that window must NOT recurse into _restart_stream().
+        self._starting = False
         self._last_start_attempt = 0.0
         self._start_backoff = 0.0
         self._stream_ready_at = None
@@ -292,6 +305,11 @@ class SoundPlayer:
         self._last_cue_finished_at = None
         self._last_cue_action = None
         self._last_write_restart = 0.0
+        # Route-heal rate limiter.  Must exist before the first stream
+        # write: a broken pipe during the initial start used to hit
+        # _heal_route() with this attribute unset and kill the player
+        # thread with AttributeError.
+        self._last_route_heal = 0.0
         # The ABOX/CS35L41 route gate is a speaker-path requirement.  HDMI,
         # Bluetooth and USB outputs do not need the speaker DSP chain.
         self.require_speaker_route = True
@@ -300,6 +318,33 @@ class SoundPlayer:
 
     def start(self) -> None:
         self.thread.start()
+
+    def _thread_alive(self) -> bool:
+        t = getattr(self, "thread", None)
+        try:
+            return bool(t is not None and t.is_alive())
+        except RuntimeError:
+            return False
+
+    def revive(self) -> bool:
+        """Re-create the worker thread when it has exited (A88).
+
+        The player must never stay dead while the control socket keeps
+        accepting cues.  A route repair can only help a thread that is still
+        running; if the thread itself ended (an exception escaped the loop on
+        an early boot), start exactly one replacement.
+        """
+        if not self.running:
+            return False
+        with self._start_lock:
+            if self._thread_alive():
+                return True
+            self.last_error = None
+            self.thread = threading.Thread(target=self._loop,
+                                           name="nuxel-sound-player", daemon=True)
+            self.thread.start()
+            logging.warning("player thread was not alive; replacement thread started")
+            return True
 
     def play(self, cue: dict) -> bool:
         cue = dict(cue)
@@ -429,10 +474,28 @@ class SoundPlayer:
             logging.warning("warmup failed: %s", exc)
 
     def _start_stream(self) -> bool:
+        # A85: RLock.  _restart_stream() is only ever called while this method
+        # holds the lock (a broken pipe during startup), and it calls back into
+        # _start_stream().  With a plain Lock that second acquire parked the
+        # ONE player thread on itself forever: the socket still answered
+        # (pending_action set) while no cue ever became active.  Measured live
+        # 2026-11-14: the worker thread gone, pw-cat alive, every volume cue
+        # stuck pending.  A re-entrant lock makes the documented restart path
+        # work instead of self-deadlocking.
         with self._start_lock:
+            self._starting = True
+            try:
+                return self._start_stream_locked()
+            finally:
+                self._starting = False
+
+    def _start_stream_locked(self) -> bool:
+        with self._start_lock:
+            # NOTE: re-entered from _restart_stream(); every early return below
+            # is safe because _starting is cleared by the outer caller.
             if not self.running:
                 return False
-            if self.proc and self.proc.poll() is None:
+            if self.proc is not None and not self._proc_dead():
                 return True
             if not Path(PW_CAT).exists():
                 self.last_error = "pw-cat missing"
@@ -487,6 +550,15 @@ class SoundPlayer:
                 logging.error("pw-cat start failed (backoff %.1fs): %s", self._start_backoff, exc)
                 return False
 
+    def _proc_dead(self) -> bool:
+        """poll() without tripping over a not-yet-popen'd stream."""
+        if self.proc is None:
+            return True
+        try:
+            return self.proc.poll() is not None
+        except Exception:  # noqa: BLE001 - a broken Process object is dead
+            return True
+
     def _restart_stream(self) -> None:
         self.restarts += 1
         try:
@@ -501,12 +573,64 @@ class SoundPlayer:
         self.proc = None
         self._start_backoff = min(5.0, max(0.5, self._start_backoff * 2 or 0.5))
         self._last_start_attempt = time.monotonic()
+        self._last_route_heal = 0.0
         self._start_stream()
+
+    def _heal_route(self, reason: str) -> bool:
+        """Re-assert the ABOX speaker route after a wedged PipeWire sink.
+
+        Bounded and rate-limited: at most one repair per ROUTE_HEAL_MIN_INTERVAL
+        so a genuinely broken speaker cannot turn the player into a restart
+        storm.  Runs the same verified route script the dedicated service uses;
+        it never fabricates a successful route.
+        """
+        now = time.monotonic()
+        # Defensive: a player object restored by the live-update path or a
+        # partially constructed instance must never lose the thread to an
+        # AttributeError here (measured live: the first broken pipe after a
+        # cold boot hit this with _last_route_heal unset and the cue thread
+        # stopped permanently).
+        last = float(getattr(self, "_last_route_heal", 0.0) or 0.0)
+        if now - last < ROUTE_HEAL_MIN_INTERVAL:
+            return False
+        self._last_route_heal = now
+        if not (Path(ROUTE_APPLY).is_file() and os.access(ROUTE_APPLY, os.X_OK)):
+            return False
+        logging.warning("audio route repair (%s); re-applying ABOX speaker route", reason)
+        try:
+            proc = subprocess.run([ROUTE_APPLY], capture_output=True, timeout=50,
+                                  env=self._pw_env(), stdin=subprocess.DEVNULL)
+            ok = proc.returncode == 0
+            logging.info("audio route repair rc=%d %s", proc.returncode,
+                         (proc.stderr or b"")[-200:].decode("utf-8", "replace"))
+            return ok
+        except (OSError, subprocess.SubprocessError) as exc:
+            logging.warning("audio route repair failed: %s", exc)
+            return False
+
+    def ensure_stream(self) -> bool:
+        """Repair the playback stream, and the speaker route if it is wedged.
+
+        A88: called when a cue is accepted but the generation that ended in a
+        broken pipe left no live stream.  The route is re-asserted first (the
+        cold-boot race), then one fresh stream is started.  Returns whether a
+        live stream exists afterwards.
+        """
+        with self._start_lock:
+            if not self._thread_alive():
+                self.revive()
+            if self.proc is not None and not self._proc_dead():
+                return True
+            if self.last_error and ("pipe" in str(self.last_error).lower()
+                                    or self.restarts):
+                self._heal_route("accepted cue with dead stream")
+            self._start_backoff = 0.0
+            return self._start_stream()
 
     def _write(self, data: bytes) -> None:
         if not self.running:
             return
-        if not self.proc or self.proc.poll() is not None:
+        if self.proc is None or self.proc.poll() is not None:
             if not self._pw_socket_ready():
                 self.last_error = "pipewire socket not ready"
                 time.sleep(0.2)
@@ -534,7 +658,22 @@ class SoundPlayer:
         except (BrokenPipeError, OSError) as exc:
             self.last_error = str(exc)
             logging.warning("pw-cat stream write failed: %s", exc)
-            self._restart_stream()
+            # Never restart from inside the start window: the outer
+            # _start_stream() call is still finishing its own start attempt
+            # (and owns the backoff).  Outside it, restart once.
+            if not self._starting:
+                # A88: a broken pipe right after start is the signature of a
+                # PipeWire sink wedged by a too-early cold-boot open.  Repair
+                # the route first, then restart the stream once.
+                try:
+                    if self._heal_route("pw-cat broken pipe"):
+                        self._start_backoff = 0.0
+                except Exception:  # noqa: BLE001 - a repair must never kill the loop
+                    logging.exception("audio route repair crashed; restarting stream")
+                try:
+                    self._restart_stream()
+                except Exception:  # noqa: BLE001
+                    logging.exception("stream restart failed; retrying on next cue")
 
     def _loop(self) -> None:
         # Control-plane readiness is independent of this worker.  Wait for the
@@ -587,7 +726,15 @@ class SoundPlayer:
                         if self._cue_requested_at:
                             self._last_cue_latency_ms = round(
                                 (self._cue_first_audio_at - self._cue_requested_at) * 1000, 2)
-            self._write(chunk)
+            try:
+                self._write(chunk)
+            except Exception:  # noqa: BLE001 - the player must never die
+                # A85: an unexpected error here used to end the ONLY player
+                # thread; the control socket kept accepting cues that then
+                # never played.  Log, back off briefly, keep the thread.
+                logging.exception("sound player loop error; continuing")
+                self.last_error = "player loop error"
+                time.sleep(0.1)
             # No sleep here: _write blocks on the kernel pipe when pw-cat has a
             # full real-time cushion.  Sleeping as well would underrun.
 
@@ -1155,6 +1302,13 @@ class SoundManager:
             return {"success": False, "error": "decode failed", "detail": str(exc),
                     "path": str(source)}
         self._persist_durable_cue(token, action, str(source), bool(loop))
+        # A88: a cue accepted while the stream is dead (a cold-boot broken
+        # pipe) used to stay pending forever.  Repair route + stream first so
+        # the very next cue is audible; the manager still reports the real
+        # player state, never a fabricated success.
+        if not self.player.status().get("stream_alive"):
+            self.player.revive()
+            self.player.ensure_stream()
         accepted = self.player.play({"action": action, "path": str(source), "pcm": pcm,
                                      "loop": bool(loop), "token": token})
         return {"success": True, "queued": bool(accepted),
@@ -1273,6 +1427,16 @@ def sd_notify(message: str) -> None:
                 pass
 
 
+def _publish_socket_group(path: Path) -> None:
+    """Give the notification-cue requester group read/write on the socket."""
+    try:
+        import grp
+        gid = grp.getgrnam("nuxel-notifications").gr_gid
+        os.chown(path, -1, gid)
+    except (KeyError, OSError):
+        pass
+
+
 def main() -> int:
     global MANAGER
     started_monotonic = time.monotonic()
@@ -1313,6 +1477,12 @@ def main() -> int:
     SOCKET_PATH.parent.mkdir(parents=True, exist_ok=True)
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.bind(str(SOCKET_PATH))
+    # The notification hub runs as its own service account (nuxel-notifications)
+    # and connects here for the per-notification cue.  A root:root 0660 socket
+    # made every real notification log "cue unavailable: Permission denied",
+    # so publish it to the group that legitimately asks for cues.  Access stays
+    # group-only; it is never world-writable.
+    _publish_socket_group(SOCKET_PATH)
     os.chmod(SOCKET_PATH, 0o660)
     sock.listen(16)
     sock.settimeout(1.0)

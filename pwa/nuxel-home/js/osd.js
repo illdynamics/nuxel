@@ -63,6 +63,7 @@
     // One-argument form is the host toast contract (screenshot acknowledgement,
     // refusals): treat the single string as the message, not as a kind.
     if (text === undefined && holdMs === undefined) { text = kind; kind = 'toast'; }
+    if (locked()) { hideAll(); return; }
     var e = ensure();
     var label = kind === 'volume' ? 'Volume' : (kind === 'power' ? 'Power' : kind);
     e.innerHTML = '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;' +
@@ -81,6 +82,33 @@
     menuKey = '';
     interval = 1500;
   }
+
+  /* v0.8.5: lock-screen leftovers.  The DOM OSD is a fixed, top-centred card
+   * with a blue border (and a blue progress bar for volume/power).  When the
+   * owner locked the phone from the power menu, the card stayed on screen for
+   * its full hold time and then lingered over/behind the lockscreen as the
+   * "blue rectangle at the top centre".  Any lock transition now hides BOTH
+   * overlays immediately, and the OSD refuses to paint while locked. */
+  function hideAll() {
+    clearTimeout(hideTimer);
+    if (el) el.style.opacity = '0';
+    hideMenu();
+  }
+  function locked() {
+    try {
+      if (document.body && document.body.classList.contains('lockscreen-active')) return true;
+      var ls = document.getElementById('lockscreen');
+      if (ls && !ls.hidden && getComputedStyle(ls).display !== 'none') return true;
+      return !!(document.documentElement && document.documentElement.classList.contains('nuxel-boot-locked'));
+    } catch (e) { return false; }
+  }
+  try {
+    window.addEventListener('nuxel:lock', hideAll);
+    window.addEventListener('nuxel:session-locked', hideAll);
+    document.addEventListener('nuxel:lockscreen-shown', hideAll);
+    document.addEventListener('nuxel:lock', hideAll);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) hideAll(); });
+  } catch (e) { /* older engines */ }
 
   function ensureMenu() {
     if (menu && menu.isConnected) return menu;
@@ -195,10 +223,14 @@
         show(j.kind || 'osd', j.text || '', j.value || 0, j.max || 0);
       })
       .catch(function () { /* stay silent */ })
-      .then(schedule);
+      .then(function () {
+        // v0.8.5 PERF: the next poll is scheduled by the interval tick below.
+        // The old `.then(schedule)` re-armed a timeout after every response,
+        // so the cadence drifted to "last response + interval" and never idled.
+      });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule);
   else schedule();
-  global.NuxelOSD = { show: show, poll: poll, hideMenu: hideMenu };
+  global.NuxelOSD = { show: show, poll: poll, hideMenu: hideMenu, hideAll: hideAll };
 })(window);

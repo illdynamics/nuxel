@@ -99,6 +99,25 @@ p = run(["bash", TOOL, "--root", os.path.join(FIX, "camera-nofw"), "fw"], {"NUXE
 check("`fw` states BLOCKED_FIRMWARE when no expected blob exists",
       "BLOCKED_FIRMWARE" in p.stdout, p.stdout)
 
+# --- firmware gate: a tiny fixture must never flip readiness ---------------
+d = json_of(run(["bash", TOOL, "--root", os.path.join(FIX, "camera-placeholder"), "status", "--json"],
+                {"NUXEL_DIAG_NO_SYSTEM": "1"}).stdout)
+check("a 3-byte placeholder plus a sub-min_size blob never passes the firmware stage",
+      d["state"] == "BLOCKED_FIRMWARE" and d["first_failing_stage"] == "firmware", json.dumps(d))
+check("rejected short/placeholder blobs are reported, not silently ignored",
+      len(d["firmware_rejected"]) >= 1, json.dumps(d))
+check("the 3-byte fixture name is never a firmware candidate",
+      "s5k2l4_setfile.bin" not in json.load(open(POLICY))["firmware_blobs"]["candidates"])
+check("the firmware candidates match the names the pinned driver actually requests",
+      set(json.load(open(POLICY))["firmware_blobs"]["candidates"])
+      >= {"fimc_is_lib.bin", "fimc_is_rta.bin"},
+      "see vendor/mcd/fimc-is-sec-define.[ch]")
+d = json_of(run(["bash", TOOL, "--root", os.path.join(FIX, "camera-ready"), "status", "--json"],
+                {"NUXEL_DIAG_NO_SYSTEM": "1"}).stdout)
+check("ready fixture proves the size gate: both minimum-set blobs are accepted",
+      d["state"] == "READY_UNTESTED" and set(d["firmware_found"])
+      >= {"fimc_is_lib.bin", "fimc_is_rta.bin"}, json.dumps(d))
+
 d = json_of(run(["bash", TOOL, "--root", os.path.join(FIX, "camera-ready"), "status", "--json"],
                 {"NUXEL_DIAG_NO_SYSTEM": "1"}).stdout)
 check("ready device is READY_UNTESTED (never VERIFIED) with no frame claimed",
@@ -171,6 +190,17 @@ txt = open(TOOL).read()
 check("tool has no flashing/partition/bootloader surface",
       all(t not in txt for t in ("/dev/block", "heimdall", "fastboot", "mmcblk")))
 check("tool defaults to no frame claimed", '"frame_captured_verified":false' in txt.replace(" ", ""))
+check("capture drives the FIMC-IS client, not v4l2-ctl on an arbitrary node",
+      "nuxel-fimc-capture" in txt and "v4l2-ctl -d" not in txt
+      and "--list-formats-ext" not in txt)
+check("capture only probes exynos-fimc-is nodes (never /dev/video0 by default)",
+      "fimc-is" in txt and "fimc_nodes" in txt)
+capat = open(os.path.join(ROOT, "tools/s10plus/fimc-capture/nuxel-fimc-capture.c")).read()
+check("FIMC-IS client drives the multi-plane S_FMT path",
+      "V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE" in capat and "VIDIOC_S_FMT" in capat
+      and "VIDIOC_S_INPUT" in capat and "VIDIOC_DQBUF" in capat)
+check("FIMC-IS client never fabricates a frame",
+      "FRAMES_CAPTURED" in capat and "NO_FRAME_TIMEOUT" in capat and "fwrite" in capat)
 
 # --- manual-proof fragment --------------------------------------------------
 dtxt = open(DOC).read() if os.path.isfile(DOC) else ""

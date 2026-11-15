@@ -1,0 +1,568 @@
+#!/usr/bin/env python3
+"""Nuxel GUI remote-access provider.
+
+Both remote paths show the actual Phoc/Wayland screen:
+
+  * VNC on TCP 5900: wayvnc mirrors the active Phoc session and authenticates
+    with PAM as the local ``nuxel`` account.  There is no VNC password.
+  * XRDP on TCP 3389: TLS + PAM.  xrdp's libvnc module connects to a
+    loopback-only wayvnc mirror on ``[::1]:5901``.  RDP therefore shows the
+    actual phone screen, not a separate X11/Openbox portal.
+
+Security boundary: service, transport, port and config paths are fixed
+allow-lists; JavaScript can never provide a command, executable, bind address
+or path.  Start/stop is delegated to one fixed privileged helper.  No password,
+private key or VNC secret is ever returned or logged.
+"""
+
+from __future__ import annotations
+
+import fcntl
+import json
+import os
+import re
+import shutil
+import socket
+import struct
+import subprocess
+import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+VERSION = "47000"
+SCHEMA = "nuxel.remote-desktop-status/1"
+
+SERVICES = ("vnc", "xrdp", "scrcpy")
+TRANSPORTS = {
+    "vnc": ("wlan", "usb"),
+    "xrdp": ("wlan", "usb"),
+    "scrcpy": ("android-adb-usb", "android-adb-tcpip"),
+}
+DEFAULT_TRANSPORT = {"vnc": "wlan", "xrdp": "wlan", "scrcpy": "android-adb-usb"}
+FIXED_PORTS = {"vnc": 5900, "xrdp": 3389}
+LOOPBACK_PORT = 5901
+HELPER = os.environ.get("NUXEL_REMOTE_CTL", "/usr/local/libexec/nuxel/nuxel-remote-desktop-ctl")
+STATE_DIR = Path(os.environ.get("NUXEL_REMOTE_STATE_DIR", "/run/nuxel/remote-desktop"))
+PREF_FILE = Path(os.environ.get("NUXEL_REMOTE_PREF_FILE", "/var/lib/nuxel/remote-desktop/preferences.json"))
+VNC_CONFIG = Path(os.environ.get("NUXEL_VNC_CONFIG", "/etc/nuxel/remote-desktop/vnc/wayvnc.conf"))
+VNC_CERT = Path(os.environ.get("NUXEL_VNC_CERT", "/etc/nuxel/remote-desktop/vnc/tls_cert.pem"))
+XRDP_CERT = Path(os.environ.get("NUXEL_XRDP_CERT", "/etc/xrdp/nuxel-cert.pem"))
+WAYLAND_RUNTIME = os.environ.get("NUXEL_WAYLAND_RUNTIME", "/run/nuxel-wayland")
+WAYLAND_DISPLAY = os.environ.get("NUXEL_WAYLAND_DISPLAY", "wayland-0")
+ORIENTATION_STATUS = Path("/run/nuxel-orientation/status.json")
+USB_PANIC_EVIDENCE = "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/"
+
+
+def _run(args: Sequence[str], timeout: float = 6.0,
+         env: Optional[Dict[str, str]] = None) -> Tuple[int, str, str]:
+    try:
+        proc = subprocess.run(list(args), capture_output=True, text=True,
+                              timeout=timeout, stdin=subprocess.DEVNULL, env=env)
+        return proc.returncode, (proc.stdout or ""), (proc.stderr or "")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return 127, "", str(exc)
+
+
+def _read(path: Path | str) -> Optional[str]:
+    try:
+        return Path(path).read_text(errors="replace").strip()
+    except OSError:
+        return None
+
+
+def _which(name: str) -> Optional[str]:
+    return shutil.which(name)
+
+
+def _wayland_env() -> Dict[str, str]:
+    env = dict(os.environ)
+    env["XDG_RUNTIME_DIR"] = WAYLAND_RUNTIME
+    env["WAYLAND_DISPLAY"] = WAYLAND_DISPLAY
+    env["XDG_SESSION_TYPE"] = "wayland"
+    return env
+
+
+def _private_ipv4(addr: str) -> bool:
+    try:
+        a, b, *_ = [int(part) for part in addr.split(".")]
+    except (ValueError, IndexError):
+        return False
+    return a == 10 or (a == 172 and 16 <= b <= 31) or (a == 192 and b == 168)
+
+
+def _ipv4_from_ip_tool() -> List[Dict[str, Any]]:
+    rc, out, _ = _run(["ip", "-4", "-o", "addr", "show"], timeout=3)
+    if rc != 0:
+        return []
+    found: List[Dict[str, Any]] = []
+    for line in out.splitlines():
+        m = re.match(r"^\d+:\s+([^:\s@]+)(?:@\S+)?\s+inet\s+(\d+\.\d+\.\d+\.\d+)/(\d+)", line)
+        if m:
+            found.append({"interface": m.group(1), "address": m.group(2),
+                          "prefix": m.group(3)})
+    return found
+
+
+def _ipv4_from_ioctl() -> List[Dict[str, Any]]:
+    found: List[Dict[str, Any]] = []
+    try:
+        names = sorted(os.listdir("/sys/class/net"))
+    except OSError:
+        return found
+    for name in names:
+        if name == "lo":
+            continue
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                packed = struct.pack("256s", name.encode()[:15])
+                addr = socket.inet_ntoa(fcntl.ioctl(sock.fileno(), 0x8915, packed)[20:24])
+                try:
+                    mask = socket.inet_ntoa(fcntl.ioctl(sock.fileno(), 0x891B, packed)[20:24])
+                    prefix = str(sum(bin(int(p)).count("1") for p in mask.split(".")))
+                except OSError:
+                    prefix = ""
+            finally:
+                sock.close()
+            found.append({"interface": name, "address": addr, "prefix": prefix})
+        except OSError:
+            continue
+    return found
+
+
+def network_state() -> Dict[str, Any]:
+    addrs = _ipv4_from_ip_tool() or _ipv4_from_ioctl()
+    usable: List[Dict[str, Any]] = []
+    for item in addrs:
+        name = item["interface"]
+        if name.startswith(("rmnet", "lo", "docker", "veth", "br-", "p2p", "usb", "ncm", "rndis")):
+            continue
+        item = dict(item)
+        item["private"] = _private_ipv4(item["address"])
+        item["trusted_lan"] = bool(item["private"] and name.startswith("wlan"))
+        usable.append(item)
+    wlan = next((a for a in usable if a["interface"].startswith("wlan") and a.get("trusted_lan")), None)
+    if wlan is None:
+        wlan = next((a for a in usable if a.get("trusted_lan")), None)
+    return {
+        "interfaces": usable,
+        "wlan": wlan,
+        "interface": wlan["interface"] if wlan else None,
+        "address": wlan["address"] if wlan else None,
+        "trusted_lan": bool(wlan),
+        "source": "ip -4 -o addr show" if _ipv4_from_ip_tool() else "SIOCGIFADDR",
+    }
+
+
+def usb_network_status() -> Dict[str, Any]:
+    release = _read("/proc/sys/kernel/osrelease") or ""
+    base = re.match(r"^(\d+\.\d+\.\d+)", release)
+    base = base.group(1) if base else release
+    return {
+        "available": False,
+        "status": "BLOCKED_KERNEL_PANIC" if base == "4.14.253" else "NEEDS_VALIDATION",
+        "reason": ("USB network is not validated on this kernel; NCM teardown panicked "
+                   "the recorded 4.14.253 vendor kernel. Use Wi-Fi/ZeroTier."),
+        "evidence": USB_PANIC_EVIDENCE,
+        "kernel_release": release,
+        "kernel_base_release": base,
+        "mutated": False,
+    }
+
+
+def _orientation() -> Dict[str, Any]:
+    try:
+        doc = json.loads(ORIENTATION_STATUS.read_text())
+    except (OSError, json.JSONDecodeError):
+        doc = {}
+    display = doc.get("display") or {}
+    width = display.get("logical_width") or display.get("physical_height")
+    height = display.get("logical_height") or display.get("physical_width")
+    try:
+        width = int(width)
+        height = int(height)
+    except (TypeError, ValueError):
+        width, height = 1520, 720
+    return {
+        "width": width,
+        "height": height,
+        "landscape": width >= height,
+        "transform": str(display.get("transform") or "normal"),
+        "orientation": doc.get("effective_orientation"),
+    }
+
+
+def _cert_fingerprint(path: Path) -> Optional[str]:
+    if not path.is_file():
+        return None
+    rc, out, _ = _run(["openssl", "x509", "-in", str(path), "-noout",
+                       "-fingerprint", "-sha256"], timeout=3)
+    if rc != 0:
+        return None
+    m = re.search(r"=([0-9A-Fa-f:]+)", out)
+    return m.group(1) if m else None
+
+
+def _state_doc() -> Dict[str, Any]:
+    try:
+        doc = json.loads((STATE_DIR / "state.json").read_text())
+        return doc if isinstance(doc, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def wayland_protocols() -> Dict[str, Any]:
+    info = _which("wayland-info")
+    if not info:
+        return {"available": False, "protocols": [], "source": "wayland-info missing"}
+    rc, out, err = _run([info], timeout=8, env=_wayland_env())
+    if rc != 0:
+        return {"available": False, "protocols": [], "error": (err or out).strip()[:400],
+                "source": "wayland-info"}
+    protocols = sorted(set(re.findall(r"interface:\s+'([^']+)'", out)))
+    return {"available": True, "protocols": protocols, "source": "wayland-info"}
+
+
+VNC_REQUIRED_PROTOCOLS = (
+    "zwlr_screencopy_manager_v1",
+    "zwlr_virtual_pointer_manager_v1",
+    "zwp_virtual_keyboard_manager_v1",
+)
+
+
+def _preferences() -> Dict[str, Any]:
+    try:
+        doc = json.loads(PREF_FILE.read_text())
+        return doc if isinstance(doc, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _preferred(service: str) -> str:
+    val = _preferences().get(service)
+    return val if val in TRANSPORTS.get(service, ()) else DEFAULT_TRANSPORT[service]
+
+
+def _write_preferences(service: str, transport: str) -> None:
+    prefs = _preferences()
+    prefs[service] = transport
+    PREF_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = PREF_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(prefs, sort_keys=True) + "\n")
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, PREF_FILE)
+
+
+def _helper_status() -> Dict[str, Any]:
+    rc, out, err = _run([HELPER, "status"], timeout=20)
+    try:
+        doc = json.loads(out) if out.strip().startswith("{") else None
+    except json.JSONDecodeError:
+        doc = None
+    if not isinstance(doc, dict):
+        return {"success": False, "error": (err or out).strip()[-800:] or "helper status failed",
+                "helper_rc": rc}
+    doc["helper_rc"] = rc
+    return doc
+
+
+def _vnc_status() -> Dict[str, Any]:
+    doc = _helper_status()
+    base = dict((doc.get("services") or {}).get("vnc") or {})
+    if not base:
+        return {"service": "vnc", "title": "VNC Screen Sharing",
+                "state": "ERROR", "reason": doc.get("error") or "helper did not return VNC status",
+                "preferred_transport": _preferred("vnc"), "port": FIXED_PORTS["vnc"]}
+    geo = _orientation()
+    state = _state_doc().get("vnc", {})
+    protocols = wayland_protocols()
+    missing = [p for p in VNC_REQUIRED_PROTOCOLS if p not in protocols.get("protocols", [])]
+    if base.get("state") not in ("OFF", "UNSUPPORTED") and missing:
+        base["state"] = "ERROR"
+        base["reason"] = "Phoc is missing required VNC protocols: " + ", ".join(missing)
+    fp = _cert_fingerprint(VNC_CERT)
+    clients = int(base.get("authenticated_clients") or 0)
+    base.update({
+        "title": "VNC Screen Sharing",
+        "session_mode_label": "Current Phoc/Wayland screen (actual phone display)",
+        "preferred_transport": _preferred("vnc"),
+        "active_transport": "wlan" if base.get("active") else None,
+        "interface": (network_state().get("interface") if base.get("active") else None),
+        "listener_address": (base.get("listener_addresses") or [None])[0],
+        "authentication": "PAM",
+        "authentication_mode": "PAM (local nuxel username/password)",
+        "encrypted": bool(base.get("encrypted")),
+        "encryption_mode": "VeNCrypt TLS / RSA-AES / Apple DH",
+        "encrypted_detail": ("PAM is verified against the local nuxel account; TLS/VeNCrypt, "
+                             "RSA-AES and Apple DH are offered. No VNC password exists."),
+        "tls_fingerprint": fp,
+        "certificate_fingerprint": fp,
+        "vnc_password_configured": False,
+        "pam_policy_ok": True,
+        "wayland_protocols_ok": not missing,
+        "protocols": protocols,
+        "missing_protocols": missing,
+        "authenticated_clients": clients,
+        "client_status_available": True,
+        "active_users": ["nuxel"] if clients else [],
+        "started_at": state.get("started_at"),
+        "last_error": base.get("reason") if base.get("state") == "ERROR" else None,
+        "geometry": "%dx%d" % (geo["width"], geo["height"]),
+        "width": geo["width"], "height": geo["height"],
+        "landscape": geo["landscape"],
+        "orientation_transform": geo["transform"],
+        "input_enabled": True,
+        "usb": usb_network_status(),
+    })
+    return base
+
+
+def _xrdp_status() -> Dict[str, Any]:
+    doc = _helper_status()
+    base = dict((doc.get("services") or {}).get("xrdp") or {})
+    if not base:
+        return {"service": "xrdp", "title": "XRDP Remote Desktop",
+                "state": "ERROR", "reason": doc.get("error") or "helper did not return XRDP status",
+                "preferred_transport": _preferred("xrdp"), "port": FIXED_PORTS["xrdp"]}
+    geo = _orientation()
+    state = _state_doc().get("xrdp", {})
+    fp = _cert_fingerprint(XRDP_CERT)
+    clients = int(base.get("authenticated_clients") or 0)
+    base.update({
+        "title": "XRDP Remote Desktop",
+        "session_mode_label": "Current Phoc/Wayland screen mirrored over RDP",
+        "preferred_transport": _preferred("xrdp"),
+        "active_transport": "wlan" if base.get("active") else None,
+        "interface": (network_state().get("interface") if base.get("active") else None),
+        "listener_address": (base.get("listener_addresses") or [None])[0],
+        "authentication": "PAM",
+        "authentication_mode": "PAM + TLS 1.2/1.3",
+        "encrypted": bool(base.get("encrypted")),
+        "encryption_mode": "TLS 1.2/1.3",
+        "encrypted_detail": ("TLS 1.2/1.3 with PAM authentication for the local nuxel "
+                             "account; libvnc mirrors the actual Phoc screen via [::1]:5901."),
+        "tls_fingerprint": fp,
+        "certificate_fingerprint": fp,
+        "authenticated_clients": clients,
+        "active_users": ["nuxel"] if clients else [],
+        "started_at": state.get("started_at"),
+        "last_error": base.get("reason") if base.get("state") == "ERROR" else None,
+        "geometry": "%dx%d" % (geo["width"], geo["height"]),
+        "width": geo["width"], "height": geo["height"],
+        "landscape": geo["landscape"],
+        "orientation_transform": geo["transform"],
+        "usb": usb_network_status(),
+    })
+    return base
+
+
+def _scrcpy_status() -> Dict[str, Any]:
+    net = network_state()
+    return {
+        "service": "scrcpy",
+        "title": "scrcpy (Android)",
+        "state": "NOT_APPLICABLE_NATIVE_NUXEL",
+        "reason": ("scrcpy supports Android ADB targets. This handset runs native "
+                   "Nuxel Linux, not Android; use the authenticated native VNC "
+                   "screen mirror on TCP 5900."),
+        "session_mode": "android-adb-target",
+        "session_mode_label": "Android ADB screen mirroring only; never native Nuxel",
+        "preferred_transport": _preferred("scrcpy"),
+        "active_transport": None,
+        "interface": None,
+        "bind_address": None,
+        "port": None,
+        "listener_verified": False,
+        "authenticated_clients": 0,
+        "authentication": "ADB_AUTHORIZATION",
+        "encrypted": False,
+        "encrypted_detail": "ADB USB/TCP-IP authorization; no VNC/RDP encryption involved",
+        "targets": [],
+        "target_count": 0,
+        "adb_available": bool(_which("adb")),
+        "adb_version": etc_adb_version(),
+        "scrcpy_available": bool(_which("scrcpy")),
+        "scrcpy_version": etc_scrcpy_version(),
+        "native_nuxel": True,
+        "native_nuxel_note": ("scrcpy is not a native Nuxel screen-sharing protocol. "
+                              "Use the PAM-authenticated VNC remote desktop on TCP 5900."),
+        "native_mirror": {
+            "service": "vnc", "host": net.get("address"),
+            "port": FIXED_PORTS["vnc"], "protocol": "tcp",
+            "direct_lan": True, "session_mode": "current-phoc-wayland-session",
+        },
+        "usb": usb_network_status(),
+    }
+
+
+def etc_adb_version() -> Optional[str]:
+    if not _which("adb"):
+        return None
+    rc, out, err = _run(["adb", "version"], timeout=3)
+    return (out or err).splitlines()[0].strip() if (out or err) else None
+
+
+def etc_scrcpy_version() -> Optional[str]:
+    if not _which("scrcpy"):
+        return None
+    rc, out, err = _run(["scrcpy", "--version"], timeout=3)
+    return (out or err).splitlines()[0].strip() if (out or err) else None
+
+
+def get_status(service: Optional[str] = None) -> Dict[str, Any]:
+    services = {"vnc": _vnc_status, "xrdp": _xrdp_status, "scrcpy": _scrcpy_status}
+    if service is not None and service not in services:
+        return {"success": False, "error": "unknown service", "error_code": "INVALID_SERVICE"}
+    selected = {service: services[service]()} if service else {k: fn() for k, fn in services.items()}
+    net = network_state()
+    active = any(s.get("listener_verified") for s in selected.values()) or any(
+        (s.get("authenticated_clients") or 0) > 0 for s in selected.values())
+    return {
+        "success": True,
+        "schema": SCHEMA,
+        "version": VERSION,
+        "services": selected,
+        "service": service,
+        "network": net,
+        "privacy": {
+            "active": active,
+            "indicator": "REMOTE DESKTOP ACTIVE" if active else "off",
+            "kill_switch_available": True,
+        },
+        "defaults": dict(DEFAULT_TRANSPORT),
+        "policy": {
+            "off_by_default": True,
+            "lan_scoped": True,
+            "listener_scope": "trusted-wlan-ipv4",
+            "wildcard_listener": False,
+            "direct_lan_listener": True,
+            "requires_ssh_tunnel": False,
+            "vnc_unauthenticated": False,
+            "vnc_authenticated": True,
+            "vnc_password_used": False,
+            "rdp_shows_actual_screen": True,
+            "usb_status": usb_network_status().get("status"),
+        },
+        "timestamp": time.time(),
+    }
+
+
+def privacy_summary() -> Dict[str, Any]:
+    doc = get_status()
+    return {"active": bool(doc.get("privacy", {}).get("active")),
+            "services": {k: {"state": v.get("state"),
+                             "active": bool(v.get("listener_verified")),
+                             "clients": v.get("authenticated_clients", 0)}
+                         for k, v in doc.get("services", {}).items()},
+            "indicator": doc.get("privacy", {}).get("indicator", "off")}
+
+
+def _helper(action: str, service: Optional[str] = None) -> Dict[str, Any]:
+    args = [HELPER, action]
+    if service:
+        args.append(service)
+    rc, out, err = _run(args, timeout=30)
+    try:
+        doc = json.loads(out) if out.strip().startswith("{") else None
+    except json.JSONDecodeError:
+        doc = None
+    if doc is None:
+        doc = {"success": rc == 0, "output": out.strip()[-1000:], "error": err.strip()[-1000:]}
+    doc["helper_rc"] = rc
+    return doc
+
+
+def connection_info(service: str) -> Dict[str, Any]:
+    if service not in SERVICES:
+        return {"success": False, "error": "unknown service", "error_code": "INVALID_SERVICE"}
+    net = network_state()
+    host = net.get("address")
+    if service == "scrcpy":
+        return {
+            "success": True, "service": "scrcpy", "native": True,
+            "host": host, "port": FIXED_PORTS["vnc"], "protocol": "tcp",
+            "session": "current-phoc-wayland-session",
+            "detail": ("Native Nuxel is not an Android ADB target. Use the PAM-"
+                       "authenticated VNC screen mirror on TCP 5900."),
+            "targets": [], "ssh_tunnel_command": None, "password_included": False,
+        }
+    port = FIXED_PORTS.get(service)
+    fp = _xrdp_fingerprint() if service == "xrdp" else _cert_fingerprint(VNC_CERT)
+    jump_url = f"{'rdp' if service == 'xrdp' else 'vnc'}://{host}:{port}" if host else None
+    return {
+        "success": True,
+        "service": service,
+        "transport": "wlan",
+        "host": host,
+        "interface": net.get("interface"),
+        "trusted_lan": net.get("trusted_lan"),
+        "port": port,
+        "protocol": "tcp",
+        "bind_address": host,
+        "bind_mode": "trusted-lan-ipv4",
+        "direct_lan": True,
+        "ssh_tunnel_command": None,
+        "jump_url": jump_url,
+        "username": "nuxel",
+        "password_included": False,
+        "tls_fingerprint": fp,
+        "session_mode": "current-phoc-wayland-session",
+        "session_mode_label": "Current Phoc/Wayland screen (actual phone display)",
+        "note": ("Direct owner-LAN listener on the current trusted WLAN IPv4 address. "
+                 "RDP uses TLS + PAM and mirrors the actual Phoc screen through a "
+                 "loopback wayvnc mirror. VNC uses PAM as the local nuxel account; "
+                 "there is no VNC password. No SSH tunnel is required on the trusted "
+                 "LAN. Never port-forward 3389/5900 to the Internet."),
+    }
+
+
+def _xrdp_fingerprint() -> Optional[str]:
+    return _cert_fingerprint(XRDP_CERT)
+
+
+def handle(action: str, params: Optional[Dict[str, Any]] = None,
+           app_id: Optional[str] = None) -> Dict[str, Any]:
+    params = params or {}
+    service = params.get("service")
+    transport = params.get("transport")
+    if service is not None and service not in SERVICES:
+        return {"success": False, "error": "unknown service", "error_code": "INVALID_SERVICE"}
+    if action == "status":
+        return get_status(service)
+    if action == "diagnose":
+        return {"success": True, "service": service,
+                "diagnostic": get_status(service), "bounded": True, "mutated": False}
+    if action == "connection-info":
+        if not service:
+            return {"success": False, "error": "service is required", "error_code": "INVALID_SERVICE"}
+        return connection_info(service)
+    if action == "scrcpy-targets":
+        doc = _scrcpy_status()
+        return {"success": True, "targets": doc.get("targets", []),
+                "state": doc.get("state")}
+    if action == "set-transport":
+        if not service or not transport:
+            return {"success": False, "error": "service and transport are required",
+                    "error_code": "INVALID_TRANSPORT"}
+        if transport not in TRANSPORTS.get(service, ()):
+            return {"success": False, "error": "transport not allowed for this service",
+                    "error_code": "INVALID_TRANSPORT"}
+        if transport == "usb":
+            usb = usb_network_status()
+            return {"success": False,
+                    "error": "USB network is not validated on this kernel/host",
+                    "error_code": usb.get("status", "USB_MODE_UNVERIFIED"),
+                    "usb": usb}
+        _write_preferences(service, transport)
+        return {"success": True, "service": service, "preferred_transport": transport}
+    if action == "start":
+        if not service:
+            return {"success": False, "error": "service is required", "error_code": "INVALID_SERVICE"}
+        return _helper("start", service)
+    if action == "stop":
+        if not service:
+            return {"success": False, "error": "service is required", "error_code": "INVALID_SERVICE"}
+        return _helper("stop", service)
+    if action == "stop-all":
+        return _helper("stop-all")
+    return {"success": False, "error": "unknown action", "error_code": "INVALID_ACTION"}

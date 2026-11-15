@@ -1,3 +1,16 @@
 # Keep the Samsung raw transport root-only.  The daemon runs as root and is
 # the sole owner; no TAG+="uaccess" and no 0666.
-KERNEL=="sec-nfc", MODE="0600", OWNER="root", GROUP="root"
+# 0660 root:nuxel (NOT 0600): the controller service runs as the session user
+# so it can read the shared grant store under its sandbox; the socket it
+# serves stays root-only to callers and every request is grant-checked.
+KERNEL=="sec-nfc", MODE="0660", OWNER="root", GROUP="nuxel"
+
+# Kernel NCI production device (s3fwrn5_i2c -> /dev/nfc0).  The daemon is the
+# sole owner; app access is through /run/nuxel/nfc/nfc.sock only.
+KERNEL=="nfc0", MODE="0660", OWNER="root", GROUP="nuxel"
+
+# Kernel NCI production device appears (or re-appears) => make sure the
+# controller service is running against the CURRENT node.  Before this rule the
+# daemon started at boot could race the s3fwrn5_i2c probe and stay in error for
+# the rest of the session even after /dev/nfc0 existed.
+ACTION=="add", KERNEL=="nfc0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="nuxel-nfcd.service"

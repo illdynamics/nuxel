@@ -136,7 +136,8 @@ CONFIG_DEFAULTS: dict[str, Any] = {
     "early_map_delay_ms": DEFAULT_EARLY_MAP_DELAY_MS,
     "require_boot_os": True,
     "early": False,
-    "audio": "never",
+    "audio": "mp4",
+    "audio_output": "pipewire,pulse,alsa",
 }
 
 ENV_MAP = {
@@ -155,6 +156,8 @@ ENV_MAP = {
     "early_map_delay_ms": "NUXEL_PRELOAD_EARLY_MAP_DELAY_MS",
     "require_boot_os": "NUXEL_PRELOAD_REQUIRE_BOOT_OS",
     "early": "NUXEL_PRELOAD_EARLY",
+    "audio": "NUXEL_PRELOAD_AUDIO",
+    "audio_output": "NUXEL_PRELOAD_AUDIO_OUTPUT",
 }
 
 PATH_ENV = {
@@ -613,6 +616,9 @@ def preflight(cfg: Config, log: Logger) -> tuple[bool, str]:
     asset = Path(str(cfg.get("asset")))
     if not player.is_file() or not os.access(player, os.X_OK):
         return False, "player-missing"
+    # A85: preflight checks the VIDEO path only, exactly as before.  The boot
+    # AUDIO track is verified separately (see audio_preflight) because a
+    # missing audio driver must never block the boot video itself.
     cmd = [str(player), "--no-config", "--no-audio", "--mute=yes",
            "--vo=null", "--frames=1", "--really-quiet", "--no-terminal",
            "--hwdec=no", "--", str(asset)]
@@ -631,13 +637,51 @@ def preflight(cfg: Config, log: Logger) -> tuple[bool, str]:
     return True, "ok"
 
 
+def _audio_mode(cfg: Config) -> str:
+    """'mp4' (the merged asset carries the boot sound), 'soundd' (let
+    nuxel-soundd play the assigned boot cue), or 'never'.
+
+    A85: the deployed config has said audio=mp4 since A83, but the player
+    command hardcoded --no-audio/--mute=yes, so the merged boot video played
+    silently.  The mode is read here and turned into real mpv/audio flags."""
+    mode = str(cfg.get("audio") or "never").strip().lower()
+    if mode in ("mp4", "asset", "embedded", "track", "true", "on", "yes"):
+        return "mp4"
+    if mode in ("soundd", "cue", "boot-cue", "service"):
+        return "soundd"
+    return "never"
+
+
+def _parse_ao(value: Any, default: str = "auto") -> str:
+    """Validate an mpv audio-output driver list ('pipewire,pulse,alsa')."""
+    text = str(value or default).strip()
+    if not text or len(text) > 120:
+        return default
+    if not re.match(r"^[A-Za-z0-9_,.+-]+$", text):
+        return default
+    return text
+
+
 def player_command(cfg: Config, ipc_path: Path, log_path: Path, asset: Path) -> list[str]:
     vo = str(cfg.get("video_output") or "wlshm")
+    audio = _audio_mode(cfg)
+    if audio == "never":
+        audio_flags = ["--no-audio", "--mute=yes"]
+    else:
+        # mpv decodes the AAC-LC track of nuxel-boot-merged.mp4.  ao is the
+        # session's PipeWire (with a bounded Pulse/ALSA fallback list) so the
+        # cue reaches the same ABOX speaker route nuxel-soundd already owns.
+        # The PCM volume is set by nuxel-soundd/route policy, not by mpv.
+        audio_flags = [
+            "--ao=" + _parse_ao(cfg.get("audio_output"), "pipewire,pulse,alsa"),
+            "--volume=100",
+            "--audio-device=auto",
+            "--audio-exclusive=no",
+        ]
     return [
         str(cfg.get("player")),
         "--no-config",
-        "--no-audio",
-        "--mute=yes",
+        *audio_flags,
         "--vo=" + vo,
         "--fullscreen",
         "--no-border",
@@ -1282,7 +1326,9 @@ def run(argv: list[str] | None = None) -> int:
             "max_display_ms": int(cfg.get("max_display_ms")),
             "final_frame_grace_ms": int(cfg.get("final_frame_grace_ms", DEFAULT_FINAL_FRAME_GRACE_MS)),
             "hard_timeout_ms": int(cfg.get("hard_timeout_ms")),
-            "audio": "disabled",
+            "audio": ("embedded" if _audio_mode(cfg) == "mp4" else _audio_mode(cfg)),
+            "audio_output": (_parse_ao(cfg.get("audio_output"), "pipewire,pulse,alsa")
+                             if _audio_mode(cfg) == "mp4" else None),
             "fullscreen": True,
             "video_output": str(cfg.get("video_output") or "wlshm"),
             "first_frame_s": (round(first_frame_s, 3) if first_frame_s is not None else None),

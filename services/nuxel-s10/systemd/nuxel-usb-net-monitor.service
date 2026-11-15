@@ -1,0 +1,18 @@
+[Unit]
+Description=Nuxel USB network link monitor (A77 physical-detach model)
+After=network.target nuxel-usb-mode-monitor.service
+# The monitor is read-only unless a network composition is active.
+ConditionPathExists=/sys/kernel/config/usb_gadget/nuxel
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/nuxel/nuxel-usb-net-monitor.sh
+Restart=always
+RestartSec=5
+# The same lock directory serializes the monitor's `off` with API transitions.
+ExecStartPre=/bin/sh -c 'install -d -m 0755 /run/nuxel/usb-net'
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

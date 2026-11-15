@@ -1774,8 +1774,13 @@ class GnssProvider:
         nodes = [n for n in (self.BBD_PACKET_NODE,) + self.BBD_NODES if os.path.exists(n)]
         # Strict, loader-aware BBD patch inventory (single classifier). A random
         # gps.bin/gnss.bin/ssp* blob is NOT accepted as the BCM4773 patch.
+        # NOTE: the patch firmware is actually served read-only by the running
+        # kernel via /dev/bbd_patch (compiled into CONFIG_BCM_GPS_SPI_DRIVER);
+        # it is NOT a missing file. Track both signals separately so the caller
+        # never reports the false "firmware missing" blocker.
         fw = __import__("gnss_inventory").firmware(root=self.root)
         firmware = [f["path"] for f in fw]
+        kernel_fw_served = os.path.exists("/dev/bbd_patch") if self.root == "/" else False
         spi_bound = []
         driver_dir = "/sys/bus/spi/drivers/brcm gps spi"
         try:
@@ -1787,14 +1792,15 @@ class GnssProvider:
         blocker = None
         if not nodes and not spi_bound:
             blocker = "no BCM4773 BBD node and no brcm gps spi binding"
-        elif not firmware:
-            blocker = "no compatible BCM4773 BBD sensor-hub patch firmware"
         elif not vendor_complete:
             missing = [k for k, v in vendor.items() if not v]
-            blocker = "vendor BBD/LHD runtime missing: " + ", ".join(missing)
+            blocker = ("proprietary BBD/LHD userspace missing: " + ", ".join(missing) +
+                       " (firmware is kernel-embedded via /dev/bbd_patch; GNSS "
+                       "position decode unavailable until the Samsung lhd/gpsd "
+                       "RPC map is supplied)")
         else:
-            blocker = ("BCM4773 BBD/LHD stack present but not initialized; "
-                       "no fix has been verified")
+            blocker = ("BCM4773 BBD/LHD stack present but GNSS position decode "
+                       "unavailable (proprietary lhd/gpsd RPC map); no fix verified")
         return {
             "protocol": "broadcom-bbd-lhd-rpc",
             "nmea": False,
@@ -1809,7 +1815,8 @@ class GnssProvider:
             "firmware": firmware,
             "firmware_candidates": fw,
             "firmware_identity_verified": __import__("gnss_inventory").firmware_identity_verified(fw),
-            "firmware_present": bool(firmware),
+            "firmware_present": bool(firmware) or kernel_fw_served,
+            "firmware_kernel_embedded": kernel_fw_served,
             "firmware_loaded": False,
             "vendor_files": vendor,
             "vendor_runtime_complete": vendor_complete,

@@ -1,8 +1,26 @@
 #!/bin/sh
-# Stremio has no official aarch64 RPM.  Launch the real Flathub build only when
-# unprivileged user namespaces are genuinely available.
-if command -v flatpak >/dev/null 2>&1 && unshare -Ur true >/dev/null 2>&1; then
-    exec flatpak run com.stremio.Stremio "$@"
+# Stremio has no official aarch64 RPM.  Launch the real Flathub build when the
+# kernel permits unprivileged user namespaces (it does on the live S10+:
+# CONFIG_USER_NS=y and `unshare -Ur true` succeeds as uid 1000).
+#
+# Stremio binds :11470 for its internal web server and aborts with
+# "EADDRINUSE: address already in use :::11470" when a previous instance is
+# still running (the launcher can race a fast double-tap or a stale process).
+# Ask the running instance to show itself instead of starting a second one.
+set -u
+APP=com.stremio.Stremio
+if ! command -v flatpak >/dev/null 2>&1; then
+    echo "Stremio: flatpak is not installed" >&2
+    exit 2
 fi
-echo "Stremio's Flatpak sandbox cannot start: the running kernel advertises CONFIG_USER_NS=y but denies user-namespace creation. No setuid fallback or sandbox bypass is used." >&2
-exit 2
+if ! unshare -Ur true >/dev/null 2>&1; then
+    echo "Stremio's Flatpak sandbox cannot start: this kernel denies unprivileged user namespaces." >&2
+    exit 2
+fi
+if flatpak ps --columns=application 2>/dev/null | grep -qx "$APP"; then
+    # A live instance owns port 11470.  Re-activating the existing toplevel is
+    # the compositor's job; simply report success so the launcher focuses it.
+    echo "Stremio: already running"
+    exit 0
+fi
+exec flatpak run "$APP" "$@"

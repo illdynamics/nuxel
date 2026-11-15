@@ -14,8 +14,12 @@ Two backends:
   PipeWire socket so the Chain
   ``PWA -> HTTP API -> nuxel-bridge -> xdg-desktop-portal -> Camera backend``
   still works end to end.
-* **hardware** — on mustang (Phase 2) the backend publishes the real
-  ``v4l2src`` node for the Samsung ISOCELL main camera and the front camera.
+* **hardware** — on the S10+ the backend publishes a real FIMC-IS capture node.
+  These are Samsung MPLANE + EXT_PIX_FORMAT nodes; the node and its raw fourcc
+  are DISCOVERED from /sys/class/video4linux (exynos-fimc-is*) and never
+  assumed to be /dev/video0. GStreamer's ``v4l2src`` only handles the standard
+  ioctl path, so the discovery helper reports the node/format and the capture
+  tool is ``nuxel-fimc-capture`` (tools/s10plus/fimc-capture).
 
 Requirements: ``python3-gi``, ``python3-gst`` and the ``GstPipeWire`` plugin.
 The systemd unit ships as ``shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service``.
@@ -62,6 +66,36 @@ DBUS_PATH = "/org/nuxel/Camera"
 _BACKEND = None
 
 
+# Raw formats the FIMC-IS driver accepts on its capture nodes (see
+# drivers/media/platform/exynos/fimc-is2/fimc-is-video.c fimc_is_formats[]).
+FIMC_RAW_FOURCCS = ("YUYV", "UYVY", "YUV444", "GRBG", "RGGB", "GBRG", "BAYER")
+
+
+def discover_fimc_nodes(sys_class="/sys/class/video4linux"):
+    """Return real FIMC-IS capture candidates as [{node,name}].
+
+    Discovery is by driver-owned sysfs name (exynos-fimc-is-*), never by
+    enumerating /dev/video0..N. An empty list means "no proven FIMC-IS node";
+    the caller must then report NO_CAMERA instead of streaming something else.
+    """
+    out = []
+    try:
+        entries = sorted(os.listdir(sys_class))
+    except OSError:
+        return out
+    for entry in entries:
+        if not entry.startswith("video"):
+            continue
+        try:
+            with open(os.path.join(sys_class, entry, "name")) as fh:
+                name = fh.read().strip()
+        except OSError:
+            continue
+        if "fimc-is" in name:
+            out.append({"node": "/dev/" + entry, "name": name})
+    return out
+
+
 class CameraBackend:
     """Owns a GStreamer pipeline that publishes a PipeWire camera node."""
 
@@ -95,13 +129,31 @@ class CameraBackend:
             )
             self._source = "synthetic-colorbar"
         else:
-            # Real camera pipeline (mustang). Use v4l2src pointing at the usual
-            # SoC camera device; override with --video-source from CLI.
-            device = video_source or "/dev/video0"
+            # Hardware: only a discovered exynos-fimc-is MPLANE node is used.
+            # v4l2src speaks the standard ioctl dialect and these nodes reject
+            # it (ENOTTY), so the pipeline is only built when an explicit node
+            # AND a raw fourcc the driver accepts were supplied; otherwise the
+            # backend stays honest and does not start.
+            device = video_source
+            if not device:
+                cands = discover_fimc_nodes()
+                device = cands[0]["node"] if cands else None
+            if not device:
+                log.error("no exynos-fimc-is capture node discovered; refusing "
+                          "to guess /dev/video0 (NO_CAMERA)")
+                self._pipeline = None
+                self._source = "no-fimc-node"
+                return
+            fourcc = os.environ.get("NUXEL_CAMERA_FOURCC", "YUYV")
+            if fourcc not in FIMC_RAW_FOURCCS:
+                log.error("unsupported FIMC-IS raw fourcc %r; no pipeline", fourcc)
+                self._pipeline = None
+                self._source = device
+                return
             pipestr = (
-                f"v4l2src device={device} ! video/x-raw,format=NV12,"
-                "width=1440,height=3120,"
-                "framerate=30/1 ! videoconvert ! queue ! "
+                f"v4l2src device={device} io-mode=mmap ! "
+                f"video/x-raw,format={fourcc},width=1440,height=1080,"
+                "framerate=30/1 ! queue ! "
                 "pipewiresink name=pwsink node.name=org.nuxel.Camera.main"
             )
             self._source = device
@@ -160,6 +212,8 @@ class CameraBackend:
                     "id": "synthetic" if self.synthetic else "main",
                     "source": self._source,
                     "synthetic": self.synthetic,
+                    "fimc_node": None if self.synthetic else self._source,
+                    "raw_fourcc": None if self.synthetic else os.environ.get("NUXEL_CAMERA_FOURCC", "YUYV"),
                     "capabilities": ["camera:capture", "camera:preview"],
                 }
             ],
@@ -317,8 +371,9 @@ class CameraPortalNode:
 
 
 def _v4l2_nodes_present() -> bool:
-    """A /dev/video* node exists.  NOT a claim that capture works (the S10+
-    FIMC-IS vendor interface does not expose standard capture)."""
+    """Any /dev/video* node exists. NOT a claim that capture works: FIMC-IS
+    nodes need their MPLANE ioctl path (nuxel-fimc-capture), which this flag
+    deliberately does not test."""
     try:
         return any(n.startswith("video") for n in os.listdir("/dev"))
     except OSError:
@@ -360,7 +415,7 @@ def _method_call_closure(
             return
 
         if method_name == "IsCameraPresent":
-            present = (not backend.synthetic) and _v4l2_nodes_present()
+            present = (not backend.synthetic) and _v4l2_nodes_present() and bool(discover_fimc_nodes())
             invocation.return_value(GLib.Variant("b", present))
         if method_name == "RunCamera":
             handle = node.run_camera()

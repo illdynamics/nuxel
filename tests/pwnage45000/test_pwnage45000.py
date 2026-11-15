@@ -73,22 +73,81 @@ p.set_enabled(False)
 import security_provider
 os.environ['NUXEL_LOCK_CREDENTIAL'] = os.path.join(tmp, 'lock.json')
 os.environ['NUXEL_LOCK_STATE'] = os.path.join(tmp, 'lock-state.json')
+os.environ['NUXEL_LOCK_POLICY'] = os.path.join(tmp, 'lock-policy.json')
 security_provider._PROVIDER = None
 s = security_provider.get_provider()
-r = s.set_mode('pin', '246813', current_secret=None)
+s.set_attempt_policy('unlimited')
+r = s.set_mode('pin', '246813', secret_confirm='246813', current_secret=None)
 check('pin credential accepted', r.get('mode') == 'pin', r)
-check('weak pin refused', s.set_mode('pin', '111111', current_secret='246813').get('error') == 'pin_too_weak')
+check('weak pin refused', s.set_mode('pin', '111111', secret_confirm='111111', current_secret='246813').get('error') == 'pin_too_weak')
 check('wrong pin rejected', s.unlock('000000').get('success') is False)
 check('correct pin unlocks', s.unlock('246813').get('success') is True)
 cred = json.loads(Path(os.environ['NUXEL_LOCK_CREDENTIAL']).read_text())
 check('no plaintext pin stored', '246813' not in json.dumps(cred))
 check('scrypt verifier present', len(cred.get('verifier', '')) == 64 and cred.get('salt'))
 s.lock('test'); check('lock persists', s.status()['locked'] is True)
-# failed attempts create persistent lockout
+# Default policy is unlimited attempts (owner request for the role-out phase):
+# nothing may lock the device out, and the right credential still unlocks.
+check('default attempt policy unlimited', s.status()['attempt_policy'] == 'unlimited')
+for _ in range(12):
+    s.unlock('999999')
+check('unlimited attempts never lock out', s.status()['rate_limit']['locked_out'] is False)
+check('right pin still unlocks after 12 failures', s.unlock('246813').get('success') is True)
+s.lock('test')
+check('attempt policy switchable', s.set_attempt_policy('limited').get('success') is True)
 for _ in range(5):
     s.unlock('999999')
-check('rate limit engages', s.status()['rate_limit']['locked_out'] is True)
+check('rate limit engages when opted in', s.status()['rate_limit']['locked_out'] is True)
+check('limited policy refuses the right pin while locked out', s.unlock('246813').get('error') == 'rate_limited')
+check('attempt policy back to unlimited', s.set_attempt_policy('unlimited').get('success') is True)
+check('unlimited policy clears the lockout', s.unlock('246813').get('success') is True)
 check('fingerprint refused without provider', s.set_mode('fingerprint', '1', fallback_pin='246813', current_secret='246813').get('error') in ('fingerprint_provider_unavailable', 'rate_limited'))
+s.set_attempt_policy('unlimited')
+s.set_mode('pin', '135790', secret_confirm='135790', current_secret='246813')
+
+# ---- pattern lock: two confirmations, no cross-mode replay ----------------
+s.lock('pattern-test')
+check('pattern without confirmation refused',
+      s.set_mode('pattern', '0-4-8-5-2', current_secret='135790').get('error') == 'pattern_confirmation_required')
+check('pattern confirmation mismatch refused',
+      s.set_mode('pattern', '0-4-8-5-2', secret_confirm='0-4-8-1-2', current_secret='135790'
+                 ).get('error') == 'pattern_confirmation_mismatch')
+check('still the PIN after refused pattern changes', s.status()['mode'] == 'pin')
+r = s.set_mode('pattern', '0-4-8-5-2', secret_confirm='0-4-8-5-2', current_secret='135790')
+check('pattern set with two confirmations', r.get('success') is True and r.get('mode') == 'pattern', r)
+check('pattern normalization', r.get('pattern_normalized') == '0-4-8-5-2', r)
+wr = s.set_mode('pattern', '0-1-2-5', secret_confirm='0-1-2-5', current_secret='0-4-8-5-2')
+check('simple pattern accepted once confirmed (no dead-lock gate)', wr.get('success') is True, wr)
+s.set_mode('pattern', '0-4-8-5-2', secret_confirm='0-4-8-5-2', current_secret='0-1-2-5')
+check('dotted pattern refused', s.set_mode('pattern', '0-9-4-5', secret_confirm='0-9-4-5',
+      current_secret='0-4-8-5-2').get('error') == 'invalid_pattern')
+s.lock('test')
+check('pattern unlocks', s.unlock('0-4-8-5-2').get('success') is True)
+s.lock('test')
+check('old PIN is not a pattern', s.unlock('246813').get('success') is False)
+check('no plaintext pattern stored', '0-4-8-5-2' not in json.dumps(
+      json.loads(Path(os.environ['NUXEL_LOCK_CREDENTIAL']).read_text())))
+check('pattern still set after a wrong entry', s.status()['mode'] == 'pattern')
+check('wrong pattern rejected', s.unlock('0-4-8-1-2').get('success') is False)
+check('pattern unlocks after a failure', s.unlock('0-4-8-5-2').get('success') is True)
+
+# ---- fingerprint mode fallback (previously stored but never verified) -----
+cred_path = Path(os.environ['NUXEL_LOCK_CREDENTIAL'])
+doc = json.loads(cred_path.read_text())
+doc.update({'mode': 'fingerprint', 'fallback_pin_salt': 'ab' * 16,
+            'fallback_pin_verifier': security_provider._derive('3838', 'ab' * 16)})
+doc.pop('salt', None); doc.pop('verifier', None)
+cred_path.write_text(json.dumps(doc))
+s.lock('test')
+check('fingerprint fallback PIN verifies', s.unlock('3838').get('success') is True)
+s.lock('test')
+check('fingerprint fallback rejects a wrong PIN', s.unlock('1234').get('success') is False)
+check('fingerprint mode status marks fallback set', s.status()['pin_fallback_set'] is True)
+s.lock('test')
+check('fingerprint unlock requires a trusted biometric result',
+      s.unlock_biometric({'success': True, 'authenticated': False}).get('success') is False)
+check('fingerprint unlock consumes a trusted result',
+      s.unlock_biometric({'success': True, 'authenticated': True}).get('success') is True)
 
 # ---- NFC / fingerprint capability truth ------------------------------------
 import nfc_provider, fingerprint_provider

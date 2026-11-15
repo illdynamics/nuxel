@@ -44,7 +44,26 @@
 // behind Stevia and allow the manifest/viewport to follow all seven modes.
 // v0.8.0 / PWNAGE-90000: bump for the shell reliability changes
 // surfaces, the launcher handoff fixes and the release version lockstep.
-const CACHE_VERSION = 'v095-p106000';
+// PWNAGE-103000 bumps to v097-p103000: js/edge-lighting.js (effect engine),
+// js/edge-panel-gesture.js (recognizer), js/gestures.js (extension point),
+// js/qs.js (Edge/Edge-light tiles), css/edge-lighting.css, index.html and the
+// new pwa/nuxel-apps/edge-fx app.  Without the bump a launcher restored from the
+// v095 cache would keep the old no-edge Home and the tiles would not exist.
+// v098-p103000 (FX fix 2): effect-tile selection persists, app-owned preview
+// settings honoured, Home resync after every provider write, mock replies refused,
+// overlay no longer paint-contained/clipped.
+// v097-p103000 (FX follow-up): explicit Edge FX preview bridge, overlay above
+// the app frame, and authoritative Allow-all source updates.
+// v099-p108000-location-permissions: Quick Settings reports a revoked
+// location:manage grant honestly, and Settings renders Location read and
+// Location control as separate per-app toggles.
+// v102-a82-lockscreen: ONE digit per keypad press on every input path (click
+// owns the activation; pointerdown/touchstart only arm it), no legacy "enter
+// PIN" sheet at all, no "Set up pattern / PIN" button and no in-lockscreen
+// setup sheet (Settings -> Security only), and no top-centre title/instructions
+// on the credential surface.  Without this bump the launcher kept serving the
+// previous JS from the v101 cache after a live deploy.
+const CACHE_VERSION = 'a88-lock5';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -66,6 +85,7 @@ const PRECACHE_ASSETS = [
     './css/lockscreen.css',
     './js/lockscreen.js',
     './js/security-lock.js',
+    './js/lockscreen-auth.js',
     './js/lockscreen-indicators.js',
     './js/apps.js',
     './js/layout-model.js',
@@ -91,6 +111,9 @@ const PRECACHE_ASSETS = [
     './keyboard-provider.json',
     './js/navigation.js',
     './js/gestures.js',
+    './js/edge-panel-gesture.js',
+    './js/edge-lighting.js',
+    './css/edge-lighting.css',
     './js/home-settings.js',
     './js/widgets.js',
     './js/system-monitor.js',

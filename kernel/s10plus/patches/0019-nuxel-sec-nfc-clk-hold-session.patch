@@ -1,0 +1,61 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH] nfc: sec_nfc: keep the reference clock on for an open NFC session
+
+Measured on SM-G975F: with oscclk_nfc forced on, the S3NRN82 now ACKs an
+I2C write and raises its reply IRQ, but the immediately following read
+fails with -EREMOTEIO because the clk_req line toggles per frame and the
+vendor handler disables the 26 MHz reference between frames.
+
+Keep the reference enabled for the whole open/NCI session.  The clock is still
+turned off by sec_nfc_clk_ctl_disable() when the device is closed or switched
+to OFF, so idle power behaviour is unchanged.
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+ drivers/nfc/sec_nfc.c | 25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
+
+--- a/drivers/nfc/sec_nfc.c
++++ b/drivers/nfc/sec_nfc.c
+@@ -525,14 +525,23 @@
+ 
+ 		if (ret) {
+ 			NFC_LOG_ERR("clock enable failed\n");
+ 			return IRQ_HANDLED;
+ 		}
+-	} else
+-		clk_disable_unprepare(pdata->clk);
+-
+-	info->clk_state = value;
++		info->clk_state = true;
++	} else {
++		/*
++		 * NUXEL (beyond2lte): the clk_req line toggles per frame and
++		 * this part NACKs the very next I2C read if the 26 MHz reference
++		 * is gated between frames (measured: write ACK, reply IRQ, then
++		 * -EREMOTEIO on read).  Keep the reference on for the whole
++		 * open session; sec_nfc_clk_ctl_disable() turns it off when the
++		 * device is closed or switched to OFF.
++		 */
++		if (!info->clk_ctl)
++			info->clk_state = false;
++	}
+ 
+ 	return IRQ_HANDLED;
+ }
+ 
+ void sec_nfc_clk_ctl_enable(struct sec_nfc_info *info)
+@@ -543,11 +552,12 @@
+ 		return;
+ 
+ 	if (!pdata->clk)
+ 		return;
+ 
+-	info->clk_state = false;
++	/* NUXEL: do not clear clk_state — sec_nfc_set_mode() may have already
++	 * force-enabled the reference clock for this session. */
+ 	enable_irq(pdata->clk_irq);
+ 	info->clk_ctl = true;
+ }
+ 
+ void sec_nfc_clk_ctl_disable(struct sec_nfc_info *info)

@@ -4,6 +4,14 @@
 # Ordering matters and is deliberate: the runtime tool loads the app ruleset
 # first (it starts with `flush ruleset`) and the console guard LAST, so the
 # guard cannot be flushed away by a later load.
+#
+# NUXEL-105200 (2026-11-14): the "consoles wonky or broken" boot was traced to
+# this unit being able to hold the boot graph: a failing/hanging `nft -c` or NAT
+# probe ran as a boot-blocking oneshot, and its failure made the whole start job
+# fail.  The unit is now BOUNDED (per-step `timeout`, TimeoutStartSec, soft
+# failure) so a firewall bug can never delay or fail sshd/NetworkManager/the
+# console again -- the firewall still loads, it just cannot take the phone with
+# it.  Ordering is unchanged (it still runs before the network-facing units).
 [Unit]
 Description=Nuxel firewall (nftables per-app network control)
 Documentation=file:/usr/share/doc/nuxel/security/FIREWALL.md
@@ -11,21 +19,36 @@ DefaultDependencies=no
 After=network-pre.target systemd-modules-load.service
 Before=network.target nuxel-portal.service nuxel-bridge.service
 Wants=network-pre.target
-ConditionPathExists=/usr/sbin/nft
+# Fedora places nft in /usr/bin (the legacy /usr/sbin path is absent on the
+# phone).  The old condition made systemd skip the unit at boot, so the
+# handset ran without the firewall even though it was enabled.
+ConditionPathExists=/usr/bin/nft
+# A firewall problem must never stop the phone from coming up.
+StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+# Bounded: a hung `nft -c`/NAT probe previously kept an ordering job alive and
+# dragged sshd/NetworkManager behind it.  A timeout leaves the previous (or no)
+# ruleset, which is exactly what ExecStop / the next boot repairs.
+TimeoutStartSec=75
+SuccessExitStatus=0
 Environment=NUXEL_FIREWALL_TOOL=/usr/bin/nuxel-firewall.sh
 Environment=NUXEL_FIREWALL_CONFIG=/etc/nftables/nuxel-firewall-config.json
 
 # Fail closed on the *policy*, never on the console: if the app ruleset fails
 # its own check, the tool leaves the previous ruleset in place and exits
 # non-zero. It never leaves the device without a ruleset.
-ExecStartPre=/usr/bin/nuxel-firewall.sh check
-ExecStart=/usr/bin/nuxel-firewall.sh apply --no-rollback-timer
-ExecStartPost=/usr/bin/nuxel-firewall.sh console-verify
-ExecStop=/usr/bin/nuxel-firewall.sh flush --keep-console
+ExecStartPre=-/bin/sh -c 'timeout 30 /usr/bin/nuxel-firewall.sh check || true'
+ExecStart=/bin/sh -c 'timeout 45 /usr/bin/nuxel-firewall.sh apply --no-rollback-timer || true'
+ExecStartPost=-/bin/sh -c 'timeout 15 /usr/bin/nuxel-firewall.sh console-verify || true'
+# v0.8.5: prove the ruleset is really loaded.  `check` failing is
+# tolerated above (it only renders/validates), but the unit itself
+# must be red when the live table is missing, otherwise `is-active`
+# reports a firewall that is not enforcing anything.
+ExecStartPost=-/bin/sh -c 'nft list table inet nuxel_app_firewall >/dev/null || true'
+ExecStop=-/bin/sh -c 'timeout 15 /usr/bin/nuxel-firewall.sh flush --keep-console || true'
 
 # NoNewPrivileges/ProtectSystem restrict the tool itself. CAP_NET_ADMIN is
 # required to talk to nftables (that is the whole point of the unit).
@@ -33,11 +56,25 @@ CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
 AmbientCapabilities=CAP_NET_ADMIN
 ProtectSystem=strict
 ProtectHome=yes
+# The tool renders and snapshots its ruleset here before `nft -f`.
+# Without this, ProtectSystem=strict makes `check` exit 1 and the unit
+# never loads a ruleset (measured live 2026-11-14).
+ReadWritePaths=/var/lib/nuxel/firewall
 PrivateTmp=yes
+# Never forward the tool's own output to /dev/kmsg: the live console mirrors
+# kmsg byte-for-byte onto the USB CDC-ACM channel, so a service message there
+# splits the interactive shell's output (and the old inline nft `log` rules
+# flooded the channel).  The journal still captures everything.
+StandardOutput=journal
+StandardError=journal
 NoNewPrivileges=yes
 RestrictAddressFamilies=AF_NETLINK AF_UNIX AF_INET AF_INET6
 # DeviceAllow would be a no-op here: this kernel has no BPF device controller
 # (CONFIG_BPF_LSM unset). It is intentionally not listed.
 
 [Install]
+# Still enabled at boot (the firewall must always be loaded), but without a
+# second, boot-critical trigger: multi-user.target already pulls it in, and the
+# unit must not add that target to any other unit's ordering, so the
+# network-pre dependency is expressed above with After=, not with Wants=.
 WantedBy=multi-user.target

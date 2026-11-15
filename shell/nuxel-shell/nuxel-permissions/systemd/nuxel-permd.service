@@ -22,7 +22,8 @@ Wants=nuxel-bridge.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/nuxel-permd.py serve --bind 127.0.0.1 --port 8765
+# ExecStart must be an absolute binary path; the argument list is passed to it.
+ExecStart=/usr/bin/python3 /usr/lib/nuxel/nuxel-permissions/nuxel-permd.py serve --bind 127.0.0.1 --port 8765
 # Writes through the HTTP API require this token; without it the API is
 # read-only by design (fail-closed, no cosmetic switch).
 EnvironmentFile=-/etc/nuxel/permd.env
@@ -33,6 +34,7 @@ StateDirectory=nuxel-permissions
 RuntimeDirectory=nuxel
 # Store location is explicit so a mis-set environment cannot silently move it.
 Environment=NUXEL_PERMISSIONS_DIR=/var/lib/nuxel/permissions
+Environment=NUXEL_PERM_CAPABILITIES=/etc/nuxel/permissions/capabilities.json
 
 NoNewPrivileges=yes
 PrivateTmp=yes

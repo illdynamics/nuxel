@@ -1,0 +1,37 @@
+diff --git a/kernel/ucount.c b/kernel/ucount.c
+index b4eeee039..2cf5ee792 100644
+--- a/kernel/ucount.c
++++ b/kernel/ucount.c
+@@ -198,12 +198,30 @@ struct ucounts *inc_ucount(struct user_namespace *ns, kuid_t uid,
+ 	struct ucounts *ucounts, *iter, *bad;
+ 	struct user_namespace *tns;
+ 	ucounts = get_ucounts(ns, uid);
+-	for (iter = ucounts; iter; iter = tns->ucounts) {
++	if (!ucounts) {
++		pr_warn("NUXEL ucount: get_ucounts(ns=%pK, uid=%u, type=%d) returned NULL\n",
++			ns, __kuid_val(uid), (int)type);
++		return NULL;
++	}
++	/*
++	 * NUXEL: the loop step used to read `tns->ucounts` before `tns` was
++	 * assigned on the first iteration (uninitialised pointer).  That is a
++	 * genuine bug in this Samsung 4.14 tree: on the S10+ it made
++	 * create_user_ns() fail with ENOSPC/EFAULT depending on stack garbage
++	 * even when the limits were fine, which is why `unshare -U` never
++	 * worked here.  Step through the parent user namespace explicitly.
++	 */
++	for (iter = ucounts; iter; iter = iter->ns->ucounts) {
+ 		int max;
++
+ 		tns = iter->ns;
+ 		max = READ_ONCE(tns->ucount_max[type]);
+-		if (!atomic_inc_below(&iter->ucount[type], max))
++		if (!atomic_inc_below(&iter->ucount[type], max)) {
++			pr_warn("NUXEL ucount: type=%d at max=%d (cur=%d) in ns=%pK level=%u\n",
++				(int)type, max, atomic_read(&iter->ucount[type]),
++				tns, tns->level);
+ 			goto fail;
++		}
+ 	}
+ 	return ucounts;
+ fail:

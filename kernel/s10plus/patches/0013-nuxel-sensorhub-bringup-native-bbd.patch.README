@@ -1,0 +1,46 @@
+# 0013 — native sensor-hub bring-up (PWNAGE-SSP)
+
+Why
+---
+The downstream Samsung SSP driver leaves `bSspShutdown = true` after probe;
+the only path that clears it is the string `ESW:READY` written to
+`/dev/bbd_control` by the Android vendor daemon `lhd`.  Nuxel has no Bionic
+runtime and therefore no `lhd`, so `raw_data` stayed `0,0,0` forever and
+`initialize_mcu()` was never re-run after the probe-time chip-ID read.
+
+What this patch does
+--------------------
+1. `ssp_dev.c`: keep the hub enabled (`bSspShutdown = false`) once probe has
+   proven the hub answers over SPI.
+2. `ssp_bbd.c`: add `nuxel_ssp_bringup_hw()` — the kernel's own documented
+   enable + `initialize_mcu()` + `sync_sensor_state()` sequence — plus read-only
+   transfer counters (tx/rx/irq) for the native BBD bridge.
+3. `ssp_i2c.c`: forward zero-length messages to `bbd_do_transfer()` (the
+   vendor code dropped them even though `use_no_irq` is supported).
+4. `bbdpl/bcm_gps_spi.c`: make the shared host-req IRQ reference/depth count
+   explicit (it was disabled under the holder's feet when the native peer closed
+   `ttyBCM`); add `nuxel_ssp_bcm_diag()` which prints real pin/IRQ/transfer
+   truth; use `gpio_to_irq(host_req)` for the ttyBCM IRQ.
+5. `bbdpl/bcm_gps_mem.c`: do not re-enable the shared IRQ behind the bridge's
+   back during a failsafe dump.
+6. `factory/gyro_lsm6dsl.c`: expose `gyro_sensor/raw_data` (int32 XYZ, honest
+   zero when the hub is not streaming).  The gyro class node had no way to read
+   a live value before.
+7. `ssp_sysfs.c`: read-only `nuxel_hub_diag` and write-only `nuxel_bringup`
+   attributes under `/sys/class/sensors/ssp_sensor/`.
+
+Safety
+------
+The patch does not add GPIOs, bus addresses, rails, mount matrices or a
+sensor-hub firmware payload.  It never touches EFS/NV storage and never
+substitutes a different hub model's firmware.
+
+Gate: build-kernel.sh compiles it with RC=0 and capability parity PASS; the
+packed Image is checked by tools/s10plus/verify-boot-image.py.
+
+Extra file
+----------
+`0013-files/bbdpl/nuxel_ssp_variant_ctl.h` must be copied to
+`drivers/sensorhub/brcm/bbdpl/` (declares the read-only transfer counters used
+by bcm_gps_spi.c).  It is kept outside the .patch because git-apply creates
+files but the build wrapper's reverse-check gate only tracks tracked files.

@@ -10,6 +10,26 @@
   'use strict';
   const SLOP = 14, DISTANCE = 56, TOP_EDGE = 40;
   let start = null, consumed = false;
+  /* PWNAGE-103000: the Edge Panel recognizer is an extension of THIS owner.
+     It shares the same pointer/touch stream, so a side swipe can never race
+     Quick Settings, the drawer, Back or an app's scroll.  The recognizer only
+     *claims* a deliberate inward swipe that started in the side band; every
+     other gesture continues through the Home rules below untouched. */
+  const edge = window.NuxelEdgePanelGesture ? window.NuxelEdgePanelGesture.createRecognizer() : null;
+  let edgeTouchId = null;
+  const viewport = () => ({ w: (window.innerWidth || 360), h: (window.innerHeight || 760) });
+  const edgeTop = () => {
+    const bar = document.getElementById('status-bar');
+    return bar ? Math.round(bar.getBoundingClientRect().bottom || TOP_EDGE) : TOP_EDGE;
+  };
+  const edgeBottom = () => {
+    const nav = document.getElementById('system-navigation');
+    return nav ? Math.round(viewport().h - (nav.getBoundingClientRect().top || viewport().h)) : 0;
+  };
+  function openEdgeFrom(result) {
+    if (!result || !window.NuxelEdgeLighting || !window.NuxelEdgeLighting.openPanel) return false;
+    return window.NuxelEdgeLighting.openPanel(result.side, 'gesture');
+  }
   const scrollable = target => target && target.closest && target.closest('input,textarea,select,[contenteditable=true],[data-gesture-scroll],.search-results,.recents-list,.quick-settings,.folder-sheet,#drawer-list');
   function state() {
     if (window.nuxel && window.nuxel.appSession && window.nuxel.appSession.state === 'ACTIVE') {
@@ -20,7 +40,10 @@
     return 'HOME';
   }
   function down(e) {
-    if (e.isPrimary === false || scrollable(e.target) || document.body.classList.contains('launcher-dragging') || e.target.closest('#system-navigation,#dock,#home-settings,.pwa-frame,#status-bar')) return;
+    if (e.isPrimary === false || scrollable(e.target) || document.body.classList.contains('launcher-dragging') || e.target.closest('#system-navigation,#dock,#home-settings,.pwa-frame,#status-bar')) { if (edge) edge.cancel('owned-surface'); return; }
+    if (edge && state() === 'HOME') {
+      edge.pointerDown(e.clientX, e.clientY, e.target, performance.now());
+    }
     start = { id: e.pointerId, x: e.clientX, y: e.clientY, topEdge: e.clientY <= TOP_EDGE, at: performance.now() };
     consumed = false;
     // The status bar owns the top-edge shade pull.  It marks this flag when it
@@ -50,14 +73,33 @@
     }
     return true;
   }
+  function move(e) {
+    if (!edge || !start || start.id !== e.pointerId) return;
+    const opened = edge.pointerMove(e.clientX, e.clientY);
+    if (opened) {
+      consumed = true;
+      start = null;
+      openEdgeFrom(opened);
+    }
+  }
   function up(e) {
+    if (edge && start && start.id === e.pointerId) {
+      const opened = edge.pointerUp(e.clientX, e.clientY);
+      if (opened) {
+        consumed = true;
+        start = null;
+        openEdgeFrom(opened);
+        return;
+      }
+    }
     if (!start || start.id !== e.pointerId || consumed || document.body.classList.contains('launcher-dragging')) { start = null; return; }
     finish(e.clientX - start.x, e.clientY - start.y, start.topEdge);
     start = null;
   }
   document.addEventListener('pointerdown', down, { capture: true, passive: true });
+  document.addEventListener('pointermove', move, { capture: true, passive: true });
   document.addEventListener('pointerup', up, { capture: true, passive: true });
-  document.addEventListener('pointercancel', () => { start = null; consumed = false; }, { capture: true });
+  document.addEventListener('pointercancel', () => { start = null; consumed = false; if (edge) edge.cancel('pointercancel'); }, { capture: true });
 
   /* PWNAGE-62000: WebKit cancels the pointer stream as soon as a vertical
      touch becomes a scroll.  The old pointer-only drawer gesture therefore
@@ -69,6 +111,7 @@
   function touchDown(e) {
     touchStart = null;
     consumed = false;
+    edgeTouchId = null;
     // NOTE: an app tile is a valid origin for the upward drawer swipe.  The
     // distance/angle gate in finish() still distinguishes it from a tap, so
     // rejecting .app-item here only broke the common "swipe up from an icon"
@@ -80,6 +123,24 @@
     touchStart = { id: t.identifier, x: t.clientX, y: t.clientY,
                    topEdge: t.clientY <= TOP_EDGE };
     window.__nuxelQsGestureConsumed = false;
+    if (edge && state() === 'HOME' && edge.pointerDown(t.clientX, t.clientY, e.target, performance.now())) {
+      edgeTouchId = t.identifier;
+    } else {
+      // Do not carry recognizer state from the pointer stream into touch.
+      if (edge) edge.cancel('touch-owns');
+    }
+  }
+  function touchMove(e) {
+    if (!edge || edgeTouchId == null) return;
+    const t = Array.from(e.changedTouches || []).find(x => x.identifier === edgeTouchId);
+    if (!t) return;
+    const opened = edge.pointerMove(t.clientX, t.clientY);
+    if (opened) {
+      edgeTouchId = null;
+      consumed = true;
+      touchStart = null;
+      openEdgeFrom(opened);
+    }
   }
   function touchUp(e) {
     if (!touchStart) return;
@@ -87,10 +148,19 @@
     if (!t) { touchStart = null; return; }
     const startAt = touchStart;
     touchStart = null;
+    if (edgeTouchId != null && edge) {
+      const opened = edge.pointerUp(t.clientX, t.clientY);
+      edgeTouchId = null;
+      if (opened) { consumed = true; openEdgeFrom(opened); return; }
+    }
     if (consumed || document.body.classList.contains('launcher-dragging')) return;
     finish(t.clientX - startAt.x, t.clientY - startAt.y, startAt.topEdge);
   }
   document.addEventListener('touchstart', touchDown, { capture: true, passive: true });
+  document.addEventListener('touchmove', touchMove, { capture: true, passive: true });
   document.addEventListener('touchend', touchUp, { capture: true, passive: true });
-  document.addEventListener('touchcancel', () => { touchStart = null; consumed = false; }, { capture: true, passive: true });
+  document.addEventListener('touchcancel', () => { touchStart = null; consumed = false; edgeTouchId = null; if (edge) edge.cancel('touchcancel'); }, { capture: true, passive: true });
+  window.addEventListener('blur', () => { if (edge) edge.cancel('blur'); edgeTouchId = null; }, { capture: true });
+  window.addEventListener('resize', () => { if (edge) edge.cancel('resize'); edgeTouchId = null; }, { passive: true });
+  window.addEventListener('orientationchange', () => { if (edge) edge.cancel('orientation'); edgeTouchId = null; }, { passive: true });
 })();

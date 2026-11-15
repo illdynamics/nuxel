@@ -1,0 +1,33 @@
+{
+  "name": "Edge FX",
+  "short_name": "Edge FX",
+  "description": "Edge lighting preview and control (AMOLED display effect), Edge panel toggle and install/uninstall state for the Nuxel Edge FX app",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "scope": "./",
+  "background_color": "#081710",
+  "theme_color": "#081710",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    { "src": "../../nuxel-home/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "../../nuxel-home/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "pwa_version": "0.8.5-beta",
+    "capabilities": [],
+    "app_type": "settings",
+    "app_id": "nuxel-edge-fx",
+    "offline_first": true,
+    "network": "none",
+    "storage": ["none (Edge Lighting settings live in /etc/nuxel/edge-lighting/edge-lighting.json through the bridge provider)"],
+    "settings_documents": ["edge-lighting"],
+    "registry_id": "nuxel-edge-fx",
+    "facilities": [
+      "edge-lighting RPC (status/set/preview/reset) via the shared bridge client",
+      "canonical app registry install/uninstall (apps RPC) — this app can remove or reinstall itself"
+    ]
+  }
+}

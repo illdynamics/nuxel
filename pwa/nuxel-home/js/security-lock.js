@@ -6,95 +6,52 @@
  */
 (function (global) {
   'use strict';
-  var VERSION = 'p45000';
+  var VERSION = 'a85';
   var cache = null;
+  /* A84: security RPCs go DIRECTLY to the root bridge, never through the
+     shared client.  The shared client's failure path returns FABRICATED mock
+     data (`this.mockMode = true`), so any transient miss (a cold token, a
+     restarted bridge, a 409) made `/security/status` look like "still locked"
+     and the launcher rejected a swipe on a device that was in swipe mode.
+     A security answer must always be the host's real answer.
+     The pinned X-Nuxel-Bridge-Version header matches what the shared client
+     sends, so the host's version gate behaves identically. */
+  var RPC_URL = 'http://127.0.0.1:8080/api/v1/rpc';
 
-  function bridge() {
-    if (global.NuxelBridge && global.NuxelBridge.call) return global.NuxelBridge;
-    // Home's lowercase wrapper rejects mock fallbacks and carries the session
-    // token; prefer it when the shared module has not published yet.
-    if (global.bridge && typeof global.bridge.call === 'function') return global.bridge;
-    try { if (global.parent && global.parent !== global && global.parent.NuxelBridge) return global.parent.NuxelBridge; } catch (e) {}
-    return null;
+  function bridgeVersion() {
+    if (global.NUXEL_BRIDGE_VERSION) return String(global.NUXEL_BRIDGE_VERSION);
+    return '1';
   }
+
   async function direct(ns, verb, params) {
     try {
-      // The PWA static server (:8000) is not the API.  The root bridge API is
-      // loopback :8080; prefer the shared client when it has loaded.
-      var res = await fetch('http://127.0.0.1:8080/api/v1/rpc', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ app_id: 'org.nuxel.Home', namespace: ns, verb: verb, params: params || {} })
+      var res = await fetch(RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                   'X-Nuxel-Bridge-Version': bridgeVersion() },
+        body: JSON.stringify({ app_id: 'org.nuxel.Home', namespace: ns, verb: verb,
+                               params: params || {} })
       });
-      if (!res.ok) return { success: false, error: 'HTTP ' + res.status };
-      var doc = await res.json();
+      var doc = null;
+      try { doc = await res.json(); } catch (e) { doc = null; }
+      if (!res.ok) {
+        if (doc && doc.result !== undefined) return doc.result;
+        return { success: false, error: 'HTTP ' + res.status,
+                 detail: (doc && (doc.detail || doc.error)) || null };
+      }
       return doc && doc.result !== undefined ? doc.result : doc;
     } catch (e) { return { success: false, error: String(e && e.message || e) }; }
   }
-  async function call(ns, verb, params) {
-    var b = bridge();
-    if (b) {
-      try { return await b.call(ns, verb, params || {}); } catch (e) { /* fall through */ }
-    }
-    return direct(ns, verb, params);
-  }
+  function call(ns, verb, params) { return direct(ns, verb, params); }
 
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
-
-  function ensurePrompt() {
-    var el = document.getElementById('nuxel-lock-prompt');
-    if (el) return el;
-    el = document.createElement('div');
-    el.id = 'nuxel-lock-prompt';
-    el.hidden = true;
-    el.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:14px;background:rgba(0,0,0,.55)';
-    el.innerHTML = '<div style="width:100%;max-width:340px;background:#0b192d;border:1px solid #3d6b9c;border-radius:18px;padding:16px;color:#eaf4ff">' +
-      '<h2 id="nlp-title" style="margin:0 0 6px;font-size:19px">Enter PIN</h2>' +
-      '<p id="nlp-hint" style="margin:0 0 10px;font-size:12px;color:#a9c5e4">Unlock this device</p>' +
-      '<input id="nlp-secret" inputmode="numeric" autocomplete="off" type="password" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #3d6b9c;background:#081425;color:#fff;font-size:18px">' +
-      '<p id="nlp-error" role="alert" style="min-height:16px;margin:8px 0;color:#ff9a9a;font-size:12px"></p>' +
-      '<div style="display:flex;gap:8px"><button id="nlp-submit" type="button" style="flex:1;min-height:44px;border:0;border-radius:11px;background:#2f5f96;color:#fff;font-weight:600">Unlock</button>' +
-      '<button id="nlp-cancel" type="button" style="min-height:44px;padding:0 14px;border:1px solid #3d6b9c;border-radius:11px;background:transparent;color:#dbeafe">Cancel</button></div>' +
-      '<p style="margin:10px 0 0;font-size:11px;color:#7f9cbb">Fingerprint, when supported, always keeps this PIN fallback.</p></div>';
-    document.body.appendChild(el);
-    return el;
-  }
-
-  function promptSecret(status) {
-    return new Promise(function (resolve) {
-      var el = ensurePrompt();
-      var input = document.getElementById('nlp-secret');
-      var err = document.getElementById('nlp-error');
-      var title = document.getElementById('nlp-title');
-      var hint = document.getElementById('nlp-hint');
-      var mode = status && status.mode || 'pin';
-      if (mode === 'pattern') {
-        title.textContent = 'Enter pattern';
-        hint.textContent = 'Use dot numbers, e.g. 0-1-2-5-8';
-        input.type = 'text'; input.inputMode = 'numeric';
-      } else if (mode === 'fingerprint') {
-        title.textContent = 'PIN fallback';
-        hint.textContent = 'Fingerprint provider unavailable or not ready; enter the PIN fallback';
-        input.type = 'password'; input.inputMode = 'numeric';
-      } else {
-        title.textContent = 'Enter PIN';
-        hint.textContent = 'At least 6 digits';
-        input.type = 'password'; input.inputMode = 'numeric';
-      }
-      input.value = ''; err.textContent = '';
-      el.hidden = false;
-      setTimeout(function () { try { input.focus(); } catch (e) {} }, 30);
-      function done(v) {
-        el.hidden = true;
-        document.getElementById('nlp-submit').onclick = null;
-        document.getElementById('nlp-cancel').onclick = null;
-        input.onkeydown = null;
-        resolve(v);
-      }
-      document.getElementById('nlp-submit').onclick = function () { done(input.value); };
-      document.getElementById('nlp-cancel').onclick = function () { done(null); };
-      input.onkeydown = function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); done(input.value); } };
-    });
-  }
+  /* The legacy text-input sheet ("Enter PIN", "Enter pattern", "PIN fallback")
+     is GONE for good (A82).  Every credential is entered on the lock screen
+     surface: pattern/PIN on the glass, the Vault master password in the
+     Vault's own password field.  A second prompt overlaying the lock screen
+     only ever asked the owner twice.  promptSecret is kept as an API name that
+     always resolves to "no prompt": callers fall back to the credential
+     surface (or treat the attempt as cancelled). */
+  function promptSecret() { return Promise.resolve(null); }
 
   async function status() {
     var st = await call('security', 'status', {});
@@ -102,28 +59,110 @@
     return st;
   }
 
-  async function verifyUnlock() {
+  /* A80: the authoritative credential surface is the lockscreen overlay
+     (#lockscreen-auth: pattern matrix / keypad / fingerprint).  It verifies
+     against the bridge itself before it asks Home to complete the unlock.
+
+     This legacy prompt must therefore NEVER open while that surface is up:
+     the old code re-prompted here after the overlay had already accepted a
+     PIN, which produced a second "Enter PIN" sheet ("At least 6 digits")
+     on top of the just-unlocked phone.  When the surface owns the credential,
+     verifyUnlock just reports the bridge truth: the caller reconciles. */
+  function overlayOwnsCredential() {
+    try {
+      var box = document.getElementById('lockscreen-auth');
+      if (!box || box.hidden) return false;
+      var pad = document.getElementById('lockscreen-pinpad');
+      var pat = document.getElementById('lockscreen-pattern');
+      var fp = document.getElementById('lockscreen-fingerprint');
+      return !!((pad && !pad.hidden) || (pat && !pat.hidden) || (fp && !fp.hidden));
+    } catch (e) { return false; }
+  }
+
+  /* verifyUnlock is the HOST/NAV gate, not a credential collector.
+   *
+   * Every credential is entered on the lock screen surface (pattern matrix,
+   * keypad or fingerprint) and verified there against the root bridge.  This
+   * function therefore only reports the bridge's authoritative state:
+   *
+   *   unlocked -> {ok:true}   let the host/nav transition proceed
+   *   locked   -> {ok:false}  the overlay owns the unlock; the caller keeps
+   *                           the session locked (it will re-render the
+   *                           credential surface, never a second prompt)
+   *
+   * It NEVER opens a prompt of its own.  The old implementation opened a
+   * legacy text-input sheet here ("Enter PIN", "At least 6 digits"), which is
+   * exactly the unexplained second PIN request the owner saw after a correct
+   * unlock -- the phone was unlocked, then the host's nav gate asked again.
+   *
+   * A85: a lockhead swipe ON A SWIPE-MODE LOCK is itself the unlock.  The
+   * provider is still `locked:true` at the moment this gate runs (the lock
+   * overlay is up and nothing has released it yet), so demanding
+   * `locked === false` FIRST dead-locked every swipe-mode phone:
+   *
+   *   gesture -> verify -> provider says locked -> rejected -> still locked
+   *
+   * The provider's own `security/unlock` verb is the atomic release for a
+   * swipe lock -- it re-reads the stored mode server-side and only clears the
+   * lock when that mode is `swipe`; on a credentialed mode it answers
+   * `invalid_credential` and the overlay keeps the keypad/pattern surface.
+   * So: status first (honest, authoritative), then for `swipe`/`unlock` (and
+   * only for `opts.direct`, i.e. the direct-swipe path) ask for that release.
+   * A credentialed mode is never released here; it goes to the credential
+   * surface exactly as before.
+   */
+  async function verifyUnlock(opts) {
+    opts = opts || {};
     var st = await status();
+    /* Observation only: the exact status object the unlock gate decided on. */
+    try {
+      var diag = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
+      if (diag) diag.postMessage('SECLOCK[a85] verify status=' + JSON.stringify({
+        success: (st && st.success), locked: (st && st.locked), mode: (st && st.mode),
+        reason: (st && st.reason), error: (st && st.error), detail: (st && st.detail),
+        provider: (st && st.source),
+      }));
+    } catch (e) { /* observation only */ }
     if (!st || st.success === false) {
-      return { ok: false, error: 'lock-provider-unavailable', detail: (st && st.error) || 'security provider unavailable' };
+      return { ok: false, error: 'lock-provider-unavailable',
+        detail: (st && st.error) || 'security provider unavailable' };
+    }
+    /* A84: a real status ALWAYS carries a boolean `locked`.  An object
+       without it is not an answer (a fabricated/mock reply or a refusal);
+       treating it as "locked" is what rejected every swipe on a swipe-mode
+       device.  Fail closed, but report the true reason. */
+    if (typeof st.locked !== 'boolean') {
+      return { ok: false, error: 'lock-provider-unavailable',
+        detail: 'security status did not report a lock state' };
     }
     if (st.rate_limit && st.rate_limit.locked_out) {
-      return { ok: false, error: 'rate_limited', detail: 'Try again in ' + st.rate_limit.remaining_s + ' s' };
+      return { ok: false, error: 'rate_limited',
+        detail: 'Try again in ' + st.rate_limit.remaining_s + ' s' };
     }
-    var secret = '';
-    if (st.mode !== 'swipe') {
-      secret = await promptSecret(st);
-      if (secret === null) return { ok: false, error: 'cancelled' };
+    if (st.locked === false) {
+      return { ok: true, state: 'UNLOCKED', mode: st.mode, via: 'bridge-authority' };
     }
-    var res = await call('security', 'unlock', { secret: secret });
-    if (res && res.success === true && res.unlocked === true) {
-      cache = null;
-      try { document.dispatchEvent(new CustomEvent('nuxel:security-unlocked', { detail: { mode: st.mode } })); } catch (e) {}
-      return { ok: true, state: 'UNLOCKED', mode: st.mode };
+    /* A85 direct swipe on a swipe-mode lock: release it through the provider's
+       own verb.  Only the direct path (opts.direct) may release; the locked
+       state is re-read SERVER-SIDE and a credentialed mode is never cleared. */
+    var mode = String(st.mode || '');
+    var swipeLock = (mode === 'swipe' || mode === 'unlock');
+    if (opts.direct === true && swipeLock) {
+      var rel = await call('security', 'unlock', { secret: '' });
+      var ok = !!(rel && rel.success !== false && rel.unlocked === true && rel.locked === false);
+      try {
+        var d = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
+        if (d) d.postMessage('SECLOCK[a85] swipe-release ok=' + (ok ? '1' : '0') +
+          ' error=' + ((rel && (rel.error || rel.detail)) || '-'));
+      } catch (e) { /* observation only */ }
+      if (ok) return { ok: true, state: 'UNLOCKED', mode: mode, via: 'swipe-direct' };
+      return { ok: false, error: (rel && rel.error) || 'swipe-release-failed',
+        detail: (rel && rel.detail) || 'the security provider did not release the lock' };
     }
-    var msg = (res && (res.error || res.detail)) || 'invalid credential';
-    if (res && res.error === 'rate_limited') msg = 'Too many attempts; wait ' + (res.remaining_s || 30) + ' s';
-    return { ok: false, error: 'credential-rejected', detail: msg, remaining_s: res && res.remaining_s };
+    return { ok: false, error: swipeLock
+        ? 'swipe-required-on-lockscreen' : 'credential-required-on-lockscreen',
+      detail: swipeLock ? 'Swipe the lockhead up to unlock'
+                        : 'Enter the credential on the lock screen' };
   }
 
   async function lock(reason) {

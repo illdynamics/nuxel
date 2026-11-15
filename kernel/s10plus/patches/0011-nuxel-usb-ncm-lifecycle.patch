@@ -1,0 +1,374 @@
+Nuxel USB-NET: own the Samsung NCM mirrorlink singleton exactly once.
+
+With CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE=y the pinned 4.14.253 vendor tree
+registers a global misc device (usb_ncm / mirrorlink) and schedules a global
+work item from ncm_alloc(), i.e. again for every bind, and frees both from
+ncm_free_inst() with an unconditional misc_deregister().  The recorded pstore
+panic (configfs rmdir -> ncm_attr_release -> ncm_free_inst -> misc_deregister)
+is the result of that lifecycle:
+
+  * register/deregister are unbalanced across binds and instances;
+  * a failed misc_register() was reported as success and later deregistered;
+  * ncm_work() dereferences mirrorlink_device.this_device, which is NULL
+    between deregistration and the next registration, and _ncm_dev can be
+    freed while the work is still queued (set_ncm_ready() races configfs
+    teardown);
+  * a second function instance can deregister the device the first still
+    owns.
+
+Fix: the misc device + work are one singleton owned by the set of live NCM
+function instances.  mirrorlink_users is taken under mirrorlink_lock before
+registration; later instances only take a reference.  ncm_function_cleanup()
+prepares the final teardown under the lock (mirrorlink_active = false,
+_ncm_dev = NULL), waits for in-flight ncm_alloc()/ncm_free() callers
+(mirrorlink_refs), drains the work with cancel_work_sync(), removes the fix
+attribute and performs exactly one misc_deregister().  Register and deregister
+run without the spinlock (they sleep) but under mirrorlink_txn so they can
+never interleave.  ncm_work() and set_ncm_ready() re-check mirrorlink_active
+under the lock.  ncm_alloc() propagates registration failure (ERR_PTR) and
+undoes refcnt/kfree.  Module exit releases the singleton even when no function
+instance remains.
+
+The module also exports const char nuxel_ncm_lifecycle_marker[] =
+"nuxel-ncm-lifecycle-fix-v2" and the misc device exposes
+/sys/class/misc/usb_ncm/nuxel_fix with the same value, so build/CI tooling can
+prove the RUNNING image carries the fix without creating a gadget first.  Userspace (tools/beta/live/nuxel-usb-net.py and
+services/nuxel-s10/bin/nuxel-usb-net-helper.sh) refuses to create an NCM
+function unless this marker is present, so the RUNNING kernel - not the
+4.14.253 version string - decides whether NCM may be used.
+
+--- a/drivers/usb/gadget/function/f_ncm.c
++++ b/drivers/usb/gadget/function/f_ncm.c
+@@ -543,6 +543,48 @@
+ };
+ 
+ static bool ncm_connect;
++
++/*
++ * Nuxel: the mirrorlink misc device and its notification work are one global
++ * singleton shared by every live NCM function instance, but the vendor code
++ * registered it from ncm_alloc() (which runs again for every bind) and tore it
++ * down from ncm_free_inst() unconditionally.  Ownership is therefore:
++ *
++ *   mirrorlink_users    number of NCM function instances that took a
++ *                       reference from ncm_function_init(); incremented under
++ *                       mirrorlink_lock before anything is registered.
++ *   mirrorlink_active   the singleton device/work has been registered and is
++ *                       not yet deregistered.  Set under the lock.
++ *   mirrorlink_refs     number of ncm_alloc()/ncm_free() callers that can still
++ *                       reach the singleton work (set_ncm_ready() requires a
++ *                       bound instance).  Teardown waits for this to drain.
++ *
++ * misc_register()/misc_deregister() are called WITHOUT the spinlock held:
++ * they sleep, and ncm_work() takes the same lock from a workqueue context.
++ * All register/deregister transitions run under mirrorlink_txn, which makes
++ * "registered" and "active" change together for other lock users.
++ */
++static DEFINE_SPINLOCK(mirrorlink_lock);
++static DEFINE_MUTEX(mirrorlink_txn);
++static unsigned int mirrorlink_users;
++static unsigned int mirrorlink_refs;
++static bool mirrorlink_active;
++/* Lifecycle-fix build marker (see tools/beta/live/nuxel-usb-net.py). */
++static const char nuxel_ncm_lifecycle_fix[] = "nuxel-ncm-lifecycle-fix-v2";
++
++static ssize_t nuxel_fix_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	return scnprintf(buf, PAGE_SIZE, "%s\n", nuxel_ncm_lifecycle_fix);
++}
++/*
++ * Nuxel: a second, always-present copy of the marker.  The misc attribute only
++ * exists while an NCM function is registered; this one lets build/CI tooling
++ * prove the RUNNING image carries the fix without creating a gadget first.
++ */
++const char nuxel_ncm_lifecycle_marker[] = "nuxel-ncm-lifecycle-fix-v2";
++EXPORT_SYMBOL_GPL(nuxel_ncm_lifecycle_marker);
++static DEVICE_ATTR_RO(nuxel_fix);
+ 
+ /* terminal version using vendor specific request */
+ u16 terminal_mode_version;
+@@ -1580,14 +1622,29 @@
+ extern struct device *create_function_device(char *name);
+ void set_ncm_ready(bool ready)
+ {
++	struct ncm_dev *dev = NULL;
++	unsigned long flags;
++
++	/*
++	 * Nuxel: this runs from vendor control requests, potentially while the
++	 * function instance is being torn down.  Never dereference _ncm_dev
++	 * unless the singleton is live; the work function re-checks under the
++	 * same lock before touching the misc device.
++	 */
++	spin_lock_irqsave(&mirrorlink_lock, flags);
+ 	if (ready != ncm_connect) {
+ 		printk(KERN_DEBUG "usb: %s old status=%d, new status=%d\n",
+ 				__func__, ncm_connect, ready);
+ 		ncm_connect = ready;
+-		schedule_work(&_ncm_dev->work);
++		if (mirrorlink_active && _ncm_dev)
++			dev = _ncm_dev;
+ 	} else
+ 		ncm_connect = ready;
++	spin_unlock_irqrestore(&mirrorlink_lock, flags);
+ 
++	if (dev)
++		schedule_work(&dev->work);
++
+ 	if (ready == false) {
+ 		terminal_mode_version = 0;
+ 		terminal_mode_vendor_id = 0;
+@@ -1689,42 +1746,160 @@
+ 	char *ncm_start[2] = { "NCM_DEVICE=START", NULL };
+ 	char *ncm_release[2] = { "NCM_DEVICE=RELEASE", NULL };
+ 	char **uevent_envp = NULL;
++	unsigned long flags;
++	bool live;
+ 
+ 	printk(KERN_DEBUG "usb: %s ncm_connect=%d\n", __func__, ncm_connect);
+ 
+-	if (ncm_connect == true)
+-		uevent_envp = ncm_start;
+-	else
+-		uevent_envp = ncm_release;
+-
+-	kobject_uevent_env(&mirrorlink_device.this_device->kobj, KOBJ_CHANGE, uevent_envp);
++	/*
++	 * Nuxel: the work can be queued just before configfs removes the
++	 * function.  ncm_function_cleanup() clears mirrorlink_active before
++	 * misc_deregister() and drains this work with cancel_work_sync(), so a
++	 * worker that already started must not touch a deregistered (or NULL)
++	 * misc device: that NULL this_device dereference was the observed
++	 * kobject_uevent_env()/misc_deregister() panic path.
++	 */
++	spin_lock_irqsave(&mirrorlink_lock, flags);
++	live = mirrorlink_active && mirrorlink_device.this_device;
++	if (live) {
++		if (ncm_connect == true)
++			uevent_envp = ncm_start;
++		else
++			uevent_envp = ncm_release;
++		kobject_uevent_env(&mirrorlink_device.this_device->kobj,
++				   KOBJ_CHANGE, uevent_envp);
++	}
++	spin_unlock_irqrestore(&mirrorlink_lock, flags);
+ }
+ 
+ static int ncm_function_init(void)
+ {
+ 	struct ncm_dev *dev;
++	unsigned long flags;
+ 	int ret = 0;
+ 
+-	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+-	if (!dev)
+-		return -ENOMEM;
++	/* Later instances only take a reference to the existing singleton. */
++	spin_lock_irqsave(&mirrorlink_lock, flags);
++	if (mirrorlink_users) {
++		mirrorlink_users++;
++		spin_unlock_irqrestore(&mirrorlink_lock, flags);
++		return 0;
++	}
++	mirrorlink_users = 1;
++	spin_unlock_irqrestore(&mirrorlink_lock, flags);
+ 
++	mutex_lock(&mirrorlink_txn);
++	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	if (!dev) {
++		ret = -ENOMEM;
++		goto drop_user;
++	}
+ 	INIT_WORK(&dev->work, ncm_work);
+ 
+-	_ncm_dev = dev;
+-
+ 	ret = misc_register(&mirrorlink_device);
+-	if (ret)
+-		printk("usb: %s - usb_ncm misc driver fail \n", __func__);
++	if (ret) {
++		printk(KERN_ERR "usb: %s - usb_ncm misc driver fail %d\n",
++				__func__, ret);
++		kfree(dev);
++		goto drop_user;
++	}
++	if (device_create_file(mirrorlink_device.this_device,
++			       &dev_attr_nuxel_fix))
++		printk(KERN_WARNING "usb: %s - could not expose fix marker\n",
++				__func__);
++
++	spin_lock_irqsave(&mirrorlink_lock, flags);
++	_ncm_dev = dev;
++	mirrorlink_active = true;
++	spin_unlock_irqrestore(&mirrorlink_lock, flags);
++	mutex_unlock(&mirrorlink_txn);
+ 	return 0;
++
++drop_user:
++	spin_lock_irqsave(&mirrorlink_lock, flags);
++	mirrorlink_users = 0;
++	spin_unlock_irqrestore(&mirrorlink_lock, flags);
++	mutex_unlock(&mirrorlink_txn);
++	return ret;
+ }
+ 
+ static void ncm_function_cleanup(void)
+ {
+-	misc_deregister(&mirrorlink_device);
+-	kfree(_ncm_dev);
++	struct ncm_dev *dev = NULL;
++	unsigned long flags;
++
++	spin_lock_irqsave(&mirrorlink_lock, flags);
++	if (!mirrorlink_users) {
++		spin_unlock_irqrestore(&mirrorlink_lock, flags);
++		return;
++	}
++	if (--mirrorlink_users) {
++		spin_unlock_irqrestore(&mirrorlink_lock, flags);
++		return;
++	}
++	spin_unlock_irqrestore(&mirrorlink_lock, flags);
++
++	/*
++	 * No live instance can schedule work now (set_ncm_ready() needs a
++	 * bound function).  Wait for in-flight ncm_alloc()/ncm_free() callers,
++	 * then detach the singleton under the transaction mutex so exactly one
++	 * misc_deregister() pairs with the successful misc_register() above.
++	 */
++	mutex_lock(&mirrorlink_txn);
++	spin_lock_irqsave(&mirrorlink_lock, flags);
++	mirrorlink_active = false;
++	dev = _ncm_dev;
+ 	_ncm_dev = NULL;
++	spin_unlock_irqrestore(&mirrorlink_lock, flags);
++
++	while (READ_ONCE(mirrorlink_refs))
++		usleep_range(1000, 5000);
++
++	if (dev)
++		cancel_work_sync(&dev->work);
++	if (dev && mirrorlink_device.this_device)
++		device_remove_file(mirrorlink_device.this_device,
++				   &dev_attr_nuxel_fix);
++	misc_deregister(&mirrorlink_device);
++	kfree(dev);
++	mutex_unlock(&mirrorlink_txn);
+ }
++
++static void ncm_function_ref_get(void)
++{
++	spin_lock_irq(&mirrorlink_lock);
++	mirrorlink_refs++;
++	spin_unlock_irq(&mirrorlink_lock);
++}
++
++static void ncm_function_ref_put(void)
++{
++	spin_lock_irq(&mirrorlink_lock);
++	if (mirrorlink_refs)
++		mirrorlink_refs--;
++	spin_unlock_irq(&mirrorlink_lock);
++}
++
++/*
++ * Module exit (or a failed module init) must not leave the vendor singleton
++ * registered after the function can no longer be created.
++ */
++static void ncm_function_shutdown(void)
++{
++	unsigned long flags;
++	unsigned int users;
++
++	/*
++	 * Leftover instances keep their own references; force the count to one
++	 * so the single call below performs the final teardown even though the
++	 * function is no longer creatable.
++	 */
++	spin_lock_irqsave(&mirrorlink_lock, flags);
++	users = mirrorlink_users;
++	mirrorlink_users = users ? 1 : 0;
++	spin_unlock_irqrestore(&mirrorlink_lock, flags);
++	ncm_function_cleanup();
++}
+ #endif
+ static inline struct f_ncm_opts *to_f_ncm_opts(struct config_item *item)
+ {
+@@ -1775,6 +1950,12 @@
+ */
+ 	kfree(opts);
+ #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
++	/*
++	 * Nuxel: the instance has no function left, so no work may be scheduled
++	 * for it; release the module-exit barrier here instead of in cleanup so
++	 * module unload waiting on ncm_function_shutdown() cannot deadlock.
++	 */
++	ncm_function_ref_put();
+ 	ncm_function_cleanup();
+ #endif
+ }
+@@ -1840,6 +2021,9 @@
+ {
+ 	struct f_ncm		*ncm;
+ 	struct f_ncm_opts	*opts;
++#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
++	int			status;
++#endif
+ 
+ 	/* allocate and initialize one new instance */
+ 	ncm = kzalloc(sizeof(*ncm), GFP_KERNEL);
+@@ -1859,6 +2043,14 @@
+ 	ncm->port.supports_multi_frame = true;
+ #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+ 	ncm->port.func.name = "ncm";
++	/*
++	 * Nuxel: take the barrier before the instance becomes reachable by
++	 * vendor control requests (which may call set_ncm_ready()), and pair it
++	 * with exactly one drop below or in ncm_free().  ncm_free_inst() only
++	 * runs after ncm_free(), so cleanup never sees an unreleased reference
++	 * from this instance.
++	 */
++	ncm_function_ref_get();
+ #else
+ 	ncm->port.func.name = "cdc_network";
+ #endif
+@@ -1875,11 +2067,37 @@
+ 	ncm->port.unwrap = ncm_unwrap_ntb;
+ 
+ #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+-	ncm_function_init();
++	status = ncm_function_init();
++	if (status) {
++		mutex_lock(&opts->lock);
++		opts->refcnt--;
++		mutex_unlock(&opts->lock);
++		kfree(ncm);
++		return ERR_PTR(status);
++	}
+ #endif
+ 	return &ncm->port.func;
+ }
+ 
++/*
++ * Nuxel: DECLARE_USB_FUNCTION_INIT() defines a static ncm_mod_exit(), which
++ * unregisters the configfs function.  Hook the vendor singleton into the same
++ * exit path so a module unload releases the misc device even if no function
++ * instance remains.  The macro's own module_exit() uses the last definition,
++ * so rename the generated init/exit and provide a chained exit.
++ */
++#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
++#define ncm_mod_init nuxel_ncm_base_mod_init
++#define ncm_mod_exit nuxel_ncm_base_mod_exit
++#endif
+ DECLARE_USB_FUNCTION_INIT(ncm, ncm_alloc_inst, ncm_alloc);
++#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
++static void __exit nuxel_ncm_mod_exit(void)
++{
++	nuxel_ncm_base_mod_exit();
++	ncm_function_shutdown();
++}
++module_exit(nuxel_ncm_mod_exit);
++#endif
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Yauheni Kaliuta");

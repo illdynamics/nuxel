@@ -32,15 +32,19 @@ from gi.repository import Gio, GLib, Gtk
 APP_ID = "org.nuxel.CameraNative"
 TOPOLOGY_PATH = "/var/lib/nuxel/camera-topology.json"
 
-# The S10+ camera gate is a hardware/vendor fact, documented in
-# docs/a52-camera/MEDIA-PIPELINE-ANALYSIS.md: the FIMC-IS vendor driver rejects
-# the standard VIDIOC_S_FMT ioctl (ENOTTY), so /dev/video* enumeration is NOT
-# evidence of a capture frame.
+# The FIMC-IS nodes are Samsung MPLANE + EXT_PIX_FORMAT: generic v4l2src /
+# v4l2-ctl get ENOTTY because they never select the multi-plane ioctl path, so
+# /dev/video* enumeration is NOT evidence of a capture frame. A real frame is
+# measured by `nuxel-fimc-capture` (tools/s10plus/fimc-capture) and published
+# by the camera portal; this app only renders a stream that is already proven.
 FIMC_BLOCK_NOTE = (
-    "Exynos FIMC-IS vendor camera stack. /dev/video* nodes are enumerated but "
-    "standard V4L2 capture is blocked (VIDIOC_S_FMT -> ENOTTY); see "
-    "docs/a52-camera/MEDIA-PIPELINE-ANALYSIS.md."
+    "Exynos FIMC-IS capture needs its MPLANE ioctl path and ISP firmware. "
+    "No proven live stream yet; diagnostics show the exact failing stage "
+    "(run: nuxel-camera-diag.sh status)."
 )
+# PipeWire node names published by the camera portal backend.
+STREAM_NODE_ENV = "NUXEL_CAMERA_STREAM_NODE"
+STREAM_NODE_DEFAULT = "org.nuxel.Camera.main"
 
 
 def read_topology() -> dict:
@@ -131,18 +135,14 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
         content.append(system_bar)
         home.connect("clicked", lambda _b: self._go_home())
         close.connect("clicked", lambda _b: self.close())
+        self.connect("close-request", self._on_close)
         GLib.timeout_add_seconds(15, self._refresh_status_line)
 
-        # Viewfinder placeholder: honest, never a synthetic live preview.
-        viewfinder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        viewfinder.set_vexpand(True)
-        viewfinder.set_halign(Gtk.Align.FILL)
-        viewfinder.set_valign(Gtk.Align.CENTER)
-        viewfinder.add_css_class("card")
-        icon = Gtk.Label(label="\U0001F4F7")
-        icon.add_css_class("title-1")
-        viewfinder.append(icon)
-        viewfinder.append(Gtk.Label(label="Camera viewfinder"))
+        # Viewfinder. Only a proven stream is rendered: when the portal has
+        # published a PipeWire node (the FIMC-IS probe already passed) we embed
+        # a Gtk.Picture fed by a gst pipewiresrc; otherwise the card states the
+        # exact reason. Never a synthetic videotestsrc in the real app.
+        viewfinder, self._stream = self._build_viewfinder(hw)
         content.append(viewfinder)
 
         # Honest status card (A65-12): concise top-level truth. The verbose
@@ -181,6 +181,52 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
         btn_row.append(close)
         content.append(btn_row)
 
+    # -- real stream ----------------------------------------------------------
+    def _stream_node(self) -> str:
+        return os.environ.get(STREAM_NODE_ENV) or STREAM_NODE_DEFAULT
+
+    def _build_viewfinder(self, hw):
+        """Return (widget, stream_state).
+
+        A live frame requires both: the bridge reports capture-verified hardware
+        AND the portal published a PipeWire node. Anything less is an honest
+        static card; the GStreamer pipeline is torn down on window close.
+        """
+        node = self._stream_node()
+        if not hw.get("capture_verified"):
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            box.set_vexpand(True)
+            box.add_css_class("card")
+            icon = Gtk.Label(label="\U0001F4F7")
+            icon.add_css_class("title-1")
+            box.append(icon)
+            box.append(Gtk.Label(label="Camera viewfinder"))
+            box.append(Gtk.Label(label="No live stream: " + (hw.get("reason") or "camera not verified")))
+            return box, None
+        try:
+            import gi as _gi
+            _gi.require_version("Gst", "1.0")
+            _gi.require_version("GstVideo", "1.0")
+            from gi.repository import Gst
+            Gst.init(None)
+            pic = Gtk.Picture()
+            pic.set_vexpand(True)
+            pic.set_size_request(-1, 520)
+            pipeline = Gst.parse_launch(
+                "pipewiresrc path=%s ! videoconvert ! gtk4paintablesink name=sink" % node)
+            sink = pipeline.get_by_name("sink")
+            paintable = sink.get_property("paintable")
+            if paintable is not None:
+                pic.set_paintable(paintable)
+            pipeline.set_state(Gst.State.PLAYING)
+            return pic, pipeline
+        except Exception as exc:  # noqa: BLE001 - report, never fake
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+            box.add_css_class("card")
+            box.append(Gtk.Label(label="Camera detected; stream backend unavailable"))
+            box.append(Gtk.Label(label=str(exc)))
+            return box, None
+
     def _status_line(self) -> str:
         try:
             wifi = open("/sys/class/net/wlan0/operstate").read().strip()
@@ -200,6 +246,18 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
             self.status_label.set_text(self._status_line())
         return True
 
+    def _on_close(self, *_):
+        self._stop_stream()
+        return False
+
+    def _stop_stream(self):
+        if getattr(self, "_stream", None) is not None:
+            try:
+                self._stream.set_state(__import__("gi").repository.Gst.State.NULL)
+            except Exception:  # noqa: BLE001
+                pass
+            self._stream = None
+
     def _go_home(self):
         env = dict(os.environ)
         env.setdefault("XDG_RUNTIME_DIR", "/run/nuxel-wayland")
@@ -212,7 +270,8 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
         self.close()
 
     def _refresh(self):
-        # Rebuild the content with a fresh status read.
+        # Rebuild the content with a fresh status read; stop the old stream.
+        self._stop_stream()
         self.set_child(None)
         self._build()
 

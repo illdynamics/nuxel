@@ -773,6 +773,23 @@ install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-abox-firmware-reload-boot.sh
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-route.sh "$STAGE/usr/lib/nuxel/nuxel-audio-route.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-mic-route.sh "$STAGE/usr/lib/nuxel/nuxel-mic-route.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-wifi-up.sh "$STAGE/usr/lib/nuxel/nuxel-wifi-up.sh"
+# v0.8.5: Flatpak app wrappers + sandbox Pulse relay.  Without these the image
+# could boot but the launcher's registry pointed at wrappers that did not
+# exist, and sandboxed apps could not reach the session Pulse socket.
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-flatpak-stremio "$STAGE/usr/lib/nuxel/nuxel-flatpak-stremio"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-flatpak-signal "$STAGE/usr/lib/nuxel/nuxel-flatpak-signal"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-flatpak-pulse-relay.py "$STAGE/usr/lib/nuxel/nuxel-flatpak-pulse-relay.py"
+install -Dm0644 /nuxel/services/nuxel-s10/systemd/nuxel-flatpak-pulse-relay.service \
+    "$STAGE/etc/systemd/system/nuxel-flatpak-pulse-relay.service"
+ln -sf ../nuxel-flatpak-pulse-relay.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-flatpak-pulse-relay.service"
+# v0.8.5: the Wi-Fi hotspot owner (hostapd + dnsmasq + dedicated NAT) and the
+# durable tethering/routing sysctls.  The hotspot is owner-controlled at
+# runtime; the unit is installed but not enabled by default.
+install -Dm0755 /nuxel/services/nuxel-network/nuxel-hotspot.py "$STAGE/usr/libexec/nuxel/nuxel-hotspot"
+install -d "$STAGE/etc/nuxel/hotspot"
+install -Dm0644 /nuxel/services/nuxel-network/nuxel-hotspot.service "$STAGE/etc/systemd/system/nuxel-hotspot.service"
+install -Dm0644 /nuxel/configs/nuxel/sysctl/90-nuxel-tether.conf "$STAGE/etc/sysctl.d/90-nuxel-tether.conf"
 # Durable interface ON/OFF intent shared by Settings, Quick Settings and the
 # boot restore.  Bluetooth/NFC/GNSS default OFF; Wi-Fi keeps NetworkManager as
 # its owner and is not re-enabled when the owner persisted it OFF.
@@ -789,7 +806,12 @@ install -Dm0644 /nuxel/configs/nuxel/touch/bootmode-guard.json "$STAGE/etc/nuxel
 ln -sf ../nuxel-bootmode-guard.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-bootmode-guard.service"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-charger-mode-recovery.sh "$STAGE/usr/lib/nuxel/nuxel-charger-mode-recovery.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-device-permissions.sh "$STAGE/usr/lib/nuxel/nuxel-device-permissions.sh"
+# The USB gadget has ONE owner (nuxel-usb-mode.sh) for every composition:
+# charging / file_transfer / usb_network / usb_tethering.  There is no second
+# network helper that edits the same configfs tree.
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-usb-mode.sh "$STAGE/usr/lib/nuxel/nuxel-usb-mode.sh"
+# PWNAGE-USBNET: USB network data plane (NCM + ACM) and its link monitor.
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-usb-net-monitor.sh "$STAGE/usr/lib/nuxel/nuxel-usb-net-monitor.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-mtp-server "$STAGE/usr/lib/nuxel/nuxel-mtp-server"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-vlc-fallback "$STAGE/usr/lib/nuxel/nuxel-vlc-fallback"
 install -m 0755 /nuxel/services/nuxel-software/nuxel-software "$STAGE/usr/lib/nuxel/nuxel-software"
@@ -817,6 +839,10 @@ install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-charger-mode-recovery.se
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-device-permissions.service "$STAGE/etc/systemd/system/nuxel-device-permissions.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mtp.service "$STAGE/etc/systemd/system/nuxel-mtp.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-mode-monitor.service "$STAGE/etc/systemd/system/nuxel-usb-mode-monitor.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-net-restore.service "$STAGE/etc/systemd/system/nuxel-usb-net-restore.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-net-monitor.service "$STAGE/etc/systemd/system/nuxel-usb-net-monitor.service"
+ln -sf ../nuxel-usb-net-monitor.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-usb-net-monitor.service"
+ln -sf ../nuxel-usb-net-restore.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-usb-net-restore.service"
 
 install -d -m 0755 "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wl-fb.service.d/15-idle-fps.conf "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d/15-idle-fps.conf"

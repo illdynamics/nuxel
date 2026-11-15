@@ -83,9 +83,20 @@ class FlashlightProvider:
         self._brightness_path: Optional[str] = None
         self._max_brightness = 255
         self._boolean_control = False
+        self._on_deadline: Optional[float] = None
+        self._session: Optional[str] = None
+        self._last_error: Optional[str] = None
+        self._on_count = 0
         self._policy = self._load_policy()
         atexit.register(self.force_off)
+        # PWNAGE-103000: never boot/initialize with the LED left on.  A previous
+        # process crash cannot leave the torch burning: provider construction
+        # forces the LED class to 0 when it is writable (explicit OFF path).
         self._refresh_path()
+        if self._brightness_path and _read_int(self._brightness_path):
+            self._write_brightness(0)
+        self._state = "OFF"
+        self._reason = "provider init: explicit OFF"
 
     # ---- policy / discovery ------------------------------------------------
     def _load_policy(self) -> Dict[str, Any]:
@@ -182,7 +193,11 @@ class FlashlightProvider:
             ms = int(safety.get("max_on_ms", 60000))
         except (TypeError, ValueError):
             ms = 60000
-        return max(1.0, min(300.0, ms / 1000.0))
+        # PWNAGE-103000: the provider enforces the POLICY ceiling (10 minutes
+        # for the S10+), never a longer hard-coded value.  The old 300 s ceiling
+        # silently contradicted the documented max_on_ms=600000 policy.  A
+        # misconfigured policy cannot raise the ceiling above the document.
+        return max(1.0, min(600.0, ms / 1000.0))
 
     # ---- state / control ---------------------------------------------------
     def status(self) -> Dict[str, Any]:
@@ -204,6 +219,11 @@ class FlashlightProvider:
                              (os.path.basename(os.path.dirname(self._brightness_path)) if self._brightness_path else None)),
                 "control": "camera-rear_flash" if self._boolean_control else "led-brightness",
                 "max_on_seconds": self._max_on_seconds(),
+                "remaining_seconds": (max(0.0, round(self._on_deadline - time.monotonic(), 1))
+                                      if state == "ON" and self._on_deadline else 0.0),
+                "session": self._session,
+                "on_count": self._on_count,
+                "last_error": self._last_error,
                 "camera_active": self._camera_active(),
                 "thermal_blocked": self._thermal_blocked(),
                 "reason": reason,
@@ -228,6 +248,16 @@ class FlashlightProvider:
         except OSError:
             return False
 
+    def _read_brightness(self) -> Optional[int]:
+        if not self._brightness_path:
+            return None
+        return _read_int(self._brightness_path)
+
+    def _readback_off(self) -> bool:
+        """A writable node that still reads non-zero is not OFF."""
+        value = self._read_brightness()
+        return value is not None and value == 0
+
     def _cancel_timer(self) -> None:
         if self._timer is not None:
             try:
@@ -237,10 +267,15 @@ class FlashlightProvider:
             self._timer = None
 
     def _remember(self) -> None:
+        now = time.monotonic()
         _atomic_json(self.state_path, {
-            "schema_version": 1,
+            "schema_version": 2,
             "state": self._state,
             "on": self._state == "ON",
+            "session": self._session,
+            "remaining_seconds": (max(0.0, round(self._on_deadline - now, 1))
+                                  if self._state == "ON" and self._on_deadline else 0.0),
+            "last_error": self._last_error,
             "reason": self._reason,
             "led_path": self._brightness_path,
             "updated_at": int(time.time()),
@@ -250,8 +285,17 @@ class FlashlightProvider:
     def force_off(self, reason: str = "explicit-off") -> Dict[str, Any]:
         with self._lock:
             self._cancel_timer()
+            self._on_deadline = None
+            self._session = None
             if self._brightness_path:
-                self._write_brightness(0)
+                ok = self._write_brightness(0)
+                if not ok or not self._readback_off():
+                    self._last_error = "OFF write failed or readback is non-zero"
+                    self._state = "ERROR"
+                    self._reason = "forced OFF failed: %s" % self._last_error
+                    self._remember()
+                    return self.status()
+                self._last_error = None
                 self._state = "OFF"
                 self._reason = reason
                 self._remember()
@@ -282,15 +326,29 @@ class FlashlightProvider:
                 self._remember()
                 return self.status()
             if not self._write_brightness(self._max_brightness):
+                self._last_error = "brightness write failed"
                 self._state = "ERROR"
                 self._reason = "brightness write failed"
                 self._remember()
                 # A failed write must not leave the LED in an unknown state.
                 self._write_brightness(0)
                 return self.status()
+            readback = self._read_brightness()
+            if readback is None or readback <= 0:
+                self._last_error = "ON write did not read back enabled"
+                self._state = "ERROR"
+                self._reason = self._last_error
+                self._write_brightness(0)
+                self._remember()
+                return self.status()
+            self._last_error = None
             self._state = "ON"
             self._reason = "torch on via privileged owner; request=%s" % requested_by
+            self._on_count += 1
+            self._session = "torch-%d" % self._on_count
+            self._on_deadline = time.monotonic() + self._max_on_seconds()
             self._remember()
+            # Idempotent re-ON: one timer per session, never a stacked timer.
             self._cancel_timer()
             self._timer = threading.Timer(self._max_on_seconds(), self._timeout_off)
             self._timer.daemon = True
@@ -300,8 +358,19 @@ class FlashlightProvider:
     def _timeout_off(self) -> None:
         with self._lock:
             self._timer = None
+            self._on_deadline = None
+            self._session = None
             if self._brightness_path:
+                # The timer is the authoritative cutoff; a failed write is NOT
+                # reported as a clean OFF (readback decides the state).
                 self._write_brightness(0)
+                if not self._readback_off():
+                    self._last_error = "timeout OFF write failed or readback is non-zero"
+                    self._state = "ERROR"
+                    self._reason = "policy timeout; %s" % self._last_error
+                    self._remember()
+                    return
+            self._last_error = None
             self._state = "OFF"
             self._reason = "policy max_on_seconds elapsed; forced off"
             self._remember()

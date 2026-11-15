@@ -22,14 +22,26 @@ StartLimitBurst=10
 
 [Service]
 Type=simple
+# First-party grant files are written by root-owned permD but enforced by the
+# unprivileged bridge.  An older writer left them 0600 root:root, making permD
+# say "allowed" while every bridge actuator call returned CAPABILITY_DENIED.
+# Repair only the group-read bit on this one protected store; never widen it to
+# other users, and do not chown the file (root remains its writer).
+ExecStartPre=+/bin/sh -c 'd=/var/lib/nuxel/permissions; [ -d "$d" ] && find "$d" -maxdepth 1 -type f -name "*.json" -exec chgrp nuxel-bridge {} + -exec chmod g+r {} + || true'
 ExecStart=/usr/bin/nuxel-bridge
+# A88: the XRDP/VNC apps start their servers through the fixed root-owned ctl.
+# The bridge runs as the unprivileged nuxel-bridge account with an empty
+# capability set; grant ONLY that one binary the ability to regain its root
+# identity (and nothing else: no sys_admin, no net_admin, no raw devices).
+# The helper then performs its allow-listed systemctl/config work and drops
+# back to the caller uid for everything that is not a config write.
 # The bridge refuses to answer a PWA whose bridge_version does not match the
 # pinned value in pwa/nuxel-common/bridge-version.json; publish it so the pin is
 # visible in `systemctl show -p Environment`.
 #   NUXEL_BRIDGE_PROTOCOL_VERSION = the pinned PWA<->host contract ("1")
 #   NUXEL_BRIDGE_VERSION          = the host implementation version
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.8.3-beta
+Environment=NUXEL_BRIDGE_VERSION=0.8.5-beta
 Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 Restart=on-failure
 RestartSec=5
@@ -42,12 +54,28 @@ Group=nuxel-bridge
 # The bridge also persists the grants it brokers, so grant it only group access
 # to that one directory rather than running the bridge as root.
 SupplementaryGroups=nuxel
+# A88: the XRDP app's Start failed generating xrdp.ini because
+# ProtectSystem=full makes /etc read-only even for the ctl that transiently
+# becomes root (the VNC one writes under /run and worked).  PrivateTmp=yes
+# already gives this unit a private mount namespace.  Bind ONLY the xrdp config
+# directory BEFORE ProtectSystem is applied, which leaves that one directory
+# writable and everything else in /etc read-only.
+BindPaths=/etc/xrdp
 ProtectSystem=full
 ProtectHome=true
 PrivateTmp=true
+# A88: the remote-desktop apps start xrdp/wayvnc through the fixed root-owned
+# ctl.  The bridge is unprivileged, so it carries EXACTLY cap_setuid/cap_setgid
+# (ambient, so they survive /usr/bin/python3 exec): the ctl can enter root for
+# its allow-listed systemctl/config work, overwrite the root-owned generated
+# config (dac_override) and drop back to the caller (setpcap) -- and nothing
+# else.  No other capability
+# is in the bounding set, so a compromised bridge cannot gain any.  The file
+# capability route does not work here because NoNewPrivileges=yes (kept for
+# every other path) suppresses it.
 NoNewPrivileges=true
-CapabilityBoundingSet=
-AmbientCapabilities=
+CapabilityBoundingSet=cap_setuid cap_setgid cap_setpcap cap_dac_override
+AmbientCapabilities=cap_setuid cap_setgid cap_setpcap cap_dac_override
 SecureBits=keep-caps
 MemoryDenyWriteExecute=true
 RestrictRealtime=true

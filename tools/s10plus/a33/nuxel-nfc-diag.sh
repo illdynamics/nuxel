@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # nuxel-nfc-diag.sh — S10+ (beyond2lte) NFC bring-up diagnostic.
 #
-# Per-stage evidence for the Samsung sec-nfc (S3FWRN5-family, I2C 0x27)
+# Per-stage evidence for the Samsung S3NRN82 (S3FWRN5-compatible NCI, I2C 0x27)
 # controller and the FIRST failing stage: controller -> firmware -> subsystem ->
 # stack -> tag. Configuration alone is NEVER a working NFC and no UID is ever
 # fabricated; a physical tag read by the owner is NEEDS_OWNER_TEST.
@@ -113,7 +113,7 @@ cmd_status() {
       "$(jesc "$c")" "$(jesc "$f")" "$(jesc "$s")" "$(jesc "$st")" "$ff" "$v"
     return 0
   fi
-  say "device   : beyond2lte   controller : sec-nfc (S3FWRN5-family) @ I2C 0x27 + eSE"
+  say "device   : beyond2lte   controller : S3NRN82 (S3FWRN5-compatible NCI) @ I2C 0x27"
   say ""
   say "stages:"
   say "  controller : $c"

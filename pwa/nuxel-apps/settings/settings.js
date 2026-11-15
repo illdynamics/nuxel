@@ -858,7 +858,11 @@
   // ---------- boot ----------
   loadZonesDoc().then(loadButtons).then(loadBoot).then(hapticsDoc).then(renderHaptics).then(function () {
     refreshDev();
-    setInterval(function () { if (!document.hidden) refreshDev(); }, 15000);
+    // v0.8.5 PERF: only poll while the Settings document is actually visible;
+    // a hidden settings view must not cost a bridge call + DOM rewrite.
+    setInterval(function () {
+      try { if (!document.hidden && document.visibilityState === 'visible') refreshDev(); } catch (e) {}
+    }, 20000);
     window.addEventListener('resize', previewLayout);
   });
 })();

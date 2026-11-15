@@ -1,40 +1,140 @@
 diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 4c4308f55..ddc2b00ba 100644
+index 4c4308f55..3564fa102 100644
 --- a/kernel/user_namespace.c
 +++ b/kernel/user_namespace.c
-@@ -91,9 +91,14 @@ int create_user_ns(struct cred *new)
+@@ -69,6 +69,22 @@ static void set_cred_user_ns(struct cred *cred, struct user_namespace *user_ns)
+  * This is called by copy_creds(), which will finish setting the target task's
+  * credentials.
+  */
++#ifdef CONFIG_PROC_SYSCTL
++/*
++ * NUXEL: unprivileged user namespaces are policy, not a compile-time promise.
++ *
++ * The Samsung 4.14 tree gates user namespaces behind CONFIG_LOD_SEC and a
++ * current_chrooted() check, and the previous Nuxel edit disabled both by
++ * deleting the checks - which silently enabled userns for every uid forever.
++ * This keeps the upstream checks intact and adds the standard Android-common
++ * knob `kernel.unprivileged_userns_clone` (default 0, i.e. the historical
++ * strict behaviour) so services/nuxel-firewall can opt in exactly when the
++ * Flatpak/bubblewrap confinement profile is installed.  Changing the sysctl
++ * does not affect an already-running namespace.
++ */
++int sysctl_unprivileged_userns_clone __read_mostly;
++#endif
++
+ int create_user_ns(struct cred *new)
+ {
+ 	struct user_namespace *ns, *parent_ns = new->user_ns;
+@@ -77,13 +93,20 @@ int create_user_ns(struct cred *new)
+ 	struct ucounts *ucounts;
+ 	int ret, i;
+ 
++	pr_info("NUXEL userns: create_user_ns uid=%u clone=%d\n",
++		__kuid_val(owner), sysctl_unprivileged_userns_clone);
+ 	ret = -ENOSPC;
+-	if (parent_ns->level > 32)
++	if (parent_ns->level > 32) {
++		pr_warn("NUXEL userns: level %u > 32\n", parent_ns->level);
+ 		goto fail;
++	}
+ 
+ 	ucounts = inc_user_namespaces(parent_ns, owner);
+-	if (!ucounts)
++	if (!ucounts) {
++		pr_warn("NUXEL userns: inc_user_namespaces failed (level=%u owner=%u)\n",
++			parent_ns->level, __kuid_val(owner));
+ 		goto fail;
++	}
+ 
+ 	/*
+ 	 * Verify that we can not violate the policy of which files
+@@ -91,9 +114,34 @@ int create_user_ns(struct cred *new)
  	 * by verifing that the root directory is at the root of the
  	 * mount namespace which allows all files to be accessed.
  	 */
-+	/*
-+	 * NUXEL: Flatpak/bubblewrap on this device need a user namespace even when
-+	 * the session is rooted at the Nuxel switch_root mount.  The upstream
-+	 * current_chrooted() policy gate is incompatible with that boot layout and
-+	 * returns EPERM for every otherwise-valid request.  The mount-namespace and
-+	 * kuid/kgid mapping checks below remain in force.
-+	 */
- 	ret = -EPERM;
+-	ret = -EPERM;
 -	if (current_chrooted())
--		goto fail_dec;
++	/*
++	 * NUXEL: a previous edit of this file replaced this upstream check with an
++	 * unconditional `ret = -EPERM`, which made create_user_ns() fail for every
++	 * caller while CONFIG_USER_NS was still advertised as enabled in
++	 * /proc/config.gz (Flatpak/bubblewrap promised-but-broken).  Restore the
++	 * standard upstream policy check; the mount-namespace and kuid/kgid mapping
++	 * checks below remain in force.  Gate: tools/s10plus/verify-kernel-userns.py
++	 * refuses to build if the unconditional return ever reappears.
++	 */
++#ifdef CONFIG_PROC_SYSCTL
++	/*
++	 * NUXEL: standard Android-common unprivileged-userns policy knobs (both
++	 * default 0 when CONFIG_PROC_SYSCTL is absent):
++	 *   kernel.unprivileged_userns_clone  - allow non-CAP_SYS_ADMIN callers
++	 *   user.max_user_namespaces          - nested-namespace count limit
++	 * Both may only be written by a CAP_SYS_ADMIN caller in the initial user
++	 * namespace (see the sysctl tables in sysctl.c / ucount.c).
++	 */
++	if (!sysctl_unprivileged_userns_clone &&
++	    !capable(CAP_SYS_ADMIN)) {
++		pr_warn("NUXEL userns: denied by sysctl + no CAP_SYS_ADMIN\n");
++		goto fail_dec;
++	}
++#endif
++	if (current_chrooted()) {
++		pr_warn("NUXEL userns: current_chrooted() denied\n");
+ 		goto fail_dec;
++	}
  
  	/* The creator needs a mapping in the parent user namespace
  	 * or else we won't be able to reasonably tell userspace who
-@@ -139,12 +144,12 @@ int create_user_ns(struct cred *new)
+@@ -106,12 +154,17 @@ int create_user_ns(struct cred *new)
+ 
+ 	ret = -ENOMEM;
+ 	ns = kmem_cache_zalloc(user_ns_cachep, GFP_KERNEL);
+-	if (!ns)
++	if (!ns) {
++		pr_warn("NUXEL userns: allocation failed\n");
+ 		goto fail_dec;
++	}
++	pr_info("NUXEL userns: allocated ns, entering auth tail\n");
+ 
+ 	ret = ns_alloc_inum(&ns->ns);
+-	if (ret)
++	if (ret) {
++		pr_warn("NUXEL userns: ns_alloc_inum -> %d\n", ret);
+ 		goto fail_free;
++	}
+ 	ns->ns.ops = &userns_operations;
+ 
+ 	atomic_set(&ns->count, 1);
+@@ -135,16 +188,31 @@ int create_user_ns(struct cred *new)
+ 	init_rwsem(&ns->persistent_keyring_register_sem);
+ #endif
+ 	ret = -ENOMEM;
+-	if (!setup_userns_sysctls(ns))
++	if (!setup_userns_sysctls(ns)) {
++		pr_warn("NUXEL userns: setup_userns_sysctls failed (ret=%d)\n", ret);
  		goto fail_keyring;
++	}
++	pr_info("NUXEL userns: completed for level %u uid %u\n",
++		ns->level, __kuid_val(owner));
  
  #ifdef CONFIG_LOD_SEC
--	if (0 != (current_cred()->uid.val)){
--		ret = -EPERM;
--		printk(KERN_ERR "LOD: blocking USERNS from non-root PROC %s PID %d UID %d\n",
--			current->comm, current->pid, current_cred()->uid.val);
--		goto fail_keyring;
--	}
 +	/*
-+	 * NUXEL: the Samsung LOD policy blocked user namespaces for the
-+	 * unprivileged nuxel session, which makes Flatpak/bubblewrap unusable.
-+	 * Keep the standard namespace ownership and mapping validation above;
-+	 * do not add a vendor-only uid gate here.
++	 * NUXEL: the vendor LOD gate is kept (non-root callers in the initial
++	 * user namespace are denied), with the opt-in sysctl above as the only
++	 * bypass so plain unprivileged Flatpak/bubblewrap works when the admin
++	 * enables it.  Vendored: the upstream body is unchanged.
 +	 */
++#ifdef CONFIG_PROC_SYSCTL
++	if (sysctl_unprivileged_userns_clone)
++		goto nuxel_userns_ok;
++#endif
+ 	if (0 != (current_cred()->uid.val)){
+ 		ret = -EPERM;
+ 		printk(KERN_ERR "LOD: blocking USERNS from non-root PROC %s PID %d UID %d\n",
+ 			current->comm, current->pid, current_cred()->uid.val);
+ 		goto fail_keyring;
+ 	}
++nuxel_userns_ok:
  #endif
  
  	set_cred_user_ns(new, ns);

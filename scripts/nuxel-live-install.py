@@ -45,11 +45,22 @@ ALLOWED_PREFIXES = (
     "/usr/libexec/nuxel/",
     "/usr/bin/nuxel-",
     "/etc/nuxel/",
+    # v0.8.5: the firewall rulesets + unit.  /etc/nftables contains only
+    # declarative rules (no block device path; the tool refuses those).
+    "/etc/nftables/",
     "/etc/profile.d/",
     "/etc/xrdp/",
     "/etc/pam.d/",
     "/etc/dbus-1/system.d/",
+    # Session-bus policy for the in-app consent surface (org.nuxel.PhoshAgent).
+    # Session policy files cannot grant device or root privileges; they only
+    # control who may own/call one session bus name.
+    "/etc/dbus-1/session.d/",
     "/etc/systemd/system/",
+    "/usr/lib/systemd/system/",
+    # Session user units (the camera portal is a per-user session service).
+    "/usr/lib/systemd/user/",
+    "/usr/lib/udev/rules.d/",
     "/usr/local/libexec/nuxel/",
     "/usr/local/bin/nuxel-",
 )
@@ -60,6 +71,12 @@ FORBIDDEN_SUFFIXES = (".img", ".dtb", ".dtbo", ".gz", ".tar", ".ko")
 # top of sshd's canonical /etc/banner.  /etc/profile.d/nuxel-banner.sh is now
 # the one local-TTY hook and is silent for SSH; retire the duplicate.
 LEGACY_REMOVE = ("/etc/profile.d/99-nuxel-banner.sh",)
+
+# The bridge is the authority for the permission store and location provider.
+# A bridge that exited during a previous deploy can remain inside systemd's
+# StartLimitIntervalSec window, so clear that rate-limit state before the real
+# restart and only then health-test THIS installation.
+UNIT_RESTART_CLEAN = ("nuxel-bridge",)
 
 
 def sha256_file(path: Path) -> str:
@@ -140,30 +157,42 @@ def main(argv=None) -> int:
             raise SystemExit("plan.json is empty")
 
         # Validate the whole plan before touching the device.
-        seen: dict[str, str] = {}
+        # Keyed by (source, target): several repository sources legitimately map
+        # to more than one installed path (the bridge's nfc_provider.py exists in
+        # both trees).  Keying by target alone left the second copy unwritten.
+        seen: dict[tuple[str, str], str] = {}
         for entry in plan:
             target = entry["target"]
             source = entry["source"]
             if not safe_target(target):
                 raise SystemExit("refused target: %s" % target)
+            gid = entry.get("gid")
+            if gid is not None and (not isinstance(gid, int) or gid < 0):
+                raise SystemExit("invalid gid for %s" % target)
             src = work / "files" / source
             if not src.is_file():
                 raise SystemExit("payload missing source: %s" % source)
             got = sha256_file(src)
             if got != entry["sha256"]:
                 raise SystemExit("payload hash mismatch for %s: %s != %s" % (source, got, entry["sha256"]))
-            if target in seen and seen[target] != got:
+            key = (source, target)
+            previous = next((v for (src_name, tgt), v in seen.items()
+                             if tgt == target), None)
+            if previous is not None and previous != got:
                 raise SystemExit("conflicting bytes for target %s" % target)
-            seen[target] = got
+            seen[key] = got
         print("VALIDATED %d file(s), %d target(s)" % (len(plan), len(seen)))
 
         # Back up and install.
         for entry in plan:
             source, target, mode = entry["source"], entry["target"], int(entry["mode"])
+            gid = entry.get("gid")
             src = work / "files" / source
             dest = under_root(root, target)
             if dest.exists() and dest.is_dir():
                 raise SystemExit("refusing to replace directory: %s" % target)
+            # Two sources may share one target only when their bytes are equal
+            # (validated above); install it once.
             if target not in changed:
                 if dest.exists():
                     backup = backup_root / target.lstrip("/")
@@ -173,6 +202,11 @@ def main(argv=None) -> int:
                 tmp = dest.with_name(dest.name + ".nuxel-new")
                 shutil.copyfile(src, tmp)
                 os.chmod(tmp, mode)
+                if gid is not None:
+                    # Group-readable grant records are consumed by the
+                    # unprivileged bridge; the store's group is resolved on the
+                    # phone by nuxel-deploy-live.py, never guessed here.
+                    os.chown(tmp, -1, gid)
                 os.replace(tmp, dest)
                 changed.append(target)
             got = sha256_file(dest)
@@ -201,9 +235,23 @@ def main(argv=None) -> int:
             return 0
 
         systemctl("daemon-reload")
+        # Restart the system bus after policy files change (session.d /
+        # system.d); without this a new bus name policy only applies at the
+        # next boot (measured with org.nuxel.PhoshAgent).
+        if any(t.startswith("/etc/dbus-1/") for t in changed):
+            systemctl("restart", "dbus")
+            time.sleep(1)
         if not args.no_restart and args.restart.strip():
             services = [s.strip() for s in args.restart.split(",") if s.strip()]
             for svc in services:
+                # A bridge that exited during a previous deploy may still be
+                # inside systemd's StartLimitIntervalSec window.  Clearing that
+                # rate-limit state is a precondition for testing THIS install.
+                if svc in UNIT_RESTART_CLEAN:
+                    systemctl("reset-failed", svc)
+                # A unit that was stopped by hand (or never enabled on an older
+                # image) must still be brought up by a deploy.
+                systemctl("reset-failed", svc)
                 systemctl("restart", svc)
             deadline = time.time() + args.health_timeout
             failed = []
@@ -213,6 +261,15 @@ def main(argv=None) -> int:
                     break
                 time.sleep(1)
             if failed:
+                # A bridge that starts then exits (for example because one
+                # grant file is unreadable) can look "active" to a single early
+                # probe.  Require the same healthy set across a short stability
+                # window before committing the deployment.
+                stable_until = time.time() + 2.0
+                while time.time() < stable_until and not failed:
+                    time.sleep(0.5)
+                    failed = [svc for svc in services if systemctl("is-active", "--quiet", svc) != 0]
+            if failed:
                 print("HEALTH_FAILED %s; rolling back" % ",".join(failed), file=sys.stderr)
                 rollback(root, backup_root, plan, changed)
                 systemctl("daemon-reload")
@@ -220,6 +277,56 @@ def main(argv=None) -> int:
                     systemctl("restart", svc)
                 return 1
             print("HEALTH_OK %s" % ",".join(services))
+
+        # NUXEL: the audio socket permissions unit must be enabled so a reboot
+        # cannot take the microphone away from session-user apps again.
+        # The audio daemon recreates pulse/ (and the per-user link) at every
+        # start/restart of THIS deploy, so re-run the permission unit last.
+        audio_unit = os.path.join(root, "etc/systemd/system/nuxel-audio-perms.service")
+        if os.path.exists(audio_unit):
+            if systemctl("enable", "nuxel-audio-perms.service") != 0:
+                print("WARN could not enable nuxel-audio-perms.service", file=sys.stderr)
+            if systemctl("start", "nuxel-audio-perms.service") != 0:
+                print("WARN nuxel-audio-perms.service did not start", file=sys.stderr)
+            else:
+                print("AUDIO_PERMS_OK")
+        # Flatpak apps cannot reach the session Pulse server (their sandbox
+        # remaps XDG_RUNTIME_DIR to /run/user/0); the relay is what makes the
+        # microphone visible to Ferdium/WhatsApp/Signal.  Keep it enabled and
+        # running across reboots and deploys.
+        relay_unit = os.path.join(root, "etc/systemd/system/nuxel-flatpak-pulse-relay.service")
+        if os.path.exists(relay_unit):
+            systemctl("enable", "nuxel-flatpak-pulse-relay.service")
+            if systemctl("restart", "nuxel-flatpak-pulse-relay.service") == 0:
+                print("FLATPAK_PULSE_RELAY_OK")
+            else:
+                print("WARN nuxel-flatpak-pulse-relay.service did not start",
+                      file=sys.stderr)
+        # Deployments must leave the permission daemon running: it is enabled,
+        # but an image that booted without it leaves it inactive, and both the
+        # verification step below and Settings depend on it being live.
+        if os.path.exists(os.path.join(root, "etc/systemd/system/nuxel-permd.service")):
+            systemctl("reset-failed", "nuxel-permd")
+            if systemctl("start", "nuxel-permd") != 0:
+                print("WARN nuxel-permd.service did not start", file=sys.stderr)
+            else:
+                print("PERMD_OK")
+
+        # The firewall must survive a reboot, not merely import.  v0.8.5 live
+        # fix: the unit was installed but left disabled (and its configured
+        # /usr/sbin/nft condition is false on this userland, where nft lives in
+        # /usr/bin), so the device booted with no ruleset.  Enable it, start it
+        # now and verify it is active; a failure is reported, never hidden.
+        fw_unit = os.path.join(root, "etc/systemd/system/nuxel-firewall.service")
+        if os.path.exists(fw_unit):
+            systemctl("enable", "nuxel-firewall.service")
+            systemctl("reset-failed", "nuxel-firewall.service")
+            if systemctl("start", "nuxel-firewall.service") != 0:
+                print("WARN nuxel-firewall.service did not start", file=sys.stderr)
+            elif systemctl("is-active", "--quiet", "nuxel-firewall.service") != 0:
+                print("WARN nuxel-firewall.service is not active", file=sys.stderr)
+            else:
+                print("FIREWALL_OK")
 
         # The firewall provider is imported by the bridge; prove the installed
         # layout resolves before declaring the deploy complete.

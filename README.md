@@ -3,18 +3,32 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.8.3-beta** — _Fully black screen-off, per-device completion percentages and a repaired release pipeline._
+**v0.8.5-beta** — _Live repair: Flatpak apps and messenger microphones, USB
+tethering, hotspot, idle CPU, and icon/lock-screen polish._
 
-> **v0.8.3-beta (2026-11-10).** Screen-off now paints and latches a black
-> framebuffer page, then drives brightness to 0, `bl_power=4`
-> (`FB_BLANK_POWERDOWN`) and `FBIOBLANK(POWERDOWN)` before re-asserting
-> powerdown. The S10+ AMOLED is genuinely dark instead of faintly lit, and the
-> black page is never shown after wake because the presenter forces a fresh
-> capture/commit. This release also repairs the v0.8.2 release gate
-> (immersive-chrome and native status-bar source contracts) and adds explicit
-> completion percentages for every device target. See
-> [RELEASE-NOTES.md](RELEASE-NOTES.md) and
-> [REPORT-PWNAGE-106000.md](REPORT-PWNAGE-106000.md).
+> **v0.8.5-beta (2026-11-15).** These fixes were reproduced and verified on the
+> live S10+ (Wi-Fi SSH and the USB-ECM console):
+>
+> - **Flatpak apps start again.** A root-owned `/run/user/1000/.flatpak` blocked
+>   every sandbox; it is now owned by the session user. Stremio launches;
+>   Stremio and Signal refuse a duplicate start.
+> - **Messenger microphones work.** WhatsApp/Ferdium recorded sped-up audio and
+>   Signal had no mic because the sandbox `PULSE_SERVER` pointed at an empty
+>   directory. The live Pulse socket is now mapped at
+>   `/run/flatpak/pulse/native`; recording inside the sandbox was verified.
+> - **USB tethering and the Wi-Fi hotspot forward traffic again.** The app
+>   firewall's forward chain dropped everything before the tether rules;
+>   `ip_forward` is now durable. Test AP **NuxNet** runs on `wlan1` with NAT on
+>   `wlan0`.
+> - **Idle CPU dropped** (a USB-C DeX link was re-linking four times a second;
+>   now stopped). System idle ~12 % busy / 89 % idle.
+> - **UI:** GTK/Flatpak icons no longer draw a second glyph or coloured tile
+>   behind the real icon; the blue rectangle after a power-menu lock is gone;
+>   the drawer and Settings are lighter.
+>
+> See [RELEASE-NOTES.md](RELEASE-NOTES.md),
+> [docs/v0.8.5-beta/REPORT.md](docs/v0.8.5-beta/REPORT.md) and the rewritten
+> [final-summary.md](final-summary.md).
 >
 > **Previously in v0.8.2-beta (2026-11-09).** XRDP and VNC are directly reachable on the
 > owner LAN on **TCP 13389** and **TCP 15900**, bound to the current trusted WLAN
@@ -171,7 +185,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 See [RELEASE-NOTES.md](RELEASE-NOTES.md) for user-facing release notes and
 [CHANGELOG.md](CHANGELOG.md) for the complete engineering history.
 
-## Honest Status — v0.8.3-beta
+## Honest Status — v0.8.5-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**

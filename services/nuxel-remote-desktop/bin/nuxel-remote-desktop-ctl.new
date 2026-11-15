@@ -1,0 +1,860 @@
+#!/usr/bin/env python3
+"""Fixed, allow-listed lifecycle helper for Nuxel GUI remote access.
+
+The helper accepts one action and one service name.  It never accepts a
+command, path, address or port from the caller.  Both remote paths show the
+real Phoc/Wayland screen:
+
+  * VNC:  TCP 5900, wayvnc attached to the active Phoc session, PAM
+    authentication as the local ``nuxel`` account.  There is no VNC password.
+    TLS (VeNCrypt) and Apple DH are offered; the latter is kept compatible with
+    Jump Desktop by the Nuxel neatvnc compatibility patch.
+  * XRDP: TCP 3389, TLS 1.2/1.3 + PAM as the local ``nuxel`` account.  xrdp's
+    libvnc module connects to a loopback-only, unauthenticated wayvnc mirror on
+    ``[::1]:5901``; the RDP listener is the only LAN-facing path.  This makes
+    RDP show the actual phone screen instead of a separate X11/Openbox portal.
+
+Listeners are bound to the current trusted WLAN IPv4 address.  A specific
+address (never 0.0.0.0) is the fail-closed LAN boundary on images without a
+firewall engine.
+"""
+
+from __future__ import annotations
+
+import fcntl
+import json
+import os
+import re
+import shutil
+import socket
+import struct
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+STATE_DIR = Path("/run/nuxel/remote-desktop")
+PREF_DIR = Path("/var/lib/nuxel/remote-desktop")
+VNC_DIR = Path("/etc/nuxel/remote-desktop/vnc")
+VNC_CONF = VNC_DIR / "wayvnc.conf"
+VNC_LOOPBACK_CONF = VNC_DIR / "wayvnc-loopback.conf"
+VNC_CERT = VNC_DIR / "tls_cert.pem"
+VNC_KEY = VNC_DIR / "tls_key.pem"
+VNC_RSA_KEY = VNC_DIR / "rsa_key.pem"
+VNC_PAM = Path("/etc/pam.d/wayvnc")
+VNC_SERVICE = "nuxel-remote-vnc.service"
+VNC_LOOPBACK_SERVICE = "nuxel-remote-vnc-loopback.service"
+XRDP_CONF = Path("/etc/xrdp/xrdp.ini")
+XRDP_CERT = Path("/etc/xrdp/nuxel-cert.pem")
+XRDP_KEY = Path("/etc/xrdp/nuxel-key.pem")
+XRDP_PAM = Path("/etc/pam.d/xrdp-sesman")
+XRDP_UNITS = ("xrdp-sesman.service", "xrdp.service")
+SERVICES = ("vnc", "xrdp", "scrcpy")
+PORTS = {"vnc": 5900, "xrdp": 3389}
+LOOPBACK_PORT = 5901
+WAYLAND_RUNTIME = Path("/run/nuxel-wayland")
+WAYLAND_DISPLAY = "wayland-0"
+ORIENTATION_STATUS = Path("/run/nuxel-orientation/status.json")
+VNC_REQUIRED_PROTOCOLS = (
+    "zwlr_screencopy_manager_v1",
+    "zwlr_virtual_pointer_manager_v1",
+    "zwp_virtual_keyboard_manager_v1",
+)
+
+VNC_PAM_BODY = """#%PAM-1.0
+# wayvnc authenticates against the local Nuxel account only.
+auth       required     pam_succeed_if.so user = nuxel
+account    required     pam_succeed_if.so user = nuxel
+auth       include      password-auth
+account    include      password-auth
+"""
+
+
+def _run(args: List[str], timeout: float = 15.0) -> subprocess.CompletedProcess:
+    """Bounded fixed-argv command. A timeout is a failure, never a crash."""
+    try:
+        return subprocess.run(args, capture_output=True, text=True, timeout=timeout,
+                              stdin=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired as exc:
+        return subprocess.CompletedProcess(
+            args, 124,
+            (exc.stdout or "") if isinstance(exc.stdout, str) else "",
+            "timed out after %.0fs" % timeout)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return subprocess.CompletedProcess(args, 127, "", str(exc))
+
+
+def _active(unit: str) -> bool:
+    p = _run(["systemctl", "is-active", unit], timeout=3)
+    return p.returncode == 0 and p.stdout.strip() == "active"
+
+
+def _listeners(port: int) -> List[str]:
+    """Return local listen addresses for ``port`` from ss or /proc/net/tcp."""
+    found: List[str] = []
+    p = _run(["ss", "-ltnH"], timeout=3)
+    if p.returncode == 0 and p.stdout.strip():
+        for line in p.stdout.splitlines():
+            fields = line.split()
+            if len(fields) < 4:
+                continue
+            host, _, got = fields[3].rpartition(":")
+            if got == str(port):
+                found.append(host.strip("[]"))
+        return found
+    for name in ("/proc/net/tcp", "/proc/net/tcp6"):
+        try:
+            lines = Path(name).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 4 or parts[3] != "0A":
+                continue
+            host_hex, _, port_hex = parts[1].rpartition(":")
+            if int(port_hex, 16) != port:
+                continue
+            if len(host_hex) == 8:
+                octets = [int(host_hex[i:i + 2], 16) for i in (6, 4, 2, 0)]
+                found.append(".".join(str(o) for o in octets))
+            else:
+                found.append("::1")
+    return found
+
+
+def _listener(port: int, address: Optional[str] = None) -> bool:
+    addrs = _listeners(port)
+    if address is None:
+        return bool(addrs)
+    return address in addrs
+
+
+def _private_ipv4(addr: str) -> bool:
+    try:
+        a, b, *_ = [int(part) for part in addr.split(".")]
+    except (ValueError, IndexError):
+        return False
+    return a == 10 or (a == 172 and 16 <= b <= 31) or (a == 192 and b == 168)
+
+
+def _network_from_ip() -> Optional[Dict[str, Any]]:
+    p = _run(["ip", "-4", "-o", "addr", "show"], timeout=3)
+    if p.returncode != 0:
+        return None
+    for line in p.stdout.splitlines():
+        m = re.match(r"^\d+:\s+([^:\s@]+)(?:@\S+)?\s+inet\s+(\d+\.\d+\.\d+\.\d+)/(\d+)", line)
+        if m and m.group(1).startswith("wlan") and _private_ipv4(m.group(2)):
+            return {"interface": m.group(1), "address": m.group(2), "prefix": m.group(3)}
+    return None
+
+
+def _network_from_ioctl() -> Optional[Dict[str, Any]]:
+    try:
+        names = sorted(p.name for p in Path("/sys/class/net").iterdir())
+    except OSError:
+        return None
+    for name in names:
+        if not name.startswith("wlan"):
+            continue
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                packed = struct.pack("256s", name.encode()[:15])
+                addr = socket.inet_ntoa(fcntl.ioctl(sock.fileno(), 0x8915, packed)[20:24])
+                try:
+                    mask = socket.inet_ntoa(fcntl.ioctl(sock.fileno(), 0x891B, packed)[20:24])
+                    prefix = str(sum(bin(int(p)).count("1") for p in mask.split(".")))
+                except OSError:
+                    prefix = "24"
+            finally:
+                sock.close()
+        except OSError:
+            continue
+        if _private_ipv4(addr):
+            return {"interface": name, "address": addr, "prefix": prefix}
+    return None
+
+
+def _network() -> Dict[str, Any]:
+    net = _network_from_ip() or _network_from_ioctl()
+    return net or {"interface": None, "address": None, "prefix": None}
+
+
+def _write_atomic(path: Path, text: str, mode: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".nuxel-tmp")
+    tmp.write_text(text)
+    os.chmod(tmp, mode)
+    os.replace(tmp, path)
+
+
+def _state() -> Dict[str, Any]:
+    try:
+        doc = json.loads((STATE_DIR / "state.json").read_text())
+        return doc if isinstance(doc, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _write_state(state: Dict[str, Any]) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = STATE_DIR / "state.json.tmp"
+    tmp.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, STATE_DIR / "state.json")
+
+
+def _cert_material_ok(cert: Path, key: Path) -> Tuple[bool, str]:
+    for path in (cert, key):
+        if not path.is_file():
+            return False, "missing %s" % path
+        if path.stat().st_size == 0:
+            return False, "empty %s" % path
+    p = _run(["openssl", "x509", "-in", str(cert), "-noout"], timeout=4)
+    if p.returncode != 0:
+        return False, "invalid certificate %s: %s" % (cert, (p.stderr or p.stdout).strip()[:200])
+    p = _run(["openssl", "rsa", "-in", str(key), "-noout", "-check"], timeout=4)
+    if p.returncode != 0:
+        return False, "invalid private key %s: %s" % (key, (p.stderr or p.stdout).strip()[:200])
+    return True, "ok"
+
+
+def _san_has_ip(cert: Path, address: str) -> bool:
+    p = _run(["openssl", "x509", "-in", str(cert), "-noout", "-ext", "subjectAltName"], timeout=4)
+    if p.returncode != 0:
+        return False
+    return ("IP Address:%s" % address) in p.stdout
+
+
+def _ensure_vnc_auth_material(address: str) -> str:
+    """Create per-device TLS + RSA material and the PAM service, root-only."""
+    VNC_DIR.mkdir(parents=True, exist_ok=True)
+    os.chmod(VNC_DIR, 0o700)
+    regenerate_cert = not (VNC_CERT.is_file() and VNC_KEY.is_file())
+    if not regenerate_cert:
+        regenerate_cert = not _san_has_ip(VNC_CERT, address)
+    if regenerate_cert:
+        p = _run([
+            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "825",
+            "-subj", "/CN=nuxel-vnc",
+            "-addext", "subjectAltName=DNS:nuxel,DNS:localhost,IP:127.0.0.1,IP:::1,IP:%s" % address,
+            "-keyout", str(VNC_KEY), "-out", str(VNC_CERT),
+        ], timeout=20)
+        if p.returncode != 0:
+            raise RuntimeError("VNC TLS material generation failed: %s" %
+                               (p.stderr or p.stdout).strip()[:400])
+    if not VNC_RSA_KEY.is_file():
+        p = _run(["ssh-keygen", "-q", "-m", "pem", "-t", "rsa", "-b", "2048",
+                  "-N", "", "-f", str(VNC_RSA_KEY)], timeout=20)
+        if p.returncode != 0:
+            p = _run(["openssl", "genrsa", "-traditional", "-out", str(VNC_RSA_KEY), "2048"],
+                     timeout=20)
+        if p.returncode != 0:
+            raise RuntimeError("VNC RSA-AES key generation failed: %s" %
+                               (p.stderr or p.stdout).strip()[:400])
+    for path in (VNC_CERT, VNC_KEY, VNC_RSA_KEY):
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+    ok, why = _cert_material_ok(VNC_CERT, VNC_KEY)
+    if not ok:
+        raise RuntimeError("VNC TLS material invalid: " + why)
+    p = _run(["openssl", "rsa", "-in", str(VNC_RSA_KEY), "-noout", "-check"], timeout=4)
+    if p.returncode != 0:
+        raise RuntimeError("VNC RSA-AES key invalid: %s" % (p.stderr or p.stdout).strip()[:300])
+    current = ""
+    try:
+        current = VNC_PAM.read_text()
+    except OSError:
+        pass
+    if "pam_succeed_if.so user = nuxel" not in current:
+        _write_atomic(VNC_PAM, VNC_PAM_BODY, 0o644)
+    return "ok"
+
+
+def _ensure_xrdp_auth_material() -> str:
+    ok, why = _cert_material_ok(XRDP_CERT, XRDP_KEY)
+    if not ok:
+        raise RuntimeError("XRDP TLS material invalid: " + why)
+    try:
+        pam = XRDP_PAM.read_text()
+    except OSError as exc:
+        raise RuntimeError("XRDP PAM policy missing: %s" % exc)
+    if "pam_succeed_if.so user = nuxel" not in pam:
+        raise RuntimeError("XRDP PAM policy does not restrict login to nuxel")
+    return "ok"
+
+
+def _write_wayvnc_config(address: str) -> None:
+    """Direct-LAN RFB with PAM as the local nuxel account (no VNC password)."""
+    if not re.match(r"^\d{1,3}(?:\.\d{1,3}){3}$", address or ""):
+        raise RuntimeError("invalid VNC bind address")
+    _ensure_vnc_auth_material(address)
+    text = (
+        "# Nuxel - generated by nuxel-remote-desktop-ctl\n"
+        "# wayvnc mirrors the active Phoc/Wayland session.\n"
+        "# PAM authenticates the local nuxel account. There is no VNC password.\n"
+        "# TLS (VeNCrypt) and RSA-AES are offered; relax_encryption adds Apple DH\n"
+        "# for Jump Desktop (Nuxel keeps the Apple DH key size Jump accepts).\n"
+        "address=%s\n"
+        "port=%d\n"
+        "enable_auth=true\n"
+        "enable_pam=true\n"
+        "certificate_file=%s\n"
+        "private_key_file=%s\n"
+        "rsa_private_key_file=%s\n"
+        "relax_encryption=true\n"
+        "use_relative_paths=false\n"
+    ) % (address, PORTS["vnc"], VNC_CERT, VNC_KEY, VNC_RSA_KEY)
+    _write_atomic(VNC_CONF, text, 0o644)
+
+
+def _write_loopback_config() -> None:
+    """Write the loopback-only, unauthenticated xrdp mirror config."""
+    text = (
+        "# Nuxel - generated by nuxel-remote-desktop-ctl\n"
+        "# Loopback-only mirror consumed by xrdp's libvnc module.  The RDP\n"
+        "# listener is TLS + PAM; this socket is never exposed on the LAN.\n"
+        "address=::1\n"
+        "port=%d\n"
+        "enable_auth=false\n"
+        "use_relative_paths=false\n"
+    ) % LOOPBACK_PORT
+    _write_atomic(VNC_LOOPBACK_CONF, text, 0o644)
+
+
+def _write_xrdp_config(address: str) -> None:
+    """Bind TLS xrdp to the WLAN address and configure the libvnc mirror."""
+    _ensure_xrdp_auth_material()
+    try:
+        original = XRDP_CONF.read_text()
+    except OSError as exc:
+        raise RuntimeError("xrdp.ini is missing: %s" % exc)
+    lines = original.splitlines()
+    out: List[str] = []
+    replaced_port = False
+    replaced_runtime = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("port=") and not replaced_port:
+            out.append("port=tcp://%s:%d" % (address, PORTS["xrdp"]))
+            replaced_port = True
+        elif stripped.startswith("autorun="):
+            out.append("autorun=Xorg")
+        elif stripped.startswith("runtime_user="):
+            out.append("runtime_user=nuxel")
+            replaced_runtime = True
+        elif stripped.startswith("runtime_group="):
+            out.append("runtime_group=xrdp")
+        else:
+            out.append(line)
+    if not replaced_port:
+        raise RuntimeError("xrdp.ini has no port= line")
+    if not replaced_runtime:
+        out.insert(0, "runtime_user=nuxel\nruntime_group=xrdp")
+    text = "\n".join(out) + "\n"
+    # Replace the [Xorg] session section with the libvnc mirror.
+    idx = text.find("[Xorg]")
+    if idx < 0:
+        raise RuntimeError("xrdp.ini has no [Xorg] section")
+    section = (
+        "[Xorg]\n"
+        "name=Nuxel Screen\n"
+        "lib=libvnc.so\n"
+        "username=ask\n"
+        "password=ask\n"
+        "ip=::1\n"
+        "port=%d\n"
+        "code=20\n"
+    ) % LOOPBACK_PORT
+    text = text[:idx] + section
+    for required in ("security_layer=tls", "certificate=%s" % XRDP_CERT,
+                     "key_file=%s" % XRDP_KEY, "lib=libvnc.so",
+                     "ip=::1"):
+        if required not in text:
+            raise RuntimeError("xrdp.ini is missing required directive: " + required)
+    _write_atomic(XRDP_CONF, text, 0o644)
+
+
+def _read_json(path: Path) -> Dict[str, Any]:
+    try:
+        doc = json.loads(path.read_text())
+        return doc if isinstance(doc, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _orientation_geometry() -> Dict[str, Any]:
+    doc = _read_json(ORIENTATION_STATUS)
+    display = doc.get("display") or {}
+    width = display.get("logical_width") or display.get("physical_height")
+    height = display.get("logical_height") or display.get("physical_width")
+    try:
+        width = int(width)
+        height = int(height)
+    except (TypeError, ValueError):
+        width, height = 1520, 720
+    if width <= 0 or height <= 0:
+        width, height = 1520, 720
+    transform = str(display.get("transform") or "normal")
+    return {
+        "width": width,
+        "height": height,
+        "landscape": width >= height,
+        "transform": transform,
+        "orientation": doc.get("effective_orientation"),
+    }
+
+
+def _parse_kv(path: Path) -> Dict[str, str]:
+    values: Dict[str, str] = {}
+    try:
+        text = path.read_text()
+    except OSError:
+        return values
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        values[key.strip()] = val.strip()
+    return values
+
+
+def _vnc_effective() -> Dict[str, Any]:
+    values = _parse_kv(VNC_CONF)
+    cert = Path(values["certificate_file"]) if values.get("certificate_file") else VNC_CERT
+    key = Path(values["private_key_file"]) if values.get("private_key_file") else VNC_KEY
+    cert_ok, _why = _cert_material_ok(cert, key)
+    pam_ok = False
+    try:
+        pam_ok = "pam_succeed_if.so user = nuxel" in VNC_PAM.read_text()
+    except OSError:
+        pass
+    return {
+        "configured": bool(values),
+        "address": values.get("address"),
+        "port": int(values["port"]) if values.get("port", "").isdigit() else None,
+        "enable_auth": values.get("enable_auth") == "true",
+        "enable_pam": values.get("enable_pam") == "true",
+        "relax_encryption": values.get("relax_encryption") == "true",
+        "certificate_file": str(cert),
+        "private_key_file": str(key),
+        "rsa_private_key_file": values.get("rsa_private_key_file"),
+        "certificate_ok": cert_ok,
+        "pam_policy_ok": pam_ok,
+        "password_file": None,
+    }
+
+
+def _xrdp_effective() -> Dict[str, Any]:
+    try:
+        text = XRDP_CONF.read_text()
+    except OSError:
+        text = ""
+    m = re.search(r"^port=tcp://([^:]+):(\d+)$", text, re.M)
+    section = text.split("[Xorg]", 1)[1] if "[Xorg]" in text else ""
+    lib = re.search(r"^lib=(.+)$", section, re.M)
+    ip = re.search(r"^ip=(.+)$", section, re.M)
+    lport = re.search(r"^port=(\d+)$", section, re.M)
+    runtime = re.search(r"^runtime_user=(.+)$", text, re.M)
+    group = re.search(r"^runtime_group=(.+)$", text, re.M)
+    cert_ok, _why = _cert_material_ok(XRDP_CERT, XRDP_KEY)
+    return {
+        "configured": bool(m and lib),
+        "address": (m.group(1) or None) if m else None,
+        "port": int(m.group(2)) if m else None,
+        "tls": "security_layer=tls" in text,
+        "lib": (lib.group(1).strip() if lib else None),
+        "mirror_ip": (ip.group(1).strip() if ip else None),
+        "mirror_port": int(lport.group(1)) if lport else None,
+        "runtime_user": (runtime.group(1).strip() if runtime else None),
+        "runtime_group": (group.group(1).strip() if group else None),
+        "certificate_ok": cert_ok,
+    }
+
+
+def _established_clients(port: int) -> List[str]:
+    p = _run(["ss", "-tnH", "state", "established"], timeout=3)
+    peers: List[str] = []
+    if p.returncode != 0:
+        return peers
+    for line in p.stdout.splitlines():
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        if fields[3].endswith(":%d" % port):
+            peer = fields[4].rsplit(":", 1)[0].strip("[]") if len(fields) > 4 else ""
+            if peer:
+                peers.append(peer)
+    return peers
+
+
+def status() -> Dict[str, Any]:
+    """Read-only truth for the Bridge and quickstart. No secrets, no mutation."""
+    net = _network()
+    vnc_cfg = _vnc_effective()
+    xrdp_cfg = _xrdp_effective()
+    geo = _orientation_geometry()
+    vnc_active = _active(VNC_SERVICE)
+    loop_active = _active(VNC_LOOPBACK_SERVICE)
+    vnc_addrs = _listeners(PORTS["vnc"])
+    vnc_listening = bool(vnc_addrs)
+    xrdp_active = all(_active(u) for u in XRDP_UNITS)
+    xrdp_addrs = _listeners(PORTS["xrdp"])
+    xrdp_listening = bool(xrdp_addrs)
+    loop_addrs = _listeners(LOOPBACK_PORT)
+    loop_listening = "::1" in loop_addrs
+
+    vnc_auth_ok = bool(vnc_cfg.get("enable_auth") and vnc_cfg.get("enable_pam")
+                       and vnc_cfg.get("certificate_ok") and vnc_cfg.get("pam_policy_ok"))
+    vnc_clients = _established_clients(PORTS["vnc"]) if vnc_listening else []
+    vnc_secure = bool(vnc_active and vnc_listening and vnc_auth_ok)
+    if not shutil.which("wayvnc"):
+        vnc_state, vnc_reason = "UNSUPPORTED", "wayvnc is not installed"
+    elif vnc_listening and not vnc_active:
+        vnc_state, vnc_reason = "ERROR", "A VNC listener is open but nuxel-remote-vnc is not active"
+    elif vnc_active and vnc_listening and not vnc_auth_ok:
+        vnc_state, vnc_reason = "ERROR", "The effective VNC config is not PAM/TLS authenticated"
+    elif vnc_active and vnc_listening:
+        vnc_state = "CONNECTED" if vnc_clients else "WAITING_FOR_CLIENT"
+        vnc_reason = ("A PAM-authenticated VNC client is connected to the actual Phoc screen"
+                      if vnc_clients else
+                      "VNC is listening for the local nuxel username/password on the actual Phoc screen")
+    else:
+        vnc_state, vnc_reason = "OFF", "Service is stopped by default"
+
+    xrdp_config_ok = bool(
+        xrdp_cfg.get("lib") == "libvnc.so"
+        and xrdp_cfg.get("mirror_ip") == "::1"
+        and xrdp_cfg.get("mirror_port") == LOOPBACK_PORT
+        and xrdp_cfg.get("runtime_user") == "nuxel"
+        and xrdp_cfg.get("tls") and xrdp_cfg.get("certificate_ok"))
+    xrdp_secure = bool(xrdp_active and xrdp_listening and loop_active and loop_listening
+                       and xrdp_config_ok)
+    xrdp_clients = _established_clients(PORTS["xrdp"]) if xrdp_listening else []
+    if not shutil.which("xrdp") or not shutil.which("Xorg"):
+        xrdp_state, xrdp_reason = "UNSUPPORTED", "xrdp or Xorg is not installed"
+    elif xrdp_listening and not xrdp_active:
+        xrdp_state, xrdp_reason = "ERROR", "An xrdp listener is open but sesman/xrdp units are not both active"
+    elif xrdp_active and xrdp_listening and not xrdp_config_ok:
+        xrdp_state, xrdp_reason = "ERROR", "xrdp is not configured for the libvnc loopback mirror"
+    elif xrdp_active and xrdp_listening and not loop_listening:
+        xrdp_state, xrdp_reason = "ERROR", "The loopback wayvnc mirror is not listening on [::1]:5901"
+    elif xrdp_active and xrdp_listening:
+        xrdp_state = "CONNECTED" if xrdp_clients else "WAITING_FOR_CLIENT"
+        xrdp_reason = ("An authenticated RDP client is connected to the actual Phoc screen"
+                       if xrdp_clients else
+                       "TLS xrdp is listening; libvnc mirrors the actual Phoc screen")
+    else:
+        xrdp_state, xrdp_reason = "OFF", "Service is stopped by default"
+
+    return {
+        "success": True,
+        "ports": dict(PORTS),
+        "services": {
+            "vnc": {
+                "state": vnc_state, "reason": vnc_reason,
+                "active": vnc_active, "listener_verified": vnc_listening,
+                "configured_bind_address": vnc_cfg.get("address"),
+                "bind_address": vnc_cfg.get("address") if vnc_active else net.get("address"),
+                "listener_addresses": vnc_addrs,
+                "port": PORTS["vnc"], "protocol": "tcp",
+                "session_mode": "current-phoc-wayland-session",
+                "transport": "wlan" if vnc_active else None,
+                "authentication_mode": "PAM (local nuxel username/password)",
+                "authentication": "PAM",
+                "encrypted": bool(vnc_auth_ok),
+                "encryption_mode": "VeNCrypt TLS / RSA-AES / Apple DH",
+                "vnc_password_configured": False,
+                "geometry": "%dx%d" % (geo["width"], geo["height"]),
+                "width": geo["width"], "height": geo["height"],
+                "landscape": geo["landscape"],
+                "orientation_transform": geo["transform"],
+                "authenticated_clients": len(vnc_clients),
+                "clients": vnc_clients,
+                "security_verified": vnc_secure,
+                "input_enabled": True,
+                "privacy_gate_ok": vnc_secure,
+                "installed": bool(shutil.which("wayvnc")),
+                "version": _run(["wayvnc", "--version"], timeout=3).stdout.strip().splitlines()[0]
+                           if shutil.which("wayvnc") else None,
+            },
+            "xrdp": {
+                "state": xrdp_state, "reason": xrdp_reason,
+                "active": xrdp_active, "listener_verified": xrdp_listening,
+                "configured_bind_address": xrdp_cfg.get("address"),
+                "bind_address": xrdp_cfg.get("address") if xrdp_active else net.get("address"),
+                "listener_addresses": xrdp_addrs,
+                "port": PORTS["xrdp"], "protocol": "tcp",
+                "session_mode": "current-phoc-wayland-session",
+                "transport": "wlan" if xrdp_active else None,
+                "authentication_mode": "PAM + TLS 1.2/1.3",
+                "authentication": "PAM",
+                "encrypted": bool(xrdp_cfg.get("tls") and xrdp_cfg.get("certificate_ok")),
+                "encryption_mode": "TLS 1.2/1.3",
+                "mirror": {"service": VNC_LOOPBACK_SERVICE,
+                           "address": "::1", "port": LOOPBACK_PORT,
+                           "listening": loop_listening},
+                "geometry": "%dx%d" % (geo["width"], geo["height"]),
+                "width": geo["width"], "height": geo["height"],
+                "landscape": geo["landscape"],
+                "authenticated_clients": len(xrdp_clients),
+                "security_verified": xrdp_secure,
+                "installed": bool(shutil.which("xrdp") and shutil.which("Xorg")),
+                "version": "xrdp 0.10.6.1 / libvnc" if shutil.which("xrdp") else None,
+            },
+            "scrcpy": {
+                "state": "NOT_APPLICABLE_NATIVE_NUXEL",
+                "reason": ("scrcpy supports Android ADB targets only; this handset is "
+                           "native Nuxel. Use the native screen-sharing route instead."),
+                "native_mirror": {
+                    "service": "vnc", "host": net.get("address"),
+                    "port": PORTS["vnc"], "protocol": "tcp",
+                    "direct_lan": True,
+                },
+            },
+        },
+        "network": net,
+        "privacy": {"active": vnc_secure or xrdp_secure},
+        "usb": {"status": "BLOCKED_KERNEL_PANIC", "mutated": False},
+    }
+
+
+def start_vnc() -> Dict[str, Any]:
+    if not shutil.which("wayvnc"):
+        return {"success": False, "error": "wayvnc is not installed",
+                "error_code": "UNSUPPORTED"}
+    net = _network()
+    address = net.get("address")
+    if not address:
+        return {"success": False, "error": "no trusted private WLAN IPv4 address; refusing wildcard exposure",
+                "error_code": "NO_TRUSTED_LAN"}
+    try:
+        _write_wayvnc_config(address)
+    except (RuntimeError, OSError) as exc:
+        return {"success": False, "error": str(exc), "error_code": "AUTH_MATERIAL"}
+    PREF_DIR.mkdir(parents=True, exist_ok=True)
+    p = _run(["systemctl", "start", "--no-block", VNC_SERVICE], timeout=10)
+    if p.returncode != 0:
+        return {"success": False, "error": (p.stderr or p.stdout).strip()[-800:],
+                "error_code": "START_FAILED"}
+    for _ in range(40):
+        if _active(VNC_SERVICE) and _listener(PORTS["vnc"], address):
+            st = _state()
+            st["vnc"] = {"started_at": time.time(), "transport": "wlan",
+                         "session": "current-phoc-wayland-session",
+                         "bind_address": address, "port": PORTS["vnc"]}
+            _write_state(st)
+            geo = _orientation_geometry()
+            return {"success": True, "service": "vnc", "state": "READY",
+                    "transport": "wlan", "bind_address": address,
+                    "port": PORTS["vnc"],
+                    "authentication_mode": "PAM (local nuxel username/password)",
+                    "vnc_password_configured": False,
+                    "geometry": "%dx%d" % (geo["width"], geo["height"]),
+                    "security_verified": True}
+        time.sleep(0.25)
+    _run(["systemctl", "stop", VNC_SERVICE], timeout=10)
+    return {"success": False,
+            "error": "wayvnc did not open %s:%d with PAM authentication" % (address, PORTS["vnc"]),
+            "error_code": "START_TIMEOUT"}
+
+
+def stop_vnc() -> Dict[str, Any]:
+    _run(["systemctl", "stop", VNC_SERVICE], timeout=15)
+    _run(["systemctl", "reset-failed", VNC_SERVICE], timeout=5)
+    for _ in range(20):
+        if not _listener(PORTS["vnc"]):
+            break
+        time.sleep(0.1)
+    st = _state()
+    st["vnc"] = {"started_at": None, "stopped_at": time.time(), "transport": None}
+    _write_state(st)
+    return {"success": True, "service": "vnc", "state": "OFF",
+            "listener_closed": not _listener(PORTS["vnc"])}
+
+
+def _clean_xrdp_stale_state() -> None:
+    """Remove a stale sesman PID/socket left by an interrupted stop."""
+    try:
+        alive = _run(["pgrep", "-x", "xrdp-sesman"], timeout=3).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        alive = False
+    if alive:
+        return
+    for path in ("/run/xrdp-sesman.pid", "/var/run/xrdp-sesman.pid",
+                 "/run/xrdp/sesman.socket", "/var/run/xrdp/sesman.socket"):
+        try:
+            Path(path).unlink()
+        except OSError:
+            pass
+
+
+def _kill_session_processes() -> List[int]:
+    """Terminate only legacy managed remote X11 sessions, never Phoc itself."""
+    killed: List[int] = []
+    for proc in Path("/proc").iterdir():
+        if not proc.name.isdigit():
+            continue
+        pid = int(proc.name)
+        if pid <= 1:
+            continue
+        try:
+            cmd = (proc / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
+        except OSError:
+            continue
+        is_x = "/usr/libexec/Xorg :" in cmd and "xorg-nuxel.conf" in cmd
+        is_session = "/usr/local/bin/nuxel-xrdp-session" in cmd
+        is_sesexec = cmd.startswith("xrdp-sesexec")
+        if not (is_x or is_session or is_sesexec):
+            continue
+        try:
+            os.kill(pid, 15)
+            killed.append(pid)
+        except OSError:
+            continue
+    for _ in range(20):
+        if not any(Path("/proc/%d" % p).exists() for p in killed):
+            break
+        time.sleep(0.1)
+    for pid in killed:
+        if Path("/proc/%d" % pid).exists():
+            try:
+                os.kill(pid, 9)
+            except OSError:
+                pass
+    return killed
+
+
+def start_xrdp() -> Dict[str, Any]:
+    if not shutil.which("xrdp") or not shutil.which("Xorg"):
+        return {"success": False, "error": "xrdp or Xorg is not installed",
+                "error_code": "UNSUPPORTED"}
+    if not Path("/usr/lib64/xrdp/libvnc.so").is_file():
+        return {"success": False, "error": "xrdp libvnc module is not installed",
+                "error_code": "UNSUPPORTED"}
+    net = _network()
+    address = net.get("address")
+    if not address:
+        return {"success": False, "error": "no trusted private WLAN IPv4 address; refusing wildcard exposure",
+                "error_code": "NO_TRUSTED_LAN"}
+    try:
+        _write_xrdp_config(address)
+        _write_loopback_config()
+    except (RuntimeError, OSError) as exc:
+        return {"success": False, "error": str(exc), "error_code": "AUTH_MATERIAL"}
+    _clean_xrdp_stale_state()
+    p = _run(["systemctl", "start", VNC_LOOPBACK_SERVICE], timeout=15)
+    if p.returncode != 0:
+        return {"success": False, "error": (p.stderr or p.stdout).strip()[-800:],
+                "error_code": "MIRROR_START_FAILED", "unit": VNC_LOOPBACK_SERVICE}
+    for _ in range(40):
+        if _active(VNC_LOOPBACK_SERVICE) and _listener(LOOPBACK_PORT, "::1"):
+            break
+        time.sleep(0.25)
+    else:
+        _run(["systemctl", "stop", VNC_LOOPBACK_SERVICE], timeout=10)
+        return {"success": False,
+                "error": "wayvnc loopback mirror did not open [::1]:%d" % LOOPBACK_PORT,
+                "error_code": "MIRROR_START_TIMEOUT"}
+    for unit in XRDP_UNITS:
+        p = _run(["systemctl", "start", unit], timeout=15)
+        if p.returncode != 0:
+            stop_xrdp()
+            return {"success": False, "error": (p.stderr or p.stdout).strip()[-800:],
+                    "error_code": "START_FAILED", "unit": unit}
+    for _ in range(40):
+        if all(_active(u) for u in XRDP_UNITS) and _listener(PORTS["xrdp"], address):
+            st = _state()
+            st["xrdp"] = {"started_at": time.time(), "transport": "wlan",
+                          "session": "current-phoc-wayland-session",
+                          "bind_address": address, "port": PORTS["xrdp"],
+                          "mirror": "::1:%d" % LOOPBACK_PORT}
+            _write_state(st)
+            geo = _orientation_geometry()
+            return {"success": True, "service": "xrdp", "state": "READY",
+                    "transport": "wlan", "bind_address": address,
+                    "port": PORTS["xrdp"], "authentication_mode": "PAM + TLS 1.2/1.3",
+                    "session_mode": "current-phoc-wayland-session",
+                    "mirror": "::1:%d" % LOOPBACK_PORT,
+                    "geometry": "%dx%d" % (geo["width"], geo["height"]),
+                    "security_verified": True}
+        time.sleep(0.25)
+    stop_xrdp()
+    return {"success": False,
+            "error": "xrdp did not open %s:%d" % (address, PORTS["xrdp"]),
+            "error_code": "START_TIMEOUT"}
+
+
+def stop_xrdp() -> Dict[str, Any]:
+    for unit in ("xrdp.service", "xrdp-sesman.service"):
+        _run(["systemctl", "stop", "--no-block", unit], timeout=10)
+    _run(["systemctl", "stop", "--no-block", VNC_LOOPBACK_SERVICE], timeout=10)
+    for _ in range(30):
+        if (not _active("xrdp.service") and not _active("xrdp-sesman.service")
+                and not _active(VNC_LOOPBACK_SERVICE)):
+            break
+        time.sleep(0.2)
+    _clean_xrdp_stale_state()
+    killed = _kill_session_processes()
+    _run(["systemctl", "reset-failed", "xrdp.service", "xrdp-sesman.service",
+          VNC_LOOPBACK_SERVICE], timeout=5)
+    for _ in range(20):
+        if not _listener(PORTS["xrdp"]) and not _listener(LOOPBACK_PORT):
+            break
+        time.sleep(0.1)
+    st = _state()
+    st["xrdp"] = {"started_at": None, "stopped_at": time.time(), "transport": None}
+    _write_state(st)
+    return {"success": True, "service": "xrdp", "state": "OFF",
+            "listener_closed": not _listener(PORTS["xrdp"]),
+            "mirror_closed": not _listener(LOOPBACK_PORT),
+            "killed_legacy_sessions": killed}
+
+
+def stop_all() -> Dict[str, Any]:
+    results = [stop_vnc(), stop_xrdp()]
+    return {"success": all(r.get("success") for r in results),
+            "services": results, "state": "OFF"}
+
+
+def main(argv: List[str]) -> int:
+    if not argv:
+        print(json.dumps({"success": False, "error": "action required"}))
+        return 2
+    action = argv[0]
+    service = argv[1] if len(argv) > 1 else None
+    if action == "status":
+        result = status()
+    elif action == "stop-all":
+        result = stop_all()
+    elif service not in SERVICES:
+        print(json.dumps({"success": False, "error": "unknown service",
+                          "error_code": "INVALID_SERVICE"}))
+        return 2
+    elif service == "scrcpy":
+        print(json.dumps({"success": False,
+                          "error": "scrcpy is Android-only; use the native VNC mirror route",
+                          "error_code": "NOT_APPLICABLE_NATIVE_NUXEL"}))
+        return 3
+    elif action == "start" and service == "vnc":
+        result = start_vnc()
+    elif action == "stop" and service == "vnc":
+        result = stop_vnc()
+    elif action == "start" and service == "xrdp":
+        result = start_xrdp()
+    elif action == "stop" and service == "xrdp":
+        result = stop_xrdp()
+    else:
+        print(json.dumps({"success": False, "error": "invalid action",
+                          "error_code": "INVALID_ACTION"}))
+        return 2
+    print(json.dumps(result))
+    return 0 if result.get("success") else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

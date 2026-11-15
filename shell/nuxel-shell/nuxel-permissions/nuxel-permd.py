@@ -59,6 +59,7 @@ import os
 import platform
 import re
 import socket
+import subprocess
 import sys
 import time
 
@@ -69,8 +70,23 @@ DEFAULT_STORE = os.environ.get("NUXEL_PERMISSIONS_DIR", "/var/lib/nuxel/permissi
 DEFAULT_ROOT = os.environ.get("NUXEL_ROOT", os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
-DEFAULT_CAP_REGISTRY = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "capabilities.json")
+# The registry ships next to this file; the service also installs it at
+# /etc/nuxel/permissions/capabilities.json.  Resolution order: explicit
+# environment override, next to the script (tooling /tests / /usr/bin copy
+# symlinked to the lib copy), then the installed system path.
+_HERE_REGISTRY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "capabilities.json")
+
+
+def _default_cap_registry():
+    override = os.environ.get("NUXEL_PERM_CAPABILITIES")
+    if override:
+        return override
+    if os.path.exists(_HERE_REGISTRY):
+        return _HERE_REGISTRY
+    return "/etc/nuxel/permissions/capabilities.json"
+
+
+DEFAULT_CAP_REGISTRY = _default_cap_registry()
 
 # Exit codes (stable, used by tools and tests)
 EXIT_OK = 0
@@ -304,17 +320,51 @@ class Store(object):
         with open(tmp, "w") as fh:
             json.dump(grants, fh, indent=2, sort_keys=True)
             fh.write("\n")
-        os.replace(tmp, path)
+            fh.flush()
+            os.fsync(fh.fileno())
+        # The store is shared with the unprivileged nuxel-bridge (Location /
+        # Bluetooth actuator enforcement) AND with nuxel-nfcd (the nfc
+        # capability is checked by the daemon for every scan/read/write).  Both
+        # run unprivileged.  A root-owned 0640 file in the nuxel-bridge group
+        # is unreadable by nfcd, and the reverse is true too, so the write
+        # grants a POSIX ACL for the service users in addition to the group.
+        # Failure to set the ACL is reported, never silently accepted.
         try:
-            os.chmod(path, 0o600)
-        except OSError:
-            pass
+            os.chmod(tmp, 0o640)
+            if os.geteuid() == 0:
+                import grp
+                try:
+                    os.chown(tmp, -1, grp.getgrnam("nuxel-bridge").gr_gid)
+                except KeyError:
+                    pass
+                for user in ("nuxel-bridge", "nuxel"):
+                    subprocess.run(["setfacl", "-m", "u:%s:r--" % user, tmp],
+                                   stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL, timeout=5)
+        except (OSError, subprocess.SubprocessError) as exc:
+            sys.stderr.write("nuxel-permd: could not set shared store mode on %s: %s\n"
+                             % (tmp, exc))
+        os.replace(tmp, path)
+        if os.geteuid() == 0:
+            for user in ("nuxel-bridge", "nuxel"):
+                subprocess.run(["setfacl", "-m", "u:%s:r--" % user, path],
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL, timeout=5)
 
     def is_granted(self, app_id, capability, consume_once=False):
         cap_id, why = self.registry.resolve(capability)
         if cap_id is None:
             return False
         grants = self.get_grants(app_id)
+        if capability != cap_id:
+            delegate = grants.get(capability)
+            if isinstance(delegate, dict):
+                if delegate.get("decision") == "deny":
+                    return False
+                if delegate.get("duration") == "once" and consume_once:
+                    self.revoke(app_id, capability, reason="once-consumed")
+                    return True
+                return True
         grant = grants.get(cap_id)
         if not isinstance(grant, dict):
             return False
@@ -331,7 +381,15 @@ class Store(object):
         cap_id, _why = self.registry.resolve(capability)
         if cap_id is None:
             return False
-        grant = self.get_grants(app_id).get(cap_id)
+        grants = self.get_grants(app_id)
+        # A delegate deny (location:read or location:manage) is stored under its
+        # own token so revoking one does not silently revoke the other.  The
+        # resource deny remains effective for delegates with no explicit allow.
+        if capability != cap_id:
+            delegate = grants.get(capability)
+            if isinstance(delegate, dict):
+                return delegate.get("decision") == "deny"
+        grant = grants.get(cap_id)
         return isinstance(grant, dict) and grant.get("decision") == "deny"
 
     def decide(self, app_id, capability, consume_once=False):
@@ -343,9 +401,16 @@ class Store(object):
           3. explicit grant                  -> allow
           4. explicit deny                   -> deny
           5. policy default                  -> allow/deny (see default_decision)
-        Every error path denies.
+        Every error path denies.  Delegate allows (``location:read``,
+        ``location:manage``, …) are checked by token first, because the resource
+        record records which delegate produced the grant.
         """
         cap_id, why = self.registry.resolve(capability)
+        if cap_id is not None and capability != cap_id:
+            delegate = self.get_grants(app_id).get(capability)
+            if isinstance(delegate, dict) and delegate.get("decision") == "deny":
+                return {"decision": DEFAULT_DENY, "app_id": app_id,
+                        "capability": capability, "source": "explicit-deny"}
         if cap_id is None:
             return {"decision": DEFAULT_DENY, "app_id": app_id,
                     "capability": capability, "source": "invalid",
@@ -359,7 +424,35 @@ class Store(object):
             return {"decision": DEFAULT_ALLOW, "app_id": app_id,
                     "capability": cap_id, "source": "intrinsic",
                     "reason": "not a grant-required resource"}
+        if self.is_denied(app_id, capability):
+            return {"decision": DEFAULT_DENY, "app_id": app_id,
+                    "capability": capability, "source": "explicit-deny"}
+        # A standalone delegate record is itself an allow for exactly that
+        # delegate (first-party seed grants are written this way).  It must be
+        # honoured before the resource record is consulted, otherwise the
+        # record is treated as "resource not granted" and Location stays off.
+        if capability != cap_id:
+            delegate = self.get_grants(app_id).get(capability)
+            if isinstance(delegate, dict) and "decision" not in delegate:
+                once = delegate.get("duration") == "once"
+                if once and consume_once:
+                    self.revoke(app_id, capability, reason="once-consumed")
+                return {"decision": DEFAULT_ALLOW, "app_id": app_id,
+                        "capability": capability, "source": "delegate-grant"}
         if self.is_granted(app_id, cap_id, consume_once=consume_once):
+            resource = self.get_grants(app_id).get(cap_id) or {}
+            owner = resource.get("delegate") if isinstance(resource, dict) else None
+            grant = self.get_grants(app_id).get(capability)
+            # Separate delegate records are authoritative once present.  A
+            # legacy delegate-scoped resource (owner) still prevents its
+            # sibling from inheriting the same allow.
+            if owner and capability != cap_id and capability != owner:
+                return {"decision": DEFAULT_DENY, "app_id": app_id,
+                        "capability": capability, "source": "delegate-not-granted"}
+            if (capability != cap_id and isinstance(grant, dict)
+                    and "decision" not in grant):
+                return {"decision": DEFAULT_ALLOW, "app_id": app_id,
+                        "capability": capability, "source": "delegate-grant"}
             return {"decision": DEFAULT_ALLOW, "app_id": app_id,
                     "capability": cap_id, "source": "grant"}
         if self.is_denied(app_id, cap_id):
@@ -434,6 +527,13 @@ class Store(object):
                 "%s cannot be enforced on this device: %s"
                 % (cap_id, enforce["limitation"] or "no mechanism exists"))
         grants = self.get_grants(app_id)
+        # The UI toggle is for one delegate capability, not the whole resource
+        # group.  Clear an explicit deny of this exact token on grant so a
+        # revoked Location read does not stay denied while its control switch
+        # is green.  A separate allow record keeps read and control independent
+        # when both are enabled; a delegate-scoped resource record would erase
+        # the other switch.  The resource record retains the shared facts.
+        grants.pop(capability, None)
         record = {
             "granted_at": _now(),
             "duration": duration,
@@ -447,10 +547,31 @@ class Store(object):
         }
         if evidence:
             record["evidence"] = evidence
-        grants[cap_id] = record
+        # Re-granting refreshes the shared resource facts from the CURRENT
+        # registry.  Keeping a previous record verbatim left the permission UI
+        # labelled with an outdated limitation/verdict after an update.
+        # A delegate-scoped legacy record (``delegate`` field) is preserved as
+        # historical evidence but no longer gates its sibling.
+        previous = grants.get(cap_id)
+        if isinstance(previous, dict):
+            for key in ("delegate", "delegates", "evidence"):
+                if key in previous and key not in record:
+                    record[key] = previous[key]
+        grants[cap_id] = dict(record)
+        if capability != cap_id:
+            # Persist the delegate independently; the bridge checks this exact
+            # token and permD's resource record supplies the enforcement facts.
+            grants[capability] = {
+                "granted_at": record["granted_at"],
+                "duration": duration,
+                "portal_type": record["portal_type"],
+                "delegate_of": cap_id,
+            }
         self.write_grants(app_id, grants)
         state = self.get_state(app_id)
         state.setdefault("grants", {})[cap_id] = record
+        if capability != cap_id:
+            state["grants"][capability] = dict(record, delegate=capability)
         self.write_state(app_id, state)
         self.audit("grant", app_id, cap_id, duration=duration,
                    enforceable=enforce["enforceable"],
@@ -470,7 +591,10 @@ class Store(object):
         }
         if reason:
             record["reason"] = reason
-        grants[cap_id] = record
+        key = capability if capability != cap_id else cap_id
+        if key != cap_id:
+            record["delegate"] = capability
+        grants[key] = record
         self.write_grants(app_id, grants)
         state = self.get_state(app_id)
         state.setdefault("grants", {})[cap_id] = record

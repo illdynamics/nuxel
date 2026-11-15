@@ -1104,6 +1104,10 @@ static void display_set(int on, const char *why) {
     force_present = 0;
     force_full_frames = 0;
     wake_pending = 1;
+    /* This is a wake, not a repaint: a full-frame request must never be
+       cleared here, or a screen-on racing a 'repaint' could be skipped by the
+       same-loop damage shortcut and the wake would only land via the bounded
+       fallback. */
     wake_generation++;
     wake_tries = 0;
     st("DISPLAY_WAKE_PREPARE why=%s brightness=%d gen=%d", why, b, wake_generation);
@@ -1146,9 +1150,19 @@ static void ctrl_pump(void) {
     for (char *q = buf; q && *q; ) {
       char *nl = strchr(q, '\n');
       if (nl) *nl = 0;
-      if (!strncmp(q, "screen-off", 10))       display_set(0, "control-fifo");
-      else if (!strncmp(q, "screen-on", 9))    display_set(1, "control-fifo");
-      else if (!strncmp(q, "screen-toggle", 13)) display_set(!display_on, "control-fifo");
+      /* Every command is idempotent against the LIVE panel state.  The wake
+         handler and the commands share the one control FIFO: a 'screen-toggle'
+         that raced a 'screen-on' (Power pressed as the dark glass was touched)
+         used to blank the panel that had just woken.  'toggle' now always means
+         the opposite of the current state read at execution time, and an
+         explicit on/off is a no-op when the panel is already there. */
+      if (!strncmp(q, "screen-off", 10)) {
+        if (display_on) display_set(0, "control-fifo");
+      } else if (!strncmp(q, "screen-on", 9)) {
+        if (!display_on) display_set(1, "control-fifo");
+      } else if (!strncmp(q, "screen-toggle", 13)) {
+        display_set(!display_on, "control-fifo");
+      }
       else if (!strncmp(q, "repaint", 7)) {
         /* One-shot full-frame request from nuxel-pwa-host after an app close,
          * launcher reload, lockscreen transition or orientation change.  It is
@@ -1157,7 +1171,13 @@ static void ctrl_pump(void) {
         force_full_frames = 2;
         st("REPAINT_REQUEST force_full_frames=%d why=control-fifo", force_full_frames);
       }
-      else if (!strncmp(q, "status", 6))       display_publish();
+      else if (!strncmp(q, "status", 6)) {
+        /* Wake verification: re-read the panel nodes so the published state is
+           what the hardware reports NOW, not the value latched at wake. */
+        int bb = read_int_file(BACKLIGHT);
+        if (bb > 0 && saved_brightness < 0) saved_brightness = bb;
+        display_publish();
+      }
       else if (!strncmp(q, "fps ", 4)) {
         int v = atoi(q + 4);
         if (v >= 1 && v <= 120) { fps_target = v; st("FPS_TARGET %d", v); }
@@ -1830,7 +1850,8 @@ int main(int argc, char **argv) {
         force_present = 0;
         force_full_frames--;
         st("REPAINT_FULL remaining=%d src=%dx%d", force_full_frames, frame_buf.w, frame_buf.h);
-      } else if (!wake_pending && (force_present || !have_hash)) {
+      } else if (!wake_pending && (force_present || !have_hash ||
+                                   (force_full_frames > 0 && display_on))) {
         changed = 1;
         /* Prime the damage baseline even when this frame is a forced repaint;
            if the baseline already exists, use its real dirty span. */
@@ -1845,10 +1866,14 @@ int main(int argc, char **argv) {
       clock_gettime(CLOCK_MONOTONIC, &t_cmp1);
       compare_ns_sum += ts_ns(&t_cmp1) - ts_ns(&t_cmp0);
       compare_n++;
-      if (wake_pending && changed) {
-        /* First real post-wake change: paint the complete new frame (usually
-           the lockscreen) rather than only the dirty rows, so no stale desktop
-           row survives the wake. */
+      if (wake_pending) {
+        /* First post-wake frame: paint the COMPLETE current frame, not only the
+           rows that differ from the pre-sleep baseline.  The baseline may not
+           match what the panel still shows (the black latch page), and after
+           off->on the dirty-run bookkeeping can name an out-of-order span, so
+           the post-wake commit is always a full repaint.  Bounded: it happens
+           once per wake. */
+        changed = 1;
         damage_y0 = 0; damage_y1 = frame_buf.h;
         dirty_reset(); dirty_add(0, frame_buf.h);
       }

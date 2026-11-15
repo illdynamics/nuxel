@@ -23,8 +23,18 @@
  * authoritative Mali accounting on this kernel; /sys/kernel/gpu/gpu_memory is
  * a legacy compatibility table and currently reports a stale zero for Phoc. */
 #define GPU_MEMORY_DEBUGFS "/sys/kernel/debug/mali/gpu_memory"
-#define IDLE_TIMEOUT_MS 30000
-#define CPU_SAMPLE_NS 150000000L
+/* Keep the socket-activated collector alive across a normal Home browsing
+ * session (the widget polls every 1-10 s).  Re-spawning per poll forced a
+ * fresh 500 ms CPU sample each time and made "open Home" look like a CPU
+ * spike; the request path also now reuses the cached delta. */
+#define IDLE_TIMEOUT_MS 120000
+/* Minimum wall-clock window between the two /proc/stat reads when a brand-new
+ * collector has no previous sample.  On the live S10+ a 50-150 ms window
+ * produced bimodal nonsense on an idle phone (measured 67% and 60% on Home
+ * while /proc sampled 8% over 8 s) because one short scheduler burst dominates
+ * a tiny window.  500 ms is still invisible to a user opening Home, but is
+ * long enough that an idle 8-core phone reports its steady state. */
+#define CPU_SAMPLE_NS 500000000L
 
 struct cpu_sample { unsigned long long total, idle; int valid; };
 static struct cpu_sample previous;

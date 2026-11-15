@@ -357,6 +357,22 @@ def test_status_redacts_coordinates_without_read_capability():
         assert redacted["last_fix_age_s"] is not None
 
 
+def test_redacted_status_keeps_the_provider_fix_for_the_authorized_reader():
+    """A Settings/control check must not turn its own redaction into no-fix."""
+    with tempfile.TemporaryDirectory() as d:
+        geo = FakeGeoClue()
+        geo.locations = [fix()]
+        lc = connector(d, geo)
+        lc.set_enabled(True)
+        redacted = lc.get_status(include_coordinates=False)
+        assert redacted["state"] == "fixed"
+        assert redacted["latitude"] is None and redacted["longitude"] is None
+        full = lc.get_status(include_coordinates=True)
+        assert full["state"] == "fixed"
+        assert full["latitude"] is not None and full["longitude"] is not None
+        assert full["accuracy"] is not None
+
+
 def test_provider_access_denied_is_named_not_called_a_timeout():
     with tempfile.TemporaryDirectory() as d:
         geo = FakeGeoClue()
@@ -368,3 +384,44 @@ def test_provider_access_denied_is_named_not_called_a_timeout():
         assert st["state"] == "unavailable"
         assert "AccessDenied" in (st["detail"] or "")
         assert "AccessDenied" in (st["last_error"] or "")
+
+
+def test_new_client_after_policy_on_restarts_a_stale_provider():
+    """A lease that outlived a policy toggle must not serve the old fix."""
+    with tempfile.TemporaryDirectory() as d:
+        geo = FakeGeoClue()
+        lc = connector(d, geo)
+        lc.set_enabled(True)
+        # One provider answer: it becomes the remembered (old) fix; the next
+        # status read must report it as stale, not as a fresh position.
+        old_fix = fix(now=time.time() - 300)
+        geo.locations = [old_fix, dict(old_fix)]
+        lc._leases["org.nuxel.Maps"] = {"count": 1, "expires": time.time() + 60}
+        stale = lc.get_status()
+        assert stale["state"] == "stale"
+        # Simulate the state after a fresh app session: no leases, provider
+        # still "connected" from before, old fix retained, no live search.
+        lc._leases.clear()
+        lc._acquisition_started_at = None
+        geo.locations = [fix(now=time.time())]
+        before = geo.acquire_calls
+        ok, err = lc.begin_acquisition("org.nuxel.Maps")
+        assert ok and err is None
+        assert geo.acquire_calls == before + 1, "provider must be re-acquired"
+        st = lc.get_status()
+        assert st["state"] == "fixed"
+        assert st["last_fix_age_s"] < 5
+
+
+def test_lease_with_a_fresh_fix_is_reused_for_a_second_client():
+    with tempfile.TemporaryDirectory() as d:
+        geo = FakeGeoClue()
+        lc = connector(d, geo)
+        lc.set_enabled(True)
+        geo.locations = [fix(now=time.time())]
+        assert lc.get_status()["state"] == "fixed"
+        lc.begin_acquisition("org.nuxel.Maps")
+        before = geo.acquire_calls
+        ok, _ = lc.begin_acquisition("org.nuxel.Weather")
+        assert ok
+        assert geo.acquire_calls == before, "a running provider with a current fix is shared"

@@ -427,7 +427,8 @@
 
   LockscreenIndicators.prototype._renderModeOverlay = function () {
     if (!this.modeOverlay) return;
-    var selected = this.state.modeSelected === 'file_transfer' ? 'file_transfer' : 'charging';
+    var _m = this.state.modeSelected;
+    var selected = (_m === 'file_transfer' || _m === 'usb_network') ? _m : 'charging';
     var buttons = this.modeOverlay.querySelectorAll('[data-mode]');
     for (var i = 0; i < buttons.length; i++) {
       var b = buttons[i];
@@ -442,6 +443,11 @@
         this.modeStatus.textContent = this.state.fileTransfer
           ? 'File transfer active. On macOS use OpenMTP or MTPLX; Finder does not mount MTP volumes.'
           : 'File transfer selected, not active. On macOS use OpenMTP or MTPLX; Finder does not mount MTP volumes.';
+      } else if (selected === 'usb_network') {
+        this.modeStatus.textContent = this.state.modeActive
+          ? 'USB network active' + (this.state.usbInterface ? ' on ' + this.state.usbInterface : '') +
+            '. The laptop needs 10.15.19.2/24; the phone is 10.15.19.1. No Internet is shared.'
+          : 'USB network selected, not active (no host link, or the running kernel lacks the NCM fix).';
       } else {
         this.modeStatus.textContent = 'Charging selected';
       }
@@ -469,7 +475,7 @@
           btn.addEventListener('click', function (e) {
             e.stopPropagation();
             var mode = btn.getAttribute('data-mode');
-            self._setMode(mode === 'file_transfer' ? 'file_transfer' : 'charging');
+            self._setMode((mode === 'file_transfer' || mode === 'usb_network') ? mode : 'charging');
           });
         })(options[i]);
       }
@@ -515,8 +521,10 @@
     }
     request.then(function (res) {
       self.state.modeBusy = false;
-      self.state.modeSelected = (res && res.mode) ? res.mode : (res && res.selected) || self.state.modeSelected;
-      self.state.fileTransfer = !!(res && res.active);
+      self.state.modeSelected = (res && res.selected) ? res.selected : (res && res.mode) || self.state.modeSelected;
+      self.state.modeActive = !!(res && res.active);
+      self.state.usbInterface = (res && res.interface) || '';
+      self.state.fileTransfer = !!(res && res.active && res.mode === 'file_transfer');
       if (!res || res.success !== true) {
         self.state.fileTransfer = false;
         if (self.modeStatus) self.modeStatus.textContent = 'Mode change failed' + ((res && res.error) ? (': ' + res.error) : '');

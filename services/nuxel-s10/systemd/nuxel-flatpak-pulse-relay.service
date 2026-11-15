@@ -1,0 +1,30 @@
+# Flatpak apps run in a sandbox whose XDG_RUNTIME_DIR is remapped to
+# /run/user/0 (backed by /root/.cache/.flatpak/<app>/xdg-run on the host), so
+# they cannot reach the real PulseAudio/PipeWire-Pulse socket.  That is why
+# Electron/GTK apps (Ferdium, WhatsApp, Signal, ZapZap, Teams) only saw
+# "Connection refused" and no microphone.
+#
+# This relay listens at /run/user/0/pulse/native (the path the launcher sets
+# as PULSE_SERVER) and forwards the Pulse protocol byte-for-byte to the real
+# server.  The launcher additionally mounts exactly that directory into each
+# sandbox with --filesystem=/run/user/0/pulse, so the app sees the live
+# socket at the standard location.  No audio is interpreted or recorded here.
+[Unit]
+Description=Nuxel Flatpak sandbox PulseAudio relay
+After=nuxel-audio-session.service nuxel-soundd.service
+Wants=nuxel-audio-session.service
+PartOf=nuxel-audio-session.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/nuxel/nuxel-flatpak-pulse-relay.py
+Restart=always
+RestartSec=1
+Environment=PYTHONUNBUFFERED=1
+RuntimeDirectory=nuxel-flatpak-pulse
+RuntimeDirectoryMode=0755
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

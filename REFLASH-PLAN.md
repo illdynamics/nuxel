@@ -28,7 +28,7 @@ edge-panel UI, service-worker cache) ships over the existing SSH/deploy path.
 | [REPORT-MOBILE-NETWORKING.md](REPORT-MOBILE-NETWORKING.md) §17 | **PARTIAL / YES** | Shannon ModemManager plugin + system image; likely boot/kernel for CP transport/DT | YES | Batch with NFC/USBNET kernel work. |
 | [REPORT-NFC.md](REPORT-NFC.md) §17 | **YES** | boot/kernel NFC class/netlink + system daemon; firmware already present | YES | Verify a physical tag read before claiming completion. |
 | [REPORT-ROTATION.md](REPORT-ROTATION.md) §17 | **PARTIAL / YES** | system image with SSP/BBD vendor runtime; boot only if SSP driver/DT changes | YES | Manual/locked rotation must stay intact. |
-| [REPORT-USBNET.md](REPORT-USBNET.md) §17 | **PARTIAL / YES** | boot/kernel gadget modes + system helper | YES | Preserve CDC-ACM recovery console in every mode experiment. |
+| [REPORT-USBNET.md](REPORT-USBNET.md) §17 / [PWNAGE-USBNET-REFLASH-MANIFEST.md](PWNAGE-USBNET-REFLASH-MANIFEST.md) | **YES (boot)** | boot/kernel NCM lifecycle patch (0011, real artifact) + single-owner USB mode manager + tether provider + PWA | YES | NCM is primary (macOS native). One gadget owner for charging/file_transfer/usb_network/usb_tethering. Source+object PASS; physical NCM teardown soak, Mac SSH and tether still NOT TESTED. Previous p112000 boot image predates the fix — do not flash. |
 | [REPORT-EDGE.md](REPORT-EDGE.md) §17 | **NO** for v1 | PWA + bridge + optional existing `set_grip_data` controller tuning | YES | Only a future kernel/DT/native-surface change would force a flash. |
 | PWNAGE-93000 (this mission) | **NO** | PWA/bridge/notification/session userspace | — | Already deployed over SSH; include in the image if rebuilding anyway. |
 
@@ -87,3 +87,17 @@ Deploy with the mission scripts, back up each replaced file as
   for the recommended userspace design.
 - Firmware/secure/kernel-gated reports: **still blocked**; they are the reason
   to schedule the next controlled reflash batch.
+
+## 7. USBNET batch gate (2026-11-14)
+
+- Kernel: `kernel/s10plus/patches/0011-nuxel-usb-ncm-lifecycle.patch`
+  (sha256 `95d8a3e7…84b78`) applies to the pristine pinned tree and its
+  `f_ncm.o` compiles with the marker in `.rodata`. The earlier p112000 image
+  did **not** contain this fix; a combined image must be rebuilt and re-gated.
+- Shared-tree blocker: the NFC agent's tree is mid-series (required `0007`
+  conflicts), so the combined `build-kernel.sh` build cannot finish until the
+  NFC owner lands their series. Do not resolve it by rewriting NFC patches.
+- Userspace ships over SSH (`tools/pwnage_usbnet/deploy-pwnage-usbnet.sh`);
+  no reflash needed for the services/UI half.
+- Flash only after: combined build, `verify-boot-image.py` PASS with the NCM
+  marker, and a physical NCM soak/ACM check on a lab target.

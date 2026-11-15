@@ -234,12 +234,27 @@ def get_provider() -> PrivacyProvider:
     return _PROVIDER
 
 
+class PrivacyStateUnavailable(RuntimeError):
+    """The privacy policy state could not be read; callers must fail closed."""
+
+
 def camera_capture_blocked() -> bool:
-    """Cheap gate used by the root Bridge camera capture path."""
+    """Gate used by every camera acquisition path (Bridge, portal, apps).
+
+    FAIL CLOSED (2026-11-14): a missing, unreadable or malformed policy file, or
+    a non-boolean "blocked" field, is treated as BLOCKED. The previous version
+    returned False on any exception, so a deleted/corrupt file silently turned
+    the privacy switch off for every client. Only an explicit JSON
+    {"blocked": false} unblocks the camera.
+    """
     try:
-        return bool(_read_json(CAMERA_DOC).get("blocked"))
+        doc = _read_json(CAMERA_DOC)
+        blocked = doc.get("blocked")
+        if isinstance(blocked, bool):
+            return blocked
+        return True
     except Exception:
-        return False
+        return True
 
 
 def handle(verb: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

@@ -16,13 +16,14 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Nuxel</title>
     <link rel="stylesheet" href="../nuxel-common/theme.css?v=p85000">
+    <link rel="stylesheet" href="css/edge-lighting.css?v=p103000">
     <link rel="stylesheet" href="css/style.css?v=p85000">
     <link rel="stylesheet" href="css/launcher.css?v=p87000">
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/status-bar.css?v=p106000">
     <link rel="stylesheet" href="css/home-settings.css?v=p80000">
     <link rel="stylesheet" href="css/widgets.css?v=p82000">
-    <link rel="stylesheet" href="css/lockscreen.css?v=p91000">
+    <link rel="stylesheet" href="css/lockscreen.css?v=a88">
     <link rel="preload" as="image" href="assets/nuxel-preload-cover.jpg">
     <script>
     // PWNAGE-36000: in phone boot mode the separate mpv preloading-screen
@@ -178,8 +179,28 @@
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/09-location.svg?v=p80000" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Location</span>
             </div>
+            <div class="qs-item" id="qs-usb-net" data-enabled="unknown" data-mode="off" title="USB network: local USB Ethernet/SSH (does not share Internet)">
+                <span class="qs-icon usb-glyph" aria-hidden="true"></span>
+                <span class="qs-label">USB Net<br>checking</span>
+            </div>
+            <div class="qs-item" id="qs-usb-tether" data-enabled="unknown" title="USB tether: share the phone's Internet with the attached computer">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png?v=usbnet2601" alt="" onerror="this.hidden=true">
+                <span class="qs-label">Tether<br>checking</span>
+            </div>
+            <div class="qs-item" id="qs-hotspot" data-enabled="unknown" title="Wi-Fi hotspot (only when the driver supports AP mode)">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png?v=usbnet2601" alt="" onerror="this.hidden=true">
+                <span class="qs-label">Hotspot<br>checking</span>
+            </div>
         </div>
         <div class="qs-row">
+            <div class="qs-item" id="qs-edge-panel" data-enabled="true" title="Edge panel: app and notification sidebar (also opens with a deliberate inward side swipe)">
+                <span class="qs-icon edge-panel-icon" aria-hidden="true"></span>
+                <span class="qs-label">Edge</span>
+            </div>
+            <div class="qs-item" id="qs-edge-lighting" data-enabled="true" title="Edge lighting: notification display effect (tap = preview, long-press = on/off)">
+                <span class="qs-icon edge-lighting-icon" aria-hidden="true"></span>
+                <span class="qs-label">Edge<br>light</span>
+            </div>
             <div class="qs-item" id="qs-dnd" data-enabled="false">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">DND</span>
@@ -191,10 +212,6 @@
             <div class="qs-item" id="qs-rotate" data-enabled="false">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Rotate</span>
-            </div>
-            <div class="qs-item" id="qs-settings" data-enabled="true">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/30-quick-settings.png?v=a44" alt="" onerror="this.hidden=true">
-                <span class="qs-label">Settings</span>
             </div>
             <div class="qs-item" id="qs-firewall" data-enabled="unknown">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/23-firewall.png?v=1" alt="" onerror="this.hidden=true">
@@ -361,10 +378,80 @@
                     <span class="cm-name">File Transfer</span>
                     <span class="cm-desc">Make Nuxel storage accessible to a connected laptop.</span>
                 </button>
+                <button type="button" class="connection-mode-option" data-mode="usb_network">
+                    <span class="cm-name">USB Network</span>
+                    <span class="cm-desc">Local USB Ethernet + SSH (10.15.19.1). Does not share Internet.</span>
+                </button>
                 <p class="connection-mode-status" id="connection-mode-status" role="status"></p>
                 <button type="button" class="connection-mode-dismiss" id="connection-mode-dismiss">Close</button>
             </div>
         </div>
+        <!-- A80 credential overlays.  Exactly one is visible per lock mode:
+             pattern  -> 9-dot matrix (penguin lock-heads as dots) + trail + PIN button
+             pin      -> numeric keypad
+             fingerprint -> nuxel-fingerprint.png aligned on the S10+ scanner + PIN button
+             The swipe penguin handle is hidden in pattern/pin/fingerprint modes. -->
+        <div id="lockscreen-auth" class="lockscreen-auth" hidden>
+            <!-- No heading/instructions here on purpose: the owner enters the
+                 pattern/PIN directly on the surface and the Vault password in
+                 the Vault's own field.  The head element stays in the DOM
+                 (hidden) because the auth module still writes status text to
+                 it; it is never painted. -->
+            <div class="lockscreen-auth-head" hidden aria-hidden="true">
+                <div id="lockscreen-auth-title" class="lockscreen-auth-title"></div>
+                <div id="lockscreen-auth-hint" class="lockscreen-auth-hint"></div>
+            </div>
+
+            <div id="lockscreen-pattern" class="lockscreen-pattern" hidden
+                 role="application" aria-label="Draw pattern to unlock">
+                <svg id="lockscreen-pattern-svg" class="lockscreen-pattern-svg"
+                     viewBox="0 0 300 300" aria-hidden="true">
+                    <polyline id="lockscreen-pattern-trail" class="lockscreen-pattern-trail"
+                              points="" fill="none"/>
+                </svg>
+                <div id="lockscreen-pattern-dots" class="lockscreen-pattern-dots"></div>
+            </div>
+
+            <div id="lockscreen-pinpad" class="lockscreen-pinpad" hidden>
+                <div id="lockscreen-pin-display" class="lockscreen-pin-display"
+                     role="status" aria-live="polite"></div>
+                <div class="lockscreen-pin-grid">
+                    <button type="button" class="lockscreen-key" data-pin="1">1</button>
+                    <button type="button" class="lockscreen-key" data-pin="2">2</button>
+                    <button type="button" class="lockscreen-key" data-pin="3">3</button>
+                    <button type="button" class="lockscreen-key" data-pin="4">4</button>
+                    <button type="button" class="lockscreen-key" data-pin="5">5</button>
+                    <button type="button" class="lockscreen-key" data-pin="6">6</button>
+                    <button type="button" class="lockscreen-key" data-pin="7">7</button>
+                    <button type="button" class="lockscreen-key" data-pin="8">8</button>
+                    <button type="button" class="lockscreen-key" data-pin="9">9</button>
+                    <button type="button" class="lockscreen-key key-wide" id="lockscreen-pin-cancel">Cancel</button>
+                    <button type="button" class="lockscreen-key" data-pin="0">0</button>
+                    <button type="button" class="lockscreen-key" id="lockscreen-pin-del" aria-label="Delete">⌫</button>
+                </div>
+                <button type="button" class="lockscreen-key key-enter" id="lockscreen-pin-enter">Unlock</button>
+            </div>
+
+            <div id="lockscreen-fingerprint" class="lockscreen-fingerprint" hidden>
+                <div id="lockscreen-fingerprint-ring" class="lockscreen-fingerprint-ring">
+                    <img id="lockscreen-fingerprint-art" class="lockscreen-fingerprint-art"
+                         src="/assets/nuxel-fingerprint.png?v=a81" alt=""
+                         draggable="false">
+                </div>
+                <div id="lockscreen-fingerprint-status" class="lockscreen-fingerprint-status"
+                     role="status" aria-live="polite">Touch the scanner to unlock</div>
+            </div>
+
+            <div id="lockscreen-auth-error" class="lockscreen-auth-error" role="alert"></div>
+            <button type="button" id="lockscreen-pin-fallback" class="lockscreen-pin-fallback"
+                    hidden>PIN</button>
+            <!-- No "Set up pattern / PIN" entry point on the lock screen: a
+                 credential can only be set/changed from Settings -> Security.
+                 The id is kept (hidden, inert) for stale callers. -->
+            <button type="button" id="lockscreen-auth-switch" class="lockscreen-pin-fallback auth-switch"
+                    hidden disabled aria-hidden="true" tabindex="-1">Set up pattern / PIN</button>
+        </div>
+
         <div class="lockscreen-touch-warning" id="lockscreen-touch-warning"
              role="alert" aria-live="assertive" hidden>
             <strong>Touch unavailable</strong>
@@ -413,6 +500,8 @@
     })();
     </script>
     <script src="../nuxel-common/theme.js?v=p85000"></script>
+    <script src="js/edge-panel-gesture.js?v=p103000"></script>
+    <script src="js/edge-lighting.js?v=a85"></script>
     <script src="../nuxel-common/haptics.js?v=a81"></script>
     <script src="../nuxel-common/geolocation.js?v=p80000"></script>
     <script src="js/apps.js?v=p91000"></script>
@@ -426,7 +515,7 @@
     <script src="js/bridge.js?v=a63"></script>
     <script src="js/recents.js?v=p80000"></script>
     <script src="js/topbar-machine.js?v=p94000"></script>
-    <script src="js/qs.js?v=p94000"></script>
+    <script src="js/qs.js?v=usbnet2601"></script>
 <script src="js/qs-firewall.js?v=1"></script>
     <!-- A32: host backend (settings/buttons/terminal) + status-bar safe zones.
          Both are inert without a host, so the VM/desktop launcher is unchanged. -->
@@ -438,10 +527,11 @@
     <script src="js/osd.js?v=p80000"></script>
     <script src="js/bootlog.js?v=p80000"></script>
     <script src="js/touch-keyboard.js?v=p80000"></script>
-    <script src="js/security-lock.js?v=p80000"></script>
+    <script src="js/security-lock.js?v=a85"></script>
     <script src="js/lockscreen-indicators.js?v=p85000"></script>
     <script src="js/lockscreen-clock.js?v=p91000"></script>
-    <script src="js/lockscreen.js?v=p80000"></script>
+    <script src="js/lockscreen-auth.js?v=a88"></script>
+    <script src="js/lockscreen.js?v=a88"></script>
     <script src="js/navigation.js?v=p80000"></script>
     <script src="js/gestures.js?v=p80000"></script>
     <script src="js/widgets.js?v=p91000"></script>

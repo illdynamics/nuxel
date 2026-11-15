@@ -1,1 +1,4 @@
-nodes + identity + firmware + media graph => READY_UNTESTED (a frame is the owner observation).
+nodes + identity + the minimum verified firmware set (fimc_is_lib.bin +
+fimc_is_rta.bin, both above min_size) => READY_UNTESTED (a frame is the owner
+observation). The blobs here are zero-pattern FIXTURES: this proves the
+diagnostic's file/size logic, never that the S10+ ISP can run them.

@@ -117,7 +117,16 @@ static void publish_state(const char *reason) {
 /* ---- authoritative lock state ------------------------------------------- */
 /* Return 2 = unlocked, 1 = locked, 0 = unknown/unreadable.  The contract is
  * fail-closed: a missing/partially-written document or a missing lock-state
- * owner never lets the native dock map over the lockscreen. */
+ * owner never lets the native dock map over the lockscreen.
+ *
+ * A85: `0` used to be reported as "unknown" and treated as a refusal -- but it
+ * is only ever produced by a missing/short document, which IS the locked
+ * outcome.  Measured 2026-11-14: /run is a tmpfs and lock-state.json did not
+ * exist at boot, so every NAV_DOCK_SHOW was refused with `lock=unknown` and
+ * the swipe-up triple buttons did not work over Settings or the VNC screen.
+ * The state file is now published at session start by the provider
+ * (nuxel-security-state-rpc); if it is still missing the dock stays hidden and
+ * the next 500 ms tick retries -- never a map over an unlocked-looking phone. */
 static int lock_state_read(void) {
   char buf[512];
   int fd = open(LOCK_STATE, O_RDONLY | O_CLOEXEC);
@@ -135,6 +144,11 @@ static int lock_state_read(void) {
   if (!strncmp(p, "false", 5)) return 2;
   if (!strncmp(p, "true", 4)) return 1;
   return 0;
+}
+
+/* Human name of a fail-closed refusal (never claims "unknown" for hidden). */
+static const char *lock_state_name(int st) {
+  return st == 2 ? "unlocked" : "locked";
 }
 
 static void dock_show(void);
@@ -307,7 +321,7 @@ static void dock_show(void) {
     dock_visible = 0;
     strip_mode = 0;
     if (surface) dock_destroy();
-    audit("NAV_DOCK_SHOW_REFUSED lock=%s", st == 1 ? "locked" : "unknown");
+    audit("NAV_DOCK_SHOW_REFUSED lock=%s", lock_state_name(st));
     return;
   }
   dock_desired = 1;
@@ -435,7 +449,7 @@ static void dock_tick(void) {
       dock_visible = 0;
       strip_mode = 0;
       dock_destroy();
-      audit("NAV_DOCK_LOCK_HIDE lock=%s", st == 1 ? "locked" : "unknown");
+      audit("NAV_DOCK_LOCK_HIDE lock=%s", lock_state_name(st));
     }
   } else if (dock_desired) {
     if (!dock_visible || strip_mode || !surface) {

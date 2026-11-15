@@ -1,0 +1,34 @@
+[Unit]
+Description=Nuxel native BBD/SSP sensor-hub bridge (BCM47752 + LSM6DSO)
+Documentation=file:/usr/share/doc/nuxel/PWNAGE-SSP-REPORT.md
+After=nuxel-wayland.service
+Before=nuxel-orientationd.service
+Wants=nuxel-wayland.service
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/python3 /usr/libexec/nuxel/nuxel-ssp-bridge --selftest
+ExecStart=/usr/bin/python3 /usr/libexec/nuxel/nuxel-ssp-bridge
+Restart=on-failure
+# Do not hammer the hub: a failed bring-up is retried with backoff, and the
+# bridge never powers the rail in a tight loop.
+RestartSec=15
+RestartSec=3
+User=root
+Group=root
+NoNewPrivileges=true
+# The bridge writes /run/nuxel-ssp-bridge/phase; without this systemd fails
+# the unit with 226/NAMESPACE before ExecStart even runs.
+RuntimeDirectory=nuxel-ssp-bridge
+RuntimeDirectoryMode=0755
+PrivateTmp=false
+ProtectSystem=full
+ReadWritePaths=/run/nuxel-ssp-bridge
+# The four BBD/SSI device nodes and the sensor class sysfs are the contract.
+DevicePolicy=closed
+DeviceAllow=/dev/bbd_sensor rw
+DeviceAllow=/dev/bbd_control rw
+DeviceAllow=/dev/ttyBCM rw
+
+[Install]
+WantedBy=multi-user.target
