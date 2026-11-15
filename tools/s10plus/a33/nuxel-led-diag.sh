@@ -176,7 +176,98 @@ except Exception: print("parse-error")')"
   [ "$n" -gt 0 ] || { printf 'FAIL selftest: zero fixtures\n'; rc=1; }
   printf '%d fixtures checked\n' "$n"; return $rc
 }
+# PWNAGE-103000: machine-readable capability report for the LED / Edge Lighting
+# / Edge Panel feature.  Everything here is read from live state; nothing is
+# assumed and no hardware state is changed.
+edge_json() {
+  python3 - "$ROOT" <<'PY'
+import json, os, sys, glob, subprocess
+root = sys.argv[1].rstrip("/")
+def rd(p, default=""):
+    try:
+        return open(p).read().strip()
+    except OSError:
+        return default
+def i(p):
+    try:
+        return int(rd(p))
+    except (TypeError, ValueError):
+        return None
+def j(p):
+    try:
+        d = json.load(open(p))
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+leds = sorted(os.path.basename(p) for p in glob.glob(root + "/sys/class/leds/*"))
+torch = "/sys/class/leds/torch-sec1"
+rear = "/sys/class/camera/flash/rear_flash"
+led_sec = "/sys/class/leds/leds-sec1"
+def node(p):
+    return {"present": os.path.exists(p), "brightness": i(p + "/brightness") if os.path.isdir(p) else i(p),
+            "max_brightness": i(p + "/max_brightness"), "type": rd(p + "/type") or None,
+            "trigger": rd(p + "/trigger") or None,
+            "driver": os.path.basename(os.path.realpath(p + "/device/driver")) if os.path.exists(p + "/device") else None}
+cfg = j(root + "/var/lib/nuxel/edge-lighting/settings.json")
+policy = j(root + "/etc/nuxel/edge-lighting/edge-lighting.json")
+dnd = j(root + "/var/lib/nuxel/notifications/dnd.json")
+state = j(root + "/run/nuxel/state.json") or j(root + "/run/nuxel/display/state.json")
+def home_runtime(root):
+    """Read-only DOM probe of the RUNNING Home WebView (PWNABLE-103000 runtime).
+
+    Runs a local inspector probe (no mutation, no navigation) so the report can
+    distinguish "shipped" from "loaded by the live Home".  The probe is optional:
+    a failing probe is reported, never treated as a pass.
+    """
+    probe = root + "/usr/local/bin/nuxel-edge-runtime-probe.py"
+    if not os.path.exists(probe):
+        return {"state": "PROBE_NOT_INSTALLED", "evidence": "PASS_BUILD_TEST only"}
+    exe = root + "/usr/local/bin/nuxel-edge-runtime-probe.sh"
+    if not os.path.exists(exe):
+        return {"state": "PROBE_DAEMON_NOT_INSTALLED"}
+    try:
+        # The probe loads the full Home document in WebKit; on this device that
+        # takes ~25 s cold.  Bounded, and a timeout is reported (never a pass).
+        out = subprocess.run([exe], capture_output=True, text=True, timeout=75).stdout.strip()
+        return json.loads(out.splitlines()[-1]) if out else {"state": "PROBE_NO_OUTPUT"}
+    except Exception as exc:  # noqa: BLE001
+        return {"state": "PROBE_FAILED", "error": str(exc)}
+
+dprint = {
+    "schema": "nuxel.edge-capability/1",
+    "leds_enumerated": leds,
+    "rear_torch": {"capability": "PASS_DEVICE_RUNTIME" if os.path.exists(torch) or os.path.exists(rear) else "NOT_SUPPORTED_ON_DEVICE",
+                   "torch_sec1": node(torch), "camera_rear_flash": node(rear)},
+    "notification_led": {"capability": "NOT_SUPPORTED_ON_DEVICE" if not state.get("notification_led_present") else "PRESENT",
+                         "label": "S10+ has no dedicated notification/RGB LED class"},
+    "rgb_notification_led": {"capability": "NOT_SUPPORTED_ON_DEVICE"},
+    "leds_sec1": dict(node(led_sec), role="NOT_ASSIGNED (no source/physical proof of a notification use)",
+                      advertised_as_rgb=False, advertised_as_notification=False),
+    "edge_display_overlay": {"capability": "PASS_UI_PREVIEW", "hardware_led": False,
+                             "renderer": "nuxel-home DOM overlay", "owner": "nuxel-home"},
+    "edge_lighting": {"settings_path": "/var/lib/nuxel/edge-lighting/settings.json",
+                      "settings_present": bool(cfg), "effect": cfg.get("effect") or policy.get("effect"),
+                      "enabled": cfg.get("enabled", policy.get("enabled")),
+                      "screen_modes_supported": ["screen_on"],
+                      "screen_off": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK",
+                      "default_effect": "wave",
+                      "effects": policy.get("effects") or ["basic","wave","bubble","multicolor","heart","fireworks","eclipse","echo"]},
+    "dnd_active": bool(dnd.get("enabled", False)),
+    "reduced_motion": "runtime pref (prefers-reduced-motion / Nuxel motion policy)",
+    "edge_panel": {"gesture": "inward side swipe (30 px band, >=42 px, 1.5x dominance)",
+                   "accessible_entry": "Quick Settings Edge tile + Edge FX app",
+                   "controller_tuning_attempted": False,
+                   "evidence": "PASS_BUILD_TEST for the recognizer; NEEDS_OWNER_PHYSICAL_TEST for ergonomics"},
+    "home_runtime": home_runtime(root),
+    "owner_physical": {"torch_visibility": "NEEDS_OWNER_PHYSICAL_TEST",
+                       "edge_gesture_ergonomics": "NEEDS_OWNER_PHYSICAL_TEST",
+                       "edge_effect_visibility_on_glass": "NEEDS_OWNER_PHYSICAL_TEST"},
+}
+print(json.dumps(dprint, indent=2, sort_keys=True))
+PY
+}
 case "$CMD" in
+  edge|edge-json) edge_json ;;
   status) cmd_status ;;
   flash) cmd_flash ;;
   off) cmd_off ;;

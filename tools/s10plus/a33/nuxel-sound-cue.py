@@ -25,6 +25,12 @@ import time
 ASSETS = Path(os.environ.get('NUXEL_SOUND_ASSET_DIR', '/usr/share/nuxel/assets'))
 RUNTIME = Path(os.environ.get('NUXEL_SOUND_RUNTIME_DIR', '/run/nuxel'))
 HANDOFF = Path(os.environ.get('NUXEL_SOUND_HANDOFF', '/run/nuxel-anim-handoff'))
+# nuxel-preload-cinema owns the panel between the boot animation and the real
+# lockscreen.  Its overlay receipt appears when the preloading video starts and
+# disappears when the video releases the glass to the lockscreen, so the boot
+# cue can be started while the video is still playing.
+CINEMA_OVERLAY = Path('/run/nuxel/preload-cinema.overlay')
+CINEMA_CONFIG = Path('/etc/nuxel/boot/preload-cinema.json')
 SOUND_MODE = Path(os.environ.get('NUXEL_SOUND_MODE', '/var/lib/nuxel/audio/sound-mode'))
 # Prefer the PipeWire pulse path when the live session owns the ALSA device;
 # direct ALSA opens fail with EBUSY while PipeWire holds hw:0,1.  GStreamer's
@@ -243,6 +249,99 @@ def play(event, percentage):
         return 6
 
 
+def _cinema_active():
+    """True while nuxel-preload-cinema's video overlay owns the glass.
+
+    The overlay document is written once when playback starts and again (state
+    'done') before the lockscreen is revealed, so its TEXT is the signal; a
+    plain non-empty file would stay "covered" forever.
+    """
+    try:
+        if not CINEMA_OVERLAY.is_file():
+            return False
+        doc = json.loads(CINEMA_OVERLAY.read_text())
+    except (OSError, ValueError):
+        return False
+    return isinstance(doc, dict) and doc.get('state') in ('starting', 'covered')
+
+
+def _cue_wait_seconds():
+    """How long before the lockscreen handoff the boot cue is started.
+
+    Derived from the shipped documents, never hardcoded: the cue must END when
+    the preloading video ends and the real lockscreen is revealed.  Cue length
+    + player start latency is subtracted from the clip length, and the result
+    is clamped to the video's own duration.
+    """
+    clip_s = 6.0
+    try:
+        doc = json.loads(CINEMA_CONFIG.read_text())
+        # `asset` is the installer path; the media facts (duration) live in the
+        # sibling `_asset` document.  Accept either shape, never guess a value.
+        asset = None
+        if isinstance(doc, dict):
+            for key in ('_asset', 'asset'):
+                cand = doc.get(key)
+                if isinstance(cand, dict):
+                    asset = cand
+                    break
+        if isinstance(asset, dict) and isinstance(asset.get('duration_ms'), (int, float)):
+            clip_s = max(0.5, float(asset['duration_ms']) / 1000.0)
+    except (OSError, ValueError, TypeError):
+        pass
+    cue_s = 0.0
+    try:
+        path = ASSETS / BOOT_FILE
+        # MPEG-1 Layer III: 1152 samples per frame.  Read the first valid
+        # frame header for the rate instead of trusting the file name.
+        import struct
+        data = path.read_bytes()
+        i = 0
+        if data[:3] == b'ID3':
+            sz = ((data[6] & 0x7f) << 21) | ((data[7] & 0x7f) << 14) | \
+                 ((data[8] & 0x7f) << 7) | (data[9] & 0x7f)
+            i = 10 + sz
+        frames = 0
+        rate = 44100
+        while i + 4 <= len(data):
+            if data[i] != 0xFF or (data[i + 1] & 0xE0) != 0xE0:
+                i += 1
+                continue
+            h = struct.unpack('>I', data[i:i + 4])[0]
+            ver, layer, bri, sri, pad = (h >> 19) & 3, (h >> 17) & 3, (h >> 12) & 0xF, (h >> 10) & 3, (h >> 9) & 1
+            brs = (0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320)
+            if ver != 3 or layer != 1 or bri == 0 or sri == 3:
+                i += 1
+                continue
+            rate = (44100, 48000, 32000)[sri]
+            i += (144 * brs[bri] * 1000) // rate + pad
+            frames += 1
+        cue_s = frames * 1152.0 / rate
+    except (OSError, ValueError, IndexError, struct.error):
+        cue_s = 0.0
+    # 250 ms covers decoder/pw-play start-up measured in sound-cues.log
+    # (queue_ms < 5 ms, measured, plus the first audio period).
+    lead = clip_s - cue_s - 0.25
+    # The supplied cue (7.7 s) is LONGER than the clip (6.0 s).  A negative
+    # lead would mean "start after the lockscreen"; that is exactly what the
+    # owner does not want.  Start at the first confirmed video frame instead, so
+    # the cue plays DURING the preloading video and only its tail follows the
+    # lockscreen.
+    if lead < 0.0:
+        lead = 0.0
+    if lead > clip_s:
+        lead = clip_s
+    return lead
+
+
+def _handoff_mtime():
+    """Seconds since the UI handoff receipt was written, or None."""
+    try:
+        return max(0.0, time.time() - HANDOFF.stat().st_mtime)
+    except OSError:
+        return None
+
+
 def do_boot():
     RUNTIME.mkdir(parents=True, exist_ok=True)
     done_file = RUNTIME / 'boot-sound-attempted'
@@ -250,7 +349,8 @@ def do_boot():
         fcntl.flock(fd, fcntl.LOCK_EX)
         if done_file.exists():
             record('boot', 'already_attempted'); return 0
-        deadline = time.monotonic() + WAIT_SECONDS
+        started = time.monotonic()
+        deadline = started + WAIT_SECONDS
         handoff = False
         route_detail = 'not checked'
         route_ok = False
@@ -268,7 +368,48 @@ def do_boot():
         # Only one attempt per boot even if playback fails. Prevents repeated
         # loud restart loops when the audio device is broken or unavailable.
         done_file.write_text(str(int(time.time())) + '\n')
-        if play_via_manager('boot', BOOT_PCM_PERCENT):
+        # PWNAGE-SSP: the operator asked for the cue to land as the lockscreen
+        # arrives, not after it has been unlocked.  Whether that is true is
+        # measured here (cue start relative to the UI handoff receipt, and to
+        # the first /run/nuxel-lockscreen receipt if present) so the offset can
+        # be tuned from evidence instead of guessed.
+        timing = {"waited_s": round(time.monotonic() - started, 3),
+                  "cue_started_after_handoff_s": _handoff_mtime()}
+        try:
+            lock_receipt = Path('/run/nuxel-lockscreen')
+            if lock_receipt.exists():
+                timing["cue_started_after_lockscreen_s"] = round(
+                    max(0.0, time.time() - lock_receipt.stat().st_mtime), 3)
+        except OSError:
+            pass
+        # Start the cue just before the preloading video hands over to the
+        # lockscreen: the cue then plays WHILE nuxel-preloading-screen.mp4 is
+        # still on the glass and ends as the real lockscreen is revealed.
+        wait_s = _cue_wait_seconds()
+        timing["cue_lead_s"] = round(wait_s, 3)
+        timing["cinema_active_at_play"] = _cinema_active()
+        if wait_s > 0.0:
+            # Anchor the lead to the moment the video is confirmed ON the glass
+            # ('covered'), not to the controller's earlier 'starting' write.
+            # The document only changes again when the video ends.
+            cover_deadline = time.monotonic() + 5.0
+            while time.monotonic() < cover_deadline and _cinema_active():
+                try:
+                    doc = json.loads(CINEMA_OVERLAY.read_text())
+                except (OSError, ValueError):
+                    doc = {}
+                if isinstance(doc, dict) and doc.get('state') == 'covered':
+                    break
+                time.sleep(0.05)
+            wait_until = time.monotonic() + wait_s
+            while _cinema_active() and time.monotonic() < wait_until:
+                time.sleep(0.05)
+            timing["cinema_wait_s"] = round(max(0.0, wait_until - time.monotonic()), 3)
+            timing["cinema_active_at_play"] = _cinema_active()
+        ok = play_via_manager('boot', BOOT_PCM_PERCENT)
+        record('boot', 'played' if ok else 'play_failed', timing=timing,
+               pcm_gain_percent=BOOT_PCM_PERCENT, audible='unverified')
+        if ok:
             return 0
         return play('boot', BOOT_PCM_PERCENT)
 

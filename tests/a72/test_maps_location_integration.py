@@ -154,7 +154,8 @@ def test_first_party_system_grants_are_explicit_and_scoped():
     expected = {
         "org.nuxel.Home.json": {"location:manage", "location:read", "network:manage", "bluetooth:manage"},
         "nuxel-settings.json": {"location:manage", "location:read", "network:manage", "bluetooth:manage", "bluetooth:scan", "bluetooth:connect"},
-        "org.nuxel.Maps.json": {"location:read"},
+        "org.nuxel.Maps.json": {"location:manage", "location:read"},
+        "org.nuxel.Weather.json": {"location:manage", "location:read"},
     }
     for name, caps in expected.items():
         doc = json.loads(read("configs/nuxel/permissions/" + name))
@@ -202,24 +203,93 @@ def test_bridge_grant_loader_reads_system_grants():
     expected = {
         "org.nuxel.Home.json": {"location:manage", "location:read"},
         "nuxel-settings.json": {"location:manage", "location:read"},
-        "org.nuxel.Maps.json": {"location:read"},
+        "org.nuxel.Maps.json": {"location:manage", "location:read"},
     }
     tmp = tempfile.mkdtemp(prefix="nuxel-system-grants-")
     try:
         for name in expected:
             shutil.copy(os.path.join(REPO, "configs/nuxel/permissions", name), tmp)
         old = mod.PERMISSIONS_DIR
+        old_seed = mod.SEED_FIRST_PARTY_GRANTS
         mod.PERMISSIONS_DIR = tmp
+        mod.SEED_FIRST_PARTY_GRANTS = False   # pure reader test, no seeding
         try:
             grants = mod.NuxelBridgeService._load_all_grants(object())
         finally:
             mod.PERMISSIONS_DIR = old
+            mod.SEED_FIRST_PARTY_GRANTS = old_seed
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     assert grants["org.nuxel.Home"]["location:manage"] == "always"
     assert grants["nuxel-settings"]["location:read"] == "always"
     assert grants["org.nuxel.Maps"]["location:read"] == "always"
-    assert "location:manage" not in grants["org.nuxel.Maps"]
+    assert grants["org.nuxel.Maps"]["location:manage"] == "always"
+
+
+def test_bridge_seeds_absent_first_party_location_grants():
+    """A fresh store must get Maps/Weather location grants without hand editing.
+
+    The bridge seeds only ABSENT records: an owner's grant/deny in the live
+    store must win, and a seeded record must be readable by the unprivileged
+    bridge (0640 + nuxel-bridge group in production).
+    """
+    import importlib.util
+    import sys
+    import tempfile
+    import shutil
+    import types
+
+    src = os.path.join(REPO, "services", "nuxel-bridge", "src")
+    fake = types.ModuleType("dbus")
+    fake.service = types.ModuleType("dbus.service")
+    fake.service.Object = object
+    fake.service.method = lambda *a, **k: (lambda f: f)
+    fake.service.signal = lambda *a, **k: (lambda f: f)
+    fake.exceptions = types.SimpleNamespace(DBusException=Exception)
+    fake.PROPERTIES_IFACE = "org.freedesktop.DBus.Properties"
+    fake.types = types.SimpleNamespace(String=lambda v, **k: v)
+    saved = {k: sys.modules.get(k) for k in list(sys.modules) if k.startswith("dbus") or k == "gi" or k.startswith("gi.")}
+    try:
+        sys.modules.update({
+            "dbus": fake, "dbus.service": fake.service, "dbus.exceptions": fake.exceptions,
+            "dbus.mainloop.glib": types.ModuleType("dbus.mainloop.glib"),
+            "gi": types.ModuleType("gi"), "gi.repository": types.ModuleType("gi.repository"),
+        })
+        sys.modules["gi.repository"].GLib = types.SimpleNamespace(MainLoop=lambda *a, **k: None)
+        if src not in sys.path:
+            sys.path.insert(0, src)
+        spec = importlib.util.spec_from_file_location("bridge_seed_under_test", os.path.join(src, "bridge.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        seed_dir = tempfile.mkdtemp(prefix="nuxel-seed-src-")
+        tmp = tempfile.mkdtemp(prefix="nuxel-seed-store-")
+        old = (mod.PERMISSIONS_DIR, mod.SEED_GRANTS_DIR, mod.SEED_FIRST_PARTY_GRANTS)
+        try:
+            for name in ("org.nuxel.Maps.json", "org.nuxel.Weather.json"):
+                shutil.copy(os.path.join(REPO, "configs/nuxel/permissions", name), seed_dir)
+            # An owner decision already exists for Maps and must not be replaced.
+            owner = os.path.join(tmp, "org.nuxel.Maps.json")
+            with open(owner, "w") as fh:
+                json.dump({"location:read": {"decision": "deny"}}, fh)
+            mod.PERMISSIONS_DIR = tmp
+            mod.SEED_GRANTS_DIR = seed_dir
+            mod.SEED_FIRST_PARTY_GRANTS = True
+            grants = mod.NuxelBridgeService._load_all_grants(
+                mod.NuxelBridgeService.__new__(mod.NuxelBridgeService))
+            assert grants["org.nuxel.Weather"]["location:read"] == "always"
+            assert grants["org.nuxel.Weather"]["location:manage"] == "always"
+            with open(owner) as fh:
+                assert json.load(fh) == {"location:read": {"decision": "deny"}}
+        finally:
+            mod.PERMISSIONS_DIR, mod.SEED_GRANTS_DIR, mod.SEED_FIRST_PARTY_GRANTS = old
+            shutil.rmtree(tmp, ignore_errors=True)
+            shutil.rmtree(seed_dir, ignore_errors=True)
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
 
 
 def test_bridge_dbus_policy_does_not_block_provider_calls():
@@ -230,3 +300,30 @@ def test_bridge_dbus_policy_does_not_block_provider_calls():
     assert '<deny receive_sender="org.nuxel.Bridge"/><!---->' not in a
     # The broad deny must not come back; it blocked GeoClue receiving bridge calls.
     assert '\n    <deny receive_sender="org.nuxel.Bridge"/>\n' not in a
+
+
+def test_location_control_is_a_per_app_permission():
+    """Read and device-wide control are separate, owner-visible toggles.
+
+    The regression this guards: permD canonicalises both tokens into the one
+    ``location`` resource, so a read grant erased control (and vice versa), and
+    the UI hid the control row entirely.  The bridge must keep the exact
+    location:manage actuator gate, while Maps declares both resources.
+    """
+    ui = read("pwa/nuxel-apps/settings/apps-permissions-settings.js")
+    assert "['location:read', 'Location'" in ui
+    assert "['location:manage', 'Location control'" in ui
+    assert "permissions', 'check'" in ui
+    for path in ("pwa/nuxel-common/app-registry.json",
+                 "pwa/nuxel-apps/maps/manifest.json"):
+        doc = json.loads(read(path))
+        apps = doc.get("apps", doc.get("nuxel", {}))
+        row = apps if isinstance(apps, dict) else next(a for a in apps if a.get("id") == "org.nuxel.Maps")
+        caps = row.get("capabilities") if isinstance(row, dict) else row["capabilities"]
+        assert "location:read" in caps and "location:manage" in caps, path
+    bridge = read("services/nuxel-bridge/src/bridge.py")
+    assert "_location_delegate_grants" in bridge
+    assert "_check_capability(app_id, 'location:manage')" in bridge
+    permd = read("shell/nuxel-shell/nuxel-permissions/nuxel-permd.py")
+    assert 'grants[capability] = {' in permd
+    assert '"delegate_of": cap_id' in permd

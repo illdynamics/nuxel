@@ -1,0 +1,3 @@
+Only the 3-byte s5k2l4_setfile.bin placeholder and a sub-min_size
+fimc_is_lib.bin => BLOCKED_FIRMWARE. A tiny fixture must never flip readiness
+(the old diagnostic passed on ANY one candidate file).

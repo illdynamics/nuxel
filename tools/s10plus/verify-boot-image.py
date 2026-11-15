@@ -178,6 +178,98 @@ def check_cpio(data, gate, label):
     return info
 
 
+def _read_dt_string(blob, off):
+    end = blob.find(b"\x00", off)
+    if end < 0:
+        return None
+    return blob[off:end].decode("ascii", "replace")
+
+
+def check_dtb(dtb, gate, label="appended DTB"):
+    """Validate the real beyond2lte hardware statements in the boot DTB.
+
+    The combined NFC image must not rely on a stale DTB that lacks the actual
+    controller node.  Parse the flat DT structure conservatively (strings and
+    the properties in this device's encoder are little-endian / big-endian
+    mixed: names are length-prefixed BE, values are BE cells).
+    """
+    if len(dtb) < 40 or struct.unpack_from(">I", dtb, 0)[0] != DTB_MAGIC:
+        gate.fail("%s: bad FDT magic/short header" % label)
+        return {}
+    total, off_struct, off_strings = struct.unpack_from(">III", dtb, 4)
+    if total > len(dtb) or off_struct >= total or off_strings >= total:
+        gate.fail("%s: invalid FDT offsets" % label)
+        return {}
+    pos = off_struct
+    depth = 0
+    cur = ""
+    path = ""
+    props = {}
+    while pos + 4 <= total:
+        tok = struct.unpack_from(">I", dtb, pos)[0]
+        pos += 4
+        if tok == 1:  # FDT_BEGIN_NODE, NUL-terminated and 4-byte aligned
+            nul = dtb.find(b"\x00", pos, total)
+            if nul < 0:
+                gate.fail("%s: unterminated FDT node name" % label)
+                break
+            name = dtb[pos:nul].decode("ascii", "replace")
+            pos = _align4(nul + 1)
+            path = name if depth == 0 else (path + "/" + name if path else name)
+            depth += 1
+            cur = path
+        elif tok == 2:
+            depth -= 1
+            if depth <= 0:
+                break
+            path = path.rsplit("/", 1)[0] if "/" in path else ""
+        elif tok == 3:  # FDT_PROP: u32 len, u32 nameoff, value
+            nlen = struct.unpack_from(">I", dtb, pos)[0]
+            nameoff = struct.unpack_from(">I", dtb, pos + 4)[0]
+            pos += 8
+            name = _read_dt_string(dtb, off_strings + nameoff) or ""
+            value = dtb[pos:pos + nlen]
+            if len(value) != nlen:
+                gate.fail("%s: truncated FDT property %s" % (label, name))
+                break
+            pos += _align4(nlen)
+            props[(cur, name)] = value
+        elif tok == 4:
+            continue
+        elif tok == 9:
+            break
+        else:
+            gate.fail("%s: unknown FDT token 0x%x" % (label, tok))
+            break
+
+    nfc = [(node, v) for (node, name), v in props.items()
+           if node.endswith("sec-nfc@27") and name == "compatible"]
+    if not nfc:
+        gate.fail("%s: no sec-nfc@27 node (NFC controller missing)" % label)
+        return props
+    node = nfc[0][0]
+    if props.get((node, "reg")) != b"\x00\x00\x00\x27":
+        gate.fail("%s: sec-nfc@27 reg is not 0x27" % label)
+    ven = props.get((node, "sec-nfc,ven-gpio"))
+    firm = props.get((node, "sec-nfc,firm-gpio"))
+    irq = props.get((node, "sec-nfc,irq-gpio"))
+    if not all(isinstance(x, bytes) and len(x) == 12 for x in (ven, firm, irq)):
+        gate.fail("%s: NFC GPIO properties are absent or malformed" % label)
+        return props
+    # The pin-controller pin numbers come from the real board overlays:
+    # ven=gpp6-2, firm=gpp6-3, irq=gpa1-2 (all beyond2lte revisions).
+    if ven[4:8] != b"\x00\x00\x00\x02" or firm[4:8] != b"\x00\x00\x00\x03":
+        gate.fail("%s: NFC ven/firm pins are not gpp6-2/gpp6-3" % label)
+    if irq[4:8] != b"\x00\x00\x00\x02":
+        gate.fail("%s: NFC IRQ pin is not gpa1-2" % label)
+    gate.note("%s: sec-nfc@27 present at I2C 0x27 with ven/firm/irq GPIOs" % label)
+    return props
+
+
+def _align4(n):
+    return (n + 3) & ~3
+
+
 def inspect(path, partition_bytes, gate):
     rep = {"path": path}
     size = os.path.getsize(path)
@@ -327,6 +419,10 @@ def inspect(path, partition_bytes, gate):
                                   "placeholder (S-Boot overwrites it; do not count a "
                                   "change to it as a device-tree experiment)"
                                   % prop.decode())
+                try:
+                    check_dtb(dtb[:totalsize], gate)
+                except Exception as exc:  # noqa: BLE001
+                    gate.fail("appended DTB could not be validated: %s" % exc)
     # ---- gate 6: partition capacity --------------------------------------------
     if size > partition_bytes:
         gate.fail("image is %d bytes, larger than the BOOT partition (%d bytes)"

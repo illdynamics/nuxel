@@ -1814,6 +1814,15 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\",\"pending\":true,\"backend\":\"button-manager-gate\"}", action);
     return;
   }
+  /* Wake without toggling.  A touch on the dark glass wakes the panel the
+     same way a short Power press does (the display bridge's control FIFO is
+     the one owner of the panel); it can never blank an already-lit screen. */
+  if (!strcmp(action, "screen-wake")) {
+    wlfb_command("screen-on");
+    st("HOST_ACTION screen-wake -> nuxel-wl-fb control fifo");
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"screen-wake\"}");
+    return;
+  }
   if (!strcmp(action, "screen-off") || !strcmp(action, "screen-on") || !strcmp(action, "screen-toggle")) {
     int fd = open("/run/nuxel-wl-fb.cmd", O_WRONLY | O_NONBLOCK);
     if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"bridge-fifo-absent\"}"); return; }

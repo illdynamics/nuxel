@@ -33,8 +33,12 @@ def test_helper_builds_natively_and_refuses_without_flag(tmp_path):
     if not cc:
         pytest.skip("no host cc")
     out = tmp_path / "nuxel-mfc-decode"
+    # macOS has no <linux/videodev2.h>: use the vendored UAPI subset shared with
+    # the camera capture tool (same approach as kernel/host-tools/include).
+    uapi = ROOT / "tools/s10plus/v4l2-uapi"
     p = subprocess.run([cc, "-O2", "-Wall", "-Wextra", "-Wno-unused-parameter",
-                        "-Wno-format-truncation", "-o", str(out), str(SRC)],
+                        "-Wno-format-truncation", "-I", str(uapi),
+                        "-o", str(out), str(SRC)],
                        capture_output=True, text=True)
     assert p.returncode == 0, p.stderr
     r = subprocess.run([str(out), "--version"], capture_output=True, text=True)

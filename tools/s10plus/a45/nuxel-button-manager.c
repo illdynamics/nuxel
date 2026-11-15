@@ -203,6 +203,16 @@ static int vol_cap_pct = 100;  /* from audio.json; 25% bring-up cap retired     
 static int vol_cap_active = 0; /* only while the bring-up flag exists          */
 static int64_t now_ms(void); /* forward decl: defined below (monotonic ms) */
 static int64_t last_activity_ms = 0; /* A45 idle: monotonic, real input only   */
+/* Touch-to-wake: the first contact on the dark glass asks nuxel-wl-fb to turn
+   the panel (and with it the touchscreen) back on.  touch_wake_ms debounces the
+   burst of samples the driver can still deliver; touch_wake_discard drops the
+   stale pre-wake samples from the gesture machine. */
+static int64_t touch_wake_ms = 0;
+static int touch_wake_discard = 0;
+/* Deferred wake repaint: the wake loop eats control commands until the panel is
+   on, so the request to refresh the glass is only sent after this timestamp
+   (the poll loop below has a 200 ms tick, which is the resolution used). */
+static int64_t touch_repaint_at_ms = 0;
 static int64_t idle_timeout_ms = 300000; /* A63 default 5 min, configurable    */
 static int display_on = 1;         /* A45 local mirror of the panel state      */
 
@@ -1517,13 +1527,81 @@ int main(int argc, char **argv) {
       }
     }
 
+    /* Deferred wake repaint (see TOUCH_WAKE_SEND).  One shot, only after the
+       panel has had time to unblank; harmless if the panel was already on. */
+    if (touch_repaint_at_ms && t >= touch_repaint_at_ms) {
+      touch_repaint_at_ms = 0;
+      fifo_send(WLFB_FIFO, "repaint\n");
+      audit("TOUCH_WAKE_REPAINT_SENT");
+    }
     if (sel.touch_fd >= 0 && r > 0 && (pf[2].revents & POLLIN)) {
       struct input_event ev[64];
       ssize_t got = read(sel.touch_fd, ev, sizeof ev);
       last_activity_ms = t;
       int cnt = (int)(got / (ssize_t)sizeof(struct input_event));
+      /* The panel is OFF (idle timeout or Power) and the owner touches the
+         glass.  nuxel-wl-fb blanks with FBIOBLANK/POWERDOWN, which silences the
+         touchscreen until the panel is powered again, so this FIRST contact is
+         the wake request.  This manager is this kernel's single owner of the
+         phone buttons and of the panel toggle, so it - not a holding finger,
+         not a tap that the compositor never sees - wakes the panel.  It is
+         queued before the panel unblanks.  The dark-glass contact is only a
+         wake request: the swipe must start on the now-lit lockscreen, never
+         from samples captured while the panel was still off. */
+      if (!display_on) {
+        char *dstate = slurp("/run/nuxel-wl-fb.state", 0);
+        int panel_off = !(dstate && strstr(dstate, "display=off"));
+        if (panel_off) {
+          if (touch_wake_ms == 0 || (t - touch_wake_ms) > 1500) {
+            fifo_send(WLFB_FIFO, "screen-on\n");
+            audit("TOUCH_WAKE_SEND source=%s", sel.touch_path);
+            /* While the panel is dark the wake loop consumes every control
+               command, so a "repaint" queued here would be lost.  Ask the
+               display bridge to repaint 1.5 s after the wake instead: the
+               launcher's status poll has shown the lockscreen by then, and a
+               full fresh frame guarantees it reaches the glass. */
+            pid_t rp = fork();
+            if (rp == 0) {
+              pid_t gp = fork();
+              if (gp == 0) {
+                int fd = open(WLFB_FIFO, O_WRONLY);
+                if (fd >= 0) {
+                  ssize_t w = write(fd, "repaint\n", 8);
+                  (void)w;
+                  close(fd);
+                }
+                _exit(0);
+              }
+              if (gp > 0) _exit(0);
+              _exit(127);
+            }
+            if (rp > 0) { int status = 0; while (waitpid(rp, &status, 0) < 0 && errno == EINTR) {} }
+            touch_repaint_at_ms = t + 1400;
+          }
+          touch_wake_ms = t;
+          last_activity_ms = t;
+          /* Drop every sample of this dark-glass contact; the gesture machine
+             restarts on the next real touch (see touch_wake_discard). */
+          touch_wake_discard = 1;
+        }
+      }
       for (int k = 0; k < cnt; k++) {
         struct input_event *e = &ev[k];
+        if (touch_wake_discard) {
+          /* Re-arm a pending DOWN in place of the contact that woke the panel. */
+          if (e->type == EV_ABS) {
+            if (e->code == ABS_MT_SLOT) mt.slot = e->value;
+            else if (e->code == ABS_MT_TRACKING_ID && mt.slot == 0 && e->value >= 0) mt.tracking = e->value;
+            else if (e->code == ABS_MT_POSITION_X && mt.slot == 0) mt.x = e->value;
+            else if (e->code == ABS_MT_POSITION_Y && mt.slot == 0) mt.y = e->value;
+          } else if (e->type == EV_SYN && e->code == SYN_REPORT && mt.slot == 0) {
+            touch_wake_discard = 0;
+            touch_pending_down = 1;
+            touch_pending_up = 0;
+            touch_active = 0;
+          }
+          continue;
+        }
         if (e->type == EV_ABS) {
           switch (e->code) {
             case ABS_MT_SLOT: mt.slot = e->value; break;
@@ -1537,6 +1615,7 @@ int main(int argc, char **argv) {
                   mt.tracking = -1;
                   touch_pending_up = 1;
                   touch_pending_down = 0;
+                  if (!display_on) touch_wake_ms = 0;
                 }
               }
               break;

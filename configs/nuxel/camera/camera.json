@@ -27,7 +27,7 @@
         {
           "role": "front_main",
           "name": "s5k3j1",
-          "note": "10 MP front ISOCELL 3J1 (f/2.2) — observed on beyond2lte, corrects the historical s5k2l4sx guess"
+          "note": "10 MP front ISOCELL 3J1 (f/2.2) \u2014 observed on beyond2lte, corrects the historical s5k2l4sx guess"
         },
         {
           "role": "front_ir",
@@ -76,32 +76,41 @@
     }
   },
   "firmware_blobs": {
-    "comment": "Vendor sensor/ISP firmware and calibration live under the vendor firmware paths. A blob being present is necessary but NOT sufficient: the sensor must also be bound and produce a frame. Missing blobs are reported as BLOCKED_FIRMWARE with the exact gap - never hidden, never substituted with a Pixel blob file.",
+    "comment": "FIMC-IS firmware is loaded by the pinned kernel's own driver, not by a Samsung Android HAL. The Exynos9820 MCD vendor path (vendor/mcd/fimc-is-sec-define.c, see patch 0022-nuxel-fimc-is-firmware-requests) opens /lib/firmware/<load_fw_name> and requests fimc_is_fw_mcu.bin, fimc_is_lib.bin and fimc_is_rta.bin; the DDK/RTA names come from the matching SM-G975F vendor firmware. Sensor per-mode setfiles are NOT files: they are compiled into the kernel (sensor_2l4_setfile_A_* etc.), so they are not listed or trusted here. A blob being present is necessary but NOT sufficient, and a file smaller than min_size is treated as missing (recorded as rejected_placeholders) so a 3-byte test fixture can never flip readiness.",
     "search_paths": [
       "/lib/firmware",
-      "/vendor/firmware",
-      "/vendor/firmware/camera",
-      "/vendor/etc/firmware",
-      "/etc/firmware"
+      "/usr/lib/firmware"
     ],
     "candidates": [
+      "fimc_is_fw_mcu.bin",
+      "fimc_is_lib.bin",
+      "fimc_is_rta.bin"
+    ],
+    "min_size": 4096,
+    "rejected_placeholders": [
       "s5k2l4_setfile.bin",
+      "s5k3j1_setfile.bin",
       "s5k3m3_setfile.bin",
       "s5k3p9_setfile.bin",
-      "s5k3j1_setfile.bin",
-      "s5k4h7_setfile.bin",
-      "exynos9820_camera.bin",
-      "is-camera.bin",
-      "is-camera-3.bin",
-      "camera_calibration.bin",
       "setfile.bin"
     ],
+    "rejected_placeholder_comment": "These names appear in older reports but the pinned kernel never requests them; the only copy in the repository is a 3-byte placeholder fixture. They are never installed and never count as present.",
     "never_install": [
       "android.hardware.camera.provider",
       "libcamera_hal*",
       "libexynoscamera*"
     ],
-    "never_install_comment": "No Android camera HAL / framework library is installed or depended on (mission section 27)."
+    "never_install_comment": "No Android camera HAL / framework library is installed or depended on (mission section 27).",
+    "min_size_by_name": {
+      "fimc_is_fw_mcu.bin": 10000,
+      "fimc_is_lib.bin": 100000,
+      "fimc_is_rta.bin": 100000
+    },
+    "minimum_verified_set": [
+      "fimc_is_lib.bin",
+      "fimc_is_rta.bin"
+    ],
+    "minimum_verified_set_comment": "Readiness needs at least these two blobs (ISP library + RTA tuning); fimc_is_fw_mcu.bin is the OIS MCU firmware and is only required for OIS cameras, so it is reported separately instead of being able to fail the whole stage."
   },
   "pipeline": {
     "comment": "The ready userspace chain. Each hop is reported independently so the FIRST failing stage is unambiguous.",
@@ -216,9 +225,9 @@
     "capture_must_be_owner_initiated": true
   },
   "output": {
-    "comment": "Where a captured still would go. This tool writes ONLY on an explicit `capture --yes` and never overwrites an existing file silently.",
+    "comment": "Where a capture would go. This tool writes ONLY on an explicit `capture --yes`, writes the driver's native buffer (FIMC-IS ISP/BAYER or YUV \u2014 decode with the fourcc in the capture JSON; not JPEG), and never overwrites silently.",
     "stills_dir": "/var/lib/nuxel/camera",
-    "default_still_name": "owner-test-%TIMESTAMP%.jpg",
+    "default_still_name": "owner-test-%TIMESTAMP%.raw",
     "max_paths": 200,
     "max_capture_count": 5,
     "oriented_metadata": true,
@@ -228,6 +237,7 @@
     "log": "/var/log/nuxel/camera-diag.log",
     "require_explicit_yes_for_capture": true,
     "auto_capture_on_boot": false,
-    "print_imsi_or_iccid": false
+    "print_imsi_or_iccid": false,
+    "firmware_verified_by": "nuxel-fimc-capture --probe-only (kernel loads firmware only on group start; a present file is not proof of a load)"
   }
 }

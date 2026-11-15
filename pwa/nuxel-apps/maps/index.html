@@ -31,6 +31,12 @@
 
 <section class="controls">
   <p id="provider-state" class="hint" role="status" aria-live="polite">Location provider: checking…</p>
+  <div class="row locate-row">
+    <button id="use-my-location" class="primary">Use my current location</button>
+    <button id="refresh-location">Check provider</button>
+  </div>
+  <p class="hint" id="locate-hint">The green marker is drawn only from a fix the location provider actually returned;
+    the global Location switch is enabled only when you tap "Use my current location".</p>
   <div class="row">
     <input id="goto-lat" type="text" placeholder="lat e.g. 52.3702">
     <input id="goto-lon" type="text" placeholder="lon e.g. 4.8952">

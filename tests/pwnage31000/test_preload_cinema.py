@@ -274,7 +274,7 @@ def test_successful_play_and_cleanup(tmp_path):
     assert r["video_eof"] is True
     assert r["readiness"]["ready"] is True
     assert r["unlock_actions"] == 0
-    assert r["audio"] == "disabled"
+    assert r["audio"] == "never"
     args = h.playback_args()[0]
     for needle in ("--no-audio", "--mute=yes", "--fullscreen", "--osc=no",
                    "--input-default-bindings=no", "--keepaspect=yes", "--panscan=0",
@@ -332,14 +332,36 @@ def test_supplied_asset_mp4_parser_returns_real_duration():
     assert abs((module.mp4_duration_seconds(SUPPLIED_ASSET) or 0) - 6.016) < 0.05
 
 
-def test_supplied_asset_audio_is_never_enabled(tmp_path):
-    h = Harness(tmp_path)
+def test_audio_never_mode_stays_silent(tmp_path):
+    # A85: the default is now the merged asset's own boot sound
+    # (audio=mp4).  An explicit "never" still produces a silent player.
+    h = Harness(tmp_path, extra_config={"audio": "never"})
     out = h.run()
     assert out.returncode == 0, out.stderr
     args = h.playback_args()[0]
     assert "--no-audio" in args
     assert "--mute=yes" in args
     assert not any(a.startswith("--audio-file") or a.startswith("--aid") for a in args)
+
+
+def test_merged_asset_audio_is_played(tmp_path):
+    # A85 live defect: /etc/nuxel/boot/preload-cinema.json said audio=mp4 (the
+    # merged MP4 carries nuxel-boot-audio.mp3) but the player command hardcoded
+    # --no-audio/--mute=yes, so the boot video was silent.  audio=mp4 must now
+    # decode the asset's own track on the session's audio driver.
+    h = Harness(tmp_path, extra_config={"audio": "mp4"})
+    out = h.run()
+    assert out.returncode == 0, out.stderr
+    args = h.playback_args()[0]
+    assert "--no-audio" not in args
+    assert "--mute=yes" not in args
+    assert any(a.startswith("--ao=pipewire") for a in args), args
+    assert "--audio-device=auto" in args
+    # The asset is still the fixed verified file; no external audio file.
+    assert not any(a.startswith("--audio-file") for a in args)
+    r = h.receipt_doc()
+    assert r["audio"] == "embedded"
+    assert r["audio_output"].startswith("pipewire")
 
 
 def test_readiness_before_video_completion_waits_for_eof(tmp_path):

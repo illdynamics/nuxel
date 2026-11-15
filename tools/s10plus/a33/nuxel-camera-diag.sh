@@ -102,24 +102,61 @@ enumerate() {
     for m in $MEDIA; do [ -d "$(abs "$m")" ] || [ -r "$(abs "$m")" ] && GRAPH_OK="yes"; done
   fi
 }
-fw_report() { # sets FW_FOUND / FW_MISSING (newline separated)
-  FW_FOUND=""; FW_MISSING=""
-  local blob sp p found
+# fw_report: sets FW_FOUND / FW_MISSING / FW_REJECTED / FW_PRESENT_ALL
+# A blob counts as present only if it exists AND is at least min_size bytes:
+# the repository's 3-byte "camera-ready" fixture must never flip readiness.
+fw_report() {
+  FW_FOUND=""; FW_MISSING=""; FW_REJECTED=""; FW_PRESENT_ALL=""
+  local blob sp p found sz minsize minf why
   for blob in $(pol_list firmware_blobs.candidates); do
-    found=no
+    found=no; why=missing; sz=0
     for sp in $(pol_list firmware_blobs.search_paths); do
       p="$(abs "$sp/$blob")"
-      [ -e "$p" ] && { found=yes; break; }
+      if [ -e "$p" ]; then
+        found=yes; sz=$(wc -c < "$p" 2>/dev/null | tr -d ' '); sz=${sz:-0}
+        minf="$(python3 - "$POLICY" "$blob" <<'PY2'
+import json,sys
+try: d=json.load(open(sys.argv[1]))
+except Exception: print(0); raise SystemExit
+fb=d.get("firmware_blobs",{})
+m=fb.get("min_size_by_name",{}).get(sys.argv[2], fb.get("min_size",0))
+print(m or 0)
+PY2
+)"
+        minsize=${minf:-0}
+        if [ "$minsize" -gt 0 ] && [ "$sz" -lt "$minsize" ]; then
+          found=no; why="placeholder(${sz}B<${minsize}B)"
+        else
+          why=ok
+        fi
+        break
+      fi
     done
-    if [ "$found" = yes ]; then FW_FOUND="$FW_FOUND $blob"; else FW_MISSING="$FW_MISSING $blob"; fi
+    if [ "$found" = yes ]; then FW_PRESENT_ALL="$FW_PRESENT_ALL $blob"; else
+      [ "$why" != missing ] && FW_REJECTED="$FW_REJECTED $blob:$why"
+      FW_MISSING="$FW_MISSING $blob"
+    fi
   done
-  FW_FOUND="${FW_FOUND# }"; FW_MISSING="${FW_MISSING# }"
+  # readiness needs the minimum verified set, not "any one blob"
+  local b ok=1
+  FW_FOUND=""
+  for b in $(pol_list firmware_blobs.minimum_verified_set); do
+    case " $FW_PRESENT_ALL " in
+      *" $b "*) FW_FOUND="$FW_FOUND $b" ;;
+      *) ok=0 ;;
+    esac
+  done
+  [ "$ok" = 1 ] || FW_FOUND=""
+  # keep the full present list for reporting, separate from the verdict set
+  FW_FOUND_ALL="${FW_PRESENT_ALL# }"
+  FW_FOUND="${FW_FOUND# }"
+  FW_MISSING="${FW_MISSING# }"; FW_REJECTED="${FW_REJECTED# }"
 }
 verdict() { # echoes STATE|FIRST_FAILING|DETAIL
   local stage=""
   if [ -z "$VIDEO$SUBDEV$MEDIA" ]; then printf 'NO_V4L2_DEVICE|capture|no /dev/video*, /dev/v4l-subdev* or /dev/media* node exists'; return; fi
   if [ -z "$NAMES" ]; then printf 'PRESENT_UNREADABLE|sensor_names|nodes exist but no sensor/bridge name is readable from the video4linux sysfs class'; return; fi
-  if [ -z "$FW_FOUND" ]; then printf 'BLOCKED_FIRMWARE|firmware|sensor identity present but none of the expected firmware blobs exist under the search paths'; return; fi
+  if [ -z "$FW_FOUND" ]; then printf 'BLOCKED_FIRMWARE|firmware|minimum verified firmware set missing under the search paths (present-all=%s; rejected=%s)' "${FW_FOUND_ALL:-none}" "${FW_REJECTED:-none}"; return; fi
   if [ "$GRAPH_OK" != yes ]; then printf 'PRESENT_UNREADABLE|media_graph|sensor identity + firmware present but no readable media device (graph) was found'; return; fi
   printf 'READY_UNTESTED|capture|nodes, sensor identity, firmware and media graph present; a frame is the owner observation'
 }
@@ -141,15 +178,16 @@ json_status() {
   local v state ff detail; IFS='|' read -r state ff detail <<EOF
 $(verdict)
 EOF
-  local jv="[]" js="[]" jm="[]" jn="[]" jf="[]" jx="[]"
+  local jv="[]" js="[]" jm="[]" jn="[]" jf="[]" jx="[]" jr="[]"
   [ -n "$VIDEO" ] && jv="$(printf '%s\n' $VIDEO | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read().split()))')"
   [ -n "$SUBDEV" ] && js="$(printf '%s\n' $SUBDEV | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read().split()))')"
   [ -n "$MEDIA" ] && jm="$(printf '%s\n' $MEDIA | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read().split()))')"
   [ -n "$NAMES" ] && jn="$(printf '%s\n' $NAMES | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read().split()))')"
   [ -n "$FW_FOUND" ] && jf="$(printf '%s\n' $FW_FOUND | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read().split()))')"
   [ -n "$FW_MISSING" ] && jx="$(printf '%s\n' $FW_MISSING | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read().split()))')"
-  printf '{"device":"beyond2lte","tool":"nuxel-camera-diag","state":"%s","verdict":"%s","first_failing_stage":"%s","detail":"%s","video_nodes":%s,"subdev_nodes":%s,"media_nodes":%s,"sensor_names":%s,"firmware_found":%s,"firmware_missing":%s,"media_graph_readable":%s,"synthetic_chain_proof":{"portal_unit":"shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service","synthetic_is_hardware_evidence":false},"frame_captured_verified":false,"owner_test":"docs/beta-finalization/manual-proof/15-camera.md"}\n' \
-    "$state" "$state" "$ff" "$(jesc "$detail")" "$jv" "$js" "$jm" "$jn" "$jf" "$jx" \
+  [ -n "$FW_REJECTED" ] && jr="$(printf '%s\n' $FW_REJECTED | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read().split()))')"
+  printf '{"device":"beyond2lte","tool":"nuxel-camera-diag","state":"%s","verdict":"%s","first_failing_stage":"%s","detail":"%s","video_nodes":%s,"subdev_nodes":%s,"media_nodes":%s,"sensor_names":%s,"firmware_found":%s,"firmware_missing":%s,"firmware_rejected":%s,"media_graph_readable":%s,"synthetic_chain_proof":{"portal_unit":"shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service","synthetic_is_hardware_evidence":false},"frame_captured_verified":false,"owner_test":"docs/beta-finalization/manual-proof/15-camera.md"}\n' \
+    "$state" "$state" "$ff" "$(jesc "$detail")" "$jv" "$js" "$jm" "$jn" "$jf" "$jx" "$jr" \
     "$([ "$GRAPH_OK" = yes ] && printf true || printf false)"
 }
 cmd_status() {
@@ -166,8 +204,9 @@ EOF
   say "media graph       : $GRAPH_OK"
   say "expected sensors  : (expected_on_s10plus = shipped hardware, NOT an observation)"
   fmt_sensors | sed 's/^/                    /'
-  say "firmware present  : ${FW_FOUND:-none}"
+  say "firmware present  : ${FW_FOUND_ALL:-none}    (verdict set: ${FW_FOUND:-none})"
   say "firmware missing  : ${FW_MISSING:-none}"
+  say "firmware rejected : ${FW_REJECTED:-none}   (a placeholder/short file never counts as present)"
   say "first failing st. : $ff  ($detail)"
   say "verdict           : $state"
   say "frame captured    : NO — a frame is the owner's observation (NEEDS_OWNER_TEST); nothing is ever claimed."
@@ -185,12 +224,12 @@ cmd_list() {
   say "sensor names :"; for n in $NAMES; do say "  $n"; done
   [ -z "$NAMES" ] && say "  (none readable)"
   if ! faked_root && command -v v4l2-ctl >/dev/null 2>&1; then
-    say "v4l2-ctl     : present — run 'v4l2-ctl --list-devices' and 'v4l2-ctl -d <node> --list-formats-ext'"
+    say "v4l2-ctl     : present (informational only) — generic v4l2-ctl capture is NOT used on FIMC-IS nodes (ENOTTY); use nuxel-fimc-capture"
   else
     say "v4l2-ctl     : not used here (v4l-utils may be absent); enumeration above is sysfs/dev only"
   fi
 }
-cmd_fw() { fw_report; say "search paths : $(pol_list firmware_blobs.search_paths | tr '\n' ' ')"; say "present      : ${FW_FOUND:-none}"; say "missing      : ${FW_MISSING:-none}"; [ -z "$FW_FOUND" ] && say "verdict      : BLOCKED_FIRMWARE — no expected firmware blob is present under the search paths"; return 0; }
+cmd_fw() { fw_report; say "search paths : $(pol_list firmware_blobs.search_paths | tr '\n' ' ')"; say "present      : ${FW_FOUND_ALL:-none}"; say "verdict set  : ${FW_FOUND:-none}"; say "missing      : ${FW_MISSING:-none}"; say "rejected     : ${FW_REJECTED:-none}"; [ -z "$FW_FOUND" ] && say "verdict      : BLOCKED_FIRMWARE — the minimum verified set is not present (a present file is proof only after a real ISP stream; see capture)"; return 0; }
 cmd_pipeline() {
   enumerate; fw_report
   local v state ff detail; IFS='|' read -r state ff detail <<EOF
@@ -262,24 +301,64 @@ PY
   if ! faked_root; then say "live check    : $(systemctl --user is-enabled nuxel-camera-portal 2>/dev/null || echo 'not-installed-in-user-manager')"; fi
   say "note          : the CAMERA half of this report is chain evidence only — a captured frame is claimed nowhere without a real capture."
 }
+# fimc_bin: the repo-built FIMC-IS capture client (static aarch64). The S10+
+# capture nodes are Samsung MPLANE + EXT_PIX_FORMAT and reject the generic
+# v4l2-ctl path (ENOTTY); nuxel-fimc-capture drives the exact ioctl set.
+fimc_bin() {
+  local c
+  [ -n "${NUXEL_FIMC_CAPTURE:-}" ] && [ -x "${NUXEL_FIMC_CAPTURE}" ] && { printf '%s' "${NUXEL_FIMC_CAPTURE}"; return; }
+  for c in /usr/libexec/nuxel/nuxel-fimc-capture "$HERE/../../fimc-capture/nuxel-fimc-capture"; do
+    [ -x "$c" ] && { printf '%s' "$c"; return; }
+  done
+  command -v nuxel-fimc-capture 2>/dev/null || true
+}
+# pick a real capture node: prefer an exynos-fimc-is node that answers
+# QUERYCAP as MPLANE capture. Never just take /dev/video0.
+fimc_nodes() {
+  local n d name
+  for n in /sys/class/video4linux/video*; do
+    [ -e "$n" ] || continue
+    d="/dev/$(basename "$n")"
+    [ -c "$(abs "$d")" ] || continue
+    name="$(cat "$n/name" 2>/dev/null)"
+    case "$name" in *fimc-is*) printf '%s\n' "$d" ;; esac
+  done
+}
+# capture_probe [json]  -> one line JSON per candidate, tried in order.
+cmd_capture_probe() {
+  local bin; bin="$(fimc_bin)"
+  [ -n "$bin" ] || { say "refused: nuxel-fimc-capture not found (build with tools/s10plus/fimc-capture/Makefile). No frame claimed."; return 6; }
+  faked_root && { say "refused: offline/faked root — no real capture device is sampled under --root."; return 5; }
+  local n; n="$(fimc_nodes | head -1)"
+  [ -n "$n" ] || { say "refused: no exynos-fimc-is capture node in /sys/class/video4linux; nothing to probe."; return 3; }
+  "$bin" --node "$n" --probe-only --json || true
+}
 cmd_capture() {
   enumerate
   [ -n "$VIDEO" ] || { say "refused: no /dev/video* node exists (NO_V4L2_DEVICE). Nothing to capture; no frame is claimed."; return 2; }
-  [ "$YES" = 1 ] || { say "refused: capturing a still is an owner action. Re-run with: $SELF capture --yes <out.jpg>"; return 4; }
+  [ "$YES" = 1 ] || { say "refused: capturing a still is an owner action. Re-run with: $SELF capture --yes [out.jpg]"; return 4; }
   faked_root && { say "refused: offline/faked root — no real capture device is sampled under --root."; return 5; }
-  command -v v4l2-ctl >/dev/null 2>&1 || { say "refused: v4l2-ctl (v4l-utils) is not installed; install it or capture from the camera app. No frame claimed."; return 6; }
+  local bin; bin="$(fimc_bin)"
+  [ -n "$bin" ] || { say "refused: nuxel-fimc-capture not built/installed; no arbitrary video node is used. No frame claimed."; return 6; }
   local out="${OUT:-}"
-  [ -n "$out" ] || out="$(pol_get output.stills_dir)/owner-test-$(date -u +%Y%m%dT%H%M%SZ).jpg"
+  [ -n "$out" ] || out="$(pol_get output.stills_dir)/owner-test-$(date -u +%Y%m%dT%H%M%SZ).raw"
   [ -e "$out" ] && { say "refused: $out already exists — refusing to overwrite. Pick another name."; return 7; }
-  local dev; dev="$(printf '%s' "$VIDEO" | tr ' ' '\n' | head -1)"
   mkdir -p "$(dirname "$out")" 2>/dev/null || true
-  say "capture one still: $dev -> $out (bounded, single frame)"
-  if v4l2-ctl -d "$dev" --stream-mmap --stream-count=1 --stream-to="$out" >/dev/null 2>&1 && [ -s "$out" ]; then
-    say "captured: $(wc -c < "$out" | tr -d ' ') bytes. Verify visually in the gallery, then record PASS/FAIL in the manual-proof fragment."
+  local n rc=1 outjson
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    say "probe+capture one frame: $n -> $out (bounded, single frame)"
+    outjson="$("$bin" --node "$n" --frames 1 --timeout 3000 --raw "$out" --json)"
+    say "$outjson"
+    if printf '%s' "$outjson" | grep -q '"verdict":"FRAMES_CAPTURED"'; then rc=0; break; fi
+  done < <(fimc_nodes)
+  if [ $rc = 0 ]; then
+    say "captured: $(wc -c < "$out" | tr -d ' ') bytes of the driver's native format (see fourcc in JSON)."
+    say "note: this is an ISP/BAYER or YUV buffer, not a JPEG — decode it with the format in the capture JSON."
   else
-    say "capture FAILED at the V4L2 layer — report FAIL with the node, the format list and dmesg; no frame is claimed."
-    return 1
+    say "capture FAILED at the FIMC-IS layer on every candidate node — report FAIL with the JSON above and dmesg; no frame is claimed."
   fi
+  return $rc
 }
 selftest() {
   local fixdir="$HERE/tests/hw-subsystems/fixtures" rc=0 n=0 f exp got

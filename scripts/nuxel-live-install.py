@@ -45,6 +45,9 @@ ALLOWED_PREFIXES = (
     "/usr/libexec/nuxel/",
     "/usr/bin/nuxel-",
     "/etc/nuxel/",
+    # v0.8.5: the firewall rulesets + unit.  /etc/nftables contains only
+    # declarative rules (no block device path; the tool refuses those).
+    "/etc/nftables/",
     "/etc/profile.d/",
     "/etc/xrdp/",
     "/etc/pam.d/",
@@ -55,6 +58,8 @@ ALLOWED_PREFIXES = (
     "/etc/dbus-1/session.d/",
     "/etc/systemd/system/",
     "/usr/lib/systemd/system/",
+    # Session user units (the camera portal is a per-user session service).
+    "/usr/lib/systemd/user/",
     "/usr/lib/udev/rules.d/",
     "/usr/local/libexec/nuxel/",
     "/usr/local/bin/nuxel-",
@@ -285,6 +290,18 @@ def main(argv=None) -> int:
                 print("WARN nuxel-audio-perms.service did not start", file=sys.stderr)
             else:
                 print("AUDIO_PERMS_OK")
+        # Flatpak apps cannot reach the session Pulse server (their sandbox
+        # remaps XDG_RUNTIME_DIR to /run/user/0); the relay is what makes the
+        # microphone visible to Ferdium/WhatsApp/Signal.  Keep it enabled and
+        # running across reboots and deploys.
+        relay_unit = os.path.join(root, "etc/systemd/system/nuxel-flatpak-pulse-relay.service")
+        if os.path.exists(relay_unit):
+            systemctl("enable", "nuxel-flatpak-pulse-relay.service")
+            if systemctl("restart", "nuxel-flatpak-pulse-relay.service") == 0:
+                print("FLATPAK_PULSE_RELAY_OK")
+            else:
+                print("WARN nuxel-flatpak-pulse-relay.service did not start",
+                      file=sys.stderr)
         # Deployments must leave the permission daemon running: it is enabled,
         # but an image that booted without it leaves it inactive, and both the
         # verification step below and Settings depend on it being live.
@@ -294,6 +311,22 @@ def main(argv=None) -> int:
                 print("WARN nuxel-permd.service did not start", file=sys.stderr)
             else:
                 print("PERMD_OK")
+
+        # The firewall must survive a reboot, not merely import.  v0.8.5 live
+        # fix: the unit was installed but left disabled (and its configured
+        # /usr/sbin/nft condition is false on this userland, where nft lives in
+        # /usr/bin), so the device booted with no ruleset.  Enable it, start it
+        # now and verify it is active; a failure is reported, never hidden.
+        fw_unit = os.path.join(root, "etc/systemd/system/nuxel-firewall.service")
+        if os.path.exists(fw_unit):
+            systemctl("enable", "nuxel-firewall.service")
+            systemctl("reset-failed", "nuxel-firewall.service")
+            if systemctl("start", "nuxel-firewall.service") != 0:
+                print("WARN nuxel-firewall.service did not start", file=sys.stderr)
+            elif systemctl("is-active", "--quiet", "nuxel-firewall.service") != 0:
+                print("WARN nuxel-firewall.service is not active", file=sys.stderr)
+            else:
+                print("FIREWALL_OK")
 
         # The firewall provider is imported by the bridge; prove the installed
         # layout resolves before declaring the deploy complete.

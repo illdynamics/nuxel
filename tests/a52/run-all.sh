@@ -10,6 +10,7 @@ run() { printf '\n=== %s ===\n' "$*"; "$@" || rc=1; }
 run python3 "$HERE/test-portal-contract.py"
 run python3 "$HERE/test-camera-frontend.py"
 run python3 "$HERE/test-camera-inventory.py"
+run python3 "$HERE/test-camera-portal-impl.py"
 run python3 "$ROOT/services/nuxel-bridge/test-media-store.py"
 run python3 "$ROOT/services/nuxel-bridge/test-camera-bridge.py" 2>/dev/null
 run python3 "$ROOT/tools/s10plus/a33/tests/hw-subsystems/test-camera-diag.py"

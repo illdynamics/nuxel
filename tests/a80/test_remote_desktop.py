@@ -288,6 +288,50 @@ def test_vnc_status_derives_effective_auth_and_never_claims_secure_when_off(tmp_
     assert st["authentication_mode"] == "VNC password"
 
 
+def test_vnc_status_reports_live_wayvnc_pam(tmp_path, monkeypatch):
+    """A88: the live server is wayvnc + PAM on the actual Phoc screen.
+
+    Measured on the handset: nuxel-remote-vnc active, wayvnc listening on the
+    WLAN address, wayvnc.conf with enable_auth/enable_pam and a TLS cert, and
+    /etc/pam.d/wayvnc restricted to nuxel.  The deployed provider used to read
+    the retired xvnc.conf and reported ERROR ("VncAuth not enabled") next to a
+    perfectly healthy server.
+    """
+    mod = load_remote()
+    conf = tmp_path / "wayvnc.conf"
+    cert = tmp_path / "tls_cert.pem"
+    key = tmp_path / "tls_key.pem"
+    cert.write_text("cert")
+    key.write_text("key")
+    pam = tmp_path / "wayvnc"
+    pam.write_text("auth required pam_succeed_if.so user = nuxel\n"
+                   "account required pam_succeed_if.so user = nuxel\n")
+    conf.write_text("address=192.168.178.167\nport=5900\nenable_auth=true\n"
+                    "enable_pam=true\ncertificate_file=%s\nprivate_key_file=%s\n"
+                    "rsa_private_key_file=%s\nrelax_encryption=true\n"
+                    % (cert, key, key))
+    monkeypatch.setattr(mod, "VNC_WAYVNC_CONFIG", conf)
+    monkeypatch.setattr(mod, "VNC_PAM", pam)
+    monkeypatch.setattr(mod, "_vnc_version", lambda: "wayvnc 0.10.2")
+    monkeypatch.setattr(mod, "_systemctl_active", lambda unit: True)
+    monkeypatch.setattr(mod, "_listener_addresses", lambda port: ["192.168.178.167"])
+    monkeypatch.setattr(mod, "_vnc_clients", lambda: {"count": 0, "available": True})
+    monkeypatch.setattr(mod, "_read", lambda path: "")
+    monkeypatch.setattr(mod, "_cert_fingerprint", lambda path: "AA:BB")
+    st = mod._vnc_status()
+    assert st["backend"] == "wayvnc"
+    assert st["state"] == "WAITING_FOR_CLIENT"
+    assert st["session_mode"] == "current-phoc-wayland-session"
+    assert st["authentication"] == "PAM (local nuxel username/password)"
+    assert st["encrypted"] is True
+    assert st["vnc_password_configured"] is False
+    assert st["security_verified"] is True
+    # No PAM restriction -> not secure, and it says so.
+    pam.write_text("auth include password-auth\n")
+    st = mod._vnc_status()
+    assert st["security_verified"] is False and st["state"] == "ERROR"
+
+
 def test_usb_modes_are_distinct_and_never_ready(monkeypatch):
     mod = load_remote()
     cfg = ("CONFIG_USB_CONFIGFS=y\nCONFIG_USB_DWC3=y\nCONFIG_USB_F_NCM=y\n"

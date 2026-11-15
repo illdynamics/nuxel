@@ -80,7 +80,9 @@ def test_bridge_inventory_full_path_does_not_raise(tmp_path):
     assert inv["present"] is True
     assert inv["driver_bound"] is True
     assert inv["firmware_present"] is False
-    assert "sensor-hub patch" in inv["blocker"]
+    # The firmware is kernel-embedded (not a missing file); the real blocker for
+    # a decoded fix is the proprietary Samsung lhd/gpsd userspace.
+    assert "proprietary BBD/LHD userspace missing" in inv["blocker"]
     assert inv["vendor_runtime"]["complete"] is False
     assert "complete" not in inv["blocker"]
     assert len(inv["bbd_nodes"]) == len(set(inv["bbd_nodes"]))

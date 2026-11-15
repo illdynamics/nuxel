@@ -896,8 +896,63 @@
   if (zoomOut) zoomOut.addEventListener('click', function () {
     state.zoom = Math.max(minZoom(), state.zoom - 1); persistView(); requestVisibleTiles();
   });
-  var locateBtn = document.getElementById('locate');
-  if (locateBtn) locateBtn.addEventListener('click', function () { refreshProvider(true); });
+  // Every locate surface funnels through ONE bounded acquisition loop: the
+  // permission is checked first (and requested once if needed), the policy is
+  // enabled only on an explicit tap, and the provider is given time to return
+  // its first real fix.  No coordinate is ever synthesised.
+  var locateBusy = false;
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function locateButtons() { return [document.getElementById('locate'), document.getElementById('use-my-location')]; }
+  function setLocateBusy(on) {
+    locateBusy = !!on;
+    locateButtons().forEach(function (b) {
+      if (!b) return;
+      b.disabled = !!on;
+      if (on) b.setAttribute('aria-busy', 'true'); else b.removeAttribute('aria-busy');
+    });
+  }
+  function locateNow() {
+    if (locateBusy) return Promise.resolve(state.provider);
+    setLocateBusy(true);
+    toast('Requesting your location…');
+    var tries = 0;
+    function step() {
+      tries++;
+      return refreshProvider(true).then(function () {
+        var p = state.provider;
+        if (p && p.state === 'fixed' && p.fix) {
+          toast('Located from a fresh provider fix');
+          return p;
+        }
+        // Keep waiting while the provider is genuinely working: a first fix
+        // can take a few seconds, and after the policy was toggled the
+        // previous position arrives as 'stale' until the new acquisition
+        // answers.  Bounded so nothing spins forever (~45 s).
+        var waiting = p && (p.state === 'searching' || p.state === 'stale' ||
+                            p.state === 'no_fix');
+        if (tries < 15 && waiting) {
+          return sleep(3000).then(step);
+        }
+        if (p && (p.state === 'stale' || p.state === 'no_fix')) {
+          toast('No fresh fix yet: ' + C.providerSummary(p, Date.now() / 1000));
+        }
+        return p;
+      });
+    }
+    return step().then(function (p) {
+      setLocateBusy(false);
+      return p;
+    }, function (e) {
+      setLocateBusy(false);
+      toast('Location request failed: ' + (e && e.message ? e.message : e));
+      return state.provider;
+    });
+  }
+  locateButtons().forEach(function (b) {
+    if (b) b.addEventListener('click', function () { locateNow(); });
+  });
+  var refreshLocBtn = document.getElementById('refresh-location');
+  if (refreshLocBtn) refreshLocBtn.addEventListener('click', function () { refreshProvider(false); });
 
   /* ---------- place search (Nominatim, one explicit action) ---------- */
   var activeSearchController = null;
@@ -1007,7 +1062,46 @@
     providerBridgeTries = 0;
     var action;
     if (requestAcquisition) {
-      action = Promise.resolve(b.call('location', 'acquire', {})).then(function (res) {
+      // 1) Ask permD for Maps' own location read grant.  A denial is a real
+      //    refusal, not something to retry.  First wait until the shared bridge
+      //    finished its version-pin init: a call() during that window used to
+      //    be reported as "provider unavailable".
+      var readyAction = (b.whenReady ? Promise.resolve(b.whenReady(15000))
+                                     : Promise.resolve(true));
+      action = readyAction.then(function () {
+        return b.call('permissions', 'check', { capability: 'location:read' });
+      }).then(function (check) {
+        if (check && check.denied === true) {
+          throw new Error('Location read is denied for Maps (Settings › Permissions)');
+        }
+        if (check && check.success === true && typeof check.stdout === 'string' &&
+            /^\s*denied:/i.test(check.stdout)) {
+          throw new Error('Location read is denied for Maps (Settings › Permissions)');
+        }
+        return b.call('location', 'get-status', {});
+      }).then(function (status) {
+        // 2) The global privacy switch is separate from this app's grant.
+        if (status && status.enabled) return null;
+        return Promise.resolve(
+          b.call('permissions', 'check', { capability: 'location:manage' })
+        ).then(function (ctl) {
+          var ctlOk = !!(ctl && (ctl.granted === true ||
+            (ctl.success === true && typeof ctl.stdout === 'string' && /^\s*allowed:/i.test(ctl.stdout))));
+          if (!ctlOk) {
+            throw new Error('Location control is not granted for Maps (Settings › Permissions)');
+          }
+          return b.call('location', 'set-enabled', { enabled: true });
+        }).then(function (on) {
+          if (!on || on.success !== true) {
+            throw new Error((on && (on.error || on.detail)) || 'Location policy did not confirm');
+          }
+          return null;
+        });
+      }).then(function () {
+        // 3) Start acquisition.  Only a CAPABILITY_DENIED answer warrants one
+        //    explicit consent request; anything else is reported as-is.
+        return b.call('location', 'acquire', {});
+      }).then(function (res) {
         if (!res || res.error_code !== 'CAPABILITY_DENIED') return res;
         return Promise.resolve(
           b.requestCapability ? b.requestCapability('location:read', 'Show the current map position')
@@ -1073,9 +1167,14 @@
     draw: draw,
     canvas: function () { return !!ctx; },
     providerView: function (raw) { return C.providerView(raw, Date.now() / 1000); },
+    // Read-only acceptance probe: the SAME provider view that drives the
+    // current-position marker.  It never produces or caches a position.
+    provider: function () { return state.provider; },
+    providerRaw: function () { return state.providerRaw; },
     addPinAt: addPinAt,
     gotoLatLon: gotoLatLon,
     refreshProvider: refreshProvider,
+    locateNow: locateNow,
     searchPlaces: searchPlaces
   };
 })();

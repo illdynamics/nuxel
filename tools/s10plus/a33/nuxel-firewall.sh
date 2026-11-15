@@ -47,11 +47,31 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 
+# Ruleset source precedence.  /etc/nftables is what the live deploy/installer
+# writes; /usr/local/share/nuxel/nftables is an older out-of-tree copy.  A
+# stale /usr/local copy used to win and shadow every deployed fix (measured
+# 2026-11-14: the rendered ruleset still carried `ct state invalid drop`
+# after a deploy that had installed the corrected /etc/nftables file, which
+# black-holed all inbound LAN/USB traffic).  Prefer the deployed copy, then
+# the repository checkout, and only then the legacy install location.
+if [ -d /etc/nftables ] && [ -f /etc/nftables/nuxel-app-firewall.nft ]; then
+    DEFAULT_RULESET_DIR=/etc/nftables
+elif [ -d "$REPO_ROOT/configs/nftables" ]; then
+    DEFAULT_RULESET_DIR="$REPO_ROOT/configs/nftables"
+else
+    DEFAULT_RULESET_DIR=/usr/local/share/nuxel/nftables
+fi
+if [ -f /etc/nuxel/firewall/nuxel-firewall-config.json ]; then
+    DEFAULT_CONFIG=/etc/nuxel/firewall/nuxel-firewall-config.json
+else
+    DEFAULT_CONFIG="$DEFAULT_RULESET_DIR/nuxel-firewall-config.json"
+fi
+
 NFT_BIN="${NUXEL_NFT_BIN:-nft}"
 NFT_STATE="${NUXEL_NFT_STATE:-}"           # mock nft live state dir
-CONFIG="${NUXEL_FIREWALL_CONFIG:-$REPO_ROOT/configs/nftables/nuxel-firewall-config.json}"
+CONFIG="${NUXEL_FIREWALL_CONFIG:-$DEFAULT_CONFIG}"
 STATE_DIR="${NUXEL_FIREWALL_STATE_DIR:-${NUXEL_FIREWALL_SNAPSHOT_DIR:-/var/lib/nuxel/firewall}}"
-RULESET_DIR="${NUXEL_FIREWALL_RULESET_DIR:-$REPO_ROOT/configs/nftables}"
+RULESET_DIR="${NUXEL_FIREWALL_RULESET_DIR:-$DEFAULT_RULESET_DIR}"
 GUARD_FILE="$RULESET_DIR/nuxel-console-guard.nft"
 CLASSID_RULESET="$RULESET_DIR/nuxel-app-firewall.nft"
 CGROUPV2_RULESET="$RULESET_DIR/nuxel-app-firewall-cgroupv2.nft"
@@ -143,6 +163,27 @@ kernel_mode() {
     echo "v1"
 }
 
+# nftables NAT chains (type nat hook prerouting/postrouting) refuse to load
+# when the kernel lacks CONFIG_NFT_CHAIN_NAT_IPV4/IPV6.  That is the measured
+# 4.14.253 S10+ kernel, where the whole app ruleset was rejected by `nft -c`
+# and therefore never deployed.  NAT on this phone is loopback-only; the tun0
+# masquerade was never used (no forwarding).  Detect the capability and fall
+# back to a filter chain that blocks app traffic leaving through any
+# non-tunnel interface, which is the kill-switch semantics without NAT.
+nat_supported() {
+    if [ -n "${NUXEL_NAT_SUPPORTED:-}" ]; then
+        [ "$NUXEL_NAT_SUPPORTED" = "1" ]
+        return $?
+    fi
+    local probe
+    probe="$(mktemp 2>/dev/null || echo /tmp/nuxel-natprobe.$$)"
+    printf 'table inet nuxel_natprobe {\n chain p {\n  type nat hook prerouting priority -100; policy accept;\n }\n}\n' > "$probe"
+    if command -v "$NFT_BIN" >/dev/null 2>&1 && "$NFT_BIN" -c -f "$probe" >/dev/null 2>&1; then
+        rm -f "$probe"; return 0
+    fi
+    rm -f "$probe"; return 1
+}
+
 kernel_report() {
     local rel mode
     rel="$(kernel_release)"; mode="$(kernel_mode)"
@@ -159,6 +200,7 @@ kernel_report() {
         echo "lsm_list:         unknown"
     fi
     echo "console_guard:    $GUARD_FILE"
+    echo "nat_chains:       $([ "$(kernel_mode)" = v1 ] && { nat_supported && echo 'supported' || echo 'unsupported (filter fallback)'; } || echo 'supported')"
     echo "dry_run:          $DRY_RUN"
 }
 
@@ -191,14 +233,58 @@ PY
 # Rendering
 # ---------------------------------------------------------------------------
 render_ruleset() {
-    local mode outfile
+    local mode outfile base
     mode="$(kernel_mode)"
     outfile="$1"
     {
         if [ "$mode" = "v2" ]; then
-            cat "$CGROUPV2_RULESET"
+            base="$CGROUPV2_RULESET"
         else
-            cat "$CLASSID_RULESET"
+            base="$CLASSID_RULESET"
+        fi
+        # The NAT section is included only where the kernel can load a NAT
+        # base chain; otherwise it is replaced by the filter fallback below.
+        if nat_supported; then
+            cat "$base"
+        else
+            {
+                # v0.8.5 LIVE FIX: the historical marker format wrapped the two
+                # NAT chains in `# __NUXEL_NAT_BEGIN__` / `# __NUXEL_NAT_END__`,
+                # but a plain sed range over those two comment lines leaves the
+                # 'chain prerouting'/'chain postrouting' opening stubs behind, so
+                # `nft -c` rejects the ENTIRE rendered ruleset.  The standalone
+                # `nuxel-firewall.sh apply` then failed, and the unit's start
+                # silently left the previous (broken) ruleset live.
+                #
+                # New source files carry exactly the two marker lines around the
+                # NAT block.  Rewrite them to internal tags, strip the complete
+                # range including both chain stubs and their closing braces, then
+                # verify that no NAT base chain survives.  Older installed copies
+                # without markers fall back to the structural awk removal.
+                sed -e 's/^# __NUXEL_NAT_BEGIN__$/@@NUXEL_NAT_BEGIN@@/' \
+                    -e 's/^# __NUXEL_NAT_END__$/@@NUXEL_NAT_END@@/' "$base" |
+                awk '
+                    /^@@NUXEL_NAT_BEGIN@@$/ { skip=1; next }
+                    /^@@NUXEL_NAT_END@@$/   { skip=0; next }
+                    skip { next }
+                    { print }
+                '
+            }
+            # Self-contained table: the base file's NAT chains sit inside its
+            # app-firewall table, so the replacement must declare its own.
+            cat <<'NATFALLBACK'
+
+# NAT base chains unavailable on this kernel (CONFIG_NFT_CHAIN_NAT_IPV4/6
+# off): enforce the tunnel-only path with a filter chain instead.  App
+# traffic may leave only through tun0; system traffic (classid 0 on 4.14)
+# is untouched so the console/DNS survive.
+table inet nuxel_vpn_egress {
+    chain output {
+        type filter hook output priority -110; policy accept;
+        meta cgroup != 0 oifname != "tun0" counter reject
+    }
+}
+NATFALLBACK
         fi
         echo
         echo "# ---- interface policy table (rendered from $CONFIG) ----"
@@ -303,7 +389,14 @@ for name, policy, note in in_client:
     print('        # %s policy=%s%s' % (name, policy, (" - " + note) if note else ""))
     print('        iifname "%s" ct state established,related accept' % name)
     print('        iifname "%s" udp dport { 67, 68 } accept' % name)
-    print('        iifname "%s" icmp type { echo-reply, destination-unreachable, time-exceeded } accept' % name)
+    # v0.8.5 LIVE FIX: never decide on echo-*replies* in an input chain.  The
+    # inbound raw/input path can mark a forward-direction echo-reply invalid;
+    # matching it here forced conntrack to re-evaluate the flow, so the
+    # *request* was then classified invalid and dropped by the app table's raw
+    # chain -- LAN ping and SSH died while USB (a different netdev path)
+    # stayed up.  Echo requests are the inbound-relevant type; replies are
+    # handled by the established/related accept above.
+    print('        iifname "%s" icmp type { echo-request, destination-unreachable, time-exceeded } accept' % name)
     print('        iifname "%s" drop' % name)
 for name, policy, note in in_drop:
     print('        # %s policy=%s%s' % (name, policy, (" - " + note) if note else ""))
@@ -542,7 +635,12 @@ do_apply() {
 
     # The one thing that must never fail silently.
     if ! do_console_verify --quiet; then
-        log "CONSOLE GUARD MISSING after apply: rolling back immediately"
+        log "CONSOLE GUARD MISSING after apply: loading the accept-only guard, then rolling back"
+        # NUXEL-105200: put the recovery plane back FIRST.  The guard only
+        # ACCEPTs, so this cannot lock anyone out, and it means the rollback
+        # itself is never the reason the owner loses SSH.
+        [ -f "$GUARD_FILE" ] && nft_run -f "$GUARD_FILE" >/dev/null 2>&1 && \
+            log "accept-only console guard reloaded before rollback"
         nft_run -f "$snap" || log "rollback failed - inspect with '$0 show'"
         record_audit "apply-rollback" "console guard missing after apply"
         if do_console_verify --quiet; then
@@ -626,6 +724,11 @@ do_console_verify() {
     if [ -z "$live" ]; then
         if [ "$quiet" = "1" ]; then return 1; fi
         echo "console-verify: UNKNOWN - no live ruleset readable (nft missing or empty ruleset)"
+        # An empty ruleset is the one state that is safe to repair immediately:
+        # the guard only ACCEPTs, so loading it cannot lock anything out.
+        if [ -f "$GUARD_FILE" ]; then
+            nft_run -f "$GUARD_FILE" >/dev/null 2>&1 && echo "console-verify: loaded $GUARD_FILE (accept-only recovery plane)"
+        fi
         return 2
     fi
     local rc=0
@@ -635,12 +738,18 @@ do_console_verify() {
     printf '%s' "$live" | grep -Eq '^[[:space:]]*table [a-z0-9]+ nuxel_console_guard[[:space:]]*\{' || rc=1
     printf '%s' "$live" | grep -q 'type filter hook input priority -200' || rc=1
     printf '%s' "$live" | grep -Eq 'iifname \{ "usb0"' || rc=1
+    # NUXEL-105200: the prerouting guard is what keeps a raw/prerouting chain
+    # (whose conntrack state on this 4.14 kernel marks LAN echo-replies invalid)
+    # from dropping SSH/ICMP before the input hook.  It must be live too, or a
+    # "console guard present" verdict is only half true.
+    printf '%s' "$live" | grep -q 'type filter hook prerouting priority -300' || rc=1
+    printf '%s' "$live" | grep -q 'tcp dport { 22, 2022 } accept' || rc=1
     if [ "$quiet" != "1" ]; then
         if [ "$rc" = "0" ]; then
             echo "console-verify: PASS - nuxel_console_guard is loaded and the USB gadget interface is accepted"
             printf '%s' "$live" | grep -A4 'chain guard' | head -8
         else
-            echo "console-verify: FAIL - console guard table or USB gadget accept is missing from the live ruleset"
+            echo "console-verify: FAIL - console guard table, prerouting guard or USB gadget accept is missing from the live ruleset"
             echo "                 fix with: $0 rollback   (or: nft -f $GUARD_FILE)"
         fi
     fi

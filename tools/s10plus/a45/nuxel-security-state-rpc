@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Publish the authoritative boot lock state before any reader starts.
+
+A85: /run is a tmpfs, so /run/nuxel/security/lock-state.json does not exist at
+boot until security/lock is called.  Measured 2026-11-14: nuxel-navdock and the
+status bar read `unknown` (the native triple-button dock then refused to map in
+Settings and the VNC screen) and the launcher's boot gate released the lock
+overlay (the phone came up already unlocked).
+
+This bounded helper asks the root bridge for the idempotent `security/
+ensure-state` verb.  The provider -- the single lock authority -- writes the
+state from the STORED credential mode (swipe -> locked:false, pin/pattern/
+fingerprint -> locked:true).  It never invents or reveals a credential.
+
+Usage: nuxel-security-state-rpc [timeout_seconds]   (default 20)
+Exit 0 only when the provider confirms the state file now has a boolean lock.
+"""
+import json
+import sys
+import time
+import urllib.request
+
+RPC = "http://127.0.0.1:8080/api/v1/rpc"
+
+
+def _post(verb, params, timeout):
+    body = json.dumps({
+        "app_id": "org.nuxel.Home",
+        "namespace": "security",
+        "verb": verb,
+        "params": params,
+    }).encode()
+    req = urllib.request.Request(
+        RPC, data=body, headers={"Content-Type": "application/json"},
+        method="POST")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        doc = json.loads(resp.read(65536) or b"{}")
+    return doc.get("result", doc)
+
+
+def main() -> int:
+    try:
+        budget = float(sys.argv[1]) if len(sys.argv) > 1 else 20.0
+    except ValueError:
+        budget = 20.0
+    deadline = time.monotonic() + max(1.0, min(budget, 120.0))
+    last = None
+    while time.monotonic() < deadline:
+        try:
+            res = _post("ensure-state", {}, 2.0)
+            if isinstance(res, dict) and res.get("success") is not False \
+                    and isinstance(res.get("locked"), bool):
+                sys.stdout.write("security-state published locked=%s mode=%s\n"
+                                 % (str(res.get("locked")).lower(), res.get("mode")))
+                return 0
+            last = res
+        except Exception as exc:  # noqa: BLE001 - bridge still warming
+            last = exc
+        time.sleep(0.25)
+    sys.stderr.write("nuxel-security-state-rpc: not published: %r\n" % (last,))
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

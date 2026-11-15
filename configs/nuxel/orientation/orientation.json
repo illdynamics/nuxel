@@ -81,6 +81,7 @@
   "sensor": {
     "preferred_source": "auto",
     "sources": [
+      "iio-sysfs-accel-gyro",
       "iio-sysfs-accel",
       "iio-accel",
       "iio-sensor-proxy",
@@ -146,7 +147,7 @@
     "sensor_hub": {
       "device": "BCM47752 / LSM6DSO via /sys/class/sensors/accelerometer_sensor/raw_data",
       "bbd_ready": "/dev/bbd_control",
-      "requires_patch_loader": "the Broadcom LHD sensor-hub patch loader is not shipped; raw_data remains 0,0,0 until the hub MCU is initialized",
+      "requires_patch_loader": "not used by Nuxel: the kernel owns the BBD transport (PWNAGE-SSP patch 0013) and the native nuxel-ssp-bridge relays /dev/bbd_sensor; no Android lhd/Bionic runtime is executed",
       "production_source": true,
       "raw_data": "/sys/class/sensors/accelerometer_sensor/raw_data",
       "enable": "/sys/class/sensors/ssp_sensor/enable",
@@ -163,7 +164,18 @@
       "auto_start": true,
       "startup_timeout_ms": 1500,
       "retry_interval_ms": 30000,
-      "comment": "nuxel-orientationd drives these real kernel nodes before an Auto probe: ESW:READY wakes the BBD/SSP bridge and the accelerometer bit is OR-ed into enable. raw_data must then become non-zero; no synthetic sample is ever used. The vendor Android lhd runtime (with /system/bin/linker64) is required to patch the BCM47752 MCU; when absent, Auto remains truthfully blocked."
+      "comment": "nuxel-orientationd drives these real kernel nodes before an Auto probe: ESW:READY wakes the BBD/SSP bridge and the accelerometer bit is OR-ed into enable. raw_data must then become non-zero; no synthetic sample is ever used. The vendor Android lhd runtime (with /system/bin/linker64) is required to patch the BCM47752 MCU; when absent, Auto remains truthfully blocked.",
+      "gyro_raw_data": "/sys/class/sensors/gyro_sensor/raw_data",
+      "bridge_unit": "nuxel-ssp-bridge.service",
+      "nuxel_bringup": "/sys/class/sensors/ssp_sensor/nuxel_bringup",
+      "nuxel_hub_diag": "/sys/class/sensors/ssp_sensor/nuxel_hub_diag"
+    },
+    "gyro": {
+      "raw_data": "/sys/class/sensors/gyro_sensor/raw_data",
+      "dps_per_lsb": 0.07,
+      "full_scale_dps": 2000,
+      "role": "rate assist only; absolute orientation is always gravity",
+      "calibration_status": "unverified"
     }
   },
   "compositor": {
