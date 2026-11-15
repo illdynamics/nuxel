@@ -220,8 +220,11 @@ IPT_CHAIN_FWD = "NUXEL_HOTSPOT_FWD"
 IPT_CHAIN_NAT = "NUXEL_HOTSPOT_NAT"
 
 
+IPTABLES = shutil.which("iptables") or "/usr/sbin/iptables"
+
+
 def _ipt(*args):
-    return run(["/usr/sbin/iptables"] + list(args))
+    return run([IPTABLES] + list(args))
 
 
 def _apply_nat_nft(ap: str, uplink: str) -> tuple[bool, str]:
