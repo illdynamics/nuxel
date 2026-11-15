@@ -6,37 +6,43 @@
  */
 (function (global) {
   'use strict';
-  var VERSION = 'a82';
+  var VERSION = 'a85';
   var cache = null;
+  /* A84: security RPCs go DIRECTLY to the root bridge, never through the
+     shared client.  The shared client's failure path returns FABRICATED mock
+     data (`this.mockMode = true`), so any transient miss (a cold token, a
+     restarted bridge, a 409) made `/security/status` look like "still locked"
+     and the launcher rejected a swipe on a device that was in swipe mode.
+     A security answer must always be the host's real answer.
+     The pinned X-Nuxel-Bridge-Version header matches what the shared client
+     sends, so the host's version gate behaves identically. */
+  var RPC_URL = 'http://127.0.0.1:8080/api/v1/rpc';
 
-  function bridge() {
-    if (global.NuxelBridge && global.NuxelBridge.call) return global.NuxelBridge;
-    // Home's lowercase wrapper rejects mock fallbacks and carries the session
-    // token; prefer it when the shared module has not published yet.
-    if (global.bridge && typeof global.bridge.call === 'function') return global.bridge;
-    try { if (global.parent && global.parent !== global && global.parent.NuxelBridge) return global.parent.NuxelBridge; } catch (e) {}
-    return null;
+  function bridgeVersion() {
+    if (global.NUXEL_BRIDGE_VERSION) return String(global.NUXEL_BRIDGE_VERSION);
+    return '1';
   }
+
   async function direct(ns, verb, params) {
     try {
-      // The PWA static server (:8000) is not the API.  The root bridge API is
-      // loopback :8080; prefer the shared client when it has loaded.
-      var res = await fetch('http://127.0.0.1:8080/api/v1/rpc', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ app_id: 'org.nuxel.Home', namespace: ns, verb: verb, params: params || {} })
+      var res = await fetch(RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                   'X-Nuxel-Bridge-Version': bridgeVersion() },
+        body: JSON.stringify({ app_id: 'org.nuxel.Home', namespace: ns, verb: verb,
+                               params: params || {} })
       });
-      if (!res.ok) return { success: false, error: 'HTTP ' + res.status };
-      var doc = await res.json();
+      var doc = null;
+      try { doc = await res.json(); } catch (e) { doc = null; }
+      if (!res.ok) {
+        if (doc && doc.result !== undefined) return doc.result;
+        return { success: false, error: 'HTTP ' + res.status,
+                 detail: (doc && (doc.detail || doc.error)) || null };
+      }
       return doc && doc.result !== undefined ? doc.result : doc;
     } catch (e) { return { success: false, error: String(e && e.message || e) }; }
   }
-  async function call(ns, verb, params) {
-    var b = bridge();
-    if (b) {
-      try { return await b.call(ns, verb, params || {}); } catch (e) { /* fall through */ }
-    }
-    return direct(ns, verb, params);
-  }
+  function call(ns, verb, params) { return direct(ns, verb, params); }
 
   /* The legacy text-input sheet ("Enter PIN", "Enter pattern", "PIN fallback")
      is GONE for good (A82).  Every credential is entered on the lock screen
@@ -88,12 +94,46 @@
    * legacy text-input sheet here ("Enter PIN", "At least 6 digits"), which is
    * exactly the unexplained second PIN request the owner saw after a correct
    * unlock -- the phone was unlocked, then the host's nav gate asked again.
+   *
+   * A85: a lockhead swipe ON A SWIPE-MODE LOCK is itself the unlock.  The
+   * provider is still `locked:true` at the moment this gate runs (the lock
+   * overlay is up and nothing has released it yet), so demanding
+   * `locked === false` FIRST dead-locked every swipe-mode phone:
+   *
+   *   gesture -> verify -> provider says locked -> rejected -> still locked
+   *
+   * The provider's own `security/unlock` verb is the atomic release for a
+   * swipe lock -- it re-reads the stored mode server-side and only clears the
+   * lock when that mode is `swipe`; on a credentialed mode it answers
+   * `invalid_credential` and the overlay keeps the keypad/pattern surface.
+   * So: status first (honest, authoritative), then for `swipe`/`unlock` (and
+   * only for `opts.direct`, i.e. the direct-swipe path) ask for that release.
+   * A credentialed mode is never released here; it goes to the credential
+   * surface exactly as before.
    */
-  async function verifyUnlock() {
+  async function verifyUnlock(opts) {
+    opts = opts || {};
     var st = await status();
+    /* Observation only: the exact status object the unlock gate decided on. */
+    try {
+      var diag = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
+      if (diag) diag.postMessage('SECLOCK[a85] verify status=' + JSON.stringify({
+        success: (st && st.success), locked: (st && st.locked), mode: (st && st.mode),
+        reason: (st && st.reason), error: (st && st.error), detail: (st && st.detail),
+        provider: (st && st.source),
+      }));
+    } catch (e) { /* observation only */ }
     if (!st || st.success === false) {
       return { ok: false, error: 'lock-provider-unavailable',
         detail: (st && st.error) || 'security provider unavailable' };
+    }
+    /* A84: a real status ALWAYS carries a boolean `locked`.  An object
+       without it is not an answer (a fabricated/mock reply or a refusal);
+       treating it as "locked" is what rejected every swipe on a swipe-mode
+       device.  Fail closed, but report the true reason. */
+    if (typeof st.locked !== 'boolean') {
+      return { ok: false, error: 'lock-provider-unavailable',
+        detail: 'security status did not report a lock state' };
     }
     if (st.rate_limit && st.rate_limit.locked_out) {
       return { ok: false, error: 'rate_limited',
@@ -102,8 +142,27 @@
     if (st.locked === false) {
       return { ok: true, state: 'UNLOCKED', mode: st.mode, via: 'bridge-authority' };
     }
-    return { ok: false, error: 'credential-required-on-lockscreen',
-      detail: 'Enter the credential on the lock screen' };
+    /* A85 direct swipe on a swipe-mode lock: release it through the provider's
+       own verb.  Only the direct path (opts.direct) may release; the locked
+       state is re-read SERVER-SIDE and a credentialed mode is never cleared. */
+    var mode = String(st.mode || '');
+    var swipeLock = (mode === 'swipe' || mode === 'unlock');
+    if (opts.direct === true && swipeLock) {
+      var rel = await call('security', 'unlock', { secret: '' });
+      var ok = !!(rel && rel.success !== false && rel.unlocked === true && rel.locked === false);
+      try {
+        var d = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
+        if (d) d.postMessage('SECLOCK[a85] swipe-release ok=' + (ok ? '1' : '0') +
+          ' error=' + ((rel && (rel.error || rel.detail)) || '-'));
+      } catch (e) { /* observation only */ }
+      if (ok) return { ok: true, state: 'UNLOCKED', mode: mode, via: 'swipe-direct' };
+      return { ok: false, error: (rel && rel.error) || 'swipe-release-failed',
+        detail: (rel && rel.detail) || 'the security provider did not release the lock' };
+    }
+    return { ok: false, error: swipeLock
+        ? 'swipe-required-on-lockscreen' : 'credential-required-on-lockscreen',
+      detail: swipeLock ? 'Swipe the lockhead up to unlock'
+                        : 'Enter the credential on the lock screen' };
   }
 
   async function lock(reason) {

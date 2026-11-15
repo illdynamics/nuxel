@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="css/status-bar.css?v=p106000">
     <link rel="stylesheet" href="css/home-settings.css?v=p80000">
     <link rel="stylesheet" href="css/widgets.css?v=p82000">
-    <link rel="stylesheet" href="css/lockscreen.css?v=a82">
+    <link rel="stylesheet" href="css/lockscreen.css?v=a88">
     <link rel="preload" as="image" href="assets/nuxel-preload-cover.jpg">
     <script>
     // PWNAGE-36000: in phone boot mode the separate mpv preloading-screen
@@ -179,9 +179,17 @@
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/09-location.svg?v=p80000" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Location</span>
             </div>
-            <div class="qs-item" id="qs-usb-tether" data-enabled="unknown" data-mode="off" title="USB networking / tethering (tap = on/off, long-press = cycle usbnet/tether/off)">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png?v=p107000" alt="" onerror="this.hidden=true">
+            <div class="qs-item" id="qs-usb-net" data-enabled="unknown" data-mode="off" title="USB network: local USB Ethernet/SSH (does not share Internet)">
+                <span class="qs-icon usb-glyph" aria-hidden="true"></span>
                 <span class="qs-label">USB Net<br>checking</span>
+            </div>
+            <div class="qs-item" id="qs-usb-tether" data-enabled="unknown" title="USB tether: share the phone's Internet with the attached computer">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png?v=usbnet2601" alt="" onerror="this.hidden=true">
+                <span class="qs-label">Tether<br>checking</span>
+            </div>
+            <div class="qs-item" id="qs-hotspot" data-enabled="unknown" title="Wi-Fi hotspot (only when the driver supports AP mode)">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png?v=usbnet2601" alt="" onerror="this.hidden=true">
+                <span class="qs-label">Hotspot<br>checking</span>
             </div>
         </div>
         <div class="qs-row">
@@ -370,6 +378,10 @@
                     <span class="cm-name">File Transfer</span>
                     <span class="cm-desc">Make Nuxel storage accessible to a connected laptop.</span>
                 </button>
+                <button type="button" class="connection-mode-option" data-mode="usb_network">
+                    <span class="cm-name">USB Network</span>
+                    <span class="cm-desc">Local USB Ethernet + SSH (10.15.19.1). Does not share Internet.</span>
+                </button>
                 <p class="connection-mode-status" id="connection-mode-status" role="status"></p>
                 <button type="button" class="connection-mode-dismiss" id="connection-mode-dismiss">Close</button>
             </div>
@@ -489,7 +501,7 @@
     </script>
     <script src="../nuxel-common/theme.js?v=p85000"></script>
     <script src="js/edge-panel-gesture.js?v=p103000"></script>
-    <script src="js/edge-lighting.js?v=p103000b"></script>
+    <script src="js/edge-lighting.js?v=a85"></script>
     <script src="../nuxel-common/haptics.js?v=a81"></script>
     <script src="../nuxel-common/geolocation.js?v=p80000"></script>
     <script src="js/apps.js?v=p91000"></script>
@@ -503,7 +515,7 @@
     <script src="js/bridge.js?v=a63"></script>
     <script src="js/recents.js?v=p80000"></script>
     <script src="js/topbar-machine.js?v=p94000"></script>
-    <script src="js/qs.js?v=p94000"></script>
+    <script src="js/qs.js?v=usbnet2601"></script>
 <script src="js/qs-firewall.js?v=1"></script>
     <!-- A32: host backend (settings/buttons/terminal) + status-bar safe zones.
          Both are inert without a host, so the VM/desktop launcher is unchanged. -->
@@ -515,11 +527,11 @@
     <script src="js/osd.js?v=p80000"></script>
     <script src="js/bootlog.js?v=p80000"></script>
     <script src="js/touch-keyboard.js?v=p80000"></script>
-    <script src="js/security-lock.js?v=a82"></script>
+    <script src="js/security-lock.js?v=a85"></script>
     <script src="js/lockscreen-indicators.js?v=p85000"></script>
     <script src="js/lockscreen-clock.js?v=p91000"></script>
-    <script src="js/lockscreen-auth.js?v=a82"></script>
-    <script src="js/lockscreen.js?v=a81"></script>
+    <script src="js/lockscreen-auth.js?v=a88"></script>
+    <script src="js/lockscreen.js?v=a88"></script>
     <script src="js/navigation.js?v=p80000"></script>
     <script src="js/gestures.js?v=p80000"></script>
     <script src="js/widgets.js?v=p91000"></script>

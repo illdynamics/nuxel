@@ -268,7 +268,18 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
   stroke-width: 7;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 4px rgba(80, 180, 255, .8));
+  /* v0.8.5 PERF: a drop-shadow filter on the live pattern stroke forced
+     WebKit's software rasteriser to re-filter the whole editor on every
+     pointer move (the same measured problem as the lock-screen handle).
+     The glow is a static translucent under-stroke instead (see -glow). */
+  filter: none;
+}
+#sec-pattern-trail-glow {
+  stroke: rgba(80, 180, 255, .35);
+  stroke-width: 15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 .pattern-editor-dots { position: absolute; inset: 0; }
 .pattern-dot {

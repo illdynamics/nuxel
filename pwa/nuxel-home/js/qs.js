@@ -237,65 +237,199 @@ class QuickSettings {
     // The label always reports the REAL helper state; a provider error or a
     // missing kernel function is shown honestly and never painted as ON.
     _buildUsbTetherTile() {
-        const tile = document.getElementById('qs-usb-tether');
+        // Two separate controls, because USB SSH and Internet tethering are
+        // different features:
+        //   #qs-usb-net    local USB Ethernet/SSH (gadget composition)
+        //   #qs-usb-tether Internet sharing to the attached computer
+        //   #qs-hotspot    Wi-Fi AP, only when the driver advertises AP mode
+        // Every tile renders provider read-back; unsupported/unknown is never
+        // painted as ON.
+        this._buildUsbNetTile();
+        this._buildUsbSharingTile();
+        this._buildHotspotTile();
+    }
+
+    _usbTileDefaults(tile, checkingText) {
+        const label = tile.querySelector('.qs-label');
+        if (label) label.innerHTML = checkingText;
+        tile.dataset.enabled = 'unknown';
+    }
+
+    _buildUsbNetTile() {
+        const tile = document.getElementById('qs-usb-net');
         if (!tile) return;
-        const MODES = ['off', 'usbnet', 'tether'];
-        const LABELS = { off: 'USB Net\nOff', usbnet: 'USB Net\nHost', tether: 'Tether\nNAT' };
+        const LABELS = { off: 'USB Net', usbnet: 'USB Net', tether: 'USB Net' };
         const _setState = (st) => {
             const active = !!(st && st.active);
-            const mode = active ? (st.mode || 'off') : 'off';
+            tile.dataset.mode = active ? (st.mode || 'usb_network') : 'off';
             tile.dataset.enabled = active ? 'true' : 'false';
-            tile.dataset.mode = mode;
             const label = tile.querySelector('.qs-label');
-            if (label) label.innerHTML = (LABELS[mode] || (mode + '<br>')) + '<br>' + (active ? 'on' : 'off');
-            const sub = st && st.function ? (' · ' + st.function) : '';
-            tile.title = 'USB networking/tethering: ' + (active ? (st.mode + sub + ' active') : 'off') +
-                ' (tap = on/off, long-press = cycle usbnet/tether/off)';
+            // Provider read-back only: a configfs composition is not "on"
+            // unless the owner recorded a live interface; SSH is only shown
+            // verified when the tri-link probe actually authenticated.
+            const ssh = (st && st.ssh) || 'unverified';
+            let text = active ? 'on' : 'off';
+            if (active && ssh === 'authenticated') text = 'ssh';
+            else if (active && ssh === 'link-up-unverified') text = 'link';
+            if (label) label.innerHTML = 'USB Net<br>' + text;
+            tile.title = active
+                ? 'USB network active on ' + (st.interface || '?') + ' (' + (st.function || 'ncm') +
+                  ', ACM preserved). SSH: ' + ssh + '. Tap = off.'
+                : 'USB network off. Tap = enable local USB Ethernet/SSH. This does not share Internet.';
         };
         const _sync = async () => {
-            // "checking" is trustworthy ambiguity; never guess before the call.
-            tile.dataset.enabled = 'unknown';
+            this._usbTileDefaults(tile, 'USB Net<br>checking');
             try {
                 const r = await bridge.call('usb-net', 'status', {});
+                // Augment with the read-only tri-link probe; never invent SSH.
+                try {
+                    const tl = await bridge.call('system', 'tri-link', {});
+                    const usb = (tl && ((tl.transports && tl.transports.usb) || tl.usb)) || {};
+                    if (r && r.active && usb) {
+                        r.ssh = usb.status === 'READY' ? 'authenticated'
+                              : (usb.status === 'LINK_UP_UNVERIFIED' ? 'link-up-unverified' : 'unverified');
+                    }
+                } catch (e2) {}
+                if (r && r.success === false) {
+                    tile.dataset.enabled = 'unknown';
+                    const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'USB Net<br>error';
+                    tile.title = 'USB network provider error: ' + ((r.error || r.detail) || 'unknown');
+                    return;
+                }
                 _setState(r);
             } catch (e) {
-                const label = tile.querySelector('.qs-label');
-                if (label) label.innerHTML = 'USB Net<br>unavail';
+                const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'USB Net<br>unavail';
                 tile.dataset.enabled = 'unknown';
-                tile.title = 'USB networking/tethering unavailable: ' + (e && e.message ? e.message : 'provider error');
             }
         };
         const _apply = async (mode) => {
+            if (tile.dataset.enabled === 'busy') return;
+            tile.dataset.enabled = 'busy';
+            const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'USB Net<br>busy';
             try {
-                const r = await bridge.call('usb-net', 'set-mode', { mode: mode, function: 'ecm' });
+                const r = await bridge.call('usb-net', 'set-mode', { mode: mode, function: 'ncm' });
                 if (r && r.success) {
-                    this._osdNotice(mode === 'off' ? 'USB networking off' :
-                        (mode === 'usbnet' ? 'USB networking on (host link)' : 'USB tethering on (NAT)'));
-                    await _sync();
+                    this._osdNotice(mode === 'off' ? 'USB networking off' : 'USB networking on');
                 } else {
-                    this._osdNotice('USB net ' + mode + ' failed: ' + ((r && (r.error || r.last_error || r.detail)) || 'helper did not confirm'));
-                    await _sync();
+                    this._osdNotice('USB network ' + mode + ' failed: ' +
+                        ((r && (r.error || r.last_error || r.detail)) || 'helper did not confirm'));
                 }
             } catch (e) {
-                this._osdNotice('USB net ' + mode + ': provider unavailable');
-                await _sync();
+                this._osdNotice('USB network: provider unavailable');
             }
+            await _sync();
         };
         tile.addEventListener('click', () => {
             if (this._utLongPressFired) { this._utLongPressFired = false; return; }
-            const cur = tile.dataset.mode || 'off';
-            const next = (cur === 'off') ? 'usbnet' : 'off';
-            _apply(next);
-        });
-        this._bindLongPress(tile, () => {
-            this._utLongPressFired = true;
-            const cur = tile.dataset.mode || 'off';
-            const idx = MODES.indexOf(cur);
-            const next = MODES[(idx + 1) % MODES.length];
-            _apply(next);
+            _apply((tile.dataset.mode || 'off') === 'off' ? 'usbnet' : 'off');
         });
         _sync();
         document.addEventListener('nuxel:usb-net-changed', _sync);
+    }
+
+    _buildUsbSharingTile() {
+        const tile = document.getElementById('qs-usb-tether');
+        if (!tile) return;
+        let enabled = false;
+        const _sync = async () => {
+            tile.dataset.enabled = 'unknown';
+            const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Tether<br>checking';
+            try {
+                const r = await bridge.call('usb-tether', 'status', {});
+                if (!r || r.success === false) {
+                    tile.dataset.enabled = 'unsupported';
+                    if (l) l.innerHTML = 'Tether<br>unknown';
+                    tile.title = 'USB tether status unavailable: ' + ((r && (r.error || r.detail)) || 'provider error');
+                    return;
+                }
+                enabled = !!r.enabled;
+                tile.dataset.enabled = enabled ? 'true' : 'false';
+                if (l) l.innerHTML = 'Tether<br>' + (enabled ? 'on' : 'off');
+                tile.title = enabled
+                    ? 'Sharing ' + (r.upstream || '?') + ' over USB. Host Internet verified: ' +
+                      (r.internet_verified ? 'yes' : 'no') + '. Tap = stop.'
+                    : 'USB Internet tethering off. Tap = share the first usable upstream.';
+            } catch (e) {
+                tile.dataset.enabled = 'unknown';
+                if (l) l.innerHTML = 'Tether<br>unavail';
+            }
+        };
+        tile.addEventListener('click', async () => {
+            if (tile.dataset.enabled === 'busy') return;
+            tile.dataset.enabled = 'busy';
+            const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Tether<br>busy';
+            try {
+                // Explicit tap.  When the local USB link is off, this is the one
+                // owner action that enables the USB network composition AND the
+                // Internet share; when sharing is on it only stops the share.
+                const r = enabled
+                    ? await bridge.call('usb-tether', 'stop', {})
+                    : await bridge.call('usb-net', 'enable-for-host', {});
+                if (!r || r.success === false) {
+                    this._osdNotice('USB tether failed: ' +
+                        ((r && (r.error || r.detail)) || 'provider did not confirm'));
+                } else {
+                    this._osdNotice(enabled ? 'USB tethering off' :
+                        'USB tethering on' + (r.internet_verified ? ' (Internet verified)' : ' (not yet verified)'));
+                }
+            } catch (e) {
+                this._osdNotice('USB tether: provider unavailable');
+            }
+            await _sync();
+        });
+        _sync();
+    }
+
+    _buildHotspotTile() {
+        const tile = document.getElementById('qs-hotspot');
+        if (!tile) return;
+        let enabled = false, supported = null;
+        const _sync = async () => {
+            tile.dataset.enabled = 'unknown';
+            const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Hotspot<br>checking';
+            try {
+                const r = await bridge.call('network', 'hotspot-status', {});
+                supported = !!(r && r.supported);
+                if (r && r.success === false) {
+                    tile.dataset.enabled = 'unknown';
+                    if (l) l.innerHTML = 'Hotspot<br>unknown';
+                    return;
+                }
+                if (!supported) {
+                    enabled = false;
+                    tile.dataset.enabled = 'unsupported';
+                    if (l) l.innerHTML = 'Hotspot<br>n/a';
+                    tile.title = 'Wi-Fi hotspot UNSUPPORTED: ' + ((r && r.reason) || 'driver has no AP mode');
+                    return;
+                }
+                enabled = !!r.enabled;
+                tile.dataset.enabled = enabled ? 'true' : 'false';
+                if (l) l.innerHTML = 'Hotspot<br>' + (enabled ? 'on' : 'off');
+                tile.title = enabled ? 'Hotspot active' : 'Tap to start the Wi-Fi hotspot';
+            } catch (e) {
+                tile.dataset.enabled = 'unknown';
+                if (l) l.innerHTML = 'Hotspot<br>unavail';
+            }
+        };
+        tile.addEventListener('click', async () => {
+            if (supported !== true) {
+                this._osdNotice('Wi-Fi hotspot is not supported by this Wi-Fi driver');
+                return;
+            }
+            if (tile.dataset.enabled === 'busy') return;
+            tile.dataset.enabled = 'busy';
+            const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Hotspot<br>busy';
+            try {
+                const r = await bridge.call('network', enabled ? 'hotspot-stop' : 'hotspot-start', {});
+                if (!r || r.success === false) {
+                    this._osdNotice('Hotspot failed: ' + ((r && (r.error || r.detail)) || 'not confirmed'));
+                }
+            } catch (e) {
+                this._osdNotice('Hotspot: provider unavailable');
+            }
+            await _sync();
+        });
+        _sync();
     }
 
     // A long press that cannot double-fire, cannot fire on a scroll and cannot

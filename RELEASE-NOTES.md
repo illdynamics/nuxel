@@ -3,6 +3,41 @@
 This file holds the release-by-release user-facing changes. The full engineering
 history remains in [CHANGELOG.md](CHANGELOG.md).
 
+## v0.8.5-beta — live repair: apps, microphones, tethering, hotspot, idle CPU (2026-11-15)
+
+### Apps and sound
+
+- **Flatpak apps start again.** A root-owned runtime directory blocked every
+  sandboxed app; it is now owned by the session user. Stremio launches and both
+  Stremio and Signal refuse a duplicate start instead of silently dying.
+- **Messenger microphones work.** WhatsApp, Ferdium, Signal and the other
+  Flatpak messengers now reach the phone's microphone: the sandbox Pulse socket
+  is mapped at the exact path the runtime advertises. Verified by recording
+  from the S10+ microphone inside the sandbox.
+
+### Network
+
+- **USB tethering** forwards traffic again (the firewall's forward chain used to
+  drop everything before the tether rules), and IPv4 forwarding is now durable.
+- **Wi-Fi hotspot** is driven by hostapd + dnsmasq from the Network Manager app.
+  The test AP **NuxNet** (`Setyup34#`) runs on the second Wi-Fi vif while the
+  owner's uplink stays on `wlan0`.
+
+### Performance and UI
+
+- **Idle CPU** dropped sharply: a USB-C DeX link was re-linking four times a
+  second with nothing attached. System idle is now ~12 % busy / 89 % idle.
+- **GTK/Flatpak icons** no longer show a second glyph or a coloured tile behind
+  the real icon.
+- **Lock screen**: the blue rectangle that lingered after locking from the power
+  menu is gone.
+- **App drawer / Settings** are lighter: icon handling is delegated and the
+  pattern editor no longer uses a per-move GPU filter.
+
+See [final-summary.md](final-summary.md) for the exact state of mobile
+networking, NFC, auto-rotation sensors, fingerprint and camera.
+
+
 ## v0.8.3-beta — fully black screen-off, per-device completion and a repaired release gate (2026-11-10)
 
 ### Screen-off is actually off

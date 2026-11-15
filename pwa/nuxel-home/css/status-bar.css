@@ -368,6 +368,24 @@
     font-style: italic;
 }
 
+/* Unsupported (e.g. no Wi-Fi AP mode) and in-flight transitions are never
+   rendered as ON and are not clickable-looking. */
+.qs-item[data-enabled="unsupported"] {
+    opacity: 0.45;
+    filter: grayscale(1);
+}
+.qs-item[data-enabled="unsupported"] .qs-label {
+    font-style: italic;
+}
+.qs-item[data-enabled="busy"] {
+    opacity: 0.8;
+    animation: qs-busy-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes qs-busy-pulse {
+    from { opacity: 0.45; }
+    to   { opacity: 0.85; }
+}
+
 .qs-icon {
     width: 24px;
     height: 24px;

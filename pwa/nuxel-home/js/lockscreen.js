@@ -1,5 +1,16 @@
 /* Nuxel A45.1 Penguin Lockscreen — swipe the actual nuxel-lockhead.png upward
- * to unlock.  This is the real drag state machine:
+ * to unlock.
+ *
+ * A84: the lockhead is ALWAYS on the glass, in every mode.
+ *   swipe / unlock  swipe up anywhere in the lower band -> directly unlocked.
+ *   pin             swipe/tap the lockhead -> numeric keypad panel.
+ *   pattern         swipe/tap the lockhead -> 9-dot matrix (centre of glass)
+ *                   with a PIN button fallback.
+ *   fingerprint     swipe/tap the lockhead -> scanner surface with a PIN
+ *                   button; with no working matcher it goes to the PIN screen.
+ * With the panel closed the swipe travels with the finger; crossing the
+ * threshold on top of the credential panel swallows that contact so the
+ * keypad never receives a stray tap.  This is the real drag state machine:
  *
  *   IDLE -> TOUCH_CAPTURED -> DRAGGING -> THRESHOLD_REACHED -> UNLOCKING -> UNLOCKED
  *   DRAGGING -> CANCELLED -> RETURN_TO_REST -> IDLE
@@ -18,7 +29,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'a82';
+  const VERSION = 'a88';
   const WALLPAPER = { w: 768, h: 1376 };
   /* The illustrated penguin's approximate opaque bounds in wallpaper pixels,
      measured from the shipped asset.  Only the vertical extent matters here:
@@ -35,6 +46,15 @@
   const SAFE_TOP = 24;         /* px of usable travel reserved above the handle */
   const RETURN_MS = 160;       /* snap-back animation (snappier) */
   const DISMISS_MS = 70;       /* accepted unlock: one short acknowledgement */
+  const DOCK_BOTTOM = 26;      /* px between the docked lockhead and the edge */
+  const PANEL_DISMISS_SWIPE = 96; /* downward swipe (panel open) closes it */
+
+  function modeLabel(mode) {
+    if (mode === 'pin') return 'PIN keypad';
+    if (mode === 'pattern') return 'pattern';
+    if (mode === 'fingerprint') return 'fingerprint';
+    return 'unlock';
+  }
 
   class Lockscreen {
     constructor() {
@@ -63,6 +83,8 @@
       this._touchInFlight = false;
       this._touchTimer = null;
       this.locked = false;
+      this.mode = 'swipe';
+      this.panelOpen = false;
       this.state = 'IDLE';
       this.startY = 0;
       this.currentY = 0;
@@ -114,6 +136,10 @@
             return { ok: false, error: 'no-authorized-controller' };
           },
           onSwipeMode: () => this._setSwipeAffordance(true),
+          /* The lockhead owns the glass in every mode; these callbacks just
+             re-dock it and remember whether the credential panel is open. */
+          onPanelMode: (open, mode) => this._onPanelMode(open, mode),
+          onModeChange: (mode) => this._onModeChange(mode),
         });
       } catch (err) {
         this.auth = null;
@@ -122,9 +148,20 @@
     }
 
     _setSwipeAffordance(visible) {
-      if (this.wrap) this.wrap.hidden = !visible;
+      /* A87: the lockhead is shown exactly where the owner needs it.
+         * swipe mode              -> always visible (it IS the unlock gesture)
+         * credential, panel closed -> visible (swipe/tap it to open the panel)
+         * credential, panel OPEN   -> hidden.  The owner asked for no lockhead
+           under the PIN prompt, and an invisible docked handle also stopped
+           stray touches near the bottom edge from being swallowed as a swipe. */
+      if (this.panelOpen && this.mode && this.mode !== 'swipe') visible = false;
+      else visible = true;
+      if (this.wrap) {
+        this.wrap.hidden = !visible;
+        this.wrap.setAttribute('aria-hidden', visible ? 'false' : 'true');
+        try { this.wrap.inert = !visible; } catch (e) { /* older engines */ }
+      }
       if (this.hint) this.hint.hidden = !visible;
-      if (this.el) this.el.classList.toggle('lockscreen-credentialed', !visible);
       /* There is deliberately NO "Set up pattern / PIN" entry point on the lock
          screen any more: credentials are set/changed in Settings -> Security
          only.  The element remains in the DOM (hidden, disabled, inert) for
@@ -133,21 +170,116 @@
       if (sw) sw.hidden = true;
     }
 
+    /* A84: keep the lockhead on the glass and dock it for the current mode.
+       A credential mode may start its panel OPEN (fingerprint with no
+       matcher goes straight to PIN, Settings may open a panel), so the dock
+       must honour the panel state rather than assume "closed". */
+    _applyHandleDock() {
+      if (!this.wrap || !this.el) return;
+      const panel = !!(this.panelOpen && this.mode && this.mode !== 'swipe');
+      this.el.classList.toggle('lockscreen-panel-open', panel);
+      /* A87: with a credential panel OPEN the lockhead is not painted at all
+         (the owner explicitly does not want it below the PIN prompt).  Closed
+         and swipe locks always show it. */
+      const showHandle = !panel;
+      this.wrap.hidden = !showHandle;
+      if (showHandle) this.wrap.removeAttribute('aria-hidden');
+      else this.wrap.setAttribute('aria-hidden', 'true');
+      try {
+        this.wrap.inert = !showHandle;
+        if (this.handle) this.handle.inert = !showHandle;
+      } catch (e) { /* older engines */ }
+      if (this.handle) {
+        if (showHandle) this.handle.removeAttribute('aria-hidden');
+        else this.handle.setAttribute('aria-hidden', 'true');
+      }
+      /* Resting position depends on the panel: closed -> the classic lower
+         band; open -> the bottom dock below the credential panel. */
+      this._positionHandle();
+      if (this.hint) {
+        const text = panel ? '' : (this.mode === 'swipe'
+          ? 'swipe up to unlock'
+          : 'tap the lockhead to open ' + modeLabel(this.mode));
+        this.hint.hidden = !text;
+        this.hint.textContent = text;
+      }
+      try {
+        this.handle.setAttribute('aria-label', panel
+          ? 'Credential panel open'
+          : (this.mode === 'swipe' ? 'Drag the penguin upward to unlock'
+                                   : 'Tap/put your finger on the penguin to open ' + modeLabel(this.mode)));
+      } catch (e) { /* older engines */ }
+      try { this._previewPanelOverlap(); } catch (e) { /* observation only */ }
+    }
+
+    _onModeChange(mode) {
+      const previous = this.mode;
+      this.mode = mode || 'swipe';
+      /* The panel owner's own onPanelMode callback carries the authoritative
+         panel state; reading isPanelOpen() here raced it (a new panel reported
+         "closed" because this ran before the surface was painted). */
+      if (!this.auth) this.panelOpen = false;
+      this._trace('mode=' + this.mode + ' panel=' + (this.panelOpen ? 1 : 0) +
+                  ' direct=' + (this.mode === 'swipe' ? 1 : 0));
+      this._applyHandleDock();
+      /* A credential panel that just closed/changed could have a stale gesture
+         in flight; never carry one across a mode change. */
+      if (this.gesture) this._cancelGesture('mode-change');
+      /* A88: when the panel is closed and the OWNER changes the method (e.g.
+         Settings -> swipe only / PIN), the live lock must be re-armed in that
+         method right away.  Without this the lock provider stayed unlocked
+         from before the switch, so only the next 4 s reconcile or a reboot
+         brought the lockhead back. */
+      if (!this.panelOpen && previous && previous !== this.mode && this.locked) {
+        try {
+          if (this.auth && typeof this.auth.refresh === 'function') {
+            Promise.resolve(this.auth.refresh()).catch(() => null);
+          }
+        } catch (e) { /* observation only */ }
+        this._trace('mode-rearmed ' + previous + '->' + this.mode);
+      }
+    }
+
+    _onPanelMode(open, mode) {
+      this._trace('PANEL-CALL ' + open + ' ' + mode);
+      this.mode = mode || this.mode;
+      this.panelOpen = !!open;
+      this._trace('panel=' + (this.panelOpen ? 'open' : 'closed') + ' mode=' + this.mode + ' was=' + this.panelOpen);
+      /* evidence only: what the panel-owner sees after this callback */
+      this._trace('panel-check open=' + this.panelOpen);
+      this._applyHandleDock();
+    }
+
+    /* A swipe starting on the penguin while the panel is open does nothing (the
+       touch belongs to the panel); while it is closed it opens the credential
+       panel instead of unlocking. */
+    _openCredentialPanel() {
+      if (!this.auth || !this.auth.openPanel) return false;
+      const opened = this.auth.openPanel() === true;
+      this._trace('panel=opened-by-lockhead opened=' + (opened ? 1 : 0) + ' mode=' + this.mode +
+                  ' sw=' + (this.auth.effectiveMode || '-') + ' panelFlag=' + (this.panelOpen ? 1 : 0));
+      return opened;
+    }
+
     /* Ask the credential surface to render the current authoritative mode.
        Returns a promise so callers can order it after the lock state write. */
     _syncAuthMode() {
-      if (!this.auth) {
-        this.status_MODE_UNKNOWN = true;
-        return Promise.resolve(null);
-      }
+      if (!this.auth) return Promise.resolve(null);
       return Promise.resolve(this.auth.show()).then((st) => {
         this._trace('auth-sync mode=' + ((st && st.mode) || '-') +
                     ' effective=' + (this.auth.effectiveMode || '-') +
                     ' visible=' + (this.auth.isVisible ? (this.auth.isVisible() ? 1 : 0) : 'n/a'));
-        const mode = (st && st.mode) || this.auth.effectiveMode || 'swipe';
+        /* A83: the auth surface's effective mode (the one actually painted) is
+           decided inside auth.show(); never re-derive it from a status object
+           that may be a non-answer, or the caller would reveal the swipe handle
+           over a live keypad. */
+        const answeredMode = (st && st.success !== false && st.mode) ? st.mode : '';
+        const mode = this.auth.effectiveMode || answeredMode || (st && st.mode) ||
+          (this.mode && this.mode !== 'swipe' ? this.mode : 'pin');
         this.mode = mode;
-        this._setSwipeAffordance(mode === 'swipe');
-        if (mode === 'swipe' && this.wrap) this.wrap.hidden = false;
+        if (this.auth) this.panelOpen = !!(this.auth.isPanelOpen && this.auth.isPanelOpen());
+        this._setSwipeAffordance(true);
+        this._applyHandleDock();
         return st;
       });
     }
@@ -164,6 +296,15 @@
     openPatternSetup() { return this.openAuthSetup(); }
 
     authVisible() { return !!(this.auth && this.auth.isVisible()); }
+
+    /* The S10+ underside scanner sits where the docked lockhead rests.  A
+       finger pressed there in fingerprint mode must behave like the
+       fingerprint button: open the scanner panel, or go straight to the PIN
+       screen when no matcher is enrolled/ready. */
+    handleFingerprintPress() {
+      if (!this.locked || !this.auth || this.mode !== 'fingerprint') return false;
+      try { return this.auth.openPanel() === true; } catch (e) { return false; }
+    }
 
     /* A68 status indicators (charging / PC-connected / live console).  They
        are three independent state machines driven by real Linux state; each one
@@ -223,27 +364,62 @@
     }
 
     _positionHandle() {
+      /* A84: the lockhead is always on the glass.
+         * swipe / closed panel -> the classic resting place in the lower band
+           (below the illustrated penguin, above the bottom edge).
+         * credential panel open -> docked at the BOTTOM, below the panel, so it
+           can never overlap the keypad/matrix (the a83 "Unlock does nothing"
+           cause) and the panel keeps the centre of the glass. */
+      if (this._reducedMotion === undefined) this._reducedMotion = false;
       const vw = global.innerWidth || 360;
       const vh = global.innerHeight || 760;
       const handleSize = Math.max(96, Math.min(124, vw * 0.3));
       const penguinSize = Math.max(72, Math.min(104, vw * 0.17));
       const penguinBottomCss = this._coverCssY(PENGUIN_BOTTOM_Y);
-      /* Reserve a lane for the alarm penguin between the illustrated penguin
-         and the lockhead, so all three (timer, alarm, handle) coexist without
-         overlap and the handle never covers the illustration. */
-      const alarmBottomCss = penguinBottomCss + ALARM_GAP + penguinSize;
-      const desiredTop = Math.min(
-        Math.max(alarmBottomCss + MIN_SPACING, vh * 0.62),
-        vh - handleSize - 24);
-      this.handle.style.width = handleSize + 'px';
-      this.handle.style.height = handleSize + 'px';
+      let desiredTop;
+      if (this.panelOpen && this.mode && this.mode !== 'swipe') {
+        /* A87: parked at the bottom.  The handle is hidden while the panel is
+           open; this position is only a fallback if it is ever revealed. */
+        desiredTop = vh - handleSize - DOCK_BOTTOM;
+        if (desiredTop < vh * 0.5) desiredTop = vh * 0.5;
+      } else {
+        /* Reserve a lane for the alarm penguin between the illustrated penguin
+           and the lockhead, so all three (timer, alarm, handle) coexist without
+           overlap and the handle never covers the illustration. */
+        const alarmBottomCss = penguinBottomCss + ALARM_GAP + penguinSize;
+        desiredTop = Math.min(
+          Math.max(alarmBottomCss + MIN_SPACING, vh * 0.62),
+          vh - handleSize - 24);
+      }
+      const docked = !!(this.panelOpen && this.mode && this.mode !== 'swipe');
+      const size = docked ? Math.min(handleSize, 84) : handleSize;
+      this.handle.style.width = size + 'px';
+      this.handle.style.height = size + 'px';
       this.wrap.style.top = desiredTop + 'px';
       this.wrap.style.bottom = 'auto';
       this.baseTop = desiredTop;
       this.restY = 0;
-      this._positionClockLanes(penguinBottomCss, desiredTop);
+      if (docked) this.el.style.setProperty('--lockscreen-handle-dock-y', Math.round(desiredTop) + 'px');
+      this._positionClockLanes(penguinBottomCss, docked ? vh * 0.62 : desiredTop);
       this._trace('position top=' + Math.round(desiredTop) + ' penguinBottom=' + Math.round(penguinBottomCss) +
-                  ' vh=' + vh + ' handle=' + handleSize);
+                  ' vh=' + vh + ' handle=' + size + ' docked=' + (docked ? 1 : 0));
+    }
+
+    /* Root-console evidence: where is the credential panel and does the docked
+       lockhead overlap any of its hit targets?  (No secrets, geometry only.) */
+    _previewPanelOverlap() {
+      if (!this.el || typeof this.el.getBoundingClientRect !== 'function') return;
+      const hb = this.handle.getBoundingClientRect();
+      const targets = ['lockscreen-pinpad', 'lockscreen-pattern', 'lockscreen-fingerprint',
+                       'lockscreen-pin-fallback'];
+      const hits = targets.filter((id) => {
+        const el = document.getElementById(id);
+        if (!el || el.hidden) return false;
+        const r = el.getBoundingClientRect();
+        return !(r.right <= hb.left || r.left >= hb.right || r.bottom <= hb.top || r.top >= hb.bottom);
+      });
+      this.panelOverlap = hits;
+      if (this.panelOpen) this._trace('panel-overlap=[' + hits.join(',') + ']');
     }
 
     /* The threshold is in viewport CSS pixels (the same space as clientY).  It
@@ -255,6 +431,14 @@
       const available = Math.max(0, baseTop - SAFE_TOP);
       const desired = vh * THRESHOLD_FRACTION;
       return Math.max(1, Math.round(Math.min(desired, available)));
+    }
+
+    _targetInCredential(target) {
+      if (!target || typeof target.closest !== 'function') return false;
+      try {
+        const el = target.closest('#lockscreen-auth');
+        return !!(el && !el.hidden);
+      } catch (e) { return false; }
     }
 
     _bindHandle() {
@@ -290,6 +474,9 @@
       if (e && e.target && typeof e.target.closest === 'function') {
         try {
           if (e.target.closest('#lockscreen-connection-mode, #connection-mode-overlay')) return;
+          /* A84/A83: a touch that starts on the credential panel is a key/dot
+             press, never a swipe on the lockhead underneath the glass. */
+          if (this.panelOpen && e.target.closest('#lockscreen-auth')) return;
         } catch (err) { /* ignore closest failures */ }
       }
       const y = Number(e && e.clientY);
@@ -324,6 +511,17 @@
         requested: false,
         consumed: false,
         acknowledged: false,
+        /* A84 routing, decided from the state at contact time:
+           'unlock'     swipe mode             -> unlock directly
+           'open-panel' credential, panel closed -> open the credential panel
+           'dismiss'    panel open, lockhead     -> close the panel
+        */
+        route: this.mode === 'swipe' ? 'unlock' : (this.panelOpen ? 'dismiss' : 'open-panel'),
+        panelOpen: this.panelOpen,
+        /* Did this contact begin over the credential panel?  Crossing the
+           threshold over the panel must swallow the contact (_pointerMove). */
+        onCredential: this._targetInCredential(e && e.target),
+        swallow: false,
       };
       this.handle.style.transition = '';
       this.handle.style.transform = 'translateY(0)';
@@ -360,10 +558,26 @@
         if (this.state === 'THRESHOLD_REACHED') this.state = 'DRAGGING';
         this.handle.classList.remove('armed');
       }
+      /* A84: a contact that started OUTSIDE the credential panel (on the
+         lockhead or in the lower band) and now travels over the open panel is
+         swallowed at the threshold: the keypad must never receive a stray
+         tap/click from an unlock swipe, while the swipe itself still counts. */
+      if (this.panelOpen && !g.onCredential && e && Number.isFinite(e.clientX) &&
+          Number.isFinite(e.clientY) && this._crossesPanel(e.clientX, e.clientY)) {
+        g.swallow = true;
+      }
       /* The handle follows the finger in real time.  This is presentation only;
          the authoritative distance is g.distance above. */
       const clamped = Math.max(0, Math.min(dy, g.threshold + 120));
       this.handle.style.transform = 'translateY(' + (-clamped) + 'px)';
+    }
+
+    _crossesPanel(x, y) {
+      const box = document.getElementById('lockscreen-auth');
+      if (!box || box.hidden || typeof box.getBoundingClientRect !== 'function') return false;
+      const r = box.getBoundingClientRect();
+      if (!r || !r.width || !r.height) return false;
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
     }
 
     _finishPointer(e, source) {
@@ -384,11 +598,69 @@
                   ' state=' + this.state + ' locked=' + (this.locked ? 1 : 0) +
                   ' visible=' + (this.el.hidden ? 0 : 1));
       this._releaseCapture();
+      /* A84: route at RELEASE.  _pointerDown's route is only a snapshot taken
+         before any panel opened; once this contact has opened a panel (its own
+         lockhead swipe) a downward continuation must close it, not re-open. */
+      if (this.panelOpen && g.route === 'open-panel' && this.mode !== 'swipe') {
+        g.route = 'dismiss';
+        this._trace('gesture=route-dismiss id=' + g.id);
+      }
+      if (g.swallow) {
+        /* Never synthesise unlock: the gesture was consumed by the panel. */
+        g.requested = true;
+        g.consumed = true;
+        this._trace('gesture=swallow id=' + g.id + ' reason=credential-panel');
+      }
+      if (g.route === 'dismiss') {
+        /* Panel open and the docked lockhead was swiped down: close the panel
+           (same feel as a sheet).  A plain tap returns to rest. */
+        if (dy <= -PANEL_DISMISS_SWIPE) {
+          if (this.auth && this.auth.closePanel) {
+            /* closePanel() notifies onPanelMode -> _onPanelMode, which clears
+               this.panelOpen and redocks the lockhead.  Without it only the
+               local flag changed and the panel stayed painted. */
+            try { this.auth.closePanel(); } catch (e) { /* ignore */ }
+          }
+          if (this.panelOpen) {
+            this.panelOpen = false;
+            this._applyHandleDock();
+          }
+        }
+        this._returnToRest('panel-lockhead');
+        return;
+      }
       if (reached) {
+        if (g.route === 'open-panel') {
+          /* Credential mode, panel closed: the lockhead swipe opens the panel
+             (it never unlocks without the credential). */
+          this._cancelSwipePresentation(g);
+          const opened = this._openCredentialPanel();
+          this._trace('gesture=open-panel id=' + g.id + ' up=' + Math.round(dy) +
+                      ' opened=' + (opened ? 1 : 0));
+          this._returnToRest('panel-open');
+          return;
+        }
         this._requestUnlock(g);
       } else {
+        /* A tap on the lockhead in a credential mode also opens the panel
+           (the owner may not know the upward swipe). */
+        if (g.route === 'open-panel' && Math.abs(dy) < DRAG_SLOP) {
+          const opened = this._openCredentialPanel();
+          this._trace('gesture=tap-open id=' + g.id + ' opened=' + (opened ? 1 : 0));
+          this._returnToRest('panel-open-tap');
+          return;
+        }
         this._returnToRest('release-below-threshold');
       }
+    }
+
+    _cancelSwipePresentation(g) {
+      if (!this.handle) return;
+      this.handle.classList.remove('grabbed');
+      this.handle.classList.remove('armed');
+      this.handle.classList.remove('unlocking');
+      this.handle.style.transition = 'transform .16s ease-out';
+      this.handle.style.transform = 'translateY(0)';
     }
 
     _lostCapture() {
@@ -456,6 +728,12 @@
         threshold: Math.round(g.threshold),
         completed: true,
         stateBefore: 'LOCKED_SCREEN_ON',
+        /* A84: 'swipe' = unlock directly on this gesture.  Anything else means
+           Home already opened a credential path and this exact gesture is the
+           proof that opened it (never a second unlock prompt). */
+        route: g.route || 'unlock',
+        direct: (g.route || 'unlock') === 'unlock',
+        mode: this.mode,
       });
       this._trace('gesture=unlock-request id=' + g.id + ' up=' + request.distance +
                   ' threshold=' + request.threshold + ' state=' + this.state +
@@ -517,8 +795,10 @@
       if (!this.locked || this.state !== 'UNLOCKING' || !g) return false;
       if (!request || request.source !== 'penguin-lockscreen') return false;
       if (request.gestureId !== g.id) return false;
-      if (!g.released || !g.reached || !g.requested || g.consumed) return false;
-      if (!(Number(request.distance) >= Number(request.threshold))) return false;
+      if (!g.released || !g.requested || g.consumed) return false;
+      const route = (request && request.route) || 'unlock';
+      if (route === 'unlock' && !g.reached) return false;
+      if (route === 'unlock' && !(Number(request.distance) >= Number(request.threshold))) return false;
       if (Number(request.threshold) !== Math.round(g.threshold)) return false;
       g.consumed = true;
       return true;
@@ -551,7 +831,15 @@
       /* A80: the authoritative lock mode decides whether the penguin gesture
          or a credential surface is presented.  Fail closed: if the bridge
          cannot answer, keep the swipe handle (it still re-verifies). */
-      Promise.resolve(this._syncAuthMode()).catch(() => this._setSwipeAffordance(true));
+      Promise.resolve(this._syncAuthMode()).catch(() => {
+        /* A86: a failed sync keeps the last confirmed credential mode (or PIN);
+           showing the swipe penguin here unlocked a credential-mode phone. */
+        if (this.mode !== 'swipe') this.mode = this.mode || 'pin';
+        else this.mode = 'pin';
+        this.panelOpen = false;
+        this._setSwipeAffordance(true);
+        this._applyHandleDock();
+      });
       this._wiggleOnce(this._displayOff() ? 2500 : 900);
       try { document.dispatchEvent(new CustomEvent('nuxel:lockscreen-shown')); } catch (e) {}
       this._trace('show version=' + VERSION + ' reason=' + (reason || 'unknown') +
@@ -566,7 +854,9 @@
       this.locked = false;
       this.unlocked = true;
       this.state = 'UNLOCKED';
+      this.panelOpen = false;
       try { document.body.classList.remove('lockscreen-active'); } catch (e) {}
+      try { this.el.classList.remove('lockscreen-panel-open'); } catch (e) {}
       this.gesture = null;
       this.pointerId = null;
       this.handle.classList.remove('grabbed');

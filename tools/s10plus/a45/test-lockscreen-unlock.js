@@ -14,7 +14,10 @@ const vm = require('vm');
 const ROOT = path.join(__dirname, '../../..');
 const LOCKS_JS = path.join(ROOT, 'pwa/nuxel-home/js/lockscreen.js');
 const APP_JS = path.join(ROOT, 'pwa/nuxel-home/js/app.js');
+const AUTH_JS = path.join(ROOT, 'pwa/nuxel-home/js/lockscreen-auth.js');
 const INDEX_HTML = path.join(ROOT, 'pwa/nuxel-home/index.html');
+const CSS = fs.readFileSync(path.join(ROOT, 'pwa/nuxel-home/css/lockscreen.css'), 'utf8');
+const INDEX = fs.readFileSync(INDEX_HTML, 'utf8');
 const BUTTON_MANAGER_C = path.join(ROOT, 'tools/s10plus/a45/nuxel-button-manager.c');
 
 let checks = 0;
@@ -56,18 +59,34 @@ function target() {
   };
 }
 
+function styleObject() {
+  const props = {};
+  return {
+    setProperty(k, v) { props[k] = v; },
+    getPropertyValue(k) { return props[k] === undefined ? '' : props[k]; },
+    removeProperty(k) { delete props[k]; },
+    get cssText() { return Object.keys(props).map(k => k + ':' + props[k]).join(';'); },
+  };
+}
+
 function element(id, top, size) {
   const el = target();
   el.id = id;
   el.hidden = false;
   el.textContent = '';
-  el.style = {};
+  el.style = styleObject();
+  el.dataset = {};
   el.classList = classList();
   el._top = top === undefined ? 0 : top;
   el._size = size === undefined ? 118 : size;
   el.getBoundingClientRect = function () {
     return { top: this._top, left: 0, width: this._size, height: this._size };
   };
+  el.attributes = {};
+  el.setAttribute = function (k, v) { this.attributes[k] = String(v); };
+  el.removeAttribute = function (k) { delete this.attributes[k]; };
+  el.getAttribute = function (k) { return this.attributes[k] === undefined ? null : this.attributes[k]; };
+  el.contains = function (other) { return other === this; };
   el.setPointerCapture = function (pointerId) { this.captured = pointerId; };
   el.releasePointerCapture = function (pointerId) {
     this.releasedCapture = pointerId;
@@ -140,6 +159,14 @@ function makeHarness(options) {
       pathname: '/pwa/nuxel-home/index.html',
     },
     webkit: undefined,
+    innerWidth: options.innerWidth || 360,
+    innerHeight: options.innerHeight || 760,
+    matchMedia() { return { matches: false, addListener() {}, removeListener() {} }; },
+    navigator: { vibrate() {} },
+    PointerEvent: function PointerEvent(type, opts) {
+      Object.assign(this, { type }, opts || {});
+      this.cancelable = (opts || {}).cancelable !== false;
+    },
     NuxelHost: host,
     Promise, Date, Object, Number, String, Math, JSON, RegExp, Error,
     URLSearchParams,
@@ -179,6 +206,9 @@ function makeHarness(options) {
   sandbox.dispatch = documentTarget.dispatch;
   documentTarget.handlers = documentTarget.handlers;
   vm.createContext(sandbox);
+  if (options.auth !== false) {
+    vm.runInContext(fs.readFileSync(AUTH_JS, 'utf8'), sandbox, { filename: 'lockscreen-auth.js' });
+  }
   vm.runInContext(fs.readFileSync(LOCKS_JS, 'utf8'), sandbox, { filename: 'lockscreen.js' });
   if (options.withApp) {
     vm.runInContext(fs.readFileSync(APP_JS, 'utf8'), sandbox, { filename: 'app.js' });
@@ -206,10 +236,12 @@ function makeHarness(options) {
   };
 }
 
-function makeController(ls, mode) {
+function makeController(ls, mode, options) {
   const requests = [];
+  const opts = options || {};
   const controller = {
     requests,
+    hostUnlocks: 0,
     unlockFromLockscreen(instance, request) {
       requests.push(request);
       if (instance !== ls) return Promise.resolve({ ok: false, error: 'inactive-lockscreen' });
@@ -218,11 +250,26 @@ function makeController(ls, mode) {
       }
       if (mode === 'error') return Promise.resolve({ ok: false, error: 'backend-unlock-failed' });
       if (mode === 'reject') return Promise.reject(new Error('backend exploded'));
+      /* A84 auth-honest mode: only a DIRECT swipe (swipe/unlock mode) may
+         commit an unlock here; a credential-routed gesture must leave the
+         session locked and must never call the host unlock action. */
+      if (opts.requireDirect && !request.direct) {
+        return Promise.resolve({ ok: false, error: 'credential-required' });
+      }
       return Promise.resolve({ ok: true, state: 'UNLOCKED' });
+    },
+    completeCredentialUnlock(instance, request) {
+      const res = (request && request.result) || {};
+      if (res.unlocked !== true) return Promise.resolve({ ok: false, error: 'credential-not-verified' });
+      if (instance !== ls) return Promise.resolve({ ok: false, error: 'inactive-lockscreen' });
+      ls.hide();
+      return Promise.resolve({ ok: true, state: 'UNLOCKED', via: request.via });
     },
   };
   return controller;
 }
+
+function gestureTargets(h) { return h.els; }
 
 async function gesture(h, options) {
   options = options || {};
@@ -648,8 +695,11 @@ async function gesture(h, options) {
 
     const index = fs.readFileSync(INDEX_HTML, 'utf8');
     check('boot gate still keys on ?boot=os', /get\('boot'\)\s*!==\s*'os'/.test(index));
-    check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=p52000/.test(index));
-    check('app controller uses the current cache-busting revision', /app\.js\?v=p62000/.test(index));
+    // The revision token changes with every lockscreen release; the invariant is
+    // that BOTH scripts are cache-busted (a stale bundle silently kept an old
+    // lockscreen on the phone).
+    check('lockscreen script uses a cache-busting revision', /lockscreen\.js\?v=[a-z]?\d+/.test(index));
+    check('app controller uses a cache-busting revision', /app\.js\?v=[a-z]?\d+/.test(index));
   }
 
   // 18. Battery 100% -> 0% flicker guard.
@@ -746,7 +796,8 @@ async function gesture(h, options) {
   console.log('      integration and the physical panel are verified only by the live');
   console.log('      USB run and the owner acceptance test.\n');
   console.log(failures === 0 ? 'ALL PASS (' + checks + '/' + checks + ')' : failures + ' FAILURES (' + checks + ' checks)');
-  process.exit(failures === 0 ? 0 : 1);
+  if (!process.env.NUXEL_LOCKSCREEN_HARNESS) process.exit(failures === 0 ? 0 : 1);
+  return { checks, failures };
 })().catch((err) => {
   console.error('HARNESS ERROR', err && err.stack || err);
   process.exit(2);

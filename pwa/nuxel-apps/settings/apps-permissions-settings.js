@@ -160,6 +160,7 @@
     if (!box) return;
     var apps = getAllApps().filter(function (a) { return a && a.id; });
     var defaults = (orientationDoc && orientationDoc.apps) || {};
+    var forced = (orientationDoc && orientationDoc.force) || {};
     box.innerHTML = '';
     if (!apps.length) {
       var st = $('apps-state'); if (st) st.textContent = 'No installed apps found.';
@@ -187,17 +188,65 @@
       });
       sel.value = defaults[a.id] || 'inherit';
       sel.setAttribute('aria-label', 'Default orientation for ' + (a.name || a.id));
+
+      // Force: lock the app to the selected orientation while it is in front.
+      // Unforced (the default) means it merely STARTS in that pose and may
+      // still be rotated afterwards.  Force only applies to an explicit mode.
+      var forceLabel = document.createElement('label');
+      forceLabel.className = 'app-orientation-force';
+      var forceBox = document.createElement('input');
+      forceBox.type = 'checkbox';
+      forceBox.setAttribute('aria-label', 'Force orientation for ' + (a.name || a.id));
+      forceBox.checked = !!forced[a.id];
+      forceBox.disabled = sel.value === 'inherit';
+      var forceText = document.createElement('span');
+      forceText.textContent = 'Force';
+      forceText.title = 'ON: the app can only run in this orientation until Force is unchecked. OFF: the app starts in this orientation but can still rotate.';
+      forceLabel.appendChild(forceBox);
+      forceLabel.appendChild(forceText);
+
       sel.addEventListener('change', function () {
         sel.disabled = true;
-        rpc('apps', 'set-orientation-default', { app_id: a.id, orientation: sel.value })
-          .then(function (r) {
-            sel.disabled = false;
-            if (!r || r.success === false) {
-              sel.value = defaults[a.id] || 'inherit';
-            } else {
-              defaults[a.id] = sel.value;
-            }
-          });
+        forceBox.disabled = true;
+        var wantedForce = sel.value === 'inherit' ? false : forceBox.checked;
+        rpc('apps', 'set-orientation-default', {
+          app_id: a.id, orientation: sel.value, force: wantedForce
+        }).then(function (r) {
+          sel.disabled = false;
+          if (!r || r.success === false) {
+            sel.value = defaults[a.id] || 'inherit';
+            forceBox.checked = !!forced[a.id];
+          } else {
+            defaults[a.id] = sel.value;
+            if (r.force) { forced[a.id] = r.forced_orientation || sel.value; }
+            else { delete forced[a.id]; }
+            forceBox.checked = !!forced[a.id];
+          }
+          forceBox.disabled = sel.value === 'inherit';
+        });
+      });
+
+      forceBox.addEventListener('change', function () {
+        // A forced app must name a concrete mode; turning Force on with an
+        // inherited entry is refused by the bridge, so ask for a mode first.
+        if (forceBox.checked && sel.value === 'inherit') {
+          forceBox.checked = false;
+          if (st) st.textContent = 'Choose a rotation before forcing ' + (a.name || a.id) + '.';
+          return;
+        }
+        forceBox.disabled = true;
+        rpc('apps', 'set-orientation-default', {
+          app_id: a.id, orientation: sel.value, force: forceBox.checked
+        }).then(function (r) {
+          forceBox.disabled = false;
+          if (!r || r.success === false) {
+            forceBox.checked = !!forced[a.id];
+          } else {
+            if (r.force) { forced[a.id] = r.forced_orientation || sel.value; }
+            else { delete forced[a.id]; }
+            forceBox.checked = !!forced[a.id];
+          }
+        });
       });
 
       var perm = document.createElement('button');
@@ -210,7 +259,7 @@
         if (select) { select.value = a.id; loadPermissions(a.id); }
       });
 
-      row.appendChild(info); row.appendChild(sel); row.appendChild(perm);
+      row.appendChild(info); row.appendChild(sel); row.appendChild(forceLabel); row.appendChild(perm);
       box.appendChild(row);
     });
     var st = $('apps-state');

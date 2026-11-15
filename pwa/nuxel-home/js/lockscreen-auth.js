@@ -1,12 +1,21 @@
 /* Nuxel A80 — credential-aware lockscreen surface.
  *
- * Owns everything except the swipe penguin (kept in js/lockscreen.js):
+ * Owns the credential panel; the penguin lockhead belongs to js/lockscreen.js
+ * and is ALWAYS presented (A84), in every mode:
  *
- *   pattern      a 3x3 matrix of small penguin lock-head dots; drag between
- *                dots to draw, with a live trail of what was drawn, then lift.
- *   pin          a numeric keypad (always reachable via the PIN button).
- *   fingerprint  /assets/nuxel-fingerprint.png placed exactly over the S10+
- *                under-display scanner, with a PIN fallback below it.
+ *   swipe / unlock  the lockhead alone: swipe it up and the phone is unlocked
+ *                   directly (no credential).  'unlock' is the owner-facing
+ *                   name for that preset in Settings.
+ *   pin             numeric keypad; PIN is verified by the root bridge.
+ *   pattern         a 3x3 matrix of penguin lock-head dots centred on the
+ *                   glass, PIN button fallback.
+ *   fingerprint     scanner artwork, PIN button fallback.  Pressing the
+ *                   fingerprint button (or the scanner when no matcher is
+ *                   present) goes straight to the PIN screen.
+ *
+ * The lockhead itself is the affordance that opens the panel too: a swipe
+ * starting on the penguin and finishing in its panel opens PIN/pattern/
+ * fingerprint (tap the penguin to open the panel without a swipe).
  *
  * Server truth is the root bridge (security_provider.py): the mode, the
  * verifier, the attempt policy and the locked flag all live there.  This file
@@ -19,7 +28,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'a82';
+  const VERSION = 'a88';
   const DOTS = 9;
   const PATTERN_DOT = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
     x: 50 + (i % 3) * 100, y: 50 + Math.floor(i / 3) * 100,
@@ -89,6 +98,14 @@
       this.onUnlock = options.onUnlock || null;
       this.onVault = options.onVault || null;
       this.onRequestPin = options.onRequestPin || null;
+      /* A84: the lockhead is always on the glass; panelled modes dock it below
+         the credential panel and use it as the "open the panel" affordance. */
+      this.onSwipeMode = options.onSwipeMode || null;
+      this.onPanelMode = options.onPanelMode || null;
+      this.onModeChange = options.onModeChange || null;
+      this.panelOpen = false;
+      this.swipeDirect = false;
+      this.pinFallbackSet = false;
 
       /* No preview may override the hardware truth.  The fingerprint surface
          (artwork over the under-display scanner) is shown only when the bridge
@@ -293,7 +310,7 @@
          pattern matrix is visible, then Enter to submit. */
       this._keyBuffer = '';
       global.addEventListener('keydown', (ev) => {
-        if (this.effectiveMode !== 'pattern' || this.busy) return;
+        if (this.effectiveMode !== 'pattern' || this.busy || !this.panelOpen) return;
         if (/^[1-9]$/.test(ev.key)) {
           this._keyBuffer += String(Number(ev.key) - 1);
           this.sequence = this._keyBuffer.split('').map(Number);
@@ -335,22 +352,45 @@
            ("3" -> "33").  One click listener cannot double-count: every press
            produces exactly one click, however many event families precede it.
            Keyboard input stays on its own path. */
+        const keyFrom = (ev) => (ev && ev.target && ev.target.closest
+          ? ev.target.closest('.lockscreen-key') : null);
+        /* A84: ONLY the click fires a key.  One physical press produces
+           exactly one click (whatever pointer/touch events precede it), and a
+           time-based dedup is wrong here: a keypad press takes ~100 ms, so two
+           quick presses (< 450 ms apart) must both register (entering 3838 in
+           under a second is normal).  pointerdown only paints press feedback
+           and stops the compositor scroll; the A83 "Unlock does nothing" bug
+           stays fixed because the docked lockhead no longer overlaps the
+           keypad and touches that start on the panel never start a swipe. */
+        const idOf = (key) => key.id || key.dataset.pin || '';
         this.pinpad.onclick = (ev) => {
-          const key = ev && ev.target && ev.target.closest
-            ? ev.target.closest('.lockscreen-key') : null;
+          const key = keyFrom(ev);
           if (!key || this.busy) return;
-          const id = key.id || key.dataset.pin || '';
+          const id = idOf(key);
           if (id === 'lockscreen-pin-del') { this.pin = this.pin.slice(0, -1); this._paintPin(); return; }
-          if (id === 'lockscreen-pin-cancel') { this.showAuthoritative(); return; }
+          if (id === 'lockscreen-pin-cancel') { this.cancelToLockhead(); return; }
           if (id === 'lockscreen-pin-enter') { this._submitPin(); return; }
           const d = key.dataset.pin;
           if (d !== undefined && this.pin.length < 16) {
             this.pin += d; this._paintPin(); buzz(6);
           }
+          this._trace('pin-key via=click len=' + this.pin.length);
         };
+        this.pinpad.addEventListener('pointerdown', (ev) => {
+          const key = keyFrom(ev);
+          if (key) { try { key.classList.add('pressed'); } catch (e) {} }
+          if (key && ev.cancelable) { try { ev.preventDefault(); } catch (e) {} }
+        }, { passive: false });
+        const release = (ev) => {
+          const key = keyFrom(ev);
+          if (key) { try { key.classList.remove('pressed'); } catch (e) {} }
+        };
+        this.pinpad.addEventListener('pointerup', release);
+        this.pinpad.addEventListener('pointercancel', release);
+        this.pinpad.addEventListener('pointerleave', release);
       }
       const key = (ev) => {
-        if (this.effectiveMode !== 'pin' || this.busy) return;
+        if (this.effectiveMode !== 'pin' || this.busy || !this.panelOpen) return;
         if (/^[0-9]$/.test(ev.key)) { this.pin += ev.key; this._paintPin(); ev.preventDefault(); }
         else if (ev.key === 'Backspace') { this.pin = this.pin.slice(0, -1); this._paintPin(); ev.preventDefault(); }
         else if (ev.key === 'Enter') { this._submitPin(); ev.preventDefault(); }
@@ -442,12 +482,26 @@
 
     tryFingerprint() {
       if (this.busy || this._fpInFlight || this.effectiveMode !== 'fingerprint') return;
-      if (!this.status || !this.status.fingerprint || !this.status.fingerprint.enrolled) {
-        this._fpMessage('No fingerprint registered yet. Use PIN or set one up.');
+      const fp = (this.status && this.status.fingerprint) || {};
+      /* A84: when the scanner cannot actually match (nothing enrolled or no
+         secure provider on this build) the press takes the owner straight to
+         the PIN screen instead of a dead status line. */
+      if (!fp.enrolled) {
+        if (this.status && this.status.pin_fallback_set) {
+          this._fpMessage('No fingerprint registered — use PIN');
+          this.showPinFallback();
+        } else {
+          this._fpMessage('No fingerprint registered yet. Use PIN or set one up.');
+        }
         return;
       }
-      if (!this.status.fingerprint || !this.status.fingerprint.provider_ready) {
-        this._fpMessage('Scanner not available on this build — use PIN');
+      if (!fp.provider_ready) {
+        if (this.status && this.status.pin_fallback_set) {
+          this._fpMessage('Scanner unavailable — use PIN');
+          this.showPinFallback();
+        } else {
+          this._fpMessage('Scanner not available on this build — use PIN');
+        }
         return;
       }
       this._fpInFlight = true;
@@ -514,6 +568,9 @@
       out.fingerprint = box('lockscreen-fingerprint');
       out.fingerprintStatus = this.fpStatus ? this.fpStatus.textContent : '';
       out.pinButtonVisible = !!(this.pinFallback && !this.pinFallback.hidden);
+      out.panelOpen = this.panelOpen;
+      out.swipeDirect = this.swipeDirect;
+      out.pinFallbackSet = this.pinFallbackSet;
       out.authSwitchVisible = !!(document.getElementById('lockscreen-auth-switch') &&
         !document.getElementById('lockscreen-auth-switch').hidden);
       out.error = this.errorEl ? this.errorEl.textContent : '';
@@ -561,25 +618,48 @@
     show() {
       if (!this.el) return;
       this._positionScanner();
+      this.panelOpen = false;
       return this.refresh().then(() => {
         const st = this.status || {};
-        const mode = st.mode || 'swipe';
+        /* A83: the server is the authority, but a transient non-answer (bridge
+           still warming, mock fallback, 5xx) must never silently downgrade a
+           credentialed device to the swipe penguin: that is exactly the state
+           where the owner sees a lockhead instead of the keypad.  When the lock
+           mode is unknown, keep the last confirmed credential mode; only a
+           fresh, successful status may say "swipe". */
+        const answered = !!(st.success !== false && (st.mode || st.locked !== undefined));
+        let mode = st.mode || '';
+        if (!answered) {
+          /* A86: fail CLOSED.  An unanswered status must never paint the
+             swipe-only glass (that presented a swipeable lockhead on a device
+             whose stored mode could be PIN/pattern).  Keep the last confirmed
+             credential mode, otherwise the PIN keypad -- the universal
+             fallback -- until the bridge answers. */
+          const last = this.mode && this.mode !== 'swipe' ? this.mode : '';
+          mode = last || 'pin';
+          this._trace('auth-status-fallback keep=' + mode);
+        }
         this.mode = mode;
+        this.pinFallbackSet = !!st.pin_fallback_set;
+        this.swipeDirect = (mode === 'swipe' || mode === 'unlock');
         const fp = st.fingerprint || {};
         if (mode === 'fingerprint') {
-          /* Keep the requested fingerprint presentation (artwork on the
-             scanner) when the PIN fallback exists so the owner sees the real
-             state.  Without a ready provider the surface states that plainly
-             and the PIN button below it is the way in. */
-          if (st.pin_fallback_set) {
-            this.effectiveMode = 'fingerprint';
-          } else {
-            /* No fallback: never hide the only usable path. */
-            this.effectiveMode = 'pin';
-          }
+          /* A84: WITH a usable matcher the scanner surface is what the owner
+             needs.  WITHOUT one (the current S10+ build: no TEEGris TA) a
+             docked lockhead that opens a dead scanner is pointless - it opens
+             the PIN screen straight away, which is the only way in.  The mode
+             itself stays 'fingerprint' (the stored fallback PIN verifies). */
+          const usable = !!(st.fingerprint && st.fingerprint.provider_ready &&
+                            st.fingerprint.enrolled && st.pin_fallback_set);
+          this.effectiveMode = usable ? 'fingerprint' : 'pin';
+        } else if (mode === 'unlock') {
+          this.effectiveMode = 'swipe';
         } else {
           this.effectiveMode = mode;
         }
+        /* A lock never opens with a panel and a swipe never opens with one:
+           both start on the lockhead alone. */
+        this.panelOpen = false;
         this._showMode(this.effectiveMode);
         if (this.effectiveMode === 'fingerprint') {
           const enrolled = !!fp.enrolled;
@@ -592,39 +672,112 @@
       });
     }
 
-    _showMode(mode) {
+    _showMode(mode, opts) {
       if (!this.el) return;
+      opts = opts || {};
+      const previous = this.effectiveMode;
       this.effectiveMode = mode;
       this._clearError();
+      /* A84: the lockhead is ALWAYS on the glass, so the old
+         onSwipeMode("hide the penguin") hook is gone.  The mode owner is told
+         FIRST (onModeChange), so the handle knows which mode it is docking for
+         before any panel callback runs. */
+      this._notifyMode(previous);
       if (mode === 'swipe') {
         this.el.hidden = true;
-        if (this.onSwipeMode) this.onSwipeMode();
+        this.panelOpen = false;
+        this.swipeDirect = true;
         return;
       }
       this.el.hidden = false;
+      this.swipeDirect = false;
       this.pin = ''; this._paintPin();
       this._resetPattern();
-      /* A credential mode replaces the swipe handle entirely. */
-      if (this.onSwipeMode) this.onSwipeMode(false);
       this.patternEl.hidden = mode !== 'pattern';
       this.pinpad.hidden = mode !== 'pin';
       this.fpEl.hidden = mode !== 'fingerprint';
       this.pinFallback.hidden = mode === 'pin';
       if (mode === 'pattern') this.pinFallback.hidden = false;
+      if (mode === 'fingerprint') this.pinFallback.hidden = false;
       /* The head (title/hint) is never painted on the lock screen: the owner
          asked for no "draw pattern / enter pin" instructions.  Only transient
          status (Checking…, the error when a save is asked for from the glass)
          is written there, and the element stays hidden. */
       if (this.titleEl) this.titleEl.textContent = '';
       if (this.hintEl) this.hintEl.textContent = '';
+      /* A88: no credential label under the PIN prompt either.  The PIN button
+         is the only thing below the keypad/matrix. */
+      if (this.pinFallback) {
+        this.pinFallback.textContent = 'PIN';
+      }
       if (mode === 'fingerprint') this._positionScanner();
+      this._setPanelOpen(opts.open === true);
     }
+
+    _notifyMode(previous) {
+      /* Fires for every applied mode (including the first) so the lockhead
+         owner can dock/show itself exactly once per transition. */
+      try { if (this.onModeChange) this.onModeChange(this.effectiveMode, this, previous); } catch (e) {}
+    }
+
+    /* Open/close the credential panel.  The lockhead stays on the glass in
+       both states: panel closed = "swipe the penguin" affordance, panel open =
+       the credential UI with the penguin docked underneath it. */
+    _setPanelOpen(open) {
+      if (!this.el) return;
+      this.panelOpen = !!open;
+      this.el.classList.toggle('lockscreen-auth-closed', !this.panelOpen);
+      /* A closed panel shows NONE of its surfaces: [hidden] on each surface is
+         the authoritative switch (CSS is only the second guard), so the keypad
+         can never be tapped - or painted - before the lockhead opens it. */
+      this._paintSurfaces();
+      if (this.panelOpen) {
+        this._resetPattern();
+        this.pin = ''; this._paintPin();
+      }
+      try { if (this.onPanelMode) this.onPanelMode(this.panelOpen, this.effectiveMode); } catch (e) {}
+    }
+
+    _paintSurfaces() {
+      const mode = this.effectiveMode;
+      const open = mode !== 'swipe' && this.panelOpen;
+      /* A88: a closed panel shows no stale error text either; an error only
+         lives while its panel is on the glass. */
+      if (!open && this.errorEl) this.errorEl.textContent = '';
+      if (this.patternEl) this.patternEl.hidden = !(open && mode === 'pattern');
+      if (this.pinpad) this.pinpad.hidden = !(open && mode === 'pin');
+      if (this.fpEl) this.fpEl.hidden = !(open && mode === 'fingerprint');
+    }
+
+    /* The lockhead was swiped/tapped in a credential mode: open the panel. */
+    openPanel() {
+      if (!this.el) return false;
+      if (this.effectiveMode === 'swipe') return false;
+      if (this.effectiveMode === 'fingerprint') {
+        /* A84: the fingerprint button / underside scanner press takes the
+           owner to the PIN screen when the scanner cannot match.  With a
+           working matcher, open the scanner panel (which keeps its PIN
+           button). */
+        const fp = (this.status && this.status.fingerprint) || {};
+        if (!(fp.provider_ready && fp.enrolled)) {
+          if (this.status && this.status.pin_fallback_set) this.showPinFallback();
+          else this._setPanelOpen(true);
+          return true;
+        }
+      }
+      this._setPanelOpen(true);
+      return true;
+    }
+
+    closePanel() { if (this.effectiveMode !== 'swipe') this._setPanelOpen(false); }
 
     _wireFallback() {
       const fb = el('lockscreen-pin-fallback');
       if (fb && !fb._wired) {
         fb._wired = true;
-        fb.addEventListener('pointerdown', (ev) => { ev.preventDefault(); this.showPinFallback(); });
+        /* One handler: the click.  pointerdown preventDefault() could suppress
+           the synthetic click on the compositor's touch path, leaving the PIN
+           button dead (the same class of bug as the A83 keypad). */
         fb.addEventListener('click', () => this.showPinFallback());
       }
     }
@@ -635,20 +788,46 @@
          against the PIN/mode-aware verifier.  A82: `this.mode` is the
          authoritative mode from the last status, so re-showing it here after
          a Cancel restores the real surface (a Cancel used to leave the keypad
-         up because this passed the transient effective mode instead). */
-      this._showMode('pin');
+         up because this passed the transient effective mode instead).
+         A84: the fallback keeps the panel open.  When the owner is ALREADY in
+         the PIN screen (a Cancel tap) there is nothing to switch to, so the
+         keypad simply stays; otherwise it swaps the surface in place. */
+      if (this.effectiveMode === 'pin' && this.isPanelOpen()) return;
+      if (!this.pinFallbackSet) {
+        /* A86: the PIN button is a FALLBACK for a stored PIN.  With none set,
+           the owner is told to set one in Settings instead of typing into a
+           keypad that can only answer invalid_credential. */
+        this._error('No PIN set yet. Set one in Settings \u2192 Security.');
+        return;
+      }
+      this._showMode('pin', { open: true });
     }
 
     /* Return from the PIN fallback to the authoritative mode (pattern /
        fingerprint / swipe).  Used by Cancel and by a Settings mode change. */
     showAuthoritative() {
-      if (this.mode === 'pin') return this.showPinFallback();
+      if (this.effectiveMode === 'pin' && this.mode === 'pin') {
+        /* Cancel on the PIN screen: with nothing else before it, go back to
+           the lockhead-only state (closed panel) instead of re-opening PIN. */
+        this._showMode('swipe');
+        return;
+      }
       if (this.mode === 'swipe') { this._showMode('swipe'); return; }
       return this.show();
     }
 
-    _error(text) { if (this.errorEl) this.errorEl.textContent = String(text || ''); }
-    _clearError() { if (this.errorEl) this.errorEl.textContent = ''; }
+    /* A84: Cancel returns to the lockhead-only glass: the phone stays locked
+       and the penguin is still there to surface the credential panel again. */
+    cancelToLockhead() {
+      this.pin = ''; this._paintPin();
+      this._resetPattern();
+      if (this.effectiveMode === 'swipe') return;
+      this._setPanelOpen(false);
+    }
+
+    _error(text) { this._errAt = global.Date ? global.Date.now() : 0;
+      if (this.errorEl) this.errorEl.textContent = String(text || ''); }
+    _clearError() { this._errAt = 0; if (this.errorEl) this.errorEl.textContent = ''; }
 
     /* Called by Home after a successful unlock so stale state never carries
        a typed PATTERN/PIN to the next lock. */
@@ -660,6 +839,7 @@
     }
 
     isVisible() { return !!(this.el && !this.el.hidden); }
+    isPanelOpen() { return !!(this.el && !this.el.hidden && this.panelOpen); }
   }
 
   global.NuxelLockscreenAuth = LockscreenAuth;

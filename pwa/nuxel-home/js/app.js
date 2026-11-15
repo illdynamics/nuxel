@@ -859,8 +859,13 @@ class NuxelHome {
                     // Otherwise the visible overlay hid while
                     // /run/nuxel/security/lock-state.json stayed locked, and
                     // the native dock correctly refused to map.
+                    // A85: a host/dock unlock is a user gesture too, but it
+                    // carries no credential.  direct:true lets the gate
+                    // release a SWIPE lock; on a PIN/pattern/fingerprint lock
+                    // the provider refuses (invalid_credential) and the
+                    // overlay keeps its credential surface.
                     const verify = (window.NuxelSecurityLock && window.NuxelSecurityLock.verifyUnlock)
-                        ? Promise.resolve(window.NuxelSecurityLock.verifyUnlock())
+                        ? Promise.resolve(window.NuxelSecurityLock.verifyUnlock({ direct: true }))
                         : Promise.resolve({ ok: true, legacy: true });
                     verify.then((v) => {
                         if (v && v.ok === true) this._unlock('host-verified');
@@ -1828,7 +1833,6 @@ class NuxelHome {
         // iframe/session so unlocking can resume the exact game state.
         try { this._backgroundForegroundApp(); } catch (e) {}
         this._setNavDock(false);
-        if (this.lockscreen) this.lockscreen.show(reason);
         // Persist the authoritative locked state in the root bridge; the JS
         // overlay is only the presentation of that decision.
         try {
@@ -1836,6 +1840,20 @@ class NuxelHome {
                 window.NuxelSecurityLock.lock(reason || 'screen-lock');
             }
         } catch (e) { /* fail closed: the overlay remains */ }
+        // A83: show only after the lock is persisted.  Showing first started an
+        // async security status read that often resolved only AFTER the lock
+        // write, so `show()` saw locked:false and painted the SWIPE penguin
+        // while the device was really in PIN mode (the owner had to swipe up
+        // before the keypad appeared).  The overlay is revealed here in the
+        // same task as the (now ordered) mode read.
+        // v0.8.5: a transient OSD/menu card must never survive into the lock
+        // screen (it painted a blue-bordered rectangle at the top centre for
+        // a few seconds after the owner locked from the power menu).
+        try { if (window.NuxelOSD && window.NuxelOSD.hideAll) window.NuxelOSD.hideAll(); } catch (e) {}
+        if (this.lockscreen) {
+            const shown = this.lockscreen.show(reason);
+            Promise.resolve(shown).catch(() => {});
+        }
         /* A lock always blanks the panel: idempotent for a display-off lock.
          * Ask for a full compositor/framebuffer frame as well, so a stale app
          * surface cannot leave a coloured band above the lockscreen. */
@@ -1917,25 +1935,7 @@ class NuxelHome {
        against the root bridge.  Commit the same unlock transition the penguin
        path uses, and only after the bridge said the session is unlocked. */
     completeCredentialUnlock(instance, request) {
-        const ls = this.lockscreen;
-        if (!ls || ls !== instance) return Promise.resolve({ ok: false, error: 'inactive-lockscreen' });
-        const via = (request && request.via) || 'credential';
-        if (!ls.isLocked()) {
-            return Promise.resolve({ ok: true, state: 'UNLOCKED', via: via });
-        }
-        const res = request && request.result;
-        if (!res || res.unlocked !== true) {
-            return Promise.resolve({ ok: false, error: 'credential-not-verified' });
-        }
-        const host = window.NuxelHost;
-        const done = () => this._unlock(via + '-verified');
-        if (host && host.available && typeof host.action === 'function') {
-            return Promise.resolve(host.action('unlock')).then((hr) => {
-                if (hr && hr.ok === false) return { ok: false, error: 'backend-unlock-failed' };
-                return done();
-            }).catch(() => ({ ok: false, error: 'backend-unlock-error' }));
-        }
-        return Promise.resolve(done());
+        return this._commitVerifiedUnlock(instance, request, (request && request.via) || 'credential');
     }
 
     /* A80: Settings can switch the lock mode or set a pattern while Home is
@@ -1959,6 +1959,56 @@ class NuxelHome {
         if (!ls.acceptGestureUnlock || !ls.acceptGestureUnlock(request)) {
             return Promise.resolve({ ok: false, error: 'invalid-or-replayed-gesture' });
         }
+        const via = (request && request.direct) ? 'swipe-direct' : 'penguin-gesture';
+        return this._commitVerifiedUnlock(ls, request, via);
+    }
+
+    /* A84: the provider is the authority for the lock state, so the launcher
+       must notice when it becomes locked without a local gesture (Settings,
+       a console kill-lock, the native lock watcher).  Without this the two
+       disagreed: the provider said locked while Home kept showing the desktop,
+       and the next swipe was judged by a lock screen that was not up. */
+    _reconcileLockFromProvider() {
+        if (!this.lockscreen || this._lockReconcileRunning) return Promise.resolve(null);
+        this._lockReconcileRunning = true;
+        const sec = window.NuxelSecurityLock;
+        if (!sec || typeof sec.status !== 'function') {
+            this._lockReconcileRunning = false;
+            return Promise.resolve(null);
+        }
+        return Promise.resolve(sec.status()).then((st) => {
+            this._lockReconcileRunning = false;
+            if (!st || st.success === false || typeof st.locked !== 'boolean') return null;
+            if (st.locked === true && !this._isLocked()) {
+                this._inputTrace('lock:provider-locked-reconcile mode=' + (st.mode || '?'));
+                this._lock('provider-authority');
+            }
+            return st;
+        }).catch(() => { this._lockReconcileRunning = false; return null; });
+    }
+
+    _startLockReconcile() {
+        if (this._lockReconcileTimer) return;
+        this._lockReconcileTimer = setInterval(() => {
+            if (typeof document !== 'undefined' && document.body &&
+                document.body.classList.contains('display-off')) return;
+            this._reconcileLockFromProvider();
+        }, 4000);
+    }
+
+    /* A84: ONE commit path for every verified unlock (direct swipe, PIN,
+       pattern, fingerprint).  The credential/preset decision was already
+       verified by the root bridge; this releases the native lock surface and
+       performs the launcher transition, and never unlocks on a rejection. */
+    _commitVerifiedUnlock(ls, request, via) {
+        if (!ls || ls !== this.lockscreen) return Promise.resolve({ ok: false, error: 'inactive-lockscreen' });
+        if (!ls.isLocked()) {
+            return Promise.resolve({ ok: true, state: 'UNLOCKED', via: via });
+        }
+        const res = request && request.result;
+        if (via !== 'swipe-direct' && (!res || res.unlocked !== true)) {
+            return Promise.resolve({ ok: false, error: 'credential-not-verified' });
+        }
         const commit = () => {
             if (this.lockscreen !== ls) return { ok: false, error: 'lockscreen-changed' };
             if (!ls.isLocked()) {
@@ -1967,27 +2017,31 @@ class NuxelHome {
                 this._enterHomeAfterUnlock('penguin-host-event');
                 return { ok: true, state: 'UNLOCKED', via: 'host-event' };
             }
-            return this._unlock('penguin-gesture');
+            return this._unlock(via + '-verified');
         };
-        // Credential verification happens in the root Bridge before any
-        // surface/nav transition.  A failure leaves the session locked.
+        /* A85: only the DIRECT lockhead swipe may release a swipe-mode lock.
+           PIN/pattern/fingerprint already verified (res.unlocked === true)
+           before this function runs, so they pass direct:false and the gate
+           only confirms the provider's authoritative state. */
         const verify = () => {
             if (window.NuxelSecurityLock && window.NuxelSecurityLock.verifyUnlock) {
-                return Promise.resolve(window.NuxelSecurityLock.verifyUnlock());
+                return Promise.resolve(window.NuxelSecurityLock.verifyUnlock({
+                    direct: via === 'swipe-direct',
+                }));
             }
             return Promise.resolve({ ok: true, legacy: true });
         };
-        const host = window.NuxelHost;
-        if (host && host.available && typeof host.action === 'function') {
+        const nost = window.NuxelHost;
+        if (nost && nost.available && typeof nost.action === 'function') {
             return verify().then((v) => {
                 if (!v || v.ok !== true) {
                     this._inputTrace(`unlock:credential-rejected ${(v && (v.error || v.detail)) || 'unknown'}`);
                     return v || { ok: false, error: 'credential-rejected' };
                 }
-                return Promise.resolve(host.action('unlock')).then((res) => {
-                    if (!res || res.ok === false) {
-                        this._inputTrace(`unlock:backend-rejected ${(res && (res.error || res.timeout)) || 'unknown'}`);
-                        return { ok: false, error: 'backend-unlock-failed', backend: res || null };
+                return Promise.resolve(nost.action('unlock')).then((hr) => {
+                    if (!hr || hr.ok === false) {
+                        this._inputTrace(`unlock:backend-rejected ${(hr && (hr.error || hr.timeout)) || 'unknown'}`);
+                        return { ok: false, error: 'backend-unlock-failed', backend: hr || null };
                     }
                     return commit();
                 });
@@ -1996,8 +2050,7 @@ class NuxelHome {
                 return { ok: false, error: 'backend-unlock-error' };
             });
         }
-        /* VM/desktop launcher: there is no native lock surface to release, so
-           the launcher controller itself is authoritative after verification. */
+        /* VM/desktop launcher: there is no native lock surface to release. */
         return verify().then((v) => (v && v.ok === true) ? commit() : v);
     }
 
@@ -2009,17 +2062,35 @@ class NuxelHome {
             this.lockscreen.show('boot');
         }
         // The boot HTML gate is not authority.  If the root security provider
-        // already reports unlocked (e.g. the session was resumed), hide the
-        // stale local overlay so Back/Home/Tabs are not inert behind it.
+        // already reports unlocked (e.g. the session was resumed WITHOUT a
+        // reboot) the overlay may be stale -- but a COLD BOOT must always
+        // start behind the lockhead.  A85: the 2026-11-14 boot evidence showed
+        // `lockscreen:boot-authority-unlocked` at boot and the phone came up
+        // straight into the unlocked desktop.  /run is a tmpfs, so a missing
+        // lock state is a fresh boot: the launcher writes the lock FIRST
+        // (security/lock, reason 'boot'), and only a `locked:false` answer
+        // that survives that write may release the overlay.
         const sec = window.NuxelSecurityLock;
         if (sec && typeof sec.status === 'function') {
-            Promise.resolve(sec.status()).then((st) => {
-                if (st && st.success !== false && st.locked === false && this.lockscreen) {
+            this._inputTrace('lockscreen:boot-lock-request');
+            const armBootLock = (sec.lock ? Promise.resolve(sec.lock('boot')) : Promise.resolve(null))
+                .catch(() => null);
+            Promise.resolve(armBootLock).then(() => sec.status()).then((st) => {
+                if (!st || st.success === false || typeof st.locked !== 'boolean') {
+                    this._inputTrace('lockscreen:boot-authority-no-answer');
+                    return;
+                }
+                if (st.locked === false && this.lockscreen) {
+                    // Only reachable when something released the lock AFTER
+                    // the boot write above (e.g. an explicit resume flow).
                     this.lockscreen.hide();
                     try { document.documentElement.classList.remove('nuxel-boot-locked'); } catch (e) {}
                     this._setNavDock(true);
                     this._releaseBootOrientation();
                     this._inputTrace('lockscreen:boot-authority-unlocked');
+                } else {
+                    this.lockscreen.show('boot-locked');
+                    this._inputTrace('lockscreen:boot-locked mode=' + (st.mode || '?'));
                 }
             }).catch(() => {});
         }
@@ -2035,6 +2106,14 @@ class NuxelHome {
         }
         this._watchDisplayForLock();
         this._watchForegroundVisibility();
+        this._startLockReconcile();
+        /* A84: the lock overlay is the boot state.  Its status read is async
+           and was the ONLY thing consulted, so a slow/failed answer left the
+           freshly booted launcher showing the desktop (silently unlocked)
+           until something else locked it.  Once that read settles, the
+           provider decides: still locked -> make sure the overlay is up;
+           unlocked -> leave Home alone. */
+        this._reconcileLockFromProvider();
     }
 
     /* Boot orientation contract (v0.7.7-beta).
@@ -2101,6 +2180,10 @@ class NuxelHome {
     _watchDisplayForLock() {
         this._lastDisplayOff = null;
         let watchTimer = null;
+        /* Set by the host's screen-wake request (touch on the dark glass) so the
+           very next ON sample dispatches display-on even if OFF was never
+           sampled by this document. */
+        this._wakeFromOff = false;
         const read = () => {
             const host = window.NuxelHost;
             if (!host || !host.available || typeof host.statusRead !== 'function') return;
@@ -2115,14 +2198,24 @@ class NuxelHome {
                 document.body.classList.toggle('display-off', off);
                 document.body.dataset.displayOff = off ? '1' : '0';
                 if (off) {
+                    this._wakeFromOff = false;
                     this._blurActiveField();
                     if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
                     if (window.NuxelSystemMonitor && window.NuxelSystemMonitor.stop) window.NuxelSystemMonitor.stop();
                 } else if (this._lastDisplayOff === true && window.NuxelSystemMonitor && window.NuxelSystemMonitor.configure) {
                     window.NuxelSystemMonitor.configure();
                 }
-                const woke = (this._lastDisplayOff === true && !off);
+                /* A wake can be observed without a preceding OFF sample in this
+                   document: the turn-on path queues the panel wake before the
+                   dark glass is touched, and a launcher reload or a locked
+                   session may never have sampled display=off.  In that case the
+                   panel is provably ON now (display_on is set synchronously by
+                   the bridge, before the backlight), and the owner still asked
+                   for the wake effect.  Fire the same one-shot event once. */
+                const woke = (this._lastDisplayOff === true && !off) ||
+                    (this._lastDisplayOff !== false && !off && this._wakeFromOff === true);
                 if (woke) {
+                    this._wakeFromOff = false;
                     try {
                         document.dispatchEvent(new CustomEvent('nuxel:display-on'));
                         if (this.lockscreen && typeof this.lockscreen.refreshIndicators === 'function') {

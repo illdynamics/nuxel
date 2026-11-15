@@ -7,6 +7,11 @@
     inset: 0;
     z-index: 500;
     background: #04121f;
+    /* A83 lock-screen input fix: touch-action:none on the whole glass cancels
+       the synthetic click for EVERY touch press, so the PIN keypad / pattern /
+       fingerprint buttons armed their pointer handlers but never fired their
+       `click` handler ("press Unlock, nothing happens").  The locked swipe
+       surface still gets `none`; a credentialed mode resets it below. */
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
@@ -648,13 +653,18 @@ body.display-off .lockscreen-clock-penguin,
 body.display-off .lockscreen-clock-penguin img { animation: none !important; }
 
 /* ==========================================================================
-   A80 credential surface — pattern / PIN / fingerprint
-   The swipe penguin handle is hidden (.lockscreen-credentialed) whenever a
-   credential is required; the credential overlay is the only unlock path then.
+   A84 credential surface — pattern / PIN / fingerprint, with the lockhead
+   ALWAYS on the glass.
+   The lockhead (.lockscreen-handle-wrap) is never hidden.  In a credential
+   mode it is docked at the bottom below the panel and acts as the "open the
+   panel" affordance; the panel owns the centre of the glass.
+   `.lockscreen-panel-open` marks an open panel.  The old credential-mode class
+   that used to hide the lockhead is gone on purpose.
    ========================================================================== */
-#lockscreen.lockscreen-credentialed .lockscreen-handle-wrap,
-#lockscreen.lockscreen-credentialed .lockscreen-hint { display: none !important; }
 
+/* Panel: bottom sheet while closed (only its own lockhead showing), nearly
+   full glass while open.  The docked lockhead is positioned by JS directly
+   below `--lockscreen-panel-bottom`. */
 .lockscreen-auth {
     position: absolute;
     left: 0;
@@ -685,17 +695,79 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
     text-shadow: 0 1px 3px rgba(0,0,0,.9); max-width: 320px;
 }
 
+/* Panel CLOSED: only the clock, wallpaper and the (always visible) lockhead.
+   Nothing of the credential UI is shown, so a fresh lock always starts with
+   the penguin to swipe. */
+#lockscreen .lockscreen-auth.lockscreen-auth-closed {
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
+
+/* Panel OPEN: the credential UI takes the glass (above the lockhead's dock) so
+   the keypad/matrix own the centre and never fight the swipe handle. */
+#lockscreen.lockscreen-panel-open .lockscreen-auth {
+    inset: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    /* A88: the credential surface (pattern matrix / PIN keypad) is centred on
+       the glass.  Exactly symmetric insets, so flex centring is the viewport
+       centre (the old 16px top / 16px bottom pair also kept a 17px scrollbar
+       gap on the side; equal insets remove that too). */
+    padding: 16px !important;
+    background: linear-gradient(to top, rgba(3, 12, 22, .94) 0%, rgba(3, 12, 22, .86) 42%, rgba(3, 12, 22, .30) 78%, rgba(3, 12, 22, .08) 100%) !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+}
+/* Landscape / short glass: keep a smaller bottom reserve for the dock. */
+@media (max-height: 640px) {
+    #lockscreen.lockscreen-panel-open .lockscreen-auth { padding-bottom: 16px !important; }
+    .lockscreen-auth { padding-bottom: 24px; }
+    .lockscreen-pattern { width: min(64vw, 240px) !important; }
+    .lockscreen-key { min-height: 48px; font-size: 20px; }
+    #lockscreen-pin-enter { min-height: 48px; }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+    #lockscreen.lockscreen-panel-open .lockscreen-auth { padding: 8px 18px 8px !important; }
+}
+
+/* The docked lockhead (panel open): still tappable/swipeable, but parked below
+   the panel's content area.  It is placed by JS at
+   top = innerHeight - size - 26; this rule only guarantees the size and that
+   it never sits above the panel's content. */
+#lockscreen.lockscreen-panel-open .lockscreen-handle-wrap {
+    z-index: 6;
+    /* A87: no lockhead below the PIN/pattern/fingerprint prompt.  JS also sets
+       [hidden]; this is the second, paint-level guard. */
+    display: none !important;
+}
+#lockscreen.lockscreen-panel-open .lockscreen-handle {
+    opacity: .92;
+}
+#lockscreen.lockscreen-panel-open .lockscreen-hint { display: none !important; }
+/* Pattern mode: the lockhead to the LEFT of the centred matrix is confusing on
+   a phone, so the hint area under it stays clear. */
+#lockscreen.lockscreen-panel-open .lockscreen-clock-lanes { display: none !important; }
+
 /* ---------------------------------------------------------------- pattern */
-/* A80 final: a real responsive 3x3 matrix.  The matrix is a CSS grid (so it is
-   always square and always fits the glass in portrait and landscape), and the
-   SVG trail is laid on top of the SAME box with a 0..300 viewBox.  The old
-   absolute 300x300 geometry fell apart once the dots moved to percentages. */
+/* A84: the 3x3 matrix lives in the CENTRE of the glass.  The panel is a
+   viewport-sized flex box with justify-content:center and the matrix has an
+   auto inline margin, so it is centred horizontally and vertically; the PIN
+   button and the error line are pinned below it (see the meta row). */
 .lockscreen-pattern {
     position: relative;
-    width: min(78vw, 300px);
-    max-width: calc(100vw - 40px);
+    width: min(72vw, 292px, calc(100dvh - 260px));
+    max-width: calc(100vw - 48px);
+    min-width: 168px;
     aspect-ratio: 1 / 1;
-    margin: 0 auto;
+    margin: auto;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
@@ -708,10 +780,10 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
     height: 100%;
     overflow: visible;
     pointer-events: none;
-    /* The drawn line must be seen over the penguins, the wallpaper and the
-       overlay gradient. */
     z-index: 3;
 }
+/* The trail glow is a one-shot while drawing (it is repainted only during a
+   drag), never on the idle glass. */
 .lockscreen-pattern-trail {
     stroke: #7fd0ff;
     stroke-width: 9;
@@ -732,8 +804,6 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
     padding: 6px;
     box-sizing: border-box;
 }
-/* A dot is a small penguin lock-head on a warm oval "cushion", sized like an
-   Android pattern dot: touch-sized hit area, compact drawn icon. */
 .lockscreen-pattern-dot {
     position: relative;
     width: clamp(44px, 19vw, 68px);
@@ -747,6 +817,7 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
     border: 2px solid rgba(140, 200, 255, .55);
     box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
     transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+    touch-action: none;
 }
 .lockscreen-pattern-dot.active {
     border-color: #7fd0ff;
@@ -769,7 +840,15 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
 }
 
 /* -------------------------------------------------------------------- PIN */
-.lockscreen-pinpad { width: min(82vw, 320px); display: flex; flex-direction: column; gap: 10px; }
+/* A88: the keypad is a centred block.  It is sized against BOTH viewport
+   axes (height included) so on a short landscape glass the Unlock button
+   never leaves the screen, and it never collapses to the top of the panel. */
+.lockscreen-pinpad {
+    width: min(82vw, 320px);
+    max-height: calc(100dvh - 32px);
+    display: flex; flex-direction: column; gap: 10px;
+    margin: auto; box-sizing: border-box;
+}
 .lockscreen-pinpad[hidden] { display: none !important; }
 .lockscreen-pin-display {
     height: 34px; font-size: 28px; letter-spacing: 9px; text-align: center;
@@ -797,6 +876,24 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
 .lockscreen-key.key-enter {
     width: 100%; min-height: 54px; font-size: 17px;
     background: rgba(46, 112, 168, .85); border-color: rgba(150, 210, 255, .55);
+}
+/* A83: press feedback independent of click synthesis. */
+#lockscreen .lockscreen-key {
+    -webkit-tap-highlight-color: rgba(120, 200, 255, .35);
+    transition: transform .06s ease, background .06s ease;
+}
+#lockscreen .lockscreen-key:active,
+#lockscreen .lockscreen-key.pressed {
+    background: rgba(40, 90, 140, .9) !important;
+    transform: scale(.97);
+}
+#lockscreen-pin-enter {
+    width: 100%;
+    min-height: 58px;
+    margin-top: 4px;
+    font-size: 18px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
 }
 
 /* ------------------------------------------------------------ fingerprint */
@@ -862,8 +959,13 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
 }
 
 /* -------------------------------------------------------------- PIN button */
+/* A84: the fallback button is pinned BELOW the centred matrix/keypad, inside
+   the panel's bottom reserve (the meta row), clear of the docked lockhead. */
 .lockscreen-pin-fallback {
-    position: relative;
+    position: fixed;
+    left: 50%;
+    bottom: 152px;
+    transform: translateX(-50%);
     z-index: 5;
     min-width: 116px;
     min-height: 46px;
@@ -880,31 +982,37 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
     -webkit-tap-highlight-color: transparent;
 }
 .lockscreen-pin-fallback[hidden] { display: none !important; }
-.lockscreen-pin-fallback:active { transform: scale(.97); background: rgba(40, 90, 140, .85); }
+/* A88: the PIN fallback is part of the open panel.  It must never paint over
+   the swipe-only glass or while the panel is closed. */
+#lockscreen .lockscreen-auth.lockscreen-auth-closed .lockscreen-pin-fallback,
+#lockscreen:not(.lockscreen-panel-open) .lockscreen-pin-fallback { display: none !important; }
+.lockscreen-pin-fallback:active { transform: translateX(-50%) scale(.97); background: rgba(40, 90, 140, .85); }
+.lockscreen-auth-error {
+    position: fixed;
+    left: 50%;
+    bottom: 206px;
+    transform: translateX(-50%);
+    z-index: 5;
+}
+@media (max-height: 640px) {
+    .lockscreen-pin-fallback { bottom: 120px; }
+    .lockscreen-auth-error { bottom: 168px; }
+}
+#lockscreen .lockscreen-pin-fallback,
+#lockscreen .lockscreen-key-enter { pointer-events: auto; }
 
 /* ------------------------------------------------------ pattern setup flow */
 .lockscreen-setup { inset: 0; max-height: none; justify-content: center; padding-bottom: 64px; border-radius: 0; background: rgba(3, 12, 22, .82); }
-/* pattern/pin/fingerprint: no swipe penguin on the glass at all */
-#lockscreen.lockscreen-credentialed .lockscreen-handle-wrap,
-#lockscreen.lockscreen-credentialed .lockscreen-clock-lanes { display: none !important; }
-@media (max-height: 640px) {
-    .lockscreen-auth { padding-bottom: 24px; }
-    .lockscreen-pattern { width: min(64vw, 240px); }
-    .lockscreen-pattern-dot { width: 62px; height: 62px; margin: -31px 0 0 -31px; }
-    .lockscreen-key { min-height: 48px; font-size: 20px; }
-}
 
-/* A80 layout final: the credential panel owns the full glass so the keypad
-   never fights the swipe handle's absolute centring. */
-#lockscreen.lockscreen-credentialed .lockscreen-auth {
-    inset: 0 !important;
-    max-height: none !important;
-    border-radius: 0 !important;
-    padding: 24px 18px 60px !important;
-    background: linear-gradient(to top, rgba(3, 12, 22, .92), rgba(3, 12, 22, .55) 55%, rgba(3, 12, 22, .18)) !important;
-    justify-content: space-between !important;
-    gap: 10px !important;
+/* v0.8.5: no transient chrome over the lock screen.  A volume/power OSD or a
+   leftover power-menu card painted a top-centre blue-bordered rectangle that
+   stayed visible for a few seconds after locking from the power menu.  The
+   lock glass is authoritative: both overlays are hidden while it is shown. */
+body.lockscreen-active #nuxel-osd,
+body.lockscreen-active #nuxel-power-menu,
+body.nuxel-boot-locked #nuxel-osd,
+body.nuxel-boot-locked #nuxel-power-menu {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
 }
-#lockscreen.lockscreen-credentialed .lockscreen-pinpad { margin-top: auto; margin-bottom: 4px; }
-#lockscreen .lockscreen-pin-fallback,
-#lockscreen .lockscreen-key-enter { pointer-events: auto; }

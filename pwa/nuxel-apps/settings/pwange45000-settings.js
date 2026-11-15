@@ -407,9 +407,14 @@
   function drawPatternTrail() {
     var line = $('sec-pattern-trail');
     if (!line) return;
-    line.setAttribute('points', patternSeq.map(function (i) {
+    var pts = patternSeq.map(function (i) {
       return PATTERN_POS[i].x + ',' + PATTERN_POS[i].y;
-    }).join(' '));
+    }).join(' ');
+    line.setAttribute('points', pts);
+    /* v0.8.5: static glow under-stroke replaces the per-move drop-shadow
+       filter (software WebKit re-filtered the whole editor on every tap). */
+    var glow = $('sec-pattern-trail-glow');
+    if (glow) glow.setAttribute('points', pts);
     Array.prototype.forEach.call(document.querySelectorAll('#sec-pattern-dots .pattern-dot'), function (d) {
       d.classList.toggle('active', patternSeq.indexOf(Number(d.dataset.dot)) >= 0);
     });

@@ -55,9 +55,33 @@ check('dot matrix is 3x3',
       AUTH.count("x: 50 + (i % 3) * 100") == 1 and AUTH.count('Math.floor(i / 3) * 100') == 1)
 check('PIN button below the pattern', 'id="lockscreen-pin-fallback"' in HTML)
 check('PIN button wired', 'lockscreen-pin-fallback' in AUTH and 'showPinFallback' in AUTH)
-check('swipe penguin hidden in credentialed modes',
-      re.search(r'lockscreen-credentialed \.lockscreen-handle-wrap[^{]*\{[^}]*display:\s*none',
-                CSS, re.S) is not None)
+
+# ---- A85/A86 owner contract ------------------------------------------------
+check('direct lockhead swipe releases a swipe lock through the provider',
+      "opts.direct === true && swipeLock" in (ROOT / 'pwa/nuxel-home/js/security-lock.js').read_text() and
+      "'security', 'unlock'" in (ROOT / 'pwa/nuxel-home/js/security-lock.js').read_text())
+check('boot always arms the lock before the overlay decision',
+      "security/lock, reason 'boot'" in APP and 'lockscreen:boot-lock-request' in APP)
+check('auth sync fails closed instead of painting the swipe glass',
+      "auth-status-fallback keep=" in AUTH and "mode = last || 'pin';" in AUTH)
+check('PIN button needs a stored PIN fallback',
+      'if (!this.pinFallbackSet)' in AUTH)
+check('lock method switch is one step with its credential (provider)',
+      'A86: selecting a lock METHOD must never leave that method without a' in SEC and
+      'self.apply_preset("pin", secret, confirm' in SEC)
+check('lock method switch is one step with its credential (settings)',
+      'A86: choosing a lock METHOD always establishes' in SETJS)
+check('boot lock publisher is packaged and mapped',
+      'tools/s10plus/a45/nuxel-security-state-rpc' in (ROOT / 'tools/s10plus/a43/package-live.py').read_text() and
+      '"/usr/lib/nuxel/nuxel-security-state-rpc"' in (ROOT / 'scripts/nuxel-deploy-live.py').read_text())
+# A84 supersedes the A80 rule: the owner asked for the lockhead on EVERY lock,
+# in every mode.  A credential mode docks it (CSS/JS) and uses it to open the
+# credential panel; it must never be hidden.
+check('swipe penguin is ALWAYS shown (A84)',
+      'visible = true;' in LOCK and
+      re.search(r'lockscreen-credentialed[^\n]*lockscreen-handle[^{]*\{[^}]*display:\s*none',
+                CSS, re.S) is None and
+      'lockscreen-panel-open' in CSS)
 
 # ---- PIN keypad ------------------------------------------------------------
 check('pin pad present', 'id="lockscreen-pinpad"' in HTML)
@@ -174,11 +198,14 @@ for mod in ('secret_service.py', 'keyring_api.py', 'security_provider.py',
 # click) is exactly one digit.  The click is the ONLY activation; pointer/touch
 # start only arm an idle fallback that a pointerup/touchend cancels.
 _pin_code = AUTH[AUTH.index('_wirePin() {'):AUTH.index('_paintPin() {')]
+# A84: pointerdown may paint feedback only; the digit/unlock action is the
+# click.  A time window that swallows clicks (a83's 450 ms) broke fast entry.
 check('keypad activates on release (click) only',
       _pin_code.count("this.pin += d") == 1 and
       'this.pinpad.onclick' in _pin_code and
-      "addEventListener('pointerdown'" not in _pin_code and
-      "addEventListener('touchstart'" not in _pin_code)
+      "addEventListener('touchend'" not in _pin_code and
+      'setTimeout' not in _pin_code and
+      not re.search(r"addEventListener\('pointerdown',[^;]*this\.pin \+=", _pin_code, re.S))
 check('keypad no longer dedups by per-contact pointerId',
       '_pressPointer' not in AUTH and "_pressKey" not in AUTH and
       '_lastKey' not in AUTH and 'releaseSeen' not in _pin_code)

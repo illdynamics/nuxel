@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 19;
+const NUXEL_REGISTRY_VERSION = 20;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -150,6 +150,21 @@ const NUXEL_APPS = {
         description: 'System settings',
         capabilities: [],
         docked: true,
+    },
+    // PWNAGE-103000: Edge FX is the installable control surface for Edge
+    // Lighting (eight effects, Wave default) and the Edge panel entry.  It is
+    // an ordinary canonical PWA: uninstall/reinstall go through the apps RPC.
+    'nuxel-edge-fx': {
+        id: 'nuxel-edge-fx',
+        name: 'Edge FX',
+        icon: '✨',
+        color: '#63F0BD',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/edge-fx/index.html',
+        description: 'Edge lighting effects, Edge panel and uninstall/reinstall',
+        capabilities: [],
+        docked: false,
     },
     'org.nuxel.Firewall': {
         id: 'org.nuxel.Firewall',
@@ -576,27 +591,166 @@ function nuxelBuiltinIcon(app) {
 
 /* Render a stable image node with an immediate, correct fallback glyph.
    `opts.priority === 'visible'` is used only for the current desktop page and
-   the dock; hidden drawer entries stay lazy/low priority. */
+   the dock; hidden drawer entries stay lazy/low priority.
+
+   DOUBLE-ICON FIX (v0.8.5): the previous markup kept the emoji/Nuxel glyph as
+   a SIBLING behind the <img>.  Whenever the image has no opaque background of
+   its own (every Adwaita/Flatpak SVG icon: Archive Manager, Papers, Loupe,
+   Stremio, Signal) the glyph bled through the transparent parts of the real
+   icon, which looked like "a second application icon drawn behind the real
+   one".  The fallback is now a CSS-only first-paint layer that is made
+   impossible to paint once the real icon is decoded: the well gets
+   data-icon-origin=external, the glyph is absolutely clipped away by
+   launcher.css (`[data-icon-origin="external"] .nuxel-icon-fallback`), and
+   the JS removes the node on load.  `opts.origin` lets callers state the
+   kind up front; otherwise nuxelIconOrigin(app) decides. */
 function nuxelAppIcon(app, opts) {
     const src = nuxelBuiltinIcon(app);
     const glyph = String((app && app.icon) || '📱');
     const esc = (v) => String(v == null ? '' : v).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
+    const origin = (opts && opts.origin) || nuxelIconOrigin(app);
+    const external = origin === 'gtk' || origin === 'flatpak';
+    const originAttr = ' data-icon-origin="' + esc(origin) + '"';
     if (!src) {
-        return '<span class="nuxel-icon-fallback" data-icon-state="fallback" aria-hidden="true">' + esc(glyph) + '</span>';
+        return '<span class="nuxel-icon-fallback" data-icon-state="fallback"' + originAttr + ' aria-hidden="true">' + esc(glyph) + '</span>';
     }
     const visible = !!(opts && opts.priority === 'visible');
     const name = esc((app && app.name) || 'App');
     const loading = visible ? 'eager' : 'lazy';
     const priority = visible ? 'high' : 'low';
-    return '<span class="nuxel-icon-fallback" data-icon-state="fallback" aria-hidden="true">' + esc(glyph) + '</span>' +
+    /* A37/PWNAGE-108000: keep first-paint glyphs, but never let one stay
+     * painted behind a decoded application icon.  The inline onload handler
+     * is a fast path only; attachIconFallbacks()/sweep() are the real
+     * contract and launcher.css makes the glyph unpaintable for external
+     * icons regardless. */
+    // v0.8.5 PERF: no inline event handlers.  A drawer/Home rebuild parses
+    // one HTML string per tile; inline `onload`/`onerror` attributes force the
+    // WebKit parser to compile a handler for EVERY icon (≈100 tiles on the
+    // All Apps drawer) on EVERY render.  The load/error contract is a single
+    // delegated listener installed once (nuxelInstallIconDelegation()).
+    return '<span class="nuxel-icon-fallback" data-icon-state="fallback"' + originAttr + ' aria-hidden="true">' + esc(glyph) + '</span>' +
         '<img class="nuxel-icon-img" src="' + esc(src) + '" alt="' + name + '" width="48" height="48" ' +
         'loading="' + loading + '" fetchpriority="' + priority + '" draggable="false" decoding="async" ' +
-        'data-icon-src="' + esc(src) + '" data-icon-state="pending" ' +
-        'onload="this.dataset.iconState=\'loaded\';var f=this.previousElementSibling;if(f){f.hidden=true;f.remove();}" ' +
-        'onerror="this.dataset.iconState=\'error\';var f=this.previousElementSibling;if(f)f.hidden=false">';
+        'data-icon-src="' + esc(src) + '" data-icon-state="pending"' + originAttr + '>';
 }
+
+
+/* Remove any fallback glyph that still sits next to a decoded icon image.
+   Safe to call repeatedly (dock/grid re-renders, app drawer open, reload). */
+function nuxelSweepIconFallbacks(root) {
+    try {
+        var scope = root || document;
+        scope.querySelectorAll('img.nuxel-icon-img').forEach(function (img) {
+            var loaded = img.dataset.iconState === 'loaded' || (img.complete && img.naturalWidth > 0);
+            if (!loaded) return;
+            if (img.dataset.iconState !== 'loaded') img.dataset.iconState = 'loaded';
+            var f = img.previousElementSibling;
+            if (f && f.classList && f.classList.contains('nuxel-icon-fallback')) {
+                f.hidden = true;
+                f.remove();
+            }
+            var well = img.parentElement;
+            if (well) well.dataset.iconLoaded = '1';
+        });
+        // Belt and braces: an external icon whose well still carries a glyph
+        // node (e.g. after an innerHTML swap that reordered nodes) loses it now.
+        scope.querySelectorAll('[data-icon-origin="gtk"] .nuxel-icon-fallback, [data-icon-origin="flatpak"] .nuxel-icon-fallback')
+            .forEach(function (f) {
+                var img = f.nextElementSibling;
+                if (img && img.classList && img.classList.contains('nuxel-icon-img') &&
+                    (img.dataset.iconState === 'loaded' || (img.complete && img.naturalWidth > 0))) {
+                    f.remove();
+                }
+            });
+    } catch (e) { /* cosmetics must never break the launcher */ }
+}
+
+
+/* Attach a real load/error listener to every icon image that does not have one
+   yet, then sweep.  Called after dock/grid rebuilds and on DOM insertion. */
+function nuxelAttachIconFallbacks(root) {
+    try {
+        var scope = root || document;
+        scope.querySelectorAll('img.nuxel-icon-img').forEach(function (img) {
+            if (!img.__nuxelFallbackBound) {
+                img.__nuxelFallbackBound = true;
+                img.addEventListener('load', function () {
+                    img.dataset.iconState = 'loaded';
+                    var f = img.previousElementSibling;
+                    if (f && f.classList && f.classList.contains('nuxel-icon-fallback')) {
+                        f.hidden = true;
+                        f.remove();
+                    }
+                    if (img.parentElement) img.parentElement.dataset.iconLoaded = '1';
+                });
+                img.addEventListener('error', function () {
+                    img.dataset.iconState = 'error';
+                    var f = img.previousElementSibling;
+                    if (f && f.classList && f.classList.contains('nuxel-icon-fallback')) f.hidden = false;
+                });
+            }
+        });
+    } catch (e) { /* cosmetics must never break the launcher */ }
+    nuxelSweepIconFallbacks(scope);
+}
+
+/* Tag the icon well with the icon's real origin.  Called after any grid/dock
+   render; idempotent and cheap (one attribute write per well). */
+function nuxelTagIconWells(root) {
+    try {
+        var scope = root || document;
+        scope.querySelectorAll('.app-item[data-app-id]').forEach(function (item) {
+            var well = item.querySelector('.app-icon');
+            if (!well) return;
+            var img = well.querySelector('img.nuxel-icon-img');
+            var origin = (img && img.dataset.iconOrigin) || (well.firstElementChild && well.firstElementChild.dataset && well.firstElementChild.dataset.iconOrigin);
+            if (!origin) {
+                var app = window.appRegistry && window.appRegistry.getApp ? window.appRegistry.getApp(item.dataset.appId) : null;
+                if (app) origin = nuxelIconOrigin(app);
+            }
+            if (origin && well.dataset.iconOrigin !== origin) well.dataset.iconOrigin = origin;
+        });
+    } catch (e) { /* cosmetics must never break the launcher */ }
+}
+
+/* One capture-phase listener owns every icon decode outcome for the whole
+   launcher (Home pages, dock, drawer, folders, search).  Ignores in-flight
+   nodes; runs once per image. */
+var _nuxelIconDelegationInstalled = false;
+function nuxelInstallIconDelegation() {
+    if (_nuxelIconDelegationInstalled || typeof document === 'undefined') return;
+    _nuxelIconDelegationInstalled = true;
+    var mark = function (img, state) {
+        if (!img || !img.classList || !img.classList.contains('nuxel-icon-img')) return;
+        if (img.dataset.iconState === state) return;
+        img.dataset.iconState = state;
+        var f = img.previousElementSibling;
+        if (f && f.classList && f.classList.contains('nuxel-icon-fallback')) {
+            if (state === 'loaded') { f.hidden = true; f.remove(); }
+            else f.hidden = false;
+        }
+        if (state === 'loaded' && img.parentElement) img.parentElement.dataset.iconLoaded = '1';
+    };
+    document.addEventListener('load', function (ev) {
+        var t = ev.target;
+        if (t && t.tagName === 'IMG') mark(t, 'loaded');
+    }, true);
+    document.addEventListener('error', function (ev) {
+        var t = ev.target;
+        if (t && t.tagName === 'IMG') mark(t, 'error');
+    }, true);
+}
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', nuxelInstallIconDelegation);
+    else nuxelInstallIconDelegation();
+}
+
 try {
     window.NuxelAppIcon = nuxelAppIcon;
+    window.NuxelSweepIconFallbacks = nuxelSweepIconFallbacks;
+    window.NuxelAttachIconFallbacks = nuxelAttachIconFallbacks;
+    window.NuxelTagIconWells = nuxelTagIconWells;
+    window.NuxelInstallIconDelegation = nuxelInstallIconDelegation;
     window.NuxelIconOrigin = nuxelIconOrigin;
     window.NuxelIconManifest = Object.freeze(Object.assign({}, NUXEL_APP_ICON_ASSETS));
 } catch (e) { /* non-DOM registry test */ }

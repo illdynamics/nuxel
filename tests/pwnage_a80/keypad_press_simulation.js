@@ -25,6 +25,8 @@ function run(label, simulate) {
   w.eval(src);
   const auth = new w.NuxelLockscreenAuth({});
   auth.effectiveMode = 'pin';
+  /* A88: the keyboard path only claims a real PIN panel that is open. */
+  auth.panelOpen = true;
   const key = w.document.querySelector('[data-pin="3"]');
   simulate(w, key, auth);
   // the no-release fallback fires at 500 ms; give every case 650 ms
