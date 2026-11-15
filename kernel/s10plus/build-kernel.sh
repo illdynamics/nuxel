@@ -247,7 +247,14 @@ apply_kernel_patches() {
             echo "[kernel-patches] ALREADY_APPLIED (staged tree): $(basename "${patch}")" | tee -a "${log}"
             continue
         else
-            echo "[kernel-patches] CONFLICT: $(basename "${patch}")" | tee -a "${log}"
+            # Distinguish a malformed patch file from a real overlap: git says
+            # "corrupt patch at <file>:<line>" for the former, which used to be
+            # reported as a CONFLICT and sent everyone looking at the source.
+            if grep -q "corrupt patch" <<<"$(git -C "${KSRC}" apply --check "${patch}" 2>&1)"; then
+                echo "[kernel-patches] MALFORMED: $(basename "${patch}") (corrupt hunk header or truncated hunk)" | tee -a "${log}"
+            else
+                echo "[kernel-patches] CONFLICT: $(basename "${patch}")" | tee -a "${log}"
+            fi
         fi
 
         if [[ -f "${required}" ]]; then

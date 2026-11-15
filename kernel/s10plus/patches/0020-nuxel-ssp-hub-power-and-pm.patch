@@ -233,7 +233,7 @@ diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
 index 44be84ecc..b6f6034ba 100644
 --- a/drivers/spi/spi-s3c64xx.c
 +++ b/drivers/spi/spi-s3c64xx.c
-@@ -1931,7 +1931,18 @@ static int s3c64xx_spi_runtime_suspend(struct device *dev)
+@@ -1931,4 +1931,15 @@ static int s3c64xx_spi_runtime_suspend(struct device *dev)
  
  	s3c64xx_spi_pin_ctrl(dev, 0);
  
