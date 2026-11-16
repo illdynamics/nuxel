@@ -2,6 +2,18 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.8.6-beta] - 2026-11-16 - *USB networking, remote access persistence, audio/icon polish and truthful hardware state*
+
+- Consolidated the current NFC, fingerprint, sensor, mobile-networking and
+  camera state in [`final-state-components.md`](final-state-components.md).
+- USB CDC-ECM uses the dedicated `10.100.10.0/24` link (`.1` phone, `.2`
+  host); the host route was verified without disabling Wi-Fi.
+- XRDP and Wayland VNC wait for ZeroTier/Wayland readiness, bind only to the
+  ZeroTier address, and are enabled as persistent services on the live phone.
+- Launcher tiles now keep a rounded, colorful Nuxel background behind original
+  GTK/Flatpak artwork; the icon cache namespace was bumped.
+- `RELEASE-NOTES.md` history is now represented by this canonical changelog.
+
 ## [v0.8.5-beta] - 2026-11-15 - *Live repair: Flatpak apps, messenger microphones, tethering, hotspot, idle CPU and UI polish*
 
 ### Fixed

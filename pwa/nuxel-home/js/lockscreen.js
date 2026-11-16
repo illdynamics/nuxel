@@ -29,7 +29,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'a88';
+  const VERSION = 'v0.8.6-beta';
   const WALLPAPER = { w: 768, h: 1376 };
   /* The illustrated penguin's approximate opaque bounds in wallpaper pixels,
      measured from the shipped asset.  Only the vertical extent matters here:
@@ -376,6 +376,11 @@
       const handleSize = Math.max(96, Math.min(124, vw * 0.3));
       const penguinSize = Math.max(72, Math.min(104, vw * 0.17));
       const penguinBottomCss = this._coverCssY(PENGUIN_BOTTOM_Y);
+      const restingTop = Math.min(
+        Math.max(penguinBottomCss + ALARM_GAP + penguinSize + MIN_SPACING, vh * 0.62),
+        vh - handleSize - 24);
+      this.el.style.setProperty('--lockscreen-scanner-top', restingTop + 'px');
+      this.el.style.setProperty('--lockscreen-scanner-size', handleSize + 'px');
       let desiredTop;
       if (this.panelOpen && this.mode && this.mode !== 'swipe') {
         /* A87: parked at the bottom.  The handle is hidden while the panel is

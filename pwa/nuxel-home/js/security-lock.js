@@ -24,7 +24,7 @@
     return '1';
   }
 
-  async function direct(ns, verb, params) {
+  async function direct(ns, verb, params, retried) {
     try {
       /* Identity is still required after the G0 boundary: Home's app-bound
          session token is fetched from the launcher relay.  The direct fetch is
@@ -34,7 +34,7 @@
         try {
           // The Home page is the top frame, so ask the injected launcher
           // relay directly (the app-bound token is delivered as a message).
-          token = await global.NuxelBridge._keyringLauncherToken();
+          token = await global.NuxelBridge._appBoundToken();
           _cachedToken = token || '';
         } catch (e) { token = ''; }
       }
@@ -47,6 +47,11 @@
         body: JSON.stringify({ app_id: 'org.nuxel.Home', namespace: ns, verb: verb,
                                params: params || {} })
       });
+      if (res.status === 401 && !retried) {
+        _cachedToken = '';
+        if (global.NuxelBridge) global.NuxelBridge._pageBoundToken = '';
+        return direct(ns, verb, params, true);
+      }
       var doc = null;
       try { doc = await res.json(); } catch (e) { doc = null; }
       if (!res.ok) {

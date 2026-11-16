@@ -16,14 +16,14 @@ const MODES = {
   usb: {
     appId: 'org.nuxel.USBSSHConsole',
     title: 'USB SSH Console',
-    subtitle: 'SSH over the USB network gadget · capability-gated',
+    subtitle: 'Physical USB SSH · 10.100.10.1 · TCP 2022',
     icon: '/assets/nuxel-applications-icon-pack/06-05_usb-connection.png',
     transport: 'usb',
   },
   wifi: {
     appId: 'org.nuxel.WiFiSSHConsole',
     title: 'Wi-Fi SSH Console',
-    subtitle: 'Key-only SSH over the phone\u2019s Wi-Fi address',
+    subtitle: 'Key-only SSH through ZeroTier · TCP 22',
     icon: '/assets/nuxel-quicksettings-icon-pack/01-wifi.png',
     transport: 'wifi',
   },
@@ -124,12 +124,15 @@ export function startTriLinkConsole(mode) {
   card.appendChild(command);
 
   const actions = el('div', 'tl-actions');
-  const recheck = el('button', 'primary', 'Recheck');
+  const start = el('button', 'primary', 'Start');
+  const stop = el('button', '', 'Stop');
+  start.type = stop.type = 'button';
+  const recheck = el('button', '', 'Recheck');
   recheck.type = 'button';
   const copy = el('button', '', 'Copy host command');
   copy.type = 'button';
   copy.disabled = true;
-  actions.append(recheck, copy);
+  actions.append(start, stop, recheck, copy);
   card.appendChild(actions);
 
   const checks = el('ul', 'tl-checks hidden');
@@ -164,6 +167,9 @@ export function startTriLinkConsole(mode) {
     row('Transport', cfg.transport.toUpperCase());
     row('Target', doc.target || 'not configured');
     row('Auth', doc.auth || 'not applicable');
+    row('Start after reboot', doc.enabled ? 'On' : 'Off');
+    start.disabled = !!doc.enabled && !!doc.active;
+    stop.disabled = !doc.enabled && !doc.active && doc.status !== 'STARTING';
     if (doc.modes) {
       Object.keys(doc.modes).forEach((name) => {
         const m = doc.modes[name] || {};
@@ -222,6 +228,18 @@ export function startTriLinkConsole(mode) {
     }
   }
 
+  async function control(action) {
+    start.disabled = stop.disabled = true;
+    try {
+      const result = await bridge.call('system', 'tri-link', {transport: cfg.transport, action});
+      if (!result || result.success === false) detail.textContent = (result && result.error) || 'Console action failed.';
+      else if (result.transports) render(result.transports[cfg.transport]);
+    } catch (e) { detail.textContent = e.message || String(e); }
+    finally { start.disabled = stop.disabled = false; }
+    setTimeout(refresh, 600);
+  }
+  start.addEventListener('click', () => control('start'));
+  stop.addEventListener('click', () => control('stop'));
   recheck.addEventListener('click', refresh);
   copy.addEventListener('click', async () => {
     if (!last || !last.host_command) return;

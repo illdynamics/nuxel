@@ -18,12 +18,12 @@
     <link rel="stylesheet" href="../nuxel-common/theme.css?v=p85000">
     <link rel="stylesheet" href="css/edge-lighting.css?v=p103000">
     <link rel="stylesheet" href="css/style.css?v=p85000">
-    <link rel="stylesheet" href="css/launcher.css?v=p87000">
+    <link rel="stylesheet" href="css/launcher.css?v=0.8.6-beta">
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/status-bar.css?v=p106000">
     <link rel="stylesheet" href="css/home-settings.css?v=p80000">
     <link rel="stylesheet" href="css/widgets.css?v=p82000">
-    <link rel="stylesheet" href="css/lockscreen.css?v=a88">
+    <link rel="stylesheet" href="css/lockscreen.css?v=0.8.6-beta">
     <link rel="preload" as="image" href="assets/nuxel-preload-cover.jpg">
     <script>
     // PWNAGE-36000: in phone boot mode the separate mpv preloading-screen
@@ -427,7 +427,7 @@
                     <button type="button" class="lockscreen-key" data-pin="9">9</button>
                     <button type="button" class="lockscreen-key key-wide" id="lockscreen-pin-cancel">Cancel</button>
                     <button type="button" class="lockscreen-key" data-pin="0">0</button>
-                    <button type="button" class="lockscreen-key" id="lockscreen-pin-del" aria-label="Delete">⌫</button>
+                    <button type="button" class="lockscreen-key" id="lockscreen-pin-del" aria-label="Backspace"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 4 2 12l7 8h13V4Z"/><path d="m12 8 7 8m0-8-7 8"/></svg></button>
                 </div>
                 <button type="button" class="lockscreen-key key-enter" id="lockscreen-pin-enter">Unlock</button>
             </div>
@@ -443,8 +443,10 @@
             </div>
 
             <div id="lockscreen-auth-error" class="lockscreen-auth-error" role="alert"></div>
-            <button type="button" id="lockscreen-pin-fallback" class="lockscreen-pin-fallback"
-                    hidden>PIN</button>
+            <div id="lockscreen-auth-actions" class="lockscreen-auth-actions" hidden>
+                <button type="button" id="lockscreen-auth-cancel" class="lockscreen-pin-fallback">Cancel</button>
+                <button type="button" id="lockscreen-pin-fallback" class="lockscreen-pin-fallback" hidden>PIN</button>
+            </div>
             <!-- No "Set up pattern / PIN" entry point on the lock screen: a
                  credential can only be set/changed from Settings -> Security.
                  The id is kept (hidden, inert) for stale callers. -->
@@ -504,7 +506,7 @@
     <script src="js/edge-lighting.js?v=a85"></script>
     <script src="../nuxel-common/haptics.js?v=a81"></script>
     <script src="../nuxel-common/geolocation.js?v=p80000"></script>
-    <script src="js/apps.js?v=p91000"></script>
+    <script src="js/apps.js?v=0.8.6-beta"></script>
     <script src="js/layout-model.js"></script>
     <script src="js/desktop-layout.js?v=p84000"></script>
     <script src="js/launcher.js?v=p85000"></script>
@@ -530,8 +532,8 @@
     <script src="js/security-lock.js?v=a85"></script>
     <script src="js/lockscreen-indicators.js?v=p85000"></script>
     <script src="js/lockscreen-clock.js?v=p91000"></script>
-    <script src="js/lockscreen-auth.js?v=a88"></script>
-    <script src="js/lockscreen.js?v=a88"></script>
+    <script src="js/lockscreen-auth.js?v=0.8.6-beta"></script>
+    <script src="js/lockscreen.js?v=0.8.6-beta"></script>
     <script src="js/navigation.js?v=p80000"></script>
     <script src="js/gestures.js?v=p80000"></script>
     <script src="js/widgets.js?v=p91000"></script>

@@ -282,18 +282,6 @@ const NUXEL_APPS = {
         description: 'Share the actual Phoc/Wayland screen (Wi-Fi preferred)',
         capabilities: [], docked: false, remoteService: 'vnc',
     },
-    'org.nuxel.ScrcpyMirror': {
-        id: 'org.nuxel.ScrcpyMirror',
-        name: 'scrcpy (Android)',
-        icon: '📱',
-        color: '#b68cff',
-        category: 'system',
-        type: 'pwa',
-        url: '/pwa/nuxel-apps/remote-scrcpy/index.html',
-        description: 'Official scrcpy for Android ADB targets only',
-        capabilities: [], docked: false, remoteService: 'scrcpy',
-    },
-
     // A59: user-facing apps authored in pwa/nuxel-apps but previously missing
     // from the launcher. Each resolves to a real index.html + manifest.json.
     'org.nuxel.Calculator': {
@@ -489,7 +477,6 @@ const NUXEL_APP_ICON_ASSETS = {
     'org.nuxel.WiFiSSHConsole': '/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a80',
     'org.nuxel.RemoteDesktopXRDP': '/assets/nuxel-applications-icon-pack/05-07_web-window.png?v=p47000',
     'org.nuxel.RemoteDesktopVNC': '/assets/nuxel-applications-icon-pack/06-04_casting-screen.png?v=p47000',
-    'org.nuxel.ScrcpyMirror': '/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png?v=p47000',
     'org.nuxel.SnekByte': '/assets/nuxel-applications-icon-pack/01-02_snekbyte.png?v=a63',
     'org.nuxel.Doom': '/pwa/nuxel-apps/doom/icons/icon-192.png?v=p77000',
     'org.nuxel.Calculator': '/assets/nuxel-applications-icon-pack/06-02_calculator.png?v=p33000',
@@ -628,7 +615,7 @@ function nuxelAppIcon(app, opts) {
     // WebKit parser to compile a handler for EVERY icon (≈100 tiles on the
     // All Apps drawer) on EVERY render.  The load/error contract is a single
     // delegated listener installed once (nuxelInstallIconDelegation()).
-    return '<span class="nuxel-icon-fallback" data-icon-state="fallback"' + originAttr + ' aria-hidden="true">' + esc(glyph) + '</span>' +
+    return (external ? '' : '<span class="nuxel-icon-fallback" data-icon-state="fallback"' + originAttr + ' aria-hidden="true">' + esc(glyph) + '</span>') +
         '<img class="nuxel-icon-img" src="' + esc(src) + '" alt="' + name + '" width="48" height="48" ' +
         'loading="' + loading + '" fetchpriority="' + priority + '" draggable="false" decoding="async" ' +
         'data-icon-src="' + esc(src) + '" data-icon-state="pending"' + originAttr + '>';

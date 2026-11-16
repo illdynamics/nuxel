@@ -22,6 +22,17 @@
       return;
     }
     var src = doc.source || {};
+    var select = $('mic-source');
+    if (select) {
+      var options = (doc.sources || []).map(function (source) {
+        var option = document.createElement('option');
+        option.value = String(source.id); option.textContent = source.name;
+        option.selected = source.id === src.id;
+        return option;
+      });
+      select.replaceChildren.apply(select, options);
+      select.disabled = !options.length;
+    }
     var vol = Number(doc.volume_percent);
     if (Number.isFinite(vol)) {
       var slider = $('mic-volume'); if (slider) slider.value = String(Math.max(0, Math.min(100, vol)));
@@ -81,6 +92,10 @@
     });
   }
   function bind() {
+    var select = $('mic-source');
+    if (select) select.addEventListener('change', function () {
+      call('select', {id: select.value}).then(render);
+    });
     var slider = $('mic-volume');
     if (slider) slider.addEventListener('change', function () { setVolume(slider.value); });
     var mute = $('mic-mute'); if (mute) mute.addEventListener('click', toggleMute);

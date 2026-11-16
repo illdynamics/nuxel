@@ -63,7 +63,7 @@
 // setup sheet (Settings -> Security only), and no top-centre title/instructions
 // on the credential surface.  Without this bump the launcher kept serving the
 // previous JS from the v101 cache after a live deploy.
-const CACHE_VERSION = 'a88-lock5';
+const CACHE_VERSION = 'v086-beta-icons';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

@@ -20,7 +20,7 @@
   ],
   "nuxel": {
     "bridge_version": "1",
-    "pwa_version": "0.8.5-beta",
+    "pwa_version": "0.8.6-beta",
     "capabilities": ["network:manage"],
     "app_type": "settings",
     "app_id": "org.nuxel.NetworkManager",

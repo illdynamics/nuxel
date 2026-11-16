@@ -1,0 +1,121 @@
+#!/usr/bin/python3
+"""Discover real USB ALSA PCMs on the S10+ image without a udev daemon.
+
+Only USB cards with /proc/asound/cardN/usbid are managed. Built-in, Bluetooth
+and DisplayPort nodes remain with their existing owners. Reconcile after
+hotplug or a Pulse socket replacement; never restart the sound server.
+"""
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import time
+
+os.environ['XDG_RUNTIME_DIR'] = '/run/nuxel-wayland'
+os.environ['PULSE_SERVER'] = 'unix:/run/nuxel-wayland/pulse/native'
+STATE = Path('/run/nuxel/usb-audio.json')
+MIC_PREF = Path('/var/lib/nuxel/audio/microphone.json')
+
+def run(*args):
+    return subprocess.run(['pactl', *args], capture_output=True, text=True, timeout=6)
+
+def read(path):
+    try:
+        return Path(path).read_text().strip()
+    except OSError:
+        return ''
+
+def discover(root=Path('/proc/asound')):
+    found = {}
+    for marker in root.glob('card*/usbid'):
+        card = marker.parent
+        identity = read(card / 'id')
+        if not re.fullmatch(r'[A-Za-z0-9_-]+', identity):
+            continue
+        for pcm in card.glob('pcm*[pc]'):
+            m = re.fullmatch(r'pcm(\d+)([pc])', pcm.name)
+            if not m:
+                continue
+            kind = 'sink' if m[2] == 'p' else 'source'
+            name = 'alsa_%s.usb-%s-%s' % ('output' if kind == 'sink' else 'input', identity, m[1])
+            found[name] = {'kind': kind, 'device': 'plughw:%s,%s' % (identity, m[1]),
+                           'card': int(card.name[4:]), 'usb_id': read(marker), 'id': identity}
+    return found
+
+def json_list(kind):
+    p = run('-f', 'json', 'list', kind)
+    if p.returncode:
+        raise RuntimeError(p.stderr.strip())
+    return json.loads(p.stdout)
+
+def reconcile(devices):
+    modules = json_list('modules')
+    # Remove only modules this helper named, never another audio owner's nodes.
+    for module in modules:
+        arg = module.get('argument', '')
+        owned = re.search(r'(?:sink|source)_name=(alsa_(?:output|input)\.usb-[A-Za-z0-9_-]+)', arg)
+        if owned and owned[1] not in devices:
+            # pactl's JSON shape differs between PipeWire-pulse versions;
+            # some module records expose name/argument but no numeric index.
+            # Never unload an unidentifiable module: it could belong to the
+            # shared audio session rather than this helper.
+            index = module.get('index')
+            if index is not None:
+                run('unload-module', str(index))
+    nodes = json_list('sinks') + json_list('sources')
+    names = {n['name'] for n in nodes}
+    existing_cards = {(str((n.get('properties') or {}).get('alsa.card')), n.get('name', '').startswith('alsa_input')) for n in nodes}
+    errors = []
+    for name, info in devices.items():
+        if name in names or (str(info['card']), info['kind'] == 'source') in existing_cards:
+            continue
+        kind = info['kind']
+        # plughw negotiates the USB device's supported rate/channel layout.
+        result = run('load-module', 'module-alsa-' + kind,
+                     kind + '_name=' + name, 'device=' + info['device'],
+                     'rate=48000', 'channels=' + ('1' if kind == 'source' else '2'),
+                     kind + '_properties=device.description="USB ' + info['id'] +
+                     (' microphone"' if kind == 'source' else ' earphones"') + ' device.bus=usb')
+        if result.returncode:
+            errors.append({'device': name, 'error': result.stderr.strip()})
+    sources = json_list('sources')
+    try:
+        pref = json.loads(MIC_PREF.read_text())
+    except (OSError, ValueError):
+        pref = {}
+    selected = pref.get('source_name')
+    source_names = {s['name'] for s in sources if not s['name'].endswith('.monitor')}
+    if selected not in source_names:
+        selected = next((s for s in sorted(source_names) if s.startswith('alsa_input.usb-')), None)
+        current = run('get-default-source').stdout.strip()
+        selected = selected or (current if current in source_names else None)
+        selected = selected or ('alsa_input.hw_0_13' if 'alsa_input.hw_0_13' in source_names else None)
+    if selected:
+        if selected.startswith('alsa_input.usb-'):
+            run('set-source-mute', selected, '1' if pref.get('muted') else '0')
+            run('set-source-volume', selected, str(max(0, min(100, int(pref.get('volume_percent', 100))))) + '%')
+        run('set-default-source', selected)
+    return errors
+
+def main():
+    previous = None
+    while True:
+        try:
+            devices = discover()
+            sock = Path('/run/nuxel-wayland/pulse/native').stat()
+            signature = (json.dumps(devices, sort_keys=True), sock.st_ino)
+            if signature != previous:
+                errors = reconcile(devices)
+                STATE.parent.mkdir(parents=True, exist_ok=True)
+                temp = STATE.with_suffix('.tmp')
+                temp.write_text(json.dumps({'devices': devices, 'errors': errors, 'updated_at': time.time()}) + '\n')
+                temp.replace(STATE)
+                if not errors:
+                    previous = signature
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+            print('USB audio discovery: ' + str(exc), flush=True)
+        time.sleep(3)
+
+if __name__ == '__main__':
+    main()

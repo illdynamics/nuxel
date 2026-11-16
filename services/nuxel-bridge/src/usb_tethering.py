@@ -1,222 +1,103 @@
 #!/usr/bin/env python3
-"""Nuxel USB networking gadget provider (userspace; no flashing).
+"""Physical CDC-ECM networking, independent of ZeroTier and USB serial.
 
-This module is a READ-BACK adapter plus a thin, typed action surface for the
-single gadget owner, ``/usr/lib/nuxel/nuxel-usb-mode.sh``.
-
-Gadget compositions (all keep the CDC-ACM recovery console):
-
-  charging       ACM only (safe default / rollback target)
-  file_transfer  ACM + MTP
-  usb_network    ACM + CDC-NCM — local USB Ethernet + SSH, no Internet share
-  usb_tethering  ACM + CDC-NCM composition flagged for explicit Internet share
-
-Internet sharing itself lives in ``usb_tether.py`` (scoped nftables) and is
-started/stopped separately.  A tethering *composition* alone is not Internet.
-
-Nothing here mutates the gadget directly: configfs is owned by
-``nuxel-usb-mode.sh``, which serialises transitions with flock(), journals them
-and rolls back to ACM-only on failure.  This module only invokes that helper
-with a fixed argv list (never a shell) and reports the helper's REAL recorded
-state; it never fabricates success and never infers "active" from a configfs
-directory.
-
-Read roots are overridable for offline tests (``NUXEL_USB_MODE_HELPER``,
-``NUXEL_USB_MODE_STATE``, ``NUXEL_USB_MODE_SELECTION``).
+The fixed systemd helper owns address/gadget changes outside the bridge's
+read-only mount namespace. Stop removes the USB address, leaving ACM intact.
 """
-from __future__ import annotations
-
+from pathlib import Path
 import json
 import os
 import subprocess
-from typing import Any, Dict, Optional
 
-HELPER = "/usr/lib/nuxel/nuxel-usb-mode.sh"
-ACTIVATION = "/run/nuxel/usb-mode.state"
-SELECTION = "/run/nuxel/connection-mode.json"
-
-# Owner-facing mode names and their compatibility aliases.
-_MODES = {
-    "off": "charging",
-    "charging": "charging",
-    "file_transfer": "file_transfer",
-    "usb-net": "usb_network",
-    "usb_network": "usb_network",
-    "usbnet": "usb_network",
-    "usb-tether": "usb_tethering",
-    "usb_tethering": "usb_tethering",
-    "tether": "usb_tethering",
-}
-_NETWORK_MODES = ("usb_network", "usb_tethering")
-
-
-def _root(env: str, default: str) -> str:
-    return os.environ.get(env, default)
-
-
-def _read_json(path: str) -> Dict[str, Any]:
+UNIT = 'nuxel-usb-net-up.service'
+HELPER = '/usr/lib/nuxel/nuxel-usb-net-up.sh'
+def _usb_config():
+    values = {'NUXEL_USB_NET_ADDR': '10.100.10.1/24',
+              'NUXEL_USB_NET_HOST_ADDR': '10.100.10.2/24',
+              'NUXEL_USB_NET_SUBNET': '10.100.10.0/24'}
+    path = os.environ.get('NUXEL_USB_NET_CONFIG', '/etc/nuxel/usb-network.conf')
     try:
-        with open(path, "r") as fh:
-            data = json.load(fh)
-        return data if isinstance(data, dict) else {}
+        for line in Path(path).read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, value = line.split('=', 1)
+            if key.strip() in values:
+                values[key.strip()] = value.strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return values
+
+_USB_CONFIG = _usb_config()
+ADDRESS = _USB_CONFIG['NUXEL_USB_NET_ADDR'].split('/', 1)[0]
+HOST = _USB_CONFIG['NUXEL_USB_NET_HOST_ADDR']
+_MODES = {'off': 'charging', 'charging': 'charging', 'usb-net': 'usb_network',
+          'usbnet': 'usb_network', 'usb_network': 'usb_network',
+          'tether': 'usb_tethering', 'usb-tether': 'usb_tethering',
+          'usb_tethering': 'usb_tethering'}
+
+def _run(*args):
+    return subprocess.run(args, capture_output=True, text=True, timeout=55)
+
+def normalize_function(function=None):
+    return 'ecm' if str(function or 'ecm').lower() in ('ecm', 'auto', '') else ''
+
+def current_state():
+    try:
+        links = json.loads(_run('ip', '-j', '-4', 'addr', 'show', 'dev', 'usb0').stdout or '[]')
+        addressed = any(a.get('local') == ADDRESS for link in links for a in link.get('addr_info', []))
+        enabled = _run('systemctl', 'is-enabled', UNIT).stdout.strip() == 'enabled'
+        carrier = Path('/sys/class/net/usb0/carrier').read_text().strip() == '1'
+    except (OSError, ValueError, subprocess.SubprocessError):
+        addressed, enabled, carrier = False, False, False
+    try:
+        tether = json.loads(Path('/run/nuxel/usb-tether.json').read_text()).get('enabled', False)
     except (OSError, ValueError):
-        return {}
+        tether = False
+    mode = 'usb_tethering' if tether and addressed else 'usb_network' if addressed else 'charging'
+    return {'success': True, 'selected': mode, 'mode': mode, 'active': addressed,
+            'enabled': enabled, 'link_connected': carrier, 'interface': 'usb0' if addressed else '',
+            'function': 'ecm', 'source': 'gadget:ecm+acm', 'tether_composition': tether,
+            'device_ip': ADDRESS + '/24' if addressed else '', 'host_ip': HOST,
+            'subnet': _USB_CONFIG['NUXEL_USB_NET_SUBNET'], 'acm_preserved': Path('/dev/ttyGS0').exists(),
+            'last_error': None}
 
-
-def normalize_function(function: Optional[str]) -> str:
-    """Only CDC-NCM is enabled for this release.
-
-    RNDIS/ECM/EEM source paths exist in the kernel, but they have not passed a
-    physical teardown/ACM-preservation soak, and macOS has no native RNDIS.
-    The kernel-level NCM lifecycle fix and its userspace marker gate NCM.
-    """
-    fn = str(function or "ncm").strip().lower()
-    if fn not in ("ncm", "auto", ""):
-        return ""
-    return "ncm"
-
-
-def current_state() -> Dict[str, Any]:
-    selection = _read_json(_root("NUXEL_USB_MODE_SELECTION", SELECTION))
-    activation = _read_json(_root("NUXEL_USB_MODE_STATE", ACTIVATION))
-    selected = str(selection.get("mode", "") or "charging")
-    mode = str(activation.get("mode", "") or "charging")
-    active = bool(activation.get("active"))
-    if not active:
-        mode = "charging" if mode else ""
-    label = str(activation.get("source", "") or "")
-    if mode in _NETWORK_MODES:
-        # The state file records the true live check (netdev present + UDC
-        # configured); never report a network mode active otherwise.
-        active = active and bool(activation.get("interface"))
-    if not active:
-        mode = "charging"
-    fn = "ncm" if mode in _NETWORK_MODES else ""
-    return {
-        "success": True,
-        "selected": selected,
-        "mode": mode,
-        "active": active,
-        "interface": activation.get("interface", "") if mode in _NETWORK_MODES else "",
-        "function": fn,
-        "upstream": activation.get("upstream", "") or "",
-        "source": label,
-        "tether_composition": bool(activation.get("tether_composition")),
-        "device_ip": activation.get("phone_address", "") if mode in _NETWORK_MODES else "",
-        "host_ip": activation.get("host_address", "") if mode in _NETWORK_MODES else "",
-        "subnet": "10.15.19.0/24" if mode in _NETWORK_MODES else "",
-        "acm_preserved": bool(activation.get("source", "").startswith(("gadget:acm", "gadget:ncm+acm", "gadget:mtp+acm", "rollback:acm"))),
-        "last_error": activation.get("error"),
-        "transaction": activation.get("transaction"),
-    }
-
-
-def set_mode(mode: str, function: str = "ncm") -> Dict[str, Any]:
-    """Request a transition through the single gadget owner.
-
-    ``mode`` accepts the typed names above.  ``function`` must be NCM (the only
-    physically targeted data plane for this batch); anything else is refused
-    instead of silently substituting a different function.
-    """
-    target = _MODES.get(str(mode or "").strip().lower())
+def set_mode(mode, function='ecm'):
+    target = _MODES.get(str(mode).lower())
     if not target:
-        return {"success": False, "error": "unknown-mode", "mode": mode,
-                "error_code": "INVALID_MODE",
-                "allowed": sorted(k for k in _MODES if k != "off")}
-    fn = normalize_function(function)
-    if not fn:
-        return {"success": False, "error": "unsupported-function", "function": function,
-                "error_code": "UNSUPPORTED_FUNCTION",
-                "detail": "only CDC-NCM is enabled; RNDIS/ECM/EEM are not physically "
-                          "validated and macOS has no native RNDIS driver"}
-    helper = _root("NUXEL_USB_MODE_HELPER", HELPER)
-    if not os.path.exists(helper):
-        return {"success": False, "error": "usb-mode-helper-missing", "mode": mode,
-                "error_code": "PROVIDER_UNAVAILABLE",
-                "detail": "the single USB gadget owner is not installed on this image"}
-    want = target
-    if want == "usb_network":
-        want = "usb_network"
-    try:
-        proc = subprocess.run([helper, want], capture_output=True, text=True,
-                              timeout=90, stdin=subprocess.DEVNULL)
-    except subprocess.TimeoutExpired:
-        return {"success": False, "error": "helper-timeout", "mode": target,
-                "error_code": "TIMEOUT"}
-    except OSError as exc:
-        return {"success": False, "error": "helper-exec-failed", "mode": target,
-                "detail": str(exc), "error_code": "EXEC_FAILED"}
+        return {'success': False, 'error': 'unknown-mode', 'error_code': 'INVALID_MODE'}
+    if not normalize_function(function):
+        return {'success': False, 'error': 'Only the validated CDC-ECM function is supported',
+                'error_code': 'UNSUPPORTED_FUNCTION'}
+    if target == 'charging':
+        return disable_all()
+    proc = _run('systemctl', 'enable', '--now', UNIT)
     result = current_state()
-    result["requested"] = target
-    result["helper_rc"] = proc.returncode
-    result["helper_output"] = (proc.stdout or "").strip()[:4000]
-    # The manager is the source of truth: success means the requested
-    # composition is the one the running kernel reports now.
-    if target == "charging":
-        result["success"] = proc.returncode == 0 and not result["active"]
-    else:
-        result["success"] = (proc.returncode == 0 and result["active"]
-                             and result["mode"] == target)
-    if not result["success"] and not result.get("last_error"):
-        result["last_error"] = (proc.stderr or proc.stdout or "").strip()[:800] or \
-            "helper did not confirm the requested composition"
+    result['success'] = proc.returncode == 0 and result['active']
+    if not result['success']:
+        result['error'] = proc.stderr.strip() or 'USB interface did not acquire its address'
     return result
 
+def preflight(mode='usb_network'):
+    return dict(current_state(), requested=_MODES.get(mode), helper_present=Path(HELPER).exists(), mutated=False)
 
-def start_tethering_composition() -> Dict[str, Any]:
-    return set_mode("usb_tethering", "ncm")
+def start_tethering_composition():
+    return set_mode('usb_tethering')
 
-
-def stop() -> Dict[str, Any]:
-    return set_mode("charging", "ncm")
-
-
-def preflight(mode: str = "usb_network") -> Dict[str, Any]:
-    """Read-only capability summary for the UI (no configfs mutation)."""
-    state = current_state()
-    return {
-        "success": True,
-        "requested": _MODES.get(str(mode).lower()),
-        "helper_present": os.path.exists(_root("NUXEL_USB_MODE_HELPER", HELPER)),
-        "active": state["active"],
-        "mode": state["mode"],
-        "ncm_function": "ncm",
-        "acm_preserved": state.get("acm_preserved"),
-        "device_ip": state.get("device_ip"),
-        "host_ip": state.get("host_ip"),
-        "last_error": state.get("last_error"),
-        "mutated": False,
-    }
-
-
-def enable_for_host(upstream: Optional[str] = None) -> Dict[str, Any]:
-    """Explicit owner action: USB network composition, then Internet sharing.
-
-    This is the one-step equivalent of (a) USB Network ON, (b) USB Tether
-    start.  Both remain separate states in the status document; this only
-    sequences them for the Settings/Quick Settings action that literally asks
-    to share Internet with the attached computer.
-
-    Returns the tether provider's real read-back.  It never reports Internet
-    verified: only the attached computer's own end-to-end evidence can do that
-    (``usb-tether host-report``).
-    """
-    import usb_tether  # same package dir; imported lazily for tests
-    comp = set_mode("usb_tethering", "ncm")
-    if not comp.get("success"):
-        return {"success": False, "stage": "usb-network",
-                "error": comp.get("error") or comp.get("last_error"),
-                "error_code": comp.get("error_code") or "USB_NOT_ACTIVE",
-                "usb": comp}
-    teth = usb_tether.start(upstream, source="usb-net:enable-for-host")
-    teth["stage"] = "usb-tether"
-    teth["usb"] = current_state()
-    return teth
-
-
-def disable_all(source: str = "api") -> Dict[str, Any]:
-    """Stop Internet sharing first, then return the gadget to ACM-only."""
+def enable_for_host(upstream=None):
     import usb_tether
-    t = usb_tether.stop(source=source)
-    u = stop()
-    return {"success": bool(u.get("success")), "tether": t, "usb": u}
+    link = set_mode('usb_network')
+    if not link['success']:
+        return dict(link, stage='usb-network')
+    return dict(usb_tether.start(upstream, source='usb-net:enable-for-host'), usb=current_state())
+
+def disable_all(source='api'):
+    import usb_tether
+    tether = usb_tether.stop(source=source)
+    ssh = _run('systemctl', 'disable', '--now', 'nuxel-usb-ssh.service')
+    proc = _run('systemctl', 'disable', '--now', UNIT)
+    return dict(current_state(), success=proc.returncode == 0 and ssh.returncode == 0 and tether.get('success', False),
+                tether=tether, error=proc.stderr.strip() or None)
+
+def stop():
+    return disable_all()

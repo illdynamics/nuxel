@@ -28,7 +28,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'a88';
+  const VERSION = 'v0.8.6-beta';
   const DOTS = 9;
   const PATTERN_DOT = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
     x: 50 + (i % 3) * 100, y: 50 + Math.floor(i / 3) * 100,
@@ -365,7 +365,7 @@
         const idOf = (key) => key.id || key.dataset.pin || '';
         this.pinpad.onclick = (ev) => {
           const key = keyFrom(ev);
-          if (!key || this.busy) return;
+          if (!key || this.busy || !this.panelOpen || this.effectiveMode !== 'pin') return;
           const id = idOf(key);
           if (id === 'lockscreen-pin-del') { this.pin = this.pin.slice(0, -1); this._paintPin(); return; }
           if (id === 'lockscreen-pin-cancel') { this.cancelToLockhead(); return; }
@@ -379,7 +379,7 @@
         this.pinpad.addEventListener('pointerdown', (ev) => {
           const key = keyFrom(ev);
           if (key) { try { key.classList.add('pressed'); } catch (e) {} }
-          if (key && ev.cancelable) { try { ev.preventDefault(); } catch (e) {} }
+          // Do not cancel pointerdown: WebKit then suppresses the only click.
         }, { passive: false });
         const release = (ev) => {
           const key = keyFrom(ev);
@@ -390,10 +390,11 @@
         this.pinpad.addEventListener('pointerleave', release);
       }
       const key = (ev) => {
-        if (this.effectiveMode !== 'pin' || this.busy || !this.panelOpen) return;
-        if (/^[0-9]$/.test(ev.key)) { this.pin += ev.key; this._paintPin(); ev.preventDefault(); }
+        if (this.effectiveMode !== 'pin' || this.busy || !this.panelOpen || ev.repeat) return;
+        if (/^[0-9]$/.test(ev.key) && this.pin.length < 16) { this.pin += ev.key; this._paintPin(); ev.preventDefault(); }
         else if (ev.key === 'Backspace') { this.pin = this.pin.slice(0, -1); this._paintPin(); ev.preventDefault(); }
         else if (ev.key === 'Enter') { this._submitPin(); ev.preventDefault(); }
+        else if (ev.key === 'Escape') { this.cancelToLockhead(); ev.preventDefault(); }
       };
       global.addEventListener('keydown', key, true);
     }
@@ -445,7 +446,8 @@
       if (res && res.error === 'rate_limited') {
         this._error('Too many attempts. Wait ' + (res.remaining_s || 30) + ' s.');
       } else {
-        this._error('Incorrect. Try again.' + (res && res.error ? ' (' + res.error + ')' : ''));
+        this._error('Try again.');
+        this._shake(via === 'pattern' ? this.patternEl : this.pinpad);
       }
       buzz(40);
       this.pin = ''; this._paintPin();
@@ -472,16 +474,12 @@
 
     _positionScanner() {
       if (!this.fpEl) return;
-      /* CSS places the oval by viewport proportion; verify against the live
-         viewport so the artwork is exactly on the physical scanner. */
-      this.fpEl.style.setProperty('--scanner-left', (SCANNER.left * 100) + '%');
-      this.fpEl.style.setProperty('--scanner-top', (SCANNER.top * 100) + '%');
-      this.fpEl.style.setProperty('--scanner-width', (SCANNER.width * 100) + '%');
-      this.fpEl.style.setProperty('--scanner-height', (SCANNER.height * 100) + '%');
+      // The lockhead owner publishes its resting geometry on #lockscreen.
+      // CSS uses that exact geometry for the scanner, including after resize.
     }
 
     tryFingerprint() {
-      if (this.busy || this._fpInFlight || this.effectiveMode !== 'fingerprint') return;
+      if (this.busy || this._fpInFlight || !this.panelOpen || this.effectiveMode !== 'fingerprint') return;
       const fp = (this.status && this.status.fingerprint) || {};
       /* A84: when the scanner cannot actually match (nothing enrolled or no
          secure provider on this build) the press takes the owner straight to
@@ -505,17 +503,24 @@
         return;
       }
       this._fpInFlight = true;
+      const generation = this._panelGeneration;
       this.fpRing.classList.add('scanning');
       this._fpMessage('Hold on the scanner…');
       bridgeCall('fingerprint', 'authenticate', { unlock: true, mode: 'lockscreen' })
         .then((res) => {
+          if (generation !== this._panelGeneration || !this.panelOpen) return res;
           if (res && res.success === true && res.unlocked === true) {
             this.fpRing.classList.add('accepted');
             this._fpMessage('Accepted');
-            if (this.onUnlock) return this.onUnlock({ via: 'fingerprint', result: res });
+            return new Promise(resolve => global.setTimeout(resolve, 1000)).then(() => {
+              if (generation === this._panelGeneration && this.panelOpen && this.onUnlock)
+                return this.onUnlock({ via: 'fingerprint', result: res });
+            });
             return res;
           }
           this.fpRing.classList.remove('accepted');
+          this._shake(this.fpRing);
+          this._error('Try again.');
           this._fpMessage(res && res.blocker ? 'Fingerprint unavailable — use PIN'
             : 'Not recognised — try again or use PIN');
           buzz(30);
@@ -726,6 +731,11 @@
     _setPanelOpen(open) {
       if (!this.el) return;
       this.panelOpen = !!open;
+      this._panelGeneration = (this._panelGeneration || 0) + 1;
+      global.clearInterval(this._fpTimer);
+      this._fpTimer = null;
+      this.el.dataset.mode = this.effectiveMode;
+      if (this.fpRing) this.fpRing.classList.remove('accepted');
       this.el.classList.toggle('lockscreen-auth-closed', !this.panelOpen);
       /* A closed panel shows NONE of its surfaces: [hidden] on each surface is
          the authoritative switch (CSS is only the second guard), so the keypad
@@ -736,6 +746,10 @@
         this.pin = ''; this._paintPin();
       }
       try { if (this.onPanelMode) this.onPanelMode(this.panelOpen, this.effectiveMode); } catch (e) {}
+      if (this.panelOpen && this.effectiveMode === 'fingerprint') {
+        this.tryFingerprint();
+        this._fpTimer = global.setInterval(() => this.tryFingerprint(), 1500);
+      }
     }
 
     _paintSurfaces() {
@@ -747,6 +761,8 @@
       if (this.patternEl) this.patternEl.hidden = !(open && mode === 'pattern');
       if (this.pinpad) this.pinpad.hidden = !(open && mode === 'pin');
       if (this.fpEl) this.fpEl.hidden = !(open && mode === 'fingerprint');
+      const actions = el('lockscreen-auth-actions');
+      if (actions) actions.hidden = !(open && (mode === 'pattern' || mode === 'fingerprint'));
     }
 
     /* The lockhead was swiped/tapped in a credential mode: open the panel. */
@@ -772,6 +788,8 @@
     closePanel() { if (this.effectiveMode !== 'swipe') this._setPanelOpen(false); }
 
     _wireFallback() {
+      const cancel = el('lockscreen-auth-cancel');
+      if (cancel) cancel.addEventListener('click', () => this.cancelToLockhead());
       const fb = el('lockscreen-pin-fallback');
       if (fb && !fb._wired) {
         fb._wired = true;
@@ -805,24 +823,24 @@
 
     /* Return from the PIN fallback to the authoritative mode (pattern /
        fingerprint / swipe).  Used by Cancel and by a Settings mode change. */
-    showAuthoritative() {
-      if (this.effectiveMode === 'pin' && this.mode === 'pin') {
-        /* Cancel on the PIN screen: with nothing else before it, go back to
-           the lockhead-only state (closed panel) instead of re-opening PIN. */
-        this._showMode('swipe');
-        return;
-      }
-      if (this.mode === 'swipe') { this._showMode('swipe'); return; }
-      return this.show();
-    }
+    showAuthoritative() { this.cancelToLockhead(); }
 
-    /* A84: Cancel returns to the lockhead-only glass: the phone stays locked
-       and the penguin is still there to surface the credential panel again. */
     cancelToLockhead() {
       this.pin = ''; this._paintPin();
       this._resetPattern();
-      if (this.effectiveMode === 'swipe') return;
+      // Restore the selected method after leaving its PIN fallback.
+      const fp = (this.status && this.status.fingerprint) || {};
+      const mode = this.mode === 'fingerprint' && !(fp.provider_ready && fp.enrolled) ? 'pin' : this.mode;
+      this._showMode(mode === 'unlock' ? 'swipe' : mode);
       this._setPanelOpen(false);
+    }
+
+    _shake(surface) {
+      if (!surface) return;
+      surface.classList.remove('credential-rejected');
+      void surface.offsetWidth;
+      surface.classList.add('credential-rejected');
+      global.setTimeout(() => surface.classList.remove('credential-rejected'), 420);
     }
 
     _error(text) { this._errAt = global.Date ? global.Date.now() : 0;
@@ -832,6 +850,7 @@
     /* Called by Home after a successful unlock so stale state never carries
        a typed PATTERN/PIN to the next lock. */
     hide() {
+      this._setPanelOpen(false);
       if (this.el) this.el.hidden = true;
       this.pin = ''; this._paintPin();
       this._resetPattern();

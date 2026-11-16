@@ -1,0 +1,6 @@
+# Copy to /etc/nuxel/usb-network.conf to change the point-to-point USB link.
+# The phone address must be the first usable address in the selected subnet;
+# the host address is normally the next address.  No DHCP service is provided.
+NUXEL_USB_NET_SUBNET=10.100.10.0/24
+NUXEL_USB_NET_ADDR=10.100.10.1/24
+NUXEL_USB_NET_HOST_ADDR=10.100.10.2/24

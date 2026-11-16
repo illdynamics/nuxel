@@ -1,0 +1,44 @@
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const {JSDOM} = require('jsdom');
+const root = path.resolve(__dirname, '../..');
+const html = fs.readFileSync(path.join(root, 'pwa/nuxel-home/index.html'),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
+const dom = new JSDOM(html, {url:'http://localhost', runScripts:'outside-only', pretendToBeVisual:true});
+const w = dom.window;
+let unlocked = 0;
+w.NuxelSecurityLock = {call: async (ns, verb, p) => ({success:p.secret === '3838',unlocked:p.secret === '3838'})};
+w.eval(fs.readFileSync(path.join(root, 'pwa/nuxel-home/js/lockscreen-auth.js'),'utf8'));
+const auth = new w.NuxelLockscreenAuth({onUnlock:()=>unlocked++});
+auth.mode = 'pin'; auth.pinFallbackSet = true;
+auth._showMode('pin',{open:true});
+function press(n) {
+  const b = w.document.querySelector('[data-pin="'+n+'"]');
+  const down = new w.MouseEvent('pointerdown', {bubbles:true,cancelable:true});
+  b.dispatchEvent(down);
+  assert(!down.defaultPrevented,'pointerdown must allow WebKit click synthesis');
+  b.dispatchEvent(new w.MouseEvent('pointerup',{bubbles:true}));
+  b.click();
+}
+(async () => {
+  press(3); assert.equal(auth.pin,'3');
+  press(3); assert.equal(auth.pin,'33','rapid identical taps both register once');
+  w.document.getElementById('lockscreen-pin-del').click(); assert.equal(auth.pin,'3');
+  w.document.getElementById('lockscreen-pin-cancel').click(); assert(!auth.panelOpen);
+  auth.openPanel(); assert.equal(auth.pin,'');
+  [1,1,1,1].forEach(press); auth._submitPin();
+  await new Promise(r=>setTimeout(r,10));
+  assert.equal(unlocked,0); assert(auth.pinpad.classList.contains('credential-rejected'));
+  assert.equal(auth.errorEl.textContent,'Try again.');
+  [3,8,3,8].forEach(press); assert.equal(auth.pinDisplay.textContent.length,4);
+  auth._submitPin(); await new Promise(r=>setTimeout(r,10)); assert.equal(unlocked,1);
+  auth.mode='pattern'; auth._showMode('pattern',{open:true});
+  w.document.getElementById('lockscreen-pin-fallback').click(); assert.equal(auth.effectiveMode,'pin');
+  w.document.getElementById('lockscreen-pin-cancel').click();
+  assert(!auth.panelOpen); assert.equal(auth.effectiveMode,'pattern');
+  auth.openPanel(); assert(!auth.patternEl.hidden);
+  w.document.getElementById('lockscreen-auth-cancel').click(); assert(!auth.panelOpen);
+  assert(w.document.getElementById('lockscreen-pin-del').querySelector('svg'));
+  console.log('PASS: real markup, single insertion, rapid repeats, deletion, retry, unlock and cancel/fallback.');
+  dom.window.close();
+})().catch(e=>{console.error(e);dom.window.close();process.exitCode=1;});

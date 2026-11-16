@@ -106,7 +106,7 @@
     "app_type": "home",
     "native_fallback": false,
     "bridge_version": "1",
-    "pwa_version": "0.8.5-beta",
+    "pwa_version": "0.8.6-beta",
     "cache_version": "a88-lock5",
     "registry_version": 18,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
@@ -128,7 +128,6 @@
     "org.nuxel.WiFiSSHConsole",
     "org.nuxel.RemoteDesktopXRDP",
     "org.nuxel.RemoteDesktopVNC",
-    "org.nuxel.ScrcpyMirror",
     "org.nuxel.Browser",
     "org.nuxel.Calculator",
     "org.nuxel.Clock",
@@ -169,7 +168,7 @@
       "safe_zones": 10,
       "safe_zone_profile": "s10plus"
     },
-    "host_version": "0.8.5-beta"
+    "host_version": "0.8.6-beta"
   },
   "id": "/pwa/nuxel-home/",
   "display_override": [
