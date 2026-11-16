@@ -9,8 +9,10 @@
  *
  *   transport TL  : 0xB0 SOP-escape, 0x01 EOP, CRC-8 (table), seqId, flags
  *   RPC framing   : [u8.. rpcId][u8.. len][payload], 7-bit extended fields
- *   used RPCs     : 0x00 GetVersion, 0x3A GetVersionExt, 0x2E StartScratchApp,
- *                   0x05 MemoryWrite, 0x37 ServiceStart, 0x36 SetInterrupt
+ *   observed RPC ids: 0x00 GetVersion, 0x3A GetVersionExt, 0x2E StartScratchApp,
+ *                     0x05 MemoryWrite, 0x37 ServiceStart, 0x36 SetInterrupt
+ *   (only read-only version queries are executable; the upload state machine
+ *   remains deliberately disabled until it is source-verified end-to-end).
  *
  * The patch bytes come from /dev/bbd_patch, which the kernel serves.
  * Every reply is decoded and printed; nothing is fabricated.  If the hub
@@ -32,6 +34,7 @@
 #define BBD_SENSOR  "/dev/bbd_sensor"
 #define BBD_PATCH   "/dev/bbd_patch"
 #define TTY_BCM     "/dev/ttyBCM"
+#define PATCH_READ_LIMIT (2u << 20)
 
 #define ESC 0xB0
 #define ESC_ESC 0x03
@@ -79,6 +82,20 @@ static uint64_t now_ms(void)
 {
 	struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
 	return (uint64_t)ts.tv_sec*1000u + (uint64_t)ts.tv_nsec/1000000u;
+}
+
+/* Used only to fingerprint decoded content.  The vendor text field named
+ * "Crc" is not documented as IEEE CRC-32 and must not be treated as one. */
+static uint32_t crc32_ieee(const uint8_t *p, size_t n)
+{
+	uint32_t crc = 0xffffffffu;
+	while (n--) {
+		unsigned int bit;
+		crc ^= *p++;
+		for (bit = 0; bit < 8; bit++)
+			crc = (crc >> 1) ^ (0xedb88320u & -(int32_t)(crc & 1));
+	}
+	return ~crc;
 }
 /* ---------- TL transmit ---------- */
 struct tx { uint8_t b[1<<17]; size_t n; };
@@ -381,16 +398,6 @@ static int rpc_scratch_app(struct chan *c, uint32_t addr)
 	rpc_add(&m, 0x2e, pl, 4);
 	return transact(c, &m, 2000, "StartScratchApp");
 }
-static int rpc_service_start(struct chan *c, uint32_t a, uint32_t b, uint32_t d, uint32_t e, uint32_t f)
-{
-	struct rpcmsg m = {0};
-	uint8_t pl[20];
-	size_t n = 0;
-	n += rpc_u32(pl + n, a); n += rpc_u32(pl + n, b);
-	n += rpc_u32(pl + n, d); n += rpc_u32(pl + n, e); n += rpc_u32(pl + n, f);
-	rpc_add(&m, 0x37, pl, n);
-	return transact(c, &m, 3000, "ServiceStart");
-}
 static int rpc_set_interrupt(struct chan *c, bool on)
 {
 	struct rpcmsg m = {0};
@@ -399,21 +406,38 @@ static int rpc_set_interrupt(struct chan *c, bool on)
 	return transact(c, &m, 1000, on ? "SetInterrupt(1)" : "SetInterrupt(0)");
 }
 
-static int load_patch(uint8_t **out, size_t *len)
+static int load_patch_path(const char *path, uint8_t **out, size_t *len)
 {
-	int fd = open(BBD_PATCH, O_RDONLY);
+	int fd = open(path, O_RDONLY);
 	uint8_t *b; size_t cap = 1 << 20, n = 0; ssize_t r;
-	if (fd < 0) { logx("open %s: %s", BBD_PATCH, strerror(errno)); return -1; }
+	if (fd < 0) { logx("open %s: %s", path, strerror(errno)); return -1; }
 	b = malloc(cap);
+	if (!b) { close(fd); logx("malloc patch buffer"); return -1; }
 	for (;;) {
-		if (n == cap) { cap *= 2; b = realloc(b, cap); }
+		uint8_t *nb;
+		if (n == cap) {
+			if (cap >= PATCH_READ_LIMIT) { logx("patch exceeds %u-byte safety limit", PATCH_READ_LIMIT); free(b); close(fd); return -1; }
+			cap *= 2;
+			nb = realloc(b, cap);
+			if (!nb) { free(b); close(fd); logx("realloc patch buffer"); return -1; }
+			b = nb;
+		}
 		r = read(fd, b + n, cap - n);
-		if (r <= 0) break;
+		if (r < 0) { if (errno == EINTR) continue; free(b); close(fd); logx("read %s: %s", path, strerror(errno)); return -1; }
+		if (r == 0) break;
+		/* bbd_patch_read() rewinds at EOF.  Its next read begins with the
+		 * original prefix; do not append it indefinitely. */
+		if (n && r >= 32 && !memcmp(b + n, b, 32)) break;
 		n += (size_t)r;
 	}
 	close(fd);
 	*out = b; *len = n;
 	return 0;
+}
+
+static int load_patch(uint8_t **out, size_t *len)
+{
+	return load_patch_path(BBD_PATCH, out, len);
 }
 
 static int parse_hex_hdr(const uint8_t *b, size_t n, const char *key, uint32_t *val, unsigned long *ulong)
@@ -460,36 +484,71 @@ static uint8_t *patch_blob(const uint8_t *hdr, size_t hn, size_t *blob_len)
 	return out;
 }
 
+static int validate_patch(const uint8_t *patch, size_t plen, uint8_t **blob_out,
+			  size_t *blen_out, uint32_t *address_out)
+{
+	uint8_t *blob;
+	size_t blen = 0;
+	uint32_t asic = 0, declared_len = 0, address = 0;
+	unsigned long declared_crc = 0;
+
+	if (parse_hex_hdr(patch, plen, "AsicVersion", &asic, NULL) ||
+	    parse_hex_hdr(patch, plen, "BlobLength", &declared_len, NULL) ||
+	    parse_hex_hdr(patch, plen, "PatchAddress", &address, NULL) ||
+	    parse_hex_hdr(patch, plen, "Crc", NULL, &declared_crc)) {
+		logx("patch header missing a mandatory field");
+		return -1;
+	}
+	blob = patch_blob(patch, plen, &blen);
+	if (!blob || !blen || blen != declared_len) {
+		logx("patch blob length invalid (declared=%u decoded=%zu)", declared_len, blen);
+		free(blob);
+		return -1;
+	}
+	printf("patch: input=%zu B asic=0x%08x blobLength=%u patchAddr=0x%08x headerCrc=0x%08lx contentCrc32=0x%08x\n",
+	       plen, asic, declared_len, address, declared_crc, crc32_ieee(blob, blen));
+	*blob_out = blob;
+	*blen_out = blen;
+	*address_out = address;
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	struct chan c;
 	uint8_t *patch = NULL, *blob = NULL;
 	size_t plen = 0, blen = 0;
-	uint32_t asic = 0, blobbytes = 0, patchaddr = 0;
-	unsigned long crc = 0;
-	const char *mode = "query";
+	uint32_t patchaddr = 0;
+	const char *mode = NULL;
+	const char *verify_path = NULL;
+	bool live = false;
 	int i, chunk = 240;
 	uint64_t deadline;
 	int replied = 0;
 
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "--verbose")) g_verbose = 1;
+		else if (!strcmp(argv[i], "--live")) live = true;
 		else if (!strcmp(argv[i], "--download")) mode = "download";
 		else if (!strcmp(argv[i], "--query")) mode = "query";
+		else if (!strcmp(argv[i], "--verify-patch") && i + 1 < argc) verify_path = argv[++i];
 		else if (!strcmp(argv[i], "--chunk") && i + 1 < argc) chunk = atoi(argv[++i]);
+		else { fprintf(stderr, "usage: %s --verify-patch PATH | --live --query [--verbose]\\n", argv[0]); return 64; }
+	}
+	if ((!verify_path && !mode) || (verify_path && mode) || (mode && !live)) {
+		fprintf(stderr, "refusing device I/O: use --verify-patch PATH, or explicitly --live --query\\n");
+		return 64;
+	}
+	if (mode && !strcmp(mode, "download")) {
+		fprintf(stderr, "refusing unvalidated firmware download: no source-verified command/ACK state machine is available\\n");
+		return 64;
 	}
 	memset(&c, 0, sizeof c); c.tf = c.sf = -1; c.rx.state = 0;
 	c.seq = 1;
 
-	if (load_patch(&patch, &plen) < 0) return 1;
-	parse_hex_hdr(patch, plen, "AsicVersion", &asic, NULL);
-	parse_hex_hdr(patch, plen, "BlobLength", &blobbytes, NULL);
-	parse_hex_hdr(patch, plen, "PatchAddress", &patchaddr, NULL);
-	parse_hex_hdr(patch, plen, "Crc", NULL, &crc);
-	blob = patch_blob(patch, plen, &blen);
-	printf("patch: hdr=%zu B asic=0x%08x blobLength=%u patchAddr=0x%08x crc=%lu decoded_blob=%zu\n",
-	       plen, asic, blobbytes, patchaddr, crc, blen);
-	if (!blob || !blen) { logx("no <Blob=> section in patch"); return 1; }
+	if (verify_path ? load_patch_path(verify_path, &patch, &plen) : load_patch(&patch, &plen)) return 1;
+	if (validate_patch(patch, plen, &blob, &blen, &patchaddr)) { free(patch); return 1; }
+	if (verify_path) { free(blob); free(patch); return 0; }
 
 	if (chan_open(&c) < 0) return 1;
 	/* The kernel queues its own frames; drain them so they do not confuse us. */
