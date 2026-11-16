@@ -278,6 +278,9 @@ class StatusBar {
         // Unlock reveals the bar without a display OFF->ON transition; refresh
         // the authoritative state once instead of polling behind the lock.
         document.addEventListener('nuxel:lockscreen-hidden', () => {
+            // hide() has removed the lockscreen class, so the bar now has a
+            // measurable width even if providers have no new icons to render.
+            this._applySafeZones();
             this._updateTime();
             this._pollPhoneStatus();
             this._pollBluetooth();
@@ -308,7 +311,18 @@ class StatusBar {
         this._applySafeZones();
         window.addEventListener('resize', () => this._applySafeZones());
         window.addEventListener('orientationchange', () => setTimeout(() => this._applySafeZones(), 120));
-        document.addEventListener('nuxel:safezones-changed', () => this._applySafeZones());
+        window.addEventListener('nuxel:safezones-changed', () => this._applySafeZones());
+        // At boot the lockscreen can leave the bar at width zero. Re-measure
+        // when it becomes visible, and when late-loading icons change size.
+        if (window.ResizeObserver) {
+            this._safeZoneResizeObserver = new ResizeObserver(() => this._applySafeZones());
+            const bar = document.getElementById('status-bar');
+            if (bar) {
+                this._safeZoneResizeObserver.observe(bar);
+                bar.querySelectorAll('.status-left, .status-center, .status-right')
+                    .forEach(cluster => this._safeZoneResizeObserver.observe(cluster));
+            }
+        }
         this._publishCanonicalModel(true);
     }
 

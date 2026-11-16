@@ -1,0 +1,17 @@
+Command: python3 -S test_ssp_runtime_audit.py
+Result: PASS
+
+test_cannot_stage_into_source (__main__.TestELF.test_cannot_stage_into_source) ... ok
+test_invalid_and_bounded (__main__.TestELF.test_invalid_and_bounded) ... ok
+test_mock_complete_static_stage (__main__.TestELF.test_mock_complete_static_stage) ... ok
+test_native_python_elf (__main__.TestELF.test_native_python_elf) ... ok
+test_repo_alias_zip (__main__.TestELF.test_repo_alias_zip) ... ok
+test_script_offline_incomplete (__main__.TestELF.test_script_offline_incomplete) ... ok
+test_stock_paths_and_libraries (__main__.TestELF.test_stock_paths_and_libraries) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.271s
+
+OK
+
+These host tests do not prove hardware functionality.
