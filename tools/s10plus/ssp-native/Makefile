@@ -21,6 +21,7 @@ $(OUT)/test_nuxel_bbd_download: tests/test_nuxel_bbd_download.c | $(OUT)
 
 check: $(OUT)/test_nuxel_bbd_download
 	$(OUT)/test_nuxel_bbd_download
+	python3 -S tests/test_verify_embedded_patch.py
 
 clean:
 	rm -rf $(OUT)
