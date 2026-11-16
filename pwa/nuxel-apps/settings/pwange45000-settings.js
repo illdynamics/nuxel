@@ -458,7 +458,9 @@
     var gx = (ev.clientX - r.left) / r.width * 300;
     var gy = (ev.clientY - r.top) / r.height * 300;
     for (var i = 0; i < 9; i++) {
-      if (Math.hypot(gx - PATTERN_POS[i].x, gy - PATTERN_POS[i].y) <= 34) return i;
+      // Keep the hit target close to the illustrated lockhead; the old radius
+      // let diagonal drags select neighbouring dots too easily.
+      if (Math.hypot(gx - PATTERN_POS[i].x, gy - PATTERN_POS[i].y) <= 20) return i;
     }
     return -1;
   }

@@ -376,7 +376,11 @@ static void osd_publish(const char *kind, const char *text, int value, int level
 
 static void osd_menu(int open, int index) {
   if (!open) {
-    if (osd_menu_index >= 0) { osd_publish("power-menu", "", 0, 0); osd_menu_index = -1; }
+    /* Remove the OSD publication immediately.  Publishing an empty
+     * power-menu record leaves the native OSD's seven-second acknowledgement
+     * grace path alive, which paints the blue rectangle after Cancel and
+     * after Lock. */
+    if (osd_menu_index >= 0) { unlink(OSD_FILE); osd_menu_index = -1; }
     return;
   }
   osd_menu_index = index;

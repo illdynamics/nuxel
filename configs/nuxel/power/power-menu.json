@@ -36,18 +36,6 @@
       "note": "Locks the launcher and blanks the panel through nuxel-pwa-host -> nuxel-wl-fb. Reversible by a POWER short press (or the on-screen unlock swipe)."
     },
     {
-      "id": "screenshot",
-      "label": "Take screenshot",
-      "icon": "screenshot",
-      "action": "screenshot",
-      "dispatch": "host-fifo",
-      "trigger_allowed": true,
-      "requires_owner_confirmation": false,
-      "channel": "/run/nuxel-pwa-host.cmd",
-      "channel_command": "action screenshot\n",
-      "note": "Captures the composited frame (wlr-screencopy, never /dev/fb0) and writes a PNG into /home/nuxel/Gallery so the Gallery app indexes it."
-    },
-    {
       "id": "restart",
       "label": "Restart",
       "icon": "restart",
@@ -71,16 +59,6 @@
       "gate": "/etc/nuxel/buttons/reboot-gate.json",
       "execution": "systemctl poweroff",
       "refusal_reason": "refused only when the live reboot gate denies the action (disabled, per-action flag, short debounce, hourly cap, or rollback path missing); the UI always exposes the option and reports the backend verdict"
-    },
-    {
-      "id": "suspend",
-      "label": "Suspend",
-      "icon": "suspend",
-      "action": "systemctl-suspend",
-      "trigger_allowed": true,
-      "requires_owner_confirmation": false,
-      "execution": "systemctl suspend",
-      "note": "logind CanSuspend=yes on this handset. The panel is blanked first and logind performs the suspend."
     },
     {
       "id": "reboot-verbose",
@@ -191,7 +169,7 @@
     },
     {
       "id": "download-mode",
-      "label": "Download Mode (Odin)",
+      "label": "Reboot Fastboot/Download",
       "icon": "download",
       "action": "enter-download-mode",
       "dispatch": "bootloader",

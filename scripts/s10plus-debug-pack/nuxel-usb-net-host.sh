@@ -43,6 +43,7 @@ PHONE_EXPLICIT=0
 [ -n "${NUXEL_USB_PHONE:-}" ] && PHONE_EXPLICIT=1
 KEY="${NUXEL_SSH_KEY:-${HOME}/.ssh/wicked_wqn_id_rsa}"
 SSH_USER="${NUXEL_SSH_USER:-root}"
+SSH_PORT="${NUXEL_USB_SSH_PORT:-2022}"
 STATE="${NUXEL_USB_HOST_STATE:-/var/run/nuxel-usb-net-host.state}"
 
 usage() { sed -n '2,32p' "$0"; }
@@ -329,7 +330,7 @@ phone_reachable() {
 ssh_probe() {
   local keyopt=()
   [ -f "$KEY" ] && keyopt=(-i "$KEY" -o IdentitiesOnly=yes)
-  ssh -o BatchMode=yes -o ConnectTimeout=4 -o StrictHostKeyChecking=accept-new \
+  ssh -p "$SSH_PORT" -o BatchMode=yes -o ConnectTimeout=4 -o StrictHostKeyChecking=accept-new \
       "${keyopt[@]}" "${SSH_USER}@$(phone_addr)" true >/dev/null 2>&1
 }
 
@@ -390,7 +391,7 @@ tether_test() {
   fi
   local ping_ok=false http_ok=false http_code="" dns_ok=false dns_detail="not probed"
   case "$OS" in
-    Darwin) ping -c 2 -W 1500 -b "$host_ip" "$phone" >/dev/null 2>&1 && ping_ok=true ;;
+    Darwin) ping -c 2 -W 1500 -S "$host_ip" "$phone" >/dev/null 2>&1 && ping_ok=true ;;
     Linux) ping -c 2 -W 2 -I "$IFACE" "$phone" >/dev/null 2>&1 && ping_ok=true ;;
   esac
   # Host resolves the public name through its normal resolver, then connects to
@@ -408,8 +409,11 @@ PY
   if [ -n "$target_ip" ]; then
     if [ "$OS" = Darwin ]; then
       sudo route -n add -host "$target_ip" "$phone" >/dev/null 2>&1 && host_route=1 || host_route=0
+      # Preserve the hostname for TLS/SNI while forcing this probe through the
+      # temporary USB route. Bare-IP HTTPS produces a false negative on macOS.
       http_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8 \
-        --interface "$host_ip" "https://$target_ip/generate_204" 2>/dev/null)"
+        --interface "$host_ip" --resolve "connectivity.gstatic.com:443:$target_ip" \
+        "https://connectivity.gstatic.com/generate_204" 2>/dev/null)"
       [ "${host_route:-0}" = 1 ] && sudo route -n delete -host "$target_ip" "$phone" >/dev/null 2>&1
     else
       sudo ip route add "$target_ip/32" via "$phone" dev "$IFACE" >/dev/null 2>&1 && host_route=1 || host_route=0
@@ -436,7 +440,7 @@ print(json.dumps({"host_address": sys.argv[1], "checked_phone": sys.argv[2],
 PY
 )"
   if [ "$ping_ok" = true ]; then
-    ssh -o BatchMode=yes -o ConnectTimeout=4 -o StrictHostKeyChecking=accept-new \
+    ssh -p "$SSH_PORT" -o BatchMode=yes -o ConnectTimeout=4 -o StrictHostKeyChecking=accept-new \
         -i "$KEY" -o IdentitiesOnly=yes "${SSH_USER}@${phone}" \
         "cd /usr/lib/nuxel/nuxel-bridge && python3 -c 'import json,sys; import usb_tether; print(json.dumps(usb_tether.host_report(json.loads(sys.stdin.read()))))'" \
         <<<"$report" 2>/dev/null | tail -1 | grep -q '"internet_verified": true' \

@@ -4,7 +4,7 @@ The BCM47752 sensor-hub bring-up work exists as
 `0013-nuxel-sensorhub-bringup-native-bbd.patch.experimental` and is **not
 applied** by `build-kernel.sh` (only `*.patch` files are).
 
-Why it was pulled from the series for v0.8.6-beta:
+Why it was pulled from the series for v0.8.7-beta:
 
 1. It superseded and duplicated every hunk of the required, proven
    `0020-nuxel-ssp-hub-power-and-pm.patch` (hub rail reference, keep the hub out

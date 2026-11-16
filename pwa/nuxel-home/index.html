@@ -18,12 +18,12 @@
     <link rel="stylesheet" href="../nuxel-common/theme.css?v=p85000">
     <link rel="stylesheet" href="css/edge-lighting.css?v=p103000">
     <link rel="stylesheet" href="css/style.css?v=p85000">
-    <link rel="stylesheet" href="css/launcher.css?v=0.8.6-beta">
+    <link rel="stylesheet" href="css/launcher.css?v=0.8.7-beta">
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/status-bar.css?v=p106000">
     <link rel="stylesheet" href="css/home-settings.css?v=p80000">
     <link rel="stylesheet" href="css/widgets.css?v=p82000">
-    <link rel="stylesheet" href="css/lockscreen.css?v=0.8.6-beta">
+    <link rel="stylesheet" href="css/lockscreen.css?v=0.8.7-beta">
     <link rel="preload" as="image" href="assets/nuxel-preload-cover.jpg">
     <script>
     // PWNAGE-36000: in phone boot mode the separate mpv preloading-screen
@@ -169,37 +169,33 @@
             </div>
             <div class="qs-item" id="qs-bluetooth" data-enabled="unknown" data-adapter-present="false" data-state="unknown">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/04-bluetooth.svg?v=p80000" alt="" onerror="this.hidden=true">
-                <span class="qs-label">Bluetooth<br>checking</span>
+                <span class="qs-label">BT<br>checking</span>
             </div>
             <div class="qs-item" id="qs-mobile" data-enabled="false">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Mobile</span>
             </div>
-            <div class="qs-item" id="qs-location" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/09-location.svg?v=p80000" alt="" onerror="this.hidden=true">
-                <span class="qs-label">Location</span>
-            </div>
-            <div class="qs-item" id="qs-usb-net" data-enabled="unknown" data-mode="off" title="USB network: local USB Ethernet/SSH (does not share Internet)">
-                <span class="qs-icon usb-glyph" aria-hidden="true"></span>
-                <span class="qs-label">USB Net<br>checking</span>
-            </div>
             <div class="qs-item" id="qs-usb-tether" data-enabled="unknown" title="USB tether: share the phone's Internet with the attached computer">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png?v=usbnet2601" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Tether<br>checking</span>
+            </div>
+            <div class="qs-item" id="qs-bt-tether" data-enabled="false" title="Bluetooth tethering">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=p110000" alt="" onerror="this.hidden=true">
+                <span class="qs-label">BT Tether</span>
             </div>
             <div class="qs-item" id="qs-hotspot" data-enabled="unknown" title="Wi-Fi hotspot (only when the driver supports AP mode)">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png?v=usbnet2601" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Hotspot<br>checking</span>
             </div>
+            <div class="qs-item" id="qs-location" data-enabled="false">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/09-location.svg?v=p80000" alt="" onerror="this.hidden=true">
+                <span class="qs-label">GPS</span>
+            </div>
         </div>
         <div class="qs-row">
-            <div class="qs-item" id="qs-edge-panel" data-enabled="true" title="Edge panel: app and notification sidebar (also opens with a deliberate inward side swipe)">
-                <span class="qs-icon edge-panel-icon" aria-hidden="true"></span>
-                <span class="qs-label">Edge</span>
-            </div>
             <div class="qs-item" id="qs-edge-lighting" data-enabled="true" title="Edge lighting: notification display effect (tap = preview, long-press = on/off)">
                 <span class="qs-icon edge-lighting-icon" aria-hidden="true"></span>
-                <span class="qs-label">Edge<br>light</span>
+                <span class="qs-label">Edge</span>
             </div>
             <div class="qs-item" id="qs-dnd" data-enabled="false">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png?v=a44" alt="" onerror="this.hidden=true">
@@ -213,33 +209,40 @@
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Rotate</span>
             </div>
-            <div class="qs-item" id="qs-firewall" data-enabled="unknown">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/23-firewall.png?v=1" alt="" onerror="this.hidden=true">
-                <span class="qs-label">Firewall<br>checking</span>
-            </div>
+            <div class="qs-item" id="qs-vpn" data-enabled="false"><span class="qs-icon vpn-glyph" aria-hidden="true"></span><span class="qs-label">VPN</span></div>
+            <div class="qs-item" id="qs-zerotier" data-enabled="false"><span class="qs-icon zerotier-glyph" aria-hidden="true"></span><span class="qs-label">ZT</span></div>
+            <div class="qs-item" id="qs-penguru" data-enabled="false" title="PenGuru placeholder toggle — reserved for the PenGuru Squad LLM network subsystem"><span class="qs-icon penguru-glyph" aria-hidden="true">P</span><span class="qs-label">PenGuru</span></div>
         </div>
         <!-- PWNAGE-52000: privacy row, present only in the fully expanded
              panel.  Each tile is backed by a real Bridge provider; OFF/
              UNSUPPORTED stays honest and never paints as ON. -->
         <div class="qs-row qs-privacy-row" id="qs-privacy-row" hidden>
+            <div class="qs-item" id="qs-tor" data-enabled="false"><span class="qs-icon tor-glyph" aria-hidden="true"></span><span class="qs-label">Tor</span></div>
             <div class="qs-item" id="qs-nfc" data-enabled="unknown" data-supported="unknown" title="NFC provider">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/08-nfc.png?v=p80000" alt="" onerror="this.hidden=true">
                 <span class="qs-label">NFC<br>checking</span>
             </div>
             <div class="qs-item" id="qs-fingerprint" data-enabled="unknown" data-supported="unknown" title="Biometric unlock policy">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/28-unlocked.png?v=p80000" alt="" onerror="this.hidden=true">
-                <span class="qs-label">Fingerprint<br>checking</span>
+                <span class="qs-label">Finger<br>checking</span>
+            </div>
+            <div class="qs-item" id="qs-firewall" data-enabled="unknown">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/23-firewall.png?v=1" alt="" onerror="this.hidden=true">
+                <span class="qs-label">Firewall</span>
             </div>
             <div class="qs-item" id="qs-camera" data-enabled="unknown" data-supported="unknown" title="Camera privacy gate">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/25-camera-disabled.png?v=p80000" alt="" onerror="this.hidden=true">
-                <span class="qs-label">Camera<br>checking</span>
+                <span class="qs-label">Cam<br>checking</span>
             </div>
             <div class="qs-item" id="qs-microphone" data-enabled="unknown" data-supported="unknown" title="System microphone mute">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/24-microphone-muted.png?v=p80000" alt="" onerror="this.hidden=true">
-                <span class="qs-label">Microphone<br>checking</span>
+                <span class="qs-label">Mic<br>checking</span>
+            </div>
+            <div class="qs-item" id="qs-paranoid" data-enabled="false" title="Paranoid placeholder">
+                <span class="qs-icon paranoid-glyph" aria-hidden="true">P</span><span class="qs-label">Para</span>
             </div>
         </div>
-        <button type="button" id="qs-expand-toggle" class="qs-expand-toggle" aria-expanded="false">More connection status</button>
+        <button type="button" id="qs-expand-toggle" class="qs-expand-toggle" aria-expanded="false">Show More</button>
         <section id="qs-details" class="qs-details" hidden aria-label="Connection details">
             <div class="qs-detail" id="qs-detail-charging" data-state="unknown">
                 <span class="qs-detail-icon charging-glyph"></span>
@@ -380,7 +383,7 @@
                 </button>
                 <button type="button" class="connection-mode-option" data-mode="usb_network">
                     <span class="cm-name">USB Network</span>
-                    <span class="cm-desc">Local USB Ethernet + SSH (10.15.19.1). Does not share Internet.</span>
+                    <span class="cm-desc">Local USB Ethernet + SSH (configurable USB subnet). Does not share Internet.</span>
                 </button>
                 <p class="connection-mode-status" id="connection-mode-status" role="status"></p>
                 <button type="button" class="connection-mode-dismiss" id="connection-mode-dismiss">Close</button>
@@ -506,7 +509,7 @@
     <script src="js/edge-lighting.js?v=a85"></script>
     <script src="../nuxel-common/haptics.js?v=a81"></script>
     <script src="../nuxel-common/geolocation.js?v=p80000"></script>
-    <script src="js/apps.js?v=0.8.6-beta"></script>
+    <script src="js/apps.js?v=0.8.7-beta"></script>
     <script src="js/layout-model.js"></script>
     <script src="js/desktop-layout.js?v=p84000"></script>
     <script src="js/launcher.js?v=p85000"></script>
@@ -532,8 +535,8 @@
     <script src="js/security-lock.js?v=a85"></script>
     <script src="js/lockscreen-indicators.js?v=p85000"></script>
     <script src="js/lockscreen-clock.js?v=p91000"></script>
-    <script src="js/lockscreen-auth.js?v=0.8.6-beta"></script>
-    <script src="js/lockscreen.js?v=0.8.6-beta"></script>
+    <script src="js/lockscreen-auth.js?v=0.8.7-beta"></script>
+    <script src="js/lockscreen.js?v=0.8.7-beta"></script>
     <script src="js/navigation.js?v=p80000"></script>
     <script src="js/gestures.js?v=p80000"></script>
     <script src="js/widgets.js?v=p91000"></script>

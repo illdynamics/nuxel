@@ -265,7 +265,7 @@
     left: 0;
     right: 0;
     background: var(--bg-secondary);
-    padding: 16px;
+    padding: 8px 12px;
     z-index: 99;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     animation: slideDown 0.25s ease;
@@ -320,8 +320,8 @@
 
 .qs-row {
     display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 5px;
+    margin-bottom: 5px;
     min-width: 0;
 }
 .qs-row[hidden] { display: none !important; }
@@ -335,14 +335,32 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 12px 4px;
+    gap: 3px;
+    padding: 4px 2px;
     border-radius: var(--button-radius);
     background: var(--bg-accent);
     cursor: pointer;
     transition: all var(--transition-fast);
-    min-height: 64px;
+    min-height: 40px;
     justify-content: center;
+}
+
+/* QS privacy/placeholder glyphs stay lightweight and never require a broken
+   image request. */
+.vpn-glyph::before { content: 'V'; }
+.zerotier-glyph::before { content: 'Z'; }
+.tor-glyph::before { content: 'T'; }
+.paranoid-glyph { font-weight: 800; color: #9ccfff; }
+.penguru-glyph { font-weight: 800; color: #d7b7ff; }
+
+/* The third row is part of the normal expanded shade, not the detail sheet. */
+#quick-settings #qs-privacy-row { display: flex; }
+#quick-settings:not(.expanded) #qs-privacy-row { display: none !important; }
+#quick-settings.extended #qs-notifications-list {
+    max-height: min(38dvh, 360px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .qs-item:active {

@@ -458,7 +458,7 @@
       } else if (selected === 'usb_network') {
         this.modeStatus.textContent = this.state.modeActive
           ? 'USB network active' + (this.state.usbInterface ? ' on ' + this.state.usbInterface : '') +
-            '. The laptop needs 10.15.19.2/24; the phone is 10.15.19.1. No Internet is shared.'
+            '. The laptop uses the configured USB subnet; the phone owns its configured gateway. No Internet is shared.'
           : 'USB network selected, not active (no host link, or the running kernel lacks the NCM fix).';
       } else {
         this.modeStatus.textContent = 'Charging selected';

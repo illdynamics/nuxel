@@ -2,6 +2,11 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.8.7-beta] - 2026-11-16
+
+- Fixed USB-link addressing and shared-Internet diagnostics, refreshed VNC/XRDP capture settings, and tightened pointer hiding.
+- Refined Quick Settings expansion, live microphone control, lock-pattern geometry, and status presentation.
+
 ## [v0.8.6-beta] - 2026-11-16 - *USB networking, remote access persistence, audio/icon polish and truthful hardware state*
 
 - Consolidated the current NFC, fingerprint, sensor, mobile-networking and

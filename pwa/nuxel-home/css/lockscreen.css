@@ -763,7 +763,8 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
    button and the error line are pinned below it (see the meta row). */
 .lockscreen-pattern {
     position: relative;
-    width: min(72vw, 292px, calc(100dvh - 260px));
+    /* 15% more centre-to-centre distance than the earlier 292px matrix. */
+    width: min(82.8vw, 336px, calc(100dvh - 260px));
     max-width: calc(100vw - 48px);
     min-width: 168px;
     aspect-ratio: 1 / 1;
@@ -806,8 +807,8 @@ body.display-off .lockscreen-clock-penguin img { animation: none !important; }
 }
 .lockscreen-pattern-dot {
     position: relative;
-    width: clamp(44px, 19vw, 68px);
-    height: clamp(44px, 19vw, 68px);
+    width: clamp(24px, 10vw, 36px);
+    height: clamp(24px, 10vw, 36px);
     border-radius: 50%;
     box-sizing: border-box;
     display: flex;
