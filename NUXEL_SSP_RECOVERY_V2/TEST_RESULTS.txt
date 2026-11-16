@@ -1,0 +1,17 @@
+test_changed_vectors_require_physical_confirmation (test_recovery_v2.SnapshotTests.test_changed_vectors_require_physical_confirmation) ... ok
+test_zero_samples_not_a_success (test_recovery_v2.SnapshotTests.test_zero_samples_not_a_success) ... ok
+test_adb_default_no_calls (test_recovery_v2.Tests.test_adb_default_no_calls) ... ok
+test_matching_anchor_collection (test_recovery_v2.Tests.test_matching_anchor_collection) ... ok
+test_no_disallowed_adb_paths (test_recovery_v2.Tests.test_no_disallowed_adb_paths) ... ok
+test_refuse_mismatched_vendor (test_recovery_v2.Tests.test_refuse_mismatched_vendor) ... ok
+test_reject_symlinks (test_recovery_v2.Tests.test_reject_symlinks) ... ok
+test_safe_conf_dedup_and_no_hardware (test_recovery_v2.Tests.test_safe_conf_dedup_and_no_hardware) ... ok
+test_stage_preparation_and_manifest_tamper_detection (test_recovery_v2.Tests.test_stage_preparation_and_manifest_tamper_detection) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.010s
+
+OK
+PLAN ONLY — zero device calls. Mount matching Android system and vendor read-only in recovery.
+Then re-run with --collect-readonly; output must be empty/new.
+This cannot repair a missing stock system image, and it never flashes firmware.

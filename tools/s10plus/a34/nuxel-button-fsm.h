@@ -264,7 +264,6 @@ static const nuxel_fsm_menu_entry nuxel_fsm_menu[] = {
    * action, never a reboot path. */
   { "cancel",        "Cancel",            "menu-close",            1, NULL },
   { "lock-screen",   "Lock screen",       "lock",                  1, NULL },
-  { "screenshot",    "Take screenshot",   "screenshot",            1, NULL },
   { "restart",       "Restart",           "systemctl-reboot",      1, "gate-closed-owner-absent" },
   { "power-off",     "Power off",         "systemctl-poweroff",    1, "gate-closed-owner-absent" },
   { "suspend",       "Suspend",           "systemctl-suspend",     1, NULL },

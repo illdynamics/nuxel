@@ -107,7 +107,7 @@
     "native_fallback": false,
     "bridge_version": "1",
     "pwa_version": "0.8.7-beta",
-    "cache_version": "v087-safezones-boot",
+    "cache_version": "v087-safezones-startup-2",
     "registry_version": 18,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [

@@ -14,20 +14,41 @@ from pathlib import Path
 import platform
 import resource
 import signal
+import stat
 import subprocess
 import time
 
 
 def verify(root):
     root = root.resolve(strict=True)
-    manifest = json.loads((root / "sha256-manifest.json").read_text())
+    manifest_path = root / "sha256-manifest.json"
+    if not stat.S_ISREG(manifest_path.lstat().st_mode):
+        raise ValueError("manifest must be a regular file")
+    manifest = json.loads(manifest_path.read_text())
+    if not isinstance(manifest, dict) or not manifest:
+        raise ValueError("manifest must be a nonempty file/hash mapping")
     for rel, expected in manifest.items():
         path = root / rel
-        if Path(rel).is_absolute() or ".." in Path(rel).parts:
+        if (Path(rel).is_absolute() or ".." in Path(rel).parts or
+                Path(rel).as_posix() != rel or rel == "sha256-manifest.json"):
             raise ValueError("unsafe manifest path: " + rel)
         if not path.resolve().is_relative_to(root) or not path.is_file():
             raise ValueError("missing/escaping runtime file: " + rel)
-        if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+    # The entire root is bound into the sandbox, so checking only the listed
+    # files leaves unlisted loader configs/libraries and symlinks unaudited.
+    actual = set()
+    for directory, dirs, files in os.walk(root, followlinks=False):
+        for name in dirs + files:
+            path = Path(directory) / name
+            mode = path.lstat().st_mode
+            if not (stat.S_ISDIR(mode) or stat.S_ISREG(mode)):
+                raise ValueError("symlink or special runtime file: " + str(path))
+            if stat.S_ISREG(mode) and path != manifest_path:
+                actual.add(path.relative_to(root).as_posix())
+    if actual != set(manifest):
+        raise ValueError("unlisted runtime files: " + ", ".join(sorted(actual - set(manifest))))
+    for rel, expected in manifest.items():
+        if hashlib.sha256((root / rel).read_bytes()).hexdigest() != expected:
             raise ValueError("runtime checksum mismatch: " + rel)
     return manifest
 
@@ -73,6 +94,10 @@ def main():
         "system/lib64/libssp-log-stderr.so"]
     if any(p not in manifest for p in required):
         ap.error("required trial files absent from integrity manifest")
+    for name in ("proc", "dev", "tmp", "data", "logs"):
+        if not (root / name).is_dir():
+            ap.error("missing sandbox mountpoint: " + name +
+                     " (create empty directories in the staging root before the trial)")
     args.output.mkdir(parents=True, exist_ok=False)
     logs = args.output.resolve() / "logs"
     logs.mkdir()

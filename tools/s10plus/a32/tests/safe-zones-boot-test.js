@@ -75,6 +75,10 @@ async function boot({doc, reject = false, ua = 'Nuxel S10+', width = 360,
   const saved = await boot({doc: persisted});
   assert.equal(saved.attrs['data-safezone-profile'], 's10plus');
   assert.equal(saved.attrs['data-safezone-blocked'], '9,10');
+  const fractional = await boot({doc: persisted, width: 356});
+  const plan = fractional.win.NuxelSafeZones.planCluster(
+    {left: 246, right: 340}, 'end', fractional.win.NuxelSafeZones.blockedIntervals(356), 356);
+  assert(340 + plan.shift <= 272.8, 'rounded translation must not cross the cutout boundary');
   const none = await boot({doc: {...persisted, profile: 'none'}});
   assert.equal(none.attrs['data-safezone-blocked'], '');
   const desktop = await boot({ua: 'desktop'});
@@ -98,6 +102,7 @@ async function boot({doc, reject = false, ua = 'Nuxel S10+', width = 360,
   assert.equal(delayed.attrs['data-safezone-blocked'], '9,10');
   delayed.bar.clientWidth = delayed.bar.offsetWidth = 360;
   delayed.win.document.dispatchEvent({type: 'nuxel:lockscreen-hidden'});
+  assert.equal(delayed.right.style.transform, 'translateX(-84px)', 'unlock must not wait for a suspended animation frame');
   delayed.paint();
   assert.equal(delayed.right.style.transform, 'translateX(-84px)', 'unlock must lay out without a Settings visit');
   assert(delayed.observed.has(delayed.bar) && delayed.observed.has(delayed.right));
@@ -105,6 +110,11 @@ async function boot({doc, reject = false, ua = 'Nuxel S10+', width = 360,
   delayed.resize();
   delayed.paint();
   assert.equal(delayed.right.style.transform, 'translateX(-52px)', 'size changes must remeasure');
+  delayed.right.style.transform = '';
+  delayed.win.document.dispatchEvent({type: 'nuxel:display-on'});
+  assert.equal(delayed.right.style.transform, 'translateX(-52px)', 'wake must apply before the next animation frame');
+  delayed.paint();
+  assert.equal(delayed.right.style.transform, 'translateX(-52px)', 'wake must remeasure even without a provider update');
   delayed.win.NuxelSafeZones.applyPreset('none');
   delayed.win.dispatchEvent({type: 'nuxel:safezones-changed'});
   delayed.paint();

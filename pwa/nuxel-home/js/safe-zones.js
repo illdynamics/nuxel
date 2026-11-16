@@ -150,8 +150,12 @@
       return { hit: true, shift: 0, zone: hit.zone, target: null, narrow: false,
                reason: 'no_free_interval' };
     }
-    var left = targetLeft(align, natural, target, width);
-    var shift = Math.round(left - natural.left);
+    // Keep both edges inside the free interval at fractional viewport widths.
+    // Rounding the translation itself can put the right edge back into a
+    // blocked zone (e.g. 273 instead of the permitted 272.8 CSS pixels).
+    var pixelTarget = { start: Math.ceil(target.start), end: Math.floor(target.end) };
+    var left = targetLeft(align, natural, pixelTarget, width);
+    var shift = left - natural.left;
     var w = natural.right - natural.left;
     return {
       hit: true, shift: shift, zone: hit.zone, target: target,

@@ -266,6 +266,7 @@ class StatusBar {
         this._nfcPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNfc(); }, 60000);
         // A wake is an event: refresh immediately instead of waiting a poll.
         document.addEventListener('nuxel:display-on', () => {
+            this._applySafeZones(true);
             this._updateTime();
             this._hydrateBatteryFromHost();
             this._pollPhoneStatus();
@@ -280,7 +281,7 @@ class StatusBar {
         document.addEventListener('nuxel:lockscreen-hidden', () => {
             // hide() has removed the lockscreen class, so the bar now has a
             // measurable width even if providers have no new icons to render.
-            this._applySafeZones();
+            this._applySafeZones(true);
             this._updateTime();
             this._pollPhoneStatus();
             this._pollBluetooth();
@@ -311,11 +312,11 @@ class StatusBar {
         this._applySafeZones();
         window.addEventListener('resize', () => this._applySafeZones());
         window.addEventListener('orientationchange', () => setTimeout(() => this._applySafeZones(), 120));
-        window.addEventListener('nuxel:safezones-changed', () => this._applySafeZones());
+        window.addEventListener('nuxel:safezones-changed', () => this._applySafeZones(true));
         // At boot the lockscreen can leave the bar at width zero. Re-measure
         // when it becomes visible, and when late-loading icons change size.
         if (window.ResizeObserver) {
-            this._safeZoneResizeObserver = new ResizeObserver(() => this._applySafeZones());
+            this._safeZoneResizeObserver = new ResizeObserver(() => this._applySafeZones(true));
             const bar = document.getElementById('status-bar');
             if (bar) {
                 this._safeZoneResizeObserver.observe(bar);
@@ -403,8 +404,16 @@ class StatusBar {
         bar.addEventListener('touchcancel', end, { passive: true });
     }
 
-    _applySafeZones() {
+    _applySafeZones(immediate = false) {
         if (!window.NuxelSafeZones || typeof window.NuxelSafeZones.applyLayout !== 'function') return;
+        // WebKit can suspend a queued animation frame while the surface is
+        // hidden. Visibility/configuration changes must not wait behind that
+        // old frame: measure the newly visible bar before it is painted.
+        if (immediate) {
+            try { window.NuxelSafeZones.applyLayout(); }
+            catch (e) { console.warn('safe zones:', e.message || e); }
+            return;
+        }
         // Many render paths call this within one state update.  Coalesce them
         // into ONE measurement/paint instead of two nested rAF layout passes
         // per caller (the old code could run 10+ forced layouts per poll).

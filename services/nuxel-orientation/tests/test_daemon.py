@@ -42,7 +42,9 @@ def test_modes_lists_seven(tmp_path):
 
 
 def test_set_persists_and_get_returns(tmp_path):
-    r = run(str(tmp_path), "set", "landscape", "--json")
+    # This tests persistence, not a successful transform on a nonexistent
+    # compositor. Actual apply/rollback is exercised in test_runtime_trial.py.
+    r = run(str(tmp_path), "set", "landscape", "--no-apply", "--json")
     assert r.returncode == 0, r.stderr
     doc = json.loads(r.stdout)
     assert doc["success"] is True
@@ -66,12 +68,13 @@ def test_set_rejects_garbage(tmp_path):
 
 def test_set_auto_portrait_from_landscape_picks_legal(tmp_path):
     # Start in landscape, then switch to auto_portrait: 90 is disallowed -> 0 or 180
-    run(str(tmp_path), "set", "landscape", "--json")
-    r = run(str(tmp_path), "set", "auto-portrait", "--json")
+    run(str(tmp_path), "set", "landscape", "--no-apply", "--json")
+    r = run(str(tmp_path), "set", "auto-portrait", "--no-apply", "--json")
     doc = json.loads(r.stdout)
     assert doc["success"] is True
     assert doc["effective_orientation"] in (0, 180)
     assert doc["auto"] is True
+    assert doc["auto_state"] == "blocked_sensor_unavailable"
 
 
 def test_selftest_passes(tmp_path):

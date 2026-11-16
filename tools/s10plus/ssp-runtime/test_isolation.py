@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -9,6 +10,37 @@ from run_isolated import sandbox, verify
 
 
 class IsolationTests(unittest.TestCase):
+    def test_rejects_unlisted_files_and_internal_symlinks(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "library.so").write_bytes(b"original")
+            good = {"library.so": hashlib.sha256(b"original").hexdigest()}
+            (root / "sha256-manifest.json").write_text(json.dumps(good))
+            (root / "ld.config.txt").write_text("unreviewed")
+            with self.assertRaisesRegex(ValueError, "unlisted"):
+                verify(root)
+            (root / "ld.config.txt").unlink()
+            (root / "alias.so").symlink_to("library.so")
+            good["alias.so"] = good["library.so"]
+            (root / "sha256-manifest.json").write_text(json.dumps(good))
+            with self.assertRaisesRegex(ValueError, "symlink"):
+                verify(root)
+
+    def test_rejects_unlisted_fifo_and_directory_symlink(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "file").write_bytes(b"data")
+            (root / "sha256-manifest.json").write_text(json.dumps(
+                {"file": hashlib.sha256(b"data").hexdigest()}))
+            os.mkfifo(root / "pipe")
+            with self.assertRaisesRegex(ValueError, "special"):
+                verify(root)
+            (root / "pipe").unlink()
+            (root / "subdir").mkdir()
+            (root / "alias").symlink_to("subdir", target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, "symlink"):
+                verify(root)
+
     def test_namespace_device_and_capability_contract(self):
         cmd = sandbox(Path("/owner/runtime"), "/bwrap")
         for flag in ("--unshare-all", "--die-with-parent", "--new-session", "--clearenv"):
