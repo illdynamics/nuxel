@@ -1,0 +1,16 @@
+{
+  "id": "nuxel-edge-fx",
+  "name": "Edge FX",
+  "icon": "✨",
+  "color": "#63F0BD",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/edge-fx/index.html",
+  "entry": "pwa/nuxel-apps/edge-fx/index.html",
+  "manifest": "pwa/nuxel-apps/edge-fx/manifest.json",
+  "description": "Choose and preview the Nuxel Edge Lighting effect, open the Edge panel, and uninstall/reinstall Edge FX",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (PWNAGE-103000)"
+}

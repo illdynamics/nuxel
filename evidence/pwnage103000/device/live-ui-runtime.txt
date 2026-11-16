@@ -1,0 +1,23 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== edge-lighting RPC/API calls by a WebView in the last 10 min
+Nov 12 11:23:26 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:26,300 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting/events?since=3 HTTP/1.1" 200 -
+Nov 12 11:23:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:28,498 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting/events?since=3 HTTP/1.1" 200 -
+Nov 12 11:23:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:30,349 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting/events?since=3 HTTP/1.1" 200 -
+Nov 12 11:23:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:45,338 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting HTTP/1.1" 200 -
+== count of event polls (live Home poller)
+118
+== home state launcher activity
+1794408417 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1794332328
+1794411326 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-apps/terminal/index.html
+1794475604 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-apps/terminal/index.html
+== torch node
+0
+0

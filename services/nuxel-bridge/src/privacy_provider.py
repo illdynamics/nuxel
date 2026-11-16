@@ -22,7 +22,7 @@ import threading
 import time
 from typing import Any, Dict, Optional
 
-CAMERA_DOC = "/etc/nuxel/privacy/camera.json"
+CAMERA_DOC = os.environ.get("NUXEL_CAMERA_POLICY", "/etc/nuxel/privacy/camera.json")
 MIC_DOC = "/etc/nuxel/privacy/microphone.json"
 RUNTIME_DIR = "/run/nuxel-wayland"
 CAPTURE_MARKER = "/run/nuxel/privacy/camera-capture.active"

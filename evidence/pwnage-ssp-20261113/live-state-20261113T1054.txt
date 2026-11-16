@@ -1,0 +1,27 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== identity ==
+2001-1c00-4d09-8a00-162b-e49d-dc7c-4128
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #32 SMP PREEMPT Fri Nov 13 09:45:45 CET 2026 aarch64 GNU/Linux
+Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820
+BCM47752KUB1G
+BR0121080900,BR010
+== raw ==
+0,0,0
+1
+== nodes ==
+crw-------. 1 root root  236,  2 Jan  1  1970 /dev/bbd_control
+crw-------. 1 root root  236,  1 Jan  1  1970 /dev/bbd_sensor
+crw-rw----. 1 root audio  10, 91 Jan  1  1970 /dev/ttyBCM
+== bridge abi ==
+no nuxel attrs (old kernel)
+== cfg ==
+sources ['iio-sysfs-accel-gyro', 'iio-sysfs-accel', 'iio-accel', 'iio-sensor-proxy', 'manual']
+gyro_raw /sys/class/sensors/gyro_sensor/raw_data

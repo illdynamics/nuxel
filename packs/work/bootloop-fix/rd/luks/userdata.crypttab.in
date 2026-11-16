@@ -1,0 +1,41 @@
+#==============================================================================
+# Nuxel LUKS2 userdata crypttab template — mustang
+#
+# Installed to /etc/crypttab on the device rootfs (via initramfs rewrite at
+# firstboot). It defines how the LUKS2-encrypted userdata partition is opened
+# before the userdata filesystem (f2fs/userdata) is mounted.
+#
+# Template markers (@@...@@) are expanded at build time or by
+# images/hooks/luks-userdata.sh at runtime:
+#   @@USERDATA_DEV@@  → the userdata block device (typically /dev/sda on
+#                       mustang's UFS, or /dev/disk/by-partlabel/userdata)
+#   @@KEYFILE@@       → path to the key file (optional)
+#
+# Two auth strategies are supported (see images/hooks/luks-userdata.sh):
+#   1. Passphrase prompt  → the initramfs drops to a prompt (keyfile unset).
+#   2. Key file           → a key file derived from the AVB-verified boot chain
+#                           + disk serial (recommended for unlocked-boot /
+#                           first-unlock automount). Set @@KEYFILE@@ to
+#                           /etc/nuxel/userdata.key.
+#
+# IMPORTANT: This file is the SHIPPED TEMPLATE (`.in`). Do NOT install the
+# literal "@@...@@" markers into /etc/crypttab on a real device — expand them
+# first (images/hooks/luks-userdata.sh performs expansion at initramfs time).
+#==============================================================================
+
+# <name>                <device>            <password>                       <cipher-options>
+userdata                @@USERDATA_DEV@@    @@KEYFILE@@                      luks,discard
+
+# --- Reference options ---
+# Passphrase-prompt variant (KEYFILE empty):
+#   userdata  @@USERDATA_DEV@@  none  luks,discard
+#   (with 'none' the initramfs prompts for a passphrase interactively)
+#
+# Keyfile variant pointing at a hardened-malloc protected key:
+#   userdata  @@USERDATA_DEV@@  /etc/nuxel/userdata.key  luks,discard
+#
+# To also verify integrity on top of confidentiality (LUKS2 with dm-integrity):
+#   userdata  @@USERDATA_DEV@@  none  luks,discard,integrity
+#
+# On the VM (plain LVM userdata, no encryption), this file is NOT used; the VM
+# mounts its plain LV directly. See docs/update-strategy.md §2.5.

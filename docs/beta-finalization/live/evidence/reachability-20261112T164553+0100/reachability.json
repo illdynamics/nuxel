@@ -1,0 +1,72 @@
+{
+  "adb_devices": [],
+  "at": "2026-11-12T16:45:53+0100",
+  "blocked_reason": "port answered bytes but no verified command frame (half-alive console)",
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261112T164553+0100",
+  "exit_code": 3,
+  "finished": "2026-11-12T16:45:54+0100",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem201",
+      "dialin": "/dev/tty.usbmodem201",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem201",
+      "tty_suffix": "201",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-11-12T16:45:53+0100",
+    "bytes_in": 8633,
+    "dev": "/dev/cu.usbmodem201",
+    "echo_ok": true,
+    "elapsed_s": 0.329,
+    "error": null,
+    "reachable": true,
+    "sample": "(133mA),VBYP(5196mV) QH(3678000 uah)\n7,28477,484829093,-;max77705_fg_read_current: current=3mA\n7,28478,484829961,-;max77705_fg_read_avg_current: avg_current=-7mA\n6,28479,484832288,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(313), Temp-ADC(1734)\n SUBSYSTEM=platform\n DEVICE=+platform:battery\n6,28480,484833079,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(317), Temp-ADC"
+  },
+  "reachable": false,
+  "selected": {
+    "callout": "/dev/cu.usbmodem201",
+    "dialin": "/dev/tty.usbmodem201",
+    "match_stage": "vid+pid+ttybase+serial",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem201",
+    "tty_suffix": "201",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem201 (matched vid+pid+ttybase+serial)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.869,
+        "framed": true,
+        "output_bytes": 0,
+        "raw_len": 11043,
+        "rc": 0,
+        "rid": "4c9fdf31",
+        "sha_ok": false
+      },
+      "ok": false,
+      "output": "",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  }
+}

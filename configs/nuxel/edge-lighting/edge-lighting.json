@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "comment": "Nuxel Edge Lighting policy (PWNAGE-103000). Installed read-only as the DEFAULT; the live user document is /etc/nuxel/edge-lighting/edge-lighting.json and the provider keeps it. This is an AMOLED display effect driven by real notification events, not a hardware LED and never the camera flash. Wave is the S10-style default; the default colour is the runtime Nuxel theme accent.",
+  "enabled": true,
+  "effect": "wave",
+  "color_mode": "theme",
+  "color": null,
+  "width": "medium",
+  "transparency": "medium",
+  "duration_ms": 1800,
+  "screen_mode": "screen_on",
+  "respect_dnd": true,
+  "respect_reduced_motion": true,
+  "reduced_motion_style": "static",
+  "source_mode": "all",
+  "allowed_apps": [],
+  "blocked_apps": [],
+  "effects": ["basic", "wave", "bubble", "multicolor", "heart", "fireworks", "eclipse", "echo"],
+  "screen_modes_supported": ["screen_on"],
+  "screen_modes_unavailable": {
+    "screen_off": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK: no edge-only low-power render path while the panel is blanked",
+    "always": "depends on screen_off support"
+  }
+}

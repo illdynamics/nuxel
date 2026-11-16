@@ -10,6 +10,7 @@ host with no dbus package.
 from __future__ import annotations
 
 import base64
+import json
 import importlib.util
 import os
 import shutil
@@ -128,6 +129,12 @@ def main() -> int:
     root = tempfile.mkdtemp(prefix="nuxel-camera-bridge-test-")
     os.environ["NUXEL_MEDIA_DIR"] = root
     os.environ["NUXEL_PERMISSIONS_DIR"] = os.path.join(root, "permissions")
+    # Privacy remains fail-closed in production; this fixture is the explicit
+    # owner-unblocked state required to exercise the capture store itself.
+    policy = os.path.join(root, "camera-policy.json")
+    with open(policy, "w") as fh:
+        json.dump({"blocked": False}, fh)
+    os.environ["NUXEL_CAMERA_POLICY"] = policy
     try:
         bridge = load("bridge_under_test", BRIDGE_SRC)
         svc = bridge.NuxelBridgeService(None, "/org/nuxel/Bridge")
@@ -145,7 +152,19 @@ def main() -> int:
         check(len(svc.media.list()) == 0, "denied capture writes no file")
 
         # 3. grant -> capture -> real file -> list -> open -> delete round trip
-        svc.capability_grants["org.nuxel.Camera"] = {"camera:capture": "always", "camera:preview": "always"}
+        # The camera privacy gate is a separate owner switch; this test is about
+        # the capture store and cannot pass with the privacy block engaged.
+        # Report that honestly by exercising the store only when the block is
+        # clearly OFF in the test environment; otherwise fail with the reason.
+        if bridge.privacy_provider is not None and bridge.privacy_provider.camera_capture_blocked():
+            check(False, "camera privacy gate is OFF for the capture-store round trip "
+                         "(enable it in Settings / remove the test override)")
+            print("\nbridge-camera: %d failure(s)" % len(FAILURES))
+            return 1
+        # Grants are stored under canonical capability ids (PenGuru G0).
+        svc.capability_grants["org.nuxel.Camera"] = {
+            bridge.resolve_capability("camera:capture"): "always",
+            bridge.resolve_capability("camera:preview"): "always"}
         jpeg = b"\xff\xd8\xff\xe0" + b"REALJPEGBYTES" * 64
         cap = bridge.json.loads(svc.CameraCapture("org.nuxel.Camera", "photo", "image/jpeg",
                                                    base64.b64encode(jpeg).decode()))

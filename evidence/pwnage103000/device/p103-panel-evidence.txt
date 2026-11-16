@@ -1,0 +1,11 @@
+libEGL warning: failed to get driver name for fd -1
+
+libEGL warning: MESA-LOADER: failed to retrieve device information
+
+libEGL warning: failed to get driver name for fd -1
+
+MESA: error: ZINK: vkCreateInstance failed (VK_ERROR_INCOMPATIBLE_DRIVER)
+libEGL warning: egl: failed to create dri2 screen
+diag: {"panelOpen":false,"sleeping":false,"hasBody":true,"drawer":false,"qsLevel":0,"panelConnected":false,"panelHidden":null,"body":"ready native-osk"}
+result: {"leftCall":"true","left":{"opened":true,"root":true,"fromRight":false,"apps":55,"hasNotificationsTab":true,"body":true},"rightCall":"true","right":{"opened":true,"root":true,"fromRight":true,"apps":55,"hasNotificationsTab":true,"body":true},"closed":{"opened":false,"root":true,"fromRight":true,"apps":55,"hasNotificationsTab":true,"body":false},"refusal":null}
+diag2: {"panelOpen":false,"sleeping":false,"hasBody":true,"drawer":false,"qsLevel":0,"lastRefusal":null,"panelConnected":true,"panelHidden":true,"body":"ready native-osk"}

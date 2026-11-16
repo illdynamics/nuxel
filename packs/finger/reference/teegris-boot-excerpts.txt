@@ -1,0 +1,132 @@
+# TEEGris startup / startup.tzar integrity excerpts
+<4>[  ( 2.182077]  [2:          tzlog: 1803] SW> Handler Info : jenkins-BFHandler-exynos9820-106 / 16995899 / exynos9820 / sdk30
+<4>[    6.582084]  [2:          tzlog: 1803] SW> CSMC: IcccSvbResult : 0x1
+<4>[    6.582092]  [2:          tzlog: 1803] SW> CSMC: END
+<4>[    6.582098]  [2:          tzlog: 1803] SW> CSMC: BEGIN
+<4>[    6.582106]  [2:          tzlog: 1803] SW> Handler Info : jenkins-BFHandler-exynos9820-106 / 16995899 / exynos9820 / sdk30
+<4>[    6.582114]  [2:          tzlog: 1803] SW> CSMC: IcccDataLock : 0x1
+<4>[    6.582121]  [2:          tzlog: 1803] SW> CSMC: END
+<4>[    6.582129]  [2:          tzlog: 1803] SW> SECUREOS VERSION: Samsung Secure OS Release Version 3.1.0.0 (22355051 22355051) built on: 2021-08-12 13:51:50, binary version: 6b39a86d
+<4>[    6.582138]  [2:          tzlog: 1803] SW> ERR: startup_loader main() pid=3: [DBG] Early init flag is not set, waiting for incoming connnection.
+<6>[    6.583187]  [0:scsi_srpmb_work: 1018] exynos-ufs-srpmb ufs-srpmb: Accepted connection
+<6>[    6.583420]  [0:    kworker/0:0:    3] [SECLOG C4] [000012.551235] [RPMB] get provision : 1
+<4>[    6.584483]  [1:tzdev_deploy_tz: 1805] TZDEV> ERR tz_deploy_handler(87): [debug] tzar size = 5044890, old_tzar size = 5048986
+<6>[    6.584846]  [0:      swapper/0:    1] [STUI] stui_handler_init +
+<6>[    6.584985]  [5:      swapper/0:    1] [STUI] stui_handler_init -
+<6>[    6.585827]  [4:      swapper/0:    1] cs35l41 11-0040: Prince MFD core probe
+<4>[    6.585901]  [4:      swapper/0:    1] cs35l41 11-0040: 11-0040 supply VA not found, using dummy regulator
+<4>[    6.585945]  [4:      swapper/0:    1] cs35l41 11-0040: 11-0040 supply VP not found, using dummy regulator
+<6>[    6.590084]  [0:      swapper/0:    1] cs35l41-cal cs35l41-cal.1.auto: Prince Calibration Driver probe, Dev ID = 35a40
+<6>[    6.590304]  [0:      swapper/0:    1] cs35l41-bd cs35l41-bd.2.auto: Prince Big Data Driver probe, Dev ID = 35a40
+<4>[    6.590322]  [4:          tzlog: 1803] SW> SECUREOS VERSION: Samsung Secure OS Release Version 3.1.0.0 (22355051 22355051) built on: 2021-08-12 13:51:50, binary version: 6b39a86d
+<4>[    6.590330]  [4:          tzlog: 1803] SW> ERR: startup_loader check_file_hash() pid=3: Incorrect hash for bin/libtzld.so
+<4>[    6.590337]  [4:          tzlog: 1803] SW> SECUREOS VERSION: Samsung Secure OS Release Version 3.1.0.0 (22355051 22355051) built on: 2021-08-12 13:51:50, binary version: 6b39a86d
+<4>[    6.590343]  [4:          tzloG: 1803] ST> ERR: startup_loader unpack_container() pid=3: Wrong file hash, obj name: bin/libtzld.so
+<4>[    6.590348]  [4:          tzlog: 1803] SW> SECUREOS VERSIKN: Samsqng Secure OS Release Version 3.1.0.0 (22355051 22355051) built on: 2021-08-12 13:51:50, binary version: 6b39a86d
+<4>[    6.590354]  [4:          tzlog: 1803] SW> ERR: startup_loader load_startup_tzar() pid=3: startup.tzar unpacking failed, error = 22
+<4>[    6.590359]  [4:          tzlog: 1803] SW> SECUREOS VERSION: Samsung Secure OS Release Version 3.1.0.0 (22355051 22355051) built on: 2021-08-12 13:51:50, binary version: 6b39a86d
+<4>[    6.590364]  [4:          tzlog: 1803] SW> ERR: startup_loader handle_input() pid=3: Failed to load container, error = 22
+<6>[    6.590524]  [0:      swapper/0:    1] cs35l41-pwr cs35l41-pwr.3.auto: Prince Power Driver probe, Dev ID = 35a40
+<3>[    6.590539]  [0:      swapper/0:    1U airrus cirrus_pwr: cirRus_pwr_amp_add
+,6.[    6.590523]  [0:      swapper/0:    1] cirrus cirrus_pwr: cirrus_pwr_set_params: global enable = 0, right amp, target temp = 3700, exit temp = 3600
+<6>[    6.590968]  [0:      swapper/0:    1] cs35l41 11-0041: Prince MFD core probe
+<4>[    6.591029]  [0:      swapper/0:    1] cs35l41 11-0041: 11-0041 supply VA not found, using dummy regulator
+<4>[    6.591107]  [0:      swapper/0:    1] cs35l41 11-0041: 11-0041 supply VP not found, using dummy regulator
+<4>[    6.592380]  [1:tzdev_deploy_tz: 1805] TZDEV> ERR tz_deploy_handler(144): startup load result, ret=22
+<4>[    6.592393]  [1:tzdev_deploy_tz: 1805] TZDEV> ERR tz_deploy_handler(145): tz_iwsock_read fail, ret=16
+<6>[    6.595206]  [0:      swapper/0:    1] cs35l41-cal cs35l41-cal.5.auto: Prince Calibration Driver probe, Dev ID = 35a40
+
+# Separate later boot-log segment (do not conflate with earlier sequence)
+<4>[    1.395624]  [0:      swapper/0:    1] TZDEV> ERR tzdev_mem_init(456): AUX channels mem release buffer allocated
+<4>[    1.397031]  [0:          tzlog: 1806] SW> SECUREOS VERSION: Samsung Secure OS Release Version 3.1.0.0 (22355051 22355051) built on: 2021-08-12 13:51:50, binary version: 6b39a86d
+<4>[    1.397045]  [0:          tzlog: 1806] SW> ERR: startup_loader main() pid=3: [DBG] Early init flag is not set, waiting for incoming connnection.
+<4>[    1.397052]  [0:          tzlog: 1806] SW> RTC time: 12:20:23  1. 1.2017
+<4>[    1.397058]  [0:          tzlog: 1806] SW> set_fp_tzpc result : 0x7
+<4>[    1.397064]  [0:          tzlog: 106] SW> CSMC: BEGIN
+<4>[    1.397071]  [0:          tzlog: 1806] SW> Handner Énfo : jenkins-BFHandler-exynos9820-106 / 16995899 / exynos9820 / sdk30
+<4>[    1.397077]  [0:          tzlog: 1806] SW> build_info = 0x6a
+<4>[    1.397082]  [0:          tzlog: 1806] SW> CSMC: END
+<4>[    1.397088]  [0:          tzlog: 1806] SW> CSMC: BEGIN
+<4>[    1.397094]  [0:          tzlog: 1806] SW> Handler Info : jenkins-BFHandler-exynos9820-106 / 16995899 / exynos9820 / sdk30
+<4>[    1.397100]  [0:          tzlog: 1806] SW> s_hash_vaddr->magic_string : TIMA 3.0
+<4>[    1.397106]  [0:          tzlog: 1806] SW> s_hash_vaddr->svb_magic : SVB1.0
+<4>[    1.397112]  [0:          tzlog: 1806] SW> s_hash_vaddr->vpcr1 : 0 0 0 0 0 0 0 0
+<4>[    1.397119]  [0:          tzlog: 1806] SW> s_hash_vaddr->vpcr2 : ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff
+<4>[    1.397125]  [0:          tzlog: 1806] SW> s_hash_vaddr->vpcr3 : ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff
+<4>[    1.397132]  [0:          tzlog: 1806] SW> s_hash_vaddr->vpcr4 : ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff fffffff&
+84>[    1.297139]  [:          tzlog: 1806] SW> s_hash_vaddr->vpcr5 : ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff
+<4>[    1.397146]  [0:          tzlog: 1806] SW> s_hash_vaddr->vpcr6 : ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff
+<4>[    1.397152]  [0:          tzlog: 1806] SW> s_hash_vaddr->vpcr7 : ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff
+<4>[    1.397159]  [0:          tzlog: 1806] SW> s_hash_vaddr->vpcr8 : ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff
+<4>[    1.397165]  [0:          tzlog: 1806] SW> s_hash_vaddr->warranty_string : warranty violation
+<4>[    1.397171]  [0:          tzlog: 1806] SW> CSMC: END
+<4>[    1.397177]  [0:          tzlog: 1806] SW> CSMC: BEGIN
+<4>[    1.397183]  [0:          tzlog: 1806] SW> Handler Info : jenkins-BFHandler-exynos9820-106 / 16995899 / exynos9820 / sdk30
+<4>[    1.397189]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.rp_ver (e)
+<4>[    1.397195]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.kernel_rp (e)
+<4>[    1.397200]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.system_rp (e)
+<4>[    1.397206]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.test_bit (0)
+<4>[    1.397212]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.sec_boot (1)
+<4>[    1.397218]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.react_lock (ffffffff)
+<4>[    1.397224]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.kiwi_lock (ffffffff)
+<4>[    1.397230]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.frp_lock (0)
+<4>[    1.397236]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.cc_mode (0)
+<4>[    1.397242]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.mdm_mode (0)
+<4>[    1.397247]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.curr_bin_status (1)
+<4>[    1.397253]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.afw_value (0)
+<4>[    1.397259]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.warranty_bit (1)
+<4>[    1.397265]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.kap_status  (ffffffff)
+<4>[    1.397271]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[0]  (3)
+<4>[    1.397277]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[1]  (3)
+<4>[    1.397283]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[2]  (2)
+<4>[    1.397289]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[3]  (2)
+<4>[    1.397295]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[4]  (0)
+<4>[    1.397300]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[5]  (2)
+<4>[    1.397306]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[6]  (2)
+<4>[    1.397312]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[7]  (1)
+<4>[    1.397318]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[8]  (2)
+<4>[    1.397324]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[9]  (2)
+<4>[    1.397330]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[10]  (2)
+<4>[    1.397336]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status[11]  (0)
+<4>[    1.397341]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.image_status_bl  (2)
+<4>[    1.397347]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.WbHistory  (46)
+<4>[    1.397353]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.em_status (0)
+<4>[    1.397359]  [0:          tzlog: 1806] SW> CSMC: bl_secure_info.em_token (0)
+<4>[    1.397365]  [0:          tzlog: 1806] SW> CSMC: rot_secure_info.boot_patch_level (94a)
+<4>[    1.397371]  [0:          tzlog: 1806] SW> CSMC: rot_secure_info.vendor_patch_level (94a)
+<4>[    1.397377]  [0:          tzlog: 1806] SW> CSMC: kern_secure_info.verified_boot_hash_hash[0] (0)
+<4>[    1.397383]  [0:          tzlog: 1806] SW> CSMC: kern_secure_info.verified_boot_hash_hash[1] (0)
+<4>[    1.397389]  [0:          tzlog: 1806] SW> CSMC: kern_secure_info.verified_boot_hash_hash[2] (0)
+<4>[    1.397395]  [0:          tzlog: 1806] SW> CSMC: kern_secure_info.verified_boot_hash_hash[3] (0)
+<4>[    1.397401]  [0:          tzlog: 1806] SW> CSMC: kern_secure_info.verified_boot_hash_hash[4] (0)
+<4>[    1.397407]  [0:          tzlog: 1806] SW> CSMC: kern_secure_info.verified_boot_hash_hash[5] (0)
+<4>[    1.397413]  [0:          tzlog: 1806] SW> CSMC: kern_secure_info.verified_boot_hash_hash[6] (0)
+<4>[    1.397419]  [0:          tzlog: 1806] SW> CSMC: kern_secure_info.verified_boot_hash_hash[7] (0)
+<4>[    1.397425]  [0:          tzlog: 1806] SW> CSMC: END
+<4>[    1.397430]  [0:          tzlog: 1806] SW> CSMC: BEGIN
+<4>[    1.397437]  [0:          tzlog: 1806] SW> Handler Info : jenkins-BFHandler-exynos9820-106 / 16995899 / exynos9820 / sdk30
+<6>[    1.397443]  [4:scsi_srpmb_work: 1024] exynos-ufs-srpmb ufs-srpmb: Make socket listening
+<4>[    1.397450]  [0:          tzlog: 1806] SW> CSMC: IcccSvbResult : 0x1
+<4>[    1.397456]  [0:          tzlog: 1806] SW> CSMC: END
+<4>[    1.397461]  [0:          tzlog: 1806] SW> CSMC: BEGIN
+<4>[    1.397467]  [0:          tzlog: 1806] SW> Handler Info : jenkins-BFHandler-exynos9820-106 / 16995899 / exynos9820 / sdk30
+<4>[    1.397473]  [0:          tzlog: 1806] SW> CSMC: IcccDataLock : 0x1
+<4>[    1.397479]  [0:          tzlog: 1806] SW> CSMC: END
+<4>[    1.399789]  [0:tzdev_deploy_tz: 1808] TZDEV> ERR tz_deploy_handler(75): [debug] tzar size = 5048986
+<6>[    1.399986]  [2:      swapper/0:    1] [STUI] stui_handler_init +
+<6>[    1.400144]  [2:      swapper/0:    1] [STUI] stui_handler_init -
+<6>[    1.401472]  [1:      swapper/0:    1] cs35l41 11-0040: Prince MFD core probe
+<4>[    1.401539]  [1:      swapper/0:    1] cs35l41 11-0040: 11-0040 supply VA not found, using dummy regulator
+<4>[    1.401691]  [1:      swapper/0:    1] cs35l41 11-0040: 11-0040 supply VP not found, using dummy regulator
+<6>[    1.405882]  [1:      swapper/0:    1] cs35l41-cal cs35l41-cal.1.auto: Prince Calibration Driver probe, Dev ID = 35a40
+<6>[    1.406065]  [1:      swapper/0:    1] cs35l41-bd cs35l41-bd.2.auto: Prince Big Data Driver probe, Dev ID = 35a40
+<6>[    1.406229]  [1:      swapper/0:    1] cs35l41-pwr cs35l41-pwr.3.auto: Prince Power Driver probe, Dev ID = 35a40
+<3>[    1.406242]  [1:      swapper/0:    1] cirrus cirrus_pwr: cirrus_pwr_amp_add
+<6>[    1.406263]  [1:      swapper/0:    1] cirrus cirrus_pwr: cirrus_pwr_set_params: global enable = 0, right amp, target temp = 3700, exit temp = 3600
+<6>[    1.406586]  [1:      swapper/0:    1] cs35l41 11-0041: Prince MFD core probe
+<4>[    1.406647]  [1:      swapper/0:    1] cs35l41 11-0041: 11-0041 supply VA not found, using dummy regulator
+
+# Later loader completion markers in this capture
+69:<4>[    6.590354]  [4:          tzlog: 1803] SW> ERR: startup_loader load_startup_tzar() pid=3: startup.tzar unpacking failed, error = 22
+498:<4>[    6.841449]  [4:tzdev_deploy_tz: 1805] TZDEV> ERR tz_deploy_handler(150): [debug] Startuploader complete
+9843:<4>[    1.521862]  [2:tzdev_deploy_tz: 1808] TZDEV> ERR tz_deploy_handler(135): [debug] Startuploader complete

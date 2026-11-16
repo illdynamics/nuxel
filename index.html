@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
+<meta name="theme-color" content="#0a1628">
+<meta name="nuxel-app-id" content="org.nuxel.PenguInterface">
+<link rel="manifest" href="manifest.json">
+<title>PenguInterface</title>
+<link rel="stylesheet" href="css/pengu.css?v=p91000">
+    <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
+</head>
+<body>
+<header class="hdr"><h1>PenguInterface</h1><span id="badge" class="badge">profile: loading</span><span class="grow"></span><button id="close" class="ghost">Close</button></header>
+<main>
+  <p class="hint">Read-only compatibility profile. Values below come from the shipped, schema-validated <code>profile.json</code>; nothing here changes hardware state.</p>
+  <section id="device" class="card"></section>
+  <section id="caps" class="card"></section>
+
+  <h2 class="sect">Spoofing</h2>
+  <p class="hint">Identity spoofing with a global default or per-app overrides. Native app launches receive the selected profile; the values below show the effective identity before you apply. Configuration is owner-only and stored outside app data.</p>
+  <section class="card">
+    <div class="row"><span>Current user agent</span><b id="spoof-ua-current">—</b></div>
+    <div class="row"><span>Current uname</span><b id="spoof-effective-uname">—</b></div>
+    <div class="row"><span>Current /etc/os-release</span><b id="spoof-effective-os">—</b></div>
+    <div class="row"><span>Real uname</span><b id="spoof-real-uname">—</b></div>
+    <div class="row"><span>Real /etc/os-release</span><b id="spoof-real-os">—</b></div>
+    <div class="row"><span>LD_PRELOAD library</span><b id="spoof-lib">—</b></div>
+    <p id="spoof-status" class="hint">—</p>
+
+    <div class="scope-row">
+      <label><input type="radio" name="spoof-scope" id="spoof-scope-app" value="app" checked> Per app</label>
+      <label><input type="radio" name="spoof-scope" id="spoof-scope-global" value="global"> Global (all apps)</label>
+    </div>
+    <p id="spoof-global-warning" class="hint warn" hidden>Global is the default for every native app launched through Nuxel. It is an app-launch override, not a kernel or system-wide identity change.</p>
+    <label class="field" id="spoof-app-field">App id
+      <select id="spoof-app-select"><option value="">Loading app list…</option></select>
+    </label>
+
+    <label class="field">Identity preset
+      <select id="spoof-preset-select"><option value="windows-portal">Windows (Portal for Teams)</option></select>
+    </label>
+
+    <label class="field">Spoof user agent <input id="spoof-ua-input" type="text" placeholder="Mozilla/5.0 ..."></label>
+    <label class="field">Spoof /etc/os-release <textarea id="spoof-os-release" rows="4" placeholder="NAME=&quot;SpoofOS&quot; ..."></textarea></label>
+    <div class="grid2">
+      <label class="field">sysname <input id="spoof-uname-sysname" type="text" value="windows_nt"></label>
+      <label class="field">nodename <input id="spoof-uname-nodename" type="text" value="WIN-CLIENT"></label>
+      <label class="field">release <input id="spoof-uname-release" type="text" value="10.0"></label>
+      <label class="field">version <input id="spoof-uname-version" type="text" value="#1 SMP PREEMPT"></label>
+      <label class="field">machine (arch) <input id="spoof-uname-machine" type="text" value="amd64"></label>
+    </div>
+    <div class="row">
+      <label class="field arch"><input type="checkbox" id="spoof-arch-arm"> Report <code>arm64</code> instead of <code>amd64</code> (keep x86_64 for a clean "Windows PC")</label>
+    </div>
+    <div class="row">
+      <button id="spoof-windows-portal" class="primary">Apply Windows (Portal for Teams)</button>
+      <button id="spoof-apply-preset" class="ghost">Apply preset…</button>
+      <button id="spoof-apply" class="primary">Apply spoof</button>
+      <button id="spoof-refresh">Refresh</button>
+      <button id="spoof-reset" class="danger">Reset this app's spoof</button>
+    </div>
+    <div class="row">
+      <button id="spoof-reset-all" class="ghost">Reset all spoofs…</button>
+    </div>
+    <p id="spoof-toast" class="hint" role="status"></p>
+  </section>
+  <p id="report" class="state" role="status"></p>
+</main>
+<script src="js/pengu.js"></script>
+<script src="js/spoof.js?v=p91000"></script>
+</body>
+</html>

@@ -109,9 +109,14 @@ export class NuxelBridgeClient {
         // 3. localStorage fallback
         try {
             const local = (g.localStorage && g.localStorage.getItem('nuxel-bridge-token')) || '';
-            if (local) {
+            // G0: token app identity is enforced server-side on every route.
+            // A cached token for a different app is never sent as this app.
+            if (local && this._tokenMatchesApp(local)) {
                 this.token = local;
                 return local;
+            }
+            if (local) {
+                try { g.localStorage.removeItem('nuxel-bridge-token'); } catch (e) { /* ignore */ }
             }
         } catch (e) { /* localStorage unavailable */ }
 
@@ -135,10 +140,28 @@ export class NuxelBridgeClient {
         return this.token;
     }
 
+    /**
+     * The HTTP bridge records token -> app_id server-side.  The browser copy is
+     * only a cache, so it must carry that binding too; a value cached by an
+     * earlier app must never be replayed as this app's identity.
+     */
+    _tokenMatchesApp(token) {
+        try {
+            const rec = typeof localStorage !== 'undefined' && localStorage
+                ? JSON.parse(localStorage.getItem('nuxel-bridge-token-app') || 'null') : null;
+            if (rec && rec.app_id) return rec.app_id === this.appId;
+            // Legacy cache with no recorded owner: discard rather than guess.
+            return false;
+        } catch (e) {
+            return false;
+        }
+    }
+
     _persistToken(token) {
         try {
             if (typeof localStorage !== 'undefined' && localStorage) {
                 localStorage.setItem('nuxel-bridge-token', token);
+                localStorage.setItem('nuxel-bridge-token-app', JSON.stringify({ app_id: this.appId }));
             }
         } catch (e) { /* ignore */ }
     }
@@ -258,7 +281,18 @@ export class NuxelBridgeClient {
             method,
             headers: { 'Content-Type': 'application/json' },
         };
-        if (this.token) options.headers['Authorization'] = 'Bearer ' + this.token;
+        // Acting routes (/rpc, /auth/*) require an app-bound token: a shared
+        // host token authenticates the process but carries no app identity and
+        // the G0 binding rejects it.  Get one from the launcher relay; if the
+        // relay is unavailable, do not send an unrelated identity.
+        const authority = ['/rpc', '/auth/app-token'].some((p) => endpoint.indexOf(p) === 0);
+        let tok = '';
+        if (authority) {
+            tok = await this._appBoundToken();
+        } else {
+            tok = this.token || await this._appBoundToken();
+        }
+        if (tok) options.headers['Authorization'] = 'Bearer ' + tok;
         // Pin header (bridge-version.json "http_header"): the host answers 409
         // version_mismatch instead of silently serving a skewed contract.
         options.headers['X-Nuxel-Bridge-Version'] = NUXEL_BRIDGE_VERSION;
@@ -403,6 +437,44 @@ export class NuxelBridgeClient {
             }
             return this._mockCall(namespace, verb, payload.params);
         }
+    }
+
+    /**
+     * Fetch a Bridge session token bound to this app via the trusted Home
+     * relay.  Unlike a shared host token, this token carries an app_id and is
+     * accepted by the app-identity binding; authority RPCs additionally
+     * require that the native launcher minted it.  Never persisted: it is
+     * short-lived and bound to this page's identity.
+     */
+    async _pageToken() {
+        try {
+            const t = await this._keyringLauncherToken();
+            if (t) return t;
+        } catch (e) { /* fall through to the shared host token */ }
+        try { return await this._resolveToken(); } catch (e) { return null; }
+    }
+
+    /** Return a cached app-bound session token, minted via the launcher relay. */
+    async _appBoundToken() {
+        if (this._pageBoundToken) return this._pageBoundToken;
+        try {
+            const t = await this._keyringLauncherToken();
+            this._pageBoundToken = t || '';
+        } catch (e) {
+            this._pageBoundToken = '';
+        }
+        return this._pageBoundToken;
+    }
+
+    /** Authenticated fetch against the local Bridge API (app-bound token). */
+    async bridgeFetch(path, options) {
+        const opts = Object.assign({}, options || {});
+        const headers = Object.assign({}, opts.headers || {});
+        const token = await this._pageToken();
+        if (token) headers.Authorization = 'Bearer ' + token;
+        headers['X-Nuxel-Bridge-Version'] = NUXEL_BRIDGE_VERSION;
+        opts.headers = headers;
+        return fetch(this.apiUrl + path, opts);
     }
 
     /* ---- Nuxel Vault / Authenticator keyring (fail closed) ---- */

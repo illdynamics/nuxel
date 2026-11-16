@@ -1,0 +1,13 @@
+{
+  "failures": 1,
+  "fallback_pin_salt": "824c6d985250afc0cec01068ff2445a0",
+  "fallback_pin_verifier": "5277bf741af5ff6e474fcc9ae2f554a4604f9e6db83222222401f1053ce16305",
+  "locked_until": 0.0,
+  "mode": "pattern",
+  "pattern_dots": 9,
+  "salt": "61e1167b8ae5e829f6cedc25ef86e7a3",
+  "schema_version": 1,
+  "secret_kind": "pattern",
+  "updated_at": 1794592273.3823323,
+  "verifier": "c9ca6545382bf04f0db3c43680502ebe6d94a489c9b393717f7fa238be8dfd7f"
+}

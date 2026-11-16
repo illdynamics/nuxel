@@ -17,6 +17,7 @@
      The pinned X-Nuxel-Bridge-Version header matches what the shared client
      sends, so the host's version gate behaves identically. */
   var RPC_URL = 'http://127.0.0.1:8080/api/v1/rpc';
+  var _cachedToken = '';
 
   function bridgeVersion() {
     if (global.NUXEL_BRIDGE_VERSION) return String(global.NUXEL_BRIDGE_VERSION);
@@ -25,10 +26,24 @@
 
   async function direct(ns, verb, params) {
     try {
+      /* Identity is still required after the G0 boundary: Home's app-bound
+         session token is fetched from the launcher relay.  The direct fetch is
+         kept (no fabricated mock data); only the Authorization header is new. */
+      var token = _cachedToken;
+      if (!token) {
+        try {
+          // The Home page is the top frame, so ask the injected launcher
+          // relay directly (the app-bound token is delivered as a message).
+          token = await global.NuxelBridge._keyringLauncherToken();
+          _cachedToken = token || '';
+        } catch (e) { token = ''; }
+      }
+      var headers = { 'Content-Type': 'application/json',
+                      'X-Nuxel-Bridge-Version': bridgeVersion() };
+      if (token) headers.Authorization = 'Bearer ' + token;
       var res = await fetch(RPC_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json',
-                   'X-Nuxel-Bridge-Version': bridgeVersion() },
+        headers: headers,
         body: JSON.stringify({ app_id: 'org.nuxel.Home', namespace: ns, verb: verb,
                                params: params || {} })
       });

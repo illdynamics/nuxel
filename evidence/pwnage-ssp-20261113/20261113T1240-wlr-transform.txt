@@ -1,0 +1,36 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== before ==
+HEADLESS-1 "Headless output 1"
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Position: 0,0
+  Transform: normal
+  Scale: 2.000000
+  Adaptive Sync: disabled
+== landscape 270 ==
+HEADLESS-1 "Headless output 1"
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Position: 0,0
+  Transform: 270
+  Scale: 2.000000
+  Adaptive Sync: disabled
+== normal ==
+HEADLESS-1 "Headless output 1"
+  Enabled: yes
+  Modes:
+    720x1520 px (current)
+  Position: 0,0
+  Transform: normal
+  Scale: 2.000000
+  Adaptive Sync: disabled

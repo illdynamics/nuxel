@@ -1,0 +1,72 @@
+{
+  "adb_devices": [],
+  "at": "2026-11-12T16:46:05+0100",
+  "blocked_reason": null,
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261112T164605+0100",
+  "exit_code": 0,
+  "finished": "2026-11-12T16:46:07+0100",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem201",
+      "dialin": "/dev/tty.usbmodem201",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem201",
+      "tty_suffix": "201",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-11-12T16:46:06+0100",
+    "bytes_in": 8247,
+    "dev": "/dev/cu.usbmodem201",
+    "echo_ok": true,
+    "elapsed_s": 0.325,
+    "error": null,
+    "reachable": true,
+    "sample": "sb: CCIC_SYSFS_PROP_STATE : 17\n6,29077,502887534,-;max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0\n6,29078,503107218,-;max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000\\x0a\n6,29079,503116775,-;max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 17\n6,29080,503116987,-;max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_"
+  },
+  "reachable": true,
+  "selected": {
+    "callout": "/dev/cu.usbmodem201",
+    "dialin": "/dev/tty.usbmodem201",
+    "match_stage": "vid+pid+ttybase+serial",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem201",
+    "tty_suffix": "201",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem201 (matched vid+pid+ttybase+serial)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.869,
+        "framed": true,
+        "output_bytes": 90,
+        "raw_len": 9817,
+        "rc": 0,
+        "rid": "d069df3e",
+        "sha_ok": true
+      },
+      "ok": true,
+      "output": "uid=0(root) gid=0(root) groups=0(root) context=system_u:system_r:kernel_t:s0\nNXL-REACH-OK",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "REACHABLE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "REACHABLE"
+  }
+}

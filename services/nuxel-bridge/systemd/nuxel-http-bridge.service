@@ -62,7 +62,10 @@ ReadWritePaths=-/var/lib/flatpak/app/com.github.IsmaelMartinez.teams_for_linux
 LogsDirectory=nuxel
 Environment=NUXEL_HTTP_BIND=127.0.0.1
 Environment=NUXEL_HTTP_PORT=8080
-Environment=NUXEL_HTTP_MODE=dev
+Environment=NUXEL_HTTP_MODE=production
+# Loopback is not identity. The dev bypass is double-gated (mode=dev AND
+# this flag) and is deliberately absent from shipped units.
+Environment=NUXEL_HTTP_DEV_LOOPBACK_BYPASS=0
 Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 # The HTTP bridge reads the SAME canonical app registry the PWA and the native
 # shell use, so /api/v1/apps/registry cannot drift from the launcher.

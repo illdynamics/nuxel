@@ -240,7 +240,14 @@ except Exception as _e:  # pragma: no cover - optional module
 
 HTTP_BIND = os.environ.get('NUXEL_HTTP_BIND', '127.0.0.1')
 HTTP_PORT = int(os.environ.get('NUXEL_HTTP_PORT', '8080'))
-HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
+# Production is the default.  The development loopback bypass exists only for
+# a local VM/pytest workflow and must be requested by BOTH environment
+# switches; one stray NUXEL_HTTP_MODE=dev can never turn loopback into an
+# unauthenticated privilege boundary on a real Nuxel image (PenGuru G0).
+HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'production')
+DEV_LOOPBACK_BYPASS = (
+    os.environ.get('NUXEL_HTTP_DEV_LOOPBACK_BYPASS', '0').strip().lower()
+    in ('1', 'true', 'yes', 'on'))
 
 # PWA<->host PROTOCOL contract (briq-04c). Pinned in
 # pwa/nuxel-common/bridge-version.json; every app manifest declares the same
@@ -702,6 +709,93 @@ def _keyring_launcher_secret():
     return value
 
 
+_REGISTRY_APP_ID_CACHE = {"path": None, "ids": set()}
+
+
+# RPC namespaces that can expose credentials or grant/approve authority.
+# These require a launcher-minted token, never a self-bootstrapped claim.
+AUTHORITY_RPC_NAMESPACES = {'keyring', 'permissions', 'penguru', 'auth'}
+AUTHORITY_RPC_VERBS = {'requestcapability', 'revokeall', 'grant', 'decideapproval',
+                       'rollbackaction', 'setenabled', 'setmode'}
+
+
+def _is_authority_rpc(body):
+    if not isinstance(body, dict):
+        return True
+    ns = str(body.get('namespace') or '').lower()
+    verb = str(body.get('verb') or '').lower()
+    return ns in AUTHORITY_RPC_NAMESPACES or verb in AUTHORITY_RPC_VERBS
+
+
+NATIVE_LAUNCH_APP_IDS = ('org.nuxel.Home',)
+
+
+def launch_authorized(requester, caller_token, http_mode=None, dev_bypass=False):
+    """Only the shell (Honor Home) may hand the host a native binary.
+
+    PWA-bound launcher tokens, self-bootstrapped tokens and shared host tokens
+    are each insufficient for native execution.  A PWA may still navigate to
+    another PWA through the same identity-bound route.
+    """
+    if requester not in NATIVE_LAUNCH_APP_IDS:
+        return False
+    if http_mode == 'dev' and dev_bypass:
+        return True
+    return (caller_token or {}).get('issuer') == 'nuxel-launcher'
+
+
+def bridge_launcher_token(app_id, secret_path=None, base=None, timeout=10.0):
+    """Exchange this device's launcher secret for an app-bound Bridge token.
+
+    Root-owned native helpers (the PWA host, the security-state publisher) use
+    the same endpoint the browser relay uses.  The secret never leaves the
+    process; the returned token is scoped to ``app_id`` and still cannot reach
+    another app's identity.
+    """
+    secret_path = secret_path or KEYRING_LAUNCHER_SECRET_FILE
+    base = base or "http://127.0.0.1:%d" % HTTP_PORT
+    try:
+        with open(secret_path) as fh:
+            secret = fh.read(256).strip()
+    except OSError:
+        return None
+    if len(secret) != 64:
+        return None
+    import urllib.request
+    body = json.dumps({"app_id": app_id}).encode()
+    req = urllib.request.Request(
+        base + "/api/v1/auth/app-token", data=body, method="POST",
+        headers={"Content-Type": "application/json",
+                 "X-Nuxel-Launcher-Secret": secret})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            doc = json.loads(resp.read(65536) or b"{}")
+    except Exception:  # noqa: BLE001 - helper reports failure, never invents a token
+        return None
+    token = doc.get("token")
+    return token if isinstance(token, str) and token else None
+
+
+def _registry_app_ids():
+    """Canonical app ids from the shared registry (for token bootstrap checks)."""
+    path = globals().get("APP_REGISTRY_PATH")
+    cached = globals()["_REGISTRY_APP_ID_CACHE"]
+    if cached.get("path") == path:
+        return cached.get("ids") or set()
+    try:
+        with open(path) as fh:
+            doc = json.load(fh)
+        apps = doc.get("apps") if isinstance(doc, dict) else None
+        ids = {a.get("id") for a in apps or [] if isinstance(a, dict) and a.get("id")}
+        if not ids:
+            ids = set()
+    except (OSError, ValueError):
+        ids = set()
+    cached["path"] = path
+    cached["ids"] = ids
+    return ids
+
+
 def _get_cors_origin(origin_header):
     """Return the matching allowed origin if permitted, else None.
 
@@ -927,9 +1021,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         `curl http://127.0.0.1:8080/api/v1/health` return 200/JSON in the VM
         verification. Any other inbound path still requires authentication.
         """
-        # Dev + loopback peer => allow (matches briq-5 curl verification).
+        # Loopback is NOT proof of identity.  The old development path returned
+        # True for any request from 127.0.0.1, which made the root-owned bridge
+        # reachable by any local process.  It is now an explicit, double-gated
+        # VM-only switch and is off on every shipped image.
         import ipaddress
-        if HTTP_MODE == 'dev':
+        if HTTP_MODE == 'dev' and DEV_LOOPBACK_BYPASS:
             try:
                 peer = self.client_address[0]
                 if peer in ('127.0.0.1', '::1') or ipaddress.ip_address(peer).is_loopback:
@@ -976,6 +1073,33 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             SESSION_TOKENS.pop(token, None)
             return None
         return session
+
+    def _bind_identity(self, app_id):
+        """Prove the request body app_id matches the bearer token identity.
+
+        This is enforced for EVERY authenticated route, not only keyring.
+        Returns a denial document, or None when the identity is proven.
+        """
+        if _keyring_api is None:
+            return {'success': False, 'error': 'identity_unavailable',
+                    'detail': 'identity module unavailable'}
+        session = self._session_token()
+        if session is None and HTTP_MODE == 'dev' and DEV_LOOPBACK_BYPASS:
+            # VM-only harness identity.  This is NOT an authority token: the
+            # authority-route gate below still requires issuer=nuxel-launcher.
+            try:
+                peer = self.client_address[0]
+                if peer in ('127.0.0.1', '::1'):
+                    session = {'app_id': app_id, 'issuer': 'dev-loopback-vm'}
+            except (ValueError, IndexError, KeyError):
+                session = None
+        if session is None:
+            # A provisioned static token authenticates the local host tooling,
+            # not an app identity.  It may only use routes that do not act on
+            # behalf of an app; acting routes require an app-bound token.
+            return {'success': False, 'error': 'app_token_required',
+                    'detail': 'an app-bound session token is required'}
+        return _keyring_api.bind_request_identity(session, app_id)
 
     def _keyring_identity(self, app_id):
         """Prove the caller is the registered local app, not a JSON app_id."""
@@ -1046,6 +1170,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         """
         if flatpak_provider is None:
             info["flatpak"] = {"available": False, "error": "provider unavailable"}
+            self._merge_flatpak_entries(info, {})
             return
         try:
             now = time.monotonic()
@@ -1058,10 +1183,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 installed = cached
         except Exception as exc:  # noqa: BLE001
             info["flatpak"] = {"available": False, "error": str(exc)}
+            self._merge_flatpak_entries(info, {})
             return
         if not installed.get("success"):
             info["flatpak"] = {"available": False,
                                "error": installed.get("error") or "flatpak list failed"}
+            self._merge_flatpak_entries(info, {})
             return
         dynamic = {}
         for app in installed.get("apps") or []:
@@ -1099,13 +1226,28 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     app.get("arch") or "aarch64"),
                 "install_source": "flatpak:" + scope,
             }
+        self._merge_flatpak_entries(info, dynamic)
+        info["flatpak"] = {
+            "available": True,
+            "installed": len(dynamic),
+            "source": "flatpak_provider",
+            "scopes": sorted({a.get("flatpak_scope") for a in dynamic.values()}),
+        }
+
+    def _merge_flatpak_entries(self, info, dynamic):
+        """Merge provider-backed entries without hiding the static registry.
+
+        A KNOWN_FLATPAK_IDS entry is replaced only when the provider actually
+        reported that app installed.  An uninstalled or unavailable provider
+        leaves the static baseline intact so an offline launch is still
+        resolved (or explicitly refused by the registry's own status), never
+        turned into a phantom "unknown_app".
+        """
         static = info.get("apps") or []
         kept = []
         for app in static:
             aid = app.get("id")
             if aid in dynamic:
-                continue
-            if aid in KNOWN_FLATPAK_IDS:
                 continue
             kept.append(app)
         for aid, entry in dynamic.items():
@@ -1115,12 +1257,6 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             merged["docked"] = bool(prev.get("docked", False))
             kept.append(merged)
         info["apps"] = kept
-        info["flatpak"] = {
-            "available": True,
-            "installed": len(dynamic),
-            "source": "flatpak_provider",
-            "scopes": sorted({a.get("flatpak_scope") for a in dynamic.values()}),
-        }
 
     def _lookup_registry_app(self, app_id):
         """Return (app_entry_or_None, registry_info). Never invents an app."""
@@ -1132,7 +1268,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return app, info
         return None, info
 
-    def _activate_app(self, target_id, requester, source):
+    def _activate_app(self, target_id, requester, source, caller_token=None):
         """Resolve an app id to an activation descriptor (JSON body, HTTP code).
 
         Mediation rules:
@@ -1163,7 +1299,19 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             ACTIVATION_REJECTED["last"] = target_id
             return ({"success": False, "error": "unknown_app", "app_id": target_id,
                      "registry_version": info.get("registry_version")}, 404)
+        # Launch authority (PenGuru G0).  Resolving a registry descriptor is
+        # read-only, but handing one to the PWA host starts a native process.
+        # Only the shell/launcher may start native or Flatpak entries.  A PWA
+        # may navigate to another PWA (the HTTP layer already bound its app
+        # identity), but it cannot start a native binary through this route.
         kind = app.get("type")
+        if kind in ("native", "flatpak") and not launch_authorized(
+                requester, caller_token, HTTP_MODE, DEV_LOOPBACK_BYPASS):
+            logger.warning('activation refused: app=%s target=%s', requester, target_id)
+            ACTIVATION_REJECTED["count"] += 1
+            ACTIVATION_REJECTED["last"] = target_id
+            return ({"success": False, "error": "launch_not_authorized",
+                     "detail": "native launch requires the Home launcher"}, 403)
         descriptor = {
             "success": True,
             "id": app.get("id"),
@@ -6589,7 +6737,15 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 self._send_json({'success': False, 'error': 'launcher_unauthorized'}, 403)
                 return
             app_id = body.get('app_id', '')
-            if app_id not in KEYRING_LAUNCHER_APPS:
+            # The launcher may mint a per-page token for any registered app
+            # (the Home relay is used for all iframe apps).  Launcher-only ids
+            # remain constrained by _keyring_api's identity rules; an
+            # unregistered id is still refused.
+            # Home is the shell identity and owns the launcher relay; it is
+            # not a registry PWA, but it is the only identity allowed to mint
+            # the token that authorizes app activation.
+            if not (app_id in ('org.nuxel.Home', 'org.nuxel.Vault', 'org.nuxel.Authenticator')
+                    or app_id in _registry_app_ids()):
                 self._send_json({'success': False, 'error': 'invalid_app_id'}, 400)
                 return
             token = str(uuid.uuid4())
@@ -6616,12 +6772,18 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             body = self._get_json_body()
             if body is None:
                 return
-            app_id = body.get('app_id', 'unknown')
+            app_id = body.get('app_id', '')
+            if not _keyring_api.bootstrap_app_allowed(
+                    app_id, _registry_app_ids()):
+                logger.warning('bootstrap token refused for app %r', app_id)
+                self._send_json({'success': False, 'error': 'invalid_app_id'}, 403)
+                return
             token = str(uuid.uuid4())
             SESSION_TOKENS[token] = {
                 "app_id": app_id,
                 "created": time.time(),
                 "expires": time.time() + SESSION_TTL_SECONDS,
+                "issuer": "self-bootstrap",
                 # Route provenance for the keyring identity check.  This is a
                 # URL path, never a secret.  It prevents a token issued for one
                 # app route from being replayed for another app_id.
@@ -6638,6 +6800,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             return
 
         if not self._verify_auth():
+            logger.warning('POST auth denied path=%s auth_present=%s mode=%s',
+                           path, bool(self.headers.get('Authorization')),
+                           HTTP_MODE)
             self._send_json({'error': 'unauthorized'}, 401)
             return
 
@@ -6652,20 +6817,44 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if body is None:
             return  # Error already sent by _get_json_body
 
-        app_id = body.get('app_id', 'unknown')
+        app_id = body.get('app_id', '')
+        denial = self._bind_identity(app_id)
+        if denial is not None:
+            logger.warning('identity denied route=%s code=%s', path, denial.get('error'))
+            self._send_json(denial, 403)
+            return
+        # Identity binding proves token.app_id == body.app_id.  For routes that
+        # expose secrets or grant authority, a self-bootstrapped token (which
+        # merely claims an id) is not enough: the token must have been minted
+        # by the native launcher for this exact app.  A root-owned loopback
+        # client can no longer self-mint Vault access (PenGuru G0).
+        if path == '/api/v1/rpc' and _is_authority_rpc(body):
+            session = self._session_token() or {}
+            if session.get('issuer') != 'nuxel-launcher':
+                logger.warning('authority route refused without launcher-bound token app=%s',
+                               app_id)
+                self._send_json({'success': False, 'error': 'launcher_token_required',
+                                 'error_code': 'PERMISSION_DENIED'}, 403)
+                return
 
         if path == '/api/v1/usb-mode/set-mode':
             if usb_mode is None:
                 self._send_json({'success': False, 'error': 'usb_mode unavailable'}, 503)
             else:
-                # The body was already consumed by _get_json_body() above.  The
-                # old second rfile.read(Content-Length) blocked forever on a
-                # keep-alive connection (the exact "File Transfer never
-                # switches" symptom); reuse the parsed document.
-                payload = body if isinstance(body, dict) else {}
-                mode = str(payload.get('mode', ''))
-                result = usb_mode.set_mode(mode)
-                self._send_json(result, 200 if result.get('success') else 409)
+                # USB composition changes /sys/kernel/config and therefore are
+                # a scoped capability, exactly like usb-net/set-mode.  This
+                # route previously performed the change without any check.
+                check = self._call_bridge('CheckPermission', app_id, 'usb:access')
+                if not (isinstance(check, dict) and check.get('granted')):
+                    self._send_json({'success': False, 'error': 'capability_denied',
+                                     'error_code': 'PERMISSION_DENIED'}, 403)
+                else:
+                    # The body was already consumed by _get_json_body() above.
+                    # Reuse the parsed document; never a second blocking read.
+                    payload = body if isinstance(body, dict) else {}
+                    mode = str(payload.get('mode', ''))
+                    result = usb_mode.set_mode(mode)
+                    self._send_json(result, 200 if result.get('success') else 409)
 
         elif path == '/api/v1/usb-net/set-mode':
             if usb_tethering is None:
@@ -6805,8 +6994,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             # for capability checks), and conflating the two would let a caller
             # "activate itself" with someone else's identity.
             target = body.get('target') or body.get('activate') or body.get('target_app_id')
-            requester = body.get('requester') or app_id
-            result, code = self._activate_app(target, requester, body.get('source') or 'launcher')
+            # The requester is the authenticated caller, never a body field.
+            requester = app_id
+            result, code = self._activate_app(target, requester,
+                                              body.get('source') or 'launcher',
+                                              caller_token=self._session_token())
             self._send_json(result, code)
 
         elif path == '/api/v1/apps/open-media':
@@ -6993,7 +7185,8 @@ def start_api_server(host=None, port=None, token=None):
     start_orientation_focus_watch()
     start_edge_lighting_watch()
     logger.info("Nuxel Bridge API running on http://%s:%s", host, port)
-    logger.info("API Token: %s", BridgeAPIHandler.server_token)
+    # Never print the shared token: it is an authentication secret.
+    logger.info("API token: %s", "configured" if BridgeAPIHandler.server_token else "not configured")
     logger.info("Mode: %s", HTTP_MODE)
     logger.info("Use: Authorization: Bearer <token>")
 
@@ -7021,3 +7214,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("\nShutting down API server...")
         server.shutdown()
+

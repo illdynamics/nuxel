@@ -65,7 +65,10 @@ class RecentsManager {
     _loadNative() {
         if (this._nativeLoading) return;
         this._nativeLoading = true;
-        fetch('http://127.0.0.1:8080/api/v1/windows/list', { cache: 'no-store' })
+        const listReq = (window.NuxelBridge && typeof window.NuxelBridge.bridgeFetch === 'function')
+            ? window.NuxelBridge.bridgeFetch('/windows/list', { cache: 'no-store' })
+            : fetch('http://127.0.0.1:8080/api/v1/windows/list', { cache: 'no-store' });
+        listReq
             .then(r => r.json())
             .then(doc => {
                 this._native = (doc && Array.isArray(doc.windows) ? doc.windows : [])
@@ -169,10 +172,15 @@ class RecentsManager {
                 if (isNative) {
                     const win = this._native.find(w => this._nativeId(w) === appId);
                     this.close('select-native');
-                    if (win) fetch('http://127.0.0.1:8080/api/v1/windows/activate', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ app_id: win.app_id })
-                    }).then(() => setTimeout(() => window.NuxelHost && window.NuxelHost.action && window.NuxelHost.action('nav-show'), 80)).catch(() => {});
+                    if (win) ((window.NuxelBridge && typeof window.NuxelBridge.bridgeFetch === 'function')
+                        ? window.NuxelBridge.bridgeFetch('/windows/activate', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ app_id: win.app_id })
+                        })
+                        : fetch('http://127.0.0.1:8080/api/v1/windows/activate', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ app_id: win.app_id })
+                        })).then(() => setTimeout(() => window.NuxelHost && window.NuxelHost.action && window.NuxelHost.action('nav-show'), 80)).catch(() => {});
                     return;
                 }
                 this.close('select-app');
@@ -198,10 +206,15 @@ class RecentsManager {
             // remove the card only after the backend accepted the request.
             const win = this._native.find(w => this._nativeId(w) === appId);
             const target = (win && win.app_id) || appId;
-            fetch('http://127.0.0.1:8080/api/v1/windows/close', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ app_id: target })
-            }).then(r => r.json().catch(() => ({}))).then(res => {
+            ((window.NuxelBridge && typeof window.NuxelBridge.bridgeFetch === 'function')
+                ? window.NuxelBridge.bridgeFetch('/windows/close', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_id: target })
+                })
+                : fetch('http://127.0.0.1:8080/api/v1/windows/close', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_id: target })
+                })).then(r => r.json().catch(() => ({}))).then(res => {
                 /* The card is retired only after the compositor backend
                    accepted the close request.  A refused close stays visible
                    in the CLOSING state so the owner can force-kill it. */

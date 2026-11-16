@@ -1,0 +1,21 @@
+{
+ "start": {
+  "checked": 0,
+  "total": 48,
+  "summary": "Currently: All apps.",
+  "msg": "Effect: Multicolor \u00b7 enabled \u00b7 1800 ms\nDND: off \u00b7 provider: ok"
+ },
+ "selected": {
+  "checked": 1,
+  "total": 48,
+  "summary": "Currently: 1 of 48 apps.",
+  "msg": "Notification sources: 1 of 48 apps"
+ },
+ "after_allow_all": {
+  "checked": 0,
+  "total": 48,
+  "summary": "Currently: All apps.",
+  "msg": "Notification sources: All apps may now light the edge."
+ }
+}
+LIVE_ALLOW_ALL: PASS

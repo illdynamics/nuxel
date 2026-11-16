@@ -1,0 +1,3 @@
+{
+  "system_inspect": {"duration": "always", "portal_type": "system:inspect", "source": "first-party-read-only"}
+}

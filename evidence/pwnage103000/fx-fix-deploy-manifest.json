@@ -1,0 +1,100 @@
+{
+  "schema": "nuxel.pwnage-103000.fx-fix.deploy-manifest/1",
+  "generated_at": "20261112T112500Z",
+  "device": {
+    "host": "192.168.178.167",
+    "user": "root",
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte"
+  },
+  "no_reflash": true,
+  "partitions_modified": [],
+  "purpose": "Fix Edge FX Preview selected and Allow all apps; make all-apps state explicit and persisted.",
+  "backup": {
+    "remote": "/root/nuxel-backup-103000-fxfix-20261112T103651Z",
+    "contents": [
+      "home-js/edge-lighting.js",
+      "home-css/edge-lighting.css",
+      "edge-fx/",
+      "settings/settings.json",
+      "bridge/edge_lighting_provider.py",
+      "edge-default/edge-lighting.json",
+      "SHA256SUMS"
+    ]
+  },
+  "files": [
+    {
+      "source": "services/nuxel-bridge/src/edge_lighting_provider.py",
+      "installed_to": "/usr/lib/nuxel/nuxel-bridge/edge_lighting_provider.py",
+      "sha256": "43bf63fbfe7fea55983228a8f880f7e9325c0bc7b58f5593f1cb63990b12841c",
+      "reason": "source_mode schema + migration + explicit Allow-all policy"
+    },
+    {
+      "source": "configs/nuxel/edge-lighting/edge-lighting.json",
+      "installed_to": "/etc/nuxel/edge-lighting/edge-lighting.json",
+      "sha256": "9834da1c367de1c3a80cbce27ecba5cc6aa7e3d8cbfa9342a74562e0ae985907",
+      "reason": "shipped default gains source_mode=all"
+    },
+    {
+      "source": "pwa/nuxel-home/js/edge-lighting.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/js/edge-lighting.js",
+      "sha256": "5f8a5e54a09c9b89da109b75702edc970e9bce0a614968efd3d54477983d306d",
+      "reason": "preview message bridge, above-frame preview, bridge-ready settings, /api/v1 GET fix"
+    },
+    {
+      "source": "pwa/nuxel-home/css/edge-lighting.css",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/css/edge-lighting.css",
+      "sha256": "f79036a850c37c9300014945e7bd139a957245140c6efdbd1b47b58e9c854775",
+      "reason": "preview visibility + above-app-frame z-index"
+    },
+    {
+      "source": "pwa/nuxel-home/sw.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/sw.js",
+      "sha256": "c5b658b8135b7f134cacbe70d69f61f1213e31d3adf725bb224b0bf83fa569a5",
+      "reason": "cache bump v097-p103000"
+    },
+    {
+      "source": "pwa/nuxel-home/manifest.json",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "sha256": "af8e9d2564b95407fdc3d566665efa8b39885bc0e245fae3c97f532779d107e9",
+      "reason": "cache_version lockstep v097-p103000"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/edge-fx.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/edge-fx.js",
+      "sha256": "0549d027c495533a4260cbfa56f6f0dbad72aa3f0c7066db8a4ee2a55807f0f6",
+      "reason": "bridge readiness, preview ack, authoritative Allow-all/allowlist state"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/index.html",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/index.html",
+      "sha256": "c0dcdfadbe479d36afd1520bc2fe28a6a9ff2cf6ab4aea64f504928189aee67d",
+      "reason": "All-apps status + asset version query"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/edge-fx.css",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/edge-fx.css",
+      "sha256": "cc126c33a80d4904f54ed205c3494d4d12ab22473f8e62c50c1dfd217b5db3de",
+      "reason": "All-apps empty-state style"
+    }
+  ],
+  "service_actions": [
+    {
+      "unit": "nuxel-http-bridge",
+      "action": "restart",
+      "reason": "provider source_mode schema loaded"
+    }
+  ],
+  "not_restarted": [
+    "nuxel-wl-fb",
+    "nuxel-wayland",
+    "nuxel-pwa-host",
+    "nuxel-web"
+  ],
+  "verification": {
+    "effects_preview": "PASS live iframe (8/8, visible, bounded, one root)",
+    "allow_all": "PASS live iframe (0->1->0 checked; summary All apps)",
+    "cache": "v097-p103000 served HTTP 200"
+  },
+  "rollback": "evidence/pwnage103000/fx-fix-rollback.sh"
+}

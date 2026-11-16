@@ -1,0 +1,40 @@
+===NODES===
+crw-------. 1 root root 237, 0 Jan  1  1970 /dev/qbt2000_fd
+crw-------. 1 root root 237, 1 Jan  1  1970 /dev/qbt2000_ipc
+
+/sys/class/fingerprint/fingerprint/:
+total 0
+-r--r--r-- 1 root root 4096 Nov  8 10:27 adm
+-r--r--r-- 1 root root 4096 Nov  8 10:27 bfs_values
+-rw-rw-r-- 1 root root 4096 Nov  8 10:27 cbgecnt
+-rw-rw-r-- 1 root root 4096 Nov  8 10:27 intcnt
+-r--r--r-- 1 root root 4096 Nov  8 10:27 name
+-r--r--r-- 1 root root 4096 Nov  8 10:27 position
+drwxr-xr-x 2 root root    0 Nov  8 10:27 power
+-rw-rw-r-- 1 root root 4096 Nov  8 10:27 resetcnt
+lrwxrwxrwx 1 root root    0 Nov  8 10:27 subsystem -> ../../../../class/fingerprint
+-r--r--r-- 1 root root 4096 Nov  8 10:27 type_check
+-rw-r--r-- 1 root root 4096 Nov  8 10:27 uevent
+-r--r--r-- 1 root root 4096 Nov  8 10:27 vendor
+-r--r--r-- 1 root root 4096 Nov  8 10:27 wuhbtest
+===SYSFS===
+name=QBT2000
+
+vendor=QCOM
+
+type_check=7
+
+position=13.77,0.00,9.00,4.00,14.80,14.80,13.00,13.00,5.00
+
+adm=1
+
+bfs_values="FP_SPICLK":"25000000"
+
+===DMESG===
+[  628.966262] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  639.976406] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  650.983437] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  661.991862] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  666.821046] fps_qbt2000_type_check_show: qbt2000
+===RPC===
+{"result": {"success": true, "schema": "nuxel.fingerprint-status/1", "supported": false, "ready": false, "state": "BLOCKED_SECURE_PROVIDER", "sensor": {"detected": true, "devices": ["/dev/qbt2000_fd", "/dev/qbt2000_ipc"], "driver": true}, "provider": {"fprintd": false, "libfprint": false, "secure_tee": false}, "enrolled": 0, "slots": [], "enrollment_supported": false, "deletion_supported": false, "test_supported": false, "pin_fallback_required": true, "template_policy": "templates remain inside the secure provider/TEE; no import/export", "blocker": "sensor/driver is present but no verified TEE-backed enrollment provider exists for this qbt2000 sensor", "detail": "sensor/driver is present but no verified TEE-backed enrollment provider exists for this qbt2000 sensor", "source": "fingerprint_provider"}}

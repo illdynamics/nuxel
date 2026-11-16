@@ -1,0 +1,29 @@
+{
+  "boot_id_after": "a269e14b-2ccd-4f0a-bbeb-088e84daa5a3",
+  "boot_id_before": "96f40ab6-e1ea-4952-af24-6f7efae499d2",
+  "cleanup": "ncm function and /var/lib/nuxel/usb-net removed after reboot",
+  "date": "2026-10-27",
+  "device": "Samsung Galaxy S10+ SM-G975F / beyond2lte",
+  "guard_refusal_rc": 2,
+  "guard_refusal_status": "BLOCKED_KERNEL_PANIC",
+  "host_usb_set_config_error": -71,
+  "kernel": "4.14.253",
+  "ncm_compiled": true,
+  "ncm_enabled": false,
+  "panic_seen_in_pstore": true,
+  "panic_top_functions": [
+    "ncm_free_inst",
+    "misc_deregister",
+    "__list_del_entry_valid",
+    "ncm_attr_release"
+  ],
+  "post_reboot_helper_status": "BLOCKED_KERNEL_PANIC",
+  "reboot_observed": true,
+  "reboot_requested_by_tool": false,
+  "reset_reason": 4,
+  "serial_after_reboot": "PASS",
+  "usb_network_interface_present": false,
+  "usb_ssh": "BLOCKED_KERNEL_PANIC",
+  "usb_ssh_after_reboot": "NOT RUN (blocked)",
+  "wlan_ssh_after_reboot": "PASS"
+}

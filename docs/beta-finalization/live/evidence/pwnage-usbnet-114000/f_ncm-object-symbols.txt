@@ -1,0 +1,9 @@
+000000007651d798 A __crc_nuxel_ncm_lifecycle_marker
+0000000000000000 d __exitcall_nuxel_ncm_mod_exit
+0000000000000024 r __kstrtab_nuxel_ncm_lifecycle_marker
+0000000000000000 r __ksymtab_nuxel_ncm_lifecycle_marker
+0000000000000070 d dev_attr_nuxel_fix
+0000000000000560 t nuxel_fix_show
+0000000000000028 r nuxel_ncm_lifecycle_fix
+0000000000000168 R nuxel_ncm_lifecycle_marker
+0000000000000000 t nuxel_ncm_mod_exit

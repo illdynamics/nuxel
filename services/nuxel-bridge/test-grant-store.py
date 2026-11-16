@@ -82,9 +82,15 @@ def main():
         try:
             bridge.PERMISSIONS_DIR = directory
             os.environ['NUXEL_LOCATION_POLICY'] = os.path.join(directory, 'location-policy.json')
-            # The loader has no instance state: using an uninitialised object
-            # proves only persisted data parsing, not D-Bus construction.
-            got = bridge.NuxelBridgeService._load_all_grants(object())
+            # The loader has no instance state of its own beyond the seeding
+            # helper.  Disable seeding for this fixture so only the persisted
+            # data under test is parsed; a bare object must remain sufficient.
+            original_seed = bridge.SEED_FIRST_PARTY_GRANTS
+            bridge.SEED_FIRST_PARTY_GRANTS = False
+            try:
+                got = bridge.NuxelBridgeService._load_all_grants(object())
+            finally:
+                bridge.SEED_FIRST_PARTY_GRANTS = original_seed
         finally:
             bridge.PERMISSIONS_DIR = original_dir
             if original_policy is None:

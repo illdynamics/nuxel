@@ -209,15 +209,34 @@ class PermissionStore:
             logger.info(f"Granted {portal_type} to {app_id} (duration={duration})")
 
     def revoke_grant(self, app_id, portal_type):
-        """Revoke a specific permission grant."""
+        """Revoke a specific permission grant.
+
+        Aliased records (e.g. ``location:read`` for portal type ``location``)
+        are resolved the same way as ``get_grant`` so a once grant can never
+        be honoured twice because only the canonical key was deleted.
+        """
         with self._lock:
-            grants = self.get_grants(app_id)
-            if portal_type in grants:
-                del grants[portal_type]
-                path = self._app_path(app_id)
-                with open(path, 'w') as f:
-                    json.dump(grants, f, indent=2)
-                logger.info(f"Revoked {portal_type} from {app_id}")
+            self._revoke_grant_locked(app_id, portal_type)
+
+    def _revoke_grant_locked(self, app_id, portal_type):
+        grants = self.get_grants(app_id)
+        names = [portal_type]
+        for name, value in grants.items():
+            if not isinstance(value, dict) or name == portal_type:
+                continue
+            # Only remove a distinct alias spelling; never widen the match to
+            # an unrelated canonical id that merely shares the prefix.
+            if ':' in name and name.split(':', 1)[0] == portal_type:
+                names.append(name)
+            elif value.get('portal_type') == portal_type:
+                names.append(name)
+        if any(name in grants for name in names):
+            for name in names:
+                grants.pop(name, None)
+            path = self._app_path(app_id)
+            with open(path, 'w') as f:
+                json.dump(grants, f, indent=2)
+            logger.info(f"Revoked {portal_type} from {app_id}")
 
     def revoke_all(self, app_id):
         """Revoke all grants for an app."""
@@ -228,13 +247,20 @@ class PermissionStore:
                 logger.info(f"Revoked all permissions for {app_id}")
 
     def check_grants(self, app_id, portal_type):
-        """Check if a permission is currently granted (non-consuming).
+        """Check a grant and atomically consume a one-shot record.
 
-        A ``once`` grant must survive until the caller actually acts on it
-        (RequestMicrophone consumes it); a read-only status query consuming
-        it would make the toggle flicker off under a live recorder.
+        A ``once`` decision is spent by the first authorization check.  The
+        check and deletion happen under the store lock so two callers cannot
+        both observe the same one-shot grant.  ``always`` and ``session``
+        grants remain reusable; the portal's consent round-trip consumes a
+        one-shot before it is acted on.
         """
-        return self.get_grant(app_id, portal_type) is not None
+        with self._lock:
+            grant = self.get_grant(app_id, portal_type)
+            if grant is not None and grant.get('duration') == 'once':
+                self._revoke_grant_locked(app_id, portal_type)
+                return True
+            return grant is not None
 
     def has_always_grant(self, app_id, portal_type):
         """Check if an app has an 'always' grant."""

@@ -1,0 +1,5 @@
+        Nuxel S10+ Live Console:
+          Product ID: 0x4ee7
+          Vendor ID: 0x18d1  (Google Inc.)
+          Serial Number: NUXEL-S10PLUS-0001
+          Manufacturer: Nuxel

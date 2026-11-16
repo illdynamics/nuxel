@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "model_id": "codebird",
+  "role": "code",
+  "name": "CodeBird",
+  "variant_id": "gguf-q4km",
+  "format": "GGUF",
+  "architecture": "qwen35",
+  "quantization": "Q4_K_M",
+  "source_repo": "empero-ai/Qwen3.8-4B-Distill-GGUF",
+  "source_revision": "391fc7d103e3942a408def3e4f51c2f85d464417",
+  "source_url": "https://huggingface.co/empero-ai/Qwen3.8-4B-Distill-GGUF/resolve/391fc7d103e3942a408def3e4f51c2f85d464417/Qwen3.8-4B-Q4_K_M.gguf",
+  "files": [
+    {
+      "path": "Qwen3.8-4B-Q4_K_M.gguf",
+      "size_bytes": 2783446304,
+      "sha256": "dec96e8cf2e11b613bb46513dec485377f9ca5a351e71712ee0e244f287c6790"
+    }
+  ],
+  "runtime": {
+    "engine": "llama.cpp",
+    "min_commit": "de32b268c4ad55d45f3b7b16c029f4e077f4ba74",
+    "context_limit": 4096
+  },
+  "license": {
+    "spdx": "Apache-2.0",
+    "notice": "GGUF repository tags Apache-2.0; derived from empero-ai/Qwen3.8-4B-Distill (Apache-2.0). Preserve upstream model/source notices.",
+    "redistribution": "review_required",
+    "provenance_review": "pending"
+  },
+  "signature": null,
+  "trust": "unsigned",
+  "notes": "Requires a llama.cpp build that actually supports the Qwen3.5 Gated DeltaNet architecture; load/self-test is the gate."
+}
