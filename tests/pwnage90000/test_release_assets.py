@@ -15,7 +15,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-EXPECTED = "v0.8.5-beta"
+# The release gate must follow the canonical version rather than retaining a
+# historical release number after a bump.
+EXPECTED = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
 failures: list[str] = []
 

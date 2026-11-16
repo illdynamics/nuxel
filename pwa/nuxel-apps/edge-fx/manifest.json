@@ -16,7 +16,7 @@
   ],
   "nuxel": {
     "bridge_version": "1",
-    "pwa_version": "0.8.6-beta",
+    "pwa_version": "0.8.7-beta",
     "capabilities": [],
     "app_type": "settings",
     "app_id": "nuxel-edge-fx",

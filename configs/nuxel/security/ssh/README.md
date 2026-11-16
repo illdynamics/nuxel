@@ -34,6 +34,6 @@ the pinned file and `HostKeyAlias=nuxel-s10plus`.
 
 Password, keyboard-interactive and blank-password login are disabled. Root key
 login remains available only from the local WLAN (`10.20.30.0/24`), the reserved
-USB subnet (`10.15.19.0/24`) and loopback. The live image has no nft/iptables
+USB subnet (`10.100.10.0/24`) and loopback. The live image has no nft/iptables
 binary, so the CIDR restriction is enforced by `sshd` itself; do not replace it
 with a wildcard `AllowUsers` entry and do not port-forward 22 from the Internet.

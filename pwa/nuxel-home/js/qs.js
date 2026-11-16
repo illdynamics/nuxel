@@ -81,6 +81,14 @@ class QuickSettings {
         this._privacyGeneration = 0;
         this._privacyInFlight = false;
         this.wifiConnected = null;
+        this._labelNames = {
+            wifi: 'WiFi', bluetooth: 'Bluetooth', mobile: 'Mobile', location: 'GPS',
+            'usb-tether': 'USB Tether', 'bt-tether': 'BT Tether',
+            hotspot: 'Hotspot', 'edge-lighting': 'Edge', dnd: 'DND', flashlight: 'Flash',
+            rotate: 'Rotate', vpn: 'VPN', zerotier: 'ZT', penguru: 'PenGuru', tor: 'Tor', nfc: 'NFC',
+            fingerprint: 'Finger', firewall: 'Firewall', camera: 'Cam',
+            microphone: 'Mic', paranoid: 'Para'
+        };
         this._init();
     }
 
@@ -115,11 +123,19 @@ class QuickSettings {
     }
 
     _bindEvents() {
+        // Provider diagnostics belong in titles/toasts.  Tile labels remain a
+        // stable one-word/two-word control surface while state is conveyed by
+        // the blue glow and data-enabled styling.
+        if (window.MutationObserver) {
+            this._labelObserver = new MutationObserver(() => this._normalizeLabels());
+            this._labelObserver.observe(this.panel, { childList: true, subtree: true, characterData: true });
+        }
         // PWNAGE-90000 direction-aware contract:
         //   closed + down                 -> compact shade
         //   compact + down                -> expanded Quick Settings
         //   compact/expanded + up         -> closed (upward dismiss always)
-        //   expanded + down               -> closed
+        //   expanded + down               -> stays expanded; Show More alone
+        //                                    reveals connection details
         // `revealed` means the compact status bar was already revealed by the
         // fullscreen top-edge gesture; the next down pull opens expanded QS.
         document.addEventListener('gesture:qs', (ev) => {
@@ -128,10 +144,12 @@ class QuickSettings {
             this.pull(direction, { revealed });
         });
         this._bindPullGesture();
+        this._normalizeLabels();
 
         // Individual toggle clicks
         const toggles = ['wifi', 'bluetooth', 'mobile', 'location', 'dnd', 'flashlight', 'rotate',
-                         'nfc', 'fingerprint', 'camera', 'microphone'];
+                         'nfc', 'fingerprint', 'camera', 'microphone', 'bt-tether', 'vpn', 'zerotier', 'penguru',
+                         'tor', 'paranoid'];
         toggles.forEach(id => {
             const el = document.getElementById(`qs-${id}`);
             if (el) {
@@ -181,6 +199,13 @@ class QuickSettings {
         // No Settings tile: the owner reaches Settings from the home screen.
     }
 
+    _normalizeLabels() {
+        Object.keys(this._labelNames).forEach((id) => {
+            const label = document.querySelector('#qs-' + id + ' .qs-label');
+            if (label && label.textContent !== this._labelNames[id]) label.textContent = this._labelNames[id];
+        });
+    }
+
     // ---- A33: boot diagnostics --------------------------------------------
     // ONE tile drives the SAME durable document the Settings app and
     // `nuxelctl verbose-boot …` write:
@@ -207,7 +232,7 @@ class QuickSettings {
             const on = !!cfg.enabled;
             tile.dataset.enabled = on ? 'true' : 'false';
             const label = tile.querySelector('.qs-label');
-            if (label) label.innerHTML = (api.EFFECT_LABELS[cfg.effect] || cfg.effect) + '<br>' + (on ? 'on' : 'off');
+            if (label) label.textContent = 'Edge';
             tile.title = 'Edge lighting: ' + (api.EFFECT_LABELS[cfg.effect] || cfg.effect) +
                 (on ? ' (tap = preview, long-press = off)' : ' (off; tap = preview, long-press = on)') +
                 ' \u00b7 AMOLED display effect, not an LED';
@@ -659,14 +684,14 @@ class QuickSettings {
 
     // `direction` is 'up', 'down' or undefined (legacy cyclic pull).
     //   hidden/standard + down -> standard / expanded (one step only)
-    //   expanded + down         -> extended
+    //   expanded + down         -> stays expanded (details require Show More)
     //   any level + up          -> hidden (atomic)
     pull(direction, options) {
         const desktopBarVisible = !document.body.classList.contains('app-immersive') &&
             !document.body.classList.contains('app-status-hidden');
         if (direction === 'up') { this.closeAll('up'); return; }
         if (direction === 'down') {
-            if (this.level >= 3) return;
+            if (this.level >= 2) return;
             if (this.level === 0 && desktopBarVisible) {
                 // The desktop already shows the standard bar, so the first
                 // physical pull there opens the panel instead of doing nothing.
@@ -780,8 +805,7 @@ class QuickSettings {
         if (notifications) notifications.hidden = !wantDetails;
         if (btn) {
             btn.setAttribute('aria-expanded', level >= 3 ? 'true' : 'false');
-            btn.textContent = level >= 3 ? 'Collapse extended settings'
-                : level >= 2 ? 'More connection status' : 'More connection status';
+            btn.textContent = level >= 3 ? 'Show Less' : 'Show More';
         }
         // PWNAGE-52000: privacy providers are read only while this row is
         // actually visible in the expanded panel.
@@ -834,6 +858,23 @@ class QuickSettings {
             await this._toggleDnd();
             return;
         }
+        if (id === 'vpn' || id === 'zerotier' || id === 'bt-tether') {
+            await this._toggleNetworkTile(id);
+            return;
+        }
+        if (id === 'penguru') {
+            const tile = document.getElementById('qs-penguru');
+            const on = tile && tile.dataset.enabled === 'true';
+            if (tile) tile.dataset.enabled = on ? 'false' : 'true';
+            this._osdNotice('PenGuru placeholder ' + (on ? 'off' : 'on'));
+            return;
+        }
+        if (id === 'tor' || id === 'paranoid') {
+            // Tor and Paranoid are intentionally fail-closed placeholders until
+            // their privileged providers are installed.
+            this._osdNotice(id === 'paranoid' ? 'Paranoid is reserved and remains off' : 'Tor provider unavailable');
+            return;
+        }
         if (id === 'flashlight') {
             await this._toggleFlashlight();
             return;
@@ -845,6 +886,24 @@ class QuickSettings {
         // A tile must not become a decorative switch.  Keep unintegrated
         // controls honest until their hardware backend is landed.
         this._osdNotice(`${id} control is unavailable on this build`);
+    }
+
+    async _toggleNetworkTile(id) {
+        const tile = document.getElementById('qs-' + id);
+        const on = tile && tile.dataset.enabled === 'true';
+        const request = id === 'vpn'
+            ? (on ? ['vpn-down', {}] : ['vpn-up', {}])
+            : id === 'zerotier'
+                ? ['zerotier-enabled', { enabled: !on }]
+                : [on ? 'bluetooth-tether-stop' : 'bluetooth-tether-start', {}];
+        try {
+            const result = await bridge.call('network', request[0], request[1]);
+            if (!result || result.success === false) throw new Error((result && (result.error || result.detail)) || 'provider refused');
+            if (tile) tile.dataset.enabled = on ? 'false' : 'true';
+            this._osdNotice(id + (on ? ' off' : ' on'));
+        } catch (e) {
+            this._osdNotice(id + ' failed: ' + (e && e.message ? e.message : e));
+        }
     }
 
     // ---- PWNAGE-52000 privacy row --------------------------------------
@@ -918,7 +977,7 @@ class QuickSettings {
         const fpPolicy = (bio && typeof bio === 'object') ? bio.enabled === true : bio === true;
         this._setPrivacyTile('qs-fingerprint', fpReady,
             fpReady && fpPolicy,
-            'Fingerprint<br>' + (fpReady ? (fpPolicy ? 'unlock on' : 'unlock off') : 'unsupported'),
+            'Finger',
             fpReady ? 'Biometric unlock policy; PIN fallback always retained' :
             ('Fingerprint unavailable: ' + (fp.blocker || fp.state || 'no secure provider')));
 
@@ -927,7 +986,7 @@ class QuickSettings {
         const camBlocked = cam.blocked === true;
         this._setPrivacyTile('qs-camera', camSupported,
             camSupported && camBlocked,
-            'Camera<br>' + (camSupported ? (camBlocked ? 'blocked' : 'allow') : 'unsupported'),
+            'Cam',
             camSupported ? ('Camera privacy gate: ' + (camBlocked ? 'blocked' : 'allowed') +
                 '; frame capture=' + (cam.capture_supported === true ? 'available' : 'unavailable on this kernel') +
                 '; active sessions=' + (cam.active_sessions == null ? 'unknown' : cam.active_sessions)) :
@@ -938,7 +997,7 @@ class QuickSettings {
         const micMuted = mic.muted === true;
         this._setPrivacyTile('qs-microphone', micSupported,
             micSupported && micMuted,
-            'Microphone<br>' + (micSupported ? (micMuted ? 'muted' : 'live') : 'unsupported'),
+            'Mic',
             micSupported ? ('System capture mute: ' + (micMuted ? 'muted' : 'not muted') +
                 '; sources=' + (mic.source_count == null ? 'unknown' : mic.source_count)) :
             ('Microphone privacy unavailable: ' + (mic.error || mic.state || 'provider unavailable')));
@@ -1327,14 +1386,14 @@ class QuickSettings {
     }
 
     _bluetoothLabel(st) {
-        if (!st) return 'Bluetooth<br>unknown';
+        if (!st) return 'BT<br>unknown';
         const s = st.state;
-        if (s === 'on') return st.discovering ? 'Bluetooth<br>discovering' : 'Bluetooth<br>on';
-        if (s === 'off') return 'Bluetooth<br>off';
-        if (s === 'hardware_blocked') return 'Bluetooth<br>blocked';
-        if (s === 'service_unavailable') return 'Bluetooth<br>no radio';
-        if (s === 'unknown') return 'Bluetooth<br>checking';
-        return 'Bluetooth<br>unknown';
+        if (s === 'on') return st.discovering ? 'BT<br>discovering' : 'BT<br>on';
+        if (s === 'off') return 'BT<br>off';
+        if (s === 'hardware_blocked') return 'BT<br>blocked';
+        if (s === 'service_unavailable') return 'BT<br>no radio';
+        if (s === 'unknown') return 'BT<br>checking';
+        return 'BT<br>unknown';
     }
 
     _bluetoothDetail(st) {
@@ -1366,7 +1425,7 @@ class QuickSettings {
                 tile.dataset.enabled = 'unknown';
                 tile.dataset.state = 'unavailable';
                 const label = tile.querySelector('.qs-label');
-                if (label) label.innerHTML = 'Bluetooth<br>unknown';
+                if (label) label.innerHTML = 'BT<br>unknown';
                 tile.title = 'Bluetooth status unavailable' +
                     (st && st.error ? (': ' + st.error) : '');
                 return;
@@ -1389,7 +1448,7 @@ class QuickSettings {
             tile.dataset.enabled = 'unknown';
             tile.dataset.state = 'error';
             const label = tile.querySelector('.qs-label');
-            if (label) label.innerHTML = 'Bluetooth<br>unknown';
+            if (label) label.innerHTML = 'BT<br>unknown';
             tile.title = 'Bluetooth status read failed: ' +
                 (e && e.message ? e.message : 'bridge error');
         }
@@ -1649,10 +1708,7 @@ class QuickSettings {
         wifi.dataset.connected = linkKnown ? (this.wifiConnected ? 'true' : 'false') : 'unknown';
         const label = wifi.querySelector('.qs-label');
         if (label) {
-            if (!radioKnown) label.innerHTML = 'WiFi<br>checking';
-            else if (!this.state.wifi) label.innerHTML = 'WiFi<br>off';
-            else if (this.wifiConnected === true) label.innerHTML = 'WiFi<br>linked';
-            else label.innerHTML = 'WiFi<br>on';
+            label.textContent = 'WiFi';
         }
         const radio = radioKnown ? (this.state.wifi ? 'ON' : 'OFF') : 'CHECKING/UNKNOWN';
         wifi.title = 'Wi-Fi radio: ' + radio + ' | ' + this._wifiLinkLabel()

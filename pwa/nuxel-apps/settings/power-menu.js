@@ -48,9 +48,6 @@
       { id: 'lock', label: 'Lock screen', action: 'lock', trigger_allowed: true,
         requires_owner_confirmation: false,
         note: 'Locks the launcher and blanks the panel. Reversible with a short POWER press.' },
-      { id: 'screenshot', label: 'Take screenshot', action: 'screenshot', trigger_allowed: true,
-        requires_owner_confirmation: false,
-        note: 'Captures the composited frame into the Gallery.' },
       { id: 'restart', label: 'Restart', action: 'restart', trigger_allowed: true,
         requires_owner_confirmation: false,
         refusal_reason: 'refused by reboot-gate.json (disabled, not allowed, cooldown or hourly cap)' },
@@ -80,7 +77,7 @@
       { id: 'recovery', label: 'Recovery', action: 'boot-recovery', trigger_allowed: false,
         requires_owner_confirmation: true,
         refusal_reason: 'NO_FLASH_INVARIANT — entering Recovery means leaving Linux for the Samsung bootloader; this mission triggers no bootloader interface.' },
-      { id: 'download-mode', label: 'Download Mode', action: 'boot-download-mode', trigger_allowed: false,
+      { id: 'download-mode', label: 'Reboot Fastboot/Download', action: 'boot-download-mode', trigger_allowed: false,
         requires_owner_confirmation: true,
         refusal_reason: 'NO_FLASH_INVARIANT — Download Mode exists only to flash, and this mission performs no flashing of any kind.' }
     ]

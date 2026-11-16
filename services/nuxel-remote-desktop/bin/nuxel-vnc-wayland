@@ -15,4 +15,4 @@ ADDRESS=10.11.12.99
 sed -i "s/^address=.*/address=$ADDRESS/" "$CONF"
 exec env LD_LIBRARY_PATH=/opt/nuxel-wayvnc/lib64 \
     /opt/nuxel-wayvnc/bin/wayvnc -C "$CONF" \
-    -S /run/nuxel-wayland/wayvncctl -L info -f 15
+    -S /run/nuxel-wayland/wayvncctl -L info -f 30

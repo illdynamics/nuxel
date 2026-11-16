@@ -8,4 +8,4 @@ CONF=/etc/nuxel/remote-desktop/vnc/wayvnc-loopback.conf
 [ -r "$CONF" ] || { echo "missing $CONF" >&2; exit 2; }
 exec env LD_LIBRARY_PATH=/opt/nuxel-wayvnc/lib64 \
     /opt/nuxel-wayvnc/bin/wayvnc -C "$CONF" \
-    -S /run/nuxel-wayland/wayvncctl-loopback -L warning -f 15 -u /run/nuxel-wayland/xrdp-vnc.sock
+    -S /run/nuxel-wayland/wayvncctl-loopback -L warning -f 30 -u /run/nuxel-wayland/xrdp-vnc.sock

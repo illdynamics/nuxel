@@ -3,10 +3,10 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.8.6-beta** — _USB-ECM networking, persistent ZeroTier-bound remote access,
+**v0.8.7-beta** — _USB-ECM networking, persistent ZeroTier-bound remote access,
 audio/icon polish, and conservative hardware-state reporting._
 
-> **v0.8.6-beta (2026-11-16).** These fixes were reproduced and verified on the
+> **v0.8.7-beta (2026-11-16).** These fixes were reproduced and verified on the
 > live S10+ (Wi-Fi SSH and the USB-ECM console):
 >
 > - **Flatpak apps start again.** A root-owned `/run/user/1000/.flatpak` blocked
@@ -184,7 +184,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 See [RELEASE-NOTES.md](RELEASE-NOTES.md) for user-facing release notes and
 [CHANGELOG.md](CHANGELOG.md) for the complete engineering history.
 
-## Honest Status — v0.8.6-beta
+## Honest Status — v0.8.7-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**

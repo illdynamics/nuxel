@@ -121,14 +121,6 @@
         "implemented_by": "launcher host (nuxel-pwa-host) action lock -> launcher _lock()"
       },
       {
-        "id": "screenshot",
-        "label": "Take screenshot",
-        "action": "screenshot",
-        "dispatch": "host-fifo",
-        "trigger_allowed": true,
-        "implemented_by": "launcher host (nuxel-pwa-host) action screenshot -> wlr-screencopy PNG into /home/nuxel/Gallery"
-      },
-      {
         "id": "restart",
         "label": "Restart",
         "action": "systemctl-reboot",

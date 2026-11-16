@@ -3,8 +3,8 @@
 // 1. Hide ext-image-copy-capture globals. wayvnc 0.9.1 prefers that protocol
 //    but phoc advertises no usable buffer format on this image. Without them
 //    wayvnc falls back to the proven zwlr-screencopy path.
-// 2. Advertise screencopy v2. phoc copy_with_damage returns an unfilled
-//    buffer on the headless output; plain copy works.
+// 2. Advertise screencopy v1. Phoc's v2 copy_with_damage can return an
+//    unfilled buffer on the headless output; v1 makes wayvnc use plain copy.
 // 3. Wayvnc 0.9.1 does not handle wl_output transform changes (upstream TODO).
 //    Translate a transform change into the dimension-change callback it does
 //    handle, so a live VNC client receives RFB DesktopSize on rotation.
@@ -42,8 +42,8 @@ static void reg_global(void *data, struct wl_registry *registry, uint32_t name,
     struct regwrap *w = data;
     if (hidden(interface))
         return;
-    if (interface && !strcmp(interface, "zwlr_screencopy_manager_v1") && version > 2)
-        version = 2;
+    if (interface && !strcmp(interface, "zwlr_screencopy_manager_v1") && version > 1)
+        version = 1;
     if (w->orig.global)
         w->orig.global(w->data, registry, name, interface, version);
 }

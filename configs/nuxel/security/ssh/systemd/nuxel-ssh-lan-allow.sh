@@ -3,7 +3,7 @@
 #
 # Why this exists
 # ---------------
-# 60-nuxel-tri-link.conf restricts SSH to 10.20.30.0/24 + 10.15.19.0/24 (and
+# 60-nuxel-tri-link.conf restricts SSH to 10.20.30.0/24 + 10.100.10.0/24 (and
 # loopback).  The owner's home LAN is 192.168.178.0/24, and that CIDR lived only
 # in 61-nuxel-lan38.conf, installed by one deploy step.  Whenever that step was
 # skipped, lost with an image rebuild, or shadowed, sshd refused every Wi-Fi

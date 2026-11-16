@@ -255,7 +255,8 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 /* ---- A80 security: pattern editor, fingerprint ceremony ------------------ */
 .pattern-editor {
   position: relative;
-  width: min(78vw, 300px);
+  /* Match the lock-screen matrix: 15% wider dot spacing. */
+  width: min(89.7vw, 345px);
   aspect-ratio: 1 / 1;
   margin: 10px auto;
   touch-action: none;
@@ -284,8 +285,8 @@ pre, code { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .pattern-editor-dots { position: absolute; inset: 0; }
 .pattern-dot {
   position: absolute;
-  width: 74px; height: 74px;
-  margin: -37px 0 0 -37px;
+  width: 44px; height: 44px;
+  margin: -22px 0 0 -22px;
   border-radius: 50%;
   box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
@@ -360,6 +361,6 @@ label.inline { display: inline-flex; align-items: center; gap: 6px; }
   .pattern-setup { display: grid; grid-template-columns: auto minmax(14rem, 1fr); gap: 12px; align-items: start; }
   .pattern-setup > .hint, .pattern-setup > #sec-pattern-wizard-status, .pattern-setup > .pattern-options { grid-column: 1 / -1; }
   .pattern-setup > .row { flex-direction: column; align-items: stretch; }
-  .pattern-editor { width: min(42vh, 260px); max-width: 100%; margin: 0 auto; }
-  .pattern-dot { width: clamp(38px, 13vh, 74px); height: clamp(38px, 13vh, 74px); margin-top: calc(clamp(38px, 13vh, 74px) / -2); margin-left: calc(clamp(38px, 13vh, 74px) / -2); }
+  .pattern-editor { width: min(48.3vh, 299px); max-width: 100%; margin: 0 auto; }
+  .pattern-dot { width: clamp(24px, 7.8vh, 44px); height: clamp(24px, 7.8vh, 44px); margin-top: calc(clamp(24px, 7.8vh, 44px) / -2); margin-left: calc(clamp(24px, 7.8vh, 44px) / -2); }
 }
