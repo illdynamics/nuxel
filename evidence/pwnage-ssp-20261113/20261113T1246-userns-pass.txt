@@ -1,0 +1,28 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+userns_clone=1
+== unshare -U as nuxel ==
+rc=0
+== unshare -Ur as nuxel ==
+rc=0
+== unshare -Uid as nuxel ==
+0
+rc=0
+== dmesg ==
+[   43.281594] NUXEL userns: allocated ns, entering auth tail
+[   43.281619] NUXEL userns: completed for level 1 uid 1000
+[   43.466719] NUXEL userns: create_user_ns uid=1000 clone=1
+[   43.466735] NUXEL chroot check: reachable=1
+[   43.466746] NUXEL userns: allocated ns, entering auth tail
+[   43.466771] NUXEL userns: completed for level 1 uid 1000
+[   43.659338] NUXEL userns: create_user_ns uid=1000 clone=1
+[   43.659354] NUXEL chroot check: reachable=1
+[   43.659359] NUXEL userns: allocated ns, entering auth tail
+[   43.659386] NUXEL userns: completed for level 1 uid 1000

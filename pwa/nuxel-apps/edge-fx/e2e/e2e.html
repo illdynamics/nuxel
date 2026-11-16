@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="nuxel-app-id" content="org.nuxel.Home">
+<title>Edge FX E2E — renderer stage</title>
+<link rel="stylesheet" href="../../../nuxel-common/theme.css?v=p85000">
+<link rel="stylesheet" href="../../../nuxel-home/css/edge-lighting.css?v=p103000">
+<style>
+  html, body { margin: 0; height: 100%; background: #081710; color: #e9f5ee; font: 14px system-ui, sans-serif; overflow: hidden; }
+  .stage-note { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 14px; background: rgba(3,10,8,.9); font-size: 12px; color: #8fb3a0; z-index: 300; }
+</style>
+<script src="../../../nuxel-common/theme.js?v=p85000"></script>
+</head>
+<body>
+<!-- Minimal Home-like stage.  The renderer + Edge Panel run in an iframe whose
+     origin is the launcher tree (same origin on the phone), so the real
+     edge-lighting.js module can be reused with no copy of the effects. -->
+<iframe id="home" title="Edge FX test stage" style="position:fixed;inset:0;border:0;width:100%;height:100%" src="../../../nuxel-home/index.html"></iframe>
+<div class="stage-note">Edge FX E2E stage — the Home document is framed; use the Edge FX app or the console calls below. Physical ergonomics are NOT proven by this page.</div>
+<script>
+  // The E2E harness exposes the Home edge-lighting API for desktop testing
+  // (toast actions, console): window.__EDGE_E2E.preview('wave').
+  window.__EDGE_E2E = {
+    ready: function () {
+      try {
+        var w = document.getElementById('home').contentWindow;
+        return !!(w && w.NuxelEdgeLighting);
+      } catch (e) { return false; }
+    },
+    preview: function (effect) {
+      var w = document.getElementById('home').contentWindow;
+      if (!w || !w.NuxelEdgeLighting) throw new Error('Home edge-lighting API not ready');
+      w.NuxelEdgeLighting.preview(effect || 'wave');
+      return w.NuxelEdgeLighting.status();
+    },
+    openPanel: function (side) {
+      var w = document.getElementById('home').contentWindow;
+      return w.NuxelEdgeLighting.openPanel(side || 'left', 'e2e');
+    }
+  };
+</script>
+</body>
+</html>

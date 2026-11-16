@@ -1,0 +1,40 @@
+[Unit]
+Description=Nuxel in-app permission consent surface (org.nuxel.PhoshAgent)
+Documentation=file:/usr/share/doc/nuxel/NFC-AND-MICROPHONE.md
+# The user bus is created by nuxel-wayland's session bootstrap.
+After=nuxel-wayland.service
+# The agent owns org.nuxel.PhoshAgent on the phone's real per-user session bus
+# (/run/user/1000/bus) — the same bus nuxel-portal calls for consent — and
+# posts the prompt card through the system notification hub.
+Wants=dbus.service nuxel-notifications.service
+After=dbus.service nuxel-notifications.service nuxel-audio-session.service
+Before=nuxel-portal.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/nuxel/nuxel-consent/nuxel_consentd.py
+Restart=always
+RestartSec=3
+# Run as the session user, like nuxel-portal and the Settings/Permission
+# Manager surfaces: the decision is written through nuxel-permd.py into the
+# SAME store those surfaces use.  The deploy fixes /var/lib/nuxel/permissions
+# ownership/ACL for nuxel, and the agent issues no hardware access itself.
+User=nuxel
+Group=nuxel
+# The consent surface lives on the REAL per-user session bus, the same one the
+# nuxel-portal broker calls over and the one the Flatpak portals use.  The
+# compositor's /run/nuxel-wayland/bus is root-only by design (measured: a
+# non-root Hello there gets NoReply), so it is not usable from uid 1000.
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+Environment=PYTHONUNBUFFERED=1
+# Writes nothing but DBus traffic; it shells out to nuxel-permd.py for the
+# policy write, which owns /var/lib/nuxel/permissions.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=read-only
+ProtectSystem=full
+ReadWritePaths=/run/user/1000 /var/lib/nuxel/permissions
+
+[Install]
+WantedBy=multi-user.target

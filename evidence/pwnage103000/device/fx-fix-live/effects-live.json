@@ -1,0 +1,183 @@
+{
+ "basic": {
+  "active": true,
+  "visible": "visible",
+  "z": "240",
+  "bands": 2,
+  "particles": 0,
+  "last": {
+   "ok": true,
+   "effect": "basic",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "wave": {
+  "active": true,
+  "visible": "visible",
+  "z": "1000",
+  "bands": 2,
+  "particles": 6,
+  "last": {
+   "ok": true,
+   "effect": "wave",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "bubble": {
+  "active": true,
+  "visible": "visible",
+  "z": "1000",
+  "bands": 2,
+  "particles": 8,
+  "last": {
+   "ok": true,
+   "effect": "bubble",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "multicolor": {
+  "active": true,
+  "visible": "visible",
+  "z": "1000",
+  "bands": 2,
+  "particles": 0,
+  "last": {
+   "ok": true,
+   "effect": "multicolor",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "heart": {
+  "active": true,
+  "visible": "visible",
+  "z": "1000",
+  "bands": 2,
+  "particles": 6,
+  "last": {
+   "ok": true,
+   "effect": "heart",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "fireworks": {
+  "active": true,
+  "visible": "visible",
+  "z": "1000",
+  "bands": 2,
+  "particles": 10,
+  "last": {
+   "ok": true,
+   "effect": "fireworks",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "eclipse": {
+  "active": true,
+  "visible": "visible",
+  "z": "1000",
+  "bands": 2,
+  "particles": 4,
+  "last": {
+   "ok": true,
+   "effect": "eclipse",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "echo": {
+  "active": true,
+  "visible": "visible",
+  "z": "1000",
+  "bands": 2,
+  "particles": 6,
+  "last": {
+   "ok": true,
+   "effect": "echo",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "after_bounds": {
+  "active": false,
+  "visible": "hidden",
+  "z": "240",
+  "bands": 0,
+  "particles": 0,
+  "last": {
+   "ok": true,
+   "effect": "echo",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ },
+ "double_click": {
+  "active": true,
+  "visible": "visible",
+  "z": "1000",
+  "bands": 2,
+  "particles": 0,
+  "last": {
+   "ok": true,
+   "effect": "basic",
+   "color": "#63f0bd",
+   "duration_ms": 1800,
+   "static": false,
+   "notification_state_changed": false,
+   "label": "Preview \u2014 no notification was created or changed"
+  },
+  "err": null,
+  "roots": 1
+ }
+}
+LIVE_EFFECT_PREVIEWS: PASS

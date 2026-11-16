@@ -1,0 +1,38 @@
+PWNAGE-103000 FX follow-up #2 — live verification on deployed :8000 tree
+Device: Samsung BEYOND2LTE EUR OPEN 26 (Exynos 9820), root, Linux 4.14.253-gf7194c1d15ed-dirty
+Date: 2026-11-12 ~13:00 CET. Harness: device-local GTK/WebKit 2.4.1 offscreen view of the
+REAL deployed Home document (http://127.0.0.1:8000/pwa/nuxel-home/index.html), Edge FX opened
+through Home's own `pwa:open` launcher event, buttons driven by real element .click().
+
+Tier: PASS_DEVICE_RUNTIME (delivery/rendering in the device's WebKit). NOT physical-glass proof.
+
+boot      {"engine":true,"dflt":"wave","accent":"#63f0bd"}
+seeded    {"m":"allowlist","a":["nuxel-dialer"]}      (external allowlist, reproduces owner state)
+preview   {"active":true,"visible":"visible","z":"240","clipped":"visible",
+           "colour":"rgb(255,143,171)","particleBox":[13,652],"sides":2,
+           "last":{"ok":true,"effect":"echo","color":"#ff8fab","duration_ms":1800,
+                   "notification_state_changed":false},
+           "msg":"Previewing Echo — no notification was created or changed."}
+preview_stops {"active":false,"hidden":"hidden"}       (bounded lifecycle completed)
+effects   basic/bubble/multicolor/heart/fireworks/eclipse/echo: persisted==previewed==tile, ok:true, active:true
+          wave: persisted==previewed=="wave", ok:true, active:true
+          node counts 2/8/10/2/8/12/6/8 (one root, both sides)
+allow_all {"home_mode":"all","home_allowed":[],"summary":"Currently: All apps.","checked":0,
+           "msg":"Notification sources: All apps may now light the edge."}
+row_edit  {"home_mode":"allowlist","n":1,"summary":"Currently: 1 of 48 apps."}
+allow_all2{"home_mode":"all","home_allowed":[]}        (Allow all works repeatedly)
+real event id 92 (org.nuxel.Mail) -> one journal entry {seq 6, effect "echo", record_id 92},
+          private body hits in journal = 0; notification then closed via CloseNotification(92).
+flashlight GET -> {"state":"OFF","on":false,"max_on_seconds":600.0}
+services  nuxel-web nuxel-http-bridge nuxel-notifications nuxel-wl-fb nuxel-wayland nuxel-bridge all active
+
+Root causes measured (before fix):
+ 1. Effect tiles called preview() only and never saved -> selections did not persist.
+ 2. Preview ignored the app's colour/width/duration (Home used its own stale copy).
+ 3. "Allow all apps" persisted in the provider (HTTP 200, source_mode all) but Home's engine
+    kept an allowlist, and the app rendered its own local flag -> looked like nothing happened.
+ 4. The overlay root used `contain: strict` (paint containment) -> 13 px slab clipping.
+ 5. A bridge `{mock:true}` reply was accepted as a real provider result.
+ 6. Preview reported ok:true for a suppressed animation.
+Uninstall/reinstall (real app buttons, confirm stubbed non-blocking in the harness):
+  Installed (installed_and_launchable) -> Uninstalled (not in registry) -> Installed; registry v28.

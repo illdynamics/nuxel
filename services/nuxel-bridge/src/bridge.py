@@ -158,55 +158,127 @@ MEDIA_DIR = os.environ.get('NUXEL_MEDIA_DIR', '/var/lib/nuxel/media')
 
 
 # ============================================================
-# Extended Capability Registry
+# Canonical Capability Registry (PenGuru G0)
 # ============================================================
+#
+# The canonical registry is nuxel-permd's capabilities.json.  The bridge does
+# not own a second capability vocabulary: legacy bridge-only aliases are kept
+# as explicit *validated aliases* of canonical ids, and an id that appears in
+# neither list is unknown and denied.
 
-CAPABILITIES = {
-    # Core phone
-    'call:initiate': 'Place phone calls',
-    'call:end': 'End active phone calls',
-    'call:status': 'Monitor call status',
-    'sms:send': 'Send SMS messages',
-    'sms:receive': 'Receive SMS message notifications',
-    'contacts:read': 'Read contacts',
-    'contacts:write': 'Create and modify contacts',
-    'location:read': 'Read GPS location',
-    'camera:capture': 'Capture photos',
-    'camera:preview': 'Access camera preview stream',
-    'notifications:send': 'Send notifications to system',
-    'notifications:receive': 'Receive system notifications',
-    'phone:status': 'Read phone status (signal, battery, network)',
-    # Extended capabilities
-    'network:outbound': 'Access the internet (outbound connections)',
-    'network:inbound': 'Accept incoming network connections',
-    'network:manage': 'Enable or disable system network radios',
-    'storage:persistent': 'Store data persistently on device',
-    'background:execution': 'Run in background after app is suspended',
-    'display:screenshot': 'Capture the screen as an image',
-    'display:screencast': 'Record the screen as video',
-    'usb:access': 'Access USB devices',
-    'bluetooth:scan': 'Scan for Bluetooth devices',
-    'bluetooth:connect': 'Connect to Bluetooth devices',
-    'bluetooth:manage': 'Enable or disable the Bluetooth radio',
-    'location:manage': 'Enable or disable the system location policy',
+_CANONICAL_CAPABILITIES_PATH = os.environ.get(
+    'NUXEL_PERMISSIONS_CAPABILITIES',
+    '/etc/nuxel/permissions/capabilities.json')
+_CANONICAL_CAPABILITIES_FALLBACKS = (
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'capabilities.json'),
+    os.path.abspath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        '..', '..', '..', 'shell', 'nuxel-shell', 'nuxel-permissions',
+        'capabilities.json')),
+)
+
+# Historical bridge ids -> canonical ids.  These are not a parallel registry:
+# they only preserve the existing bridge API vocabulary and are resolved
+# through the canonical entry above.
+CAPABILITY_ALIASES = {
+    # Bridge wire vocabulary -> canonical Nuxel capability id.  Each target must
+    # exist in capabilities.json; aliases never introduce a new authority id.
+    # Colon form is kept because the existing PWA wire protocol uses it; the
+    # permission store and registry speak the underscore ids.
+    'system:inspect': 'system_inspect',
+    'system:status': 'system_inspect',
+    'phone:status': 'phone_status',
+    'notifications:send': 'notifications',
+    'notifications:receive': 'notifications',
+    'network:outbound': 'network',
+    'network:inbound': 'network',
+    'network:manage': 'network',
+    'location:read': 'location',
+    'location:manage': 'location',
+    'bluetooth:scan': 'bluetooth',
+    'bluetooth:connect': 'bluetooth',
+    'bluetooth:manage': 'bluetooth',
+    'camera:capture': 'camera',
+    'camera:preview': 'camera',
+    'audio:playback': 'audio',
+    'sms:send': 'sms_send_raw',
+    'sms:receive': 'sms',
+    'call:initiate': 'call',
+    'call:end': 'call',
+    'call:status': 'call',
+    'contacts:read': 'contacts',
+    'contacts:write': 'contacts',
+    'storage:persistent': 'storage',
+    'background:execution': 'background',
+    'display:screenshot': 'screen_capture',
+    'display:screencast': 'screen_capture',
+    'system:power': 'system_power',
 }
 
-CAPABILITY_RISK = {
-    'call:initiate': 'high', 'call:end': 'medium', 'call:status': 'low',
-    'sms:send': 'high', 'sms:receive': 'high',
-    'contacts:read': 'medium', 'contacts:write': 'medium',
-    'location:read': 'high',
-    'camera:capture': 'high', 'camera:preview': 'medium',
-    'notifications:send': 'low', 'notifications:receive': 'low',
-    'phone:status': 'low',
-    'network:outbound': 'medium', 'network:inbound': 'high', 'network:manage': 'medium',
-    'storage:persistent': 'low',
-    'background:execution': 'medium',
-    'display:screenshot': 'high', 'display:screencast': 'high',
-    'usb:access': 'high',
-    'bluetooth:scan': 'low', 'bluetooth:connect': 'medium',
-    'bluetooth:manage': 'medium', 'location:manage': 'medium',
-}
+
+def resolve_capability(capability):
+    """Return the canonical id backing a bridge-vocabulary capability.
+
+    Unknown ids are returned unchanged so callers can fail closed with an
+    explicit "unknown capability" rather than silently granting something.
+    """
+    if not isinstance(capability, str):
+        return capability
+    if capability in CANONICAL_CAPABILITIES:
+        return capability
+    return CAPABILITY_ALIASES.get(capability, capability)
+
+
+def _load_canonical_capabilities():
+    """Load the canonical capability ids/titles, failing closed on absence."""
+    doc = None
+    for path in (_CANONICAL_CAPABILITIES_PATH,) + _CANONICAL_CAPABILITIES_FALLBACKS:
+        try:
+            with open(path) as fh:
+                doc = json.load(fh)
+            break
+        except (OSError, ValueError):
+            continue
+    if not isinstance(doc, dict) or not isinstance(doc.get('capabilities'), list):
+        logger.critical('Canonical capability registry unavailable; unknown ids denied')
+        return {}, {}
+    caps, risk = {}, {}
+    for entry in doc['capabilities']:
+        if not isinstance(entry, dict):
+            continue
+        cid = entry.get('id')
+        if not isinstance(cid, str) or not cid:
+            continue
+        caps[cid] = entry.get('title') or entry.get('description') or cid
+        risk[cid] = entry.get('risk') or 'medium'
+        for alias in entry.get('aliases') or []:
+            if isinstance(alias, str) and alias:
+                caps.setdefault(alias, caps[cid])
+                risk.setdefault(alias, risk[cid])
+    return caps, risk
+
+
+CANONICAL_CAPABILITIES, CANONICAL_CAPABILITY_RISK = _load_canonical_capabilities()
+
+CAPABILITIES = dict(CANONICAL_CAPABILITIES)
+for _alias, _target in CAPABILITY_ALIASES.items():
+    if _target in CANONICAL_CAPABILITIES:
+        CAPABILITIES.setdefault(_alias, CANONICAL_CAPABILITIES[_target])
+
+CAPABILITY_RISK = {}
+for _cap in CAPABILITIES:
+    CAPABILITY_RISK[_cap] = CANONICAL_CAPABILITY_RISK.get(
+        CAPABILITY_ALIASES.get(_cap, _cap), 'medium')
+
+
+def _capability_known(capability):
+    """True only for canonical ids (or a declared alias of one)."""
+    if not isinstance(capability, str):
+        return False
+    if capability in CANONICAL_CAPABILITIES:
+        return True
+    target = CAPABILITY_ALIASES.get(capability)
+    return bool(target) and target in CANONICAL_CAPABILITIES
 
 # Portal types mapped from capabilities
 CAPABILITY_PORTAL_MAP = {
@@ -2264,7 +2336,7 @@ class NuxelBridgeService(dbus.service.Object):
         policy_name = os.path.basename(os.environ.get(
             'NUXEL_LOCATION_POLICY',
             '/var/lib/nuxel/permissions/location-policy.json'))
-        if SEED_FIRST_PARTY_GRANTS:
+        if SEED_FIRST_PARTY_GRANTS and hasattr(self, '_seed_first_party_grants'):
             self._seed_first_party_grants(permissions_dir, policy_name)
         if os.path.isdir(permissions_dir):
             for fname in os.listdir(permissions_dir):
@@ -2292,12 +2364,41 @@ class NuxelBridgeService(dbus.service.Object):
                         # cannot silently override the app's revoke.
                         if info.get('decision') == 'deny':
                             continue
-                        app_grants[str(cap)] = info.get('duration', 'always')
+                        duration = info.get('duration', 'always')
+                        if info.get('consumed') is True or duration == 'once':
+                            # A consumed/one-shot grant is evidence, not authority.
+                            continue
+                        if duration not in NuxelBridgeService.REUSABLE_GRANT_DURATIONS + NuxelBridgeService.SESSION_GRANT_DURATIONS:
+                            logger.warning('Ignoring grant %s in %s with unsupported duration %r',
+                                           cap, fname, duration)
+                            continue
+                        canonical_cap = resolve_capability(str(cap))
+                        if canonical_cap not in CANONICAL_CAPABILITIES:
+                            logger.warning('Ignoring capability %s in %s: not in canonical registry',
+                                           cap, fname)
+                            continue
+                        wire_cap = str(cap)
+                        if duration in NuxelBridgeService.SESSION_GRANT_DURATIONS:
+                            # Keep the session binding metadata: dropping it
+                            # would widen a session grant to this daemon session.
+                            app_grants[wire_cap] = {
+                                'granted_at': info.get('granted_at'),
+                                'duration': duration,
+                                'session_id': info.get('session_id'),
+                                'session_monotonic': info.get('session_monotonic'),
+                                'expires_monotonic': info.get('expires_monotonic'),
+                            }
+                        else:
+                            app_grants[wire_cap] = duration
                     elif info is True:
                         # Older grant stores used capability -> true.  Retain a
                         # positive user grant rather than making a bridge repair
                         # revoke it, while migrating new writes to the object form.
-                        app_grants[str(cap)] = 'always'
+                        if resolve_capability(str(cap)) in CANONICAL_CAPABILITIES:
+                            app_grants[str(cap)] = 'always'
+                        else:
+                            logger.warning('Ignoring legacy grant %s in %s: not canonical',
+                                           cap, fname)
                     elif info is not False:
                         logger.warning('Ignoring malformed capability grant %s in %s', cap, fname)
                 if app_grants:
@@ -2305,7 +2406,16 @@ class NuxelBridgeService(dbus.service.Object):
         return grants
     
     def _save_grant(self, app_id, capability, duration='always'):
-        """Persist a capability grant."""
+        """Persist a capability grant.
+
+        A ``once`` grant must never reach this method from the request path
+        (it is consumed instead); this guard keeps that invariant explicit so
+        a future caller cannot silently reintroduce the reuse defect.
+        """
+        if duration == 'once':
+            logger.warning('Refusing to persist a reusable once grant for %s/%s',
+                           app_id, capability)
+            return
         permissions_dir = PERMISSIONS_DIR
         safe_id = app_id.replace('/', '_').replace('..', '_')
         path = os.path.join(permissions_dir, f"{safe_id}.json")
@@ -2318,10 +2428,15 @@ class NuxelBridgeService(dbus.service.Object):
             except json.JSONDecodeError:
                 pass
         
-        grants[capability] = {
+        stored = resolve_capability(capability)
+        grants[stored] = {
             'granted_at': time.time(),
             'duration': duration,
+            'wire_capability': capability,
         }
+        if duration in NuxelBridgeService.SESSION_GRANT_DURATIONS:
+            grants[stored]['session_id'] = getattr(self, 'session_id', None)
+            grants[stored]['session_monotonic'] = NuxelBridgeService._now_monotonic(self)
         
         os.makedirs(permissions_dir, exist_ok=True)
         tmp = path + '.tmp'
@@ -2357,10 +2472,25 @@ class NuxelBridgeService(dbus.service.Object):
                 except (OSError, subprocess.SubprocessError):
                     pass
 
-        # Update in-memory cache
+        # Update in-memory cache.  Session grants are tagged with the daemon
+        # session that granted them and a monotonic start; they are never
+        # treated as permanent.
         if app_id not in self.capability_grants:
             self.capability_grants[app_id] = {}
-        self.capability_grants[app_id][capability] = duration
+        if duration in NuxelBridgeService.SESSION_GRANT_DURATIONS:
+            self.capability_grants[app_id][capability] = {
+                'duration': duration,
+                'session_id': getattr(self, 'session_id', None),
+            }
+        else:
+            self.capability_grants[app_id][capability] = duration
+        if duration in NuxelBridgeService.SESSION_GRANT_DURATIONS:
+            if not hasattr(self, 'capability_grant_info'):
+                self.capability_grant_info = {}
+            self.capability_grant_info[(app_id, capability)] = {
+                'session_id': getattr(self, 'session_id', None),
+                'session_monotonic': NuxelBridgeService._now_monotonic(self),
+            }
 
     # Packaged, read-only first-party seed grants.  A grant the owner granted
     # or revoked lives in PERMISSIONS_DIR and always wins; the seed only fills
@@ -2452,28 +2582,141 @@ class NuxelBridgeService(dbus.service.Object):
         }
         return self.capability_grants
     
+    # ── Grant lifetime semantics (PenGuru G0) ───────────────────────
+    # Only an explicit ``always`` grant is reusable.  A ``once`` grant is
+    # consumed exactly once and persisted as consumed; a ``session``/'owner'
+    # grant is bound to this daemon session and dies with it.  Anything
+    # unrecognised is treated as unreusable (fail closed), never as always.
+    REUSABLE_GRANT_DURATIONS = (None, 'always')
+    SESSION_GRANT_DURATIONS = ('session', 'owner')
+
+    @staticmethod
+    def _now_monotonic(service):
+        return time.monotonic()
+
+    def _session_grant_live(self, app_id, capability, info):
+        """A session grant is live only in the exact session that created it."""
+        if not isinstance(info, dict):
+            return True  # legacy store already filtered by the loader
+        owner = info.get('session_id')
+        current = getattr(self, 'session_id', None)
+        if owner and current and owner != current:
+            return False
+        started = info.get('session_monotonic')
+        now = NuxelBridgeService._now_monotonic(self)
+        if isinstance(started, (int, float)) and now < started:
+            return False  # clock/session reset: old grant cannot be trusted
+        expires_at = info.get('expires_monotonic')
+        if isinstance(expires_at, (int, float)) and now >= expires_at:
+            return False
+        ended = getattr(self, '_session_ended_at', {})
+        if isinstance(ended, dict) and ended.get(owner) is not None:
+            stopped_at = ended.get(owner)
+            if isinstance(stopped_at, (int, float)) and now >= stopped_at:
+                return False
+        return True
+
+    def _grant_live(self, app_id, capability):
+        """Return True only for an always/explicitly live persistent grant.
+
+        This reads only the in-memory snapshot because ``_check_capability``
+        has just refreshed it; it never consults the portal itself.
+        """
+        caps = self.capability_grants.get(app_id, {})
+        deny = self.capability_denies.get(app_id, set())
+        canonical = resolve_capability(capability)
+        if capability in deny or canonical in deny:
+            return False
+        if capability not in caps and canonical not in caps:
+            return False
+        key = capability if capability in caps else canonical
+        info = caps.get(key)
+        if info == 'deny':
+            return False
+        if info in NuxelBridgeService.REUSABLE_GRANT_DURATIONS:
+            return True
+        if info in NuxelBridgeService.SESSION_GRANT_DURATIONS:
+            return NuxelBridgeService._session_grant_live(
+                self, app_id, capability, getattr(self, 'capability_grant_info', {}).get(
+                    (app_id, key), info))
+        return False
+
+    def _consume_once_grant(self, app_id, capability):
+        """Persist a once grant as consumed so it can never be replayed."""
+        safe_id = app_id.replace('/', '_').replace('..', '_')
+        target = os.path.join(PERMISSIONS_DIR, safe_id + '.json')
+        os.makedirs(PERMISSIONS_DIR, exist_ok=True)
+        try:
+            with open(target) as fh:
+                doc = json.load(fh)
+            if not isinstance(doc, dict):
+                doc = {}
+        except (OSError, ValueError):
+            doc = {}
+        doc[resolve_capability(capability)] = {
+            'decision': 'allow',
+            'duration': 'once',
+            'consumed': True,
+            'consumed_at': int(time.time()),
+        }
+        tmp = target + '.tmp'
+        with open(tmp, 'w') as fh:
+            json.dump(doc, fh, indent=2)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.chmod(tmp, 0o640)
+        os.replace(tmp, target)
+
     def _check_capability(self, app_id, capability):
         """Check if an app has a granted capability, consulting portal if needed.
 
         There is deliberately no hardcoded always-allow set: intrinsic
         non-sensitive capabilities are represented in the canonical registry,
         and every grant-required capability must be granted by the broker.
+
+        Cache semantics (PenGuru G0):
+          * ``always`` may be served from the refreshed store snapshot;
+          * ``once`` is consumed at the portal and never cached as reusable;
+          * ``session`` is bound to this daemon's session id and is not
+            upgraded to a persistent grant;
+          * unknown/malformed durations are denied.
         """
         # The shared store is authoritative for grants written after startup.
+        # In-process grants (used by embedded tests and by a caller that just
+        # received a portal verdict) are merged in, never erased, by a reload;
+        # an explicit revoke is the only way to remove one.
+        in_memory = {app: dict(caps) for app, caps in
+                     getattr(self, 'capability_grants', {}).items()}
         self.reload_grants()
+        for app, caps in in_memory.items():
+            merged = self.capability_grants.setdefault(app, {})
+            for cap, value in caps.items():
+                if cap not in merged and value != 'deny':
+                    merged[cap] = value
         grants = self.capability_grants.get(app_id, {})
-        if grants.get(capability) == 'deny':
+        canonical = resolve_capability(capability)
+        if grants.get(capability) == 'deny' or grants.get(canonical) == 'deny':
             return False
-        if capability in grants:
+        if self._grant_live(app_id, capability):
             return True
-        
-        # Check with portal
+
+        # Check with the permission authority
         portal_result = self.portals.check_permission(app_id, capability)
-        if portal_result.get('granted'):
-            duration = portal_result.get('duration', 'always')
-            self._save_grant(app_id, capability, duration)
+        if not portal_result.get('granted'):
+            return False
+        duration = portal_result.get('duration', 'session')
+        if duration == 'once':
+            # Persisted as consumed for the audit trail; never cached.
+            self._consume_once_grant(app_id, capability)
             return True
-        
+        if duration in NuxelBridgeService.REUSABLE_GRANT_DURATIONS or 'always' == duration:
+            self._save_grant(app_id, capability, 'always')
+            return True
+        if duration in NuxelBridgeService.SESSION_GRANT_DURATIONS:
+            self._save_grant(app_id, capability, 'session')
+            return True
+        logger.warning('Grant for %s/%s has unsupported duration %r; denying',
+                       app_id, capability, duration)
         return False
     
     def _request_capability_via_portal(self, app_id, capability):
@@ -2522,7 +2765,7 @@ class NuxelBridgeService(dbus.service.Object):
     @dbus.service.method(INTERFACE_NAME, in_signature='ss', out_signature='s')
     def RequestCapability(self, app_id, capability):
         """Request a capability grant for an app (through portal)."""
-        if capability not in CAPABILITIES:
+        if not _capability_known(capability):
             return json.dumps({'success': False, 'error': f'Unknown capability: {capability}'})
         
         if self._check_capability(app_id, capability):
@@ -2547,11 +2790,18 @@ class NuxelBridgeService(dbus.service.Object):
         return json.dumps({'app_id': app_id, 'capability': capability, 'granted': granted})
     
     @dbus.service.method(INTERFACE_NAME, in_signature='ss', out_signature='s')
+    @dbus.service.method(INTERFACE_NAME, in_signature='ss', out_signature='s')
     def RevokeCapability(self, app_id, capability):
-        """Revoke a capability for an app."""
+        """Revoke a capability for an app.
+
+        Revoking the canonical id also clears stored alias spellings that map
+        to it, so a revoke of ``system:inspect`` cannot leave a live
+        ``system_inspect`` record (or vice versa) behind.
+        """
+        canonical = resolve_capability(capability)
         if app_id in self.capability_grants:
-            if capability in self.capability_grants[app_id]:
-                del self.capability_grants[app_id][capability]
+            for key in (capability, canonical):
+                self.capability_grants[app_id].pop(key, None)
         # Remove from disk
         safe_id = app_id.replace('/', '_').replace('..', '_')
         path = os.path.join(PERMISSIONS_DIR, f"{safe_id}.json")
@@ -2559,10 +2809,14 @@ class NuxelBridgeService(dbus.service.Object):
             try:
                 with open(path) as f:
                     grants = json.load(f)
-                if capability in grants:
-                    del grants[capability]
-                with open(path, 'w') as f:
-                    json.dump(grants, f, indent=2)
+                changed = False
+                for key in list(grants):
+                    if key in (capability, canonical) or resolve_capability(key) == canonical:
+                        del grants[key]
+                        changed = True
+                if changed:
+                    with open(path, 'w') as f:
+                        json.dump(grants, f, indent=2)
             except (json.JSONDecodeError, OSError):
                 pass
         self.PermissionChanged(json.dumps({

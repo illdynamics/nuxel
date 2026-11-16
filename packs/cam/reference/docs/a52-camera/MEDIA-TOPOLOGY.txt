@@ -1,0 +1,80 @@
+# A52 Media Topology (observed 2026-10-22, Linux 4.14.253 aarch64)
+
+## Device
+Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820 (SM-G975F)
+
+## V4L2 devices (name → node → class)
+s5p-mfc-dec0             /dev/video6    MFC codec (M2M) — NOT camera
+s5p-mfc-enc0             /dev/video7    MFC codec (M2M)
+s5p-mfc-dec-secure0      /dev/video8    MFC codec (M2M)
+s5p-mfc-enc-secure0      /dev/video9    MFC codec (M2M)
+s5p-mfc-enc-otf0         /dev/video10   MFC codec (M2M)
+s5p-mfc-enc-otf-secure0  /dev/video11   MFC codec (M2M)
+exynos-jpeg              /dev/video12   JPEG codec (M2M) — NOT camera
+exynos5-scaler:m2m       /dev/video50   scaler (M2M)
+exynos-fimc-is-ss0       /dev/video101  camera sub-stream 0
+exynos-fimc-is-ss1       /dev/video102  camera sub-stream 1
+exynos-fimc-is-ss2       /dev/video103  camera sub-stream 2
+exynos-fimc-is-ss3       /dev/video104  camera sub-stream 3
+exynos-fimc-is-ss4       /dev/video105  camera sub-stream 4
+exynos-fimc-is-ss5       /dev/video106  camera sub-stream 5
+exynos-fimc-is-30s       /dev/video110  sensor slot pipeline (sensor 0)
+exynos-fimc-is-30c       /dev/video111  sensor slot pipeline
+exynos-fimc-is-30p       /dev/video112  sensor slot pipeline
+exynos-fimc-is-30f       /dev/video113  sensor slot pipeline
+exynos-fimc-is-30g       /dev/video114  sensor slot pipeline
+exynos-fimc-is-31s       /dev/video120  sensor slot pipeline (sensor 1)
+exynos-fimc-is-31c       /dev/video121  sensor slot pipeline
+exynos-fimc-is-31p       /dev/video122  sensor slot pipeline
+exynos-fimc-is-31f       /dev/video123  sensor slot pipeline
+exynos-fimc-is-31g       /dev/video124  sensor slot pipeline
+exynos-fimc-is-i0s       /dev/video130  ISP input 0
+exynos-fimc-is-i0c       /dev/video131  ISP input 0
+exynos-fimc-is-i0p       /dev/video132  ISP input 0
+exynos-fimc-is-i1s       /dev/video140  ISP input 1
+exynos-fimc-is-i1c       /dev/video141  ISP input 1
+exynos-fimc-is-i1p       /dev/video142  ISP input 1
+exynos-fimc-is-me0c      /dev/video148  metadata
+exynos-fimc-is-me1c      /dev/video149  metadata
+camerapp-gdc:m2m         /dev/video155  GDC warp (M2M)
+exynos-fimc-is-m0s       /dev/video160  meta stream
+exynos-fimc-is-m1s       /dev/video161  meta stream
+exynos-fimc-is-m0p       /dev/video170  meta stream
+exynos-fimc-is-m1p       /dev/video171  meta stream
+exynos-fimc-is-m2p       /dev/video172  meta stream
+exynos-fimc-is-m3p       /dev/video173  meta stream
+exynos-fimc-is-m4p       /dev/video174  meta stream
+exynos-fimc-is-m5p       /dev/video175  meta stream
+exynos-fimc-is-vra       /dev/video180  VRA (video recording assist)
+exynos-fimc-is-ssinstancevc0..vc3  /dev/video210-233  virtual channels ×6
+exynos-fimc-is-32s       /dev/video250  sensor slot pipeline (sensor 2)
+exynos-fimc-is-32p       /dev/video251  sensor slot pipeline (sensor 2)
+
+## Subdevices / media controller
+/dev/v4l-subdev* : NONE
+/dev/media*       : NONE
+→ no standard media-controller graph; libcamera cannot construct a pipeline.
+
+## Platform sensor devices (bound)
+170e0000.fimc_is                        (ISP core)
+17030000.fimc_is_sensor / 17040000 / 17050000 / 17050000.fimc_is_sensor2 /
+17060000.fimc_is_sensor / 17090000.fimc_is_sensor
+fimc-is_sensor_2l4@20   -> FIMC-IS-SENSOR-MODULE-2L4
+fimc-is_sensor_3m3@5A   -> FIMC-IS-SENSOR-MODULE-3M3
+fimc-is_sensor_3p9@2D   -> FIMC-IS-SENSOR-MODULE-3P9
+fimc-is_sensor_3j1@10   -> FIMC-IS-SENSOR-MODULE-3J1
+fimc-is_sensor_4ha@10   -> FIMC-IS-SENSOR-MODULE-4HA
+fimc-is-flash-gpio@0    (flash GPIO)
+
+## I²C camera peripherals
+0-0010 exynos5-fimc-is-cis      1-002d exynos5-fimc-is-cis
+2-0010 exynos5-fimc-is-cis      6-0010 exynos5-fimc-is-cis
+6-002d exynos5-fimc-is-cis
+3-000c / 3-000f / 8-000c exynos5-fimc-is-act (OIS actuators)
+10-0051 exynos5-fimc-is-ois
+
+## Standard V4L2 capture verdict
+VIDIOC_S_FMT on video110/111/112/160 → ENOTTY (errno 25)
+VIDIOC_REQBUFS / QUERYBUF          → EINVAL (errno 22)
+capabilities = 0x8420xxxx (DEVICE_CAPS|STREAMING|EXT_PIX_FORMAT|CAPTURE[_MPLANE])
+→ vendor-proprietary capture interface; no standard V4L2 streaming possible.

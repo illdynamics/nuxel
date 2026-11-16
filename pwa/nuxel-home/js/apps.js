@@ -833,7 +833,9 @@ class AppRegistry {
         } catch (e) { doc = null; }
         if (!doc || !Array.isArray(doc.apps)) {
             try {
-                const res = await fetch('http://127.0.0.1:8080/api/v1/apps/registry', { cache: 'no-store' });
+                const res = (window.NuxelBridge && typeof window.NuxelBridge.bridgeFetch === 'function')
+                    ? await window.NuxelBridge.bridgeFetch('/apps/registry', { cache: 'no-store' })
+                    : await fetch('http://127.0.0.1:8080/api/v1/apps/registry', { cache: 'no-store' });
                 if (!res.ok) return 0;
                 doc = await res.json();
             } catch (e) { return 0; }

@@ -1,0 +1,30 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== kernel ==
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #48 SMP PREEMPT Fri Nov 13 12:46:08 CET 2026 aarch64 GNU/Linux
+== userns ==
+1
+unshare rc=0
+== nft classid ==
+/dev/stdin:1:95-95: Error: syntax error, unexpected '}', expecting newline or semicolon
+table inet p { chain o { type filter hook output priority 0; meta cgroup 0x01030001 accept; } }
+                                                                                              ^
+/dev/stdin:2:1-1: Error: syntax error, unexpected end of file
+table inet p { chain o { type filter hook output priority 0; meta cgroup 0x01030001 accept; } }
+^
+nft rc=1
+== ssp ==
+mcu_probe=1 shutdown=1 resetting=0 sensor_state=0x3feff enable=0x0 shub_irq=443
+0,0,0
+0,0,0
+== orientation ==
+active
+inactive
+auto False auto_state fixed display_verified True

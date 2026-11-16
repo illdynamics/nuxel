@@ -1,0 +1,45 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{
+  "registry_version": 22,
+  "apps": [
+    {
+      "id": "nuxel-edge-fx",
+      "name": "Edge FX",
+      "icon": "\ud83d\udcf1",
+      "color": "#4a90e2",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/edge-fx/index.html",
+      "description": "Edge lighting preview and control (AMOLED display effect), Edge panel toggle and install/uninstall state for the Nuxel Edge FX app",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "install_source": "/pwa/nuxel-apps/edge-fx/index.html",
+      "installed_version": "0.8.3-beta",
+      "installed_sha256": "",
+      "installed_at": "2026-11-12T11:26:01+0100"
+    }
+  ]
+}
+---
+ProtectSystem=full
+ReadWritePaths=/var/lib/nuxel /var/log/nuxel
+---
+total 80
+drwxr-xr-x.  3 root root   4096 Nov 12 10:49 .
+drwxr-xr-x. 43  501 games 32768 Nov 12 10:49 ..
+-rw-r--r--.  1 root root    519 Nov 12 10:49 app.json
+drwxr-xr-x.  2 root root   4096 Nov 12 10:49 e2e
+-rw-r--r--.  1 root root   6020 Nov 12 10:49 edge-fx.css
+-rw-r--r--.  1 root root  15324 Nov 12 10:49 edge-fx.js
+-rw-r--r--.  1 root root   4853 Nov 12 10:49 index.html
+-rw-r--r--.  1 root root   1236 Nov 12 10:49 manifest.json

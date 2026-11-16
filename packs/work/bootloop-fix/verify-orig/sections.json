@@ -1,0 +1,26 @@
+{
+  "source": "/Users/wicked/x/nuxel/work/bootloop-fix/boot-current.img",
+  "source_sha256": "0945cc8d4aa6e80a7757c8cc8aaaa1a6de307e22f4d0465513945cb027973f38",
+  "header": {
+    "kernel_size": 45717512,
+    "kernel_addr": "0x10008000",
+    "ramdisk_size": 2424832,
+    "ramdisk_addr": "0x11000000",
+    "tags_addr": "0x10000100",
+    "page_size": 2048,
+    "header_field40": 1,
+    "os_version": "0x18000171"
+  },
+  "offsets": {
+    "kernel": 2048,
+    "ramdisk": 45721600,
+    "dtb": 48146432
+  },
+  "ramdisk_container": "lzma-alone",
+  "ramdisk_uncompressed_size": 8791372,
+  "dtb_size": 9525248,
+  "kernel_sha256": "d5e4fe656b7dda319f2e301b82f8dbd51597151dee8d2d47dd4bbae02671a5a4",
+  "initramfs_cpio_sha256": "f19b369303ede99e7e4a8360c3a83a66abb690b2df6c0854bf6897862f8ef215",
+  "appended_dtb_sha256": "0e308eee67c90d54b635b375de7af573dc204c1e9d5cc3e12464ff4a92c6294b",
+  "cpio_records": 84
+}

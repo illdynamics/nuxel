@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-10-22T12:45:00+02:00",
+  "device": "beyond2lte",
+  "kernel": "4.14.253",
+  "tool": "tools/s10plus/a52/nuxel-v4l2-capture-test.py",
+  "source": "rear-main-fimc-is (probe)",
+  "result": "CAPTURE_FAILED",
+  "first_failing_stage": "v4l2_s_fmt",
+  "detail": "VIDIOC_S_FMT returned ENOTTY (errno 25, Inappropriate ioctl for device) on exynos-fimc-is-30s/30c/30p/m0s; REQBUFS and QUERYBUF returned EINVAL (errno 22). Nodes advertise V4L2_CAP_EXT_PIX_FORMAT and VIDEO_CAPTURE_MPLANE and do not implement the standard V4L2 pixel-format ioctl.",
+  "nodes_tested": ["/dev/video110", "/dev/video111", "/dev/video112", "/dev/video160"],
+  "frame_captured_verified": false,
+  "synthetic_test_source": false,
+  "usb_uvc": false,
+  "sensor_enumeration": {
+    "rear_main": "fimc-is_sensor_2l4@20 (FIMC-IS-SENSOR-MODULE-2L4)",
+    "rear_tele": "fimc-is_sensor_3m3@5A (FIMC-IS-SENSOR-MODULE-3M3)",
+    "rear_uw": "fimc-is_sensor_3p9@2D (FIMC-IS-SENSOR-MODULE-3P9)",
+    "front_main": "fimc-is_sensor_3j1@10 (FIMC-IS-SENSOR-MODULE-3J1)",
+    "front_ir_depth": "fimc-is_sensor_4ha@10 (FIMC-IS-SENSOR-MODULE-4HA)"
+  },
+  "verdict": "HARDWARE_BLOCKED",
+  "scenario": "E (vendor FIMC-IS requires proprietary Samsung camera HAL)"
+}

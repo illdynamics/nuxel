@@ -17,6 +17,7 @@ the local PWA origin and that the Referer path is the app's registered route.
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 import threading
 import time
@@ -276,3 +277,60 @@ def get_api() -> KeyringAPI:
         if _API is None:
             _API = KeyringAPI()
         return _API
+
+
+# ── Trusted identity boundary (PenGuru G0) ─────────────────────────────
+# A request body's app_id is never proof of identity.  Every authenticated
+# HTTP request must present a per-session token whose server-side record was
+# issued for the same app.  This check runs for ALL bridge routes, not only
+# the keyring namespace, so a token issued to one first-party app cannot be
+# replayed with another app's id to reach that app's capabilities.
+_APP_ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')
+
+
+def bind_request_identity(session, app_id):
+    """Return None when the token identity equals the request app id."""
+    if not isinstance(session, dict):
+        return _error("token_required", "authenticated app session required")
+    token_app = session.get("app_id")
+    if not isinstance(token_app, str) or not _APP_ID_RE.match(token_app):
+        return _error("identity_mismatch", "the session token has no valid app identity")
+    if not isinstance(app_id, str) or not _APP_ID_RE.match(app_id):
+        return _error("identity_required", "the request must name a valid app id")
+    if token_app != app_id:
+        return _error("identity_mismatch",
+                      "the session token belongs to a different app")
+    return None
+
+
+# The shell/launcher identity owns app activation and is not a PWA in the
+# canonical app registry.  It may self-bootstrap a token like other first-party
+# clients, but its token is still not launcher-bound and cannot reach authority
+# RPCs.
+SHELL_APP_IDS = {'org.nuxel.Home'}
+
+
+def bootstrap_app_allowed(app_id, registry_ids=None):
+    """Apps that may self-bootstrap a short-lived session token.
+
+    Launcher-only apps (Vault/Authenticator) carry secrets or lock authority
+    and must be minted by the launcher secret path.  Every other *registered*
+    app may bootstrap a token that is bound to its claimed id (still not a
+    launcher-bound authority token).  When a registry snapshot is supplied, an
+    unregistered id is refused instead of becoming a free-form identity.
+    """
+    if not isinstance(app_id, str) or not _APP_ID_RE.match(app_id):
+        return False
+    if app_id in LAUNCHER_ONLY_APPS:
+        return False
+    if app_id in SHELL_APP_IDS:
+        return True
+    if registry_ids is None:
+        return True
+    return app_id in set(registry_ids)
+
+
+# Launcher-secret only identities: their keyring verbs expose credentials or
+# lock state, so a body-supplied id must never mint a token for them.
+LAUNCHER_ONLY_APPS = {"org.nuxel.Vault", "org.nuxel.Authenticator", "org.nuxel.Home"}
+

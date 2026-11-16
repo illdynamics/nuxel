@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Nuxel Camera
+GenericName=Camera
+Comment=Take photos with the Nuxel camera application
+Exec=/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py
+Icon=org.nuxel.CameraNative
+Terminal=false
+Categories=Graphics;Photography;GTK;
+StartupNotify=true
+X-GNOME-UsesNotifications=false

@@ -1,0 +1,17 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+before: 3
+after:  4
+live Home consumed up to (from its poll cursor):
+      7 events?since=0
+     37 events?since=3
+journal entries (no private text):
+{"app_id": "org.nuxel.Mail", "category": "", "color": null, "color_mode": "theme", "created_at": 1794478827, "duration_ms": 1800, "effect": "wave", "kind": "notification", "record_id": 89, "reduced_motion_style": "static", "seq": 3, "transparency": "medium", "urgency": "normal", "width": "medium"}
+{"app_id": "org.nuxel.Mail", "category": "", "color": null, "color_mode": "theme", "created_at": 1794479047, "duration_ms": 1800, "effect": "wave", "kind": "notification", "record_id": 90, "reduced_motion_style": "static", "seq": 4, "transparency": "medium", "urgency": "normal", "width": "medium"}

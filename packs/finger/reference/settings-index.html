@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
+<meta name="nuxel-app-id" content="nuxel-settings">
+<title>Nuxel Settings</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="../../nuxel-common/theme.css?v=p85000">
+<link rel="stylesheet" href="settings.css?v=p102000">
+    <script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
+</head>
+<body>
+<header class="hdr">
+  <h1>Settings</h1>
+  <button id="close" class="ghost" title="Back to Home">Close</button>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="display">Screen</button>
+  <button class="tab" data-tab="bluetooth">Bluetooth</button>
+  <button class="tab" data-tab="displays">Displays</button>
+  <button class="tab" data-tab="network">Wi-Fi</button>
+  <button class="tab" data-tab="mobile">Mobile network</button>
+  <button class="tab" data-tab="camera">Camera</button>
+  <button class="tab" data-tab="sensors">Sensors</button>
+  <button class="tab" data-tab="graphics">Graphics</button>
+  <button class="tab" data-tab="sound">Sound</button>
+  <button class="tab" data-tab="theme">Appearance</button>
+  <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
+  <button class="tab" data-tab="keyboard">Keyboard</button>
+  <button class="tab" data-tab="mouse">Mouse &amp; Keyboard</button>
+  <button class="tab" data-tab="location">Location &amp; Maps</button>
+  <button class="tab" data-tab="power">Power</button>
+  <button class="tab" data-tab="notifications">Notifications</button>
+  <button class="tab" data-tab="nfc">NFC</button>
+  <button class="tab" data-tab="fingerprint">Fingerprint</button>
+  <button class="tab" data-tab="security">Security</button>
+  <button class="tab" data-tab="firewall">Firewall</button>
+  <button class="tab" data-tab="software">Software</button>
+  <button class="tab" data-tab="apps">Apps</button>
+  <button class="tab" data-tab="permissions">Permissions</button>
+  <button class="tab" data-tab="file-handlers">File Handlers</button>
+  <button class="tab" data-tab="services">Services</button>
+  <button class="tab" data-tab="dev">Developer</button>
+</nav>
+
+<main>
+  <!-- ── DISPLAY ─────────────────────────────────────────────────────── -->
+  <section id="tab-display" class="panel active">
+    <h2>Display</h2>
+    <div class="card">
+      <h3>Screen on / off</h3>
+      <p class="hint">The display bridge (nuxel-wl-fb) stays the only framebuffer owner; these
+        buttons drive its control channel, exactly like a short POWER press.</p>
+      <div class="row">
+        <button data-action="screen-off">Screen off</button>
+        <button data-action="screen-on">Screen on</button>
+        <button data-action="screen-toggle">Toggle</button>
+      </div>
+      <pre id="screen-state" class="state">—</pre>
+    </div>
+
+    <div class="card" id="statusbar-icons-card">
+      <h3>Status Bar Icons</h3>
+      <p class="hint">Choose which indicators may appear in the top bar. Hiding an icon never
+        turns off Wi-Fi, Bluetooth, NFC, location or any other service. Provider OFF/unsupported
+        state still wins over a user "show" choice, and icons are hidden while the device is locked.</p>
+      <div id="statusbar-icon-list" class="statusbar-icon-list" role="group" aria-label="Status bar icon visibility"></div>
+      <div class="row">
+        <button id="statusbar-icons-save" class="primary">Save</button>
+        <button id="statusbar-icons-defaults">Restore Defaults</button>
+        <button id="statusbar-icons-preview">Live preview</button>
+      </div>
+      <pre id="statusbar-icons-state" class="state" role="status" aria-live="polite">Reading icon preferences…</pre>
+    </div>
+
+    <div class="card">
+      <h3>Status Bar → Camera &amp; Cutout Areas</h3>
+      <p class="hint">Ten zones, left to right. A <b>blocked</b> zone becomes an excluded
+        interval: no status item (time, battery, battery %, signal, Wi-Fi, notifications) may be
+        placed inside it.</p>
+
+      <div class="row wrap">
+        <label>Preset
+          <select id="preset">
+            <option value="none">No cutout</option>
+            <option value="right_camera">Right-side camera cutout</option>
+            <option value="center_camera">Center camera cutout</option>
+            <option value="left_camera">Left-side camera cutout</option>
+            <option value="custom">Custom / manual</option>
+          </select>
+        </label>
+        <label>Orientation
+          <select id="orientation">
+            <option value="portrait">Portrait</option>
+            <option value="landscape_left">Landscape (left)</option>
+            <option value="landscape_right">Landscape (right)</option>
+          </select>
+        </label>
+        <label>Safety padding
+          <input id="padding" type="range" min="0" max="24" step="1" value="6">
+          <output id="padding-val">6 dp</output>
+        </label>
+      </div>
+
+      <div id="zones" class="zones" role="group" aria-label="Status bar zones">
+        <!-- ten boxes built by settings.js -->
+      </div>
+
+      <h4>Live preview</h4>
+      <div class="preview-wrap">
+        <div id="preview-bar" class="preview-bar">
+          <span class="pv status-left"><span class="pv-time">09:41</span></span>
+          <span class="pv status-center"><span class="pv-sig">▂▄▆</span><span class="pv-wifi">wifi</span></span>
+          <span class="pv status-right"><span class="pv-bat">🔋</span><span class="pv-pct">100%</span></span>
+        </div>
+        <div id="preview-zones" class="preview-zones"></div>
+      </div>
+      <p id="preview-report" class="state">—</p>
+
+      <div class="row">
+        <button id="save-zones" class="primary">Save</button>
+        <button id="cancel-zones">Cancel</button>
+        <button id="apply-zones">Apply to real status bar (preview)</button>
+      </div>
+      <p class="hint">Saved to the Nuxel device configuration
+        (<code>/etc/nuxel/display/statusbar-safezones.json</code>); the same file is used by
+        <code>nuxelctl statusbar</code> on the live console. Changes need no reboot.</p>
+    </div>
+
+    <div class="block">
+      <h3>Screen rotation</h3>
+      <p class="hint">Seven modes, one source of truth
+        (<code>nuxel-orientationd</code>). Fixed modes work without a sensor;
+        Auto modes are disabled/marked unavailable when no accelerometer is
+        readable. Rotated pixels alone are never accepted as rotation.</p>
+      <div id="orientation-modes" class="radio-group" role="radiogroup" aria-label="Screen rotation mode"></div>
+      <p id="orientation-state" class="state" role="status" aria-live="polite">Checking orientation service…</p>
+      <p id="orientation-hint" class="hint">—</p>
+    </div>
+  </section>
+
+  <!-- A43: One NetworkManager backend shared with Quick Settings. -->
+  <section id="tab-network" class="panel">
+    <h2>Wi-Fi &amp; Internet</h2>
+    <div class="card">
+      <p class="hint">Real NetworkManager state. A connected access point does not guarantee working Internet. Wireless hardware requires its driver and firmware.</p>
+      <div class="row"><button id="wifi-refresh">Refresh</button><button id="wifi-scan">Scan networks</button>
+        <button id="wifi-power">Turn Wi-Fi on/off</button><button id="wifi-disconnect">Disconnect</button></div>
+      <pre id="wifi-status" class="state" role="status">Checking NetworkManager...</pre>
+      <div id="wifi-list" class="wifi-list" aria-label="Discovered Wi-Fi networks"></div>
+      <form id="wifi-connect-form" hidden autocomplete="off">
+        <h3>Connect to <span id="wifi-target-label"></span></h3>
+        <input id="wifi-ssid" type="hidden"><input id="wifi-security" type="hidden">
+        <label>Wi-Fi password <input id="wifi-password" type="password" autocomplete="new-password" minlength="8" maxlength="63"></label>
+        <div class="row"><button type="submit" class="primary">Connect</button><button type="button" id="wifi-cancel">Cancel</button></div>
+      </form>
+      <p id="wifi-result" class="state" role="status" aria-live="polite">—</p>
+    </div>
+  </section>
+
+  <!-- ── BLUETOOTH (29000) ─────────────────────────────────────────────── -->
+  <section id="tab-bluetooth" class="panel">
+    <h2>Bluetooth</h2>
+    <div class="card">
+      <h3>Controller &amp; service</h3>
+      <p class="hint">Real controller/rfkill/BlueZ/firmware state from the same authoritative
+        provider as the Bluetooth Quick Setting.</p>
+      <div class="row">
+        <button id="bt-refresh">Refresh</button>
+        <button id="bt-power" class="primary">Turn Bluetooth on/off</button>
+      </div>
+      <pre id="bt-state" class="state">Checking Bluetooth…</pre>
+      <p id="bt-detail" class="hint">—</p>
+    </div>
+
+    <div class="card">
+      <h3>Devices</h3>
+      <p class="hint">Real BlueZ scan and device actions. Pairing/connecting is owner-initiated
+        and reports the actual BlueZ result; a listed peer is not a successful connection.</p>
+      <div class="row">
+        <button id="bt-scan">Scan 8 s</button>
+        <button id="bt-list">List known</button>
+      </div>
+      <pre id="bt-devices" class="state">No scan yet.</pre>
+      <div id="bt-device-actions" class="row"></div>
+      <p id="bt-action-result" class="hint">—</p>
+    </div>
+  </section>
+
+  <!-- ── DISPLAYS (29000 / PWNAGE-52000) ───────────────────────────────── -->
+  <section id="tab-displays" class="panel">
+    <h2>Displays</h2>
+
+    <!-- Graphics Acceleration is FIRST and independent of external connector
+         discovery.  It never waits for the DisplayProvider (Type-C/DRM scan). -->
+    <div class="card" id="graphics-acceleration-card">
+      <h3>Graphics Acceleration</h3>
+      <p class="hint">Live, per-layer graphics truth. The Phoc kbase compositor, GTK GL and
+        WebKitGTK are reported separately; one accelerated layer is not proof that every
+        layer is accelerated.</p>
+      <div class="row">
+        <button id="graphics-accel-refresh" class="primary">Refresh graphics status</button>
+        <button id="graphics-accel-test">Run Graphics Test</button>
+      </div>
+      <pre id="graphics-acceleration-state" class="state" role="status" aria-live="polite">Reading GPU, Phoc, EGL, GTK, WebKit and framebuffer path…</pre>
+      <p id="graphics-acceleration-detail" class="hint">—</p>
+      <pre id="graphics-acceleration-verdict" class="state" role="status" aria-live="polite">—</pre>
+    </div>
+
+    <div class="card">
+      <h3>External display (USB-C / HDMI)</h3>
+      <p class="hint">Actual Type-C, USB-PD, DP Alt Mode and decon_t state. The kernel selects the
+        TV's supported timing (1920x1080p60 when advertised). Separate desktop is only offered when
+        the compositor genuinely exposes a second output.</p>
+      <div class="row">
+        <button id="display-refresh">Refresh connectors</button>
+        <button id="display-mode-mirror-portrait" class="primary">Mirror portrait</button>
+        <button id="display-mode-mirror-landscape">Mirror landscape</button>
+        <button id="display-mode-fullscreen">Fullscreen</button>
+        <button id="display-mode-desktop">Separate desktop</button>
+        <button id="display-mode-off">Internal only</button>
+        <button id="display-notify-test">Test notification</button>
+        <label for="display-rotation" class="hint" style="align-self:center">Rotation</label>
+        <select id="display-rotation">
+          <option value="0">0°</option>
+          <option value="90">90°</option>
+          <option value="180">180°</option>
+          <option value="270">270°</option>
+        </select>
+      </div>
+      <pre id="external-display-state" class="state">Checking external connector path…</pre>
+      <p id="external-display-detail" class="hint">—</p>
+      <p id="display-mode-result" class="hint">—</p>
+    </div>
+  </section>
+
+  <!-- ── SOUND ────────────────────────────────────────────────────────── -->
+  <section id="tab-sound" class="panel">
+    <h2>Sound</h2>
+    <div class="card" id="sound-output-card">
+      <h3>Output</h3>
+      <p class="hint">Automatic prefers a verified USB-C HDMI/DisplayPort audio endpoint.
+        Selecting an output switches to manual mode; HDMI hotplug never overrides that choice.
+        Only real, currently usable physical outputs are listed.</p>
+      <div class="row wrap">
+        <button id="sound-output-refresh">Refresh outputs</button>
+        <button id="sound-output-auto" class="primary" aria-pressed="false">Automatic</button>
+      </div>
+      <pre id="sound-output-state" class="state" role="status" aria-live="polite">Reading audio outputs…</pre>
+      <p id="sound-output-routing" class="hint">—</p>
+      <div id="sound-output-devices" class="sound-output-devices" role="radiogroup" aria-label="Available audio outputs"></div>
+      <div class="row wrap sound-output-controls">
+        <label>Volume
+          <input id="sound-output-volume" type="range" min="0" max="100" step="1" value="50">
+          <output id="sound-output-volume-val">50%</output>
+        </label>
+        <button id="sound-output-mute">Mute</button>
+        <button id="sound-output-test" class="primary" disabled>Test sound</button>
+      </div>
+      <p id="sound-output-detail" class="hint">—</p>
+    </div>
+    <div class="card" id="microphone-card">
+      <h3>Microphone</h3>
+      <p class="hint">The selected source and 0–100% level come from the real PipeWire WDMA1 capture source.
+        The slider is labelled digital input gain unless a writable ALSA capture-gain control is found.
+        The meter only runs after you tap Test microphone.</p>
+      <div class="row wrap">
+        <label>Input level <input id="mic-volume" type="range" min="0" max="100" step="1" value="100"> <output id="mic-volume-val">100%</output></label>
+        <button id="mic-mute">Mute</button>
+        <button id="mic-test" class="primary">Test microphone</button>
+      </div>
+      <div class="mic-meter" aria-hidden="true"><i id="mic-meter-fill"></i></div>
+      <label class="check"><input id="mic-noise-suppression" type="checkbox" disabled> Noise suppression</label>
+      <pre id="mic-state" class="state" role="status" aria-live="polite">Reading capture source…</pre>
+      <p id="mic-detail" class="hint">—</p>
+    </div>
+    <div class="card" id="sound-manager-card">
+      <h3>Sound assignments</h3>
+      <p class="hint">One central manager owns every sound. Files are discovered automatically from
+        <code>~/Sounds</code> and the shipped sound library. Each action can use a supplied sound,
+        a newly added file, or a custom file selected with Browse. Choices persist across reboot.</p>
+      <div id="sound-assignments" class="sound-assignments"></div>
+      <div class="row wrap">
+        <button id="sound-refresh">Refresh sound list</button>
+        <button id="sound-browse">Browse custom sound…</button>
+        <button id="sound-test-volume">Preview volume sound</button>
+      </div>
+      <input id="sound-file-input" type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.opus,.aac" hidden>
+      <pre id="sound-manager-state" class="state" role="status" aria-live="polite">Reading sound library…</pre>
+      <p id="sound-import-state" class="hint">—</p>
+    </div>
+    <div class="card">
+      <h3>Haptics</h3>
+      <p class="hint">The request path is the shared Nuxel haptics owner. A dispatched request is
+        not proof the motor moved; physical vibration remains an owner acceptance test.</p>
+      <label class="check"><input id="haptics-enabled" type="checkbox"> Haptics enabled</label>
+      <label class="check"><input id="haptics-keyboard" type="checkbox"> Keyboard keypress haptics</label>
+      <label class="check"><input id="haptics-alarm" type="checkbox"> Alarm vibration</label>
+      <label>Intensity <input id="haptics-intensity" type="range" min="0" max="100" value="30"> <output id="haptics-intensity-val">30%</output></label>
+      <div class="row"><button id="haptics-test">Test vibration</button></div>
+      <p id="haptics-report" class="state">—</p>
+    </div>
+  </section>
+
+  <!-- ── BUTTONS ──────────────────────────────────────────────────────── -->
+  <section id="tab-buttons" class="panel">
+    <h2>Buttons &amp; Gestures</h2>
+    <div class="card">
+      <h3>Power button</h3>
+      <label>Short press <select id="power-short"></select></label>
+      <label>Long press <select id="power-long"></select></label>
+    </div>
+    <div class="card">
+      <h3>Bixby / assistant button</h3>
+      <p class="hint">Default: one short press opens the Nuxel Terminal (one instance; a second
+        press focuses the existing shell).</p>
+      <label>Short press <select id="bixby-short"></select></label>
+      <label>Long press <select id="bixby-long"></select></label>
+    </div>
+    <div class="card">
+      <h3>Volume buttons</h3>
+      <label>Volume up <select id="vol-up"></select></label>
+      <label>Volume down <select id="vol-down"></select></label>
+    </div>
+    <div class="row">
+      <button id="save-buttons" class="primary">Save button mapping</button>
+      <button id="reload-buttons">Reload</button>
+    </div>
+    <p id="buttons-report" class="state">—</p>
+  </section>
+
+
+  <!-- ── POWER (battery modes + power menu) ──────────────────────────── -->
+  <section id="tab-keyboard" class="panel">
+    <h2>Keyboard</h2>
+    <div class="card">
+      <h3>Legacy text-input v1 compatibility</h3>
+      <p class="hint">Electron/Chromium 122 applications such as Caprine 2.61 only speak
+        <code>zwp_text_input_v1</code>, which modern Phoc/wlroots no longer exposes. Enabling
+        this opt-in shim lets those apps raise the same Stevia keyboard that GTK apps and
+        Nuxel PWAs already use through <code>zwp_text_input_v3</code>. The normal keyboard and
+        v3 path are unchanged.</p>
+      <p class="hint">Applies to newly launched apps immediately. If an Electron app is
+        already running, close and reopen it so it can see the new protocol.</p>
+      <label class="check"><input id="keyboard-text-input-v1" type="checkbox">
+        Enable legacy text-input v1 shim (Caprine / Electron 29)</label>
+      <div class="row"><button id="keyboard-text-input-v1-refresh">Refresh state</button></div>
+      <pre id="keyboard-text-input-v1-state" class="state" role="status" aria-live="polite">Reading…</pre>
+    </div>
+  </section>
+
+  <section id="tab-mouse" class="panel">
+    <h2>Mouse &amp; keyboard</h2>
+    <div class="card">
+      <h3>Connected physical devices</h3>
+      <p class="hint">USB HID devices attached through the USB-C hub are discovered by
+        <code>libnuxel-libinput-path.so</code> by capability, not by node number. The panel's
+        own touchsurface stays on the touch path; the internal touchpad-emulation node and
+        power/volume keys are not turned into duplicate pointers or keyboards.</p>
+      <div class="row"><button id="pi-refresh">Refresh devices</button></div>
+      <pre id="pi-state" class="state" role="status" aria-live="polite">Reading…</pre>
+    </div>
+    <div class="card">
+      <h3>Mouse</h3>
+      <p class="hint">Applies live to every connected mouse through libinput and phoc.</p>
+      <label>Pointer speed <input id="pi-mouse-speed" type="range" min="-1" max="1" step="0.05" value="0"> <output id="pi-mouse-speed-val">0.00</output></label>
+      <label>Acceleration <select id="pi-mouse-accel">
+        <option value="default">Default</option>
+        <option value="flat">Flat</option>
+        <option value="adaptive">Adaptive</option>
+      </select></label>
+      <label class="check"><input id="pi-mouse-natural" type="checkbox"> Natural scrolling</label>
+      <label class="check"><input id="pi-mouse-left" type="checkbox"> Left-handed buttons</label>
+      <label class="check"><input id="pi-mouse-middle" type="checkbox"> Middle-click emulation</label>
+    </div>
+    <div class="card">
+      <h3>Touchpad</h3>
+      <p class="hint">Only devices libinput reports as touchpads receive tap, two-finger and
+        typing-suppression settings; a plain mouse ignores these controls.</p>
+      <label>Touchpad speed <input id="pi-touchpad-speed" type="range" min="-1" max="1" step="0.05" value="0"> <output id="pi-touchpad-speed-val">0.00</output></label>
+      <label>Acceleration <select id="pi-touchpad-accel">
+        <option value="default">Default</option>
+        <option value="flat">Flat</option>
+        <option value="adaptive">Adaptive</option>
+      </select></label>
+      <label class="check"><input id="pi-touchpad-natural" type="checkbox"> Natural scrolling</label>
+      <label class="check"><input id="pi-touchpad-tap" type="checkbox"> Tap to click</label>
+      <label class="check"><input id="pi-touchpad-two" type="checkbox"> Two-finger scrolling</label>
+      <label class="check"><input id="pi-touchpad-dwt" type="checkbox"> Disable while typing</label>
+      <label class="check"><input id="pi-touchpad-left" type="checkbox"> Left-handed buttons</label>
+      <div class="row"><button id="pi-save-pointer" class="primary">Save pointer settings</button></div>
+    </div>
+    <div class="card">
+      <h3>Physical keyboard</h3>
+      <p class="hint">These write the same <code>/etc/nuxel/keyboard/keyboard.json</code> used
+        by the on-screen keyboard. <code>nuxel-keyboard-apply.sh</code> applies the XKB layout and
+        repeat values to phoc; the physical key event path is never grabbed.</p>
+      <label>Layout <select id="pi-keyboard-layout">
+        <option value="us">US</option>
+        <option value="gb">GB</option>
+        <option value="de">DE</option>
+        <option value="fr">FR</option>
+        <option value="es">ES</option>
+        <option value="it">IT</option>
+        <option value="nl">NL</option>
+      </select></label>
+      <label class="check"><input id="pi-keyboard-repeat" type="checkbox"> Key repeat</label>
+      <label>Repeat delay (ms) <input id="pi-keyboard-delay" type="number" min="100" max="2000" step="50" value="500"></label>
+      <label>Repeat interval (ms) <input id="pi-keyboard-interval" type="number" min="10" max="200" step="5" value="30"></label>
+      <label class="check"><input id="pi-keyboard-passthrough" type="checkbox"> Physical keyboard passthrough</label>
+      <div class="row"><button id="pi-save-keyboard" class="primary">Save keyboard settings</button></div>
+    </div>
+    <p id="pi-message" class="state" role="status" aria-live="polite">—</p>
+  </section>
+
+  <section id="tab-power" class="panel">
+    <h2>Power</h2>
+    <div class="card">
+      <h3>Battery mode</h3>
+      <p class="hint">The three profiles map to a real cpufreq governor and cgroup CPU weight and are
+        persisted across reboots.</p>
+      <div id="pm-modes" class="row"></div>
+      <p id="pm-mode-status" class="state" role="status" aria-live="polite">—</p>
+    </div>
+    <div class="card">
+      <h3>Power menu</h3>
+      <p class="hint">The same table the hardware POWER long-press menu uses. Restart, Power off and the
+        one-shot reboot variants are executed only through the reboot gate; Recovery and Download Mode are
+        refused by the NO-FLASH invariant.</p>
+      <div id="pm-entries" class="row"></div>
+      <p id="pm-result" class="state" role="status" aria-live="polite">—</p>
+    </div>
+    <p class="hint"><a href="power-menu.html">Open the full Power surface</a> (battery detail, governor
+      readback, complete menu table).</p>
+  </section>
+
+  <!-- ── LOCATION & MAPS (27000) ──────────────────────────────────────── -->
+  <section id="tab-location" class="panel">
+    <h2>Location &amp; Maps</h2>
+    <div class="card">
+      <h3>GNSS / location provider</h3>
+      <p class="hint">The authoritative state comes from the Nuxel bridge's canonical location
+        provider. A coordinate, manual map point or place search is never reported as a GPS fix.</p>
+      <pre id="location-state" class="state" role="status" aria-live="polite">Checking location provider…</pre>
+      <div class="row">
+        <button id="location-refresh">Refresh</button>
+        <button id="location-acquire" class="primary">Request provider fix</button>
+      </div>
+      <p id="location-detail" class="hint">—</p>
+    </div>
+
+    <div class="card">
+      <h3>Maps tile source</h3>
+      <p class="hint">One configuration is shared with the Maps app. The default is the attributed
+        OpenStreetMap standard tile service; only visible tiles are requested.</p>
+      <label>Tile URL template
+        <input id="maps-tile-url" type="text" class="grow" placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png">
+      </label>
+      <label class="check"><input id="maps-allow-net" type="checkbox"> Allow online tile downloads</label>
+      <div class="row">
+        <button id="maps-save" class="primary">Save tile source</button>
+        <button id="maps-default">Restore default</button>
+        <button id="maps-refresh">Check status</button>
+      </div>
+      <pre id="maps-state" class="state" role="status" aria-live="polite">—</pre>
+    </div>
+  </section>
+
+  <!-- ── THEME (PWNAGE-30000) ────────────────────────────────────────── -->
+  <section id="tab-theme" class="panel">
+    <h2>Appearance</h2>
+    <div class="card" id="appearance-card">
+      <h3>System appearance</h3>
+      <p class="hint">System default follows the desktop color-scheme setting. Light and Dark apply
+        through the GTK/libadwaita color-scheme setting and the GTK theme — never by injecting
+        <code>GTK_THEME</code> into every process. Flatpak GTK apps receive the setting through the
+        portal/theme extension when one is installed.</p>
+      <label>Mode
+        <select id="appearance-mode">
+          <option value="system">System default</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+      <label>GTK theme
+        <select id="appearance-theme">
+          <option value="Adwaita">Adwaita</option>
+          <option value="Adwaita-dark">Adwaita Dark</option>
+        </select>
+      </label>
+      <div class="row"><button id="appearance-apply" class="primary">Apply appearance</button>
+        <button id="appearance-refresh">Refresh</button></div>
+      <pre id="appearance-state" class="state" role="status" aria-live="polite">Reading appearance providers…</pre>
+      <p id="appearance-detail" class="hint">—</p>
+    </div>
+    <div class="card" id="motion-card">
+      <h3>Motion</h3>
+      <p class="hint">Short, restrained transitions for the launcher, panels and app feedback.
+        Reduced keeps only essential feedback; Off is near-instant. The system
+        <code>prefers-reduced-motion</code> setting is honored unless Full is explicitly selected.</p>
+      <label>Transition style
+        <select id="motion-mode">
+          <option value="system">Follow system</option>
+          <option value="full">Full (subtle)</option>
+          <option value="reduced">Reduced</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
+      <p id="motion-state" class="state" role="status" aria-live="polite">—</p>
+    </div>
+    <div class="card">
+      <h3>Nuxel theme</h3>
+      <p class="hint">One shared token system for every Nuxel app and the launcher. Selecting a
+        theme applies immediately and persists across restarts.</p>
+      <div id="theme-cards" class="theme-cards"></div>
+      <p id="theme-report" class="state">—</p>
+    </div>
+  </section>
+
+
+  <!-- ── NOTIFICATIONS / DND / LED (PWNAGE-45000) ───────────────────── -->
+  <section id="tab-notifications" class="panel">
+    <h2>Notifications</h2>
+    <div class="card">
+      <h3>Do Not Disturb</h3>
+      <p class="hint">Persistent system policy. DND suppresses popups, sound, haptics and notification lights; it never deletes notification history.</p>
+      <div class="row"><button id="dnd-refresh">Refresh</button><button id="dnd-toggle" class="primary">Toggle DND</button></div>
+      <pre id="dnd-state" class="state">Checking DND…</pre>
+      <p id="dnd-detail" class="hint">—</p>
+    </div>
+    <div class="card">
+      <h3>Notification light</h3>
+      <p class="hint">A hardware RGB notification LED is only used if the kernel exposes a real class. The S10+ currently has no front notification LED class; the display bridge can render a bounded, clearly-labelled software edge light instead.</p>
+      <pre id="led-state" class="state">Checking LED capability…</pre>
+      <div class="row wrap" id="led-color-buttons"></div>
+      <p id="led-result" class="state" role="status">—</p>
+    </div>
+  </section>
+
+  <!-- ── NFC (PWNAGE-45000) ───────────────────────────────────────────── -->
+  <section id="tab-nfc" class="panel">
+    <h2>NFC</h2>
+    <div class="card">
+      <h3>Controller &amp; reader</h3>
+      <p class="hint">Real kernel/driver/firmware/userspace state. Expected S10+ controller: Samsung sec-nfc / S3FWRN5 family at I2C 0x27. Only a physical tag read proves reader operation; payment/emulation is not claimed.</p>
+      <div class="row"><button id="nfc-refresh">Refresh diagnostics</button><button id="nfc-toggle" class="primary">Enable / disable</button></div>
+      <pre id="nfc-state" class="state" role="status">Checking NFC…</pre>
+      <p id="nfc-detail" class="hint">—</p>
+      <div class="row"><button id="nfc-test" disabled>Test tag read</button></div>
+      <p id="nfc-test-result" class="state">Tag test requires a supported reader.</p>
+    </div>
+  </section>
+
+  <!-- ── FINGERPRINT (PWNAGE-45000) ───────────────────────────────────── -->
+  <section id="tab-fingerprint" class="panel">
+    <h2>Fingerprint</h2>
+    <div class="card">
+      <h3>Secure biometric provider</h3>
+      <p class="hint">The S10+ sensor is ultrasonic under-display. Enrollment is enabled only after a verified secure/TEE provider exists. Templates never leave the provider; PIN fallback is mandatory.</p>
+      <div class="row"><button id="fp-refresh">Refresh</button></div>
+      <pre id="fp-state" class="state" role="status">Checking fingerprint provider…</pre>
+      <p id="fp-detail" class="hint">—</p>
+      <div class="row"><button id="fp-enroll" disabled>Enroll fingerprint</button><button id="fp-test" disabled>Test verification</button></div>
+      <p id="fp-result" class="state">—</p>
+    </div>
+  </section>
+
+  <!-- ── SECURITY LOCK (PWNAGE-45000) ─────────────────────────────────── -->
+  <section id="tab-security" class="panel">
+    <h2>Security</h2>
+    <div class="card">
+      <h3>Screen lock method</h3>
+      <p class="hint">The credential verifier is owned by the root bridge (scrypt, constant-time, persistent rate limit). A JavaScript overlay cannot unlock the session by itself.</p>
+      <pre id="sec-state" class="state" role="status">Checking lock policy…</pre>
+      <div class="row wrap" id="sec-modes"></div>
+      <div id="sec-credential-form">
+        <label>Current credential (required when changing) <input id="sec-current" type="password" autocomplete="off"></label>
+        <label>New PIN / pattern <input id="sec-secret" type="password" autocomplete="new-password" inputmode="numeric"></label>
+        <label>PIN fallback (fingerprint mode only) <input id="sec-fallback" type="password" autocomplete="new-password" inputmode="numeric"></label>
+        <label class="check"><input id="sec-downgrade" type="checkbox"> I understand selecting Swipe removes the current credential</label>
+        <div class="row"><button id="sec-apply" class="primary">Apply lock method</button></div>
+      </div>
+      <p id="sec-result" class="state" role="status">—</p>
+      <p class="hint">Fingerprint mode is refused unless the secure provider is ready and a PIN fallback has been verified.</p>
+    </div>
+  </section>
+
+  <!-- ── FIREWALL (briq-05b) ──────────────────────────────────────────── -->
+  <section id="tab-firewall" class="panel">
+    <h2>Firewall</h2>
+    <div class="card">
+      <h3>Firewall status</h3>
+      <p class="hint">Live readback from the authoritative firewall service. Inbound and forwarded traffic are denied by default; outgoing is allowed by default unless you switch to strict allowlist mode.</p>
+      <pre id="fw-settings-state" class="state" role="status">Checking firewall…</pre>
+      <div class="row wrap">
+        <button id="fw-settings-open" class="primary">Open Firewall app</button>
+        <button id="fw-settings-refresh" class="ghost">Refresh</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Direction defaults</h3>
+      <p class="hint">Global chain policies. Changing these does not apply anything until you Dry run / Apply.</p>
+      <div class="row wrap">
+        <label>Incoming
+          <select id="fw-input" data-direction="input">
+            <option value="deny">Deny by default</option>
+            <option value="allow">Allow</option>
+          </select>
+        </label>
+        <label>Forwarded
+          <select id="fw-forward" data-direction="forward">
+            <option value="deny">Deny by default</option>
+            <option value="allow">Allow</option>
+          </select>
+        </label>
+        <label>Outgoing
+          <select id="fw-output" data-direction="output">
+            <option value="allow">Allow by default</option>
+            <option value="deny">Block by default (allowlist)</option>
+          </select>
+        </label>
+      </div>
+      <div class="row wrap">
+        <button id="fw-save-defaults" class="primary">Save direction defaults</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Inbound services</h3>
+      <p class="hint">Inbound listeners are denied by default. Only the discovered SSH/XRDP/VNC owner rules are shown, sourced from sshd config and live sockets. Toggling a rule never weakens sshd authentication policy.</p>
+      <div id="fw-services" class="services-list"></div>
+    </div>
+
+    <div class="card">
+      <h3>Applications</h3>
+      <p class="hint">Per-app egress matrix. On this S10+ all app processes share one UID, so per-app outbound attribution is unsupported: rows are shown as unsupported rather than a fake green checkbox. When a backend supports per-app attribution, the same rows become real toggles.</p>
+      <div id="fw-apps" class="apps-list"></div>
+    </div>
+
+    <div class="card">
+      <h3>Apply</h3>
+      <div class="row wrap">
+        <button id="fw-dry-run" class="ghost">Dry run</button>
+        <button id="fw-apply" class="danger">Apply + rollback</button>
+        <button id="fw-confirm" class="primary" disabled>Confirm</button>
+        <button id="fw-rollback" class="ghost" disabled>Rollback</button>
+      </div>
+      <pre id="fw-action-result" class="state" role="status">—</pre>
+    </div>
+  </section>
+
+  <!-- ── SOFTWARE (PWNAGE-45000) ──────────────────────────────────────── -->
+  <section id="tab-software" class="panel">
+    <h2>Software</h2>
+    <div class="card">
+      <h3>Native Fedora RPM packages</h3>
+      <p class="hint">The native Software center is GNOME Software with the real PackageKit/DNF backend and polkit authorization. It is launched as the session user; NuxTore local bundles remain a separate offline source.</p>
+      <pre id="software-state" class="state" role="status">Checking package backend…</pre>
+      <div class="row"><button id="software-refresh">Refresh</button><button id="software-open" class="primary">Open Software</button></div>
+      <p id="software-detail" class="hint">—</p>
+    </div>
+    <div class="card">
+      <h3>Flatpak</h3>
+      <pre id="flatpak-state" class="state">Checking Flatpak prerequisites…</pre>
+      <p class="hint">Flatpak is never enabled with weakened sandboxing. Status is taken from the live kernel test (`unshare -Ur true` + Bubblewrap). A config flag alone is not treated as support.</p>
+    </div>
+  </section>
+
+
+  <!-- ── MOBILE NETWORK DRIVER STATUS (PWNAGE-50000) ──────────────────── -->
+  <section id="tab-mobile" class="panel">
+    <h2>Mobile network</h2>
+    <div class="card">
+      <h3>Shannon LTE transport &amp; driver</h3>
+      <p class="hint">Read-only driver truth from the same diagnostic the live console uses.
+        A CP node or netdev is a transport, never proof of registration or data.</p>
+      <div class="row"><button id="mobile-refresh" class="primary">Refresh driver status</button></div>
+      <pre id="mobile-state" class="state" role="status" aria-live="polite">Checking mobile transport…</pre>
+    </div>
+  </section>
+
+  <!-- ── CAMERA DRIVER STATUS (PWNAGE-50000) ──────────────────────────── -->
+  <section id="tab-camera" class="panel">
+    <h2>Camera</h2>
+    <div class="card">
+      <h3>FIMC-IS / V4L2 driver status</h3>
+      <p class="hint">Node, sensor, firmware, media-graph and first-failing-stage evidence.
+        A bound driver is not a captured frame.</p>
+      <div class="row"><button id="camera-refresh" class="primary">Refresh driver status</button></div>
+      <pre id="camera-state" class="state" role="status" aria-live="polite">Checking camera pipeline…</pre>
+    </div>
+  </section>
+
+  <!-- ── SENSORS DRIVER STATUS (PWNAGE-50000) ─────────────────────────── -->
+  <section id="tab-sensors" class="panel">
+    <h2>Sensors</h2>
+    <div class="card">
+      <h3>Sensor-hub classes</h3>
+      <p class="hint">Accelerometer, gyroscope, magnetometer, proximity, light, pressure and
+        the other classes the kernel actually enumerates. Raw reads are shown only when the
+        kernel exposes a readable channel.</p>
+      <div class="row wrap">
+        <button id="sensors-refresh" class="primary">Refresh all classes</button>
+        <button id="sensors-read-accel">Read accelerometer</button>
+        <button id="sensors-read-gyro">Read gyroscope</button>
+      </div>
+      <pre id="sensors-state" class="state" role="status" aria-live="polite">Checking sensor classes…</pre>
+    </div>
+  </section>
+
+  <!-- ── GRAPHICS / LAYERED GPU TRUTH (PWNAGE-50000) ──────────────────── -->
+  <section id="tab-graphics" class="panel">
+    <h2>Graphics</h2>
+    <div class="card">
+      <h3>Layered status</h3>
+      <p class="hint">Each layer is reported separately. A compositor GPU context is not
+        proof that WebKit or a GTK app is accelerated; <em>null</em> means not measured.</p>
+      <div class="row"><button id="graphics-refresh" class="primary">Refresh graphics status</button></div>
+      <pre id="graphics-state" class="state" role="status" aria-live="polite">Reading GPU, compositor, EGL, WebKit and display layers…</pre>
+    </div>
+    <div class="card">
+      <h3>Diagnostic probes</h3>
+      <p class="hint">Surfaceless EGL and Wayland EGL probes write results to
+        /run/nuxel-graphics-probes.json. They never write the framebuffer.</p>
+      <div class="row wrap">
+        <button id="graphics-probe-surfaceless">Run surfaceless EGL probe</button>
+        <button id="graphics-probe-wayland">Run Wayland EGL probe</button>
+      </div>
+      <pre id="graphics-probes" class="state" role="status" aria-live="polite">No probe run in this boot.</pre>
+    </div>
+  </section>
+
+  <!-- ── DEVELOPER ────────────────────────────────────────────────────── -->
+  <section id="tab-dev" class="panel">
+    <h2>Developer</h2>
+    <div class="card">
+      <h3>Live state</h3>
+      <div class="row"><button id="refresh-dev">Refresh</button></div>
+      <pre id="dev-state" class="state">—</pre>
+    </div>
+    <div class="card">
+      <h3>Boot diagnostics</h3>
+      <p class="hint">Three independent controls, one durable document
+        (<code>/etc/nuxel/boot/verbose-boot.json</code>). All three apply from the <b>next
+        boot</b>, are written by <code>nuxelctl verbose-boot …</code> and by this panel through
+        the same file, and are never overwritten by a package/rootfs update. Precedence for the
+        animation is <code>off &gt; short &gt; verbose boot &gt; standard</code>; the verbosity
+        level only picks how much the log says, never whether it is shown.</p>
+      <div class="boot-row">
+        <label>Boot animation
+          <select id="animation-mode">
+            <option value="standard">Standard (full 192-frame / 24 fps)</option>
+            <option value="short">Short (hand over early)</option>
+            <option value="off">Off (no animation)</option>
+          </select>
+        </label>
+      </div>
+      <div class="boot-row">
+        <label><input type="checkbox" id="verbose-boot-toggle"> Verbose boot (show the boot log on the glass)</label>
+      </div>
+      <div class="boot-row">
+        <label>Verbosity level
+          <select id="verbosity-level">
+            <option value="0">0 — quiet (markers only)</option>
+            <option value="1">1 — normal (default)</option>
+            <option value="2">2 — verbose (per-stage)</option>
+            <option value="3">3 — debug (everything)</option>
+          </select>
+        </label>
+      </div>
+      <div class="boot-row">
+        <button id="save-boot" class="primary">Save boot diagnostics</button>
+        <button id="reload-boot" class="ghost">Reload</button>
+      </div>
+      <pre id="verbose-boot-state" class="state">—</pre>
+      <p class="hint" id="boot-effective">—</p>
+      <p class="hint" id="verbose-boot-override">—</p>
+    </div>
+    <div class="card">
+      <h3>Input diagnostics</h3>
+      <p class="hint">Touch/key pipeline verdicts recorded by the launcher host and the
+        hardware-button manager.</p>
+      <pre id="dev-input" class="state">—</pre>
+    </div>
+  </section>
+  <section id="tab-apps" class="panel">
+    <h2>Apps</h2>
+    <p class="hint">Choose the orientation each installed app opens in, and jump straight
+      to its permission controls.</p>
+    <div id="apps-list" class="apps-list"></div>
+    <p class="hint" id="apps-state">Loading apps…</p>
+  </section>
+
+  <section id="tab-permissions" class="panel">
+    <h2>Permissions</h2>
+    <p class="hint">Control what each installed app can access. A permission is only granted
+      when the central policy service confirms it; anything offline or unsupported is denied.</p>
+    <label class="apps-select-label">App
+      <select id="permissions-app-select" aria-label="Select app"></select>
+    </label>
+    <div id="permissions-detail" class="permissions-detail"></div>
+    <p class="hint" id="permissions-state">Select an app to review its permissions.</p>
+  </section>
+
+  <!-- ── FILE HANDLERS ──────────────────────────────────────────────── -->
+  <section id="tab-file-handlers" class="panel">
+    <h2>File Handlers</h2>
+    <p class="hint">Choose which Nuxel source the system attachment picker prefers, set per-app
+      overrides, and review the real XDG FileChooser portal health. Changes are stored by the
+      Nuxel bridge, not by this page.</p>
+
+    <div class="card">
+      <h3>Attachment picker source</h3>
+      <label class="apps-select-label">Global preference
+        <select id="fh-global-policy" aria-label="Global attachment picker preference">
+          <option value="ask">Ask every time</option>
+          <option value="gallery">Prefer Gallery for images and videos</option>
+          <option value="files">Prefer Files for all file selections</option>
+        </select>
+      </label>
+      <p class="hint">Gallery is always available for media; Files is always one tap away. Per-app
+        overrides below win over this global preference.</p>
+      <div class="row">
+        <button id="fh-save" class="primary">Save File Handlers</button>
+        <button id="fh-reset" class="ghost">Reset to system defaults</button>
+        <button id="fh-refresh" class="ghost">Refresh</button>
+      </div>
+      <p id="fh-state" class="hint">Loading File Handlers…</p>
+    </div>
+
+    <div class="card">
+      <h3>Per-application picker source</h3>
+      <p class="hint">Overrides are keyed by the installed app ID discovered from the Nuxel registry
+        and installed desktop entries. Inherit follows the global preference.</p>
+      <div id="fh-apps" class="apps-list"></div>
+      <p id="fh-apps-state" class="hint">Loading apps…</p>
+    </div>
+
+    <div class="card">
+      <h3>Open-with defaults</h3>
+      <p class="hint">Defaults are written to your per-user mimeapps.list only when the selected
+        desktop entry actually declares that MIME type. Files is not made a universal opener.</p>
+      <div id="fh-mime-list" class="fh-mime-list"></div>
+      <p id="fh-mime-state" class="hint">Loading MIME handlers…</p>
+    </div>
+
+    <div class="card">
+      <h3>Portal health</h3>
+      <p class="hint">This is the live XDG portal state used by native and Flatpak applications.
+        org.nuxel.Portal is the separate hardware-permission broker and is not the FileChooser.</p>
+      <pre id="fh-portal" class="state">—</pre>
+      <div class="row">
+        <button id="fh-test" class="primary">Test File Picker</button>
+        <button id="fh-health" class="ghost">Refresh health</button>
+      </div>
+      <pre id="fh-test-result" class="state">The test opens the real FileChooser frontend and waits for the selected file to come back.</pre>
+    </div>
+  </section>
+
+  <!-- ── SERVICES ───────────────────────────────────────────────────── -->
+  <section id="tab-services" class="panel">
+    <h2>Services</h2>
+    <p class="hint">Read-only systemd inventory first. Unlock to control allowlisted Nuxel units. System-essential services are marked and protected; their restart/reload requires confirmation.</p>
+    <div class="card">
+      <div class="row">
+        <button id="services-unlock" class="primary">UNLOCK SERVICES</button>
+        <button id="services-refresh">Refresh</button>
+        <button id="services-daemon-reload">daemon-reload</button>
+        <button id="services-daemon-reexec">daemon-reexec</button>
+      </div>
+      <p id="services-state" class="hint"></p>
+      <p id="services-toast" class="hint hidden"></p>
+    </div>
+    <div id="services-actions" hidden>
+      <div id="services-list" class="services-list"></div>
+    </div>
+  </section>
+</main>
+
+<script src="../../nuxel-common/theme.js?v=p85000"></script>
+<script src="../../nuxel-common/haptics.js"></script>
+<script src="../../nuxel-common/maps-core.js"></script>
+<script src="../../nuxel-common/geolocation.js"></script>
+<script src="../../nuxel-common/statusbar-icons.js?v=p52000"></script>
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="settings.js?v=p52000"></script>
+<script src="keyboard-settings.js?v=a76"></script>
+<script src="apps-permissions-settings.js?v=p86001"></script>
+<script src="file-handlers-settings.js?v=p97000"></script>
+<script src="theme-settings.js?v=p50002"></script>
+<script src="sound-settings.js?v=p102000"></script>
+<script src="mic-settings.js?v=p84000"></script>
+<script src="appearance-settings.js?v=p85000"></script>
+<script src="wifi-settings.js?v=p50002"></script>
+<script src="location-maps.js"></script>
+<script src="hardware-settings.js?v=p52000"></script>
+<script src="physical-input-settings.js?v=p103000"></script>
+<script src="pwange45000-settings.js?v=p50002"></script>
+<script src="driver-diagnostics.js?v=p50002"></script>
+<script src="graphics-diagnostics.js?v=p52000"></script>
+<script src="services-settings.js?v=p88000"></script>
+<script src="firewall-settings.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="nuxel-app-id" content="nuxel-edge-fx">
+<title>Edge FX</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
+<link rel="stylesheet" href="../../nuxel-common/theme.css?v=p85000">
+<link rel="stylesheet" href="edge-fx.css?v=p103000c">
+<script src="../../nuxel-common/zoom-policy.js?v=p80000"></script>
+</head>
+<body>
+<header class="hdr">
+  <h1>Edge FX</h1>
+  <button id="close" class="ghost" title="Back to Home">Close</button>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <div class="row between">
+      <div>
+        <h2>Edge lighting</h2>
+        <p class="hint">An AMOLED display effect for incoming notifications. This phone has no
+          notification LED, so nothing here uses the camera flash or an LED.</p>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="enabled" aria-label="Edge lighting enabled">
+        <span>Enabled</span>
+      </label>
+    </div>
+    <p id="state" class="state" role="status" aria-live="polite">Loading…</p>
+    <p id="capability" class="hint">—</p>
+  </section>
+
+  <section class="card">
+    <h2>Effect</h2>
+    <div id="effects" class="effects" role="radiogroup" aria-label="Edge lighting effect"></div>
+    <p class="hint">Tap a tile to preview it on the Home display and select it as the persisted effect.</p>
+    <div class="row">
+      <button id="preview">Preview selected</button>
+      <button id="reset">Reset to default (Wave)</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Appearance</h2>
+    <label>Colour
+      <select id="color-mode">
+        <option value="theme">Nuxel theme accent</option>
+        <option value="preset">Preset colour</option>
+        <option value="custom">Custom colour</option>
+      </select>
+    </label>
+    <div id="swatches" class="swatches" hidden></div>
+    <label id="custom-row" class="custom-row" hidden>Custom colour
+      <input type="color" id="custom-color" value="#63f0bd">
+    </label>
+    <label>Width / intensity
+      <select id="width">
+        <option value="thin">Thin</option>
+        <option value="medium">Medium</option>
+        <option value="wide">Wide</option>
+      </select>
+    </label>
+    <label>Transparency
+      <select id="transparency">
+        <option value="low">Low (more visible)</option>
+        <option value="medium">Medium</option>
+        <option value="high">High (subtle)</option>
+      </select>
+    </label>
+    <label>Duration <output id="duration-out">1.8 s</output>
+      <input type="range" id="duration" min="600" max="6000" step="100" value="1800">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>Behaviour</h2>
+    <label class="check"><input type="checkbox" id="dnd"> Respect Do Not Disturb</label>
+    <label class="check"><input type="checkbox" id="rm"> Respect reduced motion</label>
+    <label>Screen state
+      <select id="screen-mode">
+        <option value="screen_on">While screen is on</option>
+        <option value="screen_off" disabled>While screen is off (unavailable)</option>
+        <option value="always" disabled>Always (unavailable)</option>
+      </select>
+    </label>
+    <p id="screen-note" class="hint">—</p>
+  </section>
+
+  <section class="card">
+    <h2>Lifecycle edge effects</h2>
+    <p class="hint">Independent from notification lighting. Each one is off unless
+      you turn it on, and each animates only while the WebView can paint.</p>
+    <label class="check"><input type="checkbox" id="lc-screen-on"> Play when the screen turns on</label>
+    <label class="check"><input type="checkbox" id="lc-screen-off"> Play when the screen turns off</label>
+    <label class="check"><input type="checkbox" id="lc-lock"> Play when the lockscreen locks</label>
+    <label class="check"><input type="checkbox" id="lc-unlock"> Play when the lockscreen unlocks</label>
+  </section>
+
+  <section class="card">
+    <h2>Sources</h2>
+    <p class="hint">An empty allowlist means every app's notifications light the edge.
+      Only canonical registry app ids are accepted. <span id="sources-summary"></span></p>
+    <p id="sources-empty" class="sources-empty" hidden>All apps are allowed. Select individual apps below to switch to an allowlist.</p>
+    <div id="sources" class="sources"></div>
+    <div class="row"><button id="sources-clear">Allow all apps</button></div>
+  </section>
+
+  <section class="card">
+    <h2>Edge panel</h2>
+    <p class="hint">Swipe inward from either curved side, or use this button / the Quick Settings “Edge” tile.</p>
+    <div class="row">
+      <button id="panel-left">Open left</button>
+      <button id="panel-right">Open right</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Installation</h2>
+    <p id="install-state" class="state">Checking the canonical app registry…</p>
+    <div class="row">
+      <button id="uninstall" class="danger">Uninstall Edge FX</button>
+      <button id="reinstall" class="primary">Install / reinstall Edge FX</button>
+    </div>
+    <p class="hint">Uninstall removes only this app from the registry (files stay on disk so it can be
+      installed again from here). The Edge lighting engine, the Edge panel and your settings are not
+      removed.</p>
+  </section>
+</main>
+
+<script type="module" src="../../nuxel-common/bridge.js?v=a63"></script>
+<script src="../../nuxel-common/theme.js?v=p85000"></script>
+<script src="edge-fx.js?v=p103000c"></script>
+</body>
+</html>

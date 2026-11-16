@@ -1,0 +1,9 @@
+5f8a5e54a09c9b89da109b75702edc970e9bce0a614968efd3d54477983d306d  /usr/share/nuxel/pwa/nuxel-home/js/edge-lighting.js
+f79036a850c37c9300014945e7bd139a957245140c6efdbd1b47b58e9c854775  /usr/share/nuxel/pwa/nuxel-home/css/edge-lighting.css
+c5b658b8135b7f134cacbe70d69f61f1213e31d3adf725bb224b0bf83fa569a5  /usr/share/nuxel/pwa/nuxel-home/sw.js
+af8e9d2564b95407fdc3d566665efa8b39885bc0e245fae3c97f532779d107e9  /usr/share/nuxel/pwa/nuxel-home/manifest.json
+5fd29d3f234c2ee15195622e60c20aff799f14da40d690039e4bab19ccccc1b6  /usr/share/nuxel/pwa/nuxel-apps/edge-fx/edge-fx.js
+c0dcdfadbe479d36afd1520bc2fe28a6a9ff2cf6ab4aea64f504928189aee67d  /usr/share/nuxel/pwa/nuxel-apps/edge-fx/index.html
+cc126c33a80d4904f54ed205c3494d4d12ab22473f8e62c50c1dfd217b5db3de  /usr/share/nuxel/pwa/nuxel-apps/edge-fx/edge-fx.css
+43bf63fbfe7fea55983228a8f880f7e9325c0bc7b58f5593f1cb63990b12841c  /usr/lib/nuxel/nuxel-bridge/edge_lighting_provider.py
+9834da1c367de1c3a80cbce27ecba5cc6aa7e3d8cbfa9342a74562e0ae985907  /etc/nuxel/edge-lighting/edge-lighting.json

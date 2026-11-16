@@ -1,0 +1,8 @@
+#!/bin/bash
+# Minimal flock(1) for macOS: flock [-n] FILE COMMAND...
+n=0; [ "$1" = "-n" ] && { n=1; shift; }
+f=$1; shift
+exec 8>>"$f" || exit 1
+if [ $n = 1 ]; then python3 -c 'import fcntl,sys; fcntl.flock(8, fcntl.LOCK_EX|fcntl.LOCK_NB)' 8>&8 2>/dev/null || exit 1
+else python3 -c 'import fcntl,sys; fcntl.flock(8, fcntl.LOCK_EX)' 8>&8 || exit 1; fi
+"$@"

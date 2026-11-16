@@ -1,0 +1,25 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"success": true, "schema_version": 1, "config": {"schema_version": 1, "enabled": true, "effect": "wave", "color_mode": "theme", "color": null, "width": "medium", "transparency": "medium", "duration_ms": 1800, "screen_mode": "screen_on", "respect_dnd": true, "respect_reduced_motion": true, "reduced_motion_style": "static", "allowed_apps": [], "blocked_apps": [], "config_source": "file"}, "settings_path": "/var/lib/nuxel/edge-lighting/settings.json", "policy_path": "/etc/nuxel/edge-lighting/edge-lighting.json", "defaults": {"schema_version": 1, "enabled": true, "effect": "wave", "color_mode": "theme", "color": null, "width": "medium", "transparency": "medium", "duration_ms": 1800, "screen_mode": "screen_on", "respect_dnd": true, "respect_reduced_motion": true, "reduced_motion_style": "static", "allowed_apps": [], "blocked_apps": []}, "persistence": {"writable": true, "kind": "user document under /var/lib (survives reboot)"}, "capability": {"effect_family": ["basic", "wave", "bubble", "multicolor", "heart", "fireworks", "eclipse", "echo"], "effects_supported": ["basic", "wave", "bubble", "multicolor", "heart", "fireworks", "eclipse", "echo"], "effects_unavailable": [], "default_effect": "wave", "screen_modes": [{"id": "screen_on", "available": true, "label": "While screen is on"}, {"id": "screen_off", "available": false, "label": "While screen is off", "reason": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK: the PWA overlay only renders while the WebView and panel are on; there is no edge-only low-power render path"}, {"id": "always", "available": false, "label": "Always", "reason": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK: the PWA overlay only renders while the WebView and panel are on; there is no edge-only low-power render path", "depends_on": "screen_off"}], "renderer": {"owner": "nuxel-home", "kind": "dom_overlay", "framebuffer_writes": false, "second_compositor": false, "hardware_led": false, "camera_flash": false}, "notification_led": {"present": false, "label": "No notification/RGB LED on this device"}, "color_model": {"modes": ["theme", "preset", "custom", "app"], "default_accent": "#63f0bd", "custom": "hex"}, "reduced_motion_default": "static", "screen_on_label": "AMOLED display effect (not a physical LED)"}, "dnd": {"active": false, "reason": "off", "source": "/var/lib/nuxel/notifications/dnd.json"}, "pending": 0, "last_seq": 3, "stats": {"accepted": 3, "folded": 0, "deduped": 0, "suppressed": 1}, "last_event": {"seq": 3, "record_id": 89, "app_id": "org.nuxel.Mail", "at": 1794478827}, "last_error": "journal rotation failed", "source": "edge_lighting_provider"}
+{"success": true, "supported": true, "state": "OFF", "on": false, "led_path": "/sys/class/camera/flash/rear_flash", "led_name": "rear_flash", "control": "camera-rear_flash", "max_on_seconds": 600.0, "remaining_seconds": 0.0, "session": null, "on_count": 0, "last_error": null, "camera_active": false, "thermal_blocked": false, "reason": "provider init: explicit OFF", "source": "flashlight_provider"}
+active
+active
+active
+active
+active
+active
+Nov 12 11:23:22 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:22,936 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting/events?since=3 HTTP/1.1" 200 -
+Nov 12 11:23:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:24,347 [INFO] nuxel-http-bridge: 127.0.0.1 - "OPTIONS /api/v1/edge-lighting/events?since=3 HTTP/1.1" 204 -
+Nov 12 11:23:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:24,354 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting/events?since=3 HTTP/1.1" 200 -
+Nov 12 11:23:26 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:26,300 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting/events?since=3 HTTP/1.1" 200 -
+Nov 12 11:23:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:28,498 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting/events?since=3 HTTP/1.1" 200 -
+Nov 12 11:23:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:30,340 [INFO] nuxel-http-bridge: 127.0.0.1 - "OPTIONS /api/v1/edge-lighting/events?since=3 HTTP/1.1" 204 -
+Nov 12 11:23:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:30,349 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting/events?since=3 HTTP/1.1" 200 -
+Nov 12 11:23:45 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-http-bridge[1153659]: 2026-11-12 11:23:45,338 [INFO] nuxel-http-bridge: 127.0.0.1 - "GET /api/v1/edge-lighting HTTP/1.1" 200 -

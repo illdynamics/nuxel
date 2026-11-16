@@ -1,0 +1,26 @@
+{
+  "device_model": "Samsung Galaxy S10+ SM-G975F",
+  "codename": "beyond2lte",
+  "soc": "Exynos 9820",
+  "chip": "BCM4773 (AsicVersion=0x004775B0)",
+  "source": "kernel-embedded (CONFIG_BCM_GPS_SPI_DRIVER=y), served read-only via /dev/bbd_patch",
+  "kernel": "4.14.253 #2 SMP PREEMPT aarch64 GNU/Linux (2026-11-09)",
+  "firmware_name": "bcm_sensorhub_a1",
+  "file_sha256": "0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72",
+  "blob_sha256": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d",
+  "blob_length": 438895,
+  "total_bytes_read": 897113,
+  "metadata": {
+    "FormatVersion": "0x00010003",
+    "AsicVersion": "0x004775B0",
+    "Name": "bcm_sensorhub_a1",
+    "Type": "Application",
+    "PatchAddress": "0x00800161",
+    "Crc": "193",
+    "PatchLevel": "0",
+    "PostPatchLevel": "1"
+  },
+  "verification_method": "read-only /dev/bbd_patch from the live target; SHA-256 double-checked; filename/AsicVersion/provenance confirmed",
+  "loaded_into_chip": false,
+  "status": "VERIFIED_PROVENANCE_PRESENT_IN_KERNEL (not yet loaded by userspace lhd replacement)"
+}

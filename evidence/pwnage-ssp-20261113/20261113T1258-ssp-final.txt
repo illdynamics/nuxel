@@ -1,0 +1,36 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== bridge ==
+nuxel-ssp-bridge: K->M cmd=0x0f len=1 opt=0x0000 data=0x00000000 payload=
+== dmesg ==
+[  152.487477] [SSPBBD] bbd_do_transfer(): completion is timeout!
+[  152.487497] [SSPBBD] bbd_do_transfer(): state of mcu power(1)
+[  152.487529] [SSPBBD]: bcm4773_debug_info pin_ttyBCM:0, pin_MCU_REQ:0, pin_MCU_RESP:1
+[  152.487533] [SSPBBD]: bcm4773_debug_info irq_enabled:1, irq_count:0
+[  152.487544] [SSPBBD] bbd_do_transfer(): queue work to sensorhub reset(0, 152480135353)
+[  152.492559] [SSP] get_chipid - get chip ID retry
+[  152.492582] [SSPBBD] Nuxel peer tx hdr=0f len=1 opt=0000 payload=0 -> 11
+[  153.511725] [SSPBBD] bbd_do_transfer(): completion is timeout!
+[  153.511753] [SSPBBD] bbd_do_transfer(): state of mcu power(1)
+[  153.511814] [SSPBBD]: bcm4773_debug_info pin_ttyBCM:0, pin_MCU_REQ:0, pin_MCU_RESP:1
+[  153.511826] [SSPBBD]: bcm4773_debug_info irq_enabled:1, irq_count:0
+[  153.511848] [SSPBBD] bbd_do_transfer(): queue work to sensorhub reset(0, 153504437159)
+[  153.511872] [SSP] get_chipid - get chip ID failed -2
+[  153.511887] [SSP] MCU device ID = 85, reading ID = -1
+[  153.511913] [SSPBBD] Nuxel bring-up: initialize_mcu after power-cycle -> -1
+[  153.511947] [SSPBBD] Nuxel bring-up via sysfs failed: -5
+[  153.519977] [SSPBBD]: DBG SPI @ TX: <255B = 1, <1K = 0, <2K = 0, <4K = 0, <8K = 0, <16K = 0, <32K = 0, <64K = 0
+[  153.519988] [SSPBBD]: DBG SPI @ RX: <255B = 1, <1K = 0, <2K = 0, <4K = 0, <8K = 0, <16K = 0, <32K = 0, <64K = 0
+[  153.520001] [SSPBBD]: DBG SPI @ FC: fail = 0, retries = 1, retry: errors = 1 delays = 0, pm = 0
+[  153.520068] [SSPBBD] Nuxel BBD peer detached
+== state ==
+mcu_probe=1 shutdown=1 resetting=0 sensor_state=0x3feff enable=0x0 shub_irq=443
+0,0,0
+0,0,0

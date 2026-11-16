@@ -1,0 +1,5 @@
+6618d946afad939ff0889cbbe107456ca82eec31197a9d129e27636180518dc2  kernel/s10plus/patches/0011-nuxel-usb-ncm-lifecycle.patch
+36569bda9a8eadffe24b98642a6e4fd8f584e8dc7ac150f50fb780358ff05934  build/out/s10plus/debug-candidates/p112000-usbnet/boot-usbnet-ncm-lifecycle.img
+f3ac41229f7c7b9932372e8035737298d845e48aeaf664d3c0559c14063f2ecd  scripts/s10plus-debug-pack/nuxel-usb-net-host.sh
+794af03295af6767e5c2fe4d584b8499985aa92fa2cbd9d6253008d635f580fb  services/nuxel-bridge/src/usb_tether.py
+bc5da73067fb78b8059dd465d99d2b0c395c59fa7d850f82cc137c41d9fe4d77  services/nuxel-s10/bin/nuxel-usb-net-helper.sh

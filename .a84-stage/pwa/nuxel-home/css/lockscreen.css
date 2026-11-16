@@ -1,0 +1,994 @@
+/* Nuxel A45 Penguin Lockscreen — full-screen swipe-to-unlock surface.
+   The wallpaper is the owner-supplied nuxel-lockscreen.jpg; the draggable
+   unlock handle is the owner-supplied nuxel-lockhead.png.  This overlay is the
+   topmost element of the launcher document, above the nav dock and keyboard. */
+#lockscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #04121f;
+    /* A83 lock-screen input fix: touch-action:none on the whole glass cancels
+       the synthetic click for EVERY touch press, so the PIN keypad / pattern /
+       fingerprint buttons armed their pointer handlers but never fired their
+       `click` handler ("press Unlock, nothing happens").  The locked swipe
+       surface still gets `none`; a credentialed mode resets it below. */
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#lockscreen[hidden] { display: none; }
+
+.lockscreen-wallpaper {
+    position: absolute;
+    inset: 0;
+    background-image: url('/assets/nuxel-lockscreen.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Clock / date / battery sit at the top, clear of the illustrated penguin. */
+.lockscreen-meta {
+    position: relative;
+    z-index: 1;
+    margin-top: calc(44px + env(safe-area-inset-top, 0px));
+    text-align: center;
+    color: #eaf4ff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+.lockscreen-time { font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -1px; }
+.lockscreen-date { font-size: 18px; margin-top: 8px; opacity: .92; }
+.lockscreen-battery { font-size: 14px; margin-top: 6px; opacity: .85; }
+
+/* The draggable handle.  Resting position is computed by js/lockscreen.js so
+   the lockhead lands BELOW the wallpaper penguin with real spacing; the CSS
+   default is a horizontal centre near the bottom. */
+.lockscreen-handle-wrap {
+    position: absolute;
+    overflow: visible;
+    left: 0;
+    right: 0;
+    bottom: 16%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+}
+/* Pointer-captured / drag-transformed container.  The artwork lives in the
+   nested child below so the decorative idle motion is a separate transform. */
+.lockscreen-handle {
+    position: relative;
+    width: 118px;
+    height: 118px;
+    display: block;
+    /* PERF (S10+ / llvmpipe): a non-interactive filter on this alpha PNG kept
+       WebKit's software rasteriser busy every frame.  The idle shadow is gone;
+       the same drop-shadow is applied only while the owner is actually dragging
+       (.grabbed/.armed/.unlocking below), where interaction already costs
+       frames.  Measured: WebKitWebProcess ~440% -> ~78% CPU with the handle and
+       indicator filters removed. */
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-user-drag: none;
+    cursor: grab;
+}
+.lockscreen-lockhead-motion {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    transform-origin: 50% 72%;
+}
+/* One short wiggle every ~12 s (driven by a low-frequency JS scheduler).
+   It runs once (iteration count 1), never on a continuous loop. */
+.lockscreen-handle.wiggling .lockscreen-lockhead-motion {
+    animation: nuxel-lockhead-wiggle 1.35s cubic-bezier(.36,.07,.19,.97) 1;
+}
+/* Gentle, low-energy invitation: a short wiggle followed by a long rest. */
+@keyframes nuxel-lockhead-wiggle {
+    0%, 58%, 100% { transform: rotate(0deg) translateX(0); }
+    62% { transform: rotate(-1.4deg) translateX(-1px); }
+    66% { transform: rotate(1.3deg) translateX(1px); }
+    70% { transform: rotate(-0.8deg) translateX(0); }
+    74% { transform: rotate(0.4deg) translateX(0); }
+}
+.lockscreen-handle.grabbed { will-change: transform; filter: brightness(1.12); cursor: grabbing; }
+/* Stop the invitation the instant a real drag starts; the drag gesture owns
+   the container transform and this child stays still until the gesture ends. */
+.lockscreen-handle.grabbed .lockscreen-lockhead-motion,
+.lockscreen-handle.armed .lockscreen-lockhead-motion,
+.lockscreen-handle.unlocking .lockscreen-lockhead-motion,
+body.display-off .lockscreen-lockhead-motion,
+body.display-off .lockscreen-hint::before { animation-play-state: paused; }
+/* Subtle armed acknowledgement once the upward distance reaches the threshold.
+   Geometry, position and artwork are untouched. */
+.lockscreen-handle.armed { will-change: transform; filter: brightness(1.18); }
+.lockscreen-handle.unlocking { will-change: transform, opacity; opacity: 0; transform: translateY(-160px) scale(1.15); transition: transform .28s ease-out, opacity .28s ease-out; }
+.lockscreen-handle.wiggling .lockscreen-lockhead-motion { will-change: transform; }
+@media (prefers-reduced-motion: reduce) {
+    .lockscreen-lockhead-motion { animation: none !important; }
+    .lockscreen-hint::before { animation: none !important; }
+}
+
+.lockscreen-hint {
+    margin-top: 14px;
+    color: rgba(234, 244, 255, 0.82);
+    font-size: 13px;
+    letter-spacing: .12em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+.lockscreen-hint::before {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 14px;
+    margin: 0 auto 6px;
+    background: rgba(234, 244, 255, 0.7);
+    /* A47: static cue.  The previous infinite 1.8 s loop forced WebKit/phoc to
+       composite continuously even when the owner was not touching the phone. */
+    opacity: .62;
+}
+@keyframes nuxel-swipe-hint {
+    0%, 100% { opacity: .25; transform: translateY(3px); }
+    50% { opacity: .9; transform: translateY(-3px); }
+}
+
+/* Progress ring is intentionally omitted: the subtle glow on .grabbed plus the
+   handle following the finger is the whole affordance. */
+
+/* ==========================================================================
+   Lockhead status indicators (charging / PC / live console)
+
+   The row is a lockscreen-level sibling of the clock/date/battery meta block.
+   It is pinned to the measured handset metadata edge (battery bottom = 170 px)
+   rather than relying on flex static-position resolution: WebKitGTK 2.52 put
+   that relative flex child at y=754 on the real 360x760 surface.  The explicit
+   184 px top keeps the requested 14 px gap and remains well above centre.
+
+   The deployed A68.2 baseline used a 34 px box.  Alpha-aware artwork bounds
+   were measured at a 10% visibility threshold; a 68 px box therefore doubles
+   the PAINTED artwork rather than merely enlarging a transparent parent.  No crop-only
+   clip-path is used.  Inactive icons are display:none: no 26% ghost remains,
+   and flex centring keeps every 1/2/3-active combination balanced.
+   ========================================================================== */
+.lockscreen-indicators {
+    position: absolute;
+    top: 184px;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    margin-top: 0;
+    min-height: 68px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 8px;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+    contain: layout style paint;
+}
+
+.lockscreen-indicator {
+    --glow: rgba(124, 224, 138, 0.8);
+    position: relative;
+    display: none;
+    flex: 0 0 auto;
+    width: 68px;
+    height: 68px;
+    opacity: 0;
+    visibility: hidden;
+    /* PERF: the saturate/brightness filter forced a software raster pass on
+       every indicator frame.  The source PNGs already carry their colour; the
+       radial glow and the existing pulse animations are unchanged. */
+    transition: opacity .22s ease;
+}
+
+.lockscreen-indicator img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+.lockscreen-indicator .lockscreen-indicator-glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 130%;
+    height: 130%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, var(--glow) 0%, rgba(0,0,0,0) 68%);
+    opacity: 0;
+    z-index: 0;
+    pointer-events: none;
+    /* PWNAGE-37000B: a static accent.  The old opacity transition (and the
+       permanent will-change) kept a composited layer alive on a 68px image
+       that was itself a 1254px source. */
+}
+
+.lockscreen-indicator.charging-ind { --glow: rgba(124, 224, 138, 0.82); }
+.lockscreen-indicator.usb-ind      { --glow: rgba(127, 212, 255, 0.86); }
+.lockscreen-indicator.live-ind     { --glow: rgba(255, 154, 90, 0.86); }
+
+/* Equal visible size (a72): the three source PNGs have different intrinsic
+   aspect ratios (charging ~1:1, PC ~1.49:1, live-console ~1.08:1).  Inside a
+   uniform square box with object-fit:contain, the painted artwork therefore
+   rendered at different heights (charging ~59px, PC ~44px, live ~53px), which
+   made the charging penguin look larger than the other two.  Widen the two
+   non-square cells so their contained artwork is the same ~59px painted height
+   as the charging penguin.  The PNG pixel art, row position (top:184px) and
+   per-icon glow/animations are unchanged.  Box sizes are derived from the
+   measured alpha bounds (10% threshold): usb 91x76, live 82x82. */
+.lockscreen-indicator.usb-ind { width: 91px; height: 76px; }
+.lockscreen-indicator.live-ind { width: 82px; height: 82px; }
+
+.lockscreen-indicator.active {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+/* PWNAGE-37000B BUTTERSCOTCH: indicator state is now DISCRETE.
+   The old charging/PC/live pulses were infinite opacity+transform animations
+   on top of 1.0-1.4 MP decoded PNGs.  On the S10+ that kept WebKit's software
+   rasteriser and phoc awake every frame even while the lockscreen was idle
+   (measured: WebKit 143% CPU, 5 fps of redundant composite frames).  A
+   static glow plus the state colour/icon swap keeps the arcade status-light
+   language without any continuously scheduled work. */
+.lockscreen-indicator.active .lockscreen-indicator-glow {
+    opacity: .55;
+}
+.lockscreen-indicator.charging-ind.active.charging img {
+    opacity: 1;
+}
+
+/* No indicator owns a running animation, so display-off needs no pause rule.
+   Keep a hard guard for any future bounded accent. */
+body.display-off .lockscreen-indicator,
+body.display-off .lockscreen-indicator img,
+body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
+    animation: none !important;
+}
+
+/* Charger/LPM boot warning.  On a charger-mode boot the vendor kernel does
+   not bind sec_ts at all, so no touch device exists and no gesture can unlock.
+   The state is read from /run/nuxel-touch-arm.state; this is an explanation,
+   not a fake control (there is deliberately no button that cannot be tapped). */
+.lockscreen-touch-warning {
+    position: absolute;
+    top: 348px;
+    left: 16px;
+    right: 16px;
+    z-index: 3;
+    display: none;
+    padding: 10px 12px;
+    color: #fff3d6;
+    background: rgba(58, 34, 8, 0.92);
+    border: 1px solid rgba(255, 190, 92, 0.75);
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.35;
+    text-align: center;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+.lockscreen-touch-warning.visible { display: block; }
+.lockscreen-touch-warning strong { display: block; font-size: 13px; letter-spacing: .02em; }
+.lockscreen-touch-warning span { display: block; margin-top: 3px; opacity: .92; }
+
+/* The handset is portrait-locked.  If a diagnostic/desktop surface forces a
+   short landscape viewport, keep the status art out of the clock and lockhead
+   rather than squeezing or overlapping it. */
+@media (orientation: landscape) and (max-height: 500px) {
+    .lockscreen-indicators {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        margin-top: 0;
+        min-height: 0;
+        flex-direction: column;
+        gap: 4px;
+        padding: 0;
+    }
+    .lockscreen-indicator { width: 44px; height: 44px; }
+    .lockscreen-indicator.usb-ind { width: 59px; height: 49px; }   /* same painted height as 44px charging */
+    .lockscreen-indicator.live-ind { width: 53px; height: 53px; } /* same painted height as 44px charging */
+    .lockscreen-transports {
+        top: 176px;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .lockscreen-transport { width: 44px; height: 44px; }
+    .lockscreen-transport.file-transfer-ind { width: 60px; height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lockscreen-indicator,
+    .lockscreen-indicator img,
+    .lockscreen-indicator.active .lockscreen-indicator-glow {
+        animation: none !important;
+        transition: none !important;
+    }
+    .lockscreen-indicator.active .lockscreen-indicator-glow { opacity: .6; }
+}
+
+/* ==========================================================================
+   PWNAGE-34000 console-transport + file-transfer indicators
+   --------------------------------------------------------------------------
+   The main row keeps the charging / PC / live-console artwork.  This second
+   compact row reports the independent console transports (serial / USB / WLAN)
+   and file-transfer state.  It is a deliberate responsive row, not an overflow
+   of the primary row, so every active transport stays visible simultaneously.
+   ========================================================================== */
+.lockscreen-transports {
+    position: absolute;
+    /* PWNAGE-49000: sit the console-transport penguins in the gap between the
+       charging/PC/live row (184..252) and the wallpaper's Nuxel wordmark.
+       The previous 286px row crowded the wordmark; 258px keeps a 6 px gap
+       under the primary row without moving the artwork over it. */
+    top: 258px;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    min-height: 56px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 10px;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.lockscreen-transport {
+    display: none;
+    flex: 0 0 auto;
+    /* PWNAGE-45000: modestly larger source artwork, still below the primary
+       row.  The transparent parent is not the visible size; the source PNGs
+       are alpha-cropped so the painted penguin grows with the cell. */
+    width: 56px;
+    height: 56px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease;
+}
+.lockscreen-transport img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+.lockscreen-transport.active {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+.lockscreen-transport.file-transfer-ind { width: 76px; height: 56px; }
+.lockscreen-transport.bluetooth-transport img {
+    opacity: 0.95;
+}
+
+/* ==========================================================================
+   PWNAGE-34000 lockscreen connection-mode button + selector overlay
+   --------------------------------------------------------------------------
+   The button is placed on the right in comfortable thumb reach.  The overlay is
+   a limited system action: it never unlocks the desktop or exposes files.
+   ========================================================================== */
+.lockscreen-connection-mode {
+    position: absolute;
+    right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    z-index: 4;
+    width: 64px;
+    height: 64px;
+    padding: 6px;
+    border: 1px solid rgba(127, 212, 255, 0.55);
+    border-radius: 16px;
+    background: rgba(4, 18, 31, 0.72);
+    color: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lockscreen-connection-mode img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+.lockscreen-connection-mode:active { transform: scale(.94); background: rgba(20, 48, 72, 0.85); }
+
+.connection-mode-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.42);
+}
+.connection-mode-overlay[hidden] { display: none; }
+.connection-mode-sheet {
+    width: 100%;
+    max-width: 340px;
+    background: #0b192d;
+    border: 1px solid rgba(127, 212, 255, 0.4);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+    color: #eaf4ff;
+}
+.connection-mode-sheet h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+.connection-mode-hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: rgba(234, 244, 255, 0.78);
+}
+.connection-mode-option {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    padding: 12px 14px;
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.connection-mode-option.selected {
+    border-color: rgba(127, 212, 255, 0.85);
+    background: rgba(56, 116, 168, 0.32);
+}
+.connection-mode-option:disabled { opacity: .55; }
+.cm-name { display: block; font-size: 16px; font-weight: 600; }
+.cm-desc { display: block; margin-top: 3px; font-size: 12px; color: rgba(234, 244, 255, 0.75); }
+.connection-mode-status {
+    margin: 10px 0 4px;
+    font-size: 12px;
+    color: #b4d8ff;
+}
+.connection-mode-dismiss {
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px;
+    border: 0;
+    border-radius: 12px;
+    background: #203c60;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+    .lockscreen-transports { top: auto; bottom: 10px; right: 12px; left: auto; min-height: 0; flex-direction: column; gap: 3px; padding: 0; }
+    .lockscreen-transport { width: 36px; height: 36px; }
+    .lockscreen-transport.file-transfer-ind { width: 50px; height: 36px; }
+    .lockscreen-connection-mode { width: 52px; height: 52px; right: 10px; bottom: 10px; }
+}
+
+/* PWNAGE-44000: the display bridge can keep the WebProcess alive while the
+   panel is blanked. Stop every continuous indicator animation in that state. */
+body.display-off .lockscreen-indicator,
+body.display-off .lockscreen-lockhead-motion,
+body.display-off .lockscreen-hint::before { animation: none !important; }
+
+/* PWNAGE-52000 lock privacy: the DOM top bar, system-navigation dock and all
+   Home chrome are hidden before the lockscreen is revealed.  The native
+   Back/Home/Recents layer-shell dock is hidden separately via
+   /run/nuxel-navdock.cmd and starts hidden until authoritative unlock. */
+body.lockscreen-active #status-bar,
+body.lockscreen-active #system-navigation,
+body.lockscreen-active #dock,
+body.lockscreen-active #app-grid,
+body.lockscreen-active #quick-settings,
+body.lockscreen-active #recents-view,
+body.lockscreen-active #search-overlay,
+body.lockscreen-active #phone-status,
+html.nuxel-boot-locked #status-bar,
+html.nuxel-boot-locked #system-navigation,
+html.nuxel-boot-locked #dock,
+html.nuxel-boot-locked #app-grid {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* PWNAGE-84000 durable Clock scheduler penguins.
+   The alarm lane owns horizontal gestures; the timer lane owns a single tap.
+   They are separate positioned hit areas and never cover the unlock handle. */
+.lockscreen-clock-lanes {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+.lockscreen-clock-lane {
+  position: absolute;
+  left: 50%;
+  width: clamp(76px, 18vw, 112px);
+  min-height: clamp(86px, 21vw, 128px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  pointer-events: auto;
+  touch-action: none;
+}
+.lockscreen-clock-lane.timer-lane {
+  top: var(--lockscreen-timer-center-y, 46%);
+  transform: translate(-50%, -50%);
+}
+.lockscreen-clock-lane.alarm-lane {
+  top: var(--lockscreen-alarm-center-y, 68%);
+  transform: translate(-50%, -50%);
+}
+.lockscreen-clock-penguin {
+  display: grid;
+  place-items: center;
+  width: clamp(72px, 17vw, 104px);
+  height: clamp(72px, 17vw, 104px);
+  border-radius: 22px;
+  background: rgba(2, 12, 24, .42);
+  border: 1px solid rgba(160, 220, 255, .28);
+  box-shadow: 0 10px 28px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12);
+  opacity: 0;
+  transform: scale(.72);
+  transition: opacity .16s ease, transform .16s ease;
+  -webkit-user-select: none; user-select: none;
+  touch-action: none;
+}
+.lockscreen-clock-penguin[aria-hidden="false"] { opacity: 1; transform: scale(1); }
+.lockscreen-clock-penguin img {
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,.35));
+}
+.lockscreen-clock-hint {
+  min-height: 1.2em;
+  font-size: clamp(8px, 2.2vw, 10px);
+  line-height: 1.25;
+  text-align: center;
+  color: rgba(230,245,255,.9);
+  text-shadow: 0 1px 3px rgba(0,0,0,.65);
+  opacity: 0;
+  transition: opacity .16s ease;
+  pointer-events: none;
+}
+.lockscreen-clock-lane.visible .lockscreen-clock-hint { opacity: .92; }
+.lockscreen-clock-penguin.ringing {
+  border-color: rgba(255,123,62,.95);
+  box-shadow: 0 0 0 2px rgba(255,123,62,.35), 0 12px 34px rgba(255,80,20,.38),
+              inset 0 1px 0 rgba(255,255,255,.18);
+  /* The whole indicator shakes, not just the artwork.  The owner asked for a
+     heavy, unmistakable shake the instant an alarm or timer starts ringing. */
+  animation: nuxel-clock-shake-heavy .18s linear infinite;
+  will-change: transform;
+}
+.lockscreen-clock-penguin.ringing img {
+  animation: nuxel-clock-shake-heavy-art .12s linear infinite;
+  filter: drop-shadow(0 0 7px rgba(255,102,40,.85)) drop-shadow(0 3px 8px rgba(0,0,0,.35));
+}
+.lockscreen-clock-lane.ringing .lockscreen-clock-hint {
+  color: #ffb28a;
+  opacity: 1;
+}
+.lockscreen-clock-penguin.snoozed { border-color: rgba(255,209,102,.65); }
+.lockscreen-clock-penguin.dragging,
+.lockscreen-clock-penguin.dragging img {
+  /* While the alarm penguin follows the finger, the drag transform is
+     authoritative.  Pause the shake and disable the base transition so the
+     inline translate3d updates 1:1 with the pointer. */
+  animation: none !important;
+  transition: none;
+  will-change: transform;
+  cursor: grabbing;
+}
+.lockscreen-clock-penguin.swipe-left { transform: translateX(-14px) scale(1); }
+.lockscreen-clock-penguin.swipe-right { transform: translateX(14px) scale(1); }
+.lockscreen-clock-penguin.rejected { animation: nuxel-clock-reject .22s ease-in-out; }
+@keyframes nuxel-clock-shake-heavy {
+  0%, 100% { transform: translate(0, 0) rotate(0) scale(1); }
+  14% { transform: translate(-11px, 5px) rotate(-9deg) scale(1.07); }
+  28% { transform: translate(11px, -6px) rotate(9deg) scale(1.07); }
+  42% { transform: translate(-9px, -5px) rotate(-7deg) scale(1.05); }
+  56% { transform: translate(9px, 6px) rotate(7deg) scale(1.05); }
+  70% { transform: translate(-6px, 3px) rotate(-4deg) scale(1.03); }
+  84% { transform: translate(6px, -3px) rotate(4deg) scale(1.03); }
+}
+@keyframes nuxel-clock-shake-heavy-art {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  20% { transform: translate(-4px, 3px) rotate(-10deg); }
+  40% { transform: translate(4px, -3px) rotate(10deg); }
+  60% { transform: translate(-3px, -2px) rotate(-7deg); }
+  80% { transform: translate(3px, 2px) rotate(7deg); }
+}
+@keyframes nuxel-clock-reject { 0%,100% { transform: translateX(0); } 35% { transform: translateX(8px); } 70% { transform: translateX(-8px); } }
+/* Ringing is an alarm, not decoration: reduced-motion keeps the heavy shake.
+   A silent pulse was the reason the owner could not tell that the timer had
+   gone off on the handset. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .lockscreen-clock-lane { width: 72px; min-height: 72px; }
+  .lockscreen-clock-penguin { width: 64px; height: 64px; border-radius: 16px; }
+  .lockscreen-clock-hint { display: none; }
+}
+body.display-off .lockscreen-clock-penguin,
+body.display-off .lockscreen-clock-penguin img { animation: none !important; }
+
+/* ==========================================================================
+   A80 credential surface — pattern / PIN / fingerprint
+   The swipe penguin handle is hidden (.lockscreen-credentialed) whenever a
+   credential is required; the credential overlay is the only unlock path then.
+   ========================================================================== */
+#lockscreen.lockscreen-credentialed .lockscreen-handle-wrap,
+#lockscreen.lockscreen-credentialed .lockscreen-hint { display: none !important; }
+
+.lockscreen-auth {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 18px 18px 40px;
+    max-height: 68vh;
+    border-radius: 22px 22px 0 0;
+    background: linear-gradient(to top, rgba(3, 12, 22, .9), rgba(3, 12, 22, .72));
+    box-shadow: 0 -8px 26px rgba(0, 0, 0, .55);
+    box-sizing: border-box;
+    color: #eaf4ff;
+    touch-action: none;
+}
+.lockscreen-auth[hidden] { display: none !important; }
+.lockscreen-auth-head { text-align: center; pointer-events: none; margin-bottom: 2px; }
+.lockscreen-auth-title { font-size: 22px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.85); }
+.lockscreen-auth-hint { font-size: 13px; opacity: .85; margin-top: 3px; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.lockscreen-auth-error {
+    min-height: 18px; font-size: 13px; color: #ffb4b4; text-align: center;
+    text-shadow: 0 1px 3px rgba(0,0,0,.9); max-width: 320px;
+}
+
+/* ---------------------------------------------------------------- pattern */
+/* A80 final: a real responsive 3x3 matrix.  The matrix is a CSS grid (so it is
+   always square and always fits the glass in portrait and landscape), and the
+   SVG trail is laid on top of the SAME box with a 0..300 viewBox.  The old
+   absolute 300x300 geometry fell apart once the dots moved to percentages. */
+/* A84: the pattern matrix is centred in the VIEWPORT (the owner asked for it
+   in the middle of the screen, not in the bottom sheet).  It is a fixed box
+   laid over the glass; the dots are absolutely placed at thirds so the drawn
+   matrix reads as 3x3 regardless of flexbox/grid quirks in WebKitGTK. */
+.lockscreen-pattern {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: min(78vw, 300px, 46vh);
+    max-width: calc(100vw - 40px);
+    aspect-ratio: 1 / 1;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.lockscreen-pattern[hidden] { display: none !important; }
+.lockscreen-pattern-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    /* The drawn line must be seen over the penguins, the wallpaper and the
+       overlay gradient. */
+    z-index: 3;
+}
+.lockscreen-pattern-trail {
+    stroke: #7fd0ff;
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(80, 180, 255, .95));
+}
+.lockscreen-pattern-trail.rejected { stroke: #ff6b6b; filter: drop-shadow(0 0 7px rgba(255,80,80,.95)); }
+.lockscreen-pattern-dots {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding: 6px;
+    box-sizing: border-box;
+}
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(1) { left: 16.667%; top: 16.667%; }
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(2) { left: 50%;     top: 16.667%; }
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(3) { left: 83.333%; top: 16.667%; }
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(4) { left: 16.667%; top: 50%; }
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(5) { left: 50%;     top: 50%; }
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(6) { left: 83.333%; top: 50%; }
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(7) { left: 16.667%; top: 83.333%; }
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(8) { left: 50%;     top: 83.333%; }
+.lockscreen-pattern-dots .lockscreen-pattern-dot:nth-child(9) { left: 83.333%; top: 83.333%; }
+/* A dot is a small penguin lock-head on a warm oval "cushion", sized like an
+   Android pattern dot: touch-sized hit area, compact drawn icon. */
+.lockscreen-pattern-dot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: clamp(44px, 19vw, 68px);
+    height: clamp(44px, 19vw, 68px);
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 45%, rgba(20, 52, 84, .85), rgba(4, 18, 31, .72) 72%);
+    border: 2px solid rgba(140, 200, 255, .55);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+    transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+.lockscreen-pattern-dot.active {
+    border-color: #7fd0ff;
+    box-shadow: 0 0 16px rgba(90, 185, 255, .95), inset 0 0 10px rgba(90, 185, 255, .55);
+    transform: translate(-50%, -50%) scale(1.06);
+}
+.lockscreen-pattern-dot.mismatch { border-color: #ff6b6b; box-shadow: 0 0 14px rgba(255,80,80,.8); }
+.lockscreen-pattern-penguin {
+    width: 74%;
+    height: 74%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
+    opacity: .97;
+}
+.lockscreen-pattern-dot.active .lockscreen-pattern-penguin {
+    filter: drop-shadow(0 0 4px rgba(150, 220, 255, .95));
+}
+
+/* -------------------------------------------------------------------- PIN */
+.lockscreen-pinpad { width: min(82vw, 320px); display: flex; flex-direction: column; gap: 10px; }
+.lockscreen-pinpad[hidden] { display: none !important; }
+.lockscreen-pin-display {
+    height: 34px; font-size: 28px; letter-spacing: 9px; text-align: center;
+    color: #eaf4ff; text-shadow: 0 1px 3px rgba(0,0,0,.9); min-height: 34px;
+}
+.lockscreen-pin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.lockscreen-key {
+    min-height: 58px;
+    border-radius: 16px;
+    border: 1px solid rgba(140, 200, 255, .35);
+    background: rgba(8, 26, 44, .62);
+    color: #eaf4ff;
+    font-size: 24px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lockscreen-key:active { background: rgba(40, 90, 140, .8); transform: scale(.97); }
+.lockscreen-key.key-wide { font-size: 15px; font-weight: 500; }
+.lockscreen-key.key-enter {
+    width: 100%; min-height: 54px; font-size: 17px;
+    background: rgba(46, 112, 168, .85); border-color: rgba(150, 210, 255, .55);
+}
+
+/* ------------------------------------------------------------ fingerprint */
+.lockscreen-fingerprint {
+    --scanner-left: 22%;
+    --scanner-top: 74%;
+    --scanner-width: 56%;
+    --scanner-height: 18%;
+    position: absolute;
+    left: var(--scanner-left);
+    top: var(--scanner-top);
+    width: var(--scanner-width);
+    height: var(--scanner-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-46%);
+    touch-action: none;
+}
+.lockscreen-fingerprint[hidden] { display: none !important; }
+.lockscreen-fingerprint-ring {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% / 42%;
+}
+.lockscreen-fingerprint-art {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    opacity: .92;
+    filter: drop-shadow(0 0 10px rgba(90, 185, 255, .35));
+    transition: filter .2s ease, transform .2s ease;
+}
+.lockscreen-fingerprint-ring.scanning .lockscreen-fingerprint-art {
+    animation: nuxel-fp-scan 1.1s ease-in-out infinite;
+}
+.lockscreen-fingerprint-ring.accepted .lockscreen-fingerprint-art {
+    filter: drop-shadow(0 0 16px rgba(110, 255, 170, .9));
+    transform: scale(.96);
+}
+@keyframes nuxel-fp-scan {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(90,185,255,.3)); }
+    50% { filter: drop-shadow(0 0 20px rgba(120,210,255,.95)); }
+}
+.lockscreen-fingerprint-status {
+    position: absolute;
+    left: 50%;
+    bottom: -28px;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 86vw;
+    font-size: 13px;
+    text-align: center;
+    color: #dceeff;
+    text-shadow: 0 1px 3px rgba(0,0,0,.9);
+}
+
+/* -------------------------------------------------------------- PIN button */
+.lockscreen-pin-fallback {
+    position: relative;
+    z-index: 5;
+    min-width: 116px;
+    min-height: 46px;
+    padding: 0 22px;
+    border-radius: 23px;
+    border: 1px solid rgba(150, 210, 255, .55);
+    background: rgba(10, 30, 52, .78);
+    color: #eaf4ff;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lockscreen-pin-fallback[hidden] { display: none !important; }
+.lockscreen-pin-fallback:active { transform: scale(.97); background: rgba(40, 90, 140, .85); }
+
+/* ------------------------------------------------------ pattern setup flow */
+.lockscreen-setup { inset: 0; max-height: none; justify-content: center; padding-bottom: 64px; border-radius: 0; background: rgba(3, 12, 22, .82); }
+/* pattern/pin/fingerprint: no swipe penguin on the glass at all */
+#lockscreen.lockscreen-credentialed .lockscreen-handle-wrap,
+#lockscreen.lockscreen-credentialed .lockscreen-clock-lanes { display: none !important; }
+
+/* A83: a credentialed mode owns the glass.  The swipe lockhead is measured in
+   JS and, before this rule, was drawn exactly where the PIN "Unlock" key sits;
+   it swallowed the tap as a swipe.  These two guards hide it even if a stale
+   class is missing, and every credential surface accepts real taps again. */
+/* A84: the lockhead is ALWAYS the first surface, including in a credentialed
+   mode: the swipe reveals the pattern/PIN/scanner.  Only the drag artwork is
+   hidden while a credential surface is live (the wrap keeps receiving the
+   swipe in swipe mode and is then removed by JS). */
+#lockscreen.lockscreen-credentialed .lockscreen-handle,
+#lockscreen.lockscreen-credentialed #lockscreen-handle {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+#lockscreen.lockscreen-credentialed,
+#lockscreen.lockscreen-credentialed .lockscreen-auth,
+#lockscreen.lockscreen-credentialed .lockscreen-pinpad,
+#lockscreen.lockscreen-credentialed .lockscreen-fingerprint {
+    touch-action: manipulation !important;
+}
+/* A84: the pattern MUST keep pan/zoom suppression, not 'manipulation'.
+   'manipulation' lets the browser claim the drag for panning, so the trail
+   never drew and the dots never connected (a dead pattern lock). */
+#lockscreen.lockscreen-credentialed .lockscreen-pattern,
+#lockscreen.lockscreen-credentialed .lockscreen-pattern-dots {
+    touch-action: none !important;
+    pointer-events: auto !important;
+}
+#lockscreen.lockscreen-credentialed .lockscreen-key,
+#lockscreen.lockscreen-credentialed #lockscreen-pin-enter,
+#lockscreen.lockscreen-credentialed #lockscreen-pin-fallback,
+#lockscreen.lockscreen-credentialed .lockscreen-pattern-dot {
+    touch-action: manipulation !important;
+    pointer-events: auto !important;
+}
+/* The confirm key spans the keypad and is always a full touch target.  It is
+   already `.lockscreen-key`, so colour/size stay identical to the digits. */
+/* A83: press feedback independent of click synthesis.  The key highlights on
+   pointerdown / :active, so the owner always sees the press land even if a
+   renderer delays the click. */
+#lockscreen.lockscreen-credentialed .lockscreen-key {
+    -webkit-tap-highlight-color: rgba(120, 200, 255, .35);
+    transition: transform .06s ease, background .06s ease;
+}
+#lockscreen.lockscreen-credentialed .lockscreen-key:active,
+#lockscreen.lockscreen-credentialed .lockscreen-key.pressed {
+    background: rgba(40, 90, 140, .9) !important;
+    transform: scale(.97);
+}
+#lockscreen-pin-enter {
+    width: 100%;
+    min-height: 58px;
+    margin-top: 4px;
+    font-size: 18px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+@media (max-height: 640px) { #lockscreen-pin-enter { min-height: 48px; } }
+@media (max-height: 640px) {
+    .lockscreen-auth { padding-bottom: 24px; }
+    .lockscreen-pattern { width: min(70vw, 240px, 42vh); }
+    .lockscreen-pattern-dot { width: 56px; height: 56px; }
+    .lockscreen-key { min-height: 48px; font-size: 20px; }
+}
+
+/* A80 layout final: the credential panel owns the full glass so the keypad
+   never fights the swipe handle's absolute centring. */
+#lockscreen.lockscreen-credentialed .lockscreen-auth {
+    inset: 0 !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    padding: 24px 18px 60px !important;
+    background: linear-gradient(to top, rgba(3, 12, 22, .92), rgba(3, 12, 22, .55) 55%, rgba(3, 12, 22, .18)) !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+}
+/* A84: the pattern is the one credential surface centred on the glass, so the
+   panel behind it must not paint an opaque layer over it.  The wrapped keypad
+   keeps the full-glass panel. */
+#lockscreen.lockscreen-credentialed.lockscreen-mode-pattern .lockscreen-auth {
+    background: linear-gradient(to top, rgba(3, 12, 22, .55), rgba(3, 12, 22, .28) 55%, rgba(3, 12, 22, .12)) !important;
+}
+#lockscreen.lockscreen-credentialed .lockscreen-pinpad { margin-top: auto; margin-bottom: 4px; }
+#lockscreen .lockscreen-pin-fallback,
+#lockscreen .lockscreen-key-enter { pointer-events: auto; }

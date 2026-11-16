@@ -1,0 +1,7 @@
+dev=/dev/cu.usbmodem201 bytes_in=8247 echo_ok=True error=None elapsed=0.325s
+sample:
+sb: CCIC_SYSFS_PROP_STATE : 17
+6,29077,502887534,-;max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_TYPE : 0
+6,29078,503107218,-;max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_USBPD_IDS : 0000:0000\x0a
+6,29079,503116775,-;max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_PROP_STATE : 17
+6,29080,503116987,-;max77705: max77705_sysfs_get_local_prop: usb: CCIC_SYSFS_

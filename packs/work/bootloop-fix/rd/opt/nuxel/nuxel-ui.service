@@ -1,0 +1,41 @@
+# Nuxel phone UI — the fbdev-native interactive interface for the S10+ (beyond2lte).
+#
+# A28: this process now starts on the NUXEL HOME LAUNCHER page.  The launcher's
+# app registry, ordering, icons, colours and geometry are compiled in from
+# pwa/nuxel-home/js/apps.js + css/style.css (tools/s10plus/a28/gen-launcher.py);
+# the A23..A27 diagnostic pages are retained and reachable by tapping the
+# launcher title or with `page=<p>` on /run/nuxel-ui.cmd.
+#
+# This kernel (Samsung Linux 4.14.253) has `# CONFIG_DRM is not set`, so there is
+# no /dev/dri and no wlroots/Phoc/Phosh session.  /dev/fb0 through the DECON
+# driver is the hardware-proven display path, and nuxel-ui is a real userspace
+# process that owns it.
+#
+# ORDERING IS DELIBERATELY EMPTY (A24, measured on A23): the Fedora userspace of
+# this image stalls before local-fs.target / multi-user.target -- every job sits in
+# state "waiting" and nothing runs.  A unit carrying `After=systemd-udev-settle
+# .service local-fs.target` therefore NEVER starts, and `ConditionPathExists=/dev/fb0`
+# was additionally evaluated as failed even though /dev/fb0 exists (crw------- 29,0).
+# The UI instead starts with no ordering, opens /dev/fb0 itself and retries via
+# Restart, and nuxel-postboot.sh starts it again if it is ever missing.
+[Unit]
+Description=Nuxel Home launcher (fbdev-native platform adapter; the UTM PWA launcher on the S10+ panel)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+Conflicts=nuxel-firstlight.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-ui
+# Restart=always also covers a clean exit (a failed frame commit path exits 0 in
+# --once mode only).  An explicit `systemctl stop` still stops it.
+Restart=always
+RestartSec=2
+TimeoutStartSec=40
+Nice=-5
+OOMScoreAdjust=-500
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=sysinit.target

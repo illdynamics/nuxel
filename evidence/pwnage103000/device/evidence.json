@@ -1,0 +1,393 @@
+{
+  "checks": {
+    "all_eight_effects_rendered": true,
+    "engine_and_gesture_loaded": true,
+    "panel_opens_both_sides_in_this_harness": false,
+    "zero_js_errors": true
+  },
+  "console_errors": [],
+  "effects": {
+    "basic": {
+      "dom": {
+        "active": true,
+        "effect": "basic",
+        "pointerEvents": "none",
+        "running": true,
+        "sides": [
+          {
+            "band": true,
+            "particles": 0,
+            "side": "left"
+          },
+          {
+            "band": true,
+            "particles": 0,
+            "side": "right"
+          }
+        ]
+      },
+      "snapshot": {
+        "ok": true,
+        "painted_elements": 2,
+        "path": "/tmp/p103-edge-render/effect-basic.png"
+      }
+    },
+    "bubble": {
+      "dom": {
+        "active": true,
+        "effect": "bubble",
+        "pointerEvents": "none",
+        "running": true,
+        "sides": [
+          {
+            "band": true,
+            "particles": 4,
+            "side": "left"
+          },
+          {
+            "band": true,
+            "particles": 4,
+            "side": "right"
+          }
+        ]
+      },
+      "snapshot": {
+        "ok": true,
+        "painted_elements": 10,
+        "path": "/tmp/p103-edge-render/effect-bubble.png"
+      }
+    },
+    "echo": {
+      "dom": {
+        "active": true,
+        "effect": "echo",
+        "pointerEvents": "none",
+        "running": true,
+        "sides": [
+          {
+            "band": true,
+            "particles": 3,
+            "side": "left"
+          },
+          {
+            "band": true,
+            "particles": 3,
+            "side": "right"
+          }
+        ]
+      },
+      "snapshot": {
+        "ok": true,
+        "painted_elements": 8,
+        "path": "/tmp/p103-edge-render/effect-echo.png"
+      }
+    },
+    "eclipse": {
+      "dom": {
+        "active": true,
+        "effect": "eclipse",
+        "pointerEvents": "none",
+        "running": true,
+        "sides": [
+          {
+            "band": true,
+            "particles": 2,
+            "side": "left"
+          },
+          {
+            "band": true,
+            "particles": 2,
+            "side": "right"
+          }
+        ]
+      },
+      "snapshot": {
+        "ok": true,
+        "painted_elements": 6,
+        "path": "/tmp/p103-edge-render/effect-eclipse.png"
+      }
+    },
+    "fireworks": {
+      "dom": {
+        "active": true,
+        "effect": "fireworks",
+        "pointerEvents": "none",
+        "running": true,
+        "sides": [
+          {
+            "band": true,
+            "particles": 5,
+            "side": "left"
+          },
+          {
+            "band": true,
+            "particles": 5,
+            "side": "right"
+          }
+        ]
+      },
+      "snapshot": {
+        "ok": true,
+        "painted_elements": 12,
+        "path": "/tmp/p103-edge-render/effect-fireworks.png"
+      }
+    },
+    "heart": {
+      "dom": {
+        "active": true,
+        "effect": "heart",
+        "pointerEvents": "none",
+        "running": true,
+        "sides": [
+          {
+            "band": true,
+            "particles": 3,
+            "side": "left"
+          },
+          {
+            "band": true,
+            "particles": 3,
+            "side": "right"
+          }
+        ]
+      },
+      "snapshot": {
+        "ok": true,
+        "painted_elements": 8,
+        "path": "/tmp/p103-edge-render/effect-heart.png"
+      }
+    },
+    "multicolor": {
+      "dom": {
+        "active": true,
+        "effect": "multicolor",
+        "pointerEvents": "none",
+        "running": true,
+        "sides": [
+          {
+            "band": true,
+            "particles": 0,
+            "side": "left"
+          },
+          {
+            "band": true,
+            "particles": 0,
+            "side": "right"
+          }
+        ]
+      },
+      "snapshot": {
+        "ok": true,
+        "painted_elements": 2,
+        "path": "/tmp/p103-edge-render/effect-multicolor.png"
+      }
+    },
+    "wave": {
+      "dom": {
+        "active": true,
+        "effect": "wave",
+        "pointerEvents": "none",
+        "running": true,
+        "sides": [
+          {
+            "band": true,
+            "particles": 3,
+            "side": "left"
+          },
+          {
+            "band": true,
+            "particles": 3,
+            "side": "right"
+          }
+        ]
+      },
+      "snapshot": {
+        "ok": true,
+        "painted_elements": 8,
+        "path": "/tmp/p103-edge-render/effect-wave.png"
+      }
+    }
+  },
+  "modules": {
+    "defaults": {
+      "allowed_apps": [],
+      "blocked_apps": [],
+      "color": null,
+      "color_mode": "theme",
+      "duration_ms": 1800,
+      "effect": "wave",
+      "enabled": true,
+      "reduced_motion_style": "static",
+      "respect_dnd": true,
+      "respect_reduced_motion": true,
+      "screen_mode": "screen_on",
+      "transparency": "medium",
+      "width": "medium"
+    },
+    "effects": [
+      "basic",
+      "wave",
+      "bubble",
+      "multicolor",
+      "heart",
+      "fireworks",
+      "eclipse",
+      "echo"
+    ],
+    "engine": "object",
+    "gesture": "object",
+    "labels": {
+      "basic": "Basic",
+      "bubble": "Bubble",
+      "echo": "Echo",
+      "eclipse": "Eclipse",
+      "fireworks": "Fireworks",
+      "heart": "Heart",
+      "multicolor": "Multicolor",
+      "wave": "Wave"
+    },
+    "overlayRoots": 0,
+    "recognizer": {
+      "dominance": 1.5,
+      "edgeBand": 30,
+      "holdMs": 450,
+      "minInward": 42
+    },
+    "status": {
+      "active": null,
+      "capability": {
+        "color_model": {
+          "custom": "hex",
+          "default_accent": "#63f0bd",
+          "modes": [
+            "theme",
+            "preset",
+            "custom",
+            "app"
+          ]
+        },
+        "default_effect": "wave",
+        "effect_family": [
+          "basic",
+          "wave",
+          "bubble",
+          "multicolor",
+          "heart",
+          "fireworks",
+          "eclipse",
+          "echo"
+        ],
+        "effects_supported": [
+          "basic",
+          "wave",
+          "bubble",
+          "multicolor",
+          "heart",
+          "fireworks",
+          "eclipse",
+          "echo"
+        ],
+        "effects_unavailable": [],
+        "notification_led": {
+          "label": "No notification/RGB LED on this device",
+          "present": false
+        },
+        "reduced_motion_default": "static",
+        "renderer": {
+          "camera_flash": false,
+          "framebuffer_writes": false,
+          "hardware_led": false,
+          "kind": "dom_overlay",
+          "owner": "nuxel-home",
+          "second_compositor": false
+        },
+        "screen_modes": [
+          {
+            "available": true,
+            "id": "screen_on",
+            "label": "While screen is on"
+          },
+          {
+            "available": false,
+            "id": "screen_off",
+            "label": "While screen is off",
+            "reason": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK: the PWA overlay only renders while the WebView and panel are on; there is no edge-only low-power render path"
+          },
+          {
+            "available": false,
+            "depends_on": "screen_off",
+            "id": "always",
+            "label": "Always",
+            "reason": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK: the PWA overlay only renders while the WebView and panel are on; there is no edge-only low-power render path"
+          }
+        ],
+        "screen_on_label": "AMOLED display effect (not a physical LED)"
+      },
+      "dnd": {
+        "active": false,
+        "reason": "off",
+        "source": "/var/lib/nuxel/notifications/dnd.json"
+      },
+      "lastClose": null,
+      "lastError": null,
+      "lastEventAt": 0,
+      "lastOpen": null,
+      "lastPollAt": 1794478746571,
+      "lastPreviewAt": 0,
+      "provider": "ok",
+      "seq": 0,
+      "settings": {
+        "allowed_apps": [],
+        "blocked_apps": [],
+        "color": null,
+        "color_mode": "theme",
+        "duration_ms": 1800,
+        "effect": "wave",
+        "enabled": true,
+        "reduced_motion_style": "static",
+        "respect_dnd": true,
+        "respect_reduced_motion": true,
+        "screen_mode": "screen_on",
+        "transparency": "medium",
+        "width": "medium"
+      }
+    },
+    "tiles": {
+      "edge": true,
+      "light": true
+    }
+  },
+  "panel": {
+    "closed": {
+      "apps": 0,
+      "body": false,
+      "fromRight": false,
+      "hasNotificationsTab": false,
+      "opened": false,
+      "root": false
+    },
+    "left": {
+      "apps": 0,
+      "body": false,
+      "fromRight": false,
+      "hasNotificationsTab": false,
+      "opened": false,
+      "root": false
+    },
+    "leftCall": "false",
+    "right": {
+      "apps": 0,
+      "body": false,
+      "fromRight": false,
+      "hasNotificationsTab": false,
+      "opened": false,
+      "root": false
+    },
+    "rightCall": "false"
+  },
+  "physical": "NEEDS_OWNER_PHYSICAL_TEST (glass visibility / finger ergonomics not proven)",
+  "rendered_at": 1794478757,
+  "schema": "nuxel.edge-render/1",
+  "url": "http://127.0.0.1:8000/pwa/nuxel-home/index.html",
+  "verdict": "PASS_UI_RENDER_EFFECTS"
+}

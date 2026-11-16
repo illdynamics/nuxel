@@ -1,0 +1,52 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== downloaded analysis copies (not installed) ===
+sha256sum: /tmp/s10-gpsd: No such file or directory
+sha256sum: /tmp/s10-lhd: No such file or directory
+sha256sum: /tmp/s10-gnss-service: No such file or directory
+=== live system has no Android runtime ===
+ls: cannot access '/system': No such file or directory
+ls: cannot access '/system/bin': No such file or directory
+ls: cannot access '/system/bin/linker64': No such file or directory
+ls: cannot access '/vendor/bin': No such file or directory
+ls: cannot access '/vendor/lib64': No such file or directory
+=== device nodes/modes ===
+ls: cannot access '/dev/gnss*': No such file or directory
+crw------- 1 root root  236,  2 Jan  1  1970 /dev/bbd_control
+crw------- 1 root root  236,  3 Jan  1  1970 /dev/bbd_patch
+crw------- 1 root root  236,  1 Jan  1  1970 /dev/bbd_sensor
+crw------- 1 root root  236,  4 Jan  1  1970 /dev/bbd_urgent_patch
+crw------- 1 root root   10, 89 Jan  1  1970 /dev/ssp_data_injection
+crw------- 1 root root   10, 88 Jan  1  1970 /dev/ssp_sensorhub
+crw-rw---- 1 root audio  10, 91 Jan  1  1970 /dev/ttyBCM
+=== bbd sysfs class ===
+/sys/class/bbd -> 
+/sys/class/bbd/bbd_patch -> ../../devices/virtual/bbd/bbd_patch
+/sys/class/bbd/bbd_urgent_patch -> ../../devices/virtual/bbd/bbd_urgent_patch
+/sys/class/bbd/bbd_sensor -> ../../devices/virtual/bbd/bbd_sensor
+/sys/class/bbd/bbd_control -> ../../devices/virtual/bbd/bbd_control
+=== GPS rail ===
+/sys/devices/platform/10430000.pinctrl/gpiochip50/gpio/gpio145
+0
+=== SPI binding ===
+/sys/bus/spi/drivers/brcm gps spi
+DRIVER=brcm gps spi
+OF_NAME=BCM4773
+OF_FULLNAME=/spi@10970000/BCM4773@0
+OF_COMPATIBLE_0=ssp,BCM4773
+OF_COMPATIBLE_N=1
+MODALIAS=spi:BCM4773
+=== firmware candidates on live root ===
+=== SSP state ===
+[ 4146.915335] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 4152.803106] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 4158.947828] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+=== source-of-record lhd.conf (fetched, not installed) ===
+PortName=tcp:127.0.0.1:300; LheName=bbd; LhePatch=/dev/bbd_patch; LheBbdPacket=/dev/ttyBCM

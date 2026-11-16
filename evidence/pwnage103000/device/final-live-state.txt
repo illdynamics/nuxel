@@ -1,0 +1,14 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"success": true, "config": {"schema_version": 1, "enabled": true, "effect": "wave", "color_mode": "theme", "color": null, "width": "medium", "transparency": "medium", "duration_ms": 1800, "screen_mode": "screen_on", "respect_dnd": true, "respect_reduced_motion": true, "reduced_motion_style": "static", "allowed_apps": [], "blocked_apps": [], "config_source": "file"}, "settings": "/var/lib/nuxel/edge-lighting/settings.json", "persistence": {"writable": true, "kind": "user document under /var/lib (survives reboot)"}, "last_seq": 5}
+{"state": "OFF", "on": false, "supported": true, "led_path": "/sys/class/camera/flash/rear_flash", "max_on_seconds": 600.0}
+active active active active active active 
+0
+0

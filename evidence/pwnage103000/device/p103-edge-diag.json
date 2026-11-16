@@ -1,0 +1,198 @@
+{
+  "dnd_active": false,
+  "edge_display_overlay": {
+    "capability": "PASS_UI_PREVIEW",
+    "hardware_led": false,
+    "owner": "nuxel-home",
+    "renderer": "nuxel-home DOM overlay"
+  },
+  "edge_lighting": {
+    "default_effect": "wave",
+    "effect": "wave",
+    "effects": [
+      "basic",
+      "wave",
+      "bubble",
+      "multicolor",
+      "heart",
+      "fireworks",
+      "eclipse",
+      "echo"
+    ],
+    "enabled": true,
+    "screen_modes_supported": [
+      "screen_on"
+    ],
+    "screen_off": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK",
+    "settings_path": "/var/lib/nuxel/edge-lighting/settings.json",
+    "settings_present": true
+  },
+  "edge_panel": {
+    "accessible_entry": "Quick Settings Edge tile + Edge FX app",
+    "controller_tuning_attempted": false,
+    "evidence": "PASS_BUILD_TEST for the recognizer; NEEDS_OWNER_PHYSICAL_TEST for ergonomics",
+    "gesture": "inward side swipe (30 px band, >=42 px, 1.5x dominance)"
+  },
+  "home_runtime": {
+    "default": "wave",
+    "effects": [
+      "basic",
+      "wave",
+      "bubble",
+      "multicolor",
+      "heart",
+      "fireworks",
+      "eclipse",
+      "echo"
+    ],
+    "loaded": true,
+    "status": {
+      "active": null,
+      "capability": {
+        "color_model": {
+          "custom": "hex",
+          "default_accent": "#63f0bd",
+          "modes": [
+            "theme",
+            "preset",
+            "custom",
+            "app"
+          ]
+        },
+        "default_effect": "wave",
+        "effect_family": [
+          "basic",
+          "wave",
+          "bubble",
+          "multicolor",
+          "heart",
+          "fireworks",
+          "eclipse",
+          "echo"
+        ],
+        "effects_supported": [
+          "basic",
+          "wave",
+          "bubble",
+          "multicolor",
+          "heart",
+          "fireworks",
+          "eclipse",
+          "echo"
+        ],
+        "effects_unavailable": [],
+        "notification_led": {
+          "label": "No notification/RGB LED on this device",
+          "present": false
+        },
+        "reduced_motion_default": "static",
+        "renderer": {
+          "camera_flash": false,
+          "framebuffer_writes": false,
+          "hardware_led": false,
+          "kind": "dom_overlay",
+          "owner": "nuxel-home",
+          "second_compositor": false
+        },
+        "screen_modes": [
+          {
+            "available": true,
+            "id": "screen_on",
+            "label": "While screen is on"
+          },
+          {
+            "available": false,
+            "id": "screen_off",
+            "label": "While screen is off",
+            "reason": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK: the PWA overlay only renders while the WebView and panel are on; there is no edge-only low-power render path"
+          },
+          {
+            "available": false,
+            "depends_on": "screen_off",
+            "id": "always",
+            "label": "Always",
+            "reason": "NOT_SUPPORTED_BY_CURRENT_DISPLAY_STACK: the PWA overlay only renders while the WebView and panel are on; there is no edge-only low-power render path"
+          }
+        ],
+        "screen_on_label": "AMOLED display effect (not a physical LED)"
+      },
+      "dnd": {
+        "active": false,
+        "reason": "off",
+        "source": "/var/lib/nuxel/notifications/dnd.json"
+      },
+      "lastClose": null,
+      "lastError": null,
+      "lastEventAt": 0,
+      "lastOpen": null,
+      "lastPollAt": 1794479010353,
+      "lastPreviewAt": 0,
+      "lastRefusal": null,
+      "provider": "ok",
+      "seq": 3,
+      "settings": {
+        "allowed_apps": [],
+        "blocked_apps": [],
+        "color": null,
+        "color_mode": "theme",
+        "duration_ms": 1800,
+        "effect": "wave",
+        "enabled": true,
+        "reduced_motion_style": "static",
+        "respect_dnd": true,
+        "respect_reduced_motion": true,
+        "screen_mode": "screen_on",
+        "transparency": "medium",
+        "width": "medium"
+      }
+    }
+  },
+  "leds_enumerated": [
+    "leds-sec1",
+    "torch-sec1"
+  ],
+  "leds_sec1": {
+    "advertised_as_notification": false,
+    "advertised_as_rgb": false,
+    "brightness": 0,
+    "driver": "s2mpb02-led",
+    "max_brightness": 15,
+    "present": true,
+    "role": "NOT_ASSIGNED (no source/physical proof of a notification use)",
+    "trigger": "[none] rc-feedback rfkill-any rfkill0 mmc0 max77705-fuelgauge-online max77705-charger-online otg-online mfc-charger-online ps-online usb-online ac-online battery-charging-or-full battery-charging battery-full battery-charging-blink-full-solid wireless-online rfkill1 rfkill2",
+    "type": null
+  },
+  "notification_led": {
+    "capability": "NOT_SUPPORTED_ON_DEVICE",
+    "label": "S10+ has no dedicated notification/RGB LED class"
+  },
+  "owner_physical": {
+    "edge_effect_visibility_on_glass": "NEEDS_OWNER_PHYSICAL_TEST",
+    "edge_gesture_ergonomics": "NEEDS_OWNER_PHYSICAL_TEST",
+    "torch_visibility": "NEEDS_OWNER_PHYSICAL_TEST"
+  },
+  "rear_torch": {
+    "camera_rear_flash": {
+      "brightness": 15,
+      "driver": null,
+      "max_brightness": null,
+      "present": true,
+      "trigger": null,
+      "type": null
+    },
+    "capability": "PASS_DEVICE_RUNTIME",
+    "torch_sec1": {
+      "brightness": 0,
+      "driver": "s2mpb02-led",
+      "max_brightness": 15,
+      "present": true,
+      "trigger": "[none] rc-feedback rfkill-any rfkill0 mmc0 max77705-fuelgauge-online max77705-charger-online otg-online mfc-charger-online ps-online usb-online ac-online battery-charging-or-full battery-charging battery-full battery-charging-blink-full-solid wireless-online rfkill1 rfkill2",
+      "type": null
+    }
+  },
+  "reduced_motion": "runtime pref (prefers-reduced-motion / Nuxel motion policy)",
+  "rgb_notification_led": {
+    "capability": "NOT_SUPPORTED_ON_DEVICE"
+  },
+  "schema": "nuxel.edge-capability/1"
+}

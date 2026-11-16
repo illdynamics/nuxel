@@ -1,0 +1,216 @@
+{
+  "schema": "nuxel.pwnage-103000.deploy-manifest/1",
+  "generated_at": "20261112T093450Z",
+  "device": {
+    "host": "192.168.178.167",
+    "user": "root",
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "kernel": "4.14.253-gf7194c1d15ed-dirty"
+  },
+  "no_reflash": true,
+  "partitions_modified": [],
+  "backup": {
+    "remote": "/root/nuxel-backup-103000-20261112T093450Z",
+    "contents": [
+      "usr-share-nuxel-pre-103000.tgz",
+      "nuxel-bridge-pre-103000.tgz",
+      "etc-nuxel-leds-pre-103000.tgz",
+      "pwa-pre-103000/home-pre.tgz",
+      "pwa-pre-103000/common-settings-pre.tgz"
+    ],
+    "local_source_snapshot": "evidence/pwnage103000/src-snapshot/"
+  },
+  "settings_documents": {
+    "user": "/var/lib/nuxel/edge-lighting/settings.json",
+    "shipped_default": "/etc/nuxel/edge-lighting/edge-lighting.json",
+    "journal": "/var/lib/nuxel/edge-lighting/events.jsonl"
+  },
+  "files": [
+    {
+      "source": "services/nuxel-bridge/src/edge_lighting_provider.py",
+      "installed_to": "/usr/lib/nuxel/nuxel-bridge/edge_lighting_provider.py",
+      "sha256": "1b143c73e488ba83960e678a235ec76fe7ecbf8eff0a34eb2af496a79f1aa33b",
+      "reason": "new provider (Edge Lighting controller)"
+    },
+    {
+      "source": "services/nuxel-bridge/src/flashlight_provider.py",
+      "installed_to": "/usr/lib/nuxel/nuxel-bridge/flashlight_provider.py",
+      "sha256": "065a9a21b7adb6ae0ac7930660ad202d570d0a013b93c9bafd54ee96ad83b783",
+      "reason": "torch safety: policy ceiling 600s, OFF on init, readback, session/remaining, ERROR paths"
+    },
+    {
+      "source": "services/nuxel-bridge/src/api.py",
+      "installed_to": "/usr/lib/nuxel/nuxel-bridge/api.py",
+      "sha256": "95038261077cb0d321c1b8fb2b83cf9fd80a4a3f2f05755af9c70e2b33e77ff2",
+      "reason": "routes /api/v1/edge-lighting[/events], RPC namespace, NotificationAdded watch (own GLib loop)"
+    },
+    {
+      "source": "pwa/nuxel-home/js/edge-lighting.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/js/edge-lighting.js",
+      "sha256": "426d73edb64cb70e974aed6ce4bc74dfc619b3f546f4a676322b76ff537f986b",
+      "reason": "effect engine + Edge Panel renderer"
+    },
+    {
+      "source": "pwa/nuxel-home/js/edge-panel-gesture.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/js/edge-panel-gesture.js",
+      "sha256": "f637320083f1b92212f05c61c8abb8c2413fca283024282efc94796a6412a12d",
+      "reason": "inward side-swipe recognizer"
+    },
+    {
+      "source": "pwa/nuxel-home/css/edge-lighting.css",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/css/edge-lighting.css",
+      "sha256": "dc9257cf1f07be200e19baa52a4aca3ca67ba74da8257fe3dde1b6b0f583e386",
+      "reason": "8 effect styles + Edge Panel styles"
+    },
+    {
+      "source": "pwa/nuxel-home/js/gestures.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/js/gestures.js",
+      "sha256": "9ed9c2e3bc4260c70f4d19930fcb34342af979d4f12f7c43dfc466b41b76d227",
+      "reason": "integrates the recognizer into the existing gesture owner"
+    },
+    {
+      "source": "pwa/nuxel-home/js/qs.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/js/qs.js",
+      "sha256": "fb2a68ad351a54a182d68237750efa95c9f11e8af4c684f96d1cc2b0579979ae",
+      "reason": "Edge + Edge-light Quick Settings tiles"
+    },
+    {
+      "source": "pwa/nuxel-home/js/apps.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/js/apps.js",
+      "sha256": "2914154e662df944eb1214d80602fe7e60e9d947adabd728773bfc5c7271b25e",
+      "reason": "launcher registry: Edge FX + REGISTRY_VERSION 20"
+    },
+    {
+      "source": "pwa/nuxel-home/index.html",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/index.html",
+      "sha256": "0145af936656a557205f3ebf36d6cac23232bf7f351a65b5750d923cb8622346",
+      "reason": "loads edge modules/CSS, tiles"
+    },
+    {
+      "source": "pwa/nuxel-home/sw.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/sw.js",
+      "sha256": "9317753a88072e26fbefac765d4841a1bd186eed51efe6325f6deab8a3da577c",
+      "reason": "cache v096-p103000 + precache"
+    },
+    {
+      "source": "pwa/nuxel-home/manifest.json",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "sha256": "1d653b2f0223beb8eadc3dc4c27f020ac03553d54608b6afeec56ca029d82292",
+      "reason": "cache_version lockstep"
+    },
+    {
+      "source": "pwa/nuxel-common/bridge.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-common/bridge.js",
+      "sha256": "ee0b29cbfbedc4546cae3044390c339aa9b0fe758a8e35ccf4aeb7e44a4deeb0",
+      "reason": "adds request()/get() for read-only fetches"
+    },
+    {
+      "source": "pwa/nuxel-common/app-registry.json",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json",
+      "sha256": "e8c86ba58b41778ae39ba78a3a812e15916f1eb0a36b1ddec92aeabadbdbc211",
+      "reason": "canonical registry: Edge FX (registry_version 20)"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/index.html",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/index.html",
+      "sha256": "533e0368fbab1f236b484979894928e69fc82dc8bc4c7c1b2dc6cb7d1718f1cf",
+      "reason": "Edge FX app"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/manifest.json",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/manifest.json",
+      "sha256": "b0b1937cf6393db01778d22bf3008a736459cec421b7ae797498734cbfbca9ff",
+      "reason": "Edge FX manifest"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/app.json",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/app.json",
+      "sha256": "d3440d57520d09914f5646e063beb916d54261ed9ead757884f34a0c07b97ef1",
+      "reason": "Edge FX app descriptor"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/edge-fx.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/edge-fx.js",
+      "sha256": "07c767ca7d3ee427e0e865edd6219cc9507237f8851dce311a19d473d68beaed",
+      "reason": "Edge FX controller"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/edge-fx.css",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/edge-fx.css",
+      "sha256": "541b11c324d0eaecdcdcb90b4e8ca78bfa374354e0a5b358e7a30864ee967695",
+      "reason": "Edge FX styles"
+    },
+    {
+      "source": "pwa/nuxel-apps/edge-fx/e2e/e2e.html",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/edge-fx/e2e/e2e.html",
+      "sha256": "b6a9f52874f5331b895bec5ddd62a7ffe555c07dde18e082def99af60afaf9be",
+      "reason": "Edge FX E2E stage"
+    },
+    {
+      "source": "pwa/nuxel-apps/settings/index.html",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/settings/index.html",
+      "sha256": "f9dce571462099ec18061af9f5f517e5e11110b576c61abdd8e01c8fe63c8069",
+      "reason": "Settings -> Notifications Edge lighting card"
+    },
+    {
+      "source": "pwa/nuxel-apps/settings/edge-lighting-settings.js",
+      "installed_to": "/usr/share/nuxel/pwa/nuxel-apps/settings/edge-lighting-settings.js",
+      "sha256": "e14401ddf4143ea6725420226dc5c9aaf59e66b7188b81b5e021bd87f9c30aec",
+      "reason": "Settings controller"
+    },
+    {
+      "source": "configs/nuxel/edge-lighting/edge-lighting.json",
+      "installed_to": "/etc/nuxel/edge-lighting/edge-lighting.json",
+      "sha256": "6ede52b185a43cc6880c0efb40a1d1a40850b084c18c9b9dc06279636be28f2f",
+      "reason": "shipped policy default (Wave/theme/1800ms)"
+    },
+    {
+      "source": "shell/nuxel-home-native/nuxel_home/app_registry.json",
+      "installed_to": "(build tree only; mirror regenerated with --sync-native)",
+      "sha256": "5ac13b106b0bf24749500b508ac563d03197318684a3b601578a549eafb3938f",
+      "reason": "native shell mirror"
+    },
+    {
+      "source": "tools/s10plus/a33/nuxel-led-diag.sh",
+      "installed_to": "/usr/local/bin/nuxel-led-diag.sh",
+      "sha256": "35db47a0fba07f7313e65a5c17b3dea3396ccf7f030f5dada1a7337ca3a9ec46",
+      "reason": "edge/capability JSON report + runtime probe"
+    },
+    {
+      "source": "tools/s10plus/a33/edge-runtime/edge-runtime-render.py",
+      "installed_to": "/usr/local/bin/nuxel-edge-render.py",
+      "sha256": "5677b822d4e67a890087dea7e285380f3c5a190a52ea295558e37daebce171f1",
+      "reason": "headless WebKit render harness"
+    },
+    {
+      "source": "tools/s10plus/a33/edge-runtime/nuxel-edge-runtime-probe.py",
+      "installed_to": "/usr/local/bin/nuxel-edge-runtime-probe.py",
+      "sha256": "7273452c610b3ae15cb8eb49bb857c099abc5eab7ec432588c353bdc84cf45d6",
+      "reason": "read-only page probe"
+    },
+    {
+      "source": "tools/s10plus/a33/edge-runtime/nuxel-edge-runtime-probe.sh",
+      "installed_to": "/usr/local/bin/nuxel-edge-runtime-probe.sh",
+      "sha256": "b25c2a465017cb74e3096b7e92bfe69773948e38ec072552a740499d5c245d56",
+      "reason": "probe wrapper (headless Wayland)"
+    }
+  ],
+  "services_restarted": [
+    "nuxel-http-bridge.service"
+  ],
+  "services_not_restarted": [
+    "nuxel-web.service (static; SW cache bump handles it)",
+    "nuxel-wl-fb.service",
+    "nuxel-wayland.service",
+    "nuxel-notifications.service"
+  ],
+  "rollback_script": "evidence/pwnage103000/rollback.sh",
+  "registry_note": "The live /etc/nuxel/app-registry/app_registry.json was advanced by the install test (registry_version 22, Edge FX installed). Prior copy in the remote backup tarballs.",
+  "final_render_harness": {
+    "path": "/usr/local/bin/nuxel-edge-render.py",
+    "result": "PASS_UI_RENDER_EFFECTS (all four checks incl. panel both sides)",
+    "evidence": "evidence/pwnage103000/device/render-final/evidence.json"
+  },
+  "updated_at": "post-deploy-final"
+}

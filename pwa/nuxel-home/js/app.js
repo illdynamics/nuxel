@@ -1212,7 +1212,13 @@ class NuxelHome {
             const timeout = setTimeout(() => resolve({ success: false, error: 'timeout' }), timeoutMs || 8000);
             const options = { method: method, headers: { 'Content-Type': 'application/json' } };
             if (body) options.body = JSON.stringify(body);
-            fetch('http://127.0.0.1:8080' + path, options)
+            // Send the Home-bound session token.  Loopback alone is not
+            // authentication (PenGuru G0): the bridge binds app_id to token.
+            const shared = window.NuxelBridge;
+            const request = (shared && typeof shared.bridgeFetch === 'function')
+                ? shared.bridgeFetch(path.replace(/^\/api\/v1/, ''), options)
+                : fetch('http://127.0.0.1:8080' + path, options);
+            request
                 .then((r) => r.json().catch(() => ({})))
                 .then((data) => { clearTimeout(timeout); resolve(data); })
                 .catch((e) => { clearTimeout(timeout); resolve({ success: false, error: String(e) }); });

@@ -1,0 +1,58 @@
+[Unit]
+Description=Nuxel native Broadcom BBD/LHD GNSS bridge (beyond2lte BCM4773)
+Documentation=file:///usr/share/doc/nuxel/docs/hardware/gps/GPS-IMPLEMENTATION.md
+After=systemd-udevd.service
+Before=nuxel-bridge.service
+Wants=systemd-udevd.service
+# Never block boot: this is a Type=simple optional service.
+ConditionPathExists=/dev/ttyBCM
+ConditionPathExists=/dev/bbd_patch
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py --session --observe 5 --handshake-timeout 15
+# Run as root ONLY because it must own /dev/ttyBCM (root:audio 0660) and the
+# GPS_PWR_EN rail. Device access stays least-privilege via the existing udev
+# group; this service does not chmod 666 anything.
+User=root
+Group=root
+# A88: the configured command is a BOUNDED one-shot session (--session), so a
+# completed session is a successful unit, not a crash.  nuxel_lhd exits 2 when
+# the proprietary lhd/gpsd decode boundary is reached (documented, expected on
+# this image), and Restart=on-failure then re-ran the hardware power cycle
+# every ~30 s forever (measured: restart counter 16).  Exit 0 is reported
+# honestly as "boundary reached" in the journal; only a real crash restarts.
+Restart=on-failure
+RestartSec=5
+SuccessExitStatus=2
+# Bounded: the daemon self-limits handshake/observe windows and restores power.
+TimeoutStartSec=40
+TimeoutStopSec=10
+# Preserve least privilege beyond the required device access.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/run
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+DeviceAllow=/dev/ttyBCM rw
+DeviceAllow=/dev/bbd_patch r
+DeviceAllow=/dev/bbd_control rw
+# A88: GPS_PWR_EN is a sysfs attribute, not a device node.  systemd rejects a
+# DeviceAllow for it ("Invalid device node path") on every unit load; access to
+# the rail is granted by the filesystem policy (ProtectSystem/ReadWritePaths or
+# the udev node) exactly as before, so only the invalid line is removed.
+DevicePolicy=closed
+
+# Honest reporting: this daemon reaches the communication boundary but cannot
+# decode a GNSS fix without the proprietary lhd/gpsd RPC map. It never reports
+# a fake fix. See GPS-BLOCKERS.md.
+
+[Install]
+WantedBy=multi-user.target

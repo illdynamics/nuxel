@@ -30,8 +30,29 @@ def _post(verb, params, timeout):
         "verb": verb,
         "params": params,
     }).encode()
+    headers = {"Content-Type": "application/json"}
+    # G0: the Bridge binds app_id to an app-bound session token.  This
+    # root-owned helper exchanges the device launcher secret for a Home-scoped
+    # token; it never relies on a loopback bypass.  Any failure leaves the
+    # request unauthenticated, which the Bridge refuses, and the helper then
+    # reports "not published" instead of inventing a lock state.
+    try:
+        with open("/etc/nuxel/keyring-launcher.secret") as fh:
+            secret = fh.read(256).strip()
+        if len(secret) == 64:
+            mint = json.dumps({"app_id": "org.nuxel.Home"}).encode()
+            mreq = urllib.request.Request(
+                "http://127.0.0.1:8080/api/v1/auth/app-token", data=mint,
+                headers={"Content-Type": "application/json",
+                         "X-Nuxel-Launcher-Secret": secret}, method="POST")
+            with urllib.request.urlopen(mreq, timeout=timeout) as mresp:
+                token = json.loads(mresp.read(65536) or b"{}").get("token")
+            if token:
+                headers["Authorization"] = "Bearer " + token
+    except Exception:  # noqa: BLE001 - reported as not-published below
+        pass
     req = urllib.request.Request(
-        RPC, data=body, headers={"Content-Type": "application/json"},
+        RPC, data=body, headers=headers,
         method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         doc = json.loads(resp.read(65536) or b"{}")

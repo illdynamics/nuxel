@@ -218,10 +218,22 @@
       var controller = global.AbortController ? new global.AbortController() : null;
       var timer = controller ? global.setTimeout(function () { controller.abort(); }, 4000) : null;
       function finish() { if (timer !== null) { global.clearTimeout(timer); timer = null; } }
-      global.fetch(API_PATH, {
-        cache: 'no-store', credentials: 'omit',
-        signal: controller ? controller.signal : undefined
-      }).then(function (response) {
+      // The bridge requires an app-bound session token (G0).  Use the shared
+      // client's authenticated fetch when present; an unauthenticated loopback
+      // request is not a capability.
+      var request;
+      if (global.NuxelBridge && typeof global.NuxelBridge.bridgeFetch === 'function') {
+        request = global.NuxelBridge.bridgeFetch('/system/indicators', {
+          cache: 'no-store', credentials: 'omit',
+          signal: controller ? controller.signal : undefined
+        });
+      } else {
+        request = global.fetch(API_PATH, {
+          cache: 'no-store', credentials: 'omit',
+          signal: controller ? controller.signal : undefined
+        });
+      }
+      request.then(function (response) {
         if (!response.ok) throw new Error('indicators status ' + response.status);
         return response.json();
       }).then(function (data) {
@@ -508,12 +520,16 @@
     // (same-origin, key-authenticated) rather than routing through NuxelHost.
     var request;
     if (typeof global.fetch === 'function') {
-      request = global.fetch('http://127.0.0.1:8080/api/v1/usb-mode/set-mode', {
+      var modeOpts = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: mode }),
+        body: JSON.stringify({ app_id: 'org.nuxel.Home', mode: mode }),
         cache: 'no-store',
-      }).then(function (res) {
+      };
+      var modeReq = (global.NuxelBridge && typeof global.NuxelBridge.bridgeFetch === 'function')
+        ? global.NuxelBridge.bridgeFetch('/usb-mode/set-mode', modeOpts)
+        : global.fetch('http://127.0.0.1:8080/api/v1/usb-mode/set-mode', modeOpts);
+      request = modeReq.then(function (res) {
         return res.json().catch(function () { return {}; });
       }).catch(function (err) { return { success: false, error: String(err && err.message || err) }; });
     } else {

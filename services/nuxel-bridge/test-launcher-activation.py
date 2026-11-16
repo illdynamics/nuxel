@@ -91,7 +91,12 @@ def install_dbus_stub() -> None:
 
 def load_api(registry_path: str):
     install_dbus_stub()
+    # Offline VM harness: loopback auth is double-gated now (G0).
     os.environ["NUXEL_HTTP_MODE"] = "dev"
+    os.environ["NUXEL_HTTP_DEV_LOOPBACK_BYPASS"] = "1"
+    src_dir = os.path.join(HERE, "src")
+    if src_dir not in sys.path:
+        sys.path.insert(0, src_dir)
     spec = importlib.util.spec_from_file_location("nuxel_api_activation_under_test", API_SRC)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)          # type: ignore[union-attr]
