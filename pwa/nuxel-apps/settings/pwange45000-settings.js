@@ -505,8 +505,8 @@
         if (m === 'fingerprint' && !(st.fingerprint && st.fingerprint.selectable)) {
           b.disabled = true; b.title = 'Set a PIN and enable fingerprint first';
         }
-        if (m === 'pattern' && !st.pin_fallback_set && st.mode === 'swipe') {
-          /* a pattern can be the first credential; setup confirms twice */
+        if (m !== 'swipe' && (!st.pin_fallback_set || (m === 'pattern' && !st.pattern_set))) {
+          b.disabled = true; b.title = !st.pin_fallback_set ? 'Set a PIN first' : 'Set a pattern first';
         }
         b.addEventListener('click', function () { chooseMode(m); });
         box.appendChild(b);
@@ -517,8 +517,12 @@
       if (!b) return;
       var active = (kind === 'unlock') ? st.mode === 'swipe' : st.mode === kind;
       b.classList.toggle('primary', active);
+      b.disabled = kind !== 'unlock' && (!st.pin_fallback_set || (kind === 'pattern' && !st.pattern_set) ||
+        (kind === 'fingerprint' && !(st.fingerprint && st.fingerprint.selectable)));
     });
-    var isPattern = st.mode === 'pattern' || (st.credential_set && st.secret_kind === 'pattern');
+    var isPattern = !!st.pattern_set;
+    var patternSetup = $('sec-pattern-setup');
+    if (patternSetup) patternSetup.disabled = !st.pin_fallback_set;
     var setupBtn = $('sec-pattern-setup'), wizard = $('sec-pattern-wizard');
     if (setupBtn && (!wizard || wizard.hidden)) setupBtn.textContent = isPattern ? 'Change pattern lock' : 'Set up pattern lock';
     setText('sec-pattern-status', isPattern
@@ -555,36 +559,11 @@
   }
   function chooseMode(m) {
     selectedMode = m;
-    /* A86: choosing a lock METHOD always establishes that method's credential
-       in the same step.  A method is never selected before its secret exists. */
-    if (m === 'pattern') {
-      openPatternSetup();
-      setText('sec-result', 'Draw the pattern twice in the wizard; the lock switches when it is saved.');
-      return;
-    }
-    if (m === 'pin') {
-      var pp = $('sec-pin'), pp2 = $('sec-pin2');
-      if (pp && pp.value && pp2 && pp2.value && pp.value === pp2.value) {
-        applyPreset('pin');
-      } else if (pp) {
-        pp.focus();
-        setText('sec-result', 'Enter the PIN twice, then press Set PIN (or PIN mode) to activate PIN unlock.');
-      }
-      return;
-    }
-    if (m === 'fingerprint') {
-      if (currentSecret() || presetValue('fingerprint').v) applyPreset('fingerprint');
-      setText('sec-result', 'Fingerprint mode needs a registered fingerprint and a PIN fallback; ' +
-        'enter that PIN twice above, register the fingerprint, then press Enable fingerprint unlock.');
-      return;
-    }
-    var cur = currentSecret();
-    if (!cur) { setText('sec-result', 'Enter the current unlock credential to switch to Swipe.'); return; }
-    call('security', 'set-mode', { mode: 'swipe', confirm_downgrade: true, current_secret: cur }).then(function (r) {
-      setText('sec-result', r && r.success ? 'Swipe unlock enabled: the credential was removed.' :
-        ('Refused: ' + ((r && (r.error || r.detail)) || 'unknown')));
-      if (r && r.success) { var c = $('sec-current'); if (c) c.value = ''; }
-      announceMode(); loadSecurity();
+    call('security', 'set-mode', { mode: m, confirm_downgrade: m === 'swipe', current_secret: currentSecret() || undefined }).then(function (r) {
+      setText('sec-result', r && r.success ? (m === 'swipe' ? 'Swipe only enabled. Saved credentials are retained.' : m + ' unlock enabled.') :
+        ('Refused: ' + ((r && (r.detail || r.error)) || 'unknown')));
+      if (r && r.success) { var c = $('sec-current'); if (c) c.value = ''; announceMode(); }
+      loadSecurity();
     });
   }
   function currentSecret() { var e = $('sec-current'); return e ? e.value : ''; }
@@ -598,40 +577,7 @@
     var v2 = p2 && p2.value ? p2.value : v;
     return { v: v, v2: v2 };
   }
-  function applyPreset(kind) {
-    if (kind !== 'unlock') {
-      var vals = presetValue(kind);
-      if (!vals.v) { setText('sec-preset-result', 'Type the PIN (twice) in the PIN code card first.'); return; }
-      if (vals.v !== vals.v2) { setText('sec-preset-result', 'The two PIN entries do not match.'); return; }
-    }
-    var params = { preset: kind };
-    if (kind === 'pin') { params.secret = presetValue(kind).v; params.secret_confirm = params.secret; }
-    if (kind === 'pattern') {
-      /* Never activate a pattern that was not confirmed twice.  The wizard is
-         the only path that stores/activates a pattern. */
-      openPatternSetup();
-      setText('sec-preset-result', 'Draw the pattern twice in the wizard below; the lock switches when it is saved.');
-      return;
-    }
-    if (kind === 'fingerprint') { params.secret = presetValue('fingerprint').v; }
-    var cur = currentSecret(); if (cur) params.current_secret = cur;
-    setText('sec-preset-result', 'Applying…');
-    call('security', 'apply-preset', params).then(function (r) {
-      if (r && r.success) {
-        var msg = {
-          unlock: 'Unlock directly: swipe the lockhead up and the phone opens.',
-          pin: 'PIN lock active: swipe the lockhead up, then enter the PIN.',
-          pattern: 'Pattern lock active: swipe the lockhead up, draw the pattern (PIN button for the PIN).',
-          fingerprint: 'Fingerprint lock active: the scanner with a PIN button.'
-        }[kind] || 'Lock updated.';
-        setText('sec-preset-result', msg);
-        var c = $('sec-current'); if (c) c.value = '';
-        announceMode(); loadSecurity();
-      } else {
-        setText('sec-preset-result', 'Refused: ' + ((r && (r.detail || r.error)) || 'unknown'));
-      }
-    }).catch(function (e) { setText('sec-preset-result', 'Failed: ' + (e && (e.message || e))); });
-  }
+  function applyPreset(kind) { chooseMode(kind === 'unlock' ? 'swipe' : kind); }
 
   function setPin() {
     var p = $('sec-pin'), p2 = $('sec-pin2');
@@ -659,7 +605,8 @@
     var v = p ? p.value : '', v2 = p2 ? p2.value : '';
     if (v) {
       if (v !== v2) { setText('sec-pin-result', 'The two PIN entries do not match.'); return; }
-      applyPreset('pin');
+      call('security', 'apply-preset', { preset: 'pin', secret: v, secret_confirm: v2, current_secret: currentSecret() || undefined })
+        .then(function (r) { setText('sec-pin-result', r && r.success ? 'PIN unlock enabled.' : 'Could not save PIN.'); announceMode(); loadSecurity(); });
       return;
     }
     call('security', 'status', {}).then(function (st) {

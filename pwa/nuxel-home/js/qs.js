@@ -273,7 +273,7 @@ class QuickSettings {
             else if (active && ssh === 'link-up-unverified') text = 'link';
             if (label) label.innerHTML = 'USB Net<br>' + text;
             tile.title = active
-                ? 'USB network active on ' + (st.interface || '?') + ' (' + (st.function || 'ncm') +
+                ? 'USB network active on ' + (st.interface || '?') + ' (' + (st.function || 'ecm') +
                   ', ACM preserved). SSH: ' + ssh + '. Tap = off.'
                 : 'USB network off. Tap = enable local USB Ethernet/SSH. This does not share Internet.';
         };
@@ -307,7 +307,7 @@ class QuickSettings {
             tile.dataset.enabled = 'busy';
             const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'USB Net<br>busy';
             try {
-                const r = await bridge.call('usb-net', 'set-mode', { mode: mode, function: 'ncm' });
+                const r = await bridge.call('usb-net', 'set-mode', { mode: mode, function: 'ecm' });
                 if (r && r.success) {
                     this._osdNotice(mode === 'off' ? 'USB networking off' : 'USB networking on');
                 } else {

@@ -51,9 +51,9 @@
     var mode = r.active ? (r.mode || r.selected || 'off') : 'off';
     var lines = [
       'USB link: ' + (r.active ? mode.toUpperCase() : 'OFF') +
-        (r.interface ? '  (' + r.interface + ', ' + (r.function || 'ncm') + ')' : ''),
-      'Phone: ' + (r.device_ip || '10.15.19.1') + '   Host: ' + (r.host_ip || '10.15.19.2') +
-        '   subnet: ' + (r.subnet || '10.15.19.0/24'),
+        (r.interface ? '  (' + r.interface + ', ' + (r.function || 'ecm') + ')' : ''),
+      'Phone: ' + (r.device_ip || '10.100.10.1') + '   Host: ' + (r.host_ip || '10.100.10.2') +
+        '   subnet: ' + (r.subnet || '10.100.10.0/24'),
       'ACM recovery console: ' + (r.acm_preserved ? 'preserved' : 'NOT CONFIRMED') + ' in every mode',
       'SSH: ' + (r.active ? 'USB link up; a host-side key-authenticated probe is what marks it READY' : 'n/a')
     ];
@@ -76,8 +76,8 @@
     var lines = ['Internet sharing: ' + state];
     if (r.upstream) lines.push('upstream: ' + r.upstream + (r.vpn_armed ? '  (VPN kill switch armed)' : ''));
     if (r.usb_interface) lines.push('USB interface: ' + r.usb_interface);
-    if (r.source_address) lines.push('host: ' + (r.host_address || '10.15.19.2/24') +
-      '  gateway: ' + (r.gateway || '10.15.19.1') + '  (DHCP: ' + (r.dhcp || 'static-host-config') + ')');
+    if (r.source_address) lines.push('host: ' + (r.host_address || '10.100.10.2/24') +
+      '  gateway: ' + (r.gateway || '10.100.10.1') + '  (DHCP: ' + (r.dhcp || 'static-host-config') + ')');
     lines.push('Host Internet verified: ' + (r.internet_verified ? 'yes' : 'no') +
       ' (a configured share alone is not proof)');
     if (r.vpn_conflict) lines.push('VPN: ' + r.vpn_conflict);
@@ -137,7 +137,7 @@
   function apply(mode) {
     busy(true);
     setText('usbnet-state', 'Applying ' + mode + '…');
-    rpc('usb-net', 'set-mode', { mode: mode, function: 'ncm' }).then(function (r) {
+    rpc('usb-net', 'set-mode', { mode: mode, function: 'ecm' }).then(function (r) {
       if (!r || r.success === false) {
         setText('usbnet-state', mode + ' FAILED: ' + ((r && (r.error || r.last_error || r.detail)) || 'helper did not confirm'));
       }

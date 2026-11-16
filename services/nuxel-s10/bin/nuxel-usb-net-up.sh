@@ -5,7 +5,7 @@
 # teardown-clean CDC data plane (the NCM function is the one with the recorded
 # 4.14 teardown panic and is NEVER used here).  This script adds an ECM
 # function next to the ACM live console, re-binds the UDC once, and gives the
-# phone end of the link 10.15.19.1/24 (the Mac reaches it with 10.15.19.2/24,
+# phone end of the link 10.100.10.1/24 (the Mac reaches it with 10.100.10.2/24,
 # see scripts/s10plus-debug-pack/nuxel-usb-net-host.sh).
 #
 # It is idempotent: re-running with the function already present only makes
@@ -19,7 +19,11 @@ GADGET=${NUXEL_USB_GADGET:-/sys/kernel/config/usb_gadget/nuxel}
 CONFIG=${NUXEL_USB_CONFIG:-c.1}
 FUNC=ecm.usb0
 UDC=${NUXEL_UDC_NAME:-10c00000.dwc3}
-ADDR=${NUXEL_USB_NET_ADDR:-10.15.19.1/24}
+# The owner may change these three values in /etc/nuxel/usb-network.conf.
+# Keep the safe defaults when the optional file is absent.
+USB_NET_CONFIG=${NUXEL_USB_NET_CONFIG:-/etc/nuxel/usb-network.conf}
+[ -r "$USB_NET_CONFIG" ] && . "$USB_NET_CONFIG"
+ADDR=${NUXEL_USB_NET_ADDR:-10.100.10.1/24}
 IFACE=${NUXEL_USB_NET_IFACE:-usb0}
 STATE_DIR=${NUXEL_USB_RUN_DIR:-/run/nuxel}
 MARKER="$STATE_DIR/usb-net.state"
@@ -27,7 +31,17 @@ MARKER="$STATE_DIR/usb-net.state"
 log() { printf '%s nuxel-usb-net-up: %s\n' "$(date -u +%FT%TZ)" "$*" >&2; }
 state() { printf '{"active":%s,"interface":"%s","address":"%s","error":%s}\n' "$1" "$IFACE" "$ADDR" "${2:-null}" > "$MARKER.tmp.$$" 2>/dev/null && mv -f "$MARKER.tmp.$$" "$MARKER" 2>/dev/null; }
 
-[ -d "$GADGET" ] || { log "no gadget at $GADGET (ACM-only console?)"; state false '"no-gadget"'; exit 0; }
+mkdir -p "$STATE_DIR"
+# Keep ACM and ECM descriptors alive on Stop; only remove the local IP link.
+# Unbinding the composite gadget would interrupt the serial recovery console.
+if [ "${1:-start}" = stop ]; then
+  ip addr del "$ADDR" dev "$IFACE" 2>/dev/null || true
+  state false
+  exit 0
+fi
+exec 9>"$STATE_DIR/usb-network.lock"
+flock -x 9
+[ -d "$GADGET" ] || { log "no gadget at $GADGET (ACM-only console?)"; state false '"no-gadget"'; exit 1; }
 
 if [ ! -d "$GADGET/functions/$FUNC" ]; then
   mkdir -p "$GADGET/functions/$FUNC" || { log "cannot create $FUNC"; state false '"configfs-ecm"'; exit 1; }
@@ -45,8 +59,9 @@ fi
 
 [ -e "/sys/class/net/$IFACE" ] || { log "$IFACE did not appear"; state false '"no-interface"'; exit 1; }
 ip link set "$IFACE" up || true
+ip addr flush dev "$IFACE" scope global 2>/dev/null || true
 ip addr replace "$ADDR" dev "$IFACE" || { log "cannot address $IFACE"; state false '"address"'; exit 1; }
 # Directly-connected /24 only: no default route, no DNS change.
 state true
-log "USB network ready: $IFACE $ADDR (owner SSH: ssh -i ~/.ssh/wicked_wqn_id_rsa root@10.15.19.1)"
+log "USB network ready: $IFACE $ADDR (owner SSH: ssh -i ~/.ssh/wicked_wqn_id_rsa -p 2022 root@10.100.10.1)"
 exit 0

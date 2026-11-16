@@ -1,0 +1,15 @@
+[Unit]
+Description=Nuxel USB earphone and microphone discovery
+After=nuxel-audio-session.service nuxel-flatpak-pulse-relay.service
+Wants=nuxel-audio-session.service nuxel-flatpak-pulse-relay.service
+
+[Service]
+ExecStart=/usr/libexec/nuxel/nuxel-usb-audio
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

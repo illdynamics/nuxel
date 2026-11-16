@@ -102,7 +102,7 @@ class NotificationClient:
 
 class DisplayDaemon:
     def __init__(self, root: str = "/", run_dir: str = RUN_DIR,
-                 state_dir: str = STATE_DIR, poll_interval: float = 0.2,
+                 state_dir: str = STATE_DIR, poll_interval: float = 1.0,
                  notifier: Optional[NotificationClient] = None,
                  runner=subprocess.run):
         self.root = root
@@ -1112,7 +1112,7 @@ def main(argv=None) -> int:
     ap.add_argument("--root", default="/")
     ap.add_argument("--run-dir", default=RUN_DIR)
     ap.add_argument("--state-dir", default=STATE_DIR)
-    ap.add_argument("--poll-interval", type=float, default=0.2)
+    ap.add_argument("--poll-interval", type=float, default=1.0)
     ap.add_argument("--once", action="store_true", help="print one status JSON and exit")
     ap.add_argument("--notify-test", action="store_true", help="submit a synthetic notification and exit")
     args = ap.parse_args(argv)

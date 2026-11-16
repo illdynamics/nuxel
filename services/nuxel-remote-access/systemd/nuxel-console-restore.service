@@ -1,0 +1,12 @@
+[Unit]
+Description=Hand the initramfs serial console to its persistent systemd owner
+After=systemd-tmpfiles-setup.service
+Before=nuxel-console.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/console_control.py
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

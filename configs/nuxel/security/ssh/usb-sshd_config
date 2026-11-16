@@ -1,0 +1,22 @@
+Port 2022
+AddressFamily inet
+ListenAddress 10.100.10.1
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_rsa_key
+AuthorizedKeysFile .ssh/authorized_keys
+AuthenticationMethods publickey
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+PermitRootLogin prohibit-password
+AllowUsers root@10.100.10.0/24 nuxel@10.100.10.0/24
+UsePAM yes
+AllowAgentForwarding no
+AllowTcpForwarding local
+X11Forwarding no
+PermitTunnel no
+ClientAliveInterval 30
+ClientAliveCountMax 3
+PidFile /run/nuxel-usb-sshd.pid
+Subsystem sftp /usr/libexec/openssh/sftp-server

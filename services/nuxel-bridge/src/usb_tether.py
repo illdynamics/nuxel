@@ -45,15 +45,33 @@ import re
 import subprocess
 from typing import Any, Dict, List, Optional
 
-DEFAULT_SUBNET = "10.15.19.0/24"
+def _usb_config():
+    values = {"NUXEL_USB_NET_SUBNET": "10.100.10.0/24",
+              "NUXEL_USB_NET_ADDR": "10.100.10.1/24",
+              "NUXEL_USB_NET_HOST_ADDR": "10.100.10.2/24"}
+    try:
+        with open(os.environ.get("NUXEL_USB_NET_CONFIG", "/etc/nuxel/usb-network.conf")) as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                if key in values:
+                    values[key] = value.strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return values
+
+_USB_CONFIG = _usb_config()
+DEFAULT_SUBNET = _USB_CONFIG["NUXEL_USB_NET_SUBNET"]
 TABLE = "nuxel_usb_tether"
 
 
 def _root(env: str, default: str) -> str:
     return os.environ.get(env, default)
 # DHCP-less link: the host is configured .2/24, gateway .1 (the phone).
-HOST_ADDRESS = "10.15.19.2/24"
-DEFAULT_GATEWAY = "10.15.19.1"
+HOST_ADDRESS = _USB_CONFIG["NUXEL_USB_NET_HOST_ADDR"]
+DEFAULT_GATEWAY = _USB_CONFIG["NUXEL_USB_NET_ADDR"].split("/", 1)[0]
 IFNAME_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,15}$")
 # Never selectable as an upstream: the gadget itself and loopback.
 _NOT_UPSTREAM = re.compile(r"^(lo|usb\d+|ncm\d+|rndis\d+|eem\d+|usb_tether\w*)$")
@@ -154,17 +172,11 @@ def _vpn_armed() -> bool:
 
 def usb_link() -> Dict[str, Any]:
     """The live USB link from the single gadget owner's activation record."""
-    st = _read_json(_usb_state_path())
-    mode = st.get("mode")
-    iface = st.get("interface") or ""
-    active = bool(st.get("active")) and mode in ("usb_network", "usb_tethering")
-    if not iface or not os.path.isdir(os.path.join(_sys_net(), iface)):
-        active = False
-    addr = st.get("phone_address") or ""
-    return {"active": active, "interface": iface if active else "",
-            "mode": mode, "phone_address": addr,
-            "host_address": st.get("host_address") or HOST_ADDRESS,
-            "netdev_present": bool(iface) and os.path.isdir(os.path.join(_sys_net(), iface))}
+    import usb_tethering
+    st = usb_tethering.current_state()
+    return {"active": st["active"], "interface": st["interface"],
+            "mode": st["mode"], "phone_address": st["device_ip"],
+            "host_address": HOST_ADDRESS, "netdev_present": bool(st["interface"])}
 
 
 def upstream_candidates() -> List[Dict[str, Any]]:
@@ -255,19 +267,50 @@ def _port_conflict(link: Dict[str, Any], upstream: Dict[str, Any]) -> Optional[s
 
 
 def _render(link: Dict[str, Any], upstream: Dict[str, Any]) -> str:
-    src = _source_address(link)
-    usb = link["interface"]
-    up = upstream["interface"]
+    # Do not impose a default-drop policy on hotspot/VPN forwarding. Restrict
+    # only this USB interface; unrelated forwarding remains with its owner.
+    usb, up = link["interface"], upstream["interface"]
     return "\n".join([
         "add table inet %s" % TABLE,
-        "add chain inet %s forward { type filter hook forward priority -50; policy drop; }" % TABLE,
-        "add rule inet %s forward iifname \"%s\" oifname \"%s\" ip saddr %s ct state new,established accept" % (TABLE, usb, up, src),
-        "add rule inet %s forward iifname \"%s\" oifname \"%s\" ip daddr %s ct state established,related accept" % (TABLE, up, usb, src),
-        "add chain inet %s postrouting { type nat hook postrouting priority 110; policy accept; }" % TABLE,
-        "add rule inet %s postrouting oifname \"%s\" ip saddr %s masquerade" % (TABLE, up, src),
-        "add rule inet %s forward ct state established,related accept" % TABLE,
-        "",
-    ])
+        "add chain inet %s forward { type filter hook forward priority -50; policy accept; }" % TABLE,
+        'add rule inet %s forward iifname "%s" oifname "%s" ip saddr %s counter accept' % (TABLE, usb, up, DEFAULT_SUBNET),
+        'add rule inet %s forward iifname "%s" oifname "%s" ip daddr %s ct state established,related counter accept' % (TABLE, up, usb, DEFAULT_SUBNET),
+        'add rule inet %s forward iifname "%s" counter drop' % (TABLE, usb),
+        'add rule inet %s forward oifname "%s" counter drop' % (TABLE, usb), ""])
+
+NAT_CHAIN = "NUXEL_USB_TETHER"
+PREF_PATH = "/var/lib/nuxel/usb-tether-preferences.json"
+UNIT = "nuxel-usb-tether.service"
+
+def _clear_nat():
+    while _run(["iptables", "-w", "-t", "nat", "-D", "POSTROUTING", "-j", NAT_CHAIN]).returncode == 0:
+        pass
+    _run(["iptables", "-w", "-t", "nat", "-F", NAT_CHAIN])
+    _run(["iptables", "-w", "-t", "nat", "-X", NAT_CHAIN])
+
+def _install_nat(upstream):
+    # This vendor kernel supports iptables NAT, but lacks nftables NAT chains.
+    # Our private chain never edits the hotspot's NUXEL_TETHER chain.
+    _clear_nat()
+    for args in (["-N", NAT_CHAIN],
+                 ["-A", NAT_CHAIN, "-s", DEFAULT_SUBNET, "-o", upstream, "-j", "MASQUERADE"],
+                 ["-A", "POSTROUTING", "-j", NAT_CHAIN]):
+        proc = _run(["iptables", "-w", "-t", "nat", *args])
+        if proc.returncode:
+            _clear_nat()
+            return proc
+    return proc
+
+def _service_control(enabled, upstream=None):
+    _write_json(PREF_PATH, {"enabled": enabled, "upstream": upstream})
+    proc = _run(["systemctl", "enable" if enabled else "disable", UNIT])
+    if not proc.returncode:
+        proc = _run(["systemctl", "restart" if enabled else "stop", UNIT], timeout=55)
+    out = status()
+    out["success"] = proc.returncode == 0 and out["enabled"] == enabled
+    if not out["success"]:
+        out["error"] = proc.stderr.strip() or out.get("last_error") or "USB tether service failed"
+    return out
 
 
 def _run_nft_script(script: str) -> subprocess.CompletedProcess:
@@ -293,8 +336,10 @@ def _ip_forward() -> str:
 def _host_evidence() -> Dict[str, Any]:
     ev = _read_json(_evidence_path())
     try:
-        age = int(ev.get("age_seconds"))
-    except (TypeError, ValueError):
+        age = max(0, int(float(_uptime()) - float(ev["uptime"])))
+        if ev.get("boot_id") != _read("/proc/sys/kernel/random/boot_id"):
+            age = None
+    except (KeyError, TypeError, ValueError):
         age = None
     return {"verified": bool(ev.get("verified")) and age is not None and age <= 120,
             "source": ev.get("source"), "age_seconds": age,
@@ -357,6 +402,8 @@ def status() -> Dict[str, Any]:
 
 
 def start(upstream: Optional[str] = None, source: str = "api") -> Dict[str, Any]:
+    if os.environ.get("NUXEL_USB_TETHER_WORKER") != "1":
+        return _service_control(True, upstream)
     link = usb_link()
     if not link["active"]:
         return {"success": False, "error": "usb-network-not-active",
@@ -393,6 +440,10 @@ def start(upstream: Optional[str] = None, source: str = "api") -> Dict[str, Any]
         _run(["nft", "delete", "table", "inet", TABLE])
         return {"success": False, "error": "nft reported success but the table is absent",
                 "error_code": "NFT_VERIFY_FAILED"}
+    nat = _install_nat(up["interface"])
+    if nat.returncode:
+        _run(["nft", "delete", "table", "inet", TABLE])
+        return {"success": False, "error": nat.stderr, "error_code": "NAT_FAILED"}
     sysctl = _run(["sysctl", "-qw", "net.ipv4.ip_forward=1"])
     if sysctl.returncode != 0 or _ip_forward() != "1":
         _run(["nft", "delete", "table", "inet", TABLE])
@@ -418,8 +469,13 @@ def start(upstream: Optional[str] = None, source: str = "api") -> Dict[str, Any]
 
 
 def stop(source: str = "api") -> Dict[str, Any]:
+    if os.environ.get("NUXEL_USB_TETHER_WORKER") != "1":
+        return _service_control(False)
+    _clear_nat()
     st = _read_json(_state_path())
     _run(["nft", "delete", "table", "inet", TABLE])
+    # Local-only networking must not keep forwarding after sharing is stopped.
+    _run_nft_script("add table inet %s\nadd chain inet %s forward { type filter hook forward priority -50; policy accept; }\nadd rule inet %s forward iifname \"usb0\" drop\n" % (TABLE, TABLE, TABLE))
     # v0.8.5: DO NOT restore a stale "previous" ip_forward here.  Forwarding is
     # shared with the Wi-Fi hotspot; stopping tethering used to write back the
     # value captured at tether start (0 if the hotspot was not yet running),
@@ -472,7 +528,8 @@ def host_report(payload: Dict[str, Any]) -> Dict[str, Any]:
         "checked_phone": dst_ip,
         "dns_ok": bool(payload.get("dns_ok")),
         "ping_ok": bool(payload.get("ping_ok")),
-        "age_seconds": 0,
+        "age_seconds": 0, "uptime": _uptime(),
+        "boot_id": _read("/proc/sys/kernel/random/boot_id"),
         "checked_at": payload.get("checked_at") or "",
     }
     if not ev["verified"]:

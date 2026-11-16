@@ -257,7 +257,7 @@ DEV_LOOPBACK_BYPASS = (
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.5-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.6-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -2842,6 +2842,21 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip('/')
+
+        # Package artwork is a public image asset. <img> cannot attach the
+        # per-app bearer header. Only a validated desktop ID is accepted here;
+        # all other API routes retain their authentication boundary.
+        icon = re.fullmatch(r'/api/v1/(apps|flatpak)/icon/([A-Za-z0-9][A-Za-z0-9._-]{1,127})', path)
+        if icon:
+            if icon.group(1) == 'flatpak' and flatpak_provider is not None:
+                data, mime, err = flatpak_provider.get_provider().icon(icon.group(2))
+            else:
+                data, mime, err = resolve_desktop_icon(icon.group(2))
+            if data is not None and mime:
+                self._send_bytes(data, mime, cache='private, max-age=300')
+            else:
+                self._send_json({'success': False, 'error': 'icon_not_found'}, 404)
+            return
 
         if not self._verify_auth():
             self._send_json({'error': 'unauthorized'}, 401)
@@ -6116,12 +6131,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 logger.warning('flashlight RPC %s failed: %s', verb, exc)
                 return {'success': False, 'state': 'ERROR', 'error': str(exc)}
         if namespace == 'system' and verb == 'tri-link':
-            if tri_link_status is not None:
-                try:
-                    return tri_link_status.get_status()
-                except Exception as exc:  # noqa: BLE001
-                    return {'success': False, 'error': str(exc)}
-            return {'success': False, 'error': 'tri_link_status unavailable'}
+            try:
+                import console_control
+                return console_control.control(params.get('action', 'status'), params.get('transport', 'wifi'), app_id)
+            except Exception as exc:
+                return {'success': False, 'error': str(exc)}
         if namespace == 'system' and verb == 'remote-desktop':
             if remote_desktop is None:
                 return {'success': False, 'error': 'remote_desktop unavailable',
@@ -7214,4 +7228,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("\nShutting down API server...")
         server.shutdown()
-

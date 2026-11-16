@@ -3,10 +3,10 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.8.5-beta** — _Live repair: Flatpak apps and messenger microphones, USB
-tethering, hotspot, idle CPU, and icon/lock-screen polish._
+**v0.8.6-beta** — _USB-ECM networking, persistent ZeroTier-bound remote access,
+audio/icon polish, and conservative hardware-state reporting._
 
-> **v0.8.5-beta (2026-11-15).** These fixes were reproduced and verified on the
+> **v0.8.6-beta (2026-11-16).** These fixes were reproduced and verified on the
 > live S10+ (Wi-Fi SSH and the USB-ECM console):
 >
 > - **Flatpak apps start again.** A root-owned `/run/user/1000/.flatpak` blocked
@@ -26,18 +26,17 @@ tethering, hotspot, idle CPU, and icon/lock-screen polish._
 >   behind the real icon; the blue rectangle after a power-menu lock is gone;
 >   the drawer and Settings are lighter.
 >
-> See [RELEASE-NOTES.md](RELEASE-NOTES.md),
-> [docs/v0.8.5-beta/REPORT.md](docs/v0.8.5-beta/REPORT.md) and the rewritten
-> [final-summary.md](final-summary.md).
+> See [CHANGELOG.md](CHANGELOG.md), [final-state-components.md](final-state-components.md),
+> and the detailed reports in [docs/](docs/).
 >
 > **Previously in v0.8.2-beta (2026-11-09).** XRDP and VNC are directly reachable on the
-> owner LAN on **TCP 13389** and **TCP 15900**, bound to the current trusted WLAN
-> IPv4 address. XRDP is TLS + PAM in a separate X11 session; VNC is PAM +
+> owner ZeroTier address `10.11.12.99` on **TCP 3389** and **TCP 5900**. USB SSH
+> remains at `10.100.10.1:2022`. XRDP is TLS + PAM in a separate X11 session; VNC is PAM +
 > VeNCrypt TLS/RSA-AES and mirrors the active Phoc session. Every bridge/UI
 > security field is derived from the effective daemon configuration. USB
 > Tri-Link is now mode-aware and honestly reports NCM as blocked on the recorded
 > 4.14.253 kernel and RNDIS as unverified. See
-> [RELEASE-NOTES.md](RELEASE-NOTES.md) and [REPORT-USBNET.md](REPORT-USBNET.md).
+> [CHANGELOG.md](CHANGELOG.md) and [final-state-components.md](final-state-components.md).
 >
 > **Previously in v0.7.7-beta:** **Nuxel Doom is now a real WAD engine.**
 > The old lookalike raycaster is gone: `org.nuxel.Doom` runs the **Chocolate
@@ -185,7 +184,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 See [RELEASE-NOTES.md](RELEASE-NOTES.md) for user-facing release notes and
 [CHANGELOG.md](CHANGELOG.md) for the complete engineering history.
 
-## Honest Status — v0.8.5-beta
+## Honest Status — v0.8.6-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**

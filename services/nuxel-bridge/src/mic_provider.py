@@ -228,6 +228,20 @@ def suppression_status() -> dict:
     }
 
 
+def set_source(node_id):
+    sources, error = _sources()
+    source = next((s for s in sources if str(s['id']) == str(node_id)), None)
+    if not source:
+        return {'success': False, 'error': 'Microphone is no longer connected'}
+    result = _run([WPCTL, 'set-default', str(source['id'])])
+    if result.returncode:
+        return {'success': False, 'error': result.stderr.strip()}
+    pref = _state()
+    pref['source_name'] = _inspect(source['id']).get('node.name', '')
+    _save_state(pref)
+    return status()
+
+
 def set_volume(percent: int) -> dict:
     sources, err = _sources()
     source = next((s for s in sources if s["default"]), sources[0] if sources else None)
@@ -345,12 +359,14 @@ def set_suppression(enabled: bool) -> dict:
 
 def rpc(app_id: str, verb: str, params: dict) -> dict:
     params = params if isinstance(params, dict) else {}
-    allowed = {"status", "volume", "mute", "level", "suppression"}
+    allowed = {"status", "volume", "mute", "level", "suppression", "select"}
     if verb not in allowed:
         return {"success": False, "error": "unknown microphone verb: %s" % verb,
                 "error_code": "UNKNOWN_VERB"}
     if verb == "status":
         return status()
+    if verb == "select":
+        return set_source(params.get("id"))
     if verb == "volume":
         return set_volume(params.get("percent", 100))
     if verb == "mute":

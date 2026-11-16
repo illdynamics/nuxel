@@ -1,7 +1,7 @@
 [Unit]
-Description=Nuxel USB network (ECM owner link at 10.15.19.1)
+Description=Nuxel USB network (ECM owner link at 10.100.10.1)
 Documentation=file:/usr/share/doc/nuxel/PWNAGE-107000-USBNET-REPORT.md
-After=network.target systemd-modules-load.service
+After=network.target systemd-modules-load.service nuxel-usb-mode-restore.service
 # Only when the owner has plugged the phone into a USB host.
 ConditionPathExists=/sys/class/udc/10c00000.dwc3
 
@@ -9,6 +9,7 @@ ConditionPathExists=/sys/class/udc/10c00000.dwc3
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/lib/nuxel/nuxel-usb-net-up.sh
+ExecStop=/usr/lib/nuxel/nuxel-usb-net-up.sh stop
 TimeoutStartSec=45
 
 [Install]

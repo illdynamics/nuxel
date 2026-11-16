@@ -1,0 +1,19 @@
+#!/usr/bin/python3
+"""Wait for the owner address on an actual ZeroTier interface; never bind LAN."""
+import json
+import subprocess
+import sys
+import time
+ADDRESS = '10.11.12.99'
+def ready():
+    try:
+        links = json.loads(subprocess.check_output(['ip','-j','-4','addr','show'], timeout=3))
+        return any(link['ifname'].startswith('zt') and any(a.get('local') == ADDRESS for a in link.get('addr_info', [])) for link in links)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+if __name__ == '__main__':
+    deadline = time.monotonic() + 45
+    while time.monotonic() < deadline:
+        if ready(): sys.exit(0)
+        time.sleep(1)
+    sys.exit('ZeroTier 10.11.12.99 is not assigned yet; systemd will retry.')

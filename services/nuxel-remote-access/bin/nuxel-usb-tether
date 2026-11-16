@@ -1,0 +1,21 @@
+#!/usr/bin/python3
+"""Fixed systemd worker; never receives a shell command from the bridge."""
+import json
+import os
+from pathlib import Path
+import sys
+sys.path.insert(0, '/usr/lib/nuxel/nuxel-bridge')
+os.environ['NUXEL_USB_TETHER_WORKER'] = '1'
+import usb_tether
+if sys.argv[1:] == ['stop']:
+    result = usb_tether.stop(source='systemd')
+else:
+    try:
+        pref = json.loads(Path(usb_tether.PREF_PATH).read_text())
+    except (OSError, ValueError):
+        pref = {}
+    result = usb_tether.start(pref.get('upstream'), source='systemd')
+    if not result.get('success'):
+        usb_tether._write_json(usb_tether._state_path(), {'enabled': False, 'last_error': result.get('error')})
+print(json.dumps(result))
+sys.exit(0 if result.get('success') else 1)

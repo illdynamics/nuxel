@@ -274,7 +274,7 @@ export class NuxelBridgeClient {
 
     /* ---- Low-level request ---- */
 
-    async _request(endpoint, data, method) {
+    async _request(endpoint, data, method, retried = false) {
         method = method || 'GET';
         const url = this.apiUrl + endpoint;
         const options = {
@@ -298,6 +298,10 @@ export class NuxelBridgeClient {
         options.headers['X-Nuxel-Bridge-Version'] = NUXEL_BRIDGE_VERSION;
         if (method === 'POST') options.body = JSON.stringify(data || {});
         const res = await fetch(url, options);
+        if (res.status === 401 && !retried) {
+            this.token = ''; this._pageBoundToken = ''; this._keyringToken = '';
+            return this._request(endpoint, data, method, true);
+        }
         if (!res.ok) {
             // A refusal body carries the machine-readable reason (error/detail).
             // Attach it so a caller can act on the refusal instead of string-
@@ -456,10 +460,11 @@ export class NuxelBridgeClient {
 
     /** Return a cached app-bound session token, minted via the launcher relay. */
     async _appBoundToken() {
-        if (this._pageBoundToken) return this._pageBoundToken;
+        if (this._pageBoundToken && Date.now() < (this._pageBoundExpiry || 0)) return this._pageBoundToken;
         try {
             const t = await this._keyringLauncherToken();
             this._pageBoundToken = t || '';
+            this._pageBoundExpiry = Date.now() + 3000 * 1000;
         } catch (e) {
             this._pageBoundToken = '';
         }
@@ -486,11 +491,13 @@ export class NuxelBridgeClient {
      */
     _keyringLauncherToken() {
         return new Promise((resolve, reject) => {
-            if (typeof window === 'undefined' || !window.parent || window.parent === window) {
+            if (typeof window === 'undefined' || !window.parent) {
                 reject(new Error('not-embedded'));
                 return;
             }
             const parent = window.parent;
+            const topFrame = parent === window;
+            if (topFrame && this.appId !== 'org.nuxel.Home') { reject(new Error('not-launcher')); return; }
             const bytes = new Uint8Array(16);
             const cryptoObj = (typeof globalThis !== 'undefined' && globalThis.crypto) ||
                 (typeof window !== 'undefined' && window.crypto) || null;
@@ -517,7 +524,7 @@ export class NuxelBridgeClient {
             }
             window.addEventListener('message', onMessage);
             try {
-                parent.postMessage({ type: 'nuxel-keyring-token-request',
+                parent.postMessage({ type: topFrame ? 'nuxel-keyring-mint' : 'nuxel-keyring-token-request',
                     app_id: this.appId, nonce: nonce }, window.location.origin);
             } catch (e) {
                 done = true;

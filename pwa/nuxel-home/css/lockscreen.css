@@ -1016,3 +1016,41 @@ body.nuxel-boot-locked #nuxel-power-menu {
     opacity: 0 !important;
     visibility: hidden !important;
 }
+
+/* v0.8.6: one credential surface; scanner shares the resting lockhead box. */
+.lockscreen-key svg { vertical-align: middle; pointer-events: none; }
+.lockscreen-auth-actions {
+    position: absolute; left: 0; right: 0; bottom: 24px;
+    display: flex; justify-content: center; gap: 18px;
+}
+.lockscreen-auth-actions[hidden] { display: none !important; }
+.lockscreen-auth-actions .lockscreen-pin-fallback {
+    position: static; transform: none; letter-spacing: normal;
+}
+.lockscreen-auth-actions .lockscreen-pin-fallback:active { transform: scale(.97); }
+.lockscreen-fingerprint {
+    left: 50%; top: var(--lockscreen-scanner-top, 78%);
+    width: var(--lockscreen-scanner-size, 118px);
+    height: var(--lockscreen-scanner-size, 118px);
+    transform: translateX(-50%);
+}
+.lockscreen-auth[data-mode="fingerprint"] .lockscreen-auth-actions {
+    bottom: auto; top: calc(var(--lockscreen-scanner-top) + var(--lockscreen-scanner-size) + 30px);
+}
+/* Keep the buttons on glass when the scanner is near the bottom edge. */
+.lockscreen-auth[data-mode="fingerprint"] .lockscreen-auth-actions {
+    top: auto; bottom: 4px;
+}
+.lockscreen-auth[data-mode="fingerprint"] .lockscreen-fingerprint-status { bottom: 100%; }
+.lockscreen-auth[data-mode="fingerprint"] .lockscreen-fingerprint-ring { width: 70%; height: 70%; }
+.lockscreen-auth[data-mode="fingerprint"] .lockscreen-pin-fallback { min-height: 36px; }
+.lockscreen-auth-error { bottom: 86px; }
+.lockscreen-auth[data-mode="fingerprint"] .lockscreen-auth-error { bottom: auto; top: 50%; }
+.credential-rejected { animation: nuxel-credential-shake .4s ease; }
+@keyframes nuxel-credential-shake {
+    0%, 100% { translate: 0; } 20%, 60% { translate: -12px; } 40%, 80% { translate: 12px; }
+}
+.lockscreen-fingerprint-ring.accepted .lockscreen-fingerprint-art {
+    animation: nuxel-fp-accepted 1s ease both;
+}
+@keyframes nuxel-fp-accepted { 0% { transform: scale(1); } 60%, 100% { transform: scale(1.24); } }

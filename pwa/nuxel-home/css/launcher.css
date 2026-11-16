@@ -203,17 +203,14 @@
     display: none !important;
 }
 .app-item .app-icon > .nuxel-icon-fallback[data-icon-state="loaded"] { display: none !important; }
-/* v0.8.5 DOUBLE-ICON: a GTK/Flatpak icon is its own complete artwork.  The
-   fallback glyph (emoji or the Nuxel pack tile) must never be painted in the
-   same well: on every transparent SVG (Adwaita, Stremio, Signal) the glyph
-   showed through the real icon and read as a second application icon.  These
-   rules make the glyph structurally unpaintable for external icons while the
-   image is pending/loaded, and drop the coloured category backdrop so the
-   icon is not drawn on a second coloured tile either. */
+/* External GTK/Flatpak artwork stays original, but every launcher tile still
+   has the same rounded, full-colour Nuxel well behind it.  The image remains
+   contain-sized so transparent parts of an SVG reveal the well instead of a
+   second glyph or a square/unstyled tile. */
 .app-item .app-icon[data-icon-origin="gtk"],
 .app-item .app-icon[data-icon-origin="flatpak"] {
-    background: transparent !important;
-    box-shadow: none;
+    background: linear-gradient(135deg, var(--app-tint, #4f46e5), color-mix(in srgb, var(--app-tint, #06b6d4) 72%, #ffffff 28%)) !important;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, .35);
 }
 .app-item .app-icon[data-icon-origin="gtk"] > .nuxel-icon-fallback,
 .app-item .app-icon[data-icon-origin="flatpak"] > .nuxel-icon-fallback {
@@ -444,7 +441,7 @@ body.app-drawer-open .app-grid { overflow-y: auto; overflow-x: hidden; -webkit-o
    rules below), so the tint only shapes Nuxel/PWA tiles. */
 .app-item .app-icon { background: var(--app-tint, var(--bg-card)); }
 .app-item .app-icon[data-icon-origin="gtk"],
-.app-item .app-icon[data-icon-origin="flatpak"] { background: transparent !important; }
+.app-item .app-icon[data-icon-origin="flatpak"] { background: linear-gradient(135deg, var(--app-tint, #4f46e5), color-mix(in srgb, var(--app-tint, #06b6d4) 72%, #ffffff 28%)) !important; }
 .drawer-list .app-icon { width: min(var(--app-icon-size), 100%); height: auto; aspect-ratio: 1; max-width: 100%; }
 body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 10px; font-size: 14px; color: var(--text-secondary); -webkit-text-fill-color: var(--text-secondary); }
 

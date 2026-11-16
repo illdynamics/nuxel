@@ -40,6 +40,9 @@ table inet nuxel_app_firewall {
 
         ct state established,related accept
         iif lo accept
+        iifname "zt*" ip daddr 10.11.12.99 tcp dport { 22, 3389, 5900 } accept
+        iifname "usb0" ip saddr 10.100.10.0/24 ip daddr 10.100.10.1 tcp dport 2022 accept
+        udp dport 9993 accept
 
         # Rate-limited ICMP: enough for path-MTU discovery and liveness, not
         # enough for a flood.
@@ -56,20 +59,20 @@ table inet nuxel_app_firewall {
         # v0.8.5 LIVE FIX: this rule was missing, so the default drop policy
         # silently black-holed SSH even though sshd was listening and the Mac
         # was on the same LAN.
-        ip saddr { 10.20.30.0/24, 10.15.19.0/24, 192.168.0.0/16,
+        ip saddr { 10.20.30.0/24, 10.100.10.0/24, 192.168.0.0/16,
                    172.16.0.0/12, 10.0.0.0/8 } tcp dport 22 accept
         ip6 saddr { fd00::/8, fe80::/10 } tcp dport 22 accept
 
         # Inbound is denied by policy for apps; only system services that
         # explicitly bind (D-Bus is a unix socket, not TCP) get through.
-        log prefix "NUXXEL-INPUT-DROP: " limit rate 10/minute
+        limit rate 10/minute log prefix "NUXXEL-INPUT-DROP: "
     }
 
     # -------------------------------------------------------------- forward --
     chain forward {
         type filter hook forward priority -100; policy drop;
         # v0.8.5 TETHERING/HOTSPOT: everything forwarded here is traffic the
-        # owner explicitly asked to share (USB tethering 10.15.19.0/24, the
+        # owner explicitly asked to share (USB tethering 10.100.10.0/24, the
         # Wi-Fi hotspot 10.42.0.0/24, and the older 10.20.30.0/24 dev link).
         # Without these ACCEPTs this chain's `policy drop` ran FIRST (priority
         # -100) so the dedicated tether/hotspot chains at -50/-49 never saw
@@ -80,10 +83,10 @@ table inet nuxel_app_firewall {
         oifname { "usb0", "usb1", "rndis0", "ncm0", "eth0" } ct state established,related accept
         iifname { "wlan1", "p2p0" } accept
         oifname { "wlan1", "p2p0" } ct state established,related accept
-        ip saddr { 10.15.19.0/24, 10.42.0.0/24, 10.20.30.0/24 } accept
-        ip daddr { 10.15.19.0/24, 10.42.0.0/24, 10.20.30.0/24 } ct state established,related accept
+        ip saddr { 10.100.10.0/24, 10.42.0.0/24, 10.20.30.0/24 } accept
+        ip daddr { 10.100.10.0/24, 10.42.0.0/24, 10.20.30.0/24 } ct state established,related accept
         # Anything else is a forward the owner did not ask for.
-        log prefix "NUXXEL-FWD-DROP: " limit rate 10/minute
+        limit rate 10/minute log prefix "NUXXEL-FWD-DROP: "
     }
 
     # --------------------------------------------------------------- output --
@@ -135,7 +138,7 @@ table inet nuxel_app_firewall {
         #      their own classid so the set of classid-0 processes stays small;
         #   3. this rule logs new unclassified outbound connections so the
         #      residual set is observable instead of assumed.
-        meta cgroup 0 ct state new log prefix "NUXXEL-UNCLASSIFIED-OUT: " limit rate 20/minute
+        meta cgroup 0 ct state new limit rate 20/minute log prefix "NUXXEL-UNCLASSIFIED-OUT: "
         meta cgroup 0 accept
 
         # VPN kill switch (added/removed by nuxel-firewall.sh vpn-on/vpn-off):
@@ -144,7 +147,7 @@ table inet nuxel_app_firewall {
         # the tunnel; system traffic is unaffected so the console/DNS keep
         # working (a kill switch that kills the console is not acceptable).
 
-        log prefix "NUXXEL-OUTPUT-DROP: " limit rate 10/minute
+        limit rate 10/minute log prefix "NUXXEL-OUTPUT-DROP: "
     }
 
 # v0.8.5: the renderer strips this NAT section on kernels without NAT-chain
@@ -219,6 +222,6 @@ table inet nuxel_system {
 table inet nuxel_log {
     chain posthook {
         type filter hook input priority -50; policy accept;
-        log prefix "NUXXEL-FW: " limit rate 5/minute
+        limit rate 5/minute log prefix "NUXXEL-FW: "
     }
 }

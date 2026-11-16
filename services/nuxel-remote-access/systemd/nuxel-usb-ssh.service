@@ -1,0 +1,18 @@
+[Unit]
+Description=Nuxel physical USB SSH console (10.100.10.1:2022)
+Requires=nuxel-usb-net-up.service
+Wants=sshd-keygen.target
+After=nuxel-usb-net-up.service sshd-keygen.target
+PartOf=nuxel-usb-net-up.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/sshd -D -e -f /etc/nuxel/security/ssh/usb-sshd_config
+KillMode=process
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

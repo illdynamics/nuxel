@@ -4,10 +4,10 @@
 #   nuxel-usb-net-host.sh --status [--json]
 #   nuxel-usb-net-host.sh --discover [--json]
 #   nuxel-usb-net-host.sh --preflight [--json]
-#   sudo nuxel-usb-net-host.sh --apply [--interface IFACE] [--address 10.15.19.1/24]
+#   sudo nuxel-usb-net-host.sh --apply [--interface IFACE] [--address 10.100.10.1/24]
 #   sudo nuxel-usb-net-host.sh --remove [--interface IFACE]
 #   nuxel-usb-net-host.sh --diagnose [--json]
-#   nuxel-usb-net-host.sh --ssh [--phone 10.15.19.1] --key ~/.ssh/xxx
+#   nuxel-usb-net-host.sh --ssh [--phone 10.100.10.1] --key ~/.ssh/xxx
 #   nuxel-usb-net-host.sh --tether-test [--json]
 #       Prove Internet tethering END TO END from this computer: default route
 #       must stay on Wi-Fi, so the phone is probed by binding the source
@@ -35,7 +35,7 @@ VID="${NUXEL_USB_VID:-18d1}"
 PID="${NUXEL_USB_PID:-4ee7}"
 IFACE="${NUXEL_USB_IFACE:-}"
 PHONE="${NUXEL_USB_PHONE:-}"
-ADDR="${NUXEL_USB_HOST_ADDR:-10.15.19.2/24}"
+ADDR="${NUXEL_USB_HOST_ADDR:-10.100.10.2/24}"
 MODE="auto"
 ACTION=status
 JSON=0
@@ -78,7 +78,7 @@ ANCHOR=""
 
 # Resolve the phone address from the host address prefix, unless the owner
 # passed --phone or NUXEL_USB_PHONE explicitly.  The phone owns .1 of its link
-# subnet (10.15.19.1/24 by default, matching nuxel-usb-mode.sh); the host is
+# subnet (10.100.10.1/24 by default, matching nuxel-usb-mode.sh); the host is
 # configured .2.  Diagnostics must probe the PHONE, never the host's own .2/.1.
 phone_addr() {
   if [ "$PHONE_EXPLICIT" = 1 ]; then
@@ -89,7 +89,7 @@ import ipaddress, sys
 try:
     i = ipaddress.ip_interface(sys.argv[1])
 except ValueError:
-    print("10.15.19.1"); raise SystemExit(0)
+    print("10.100.10.1"); raise SystemExit(0)
 net = i.network
 print(str(net.network_address + 1))
 PY
