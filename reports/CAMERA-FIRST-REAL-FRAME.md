@@ -74,3 +74,12 @@ cannot be installed because its manifest hashes are inconsistent and the 3J1/4HA
 identity is unexplained. After provenance is established, stage it in an
 isolated system-image payload, prove the exact requested basename and accepted
 loader response, then request a new owner-authorized physical capture session.
+
+## Recovery correction — 2026-11-17
+
+See [continued source and firmware investigation](CAMERA-RECOVERY-2026-11-17.md).
+The owner AP has now been recovered and all eight bundled camera files match
+it. The direct failing open is `/system/vendor/firmware/fimc_is_lib.bin`.
+The running sensor-group ABI decodes the former input value 37 as rear position
+zero, not a sensor enum; its earlier enum interpretation above is superseded.
+No new physical camera test has occurred.

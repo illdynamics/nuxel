@@ -16,9 +16,9 @@
 #
 # These are the blobs the *downstream* Samsung Exynos 9820 kernel (bcmdhd WiFi,
 # CS47L93/CS35L40 audio, S3NRN82 NFC, Shannon/Calliope modem, FIMC-IS camera
-# ISP) loads at runtime. They are the correct match for
-# Linux4/android_kernel_samsung_exynos9820 (Linux 4.14.253), which is the
-# kernel the postmarketOS S10 port actually uses.
+# ISP) requests at runtime. The pin establishes reference identity, not
+# executable DDK ABI compatibility with a particular Nuxel kernel or camera
+# module. Camera deployment requires a separately reviewed recovery plan.
 #
 # NOTE on WiFi: the S10+ ships Samsung's `bcmdhd` Broadcom driver, NOT
 # mainline `brcmfmac`. The matching firmware is `bcmdhd_sta.bin_b1` /
@@ -96,8 +96,17 @@ fetch_file() { # $1 = repo-relative path, $2 = basename to store
         log "would fetch ${rel} -> ${out}"
         return 0
     fi
+    case "${name}" in
+        fimc_is_fw_mcu.bin|fimc_is_lib.bin|fimc_is_rta.bin|setfile_2l4.bin|setfile_3j1.bin|setfile_3m3.bin|setfile_3p9.bin|setfile_4ha.bin)
+            # Reference acquisition only; validates BEFORE publishing and refuses
+            # to overwrite a different revision. Not evidence of hardware ABI.
+            python3 -S "${SCRIPT_DIR}/../../NUXEL_CAMERA_RECOVERY_V2/fetch_pinned_camera_reference.py" \
+                --manifest "${SCRIPT_DIR}/manifest.yml" --dest "${DEST}" --download --only "${name}"
+            return $?
+            ;;
+    esac
     mkdir -p "$(dirname "${out}")"
-    curl -sSL -o "${out}.tmp" "${RAW}/${rel}" || { err "download failed: ${rel}"; return 2; }
+    curl -fsSL -o "${out}.tmp" "${RAW}/${rel}" || { err "download failed: ${rel}"; return 2; }
     mv "${out}.tmp" "${out}"
 }
 
@@ -106,10 +115,15 @@ log "source : ${REPO}@${COMMIT}"
 log "dest   : ${DEST}"
 count=0
 log "listing firmware blobs (recursive) ..."
+firmware_list="$(list_firmware_blobs)" || exit 2
 while IFS=$'\t' read -r rel name; do
     [ -n "${rel}" ] || continue
-    fetch_file "${rel}" "${name}" && count=$((count+1))
-done < <(list_firmware_blobs)
+    if fetch_file "${rel}" "${name}"; then
+        count=$((count+1))
+    else
+        exit $?
+    fi
+done <<< "${firmware_list}"
 
 log "fetched ${count} file(s) into ${DEST}"
 if [ "${DRY_RUN}" -eq 0 ]; then

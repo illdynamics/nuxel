@@ -1,0 +1,511 @@
+
+vendor/mcd/fimc-is-sec-define.c SHA256=a0e906f5808885948f50c337cedfed33d4f95900497d4b7886740007eaee72ce
+3182: int fimc_is_sec_fw_sel_eeprom(struct device *dev, int rom_id, bool headerOnly)
+3183: {
+3184: 	int ret = 0;
+3185: 	char fw_path[100];
+3186: 	char phone_fw_version[FIMC_IS_HEADER_VER_SIZE + 1] = {0, };
+3187:
+3188: 	struct file *fp = NULL;
+3189: 	mm_segment_t old_fs;
+3190: 	long fsize, nread;
+3191: 	u8 *read_buf = NULL;
+3192: 	u8 *temp_buf = NULL;
+3193: 	bool is_ldo_enabled;
+3194: 	struct fimc_is_core *core = (struct fimc_is_core *)dev_get_drvdata(fimc_is_dev);
+3195: 	struct fimc_is_vender_specific *specific = core->vender.private_data;
+3196: 	struct fimc_is_rom_info *finfo = NULL;
+3197: 	struct fimc_is_rom_info *pinfo = NULL;
+3198: 	bool camera_running;
+3199:
+3200: 	fimc_is_sec_get_sysfs_pinfo(&pinfo, rom_id);
+3201: 	fimc_is_sec_get_sysfs_finfo(&finfo, rom_id);
+3202:
+3203: 	is_ldo_enabled = false;
+3204:
+3205: 	/* Use mutex for i2c read */
+3206: 	mutex_lock(&specific->rom_lock);
+3207:
+3208: 	if (!test_bit(FIMC_IS_ROM_STATE_CAL_READ_DONE, &finfo->rom_state) || force_caldata_dump) {
+3209: 		if (rom_id == ROM_ID_REAR)
+3210: 			is_dumped_fw_loading_needed = false;
+3211:
+3212: 		if (force_caldata_dump)
+3213: 			info("forced caldata dump!!\n");
+3214:
+3215: 		fimc_is_sec_rom_power_on(core, finfo->rom_power_position);
+3216: 		is_ldo_enabled = true;
+3217:
+3218: 		info("Camera: read cal data from EEPROM (ROM ID:%d)\n", rom_id);
+3219: 		if (rom_id == ROM_ID_REAR && headerOnly) {
+3220: 			fimc_is_sec_read_eeprom_header(dev, rom_id);
+3221: 		} else {
+3222: 			if (!fimc_is_sec_readcal_eeprom(dev, rom_id)) {
+3223: 				set_bit(FIMC_IS_ROM_STATE_CAL_READ_DONE, &finfo->rom_state);
+3224: 			}
+3225: 		}
+3226:
+3227: 		if (rom_id != ROM_ID_REAR) {
+3228: 			goto exit;
+3229: 		}
+3230: 	}
+3231:
+3232: 	fimc_is_sec_sensorid_find(core);
+3233: 	if (headerOnly) {
+3234: 		goto exit;
+3235: 	}
+3236:
+3237: 	snprintf(fw_path, sizeof(fw_path), "%s%s", FIMC_IS_FW_PATH, finfo->load_fw_name);
+3238:
+3239: 	old_fs = get_fs();
+3240: 	set_fs(KERNEL_DS);
+3241:
+3242: 	fp = filp_open(fw_path, O_RDONLY, 0);
+3243: 	if (IS_ERR(fp)) {
+3244: 		err("Camera: Failed open phone firmware");
+3245: 		ret = -EIO;
+3246: 		fp = NULL;
+3247: 		goto read_phone_fw_exit;
+3248: 	}
+3249:
+3250: 	fsize = fp->f_path.dentry->d_inode->i_size;
+3251: 	info("start, file path %s, size %ld Bytes\n",
+3252: 		fw_path, fsize);
+3253:
+3254: #if defined(CONFIG_CAMERA_FROM) && defined(CAMERA_MODULE_DUALIZE)
+3255: 	if (FIMC_IS_MAX_FW_BUFFER_SIZE >= fsize) {
+3256: 		memset(fw_buf, 0x0, FIMC_IS_MAX_FW_BUFFER_SIZE);
+3257: 		temp_buf = fw_buf;
+3258: 	} else
+3259: #endif
+3260: 	{
+3261: 		info("Phone FW size is larger than FW buffer. Use vmalloc.\n");
+3262: 		read_buf = vmalloc(fsize);
+3263: 		if (!read_buf) {
+3264: 			err("failed to allocate memory");
+3265: 			ret = -ENOMEM;
+3266: 			goto read_phone_fw_exit;
+3267: 		}
+3268: 		temp_buf = read_buf;
+3269: 	}
+3270: 	nread = vfs_read(fp, (char __user *)temp_buf, fsize, &fp->f_pos);
+3271: 	if (nread != fsize) {
+3272: 		err("failed to read firmware file, %ld Bytes", nread);
+3273: 		ret = -EIO;
+3274: 		goto read_phone_fw_exit;
+3275: 	}
+3276:
+3277: 	strncpy(phone_fw_version, temp_buf + nread - FIMC_IS_HEADER_VER_OFFSET, FIMC_IS_HEADER_VER_SIZE);
+3278: 	strncpy(pinfo->header_ver, temp_buf + nread - FIMC_IS_HEADER_VER_OFFSET, FIMC_IS_HEADER_VER_SIZE);
+3279: 	info("Camera: phone fw version: %s\n", phone_fw_version);
+3280:
+3281: read_phone_fw_exit:
+3282: 	if (read_buf) {
+3283: 		vfree(read_buf);
+3284: 		read_buf = NULL;
+3285: 		temp_buf = NULL;
+3286: 	}
+3287:
+3288: 	if (fp) {
+3289: 		filp_close(fp, current->files);
+3290: 		fp = NULL;
+3291: 	}
+3292:
+3293: 	set_fs(old_fs);
+3294:
+3295: exit:
+3296: 	camera_running = fimc_is_vendor_check_camera_running(finfo->rom_power_position);
+3297: 	if (is_ldo_enabled && !camera_running)
+3298: 		fimc_is_sec_rom_power_off(core, finfo->rom_power_position);
+3299:
+3300: 	mutex_unlock(&specific->rom_lock);
+3301:
+3302: 	return ret;
+3303: }
+3304:
+3305: #if defined(CONFIG_CAMERA_FROM)
+3306: int fimc_is_sec_fw_sel(struct fimc_is_core *core, struct device *dev, bool headerOnly)
+3307: {
+3308: 	int ret = 0;
+3309: 	struct fimc_is_vender_specific *specific = core->vender.private_data;
+3310: 	struct fimc_is_spi *spi = &core->spi0;
+
+vendor/mcd/fimc-is-sec-define.c SHA256=a0e906f5808885948f50c337cedfed33d4f95900497d4b7886740007eaee72ce
+3118: int fimc_is_sec_run_fw_sel(struct device *dev, int rom_id)
+3119: {
+3120: 	struct fimc_is_core *core = (struct fimc_is_core *)dev_get_drvdata(fimc_is_dev);
+3121: 	int ret = 0;
+3122: 	struct fimc_is_vender_specific *specific = core->vender.private_data;
+3123: 	struct fimc_is_rom_info *finfo = NULL;
+3124: 	struct fimc_is_rom_info *finfo_rear = NULL;
+3125:
+3126: 	fimc_is_sec_get_sysfs_finfo(&finfo, rom_id);
+3127:
+3128: 	/* FIMC_IS_FW_DUMP_PATH folder cannot access until User unlock handset */
+3129: 	if (!test_bit(FIMC_IS_ROM_STATE_CAL_RELOAD, &finfo->rom_state)) {
+3130: 		if (fimc_is_sec_file_exist(FIMC_IS_FW_DUMP_PATH)) {
+3131: 			/* Check reload cal data enabled */
+3132: 			fimc_is_sec_check_reload(core);
+3133: 			set_bit(FIMC_IS_ROM_STATE_CAL_RELOAD, &finfo->rom_state);
+3134: 			check_need_cal_dump = CAL_DUMP_STEP_CHECK;
+3135: 			info("CAL_DUMP_STEP_CHECK");
+3136: 		}
+3137: 	}
+3138:
+3139: 	/* Check need to dump cal data */
+3140: 	if (check_need_cal_dump == CAL_DUMP_STEP_CHECK) {
+3141: 		if (test_bit(FIMC_IS_ROM_STATE_CAL_READ_DONE, &finfo->rom_state)) {
+3142: #ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
+3143: 			fimc_is_sec_cal_dump(core);
+3144: #endif
+3145: 			check_need_cal_dump = CAL_DUMP_STEP_DONE;
+3146: 			info("CAL_DUMP_STEP_DONE");
+3147: 		}
+3148: 	}
+3149:
+3150: 	info("%s rom id[%d] %d\n", __func__, rom_id,
+3151: 		test_bit(FIMC_IS_ROM_STATE_CAL_READ_DONE, &finfo->rom_state));
+3152:
+3153: 	if (rom_id != ROM_ID_REAR) {
+3154: 		fimc_is_sec_get_sysfs_finfo(&finfo_rear, ROM_ID_REAR);
+3155: 		if (!test_bit(FIMC_IS_ROM_STATE_CAL_READ_DONE, &finfo_rear->rom_state) || force_caldata_dump) {
+3156: 			ret = fimc_is_sec_fw_sel_eeprom(dev, ROM_ID_REAR, true);
+3157: 		}
+3158: 	}
+3159:
+3160: 	if (!test_bit(FIMC_IS_ROM_STATE_CAL_READ_DONE, &finfo->rom_state) || force_caldata_dump) {
+3161: #if defined(CONFIG_CAMERA_FROM)
+3162: 		ret = fimc_is_sec_fw_sel(core, dev, false);
+3163: #else
+3164: 		ret = fimc_is_sec_fw_sel_eeprom(dev, rom_id, false);
+3165: #endif
+3166: 	}
+3167:
+3168: 	if (specific->check_sensor_vendor) {
+3169: 		if (fimc_is_sec_check_rom_ver(core, rom_id)) {
+3170: 			fimc_is_sec_check_module_state(finfo);
+3171:
+3172: 			if (test_bit(FIMC_IS_ROM_STATE_OTHER_VENDOR, &finfo->rom_state)) {
+3173: 				err("Not supported module. Rom ID = %d, Module ver = %s", rom_id, finfo->header_ver);
+3174: 				return  -EIO;
+3175: 			}
+3176: 		}
+3177: 	}
+
+vendor/mcd/fimc-is-sec-define.c SHA256=a0e906f5808885948f50c337cedfed33d4f95900497d4b7886740007eaee72ce
+2900: int fimc_is_sec_sensorid_find(struct fimc_is_core *core)
+2901: {
+2902: 	struct fimc_is_vender_specific *specific = core->vender.private_data;
+2903: 	struct fimc_is_rom_info *finfo = NULL;
+2904:
+2905: 	fimc_is_sec_get_sysfs_finfo(&finfo, ROM_ID_REAR);
+2906:
+2907: 	snprintf(finfo->load_fw_name, sizeof(FIMC_IS_DDK), "%s", FIMC_IS_DDK);
+2908:
+2909: 	if (fimc_is_sec_fw_module_compare(finfo->header_ver, FW_2L4_L)) {
+2910: 		specific->rear_sensor_id = SENSOR_NAME_SAK2L4;
+2911: 	}
+2912:
+2913: 	info("%s sensor id %d\n", __func__, specific->rear_sensor_id);
+2914:
+2915: 	return 0;
+
+include/fimc-is-binary.h SHA256=547158de9b9493f66c5d6e58d1948013e7a472cca40c7b416e7231f94044e989
+15: #include "fimc-is-config.h"
+16:
+17: #ifdef VENDER_PATH
+18: #define FIMC_IS_FW_PATH 			"/system/vendor/firmware/"
+19: #define FIMC_IS_FW_DUMP_PATH			"/data/vendor/camera/"
+20: #define FIMC_IS_SETFILE_SDCARD_PATH		"/data/vendor/camera/"
+21: #define FIMC_IS_FW_SDCARD			"/data/vendor/camera/fimc_is_fw.bin"
+22: #define FIMC_IS_FW				"fimc_is_fw.bin"
+23: #define FIMC_IS_LIB_PATH			"/system/vendor/firmware/"
+24: #ifdef CONFIG_SAMSUNG_PRODUCT_SHIP
+25: #define FIMC_IS_ISP_LIB_SDCARD_PATH		NULL
+26: #else
+27: #define FIMC_IS_ISP_LIB_SDCARD_PATH		"/data/vendor/camera/"
+28: #endif
+29: #define FIMC_IS_REAR_CAL_SDCARD_PATH		"/data/vendor/camera/"
+30: #define FIMC_IS_FRONT_CAL_SDCARD_PATH		"/data/media/0/"
+31: #else
+32: #define FIMC_IS_FW_PATH 			"/system/vendor/firmware/"
+33: #define FIMC_IS_FW_DUMP_PATH			"/data/"
+34: #define FIMC_IS_SETFILE_SDCARD_PATH		"/data/"
+35: #define FIMC_IS_FW_SDCARD			"/data/fimc_is_fw2.bin"
+36: #define FIMC_IS_FW				"fimc_is_fw2.bin"
+37: #define FIMC_IS_ISP_LIB_SDCARD_PATH		"/data/"
+38: #define FIMC_IS_REAR_CAL_SDCARD_PATH		"/data/"
+39: #define FIMC_IS_FRONT_CAL_SDCARD_PATH		"/data/"
+40: #endif
+41:
+42: #ifdef USE_ONE_BINARY
+43: #define FIMC_IS_ISP_LIB				"fimc_is_lib.bin"
+44: #else
+45: #define FIMC_IS_ISP_LIB				"fimc_is_lib_isp.bin"
+
+fimc-is-video-sensor.c SHA256=dccc50617d6e4b63646154dc7d7160eed3fe3fffc7f412fb6c3784b56db607a7
+456: #ifdef CONFIG_USE_SENSOR_GROUP
+457: static int fimc_is_ssx_video_s_input(struct file *file, void *priv,
+458: 	unsigned int input)
+459: {
+460: 	int ret = 0;
+461: 	u32 scenario, stream, position, vindex, intype, leader;
+462: 	struct fimc_is_video_ctx *vctx = file->private_data;
+463: 	struct fimc_is_device_sensor *device;
+464: 	struct fimc_is_framemgr *framemgr;
+465:
+466: 	FIMC_BUG(!vctx);
+467:
+468: 	device = GET_DEVICE(vctx);
+469: 	framemgr = GET_FRAMEMGR(vctx);
+470: 	scenario = (input & SENSOR_SCN_MASK) >> SENSOR_SCN_SHIFT;
+471: 	stream = (input & INPUT_STREAM_MASK) >> INPUT_STREAM_SHIFT;
+472: 	position = (input & INPUT_POSITION_MASK) >> INPUT_POSITION_SHIFT;
+473: 	vindex = (input & INPUT_VINDEX_MASK) >> INPUT_VINDEX_SHIFT;
+474: 	intype = (input & INPUT_INTYPE_MASK) >> INPUT_INTYPE_SHIFT;
+475: 	leader = (input & INPUT_LEADER_MASK) >> INPUT_LEADER_SHIFT;
+476:
+477: 	mdbgv_sensor("%s(input : %08X)[%d,%d,%d,%d,%d,%d]\n", vctx, __func__, input,
+478: 			scenario, stream, position, vindex, intype, leader);
+479:
+480: 	ret = fimc_is_video_s_input(file, vctx);
+481: 	if (ret) {
+482: 		merr("fimc_is_video_s_input is fail(%d)", vctx, ret);
+483: 		goto p_err;
+484: 	}
+485:
+486: 	ret = fimc_is_sensor_s_input(device, position, scenario, vindex);
+487: 	if (ret) {
+488: 		merr("fimc_is_sensor_s_input is fail(%d)", device, ret);
+489: 		goto p_err;
+490: 	}
+491:
+492: p_err:
+493: 	return ret;
+494: }
+
+fimc-is-video.h SHA256=b5c70323ab1aa43323829ac83aa387300bdf1fb9b88c6b4389b3836d3b421391
+30:
+31: /*
+32:  * sensor scenario (26 ~ 31 bit)
+33:  */
+34: #define SENSOR_SCN_MASK			0xFC000000
+35: #define SENSOR_SCN_SHIFT			26
+36:
+37: /*
+38:  * stream type
+39:  * [0] : No reprocessing type
+40:  * [1] : reprocessing type
+41:  */
+42: #define INPUT_STREAM_MASK			0x03000000
+43: #define INPUT_STREAM_SHIFT			24
+44:
+45: /*
+46:  * senosr position
+47:  * [0] : rear
+48:  * [1] : front
+49:  * [2] : rear2
+50:  * [3] : secure
+51:  */
+52: #define INPUT_POSITION_MASK			0x00FF0000
+53: #define INPUT_POSITION_SHIFT			16
+54:
+55: /*
+56:  * video index
+57:  * [x] : connected capture video node index
+58:  */
+59: #define INPUT_VINDEX_MASK			0x0000FF00
+60: #define INPUT_VINDEX_SHIFT			8
+61:
+62: /*
+63:  * input type
+64:  * [0] : memory input
+65:  * [1] : on the fly input
+66:  * [2] : pipe input
+67:  */
+68: #define INPUT_INTYPE_MASK			0x000000F0
+69: #define INPUT_INTYPE_SHIFT			4
+70:
+71: /*
+72:  * stream leader
+73:  * [0] : No stream leader
+74:  * [1] : stream leader
+75:  */
+76: #define INPUT_LEADER_MASK			0x0000000F
+77: #define INPUT_LEADER_SHIFT			0
+
+interface/fimc-is-interface-library.c SHA256=aa323b3eb8b4be33350b476470f19f3275136dbbff45fb87d1592bba54fb70f0
+2240: 	rkp_dynamic_load_t rkp_dyn;
+2241: 	static rkp_dynamic_load_t rkp_dyn_before = {0};
+2242: #endif
+2243: 	ulong lib_isp = DDK_LIB_ADDR;
+2244:
+2245: #ifdef USE_ONE_BINARY
+2246: 	size_t bin_size = VRA_LIB_SIZE + DDK_LIB_SIZE;
+2247: #else
+2248: 	size_t bin_size = DDK_LIB_SIZE;
+2249: #endif
+2250:
+2251: 	ulong lib_vra = VRA_LIB_ADDR;
+2252: 	struct fimc_is_memory_attribute memory_attribute[] = {
+2253: 		{__pgprot(PTE_RDONLY), PFN_UP(LIB_VRA_CODE_SIZE), lib_vra},
+2254: 		{__pgprot(PTE_RDONLY), PFN_UP(LIB_ISP_CODE_SIZE), lib_isp}
+2255: 	};
+2256:
+2257: #ifdef USE_ONE_BINARY
+2258: 	lib_addr = LIB_START;
+2259: 	snprintf(bin_type, sizeof(bin_type), "DDK");
+2260: #else
+2261: 	lib_addr = lib_isp;
+2262: 	snprintf(bin_type, sizeof(bin_type), "ISP");
+2263: #endif
+2264:
+2265: 	/* load DDK library */
+2266: 	setup_binary_loader(&bin, 3, -EAGAIN, NULL, NULL);
+2267: #ifdef CAMERA_FW_LOADING_FROM
+2268: 	ret = fimc_is_vender_request_binary(&bin, FIMC_IS_ISP_LIB_SDCARD_PATH, FIMC_IS_FW_DUMP_PATH,
+2269: 						gPtr_lib_support.fw_name, device);
+2270: #else
+2271: 	ret = request_binary(&bin, FIMC_IS_ISP_LIB_SDCARD_PATH,
+2272: 						FIMC_IS_ISP_LIB, device);
+2273: #endif
+2274: 	if (ret) {
+2275: 		err_lib("failed to load ISP library (%d)", ret);
+2276: 		return ret;
+2277: 	}
+2278:
+2279: 	if (loadType == BINARY_LOAD_ALL) {
+2280: #ifdef CONFIG_UH_RKP
+2281: 		memset(&rkp_dyn, 0, sizeof(rkp_dyn));
+2282: 		rkp_dyn.binary_base = lib_addr;
+2283: 		rkp_dyn.binary_size = bin.size;
+2284: 		rkp_dyn.code_base1 = memory_attribute[INDEX_ISP_BIN].vaddr;
+2285: 		rkp_dyn.code_size1 = memory_attribute[INDEX_ISP_BIN].numpages * PAGE_SIZE;
+2286: #ifdef USE_ONE_BINARY
+2287: 		rkp_dyn.type = RKP_DYN_FIMC_COMBINED;
+2288: 		rkp_dyn.code_base2 = memory_attribute[INDEX_VRA_BIN].vaddr;
+2289: 		rkp_dyn.code_size2 = memory_attribute[INDEX_VRA_BIN].numpages * PAGE_SIZE;
+2290: #else
+2291: 		rkp_dyn.type = RKP_DYN_FIMC;
+2292: #endif
+2293: 		if (rkp_dyn_before.type)
+2294: 			uh_call(UH_APP_RKP, RKP_DYNAMIC_LOAD, RKP_DYN_COMMAND_RM,(u64)&rkp_dyn_before, 0, 0);
+2295: 		memcpy(&rkp_dyn_before, &rkp_dyn, sizeof(rkp_dynamic_load_t));
+2296: #endif
+2297: 		ret = fimc_is_memory_attribute_nxrw(&memory_attribute[INDEX_ISP_BIN]);
+2298: 		if (ret) {
+2299: 			err_lib("failed to change into NX memory attribute (%d)", ret);
+2300: 			return ret;
+2301: 		}
+2302:
+2303: #ifdef USE_ONE_BINARY
+2304: 		ret = fimc_is_memory_attribute_nxrw(&memory_attribute[INDEX_VRA_BIN]);
+2305: 		if (ret) {
+2306: 			err_lib("failed to change into NX memory attribute (%d)", ret);
+2307: 			return ret;
+2308: 		}
+2309: #endif
+2310:
+2311: 		info_lib("binary info[%s] - type: C/D, from: %s\n",
+2312: 			bin_type,
+2313: 			was_loaded_by(&bin) ? "built-in" : "user-provided");
+2314: 		if (bin.size <= bin_size) {
+2315: 			memcpy((void *)lib_addr, bin.data, bin.size);
+2316: 			__flush_dcache_area((void *)lib_addr, bin.size);
+2317: 		} else {
+2318: 			err_lib("DDK bin size is bigger than memory area. %zd[%zd]",
+2319: 				bin.size, bin_size);
+2320: 			ret = -EBADF;
+2321: 			goto fail;
+2322: 		}
+2323:
+2324: #ifdef CONFIG_UH_RKP
+2325: 		ret = uh_call(UH_APP_RKP, RKP_DYNAMIC_LOAD, RKP_DYN_COMMAND_INS, (u64)&rkp_dyn, 0, 0);
+2326: 		if (ret) {
+2327: 			err_lib("fail to load verify FIMC in EL2");
+2328: 		}
+2329: #else
+2330: 		ret = fimc_is_memory_attribute_rox(&memory_attribute[INDEX_ISP_BIN]);
+2331: 		if (ret) {
+2332: 			err_lib("failed to change into EX memory attribute (%d)", ret);
+2333: 			return ret;
+2334: 		}
+2335:
+2336: #ifdef USE_ONE_BINARY
+2337: 		ret = fimc_is_memory_attribute_rox(&memory_attribute[INDEX_VRA_BIN]);
+2338: 		if (ret) {
+2339: 			err_lib("failed to change into EX memory attribute (%d)", ret);
+2340: 			return ret;
+2341: 		}
+2342: #endif
+2343: #endif
+2344: 	} else { /* loadType == BINARY_LOAD_DATA */
+2345: 		if ((bin.size > CAMERA_BINARY_DDK_DATA_OFFSET) && (bin.size <= bin_size)) {
+2346: 			info_lib("binary info[%s] - type: D, from: %s\n",
+2347: 				bin_type,
+2348: 				was_loaded_by(&bin) ? "built-in" : "user-provided");
+2349: 			memcpy((void *)lib_addr + CAMERA_BINARY_VRA_DATA_OFFSET + CDH_SIZE,
+2350: 				bin.data + CAMERA_BINARY_VRA_DATA_OFFSET + CDH_SIZE,
+
+vendor/mcd/fimc-is-device-ois_mcu.c SHA256=8d4b7c1b4947f2ac0f7b04678fa00b9a26b6b77d14d305a9d49199a57b85d597
+1100: 	fp = filp_open(fw_name, O_RDONLY, 0);
+1101: 	if (IS_ERR_OR_NULL(fp)) {
+1102: 		info("mcu failed to open SDCARD fw!!!\n");
+1103: 		goto request_fw;
+1104: 	}
+1105:
+1106: 	fw_requested = 0;
+1107: 	size = fp->f_path.dentry->d_inode->i_size;
+1108: 	info("mcu start read sdcard, file path %s, size %lu Bytes\n", fw_name, size);
+1109:
+1110: 	*buf = vmalloc(size);
+1111: 	if (!(*buf)) {
+1112: 		err("failed to allocate memory");
+1113: 		ret = -ENOMEM;
+1114: 		goto p_err;
+1115: 	}
+1116:
+1117: 	nread = vfs_read(fp, (char __user *)(*buf), size, &fp->f_pos);
+1118: 	if (nread != size) {
+1119: 		err("failed to read firmware file, %ld Bytes\n", nread);
+1120: 		ret = -EIO;
+1121: 		goto p_err;
+1122: 	}
+1123:
+1124: 	memcpy(&mcu->vdrinfo_bin[0], *buf + 0x807C, sizeof(mcu->vdrinfo_bin));
+1125: 	mcu->hw_bin[0] = *(*buf + 0x80FB);
+1126: 	mcu->hw_bin[1] = *(*buf + 0x80FA);
+1127: 	mcu->hw_bin[2] = *(*buf + 0x80F9);
+1128: 	mcu->hw_bin[3] = *(*buf + 0x80F8);
+1129: 	memcpy(ois_pinfo.header_ver, mcu->hw_bin, 4);
+1130: 	memcpy(&ois_pinfo.header_ver[4], *buf + 0x807C, 4);
+1131:
+1132: 	//fw_sdcard = true;
+1133: 	if (OIS_BIN_LEN >= nread) {
+1134: 		//ois_device->not_crc_bin = true;
+1135: 		err("mcu fw binary size = %ld.\n", nread);
+1136: 	}
+1137:
+1138: request_fw:
+1139: 	if (fw_requested) {
+1140: 		snprintf(fw_name, sizeof(fw_name), "%s", name);
+1141: 		set_fs(old_fs);
+1142: 		retry_count = 3;
+1143: 		ret = request_firmware(&fw_blob, fw_name, &client->dev);
+1144: 		while (--retry_count && ret == -EAGAIN) {
+1145: 			err("request_firmware retry(count:%d)", retry_count);
+1146: 			ret = request_firmware(&fw_blob, fw_name, &client->dev);
+1147: 		}
+1148:
+1149: 		if (ret) {
+1150: 			err("request_firmware is fail(ret:%d)", ret);
+1151: 			ret = -EINVAL;
+1152: 			goto p_err;
+1153: 		}
+1154:
+1155: 		if (!fw_blob) {
+1156: 			err("fw_blob is NULL");
+1157: 			ret = -EINVAL;
+1158: 			goto p_err;
+1159: 		}
+1160:

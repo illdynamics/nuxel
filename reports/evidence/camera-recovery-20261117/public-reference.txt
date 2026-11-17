@@ -1,0 +1,8 @@
+OK fimc_is_fw_mcu.bin Downloaded and verified from https://raw.githubusercontent.com/Linux4/proprietary_vendor_samsung/05c9ef8f16e0ad5ab274e408c120dfd99fd5c628/beyond2lte/proprietary/vendor/firmware/fimc_is_fw_mcu.bin
+OK fimc_is_lib.bin Downloaded and verified from https://raw.githubusercontent.com/Linux4/proprietary_vendor_samsung/05c9ef8f16e0ad5ab274e408c120dfd99fd5c628/beyond2lte/proprietary/vendor/firmware/fimc_is_lib.bin
+OK fimc_is_rta.bin Downloaded and verified from https://raw.githubusercontent.com/Linux4/proprietary_vendor_samsung/05c9ef8f16e0ad5ab274e408c120dfd99fd5c628/beyond2lte/proprietary/vendor/firmware/fimc_is_rta.bin
+OK setfile_2l4.bin Downloaded and verified from https://raw.githubusercontent.com/Linux4/proprietary_vendor_samsung/05c9ef8f16e0ad5ab274e408c120dfd99fd5c628/beyond2lte/proprietary/vendor/firmware/setfile_2l4.bin
+OK setfile_3j1.bin Downloaded and verified from https://raw.githubusercontent.com/Linux4/proprietary_vendor_samsung/05c9ef8f16e0ad5ab274e408c120dfd99fd5c628/beyond2lte/proprietary/vendor/firmware/setfile_3j1.bin
+OK setfile_3m3.bin Downloaded and verified from https://raw.githubusercontent.com/Linux4/proprietary_vendor_samsung/05c9ef8f16e0ad5ab274e408c120dfd99fd5c628/beyond2lte/proprietary/vendor/firmware/setfile_3m3.bin
+OK setfile_3p9.bin Downloaded and verified from https://raw.githubusercontent.com/Linux4/proprietary_vendor_samsung/05c9ef8f16e0ad5ab274e408c120dfd99fd5c628/beyond2lte/proprietary/vendor/firmware/setfile_3p9.bin
+OK setfile_4ha.bin Downloaded and verified from https://raw.githubusercontent.com/Linux4/proprietary_vendor_samsung/05c9ef8f16e0ad5ab274e408c120dfd99fd5c628/beyond2lte/proprietary/vendor/firmware/setfile_4ha.bin
