@@ -14,6 +14,9 @@ calibration read on the physical rear-main module.
 |---|---|---|
 | Handset/kernel | PROVED_LIVE | `4.14.253-gf7194c1d15ed-dirty`, 2026-11-17T12:52:20+01:00 |
 | Board/revision | PROVED_LIVE | kernel command line: `SM-G975F`, revision `26`, EUR/OPEN |
+| Running-config SHA-256 | PROVED_LIVE | `/proc/config.gz`: `5aebd0711ac9cf7383c7d8a185826256a382fce111d064bd53f47909ee885583` |
+| Local build Image SHA-256 | HISTORICAL_LIVE | `/root/kbuild/out/arch/arm64/boot/Image`: `e42813084477c71a45415466b4bf469e22f5c4ab45b078bb5c9d992148d5d3ff`; this is not represented as a BOOT-partition readback |
+| BOOT-partition SHA-256 | UNKNOWN | no partition read was performed; no flash was contemplated |
 | FIMC-IS topology | PROVED_LIVE | 68 `/dev/video*` entries; no `/dev/media*` or `/dev/v4l-subdev*` |
 | Five module drivers | PROVED_LIVE | sysfs binds `FIMC-IS-SENSOR-MODULE-{2L4,3M3,3P9,3J1,4HA}` |
 | Main rear sensor selection | PROVED_LIVE | `/dev/video101`, sensor enum `37` (`SENSOR_NAME_SAK2L4`) accepted by `S_INPUT` |
@@ -23,6 +26,7 @@ calibration read on the physical rear-main module.
 | Linux firmware fallback in running BOOT | UNKNOWN | live `firmware_class.path` is `/vendor/firmware`; no accepted FIMC-IS binary has been observed |
 | Supplied camera blobs | PRESENT_IN_ZIP | eight blobs exist, but their hashes disagree with the manifest for `fimc_is_lib.bin`, `fimc_is_rta.bin`, and all five setfiles; `setfile_3j1.bin` == `setfile_4ha.bin` |
 | Real camera frame | NOT_TESTED / BLOCKED | no `REQBUFS`, `QBUF`, `STREAMON`, or `DQBUF` was performed |
+| Camera daemon binary | PROVED_LIVE (absent) | no live `nuxel-fimc-capture` binary was installed; the portal unit is `disabled` / `inactive` |
 
 ## Actual node and ABI results
 
