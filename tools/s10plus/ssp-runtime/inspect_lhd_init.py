@@ -21,6 +21,90 @@ LABELS = [
 ]
 
 
+class MatchedImage:
+    """Minimal ELF64 reader shared by static inspection and offline emulation."""
+
+    def __init__(self, path):
+        self.data = Path(path).read_bytes()
+        self.digest = hashlib.sha256(self.data).hexdigest()
+        if self.digest != EXPECTED:
+            raise ValueError('not the reviewed G975FXXS9DTK9 lhd; offsets are not portable')
+        phoff = struct.unpack_from('<Q', self.data, 32)[0]
+        entsize, count = struct.unpack_from('<HH', self.data, 54)
+        self.segments = []
+        for i in range(count):
+            typ, flags, off, addr, _, filesz, memsz, _ = struct.unpack_from(
+                '<IIQQQQQQ', self.data, phoff + i * entsize)
+            if typ == 1:
+                self.segments.append((addr, memsz, self.data[off:off + filesz], flags))
+        self.relocations = {}
+        shoff = struct.unpack_from('<Q', self.data, 40)[0]
+        entsize, count = struct.unpack_from('<HH', self.data, 58)
+        for i in range(count):
+            s = struct.unpack_from('<IIQQQQIIQQ', self.data, shoff + i * entsize)
+            if s[1] == 4:
+                for off in range(s[4], s[4] + s[5], s[9]):
+                    slot, info, addend = struct.unpack_from('<QQq', self.data, off)
+                    if info == 1027:
+                        self.relocations[slot] = addend
+
+    def read(self, va, size):
+        for addr, _, data, _ in self.segments:
+            if addr <= va and va + size <= addr + len(data):
+                return data[va - addr:va - addr + size]
+        raise ValueError('unmapped virtual address')
+
+
+def response_path(image):
+    """Reviewed facts, bound to this binary, not a live-operation validator."""
+    ranges = {
+        'callback_installation': (0x388a8, 0x388ec),
+        'registration': (0x389bc, 0x389c8),
+        'rpc_list': (0x3e740, 0x3e884),
+        'rpc_dispatch_and_postcheck': (0x3e884, 0x3e9b0),
+        'version_decoder': (0x3d1a8, 0x3d364),
+        'callbacks': (0x39b9c, 0x39e6c),
+        'reader': (0x41000, 0x41224),
+    }
+    return {
+        'confidence': 'STATIC_VERIFIED against exact matched ELF',
+        'transport_and_hardware_verified': False,
+        'registration': '0x389c4 -> 0x3e9b0 adds owner+0x4c0 to RPC handler list',
+        'handler_vtable': {'base': '0x48ad0', 'dispatch_slot': '0x48ae0',
+                           'dispatch_target': hex(image.relocations[0x48ae0])},
+        'callback_interface': {'subobject_offset': 16, 'vtable': '0x48b10',
+                               'normal_slot': '0x48b20', 'extended_slot': '0x48b28'},
+        'rpc_ids': {
+            '3': {'compare_va': '0x3d1dc', 'fields': ['LE32 w1', 'LE32 w2', 'LE32 w3'],
+                  'callback_call_va': '0x3d234', 'thunk': '0x39d00'},
+            '59': {'compare_va': '0x3d1c8',
+                   'fields': ['LE32 w1', 'LE32 w2', 'LE32 w3', 'LE32 w4',
+                              'u8 length + bytes x5', 'LE32 w6', 'u8 length + bytes x7'],
+                   'callback_call_va': '0x3d314', 'thunk': '0x39e64'},
+            '4': {'compare_va': '0x3d1d4', 'fields': ['LE32 w1'],
+                  'callback_call_va': '0x3d33c', 'target': '0x18050 (returns)'},
+        },
+        'reader': {'vtable': hex(image.relocations[0x49598] + 16),
+                   'u8': '0x410cc', 'LE32': '0x41168', 'span': '0x411e4',
+                   'failure': 'sets byte +36; scalar returns 0 without advancing cursor',
+                   'span_failure': 'sets error but returns current pointer without advancing'},
+        'validation_order': [
+            '0x3e740 prewalk checks aggregate RPC record lengths before dispatch',
+            'prewalk reads header bytes before proving each byte lies in supplied extent',
+            '0x3e884 constructs bounded reader and calls registered handlers',
+            '0x3d1a8 reads fields then invokes callback without checking reader error',
+            'callback mutates metadata and may advance state / call initializer',
+            '0x3e924..0x3e95c checks remaining length/error AFTER callback returns',
+        ],
+        'not_present_in_reviewed_rpc_path': ['request token', 'session identity',
+                                             'duplicate suppression', 'CRC check'],
+        'scope_limit': 'Transport CRC/sequence/internal routing is upstream; not bypassed by this claim.',
+        'evidence_ranges': {name: {'start': hex(a), 'end_exclusive': hex(b),
+                                  'sha256': hashlib.sha256(image.read(a, b-a)).hexdigest()}
+                            for name, (a, b) in ranges.items()},
+    }
+
+
 def inspect(path):
     data = path.read_bytes()
     digest = hashlib.sha256(data).hexdigest()
@@ -59,6 +143,7 @@ def inspect(path):
         'states': [{'state': i + 1, 'handler_va': hex(0x38a48 + 4 * offset),
                     'log_label': LABELS[i]} for i, offset in enumerate(targets)],
         'done_state': 17,
+        'response_path': response_path(MatchedImage(path)),
         'sync_initial_constants': list(struct.unpack('<II', read(0xde38, 8))),
         'sync_confirmation_constants': list(struct.unpack('<II', read(0xde60, 8))),
         'version_callback_gates': {

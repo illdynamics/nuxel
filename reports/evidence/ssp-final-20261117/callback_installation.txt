@@ -1,0 +1,24 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+00000000000388a8 <.text+0x208a8>:
+   388a8:	b0000088 	adrp	x8, 49000 <dl_iterate_phdr@plt+0x38e0>
+   388ac:	f9426d08 	ldr	x8, [x8, #1240]
+   388b0:	f9026eb5 	str	x21, [x21, #1240]
+   388b4:	f90272b4 	str	x20, [x21, #1248]
+   388b8:	b904eabf 	str	wzr, [x21, #1256]
+   388bc:	91004109 	add	x9, x8, #0x10
+   388c0:	f90262a9 	str	x9, [x21, #1216]
+   388c4:	b0000089 	adrp	x9, 49000 <dl_iterate_phdr@plt+0x38e0>
+   388c8:	f9427129 	ldr	x9, [x9, #1248]
+   388cc:	9113c2a1 	add	x1, x21, #0x4f0
+   388d0:	91014108 	add	x8, x8, #0x50
+   388d4:	9114c2a0 	add	x0, x21, #0x530
+   388d8:	91004129 	add	x9, x9, #0x10
+   388dc:	f9027eb5 	str	x21, [x21, #1272]
+   388e0:	f90282bf 	str	xzr, [x21, #1280]
+   388e4:	f9026aa8 	str	x8, [x21, #1232]
+   388e8:	f9027aa9 	str	x9, [x21, #1264]

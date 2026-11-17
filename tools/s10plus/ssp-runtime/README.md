@@ -76,3 +76,30 @@ records private-network trials distinguishing the Android AID_INET permission
 check from protocol failure. Its optional argument drops supplementary groups,
 GID and UID before the socket call. It never connects, binds or opens hardware.
 The daemon sandbox's identity and capabilities have not been relaxed.
+
+### Matched decoder/callback replay (offline only)
+
+`inspect_lhd_init.py` now records the verified RPC IDs, ELF dispatch slots,
+reader implementations and validation order, with hashes of each code range.
+The IDs come from decoder comparisons, not callback addresses.
+
+`replay_lhd_response.py` executes the original matched AArch64 instructions in
+Unicorn. It does not execute the ELF as a process or access the handset. It
+constructs synthetic objects and RPC inputs, applies ELF RELATIVE relocations,
+disables logging, stubs lock/diagnostic callbacks, and intercepts the initializer
+continuation. Unknown code and exception/syscall instructions fail closed; an
+instruction budget bounds each replay. This is not a firmware implementation.
+
+```sh
+python3 -m venv /tmp/nuxel-lhd-replay
+/tmp/nuxel-lhd-replay/bin/pip install -r tools/s10plus/ssp-runtime/requirements-analysis.txt
+/tmp/nuxel-lhd-replay/bin/python -m unittest discover -s tools/s10plus/ssp-runtime -p test_lhd_response.py -v
+/tmp/nuxel-lhd-replay/bin/python tools/s10plus/ssp-runtime/replay_lhd_response.py \
+  packs/sensors/acquired/vendor-bin-hw-lhd --state 8 --hex 0300
+```
+
+All fixtures are **SYNTHETIC**. In particular, `0300` is an intentionally malformed
+version record, not an expected ROM reply. It demonstrates callback metadata
+mutation and state advance *before* the reader-error check. Logging is disabled,
+so extended string formatting safety is outside this replay's claims. The
+intercepted initializer does not run; later completion and READY are unverified.
