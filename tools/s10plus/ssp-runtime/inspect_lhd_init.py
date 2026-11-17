@@ -65,6 +65,12 @@ def response_path(image):
         'version_decoder': (0x3d1a8, 0x3d364),
         'callbacks': (0x39b9c, 0x39e6c),
         'reader': (0x41000, 0x41224),
+        'transport_receive': (0x3fe80, 0x40508),
+        'transport_crc': (0x40f90, 0x41000),
+        'transport_constructor': (0x3edb8, 0x3eed4),
+        'rpc_transport_installation': (0x3e250, 0x3e358),
+        'rpc_constructor_call': (0x349a8, 0x34a18),
+        'rpc_constructor_reinit': (0x37198, 0x37204),
     }
     return {
         'confidence': 'STATIC_VERIFIED against exact matched ELF',
@@ -99,6 +105,22 @@ def response_path(image):
         'not_present_in_reviewed_rpc_path': ['request token', 'session identity',
                                              'duplicate suppression', 'CRC check'],
         'scope_limit': 'Transport CRC/sequence/internal routing is upstream; not bypassed by this claim.',
+        'transport': {
+            'call_graph': ['0x3e2f4 -> 0x3fe80', '0x3fe84 escaped byte parser',
+                           '0x3ffbc -> 0x40098 complete frame',
+                           '0x404fc interface +0x30 -> 0x3ebfc -> 0x3e740'],
+            'crc': '0x400ec..0x40124: minimum 4 bytes; CRC over bytes 1..length-2; nibble swap',
+            'length': '0x40318..0x4032c: all flags consumed and remaining body equals payload size',
+            'packet_sequence': '0x40330..0x40370: mismatch updates statistics, not payload rejection',
+            'reliable': '0x403bc..0x40490: seq/CRC/length duplicate check, next-sequence acceptance, ACK/NACK send',
+            'duplicate_option': {
+                'offset': '0x3521', 'default_at_both_reviewed_constructor_calls': False,
+                'evidence': ['0x349d4', '0x371a0', '0x3ee88', '0x40408', '0x4046c'],
+                'meaning': 'when true, also delivers duplicate/out-of-order reliable payloads'},
+            'internal_route': '0x404ac..0x404bc routes internal flag to 0x407f0 instead of RPC',
+            'session_identity': 'no session token in reviewed receive path; sync resets still need review',
+            'replay_boundaries': ['send', 'reliable ACK/NACK processing', 'internal-message processing'],
+        },
         'evidence_ranges': {name: {'start': hex(a), 'end_exclusive': hex(b),
                                   'sha256': hashlib.sha256(image.read(a, b-a)).hexdigest()}
                             for name, (a, b) in ranges.items()},

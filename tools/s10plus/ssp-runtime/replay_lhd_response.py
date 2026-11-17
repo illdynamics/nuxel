@@ -21,7 +21,9 @@ OWNER, PLATFORM, RPC, INPUT = 0x100000, 0x110000, 0x120000, 0x130000
 STACK, TLS, STUBS = 0x200000, 0x300000, 0x310000
 RETURN, DIAG, LOCK = STUBS, STUBS + 4, STUBS + 8
 ALLOWED = ((0x3e740, 0x3e9b0), (0x3d1a8, 0x3d364),
-           (0x39b9c, 0x39e6c), (0x41000, 0x41224))
+           (0x39b9c, 0x39e6c), (0x41000, 0x41224),
+           (0x3e2f4, 0x3e358), (0x3ebfc, 0x3ec04),
+           (0x3fe80, 0x40508), (0x40f90, 0x41000))
 
 
 def rpc_record(rpc_id, body):
@@ -34,7 +36,8 @@ def rpc_record(rpc_id, body):
 
 
 class Replay:
-    def __init__(self, binary, state=0, original_version=0xffffffff):
+    def __init__(self, binary, state=0, original_version=0xffffffff,
+                 deliver_reliable_duplicates=False):
         self.image = MatchedImage(binary)
         self.uc = Uc(UC_ARCH_ARM64, UC_MODE_ARM)
         # File-backed contents plus RELATIVE relocations, all offline.
@@ -57,6 +60,14 @@ class Replay:
         self.put32(OWNER + 1256, state)
         self.put32(OWNER + 2332, original_version)
         self.put64(RPC, PLATFORM)
+        # Constructor 0x3e250 supplies this interface to the transport at +24.
+        self.put64(RPC + 8, 0x48e70)
+        self.put64(RPC + 16, RPC)
+        self.put64(RPC + 24 + 8, RPC + 8)
+        # Reviewed constructor defaults (0x3edb8), with explicit caller option.
+        self.uc.mem_write(RPC + 24 + 0x428, b'\xff')
+        self.uc.mem_write(RPC + 24 + 0x431, b'\xff')
+        self.uc.mem_write(RPC + 24 + 0x3521, bytes([bool(deliver_reliable_duplicates)]))
         self.put64(RPC + 0x3540, OWNER + 0x4c0)
         self.uc.mem_write(RPC + 0x3d71, b'\x01')
         self.put64(PLATFORM, PLATFORM + 0x100)
@@ -93,6 +104,15 @@ class Replay:
             uc.reg_write(UC_ARM64_REG_X0, 0)
             self._return()
             return
+        boundaries = {0x3f3d8: 'transport_send_boundary',
+                      0x4050c: 'reliable_ack_handler_boundary',
+                      0x40674: 'reliable_nack_handler_boundary',
+                      0x407f0: 'internal_message_boundary'}
+        if addr in boundaries:
+            self.events.append({'kind': boundaries[addr],
+                                'w1': uc.reg_read(UC_ARM64_REG_X1) & 0xffffffff})
+            self._return()
+            return
         if addr in (DIAG, LOCK, 0x18050, 0x389fc):
             kind = {DIAG: 'postcheck_or_envelope_diagnostic', LOCK: 'lock_stub',
                     0x18050: 'empty_method', 0x389fc: 'initializer_boundary'}[addr]
@@ -114,7 +134,7 @@ class Replay:
             self.events.append({'kind': 'post_callback_check' if addr == 0x3e924 else 'reader_error',
                                 'state': self.word(OWNER + 1256)})
 
-    def run(self, payload, budget=20000):
+    def run(self, payload, budget=20000, wire=False):
         if len(payload) > 0x7fff:
             raise ValueError('offline fixture too large')
         self.events = []
@@ -128,10 +148,11 @@ class Replay:
         self.uc.reg_write(UC_ARM64_REG_X0, RPC)
         self.uc.reg_write(UC_ARM64_REG_X1, INPUT)
         self.uc.reg_write(UC_ARM64_REG_X2, len(payload))
-        self.uc.emu_start(0x3e740, RETURN, count=budget)
+        self.uc.emu_start(0x3e2f4 if wire else 0x3e740, RETURN, count=budget)
         if self.uc.reg_read(UC_ARM64_REG_PC) != RETURN:
             raise RuntimeError('instruction budget exhausted')
         return {'fixture': 'SYNTHETIC; not a captured hardware response',
+                'entry_layer': 'escaped TL bytes' if wire else 'RPC list',
                 'input_hex': payload.hex(), 'events': list(self.events),
                 'state': self.word(OWNER + 1256),
                 'metadata': {str(off): self.word(OWNER + off)
@@ -144,12 +165,14 @@ def main():
     ap.add_argument('binary', type=Path)
     ap.add_argument('--hex', required=True, help='synthetic RPC-list bytes')
     ap.add_argument('--state', type=int, default=0)
+    ap.add_argument('--wire', action='store_true', help='input is escaped TL bytes, still offline')
     args = ap.parse_args()
     replay = Replay(args.binary, args.state)
-    result = replay.run(bytes.fromhex(args.hex))
+    result = replay.run(bytes.fromhex(args.hex), wire=args.wire)
     result['binary_sha256'] = replay.image.digest
     result['boundaries'] = ['initializer continuation intercepted', 'logging disabled',
-                            'diagnostic and lock callbacks stubbed', 'upstream transport absent']
+                            'diagnostic and lock callbacks stubbed',
+                            'send, reliable ACK/NACK handlers and internal operations intercepted']
     print(json.dumps(result, indent=2))
 
 

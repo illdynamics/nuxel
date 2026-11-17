@@ -102,12 +102,50 @@ transport/session behavior, initialization timeouts/abort/reset contract and a
 confirmed recovery path for loss of SSH or persistent MCU state. Process exit
 is not a recovery mechanism.
 
+## Milestone 2: escaped transport through callback
+
+Milestone 1 is committed as `c24ff705`. The extended replay now runs the original
+escaped-byte parser, frame validator and RPC delivery path. Evidence:
+[transport mapping](evidence/ssp-final-20261117/transport-path.json),
+[machine code](evidence/ssp-final-20261117/transport_receive.txt),
+[CRC implementation](evidence/ssp-final-20261117/transport_crc.txt),
+[wire-to-callback replay](evidence/ssp-final-20261117/wire-empty-version-replay.json).
+Confidence: STATIC_VERIFIED and OFFLINE_EMULATED; input remains SYNTHETIC.
+
+The complete reviewed receive path is `0x3e2f4 -> 0x3fe80/0x3fe84 ->
+0x40098 -> virtual +0x30 -> 0x3ebfc -> 0x3e740 -> 0x3e884 ->
+0x3d1a8 -> callback thunk -> version callback`. Constructor 0x3e250 supplies
+the transport interface at RPC-object +8, with vtable 0x48e70.
+
+- Frame minimum is four decoded bytes. CRC covers bytes after packet sequence
+  and before CRC, using the embedded table and nibble swap. Bad CRC rejects
+  before RPC. Unconsumed flags and payload-size mismatches also reject.
+- Packet sequence mismatch increments loss statistics; it does not suppress
+  an otherwise accepted unreliable payload. Unreliable duplicates/reordering
+  therefore reach version callbacks.
+- Reliable duplicate identity uses reliable sequence, payload CRC and length.
+  Normal mode suppresses duplicates and non-next sequences, emitting ACK/NACK
+  through the transport-send method. Both reviewed constructor call sites pass
+  false for the alternative duplicate-delivery option at transport offset
+  0x3521. Next sequence is accepted modulo 256. This is not a session nonce or
+  firmware-operation completion check.
+- Internal payloads route to 0x407f0 instead of RPC. Packet/reliable ACK-only
+  frames do not invoke version callbacks. ACK/NACK handlers, internal handling
+  and actual transmission remain intercepted boundaries in this replay.
+- A CRC-valid synthetic frame containing `03 00` still reaches metadata writes
+  and 8->9 before underflow diagnosis. CRC does not establish RPC schema validity.
+
+[20 tests pass](evidence/ssp-final-20261117/transport-tests.txt), including
+all earlier tests plus CRC/length rejection, reliable ordering, internal routing,
+ACK-only frames, escaping, every split point of a frame and parser restart.
+The configurable duplicate-delivery mode is tested separately and is not claimed
+to be the installed daemon default. The source-backed independent polynomial
+fixture encoder is reused from `check_protocol_replay.py`.
+
 ## Next safe milestone
 
-Trace the receive path above 0x3e740: RPC constructor 0x3e250 installs interface
-vtable 0x48e70; transport receive 0x3fe80 calls complete-frame decoder 0x40098.
-The latter dispatches noninternal payloads via interface slot +0x30 at 0x404fc
-(target 0x3ebfc -> 0x3e740). Extend offline replay across CRC, sequence,
-reliable duplicate filtering and internal routing. Keep ACK transmission and
-internal initialization effects explicit boundaries until separately reviewed.
-Then trace state 16 forward to DONE and the virtual timer implementation.
+Trace state 16 forward to DONE and the virtual timer implementation. Preliminary
+static resolution: initializer interface vtable 0x48720, completion +16 ->
+0x37508, diagnostic +24 -> 0x376c8, timer +32 -> 0x37908. State 17 is also
+entered after reporting failure; it cannot alone prove successful initialization.
+Prove this with original-code replay before relying on it in a trial contract.

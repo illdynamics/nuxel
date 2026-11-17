@@ -1,0 +1,34 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+0000000000037198 <.text+0x1f198>:
+   37198:	f9400be1 	ldr	x1, [sp, #16]
+   3719c:	aa1703e0 	mov	x0, x23
+   371a0:	2a1f03e2 	mov	w2, wzr
+   371a4:	94001c2b 	bl	3e250 <__libc_init@plt-0x6c00>
+   371a8:	aa1703e0 	mov	x0, x23
+   371ac:	aa1803e1 	mov	x1, x24
+   371b0:	94001e00 	bl	3e9b0 <__libc_init@plt-0x64a0>
+   371b4:	aa1703e0 	mov	x0, x23
+   371b8:	aa1903e1 	mov	x1, x25
+   371bc:	94001dfd 	bl	3e9b0 <__libc_init@plt-0x64a0>
+   371c0:	aa1703e0 	mov	x0, x23
+   371c4:	aa1a03e1 	mov	x1, x26
+   371c8:	94001dfa 	bl	3e9b0 <__libc_init@plt-0x64a0>
+   371cc:	aa1703e0 	mov	x0, x23
+   371d0:	aa1b03e1 	mov	x1, x27
+   371d4:	94001df7 	bl	3e9b0 <__libc_init@plt-0x64a0>
+   371d8:	aa1703e0 	mov	x0, x23
+   371dc:	aa1c03e1 	mov	x1, x28
+   371e0:	94001df4 	bl	3e9b0 <__libc_init@plt-0x64a0>
+   371e4:	aa1703e0 	mov	x0, x23
+   371e8:	aa1503e1 	mov	x1, x21
+   371ec:	94001df1 	bl	3e9b0 <__libc_init@plt-0x64a0>
+   371f0:	f94007e0 	ldr	x0, [sp, #8]
+   371f4:	f9400fe1 	ldr	x1, [sp, #24]
+   371f8:	aa1303e2 	mov	x2, x19
+   371fc:	aa1703e3 	mov	x3, x23
+   37200:	94000596 	bl	38858 <__libc_init@plt-0xc5f8>

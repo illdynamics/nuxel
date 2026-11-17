@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from inspect_lhd_init import EXPECTED, MatchedImage, inspect
 from replay_lhd_response import Replay, rpc_record
+from check_protocol_replay import frame
 
 BINARY = Path(__file__).resolve().parents[3] / 'packs/sensors/acquired/vendor-bin-hw-lhd'
 VALUES = (0x12345678, 0x9abcdef0, 0x13579bdf)
@@ -114,6 +115,74 @@ class OriginalDecoderTests(unittest.TestCase):
     def test_instruction_budget_is_enforced(self):
         with self.assertRaisesRegex(RuntimeError, 'budget'):
             Replay(BINARY).run(rpc_record(3, BODY), budget=1)
+
+
+class OriginalTransportTests(unittest.TestCase):
+    def wire(self, sequence=0, flags=0, details=b'', payload=None):
+        if payload is None:
+            payload = rpc_record(3, BODY)
+        return frame(bytes([sequence, len(payload), flags]) + details + payload)
+
+    def test_transport_to_callback_and_underflow_order(self):
+        for body in (BODY, b''):
+            result = Replay(BINARY, 8).run(self.wire(payload=rpc_record(3, body)), wire=True)
+            self.assertEqual(result['state'], 9)
+            self.assertIn('version_callback', kinds(result))
+            self.assertEqual('reader_error' in kinds(result), not body)
+
+    def test_crc_and_declared_size_reject_before_callback(self):
+        valid = self.wire()
+        bad_crc = valid[:-3] + bytes([valid[-3] ^ 1]) + valid[-2:]
+        bad_size = frame(bytes([0, 0, 0]) + rpc_record(3, BODY))
+        for wire in (bad_crc, bad_size, valid[:-2]):
+            result = Replay(BINARY, 8).run(wire, wire=True)
+            self.assertNotIn('version_callback', kinds(result))
+            self.assertEqual(result['state'], 8)
+
+    def test_unreliable_sequence_jump_and_duplicate_are_delivered(self):
+        replay = Replay(BINARY, 8)
+        for sequence in (0, 0, 200, 3):
+            result = replay.run(self.wire(sequence=sequence), wire=True)
+            self.assertIn('version_callback', kinds(result))
+
+    def test_reliable_duplicate_suppressed_and_next_accepted(self):
+        replay = Replay(BINARY, 8)
+        for sequence, expected in ((0, True), (0, False), (2, False), (1, True)):
+            result = replay.run(self.wire(flags=2, details=bytes([sequence])), wire=True)
+            self.assertEqual('version_callback' in kinds(result), expected)
+            send = [event for event in result['events'] if event['kind'] == 'transport_send_boundary']
+            self.assertEqual(send[0]['w1'], 9 if sequence == 2 else 5)
+
+    def test_constructor_option_can_deliver_reliable_duplicates(self):
+        replay = Replay(BINARY, 8, deliver_reliable_duplicates=True)
+        for unused in range(2):
+            result = replay.run(self.wire(flags=2, details=b'\x00'), wire=True)
+            self.assertIn('version_callback', kinds(result))
+
+    def test_internal_payload_never_reaches_rpc(self):
+        result = Replay(BINARY, 8).run(self.wire(flags=128, details=b'\x01\x00'), wire=True)
+        self.assertIn('internal_message_boundary', kinds(result))
+        self.assertNotIn('version_callback', kinds(result))
+        self.assertEqual(result['state'], 8)
+
+    def test_ack_only_does_not_invoke_version_callback(self):
+        for flags in (1, 4, 8):
+            result = Replay(BINARY, 8).run(self.wire(flags=flags, details=b'\x00', payload=b''), wire=True)
+            self.assertNotIn('version_callback', kinds(result))
+            self.assertEqual(result['state'], 8)
+
+    def test_fragmentation_escaping_and_restart(self):
+        payload = rpc_record(3, bytes.fromhex('b0111300') * 3)
+        wire = self.wire(payload=payload)
+        for split in range(1, len(wire)):
+            replay = Replay(BINARY, 8)
+            first = replay.run(wire[:split], wire=True)
+            second = replay.run(wire[split:], wire=True)
+            self.assertNotIn('version_callback', kinds(first))
+            self.assertIn('version_callback', kinds(second))
+            self.assertEqual(second['metadata']['2320'], 0x001311b0)
+        result = Replay(BINARY, 8).run(b'\xb0\x00\xff' + wire, wire=True)
+        self.assertIn('version_callback', kinds(result))
 
 
 if __name__ == '__main__':

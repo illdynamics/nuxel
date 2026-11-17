@@ -1,0 +1,78 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+000000000003edb8 <.text+0x26db8>:
+   3edb8:	f81c0ff7 	str	x23, [sp, #-64]!
+   3edbc:	a90157f6 	stp	x22, x21, [sp, #16]
+   3edc0:	a9024ff4 	stp	x20, x19, [sp, #32]
+   3edc4:	a9037bfd 	stp	x29, x30, [sp, #48]
+   3edc8:	9100c3fd 	add	x29, sp, #0x30
+   3edcc:	f0000048 	adrp	x8, 49000 <dl_iterate_phdr@plt+0x38e0>
+   3edd0:	f942c508 	ldr	x8, [x8, #1416]
+   3edd4:	32001ff5 	orr	w21, wzr, #0xff
+   3edd8:	32181ff7 	orr	w23, wzr, #0xff00
+   3eddc:	aa0003f3 	mov	x19, x0
+   3ede0:	91004108 	add	x8, x8, #0x10
+   3ede4:	b900101f 	str	wzr, [x0, #16]
+   3ede8:	b904241f 	str	wzr, [x0, #1060]
+   3edec:	b9042c1f 	str	wzr, [x0, #1068]
+   3edf0:	3910c81f 	strb	wzr, [x0, #1074]
+   3edf4:	7908681f 	strh	wzr, [x0, #1076]
+   3edf8:	3931581f 	strb	wzr, [x0, #3158]
+   3edfc:	3910a015 	strb	w21, [x0, #1064]
+   3ee00:	79086017 	strh	w23, [x0, #1072]
+   3ee04:	a9000408 	stp	x8, x1, [x0]
+   3ee08:	91315c00 	add	x0, x0, #0xc57
+   3ee0c:	aa0203f4 	mov	x20, x2
+   3ee10:	12000076 	and	w22, w3, #0x1
+   3ee14:	9400085f 	bl	40f90 <__libc_init@plt-0x3ec0>
+   3ee18:	91316268 	add	x8, x19, #0xc58
+   3ee1c:	f91a2e68 	str	x8, [x19, #13400]
+   3ee20:	52868c88 	mov	w8, #0x3464                	// #13412
+   3ee24:	b934627f 	str	wzr, [x19, #13408]
+   3ee28:	6f00e400 	movi	v0.2d, #0x0
+   3ee2c:	78286a7f 	strh	wzr, [x19, x8]
+   3ee30:	52869088 	mov	w8, #0x3484                	// #13444
+   3ee34:	3ca86a60 	str	q0, [x19, x8]
+   3ee38:	52868f08 	mov	w8, #0x3478                	// #13432
+   3ee3c:	3ca86a60 	str	q0, [x19, x8]
+   3ee40:	52868d08 	mov	w8, #0x3468                	// #13416
+   3ee44:	3ca86a60 	str	q0, [x19, x8]
+   3ee48:	52869908 	mov	w8, #0x34c8                	// #13512
+   3ee4c:	3ca86a60 	str	q0, [x19, x8]
+   3ee50:	52869788 	mov	w8, #0x34bc                	// #13500
+   3ee54:	3ca86a60 	str	q0, [x19, x8]
+   3ee58:	52869588 	mov	w8, #0x34ac                	// #13484
+   3ee5c:	3ca86a60 	str	q0, [x19, x8]
+   3ee60:	52869f08 	mov	w8, #0x34f8                	// #13560
+   3ee64:	f91a8a7f 	str	xzr, [x19, #13584]
+   3ee68:	3ca86a60 	str	q0, [x19, x8]
+   3ee6c:	5286a0c8 	mov	w8, #0x3506                	// #13574
+   3ee70:	f8286a7f 	str	xzr, [x19, x8]
+   3ee74:	5286a408 	mov	w8, #0x3520                	// #13600
+   3ee78:	5286a429 	mov	w9, #0x3521                	// #13601
+   3ee7c:	f91a8e74 	str	x20, [x19, #13592]
+   3ee80:	38286a7f 	strb	wzr, [x19, x8]
+   3ee84:	52869e28 	mov	w8, #0x34f1                	// #13553
+   3ee88:	38296a76 	strb	w22, [x19, x9]
+   3ee8c:	52869e09 	mov	w9, #0x34f0                	// #13552
+   3ee90:	5286a18a 	mov	w10, #0x350c                	// #13580
+   3ee94:	b900127f 	str	wzr, [x19, #16]
+   3ee98:	b904267f 	str	wzr, [x19, #1060]
+   3ee9c:	b9042e7f 	str	wzr, [x19, #1068]
+   3eea0:	3910a275 	strb	w21, [x19, #1064]
+   3eea4:	79086277 	strh	w23, [x19, #1072]
+   3eea8:	3910ca7f 	strb	wzr, [x19, #1074]
+   3eeac:	79086a7f 	strh	wzr, [x19, #1076]
+   3eeb0:	39315a7f 	strb	wzr, [x19, #3158]
+   3eeb4:	38286a75 	strb	w21, [x19, x8]
+   3eeb8:	38296a7f 	strb	wzr, [x19, x9]
+   3eebc:	382a6a7f 	strb	wzr, [x19, x10]
+   3eec0:	a9437bfd 	ldp	x29, x30, [sp, #48]
+   3eec4:	a9424ff4 	ldp	x20, x19, [sp, #32]
+   3eec8:	a94157f6 	ldp	x22, x21, [sp, #16]
+   3eecc:	f84407f7 	ldr	x23, [sp], #64
+   3eed0:	d65f03c0 	ret

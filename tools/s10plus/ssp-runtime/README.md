@@ -103,3 +103,10 @@ version record, not an expected ROM reply. It demonstrates callback metadata
 mutation and state advance *before* the reader-error check. Logging is disabled,
 so extended string formatting safety is outside this replay's claims. The
 intercepted initializer does not run; later completion and READY are unverified.
+
+`--wire` starts at the original transport receive wrapper. CRC, escaping,
+length checks, reliable sequence filtering and noninternal RPC delivery execute
+as matched machine code. Send, reliable ACK/NACK handlers and internal-message
+processing are intercepted and recorded. Both reviewed constructor callers
+disable reliable duplicate delivery; the alternative option is tested explicitly.
+This does not emulate a session handshake, firmware execution or hardware timing.
