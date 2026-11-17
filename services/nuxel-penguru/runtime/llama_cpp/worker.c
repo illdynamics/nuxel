@@ -26,6 +26,7 @@
 #include <linux/seccomp.h>
 #include <linux/filter.h>
 #include <sys/syscall.h>
+#include <sys/socket.h>
 #include <stddef.h>
 #include "llama.h"
 
@@ -156,6 +157,11 @@ int main(void) {
       prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &program)) {
     emit("error", "\"code\":\"network_isolation_unavailable\""); return 2;
   }
+  int network_probe = socket(AF_INET, SOCK_STREAM, 0);
+  if (network_probe >= 0 || errno != EPERM) {
+    if (network_probe >= 0) close(network_probe);
+    emit("error", "\"code\":\"network_isolation_check_failed\""); return 2;
+  }
   if (count != 1) { emit("error", "\"code\":\"invalid_package\",\"detail\":\"expected one gguf\""); return 2; }
 
   signal(SIGTERM, on_signal);
@@ -174,7 +180,7 @@ int main(void) {
                                sizeof archbuf) < 0)
     snprintf(archbuf, sizeof archbuf, "unknown");
   long load_ms = (long)((now_s() - t0) * 1000.0);
-  emit("loaded", "\"engine\":\"llama.cpp\",\"architecture\":\"%.*s\","
+  emit("loaded", "\"engine\":\"llama.cpp\",\"network_socket_test\":\"denied\",\"architecture\":\"%.*s\","
        "\"n_params\":%llu,\"n_vocab\":%d,\"load_ms\":%ld,\"threads\":%ld,"
        "\"context\":%ld,\"model\":\"%.*s\",\"llama_version\":\"%.*s\"",
        60, archbuf, (unsigned long long)llama_model_n_params(m),
@@ -234,9 +240,6 @@ int main(void) {
   else if (rc != 0) { emit("error", "\"code\":\"decode_failed\",\"rc\":%d", rc); }
 
   int gen = 0;
-  char output[65537];
-  size_t olen = 0;
-  output[0] = 0;
   double t_first = 0, t_gen = now_s();
   if (!g_cancel && rc == 0) {
     llama_sampler_chain_params sp = llama_sampler_chain_default_params();
@@ -253,8 +256,6 @@ int main(void) {
         piece[pl] = 0;
         json_escape(piece, esc, sizeof esc);
         emit("token", "\"text\":\"%s\"", esc);
-        size_t k = (size_t)pl;
-        if (olen + k < sizeof(output) - 1) { memcpy(output + olen, piece, k); olen += k; output[olen] = 0; }
         if (t_first == 0) t_first = now_s() - t_gen;
         gen++;
       }
@@ -283,9 +284,8 @@ int main(void) {
     } else {
       emit("done", "\"op\":\"%.*s\",\"result\":\"ok\",\"prompt_tokens\":%d,"
            "\"generated_tokens\":%d,\"decode_tokens_per_second\":%.3f,"
-           "\"time_to_first_token_ms\":%ld,\"output\":\"%.*s\"",
-           24, op, nt, gen, (double)gen / elapsed, (long)(t_first * 1000.0),
-           65536, output);
+           "\"time_to_first_token_ms\":%ld",
+           24, op, nt, gen, (double)gen / elapsed, (long)(t_first * 1000.0));
     }
   }
   llama_free(ctx);

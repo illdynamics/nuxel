@@ -35,6 +35,7 @@ const PWAS = {
     'org.nuxel.Files': 'nuxel-apps/files/index.html',
     'org.nuxel.Mail': 'nuxel-apps/mail/index.html',
     'org.nuxel.Notes': 'nuxel-apps/notes/index.html',
+    'org.nuxel.PenGuru': 'nuxel-apps/penguru/index.html',
 };
 
 // System surfaces are not third-party apps: the launcher manifest may declare
@@ -197,7 +198,7 @@ for (const [appId, relHtml] of Object.entries(PWAS)) {
 }
 
 if (failures === 0) {
-    console.log('[verify-wiring] ALL 6 PWA SURFACES OK');
+    console.log(`[verify-wiring] ALL ${Object.keys(PWAS).length} PWA SURFACES OK`);
     process.exit(0);
 }
 console.error(`[verify-wiring] ${failures} assertion(s) FAILED`);

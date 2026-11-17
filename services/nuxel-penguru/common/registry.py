@@ -199,6 +199,16 @@ class ModelRegistry:
         return os.path.join(self.models_root, m["model_id"], m["source_revision"],
                             m["variant_id"])
 
+    def download_eligibility(self, manifest: Dict[str, Any]) -> Tuple[bool, str]:
+        signed, reason = verify_signature(manifest, self.trusted_key)
+        if signed and manifest.get("trust") == "test_signed" and not self.allow_test_keys:
+            return False, "Test signature requires explicit test-build authorization; not a release package"
+        if not signed:
+            return False, reason
+        if manifest["format"] != "GGUF":
+            return False, "This installer supports GGUF only"
+        return True, "Trusted manifest; owner must accept the exact revision's license"
+
     def verify_installed(self, m: Dict[str, Any]) -> PackageState:
         d = self.package_dir(m)
         if not os.path.isdir(d):
@@ -248,6 +258,7 @@ class ModelRegistry:
         }
         for m in self.manifests():
             st = self.verify_installed(m)
+            downloadable, download_reason = self.download_eligibility(m)
             card = cards.setdefault(m["model_id"], {"model_id": m["model_id"],
                                                     "variants": []})
             card["name"] = m.get("name", m["model_id"])
@@ -267,6 +278,8 @@ class ModelRegistry:
                 "detail": st.detail,
                 "redistribution": (m.get("license") or {}).get("redistribution"),
                 "self_test": self.self_test_record(m),
+                "download_allowed": downloadable,
+                "download_reason": download_reason,
             })
         for mid in MODEL_IDS:
             cards[mid].setdefault("variants", [])

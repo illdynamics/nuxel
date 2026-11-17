@@ -54,8 +54,8 @@ def start_download(registry: reg.ModelRegistry, model_id: str, variant_id: str,
     if not license_accepted or license_revision != m["source_revision"]:
         return {"ok": False, "error": "license_ack_required",
                 "detail": "accept the exact revision's license notice first"}
-    signed, why = reg.verify_signature(m, registry.trusted_key)
-    if not signed or (m.get("trust") == "test_signed" and not registry.allow_test_keys):
+    signed, why = registry.download_eligibility(m)
+    if not signed:
         return {"ok": False, "error": "manifest_untrusted", "detail": why}
     with _LOCK:
         if any(j["state"] not in ("ready", "error", "cancelled", "quarantined") for j in _JOBS.values()):
@@ -66,6 +66,8 @@ def start_download(registry: reg.ModelRegistry, model_id: str, variant_id: str,
            "total_bytes": sum(f["size_bytes"] for f in m["files"]),
            "received_bytes": 0, "updated": time.time()}
     with _LOCK:
+        if any(j["state"] not in ("ready", "error", "cancelled", "quarantined") for j in _JOBS.values()):
+            return {"ok": False, "error": "download_busy"}
         _JOBS[job_id] = job
     t = threading.Thread(target=_run, args=(job, registry, m), daemon=True)
     THREADS[job_id] = t

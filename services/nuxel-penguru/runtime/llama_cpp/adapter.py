@@ -10,6 +10,7 @@ No TCP listener.  The worker is a bounded child process with:
 from __future__ import annotations
 
 import json
+from collections import deque
 import os
 import shutil
 import signal
@@ -100,11 +101,37 @@ class LlamaCppRuntime(InferenceRuntime):
         proc.stdin.write(json.dumps(job, separators=(",", ":"), ensure_ascii=False) + "\n")
         proc.stdin.close()
         # Drain libllama diagnostics so a full stderr pipe cannot stall generation.
-        threading.Thread(target=lambda: list(proc.stderr), daemon=True).start()
+        proc.penguru_diagnostics = deque(maxlen=16)
+        def drain():
+            while True:
+                chunk = proc.stderr.read(4096)
+                if not chunk:
+                    break
+                proc.penguru_diagnostics.append(chunk)
+        threading.Thread(target=drain, daemon=True).start()
         return proc
 
     def _events(self, proc: subprocess.Popen) -> Iterator[Dict[str, Any]]:
         assert proc.stdout is not None
+        expired = threading.Event()
+        def expire():
+            expired.set()
+            if proc.poll() is None:
+                proc.kill()
+        watchdog = threading.Timer(180, expire)
+        watchdog.daemon = True
+        watchdog.start()
+        try:
+            yield from self._read_events(proc)
+            if expired.is_set():
+                yield {"event": "error", "code": "worker_timeout", "detail": "180 second worker deadline exceeded"}
+        finally:
+            watchdog.cancel()
+            if proc.poll() is None:
+                proc.kill()
+            proc.wait(timeout=5)
+
+    def _read_events(self, proc: subprocess.Popen) -> Iterator[Dict[str, Any]]:
         for line in proc.stdout:
             line = line.strip()
             if not line:
@@ -112,10 +139,16 @@ class LlamaCppRuntime(InferenceRuntime):
             try:
                 doc = json.loads(line)
             except ValueError:
-                continue
+                yield {"event": "error", "code": "worker_protocol_error",
+                       "detail": "Worker emitted an invalid JSON event"}
+                return
             if isinstance(doc, dict) and isinstance(doc.get("event"), str):
                 yield doc
-        proc.wait()
+        returncode = proc.wait()
+        if returncode:
+            yield {"event": "error", "code": "worker_exit",
+                   "detail": "Worker exited with status %d: %s" % (returncode,
+                       "".join(proc.penguru_diagnostics)[-4096:])}
 
     def _run_job(self, job: Dict[str, Any], limit_bytes: int) -> Iterator[Dict[str, Any]]:
         with self._lock:

@@ -240,17 +240,30 @@ class Handler(socketserver.StreamRequestHandler):
         return {"app_id": app_id, "session_id": session_id, "uid": uid, "pid": pid}
 
     def handle(self):
-        ident = self._ident()
+        self.request.settimeout(15)
+        try:
+            ident = self._ident()
+        except (ValueError, OSError, AttributeError):
+            ident = None
         if ident is None:
             self.wfile.write(json.dumps({"ok": False, "error": "identity_required"}).encode() + b"\n")
             return
-        for raw in self.rfile:
+        while True:
+            raw = self.rfile.readline(65537)
+            if not raw:
+                break
+            if len(raw) > 65536:
+                self.wfile.write(b'{"ok":false,"error":"request_too_large"}\n')
+                return
             try:
                 req = json.loads(raw)
             except ValueError:
                 self.wfile.write(b'{"ok":false,"error":"invalid_json"}\n')
                 continue
-            out = self._dispatch(ident, req)
+            try:
+                out = self._dispatch(ident, req)
+            except (OSError, ValueError, reg.ManifestError):
+                out = {"ok": False, "error": "operation_failed"}
             self.wfile.write(json.dumps(out, ensure_ascii=False).encode() + b"\n")
             self.wfile.flush()
 

@@ -40,7 +40,9 @@ function renderCards(cards) {
       area.innerHTML = `<p>${esc(v.format)} · ${esc(v.quantization)} · ${(v.size_bytes/1e9).toFixed(2)} GB · ${esc(v.engine)}</p><p><a target="_blank" rel="noopener noreferrer" href="https://huggingface.co/${esc(v.source_repo)}">${esc(v.source_repo)}</a></p><p class="revision">Revision ${esc(v.source_revision)}</p><p><strong>${esc(v.status)}</strong> — ${esc(v.detail)}</p><details><summary>Files, integrity &amp; license</summary><pre>${esc(JSON.stringify(v.files,null,2))}</pre><p>${esc(v.license.spdx)}: ${esc(v.license.notice)}</p><p>Redistribution review: ${esc(v.license.provenance_review)}</p></details>`;
       const ack = document.createElement('label'); const check = document.createElement('input'); check.type='checkbox'; ack.append(check,document.createTextNode(' I have reviewed the license and provenance notice for this revision.'));
       const download = document.createElement('button'); download.textContent = v.status === 'ready' ? 'Verified & ready' : v.status === 'verified_signed' ? 'Verify installed model' : 'Download from Hugging Face'; download.disabled = true;
-      check.onchange = () => download.disabled = !check.checked || v.status === 'ready';
+      check.disabled = !v.download_allowed;
+      check.onchange = () => download.disabled = !check.checked || !v.download_allowed || v.status === 'ready';
+      const trust = document.createElement('p'); trust.textContent = v.download_reason || 'Manifest trust has not been verified';
       const progress = document.createElement('progress'); progress.max=1; progress.value=0; progress.hidden=true;
       const state = document.createElement('p'); state.setAttribute('role','status');
       const cancel = document.createElement('button'); cancel.textContent='Cancel download'; cancel.hidden=true;
@@ -50,7 +52,7 @@ function renderCards(cards) {
       };
       const remove=document.createElement('button');remove.textContent='Delete package'; remove.disabled=v.status==='not_installed';remove.onclick=async()=>{if(!confirm(`Delete ${card.model_id} ${v.variant_id} from this device?`))return;try{await call('delete_model',{model_id:card.model_id,variant_id:v.variant_id});await refresh();}catch(e){notice(e.message);}};
       const override=document.createElement('select');override.setAttribute('aria-label',card.model_id+' runtime override');override.innerHTML='<option value="inherit">Inherit global runtime</option><option value="llama.cpp">llama.cpp</option><option value="onnxruntime-genai">ORT GenAI</option>';override.onchange=()=>call('set_runtime',{model_id:card.model_id,engine:override.value}).catch(e=>notice(e.message));
-      area.append(ack,download,remove,cancel,progress,state,override);box.append(area);
+      area.append(trust,ack,download,remove,cancel,progress,state,override);box.append(area);
     }
     $('cards').append(box);
   }
