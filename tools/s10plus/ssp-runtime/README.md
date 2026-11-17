@@ -119,6 +119,11 @@ firmware execution. Timer units are independently traced to the matched Android
 elapsedRealtime implementation; see the final recovery report and clock evidence.
 # Synchronization continuation replay
 
+`--reliable-queue` additionally executes the original ring allocator/free,
+ACK/NACK, retransmission and consumed-patch startup branches. Patch fields are
+synthetically staged; this is not patch validation. Actual sends and external
+error handling remain intercepted. Queue drain is never called MCU success.
+
 `replay_lhd_response.py BINARY --sync-initializer` executes bounded synthetic
 initial/confirmation synchronization, timeout/restart and cancel/late-reply
 scenarios using the hash-matched instructions. `SyncInitializerReplay` extends

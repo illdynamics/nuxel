@@ -280,12 +280,73 @@ New [read-only SSH baseline](evidence/ssp-sync-contract-20261117/phone-readonly.
 records kernel identity, active orientation/bridge/SSH services and node metadata.
 No transport/device was opened. It is not a new physical streaming test.
 
+## Milestone 5: reliable completion versus application startup
+
+Milestone 4 is committed as `90445249`. The next extension executes the actual
+bounded transport ring allocator/free routines, reliable enqueue, cumulative
+ACK/NACK handlers, resend scheduler, and the state-12 post-supply branches.
+[Inventory](evidence/ssp-reliable-contract-20261117/contract.json),
+[replays](evidence/ssp-reliable-contract-20261117/replays.json),
+[tests](evidence/ssp-reliable-contract-20261117/tests.txt) and annotated-by-range
+disassembly are preserved. Confidence: STATIC_VERIFIED / OFFLINE_EMULATED.
+
+The counter at transport +`0x3508` is **pending reliable payload bytes**, not
+completed firmware operations. Enqueue `0x3fa24` adds payload length. ACK
+`0x4050c` searches the queue for the reported u8 sequence, retires every entry
+through that match, subtracts their lengths, then invokes saved callbacks.
+Unknown/duplicate ACKs do not retire more entries. Packet ACK alone cannot
+drain the queue. NACK `0x40674` can retire a prefix and mark the suffix for
+resend after matching a queued packet sequence. These tests do not establish
+that an actual BCM47752 accepted any request.
+
+Reliable retransmission interval is 500ms, also triggered by a resend flag.
+After ten send attempts, the scheduler calls the communication-error interface;
+it does not itself clear pending bytes or report application success. The
+higher-level error callback is intercepted, not assumed harmless. No-pending
+sync, retry and cancellation tests from milestone 4 continue to pass.
+
+State 12 calls patch supply `0x399fc`, then reads the pending counter through
+`0x3e3f0 -> 0x3f0f4`. Nonzero prevents application startup. Zero proceeds to
+the startup branch. Static supply logic requires at least 2048 bytes of ring
+capacity, feeds at most 512 patch bytes per iteration, then compares a local
+checksum byte after supply. **The new branch fixture stages synthetic patch
+metadata as already consumed; it does not prove patch validation or successful
+memory writes.**
+
+| Post-supply branch | Original serializer / request | Next state and delay |
+|---|---|---|
+| Patch type `0x41` (scratch log branch) | `0x3cee0`: RPC 46, LE32 entry, unreliable send | 13, 40ms |
+| Other type (service log branch) | `0x3cff8`: RPC 55, LE32 entry plus four zero LE32s, unreliable send | 13, 100ms |
+| Entry `0xffffffff` | No startup request; reliable empty RPC 0 version request | 15, 250ms |
+
+Interface +48 resolves to `0x387f0`, which reads core byte +18808. When true,
+the two startup branches choose state 16 instead of 13. Its production
+configuration is not assumed enabled. Normally state 13 starts a second sync
+sequence with destination 14, leading to final version confirmation. Thus
+queue drain and the startup send are **not** sufficient MCU-ready evidence.
+
+The suite now has 51 original-code tests, plus seven isolation tests. Added
+checks include CRC rejection before ACK processing, packet/reliable separation,
+cumulative/partial/unknown/duplicate ACKs, NACK resend, retry exhaustion, 300
+enqueue/free cycles spanning ring and u8 sequence wrap, pending-byte startup
+gating, metadata refusal and all four startup branches. Actual send is still
+intercepted with explicitly synthetic packet-sequence return 0; no live response
+or successful firmware operation is fabricated. The native regression suite
+also runs with AddressSanitizer/UndefinedBehaviorSanitizer; see
+[build/test output](evidence/ssp-reliable-contract-20261117/native-sanitizers.txt).
+
+Reproduce these traces with the same environment and test commands above:
+
+```sh
+/tmp/nuxel-lhd-analysis-env/bin/python tools/s10plus/ssp-runtime/replay_lhd_response.py packs/sensors/acquired/vendor-bin-hw-lhd --reliable-queue
+```
+
 ## Next safe milestone
 
-Trace reliable enqueue `0x3fa24`, ACK handler `0x4050c`, pending count
-`0x3f0f4` and initializer state 12 (`0x38cdc`) together. Determine exactly
-what queue drain proves before scratch/service application startup. Keep
-memory writes and physical transport intercepted. Separately resolve the
+Trace patch-record decoder `0x3c7e0 -> 0x3ca50` and its virtual callbacks into
+the memory-write serializer, preserving bounds and keeping physical transport
+intercepted. Resolve higher-level communication-error/abort effects; the
+current replay deliberately stops before them. Separately resolve the
 experimental native-peer receive diversion and higher-level abort/reset
 effects before requesting any hardware trial. A defensible end-to-end recovery
 contract is not complete, so **no physical trial is proposed or authorized**.

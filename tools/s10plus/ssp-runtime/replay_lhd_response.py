@@ -380,6 +380,104 @@ class SyncInitializerReplay(SyncReplay):
         return self.snapshot()
 
 
+class ReliableReplay(SyncInitializerReplay):
+    """Original reliable queue/ACK and post-supply startup branches, offline only.
+
+    Uses the real bounded ring allocator. Physical send remains intercepted
+    (synthetic packet sequence return 0). Patch metadata can be staged as already
+    consumed; this NEVER loads, validates, writes or executes firmware.
+    """
+
+    QUEUE_CALLBACK = STUBS + 32
+
+    def __init__(self, binary, now=1000):
+        super().__init__(binary, now=now)
+        self.put64(self.TRANSPORT + 0x3458, self.TRANSPORT + 0xc58)
+
+    def _code(self, uc, addr, size, user):
+        if addr == self.QUEUE_CALLBACK:
+            self.events.append({'kind': 'queue_callback',
+                                'argument': uc.reg_read(UC_ARM64_REG_X1) & 0xffffffff,
+                                'pending_bytes_at_callback': self.word(self.TRANSPORT + 0x3508)})
+            self._return()
+            return
+        if addr == DIAG:
+            self.events.append({'kind': 'transport_diagnostic_boundary'})
+            self.stopped_at_assertion = True
+            uc.reg_write(UC_ARM64_REG_PC, RETURN)
+            return
+        if (0x3f994 <= addr < 0x3fe80 or 0x3ef6c <= addr < 0x3f0fc
+                or 0x4050c <= addr < 0x407f0 or 0x399fc <= addr < 0x39b9c
+                or 0x3e3f0 <= addr < 0x3e408 or 0x40f3c <= addr < 0x40f90
+                or 0x40ff8 <= addr < 0x41000 or 0x3c74c <= addr < 0x3c79c
+                or 0x3cee0 <= addr < 0x3cf30 or 0x3cff8 <= addr < 0x3d0b8
+                or 0x41250 <= addr < 0x413e8 or 0x387f0 <= addr < 0x38800):
+            return
+        super()._code(uc, addr, size, user)
+
+    def snapshot(self):
+        result = super().snapshot()
+        result['pending_bytes'] = self.word(self.TRANSPORT + 0x3508)
+        pointer = struct.unpack('<Q', self.uc.mem_read(self.TRANSPORT + 0x34f8, 8))[0]
+        queue = []
+        while pointer:
+            if len(queue) >= 150 or not self.TRANSPORT + 0xc58 <= pointer < self.TRANSPORT + 0x3458:
+                raise RuntimeError('invalid/cyclic synthetic queue')
+            node = bytes(self.uc.mem_read(pointer, 64))
+            queue.append({'sequence': node[0], 'packet_sequence': node[1],
+                          'attempts': node[2], 'resend': bool(node[16]),
+                          'length': struct.unpack_from('<H', node, 24)[0]})
+            pointer = struct.unpack_from('<Q', node, 56)[0]
+        result['queue'] = queue
+        return result
+
+    def enqueue(self, payload, tag=0):
+        if not 0 < len(payload) <= 1024:
+            raise ValueError('synthetic reliable payload must have 1..1024 bytes')
+        self.input_len = len(payload)
+        self.uc.mem_write(INPUT, payload)
+        self.execute(0x3fa24, [self.TRANSPORT, INPUT, len(payload),
+                              self.QUEUE_CALLBACK, 0, tag])
+        return self.snapshot()
+
+    def acknowledge(self, sequence, nack_packet=None):
+        if not 0 <= sequence <= 255 or (nack_packet is not None and not 0 <= nack_packet <= 255):
+            raise ValueError('synthetic sequence is not u8')
+        self.execute(0x4050c if nack_packet is None else 0x40674,
+                     [self.TRANSPORT, sequence, nack_packet or 0])
+        return self.snapshot()
+
+    def stage_consumed_patch(self, patch_type=0x41, entry=0x12345678, skip_confirmation=False):
+        """SYNTHETIC branch fixture only. Does not assert patch availability on HW."""
+        self.put32(OWNER + 1256, 12)
+        self.put32(OWNER + 40 + 0x41c, 16)
+        self.put32(OWNER + 0x924, 16)
+        self.put32(OWNER + 40 + 0x430, patch_type)
+        self.put32(OWNER + 40 + 0x434, entry)
+        self.uc.mem_write(OWNER + 40 + 0x488, b'\x01')
+        self.uc.mem_write(self.CORE + 18808, bytes([bool(skip_confirmation)]))
+        self.put32(OWNER + 0x92c, self.now + 500)
+
+
+def reliable_scenarios(binary):
+    result = {'fixture': 'SYNTHETIC queue bytes and consumed-patch fields; NOT firmware acceptance',
+              'binary_sha256': MatchedImage(binary).digest, 'scenarios': {}}
+    r = ReliableReplay(binary)
+    result['scenarios']['cumulative_ack'] = [r.enqueue(b'abc', 11), r.enqueue(b'de', 22),
+                                            r.acknowledge(2)]
+    for patch_type in (0x41, 0x42):
+        r = ReliableReplay(binary)
+        trace = [r.enqueue(b'synthetic')]
+        r.stage_consumed_patch(patch_type)
+        trace.extend([r.step(), r.acknowledge(1), r.step()])
+        result['scenarios'][f'pending_to_start_type_{patch_type:x}'] = trace
+    r = ReliableReplay(binary)
+    trace = [r.enqueue(b'synthetic')]
+    trace.extend(r.poll(now) for now in range(1500, 6001, 500))
+    result['scenarios']['retry_exhaustion'] = trace
+    return result
+
+
 def sync_scenarios(binary):
     """Reproducible bounded offline traces, never a reference hardware transcript."""
     response = bytes([1, 1, 10, 20, 30, 40, 50, 60])
@@ -405,13 +503,15 @@ def main():
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument('--hex', help='synthetic RPC-list bytes')
     mode.add_argument('--sync-initializer', action='store_true', help='bounded synthetic sync/initializer scenarios')
+    mode.add_argument('--reliable-queue', action='store_true', help='bounded synthetic reliable queue/startup scenarios')
     ap.add_argument('--state', type=int, default=0)
     ap.add_argument('--wire', action='store_true', help='input is escaped TL bytes, still offline')
     args = ap.parse_args()
-    if args.sync_initializer:
+    if args.sync_initializer or args.reliable_queue:
         if args.wire or args.state:
-            ap.error('--sync-initializer does not accept --wire or --state')
-        print(json.dumps(sync_scenarios(args.binary), indent=2))
+            ap.error('scenario mode does not accept --wire or --state')
+        scenario = sync_scenarios if args.sync_initializer else reliable_scenarios
+        print(json.dumps(scenario(args.binary), indent=2))
         return
     replay = Replay(args.binary, args.state)
     result = replay.run(bytes.fromhex(args.hex), wire=args.wire)
