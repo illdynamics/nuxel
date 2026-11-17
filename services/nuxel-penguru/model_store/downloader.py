@@ -19,6 +19,7 @@ import shutil
 import threading
 import time
 import urllib.request
+import uuid
 from typing import Any, Dict, Optional
 
 from common import paths
@@ -53,7 +54,13 @@ def start_download(registry: reg.ModelRegistry, model_id: str, variant_id: str,
     if not license_accepted or license_revision != m["source_revision"]:
         return {"ok": False, "error": "license_ack_required",
                 "detail": "accept the exact revision's license notice first"}
-    job_id = "%s-%s-%d" % (model_id, variant_id, int(time.time() * 1000))
+    signed, why = reg.verify_signature(m, registry.trusted_key)
+    if not signed or (m.get("trust") == "test_signed" and not registry.allow_test_keys):
+        return {"ok": False, "error": "manifest_untrusted", "detail": why}
+    with _LOCK:
+        if any(j["state"] not in ("ready", "error", "cancelled", "quarantined") for j in _JOBS.values()):
+            return {"ok": False, "error": "download_busy"}
+    job_id = "%s-%s-%s" % (model_id, variant_id, uuid.uuid4().hex)
     job = {"job_id": job_id, "model_id": model_id, "variant_id": variant_id,
            "state": "user_confirmed", "progress": 0.0, "detail": "",
            "total_bytes": sum(f["size_bytes"] for f in m["files"]),
@@ -88,9 +95,16 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
     try:
         os.makedirs(jdir, mode=0o750, exist_ok=True)
         _set(job, "check_space")
-        need = job["total_bytes"] * 2 + MIN_FREE_AFTER
+        need = job["total_bytes"] + MIN_FREE_AFTER
         if _free_bytes(paths.STATE_DIR) < need:
             raise RuntimeError("insufficient storage")
+        target = registry.package_dir(m)
+        if os.path.isdir(target):
+            st = registry.verify_installed(m)
+            if st.status not in (reg.STATUS_VERIFIED_SIGNED, reg.STATUS_READY):
+                raise RuntimeError("existing package failed verification; delete before retry")
+            _self_test(job, m, target)
+            return
         _set(job, "downloading")
         for f in m["files"]:
             if job.get("cancel"):
@@ -106,6 +120,9 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
                     h.update(chunk)
             if h.hexdigest() != f["sha256"]:
                 raise RuntimeError("sha256 mismatch for %s" % f["path"])
+            with open(dst, "rb") as fh:
+                if m["format"] == "GGUF" and fh.read(4) != b"GGUF":
+                    raise RuntimeError("invalid GGUF header")
             os.replace(dst, final)
         _set(job, "verify_signature")
         signed, why = reg.verify_signature(m, registry.trusted_key)
@@ -126,11 +143,9 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
         if os.path.exists(target):
             raise RuntimeError("target already exists; refusing to overwrite")
         os.replace(jdir, target)
-        _set(job, "self_test")
-        job["state"] = "ready_for_self_test"
-        job["package_dir"] = target
-        _set(job, "ready_for_self_test", "package verified; runtime self-test required",
-             1.0)
+        with open(os.path.join(target, "license-acceptance.json"), "w") as fh:
+            json.dump({"revision": m["source_revision"], "at": time.time(), "notice": m["license"]}, fh)
+        _self_test(job, m, target)
     except Exception as exc:  # noqa: BLE001
         partial = os.path.join(jdir)
         try:
@@ -142,34 +157,64 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
             pass
         with _LOCK:
             if job.get("state") not in ("quarantined",):
-                _set(job, "error", str(exc))
+                _set(job, "cancelled" if job.get("cancel") else "error", str(exc))
+
+
+def _self_test(job, manifest, target):
+    from runtime.llama_cpp.adapter import LlamaCppRuntime
+    from common.runtime_api import RuntimeProfile
+    _set(job, "self_test", "Loading exact package and generating test tokens", 1.0)
+    rt = LlamaCppRuntime(runner=False)
+    result = rt.self_test(manifest, target, RuntimeProfile(
+        engine="llama.cpp", package_format="GGUF", threads=4, context_limit=4096), max_tokens=8)
+    if job.get("cancel"):
+        raise RuntimeError("cancelled by owner")
+    if result.get("result") != "pass" or (result.get("loaded") or {}).get("architecture") != manifest["architecture"]:
+        raise RuntimeError("runtime self-test failed: " + str(result.get("code", "architecture mismatch")))
+    record = {"result": "pass", "engine": "llama.cpp", "version": manifest["runtime"]["min_commit"],
+              "at": time.time(), "load_ms": result["loaded"].get("load_ms"),
+              "output_sha256": hashlib.sha256(result["output"].encode()).hexdigest()}
+    with open(os.path.join(target, "self-test.json.tmp"), "w") as fh:
+        json.dump(record, fh)
+    os.replace(os.path.join(target, "self-test.json.tmp"), os.path.join(target, "self-test.json"))
+    _set(job, "ready", "Signature, SHA-256, architecture and real generation verified", 1.0)
 
 
 def _download(rel: str, base_url: str, dst: str, size: int, job: Dict[str, Any]):
-    have = os.path.getsize(dst) if os.path.exists(dst) else 0
-    headers = {}
-    if have:
-        headers["Range"] = "bytes=%d-" % have
-    req = urllib.request.Request(base_url, headers=headers)
-    mode = "ab" if have else "wb"
-    with urllib.request.urlopen(req, timeout=60) as resp, open(dst, mode) as out:
-        if have and resp.status != 206:
-            have = 0
-            out.close()
-            out = open(dst, "wb")
-        while True:
-            if job.get("cancel"):
-                raise RuntimeError("cancelled by owner")
-            chunk = resp.read(1 << 20)
-            if not chunk:
-                break
-            out.write(chunk)
-            have += len(chunk)
-            with _LOCK:
-                job["received_bytes"] = have
-                job["progress"] = min(1.0, have / float(size or 1))
-    if have != size:
-        raise RuntimeError("size mismatch: got %d expected %d" % (have, size))
+    for attempt in range(3):
+        try:
+            have = os.path.getsize(dst) if os.path.exists(dst) else 0
+            headers = {"Range": "bytes=%d-" % have} if have else {}
+            req = urllib.request.Request(base_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                if not resp.url.startswith("https://"):
+                    raise RuntimeError("insecure redirect refused")
+                if have and resp.status == 206:
+                    if not resp.headers.get("Content-Range", "").startswith("bytes %d-" % have):
+                        raise RuntimeError("invalid range response")
+                else:
+                    have = 0
+                with open(dst, "ab" if have else "wb") as out:
+                    while True:
+                        if job.get("cancel"):
+                            raise RuntimeError("cancelled by owner")
+                        chunk = resp.read(1 << 18)
+                        if not chunk:
+                            break
+                        have += len(chunk)
+                        if have > size:
+                            raise RuntimeError("download exceeds declared size")
+                        out.write(chunk)
+                        with _LOCK:
+                            job["received_bytes"] = have
+                            job["progress"] = min(1.0, have / float(size))
+            if have != size:
+                raise OSError("incomplete transfer")
+            return
+        except (OSError, TimeoutError):
+            if attempt == 2 or job.get("cancel"):
+                raise
+            time.sleep(2 ** attempt)
 
 
 def delete_model(registry: reg.ModelRegistry, model_id: str, variant_id: str
@@ -182,7 +227,7 @@ def delete_model(registry: reg.ModelRegistry, model_id: str, variant_id: str
     if not os.path.isdir(d):
         return {"ok": False, "error": "not_installed"}
     # Only remove inside the immutable package directory (never a parent).
-    if not os.path.abspath(d).startswith(os.path.abspath(paths.MODELS_DIR) + os.sep):
+    if not os.path.abspath(d).startswith(os.path.abspath(registry.models_root) + os.sep):
         return {"ok": False, "error": "refused_path"}
     for name in os.listdir(d):
         p = os.path.join(d, name)

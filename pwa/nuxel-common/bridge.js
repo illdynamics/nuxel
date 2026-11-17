@@ -430,6 +430,7 @@ export class NuxelBridgeClient {
             if (res && res.success === false) throw new Error((res.error) || ('bridge error on ' + namespace + '.' + verb));
             return res;
         } catch (e) {
+            if (namespace === 'penguru') throw e;
             // Graceful mock fallback when the bridge is unreachable.
             this.connected = false;
             this.mockMode = true;

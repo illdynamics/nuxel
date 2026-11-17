@@ -5834,6 +5834,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         namespace = body.get('namespace', '')
         verb = body.get('verb', '')
         params = body.get('params', {}) or {}
+        if namespace == 'penguru':
+            import penguru_api
+            return penguru_api.handle(app_id, self._session_token(), verb, params)
         if namespace == 'permissions':
             return self._permissions_rpc(app_id, verb, params)
         # USB networking + tethering: owner-facing surface only, backed by the

@@ -97,8 +97,10 @@ class LlamaCppRuntime(InferenceRuntime):
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 env=env, text=True, bufsize=1)
         assert proc.stdin is not None
-        proc.stdin.write(json.dumps(job, separators=(",", ":")) + "\n")
-        proc.stdin.flush()
+        proc.stdin.write(json.dumps(job, separators=(",", ":"), ensure_ascii=False) + "\n")
+        proc.stdin.close()
+        # Drain libllama diagnostics so a full stderr pipe cannot stall generation.
+        threading.Thread(target=lambda: list(proc.stderr), daemon=True).start()
         return proc
 
     def _events(self, proc: subprocess.Popen) -> Iterator[Dict[str, Any]]:

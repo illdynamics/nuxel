@@ -169,6 +169,7 @@ class ModelRegistry:
     def __init__(self, manifests_dir: str, models_root: str,
                  trusted_key: Optional[str] = None,
                  allow_test_keys: bool = False):
+        self._hash_cache = {}
         self.allow_test_keys = allow_test_keys
         self.manifests_dir = manifests_dir
         self.models_root = models_root
@@ -206,7 +207,7 @@ class ModelRegistry:
                                 "package is not installed", m["source_revision"], m)
         signed, why = verify_signature(m, self.trusted_key)
         if signed and not self.allow_test_keys and \
-                (m.get("signature") or {}).get("scope") == "test":
+                m.get("trust") == "test_signed":
             signed, why = False, "test signature is not a release trust root"
         for f in m["files"]:
             p = os.path.join(d, f["path"])
@@ -214,7 +215,16 @@ class ModelRegistry:
                 return PackageState(m["model_id"], m["variant_id"], STATUS_ERROR,
                                     "missing file %s" % f["path"],
                                     m["source_revision"], m)
-            digest, size = sha256_file(p, f["size_bytes"])
+            st = os.stat(p, follow_symlinks=False)
+            if os.path.islink(p):
+                raise ManifestError("symlink model file refused")
+            stamp = (st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+            cached = self._hash_cache.get(p)
+            if cached and cached[0] == stamp:
+                digest, size = cached[1]
+            else:
+                digest, size = sha256_file(p, f["size_bytes"])
+                self._hash_cache[p] = (stamp, (digest, size))
             if size != f["size_bytes"]:
                 return PackageState(m["model_id"], m["variant_id"], STATUS_ERROR,
                                     "size mismatch for %s" % f["path"],
@@ -248,6 +258,7 @@ class ModelRegistry:
                 "architecture": m.get("architecture"),
                 "quantization": m.get("quantization"),
                 "source_repo": m.get("source_repo"),
+                "files": m["files"],
                 "source_revision": m.get("source_revision"),
                 "size_bytes": sum(f["size_bytes"] for f in m["files"]),
                 "engine": m["runtime"]["engine"],
