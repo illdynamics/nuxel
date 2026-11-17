@@ -1,31 +1,29 @@
 connect to Nuxel over ssh use key ~wicked/.ssh/wicked_wqn_id_rsa to connect to Nuxel, use root user and IP 10.11.12.99
 
-please fix the top bar icon location. I have to go to settings and out of settinsg again before the icons are aligned properly, with the last 2 blocks of the 10 blocks blocked from dispalying icons as there is the camera. when we just boot up the last 2 blocks are still being used and the top bar icon blockers dont work until I open settings and close it again.
+Continue the Nuxel S10+ BCM47752 SSP recovery from the latest committed repository state.
 
-and remove "take screenshot" from the power menu when we hold power button please.
+Read `reports/SSP-STOCK-RUNTIME-2026-11-17.md` and all supporting evidence.
 
-then continue the Nuxel Galaxy S10+ BCM47752 SSP sensor-hub recovery.
+The matching Samsung G975FXXS9DTK9 Android runtime has now been recovered. All four vendor anchors match, zero dynamic library dependencies remain unresolved, and Samsung `lhd` executes with stock VNDK libraries inside hardware-denied isolation.
 
-All 9 tests in `NUXEL_SSP_RECOVERY_V2/test_recovery_v2.py` have passed successfully.
+DO NOT repeat the stock firmware acquisition, runtime extraction, or previous sandbox assertion unless new evidence requires it.
 
-Read and execute the complete engineering mission in:
+Your next engineering objective is to establish the exact, verified initialization and communication contract between the existing Samsung `lhd` daemon, the kernel BBD interface, and the BCM47752 sensor hub.
 
-`NUXEL_SSP_RECOVERY_V2/02_AGENT_CONTINUE_SSP_UNTIL_VERIFIED.md`
+Prioritize:
 
-Work from the existing repository, preserving previous commits and changes.
+1. Analyze existing Samsung kernel, daemon and BBD transport implementations and search trustworthy upstream references for the exact initialization protocol.
+2. Determine the expected messages, acknowledgements, error states, timeout behavior, startup ordering and firmware-loading responsibilities.
+3. Investigate the existing native downloader's incorrect acceptance of unrelated transport packets as successful acknowledgements. Implement and test a correct protocol state machine only when supported by trustworthy evidence.
+4. Improve the isolated test framework so it can exercise verified protocol behavior without exposing live power controls or requiring speculative hardware writes.
+5. Characterize the daemon's configuration warnings, Binder dependency, and socket-denial messages; distinguish genuine initialization blockers from sandbox artifacts.
+6. Prepare a documented, bounded physical hardware-init trial only after demonstrating a credible protocol path, with recovery provisions and explicit owner approval for any state-changing operation.
+7. Once authorized and validated, obtain actual, physically changing accelerometer and gyroscope samples. Then verify Nuxel automatic rotation and relevant regressions.
 
-Your primary objective is to restore **genuine, physically changing accelerometer and gyroscope readings** from the BCM47752 sensor hub.
+Preserve commits `7cd354d4` and `3c06d253`, all working UI changes, and the recovered stock runtime.
 
-Prioritize recovering the matching Android/Bionic runtime and testing the existing Samsung `lhd` implementation. Reuse the available Samsung firmware, driver and vendor components before writing replacements.
+Continue implementing and testing all safe work rather than stopping at a research report.
 
-Perform all safe research, implementation, builds, simulations and diagnostics independently. Do not stop at a report if further safe engineering work is possible.
+Do not invent an ACK, bypass protocol validation, make speculative firmware writes, expose unrestricted host sysfs or report synthetic sensor readings as real.
 
-Before any firmware transmission, GPIO reset, power sequencing or flashing, establish the protocol and a recovery plan and request my explicit approval.
-
-Once sensor streaming works, integrate and verify automatic rotation.
-
-Provide actual hardware evidence for success, with reproducible test results. If an indispensable external dependency remains, document exactly what is missing and how to obtain it.
-
-all files and ressources you need are located in ./NUXEL_SSP_RECOVERY_V2
-
-if you need to reflash anything thats impossible without TWRP access, you are allowed to reboot into recovery and reflash the phone. if you reflash and it ends up in TWRP again that means I did that and it bootlooped/hung/crashed. then you re-investigate, fix and reflash again until we boot into nuxel again then it was successful.
+The success criterion remains verified physical motion data and functional hardware-driven rotation. Report any remaining external blocker precisely, without claiming success prematurely.

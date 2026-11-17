@@ -1,5 +1,9 @@
 # SSP recovery continuation — 2026-11-17
 
+connect to Nuxel over ssh use key ~wicked/.ssh/wicked_wqn_id_rsa to connect to Nuxel, use root user and IP 10.11.12.99
+if you need to reflash anything thats impossible without TWRP access, you are allowed to reboot into recovery and reflash the phone. if you reflash and it ends up in TWRP again that means I did that and it bootlooped/hung/crashed. then you re-investigate, fix and reflash again until we boot into nuxel again then it was successful.
+everything you need what you asked for is located at ./SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac
+
 Sensor recovery remains blocked on the matching Samsung Android runtime.
 Twelve fresh hardware samples are zero for both accelerometer and gyroscope.
 No firmware transmission, GPIO reset, power sequencing, partition mounting,
