@@ -1,0 +1,40 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+000000000003ebac <.text+0x26bac>:
+   3ebac:	f9400408 	ldr	x8, [x0, #8]
+   3ebb0:	f9400100 	ldr	x0, [x8]
+   3ebb4:	f9400008 	ldr	x8, [x0]
+   3ebb8:	f9400902 	ldr	x2, [x8, #16]
+   3ebbc:	d61f0040 	br	x2
+   3ebc0:	f9400408 	ldr	x8, [x0, #8]
+   3ebc4:	f9400100 	ldr	x0, [x8]
+   3ebc8:	f9400008 	ldr	x8, [x0]
+   3ebcc:	f9400d01 	ldr	x1, [x8, #24]
+   3ebd0:	d61f0020 	br	x1
+   3ebd4:	f9400408 	ldr	x8, [x0, #8]
+   3ebd8:	f9400100 	ldr	x0, [x8]
+   3ebdc:	f9400008 	ldr	x8, [x0]
+   3ebe0:	f9401103 	ldr	x3, [x8, #32]
+   3ebe4:	d61f0060 	br	x3
+   3ebe8:	f9400408 	ldr	x8, [x0, #8]
+   3ebec:	f9400100 	ldr	x0, [x8]
+   3ebf0:	f9400008 	ldr	x8, [x0]
+   3ebf4:	f9401501 	ldr	x1, [x8, #40]
+   3ebf8:	d61f0020 	br	x1
+   3ebfc:	f9400400 	ldr	x0, [x0, #8]
+   3ec00:	17fffed0 	b	3e740 <__libc_init@plt-0x6710>
+   3ec04:	f9400408 	ldr	x8, [x0, #8]
+   3ec08:	f9400100 	ldr	x0, [x8]
+   3ec0c:	f9400008 	ldr	x8, [x0]
+   3ec10:	f9401903 	ldr	x3, [x8, #48]
+   3ec14:	d61f0060 	br	x3
+   3ec18:	f9400408 	ldr	x8, [x0, #8]
+   3ec1c:	12000021 	and	w1, w1, #0x1
+   3ec20:	f9400100 	ldr	x0, [x8]
+   3ec24:	f9400008 	ldr	x8, [x0]
+   3ec28:	f9401d02 	ldr	x2, [x8, #56]
+   3ec2c:	d61f0040 	br	x2

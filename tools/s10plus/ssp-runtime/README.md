@@ -117,3 +117,14 @@ patch metadata marked available. Completion is intercepted before external
 effects. Both success and failure enter DONE; neither test result establishes
 firmware execution. Timer units are independently traced to the matched Android
 elapsedRealtime implementation; see the final recovery report and clock evidence.
+# Synchronization continuation replay
+
+`replay_lhd_response.py BINARY --sync-initializer` executes bounded synthetic
+initial/confirmation synchronization, timeout/restart and cancel/late-reply
+scenarios using the hash-matched instructions. `SyncInitializerReplay` extends
+the existing transport replay through the original platform callback and
+initializer to version-request serialization. Raw writes and reliable enqueue
+are intercepted; no response, ACK, physical timer or MCU is simulated as real.
+Assertion-helper entry stops the replay before its side effects. Other main-core
+modes are refused. See `reports/SSP-FIRST-LIGHT-FINAL-RECOVERY.md` for limitations
+and test commands. This is an offline diagnostic, not a live downloader.

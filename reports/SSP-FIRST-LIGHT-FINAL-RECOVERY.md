@@ -1,8 +1,10 @@
 # SSP final recovery — 2026-11-17
 
 **Physical accelerometer/gyro streaming and automatic rotation are NOT VERIFIED.**
-Starting HEAD is `6bcbcea6` on `feat/ssp`. The pre-existing `ssp.md` edit is
-preserved. No transport was opened, firmware transmitted, service changed,
+Original investigation started at `6bcbcea6` on `feat/ssp`. This continuation
+reconciled a clean checkout at `61eee374` on **`feat/png`**; no branch switch or
+reset was made. Earlier work, including the `ssp.md` edit, is preserved.
+No transport was opened, firmware transmitted, service changed,
 power/reset/watchdog setting written, or boot partition touched.
 
 ## Milestone 1: decoded RPC to version callback
@@ -203,9 +205,87 @@ Latest read-only SSH observation (2026-11-17 10:33:28 UTC): orientationd active;
 hub `mcu_probe=1 shutdown=1 resetting=0 sensor_state=0x3feff enable=0x0
 shub_irq=443`. No live hardware-changing operation has been performed.
 
+## Milestone 4: synchronization through initialization and request serialization
+
+The isolated sync replay already added in `380d8ee1` is preserved and extended,
+not reimplemented. [Hash-bound inventory](evidence/ssp-sync-contract-20261117/contract.json),
+[original-code traces](evidence/ssp-sync-contract-20261117/replays.json), and
+[42 passing tests](evidence/ssp-sync-contract-20261117/tests.txt) close the
+callback-to-next-request gap. Confidence: STATIC_VERIFIED / OFFLINE_EMULATED.
+Every response fixture is **SYNTHETIC**, never a captured ROM/application response.
+
+```text
+CRC/length-checked internal transport payload -> 0x407f0
+  opcode 1: read seven u8 fields; reject error or leftover bytes
+  require sync-active AND token equality; update transport fields
+  clear active; run scheduler -> interface +64 -> 0x3ec18
+  outer interface +56 (relocation 0x487f8) -> 0x37f88
+    core state +18812 == 3 -> initializer at core+15808 -> 0x396ac
+      state 4 -> 5(success) / 6(timeout) -> initializer 0x389fc
+      5 -> saved destination 7(initial) / 14(confirmation); timer 0ms
+      next explicit timer dispatch: 7/14 -> 8/15
+        original RPC encoder emits ID 0, empty body (00 00)
+        reliable enqueue boundary; timer 250ms; five retry credits
+```
+
+The opcode jump table at `0xe0dd` derives dispatch targets from real binary
+bytes, not callback addresses. Opcode 1 requires exactly eight payload bytes.
+Byte 1 is compared with the current token; bytes 2/4/5/6 update transport
+sequence bookkeeping, while bytes 3/7 are read but discarded. Exact stores
+and modulo-256 adjustments are in the inventory. These local field roles do
+not establish undocumented ROM semantics. Malformed sync responses reject
+**before mutation**, unlike the earlier version RPC decoder.
+
+Starter `0x3f0fc` emits internal payload `[0, token]` with transport flags
+`0x300`. The no-pending-queue scheduler retries at 100ms with tokens 1..6;
+at 600ms it completes false. Constants at `0xde38`/`0xde60` are `(7,5)` and
+`(14,5)`: five initializer restart credits. A timeout consumes one, returns
+to state 2, emits the **binary's own 36-byte autobaud constant** through a
+raw-write boundary, waits 100ms, then starts synchronization again. The
+new attempt resets token to 1: an old token-1 reply passes the local check.
+This token is not a cross-attempt session nonce.
+
+Both version-wait states issue the initial request plus five retries at
+250ms. Exhaustion reaches assertion helper `0x34f80`; the harness stops
+before its real effects. Sync restart exhaustion likewise reaches that helper.
+Neither is modeled as success or a safe hardware reset.
+
+**Cancellation safety gap:** `0x39684` clears initializer state/unregisters
+its RPC handler but leaves transport synchronization active. With synthetic
+core state still 3, a late valid sync reply mutates transport bookkeeping and
+reaches an unexpected-state assertion with initializer state 0. This is a
+bounded local finding, not a claim that the full production caller fails to
+cancel or changes no other state. Higher-level cancellation and reset effects
+remain a mandatory safety investigation.
+
+Replay scope: stock instructions, exact binary hash guard, finite instruction
+budget, no ELF process/syscalls/devices; logging/locks stubbed; raw writes,
+transport sends and reliable enqueue intercepted. No ACK is invented. Timer
+steps are explicit synthetic calls, not the actual event loop. Main-core
+modes other than 3 are refused. Tests cover both destinations, retry limits,
+malformed/duplicate responses, cancellation, stale token reuse and refusal
+after assertion. Normal and extended version decoder tests still pass.
+
+Reproduce on the host (use an owner-local virtual environment):
+
+```sh
+python3 -m venv /tmp/nuxel-lhd-analysis-env
+/tmp/nuxel-lhd-analysis-env/bin/pip install -r tools/s10plus/ssp-runtime/requirements-analysis.txt
+PYTHONPATH=tools/s10plus/ssp-runtime:tools/s10plus/ssp-native /tmp/nuxel-lhd-analysis-env/bin/python -m unittest discover -s tools/s10plus/ssp-runtime -p 'test_lhd_response.py' -v
+/tmp/nuxel-lhd-analysis-env/bin/python tools/s10plus/ssp-runtime/inspect_lhd_init.py packs/sensors/acquired/vendor-bin-hw-lhd
+/tmp/nuxel-lhd-analysis-env/bin/python tools/s10plus/ssp-runtime/replay_lhd_response.py packs/sensors/acquired/vendor-bin-hw-lhd --sync-initializer
+```
+
+New [read-only SSH baseline](evidence/ssp-sync-contract-20261117/phone-readonly.txt)
+records kernel identity, active orientation/bridge/SSH services and node metadata.
+No transport/device was opened. It is not a new physical streaming test.
+
 ## Next safe milestone
 
-Trace internal synchronization through transport handler 0x407f0, starter
-0x3f0fc and retry scheduler 0x3f1f8. Resolve interface completion 0x3ec18 ->
-0x37f88 into the initializer. Replay token, exact-length, timeout and duplicate
-behavior with synthetic inputs, keeping actual sends intercepted.
+Trace reliable enqueue `0x3fa24`, ACK handler `0x4050c`, pending count
+`0x3f0f4` and initializer state 12 (`0x38cdc`) together. Determine exactly
+what queue drain proves before scratch/service application startup. Keep
+memory writes and physical transport intercepted. Separately resolve the
+experimental native-peer receive diversion and higher-level abort/reset
+effects before requesting any hardware trial. A defensible end-to-end recovery
+contract is not complete, so **no physical trial is proposed or authorized**.

@@ -5,7 +5,7 @@ import struct
 import tempfile
 import unittest
 from inspect_lhd_init import EXPECTED, MatchedImage, inspect
-from replay_lhd_response import Replay, FinalVersionReplay, SyncReplay, rpc_record
+from replay_lhd_response import Replay, FinalVersionReplay, SyncReplay, SyncInitializerReplay, rpc_record
 from replay_lhd_response import OWNER, INIT_INTERFACE, PLATFORM
 from check_protocol_replay import frame
 
@@ -16,6 +16,109 @@ BODY = struct.pack('<III', *VALUES)
 
 def kinds(result):
     return [e['kind'] for e in result['events']]
+
+
+class SyncInitializerTests(unittest.TestCase):
+    RESPONSE = bytes([1, 1, 10, 20, 30, 40, 50, 60])  # SYNTHETIC, not ROM evidence
+
+    def test_real_interface_relocations(self):
+        image = MatchedImage(BINARY)
+        self.assertEqual(image.relocations[0x48eb0], 0x3ec18)
+        self.assertEqual(image.relocations[0x487f8], 0x37f88)
+
+    def test_initial_and_confirmation_paths_serialize_version_request(self):
+        for confirmation, target, waiting in ((False, 7, 8), (True, 14, 15)):
+            with self.subTest(confirmation=confirmation):
+                r = SyncInitializerReplay(BINARY, confirmation)
+                r.start()
+                synced = r.receive(self.RESPONSE)
+                self.assertEqual(synced['state'], target)
+                self.assertEqual(synced['timer_deadline'], 1000)
+                requested = r.step()
+                self.assertEqual(requested['state'], waiting)
+                self.assertEqual(requested['version_retries'], 5)
+                self.assertEqual(requested['timer_deadline'], 1250)
+                self.assertEqual([e['payload_hex'] for e in requested['events']
+                                  if e['kind'] == 'reliable_enqueue_boundary'], ['0000'])
+                self.assertNotIn('version_callback', kinds(requested))
+
+    def test_version_timeout_is_five_retries_then_assertion_boundary(self):
+        r = SyncInitializerReplay(BINARY)
+        r.start()
+        r.receive(self.RESPONSE)
+        r.step()
+        for i in range(1, 6):
+            result = r.step(1000 + 250*i)
+            self.assertEqual(result['version_retries'], 5-i)
+            self.assertEqual(result['timer_deadline'], 1250 + 250*i)
+            self.assertIn('reliable_enqueue_boundary', kinds(result))
+        result = r.step(2500)
+        self.assertTrue(result['assertion_boundary'])
+        self.assertNotIn('reliable_enqueue_boundary', kinds(result))
+        self.assertEqual(result['state'], 8)
+        with self.assertRaisesRegex(RuntimeError, 'assertion boundary'):
+            r.step()
+
+    def test_sync_timeout_restarts_autobaud_with_decremented_budget(self):
+        r = SyncInitializerReplay(BINARY)
+        r.start()
+        for now in range(1100, 1601, 100):
+            result = r.poll(now)
+        self.assertEqual(result['state'], 2)
+        self.assertEqual(result['sync_retries'], 4)
+        raw = r.step(1600)
+        self.assertEqual(raw['state'], 3)
+        self.assertEqual(raw['timer_deadline'], 1700)
+        self.assertEqual([e['payload_hex'] for e in raw['events']
+                          if e['kind'] == 'raw_write_boundary'],
+                         [r.image.read(0xdfe4, 36).hex()])
+        restarted = r.step(1700)
+        self.assertEqual(restarted['state'], 4)
+        self.assertEqual(restarted['token'], 1)
+        # Token reuse means the earlier attempt's synthetic response also passes.
+        self.assertEqual(r.receive(self.RESPONSE)['state'], 7)
+
+    def test_exhausted_sync_budget_stops_without_inventing_recovery(self):
+        for confirmation in (False, True):
+            r = SyncInitializerReplay(BINARY, confirmation)
+            r.put32(OWNER + 2356, 0)
+            r.start()
+            for now in range(1100, 1601, 100):
+                result = r.poll(now)
+            self.assertTrue(result['assertion_boundary'])
+            self.assertEqual(result['state'], 6)
+            self.assertNotIn('raw_write_boundary', kinds(result))
+
+    def test_cancel_does_not_cancel_transport_sync(self):
+        r = SyncInitializerReplay(BINARY)
+        r.start()
+        canceled = r.step(cancel=True)
+        self.assertEqual(canceled['state'], 0)
+        self.assertTrue(canceled['active'])
+        late = r.receive(self.RESPONSE)
+        self.assertFalse(late['active'])
+        self.assertTrue(late['assertion_boundary'])
+        self.assertEqual(late['state'], 0)
+        self.assertEqual(late['transport_bytes']['0xc56'], 11)
+
+    def test_truncated_and_duplicate_sync_do_not_repeat_initializer(self):
+        r = SyncInitializerReplay(BINARY)
+        r.start()
+        for length in range(8):
+            result = r.receive(self.RESPONSE[:length])
+            self.assertEqual(result['state'], 4)
+            self.assertNotIn('initializer_entry', kinds(result))
+        r.receive(self.RESPONSE)
+        duplicate = r.receive(self.RESPONSE)
+        self.assertEqual(duplicate['state'], 7)
+        self.assertNotIn('initializer_entry', kinds(duplicate))
+
+    def test_unreviewed_core_state_is_refused(self):
+        r = SyncInitializerReplay(BINARY)
+        r.put32(r.CORE + 18812, 2)
+        r.start()
+        with self.assertRaisesRegex(RuntimeError, 'unreviewed execution at 0x37fc0'):
+            r.receive(self.RESPONSE)
 
 
 class OriginalDecoderTests(unittest.TestCase):

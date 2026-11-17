@@ -287,13 +287,132 @@ class SyncReplay(Replay):
         return self.snapshot()
 
 
+class SyncInitializerReplay(SyncReplay):
+    """Continue original sync callbacks through initializer/version serialization.
+
+    Synthetic core state 3 selects firmware initialization, with no queued
+    reliable traffic. Raw writes and reliable enqueue are intercepted, not
+    acknowledged. Assertions stop this harness BEFORE their real side effects.
+    This does not emulate a timer event loop, MCU, or recovery mechanism.
+    """
+
+    CORE = OWNER - 0x3dc0
+
+    def __init__(self, binary, confirmation=False, now=1000):
+        super().__init__(binary, now)
+        self.uc.mem_map(0xf0000, 0x10000)
+        self.put64(PLATFORM + 8, self.CORE)
+        self.put64(PLATFORM + 0x138, 0x37f88)
+        self.put32(self.CORE + 18812, 3)
+        self.put32(self.CORE + 18824, now)
+        self.put64(OWNER + 8, PLATFORM)
+        self.put64(OWNER + 16, INIT_INTERFACE)
+        self.put64(OWNER + 1208, RPC)
+        self.put64(INIT_INTERFACE, 0x48720)
+        self.put64(INIT_INTERFACE + 8, self.CORE)
+        constants = self.image.read(0xde60 if confirmation else 0xde38, 8)
+        self.uc.mem_write(OWNER + 2352, constants)
+        self.stopped_at_assertion = False
+        # Same writer construction as RPC constructor 0x3e28c..0x3e2a4.
+        self.execute(0x41224, [RPC + 0x3548, RPC + 0x3570, 0x3fc])
+
+    def _code(self, uc, addr, size, user):
+        if addr == 0x34f80:
+            self.events.append({'kind': 'assertion_boundary',
+                                'state': self.word(OWNER + 1256),
+                                'caller_return': hex(uc.reg_read(UC_ARM64_REG_X30))})
+            self.stopped_at_assertion = True
+            uc.reg_write(UC_ARM64_REG_PC, RETURN)
+            return
+        if addr == 0x376c8:
+            self.events.append({'kind': 'diagnostic_boundary'})
+            self._return()
+            return
+        if addr in (0x37b40, 0x3fa24):
+            length = uc.reg_read(UC_ARM64_REG_X2) & 0xffffffff
+            if length > 1024:
+                raise RuntimeError('send boundary exceeds reviewed fixture bound')
+            pointer = uc.reg_read(UC_ARM64_REG_X1)
+            self.events.append({'kind': 'raw_write_boundary' if addr == 0x37b40
+                                else 'reliable_enqueue_boundary',
+                                'payload_hex': bytes(uc.mem_read(pointer, length)).hex()})
+            self._return()
+            return
+        if addr == 0x45150:  # ELF memcpy PLT: bounded memory-only replacement
+            dst, src, length = [uc.reg_read(UC_ARM64_REG_X0 + i) for i in range(3)]
+            if length > 1024:
+                raise RuntimeError('copy exceeds reviewed fixture bound')
+            if length:
+                uc.mem_write(dst, bytes(uc.mem_read(src, length)))
+            self._return()
+            return
+        if addr == 0x389fc:
+            self.events.append({'kind': 'initializer_entry', 'state': self.word(OWNER + 1256)})
+        if (0x37f88 <= addr < 0x37fc0 or 0x389fc <= addr < 0x396ac
+                or 0x37908 <= addr < 0x37944 or 0x3e3a4 <= addr < 0x3e3f0
+                or 0x3cd5c <= addr < 0x3cda4 or 0x3e408 <= addr < 0x3e740
+                or 0x3ec30 <= addr < 0x3ed54 or 0x41224 <= addr < 0x41250
+                or 0x3eac4 <= addr < 0x3ebac):
+            return
+        super()._code(uc, addr, size, user)
+
+    def execute(self, entry, arguments, budget=20000):
+        if getattr(self, 'stopped_at_assertion', False):
+            raise RuntimeError('assertion boundary reached; create a new isolated replay')
+        super().execute(entry, arguments, budget)
+
+    def snapshot(self):
+        result = super().snapshot()
+        result.update(state=self.word(OWNER + 1256),
+                      destination=self.word(OWNER + 2352),
+                      sync_retries=self.word(OWNER + 2356),
+                      version_retries=self.word(OWNER + 2360),
+                      timer_deadline=self.word(INIT_INTERFACE + 16),
+                      timer_active=bool(self.uc.mem_read(INIT_INTERFACE + 20, 1)[0]),
+                      assertion_boundary=self.stopped_at_assertion)
+        return result
+
+    def step(self, now=None, cancel=False):
+        if now is not None:
+            self.now = now & 0xffffffff
+        self.put32(self.CORE + 18824, self.now)
+        self.execute(0x39684 if cancel else 0x389fc, [OWNER])
+        return self.snapshot()
+
+
+def sync_scenarios(binary):
+    """Reproducible bounded offline traces, never a reference hardware transcript."""
+    response = bytes([1, 1, 10, 20, 30, 40, 50, 60])
+    result = {'fixture': 'SYNTHETIC; NOT a reference ROM response or proof of MCU boot',
+              'binary_sha256': MatchedImage(binary).digest, 'scenarios': {}}
+    for confirmation in (False, True):
+        r = SyncInitializerReplay(binary, confirmation)
+        result['scenarios']['confirmation' if confirmation else 'initial'] = [
+            r.start(), r.receive(response), r.step()]
+    r = SyncInitializerReplay(binary)
+    result['scenarios']['cancel_then_late_reply'] = [r.start(), r.step(cancel=True), r.receive(response)]
+    r = SyncInitializerReplay(binary)
+    trace = [r.start()]
+    trace.extend(r.poll(now) for now in range(1100, 1601, 100))
+    trace.extend([r.step(1600), r.step(1700), r.receive(response)])
+    result['scenarios']['timeout_restart_old_token'] = trace
+    return result
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('binary', type=Path)
-    ap.add_argument('--hex', required=True, help='synthetic RPC-list bytes')
+    mode = ap.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--hex', help='synthetic RPC-list bytes')
+    mode.add_argument('--sync-initializer', action='store_true', help='bounded synthetic sync/initializer scenarios')
     ap.add_argument('--state', type=int, default=0)
     ap.add_argument('--wire', action='store_true', help='input is escaped TL bytes, still offline')
     args = ap.parse_args()
+    if args.sync_initializer:
+        if args.wire or args.state:
+            ap.error('--sync-initializer does not accept --wire or --state')
+        print(json.dumps(sync_scenarios(args.binary), indent=2))
+        return
     replay = Replay(args.binary, args.state)
     result = replay.run(bytes.fromhex(args.hex), wire=args.wire)
     result['binary_sha256'] = replay.image.digest
