@@ -1,0 +1,52 @@
+1794893439 A80_PROBE ssp1117geometry {"report":{"placed":[{"ok":true,"cluster":"status-left"}],"moved":[{"zone":9,"cluster":"status-right","shift":-68,"free":[0,276]}],"width":360,"blocked":[9,10],"dropped":[]},"bar":{"height":36,"right":360,"top":0,"width":360,"y":0,"bottom":36,"left":0,"x":0},"right":{"top":9.25,"height":16.5,"right":276,"y":9.25,"width":99,"left":177,"bottom":25.75,"x":177},"transform":"translateX(-68px)","body":"ready native-osk preload-ready"}
+SPEC_VERSION 1
+MENU_COUNT 15
+ENTRY 0 cancel allowed=1 action=menu-close refusal=-
+ENTRY 1 lock-screen allowed=1 action=lock refusal=-
+ENTRY 2 restart allowed=1 action=systemctl-reboot refusal=gate-closed-owner-absent
+ENTRY 3 power-off allowed=1 action=systemctl-poweroff refusal=gate-closed-owner-absent
+ENTRY 4 suspend allowed=1 action=systemctl-suspend refusal=-
+ENTRY 5 reboot-verbose allowed=1 action=reboot-verbose refusal=gate-closed-owner-absent
+ENTRY 6 reboot-safe-mode allowed=1 action=reboot-safe-mode refusal=gate-closed-owner-absent
+ENTRY 7 reboot-diag allowed=1 action=reboot-diag refusal=gate-closed-owner-absent
+ENTRY 8 reboot-debug allowed=1 action=reboot-debug refusal=gate-closed-owner-absent
+ENTRY 9 back allowed=1 action=back refusal=-
+ENTRY 10 forward allowed=1 action=forward refusal=-
+ENTRY 11 stop allowed=1 action=stop refusal=-
+ENTRY 12 reload-launcher allowed=1 action=reload-launcher refusal=-
+ENTRY 13 recovery allowed=0 action=enter-recovery refusal=NO_FLASH_INVARIANT
+ENTRY 14 download-mode allowed=0 action=enter-download-mode refusal=NO_FLASH_INVARIANT
+NO_FLASH_INVARIANT enforced=1 (enter-recovery, enter-download-mode are refused at execution)
+Tue Nov 17 05:30:39 UTC 2026
+mcu_probe=1 shutdown=1 resetting=0 sensor_state=0x3feff enable=0x0 shub_irq=443
+
+[25868.454063] [SSP] panel_notifier_callback PANEL_EVENT_BL_CHANGED 12800 3557
+[25868.454074] [SSPBBD]: ssp_down == true. returning
+[25868.459092] [SSP] send_panel_information, failed to send panel information
+[25872.869737] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25878.757715] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25884.903863] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25890.791844] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25896.935737] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25902.823906] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25908.966062] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25914.855765] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25920.744610] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25926.887921] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25932.775759] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25938.917976] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25944.807632] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25950.951698] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25956.839657] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25962.983529] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25968.873700] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25974.759469] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25980.903727] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25986.791312] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25992.935756] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[25998.825784] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[26004.967623] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[26010.855448] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[26016.744157] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[26022.887499] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[26023.992218] [SSPBBD] nuxel diag: host_req=0 mcu_req=0 mcu_resp=1 irq_en=0 irq_cnt=0 tx=32 rx=0

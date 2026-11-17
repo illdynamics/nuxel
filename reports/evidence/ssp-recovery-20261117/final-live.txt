@@ -1,0 +1,27 @@
+Tue Nov 17 05:31:41 UTC 2026
+Linux [hostname-redacted] 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux
+Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820
+crw-------. 1 root root  236,  2 Jan  1  1970 /dev/bbd_control
+crw-------. 1 root root  236,  3 Jan  1  1970 /dev/bbd_patch
+crw-------. 1 root root  236,  1 Jan  1  1970 /dev/bbd_sensor
+crw-rw----. 1 root audio  10, 91 Jan  1  1970 /dev/ttyBCM
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+active
+active
+active
+/mnt/android/system:
+total 8
+drwxr-xr-x 2 root root 4096 Oct 28 15:10 .
+drwxr-xr-x 4 root root 4096 Oct 28 15:10 ..
+
+/mnt/system-ro:
+total 8
+drwxr-xr-x.  2 root root 4096 Nov  1 18:52 .
+drwxr-xr-x. 15 root root 4096 Nov 13 20:55 ..
+
+/mnt/vendor-ro:
+total 8
+drwxr-xr-x.  2 root root 4096 Nov  1 13:25 .
+drwxr-xr-x. 15 root root 4096 Nov 13 20:55 ..

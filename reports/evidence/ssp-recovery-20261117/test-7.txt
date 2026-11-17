@@ -1,0 +1,56 @@
+PASS active A34 FSM compiles
+PASS configured menu has 15 entries
+PASS active MENU_COUNT matches configuration
+PASS active table length matches configuration
+PASS screenshot is absent from the power menu
+PASS entry 0 id cancel
+PASS entry 0 action menu-close
+PASS entry 0 allowed True
+PASS entry 1 id lock-screen
+PASS entry 1 action lock
+PASS entry 1 allowed True
+PASS entry 2 id restart
+PASS entry 2 action systemctl-reboot
+PASS entry 2 allowed True
+PASS entry 3 id power-off
+PASS entry 3 action systemctl-poweroff
+PASS entry 3 allowed True
+PASS entry 4 id suspend
+PASS entry 4 action systemctl-suspend
+PASS entry 4 allowed True
+PASS entry 5 id reboot-verbose
+PASS entry 5 action reboot-verbose
+PASS entry 5 allowed True
+PASS entry 6 id reboot-safe-mode
+PASS entry 6 action reboot-safe-mode
+PASS entry 6 allowed True
+PASS entry 7 id reboot-diag
+PASS entry 7 action reboot-diag
+PASS entry 7 allowed True
+PASS entry 8 id reboot-debug
+PASS entry 8 action reboot-debug
+PASS entry 8 allowed True
+PASS entry 9 id back
+PASS entry 9 action back
+PASS entry 9 allowed True
+PASS entry 10 id forward
+PASS entry 10 action forward
+PASS entry 10 allowed True
+PASS entry 11 id stop
+PASS entry 11 action stop
+PASS entry 11 allowed True
+PASS entry 12 id reload-launcher
+PASS entry 12 action reload-launcher
+PASS entry 12 allowed True
+PASS entry 13 id recovery
+PASS entry 13 action enter-recovery
+PASS entry 13 allowed False
+PASS entry 13 carries NO_FLASH_INVARIANT
+PASS entry 14 id download-mode
+PASS entry 14 action enter-download-mode
+PASS entry 14 allowed False
+PASS entry 14 carries NO_FLASH_INVARIANT
+PASS dispatcher forwards the four browser controls to the host
+PASS dispatcher keeps NO_FLASH_INVARIANT refusal
+
+0 failing check(s)

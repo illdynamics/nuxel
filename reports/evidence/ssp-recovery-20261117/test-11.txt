@@ -1,0 +1,10 @@
+source_payload_bytes=897112
+kernel_export_bytes=897113
+kernel_export_sha256=0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72
+asic=0x004775b0
+header_crc=193
+blob_length=438895
+patch_address=0x00800161
+blob_crc32_ieee=93d35bb4
+blob_sha256=56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d
+PASS: host-only embedded patch identity verification

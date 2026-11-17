@@ -3,6 +3,8 @@ import json
 import tempfile
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+import subprocess
 
 import ssp_stock_collect as collect
 import ssp_trial_prepare as trial
@@ -79,6 +81,26 @@ if __name__ == '__main__':unittest.main()
 # Dedicated read-only snapshot parser checks; no SSH in the test suite.
 import ssp_live_snapshot as snapshot
 class SnapshotTests(unittest.TestCase):
+    def test_nonfinite_vectors_are_not_sensor_evidence(self):
+        for value in ('nan,0,0', '0,inf,0', '0,0,-inf', '1e999,0,0'):
+            self.assertIsNone(snapshot.vector(value))
+        self.assertEqual(snapshot.evaluate([{'accelerometer':'nan,0,0'}])['accelerometer']['status'], 'NOT_EXPOSED')
+
+    def test_identity_and_timestamp_capture_without_hardware(self):
+        with tempfile.TemporaryDirectory() as t:
+            output=Path(t)/'samples.json'
+            key=Path(t)/'key with spaces'
+            with patch.object(snapshot.subprocess,'run',return_value=subprocess.CompletedProcess(
+                    [],0,b'KERNEL=test\nFIELD:accelerometer=0,0,0\nFIELD:gyroscope=0,0,0\n',b'')) as run:
+                self.assertEqual(snapshot.main(['--host','10.11.12.99','--identity-file',str(key),
+                    '--output',str(output),'--samples','1','--capture-readonly']),0)
+            cmd=run.call_args.args[0]
+            self.assertEqual(cmd[cmd.index('-i')+1],str(key))
+            self.assertEqual(cmd[-1],snapshot.COMMAND)
+            row=json.loads(output.read_text())['samples'][0]
+            self.assertLessEqual(row['started_utc'],row['completed_utc'])
+            self.assertNotIn(str(key),output.read_text())
+
     def test_zero_samples_not_a_success(self):
         rows=[{'accelerometer':'0,0,0','gyroscope':'0,0,0'} for _ in range(3)]
         r=snapshot.evaluate(rows)

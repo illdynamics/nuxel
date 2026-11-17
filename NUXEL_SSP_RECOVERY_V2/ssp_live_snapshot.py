@@ -7,12 +7,14 @@ Use --capture-readonly explicitly and gently rotate the phone during sampling.
 from __future__ import annotations
 import argparse
 import json
+import math
 import re
 import shlex
 import subprocess
 import sys
 import time
 from pathlib import Path
+from datetime import datetime, timezone
 
 FIELDS={
     'accelerometer':'/sys/class/sensors/accelerometer_sensor/raw_data',
@@ -44,7 +46,9 @@ def vector(s):
     if not s:return None
     parts=[x.strip() for x in s.split(',')]
     if len(parts)!=3:return None
-    try:return tuple(float(x) for x in parts)
+    try:
+        values=tuple(float(x) for x in parts)
+        return values if all(math.isfinite(x) for x in values) else None
     except ValueError:return None
 
 
@@ -68,6 +72,7 @@ def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--host',required=True,help='SSH hostname/IP of Nuxel handset')
     p.add_argument('--ssh-user',default='root')
+    p.add_argument('--identity-file',type=Path,help='SSH private key path (passed to ssh, never read or recorded)')
     p.add_argument('--output',required=True,type=Path,help='new HOST JSON file')
     p.add_argument('--samples',type=int,default=8)
     p.add_argument('--interval',type=float,default=0.75)
@@ -84,7 +89,11 @@ def main(argv=None):
     samples=[]
     for i in range(a.samples):
         cmd=['ssh','-o','BatchMode=yes','-o','ConnectTimeout=5',
-             '-o','StrictHostKeyChecking=yes',f'{a.ssh_user}@{a.host}',COMMAND]
+             '-o','StrictHostKeyChecking=yes']
+        if a.identity_file:
+            cmd += ['-i',str(a.identity_file.expanduser())]
+        cmd += [f'{a.ssh_user}@{a.host}',COMMAND]
+        started=datetime.now(timezone.utc).isoformat()
         try:
             r=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=10)
         except (OSError,subprocess.TimeoutExpired) as e:
@@ -94,12 +103,16 @@ def main(argv=None):
             print('SSH exited non-zero; no hardware conclusion:',r.stderr.decode('utf8','replace')[:250],file=sys.stderr)
             return 4
         # Retain raw samples as evidence, never claim these prove physical movement.
-        samples.append(parse(r.stdout.decode('utf8','replace')))
+        sample=parse(r.stdout.decode('utf8','replace'))
+        sample['started_utc']=started
+        sample['completed_utc']=datetime.now(timezone.utc).isoformat()
+        samples.append(sample)
         if i+1<a.samples:time.sleep(a.interval)
     obj={'status':'READONLY_SNAPSHOT','hardware_writes':0,'samples':samples,
          'classification':evaluate(samples)}
     a.output.parent.mkdir(parents=True,exist_ok=True)
-    a.output.open('x',encoding='utf8').write(json.dumps(obj,indent=2)+'\n')
+    with a.output.open('x',encoding='utf8') as report:
+        report.write(json.dumps(obj,indent=2)+'\n')
     print(json.dumps(obj['classification'],indent=2))
     return 0
 

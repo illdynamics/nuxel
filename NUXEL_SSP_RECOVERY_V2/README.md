@@ -9,7 +9,7 @@
 - `ssp_stock_collect.py` — explicit read-only ADB collection of matching stock system/vendor linker and recursive ELF dependencies. Refuses a mismatched source set. `--collect-readonly` is required for device reads; without it, plan only.
 - `ssp_trial_prepare.py` — host-only hardware-denied config for existing `lhd` sandbox plus SHA-256 inventory, no daemon execution.
 - `ssp_live_snapshot.py` — explicit read-only SSH sensor sample capture (`--capture-readonly`), classification with no fabricated success.
-- `test_recovery_v2.py` — offline unit tests (9 passed here).
+- `test_recovery_v2.py` — offline unit tests (11 passed on 2026-11-17; original kit had 9).
 - `current_archive_audit/` — reproduced original audit JSON and Markdown, showing missing 14 library names across 28 dependency occurrences.
 
 ## Install on Mac (in existing working tree)
@@ -49,3 +49,16 @@ The uploaded ZIP has no matching stock Android `/system/bin/linker64` or full Bi
 - The scripts do **not** write to device nodes or partitions; the collector uses read-only `cat`, the sample tool uses read-only `uname`/`cat`, and the trial helper writes only host staged files.
 - The isolated trial helper does not make Samsung `lhd` safe to run with real hardware; it prepares a **hardware-denied config** for a separately audited sandbox.
 - Full firmware upload must remain disabled until the original vendor handshake/ACK state machine and recovery strategy are verified. No guarantees of hardware success or boot safety are possible from archive-only analysis.
+
+## Reproducible SSH capture with a dedicated key
+
+```sh
+python3 -S NUXEL_SSP_RECOVERY_V2/ssp_live_snapshot.py \
+  --host 10.11.12.99 --ssh-user root \
+  --identity-file ~wicked/.ssh/wicked_wqn_id_rsa \
+  --output /tmp/ssp-new-samples.json --samples 12 --interval .75 --capture-readonly
+```
+
+Each sample records host UTC start/end times and the observed kernel. The key is
+passed directly to SSH; its contents and path are not saved in the report.
+Non-finite vectors (NaN/infinity) are rejected as invalid evidence.
