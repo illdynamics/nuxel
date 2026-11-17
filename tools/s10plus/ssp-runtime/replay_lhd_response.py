@@ -209,6 +209,84 @@ class FinalVersionReplay(Replay):
                 'registered': self.word(RPC + 0x3540) != 0}
 
 
+class SyncReplay(Replay):
+    """Original internal synchronization with synthetic time and intercepted sends.
+
+    The scheduler runs with no pending reliable queue. Completion stops at the
+    platform callback; this does not establish an MCU session or initialize it.
+    """
+
+    CLOCK, SCHEDULE, SYNC_DONE, COMM_ERROR = (STUBS + 16, STUBS + 20,
+                                            STUBS + 24, STUBS + 28)
+    TRANSPORT = RPC + 24
+
+    def __init__(self, binary, now=1000):
+        super().__init__(binary, state=4)
+        self.now = now
+        for offset, callback in ((16, self.SCHEDULE), (24, self.CLOCK),
+                                 (40, self.COMM_ERROR), (56, self.SYNC_DONE)):
+            self.put64(PLATFORM + 0x100 + offset, callback)
+        self.uc.mem_write(self.TRANSPORT + 0x34f0, b'\x01\x00')
+
+    def _code(self, uc, addr, size, user):
+        if addr == self.CLOCK:
+            uc.reg_write(UC_ARM64_REG_X0, self.now & 0xffffffff)
+            self._return()
+            return
+        if addr in (self.SCHEDULE, self.SYNC_DONE, self.COMM_ERROR):
+            argument = uc.reg_read(UC_ARM64_REG_X1) & 0xffffffff
+            if addr == self.SCHEDULE:
+                self.events.append({'kind': 'schedule_boundary',
+                                    'delay_ms': argument if argument < 0x80000000 else argument - 0x100000000})
+            elif addr == self.SYNC_DONE:
+                self.events.append({'kind': 'sync_completion_boundary', 'success': bool(argument & 1)})
+            else:
+                self.events.append({'kind': 'communication_error_boundary'})
+            self._return()
+            return
+        if addr == 0x3f3d8:
+            length = uc.reg_read(UC_ARM64_REG_X0 + 3) & 0xffff
+            pointer = uc.reg_read(UC_ARM64_REG_X2)
+            self.events.append({'kind': 'transport_send_boundary',
+                                'flags': uc.reg_read(UC_ARM64_REG_X1) & 0xffff,
+                                'payload_hex': bytes(uc.mem_read(pointer, length)).hex()})
+            uc.reg_write(UC_ARM64_REG_X0, 0)
+            self._return()
+            return
+        if (0x3f0fc <= addr < 0x3f3d8 or 0x407f0 <= addr < 0x40b10
+                or 0x3ebac <= addr < 0x3ec30 or 0x396ac <= addr < 0x3970c):
+            return
+        super()._code(uc, addr, size, user)
+
+    def snapshot(self):
+        return {'fixture': 'SYNTHETIC internal response and clock; sends intercepted',
+                'events': list(self.events),
+                'active': bool(self.uc.mem_read(self.TRANSPORT + 0x350d, 1)[0]),
+                'token': self.word(self.TRANSPORT + 0x3514),
+                'transport_bytes': {hex(offset): self.uc.mem_read(self.TRANSPORT + offset, 1)[0]
+                                    for offset in (0xc56, 0x34f0, 0x34f1, 0x428, 0x431, 0x432)},
+                'previous_reliable_length': self.uc.mem_read(self.TRANSPORT + 0x434, 2).hex()}
+
+    def start(self):
+        self.execute(0x3f0fc, [self.TRANSPORT])
+        return self.snapshot()
+
+    def poll(self, now):
+        self.now = now
+        self.execute(0x3f1f8, [self.TRANSPORT])
+        return self.snapshot()
+
+    def receive(self, payload):
+        if len(payload) > 0x7fff:
+            raise ValueError('offline fixture too large')
+        self.input_len = len(payload)
+        self.uc.mem_write(INPUT, b'\x00' * 0x10000)
+        if payload:
+            self.uc.mem_write(INPUT, payload)
+        self.execute(0x407f0, [self.TRANSPORT, INPUT, len(payload)])
+        return self.snapshot()
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('binary', type=Path)

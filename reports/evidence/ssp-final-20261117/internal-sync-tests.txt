@@ -1,0 +1,39 @@
+test_cancel_unregisters_without_clearing_metadata_or_timer (test_lhd_response.FinalVersionTests.test_cancel_unregisters_without_clearing_metadata_or_timer) ... ok
+test_confirmation_only_path_skips_patch_identity_comparison (test_lhd_response.FinalVersionTests.test_confirmation_only_path_skips_patch_identity_comparison) ... ok
+test_legacy_asic_exception_is_revision_specific (test_lhd_response.FinalVersionTests.test_legacy_asic_exception_is_revision_specific) ... ok
+test_success_and_failure_both_enter_done (test_lhd_response.FinalVersionTests.test_success_and_failure_both_enter_done) ... ok
+test_timer_negative_cancels_and_positive_wraps (test_lhd_response.FinalVersionTests.test_timer_negative_cancels_and_positive_wraps) ... ok
+test_busy_start_does_not_reset_token_or_send (test_lhd_response.InternalSyncTests.test_busy_start_does_not_reset_token_or_send) ... ok
+test_clock_and_sequence_fields_wrap (test_lhd_response.InternalSyncTests.test_clock_and_sequence_fields_wrap) ... ok
+test_crc_valid_internal_wire_path_and_bad_crc (test_lhd_response.InternalSyncTests.test_crc_valid_internal_wire_path_and_bad_crc) ... ok
+test_initializer_sync_callback_branches (test_lhd_response.InternalSyncTests.test_initializer_sync_callback_branches) ... ok
+test_retry_limit_and_exact_deadline (test_lhd_response.InternalSyncTests.test_retry_limit_and_exact_deadline) ... ok
+test_retry_rejects_previous_token_but_new_attempt_reuses_it (test_lhd_response.InternalSyncTests.test_retry_rejects_previous_token_but_new_attempt_reuses_it) ... ok
+test_start_and_exact_response_mutations (test_lhd_response.InternalSyncTests.test_start_and_exact_response_mutations) ... ok
+test_truncated_and_trailing_responses_reject_before_mutation (test_lhd_response.InternalSyncTests.test_truncated_and_trailing_responses_reject_before_mutation) ... ok
+test_wrong_token_inactive_and_duplicate_responses_do_not_complete (test_lhd_response.InternalSyncTests.test_wrong_token_inactive_and_duplicate_responses_do_not_complete) ... ok
+test_duplicate_and_reordered_metadata_persist (test_lhd_response.OriginalDecoderTests.test_duplicate_and_reordered_metadata_persist) ... ok
+test_each_normal_truncation_mutates_before_error (test_lhd_response.OriginalDecoderTests.test_each_normal_truncation_mutates_before_error) ... ok
+test_envelope_mismatch_rejected_before_callback (test_lhd_response.OriginalDecoderTests.test_envelope_mismatch_rejected_before_callback) ... ok
+test_extended_and_its_truncations (test_lhd_response.OriginalDecoderTests.test_extended_and_its_truncations) ... ok
+test_identity_relocations_and_range_hashes (test_lhd_response.OriginalDecoderTests.test_identity_relocations_and_range_hashes) ... ok
+test_incomplete_header_reads_beyond_supplied_extent (test_lhd_response.OriginalDecoderTests.test_incomplete_header_reads_beyond_supplied_extent) ... ok
+test_instruction_budget_is_enforced (test_lhd_response.OriginalDecoderTests.test_instruction_budget_is_enforced) ... ok
+test_modified_binary_refused (test_lhd_response.OriginalDecoderTests.test_modified_binary_refused) ... ok
+test_multi_record_order_and_original_version_latch (test_lhd_response.OriginalDecoderTests.test_multi_record_order_and_original_version_latch) ... ok
+test_normal_all_initialization_states (test_lhd_response.OriginalDecoderTests.test_normal_all_initialization_states) ... ok
+test_trailing_payload_detected_after_callback (test_lhd_response.OriginalDecoderTests.test_trailing_payload_detected_after_callback) ... ok
+test_unknown_ids_and_nonversion_response (test_lhd_response.OriginalDecoderTests.test_unknown_ids_and_nonversion_response) ... ok
+test_ack_only_does_not_invoke_version_callback (test_lhd_response.OriginalTransportTests.test_ack_only_does_not_invoke_version_callback) ... ok
+test_constructor_option_can_deliver_reliable_duplicates (test_lhd_response.OriginalTransportTests.test_constructor_option_can_deliver_reliable_duplicates) ... ok
+test_crc_and_declared_size_reject_before_callback (test_lhd_response.OriginalTransportTests.test_crc_and_declared_size_reject_before_callback) ... ok
+test_fragmentation_escaping_and_restart (test_lhd_response.OriginalTransportTests.test_fragmentation_escaping_and_restart) ... ok
+test_internal_payload_never_reaches_rpc (test_lhd_response.OriginalTransportTests.test_internal_payload_never_reaches_rpc) ... ok
+test_reliable_duplicate_suppressed_and_next_accepted (test_lhd_response.OriginalTransportTests.test_reliable_duplicate_suppressed_and_next_accepted) ... ok
+test_transport_to_callback_and_underflow_order (test_lhd_response.OriginalTransportTests.test_transport_to_callback_and_underflow_order) ... ok
+test_unreliable_sequence_jump_and_duplicate_are_delivered (test_lhd_response.OriginalTransportTests.test_unreliable_sequence_jump_and_duplicate_are_delivered) ... ok
+
+----------------------------------------------------------------------
+Ran 34 tests in 0.482s
+
+OK

@@ -5,7 +5,7 @@ import struct
 import tempfile
 import unittest
 from inspect_lhd_init import EXPECTED, MatchedImage, inspect
-from replay_lhd_response import Replay, FinalVersionReplay, rpc_record
+from replay_lhd_response import Replay, FinalVersionReplay, SyncReplay, rpc_record
 from replay_lhd_response import OWNER, INIT_INTERFACE, PLATFORM
 from check_protocol_replay import frame
 
@@ -233,6 +233,119 @@ class FinalVersionTests(unittest.TestCase):
         replay.execute(0x37908, [INIT_INTERFACE, 0xffffffff])
         self.assertEqual(replay.uc.mem_read(INIT_INTERFACE + 20, 1), b'\x00')
         self.assertEqual(replay.word(PLATFORM + 18824), 0xfffffff0)
+
+
+class InternalSyncTests(unittest.TestCase):
+    REPLY = bytes([1, 1, 10, 20, 30, 40, 50, 60])
+
+    def test_start_and_exact_response_mutations(self):
+        replay = SyncReplay(BINARY)
+        started = replay.start()
+        self.assertTrue(started['active'])
+        self.assertEqual(started['events'], [
+            {'kind': 'transport_send_boundary', 'flags': 0x300, 'payload_hex': '0001'},
+            {'kind': 'schedule_boundary', 'delay_ms': 100}])
+        result = replay.receive(self.REPLY)
+        self.assertFalse(result['active'])
+        self.assertEqual(result['transport_bytes'], {
+            '0xc56': 11, '0x34f0': 31, '0x34f1': 30,
+            '0x428': 40, '0x431': 49, '0x432': 0})
+        self.assertEqual(result['previous_reliable_length'], '0000')
+        self.assertIn({'kind': 'sync_completion_boundary', 'success': True}, result['events'])
+        self.assertNotIn('version_callback', kinds(result))
+
+    def test_truncated_and_trailing_responses_reject_before_mutation(self):
+        for payload in [self.REPLY[:length] for length in range(8)] + [self.REPLY + b'\x00']:
+            with self.subTest(payload=payload.hex()):
+                replay = SyncReplay(BINARY)
+                before = replay.start()
+                result = replay.receive(payload)
+                self.assertTrue(result['active'])
+                self.assertEqual(result['transport_bytes'], before['transport_bytes'])
+                self.assertNotIn('sync_completion_boundary', kinds(result))
+                self.assertNotIn('read_past_supplied_input', kinds(result))
+
+    def test_wrong_token_inactive_and_duplicate_responses_do_not_complete(self):
+        replay = SyncReplay(BINARY)
+        self.assertNotIn('sync_completion_boundary', kinds(replay.receive(self.REPLY)))
+        replay.start()
+        wrong_token = self.REPLY[:1] + b'\x02' + self.REPLY[2:]
+        self.assertNotIn('sync_completion_boundary', kinds(replay.receive(wrong_token)))
+        self.assertIn('sync_completion_boundary', kinds(replay.receive(self.REPLY)))
+        duplicate = replay.receive(self.REPLY)
+        self.assertNotIn('sync_completion_boundary', kinds(duplicate))
+
+    def test_retry_limit_and_exact_deadline(self):
+        replay = SyncReplay(BINARY)
+        replay.start()
+        early = replay.poll(1099)
+        self.assertEqual(early['events'], [{'kind': 'schedule_boundary', 'delay_ms': 1}])
+        for token in range(2, 7):
+            result = replay.poll(1000 + (token - 1) * 100)
+            self.assertTrue(result['active'])
+            self.assertEqual(result['token'], token)
+            self.assertIn({'kind': 'transport_send_boundary', 'flags': 0x300,
+                           'payload_hex': bytes([0, token]).hex()}, result['events'])
+        expired = replay.poll(1600)
+        self.assertFalse(expired['active'])
+        self.assertNotIn('transport_send_boundary', kinds(expired))
+        self.assertIn({'kind': 'sync_completion_boundary', 'success': False}, expired['events'])
+        self.assertNotIn('sync_completion_boundary', kinds(replay.poll(1700)))
+
+    def test_retry_rejects_previous_token_but_new_attempt_reuses_it(self):
+        replay = SyncReplay(BINARY)
+        replay.start()
+        replay.poll(1100)
+        self.assertNotIn('sync_completion_boundary', kinds(replay.receive(self.REPLY)))
+        current_reply = self.REPLY[:1] + b'\x02' + self.REPLY[2:]
+        replay.receive(current_reply)
+        restarted = replay.start()
+        self.assertEqual(restarted['token'], 1)
+        self.assertIn('sync_completion_boundary', kinds(replay.receive(self.REPLY)))
+
+    def test_busy_start_does_not_reset_token_or_send(self):
+        replay = SyncReplay(BINARY)
+        replay.start()
+        replay.poll(1100)
+        busy = replay.start()
+        self.assertEqual(busy['token'], 2)
+        self.assertTrue(busy['active'])
+        self.assertNotIn('transport_send_boundary', kinds(busy))
+        replay = SyncReplay(BINARY)
+        replay.uc.mem_write(replay.TRANSPORT + 0x34f0, b'\x00\x00')
+        busy = replay.start()
+        self.assertFalse(busy['active'])
+        self.assertNotIn('transport_send_boundary', kinds(busy))
+
+    def test_clock_and_sequence_fields_wrap(self):
+        replay = SyncReplay(BINARY, now=0xfffffff0)
+        replay.start()
+        self.assertEqual(replay.poll(0x53)['token'], 1)
+        self.assertEqual(replay.poll(0x54)['token'], 2)
+        result = replay.receive(bytes([1, 2, 255, 123, 255, 255, 0, 123]))
+        self.assertEqual(result['transport_bytes'], {
+            '0xc56': 0, '0x34f0': 0, '0x34f1': 255,
+            '0x428': 255, '0x431': 255, '0x432': 0})
+
+    def test_crc_valid_internal_wire_path_and_bad_crc(self):
+        wire = frame(bytes([0, 8, 128, 1, 0]) + self.REPLY)
+        replay = SyncReplay(BINARY)
+        replay.start()
+        result = replay.run(wire, wire=True)
+        self.assertIn('sync_completion_boundary', kinds(result))
+        self.assertNotIn('version_callback', kinds(result))
+        replay = SyncReplay(BINARY)
+        replay.start()
+        result = replay.run(wire[:-3] + bytes([wire[-3] ^ 1]) + wire[-2:], wire=True)
+        self.assertNotIn('sync_completion_boundary', kinds(result))
+        self.assertTrue(replay.snapshot()['active'])
+
+    def test_initializer_sync_callback_branches(self):
+        for success, next_state in ((True, 5), (False, 6)):
+            replay = SyncReplay(BINARY)
+            replay.execute(0x396ac, [OWNER, int(success)])
+            self.assertEqual(replay.word(OWNER + 1256), next_state)
+            self.assertEqual(replay.events, [{'kind': 'initializer_boundary', 'state': next_state}])
 
 
 if __name__ == '__main__':
