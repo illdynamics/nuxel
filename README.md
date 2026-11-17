@@ -1,7 +1,7 @@
 # Nuxel Phone OS — Linux on Google Pixel
 ![Repo Views](https://komarev.com/ghpvc/?username=illdynamics-nuxel&label=Repo+Views&color=blue)
 
-![Nuxel](./nuxel.jpg)
+![Nuxel](./assets/nuxel-og-image.png)
 
 **v0.8.7-beta** — _USB-ECM networking, persistent ZeroTier-bound remote access,
 audio/icon polish, and conservative hardware-state reporting._
