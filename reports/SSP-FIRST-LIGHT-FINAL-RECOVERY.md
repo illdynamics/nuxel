@@ -142,10 +142,70 @@ The configurable duplicate-delivery mode is tested separately and is not claimed
 to be the installed daemon default. The source-backed independent polynomial
 fixture encoder is reused from `check_protocol_replay.py`.
 
+## Milestone 3: final verification, DONE and timer units
+
+Milestone 2 is committed as `f3fbff72`. Confidence for the following is
+STATIC_VERIFIED and OFFLINE_EMULATED, with synthetic, already-available patch
+metadata. Evidence: [mapping](evidence/ssp-final-20261117/final-verification-path.json),
+[initializer/cancel](evidence/ssp-final-20261117/initializer_and_cancel.txt),
+[completion/timers](evidence/ssp-final-20261117/completion_and_timer_methods.txt),
+[replays](evidence/ssp-final-20261117/done-replays.json).
+
+State 16 compares current ASIC identity (owner +2320) with the patch object's
+ASIC field (+1056, object at owner +40). The BCM4775b0 branch masks the current
+ASIC to 24 bits before comparison. A separate legacy exception accepts 4774a0
+against patch 4774a1 only when original-version field +2332 is 0x36a07.
+The reviewed branch does not generally compare the other two version words.
+Owner flag +2345, set by start argument bit 0, bypasses this comparison and
+reports success; it is labeled confirmation-only in the analysis.
+
+Completion callback at 0x37508 receives a boolean. **Both true and false enter
+state 17**, schedule a one-millisecond continuation, then clear state and
+unregister the RPC handler. DONE is cleanup, not successful firmware execution.
+Cancellation at 0x39684 similarly clears state/unregisters; it does not restore
+metadata, clear the timer itself, or establish any hardware recovery.
+
+The initializer interface vtable is 0x48720: +16 is completion 0x37508,
++24 diagnostic 0x376c8, +32 timer 0x37908, +40 clock 0x37934. Consequently
+the constant 100 sent to +24 is a diagnostic/progress argument, not a timeout.
+Timer deadlines are unsigned 32-bit cached elapsed time plus delay. Negative
+signed delays disable the timer; the poll uses signed deadline-minus-now and
+clears active before dispatch. Wraparound and cancellation are replay-tested.
+
+Clock chain: core update 0x3507c -> interface +24 -> 0x26290 -> singleton
+virtual +152 -> 0x228d8 -> 0x1f6e4 -> Android elapsedRealtime. The exact
+runtime's VNDK libutils implementation divides BOOTTIME nanoseconds by 1,000,000.
+Thus these timer values are **milliseconds**, supported by matched-library
+[disassembly](evidence/ssp-final-20261117/vndk-elapsed-time.txt) and
+[AOSP source inventory](evidence/ssp-final-20261117/clock-source.json), including
+revision, SHA-256, Apache-2.0 license and Samsung differences.
+
+Success notification can reach 0x265b0 and emit `BBD:PassThru=0` followed by
+`ESW:READY` through 0x21a54; the enabled control writer and preceding helper
+effects still require analysis. No READY was emitted in this work. Original-code
+replay intercepts completion before its external effects and does not load patches.
+[All 25 tests pass](evidence/ssp-final-20261117/final-version-tests.txt).
+
+## Newly identified hardware compatibility gate
+
+The local experimental kernel patch's `bbd_common_open` calls
+`bbd_nuxel_peer_open()` for every bbd_sensor open. That marks a native peer
+active and arms the hub IRQ. `bcm_on_packet_received` then diverts raw SSI data
+to that peer and returns before queuing ttyBCM input. A stock lhd opening
+bbd_sensor therefore risks diverting its own receive traffic under this source.
+Peer close clears active but does not undo IRQ arming. Evidence is the local
+`0013-nuxel-sensorhub-bringup-native-bbd.patch.experimental` and patched source
+`bbd.c:600`, `ssp_bbd.c:217`, `bcm_gps_spi.c:865`. The exact running dirty
+kernel is not yet proven identical to these sources. This must be resolved
+before any live stock-runtime trial; sole daemon ownership is insufficient.
+
+Latest read-only SSH observation (2026-11-17 10:33:28 UTC): orientationd active;
+hub `mcu_probe=1 shutdown=1 resetting=0 sensor_state=0x3feff enable=0x0
+shub_irq=443`. No live hardware-changing operation has been performed.
+
 ## Next safe milestone
 
-Trace state 16 forward to DONE and the virtual timer implementation. Preliminary
-static resolution: initializer interface vtable 0x48720, completion +16 ->
-0x37508, diagnostic +24 -> 0x376c8, timer +32 -> 0x37908. State 17 is also
-entered after reporting failure; it cannot alone prove successful initialization.
-Prove this with original-code replay before relying on it in a trial contract.
+Trace internal synchronization through transport handler 0x407f0, starter
+0x3f0fc and retry scheduler 0x3f1f8. Resolve interface completion 0x3ec18 ->
+0x37f88 into the initializer. Replay token, exact-length, timeout and duplicate
+behavior with synthetic inputs, keeping actual sends intercepted.

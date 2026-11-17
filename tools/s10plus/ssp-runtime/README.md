@@ -102,7 +102,7 @@ All fixtures are **SYNTHETIC**. In particular, `0300` is an intentionally malfor
 version record, not an expected ROM reply. It demonstrates callback metadata
 mutation and state advance *before* the reader-error check. Logging is disabled,
 so extended string formatting safety is outside this replay's claims. The
-intercepted initializer does not run; later completion and READY are unverified.
+base replay intercepts the initializer; it does not emit READY.
 
 `--wire` starts at the original transport receive wrapper. CRC, escaping,
 length checks, reliable sequence filtering and noninternal RPC delivery execute
@@ -110,3 +110,10 @@ as matched machine code. Send, reliable ACK/NACK handlers and internal-message
 processing are intercepted and recorded. Both reviewed constructor callers
 disable reliable duplicate delivery; the alternative option is tested explicitly.
 This does not emulate a session handshake, firmware execution or hardware timing.
+
+`FinalVersionReplay`, exercised by the same test suite, runs state-16 ASIC
+comparison, DONE cleanup, cancellation and timer arithmetic using synthetic
+patch metadata marked available. Completion is intercepted before external
+effects. Both success and failure enter DONE; neither test result establishes
+firmware execution. Timer units are independently traced to the matched Android
+elapsedRealtime implementation; see the final recovery report and clock evidence.

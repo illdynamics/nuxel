@@ -19,6 +19,7 @@ from inspect_lhd_init import MatchedImage
 
 OWNER, PLATFORM, RPC, INPUT = 0x100000, 0x110000, 0x120000, 0x130000
 STACK, TLS, STUBS = 0x200000, 0x300000, 0x310000
+INIT_INTERFACE = OWNER + 0xa00
 RETURN, DIAG, LOCK = STUBS, STUBS + 4, STUBS + 8
 ALLOWED = ((0x3e740, 0x3e9b0), (0x3d1a8, 0x3d364),
            (0x39b9c, 0x39e6c), (0x41000, 0x41224),
@@ -77,6 +78,17 @@ class Replay:
         self.input_len = 0
         self.uc.hook_add(UC_HOOK_CODE, self._code)
         self.uc.hook_add(UC_HOOK_MEM_READ, self._read)
+
+    def execute(self, entry, arguments, budget=20000):
+        self.events = []
+        self.uc.reg_write(UC_ARM64_REG_SP, STACK + 0xff00)
+        self.uc.reg_write(UC_ARM64_REG_TPIDR_EL0, TLS)
+        self.uc.reg_write(UC_ARM64_REG_X30, RETURN)
+        for index, argument in enumerate(arguments):
+            self.uc.reg_write(UC_ARM64_REG_X0 + index, argument)
+        self.uc.emu_start(entry, RETURN, count=budget)
+        if self.uc.reg_read(UC_ARM64_REG_PC) != RETURN:
+            raise RuntimeError('instruction budget exhausted')
 
     def put64(self, addr, value):
         self.uc.mem_write(addr, struct.pack('<Q', value))
@@ -137,20 +149,11 @@ class Replay:
     def run(self, payload, budget=20000, wire=False):
         if len(payload) > 0x7fff:
             raise ValueError('offline fixture too large')
-        self.events = []
         self.input_len = len(payload)
         self.uc.mem_write(INPUT, b'\x00' * 0x10000)
         if payload:
             self.uc.mem_write(INPUT, payload)
-        self.uc.reg_write(UC_ARM64_REG_SP, STACK + 0xff00)
-        self.uc.reg_write(UC_ARM64_REG_TPIDR_EL0, TLS)
-        self.uc.reg_write(UC_ARM64_REG_X30, RETURN)
-        self.uc.reg_write(UC_ARM64_REG_X0, RPC)
-        self.uc.reg_write(UC_ARM64_REG_X1, INPUT)
-        self.uc.reg_write(UC_ARM64_REG_X2, len(payload))
-        self.uc.emu_start(0x3e2f4 if wire else 0x3e740, RETURN, count=budget)
-        if self.uc.reg_read(UC_ARM64_REG_PC) != RETURN:
-            raise RuntimeError('instruction budget exhausted')
+        self.execute(0x3e2f4 if wire else 0x3e740, [RPC, INPUT, len(payload)], budget)
         return {'fixture': 'SYNTHETIC; not a captured hardware response',
                 'entry_layer': 'escaped TL bytes' if wire else 'RPC list',
                 'input_hex': payload.hex(), 'events': list(self.events),
@@ -158,6 +161,52 @@ class Replay:
                 'metadata': {str(off): self.word(OWNER + off)
                              for off in (2320, 2324, 2328, 2332)},
                 'normal_extra': self.word(PLATFORM + 18832)}
+
+
+class FinalVersionReplay(Replay):
+    """Original state-16 comparison, timer arithmetic and DONE/cancel cleanup.
+
+    Synthetic patch metadata is already marked available. Patch loading and
+    higher-level completion effects are not emulated. No READY is emitted.
+    """
+
+    def __init__(self, binary, asic, patch_asic, original_version=0xffffffff,
+                 confirmation_only=False, now=1000):
+        super().__init__(binary, state=16, original_version=original_version)
+        self.put64(OWNER + 8, PLATFORM)
+        self.put64(OWNER + 16, INIT_INTERFACE)
+        self.put64(OWNER + 1208, RPC)
+        self.put64(INIT_INTERFACE, 0x48720)
+        self.put64(INIT_INTERFACE + 8, PLATFORM)
+        self.put32(OWNER + 2320, asic)
+        self.put32(OWNER + 40 + 1056, patch_asic)
+        self.uc.mem_write(OWNER + 40 + 1160, b'\x01')
+        self.uc.mem_write(OWNER + 2345, bytes([bool(confirmation_only)]))
+        self.put32(PLATFORM + 18824, now)
+
+    def _code(self, uc, addr, size, user):
+        if addr == 0x37508:
+            self.events.append({'kind': 'completion_boundary',
+                                'success': bool(uc.reg_read(UC_ARM64_REG_X1) & 1),
+                                'asic': uc.reg_read(UC_ARM64_REG_X2) & 0xffffffff})
+            self._return()
+            return
+        if addr == 0x376c8:
+            self.events.append({'kind': 'diagnostic_boundary'})
+            self._return()
+            return
+        if (0x389fc <= addr < 0x396ac or 0x37908 <= addr < 0x37944
+                or 0x3c75c <= addr < 0x3c76c or 0x3eac4 <= addr < 0x3ebac):
+            return
+        super()._code(uc, addr, size, user)
+
+    def step(self, cancel=False):
+        self.execute(0x39684 if cancel else 0x389fc, [OWNER])
+        return {'fixture': 'SYNTHETIC patch/version fields; not firmware acceptance',
+                'events': list(self.events), 'state': self.word(OWNER + 1256),
+                'timer_deadline': self.word(INIT_INTERFACE + 16),
+                'timer_active': bool(self.uc.mem_read(INIT_INTERFACE + 20, 1)[0]),
+                'registered': self.word(RPC + 0x3540) != 0}
 
 
 def main():

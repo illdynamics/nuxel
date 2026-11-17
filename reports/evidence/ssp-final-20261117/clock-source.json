@@ -1,0 +1,13 @@
+{
+  "url": "https://android.googlesource.com/platform/system/core/+/5aa0e4241029c80617a8e98b07f7f48ab6b3a3d7/libutils/SystemClock.cpp",
+  "revision": "5aa0e4241029c80617a8e98b07f7f48ab6b3a3d7",
+  "tag": "android-10.0.0_r1",
+  "license": "Apache-2.0",
+  "sha256": "833e13107ae055140aaeed370e743fadec367bd0388e339691040f1c36f256cd",
+  "applicability": "Android clock units only; not BCM47752 firmware protocol",
+  "matched_vndk_libutils_sha256": "71a30c306bc92647e15c9b1957234e14dd3020aaa7f6fd5081a1267c6dcecd76",
+  "library_provenance": "reports/evidence/ssp-stock-20261117/stock-manifest.json",
+  "library_load_evidence": "reports/evidence/ssp-stock-20261117/trial-vndk/syscalls.log:508",
+  "differences": "matched Samsung binary has overflow checking; both divide BOOTTIME nanoseconds by 1000000",
+  "retrieval_note": "web tool open failed; exact source fetched using HTTPS curl and base64 decoding"
+}

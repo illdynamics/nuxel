@@ -5,7 +5,8 @@ import struct
 import tempfile
 import unittest
 from inspect_lhd_init import EXPECTED, MatchedImage, inspect
-from replay_lhd_response import Replay, rpc_record
+from replay_lhd_response import Replay, FinalVersionReplay, rpc_record
+from replay_lhd_response import OWNER, INIT_INTERFACE, PLATFORM
 from check_protocol_replay import frame
 
 BINARY = Path(__file__).resolve().parents[3] / 'packs/sensors/acquired/vendor-bin-hw-lhd'
@@ -183,6 +184,55 @@ class OriginalTransportTests(unittest.TestCase):
             self.assertEqual(second['metadata']['2320'], 0x001311b0)
         result = Replay(BINARY, 8).run(b'\xb0\x00\xff' + wire, wire=True)
         self.assertIn('version_callback', kinds(result))
+
+
+class FinalVersionTests(unittest.TestCase):
+    def test_success_and_failure_both_enter_done(self):
+        for asic, expected in ((0x4775b0, True), (0x44775b0, True),
+                               (0x4775b1, False), (0, False)):
+            replay = FinalVersionReplay(BINARY, asic, 0x4775b0)
+            result = replay.step()
+            completion = [event for event in result['events'] if event['kind'] == 'completion_boundary']
+            self.assertEqual(completion, [{'kind': 'completion_boundary', 'success': expected, 'asic': asic}])
+            self.assertEqual(result['state'], 17)
+            self.assertEqual(result['timer_deadline'], 1001)
+            self.assertTrue(result['timer_active'])
+            self.assertTrue(result['registered'])
+            cleaned = replay.step()
+            self.assertEqual(cleaned['state'], 0)
+            self.assertFalse(cleaned['registered'])
+
+    def test_legacy_asic_exception_is_revision_specific(self):
+        for revision, expected in ((0x36a07, True), (0x36a08, False)):
+            result = FinalVersionReplay(BINARY, 0x4774a0, 0x4774a1,
+                                        original_version=revision).step()
+            completion = next(event for event in result['events'] if event['kind'] == 'completion_boundary')
+            self.assertEqual(completion['success'], expected)
+
+    def test_confirmation_only_path_skips_patch_identity_comparison(self):
+        result = FinalVersionReplay(BINARY, 0, 0x4775b0, confirmation_only=True).step()
+        completion = next(event for event in result['events'] if event['kind'] == 'completion_boundary')
+        self.assertTrue(completion['success'])
+        self.assertEqual(result['state'], 17)
+
+    def test_cancel_unregisters_without_clearing_metadata_or_timer(self):
+        replay = FinalVersionReplay(BINARY, 0x4775b0, 0x4775b0)
+        replay.step()
+        result = replay.step(cancel=True)
+        self.assertEqual(result['state'], 0)
+        self.assertFalse(result['registered'])
+        self.assertEqual(replay.word(OWNER + 2320), 0x4775b0)
+        self.assertTrue(result['timer_active'])
+        self.assertNotIn('completion_boundary', kinds(result))
+
+    def test_timer_negative_cancels_and_positive_wraps(self):
+        replay = FinalVersionReplay(BINARY, 0x4775b0, 0x4775b0, now=0xfffffff0)
+        replay.execute(0x37908, [INIT_INTERFACE, 250])
+        self.assertEqual(replay.word(INIT_INTERFACE + 16), 234)
+        self.assertEqual(replay.uc.mem_read(INIT_INTERFACE + 20, 1), b'\x01')
+        replay.execute(0x37908, [INIT_INTERFACE, 0xffffffff])
+        self.assertEqual(replay.uc.mem_read(INIT_INTERFACE + 20, 1), b'\x00')
+        self.assertEqual(replay.word(PLATFORM + 18824), 0xfffffff0)
 
 
 if __name__ == '__main__':
