@@ -1,5 +1,8 @@
 # BCM47752 protocol contract review — 2026-11-17
 
+connect to Nuxel over ssh use key ~wicked/.ssh/wicked_wqn_id_rsa to connect to Nuxel, use root user and IP 10.11.12.99
+if you need to reflash anything thats impossible without TWRP access, you are allowed to reboot into recovery and reflash the phone. if you reflash and it ends up in TWRP again that means I did that and it bootlooped/hung/crashed. then you re-investigate, fix and reflash again until we boot into nuxel again then it was successful.
+
 **Physical sensors and automatic rotation remain NOT VERIFIED.** SSH to
 root@10.11.12.99 with the supplied key succeeded. No live BBD descriptor was
 opened, no power/reset/watchdog setting was changed, and no firmware was sent.
@@ -131,6 +134,36 @@ contains distinct patch validation, scratch-app versus service-app branches,
 ROM mismatch reset and sync retry paths. Timer-like virtual calls receive
 constants including 250 and 100, but their units and complete failure semantics
 are not yet proven; they are not implemented as protocol timeouts here.
+
+### Callback side-effect follow-up
+
+Further hash-bound inspection establishes that the state gate is a transition
+gate, not a gate on all callback side effects. Both callbacks write arguments
+w1/w2/w3 into owner offsets 2320/2324/2328 **before** checking state 8 or 15.
+They also populate offset 2332 from w2 when its previous value is 0xffffffff.
+The normal callback additionally stores the original w1 at offset 18832 through
+its member-32 pointer. Thus an unexpected-state response can mutate metadata
+without advancing initialization. No assertion is made that arbitrary wire input
+can reach these callbacks; upstream decoding and validation remain unresolved.
+
+ELF RELATIVE relocations identify slots 0x48ae8 → 0x39b9c and 0x48af0 →
+0x39d08, plus slots 0x48b20 → 0x39d00 and 0x48b28 → 0x39e64. The latter
+targets subtract 16 from the object pointer and tail-branch to the corresponding
+callback. These are static dispatch references, not on-wire RPC identifiers.
+[Callback results](evidence/ssp-protocol-20261117/lhd-callback-review.json) and
+[disassembly](evidence/ssp-protocol-20261117/lhd-callback-disassembly.txt) retain
+the evidence. The inspector now extracts these relocations directly from ELF
+RELA sections; all four were independently compared with GNU readelf, and a
+one-byte-modified binary was rejected by the hash guard. `git diff --check`
+passed. No runtime implementation changed, and the earlier 95-test result was
+not rerun or represented as new validation.
+
+A fresh [SSH check](evidence/ssp-protocol-20261117/phone-callback-review.txt)
+reports `nuxel-orientationd.service` active, no failed units and no lhd process.
+An initial query used the nonexistent `nuxel-orientation.service`; its inactive
+result was a unit-name error, not evidence of a service regression. No BBD
+descriptor, power/watchdog setting, firmware, service deployment, reboot or
+flash was involved. Physical sensors and rotation remain unverified.
 
 ## Configuration, Binder and socket diagnostics
 

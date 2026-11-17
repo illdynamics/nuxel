@@ -38,6 +38,20 @@ def inspect(path):
         raise ValueError('unmapped virtual address')
 
     targets = struct.unpack('<16H', read(0xdfc4, 32))
+    # ELF64 SHT_RELA entries carry the callback addresses as addends. Reading
+    # raw pointer slots alone misses the dynamic loader's relocation contract.
+    shoff = struct.unpack_from('<Q', data, 40)[0]
+    shentsize, shcount = struct.unpack_from('<HH', data, 58)
+    callback_refs = []
+    callback_targets = {0x39b9c, 0x39d08, 0x39d00, 0x39e64}
+    for i in range(shcount):
+        section = struct.unpack_from('<IIQQQQIIQQ', data, shoff + i * shentsize)
+        if section[1] != 4:  # SHT_RELA
+            continue
+        for off in range(section[4], section[4] + section[5], section[9]):
+            slot, info, addend = struct.unpack_from('<QQq', data, off)
+            if info == 1027 and addend in callback_targets:  # RELATIVE, symbol 0
+                callback_refs.append({'slot_va': hex(slot), 'target_va': hex(addend)})
     return {
         'kind': 'STATIC BINARY ANALYSIS', 'hardware_verified': False,
         'binary_sha256': digest, 'dispatch_va': '0x389fc',
@@ -51,6 +65,21 @@ def inspect(path):
             'normal_callback_va': '0x39b9c', 'extended_callback_va': '0x39d08',
             'transitions': {'8': 9, '15': 16},
             'other_states': 'unexpected-version log; no state advance',
+            'pre_gate_writes': {
+                'owner_pointer_member_offset': 24,
+                'owner_fields': {'2320': 'argument w1', '2324': 'argument w2',
+                                 '2328': 'argument w3',
+                                 '2332': 'argument w2 only when old value is 0xffffffff'},
+                'normal_callback_extra_write': {
+                    'pointer_member_offset': 32, 'field_offset': 18832,
+                    'value': 'argument w1'},
+                'normal_store_range': ['0x39c34', '0x39c68'],
+                'extended_store_range': ['0x39d8c', '0x39db4'],
+                'implication': 'unexpected state does not imply no metadata mutation'},
+            'relative_relocations': callback_refs,
+            'adjustor_thunks': {
+                '0x39d00': 'subtract 16 from x0; tail branch to 0x39b9c',
+                '0x39e64': 'subtract 16 from x0; tail branch to 0x39d08'},
             'scope': 'callback control flow, not verified on-wire RPC decoding'},
         'unverified': ['RPC reply schemas and dispatch validation',
                        'internal sync payload and ACK ordering',
