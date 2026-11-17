@@ -20,6 +20,8 @@
  *   nuxel-fimc-capture --node /dev/video130 [--input 0] [--fourcc YUYV]
  *       [--width 1440] [--height 1080] [--buffers 4] [--frames 1]
  *       [--timeout 2000] [--raw out.bin] [--probe-only] [--json]
+ *   nuxel-fimc-capture --sensor-node /dev/video101 --sensor-id 37
+ *       --sensor-probe --allow-sensor-init --json
  *
  * Exit: 0 verified frames, 3 probe OK but no frame in timeout,
  *       2 usage error, 4 ioctl failure (details in JSON), 5 node missing.
@@ -45,9 +47,12 @@ struct opts {
 	const char *raw;
 	const char *fourcc;
 	unsigned input;
+	unsigned sensor_id;
 	unsigned width, height;
 	unsigned buffers, frames, timeout_ms;
 	int probe_only;
+	int sensor_probe;
+	int allow_sensor_init;
 	int json;
 };
 
@@ -88,7 +93,9 @@ static void usage(void)
 {
 	fputs("usage: nuxel-fimc-capture --node /dev/videoN [--input I] "
 	      "[--fourcc YUYV] [--width W] [--height H] [--buffers N] "
-	      "[--frames N] [--timeout MS] [--raw FILE] [--probe-only] [--json]\n", stderr);
+	      "[--frames N] [--timeout MS] [--raw FILE] [--probe-only] [--json]\n"
+	      "       nuxel-fimc-capture --sensor-node /dev/videoNN --sensor-id ID "
+	      "--sensor-probe --allow-sensor-init [--json]\n", stderr);
 }
 
 static int parse(int argc, char **argv)
@@ -98,6 +105,8 @@ static int parse(int argc, char **argv)
 		const char *a = argv[i];
 		const char *v = (i + 1 < argc) ? argv[i + 1] : NULL;
 		if (!strcmp(a, "--node") && v) { O.node = v; i++; }
+		else if (!strcmp(a, "--sensor-node") && v) { O.node = v; i++; }
+		else if (!strcmp(a, "--sensor-id") && v) { O.sensor_id = strtoul(v, NULL, 0); i++; }
 		else if (!strcmp(a, "--raw") && v) { O.raw = v; i++; }
 		else if (!strcmp(a, "--fourcc") && v) { O.fourcc = v; i++; }
 		else if (!strcmp(a, "--input") && v) { O.input = strtoul(v, NULL, 0); i++; }
@@ -107,11 +116,25 @@ static int parse(int argc, char **argv)
 		else if (!strcmp(a, "--frames") && v) { O.frames = strtoul(v, NULL, 0); i++; }
 		else if (!strcmp(a, "--timeout") && v) { O.timeout_ms = strtoul(v, NULL, 0); i++; }
 		else if (!strcmp(a, "--probe-only")) { O.probe_only = 1; }
+		else if (!strcmp(a, "--sensor-probe")) { O.sensor_probe = 1; }
+		else if (!strcmp(a, "--allow-sensor-init")) { O.allow_sensor_init = 1; }
 		else if (!strcmp(a, "--json")) { O.json = 1; }
 		else if (!strcmp(a, "-h") || !strcmp(a, "--help")) { usage(); exit(0); }
 		else { fprintf(stderr, "unknown argument: %s\n", a); usage(); return 2; }
 	}
 	if (!O.node) { usage(); return 2; }
+	if (O.sensor_probe && !O.sensor_id) {
+		fputs("--sensor-probe requires a nonzero --sensor-id from the pinned kernel enum\n", stderr);
+		return 2;
+	}
+	if (O.sensor_probe && (O.probe_only || O.raw)) {
+		fputs("--sensor-probe cannot be combined with --probe-only or --raw\n", stderr);
+		return 2;
+	}
+	if (O.sensor_probe && !O.allow_sensor_init) {
+		fputs("refusing sensor init: S_INPUT reads EEPROM and can toggle sensor retention; pass --allow-sensor-init after owner approval\n", stderr);
+		return 2;
+	}
 	if (O.buffers == 0 || O.buffers > 32) { fputs("--buffers must be 1..32\n", stderr); return 2; }
 	if (O.frames == 0 || O.frames > 10000) { fputs("--frames must be 1..10000\n", stderr); return 2; }
 	return 0;
@@ -213,6 +236,33 @@ int main(int argc, char **argv)
 		close(fd);
 		return 4;
 	}
+	/*
+	 * FIMC-IS sensor endpoints (SS0..SS5) advertise VIDEO_OUTPUT_MPLANE.
+	 * They must receive their Samsung sensor enum through S_INPUT before the
+	 * ISP/output endpoints can be configured.  Samsung's S_INPUT is not a
+	 * read-only probe: it can power EEPROM/I2C and toggle sensor retention.
+	 * It therefore requires an explicit consent flag and stops immediately
+	 * afterwards: no format, buffers, or userspace STREAMON is requested.
+	 */
+	if (O.sensor_probe) {
+		stage = "VIDIOC_S_INPUT(sensor)";
+		if (!(cap.capabilities & V4L2_CAP_VIDEO_OUTPUT_MPLANE)) {
+			emit(0, "NOT_MPLANE_SENSOR", 0, 0, &cap, NULL, 0,
+			     "sensor probe requires a V4L2_CAP_VIDEO_OUTPUT_MPLANE endpoint");
+			close(fd);
+			return 4;
+		}
+		if (do_ioctl(fd, VIDIOC_S_INPUT, &O.sensor_id, stage) < 0) {
+			emit(0, "SENSOR_INPUT_FAILED", 0, 0, &cap, NULL, 0,
+			     "kernel rejected this sensor enum or its module is not bound");
+			close(fd);
+			return 4;
+		}
+		emit(1, "SENSOR_BOUND", 0, 0, &cap, NULL, 0,
+		     "S_INPUT accepted; sensor init was owner-authorized; no format, buffers, or userspace STREAMON requested");
+		close(fd);
+		return 0;
+	}
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE)) {
 		emit(0, "NOT_MPLANE_CAPTURE", 0, 0, &cap, NULL, 0, "node is not V4L2_CAP_VIDEO_CAPTURE_MPLANE");
 		close(fd);
@@ -247,8 +297,22 @@ int main(int argc, char **argv)
 	stage = "VIDIOC_G_FMT";
 	memset(&fmt, 0, sizeof(fmt));
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-	do_ioctl(fd, VIDIOC_G_FMT, &fmt, stage);
+	if (do_ioctl(fd, VIDIOC_G_FMT, &fmt, stage) < 0) {
+		emit(0, "G_FMT_FAILED", 0, 0, &cap, NULL, 0,
+		     "multi-plane G_FMT rejected after S_FMT");
+		close(fd);
+		return 4;
+	}
 	stage = "format";
+	if (!fmt.fmt.pix_mp.width || !fmt.fmt.pix_mp.height ||
+	    !fmt.fmt.pix_mp.pixelformat || !fmt.fmt.pix_mp.num_planes ||
+	    !fmt.fmt.pix_mp.plane_fmt[0].sizeimage) {
+		last_errno = 0;
+		emit(0, "FORMAT_UNCOMMITTED", 0, 0, &cap, &fmt.fmt.pix_mp, 0,
+		     "S_FMT returned success but G_FMT has no usable format; do not stream");
+		close(fd);
+		return 4;
+	}
 
 	if (O.probe_only) {
 		emit(1, "PROBE_OK", 0, 0, &cap, &fmt.fmt.pix_mp, 0,
