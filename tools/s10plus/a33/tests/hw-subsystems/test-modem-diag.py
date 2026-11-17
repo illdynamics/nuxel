@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOL = os.path.join(HERE, "..", "..", "nuxel-modem-diag.sh")
@@ -57,6 +58,8 @@ pol = json.load(open(POLICY))
 truth = pol["device"]["modem_stack_truth"]
 check("policy records the Shannon LTE modem and the missing upstream plugin",
       "Shannon" in pol["device"]["modem"] and truth["upstream_modemmanager_plugin"] is False)
+check("generic Samsung ModemManager plugins never satisfy the Shannon backend gate",
+      "*samsung*" not in pol["modemmanager"]["plugin_globs"])
 check("policy forbids transplanting Pixel/Exynos-5500/Qualcomm instructions",
       "Pixel" in truth["do_not_transplant"])
 check("policy default cellular verdict is honest (NOT_SUPPORTED/BLOCKED)",
@@ -93,6 +96,21 @@ d = json_of(run(["bash", TOOL, "--root", os.path.join(FIX, "modem-cp-only"), "st
 check("transport without a Shannon plugin => BLOCKED_FIRMWARE at modemmanager_plugin",
       d["state"] == "BLOCKED_FIRMWARE" and d["first_failing_stage"] == "modemmanager_plugin"
       and d["cp_nodes"] != [])
+
+with tempfile.TemporaryDirectory() as td:
+    os.makedirs(os.path.join(td, "dev"))
+    os.makedirs(os.path.join(td, "sys", "class", "net", "rmnet7"))
+    open(os.path.join(td, "dev", "umts_boot0"), "w").close()
+    open(os.path.join(td, "dev", "umts_ipc0"), "w").close()
+    d = json_of(run(["bash", TOOL, "--root", td, "status", "--json"], FAKE).stdout)
+    check("globbed umts/rmnet paths enumerate under an alternate root",
+          d["cp_nodes"] == ["/dev/umts_boot0", "/dev/umts_ipc0"]
+          and d["net_interfaces"] == ["rmnet7"]
+          and d["state"] == "BLOCKED_FIRMWARE")
+
+p = run(["bash", TOOL, "status", "--json"], {"NUXEL_MODEM_POLICY": POLICY, **FAKE})
+check("live-root path expansion never produces a double-slash probe error",
+      p.returncode == 0 and "grep: //" not in p.stderr)
 
 d = json_of(run(["bash", TOOL, "--root", os.path.join(FIX, "modem-nosim"), "status", "--json"], FAKE).stdout)
 check("stack present without a SIM => NO_SIM at sim (owner inserts a SIM)",
