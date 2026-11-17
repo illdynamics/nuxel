@@ -1,0 +1,109 @@
+
+kernel/s10plus/.build/out/vmlinux:     file format elf64-littleaarch64
+
+
+Disassembly of section .head.text:
+
+Disassembly of section .text:
+
+ffffff8008db0360 <bcm_on_packet_received>:
+ffffff8008db0360:	a9ba7bfd 	stp	x29, x30, [sp, #-96]!
+ffffff8008db0364:	910003fd 	mov	x29, sp
+ffffff8008db0368:	a90153f3 	stp	x19, x20, [sp, #16]
+ffffff8008db036c:	aa0103f4 	mov	x20, x1
+ffffff8008db0370:	a90363f7 	stp	x23, x24, [sp, #48]
+ffffff8008db0374:	2a0203f7 	mov	w23, w2
+ffffff8008db0378:	a9046bf9 	stp	x25, x26, [sp, #64]
+ffffff8008db037c:	aa0003fa 	mov	x26, x0
+ffffff8008db0380:	97fff340 	bl	ffffff8008dad080 <bbd_nuxel_peer_active>
+ffffff8008db0384:	35000700 	cbnz	w0, ffffff8008db0464 <bcm_on_packet_received+0x104>
+ffffff8008db0388:	91020340 	add	x0, x26, #0x80
+ffffff8008db038c:	a9025bf5 	stp	x21, x22, [sp, #32]
+ffffff8008db0390:	aa1703f9 	mov	x25, x23
+ffffff8008db0394:	f9002bfb 	str	x27, [sp, #80]
+ffffff8008db0398:	940e5772 	bl	ffffff8009146160 <mutex_lock>
+ffffff8008db039c:	294d4f43 	ldp	w3, w19, [x26, #104]
+ffffff8008db03a0:	528ffff6 	mov	w22, #0x7fff                	// #32767
+ffffff8008db03a4:	52900015 	mov	w21, #0x8000                	// #32768
+ffffff8008db03a8:	d280001b 	mov	x27, #0x0                   	// #0
+ffffff8008db03ac:	14000007 	b	ffffff8008db03c8 <bcm_on_packet_received+0x68>
+ffffff8008db03b0:	8b13037b 	add	x27, x27, x19
+ffffff8008db03b4:	b9406f53 	ldr	w19, [x26, #108]
+ffffff8008db03b8:	51000660 	sub	w0, w19, #0x1
+ffffff8008db03bc:	4b030000 	sub	w0, w0, w3
+ffffff8008db03c0:	f240381f 	tst	x0, #0x7fff
+ffffff8008db03c4:	54000600 	b.eq	ffffff8008db0484 <bcm_on_packet_received+0x124>  // b.none
+ffffff8008db03c8:	4b0302c0 	sub	w0, w22, w3
+ffffff8008db03cc:	4b0302a1 	sub	w1, w21, w3
+ffffff8008db03d0:	0b130013 	add	w19, w0, w19
+ffffff8008db03d4:	12003a73 	and	w19, w19, #0x7fff
+ffffff8008db03d8:	6b13001f 	cmp	w0, w19
+ffffff8008db03dc:	1a93b033 	csel	w19, w1, w19, lt	// lt = tstop
+ffffff8008db03e0:	8b1b0281 	add	x1, x20, x27
+ffffff8008db03e4:	f9403340 	ldr	x0, [x26, #96]
+ffffff8008db03e8:	93407e73 	sxtw	x19, w19
+ffffff8008db03ec:	eb19027f 	cmp	x19, x25
+ffffff8008db03f0:	9a999273 	csel	x19, x19, x25, ls	// ls = plast
+ffffff8008db03f4:	8b23c000 	add	x0, x0, w3, sxtw
+ffffff8008db03f8:	aa1303e2 	mov	x2, x19
+ffffff8008db03fc:	940ca8e1 	bl	ffffff80090da780 <__memcpy>
+ffffff8008db0400:	b9406b43 	ldr	w3, [x26, #104]
+ffffff8008db0404:	eb130339 	subs	x25, x25, x19
+ffffff8008db0408:	0b130063 	add	w3, w3, w19
+ffffff8008db040c:	12003863 	and	w3, w3, #0x7fff
+ffffff8008db0410:	b9006b43 	str	w3, [x26, #104]
+ffffff8008db0414:	54fffce1 	b.ne	ffffff8008db03b0 <bcm_on_packet_received+0x50>  // b.any
+ffffff8008db0418:	91404341 	add	x1, x26, #0x10, lsl #12
+ffffff8008db041c:	f9415c20 	ldr	x0, [x1, #696]
+ffffff8008db0420:	8b170000 	add	x0, x0, x23
+ffffff8008db0424:	f9015c20 	str	x0, [x1, #696]
+ffffff8008db0428:	91020340 	add	x0, x26, #0x80
+ffffff8008db042c:	940e57bd 	bl	ffffff8009146320 <mutex_unlock>
+ffffff8008db0430:	91404340 	add	x0, x26, #0x10, lsl #12
+ffffff8008db0434:	d2800003 	mov	x3, #0x0                   	// #0
+ffffff8008db0438:	91030000 	add	x0, x0, #0xc0
+ffffff8008db043c:	52800022 	mov	w2, #0x1                   	// #1
+ffffff8008db0440:	52800061 	mov	w1, #0x3                   	// #3
+ffffff8008db0444:	97cd3e6f 	bl	ffffff80080ffe00 <__wake_up>
+ffffff8008db0448:	f9402bfb 	ldr	x27, [sp, #80]
+ffffff8008db044c:	a9425bf5 	ldp	x21, x22, [sp, #32]
+ffffff8008db0450:	a94153f3 	ldp	x19, x20, [sp, #16]
+ffffff8008db0454:	a94363f7 	ldp	x23, x24, [sp, #48]
+ffffff8008db0458:	a9446bf9 	ldp	x25, x26, [sp, #64]
+ffffff8008db045c:	a8c67bfd 	ldp	x29, x30, [sp], #96
+ffffff8008db0460:	d65f03c0 	ret
+ffffff8008db0464:	aa1703e1 	mov	x1, x23
+ffffff8008db0468:	aa1403e0 	mov	x0, x20
+ffffff8008db046c:	97fff8dd 	bl	ffffff8008dae7e0 <bbd_nuxel_peer_rx>
+ffffff8008db0470:	a94153f3 	ldp	x19, x20, [sp, #16]
+ffffff8008db0474:	a94363f7 	ldp	x23, x24, [sp, #48]
+ffffff8008db0478:	a9446bf9 	ldp	x25, x26, [sp, #64]
+ffffff8008db047c:	a8c67bfd 	ldp	x29, x30, [sp], #96
+ffffff8008db0480:	d65f03c0 	ret
+ffffff8008db0484:	91404341 	add	x1, x26, #0x10, lsl #12
+ffffff8008db0488:	f9415c20 	ldr	x0, [x1, #696]
+ffffff8008db048c:	8b170000 	add	x0, x0, x23
+ffffff8008db0490:	f9015c20 	str	x0, [x1, #696]
+ffffff8008db0494:	91020340 	add	x0, x26, #0x80
+ffffff8008db0498:	940e57a2 	bl	ffffff8009146320 <mutex_unlock>
+ffffff8008db049c:	d2800003 	mov	x3, #0x0                   	// #0
+ffffff8008db04a0:	52800022 	mov	w2, #0x1                   	// #1
+ffffff8008db04a4:	91404340 	add	x0, x26, #0x10, lsl #12
+ffffff8008db04a8:	52800061 	mov	w1, #0x3                   	// #3
+ffffff8008db04ac:	91030000 	add	x0, x0, #0xc0
+ffffff8008db04b0:	97cd3e54 	bl	ffffff80080ffe00 <__wake_up>
+ffffff8008db04b4:	aa1903e1 	mov	x1, x25
+ffffff8008db04b8:	b0006980 	adrp	x0, ffffff8009ae1000 <_fw_npu_NPU_bin_name+0x2c1b0>
+ffffff8008db04bc:	91290000 	add	x0, x0, #0xa40
+ffffff8008db04c0:	940d0155 	bl	ffffff80090f0a14 <printk>
+ffffff8008db04c4:	f9402bfb 	ldr	x27, [sp, #80]
+ffffff8008db04c8:	a9425bf5 	ldp	x21, x22, [sp, #32]
+ffffff8008db04cc:	a94153f3 	ldp	x19, x20, [sp, #16]
+ffffff8008db04d0:	a94363f7 	ldp	x23, x24, [sp, #48]
+ffffff8008db04d4:	a9446bf9 	ldp	x25, x26, [sp, #64]
+ffffff8008db04d8:	a8c67bfd 	ldp	x29, x30, [sp], #96
+ffffff8008db04dc:	d65f03c0 	ret
+
+Disassembly of section .init.text:
+
+Disassembly of section .exit.text:

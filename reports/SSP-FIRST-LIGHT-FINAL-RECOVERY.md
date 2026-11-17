@@ -341,6 +341,90 @@ Reproduce these traces with the same environment and test commands above:
 /tmp/nuxel-lhd-analysis-env/bin/python tools/s10plus/ssp-runtime/replay_lhd_response.py packs/sensors/acquired/vendor-bin-hw-lhd --reliable-queue
 ```
 
+## Milestone 6: running build identification and confirmed receive-path conflict
+
+Milestone 5 is committed as `6437658b`. New identity tooling compares a saved
+`/sys/kernel/notes` capture with ELF PT_NOTE entries, refusing malformed,
+oversized, conflicting or non-AArch64 inputs. It does not connect to hardware.
+[Identity result](evidence/ssp-safety-contract-20261117/kernel-identity.json):
+
+- Running capture and local vmlinux GNU build ID:
+  `69020d959693f8302669c37a77636ee06825cf94`.
+- Local vmlinux SHA-256:
+  `333297b336070c9a508f28d5c000789edcb238ee88c8ee126766accbf41f0a09`.
+- Capture SHA-256:
+  `e1e9f3cc02bddaf8b48d1f1761de61785b381e1bedf0b8ecd0977218f9d57a0c`.
+
+This identifies the local build artifact; it is not full running-memory
+attestation or proof that every current dirty source file produced it. The
+relevant compiled functions were therefore disassembled directly:
+
+1. `bbd_common_open` compares minor 1 at `ffffff8009139eb4` and calls
+   `bbd_nuxel_peer_open` at `ffffff8009139eec`.
+2. `bbd_nuxel_peer_open` sets the native-active flag and conditionally calls
+   `enable_irq` at `ffffff8008dad05c`.
+3. `bcm_on_packet_received` calls `bbd_nuxel_peer_active` at
+   `ffffff8008db0380`; a true result branches away from tty queueing to
+   `bbd_nuxel_peer_rx` and returns.
+4. `bbd_nuxel_peer_release` clears the flag but does not disable that IRQ.
+
+See [open](evidence/ssp-safety-contract-20261117/bbd_common_open.txt),
+[attach](evidence/ssp-safety-contract-20261117/bbd_nuxel_peer_open.txt),
+[receive](evidence/ssp-safety-contract-20261117/bcm_on_packet_received.txt),
+[detach](evidence/ssp-safety-contract-20261117/bbd_nuxel_peer_release.txt).
+Matched stock config selects **both** `/dev/ttyBCM` and `/dev/bbd_sensor`.
+Consequently the compiled native-peer policy is incompatible with treating a
+stock sensor-node open as a passive bridge attachment. This is now a confirmed
+compiled-code compatibility gate, not merely a speculative source mismatch.
+No live open was used to demonstrate it.
+
+Base source is [Linux4 f7194c1d15eded1c2a1a4dc63825b26103435cc0](https://github.com/Linux4/android_kernel_samsung_exynos9820/blob/f7194c1d15eded1c2a1a4dc63825b26103435cc0/drivers/sensorhub/brcm/bbdpl/bbd.c),
+with existing Nuxel modifications. Source headers identify Broadcom GPLv2 and
+Samsung GPLv2-or-later code; bbd.c also declares Dual BSD/GPL. The
+[existing local delta](evidence/ssp-safety-contract-20261117/existing-kernel-local-delta.patch)
+and [source/build hashes](evidence/ssp-safety-contract-20261117/local-source-build-sha256.txt)
+are recorded without changing the source or kernel. A new targeted public
+source search found related BCM47765 architecture, not a device-matched lhd
+protocol implementation; it does not justify replacing this transport.
+
+Fresh [ownership/state capture](evidence/ssp-safety-contract-20261117/ownership-and-state.json)
+reads proc descriptor symlinks and reviewed show-only attributes. It is a
+non-atomic snapshot, not an exclusive lock. The hub remains shut down; it is
+not physical streaming evidence. The diagnostic read emits a kernel log line
+but performs no power/reset or transport operation. Watchdog settings were
+read, never changed. The compiled `bbd_mcu_reset` path may SIGKILL the
+registered daemon; process termination does not establish power restoration.
+
+All 61 offline runtime/identity/isolation tests pass. Existing orientation/GNSS
+regression tests: [88 pass](evidence/ssp-safety-contract-20261117/orientation-gnss-tests.txt).
+No service deployment, restart or orientation-policy change was performed.
+
+Identity reproduction (the saved 36-byte capture is not firmware):
+
+```sh
+python3 tools/s10plus/ssp-runtime/inspect_kernel_identity.py kernel/s10plus/.build/out/vmlinux reports/evidence/ssp-safety-contract-20261117/live-notes.bin
+```
+
+### Hardware-trial decision and recovery gates
+
+| Gate | Status / required evidence |
+|---|---|
+| Exact stock lhd/runtime | Present, hash-bound and hardware-denied execution verified previously |
+| Host transport/initializer analysis | Expanded through sync, reliable drain and startup; real responses unverified |
+| Stock/native routing coexistence | Verified incompatible compiled policy; needs separately built/reviewed compatibility change |
+| tty/BBD open side effects | Confirmed IRQ/ring/owner changes; opens require approval |
+| Watchdog, reset and daemon exit | Partial source/compiled evidence; no confirmed full MCU rollback |
+| Bootability recovery | Preserve original boot and existing TWRP/ADB route; recovery artifacts/owner availability must be revalidated before a trial; handset is A-only |
+| Loss of SSH | No unattended retry/reboot/reflash; owner-accessible recovery must be confirmed before starting |
+| Accel/gyro stream and four-way rotation | NOT VERIFIED; require real changing samples and owner movement/display tests |
+
+No trial is ready for approval. A future proposal must pin the candidate kernel,
+lhd/runtime/patch hashes, exact nodes/operations, ownership exclusion, watchdog
+handling, a single bounded attempt, failure capture and an independently
+confirmed recovery mechanism. No broad `/sys` exposure, synthetic READY,
+speculative reset, or automatic retry loop is acceptable. These are prerequisites,
+not a claim that a recovery plan has already been validated.
+
 ## Next safe milestone
 
 Trace patch-record decoder `0x3c7e0 -> 0x3ca50` and its virtual callbacks into

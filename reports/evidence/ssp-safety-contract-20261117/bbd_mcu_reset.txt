@@ -1,0 +1,66 @@
+
+kernel/s10plus/.build/out/vmlinux:     file format elf64-littleaarch64
+
+
+Disassembly of section .head.text:
+
+Disassembly of section .text:
+
+ffffff800913a328 <bbd_mcu_reset>:
+ffffff800913a328:	a9bd7bfd 	stp	x29, x30, [sp, #-48]!
+ffffff800913a32c:	910003fd 	mov	x29, sp
+ffffff800913a330:	a90153f3 	stp	x19, x20, [sp, #16]
+ffffff800913a334:	d000f233 	adrp	x19, ffffff800af80000 <m_aucRxEscapedBuf+0x688>
+ffffff800913a338:	91270273 	add	x19, x19, #0x9c0
+ffffff800913a33c:	91404274 	add	x20, x19, #0x10, lsl #12
+ffffff800913a340:	f90013f5 	str	x21, [sp, #32]
+ffffff800913a344:	2a0003f5 	mov	w21, w0
+ffffff800913a348:	90004d40 	adrp	x0, ffffff8009ae2000 <_fw_npu_NPU_bin_name+0x2d1b0>
+ffffff800913a34c:	9110e000 	add	x0, x0, #0x438
+ffffff800913a350:	97fed9b1 	bl	ffffff80090f0a14 <printk>
+ffffff800913a354:	f962be80 	ldr	x0, [x20, #17784]
+ffffff800913a358:	b40000c0 	cbz	x0, ffffff800913a370 <bbd_mcu_reset+0x48>
+ffffff800913a35c:	f9401002 	ldr	x2, [x0, #32]
+ffffff800913a360:	b4000082 	cbz	x2, ffffff800913a370 <bbd_mcu_reset+0x48>
+ffffff800913a364:	f962ba80 	ldr	x0, [x20, #17776]
+ffffff800913a368:	2a1503e1 	mov	w1, w21
+ffffff800913a36c:	d63f0040 	blr	x2
+ffffff800913a370:	91405273 	add	x19, x19, #0x14, lsl #12
+ffffff800913a374:	39560260 	ldrb	w0, [x19, #1408]
+ffffff800913a378:	360002c0 	tbz	w0, #0, ffffff800913a3d0 <bbd_mcu_reset+0xa8>
+ffffff800913a37c:	d000f2d5 	adrp	x21, ffffff800af94000 <bbd+0x13640>
+ffffff800913a380:	913ee2a0 	add	x0, x21, #0xfb8
+ffffff800913a384:	94003ac7 	bl	ffffff8009148ea0 <_raw_spin_lock>
+ffffff800913a388:	f962ca81 	ldr	x1, [x20, #17808]
+ffffff800913a38c:	b4000061 	cbz	x1, ffffff800913a398 <bbd_mcu_reset+0x70>
+ffffff800913a390:	39566260 	ldrb	w0, [x19, #1432]
+ffffff800913a394:	360000c0 	tbz	w0, #0, ffffff800913a3ac <bbd_mcu_reset+0x84>
+ffffff800913a398:	90004d40 	adrp	x0, ffffff8009ae2000 <_fw_npu_NPU_bin_name+0x2d1b0>
+ffffff800913a39c:	12800013 	mov	w19, #0xffffffff            	// #-1
+ffffff800913a3a0:	91118000 	add	x0, x0, #0x460
+ffffff800913a3a4:	97fed99c 	bl	ffffff80090f0a14 <printk>
+ffffff800913a3a8:	14000007 	b	ffffff800913a3c4 <bbd_mcu_reset+0x9c>
+ffffff800913a3ac:	52800020 	mov	w0, #0x1                   	// #1
+ffffff800913a3b0:	52800002 	mov	w2, #0x0                   	// #0
+ffffff800913a3b4:	39166260 	strb	w0, [x19, #1432]
+ffffff800913a3b8:	52800120 	mov	w0, #0x9                   	// #9
+ffffff800913a3bc:	97be0974 	bl	ffffff80080bc98c <send_sig>
+ffffff800913a3c0:	2a0003f3 	mov	w19, w0
+ffffff800913a3c4:	913ee2a0 	add	x0, x21, #0xfb8
+ffffff800913a3c8:	94003b9a 	bl	ffffff8009149230 <_raw_spin_unlock>
+ffffff800913a3cc:	14000007 	b	ffffff800913a3e8 <bbd_mcu_reset+0xc0>
+ffffff800913a3d0:	d28001c2 	mov	x2, #0xe                   	// #14
+ffffff800913a3d4:	90004d41 	adrp	x1, ffffff8009ae2000 <_fw_npu_NPU_bin_name+0x2d1b0>
+ffffff800913a3d8:	52800040 	mov	w0, #0x2                   	// #2
+ffffff800913a3dc:	91122021 	add	x1, x1, #0x488
+ffffff800913a3e0:	97f1e448 	bl	ffffff8008db3500 <bbd_on_read>
+ffffff800913a3e4:	2a0003f3 	mov	w19, w0
+ffffff800913a3e8:	f94013f5 	ldr	x21, [sp, #32]
+ffffff800913a3ec:	2a1303e0 	mov	w0, w19
+ffffff800913a3f0:	a94153f3 	ldp	x19, x20, [sp, #16]
+ffffff800913a3f4:	a8c37bfd 	ldp	x29, x30, [sp], #48
+ffffff800913a3f8:	d65f03c0 	ret
+
+Disassembly of section .init.text:
+
+Disassembly of section .exit.text:
