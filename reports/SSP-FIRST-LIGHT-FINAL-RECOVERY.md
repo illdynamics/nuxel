@@ -425,11 +425,57 @@ confirmed recovery mechanism. No broad `/sys` exposure, synthetic READY,
 speculative reset, or automatic retry loop is acceptable. These are prerequisites,
 not a claim that a recovery plan has already been validated.
 
+## Milestone 7: actual acquired patch records to stock memory-write RPCs
+
+Milestone 6 is committed as `03ee7686`. The hash-matched embedded patch is now
+fed in 512-byte chunks through original instructions `0x3c7e0 -> 0x3ca50 ->
+virtual +16 -> 0x39e74 -> 0x3d60c`. This is **host-side patch parsing**, not
+an incoming ROM response. No ELF process, device, memory-write transmission,
+transport ACK or firmware execution occurs. The actual queue operation remains
+an intercepted boundary. Only hashes/counts/metadata are saved, not patch bytes.
+
+[Actual-record replay](evidence/ssp-patch-contract-20261117/actual-record-replay.json)
+and [hash-bound mapping](evidence/ssp-patch-contract-20261117/contract.json)
+establish:
+
+- Exact exported patch SHA-256:
+  `0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72`.
+- Blob SHA-256:
+  `56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d`.
+- 438,895 blob bytes, 858 supplied chunks, **479 F1 records**, 435,542 data
+  bytes, 478 serialized RPC packets (small records can share a transaction).
+- F1 is a file-record tag: LE16 body length, then LE32 destination and data.
+  The parser accumulates a complete body, rejects lengths above 950, and
+  requires at least five body bytes for F1. It is not an RPC opcode.
+- Serializer emits RPC **5**, containing LE32 destination, LE16 data count,
+  then data. Every destination, size and data SHA-256 agrees across an
+  independent input-record parser, original callback and independent decoded
+  serialized-RPC comparison. Final parser state is idle, without residual data.
+- Reliable transaction stores callback `0x39e6c`, which forwards to the
+  initializer when the transport completion callback runs. That is not an
+  independent firmware memory-write status response.
+
+Confidence: STATIC_VERIFIED and OFFLINE_ORIGINAL_CODE with an identity-verified
+existing artifact. The XML-like container loader, header checksum validation,
+patch selection and non-F1 callbacks are not emulated. F0/F2..F5 may exist in
+the binary parser but are not present in this blob; their callbacks remain
+execution-denied. No new runtime/firmware download was needed.
+
+[68 tests pass](evidence/ssp-patch-contract-20261117/tests.txt), including
+fragment boundaries, incomplete records, exact little-endian serialization,
+duplicate/reordered file records, maximum accepted size, malformed lengths,
+unknown tags, refusal of unreviewed callbacks, and the actual acquired blob.
+Synthetic rejection fixtures remain explicitly distinguished from actual data.
+
+```sh
+/tmp/nuxel-lhd-analysis-env/bin/python tools/s10plus/ssp-runtime/replay_lhd_response.py packs/sensors/acquired/vendor-bin-hw-lhd --patch-records kernel/s10plus/.build/src/drivers/sensorhub/brcm/bbdpl/r_os/bbd_patch_file_beyond.h
+```
+
 ## Next safe milestone
 
-Trace patch-record decoder `0x3c7e0 -> 0x3ca50` and its virtual callbacks into
-the memory-write serializer, preserving bounds and keeping physical transport
-intercepted. Resolve higher-level communication-error/abort effects; the
+Build/review a default-preserving stock/native routing compatibility option.
+Resolve the original container-loader validation/selection and higher-level
+communication-error/abort effects; the
 current replay deliberately stops before them. Separately resolve the
 experimental native-peer receive diversion and higher-level abort/reset
 effects before requesting any hardware trial. A defensible end-to-end recovery

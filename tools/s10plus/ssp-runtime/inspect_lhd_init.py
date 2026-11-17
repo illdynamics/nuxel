@@ -103,10 +103,27 @@ def response_path(image):
         'writer_scalar_and_span': (0x41250, 0x413e8),
         'skip_confirmation_getter': (0x387f0, 0x38800),
         'queue_capacity': (0x40f3c, 0x40f90),
+        'patch_record_parser_and_dispatch': (0x3c7c4, 0x3cd5c),
+        'patch_write_callback_and_ack_forwarder': (0x39e6c, 0x39f54),
+        'memory_write_encoder': (0x3d60c, 0x3d698),
+        'patch_parser_error_callbacks': (0x3a354, 0x3a38c),
+        'patch_transaction_with_callback': (0x3ed54, 0x3eda8),
     }
     return {
         'confidence': 'STATIC_VERIFIED against exact matched ELF',
         'transport_and_hardware_verified': False,
+        'patch_record_path': {
+            'confidence': 'STATIC_VERIFIED / OFFLINE_ORIGINAL_CODE with hash-matched embedded blob',
+            'source_layer': 'host patch file bytes, NOT incoming ROM responses',
+            'parser': '0x3c7e0 carries tag/LE16 length/body across chunks; accepts tags F0..F5; body limit 950',
+            'F1_schema': 'LE32 destination plus at least one data byte; exact body already accumulated',
+            'dispatch': '0x3ca50 F1 -> 0x3cc2c -> virtual +16 at 0x48b58 -> 0x39e74',
+            'callback_target': hex(image.relocations[0x48b58]),
+            'serializer': '0x39e74 -> 0x3d60c: RPC ID 5, LE32 destination, LE16 data length, bytes',
+            'transaction': '0x3ed54 captures callback 0x39e6c; reliable enqueue 0x3fa24',
+            'ack_callback': '0x39e6c -> initializer 0x389fc; transport callback, not separate firmware status',
+            'replay_scope': 'F1 callback only; sends intercepted; other callbacks refused; header/container loader not emulated',
+        },
         'download_completion': {
             'confidence': 'STATIC_VERIFIED / OFFLINE_EMULATED; staged consumed-patch metadata only',
             'pending_count': 'transport+0x3508 counts reliable payload bytes, not firmware-operation responses',

@@ -1,0 +1,65 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+0000000000039e6c <.text+0x21e6c>:
+   39e6c:	f9400400 	ldr	x0, [x0, #8]
+   39e70:	17fffae3 	b	389fc <__libc_init@plt-0xc454>
+   39e74:	d10183ff 	sub	sp, sp, #0x60
+   39e78:	a9025ff8 	stp	x24, x23, [sp, #32]
+   39e7c:	a90357f6 	stp	x22, x21, [sp, #48]
+   39e80:	a9044ff4 	stp	x20, x19, [sp, #64]
+   39e84:	a9057bfd 	stp	x29, x30, [sp, #80]
+   39e88:	910143fd 	add	x29, sp, #0x50
+   39e8c:	d53bd058 	mrs	x24, tpidr_el0
+   39e90:	f9401708 	ldr	x8, [x24, #40]
+   39e94:	aa0003f6 	mov	x22, x0
+   39e98:	aa0303f3 	mov	x19, x3
+   39e9c:	2a0203f4 	mov	w20, w2
+   39ea0:	f9000fe8 	str	x8, [sp, #24]
+   39ea4:	f9400800 	ldr	x0, [x0, #16]
+   39ea8:	2a0103f5 	mov	w21, w1
+   39eac:	b40001a0 	cbz	x0, 39ee0 <__libc_init@plt-0xaf70>
+   39eb0:	11002a97 	add	w23, w20, #0xa
+   39eb4:	94001370 	bl	3ec74 <__libc_init@plt-0x61dc>
+   39eb8:	12003ee8 	and	w8, w23, #0xffff
+   39ebc:	11002908 	add	w8, w8, #0xa
+   39ec0:	6b08001f 	cmp	w0, w8
+   39ec4:	540000a2 	b.cs	39ed8 <__libc_init@plt-0xaf78>  // b.hs, b.nlast
+   39ec8:	f9400ac0 	ldr	x0, [x22, #16]
+   39ecc:	94001360 	bl	3ec4c <__libc_init@plt-0x6204>
+   39ed0:	f9000adf 	str	xzr, [x22, #16]
+   39ed4:	14000003 	b	39ee0 <__libc_init@plt-0xaf70>
+   39ed8:	f9400ad7 	ldr	x23, [x22, #16]
+   39edc:	b5000177 	cbnz	x23, 39f08 <__libc_init@plt-0xaf48>
+   39ee0:	f94006c8 	ldr	x8, [x22, #8]
+   39ee4:	90000082 	adrp	x2, 49000 <dl_iterate_phdr@plt+0x38e0>
+   39ee8:	910062d7 	add	x23, x22, #0x18
+   39eec:	aa1703e0 	mov	x0, x23
+   39ef0:	f9425d01 	ldr	x1, [x8, #1208]
+   39ef4:	f9427842 	ldr	x2, [x2, #1264]
+   39ef8:	aa1603e3 	mov	x3, x22
+   39efc:	2a1f03e4 	mov	w4, wzr
+   39f00:	94001395 	bl	3ed54 <__libc_init@plt-0x60fc>
+   39f04:	f9000ad7 	str	x23, [x22, #16]
+   39f08:	910023e0 	add	x0, sp, #0x8
+   39f0c:	aa1703e1 	mov	x1, x23
+   39f10:	94000d98 	bl	3d570 <__libc_init@plt-0x78e0>
+   39f14:	910023e0 	add	x0, sp, #0x8
+   39f18:	2a1503e1 	mov	w1, w21
+   39f1c:	2a1403e2 	mov	w2, w20
+   39f20:	aa1303e3 	mov	x3, x19
+   39f24:	94000dba 	bl	3d60c <__libc_init@plt-0x7844>
+   39f28:	f9401708 	ldr	x8, [x24, #40]
+   39f2c:	f9400fe9 	ldr	x9, [sp, #24]
+   39f30:	eb09011f 	cmp	x8, x9
+   39f34:	540000e1 	b.ne	39f50 <__libc_init@plt-0xaf00>  // b.any
+   39f38:	a9457bfd 	ldp	x29, x30, [sp, #80]
+   39f3c:	a9444ff4 	ldp	x20, x19, [sp, #64]
+   39f40:	a94357f6 	ldp	x22, x21, [sp, #48]
+   39f44:	a9425ff8 	ldp	x24, x23, [sp, #32]
+   39f48:	910183ff 	add	sp, sp, #0x60
+   39f4c:	d65f03c0 	ret
+   39f50:	94002bcc 	bl	44e80 <__stack_chk_fail@plt>

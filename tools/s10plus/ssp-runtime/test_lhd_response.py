@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from inspect_lhd_init import EXPECTED, MatchedImage, inspect
 from replay_lhd_response import Replay, FinalVersionReplay, SyncReplay, SyncInitializerReplay, rpc_record
-from replay_lhd_response import ReliableReplay
+from replay_lhd_response import ReliableReplay, PatchRecordReplay, patch_scenario
 from replay_lhd_response import OWNER, INIT_INTERFACE, PLATFORM
 from check_protocol_replay import frame
 
@@ -232,6 +232,73 @@ class ReliableQueueTests(unittest.TestCase):
         result = r.step()
         self.assertTrue(result['assertion_boundary'])
         self.assertNotIn('transport_send_boundary', kinds(result))
+
+
+class PatchRecordTests(unittest.TestCase):
+    @staticmethod
+    def record(data=b'abc', address=0x12345678):
+        return b'\xf1' + struct.pack('<HI', len(data)+4, address) + data
+
+    def test_f1_serializes_rpc5_with_exact_little_endian_fields(self):
+        r = PatchRecordReplay(BINARY)
+        result = r.feed(self.record())
+        writes = [e for e in result['events'] if e['kind'] == 'patch_write_callback']
+        self.assertEqual(writes, [{'kind': 'patch_write_callback', 'destination': '0x12345678',
+                                  'length': 3, 'data_sha256': hashlib.sha256(b'abc').hexdigest()}])
+        r.flush()
+        self.assertEqual(r.last_serialized, rpc_record(5, struct.pack('<IH', 0x12345678, 3)+b'abc'))
+        self.assertEqual(result['parser_state'], 0)
+
+    def test_all_fragment_boundaries_and_incomplete_record(self):
+        record = self.record()
+        for split in range(1, len(record)):
+            r = PatchRecordReplay(BINARY)
+            first = r.feed(record[:split])
+            self.assertNotIn('patch_write_callback', kinds(first))
+            self.assertNotEqual(first['parser_state'], 0)
+            result = r.feed(record[split:])
+            self.assertEqual(kinds(result).count('patch_write_callback'), 1)
+            r.flush()
+            self.assertEqual(r.last_serialized, rpc_record(5, struct.pack('<IH', 0x12345678, 3)+b'abc'))
+
+    def test_duplicate_and_reordered_file_records_are_not_suppressed(self):
+        r = PatchRecordReplay(BINARY)
+        result = r.feed(self.record(address=2)+self.record(address=1)+self.record(address=2))
+        self.assertEqual([e['destination'] for e in result['events']
+                          if e['kind'] == 'patch_write_callback'], ['0x2', '0x1', '0x2'])
+
+    def test_malformed_tag_length_and_short_body_refused(self):
+        for record in (b'\xef', b'\xf1\xb7\x03', b'\xf1\x04\x00'+b'\x00'*4):
+            r = PatchRecordReplay(BINARY)
+            result = r.feed(record)
+            self.assertTrue(result['assertion_boundary'])
+            self.assertNotIn('patch_write_callback', kinds(result))
+
+    def test_maximum_f1_body_and_unreviewed_callback(self):
+        r = PatchRecordReplay(BINARY)
+        result = r.feed(self.record(b'x'*946))
+        self.assertFalse(result['assertion_boundary'])
+        self.assertEqual(result['parser_state'], 0)
+        r.flush()
+        self.assertEqual(r.last_serialized, rpc_record(5, struct.pack('<IH', 0x12345678, 946)+b'x'*946))
+        with self.assertRaisesRegex(RuntimeError, 'unreviewed execution'):
+            PatchRecordReplay(BINARY).feed(b'\xf0\x0c\x00'+bytes(12))
+
+    def test_independent_rpc_output_checker_rejects_malformed_records(self):
+        for payload in (b'\x05', b'\x05\x80', b'\x06\x00', b'\x05\x07',
+                        rpc_record(5, struct.pack('<IH', 1, 2)+b'x')):
+            with self.assertRaises(ValueError):
+                PatchRecordReplay.decode_serialized_writes(payload)
+
+    def test_actual_hash_matched_embedded_patch_records_offline(self):
+        header = BINARY.parents[3] / 'kernel/s10plus/.build/src/drivers/sensorhub/brcm/bbdpl/r_os/bbd_patch_file_beyond.h'
+        if not header.is_file():
+            self.skipTest('owner-local matched kernel header unavailable')
+        result = patch_scenario(BINARY, header)
+        self.assertEqual(result['write_records'], 479)
+        self.assertEqual(result['write_data_bytes'], 435542)
+        self.assertEqual(result['rpc_packets'], 478)
+        self.assertEqual(result['final_parser_state'], 0)
 
 
 class OriginalDecoderTests(unittest.TestCase):

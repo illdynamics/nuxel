@@ -1,0 +1,32 @@
+{
+  "kind": "OFFLINE_ORIGINAL_CODE; actual matched embedded records, NO hardware responses",
+  "binary_sha256": "6362e80d1f2ae37c76dd5f468bf08abacb89e1c2d2b80976d5b1c3abbf761dfe",
+  "patch_identity": {
+    "source_payload_bytes": 897112,
+    "kernel_export_bytes": 897113,
+    "kernel_export_sha256": "0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72",
+    "asic": "0x004775b0",
+    "header_crc": "193",
+    "blob_length": 438895,
+    "patch_address": "0x00800161",
+    "blob_crc32_ieee": "93d35bb4",
+    "blob_sha256": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d"
+  },
+  "chunk_bytes": 512,
+  "chunks": 858,
+  "write_records": 479,
+  "write_data_bytes": 435542,
+  "rpc_packets": 478,
+  "first_destination": "0x800000",
+  "last_destination": "0x86a54c",
+  "write_metadata_sha256": "8ad675ea8a12d4469eac2c431cf2d0015695020ec852d10828d7eea5c2cb7477",
+  "serialized_packet_metadata_sha256": "1ba9eb2017f75c6dc3e9e71e73531ccd851e8b6954e01d8104d1819cd500bd73",
+  "final_parser_state": 0,
+  "independent_record_and_serialized_rpc_comparison": "PASS: all destinations, lengths and data hashes match",
+  "limits": [
+    "header/container loader is NOT emulated",
+    "only F1 callback enabled",
+    "enqueue intercepted, NO transport ACK generated",
+    "no memory-write acceptance, firmware execution or sensor verification"
+  ]
+}

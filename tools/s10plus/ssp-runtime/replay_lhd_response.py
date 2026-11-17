@@ -7,6 +7,7 @@ Initializer continuation, diagnostic logging and locks are explicit boundaries.
 Requires unicorn==2.1.4; no Android runtime or pyelftools dependency.
 """
 import argparse
+import hashlib
 import json
 import struct
 from pathlib import Path
@@ -459,6 +460,154 @@ class ReliableReplay(SyncInitializerReplay):
         self.put32(OWNER + 0x92c, self.now + 500)
 
 
+class PatchRecordReplay(SyncInitializerReplay):
+    """Original patch-record parser and F1 -> RPC5 memory-write serialization.
+
+    This is host-only parsing, not a memory-write simulator. Reliable enqueue
+    stops before allocation/send, and no ACK is generated. Output contains
+    hashes/metadata only, never patch data. Non-F1 callbacks are not enabled.
+    """
+
+    PARSER = OWNER + 0x530
+    PATCH_INTERFACE = OWNER + 0x4f0
+
+    def __init__(self, binary):
+        super().__init__(binary)
+        self.put64(self.PATCH_INTERFACE, 0x48b48)
+        self.put64(self.PATCH_INTERFACE + 8, OWNER)
+        self.execute(0x3c7c4, [self.PARSER, self.PATCH_INTERFACE])
+        self.last_serialized = b''
+        self.serialized_writes = []
+
+    @staticmethod
+    def decode_serialized_writes(payload):
+        """Independent strict check of the observed RPC5 output schema only."""
+        writes, cursor = [], 0
+        while cursor < len(payload):
+            if len(payload)-cursor < 2 or payload[cursor] != 5:
+                raise ValueError('expected complete RPC5 header')
+            length = payload[cursor+1]
+            cursor += 2
+            if length & 128:
+                if cursor == len(payload):
+                    raise ValueError('short RPC5 length')
+                length = ((length & 127) << 8) | payload[cursor]
+                cursor += 1
+            end = cursor + length
+            if length < 7 or end > len(payload):
+                raise ValueError('invalid RPC5 extent')
+            address, count = struct.unpack_from('<IH', payload, cursor)
+            if count != length-6:
+                raise ValueError('RPC5 embedded length mismatch')
+            writes.append({'destination': hex(address), 'length': count,
+                           'data_sha256': hashlib.sha256(payload[cursor+6:end]).hexdigest()})
+            cursor = end
+        return writes
+
+    def _code(self, uc, addr, size, user):
+        if addr == 0x39e74:
+            length = uc.reg_read(UC_ARM64_REG_X2) & 0xffffffff
+            if not 1 <= length <= 946:
+                raise RuntimeError('write callback outside reviewed F1 bounds')
+            pointer = uc.reg_read(UC_ARM64_REG_X0 + 3)
+            self.events.append({'kind': 'patch_write_callback',
+                                'destination': hex(uc.reg_read(UC_ARM64_REG_X1) & 0xffffffff),
+                                'length': length,
+                                'data_sha256': hashlib.sha256(uc.mem_read(pointer, length)).hexdigest()})
+        if addr == 0x3fa24:
+            length = uc.reg_read(UC_ARM64_REG_X2) & 0xffff
+            if length > 1024:
+                raise RuntimeError('serialized patch RPC exceeds buffer bound')
+            self.last_serialized = bytes(uc.mem_read(uc.reg_read(UC_ARM64_REG_X1), length))
+            self.serialized_writes.extend(self.decode_serialized_writes(self.last_serialized))
+            self.events.append({'kind': 'patch_reliable_enqueue_boundary', 'length': length,
+                                'sha256': hashlib.sha256(self.last_serialized).hexdigest()})
+            self._return()
+            return
+        if (0x3c7c4 <= addr < 0x3cd5c or 0x39e74 <= addr < 0x39f54
+                or 0x3d570 <= addr < 0x3d584 or 0x3d60c <= addr < 0x3d698
+                or 0x3ed54 <= addr < 0x3eda8 or 0x3a354 <= addr < 0x3a38c
+                or 0x41250 <= addr < 0x413e8):
+            return
+        super()._code(uc, addr, size, user)
+
+    def snapshot(self):
+        result = super().snapshot()
+        result['fixture'] = 'host patch-record parsing; no queue send, ACK or MCU execution'
+        result['parser_state'] = self.word(self.PARSER)
+        result['record_type'] = self.uc.mem_read(self.PARSER + 16, 1)[0]
+        result['record_length'] = struct.unpack('<H', self.uc.mem_read(self.PARSER + 18, 2))[0]
+        result['record_buffered'] = struct.unpack('<H', self.uc.mem_read(self.PARSER + 0x3d8, 2))[0]
+        return result
+
+    def feed(self, data):
+        if not 0 < len(data) <= 4096:
+            raise ValueError('patch chunk must have 1..4096 bytes')
+        self.input_len = len(data)
+        self.uc.mem_write(INPUT, data)
+        self.execute(0x3c7e0, [self.PARSER, INPUT, len(data)], budget=100000)
+        result = self.snapshot()
+        result['parser_return'] = self.uc.reg_read(UC_ARM64_REG_X0) & 0xffffffff
+        return result
+
+    def flush(self):
+        pointer = struct.unpack('<Q', self.uc.mem_read(OWNER + 0x500, 8))[0]
+        self.events = []
+        if pointer:
+            self.execute(0x3ec4c, [pointer])
+            self.put64(OWNER + 0x500, 0)
+        return self.snapshot()
+
+
+def patch_scenario(binary, header):
+    # Reuse the existing exact embedded-patch identity verifier; no downloads.
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'ssp-native'))
+    from verify_embedded_patch import decode_c_string_literals, verify, field
+    patch = decode_c_string_literals(header)
+    identity = verify(patch)
+    blob = bytes.fromhex(field(patch, b'Blob').decode('ascii'))
+    replay = PatchRecordReplay(binary)
+    writes, packets, chunk_count = [], [], 0
+    for offset in range(0, len(blob), 512):
+        result = replay.feed(blob[offset:offset+512])
+        if result['assertion_boundary'] or result['parser_return']:
+            raise RuntimeError(f'original patch parser refused chunk at offset {offset}')
+        events = result['events'] + replay.flush()['events']
+        writes.extend(e for e in events if e['kind'] == 'patch_write_callback')
+        packets.extend(e for e in events if e['kind'] == 'patch_reliable_enqueue_boundary')
+        chunk_count += 1
+    if replay.snapshot()['parser_state']:
+        raise RuntimeError('patch ended with incomplete original parser state')
+    decoded = [{k: e[k] for k in ('destination', 'length', 'data_sha256')} for e in writes]
+    expected, cursor = [], 0
+    while cursor < len(blob):
+        if len(blob)-cursor < 3:
+            raise RuntimeError('short independent patch record')
+        tag, length = struct.unpack_from('<BH', blob, cursor)
+        end = cursor+3+length
+        if tag != 0xf1 or not 5 <= length <= 950 or end > len(blob):
+            raise RuntimeError('unreviewed independent patch schema')
+        address = struct.unpack_from('<I', blob, cursor+3)[0]
+        expected.append({'destination': hex(address), 'length': length-4,
+                         'data_sha256': hashlib.sha256(blob[cursor+7:end]).hexdigest()})
+        cursor = end
+    if decoded != expected or replay.serialized_writes != expected:
+        raise RuntimeError('input records / original callbacks / serialized RPCs disagree')
+    return {'kind': 'OFFLINE_ORIGINAL_CODE; actual matched embedded records, NO hardware responses',
+            'binary_sha256': replay.image.digest, 'patch_identity': identity,
+            'chunk_bytes': 512, 'chunks': chunk_count, 'write_records': len(writes),
+            'write_data_bytes': sum(e['length'] for e in writes), 'rpc_packets': len(packets),
+            'first_destination': writes[0]['destination'], 'last_destination': writes[-1]['destination'],
+            'write_metadata_sha256': hashlib.sha256(json.dumps(writes, sort_keys=True).encode()).hexdigest(),
+            'serialized_packet_metadata_sha256': hashlib.sha256(json.dumps(packets, sort_keys=True).encode()).hexdigest(),
+            'final_parser_state': replay.snapshot()['parser_state'],
+            'independent_record_and_serialized_rpc_comparison': 'PASS: all destinations, lengths and data hashes match',
+            'limits': ['header/container loader is NOT emulated', 'only F1 callback enabled',
+                       'enqueue intercepted, NO transport ACK generated',
+                       'no memory-write acceptance, firmware execution or sensor verification']}
+
+
 def reliable_scenarios(binary):
     result = {'fixture': 'SYNTHETIC queue bytes and consumed-patch fields; NOT firmware acceptance',
               'binary_sha256': MatchedImage(binary).digest, 'scenarios': {}}
@@ -504,12 +653,16 @@ def main():
     mode.add_argument('--hex', help='synthetic RPC-list bytes')
     mode.add_argument('--sync-initializer', action='store_true', help='bounded synthetic sync/initializer scenarios')
     mode.add_argument('--reliable-queue', action='store_true', help='bounded synthetic reliable queue/startup scenarios')
+    mode.add_argument('--patch-records', type=Path, metavar='HEADER', help='offline original-code parse of hash-verified embedded patch')
     ap.add_argument('--state', type=int, default=0)
     ap.add_argument('--wire', action='store_true', help='input is escaped TL bytes, still offline')
     args = ap.parse_args()
-    if args.sync_initializer or args.reliable_queue:
+    if args.sync_initializer or args.reliable_queue or args.patch_records:
         if args.wire or args.state:
             ap.error('scenario mode does not accept --wire or --state')
+        if args.patch_records:
+            print(json.dumps(patch_scenario(args.binary, args.patch_records), indent=2))
+            return
         scenario = sync_scenarios if args.sync_initializer else reliable_scenarios
         print(json.dumps(scenario(args.binary), indent=2))
         return

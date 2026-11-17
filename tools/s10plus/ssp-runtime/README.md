@@ -119,6 +119,12 @@ firmware execution. Timer units are independently traced to the matched Android
 elapsedRealtime implementation; see the final recovery report and clock evidence.
 # Synchronization continuation replay
 
+`--patch-records HEADER` verifies the existing exact embedded-patch identity,
+then runs its F1 records through original parser/callback/RPC5 serializer code.
+Independent checks compare destinations, lengths and hashes at every layer.
+It never transmits a record, generates an ACK or includes patch data in output.
+Only F1 callbacks are enabled; container/header loading is outside this replay.
+
 `--reliable-queue` additionally executes the original ring allocator/free,
 ACK/NACK, retransmission and consumed-patch startup branches. Patch fields are
 synthetically staged; this is not patch validation. Actual sends and external
