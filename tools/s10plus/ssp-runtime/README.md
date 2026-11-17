@@ -47,3 +47,32 @@ the stock namespace policy select the VNDK dependencies; the broad static
 resolver alone cannot do that. The flag requires the config in the integrity
 manifest. Probe and daemon trials retain identical hardware restrictions.
 Private `/tmp/nv` and `/tmp/log` directories support the vendor lock/log paths.
+
+## Offline protocol work after matched runtime recovery
+
+Do not rerun the known missing-BBD assertion to investigate the firmware
+protocol. The recovered stock runtime remains intact. Instead:
+
+```sh
+make -C tools/s10plus/ssp-native OUT=/tmp/ssp-offline all check
+python3 tools/s10plus/ssp-runtime/check_protocol_replay.py --decoder /tmp/ssp-offline/nuxel_bbd_download
+python3 tools/s10plus/ssp-runtime/inspect_lhd_init.py packs/sensors/acquired/vendor-bin-hw-lhd
+```
+
+Replay uses simulated bytes, an independent bitwise CRC calculation, bounded
+subprocess execution, and the native stdin-only decoder. It exercises ACK/NACK
+framing, internal payload isolation, extended lengths, malformed RPC rejection,
+CRC failure and stream resynchronization. It opens no device and cannot verify
+operation completion or physical sensor samples. Native socketpair tests also
+require that matching/stale packet ACKs, reliable ACK/NACKs and unrelated RPCs
+never complete a query. `make check` runs both sets of checks.
+
+The static initializer inspector rejects any daemon hash other than the matched
+stock binary. It records dispatch addresses and reviewed callback gates; it
+explicitly lists the remaining unverified protocol semantics.
+
+`network_probe.c` only creates and closes an AF_INET socket. The protocol report
+records private-network trials distinguishing the Android AID_INET permission
+check from protocol failure. Its optional argument drops supplementary groups,
+GID and UID before the socket call. It never connects, binds or opens hardware.
+The daemon sandbox's identity and capabilities have not been relaxed.

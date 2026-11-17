@@ -16,12 +16,13 @@ $(OUT)/nuxel_bbd_download: nuxel_bbd_download.c | $(OUT)
 $(OUT)/nuxel_bbd_host: nuxel_bbd_host.c | $(OUT)
 	$(CC) $(CFLAGS) $(WARN) -o $@ $<
 
-$(OUT)/test_nuxel_bbd_download: tests/test_nuxel_bbd_download.c | $(OUT)
+$(OUT)/test_nuxel_bbd_download: tests/test_nuxel_bbd_download.c nuxel_bbd_download.c | $(OUT)
 	$(CC) $(CFLAGS) $(WARN) -I. -o $@ $<
 
-check: $(OUT)/test_nuxel_bbd_download
+check: $(OUT)/test_nuxel_bbd_download $(OUT)/nuxel_bbd_download
 	$(OUT)/test_nuxel_bbd_download
 	python3 -S tests/test_verify_embedded_patch.py
+	python3 -S ../ssp-runtime/check_protocol_replay.py --decoder $(OUT)/nuxel_bbd_download --summary
 
 clean:
 	rm -rf $(OUT)

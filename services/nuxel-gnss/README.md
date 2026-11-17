@@ -1,27 +1,26 @@
-# nuxel-gnss - native Broadcom BBD/LHD GNSS service (beyond2lte BCM4773)
+# Experimental native BBD/GNSS helpers (S10+ BCM47752)
 
-Nuxel-native implementation of the Broadcom Bridge Driver (BBD) / LHD protocol
-for the S10+ SM-G975F GNSS receiver, ported from the GPL-2.0 kernel source in
-drivers/sensorhub/brcm/bbdpl/ on the device (/root/kbuild/).
+The transport module implements source-backed TL framing, CRC and RPC parsing.
+It does not establish firmware-operation acknowledgements or initialize the hub.
+The matched Samsung `lhd` and runtime have been recovered for isolated analysis.
 
-## Components
-- src/nuxel_bbd_tl.py - transport-layer framing, CRC-8, RPC framing/parse.
-- src/nuxel_control.py - control strings, power/patch constants, patch parser.
-- src/nuxel_lhd.py - native daemon (power lease, firmware provenance, transport
-  open/wakeup, control exchange, bounded handshake, guaranteed cleanup).
-- systemd/nuxel-gnss-lhd.service - systemd unit (least-privilege, bounded).
-- tests/ - host-only unit tests (incl. the kernel sample1 framing vector).
+`nuxel_lhd.py --session` now refuses with `INITIALIZATION_PROTOCOL_UNVERIFIED`
+before acquiring power, opening devices or writing controls. The old session
+incorrectly sent `ESW:READY` after only reading the patch; that path is removed.
+The CLI exits 2, which the existing optional systemd unit accepts without a
+restart loop. These repository changes have not been deployed to the handset.
 
-## Honest boundary
-The firmware (bcm_sensorhub_a1, AsicVersion=0x004775B0, BCM4773) is embedded in
-the running kernel and served read-only via /dev/bbd_patch (SHA-256:
-0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72).
+Components:
 
-This service implements everything up to the BBD communication boundary. The
-GNSS position solution decode requires the proprietary Samsung
-lhd/gpsd/libwrappergps application RPC map, which is not open-sourced and not
-present here; the daemon therefore reports POSITION_DECODER_UNAVAILABLE instead
-of fabricating a fix.
+- `src/nuxel_bbd_tl.py`: framing, strict decoding and separate ACK/NACK metadata.
+- `src/nuxel_control.py`: kernel control constants and patch-file parser.
+- `src/nuxel_lhd.py`: gated session entry point and experimental low-level helpers.
+- `tests/`: offline parser, kernel sample, protocol gate and socketpair tests.
 
-See docs/hardware/gps/ for the full architecture, blockers, reflash manifest,
-and test report.
+Firmware-file identity is not proof of a loaded or running application. The
+older BCM4773-labelled inventory and historical GPS reports do not establish
+the BCM47752 initialization contract. Physical GNSS fixes, motion samples and
+hardware rotation remain unverified by this module.
+
+See [current protocol review](../../reports/SSP-PROTOCOL-CONTRACT-2026-11-17.md)
+and [offline framework](../../tools/s10plus/ssp-runtime/README.md).

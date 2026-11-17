@@ -1,44 +1,15 @@
 #!/usr/bin/env python3
-"""Nuxel native Broadcom BBD/LHD bridge daemon for SM-G975F (beyond2lte).
+"""Experimental native BBD helpers for the SM-G975F BCM47752 recovery.
 
-Owns the BCM4773 BBD transport and implements, in a Nuxel-native Python service,
-the application-side of the Broadcom Bridge Driver (BBD) / LHD protocol that the
-vendor Android ``lhd``/``gpsd`` daemons perform over ``/dev/ttyBCM``.
+The kernel source establishes TL framing and bridge control strings, not the
+complete firmware initialization or GNSS application protocol. The matching
+Samsung lhd/runtime is now recovered for isolated analysis. See
+reports/SSP-PROTOCOL-CONTRACT-2026-11-17.md.
 
-Protocol provenance
---------------------
-* Transport-layer framing + CRC (ESCAPE 0xB0 / SOP 0x00 / EOP 0x01) is ported
-  verbatim from the GPL-2.0 kernel ``drivers/sensorhub/brcm/bbdpl/bbd_rpc_lh.c``.
-* Control strings are from ``.../bbd.h`` / ``.../bbd.c``.
-* The sensor-hub patch firmware is served read-only by the running kernel via
-  ``/dev/bbd_patch`` (it is compiled in, not a missing blob).
-
-Honest boundary
----------------
-The GNSS *application* RPCs (patch-download RPC id, GNSS start/stop control RPC
-ids, and the position-solution RPC id + payload layout) live in the proprietary
-Samsung ``lhd``/``gpsd``/``libwrappergps`` userspace, which is NOT open-sourced
-and NOT present on Nuxel.  The GPL kernel only routes "sensor" vs "non-sensor"
-RPCs; it does not decode the GNSS position message.  This daemon therefore:
-
-  * fully implements and verifies power sequencing, firmware provenance/read,
-    transport open/wakeup, and the BBD TL framing for RX and TX;
-  * reaches the comms boundary and reports receiver state from SSP/kernel
-    (``GPS: false/true``) rather than fabricating a fix;
-  * clearly reports ``POSITION_DECODER_UNAVAILABLE`` when a fix could not be
-    decoded, instead of inventing coordinates.
-
-This is the correct Nuxel-native architecture (handoff option A).  To go the
-last metre to a decoded fix, add either (a) a lawful port of the Samsung GNSS
-RPC map, or (b) an isolated Android-compat runtime running the owner's own
-``lhd``/``gpsd``.  Neither is fabricated here.
-
-Safety
-------
-Read-only + bounded: takes a power lease, opens the transport, performs a
-bounded handshake, and guarantees power-off and fd close in ``finally``.  No
-partition writes, no reboot, no raw GPIO pokes beyond the kernel-owned sysfs
-rail.  One process owns ``/dev/ttyBCM`` for its lifetime.
+Session startup refuses before device/power access until an evidence-backed
+initialization contract exists. Reading a patch is not downloading it, and
+ESW:READY must not be synthesized. The low-level helpers remain for review;
+they are not a verified power sequence or an approved hardware trial.
 """
 from __future__ import annotations
 
@@ -239,10 +210,10 @@ class LhdDaemon:
         return {"success": True, "written": n, "frame_bytes": len(frame)}
 
     def rx_poll(self, deadline, on_rpc=None):
-        """Read the de-framed RPC payload stream from /dev/ttyBCM.
+        """Parse escaped TL frames forwarded through /dev/ttyBCM.
 
-        The kernel's bcb_parse_asic_data() already strips TL framing and hands
-        us the inner RPC records; we parse the 7/8-bit RPC id/len header.
+        The kernel filters sensor RPCs but forwards other escaped TL frames.
+        Internal records and malformed RPC lists must not reach RPC callbacks.
         """
         out = []
         while time.monotonic() < deadline:
@@ -261,7 +232,12 @@ class LhdDaemon:
             pkts = self.parser.push(chunk)
             for pkt in pkts:
                 self.stats["rx_packets"] += 1
-                rpcs = tl.parse_rpc_payload(pkt["payload"])
+                if pkt["internal"]:
+                    continue
+                try:
+                    rpcs = tl.parse_rpc_payload(pkt["payload"])
+                except ValueError:
+                    continue
                 for rpc_id, data in rpcs:
                     if on_rpc:
                         on_rpc(rpc_id, data)
@@ -271,96 +247,22 @@ class LhdDaemon:
     # ------------------------------------------------------- full session
     def run_session(self, expect_handshake=True, handshake_timeout=15.0,
                     observe_timeout=5.0):
-        """Power on, load firmware, open transport, bounded handshake, cleanup.
+        """Refuse initialization until the operation protocol is verified.
 
-        Returns a structured result dict (never a fabricated fix).
+        Reading patch bytes is not loading them into the hub. In particular,
+        ESW:READY must never be synthesized from file parsing or TL activity.
+        Keep this refusal before power acquisition, device opens and controls.
         """
-        result = {
-            "success": False,
-            "state": ABSENT,
-            "present": self.present(),
-            "power": None,
-            "firmware": None,
-            "transport": None,
-            "handshake": None,
-            "rx": [],
-            "stats": self.stats,
-            "error": None,
-            "fix": None,
-            "fix_decoded": False,
+        self.state = FIRMWARE_UNVERIFIED
+        self.last_error = "BCM47752 initialization/response contract is unverified"
+        return {
+            "success": False, "state": self.state, "present": None,
+            "power": None, "firmware": None, "transport": None,
+            "handshake": None, "rx": [], "stats": self.stats,
+            "error": self.last_error, "fix": None, "fix_decoded": False,
             "position_decoder": POSITION_DECODER_UNAVAILABLE,
+            "blocker": "INITIALIZATION_PROTOCOL_UNVERIFIED",
         }
-        if not self.present():
-            result["error"] = "BBD nodes not all present"
-            self.state = ABSENT
-            return result
-
-        initial_rail = self.power.read()
-        lease = self.power.acquire()
-        pooled = self.power.set_power(True)
-        result["power"] = pooled
-        if not pooled.get("success"):
-            result["state"] = FAULT
-            result["error"] = "power-on failed: %s" % pooled.get("error")
-            self.power.release(lease, bool(initial_rail))
-            return result
-
-        try:
-            if not self.load_firmware():
-                result["state"] = self.state
-                result["error"] = self.last_error
-                return result
-            result["firmware"] = {
-                "name": self.firmware_meta.get("Name"),
-                "asic": self.firmware_meta.get("AsicVersion"),
-                "blob_len": len(self.firmware),
-                "sha256": __import__("hashlib").sha256(self.firmware).hexdigest(),
-            }
-            if not self.open_transport():
-                result["state"] = self.state
-                result["error"] = self.last_error
-                return result
-            result["transport"] = "open"
-            rev = self.ioctl_get_hw_rev()
-            result["hw"] = rev
-
-            # Begin patch download (matches lhd's SSI:PassThru=1 sequence).
-            c1 = self.write_control(ctl.BBD_CTRL_SSI_PATCH_BEGIN)
-            # Signal sensor-hub readiness after patch (ESW:READY).
-            c2 = self.write_control(ctl.ESW_CTRL_READY)
-            result["control"] = {"patch_begin": c1, "ready": c2}
-
-            # Raw RX floor: is ANY byte coming back from the receiver at all?
-            # Recorded before any application RPC, so a silent receiver and an
-            # unknown RPC map can never be confused with each other.
-            floor_deadline = time.monotonic() + float(
-                os.environ.get('NUXEL_GNSS_RX_FLOOR_SECONDS', '3'))
-            floor_rx = self.rx_poll(floor_deadline)
-            result["rx_floor"] = {
-                "bytes": self.stats["rx_bytes"],
-                "packets": len(floor_rx),
-            }
-            if expect_handshake:
-                handshake = self.handshake(handshake_timeout)
-                result["handshake"] = handshake
-                if handshake.get("ok"):
-                    self.state = BBD_HANDSHAKE_OK
-                    self.stats["handshake"] = True
-            # Observe a bounded window of de-framed RPC traffic (no decode of
-            # the proprietary GNSS position RPC).
-            if self.tfd is not None:
-                deadline = time.monotonic() + observe_timeout
-                result["rx"] = self.rx_poll(deadline)
-            if self.state == BBD_HANDSHAKE_OK:
-                result["success"] = True
-                result["state"] = self.state
-            else:
-                result["state"] = self.state
-                result["error"] = ("transport/handshake boundary reached; GNSS "
-                                   "position decode unavailable (proprietary lhd/gpsd RPC map)")
-            return result
-        finally:
-            self.cleanup(lease, bool(initial_rail))
 
     def handshake(self, timeout: float):
         """Bounded observation for chip/SSP ready state.

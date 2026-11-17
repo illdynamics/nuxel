@@ -1,0 +1,22 @@
+{
+  "success": false,
+  "state": "FIRMWARE_UNVERIFIED",
+  "present": null,
+  "power": null,
+  "firmware": null,
+  "transport": null,
+  "handshake": null,
+  "rx": [],
+  "stats": {
+    "rx_bytes": 0,
+    "tx_bytes": 0,
+    "rx_packets": 0,
+    "garbage_bytes": 0,
+    "handshake": false
+  },
+  "error": "BCM47752 initialization/response contract is unverified",
+  "fix": null,
+  "fix_decoded": false,
+  "position_decoder": "POSITION_DECODER_UNAVAILABLE",
+  "blocker": "INITIALIZATION_PROTOCOL_UNVERIFIED"
+}

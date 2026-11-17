@@ -101,6 +101,75 @@ def test_garbage_tolerance():
     assert parser.packets == 1
 
 
+
+
+
+def test_crc_all_entries_against_polynomial():
+    # Independent bitwise construction of the source's MSB-first 0x4d table.
+    for value in range(256):
+        crc = value
+        for _ in range(8):
+            crc = ((crc << 1) ^ (0x4d if crc & 0x80 else 0)) & 255
+        assert tl.CRC_TABLE[value] == crc
+
+
+def body_frame(body):
+    # Specify decoded bytes directly; do not use build_frame to test decoder.
+    return b'\xb0\x00' + tl.encode_escape(body + bytes([tl.crc8_packet(body[1:])])) + b'\xb0\x01'
+
+
+def test_transport_ack_is_separate_from_rpc():
+    pkt, = tl.TransportLayerParser().push(body_frame(bytes([7, 0, 5, 42, 9])))
+    assert pkt['flags'] == 5 and pkt['ack_seq'] == 42
+    assert pkt['reliable_ack_seq'] == 9 and pkt['reliable_nack_seq'] is None
+    assert tl.parse_rpc_payload(pkt['payload']) == []
+    pkt, = tl.TransportLayerParser().push(body_frame(bytes([8, 0, 8, 8])))
+    assert pkt['reliable_nack_seq'] == 8 and not pkt['ack']
+
+
+def test_extended_lengths_details_and_fragmentation():
+    for size in (0, 127, 128, 255, 256, 2048):
+        payload = b'\xb0' * size
+        frame = tl.build_frame(255, payload, tl.FLAG_RELIABLE_PACKET,
+                               {tl.FLAG_RELIABLE_PACKET: 4})
+        parser = tl.TransportLayerParser()
+        packets = []
+        for byte in frame:
+            packets += parser.push(bytes([byte]))
+        pkt, = packets
+        assert pkt['payload'] == payload and pkt['reliable_seq'] == 4
+        assert bool(pkt['flags'] & tl.FLAG_SIZE_EXTENDED) == (size > 255)
+
+
+def test_reject_invalid_headers_and_rpc():
+    import pytest
+    for body in (b'\x09\x01\x01\x2a', b'\x09\x00\x01',
+                 b'\x09\x00\x80\x04\x00', b'\x09\x00\x00\x00'):
+        assert tl.TransportLayerParser().push(body_frame(body)) == []
+    for payload in (b'\x80', b'\x01', b'\x01\x80', b'\x01\x02\x00',
+                    b'\x00\x00\x01'):
+        with pytest.raises(ValueError):
+            tl.parse_rpc_payload(payload)
+    for flags, details in ((1, {}), (0, {1: 0}), (0x400, {})):
+        with pytest.raises(ValueError):
+            tl.build_frame(0, b'', flags, details)
+    with pytest.raises(ValueError):
+        tl.build_frame(0, b'x' * 2049)
+    with pytest.raises(ValueError):
+        tl.build_rpc_packet(0x8000, b'')
+
+
+def test_restart_after_partial_or_overflow():
+    frame = tl.build_frame(0, b'\x01\x00')
+    for prefix in (b'\xb0\x00\x99\x20\x00',
+                   b'\xb0\x00' + b'x' * 2063,
+                   b'\xb0\x00' + b'\xb0\x03' * 2063):
+        parser = tl.TransportLayerParser()
+        assert parser.push(prefix) == []
+        pkt, = parser.push(frame)
+        assert pkt['payload'] == b'\x01\x00'
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
