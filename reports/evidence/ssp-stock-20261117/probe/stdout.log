@@ -1,0 +1,14 @@
+DENIED /dev/ttyBCM errno=2
+DENIED /dev/bbd_sensor errno=2
+DENIED /dev/bbd_control errno=2
+DENIED /dev/bbd_patch errno=2
+DENIED /dev/sda errno=2
+DENIED /sys/class/sec/sensorhub/mcu_power errno=2
+DENIED /sys/class/sec/gps/GPS_PWR_EN/value errno=2
+DENIED /efs errno=2
+DENIED /etc/shadow errno=2
+DENIED /proc/1/root/etc/shadow errno=2
+runtime_readonly=1 uid=65534 gid=65534
+CapEff:	0000000000000000
+NoNewPrivs:	1
+isolation=PASS (NO HARDWARE ACCESS)
