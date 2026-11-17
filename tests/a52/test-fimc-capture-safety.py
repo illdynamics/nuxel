@@ -21,3 +21,9 @@ def test_zeroed_get_format_cannot_be_reported_as_probe_success() -> None:
     source = SOURCE.read_text()
     assert '"FORMAT_UNCOMMITTED"' in source
     assert "!fmt.fmt.pix_mp.width || !fmt.fmt.pix_mp.height" in source
+
+
+def test_cleanup_never_retries_failed_streamoff() -> None:
+    cleanup = SOURCE.read_text().split('\nfail:\n',1)[1].split('\nout:\n',1)[0]
+    assert 'goto fail' not in cleanup
+    assert 'if (streaming)' in cleanup
