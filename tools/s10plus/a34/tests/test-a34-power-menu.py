@@ -52,9 +52,10 @@ with tempfile.TemporaryDirectory() as td:
                 'refusal': parts[5].split('=', 1)[1],
             })
 
-check('configured menu has 16 entries', len(entries) == 16, len(entries))
-check('active A34 MENU_COUNT is 16', count == 16, count)
-check('active A34 table length is 16', len(menu) == 16, len(menu))
+check('configured menu has 15 entries', len(entries) == 15, len(entries))
+check('active MENU_COUNT matches configuration', count == len(entries), count)
+check('active table length matches configuration', len(menu) == len(entries), len(menu))
+check('screenshot is absent from the power menu', all(e['id'] != 'screenshot' for e in menu))
 for i, (want, got) in enumerate(zip(entries, menu)):
     check('entry %d id %s' % (i, want['id']), want['id'] == got['id'], got['id'])
     check('entry %d action %s' % (i, want['action']), want['action'] == got['action'], got['action'])

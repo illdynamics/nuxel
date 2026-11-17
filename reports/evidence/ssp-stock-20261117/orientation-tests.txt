@@ -1,0 +1,95 @@
+EEEEEE
+======================================================================
+ERROR: test_apply (unittest.loader._FailedTest.test_apply)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_apply
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "/Users/wicked/x/nuxel/services/nuxel-orientation/tests/test_apply.py", line 6, in <module>
+    import nuxel_orientation.apply as apply_mod
+ModuleNotFoundError: No module named 'nuxel_orientation'
+
+
+======================================================================
+ERROR: test_policy (unittest.loader._FailedTest.test_policy)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_policy
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "/Users/wicked/x/nuxel/services/nuxel-orientation/tests/test_policy.py", line 3, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_runtime_trial (unittest.loader._FailedTest.test_runtime_trial)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_runtime_trial
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "/Users/wicked/x/nuxel/services/nuxel-orientation/tests/test_runtime_trial.py", line 9, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_sensor_hub (unittest.loader._FailedTest.test_sensor_hub)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_sensor_hub
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "/Users/wicked/x/nuxel/services/nuxel-orientation/tests/test_sensor_hub.py", line 3, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_sensor_hub_control (unittest.loader._FailedTest.test_sensor_hub_control)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_sensor_hub_control
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "/Users/wicked/x/nuxel/services/nuxel-orientation/tests/test_sensor_hub_control.py", line 5, in <module>
+    from nuxel_orientation.sensors import (
+ModuleNotFoundError: No module named 'nuxel_orientation'
+
+
+======================================================================
+ERROR: test_sensors (unittest.loader._FailedTest.test_sensors)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_sensors
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/unittest/loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "/Users/wicked/x/nuxel/services/nuxel-orientation/tests/test_sensors.py", line 6, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.000s
+
+FAILED (errors=6)

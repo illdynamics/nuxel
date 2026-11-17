@@ -1,0 +1,28 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-11-17T14:06:38+01:00
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux
+5aebd0711ac9cf7383c7d8a185826256a382fce111d064bd53f47909ee885583  /proc/config.gz
+ console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0001000420000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=1 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=[redacted] androidboot.ap_serial=[redacted] snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=[redacted] androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=[redacted] root=PARTUUID=52444E41-494F-2044-7379-7374656D0000
+/vendor/firmware
+ls: cannot access '/system': No such file or directory
+ls: cannot access '/system/vendor': No such file or directory
+ls: cannot access '/system/vendor/firmware': No such file or directory
+drwxr-xr-x 4 root root 4096 Nov 12 16:32 /lib/firmware
+drwxr-xr-x 3 root root 4096 Nov  1 13:30 /vendor/firmware
+Nov 17 12:56:09 WIN-CLIENT kernel: [@]fimc_is_sec_run_fw_sel rom id[0] 0
+Nov 17 12:56:09 WIN-CLIENT kernel: [@]Camera: read cal data from EEPROM (ROM ID:0)
+Nov 17 12:56:09 WIN-CLIENT kernel: [@]Camera: read cal data from EEPROM (rom_id:0)
+Nov 17 12:56:09 WIN-CLIENT kernel: [@]Camera: I2C read cal data
+Nov 17 12:56:10 WIN-CLIENT kernel: [@] Module ver : M
+Nov 17 12:56:10 WIN-CLIENT kernel: [@][ERR]fimc_is_sec_fw_sel_eeprom:3244:Camera: Failed open phone firmware
+Nov 17 12:56:10 WIN-CLIENT kernel: [@][ERR]fimc_is_vender_fw_prepare:1350:fimc_is_sec_run_fw_sel is fail1(-5)
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git

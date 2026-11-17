@@ -1,0 +1,48 @@
+{
+  "revision": "adda23472627e5bbb35f48e55588cc38eb19f73d",
+  "note": "Tag v3.6 comparator; exact DTK9 source correlation still unproven",
+  "files": [
+    {
+      "path": "interface/fimc-is-interface-library.c",
+      "url": "https://raw.githubusercontent.com/CruelKernel/samsung-exynos9820/adda23472627e5bbb35f48e55588cc38eb19f73d/drivers/media/platform/exynos/fimc-is2/interface/fimc-is-interface-library.c",
+      "sha256": "aa323b3eb8b4be33350b476470f19f3275136dbbff45fb87d1592bba54fb70f0",
+      "matches": true,
+      "diff": ""
+    },
+    {
+      "path": "interface/fimc-is-interface-ddk.c",
+      "url": "https://raw.githubusercontent.com/CruelKernel/samsung-exynos9820/adda23472627e5bbb35f48e55588cc38eb19f73d/drivers/media/platform/exynos/fimc-is2/interface/fimc-is-interface-ddk.c",
+      "sha256": "34e6b35b3e954e2914d210f990ed8f8d155a608bc3d573f14b260f9521824c36",
+      "matches": true,
+      "diff": ""
+    },
+    {
+      "path": "interface/fimc-is-interface-library.h",
+      "url": "https://raw.githubusercontent.com/CruelKernel/samsung-exynos9820/adda23472627e5bbb35f48e55588cc38eb19f73d/drivers/media/platform/exynos/fimc-is2/interface/fimc-is-interface-library.h",
+      "sha256": "b022f7838d662cc7dbf89f36bc38302798470a4c1db9824359b49a5b704761b6",
+      "matches": true,
+      "diff": ""
+    },
+    {
+      "path": "interface/fimc-is-interface-ddk.h",
+      "url": "https://raw.githubusercontent.com/CruelKernel/samsung-exynos9820/adda23472627e5bbb35f48e55588cc38eb19f73d/drivers/media/platform/exynos/fimc-is2/interface/fimc-is-interface-ddk.h",
+      "sha256": "1abf71bc9843b29ca5a31328fd285d57e4ba14430010ce5fe53a23be9a5d8925",
+      "matches": true,
+      "diff": ""
+    },
+    {
+      "path": "include/fimc-is-metadata.h",
+      "url": "https://raw.githubusercontent.com/CruelKernel/samsung-exynos9820/adda23472627e5bbb35f48e55588cc38eb19f73d/drivers/media/platform/exynos/fimc-is2/include/fimc-is-metadata.h",
+      "sha256": "b197d147f21f581b2782753360f51529bd9162db8e1292c8e69fca7572b0c723",
+      "matches": false,
+      "diff": "--- cruel-v3.6/include/fimc-is-metadata.h\n+++ nuxel/include/fimc-is-metadata.h\n@@ -694,7 +694,7 @@\n \tuint32_t\t\t\tvendor_lls_tuning_set_index;\n \tuint32_t\t\t\tvendor_lls_brightness_index;\n \tenum stats_wdrAutoState \tvendor_wdrAutoState;\n-\tuint32_t\t\t\tvendor_rgbAvgSamples[2][4]; \n+\tuint32_t\t\t\tvendor_rgbAvgSamples[2][4];\n };\n \n struct camera2_stats_sm {\n@@ -741,10 +741,11 @@\n \tAA_CAPTURE_INTENT_STILL_CAPTURE_LLHDR_VEHDR_DYNAMIC_SHOT,\n \tAA_CAPTURE_INTENT_STILL_CAPTURE_VENR_DYNAMIC_SHOT,\n \tAA_CAPTURE_INTENT_STILL_CAPTURE_LLS_FLASH,\n-\tAA_CAPTURE_INTENT_STILL_CAPTURE_SUPER_NIGHT_SHOT_HANDHELD_FAST,    // 1st frame for JPEG+Thumbnail\n-\tAA_CAPTURE_INTENT_STILL_CAPTURE_SUPER_NIGHT_SHOT_TRIPOD_FAST,      // 1st frame for JPEG+Thumbnail\n-\tAA_CAPTURE_INTENT_STILL_CAPTURE_SUPER_NIGHT_SHOT_TRIPOD_LE_FAST,   // 1st frame for JPEG+Thumbnail\n-\tAA_CAPTURE_INTENT_STILL_CAPTURE_CROPPED_REMOSAIC_DYNAMIC_SHOT,\n+\tAA_CAPTURE_INTENT_STILL_CAPTURE_SUPER_NIGHT_SHOT_HANDHELD_FAST  = 120,   // 1st frame for JPEG+Thumbnail\n+\tAA_CAPTURE_INTENT_STILL_CAPTURE_SUPER_NIGHT_SHOT_TRIPOD_FAST    = 121,   // 1st frame for JPEG+Thumbnail\n+\tAA_CAPTURE_INTENT_STILL_CAPTURE_SUPER_NIGHT_SHOT_TRIPOD_LE_FAST = 122,   // 1st frame for JPEG+Thumbnail\n+\tAA_CAPTURE_INTENT_STILL_CAPTURE_CROPPED_REMOSAIC_DYNAMIC_SHOT   = 123,\n+\tAA_CAPTURE_INTENT_STILL_CAPTURE_CROPPED_REMOSAIC_SINGLE         = 124,\n };\n \n enum aa_mode {\n@@ -1081,7 +1082,8 @@\n \n enum aa_night_timelaps_mode {\n \tAA_NIGHT_TIMELAPS_MODE_OFF = 0,\n-\tAA_NIGHT_TIMELAPS_MODE_ON,\n+\tAA_NIGHT_TIMELAPS_MODE_ON_45X,\n+\tAA_NIGHT_TIMELAPS_MODE_ON_15X,\n };\n \n struct camera2_video_output_size {\n@@ -1219,10 +1221,10 @@\n \tint32_t\t\t\t\tvendor_lightConditionValue;\n \tint32_t\t\t\t\tvendor_dynamicShotExtraInfo;\n \tstruct aa_apexInfo\t\tvendor_apexInfo;\n-\tstruct osdInfo\t\t\tvendor_osdInfo;      \n-\tint32_t\t\t\t\tvendor_drcRatio;    \n+\tstruct osdInfo\t\t\tvendor_osdInfo;\n+\tint32_t\t\t\t\tvendor_drcRatio;\n \tuint32_t\t\t\tvendor_colorTempIndex; // cu\n-\tuint32_t\t\t\tvendor_luxIndex;       \n+\tuint32_t\t\t\tvendor_luxIndex;\n \tuint32_t\t\t\tvendor_luxStandard;\n \tint32_t\t\t\t\tvendor_aeStats4VO[8];\n \tint32_t\t\t\t\tvendor_multiFrameEv;\n@@ -1659,7 +1661,7 @@\n \tuint32_t\tmidAnalogGain;\n \tuint32_t\tshortAnalogGain;\n \tuint32_t\tlongDigitalGain;\n-\tuint32_t\tmidDigitalGain;\t\n+\tuint32_t\tmidDigitalGain;\n \tuint32_t\tshortDigitalGain;\n \n \tuint64_t\texposureTime;\n@@ -1681,10 +1683,10 @@\n \tuint32_t\tlongDigitalGain;\n \tuint32_t\tmidDigitalGain;\n \tuint32_t\tshortDigitalGain;\n-\tuint32_t\tshortWdrExposureTime;   \n-\tuint32_t\tlongWdrExposureTime;   \n-\tuint32_t\tshortWdrSensitivity;   \n-\tuint32_t\tlongWdrSensitivity;   \n+\tuint32_t\tshortWdrExposureTime;\n+\tuint32_t\tlongWdrExposureTime;\n+\tuint32_t\tshortWdrSensitivity;\n+\tuint32_t\tlongWdrSensitivity;\n \tuint64_t\ttimeStampBoot;\n \tuint32_t\tmultiLuminances[9];\n };\n@@ -1736,6 +1738,7 @@\n \tCAMERA_WDR_ON = 2,\n \tCAMERA_WDR_AUTO = 3,\n \tCAMERA_WDR_AUTO_LIKE = 4,\n+\tCAMERA_WDR_AUTO_3P = 5,\n \tTOTALCOUNT_CAMERA_WDR,\n \tCAMERA_WDR_UNKNOWN,\n };\n@@ -1775,6 +1778,8 @@\n \tCAMERA_OP_MODE_HAL3_FAC,\n \tCAMERA_OP_MODE_HAL3_SDK,\n \tCAMERA_OP_MODE_HAL3_CAMERAX,\n+\tCAMERA_OP_MODE_HAL3_AVSP,\n+\tCAMERA_OP_MODE_HAL3_SDK_VIP,\n };\n \n struct camera2_pdaf_single_result {\n@@ -1932,8 +1937,8 @@\n \tSCENE_INDEX_CITY\t\t= 35,\n \tSCENE_INDEX_SHOE_DISP\t\t= 36,\n \tSCENE_INDEX_SHOE_ON\t\t= 37,\n-\tSCENE_INDEX_FACE\t\t= 38,\t\n-\t\n+\tSCENE_INDEX_FACE\t\t= 38,\n+\n \t// The enums which are same as or more than 1000 are set by AE result\n \tSCENE_INDEX_DAY_HDR\t\t= 10000,\n \tSCENE_INDEX_NIGHT_HDR\t\t= 10001,\n@@ -1993,13 +1998,27 @@\n };\n \n enum camera_client_index {\n-\tCAMERA_APP_CATEGORY_NONE = 0,\n-\tCAMERA_APP_CATEGORY_FACEBOOK = 1,\n-\tCAMERA_APP_CATEGORY_WECHAT = 2,\n-\tCAMERA_APP_CATEGORY_SNAPCHAT = 3,\n-\tCAMERA_APP_CATEGORY_TWITTER = 4,\n-\tCAMERA_APP_CATEGORY_INSTAGRAM = 5,\n-\tCAMERA_APP_CATEGORY_3P_VT = 6,\n+\tCAMERA_APP_CATEGORY_NOT_READ           = -1,\n+\tCAMERA_APP_CATEGORY_NONE               = 0,\n+\tCAMERA_APP_CATEGORY_FACEBOOK           = 1,\n+\tCAMERA_APP_CATEGORY_WECHAT             = 2,\n+\tCAMERA_APP_CATEGORY_SNAPCHAT           = 3,\n+\tCAMERA_APP_CATEGORY_TWITTER            = 4,\n+\tCAMERA_APP_CATEGORY_INSTAGRAM          = 5,\n+\tCAMERA_APP_CATEGORY_3P_VT              = 6,\n+\tCAMERA_APP_CATEGORY_VAULT              = 7,\n+\tCAMERA_APP_CATEGORY_FACEBOOK_MASSENGER = 8,\n+\tCAMERA_APP_CATEGORY_WHATSAPP           = 9,\n+\tCAMERA_APP_CATEGORY_ULIKE              = 10,\n+\tCAMERA_APP_CATEGORY_WEIBO              = 11,\n+\tCAMERA_APP_CATEGORY_MEITU              = 12,\n+\tCAMERA_APP_CATEGORY_KAKAOBANK          = 13,\n+\tCAMERA_APP_CATEGORY_CAMCARD            = 14,\n+\tCAMERA_APP_CATEGORY_CAMCARD_FREE       = 15,\n+\tCAMERA_APP_CATEGORY_SNOW               = 16,\n+\tCAMERA_APP_CATEGORY_B612               = 17,\n+\tCAMERA_APP_CATEGORY_SODA               = 18,\n+\tCAMERA_APP_CATEGORY_FOODIE             = 19,\n \tCAMERA_APP_CATEGORY_MAX\n };\n \n@@ -2186,6 +2205,14 @@\n \tuint32_t\t\thw_rot_mirror[CAMERA2_MAX_FACES];\n };\n \n+enum camera_flip_mode {\n+\tCAM_FLIP_MODE_NORMAL = 0,\n+\tCAM_FLIP_MODE_HORIZONTAL,\n+\tCAM_FLIP_MODE_VERTICAL,\n+\tCAM_FLIP_MODE_HORIZONTAL_VERTICAL,\n+\tCAM_FLIP_MODE_MAX,\n+};\n+\n /** \\brief\n   stream structure for scaler.\n  */\n@@ -2334,9 +2361,13 @@\n \tuint32_t\t\t\tcrop_taa_y;\n \tuint32_t\t\t\tbds_ratio_x;\n \tuint32_t\t\t\tbds_ratio_y;\n+\tuint32_t\t\t\tremosaic_rotation;\n+\n+\tenum camera_flip_mode\t\tmcsc_flip[MCSC_PORT_MAX];\n+\tenum camera_flip_mode\t\tmcsc_flip_result[MCSC_PORT_MAX];\n \n \t/* reserved for future */\n-\tuint32_t\t\t\treserved[8];\n+\tuint32_t\t\t\treserved[7];\n \n \t/**\t\\brief\n \t  processing time debugging\n"
+    },
+    {
+      "path": "ischain/fimc-is-v7_0_0/fimc-is-config.h",
+      "url": "https://raw.githubusercontent.com/CruelKernel/samsung-exynos9820/adda23472627e5bbb35f48e55588cc38eb19f73d/drivers/media/platform/exynos/fimc-is2/ischain/fimc-is-v7_0_0/fimc-is-config.h",
+      "sha256": "b0255f71cb3c8b46663af98d50285e541506205ffaa34acf8e73f285527c50ea",
+      "matches": true,
+      "diff": ""
+    }
+  ]
+}

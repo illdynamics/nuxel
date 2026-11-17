@@ -1,7 +1,7 @@
 """Nuxel BBD Transport Layer (TL) framing + CRC-8 + RPC helper.
 
 A faithful Python port of the Broadcom BBD Protocol Layer logic found in the
-GPLv2 kernel driver drviers/sensorhub/brcm/bbdpl/bbd_rpc_lh.c (Broadcom Bridge
+GPLv2 kernel driver drivers/sensorhub/brcm/bbdpl/bbd_rpc_lh.c (Broadcom Bridge
 Driver) on the SM-G975F `beyond2lte` 4.14.253 kernel.  This module implements
 only the wire format proven by that source: SOP/EOP framing, escape handling,
 the 256-entry CRC-8 table, and the packet/rpc header layout.
@@ -12,7 +12,7 @@ a GNSS fix; it only frames/parses BBD packets.
 
 Wire framing (bbd_rpc_lh.c):
     ESCAPE(0xB0) SOP(0x00) <message> ESCAPE(0xB0) EOP(0x01)
-    message = SeqId + PayloadSize(LSB[,MSB]) + Flags(LSB[,MSB]) + flag-details
+    message = SeqId + PayloadSizeLSB + FlagsLSB + flag-details (including extensions)
               + payload + CRC8 (nibble-swapped)
     escape codes inside message: 0xB0->0xB0 0x03, 0x11->0xB0 0x04, 0x13->0xB0 0x05
 """
@@ -55,7 +55,7 @@ CRC_TABLE = (
     0xca, 0x87, 0x50, 0x1d, 0xb3, 0xfe, 0x29, 0x64, 0x38, 0x75, 0xa2, 0xef, 0x41, 0x0c, 0xdb, 0x96,
     0x42, 0x0f, 0xd8, 0x95, 0x3b, 0x76, 0xa1, 0xec, 0xb0, 0xfd, 0x2a, 0x67, 0xc9, 0x84, 0x53, 0x1e,
     0xeb, 0xa6, 0x71, 0x3c, 0x92, 0xdf, 0x08, 0x45, 0x19, 0x54, 0x83, 0xce, 0x60, 0x2d, 0xfa, 0xb7,
-    0x5d, 0x10, 0xc7, 0x8a, 0x24, 0x69, 0x3e, 0xf3, 0xaf, 0xe2, 0x35, 0x78, 0xd6, 0x9b, 0x4c, 0x01,
+    0x5d, 0x10, 0xc7, 0x8a, 0x24, 0x69, 0xbe, 0xf3, 0xaf, 0xe2, 0x35, 0x78, 0xd6, 0x9b, 0x4c, 0x01,
     0xf4, 0xb9, 0x6e, 0x23, 0x8d, 0xc0, 0x17, 0x5a, 0x06, 0x4b, 0x9c, 0xd1, 0x7f, 0x32, 0xe5, 0xa8,
 )
 
@@ -94,30 +94,36 @@ def encode_escape(payload: bytes) -> bytes:
     return bytes(out)
 
 
-def build_frame(seq_id: int, payload: bytes, flags: int = 0) -> bytes:
-    """Build a complete BBD TL frame from a payload.
+def build_frame(seq_id: int, payload: bytes, flags: int = 0,
+                details: dict[int, int] | None = None) -> bytes:
+    """Encode framing only; this does not establish an RPC completion contract.
 
-    payload must already be an RPC packet list (see build_rpc_packet).  This
-    produces: ESCAPE SOP <message> ESCAPE EOP with a correct trailing CRC.
+    Detail keys are flag masks. Extension details are generated automatically;
+    every other set bit requires its own detail, including INTERNAL/IGNORE.
     """
-    payload_size = len(payload)
-    size_extended = payload_size > 0xFF
-    flags_hi = flags >> 8
-    flags_lo = flags & 0xFF
-    msg = bytearray()
-    msg.append(seq_id & 0xFF)
-    msg.append(payload_size & 0xFF)
-    msg.append(flags_lo)
-    # flag detail bytes: SIZE_EXTENDED detail carries the payload size MSB,
-    # FLAG_EXTENDED detail carries the flags MSB.
-    if size_extended:
-        msg.append((payload_size >> 8) & 0xFF)
-    if flags_hi:
-        msg.append(flags_hi)
+    details = {} if details is None else details
+    if not 0 <= seq_id <= 255 or not 0 <= flags <= 0x3ff:
+        raise ValueError("invalid sequence or unsupported flags")
+    if len(payload) > 2048:
+        raise ValueError("payload exceeds source transport limit")
+    flags &= ~(FLAG_SIZE_EXTENDED | FLAG_EXTENDED)
+    if len(payload) > 255:
+        flags |= FLAG_SIZE_EXTENDED
+    if flags >> 8:
+        flags |= FLAG_EXTENDED
+    required = {1 << i for i in range(10) if flags & (1 << i)} - {
+        FLAG_SIZE_EXTENDED, FLAG_EXTENDED}
+    if set(details) != required or any(not 0 <= v <= 255 for v in details.values()):
+        raise ValueError("missing, surplus or invalid flag details")
+    msg = bytearray((seq_id, len(payload) & 255, flags & 255))
+    for i in range(10):
+        bit = 1 << i
+        if flags & bit:
+            msg.append(len(payload) >> 8 if bit == FLAG_SIZE_EXTENDED else
+                       flags >> 8 if bit == FLAG_EXTENDED else details[bit])
     msg += payload
-    crc = crc8_packet(bytes(msg[1:]))  # excludes SeqId, includes everything else
-    msg.append(crc)
-    return bytes((ESCAPE_CHARACTER, SOP_CHARACTER)) + encode_escape(bytes(msg)) + bytes((ESCAPE_CHARACTER, EOP_CHARACTER))
+    msg.append(crc8_packet(bytes(msg[1:])))
+    return bytes((ESCAPE_CHARACTER, SOP_CHARACTER)) + encode_escape(msg) + bytes((ESCAPE_CHARACTER, EOP_CHARACTER))
 
 
 def build_rpc_packet(rpc_id: int, data: bytes) -> bytes:
@@ -129,14 +135,8 @@ def build_rpc_packet(rpc_id: int, data: bytes) -> bytes:
     out = bytearray()
 
     def put_varint_style(v):
-        # rpc_id / rpc_len are 15-bit.  Two bytes are used when the low byte
-        # has bit 7 set, because the decoder tests the FIRST byte's bit 7:
-        #     hi = payload[i]; if hi & 0x80: id = ((hi & ~0x80) << 8) | payload[i+1]
-        # Encoding must therefore place the 7 high bits in the first byte
-        # (without the flag) and use the low byte only to carry bit 7 of the
-        # value... which the decoder does NOT model: it folds the *low* byte in.
-        # The only self-consistent form is (hi7 << 8) | lo with hi7 <= 0x7F:
-        # emit two bytes when the HIGH 7-bit part is non-zero, else one byte.
+        # Fields are one byte below 0x80, otherwise high seven bits
+        # with the marker followed by the low eight bits.
         hi = (v >> 8) & 0x7F
         lo = v & 0xFF
         if hi or lo & 0x80:
@@ -145,6 +145,8 @@ def build_rpc_packet(rpc_id: int, data: bytes) -> bytes:
         else:
             out.append(lo)
 
+    if not 0 <= rpc_id <= 0x7fff or len(data) > 0x7fff:
+        raise ValueError("RPC id/length exceeds 15-bit encoding")
     put_varint_style(rpc_id)
     put_varint_style(len(data))
     out += data
@@ -192,7 +194,7 @@ class TransportLayerParser:
         elif self.state == 1:  # WAIT_FOR_SOP
             if uc == SOP_CHARACTER:
                 self.state = 2
-                self.rx_len = 0
+                self._reset()
             elif uc != ESCAPE_CHARACTER:
                 self.state = 0
                 self.garbage_bytes += 1
@@ -201,12 +203,17 @@ class TransportLayerParser:
         elif self.state == 2:  # WAIT_FOR_MESSAGE_COMPLETE
             if uc == ESCAPE_CHARACTER:
                 self.state = 3
-            elif self.rx_len < 4096:
+            elif self.rx_len < 2048 + 14:
                 self.msg.append(uc)
                 self.rx_len += 1
             else:
                 self.state = 0
+                self._reset()
         elif self.state == 3:  # WAIT_FOR_EOP
+            if self.rx_len >= 2048 + 14 and uc in (ESCAPED_ESCAPE, ESCAPED_XON, ESCAPED_XOFF):
+                self.state = 0
+                self._reset()
+                return out
             if uc == EOP_CHARACTER:
                 pkt = self._decode_packet(self.msg)
                 if pkt is not None:
@@ -230,7 +237,7 @@ class TransportLayerParser:
                 self.state = 2
             elif uc == SOP_CHARACTER:
                 self.state = 2
-                self.rx_len = 0
+                self._reset()
                 self.garbage_bytes += 1
             elif uc == ESCAPE_CHARACTER:
                 self.state = 1
@@ -250,6 +257,8 @@ class TransportLayerParser:
         seq_id = body[p]; p += 1
         payload_size = body[p]; p += 1
         flags = body[p]; p += 1
+        original_flags = flags
+        reliable_ack_seq = reliable_nack_seq = None
         reliable = False
         reliable_seq = None
         ack = False
@@ -270,9 +279,9 @@ class TransportLayerParser:
             elif bit == FLAG_RELIABLE_PACKET:
                 reliable = True; reliable_seq = detail
             elif bit == FLAG_RELIABLE_ACK:
-                pass
+                reliable_ack_seq = detail
             elif bit == FLAG_RELIABLE_NACK:
-                pass
+                reliable_nack_seq = detail
             elif bit == FLAG_MSG_LOST:
                 pass
             elif bit == FLAG_MSG_GARBAGE:
@@ -281,6 +290,7 @@ class TransportLayerParser:
                 payload_size |= detail << 8
             elif bit == FLAG_EXTENDED:
                 flags |= detail << 8
+                original_flags |= detail << 8
             elif bit == FLAG_INTERNAL_PACKET:
                 internal = True
             elif bit == FLAG_IGNORE_SEQID:
@@ -289,10 +299,14 @@ class TransportLayerParser:
                 flags |= bit
                 break
         payload = body[p:len(body) - 1]
+        if flags or len(payload) != payload_size or payload_size > 2048:
+            return None
         return {
             "seq_id": seq_id,
             "payload_size": payload_size,
-            "flags": flags,
+            "flags": original_flags,
+            "reliable_ack_seq": reliable_ack_seq,
+            "reliable_nack_seq": reliable_nack_seq,
             "payload": payload,
             "reliable": reliable,
             "reliable_seq": reliable_seq,
@@ -309,14 +323,24 @@ def parse_rpc_payload(payload: bytes):
     """
     out = []
     i = 0
-    n = len(payload)
-    while i < n:
-        rpc_id = payload[i]; i += 1
-        if rpc_id & 0x80:
-            rpc_id = (rpc_id & ~0x80) << 8 | payload[i]; i += 1
-        rpc_len = payload[i]; i += 1
-        if rpc_len & 0x80:
-            rpc_len = (rpc_len & ~0x80) << 8 | payload[i]; i += 1
-        data = payload[i:i + rpc_len]; i += rpc_len
-        out.append((rpc_id, bytes(data)))
+
+    def take_field():
+        nonlocal i
+        if i >= len(payload):
+            raise ValueError("truncated RPC field")
+        value = payload[i]
+        i += 1
+        if value & 0x80:
+            if i >= len(payload):
+                raise ValueError("truncated extended RPC field")
+            value = ((value & 0x7f) << 8) | payload[i]
+            i += 1
+        return value
+
+    while i < len(payload):
+        rpc_id, rpc_len = take_field(), take_field()
+        if rpc_len > len(payload) - i:
+            raise ValueError("truncated RPC payload")
+        out.append((rpc_id, bytes(payload[i:i + rpc_len])))
+        i += rpc_len
     return out

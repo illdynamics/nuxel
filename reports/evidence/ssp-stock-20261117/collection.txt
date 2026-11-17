@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/wicked/x/nuxel/NUXEL_SSP_RECOVERY_V2/ssp_image_collect.py", line 122, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/wicked/x/nuxel/NUXEL_SSP_RECOVERY_V2/ssp_image_collect.py", line 91, in main
+    result = collect(repo, out, reader, load_repo_elf(repo))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wicked/x/nuxel/NUXEL_SSP_RECOVERY_V2/ssp_stock_collect.py", line 155, in collect
+    raise RuntimeError(f"Unexpected DT_NEEDED name {name!r} in {rel}")
+RuntimeError: Unexpected DT_NEEDED name 'android.frameworks.schedulerservice@1.0.so' in vendor/lib64/sensors.sensorhub.so

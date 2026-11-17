@@ -1,0 +1,118 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+000000000003d1a8 <.text+0x251a8>:
+   3d1a8:	a9bb67fa 	stp	x26, x25, [sp, #-80]!
+   3d1ac:	a9015ff8 	stp	x24, x23, [sp, #16]
+   3d1b0:	a90257f6 	stp	x22, x21, [sp, #32]
+   3d1b4:	a9034ff4 	stp	x20, x19, [sp, #48]
+   3d1b8:	a9047bfd 	stp	x29, x30, [sp, #64]
+   3d1bc:	910103fd 	add	x29, sp, #0x40
+   3d1c0:	12003c28 	and	w8, w1, #0xffff
+   3d1c4:	aa0203f4 	mov	x20, x2
+   3d1c8:	7100ed1f 	cmp	w8, #0x3b
+   3d1cc:	aa0003f3 	mov	x19, x0
+   3d1d0:	54000360 	b.eq	3d23c <__libc_init@plt-0x7c14>  // b.none
+   3d1d4:	7100111f 	cmp	w8, #0x4
+   3d1d8:	54000a20 	b.eq	3d31c <__libc_init@plt-0x7b34>  // b.none
+   3d1dc:	71000d1f 	cmp	w8, #0x3
+   3d1e0:	54000b41 	b.ne	3d348 <__libc_init@plt-0x7b08>  // b.any
+   3d1e4:	f9400288 	ldr	x8, [x20]
+   3d1e8:	aa1403e0 	mov	x0, x20
+   3d1ec:	f9403508 	ldr	x8, [x8, #104]
+   3d1f0:	d63f0100 	blr	x8
+   3d1f4:	f9400288 	ldr	x8, [x20]
+   3d1f8:	2a0003f5 	mov	w21, w0
+   3d1fc:	aa1403e0 	mov	x0, x20
+   3d200:	f9403508 	ldr	x8, [x8, #104]
+   3d204:	d63f0100 	blr	x8
+   3d208:	f9400288 	ldr	x8, [x20]
+   3d20c:	2a0003f6 	mov	w22, w0
+   3d210:	aa1403e0 	mov	x0, x20
+   3d214:	f9403508 	ldr	x8, [x8, #104]
+   3d218:	d63f0100 	blr	x8
+   3d21c:	f8410e68 	ldr	x8, [x19, #16]!
+   3d220:	2a0003e3 	mov	w3, w0
+   3d224:	2a1503e1 	mov	w1, w21
+   3d228:	2a1603e2 	mov	w2, w22
+   3d22c:	f9400908 	ldr	x8, [x8, #16]
+   3d230:	aa1303e0 	mov	x0, x19
+   3d234:	d63f0100 	blr	x8
+   3d238:	14000042 	b	3d340 <__libc_init@plt-0x7b10>
+   3d23c:	f9400288 	ldr	x8, [x20]
+   3d240:	aa1403e0 	mov	x0, x20
+   3d244:	f9403508 	ldr	x8, [x8, #104]
+   3d248:	d63f0100 	blr	x8
+   3d24c:	f9400288 	ldr	x8, [x20]
+   3d250:	2a0003f5 	mov	w21, w0
+   3d254:	aa1403e0 	mov	x0, x20
+   3d258:	f9403508 	ldr	x8, [x8, #104]
+   3d25c:	d63f0100 	blr	x8
+   3d260:	f9400288 	ldr	x8, [x20]
+   3d264:	2a0003f6 	mov	w22, w0
+   3d268:	aa1403e0 	mov	x0, x20
+   3d26c:	f9403508 	ldr	x8, [x8, #104]
+   3d270:	d63f0100 	blr	x8
+   3d274:	f9400288 	ldr	x8, [x20]
+   3d278:	2a0003f7 	mov	w23, w0
+   3d27c:	aa1403e0 	mov	x0, x20
+   3d280:	f9403508 	ldr	x8, [x8, #104]
+   3d284:	d63f0100 	blr	x8
+   3d288:	f9400288 	ldr	x8, [x20]
+   3d28c:	2a0003f8 	mov	w24, w0
+   3d290:	aa1403e0 	mov	x0, x20
+   3d294:	f9402508 	ldr	x8, [x8, #72]
+   3d298:	d63f0100 	blr	x8
+   3d29c:	f9400288 	ldr	x8, [x20]
+   3d2a0:	12001c01 	and	w1, w0, #0xff
+   3d2a4:	aa1403e0 	mov	x0, x20
+   3d2a8:	f9403d08 	ldr	x8, [x8, #120]
+   3d2ac:	d63f0100 	blr	x8
+   3d2b0:	f9400288 	ldr	x8, [x20]
+   3d2b4:	aa0003f9 	mov	x25, x0
+   3d2b8:	aa1403e0 	mov	x0, x20
+   3d2bc:	f9403508 	ldr	x8, [x8, #104]
+   3d2c0:	d63f0100 	blr	x8
+   3d2c4:	f9400288 	ldr	x8, [x20]
+   3d2c8:	2a0003fa 	mov	w26, w0
+   3d2cc:	aa1403e0 	mov	x0, x20
+   3d2d0:	f9402508 	ldr	x8, [x8, #72]
+   3d2d4:	d63f0100 	blr	x8
+   3d2d8:	f9400288 	ldr	x8, [x20]
+   3d2dc:	12001c01 	and	w1, w0, #0xff
+   3d2e0:	aa1403e0 	mov	x0, x20
+   3d2e4:	f9403d08 	ldr	x8, [x8, #120]
+   3d2e8:	d63f0100 	blr	x8
+   3d2ec:	f8410e68 	ldr	x8, [x19, #16]!
+   3d2f0:	aa0003e7 	mov	x7, x0
+   3d2f4:	2a1503e1 	mov	w1, w21
+   3d2f8:	2a1603e2 	mov	w2, w22
+   3d2fc:	f9400d08 	ldr	x8, [x8, #24]
+   3d300:	aa1303e0 	mov	x0, x19
+   3d304:	2a1703e3 	mov	w3, w23
+   3d308:	2a1803e4 	mov	w4, w24
+   3d30c:	aa1903e5 	mov	x5, x25
+   3d310:	2a1a03e6 	mov	w6, w26
+   3d314:	d63f0100 	blr	x8
+   3d318:	1400000a 	b	3d340 <__libc_init@plt-0x7b10>
+   3d31c:	f9400288 	ldr	x8, [x20]
+   3d320:	aa1403e0 	mov	x0, x20
+   3d324:	f9403508 	ldr	x8, [x8, #104]
+   3d328:	d63f0100 	blr	x8
+   3d32c:	f8410e68 	ldr	x8, [x19, #16]!
+   3d330:	2a0003e1 	mov	w1, w0
+   3d334:	f9401108 	ldr	x8, [x8, #32]
+   3d338:	aa1303e0 	mov	x0, x19
+   3d33c:	d63f0100 	blr	x8
+   3d340:	320003e0 	orr	w0, wzr, #0x1
+   3d344:	14000002 	b	3d34c <__libc_init@plt-0x7b04>
+   3d348:	2a1f03e0 	mov	w0, wzr
+   3d34c:	a9447bfd 	ldp	x29, x30, [sp, #64]
+   3d350:	a9434ff4 	ldp	x20, x19, [sp, #48]
+   3d354:	a94257f6 	ldp	x22, x21, [sp, #32]
+   3d358:	a9415ff8 	ldp	x24, x23, [sp, #16]
+   3d35c:	a8c567fa 	ldp	x26, x25, [sp], #80
+   3d360:	d65f03c0 	ret

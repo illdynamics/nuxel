@@ -34,7 +34,7 @@
     presets: ['none', 'right_camera', 'center_camera', 'left_camera', 'custom'],
     preset_alias: { center_camera: 'pixel_center', pixel_center: 'pixel_center', s10plus: 's10plus' },
     padding_dp: 6,
-    profile: 'none',
+    profile: 'auto',
     orientation: 'portrait',
     custom: { portrait: [], landscape_left: [], landscape_right: [] }
   };
@@ -55,9 +55,8 @@
 
   function zonesFor(profile, orientation) {
     var alias = state.preset_alias[profile] || profile;
-    var p = state.profiles[alias] || state.profiles[profile];
+    var p = profile === 'custom' ? state.custom : (state.profiles[alias] || state.profiles[profile]);
     if (!p) return [];
-    if (profile === 'custom') p = state.custom;
     var list = p[orientation] || p.portrait || [];
     return list.slice().sort(function (a, b) { return a - b; });
   }
@@ -151,8 +150,12 @@
       return { hit: true, shift: 0, zone: hit.zone, target: null, narrow: false,
                reason: 'no_free_interval' };
     }
-    var left = targetLeft(align, natural, target, width);
-    var shift = Math.round(left - natural.left);
+    // Keep both edges inside the free interval at fractional viewport widths.
+    // Rounding the translation itself can put the right edge back into a
+    // blocked zone (e.g. 273 instead of the permitted 272.8 CSS pixels).
+    var pixelTarget = { start: Math.ceil(target.start), end: Math.floor(target.end) };
+    var left = targetLeft(align, natural, pixelTarget, width);
+    var shift = left - natural.left;
     var w = natural.right - natural.left;
     return {
       hit: true, shift: shift, zone: hit.zone, target: target,
@@ -272,14 +275,18 @@
       }
       if (!state.profile || state.profile === 'auto') state.profile = deviceProfile();
       if (cb) cb(state, how);
+      global.dispatchEvent(new CustomEvent('nuxel:safezones-changed', { detail: clone(state) }));
+    }
+    function fallback() {
+      merge((function () { try { return localStorage.getItem('nuxel.safezones'); } catch (e) { return null; } })(), 'localStorage');
     }
     if (global.NuxelHost && global.NuxelHost.available) {
       global.NuxelHost.configGet(CFG_NAME).then(function (res) {
         if (res && res.ok && res.text) merge(res.text, 'host');
-        else merge((function () { try { return localStorage.getItem('nuxel.safezones'); } catch (e) { return null; } })(), 'localStorage');
-      });
+        else fallback();
+      }, fallback);
     } else {
-      merge((function () { try { return localStorage.getItem('nuxel.safezones'); } catch (e) { return null; } })(), 'localStorage');
+      fallback();
     }
   }
 

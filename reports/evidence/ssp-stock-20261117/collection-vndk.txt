@@ -1,0 +1,26 @@
+{
+  "status": "STATIC_COLLECTION_ONLY",
+  "missing": [],
+  "properties": {
+    "vendor/build.prop": {
+      "ro.vendor.build.fingerprint": "samsung/beyond2ltexx/beyond2:10/QP1A.190711.020/G975FXXS9DTK9:user/release-keys",
+      "ro.vendor.build.version.sdk": "29",
+      "ro.product.vendor.device": "beyond2"
+    },
+    "system/build.prop": {
+      "ro.build.version.sdk": "29",
+      "ro.build.version.release": "10"
+    },
+    "system/etc/prop.default": {}
+  },
+  "images": {
+    "system": {
+      "sha256": "419d14cddd1f2847e7fc20d4d7ab41eec89b441a84297e616c99377fcf34b462",
+      "bytes": 5976883200
+    },
+    "vendor": {
+      "sha256": "2b4fd8e717fb5b283ec757a36bbea8a7893fab9ee26fb3ddf3cd31b924b6be45",
+      "bytes": 1153433600
+    }
+  }
+}

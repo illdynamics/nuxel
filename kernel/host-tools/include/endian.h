@@ -23,12 +23,24 @@
 /* Prefer the compact glibc/musl-compatible names used by the kernel scripts. */
 #if defined(__APPLE__)
 #  include <libkern/OSByteOrder.h>
-#  define __BYTE_ORDER    __DARWIN_BYTE_ORDER
-#  define __LITTLE_ENDIAN __DARWIN_LITTLE_ENDIAN
-#  define __BIG_ENDIAN    __DARWIN_BIG_ENDIAN
-#  define BYTE_ORDER      __BYTE_ORDER
-#  define LITTLE_ENDIAN   __LITTLE_ENDIAN
-#  define BIG_ENDIAN      __BIG_ENDIAN
+#  ifndef __BYTE_ORDER
+#    define __BYTE_ORDER    __DARWIN_BYTE_ORDER
+#  endif
+#  ifndef __LITTLE_ENDIAN
+#    define __LITTLE_ENDIAN __DARWIN_LITTLE_ENDIAN
+#  endif
+#  ifndef __BIG_ENDIAN
+#    define __BIG_ENDIAN    __DARWIN_BIG_ENDIAN
+#  endif
+#  ifndef BYTE_ORDER
+#    define BYTE_ORDER      __BYTE_ORDER
+#  endif
+#  ifndef LITTLE_ENDIAN
+#    define LITTLE_ENDIAN   __LITTLE_ENDIAN
+#  endif
+#  ifndef BIG_ENDIAN
+#    define BIG_ENDIAN      __BIG_ENDIAN
+#  endif
 
 #  define htobe16(x) OSSwapHostToBigInt16(x)
 #  define htole16(x) OSSwapHostToLittleInt16(x)
@@ -47,6 +59,29 @@
 #else
 /* Robust fallback (non-Apple): pure-C swap based on __BYTE_ORDER__. */
 #  include <stdint.h>
+/*
+ * GCC/Clang expose the portable double-underscore spellings.  glibc normally
+ * maps those to the historical single-underscore names from <endian.h>, but
+ * this file deliberately shadows that header for the kernel host tools.  On
+ * Linux CI that meant the compatibility shim saw neither mapping and stopped
+ * before fixdep could build.  Define the legacy aliases from compiler builtins
+ * when libc has not already supplied them.
+ */
+#  ifndef __BYTE_ORDER
+#    ifdef __BYTE_ORDER__
+#      define __BYTE_ORDER __BYTE_ORDER__
+#    endif
+#  endif
+#  ifndef __LITTLE_ENDIAN
+#    ifdef __ORDER_LITTLE_ENDIAN__
+#      define __LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
+#    endif
+#  endif
+#  ifndef __BIG_ENDIAN
+#    ifdef __ORDER_BIG_ENDIAN__
+#      define __BIG_ENDIAN __ORDER_BIG_ENDIAN__
+#    endif
+#  endif
 #  ifndef __BYTE_ORDER
 #    error "endian.h shim: host __BYTE_ORDER__/endianness must be defined"
 #  endif
@@ -94,9 +129,8 @@
 #    define be64toh(x) ((uint64_t)(x))
 #    define le64toh(x) _nuxel_swap64(x)
 #  endif
-#  undef _nuxel_swap16
-#  undef _nuxel_swap32
-#  undef _nuxel_swap64
+/* Keep the private swap helpers defined: the public conversion macros expand
+ * them at their caller, so undefining them here leaves invalid C tokens. */
 #endif
 
 #endif /* _NUXEL_HOST_ENDIAN_H_ */

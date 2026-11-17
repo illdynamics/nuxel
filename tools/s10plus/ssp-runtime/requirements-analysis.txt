@@ -1,0 +1,2 @@
+# Offline machine-code replay only; no Android runtime required.
+unicorn==2.1.4

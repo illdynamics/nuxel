@@ -183,3 +183,5 @@ spoof/spoof.tar.gz
 # Ad-hoc sound-library extracts used while auditioning boot cues.
 assets/nuxel-sounds/full_*.mp3
 assets/nuxel-sounds/tight_*.mp3
+./SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/
+SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/**

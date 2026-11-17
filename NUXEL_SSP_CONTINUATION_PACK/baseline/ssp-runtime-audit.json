@@ -1,0 +1,218 @@
+{
+  "device_writes": 0,
+  "files": {
+    "vendor/bin/hw/lhd": {
+      "bytes": 318024,
+      "elf": {
+        "class": 64,
+        "interpreter": "/system/bin/linker64",
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "liblog.so",
+          "libutils.so",
+          "libz.so",
+          "libhardware_legacy.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": null
+      },
+      "origin": "uploaded-repo",
+      "sha256": "6362e80d1f2ae37c76dd5f468bf08abacb89e1c2d2b80976d5b1c3abbf761dfe"
+    },
+    "vendor/etc/sensor/lhd.conf": {
+      "bytes": 1264,
+      "elf": null,
+      "origin": "uploaded-repo",
+      "sha256": "1660da1b4f024e4ed6fd4b99e62145747d6eb27a7fe84ad58af240b7edd46bc4"
+    },
+    "vendor/lib64/hw/sensors.exynos9820.so": {
+      "bytes": 15336,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "liblog.so",
+          "libcutils.so",
+          "libhardware.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "sensors.exynos9820.so"
+      },
+      "origin": "uploaded-repo",
+      "sha256": "44b26ae85510b2c4147d0ff8a518211e8a475fd29c002922f53b5a726e4d2ef0"
+    },
+    "vendor/lib64/sensors.sensorhub.so": {
+      "bytes": 212192,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "android.frameworks.schedulerservice@1.0.so",
+          "libcutils.so",
+          "liblog.so",
+          "libbase.so",
+          "libhidlbase.so",
+          "libhidltransport.so",
+          "libutils.so",
+          "libhardware.so",
+          "libhardware_legacy.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "sensors.sensorhub.so"
+      },
+      "origin": "uploaded-repo",
+      "sha256": "de0110a7065f39723fc7436f4d5451d92572d87fe9a3ae8550cc4e88f3cd5718"
+    }
+  },
+  "invalid_or_wrong_arch": [],
+  "lhd_config_endpoint_markers": {
+    "GpioNPowerPath": true,
+    "GpioNStdbyPath": true,
+    "LheBbdControl": true,
+    "LheBbdPacket": true,
+    "LheBbdSensor": true,
+    "LhePatch": true
+  },
+  "missing_linker64": true,
+  "missing_seeds": [],
+  "repo_archive_supplied": true,
+  "repo_directory_supplied": false,
+  "staged_on_host": false,
+  "status": "INCOMPLETE",
+  "stock_android_root_supplied": false,
+  "unresolved": [
+    {
+      "library": "liblog.so",
+      "required_by": "vendor/bin/hw/lhd"
+    },
+    {
+      "library": "libutils.so",
+      "required_by": "vendor/bin/hw/lhd"
+    },
+    {
+      "library": "libz.so",
+      "required_by": "vendor/bin/hw/lhd"
+    },
+    {
+      "library": "libhardware_legacy.so",
+      "required_by": "vendor/bin/hw/lhd"
+    },
+    {
+      "library": "libc++.so",
+      "required_by": "vendor/bin/hw/lhd"
+    },
+    {
+      "library": "libc.so",
+      "required_by": "vendor/bin/hw/lhd"
+    },
+    {
+      "library": "libm.so",
+      "required_by": "vendor/bin/hw/lhd"
+    },
+    {
+      "library": "libdl.so",
+      "required_by": "vendor/bin/hw/lhd"
+    },
+    {
+      "library": "android.frameworks.schedulerservice@1.0.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libcutils.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "liblog.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libbase.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libhidlbase.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libhidltransport.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libutils.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libhardware.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libhardware_legacy.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libc++.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libc.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libm.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "libdl.so",
+      "required_by": "vendor/lib64/sensors.sensorhub.so"
+    },
+    {
+      "library": "liblog.so",
+      "required_by": "vendor/lib64/hw/sensors.exynos9820.so"
+    },
+    {
+      "library": "libcutils.so",
+      "required_by": "vendor/lib64/hw/sensors.exynos9820.so"
+    },
+    {
+      "library": "libhardware.so",
+      "required_by": "vendor/lib64/hw/sensors.exynos9820.so"
+    },
+    {
+      "library": "libc++.so",
+      "required_by": "vendor/lib64/hw/sensors.exynos9820.so"
+    },
+    {
+      "library": "libc.so",
+      "required_by": "vendor/lib64/hw/sensors.exynos9820.so"
+    },
+    {
+      "library": "libm.so",
+      "required_by": "vendor/lib64/hw/sensors.exynos9820.so"
+    },
+    {
+      "library": "libdl.so",
+      "required_by": "vendor/lib64/hw/sensors.exynos9820.so"
+    }
+  ],
+  "warning": "Static dependencies and hashes do NOT prove successful Android execution or sensor streaming."
+}

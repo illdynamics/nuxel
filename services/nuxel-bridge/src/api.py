@@ -257,7 +257,7 @@ DEV_LOOPBACK_BYPASS = (
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.7-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.8.8-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -5834,6 +5834,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         namespace = body.get('namespace', '')
         verb = body.get('verb', '')
         params = body.get('params', {}) or {}
+        if namespace == 'penguru':
+            import penguru_api
+            return penguru_api.handle(app_id, self._session_token(), verb, params)
         if namespace == 'permissions':
             return self._permissions_rpc(app_id, verb, params)
         # USB networking + tethering: owner-facing surface only, backed by the

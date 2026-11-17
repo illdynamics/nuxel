@@ -167,6 +167,7 @@ class Scheduler:
             m = res["manifest"]
             if (self.loaded_model == model_id and self.loaded_variant == m["variant_id"]
                     and self._runtime is not None):
+                self.lifecycle.set("ACTIVE")
                 return {"ok": True, "manifest": m, "engine": res["engine"],
                         "warm": True, "provider": self.loaded_provider}
             if self.loaded_model and self.loaded_model != model_id:

@@ -1,0 +1,11 @@
+Tue Nov 17 09:14:38 UTC 2026
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux
+ 10:14:38 up 10:57,  0 user,  load average: 12.21, 12.40, 12.72
+inactive
+active
+inactive
+mcu_probe=1 shutdown=1 resetting=0 sensor_state=0x3feff enable=0x0 shub_irq=443
+crw-------. 1 root root  236,  2 Jan  1  1970 /dev/bbd_control
+crw-------. 1 root root  236,  3 Jan  1  1970 /dev/bbd_patch
+crw-------. 1 root root  236,  1 Jan  1  1970 /dev/bbd_sensor
+crw-rw----. 1 root audio  10, 91 Jan  1  1970 /dev/ttyBCM

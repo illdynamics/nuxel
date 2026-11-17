@@ -1,0 +1,15 @@
+{
+  "hardware_actions": [],
+  "daemon_rerun": false,
+  "runtime_reextracted": false,
+  "target_native_test_command": "/opt/nuxel-bwrap011/bwrap --unshare-all --die-with-parent --new-session --uid 65534 --gid 65534 --cap-drop ALL --ro-bind /run/nuxel-ssp-protocol-review-test /test --dev /dev --tmpfs /tmp --clearenv -- /test",
+  "socket_test_command_template": "/opt/nuxel-bwrap011/bwrap --unshare-net --unshare-pid --unshare-ipc --unshare-uts --die-with-parent --new-session --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --ro-bind /run/nuxel-ssp-network-review-v2 /test --dev /dev --clearenv -- /test GID",
+  "socket_gid_trials": [
+    65534,
+    3003
+  ],
+  "socket_probe_privilege_drop": "setgroups(0,NULL), setgid(GID), setuid(65534) before socket; no bind/connect",
+  "disassembly_command": "aarch64-linux-gnu-objdump -d --start-address=0x389fc --stop-address=0x39e70 packs/sensors/acquired/vendor-bin-hw-lhd",
+  "target_source": "tools/s10plus/ssp-native/tests/test_nuxel_bbd_download.c",
+  "socket_source": "tools/s10plus/ssp-runtime/network_probe.c"
+}

@@ -29,7 +29,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'v0.8.7-beta';
+  const VERSION = 'v0.8.8-beta';
   const WALLPAPER = { w: 768, h: 1376 };
   /* The illustrated penguin's approximate opaque bounds in wallpaper pixels,
      measured from the shipped asset.  Only the vertical extent matters here:

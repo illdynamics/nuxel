@@ -1,0 +1,10 @@
+# Nuxel SSP Android runtime: OFFLINE audit
+
+**Status:** `INCOMPLETE`
+
+- Available source files: **4**
+- Missing root executables/HALs: **0**
+- Direct/recursive unresolved DT_NEEDED entries: **28**
+- Interpreter `/system/bin/linker64` missing: **True**
+- Invalid/wrong architecture: **0**
+Wrote /Users/wicked/x/nuxel/build/ssp-recovery-v2-20261117/audit/ssp-runtime-audit.json and /Users/wicked/x/nuxel/build/ssp-recovery-v2-20261117/audit/ssp-runtime-audit.md

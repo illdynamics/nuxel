@@ -1,0 +1,27 @@
+[Unit]
+Description=PenGuru local AI control plane
+After=nuxel-http-bridge.service
+
+[Service]
+Type=simple
+User=nuxel-penguru
+Group=nuxel-penguru
+ExecStart=/usr/bin/python3 /opt/nuxel-penguru/service.py
+Environment=NUXEL_PENGURU_NO_SYSTEMD_RUN=1
+RuntimeDirectory=nuxel-penguru
+RuntimeDirectoryMode=0700
+StateDirectory=nuxel-penguru
+StateDirectoryMode=0700
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_UNIX
+ReadWritePaths=/var/lib/nuxel-penguru
+KillMode=control-group
+TimeoutStopSec=8
+Nice=10
+TasksMax=64
+MemoryMax=5G
+Restart=no

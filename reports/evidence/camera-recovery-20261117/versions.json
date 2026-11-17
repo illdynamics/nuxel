@@ -1,0 +1,88 @@
+{
+  "fresh-ap": {
+    "setfile_3m3.bin": {
+      "size": 2858784,
+      "sha256": "a696783eec88515b2e14e21c1288baeb61e402ec245a9b2a7e88084139cd0abf",
+      "setfile_version": "200410_3M3 2020/04/10/21:30 E9820"
+    },
+    "fimc_is_lib.bin": {
+      "size": 4432944,
+      "sha256": "e0bb2c36bf43e9a864037552640be4b7b57e5944a0c86f8485900152bd5fbbcd",
+      "library_version": "5E9820 10268-2020/08/31 15:34:09]L12XLNH01GM",
+      "phone_version": "L12XLNH01GM"
+    },
+    "setfile_3j1.bin": {
+      "size": 3944440,
+      "sha256": "dc352608088d409dfc9faf3c5475d045220f5316f49cee4d6619dd98ce076876",
+      "setfile_version": "200410_3J1 2020/04/10/21:30 E9820"
+    },
+    "setfile_2l4.bin": {
+      "size": 4080120,
+      "sha256": "bd32765a5afea316e6e4a5dc466ee07e7f4767d90c4a07ea9823fd85d7e86863",
+      "setfile_version": "200701_2L4 2020/07/01/14:46 E9820"
+    },
+    "setfile_3p9.bin": {
+      "size": 3265896,
+      "sha256": "226987e49b416ad6a5548069a6abe370ddd8b1ab49bf5005731950fca450100f",
+      "setfile_version": "200410_3P9 2020/04/10/21:30 E9820"
+    },
+    "fimc_is_rta.bin": {
+      "size": 3986208,
+      "sha256": "9ca4668a2be85edd8c14b5243db235fd145db526915216dab17fae2c8e3ffc30",
+      "library_version": "S5E9820 ddab56368-11/13 12:18:00]L12XLNH01GM",
+      "phone_version": "L12XLNH01GM"
+    },
+    "setfile_4ha.bin": {
+      "size": 3944440,
+      "sha256": "dc352608088d409dfc9faf3c5475d045220f5316f49cee4d6619dd98ce076876",
+      "setfile_version": "200410_3J1 2020/04/10/21:30 E9820"
+    },
+    "fimc_is_fw_mcu.bin": {
+      "size": 34348,
+      "sha256": "0887a6c5f2ad8b4d261473889b3b4c5e44497df4b487775e86ae9cf9e535acdf"
+    }
+  },
+  "pinned-reference": {
+    "setfile_3m3.bin": {
+      "size": 2858784,
+      "sha256": "92c4bf1c197215d9a870e27051c04ff677c58dafc530355ecff69b85fddac1cd",
+      "setfile_version": "210402_3M3 2021/04/02/16:23 E9820"
+    },
+    "fimc_is_lib.bin": {
+      "size": 4432944,
+      "sha256": "08e54ac3817b4c9d4851a90a7b3ac3e5b30ba98378c217ce8ea51db0ff98f1db",
+      "library_version": "5E9820 10705-2021/04/05 16:59:12]L12XLOD01GM",
+      "phone_version": "L12XLOD01GM"
+    },
+    "setfile_3j1.bin": {
+      "size": 3944440,
+      "sha256": "4e68f97def312d9b4827d9eab3c3a10f2d476ed4aa76a9c42d4b7b84ef571bb9",
+      "setfile_version": "210402_3J1 2021/04/02/16:23 E9820"
+    },
+    "setfile_2l4.bin": {
+      "size": 4080120,
+      "sha256": "876638f09d7ec4ad4ca695d7219267f236c9ea832252fd93296724c176a6b0f3",
+      "setfile_version": "210402_2L4 2021/04/02/16:23 E9820"
+    },
+    "setfile_3p9.bin": {
+      "size": 3265896,
+      "sha256": "6e774bc773833d49046d3d3cb750181a990fb10ea76654d8b87501b23e1883fd",
+      "setfile_version": "210402_3P9 2021/04/02/16:23 E9820"
+    },
+    "fimc_is_rta.bin": {
+      "size": 3986400,
+      "sha256": "12809be7b38919b7f98ad14c85d55d3b6d2b029304e7baef1141aca7dd94b1e9",
+      "library_version": "S5E9820 3e760f650-09/30 18:15:59]L12XLOD01GM",
+      "phone_version": "L12XLOD01GM"
+    },
+    "setfile_4ha.bin": {
+      "size": 3944440,
+      "sha256": "4e68f97def312d9b4827d9eab3c3a10f2d476ed4aa76a9c42d4b7b84ef571bb9",
+      "setfile_version": "210402_3J1 2021/04/02/16:23 E9820"
+    },
+    "fimc_is_fw_mcu.bin": {
+      "size": 34348,
+      "sha256": "0887a6c5f2ad8b4d261473889b3b4c5e44497df4b487775e86ae9cf9e535acdf"
+    }
+  }
+}

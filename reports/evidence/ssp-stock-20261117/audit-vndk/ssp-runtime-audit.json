@@ -1,0 +1,623 @@
+{
+  "device_writes": 0,
+  "files": {
+    "system/bin/linker64": {
+      "bytes": 1608256,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [],
+        "rpath": null,
+        "runpath": null,
+        "soname": "ld-android.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "20a066d043128ff56bc115c172cccb5d7db65f5c1416a8248a069ba6a57069be"
+    },
+    "system/lib64/android.frameworks.schedulerservice@1.0.so": {
+      "bytes": 83688,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libhidlbase.so",
+          "libhidltransport.so",
+          "libhwbinder.so",
+          "liblog.so",
+          "libutils.so",
+          "libcutils.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "android.frameworks.schedulerservice@1.0.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "c98eeafdb73e1eb4bec0c66e09161049cadf6a59e466ae57c7ffe883f61d7354"
+    },
+    "system/lib64/android.system.suspend@1.0.so": {
+      "bytes": 117104,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libhidlbase.so",
+          "libhidltransport.so",
+          "libhwbinder.so",
+          "liblog.so",
+          "libutils.so",
+          "libcutils.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "android.system.suspend@1.0.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "22843cc7b4c38ca12abd88c9a30d6f5489a96b6f0ec45dfbc8052eb07742ecb8"
+    },
+    "system/lib64/ld-android.so": {
+      "bytes": 9616,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [],
+        "rpath": null,
+        "runpath": null,
+        "soname": "ld-android.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "9b59b36f6de1f8976b1ac7e8043b87a41e4b0002795ebd51bbdfea59b2428ae9"
+    },
+    "system/lib64/libbase.so": {
+      "bytes": 83552,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "liblog.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libbase.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "cfd3b9dbc37bbf3dd21b30f0940c3e6fcfbae6b4d45a180efef91967cede39ef"
+    },
+    "system/lib64/libbinder.so": {
+      "bytes": 643056,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libbase.so",
+          "liblog.so",
+          "libcutils.so",
+          "libutils.so",
+          "libbinderthreadstate.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libbinder.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "46d749c614e676f8d507aae27518d13ec80c6deea43214eed240aaf849966437"
+    },
+    "system/lib64/libbinderthreadstate.so": {
+      "bytes": 23896,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "liblog.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libbinderthreadstate.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "a00b8b659ffbd8b85ddaa7a27e875c366026ccc2fe50907f82f6db8f6196d420"
+    },
+    "system/lib64/libc++.so": {
+      "bytes": 845928,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libc++.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "e3cdb7e15bb2b172d3dfada9ce5d171718ebe2ae10253cba5ac4d4ac71a21860"
+    },
+    "system/lib64/libc.so": {
+      "bytes": 1245176,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "ld-android.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libc.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "2308e1676ab55cebd2c1207c1149038929132b6da8533e590fce943fe34fd506"
+    },
+    "system/lib64/libcgrouprc.so": {
+      "bytes": 20056,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libbase.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libcgrouprc.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "bd6f40ae9d6db7ad175181907764801852751142edd1b095d2d8acfe5fcc6862"
+    },
+    "system/lib64/libcutils.so": {
+      "bytes": 82552,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "liblog.so",
+          "libbase.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libcutils.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "da87e53bb18cb70d8804d489f424d92465177f2e0eca765353cdbe1e33cd560e"
+    },
+    "system/lib64/libdl.so": {
+      "bytes": 14016,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "ld-android.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libdl.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "d49dba9e449f25ebfed4edfa2af6b811ba36bd1fe6683475cd8e5821fefe5acd"
+    },
+    "system/lib64/libdl_android.so": {
+      "bytes": 10192,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "ld-android.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libdl_android.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "3deec16a88d1df86c476e541799f32c98e3f20f48c7c24e63f829413803d4d95"
+    },
+    "system/lib64/libhardware.so": {
+      "bytes": 15280,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libcutils.so",
+          "liblog.so",
+          "libvndksupport.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libhardware.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "655b29af09b86f40ddc70637cad5e97be025ba102908c50f001790b713371b6a"
+    },
+    "system/lib64/libhardware_legacy.so": {
+      "bytes": 24256,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libbase.so",
+          "libbinder.so",
+          "libcutils.so",
+          "libhidlbase.so",
+          "libhidltransport.so",
+          "libhwbinder.so",
+          "liblog.so",
+          "libutils.so",
+          "android.system.suspend@1.0.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libhardware_legacy.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "857c3307e6d939f15b3424286ab3afb0205581964e89d70e18d061400048ced3"
+    },
+    "system/lib64/libhidlbase.so": {
+      "bytes": 692168,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libhwbinder.so",
+          "libvndksupport.so",
+          "libbase.so",
+          "liblog.so",
+          "libcutils.so",
+          "libutils.so",
+          "libbinderthreadstate.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libhidlbase.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "0082393cd3a34c524353e6c820dadb4eea018f11f3311ed9b339cb823a6ecc17"
+    },
+    "system/lib64/libhidltransport.so": {
+      "bytes": 14896,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libhidltransport.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "56ad32b30e6fbf6eef34d7ad1d8dd63f8538ffef3e84af49db834643afae6014"
+    },
+    "system/lib64/libhwbinder.so": {
+      "bytes": 14896,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libhwbinder.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "0dd38ca10f7d0a00c1ebdf2148f12c1895e58651c6f5206b4a39f6df04cb50fb"
+    },
+    "system/lib64/liblog.so": {
+      "bytes": 92240,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "liblog.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "ab35b183162157a23b2a00697cf5c0965b7b10b1bbbe0d9b978e62d15b10fabe"
+    },
+    "system/lib64/libm.so": {
+      "bytes": 229352,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libc.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libm.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "78aa48ca8b154f4f43047a687c1259e4ed7e5f6e2bb686beff60c6978c428a88"
+    },
+    "system/lib64/libprocessgroup.so": {
+      "bytes": 255320,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libbase.so",
+          "libcgrouprc.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libprocessgroup.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "f8c8e6a674e61d9b3cd69250bd1595aa5fa3ef017ddbf2f0d95996ab5ad3b6d4"
+    },
+    "system/lib64/libutils.so": {
+      "bytes": 117416,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libcutils.so",
+          "liblog.so",
+          "libprocessgroup.so",
+          "libvndksupport.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libutils.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "57155fceabd7820bf7ce2a9f2c34e4fbd2db3e4b86ac6b632cb118ca78b8efe0"
+    },
+    "system/lib64/libvndksupport.so": {
+      "bytes": 15648,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libdl_android.so",
+          "liblog.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libvndksupport.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "fc996233316f315019ea3c9e223154abc44f2cbabbe515135517afd9f3d2e7be"
+    },
+    "system/lib64/libz.so": {
+      "bytes": 106472,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "libz.so"
+      },
+      "origin": "owner-stock",
+      "sha256": "743d282253b549b11d8259a51e6a963c8ec7c55bf85f5e62c8f33f9922129f46"
+    },
+    "vendor/bin/hw/lhd": {
+      "bytes": 318024,
+      "elf": {
+        "class": 64,
+        "interpreter": "/system/bin/linker64",
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "liblog.so",
+          "libutils.so",
+          "libz.so",
+          "libhardware_legacy.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": null
+      },
+      "origin": "uploaded-repo",
+      "sha256": "6362e80d1f2ae37c76dd5f468bf08abacb89e1c2d2b80976d5b1c3abbf761dfe"
+    },
+    "vendor/etc/sensor/lhd.conf": {
+      "bytes": 1264,
+      "elf": null,
+      "origin": "uploaded-repo",
+      "sha256": "1660da1b4f024e4ed6fd4b99e62145747d6eb27a7fe84ad58af240b7edd46bc4"
+    },
+    "vendor/lib64/hw/sensors.exynos9820.so": {
+      "bytes": 15336,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "liblog.so",
+          "libcutils.so",
+          "libhardware.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "sensors.exynos9820.so"
+      },
+      "origin": "uploaded-repo",
+      "sha256": "44b26ae85510b2c4147d0ff8a518211e8a475fd29c002922f53b5a726e4d2ef0"
+    },
+    "vendor/lib64/sensors.sensorhub.so": {
+      "bytes": 212192,
+      "elf": {
+        "class": 64,
+        "interpreter": null,
+        "machine": 183,
+        "machine_name": "AArch64",
+        "needed": [
+          "android.frameworks.schedulerservice@1.0.so",
+          "libcutils.so",
+          "liblog.so",
+          "libbase.so",
+          "libhidlbase.so",
+          "libhidltransport.so",
+          "libutils.so",
+          "libhardware.so",
+          "libhardware_legacy.so",
+          "libc++.so",
+          "libc.so",
+          "libm.so",
+          "libdl.so"
+        ],
+        "rpath": null,
+        "runpath": null,
+        "soname": "sensors.sensorhub.so"
+      },
+      "origin": "uploaded-repo",
+      "sha256": "de0110a7065f39723fc7436f4d5451d92572d87fe9a3ae8550cc4e88f3cd5718"
+    }
+  },
+  "invalid_or_wrong_arch": [],
+  "lhd_config_endpoint_markers": {
+    "GpioNPowerPath": true,
+    "GpioNStdbyPath": true,
+    "LheBbdControl": true,
+    "LheBbdPacket": true,
+    "LheBbdSensor": true,
+    "LhePatch": true
+  },
+  "missing_linker64": false,
+  "missing_seeds": [],
+  "repo_archive_supplied": false,
+  "repo_directory_supplied": true,
+  "staged_on_host": false,
+  "status": "STATIC_ELF_DEPENDENCIES_FOUND_NOT_RUNTIME_VERIFIED",
+  "stock_android_root_supplied": true,
+  "stock_build_identity_unverified": true,
+  "stock_build_properties": {
+    "system/build.prop": {
+      "ro.build.version.sdk": "29"
+    },
+    "system/etc/prop.default": {},
+    "vendor/build.prop": {
+      "ro.product.vendor.device": "beyond2",
+      "ro.vendor.build.fingerprint": "samsung/beyond2ltexx/beyond2:10/QP1A.190711.020/G975FXXS9DTK9:user/release-keys",
+      "ro.vendor.build.version.sdk": "29"
+    }
+  },
+  "unresolved": [],
+  "warning": "Static dependencies and hashes do NOT prove successful Android execution or sensor streaming."
+}

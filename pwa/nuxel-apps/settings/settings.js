@@ -145,7 +145,7 @@
       left_camera: { portrait: [1, 2], landscape_left: [1, 2], landscape_right: [9, 10] },
       right_camera: { portrait: [9, 10], landscape_left: [9, 10], landscape_right: [1, 2] }
     },
-    padding_dp: 6, profile: 'none', orientation: 'portrait',
+    padding_dp: 6, profile: 'auto', orientation: 'portrait',
     custom: { portrait: [], landscape_left: [], landscape_right: [] }
   };
   var DEFAULT_BUTTONS = {
@@ -257,7 +257,7 @@
     return cfgGet('statusbar-safezones').then(function (res) {
       zonesDoc = (res && res.ok && res.text) ? parse(res.text, DEFAULT_ZONES) : parse(null, DEFAULT_ZONES);
       var engine = layoutEngine();
-      var profile = zonesDoc.profile && zonesDoc.profile !== 'none' ? zonesDoc.profile
+      var profile = zonesDoc.profile && zonesDoc.profile !== 'auto' ? zonesDoc.profile
                   : (engine && engine.deviceProfile ? engine.deviceProfile() : 'none');
       WORK.profile = profile;
       WORK.orientation = zonesDoc.orientation || 'portrait';

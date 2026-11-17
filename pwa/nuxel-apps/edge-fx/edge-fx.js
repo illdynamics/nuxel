@@ -588,7 +588,7 @@
     });
     $('reinstall').addEventListener('click', function () {
       call('apps', 'register', {
-        app_id: APP_ID, name: 'Edge FX', start_url: START_URL, version: '0.8.7-beta'
+        app_id: APP_ID, name: 'Edge FX', start_url: START_URL, version: '0.8.8-beta'
       }).then(function (res) {
         if (res && res.success) { $('install-state').textContent = 'Installed (state: ' + (res.state || 'installed') + ').'; loadRegistry(); }
         else $('install-state').textContent = 'Install refused: ' + ((res && (res.error || res.detail)) || 'unknown');

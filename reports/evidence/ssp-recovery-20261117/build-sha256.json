@@ -1,0 +1,18 @@
+{
+  "nuxel_bbd_download": {
+    "sha256": "d4b6882bc68d7237a6826ab459183bfcc5fe935cd359e152efb4f88fe8ed7359",
+    "bytes": 110200
+  },
+  "nuxel_bbd_host": {
+    "sha256": "ee940051bf73589f93b6a00fb9083aa422bfa761edc7fd4e42dcbab2d9106879",
+    "bytes": 98080
+  },
+  "isolation-probe": {
+    "sha256": "4f652f182bb160665bd18adedce0260ce347e2b292f85c21e8b2d5f78629dc40",
+    "bytes": 2658576
+  },
+  "libssp-log-stderr.so": {
+    "sha256": "7761d2fd5e4e477e42ce5b94a40624f70c6fdb7a5e1fd7243cee4c5683b68b2d",
+    "bytes": 67832
+  }
+}

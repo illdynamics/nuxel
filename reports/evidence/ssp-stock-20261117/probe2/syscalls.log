@@ -1,0 +1,362 @@
+720369 execve("/opt/nuxel-bwrap011/bwrap", ["/opt/nuxel-bwrap011/bwrap", "--unshare-all", "--die-with-parent", "--new-session", "--uid", "65534", "--gid", "65534", "--cap-drop", "ALL", "--ro-bind", "/run/nuxel-ssp-trial-20261117", "/", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--dir", "/tmp/nv", "--dir", "/tmp/log", "--tmpfs", "/data", "--dir", "/data/ssp-private", "--clearenv", "--setenv", "PATH", "/system/bin", "--setenv", "ANDROID_ROOT", "/system", "--setenv", "ANDROID_DATA", "/data", "--setenv", "LD_LIBRARY_PATH", "/system/lib64:/vendor/lib64:/apex/com.android.runtime/lib64/bionic", "--setenv", "LD_PRELOAD", "/system/lib64/libssp-log-stderr.so", "--chdir", "/tmp", "--bind", "/run/ssp-stock-probe2-20261117/logs", "/logs", "--", "/isolation-probe"], 0x7ff2960f68 /* 15 vars */) = 0
+720369 faccessat(AT_FDCWD, "/etc/ld.so.preload", R_OK) = -1 ENOENT (No such file or directory)
+720369 openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+720369 openat(AT_FDCWD, "/lib64/libcap.so.2", O_RDONLY|O_CLOEXEC) = 3
+720369 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0`w\0\0\0\0\0\0@\0\0\0\0\0\0\08\10\1\0\0\0\0\0\0\0\0\0@\08\0\f\0@\0\37\0\36\0\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\240\2\0\0\0\0\0\0\240\2\0\0\0\0\0\0\10\0\0\0\0\0\0\0\3\0\0\0\4\0\0\0 \233\0\0\0\0\0\0 \233\0\0\0\0\0\0 \233\0\0\0\0\0\0\33\0\0\0\0\0\0\0"..., 832) = 832
+720369 openat(AT_FDCWD, "/lib64/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+720369 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0\267\0\1\0\0\0\250g\2\0\0\0\0\0@\0\0\0\0\0\0\0\260\30#\0\0\0\0\0\0\0\0\0@\08\0\r\0@\0E\0D\0\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\330\2\0\0\0\0\0\0\330\2\0\0\0\0\0\0\10\0\0\0\0\0\0\0\3\0\0\0\4\0\0\0\20L\32\0\0\0\0\0\20L\32\0\0\0\0\0\20L\32\0\0\0\0\0\33\0\0\0\0\0\0\0"..., 832) = 832
+720369 prctl(PR_CAPBSET_READ, CAP_MAC_OVERRIDE) = 1
+720369 prctl(PR_CAPBSET_READ, 0x30 /* CAP_??? */) = -1 EINVAL (Invalid argument)
+720369 prctl(PR_CAPBSET_READ, CAP_CHECKPOINT_RESTORE) = -1 EINVAL (Invalid argument)
+720369 prctl(PR_CAPBSET_READ, CAP_BLOCK_SUSPEND) = 1
+720369 prctl(PR_CAPBSET_READ, CAP_PERFMON) = -1 EINVAL (Invalid argument)
+720369 prctl(PR_CAPBSET_READ, CAP_AUDIT_READ) = 1
+720369 prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) = 0
+720369 openat(AT_FDCWD, "/proc/sys/kernel/overflowuid", O_RDONLY|O_CLOEXEC) = 3
+720369 read(3, "65534\n", 4079)         = 6
+720369 read(3, "", 4073)                = 0
+720369 openat(AT_FDCWD, "/proc/sys/kernel/overflowgid", O_RDONLY|O_CLOEXEC) = 3
+720369 read(3, "65534\n", 4079)         = 6
+720369 read(3, "", 4073)                = 0
+720369 ioctl(1, TCGETS2, 0x7fff2777e8)  = -1 ENOTTY (Inappropriate ioctl for device)
+720369 newfstatat(AT_FDCWD, "/proc/self/ns/user", {st_mode=S_IFREG|0444, st_size=0, ...}, 0) = 0
+720369 newfstatat(AT_FDCWD, "/sys/module/user_namespace/parameters/enable", 0x7fff2798f8, 0) = -1 ENOENT (No such file or directory)
+720369 newfstatat(AT_FDCWD, "/proc/sys/user/max_user_namespaces", {st_mode=S_IFREG|0644, st_size=0, ...}, 0) = 0
+720369 openat(AT_FDCWD, "/proc/sys/user/max_user_namespaces", O_RDONLY|O_CLOEXEC) = 3
+720369 read(3, "27227\n", 4079)         = 6
+720369 read(3, "", 4073)                = 0
+720369 openat(AT_FDCWD, "/proc", O_RDONLY|O_PATH) = 3
+720369 wait4(-1, 0x7fff2777ac, WNOHANG, NULL) = -1 ECHILD (No child processes)
+720369 newfstatat(AT_FDCWD, "/proc/self/ns/cgroup", {st_mode=S_IFREG|0444, st_size=0, ...}, 0) = 0
+720369 clone(child_stack=NULL, flags=CLONE_NEWNS|CLONE_NEWCGROUP|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWNET|SIGCHLD) = 720374
+720369 openat(3, "720374/ns", O_RDONLY|O_PATH <unfinished ...>
+720374 read(5 <unfinished ...>
+720369 <... openat resumed>)            = 6
+720369 newfstatat(6, "cgroup", {st_mode=S_IFREG|0444, st_size=0, ...}, 0) = 0
+720369 newfstatat(6, "ipc", {st_mode=S_IFREG|0444, st_size=0, ...}, 0) = 0
+720369 newfstatat(6, "mnt", {st_mode=S_IFREG|0444, st_size=0, ...}, 0) = 0
+720369 newfstatat(6, "net", {st_mode=S_IFREG|0444, st_size=0, ...}, 0) = 0
+720369 newfstatat(6, "pid", {st_mode=S_IFREG|0444, st_size=0, ...}, 0) = 0
+720369 newfstatat(6, "uts", {st_mode=S_IFREG|0444, st_size=0, ...}, 0) = 0
+720369 prctl(PR_SET_DUMPABLE, SUID_DUMP_USER) = 0
+720369 prctl(PR_SET_PDEATHSIG, SIGKILL) = 0
+720369 write(5, "\1\0\0\0\0\0\0\0", 8)  = 8
+720374 <... read resumed>, "\1\0\0\0\0\0\0\0", 8) = 8
+720369 openat(3, "self/fd", O_RDONLY|O_NOCTTY|O_NONBLOCK|O_CLOEXEC|O_DIRECTORY) = 5
+720374 prctl(PR_CAPBSET_DROP, CAP_CHOWN) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_DAC_OVERRIDE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_DAC_READ_SEARCH) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_FOWNER) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_FSETID) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_KILL) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SETGID) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SETUID) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SETPCAP) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_LINUX_IMMUTABLE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_NET_BIND_SERVICE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_NET_BROADCAST) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_NET_ADMIN) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_NET_RAW) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_IPC_LOCK) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_IPC_OWNER) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_MODULE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_RAWIO) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_CHROOT) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_PTRACE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_PACCT) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_ADMIN) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_BOOT) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_NICE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_RESOURCE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_TIME) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_TTY_CONFIG) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_MKNOD) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_LEASE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_AUDIT_WRITE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_AUDIT_CONTROL) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SETFCAP) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_MAC_OVERRIDE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_MAC_ADMIN) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYSLOG) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_WAKE_ALARM) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_BLOCK_SUSPEND) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_AUDIT_READ) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_PERFMON) = -1 EINVAL (Invalid argument)
+720374 prctl(PR_CAPBSET_DROP, CAP_BPF)  = -1 EINVAL (Invalid argument)
+720374 prctl(PR_CAPBSET_DROP, CAP_CHECKPOINT_RESTORE) = -1 EINVAL (Invalid argument)
+720374 socket(AF_UNIX, SOCK_DGRAM|SOCK_CLOEXEC, 0) = 5
+720374 ioctl(5, SIOCGIFINDEX, {ifr_name="lo", ifr_ifindex=1}) = 0
+720374 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 5
+720374 bind(5, {sa_family=AF_NETLINK, nl_pid=1, nl_groups=00000000}, 12) = 0
+720374 sendto(5, [{nlmsg_len=40, nlmsg_type=0x14 /* NLMSG_??? */, nlmsg_flags=NLM_F_REQUEST|NLM_F_ACK|0x600, nlmsg_seq=0, nlmsg_pid=1}, "\x02\x08\x80\xfe\x01\x00\x00\x00\x08\x00\x02\x00\x7f\x00\x00\x01\x08\x00\x01\x00\x7f\x00\x00\x01"], 40, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 40
+720374 recvfrom(5, [{nlmsg_len=36, nlmsg_type=NLMSG_ERROR, nlmsg_flags=NLM_F_CAPPED, nlmsg_seq=0, nlmsg_pid=1}, {error=0, msg={nlmsg_len=40, nlmsg_type=0x14 /* NLMSG_??? */, nlmsg_flags=NLM_F_REQUEST|NLM_F_ACK|0x600, nlmsg_seq=0, nlmsg_pid=1}}], 1024, 0, NULL, NULL) = 36
+720374 sendto(5, [{nlmsg_len=32, nlmsg_type=0x10 /* NLMSG_??? */, nlmsg_flags=NLM_F_REQUEST|NLM_F_ACK, nlmsg_seq=1, nlmsg_pid=1}, "\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00"], 32, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 32
+720374 recvfrom(5, [{nlmsg_len=36, nlmsg_type=NLMSG_ERROR, nlmsg_flags=NLM_F_CAPPED, nlmsg_seq=1, nlmsg_pid=1}, {error=0, msg={nlmsg_len=32, nlmsg_type=0x10 /* NLMSG_??? */, nlmsg_flags=NLM_F_REQUEST|NLM_F_ACK, nlmsg_seq=1, nlmsg_pid=1}}], 1024, 0, NULL, NULL) = 36
+720374 openat(3, "self", O_RDONLY|O_PATH) = 5
+720374 openat(5, "uid_map", O_RDWR|O_CLOEXEC) = 6
+720374 write(6, "0 0 1\n", 6)           = 6
+720374 openat(5, "setgroups", O_RDWR|O_CLOEXEC) = 6
+720374 write(6, "deny\n", 5)            = 5
+720374 openat(5, "gid_map", O_RDWR|O_CLOEXEC) = 6
+720374 write(6, "0 0 1\n", 6)           = 6
+720374 readlinkat(AT_FDCWD, "/run", 0x7fff2773a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/run/nuxel-ssp-trial-20261117", 0x7fff2773a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/run", 0x7fff2773a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/run/ssp-stock-probe2-20261117", 0x7fff2773a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/run/ssp-stock-probe2-20261117/logs", 0x7fff2773a0, 1023) = -1 EINVAL (Invalid argument)
+720374 mount(NULL, "/", NULL, MS_REC|MS_SILENT|MS_SLAVE, NULL) = 0
+720374 mount("tmpfs", "/tmp", "tmpfs", MS_NOSUID|MS_NODEV, NULL) = 0
+720374 getcwd("/root", 4096)            = 6
+720374 chdir("/tmp")                    = 0
+720374 mkdirat(AT_FDCWD, "newroot", 0755) = 0
+720374 mount("newroot", "newroot", NULL, MS_MGC_VAL|MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 mkdirat(AT_FDCWD, "oldroot", 0755) = 0
+720374 pivot_root("/tmp", "oldroot")    = 0
+720374 chdir("/")                       = 0
+720374 newfstatat(AT_FDCWD, "/oldroot/run/nuxel-ssp-trial-20261117", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 mount("/oldroot/run/nuxel-ssp-trial-20261117", "/newroot/", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 faccessat2(AT_FDCWD, "/newroot/", F_OK, AT_EACCESS) = -1 ENOSYS (Function not implemented)
+720374 faccessat(AT_FDCWD, "/newroot/", F_OK) = 0
+720374 openat(AT_FDCWD, "/newroot", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot", 99) = 8
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 2687
+720374 read(6, "", 1392)                = 0
+720374 mount("none", "/newroot", NULL, MS_RDONLY|MS_NOSUID|MS_NODEV|MS_REMOUNT|MS_BIND|MS_SILENT, NULL) = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/proc", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 mount("proc", "/newroot/proc", "proc", MS_NOSUID|MS_NODEV|MS_NOEXEC, NULL) = 0
+720374 faccessat(AT_FDCWD, "/newroot/proc/sys", W_OK) = -1 EACCES (Permission denied)
+720374 faccessat(AT_FDCWD, "/newroot/proc/sysrq-trigger", W_OK) = 0
+720374 mount("/newroot/proc/sysrq-trigger", "/newroot/proc/sysrq-trigger", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/proc", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/proc/sysrq-trigger", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/proc/sysrq-trigger", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/proc/sysrq-trigger", 99) = 27
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 2866
+720374 read(6, "", 1213)                = 0
+720374 mount("none", "/newroot/proc/sysrq-trigger", NULL, MS_RDONLY|MS_NOSUID|MS_NODEV|MS_NOEXEC|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 faccessat(AT_FDCWD, "/newroot/proc/irq", W_OK) = 0
+720374 mount("/newroot/proc/irq", "/newroot/proc/irq", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/proc", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/proc/irq", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/proc/irq", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/proc/irq", 99) = 17
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 2949
+720374 read(6, "", 1130)                = 0
+720374 mount("none", "/newroot/proc/irq", NULL, MS_RDONLY|MS_NOSUID|MS_NODEV|MS_NOEXEC|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 faccessat(AT_FDCWD, "/newroot/proc/bus", W_OK) = 0
+720374 mount("/newroot/proc/bus", "/newroot/proc/bus", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/proc", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/proc/bus", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/proc/bus", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/proc/bus", 99) = 17
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 3032
+720374 read(6, "", 1047)                = 0
+720374 mount("none", "/newroot/proc/bus", NULL, MS_RDONLY|MS_NOSUID|MS_NODEV|MS_NOEXEC|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/dev", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 mount("tmpfs", "/newroot/dev", "tmpfs", MS_NOSUID|MS_NODEV, "mode=0755") = 0
+720374 openat(AT_FDCWD, "/newroot/dev/null", O_WRONLY|O_CREAT|O_TRUNC, 0444) = 5
+720374 mount("/oldroot/dev/null", "/newroot/dev/null", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev/null", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/dev/null", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/dev/null", 99) = 17
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 3246
+720374 read(6, "", 833)                 = 0
+720374 mount("none", "/newroot/dev/null", NULL, MS_NOSUID|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 openat(AT_FDCWD, "/newroot/dev/zero", O_WRONLY|O_CREAT|O_TRUNC, 0444) = 5
+720374 mount("/oldroot/dev/zero", "/newroot/dev/zero", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev/zero", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/dev/zero", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/dev/zero", 99) = 17
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 3379
+720374 read(6, "", 700)                 = 0
+720374 mount("none", "/newroot/dev/zero", NULL, MS_NOSUID|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 openat(AT_FDCWD, "/newroot/dev/full", O_WRONLY|O_CREAT|O_TRUNC, 0444) = 5
+720374 mount("/oldroot/dev/full", "/newroot/dev/full", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev/full", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/dev/full", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/dev/full", 99) = 17
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 3512
+720374 read(6, "", 567)                 = 0
+720374 mount("none", "/newroot/dev/full", NULL, MS_NOSUID|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 openat(AT_FDCWD, "/newroot/dev/random", O_WRONLY|O_CREAT|O_TRUNC, 0444) = 5
+720374 mount("/oldroot/dev/random", "/newroot/dev/random", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev/random", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/dev/random", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/dev/random", 99) = 19
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 3649
+720374 read(6, "", 430)                 = 0
+720374 mount("none", "/newroot/dev/random", NULL, MS_NOSUID|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 openat(AT_FDCWD, "/newroot/dev/urandom", O_WRONLY|O_CREAT|O_TRUNC, 0444) = 5
+720374 mount("/oldroot/dev/urandom", "/newroot/dev/urandom", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev/urandom", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/dev/urandom", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/dev/urandom", 99) = 20
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 3788
+720374 read(6, "", 291)                 = 0
+720374 mount("none", "/newroot/dev/urandom", NULL, MS_NOSUID|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 openat(AT_FDCWD, "/newroot/dev/tty", O_WRONLY|O_CREAT|O_TRUNC, 0444) = 5
+720374 mount("/oldroot/dev/tty", "/newroot/dev/tty", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/dev/tty", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/dev/tty", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/dev/tty", 99) = 16
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 3919
+720374 read(6, "", 160)                 = 0
+720374 mount("none", "/newroot/dev/tty", NULL, MS_NOSUID|MS_REMOUNT|MS_BIND|MS_SILENT|MS_RELATIME, NULL) = 0
+720374 symlinkat("/proc/self/fd/0", AT_FDCWD, "/newroot/dev/stdin") = 0
+720374 symlinkat("/proc/self/fd/1", AT_FDCWD, "/newroot/dev/stdout") = 0
+720374 symlinkat("/proc/self/fd/2", AT_FDCWD, "/newroot/dev/stderr") = 0
+720374 symlinkat("/proc/self/fd", AT_FDCWD, "/newroot/dev/fd") = 0
+720374 symlinkat("/proc/kcore", AT_FDCWD, "/newroot/dev/core") = 0
+720374 mkdirat(AT_FDCWD, "/newroot/dev/shm", 0755) = 0
+720374 mkdirat(AT_FDCWD, "/newroot/dev/pts", 0755) = 0
+720374 mount("devpts", "/newroot/dev/pts", "devpts", MS_NOSUID|MS_NOEXEC, "newinstance,ptmxmode=0666,mode=620") = 0
+720374 symlinkat("pts/ptmx", AT_FDCWD, "/newroot/dev/ptmx") = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/tmp", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 mount("tmpfs", "/newroot/tmp", "tmpfs", MS_NOSUID|MS_NODEV, "mode=0755") = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/tmp", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/tmp/nv", 0x7fff2775b0, 0) = -1 ENOENT (No such file or directory)
+720374 mkdirat(AT_FDCWD, "/newroot/tmp/nv", 0755) = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/tmp", {st_mode=S_IFDIR|0755, st_size=60, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/tmp/log", 0x7fff2775b0, 0) = -1 ENOENT (No such file or directory)
+720374 mkdirat(AT_FDCWD, "/newroot/tmp/log", 0755) = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/data", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 mount("tmpfs", "/newroot/data", "tmpfs", MS_NOSUID|MS_NODEV, "mode=0755") = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/data", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/data/ssp-private", 0x7fff2775b0, 0) = -1 ENOENT (No such file or directory)
+720374 mkdirat(AT_FDCWD, "/newroot/data/ssp-private", 0755) = 0
+720374 newfstatat(AT_FDCWD, "/oldroot/run/ssp-stock-probe2-20261117/logs", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot", {st_mode=S_IFDIR|0755, st_size=240, ...}, 0) = 0
+720374 newfstatat(AT_FDCWD, "/newroot/logs", {st_mode=S_IFDIR|0755, st_size=40, ...}, 0) = 0
+720374 mount("/oldroot/run/ssp-stock-probe2-20261117/logs", "/newroot/logs", NULL, MS_BIND|MS_REC|MS_SILENT, NULL) = 0
+720374 readlinkat(AT_FDCWD, "/newroot", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 readlinkat(AT_FDCWD, "/newroot/logs", 0x7fff2750a0, 1023) = -1 EINVAL (Invalid argument)
+720374 openat(AT_FDCWD, "/newroot/logs", O_RDONLY|O_CLOEXEC|O_PATH) = 5
+720374 readlinkat(AT_FDCWD, "/oldroot/proc/self/fd/5", "/newroot/logs", 99) = 13
+720374 openat(3, "self/mountinfo", O_RDONLY|O_CLOEXEC) = 6
+720374 read(6, "64 328 259:15 / /oldroot rw,relatime master:1 - ext4 /dev/sda31 rw,seclabel,errors=remount-ro,data=ordered\n72 64 0:4 / /oldroot/proc rw,relatime master:2 - proc"..., 4079) = 4034
+720374 read(6, "514 330 0:40 / /newroot/tmp rw,nosuid,nodev,r", 45) = 45
+720374 read(6, "elatime - tmpfs tmpfs rw,seclabel,mode=755\n515 330 0:41 / /newroot/data rw,nosuid,nodev,relatime - tmpfs tmpfs rw,seclabel,mode=755\n517 330 0:22 /ssp-stock-prob"..., 4080) = 283
+720374 read(6, "", 3797)                = 0
+720374 mount("oldroot", "oldroot", NULL, MS_REC|MS_SILENT|MS_PRIVATE, NULL) = 0
+720374 umount2("oldroot", MNT_DETACH)   = 0
+720374 openat(AT_FDCWD, "/", O_RDONLY|O_DIRECTORY) = 5
+720374 chdir("/newroot")                = 0
+720374 pivot_root(".", ".")             = 0
+720374 umount2(".", MNT_DETACH)         = 0
+720374 chdir("/")                       = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_CHOWN) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_DAC_OVERRIDE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_DAC_READ_SEARCH) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_FOWNER) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_FSETID) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_KILL) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SETGID) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SETUID) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SETPCAP) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_LINUX_IMMUTABLE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_NET_BIND_SERVICE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_NET_BROADCAST) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_NET_ADMIN) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_NET_RAW) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_IPC_LOCK) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_IPC_OWNER) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_MODULE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_RAWIO) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_CHROOT) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_PTRACE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_PACCT) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_ADMIN) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_BOOT) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_NICE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_RESOURCE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_TIME) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYS_TTY_CONFIG) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_MKNOD) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_LEASE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_AUDIT_WRITE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_AUDIT_CONTROL) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SETFCAP) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_MAC_OVERRIDE) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_MAC_ADMIN) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_SYSLOG) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_WAKE_ALARM) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_BLOCK_SUSPEND) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_AUDIT_READ) = 0
+720374 prctl(PR_CAPBSET_DROP, CAP_PERFMON) = -1 EINVAL (Invalid argument)
+720374 prctl(PR_CAPBSET_DROP, CAP_BPF)  = -1 EINVAL (Invalid argument)
+720374 prctl(PR_CAPBSET_DROP, CAP_CHECKPOINT_RESTORE) = -1 EINVAL (Invalid argument)
+720374 openat(3, "self", O_RDONLY|O_PATH) = 5
+720374 openat(5, "uid_map", O_RDWR|O_CLOEXEC) = 6
+720374 write(6, "65534 0 1\n", 10)      = 10
+720374 openat(5, "gid_map", O_RDWR|O_CLOEXEC) = 6
+720374 write(6, "65534 0 1\n", 10)      = 10
+720374 prctl(PR_SET_DUMPABLE, SUID_DUMP_USER) = 0
+720374 chdir("/tmp")                    = 0
+720374 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7fab7830f0) = 2
+720374 openat(3, "self/fd", O_RDONLY|O_NOCTTY|O_NONBLOCK|O_CLOEXEC|O_DIRECTORY) = 5
+720385 prctl(PR_SET_PDEATHSIG, SIGKILL) = 0
+720385 execve("/isolation-probe", ["/isolation-probe"], 0x20c7510 /* 6 vars */ <unfinished ...>
+720374 prctl(PR_SET_PDEATHSIG, SIGKILL) = 0
+720385 <... execve resumed>)            = 0
+720374 wait4(-1 <unfinished ...>
+720385 readlinkat(AT_FDCWD, "/proc/self/exe", "/isolation-probe", 4096) = 16
+720385 openat(AT_FDCWD, "/dev/ttyBCM", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/dev/bbd_sensor", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/dev/bbd_control", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/dev/bbd_patch", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/dev/sda", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/sys/class/sec/sensorhub/mcu_power", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/sys/class/sec/gps/GPS_PWR_EN/value", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/efs", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/etc/shadow", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/proc/1/root/etc/shadow", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
+720385 openat(AT_FDCWD, "/vendor/bin/hw/lhd", O_WRONLY) = -1 EROFS (Read-only file system)
+720385 openat(AT_FDCWD, "/proc/self/status", O_RDONLY) = 3
+720385 read(3, "Name:\tisolation-probe\nUmask:\t0022\nState:\tR (running)\nTgid:\t2\nNgid:\t0\nPid:\t2\nPPid:\t1\nTracerPid:\t0\nUid:\t65534\t65534\t65534\t65534\nGid:\t65534\t65534\t65534\t65534\nFDSiz"..., 1024) = 1006
+720385 read(3, "", 1024)                = 0
+720385 write(1, "DENIED /dev/ttyBCM errno=2\nDENIED /dev/bbd_sensor errno=2\nDENIED /dev/bbd_control errno=2\nDENIED /dev/bbd_patch errno=2\nDENIED /dev/sda errno=2\nDENIED /sys/clas"..., 445) = 445
+720385 exit_group(0)                    = ?
+720385 +++ exited with 0 +++
+720374 <... wait4 resumed>, [{WIFEXITED(s) && WEXITSTATUS(s) == 0}], 0, NULL) = 2
+720374 write(4, "\1\0\0\0\0\0\0\0", 8)  = 8
+720369 read(4, "\1\0\0\0\0\0\0\0", 8)   = 8
+720374 wait4(-1 <unfinished ...>
+720369 exit_group(0)                    = ?
+720374 <... wait4 resumed>, 0x7fff2777e4, 0, NULL) = -1 ECHILD (No child processes)
+720369 +++ exited with 0 +++
+720374 +++ killed by SIGKILL +++

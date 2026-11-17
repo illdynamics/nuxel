@@ -1,0 +1,9 @@
+  OK   front main sensor is recorded as s5k3j1 (observed), not the s5k2l4sx guess
+  OK   three rear sensors recorded
+  OK   expected-shipped hardware is labelled, not observation
+  OK   policy states the no-fabrication rule
+  OK   portal interface is the private org.nuxel.Camera
+  OK   synthetic source is opt-in, never the device default
+  OK   capture is owner-initiated only, never automatic
+
+camera-inventory: 0 failure(s)

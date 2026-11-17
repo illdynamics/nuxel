@@ -49,6 +49,7 @@ class RequestQueue:
     def __init__(self, path: str, keep_text: bool = False):
         self.path = path
         self.keep_text = keep_text
+        self._outputs = {}
         self._lock = threading.RLock()
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         self._db = sqlite3.connect(path, check_same_thread=False)
@@ -78,6 +79,10 @@ class RequestQueue:
         allowed = {"status", "route", "reason_code", "confidence", "worker",
                    "engine", "provider", "variant_id", "revision", "output",
                    "error", "cancelled", "conversation_id"}
+        if not self.keep_text and "output" in fields:
+            self._outputs[rid] = fields.pop("output")
+            while len(self._outputs) > 100:
+                self._outputs.pop(next(iter(self._outputs)))
         cols, vals = [], []
         for k, v in fields.items():
             if k in allowed:
@@ -95,7 +100,10 @@ class RequestQueue:
     def get(self, rid: str) -> Optional[Dict[str, Any]]:
         with self._lock:
             row = self._db.execute("SELECT * FROM requests WHERE id=?", (rid,)).fetchone()
-        return dict(row) if row else None
+        result = dict(row) if row else None
+        if result and rid in self._outputs:
+            result["output"] = self._outputs[rid]
+        return result
 
     def owned(self, rid: str, app_id: str, session_id: str) -> bool:
         r = self.get(rid)
@@ -124,6 +132,7 @@ class RequestQueue:
                 "DELETE FROM requests WHERE app_id=? AND session_id=? AND conversation_id=?",
                 (app_id, session_id, conversation_id))
             self._db.commit()
+        self._outputs.clear()
         return cur.rowcount
 
     def clear_all(self, app_id: str, session_id: str) -> int:
@@ -132,4 +141,5 @@ class RequestQueue:
                 "DELETE FROM requests WHERE app_id=? AND session_id=?",
                 (app_id, session_id))
             self._db.commit()
+        self._outputs.clear()
         return cur.rowcount

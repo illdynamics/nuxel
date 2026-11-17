@@ -1,0 +1,23 @@
+{
+  "name": "PenGuru Squad",
+  "short_name": "PenGuru",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1422",
+  "theme_color": "#101b2c",
+  "icons": [
+    {
+      "src": "/assets/nuxel-penguru-squad.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "nuxel": {
+    "app_id": "org.nuxel.PenGuru",
+    "bridge_version": "1",
+    "capabilities": [
+      "system:inspect"
+    ]
+  }
+}

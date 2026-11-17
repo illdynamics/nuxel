@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8"><style>:root{--status-bar-height:36px}*{box-sizing:border-box}body{margin:0}#status-bar{display:none}</style>
+<link rel="stylesheet" href="/pwa/nuxel-home/css/status-bar.css?v=p106000">
+<div id="status-bar" class="status-bar" style="display:none"><div class="status-left"><span id="status-time">22:30</span></div><div class="status-right"><span class="status-icon">W</span><span id="status-battery" class="status-icon">BAT</span><span id="status-battery-pct">90%</span></div></div>
+<script>
+window.NuxelHost={available:true,configGet:()=>Promise.resolve({ok:true,text:JSON.stringify({profiles:{s10plus:{portrait:[9,10]}},profile:'s10plus',orientation:'portrait',padding_dp:6})})};
+</script>
+<script src="/pwa/nuxel-home/js/status-bar.js?v=safezones-startup-2"></script>
+<script src="/pwa/nuxel-home/js/safe-zones.js?v=safezones-startup-2"></script>
+<script>
+// Exercise the real layout/event registration, excluding hardware providers.
+for(const name of Object.getOwnPropertyNames(StatusBar.prototype)){
+ if(!['constructor','_init','_applySafeZones'].includes(name))StatusBar.prototype[name]=function(){};
+}
+const paint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+addEventListener('load',async()=>{
+ try{
+  await paint();
+  const before=window.__nuxelSafeZoneReport;
+  document.getElementById('status-bar').style.display='grid';
+  document.dispatchEvent(new CustomEvent('nuxel:lockscreen-hidden'));
+  await paint();
+  const b=document.getElementById('status-bar').getBoundingClientRect();
+  const r=document.querySelector('.status-right').getBoundingClientRect();
+  const iv=NuxelSafeZones.blockedIntervals(b.width);
+  const hit=NuxelSafeZones.overlaps(r.left-b.left,r.right-b.left,iv);
+  parent.__nuxelSafeZoneBrowserTest={kind:'ISOLATED_WEBKIT_LAYOUT_FIXTURE',pass:before.width===0&&!hit,hiddenWidth:before.width,width:b.width,right:{left:r.left,right:r.right},blocked:iv,report:window.__nuxelSafeZoneReport};
+ }catch(e){parent.__nuxelSafeZoneBrowserTest={pass:false,error:String(e)}}
+});
+</script>

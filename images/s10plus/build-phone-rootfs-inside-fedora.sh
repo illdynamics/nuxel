@@ -1076,6 +1076,17 @@ install -m 0644 /nuxel/services/nuxel-remote-desktop/config/wayvnc.pam \
     "$STAGE/etc/pam.d/wayvnc"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.service \
     "$STAGE/etc/systemd/system/nuxel-remote-vnc.service"
+# wayvnc prefers Phoc's ext-image/copy-with-damage protocols, but the S10+
+# headless Phoc output can hand those paths an unfilled frame.  Ship the small
+# ABI interposer built from this checkout so both direct VNC and XRDP's
+# loopback mirror use stable plain zwlr-screencopy v1.  This must be built in
+# the arm64 rootfs builder; a host-built dylib/ELF would not be runnable on the
+# phone and was the reason a source-only fix did not reach the live service.
+gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
+    /nuxel/tools/s10plus/a67/wayvnc-force-wlr-screencopy.c \
+    -o "$STAGE/usr/lib/nuxel/libnuxel-wayvnc-wlr-screencopy.so" \
+    $(pkg-config --cflags --libs wayland-client) -ldl
+chmod 0755 "$STAGE/usr/lib/nuxel/libnuxel-wayvnc-wlr-screencopy.so"
 # XRDP is a SEPARATE X11 session run as the canonical local owner account
 # `nuxel` (uid 1000).  The retired `nuxel-remote` account is intentionally not
 # created: PAM and the session launcher both refuse any other identity.
@@ -1122,6 +1133,7 @@ chmod 0644 "$STAGE/etc/nuxel/remote-desktop/vnc/tls_cert.pem"
 for _rd in /usr/bin/wayvnc /usr/bin/wayvncctl /usr/bin/xrdp /usr/libexec/Xorg \
            /usr/bin/openbox /usr/bin/firefox /usr/local/bin/nuxel-xrdp-session \
            /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl \
+           /usr/lib/nuxel/libnuxel-wayvnc-wlr-screencopy.so \
            /etc/systemd/system/nuxel-remote-vnc.service \
            /etc/nuxel/remote-desktop/vnc/wayvnc.conf.example \
            /etc/nuxel/remote-desktop/vnc/tls_cert.pem \

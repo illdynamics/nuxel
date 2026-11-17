@@ -1,0 +1,82 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+000000000003e884 <.text+0x26884>:
+   3e884:	d101c3ff 	sub	sp, sp, #0x70
+   3e888:	f9001bf7 	str	x23, [sp, #48]
+   3e88c:	a90457f6 	stp	x22, x21, [sp, #64]
+   3e890:	a9054ff4 	stp	x20, x19, [sp, #80]
+   3e894:	a9067bfd 	stp	x29, x30, [sp, #96]
+   3e898:	910183fd 	add	x29, sp, #0x60
+   3e89c:	d53bd056 	mrs	x22, tpidr_el0
+   3e8a0:	f94016c9 	ldr	x9, [x22, #40]
+   3e8a4:	aa0203e8 	mov	x8, x2
+   3e8a8:	2a0103f4 	mov	w20, w1
+   3e8ac:	aa0003f3 	mov	x19, x0
+   3e8b0:	12003c62 	and	w2, w3, #0xffff
+   3e8b4:	910003e0 	mov	x0, sp
+   3e8b8:	aa0803e1 	mov	x1, x8
+   3e8bc:	f90017e9 	str	x9, [sp, #40]
+   3e8c0:	940009f8 	bl	410a0 <__libc_init@plt-0x3db0>
+   3e8c4:	5287ae28 	mov	w8, #0x3d71                	// #15729
+   3e8c8:	8b080277 	add	x23, x19, x8
+   3e8cc:	f95aa275 	ldr	x21, [x19, #13632]
+   3e8d0:	390002ff 	strb	wzr, [x23]
+   3e8d4:	f9400260 	ldr	x0, [x19]
+   3e8d8:	2a1f03e1 	mov	w1, wzr
+   3e8dc:	f9400008 	ldr	x8, [x0]
+   3e8e0:	f9402108 	ldr	x8, [x8, #64]
+   3e8e4:	d63f0100 	blr	x8
+   3e8e8:	b4000155 	cbz	x21, 3e910 <__libc_init@plt-0x6540>
+   3e8ec:	f94002a8 	ldr	x8, [x21]
+   3e8f0:	910003e2 	mov	x2, sp
+   3e8f4:	aa1503e0 	mov	x0, x21
+   3e8f8:	2a1403e1 	mov	w1, w20
+   3e8fc:	f9400908 	ldr	x8, [x8, #16]
+   3e900:	d63f0100 	blr	x8
+   3e904:	37000100 	tbnz	w0, #0, 3e924 <__libc_init@plt-0x652c>
+   3e908:	f94006b5 	ldr	x21, [x21, #8]
+   3e90c:	b5ffff15 	cbnz	x21, 3e8ec <__libc_init@plt-0x6564>
+   3e910:	b97d7668 	ldr	w8, [x19, #15732]
+   3e914:	910003f4 	mov	x20, sp
+   3e918:	11000508 	add	w8, w8, #0x1
+   3e91c:	b93d7668 	str	w8, [x19, #15732]
+   3e920:	14000010 	b	3e960 <__libc_init@plt-0x64f0>
+   3e924:	910003e0 	mov	x0, sp
+   3e928:	940009bf 	bl	41024 <__libc_init@plt-0x3e2c>
+   3e92c:	350000a0 	cbnz	w0, 3e940 <__libc_init@plt-0x6510>
+   3e930:	910003e0 	mov	x0, sp
+   3e934:	910003f4 	mov	x20, sp
+   3e938:	940009cc 	bl	41068 <__libc_init@plt-0x3de8>
+   3e93c:	36000120 	tbz	w0, #0, 3e960 <__libc_init@plt-0x64f0>
+   3e940:	f9400260 	ldr	x0, [x19]
+   3e944:	d0fffe41 	adrp	x1, 8000 <__libc_init@plt-0x3ce50>
+   3e948:	91054421 	add	x1, x1, #0x151
+   3e94c:	528021c2 	mov	w2, #0x10e                 	// #270
+   3e950:	f9400008 	ldr	x8, [x0]
+   3e954:	910003f4 	mov	x20, sp
+   3e958:	f9401908 	ldr	x8, [x8, #48]
+   3e95c:	d63f0100 	blr	x8
+   3e960:	f9400260 	ldr	x0, [x19]
+   3e964:	320003e1 	orr	w1, wzr, #0x1
+   3e968:	320003f3 	orr	w19, wzr, #0x1
+   3e96c:	f9400008 	ldr	x8, [x0]
+   3e970:	f9402108 	ldr	x8, [x8, #64]
+   3e974:	d63f0100 	blr	x8
+   3e978:	aa1403e0 	mov	x0, x20
+   3e97c:	390002f3 	strb	w19, [x23]
+   3e980:	97ff65b4 	bl	18050 <__libc_init@plt-0x2ce00>
+   3e984:	f94016c8 	ldr	x8, [x22, #40]
+   3e988:	f94017e9 	ldr	x9, [sp, #40]
+   3e98c:	eb09011f 	cmp	x8, x9
+   3e990:	540000e1 	b.ne	3e9ac <__libc_init@plt-0x64a4>  // b.any
+   3e994:	a9467bfd 	ldp	x29, x30, [sp, #96]
+   3e998:	a9454ff4 	ldp	x20, x19, [sp, #80]
+   3e99c:	a94457f6 	ldp	x22, x21, [sp, #64]
+   3e9a0:	f9401bf7 	ldr	x23, [sp, #48]
+   3e9a4:	9101c3ff 	add	sp, sp, #0x70
+   3e9a8:	d65f03c0 	ret
+   3e9ac:	94001935 	bl	44e80 <__stack_chk_fail@plt>

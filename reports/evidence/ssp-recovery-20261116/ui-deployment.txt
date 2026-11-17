@@ -1,0 +1,24 @@
+SPEC_VERSION 1
+MENU_COUNT 15
+ENTRY 0 cancel allowed=1 action=menu-close refusal=-
+ENTRY 1 lock-screen allowed=1 action=lock refusal=-
+ENTRY 2 restart allowed=1 action=systemctl-reboot refusal=gate-closed-owner-absent
+ENTRY 3 power-off allowed=1 action=systemctl-poweroff refusal=gate-closed-owner-absent
+ENTRY 4 suspend allowed=1 action=systemctl-suspend refusal=-
+ENTRY 5 reboot-verbose allowed=1 action=reboot-verbose refusal=gate-closed-owner-absent
+ENTRY 6 reboot-safe-mode allowed=1 action=reboot-safe-mode refusal=gate-closed-owner-absent
+ENTRY 7 reboot-diag allowed=1 action=reboot-diag refusal=gate-closed-owner-absent
+ENTRY 8 reboot-debug allowed=1 action=reboot-debug refusal=gate-closed-owner-absent
+ENTRY 9 back allowed=1 action=back refusal=-
+ENTRY 10 forward allowed=1 action=forward refusal=-
+ENTRY 11 stop allowed=1 action=stop refusal=-
+ENTRY 12 reload-launcher allowed=1 action=reload-launcher refusal=-
+ENTRY 13 recovery allowed=0 action=enter-recovery refusal=NO_FLASH_INVARIANT
+ENTRY 14 download-mode allowed=0 action=enter-download-mode refusal=NO_FLASH_INVARIANT
+NO_FLASH_INVARIANT enforced=1 (enter-recovery, enter-download-mode are refused at execution)
+a1dbf9a1313c9e88ae71a06c9a83f928621dc4676d4e573d300ed7b104551798  /usr/lib/nuxel/nuxel-button-manager
+20014afc664b89119f2888555e421d9fe6bd8b1be5d916336d565b99276050bc  /usr/share/nuxel/pwa/nuxel-home/js/safe-zones.js
+c4b08be34df726e239b29b3fc536c99d7dd49e594dd8f25efbf63deede08a0c9  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.

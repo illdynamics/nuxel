@@ -1,0 +1,554 @@
+[
+  {
+    "path": "reports/evidence/ssp-stock-20261117/anchors.json",
+    "sha256": "7a126cd89bd1a856689c18ed6cb9432d0b328dcd482d892bff1765beacd5568a",
+    "bytes": 1004,
+    "structure": "list"
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/archive-integrity-full-prefix.json",
+    "sha256": "3d619dfd3d70b36958115e77b08c841bb11b70b4a49da768a213138c9714b7b2",
+    "bytes": 247,
+    "structure": [
+      "expected_md5",
+      "actual_md5",
+      "hashed_prefix_bytes",
+      "note",
+      "match"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/archive-integrity.json",
+    "sha256": "a7b81f8661e1f4eeb9403f7d664af5da7532a6a0756769c9744b6192d8d9e520",
+    "bytes": 163,
+    "structure": [
+      "expected_md5",
+      "actual_md5",
+      "original_tar_bytes",
+      "match"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/archive.json",
+    "sha256": "e97081eb8c1dce0961874d08d7142039cc1df002434fddcb3fedbafe63dbb125",
+    "bytes": 410,
+    "structure": [
+      "archive",
+      "bytes",
+      "sha256",
+      "trailer"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/audit/ssp-runtime-audit.json",
+    "sha256": "ed48fc1dd59c33832bb6760d42f57a7dd7caafddccbff30eb9b7309f3c392f29",
+    "bytes": 16530,
+    "structure": [
+      "device_writes",
+      "files",
+      "invalid_or_wrong_arch",
+      "lhd_config_endpoint_markers",
+      "missing_linker64",
+      "missing_seeds",
+      "repo_archive_supplied",
+      "repo_directory_supplied",
+      "staged_on_host",
+      "status",
+      "stock_android_root_supplied",
+      "stock_build_identity_unverified",
+      "stock_build_properties",
+      "unresolved",
+      "warning"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/audit/ssp-runtime-audit.md",
+    "sha256": "3c8b5bdfcdbc7dae6f3ec452324e226baefbeadfefdbe510c20129c115be1d82",
+    "bytes": 1297
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/audit-tests.txt",
+    "sha256": "4298b8c15d798e6f35c057058d1e33929fdbd141909be33dfdc7ce6a5d8c88d0",
+    "bytes": 117
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/audit-vndk/ssp-runtime-audit.json",
+    "sha256": "4ae7f53fe1111cafb1891798059c992b694b05a172bc8cdcfde05a69404ffa73",
+    "bytes": 16531,
+    "structure": [
+      "device_writes",
+      "files",
+      "invalid_or_wrong_arch",
+      "lhd_config_endpoint_markers",
+      "missing_linker64",
+      "missing_seeds",
+      "repo_archive_supplied",
+      "repo_directory_supplied",
+      "staged_on_host",
+      "status",
+      "stock_android_root_supplied",
+      "stock_build_identity_unverified",
+      "stock_build_properties",
+      "unresolved",
+      "warning"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/audit-vndk/ssp-runtime-audit.md",
+    "sha256": "6d2f2fb81ee6e1dbb093043fc5b9666d83db61f5a479633e545a96b89788a08e",
+    "bytes": 1298
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/audit-vndk-summary.txt",
+    "sha256": "bb8b2335a3db3e6dfd93463211fd2e9c7ad2c12601d714e9ca432f9e8e4b1485",
+    "bytes": 521
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/collection-retry.txt",
+    "sha256": "ad92c0aed2ef6744aa329de70a101eba4c3c12a20d793a1d0e6b497d776da07c",
+    "bytes": 749
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/collection-vndk.txt",
+    "sha256": "ad92c0aed2ef6744aa329de70a101eba4c3c12a20d793a1d0e6b497d776da07c",
+    "bytes": 749
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/collection.txt",
+    "sha256": "61c3cfba037c03e3275f30976ddc06092afd9970118c08deacad6aec139228e4",
+    "bytes": 692
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/embedded-patch.txt",
+    "sha256": "7e7d2fd90b2b9c6bf6de9649eeff70a312dfa1b0bc4ee523fde54e49b0cd306f",
+    "bytes": 371
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/final-phone.txt",
+    "sha256": "cee8efa6e6f6f6798eeccde74b6c20d8f180626c158a7c18cbe95848af050c6d",
+    "bytes": 283
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/gnss-tests.txt",
+    "sha256": "0022ee81eaae586301bd919619db568337b011018f4f635ccdae17bcdd457edb",
+    "bytes": 98
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/helper-hashes.json",
+    "sha256": "c43948d69088213bf860c32fb3113810df7fcfbabdde94af75e947565ee2bf19",
+    "bytes": 186,
+    "structure": [
+      "isolation-probe",
+      "libssp-log-stderr.so"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/isolation-tests-v2.txt",
+    "sha256": "e173390ef75b68ab673bd9d24aeef011eda36f068902920329421b93659769d0",
+    "bytes": 1075
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/isolation-tests.txt",
+    "sha256": "17039cb6d95167f55ea7a81529e1527f9604a8be19fc64a6edbf835b110bb05e",
+    "bytes": 904
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/live-baseline.json",
+    "sha256": "b7edb5a1ac6938bf4e85930849ac9bcc21e321993b3ab26c6965476b9b1a79be",
+    "bytes": 5799,
+    "structure": [
+      "status",
+      "hardware_writes",
+      "samples",
+      "classification"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/live-final.json",
+    "sha256": "8b46720ce315228bc2de0d8d7d115cd180ab7fd98d8ce8e0a42e065e182868f1",
+    "bytes": 5799,
+    "structure": [
+      "status",
+      "hardware_writes",
+      "samples",
+      "classification"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/native-tests.txt",
+    "sha256": "a26bde5da451f8f46ad586897ba8b0944b8386fe54ab2e223b651d7483cb07b2",
+    "bytes": 926
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/orientation-gnss-pytest.txt",
+    "sha256": "09cc6af3fe086f11f6ffcb0b7ef19320bc356ae793cd1e6739681a1a9124f557",
+    "bytes": 179
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/orientation-service.txt",
+    "sha256": "a6cd417034d2b946193e723ca824ee80704a3d3415324061139dfaf927c94081",
+    "bytes": 584
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/orientation-tests.txt",
+    "sha256": "482e0cb03b55897c30f1af023b18329e1f54c2c67574c5f1c00c2cacb6707614",
+    "bytes": 5245
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/preflight-vndk-final.json",
+    "sha256": "3acdf22f94b319a3b61b52a258c5b2d757137e50d002fea9396bd8c4330570c8",
+    "bytes": 270,
+    "structure": [
+      "hardware_access",
+      "write_to_phone",
+      "missing_required",
+      "no_hardware_config_valid",
+      "probe_ready",
+      "logshim_ready",
+      "manifest_mismatches",
+      "runtime_files",
+      "status"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/preflight-vndk.json",
+    "sha256": "ac63d75136350f625f7942cc101f6049aca1fd3cb43236cc924436a9be88c1b9",
+    "bytes": 271,
+    "structure": [
+      "hardware_access",
+      "write_to_phone",
+      "missing_required",
+      "no_hardware_config_valid",
+      "probe_ready",
+      "logshim_ready",
+      "manifest_mismatches",
+      "runtime_files",
+      "status"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/preflight.json",
+    "sha256": "2e97ff7160385fbd014d93703ffd0f5aa8d18de11180d7fee32bc3fd6ae44d90",
+    "bytes": 270,
+    "structure": [
+      "hardware_access",
+      "write_to_phone",
+      "missing_required",
+      "no_hardware_config_valid",
+      "probe_ready",
+      "logshim_ready",
+      "manifest_mismatches",
+      "runtime_files",
+      "status"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe/result.json",
+    "sha256": "f3b5cc8e2c34b8f1e07a0359e6436bf2c7371696f757fbb19f617eaa95098884",
+    "bytes": 1054,
+    "structure": [
+      "kind",
+      "elapsed_seconds",
+      "returncode",
+      "timed_out",
+      "hardware_devices_exposed",
+      "sensor_success",
+      "command"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe/stdout.log",
+    "sha256": "7f3eb5298923a1c2cec5e0e7191d6ffe57031ecb2fa5636f883ea1e44220dc78",
+    "bytes": 445,
+    "contents": "DENIED /dev/ttyBCM errno=2\nDENIED /dev/bbd_sensor errno=2\nDENIED /dev/bbd_control errno=2\nDENIED /dev/bbd_patch errno=2\nDENIED /dev/sda errno=2\nDENIED /sys/class/sec/sensorhub/mcu_power errno=2\nDENIED /sys/class/sec/gps/GPS_PWR_EN/value errno=2\nDENIED /efs errno=2\nDENIED /etc/shadow errno=2\nDENIED /proc/1/root/etc/shadow errno=2\nruntime_readonly=1 uid=65534 gid=65534\nCapEff:\t0000000000000000\nNoNewPrivs:\t1\nisolation=PASS (NO HARDWARE ACCESS)\n"
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe/syscalls.log",
+    "sha256": "ea1ec60cbd3e2a5a941185541d0156575bbe5b7ba833b8832f856bfe94fba455",
+    "bytes": 28792,
+    "relevant_lines": []
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe-vndk/result.json",
+    "sha256": "be1f9da20d3c05baedc8cdba07b4eed888aac353c651566ecad9767279f70ca4",
+    "bytes": 1074,
+    "structure": [
+      "kind",
+      "elapsed_seconds",
+      "returncode",
+      "timed_out",
+      "hardware_devices_exposed",
+      "sensor_success",
+      "command"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe-vndk/stdout.log",
+    "sha256": "7f3eb5298923a1c2cec5e0e7191d6ffe57031ecb2fa5636f883ea1e44220dc78",
+    "bytes": 445,
+    "contents": "DENIED /dev/ttyBCM errno=2\nDENIED /dev/bbd_sensor errno=2\nDENIED /dev/bbd_control errno=2\nDENIED /dev/bbd_patch errno=2\nDENIED /dev/sda errno=2\nDENIED /sys/class/sec/sensorhub/mcu_power errno=2\nDENIED /sys/class/sec/gps/GPS_PWR_EN/value errno=2\nDENIED /efs errno=2\nDENIED /etc/shadow errno=2\nDENIED /proc/1/root/etc/shadow errno=2\nruntime_readonly=1 uid=65534 gid=65534\nCapEff:\t0000000000000000\nNoNewPrivs:\t1\nisolation=PASS (NO HARDWARE ACCESS)\n"
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe-vndk/syscalls.log",
+    "sha256": "fa79d9d7987f7c2fdbcb1db901c8c212677e934443a10eca344b17f496c52927",
+    "bytes": 29952,
+    "relevant_lines": []
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe2/result.json",
+    "sha256": "966a8534c9656822c3c40fc3e669c781a1b7ea6a3b8d6d57fd3197508deeafda",
+    "bytes": 1112,
+    "structure": [
+      "kind",
+      "elapsed_seconds",
+      "returncode",
+      "timed_out",
+      "hardware_devices_exposed",
+      "sensor_success",
+      "command"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe2/stdout.log",
+    "sha256": "7f3eb5298923a1c2cec5e0e7191d6ffe57031ecb2fa5636f883ea1e44220dc78",
+    "bytes": 445,
+    "contents": "DENIED /dev/ttyBCM errno=2\nDENIED /dev/bbd_sensor errno=2\nDENIED /dev/bbd_control errno=2\nDENIED /dev/bbd_patch errno=2\nDENIED /dev/sda errno=2\nDENIED /sys/class/sec/sensorhub/mcu_power errno=2\nDENIED /sys/class/sec/gps/GPS_PWR_EN/value errno=2\nDENIED /efs errno=2\nDENIED /etc/shadow errno=2\nDENIED /proc/1/root/etc/shadow errno=2\nruntime_readonly=1 uid=65534 gid=65534\nCapEff:\t0000000000000000\nNoNewPrivs:\t1\nisolation=PASS (NO HARDWARE ACCESS)\n"
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/probe2/syscalls.log",
+    "sha256": "31c3ec4bcb150274cee298b5e76a5f9553b713978cf9b88bca2242a0633c3a74",
+    "bytes": 29523,
+    "relevant_lines": []
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/stock-manifest.json",
+    "sha256": "facf207883d4a8a541b63721bf504ddc724be01fc7c3b4bc6dcd36d8a974605c",
+    "bytes": 13883,
+    "structure": [
+      "status",
+      "device_writes",
+      "hardware_access",
+      "warning",
+      "origin_paths",
+      "properties",
+      "missing",
+      "invalid_candidates",
+      "files",
+      "source",
+      "images"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/toolkit-tests-final.txt",
+    "sha256": "fceff63409effd228c571f5b8d78089825348d2f2eaeb7eb9dd39d9ff6af9a49",
+    "bytes": 768
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/toolkit-tests.txt",
+    "sha256": "7cc94a390a12b8d9f1bf4515c014c9e4c0ee248bdf609bb9475cfbe92a0c6acb",
+    "bytes": 768
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial/result.json",
+    "sha256": "6856390796c61570e4c18d438c53962d114c5f51cd3b10633cba535080c28965",
+    "bytes": 1099,
+    "structure": [
+      "kind",
+      "elapsed_seconds",
+      "returncode",
+      "timed_out",
+      "hardware_devices_exposed",
+      "sensor_success",
+      "command"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial/stdout.log",
+    "sha256": "92ec3f0de8f38834db8e7f4865dfbbcb02865659c29efae30921f8d421b5b5ff",
+    "bytes": 1595,
+    "contents": "Error opening trace file: No such file or directory (2)\ngetService: defaultServiceManager() is null\nGlLhdInterface::Init(/vendor/etc/sensor/lhd-isolated.conf)\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"FlpName\"=\"tcp\"\n\nSetCfgValue: LHD config \"LheSerialControl\"=\"DISABLED_IN_ISOLATION\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LheClockMHz\"=\"100\"\n\nSetCfgValue: LHD config \"LhePatch\"=\"/no-hardware/bbd-patch\"\n\nSetCfgValue: LHD config \"LheMaxMcuResetTries\"=\"0\"\n\nSetCfgValue: LHD config \"LheBbdPacket\"=\"/no-hardware/bbd-packet\"\n\nSetCfgValue: LHD config \"LheBbdControl\"=\"/no-hardware/bbd-control\"\n\nSetCfgValue: LHD config \"LheBbdSensor\"=\"/no-hardware/bbd-sensor\"\n\nSetCfgValue: LHD config \"Lhe477xDebugFlags\"=\"RPC:FACILITY=33:STDOUT_PUTS:STDOUT_LOG\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LheSensorIpc\"=\"true\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LhePinMux\"=\"P17=M1\"\n\nSetCfgValue: LHD config \"LheAutoBaudDelayMS\"=\"10\"\n\nSetCfgValue: LHD config \"LheBbdReliable\"=\"/no-hardware/bbd-reliable\"\n\ngetConfig: Can't find \"UrgentPatch=\" in /vendor/etc/sensor/lhd-isolated.conf\n\ngetConfig: Can't find \"LheFailSafe=\" in /vendor/etc/sensor/lhd-isolated.conf\n\nEnableLhdKiller() lhd killer enabled\n\nEnableLhdKiller() /sys/bbd/lk_enable open failed(No such file or directory)\n\nGpsHalOneInstance: open(\"/tmp/nv/.lhd.lock\", O_WRONLY|O_CREAT, 0660) returned -1, errno=2\n\nLHD Daemon Process is already running, the second instance will not be started!LHD Daemon Process is already running, the second instance will not be started!\n"
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial/syscalls.log",
+    "sha256": "e4bd984ba99a3ab8d8251021c73616c478e7f813c13213451a06e7971953021f",
+    "bytes": 47355,
+    "relevant_lines": [
+      "719859 faccessat(AT_FDCWD, \"/dev/hwbinder\", R_OK|W_OK) = -1 ENOENT (No such file or directory)",
+      "719859 write(2, \"getService: defaultServiceManager() is null\", 43) = 43",
+      "719859 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "719859 write(2, \"SetCfgValue: LHD config \\\"LhePatch\\\"=\\\"/no-hardware/bbd-patch\\\"\\n\", 60) = 60",
+      "719859 write(2, \"SetCfgValue: LHD config \\\"LheBbdPacket\\\"=\\\"/no-hardware/bbd-packet\\\"\\n\", 65) = 65",
+      "719859 write(2, \"SetCfgValue: LHD config \\\"LheBbdControl\\\"=\\\"/no-hardware/bbd-control\\\"\\n\", 67) = 67",
+      "719859 write(2, \"SetCfgValue: LHD config \\\"LheBbdSensor\\\"=\\\"/no-hardware/bbd-sensor\\\"\\n\", 65) = 65",
+      "719859 write(2, \"SetCfgValue: LHD config \\\"LheBbdReliable\\\"=\\\"/no-hardware/bbd-reliable\\\"\\n\", 69) = 69",
+      "719859 socket(AF_INET, SOCK_STREAM, IPPROTO_IP) = -1 EACCES (Permission denied)",
+      "719859 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "719859 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "719859 openat(AT_FDCWD, \"/sys/bbd/lk_enable\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "719859 write(2, \"EnableLhdKiller() /sys/bbd/lk_enable open failed(No such file or directory)\\n\", 76) = 76"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial-manifest.json",
+    "sha256": "0972c3e4831313cacc8d092afcb4a1eb574c0973f8c25af64ddb17f963454eac",
+    "bytes": 5933,
+    "structure": [
+      "apex/com.android.runtime/bin/linker64",
+      "apex/com.android.runtime/etc/ld.config.txt",
+      "apex/com.android.runtime/lib64/bionic/libc.so",
+      "apex/com.android.runtime/lib64/bionic/libdl.so",
+      "apex/com.android.runtime/lib64/bionic/libm.so",
+      "isolation-probe",
+      "system/bin/linker64",
+      "system/build.prop",
+      "system/etc/ld.config.29.txt",
+      "system/etc/ld.config.txt",
+      "system/etc/prop.default",
+      "system/lib64/android.frameworks.schedulerservice@1.0.so",
+      "system/lib64/android.system.suspend@1.0.so",
+      "system/lib64/ld-android.so",
+      "system/lib64/libbase.so",
+      "system/lib64/libbinder.so",
+      "system/lib64/libbinderthreadstate.so",
+      "system/lib64/libc++.so",
+      "system/lib64/libc.so",
+      "system/lib64/libcgrouprc.so",
+      "system/lib64/libcutils.so",
+      "system/lib64/libdl.so",
+      "system/lib64/libdl_android.so",
+      "system/lib64/libhardware.so",
+      "system/lib64/libhardware_legacy.so",
+      "system/lib64/libhidlbase.so",
+      "system/lib64/libhidltransport.so",
+      "system/lib64/libhwbinder.so",
+      "system/lib64/liblog.so",
+      "system/lib64/libm.so",
+      "system/lib64/libprocessgroup.so",
+      "system/lib64/libutils.so",
+      "system/lib64/libvndksupport.so",
+      "system/lib64/libz.so",
+      "system/lib64/vndk-29/android.frameworks.schedulerservice@1.0.so",
+      "system/lib64/vndk-29/android.system.suspend@1.0.so",
+      "system/lib64/vndk-29/libbinder.so",
+      "system/lib64/vndk-29/libhardware_legacy.so",
+      "system/lib64/vndk-sp-29/libbase.so",
+      "system/lib64/vndk-sp-29/libbinderthreadstate.so",
+      "system/lib64/vndk-sp-29/libc++.so",
+      "system/lib64/vndk-sp-29/libcutils.so",
+      "system/lib64/vndk-sp-29/libhardware.so",
+      "system/lib64/vndk-sp-29/libhidlbase.so",
+      "system/lib64/vndk-sp-29/libhidltransport.so",
+      "system/lib64/vndk-sp-29/libhwbinder.so",
+      "system/lib64/vndk-sp-29/libprocessgroup.so",
+      "system/lib64/vndk-sp-29/libutils.so",
+      "system/lib64/vndk-sp-29/libz.so",
+      "vendor/bin/hw/lhd",
+      "vendor/build.prop",
+      "vendor/etc/sensor/lhd-isolated.conf",
+      "vendor/etc/sensor/lhd.conf",
+      "vendor/lib64/hw/sensors.exynos9820.so",
+      "vendor/lib64/libssp-log-stderr.so",
+      "vendor/lib64/sensors.sensorhub.so"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial-vndk/result.json",
+    "sha256": "357a9967a61e54b323d4cceb87b3526eb84bc368c8a0b9a5093cd4d341bdd5ad",
+    "bytes": 1117,
+    "structure": [
+      "kind",
+      "elapsed_seconds",
+      "returncode",
+      "timed_out",
+      "hardware_devices_exposed",
+      "sensor_success",
+      "command"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial-vndk/stdout.log",
+    "sha256": "911f4ef4f9c9092ff468e3297a245106d2298d8663fc9836bafb7824c25bc1b4",
+    "bytes": 1442,
+    "contents": "Error opening trace file: No such file or directory (2)\ngetService: defaultServiceManager() is null\nGlLhdInterface::Init(/vendor/etc/sensor/lhd-isolated.conf)\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"FlpName\"=\"tcp\"\n\nSetCfgValue: LHD config \"LheSerialControl\"=\"DISABLED_IN_ISOLATION\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LheClockMHz\"=\"100\"\n\nSetCfgValue: LHD config \"LhePatch\"=\"/no-hardware/bbd-patch\"\n\nSetCfgValue: LHD config \"LheMaxMcuResetTries\"=\"0\"\n\nSetCfgValue: LHD config \"LheBbdPacket\"=\"/no-hardware/bbd-packet\"\n\nSetCfgValue: LHD config \"LheBbdControl\"=\"/no-hardware/bbd-control\"\n\nSetCfgValue: LHD config \"LheBbdSensor\"=\"/no-hardware/bbd-sensor\"\n\nSetCfgValue: LHD config \"Lhe477xDebugFlags\"=\"RPC:FACILITY=33:STDOUT_PUTS:STDOUT_LOG\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LheSensorIpc\"=\"true\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LhePinMux\"=\"P17=M1\"\n\nSetCfgValue: LHD config \"LheAutoBaudDelayMS\"=\"10\"\n\nSetCfgValue: LHD config \"LheBbdReliable\"=\"/no-hardware/bbd-reliable\"\n\ngetConfig: Can't find \"UrgentPatch=\" in /vendor/etc/sensor/lhd-isolated.conf\n\ngetConfig: Can't find \"LheFailSafe=\" in /vendor/etc/sensor/lhd-isolated.conf\n\nEnableLhdKiller() lhd killer enabled\n\nEnableLhdKiller() /sys/bbd/lk_enable open failed(No such file or directory)\n\nASSERT in BbdCommon::Open(/no-hardware/bbd-control)/54 error 2 \"No such file or directory\":56: \n\n"
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial-vndk/syscalls.log",
+    "sha256": "f0897ad79180cd3463a43f918c7ebb025280026f0f0f7b0b64ae983633c313f1",
+    "bytes": 71372,
+    "relevant_lines": [
+      "723147 faccessat(AT_FDCWD, \"/dev/hwbinder\", R_OK|W_OK) = -1 ENOENT (No such file or directory)",
+      "723147 write(2, \"getService: defaultServiceManager() is null\", 43) = 43",
+      "723147 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "723147 write(2, \"SetCfgValue: LHD config \\\"LhePatch\\\"=\\\"/no-hardware/bbd-patch\\\"\\n\", 60) = 60",
+      "723147 write(2, \"SetCfgValue: LHD config \\\"LheBbdPacket\\\"=\\\"/no-hardware/bbd-packet\\\"\\n\", 65) = 65",
+      "723147 write(2, \"SetCfgValue: LHD config \\\"LheBbdControl\\\"=\\\"/no-hardware/bbd-control\\\"\\n\", 67) = 67",
+      "723147 write(2, \"SetCfgValue: LHD config \\\"LheBbdSensor\\\"=\\\"/no-hardware/bbd-sensor\\\"\\n\", 65) = 65",
+      "723147 write(2, \"SetCfgValue: LHD config \\\"LheBbdReliable\\\"=\\\"/no-hardware/bbd-reliable\\\"\\n\", 69) = 69",
+      "723147 socket(AF_INET, SOCK_STREAM, IPPROTO_IP) = -1 EACCES (Permission denied)",
+      "723147 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "723147 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "723147 openat(AT_FDCWD, \"/sys/bbd/lk_enable\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "723147 write(2, \"EnableLhdKiller() /sys/bbd/lk_enable open failed(No such file or directory)\\n\", 76) = 76",
+      "723147 read(4, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "723147 openat(AT_FDCWD, \"/no-hardware/gpio-standby\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "723147 openat(AT_FDCWD, \"/no-hardware/gpio-power\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "723147 openat(AT_FDCWD, \"/no-hardware/gpio-standby\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "723147 openat(AT_FDCWD, \"/no-hardware/gpio-power\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "723147 openat(AT_FDCWD, \"/no-hardware/gpio-standby\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "723147 openat(AT_FDCWD, \"/no-hardware/bbd-control\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "723147 write(2, \"ASSERT in BbdCommon::Open(/no-hardware/bbd-control)/54 error 2 \\\"No such file or directory\\\":56: \\n\", 96) = 96",
+      "723147 openat(AT_FDCWD, \"/no-hardware/gpio-standby\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "723147 openat(AT_FDCWD, \"/no-hardware/gpio-power\", O_RDWR) = -1 ENOENT (No such file or directory)"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial2/result.json",
+    "sha256": "f8062bcb49de56711af4b1c3c3d85b0c36b9b6dfe4ea8f48940ea5ace7a5098c",
+    "bytes": 1155,
+    "structure": [
+      "kind",
+      "elapsed_seconds",
+      "returncode",
+      "timed_out",
+      "hardware_devices_exposed",
+      "sensor_success",
+      "command"
+    ]
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial2/stdout.log",
+    "sha256": "911f4ef4f9c9092ff468e3297a245106d2298d8663fc9836bafb7824c25bc1b4",
+    "bytes": 1442,
+    "contents": "Error opening trace file: No such file or directory (2)\ngetService: defaultServiceManager() is null\nGlLhdInterface::Init(/vendor/etc/sensor/lhd-isolated.conf)\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"FlpName\"=\"tcp\"\n\nSetCfgValue: LHD config \"LheSerialControl\"=\"DISABLED_IN_ISOLATION\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LheClockMHz\"=\"100\"\n\nSetCfgValue: LHD config \"LhePatch\"=\"/no-hardware/bbd-patch\"\n\nSetCfgValue: LHD config \"LheMaxMcuResetTries\"=\"0\"\n\nSetCfgValue: LHD config \"LheBbdPacket\"=\"/no-hardware/bbd-packet\"\n\nSetCfgValue: LHD config \"LheBbdControl\"=\"/no-hardware/bbd-control\"\n\nSetCfgValue: LHD config \"LheBbdSensor\"=\"/no-hardware/bbd-sensor\"\n\nSetCfgValue: LHD config \"Lhe477xDebugFlags\"=\"RPC:FACILITY=33:STDOUT_PUTS:STDOUT_LOG\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LheSensorIpc\"=\"true\"\n\nSetCfgValue: Critical Error. Unknown configuration parameter \"LhePinMux\"=\"P17=M1\"\n\nSetCfgValue: LHD config \"LheAutoBaudDelayMS\"=\"10\"\n\nSetCfgValue: LHD config \"LheBbdReliable\"=\"/no-hardware/bbd-reliable\"\n\ngetConfig: Can't find \"UrgentPatch=\" in /vendor/etc/sensor/lhd-isolated.conf\n\ngetConfig: Can't find \"LheFailSafe=\" in /vendor/etc/sensor/lhd-isolated.conf\n\nEnableLhdKiller() lhd killer enabled\n\nEnableLhdKiller() /sys/bbd/lk_enable open failed(No such file or directory)\n\nASSERT in BbdCommon::Open(/no-hardware/bbd-control)/54 error 2 \"No such file or directory\":56: \n\n"
+  },
+  {
+    "path": "reports/evidence/ssp-stock-20261117/trial2/syscalls.log",
+    "sha256": "339d542543355a81f3f0e6c1cac027a54293629ee06e2c5c456214964251a4bf",
+    "bytes": 51781,
+    "relevant_lines": [
+      "720826 faccessat(AT_FDCWD, \"/dev/hwbinder\", R_OK|W_OK) = -1 ENOENT (No such file or directory)",
+      "720826 write(2, \"getService: defaultServiceManager() is null\", 43) = 43",
+      "720826 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "720826 write(2, \"SetCfgValue: LHD config \\\"LhePatch\\\"=\\\"/no-hardware/bbd-patch\\\"\\n\", 60) = 60",
+      "720826 write(2, \"SetCfgValue: LHD config \\\"LheBbdPacket\\\"=\\\"/no-hardware/bbd-packet\\\"\\n\", 65) = 65",
+      "720826 write(2, \"SetCfgValue: LHD config \\\"LheBbdControl\\\"=\\\"/no-hardware/bbd-control\\\"\\n\", 67) = 67",
+      "720826 write(2, \"SetCfgValue: LHD config \\\"LheBbdSensor\\\"=\\\"/no-hardware/bbd-sensor\\\"\\n\", 65) = 65",
+      "720826 write(2, \"SetCfgValue: LHD config \\\"LheBbdReliable\\\"=\\\"/no-hardware/bbd-reliable\\\"\\n\", 69) = 69",
+      "720826 socket(AF_INET, SOCK_STREAM, IPPROTO_IP) = -1 EACCES (Permission denied)",
+      "720826 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "720826 read(3, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "720826 openat(AT_FDCWD, \"/sys/bbd/lk_enable\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "720826 write(2, \"EnableLhdKiller() /sys/bbd/lk_enable open failed(No such file or directory)\\n\", 76) = 76",
+      "720826 read(4, \"PortName=tcp:127.0.0.1:300\\nFlpName=tcp\\nLheName=bbd\\nLheSerialControl=DISABLED_IN_ISOLATION\\nLheClockMHz=100\\n\\nGpioNPowerPath=/no-hardware/gpio-power\\nGpioNStdbyPath\"..., 4096) = 1216",
+      "720826 openat(AT_FDCWD, \"/no-hardware/gpio-standby\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "720826 openat(AT_FDCWD, \"/no-hardware/gpio-power\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "720826 openat(AT_FDCWD, \"/no-hardware/gpio-standby\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "720826 openat(AT_FDCWD, \"/no-hardware/gpio-power\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "720826 openat(AT_FDCWD, \"/no-hardware/gpio-standby\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "720826 openat(AT_FDCWD, \"/no-hardware/bbd-control\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "720826 write(2, \"ASSERT in BbdCommon::Open(/no-hardware/bbd-control)/54 error 2 \\\"No such file or directory\\\":56: \\n\", 96) = 96",
+      "720826 openat(AT_FDCWD, \"/no-hardware/gpio-standby\", O_RDWR) = -1 ENOENT (No such file or directory)",
+      "720826 openat(AT_FDCWD, \"/no-hardware/gpio-power\", O_RDWR) = -1 ENOENT (No such file or directory)"
+    ]
+  }
+]

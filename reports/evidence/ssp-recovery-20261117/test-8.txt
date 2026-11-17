@@ -1,0 +1,4 @@
+ACTION t=800 name=screenshot
+SUMMARY actions=1 emitted=1 menu_open=0
+NOTE state machine replayed from the real FSM core
+PASS: Power+VolumeDown maps to screenshot and suppresses single-key classes

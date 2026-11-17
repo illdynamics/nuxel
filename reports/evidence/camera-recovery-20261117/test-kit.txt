@@ -1,0 +1,29 @@
+test_all_expected (test_camera_recovery.CameraAuditTests.test_all_expected) ... ok
+test_duplicate_names_detected (test_camera_recovery.CameraAuditTests.test_duplicate_names_detected) ... ok
+test_fake_fetch_rejected_and_no_file (test_camera_recovery.CameraAuditTests.test_fake_fetch_rejected_and_no_file) ... ok
+test_manifest (test_camera_recovery.CameraAuditTests.test_manifest) ... ok
+test_missing_is_not_success (test_camera_recovery.CameraAuditTests.test_missing_is_not_success) ... ok
+test_no_special_devices (test_camera_recovery.CameraAuditTests.test_no_special_devices) ... ok
+test_occupied_destination_not_overwritten (test_camera_recovery.CameraAuditTests.test_occupied_destination_not_overwritten) ... ok
+test_symlink_rejected (test_camera_recovery.CameraAuditTests.test_symlink_rejected) ... ok
+test_valid_mock_fetch (test_camera_recovery.CameraAuditTests.test_valid_mock_fetch) ... ok
+test_wrong_hash (test_camera_recovery.CameraAuditTests.test_wrong_hash) ... ok
+test_all_expected (test_camera_recovery.StrictAuditTests.test_all_expected) ... ok
+test_duplicate_names_detected (test_camera_recovery.StrictAuditTests.test_duplicate_names_detected) ... ok
+test_fake_fetch_rejected_and_no_file (test_camera_recovery.StrictAuditTests.test_fake_fetch_rejected_and_no_file) ... ok
+test_manifest (test_camera_recovery.StrictAuditTests.test_manifest) ... ok
+test_missing_is_not_success (test_camera_recovery.StrictAuditTests.test_missing_is_not_success) ... ok
+test_no_special_devices (test_camera_recovery.StrictAuditTests.test_no_special_devices) ... ok
+test_occupied_destination_not_overwritten (test_camera_recovery.StrictAuditTests.test_occupied_destination_not_overwritten) ... ok
+test_strict_ambiguous_path (test_camera_recovery.StrictAuditTests.test_strict_ambiguous_path) ... ok
+test_strict_mismatch (test_camera_recovery.StrictAuditTests.test_strict_mismatch) ... ok
+test_strict_missing (test_camera_recovery.StrictAuditTests.test_strict_missing) ... ok
+test_strict_valid (test_camera_recovery.StrictAuditTests.test_strict_valid) ... ok
+test_symlink_rejected (test_camera_recovery.StrictAuditTests.test_symlink_rejected) ... ok
+test_valid_mock_fetch (test_camera_recovery.StrictAuditTests.test_valid_mock_fetch) ... ok
+test_wrong_hash (test_camera_recovery.StrictAuditTests.test_wrong_hash) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.048s
+
+OK
