@@ -95,6 +95,8 @@ def cancel_download(job_id: str) -> Dict[str, Any]:
 def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
     jdir = _job_dir(job["job_id"])
     try:
+        if job.get("cancel"):
+            raise RuntimeError("cancelled by owner")
         os.makedirs(jdir, mode=0o750, exist_ok=True)
         _set(job, "check_space")
         need = job["total_bytes"] + MIN_FREE_AFTER
@@ -119,6 +121,8 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
             h = hashlib.sha256()
             with open(dst, "rb") as fh:
                 for chunk in iter(lambda: fh.read(1 << 20), b""):
+                    if job.get("cancel"):
+                        raise RuntimeError("cancelled by owner")
                     h.update(chunk)
             if h.hexdigest() != f["sha256"]:
                 raise RuntimeError("sha256 mismatch for %s" % f["path"])
@@ -140,6 +144,8 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
             _set(job, "quarantined", "non-GGUF download is not installed by this path", 1.0)
             raise RuntimeError("format_not_supported")
         _set(job, "atomic_install")
+        if job.get("cancel"):
+            raise RuntimeError("cancelled by owner")
         target = os.path.join(registry.package_dir(m))
         os.makedirs(os.path.dirname(target), mode=0o750, exist_ok=True)
         if os.path.exists(target):
@@ -165,6 +171,8 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
 def _self_test(job, manifest, target):
     from runtime.llama_cpp.adapter import LlamaCppRuntime
     from common.runtime_api import RuntimeProfile
+    if job.get("cancel"):
+        raise RuntimeError("cancelled by owner")
     _set(job, "self_test", "Loading exact package and generating test tokens", 1.0)
     rt = LlamaCppRuntime(runner=False)
     result = rt.self_test(manifest, target, RuntimeProfile(
@@ -185,6 +193,8 @@ def _self_test(job, manifest, target):
 def _download(rel: str, base_url: str, dst: str, size: int, job: Dict[str, Any]):
     for attempt in range(3):
         try:
+            if job.get("cancel"):
+                raise RuntimeError("cancelled by owner")
             have = os.path.getsize(dst) if os.path.exists(dst) else 0
             headers = {"Range": "bytes=%d-" % have} if have else {}
             req = urllib.request.Request(base_url, headers=headers)

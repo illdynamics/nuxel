@@ -31,10 +31,15 @@ try {
   assert(!container.querySelector('button').disabled, 'Trusted accepted package cannot download');
   container.querySelector('button').click();
   await new Promise(resolve => setTimeout(resolve, 10));
+  assert(checkbox.disabled, 'License changed during active transfer');
+  assert(container.querySelector('button').disabled, 'Concurrent download enabled');
   assert(calls[0].operation === 'start_download', 'Wrong download operation');
   assert(calls[0].params.license_revision === variant.source_revision, 'License revision not bound');
   await new Promise(resolve => setTimeout(resolve, 1600));
   assert(container.textContent.includes('ready'), 'Progress not polled');
+  assert(container.querySelector('button').disabled, 'Ready package can be downloaded again');
+  assert(container.querySelector('button').textContent === 'Verified & ready', 'Ready label missing');
+  assert(container.querySelector('select'), 'Per-model runtime control missing');
   library.render([], false);
   assert(!container.querySelector('progress'), 'OFF retained active progress');
   result.textContent = 'PASS: OFF, trust gating, safe text, revision-bound download and progress polling (fixtures only)';

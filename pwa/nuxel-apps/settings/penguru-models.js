@@ -6,7 +6,7 @@ export function modelLibrary(container, call) {
     result.textContent = text;
     return result;
   }
-  function render(cards, enabled) {
+  function render(cards, enabled, perModel = {}) {
     if (enabled && jobs.size) return;
     jobs.clear();
     container.replaceChildren();
@@ -22,7 +22,7 @@ export function modelLibrary(container, call) {
       for (const variant of card.variants) {
         article.append(node('p', `${variant.format} · ${variant.quantization} · ${(variant.size_bytes / 1e9).toFixed(2)} GB · ${variant.engine}`));
         const source = node('a', variant.source_repo);
-        source.href = 'https://huggingface.co/' + variant.source_repo;
+        source.href = 'https://huggingface.co/' + variant.source_repo + '/tree/' + variant.source_revision;
         source.target = '_blank';
         source.rel = 'noopener noreferrer';
         article.append(source, node('p', `Revision: ${variant.source_revision}`));
@@ -38,8 +38,12 @@ export function modelLibrary(container, call) {
         const label = node('label', '');
         label.append(accepted, document.createTextNode(' I reviewed this revision’s license and provenance.'));
         const download = node('button', variant.status === 'ready' ? 'Verified & ready' : 'Download from Hugging Face');
+        let active = false;
+        const updateDownload = () => {
+          download.disabled = active || !accepted.checked || !variant.download_allowed || variant.status === 'ready';
+        };
         download.disabled = true;
-        accepted.onchange = () => { download.disabled = !accepted.checked || !variant.download_allowed || variant.status === 'ready'; };
+        accepted.onchange = updateDownload;
         const progress = document.createElement('progress');
         progress.max = 1;
         progress.value = 0;
@@ -49,20 +53,57 @@ export function modelLibrary(container, call) {
         const cancel = node('button', 'Cancel download');
         cancel.hidden = true;
         download.onclick = async () => {
-          download.disabled = true;
+          if (download.disabled) return;
+          active = true;
+          accepted.disabled = true;
+          updateDownload();
           try {
             const result = await call('start_download', {model_id: card.model_id,
               variant_id: variant.variant_id, license_accepted: accepted.checked,
               license_revision: variant.source_revision});
             progress.hidden = cancel.hidden = false;
-            jobs.set(result.job_id, {progress, status, cancel, download});
+            jobs.set(result.job_id, {progress, status, cancel, finish: state => {
+              active = false;
+              accepted.disabled = !variant.download_allowed;
+              if (state === 'ready') {
+                variant.status = 'ready';
+                download.textContent = 'Verified & ready';
+                remove.disabled = false;
+              }
+              updateDownload();
+            }});
             cancel.onclick = () => call('cancel_download', {job_id: result.job_id}).catch(error => { status.textContent = error.message; });
           } catch (error) {
             status.textContent = error.message;
-            download.disabled = !variant.download_allowed;
+            active = false;
+            accepted.disabled = !variant.download_allowed;
+            updateDownload();
           }
         };
-        article.append(label, download, cancel, progress, status);
+        const remove = node('button', 'Delete package');
+        remove.disabled = variant.status === 'not_installed';
+        remove.onclick = async () => {
+          if (active || jobs.size) { status.textContent = 'Finish or cancel the download first.'; return; }
+          if (!confirm(`Delete ${card.model_id} ${variant.variant_id} from this device?`)) return;
+          remove.disabled = true;
+          try {
+            await call('delete_model', {model_id: card.model_id, variant_id: variant.variant_id});
+            render((await call('list_models')).models, true, perModel);
+          } catch (error) { status.textContent = error.message; remove.disabled = false; }
+        };
+        const override = node('select', '');
+        override.setAttribute('aria-label', card.model_id + ' runtime override');
+        for (const [value, title] of [['inherit', 'Inherit global runtime'], ['llama.cpp', 'llama.cpp'], ['onnxruntime-genai', 'ORT GenAI (requires ONNX package)']]) {
+          const option = node('option', title); option.value = value; override.append(option);
+        }
+        override.value = perModel[card.model_id] || 'inherit';
+        override.onchange = async () => {
+          try {
+            await call('set_runtime', {model_id: card.model_id, engine: override.value});
+            perModel[card.model_id] = override.value;
+          } catch (error) { status.textContent = error.message; override.value = perModel[card.model_id] || 'inherit'; }
+        };
+        article.append(label, download, remove, cancel, progress, status, override);
       }
       container.append(article);
     }
@@ -78,7 +119,7 @@ export function modelLibrary(container, call) {
         if (['ready', 'error', 'quarantined', 'cancelled'].includes(job.state)) {
           jobs.delete(id);
           view.cancel.hidden = true;
-          view.download.disabled = job.state === 'ready';
+          view.finish(job.state);
         }
       }
     } catch (error) {
