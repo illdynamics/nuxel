@@ -28,7 +28,7 @@
 (function (global) {
   'use strict';
 
-  const VERSION = 'v0.8.7-beta';
+  const VERSION = 'v0.8.8-beta';
   const DOTS = 9;
   const PATTERN_DOT = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
     x: 50 + (i % 3) * 100, y: 50 + Math.floor(i / 3) * 100,
