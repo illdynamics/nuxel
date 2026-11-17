@@ -81,7 +81,8 @@ def preflight(root:Path)->dict:
     data=walk_files(root)
     absent=[x for x in REQUIRED_FILES if x not in data]
     probe_ready=('isolation-probe' in data)
-    shim_ready=all(x in data for x in EXEC_TRIAL)
+    shim_ready=(all(x in data for x in EXEC_TRIAL) or
+                'vendor/lib64/libssp-log-stderr.so' in data)
     conf=data.get('vendor/etc/sensor/lhd-isolated.conf',b'')
     expected=safe_conf(data.get('vendor/etc/sensor/lhd.conf',b'')) if data.get('vendor/etc/sensor/lhd.conf') else b''
     safe=bool(conf) and conf==expected

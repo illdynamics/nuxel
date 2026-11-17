@@ -62,3 +62,26 @@ python3 -S NUXEL_SSP_RECOVERY_V2/ssp_live_snapshot.py \
 Each sample records host UTC start/end times and the observed kernel. The key is
 passed directly to SSH; its contents and path are not saved in the report.
 Non-finite vectors (NaN/infinity) are rejected as invalid evidence.
+
+## Owner-held Samsung ext4 images (offline)
+
+`ssp_image_collect.py` reads raw system/vendor ext4 images using `debugfs -R`
+without mounting them or using a phone connection. First extract only
+`system.img.lz4` and `vendor.img.lz4` from the owner-held AP archive, decompress
+with `lz4`, and convert Android sparse images with `simg2img`. Keep these
+proprietary artifacts outside Git. Outputs must be outside the repository.
+
+```sh
+python3 -S NUXEL_SSP_RECOVERY_V2/ssp_image_collect.py \
+  --repo-root . --system-image /owner/system.raw.img \
+  --vendor-image /owner/vendor.raw.img --output /owner/new-runtime \
+  --debugfs /opt/homebrew/opt/e2fsprogs/sbin/debugfs
+```
+
+The collector requires all four vendor anchors to match before writing the
+runtime. It resolves Android symlinks inside the images, supports the Samsung
+Android 10 flattened `com.android.runtime.release` APEX, and retains VNDK-29
+variants alongside the broad static dependency closure. Other APEX layouts
+are unsupported. Its manifest records source image hashes and each extracted
+file's hash and image path. Static closure is not a namespace or hardware test.
+See `reports/SSP-STOCK-RUNTIME-2026-11-17.md` for the actual matched-image trial.

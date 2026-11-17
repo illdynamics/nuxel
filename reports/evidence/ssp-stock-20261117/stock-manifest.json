@@ -1,0 +1,295 @@
+{
+  "status": "STATIC_COLLECTION_ONLY",
+  "device_writes": 0,
+  "hardware_access": false,
+  "warning": "Host runtime file collection is not permission to execute lhd or transmit firmware.",
+  "origin_paths": {
+    "vendor/bin/hw/lhd": "vendor.img:/bin/hw/lhd",
+    "vendor/etc/sensor/lhd.conf": "vendor.img:/etc/sensor/lhd.conf",
+    "vendor/lib64/sensors.sensorhub.so": "vendor.img:/lib64/sensors.sensorhub.so",
+    "vendor/lib64/hw/sensors.exynos9820.so": "vendor.img:/lib64/hw/sensors.exynos9820.so",
+    "system/bin/linker64": "system.img:/system/apex/com.android.runtime.release/bin/linker64",
+    "system/lib64/liblog.so": "system.img:/system/lib64/liblog.so",
+    "system/lib64/libutils.so": "system.img:/system/lib64/libutils.so",
+    "system/lib64/libz.so": "system.img:/system/lib64/libz.so",
+    "system/lib64/libhardware_legacy.so": "system.img:/system/lib64/libhardware_legacy.so",
+    "system/lib64/libc++.so": "system.img:/system/lib64/libc++.so",
+    "system/lib64/libc.so": "system.img:/system/apex/com.android.runtime.release/lib64/bionic/libc.so",
+    "system/lib64/libm.so": "system.img:/system/apex/com.android.runtime.release/lib64/bionic/libm.so",
+    "system/lib64/libdl.so": "system.img:/system/apex/com.android.runtime.release/lib64/bionic/libdl.so",
+    "system/lib64/android.frameworks.schedulerservice@1.0.so": "system.img:/system/lib64/android.frameworks.schedulerservice@1.0.so",
+    "system/lib64/libcutils.so": "system.img:/system/lib64/libcutils.so",
+    "system/lib64/libbase.so": "system.img:/system/lib64/libbase.so",
+    "system/lib64/libhidlbase.so": "system.img:/system/lib64/libhidlbase.so",
+    "system/lib64/libhidltransport.so": "system.img:/system/lib64/libhidltransport.so",
+    "system/lib64/libhardware.so": "system.img:/system/lib64/libhardware.so",
+    "system/lib64/libprocessgroup.so": "system.img:/system/lib64/libprocessgroup.so",
+    "system/lib64/libvndksupport.so": "system.img:/system/lib64/libvndksupport.so",
+    "system/lib64/libbinder.so": "system.img:/system/lib64/libbinder.so",
+    "system/lib64/libhwbinder.so": "system.img:/system/lib64/libhwbinder.so",
+    "system/lib64/android.system.suspend@1.0.so": "system.img:/system/lib64/android.system.suspend@1.0.so",
+    "system/lib64/ld-android.so": "system.img:/system/lib64/ld-android.so",
+    "system/lib64/libbinderthreadstate.so": "system.img:/system/lib64/libbinderthreadstate.so",
+    "system/lib64/libcgrouprc.so": "system.img:/system/lib64/libcgrouprc.so",
+    "system/lib64/libdl_android.so": "system.img:/system/lib64/libdl_android.so",
+    "vendor/build.prop": "vendor.img:/build.prop",
+    "system/build.prop": "system.img:/system/build.prop",
+    "system/etc/prop.default": "system.img:/system/etc/prop.default",
+    "system/etc/ld.config.29.txt": "system.img:/system/etc/ld.config.29.txt",
+    "apex/com.android.runtime/bin/linker64": "system.img:/system/apex/com.android.runtime.release/bin/linker64",
+    "apex/com.android.runtime/lib64/bionic/libc.so": "system.img:/system/apex/com.android.runtime.release/lib64/bionic/libc.so",
+    "apex/com.android.runtime/lib64/bionic/libm.so": "system.img:/system/apex/com.android.runtime.release/lib64/bionic/libm.so",
+    "apex/com.android.runtime/lib64/bionic/libdl.so": "system.img:/system/apex/com.android.runtime.release/lib64/bionic/libdl.so",
+    "apex/com.android.runtime/etc/ld.config.txt": "system.img:/system/apex/com.android.runtime.release/etc/ld.config.txt",
+    "system/lib64/vndk-29/android.frameworks.schedulerservice@1.0.so": "system.img:/system/lib64/vndk-29/android.frameworks.schedulerservice@1.0.so",
+    "system/lib64/vndk-29/android.system.suspend@1.0.so": "system.img:/system/lib64/vndk-29/android.system.suspend@1.0.so",
+    "system/lib64/vndk-sp-29/libbase.so": "system.img:/system/lib64/vndk-sp-29/libbase.so",
+    "system/lib64/vndk-29/libbinder.so": "system.img:/system/lib64/vndk-29/libbinder.so",
+    "system/lib64/vndk-sp-29/libbinderthreadstate.so": "system.img:/system/lib64/vndk-sp-29/libbinderthreadstate.so",
+    "system/lib64/vndk-sp-29/libc++.so": "system.img:/system/lib64/vndk-sp-29/libc++.so",
+    "system/lib64/vndk-sp-29/libcutils.so": "system.img:/system/lib64/vndk-sp-29/libcutils.so",
+    "system/lib64/vndk-sp-29/libhardware.so": "system.img:/system/lib64/vndk-sp-29/libhardware.so",
+    "system/lib64/vndk-29/libhardware_legacy.so": "system.img:/system/lib64/vndk-29/libhardware_legacy.so",
+    "system/lib64/vndk-sp-29/libhidlbase.so": "system.img:/system/lib64/vndk-sp-29/libhidlbase.so",
+    "system/lib64/vndk-sp-29/libhidltransport.so": "system.img:/system/lib64/vndk-sp-29/libhidltransport.so",
+    "system/lib64/vndk-sp-29/libhwbinder.so": "system.img:/system/lib64/vndk-sp-29/libhwbinder.so",
+    "system/lib64/vndk-sp-29/libprocessgroup.so": "system.img:/system/lib64/vndk-sp-29/libprocessgroup.so",
+    "system/lib64/vndk-sp-29/libutils.so": "system.img:/system/lib64/vndk-sp-29/libutils.so",
+    "system/lib64/vndk-sp-29/libz.so": "system.img:/system/lib64/vndk-sp-29/libz.so"
+  },
+  "properties": {
+    "vendor/build.prop": {
+      "ro.vendor.build.fingerprint": "samsung/beyond2ltexx/beyond2:10/QP1A.190711.020/G975FXXS9DTK9:user/release-keys",
+      "ro.vendor.build.version.sdk": "29",
+      "ro.product.vendor.device": "beyond2"
+    },
+    "system/build.prop": {
+      "ro.build.version.sdk": "29",
+      "ro.build.version.release": "10"
+    },
+    "system/etc/prop.default": {}
+  },
+  "missing": [],
+  "invalid_candidates": [],
+  "files": {
+    "vendor/bin/hw/lhd": {
+      "sha256": "6362e80d1f2ae37c76dd5f468bf08abacb89e1c2d2b80976d5b1c3abbf761dfe",
+      "bytes": 318024
+    },
+    "vendor/etc/sensor/lhd.conf": {
+      "sha256": "1660da1b4f024e4ed6fd4b99e62145747d6eb27a7fe84ad58af240b7edd46bc4",
+      "bytes": 1264
+    },
+    "vendor/lib64/sensors.sensorhub.so": {
+      "sha256": "de0110a7065f39723fc7436f4d5451d92572d87fe9a3ae8550cc4e88f3cd5718",
+      "bytes": 212192
+    },
+    "vendor/lib64/hw/sensors.exynos9820.so": {
+      "sha256": "44b26ae85510b2c4147d0ff8a518211e8a475fd29c002922f53b5a726e4d2ef0",
+      "bytes": 15336
+    },
+    "system/bin/linker64": {
+      "sha256": "20a066d043128ff56bc115c172cccb5d7db65f5c1416a8248a069ba6a57069be",
+      "bytes": 1608256
+    },
+    "system/lib64/liblog.so": {
+      "sha256": "ab35b183162157a23b2a00697cf5c0965b7b10b1bbbe0d9b978e62d15b10fabe",
+      "bytes": 92240
+    },
+    "system/lib64/libutils.so": {
+      "sha256": "57155fceabd7820bf7ce2a9f2c34e4fbd2db3e4b86ac6b632cb118ca78b8efe0",
+      "bytes": 117416
+    },
+    "system/lib64/libz.so": {
+      "sha256": "743d282253b549b11d8259a51e6a963c8ec7c55bf85f5e62c8f33f9922129f46",
+      "bytes": 106472
+    },
+    "system/lib64/libhardware_legacy.so": {
+      "sha256": "857c3307e6d939f15b3424286ab3afb0205581964e89d70e18d061400048ced3",
+      "bytes": 24256
+    },
+    "system/lib64/libc++.so": {
+      "sha256": "e3cdb7e15bb2b172d3dfada9ce5d171718ebe2ae10253cba5ac4d4ac71a21860",
+      "bytes": 845928
+    },
+    "system/lib64/libc.so": {
+      "sha256": "2308e1676ab55cebd2c1207c1149038929132b6da8533e590fce943fe34fd506",
+      "bytes": 1245176
+    },
+    "system/lib64/libm.so": {
+      "sha256": "78aa48ca8b154f4f43047a687c1259e4ed7e5f6e2bb686beff60c6978c428a88",
+      "bytes": 229352
+    },
+    "system/lib64/libdl.so": {
+      "sha256": "d49dba9e449f25ebfed4edfa2af6b811ba36bd1fe6683475cd8e5821fefe5acd",
+      "bytes": 14016
+    },
+    "system/lib64/android.frameworks.schedulerservice@1.0.so": {
+      "sha256": "c98eeafdb73e1eb4bec0c66e09161049cadf6a59e466ae57c7ffe883f61d7354",
+      "bytes": 83688
+    },
+    "system/lib64/libcutils.so": {
+      "sha256": "da87e53bb18cb70d8804d489f424d92465177f2e0eca765353cdbe1e33cd560e",
+      "bytes": 82552
+    },
+    "system/lib64/libbase.so": {
+      "sha256": "cfd3b9dbc37bbf3dd21b30f0940c3e6fcfbae6b4d45a180efef91967cede39ef",
+      "bytes": 83552
+    },
+    "system/lib64/libhidlbase.so": {
+      "sha256": "0082393cd3a34c524353e6c820dadb4eea018f11f3311ed9b339cb823a6ecc17",
+      "bytes": 692168
+    },
+    "system/lib64/libhidltransport.so": {
+      "sha256": "56ad32b30e6fbf6eef34d7ad1d8dd63f8538ffef3e84af49db834643afae6014",
+      "bytes": 14896
+    },
+    "system/lib64/libhardware.so": {
+      "sha256": "655b29af09b86f40ddc70637cad5e97be025ba102908c50f001790b713371b6a",
+      "bytes": 15280
+    },
+    "system/lib64/libprocessgroup.so": {
+      "sha256": "f8c8e6a674e61d9b3cd69250bd1595aa5fa3ef017ddbf2f0d95996ab5ad3b6d4",
+      "bytes": 255320
+    },
+    "system/lib64/libvndksupport.so": {
+      "sha256": "fc996233316f315019ea3c9e223154abc44f2cbabbe515135517afd9f3d2e7be",
+      "bytes": 15648
+    },
+    "system/lib64/libbinder.so": {
+      "sha256": "46d749c614e676f8d507aae27518d13ec80c6deea43214eed240aaf849966437",
+      "bytes": 643056
+    },
+    "system/lib64/libhwbinder.so": {
+      "sha256": "0dd38ca10f7d0a00c1ebdf2148f12c1895e58651c6f5206b4a39f6df04cb50fb",
+      "bytes": 14896
+    },
+    "system/lib64/android.system.suspend@1.0.so": {
+      "sha256": "22843cc7b4c38ca12abd88c9a30d6f5489a96b6f0ec45dfbc8052eb07742ecb8",
+      "bytes": 117104
+    },
+    "system/lib64/ld-android.so": {
+      "sha256": "9b59b36f6de1f8976b1ac7e8043b87a41e4b0002795ebd51bbdfea59b2428ae9",
+      "bytes": 9616
+    },
+    "system/lib64/libbinderthreadstate.so": {
+      "sha256": "a00b8b659ffbd8b85ddaa7a27e875c366026ccc2fe50907f82f6db8f6196d420",
+      "bytes": 23896
+    },
+    "system/lib64/libcgrouprc.so": {
+      "sha256": "bd6f40ae9d6db7ad175181907764801852751142edd1b095d2d8acfe5fcc6862",
+      "bytes": 20056
+    },
+    "system/lib64/libdl_android.so": {
+      "sha256": "3deec16a88d1df86c476e541799f32c98e3f20f48c7c24e63f829413803d4d95",
+      "bytes": 10192
+    },
+    "vendor/build.prop": {
+      "sha256": "fb2758e75015c8775b4003cf5bc0da95ff7b0693821a55f559f0115c4e3f699d",
+      "bytes": 4624
+    },
+    "system/build.prop": {
+      "sha256": "623adc96bcd187727d3308240047e87adaf1df566659b4bdabc54f47c356ca5c",
+      "bytes": 3503
+    },
+    "system/etc/prop.default": {
+      "sha256": "801c2556bdd6892b6adb8842edac44632918f7e16927ebe1c9260cfe79e20459",
+      "bytes": 1524
+    },
+    "system/etc/ld.config.29.txt": {
+      "sha256": "5c48bf6bd095a9acbe716271c76e7e0cd6d0a917d1264eddfa5d7c2e8b338e8a",
+      "bytes": 44623
+    },
+    "apex/com.android.runtime/bin/linker64": {
+      "sha256": "20a066d043128ff56bc115c172cccb5d7db65f5c1416a8248a069ba6a57069be",
+      "bytes": 1608256
+    },
+    "apex/com.android.runtime/lib64/bionic/libc.so": {
+      "sha256": "2308e1676ab55cebd2c1207c1149038929132b6da8533e590fce943fe34fd506",
+      "bytes": 1245176
+    },
+    "apex/com.android.runtime/lib64/bionic/libm.so": {
+      "sha256": "78aa48ca8b154f4f43047a687c1259e4ed7e5f6e2bb686beff60c6978c428a88",
+      "bytes": 229352
+    },
+    "apex/com.android.runtime/lib64/bionic/libdl.so": {
+      "sha256": "d49dba9e449f25ebfed4edfa2af6b811ba36bd1fe6683475cd8e5821fefe5acd",
+      "bytes": 14016
+    },
+    "apex/com.android.runtime/etc/ld.config.txt": {
+      "sha256": "71daf19987e8de838b49437a66ad083b4521e476abb9909478ab695c65798ccb",
+      "bytes": 4345
+    },
+    "system/lib64/vndk-29/android.frameworks.schedulerservice@1.0.so": {
+      "sha256": "9ebe0d1ebb198dddd084d2009464c499bf0eef427914c7205e2c2e870657f3a5",
+      "bytes": 83688
+    },
+    "system/lib64/vndk-29/android.system.suspend@1.0.so": {
+      "sha256": "6841155ff369fb47fa82982c01ffc34b5622c8b970db80b88445fc7a376726b7",
+      "bytes": 117104
+    },
+    "system/lib64/vndk-sp-29/libbase.so": {
+      "sha256": "59e91b20dd637b980f89c4b888d2212c6cc11d369c0db277f9ea8b90575ea912",
+      "bytes": 83552
+    },
+    "system/lib64/vndk-29/libbinder.so": {
+      "sha256": "b88e4f68d666b13b48c997896876b8584b510eef1975e96a2a0eb6eb63919052",
+      "bytes": 497920
+    },
+    "system/lib64/vndk-sp-29/libbinderthreadstate.so": {
+      "sha256": "c7a0db9edb894123f2f0c8b46cbe667374a85d9dd55e7def5f8da1541f9e1919",
+      "bytes": 23896
+    },
+    "system/lib64/vndk-sp-29/libc++.so": {
+      "sha256": "91ea46ffe9ee01dd5572d75c5456aba6e3f351999f378452074026b615e6574e",
+      "bytes": 845936
+    },
+    "system/lib64/vndk-sp-29/libcutils.so": {
+      "sha256": "a1daa81588c81f91515a24f253075c2edf11fd554cf6f0028d00167e3f675237",
+      "bytes": 74288
+    },
+    "system/lib64/vndk-sp-29/libhardware.so": {
+      "sha256": "ad4257c0aa2620daf23938a9930d5a969b3f00d1e020616861405a93e5b960e8",
+      "bytes": 15256
+    },
+    "system/lib64/vndk-29/libhardware_legacy.so": {
+      "sha256": "ccf84db8fc1ea0738d1c012d4ccca6920585869ac3eb0474cb5f73d6d487c59f",
+      "bytes": 24256
+    },
+    "system/lib64/vndk-sp-29/libhidlbase.so": {
+      "sha256": "bce0fca480138440d1aac1ee5edb2066289df865a52178552f179e88d6fbb92e",
+      "bytes": 692176
+    },
+    "system/lib64/vndk-sp-29/libhidltransport.so": {
+      "sha256": "c52ecde24197c9b6367b2f56609aab75d9c65649742577da428cc8eb29f22f06",
+      "bytes": 14896
+    },
+    "system/lib64/vndk-sp-29/libhwbinder.so": {
+      "sha256": "17b2bb3a8ea0c27a18098e3b0ef819cc545bd0a6b0bc00a56f35f349377caac0",
+      "bytes": 14896
+    },
+    "system/lib64/vndk-sp-29/libprocessgroup.so": {
+      "sha256": "45711f8b3cce9f43c076cdd19459bad838026618f5079ce8f7722a0fc5fe69e7",
+      "bytes": 251208
+    },
+    "system/lib64/vndk-sp-29/libutils.so": {
+      "sha256": "71a30c306bc92647e15c9b1957234e14dd3020aaa7f6fd5081a1267c6dcecd76",
+      "bytes": 117416
+    },
+    "system/lib64/vndk-sp-29/libz.so": {
+      "sha256": "12232a4b0bd38cc61523deea8b4bb3f9010a1c5c159e0baf4430c210674cac02",
+      "bytes": 106472
+    }
+  },
+  "source": "owner-local raw ext4 images; debugfs read-only; no mounts",
+  "images": {
+    "system": {
+      "sha256": "419d14cddd1f2847e7fc20d4d7ab41eec89b441a84297e616c99377fcf34b462",
+      "bytes": 5976883200
+    },
+    "vendor": {
+      "sha256": "2b4fd8e717fb5b283ec757a36bbea8a7893fab9ee26fb3ddf3cd31b924b6be45",
+      "bytes": 1153433600
+    }
+  }
+}

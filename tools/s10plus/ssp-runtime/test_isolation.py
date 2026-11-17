@@ -51,10 +51,20 @@ class IsolationTests(unittest.TestCase):
         self.assertNotIn("--bind", cmd)
         self.assertNotIn("--dev-bind", cmd)
         self.assertEqual(cmd.count("--ro-bind"), 1)
+        self.assertIn("/tmp/nv", cmd)
+        self.assertIn("/tmp/log", cmd)
+        self.assertLess(cmd.index("/tmp"), cmd.index("/tmp/nv"))
         self.assertEqual(cmd[cmd.index("--ro-bind") + 1:cmd.index("--ro-bind") + 3],
                          ["/owner/runtime", "/"])
         self.assertEqual(cmd[cmd.index("--dev") + 1], "/dev")
         self.assertEqual(cmd[-2:], ["/vendor/bin/hw/lhd", "/vendor/etc/sensor/lhd-isolated.conf"])
+
+    def test_stock_namespace_does_not_override_vndk_with_system_libraries(self):
+        cmd = sandbox(Path('/runtime'), '/bwrap', stock_namespaces=True)
+        self.assertEqual(cmd[cmd.index('LD_LIBRARY_PATH')+1], '/vendor/lib64')
+        self.assertEqual(cmd[cmd.index('LD_PRELOAD')+1], '/vendor/lib64/libssp-log-stderr.so')
+        probe = sandbox(Path('/runtime'), '/bwrap', probe=True, stock_namespaces=True)
+        self.assertEqual(cmd[:-2], probe[:-1])
 
     def test_probe_uses_identical_isolation(self):
         normal = sandbox(Path("/runtime"), "/bwrap")

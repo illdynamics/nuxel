@@ -1,0 +1,22 @@
+..............
+----------------------------------------------------------------------
+Ran 14 tests in 0.016s
+
+OK
+{
+  "accelerometer": {
+    "status": "ALL_ZERO",
+    "valid_samples": 1,
+    "distinct_vectors": 1
+  },
+  "gyroscope": {
+    "status": "ALL_ZERO",
+    "valid_samples": 1,
+    "distinct_vectors": 1
+  },
+  "real_motion_verified": false,
+  "reason": "Samples changing across a time series are suggestive, but a physical operator must corroborate rotation and axis mapping; no hardware proof in offline environment."
+}
+PLAN ONLY — zero device calls. Mount matching Android system and vendor read-only in recovery.
+Then re-run with --collect-readonly; output must be empty/new.
+This cannot repair a missing stock system image, and it never flashes firmware.

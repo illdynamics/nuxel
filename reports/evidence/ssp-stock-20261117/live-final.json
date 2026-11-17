@@ -1,0 +1,152 @@
+{
+  "status": "READONLY_SNAPSHOT",
+  "hardware_writes": 0,
+  "samples": [
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:39.783412+00:00",
+      "completed_utc": "2026-11-17T06:59:40.139962+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:40.895505+00:00",
+      "completed_utc": "2026-11-17T06:59:41.435711+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:42.191130+00:00",
+      "completed_utc": "2026-11-17T06:59:42.674145+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:43.425187+00:00",
+      "completed_utc": "2026-11-17T06:59:43.884006+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:44.638179+00:00",
+      "completed_utc": "2026-11-17T06:59:45.122477+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:45.876819+00:00",
+      "completed_utc": "2026-11-17T06:59:46.361974+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:47.117472+00:00",
+      "completed_utc": "2026-11-17T06:59:47.589309+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:48.342958+00:00",
+      "completed_utc": "2026-11-17T06:59:48.822133+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:49.577575+00:00",
+      "completed_utc": "2026-11-17T06:59:49.993087+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:50.748796+00:00",
+      "completed_utc": "2026-11-17T06:59:51.208643+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:51.963975+00:00",
+      "completed_utc": "2026-11-17T06:59:52.460380+00:00"
+    },
+    {
+      "kernel": "Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT Sat Nov 14 09:51:04 CET 2026 aarch64 GNU/Linux",
+      "accelerometer": "0,0,0",
+      "gyroscope": "0,0,0",
+      "ssp_enable": "0",
+      "mcu_name": "BCM47752KUB1G",
+      "mcu_rev": "BR0121080900,BR010",
+      "mcu_power": "1",
+      "started_utc": "2026-11-17T06:59:53.215645+00:00",
+      "completed_utc": "2026-11-17T06:59:53.717603+00:00"
+    }
+  ],
+  "classification": {
+    "accelerometer": {
+      "status": "ALL_ZERO",
+      "valid_samples": 12,
+      "distinct_vectors": 1
+    },
+    "gyroscope": {
+      "status": "ALL_ZERO",
+      "valid_samples": 12,
+      "distinct_vectors": 1
+    },
+    "real_motion_verified": false,
+    "reason": "Samples changing across a time series are suggestive, but a physical operator must corroborate rotation and axis mapping; no hardware proof in offline environment."
+  }
+}

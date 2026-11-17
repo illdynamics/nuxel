@@ -1,0 +1,7 @@
+{
+  "expected_md5": "3a3bd8a4d72bd5e7841f9efb7974876c",
+  "actual_md5": "3a3bd8a4d72bd5e7841f9efb7974876c",
+  "hashed_prefix_bytes": 5500528723,
+  "note": "Samsung trailer hashes tar plus build metadata preceding checksum line",
+  "match": true
+}

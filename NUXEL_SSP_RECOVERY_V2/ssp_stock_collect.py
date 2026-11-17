@@ -151,7 +151,7 @@ def collect(repo: Path, out: Path, reader, elf_meta):
         if not info or info.get("class")!=64 or info.get("machine")!=183:
             raise RuntimeError(f"Non-AArch64 ELF64 in dependency chain: {rel}")
         for name in info.get("needed",[]):
-            if not re.fullmatch(r"[a-zA-Z0-9_+.-]+\.so(?:\.[0-9]+)*",name):
+            if not re.fullmatch(r"[a-zA-Z0-9_+@.-]+\.so(?:\.[0-9]+)*",name):
                 raise RuntimeError(f"Unexpected DT_NEEDED name {name!r} in {rel}")
             path=None
             # Same-directory dependencies first, then deterministic broad search.

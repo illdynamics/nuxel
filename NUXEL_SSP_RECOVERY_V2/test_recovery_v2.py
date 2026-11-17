@@ -32,12 +32,14 @@ class Tests(unittest.TestCase):
             files={p:b'AARCH64_VENDOR' for p in collect.ANCHORS}
             files['system/bin/linker64']=b'AARCH64_LINKER'
             files['system/lib64/liblog.so']=b'AARCH64_LIB'
+            files['vendor/lib64/android.frameworks.schedulerservice@1.0.so']=b'AARCH64_LIB'
             files['system/build.prop']=b'ro.build.fingerprint=samsung/beyond2lte/test:10/X:abc/user/release-keys\n'
             def mock_meta(b):
-                return {'class':64,'machine':183,'needed':['liblog.so'] if b==b'AARCH64_VENDOR' else []}
+                return {'class':64,'machine':183,'needed':['liblog.so', 'android.frameworks.schedulerservice@1.0.so'] if b==b'AARCH64_VENDOR' else []}
             result=collect.collect(root,stock,FakeReader(files),mock_meta)
             self.assertEqual(result['status'],'STATIC_COLLECTION_ONLY')
             self.assertIn('system/lib64/liblog.so',result['files'])
+            self.assertIn('vendor/lib64/android.frameworks.schedulerservice@1.0.so',result['files'])
             self.assertEqual(result['device_writes'],0)
             self.assertTrue((stock/'ssp-stock-collection.json').is_file())
             with self.assertRaises(RuntimeError):collect.collect(root,stock,FakeReader(files),mock_meta)

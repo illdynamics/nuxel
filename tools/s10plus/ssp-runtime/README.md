@@ -37,3 +37,13 @@ the sensor hub. The November 16, 2026 recovery report records such a live test.
 
 No firmware upload, reset, power operation, or boot flash is authorized by
 these commands. The native downloader's `--download` refusal remains in place.
+
+For the matched Samsung Android 10 tree, `--stock-namespaces` uses only
+`/vendor/lib64` in `LD_LIBRARY_PATH` and preloads the diagnostic shim from
+`vendor/lib64/libssp-log-stderr.so`. Stage the unmodified stock
+`system/etc/ld.config.29.txt` also as `system/etc/ld.config.txt`, together with
+the referenced VNDK-29 variants and canonical runtime APEX files. This makes
+the stock namespace policy select the VNDK dependencies; the broad static
+resolver alone cannot do that. The flag requires the config in the integrity
+manifest. Probe and daemon trials retain identical hardware restrictions.
+Private `/tmp/nv` and `/tmp/log` directories support the vendor lock/log paths.

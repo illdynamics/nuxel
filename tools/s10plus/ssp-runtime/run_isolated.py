@@ -53,15 +53,18 @@ def verify(root):
     return manifest
 
 
-def sandbox(root, bwrap, probe=False, logs=None):
+def sandbox(root, bwrap, probe=False, logs=None, stock_namespaces=False):
     args = [bwrap, "--unshare-all", "--die-with-parent", "--new-session",
             "--uid", "65534", "--gid", "65534", "--cap-drop", "ALL",
             "--ro-bind", str(root), "/", "--proc", "/proc", "--dev", "/dev",
-            "--tmpfs", "/tmp", "--tmpfs", "/data", "--dir", "/data/ssp-private",
+            "--tmpfs", "/tmp", "--dir", "/tmp/nv", "--dir", "/tmp/log",
+            "--tmpfs", "/data", "--dir", "/data/ssp-private",
             "--clearenv", "--setenv", "PATH", "/system/bin",
             "--setenv", "ANDROID_ROOT", "/system", "--setenv", "ANDROID_DATA", "/data",
-            "--setenv", "LD_LIBRARY_PATH", "/system/lib64:/vendor/lib64:/apex/com.android.runtime/lib64/bionic",
-            "--setenv", "LD_PRELOAD", "/system/lib64/libssp-log-stderr.so",
+            "--setenv", "LD_LIBRARY_PATH", ("/vendor/lib64" if stock_namespaces else
+             "/system/lib64:/vendor/lib64:/apex/com.android.runtime/lib64/bionic"),
+            "--setenv", "LD_PRELOAD", ("/vendor/lib64/libssp-log-stderr.so" if stock_namespaces
+                              else "/system/lib64/libssp-log-stderr.so"),
             "--chdir", "/tmp"]
     if logs is not None:
         args += ["--bind", str(logs), "/logs"]
@@ -84,6 +87,8 @@ def main():
     ap.add_argument("--bwrap", default="/opt/nuxel-bwrap011/bwrap")
     ap.add_argument("--seconds", type=int, default=8, choices=range(1, 21))
     ap.add_argument("--probe", action="store_true")
+    ap.add_argument("--stock-namespaces", action="store_true",
+                    help="use staged stock ld.config.txt and VNDK libraries")
     args = ap.parse_args()
     if platform.machine() != "aarch64" or os.geteuid() != 0:
         ap.error("requires root on the AArch64 target")
@@ -91,7 +96,10 @@ def main():
     manifest = verify(root)
     required = ["isolation-probe"] if args.probe else [
         "vendor/bin/hw/lhd", "vendor/etc/sensor/lhd-isolated.conf", "system/bin/linker64",
-        "system/lib64/libssp-log-stderr.so"]
+        ("vendor/lib64/libssp-log-stderr.so" if args.stock_namespaces else
+         "system/lib64/libssp-log-stderr.so")]
+    if args.stock_namespaces:
+        required.append("system/etc/ld.config.txt")
     if any(p not in manifest for p in required):
         ap.error("required trial files absent from integrity manifest")
     for name in ("proc", "dev", "tmp", "data", "logs"):
@@ -103,7 +111,7 @@ def main():
     logs.mkdir()
     with open("/run/nuxel-ssp-isolated.lock", "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        cmd = sandbox(root, args.bwrap, args.probe, logs)
+        cmd = sandbox(root, args.bwrap, args.probe, logs, args.stock_namespaces)
         trace = ["/usr/bin/strace", "-f", "-s", "160", "-o", str(args.output / "syscalls.log"),
                  "-e", "trace=%file,%process,%network,read,write,ioctl,prctl", "--"]
         start = time.monotonic()
