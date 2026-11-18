@@ -205,8 +205,8 @@ class ModelRegistry:
             return False, "Test signature requires explicit test-build authorization; not a release package"
         if not signed:
             return False, reason
-        if manifest["format"] != "GGUF":
-            return False, "This installer supports GGUF only"
+        if manifest["format"] not in ("GGUF", "ONNX_CLASSIFIER"):
+            return False, "No installer for this package format"
         return True, "Trusted manifest; owner must accept the exact revision's license"
 
     def verify_installed(self, m: Dict[str, Any]) -> PackageState:
@@ -245,7 +245,9 @@ class ModelRegistry:
                                     m["source_revision"], m)
         state = STATUS_VERIFIED_SIGNED if signed else STATUS_VERIFIED_UNSIGNED
         rec = self.self_test_record(m)
-        if rec and rec.get("result") == "pass" and signed:
+        if (rec and rec.get("result") == "pass" and signed
+                and self.license_accepted(m)
+                and rec.get("manifest_sha256") == hashlib.sha256(canonical_manifest_bytes(m)).hexdigest()):
             state = STATUS_READY
         return PackageState(m["model_id"], m["variant_id"], state,
                             "bytes match manifest; " + why,
@@ -269,7 +271,7 @@ class ModelRegistry:
                 "architecture": m.get("architecture"),
                 "quantization": m.get("quantization"),
                 "source_repo": m.get("source_repo"),
-                "files": m["files"],
+                "files": [{k:v for k,v in f.items() if k != "inline_utf8"} for f in m["files"]],
                 "source_revision": m.get("source_revision"),
                 "size_bytes": sum(f["size_bytes"] for f in m["files"]),
                 "engine": m["runtime"]["engine"],
@@ -288,6 +290,15 @@ class ModelRegistry:
                 for v in cards[mid]["variants"])
         return [cards[mid] for mid in MODEL_IDS]
 
+    def license_accepted(self, m):
+        try:
+            with open(os.path.join(self.package_dir(m), "license-acceptance.json")) as fh:
+                record = json.load(fh)
+            return (record.get("revision") == m["source_revision"]
+                    and record.get("notice") == m["license"])
+        except (OSError, ValueError, AttributeError):
+            return False
+
     def self_test_record(self, m: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         path = os.path.join(self.package_dir(m), "self-test.json")
         try:
@@ -298,7 +309,7 @@ class ModelRegistry:
         if not isinstance(doc, dict):
             return None
         return {k: doc.get(k) for k in ("result", "engine", "version", "at",
-                                         "load_ms", "prompt", "output_sha256")}
+                                         "load_ms", "prompt", "output_sha256", "manifest_sha256")}
 
     def ready_manifest(self, model_id: str, variant_id: Optional[str] = None
                        ) -> Tuple[Optional[Dict[str, Any]], str]:

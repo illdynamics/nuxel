@@ -49,7 +49,7 @@ def main():
     print("[manifests] packaged manifests are structurally valid and immutable")
     reg0 = registry.ModelRegistry(os.path.join(SVC, "manifests"), "/nonexistent")
     found = {m["model_id"]: m for m in reg0.manifests()}
-    check(set(found) == {"chatbird", "codebird"}, "exactly ChatBird and CodeBird GGUF manifests ship")
+    check(set(found) == {"chatbird", "codebird", "sonarbird"}, "ChatBird, CodeBird and SonarBird manifests ship")
     for mid, m in found.items():
         check(not registry.validate_manifest(m), "%s manifest schema ok" % mid)
         check("resolve/main" not in m["source_url"], "%s pins an immutable revision URL" % mid)
@@ -128,6 +128,15 @@ def main():
               "signed package without a passing self-test is still not selectable")
         with open(os.path.join(pkg, "self-test.json"), "w") as fh:
             json.dump({"result": "pass", "engine": "llama.cpp"}, fh)
+        check(reg.ready_manifest("chatbird")[0] is None,
+              "legacy self-test without owner license record cannot promote package")
+        with open(os.path.join(pkg, "license-acceptance.json"), "w") as fh:
+            json.dump({"revision": m["source_revision"], "notice": m["license"]}, fh)
+        check(reg.ready_manifest("chatbird")[0] is None,
+              "self-test must be bound to the signed manifest")
+        with open(os.path.join(pkg, "self-test.json"), "w") as fh:
+            json.dump({"result": "pass", "engine": "llama.cpp", "manifest_sha256":
+                       hashlib.sha256(registry.canonical_manifest_bytes(m)).hexdigest()}, fh)
         got, why = reg.ready_manifest("chatbird")
         check(got is not None and why == "ready",
               "signed package with passing self-test is READY")

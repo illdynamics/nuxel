@@ -1,9 +1,16 @@
 # PenGuru / NuXAI — Step-by-Step Implementation Plan
 
 **Target:** Nuxel native (Fedora ARM64 userland on the phone, kernel 4.14.253)
-**Host access:** `ssh -i ~/.ssh/wicked_wqn_id_rsa root@192.168.178.167` (root)
+**Host access:** `ssh -i ~/.ssh/wicked_wqn_id_rsa root@10.11.12.99` (root)
 **Source repo local path:** `/Users/wicked/x/nuxel`
 **Guide version:** DUAL-RUNTIME IMPLEMENTATION GUIDE v1.1 (9 Nov 2026)
+
+## Current implementation status (v0.8.9-beta)
+
+This document is the implementation target, not a completion claim. Current
+verified scope, outstanding work and release evidence live in
+[`../docs/releases/v0.8.9-beta.md`](../docs/releases/v0.8.9-beta.md).
+Owner signing trust is enrolled; the full dual-runtime and voice gates are open.
 
 ## How to use this plan
 - Steps are **globally numbered** (`Step 1 … Step N`). Ask an agent to execute exactly one step, then verify its exit criteria before moving on.

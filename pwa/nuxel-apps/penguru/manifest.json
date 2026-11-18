@@ -18,6 +18,7 @@
     "bridge_version": "1",
     "capabilities": [
       "system:inspect"
-    ]
+    ],
+    "pwa_version": "0.8.9-beta"
   }
 }

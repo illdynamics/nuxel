@@ -28,7 +28,12 @@
     "redistribution": "review_required",
     "provenance_review": "pending"
   },
-  "signature": null,
-  "trust": "unsigned",
-  "notes": "Requires a llama.cpp build that actually supports the Qwen3.5 Gated DeltaNet architecture; load/self-test is the gate."
+  "signature": {
+    "alg": "ed25519",
+    "value": "BjtLANCYyke7taI1aESIxQS+gtS2s1jwoW+/ptihrHGmSPnRmlSULguZLj/hwPJZlfm2tnWfybwHhF0i1zg4DA==",
+    "key_id": "nuxel-penguru-owner-release.pem",
+    "scope": "release"
+  },
+  "trust": "release_signed",
+  "notes": "Owner-local signed download metadata. Weights remain hosted upstream and are not redistributed. Exact-revision owner license acknowledgement and a manifest-bound on-device runtime self-test are required before READY."
 }

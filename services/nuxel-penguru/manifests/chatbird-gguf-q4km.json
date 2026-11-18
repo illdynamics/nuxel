@@ -20,7 +20,9 @@
   "runtime": {
     "engine": "llama.cpp",
     "min_commit": "de32b268c4ad55d45f3b7b16c029f4e077f4ba74",
-    "context_limit": 4096
+    "context_limit": 4096,
+    "chat_template": "chatml",
+    "chat_template_source": "SicariusSicariiStuff/Impish_LLAMA_4B@e2e1cd304efb5c8172c6fac4f5b17bbd6bda91c9/tokenizer_config.json"
   },
   "license": {
     "spdx": "Apache-2.0",
@@ -28,7 +30,12 @@
     "redistribution": "review_required",
     "provenance_review": "pending"
   },
-  "signature": null,
-  "trust": "unsigned",
-  "notes": "Hashes and size recorded from the immutable HF revision and its X-Linked-ETag. No signature yet; the downloader refuses to mark this READY until a trusted manifest signature exists."
+  "signature": {
+    "alg": "ed25519",
+    "value": "5c81NrXkKBLE8ZFgOxXO6NfiMJVpMkhjpI1yWWdAMlzsVkuFX55FJtGOmAj69TMnKSaChAaVpAFs4wbwWxkrCA==",
+    "key_id": "nuxel-penguru-owner-release.pem",
+    "scope": "release"
+  },
+  "trust": "release_signed",
+  "notes": "Owner-local signed download metadata. Weights remain hosted upstream and are not redistributed. Exact-revision owner license acknowledgement and a manifest-bound on-device runtime self-test are required before READY."
 }

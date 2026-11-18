@@ -277,6 +277,14 @@ jobs:
           ls /proc/sys/fs/binfmt_misc/ 2>/dev/null | grep -i aarch64 \
             || echo "::warning::no aarch64 binfmt handler visible; arm64 podman run may fail"
 
+      - name: PenGuru integrity and lifecycle regression gates
+        run: |
+          sudo apt-get install -y --no-install-recommends python3-cryptography
+          for test in services/nuxel-penguru/tests/test_*.py; do python3 "$test"; done
+          python3 services/nuxel-bridge/test-security-g0.py
+          python3 services/nuxel-penguru/tools/sign-manifest.py verify services/nuxel-penguru/manifests/chatbird-gguf-q4km.json services/nuxel-penguru/keys/owner-release-public.pem
+          python3 services/nuxel-penguru/tools/sign-manifest.py verify services/nuxel-penguru/manifests/codebird-gguf-q4km.json services/nuxel-penguru/keys/owner-release-public.pem
+
       - name: Populate single-source PWA assets
         run: |
           # tools/dedupe-assets.sh is committed executable; make it explicit so

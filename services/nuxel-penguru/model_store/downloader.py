@@ -107,6 +107,7 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
             st = registry.verify_installed(m)
             if st.status not in (reg.STATUS_VERIFIED_SIGNED, reg.STATUS_READY):
                 raise RuntimeError("existing package failed verification; delete before retry")
+            _record_license(m, target)
             _self_test(job, m, target)
             return
         _set(job, "downloading")
@@ -117,7 +118,11 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
             final = os.path.join(jdir, f["path"])
             if os.path.exists(final):
                 continue
-            _download(f["path"], m["source_url"], dst, f["size_bytes"], job)
+            if "inline_utf8" in f:
+                with open(dst, "wb") as stream:
+                    stream.write(f["inline_utf8"].encode("utf-8"))
+            else:
+                _download(f["path"], f.get("url", m["source_url"]), dst, f["size_bytes"], job)
             h = hashlib.sha256()
             with open(dst, "rb") as fh:
                 for chunk in iter(lambda: fh.read(1 << 20), b""):
@@ -140,7 +145,7 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
             raise RuntimeError("manifest_untrusted")
         _set(job, "verify_hashes", progress=1.0)
         _set(job, "verify_format")
-        if m["format"] != "GGUF":
+        if m["format"] not in ("GGUF", "ONNX_CLASSIFIER"):
             _set(job, "quarantined", "non-GGUF download is not installed by this path", 1.0)
             raise RuntimeError("format_not_supported")
         _set(job, "atomic_install")
@@ -151,8 +156,7 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
         if os.path.exists(target):
             raise RuntimeError("target already exists; refusing to overwrite")
         os.replace(jdir, target)
-        with open(os.path.join(target, "license-acceptance.json"), "w") as fh:
-            json.dump({"revision": m["source_revision"], "at": time.time(), "notice": m["license"]}, fh)
+        _record_license(m, target)
         _self_test(job, m, target)
     except Exception as exc:  # noqa: BLE001
         partial = os.path.join(jdir)
@@ -168,7 +172,34 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
                 _set(job, "cancelled" if job.get("cancel") else "error", str(exc))
 
 
+def _record_license(manifest, target):
+    staged = os.path.join(target, "license-acceptance.json.tmp")
+    with open(staged, "w") as fh:
+        json.dump({"revision": manifest["source_revision"], "at": time.time(),
+                   "notice": manifest["license"]}, fh)
+    os.replace(staged, os.path.join(target, "license-acceptance.json"))
+
+
 def _self_test(job, manifest, target):
+    if job.get("cancel"):
+        raise RuntimeError("cancelled by owner")
+    if manifest.get("format") == "ONNX_CLASSIFIER":
+        from sonarbird.router import Classifier
+        _set(job, "self_test", "Loading MiniLM and verifying real sentence embeddings", 1.0)
+        classifier = Classifier(target)
+        scores, margin = classifier.classify("Implement a Python sorting function")
+        if not scores or max(scores, key=scores.get) != "CODE":
+            raise RuntimeError("MiniLM classifier self-test failed: " + str(classifier._load_error))
+        classifier.unload()
+        if job.get("cancel"):
+            raise RuntimeError("cancelled by owner")
+        record = {"result": "pass", "engine": "onnxruntime", "version": "1.32.0",
+                  "at": time.time(), "manifest_sha256": hashlib.sha256(reg.canonical_manifest_bytes(manifest)).hexdigest()}
+        with open(os.path.join(target, "self-test.json.tmp"), "w") as stream:
+            json.dump(record, stream)
+        os.replace(os.path.join(target, "self-test.json.tmp"), os.path.join(target, "self-test.json"))
+        _set(job, "ready", "MiniLM signature, hashes and real routing inference verified", 1.0)
+        return
     from runtime.llama_cpp.adapter import LlamaCppRuntime
     from common.runtime_api import RuntimeProfile
     if job.get("cancel"):
@@ -181,7 +212,7 @@ def _self_test(job, manifest, target):
         raise RuntimeError("cancelled by owner")
     if result.get("result") != "pass" or (result.get("loaded") or {}).get("architecture") != manifest["architecture"]:
         raise RuntimeError("runtime self-test failed: " + str(result.get("code", "architecture mismatch")))
-    record = {"result": "pass", "engine": "llama.cpp", "version": manifest["runtime"]["min_commit"],
+    record = {"manifest_sha256": hashlib.sha256(reg.canonical_manifest_bytes(manifest)).hexdigest(), "result": "pass", "engine": "llama.cpp", "version": manifest["runtime"]["min_commit"],
               "at": time.time(), "load_ms": result["loaded"].get("load_ms"),
               "output_sha256": hashlib.sha256(result["output"].encode()).hexdigest()}
     with open(os.path.join(target, "self-test.json.tmp"), "w") as fh:

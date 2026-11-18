@@ -205,6 +205,11 @@ int main(void) {
   if (!ctx) { llama_model_free(m); emit("error", "\"code\":\"context_failed\""); return 3; }
 
   const char *tmpl = llama_model_chat_template(m, NULL);
+  /* Only a verified manifest may supply a missing package template. */
+  char template_override[64] = "";
+  jget(job, "chat_template", template_override, sizeof template_override);
+  if (!tmpl && !strcmp(model, "chatbird") && !strcmp(archbuf, "llama") &&
+      !strcmp(template_override, "chatml")) tmpl = "chatml";
   if (!tmpl) { emit("error", "\"code\":\"missing_chat_template\""); return 4; }
   char formatted[131072];
   struct llama_chat_message msg = {"user", prompt};

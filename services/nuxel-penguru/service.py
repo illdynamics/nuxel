@@ -133,7 +133,9 @@ class Controller:
                         "worker": mode, "decision_source": "mode"}
         else:
             if self.classifier is None:
-                self.classifier = Classifier()
+                manifest, _ = self.registry.ready_manifest("sonarbird")
+                if manifest is not None:
+                    self.classifier = Classifier(self.registry.package_dir(manifest))
             decision = route(text, self.classifier).as_dict()
         if override in ("CHAT", "CODE", "ASK"):
             decision.update({"route": override, "reason_code": "R_OWNER_OVERRIDE",

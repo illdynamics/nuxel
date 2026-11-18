@@ -103,7 +103,8 @@ export function modelLibrary(container, call) {
             perModel[card.model_id] = override.value;
           } catch (error) { status.textContent = error.message; override.value = perModel[card.model_id] || 'inherit'; }
         };
-        article.append(label, download, remove, cancel, progress, status, override);
+        article.append(label, download, remove, cancel, progress, status);
+        if (card.model_id !== 'sonarbird') article.append(override);
       }
       container.append(article);
     }

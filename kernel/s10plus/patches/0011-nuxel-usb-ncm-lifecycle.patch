@@ -365,7 +365,7 @@ function unless this marker is present, so the RUNNING kernel - not the
 +#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 +static void __exit nuxel_ncm_mod_exit(void)
 +{
-+	nuxel_ncm_base_mod_exit();
++	usb_function_unregister(&ncmusb_func);
 +	ncm_function_shutdown();
 +}
 +module_exit(nuxel_ncm_mod_exit);
