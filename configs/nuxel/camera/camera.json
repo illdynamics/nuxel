@@ -76,15 +76,22 @@
     }
   },
   "firmware_blobs": {
-    "comment": "FIMC-IS firmware is loaded by the pinned kernel's own driver, not by a Samsung Android HAL. The Exynos9820 MCD vendor path (vendor/mcd/fimc-is-sec-define.c, see patch 0022-nuxel-fimc-is-firmware-requests) opens /lib/firmware/<load_fw_name> and requests fimc_is_fw_mcu.bin, fimc_is_lib.bin and fimc_is_rta.bin; the DDK/RTA names come from the matching SM-G975F vendor firmware. Sensor per-mode setfiles are NOT files: they are compiled into the kernel (sensor_2l4_setfile_A_* etc.), so they are not listed or trusted here. A blob being present is necessary but NOT sufficient, and a file smaller than min_size is treated as missing (recorded as rejected_placeholders) so a 3-byte test fixture can never flip readiness.",
+    "comment": "The EEPROM phone-version reader directly opens /system/vendor/firmware/fimc_is_lib.bin and has no fallback. Later DDK/RTA and OIS loaders use request_firmware; the live custom path is /vendor/firmware. External ISP tuning setfile_*.bin files are separate from compiled CIS register tables. Presence/size are inventory only, not hash, ABI or load verification. See reports/CAMERA-RECOVERY-2026-11-17.md.",
     "search_paths": [
+      "/system/vendor/firmware",
+      "/vendor/firmware",
       "/lib/firmware",
       "/usr/lib/firmware"
     ],
     "candidates": [
       "fimc_is_fw_mcu.bin",
       "fimc_is_lib.bin",
-      "fimc_is_rta.bin"
+      "fimc_is_rta.bin",
+      "setfile_2l4.bin",
+      "setfile_3j1.bin",
+      "setfile_3m3.bin",
+      "setfile_3p9.bin",
+      "setfile_4ha.bin"
     ],
     "min_size": 4096,
     "rejected_placeholders": [
@@ -110,7 +117,7 @@
       "fimc_is_lib.bin",
       "fimc_is_rta.bin"
     ],
-    "minimum_verified_set_comment": "Readiness needs at least these two blobs (ISP library + RTA tuning); fimc_is_fw_mcu.bin is the OIS MCU firmware and is only required for OIS cameras, so it is reported separately instead of being able to fail the whole stage."
+    "minimum_verified_set_comment": "Historical key: this is only a minimum presence inventory; it does not verify SHA, DDK ABI or effective loader paths. A camera trial needs its complete coherent firmware set."
   },
   "pipeline": {
     "comment": "The ready userspace chain. Each hop is reported independently so the FIRST failing stage is unambiguous.",
@@ -238,6 +245,6 @@
     "require_explicit_yes_for_capture": true,
     "auto_capture_on_boot": false,
     "print_imsi_or_iccid": false,
-    "firmware_verified_by": "nuxel-fimc-capture --probe-only (kernel loads firmware only on group start; a present file is not proof of a load)"
+    "firmware_verified_by": "Pinned manifest/owner-AP audit establishes file identity only; kernel log and real capture establish load and physical behavior. Probe requires explicit sensor-init consent."
   }
 }

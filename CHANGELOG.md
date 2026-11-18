@@ -2,6 +2,21 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.8.9-beta] - 2026-11-17
+
+- Enroll owner-local model signing trust while preserving the handset test key.
+- Sign immutable ChatBird/CodeBird GGUF metadata; retain owner license controls.
+- Require exact license notice and manifest-bound self-test before READY.
+- Include PenGuru in live payloads and build the pinned CPU runtime in phone images.
+- Synchronize active version pins; retain unavailable ONNX, learned routing and voice states.
+
+## [v0.8.8-beta] - 2026-11-17
+
+- Integrated an **opt-in, disabled-by-default local AI subsystem (PenGuru Squad)**: ChatBird/CodeBird llama.cpp workers, SonarBird intent routing, Squad orchestration, signed-model Model Store and a read-only permission broker (`services/nuxel-penguru`), plus the launcher-authenticated bridge route in `penguru_api.py`.
+- Closed the Phase-0 security gates (G0): dev-mode loopback bypass neutralized, per-token app-id binding, consumed `once`/bounded `session` grants and a canonical capability registry. Bridge G0 regression suite passes; PenGuru stays chat-only until higher gates close.
+- Synchronized the entire repository to canonical version **v0.8.8-beta** (VERSION, PWA manifests/version pins, device APKBUILD pkgver, meson project versions, native app-version constants, OTA builder default and systemd bridge pins). `tests/pwnage90000/test_release_assets.py` lockstep gate: 0 failures.
+- Added release note [`docs/releases/v0.8.8-beta.md`](docs/releases/v0.8.8-beta.md).
+
 ## [v0.8.7-beta] - 2026-11-16
 
 - Fixed USB-link addressing and shared-Internet diagnostics, refreshed VNC/XRDP capture settings, and tightened pointer hiding.

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "model_id": "sonarbird",
+  "role": "optional_voice",
+  "name": "SonarBird",
+  "variant_id": "speech-whisper-tiny-en",
+  "format": "WHISPER",
+  "architecture": "whisper",
+  "quantization": "FP16 \u00b7 Voice tiny.en (optional)",
+  "source_repo": "ggerganov/whisper.cpp",
+  "source_revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+  "source_url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en.bin",
+  "files": [
+    {
+      "path": "ggml-tiny.en.bin",
+      "size_bytes": 77704715,
+      "sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f"
+    }
+  ],
+  "runtime": {
+    "engine": "whisper.cpp",
+    "version": "5f9823760117f500ebce2527cbb2314572f5fcd6",
+    "provider": "CPU"
+  },
+  "license": {
+    "spdx": "MIT",
+    "notice": "Optional local English speech recognition. OpenAI Whisper converted by ggerganov/whisper.cpp. Separate from MiniLM text routing. Microphone is opened only by foreground owner action.",
+    "redistribution": "upstream_download"
+  },
+  "trust": "release_signed",
+  "signature": {
+    "alg": "ed25519",
+    "value": "w2f7KHmhVcI3pv+Ym4InlrTh6mAUQOQwcge9V6MbwoL8rRdm+uaAB+m4YJP9FHbdpj48l0pI5oTqSvioYv9PAw==",
+    "key_id": "nuxel-penguru-owner-release.pem",
+    "scope": "release"
+  }
+}

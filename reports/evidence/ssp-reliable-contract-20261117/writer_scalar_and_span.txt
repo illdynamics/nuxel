@@ -1,0 +1,109 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+0000000000041250 <.text+0x29250>:
+   41250:	b9402008 	ldr	w8, [x0, #32]
+   41254:	350000c8 	cbnz	w8, 4126c <__libc_init@plt-0x3be4>
+   41258:	b9400808 	ldr	w8, [x0, #8]
+   4125c:	b940180a 	ldr	w10, [x0, #24]
+   41260:	11000509 	add	w9, w8, #0x1
+   41264:	6b0a013f 	cmp	w9, w10
+   41268:	54000089 	b.ls	41278 <__libc_init@plt-0x3bd8>  // b.plast
+   4126c:	320003e8 	orr	w8, wzr, #0x1
+   41270:	39009008 	strb	w8, [x0, #36]
+   41274:	d65f03c0 	ret
+   41278:	f940080a 	ldr	x10, [x0, #16]
+   4127c:	b9000809 	str	w9, [x0, #8]
+   41280:	38286941 	strb	w1, [x10, x8]
+   41284:	d65f03c0 	ret
+   41288:	f9400008 	ldr	x8, [x0]
+   4128c:	f9400902 	ldr	x2, [x8, #16]
+   41290:	d61f0040 	br	x2
+   41294:	b9402008 	ldr	w8, [x0, #32]
+   41298:	350000c8 	cbnz	w8, 412b0 <__libc_init@plt-0x3ba0>
+   4129c:	b9400808 	ldr	w8, [x0, #8]
+   412a0:	b9401809 	ldr	w9, [x0, #24]
+   412a4:	1100090a 	add	w10, w8, #0x2
+   412a8:	6b09015f 	cmp	w10, w9
+   412ac:	54000089 	b.ls	412bc <__libc_init@plt-0x3b94>  // b.plast
+   412b0:	320003e8 	orr	w8, wzr, #0x1
+   412b4:	39009008 	strb	w8, [x0, #36]
+   412b8:	d65f03c0 	ret
+   412bc:	f9400809 	ldr	x9, [x0, #16]
+   412c0:	1100050a 	add	w10, w8, #0x1
+   412c4:	b900080a 	str	w10, [x0, #8]
+   412c8:	53087c2a 	lsr	w10, w1, #8
+   412cc:	38286921 	strb	w1, [x9, x8]
+   412d0:	b9400808 	ldr	w8, [x0, #8]
+   412d4:	f9400809 	ldr	x9, [x0, #16]
+   412d8:	1100050b 	add	w11, w8, #0x1
+   412dc:	b900080b 	str	w11, [x0, #8]
+   412e0:	3828692a 	strb	w10, [x9, x8]
+   412e4:	d65f03c0 	ret
+   412e8:	f9400008 	ldr	x8, [x0]
+   412ec:	f9401102 	ldr	x2, [x8, #32]
+   412f0:	d61f0040 	br	x2
+   412f4:	b9402008 	ldr	w8, [x0, #32]
+   412f8:	350000c8 	cbnz	w8, 41310 <__libc_init@plt-0x3b40>
+   412fc:	b9400808 	ldr	w8, [x0, #8]
+   41300:	b9401809 	ldr	w9, [x0, #24]
+   41304:	1100110a 	add	w10, w8, #0x4
+   41308:	6b09015f 	cmp	w10, w9
+   4130c:	54000089 	b.ls	4131c <__libc_init@plt-0x3b34>  // b.plast
+   41310:	320003e8 	orr	w8, wzr, #0x1
+   41314:	39009008 	strb	w8, [x0, #36]
+   41318:	d65f03c0 	ret
+   4131c:	f9400809 	ldr	x9, [x0, #16]
+   41320:	1100050a 	add	w10, w8, #0x1
+   41324:	b900080a 	str	w10, [x0, #8]
+   41328:	53087c2a 	lsr	w10, w1, #8
+   4132c:	38286921 	strb	w1, [x9, x8]
+   41330:	b9400808 	ldr	w8, [x0, #8]
+   41334:	f9400809 	ldr	x9, [x0, #16]
+   41338:	1100050b 	add	w11, w8, #0x1
+   4133c:	b900080b 	str	w11, [x0, #8]
+   41340:	3828692a 	strb	w10, [x9, x8]
+   41344:	b9400808 	ldr	w8, [x0, #8]
+   41348:	f9400809 	ldr	x9, [x0, #16]
+   4134c:	53107c2a 	lsr	w10, w1, #16
+   41350:	1100050b 	add	w11, w8, #0x1
+   41354:	b900080b 	str	w11, [x0, #8]
+   41358:	3828692a 	strb	w10, [x9, x8]
+   4135c:	b9400808 	ldr	w8, [x0, #8]
+   41360:	f9400809 	ldr	x9, [x0, #16]
+   41364:	53187c2a 	lsr	w10, w1, #24
+   41368:	1100050b 	add	w11, w8, #0x1
+   4136c:	b900080b 	str	w11, [x0, #8]
+   41370:	3828692a 	strb	w10, [x9, x8]
+   41374:	d65f03c0 	ret
+   41378:	f9400008 	ldr	x8, [x0]
+   4137c:	f9401902 	ldr	x2, [x8, #48]
+   41380:	d61f0040 	br	x2
+   41384:	a9be4ff4 	stp	x20, x19, [sp, #-32]!
+   41388:	a9017bfd 	stp	x29, x30, [sp, #16]
+   4138c:	910043fd 	add	x29, sp, #0x10
+   41390:	b9402008 	ldr	w8, [x0, #32]
+   41394:	aa0003f3 	mov	x19, x0
+   41398:	350000e8 	cbnz	w8, 413b4 <__libc_init@plt-0x3a9c>
+   4139c:	b9400a68 	ldr	w8, [x19, #8]
+   413a0:	b9401a69 	ldr	w9, [x19, #24]
+   413a4:	2a0203f4 	mov	w20, w2
+   413a8:	0b02010a 	add	w10, w8, w2
+   413ac:	6b09015f 	cmp	w10, w9
+   413b0:	54000089 	b.ls	413c0 <__libc_init@plt-0x3a90>  // b.plast
+   413b4:	320003e8 	orr	w8, wzr, #0x1
+   413b8:	39009268 	strb	w8, [x19, #36]
+   413bc:	14000008 	b	413dc <__libc_init@plt-0x3a74>
+   413c0:	f9400a69 	ldr	x9, [x19, #16]
+   413c4:	2a1403e2 	mov	w2, w20
+   413c8:	8b080120 	add	x0, x9, x8
+   413cc:	94000f61 	bl	45150 <memcpy@plt>
+   413d0:	b9400a68 	ldr	w8, [x19, #8]
+   413d4:	0b140108 	add	w8, w8, w20
+   413d8:	b9000a68 	str	w8, [x19, #8]
+   413dc:	a9417bfd 	ldp	x29, x30, [sp, #16]
+   413e0:	a8c24ff4 	ldp	x20, x19, [sp], #32
+   413e4:	d65f03c0 	ret

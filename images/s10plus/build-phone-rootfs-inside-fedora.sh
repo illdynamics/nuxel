@@ -21,7 +21,7 @@ trap 'rm -f "$OUT" "$OUT.sha256"' ERR
 # PWNAGE-54000: nuxel-contacts / nuxel-messages / nuxel-dialer are compiled
 # from repo sources into the image and need the GTK4 + libadwaita headers.
 dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils acl python3 python3-pillow \
-    gcc make pkgconf-pkg-config kernel-headers \
+    gcc gcc-c++ cmake make pkgconf-pkg-config kernel-headers \
     wayland-devel wayland-protocols-devel \
     gtk3-devel webkit2gtk4.1-devel alsa-lib-devel git openssl \
     gtk4-devel libadwaita-devel
@@ -90,7 +90,7 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     filesystem setup fedora-release glibc glibc-langpack-en \
     bash coreutils util-linux findutils grep sed gawk \
     systemd-258.11-1.fc43 systemd-udev systemd-networkd dbus-broker dbus-daemon \
-    python3 python3-dbus python3-gobject phosh phoc stevia stevia-phosh-osk-provider seatd \
+    python3 python3-pip python3-cryptography python3-dbus python3-gobject phosh phoc stevia stevia-phosh-osk-provider seatd \
     NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 geoclue2-demos bluez bluez-deprecated bluez-obexd \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     gtk3 webkit2gtk4.1 gtk4 libadwaita glib-networking libproxy \
@@ -1045,6 +1045,32 @@ for service in nuxel-bridge nuxel-portal nuxel-notifications; do
     install -m 0755 "$shim" "$STAGE/usr/bin/$(basename "$shim")"
   done
 done
+# Isolated Python inference dependencies; system cryptography remains available.
+chroot "$STAGE" python3 -m venv --system-site-packages /opt/nuxel-penguru-venv
+chroot "$STAGE" /opt/nuxel-penguru-venv/bin/pip install \
+    onnxruntime==1.32.0 tokenizers==0.22.2 numpy==2.5.5
+# PenGuru CPU runtime, service and public download trust. No model weights or
+# private keys are included. The static services remain OFF until owner opt-in.
+bash /nuxel/services/nuxel-penguru/tools/build-speech.sh "$STAGE/opt/nuxel-speech" /tmp/penguru-whisper-source
+bash /nuxel/services/nuxel-penguru/tools/build-runtime.sh /tmp/penguru-runtime /tmp/penguru-llama-source
+install -d "$STAGE/opt/nuxel-llama" "$STAGE/opt/nuxel-penguru" \
+    "$STAGE/etc/nuxel/penguru" "$STAGE/usr/share/nuxel-penguru/manifests"
+cp -a /tmp/penguru-runtime/*.so* "$STAGE/opt/nuxel-llama/"
+cp -a /nuxel/services/nuxel-penguru/. "$STAGE/opt/nuxel-penguru/"
+find "$STAGE/opt/nuxel-penguru" -name '__pycache__' -type d -prune -exec rm -rf {} +
+install -m 0755 /tmp/penguru-runtime/penguru-llama-worker \
+    "$STAGE/opt/nuxel-penguru/runtime/llama_cpp/penguru-llama-worker"
+install -m 0644 /nuxel/services/nuxel-penguru/systemd/*.service "$STAGE/etc/systemd/system/"
+install -m 0644 /nuxel/services/nuxel-penguru/manifests/*.json "$STAGE/usr/share/nuxel-penguru/manifests/"
+install -m 0644 /nuxel/services/nuxel-penguru/keys/owner-release-public.pem \
+    "$STAGE/etc/nuxel/penguru/manifest-pubkey.pem"
+chroot "$STAGE" useradd --system --user-group --no-create-home \
+    --home-dir /var/lib/nuxel-penguru --shell /usr/sbin/nologin nuxel-penguru
+install -d "$STAGE/var/lib/nuxel-penguru"
+chroot "$STAGE" chown nuxel-penguru:nuxel-penguru /var/lib/nuxel-penguru
+chmod 0700 "$STAGE/var/lib/nuxel-penguru"
+install -Dm0644 /nuxel/assets/nuxel-penguru-squad.png "$STAGE/usr/share/nuxel/assets/nuxel-penguru-squad.png"
+
 # Firewall package imported by nuxel-bridge/src/firewall_provider.py.  The
 # bridge computes its search root as <bridge-dir>/../../nuxel-firewall, i.e.
 # /usr/lib/nuxel/nuxel-firewall, so the package must land there exactly.

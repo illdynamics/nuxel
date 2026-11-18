@@ -1,0 +1,17 @@
+{
+  "id": "org.nuxel.PenGuru",
+  "name": "PenGuru Squad",
+  "icon": "\ud83d\udc27",
+  "icon_asset": "/assets/nuxel-penguru-squad.png",
+  "color": "#236e69",
+  "category": "productivity",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/penguru/index.html",
+  "description": "Local ChatBird, CodeBird and Squad assistants",
+  "capabilities": [
+    "system:inspect"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "status": "implemented"
+}

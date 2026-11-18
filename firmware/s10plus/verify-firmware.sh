@@ -24,6 +24,8 @@
 #
 #   --root <dir>   verify against a root directory (e.g. the rootfs staging)
 #                  rather than the live system. Default "/".
+#   --camera-root DIR  verify all eight camera files against the PUBLIC pin only;
+#                  separate from generic verification, no hardware ABI claim.
 #   --strict       fail (non-zero) when any required blob is missing OR its
 #                  checksum is still a placeholder. Default: placeholders are
 #                  pending warnings only.
@@ -49,6 +51,7 @@ MANIFEST="${SCRIPT_DIR}/manifest.yml"
 ROOT="/"
 STRICT=0
 VERBOSE=0
+CAMERA_ROOT=""
 
 log()  { echo "[verify-fw-s10plus] $*"; }
 warn() { echo "[verify-fw-s10plus][warn] $*" >&2; }
@@ -62,6 +65,7 @@ parse_args() {
                 NUXEL_DEVICE="$2"; shift 2 ;;
             --root) ROOT="$2"; shift 2 ;;
             --strict) STRICT=1; shift ;;
+            --camera-root) CAMERA_ROOT="$2"; shift 2 ;;
             -v|--verbose) VERBOSE=1; shift ;;
             -h|--help)
                 sed -n '2,43p' "$0" | sed 's/^# \{0,1\}//'
@@ -100,6 +104,12 @@ main() {
         err "This verifier is ONLY for the Samsung Galaxy S10+ (s10plus). Got: ${NUXEL_DEVICE_KEY}"
         return 1
     }
+
+    if [ -n "$CAMERA_ROOT" ]; then
+        python3 -S "${SCRIPT_DIR}/../../NUXEL_CAMERA_RECOVERY_V2/camera_firmware_audit.py" \
+            --manifest "$MANIFEST" --root "$CAMERA_ROOT" --require-manifest-match
+        return $?
+    fi
 
     [ -f "$MANIFEST" ] || { err "Manifest not found: $MANIFEST"; return 3; }
     command -v python3 >/dev/null 2>&1 || { err "python3 required to parse manifest.yml"; return 3; }

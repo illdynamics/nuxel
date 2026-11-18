@@ -52,7 +52,7 @@ INV_TMP="$(mktemp)"
 "${SSH[@]}" 'bash -s' > "$INV_TMP" <<'REMOTE'
 set -uo pipefail
 roots="/usr/lib/nuxel /usr/libexec/nuxel /usr/bin /usr/local/bin /usr/share/nuxel \
-       /usr/share/applications /etc/nuxel /etc/systemd/system /etc/dbus-1 /etc/polkit-1"
+       /opt/nuxel-penguru /opt/nuxel-llama /usr/share/nuxel-penguru /usr/share/applications /etc/nuxel /etc/systemd/system /etc/dbus-1 /etc/polkit-1"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 # regular files: content hash + size

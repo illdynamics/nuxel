@@ -29,7 +29,8 @@ for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
              'pwa/nuxel-apps/weather',
              'pwa/nuxel-apps/permissions', 'pwa/nuxel-apps/network-manager',
              'pwa/nuxel-apps/devmgmt', 'pwa/nuxel-apps/edge-fx',
-             'pwa/nuxel-apps/penguinterface',
+             'pwa/nuxel-apps/penguinterface', 'pwa/nuxel-apps/penguru',
+             'services/nuxel-penguru',
              'pwa/nuxel-apps/remote-xrdp', 'pwa/nuxel-apps/remote-vnc',
              'pwa/nuxel-apps/remote-scrcpy', 'pwa/nuxel-common',
              'pwa/nuxel-apps/nuxtore', 'pwa/nuxel-apps/photos',
@@ -46,6 +47,8 @@ for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
             continue
         items.add(path.relative_to(root).as_posix())
 items.update({
+    'assets/nuxel-penguru-squad.png',
+    'services/nuxel-bridge/src/penguru_api.py',
     # PWNAGE-CAM: native camera app, private org.nuxel.Camera broker, capture
     # client + diagnostic. The aarch64 nuxel-fimc-capture binary is built by
     # tools/s10plus/fimc-capture/Makefile; the host deployer maps it to

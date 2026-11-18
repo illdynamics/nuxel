@@ -1,0 +1,29 @@
+[Unit]
+Description=PenGuru owner-started model download helper
+BindsTo=nuxel-penguru.service
+After=nuxel-penguru.service
+
+[Service]
+Type=simple
+User=nuxel-penguru
+Group=nuxel-penguru
+SupplementaryGroups=inet
+ExecStart=/opt/nuxel-penguru-venv/bin/python3 /opt/nuxel-penguru/service.py
+Environment=NUXEL_PENGURU_NO_SYSTEMD_RUN=1
+Environment=NUXEL_PENGURU_DOWNLOADER=1
+Environment=NUXEL_PENGURU_SOCKET=/run/nuxel-penguru-download/control.sock
+RuntimeDirectory=nuxel-penguru-download
+RuntimeDirectoryMode=0700
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/nuxel-penguru
+KillMode=control-group
+TimeoutStopSec=8
+Nice=15
+TasksMax=64
+MemoryMax=5G
+Restart=no

@@ -20,8 +20,10 @@
  *   nuxel-fimc-capture --node /dev/video130 [--input 0] [--fourcc YUYV]
  *       [--width 1440] [--height 1080] [--buffers 4] [--frames 1]
  *       [--timeout 2000] [--raw out.bin] [--probe-only] [--json]
+ *   nuxel-fimc-capture --sensor-node /dev/video101 --sensor-position 0
+ *       --sensor-probe --allow-sensor-init --json
  *
- * Exit: 0 verified frames, 3 probe OK but no frame in timeout,
+ * Exit: 0 accepted probe or dequeued payload (not physical verification), 3 no frame,
  *       2 usage error, 4 ioctl failure (details in JSON), 5 node missing.
  */
 #define _GNU_SOURCE
@@ -45,9 +47,13 @@ struct opts {
 	const char *raw;
 	const char *fourcc;
 	unsigned input;
+	unsigned sensor_input;
+	int sensor_position_set;
 	unsigned width, height;
 	unsigned buffers, frames, timeout_ms;
 	int probe_only;
+	int sensor_probe;
+	int allow_sensor_init;
 	int json;
 };
 
@@ -84,11 +90,35 @@ static int do_ioctl(int fd, unsigned long req, void *arg, const char *name)
 	return ret;
 }
 
+/* Current mapper supports one memory plane only. Reject metadata/multiple
+ * planes rather than silently reporting a partial frame. */
+static int payload_length(const struct v4l2_buffer *dq,
+                          const struct v4l2_plane *p, size_t mapped,
+                          size_t *length)
+{
+    if (dq->length != 1 || (dq->flags & V4L2_BUF_FLAG_ERROR) ||
+        !p->bytesused || p->bytesused > mapped ||
+        p->data_offset >= p->bytesused)
+        return -1;
+    *length = p->bytesused - p->data_offset;
+    return 0;
+}
+
+static int varied_payload(const unsigned char *p, size_t n)
+{
+    size_t i;
+    for (i = 1; i < n; i++)
+        if (p[i] != p[0]) return 1;
+    return 0;
+}
+
 static void usage(void)
 {
 	fputs("usage: nuxel-fimc-capture --node /dev/videoN [--input I] "
 	      "[--fourcc YUYV] [--width W] [--height H] [--buffers N] "
-	      "[--frames N] [--timeout MS] [--raw FILE] [--probe-only] [--json]\n", stderr);
+	      "[--frames N] [--timeout MS] [--raw FILE] [--probe-only] [--json]\n"
+	      "       nuxel-fimc-capture --sensor-node /dev/videoNN --sensor-position 0 "
+	      "--sensor-probe --allow-sensor-init [--json]\n", stderr);
 }
 
 static int parse(int argc, char **argv)
@@ -98,6 +128,20 @@ static int parse(int argc, char **argv)
 		const char *a = argv[i];
 		const char *v = (i + 1 < argc) ? argv[i + 1] : NULL;
 		if (!strcmp(a, "--node") && v) { O.node = v; i++; }
+		else if (!strcmp(a, "--sensor-node") && v) { O.node = v; i++; }
+		else if (!strcmp(a, "--sensor-id")) {
+            fputs("--sensor-id is invalid for CONFIG_USE_SENSOR_GROUP; use --sensor-position 0 for the bounded rear trial\n", stderr);
+            return 2;
+        }
+        else if (!strcmp(a, "--sensor-position") && v) {
+            if (strcmp(v, "0")) {
+                fputs("only rear position 0 is supported by this bounded probe\n", stderr);
+                return 2;
+            }
+            O.sensor_input = 0; /* position=rear, scenario=normal, source video=0 */
+            O.sensor_position_set = 1;
+            i++;
+        }
 		else if (!strcmp(a, "--raw") && v) { O.raw = v; i++; }
 		else if (!strcmp(a, "--fourcc") && v) { O.fourcc = v; i++; }
 		else if (!strcmp(a, "--input") && v) { O.input = strtoul(v, NULL, 0); i++; }
@@ -107,11 +151,27 @@ static int parse(int argc, char **argv)
 		else if (!strcmp(a, "--frames") && v) { O.frames = strtoul(v, NULL, 0); i++; }
 		else if (!strcmp(a, "--timeout") && v) { O.timeout_ms = strtoul(v, NULL, 0); i++; }
 		else if (!strcmp(a, "--probe-only")) { O.probe_only = 1; }
+		else if (!strcmp(a, "--sensor-probe")) { O.sensor_probe = 1; }
+		else if (!strcmp(a, "--allow-sensor-init")) { O.allow_sensor_init = 1; }
 		else if (!strcmp(a, "--json")) { O.json = 1; }
 		else if (!strcmp(a, "-h") || !strcmp(a, "--help")) { usage(); exit(0); }
 		else { fprintf(stderr, "unknown argument: %s\n", a); usage(); return 2; }
 	}
 	if (!O.node) { usage(); return 2; }
+	if (O.sensor_probe && !O.sensor_position_set) {
+		fputs("--sensor-probe requires --sensor-position 0 (packed group ABI)\n", stderr);
+		return 2;
+	}
+	if (O.sensor_probe && (O.probe_only || O.raw)) {
+		fputs("--sensor-probe cannot be combined with --probe-only or --raw\n", stderr);
+		return 2;
+	}
+	if (O.sensor_probe && !O.allow_sensor_init) {
+		fputs("refusing sensor init: S_INPUT reads EEPROM and can toggle sensor retention; pass --allow-sensor-init after owner approval\n", stderr);
+		return 2;
+	}
+	if (!O.timeout_ms || O.timeout_ms > 30000) { fputs("--timeout must be 1..30000 ms\n", stderr); return 2; }
+	if (!O.allow_sensor_init) { fputs("S_INPUT requires --allow-sensor-init after owner approval\n", stderr); return 2; }
 	if (O.buffers == 0 || O.buffers > 32) { fputs("--buffers must be 1..32\n", stderr); return 2; }
 	if (O.frames == 0 || O.frames > 10000) { fputs("--frames must be 1..10000\n", stderr); return 2; }
 	return 0;
@@ -142,7 +202,7 @@ static void emit(int ok, const char *verdict, uint64_t frames, uint64_t bytes,
 	jstr(O.node);
 	printf(",\"ok\":%s,\"verdict\":", ok ? "true" : "false");
 	jstr(verdict);
-	printf(",\"stage\":");
+	printf(",\"physical_frame_verified\":false,\"stage\":");
 	jstr(stage);
 	printf(",\"errno\":%d,\"frames\":%llu,\"bytes\":%llu", last_errno,
 	       (unsigned long long)frames, (unsigned long long)bytes);
@@ -171,7 +231,7 @@ static void emit(int ok, const char *verdict, uint64_t frames, uint64_t bytes,
 
 int main(int argc, char **argv)
 {
-	int rc, fd, framed = 0, verified = 0, i, q;
+	int rc, fd, framed = 0, verified = 0, streaming = 0, i, q;
 	struct stat st;
 	struct v4l2_capability cap;
 	struct v4l2_format fmt;
@@ -179,7 +239,7 @@ int main(int argc, char **argv)
 	struct v4l2_buffer bufs[32], dq;
 	struct v4l2_plane planes[32][VIDEO_MAX_PLANES];
 	struct buf map[32];
-	uint64_t total = 0, first_ms = 0, last_ms = 0;
+	uint64_t total = 0, first_ms = 0, last_ms = 0, deadline = 0;
 	FILE *raw = NULL;
 	double fps = 0.0;
 
@@ -213,7 +273,34 @@ int main(int argc, char **argv)
 		close(fd);
 		return 4;
 	}
-	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE)) {
+	/*
+	 * FIMC-IS sensor endpoints (SS0..SS5) advertise VIDEO_OUTPUT_MPLANE.
+	 * They must receive the Samsung packed position through S_INPUT before the
+	 * ISP/output endpoints can be configured.  Samsung's S_INPUT is not a
+	 * read-only probe: it can power EEPROM/I2C and toggle sensor retention.
+	 * It therefore requires an explicit consent flag and stops immediately
+	 * afterwards: no format, buffers, or userspace STREAMON is requested.
+	 */
+	if (O.sensor_probe) {
+		stage = "VIDIOC_S_INPUT(sensor)";
+		if (!((cap.capabilities & V4L2_CAP_DEVICE_CAPS ? cap.device_caps : cap.capabilities) & V4L2_CAP_VIDEO_OUTPUT_MPLANE)) {
+			emit(0, "NOT_MPLANE_SENSOR", 0, 0, &cap, NULL, 0,
+			     "sensor probe requires a V4L2_CAP_VIDEO_OUTPUT_MPLANE endpoint");
+			close(fd);
+			return 4;
+		}
+		if (do_ioctl(fd, VIDIOC_S_INPUT, &O.sensor_input, stage) < 0) {
+			emit(0, "SENSOR_INPUT_FAILED", 0, 0, &cap, NULL, 0,
+			     "kernel rejected the packed rear position or firmware initialization failed");
+			close(fd);
+			return 4;
+		}
+		emit(1, "SENSOR_BOUND", 0, 0, &cap, NULL, 0,
+		     "S_INPUT accepted; sensor init was owner-authorized; no format, buffers, or userspace STREAMON requested");
+		close(fd);
+		return 0;
+	}
+	if (!((cap.capabilities & V4L2_CAP_DEVICE_CAPS ? cap.device_caps : cap.capabilities) & V4L2_CAP_VIDEO_CAPTURE_MPLANE)) {
 		emit(0, "NOT_MPLANE_CAPTURE", 0, 0, &cap, NULL, 0, "node is not V4L2_CAP_VIDEO_CAPTURE_MPLANE");
 		close(fd);
 		return 4;
@@ -247,8 +334,24 @@ int main(int argc, char **argv)
 	stage = "VIDIOC_G_FMT";
 	memset(&fmt, 0, sizeof(fmt));
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-	do_ioctl(fd, VIDIOC_G_FMT, &fmt, stage);
+	if (do_ioctl(fd, VIDIOC_G_FMT, &fmt, stage) < 0) {
+		emit(0, "G_FMT_FAILED", 0, 0, &cap, NULL, 0,
+		     "multi-plane G_FMT rejected after S_FMT");
+		close(fd);
+		return 4;
+	}
 	stage = "format";
+	if (!fmt.fmt.pix_mp.width || !fmt.fmt.pix_mp.height ||
+	    !fmt.fmt.pix_mp.pixelformat || !fmt.fmt.pix_mp.num_planes ||
+	    !fmt.fmt.pix_mp.plane_fmt[0].sizeimage ||
+	    fmt.fmt.pix_mp.num_planes != 1 ||
+	    !fmt.fmt.pix_mp.plane_fmt[0].bytesperline) {
+		last_errno = 0;
+		emit(0, "FORMAT_UNCOMMITTED", 0, 0, &cap, &fmt.fmt.pix_mp, 0,
+		     "S_FMT returned success but G_FMT has no usable format; do not stream");
+		close(fd);
+		return 4;
+	}
 
 	if (O.probe_only) {
 		emit(1, "PROBE_OK", 0, 0, &cap, &fmt.fmt.pix_mp, 0,
@@ -284,7 +387,8 @@ int main(int argc, char **argv)
 			emit(0, "QUERYBUF_FAILED", 0, 0, &cap, &fmt.fmt.pix_mp, 0, "buffer query rejected");
 			goto fail;
 		}
-		if (planes[q][0].length == 0) {
+		if (bufs[q].length != 1 ||
+		    planes[q][0].length < fmt.fmt.pix_mp.plane_fmt[0].sizeimage) {
 			last_errno = 0;
 			emit(0, "QUERYBUF_EMPTY", 0, 0, &cap, &fmt.fmt.pix_mp, 0,
 			     "driver reported a zero-length plane (no ISP-allocated buffer)");
@@ -320,17 +424,19 @@ int main(int argc, char **argv)
 		}
 	}
 
+	streaming = 1;
 	if (O.raw) {
 		stage = "raw_open";
-		raw = fopen(O.raw, "wb");
+		raw = fopen(O.raw, "wbx");
 		if (!raw) {
 			last_errno = errno;
-			raw = NULL; /* frames still run; only the dump is skipped */
+			emit(0, "RAW_OPEN_FAILED", 0, 0, &cap, &fmt.fmt.pix_mp, 0, "output must be a new writable file");
+			goto fail;
 		}
 	}
 
 	while (framed < (int)O.frames) {
-		unsigned long long deadline = now_ms() + (framed == 0 ? O.timeout_ms : O.timeout_ms * 2);
+		if (!deadline) deadline = now_ms() + O.timeout_ms;
 
 		stage = "poll";
 		for (;;) {
@@ -343,7 +449,6 @@ int main(int argc, char **argv)
 				if (framed == 0) {
 					emit(0, "NO_FRAME_TIMEOUT", 0, 0, &cap, &fmt.fmt.pix_mp, 0,
 					     "stream started but DQBUF produced no frame before the timeout");
-					do_ioctl(fd, VIDIOC_STREAMOFF, &(enum v4l2_buf_type){ V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE }, "VIDIOC_STREAMOFF");
 					goto fail;
 				}
 				goto done;
@@ -382,17 +487,35 @@ int main(int argc, char **argv)
 
 		{
 			unsigned long long ts = now_ms();
-			uint32_t bytelen = planes[0][0].bytesused && planes[0][0].bytesused < map[dq.index].len
-				? planes[0][0].bytesused : (uint32_t)map[dq.index].len;
+            size_t bytelen;
+            const unsigned char *payload;
+            if (payload_length(&dq, &planes[0][0], map[dq.index].len, &bytelen)) {
+                emit(0, "INVALID_PAYLOAD", framed, total, &cap, &fmt.fmt.pix_mp, 0,
+                     "empty, errored, or out-of-bounds dequeue");
+                goto fail;
+            }
+            payload = (const unsigned char *)map[dq.index].mem + planes[0][0].data_offset;
+            if (!varied_payload(payload, bytelen)) {
+                emit(0, "CONSTANT_PAYLOAD", framed, total, &cap, &fmt.fmt.pix_mp, 0,
+                     "constant bytes cannot establish a physical frame");
+                goto fail;
+            }
+            fprintf(stderr, "DQBUF index=%u sequence=%u timestamp=%lld.%06ld bytes=%zu offset=%u\n",
+                    dq.index, dq.sequence, (long long)dq.timestamp.tv_sec,
+                    (long)dq.timestamp.tv_usec, bytelen, planes[0][0].data_offset);
 
 			if (framed == 0)
 				first_ms = ts;
 			last_ms = ts;
 			total += bytelen;
-			if (raw && bytelen)
-				fwrite(map[dq.index].mem, 1, bytelen, raw);
+			if (raw && (fwrite(payload, 1, bytelen, raw) != bytelen || fflush(raw))) {
+                emit(0, "RAW_WRITE_FAILED", framed, total, &cap, &fmt.fmt.pix_mp, 0,
+                     "frame evidence could not be saved completely");
+                goto fail;
+            }
 			framed++;
 			verified = 1;
+			deadline = 0;
 		}
 
 		stage = "VIDIOC_QBUF(requeue)";
@@ -407,16 +530,23 @@ done:
 	if (framed > 1 && last_ms > first_ms)
 		fps = (framed - 1) * 1000.0 / (double)(last_ms - first_ms);
 	stage = "VIDIOC_STREAMOFF";
-	do_ioctl(fd, VIDIOC_STREAMOFF, &(enum v4l2_buf_type){ V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE }, stage);
+	streaming = 0; /* one attempt only, including a failed STREAMOFF */
+	if (do_ioctl(fd, VIDIOC_STREAMOFF, &(enum v4l2_buf_type){ V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE }, stage) < 0) {
+        emit(0, "STREAMOFF_FAILED", framed, total, &cap, &fmt.fmt.pix_mp, 0,
+             "stop failed; close fd and inspect kernel log before any further trial");
+        rc = 4;
+        goto out;
+    }
 	emit(verified, verified ? "FRAMES_CAPTURED" : "NO_FRAME", (uint64_t)framed, total,
 	     &cap, &fmt.fmt.pix_mp, fps,
-	     verified ? "FIMC-IS produced buffer(s); these are ISP/BAYER or YUV bytes, not a JPEG/PNG" : "no frame");
+	     verified ? "Dequeued nonconstant payload; physical scene correlation still required" : "no frame");
 	rc = verified ? 0 : 3;
 	goto out;
 
 fail:
 	stage = "cleanup";
-	do_ioctl(fd, VIDIOC_STREAMOFF, &(enum v4l2_buf_type){ V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE }, stage);
+	if (streaming)
+        do_ioctl(fd, VIDIOC_STREAMOFF, &(enum v4l2_buf_type){ V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE }, stage);
 	rc = 4;
 
 out:

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>PenGuru model-library fixture test</title>
+<div id="library"></div><pre id="result">RUNNING</pre>
+<script type="module">
+import {modelLibrary} from '/pwa/nuxel-apps/settings/penguru-models.js';
+const container = document.getElementById('library');
+const result = document.getElementById('result');
+const calls = [];
+const library = modelLibrary(container, async (operation, params) => {
+  calls.push({operation, params});
+  if (operation === 'start_download') return {job_id: 'fixture-download'};
+  return {job: {state: 'ready', progress: 1, detail: 'UI fixture only'}};
+});
+const variant = {variant_id: 'gguf-q4km', format: 'GGUF', quantization: 'Q4_K_M',
+  size_bytes: 100, engine: 'llama.cpp', source_repo: 'fixture/model',
+  source_revision: 'a'.repeat(40), files: [], license: {spdx: 'test-only'},
+  status: 'not_installed', detail: 'fixture', download_allowed: false,
+  download_reason: '<script>untrusted markup</' + 'script>'};
+function assert(condition, message) { if (!condition) throw Error(message); }
+try {
+  library.render([], false);
+  assert(container.textContent.includes('OFF'), 'OFF must be visible');
+  library.render([{model_id: 'codebird', variants: [variant]}], true);
+  assert(container.querySelector('input').disabled, 'Untrusted package checkbox enabled');
+  assert(container.querySelector('button').disabled, 'Untrusted download enabled');
+  assert(!container.querySelector('script'), 'Untrusted text became markup');
+  library.render([{model_id: 'codebird', variants: [{...variant, download_allowed: true}]}], true);
+  const checkbox = container.querySelector('input');
+  checkbox.checked = true;
+  checkbox.dispatchEvent(new Event('change'));
+  assert(!container.querySelector('button').disabled, 'Trusted accepted package cannot download');
+  container.querySelector('button').click();
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert(checkbox.disabled, 'License changed during active transfer');
+  assert(container.querySelector('button').disabled, 'Concurrent download enabled');
+  assert(calls[0].operation === 'start_download', 'Wrong download operation');
+  assert(calls[0].params.license_revision === variant.source_revision, 'License revision not bound');
+  await new Promise(resolve => setTimeout(resolve, 1600));
+  assert(container.textContent.includes('ready'), 'Progress not polled');
+  assert(container.querySelector('button').disabled, 'Ready package can be downloaded again');
+  assert(container.querySelector('button').textContent === 'Verified & ready', 'Ready label missing');
+  assert(container.querySelector('select'), 'Per-model runtime control missing');
+  library.render([], false);
+  assert(!container.querySelector('progress'), 'OFF retained active progress');
+  result.textContent = 'PASS: OFF, trust gating, safe text, revision-bound download and progress polling (fixtures only)';
+} catch (error) {
+  result.textContent = 'FAIL: ' + error.message;
+}
+</script></html>

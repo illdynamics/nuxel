@@ -50,10 +50,19 @@ class Controller:
             runtimes["llama.cpp"] = LlamaCppRuntime(paths.LLAMA_LIB,
                                                    runner=None)
         self.scheduler = Scheduler(self.registry, runtimes, cfg)
-        self.classifier = Classifier()
+        self.classifier = None
+        self._generation_lock = threading.Lock()
         self._lock = threading.RLock()
         if cfg.get("enabled"):
             self.scheduler.set_enabled(True)
+
+    def save_preferences(self):
+        doc = {"mode": self.scheduler.mode, "runtime_preference": self.scheduler.runtime_preference,
+               "per_model_engine": self.scheduler.per_model}
+        path = os.path.join(paths.STATE_DIR, "preferences.json")
+        with open(path + ".tmp", "w") as fh:
+            json.dump(doc, fh)
+        os.replace(path + ".tmp", path)
 
     # ---- status ---------------------------------------------------------
     def status(self) -> Dict[str, Any]:
@@ -71,11 +80,11 @@ class Controller:
             "provider": self.scheduler.loaded_provider,
             "queue_depth": self.queue.pending_count(),
             "models": cards,
-            "sonarbird": self.classifier.status(),
+            "sonarbird": self.classifier.status() if self.classifier else {"available": False, "mode": "deterministic rules"},
             "providers": {"CPU": {"status": "baseline"},
                           "GPU/NPU": {"status": "not validated on this device"}},
             "network": {"workers": "denied", "local_only": True},
-            "voice": {"wake_word": bool(self.cfg.get("wake_word_enabled")),
+            "voice": {"wake_word": False, "foreground_speech": os.path.isfile("/opt/nuxel-speech/whisper-cli"),
                       "listening": False},
         }
 
@@ -93,17 +102,26 @@ class Controller:
         if mode not in MODES:
             return {"ok": False, "error": "invalid_mode"}
         pref = body.get("runtime_preference") or self.scheduler.runtime_preference
+        if pref not in ("auto", "llama.cpp", "onnxruntime-genai"):
+            return {"ok": False, "error": "invalid_runtime"}
+        if body.get("route_override") not in (None, "", "CHAT", "CODE", "ASK"):
+            return {"ok": False, "error": "invalid_override"}
+        if not self._generation_lock.acquire(blocking=False):
+            return {"ok": False, "error": "busy", "detail": "Cancel or finish the active request first"}
         rec = self.queue.submit(ident["app_id"], ident["session_id"], mode,
                                 pref, text, body.get("conversation_id"))
         rid = rec["request_id"]
-        try:
-            result = self._handle(rid, ident, text, mode, pref,
-                                  body.get("route_override"))
-        except Exception as exc:  # noqa: BLE001 - always return a typed error
-            self.queue.update(rid, status="error", error="%s: %s" % (type(exc).__name__, exc))
-            return {"ok": False, "request_id": rid, "error": "internal_error"}
-        result["request_id"] = rid
-        return result
+        def run():
+            try:
+                self._handle(rid, ident, text, mode, pref, body.get("route_override"))
+            except Exception as exc:
+                self.queue.update(rid, status="error", error="%s: %s" % (type(exc).__name__, exc))
+                if self.scheduler.lifecycle.can("IDLE"):
+                    self.scheduler.lifecycle.set("IDLE")
+            finally:
+                self._generation_lock.release()
+        threading.Thread(target=run, daemon=True).start()
+        return {"ok": True, "request_id": rid, "status": "queued"}
 
     def _handle(self, rid: str, ident: Dict[str, str], text: str, mode: str,
                 pref: str, override: Optional[str]) -> Dict[str, Any]:
@@ -114,6 +132,10 @@ class Controller:
                         "confidence": 1.0, "reason_code": "R_SINGLE_MODE",
                         "worker": mode, "decision_source": "mode"}
         else:
+            if self.classifier is None:
+                manifest, _ = self.registry.ready_manifest("sonarbird", "onnx-int8-arm64")
+                if manifest is not None:
+                    self.classifier = Classifier(self.registry.package_dir(manifest))
             decision = route(text, self.classifier).as_dict()
         if override in ("CHAT", "CODE", "ASK"):
             decision.update({"route": override, "reason_code": "R_OWNER_OVERRIDE",
@@ -159,6 +181,7 @@ class Controller:
             events.append(ev)
             if ev["event"] == "token":
                 output.append(ev.get("text", ""))
+                self.queue.update(rid, status="generating", output="".join(output))
             elif ev["event"] in ("done", "error", "oom", "cancelled"):
                 final = ev
         out_text = "".join(output)[:65536]
@@ -203,29 +226,46 @@ class Handler(socketserver.StreamRequestHandler):
                                             12)
             import struct
             pid, uid, gid = struct.unpack("3i", creds)
+            if uid != 0:  # Only the trusted root bridge may assert launcher identity.
+                return None
         except OSError:
             return None
-        doc = json.loads(self.rfile.readline() or b"{}")
+        doc = json.loads(self.rfile.readline(65537) or b"{}")
         app_id = doc.get("app_id")
         session_id = doc.get("session_id")
         if not isinstance(app_id, str) or not app_id or not isinstance(session_id, str):
             return None
-        if not SAFE_SESSION.match(session_id):
+        if app_id not in ("org.nuxel.PenGuru", "nuxel-settings", "org.nuxel.Settings"):
+            return None
+        if not SAFE_SESSION.fullmatch(session_id):
             return None
         return {"app_id": app_id, "session_id": session_id, "uid": uid, "pid": pid}
 
     def handle(self):
-        ident = self._ident()
+        self.request.settimeout(15)
+        try:
+            ident = self._ident()
+        except (ValueError, OSError, AttributeError):
+            ident = None
         if ident is None:
             self.wfile.write(json.dumps({"ok": False, "error": "identity_required"}).encode() + b"\n")
             return
-        for raw in self.rfile:
+        while True:
+            raw = self.rfile.readline(524289)
+            if not raw:
+                break
+            if len(raw) > 524288:
+                self.wfile.write(b'{"ok":false,"error":"request_too_large"}\n')
+                return
             try:
                 req = json.loads(raw)
             except ValueError:
                 self.wfile.write(b'{"ok":false,"error":"invalid_json"}\n')
                 continue
-            out = self._dispatch(ident, req)
+            try:
+                out = self._dispatch(ident, req)
+            except (OSError, ValueError, reg.ManifestError):
+                out = {"ok": False, "error": "operation_failed"}
             self.wfile.write(json.dumps(out, ensure_ascii=False).encode() + b"\n")
             self.wfile.flush()
 
@@ -234,6 +274,11 @@ class Handler(socketserver.StreamRequestHandler):
             return {"ok": False, "error": "invalid_request"}
         op = req.get("op")
         c = self.controller
+        download_ops = ("start_download", "download_status", "cancel_download")
+        if os.environ.get("NUXEL_PENGURU_DOWNLOADER") == "1" and op not in download_ops:
+            return {"ok": False, "error": "download_only"}
+        if os.environ.get("NUXEL_PENGURU_DOWNLOADER") != "1" and op in download_ops:
+            return {"ok": False, "error": "use_download_service"}
         if op == "status":
             return {"ok": True, "status": c.status()}
         if op == "set_enabled":
@@ -243,6 +288,7 @@ class Handler(socketserver.StreamRequestHandler):
         if op == "set_mode":
             try:
                 out = c.scheduler.set_mode(str(req.get("mode")))
+                c.save_preferences()
                 out["ok"] = True
                 return out
             except ValueError as exc:
@@ -252,10 +298,18 @@ class Handler(socketserver.StreamRequestHandler):
                 out = c.scheduler.set_runtime_preference(
                     str(req.get("preference") or c.scheduler.runtime_preference),
                     req.get("model_id"), req.get("engine"))
+                c.save_preferences()
                 out["ok"] = True
                 return out
             except ValueError as exc:
                 return {"ok": False, "error": str(exc)}
+        if op == "transcribe":
+            if not c.scheduler.enabled:
+                return {"ok": False, "error": "disabled"}
+            if c._generation_lock.locked():
+                return {"ok": False, "error": "busy", "detail": "Finish generation before speech recognition"}
+            from voice.speech import transcribe
+            return {"ok": True, **transcribe(c.registry, req.get("audio"))}
         if op == "submit":
             return c.submit(ident, req)
         if op == "cancel":
@@ -289,13 +343,16 @@ class Handler(socketserver.StreamRequestHandler):
         if op == "cancel_download":
             return store.cancel_download(str(req.get("job_id") or ""))
         if op == "delete_model":
+            if c._generation_lock.locked():
+                return {"ok": False, "error": "busy"}
+            c.scheduler.unload("delete")
             return store.delete_model(c.registry, str(req.get("model_id") or ""),
                                       str(req.get("variant_id") or ""))
         if op == "diagnostics":
             return {"ok": True, "status": c.status(),
                     "device": c.scheduler._device().__dict__,
                     "runtimes": {k: v.probe(c.scheduler._device(),
-                                            c.scheduler._profile({"runtime": {"context_limit": 4096}}))
+                                            c.scheduler._profile({"format": "GGUF", "runtime": {"context_limit": 4096}}))
                                  for k, v in c.scheduler.runtimes.items()}}
         if op == "disable_all":
             out = c.scheduler.set_enabled(False)
@@ -314,6 +371,15 @@ def serve(sock_path: str) -> None:
     except Exception as exc:  # noqa: BLE001
         print("penguru: invalid config:", exc, file=sys.stderr)
         raise SystemExit(2)
+    try:
+        with open(os.path.join(paths.STATE_DIR, "preferences.json")) as fh:
+            saved = json.load(fh)
+        for key in ("mode", "runtime_preference", "per_model_engine"):
+            if key in saved:
+                cfg[key] = saved[key]
+    except (OSError, ValueError):
+        pass
+    cfg["enabled"] = os.environ.get("NUXEL_PENGURU_DOWNLOADER") != "1"
     Handler.controller = Controller(cfg)
     os.makedirs(os.path.dirname(sock_path), exist_ok=True)
     try:

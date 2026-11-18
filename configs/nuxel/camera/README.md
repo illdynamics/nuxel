@@ -44,3 +44,18 @@ nuxel-camera-diag.sh selftest             # 4 offline fixtures
 
 Owner procedure: `docs/beta-finalization/manual-proof/15-camera.md`.
 Verdicts: `READY_UNTESTED`, `PRESENT_UNREADABLE`, `BLOCKED_FIRMWARE`, `NO_V4L2_DEVICE`.
+
+## Recovery safety (2026-11-17)
+
+`capture` and `capture-probe` require `--yes` and an explicitly reviewed
+`NUXEL_FIMC_NODE=/dev/videoNNN`; automatic node scanning is disabled. `S_INPUT`
+can initialize hardware even with `--probe-only`. The low-level client requires
+`--allow-sensor-init` for both modes. The sensor-only diagnostic uses
+`--sensor-position 0`, matching `CONFIG_USE_SENSOR_GROUP=y`; `--sensor-id 37`
+is rejected. The current payload mapper supports one memory plane and fails
+closed on additional planes, empty/errored buffers or incomplete output.
+Dequeued bytes alone never establish physical scene correlation.
+
+See [recovery evidence](../../../reports/CAMERA-RECOVERY-2026-11-17.md) before
+any new hardware attempt. A file listed under a search path does not establish
+that the direct EEPROM firmware reader can open it.

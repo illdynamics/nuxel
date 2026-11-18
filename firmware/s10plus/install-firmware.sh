@@ -358,6 +358,10 @@ install_blobs() {
     local cat src dst req cs _desc blob target
     while IFS=$'\t' read -r cat src dst req cs _desc; do
         [ -n "$src" ] || continue
+        if [ "$cat" = "camera_isp" ]; then
+            warn "SKIP camera_isp ${src}: requires coherent-set and DDK ABI review; use the camera recovery proposal, not generic install."
+            continue
+        fi
         case "$dst" in
             "DO NOT INSTALL"*) log "SKIP     ${src} (${dst})"; continue ;;
         esac

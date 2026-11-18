@@ -324,14 +324,15 @@ fimc_nodes() {
     case "$name" in *fimc-is*) printf '%s\n' "$d" ;; esac
   done
 }
-# capture_probe [json]  -> one line JSON per candidate, tried in order.
+# capture_probe --yes -> one reviewed endpoint; S_INPUT is state-changing.
 cmd_capture_probe() {
   local bin; bin="$(fimc_bin)"
   [ -n "$bin" ] || { say "refused: nuxel-fimc-capture not found (build with tools/s10plus/fimc-capture/Makefile). No frame claimed."; return 6; }
   faked_root && { say "refused: offline/faked root — no real capture device is sampled under --root."; return 5; }
-  local n; n="$(fimc_nodes | head -1)"
-  [ -n "$n" ] || { say "refused: no exynos-fimc-is capture node in /sys/class/video4linux; nothing to probe."; return 3; }
-  "$bin" --node "$n" --probe-only --json || true
+  [ "$YES" = 1 ] || { say "refused: probe uses S_INPUT and requires --yes after review."; return 4; }
+  local n="${NUXEL_FIMC_NODE:-}"
+  [[ "$n" =~ ^/dev/video[0-9]+$ ]] || { say "refused: set NUXEL_FIMC_NODE to the reviewed capture endpoint; no scanning."; return 4; }
+  "$bin" --node "$n" --probe-only --allow-sensor-init --json
 }
 cmd_capture() {
   enumerate
@@ -344,19 +345,17 @@ cmd_capture() {
   [ -n "$out" ] || out="$(pol_get output.stills_dir)/owner-test-$(date -u +%Y%m%dT%H%M%SZ).raw"
   [ -e "$out" ] && { say "refused: $out already exists — refusing to overwrite. Pick another name."; return 7; }
   mkdir -p "$(dirname "$out")" 2>/dev/null || true
-  local n rc=1 outjson
-  while IFS= read -r n; do
-    [ -n "$n" ] || continue
-    say "probe+capture one frame: $n -> $out (bounded, single frame)"
-    outjson="$("$bin" --node "$n" --frames 1 --timeout 3000 --raw "$out" --json)"
-    say "$outjson"
-    if printf '%s' "$outjson" | grep -q '"verdict":"FRAMES_CAPTURED"'; then rc=0; break; fi
-  done < <(fimc_nodes)
+  local n="${NUXEL_FIMC_NODE:-}" rc=0 outjson
+  [[ "$n" =~ ^/dev/video[0-9]+$ ]] || { say "refused: set NUXEL_FIMC_NODE to the reviewed capture endpoint; no scanning."; return 4; }
+  say "one capture attempt: $n -> $out"
+  outjson="$("$bin" --node "$n" --allow-sensor-init --frames 1 --timeout 3000 --raw "$out" --json)" || rc=$?
+  say "$outjson"
+  if ! printf '%s' "$outjson" | grep -q '"verdict":"FRAMES_CAPTURED"'; then rc=4; fi
   if [ $rc = 0 ]; then
     say "captured: $(wc -c < "$out" | tr -d ' ') bytes of the driver's native format (see fourcc in JSON)."
     say "note: this is an ISP/BAYER or YUV buffer, not a JPEG — decode it with the format in the capture JSON."
   else
-    say "capture FAILED at the FIMC-IS layer on every candidate node — report FAIL with the JSON above and dmesg; no frame is claimed."
+    say "capture FAILED at the FIMC-IS layer on the selected node — report FAIL with the JSON above and dmesg; no frame is claimed."
   fi
   return $rc
 }

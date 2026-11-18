@@ -19,6 +19,15 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <dirent.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <sys/prctl.h>
+#include <linux/seccomp.h>
+#include <linux/filter.h>
+#include <sys/syscall.h>
+#include <sys/socket.h>
+#include <stddef.h>
 #include "llama.h"
 
 static volatile sig_atomic_t g_cancel = 0;
@@ -121,16 +130,37 @@ int main(void) {
   if (!prompt[0]) snprintf(prompt, sizeof prompt, "Hello!");
 
   /* The package dir must contain exactly one .gguf file. */
-  char cmd[1024], gguf[1024] = "";
-  snprintf(cmd, sizeof cmd, "find '%s' -maxdepth 1 -type f -name '*.gguf' | head -2", pkg);
-  FILE *fp = popen(cmd, "r");
+  char gguf[1024] = "";
   int count = 0;
-  if (fp) {
-    while (fgets(cmd, sizeof cmd, fp)) {
-      cmd[strcspn(cmd, "\n")] = 0;
-      if (cmd[0]) { snprintf(gguf, sizeof gguf, "%s", cmd); count++; }
+  DIR *dir = opendir(pkg);
+  struct dirent *entry;
+  while (dir && (entry = readdir(dir))) {
+    size_t len = strlen(entry->d_name);
+    if (len > 5 && !strcmp(entry->d_name + len - 5, ".gguf")) {
+      snprintf(gguf, sizeof gguf, "%s/%s", pkg, entry->d_name);
+      count++;
     }
-    pclose(fp);
+  }
+  if (dir) closedir(dir);
+  int lockfd = open("/var/lib/nuxel-penguru/worker.lock", O_CREAT|O_RDWR, 0600);
+  if (lockfd < 0 || flock(lockfd, LOCK_EX|LOCK_NB)) {
+    emit("error", "\"code\":\"worker_busy\""); return 2;
+  }
+  struct sock_filter filter[] = {
+    BPF_STMT(BPF_LD|BPF_W|BPF_ABS, offsetof(struct seccomp_data, nr)),
+    BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, __NR_socket, 0, 1),
+    BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ERRNO | EPERM),
+    BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ALLOW)
+  };
+  struct sock_fprog program = {4, filter};
+  if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) ||
+      prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &program)) {
+    emit("error", "\"code\":\"network_isolation_unavailable\""); return 2;
+  }
+  int network_probe = socket(AF_INET, SOCK_STREAM, 0);
+  if (network_probe >= 0 || errno != EPERM) {
+    if (network_probe >= 0) close(network_probe);
+    emit("error", "\"code\":\"network_isolation_check_failed\""); return 2;
   }
   if (count != 1) { emit("error", "\"code\":\"invalid_package\",\"detail\":\"expected one gguf\""); return 2; }
 
@@ -150,7 +180,7 @@ int main(void) {
                                sizeof archbuf) < 0)
     snprintf(archbuf, sizeof archbuf, "unknown");
   long load_ms = (long)((now_s() - t0) * 1000.0);
-  emit("loaded", "\"engine\":\"llama.cpp\",\"architecture\":\"%.*s\","
+  emit("loaded", "\"engine\":\"llama.cpp\",\"network_socket_test\":\"denied\",\"architecture\":\"%.*s\","
        "\"n_params\":%llu,\"n_vocab\":%d,\"load_ms\":%ld,\"threads\":%ld,"
        "\"context\":%ld,\"model\":\"%.*s\",\"llama_version\":\"%.*s\"",
        60, archbuf, (unsigned long long)llama_model_n_params(m),
@@ -174,9 +204,21 @@ int main(void) {
   struct llama_context *ctx = llama_init_from_model(m, cp);
   if (!ctx) { llama_model_free(m); emit("error", "\"code\":\"context_failed\""); return 3; }
 
-  int np = (int)strlen(prompt);
+  const char *tmpl = llama_model_chat_template(m, NULL);
+  /* Only a verified manifest may supply a missing package template. */
+  char template_override[64] = "";
+  jget(job, "chat_template", template_override, sizeof template_override);
+  if (!tmpl && !strcmp(model, "chatbird") && !strcmp(archbuf, "llama") &&
+      !strcmp(template_override, "chatml")) tmpl = "chatml";
+  if (!tmpl) { emit("error", "\"code\":\"missing_chat_template\""); return 4; }
+  char formatted[131072];
+  struct llama_chat_message msg = {"user", prompt};
+  int np = llama_chat_apply_template(tmpl, &msg, 1, true, formatted, sizeof formatted);
+  if (np < 0 || np >= (int)sizeof formatted) {
+    emit("error", "\"code\":\"unsupported_chat_template\""); return 4;
+  }
   int32_t *toks = malloc(sizeof(int32_t) * (size_t)(n_ctx + 8));
-  int nt = llama_tokenize(vocab, prompt, np, toks, (int32_t)n_ctx, true, true);
+  int nt = llama_tokenize(vocab, formatted, np, toks, (int32_t)n_ctx, true, true);
   if (nt <= 0) { free(toks); llama_free(ctx); llama_model_free(m);
                  emit("error", "\"code\":\"tokenize_failed\""); return 4; }
 
@@ -203,26 +245,22 @@ int main(void) {
   else if (rc != 0) { emit("error", "\"code\":\"decode_failed\",\"rc\":%d", rc); }
 
   int gen = 0;
-  char output[65537];
-  size_t olen = 0;
-  output[0] = 0;
   double t_first = 0, t_gen = now_s();
   if (!g_cancel && rc == 0) {
     llama_sampler_chain_params sp = llama_sampler_chain_default_params();
     struct llama_sampler *chain = llama_sampler_chain_init(sp);
     llama_sampler_chain_add(chain, llama_sampler_init_greedy());
-    for (int step = 0; step < max_tokens && !g_cancel; step++) {
+    for (int step = 0; step < max_tokens && pos < n_ctx && !g_cancel; step++) {
       llama_token tok = llama_sampler_sample(chain, ctx, -1);
       llama_sampler_accept(chain, tok);
-      char piece[256];
-      int pl = llama_token_to_piece(vocab, tok, piece, sizeof piece, 0, true);
-      if (pl > 0) {
+      if (llama_vocab_is_eog(vocab, tok)) break;
+      char piece[257];
+      int pl = llama_token_to_piece(vocab, tok, piece, sizeof piece - 1, 0, true);
+      if (pl > 0 && pl < (int)sizeof piece) {
         char esc[1024];
         piece[pl] = 0;
         json_escape(piece, esc, sizeof esc);
         emit("token", "\"text\":\"%s\"", esc);
-        size_t k = (size_t)pl;
-        if (olen + k < sizeof(output) - 1) { memcpy(output + olen, piece, k); olen += k; output[olen] = 0; }
         if (t_first == 0) t_first = now_s() - t_gen;
         gen++;
       }
@@ -251,9 +289,8 @@ int main(void) {
     } else {
       emit("done", "\"op\":\"%.*s\",\"result\":\"ok\",\"prompt_tokens\":%d,"
            "\"generated_tokens\":%d,\"decode_tokens_per_second\":%.3f,"
-           "\"time_to_first_token_ms\":%ld,\"output\":\"%.*s\"",
-           24, op, nt, gen, (double)gen / elapsed, (long)(t_first * 1000.0),
-           65536, output);
+           "\"time_to_first_token_ms\":%ld",
+           24, op, nt, gen, (double)gen / elapsed, (long)(t_first * 1000.0));
     }
   }
   llama_free(ctx);

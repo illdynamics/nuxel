@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-17",
+  "source_archive": "/mnt/data/nuxel-feat-cam.zip",
+  "archive_format_note": "Uploaded ZIP lacks a ZIP end-of-central-directory record. Local file headers can be read; complete repository membership and latest camera worktree commits cannot be certified. All eight firmware members listed below individually passed decompression and local-header ZIP CRC32 verification.",
+  "manifest_path": "firmware/s10plus/manifest.yml",
+  "blob_path": "firmware/s10plus/blobs/device-vendor-firmware/",
+  "source_claim": "Linux4/proprietary_vendor_samsung@05c9ef8f16e0ad5ab274e408c120dfd99fd5c628",
+  "files": [
+    {
+      "file": "fimc_is_fw_mcu.bin",
+      "bytes": 34348,
+      "actual": "0887a6c5f2ad8b4d261473889b3b4c5e44497df4b487775e86ae9cf9e535acdf",
+      "manifest": "0887a6c5f2ad8b4d261473889b3b4c5e44497df4b487775e86ae9cf9e535acdf",
+      "match": true
+    },
+    {
+      "file": "fimc_is_lib.bin",
+      "bytes": 4432944,
+      "actual": "e0bb2c36bf43e9a864037552640be4b7b57e5944a0c86f8485900152bd5fbbcd",
+      "manifest": "08e54ac3817b4c9d4851a90a7b3ac3e5b30ba98378c217ce8ea51db0ff98f1db",
+      "match": false
+    },
+    {
+      "file": "fimc_is_rta.bin",
+      "bytes": 3986208,
+      "actual": "9ca4668a2be85edd8c14b5243db235fd145db526915216dab17fae2c8e3ffc30",
+      "manifest": "12809be7b38919b7f98ad14c85d55d3b6d2b029304e7baef1141aca7dd94b1e9",
+      "match": false
+    },
+    {
+      "file": "setfile_2l4.bin",
+      "bytes": 4080120,
+      "actual": "bd32765a5afea316e6e4a5dc466ee07e7f4767d90c4a07ea9823fd85d7e86863",
+      "manifest": "876638f09d7ec4ad4ca695d7219267f236c9ea832252fd93296724c176a6b0f3",
+      "match": false
+    },
+    {
+      "file": "setfile_3j1.bin",
+      "bytes": 3944440,
+      "actual": "dc352608088d409dfc9faf3c5475d045220f5316f49cee4d6619dd98ce076876",
+      "manifest": "4e68f97def312d9b4827d9eab3c3a10f2d476ed4aa76a9c42d4b7b84ef571bb9",
+      "match": false
+    },
+    {
+      "file": "setfile_3m3.bin",
+      "bytes": 2858784,
+      "actual": "a696783eec88515b2e14e21c1288baeb61e402ec245a9b2a7e88084139cd0abf",
+      "manifest": "92c4bf1c197215d9a870e27051c04ff677c58dafc530355ecff69b85fddac1cd",
+      "match": false
+    },
+    {
+      "file": "setfile_3p9.bin",
+      "bytes": 3265896,
+      "actual": "226987e49b416ad6a5548069a6abe370ddd8b1ab49bf5005731950fca450100f",
+      "manifest": "6e774bc773833d49046d3d3cb750181a990fb10ea76654d8b87501b23e1883fd",
+      "match": false
+    },
+    {
+      "file": "setfile_4ha.bin",
+      "bytes": 3944440,
+      "actual": "dc352608088d409dfc9faf3c5475d045220f5316f49cee4d6619dd98ce076876",
+      "manifest": "4e68f97def312d9b4827d9eab3c3a10f2d476ed4aa76a9c42d4b7b84ef571bb9",
+      "match": false
+    }
+  ],
+  "duplicate_pairs": [
+    [
+      "setfile_3j1.bin",
+      "setfile_4ha.bin"
+    ]
+  ],
+  "summary": {
+    "firmware_count": 8,
+    "manifest_matches": 1,
+    "mismatches": 7
+  },
+  "disposition": "NO AUTOMATIC DEPLOY: Verify installed stock AP/vendor provenance and kernel-selected paths before any hardware trial."
+}

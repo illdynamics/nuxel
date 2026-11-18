@@ -117,3 +117,25 @@ patch metadata marked available. Completion is intercepted before external
 effects. Both success and failure enter DONE; neither test result establishes
 firmware execution. Timer units are independently traced to the matched Android
 elapsedRealtime implementation; see the final recovery report and clock evidence.
+# Synchronization continuation replay
+
+`--patch-records HEADER` verifies the existing exact embedded-patch identity,
+then runs its F1 records through original parser/callback/RPC5 serializer code.
+Independent checks compare destinations, lengths and hashes at every layer.
+It never transmits a record, generates an ACK or includes patch data in output.
+Only F1 callbacks are enabled; container/header loading is outside this replay.
+
+`--reliable-queue` additionally executes the original ring allocator/free,
+ACK/NACK, retransmission and consumed-patch startup branches. Patch fields are
+synthetically staged; this is not patch validation. Actual sends and external
+error handling remain intercepted. Queue drain is never called MCU success.
+
+`replay_lhd_response.py BINARY --sync-initializer` executes bounded synthetic
+initial/confirmation synchronization, timeout/restart and cancel/late-reply
+scenarios using the hash-matched instructions. `SyncInitializerReplay` extends
+the existing transport replay through the original platform callback and
+initializer to version-request serialization. Raw writes and reliable enqueue
+are intercepted; no response, ACK, physical timer or MCU is simulated as real.
+Assertion-helper entry stops the replay before its side effects. Other main-core
+modes are refused. See `reports/SSP-FIRST-LIGHT-FINAL-RECOVERY.md` for limitations
+and test commands. This is an offline diagnostic, not a live downloader.

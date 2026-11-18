@@ -1,0 +1,56 @@
+[
+  {
+    "name": "fimc_is_fw_mcu.bin",
+    "size": 34348,
+    "sha256": "0887a6c5f2ad8b4d261473889b3b4c5e44497df4b487775e86ae9cf9e535acdf",
+    "fresh_ap_matches_ssp_extraction": true
+  },
+  {
+    "name": "fimc_is_lib.bin",
+    "size": 4432944,
+    "sha256": "e0bb2c36bf43e9a864037552640be4b7b57e5944a0c86f8485900152bd5fbbcd",
+    "fresh_ap_matches_ssp_extraction": true
+  },
+  {
+    "name": "fimc_is_rta.bin",
+    "size": 3986208,
+    "sha256": "9ca4668a2be85edd8c14b5243db235fd145db526915216dab17fae2c8e3ffc30",
+    "fresh_ap_matches_ssp_extraction": true
+  },
+  {
+    "name": "setfile_2l4.bin",
+    "size": 4080120,
+    "sha256": "bd32765a5afea316e6e4a5dc466ee07e7f4767d90c4a07ea9823fd85d7e86863",
+    "fresh_ap_matches_ssp_extraction": true
+  },
+  {
+    "name": "setfile_3j1.bin",
+    "size": 3944440,
+    "sha256": "dc352608088d409dfc9faf3c5475d045220f5316f49cee4d6619dd98ce076876",
+    "fresh_ap_matches_ssp_extraction": true
+  },
+  {
+    "name": "setfile_3m3.bin",
+    "size": 2858784,
+    "sha256": "a696783eec88515b2e14e21c1288baeb61e402ec245a9b2a7e88084139cd0abf",
+    "fresh_ap_matches_ssp_extraction": true
+  },
+  {
+    "name": "setfile_3p9.bin",
+    "size": 3265896,
+    "sha256": "226987e49b416ad6a5548069a6abe370ddd8b1ab49bf5005731950fca450100f",
+    "fresh_ap_matches_ssp_extraction": true
+  },
+  {
+    "name": "setfile_4ha.bin",
+    "size": 3944440,
+    "sha256": "dc352608088d409dfc9faf3c5475d045220f5316f49cee4d6619dd98ce076876",
+    "fresh_ap_matches_ssp_extraction": true
+  },
+  {
+    "name": "build.prop",
+    "size": 4624,
+    "sha256": "fb2758e75015c8775b4003cf5bc0da95ff7b0693821a55f559f0115c4e3f699d",
+    "fresh_ap_matches_ssp_extraction": true
+  }
+]
