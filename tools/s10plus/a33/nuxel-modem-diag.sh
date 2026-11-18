@@ -45,7 +45,12 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 RR=""; d="$HERE"; for _ in 1 2 3 4 5 6; do [ -d "$d/configs/nuxel" ] && { RR="$d"; break; }; d="$(dirname "$d")"; done
 [ -n "$RR" ] && [ ! -r "$POLICY" ] && POLICY="$RR/configs/nuxel/modem/modem.json"
 say() { printf '%s\n' "$*"; }
-abs() { case "$1" in /*) printf '%s%s' "$ROOT" "$1" ;; *) printf '%s/%s' "$ROOT" "$1" ;; esac; }
+abs() {
+  # A live root is represented by "/", whereas test roots are prefixes.
+  # Preserve exactly one leading slash in the former case.
+  if [ "$ROOT" = "/" ]; then printf '%s' "$1"; return; fi
+  case "$1" in /*) printf '%s%s' "$ROOT" "$1" ;; *) printf '%s/%s' "$ROOT" "$1" ;; esac
+}
 jesc() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
 faked_root() { [ "$ROOT" != "/" ]; }
 pol_list() { python3 - "$POLICY" "$1" <<'PY'
@@ -72,22 +77,32 @@ print("" if cur is None else cur)
 PY
 }
 dedupe() { local out="" x; for x in $1; do case " $out " in *" $x "*) ;; *) out="$out $x" ;; esac; done; printf '%s' "${out# }"; }
+glob_paths() {
+  # Do not use command substitution to expand a glob: its output is data, not
+  # shell syntax, so /dev/umts* was previously treated literally on the live
+  # root.  compgen expands only the supplied pattern and produces no result
+  # for a miss.  All configured paths are root-owned static policy strings.
+  compgen -G "$1" || true
+}
+display_path() {
+  if [ "$ROOT" = "/" ]; then printf '%s' "$1"; else printf '%s' "${1#$ROOT}"; fi
+}
 
 # ---- enumeration -----------------------------------------------------------
 CP_NODES=""; NET_IFACES=""; PLUGIN=""; MMCLI=""; SIM_STATE="unknown"
 enumerate() {
   local cand p
   for cand in $(pol_list interfaces.cp_node_globs) $(pol_list interfaces.cp_node_candidates); do
-    for p in $(abs "$cand"); do [ -e "$p" ] && CP_NODES="$CP_NODES ${p#$ROOT}"; done
+    for p in $(glob_paths "$(abs "$cand")"); do [ -e "$p" ] && CP_NODES="$CP_NODES $(display_path "$p")"; done
   done
   for cand in $(pol_list interfaces.net_globs); do
-    for p in $(abs "$cand"); do [ -e "$p" ] && NET_IFACES="$NET_IFACES $(basename "$p")"; done
+    for p in $(glob_paths "$(abs "$cand")"); do [ -e "$p" ] && NET_IFACES="$NET_IFACES $(basename "$p")"; done
   done
   CP_NODES="$(dedupe "$CP_NODES")"; NET_IFACES="$(dedupe "$NET_IFACES")"
   local pdir g p2
   for pdir in $(pol_list modemmanager.plugin_dirs); do
     for g in $(pol_list modemmanager.plugin_globs); do
-      for p2 in "$(abs "$pdir")"/$g; do [ -e "$p2" ] && PLUGIN="$PLUGIN $(basename "$p2")"; done
+      for p2 in $(glob_paths "$(abs "$pdir")/$g"); do [ -e "$p2" ] && PLUGIN="$PLUGIN $(basename "$p2")"; done
     done
   done
   PLUGIN="$(dedupe "$PLUGIN")"
