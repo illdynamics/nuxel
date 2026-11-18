@@ -1,6 +1,0 @@
-PASS camera-absent            state=NO_V4L2_DEVICE
-PASS camera-nofw              state=BLOCKED_FIRMWARE
-PASS camera-partial           state=PRESENT_UNREADABLE
-PASS camera-placeholder       state=BLOCKED_FIRMWARE
-PASS camera-ready             state=READY_UNTESTED
-5 fixtures checked

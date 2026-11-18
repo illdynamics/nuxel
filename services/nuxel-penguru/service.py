@@ -30,6 +30,7 @@ from sonarbird.router import Classifier, route  # noqa: E402
 from runtime.llama_cpp.adapter import LlamaCppRuntime  # noqa: E402
 from supervisor import read_actions  # noqa: E402
 from model_store import downloader as store  # noqa: E402
+from beak import config as beak_config, catalog as beak_catalog  # noqa: E402
 
 SCHEMA_VERSION = 1
 MAX_TEXT = 16000
@@ -84,8 +85,8 @@ class Controller:
             "providers": {"CPU": {"status": "baseline"},
                           "GPU/NPU": {"status": "not validated on this device"}},
             "network": {"workers": "denied", "local_only": True},
-            "voice": {"wake_word": False, "foreground_speech": os.path.isfile("/opt/nuxel-speech/whisper-cli"),
-                      "listening": False},
+            "voice": {"config": beak_config.load(), "capabilities": beak_config.capabilities(),
+                      "listening": False, "foreground_only": True},
         }
 
     # ---- request path ---------------------------------------------------
@@ -104,6 +105,9 @@ class Controller:
         pref = body.get("runtime_preference") or self.scheduler.runtime_preference
         if pref not in ("auto", "llama.cpp", "onnxruntime-genai"):
             return {"ok": False, "error": "invalid_runtime"}
+        if pref == "onnxruntime-genai":
+            return {"ok": False, "error": "genai_package_missing",
+                    "detail": "ChatBird and CodeBird use llama.cpp GGUF. Select Auto or llama.cpp; MiniLM uses a separate ONNX Runtime session."}
         if body.get("route_override") not in (None, "", "CHAT", "CODE", "ASK"):
             return {"ok": False, "error": "invalid_override"}
         if not self._generation_lock.acquire(blocking=False):
@@ -274,7 +278,7 @@ class Handler(socketserver.StreamRequestHandler):
             return {"ok": False, "error": "invalid_request"}
         op = req.get("op")
         c = self.controller
-        download_ops = ("start_download", "download_status", "cancel_download")
+        download_ops = ("start_download", "start_beak_download", "download_status", "cancel_download")
         if os.environ.get("NUXEL_PENGURU_DOWNLOADER") == "1" and op not in download_ops:
             return {"ok": False, "error": "download_only"}
         if os.environ.get("NUXEL_PENGURU_DOWNLOADER") != "1" and op in download_ops:
@@ -282,7 +286,11 @@ class Handler(socketserver.StreamRequestHandler):
         if op == "status":
             return {"ok": True, "status": c.status()}
         if op == "set_enabled":
-            out = c.scheduler.set_enabled(bool(req.get("enabled")))
+            # JSON booleans only: bool("false") is True in Python. Never power
+            # on services or permit microphone access from a malformed value.
+            if type(req.get("enabled")) is not bool:
+                return {"ok": False, "error": "invalid_enabled", "detail": "enabled must be a JSON boolean"}
+            out = c.scheduler.set_enabled(req["enabled"])
             out["ok"] = True
             return out
         if op == "set_mode":
@@ -294,6 +302,9 @@ class Handler(socketserver.StreamRequestHandler):
             except ValueError as exc:
                 return {"ok": False, "error": str(exc)}
         if op == "set_runtime":
+            if req.get("preference") == "onnxruntime-genai" or req.get("engine") == "onnxruntime-genai":
+                return {"ok": False, "error": "genai_package_missing",
+                        "detail": "No compatible ONNX GenAI package or adapter is installed. Use Auto for GGUF and MiniLM."}
             try:
                 out = c.scheduler.set_runtime_preference(
                     str(req.get("preference") or c.scheduler.runtime_preference),
@@ -303,13 +314,43 @@ class Handler(socketserver.StreamRequestHandler):
                 return out
             except ValueError as exc:
                 return {"ok": False, "error": str(exc)}
+        if op == "get_beak":
+            return {"ok": True, "config": beak_config.load(), "capabilities": beak_config.capabilities()}
+        if op == "set_beak":
+            try:
+                return {"ok": True, "config": beak_config.update(req.get("changes")),
+                        "capabilities": beak_config.capabilities()}
+            except (ValueError, OSError) as exc:
+                return {"ok": False, "error": "invalid_beak_config", "detail": str(exc)}
+        if op == "beak_catalog":
+            return {"ok": True, "components": beak_catalog.listing()}
+        if op == "start_beak_download":
+            return store.start_beak_download(str(req.get("component_id") or ""),
+                                             req.get("reviewed") is True)
+        if op == "speak":
+            if not c.scheduler.enabled:
+                return {"ok": False, "error": "disabled"}
+            if not c._generation_lock.acquire(blocking=False):
+                return {"ok": False, "error": "busy", "detail": "Generation is finishing; retry talkback shortly"}
+            try:
+                c.scheduler.unload("talkback")  # release large LLM before voice output
+                from voice.tts import synthesize
+                return {"ok": True, **synthesize(str(req.get("text") or ""), beak_config.load())}
+            except ValueError as exc:
+                return {"ok": False, "error": "tts_unavailable", "detail": str(exc)}
+            finally:
+                c._generation_lock.release()
         if op == "transcribe":
             if not c.scheduler.enabled:
                 return {"ok": False, "error": "disabled"}
-            if c._generation_lock.locked():
+            if not c._generation_lock.acquire(blocking=False):
                 return {"ok": False, "error": "busy", "detail": "Finish generation before speech recognition"}
-            from voice.speech import transcribe
-            return {"ok": True, **transcribe(c.registry, req.get("audio"))}
+            try:
+                c.scheduler.unload("speech")  # do not run Qwen ASR alongside 4B LLM
+                from voice.speech import transcribe
+                return {"ok": True, **transcribe(c.registry, req.get("audio"), beak_config.load())}
+            finally:
+                c._generation_lock.release()
         if op == "submit":
             return c.submit(ident, req)
         if op == "cancel":
@@ -379,8 +420,23 @@ def serve(sock_path: str) -> None:
                 cfg[key] = saved[key]
     except (OSError, ValueError):
         pass
+    # A stale GenAI preference cannot run GGUF ChatBird/CodeBird. The UI now
+    # marks the GenAI option unavailable; reset stale preference BEFORE serving
+    # any generation request, not as a silent fallback mid-inference.
+    if cfg.get("runtime_preference") == "onnxruntime-genai":
+        cfg["runtime_preference"] = "auto"
+    # A malformed persisted value must not crash the control plane at boot.
+    overrides = cfg.get("per_model_engine")
+    if not isinstance(overrides, dict):
+        overrides = {}
+    cfg["per_model_engine"] = {mid: engine for mid, engine in overrides.items()
+        if engine == "llama.cpp" and mid in ("chatbird", "codebird")}
     cfg["enabled"] = os.environ.get("NUXEL_PENGURU_DOWNLOADER") != "1"
     Handler.controller = Controller(cfg)
+    if (os.environ.get("NUXEL_PENGURU_DOWNLOADER") != "1" and
+            (saved if isinstance(locals().get("saved"), dict) else {}).get("runtime_preference") == "onnxruntime-genai"):
+        # Persist the repaired preference once so UI and future restarts agree.
+        Handler.controller.save_preferences()
     os.makedirs(os.path.dirname(sock_path), exist_ok=True)
     try:
         os.unlink(sock_path)

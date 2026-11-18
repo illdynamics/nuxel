@@ -110,3 +110,11 @@ checks that creating an Internet socket is denied before loading a model.
 
 These remain visibly unavailable. A successful CodeBird test does not imply
 completion of those features or acceptance of the full kickstart specification.
+
+## v0.9.1-beta Beak note
+
+The canonical mutable Beak config is `/var/lib/nuxel-penguru/beak.json` (owner `nuxel-penguru`). The default is in `beak/defaults.json`; both the PenGuru Squad app and Nuxel Settings edit it via `get_beak`/`set_beak`. Talkback is enabled as a preference, **not** proof Piper exists. Native RNNoise/Silero VAD, a permanent wake listener, and native TTS/ASR binaries require separate on-device verification. The bounded browser microphone loop is foreground-only; the RMS gate is not Silero.
+
+Model downloads in Beak are staged under `/var/lib/nuxel-penguru/beak/staging`; staging SHA-256 receipts record **observed, untrusted** hashes. Staging never enables executable inference. Compare with an independently sourced immutable signed manifest, review licenses, compile and validate the respective ARM64 runtimes, then explicitly provision to `beak/approved` before enabling Qwen/Piper. Never treat an unsigned staged file as Model Store READY.
+
+**ONNX distinction:** `onnxruntime` is used by MiniLM; `onnxruntime-genai` would require separate exported GenAI models and is not a usable alternative for the selected ChatBird/CodeBird GGUF files. Use Auto with llama.cpp.

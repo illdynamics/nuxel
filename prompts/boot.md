@@ -1,1 +1,0 @@
-booted + zip ready

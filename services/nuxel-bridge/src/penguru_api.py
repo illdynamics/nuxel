@@ -13,7 +13,7 @@ import time
 
 APPS = {'org.nuxel.PenGuru', 'nuxel-settings', 'org.nuxel.Settings'}
 OPS = {'status', 'set_enabled', 'set_mode', 'set_runtime', 'submit', 'get', 'cancel',
-       'transcribe', 'clear_all', 'delete_conversation', 'list_models', 'start_download',
+       'transcribe', 'speak', 'get_beak', 'set_beak', 'beak_catalog', 'start_beak_download', 'clear_all', 'delete_conversation', 'list_models', 'start_download',
        'download_status', 'cancel_download', 'delete_model', 'diagnostics'}
 LOCK = threading.RLock()
 
@@ -65,8 +65,11 @@ def handle(app, token, verb, params):
                         'mode': 'squad', 'runtime_preference': 'auto', 'models': [],
                         'voice': {'listening': False}}}
             return {'ok': False, 'error': 'disabled', 'detail': 'Enable PenGuru first'}
-        download = verb in ('start_download', 'download_status', 'cancel_download')
-        if verb == 'start_download':
+        download = verb in ('start_download', 'start_beak_download', 'download_status', 'cancel_download')
+        # Beak artifacts use the same isolated downloader socket.  Previously
+        # the UI could create a Beak download request while this unit was
+        # stopped, producing a misleading backend-unavailable error.
+        if verb in ('start_download', 'start_beak_download'):
             result = unit('start', True)
             if result.returncode:
                 return {'ok': False, 'error': 'download_service_start_failed', 'detail': result.stderr[-1000:]}

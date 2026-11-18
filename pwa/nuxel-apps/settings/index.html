@@ -54,12 +54,15 @@
     <p>Local ChatBird, CodeBird and Squad assistants. Model downloads and generation are managed on this device.</p>
     <button id="penguru-toggle">Enable PenGuru</button><button id="penguru-refresh">Refresh</button>
     <label>Assistant <select id="penguru-mode"><option value="squad">PenGuru Squad</option><option value="chatbird">Single ChatBird</option><option value="codebird">Single CodeBird</option></select></label>
-    <label>Runtime <select id="penguru-runtime"><option value="auto">Auto</option><option value="llama.cpp">llama.cpp</option><option value="onnxruntime-genai">ONNX Runtime GenAI (requires compatible package)</option></select></label>
+    <label>Runtime <select id="penguru-runtime"><option value="auto">Auto</option><option value="llama.cpp">llama.cpp</option><option value="onnxruntime-genai" disabled>ONNX Runtime GenAI (requires compatible package)</option></select></label>
     <p id="penguru-status" role="status">OFF by default. No microphone capture.</p>
     <h3>Hugging Face model library</h3>
     <div id="penguru-models" aria-live="polite">Enable PenGuru to inspect model packages.</div>
     <p>Open <strong>PenGuru Squad</strong> from the app launcher for conversations, Hugging Face downloads, integrity checks and per-model settings.</p>
-    <p>Wake-word and push-to-talk: unavailable until local speech packages are validated. Generated-code execution and privileged actions are disabled.</p>
+    <h3>Beak · Voice and component downloads</h3>
+    <p>One config shared with PenGuru Squad. Continuous foreground listening is opt-in. No audio is sent to cloud services.</p>
+    <div id="penguru-beak"></div>
+    <p>Audio recognition and talkback require the selected native runtime and approved model artifacts. Generated code and privileged actions remain permission-gated.</p>
     </div>
   </section>
   <!-- ── DISPLAY ─────────────────────────────────────────────────────── -->

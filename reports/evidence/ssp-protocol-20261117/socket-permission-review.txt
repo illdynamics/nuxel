@@ -1,4 +1,0 @@
-uid=65534 gid=65534 AF_INET_errno=13 hardware_verified=false
-probe_exit=13
-uid=65534 gid=3003 AF_INET_errno=13 hardware_verified=false
-probe_exit=13

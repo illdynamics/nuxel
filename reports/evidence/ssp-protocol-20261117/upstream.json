@@ -1,5 +1,0 @@
-{
-  "url": "https://android.googlesource.com/kernel/google-modules/gps/broadcom/bcm47765/+/refs/tags/android-16.0.0_r0.4/bbd.c?format=TEXT",
-  "sha256": "0ecdae36783eb2188f523c6fbf0a3fe7c3ebb7fb30add561d0890fb79c89e3aa",
-  "scope": "BCM47765 comparison only; not BCM47752 firmware protocol"
-}

@@ -1,1 +1,0 @@
-Checksums for pack scripts/docs are generated in the archive build below.

@@ -65,8 +65,16 @@ class Classifier:
         self._load_error = None
 
     def status(self) -> Dict[str, Any]:
-        return {"available": self.available(), "package_dir": self.package_dir,
-                "error": self._load_error, "version": ROUTER_VERSION}
+        import importlib.util
+        present = self.available()
+        deps = {name: importlib.util.find_spec(name) is not None
+                for name in ("onnxruntime", "tokenizers", "numpy")}
+        runnable = present and all(deps.values())
+        return {"available": runnable, "package_present": present,
+                "dependencies": deps, "engine": "onnxruntime", "package_dir": self.package_dir,
+                "error": self._load_error if runnable else
+                    (self._load_error or "Missing ONNX Runtime dependencies or package"),
+                "version": ROUTER_VERSION}
 
     def available(self) -> bool:
         if self._session is not None:

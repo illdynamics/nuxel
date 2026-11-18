@@ -1,7 +1,0 @@
-{
-  "drivers/sensorhub/brcm/bbdpl/bbd_rpc_lh.c": "ab530d252e9d6bcd829bb274f5bcf8ceaecbef7f7e5c101c8d9ebe4bde1d933e",
-  "drivers/sensorhub/brcm/bbdpl/bbd.c": "33bb3ee6fd67e8a98a2592f62ec323b8b341b9b0727150ce326b6c7ed5bfcebe",
-  "drivers/sensorhub/brcm/bbdpl/bbd.h": "9fcdeedf6b85261e3328b5653f74882b39b12151e5fbcd741bcfac91cc86f984",
-  "drivers/sensorhub/brcm/bbdpl/bcm_gps_spi.c": "0f2fc0d6270264a82617656d485fbfd59d9da1a9e009c484d789e9b15ee9588a",
-  "drivers/sensorhub/brcm/ssp_bbd.c": "c97644d0d7444856926003a46bac8e18761de37fb1cdb76aa8aaff05f6993dd3"
-}

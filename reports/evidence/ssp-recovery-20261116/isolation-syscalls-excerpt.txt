@@ -1,9 +1,0 @@
-128986 prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) = 0
-128986 clone(child_stack=NULL, flags=CLONE_NEWNS|CLONE_NEWCGROUP|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWNET|SIGCHLD) = 128995
-129019 openat(AT_FDCWD, "/dev/ttyBCM", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
-129019 openat(AT_FDCWD, "/dev/bbd_sensor", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
-129019 openat(AT_FDCWD, "/dev/bbd_control", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
-129019 openat(AT_FDCWD, "/dev/bbd_patch", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
-129019 openat(AT_FDCWD, "/sys/class/sec/sensorhub/mcu_power", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
-129019 openat(AT_FDCWD, "/sys/class/sec/gps/GPS_PWR_EN/value", O_RDONLY|O_NONBLOCK) = -1 ENOENT (No such file or directory)
-129019 write(1, "DENIED /dev/ttyBCM errno=2\nDENIED /dev/bbd_sensor errno=2\nDENIED /dev/bbd_control errno=2\nDENIED /dev/bbd_patch errno=2\nDENIED /dev/sda errno=2\nDENIED /sys/clas"..., 445) = 445

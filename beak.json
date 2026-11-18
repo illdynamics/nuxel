@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "asr_backend": "qwen",
+  "vad_enabled": true,
+  "interrupt_on_speech": true,
+  "noise_suppression": "rnnoise",
+  "talkback_enabled": true,
+  "tts_backend": "piper",
+  "config_owner": "penguru-beak"
+}

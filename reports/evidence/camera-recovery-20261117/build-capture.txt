@@ -1,3 +1,0 @@
-aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror -std=gnu99 -I../v4l2-uapi -static -o nuxel-fimc-capture nuxel-fimc-capture.c
-9b6154d57203a88dc3bdc4a421a0f4ce7e4b37b305892faee1abbd00b623d1f5  /Users/wicked/.local/share/nuxel-camera/nuxel-fimc-capture-aarch64
-/Users/wicked/.local/share/nuxel-camera/nuxel-fimc-capture-aarch64: ELF 64-bit LSB executable, ARM aarch64, version 1 (GNU/Linux), statically linked, BuildID[sha1]=99ec7e154137868d5ea357dd76c1735c2c1e8cb6, for GNU/Linux 3.7.0, with debug_info, not stripped

@@ -124,16 +124,22 @@ def main():
         install('/usr/lib/nuxel/nuxel-bridge/penguru_api.py', (source / 'services/nuxel-bridge/src/penguru_api.py').read_bytes())
         api = Path('/usr/lib/nuxel/nuxel-bridge/api.py')
         install(api, merge_api(api.read_text()))
-        for item in (source / 'pwa/nuxel-apps/penguru').iterdir():
+        # PWA assets include nested icon files.  Copy them transactionally too;
+        # the old one-level loop installed the manifest references but omitted
+        # the actual 192/512 icons.
+        pwa_source = source / 'pwa/nuxel-apps/penguru'
+        for item in sorted(pwa_source.rglob('*')):
             if item.is_file():
-                install(Path('/usr/share/nuxel/pwa/nuxel-apps/penguru') / item.name, item.read_bytes())
+                install(Path('/usr/share/nuxel/pwa/nuxel-apps/penguru') / item.relative_to(pwa_source), item.read_bytes())
         settings = Path('/usr/share/nuxel/pwa/nuxel-apps/settings')
         install(settings / 'index.html', merge_settings((settings / 'index.html').read_text(),
                 (source / 'pwa/nuxel-apps/settings/index.html').read_text()))
-        for name in ('penguru-settings.js', 'penguru-models.js'):
+        for name in ('penguru-settings.js', 'penguru-models.js', 'penguru-beak.js'):
             install(settings / name, (source / 'pwa/nuxel-apps/settings' / name).read_bytes())
         incoming = json.loads((source / 'pwa/nuxel-common/app-registry.json').read_text())
-        for name in ('/etc/nuxel/app-registry/app_registry.json', '/usr/share/nuxel/pwa/nuxel-common/app-registry.json', '/usr/share/nuxel/nuxel-common/app-registry.json'):
+        # The native drawer deliberately prefers the mutable per-device copy.
+        # Updating only /etc leaves an old/placeholder icon visible forever.
+        for name in ('/var/lib/nuxel/app-registry/app_registry.json', '/etc/nuxel/app-registry/app_registry.json', '/usr/share/nuxel/pwa/nuxel-common/app-registry.json', '/usr/share/nuxel/nuxel-common/app-registry.json'):
             destination = Path(name)
             if destination.exists():
                 install(destination, json.dumps(merge_registry(json.loads(destination.read_text()), incoming), indent=2) + '\n')
@@ -145,6 +151,10 @@ def main():
             account = pwd.getpwnam('nuxel-penguru')
         state = Path('/var/lib/nuxel-penguru')
         state.mkdir(mode=0o700, exist_ok=True)
+        # Shared Beak config: deploy once, never overwrite an owner's choices.
+        # The same state file is read by PenGuru Squad and Nuxel Settings.
+        if not (state / 'beak.json').exists():
+            install(state / 'beak.json', (service / 'beak/defaults.json').read_bytes(), 0o600)
         for item in [state, *state.rglob('*')]:
             if item.is_symlink():
                 raise RuntimeError('Symlink in PenGuru state; ownership not changed')
