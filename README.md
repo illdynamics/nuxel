@@ -1,7 +1,6 @@
 # Nuxel Phone OS — Linux on Google Pixel
 ![Repo Views](https://komarev.com/ghpvc/?username=illdynamics-nuxel&label=Repo+Views&color=blue)
-
-![Nuxel](./nuxel.jpg)
+![Nuxel](./assets/nuxel-og-image.png)
 
 **v0.8.9-beta** — PenGuru owner-signed model downloads and release integration.
 
@@ -17,6 +16,20 @@ SonarBird classifier, voice/wake phrase and privileged write workflows remain
 unavailable. Squad uses deterministic routing and abstains on uncertain requests.
 See [current release status](docs/releases/v0.8.9-beta.md) for tested scope and
 release/deployment evidence. Historical release notes describe their own snapshots.
+
+**v0.8.8-beta** — _PenGuru Squad opt-in local AI beta, Phase-0 security gate
+closure and a synchronized v0.8.8-beta version lockstep._
+
+> **v0.8.8-beta (2026-11-17).** Opt-in, disabled-by-default local AI —
+> **PenGuru Squad** — integrated over the v0.8.7 image: ChatBird/CodeBird llama.cpp
+> workers, SonarBird routing, Squad orchestration, a signed-model store and a
+> read-only permission broker. The Phase-0 (G0) security gates are closed and
+> regression-tested (`test-security-g0.py`), so PenGuru stays chat-only with no
+> privileged action reachable by model text alone. The whole repo is synchronized
+> to canonical `v0.8.8-beta` behind a passing release-asset lockstep gate. See
+> [`docs/releases/v0.8.8-beta.md`](docs/releases/v0.8.8-beta.md). Live on-device
+> performance/battery/thermal acceptance must run on the owner S10+ before any
+> wider rollout (no handset is attached to this build host).
 
 > **v0.8.7-beta (2026-11-16).** These fixes were reproduced and verified on the
 > live S10+ (Wi-Fi SSH and the USB-ECM console):
@@ -196,6 +209,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 See [RELEASE-NOTES.md](RELEASE-NOTES.md) for user-facing release notes and
 [CHANGELOG.md](CHANGELOG.md) for the complete engineering history.
 
+
 ## PenGuru Squad opt-in beta (v0.8.9-beta)
 
 PenGuru is a **local-first** AI subsystem and is **disabled by default**. It is an
@@ -206,6 +220,7 @@ manifest is signed with the production trust key. Voice/wake-word modes are out
 of scope and off. Every bridge/system call passes a typed permission broker, so a
 model cannot perform a privileged action by persuasive text. Full component list,
 security gates, rollback steps and known limitations:
+
 [`docs/releases/v0.8.9-beta.md`](docs/releases/v0.8.9-beta.md).
 
 ## Honest Status — v0.8.7-beta
