@@ -1,0 +1,6 @@
+{
+  "reference": "local SentenceTransformer safetensors",
+  "fp32_max_absolute_error": 2.0404933643788925e-07,
+  "fp32_cosine_min": 1.000000000567626,
+  "padding_max_absolute_error": 6.674570460218909e-08
+}

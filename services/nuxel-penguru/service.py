@@ -84,7 +84,7 @@ class Controller:
             "providers": {"CPU": {"status": "baseline"},
                           "GPU/NPU": {"status": "not validated on this device"}},
             "network": {"workers": "denied", "local_only": True},
-            "voice": {"wake_word": bool(self.cfg.get("wake_word_enabled")),
+            "voice": {"wake_word": False, "foreground_speech": os.path.isfile("/opt/nuxel-speech/whisper-cli"),
                       "listening": False},
         }
 
@@ -133,7 +133,9 @@ class Controller:
                         "worker": mode, "decision_source": "mode"}
         else:
             if self.classifier is None:
-                self.classifier = Classifier()
+                manifest, _ = self.registry.ready_manifest("sonarbird", "onnx-int8-arm64")
+                if manifest is not None:
+                    self.classifier = Classifier(self.registry.package_dir(manifest))
             decision = route(text, self.classifier).as_dict()
         if override in ("CHAT", "CODE", "ASK"):
             decision.update({"route": override, "reason_code": "R_OWNER_OVERRIDE",
@@ -249,10 +251,10 @@ class Handler(socketserver.StreamRequestHandler):
             self.wfile.write(json.dumps({"ok": False, "error": "identity_required"}).encode() + b"\n")
             return
         while True:
-            raw = self.rfile.readline(65537)
+            raw = self.rfile.readline(524289)
             if not raw:
                 break
-            if len(raw) > 65536:
+            if len(raw) > 524288:
                 self.wfile.write(b'{"ok":false,"error":"request_too_large"}\n')
                 return
             try:
@@ -301,6 +303,13 @@ class Handler(socketserver.StreamRequestHandler):
                 return out
             except ValueError as exc:
                 return {"ok": False, "error": str(exc)}
+        if op == "transcribe":
+            if not c.scheduler.enabled:
+                return {"ok": False, "error": "disabled"}
+            if c._generation_lock.locked():
+                return {"ok": False, "error": "busy", "detail": "Finish generation before speech recognition"}
+            from voice.speech import transcribe
+            return {"ok": True, **transcribe(c.registry, req.get("audio"))}
         if op == "submit":
             return c.submit(ident, req)
         if op == "cancel":

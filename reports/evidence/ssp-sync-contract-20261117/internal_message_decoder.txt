@@ -1,0 +1,207 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+00000000000407f0 <.text+0x287f0>:
+   407f0:	d10203ff 	sub	sp, sp, #0x80
+   407f4:	f9001bf9 	str	x25, [sp, #48]
+   407f8:	a9045ff8 	stp	x24, x23, [sp, #64]
+   407fc:	a90557f6 	stp	x22, x21, [sp, #80]
+   40800:	a9064ff4 	stp	x20, x19, [sp, #96]
+   40804:	a9077bfd 	stp	x29, x30, [sp, #112]
+   40808:	9101c3fd 	add	x29, sp, #0x70
+   4080c:	d53bd059 	mrs	x25, tpidr_el0
+   40810:	f9401728 	ldr	x8, [x25, #40]
+   40814:	aa0003f3 	mov	x19, x0
+   40818:	72003c5f 	tst	w2, #0xffff
+   4081c:	f90017e8 	str	x8, [sp, #40]
+   40820:	54000240 	b.eq	40868 <__libc_init@plt-0x45e8>  // b.none
+   40824:	38401428 	ldrb	w8, [x1], #1
+   40828:	7100151f 	cmp	w8, #0x5
+   4082c:	540010c8 	b.hi	40a44 <__libc_init@plt-0x440c>  // b.pmore
+   40830:	d0fffe69 	adrp	x9, e000 <__libc_init@plt-0x36e50>
+   40834:	91037529 	add	x9, x9, #0xdd
+   40838:	100000aa 	adr	x10, 4084c <__libc_init@plt-0x4604>
+   4083c:	3868692b 	ldrb	w11, [x9, x8]
+   40840:	8b0b094a 	add	x10, x10, x11, lsl #2
+   40844:	51000448 	sub	w8, w2, #0x1
+   40848:	d61f0140 	br	x10
+   4084c:	12003c48 	and	w8, w2, #0xffff
+   40850:	7100091f 	cmp	w8, #0x2
+   40854:	540010e1 	b.ne	40a70 <__libc_init@plt-0x43e0>  // b.any
+   40858:	39400021 	ldrb	w1, [x1]
+   4085c:	aa1303e0 	mov	x0, x19
+   40860:	940000ac 	bl	40b10 <__libc_init@plt-0x4340>
+   40864:	14000078 	b	40a44 <__libc_init@plt-0x440c>
+   40868:	f9400660 	ldr	x0, [x19, #8]
+   4086c:	d0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   40870:	91090821 	add	x1, x1, #0x242
+   40874:	528099e2 	mov	w2, #0x4cf                 	// #1231
+   40878:	f9400008 	ldr	x8, [x0]
+   4087c:	f9401d08 	ldr	x8, [x8, #56]
+   40880:	d63f0100 	blr	x8
+   40884:	14000070 	b	40a44 <__libc_init@plt-0x440c>
+   40888:	72003d1f 	tst	w8, #0xffff
+   4088c:	54000fc0 	b.eq	40a84 <__libc_init@plt-0x43cc>  // b.none
+   40890:	f9400660 	ldr	x0, [x19, #8]
+   40894:	d0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   40898:	91090821 	add	x1, x1, #0x242
+   4089c:	5280a182 	mov	w2, #0x50c                 	// #1292
+   408a0:	17fffff6 	b	40878 <__libc_init@plt-0x45d8>
+   408a4:	72003d1f 	tst	w8, #0xffff
+   408a8:	54000f40 	b.eq	40a90 <__libc_init@plt-0x43c0>  // b.none
+   408ac:	f9400660 	ldr	x0, [x19, #8]
+   408b0:	d0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   408b4:	91090821 	add	x1, x1, #0x242
+   408b8:	52809de2 	mov	w2, #0x4ef                 	// #1263
+   408bc:	17ffffef 	b	40878 <__libc_init@plt-0x45d8>
+   408c0:	12003d02 	and	w2, w8, #0xffff
+   408c4:	910003e0 	mov	x0, sp
+   408c8:	940001f6 	bl	410a0 <__libc_init@plt-0x3db0>
+   408cc:	910003e0 	mov	x0, sp
+   408d0:	940001ff 	bl	410cc <__libc_init@plt-0x3d84>
+   408d4:	2a0003f6 	mov	w22, w0
+   408d8:	910003e0 	mov	x0, sp
+   408dc:	940001fc 	bl	410cc <__libc_init@plt-0x3d84>
+   408e0:	2a0003f5 	mov	w21, w0
+   408e4:	910003e0 	mov	x0, sp
+   408e8:	940001f9 	bl	410cc <__libc_init@plt-0x3d84>
+   408ec:	910003e0 	mov	x0, sp
+   408f0:	940001f7 	bl	410cc <__libc_init@plt-0x3d84>
+   408f4:	2a0003f4 	mov	w20, w0
+   408f8:	910003e0 	mov	x0, sp
+   408fc:	940001f4 	bl	410cc <__libc_init@plt-0x3d84>
+   40900:	2a0003f7 	mov	w23, w0
+   40904:	910003e0 	mov	x0, sp
+   40908:	940001f1 	bl	410cc <__libc_init@plt-0x3d84>
+   4090c:	2a0003f8 	mov	w24, w0
+   40910:	910003e0 	mov	x0, sp
+   40914:	940001ee 	bl	410cc <__libc_init@plt-0x3d84>
+   40918:	910003e0 	mov	x0, sp
+   4091c:	940001d3 	bl	41068 <__libc_init@plt-0x3de8>
+   40920:	37000080 	tbnz	w0, #0, 40930 <__libc_init@plt-0x4520>
+   40924:	910003e0 	mov	x0, sp
+   40928:	940001bf 	bl	41024 <__libc_init@plt-0x3e2c>
+   4092c:	34000b80 	cbz	w0, 40a9c <__libc_init@plt-0x43b4>
+   40930:	f9400660 	ldr	x0, [x19, #8]
+   40934:	d0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   40938:	91090821 	add	x1, x1, #0x242
+   4093c:	52809d02 	mov	w2, #0x4e8                 	// #1256
+   40940:	1400003c 	b	40a30 <__libc_init@plt-0x4420>
+   40944:	12003d02 	and	w2, w8, #0xffff
+   40948:	910003e0 	mov	x0, sp
+   4094c:	940001d5 	bl	410a0 <__libc_init@plt-0x3db0>
+   40950:	910003e0 	mov	x0, sp
+   40954:	94000205 	bl	41168 <__libc_init@plt-0x3ce8>
+   40958:	910003e0 	mov	x0, sp
+   4095c:	94000203 	bl	41168 <__libc_init@plt-0x3ce8>
+   40960:	910003e0 	mov	x0, sp
+   40964:	94000201 	bl	41168 <__libc_init@plt-0x3ce8>
+   40968:	910003e0 	mov	x0, sp
+   4096c:	940001ff 	bl	41168 <__libc_init@plt-0x3ce8>
+   40970:	910003e0 	mov	x0, sp
+   40974:	940001fd 	bl	41168 <__libc_init@plt-0x3ce8>
+   40978:	910003e0 	mov	x0, sp
+   4097c:	940001fb 	bl	41168 <__libc_init@plt-0x3ce8>
+   40980:	910003e0 	mov	x0, sp
+   40984:	940001f9 	bl	41168 <__libc_init@plt-0x3ce8>
+   40988:	910003e0 	mov	x0, sp
+   4098c:	940001f7 	bl	41168 <__libc_init@plt-0x3ce8>
+   40990:	910003e0 	mov	x0, sp
+   40994:	940001f5 	bl	41168 <__libc_init@plt-0x3ce8>
+   40998:	910003e0 	mov	x0, sp
+   4099c:	940001f3 	bl	41168 <__libc_init@plt-0x3ce8>
+   409a0:	910003e0 	mov	x0, sp
+   409a4:	940001f1 	bl	41168 <__libc_init@plt-0x3ce8>
+   409a8:	910003e0 	mov	x0, sp
+   409ac:	940001af 	bl	41068 <__libc_init@plt-0x3de8>
+   409b0:	37000080 	tbnz	w0, #0, 409c0 <__libc_init@plt-0x4490>
+   409b4:	910003e0 	mov	x0, sp
+   409b8:	9400019b 	bl	41024 <__libc_init@plt-0x3e2c>
+   409bc:	34000400 	cbz	w0, 40a3c <__libc_init@plt-0x4414>
+   409c0:	f9400660 	ldr	x0, [x19, #8]
+   409c4:	d0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   409c8:	91090821 	add	x1, x1, #0x242
+   409cc:	5280a0a2 	mov	w2, #0x505                 	// #1285
+   409d0:	14000018 	b	40a30 <__libc_init@plt-0x4420>
+   409d4:	12003d02 	and	w2, w8, #0xffff
+   409d8:	910003e0 	mov	x0, sp
+   409dc:	940001b1 	bl	410a0 <__libc_init@plt-0x3db0>
+   409e0:	910003e0 	mov	x0, sp
+   409e4:	940001ca 	bl	4110c <__libc_init@plt-0x3d44>
+   409e8:	910003e0 	mov	x0, sp
+   409ec:	940001c8 	bl	4110c <__libc_init@plt-0x3d44>
+   409f0:	910003e0 	mov	x0, sp
+   409f4:	940001c6 	bl	4110c <__libc_init@plt-0x3d44>
+   409f8:	910003e0 	mov	x0, sp
+   409fc:	940001c4 	bl	4110c <__libc_init@plt-0x3d44>
+   40a00:	910003e0 	mov	x0, sp
+   40a04:	940001c2 	bl	4110c <__libc_init@plt-0x3d44>
+   40a08:	910003e0 	mov	x0, sp
+   40a0c:	94000197 	bl	41068 <__libc_init@plt-0x3de8>
+   40a10:	37000080 	tbnz	w0, #0, 40a20 <__libc_init@plt-0x4430>
+   40a14:	910003e0 	mov	x0, sp
+   40a18:	94000183 	bl	41024 <__libc_init@plt-0x3e2c>
+   40a1c:	34000100 	cbz	w0, 40a3c <__libc_init@plt-0x4414>
+   40a20:	f9400660 	ldr	x0, [x19, #8]
+   40a24:	d0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   40a28:	91090821 	add	x1, x1, #0x242
+   40a2c:	5280a362 	mov	w2, #0x51b                 	// #1307
+   40a30:	f9400008 	ldr	x8, [x0]
+   40a34:	f9401d08 	ldr	x8, [x8, #56]
+   40a38:	d63f0100 	blr	x8
+   40a3c:	910003e0 	mov	x0, sp
+   40a40:	97ff5d84 	bl	18050 <__libc_init@plt-0x2ce00>
+   40a44:	f9401728 	ldr	x8, [x25, #40]
+   40a48:	f94017e9 	ldr	x9, [sp, #40]
+   40a4c:	eb09011f 	cmp	x8, x9
+   40a50:	540005e1 	b.ne	40b0c <__libc_init@plt-0x4344>  // b.any
+   40a54:	a9477bfd 	ldp	x29, x30, [sp, #112]
+   40a58:	a9464ff4 	ldp	x20, x19, [sp, #96]
+   40a5c:	a94557f6 	ldp	x22, x21, [sp, #80]
+   40a60:	a9445ff8 	ldp	x24, x23, [sp, #64]
+   40a64:	f9401bf9 	ldr	x25, [sp, #48]
+   40a68:	910203ff 	add	sp, sp, #0x80
+   40a6c:	d65f03c0 	ret
+   40a70:	f9400660 	ldr	x0, [x19, #8]
+   40a74:	d0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   40a78:	91090821 	add	x1, x1, #0x242
+   40a7c:	52809b02 	mov	w2, #0x4d8                 	// #1240
+   40a80:	17ffff7e 	b	40878 <__libc_init@plt-0x45d8>
+   40a84:	aa1303e0 	mov	x0, x19
+   40a88:	940000dd 	bl	40dfc <__libc_init@plt-0x4054>
+   40a8c:	17ffffee 	b	40a44 <__libc_init@plt-0x440c>
+   40a90:	aa1303e0 	mov	x0, x19
+   40a94:	94000078 	bl	40c74 <__libc_init@plt-0x41dc>
+   40a98:	17ffffeb 	b	40a44 <__libc_init@plt-0x440c>
+   40a9c:	5286a1a8 	mov	w8, #0x350d                	// #13581
+   40aa0:	8b080268 	add	x8, x19, x8
+   40aa4:	39400109 	ldrb	w9, [x8]
+   40aa8:	34fffca9 	cbz	w9, 40a3c <__libc_init@plt-0x4414>
+   40aac:	b9751669 	ldr	w9, [x19, #13588]
+   40ab0:	6b36013f 	cmp	w9, w22, uxtb
+   40ab4:	54fffc41 	b.ne	40a3c <__libc_init@plt-0x4414>  // b.any
+   40ab8:	110006a9 	add	w9, w21, #0x1
+   40abc:	1100068a 	add	w10, w20, #0x1
+   40ac0:	52869e0b 	mov	w11, #0x34f0                	// #13552
+   40ac4:	52869e2c 	mov	w12, #0x34f1                	// #13553
+   40ac8:	5100070d 	sub	w13, w24, #0x1
+   40acc:	aa1303e0 	mov	x0, x19
+   40ad0:	39315a69 	strb	w9, [x19, #3158]
+   40ad4:	382b6a6a 	strb	w10, [x19, x11]
+   40ad8:	382c6a74 	strb	w20, [x19, x12]
+   40adc:	3910a277 	strb	w23, [x19, #1064]
+   40ae0:	3910c66d 	strb	w13, [x19, #1073]
+   40ae4:	3910ca7f 	strb	wzr, [x19, #1074]
+   40ae8:	79086a7f 	strh	wzr, [x19, #1076]
+   40aec:	3900011f 	strb	wzr, [x8]
+   40af0:	97fff9c2 	bl	3f1f8 <__libc_init@plt-0x5c58>
+   40af4:	f9400660 	ldr	x0, [x19, #8]
+   40af8:	320003e1 	orr	w1, wzr, #0x1
+   40afc:	f9400008 	ldr	x8, [x0]
+   40b00:	f9402108 	ldr	x8, [x8, #64]
+   40b04:	d63f0100 	blr	x8
+   40b08:	17ffffcd 	b	40a3c <__libc_init@plt-0x4414>
+   40b0c:	940010dd 	bl	44e80 <__stack_chk_fail@plt>

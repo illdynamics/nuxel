@@ -81,65 +81,54 @@ class Classifier:
         if self._session is not None:
             return True
         try:
-            import numpy as np  # noqa: F401
-            import onnxruntime as ort
-            meta_path = os.path.join(self.package_dir, "classifier.json")
-            with open(meta_path) as fh:
+            import numpy as np
+            from .encoder import Encoder
+            with open(os.path.join(self.package_dir, "classifier.json")) as fh:
                 meta = json.load(fh)
-            self._labels = list(meta.get("labels") or self._labels)
-            th = meta.get("thresholds") or {}
-            self._thresholds = {
-                "high": float(th.get("high", DEFAULT_HIGH)),
-                "low": float(th.get("low", DEFAULT_LOW)),
-            }
-            opts = ort.SessionOptions()
-            opts.intra_op_num_threads = self.threads
-            opts.inter_op_num_threads = 1
-            opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            self._session = ort.InferenceSession(
-                os.path.join(self.package_dir, "encoder.onnx"), opts,
-                providers=["CPUExecutionProvider"])
-            self._meta = meta
+            self._labels = meta["labels"]
+            if set(self._labels) != {"CHAT", "CODE", "SYSTEM", "ASK"}:
+                raise ValueError("Invalid classifier labels")
+            self._weights = np.asarray(meta["weights"], dtype=np.float64)
+            self._bias = np.asarray(meta["bias"], dtype=np.float64)
+            self._references = np.asarray(meta["references"], dtype=np.float64)
+            if self._weights.shape != (4,384) or self._bias.shape != (4,) or self._references.ndim != 2 or self._references.shape[1] != 384:
+                raise ValueError("Classifier dimension mismatch")
+            if not all(np.isfinite(x).all() for x in [self._weights,self._bias,self._references]):
+                raise ValueError("Non-finite classifier")
+            self._temperature = float(meta["temperature"])
+            if not .1 <= self._temperature <= 10:
+                raise ValueError("Invalid calibration temperature")
+            self._thresholds = meta["thresholds"]
+            self._session = Encoder(self.package_dir, self.threads)
             self._load_error = None
             return True
-        except Exception as exc:  # noqa: BLE001 - absent runtime = rules only
+        except Exception as exc:
             self._load_error = "%s: %s" % (type(exc).__name__, exc)
             self._session = None
             return False
 
-    def classify(self, text: str):
-        """Return (probabilities dict, margin) or (None, 0.0) when unavailable."""
+    def classify(self, text):
         if self._session is None and not self.load():
             return None, 0.0
         try:
             import numpy as np
-            tok = self._meta.get("tokenizer", {})
-            max_len = int(tok.get("max_length", 128))
-            voc = tok.get("vocab", {})
-            ids = [voc.get("[CLS]", 101)]
-            for word in text.lower().split():
-                ids.append(voc.get(word, voc.get("[UNK]", 100)))
-                if len(ids) >= max_len - 1:
-                    break
-            ids.append(voc.get("[SEP]", 102))
-            mask = [1] * len(ids)
-            while len(ids) < max_len:
-                ids.append(0)
-                mask.append(0)
-            feeds = {"input_ids": np.array([ids], dtype=np.int64),
-                     "attention_mask": np.array([mask], dtype=np.int64)}
-            for name in self._session.get_inputs():
-                if name.name not in feeds and name.name == "token_type_ids":
-                    feeds[name.name] = np.zeros((1, max_len), dtype=np.int64)
-            out = self._session.run(None, feeds)[0][0]
-            probs = np.exp(out - out.max())
-            probs = probs / probs.sum()
+            vector = self._session.encode([text])[0]
+            if float((self._references @ vector).max()) < self._thresholds["similarity"]:
+                return {"ASK": 1.0}, 1.0
+            logits = (self._weights @ vector + self._bias) / self._temperature
+            probs = np.exp(logits - logits.max())
+            probs /= probs.sum()
             ordered = sorted(probs, reverse=True)
-            margin = float(ordered[0] - ordered[1]) if len(ordered) > 1 else 1.0
-            return ({lab: float(p) for lab, p in zip(self._labels, probs)}, margin)
-        except Exception as exc:  # noqa: BLE001
+            return dict(zip(self._labels, map(float, probs))), float(ordered[0]-ordered[1])
+        except Exception as exc:
             self._load_error = "inference failed: %s" % exc
             return None, 0.0
+
+    def unload(self):
+        self._session = None
+        for name in ("_weights", "_bias", "_references"):
+            if hasattr(self, name):
+                delattr(self, name)
 
 
 def route(text: str, classifier: Optional[Classifier] = None) -> Route:

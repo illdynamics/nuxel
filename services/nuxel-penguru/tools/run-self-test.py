@@ -29,6 +29,9 @@ def main(model_id, variant_id, prompt="Reply with the single word READY."):
     if m is None:
         print("unknown package")
         return 2
+    state = r.verify_installed(m)
+    if state.status not in (reg.STATUS_VERIFIED_SIGNED, reg.STATUS_READY):
+        raise SystemExit("Refused unverified package: " + state.detail)
     pkg = r.package_dir(m)
     rt = LlamaCppRuntime(paths.LLAMA_LIB, runner=False)
     prof = RuntimeProfile(engine="llama.cpp", package_format="GGUF",
@@ -36,7 +39,7 @@ def main(model_id, variant_id, prompt="Reply with the single word READY."):
                           context_limit=int(m["runtime"].get("context_limit", 4096)),
                           memory_budget_bytes=0)
     res = rt.self_test(m, pkg, prof, prompt=prompt, max_tokens=16)
-    rec = {"result": res.get("result"), "engine": "llama.cpp",
+    rec = {"manifest_sha256": __import__("hashlib").sha256(reg.canonical_manifest_bytes(m)).hexdigest(), "result": res.get("result"), "engine": "llama.cpp",
            "version": "de32b268c4ad55d45f3b7b16c029f4e077f4ba74",
            "at": time.time(), "load_ms": (res.get("loaded") or {}).get("load_ms"),
            "prompt": prompt,

@@ -199,6 +199,7 @@ class LlamaCppRuntime(InferenceRuntime):
         m = self._loaded["manifest"]
         job = {"schema_version": 1, "op": "generate",
                "model": m.get("model_id"),
+               "chat_template": m.get("runtime", {}).get("chat_template", ""),
                "package_dir": self._loaded["package_dir"],
                "prompt": prompt,
                "options": {"threads": options_threads(m),
@@ -222,6 +223,7 @@ class LlamaCppRuntime(InferenceRuntime):
                   max_tokens: int = 16) -> Dict[str, Any]:
         job = {"schema_version": 1, "op": "self_test",
                "model": manifest.get("model_id"),
+               "chat_template": manifest.get("runtime", {}).get("chat_template", ""),
                "package_dir": package_dir, "prompt": prompt,
                "options": {"threads": profile.threads,
                            "context": profile.context_limit,

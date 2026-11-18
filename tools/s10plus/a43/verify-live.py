@@ -27,6 +27,12 @@ with tarfile.open(payload, 'r:gz') as tf:
         assert len(data) == entry['bytes'], rel
         assert hashlib.sha256(data).hexdigest() == entry['sha256'], rel
     required = {
+        'pwa/nuxel-apps/penguru/index.html',
+        'services/nuxel-penguru/service.py',
+        'services/nuxel-penguru/keys/owner-release-public.pem',
+        'services/nuxel-penguru/tools/build-runtime.sh',
+        'services/nuxel-bridge/src/penguru_api.py',
+        'assets/nuxel-penguru-squad.png',
         'pwa/nuxel-home/index.html',
         'pwa/nuxel-home/sw.js',
         'pwa/nuxel-home/manifest.json',

@@ -17,7 +17,9 @@
     "app_id": "org.nuxel.PenGuru",
     "bridge_version": "1",
     "capabilities": [
-      "system:inspect"
-    ]
+      "system:inspect",
+      "microphone"
+    ],
+    "pwa_version": "0.8.9-beta"
   }
 }

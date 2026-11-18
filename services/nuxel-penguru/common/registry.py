@@ -63,7 +63,7 @@ def validate_manifest(m: Any) -> List[str]:
         errors.append("model_id must be one of %s" % (MODEL_IDS,))
     if not isinstance(m.get("variant_id"), str) or not SAFE_ID.match(m.get("variant_id") or ""):
         errors.append("variant_id must be a safe slug")
-    if m.get("format") not in ("GGUF", "ONNX_GENAI", "ONNX_CLASSIFIER"):
+    if m.get("format") not in ("GGUF", "ONNX_GENAI", "ONNX_CLASSIFIER", "WHISPER"):
         errors.append("format must be GGUF, ONNX_GENAI or ONNX_CLASSIFIER")
     revision = m.get("source_revision")
     if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
@@ -91,7 +91,7 @@ def validate_manifest(m: Any) -> List[str]:
                 errors.append("file sha256 must be 64 lowercase hex characters")
     rt = m.get("runtime")
     if not isinstance(rt, dict) or rt.get("engine") not in (
-            "llama.cpp", "onnxruntime-genai", "onnxruntime"):
+            "llama.cpp", "onnxruntime-genai", "onnxruntime", "whisper.cpp"):
         errors.append("runtime.engine is invalid")
     lic = m.get("license")
     if not isinstance(lic, dict) or not isinstance(lic.get("spdx"), str):
@@ -205,8 +205,8 @@ class ModelRegistry:
             return False, "Test signature requires explicit test-build authorization; not a release package"
         if not signed:
             return False, reason
-        if manifest["format"] != "GGUF":
-            return False, "This installer supports GGUF only"
+        if manifest["format"] not in ("GGUF", "ONNX_CLASSIFIER", "WHISPER"):
+            return False, "No installer for this package format"
         return True, "Trusted manifest; owner must accept the exact revision's license"
 
     def verify_installed(self, m: Dict[str, Any]) -> PackageState:
@@ -245,7 +245,9 @@ class ModelRegistry:
                                     m["source_revision"], m)
         state = STATUS_VERIFIED_SIGNED if signed else STATUS_VERIFIED_UNSIGNED
         rec = self.self_test_record(m)
-        if rec and rec.get("result") == "pass" and signed:
+        if (rec and rec.get("result") == "pass" and signed
+                and self.license_accepted(m)
+                and rec.get("manifest_sha256") == hashlib.sha256(canonical_manifest_bytes(m)).hexdigest()):
             state = STATUS_READY
         return PackageState(m["model_id"], m["variant_id"], state,
                             "bytes match manifest; " + why,
@@ -269,7 +271,7 @@ class ModelRegistry:
                 "architecture": m.get("architecture"),
                 "quantization": m.get("quantization"),
                 "source_repo": m.get("source_repo"),
-                "files": m["files"],
+                "files": [{k:v for k,v in f.items() if k != "inline_utf8"} for f in m["files"]],
                 "source_revision": m.get("source_revision"),
                 "size_bytes": sum(f["size_bytes"] for f in m["files"]),
                 "engine": m["runtime"]["engine"],
@@ -288,6 +290,15 @@ class ModelRegistry:
                 for v in cards[mid]["variants"])
         return [cards[mid] for mid in MODEL_IDS]
 
+    def license_accepted(self, m):
+        try:
+            with open(os.path.join(self.package_dir(m), "license-acceptance.json")) as fh:
+                record = json.load(fh)
+            return (record.get("revision") == m["source_revision"]
+                    and record.get("notice") == m["license"])
+        except (OSError, ValueError, AttributeError):
+            return False
+
     def self_test_record(self, m: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         path = os.path.join(self.package_dir(m), "self-test.json")
         try:
@@ -298,7 +309,7 @@ class ModelRegistry:
         if not isinstance(doc, dict):
             return None
         return {k: doc.get(k) for k in ("result", "engine", "version", "at",
-                                         "load_ms", "prompt", "output_sha256")}
+                                         "load_ms", "prompt", "output_sha256", "manifest_sha256")}
 
     def ready_manifest(self, model_id: str, variant_id: Optional[str] = None
                        ) -> Tuple[Optional[Dict[str, Any]], str]:

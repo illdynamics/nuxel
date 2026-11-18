@@ -61,22 +61,22 @@ has not been exercised on the final installation.
 
 ## Trust and downloads
 
-The two repository GGUF manifests are **unsigned**. The handset also has an
-older test-signed CodeBird manifest and downloaded model. Neither is a
-production-ready release package. Both model menus display immutable revisions,
-sizes, hashes, license notices, and the exact trust failure. Download buttons
-remain disabled for untrusted packages; checking a license box is not a trust
-bypass. A trusted signed manifest enables the existing download path, which
-requires exact-revision license acknowledgement and a real runtime self-test
-before READY. This turn did not download multi-gigabyte models or accept a
-model license for the owner.
+Both immutable GGUF manifests are owner-release signed. The public key is in
+`keys/owner-release-public.pem`; the private key lives outside this repository.
+The handset's previous test key and manifests were preserved under
+`/var/backups/nuxel-penguru/owner-trust-20261117/` before explicit enrollment.
 
-Only an explicitly isolated engineering test may opt into the already installed
-test key with `device-runtime-check.py codebird --test-signature`. The check
-hashes the package, verifies the signature, loads it and generates tokens. It
-does not install a trust key, alter production configuration, write a READY
-record, or promote test artifacts. Run it unprivileged with a bounded transient
-systemd unit, as recorded in `reports/PENGURU-DEVICE-INTEGRATION-2026-11-17.md`.
+Download buttons require the owner to acknowledge the exact revision's notice.
+A pre-existing package can be reused only after hash/signature verification;
+its license record is written on that foreground action, and a fresh runtime
+self-test must bind to the signed manifest before READY. Legacy test records
+cannot silently promote packages. ChatBird's upstream license provenance remains
+unresolved; no model weights are redistributed in the release.
+
+`tools/provision-owner-key.py PRIVATE_PATH PUBLIC_PATH` creates or reuses an
+Ed25519 key without overwriting a different key. `tools/sign-manifest.py` signs
+metadata. Enrollment is a separate owner-authorized operation. The installer
+continues to preserve existing handset trust and manifests.
 
 ## Local checks
 
@@ -100,10 +100,10 @@ checks that creating an Internet socket is denied before loading a model.
 
 ## Not implemented or not accepted
 
-- Production-trusted model release and successful owner-driven download UI test.
+- Owner-driven multi-gigabyte download UI acceptance.
 - ChatBird generation on this handset.
 - ONNX Runtime GenAI adapter and compatible exported model packages.
-- Approved SonarBird encoder/classifier bundle; only deterministic routing works.
+- Broader SonarBird dataset and physical acceptance beyond the initial synthetic-family evaluation.
 - Microphone capture, local STT, tested Penguru wake-phrase model and native overlay.
 - Privileged writes, approvals/rollback broker, and generated-code execution.
 - Full conversation quality, soak, thermal, suspend/resume and physical UI acceptance.

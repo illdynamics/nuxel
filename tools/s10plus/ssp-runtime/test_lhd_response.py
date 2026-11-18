@@ -5,7 +5,8 @@ import struct
 import tempfile
 import unittest
 from inspect_lhd_init import EXPECTED, MatchedImage, inspect
-from replay_lhd_response import Replay, FinalVersionReplay, SyncReplay, rpc_record
+from replay_lhd_response import Replay, FinalVersionReplay, SyncReplay, SyncInitializerReplay, rpc_record
+from replay_lhd_response import ReliableReplay, PatchRecordReplay, patch_scenario
 from replay_lhd_response import OWNER, INIT_INTERFACE, PLATFORM
 from check_protocol_replay import frame
 
@@ -16,6 +17,288 @@ BODY = struct.pack('<III', *VALUES)
 
 def kinds(result):
     return [e['kind'] for e in result['events']]
+
+
+class SyncInitializerTests(unittest.TestCase):
+    RESPONSE = bytes([1, 1, 10, 20, 30, 40, 50, 60])  # SYNTHETIC, not ROM evidence
+
+    def test_real_interface_relocations(self):
+        image = MatchedImage(BINARY)
+        self.assertEqual(image.relocations[0x48eb0], 0x3ec18)
+        self.assertEqual(image.relocations[0x487f8], 0x37f88)
+
+    def test_initial_and_confirmation_paths_serialize_version_request(self):
+        for confirmation, target, waiting in ((False, 7, 8), (True, 14, 15)):
+            with self.subTest(confirmation=confirmation):
+                r = SyncInitializerReplay(BINARY, confirmation)
+                r.start()
+                synced = r.receive(self.RESPONSE)
+                self.assertEqual(synced['state'], target)
+                self.assertEqual(synced['timer_deadline'], 1000)
+                requested = r.step()
+                self.assertEqual(requested['state'], waiting)
+                self.assertEqual(requested['version_retries'], 5)
+                self.assertEqual(requested['timer_deadline'], 1250)
+                self.assertEqual([e['payload_hex'] for e in requested['events']
+                                  if e['kind'] == 'reliable_enqueue_boundary'], ['0000'])
+                self.assertNotIn('version_callback', kinds(requested))
+
+    def test_version_timeout_is_five_retries_then_assertion_boundary(self):
+        r = SyncInitializerReplay(BINARY)
+        r.start()
+        r.receive(self.RESPONSE)
+        r.step()
+        for i in range(1, 6):
+            result = r.step(1000 + 250*i)
+            self.assertEqual(result['version_retries'], 5-i)
+            self.assertEqual(result['timer_deadline'], 1250 + 250*i)
+            self.assertIn('reliable_enqueue_boundary', kinds(result))
+        result = r.step(2500)
+        self.assertTrue(result['assertion_boundary'])
+        self.assertNotIn('reliable_enqueue_boundary', kinds(result))
+        self.assertEqual(result['state'], 8)
+        with self.assertRaisesRegex(RuntimeError, 'assertion boundary'):
+            r.step()
+
+    def test_sync_timeout_restarts_autobaud_with_decremented_budget(self):
+        r = SyncInitializerReplay(BINARY)
+        r.start()
+        for now in range(1100, 1601, 100):
+            result = r.poll(now)
+        self.assertEqual(result['state'], 2)
+        self.assertEqual(result['sync_retries'], 4)
+        raw = r.step(1600)
+        self.assertEqual(raw['state'], 3)
+        self.assertEqual(raw['timer_deadline'], 1700)
+        self.assertEqual([e['payload_hex'] for e in raw['events']
+                          if e['kind'] == 'raw_write_boundary'],
+                         [r.image.read(0xdfe4, 36).hex()])
+        restarted = r.step(1700)
+        self.assertEqual(restarted['state'], 4)
+        self.assertEqual(restarted['token'], 1)
+        # Token reuse means the earlier attempt's synthetic response also passes.
+        self.assertEqual(r.receive(self.RESPONSE)['state'], 7)
+
+    def test_exhausted_sync_budget_stops_without_inventing_recovery(self):
+        for confirmation in (False, True):
+            r = SyncInitializerReplay(BINARY, confirmation)
+            r.put32(OWNER + 2356, 0)
+            r.start()
+            for now in range(1100, 1601, 100):
+                result = r.poll(now)
+            self.assertTrue(result['assertion_boundary'])
+            self.assertEqual(result['state'], 6)
+            self.assertNotIn('raw_write_boundary', kinds(result))
+
+    def test_cancel_does_not_cancel_transport_sync(self):
+        r = SyncInitializerReplay(BINARY)
+        r.start()
+        canceled = r.step(cancel=True)
+        self.assertEqual(canceled['state'], 0)
+        self.assertTrue(canceled['active'])
+        late = r.receive(self.RESPONSE)
+        self.assertFalse(late['active'])
+        self.assertTrue(late['assertion_boundary'])
+        self.assertEqual(late['state'], 0)
+        self.assertEqual(late['transport_bytes']['0xc56'], 11)
+
+    def test_truncated_and_duplicate_sync_do_not_repeat_initializer(self):
+        r = SyncInitializerReplay(BINARY)
+        r.start()
+        for length in range(8):
+            result = r.receive(self.RESPONSE[:length])
+            self.assertEqual(result['state'], 4)
+            self.assertNotIn('initializer_entry', kinds(result))
+        r.receive(self.RESPONSE)
+        duplicate = r.receive(self.RESPONSE)
+        self.assertEqual(duplicate['state'], 7)
+        self.assertNotIn('initializer_entry', kinds(duplicate))
+
+    def test_unreviewed_core_state_is_refused(self):
+        r = SyncInitializerReplay(BINARY)
+        r.put32(r.CORE + 18812, 2)
+        r.start()
+        with self.assertRaisesRegex(RuntimeError, 'unreviewed execution at 0x37fc0'):
+            r.receive(self.RESPONSE)
+
+
+class ReliableQueueTests(unittest.TestCase):
+    def test_original_allocator_and_cumulative_ack(self):
+        r = ReliableReplay(BINARY)
+        self.assertEqual(r.enqueue(b'abc', 11)['pending_bytes'], 3)
+        self.assertEqual(r.enqueue(b'defgh', 22)['pending_bytes'], 8)
+        result = r.acknowledge(2)
+        self.assertEqual(result['pending_bytes'], 0)
+        self.assertEqual(result['queue'], [])
+        callbacks = [e for e in result['events'] if e['kind'] == 'queue_callback']
+        self.assertEqual([e['argument'] for e in callbacks], [11, 22])
+        self.assertEqual([e['pending_bytes_at_callback'] for e in callbacks], [0, 0])
+        self.assertNotIn('version_callback', kinds(result))
+
+    def test_unknown_partial_duplicate_and_reordered_ack(self):
+        r = ReliableReplay(BINARY)
+        r.enqueue(b'abc')
+        r.enqueue(b'de')
+        self.assertEqual(r.acknowledge(99)['pending_bytes'], 5)
+        self.assertEqual(r.acknowledge(1)['pending_bytes'], 2)
+        duplicate = r.acknowledge(1)
+        self.assertEqual(duplicate['pending_bytes'], 2)
+        self.assertNotIn('queue_callback', kinds(duplicate))
+        self.assertEqual(r.acknowledge(2)['pending_bytes'], 0)
+        self.assertNotIn('queue_callback', kinds(r.acknowledge(1)))
+
+    def test_crc_and_packet_ack_cannot_drain_reliable_queue(self):
+        r = ReliableReplay(BINARY)
+        r.enqueue(b'abc')
+        packet_ack = frame(bytes([0, 0, 1, 1]))
+        r.run(packet_ack, wire=True)
+        self.assertEqual(r.snapshot()['pending_bytes'], 3)
+        reliable_ack = frame(bytes([1, 0, 4, 1]))
+        bad_crc = reliable_ack[:-3] + bytes([reliable_ack[-3] ^ 1]) + reliable_ack[-2:]
+        r.run(bad_crc, wire=True)
+        self.assertEqual(r.snapshot()['pending_bytes'], 3)
+        result = r.run(reliable_ack, wire=True)
+        self.assertEqual(r.snapshot()['pending_bytes'], 0)
+        self.assertIn('queue_callback', kinds(result))
+        self.assertNotIn('version_callback', kinds(result))
+
+    def test_nack_cumulatively_retires_prefix_and_resends_suffix(self):
+        r = ReliableReplay(BINARY)
+        r.enqueue(b'abc', 11)
+        r.enqueue(b'de', 22)
+        # Packet sequence 0 is the intercepted-send return, not observed traffic.
+        result = r.acknowledge(1, nack_packet=0)
+        self.assertEqual(result['pending_bytes'], 2)
+        self.assertEqual([e['argument'] for e in result['events']
+                          if e['kind'] == 'queue_callback'], [11])
+        self.assertEqual(result['queue'][0]['attempts'], 2)
+        self.assertIn('transport_send_boundary', kinds(result))
+
+    def test_reliable_retry_limit_reports_error_without_clearing_queue(self):
+        r = ReliableReplay(BINARY)
+        r.enqueue(b'abc')
+        self.assertNotIn('transport_send_boundary', kinds(r.poll(1499)))
+        for now in range(1500, 5501, 500):
+            result = r.poll(now)
+        self.assertEqual(result['queue'][0]['attempts'], 10)
+        result = r.poll(6000)
+        self.assertIn('communication_error_boundary', kinds(result))
+        self.assertEqual(result['pending_bytes'], 3)
+        self.assertNotIn('queue_callback', kinds(result))
+        self.assertNotIn('transport_send_boundary', kinds(result))
+
+    def test_ring_and_sequence_wrap_under_bounded_repeated_use(self):
+        r = ReliableReplay(BINARY)
+        for i in range(300):
+            payload = bytes([i & 255]) * (1 + i % 127)
+            result = r.enqueue(payload)
+            self.assertEqual(result['pending_bytes'], len(payload))
+            self.assertFalse(result['assertion_boundary'])
+            result = r.acknowledge((i + 1) & 255)
+            self.assertEqual(result['queue'], [])
+            self.assertEqual(result['pending_bytes'], 0)
+
+    def test_pending_bytes_block_application_start(self):
+        r = ReliableReplay(BINARY)
+        r.enqueue(b'synthetic')
+        r.stage_consumed_patch()
+        result = r.step()
+        self.assertEqual(result['state'], 12)
+        self.assertNotIn('transport_send_boundary', kinds(result))
+        r.acknowledge(1)
+        self.assertEqual(r.step()['state'], 13)
+
+    def test_scratch_service_and_no_entry_startup_branches(self):
+        for patch_type, entry, skip, state, delay, expected in (
+                (0x41, 0x12345678, False, 13, 40, '2e0478563412'),
+                (0x42, 0x12345678, False, 13, 100, '371478563412' + '00'*16),
+                (0x41, 0x12345678, True, 16, 40, '2e0478563412'),
+                (0x41, 0xffffffff, False, 15, 250, '0000')):
+            with self.subTest(patch_type=patch_type, entry=entry, skip=skip):
+                r = ReliableReplay(BINARY)
+                r.stage_consumed_patch(patch_type, entry, skip)
+                result = r.step()
+                sends = [e for e in result['events'] if e['kind'] == 'transport_send_boundary']
+                self.assertEqual([e['payload_hex'] for e in sends], [expected])
+                self.assertEqual(sends[0]['flags'], 2 if entry == 0xffffffff else 0)
+                self.assertEqual(result['state'], state)
+                self.assertEqual(result['timer_deadline'], 1000 + delay)
+                self.assertNotIn('version_callback', kinds(result))
+
+    def test_unavailable_patch_metadata_stops_before_application_start(self):
+        r = ReliableReplay(BINARY)
+        r.stage_consumed_patch()
+        r.uc.mem_write(OWNER + 40 + 0x488, b'\x00')
+        result = r.step()
+        self.assertTrue(result['assertion_boundary'])
+        self.assertNotIn('transport_send_boundary', kinds(result))
+
+
+class PatchRecordTests(unittest.TestCase):
+    @staticmethod
+    def record(data=b'abc', address=0x12345678):
+        return b'\xf1' + struct.pack('<HI', len(data)+4, address) + data
+
+    def test_f1_serializes_rpc5_with_exact_little_endian_fields(self):
+        r = PatchRecordReplay(BINARY)
+        result = r.feed(self.record())
+        writes = [e for e in result['events'] if e['kind'] == 'patch_write_callback']
+        self.assertEqual(writes, [{'kind': 'patch_write_callback', 'destination': '0x12345678',
+                                  'length': 3, 'data_sha256': hashlib.sha256(b'abc').hexdigest()}])
+        r.flush()
+        self.assertEqual(r.last_serialized, rpc_record(5, struct.pack('<IH', 0x12345678, 3)+b'abc'))
+        self.assertEqual(result['parser_state'], 0)
+
+    def test_all_fragment_boundaries_and_incomplete_record(self):
+        record = self.record()
+        for split in range(1, len(record)):
+            r = PatchRecordReplay(BINARY)
+            first = r.feed(record[:split])
+            self.assertNotIn('patch_write_callback', kinds(first))
+            self.assertNotEqual(first['parser_state'], 0)
+            result = r.feed(record[split:])
+            self.assertEqual(kinds(result).count('patch_write_callback'), 1)
+            r.flush()
+            self.assertEqual(r.last_serialized, rpc_record(5, struct.pack('<IH', 0x12345678, 3)+b'abc'))
+
+    def test_duplicate_and_reordered_file_records_are_not_suppressed(self):
+        r = PatchRecordReplay(BINARY)
+        result = r.feed(self.record(address=2)+self.record(address=1)+self.record(address=2))
+        self.assertEqual([e['destination'] for e in result['events']
+                          if e['kind'] == 'patch_write_callback'], ['0x2', '0x1', '0x2'])
+
+    def test_malformed_tag_length_and_short_body_refused(self):
+        for record in (b'\xef', b'\xf1\xb7\x03', b'\xf1\x04\x00'+b'\x00'*4):
+            r = PatchRecordReplay(BINARY)
+            result = r.feed(record)
+            self.assertTrue(result['assertion_boundary'])
+            self.assertNotIn('patch_write_callback', kinds(result))
+
+    def test_maximum_f1_body_and_unreviewed_callback(self):
+        r = PatchRecordReplay(BINARY)
+        result = r.feed(self.record(b'x'*946))
+        self.assertFalse(result['assertion_boundary'])
+        self.assertEqual(result['parser_state'], 0)
+        r.flush()
+        self.assertEqual(r.last_serialized, rpc_record(5, struct.pack('<IH', 0x12345678, 946)+b'x'*946))
+        with self.assertRaisesRegex(RuntimeError, 'unreviewed execution'):
+            PatchRecordReplay(BINARY).feed(b'\xf0\x0c\x00'+bytes(12))
+
+    def test_independent_rpc_output_checker_rejects_malformed_records(self):
+        for payload in (b'\x05', b'\x05\x80', b'\x06\x00', b'\x05\x07',
+                        rpc_record(5, struct.pack('<IH', 1, 2)+b'x')):
+            with self.assertRaises(ValueError):
+                PatchRecordReplay.decode_serialized_writes(payload)
+
+    def test_actual_hash_matched_embedded_patch_records_offline(self):
+        header = BINARY.parents[3] / 'kernel/s10plus/.build/src/drivers/sensorhub/brcm/bbdpl/r_os/bbd_patch_file_beyond.h'
+        if not header.is_file():
+            self.skipTest('owner-local matched kernel header unavailable')
+        result = patch_scenario(BINARY, header)
+        self.assertEqual(result['write_records'], 479)
+        self.assertEqual(result['write_data_bytes'], 435542)
+        self.assertEqual(result['rpc_packets'], 478)
+        self.assertEqual(result['final_parser_state'], 0)
 
 
 class OriginalDecoderTests(unittest.TestCase):

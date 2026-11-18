@@ -6,7 +6,7 @@ After=nuxel-http-bridge.service
 Type=simple
 User=nuxel-penguru
 Group=nuxel-penguru
-ExecStart=/usr/bin/python3 /opt/nuxel-penguru/service.py
+ExecStart=/opt/nuxel-penguru-venv/bin/python3 /opt/nuxel-penguru/service.py
 Environment=NUXEL_PENGURU_NO_SYSTEMD_RUN=1
 RuntimeDirectory=nuxel-penguru
 RuntimeDirectoryMode=0700

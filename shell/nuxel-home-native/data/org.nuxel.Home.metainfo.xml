@@ -47,10 +47,10 @@
   </screenshots>
 
   <releases>
-    <release version="0.8.8-beta" date="2026-11-10">
-      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.8.8-beta</url>
+    <release version="0.8.9-beta" date="2026-11-10">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.8.9-beta</url>
       <description>
-        <p>Nuxel Home v0.8.8-beta — fully black screen-off and release-CI repair.</p>
+        <p>Nuxel Home v0.8.9-beta — fully black screen-off and release-CI repair.</p>
         <ul>
           <li>Screen-off now latches a black page before blanking the AMOLED panel</li>
           <li>Panel powerdown is re-asserted after FBIOBLANK for a truly dark screen</li>

@@ -1,0 +1,31 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+00000000000396ac <.text+0x216ac>:
+   396ac:	f81e0ff3 	str	x19, [sp, #-32]!
+   396b0:	a9017bfd 	stp	x29, x30, [sp, #16]
+   396b4:	910043fd 	add	x29, sp, #0x10
+   396b8:	b944e808 	ldr	w8, [x0, #1256]
+   396bc:	aa0003f3 	mov	x19, x0
+   396c0:	7100111f 	cmp	w8, #0x4
+   396c4:	54000081 	b.ne	396d4 <__libc_init@plt-0xb77c>  // b.any
+   396c8:	36000161 	tbz	w1, #0, 396f4 <__libc_init@plt-0xb75c>
+   396cc:	528000a8 	mov	w8, #0x5                   	// #5
+   396d0:	1400000a 	b	396f8 <__libc_init@plt-0xb758>
+   396d4:	f9400660 	ldr	x0, [x19, #8]
+   396d8:	90fffea1 	adrp	x1, d000 <__libc_init@plt-0x37e50>
+   396dc:	90fffe82 	adrp	x2, 9000 <__libc_init@plt-0x3be50>
+   396e0:	91011021 	add	x1, x1, #0x44
+   396e4:	911ff442 	add	x2, x2, #0x7fd
+   396e8:	52801543 	mov	w3, #0xaa                  	// #170
+   396ec:	97ffee25 	bl	34f80 <__libc_init@plt-0xfed0>
+   396f0:	14000003 	b	396fc <__libc_init@plt-0xb754>
+   396f4:	321f07e8 	orr	w8, wzr, #0x6
+   396f8:	b904ea68 	str	w8, [x19, #1256]
+   396fc:	a9417bfd 	ldp	x29, x30, [sp, #16]
+   39700:	aa1303e0 	mov	x0, x19
+   39704:	f84207f3 	ldr	x19, [sp], #32
+   39708:	17fffcbd 	b	389fc <__libc_init@plt-0xc454>

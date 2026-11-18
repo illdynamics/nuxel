@@ -65,7 +65,7 @@ index db65af462..d9c0a7405 100644
 +	 * this assignment a fully probed hub looks "not registered" to
 +	 * nuxel_ssp_bringup_hw() forever.
 +	 */
-+	nuxel_ssp_register_data(data);
++	/* Native peer registration requires the separate experimental patch. */
  	iRet = 0;
  	mutex_init(&shutdown_lock);
  	set_ssp_data_info(data);
@@ -101,7 +101,7 @@ index b2c0dd043..154134ae5 100644
 +	int n;
 +
 +	/* Keep the one-line transport truth in the kernel log as well. */
-+	nuxel_ssp_bcm_diag();
++	/* Native transport diagnostics require the separate experimental patch. */
 +
 +	n = snprintf(buf, PAGE_SIZE,
 +		"mcu_probe=%d shutdown=%d resetting=%d sensor_state=0x%llx "
@@ -116,9 +116,9 @@ index b2c0dd043..154134ae5 100644
 +
 +/*
 + * Nuxel PWNAGE-SSP: exact return code of a userspace-requested hub bring-up.
-+ * Writing 1 runs nuxel_ssp_bringup_hw() in this (sleeping) context; the write
-+ * returns 0 only when the hub answered initialize_mcu().  The daemon reads it
-+ * back so a failed bring-up is never mistaken for a running hub.
++ * Native bring-up is unavailable without the experimental peer; the write
++ * returns EOPNOTSUPP in this release build. The daemon must treat it
++ * as unavailable, never as proof that the hub is running.
 + */
 +static ssize_t set_nuxel_bringup(struct device *dev,
 +	struct device_attribute *attr, const char *buf, size_t size)
@@ -130,7 +130,7 @@ index b2c0dd043..154134ae5 100644
 +	if (ret != 1)
 +		return size;
 +
-+	ret = nuxel_ssp_bringup_hw();
++	ret = -EOPNOTSUPP; /* Native bring-up is not in the release patch set. */
 +	if (ret < 0) {
 +		pr_err("[SSPBBD] Nuxel bring-up via sysfs failed: %d\n", ret);
 +		return ret;

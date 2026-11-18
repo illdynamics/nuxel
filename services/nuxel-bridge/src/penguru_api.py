@@ -13,7 +13,7 @@ import time
 
 APPS = {'org.nuxel.PenGuru', 'nuxel-settings', 'org.nuxel.Settings'}
 OPS = {'status', 'set_enabled', 'set_mode', 'set_runtime', 'submit', 'get', 'cancel',
-       'clear_all', 'delete_conversation', 'list_models', 'start_download',
+       'transcribe', 'clear_all', 'delete_conversation', 'list_models', 'start_download',
        'download_status', 'cancel_download', 'delete_model', 'diagnostics'}
 LOCK = threading.RLock()
 

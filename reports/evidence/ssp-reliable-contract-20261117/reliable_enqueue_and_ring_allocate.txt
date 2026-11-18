@@ -1,0 +1,286 @@
+
+packs/sensors/acquired/vendor-bin-hw-lhd:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+000000000003fa24 <.text+0x27a24>:
+   3fa24:	a9ba6ffc 	stp	x28, x27, [sp, #-96]!
+   3fa28:	a90167fa 	stp	x26, x25, [sp, #16]
+   3fa2c:	a9025ff8 	stp	x24, x23, [sp, #32]
+   3fa30:	a90357f6 	stp	x22, x21, [sp, #48]
+   3fa34:	a9044ff4 	stp	x20, x19, [sp, #64]
+   3fa38:	a9057bfd 	stp	x29, x30, [sp, #80]
+   3fa3c:	910143fd 	add	x29, sp, #0x50
+   3fa40:	12003c59 	and	w25, w2, #0xffff
+   3fa44:	7110073f 	cmp	w25, #0x401
+   3fa48:	aa0003f3 	mov	x19, x0
+   3fa4c:	54000262 	b.cs	3fa98 <__libc_init@plt-0x53b8>  // b.hs, b.nlast
+   3fa50:	52868c08 	mov	w8, #0x3460                	// #13408
+   3fa54:	52869e29 	mov	w9, #0x34f1                	// #13553
+   3fa58:	8b08027a 	add	x26, x19, x8
+   3fa5c:	39424348 	ldrb	w8, [x26, #144]
+   3fa60:	38696a69 	ldrb	w9, [x19, x9]
+   3fa64:	4b090108 	sub	w8, w8, w9
+   3fa68:	12001d08 	and	w8, w8, #0xff
+   3fa6c:	51000508 	sub	w8, w8, #0x1
+   3fa70:	7102591f 	cmp	w8, #0x96
+   3fa74:	540001c2 	b.cs	3faac <__libc_init@plt-0x53a4>  // b.hs, b.nlast
+   3fa78:	5286a1a8 	mov	w8, #0x350d                	// #13581
+   3fa7c:	38686a68 	ldrb	w8, [x19, x8]
+   3fa80:	34000308 	cbz	w8, 3fae0 <__libc_init@plt-0x5370>
+   3fa84:	f9400660 	ldr	x0, [x19, #8]
+   3fa88:	f0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   3fa8c:	91090821 	add	x1, x1, #0x242
+   3fa90:	528044c2 	mov	w2, #0x226                 	// #550
+   3fa94:	1400000a 	b	3fabc <__libc_init@plt-0x5394>
+   3fa98:	f9400660 	ldr	x0, [x19, #8]
+   3fa9c:	f0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   3faa0:	91090821 	add	x1, x1, #0x242
+   3faa4:	52804482 	mov	w2, #0x224                 	// #548
+   3faa8:	14000005 	b	3fabc <__libc_init@plt-0x5394>
+   3faac:	f9400660 	ldr	x0, [x19, #8]
+   3fab0:	f0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   3fab4:	91090821 	add	x1, x1, #0x242
+   3fab8:	528044a2 	mov	w2, #0x225                 	// #549
+   3fabc:	f9400008 	ldr	x8, [x0]
+   3fac0:	f9401d03 	ldr	x3, [x8, #56]
+   3fac4:	a9457bfd 	ldp	x29, x30, [sp, #80]
+   3fac8:	a9444ff4 	ldp	x20, x19, [sp, #64]
+   3facc:	a94357f6 	ldp	x22, x21, [sp, #48]
+   3fad0:	a9425ff8 	ldp	x24, x23, [sp, #32]
+   3fad4:	a94167fa 	ldp	x26, x25, [sp, #16]
+   3fad8:	a8c66ffc 	ldp	x28, x27, [sp], #96
+   3fadc:	d61f0060 	br	x3
+   3fae0:	79400348 	ldrh	w8, [x26]
+   3fae4:	79400749 	ldrh	w9, [x26, #2]
+   3fae8:	2a0503f4 	mov	w20, w5
+   3faec:	aa0403f5 	mov	x21, x4
+   3faf0:	aa0303f6 	mov	x22, x3
+   3faf4:	2a0203f7 	mov	w23, w2
+   3faf8:	aa0103f8 	mov	x24, x1
+   3fafc:	6b08013f 	cmp	w9, w8
+   3fb00:	540000c9 	b.ls	3fb18 <__libc_init@plt-0x5338>  // b.plast
+   3fb04:	2a2803ea 	mvn	w10, w8
+   3fb08:	0b0a0129 	add	w9, w9, w10
+   3fb0c:	7101413f 	cmp	w9, #0x50
+   3fb10:	540001e3 	b.cc	3fb4c <__libc_init@plt-0x5304>  // b.lo, b.ul, b.last
+   3fb14:	1400001c 	b	3fb84 <__libc_init@plt-0x52cc>
+   3fb18:	5285000a 	mov	w10, #0x2800                	// #10240
+   3fb1c:	4b08014a 	sub	w10, w10, w8
+   3fb20:	71013d5f 	cmp	w10, #0x4f
+   3fb24:	540000e8 	b.hi	3fb40 <__libc_init@plt-0x5310>  // b.pmore
+   3fb28:	7101453f 	cmp	w9, #0x51
+   3fb2c:	54000103 	b.cc	3fb4c <__libc_init@plt-0x5304>  // b.lo, b.ul, b.last
+   3fb30:	6b09011f 	cmp	w8, w9
+   3fb34:	54000201 	b.ne	3fb74 <__libc_init@plt-0x52dc>  // b.any
+   3fb38:	7900075f 	strh	wzr, [x26, #2]
+   3fb3c:	14000010 	b	3fb7c <__libc_init@plt-0x52d4>
+   3fb40:	35000229 	cbnz	w9, 3fb84 <__libc_init@plt-0x52cc>
+   3fb44:	7101415f 	cmp	w10, #0x50
+   3fb48:	540001e1 	b.ne	3fb84 <__libc_init@plt-0x52cc>  // b.any
+   3fb4c:	f9400660 	ldr	x0, [x19, #8]
+   3fb50:	f0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   3fb54:	91090821 	add	x1, x1, #0x242
+   3fb58:	52804542 	mov	w2, #0x22a                 	// #554
+   3fb5c:	f9400008 	ldr	x8, [x0]
+   3fb60:	f9401d08 	ldr	x8, [x8, #56]
+   3fb64:	d63f0100 	blr	x8
+   3fb68:	aa1f03fc 	mov	x28, xzr
+   3fb6c:	aa1f03fb 	mov	x27, xzr
+   3fb70:	14000024 	b	3fc00 <__libc_init@plt-0x5250>
+   3fb74:	52868c89 	mov	w9, #0x3464                	// #13412
+   3fb78:	78296a68 	strh	w8, [x19, x9]
+   3fb7c:	2a1f03e8 	mov	w8, wzr
+   3fb80:	7900035f 	strh	wzr, [x26]
+   3fb84:	f95a2e6a 	ldr	x10, [x19, #13400]
+   3fb88:	1101410b 	add	w11, w8, #0x50
+   3fb8c:	52850009 	mov	w9, #0x2800                	// #10240
+   3fb90:	6b2b213f 	cmp	w9, w11, uxth
+   3fb94:	8b080148 	add	x8, x10, x8
+   3fb98:	7900034b 	strh	w11, [x26]
+   3fb9c:	54000081 	b.ne	3fbac <__libc_init@plt-0x52a4>  // b.any
+   3fba0:	52868c8a 	mov	w10, #0x3464                	// #13412
+   3fba4:	782a6a69 	strh	w9, [x19, x10]
+   3fba8:	7900035f 	strh	wzr, [x26]
+   3fbac:	d0fffe69 	adrp	x9, d000 <__libc_init@plt-0x37e50>
+   3fbb0:	d0fffe6a 	adrp	x10, d000 <__libc_init@plt-0x37e50>
+   3fbb4:	fd474920 	ldr	d0, [x9, #3728]
+   3fbb8:	fd472941 	ldr	d1, [x10, #3664]
+   3fbbc:	5285000b 	mov	w11, #0x2800                	// #10240
+   3fbc0:	9101410a 	add	x10, x8, #0x50
+   3fbc4:	fd000100 	str	d0, [x8]
+   3fbc8:	fd002501 	str	d1, [x8, #72]
+   3fbcc:	f95a2e69 	ldr	x9, [x19, #13400]
+   3fbd0:	9100211b 	add	x27, x8, #0x8
+   3fbd4:	8b0b0129 	add	x9, x9, x11
+   3fbd8:	eb09015f 	cmp	x10, x9
+   3fbdc:	54000109 	b.ls	3fbfc <__libc_init@plt-0x5254>  // b.plast
+   3fbe0:	f9400660 	ldr	x0, [x19, #8]
+   3fbe4:	f0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   3fbe8:	91090821 	add	x1, x1, #0x242
+   3fbec:	5280bce2 	mov	w2, #0x5e7                 	// #1511
+   3fbf0:	f9400008 	ldr	x8, [x0]
+   3fbf4:	f9401d08 	ldr	x8, [x8, #56]
+   3fbf8:	d63f0100 	blr	x8
+   3fbfc:	aa1b03fc 	mov	x28, x27
+   3fc00:	7900039f 	strh	wzr, [x28]
+   3fc04:	39000b9f 	strb	wzr, [x28, #2]
+   3fc08:	3900439f 	strb	wzr, [x28, #16]
+   3fc0c:	b900179f 	str	wzr, [x28, #20]
+   3fc10:	7900339f 	strh	wzr, [x28, #24]
+   3fc14:	f900079f 	str	xzr, [x28, #8]
+   3fc18:	f9001f9f 	str	xzr, [x28, #56]
+   3fc1c:	b900339f 	str	wzr, [x28, #48]
+   3fc20:	a9027f9f 	stp	xzr, xzr, [x28, #32]
+   3fc24:	39424348 	ldrb	w8, [x26, #144]
+   3fc28:	39000368 	strb	w8, [x27]
+   3fc2c:	39424348 	ldrb	w8, [x26, #144]
+   3fc30:	11000508 	add	w8, w8, #0x1
+   3fc34:	39024348 	strb	w8, [x26, #144]
+   3fc38:	f9400660 	ldr	x0, [x19, #8]
+   3fc3c:	f9400008 	ldr	x8, [x0]
+   3fc40:	f9400d08 	ldr	x8, [x8, #24]
+   3fc44:	d63f0100 	blr	x8
+   3fc48:	b9001760 	str	w0, [x27, #20]
+   3fc4c:	320003e8 	orr	w8, wzr, #0x1
+   3fc50:	aa1303e0 	mov	x0, x19
+   3fc54:	2a1703e1 	mov	w1, w23
+   3fc58:	39000b68 	strb	w8, [x27, #2]
+   3fc5c:	94000032 	bl	3fd24 <__libc_init@plt-0x512c>
+   3fc60:	f9000780 	str	x0, [x28, #8]
+   3fc64:	b5000120 	cbnz	x0, 3fc88 <__libc_init@plt-0x51c8>
+   3fc68:	f9400660 	ldr	x0, [x19, #8]
+   3fc6c:	f0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   3fc70:	91090821 	add	x1, x1, #0x242
+   3fc74:	52804622 	mov	w2, #0x231                 	// #561
+   3fc78:	f9400008 	ldr	x8, [x0]
+   3fc7c:	f9401d08 	ldr	x8, [x8, #56]
+   3fc80:	d63f0100 	blr	x8
+   3fc84:	f9400780 	ldr	x0, [x28, #8]
+   3fc88:	92403ee2 	and	x2, x23, #0xffff
+   3fc8c:	aa1803e1 	mov	x1, x24
+   3fc90:	94001530 	bl	45150 <memcpy@plt>
+   3fc94:	79003377 	strh	w23, [x27, #24]
+   3fc98:	a9025796 	stp	x22, x21, [x28, #32]
+   3fc9c:	b9003394 	str	w20, [x28, #48]
+   3fca0:	f9001f9f 	str	xzr, [x28, #56]
+   3fca4:	b9750a68 	ldr	w8, [x19, #13576]
+   3fca8:	f95a7e69 	ldr	x9, [x19, #13560]
+   3fcac:	0b190108 	add	w8, w8, w25
+   3fcb0:	b9350a68 	str	w8, [x19, #13576]
+   3fcb4:	b40000c9 	cbz	x9, 3fccc <__libc_init@plt-0x5184>
+   3fcb8:	f95a8269 	ldr	x9, [x19, #13568]
+   3fcbc:	5286a008 	mov	w8, #0x3500                	// #13568
+   3fcc0:	8b080268 	add	x8, x19, x8
+   3fcc4:	f9001d3c 	str	x28, [x9, #56]
+   3fcc8:	14000004 	b	3fcd8 <__libc_init@plt-0x5178>
+   3fccc:	5286a008 	mov	w8, #0x3500                	// #13568
+   3fcd0:	f91a7e7b 	str	x27, [x19, #13560]
+   3fcd4:	8b080268 	add	x8, x19, x8
+   3fcd8:	f900011b 	str	x27, [x8]
+   3fcdc:	f9400782 	ldr	x2, [x28, #8]
+   3fce0:	39400364 	ldrb	w4, [x27]
+   3fce4:	79403363 	ldrh	w3, [x27, #24]
+   3fce8:	321f03e1 	orr	w1, wzr, #0x2
+   3fcec:	aa1303e0 	mov	x0, x19
+   3fcf0:	97fffdba 	bl	3f3d8 <__libc_init@plt-0x5a78>
+   3fcf4:	39000760 	strb	w0, [x27, #1]
+   3fcf8:	b9748668 	ldr	w8, [x19, #13444]
+   3fcfc:	aa1303e0 	mov	x0, x19
+   3fd00:	11000508 	add	w8, w8, #0x1
+   3fd04:	b9348668 	str	w8, [x19, #13444]
+   3fd08:	a9457bfd 	ldp	x29, x30, [sp, #80]
+   3fd0c:	a9444ff4 	ldp	x20, x19, [sp, #64]
+   3fd10:	a94357f6 	ldp	x22, x21, [sp, #48]
+   3fd14:	a9425ff8 	ldp	x24, x23, [sp, #32]
+   3fd18:	a94167fa 	ldp	x26, x25, [sp, #16]
+   3fd1c:	a8c66ffc 	ldp	x28, x27, [sp], #96
+   3fd20:	17fffd36 	b	3f1f8 <__libc_init@plt-0x5c58>
+   3fd24:	f81d0ff5 	str	x21, [sp, #-48]!
+   3fd28:	a9014ff4 	stp	x20, x19, [sp, #16]
+   3fd2c:	a9027bfd 	stp	x29, x30, [sp, #32]
+   3fd30:	910083fd 	add	x29, sp, #0x20
+   3fd34:	52868c08 	mov	w8, #0x3460                	// #13408
+   3fd38:	530b3c29 	ubfx	w9, w1, #11, #5
+   3fd3c:	2a0103f4 	mov	w20, w1
+   3fd40:	aa0003f3 	mov	x19, x0
+   3fd44:	7100153f 	cmp	w9, #0x5
+   3fd48:	8b080015 	add	x21, x0, x8
+   3fd4c:	54000103 	b.cc	3fd6c <__libc_init@plt-0x50e4>  // b.lo, b.ul, b.last
+   3fd50:	f9400660 	ldr	x0, [x19, #8]
+   3fd54:	f0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   3fd58:	91090821 	add	x1, x1, #0x242
+   3fd5c:	5280b3e2 	mov	w2, #0x59f                 	// #1439
+   3fd60:	f9400008 	ldr	x8, [x0]
+   3fd64:	f9401d08 	ldr	x8, [x8, #56]
+   3fd68:	d63f0100 	blr	x8
+   3fd6c:	794002a9 	ldrh	w9, [x21]
+   3fd70:	794006ab 	ldrh	w11, [x21, #2]
+   3fd74:	11001e88 	add	w8, w20, #0x7
+   3fd78:	927d3108 	and	x8, x8, #0xfff8
+   3fd7c:	1100410a 	add	w10, w8, #0x10
+   3fd80:	6b09017f 	cmp	w11, w9
+   3fd84:	540000c9 	b.ls	3fd9c <__libc_init@plt-0x50b4>  // b.plast
+   3fd88:	2a2903ec 	mvn	w12, w9
+   3fd8c:	0b0c016b 	add	w11, w11, w12
+   3fd90:	6b0a017f 	cmp	w11, w10
+   3fd94:	540001e3 	b.cc	3fdd0 <__libc_init@plt-0x5080>  // b.lo, b.ul, b.last
+   3fd98:	14000014 	b	3fde8 <__libc_init@plt-0x5068>
+   3fd9c:	5285000c 	mov	w12, #0x2800                	// #10240
+   3fda0:	4b09018c 	sub	w12, w12, w9
+   3fda4:	6b0a019f 	cmp	w12, w10
+   3fda8:	540000e2 	b.cs	3fdc4 <__libc_init@plt-0x508c>  // b.hs, b.nlast
+   3fdac:	6b0b015f 	cmp	w10, w11
+   3fdb0:	54000102 	b.cs	3fdd0 <__libc_init@plt-0x5080>  // b.hs, b.nlast
+   3fdb4:	6b0b013f 	cmp	w9, w11
+   3fdb8:	54000101 	b.ne	3fdd8 <__libc_init@plt-0x5078>  // b.any
+   3fdbc:	790006bf 	strh	wzr, [x21, #2]
+   3fdc0:	14000008 	b	3fde0 <__libc_init@plt-0x5070>
+   3fdc4:	3500012b 	cbnz	w11, 3fde8 <__libc_init@plt-0x5068>
+   3fdc8:	6b0a019f 	cmp	w12, w10
+   3fdcc:	540000e1 	b.ne	3fde8 <__libc_init@plt-0x5068>  // b.any
+   3fdd0:	aa1f03f4 	mov	x20, xzr
+   3fdd4:	14000026 	b	3fe6c <__libc_init@plt-0x4fe4>
+   3fdd8:	52868c8b 	mov	w11, #0x3464                	// #13412
+   3fddc:	782b6a69 	strh	w9, [x19, x11]
+   3fde0:	2a1f03e9 	mov	w9, wzr
+   3fde4:	790002bf 	strh	wzr, [x21]
+   3fde8:	f95a2e6b 	ldr	x11, [x19, #13400]
+   3fdec:	0b0a012c 	add	w12, w9, w10
+   3fdf0:	5285000a 	mov	w10, #0x2800                	// #10240
+   3fdf4:	6b2c215f 	cmp	w10, w12, uxth
+   3fdf8:	8b090169 	add	x9, x11, x9
+   3fdfc:	790002ac 	strh	w12, [x21]
+   3fe00:	54000081 	b.ne	3fe10 <__libc_init@plt-0x5040>  // b.any
+   3fe04:	52868c8b 	mov	w11, #0x3464                	// #13412
+   3fe08:	782b6a6a 	strh	w10, [x19, x11]
+   3fe0c:	790002bf 	strh	wzr, [x21]
+   3fe10:	5295e1ea 	mov	w10, #0xaf0f                	// #44815
+   3fe14:	91002134 	add	x20, x9, #0x8
+   3fe18:	79000128 	strh	w8, [x9]
+   3fe1c:	79000d3f 	strh	wzr, [x9, #6]
+   3fe20:	b800212a 	stur	w10, [x9, #2]
+   3fe24:	529f5e09 	mov	w9, #0xfaf0                	// #64240
+   3fe28:	8b08028a 	add	x10, x20, x8
+   3fe2c:	79000148 	strh	w8, [x10]
+   3fe30:	b8002149 	stur	w9, [x10, #2]
+   3fe34:	79000d5f 	strh	wzr, [x10, #6]
+   3fe38:	f95a2e68 	ldr	x8, [x19, #13400]
+   3fe3c:	91002149 	add	x9, x10, #0x8
+   3fe40:	5285000a 	mov	w10, #0x2800                	// #10240
+   3fe44:	8b0a0108 	add	x8, x8, x10
+   3fe48:	eb08013f 	cmp	x9, x8
+   3fe4c:	54000109 	b.ls	3fe6c <__libc_init@plt-0x4fe4>  // b.plast
+   3fe50:	f9400660 	ldr	x0, [x19, #8]
+   3fe54:	f0fffe41 	adrp	x1, a000 <__libc_init@plt-0x3ae50>
+   3fe58:	91090821 	add	x1, x1, #0x242
+   3fe5c:	5280bce2 	mov	w2, #0x5e7                 	// #1511
+   3fe60:	f9400008 	ldr	x8, [x0]
+   3fe64:	f9401d08 	ldr	x8, [x8, #56]
+   3fe68:	d63f0100 	blr	x8
+   3fe6c:	aa1403e0 	mov	x0, x20
+   3fe70:	a9427bfd 	ldp	x29, x30, [sp, #32]
+   3fe74:	a9414ff4 	ldp	x20, x19, [sp, #16]
+   3fe78:	f84307f5 	ldr	x21, [sp], #48
+   3fe7c:	d65f03c0 	ret
