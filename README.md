@@ -630,3 +630,4 @@ _Build the bunker first. Add the rave lights later._
 ---
 
 <!-- Reconciliation & code-size accuracy owned by the Repo state audit & doc reconciliation build group (briq-01-audit). Single source of truth for all measured counts: docs/repo-audit.md. -->
+
