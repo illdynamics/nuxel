@@ -2,7 +2,7 @@
 ![Repo Views](https://komarev.com/ghpvc/?username=illdynamics-nuxel&label=Repo+Views&color=blue)
 ![Nuxel](./assets/nuxel-og-image.png)
 
-**v0.8.9-beta** — PenGuru owner-signed model downloads and release integration.
+**v0.9.1-beta candidate** — PenGuru Squad Beak integration, shared voice settings and staged download controls; full on-device voice acceptance remains open.
 
 PenGuru Squad is an opt-in local AI subsystem deployed on the S10+ over Wi-Fi
 SSH. The application and Settings share model download, progress, cancellation,
@@ -14,7 +14,7 @@ model weights are never included in Git or release images.
 The implementation is incomplete: ONNX GenAI packages, a validated learned
 SonarBird classifier, voice/wake phrase and privileged write workflows remain
 unavailable. Squad uses deterministic routing and abstains on uncertain requests.
-See [current release status](docs/releases/v0.8.9-beta.md) for tested scope and
+See [current release status](docs/releases/v0.9.1-beta.md) for tested scope and
 release/deployment evidence. Historical release notes describe their own snapshots.
 
 **v0.8.8-beta** — _PenGuru Squad opt-in local AI beta, Phase-0 security gate
@@ -210,7 +210,7 @@ See [RELEASE-NOTES.md](RELEASE-NOTES.md) for user-facing release notes and
 [CHANGELOG.md](CHANGELOG.md) for the complete engineering history.
 
 
-## PenGuru Squad opt-in beta (v0.8.9-beta)
+## PenGuru Squad opt-in beta (v0.9.1-beta)
 
 PenGuru is a **local-first** AI subsystem and is **disabled by default**. It is an
 opt-in beta: enable it in Settings → **PenGuru AI**, pick a model, acknowledge its

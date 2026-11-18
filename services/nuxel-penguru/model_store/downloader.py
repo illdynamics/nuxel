@@ -58,7 +58,7 @@ def start_download(registry: reg.ModelRegistry, model_id: str, variant_id: str,
     if not signed:
         return {"ok": False, "error": "manifest_untrusted", "detail": why}
     with _LOCK:
-        if any(j["state"] not in ("ready", "error", "cancelled", "quarantined") for j in _JOBS.values()):
+        if any(j["state"] not in ("ready", "staged", "error", "cancelled", "quarantined") for j in _JOBS.values()):
             return {"ok": False, "error": "download_busy"}
     job_id = "%s-%s-%s" % (model_id, variant_id, uuid.uuid4().hex)
     job = {"job_id": job_id, "model_id": model_id, "variant_id": variant_id,
@@ -66,13 +66,93 @@ def start_download(registry: reg.ModelRegistry, model_id: str, variant_id: str,
            "total_bytes": sum(f["size_bytes"] for f in m["files"]),
            "received_bytes": 0, "updated": time.time()}
     with _LOCK:
-        if any(j["state"] not in ("ready", "error", "cancelled", "quarantined") for j in _JOBS.values()):
+        if any(j["state"] not in ("ready", "staged", "error", "cancelled", "quarantined") for j in _JOBS.values()):
             return {"ok": False, "error": "download_busy"}
         _JOBS[job_id] = job
     t = threading.Thread(target=_run, args=(job, registry, m), daemon=True)
     THREADS[job_id] = t
     t.start()
     return {"ok": True, "job_id": job_id, "state": job["state"]}
+
+
+def start_beak_download(component_id: str, consent: bool) -> Dict[str, Any]:
+    """Stage exactly one allowlisted component, never install or execute it."""
+    from beak.catalog import listing
+    item = next((x for x in listing() if x["id"] == component_id), None)
+    if item is None:
+        return {"ok": False, "error": "unknown_beak_component"}
+    if item.get("download_allowed") is not True:
+        return {"ok": False, "error": "source_unverified",
+                "detail": "Automatic installation is disabled until a compatible pinned source, checksum and license are verified"}
+    if consent is not True:
+        return {"ok": False, "error": "owner_review_required"}
+    with _LOCK:
+        if any(j["state"] not in ("ready", "staged", "error", "cancelled", "quarantined") for j in _JOBS.values()):
+            return {"ok": False, "error": "download_busy"}
+        jid = "beak-%s-%s" % (component_id, uuid.uuid4().hex)
+        job = {"job_id": jid, "component_id": component_id, "state": "user_confirmed",
+               "progress": 0., "detail": "", "received_bytes": 0,
+               "total_bytes": 0, "updated": time.time()}
+        _JOBS[jid] = job
+        thread = threading.Thread(target=_beak_stage, args=(job, item), daemon=True)
+        THREADS[jid] = thread
+        thread.start()
+    return {"ok": True, "job_id": jid, "state": job["state"]}
+
+
+def _beak_stage(job: Dict[str, Any], item: Dict[str, Any]):
+    """Bounded HTTPS streaming, SHA256 receipt, and quarantine-only destination."""
+    import urllib.parse
+    jid = job["job_id"]
+    base = os.path.join(paths.STATE_DIR, "beak", "staging")
+    dst_dir = os.path.join(base, jid)
+    max_bytes = int(item["max_bytes"])
+    try:
+        os.makedirs(base, mode=0o700, exist_ok=True)
+        state = os.path.realpath(paths.STATE_DIR)
+        if (os.path.islink(base) or os.path.islink(os.path.dirname(base)) or
+                not os.path.realpath(base).startswith(state + os.sep)):
+            raise RuntimeError("Refusing untrusted staging path or symlink")
+        os.makedirs(dst_dir, mode=0o700, exist_ok=False)
+        if _free_bytes(paths.STATE_DIR) < max_bytes + MIN_FREE_AFTER:
+            raise RuntimeError("Not enough free space for worst-case file size and 1 GiB reserve")
+        partial = os.path.join(dst_dir, item["filename"] + ".part")
+        request = urllib.request.Request(item["url"], headers={"User-Agent": "Nuxel-Beak/0.9"})
+        _set(job, "downloading", "Downloading into untrusted staging; not installable")
+        digest = hashlib.sha256()
+        received = 0
+        with urllib.request.urlopen(request, timeout=30) as src:
+            desturl = urllib.parse.urlparse(src.url)
+            if desturl.scheme != "https" or desturl.username or desturl.password:
+                raise RuntimeError("Non-HTTPS/credentialed redirect blocked")
+            with open(partial, "xb") as out:
+                while True:
+                    if job.get("cancel"):
+                        raise RuntimeError("cancelled by owner")
+                    block = src.read(262144)
+                    if not block:
+                        break
+                    received += len(block)
+                    if received > max_bytes or _free_bytes(paths.STATE_DIR) < MIN_FREE_AFTER:
+                        raise RuntimeError("Component size/storage budget exceeded")
+                    out.write(block)
+                    digest.update(block)
+                    job["received_bytes"] = received
+                    _set(job, "downloading", "Staged bytes: %d" % received,
+                         min(0.99, received / max_bytes))
+        if received == 0:
+            raise RuntimeError("Empty component rejected")
+        os.replace(partial, os.path.join(dst_dir, item["filename"]))
+        receipt = {"component_id": item["id"], "source": item["url"],
+                   "sha256_observed_untrusted": digest.hexdigest(),
+                   "size_bytes": received, "trusted": False, "runtime_ready": False,
+                   "created_at": time.time()}
+        with open(os.path.join(dst_dir, "STAGING-RECEIPT.json"), "w") as out:
+            json.dump(receipt, out, indent=2)
+        _set(job, "staged", "Downloaded and hashed. NOT installed or trusted; requires pinned signature, license and runtime self-test.", 1.)
+    except Exception as exc:
+        shutil.rmtree(dst_dir, ignore_errors=True)
+        _set(job, "cancelled" if job.get("cancel") else "error", str(exc))
 
 
 def download_status(job_id: str) -> Dict[str, Any]:

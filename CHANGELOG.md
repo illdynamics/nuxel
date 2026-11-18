@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.1-beta — PenGuru Beak userspace integration (candidate; live acceptance pending)
+
+- Added a single user-owned `beak.json` configuration shared by PenGuru Squad and Nuxel Settings: Qwen ASR selected, VAD and interruption enabled, RNNoise requested, Piper talkback enabled. Continuous foreground listening remains explicit opt-in.
+- Added device-side Beak download-to-staging controls for Qwen ASR, Needle 3, Whistle and Spark TTS; they do NOT claim to install trusted runtime executables. The existing signed model manifest trust system is preserved.
+- Added bounded Qwen3-ASR CLI and Piper CLI integration paths, with explicit errors until ARM64 runtime binaries and approved model artifacts are installed and tested.
+- Added foreground microphone/wake transcription controls and an ephemeral talkback path. Silero VAD, native RNNoise, continuous background wake recognition, Cactus Whistle/Needle3 and Spark audio decoding still require device implementation and acceptance.
+- Disabled selection of ONNX Runtime GenAI for GGUF packages; stale saved GenAI preferences are reset to Auto on service startup. SonarBird's ONNX Runtime classifier remains separate.
+- Updated device installer for Beak defaults and common Settings UI script. All phone-side validation, energy measurements and release image verification are outstanding until performed by the owner agent.
+
+
 All notable changes to the Nuxel Phone OS repository are documented here.
 
 ## [v0.8.9-beta] - 2026-11-17

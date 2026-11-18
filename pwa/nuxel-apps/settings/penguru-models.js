@@ -94,7 +94,7 @@ export function modelLibrary(container, call) {
         const override = node('select', '');
         override.setAttribute('aria-label', card.model_id + ' runtime override');
         for (const [value, title] of [['inherit', 'Inherit global runtime'], ['llama.cpp', 'llama.cpp'], ['onnxruntime-genai', 'ORT GenAI (requires ONNX package)']]) {
-          const option = node('option', title); option.value = value; override.append(option);
+          const option = node('option', title); option.value = value; if(value==='onnxruntime-genai') option.disabled=true; override.append(option);
         }
         override.value = perModel[card.model_id] || 'inherit';
         override.onchange = async () => {
