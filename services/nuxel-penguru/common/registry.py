@@ -63,7 +63,7 @@ def validate_manifest(m: Any) -> List[str]:
         errors.append("model_id must be one of %s" % (MODEL_IDS,))
     if not isinstance(m.get("variant_id"), str) or not SAFE_ID.match(m.get("variant_id") or ""):
         errors.append("variant_id must be a safe slug")
-    if m.get("format") not in ("GGUF", "ONNX_GENAI", "ONNX_CLASSIFIER"):
+    if m.get("format") not in ("GGUF", "ONNX_GENAI", "ONNX_CLASSIFIER", "WHISPER"):
         errors.append("format must be GGUF, ONNX_GENAI or ONNX_CLASSIFIER")
     revision = m.get("source_revision")
     if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
@@ -91,7 +91,7 @@ def validate_manifest(m: Any) -> List[str]:
                 errors.append("file sha256 must be 64 lowercase hex characters")
     rt = m.get("runtime")
     if not isinstance(rt, dict) or rt.get("engine") not in (
-            "llama.cpp", "onnxruntime-genai", "onnxruntime"):
+            "llama.cpp", "onnxruntime-genai", "onnxruntime", "whisper.cpp"):
         errors.append("runtime.engine is invalid")
     lic = m.get("license")
     if not isinstance(lic, dict) or not isinstance(lic.get("spdx"), str):
@@ -205,7 +205,7 @@ class ModelRegistry:
             return False, "Test signature requires explicit test-build authorization; not a release package"
         if not signed:
             return False, reason
-        if manifest["format"] not in ("GGUF", "ONNX_CLASSIFIER"):
+        if manifest["format"] not in ("GGUF", "ONNX_CLASSIFIER", "WHISPER"):
             return False, "No installer for this package format"
         return True, "Trusted manifest; owner must accept the exact revision's license"
 

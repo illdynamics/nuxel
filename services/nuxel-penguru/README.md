@@ -103,7 +103,7 @@ checks that creating an Internet socket is denied before loading a model.
 - Owner-driven multi-gigabyte download UI acceptance.
 - ChatBird generation on this handset.
 - ONNX Runtime GenAI adapter and compatible exported model packages.
-- Approved SonarBird encoder/classifier bundle; only deterministic routing works.
+- Broader SonarBird dataset and physical acceptance beyond the initial synthetic-family evaluation.
 - Microphone capture, local STT, tested Penguru wake-phrase model and native overlay.
 - Privileged writes, approvals/rollback broker, and generated-code execution.
 - Full conversation quality, soak, thermal, suspend/resume and physical UI acceptance.

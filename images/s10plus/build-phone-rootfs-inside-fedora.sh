@@ -90,7 +90,7 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     filesystem setup fedora-release glibc glibc-langpack-en \
     bash coreutils util-linux findutils grep sed gawk \
     systemd-258.11-1.fc43 systemd-udev systemd-networkd dbus-broker dbus-daemon \
-    python3 python3-cryptography python3-dbus python3-gobject phosh phoc stevia stevia-phosh-osk-provider seatd \
+    python3 python3-pip python3-cryptography python3-dbus python3-gobject phosh phoc stevia stevia-phosh-osk-provider seatd \
     NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 geoclue2-demos bluez bluez-deprecated bluez-obexd \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     gtk3 webkit2gtk4.1 gtk4 libadwaita glib-networking libproxy \
@@ -1045,8 +1045,13 @@ for service in nuxel-bridge nuxel-portal nuxel-notifications; do
     install -m 0755 "$shim" "$STAGE/usr/bin/$(basename "$shim")"
   done
 done
+# Isolated Python inference dependencies; system cryptography remains available.
+chroot "$STAGE" python3 -m venv --system-site-packages /opt/nuxel-penguru-venv
+chroot "$STAGE" /opt/nuxel-penguru-venv/bin/pip install \
+    onnxruntime==1.32.0 tokenizers==0.22.2 numpy==2.5.5
 # PenGuru CPU runtime, service and public download trust. No model weights or
 # private keys are included. The static services remain OFF until owner opt-in.
+bash /nuxel/services/nuxel-penguru/tools/build-speech.sh "$STAGE/opt/nuxel-speech" /tmp/penguru-whisper-source
 bash /nuxel/services/nuxel-penguru/tools/build-runtime.sh /tmp/penguru-runtime /tmp/penguru-llama-source
 install -d "$STAGE/opt/nuxel-llama" "$STAGE/opt/nuxel-penguru" \
     "$STAGE/etc/nuxel/penguru" "$STAGE/usr/share/nuxel-penguru/manifests"

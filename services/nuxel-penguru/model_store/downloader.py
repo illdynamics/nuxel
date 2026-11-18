@@ -145,7 +145,7 @@ def _run(job: Dict[str, Any], registry: reg.ModelRegistry, m: Dict[str, Any]):
             raise RuntimeError("manifest_untrusted")
         _set(job, "verify_hashes", progress=1.0)
         _set(job, "verify_format")
-        if m["format"] not in ("GGUF", "ONNX_CLASSIFIER"):
+        if m["format"] not in ("GGUF", "ONNX_CLASSIFIER", "WHISPER"):
             _set(job, "quarantined", "non-GGUF download is not installed by this path", 1.0)
             raise RuntimeError("format_not_supported")
         _set(job, "atomic_install")
@@ -183,6 +183,19 @@ def _record_license(manifest, target):
 def _self_test(job, manifest, target):
     if job.get("cancel"):
         raise RuntimeError("cancelled by owner")
+    if manifest.get("format") == "WHISPER":
+        from voice.speech import self_test
+        _set(job, "self_test", "Loading local speech decoder", 1.0)
+        self_test(target)
+        if job.get("cancel"):
+            raise RuntimeError("cancelled by owner")
+        record = {"result": "pass", "engine": "whisper.cpp", "at": time.time(),
+                  "manifest_sha256": hashlib.sha256(reg.canonical_manifest_bytes(manifest)).hexdigest()}
+        with open(os.path.join(target, "self-test.json.tmp"), "w") as stream:
+            json.dump(record, stream)
+        os.replace(os.path.join(target, "self-test.json.tmp"), os.path.join(target, "self-test.json"))
+        _set(job, "ready", "Local speech decoder loaded and inference completed", 1.0)
+        return
     if manifest.get("format") == "ONNX_CLASSIFIER":
         from sonarbird.router import Classifier
         _set(job, "self_test", "Loading MiniLM and verifying real sentence embeddings", 1.0)

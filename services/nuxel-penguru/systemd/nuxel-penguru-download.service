@@ -8,7 +8,7 @@ Type=simple
 User=nuxel-penguru
 Group=nuxel-penguru
 SupplementaryGroups=inet
-ExecStart=/usr/bin/python3 /opt/nuxel-penguru/service.py
+ExecStart=/opt/nuxel-penguru-venv/bin/python3 /opt/nuxel-penguru/service.py
 Environment=NUXEL_PENGURU_NO_SYSTEMD_RUN=1
 Environment=NUXEL_PENGURU_DOWNLOADER=1
 Environment=NUXEL_PENGURU_SOCKET=/run/nuxel-penguru-download/control.sock

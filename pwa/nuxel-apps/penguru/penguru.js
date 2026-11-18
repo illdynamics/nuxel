@@ -1,8 +1,10 @@
+import {voiceControls} from './voice.js';
 import {bridge} from '../../nuxel-common/bridge.js';
 import {modelLibrary} from '../settings/penguru-models.js';
 const $ = id => document.getElementById(id);
 let enabled = false, request = null, lastOutput = '', currentReply = null;
 const library = modelLibrary($('cards'), call);
+const voice = voiceControls(call, () => enabled && !request, text => { $('prompt').value = text; page('chat'); $('prompt').focus(); });
 async function call(op, params = {}) {
   const r = await bridge.call('penguru', op, params);
   if (!r || r.ok !== true) throw new Error(r?.detail || r?.error || 'PenGuru is unavailable');
@@ -28,10 +30,10 @@ async function refresh() {
   notice(enabled ? `${s.state} · ${s.engine || 'No model loaded'} · CPU · local only` : 'PenGuru is OFF. Enable it to manage models and start a conversation.');
   library.render(s.models || [], enabled, s.per_model_engine || {});
 }
-$('power').onclick=async()=>{try{await call('set_enabled',{enabled:!enabled});request=null;$('cancel').disabled=true;await refresh();}catch(e){notice(e.message);}};
+$('power').onclick=async()=>{try{await voice.stop();await call('set_enabled',{enabled:!enabled});request=null;$('cancel').disabled=true;await refresh();}catch(e){notice(e.message);}};
 $('mode').onchange=()=>call('set_mode',{mode:$('mode').value}).catch(e=>notice(e.message));
 $('runtime').onchange=()=>call('set_runtime',{preference:$('runtime').value}).catch(e=>notice(e.message));
-$('compose').onsubmit=async e=>{e.preventDefault();if(request)return;const text=$('prompt').value.trim();if(!text)return;try{message('user',text);currentReply=message('assistant','Routing…');const r=await call('submit',{text,route_override:$('route').value||null});request=r.request_id;$('prompt').value='';$('cancel').disabled=false;$('send').disabled=true;}catch(err){notice(err.message);}};
+$('compose').onsubmit=async e=>{e.preventDefault();if(request)return;await voice.stop();const text=$('prompt').value.trim();if(!text)return;try{message('user',text);currentReply=message('assistant','Routing…');const r=await call('submit',{text,route_override:$('route').value||null});request=r.request_id;$('prompt').value='';$('cancel').disabled=false;$('send').disabled=true;}catch(err){notice(err.message);}};
 $('cancel').onclick=()=>request&&call('cancel',{request_id:request}).catch(e=>notice(e.message));
 $('clear').onclick=async()=>{try{if(request)await call('cancel',{request_id:request});await call('clear_all');request=null;lastOutput='';$('messages').replaceChildren();$('cancel').disabled=true;$('send').disabled=!enabled;}catch(e){notice(e.message);}};
 $('export').onclick=()=>{if(!lastOutput){notice('No response to export yet.');return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lastOutput],{type:'text/plain'}));a.download='penguru-response.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
