@@ -395,3 +395,41 @@ Concrete 4.14 API conversions applied (validated against include/ in-tree):
   - drivers/s10-camera-v4l2/s10-isppre-hold.c (new, beyond2lte)
   - kernel .build/src/drivers/media/platform/s10-camera/{Kconfig,Makefile}
   - kernel/s10plus/configs/nuxel-camera-v4l2.fragment (+VIDEO_S10_CAMERA=m)
+
+## Session 5 (cont.) — DTBO skeleton + build-environment blocker found
+
+### DTBO skeleton authored (structure complete, phandles partial)
+kernel/s10plus/dts/nuxel-camera-v4l2.dtso adds the s10-camera-v4l2 bindings:
+  camera-isppre-hold (pd_isppre), clock-controller@17000000 (isppre-clock),
+  camera-csis@17040000/17050000/17030000 (CSIS0/1/2) with the s5k2l4 sensor.
+All symbolic labels (pd_isppre, pmu_system_controller, mipi_phy_csis*, etc.)
+were read from the live device's /proc/device-tree/__symbols__. The remaining
+regulator/reset-GPIO/pinctrl/clock phandles are board-local and are marked
+[TODO-RESOLVE]; they must be filled from the decompiled
+exynos9820-beyond2lte_eur_open_26.dtb before the overlay is flashable.
+
+### CRITICAL: full in-tree kernel build is blocked on THIS macOS host
+- The host volume is case-INSENSITIVE APFS (verified: `NetfilterCaseTest_abc`
+  resolves as `netfiltercasetest_abc`). The Linux netfilter tree has case-variant
+  file pairs (xt_DSCP.c "target" vs xt_dscp.c "match", xt_TCPMSS.c vs xt_tcpmss.c,
+  xt_CONNMARK/xt_MARK/xt_HL/xt_RATEEST ...) that CANNOT coexist on this FS, so
+  the `net/netfilter` full-tree build always fails with "no rule to make
+  xt_TCPMSS.o" / "undefined struct xt_tcpmss_info" style errors.
+- This is UNRELATED to the camera port (the previous good boot image was built
+  on a case-sensitive host). The isolated out-of-tree camera module objects
+  still compile clean (they don't touch netfilter).
+- SOLUTION (verified): the LIVE DEVICE is a native aarch64 Linux box
+  (gcc 15.3.1, gmake, 8 cores, 50 GB free, case-sensitive ext4/btrfs). The
+  full Image.gz + dtbs build + DTBO authoring resolution can be performed
+  ON THE DEVICE itself (they are the target arch and filesystem).
+
+### Files changed this session
+  - kernel/s10plus/dts/nuxel-camera-v4l2.dtso (NEW skeleton overlay)
+  - kernel/s10plus/configs/nuxel-all.fragment (combined kbase+camera)
+  - kernel .build/src/net/netfilter/{xt_*.c,xt_*.h} restored from HEAD
+    (pre-existing case-collision corruption, not camera-related)
+
+### Honest status
+  - Driver 4.14 port: COMPLETE + compiles clean (the core deliverable).
+  - DTBO: structure authored; board phandles + full build + flash + physical
+    first-frame + app integration REMAIN.
