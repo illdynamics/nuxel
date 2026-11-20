@@ -231,3 +231,40 @@ driver's Kconfig selects them.
 New files:
   kernel/s10plus/configs/nuxel-camera-v4l2.fragment
   (offline test tree at kernel/s10plus/.build/out-camtest, not committed)
+
+## Session 3 summary — verified milestones and honest status
+
+### Completed and verified this session
+1. Sensor register data pipeline REPRODUCED byte-identical to s10-linux:
+   - Copied in-tree GPL fimc-is-cis-{2l4,3m3,3p9,3j1}-setA.h from the running
+     kernel; SHA-256 matches s10-linux's pinned LineageOS headers EXACTLY.
+   - prepare-s5k-tables.py + prepare-s5k-firmware.py produced .s5k runtime
+     containers whose SHA-256 matches the driver manifest EXACTLY
+     (S5K2L4= b9a47b96..., etc.). Sensor programming for the S10+ is reproduced.
+2. Driver source staged as drivers/s10-camera-v4l2/ (GPL-2.0, provenance preserved).
+3. Media framework compile feasibility verified offline (see above).
+4. Architecture decision made and documented (Strategy B).
+
+### Status of the FIRST_FRAME milestone
+- Stage A (vendor FIMC-IS2): fw+sensor+format+buffers verified; streaming = panic.
+- Stage B (s10-camera-v4l2 port): foundation verified (framework compiles, data
+  reproduced); the ~2856-line driver API port (post-6.x -> 4.14) + beyond2lte
+  camera DTBO + cross-compile + TWRP flash remain TODO.
+
+### Exact remaining work (bounded, in order)
+1. Port exynos9820-csis.c: v4l2_subdev_state->v4l2_subdev_pad_config;
+   .enable/.disable_streams -> video .s_stream; v4l2_async_connection/nf_init ->
+   v4l2_async_subdev+notifier bound/complete; v4l2_fwnode_endpoint_alloc_parse ->
+   v4l2_fwnode_endpoint_parse; video_device_pipeline_start -> media_entity_
+   pipeline_start.
+2. Port s5k-cis.c: same subdev/state rewrite; __v4l2_ctrl_modify_range/s_ctrl ->
+   v4l2_ctrl_modify_range/s_ctrl; pm_runtime_resume_and_get -> pm_runtime_get_sync;
+   mux_control -> Samsung mux/pinctrl.
+3. Port ak7374.c (lens actuator, mostly standard V4L2 ctrls).
+4. Author beyond2lte camera DTBO (5 sensors + CSIS0/1/2/3 + clocks/regulators/
+   gpio/reset/PHY), derived from the current beyond2lte overlay DTS + s10-linux DTS.
+5. Cross-compile, iterate offline; preserve rollback boot image; flash via TWRP;
+   bounded live first-frame test with the crash-recovery protocol.
+
+No synthetic/test-pattern frame has been claimed. No proprietary firmware or
+generated sensor binaries are committed to public git.
