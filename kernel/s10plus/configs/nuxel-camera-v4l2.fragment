@@ -1,0 +1,35 @@
+# ============================================================================
+# Nuxel S10+ — native camera V4L2/media framework enablement (Strategy B).
+#
+# The 4.14.253 Samsung downstream kernel ALREADY ships the complete mainline
+# V4L2/media framework (drivers/media/v4l2-core, drivers/media/media-*, and all
+# include/media headers), but the beyond2lte defconfig leaves the camera-facing
+# parts disabled because the vendor FIMC-IS2 driver does not use them. Enable
+# them so a native standard-V4L2 camera driver (port of s10-linux
+# s10-camera-v4l2) can bind sensors to the Exynos9820 MIPI CSIS and produce
+# RAW10 Bayer via videobuf2 DMA-contig, exactly as upstream embedded cameras do.
+#
+# These are the ONLY missing framework pieces (verified in-tree):
+#   - media controller core + entity/devnode (guarded by CONFIG_MEDIA_CONTROLLER)
+#   - V4L2 sub-device pad/state API (guarded by CONFIG_VIDEO_V4L2_SUBDEV_API)
+#   - V4L2 fwnode endpoint parsing (v4l2-fwnode.c, CONFIG_V4L2_FWNODE)
+#   - videobuf2 DMA-contig allocator (videobuf2-dma-contig.c)
+#
+# videobuf2-core + videobuf2-v4l2 are ALREADY built (CONFIG_VIDEOBUF2_CORE=y);
+# there is no separate CONFIG_VIDEOBUF2_V4L2 symbol in this 4.14 tree.
+#
+# The vendor FIMC-IS2 driver is preserved untouched as a rollback; it does not
+# depend on these symbols and will keep working when they are re-disabled.
+# ============================================================================
+CONFIG_MEDIA_CONTROLLER=y
+CONFIG_MEDIA_CONTROLLER_DVB=y
+CONFIG_VIDEO_V4L2_SUBDEV_API=y
+CONFIG_V4L2_FWNODE=y
+CONFIG_VIDEOBUF2_DMA_CONTIG=y
+CONFIG_MEDIA_CAMERA_SUPPORT=y
+CONFIG_VIDEO_DEV=y
+CONFIG_VIDEO_V4L2=y
+CONFIG_V4L2_MEM2MEM_DEV=y
+CONFIG_VIDEOBUF2_CORE=y
+CONFIG_VIDEOBUF2_MEMOPS=y
+CONFIG_VIDEOBUF2_DMA_SG=y

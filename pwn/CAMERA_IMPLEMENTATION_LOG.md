@@ -207,3 +207,27 @@ kernel-crashing until the ischain order is correct.
 ## Files changed
 - tools/s10plus/fimc-capture/nuxel-fimc-capture3.c (NEW: correct private control
   + 2-plane meta + valid SBGGR10 + full leader sequence)
+
+## Session 3 (part 2) — Strategy B feasibility VERIFIED offline
+
+### Media framework compiles on 4.14.253 (confirmed, not assumed)
+Offline cross-compile test (aarch64-linux-gnu-gcc 15.2, macOS host) with a
+beyond2lte defconfig + CONFIG_MEDIA_CONTROLLER=y + CONFIG_VIDEO_V4L2_SUBDEV_API=y:
+
+SUCCESS — drivers/media/ builds cleanly:
+  media-device.o media-entity.o media-devnode.o        (media controller core)
+  v4l2-subdev.o v4l2-async.o v4l2-mc.o v4l2-ctrls.o    (V4L2 framework)
+  v4l2-device.o v4l2-mem2mem.o v4l2-common.o
+  videobuf2-core.o videobuf2-v4l2.o videobuf2-dma-sg.o videobuf2-memops.o
+
+This proves the 4.14 downstream kernel's media framework is complete and
+buildable with the controller/subdev API enabled — the foundation Strategy B
+needs is present. Remaining config to add when the driver lands:
+  CONFIG_VIDEOBUF2_DMA_CONTIG (tristate, selected by the driver)
+  CONFIG_V4L2_FWNODE (tristate, selected by the driver)
+Both are tristate "select only" symbols that become set when the s10-camera-v4l2
+driver's Kconfig selects them.
+
+New files:
+  kernel/s10plus/configs/nuxel-camera-v4l2.fragment
+  (offline test tree at kernel/s10plus/.build/out-camtest, not committed)
