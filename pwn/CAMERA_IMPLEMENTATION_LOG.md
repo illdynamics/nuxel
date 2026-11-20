@@ -138,3 +138,72 @@ selection (the `V4L2_CID_IS_SET_SETFILE` / mode-select control + the sensor subd
 expected mbus code). This is the last unknown for Stage A. If it cannot be resolved
 by one more focused pass, proceed to Stage B (port s10-linux s10-camera-v4l2 to 4.14,
 using the GPL sensor setfiles already in-tree).
+
+## Session 3 findings (2026-11-20 continuation) — MAJOR BREAKTHROUGH + crash
+
+### Decisive root-cause resolution: V4L2_CID_IS_S_SENSOR_SIZE
+The sensor leader (ss0, /dev/video101) S_FMT failed with -EINVAL because the
+v2 `fimc_is_sensor_s_format()` reads `device->sensor_width` / `device->sensor_height`,
+which are ONLY set by the private control:
+
+  V4L2_CID_IS_S_SENSOR_SIZE = V4L2_CID_FIMC_IS_BASE + 69 = 0x009A1045
+  (value = (width << 16) | height;  SENSOR_SIZE_WIDTH_MASK=0xFFFF0000/SHIFT=16,
+   SENSOR_SIZE_HEIGHT_MASK=0xFFFF/SHIFT=0)
+
+Prior tools never set this control, so sensor_width/height were 0, and
+fimc_is_sensor_g_mode() logged "sensor mode(0x0@30fps) is not found" -> -EINVAL.
+
+VERIFIED LIVE (nuxel-fimc-capture3):
+```
+[sensor S_INPUT] 0x00000001 ret=0
+[sensor S_SENSOR_SIZE 2016x1512] ret=0
+[sensor S_FMT] ret=0  (SBGGR10, 2016x1512, 2 planes)
+sensor mode(2016x1512@30) = 5 (lane:4)   <- sensor mode RESOLVED
+[sensor REQBUFS] ret=0 count=4
+[sensor QBUF 0..3] ret=0
+```
+
+Also confirmed: FIMC-IS2 uses NUM_OF_META_PLANE=1 (every format has an extra
+metadata plane); buffer QBUF must supply 2 planes (image + 32KB meta ION fd).
+The valid Bayer format for the 2L4 raw output is SBGGR10 (not SGRBG10, which is
+absent from fimc_is_formats[]).
+
+### Capture (i0c /dev/video131) also reaches QBUF (verified)
+With YUYV 2-plane: cap S_FMT=0, REQBUFS=0, QBUF[0..3]=0. (unchanged from prior)
+
+### CRITICAL RISK CONFIRMED: sensor STREAMON triggers a kernel panic
+The first full capture3 run drove sensor STREAMON and caused a HARDWARE WATCHDOG
+panic ("Panic#2", pstore dmesg-ramoops-0) and a reboot back into Nuxel (not TWRP).
+Device recovered cleanly; fimc-is reloaded; no lasting damage.
+
+ROOT CAUSE (source-backed): the sensor leader `.start_streaming` ->
+fimc_is_sensor_back_start() configures CAMIF + FLITE s_stream(enable), which
+starts MIPI CSI DMA. Without the full ischain/3AA/ISP group-leader startup
+(fimc_is_itf_process_start via the 3AA group leader STREAMON FIRST), the DMA/com
+state is inconsistent and the hardware hangs until the watchdog fires.
+
+SAFE SEQUENCE (must be respected before any further live streaming attempt):
+  1. S_INPUT + S_SENSOR_SIZE + S_FMT + REQBUFS + QBUF on sensor ss0 (NO STREAMON yet)
+  2. Open+configure the 3AA group leader (30s/30c) and the ISP chain
+  3. STREAMON the 3AA group leader first (triggers fimc_is_itf_process_start)
+  4. Only then STREAMON the capture node (i0c)
+
+Next safe step: reproduce the Samsung HAL order where the 3AA/ISP group leader is
+started BEFORE any sensor/capture STREAMON, and never STREAMON the sensor leader
+out of order. Each live STREAMON attempt must be treated as potentially
+kernel-crashing until the ischain order is correct.
+
+## Corrected capture sequence (source-authoritative, from fimc-is-video.c + v2)
+  1. open ss0 -> OPEN
+  2. S_INPUT (packed 0x00000001 = position SP_REAR=0, leader=1) -> S_INPUT
+  3. S_CTRL V4L2_CID_IS_S_SENSOR_SIZE = (W<<16)|H  [REQUIRED, was missing]
+  4. S_FMT (SBGGR10, num_planes=2) -> S_FORMAT
+  5. REQBUFS(count=N) -> S_BUFS
+  6. QBUF x N (image dmabuf + meta dmabuf)
+  7. Open+configure 3AA group leader / ISP chain FIRST
+  8. STREAMON 3AA group leader -> fimc_is_itf_process_start
+  9. STREAMON capture i0c -> DQBUF
+
+## Files changed
+- tools/s10plus/fimc-capture/nuxel-fimc-capture3.c (NEW: correct private control
+  + 2-plane meta + valid SBGGR10 + full leader sequence)

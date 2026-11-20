@@ -1,93 +1,91 @@
-# NUXEL S10+ Camera Driver Architecture — Decision Record
+# NUXEL S10+ Camera Driver Architecture — Decision Record (updated)
 
-**Date:** 2026-11-20
-**Target:** Samsung Galaxy S10+ SM-G975F (`beyond2lte`), Exynos9820, kernel 4.14.253-gf7194c1d15ed-dirty
+**Date:** 2026-11-20 (continuation)
+**Target:** SM-G975F beyond2lte, Exynos9820, kernel 4.14.253-gf7194c1d15ed-dirty
 **Author:** Nuxel camera engineering agent
+
+## DECISION: Strategy B — port the s10-linux custom native V4L2 driver
+
+## New decisive evidence (this continuation)
+
+1. The 4.14.253 Samsung downstream kernel **already contains the complete
+   mainline-style V4L2/media framework**, just disabled in config:
+   - `drivers/media/v4l2-core/v4l2-subdev.c`, `v4l2-async.c`, `v4l2-fwnode.c`,
+     `v4l2-mc.c`, `v4l2-device.c`, `v4l2-ctrls.c`, `v4l2-mem2mem.c` — all present.
+   - `drivers/media/media-device.c`, `media-entity.c`, `media-devnode.c` present.
+   - `videobuf2-core.c`, `videobuf2-v4l2.c`, `videobuf2-dma-contig.c`,
+     `videobuf2-dma-sg.c` — all present in-tree (`drivers/media/v4l2-core/`).
+   - `include/media/v4l2-subdev.h`, `v4l2-async.h`, `v4l2-fwnode.h`, `v4l2-mc.h`,
+     `v4l2-mediabus.h` — all present.
+   - Kconfig symbols `MEDIA_CONTROLLER`, `VIDEO_V4L2_SUBDEV_API`,
+     `MEDIA_CONTROLLER_DVB` exist in `drivers/media/Kconfig`.
+   - Source is fully `#ifdef CONFIG_MEDIA_CONTROLLER` / `CONFIG_VIDEO_V4L2_SUBDEV_API`
+     gated, i.e. it is the *complete* mainline implementation, not a Samsung stub.
+   - Older Exynos MIPI CSIS reference driver exists in-tree:
+     `drivers/media/platform/exynos4-is/mipi-csis.c` (Exynos4 register layout;
+     Exynos9820 CSIS differs and needs the s10-linux `exynos9820-csis.c` ported).
+
+   Disabled config to enable:
+   - `CONFIG_MEDIA_CONTROLLER=n` -> `=y`
+   - `CONFIG_VIDEO_V4L2_SUBDEV_API=n` -> `=y`
+   - `CONFIG_VIDEOBUF2_DMA_CONTIG=n` (not set) -> `=y` (or `=m`)
+   - `CONFIG_VIDEOBUF2_V4L2=n` (not set) -> `=y`
+
+2. Sensor register tables are GPL-available on-device (not proprietary runtime):
+   `drivers/media/platform/exynos/fimc-is2/sensor/module_framework/cis/fimc-is-cis-{2l4,3m3,3p9,3j1}-setA.h`
+   — exactly what s10-linux's `scripts/prepare-s5k-tables.py` consumes.
+
+3. Stage A (FIMC-IS2 vendor userspace HAL reimplementation) confirmed high-risk:
+   - `sensor_module_s_format()` (fimc-is-device-module-base.c:1067) requires
+     `device->cfg->mode` set by the proprietary ischain path; S_FMT alone cannot
+     establish it (verified source-level, matches live -EINVAL on /dev/video101).
+   - No public precedent for driving FIMC-IS2 from native Linux userspace.
+   - Already 2+ sessions stalled; further effort is undirected reverse engineering.
 
 ## Chosen architecture
 
-**Two-stage strategy, decisive-first:**
+Port `s10-linux`'s `drivers/s10-camera-v4l2/` (GPLv2, ~3000 lines) to the
+4.14.253 Samsung vendor kernel, enabling the in-tree media framework, and expose
+standard V4L2 (RAW10 Bayer) capture nodes for the rear-main 2L4 first, then 3M3/
+3P9/3J1, with a libcamera software-ISP pipeline for color/preview/video.
 
-1. **Stage A (attempt first, bounded): complete the existing Samsung FIMC-IS2 vendor
-   pipeline via a userspace-native control layer.** The firmware problem is already
-   resolved (8 blobs deployed and hash-verified), the rear 2L4 sensor binds and
-   initializes, and ION DMA-BUF capture buffers can be queued on the ISP capture
-   node `/dev/video131` (i0c). The remaining work is reconstructing the vendor
-   driver's proprietary leader/follower streaming sequence (S_INPUT -> sensor
-   leader start -> 3AA/ISP group leader start -> ISP capture stream-on -> DQBUF).
+## Required changes (bounded)
 
-2. **Stage B (fallback, authorized): port the proven custom native V4L2 driver
-   (`s10-camera-v4l2`) from butztill/s10-linux** to the running 4.14.253 kernel,
-   with libcamera software-ISP pipeline. This is the only publicly documented
-   native-Linux capture path that produced physical still images on Exynos9820.
-
-## Evidence supporting the choice
-
-### Stage A viability
-- Firmware loads cleanly (`rom id[0] 1`, `rta name is fimc_is_rta.bin`), confirmed live.
-- SAK2L4 sensor initializes (`Sensor version. Rev. 0xA102`, OIS, actuator product_id 0xE).
-- ION `camera_heap` (id 5) DMABUF allocation + `VIDIOC_QBUF` succeed on i0c (4 buffers).
-- The vendor driver already contains the complete hardware-specific ISP implementation
-  (DDK/RTA firmware, AF/AE/AWB, OIS, actuator) — no new kernel driver needed if the
-  userspace sequence can be reconstructed.
-
-### Stage A risk
-- `fimc_is_ixc_video_get_format_mplane()` is a literal stub (`return 0` without
-  populating the format struct) — ISP capture format is never exposed via G_FMT.
-- Sensor leader `/dev/video101` (`ss0`) rejects every `VIDIOC_S_FMT` (format is set
-  internally via private controls + S_INPUT, not S_FMT).
-- ISP capture start requires the 3AA/ISP group leader to be started first
-  (`fimc_is_itf_process_start()` runs in the group-leader start path); otherwise
-  `start_streaming` fails with -22.
-- Reconstructing this is effectively reimplementing Samsung's undocumented
-  proprietary `libexynoscamera` HAL. No public reference demonstrates success.
-
-### Stage B viability
-- s10-linux `drivers/s10-camera-v4l2/` is a clean, GPLv2, standard-V4L2 driver:
-  CSI receiver (`exynos9820-csis.c`, 1380 lines) + sensor subdev (`s5k-cis.c`, 1115
-  lines) + lens actuator (`ak7374.c`, 361 lines). ~3000 lines total.
-- It produces RAW10 Bayer via the CSIS write-DMA directly (media graph sensor->csis->video).
-- Documented: four sensors produced still images (STATUS.md, 2026-10-31).
-- The sensor register tables (the raw material) are GPL-available as
-  `fimc-is-cis-{2l4,3m3,3p9,3j1}-setA.h` — **already present in our on-device kernel
-  source** at `drivers/media/platform/exynos/fimc-is2/sensor/module_framework/cis/`.
-- s10-linux uses libcamera with a software ISP (patches/libcamera/*) + Plasma Camera.
-
-### Stage B risk / cost
-- s10-linux targets Linux **7.2-rc2**; our kernel is **4.14.253**. The driver uses
-  modern media/videobuf2/V4L2-async APIs that must be backported to 4.14.
-- Produces **raw Bayer only**; requires libcamera software ISP for color/preview/video
-  (no hardware ISP, AF/AE/AWB must be implemented in software or via V4L2 controls).
-- s10-linux does NOT support the S10+'s 5th sensor (4HA front depth) — must be added.
-- Requires a kernel rebuild + flash (authorized via TWRP recovery).
-
-## Alternatives considered
-
-- **Complete FIMC-IS2 vendor HAL (pure Stage A)** — fastest if it worked, but the ISP
-  G_FMT stub and undocumented leader/follower protocol make it a high-risk reverse
-  engineering effort with no public success precedent.
-- **gangg111/S10Plus_Linux Droidian port** — uses Android Camera2/libcamx (libhybris).
-  Violates the zero-Android-userspace requirement. Extracted hardware/topology knowledge
-  only; not a runtime dependency.
-
-## Reusable components
-
-- Stage A: existing `nuxel-ion-capture.c`, `nuxel-fimc-full-capture.c`,
-  `nuxel-fimc-leader-capture.c`, `videodev2_exynos_camera.h` (private control IDs),
-  deployed firmware blobs (`/system/vendor/firmware/`), patch 0022.
-- Stage B: `s10-camera-v4l2/` driver sources, `s5k-fw.h`/`s5k-fw-manifest.h` loader,
-  `prepare-s5k-tables.py` generator, libcamera patches, DTS camera topology, ak7374 lens.
-
-## Required changes (staged)
-
-1. Stage A: reconstruct the leader streaming sequence and attempt first frame
-   (no kernel change).
-2. If Stage A fails: backport s10-camera-v4l2 to 4.14, add 4HA, build, flash via TWRP.
-3. libcamera software-ISP pipeline + PipeWire producer.
-4. Portal/broker fixes; Nuxel Camera app; GTK + Flatpak validation.
+1. Enable `CONFIG_MEDIA_CONTROLLER=y`, `CONFIG_VIDEO_V4L2_SUBDEV_API=y`,
+   `CONFIG_VIDEOBUF2_DMA_CONTIG=y`, `CONFIG_VIDEOBUF2_V4L2=y` in the Nuxel
+   kernel defconfig/fragment.
+2. Port `s10-camera-v4l2/` (exynos9820-csis.c, s5k-cis.c, ak7374.c) to 4.14:
+   - Adapt modern `v4l2_async`/`v4l2_fwnode`/`device_link`/`pinctrl`/GPIO consumer
+     APIs to the 4.14 equivalents present in-tree.
+   - Wire the Exynos9820 CSIS clock/regulator/PMU sequences from the s10-linux
+     DTS and the `fimc-is2` CAMIF/FLITE hardware knowledge into the driver.
+3. Generate `*-tables.h` from the in-tree GPL `fimc-is-cis-*-setA.h` headers.
+4. Add beyond2lte DTS camera nodes (or a new DTBO overlay) describing the 5 sensors,
+   CSIS, clocks, regulators, GPIO/reset, and I2C addresses captured from the
+   current beyond2lte overlay DTS.
+5. Build via `kernel/s10plus/build-kernel.sh`, flash via TWRP (authorized, see
+   `cam.md`), preserving the last-known-good boot image.
+6. libcamera software-ISP pipeline handler + PipeWire producer.
 
 ## Rollback plan
 
-- Stage A changes are userspace-only (reversible by rm).
-- Stage B: preserve last-known-good boot image; record flash provenance + SHA-256;
-  TWRP recovery path available; `fimc-is2` vendor driver remains in-tree as rollback.
+- Vendor `fimc-is2` driver remains in-tree; re-select it in config to roll back.
+- Preserve last-known-good boot image + its SHA-256; TWRP/USB recovery path stands.
+- Stage A tools/binaries remain as reference, not removed.
+
+## Alternatives considered
+
+- **Stage A (complete vendor HAL)** — fastest if it worked, but no public precedent
+  and the sensor mode is set only via the undocumented ischain path. Rejected as
+  primary; vendor driver retained as rollback/reference.
+- **gangg111/S10Plus_Linux (Droidian)** — Camera2/libhybris = Android userspace
+  dependency; violates zero-Android requirement. Hardware/topology reference only.
+
+## Reusable components
+
+- s10-linux `s10-camera-v4l2/` driver (exynos9820-csis.c, s5k-cis.c, ak7374.c,
+  s5k-fw.h/manifest, prepare-s5k-tables.py).
+- In-tree GPL sensor tables `fimc-is-cis-2l4/3m3/3p9/3j1-setA.h`.
+- In-tree media framework (vb2, v4l2-subdev, media controller, v4l2-async/fwnode).
+- Existing firmware (8 blobs at /system/vendor/firmware preserved).
+- Existing capture probes as reference (nuxel-ion-capture.c etc.).
