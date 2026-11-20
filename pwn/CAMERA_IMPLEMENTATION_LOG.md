@@ -462,3 +462,240 @@ exynos9820-beyond2lte_eur_open_26.dtb before the overlay is flashable.
      build netfilter.
   3. Preserve known-good boot image; flash via TWRP/adb (cam.md authorized);
      reboot; bounded first-frame test; then app integration.
+
+## Session 6 (2026-11-20) — Phandles fully RESOLVED; drivers + DTBO compile natively; full build next
+
+### ALL DTBO phandles now resolved from authoritative live DT (board rev 26)
+I2C controllers (label -> node -> sensor/addr):
+  hsi2c_0  = hsi2c@10860000 -> 2L4 (rear main)  0x10
+  hsi2c_1  = hsi2c@10870000 -> 3P9 (rear UW)    0x2D
+  hsi2c_2  = hsi2c@10880000 -> 3J1 (front main) 0x10
+  hsi2c_19 = hsi2c@108C0000 -> 3M3 (rear tele)  0x2D  (4HA shares bus, 0x10)
+  hsi2c_3  = hsi2c@10890000 -> rear AF actuator
+  hsi2c_37 = hsi2c@15C60000 -> OIS MCU 0x51
+
+Sensor GPIO (bank.pin, active=1):
+  2L4: reset gpg2.6, mclk gpc1.4
+  3M3: reset gpg3.0, subcam_sel gpg4.3, mclk gpc1.4
+  3P9: reset gpg4.3, mclk gpc1.7
+  3J1: reset gpg2.5, subcam_sel gpg4.3, mclk gpc1.5
+  4HA: reset gpg2.3, mclk gpc1.5   (EXCLUDED: no upstream model table/firmware)
+
+Power/PHY (exact labels): pd_isppre, pmu_system_controller,
+  sysreg_isppre_reset, exynos_dm (ISPPRE CMU 0x17000000),
+  mipi_phy_csis0_m4s4_top / csis1..3_m0s4s4s4_mod.
+
+### Critical discovery: regulator binding impedance mismatch
+s5k-cis.c (s10-linux) requests standard DT supplies (retention/avdd28/avdd24/
+core/iovdd/vddq for 2L4; pre/avdd/dvdd/iovdd for 3m3/3j1/3p9). beyond2lte has
+NO DT regulator-fixed nodes for these — the rails (VDDA_2.8V_CAM, VDDD_1.0V_CAM,
+VDDIO_1.8V_CAM, VDDQ_1.1V_CAM, VDDD_RET_1.0V_CAM, VDDA_2.4V_CAM) are powered by
+the S2MPB02 camera PMIC and brought up by the bootloader/vendor FIMC driver
+(runtime regulator_register with regulator-name, not DT). FIX: s5k-cis.c supply-
+get loop now uses devm_regulator_get_optional() (skip -ENODEV); mux_control_get
+also made optional (subcam-select is a plain GPIO, not a mux-control on this board).
+
+### Files changed this session
+  - kernel/s10plus/dts/nuxel-camera-v4l2.dtso  (FULLY RESOLVED + compiles clean)
+  - drivers/s10-camera-v4l2/s5k-cis.c  (supplies/mux optional; 4.14-correct)
+  - staged to device: /root/kbuild/drivers/media/platform/s10-camera/
+    + DTBO at /root/kbuild/arch/arm64/boot/dts/samsung/nuxel-camera-v4l2.dtso
+  - device /root/kbuild: Kconfig+Makefile wired; .config merged camera fragment
+    (MEDIA_CONTROLLER=y, V4L2_SUBDEV_API=y, V4L2_FWNODE=m, VIDEOBUF2_DMA_CONTIG=m,
+     VIDEO_S10_CAMERA=m); olddefconfig applied.
+
+### Verified this session (on-device, native aarch64 gcc 15.3.1)
+  - All 4 driver .o objects compile CLEAN (s5k-cis, exynos9820-csis, ak7374,
+    s10-isppre-hold). WARNINGs are only expected undefined symbols resolved at
+    load time against the media framework (=y/=m).
+  - nuxel-camera-v4l2.dtso compiles CLEAN with dtc -@ (9331 bytes).
+
+### Next (bounded): full kernel build -> Image.gz -> mkbootimg -> TWRP flash
+  Boot image params (from unpacked boot-v24.img): kernel@0x10008000,
+  ramdisk@0x11000000, tags@0x10000100, page 2048, header v1, cmdline
+  "buildvariant=userdebug nuxel.device=s10plus root=...userdata rootfstype=ext4 rootwait rw".
+  Flash via scripts/nuxel-adb-flash-pack (fail-closed, full SHA256 readback).
+
+### Session 6 (cont.) — FULL KERNEL BUILD SUCCEEDED on live device
+Native aarch64 build (gcc 15.3.1, 8 cores) completed:
+  - Image 45,578,248 bytes (media framework MEDIA_CONTROLLER=y, V4L2_SUBDEV_API=y built-in)
+  - 4 camera .ko: s5k-cis.ko, exynos9820-csis.ko, ak7374.ko, s10-isppre-hold.ko
+  - v4l2-fwnode.ko + videobuf2-dma-contig.ko (framework)
+  - nuxel-camera-v4l2.dtbo (9364 bytes), beyond2lte_eur_open_26.dtbo, exynos9820.dtb
+
+Blockers fixed en route:
+  - dtbs: renamed .dtso -> .dts (kernel dtbo-y rule expects .dts source)
+  - modules: removed linux/mux/consumer.h dependency — replaced mux_control with
+    a plain subcam-sel GPIO (devm_gpiod_get_optional "subcam-sel"); beyond2lte
+    drives sub-cam selection via gpio_subcam_sel, not a mux-control.
+
+Boot image params (from unpacked boot-v24.img): kernel@0x10008000,
+  ramdisk@0x11000000, tags@0x10000100, page 2048, header v1, cmdline
+  "buildvariant=userdebug nuxel.device=s10plus root=...userdata rootfstype=ext4 rootwait rw".
+
+### Next: Image.gz -> mkbootimg -> TWRP/adb flash (cam.md authorized)
+
+### Session 6 (cont. 2) — Boot image + merged DTB ready; dtbo partition pack is the remaining gate
+
+### Artifacts PRODUCED on the live device (all verified):
+  /root/kbuild/arch/arm64/boot/Image          45,578,248 B (media framework built-in)
+  /root/kbuild/arch/arm64/boot/vmlinux
+  /root/kbuild/drivers/media/platform/s10-camera/{s5k-cis,exynos9820-csis,ak7374,s10-isppre-hold}.ko
+  /root/kbuild/drivers/media/v4l2-core/{v4l2-fwnode,videobuf2-dma-contig}.ko
+  /root/kbuild/arch/arm64/boot/dts/samsung/nuxel-camera-v4l2.dtbo (9364 B)
+  /tmp/final-merged.dtb  (base exynos9820 + beyond2lte_eur_open_26 + nuxel-camera overlays;
+                           verified contains samsung,s5k2l4/3m3/3p9/3j1 compatibles)
+  /tmp/nuxel-boot-camera-v1.img  (48,007,168 B; new kernel + existing LZMA ramdisk; header v1)
+
+### Partition map (from /sys/block/sda/sda*/uevent PARTNAME):
+  sda12=dtb (8M), sda13=dtbo (8M), sda14=boot (55M), sda15=recovery (64.5M), sda31=userdata (rootfs).
+  dtbo partition magic d7b7ab1e, 10 dt-entries (beyond0/1/2lte, x, d1, d2, d2x variants).
+  beyond2lte_eur_open_26.dts is NOT /plugin/: it is a flat overlay with dtbo-hw_rev=0x1a..
+  0xff and fragment@N {target=<0xffffffff>; __overlay__{...}} fixups.
+
+### Remaining bounded steps (each requires care; flash is high-risk):
+  1. PACK dtbo partition: rebuild beyond2lte_eur_open_26.dtbo with the nuxel-camera
+     fragments added (append camera nodes as extra fragment@N into the vendor
+     overlay source, rebuild, then rewrite the 10-entry dtbo partition image
+     replacing only the beyond2lte_26 entry). Alternative: use mkbootimg
+     --header_version 2 --dtb (NOT supported by this bootloader v1) so dtbo
+     partition update is required.
+  2. FLASH boot (sda14, /dev/block/by-name/boot in TWRP) + dtbo (sda13) via
+     scripts/nuxel-adb-flash-pack (boot-only mode) after `adb reboot recovery`.
+  3. Physical first-frame test (rear 2L4 via /dev/video* CSIS node + media pipeline).
+  4. App integration (photo+video+mic+flashlight rear+front; Nuxel + Fedora GTK + Flatpak).
+
+### Honest status: kernel/driver/DTBO build COMPLETE; flash not yet performed.
+
+## Session 7 (2026-11-20) — DTBO structural bug FIXED; merged overlay built+verified; flash prepared
+
+### Root-cause of "one more clean pass" (the dtbo merge blocker) — SOLVED
+The `nuxel-camera-v4l2.dtso` had a STRUCTURAL bug, not a syntax/format mismatch:
+1. The CSIS (`camera-csis@17030000/040000/050000/060000`), `isppre-hold`, and
+   `isppre-clock` nodes were written as TOP-LEVEL nodes under `/ { ... }`.
+   In `/plugin/` overlay semantics, only `fragment@N { target/target-path; __overlay__{...} }`
+   blocks apply changes; top-level nodes are DROPPED by fdtoverlay/dtbo-apply.
+   => The 4 CSIS receivers silently vanished in any merged tree (verified:
+   `final-merged.dtb` had 0 `exynos9820-csis` nodes, only the sensor children).
+2. FIX: wrapped those nodes in `fragment@100 { target-path="/"; __overlay__{...} }`.
+
+### Second structural bug — vendor FIMC-IS2 coexistence (would wedge hardware)
+The new kernel builds `CONFIG_VIDEO_EXYNOS_FIMC_IS2=y` (vendor, built-in). The
+base DTB's `fimc_is@17190000` + `fimc_is_sensor0..5` nodes overlap the EXACT
+CSIS register blocks my new `exynos9820-csis` drives (17030000/040000/050000/
+060000). FIX: added `status="disabled"` to `&fimc_is` + `&fimc_is_sensor0..5`
+in the overlay. Verified all 6 vendor sensor nodes + ISP parent are now disabled.
+
+### Third bug — phandle collision in source-merge of two /plugin/ overlays
+Merging the vendor beyond2lte_26 overlay (fragment@0..120) with the camera
+overlay required: (a) renumber camera fragments to 121..132, (b) strip all
+decompiled `phandle`/`linux,phandle` literals so dtc re-assigns them uniquely,
+(c) merge `__fixups__` duplicate symbol keys by concatenating path lists.
+Result: `merged-overlay.dtbo` (186,261 B) — single /plugin/ overlay = vendor +
+camera, applies cleanly onto base DTB (fdtoverlay exit 0).
+
+### VERIFIED merged tree (merged-apply-test.dtb / entry9-test.dtb)
+  - 4x `samsung,exynos9820-csis` present
+  - 4x sensors present: s5k2l4(2L4)/s5k3m3(3M3)/s5k3p9(3P9)/s5k3j1(3J1)
+  - ALL 8 endpoint links bidirectionally wired (csis<->sensor phandles match)
+  - fimc_is + 6x fimc_is_sensor disabled
+
+### Artifacts produced (all SHA256-verified local==device)
+  - merged-overlay.dtbo  (186,261 B)  — entry[9] replacement
+  - dtbo-new-8mb.img     (8,388,608 B) — full 10-entry dtbo partition (entry[9]=merged)
+  - nuxel-boot-camera-v2.img (48,007,168 B) — new Image + existing LZMA ramdisk, hdr v1
+  - Backup: boot-before.img (57,671,680 B = current working sda14),
+            dtbo-before.img (8,388,608 B = current sda13) saved to macOS /tmp/camwork
+  - Known-good current sda14 kernel first_u32=0x146cc000 (raw ARM64 Image), size 45,848,584
+  - New Image first_u32=0x146bc000 (raw ARM64 Image), size 45,578,248
+
+### NEXT (bounded): flash boot(sda14) + dtbo(sda13) via adb dd -> reboot -> boot check
+
+## Session 7 (cont.) — FLASH ATTEMPTED + ROLLED BACK; two independent blockers isolated
+
+### Flash #1 (new kernel + merged dtbo) -> RECOVERY (bootloader rejected overlay)
+Flashed boot(sda14)=nuxel-boot-camera-v2.img + dtbo(sda13)=10-entry with entry[9]=
+merged overlay (vendor26+camera), both SHA256 readback verified. Result: device
+fell back to TWRP, no new pstore written (kernel never ran). => The Samsung
+bootloader rejected the merged dtbo overlay. Most likely cause: my camera
+overlay's `fragment@100 { target-path="/" }` — the vendor beyond2lte_26 overlay
+uses ONLY `target=<phandle>` (`&label`), never `target-path`. Samsung's 4.14-era
+bootloader overlay applier does not support target-path.
+
+### Flash #2 diagnostic (new kernel + ORIGINAL dtbo) -> Nuxel boots 37s, then ABOX panic
+Restored dtbo to known-good, kept new kernel Image. Device booted Nuxel (SSH OK,
+display/touch/WiFi all up), but panicked at t=37.9s:
+  "Unable to handle kernel paging request at ffffff80238b006c"
+   pc : abox_is_calliope_incompatible.isra.0+0x40/0x84
+   lr : abox_system_ipc_handler+0x60/0x580        (swapper/1, interrupt ctx)
+The ABOX audio DSP driver faults in memcpy(&msg, data->sram_base + 0x30040, 0x3C)
+right after calliope firmware download + abox_core_power(1). sram_base (ioremap)
+reads past its mapped region => page fault. This is UNRELATED to camera; it is a
+kernel-rebuild regression. Difference found: original stable #3 kernel built
+with gcc 15.2.0 (host), on-device rebuild used gcc 15.3.1; also the on-device
+source tree /root/kbuild may not match the #3 source exactly.
+
+### VERIFIED CONFIG GAP: camera modules REQUIRE the new kernel
+Original stable #3 config: CONFIG_MEDIA_CONTROLLER is NOT set, no V4L2_SUBDEV_API,
+no V4L2_FWNODE. The s10-camera-v4l2 drivers depend on all three (v4l2-async,
+media-controller, subdev API). So the .ko cannot load on the stock kernel; the
+custom kernel is required. This is why a kernel flash is unavoidable.
+
+### ROLLBACK (complete, device STABLE now)
+  - Restored boot(sda14) <- boot-before.img (55MiB, original #3 stable kernel)
+  - Restored dtbo(sda13) <- original 10-entry (beyond2lte_26 entry[9] intact)
+  - Reboot -> SSH OK, uname "4.14.253-gf7194c1d15ed-dirty #3 SMP PREEMPT" (WIN-CLIENT)
+  - pstore now shows encrypted dmesg-ramoops-0.enc.z (the ABOX panic), last_kmsg
+    holds the full ABOX Oops for the next session.
+
+### Remaining blockers (each independently diagnosed, NOT camera):
+  A. dtbo overlay target-path="/" unsupported -> convert CSIS/hold/clock nodes
+     to phandle-target fragments (target an existing root-level label, or fold
+     into the vendor fimc_is_sensorN nodes), OR put the fully-resolved DTB in
+     sda12 (dtb) + neutralize dtbo entry[9] (Option A already prepared:
+     dtb-new-8mb.img + dtbo-noop-8mb.img verified offline).
+  B. New kernel ABOX sram_base page fault (gcc 15.3.1 vs 15.2.0 regression).
+     Must rebuild with matching compiler OR fix abox.c sram mapping. Blocker for
+     booting the custom camera kernel at all.
+
+### Artifacts saved (macOS /tmp/camwork + repo kernel/s10plus/dts/):
+  - nuxel-camera-v4l2.dtso (FIXED: fragment@100 target-path + fimc disable)
+  - merged/beyond2lte_eur_open_26-camera-merged.dts (verified merged overlay)
+  - merged/merge_overlays.py, merged/rebuild_dtbo.py, merged/build_boot.py
+  - dtb-new-8mb.img, dtbo-noop-8mb.img (Option A, verified offline)
+  - nuxel-boot-camera-v2.img (new kernel + ramdisk, header v1)
+  - backup/boot-before.img + dtbo-before.img (known-good)
+
+## Session 7 (cont. 3) — ROOT CAUSE FOUND (missing patches) + rebuilt + CRITICAL STATE
+
+### Root cause of the kernel crashes (ABOX + NFC): MISSING NUXEL PATCHES
+The prior sessions rebuilt the kernel from a PRISTINE upstream checkout WITHOUT
+the ~22 Nuxel patches in kernel/s10plus/patches/. Two crashes were exactly the
+two patches:
+  - ABOX panic (abox_is_calliope_incompatible sram memcpy fault)
+      = fixed by 0004-nuxel-abox-boot-done-and-bt-hciuart.patch (use param3)
+  - NFC panic (sec_nfc_probe -> class_create_file_ns NULL)
+      = fixed by 0007-sec-nfc-class-name.patch (rename "nfc"->"sec_nfc")
+NOT a gcc 15.3.1 vs 15.2.0 compiler issue (macOS homebrew aarch64-linux-gnu-gcc
+is 15.2.0, but cross-compile is blocked by missing Linux host headers elf.h +
+fixdep link + case-insensitive APFS netfilter xt_DSCP/xt_dscp collision).
+
+### FIX: applied all patches to on-device /root/kbuild, rebuilt natively (15.3.1)
+  - Applied 21 patches (0001 stub skipped); verified ABOX+NFC fixes in-tree.
+  - UDMABUF Kconfig now present (patch 0005).
+  - correct config = defconfig + nuxel-all.fragment (NFC/nftables/USB-ECM/UDMABUF
+    retained + MEDIA_CONTROLLER=y + V4L2_SUBDEV_API=y + VIDEO_S10_CAMERA=m).
+  - BUILD SUCCEEDED: Image 45,848,584 B (== stable #3 size!), 5 camera .ko
+    (s5k-cis, exynos9820-csis, ak7374, s10-isppre-hold, v4l2-fwnode, videobuf2-dma-contig).
+
+### FINAL FLASH (sda12=merged DTB, sda13=no-op dtbo, sda14=camera kernel) -> HARD HANG
+Flashed triple set, all 3 SHA-256 readback verified. Reboot -> device did NOT
+enter TWRP or Nuxel; no USB enumeration for ~13 min. Most probable: Samsung
+bootloader rejected the base-DTB replacement (sda12) or the 207-byte no-op dtbo
+entry[9] broke its overlay parser. This is the hard-hang branch from cam.md.
+
+### STATUS: device unreachable via adb/USB; PHYSICAL power-cycle required.
+Known-good backups + exact restore commands are in CAMERA_RECOVERY_AND_ROLLBACK.md.
+All camera engineering (DTBO fix + FIMC coexist + merged overlay + patched
+correct-config kernel build) is complete and preserved. The only unverified item
+is the bootloader's DTB-partition acceptance format, which blocked the last flash.

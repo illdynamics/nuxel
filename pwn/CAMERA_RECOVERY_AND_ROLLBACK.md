@@ -1,47 +1,67 @@
-# NUXEL S10+ Camera — Recovery and Rollback
+# NUXEL S10+ Camera — Recovery and Rollback (UPDATED 2026-11-20, Session 7)
 
-**Date:** 2026-11-20
-**Target:** SM-G975F beyond2lte, Exynos9820
+**Target:** SM-G975F beyond2lte, Exynos9820, 4.14.253
 
-## Current known-good state (verified 2026-11-20)
+## CURRENT STATE (2026-11-20, ~20:30 CET) — DEVICE UNREACHABLE, REQUIRES PHYSICAL RECOVERY
 
-- Device boots Nuxel normally (kernel 4.14.253-gf7194c1d15ed-dirty, build #3).
-- No boot/partition/EFS/modem changes made in this session. All camera work this
-  session was userspace-only (firmware already deployed prior; capture tools
-  in /usr/local/bin) plus one kernel-source clone + offline build (no flash).
-- The one camera STREAMON experiment triggered a hardware-watchdog panic
-  (pstore "Panic#2") and a clean reboot back into Nuxel. No lasting damage;
-  fimc-is re-probed and /dev/video101 returned on the next boot.
+The device is currently in a hard boot-loop/hang state after flashing a 3-partition
+camera bring-up (base DTB replaced with full board+camera merge + no-op dtbo +
+correct-config camera kernel). After reboot the device did NOT enter TWRP or
+Nuxel and does NOT enumerate on USB/adb (empty `adb devices`, empty
+`system_profiler SPUSBDataType` for ~13 minutes of polling).
 
-## Rollback for Stage A (userspace, already reversible)
+### Immediate recovery (requires human physical action):
+1. **Hard power-cycle**: hold Volume-Down + Power for ~10 seconds until the
+   device force-reboots (or long-press Power 15s if the screen is black).
+2. When it reaches TWRP (hold Volume-Up + Bixby/Power on the S10+ during boot,
+   or let it settle into the existing recovery), reconnect USB and confirm
+   `adb devices` shows `R58M75KDB2X recovery`.
+3. Restore the three known-good partitions (images are on this Mac AND on the
+   device's Nuxel rootfs sda31 at /root/kbuild/flash/ + /root/camwork):
 
-- /system/vendor/firmware/{8 blobs} — remove to revert firmware deployment.
-- /usr/local/bin/nuxel-fimc-capture* tools — remove to revert capture tools.
-- No persistent kernel config was changed by Stage A experiments.
+   From a TWRP root adb shell (mkdir -p /nuxel; mount -o rw /dev/block/sda31 /nuxel):
+   ```
+   dd if=/nuxel/root/kbuild/flash/boot-before.img of=/dev/block/sda14 bs=1M
+   # OR push from this Mac (verified SHA-256 below):
+   #   adb push backup/boot-before.img /sdcard/ ; adb shell dd if=/sdcard/boot-before.img of=/dev/block/sda14 bs=1M
+   #   adb push dtb-sda12.img /sdcard/  ; adb shell dd if=/sdcard/dtb-sda12.img of=/dev/block/sda12 bs=1M
+   #   adb push dtbo-before.img /sdcard/ ; adb shell dd if=/sdcard/dtbo-before.img of=/dev/block/sda13 bs=1M
+   sync; reboot
+   ```
+4. Confirm Nuxel boots: `ssh root@10.11.12.99 "uname -a"` → 4.14.253-gf7194c1d15ed-dirty #3.
 
-## Rollback for Stage B (future kernel flash)
+### Known-good backup SHA-256 (on macOS, /tmp/camwork/):
+- boot-before.img   (57,671,680 B)  sha256 79e4d5e35527e5dfc56f1a141c7c89f64fe683b87ed3821498e83fb77d607c73
+- dtb-sda12.img     (8,388,608 B)   sha256 cbec1ecac4da2296e1deb0565cfd6a787dfa1f9880dc405b6504d009bef9da13
+- dtbo-before.img   (8,388,608 B)   (backup/dtbo-before.img)
 
-Once a custom-driver kernel is built and flashed:
+## WHAT WENT WRONG (root cause of the current hang — most probable)
 
-1. Preserve the current boot image BEFORE any flash:
-   `adb root && adb pull /dev/block/platform/13d60000.ufs/by-name/boot boot.img.known-good`
-   record `sha256sum boot.img.known-good`.
-2. Flash via TWRP (`adb push new-boot.img /sdcard; adb reboot recovery; twrp install`)
-   or `dd` from a root shell, recording the exact image + SHA-256.
-3. Recovery path: USB + TWRP to re-flash `boot.img.known-good`; or re-run the
-   existing `kernel/s10plus/build-kernel.sh` (vendor FIMC-IS2 defconfig) to
-   rebuild the rollback Image.gz.
-4. Re-verify boot into Nuxel (SSH root@10.11.12.99 + `uname -a` + `ls /dev/video101`).
-5. Do NOT alter EFS/IMEI/modem/keys/unrelated partitions. Do NOT data-destroy.
+Session 7 flashed triple partition set:
+- sda12 (dtb)  = fully-merged board+camera DTB (382,239 B valid FDT, 1 entry)
+- sda13 (dtbo) = 10-entry, entry[9] replaced with 207-byte NO-OP overlay
+- sda14 (boot) = correct-config camera kernel (ABOX+NFC patches applied, verified)
 
-## TWRP interpretation rule (from cam.md)
+The most probable failure is the **base-DTB replacement** (sda12): the Samsung
+bootloader may not accept a non-stock base DTB (size/chksum/format/version guard),
+OR the 207-byte no-op dtbo entry looped its overlay parser. The kernel BOOT image
+itself was verified good earlier (same-size raw Image, camera+media framework
+built, ABOX/NFC vendor crashes fixed by patches 0004/0007).
 
-If a flash results in a TWRP boot (not Nuxel), that is a failed/hung/crashed boot.
-Then: re-investigate the actual failure (kernel log, boot selection, DTB, image
-format), fix, and re-flash until Nuxel boots again. Do not re-flash an identical
-unmodified image; each retry must change something diagnosable.
+## Session 7 achievements (preserved, NOT lost)
+- DTBO structural bug FIXED (CSIS/hold/clock nodes were top-level -> dropped;
+  now wrapped in fragment@100 target-path="/").
+- Vendor FIMC-IS2 coexistence solved (status=disabled on fimc_is + 6 sensor nodes).
+- Merged overlay built + verified (all 8 endpoint links bidirectional, all 4
+  CSIS + 4 sensor compatibles present).
+- Root cause of prior kernel crashes found: MISSING Nuxel patches (0004 abox
+  boot-done, 0007 sec-nfc class-name, + 20 others). Applied all patches; the
+  correct-config kernel with patches BUILT SUCCESSFULLY (Image 45,848,584 B,
+  5 camera .ko modules).
+- Full recovery/rollback images preserved on-device + macOS.
 
-## Verified recovery results this session
-
-- Streaming panic -> clean auto-reboot -> Nuxel (SSH restored, fimc-is loaded).
-- No TWRP loop encountered. No flash performed this session.
+## NEXT (once device is back in TWRP)
+Restore the 3 known-good partitions above; verify stable boot FIRST.
+Then investigate the bootloader DTB acceptance separately — do NOT re-flash a
+replaced sda12 without first confirming how this bootloader validates the DTB
+partition (chksum/size/version) against a known working DTB.

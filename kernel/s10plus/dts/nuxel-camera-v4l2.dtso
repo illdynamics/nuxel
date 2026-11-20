@@ -1,150 +1,183 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Nuxel S10+ (beyond2lte / exynos9820) native camera device-tree overlay.
- *
- * Overlays the post-6.x s10-linux "s10-camera-v4l2" driver bindings onto the
- * vendor FIMC-IS2 tree. The vendor FIMC-IS2 nodes and the physical MIPI D-PHY
- * / ISPPRE / PMU / I2C / regulator blocks already exist in the base DTB; this
- * overlay only adds (1) the standard-V4L2 CSIS receiver+write-DMA nodes,
- * (2) the Samsung S5K sensor children on the existing I2C controllers,
- * (3) the s10-isppre-hold / s10-isppre-clock bring-up aids.
- *
- * Status: STRUCTURE COMPLETE, PHANDLES PARTIALLY RESOLVED.
- * The symbolic labels below were read from the live device's /proc/device-tree/
- * __symbols__ node. Regulator / reset-GPIO / pinctrl phandles are board-local
- * and must be resolved from the decompiled beyond2lte DTB before flashing.
- * They are marked [TODO-RESOLVE] in abvious locations.
- *
- * DO NOT FLASH until every [TODO-RESOLVE] is replaced with a real phandle or
- * `#include` of the board's pinctrl/regulator labels.
+ * FIXED: standalone CSIS/isppre-hold/isppre-clock nodes are now wrapped in
+ * fragment blocks targeting "/", so dtc/fdtoverlay actually merge them into
+ * the base DTB (previously top-level nodes in /plugin/ were dropped).
  */
 /dts-v1/;
 /plugin/;
 
 / {
-	compatible = "samsung,exynos9820";
+	compatible = "samsung,beyond2lte", "samsung,exynos9820";
+	dtbo-hw_rev = <0x1a>;
+	dtbo-hw_rev_end = <0xff>;
 
-	/* Bring-up aid: keep the ISPPRE power domain on (its CMU aborts on a
-	 * power cycle under mainline exynos-pd). Matches s10-isppre-hold.c. */
-	camera_isppre_hold: camera-isppre-hold {
-		compatible = "samsung,exynos9820-isppre-hold-test";
-		power-domains = <&pd_isppre>;
-	};
+	fragment@100 {
+		target-path = "/";
+		__overlay__ {
+			camera_isppre_hold: camera-isppre-hold {
+				compatible = "samsung,exynos9820-isppre-hold-test";
+				power-domains = <&pd_isppre>;
+			};
 
-	/* Q-channel clock provider for the CSIS receive clocks. Matches
-	 * s10-isppre-clock.c (indexes 0..7); the vendor tree upstream uses the
-	 * same 0x17000000 CMU. */
-	isppre_clock: clock-controller@17000000 {
-		compatible = "samsung,exynos9820-isppre-clock-test";
-		reg = <0x0 0x17000000 0x0 0x8000>;
-		#clock-cells = <1>;
-		clock-names = "bus";
-		clocks = <&cmu_top 0x60>;            /* [TODO-RESOLVE] TOP->ISPPRE bus */
-		power-domains = <&pd_isppre>;
-	};
+			isppre_clock: clock-controller@17000000 {
+				compatible = "samsung,exynos9820-isppre-clock-test";
+				reg = <0x0 0x17000000 0x0 0x8000>;
+				#clock-cells = <1>;
+				clock-names = "bus";
+				clocks = <&exynos_dm 0>;
+				power-domains = <&pd_isppre>;
+			};
 
-	/* ---- CSIS0 (rear tele/3m3 + front sub-mux share) ---- */
-	camera_csis0: camera-csis@17040000 {
-		compatible = "samsung,exynos9820-csis";
-		reg = <0x0 0x17040000 0x0 0x1000>,
-		      <0x0 0x170e0000 0x0 0x100>,
-		      <0x0 0x17020500 0x0 0x4>,
-		      <0x0 0x19162b00 0x0 0x500>,
-		      <0x0 0x170b0000 0x0 0x500>;
-		reg-names = "csis", "dma-top", "phy-reset", "phy", "dma";
-		interrupts = <0 0x136 4>, <0 0x13c 4>;
-		interrupt-names = "csis", "dma";
-		samsung,pmu-syscon = <&pmu_system_controller>;
-		samsung,pmu-phy-offset = <0x730>;
-		samsung,phy-reset-bit = <0x2>;
-		power-domains = <&pd_isppre>;
-		clock-names = "csis", "dma", "mmu", "bus";
-		clocks = <&isppre_clock 3>, <&isppre_clock 4>,
-		         <&isppre_clock 5>, <&cmu_top 0x60>; /* [TODO-RESOLVE] bus */
-		status = "disabled"; /* enable only after phandle resolution */
+			camera_csis0: camera-csis@17040000 {
+				compatible = "samsung,exynos9820-csis";
+				reg = <0x0 0x17040000 0x0 0x1000>,
+				      <0x0 0x170e0000 0x0 0x100>,
+				      <0x0 0x17020500 0x0 0x4>,
+				      <0x0 0x19162300 0x0 0x500>,
+				      <0x0 0x170b0000 0x0 0x500>;
+				reg-names = "csis", "dma-top", "phy-reset", "phy", "dma";
+				interrupts = <0 0x136 4>, <0 0x13c 4>;
+				interrupt-names = "csis", "dma";
+				samsung,pmu-syscon = <&pmu_system_controller>;
+				samsung,pmu-phy-offset = <0x730>;
+				samsung,phy-reset-bit = <0x2>;
+				samsung,phy = <&mipi_phy_csis0_m4s4_top>;
+				samsung,dc-combo;
+				power-domains = <&pd_isppre>;
+				clock-names = "csis", "dma", "mmu", "bus";
+				clocks = <&isppre_clock 3>, <&isppre_clock 4>,
+				         <&isppre_clock 5>, <&exynos_dm 0>;
+				status = "okay";
 
-		ports {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			port@0 {
-				reg = <0>;
-				csis0_ep: endpoint {
-					/* wired to the tele sensor's remote endpoint */
-					remote-endpoint = <&s5k3m3_out>;
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					port@0 {
+						reg = <0>;
+						csis0_ep: endpoint {
+							remote-endpoint = <&s5k3m3_out>;
+						};
+					};
+				};
+			};
+
+			camera_csis1: camera-csis@17050000 {
+				compatible = "samsung,exynos9820-csis";
+				reg = <0x0 0x17050000 0x0 0x1000>,
+				      <0x0 0x170e0000 0x0 0x100>,
+				      <0x0 0x17020500 0x0 0x4>,
+				      <0x0 0x19162b00 0x0 0x500>,
+				      <0x0 0x170c0000 0x0 0x500>;
+				reg-names = "csis", "dma-top", "phy-reset", "phy", "dma";
+				interrupts = <0 0x137 4>, <0 0x13d 4>;
+				interrupt-names = "csis", "dma";
+				samsung,pmu-syscon = <&pmu_system_controller>;
+				samsung,pmu-phy-offset = <0x73c>;
+				samsung,phy-reset-bit = <0x3>;
+				samsung,phy = <&mipi_phy_csis1_m0s4s4s4_mod>;
+				samsung,dc-combo;
+				power-domains = <&pd_isppre>;
+				clock-names = "csis", "dma", "mmu", "bus";
+				clocks = <&isppre_clock 0>, <&isppre_clock 1>,
+				         <&isppre_clock 5>, <&exynos_dm 0>;
+				status = "okay";
+
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					port@0 {
+						reg = <0>;
+						csis1_ep: endpoint {
+							remote-endpoint = <&s5k3j1_out>;
+						};
+					};
+				};
+			};
+
+			camera_csis2: camera-csis@17030000 {
+				compatible = "samsung,exynos9820-csis";
+				reg = <0x0 0x17030000 0x0 0x1000>,
+				      <0x0 0x170e0000 0x0 0x100>,
+				      <0x0 0x17020500 0x0 0x4>,
+				      <0x0 0x19162d00 0x0 0x500>,
+				      <0x0 0x170a0000 0x0 0x500>;
+				reg-names = "csis", "dma-top", "phy-reset", "phy", "dma";
+				interrupts = <0 0x138 4>, <0 0x13e 4>;
+				interrupt-names = "csis", "dma";
+				samsung,pmu-syscon = <&pmu_system_controller>;
+				samsung,pmu-phy-offset = <0x73c>;
+				samsung,phy-reset-bit = <0x1>;
+				samsung,phy = <&mipi_phy_csis2_m0s4s4s4_mod>;
+				samsung,dc-combo;
+				samsung,pdaf-vc1;
+				power-domains = <&pd_isppre>;
+				clock-names = "csis", "dma", "mmu", "bus";
+				clocks = <&isppre_clock 5>, <&isppre_clock 1>,
+				         <&isppre_clock 5>, <&exynos_dm 0>;
+				status = "okay";
+
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					port@0 {
+						reg = <0>;
+						csis2_ep: endpoint {
+							remote-endpoint = <&s5k2l4_out>;
+						};
+					};
+				};
+			};
+
+			camera_csis3: camera-csis@17060000 {
+				compatible = "samsung,exynos9820-csis";
+				reg = <0x0 0x17060000 0x0 0x1000>,
+				      <0x0 0x170e0000 0x0 0x100>,
+				      <0x0 0x17020500 0x0 0x4>,
+				      <0x0 0x19163300 0x0 0x300>,
+				      <0x0 0x170d0000 0x0 0x500>;
+				reg-names = "csis", "dma-top", "phy-reset", "phy", "dma";
+				interrupts = <0 0x13f 4>, <0 0x140 4>;
+				interrupt-names = "csis", "dma";
+				samsung,pmu-syscon = <&pmu_system_controller>;
+				samsung,pmu-phy-offset = <0x73c>;
+				samsung,phy-reset-bit = <0x4>;
+				samsung,phy = <&mipi_phy_csis3_m0s4s4s4_mod>;
+				power-domains = <&pd_isppre>;
+				clock-names = "csis", "dma", "mmu", "bus";
+				clocks = <&isppre_clock 6>, <&isppre_clock 7>,
+				         <&isppre_clock 5>, <&exynos_dm 0>;
+				status = "okay";
+
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					port@0 {
+						reg = <0>;
+						csis3_ep: endpoint {
+							remote-endpoint = <&s5k3p9_out>;
+						};
+					};
 				};
 			};
 		};
 	};
-
-	/* ---- CSIS1 (front main 3j1) ---- */
-	camera_csis1: camera-csis@17050000 {
-		compatible = "samsung,exynos9820-csis";
-		reg = <0x0 0x17050000 0x0 0x1000>,
-		      <0x0 0x170e0000 0x0 0x100>,
-		      <0x0 0x17020500 0x0 0x4>,
-		      <0x0 0x19162c00 0x0 0x500>,
-		      <0x0 0x170c0000 0x0 0x500>;
-		reg-names = "csis", "dma-top", "phy-reset", "phy", "dma";  /* [TODO-RESOLVE] phy/dma offsets for CSIS1 */
-		interrupts = <0 0x137 4>, <0 0x13d 4>;
-		interrupt-names = "csis", "dma";
-		samsung,pmu-syscon = <&pmu_system_controller>;
-		samsung,pmu-phy-offset = <0x73c>;
-		samsung,phy-reset-bit = <0x3>;
-		samsung,phy-dc-combo;
-		power-domains = <&pd_isppre>;
-		clock-names = "csis", "dma", "mmu", "bus";
-		clocks = <&isppre_clock 0>, <&isppre_clock 1>,
-		         <&isppre_clock 5>, <&cmu_top 0x60>;
-		status = "disabled";
-	};
-
-	/* ---- CSIS2 (rear main 2l4) ---- */
-	camera_csis2: camera-csis@17030000 {
-		compatible = "samsung,exynos9820-csis";
-		reg = <0x0 0x17030000 0x0 0x1000>,
-		      <0x0 0x170e0000 0x0 0x100>,
-		      <0x0 0x17020500 0x0 0x4>,
-		      <0x0 0x19162d00 0x0 0x500>,
-		      <0x0 0x170a0000 0x0 0x500>;
-		reg-names = "csis", "dma-top", "phy-reset", "phy", "dma";
-		interrupts = <0 0x138 4>, <0 0x13e 4>;
-		interrupt-names = "csis", "dma";
-		samsung,pmu-syscon = <&pmu_system_controller>;
-		samsung,pmu-phy-offset = <0x73c>;
-		samsung,phy-reset-bit = <0x1>;
-		samsung,phy-dc-combo;
-		samsung,pdaf-vc1;
-		power-domains = <&pd_isppre>;
-		clock-names = "csis", "dma", "mmu", "bus";
-		clocks = <&isppre_clock 5>, <&isppre_clock 1>,
-		         <&isppre_clock 5>, <&cmu_top 0x60>;
-		status = "disabled";
-	};
 };
 
-/* ---- Sensor children on the existing I2C controllers ----
- * The vendor FIMC DTS uses `sensor_i2c_ch` (0..4) and `mclk_ch` (0..4) rather
- * than explicit controller phandles. Those map to:
- *   i2c_ch 0 = hsi2c@10870000 (rear main/tele), mclk 0
- *   i2c_ch 2 = hsi2c (sub tele/4ha), mclk 1
- *   i2c_ch 4 = hsi2c (uw/front), mclk 3
- * The exact controller / regulator / reset-GPIO phandles must be filled from
- * the decompiled beyond2lte base DTB. [TODO-RESOLVE]
- */
-&i2c0 {  /* [TODO-RESOLVE] actual rear-main I2C controller label */
-	s5k2l4: sensor@20 {
+/* ========================= SENSOR CHILDREN =============================== */
+&hsi2c_0 {  /* rear main 2L4 */
+	s5k2l4: sensor@10 {
 		compatible = "samsung,s5k2l4";
-		reg = <0x20>;
-		reset-gpios = <&gpg0 6 GPIO_ACTIVE_LOW>;  /* [TODO-RESOLVE] */
-		clocks = <&cis0_clock>;                    /* [TODO-RESOLVE] */
+		reg = <0x10>;
+		reset-gpios = <&gpg2 6 0>;
+		pinctrl-names = "default", "camera-on";
+		pinctrl-0 = <&sensor_mclk0_out>;
+		pinctrl-1 = <&sensor_mclk0_fn>;
+		clocks = <&isppre_clock 0>;
 		clock-names = "mclk";
-		retention-supply = <&s5k2l4_retention>;
-		avdd28-supply = <&s5k2l4_avdd28>;
-		avdd24-supply = <&s5k2l4_avdd24>;
-		core-supply = <&s5k2l4_core>;
-		iovdd-supply = <&s5k2l4_iovdd>;
-		vddq-supply = <&s5k2l4_vddq>;
 		orientation = <3>;
+		status = "okay";
 
 		port {
 			s5k2l4_out: endpoint {
@@ -154,4 +187,106 @@
 			};
 		};
 	};
+};
+
+&hsi2c_19 {  /* rear tele 3M3 */
+	s5k3m3: sensor@2D {
+		compatible = "samsung,s5k3m3";
+		reg = <0x2d>;
+		reset-gpios = <&gpg3 0 0>;
+		subcam-sel-gpios = <&gpg4 3 0>;
+		pinctrl-names = "default", "camera-on";
+		pinctrl-0 = <&sensor_mclk0_out>;
+		pinctrl-1 = <&sensor_mclk0_fn>;
+		clocks = <&isppre_clock 0>;
+		clock-names = "mclk";
+		status = "okay";
+
+		port {
+			s5k3m3_out: endpoint {
+				remote-endpoint = <&csis0_ep>;
+				data-lanes = <1 2 3 4>;
+				link-frequencies = /bits/ 64 <598000000 481000000>;
+			};
+		};
+	};
+};
+
+&hsi2c_1 {  /* rear ultrawide 3P9 */
+	s5k3p9: sensor@2D {
+		compatible = "samsung,s5k3p9";
+		reg = <0x2d>;
+		reset-gpios = <&gpg4 3 0>;
+		pinctrl-names = "default", "camera-on";
+		pinctrl-0 = <&sensor_mclk3_out>;
+		pinctrl-1 = <&sensor_mclk3_fn>;
+		clocks = <&isppre_clock 3>;
+		clock-names = "mclk";
+		status = "okay";
+
+		port {
+			s5k3p9_out: endpoint {
+				remote-endpoint = <&csis3_ep>;
+				data-lanes = <1 2 3 4>;
+				link-frequencies = /bits/ 64 <676000000 596000000>;
+			};
+		};
+	};
+};
+
+&hsi2c_2 {  /* front main 3J1 */
+	s5k3j1: sensor@10 {
+		compatible = "samsung,s5k3j1";
+		reg = <0x10>;
+		reset-gpios = <&gpg2 5 0>;
+		subcam-sel-gpios = <&gpg4 3 0>;
+		pinctrl-names = "default", "camera-on";
+		pinctrl-0 = <&sensor_mclk1_out>;
+		pinctrl-1 = <&sensor_mclk1_fn>;
+		clocks = <&isppre_clock 1>;
+		clock-names = "mclk";
+		status = "okay";
+
+		port {
+			s5k3j1_out: endpoint {
+				remote-endpoint = <&csis1_ep>;
+				data-lanes = <1 2 3 4>;
+				link-frequencies = /bits/ 64 <903500000 807720000>;
+			};
+		};
+	};
+};
+
+/* ===================== DISABLE VENDOR FIMC-IS2 ============================
+ * The new standard-V4L2 CSIS + S5K drivers take over the CSIS receivers and
+ * the I2C sensor sub-devices. The vendor FIMC-IS2 driver (built-in,
+ * CONFIG_VIDEO_EXYNOS_FIMC_IS2=y) must not bind the same physical CSIS
+ * register blocks / sensors simultaneously. Disable its nodes.
+ * ========================================================================= */
+&fimc_is {
+	status = "disabled";
+};
+
+&fimc_is_sensor0 {
+	status = "disabled";
+};
+
+&fimc_is_sensor1 {
+	status = "disabled";
+};
+
+&fimc_is_sensor2 {
+	status = "disabled";
+};
+
+&fimc_is_sensor3 {
+	status = "disabled";
+};
+
+&fimc_is_sensor4 {
+	status = "disabled";
+};
+
+&fimc_is_sensor5 {
+	status = "disabled";
 };
