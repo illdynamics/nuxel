@@ -1,47 +1,47 @@
-# NUXEL S10+ Camera — Recovery & Rollback
+# NUXEL S10+ Camera — Recovery and Rollback
 
 **Date:** 2026-11-20
-**Device:** SM-G975F beyond2lte, kernel 4.14.253-gf7194c1d15ed-dirty
+**Target:** SM-G975F beyond2lte, Exynos9820
 
-## Current known-good state (as of this session)
+## Current known-good state (verified 2026-11-20)
 
-- **Running kernel:** `4.14.253-gf7194c1d15ed-dirty` (Samsung downstream Exynos9820).
-- **Kernel source on device:** `/root/kbuild/src` @ git HEAD `f7194c1d15eded1c2a1a4dc63825b26103435cc0`.
-- **Firmware (all hash-verified, owner-stock G975FXXS9DTK9):** `/system/vendor/firmware/`
-  and `/usr/lib/firmware/` — `fimc_is_lib.bin`, `fimc_is_rta.bin`, `fimc_is_fw_mcu.bin`,
-  `setfile_{2l4,3m3,3p9,3j1,4ha}.bin`.
-- **Userspace tools:** `/usr/local/bin/nuxel-fimc-capture{,2}`, `nuxel-ion-capture`,
-  `nuxel-fimc-full-capture`, `nuxel-fimc-leader-capture{,2}`.
+- Device boots Nuxel normally (kernel 4.14.253-gf7194c1d15ed-dirty, build #3).
+- No boot/partition/EFS/modem changes made in this session. All camera work this
+  session was userspace-only (firmware already deployed prior; capture tools
+  in /usr/local/bin) plus one kernel-source clone + offline build (no flash).
+- The one camera STREAMON experiment triggered a hardware-watchdog panic
+  (pstore "Panic#2") and a clean reboot back into Nuxel. No lasting damage;
+  fimc-is re-probed and /dev/video101 returned on the next boot.
 
-All this session's changes are **userspace-only and reversible** (file copies + new tools).
-No kernel, boot, partition, EEPROM, calibration or bootloader was modified.
+## Rollback for Stage A (userspace, already reversible)
 
-## TWRP reflash agreement (authorized)
+- /system/vendor/firmware/{8 blobs} — remove to revert firmware deployment.
+- /usr/local/bin/nuxel-fimc-capture* tools — remove to revert capture tools.
+- No persistent kernel config was changed by Stage A experiments.
 
-From `pwn/cam.md` / `cam.md`: flashing via TWRP is authorized for the camera bring-up.
-Procedure understood:
-- Reboot phone to recovery, flash via `adb` over USB.
-- If the phone boots back into TWRP = flash failed / bootloop / hang / crash.
-- Re-investigate, fix, reflash, reboot until it boots Nuxel.
-- SSH key `~/.ssh/wicked_wqn_id_rsa`, dev `root@10.11.12.99`, also USB-connected.
+## Rollback for Stage B (future kernel flash)
 
-## Recovery path
+Once a custom-driver kernel is built and flashed:
 
-1. **Kernel recovery:** last-known-good boot image must be preserved before any
-   boot-critical flash. Flash is done via TWRP (adb + dd) or heimdall (BOOT).
-2. **USB/TWRP:** phone is USB-connected; recovery bootable via TWRP.
-3. **Userspace rollback:** `rm` the created `/system/vendor/firmware/` blobs and
-   `/usr/local/bin/nuxel-*` tools (or restore from `/tmp` backups taken before deploy).
+1. Preserve the current boot image BEFORE any flash:
+   `adb root && adb pull /dev/block/platform/13d60000.ufs/by-name/boot boot.img.known-good`
+   record `sha256sum boot.img.known-good`.
+2. Flash via TWRP (`adb push new-boot.img /sdcard; adb reboot recovery; twrp install`)
+   or `dd` from a root shell, recording the exact image + SHA-256.
+3. Recovery path: USB + TWRP to re-flash `boot.img.known-good`; or re-run the
+   existing `kernel/s10plus/build-kernel.sh` (vendor FIMC-IS2 defconfig) to
+   rebuild the rollback Image.gz.
+4. Re-verify boot into Nuxel (SSH root@10.11.12.99 + `uname -a` + `ls /dev/video101`).
+5. Do NOT alter EFS/IMEI/modem/keys/unrelated partitions. Do NOT data-destroy.
 
-## Rollback plan (for the pending Strategy B kernel driver)
+## TWRP interpretation rule (from cam.md)
 
-- Preserve current boot image + `Image.gz` hash + DTB hash before flash.
-- Keep `fimc-is2` vendor driver in-tree (do not remove; the new custom driver must
-  coexist or be disabled at runtime via `modprobe.d`/device-tree).
-- Record exact installed image path + SHA-256 per the "Phase 10" checklist.
-- If a new kernel fails to boot, restore the last-known-good image via TWRP.
+If a flash results in a TWRP boot (not Nuxel), that is a failed/hung/crashed boot.
+Then: re-investigate the actual failure (kernel log, boot selection, DTB, image
+format), fix, and re-flash until Nuxel boots again. Do not re-flash an identical
+unmodified image; each retry must change something diagnosable.
 
-## Do NOT modify
+## Verified recovery results this session
 
-EFS, IMEI, modem calibration, protected keys, bootloader, unrelated partitions.
-Only camera-related kernel/userspace changes are in scope.
+- Streaming panic -> clean auto-reboot -> Nuxel (SSH restored, fimc-is loaded).
+- No TWRP loop encountered. No flash performed this session.
