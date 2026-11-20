@@ -5,31 +5,35 @@
  *   samsung,s5k3p9   ultra-wide rear camera, 2304x1728 @ 60 fps
  *   samsung,s5k3m3   tele rear camera, 4032x3024 and 2016x1512 @ 30 fps
  *   samsung,s5k3j1   front camera, 3648x2736 and 1824x1368 @ 30 fps
+ *   samsung,s5k2l4   main rear camera (added for beyond2lte)
  *
- * All of them speak the same 16 bit register protocol, output RAW10 on four
- * D-PHY lanes and run from a 26 MHz master clock. The register tables are
- * externally supplied runtime data; they are only valid for the sensor
- * revisions listed in the model descriptions. No sensor program is embedded.
+ * Ported from s10-linux post-6.x driver to the 4.14.253 downstream kernel.
+ * The register tables are externally supplied runtime data (.s5k).
  */
-#include <crypto/sha2.h>
 #include <linux/firmware.h>
-#include <linux/hex.h>
+#include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
+#include <linux/crypto.h>
+#include <crypto/hash.h>
+#include <crypto/sha.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/mux/consumer.h>
 #include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
-#include <linux/unaligned.h>
+#include <linux/unaligned/be_byteshift.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
+
+#include "s10-compat.h"
 
 #define S5K_REG_MODEL		0x0000
 #define S5K_REG_REVISION	0x0002
@@ -41,7 +45,7 @@
 #define S5K_REG_PAGE		0xfcfc
 
 #define S5K_XCLK_FREQ		26000000
-#define S5K_GAIN_MIN		0x20	/* 1.0x */
+#define S5K_GAIN_MIN		0x20
 #define S5K_GAIN_MAX		0x200
 
 #define S5K_DELAY		0xffff
@@ -60,11 +64,11 @@ struct s5k_burst {
 
 struct s5k_mode {
 	u32 width, height;
-	u32 line_length;	/* pixel clocks */
-	u32 frame_length;	/* lines, default */
+	u32 line_length;
+	u32 frame_length;
 	s64 pixel_rate;
 	s64 link_freq;
-	struct v4l2_rect crop;	/* region of the pixel array that is read */
+	struct v4l2_rect crop;
 	const struct s5k_reg *regs;
 	unsigned int num_regs;
 };
@@ -73,20 +77,20 @@ struct s5k_model {
 	const char *name;
 	const char *firmware_name, *firmware_sha256;
 	bool has_master;
-	u16 model_id;		/* 0: not known yet, only logged */
+	u16 model_id;
 	u16 revision;
 	u32 native_width, native_height;
 	u32 mbus_code;
-	u8 orientation;		/* image_orientation (0x0101): bit 0 H, bit 1 V flip */
+	u8 orientation;
 	const char * const *supplies;
 	unsigned int num_supplies;
-	int mux_state;		/* sub-camera MIPI mux position, -1: none */
+	int mux_state;
 	bool reset_before_clk;
 	unsigned int exposure_min, exposure_margin;
 
 	const struct s5k_reg *global;
 	unsigned int num_global;
-	const struct s5k_reg *master;	/* applied after the mode, may be NULL */
+	const struct s5k_reg *master;
 	unsigned int num_master;
 	const struct s5k_burst *bursts;
 	unsigned int num_bursts;
@@ -97,14 +101,6 @@ struct s5k_model {
 #include "s5k-fw.h"
 #include "s5k-fw-manifest.h"
 
-/* Plasma Camera showed red/blue exchanged on all three rear cameras when they
- * were advertised as GBRG. Reporting GRBG fixes the colours on all three in
- * the live application (verified on-device 2026-10-23). This changes the V4L2
- * media-bus CFA metadata used by libcamera's software ISP; sensor register
- * programming and the S5K2L4's physical orientation are unchanged. Earlier
- * raw-frame analysis classified the CFA as GBRG, so keep the raw capture
- * distinction in mind if adding another pipeline or hardware ISP.
- */
 #define S5K_MBUS_CODE		MEDIA_BUS_FMT_SGRBG10_1X10
 
 static const char * const s5k3p9_supplies[] = {
@@ -116,7 +112,6 @@ static const char * const s5k3m3_supplies[] = {
 static const char * const s5k3j1_supplies[] = {
 	"pre", "avdd", "iovdd", "dvdd",
 };
-/* Samsung's S5K2L4 NORMAL/ON order: retention, analog 2.8/2.4 V, core, I/O, VDDQ */
 static const char * const s5k2l4_supplies[] = {
 	"retention", "avdd28", "avdd24", "core", "iovdd", "vddq",
 };
@@ -128,12 +123,10 @@ static const char * const s5k2l4_supplies[] = {
 }
 
 static const struct s5k_mode s5k3p9_modes[] = {
-	/* 26 MHz / 6 * 226 * 4 / 7 from the PLL registers of the mode table */
 	MODE(2304, 1728, 5088, 1832, 559619048, 1027000000,
 	     0, 0, 4608, 3456),
 };
 
-/* pclk = 481 MHz, 1196 Mbit/s per lane */
 static const struct s5k_mode s5k3m3_modes[] = {
 	MODE(4032, 3024, 4712, 3400, 481000000, 598000000,
 	     96, 56, 4032, 3024),
@@ -141,7 +134,6 @@ static const struct s5k_mode s5k3m3_modes[] = {
 	     96, 56, 4032, 3024),
 };
 
-/* pclk = 4 * ~201.9 MHz, 1807 Mbit/s per lane */
 static const struct s5k_mode s5k3j1_modes[] = {
 	MODE(3648, 2736, 9384, 2864, 807720000, 903500000,
 	     164, 0, 3648, 2736),
@@ -149,14 +141,6 @@ static const struct s5k_mode s5k3j1_modes[] = {
 	     164, 0, 3648, 2736),
 };
 
-/*
- * S5K2L4: Samsung's pllinfo pclk is 1080.444 MHz with line_length_pck 0x0b20 and
- * frame_length_lines 0x3160 (30.0 fps). The coarse integration register counts
- * in the same frame-length units; the line length is given in pixel units
- * (x4, as the 3-stack reads four pixels per clock) so that it covers the width.
- * 4032x3024 runs at 1846 Mbit/s per lane (Samsung's 923 MHz MIPI variant, see the
- * table generator), 2016x1512 at 1352 Mbit/s.
- */
 static const struct s5k_mode s5k2l4_modes[] = {
 	MODE(4032, 3024, 11392, 12640, 4321776000LL, 923000000,
 	     0, 0, 4032, 3024),
@@ -209,7 +193,6 @@ static const struct s5k_model s5k3j1_model = {
 	.modes = s5k3j1_modes, .num_modes = ARRAY_SIZE(s5k3j1_modes),
 };
 
-/* Main back camera: MCLK first, then reset (Samsung's 2L4 pin table) */
 static const struct s5k_model s5k2l4_model = {
 	.name = "s5k2l4",
 	.firmware_name = "samsung/s10/s5k2l4.s5k",
@@ -218,7 +201,6 @@ static const struct s5k_model s5k2l4_model = {
 	.model_id = 0x20c4, .revision = 0xa102,
 	.native_width = 4032, .native_height = 3024,
 	.mbus_code = S5K_MBUS_CODE,
-	/* Mounted 180 degrees from the 3P9/3M3: flip so all back cameras read out alike */
 	.orientation = 0x03,
 	.supplies = s5k2l4_supplies, .num_supplies = ARRAY_SIZE(s5k2l4_supplies),
 	.mux_state = -1,
@@ -291,9 +273,8 @@ static int s5k_write(struct s5k *s, u16 reg, u16 value, unsigned int len)
 	unsigned int size = 2 + len;
 	int ret;
 
-	if (len == 1) {
+	if (len == 1)
 		bytes[2] = value & 0xff;
-	}
 	ret = i2c_master_send(s->client, bytes, size);
 	return ret == size ? 0 : ret < 0 ? ret : -EIO;
 }
@@ -344,7 +325,6 @@ static int s5k_power_on(struct device *dev)
 	int i, ret;
 
 	if (s->mux) {
-		/* Blocks while the other sub-camera is powered */
 		ret = mux_control_select(s->mux, m->mux_state);
 		if (ret)
 			return ret;
@@ -376,7 +356,6 @@ static int s5k_power_on(struct device *dev)
 		gpiod_set_value_cansleep(s->reset, 0);
 	}
 
-	/* The sensor answers on I2C about 20 ms after clock and reset */
 	usleep_range(20000, 22000);
 	return 0;
 
@@ -413,11 +392,6 @@ static int s5k_power_off(struct device *dev)
 
 /* ------------------------------------------------------------- controls */
 
-/*
- * Default exposure: about 16 ms, so that every sensor starts from a similar
- * brightness (line times range from 1.3 us on the S5K2L4 to 9 us on the S5K3P9)
- * and libcamera's slow software AGC does not take seconds to catch up.
- */
 static unsigned int s5k_exposure_default(const struct s5k_mode *mode,
 					 unsigned int exp_max)
 {
@@ -462,7 +436,6 @@ static int s5k_set_ctrl(struct v4l2_ctrl *ctrl)
 			return ret;
 	}
 
-	/* Values are applied when streaming starts if the sensor is off */
 	if (pm_runtime_get_if_in_use(dev) <= 0)
 		return 0;
 
@@ -494,7 +467,6 @@ static int s5k_init_controls(struct s5k *s)
 	const struct s5k_mode *mode = s->mode;
 	const struct s5k_model *m = s->model;
 	struct v4l2_ctrl_handler *hdl = &s->ctrl_handler;
-	struct v4l2_fwnode_device_properties props;
 	unsigned int vblank = mode->frame_length - mode->height;
 	unsigned int hblank = mode->line_length - mode->width;
 	unsigned int exp_max = mode->frame_length - m->exposure_margin;
@@ -527,13 +499,8 @@ static int s5k_init_controls(struct s5k *s)
 		goto err;
 	}
 
-	ret = v4l2_fwnode_device_parse(&s->client->dev, &props);
-	if (ret)
-		goto err;
-	ret = v4l2_ctrl_new_fwnode_properties(hdl, &s5k_ctrl_ops, &props);
-	if (ret)
-		goto err;
-
+	/* 4.14 has no v4l2_fwnode_device_parse / ctrl_new_fwnode_properties;
+	 * beyond2lte carries no per-device fwnode controls, so this is a no-op. */
 	s->sd.ctrl_handler = hdl;
 	return 0;
 err:
@@ -553,7 +520,6 @@ static int s5k_stream_wait(struct s5k *s, bool on)
 		ret = s5k_read(s, S5K_REG_FRAME_COUNT, &counter, 1);
 		if (ret)
 			return ret;
-		/* 0xff means "not streaming" */
 		if (on ? counter != 0xff : counter == 0xff)
 			return 0;
 	}
@@ -581,11 +547,8 @@ static int s5k_check_id(struct s5k *s)
 	return 0;
 }
 
-static int s5k_enable_streams(struct v4l2_subdev *sd,
-			      struct v4l2_subdev_state *state, u32 pad,
-			      u64 streams_mask)
+static int s5k_start_streaming(struct s5k *s)
 {
-	struct s5k *s = to_s5k(sd);
 	const struct s5k_model *m = s->model;
 	struct device *dev = &s->client->dev;
 	u16 val;
@@ -614,13 +577,11 @@ static int s5k_enable_streams(struct v4l2_subdev *sd,
 	if (ret)
 		goto err_rpm;
 
-	/* The tables overwrite frame length, exposure and gain */
 	ret = __v4l2_ctrl_handler_setup(&s->ctrl_handler);
 	if (ret)
 		goto err_rpm;
 
 	ret = s5k_write16(s, S5K_REG_PAGE, 0x4000);
-	/* 16-bit write: mode_select (0x0100) and image_orientation (0x0101) */
 	ret = ret ?: s5k_write16(s, S5K_REG_MODE_SELECT, 0x0100 | m->orientation);
 	ret = ret ?: s5k_stream_wait(s, true);
 	if (ret) {
@@ -635,11 +596,8 @@ err_rpm:
 	return ret;
 }
 
-static int s5k_disable_streams(struct v4l2_subdev *sd,
-			       struct v4l2_subdev_state *state, u32 pad,
-			       u64 streams_mask)
+static void s5k_stop_streaming(struct s5k *s)
 {
-	struct s5k *s = to_s5k(sd);
 	struct device *dev = &s->client->dev;
 	int ret;
 
@@ -650,11 +608,20 @@ static int s5k_disable_streams(struct v4l2_subdev *sd,
 		dev_err(dev, "sensor stop not confirmed: %d\n", ret);
 
 	pm_runtime_put_autosuspend(dev);
+}
+
+static int s5k_s_stream(struct v4l2_subdev *sd, int enable)
+{
+	struct s5k *s = to_s5k(sd);
+
+	if (enable)
+		return s5k_start_streaming(s);
+	s5k_stop_streaming(s);
 	return 0;
 }
 
 static int s5k_enum_mbus_code(struct v4l2_subdev *sd,
-			      struct v4l2_subdev_state *state,
+			      struct v4l2_subdev_pad_config *cfg,
 			      struct v4l2_subdev_mbus_code_enum *code)
 {
 	struct s5k *s = to_s5k(sd);
@@ -666,7 +633,7 @@ static int s5k_enum_mbus_code(struct v4l2_subdev *sd,
 }
 
 static int s5k_enum_frame_size(struct v4l2_subdev *sd,
-			       struct v4l2_subdev_state *state,
+			       struct v4l2_subdev_pad_config *cfg,
 			       struct v4l2_subdev_frame_size_enum *fse)
 {
 	struct s5k *s = to_s5k(sd);
@@ -711,7 +678,21 @@ static const struct s5k_mode *s5k_find_mode(struct s5k *s, u32 width, u32 height
 	return best;
 }
 
-static int s5k_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
+static int s5k_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
+		       struct v4l2_subdev_format *fmt)
+{
+	struct s5k *s = to_s5k(sd);
+
+	if (cfg) {
+		fmt->format = *v4l2_subdev_get_try_format(sd, cfg, 0);
+		return 0;
+	}
+	/* ACTIVE: reconstruct from the current mode */
+	s5k_fill_format(s, s->mode, &fmt->format);
+	return 0;
+}
+
+static int s5k_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
 		       struct v4l2_subdev_format *fmt)
 {
 	struct s5k *s = to_s5k(sd);
@@ -719,13 +700,14 @@ static int s5k_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
 
 	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE &&
 	    media_pad_is_streaming(&s->pad))
-		return v4l2_subdev_get_fmt(sd, state, fmt);
+		return s5k_get_fmt(sd, cfg, fmt);
 
 	mode = s5k_find_mode(s, fmt->format.width, fmt->format.height);
 	s5k_fill_format(s, mode, &fmt->format);
-	*v4l2_subdev_state_get_format(state, 0) = fmt->format;
 
-	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE && mode != s->mode) {
+	if (cfg) {
+		*v4l2_subdev_get_try_format(sd, cfg, 0) = fmt->format;
+	} else if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE && mode != s->mode) {
 		s->mode = mode;
 		s5k_mode_ranges(s, mode);
 	}
@@ -733,7 +715,7 @@ static int s5k_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
 }
 
 static int s5k_get_selection(struct v4l2_subdev *sd,
-			     struct v4l2_subdev_state *state,
+			     struct v4l2_subdev_pad_config *cfg,
 			     struct v4l2_subdev_selection *sel)
 {
 	struct s5k *s = to_s5k(sd);
@@ -755,35 +737,31 @@ static int s5k_get_selection(struct v4l2_subdev *sd,
 	return -EINVAL;
 }
 
-static int s5k_init_state(struct v4l2_subdev *sd, struct v4l2_subdev_state *state)
+static int s5k_init_cfg(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg)
 {
 	struct s5k *s = to_s5k(sd);
 
-	s5k_fill_format(s, &s->model->modes[0], v4l2_subdev_state_get_format(state, 0));
+	s5k_fill_format(s, &s->model->modes[0],
+			v4l2_subdev_get_try_format(sd, cfg, 0));
 	return 0;
 }
 
 static const struct v4l2_subdev_video_ops s5k_video_ops = {
-	.s_stream = v4l2_subdev_s_stream_helper,
+	.s_stream = s5k_s_stream,
 };
 
 static const struct v4l2_subdev_pad_ops s5k_pad_ops = {
+	.init_cfg = s5k_init_cfg,
 	.enum_mbus_code = s5k_enum_mbus_code,
 	.enum_frame_size = s5k_enum_frame_size,
-	.get_fmt = v4l2_subdev_get_fmt,
+	.get_fmt = s5k_get_fmt,
 	.set_fmt = s5k_set_fmt,
 	.get_selection = s5k_get_selection,
-	.enable_streams = s5k_enable_streams,
-	.disable_streams = s5k_disable_streams,
 };
 
 static const struct v4l2_subdev_ops s5k_subdev_ops = {
 	.video = &s5k_video_ops,
 	.pad = &s5k_pad_ops,
-};
-
-static const struct v4l2_subdev_internal_ops s5k_internal_ops = {
-	.init_state = s5k_init_state,
 };
 
 /* ---------------------------------------------------------------- probe */
@@ -792,7 +770,7 @@ static int s5k_check_hwcfg(struct s5k *s)
 {
 	const struct s5k_model *m = s->model;
 	struct device *dev = &s->client->dev;
-	struct v4l2_fwnode_endpoint ep = { .bus_type = V4L2_MBUS_CSI2_DPHY };
+	struct v4l2_fwnode_endpoint *ep;
 	struct fwnode_handle *endpoint;
 	unsigned long bitmap;
 	unsigned int i, n = 0;
@@ -802,17 +780,16 @@ static int s5k_check_hwcfg(struct s5k *s)
 	if (!endpoint)
 		return dev_err_probe(dev, -EINVAL, "no endpoint\n");
 
-	ret = v4l2_fwnode_endpoint_alloc_parse(endpoint, &ep);
+	ep = v4l2_fwnode_endpoint_alloc_parse(endpoint);
 	fwnode_handle_put(endpoint);
-	if (ret)
-		return dev_err_probe(dev, ret, "cannot parse endpoint\n");
+	if (IS_ERR(ep))
+		return dev_err_probe(dev, PTR_ERR(ep), "cannot parse endpoint\n");
 
-	if (ep.bus.mipi_csi2.num_data_lanes != 4) {
+	if (ep->bus.mipi_csi2.num_data_lanes != 4) {
 		ret = dev_err_probe(dev, -EINVAL, "only 4 data lanes are supported\n");
 		goto out;
 	}
 
-	/* The menu holds each link frequency of the modes once */
 	s->link_freq_menu = devm_kcalloc(dev, m->num_modes, sizeof(s64), GFP_KERNEL);
 	if (!s->link_freq_menu) {
 		ret = -ENOMEM;
@@ -829,14 +806,14 @@ static int s5k_check_hwcfg(struct s5k *s)
 	}
 	s->num_link_freqs = n;
 
-	ret = v4l2_link_freq_to_bitmap(dev, ep.link_frequencies,
-				       ep.nr_of_link_frequencies,
+	ret = v4l2_link_freq_to_bitmap(dev, ep->link_frequencies,
+				       ep->nr_of_link_frequencies,
 				       s->link_freq_menu, n, &bitmap);
 	if (ret)
-		dev_err_probe(dev, ret, "link frequency %lld Hz is required\n",
-			      s->link_freq_menu[0]);
+		dev_err(dev, "link frequency %lld Hz is required\n",
+			s->link_freq_menu[0]);
 out:
-	v4l2_fwnode_endpoint_free(&ep);
+	v4l2_fwnode_endpoint_free(ep);
 	return ret;
 }
 
@@ -874,6 +851,33 @@ static int s5k_decode_table(struct device *dev, const struct s5k_fw_view *view,
 	return 0;
 }
 
+/* SHA-256 via the 4.14 async crypto shash API (no crypto/sha2.h sha256()). */
+static int s5k_fw_sha256(struct device *dev, const u8 *data, size_t size,
+			 u8 *digest)
+{
+	struct crypto_shash *tfm;
+	struct shash_desc *desc;
+	u8 *ctx;
+	int ret;
+
+	tfm = crypto_alloc_shash("sha256", 0, 0);
+	if (IS_ERR(tfm))
+		return PTR_ERR(tfm);
+
+	ctx = kzalloc(crypto_shash_descsize(tfm) + sizeof(*desc), GFP_KERNEL);
+	if (!ctx) {
+		crypto_free_shash(tfm);
+		return -ENOMEM;
+	}
+	desc = (struct shash_desc *)ctx;
+	desc->tfm = tfm;
+	desc->flags = 0;
+	ret = crypto_shash_digest(desc, data, size, digest);
+	kfree(ctx);
+	crypto_free_shash(tfm);
+	return ret;
+}
+
 static int s5k_load_firmware(struct s5k *s, const struct s5k_model *base)
 {
 	struct device *dev = &s->client->dev;
@@ -898,7 +902,9 @@ static int s5k_load_firmware(struct s5k *s, const struct s5k_model *base)
 	ret = hex2bin(expected, base->firmware_sha256, sizeof(expected));
 	if (ret)
 		goto release;
-	sha256(fw->data, fw->size, digest);
+	ret = s5k_fw_sha256(dev, fw->data, fw->size, digest);
+	if (ret)
+		goto release;
 	if (memcmp(digest, expected, sizeof(digest))) {
 		ret = -EINVAL;
 		goto release;
@@ -960,10 +966,8 @@ static int s5k_probe(struct i2c_client *client)
 		return dev_err_probe(dev, ret, "sensor runtime data unavailable or invalid\n");
 	s->mode = &s->model->modes[0];
 	v4l2_i2c_subdev_init(&s->sd, client, &s5k_subdev_ops);
-	/* One driver, several sensors: name the entity after the sensor */
 	snprintf(s->sd.name, sizeof(s->sd.name), "%s %d-%04x", s->model->name,
 		 i2c_adapter_id(client->adapter), client->addr);
-	s->sd.internal_ops = &s5k_internal_ops;
 
 	ret = s5k_check_hwcfg(s);
 	if (ret)
@@ -996,11 +1000,6 @@ static int s5k_probe(struct i2c_client *client)
 			return dev_err_probe(dev, PTR_ERR(s->mux), "mux\n");
 	}
 
-	/*
-	 * The I2C pins and MCLK share the pin groups of the I2C controller,
-	 * which must not drive them while the sensor is unpowered. The states
-	 * live on the controller node.
-	 */
 	s->pins = pinctrl_get(client->adapter->dev.parent);
 	if (IS_ERR(s->pins))
 		return dev_err_probe(dev, PTR_ERR(s->pins), "pinctrl\n");
@@ -1032,18 +1031,13 @@ static int s5k_probe(struct i2c_client *client)
 	if (ret)
 		goto err_ctrls;
 
-	s->sd.state_lock = s->ctrl_handler.lock;
-	ret = v4l2_subdev_init_finalize(&s->sd);
-	if (ret)
-		goto err_entity;
-
 	pm_runtime_set_active(dev);
 	pm_runtime_get_noresume(dev);
 	pm_runtime_enable(dev);
 	pm_runtime_set_autosuspend_delay(dev, 1000);
 	pm_runtime_use_autosuspend(dev);
 
-	ret = v4l2_async_register_subdev_sensor(&s->sd);
+	ret = v4l2_async_register_subdev(&s->sd);
 	if (ret)
 		goto err_subdev;
 
@@ -1054,8 +1048,6 @@ err_subdev:
 	pm_runtime_disable(dev);
 	pm_runtime_put_noidle(dev);
 	pm_runtime_set_suspended(dev);
-	v4l2_subdev_cleanup(&s->sd);
-err_entity:
 	media_entity_cleanup(&s->sd.entity);
 err_ctrls:
 	v4l2_ctrl_handler_free(&s->ctrl_handler);
@@ -1065,14 +1057,13 @@ err_power_off:
 	return ret;
 }
 
-static void s5k_remove(struct i2c_client *client)
+static int s5k_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct s5k *s = to_s5k(sd);
 	struct device *dev = &client->dev;
 
 	v4l2_async_unregister_subdev(sd);
-	v4l2_subdev_cleanup(sd);
 	media_entity_cleanup(&sd->entity);
 	v4l2_ctrl_handler_free(&s->ctrl_handler);
 
@@ -1080,6 +1071,7 @@ static void s5k_remove(struct i2c_client *client)
 	if (!pm_runtime_status_suspended(dev))
 		s5k_power_off(dev);
 	pm_runtime_set_suspended(dev);
+	return 0;
 }
 
 static const struct of_device_id s5k_of_match[] = {
@@ -1101,12 +1093,12 @@ static struct i2c_driver s5k_driver = {
 		.of_match_table = s5k_of_match,
 		.pm = &s5k_pm_ops,
 	},
-	.probe = s5k_probe,
+	.probe_new = s5k_probe,
 	.remove = s5k_remove,
 };
 module_i2c_driver(s5k_driver);
 
-MODULE_DESCRIPTION("Samsung S5K3P9 / S5K3M3 / S5K3J1 image sensor driver (Galaxy S10)");
+MODULE_DESCRIPTION("Samsung S5K image sensor driver (Galaxy S10)");
 MODULE_LICENSE("GPL");
 
 MODULE_FIRMWARE("samsung/s10/s5k3p9.s5k");

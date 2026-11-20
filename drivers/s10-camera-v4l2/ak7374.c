@@ -2,17 +2,8 @@
 /*
  * AK737x voice-coil lens actuator of the Galaxy S10 tele camera (S5K3M3).
  *
- * Register protocol from Samsung's GPL fimc-is-actuator-ak737x.c
- * (LineageOS/android_kernel_samsung_exynos9820 @ 4bcfb0263b21):
- *   position: two 8-bit registers, 9-bit value left-aligned,
- *             reg 0x00 = val >> 1, reg 0x01 = (val & 1) << 7
- *   control:  reg 0x02, 0x00 active / 0x40 standby / 0x20 sleep
- *   product id: reg 0xf3, 0x0e on this handset's tele (AK7374)
- * Position 0 is infinity, 511 macro; Samsung's first position is 120.
- * The actuator needs ~10 ms after its supply comes up before it answers.
- *
- * The sensor node links here with lens-focus; v4l2-async then creates the
- * ancillary link that libcamera's CameraLens looks for.
+ * Ported from s10-linux driver to the 4.14.253 downstream kernel.
+ * Register protocol from Samsung's GPL fimc-is-actuator-ak737x.c.
  */
 #include <linux/delay.h>
 #include <linux/i2c.h>
@@ -25,6 +16,8 @@
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 
+#include "s10-compat.h"
+
 #define AK7374_REG_POS_HIGH	0x00
 #define AK7374_REG_POS_LOW	0x01
 #define AK7374_REG_CONT		0x02
@@ -33,7 +26,7 @@
 #define AK7374_ACTIVE		0x00
 #define AK7374_STANDBY		0x40
 
-#define AK7374_POS_MAX		511	/* 9 bit, 0 = infinity */
+#define AK7374_POS_MAX		511
 #define AK7374_FIRST_POS	120
 #define AK7374_POWER_DELAY_US	10000
 #define AK7374_FIRST_DELAY_US	2000
@@ -43,7 +36,7 @@ struct ak7374 {
 	struct v4l2_subdev sd;
 	struct v4l2_ctrl *focus;
 	struct regulator *vdd;
-	struct regulator *vddio;	/* rear-flex camera I/O (S2MPB03 LDO3) */
+	struct regulator *vddio;
 	struct pinctrl *pins;
 	struct pinctrl_state *pins_idle, *pins_active;
 	bool active;
@@ -52,7 +45,6 @@ struct ak7374 {
 	struct i2c_adapter *adapter;
 };
 
-/* Main and tele share CAM3. An idle lens must not park a live peer's pins. */
 static LIST_HEAD(ak7374_lenses);
 static DEFINE_MUTEX(ak7374_bus_lock);
 
@@ -175,8 +167,6 @@ static int ak7374_power_on(struct device *dev)
 	if (ret)
 		return ret;
 
-	/* The rear-flex I/O rail powers the bus pull-ups; it must be up
-	 * before anything on the CAM3 bus answers. */
 	if (vcm->vddio) {
 		ret = regulator_enable(vcm->vddio);
 		if (ret) {
@@ -193,20 +183,12 @@ static int ak7374_power_on(struct device *dev)
 		ak7374_bus_pins(vcm, false);
 		return ret;
 	}
-	/* The actuator answers about 10 ms after its supply comes up */
 	usleep_range(AK7374_POWER_DELAY_US, AK7374_POWER_DELAY_US + 500);
 
 	ret = ak7374_read8(vcm, AK7374_REG_ID, &id);
 	if (ret) {
-		/*
-		 * A dead CAM3 bus is a bring-up condition (missing bus pull-up
-		 * rail), not a reason to latch a runtime-PM error: probe daemons
-		 * (udev) open the node on registration. Log and keep going;
-		 * individual position writes will report the real I2C errors.
-		 */
 		dev_warn(dev, "actuator does not answer: %d\n", ret);
 	} else {
-		/* Samsung's board lists 0x0e (AK7374); log everything */
 		dev_info(dev, "product id register 0x%02x = 0x%02x\n",
 			 AK7374_REG_ID, id);
 	}
@@ -264,10 +246,6 @@ static int ak7374_probe(struct i2c_client *client)
 		vcm->vddio = NULL;
 	}
 
-	/*
-	 * Like the sensor buses: the CAM3 I2C pins must only be driven while
-	 * something on that bus is powered. The states live on the controller.
-	 */
 	vcm->pins = pinctrl_get(client->adapter->dev.parent);
 	if (IS_ERR(vcm->pins))
 		return dev_err_probe(dev, PTR_ERR(vcm->pins), "pinctrl\n");
@@ -322,7 +300,7 @@ err_ctrls:
 	return ret;
 }
 
-static void ak7374_remove(struct i2c_client *client)
+static int ak7374_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ak7374 *vcm = sd_to_ak7374(sd);
@@ -334,6 +312,7 @@ static void ak7374_remove(struct i2c_client *client)
 	pm_runtime_set_suspended(&client->dev);
 	media_entity_cleanup(&sd->entity);
 	v4l2_ctrl_handler_free(&vcm->ctrls);
+	return 0;
 }
 
 static const struct of_device_id ak7374_of_match[] = {
@@ -352,7 +331,7 @@ static struct i2c_driver ak7374_driver = {
 		.of_match_table = ak7374_of_match,
 		.pm = &ak7374_pm_ops,
 	},
-	.probe = ak7374_probe,
+	.probe_new = ak7374_probe,
 	.remove = ak7374_remove,
 };
 module_i2c_driver(ak7374_driver);

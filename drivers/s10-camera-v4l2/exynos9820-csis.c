@@ -2,24 +2,16 @@
 /*
  * Exynos 9820 MIPI CSI-2 receiver (CSIS) with its CSISX4 write DMA.
  *
- * Camera path of the Galaxy S10: sensor -> M0S4S4S4 D-PHY -> CSIS1 -> write
- * DMA channel 1 -> memory. The media graph is
+ * Ported from s10-linux post-6.x driver to the 4.14.253 downstream kernel.
+ * Media graph: sensor [0] ---> [0] csis [1] ---> [0] video capture node.
  *
- *   sensor [0] ---> [0] csis [1] ---> [0] video capture node
- *
- * Register layouts and sequences follow Samsung's GPL fimc-is-hw-csi-v5_2.[ch]
- * and phy-exynos-mipi.c (LineageOS/android_kernel_samsung_exynos9820), the
- * recipe was verified on hardware (see docs/camera-bringup.md).
- *
- * The write DMA has a ring of address slots. Every frame goes to the next
- * slot; at the end of a frame the finished slot is handed back to userspace
- * and re-armed with the next queued buffer (or a scratch buffer when userspace
- * is too slow, in which case the frame is dropped and the sequence number
- * skips).
+ * The write DMA has a ring of address slots; each finished slot is handed
+ * back to userspace and re-armed with the next queued buffer (or a scratch
+ * buffer when userspace is too slow; the frame is then dropped and the
+ * sequence number skips).
  *
  * The ISPPRE power domain must never be powered off: once off, its CMU is
- * unreachable until reboot. s10-isppre-hold.ko keeps it on and must be
- * loaded first.
+ * unreachable until reboot. s10-isppre-hold.ko keeps it on and loads first.
  */
 #include <linux/bitfield.h>
 #include <linux/clk.h>
@@ -38,6 +30,7 @@
 #include <media/v4l2-async.h>
 #include <media/v4l2-common.h>
 #include <media/v4l2-device.h>
+#include <media/v4l2-dev.h>
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-mc.h>
@@ -46,6 +39,7 @@
 #include <media/videobuf2-v4l2.h>
 
 #include "exynos9820-csis-settle.h"
+#include "s10-compat.h"
 
 #define DRV_NAME "exynos9820-csis"
 
@@ -93,13 +87,7 @@ module_param(interleave, uint, 0644);
 #define   ISP_QUAD_PIXEL	(2 << 12)
 #define CSIS_DEBUG_OPTION	0x500
 #define CSIS_PHY_CMN_CTRL	0x704
-/* Errors only: no frame start/end, the DMA reports those */
 #define CSIS_ERR_MASK0		0x000fff1f
-/*
- * Only channel 0 carries image data. The tele sensor also puts data on other
- * channels, which raises the per-channel resolution mismatch errors of
- * channels 1..3 on every line; they are not interesting.
- */
 #define CSIS_ERR_MASK1		0x000011f0
 #define MIPI_DT_RAW10		0x2b
 
@@ -108,7 +96,7 @@ module_param(interleave, uint, 0644);
 #define   DMA_ENABLE		BIT(0)
 #define   DMA_UPDT_PTR_EN	BIT(1)
 #define   DMA_UPDT_FRAMEPTR	GENMASK(6, 2)
-#define DMA_FMT			0x004	/* 0: 16 bit per pixel, 2D, RAW10 */
+#define DMA_FMT			0x004
 #define DMA_ADDR(n)		(0x010 + 4 * (n))
 #define DMA_ACT_CTRL		0x090
 #define   DMA_ACT_FRAMEPTR	GENMASK(6, 2)
@@ -134,12 +122,6 @@ module_param(interleave, uint, 0644);
 #define TOP_SRAM_SPLIT		0x0c
 #define TOP_MATRIX		0x10
 
-/*
- * Per instance, from the device tree: the PMU isolation register of the PHY
- * (samsung,pmu-phy-offset) and its reset bit in the ISPPRE sysreg at
- * 0x17020500 (samsung,phy-reset-bit).
- */
-
 #define CSIS_PAD_SINK		0
 #define CSIS_PAD_SRC		1
 #define CSIS_NUM_PADS		2
@@ -157,7 +139,6 @@ struct csis_format {
 	u32 fourcc;
 };
 
-/* 10 bit samples in 16 bit words, in the low bits (DMA_FMT = 0) */
 static const struct csis_format csis_formats[] = {
 	{ MEDIA_BUS_FMT_SBGGR10_1X10, V4L2_PIX_FMT_SBGGR10 },
 	{ MEDIA_BUS_FMT_SGBRG10_1X10, V4L2_PIX_FMT_SGBRG10 },
@@ -180,7 +161,7 @@ struct csis {
 	bool phy_dc_combo;
 	bool pdaf_vc1;
 	unsigned int lanes, nr_sensors;
-	struct clk_bulk_data clks[C_NUM];
+	struct clk *clk[C_NUM];
 	unsigned long old_bus_rate;
 	bool rate_set;
 	int irq_csis, irq_dma;
@@ -190,6 +171,8 @@ struct csis {
 	struct v4l2_async_notifier notifier;
 	struct v4l2_subdev sd;
 	struct media_pad pads[CSIS_NUM_PADS];
+	/* 4.14 has no subdev active-state tracking; keep the sink format here. */
+	struct v4l2_mbus_framefmt fmt_sink;
 	bool registered;
 
 	struct video_device vdev;
@@ -199,10 +182,9 @@ struct csis {
 	struct mutex lock;		/* video node and vb2 */
 	struct v4l2_pix_format fmt;
 
-	/* Buffer ring, shared with the interrupt handler */
 	spinlock_t qlock;
 	struct list_head queued;
-	struct csis_buffer *slot[CSIS_NUM_SLOTS];	/* NULL: scratch buffer */
+	struct csis_buffer *slot[CSIS_NUM_SLOTS];
 	void *scratch;
 	dma_addr_t scratch_dma;
 	size_t scratch_size;
@@ -252,12 +234,12 @@ static int csis_runtime_resume(struct device *dev)
 	struct csis *c = dev_get_drvdata(dev);
 	int ret, i;
 
-	ret = clk_prepare_enable(c->clks[C_BUS].clk);
+	ret = clk_prepare_enable(c->clk[C_BUS]);
 	if (ret)
 		return ret;
-	c->old_bus_rate = clk_get_rate(c->clks[C_BUS].clk);
+	c->old_bus_rate = clk_get_rate(c->clk[C_BUS]);
 	if (bus_hz && bus_hz != c->old_bus_rate) {
-		ret = clk_set_rate(c->clks[C_BUS].clk, bus_hz);
+		ret = clk_set_rate(c->clk[C_BUS], bus_hz);
 		if (ret)
 			dev_warn(dev, "cannot set the bus clock to %lu Hz: %d\n",
 				 bus_hz, ret);
@@ -265,18 +247,18 @@ static int csis_runtime_resume(struct device *dev)
 			c->rate_set = true;
 	}
 	for (i = C_CSIS; i <= C_MMU; i++) {
-		ret = clk_prepare_enable(c->clks[i].clk);
+		ret = clk_prepare_enable(c->clk[i]);
 		if (ret)
 			goto err;
 	}
 	return 0;
 err:
 	while (i-- > C_CSIS)
-		clk_disable_unprepare(c->clks[i].clk);
+		clk_disable_unprepare(c->clk[i]);
 	if (c->rate_set)
-		clk_set_rate(c->clks[C_BUS].clk, c->old_bus_rate);
+		clk_set_rate(c->clk[C_BUS], c->old_bus_rate);
 	c->rate_set = false;
-	clk_disable_unprepare(c->clks[C_BUS].clk);
+	clk_disable_unprepare(c->clk[C_BUS]);
 	return ret;
 }
 
@@ -286,11 +268,11 @@ static int csis_runtime_suspend(struct device *dev)
 	int i;
 
 	for (i = C_MMU; i >= C_CSIS; i--)
-		clk_disable_unprepare(c->clks[i].clk);
+		clk_disable_unprepare(c->clk[i]);
 	if (c->rate_set)
-		clk_set_rate(c->clks[C_BUS].clk, c->old_bus_rate);
+		clk_set_rate(c->clk[C_BUS], c->old_bus_rate);
 	c->rate_set = false;
-	clk_disable_unprepare(c->clks[C_BUS].clk);
+	clk_disable_unprepare(c->clk[C_BUS]);
 	return 0;
 }
 
@@ -304,8 +286,6 @@ static void phy_bits(void __iomem *a, unsigned int start, unsigned int width, u3
 	writel(cfg, a);
 }
 
-/* __set_phy_cfg_0502_0002_dphy(), 4 lanes, plain D-PHY. */
-/* Samsung's fimc_is_hw_find_settle(): lane rate rounded up to 10 Mbit/s */
 static u32 csis_settle_for(u32 speed)
 {
 	speed = clamp(roundup(speed, 10), CSIS_SETTLE_MIN_RATE, CSIS_SETTLE_MAX_RATE);
@@ -326,7 +306,7 @@ static void csis_phy_configure(struct csis *c, u32 speed)
 		if (speed < 4000)
 			skew_delay_sel = speed >= 3000 ? 1 : speed >= 2000 ? 2 : 3;
 	}
-	writel(0x00000001, regs + 0x0000);	/* SC_GNR_CON0 */
+	writel(0x00000001, regs + 0x0000);
 	writel(0x00001450, regs + 0x0004);
 	writel(speed > 4500 ? 0 : 4, regs + 0x0008);
 	writel(speed > 4500 ? 0x8000 : 0x9000, regs + 0x000c);
@@ -338,16 +318,15 @@ static void csis_phy_configure(struct csis *c, u32 speed)
 	for (i = 0; i < 4; i++) {
 		void __iomem *l = regs + i * 0x100;
 
-		writel(0x00000001, l + 0x0100);	/* SD_GNR_CON0 */
+		writel(0x00000001, l + 0x0100);
 		writel(0x00001450, l + 0x0104);
 		writel(speed > 4500 ? 0 : 4, l + 0x0108);
 		writel(speed > 4500 ? 0x8260 : speed == 4500 ? 0x9260 : 0x9000, l + 0x010c);
 		writel(0x00000005, l + 0x0110);
 		phy_bits(l + 0x0110, 8, 2, skew_delay_sel);
 		writel(0x00000600, l + 0x0114);
-		/* D/C-PHY combo lanes 0..2 (Samsung PHY type 0xDC: CSIS0, CSIS2) */
 		if ((dc_combo < 0 ? c->phy_dc_combo : dc_combo) && i < 3)
-			writel(0x00000040, l + 0x0124);	/* SD_ANA_CON7 */
+			writel(0x00000040, l + 0x0124);
 		phy_bits(l + 0x0130, 0, 8, hs_settle);
 		phy_bits(l + 0x0130, 8, 1, settle_clk_sel);
 		writel(0x00000003, l + 0x0134);
@@ -360,7 +339,7 @@ static int csis_phy_on(struct csis *c, u32 speed)
 {
 	int ret;
 
-	ret = regmap_update_bits(c->pmu, c->pmu_phy_offset, 1, 1);	/* isolation bypass */
+	ret = regmap_update_bits(c->pmu, c->pmu_phy_offset, 1, 1);
 	if (ret)
 		return ret;
 	writel(readl(c->rst) & ~BIT(c->phy_reset_bit), c->rst);
@@ -386,23 +365,17 @@ static void csis_csi_enable(struct csis *c, u32 width, u32 height)
 	for (i = 0; i < 20 && (readl(c->regs + CSIS_CMN_CTRL) & CMN_SW_RESET); i++)
 		udelay(10);
 
-	/* lane count (zero based), lane interleave */
 	v = readl(c->regs + CSIS_CMN_CTRL);
 	v &= ~(GENMASK(1, 0) << CMN_LANE_SHIFT);
 	v |= (c->lanes - 1) << CMN_LANE_SHIFT;
 	v &= ~(GENMASK(1, 0) << CMN_INTERLEAVE_SHIFT);
 	v |= (interleave & 3) << CMN_INTERLEAVE_SHIFT;
 	writel(v, c->regs + CSIS_CMN_CTRL);
-	rmw(c->regs + CSIS_PHY_CMN_CTRL, GENMASK(4, 1), GENMASK(c->lanes, 1));	/* data lanes */
-	writel(1, c->regs + CSIS_DEBUG_OPTION);				/* pixel align */
+	rmw(c->regs + CSIS_PHY_CMN_CTRL, GENMASK(4, 1), GENMASK(c->lanes, 1));
+	writel(1, c->regs + CSIS_DEBUG_OPTION);
 
 	writel((min(vc0_pixel_mode, 2U) << 12) | (MIPI_DT_RAW10 << 2), c->regs + CSIS_ISP_CONFIG_CH0);
 	writel((height << 16) | width, c->regs + CSIS_ISP_RESOL_CH0);
-	/*
-	 * S5K2L4 (Samsung PD_MOD3): phase-detection lines arrive interleaved on
-	 * VC1, one per four image lines. Samsung runs that channel in quad pixel
-	 * mode; it has no DMA here, so its data is dropped.
-	 */
 	if (pdaf_vc1 < 0 ? c->pdaf_vc1 : pdaf_vc1) {
 		writel(ISP_QUAD_PIXEL | (MIPI_DT_RAW10 << 2) | 1, c->regs + CSIS_ISP_CONFIG_CH1);
 		writel(((height / 4) << 16) | width, c->regs + CSIS_ISP_RESOL_CH1);
@@ -415,7 +388,7 @@ static void csis_csi_enable(struct csis *c, u32 width, u32 height)
 
 	rmw(c->regs + CSIS_CMN_CTRL, CMN_UPDATE_SHADOW, CMN_UPDATE_SHADOW);
 	rmw(c->regs + CSIS_CMN_CTRL, CMN_PHY_SEL, 0);
-	rmw(c->regs + CSIS_PHY_CMN_CTRL, BIT(0), 1);			/* clock lane */
+	rmw(c->regs + CSIS_PHY_CMN_CTRL, BIT(0), 1);
 	rmw(c->regs + CSIS_CMN_CTRL, CMN_QCHANNEL_EN, 0);
 	rmw(c->regs + CSIS_CMN_CTRL, CMN_CSI_EN, CMN_CSI_EN);
 }
@@ -428,7 +401,6 @@ static void csis_csi_disable(struct csis *c)
 	writel(0, c->regs + CSIS_INT_MSK1);
 }
 
-/* DMA_ABORT_REQ handshake: also clears a stale "aborted" state. */
 static void csis_dma_abort(struct csis *c)
 {
 	u32 src = 0;
@@ -456,7 +428,7 @@ static void csis_dma_start(struct csis *c, u32 width)
 	writel((sram_split << 16) | sram_split, c->top + TOP_SRAM_SPLIT);
 	writel(0, c->top + TOP_MATRIX);
 
-	writel(0, c->dma + DMA_OTF_FORMAT);	/* RAW10 over the OTF path */
+	writel(0, c->dma + DMA_OTF_FORMAT);
 	writel(0, c->dma + DMA_DATA_CTRL);
 	writel(DMA_IRQ_MASK, c->dma + DMA_INT_MASK);
 	writel(readl(c->dma + DMA_INT_SRC), c->dma + DMA_INT_SRC);
@@ -500,7 +472,6 @@ static irqreturn_t csis_dma_irq(int irq, void *data)
 		c->n_errors++;
 	}
 
-	/* If both are pending, the end belongs to the previous frame */
 	if (src & DMA_INT_FRM_END) {
 		unsigned int slot = c->cur_slot;
 		struct csis_buffer *next;
@@ -580,23 +551,37 @@ static void csis_fill_format(struct v4l2_mbus_framefmt *f, u32 code, u32 w, u32 
 	f->xfer_func = V4L2_XFER_FUNC_NONE;
 }
 
-static int csis_init_state(struct v4l2_subdev *sd, struct v4l2_subdev_state *state)
+/* get the active OR try sink format; 4.14 passes pad_config for TRY,
+ * NULL for ACTIVE. */
+static struct v4l2_mbus_framefmt *csis_get_sink_fmt(struct csis *c,
+						    struct v4l2_subdev_pad_config *cfg)
 {
+	if (cfg)
+		return v4l2_subdev_get_try_format(&c->sd, cfg, CSIS_PAD_SINK);
+	return &c->fmt_sink;
+}
+
+static int csis_init_cfg(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg)
+{
+	struct csis *c = sd_to_csis(sd);
 	unsigned int i;
 
 	for (i = 0; i < CSIS_NUM_PADS; i++)
-		csis_fill_format(v4l2_subdev_state_get_format(state, i),
+		csis_fill_format(v4l2_subdev_get_try_format(sd, cfg, i),
 				 MEDIA_BUS_FMT_SGRBG10_1X10, 2304, 1728);
+	c->fmt_sink = *v4l2_subdev_get_try_format(sd, cfg, CSIS_PAD_SINK);
 	return 0;
 }
 
-static int csis_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
+static int csis_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
 			       struct v4l2_subdev_mbus_code_enum *code)
 {
+	struct csis *c = sd_to_csis(sd);
+
 	if (code->pad == CSIS_PAD_SRC) {
 		if (code->index)
 			return -EINVAL;
-		code->code = v4l2_subdev_state_get_format(state, CSIS_PAD_SINK)->code;
+		code->code = csis_get_sink_fmt(c, cfg)->code;
 		return 0;
 	}
 	if (code->index >= ARRAY_SIZE(csis_formats))
@@ -605,14 +590,15 @@ static int csis_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_state 
 	return 0;
 }
 
-static int csis_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
+static int csis_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
 				struct v4l2_subdev_frame_size_enum *fse)
 {
+	struct csis *c = sd_to_csis(sd);
+
 	if (fse->index || !csis_find_code(fse->code))
 		return -EINVAL;
 	if (fse->pad == CSIS_PAD_SRC) {
-		const struct v4l2_mbus_framefmt *f =
-			v4l2_subdev_state_get_format(state, CSIS_PAD_SINK);
+		const struct v4l2_mbus_framefmt *f = csis_get_sink_fmt(c, cfg);
 
 		if (fse->code != f->code)
 			return -EINVAL;
@@ -627,37 +613,61 @@ static int csis_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_state
 	return 0;
 }
 
-static int csis_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
+static int csis_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
 			struct v4l2_subdev_format *fmt)
 {
+	struct csis *c = sd_to_csis(sd);
+
+	if (fmt->pad == CSIS_PAD_SRC) {
+		fmt->format = *csis_get_sink_fmt(c, cfg);
+		return 0;
+	}
+	fmt->format = *csis_get_sink_fmt(c, cfg);
+	return 0;
+}
+
+static int csis_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
+			struct v4l2_subdev_format *fmt)
+{
+	struct csis *c = sd_to_csis(sd);
 	const struct csis_format *f;
 	struct v4l2_mbus_framefmt *sink, *src;
 	u32 w, h;
 
-	if (fmt->pad == CSIS_PAD_SRC)	/* the source follows the sink */
-		return v4l2_subdev_get_fmt(sd, state, fmt);
+	if (fmt->pad == CSIS_PAD_SRC)
+		return csis_get_fmt(sd, cfg, fmt);
 
-	if (sd_to_csis(sd)->running && fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE)
+	if (c->running && fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE)
 		return -EBUSY;
 
 	f = csis_find_code(fmt->format.code) ?: &csis_formats[0];
 	w = clamp(ALIGN(fmt->format.width, CSIS_WIDTH_ALIGN), CSIS_MIN_WIDTH, CSIS_MAX_WIDTH);
 	h = clamp_t(u32, fmt->format.height, CSIS_MIN_HEIGHT, CSIS_MAX_HEIGHT);
 
-	sink = v4l2_subdev_state_get_format(state, CSIS_PAD_SINK);
-	src = v4l2_subdev_state_get_format(state, CSIS_PAD_SRC);
+	sink = csis_get_sink_fmt(c, cfg);
 	csis_fill_format(sink, f->mbus_code, w, h);
-	*src = *sink;
+	if (cfg)
+		src = v4l2_subdev_get_try_format(sd, cfg, CSIS_PAD_SRC);
+	else
+		src = sink;	/* source follows sink in active mode */
+	if (src != sink)
+		*src = *sink;
 	fmt->format = *sink;
 	return 0;
 }
 
-static int csis_enable_streams(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
-			       u32 pad, u64 streams_mask)
+static int csis_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct csis *c = sd_to_csis(sd);
-	const struct v4l2_mbus_framefmt *fmt =
-		v4l2_subdev_state_get_format(state, CSIS_PAD_SINK);
+
+	if (enable)
+		return c->running ? 0 : 0; /* actual enable handled at start_streaming */
+	return 0;
+}
+
+static int csis_start_streaming(struct csis *c)
+{
+	const struct v4l2_mbus_framefmt *fmt = &c->fmt_sink;
 	struct media_pad *remote = media_pad_remote_pad_unique(&c->pads[CSIS_PAD_SINK]);
 	unsigned long flags;
 	s64 link_freq;
@@ -667,11 +677,11 @@ static int csis_enable_streams(struct v4l2_subdev *sd, struct v4l2_subdev_state 
 	if (IS_ERR(remote))
 		return PTR_ERR(remote);
 
-	/* 10 bits per pixel, double data rate */
 	link_freq = v4l2_get_link_freq(remote, 10, c->lanes * 2);
-	if (link_freq <= 0)
-		return dev_err_probe(c->dev, link_freq ? link_freq : -EINVAL,
-				     "the sensor does not report its link frequency\n");
+	if (link_freq <= 0) {
+		dev_err(c->dev, "the sensor does not report its link frequency\n");
+		return link_freq ? link_freq : -EINVAL;
+	}
 
 	ret = pm_runtime_resume_and_get(c->dev);
 	if (ret < 0)
@@ -706,8 +716,9 @@ static int csis_enable_streams(struct v4l2_subdev *sd, struct v4l2_subdev_state 
 	enable_irq(c->irq_dma);
 	enable_irq(c->irq_csis);
 
-	ret = v4l2_subdev_enable_streams(media_entity_to_v4l2_subdev(remote->entity),
-					 remote->index, BIT(0));
+	/* Start the sensor (remote subdev) */
+	ret = v4l2_subdev_call(media_entity_to_v4l2_subdev(remote->entity),
+			       video, s_stream, 1);
 	if (ret) {
 		dev_err(c->dev, "cannot start the sensor: %d\n", ret);
 		goto err_hw;
@@ -736,18 +747,15 @@ err_pm:
 	return ret;
 }
 
-static int csis_disable_streams(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
-				u32 pad, u64 streams_mask)
+static void csis_stop_streaming(struct csis *c)
 {
-	struct csis *c = sd_to_csis(sd);
 	struct media_pad *remote = media_pad_remote_pad_unique(&c->pads[CSIS_PAD_SINK]);
 	unsigned long flags;
 	unsigned int i;
 
 	if (!IS_ERR(remote))
-		v4l2_subdev_disable_streams(media_entity_to_v4l2_subdev(remote->entity),
-					 remote->index, BIT(0));
-	/* Let the frame in flight finish */
+		v4l2_subdev_call(media_entity_to_v4l2_subdev(remote->entity),
+				 video, s_stream, 0);
 	msleep(40);
 
 	disable_irq(c->irq_csis);
@@ -758,7 +766,6 @@ static int csis_disable_streams(struct v4l2_subdev *sd, struct v4l2_subdev_state
 	csis_dma_abort(c);
 	csis_phy_off(c);
 
-	/* Whatever is still armed was never completed */
 	spin_lock_irqsave(&c->qlock, flags);
 	for (i = 0; i < CSIS_NUM_SLOTS; i++) {
 		if (c->slot[i])
@@ -776,21 +783,19 @@ static int csis_disable_streams(struct v4l2_subdev *sd, struct v4l2_subdev_state
 	dma_free_coherent(c->dev, c->scratch_size, c->scratch, c->scratch_dma);
 	c->scratch = NULL;
 	pm_runtime_put(c->dev);
-	return 0;
 }
 
 static const struct v4l2_subdev_video_ops csis_video_ops = {
-	.s_stream = v4l2_subdev_s_stream_helper,
+	.s_stream = csis_s_stream,
 };
 
 static const struct v4l2_subdev_pad_ops csis_pad_ops = {
+	.init_cfg = csis_init_cfg,
 	.enum_mbus_code = csis_enum_mbus_code,
 	.enum_frame_size = csis_enum_frame_size,
-	.get_fmt = v4l2_subdev_get_fmt,
+	.get_fmt = csis_get_fmt,
 	.set_fmt = csis_set_fmt,
 	.link_validate = v4l2_subdev_link_validate_default,
-	.enable_streams = csis_enable_streams,
-	.disable_streams = csis_disable_streams,
 };
 
 static const struct v4l2_subdev_ops csis_subdev_ops = {
@@ -798,11 +803,6 @@ static const struct v4l2_subdev_ops csis_subdev_ops = {
 	.pad = &csis_pad_ops,
 };
 
-static const struct v4l2_subdev_internal_ops csis_internal_ops = {
-	.init_state = csis_init_state,
-};
-
-/* One sensor at a time on the sink pad (the tele and front cameras share a port). */
 static int csis_link_setup(struct media_entity *entity, const struct media_pad *local,
 			   const struct media_pad *remote, u32 flags)
 {
@@ -884,7 +884,7 @@ static int csis_vb2_start_streaming(struct vb2_queue *q, unsigned int count)
 		dev_err(c->dev, "cannot start the pipeline: %d\n", ret);
 		goto err_buffers;
 	}
-	ret = v4l2_subdev_enable_streams(&c->sd, CSIS_PAD_SRC, BIT(0));
+	ret = csis_start_streaming(c);
 	if (ret)
 		goto err_pipeline;
 	return 0;
@@ -900,7 +900,7 @@ static void csis_vb2_stop_streaming(struct vb2_queue *q)
 {
 	struct csis *c = vb2_get_drv_priv(q);
 
-	v4l2_subdev_disable_streams(&c->sd, CSIS_PAD_SRC, BIT(0));
+	csis_stop_streaming(c);
 	video_device_pipeline_stop(&c->vdev);
 	csis_return_buffers(c, VB2_BUF_STATE_ERROR);
 }
@@ -941,14 +941,6 @@ static int csis_querycap(struct file *file, void *priv, struct v4l2_capability *
 
 static int csis_enum_fmt(struct file *file, void *priv, struct v4l2_fmtdesc *f)
 {
-	if (f->mbus_code) {
-		const struct csis_format *fmt = csis_find_code(f->mbus_code);
-
-		if (f->index || !fmt)
-			return -EINVAL;
-		f->pixelformat = fmt->fourcc;
-		return 0;
-	}
 	if (f->index >= ARRAY_SIZE(csis_formats))
 		return -EINVAL;
 	f->pixelformat = csis_formats[f->index].fourcc;
@@ -1023,23 +1015,15 @@ static const struct v4l2_file_operations csis_fops = {
 static int csis_video_link_validate(struct media_link *link)
 {
 	struct video_device *vdev = media_entity_to_video_device(link->sink->entity);
-	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(link->source->entity);
 	struct csis *c = video_get_drvdata(vdev);
-	const struct v4l2_mbus_framefmt *f;
-	struct v4l2_subdev_state *state;
-	struct v4l2_mbus_framefmt fmt;
+	const struct v4l2_mbus_framefmt *f = &c->fmt_sink;
 
-	state = v4l2_subdev_lock_and_get_active_state(sd);
-	f = v4l2_subdev_state_get_format(state, link->source->index);
-	fmt = *f;
-	v4l2_subdev_unlock_state(state);
-
-	if (fmt.width != c->fmt.width || fmt.height != c->fmt.height ||
-	    !csis_find_code(fmt.code) ||
-	    csis_find_code(fmt.code)->fourcc != c->fmt.pixelformat) {
-		dev_dbg(c->dev, "video format %ux%u %p4cc does not match the pipeline %ux%u code %#x\n",
+	if (f->width != c->fmt.width || f->height != c->fmt.height ||
+	    !csis_find_code(f->code) ||
+	    csis_find_code(f->code)->fourcc != c->fmt.pixelformat) {
+		dev_dbg(c->dev, "video format %ux%u %p4cc does not match pipeline %ux%u code %#x\n",
 			c->fmt.width, c->fmt.height, &c->fmt.pixelformat,
-			fmt.width, fmt.height, fmt.code);
+			f->width, f->height, f->code);
 		return -EPIPE;
 	}
 	return 0;
@@ -1059,28 +1043,35 @@ static void csis_unregister(struct csis *c)
 	media_device_unregister(&c->mdev);
 }
 
-static int csis_notify_bound(struct v4l2_async_notifier *n, struct v4l2_subdev *sd,
-			     struct v4l2_async_connection *asc)
+/*
+ * Create a single link from the bound sensor subdev's source pad (pad 0) to
+ * the CSIS sink pad. 4.14 has no v4l2_create_fwnode_links_to_pad(); the sensor
+ * driver registers a single source pad and csis has a single sink pad, so the
+ * topological link is unambiguous here.
+ */
+static int csis_create_sensor_link(struct v4l2_subdev *sd, struct media_pad *sink,
+				   u32 flags)
 {
-	struct csis *c = container_of(n, struct csis, notifier);
 	int ret;
 
-	/*
-	 * Several sensors can share the port (the tele and front cameras sit
-	 * behind a mux): their links are selectable, never enabled by default,
-	 * and csis_link_setup() allows one at a time. A lone sensor is wired
-	 * permanently.
-	 */
-	ret = v4l2_create_fwnode_links_to_pad(sd, &c->pads[CSIS_PAD_SINK],
-					      c->nr_sensors == 1 ?
-					      MEDIA_LNK_FL_ENABLED | MEDIA_LNK_FL_IMMUTABLE : 0);
-	if (ret)
+	ret = media_create_pad_link(&sd->entity, 0, sink->entity, sink->index, flags);
+	if (ret && ret != -EEXIST)
 		return ret;
 	return 0;
 }
 
+static int csis_notify_bound(struct v4l2_async_notifier *n, struct v4l2_subdev *sd,
+			     struct v4l2_async_subdev *asd)
+{
+	struct csis *c = container_of(n, struct csis, notifier);
+
+	return csis_create_sensor_link(sd, &c->pads[CSIS_PAD_SINK],
+					c->nr_sensors == 1 ?
+					MEDIA_LNK_FL_ENABLED | MEDIA_LNK_FL_IMMUTABLE : 0);
+}
+
 static void csis_notify_unbind(struct v4l2_async_notifier *n, struct v4l2_subdev *sd,
-			       struct v4l2_async_connection *asc)
+			       struct v4l2_async_subdev *asd)
 {
 	struct csis *c = container_of(n, struct csis, notifier);
 
@@ -1103,51 +1094,85 @@ static int csis_notify_complete(struct v4l2_async_notifier *n)
 	return 0;
 }
 
-static const struct v4l2_async_notifier_operations csis_notify_ops = {
-	.bound = csis_notify_bound,
-	.unbind = csis_notify_unbind,
-	.complete = csis_notify_complete,
-};
-
 static int csis_parse_dt(struct csis *c)
 {
 	struct fwnode_handle *fwnode;
 	int ret = 0;
 
 	c->lanes = 0;
-	fwnode_graph_for_each_endpoint(dev_fwnode(c->dev), fwnode) {
-		struct v4l2_fwnode_endpoint ep = { .bus_type = V4L2_MBUS_CSI2_DPHY };
+	c->nr_sensors = 0;
+	c->notifier.subdevs = NULL;
+	c->notifier.num_subdevs = 0;
 
-		if (!c->nr_sensors)
-			v4l2_async_nf_init(&c->notifier, &c->v4l2_dev);
+	/* Pre-count endpoints to size the subdevs array (4.14 has no
+	 * fwnode_graph_for_each_endpoint() macro). */
+	fwnode = fwnode_graph_get_next_endpoint(dev_fwnode(c->dev), NULL);
+	while (fwnode) {
+		c->nr_sensors++;
+		fwnode_handle_put(fwnode);
+		fwnode = fwnode_graph_get_next_endpoint(dev_fwnode(c->dev), fwnode);
+	}
+
+	if (!c->nr_sensors)
+		return dev_err_probe(c->dev, -EINVAL, "no sensor endpoint in the device tree\n");
+
+	c->notifier.subdevs = devm_kcalloc(c->dev, c->nr_sensors,
+					   sizeof(*c->notifier.subdevs), GFP_KERNEL);
+	if (!c->notifier.subdevs)
+		return -ENOMEM;
+
+	c->nr_sensors = 0;
+	fwnode = fwnode_graph_get_next_endpoint(dev_fwnode(c->dev), NULL);
+	while (fwnode) {
+		struct v4l2_fwnode_endpoint ep = { };
+		struct fwnode_handle *remote;
+		struct fwnode_handle *next = fwnode_graph_get_next_endpoint(dev_fwnode(c->dev), fwnode);
+		struct v4l2_async_subdev *asd;
+
 		ret = v4l2_fwnode_endpoint_parse(fwnode, &ep);
 		if (ret) {
 			dev_err_probe(c->dev, ret, "cannot parse the endpoint\n");
+			fwnode_handle_put(fwnode);
+			fwnode = next;
 			break;
 		}
 		if (ep.bus.mipi_csi2.num_data_lanes < 1 || ep.bus.mipi_csi2.num_data_lanes > 4 ||
 		    (c->lanes && c->lanes != ep.bus.mipi_csi2.num_data_lanes)) {
 			ret = dev_err_probe(c->dev, -EINVAL,
 					    "1..4 data lanes, the same for all sensors\n");
+			fwnode_handle_put(fwnode);
+			fwnode = next;
 			break;
 		}
 		c->lanes = ep.bus.mipi_csi2.num_data_lanes;
-		if (IS_ERR(v4l2_async_nf_add_fwnode_remote(&c->notifier, fwnode,
-							    struct v4l2_async_connection))) {
+
+		remote = fwnode_graph_get_remote_endpoint(fwnode);
+		if (!remote) {
+			fwnode_handle_put(fwnode);
+			fwnode = next;
+			ret = -EINVAL;
+			break;
+		}
+		asd = devm_kzalloc(c->dev, sizeof(*asd), GFP_KERNEL);
+		if (!asd) {
+			fwnode_handle_put(remote);
+			fwnode_handle_put(fwnode);
+			fwnode = next;
 			ret = -ENOMEM;
 			break;
 		}
+		asd->match_type = V4L2_ASYNC_MATCH_FWNODE;
+		asd->match.fwnode.fwnode = remote;
+		c->notifier.subdevs[c->notifier.num_subdevs++] = asd;
 		c->nr_sensors++;
-	}
-	if (!ret && !c->nr_sensors)
-		return dev_err_probe(c->dev, -EINVAL, "no sensor endpoint in the device tree\n");
-	if (ret) {
 		fwnode_handle_put(fwnode);
-		if (c->nr_sensors)
-			v4l2_async_nf_cleanup(&c->notifier);
-		return ret;
+		fwnode = next;
 	}
-	c->notifier.ops = &csis_notify_ops;
+	if (ret)
+		return ret;
+	c->notifier.bound = csis_notify_bound;
+	c->notifier.unbind = csis_notify_unbind;
+	c->notifier.complete = csis_notify_complete;
 	return 0;
 }
 
@@ -1156,7 +1181,6 @@ static void __iomem *csis_map(struct platform_device *pdev, const char *name)
 	return devm_platform_ioremap_resource_byname(pdev, name);
 }
 
-/* The DMA top block and the PHY reset register are shared by all channels. */
 static void __iomem *csis_map_shared(struct platform_device *pdev, const char *name)
 {
 	struct resource *res = platform_get_resource_byname(pdev, IORESOURCE_MEM, name);
@@ -1201,11 +1225,11 @@ static int csis_probe(struct platform_device *pdev)
 	c->pmu = syscon_regmap_lookup_by_phandle(dev->of_node, "samsung,pmu-syscon");
 	if (IS_ERR(c->pmu))
 		return dev_err_probe(dev, PTR_ERR(c->pmu), "PMU syscon\n");
-	for (i = 0; i < C_NUM; i++)
-		c->clks[i].id = clk_names[i];
-	ret = devm_clk_bulk_get(dev, C_NUM, c->clks);
-	if (ret)
-		return dev_err_probe(dev, ret, "clocks\n");
+	for (i = 0; i < C_NUM; i++) {
+		c->clk[i] = devm_clk_get(dev, clk_names[i]);
+		if (IS_ERR(c->clk[i]))
+			return dev_err_probe(dev, PTR_ERR(c->clk[i]), "clock %s\n", clk_names[i]);
+	}
 
 	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32));
 	if (ret)
@@ -1216,11 +1240,10 @@ static int csis_probe(struct platform_device *pdev)
 	c->irq_dma = platform_get_irq_byname(pdev, "dma");
 	if (c->irq_csis < 0 || c->irq_dma < 0)
 		return dev_err_probe(dev, -ENODEV, "interrupts\n");
-	/* Both stay off until the hardware is set up: the block is unclocked */
-	ret = devm_request_irq(dev, c->irq_csis, csis_csi_irq, IRQF_NO_AUTOEN, DRV_NAME "-csis", c);
+	ret = devm_request_irq_noautoen(dev, c->irq_csis, csis_csi_irq, 0, DRV_NAME "-csis", c);
 	if (ret)
 		return ret;
-	ret = devm_request_irq(dev, c->irq_dma, csis_dma_irq, IRQF_NO_AUTOEN, DRV_NAME "-dma", c);
+	ret = devm_request_irq_noautoen(dev, c->irq_dma, csis_dma_irq, 0, DRV_NAME "-dma", c);
 	if (ret)
 		return ret;
 
@@ -1228,7 +1251,6 @@ static int csis_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
-	/* Media device and V4L2 device */
 	c->mdev.dev = dev;
 	strscpy(c->mdev.model, "Exynos 9820 camera", sizeof(c->mdev.model));
 	snprintf(c->mdev.bus_info, sizeof(c->mdev.bus_info), "platform:%s", dev_name(dev));
@@ -1238,9 +1260,7 @@ static int csis_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_mdev;
 
-	/* CSIS subdevice */
 	v4l2_subdev_init(&c->sd, &csis_subdev_ops);
-	c->sd.internal_ops = &csis_internal_ops;
 	c->sd.owner = THIS_MODULE;
 	c->sd.dev = dev;
 	c->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
@@ -1253,11 +1273,10 @@ static int csis_probe(struct platform_device *pdev)
 	ret = media_entity_pads_init(&c->sd.entity, CSIS_NUM_PADS, c->pads);
 	if (ret)
 		goto err_v4l2;
-	ret = v4l2_subdev_init_finalize(&c->sd);
-	if (ret)
-		goto err_entity;
 
-	/* Capture node */
+	/* default active sink format */
+	csis_fill_format(&c->fmt_sink, MEDIA_BUS_FMT_SGRBG10_1X10, 2304, 1728);
+
 	c->fmt.width = 2304;
 	c->fmt.height = 1728;
 	c->fmt.pixelformat = V4L2_PIX_FMT_SGRBG10;
@@ -1272,12 +1291,10 @@ static int csis_probe(struct platform_device *pdev)
 	c->queue.timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC | V4L2_BUF_FLAG_TSTAMP_SRC_SOE;
 	c->queue.lock = &c->lock;
 	c->queue.dev = dev;
-	c->queue.allow_cache_hints = 1;
-	c->queue.min_queued_buffers = 1;
-	c->queue.min_reqbufs_allocation = 4;
+	c->queue.min_buffers_needed = 1;
 	ret = vb2_queue_init(&c->queue);
 	if (ret)
-		goto err_subdev;
+		goto err_entity;
 
 	strscpy(c->vdev.name, "exynos9820-csis capture", sizeof(c->vdev.name));
 	c->vdev.fops = &csis_fops;
@@ -1287,23 +1304,18 @@ static int csis_probe(struct platform_device *pdev)
 	c->vdev.queue = &c->queue;
 	c->vdev.lock = &c->lock;
 	c->vdev.vfl_dir = VFL_DIR_RX;
-	c->vdev.device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING | V4L2_CAP_IO_MC;
+	c->vdev.device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
 	c->vdev.entity.ops = &csis_video_entity_ops;
 	c->vdev_pad.flags = MEDIA_PAD_FL_SINK | MEDIA_PAD_FL_MUST_CONNECT;
 	ret = media_entity_pads_init(&c->vdev.entity, 1, &c->vdev_pad);
 	if (ret)
-		goto err_subdev;
+		goto err_entity;
 	video_set_drvdata(&c->vdev, c);
 
-	/*
-	 * Entities have to be registered with the media device before links
-	 * can be created to them, so both are registered now; the media device
-	 * node itself appears once the sensor is bound.
-	 */
 	ret = v4l2_device_register_subdev(&c->v4l2_dev, &c->sd);
 	if (ret)
 		goto err_vdev_entity;
-	ret = video_register_device(&c->vdev, VFL_TYPE_VIDEO, -1);
+	ret = video_register_device(&c->vdev, VFL_TYPE_GRABBER, -1);
 	if (ret)
 		goto err_reg_sd;
 	ret = media_create_pad_link(&c->sd.entity, CSIS_PAD_SRC, &c->vdev.entity, 0,
@@ -1314,11 +1326,9 @@ static int csis_probe(struct platform_device *pdev)
 	ret = csis_parse_dt(c);
 	if (ret)
 		goto err_reg_video;
-	ret = v4l2_async_nf_register(&c->notifier);
-	if (ret) {
-		v4l2_async_nf_cleanup(&c->notifier);
+	ret = v4l2_async_notifier_register(&c->v4l2_dev, &c->notifier);
+	if (ret)
 		goto err_reg_video;
-	}
 	dev_info(dev, "waiting for the sensor (needs s10-isppre-hold.ko to keep the ISPPRE domain on)\n");
 	return 0;
 
@@ -1328,8 +1338,6 @@ err_reg_sd:
 	v4l2_device_unregister_subdev(&c->sd);
 err_vdev_entity:
 	media_entity_cleanup(&c->vdev.entity);
-err_subdev:
-	v4l2_subdev_cleanup(&c->sd);
 err_entity:
 	media_entity_cleanup(&c->sd.entity);
 err_v4l2:
@@ -1339,20 +1347,19 @@ err_mdev:
 	return ret;
 }
 
-static void csis_remove(struct platform_device *pdev)
+static int csis_remove(struct platform_device *pdev)
 {
 	struct csis *c = platform_get_drvdata(pdev);
 
-	v4l2_async_nf_unregister(&c->notifier);
+	v4l2_async_notifier_unregister(&c->notifier);
 	csis_unregister(c);
 	video_unregister_device(&c->vdev);
 	v4l2_device_unregister_subdev(&c->sd);
-	v4l2_async_nf_cleanup(&c->notifier);
 	media_entity_cleanup(&c->vdev.entity);
-	v4l2_subdev_cleanup(&c->sd);
 	media_entity_cleanup(&c->sd.entity);
 	v4l2_device_unregister(&c->v4l2_dev);
 	media_device_cleanup(&c->mdev);
+	return 0;
 }
 
 static const struct dev_pm_ops csis_pm_ops = {

@@ -268,3 +268,130 @@ New files:
 
 No synthetic/test-pattern frame has been claimed. No proprietary firmware or
 generated sensor binaries are committed to public git.
+
+## Session 4 (2026-11-20 continuation) — Port-scope analysis complete, port not yet started
+
+### State confirmed (no regressions)
+- Live device `root@10.11.12.99` reachable, kernel `4.14.253-gf7194c1d15ed-dirty`.
+- 8 firmware blobs intact at `/system/vendor/firmware/` (7 visible in listing; setfile_4ha.bin
+  expected too — verify before relying on it).
+- Full `/dev/video*` FIMC-IS2 node set intact (vendor driver still loaded — rollback sane).
+
+### Foundation verified (unchanged from Session 3, re-confirmed this session)
+- Host has the EXACT running kernel source at `kernel/s10plus/.build/src/`
+  (git HEAD f7194c1d15ed == live). No need to rsync from device.
+- In-tree media framework present and gated behind config:
+  drivers/media/v4l2-core/{v4l2-subdev,v4l2-async,v4l2-fwnode,v4l2-mc,v4l2-ctrls,v4l2-device}.c
+  drivers/media/media-{device,entity,devnode}.c
+  videobuf2-{core,v4l2,dma-contig,dma-sg,vmalloc,memops}.c
+  include/media/v4l2-{subdev,async,fwnode,mc,mediabus}.h
+- The Stage-B driver source is staged at repo root `drivers/s10-camera-v4l2/`
+  (upstream s10-linux @ d8135b2, GPL-2.0, provenance preserved).
+- Generated sensor runtime data staged at `pwn/s5k-firmware-out/*.s5k` +
+  `pwn/camera-tables-out/*-tables.h` (matches upstream manifest SHA-256).
+
+### Port scope fully mapped this session (NEW — this is the concrete TODO)
+exynos9820-csis.c and s5k-cis.c are post-6.x V4L2. The 4.14 tree LACKS all of:
+
+  structural/API:
+   - v4l2_subdev_state (use v4l2_subdev_pad_config + per-pad format storage)
+   - v4l2_subdev_state_get_format() (new internal per-pad lookup)
+   - v4l2_subdev_lock_and_get_active_state() / v4l2_subdev_init_finalize()
+   - pad ops .init_state (use internal_ops .open = csis_open to init pad_config)
+   - .enable_streams/.disable_streams (rewrite as legacy video .s_stream +
+     v4l2_subdev_s_stream helper semantics; the driver sets V4L2_SUBDEV_FL_STREAMS)
+   - v4l2_subdev_enable_streams/disable_streams (replace with v4l2_subdev_call .s_stream)
+   - v4l2_subdev_s_stream_helper (shim or drop; helper expects modern state)
+
+  async/fwnode:
+   - v4l2_async_connection / v4l2_async_nf_init/add_fwnode_remote/register
+     (use 4.14 v4l2_async_notifier + v4l2_async_subdev + notifier bound/complete/unbind ops)
+   - v4l2_create_fwnode_links_to_pad (port from 4.14 media docs / s10-linux git history)
+   - v4l2_fwnode_endpoint_parse / _alloc_parse / v4l2_fwnode_device_parse /
+     v4l2_ctrl_new_fwnode_properties / v4l2_link_freq_to_bitmap / v4l2_get_link_freq
+     (4.14 has v4l2_fwnode_endpoint_parse with a BUS_TYPE struct variant, not CSI2_DPHY enum;
+     must adapt the CSI2 lane field layout)
+
+  pipeline/media:
+   - video_device_pipeline_start/stop -> media_entity_pipeline_start/stop()
+   - media_pad_remote_pad_unique() (4.14 has media_pad_remote_pad_first / media-entity core;
+     add a small helper in-driver)
+   - media_pad_is_streaming / v4l2_subdev_get_fmt helpers
+
+  misc/helpers (4.14 lacks):
+   - dev_err_probe() (shim: dev_err + return)
+   - devm_platform_ioremap_resource_byname() (shim: platform_get_resource_byname + devm_ioremap)
+   - clk_bulk_data / devm_clk_bulk_get() (rewrite as 4 individual devm_clk_get calls)
+   - linux/mux/consumer.h mux_control (4.14 uses a Samsung pinctrl/gpio mux; must map to
+     the beyond2lte camera I2C-mux gpio/pinctrl, inspect fimc-is2 for the actual mux control)
+   - pm_runtime_resume_and_get -> pm_runtime_get_sync (check return semantics)
+   - __v4l2_ctrl_modify_range/s_ctrl -> v4l2_ctrl_modify_range/s_ctrl (exported variants)
+   - IRQF_NO_AUTOEN -> request_irq then disable_irq_nosync
+   - crypto/sha2.h sha256() (4.14 has lib/sha256.c sha256() or use shash; verify)
+   - get_unaligned_be16 (in-tree <asm/unaligned.h> / <linux/unaligned/be_byteshift.h>)
+   - request_firmware_direct (may need ascii->shim; 4.14 request_firmware is synchronous)
+   - FIELD_GET / GENMASK / clamp / roundup (all present in 4.14 <linux/bitfield.h> etc.)
+
+### remaining before first compile
+- Port both drivers per above; add s10-isppre-hold.ko (upstream keeps ISPPRE domain on;
+  verify exynos9820 has this — else the CMU becomes unreachable after power-off).
+- Write beyond2lte camera DTBO (5 sensors: 2L4/3M3/3P9/3J1/4HA + CSIS0/1/2/3 +
+  clocks/regulators/gpio/reset/PHY pmu offsets/reset bits; 4HA has no upstream model table —
+  must be added or intentionally excluded with documented limitation).
+- Enable media framework fragment (kernel/s10plus/configs/nuxel-camera-v4l2.fragment) and
+  wire drivers/s10-camera-v4l2 into kernel Kconfig/Makefile.
+- Cross-compile; preserve known-good boot image; flash via TWRP (auuthorized in pwn/cam.md);
+  bounded first-frame test.
+
+### Files created/changed this session
+- (none new; analysis only. Re-confirmed all Session 3 artifacts intact.)
+
+## Session 5 (2026-11-20) — 4.14 API port COMPILED; DTBO + full build + flash remain
+
+### Port of s10-camera-v4l2 → 4.14.253 drivers COMPILES (verified offline)
+The previous session only *mapped* the port surface. This session ported all three
+drivers (plus the ISPPRE-hold aid) and proved they compile against the pinned
+4.14 tree (aarch64-linux-gnu-gcc 15.2, beyond2lte defconfig + camera fragment):
+
+  drivers/media/platform/s10-camera/{exynos9820-csis,s5k-cis,ak7374,s10-isppre-hold}.o
+  ALL COMPILE CLEAN (no errors; only benign min_t/clamp pointer-type warnings).
+
+Concrete 4.14 API conversions applied (validated against include/ in-tree):
+  - v4l2_subdev_state -> v4l2_subdev_pad_config; .init_state -> pad .init_cfg;
+    ACTIVE format tracked in driver struct (4.14 has no subdev active-state).
+  - .enable_streams/.disable_streams -> legacy video_ops .s_stream (single fn).
+  - v4l2_async_nf_*/v4l2_async_connection -> 4.14 v4l2_async_notifier +
+    v4l2_async_subdev[] with FWNODE match + bound/unbind/complete fptrs.
+  - v4l2_create_fwnode_links_to_pad -> inline media_create_pad_link from the
+    sensor's single source pad to the CSIS sink pad.
+  - dev_err_probe, pm_runtime_resume_and_get, media_pad_remote_pad_unique,
+    video_device_pipeline_start/stop, media_pad_is_streaming, link-freq and
+    fwnode-device-props -> shims in s10-compat.h (this downstream 4.14 already
+    has clk_bulk_data + devm_clk_bulk_get, so those shims were dropped).
+  - sha256()/crypto/sha2.h absent -> crypto_shash "sha256" digest.
+  - request_firmware_direct /\`hex2bin\`/mux_control all present in this tree.
+  - 4.14 lacks: V4L2_CAP_IO_MC, v4l2_fmtdesc.mbus_code, vb2 min_queued_buffers/
+    min_reqbufs_allocation, VFL_TYPE_VIDEO (uses VFL_TYPE_GRABBER),
+    fwnode_graph_for_each_endpoint, i2c .probe 1-arg (uses .probe_new). All fixed.
+
+### Key live-device facts (from SSH root@10.11.12.99)
+  - Machine: "Samsung BEYOND2LTE EUR OPEN 26 board"; compatible "samsung,armv8",
+    "samsung,exynos9820" (NOT "beyond2lte" string) -> isppre-hold gate changed
+    to of_machine_is_compatible("samsung,exynos9820").
+  - DTB target: exynos9820-beyond2lte_eur_open_26.*
+  - Vendor FIMC-IS2 + all 5 sensors (2l4@20,3j1@10,3m3@5A,3p9@2D,4ha@10) and
+    MIPI D-PHY nodes already present in the live DT -> DTBO must overlay new
+    csis nodes using existing PMU/clock/gpio/regulator phandles.
+
+### Next (bounded)
+  1. Author beyond2lte camera DTBO (csis x4 + 5 sensors + isppre-hold +
+     isppre-clock) mapped to the existing beyond2lte phandles.
+  2. Full kernel build (build-kernel.sh with the camera fragment) -> boot image.
+  3. Preserve known-good boot image; flash via TWRP/adb; reboot; first-frame test.
+
+### Files changed this session
+  - drivers/s10-camera-v4l2/{exynos9820-csis.c,s5k-cis.c,ak7374.c} (ported)
+  - drivers/s10-camera-v4l2/s10-compat.h (new shim header)
+  - drivers/s10-camera-v4l2/s10-isppre-hold.c (new, beyond2lte)
+  - kernel .build/src/drivers/media/platform/s10-camera/{Kconfig,Makefile}
+  - kernel/s10plus/configs/nuxel-camera-v4l2.fragment (+VIDEO_S10_CAMERA=m)
