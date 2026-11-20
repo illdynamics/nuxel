@@ -433,3 +433,32 @@ exynos9820-beyond2lte_eur_open_26.dtb before the overlay is flashable.
   - Driver 4.14 port: COMPLETE + compiles clean (the core deliverable).
   - DTBO: structure authored; board phandles + full build + flash + physical
     first-frame + app integration REMAIN.
+
+## Session 5 (cont. 2) — Live DT decompiled; CSIS phandles RESOLVED
+
+### Safe non-destructive progress
+- Copied the 4 `.s5k` sensor runtime files to the live device
+  `/lib/firmware/samsung/s10/{s5k2l4,s5k3j1,s5k3m3,s5k3p9}.s5k`; SHA-256 matches
+  the driver manifest EXACTLY (b9a47b96..., ef8decfa..., d7241d42..., 23632888...).
+  No kernel flash performed.
+
+### Live DTB decompiled (dtc 1.8.1) — key camera phandles now known
+  pd_isppre              = phandle 0x07  (/pd-isppre@15862500, exynos-pd)
+  sysreg_isppre_reset    = phandle 0x41  (/system-controller@17020500, reg 0x17020500 +0x4)
+  pmu_system_controller  = phandle 0x54  (/system-controller@15860000, reg 0x15860000 +0x10000, syscon)
+  mipi_phy_csis2 (2L4)   = phandle 0x43  reg 0x19162300 +0x500  isolation 0x730 reset bit 1
+  mipi_phy_csis1 (3J1)   = phandle 0x45  reg 0x19162b00 +0x500  isolation 0x730 reset bit 2
+  mipi_phy_csis3 (3M3?)  = phandle 0x46  reg 0x19163300 +0x300  isolation 0x730 reset bit 3
+  exynos_dm (ISPPRE CMU) = /exynos-dm@17000000 (0x17000000)
+
+  -> csis driver's samsung,pmu-phy-offset = 0x730 (isolation) and
+     samsung,phy-reset-bit = D-PHY reset bit for each channel.
+
+### Remaining (next continuation)
+  1. Resolve per-sensor I2C-controller + regulator + reset-GPIO + pinctrl
+     phandles from /tmp/live.dts (18358 lines, decompiled) for all 5 sensors.
+  2. Native kernel build ON the live device (aarch64 gcc 15.3.1, case-sensitive
+     fs) with the nuxel-all fragment — macOS host is case-insensitive and cannot
+     build netfilter.
+  3. Preserve known-good boot image; flash via TWRP/adb (cam.md authorized);
+     reboot; bounded first-frame test; then app integration.
