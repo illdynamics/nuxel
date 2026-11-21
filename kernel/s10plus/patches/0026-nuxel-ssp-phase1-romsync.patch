@@ -1,0 +1,94 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH 0026] sensorhub/ssp: phase-1 raw-SSI boot-ROM sync before WHOAMI
+
+The BCM47752 boot ROM only leaves its autobaud window after a raw SSI
+autobaud+GetVersion ping driven over direct bcm_spi_sync()/bcm_ssi_rx() —
+NOT the hello-gated /dev/ttyBCM circ-buffer that bcm_rxtx_work_func() drives
+after bcm477x_hello() waits for mcu_resp.
+
+bcm477x_rpc_get_version() already implements that phase-1 sequence in
+bcm_gps_regs.c but has no caller in the native path.  Wire it into
+nuxel_ssp_bringup_hw()'s rail cold-cycle recovery: after regulator_force_disable
++ regulator_enable re-enters the cold power-on window, run the raw-SSI sync so
+the ROM transitions out of autobaud before initialize_mcu() issues WHOAMI.
+
+This is one step of the two-phase download; the phase-2 reliable MemoryWrite/
+StartScratchApp/ServiceStart/GetVersion records remain in the userspace native
+downloader, which now runs after the ROM is actually in its download state.
+
+NOTE: applies on top of 0023 (which supersedes 0020 for ssp_dev.c/ssp_sysfs.c)
+and 0025.
+
+Signed-off-by: Nuxel <nuxel@localhost>
+
+diff --git a/drivers/sensorhub/brcm/ssp_bbd.c b/drivers/sensorhub/brcm/ssp_bbd.c
+index 3b949c8..0207994 100644
+--- a/drivers/sensorhub/brcm/ssp_bbd.c
++++ b/drivers/sensorhub/brcm/ssp_bbd.c
+@@ -14,6 +14,13 @@
+  */
+ 
+ #include "ssp.h"
++/* Forward declarations for the bbdpl direct-SSI boot-ROM path (no header
++ * include: bcm_gps_spi.h needs struct spi_device / circ_buf which ssp.h does
++ * not pull in).  Both symbols are built into the same vmlinux (CONFIG_BCM_GPS_
++ * SPI_DRIVER=y, CONFIG_SENSORS_SSP_BBD=y). */
++struct bcm_spi_priv;
++struct bcm_spi_priv *bcm_get_bcm_gps(void);
++int bcm477x_rpc_get_version(void *prv, char *id);
+ 
+ 
+ bool ssp_dbg;
+@@ -82,6 +89,32 @@ void nuxel_ssp_register_data(struct ssp_data *data)
+ }
+ EXPORT_SYMBOL_GPL(nuxel_ssp_register_data);
+ 
++/*
++ * Nuxel PWNAGE-SSP: phase-1 boot-ROM synchronisation.
++ *
++ * The BCM47752 boot ROM only enters its reliable-download state after a raw
++ * SSI autobaud+GetVersion ping.  The vendor kernel already implements this in
++ * bcm477x_rpc_get_version() (drivers/sensorhub/brcm/bbdpl/bcm_gps_regs.c),
++ * which drives bcm_spi_sync()/bcm_ssi_rx() DIRECTLY — it does NOT go through
++ * the hello-gated /dev/ttyBCM circ-buffer — and is exported but has no caller
++ * in the native path.  Call it here as the phase-1 handshake, after the rail
++ * has been genuinely cold-cycled, before any WHOAMI/reliable RPC.
++ *
++ * Returns 0 on a ROM reply, -ENODEV when the SPI transport is not up,
++ * -ETIMEDOUT when the ROM stays silent (the honest "not in cold window" case).
++ */
++static int nuxel_ssp_dl_romsync(void)
++{
++	struct bcm_spi_priv *priv = bcm_get_bcm_gps();
++
++	if (!priv)
++		return -ENODEV;
++	/* bcm477x_rpc_get_version() is the raw-SSI autobaud+GetVersion path. */
++	if (bcm477x_rpc_get_version(priv, "nuxel-dl"))
++		return -EIO;
++	return 0;
++}
++
+ /*
+  * Bring the sensor hub out of the post-probe shutdown state without the
+  * Android vendor lhd daemon.  This performs only the kernel's own documented
+@@ -161,6 +194,19 @@ int nuxel_ssp_bringup_hw(void)
+ 			ret, regulator_is_enabled(data->regulator_vdd_mcu_1p8));
+ 		msleep(300);	/* MCU boot time after rail settle */
+ 
++		/*
++		 * The hub is now in a genuine cold power-on window.  Drive the
++		 * phase-1 raw-SSI ROM sync (autobaud + GetVersion) so the boot ROM
++		 * transitions out of autobaud and can accept the firmware download
++		 * and the subsequent WHOAMI handshake.  bcm477x_rpc_get_version()
++		 * bypasses the hello-gated /dev/ttyBCM path and uses direct
++		 * bcm_spi_sync()/bcm_ssi_rx().
++		 */
++		{
++			int rsync = nuxel_ssp_dl_romsync();
++			pr_info("[SSPBBD] Nuxel bring-up: phase-1 ROM sync -> %d\n", rsync);
++		}
++
+ 		clean_pending_list(data);
+ 		data->resetting = false;
+ 		if (data->bSspShutdown)
