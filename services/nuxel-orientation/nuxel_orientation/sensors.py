@@ -267,7 +267,22 @@ class SensorHubControl:
         }
 
     def ensure_streaming(self, force=False):
-        """Ask the kernel to start the sensor hub; verify with real raw_data."""
+        """Verify a real sample; never synthesise hub readiness (sensor only).
+
+        The single authoritative owner of BCM47752 initialization is the
+        kernel itself via the PWNAGE-SSP ``nuxel_bringup`` sysfs, driven by
+        ``nuxel-ssp-bridge.service``.  The orientation daemon is a *consumer*
+        of real sensor data, not an initialization owner, and must not race
+        the bridge or the kernel by writing control strings or enable bits.
+
+        PREMATURE READINESS REMOVED: the historic path that wrote ``ESW:READY``
+        into /dev/bbd_control (and OR-ed the accelerometer enable bit) is gone.
+        ``ESW:READY`` is a daemon notification that queues the kernel MCU-ready
+        worker, which can power/reset the hub; emitting it without a verified
+        firmware/app readiness condition is precisely the hazard the SSP
+        protocol report forbids.  When the native bridge ABI is present the
+        kernel/bridge own bring-up and this method only observes the result.
+        """
         now = time.monotonic()
         if not force and self._last_status and self._last_status.get("streaming"):
             return self._last_status
@@ -275,53 +290,42 @@ class SensorHubControl:
                 (now - self._last_attempt) * 1000.0 < self.retry_interval_ms):
             return self._last_status or self.status()
         self._last_attempt = now
+
+        # Native bridge ABI: the kernel owns initialization.  Observe only.
+        native = self._native_bridge_abi_path()
+        if native and os.path.exists(self._p(native)):
+            # Give a just-started bridge/kernel a bounded moment to stream,
+            # then report the truthful current state (honestly unavailable
+            # while raw_data remains zero).  No control writes are made here.
+            deadline = time.monotonic() + self.startup_timeout_ms / 1000.0
+            status = self.status()
+            while not status.get("streaming") and time.monotonic() < deadline:
+                time.sleep(0.05)
+                status = self.status()
+            if not status.get("streaming"):
+                status["reason"] = (
+                    "BCM47752 MCU is not streaming after kernel bring-up "
+                    "(see nuxel_hub_diag / nuxel-ssp-bridge log)")
+            self._last_status = status
+            return status
+
+        # Legacy path (no native bridge ABI): the vendor lhd runtime would be
+        # the only thing able to patch the MCU; without it there is nothing
+        # this daemon can safely do.  Report unavailable, never write control.
         before = self.status()
         if before.get("streaming"):
             self._last_status = before
             return before
-        if not self.auto_start:
-            before["reason"] = before.get("reason") or "sensor auto-start disabled"
-            self._last_status = before
-            return before
-        # Without the vendor LHD runtime no kernel write can patch the MCU.
-        # Do not spam the kernel with doomed enable/reset transactions.
-        if not before.get("lhd_present"):
-            self._last_status = before
-            return before
-        if not before.get("android_linker_present"):
-            self._last_status = before
-            return before
-        # 1. Bring the MCU out of shutdown / request a fresh BBD handshake.
-        if os.path.exists(self._p(self.bbd_control_path)):
-            try:
-                with open(self._p(self.bbd_control_path), "w") as f:
-                    f.write("ESW:READY")
-            except OSError:
-                pass
-        # 2. Preserve any existing sensor bits and set accelerometer (bit 0).
-        try:
-            current = int(_read_text_file(self._p(self.enable_path)) or "0", 10)
-        except ValueError:
-            current = 0
-        wanted = current | self.enable_bit
-        if wanted != current:
-            try:
-                with open(self._p(self.enable_path), "w") as f:
-                    f.write("%d" % wanted)
-            except OSError:
-                pass
-        # 3. Verify with a real sample; never synthesize one.
-        deadline = time.monotonic() + self.startup_timeout_ms / 1000.0
-        status = self.status()
-        while not status.get("streaming") and time.monotonic() < deadline:
-            time.sleep(0.05)
-            status = self.status()
-        if not status.get("streaming"):
-            status["reason"] = (
-                "sensor-hub MCU did not stream after enable (LHD patch "
-                "handshake/chip-ID failed)")
-        self._last_status = status
-        return status
+        if not before.get("lhd_present") or not before.get("android_linker_present"):
+            before["reason"] = (
+                before.get("reason")
+                or "native bridge ABI absent and vendor lhd runtime missing; "
+                   "sensor-hub initialization is not owned by this service")
+        self._last_status = before
+        return before
+
+    def _native_bridge_abi_path(self):
+        return "/sys/class/sensors/ssp_sensor/nuxel_bringup"
 
 
 def hub_control_from_config(config=None, root="/"):

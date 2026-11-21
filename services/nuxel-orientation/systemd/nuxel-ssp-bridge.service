@@ -11,9 +11,12 @@ ExecStartPre=/usr/bin/python3 /usr/libexec/nuxel/nuxel-ssp-bridge --selftest
 ExecStart=/usr/bin/python3 /usr/libexec/nuxel/nuxel-ssp-bridge
 Restart=on-failure
 # Do not hammer the hub: a failed bring-up is retried with backoff, and the
-# bridge never powers the rail in a tight loop.
+# bridge never powers the rail in a tight loop.  A single RestartSec applies a
+# flat backoff; the start-limit below bounds the total retry storm so a
+# persistently unavailable hub cannot loop hardware operations forever.
 RestartSec=15
-RestartSec=3
+StartLimitIntervalSec=120
+StartLimitBurst=4
 User=root
 Group=root
 NoNewPrivileges=true
@@ -24,10 +27,12 @@ RuntimeDirectoryMode=0755
 PrivateTmp=false
 ProtectSystem=full
 ReadWritePaths=/run/nuxel-ssp-bridge
-# The four BBD/SSI device nodes and the sensor class sysfs are the contract.
+# The BBD sensor (peer contract) and the SSI tty are the transport contract;
+# the sysfs control attributes are write-through the kernel, not /dev files.
+# bbd_control is intentionally NOT granted: the bridge never writes ESW:READY
+# (it is a kernel-owned bring-up via nuxel_bringup, never a synthesized ready).
 DevicePolicy=closed
 DeviceAllow=/dev/bbd_sensor rw
-DeviceAllow=/dev/bbd_control rw
 DeviceAllow=/dev/ttyBCM rw
 
 [Install]
