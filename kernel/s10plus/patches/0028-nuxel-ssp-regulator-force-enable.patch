@@ -1,0 +1,112 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH 0028] regulator/sensorhub: add regulator_force_enable() and make the MCU cold-cycle symmetric
+
+The deployed 0025 cold-cycle is ONE-WAY on beyond2lte.  vdd_mcu_1p8
+(LDO21M) carries the DT regulator-always-on property, so per-handle
+always_on is set and regulator_enable()/regulator_is_enabled() become
+no-op/always-1.  regulator_force_disable() drops the rail but there is
+no matching force-enable, so echo 1 > mcu_power cannot re-raise it; only
+a full reboot restores power (confirmed on hardware).
+
+Add regulator_force_enable() (symmetric partner of force_disable) and
+use it in both power-cycle paths (set_mcu_power case 1 and 0023's
+nuxel_ssp_bringup_hw fallback).
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 7b56ce737141..093f02c88e00 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2396,6 +2396,38 @@ int regulator_force_disable(struct regulator *regulator)
+ }
+ EXPORT_SYMBOL_GPL(regulator_force_disable);
+ 
++/**
++ * regulator_force_enable - force enable regulator output
++ * @regulator: regulator source
++ *
++ * Forcibly enable the regulator output voltage or current, even for a
++ * regulator whose per-handle always_on flag makes a normal regulator_enable()
++ * a no-op.  This is the symmetric partner of regulator_force_disable(); it
++ * exists so a bounded, supervised power-cycle can be completed by following a
++ * regulator_force_disable() with a regulator_force_enable() that physically
++ * re-raises the rail back to its pre-cycle (enabled) state.
++ *
++ * NOTE: this will enable the regulator output even if other consumers are
++ * disabled.  Only call it from an explicit recovery path immediately after a
++ * regulator_force_disable() on the same regulator.
++ */
++int regulator_force_enable(struct regulator *regulator)
++{
++	struct regulator_dev *rdev = regulator->rdev;
++	int ret;
++
++	mutex_lock(&rdev->mutex);
++	ret = _regulator_do_enable(rdev);
++	mutex_unlock(&rdev->mutex);
++
++	if (rdev->supply)
++		while (rdev->open_count--)
++			regulator_enable(rdev->supply);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regulator_force_enable);
++
+ static void regulator_disable_work(struct work_struct *work)
+ {
+ 	struct regulator_dev *rdev = container_of(work, struct regulator_dev,
+diff --git a/drivers/sensorhub/brcm/ssp_bbd.c b/drivers/sensorhub/brcm/ssp_bbd.c
+index 4b63014cf7c3..71c6fc25e6a1 100644
+--- a/drivers/sensorhub/brcm/ssp_bbd.c
++++ b/drivers/sensorhub/brcm/ssp_bbd.c
+@@ -154,9 +154,9 @@ int nuxel_ssp_bringup_hw(void)
+ 	    !IS_ERR(data->regulator_vdd_mcu_1p8)) {
+ 		pr_err("[SSPBBD] Nuxel bring-up: retrying after MCU power-cycle\n");
+ 		if (regulator_is_enabled(data->regulator_vdd_mcu_1p8))
+-			regulator_disable(data->regulator_vdd_mcu_1p8);
++			regulator_force_disable(data->regulator_vdd_mcu_1p8);
+ 		msleep(120);
+-		ret = regulator_enable(data->regulator_vdd_mcu_1p8);
++		ret = regulator_force_enable(data->regulator_vdd_mcu_1p8);
+ 		pr_info("[SSPBBD] Nuxel bring-up: vdd_mcu_1p8 re-enabled -> %d (enabled=%d)\n",
+ 			ret, regulator_is_enabled(data->regulator_vdd_mcu_1p8));
+ 		msleep(300);	/* MCU boot time after rail settle */
+diff --git a/drivers/sensorhub/brcm/ssp_sysfs.c b/drivers/sensorhub/brcm/ssp_sysfs.c
+index f1b7b7c1c422..c35d052f3ad0 100644
+--- a/drivers/sensorhub/brcm/ssp_sysfs.c
++++ b/drivers/sensorhub/brcm/ssp_sysfs.c
+@@ -593,7 +593,7 @@ static ssize_t set_mcu_power(struct device *dev,
+ 			 * symmetric regulator_force_enable() to physically re-raise
+ 			 * the rail back to its pre-cycle (enabled) state.
+ 			 */
+-			ret = regulator_enable(data->regulator_vdd_mcu_1p8);
++			ret = regulator_force_enable(data->regulator_vdd_mcu_1p8);
+ 			if (ret)
+ 				pr_err("[SSP] %s:failed to enable vdd_mcu_1p8(%d)\n", __func__, ret);
+ 			break;
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index 250166410312..3fc2dc14c2c8 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -226,6 +226,7 @@ void devm_regulator_bulk_unregister_supply_alias(struct device *dev,
+ int __must_check regulator_enable(struct regulator *regulator);
+ int regulator_disable(struct regulator *regulator);
+ int regulator_force_disable(struct regulator *regulator);
++int regulator_force_enable(struct regulator *regulator);
+ int regulator_is_enabled(struct regulator *regulator);
+ int regulator_disable_deferred(struct regulator *regulator, int ms);
+ 
+@@ -412,6 +413,11 @@ static inline int regulator_force_disable(struct regulator *regulator)
+ 	return 0;
+ }
+ 
++static inline int regulator_force_enable(struct regulator *regulator)
++{
++	return 0;
++}
++
+ static inline int regulator_disable_deferred(struct regulator *regulator,
+ 					     int ms)
+ {
