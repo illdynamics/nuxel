@@ -69,13 +69,23 @@ def load_tree(path, gate, label, dtbo_idx=None):
     if not fdts:
         gate.fail("%s: no embedded FDT (unrecognized magic or container)" % label)
         return None
-    # For a dtbo table, select the entry matching dtbo_idx (default: last entry,
-    # which for this device is the broadest/most-specific rev window).
-    idx = None
-    if dtbo_idx is not None and 0 <= dtbo_idx < len(fdts):
-        idx = dtbo_idx
+    # For a dtbo table, select the entry matching dtbo_idx.  DIFFERENT from a
+    # "guess the broadest entry" heuristic: if the container holds more than one
+    # embedded FDT and the caller did NOT pass an explicit revision selection
+    # (--dtbo-idx from androidboot.dtbo_idx), then the selection is MISSING and
+    # that is a hard failure — we must never silently pick an overlay entry.
+    if len(fdts) == 1:
+        idx = 0
+    elif dtbo_idx is None:
+        gate.fail("%s: multi-entry DTBO (%d FDTs) but no explicit --dtbo-idx "
+                  "selection (androidboot.dtbo_idx missing); refusing to guess"
+                  % (label, len(fdts)))
+        return None
+    elif not (0 <= dtbo_idx < len(fdts)):
+        gate.fail("%s: --dtbo-idx=%s out of range [0..%d)" % (label, dtbo_idx, len(fdts)))
+        return None
     else:
-        idx = 0 if len(fdts) == 1 else (len(fdts) - 1)
+        idx = dtbo_idx
     fdt = fdts[idx]
     try:
         tree = dg.parse_fdt(fdt)

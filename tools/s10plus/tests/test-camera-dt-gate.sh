@@ -58,6 +58,11 @@ expect fail "wrong-rev dtbo (rev 4..15 vs 26)" "$FIX/wrong-rev-dtbo.img" --dtbo-
 expect pass "correct-rev dtbo (rev 26..255)"  "$GOOD_DTBO" --dtbo-idx 9
 
 # --- Golden SHA identity: self-match passes, cross-mismatch fails ----------
+# --- Missing dtbo selection MUST fail-closed (never guess) ----------------
+printf '\nMissing dtbo selection (MUST FAIL-closed, no guessing):\n'
+expect fail "dtbo without --dtbo-idx (multi-entry)" "$GOOD_DTBO"
+expect fail "dtbo out-of-range idx" "$GOOD_DTBO" --dtbo-idx 999
+
 printf '\nGolden SHA identity checks:\n'
 if python3 "$GATE" "$GOOD_DTB" --golden "$GOOD_DTB" >/dev/null 2>&1; then ok "golden self-match -> pass"; else bad "golden self-match -> fail"; fi
 if python3 "$GATE" "$GOOD_DTB" --golden "$GOOD_DTBO" >/dev/null 2>&1; then bad "golden cross-mismatch -> pass (should fail)"; else ok "golden cross-mismatch -> fail"; fi
