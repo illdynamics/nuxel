@@ -1,0 +1,15 @@
+# 06 — TRUE ACCELEROMETER + GYROSCOPE STREAMING, NEVER SYNTHETIC
+
+DeepSeek-V4-Pro-Thinking: proceed only after 05 proves a real MCU app and the normal SSP handshake; otherwise finish non-hardware tests and report `BLOCKED_MCU`. Keep MASTER 00 safety gates active. Zero Android runtime dependencies.
+
+**Bring-up:** inspect native `nuxel-ssp-bridge`, sysfs `nuxel_bringup` / `nuxel_stream`, `ssp_sensor/sensor_state` and enable bitmap, existing BBD packet pipeline, `gyro_lsm6dsl.c` raw_data, and axis conventions. Enable accel+gyro only *after* verified MCU readiness. No duplicate owner or firmware application. Confirm sensor IDs/revisions and real event/interrupt routing. Correct sampling interval and kernel buffer/timestamp handling.
+
+**Required real measurements:** create a read-only sample recorder (times UTC + monotonic, kernel ID, service, raw xyz, enable bits, IRQ count, sample age; no personal content). Multiple consistent samples in at least 4 physical poses and one physical movement. Gravity direction and magnitude must physically agree with the S10+ held portrait, landscape-left, landscape-right and reverse portrait. Recompute sensor mount matrix and gravity references, annotate actual signs and scale (raw LSM6DSO counts converted to known units only after calibrating real range). Gyro values may be zero when phone is still; require a repeatable short burst of plausible signed angular-rate change while phone is physically rotated and decay toward rest. Reject hardcoded constant nonzero data, stale timestamp, fake node, and generated fixtures.
+
+**Auto-sideways preparation:** the user will place the **actual handset SIDEWAYS**. During the proof, record physical pose as `sideways`, but do not assume which landscape edge is down. A real accelerometer vector has gravity mostly along one of the screen-plane axes; only after derived mounting/axis calibration should 90 versus 270 be predicted. Capture raw values and normalized vectors over successive samples while stationary sideways. If no new event occurs while stationary, do not inject one; correct startup sampling or ask for one safe physical reposition.
+
+**Diagnostics:** output `SENSOR_ACCEL_PHYSICAL=PASS` only with changing physical gravity across poses; `SENSOR_GYRO_PHYSICAL=PASS` only with captured motion-correlated rotation events. Check error states: sensor disabled, inactive MCU, timeout, bad scale, jitter, CRC, interrupt loss, stale data. Unrelated IIO timestamp-only devices do not satisfy this. Note GNSS/shared power dependencies.
+
+**No kernel flash by default.** Prefer user-space calibration, bridge ownership correction or sensor state fix. If a new kernel build is truly required, return to 02-05 full gate, not direct BOOT flash. Preserve known-good Nuxel boot, DTB, DTBO and all services.
+
+**Deliverables:** `reports/SSP-ACCEL-GYRO-FIRST-REAL-SAMPLES.md`, raw logs, calibrated axis matrix, actual sample timestamps, gyro physical movement evidence, source/commit/tests. Gate 06 PASS only if **both** physical sensors are demonstrated independently, with a coherent continuous stream and no automatic reset loop.
