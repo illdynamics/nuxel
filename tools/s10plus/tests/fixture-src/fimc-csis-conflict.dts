@@ -1,0 +1,19 @@
+/dts-v1/;
+
+/ {
+    compatible = "samsung,armv8", "samsung,exynos9820";
+    #address-cells = <0x02>;
+    #size-cells = <0x01>;
+
+    fimc_is@17190000 {
+        compatible = "samsung,exynos5-fimc-is";
+    };
+
+    csis@17020000 {
+        compatible = "samsung,exynos9820-csis";
+    };
+
+    sensor {
+        compatible = "samsung,s5k2l4";
+    };
+};

@@ -1,0 +1,14 @@
+/dts-v1/;
+
+/ {
+    compatible = "samsung,armv8", "samsung,exynos9820";
+    #address-cells = <0x02>;
+    #size-cells = <0x01>;
+
+    camera0 {
+        compatible = "samsung,s5k2l4";
+        endpoint0 {
+            data-lanes = <0x01 0x02 0x03>;   /* 3 lanes is invalid */
+        };
+    };
+};
