@@ -1,0 +1,15 @@
+# PROMPT 07 — FRONT CAMERA, OTHER SENSORS, TORCH, AUDIO/VIDEO AND THREE APPLICATIONS
+
+**Entry:** first physical frame and shared stack PASS. Never batch risky board-sensor DT changes; each sensor addition goes back through camera-DT gate and PROMPT 04 if it truly needs a BOOT change.
+
+1. Add **front main S5K3J1** as second real verified physical camera. Map and test its actual CSI endpoint, I2C, clocks, power, FPS, orientation/mirroring and controls. Then individually inspect 3M3 tele, 3P9 ultrawide, 4HA auxiliary/depth hardware; add only physically supported modes with honest limitation evidence. Four successful stills on upstream S10 do not guarantee five native S10+ streams.
+2. Implement autofocus/exposure/white balance controls where supported; physically test actuator (tele AK7374 etc.), OIS where possible, lens switching and correct manual override. Use actual hardware controls, not guessed register writes. Safe power-down after stop/error is mandatory.
+3. Integrate flash and **video torch** only after hardware GPIO/regulator/LED driver identity and safe current/time limits are source-verified. Ensure video torch turns off on stop, app crash, lock, thermal overrun and privacy revoke; do not guess sysfs paths or drive unverified GPIOs.
+4. Upgrade Nuxel Camera PWA/native GTK to true front/rear live preview, front/rear photographs saved to gallery, rear/front video with captured microphone audio and proper A/V sync. Use stable device names, correct aspect/orientation, permission controls, mode switch, thumbnails and crash cleanup. `MediaRecorder` support from the web engine must be actually measured; use a native GStreamer codec/encoder fallback only where tested. Test whether hardware MFC works; software encoding is acceptable within thermal bounds.
+5. Verify video and audio via **actual decoded media** with a known test recording: correct frame sequence, timestamps, file size, duration, nonzero audio, playback, gallery import, no fake/cached content. A video file's presence is not success.
+6. Install a suitable real camera application from an **official Fedora repository** after inspecting current package metadata/backend, and an independent Flatpak camera application from an appropriate trusted remote. Use normal app permissions/portals and the **same physical kernel/libcamera/PipeWire stack** for Nuxel, Fedora native GTK and Flatpak. Record each app's true supported feature limits; do not fake unsupported functions.
+7. Run an acceptance matrix for rear/main, front/main, other available sensors, photo, video+mic, torch, orientation, gallery, permissions, close/reopen and three apps. Only give PASS with identifiable device logs and physical file evidence.
+
+**Deliver:** all source/UI/service changes, real test files (private), `pwn/CAMERA_LIVE_ACCEPTANCE.md` updated per-sensor/per-app, `reports/camera-07-completion.md`. **EXIT GATE:** every hardware-supported promised task measured, or precise defensible `BLOCKED` with evidence; never advertise a full working camera while front/video/Flatpak are missing.
+
+---

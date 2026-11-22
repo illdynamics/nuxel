@@ -1,0 +1,65 @@
+{
+  "schema": "nuxel.camera.prompt00/v1",
+  "capture_utc": null,
+  "device": {
+    "model": null,
+    "codename": null,
+    "status": "UNVERIFIED",
+    "board_revision": null,
+    "dtbo_index": null,
+    "dt_layout": "separate-dtb-dtbo",
+    "appended_dtb_index": null
+  },
+  "proof": {
+    "off_device": false,
+    "rollback_ready": false,
+    "selected_overlay_verified": false,
+    "active_tree_matches_onflash": false,
+    "bootloader_dt_source_verified": false,
+    "boot_readback_sha256": null,
+    "dtb_readback_sha256": null,
+    "dtbo_readback_sha256": null
+  },
+  "partitions": {
+    "boot_bytes": 0,
+    "dtb_bytes": 0,
+    "dtbo_bytes": 0
+  },
+  "artifacts": {
+    "boot": {
+      "path": null,
+      "sha256": null,
+      "size_bytes": null
+    },
+    "dtb": {
+      "path": null,
+      "sha256": null,
+      "size_bytes": null
+    },
+    "dtbo": {
+      "path": null,
+      "sha256": null,
+      "size_bytes": null
+    },
+    "merged_fdt": {
+      "path": null,
+      "sha256": null,
+      "size_bytes": null
+    },
+    "recovery": {
+      "path": null,
+      "sha256": null,
+      "size_bytes": null
+    },
+    "selected_board_evidence": {
+      "path": null,
+      "sha256": null,
+      "size_bytes": null
+    },
+    "rollback_plan": {
+      "path": null,
+      "sha256": null,
+      "size_bytes": null
+    }
+  }
+}

@@ -1,0 +1,16 @@
+/dts-v1/;
+
+/ {
+    compatible = "samsung,armv8", "samsung,exynos9820";
+    #address-cells = <0x02>;
+    #size-cells = <0x01>;
+
+    camera0 {
+        compatible = "samsung,s5k2l4";
+        port {
+            endpoint {
+                remote-endpoint = <0x99>;   /* dangling phandle 0x99 */
+            };
+        };
+    };
+};

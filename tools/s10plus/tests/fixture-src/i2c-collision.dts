@@ -1,0 +1,18 @@
+/dts-v1/;
+
+/ {
+    compatible = "samsung,armv8", "samsung,exynos9820";
+    #address-cells = <0x01>;
+    #size-cells = <0x00>;
+
+    i2c@0 {
+        #address-cells = <0x01>;
+        #size-cells = <0x00>;
+
+        /* Camera node stealing the reserved touch address 0x48 */
+        fimc-is_sensor@48 {
+            compatible = "samsung,sensor-module-2l4";
+            reg = <0x48>;
+        };
+    };
+};

@@ -1,0 +1,1 @@
+One important limitation: Option A requires an existing, owner-authorized camera signing key. I can wire up and validate a supplied public key, but I cannot invent an existing trust anchor or treat a key from another service as authorized. I’ll check whether the ZIP contains a legitimate camera-specific key before deciding what can pass.

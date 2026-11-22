@@ -116,17 +116,21 @@ class Bridge:
         kernel drives SSI and decodes the replies itself.  Nothing here claims
         the hub is alive: ``initialize_mcu`` still has to get a real chip-ID
         answer and ``nuxel_stream`` still has to be accepted.
+
+        PREMATURE READINESS REMOVED: an earlier build fell back to writing
+        ``ESW:READY`` into /dev/bbd_control when the ``nuxel_bringup`` sysfs
+        was absent.  That string is a daemon *notification* that queues the
+        kernel's MCU-ready worker (and can power/reset the hub); synthesising
+        it without a verified firmware/app readiness condition is exactly the
+        hazard the SSP protocol report prohibits.  The single authoritative
+        owner of initialization is the kernel via ``nuxel_bringup``; if that
+        ABI is missing the bridge must report the hub unavailable, never emit
+        a fake ready event.
         """
         if not os.path.exists(SSP_BRINGUP):
-            log("kernel has no %s (pre-PWNAGE-SSP image?); falling back to "
-                "ESW:READY" % SSP_BRINGUP)
-            try:
-                with open(BBD_CONTROL, "w") as f:
-                    f.write("ESW:READY")
-            except OSError as exc:
-                log("ESW:READY failed: %s" % exc)
-                return False
-            return True
+            log("kernel has no %s (pre-PWNAGE-SSP image); hub remains "
+                "unavailable (no ESW:READY synthesis)" % SSP_BRINGUP)
+            return False
         try:
             write_text(SSP_BRINGUP, 1)
             log("hub bring-up accepted by kernel (initialize_mcu returned OK)")
