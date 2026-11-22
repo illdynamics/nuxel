@@ -1,0 +1,36 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH 0020] spi/s3c64xx: re-init HW after runtime suspend (SSP hub readiness)
+
+This is the REDUCED, corrected 0020.  The original patch also duplicated the
+ssp_dev.c / ssp_sysfs.c bring-up hunks that 0023 now owns as the single
+authority, so those hunks are removed here.  This patch keeps ONLY the
+independent SPI controller fix.
+
+Mark sci->need_hw_init in the DOMAIN_TOP runtime-suspend path so the next
+transfer_one_message() re-runs s3c64xx_spi_hwinit(); otherwise the GPS/SSP SPI
+(spi17) reads 0xFF after the first idle and the BCM47752 hub looks dead.
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+index 44be84ecc467..b6f6034baa7b 100644
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -1931,6 +1931,17 @@ static int s3c64xx_spi_runtime_suspend(struct device *dev)
+ 
+ 	s3c64xx_spi_pin_ctrl(dev, 0);
+ 
++	/*
++	 * Nuxel: a runtime suspend gates the clocks and the controller loses
++	 * its FIFO/mode configuration.  Mark it for re-initialisation so the
++	 * next transfer_one_message() re-runs s3c64xx_spi_hwinit() exactly as
++	 * the system-resume path already does.  Without this the GPS/SSP SPI
++	 * (spi17, 10970000.spi) reads 0xFF after the first idle and the
++	 * BCM47752 sensor hub appears dead.
++	 */
++	if (sci->domain == DOMAIN_TOP)
++		sci->need_hw_init = 1;
++
+ 	return 0;
+ }
+ 

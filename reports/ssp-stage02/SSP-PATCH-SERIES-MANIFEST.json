@@ -1,0 +1,65 @@
+{
+  "title": "Nuxel SSP Stage-02 corrected kernel patch series",
+  "pinned_source": {
+    "repo": "https://github.com/Linux4/android_kernel_samsung_exynos9820",
+    "commit": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+    "kernel": "4.14.253 downstream",
+    "defconfig": "exynos9820-beyond2lte_defconfig"
+  },
+  "toolchain": "aarch64-unknown-linux-gnu-gcc 15.2.0",
+  "apply_order": [
+    "0020-nuxel-ssp-spi-runtime-reinit.patch",
+    "0023-nuxel-ssp-native-bringup-reconciled-v2.patch",
+    "0025-nuxel-ssp-rail-force-coldcycle.patch",
+    "0027-nuxel-ssp-kernel-firmware-download-v2.patch"
+  ],
+  "patches": [
+    {
+      "name": "0020-nuxel-ssp-spi-runtime-reinit.patch",
+      "sha256": "62a339642a8c039471c360da9a9175fd7e1b3e5e821cf3013ae953b0d6f73200",
+      "required": true,
+      "purpose": "SPI controller re-init after runtime suspend (independent PM fix)"
+    },
+    {
+      "name": "0023-nuxel-ssp-native-bringup-reconciled-v2.patch",
+      "sha256": "b21abad67fdee4734bfbc8c259295ff85f326fb16aabd68dc15dd208f92ca1db",
+      "required": true,
+      "purpose": "native BBD peer + bring-up (deadlock + IsNoRespCnt bool->u32 fix)"
+    },
+    {
+      "name": "0025-nuxel-ssp-rail-force-coldcycle.patch",
+      "sha256": "ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99",
+      "required": true,
+      "purpose": "mcu_power sysfs regulator_force_disable for genuine cold-cycle"
+    },
+    {
+      "name": "0026-nuxel-ssp-phase1-romsync.patch",
+      "retired": true,
+      "purpose": "subsumed by 0027 phase-1 (raw-SSI ROM sync)"
+    },
+    {
+      "name": "0027-nuxel-ssp-kernel-firmware-download-v2.patch",
+      "sha256": "cc33f15e034b823c0b019d02f4948df2013715fdf86473f0ce4fab94c51e289d",
+      "required": true,
+      "purpose": "kernel-coordinated BCM47752 firmware download (rebased; parser/allocation/ACK/CRC fixes)"
+    }
+  ],
+  "symbols": [
+    "nuxel_ssp_register_data",
+    "nuxel_ssp_bringup_hw",
+    "nuxel_ssp_dl_download",
+    "nuxel_bbd_patch_bytes",
+    "bbd_nuxel_peer_open",
+    "bbd_nuxel_peer_release",
+    "bbd_nuxel_peer_active",
+    "bbd_nuxel_peer_rx",
+    "nuxel_bbd_peer_send"
+  ],
+  "verification": {
+    "forward_apply": "PASS (0020 -> 0023 -> 0025 -> 0027)",
+    "reverse_idempotence": "PASS (exact return to pinned tree)",
+    "duplicate_symbols": "none (each symbol single definition)",
+    "compile": "ssp_bbd.o, ssp_dev.o, ssp_sysfs.o, ssp_i2c.o, bbd.o, bcm_gps_mem.o, bcm_gps_spi.o, bcm_gps_regs.o, bbd_rpc_lh.o, gyro_lsm6dsl.o all build; ssp_bbd.o warning-free",
+    "negative_case_tests": "8/8 PASS; lock-discipline static test PASS"
+  }
+}

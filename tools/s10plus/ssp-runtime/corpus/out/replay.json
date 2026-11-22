@@ -1,0 +1,74 @@
+{
+  "normal_getversion_request": {
+    "returncode": 0,
+    "out": "TL seq=1 flags=0x000 size=2\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "normal_getversion_reply": {
+    "returncode": 0,
+    "out": "TL seq=0 flags=0x000 size=6\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "normal_reliable_memwrite": {
+    "returncode": 0,
+    "out": "TL seq=1 flags=0x002 size=9 REL\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "normal_start_scratch": {
+    "returncode": 0,
+    "out": "TL seq=2 flags=0x000 size=6\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "normal_service_start": {
+    "returncode": 0,
+    "out": "TL seq=3 flags=0x000 size=22\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "normal_reliable_ack": {
+    "returncode": 0,
+    "out": "TL seq=0 flags=0x004 size=0\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "faulty_missing_detail_bit": {
+    "returncode": 0,
+    "out": "TL seq=9 flags=0x001 size=0\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "faulty_unknown_flag": {
+    "returncode": 0,
+    "out": "TL seq=9 flags=0x080 size=0\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "faulty_surplus_payload": {
+    "returncode": 2,
+    "out": "OFFLINE REPLAY: packets=0 crc_err=0 malformed=1 incomplete=0; hardware_verified=false"
+  },
+  "faulty_truncated_rpc": {
+    "returncode": 2,
+    "out": "OFFLINE REPLAY: packets=0 crc_err=0 malformed=1 incomplete=0; hardware_verified=false"
+  },
+  "faulty_wrong_crc": {
+    "returncode": 2,
+    "out": "TL CRC error f8!=f9\nOFFLINE REPLAY: packets=0 crc_err=1 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "faulty_stale_ack": {
+    "returncode": 0,
+    "out": "TL seq=0 flags=0x005 size=0\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "normal_seq_wrap_boundary": {
+    "returncode": 0,
+    "out": "TL seq=255 flags=0x000 size=6\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "faulty_duplicate_reply": {
+    "returncode": 0,
+    "out": "TL seq=0 flags=0x004 size=0\n  TL seq=0 flags=0x004 size=0\nOFFLINE REPLAY: packets=2 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "faulty_mixed_version": {
+    "returncode": 0,
+    "out": "TL seq=0 flags=0x000 size=6\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "idle_0xff_not_protocol": {
+    "returncode": 0,
+    "out": "OFFLINE REPLAY: packets=0 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  },
+  "faulty_unfinished_frame": {
+    "returncode": 2,
+    "out": "OFFLINE REPLAY: packets=0 crc_err=0 malformed=0 incomplete=1; hardware_verified=false"
+  },
+  "normal_escaped_payload": {
+    "returncode": 0,
+    "out": "TL seq=0 flags=0x000 size=7\nOFFLINE REPLAY: packets=1 crc_err=0 malformed=0 incomplete=0; hardware_verified=false"
+  }
+}

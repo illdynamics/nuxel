@@ -1,42 +1,49 @@
 From: Nuxel <nuxel@localhost>
-Subject: [PATCH 0025] sensorhub/ssp: force-drop hub rail for a genuine MCU cold-cycle
+Subject: [PATCH 0025] sensorhub/ssp: regulator_force_disable for a genuine MCU cold-cycle
 
-The BCM47752 SPI boot ROM only answers its autobaud/GetVersion window right
-after a true cold power-on.  On this board vdd_mcu_1p8 (s2mps19 LDO21M) is
-left enabled by the bootloader with num_users == 0, so the existing
-regulator_disable() is a no-op (an "unbalanced disable" of a rail that holds
-no reference) and the rail never actually falls.  A warm reboot therefore
-never re-enters the boot-ROM window and every firmware download reads 0xFFFF.
+The bootloader leaves vdd_mcu_1p8 enabled with num_users == 0, so the existing
+regulator_disable() is an unbalanced no-op and the rail never physically falls.
+A warm reboot therefore never re-enters the BCM47752 boot-ROM autobaud window
+and every firmware download reads 0xFFFF.
 
-Use regulator_force_disable() on `echo 0 > mcu_power` (and in the native
-bring-up recovery) so the rail genuinely drops, and regulator_enable() restores
-it.  Stays a single kernel-owned path via the existing mcu_power sysfs, with no
-competing raw GPIO or ad-hoc regulator manipulation.
+Use regulator_force_disable() in set_mcu_power()'s `echo 0` path so the rail
+actually drops; regulator_enable() (case 1) restores our reference.  This is
+ONLY reachable through an explicit, operator-initiated sysfs write, never an
+automatic service loop.  The bring-up recovery path's equivalent change is
+owned by 0027 (the downloader), not duplicated here.
 
-NOTE: line numbers assume the tree state after patches 0020 and 0023-ssp are
-applied (the build applies patches in sorted order before this one).
+AUDIT: vdd_mcu_1p8 may be shared with GNSS; force-disable drops every
+consumer's reference.  Do not call from periodic/service paths and always
+restore with regulator_enable() as part of the same bounded operation.
 
 Signed-off-by: Nuxel <nuxel@localhost>
 ---
- drivers/sensorhub/brcm/ssp_sysfs.c | 2 +-
- drivers/sensorhub/brcm/ssp_bbd.c   | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
 diff --git a/drivers/sensorhub/brcm/ssp_sysfs.c b/drivers/sensorhub/brcm/ssp_sysfs.c
+index e9004ed3a003..de4c9fb5b0ac 100644
 --- a/drivers/sensorhub/brcm/ssp_sysfs.c
 +++ b/drivers/sensorhub/brcm/ssp_sysfs.c
-@@ -568,3 +568,3 @@ static ssize_t set_mcu_power(struct device *dev,
+@@ -565,8 +565,23 @@ static ssize_t set_mcu_power(struct device *dev,
+ 	if (data->regulator_vdd_mcu_1p8 != NULL) {
+ 		switch (enable) {
+ 		case 0:
++			/*
++			 * Nuxel: the bootloader leaves vdd_mcu_1p8 enabled with
++			 * num_users == 0, so a plain regulator_disable() is an
++			 * "unbalanced disable" and the rail never physically drops.
++			 * regulator_force_disable() detaches every reference so the
++			 * rail can actually fall; regulator_enable(case 1) then
++			 * re-attaches our reference.  This is ONLY reachable through
++			 * an explicit `echo 0 > mcu_power` sysfs write (a bounded,
++			 * operator-initiated cold-cycle), never an automatic loop.
++			 *
++			 * AUDIT: this rail may be shared with GNSS.  A force-disable
++			 * drops every consumer's reference count; do not call it from
++			 * any periodic/service path, and always follow with a bounded
++			 * regulator_enable() restore as part of the same operation.
++			 */
  			if (regulator_is_enabled(data->regulator_vdd_mcu_1p8))
 -				ret = regulator_disable(data->regulator_vdd_mcu_1p8);
 +				ret = regulator_force_disable(data->regulator_vdd_mcu_1p8);
  			break;
-
-diff --git a/drivers/sensorhub/brcm/ssp_bbd.c b/drivers/sensorhub/brcm/ssp_bbd.c
---- a/drivers/sensorhub/brcm/ssp_bbd.c
-+++ b/drivers/sensorhub/brcm/ssp_bbd.c
-@@ -156,4 +156,4 @@ int nuxel_ssp_bringup_hw(void)
- 		pr_err("[SSPBBD] Nuxel bring-up: retrying after MCU power-cycle\n");
- 		if (regulator_is_enabled(data->regulator_vdd_mcu_1p8))
--			regulator_disable(data->regulator_vdd_mcu_1p8);
-+			regulator_force_disable(data->regulator_vdd_mcu_1p8);
- 		msleep(120);
+ 		case 1:
+ 			/*

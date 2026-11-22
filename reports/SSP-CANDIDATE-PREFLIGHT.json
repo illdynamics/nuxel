@@ -1,0 +1,136 @@
+{
+  "schema": "nuxel-ssp-candidate-preflight-v1",
+  "generated": "2026-11-22T17:07:00+01:00",
+  "stage": "04",
+  "title": "SSP candidate preflight — exhaustive offline verification and zero-DT-change BOOT gate",
+  "overall_verdict": "NO_FLASH",
+  "overall_reason": "Multiple gates FAIL or are BLOCKED: (1) the kernel source tree is contaminated with 28 unrelated netfilter files, (2) no clean pinned kernel has been built (no .config, no Image), (3) pack-ssp-boot.py has a broken FDT-discovery heuristic that cannot repack this device (which has NO appended DTB), and (4) no software-only alternative has been proven to require a kernel flash. A single FAIL means NO FLASH.",
+  "no_zero_brick_probability_assertion": "No assertion of zero brick probability is made. Any future flash is covered by the owner's BOOT-only TWRP agreement and bounded hardware-trial authorization, not by this report.",
+
+  "gates": {
+    "G_TEST_NATIVE_C_HARNESS": {
+      "status": "PASS",
+      "detail": "tools/s10plus/ssp-native OUT=/tmp/ssp-audit-build check",
+      "results": {
+        "test_nuxel_bbd_download": "PASS (framing, CRC, patch validation, source contract, extended/restart, unrelated-packet-non-completion)",
+        "test_nuxel_bbd_flash": "PASS (TL framing, RPC encode, F1 records, RX decode)",
+        "test_nuxel_bbd_negative": "PASS (NEW: F0..F5 malformed/truncated, version mismatch, bad ACK/NACK, wrong CRC, no reply timeout, short read/partial transfer, cancellation, missing post-start version path, 8-bit sequence rollover, RX reentrancy, two-instance independence, header decode edge cases)",
+        "test_verify_embedded_patch": "PASS (2 tests)",
+        "check_protocol_replay": "PASS (SIMULATED framing replay, hardware_verified=false)"
+      }
+    },
+    "G_TEST_ORIENTATION_PYTEST": {
+      "status": "PASS",
+      "detail": "PYTHONPATH=services/nuxel-orientation python3 -m pytest -q services/nuxel-orientation/tests",
+      "results": {
+        "total": 77,
+        "passed": 77,
+        "note": "68 original + 9 NEW fixtures (real-source-unavailable and stale-data recovery, in test_source_availability_and_stale.py)"
+      }
+    },
+    "G_TEST_RECOVERY_UNITTEST": {
+      "status": "PASS",
+      "detail": "python3 -S -m unittest discover -s NUXEL_SSP_RECOVERY_V2 -p 'test_*.py'",
+      "results": {"total": 14, "passed": 14}
+    },
+    "G_KERNEL_CLEAN_INPUTS": {
+      "status": "FAIL",
+      "detail": "The kernel working tree is NOT clean: 28 unrelated netfilter files are modified by no patch in the repo. Violates 'no unrelated patch changes'.",
+      "evidence": {
+        "kernel_src_head": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+        "modified_file_count": 40,
+        "unrelated_netfilter_files": 28,
+        "dirty_diff_sha256": "7340907c93ed3618fc19f882ad977d089b4ee3ee33a3f912170ef1ed529c1938"
+      }
+    },
+    "G_KERNEL_BUILD_EXACT_PINNED": {
+      "status": "FAIL",
+      "detail": "Exact pinned kernel NOT built. No .config generated, no arch/arm64/boot/Image produced. Build cannot proceed until G_KERNEL_CLEAN_INPUTS passes.",
+      "evidence": {
+        "config": "MISSING",
+        "image": "MISSING",
+        "kallsyms": "NOT_BUILT"
+      }
+    },
+    "G_EMBEDDED_FIRMWARE_IDENTITY": {
+      "status": "PASS",
+      "detail": "Verified firmware identity against real bytes (not documentation): bbd_patch_file_beyond.h -> asic=0x004775b0, blob_length=438895, patch_address=0x00800161, crc32_ieee=93d35bb4, kernel_export_sha256=0b53f3b04b..., blob_sha256=56e8b1ea4b34..."
+    },
+    "G_BOOT_DONOR_REVALIDATION": {
+      "status": "PASS",
+      "detail": "Donor BOOT revalidated LIVE from running handset root@10.11.12.99 (uname 4.14.253-gf7194c1d15ed-dirty). Fresh read-only dd+sha256 of sda12/13/14/15 all match the Stage-01 historical hashes byte-for-byte.",
+      "evidence": {
+        "dtb_sda12": "abc9d45d3745866346fd94c7c04028cc2c62ade4dd274b400dbbfec0c2ef4780 (UNCHANGED)",
+        "dtbo_sda13": "de3bc02526c66647992a744608fdf61548823866e822a7400619d74126095c23 (UNCHANGED)",
+        "boot_sda14": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c (UNCHANGED)",
+        "recovery_sda15": "4cc71d6277e020cdec729b85934cfb6111e9abee8db2fbcc344aad3173335d87 (UNCHANGED)",
+        "boot_capacity": "57671680 bytes (112640 sectors), partition /dev/sda14 PARTLABEL=boot",
+        "selected_boot": "androidboot.dtbo_idx=9, bootloader=G975FXXSEFUL1, verifiedbootstate=orange, serialno=R58M75KDB2X"
+      }
+    },
+    "G_BOOT_PACK_VERIFY": {
+      "status": "FAIL",
+      "detail": "tools/s10plus/pack-ssp-boot.py CANNOT repack this device. Its FDT-discovery heuristic (donor.find(0xD00DFEED) after ramdisk) assumes an appended DTB tail; this device has NO appended DTB (external dtb/dtbo partitions sda12/sda13). Running it on the donor raises 'cannot locate the appended DTB region'. The always-true fallback 'donor[cand - min(cand, PAGE):cand] or True' is also a degenerate branch. A working packager for this device must not search for an FDT tail.",
+      "evidence": {
+        "verify_boot_image": "header_size=1648, kernel_size=45848584, ramdisk_size=2424832, appended_dtb_count=0, 'no valid appended BOOT FDT' (expected/correct)",
+        "unpack_boot_image": "offsets kernel=2048 ramdisk=45852672 dtb=48277504; dtb_size=9394176 = ALL ZERO partition slack (verified all zeros, 0 FDT magic bytes)",
+        "pack_ssp_boot_run": "'cannot locate the appended DTB region' (SystemExit)"
+      }
+    },
+    "G_BOOT_BYTEEXACT_TAIL": {
+      "status": "PASS_WITH_CAVEAT",
+      "detail": "There is NO appended/embedded DTB/hash tail to preserve: the region after ramdisk (9394176 bytes) is 100% zero partition slack with zero FDT magic occurrences. A correct kernel-only repack would preserve only the header (1648 bytes) + ramdisk bytes byte-for-byte and zero-fill the remaining slack. The byte-equality requirement is therefore trivially satisfiable, but cannot be demonstrated because no candidate kernel exists and the packer is broken (G_BOOT_PACK_VERIFY)."
+    },
+    "G_BOOT_DTB_DTBO_PARTITION_HASHES": {
+      "status": "PASS",
+      "detail": "dtb (sda12) and dtbo (sda13) partition hashes recorded read-only immediately before any flash (no flash performed). Both UNCHANGED and byte-identical to Stage-01. androidboot.dtbo_idx=9 records the bootloader-selected DTBO; no dtc/dtbo output was changed in any deployed package (no package was deployed)."
+    },
+    "G_BOOT_ROLLBACK_STAGING": {
+      "status": "PARTIAL",
+      "detail": "HOST-side known-good rollback seed captured and size+digest verified: /tmp/nuxel-ssp-preflight/boot-sda14-fresh.img (57671680 bytes, sha256 0e6aa34c... == live sda14). A SECOND TWRP-accessible copy + dual-endpoint byte verification has NOT been established (no recovery boot performed; TWRP accessibility not reconfirmed). This gate is therefore NOT fully satisfied for a rollback receipt.",
+      "evidence": {
+        "host_seed_path": "/tmp/nuxel-ssp-preflight/boot-sda14-fresh.img",
+        "host_seed_sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+        "twrp_copy": "NOT_ESTABLISHED",
+        "dual_endpoint_verify": "NOT_DONE"
+      }
+    },
+    "G_SOFTWARE_ONLY_ALTERNATIVE": {
+      "status": "SUPPORTS_NO_FLASH",
+      "detail": "The installed kernel (0020+0023) already exposes the full userspace passthrough transport: /dev/ttyBCM (10,91), /dev/bbd_sensor (236,1), /dev/bbd_control (236,2), /dev/bbd_patch (236,3), and the write-only /sys/class/sensors/ssp_sensor/nuxel_bringup ABI. The native userspace tools (nuxel_bbd_flash.c --flash, nuxel_bbd_download.c) target exactly these nodes and could drive the firmware download WITHOUT a kernel flash. The 0027 kernel-side downloader (nuxel_ssp_dl_*) is therefore NOT proven necessary, and flashing a new kernel merely to change where the already-testable protocol parser runs is avoided. Note: the userspace path is NOT yet proven to produce RX (live diag still rx=0), so this is an alternative to pursue, not a proven fix.",
+      "evidence": {
+        "device_nodes_present": true,
+        "live_diag": "mcu_probe=1 shutdown=1 resetting=1 sensor_state=0x3feff enable=0x0 shub_irq=443",
+        "live_rx": "rx=0 despite tx=184 (unresolved)",
+        "kernel_0027_necessary": false
+      }
+    }
+  },
+
+  "known_remaining_hardware_risks": [
+    "The MCU (BCM47752KUB1G) has never produced RX in response to the 184-byte TX — root cause (cold-start timing vs electrical vs protocol) remains unresolved.",
+    "The vendor lhd runtime is ARCHIVE_ONLY (expected SHA256 6362e80d...); it cannot be re-verified against live bytes in this session.",
+    "autobaud 32-vs-36 reconciliation (kernel 32 vs lhd VA 0xdfe4 36) remains unresolved.",
+    "Any future BOOT flash requires the owner's BOOT-only TWRP agreement and bounded hardware-trial authorization; this report grants nothing."
+  ],
+
+  "rollback_receipt": {
+    "status": "PARTIAL",
+    "host_seed": "/tmp/nuxel-ssp-preflight/boot-sda14-fresh.img",
+    "host_seed_sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+    "host_seed_size": 57671680,
+    "twrp_seed": "NOT_ESTABLISHED",
+    "partition_mapping": "boot=/dev/sda14 (PARTLABEL=boot); dtb=/dev/sda12; dtbo=/dev/sda13; recovery=/dev/sda15",
+    "readback_recipe": "dd if=/dev/sda14 bs=1M | sha256sum (read-only), then compare against host seed"
+  },
+
+  "boot_image_parser_comparison": {
+    "tool": "verify-boot-image.py",
+    "result": "header_size=1648, kernel_size=45848584, ramdisk_size=2424832 (lzma-alone), appended_dtb_count=0, 'no valid appended BOOT FDT' (correct)",
+    "second_verifier": "unpack-boot-image.py",
+    "second_result": "kernel_off=2048, ramdisk_off=45852672, kernel_addr=0x10008000, ramdisk_addr=0x11000000, tags_addr=0x10000100; dtb region (48277504+) = 9394176 bytes ALL ZERO slack (verified). Both agree on kernel/ramdisk size and addresses; they differ only in that unpack mislabels the zero slack as an appended DTB."
+  },
+
+  "final_decision": "NO_FLASH",
+  "next_stage_only_if_all_pass": "Move to stage 05 under owner's BOOT-only TWRP agreement and bounded hardware-trial authorization ONLY after G_KERNEL_CLEAN_INPUTS, G_KERNEL_BUILD_EXACT_PINNED, G_BOOT_PACK_VERIFY, and G_BOOT_ROLLBACK_STAGING all individually PASS. They do not all pass in this round."
+}

@@ -1,3 +1,27 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH 0023] sensorhub: native SSP bring-up (single authority; deadlock + bool fix)
+
+Reconciled native BBD peer + nuxel_ssp_bringup_hw() + transport diagnostics.
+Single authority for the SSP driver files; supersedes the old 0020's
+ssp_dev.c / ssp_sysfs.c hunks (folded in, no longer duplicated by 0020).
+
+Fixes vs prior reconciled snapshots:
+  1. bbd_do_transfer() failure path re-locked pending_mutex while already held
+     from entry -> guaranteed raw-mutex self-deadlock on a failed send.  Now
+     list_del() runs under the already-held lock, clean_msg() runs only after
+     pending_mutex AND comm_mutex are both released.
+  2. IsNoRespCnt was declared bool but incremented (data->IsNoRespCnt++)
+     -> changed to u32.  This is a real vendor bug (never an accurate counter
+     and a -Wbool-operation diagnostic).
+
+Contents: native peer open/release/rx, register_data, bringup, sysfs diag/
+bringup/stream, gyro raw_data, zero-length forward, regulator reference.
+
+Do NOT apply the original 0013 experimental patch or the old 0020's
+ssp_dev/ssp_sysfs hunks alongside this.
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
 diff --git a/drivers/sensorhub/brcm/bbdpl/bbd.c b/drivers/sensorhub/brcm/bbdpl/bbd.c
 index 0b607aa87ba4..337baefbb839 100644
 --- a/drivers/sensorhub/brcm/bbdpl/bbd.c
@@ -389,9 +413,18 @@ index cdbf5eaf9f3e..bd0bf36c898c 100644
  };
  
 diff --git a/drivers/sensorhub/brcm/ssp.h b/drivers/sensorhub/brcm/ssp.h
-index 220961390737..0ed3cbffd458 100644
+index 220961390737..57e3334194e7 100644
 --- a/drivers/sensorhub/brcm/ssp.h
 +++ b/drivers/sensorhub/brcm/ssp.h
+@@ -1019,7 +1019,7 @@ struct ssp_data {
+ /* AP suspend check flag*/
+         bool IsAPsuspend;
+ /* no ack about mcu_resp pin*/
+-        bool IsNoRespCnt;
++        u32 IsNoRespCnt;
+ /* hall ic */
+ 	bool hall_ic_status; // 0: open 1: close
+ };
 @@ -1052,6 +1052,15 @@ extern void bcm4773_debug_info(void);
  void clean_pending_list(struct ssp_data *data);
  void toggle_mcu_reset(struct ssp_data *data);
@@ -409,7 +442,7 @@ index 220961390737..0ed3cbffd458 100644
  int initialize_sysfs(struct ssp_data *data);
  void initialize_function_pointer(struct ssp_data *data);
 diff --git a/drivers/sensorhub/brcm/ssp_bbd.c b/drivers/sensorhub/brcm/ssp_bbd.c
-index 8987fc69f563..770988883f00 100644
+index 8987fc69f563..4b63014cf7c3 100644
 --- a/drivers/sensorhub/brcm/ssp_bbd.c
 +++ b/drivers/sensorhub/brcm/ssp_bbd.c
 @@ -47,6 +47,139 @@ enum packet_state_e {
@@ -689,7 +722,7 @@ index 8987fc69f563..770988883f00 100644
  		DEBUG_SHOW_HEX_SEND(msg, 9);
  	} else {
  		pr_err("[SSP]: %s bbd_send_packet fail!!\n", __func__);
-@@ -125,12 +375,29 @@ int bbd_do_transfer(struct ssp_data *data, struct ssp_msg *msg,
+@@ -125,12 +375,40 @@ int bbd_do_transfer(struct ssp_data *data, struct ssp_msg *msg,
  		else
  			pr_err("[SSPBBD]: packet size of ssp must be less than %d, but %d\n",
  					MAX_SSP_PACKET_SIZE, (int)msg->length);
@@ -708,20 +741,31 @@ index 8987fc69f563..770988883f00 100644
 +		 * keeping the transport enabled.
 +		 */
 +		if (msg != NULL) {
++			/*
++			 * pending_mutex is ALREADY held here (acquired at entry,
++			 * above).  Do NOT re-lock it: that is a guaranteed
++			 * self-deadlock (raw mutex, non-recursive).  Remove the
++			 * message from the pending list under the lock we already
++			 * own, then free it only after every lock is released so
++			 * clean_msg()'s kfree() cannot race the list.
++			 */
 +			msg->done = NULL;
 +			msg->dead_hook = NULL;
-+			mutex_lock(&data->pending_mutex);
 +			if (!use_no_irq && msg->list.next != NULL &&
 +			    msg->list.next != LIST_POISON1)
 +				list_del(&msg->list);
-+			mutex_unlock(&data->pending_mutex);
-+			clean_msg(msg);
 +		}
++
 +		mutex_unlock(&data->pending_mutex);
++		mutex_unlock(&data->comm_mutex);
++
++		if (msg != NULL)
++			clean_msg(msg);
++
  		return -1;
  	}
  
-@@ -267,6 +534,7 @@ int callback_bbd_on_mcu_ready(void *ssh_data, bool ready)
+@@ -267,6 +545,7 @@ int callback_bbd_on_mcu_ready(void *ssh_data, bool ready)
  
  	if (data == NULL)
  		return -1;
@@ -729,7 +773,7 @@ index 8987fc69f563..770988883f00 100644
  
  	if (ready == true) {
  		/* Start queue work for initializing MCU */
-@@ -360,6 +628,7 @@ int callback_bbd_on_mcu_reset(void *ssh_data, bool IsNoResp)
+@@ -360,6 +639,7 @@ int callback_bbd_on_mcu_reset(void *ssh_data, bool IsNoResp)
  
  	if (!data)
  		return -1;
@@ -737,7 +781,7 @@ index 8987fc69f563..770988883f00 100644
          if(IsNoResp && !data->resetting)
              data->IsNoRespCnt++;
  
-@@ -772,7 +1041,14 @@ int callback_bbd_on_packet(void *ssh_data, const char *buf, size_t size)
+@@ -772,7 +1052,14 @@ int callback_bbd_on_packet(void *ssh_data, const char *buf, size_t size)
  					return -1;
  
  				reset_ssp_pkt();

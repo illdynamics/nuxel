@@ -1,0 +1,28 @@
+# 0023 — SSP native bring-up (reconciled 0013 + 0020), experimental first-light
+
+This patch reconciles the two prior SSP bring-up patches into one
+non-overlapping series that MUST layer on top of the required 0020 patch
+(which supplies the regulator rail reference + SPI runtime-suspend re-init):
+
+- 0020 (required): vdd_mcu_1p8 regulator_enable + spi-s3c64xx need_hw_init.
+- 0013 (experimental): native BBD peer + nuxel_ssp_bringup_hw() + sysfs ABI.
+
+0023 is the de-duplicated 0013 content ONLY. It assumes 0020 is already
+applied (the patch hooks into 0020's nuxel_hub_diag / nuxel_bringup /
+nuxel_stream sysfs attributes and ssp_dev.c probe tail).
+
+What it adds on top of 0020:
+- ssp_bbd.c: nuxel_ssp_register_data(), nuxel_ssp_bringup_hw(),
+  bbd_nuxel_peer_open/release/active/rx, nuxel_bbd_peer_send framing.
+- bbd.c/bcm_gps_spi.c/bcm_gps_mem.c: native peer transport + honest diag.
+- gyro_lsm6dsl.c: gyro_sensor/raw_data sysfs (int32 XYZ).
+- ssp_i2c.c: forward zero-length AP->MCU messages.
+- ssp_dev.c: nuxel_ssp_register_data(data) at probe.
+- ssp_sysfs.c: wire nuxel_ssp_bcm_diag() + nuxel_ssp_bringup_hw()
+  (replacing 0020's -EOPNOTSUPP stub).
+
+Do NOT apply this patch without 0020 already applied.
+Do NOT apply the original 0013 experimental patch alongside this.
+
+See reports/SSP-FIRST-LIGHT-RECONCILIATION-2026-11-21.md and
+reports/SSP-PHYSICAL-ACCEPTANCE.md for acceptance evidence.

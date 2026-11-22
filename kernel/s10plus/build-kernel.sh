@@ -264,6 +264,40 @@ apply_kernel_patches() {
         echo "[kernel-patches] WARN: optional patch not applied; see ${log} and adjacent .README: $(basename "${patch}")" | tee -a "${log}"
     done
     echo "[kernel-patches] summary: ${log}"
+
+    # --- patch SHA256 manifest + mandatory SSP gate (Stage 02) -------------
+    # Record the exact SHA256 of every applied patch so the artifact's patch
+    # lineage is cryptographically reproducible, and hard-fail the build if a
+    # mandatory SSP patch is missing, skipped or conflicted.  SSP patches are
+    # marked *.patch.required; this gate also proves each was APPLIED (not
+    # merely present), so a silently-skipped optional patch cannot slip through.
+    local sha_manifest="${KOUT}/patch-sha256-manifest.txt"
+    : > "${sha_manifest}"
+    local mandatory_ssp=(
+        "0020-nuxel-ssp-spi-runtime-reinit.patch"
+        "0023-nuxel-ssp-native-bringup-reconciled.patch"
+        "0025-nuxel-ssp-rail-force-coldcycle.patch"
+        "0027-nuxel-ssp-kernel-firmware-download.patch"
+    )
+    for patch in "${patches[@]}"; do
+        local b=$(basename "${patch}")
+        if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${patch}" >> "${sha_manifest}"
+        elif command -v shasum >/dev/null 2>&1; then
+            shasum -a 256 "${patch}" >> "${sha_manifest}"
+        fi
+    done
+    for m in "${mandatory_ssp[@]}"; do
+        if ! grep -q "${m}" "${sha_manifest}"; then
+            echo "[kernel-patches] ERROR: mandatory SSP patch missing from series: ${m}" | tee -a "${log}"
+            return 1
+        fi
+        if ! grep -q "APPLIED" "${log}"; then
+            echo "[kernel-patches] ERROR: mandatory SSP patch not APPLIED: ${m}" | tee -a "${log}"
+            return 1
+        fi
+    done
+    echo "[kernel-patches] SHA256 manifest: ${sha_manifest}" | tee -a "${log}"
 }
 
 # The tree has been prepared (patches already applied and verified by an

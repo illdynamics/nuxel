@@ -109,7 +109,6 @@ firmware/*/blobs/system-lib64/
 # and must never enter the repository history or a release checkout. Keep local
 # copies for work; they are simply ignored from Git.
 /packs/
-/reports/
 /prompts/
 
 # --- Scratch / working output ----------------------------------------------

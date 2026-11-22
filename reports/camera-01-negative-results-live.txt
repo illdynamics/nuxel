@@ -1,0 +1,30 @@
+Prompt 00_8 — LIVE-BASELINE NEGATIVE CASE MATRIX (2026-11-22)
+
+STATUS: NOT EXECUTED AGAINST REAL CAPTURED IMAGES.
+The live negative cases required by Phase 3 step 16 cannot be run because the
+current BOOT/DTB/DTBO/merged-FDT baseline images, the owner-signed manifest, and
+the trusted pubkey are all absent from this host. Running them against synthetic
+fixtures alone would not be a "live-baseline" negative result and is not claimed here.
+
+Synthetic fail-closed negatives that DID pass (51 test suite, tooling only):
+  * no signature -> nonzero exit
+  * wrong trusted pubkey -> nonzero exit
+  * stale capture -> nonzero exit
+  * invalid board revision/index -> nonzero exit
+  * corrupted DTBO entry -> nonzero exit
+  * absent/mismatched backup -> nonzero exit
+  * missing rollback proof -> nonzero exit
+  * changed BOOT trailing bytes -> nonzero exit
+  * changed GPIO consumer/flags -> nonzero exit
+  * modified NFC/SSP/display property -> nonzero exit
+  * partition overflow -> nonzero exit
+  * altered candidate DTB/DTBO -> nonzero exit
+
+Each of the above is exercised by the synthetic regression suite
+(tools/s10plus/tests/test-camera-offline-gates.py), which returned 51/51 PASS on
+this host. These are tool-behavior proofs, NOT live-device proofs.
+
+REAL negative cases (on captured current-device copies): BLOCKED — no private
+baseline images present. No live negative case is reported as PASS.
+
+No on-device writes or reboots. No STREAMON. No TWRP entry.

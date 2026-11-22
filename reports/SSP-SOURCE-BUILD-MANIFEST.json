@@ -1,0 +1,108 @@
+{
+  "schema": "nuxel-ssp-source-build-manifest-v1",
+  "generated": "2026-11-22T17:05:00+01:00",
+  "stage": "04 (offline verification + zero-DT-change BOOT preflight)",
+  "verdict": "NO_FLASH_IN_THIS_ROUND",
+  "source": {
+    "main_repo_head": "21a56e40df095c0c5de836b90d3477e763a736e9",
+    "main_repo_branch": "cs/ssp",
+    "kernel_repo": "https://github.com/Linux4/android_kernel_samsung_exynos9820",
+    "kernel_commit": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+    "kernel_version": "4.14.253 downstream",
+    "defconfig": "exynos9820-beyond2lte_defconfig"
+  },
+  "compiler": {
+    "cross_compile": "aarch64-linux-gnu-",
+    "gcc_version": "15.2.0",
+    "alternate_toolchain": "aarch64-unknown-linux-gnu-gcc 15.2.0"
+  },
+  "kconfig": {
+    "status": "MISSING",
+    "note": "No .config has been generated in kernel/s10plus/.build/src or .build/out. The exact pinned kernel has NOT been built in this round; a build cannot proceed until the working tree is cleaned of unrelated contamination and a fresh defconfig + fragment is produced."
+  },
+  "image_build_id": {
+    "status": "NOT_BUILT",
+    "note": "arch/arm64/boot/Image does not exist. No kernel was compiled this round."
+  },
+  "kallsyms": {
+    "status": "NOT_BUILT_FOR_CANDIDATE",
+    "live_running_kernel_symbols": {
+      "nuxel_ssp_bringup_hw": "present (0023 deployed)",
+      "bbd_nuxel_peer_open/active/rx/release": "present (0023 deployed)",
+      "nuxel_bbd_peer_send.constprop.0": "present (0023 deployed)",
+      "nuxel_ssp_dl_download": "ABSENT (0027 NOT deployed)",
+      "nuxel_bbd_patch_bytes": "ABSENT (0027 NOT deployed)"
+    },
+    "candidate_source_symbols": {
+      "nuxel_ssp_dl_download": "present in kernel/s10plus/.build/src/drivers/sensorhub/brcm/ssp_bbd.c (0027 applied to source)",
+      "note": "0027 would introduce the kernel-coordinated downloader that is NOT in the running kernel."
+    }
+  },
+  "patches": [
+    {"name": "0020-nuxel-ssp-spi-runtime-reinit.patch", "sha256": "62a339642a8c039471c360da9a9175fd7e1b3e5e821cf3013ae953b0d6f73200", "required": true, "role": "SPI re-init after runtime suspend"},
+    {"name": "0023-nuxel-ssp-native-bringup-reconciled.patch", "sha256": "b21abad67fdee4734bfbc8c259295ff85f326fb16aabd68dc15dd208f92ca1db", "required": true, "role": "native BBD peer + bring-up"},
+    {"name": "0025-nuxel-ssp-rail-force-coldcycle.patch", "sha256": "ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99", "required": true, "role": "mcu_power rail force-disable"},
+    {"name": "0027-nuxel-ssp-kernel-firmware-download.patch", "sha256": "cc33f15e034b823c0b019d02f4948df2013715fdf86473f0ce4fab94c51e289d", "required": true, "role": "kernel-coordinated firmware download"}
+  ],
+  "unrelated_contamination": {
+    "status": "FAIL",
+    "severity": "BLOCKING",
+    "count_unrelated_files": 28,
+    "detail": "The kernel working tree (kernel/s10plus/.build/src) contains 28 modified netfilter files that are NOT touchable by any patch in kernel/s10plus/patches/ or anywhere else in the repo. These are foreign changes (net/netfilter/xt_DSCP.c, xt_HL.c, xt_RATEEST.c, xt_TCPMSS.c + uapi/libdss-include headers). No patch in the repo references them. This violates the 'no unrelated patch changes' gate and makes any build from this tree non-reproducible and unsafe.",
+    "files": [
+      "include/uapi/linux/netfilter/xt_CONNMARK.h",
+      "include/uapi/linux/netfilter/xt_DSCP.h",
+      "include/uapi/linux/netfilter/xt_MARK.h",
+      "include/uapi/linux/netfilter/xt_RATEEST.h",
+      "include/uapi/linux/netfilter/xt_TCPMSS.h",
+      "include/uapi/linux/netfilter_ipv4/ipt_ECN.h",
+      "include/uapi/linux/netfilter_ipv4/ipt_TTL.h",
+      "include/uapi/linux/netfilter_ipv6/ip6t_HL.h",
+      "lib/libdss-include/include/linux/netfilter/xt_CONNMARK.h",
+      "lib/libdss-include/include/linux/netfilter/xt_DSCP.h",
+      "lib/libdss-include/include/linux/netfilter/xt_MARK.h",
+      "lib/libdss-include/include/linux/netfilter/xt_RATEEST.h",
+      "lib/libdss-include/include/linux/netfilter/xt_TCPMSS.h",
+      "lib/libdss-include/include/linux/netfilter_ipv4/ipt_ECN.h",
+      "lib/libdss-include/include/linux/netfilter_ipv4/ipt_TTL.h",
+      "lib/libdss-include/include/linux/netfilter_ipv6/ip6t_HL.h",
+      "lib/libdss-include/linux/netfilter/xt_CONNMARK.h",
+      "lib/libdss-include/linux/netfilter/xt_DSCP.h",
+      "lib/libdss-include/linux/netfilter/xt_MARK.h",
+      "lib/libdss-include/linux/netfilter/xt_RATEEST.h",
+      "lib/libdss-include/linux/netfilter/xt_TCPMSS.h",
+      "lib/libdss-include/linux/netfilter_ipv4/ipt_ECN.h",
+      "lib/libdss-include/linux/netfilter_ipv4/ipt_TTL.h",
+      "lib/libdss-include/linux/netfilter_ipv6/ip6t_HL.h",
+      "net/netfilter/xt_DSCP.c",
+      "net/netfilter/xt_HL.c",
+      "net/netfilter/xt_RATEEST.c",
+      "net/netfilter/xt_TCPMSS.c"
+    ]
+  },
+  "working_tree": {
+    "kernel_src_dirty_diff_sha256": "7340907c93ed3618fc19f882ad977d089b4ee3ee33a3f912170ef1ed529c1938",
+    "kernel_src_modified_file_count": 40,
+    "ssp_files_modified": ["ssp_bbd.c", "ssp_dev.c", "ssp_sysfs.c", "ssp_i2c.c", "ssp.h", "bbd.c", "bbd.h", "bcm_gps_mem.c", "bcm_gps_spi.c", "bcm_gps_spi.h", "bcm_gps_regs.c", "gyro_lsm6dsl.c", "spi-s3c64xx.c"],
+    "unrelated_files_modified": 28
+  },
+  "embedded_firmware_identity": {
+    "status": "PASS",
+    "verified_against_real_bytes": true,
+    "source_header": "kernel/s10plus/.build/src/drivers/sensorhub/brcm/bbdpl/r_os/bbd_patch_file_beyond.h",
+    "asic": "0x004775b0",
+    "header_crc": 193,
+    "blob_length": 438895,
+    "patch_address": "0x00800161",
+    "blob_crc32_ieee": "93d35bb4",
+    "blob_sha256": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d",
+    "kernel_export_sha256": "0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72"
+  },
+  "boot_image_hashes": {
+    "status": "NO_CANDIDATE_BUILT",
+    "image": "N/A (no candidate kernel Image exists)",
+    "ramdisk": "0dd0fb5a3d6895f28d8861d967382a0b87182d0f9c63b1d560393818b290f407 (donor, unchanged)",
+    "boot_partition_donor": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+    "dtb_tail": "N/A — this device has NO appended DTB/hash tail (external dtb/dtbo partitions sda12/sda13)"
+  }
+}

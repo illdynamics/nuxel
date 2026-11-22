@@ -1,0 +1,871 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH 0027] sensorhub/ssp: kernel-coordinated BCM47752 firmware download (rebased on 0023)
+
+Contains ONLY the downloader, rebased on 0023.  Does NOT re-declare any
+native-peer symbol 0023 already owns.  Supersedes original 0026 (raw-SSI ROM
+sync) and bring-up half of 0025 (regulator_force_disable), folded in rather
+than duplicated.
+
+Corrections vs. original 0027 (compile-verified on commit f7194c1d15ed):
+  - bbd_do_transfer deadlock               -> fixed in 0023.
+  - Premature parser success               -> dl_next_record TRUNCATED/MALFORMED
+      status hard-fails; never reaches WHOAMI on a structural error.
+  - Fragile ~439KB contiguous kmalloc      -> bounded kvmalloc + DL_MAX_BLOB.
+  - Stale ACK correlation                  -> per-op seq/rel_seq snapshots,
+      cleared per op; unsigned-char wrap; explicit NACK; duplicate/arbitrary
+      bcm_ssi_rx data ignored.
+  - Text "Crc" ambiguity                   -> BlobLength validated vs decoded
+      count; PatchAddress requires explicit hex.
+  - 36B ttyBCM vs 32B direct-SSI autobaud  -> phase-1 uses direct-SSI 32 x
+      0x80; vendor bcm477x_rpc_get_version has a broken inverted poll loop and
+      must not be a sync authority.
+
+Compile-verified: ssp_bbd.o, bbd.o, bcm_gps_spi.o, bcm_gps_mem.o,
+bcm_gps_regs.o, ssp_sysfs.o, ssp_dev.o, ssp_i2c.o, gyro_lsm6dsl.o build with
+aarch64-unknown-linux-gnu-gcc 15.2 (no new warnings).
+
+Still required before flash (Stage 03/04): vendor frame/CRC/seq/ACK parity;
+rpc_id transport-vs-operational semantics; KASAN/lockdep build.
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+diff --git a/drivers/sensorhub/brcm/bbdpl/bbd.h b/drivers/sensorhub/brcm/bbdpl/bbd.h
+index 725149e888b2..826d6ee7e204 100644
+--- a/drivers/sensorhub/brcm/bbdpl/bbd.h
++++ b/drivers/sensorhub/brcm/bbdpl/bbd.h
+@@ -151,4 +151,5 @@ extern ssize_t	bbd_send_packet(unsigned char *buf, size_t size);
+ extern ssize_t	bbd_pull_packet(unsigned char *buf, size_t size, unsigned int timeout_ms);
+ extern int	bbd_mcu_reset(bool IsNoResp);
+ extern int	bbd_init(struct device *dev);
++extern const unsigned char *nuxel_bbd_patch_bytes(int ap_type, int hw_rev, size_t *size);
+ #endif /* __BBD_H__ */
+diff --git a/drivers/sensorhub/brcm/ssp_bbd.c b/drivers/sensorhub/brcm/ssp_bbd.c
+index 4b63014cf7c3..2230db44530f 100644
+--- a/drivers/sensorhub/brcm/ssp_bbd.c
++++ b/drivers/sensorhub/brcm/ssp_bbd.c
+@@ -15,6 +15,10 @@
+ 
+ #include "ssp.h"
+ 
++#include <linux/circ_buf.h>
++#include <linux/vmalloc.h>
++#include "bbdpl/bcm_gps_spi.h"
++
+ 
+ bool ssp_dbg;
+ bool ssp_pkt_dbg;
+@@ -82,6 +86,777 @@ void nuxel_ssp_register_data(struct ssp_data *data)
+ }
+ EXPORT_SYMBOL_GPL(nuxel_ssp_register_data);
+ 
++/*
++ * ========================================================================
++ * Nuxel PWNAGE-SSP: kernel-coordinated BCM47752 firmware download (0027,
++ * rebased on 0023).  This block is DELIBERATELY self-contained and does not
++ * re-declare any native-peer symbol that 0023 already provides.
++ *
++ * Transport: direct bcm_spi_sync()/bcm_ssi_rx() on the boot-ROM SSI link.
++ * It is the ONE authoritative kernel download path; it must never run
++ * concurrently with nuxel_bbd_flash / nuxel-ssp-bridge / lhd.
++ *
++ * Defects corrected vs. the original 0027:
++ *   1. bbd_do_transfer deadlock        -> fixed in 0023 (this file, above).
++ *   2. Premature parser success        -> dl_next_record returns a distinct
++ *      TRUNCATED/MALFORMED status; the loop hard-fails, never reaches WHOAMI.
++ *   3. Fragile ~439KB contiguous kmalloc -> bounded kvmalloc + length cap.
++ *   4. Stale ACK correlation           -> per-op seq/rel_seq snapshots,
++ *      cleared per op; wrap via unsigned char; explicit NACK honored;
++ *      arbitrary/duplicate bcm_ssi_rx data ignored.
++ *   5. Text "Crc" ambiguity            -> BlobLength validated against decoded
++ *      count; PatchAddress requires an explicit hex value.
++ * ========================================================================
++ */
++#define DL_ESC      0xB0
++#define DL_EOP      0x01
++#define DL_ESC_ESC  0x03
++#define DL_ESC_XON  0x04
++#define DL_ESC_XOFF 0x05
++#define DL_XON      0x11
++#define DL_XOFF     0x13
++
++#define DLF_ACK        (1u<<0)
++#define DLF_RELIABLE   (1u<<1)
++#define DLF_REL_ACK    (1u<<2)
++#define DLF_REL_NACK   (1u<<3)
++#define DLF_SIZE_EXT   (1u<<6)
++#define DLF_EXT        (1u<<7)
++#define DLF_INTERNAL   (1u<<8)
++#define DLF_IGN_SEQ    (1u<<9)
++
++#define DL_RPC_GET_VERSION    0
++#define DL_RPC_MEM_WRITE      5
++#define DL_RPC_START_SCRATCH  46
++#define DL_RPC_SERVICE_START  55
++
++#define DL_MAX_PAYLOAD 1024
++#define DL_MAX_WIRE    2048
++#define DL_MAX_BLOB     (512 * 1024)
++
++static const unsigned char dl_crc_tbl[256] = {
++0x00,0x4d,0x9a,0xd7,0x79,0x34,0xe3,0xae,0xf2,0xbf,0x68,0x25,0x8b,0xc6,0x11,0x5c,
++0xa9,0xe4,0x33,0x7e,0xd0,0x9d,0x4a,0x07,0x5b,0x16,0xc1,0x8c,0x22,0x6f,0xb8,0xf5,
++0x1f,0x52,0x85,0xc8,0x66,0x2b,0xfc,0xb1,0xed,0xa0,0x77,0x3a,0x94,0xd9,0x0e,0x43,
++0xb6,0xfb,0x2c,0x61,0xcf,0x82,0x55,0x18,0x44,0x09,0xde,0x93,0x3d,0x70,0xa7,0xea,
++0x3e,0x73,0xa4,0xe9,0x47,0x0a,0xdd,0x90,0xcc,0x81,0x56,0x1b,0xb5,0xf8,0x2f,0x62,
++0x97,0xda,0x0d,0x40,0xee,0xa3,0x74,0x39,0x65,0x28,0xff,0xb2,0x1c,0x51,0x86,0xcb,
++0x21,0x6c,0xbb,0xf6,0x58,0x15,0xc2,0x8f,0xd3,0x9e,0x49,0x04,0xaa,0xe7,0x30,0x7d,
++0x88,0xc5,0x12,0x5f,0xf1,0xbc,0x6b,0x26,0x7a,0x37,0xe0,0xad,0x03,0x4e,0x99,0xd4,
++0x7c,0x31,0xe6,0xab,0x05,0x48,0x9f,0xd2,0x8e,0xc3,0x14,0x59,0xf7,0xba,0x6d,0x20,
++0xd5,0x98,0x4f,0x02,0xac,0xe1,0x36,0x7b,0x27,0x6a,0xbd,0xf0,0x5e,0x13,0xc4,0x89,
++0x63,0x2e,0xf9,0xb4,0x1a,0x57,0x80,0xcd,0x91,0xdc,0x0b,0x46,0xe8,0xa5,0x72,0x3f,
++0xca,0x87,0x50,0x1d,0xb3,0xfe,0x29,0x64,0x38,0x75,0xa2,0xef,0x41,0x0c,0xdb,0x96,
++0x42,0x0f,0xd8,0x95,0x3b,0x76,0xa1,0xec,0xb0,0xfd,0x2a,0x67,0xc9,0x84,0x53,0x1e,
++0xeb,0xa6,0x71,0x3c,0x92,0xdf,0x08,0x45,0x19,0x54,0x83,0xce,0x60,0x2d,0xfa,0xb7,
++0x5d,0x10,0xc7,0x8a,0x24,0x69,0xbe,0xf3,0xaf,0xe2,0x35,0x78,0xd6,0x9b,0x4c,0x01,
++0xf4,0xb9,0x6e,0x23,0x8d,0xc0,0x17,0x5a,0x06,0x4b,0x9c,0xd1,0x7f,0x32,0xe5,0xa8 };
++
++static unsigned char dl_crc_calc(const unsigned char *p, int n)
++{
++	unsigned char crc = 0;
++	while (n-- > 0)
++		crc = dl_crc_tbl[crc ^ (*p++)];
++	return crc;
++}
++
++static unsigned char dl_crc_nibble_swap(unsigned char c)
++{
++	return (unsigned char)(((c & 0x0F) << 4) | ((c & 0xF0) >> 4));
++}
++
++static int dl_rpc_field(unsigned char *o, unsigned int v)
++{
++	if (v >= 0x80) {
++		o[0] = (unsigned char)(((v >> 8) & 0x7f) | 0x80);
++		o[1] = (unsigned char)v;
++		return 2;
++	}
++	o[0] = (unsigned char)v;
++	return 1;
++}
++
++static int dl_rpc_record(unsigned char *out, unsigned int id,
++			 const unsigned char *payload, unsigned int plen)
++{
++	int n = dl_rpc_field(out, id);
++	n += dl_rpc_field(out + n, plen);
++	if (plen) {
++		memcpy(out + n, payload, plen);
++		n += plen;
++	}
++	return n;
++}
++
++static int dl_tl_build(unsigned char *wire, unsigned char seq,
++		       unsigned int flags, const unsigned char *payload,
++		       unsigned int plen, unsigned char rel_seq)
++{
++	unsigned char body[DL_MAX_PAYLOAD + 40];
++	int bn = 0, i, n = 0;
++	unsigned char crc;
++	unsigned int sz = plen;
++	unsigned int f = flags;
++
++	if (plen > DL_MAX_PAYLOAD)
++		return 0;
++	if (sz > 0xFF)
++		f |= DLF_SIZE_EXT;
++	if (f >> 8)
++		f |= DLF_EXT;
++
++	body[bn++] = seq;
++	body[bn++] = (unsigned char)(sz & 0xFF);
++	body[bn++] = (unsigned char)(f & 0xFF);
++	for (i = 0; i < 10; i++) {
++		unsigned int bit = (1u << i);
++		if (!(f & bit))
++			continue;
++		if (bit == DLF_SIZE_EXT)
++			body[bn++] = (unsigned char)(sz >> 8);
++		else if (bit == DLF_EXT)
++			body[bn++] = (unsigned char)(f >> 8);
++		else if (bit == DLF_RELIABLE)
++			body[bn++] = rel_seq;
++		else
++			body[bn++] = 0;
++	}
++	if (plen) {
++		memcpy(body + bn, payload, plen);
++		bn += plen;
++	}
++
++	crc = dl_crc_nibble_swap(dl_crc_calc(body + 1, bn - 1));
++
++	wire[n++] = DL_ESC; wire[n++] = 0x00;
++	for (i = 0; i < bn; i++) {
++		unsigned char v = body[i];
++		if (v == DL_ESC) { wire[n++] = DL_ESC; wire[n++] = DL_ESC_ESC; }
++		else if (v == DL_XON) { wire[n++] = DL_ESC; wire[n++] = DL_ESC_XON; }
++		else if (v == DL_XOFF) { wire[n++] = DL_ESC; wire[n++] = DL_ESC_XOFF; }
++		else wire[n++] = v;
++	}
++	if (crc == DL_ESC) { wire[n++] = DL_ESC; wire[n++] = DL_ESC_ESC; }
++	else if (crc == DL_XON) { wire[n++] = DL_ESC; wire[n++] = DL_ESC_XON; }
++	else if (crc == DL_XOFF) { wire[n++] = DL_ESC; wire[n++] = DL_ESC_XOFF; }
++	else wire[n++] = crc;
++	wire[n++] = DL_ESC; wire[n++] = DL_EOP;
++	return n;
++}
++
++enum dl_rx_st { DL_RX_ESC = 0, DL_RX_SOP, DL_RX_MSG, DL_RX_EOP };
++
++struct dl_rx {
++	enum dl_rx_st state;
++	unsigned char msg[DL_MAX_WIRE];
++	int mlen;
++	unsigned int packets;
++	unsigned int crc_err;
++	unsigned int malformed;
++};
++
++struct dl_pkt {
++	unsigned char seq;
++	unsigned int flags;
++	unsigned int size;
++	const unsigned char *payload;
++	unsigned char rel_seq;
++	unsigned char ack_seq;
++	unsigned char rel_ack_seq;
++	unsigned char rel_nack_seq;
++	bool reliable;
++	bool rel_ack;
++	bool rel_nack;
++	bool internal;
++};
++
++static void dl_rx_init(struct dl_rx *r)
++{
++	memset(r, 0, sizeof(*r));
++	r->state = DL_RX_ESC;
++}
++
++static bool dl_tl_parse(struct dl_rx *r, struct dl_pkt *out)
++{
++	const unsigned char *m = r->msg;
++	int len = r->mlen;
++	unsigned char crc, want;
++	unsigned int flags, size;
++	int off;
++	int bit;
++	unsigned char rel_seq = 0, ack_seq = 0, rel_ack_seq = 0, rel_nack_seq = 0;
++
++	if (len < 4) { r->malformed++; return false; }
++	crc = dl_crc_nibble_swap(dl_crc_calc(m + 1, len - 2));
++	want = m[len - 1];
++	if (crc != want) { r->crc_err++; return false; }
++
++	flags = m[2];
++	size = m[1];
++	off = 3;
++
++	for (bit = 0; bit < 16 && flags != 0; bit++) {
++		unsigned int b = (1u << bit);
++		unsigned char d;
++		if (!(flags & b))
++			continue;
++		if (off >= len - 1) { r->malformed++; return false; }
++		d = m[off++];
++		flags &= ~b;
++		if (b == DLF_SIZE_EXT)
++			size |= (unsigned int)(d << 8);
++		else if (b == DLF_EXT)
++			flags |= (unsigned int)(d << 8);
++		else if (b == DLF_ACK)
++			ack_seq = d;
++		else if (b == DLF_RELIABLE)
++			rel_seq = d;
++		else if (b == DLF_REL_ACK)
++			rel_ack_seq = d;
++		else if (b == DLF_REL_NACK)
++			rel_nack_seq = d;
++	}
++
++	if (flags != 0 || size != (unsigned int)(len - 1 - off)) {
++		r->malformed++;
++		return false;
++	}
++
++	memset(out, 0, sizeof(*out));
++	out->seq = m[0];
++	out->flags = m[2];
++	out->size = size;
++	out->payload = m + off;
++	out->rel_seq = rel_seq;
++	out->ack_seq = ack_seq;
++	out->rel_ack_seq = rel_ack_seq;
++	out->rel_nack_seq = rel_nack_seq;
++	out->reliable = (rel_seq != 0);
++	out->rel_ack = (rel_ack_seq != 0);
++	out->rel_nack = (rel_nack_seq != 0);
++	out->internal = ((m[2] & DLF_INTERNAL) != 0);
++	r->packets++;
++	return true;
++}
++
++typedef void (*dl_pkt_cb)(const struct dl_pkt *pkt, void *ctx);
++
++static void dl_on_pkt(const struct dl_pkt *pkt, void *ctx);
++
++static void dl_rx_feed(struct dl_rx *r, unsigned char c, dl_pkt_cb cb, void *ctx)
++{
++	if (c == DL_XON || c == DL_XOFF)
++		return;
++	switch (r->state) {
++	case DL_RX_ESC:
++		if (c == DL_ESC)
++			r->state = DL_RX_SOP;
++		break;
++	case DL_RX_SOP:
++		if (c == 0x00) { r->state = DL_RX_MSG; r->mlen = 0; }
++		else if (c != DL_ESC)
++			r->state = DL_RX_ESC;
++		break;
++	case DL_RX_MSG:
++		if (c == DL_ESC)
++			r->state = DL_RX_EOP;
++		else if (r->mlen < (int)sizeof(r->msg))
++			r->msg[r->mlen++] = c;
++		else { r->state = DL_RX_ESC; r->mlen = 0; r->malformed++; }
++		break;
++	case DL_RX_EOP:
++		if (r->mlen >= (int)sizeof(r->msg)) { r->state = DL_RX_ESC; r->mlen = 0; r->malformed++; break; }
++		if (c == DL_EOP) {
++			struct dl_pkt pkt;
++			if (dl_tl_parse(r, &pkt) && cb)
++				cb(&pkt, ctx);
++			r->state = DL_RX_ESC; r->mlen = 0;
++		} else if (c == DL_ESC_ESC) { r->msg[r->mlen++] = DL_ESC; r->state = DL_RX_MSG; }
++		else if (c == DL_ESC_XON)  { r->msg[r->mlen++] = DL_XON;  r->state = DL_RX_MSG; }
++		else if (c == DL_ESC_XOFF) { r->msg[r->mlen++] = DL_XOFF; r->state = DL_RX_MSG; }
++		else if (c == 0x00)     { r->state = DL_RX_MSG; r->mlen = 0; }
++		else
++			r->state = DL_RX_ESC;
++		break;
++	default:
++		r->state = DL_RX_ESC;
++	}
++}
++
++struct dl_sess {
++	struct bcm_spi_priv *priv;
++	struct dl_rx rx;
++	unsigned char seq;
++	unsigned char rel_seq;
++	unsigned char op_seq;
++	unsigned char op_rel_seq;
++	bool op_outstanding;
++	unsigned char rel_acked_seq;
++	unsigned char rel_nacked_seq;
++	bool got_version;
++	unsigned int version_w0;
++	unsigned int rpc_count;
++};
++
++static int dl_spi_write(struct bcm_spi_priv *priv, unsigned char ctrl,
++			const unsigned char *payload, int n)
++{
++	struct bcm_ssi_tx_frame *tx = priv->tx_buf;
++	struct bcm_ssi_rx_frame *rx = priv->rx_buf;
++
++	if (n > (int)sizeof(tx->data))
++		return -E2BIG;
++	tx->cmd = ctrl;
++	memcpy(tx->data, payload, n);
++	rx->status = 0;
++	return bcm_spi_sync(priv, tx, rx, n + 1, 8);
++}
++
++static void dl_pump(struct dl_sess *s, int max_iter)
++{
++	int i;
++	for (i = 0; i < max_iter; i++) {
++		size_t len = 0;
++		int ret = bcm_ssi_rx(s->priv, &len);
++		if (ret < 0)
++			break;
++		if (len == 0)
++			break;
++		{
++			unsigned char *d = s->priv->rx_buf->data;
++			size_t j;
++			for (j = 1; j <= len && j < (size_t)MAX_SPI_FRAME_LEN - 1; j++)
++				dl_rx_feed(&s->rx, d[j], dl_on_pkt, s);
++		}
++	}
++}
++
++static void dl_on_pkt(const struct dl_pkt *pkt, void *ctx)
++{
++	struct dl_sess *s = ctx;
++	unsigned int off = 0;
++
++	if (!s->op_outstanding)
++		return;
++
++	if (pkt->rel_nack && pkt->rel_nack_seq == s->op_rel_seq) {
++		s->rel_nacked_seq = pkt->rel_nack_seq;
++		s->op_outstanding = false;
++		return;
++	}
++	if (pkt->rel_ack && pkt->rel_ack_seq == s->op_rel_seq) {
++		s->rel_acked_seq = pkt->rel_ack_seq;
++		s->op_outstanding = false;
++		return;
++	}
++	if (pkt->internal || pkt->size == 0)
++		return;
++
++	while (off < pkt->size) {
++		const unsigned char *p = pkt->payload + off;
++		unsigned int rem = pkt->size - off;
++		unsigned int id, len;
++		int i = 0;
++		if (rem < 2)
++			break;
++		id = p[i++];
++		if (id & 0x80) { if (i >= (int)rem) break; id = (unsigned int)(((id & 0x7f) << 8) | p[i++]); }
++		if (i >= (int)rem) break;
++		len = p[i++];
++		if (len & 0x80) { if (i >= (int)rem) break; len = (unsigned int)(((len & 0x7f) << 8) | p[i++]); }
++		if (i + len > rem)
++			break;
++		if (id == DL_RPC_GET_VERSION && len >= 4) {
++			s->version_w0 = (unsigned int)p[i] |
++				((unsigned int)p[i+1] << 8) |
++				((unsigned int)p[i+2] << 16) |
++				((unsigned int)p[i+3] << 24);
++			s->got_version = true;
++		}
++		s->rpc_count++;
++		off += i + len;
++	}
++}
++
++static int nuxel_ssp_dl_phase1(struct dl_sess *s)
++{
++	static const unsigned char autobaud[32] = {
++		0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
++		0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
++		0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,
++		0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80 };
++	static const unsigned char ping[13] = {
++		0xB0,0x00,0x00,0x02,0x80,0x03,0x00,0x00,0x00,0x01,0xB1,0xB0,0x01 };
++	int iter;
++
++	{
++		struct bcm_ssi_tx_frame *tx = s->priv->tx_buf;
++		struct bcm_ssi_rx_frame *rx = s->priv->rx_buf;
++		tx->cmd = autobaud[0];
++		memcpy(tx->data, autobaud + 1, sizeof(autobaud) - 1);
++		rx->status = 0;
++		if (bcm_spi_sync(s->priv, tx, rx, sizeof(autobaud), sizeof(autobaud)))
++			return -EIO;
++	}
++	msleep(20);
++
++	{
++		struct bcm_ssi_tx_frame *tx = s->priv->tx_buf;
++		struct bcm_ssi_rx_frame *rx = s->priv->rx_buf;
++		tx->cmd = SSI_WRITE_HD;
++		memcpy(tx->data, ping, sizeof(ping));
++		rx->status = 0;
++		if (bcm_spi_sync(s->priv, tx, rx, sizeof(ping) + 1, 8))
++			return -EIO;
++	}
++
++	s->op_outstanding = false;
++	s->got_version = false;
++	for (iter = 0; iter < 50; iter++) {
++		msleep(20);
++		dl_pump(s, 4);
++		if (s->got_version)
++			break;
++	}
++	if (!s->got_version)
++		return -ETIMEDOUT;
++	return 0;
++}
++
++static int dl_reliable_rpc(struct dl_sess *s, unsigned int rpc_id,
++			   const unsigned char *payload, unsigned int plen,
++			   int wait_ms)
++{
++	unsigned char rpc[DL_MAX_PAYLOAD + 4];
++	unsigned char wire[DL_MAX_WIRE];
++	int rn, wn;
++	unsigned long deadline = jiffies + msecs_to_jiffies(wait_ms);
++	unsigned char want_seq, want_rel;
++
++	rn = dl_rpc_record(rpc, rpc_id, payload, plen);
++	if (plen + 4 > sizeof(rpc))
++		return -E2BIG;
++
++	want_seq = s->seq + 1u;
++	want_rel = s->rel_seq + 1u;
++	wn = dl_tl_build(wire, want_seq, DLF_RELIABLE, rpc, rn, want_rel);
++	if (!wn)
++		return -E2BIG;
++
++	s->seq = want_seq;
++	s->rel_seq = want_rel;
++	s->rel_acked_seq = 0;
++	s->rel_nacked_seq = 0;
++	s->op_seq = want_seq;
++	s->op_rel_seq = want_rel;
++	s->op_outstanding = true;
++
++	if (dl_spi_write(s->priv, SSI_WRITE_HD, wire, wn))
++		return -EIO;
++
++	while (time_before(jiffies, deadline)) {
++		dl_pump(s, 4);
++		if (!s->op_outstanding && s->rel_acked_seq == want_rel) {
++			s->op_seq = 0; s->op_rel_seq = 0;
++			return 0;
++		}
++		if (!s->op_outstanding && s->rel_nacked_seq == want_rel) {
++			s->op_seq = 0; s->op_rel_seq = 0;
++			return -EIO;
++		}
++		msleep(20);
++	}
++	s->op_seq = 0; s->op_rel_seq = 0; s->op_outstanding = false;
++	return -ETIMEDOUT;
++}
++
++static int dl_fire_rpc(struct dl_sess *s, unsigned int rpc_id,
++		       const unsigned char *payload, unsigned int plen)
++{
++	unsigned char rpc[DL_MAX_PAYLOAD + 4];
++	unsigned char wire[DL_MAX_WIRE];
++	int rn, wn;
++	rn = dl_rpc_record(rpc, rpc_id, payload, plen);
++	if (plen + 4 > sizeof(rpc))
++		return -E2BIG;
++	wn = dl_tl_build(wire, s->seq++, 0, rpc, rn, 0);
++	if (!wn)
++		return -E2BIG;
++	return dl_spi_write(s->priv, SSI_WRITE_HD, wire, wn);
++}
++
++enum dl_rec_st { DL_REC_F1 = 0, DL_REC_OTHER, DL_REC_TRUNCATED, DL_REC_MALFORMED };
++
++static int dl_hex_val(unsigned char c)
++{
++	if (c >= '0' && c <= '9') return c - '0';
++	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
++	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
++	return -1;
++}
++
++static enum dl_rec_st dl_next_record(const unsigned char *blob, size_t blob_len,
++				     size_t *off, unsigned int *dest,
++				     const unsigned char **body,
++				     unsigned int *body_len)
++{
++	unsigned char tag;
++	unsigned int len;
++	size_t o = *off;
++
++	if (o + 3 > blob_len)
++		return DL_REC_TRUNCATED;
++	tag = blob[o];
++	len = (unsigned int)blob[o + 1] | ((unsigned int)blob[o + 2] << 8);
++	if (o + 3 + len > blob_len)
++		return DL_REC_TRUNCATED;
++
++	if (tag == 0xF1) {
++		if (len < 4)
++			return DL_REC_MALFORMED;
++		*dest = (unsigned int)blob[o + 3] |
++			((unsigned int)blob[o + 4] << 8) |
++			((unsigned int)blob[o + 5] << 16) |
++			((unsigned int)blob[o + 6] << 24);
++		*body = blob + o + 3 + 4;
++		*body_len = len - 4;
++		*off = o + 3 + len;
++		return DL_REC_F1;
++	}
++
++	*body = blob + o + 3;
++	*body_len = len;
++	*off = o + 3 + len;
++	return DL_REC_OTHER;
++}
++
++static int dl_parse_hex_hdr(const unsigned char *b, size_t n, const char *key,
++			    unsigned int *out)
++{
++	size_t kl = strlen(key), i;
++	for (i = 0; i + kl + 2 <= n; i++) {
++		if (b[i] == '<' && !memcmp(b + i + 1, key, kl) && b[i + 1 + kl] == '=') {
++			const unsigned char *p = b + i + 1 + kl + 1;
++			unsigned long long x = 0;
++			int digits = 0;
++			int saw_x = 0;
++			while (p < b + n && *p != '>' && *p != '\n') {
++				if (*p == 'x' || *p == 'X') { saw_x = 1; p++; continue; }
++				if (*p >= '0' && *p <= '9')
++					x = (x << 4) | (unsigned long long)(*p - '0');
++				else if (*p >= 'a' && *p <= 'f')
++					x = (x << 4) | (unsigned long long)(*p - 'a' + 10);
++				else if (*p >= 'A' && *p <= 'F')
++					x = (x << 4) | (unsigned long long)(*p - 'A' + 10);
++				else if (*p == ' ' || *p == '\t') { p++; continue; }
++				else
++					break;
++				digits++;
++				p++;
++			}
++			if (!digits && !saw_x)
++				return -EINVAL;
++			*out = (unsigned int)x;
++			return 0;
++		}
++	}
++	return -ENOENT;
++}
++
++static unsigned char *dl_decode_blob(const unsigned char *b, size_t n,
++				     size_t *out_len, unsigned int *declared)
++{
++	size_t i, cap = 0, len = 0;
++	unsigned char *out = NULL;
++	unsigned int bl = 0;
++	bool have_declared = false;
++
++	if (dl_parse_hex_hdr(b, n, "BlobLength", &bl) == 0)
++		have_declared = true;
++
++	for (i = 0; i + 6 <= n; i++) {
++		if (b[i] == '<' && !memcmp(b + i + 1, "Blob=", 5)) {
++			const unsigned char *p = b + i + 6;
++			size_t end = i + 6;
++			size_t hex_bytes;
++			while (end < n && !(b[end] == '>' && end + 1 < n && b[end + 1] == '\n'))
++				end++;
++			hex_bytes = end - (p - b);
++			if (hex_bytes / 2 + 8 > DL_MAX_BLOB)
++				return NULL;
++			out = kvmalloc(hex_bytes / 2 + 8, GFP_KERNEL);
++			if (!out)
++				return NULL;
++			cap = hex_bytes / 2 + 8;
++			while (p < b + end) {
++				int hi, lo;
++				while (p < b + end && dl_hex_val(*p) < 0) p++;
++				if (p >= b + end) break;
++				hi = dl_hex_val(*p++);
++				while (p < b + end && dl_hex_val(*p) < 0) p++;
++				if (p >= b + end) { len = 0; kvfree(out); return NULL; }
++				lo = dl_hex_val(*p++);
++				if (len + 1 > cap) break;
++				out[len++] = (unsigned char)((hi << 4) | lo);
++			}
++			if (have_declared && bl != len) {
++				pr_err("[SSPBBD] dl blob: declared BlobLength %u != decoded %zu\n",
++				       bl, len);
++				kvfree(out);
++				return NULL;
++			}
++			*declared = bl;
++			*out_len = len;
++			return out;
++		}
++	}
++	return NULL;
++}
++
++int nuxel_ssp_dl_download(struct ssp_data *data)
++{
++	struct dl_sess sess;
++	const unsigned char *cont;
++	size_t cont_len;
++	unsigned char *blob = NULL;
++	size_t blob_len = 0, off = 0;
++	unsigned int entry = 0;
++	unsigned int declared = 0;
++	unsigned int nwrites = 0;
++	unsigned int nrecords = 0;
++	int ret = -EIO;
++
++	if (!data) return -EINVAL;
++
++	memset(&sess, 0, sizeof(sess));
++	sess.priv = bcm_get_bcm_gps();
++	if (!sess.priv)
++		return -ENODEV;
++
++	sess.priv->rx_strm.pckt_len = 1;
++	sess.priv->rx_strm.fc_len = 0;
++	sess.priv->rx_strm.ctrl_len = sess.priv->rx_strm.pckt_len +
++				      sess.priv->rx_strm.fc_len + 1;
++	sess.priv->rx_strm.frame_len = MIN_SPI_FRAME_LEN;
++	sess.priv->rx_strm.ctrl_byte = SSI_MODE_STREAM | SSI_PCKT_1B_LENGTH |
++				       SSI_READ_TRANS;
++
++	cont = nuxel_bbd_patch_bytes(data->ap_type, data->ap_rev, &cont_len);
++	if (!cont || cont_len == 0) {
++		pr_err("[SSPBBD] nuxel dl: no embedded patch for ap=%d hw=%d\n",
++		       data->ap_type, data->ap_rev);
++		return -ENOENT;
++	}
++
++	if (dl_parse_hex_hdr(cont, cont_len, "PatchAddress", &entry)) {
++		pr_err("[SSPBBD] nuxel dl: missing PatchAddress in container\n");
++		return -EINVAL;
++	}
++
++	blob = dl_decode_blob(cont, cont_len, &blob_len, &declared);
++	if (!blob || blob_len == 0) {
++		pr_err("[SSPBBD] nuxel dl: failed to decode/validate patch Blob\n");
++		kvfree(blob);
++		return -EINVAL;
++	}
++	pr_info("[SSPBBD] nuxel dl: container %zu B -> blob %zu B (declared %u), entry=0x%08x\n",
++		cont_len, blob_len, declared, entry);
++
++	dl_rx_init(&sess.rx);
++	sess.seq = 1; sess.rel_seq = 0;
++	sess.op_outstanding = false;
++
++	ret = nuxel_ssp_dl_phase1(&sess);
++	if (ret) {
++		pr_err("[SSPBBD] nuxel dl: phase-1 ROM sync failed (%d)\n", ret);
++		goto out;
++	}
++	pr_info("[SSPBBD] nuxel dl: phase-1 ROM sync OK (GetVersion w0=0x%08x)\n",
++		sess.version_w0);
++
++	off = 0;
++	while (off < blob_len) {
++		unsigned int dest = 0; const unsigned char *body = NULL; unsigned int bl = 0;
++		enum dl_rec_st st = dl_next_record(blob, blob_len, &off, &dest, &body, &bl);
++		if (st == DL_REC_TRUNCATED || st == DL_REC_MALFORMED) {
++			pr_err("[SSPBBD] nuxel dl: malformed/truncated record at offset %zu (st=%d)\n",
++			       off, st);
++			ret = -EINVAL;
++			goto out;
++		}
++		nrecords++;
++		if (st == DL_REC_OTHER)
++			continue;
++
++		if (bl + 6 > DL_MAX_PAYLOAD) {
++			pr_err("[SSPBBD] nuxel dl: F1 record too large (%u)\n", bl);
++			ret = -E2BIG;
++			goto out;
++		}
++		{
++			unsigned char mw[DL_MAX_PAYLOAD];
++			unsigned int plen = bl + 6;
++			mw[0] = (unsigned char)dest; mw[1] = (unsigned char)(dest >> 8);
++			mw[2] = (unsigned char)(dest >> 16); mw[3] = (unsigned char)(dest >> 24);
++			mw[4] = (unsigned char)(bl & 0xFF); mw[5] = (unsigned char)(bl >> 8);
++			memcpy(mw + 6, body, bl);
++			ret = dl_reliable_rpc(&sess, DL_RPC_MEM_WRITE, mw, plen, 1500);
++			if (ret) {
++				pr_err("[SSPBBD] nuxel dl: MemoryWrite dest=0x%08x failed (%d)\n",
++				       dest, ret);
++				goto out;
++			}
++		}
++		nwrites++;
++	}
++
++	if (nwrites == 0) {
++		pr_err("[SSPBBD] nuxel dl: no F1 records downloaded (%u records seen)\n",
++		       nrecords);
++		ret = -EINVAL;
++		goto out;
++	}
++	pr_info("[SSPBBD] nuxel dl: %u F1 MemoryWrite records ACKed (%u total records)\n",
++		nwrites, nrecords);
++
++	{
++		unsigned char b[4] = { (unsigned char)entry, (unsigned char)(entry >> 8),
++				       (unsigned char)(entry >> 16), (unsigned char)(entry >> 24) };
++		if (dl_fire_rpc(&sess, DL_RPC_START_SCRATCH, b, 4)) {
++			ret = -EIO;
++			goto out;
++		}
++		msleep(40);
++	}
++
++	{
++		unsigned char b[20] = {0};
++		b[0] = (unsigned char)entry; b[1] = (unsigned char)(entry >> 8);
++		b[2] = (unsigned char)(entry >> 16); b[3] = (unsigned char)(entry >> 24);
++		if (dl_fire_rpc(&sess, DL_RPC_SERVICE_START, b, 20)) {
++			ret = -EIO;
++			goto out;
++		}
++		msleep(100);
++	}
++
++	{
++		int rn;
++		rn = dl_reliable_rpc(&sess, DL_RPC_GET_VERSION, NULL, 0, 2500);
++		if (rn) {
++			pr_err("[SSPBBD] nuxel dl: app-start confirmation failed (%d)\n", rn);
++			ret = rn;
++			goto out;
++		}
++	}
++	pr_info("[SSPBBD] nuxel dl: firmware + app confirmed (GetVersion w0=0x%08x)\n",
++		sess.version_w0);
++	ret = 0;
++out:
++	kvfree(blob);
++	return ret;
++}
++
+ /*
+  * Bring the sensor hub out of the post-probe shutdown state without the
+  * Android vendor lhd daemon.  This performs only the kernel's own documented
+@@ -154,14 +929,35 @@ int nuxel_ssp_bringup_hw(void)
+ 	    !IS_ERR(data->regulator_vdd_mcu_1p8)) {
+ 		pr_err("[SSPBBD] Nuxel bring-up: retrying after MCU power-cycle\n");
+ 		if (regulator_is_enabled(data->regulator_vdd_mcu_1p8))
+-			regulator_disable(data->regulator_vdd_mcu_1p8);
++			regulator_force_disable(data->regulator_vdd_mcu_1p8);
+ 		msleep(120);
+ 		ret = regulator_enable(data->regulator_vdd_mcu_1p8);
+ 		pr_info("[SSPBBD] Nuxel bring-up: vdd_mcu_1p8 re-enabled -> %d (enabled=%d)\n",
+ 			ret, regulator_is_enabled(data->regulator_vdd_mcu_1p8));
+ 		msleep(300);	/* MCU boot time after rail settle */
+ 
++		/*
++		 * The hub is now in a genuine cold power-on window.  Drive the full
++		 * two-phase firmware download over direct bcm_spi_sync()/bcm_ssi_rx()
++		 * (phase-1 autobaud+GetVersion, phase-2 reliable MemoryWrite +
++		 * StartScratchApp + ServiceStart + confirm GetVersion).  Only when
++		 * that is verified do we proceed to initialize_mcu()/WHOAMI.
++		 */
++		{
++			int dl = nuxel_ssp_dl_download(data);
++			pr_info("[SSPBBD] Nuxel bring-up: firmware download -> %d\n", dl);
++			if (dl) {
++				pr_err("[SSPBBD] Nuxel bring-up: firmware download "
++				       "failed; skipping WHOAMI (honest error, no false "
++				       "ready)\n");
++				data->resetting = false;
++				ssp_enable(data, false);
++				return -EIO;
++			}
++		}
++
+ 		clean_pending_list(data);
++
+ 		data->resetting = false;
+ 		if (data->bSspShutdown)
+ 			ssp_enable(data, true);

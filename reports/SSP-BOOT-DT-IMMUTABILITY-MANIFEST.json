@@ -1,0 +1,54 @@
+{
+  "schema": "nuxel-ssp-immutability-manifest-v1",
+  "generated": "2026-11-22T15:42:00+01:00",
+  "device": {
+    "model": "SM-G975F",
+    "codename": "beyond2lte",
+    "serialno": "R58M75KDB2X",
+    "bootloader": "G975FXXSEFUL1",
+    "hardware": "exynos9820",
+    "revision": "26",
+    "verifiedbootstate": "orange",
+    "selinux": "enforcing"
+  },
+  "kernel": {
+    "release": "4.14.253-gf7194c1d15ed-dirty",
+    "built": "Sat Nov 21 12:30:11 CET 2026",
+    "deployed_patches": ["0020-nuxel-ssp-hub-power-and-pm", "0023-nuxel-ssp-native-bringup-reconciled"],
+    "NOT_deployed_patches": ["0025-nuxel-ssp-rail-force-coldcycle", "0026-nuxel-ssp-phase1-romsync", "0027-nuxel-ssp-kernel-firmware-download"],
+    "kallsyms_ssp_bringup_present": true,
+    "kallsyms_ssp_dl_present": false
+  },
+  "partitions": {
+    "dtb":   { "device": "/dev/sda12", "blocks": 16384,  "bytes": 8388608,    "partlabel": "dtb",      "sha256": "abc9d45d3745866346fd94c7c04028cc2c62ade4dd274b400dbbfec0c2ef4780", "status": "UNCHANGED" },
+    "dtbo":  { "device": "/dev/sda13", "blocks": 16384,  "bytes": 8388608,    "partlabel": "dtbo",     "sha256": "de3bc02526c66647992a744608fdf61548823866e822a7400619d74126095c23", "status": "UNCHANGED" },
+    "boot":  { "device": "/dev/sda14", "blocks": 112640, "bytes": 57671680,   "partlabel": "boot",     "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c", "status": "UNCHANGED" },
+    "recovery": { "device": "/dev/sda15", "blocks": 132096, "bytes": 67633152, "partlabel": "recovery", "sha256": "4cc71d6277e020cdec729b85934cfb6111e9abee8db2fbcc344aad3173335d87", "status": "UNCHANGED" }
+  },
+  "boot_image": {
+    "format": "android-bootimg-v1",
+    "header_version": 1,
+    "header_size": 1648,
+    "name": "nuxel-s10plus",
+    "kernel_addr": "0x10008000",
+    "ramdisk_addr": "0x11000000",
+    "tags_addr": "0x10000100",
+    "kernel_size": 45848584,
+    "kernel_offset": 2048,
+    "kernel_sha256": "0e553484a76be95cadda759a711257f9baae880a227e4754bf1c80c081a7163d",
+    "ramdisk_size": 2424832,
+    "ramdisk_offset": 45852672,
+    "ramdisk_sha256": "0dd0fb5a3d6895f28d8861d967382a0b87182d0f9c63b1d560393818b290f407",
+    "ramdisk_format": "lzma-alone/eos-marker/dict=0x800000",
+    "ramdisk_uncompressed_size": 8791372,
+    "appended_dtb_count": 0,
+    "cmdline": "buildvariant=userdebug nuxel.device=s10plus root=/dev/block/platform/13d60000.ufs/by-name/userdata rootfstype=ext4 rootwait rw",
+    "note": "NO appended FDT/DTB tail in this boot image; DTB/DTBO are EXTERNAL partitions (sda12/sda13) selected via androidboot.dtbo_idx=9"
+  },
+  "cmdline_selected_dtbo_idx": 9,
+  "immutability_rules": {
+    "forbidden_writes": ["DTB", "DTBO", "RECOVERY", "vendor", "modem", "PIT", "EFS", "bootloader", "vbmeta", "param", "up_param"],
+    "boot_repack_policy": "replace ONLY arm64 Image payload; preserve ramdisk bytes, header fields, no appended DT tail exists; leave sda12/sda13 byte-identical",
+    "rollback_seed_host": "/tmp/nuxel-ssp-baseline/boot-sda14.img (sha256 verified == live sda14)"
+  }
+}
