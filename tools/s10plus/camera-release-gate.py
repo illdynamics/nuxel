@@ -61,8 +61,17 @@ def check_manifest(m):
         dev = m['device']
         if dev['model'] != 'SM-G975F' or dev['codename'] != 'beyond2lte' or \
                 dev['status'] != 'NUXEL_HEALTHY' or not isinstance(dev['board_revision'], int) or \
-                not isinstance(dev['dtbo_index'], int) or not isinstance(dev['appended_dtb_index'], int):
+                not isinstance(dev['dtbo_index'], int):
             raise ValueError('active board/kernel/overlay identity not proven')
+        layout = dev.get('dt_layout')
+        if layout not in ('boot-appended', 'separate-dtb-dtbo'):
+            raise ValueError('explicit boot-appended vs separate-DT layout required')
+        if layout == 'boot-appended':
+            if not isinstance(dev.get('appended_dtb_index'), int) or dev['appended_dtb_index'] < 0:
+                raise ValueError('appended DT selection not independently proven')
+        elif ('appended_dtb_index' in dev and dev['appended_dtb_index'] is not None) or \
+                m['proof'].get('bootloader_dt_source_verified') is not True:
+            raise ValueError('separate-DT layout needs no appended selection AND verified bootloader source proof')
         proof = m['proof']
         if proof.get('off_device') is not True or proof.get('rollback_ready') is not True or \
                 proof.get('selected_overlay_verified') is not True or \
@@ -137,8 +146,22 @@ def audit(a):
                                      'overlay_entry': dev['dtbo_index']})
         # Offline no-change must bind all input member SHA256s. Changed BOOT
         # requires separately signed, exact member approval.
-        bootargs = [a.candidate_boot, '--json', '--partition-bytes', str(m['partitions']['boot_bytes']),
-                    '--selected-appended-dtb-index', str(dev['appended_dtb_index'])]
+        bootargs = [a.candidate_boot, '--json', '--partition-bytes', str(m['partitions']['boot_bytes'])]
+        separate = None
+        if dev['dt_layout'] == 'boot-appended':
+            bootargs += ['--selected-appended-dtb-index', str(dev['appended_dtb_index'])]
+        else:
+            # Source of these hashes is the owner-signed private Prompt00 manifest.
+            # The verifier independently verifies all three source files and their
+            # layout. Never accept an unsupported --no-dtb / absent-DT switch.
+            separate = {
+                'dtb_path': paths['dtb'], 'dtb_sha256': m['artifacts']['dtb']['sha256'],
+                'dtbo_path': paths['dtbo'], 'dtbo_sha256': m['artifacts']['dtbo']['sha256'],
+                'merged_path': paths['merged_fdt'], 'merged_sha256': m['artifacts']['merged_fdt']['sha256'],
+                'dtbo_index': dev['dtbo_index'], 'board_revision': dev['board_revision'],
+            }
+            for key, value in separate.items():
+                bootargs += ['--separate-' + key.replace('_', '-'), str(value)]
         if sha_file(a.candidate_boot) == m['artifacts']['boot']['sha256']:
             bootargs += ['--expect-boot-sha256', m['artifacts']['boot']['sha256']]
         else:
@@ -164,11 +187,12 @@ def audit(a):
         v_spec.loader.exec_module(v_mod)
         g = v_mod.Gate()
         original = v_mod.inspect(paths['boot'], m['partitions']['boot_bytes'], g,
-                   selected_appended_idx=dev['appended_dtb_index'])
+                   selected_appended_idx=dev.get('appended_dtb_index'),
+                   separate_dt_evidence=separate)
         if g.failures or not original.get('dtb_sha256'):
-            raise ValueError('golden BOOT is malformed: ' + '; '.join(g.failures))
+            raise ValueError('golden BOOT DT source is malformed: ' + '; '.join(g.failures))
         if result[0].get('dtb_sha256') != original['dtb_sha256']:
-            raise ValueError('candidate BOOT changes appended DTB; exact merge/variant proof not implemented: NO-FLASH')
+            raise ValueError('candidate BOOT changes trusted DTB source: NO-FLASH')
         passed('BOOT_CONTAINER_PASS', result[0]['sha256'])
         # Candidate table must have *exact* partition size and independently
         # explicit entry selection. Never default to revision 26/index 9.
@@ -180,7 +204,9 @@ def audit(a):
         dtargs = ['--json', '--board-rev', str(dev['board_revision']), '--dtbo-idx', '0', a.candidate_dtb]
         result = json.loads(call_tool('camera-dt-gate.py', dtargs))
         result += json.loads(call_tool('camera-dt-gate.py',
-                 ['--json', '--merged', a.candidate_merged]))
+                 ['--json', '--merged', '--golden-merged', paths['merged_fdt'],
+                  '--golden-merged-sha256', m['artifacts']['merged_fdt']['sha256'],
+                  a.candidate_merged]))
         if any(item.get('result') != 'PASS' for item in result):
             raise ValueError('camera graph gate failed')
         dtresult = json.loads(call_tool('camera-dt-gate.py',

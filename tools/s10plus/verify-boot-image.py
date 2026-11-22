@@ -272,7 +272,62 @@ def _align4(n):
     return (n + 3) & ~3
 
 
-def inspect(path, partition_bytes, gate, expected=None, selected_appended_idx=None):
+def verify_separate_dt_evidence(evidence, gate):
+    """Validate explicit signed-baseline references for separate Samsung DTB/DTBO.
+
+    This alone cannot prove bootloader behavior. The outer release gate MUST
+    verify the owner-trusted manifest signature and exact live readback hashes.
+    Missing/contradictory evidence is fatal, never an implied no-DT exception.
+    """
+    if not isinstance(evidence, dict):
+        gate.fail('separate DT layout requires complete explicit evidence')
+        return False
+    try:
+        for name in ('dtb', 'dtbo', 'merged'):
+            path, expected_sha = evidence[name + '_path'], evidence[name + '_sha256']
+            if not isinstance(expected_sha, str) or len(expected_sha) != 64 or any(
+                    ch not in '0123456789abcdef' for ch in expected_sha.lower()):
+                raise ValueError('invalid SHA256 for separate ' + name)
+            with open(path, 'rb') as f:
+                raw = f.read()
+            if hashlib.sha256(raw).hexdigest() != expected_sha.lower():
+                raise ValueError('separate %s SHA256 mismatch' % name)
+            if name == 'merged' and not dt_graph.is_fdt(raw):
+                raise ValueError('active merged FDT must be bare FDT')
+            trees = [dt_graph.parse_fdt(b) for b in dt_graph.extract_fdts(raw)]
+            if name == 'dtb':
+                if len(trees) != 1:
+                    raise ValueError('separate DTB has ambiguous multiple entries')
+            if name == 'dtbo':
+                idx = evidence['dtbo_index']
+                rev = evidence['board_revision']
+                if not isinstance(idx, int) or not isinstance(rev, int) or not (0 <= rev <= 255):
+                    raise ValueError('unproven overlay index or board revision')
+                if not dt_graph.is_samsung_dth(raw) or not (0 <= idx < len(trees)):
+                    raise ValueError('DTBO is not a selected Samsung table entry')
+                root = trees[idx].get('/')
+                lo = root.props.get('dtbo-hw_rev') if root else None
+                hi = root.props.get('dtbo-hw_rev_end') if root else None
+                if not lo or not hi or len(lo.data) != 4 or len(hi.data) != 4 or \
+                        not (lo.cells[0] <= rev <= hi.cells[0]):
+                    raise ValueError('selected overlay revision window does not include board')
+            if name == 'merged':
+                root = trees[0].get('/')
+                comp = root.props.get('compatible') if root else None
+                model = root.props.get('model') if root else None
+                if not comp or not any('exynos9820' in x.lower() for x in comp.strings) or \
+                        not model or not any('beyond2lte' in x.lower() for x in model.strings):
+                    raise ValueError('active merged FDT does not identify beyond2lte Exynos9820')
+                check_dtb(raw, gate, 'signed live merged FDT (separate DT source)')
+        gate.note('separate DTB, selected DTBO entry and live merged FDT verified by SHA256; '
+                  'bootloader active-source proof still requires trusted live manifest')
+        return True
+    except (ValueError, KeyError, OSError, IndexError, TypeError, struct.error) as exc:
+        gate.fail('separate DT layout evidence rejected: %s' % exc)
+        return False
+
+
+def inspect(path, partition_bytes, gate, expected=None, selected_appended_idx=None, separate_dt_evidence=None):
     expected = expected or {}
     rep = {"path": path}
     size = os.path.getsize(path)
@@ -407,7 +462,19 @@ def inspect(path, partition_bytes, gate, expected=None, selected_appended_idx=No
 
     # ---- gate 5: appended DTBs; exact count and bootloader selection --------
     doff = roff + round_up(rsize, page)
-    if doff >= size:
+    if separate_dt_evidence is not None:
+        if selected_appended_idx is not None:
+            gate.fail('separate DT layout cannot also select an appended BOOT DTB')
+        if doff > size or any(data[doff:]):
+            gate.fail('separate DT layout contains unexpected BOOT trailing payload; not a proven separate-DT image')
+        else:
+            verify_separate_dt_evidence(separate_dt_evidence, gate)
+            rep['dt_source'] = 'verified-separate-dtb-dtbo-and-live-fdt'
+            rep['appended_dtb_count'] = 0
+            rep['dtb_sha256'] = separate_dt_evidence.get('dtb_sha256')
+        if expected.get('dtb') and rep.get('dtb_sha256') != expected['dtb']:
+            gate.fail('separate DTB member SHA-256 mismatch')
+    elif doff >= size:
         gate.fail('BOOT has no appended DTB; bootloader DT selection unproven')
     else:
         pos = doff
@@ -488,10 +555,26 @@ def main(argv):
     ap.add_argument('--expect-ramdisk-sha256')
     ap.add_argument('--expect-dtb-sha256')
     ap.add_argument('--selected-appended-dtb-index', type=int)
+    ap.add_argument('--separate-dtb-path')
+    ap.add_argument('--separate-dtb-sha256')
+    ap.add_argument('--separate-dtbo-path')
+    ap.add_argument('--separate-dtbo-sha256')
+    ap.add_argument('--separate-merged-path')
+    ap.add_argument('--separate-merged-sha256')
+    ap.add_argument('--separate-dtbo-index', type=int)
+    ap.add_argument('--separate-board-revision', type=int)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
 
+    keys = ('dtb_path', 'dtb_sha256', 'dtbo_path', 'dtbo_sha256',
+            'merged_path', 'merged_sha256', 'dtbo_index', 'board_revision')
+    kwargs = {key: getattr(args, 'separate_' + key) for key in keys}
+    # All-or-none. A single flag never bypasses the required appended DTB.
+    separate_evidence = kwargs if any(x is not None for x in kwargs.values()) else None
+    if separate_evidence is not None and any(x is None for x in kwargs.values()):
+        print('FAIL: incomplete separate DT source evidence', file=sys.stderr)
+        return 2
     overall = 0
     reports = []
     for path in args.images:
@@ -502,7 +585,8 @@ def main(argv):
                 'kernel': args.expect_kernel_sha256,
                 'ramdisk': args.expect_ramdisk_sha256,
                 'dtb': args.expect_dtb_sha256,
-            }, selected_appended_idx=args.selected_appended_dtb_index)
+            }, selected_appended_idx=args.selected_appended_dtb_index,
+               separate_dt_evidence=separate_evidence)
         except OSError as exc:
             gate.fail("cannot read: %s" % exc)
             rep = {"path": path}

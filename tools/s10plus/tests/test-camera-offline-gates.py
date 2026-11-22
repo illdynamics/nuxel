@@ -346,7 +346,7 @@ class OfflineGateTests(unittest.TestCase):
         manifest={'schema':'nuxel.camera.prompt00/v1',
             'capture_utc':datetime.now(timezone.utc).isoformat(),
             'device':{'model':'SM-G975F','codename':'beyond2lte',
-                      'board_revision':26,'dtbo_index':1,'appended_dtb_index':0,
+                      'board_revision':26,'dtbo_index':1,'dt_layout':'boot-appended','appended_dtb_index':0,
                       'status':'NUXEL_HEALTHY'},'artifacts':artifacts,
             'partitions':{'boot_bytes':1000000,'dtb_bytes':1000000,'dtbo_bytes':1000000},
             'proof':{'off_device':True,'rollback_ready':True,'selected_overlay_verified':True,
@@ -401,6 +401,154 @@ class OfflineGateTests(unittest.TestCase):
         r=self.runpy('camera-release-gate.py',*(args[:args.index('--candidate-dtb')]+[
             '--candidate-dtb',self.put(self.good+b'X')]+args[args.index('--candidate-dtbo'):]))
         self.assertNotEqual(r.returncode,0)
+
+        # SYNTHETIC ONLY: exercise the combined known-good STOCK shared GPIO
+        # and genuine separate-DTB/DTBO boot layout under signed evidence.
+        stock = self.tmp / 'SYNTHETIC_stock-live.fdt'
+        stock.write_bytes(mkfdt(self.stock_flash_nodes()))
+        separate_boot = self.tmp / 'SYNTHETIC_separate-boot.img'
+        separate_boot.write_bytes(mkboot(self.good)[:-len(self.good)])
+        separate = copy.deepcopy(manifest)
+        separate['device']['dt_layout'] = 'separate-dtb-dtbo'
+        separate['device']['appended_dtb_index'] = None
+        separate['proof']['bootloader_dt_source_verified'] = True
+        for name, path in (('boot',separate_boot),('dtb',stock),('merged_fdt',stock)):
+            separate['artifacts'][name] = desc(path)
+        for name in ('boot', 'dtb'):
+            separate['proof'][name + '_readback_sha256'] = separate['artifacts'][name]['sha256']
+        separate_m = self.tmp / 'SYNTHETIC_signed-separate-manifest.json'
+        separate_m.write_text(json.dumps(separate))
+        separate_sig = self.tmp / 'SYNTHETIC_signed-separate-manifest.sig'
+        subprocess.run(['openssl','dgst','-sha256','-sign',str(priv),
+                        '-out',str(separate_sig),str(separate_m)],capture_output=True,check=True)
+        separate_args = list(args)
+        for flag, value in [('--manifest',separate_m),('--signature',separate_sig),
+                            ('--candidate-boot',separate_boot),('--candidate-dtb',stock),
+                            ('--candidate-merged',stock),
+                            ('--receipt-dir',self.tmp / 'synthetic-separate-receipts')]:
+            separate_args[separate_args.index(flag)+1] = value
+        no = self.runpy('camera-release-gate.py',*separate_args)
+        self.assertEqual(no.returncode,0,no.stdout+no.stderr)
+        self.assertEqual(json.loads(no.stdout)['result'],'PASS_OFFLINE_ONLY')
+        # Any signed assertion with the bootloader selection proof removed is
+        # rejected even though all image bytes remain identical.
+        unproven = copy.deepcopy(separate)
+        unproven['proof']['bootloader_dt_source_verified'] = False
+        unproven_m = self.tmp/'SYNTHETIC_unproven-separate.json'
+        unproven_m.write_text(json.dumps(unproven))
+        unproven_sig = self.tmp/'SYNTHETIC_unproven-separate.sig'
+        subprocess.run(['openssl','dgst','-sha256','-sign',str(priv),
+                        '-out',str(unproven_sig),str(unproven_m)],capture_output=True,check=True)
+        bad_args = list(separate_args)
+        bad_args[bad_args.index('--manifest')+1] = unproven_m
+        bad_args[bad_args.index('--signature')+1] = unproven_sig
+        no = self.runpy('camera-release-gate.py',*bad_args)
+        self.assertNotEqual(no.returncode,0,no.stdout+no.stderr)
+
+    def stock_flash_nodes(self):
+        nodes = copy.deepcopy(self.nodes)
+        nodes['/mipi-csis@0']['status'] = string('disabled')  # vendor baseline, native CSIS not active
+        nodes['/gpio@1'] = {'phandle': cells(16), '#gpio-cells': cells(2)}
+        nodes['/s2mpb02_pmic@59/torch'] = {
+            'torch-gpios': cells(15, 4, 0, 16, 6, 0),
+            'compatible': string('samsung,pmic-torch')}
+        nodes['/fimc-is-flash-gpio@0'] = {
+            'flash-gpios': cells(15, 4, 0, 16, 6, 0),
+            'compatible': string('samsung,fimc-is-flash-gpio')}
+        return nodes
+
+    def test_45_preexisting_stock_flash_claim_requires_golden(self):
+        nodes = self.stock_flash_nodes()
+        fdt = self.put(mkfdt(nodes))
+        # A naked duplicated GPIO is a hard failure (even if it *looks* stock).
+        no = self.runpy('camera-dt-gate.py', '--merged', fdt)
+        self.assertNotEqual(no.returncode, 0, no.stdout+no.stderr)
+        # Exact, hash-pinned live golden evidence permits a byte-identical overlap.
+        yes = self.runpy('camera-dt-gate.py', '--merged',
+                         '--golden-merged', fdt,
+                         '--golden-merged-sha256', file_sha(fdt), fdt)
+        self.assertEqual(yes.returncode, 0, yes.stdout+yes.stderr)
+
+    def test_46_new_camera_owner_cannot_reuse_stock_flash_pin(self):
+        baseline = self.put(mkfdt(self.stock_flash_nodes()))
+        nodes = self.stock_flash_nodes()
+        nodes['/i2c@0/camera@30']['torch-gpios'] = cells(15, 4, 0)
+        candidate = self.put(mkfdt(nodes))
+        no = self.runpy('camera-dt-gate.py', '--merged',
+                        '--golden-merged', baseline,
+                        '--golden-merged-sha256', file_sha(baseline), candidate)
+        self.assertNotEqual(no.returncode, 0, no.stdout+no.stderr)
+        self.assertIn('NEW/ALTERED GPIO conflict', no.stdout)
+
+    def test_47_mutated_stock_flash_flag_is_not_waived(self):
+        baseline = self.put(mkfdt(self.stock_flash_nodes()))
+        nodes = self.stock_flash_nodes()
+        nodes['/fimc-is-flash-gpio@0']['flash-gpios'] = cells(15, 4, 0, 16, 6, 1)
+        candidate = self.put(mkfdt(nodes))
+        no = self.runpy('camera-dt-gate.py', '--merged',
+                        '--golden-merged', baseline,
+                        '--golden-merged-sha256', file_sha(baseline), candidate)
+        self.assertNotEqual(no.returncode, 0, no.stdout+no.stderr)
+
+    def test_48_untrusted_or_mutated_golden_cannot_waive_conflict(self):
+        fdt = self.put(mkfdt(self.stock_flash_nodes()))
+        for args in [('--golden-merged', fdt),
+                     ('--golden-merged-sha256', file_sha(fdt)),
+                     ('--golden-merged', fdt, '--golden-merged-sha256', '0'*64)]:
+            no = self.runpy('camera-dt-gate.py', '--merged', *args, fdt)
+            self.assertNotEqual(no.returncode, 0, no.stdout+no.stderr)
+
+    def separate_args(self, base, overlay, merged, idx=1, rev=26):
+        return ['--separate-dtb-path', base, '--separate-dtb-sha256', file_sha(base),
+                '--separate-dtbo-path', overlay, '--separate-dtbo-sha256', file_sha(overlay),
+                '--separate-merged-path', merged, '--separate-merged-sha256', file_sha(merged),
+                '--separate-dtbo-index', str(idx), '--separate-board-revision', str(rev)]
+
+    def test_49_separate_dtb_with_complete_pinned_sources(self):
+        noapp = self.put(mkboot(self.good)[:-len(self.good)], '.img')
+        no = self.runpy('verify-boot-image.py', noapp)
+        self.assertNotEqual(no.returncode, 0, no.stdout+no.stderr)
+        yes = self.runpy('verify-boot-image.py', '--json',
+                         *self.separate_args(self.fdt, self.dtbo, self.fdt), noapp)
+        self.assertEqual(yes.returncode, 0, yes.stdout+yes.stderr)
+        self.assertEqual(json.loads(yes.stdout)[0]['appended_dtb_count'], 0)
+
+    def test_50_separate_layout_mismatch_fails_closed(self):
+        noapp = self.put(mkboot(self.good)[:-len(self.good)], '.img')
+        cases = [self.separate_args(self.fdt, self.dtbo, self.fdt, idx=0),
+                 self.separate_args(self.fdt, self.dtbo, self.fdt, rev=15),
+                 self.separate_args(self.fdt, self.dtbo, self.fdt)[:-2]]
+        for args in cases:
+            no = self.runpy('verify-boot-image.py', *args, noapp)
+            self.assertNotEqual(no.returncode, 0, no.stdout+no.stderr)
+        invalid = self.separate_args(self.fdt, self.dtbo, self.fdt)
+        invalid[3] = '0'*64
+        no = self.runpy('verify-boot-image.py', *invalid, noapp)
+        self.assertNotEqual(no.returncode, 0, no.stdout+no.stderr)
+        # Signed separate-DT claims cannot make a BOOT image with nonzero
+        # trailing payload silently switch to another DT layout.
+        mixed = self.put(mkboot(self.good), '.img')
+        no = self.runpy('verify-boot-image.py',
+                        *self.separate_args(self.fdt, self.dtbo, self.fdt), mixed)
+        self.assertNotEqual(no.returncode, 0, no.stdout+no.stderr)
+
+    def test_51_release_manifest_demands_explicit_dt_layout(self):
+        # Untested assertions in JSON cannot replace owner-trusted evidence.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('camrelease', TOOL / 'camera-release-gate.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        try:
+            module.check_manifest({'schema':'nuxel.camera.prompt00/v1',
+                                   'capture_utc':datetime.now(timezone.utc).isoformat(),
+                                   'device':{'model':'SM-G975F','codename':'beyond2lte',
+                                             'status':'NUXEL_HEALTHY','board_revision':26,
+                                             'dtbo_index':1,'appended_dtb_index':0},
+                                   'proof':{}})
+        except ValueError as exc:
+            self.assertIn('explicit boot-appended vs separate-DT layout', str(exc))
+        else:
+            self.fail('manifest without DT layout was wrongly accepted')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

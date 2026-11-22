@@ -307,21 +307,23 @@ def check_address_cells(tree, gate, label):
                       (label, path))
 
 
-def check_gpio_ownership(tree, gate, label, is_merged=False):
-    """Detect enabled camera vs other hardware claiming identical GPIO line.
+def gpio_claims(tree, gate, label):
+    """Collect concrete enabled GPIO claims keyed by (provider path, line).
 
-    GPIO specifier's final cell contains polarity/flags (per #gpio-cells).
-    Unknown polarity / unrelated exact-board pinmux requires a golden diff;
-    fail where a camera actually overlaps an existing functional GPIO owner.
+    GPIO names/paths are not trusted identity: the provider must resolve through
+    the FDT phandle graph. Claim identity includes the complete property bytes,
+    owner path, GPIO tuple and polarity, so a stock overlap cannot mask a new
+    user or a changed mode/flag. This is deliberately NOT a pin-number whitelist.
     """
-    if not is_merged:
-        return
     owners = {}
     for path, node in tree.nodes.items():
         if not _enabled(node):
             continue
         for pname, prop in node.props.items():
             if not (pname.endswith('-gpio') or pname.endswith('-gpios') or pname == 'gpios'):
+                continue
+            if len(prop.data) % 4:
+                gate.fail('%s: malformed GPIO cell width %s/%s' % (label, path, pname))
                 continue
             vals = prop.cells
             i = 0
@@ -330,26 +332,56 @@ def check_gpio_ownership(tree, gate, label, is_merged=False):
                 target = tree.resolve_phandle(ph)
                 provider = tree.get(target) if target else None
                 nc = provider.props.get('#gpio-cells') if provider else None
-                if not nc or not nc.cells or nc.cells[0] < 2:
+                if not nc or len(nc.data) != 4 or not nc.cells or not (2 <= nc.cells[0] <= 16):
                     if _camera_node(node):
                         gate.fail('%s: invalid/unresolved camera GPIO %s/%s' % (label, path, pname))
                     break
                 count = nc.cells[0]
                 if i + 1 + count > len(vals):
-                    gate.fail('%s: malformed camera GPIO tuple %s/%s' % (label, path, pname))
+                    gate.fail('%s: truncated GPIO tuple %s/%s' % (label, path, pname))
                     break
                 pin, flags = vals[i+1], vals[i+count]
-                key = (target, pin)
                 if flags & ~0x7f and _camera_node(node):
                     gate.fail('%s: suspicious GPIO flags 0x%x at %s/%s' %
                               (label, flags, path, pname))
-                for prevpath, prevcamera in owners.get(key, []):
-                    if prevpath != path and (_camera_node(node) or prevcamera):
-                        gate.fail('%s: GPIO %s pin %d owned by both %s and %s' %
-                                  (label, target, pin, prevpath, path))
-                owners.setdefault(key, []).append((path, _camera_node(node)))
+                key = (target, pin)
+                claim = (path, pname, tuple(vals[i:i+count+1]), prop.data.hex())
+                owners.setdefault(key, []).append((claim, _camera_node(node)))
                 i += count + 1
-    gate.note('%s: checked %d unique GPIO owner identifiers' % (label, len(owners)))
+    return owners
+
+
+def check_gpio_ownership(tree, gate, label, is_merged=False, golden_tree=None):
+    """Fail closed on new GPIO conflicts; preserve exact genuine stock overlaps.
+
+    A known-good merged FDT is the *only* possible source of existing shared
+    claims. With no signed baseline, even stock-looking duplicates fail.
+    The release wrapper supplies a previously signed/hash-checked golden FDT;
+    standalone callers need --golden-merged + --golden-merged-sha256 themselves.
+    """
+    if not is_merged:
+        return
+    owners = gpio_claims(tree, gate, label)
+    baseline = gpio_claims(golden_tree, gate, 'golden') if golden_tree else {}
+    for key, claims in owners.items():
+        # Multiple references inside one owner node do not prove cross-owner
+        # conflict; group by owner path and include the exact claim signatures.
+        owner_paths = {claim[0][0] for claim in claims}
+        if len(owner_paths) < 2 or not any(is_cam for _, is_cam in claims):
+            continue
+        expected = baseline.get(key, [])
+        expected_paths = {claim[0][0] for claim in expected}
+        exact = (len(expected_paths) >= 2 and
+                 sorted(claim[0] for claim in expected) ==
+                 sorted(claim[0] for claim in claims))
+        if exact:
+            gate.note('%s: pre-existing, byte-identical golden shared GPIO %s pin %s '
+                      '(no new owners or changed flags)' % (label, key[0], key[1]))
+        else:
+            gate.fail('%s: NEW/ALTERED GPIO conflict %s pin %s owners %s; '
+                      'requires unchanged hash-pinned golden FDT evidence' %
+                      (label, key[0], key[1], sorted(owner_paths)))
+    gate.note('%s: checked %d unique GPIO identifiers' % (label, len(owners)))
 
 
 def check_exclusivity(tree, gate, label):
@@ -369,7 +401,7 @@ def check_exclusivity(tree, gate, label):
     gate.note('%s: enabled FIMC=%d native CSIS=%d' % (label, len(fimc), len(csis)))
 
 
-def validate(path, golden_sha, gate, is_merged=False, board_rev=None, dtbo_idx=None):
+def validate(path, golden_sha, gate, is_merged=False, board_rev=None, dtbo_idx=None, golden_tree=None):
     rep = {"path": path}
     try:
         rep["sha256"] = sha256_file(path)
@@ -406,7 +438,7 @@ def validate(path, golden_sha, gate, is_merged=False, board_rev=None, dtbo_idx=N
     check_address_cells(tree, gate, path)
     check_i2c(tree, gate, path)
     check_refs(tree, gate, path, is_merged=is_merged)
-    check_gpio_ownership(tree, gate, path, is_merged=is_merged)
+    check_gpio_ownership(tree, gate, path, is_merged=is_merged, golden_tree=golden_tree)
     check_exclusivity(tree, gate, path)
 
     rep["nodes"] = len(tree.nodes)
@@ -423,20 +455,41 @@ def main(argv):
     ap.add_argument("--board-rev", type=int, default=None)
     ap.add_argument("--dtbo-idx", type=int, default=None,
                     help="dtbo entry index selected by bootloader (androidboot.dtbo_idx)")
+    ap.add_argument('--golden-merged', help='hash-pinned current live merged FDT, used only for exact existing GPIO overlaps')
+    ap.add_argument('--golden-merged-sha256', help='expected SHA256 of trusted live merged FDT; must be provided with --golden-merged')
     # Camera DT deltas are controlled by camera-dt-diff.py; no allow bypass here.
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     a = ap.parse_args(argv)
 
+    golden_tree = None
+    evidence_error = None
+    if bool(a.golden_merged) != bool(a.golden_merged_sha256):
+        evidence_error = 'both --golden-merged and --golden-merged-sha256 required'
+    elif a.golden_merged:
+        try:
+            if not re.fullmatch(r'[0-9a-fA-F]{64}', a.golden_merged_sha256):
+                raise ValueError('invalid golden SHA256')
+            if sha256_file(a.golden_merged) != a.golden_merged_sha256.lower():
+                raise ValueError('golden merged SHA256 mismatch')
+            with open(a.golden_merged, 'rb') as f:
+                raw = f.read()
+            if not dg.is_fdt(raw):
+                raise ValueError('golden merged evidence must be a bare FDT')
+            golden_tree = dg.parse_fdt(dg.extract_fdts(raw)[0])
+        except (OSError, ValueError, struct.error) as e:
+            evidence_error = 'invalid golden merged evidence: %s' % e
     overall = 0
     reports = []
     for path in a.images:
         g = Gate()
+        if evidence_error:
+            g.fail(evidence_error)
         golden = sha256_file(a.golden) if a.golden and os.path.exists(a.golden) else None
         if a.golden and not os.path.exists(a.golden):
             g.fail("golden %s missing" % a.golden)
         rep = validate(path, golden, g, is_merged=a.merged,
-                       board_rev=a.board_rev, dtbo_idx=a.dtbo_idx)
+                       board_rev=a.board_rev, dtbo_idx=a.dtbo_idx, golden_tree=golden_tree)
         rep["failures"] = g.failures
         rep["warnings"] = g.warnings
         rep["notes"] = g.notes
