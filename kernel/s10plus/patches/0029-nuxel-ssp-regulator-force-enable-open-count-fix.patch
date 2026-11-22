@@ -1,0 +1,35 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH 0029] regulator: fix regulator_force_enable() open_count corruption
+
+The 0028 regulator_force_enable() copied the trailing
+"while (rdev->open_count--) regulator_enable(rdev->supply)" tail from
+regulator_force_disable().  For enable this is wrong:
+
+1. It drains rdev->open_count to zero, corrupting the consumer-handle
+   invariant (teardown later hits WARN_ON(rdev->open_count)).
+2. It enables the PARENT supply open_count times outside any lock, which
+   diverges from upstream regulator_enable() ordering and count semantics.
+
+_regulator_do_enable() already performs ena_gpio_ctrl/ops->enable plus the
+ramp delay; it is the same physical primitive _regulator_enable() uses.  The
+correct symmetric enable for the bounded recovery path (immediately following
+regulator_force_disable()) does not touch open_count and does not recurse into
+the supply chain.
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 093f02c88e00..14eac61f0f56 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2420,10 +2420,6 @@ int regulator_force_enable(struct regulator *regulator)
+ 	ret = _regulator_do_enable(rdev);
+ 	mutex_unlock(&rdev->mutex);
+ 
+-	if (rdev->supply)
+-		while (rdev->open_count--)
+-			regulator_enable(rdev->supply);
+-
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regulator_force_enable);

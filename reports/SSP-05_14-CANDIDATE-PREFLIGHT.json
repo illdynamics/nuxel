@@ -1,0 +1,52 @@
+{
+  "schema": "ssp-05_14-candidate-preflight-v1",
+  "device": {"serial": "R58M75KDB2X", "product": "beyond2lte", "model": "SM-G975F"},
+  "candidate": {
+    "target_partition": "boot",
+    "by_name": "boot",
+    "block_device": "/dev/block/sda14",
+    "bytes": 57671680,
+    "boot_sha256": "1be1ded89f9e04a6a2ca0d32d9273bd363c2e200f478ab10213ea3927674a599",
+    "kernel_sha256": "90265d386683b86519a46326082accb02555995ca8e1ea9a24e0fdcf91fb9ccd",
+    "kernel_size": 45848584,
+    "ramdisk_sha256_preserved": "0dd0fb5a3d6895f28d8861d967382a0b87182d0f9c63b1d560393818b290f407",
+    "ramdisk_size": 2424832,
+    "patch_series": ["0020", "0023", "0025", "0028", "0029"],
+    "patch_0027": "excluded",
+    "appended_dtb_count": 0,
+    "header_change_only": "kernel_size@0x08"
+  },
+  "donor": {
+    "boot_sha256": "760c0e44ca5cdac9d0ce3b4721fae2f734ab99f03b70039faf23a78171620f1a",
+    "identity": "0028-deployed"
+  },
+  "live_baseline": {
+    "boot_sda14": "760c0e44ca5cdac9d0ce3b4721fae2f734ab99f03b70039faf23a78171620f1a",
+    "dtb_sda12": "abc9d45d3745866346fd94c7c04028cc2c62ade4dd274b400dbbfec0c2ef4780",
+    "dtbo_sda13": "de3bc02526c66647992a744608fdf61548823866e822a7400619d74126095c23",
+    "recovery_sda15": "4cc71d6277e020cdec729b85934cfb6111e9abee8db2fbcc344aad3173335d87"
+  },
+  "rollback_copies": [
+    {"location": "host:/tmp/nuxel-boot/boot-0028-current.img", "sha256": "760c0e44ca5cdac9d0ce3b4721fae2f734ab99f03b70039faf23a78171620f1a"},
+    {"location": "host:evidence/pwnage-ssp-05_12/boot-0028-candidate.img", "sha256": "760c0e44ca5cdac9d0ce3b4721fae2f734ab99f03b70039faf23a78171620f1a"},
+    {"location": "device:/cache/nuxel-ssp-rollback/boot-sda14-known-good-760c0e44.img", "sha256": "760c0e44ca5cdac9d0ce3b4721fae2f734ab99f03b70039faf23a78171620f1a"},
+    {"location": "device:/cache/nuxel-ssp-rollback/boot-sda14-known-good-9805d519.img", "sha256": "9805d519b61c38a960158753679e1e2af0cf1783ce4f4c6e3c8b0ba6be5fbca7"},
+    {"location": "host:evidence/pwnage-ssp-05_9/candidate-boot-0020-0023-0025.img", "sha256": "9805d519b61c38a960158753679e1e2af0cf1783ce4f4c6e3c8b0ba6be5fbca7"}
+  ],
+  "regulator_core_safety": {
+    "patch_0029_present": true,
+    "open_count_drain_removed": true,
+    "supply_recursion_removed": true,
+    "regression_checks": "9/9 PASS (tools/s10plus/ssp-stage04/test_regulator_0029.py)"
+  },
+  "build_integrity": {
+    "source_commit": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+    "filesystem": "case-sensitive APFS",
+    "patch_application": "0020/0023/0025/0028/0029 APPLIED_AND_VERIFIED, 0027 excluded",
+    "image_sha256": "90265d386683b86519a46326082accb02555995ca8e1ea9a24e0fdcf91fb9ccd",
+    "vmlinux_sha256": "0470ed7800e160560d99a85736b9ad4115a1917d1debe5b641c2dd42fef706ce"
+  },
+  "flash_authorized": true,
+  "flash_scope": "BOOT-only /dev/block/sda14 single dd write",
+  "decision": "GO"
+}

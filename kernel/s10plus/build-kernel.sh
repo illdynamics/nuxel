@@ -167,6 +167,23 @@ if [[ $DO_CLONE -eq 1 || ! -d "${KSRC}/.git" ]]; then
     fi
 fi
 
+# --- SSP Stage-04 strict source lineage guard -------------------------------
+# This gate is intentionally read-only. A polluted/case-collided working tree
+# must NOT be repaired by automatically resetting other subsystem changes.
+# Stage 04 sets NUXEL_SSP_STRICT=1 and uses a fresh case-sensitive checkout.
+if [ "${NUXEL_SSP_STRICT:-0}" = "1" ]; then
+    echo "[ssp-stage04] strict pinned source/foreign-edit gate"
+    python3 -S "${NUXEL_ROOT}/tools/s10plus/ssp-stage04/audit_kernel_source.py" \
+        --source "${KSRC}" \
+        --patch-dir "${NUXEL_ROOT}/kernel/s10plus/patches" \
+        --expected-commit "${DOWNSTREAM_COMMIT}" \
+        --allow-patch-touched \
+        --json-out "${KOUT}/ssp-kernel-source-audit.json" || {
+        echo "[ssp-stage04] FAIL: pinned kernel checkout contains missing/foreign edits; NO BUILD/FLASH"
+        exit 1
+    }
+fi
+
 # --- apply this repository's kernel patches (idempotent + auditable) --------
 # The toolchain README previously claimed this wrapper applied patches, but
 # the implementation had no git-apply step.  Keep patch application explicit:
@@ -217,6 +234,18 @@ apply_kernel_patches() {
 
     for patch in "${patches[@]}"; do
         required="${patch}.required"
+        # 0027 (in-kernel firmware downloader) is deliberately excluded for the
+        # ROM-first-light candidate when NUXEL_SSP_EXCLUDE_0027=1.  It carries a
+        # dangling extern (nuxel_bbd_patch_bytes) that is un-linkable and relocates
+        # parser logic into kernel space, which is forbidden when the userspace
+        # nuxel_bbd_flash/download tools already implement the ROM protocol.
+        # Skipping it here (before the .required gate) makes the exclusion apply
+        # to BOTH application and validation, matching its documented intent.
+        if [ "${NUXEL_SSP_EXCLUDE_0027:-0}" = "1" ] && \
+           [ "$(basename "${patch}")" = "0027-nuxel-ssp-kernel-firmware-download.patch" ]; then
+            echo "[kernel-patches] SKIP excluded(0027): $(basename "${patch}")" | tee -a "${log}"
+            continue
+        fi
         if grep -qE '^# STUB([[:space:]]|$)' "${patch}" 2>/dev/null; then
             echo "[kernel-patches] SKIP documentation stub: $(basename "${patch}")" | tee -a "${log}"
             continue
@@ -226,7 +255,8 @@ apply_kernel_patches() {
             echo "[kernel-patches] ALREADY_APPLIED: $(basename "${patch}")" | tee -a "${log}"
             continue
         fi
-        if patch_targets_present "${patch}"; then
+        if [[ ! -f "${required}" || "$(basename "${patch}")" != *-nuxel-ssp-* ]] \
+            && patch_targets_present "${patch}"; then
             # A patch that creates files cannot be re-applied (git reports
             # "already exists") nor reverse-checked while later hunks of the
             # same series differ; every file it creates is already in the
@@ -273,12 +303,23 @@ apply_kernel_patches() {
     # merely present), so a silently-skipped optional patch cannot slip through.
     local sha_manifest="${KOUT}/patch-sha256-manifest.txt"
     : > "${sha_manifest}"
+    # Default mandatory set. Patch 0027 (the IN-KERNEL firmware downloader) is
+    # NOT required for ROM first light: the userspace nuxel_bbd_flash/download
+    # tools already implement the ROM protocol over the existing /dev/ttyBCM +
+    # native-peer transport, and 0027 carries a dangling extern
+    # (nuxel_bbd_patch_bytes) that is un-linkable. It also relocates parser
+    # logic into kernel space, which is forbidden when a userspace path exists.
+    # Minimal ROM-first-light candidate = 0020 + 0023 + 0025 (documented in
+    # reports/SSP-05_9-BUILD-REMEDIATION.md). Set NUXEL_SSP_EXCLUDE_0027=1 to
+    # build this candidate; otherwise 0027 remains mandatory (fail-closed).
     local mandatory_ssp=(
         "0020-nuxel-ssp-spi-runtime-reinit.patch"
         "0023-nuxel-ssp-native-bringup-reconciled.patch"
         "0025-nuxel-ssp-rail-force-coldcycle.patch"
-        "0027-nuxel-ssp-kernel-firmware-download.patch"
     )
+    if [ "${NUXEL_SSP_EXCLUDE_0027:-0}" != "1" ]; then
+        mandatory_ssp+=( "0027-nuxel-ssp-kernel-firmware-download.patch" )
+    fi
     for patch in "${patches[@]}"; do
         local b=$(basename "${patch}")
         if command -v sha256sum >/dev/null 2>&1; then
@@ -292,8 +333,11 @@ apply_kernel_patches() {
             echo "[kernel-patches] ERROR: mandatory SSP patch missing from series: ${m}" | tee -a "${log}"
             return 1
         fi
-        if ! grep -q "APPLIED" "${log}"; then
-            echo "[kernel-patches] ERROR: mandatory SSP patch not APPLIED: ${m}" | tee -a "${log}"
+        # An unrelated "APPLIED" line is not proof for THIS patch. Require
+        # an exact per-file success receipt; "files present" is insufficient.
+        if ! grep -Fqx "[kernel-patches] APPLIED_AND_VERIFIED: ${m}" "${log}" \
+            && ! grep -Fqx "[kernel-patches] ALREADY_APPLIED: ${m}" "${log}"; then
+            echo "[kernel-patches] ERROR: mandatory SSP patch has no exact verified receipt: ${m}" | tee -a "${log}"
             return 1
         fi
     done
@@ -303,6 +347,10 @@ apply_kernel_patches() {
 # The tree has been prepared (patches already applied and verified by an
 # earlier run): re-applying the series would conflict on its own edits.
 if [ "${NUXEL_SKIP_PATCHES:-0}" = "1" ]; then
+    if [ "${NUXEL_SSP_STRICT:-0}" = "1" ]; then
+        echo "[ssp-stage04] FAIL: NUXEL_SKIP_PATCHES cannot bypass SSP patch receipts in strict mode"
+        exit 1
+    fi
     echo "[kernel-patches] NUXEL_SKIP_PATCHES=1 (tree is pre-patched)"
 else
     apply_kernel_patches

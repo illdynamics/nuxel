@@ -74,12 +74,12 @@ index 4b63014cf7c3..71c6fc25e6a1 100644
  			ret, regulator_is_enabled(data->regulator_vdd_mcu_1p8));
  		msleep(300);	/* MCU boot time after rail settle */
 diff --git a/drivers/sensorhub/brcm/ssp_sysfs.c b/drivers/sensorhub/brcm/ssp_sysfs.c
-index f1b7b7c1c422..c35d052f3ad0 100644
+index de4c9fb5b0ac..d079b2b2063c 100644
 --- a/drivers/sensorhub/brcm/ssp_sysfs.c
 +++ b/drivers/sensorhub/brcm/ssp_sysfs.c
-@@ -593,7 +593,7 @@ static ssize_t set_mcu_power(struct device *dev,
- 			 * symmetric regulator_force_enable() to physically re-raise
- 			 * the rail back to its pre-cycle (enabled) state.
+@@ -590,7 +590,7 @@ static ssize_t set_mcu_power(struct device *dev,
+ 			 * bootloader left the rail on (num_users == 0); skipping the
+ 			 * enable then left the hub unpowered on any PMIC rebalance.
  			 */
 -			ret = regulator_enable(data->regulator_vdd_mcu_1p8);
 +			ret = regulator_force_enable(data->regulator_vdd_mcu_1p8);

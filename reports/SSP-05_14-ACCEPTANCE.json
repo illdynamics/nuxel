@@ -1,0 +1,105 @@
+{
+  "schema": "ssp-05_14-acceptance-v1",
+  "timestamp": "2026-11-23T00:47:00+01:00",
+  "agent": "DeepSeek-V4-Pro-Thinking",
+  "device": {"serial": "R58M75KDB2X", "product": "beyond2lte", "model": "SM-G975F"},
+  "deployed_boot_sha256": "1be1ded89f9e04a6a2ca0d32d9273bd363c2e200f478ab10213ea3927674a599",
+  "deployed_kernel": "4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT Mon Nov 23 00:43:30 CET 2026",
+  "gates": {
+    "BOOT_NUXEL": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_14-NUXEL-BOOT-VERIFICATION.md",
+      "method": "adb reboot -> SSH kernel identity + systemd running + regulator_force_enable in kallsyms",
+      "timestamp": "2026-11-23T00:45:00+01:00",
+      "uncertainty": "none (kernel build timestamp 00:43:30 matches clean build)"
+    },
+    "KERNEL_PATCH_INTEGRITY": {
+      "status": "PASS",
+      "evidence": "kernel/s10plus/.build/out/patch-application.log (0020/0023/0025/0028/0029 APPLIED_AND_VERIFIED, 0027 excluded)",
+      "method": "clean case-sensitive build, deterministic patch apply + reverse-check",
+      "timestamp": "2026-11-23T00:43:00+01:00",
+      "uncertainty": "none"
+    },
+    "REGULATOR_CORE_SAFETY": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_14-REGULATOR-0029-VALIDATION.md + test_regulator_0029.py (9/9)",
+      "method": "source audit + regression test + read-only live check (no WARN_ON)",
+      "timestamp": "2026-11-23T00:44:00+01:00",
+      "uncertainty": "none for open_count invariant; always_on bypass is the narrow intended recovery path"
+    },
+    "POWER_DOMAIN_IDENTITY": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_14-HARDWARE-MODEL.md + SSP-05_13-GPIO-OWNERSHIP.md",
+      "method": "source (bcm_gps_spi.c, ssp_dev.c) + reverse-DTS pin mapping",
+      "timestamp": "2026-11-23T00:46:00+01:00",
+      "uncertainty": "sensor-hub vs GNSS domain separation is source-derived; no datasheet confirmation"
+    },
+    "ROM_ENDPOINT_IDENTITY": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_14-ROM-ENDPOINT-IDENTITY.md",
+      "method": "source call-graph (bcm477x_rpc_get_version -> GNSS boot-ROM over /dev/ttyBCM)",
+      "timestamp": "2026-11-23T00:46:00+01:00",
+      "uncertainty": "live endpoint identity not confirmed (no GPS_PWR_EN assertion)"
+    },
+    "VENDOR_SEQUENCE": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_14-VENDOR-SEQUENCE.md",
+      "method": "stock kernel source call-graph + gpsd-ownership inference",
+      "timestamp": "2026-11-23T00:46:00+01:00",
+      "uncertainty": "GPS_PWR_EN rise->ROM-ready delay absent from tree (datasheet/gpsd disassembly needed)"
+    },
+    "GPIO_OWNERSHIP": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_13-GPIO-OWNERSHIP.md",
+      "method": "pinctrl reverse-DTS (gpg0-2) + bcm_gps_spi.c GPIO parse/export",
+      "timestamp": "2026-11-23T00:46:00+01:00",
+      "uncertainty": "none for physical pin identity (gpg0-2, not gpg4)"
+    },
+    "POWER_TRANSITION_SAFETY": {
+      "status": "NOT_RUN",
+      "evidence": "reports/SSP-05_14-FIRST-LIGHT-DECISION.md",
+      "method": "no GPS_PWR_EN assertion; no new regulator transition (read-only validation only)",
+      "timestamp": "2026-11-23T00:47:00+01:00",
+      "uncertainty": "vendor post-power timing + RF-safety evidence missing; requires separate owner approval"
+    },
+    "ROM_GETVERSION": {
+      "status": "NOT_RUN",
+      "evidence": "reports/SSP-05_14-ROM-FIRST-LIGHT.md",
+      "method": "no ROM probe executed (GPS_PWR_EN power-gate)",
+      "timestamp": "2026-11-23T00:47:00+01:00",
+      "uncertainty": "blocked by S0->S1 transition (GPS_PWR_EN)"
+    },
+    "DOWNLOADER_OFFLINE": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_12-DOWNLOADER-READINESS.md",
+      "method": "nuxel_bbd_flash --rom-probe / --flash exclusive; ROM probe never writes firmware",
+      "timestamp": "2026-11-23T00:47:00+01:00",
+      "uncertainty": "none (offline; no firmware download performed this stage)"
+    },
+    "SYSTEM_INTEGRITY": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_14-NUXEL-BOOT-VERIFICATION.md",
+      "method": "dtb/dtbo/recovery digests unchanged (TWRP readback) + 0 failed systemd units",
+      "timestamp": "2026-11-23T00:47:00+01:00",
+      "uncertainty": "none"
+    },
+    "ROLLBACK_READY": {
+      "status": "PASS",
+      "evidence": "reports/SSP-05_14-CANDIDATE-PREFLIGHT.json (5 verified copies)",
+      "method": "2 host + 2 TWRP-accessible device copies (760c0e44, 9805d519) byte-verified",
+      "timestamp": "2026-11-23T00:47:00+01:00",
+      "uncertainty": "none"
+    }
+  },
+  "readiness": {
+    "READY_FOR_06": false,
+    "blocking_gates": ["POWER_TRANSITION_SAFETY", "ROM_GETVERSION"],
+    "blocking_reason": "The two remaining gates require the separately-authorized GPS_PWR_EN (S0->S1) physical assertion, which needs vendor-sequence/datasheet evidence and owner sign-off.  The BOOT-flash mandate (which this mission completed) does NOT authorize that assertion.",
+    "deployed_and_verified": {
+      "boot_0029_sha256": "1be1ded89f9e04a6a2ca0d32d9273bd363c2e200f478ab10213ea3927674a599",
+      "kernel_0029": "4.14.253-gf7194c1d15ed-dirty",
+      "regulator_force_enable_correct": true,
+      "booting_nuxel": true
+    }
+  }
+}
