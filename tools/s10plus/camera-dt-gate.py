@@ -59,41 +59,29 @@ def sha256_file(path):
 
 
 def load_tree(path, gate, label, dtbo_idx=None):
-    """Extract the selected FDT (dtbo entry idx if given) and parse it."""
+    """Strictly parse the container entry declared by real bootloader evidence."""
     try:
-        data = open(path, "rb").read()
-    except OSError as e:
-        gate.fail("%s: %s" % (label, e))
+        with open(path, "rb") as f:
+            raw = f.read()
+        fdts = dg.extract_fdts(raw)
+        multi = dg.is_samsung_dth(raw)
+        if multi and dtbo_idx is None:
+            gate.fail("%s: DT_TABLE requires explicit bootloader-selected --dtbo-idx" % label)
+            return None
+        if dtbo_idx is not None and not (0 <= dtbo_idx < len(fdts)):
+            gate.fail("%s: selected entry %d is not present (count %d)" %
+                      (label, dtbo_idx, len(fdts)))
+            return None
+        if not multi and dtbo_idx not in (None, 0):
+            gate.fail("%s: --dtbo-idx invalid for bare FDT" % label)
+            return None
+        idx = dtbo_idx if dtbo_idx is not None else 0
+        tree = dg.parse_fdt(fdts[idx])
+        gate.note("%s: parsed selected entry %d of %d" % (label, idx, len(fdts)))
+        return tree
+    except (ValueError, OSError, UnicodeError, IndexError, struct.error) as e:
+        gate.fail("%s: malformed/unreadable FDT container: %s" % (label, e))
         return None
-    fdts = dg.extract_fdts(data)
-    if not fdts:
-        gate.fail("%s: no embedded FDT (unrecognized magic or container)" % label)
-        return None
-    # For a dtbo table, select the entry matching dtbo_idx.  DIFFERENT from a
-    # "guess the broadest entry" heuristic: if the container holds more than one
-    # embedded FDT and the caller did NOT pass an explicit revision selection
-    # (--dtbo-idx from androidboot.dtbo_idx), then the selection is MISSING and
-    # that is a hard failure — we must never silently pick an overlay entry.
-    if len(fdts) == 1:
-        idx = 0
-    elif dtbo_idx is None:
-        gate.fail("%s: multi-entry DTBO (%d FDTs) but no explicit --dtbo-idx "
-                  "selection (androidboot.dtbo_idx missing); refusing to guess"
-                  % (label, len(fdts)))
-        return None
-    elif not (0 <= dtbo_idx < len(fdts)):
-        gate.fail("%s: --dtbo-idx=%s out of range [0..%d)" % (label, dtbo_idx, len(fdts)))
-        return None
-    else:
-        idx = dtbo_idx
-    fdt = fdts[idx]
-    try:
-        tree = dg.parse_fdt(fdt)
-    except ValueError as e:
-        gate.fail("%s: %s" % (label, e))
-        return None
-    gate.note("%s: selected FDT entry %d of %d" % (label, idx, len(fdts)))
-    return tree
 
 
 def container_classify(path):
@@ -114,26 +102,25 @@ def check_structure(tree, gate, label):
     return True
 
 
-def check_model(tree, gate, label):
-    root = tree.get("/")
-    if root is None:
-        gate.fail("%s: no root node" % label)
+def check_model(tree, gate, label, is_merged=False, is_overlay=False):
+    root = tree.get('/')
+    if not root:
+        gate.fail('%s: root node absent' % label)
         return
-    comp = root.props.get("compatible")
+    comp = root.props.get('compatible')
     comps = comp.strings if comp else []
-    if not any("exynos9820" in c.lower() for c in comps):
-        gate.fail("%s: no exynos9820 compatible (got %s)" % (label, comps))
-    m = root.props.get("model")
-    if m and m.strings:
-        model = m.strings[0]
-        if "BEYOND2LTE" not in model.upper():
-            gate.fail("%s: model %r is not beyond2lte" % (label, model))
-        else:
-            gate.note("%s: model %r" % (label, model))
-    else:
-        # Downstream Exynos dtb carries board identity via bootargs + bootloader,
-        # not a static /model; this is expected and not a failure.
-        gate.note("%s: no static /model (board identity via bootargs/compatible)" % label)
+    model = root.props.get('model')
+    models = model.strings if model else []
+    # Standalone DT overlays often have only fragment nodes; board identity
+    # must instead come from the selected entry plus the active merged tree.
+    if not is_overlay and not any('exynos9820' in c.lower() for c in comps):
+        gate.fail('%s: exynos9820 compatible missing (got %r)' % (label, comps))
+    if models and any('beyond1lte' in m.lower() or 'beyond0lte' in m.lower() for m in models):
+        gate.fail('%s: incorrect S10+ model %r' % (label, models))
+    if not is_overlay and models and not any('beyond2lte' in m.lower() for m in models):
+        gate.fail('%s: model is not beyond2lte: %r' % (label, models))
+    if is_merged and not models:
+        gate.note('%s: static /model missing; require signed live board manifest' % label)
 
 
 def _iter_i2c_nodes(tree):
@@ -151,193 +138,241 @@ def _iter_i2c_nodes(tree):
 
 
 def check_board_revision_selection(tree, gate, label, board_rev, dtbo_idx, is_dtbo):
-    """Verify the dtbo entry selected by dtbo_idx covers the expected board
-    revision (dtbo-hw_rev .. dtbo-hw_rev_end window)."""
     if not is_dtbo:
         return
     if dtbo_idx is None or board_rev is None:
+        gate.fail('%s: DTBO board revision and selected index mandatory' % label)
         return
-    root = tree.get("/")
-    if root is None:
-        return
-    lo = root.props.get("dtbo-hw_rev")
-    hi = root.props.get("dtbo-hw_rev_end")
-    if lo is None or hi is None:
-        gate.note("%s: no dtbo-hw_rev window on this entry (idx %s)" % (label, dtbo_idx))
-        return
-    if not (lo.cells and hi.cells):
-        gate.note("%s: empty rev window" % label)
+    root = tree.get('/')
+    lo, hi = (root.props.get(x) if root else None for x in ('dtbo-hw_rev', 'dtbo-hw_rev_end'))
+    if not lo or not hi or len(lo.data) != 4 or len(hi.data) != 4:
+        gate.fail('%s: selected DTBO entry lacks valid board revision bounds' % label)
         return
     l, h = lo.cells[0], hi.cells[0]
-    if not (l <= board_rev <= h):
-        gate.fail("%s: dtbo entry idx=%s rev window [%d..%d] does NOT include board rev %d"
-                  % (label, dtbo_idx, l, h, board_rev))
+    if l > h or not (l <= board_rev <= h):
+        gate.fail('%s: selected entry %d rev range [%d,%d] excludes board rev %d' %
+                  (label, dtbo_idx, l, h, board_rev))
     else:
-        gate.note("%s: dtbo entry idx=%s rev window [%d..%d] covers board rev %d"
-                  % (label, dtbo_idx, l, h, board_rev))
+        gate.note('%s: selected entry %d covers board rev %d' % (label, dtbo_idx, board_rev))
 
+
+def _enabled(node):
+    p = node.props.get('status')
+    return not (p and p.strings and p.strings[0] in ('disabled', 'fail', 'reserved'))
+
+
+def _camera_node(node):
+    cp = node.props.get('compatible')
+    return bool(CAMERA_GREP.search(node.path) or
+                (cp and any(CAMERA_GREP.search(c) for c in cp.strings)))
 
 
 def check_i2c(tree, gate, label):
-    # Determine which I2C addresses are "reserved owners" and detect a camera
-    # node stealing one. Reuse of a 7-bit address across DIFFERENT CSIS/ISPHQ
-    # channels is normal for FIMC-IS, so duplicates are notes, not failures.
-    addr_use = {}
-    reserved_hits = []
-    for path, node, unit, addr in _iter_i2c_nodes(tree):
-        if not (0x03 <= addr <= 0x7f):
+    """Duplicate 7-bit addresses on the *same enabled I2C bus* are unsafe."""
+    by_bus = {}
+    for path, node, _unit, addr in _iter_i2c_nodes(tree):
+        if not _enabled(node):
             continue
-        addr_use.setdefault(addr, []).append(path)
-        if addr in RESERVED_I2C:
-            reserved_hits.append((path, node, addr, RESERVED_I2C[addr]))
-    for path, node, addr, owner in reserved_hits:
-        is_camera = bool(CAMERA_GREP.search(node.name)) or bool(
-            node.props.get("compatible")
-            and any(CAMERA_GREP.search(s) for s in node.props["compatible"].strings))
-        if is_camera or re.search(r'fimc|s5k|2l4|3j1|3m3|3p9|csis|camera',
-                                  node.name, re.I):
-            gate.fail("%s: camera node %s steals reserved I2C @0x%02x (%s)"
-                      % (label, path, addr, owner))
+        # A sensor `reg` below a CSI node is NOT an I2C address. Restrict
+        # address collision logic to explicit I2C parent controllers.
+        parent = node.parent
+        if not parent or not re.search(r'i2c|hsi2c', parent.name, re.I):
+            continue
+        if len(node.props['reg'].data) != 4 or not (0x03 <= addr <= 0x7f):
+            continue
+        key = (parent.path, addr)
+        if key in by_bus:
+            gate.fail('%s: I2C bus %s duplicates address 0x%02x (%s, %s)' %
+                      (label, parent.path, addr, by_bus[key], path))
         else:
-            gate.note("%s: @0x%02x is owned by %s (%s)" % (label, addr, owner, path))
-    for addr, nodes in sorted(addr_use.items()):
-        if len(nodes) > 1:
-            gate.note("%s: 0x%02x used by %d nodes %s (distinct CSIS/ISPHQ channels?)"
-                      % (label, addr, len(nodes),
-                         ", ".join(sorted(set(nodes))[:5])))
-    gate.note("%s: %d unique 7-bit I2C addresses seen" % (label, len(addr_use)))
+            by_bus[key] = path
+        if _camera_node(node) and addr in RESERVED_I2C:
+            gate.fail('%s: camera node %s claims reserved address 0x%02x' % (label, path, addr))
+    gate.note('%s: checked %d enabled I2C bus/address assignments' % (label, len(by_bus)))
 
 
 def check_endpoints(tree, gate, label):
-    """Real phandle-based endpoint resolution + bidirectionality."""
-    errs = []
-    edges = dg.resolve_endpoint_graph(tree, errs)
-    for e in errs:
-        gate.fail("%s: %s" % (label, e))
-    # bidirectionality: for each A->B, require B->A
-    reverse = {}
+    errors = []
+    edges = dg.resolve_endpoint_graph(tree, errors)
+    for err in errors:
+        gate.fail('%s: %s' % (label, err))
     for a, b in edges.items():
-        reverse.setdefault(b, set()).add(a)
-    for a, b in edges.items():
-        if a not in reverse.get(b, set()):
-            gate.fail("%s: endpoint %s -> %s is not bidirectional (no reverse edge)"
-                      % (label, a, b))
-    # data-lanes validity
-    lane_bad = 0
-    lanes_seen = 0
+        if tree.get(b) is None or not b.split('/')[-1].startswith('endpoint'):
+            gate.fail('%s: remote endpoint %s resolves to non-endpoint %s' % (label, a, b))
+        elif edges.get(b) != a:
+            gate.fail('%s: one-way endpoint %s -> %s' % (label, a, b))
     for path, node in tree.nodes.items():
-        dl = node.props.get("data-lanes")
-        if dl is None:
+        if not _enabled(node):
             continue
-        lanes_seen += 1
-        n = len(dl.cells)
-        if n not in (1, 2, 4):
-            gate.fail("%s: %s data-lanes=<%s> invalid count %d (allowed 1/2/4)"
-                      % (label, path, " ".join("0x%x" % c for c in dl.cells), n))
-            lane_bad += 1
-    gate.note("%s: %d endpoints (edges), %d data-lanes specs, %d unresolved/one-way failures"
-              % (label, len(edges), lanes_seen, len(errs) + lane_bad))
+        dl = node.props.get('data-lanes')
+        if not dl:
+            continue
+        vals = dl.cells
+        if not vals or len(vals) not in (1, 2, 4) or len(vals) != len(set(vals)) or \
+                any(n < 1 or n > 4 for n in vals):
+            gate.fail('%s: bad CSI lane count or map at %s: %r' % (label, path, vals))
+    for a, b in edges.items():
+        if a > b:
+            continue
+        left, right = tree.get(a), tree.get(b)
+        if not left or not right:
+            continue
+        l, r = left.props.get('data-lanes'), right.props.get('data-lanes')
+        if l and r and len(l.cells) != len(r.cells):
+            gate.fail('%s: endpoint CSI lane count mismatch %s<->%s' % (label, a, b))
+    gate.note('%s: inspected %d directed endpoint links' % (label, len(edges)))
 
 
 def check_refs(tree, gate, label, is_merged=False):
-    """Resolve clocks/resets/regulators/pinctrl/GPIO through phandle graph.
+    """Validate camera dependencies against actual phandle providers.
 
-    In MERGED mode (the authoritative active FDT = base + overlays applied),
-    any dangling phandle reference is a structural hard failure. In OVERLAY
-    mode (a standalone dtbo partition), phandle references legitimately point
-    at base-tree nodes (external) or use 0/placeholder cells, so they are
-    reported as notes rather than false positives.
+    Standalone overlays have external references; only the merged tree can
+    certify them. Unknown phandle and truncated specifier tuples are fatal for
+    active camera paths. The final release gate requires a merged candidate.
     """
-    missing_clocks = {}  # ph -> [paths]
-    missing_resets = {}
-    missing_gpio = {}
+    specifiers = {
+        'clocks': '#clock-cells', 'assigned-clocks': '#clock-cells',
+        'resets': '#reset-cells', 'phys': '#phy-cells',
+        'power-domains': '#power-domain-cells', 'dmas': '#dma-cells',
+        'iommus': '#iommu-cells',
+    }
     for path, node in tree.nodes.items():
-        for target, idx, ph in dg.resolve_clock_refs(tree, node):
-            if target is None and ph != 0:
-                missing_clocks.setdefault(ph, []).append(path)
-        for target, idx, ph in dg.resolve_reset_refs(tree, node):
-            if target is None and ph != 0:
-                missing_resets.setdefault(ph, []).append(path)
+        if not _enabled(node) or not _camera_node(node):
+            continue
+        for pname, p in node.props.items():
+            spec = specifiers.get(pname)
+            if pname.endswith('-gpios') or pname == 'gpios':
+                spec = '#gpio-cells'
+            if spec is not None:
+                vals = p.cells
+                if not vals and p.data:
+                    gate.fail('%s: invalid cell width %s/%s' % (label, path, pname))
+                    continue
+                i = 0
+                while i < len(vals):
+                    ph = vals[i]
+                    target = tree.resolve_phandle(ph)
+                    if not target:
+                        if is_merged:
+                            gate.fail('%s: camera %s/%s has unresolved phandle 0x%x' %
+                                      (label, path, pname, ph))
+                        break
+                    provider = tree.get(target)
+                    nc = provider.props.get(spec) if provider else None
+                    if nc is None or len(nc.data) != 4 or nc.cells[0] > 16:
+                        gate.fail('%s: camera %s/%s provider %s lacks valid %s' %
+                                  (label, path, pname, target, spec))
+                        break
+                    i += 1 + nc.cells[0]
+                    if i > len(vals):
+                        gate.fail('%s: camera %s/%s has truncated phandle specifier' %
+                                  (label, path, pname))
+            elif pname == 'pinctrl-0' or re.fullmatch(r'pinctrl-\d+', pname):
+                for ph in p.cells:
+                    if not tree.resolve_phandle(ph) and is_merged:
+                        gate.fail('%s: camera pinctrl %s/%s unresolved phandle 0x%x' %
+                                  (label, path, pname, ph))
+            elif pname.endswith('-supply') or pname in ('vin-supply', 'vdd-supply'):
+                if len(p.data) != 4 or not p.cells:
+                    gate.fail('%s: invalid camera regulator ref %s/%s' % (label, path, pname))
+                elif is_merged and not tree.resolve_phandle(p.cells[0]):
+                    gate.fail('%s: unresolved camera regulator %s/%s' % (label, path, pname))
+            elif pname.endswith('-gpios') and is_merged:
+                pass
+    gate.note('%s: checked enabled camera clock/reset/PHY/regulator/pinctrl/GPIO references'
+              % label)
+
+
+def check_address_cells(tree, gate, label):
+    """Verify camera `reg` tuple widths against actual parent bus cells."""
     for path, node in tree.nodes.items():
-        for pname, target, args, flags, ph in dg.resolve_gpio_refs(tree, node):
-            if target is None and ph != 0:
-                missing_gpio.setdefault(ph, []).append(path)
+        if not _enabled(node) or not _camera_node(node):
+            continue
+        reg = node.props.get('reg')
+        if reg is None:
+            continue
+        parent = node.parent
+        if parent is None:
+            gate.fail('%s: camera reg lacks parent at %s' % (label, path))
+            continue
+        a, s = parent.props.get('#address-cells'), parent.props.get('#size-cells')
+        if not a or not s or len(a.data) != 4 or len(s.data) != 4 or \
+                a.cells[0] > 4 or s.cells[0] > 4 or a.cells[0] == 0:
+            gate.fail('%s: camera %s has missing/invalid parent #address-cells/#size-cells' %
+                      (label, path))
+            continue
+        n = a.cells[0] + s.cells[0]
+        if len(reg.data) % 4 or not reg.cells or len(reg.cells) % n:
+            gate.fail('%s: camera %s reg tuple width does not match parent bus cells' %
+                      (label, path))
 
-    def _camera(path):
-        node = tree.get(path)
-        if node is None:
-            return False
-        return bool(CAMERA_GREP.search(node.name)) or bool(
-            node.props.get("compatible")
-            and any(CAMERA_GREP.search(s) for s in node.props["compatible"].strings))
 
-    if is_merged:
-        # In the authoritative merged FDT, camera-relevant dangling refs are
-        # hard failures; non-camera dangling refs are warnings (out of camera
-        # scope, and often a pre-existing vendor-tree condition).
-        for ph, paths in missing_clocks.items():
-            cam = [p for p in paths if _camera(p)]
-            if cam:
-                gate.fail("%s: %d camera clock phandle(s) 0x%x unresolved: %s"
-                          % (label, len(cam), ph, ", ".join(cam)))
-            else:
-                gate.warn("%s: non-camera clock phandle 0x%x unresolved in %s"
-                          % (label, ph, ", ".join(paths[:3])))
-        for ph, paths in missing_resets.items():
-            cam = [p for p in paths if _camera(p)]
-            if cam:
-                gate.fail("%s: %d camera reset phandle(s) 0x%x unresolved: %s"
-                          % (label, len(cam), ph, ", ".join(cam)))
-            else:
-                gate.warn("%s: non-camera reset phandle 0x%x unresolved in %s"
-                          % (label, ph, ", ".join(paths[:3])))
-        for ph, paths in missing_gpio.items():
-            cam = [p for p in paths if _camera(p)]
-            if cam:
-                gate.fail("%s: %d camera gpio phandle(s) 0x%x unresolved: %s"
-                          % (label, len(cam), ph, ", ".join(cam)))
-            else:
-                gate.warn("%s: non-camera gpio phandle 0x%x unresolved in %s"
-                          % (label, ph, ", ".join(paths[:3])))
-        if not (missing_clocks or missing_resets or missing_gpio):
-            gate.note("%s: all clock/reset/gpio refs resolve (merged FDT)" % label)
-    else:
-        if missing_clocks:
-            gate.note("%s: %d clock phandle(s) are external/overlay refs (base-tree phandles): %s"
-                      % (label, len(missing_clocks),
-                         ", ".join("0x%x" % p for p in sorted(missing_clocks))))
-        if missing_resets:
-            gate.note("%s: %d reset phandle(s) external/overlay refs: %s"
-                      % (label, len(missing_resets),
-                         ", ".join("0x%x" % p for p in sorted(missing_resets))))
-        if missing_gpio:
-            gate.note("%s: %d gpio phandle(s) external/overlay refs: %s"
-                      % (label, len(missing_gpio),
-                         ", ".join("0x%x" % p for p in sorted(missing_gpio))))
+def check_gpio_ownership(tree, gate, label, is_merged=False):
+    """Detect enabled camera vs other hardware claiming identical GPIO line.
+
+    GPIO specifier's final cell contains polarity/flags (per #gpio-cells).
+    Unknown polarity / unrelated exact-board pinmux requires a golden diff;
+    fail where a camera actually overlaps an existing functional GPIO owner.
+    """
+    if not is_merged:
+        return
+    owners = {}
+    for path, node in tree.nodes.items():
+        if not _enabled(node):
+            continue
+        for pname, prop in node.props.items():
+            if not (pname.endswith('-gpio') or pname.endswith('-gpios') or pname == 'gpios'):
+                continue
+            vals = prop.cells
+            i = 0
+            while i < len(vals):
+                ph = vals[i]
+                target = tree.resolve_phandle(ph)
+                provider = tree.get(target) if target else None
+                nc = provider.props.get('#gpio-cells') if provider else None
+                if not nc or not nc.cells or nc.cells[0] < 2:
+                    if _camera_node(node):
+                        gate.fail('%s: invalid/unresolved camera GPIO %s/%s' % (label, path, pname))
+                    break
+                count = nc.cells[0]
+                if i + 1 + count > len(vals):
+                    gate.fail('%s: malformed camera GPIO tuple %s/%s' % (label, path, pname))
+                    break
+                pin, flags = vals[i+1], vals[i+count]
+                key = (target, pin)
+                if flags & ~0x7f and _camera_node(node):
+                    gate.fail('%s: suspicious GPIO flags 0x%x at %s/%s' %
+                              (label, flags, path, pname))
+                for prevpath, prevcamera in owners.get(key, []):
+                    if prevpath != path and (_camera_node(node) or prevcamera):
+                        gate.fail('%s: GPIO %s pin %d owned by both %s and %s' %
+                                  (label, target, pin, prevpath, path))
+                owners.setdefault(key, []).append((path, _camera_node(node)))
+                i += count + 1
+    gate.note('%s: checked %d unique GPIO owner identifiers' % (label, len(owners)))
 
 
 def check_exclusivity(tree, gate, label):
-    """Native CSIS vs vendor FIMC-IS2 must be mutually exclusive."""
-    comps = []
+    fimc, csis = [], []
     for path, node in tree.nodes.items():
-        c = node.props.get("compatible")
-        if c:
-            comps.extend(c.strings)
-    fimc = any(FIMC_IS_RE.search(s) for s in comps)
-    csis = any(NATIVE_CSIS_RE.search(s) for s in comps)
-    s5k = sorted(set(s for s in comps if S5K_SENSOR_RE.search(s)))
-    if csis and fimc and s5k:
-        gate.fail("%s: native CSIS AND vendor FIMC-IS both present with sensors %s "
-                  "(must be mutually exclusive)" % (label, s5k))
-    # Also detect native-CSIS-only-with-s5k as a note (Strategy B target),
-    # and vendor-fimc-only as the current Strategy A live state.
-    gate.note("%s: fimc_is=%s native_csis=%s s5k_sensors=%s"
-              % (label, fimc, csis, s5k))
+        if not _enabled(node):
+            continue
+        cp = node.props.get('compatible')
+        comps = cp.strings if cp else []
+        if any(FIMC_IS_RE.search(s) for s in comps):
+            fimc.append(path)
+        if any(NATIVE_CSIS_RE.search(s) for s in comps):
+            csis.append(path)
+    if fimc and csis:
+        gate.fail('%s: enabled vendor FIMC-IS and native CSIS coexist: %r %r' %
+                  (label, fimc[:5], csis[:5]))
+    gate.note('%s: enabled FIMC=%d native CSIS=%d' % (label, len(fimc), len(csis)))
 
 
 def validate(path, golden_sha, gate, is_merged=False, board_rev=None, dtbo_idx=None):
-    rep = {"path": path, "sha256": sha256_file(path)}
+    rep = {"path": path}
     try:
+        rep["sha256"] = sha256_file(path)
         raw = open(path, "rb").read()
     except OSError as e:
         gate.fail("%s: %s" % (path, e))
@@ -345,7 +380,11 @@ def validate(path, golden_sha, gate, is_merged=False, board_rev=None, dtbo_idx=N
     if len(raw) < 8:
         gate.fail("%s: too small (%d bytes)" % (path, len(raw)))
         return rep
-    rep["format"] = container_classify(path)
+    try:
+        rep["format"] = container_classify(path)
+    except (ValueError, struct.error) as e:
+        gate.fail('%s: malformed DTB/DTBO table: %s' % (path, e))
+        return rep
     if rep["format"].startswith("unknown"):
         gate.fail("%s: unrecognised container (magic 0x%08x)"
                   % (path, struct.unpack_from(">I", raw, 0)[0]))
@@ -358,13 +397,16 @@ def validate(path, golden_sha, gate, is_merged=False, board_rev=None, dtbo_idx=N
     if tree is None:
         return rep
     check_structure(tree, gate, path)
-    check_model(tree, gate, path)
-    n_entries = len(dg.dth_entry_offsets(raw)) if dg.is_samsung_dth(raw) else 1
+    is_overlay = dg.is_samsung_dth(raw) and len(dg.dtbo_entries(raw)) > 1
+    check_model(tree, gate, path, is_merged=is_merged, is_overlay=is_overlay)
+    n_entries = len(dg.dtbo_entries(raw)) if dg.is_samsung_dth(raw) else 1
     check_board_revision_selection(tree, gate, path, board_rev, dtbo_idx,
                                    is_dtbo=(not is_merged and n_entries > 1))
     check_endpoints(tree, gate, path)
+    check_address_cells(tree, gate, path)
     check_i2c(tree, gate, path)
     check_refs(tree, gate, path, is_merged=is_merged)
+    check_gpio_ownership(tree, gate, path, is_merged=is_merged)
     check_exclusivity(tree, gate, path)
 
     rep["nodes"] = len(tree.nodes)
@@ -378,10 +420,10 @@ def main(argv):
     ap.add_argument("--golden", help="golden baseline image; camera members must match")
     ap.add_argument("--merged", action="store_true",
                     help="input is the active merged FDT (base+overlays): enforce full hermetic graph")
-    ap.add_argument("--board-rev", type=int, default=EXPECT_BOARD_REV)
+    ap.add_argument("--board-rev", type=int, default=None)
     ap.add_argument("--dtbo-idx", type=int, default=None,
                     help="dtbo entry index selected by bootloader (androidboot.dtbo_idx)")
-    ap.add_argument("--allow", action="append", default=[])
+    # Camera DT deltas are controlled by camera-dt-diff.py; no allow bypass here.
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     a = ap.parse_args(argv)

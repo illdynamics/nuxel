@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """dt_graph.py — true device-tree structural graph parser for Exynos DTB/DTBO.
 
-Reads the deterministic DTS text emitted by `dtc -I dtb -O dts` (which
-faithfully represents the actual FDT structure, numeric phandles and property
-cells) and builds:
+Parses the binary flattened device-tree directly without depending on dtc,
+checking offsets, structure tokens, duplicate phandles and boundaries. Builds:
   * a nested node tree keyed by full path,
   * a phandle -> path map (phandle / linux,phandle / __symbols__),
   * a decoded property model (u32 cells, strings, string-list),
@@ -18,6 +17,7 @@ import subprocess
 import struct
 import hashlib
 import os
+import fdt_binary
 
 FDT_MAGIC = 0xD00DFEED
 SAMSUNG_DTH_MAGIC = 0xD7B7AB1E  # also the Samsung/Exynos DTBO container magic
@@ -52,36 +52,55 @@ def is_samsung_dth(b):
 # +0x18 page/alignment (0x800)
 # +0x24 first FDT byte offset
 # +0x30 dtb-hw_rev low   +0x34 dtb-hw_rev_end high (board revision window)
+def dtbo_entries(data):
+    """Parse standard Android DT_TABLE header + entry descriptors (big endian).
+
+    The magic happens to be the Samsung DTH magic; a scan for FDT_MAGIC inside
+    payloads is *not* an entry parser and can silently accept broken tables.
+    """
+    if not is_samsung_dth(data):
+        raise ValueError('not a DT_TABLE/DTH container')
+    if len(data) < 32:
+        raise ValueError('truncated DT_TABLE header')
+    magic, total, hsize, esize, count, eoff, page, ver = struct.unpack_from('>8I', data)
+    if hsize < 32 or hsize > total or total > len(data) or esize < 32 or esize % 4:
+        raise ValueError('invalid DT_TABLE header size/entry size/total size')
+    if count == 0 or count > 1024 or eoff < hsize or eoff % 4 or eoff + count * esize > total:
+        raise ValueError('invalid DT_TABLE entry array bounds/count')
+    if page < 512 or page & (page - 1):
+        raise ValueError('invalid DT_TABLE alignment/page_size')
+    if ver not in (0, 1):
+        raise ValueError('unsupported DT_TABLE version %d' % ver)
+    entries = []
+    intervals = [(0, eoff + count * esize)]
+    for i in range(count):
+        size, off, id_, rev = struct.unpack_from('>4I', data, eoff + i * esize)
+        if off % 4 or size < 40 or off < eoff + count * esize or off + size > total:
+            raise ValueError('invalid DT_TABLE entry %d size/offset' % i)
+        for a, b in intervals:
+            if max(a, off) < min(b, off + size):
+                raise ValueError('overlapping DT_TABLE entry %d' % i)
+        fdt_binary.inspect(data[off:off+size])
+        if fdt_binary.inspect(data[off:off+size])['totalsize'] != size:
+            raise ValueError('DT_TABLE entry %d size != FDT totalsize' % i)
+        intervals.append((off, off + size))
+        entries.append({'index': i, 'size': size, 'offset': off, 'id': id_, 'rev': rev})
+    return entries
+
+
 def dth_entry_offsets(data):
-    """All byte offsets of embedded standard FDTs inside a DTH/DTBO blob."""
-    if len(data) < 8 or struct.unpack_from(">I", data, 0)[0] != SAMSUNG_DTH_MAGIC:
-        return []
-    pat = struct.pack(">I", FDT_MAGIC)
-    offs = []
-    s = 0
-    while True:
-        o = data.find(pat, s)
-        if o < 0:
-            break
-        offs.append(o)
-        s = o + 4
-    return offs
+    return [e['offset'] for e in dtbo_entries(data)] if is_samsung_dth(data) else []
 
 
 def extract_fdts(data):
-    """Return list of FDT byte strings embedded in a DTH/DTBO or bare FDT."""
     if is_fdt(data):
-        total = struct.unpack_from(">I", data, 4)[0]
-        return [data[:total]]
-    out = []
-    for o in dth_entry_offsets(data):
-        if o + 8 > len(data):
-            continue
-        total = struct.unpack_from(">I", data, o + 4)[0]
-        if total <= 0 or o + total > len(data):
-            continue
-        out.append(data[o:o + total])
-    return out
+        h = fdt_binary.inspect(data)
+        if any(data[h['totalsize']:]):
+            raise ValueError('unexpected nonzero trailing FDT bytes')
+        return [data[:h['totalsize']]]
+    if is_samsung_dth(data):
+        return [data[e['offset']:e['offset']+e['size']] for e in dtbo_entries(data)]
+    raise ValueError('not a supported bare FDT or Android DT_TABLE')
 
 
 def extract_first_fdt(path):
@@ -114,7 +133,7 @@ _PROP_RE = re.compile(r'^\s*(?:([A-Za-z0-9_.,#\-]+)\s*:\s*)?([A-Za-z0-9_,#\-]+)\
 
 
 class DtProperty:
-    __slots__ = ("name", "raw", "cells", "strings", "phandles", "phandle_refs", "cell_groups")
+    __slots__ = ("name", "raw", "cells", "strings", "phandles", "phandle_refs", "cell_groups", "data")
 
     def __init__(self, name, raw):
         self.name = name
@@ -124,6 +143,7 @@ class DtProperty:
         self.phandles = []
         self.phandle_refs = []
         self.cell_groups = []
+        self.data = None
 
     def decode(self):
         v = self.raw
@@ -263,11 +283,8 @@ class DtTree:
 
 
 def parse_fdt(fdt_bytes):
-    """Parse FDT bytes into DtTree via dtc -O dts."""
-    r = run(["dtc", "-I", "dtb", "-O", "dts", "-"], input=fdt_bytes)
-    if r.returncode != 0:
-        raise ValueError("dtc: %s" % r.stderr.decode("utf-8", "replace")[:400])
-    return DtTree(r.stdout.decode("utf-8", "replace"))
+    """Parse and validate binary FDT directly; never depend on dtc availability."""
+    return fdt_binary.parse(fdt_bytes, (DtTree, DtNode, DtProperty))
 
 
 def parse_path(path):
