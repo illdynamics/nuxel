@@ -844,14 +844,14 @@ static bool data_session_emit(void)
         /* Full data-profile sync incl. RAT (source-backed IpcTxSyncProfileInfo,
          * main=13 sub=37, 326 bytes; RAT = LTE = 14). */
         if (!fmt_tx_sync_profile_info(&f, (const char*)g.dsc.apn,
-                                      FMT_TX_AUTH_NONE, g.dsc.protocol))
+                                      g.dsc.auth_code, g.dsc.protocol))
             return false;
         break;
     case DS_SET_DATA_PROFILE:
         /* Set the APN/auth/protocol data profile (source-backed SetDataProfile,
          * main=13 sub=27, 203 bytes; auth NONE -> numeric code 1). */
         if (!fmt_tx_set_data_profile(&f, (const char*)g.dsc.apn,
-                                     FMT_TX_AUTH_NONE, g.dsc.protocol))
+                                     g.dsc.auth_code, g.dsc.protocol))
             return false;
         break;
     case DS_SET_LTE_ATTACH:
@@ -861,7 +861,7 @@ static bool data_session_emit(void)
          * NOT the DataProfile default id and NOT 5 (which is only for
          * dual-sim model_type 1). payload[0]=3 = apply profile. */
         if (!fmt_tx_set_lte_attach_profile(&f, (const char*)g.dsc.apn,
-                                           FMT_TX_AUTH_NONE,
+                                           g.dsc.auth_code,
                                            g.dsc.protocol,
                                            DS_ATTACH_CID, g.dsc.attach_flag))
             return false;
@@ -895,7 +895,7 @@ static bool data_session_emit(void)
          * 112-byte frame). This is the REAL LTE activation command; the CDMA
          * SetDataCallEstablish (main=3/sub=2) is a legacy CDMA path. */
         if (!fmt_tx_set_pdp_context(&f, (const char*)g.dsc.apn,
-                                    FMT_TX_AUTH_NONE, g.dsc.protocol,
+                                    g.dsc.auth_code, g.dsc.protocol,
                                     DS_ATTACH_CID))
             return false;
         break;
@@ -1328,6 +1328,18 @@ static uint8_t env_attach_flag(void)
     return 3u;
 }
 
+/* Map NUXEL_AUTH env string -> DataAuth numeric code.
+ * none=1 (default), pap=2, chap=3. Unknown -> 1. */
+static uint8_t env_auth(void)
+{
+    const char *p = getenv("NUXEL_AUTH");
+    if (!p || !*p) return 1u;
+    if (!strcasecmp(p, "none") || !strcasecmp(p, "0") || !strcasecmp(p, "1")) return 1u;
+    if (!strcasecmp(p, "pap")  || !strcasecmp(p, "2")) return 2u;
+    if (!strcasecmp(p, "chap") || !strcasecmp(p, "3")) return 3u;
+    return 1u;
+}
+
 static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
@@ -1348,6 +1360,7 @@ static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e
     ds_reset(&g.dsc, apn, (uint8_t)profile);
     g.dsc.protocol = env_protocol();
     g.dsc.attach_flag = env_attach_flag();
+    g.dsc.auth_code = env_auth();
     g.data_path_armed = true;
     g.wrote_phase = false;
     g.dsc.step_deadline_ms = 0;
@@ -1504,6 +1517,7 @@ int main(int argc, char **argv)
             ds_reset(&g.dsc, getenv("NUXEL_APN") ? getenv("NUXEL_APN") : "internet", 1);
             g.dsc.protocol = env_protocol();
             g.dsc.attach_flag = env_attach_flag();
+            g.dsc.auth_code = env_auth();
         } else if (strcmp(argv[i], "--help") == 0) {
             fprintf(stderr, "usage: nuxel-radiod [--write-enable] [--arm-data-path]\n");
             return 0;

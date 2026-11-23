@@ -42,6 +42,7 @@ void ds_reset(struct data_session_ctx *c, const char *apn, uint8_t profile_id)
     c->profile_id = profile_id;
     c->protocol = 4;   /* default FMT_TX_PROTO_IPV4V6; caller may override */
     c->attach_flag = 3; /* default SetLteAttachProfile flag: 3 = apply */
+    c->auth_code = 1;   /* default DataAuth NONE */
     c->gen_result_valid = false;
     c->gprs_call_state_valid = false;
     c->gprs_pdp_state_valid = false;

@@ -52,6 +52,7 @@ struct data_session_ctx {
     uint8_t        profile_id;
     uint8_t        protocol;      /* IP family for PDP/attach (FMT_TX_PROTO_*) */
     uint8_t        attach_flag;   /* SetLteAttachProfile payload[0] (3=apply, 1=define) */
+    uint8_t        auth_code;     /* DataAuth (1=none, 2=PAP, 3=CHAP) */
     bool           mobile_data_on;
     bool           attached;
     bool           call_established;
