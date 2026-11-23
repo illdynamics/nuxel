@@ -58,6 +58,29 @@ int main(void)
     CHECK(p == DS_FAILED, "bounded retries -> FAILED (got %d)", (int)p);
     CHECK(c.attempt <= 3, "attempt count bounded (got %u)", c.attempt);
 
+    /* --- ds_feedback: strict success/rejection behaviour --- */
+    ds_reset(&c, "internet", 1);
+    /* success advances ENABLE_MOBILE_DATA -> SYNC_PROFILE */
+    p = ds_feedback(&c, true, 1000);
+    CHECK(p == DS_SYNC_PROFILE, "ds_feedback(success) advances (got %d)", (int)p);
+    /* rejection -> REJECTED (terminal for this attempt, bounded) */
+    p = ds_feedback(&c, false, 1000);
+    CHECK(p == DS_REJECTED, "ds_feedback(fail) -> REJECTED (got %d)", (int)p);
+    CHECK(ds_terminal(&c), "REJECTED is terminal after feedback failure");
+
+    /* after 3 rejections -> FAILED (bounded, no infinite loop) */
+    ds_reset(&c, "internet", 1);
+    c.attempt = 3;
+    p = ds_feedback(&c, false, 1000);
+    CHECK(p == DS_FAILED, "ds_feedback(fail) at attempt==3 -> FAILED (got %d)", (int)p);
+
+    /* --- ds_gprs_call_connected helper --- */
+    CHECK(ds_gprs_call_connected(1), "call state 1 is connected");
+    CHECK(ds_gprs_call_connected(10), "call state 10 is connected");
+    CHECK(ds_gprs_call_connected(11), "call state 11 is connected");
+    CHECK(!ds_gprs_call_connected(3), "call state 3 (live-observed) is NOT connected");
+    CHECK(!ds_gprs_call_connected(0), "call state 0 is NOT connected");
+
     printf("\n%s: %d failures\n", failures ? "RESULT=FAIL" : "RESULT=PASS", failures);
     return failures ? 1 : 0;
 }

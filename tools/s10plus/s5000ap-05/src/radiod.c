@@ -332,7 +332,14 @@ static const char *fmt_sub_name(uint8_t main, uint8_t sub)
     return NULL;
 }
 
-static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f);
+/* Response-decode decision kinds (see decode_gating_response). */
+typedef enum {
+    DS_FEEDBACK_IGNORE = 0,
+    DS_FEEDBACK_OK     = 1,
+    DS_FEEDBACK_FAIL   = 2,
+} ds_feedback_kind;
+
+static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f);
 
 static const struct nuxel_fmt_observation *find_fmt_obs(uint8_t m, uint8_t s, uint8_t t)
 {
@@ -394,29 +401,42 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         g.sim_ready_seen = true;
     }
 
-    /* Feed the Stage-06 data-session FSM: an authenticated response advances
-     * the phase; this is the ONLY place the FSM is advanced (never on write). */
-    if (g.data_path_armed && g.dsc.phase != DS_IDLE && fmt_rx_is_data_ack(f)) {
-        /* PS attach is asynchronous: the CP ACKs the PsAttach command with a
-         * generic GEN echo but completes the actual GPRS/PS attach in the
-         * background. Hold the PS_ATTACH phase for a short dwell so the attach
-         * completes before we emit SetPdpContext(ACTIVATE). Otherwise the PDP
-         * activation is sent too early and the CP rejects it with
-         * GPRS_CALL_STATUS state=3 (not connected). */
-        if (g.dsc.phase == DS_PS_ATTACH &&
-            g.dsc.phase_entered_ms &&
-            now_ms() - g.dsc.phase_entered_ms < 3000u) {
-            /* do not advance yet */
-        } else {
-        enum ds_phase prev = g.dsc.phase;
-        enum ds_phase next = ds_step(&g.dsc, true, now_ms());
-        diagf("data_session_ack", "\"phase\":\"%s\",\"next\":\"%s\"",
-              ds_phase_name(prev), ds_phase_name(next));
-        if (next != prev) {
+    /* Feed the Stage-06 data-session FSM. We now honour the REAL decoded
+     * result of each modem response (GEN result byte, GPRS_CALL_STATUS state,
+     * GPRS_PDP_CONTEXT state). A generic GEN echo with non-zero result, or a
+     * "not connected" call-state, is treated as a FAILURE and blocks advance.
+     * This is the core Stage-06 correction: we no longer advance on a bare ACK. */
+    if (g.data_path_armed && g.dsc.phase != DS_IDLE) {
+        ds_feedback_kind k = decode_gating_response(f);
+        if (k == DS_FEEDBACK_OK) {
+            /* Hold PS_ATTACH for a short dwell so the asynchronous PS attach
+             * completes before SetPdpContext(ACTIVATE). Bounded: only applies to
+             * that phase and only before the dwell elapses. */
+            if (g.dsc.phase == DS_PS_ATTACH &&
+                g.dsc.phase_entered_ms &&
+                now_ms() - g.dsc.phase_entered_ms < 3000u) {
+                /* dwell: do not advance yet */
+            } else {
+                enum ds_phase prev = g.dsc.phase;
+                enum ds_phase next = ds_step(&g.dsc, true, now_ms());
+                diagf("data_session_ack", "\"phase\":\"%s\",\"next\":\"%s\"",
+                      ds_phase_name(prev), ds_phase_name(next));
+                if (next != prev) {
+                    g.wrote_phase = false;
+                    g.dsc.phase_entered_ms = now_ms();
+                }
+            }
+        } else if (k == DS_FEEDBACK_FAIL) {
+            enum ds_phase prev = g.dsc.phase;
+            diagf("data_session_reject",
+                  "\"phase\":\"%s\",\"gen_result\":%u,\"call_state\":%u,\"pdp_state\":%u",
+                  ds_phase_name(prev), g.dsc.last_gen_result,
+                  g.dsc.last_gprs_call_state, g.dsc.last_gprs_pdp_state);
+            enum ds_phase next = ds_feedback(&g.dsc, false, now_ms());
             g.wrote_phase = false;
             g.dsc.phase_entered_ms = now_ms();
+            (void)next;
         }
-        } /* end dwell guard */
     }
     /* We do not decode telephony semantics (UNKNOWN). We DO surface the
      * existence and classification of every message as a diagnostic. */
@@ -551,46 +571,107 @@ static bool radiod_write_fmt(const struct fmt_tx_frame *f)
     return false;
 }
 
-/* Map an authenticated FMT RX observation to a data-session acknowledgement.
- * We ONLY treat a specific, recovered response as an ack — never a generic
- * write. This is a conservative correlator that refuses to advance on
- * unknown/unsolicited traffic. */
-static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
+/*
+ * Decode the REAL modem responses that gate the data-session FSM, and record
+ * their results into g.dsc. Returns DS_FEEDBACK_OK / DS_FEEDBACK_FAIL for the
+ * *current* phase, or DS_FEEDBACK_IGNORE when the frame is not a gating
+ * response for this phase.
+ *
+ * The three real, protocol-backed sources we now honour (previously ignored):
+ *   1. GEN echo (main=128, type=2): payload = [echo_main][echo_sub][echo_type]
+ *      [RESULT][0x80]. RESULT==0 means success; non-zero is a CP rejection.
+ *   2. GPRS_CALL_STATUS (main=13 sub=16): payload[0]=cid, payload[1]=state.
+ *      state in {1,10,11} => connected; else (incl. live-observed 3) => NOT
+ *      connected. This is the authoritative bearer-existence flag.
+ *   3. GPRS_PDP_CONTEXT (main=13 sub=4 type=2): response to GetPdpContext(query).
+ *      payload[0]=entry count; payload[1]=state. state==0 => disconnected.
+ */
+static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
 {
-    if (!g.data_path_armed || g.dsc.phase == DS_IDLE) return false;
-    switch (g.dsc.phase) {
-    case DS_SIM_CHECK:
-        /* SEC_PIN_STATUS(type=2 response) is the SIM-readiness acknowledgement. */
-        return (f->main_cmd == IPC41_MAIN_SEC &&
-                f->sub_cmd == IPC41_SEC_PIN_STATUS &&
-                f->cmd_type != IPC41_TYPE_NOTIFICATION);
-    case DS_ENABLE_MOBILE_DATA:
-    case DS_SYNC_PROFILE:
-    case DS_SET_DATA_PROFILE:
-    case DS_SET_LTE_ATTACH:
-    case DS_DEFINE_PDP:
-    case DS_ALWAYS_ON_PDN:
-    case DS_PS_ATTACH:
-    case DS_DATA_CALL:
-    case DS_GET_PDP_LIST:
-        /* Data-call establish response: CDMA_DATA_CALL_ESTABLISH (main=3 sub=2),
-         * or GPRS-family response (type != NOTI), or the generic GEN response
-         * (main=128, type=2) that the CP emits to acknowledge a data-path
-         * command (observed live after the mobile-data write). */
-        return ((f->main_cmd == IPC41_MAIN_CDMA_DATA &&
-                 f->sub_cmd == 2) ||
-                (f->main_cmd == IPC41_MAIN_GPRS &&
-                 f->cmd_type != IPC41_TYPE_NOTIFICATION) ||
-                (f->main_cmd == IPC41_MAIN_GEN &&
-                 f->cmd_type == IPC41_TYPE_RESPONSE));
-    case DS_WAIT_IP:
-        /* IP configuration arrives via GPRS_IP_CONFIGURATION. */
-        return (f->main_cmd == IPC41_MAIN_GPRS &&
-                (f->sub_cmd == IPC41_GPRS_IP_CONFIGURATION ||
-                 f->sub_cmd == IPC41_GPRS_CALL_STATUS));
-    default:
-        return false;
+    uint8_t phase = (uint8_t)g.dsc.phase;
+
+    /* ---- GEN echo (main=128) record result byte as diagnostic ---- */
+    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->payload_len >= 4) {
+        /* payload = [echo_main][echo_sub][echo_type][?][?]. We record the 4th
+         * byte as a RESULT indicator for diagnostics, but a GEN echo is only a
+         * COMMAND-ACCEPTED signal — it is NOT proof of operation completion.
+         * Per the Stage-06 truth contract we never treat it as the authority
+         * for a data-session transition. The bearer outcome is decided by
+         * GPRS_CALL_STATUS (DATA_CALL) and GPRS_PDP_CONTEXT (GET_PDP_LIST). */
+        uint8_t result = f->payload[3];
+        g.dsc.last_gen_result = result;
+        g.dsc.gen_result_valid = true;
+        if (result != DS_GEN_RESULT_OK) {
+            diagf("data_session_gen_warn",
+                  "\"phase\":\"%s\",\"gen_result\":%u",
+                  ds_phase_name(phase), result);
+        }
+        /* Accept the command and advance through the setup-only phases. Do NOT
+         * decide bearer success here. */
+        switch (phase) {
+        case DS_ENABLE_MOBILE_DATA:
+        case DS_SYNC_PROFILE:
+        case DS_SET_DATA_PROFILE:
+        case DS_SET_LTE_ATTACH:
+        case DS_DEFINE_PDP:
+        case DS_ALWAYS_ON_PDN:
+        case DS_PS_ATTACH:
+            return DS_FEEDBACK_OK;
+        case DS_DATA_CALL:
+        case DS_GET_PDP_LIST:
+            /* The bearer outcome must come from GPRS_CALL_STATUS /
+             * GPRS_PDP_CONTEXT, never from a GEN echo. */
+            return DS_FEEDBACK_IGNORE;
+        default:
+            return DS_FEEDBACK_IGNORE;
+        }
     }
+
+    /* ---- GPRS_CALL_STATUS (main=13 sub=16) ---- */
+    if (f->main_cmd == IPC41_MAIN_GPRS && f->sub_cmd == IPC41_GPRS_CALL_STATUS &&
+        f->payload_len >= 2) {
+        uint8_t state = f->payload[1];
+        g.dsc.last_gprs_call_state = state;
+        g.dsc.gprs_call_state_valid = true;
+        if (phase == DS_DATA_CALL) {
+            return ds_gprs_call_connected(state) ? DS_FEEDBACK_OK : DS_FEEDBACK_FAIL;
+        }
+        return DS_FEEDBACK_IGNORE;
+    }
+
+    /* ---- GPRS_PDP_CONTEXT list (main=13 sub=4 type=2, GetPdpContext reply) ---- */
+    if (f->main_cmd == IPC41_MAIN_GPRS && f->sub_cmd == IPC41_GPRS_PDP_CONTEXT &&
+        f->cmd_type == IPC41_TYPE_RESPONSE) {
+        if (f->payload_len >= 2) {
+            g.dsc.last_gprs_pdp_state = f->payload[1];
+        } else {
+            g.dsc.last_gprs_pdp_state = 0;
+        }
+        g.dsc.gprs_pdp_state_valid = true;
+        if (phase == DS_GET_PDP_LIST) {
+            /* A list state of 0 => the PDP context is DISCONNECTED. */
+            return (g.dsc.last_gprs_pdp_state != 0) ? DS_FEEDBACK_OK : DS_FEEDBACK_FAIL;
+        }
+        return DS_FEEDBACK_IGNORE;
+    }
+
+    /* ---- GPRS_IP_CONFIGURATION (main=13 sub=9): bearer IP handshake ---- */
+    if (f->main_cmd == IPC41_MAIN_GPRS &&
+        f->sub_cmd == IPC41_GPRS_IP_CONFIGURATION) {
+        if (phase == DS_WAIT_IP) return DS_FEEDBACK_OK;
+        return DS_FEEDBACK_IGNORE;
+    }
+
+    /* ---- SIM readiness (SEC_PIN_STATUS) for DS_SIM_CHECK ---- */
+    if (phase == DS_SIM_CHECK &&
+        f->main_cmd == IPC41_MAIN_SEC &&
+        f->sub_cmd == IPC41_SEC_PIN_STATUS &&
+        f->cmd_type != IPC41_TYPE_NOTIFICATION) {
+        return DS_FEEDBACK_OK;
+    }
+
+    return DS_FEEDBACK_IGNORE;
 }
 
 /* Build and emit the FMT frame for the current data-session phase. Returns

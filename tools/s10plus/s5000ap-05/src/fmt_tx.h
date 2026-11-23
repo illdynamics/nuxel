@@ -82,6 +82,12 @@ bool fmt_tx_get_atr(struct fmt_tx_frame *f);
 bool fmt_tx_get_serving_network(struct fmt_tx_frame *f);
 bool fmt_tx_get_registration(struct fmt_tx_frame *f);
 
+/* Query PS/data registration state (source: IpcTxNetGetDataRegState @0x335b00).
+ * 9-byte NET(NET_REGIST sub=5) request with a 2-byte payload. This is the
+ * vendor's data-registration query and is distinct from the 7-byte voice
+ * NET_REGIST query above. */
+bool fmt_tx_get_data_reg_state(struct fmt_tx_frame *f);
+
 /* ---- GPRS / data-path commands (AP -> CP requests) ---- */
 
 /* GPRS PS attach/detach (main=13 sub=3, 3-byte payload).

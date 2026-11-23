@@ -278,6 +278,22 @@ bool fmt_tx_get_registration(struct fmt_tx_frame *f)
 }
 
 /*
+ * PS/data registration state query (IpcTxNetGetDataRegState @0x335b00).
+ *
+ * Recovered byte-exact from the vendor RIL: the function builds a 9-byte frame
+ * with header main=8 (NET), sub=5 (NET_REGIST), type=2 (REQUEST) and a 2-byte
+ * payload [0xFF, 0x03]. The 0x03 trailing byte is the data-registration
+ * selection; 0xFF is the vendor's fixed marker. This is the query the RIL
+ * issues via ModemProxy::GetDataRegState -> IpcModem::GetDataRegState
+ * (transaction 801) to learn the PS/data registration state of the CP.
+ */
+bool fmt_tx_get_data_reg_state(struct fmt_tx_frame *f)
+{
+    static const uint8_t payload[2] = { 0xFF, 0x03 };
+    return fmt_tx_raw(f, MAIN_NET, 5 /*NET_REGIST*/, FMT_TX_TYPE_REQUEST, payload, 2);
+}
+
+/*
  * GPRS PS attach (recovered from IpcTxPsAttach disasm @0x31fa98):
  *   header main=13 sub=3 type=3; payload[0]=attach, payload[1]=suspend,
  *   payload[2]=detach_reason (clamped 0..4).

@@ -209,6 +209,18 @@ int main(void)
     CHECK(!fmt_tx_raw(&f, 13, 3, 3, big, FMT_TX_MAX_FRAME),
           "raw rejects oversized payload");
 
+    /* --- GetDataRegState (source: IpcTxNetGetDataRegState @0x335b00) ---
+     * 9-byte NET(NET_REGIST sub=5) REQUEST frame with 2-byte payload [0xFF,0x03].
+     * len=9, main=8, sub=5, type=2, payload={0xFF,0x03}. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_get_data_reg_state(&f), "get_data_reg_state builds");
+    const uint8_t datareg_expect[9] = { 0x09,0x00, 0x00,0x00, 0x08,0x05, 0x02, 0xFF,0x03 };
+    bad = hexcmp(f.buf, datareg_expect, 9);
+    CHECK(f.len == 9, "get_data_reg_state len==9 (got %zu)", f.len);
+    CHECK(bad == -1, "get_data_reg_state bytes match disasm (diff @ %d)", bad);
+    CHECK(f.main_cmd == 8 && f.sub_cmd == 5 && f.cmd_type == 2,
+          "get_data_reg_state main/sub/type=8/5/2 (NET_REGIST REQUEST)");
+
     printf("\n%s: %d failures\n", failures ? "RESULT=FAIL" : "RESULT=PASS", failures);
     return failures ? 1 : 0;
 }

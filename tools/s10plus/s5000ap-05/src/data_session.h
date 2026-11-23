@@ -52,7 +52,35 @@ struct data_session_ctx {
     bool           ip_configured;
     uint64_t       step_deadline_ms;
     uint64_t       phase_entered_ms;  /* monotonic ts when current phase began */
+
+    /* Stage-06 response-decode state (populated from REAL modem responses only;
+     * never from a frame write). These drive the strict FSM transitions. */
+    uint8_t        last_gen_result;    /* GEN echo result byte (0=success) */
+    uint8_t        last_gprs_call_state; /* GPRS_CALL_STATUS state byte */
+    uint8_t        last_gprs_pdp_state;  /* GPRS_PDP_CONTEXT list state byte */
+    bool           gen_result_valid;   /* a GEN result has been correlated */
+    bool           gprs_call_state_valid;
+    bool           gprs_pdp_state_valid;
 };
+
+/* Gen echo result codes recovered live + source-backed (vendor IpcRxGeneral):
+ * 0 == success; non-zero == rejection/failure. We deliberately do NOT map a
+ * specific enum for 0x01/0x03 yet — non-zero is sufficient to fail-closed. */
+#define DS_GEN_RESULT_OK 0u
+
+/* GPRS data-call state (IpcRxGprsCallStatus @0x321ab0): the CP reports
+ * payload[1] as the data-call state. 1/10/11 -> connected (4/5/6 internal); any
+ * other value (incl. 3, observed live) -> 0 = NOT connected. */
+#define DS_GPRS_CALL_NOT_CONNECTED 0u
+#define DS_GPRS_CALL_ACTIVE_4      1u  /* payload[1]==1  -> internal 4 */
+#define DS_GPRS_CALL_ACTIVE_5      10u /* payload[1]==10 -> internal 5 */
+#define DS_GPRS_CALL_ACTIVE_6      11u /* payload[1]==11 -> internal 6 */
+
+/* Returns true when a GPRS_CALL_STATUS state byte means "data call established". */
+static inline bool ds_gprs_call_connected(uint8_t state) {
+    return state == DS_GPRS_CALL_ACTIVE_4 || state == DS_GPRS_CALL_ACTIVE_5 ||
+           state == DS_GPRS_CALL_ACTIVE_6;
+}
 
 /* Advance the FSM given: current phase, whether the last modem response
  * acknowledged the step, and a monotonic timestamp. Returns the phase to
@@ -64,6 +92,13 @@ void ds_reset(struct data_session_ctx *c, const char *apn, uint8_t profile_id);
 
 /* Human-readable phase name (diagnostics, no secrets). */
 const char *ds_phase_name(enum ds_phase p);
+
+/* Feed a decoded REAL modem response into the FSM and determine whether the
+ * current phase is actually satisfied. Unlike ds_step(ack=true), this version
+ * uses the RESULT of the specific command (GEN result byte / GPRS call state /
+ * PDP list state), so a generic GEN echo with a non-zero result never advances.
+ * Returns the current phase (callers read ctx fields to know the outcome). */
+enum ds_phase ds_feedback(struct data_session_ctx *c, bool success, uint64_t now_ms);
 
 /* True if the FSM has reached a terminal phase (ACTIVE/REJECTED/FAILED). */
 bool ds_terminal(const struct data_session_ctx *c);

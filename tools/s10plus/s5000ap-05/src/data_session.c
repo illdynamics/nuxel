@@ -36,6 +36,9 @@ void ds_reset(struct data_session_ctx *c, const char *apn, uint8_t profile_id)
     c->phase = DS_ENABLE_MOBILE_DATA;  /* SIM already READY (CP-notified); no guessed SIM query */
     c->phase_entered_ms = 0;
     c->profile_id = profile_id;
+    c->gen_result_valid = false;
+    c->gprs_call_state_valid = false;
+    c->gprs_pdp_state_valid = false;
     if (apn) {
         size_t n = strlen(apn);
         if (n > sizeof c->apn - 1) n = sizeof c->apn - 1;
@@ -95,4 +98,37 @@ enum ds_phase ds_step(struct data_session_ctx *c, bool ack, uint64_t now_ms)
         break;
     }
     return c->phase;
+}
+
+
+/*
+ * Strict response-feedback driver.
+ *
+ * Unlike ds_step(ack=true), this function consumes the DECODED result of a real
+ * modem response for the current phase. A non-zero GEN result, an "not
+ * connected" GPRS_CALL_STATUS, or an empty PDP-context list means the step
+ * FAILED and the FSM must NOT advance. On failure we move to DS_REJECTED (a
+ * terminal, observable state) with a bounded attempt budget so we never loop
+ * and never silently claim a bearer that does not exist.
+ */
+enum ds_phase ds_feedback(struct data_session_ctx *c, bool success, uint64_t now_ms)
+{
+    if (!c) return DS_FAILED;
+    if (c->phase == DS_IDLE || c->phase == DS_ACTIVE ||
+        c->phase == DS_REJECTED || c->phase == DS_FAILED)
+        return c->phase;
+
+    if (!success) {
+        /* Rejection: stop on this attempt, honouring the truth contract. */
+        if (c->attempt >= 3u) {
+            c->phase = DS_FAILED;
+        } else {
+            c->attempt++;
+            c->phase = DS_REJECTED;
+        }
+        return c->phase;
+    }
+
+    /* Success: advance exactly like ds_step(ack=true). */
+    return ds_step(c, true, now_ms);
 }
