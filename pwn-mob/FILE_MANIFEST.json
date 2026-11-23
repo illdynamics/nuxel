@@ -1,0 +1,54 @@
+{
+  "snapshot": "nuxel-ds-ssp (1)(3).zip",
+  "audit_date": "2026-11-22",
+  "files": {
+    "00_MASTER_SAFETY_AND_TRUTH.md": {
+      "bytes": 7048,
+      "sha256": "cb9dc44ba5abcf6c814fd730dba5327efbd1aed096a0c8f1a4c903795274612d"
+    },
+    "01_LIVE_RECONCILIATION.md": {
+      "bytes": 5682,
+      "sha256": "2a2f5082cd6d05e87b45a6f2b769f18646af84f1cd4bd7db2b792475b3bfbfb6"
+    },
+    "02_CP_FIRMWARE_VALIDATION.md": {
+      "bytes": 3505,
+      "sha256": "4200831e82c536f26b5e775a1f3a7526e54a9ac216acc719c87f4cbb559e86c8"
+    },
+    "03_CBD_ABI_AND_OFFLINE_BUILD.md": {
+      "bytes": 4442,
+      "sha256": "3c1f7fe42459796ed85adcfb62e8661cb96a22b0e6cc0191c6ae94f5618acda0"
+    },
+    "04_CP_BOOT_CONTROLLED_TRIAL.md": {
+      "bytes": 3926,
+      "sha256": "476883aaba1e84a1c3f1850198d741cb1fecf6b4f8c6ec5fde86516406d6add7"
+    },
+    "05_RFS_SIPC_RADIOD.md": {
+      "bytes": 3854,
+      "sha256": "5e29101be022da497dc5bf18be11bf0d1502f4d6722d3b4e323f53a771edd3ec"
+    },
+    "06_SIM_LTE_MODEMMANAGER.md": {
+      "bytes": 4140,
+      "sha256": "70f04023892791e135abba91729b579f82463c647075c127625070ac6e002303"
+    },
+    "07_SMS_VOICE_IMS_UI.md": {
+      "bytes": 3330,
+      "sha256": "7ece13a78703a953f5e8beb61346efa30968b60c055260245bfab511743be866"
+    },
+    "08_REGRESSION_AND_HANDOFF.md": {
+      "bytes": 3362,
+      "sha256": "e5f56a8cf689d57ecf53b66df396eeb64366e7983b11f366899ecd6b545fe3f4"
+    },
+    "09_TWRP_A_ONLY_RECOVERY_AGREEMENT.md": {
+      "bytes": 5689,
+      "sha256": "45e137a555990840a28d0ef32f442cb3db234e93a3c243b0a9dff8d403fda453"
+    },
+    "AUDIT_REPORT.md": {
+      "bytes": 18144,
+      "sha256": "66b9de728a50e8f8161af4a3b62437b10e1f76f71348bfd826d43734d069e83b"
+    },
+    "README.md": {
+      "bytes": 5782,
+      "sha256": "272e623019233d91383f78f0d63f24338116c1f0532dbcacb6c5e11e46add246"
+    }
+  }
+}
