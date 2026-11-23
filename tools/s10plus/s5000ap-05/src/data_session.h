@@ -25,6 +25,7 @@
 enum ds_phase {
     DS_IDLE = 0,
     DS_SIM_CHECK,          /* confirm SIM READY */
+    DS_NET_REGIST_CHECK,   /* read PS/data registration (GetDataRegState NET_REGIST) */
     DS_ENABLE_MOBILE_DATA, /* GPRS mobile data ON (SetMobileDataSetting sub=29) */
     DS_SYNC_PROFILE,       /* full profile sync w/ RAT (SyncProfileInfo sub=37) */
     DS_SET_DATA_PROFILE,   /* set APN/auth/protocol data profile */

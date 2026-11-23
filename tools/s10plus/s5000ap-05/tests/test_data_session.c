@@ -15,16 +15,17 @@ int main(void)
     struct data_session_ctx c;
     ds_reset(&c, "internet", 1);
 
-    CHECK(c.phase == DS_ENABLE_MOBILE_DATA, "starts at ENABLE_MOBILE_DATA (SIM already READY)");
+    CHECK(c.phase == DS_NET_REGIST_CHECK, "starts at NET_REGIST_CHECK (SIM already READY)");
     CHECK(strcmp((const char*)c.apn, "internet") == 0, "APN recorded");
     CHECK(c.profile_id == 1, "profile id recorded");
 
     /* No ack -> stays put (no fabricated advance). */
     enum ds_phase p = ds_step(&c, false, 100);
-    CHECK(p == DS_ENABLE_MOBILE_DATA, "no ack -> stays ENABLE_MOBILE_DATA");
+    CHECK(p == DS_NET_REGIST_CHECK, "no ack -> stays NET_REGIST_CHECK");
 
     /* Authenticated ack advances each phase in order
-     * (ENABLE_MOBILE_DATA -> SYNC_PROFILE -> SET_DATA_PROFILE -> ... -> ACTIVE). */
+     * (NET_REGIST_CHECK -> ENABLE_MOBILE_DATA -> SYNC_PROFILE -> ... -> ACTIVE). */
+    p = ds_step(&c, true, 100);  CHECK(p == DS_ENABLE_MOBILE_DATA, "NET_REGIST_CHECK -> ENABLE_MOBILE_DATA");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SYNC_PROFILE, "ENABLE_MOBILE_DATA -> SYNC_PROFILE");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_DATA_PROFILE, "SYNC_PROFILE -> SET_DATA_PROFILE");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_LTE_ATTACH, "SET_DATA_PROFILE -> SET_LTE_ATTACH");
@@ -60,9 +61,9 @@ int main(void)
 
     /* --- ds_feedback: strict success/rejection behaviour --- */
     ds_reset(&c, "internet", 1);
-    /* success advances ENABLE_MOBILE_DATA -> SYNC_PROFILE */
+    /* success advances NET_REGIST_CHECK -> ENABLE_MOBILE_DATA */
     p = ds_feedback(&c, true, 1000);
-    CHECK(p == DS_SYNC_PROFILE, "ds_feedback(success) advances (got %d)", (int)p);
+    CHECK(p == DS_ENABLE_MOBILE_DATA, "ds_feedback(success) advances (got %d)", (int)p);
     /* rejection -> REJECTED (terminal for this attempt, bounded) */
     p = ds_feedback(&c, false, 1000);
     CHECK(p == DS_REJECTED, "ds_feedback(fail) -> REJECTED (got %d)", (int)p);

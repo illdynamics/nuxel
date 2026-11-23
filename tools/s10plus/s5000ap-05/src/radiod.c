@@ -663,6 +663,16 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         return DS_FEEDBACK_IGNORE;
     }
 
+    /* ---- NET_REGIST response (main=8 sub=5) for DS_NET_REGIST_CHECK ---- */
+    if (phase == DS_NET_REGIST_CHECK &&
+        f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_REGIST) {
+        /* The CP reports its registration state. We record it (see fmt payload
+         * diagnostics) and advance; the decisive data gate remains GPRS_CALL_STATUS
+         * at DATA_CALL. This phase is a read-only state query, so any valid NET_REGIST
+         * response (type 2 response or type 3 notification) satisfies it. */
+        return DS_FEEDBACK_OK;
+    }
+
     /* ---- SIM readiness (SEC_PIN_STATUS) for DS_SIM_CHECK ---- */
     if (phase == DS_SIM_CHECK &&
         f->main_cmd == IPC41_MAIN_SEC &&
@@ -686,6 +696,13 @@ static bool data_session_emit(void)
          * a SIM query command is NOT source-backed, so we never emit one. Treat
          * this phase as already satisfied by silently advancing. */
         return false;
+    case DS_NET_REGIST_CHECK:
+        /* Read the CP's PS/data registration state before any data-path command.
+         * This is the source-backed IpcTxNetGetDataRegState (NET_REGIST sub=5,
+         * 9-byte query). The response tells us whether the modem is PS-registered
+         * before we attempt a PDP activation that would otherwise be rejected. */
+        if (!fmt_tx_get_data_reg_state(&f)) return false;
+        break;
     case DS_ENABLE_MOBILE_DATA:
         /* Enable GPRS mobile data (source-backed IpcTxSetMobileDataSetting,
          * main=13 sub=29, 9 bytes; enable=1, extra=1). This is the explicit
