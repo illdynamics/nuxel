@@ -104,6 +104,8 @@ struct radiod_ctx {
     struct data_session_ctx dsc;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
     bool     wrote_phase;       /* last phase already emitted a frame */
+    bool     rfs_handshake_done;/* RFS boot handshake answered (CP advanced) */
+    bool     sim_ready_seen;    /* SEC_PIN_STATUS=READY observed (protocol-backed) */
 
     struct radiod_request pending[RADIOD_MAX_PENDING];
     uint8_t  next_seq;
@@ -384,6 +386,14 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     record_obs(ch, f, ob != NULL);
     resolve_pending(f);
 
+    /* SIM readiness gate: SEC_PIN_STATUS payload == 0x0000 means READY (the
+     * CP-notified state, protocol-backed — NOT static ds_detect). */
+    if (f->main_cmd == IPC41_MAIN_SEC && f->sub_cmd == IPC41_SEC_PIN_STATUS &&
+        f->payload_len >= 2 && f->payload[0] == 0x00 && f->payload[1] == 0x00) {
+        if (!g.sim_ready_seen) diag("sim_ready", "\"SEC_PIN_STATUS\":\"READY\"");
+        g.sim_ready_seen = true;
+    }
+
     /* Feed the Stage-06 data-session FSM: an authenticated response advances
      * the phase; this is the ONLY place the FSM is advanced (never on write). */
     if (g.data_path_armed && g.dsc.phase != DS_IDLE && fmt_rx_is_data_ack(f)) {
@@ -482,6 +492,7 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
     if (st == NUXEL_IO_OK) {
         g.stats.rfs_responses++;
         g.stats.tx_frames++;
+        g.rfs_handshake_done = true;
         diagf("rfs_tx", "\"op\":%u,\"res\":%d,\"len\":%zu",
               req.op, res, n);
     } else {
@@ -536,9 +547,12 @@ static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
     case DS_DEFINE_PDP:
     case DS_PS_ATTACH:
     case DS_DATA_CALL:
-        /* GPRS-family response (type != NOTI) for the corresponding sub. */
-        return (f->main_cmd == IPC41_MAIN_GPRS &&
-                f->cmd_type != IPC41_TYPE_NOTIFICATION);
+        /* Data-call establish response: CDMA_DATA_CALL_ESTABLISH (main=3 sub=2)
+         * or GPRS-family response (type != NOTI). */
+        return ((f->main_cmd == IPC41_MAIN_CDMA_DATA &&
+                 f->sub_cmd == 2) ||
+                (f->main_cmd == IPC41_MAIN_GPRS &&
+                 f->cmd_type != IPC41_TYPE_NOTIFICATION));
     case DS_WAIT_IP:
         /* IP configuration arrives via GPRS_IP_CONFIGURATION. */
         return (f->main_cmd == IPC41_MAIN_GPRS &&
@@ -557,8 +571,10 @@ static bool data_session_emit(void)
     memset(&f, 0, sizeof f);
     switch (g.dsc.phase) {
     case DS_SIM_CHECK:
-        if (!fmt_tx_get_sim_status(&f)) return false;
-        break;
+        /* SIM readiness is authenticated via CP-notified SEC_PIN_STATUS=READY;
+         * a SIM query command is NOT source-backed, so we never emit one. Treat
+         * this phase as already satisfied by silently advancing. */
+        return false;
     case DS_ENABLE_MOBILE_DATA:
         if (!fmt_tx_mobile_data(&f, true, false)) return false;
         break;
@@ -571,11 +587,8 @@ static bool data_session_emit(void)
         if (!fmt_tx_ps_attach(&f, true, false, 0)) return false;
         break;
     case DS_DATA_CALL:
-        /* Establish the data call: mobile-data already ON; re-assert enable.
-         * NOTE: the exact SetDataCallEstablish wire bytes are under final
-         * verification; we re-issue mobile-data enable here rather than send
-         * an unverified data-call frame. */
-        if (!fmt_tx_mobile_data(&f, true, true)) return false;
+        /* Establish the data call (source-backed CDMA_DATA_CALL_ESTABLISH). */
+        if (!fmt_tx_set_data_call_establish(&f, true)) return false;
         break;
     case DS_WAIT_IP:
     case DS_ACTIVE:
@@ -597,6 +610,13 @@ static void data_session_tick(uint64_t now)
         return;   /* cannot safely transmit yet */
     }
     if (ds_terminal(&g.dsc)) return;
+
+    /* SAFETY: only transmit data-path commands AFTER the CP has completed its
+     * boot-stage RFS handshake AND reported the SIM READY (protocol-backed).
+     * Emitting during boot would be dropped/ignored by the CP. */
+    if (!g.rfs_handshake_done || !g.sim_ready_seen) {
+        return;
+    }
 
     /* Emit the current phase ONCE (no re-transmit storm). */
     if (!g.wrote_phase) {

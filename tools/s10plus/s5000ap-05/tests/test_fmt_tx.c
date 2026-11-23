@@ -84,6 +84,17 @@ int main(void)
     CHECK(!fmt_tx_define_pdp_context(&f, longapn, FMT_TX_PROTO_IPV4V6, 1),
           "define_pdp rejects overly-long APN");
 
+    /* --- SetDataCallEstablish (source: IpcTxSetDataCallEstablish @0x320a10) ---
+     * Expected 8-byte frame: len=8, main=3, sub=2, type=3, payload=[1].
+     */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_data_call_establish(&f, true), "data_call_establish builds");
+    const uint8_t dc_est_expect[8] = { 0x08,0x00, 0x00,0x00, 0x03,0x02, 0x03, 0x01 };
+    bad = hexcmp(f.buf, dc_est_expect, 8);
+    CHECK(f.len == 8, "data_call_establish len==8");
+    CHECK(bad == -1, "data_call_establish bytes match disasm (diff @ %d)", bad);
+    CHECK(f.main_cmd == 3 && f.sub_cmd == 2, "data_call_establish main/sub=3/2");
+
     /* --- raw serializer + overflow guard --- */
     memset(&f, 0, sizeof f);
     uint8_t pl[3] = { 0xaa, 0xbb, 0xcc };

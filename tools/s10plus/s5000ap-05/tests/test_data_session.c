@@ -15,21 +15,21 @@ int main(void)
     struct data_session_ctx c;
     ds_reset(&c, "internet", 1);
 
-    CHECK(c.phase == DS_SIM_CHECK, "starts at SIM_CHECK");
+    CHECK(c.phase == DS_ENABLE_MOBILE_DATA, "starts at ENABLE_MOBILE_DATA (SIM already READY)");
     CHECK(strcmp((const char*)c.apn, "internet") == 0, "APN recorded");
     CHECK(c.profile_id == 1, "profile id recorded");
 
     /* No ack -> stays put (no fabricated advance). */
     enum ds_phase p = ds_step(&c, false, 100);
-    CHECK(p == DS_SIM_CHECK, "no ack -> stays SIM_CHECK");
+    CHECK(p == DS_ENABLE_MOBILE_DATA, "no ack -> stays ENABLE_MOBILE_DATA");
 
-    /* Authenticated ack advances each phase in order. */
-    p = ds_step(&c, true, 100);  CHECK(p == DS_ENABLE_MOBILE_DATA, "SIM_CHECK -> ENABLE_MOBILE_DATA");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_DEFINE_PDP, "-> DEFINE_PDP");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_PS_ATTACH, "-> PS_ATTACH");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_DATA_CALL, "-> DATA_CALL");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_WAIT_IP, "-> WAIT_IP");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_ACTIVE, "-> ACTIVE");
+    /* Authenticated ack advances each phase in order
+     * (ENABLE_MOBILE_DATA -> DEFINE_PDP -> PS_ATTACH -> DATA_CALL -> WAIT_IP -> ACTIVE). */
+    p = ds_step(&c, true, 100);  CHECK(p == DS_DEFINE_PDP, "ENABLE_MOBILE_DATA -> DEFINE_PDP");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_PS_ATTACH, "DEFINE_PDP -> PS_ATTACH");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_DATA_CALL, "PS_ATTACH -> DATA_CALL");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_WAIT_IP, "DATA_CALL -> WAIT_IP");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_ACTIVE, "WAIT_IP -> ACTIVE");
 
     CHECK(ds_terminal(&c), "ACTIVE is terminal");
 

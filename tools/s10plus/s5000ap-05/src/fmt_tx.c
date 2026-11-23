@@ -47,6 +47,19 @@ bool fmt_tx_raw(struct fmt_tx_frame *f, uint8_t main, uint8_t sub,
     return true;
 }
 
+/*
+ * GPRS/data-call establish (recovered from IpcTxSetDataCallEstablish @0x320a10):
+ *   8-byte frame: len=8, msg_seq=0, ack_seq=0, main=3, sub=2, type=3,
+ *   payload[0]=1 when establish else 2.
+ */
+bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish)
+{
+    uint8_t p[1];
+    p[0] = establish ? 1u : 2u;
+    return fmt_tx_raw(f, 3u /*CDMA_DATA*/, 2u /*CDMA_DATA_CALL_ESTABLISH*/,
+                      FMT_TX_TYPE_NOTIFICATION, p, 1);
+}
+
 /* SIM query: vendor sends SEC interrogations as 7-byte frames (type=2). */
 bool fmt_tx_get_sim_status(struct fmt_tx_frame *f)
 {

@@ -105,6 +105,11 @@ bool fmt_tx_mobile_data(struct fmt_tx_frame *f, bool enable, bool extra);
 bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
                                uint8_t proto, uint8_t profile_id);
 
+/* GPRS data-call establish (main=3 CDMA_DATA, sub=2 CDMA_DATA_CALL_ESTABLISH).
+ * Recovered from IpcTxSetDataCallEstablish @0x320a10: 8-byte frame,
+ * payload[0]=1 when establish else 2. */
+bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish);
+
 /* Serialize a raw FMT frame given explicit fields (validation helper). */
 bool fmt_tx_raw(struct fmt_tx_frame *f, uint8_t main, uint8_t sub,
                 uint8_t type, const uint8_t *payload, size_t payload_len);
