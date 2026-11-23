@@ -692,35 +692,47 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
     if (f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_REGIST &&
         f->payload_len >= 11) {
         /* AUTHORITATIVE decode recovered from IpcRxNetRegState @0x339818
-         * (libsec-ril.so build 60889dd714394ae0db7c2ecc2bf2740f, aarch64):
-         * register x19 = FMT payload base. The field offsets below are the
-         * verbatim load offsets in that handler:
-         *   payload[6]  = registrant selector (0x03 => data response path)
-         *   payload[7]  = raw network-mode / RAT marker byte (0x36 seen live)
-         *   payload[8]  = NetServiceDomainType selector. It indexes an int map
-         *                 at .rodata 0x14a0b8: idx0->0, idx1->2(CS_PS),
-         *                 idx2->1(PS_ONLY). 0/unknown when never configured.
-         *   payload[9]  = RegState selector (indexes a byte jump-table at
-         *                 0x14a223). RegState enum (NetRegState::IsRegistered /
-         *                 IsDenied @0x2a9cd0/@0x2a9d38):
-         *                   0=NOT_REGISTERED/off, 1=REGISTERED_HOME,
-         *                   2=SEARCHING, 3=DENIED, 4=UNKNOWN,
-         *                   5=REGISTERED_ROAMING, 13=DENIED(alternate).
-         *   payload[10] = reject-cause byte (0 = no reject)
-         *   payload[11..12] = LAC/TAC (LE halfword)
-         *   payload[13..16] = cell id (LE word)
-         *   payload[17] = LtePsVoiceIndication
-         *   payload[20] = secondary service-domain byte
-         *   payload[21] = secondary state byte
+         * (libsec-ril.so build 60889dd714394ae0db7c2ecc2bf2740f, aarch64),
+         * with the pointer base CORRECTED this round.
          *
-         * The PREVIOUS mapping (payload[1]=PS, payload[2]=CS) was WRONG: it
-         * read the query selector echo (bytes 1..2) instead of the real
-         * registration-state vector at payload[8]/[9]. This falsely reported
-         * "PS DENIED / CS REGISTERED" when the CP actually reports data
-         * RegState=0 (NOT registered) and an unconfigured service domain. */
-        uint8_t dom_sel = f->payload[8];
-        uint8_t reg_sel = f->payload[9];
-        uint8_t reject  = f->payload[10];
+         * CRITICAL: every IpcRx* receive handler takes (char* data) = the FULL
+         * FMT frame (7-byte sipc_fmt_hdr + payload), NOT the payload alone.
+         * PROVEN from IpcRxGeneral @0x32b0f0 (GEN echo) which reads
+         * data[7]=echo_main, data[8]=echo_sub (i.e. payload[0], payload[1]),
+         * and confirmed by the kernel struct sipc_fmt_hdr (modem_prj.h)
+         * [u16 len][u8 msg_seq][u8 ack_seq][u8 main][u8 sub][u8 type].
+         *
+         * Therefore in IpcRxNetRegState the payload begins at data+7, and the
+         * field loads are:
+         *   data[6]  = header cmd_type (registrant selector: 0x03 => noti path)
+         *   data[7]  = payload[0] = RAT marker (RAT converter @0x33a028)
+         *   data[8]  = payload[1] = service-domain selector (int map @0x14a0b8)
+         *   data[9]  = payload[2] = RegState raw enum (IDENTITY to RegState)
+         *   data[10] = payload[3] = reject-cause byte
+         *   data[11..12]= payload[4..5] = LAC/TAC (LE halfword)
+         *   data[13..16]= payload[6..9] = cell id (LE word)
+         *   data[17] = payload[10] = LtePsVoiceIndication
+         *   data[18..19]= payload[11..12] (halfword)
+         *   data[20] = payload[13] = secondary service-domain byte
+         *   data[21] = payload[14] = secondary state byte
+         *
+         * RegState enum (NetRegState::IsRegistered @0x2a9ce8 => (r|4)==5 i.e.
+         * r in {1,5}; NetRegState::IsDenied @0x2a9d38 => r in {3,13}):
+         *   0=NOT_REGISTERED/off, 1=REGISTERED_HOME, 2=SEARCHING, 3=DENIED,
+         *   4=UNKNOWN, 5=REGISTERED_ROAMING, 13=DENIED(alternate).
+         *
+         * Service domain int map @0x14a0b8 (LE dwords): selector 1->0,
+         * selector 2->2 (CS_PS), selector 3->1 (PS_ONLY).
+         *
+         * THIS CORRECTS A PRIOR BUG: the previous code read payload[8]/[9]
+         * (cell-id bytes) as domain/RegState and falsely reported
+         * "NOT_REGISTERED(0)" + "service domain unconfigured(0)". The round-14
+         * report also mis-read payload[1]/payload[2] as PS/CS. With the correct
+         * offsets the live payload[1]=0x03 => PS_ONLY and payload[2]=0x01 =>
+         * REGISTERED_HOME: PS/data registration is ALREADY SUCCESSFUL. */
+        uint8_t dom_sel = f->payload[1];
+        uint8_t reg_sel = f->payload[2];
+        uint8_t reject  = f->payload[3];
 
         /* NetServiceDomainType map (authoritative int table @0x14a0b8):
          * selector 1 -> 0 (CS_ONLY), 2 -> 2 (CS_PS), 3 -> 1 (PS_ONLY).
@@ -729,10 +741,10 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
                        ? (uint8_t)((dom_sel == 1u) ? 0u : (dom_sel == 2u) ? 2u : 1u)
                        : 0u;
 
-        /* RegState jump-table mapping (byte jump table @0x14a223) collapses to
-         * the Android RegState enum. We record the raw selector and a decoded
-         * enum. Since this is the GetDataRegState response (data selector), the
-         * RegState here is the PS/data registration state. */
+        /* RegState value at payload[2] is the raw RegState enum (identity;
+         * IsRegistered/IsDenied operate on these raw values directly). Since
+         * this is the GetDataRegState response, payload[2] is the PS/data
+         * registration state. */
         uint8_t ps_reg = (reg_sel == 0u) ? 0u :          /* NOT registered */
                          (reg_sel == 1u) ? 1u :          /* REGISTERED_HOME */
                          (reg_sel == 2u) ? 2u :          /* SEARCHING */

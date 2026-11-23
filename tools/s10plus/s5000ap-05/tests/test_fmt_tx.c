@@ -153,8 +153,10 @@ int main(void)
     CHECK(f.buf[7 + 2] == 0x04, "set_lte_attach_profile payload[2] protocol == 0x04");
     CHECK(memcmp(&f.buf[7 + 3], "internet", 8) == 0,
           "set_lte_attach_profile APN placed at payload offset 3");
-    CHECK(f.buf[7 + 168] == 0x01, "set_lte_attach_profile auth flag == 0x01");
-    CHECK(f.buf[7 + 169] == 0x01, "set_lte_attach_profile pco flag == 0x01");
+    CHECK(f.buf[7 + 191] == 0x01, "set_lte_attach_profile auth flag == 0x01 (payload[191])");
+    CHECK(f.buf[7 + 192] == 0x04, "set_lte_attach_profile protocol roaming == 0x04 (payload[192])");
+    CHECK(f.buf[7 + 168] == 0x00, "set_lte_attach_profile payload[168] (password region) zero");
+    CHECK(f.buf[7 + 169] == 0x00, "set_lte_attach_profile payload[169] (password region) zero");
 
     /* attach cid = 5 (GetAttachCid() for LTE model) must serialize correctly. */
     memset(&f, 0, sizeof f);

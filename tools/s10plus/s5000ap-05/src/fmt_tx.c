@@ -231,15 +231,18 @@ bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profi
 /*
  * GPRS LTE attach profile (recovered from IpcTxSetLteAttachProfile @0x320238):
  *   201-byte frame: main=13 sub=20(0x14) type=3; payload=194 bytes.
- *     payload[0]       = flag (3 or 4; csinc on bool enable -> 3 when true)
+ *     payload[0]       = flag (3 or 4; 3=apply live-verified)
  *     payload[1]       = cid (u8, profile/context id)
- *     payload[2]       = protocol wire byte
+ *     payload[2]       = protocol home wire byte
  *     payload[3..103]  = APN (101 bytes, NUL-padded)
- *     payload[104..135]= username (32 bytes)
- *     payload[136..167]= password (32 bytes)
- *     payload[168]     = auth flag (0x00010201 >> ((auth-1)*8))
- *     payload[169]     = pco flag
- *     payload[170..]   = tail halfwords (0)
+ *     payload[104..119]= extra (16 bytes, zero)
+ *     payload[120..123]= int (4 bytes, zero)
+ *     payload[124..126]= reserved (zero)
+ *     payload[127..158]= username (32 bytes)
+ *     payload[159..190]= password (32 bytes)
+ *     payload[191]     = auth flag (0x00010201 >> ((auth-1)*8))
+ *     payload[192]     = protocol roaming wire byte
+ *     payload[193]     = reserved (zero)
  */
 bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
                                    uint8_t auth_code, uint8_t proto, uint8_t cid)
@@ -259,16 +262,44 @@ bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
     p[1] = cid;                  /* profile/context id */
     p[2] = proto_wire_byte(proto);
 
-    /* auth flag at payload[168] (0x00010201 >> ((auth-1)*8)). */
+    /* AUTHORITATIVE layout recovered this round from
+     * IpcProtocol41::IpcTxSetLteAttachProfile @0x320238 (aarch64),
+     * signature (unsigned char flag, char* apn, char* user, char* pass,
+     * DataAuth, DataProtocol home, DataProtocol roaming, PcscfViaPco, ...).
+     *
+     * frame base = sp+0x10; every store offset below was re-derived and is
+     * payload-relative (frame[7+i] == payload[i]):
+     *   payload[0]    = flag (3 = apply; 4 was live-rejected on SM-G975F)
+     *   payload[1]    = cid
+     *   payload[2]    = protocol home wire byte
+     *   payload[3..103]   = APN (101 bytes)
+     *   payload[104..119] = extra (16 bytes; zero for internet APN)
+     *   payload[120..123] = int (4 bytes; zero)
+     *   payload[124..126] = reserved (zero)
+     *   payload[127..158] = username (32 bytes; zero)
+     *   payload[159..190] = password (32 bytes; zero)
+     *   payload[191]  = auth flag (0x00010201 >> ((auth-1)*8))
+     *   payload[192]  = protocol roaming wire byte
+     *   payload[193]  = reserved (zero)
+     *
+     * The PRIOR code placed the auth flag at payload[168] (inside the password
+     * region) and a spurious pco byte at payload[169], and omitted the protocol
+     * roaming byte at payload[192]. That malformed the LTE attach profile, so
+     * the CP attached with a wrong/empty profile and the subsequent
+     * SetPdpContext default-bearer activation failed (GPRS_CALL_STATUS
+     * state=3). */
+    /* APN at payload[3..3+alen]. */
+    memcpy(&p[3], apn, alen);
+
+    /* protocol roaming (payload[192]) = same as home for a single profile. */
+    p[192] = proto_wire_byte(proto);
+
+    /* auth flag at payload[191] (0x00010201 >> ((auth-1)*8)). */
     {
         unsigned idx = (auth_code >= 1u) ? (auth_code - 1u) : 0u;
         uint32_t pat = 0x00010201u;
-        p[168] = (uint8_t)((idx < 4u) ? (pat >> (idx * 8u)) & 0xffu : 0u);
+        p[191] = (uint8_t)((idx < 4u) ? (pat >> (idx * 8u)) & 0xffu : 0u);
     }
-    p[169] = (uint8_t)((~0u) & 1u);  /* pco=0 -> 1 */
-
-    /* APN at payload[3..3+alen]. */
-    memcpy(&p[3], apn, alen);
 
     return true;
 }
