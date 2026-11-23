@@ -82,3 +82,25 @@ RADIO sda16 = 9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7 (
 BOOT  sda8  = 2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74 (UNCHANGED)
 Wi-Fi wlan0 10.20.30.16 UP; ZeroTier 10.11.12.99 UP; USB 10.100.10.1 UP; SSH intact.
 Deployed binary a9506c24… (unchanged from round-19/20 baseline).
+
+## Round-21 additional decisive insight (timing proof)
+
+Live boot-journal timing on the current boot proves the runtime attach-profile
+path CANNOT work, not even with a CP power-cycle:
+
+- radiod starts                    22:47:29
+- PS REGISTERED_HOME first observed 22:47:34  (~5 s after CP ONLINE)
+- DS_SET_LTE_ATTACH (SetLteAttachProfile sub=20) sent 22:48:44 (≈75 s later)
+
+The modem auto-registers to LTE/PS within ~5 s of CP ONLINE, while the data-
+session FSM only reaches the attach-profile command after ~75 s of prerequisite
+commands (service-domain, preferred-net, mobile-data, set-data-profile). Because
+the vendor confirms the initial-attach APN is applied ONLY during initial attach,
+and SetLteAttachProfile does NOT trigger a re-attach on an already-registered
+modem, the runtime command can never be applied in time.
+
+This rules out Round-20 option #3 (CP power-cycle): even a fresh CP boot would
+register in ~5 s, before any userspace attach-profile command could land. The
+remaining resolution is therefore strictly one of:
+  (a) persistent NV/EFS initial-attach APN = "internet" (owner-authorized), or
+  (b) carrier-side data-service provisioning for this SIM/device.
