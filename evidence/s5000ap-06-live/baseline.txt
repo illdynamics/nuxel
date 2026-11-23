@@ -37,3 +37,16 @@ mmcli_L="No modems were found"
 RxFrames=1 RxBytes=76662 TxFrames=0 ParseTruncated=0 ParseErrors=0
 OverflowDrops=0 UnknownCmd=0 RawFrames=39 RawBytes=76637 RfsOps=1
 RfsDestructive=1 RawUnclassified=38 Disconnects=0 Reconnects=0 Timeouts=0
+
+# --- Post-investigation (read-only partition inspection) ---
+# Read-only mount (-o ro,noload) of sda26(vendor) and sda25(system); no write, no flash.
+vendor_partition=sda26 (ext4, PARTLABEL=vendor)
+vendor RIL blobs present:
+  libsec-ril.so libsec-ril-dsds.so libsec_semRil.so libvndsecril-client.so
+  libril.so librilutils.so libreference-ril.so bin/hw/rild
+system_partition=sda25 (ext4, PARTLABEL=system) = leftover Android system image
+  (Halium scaffolding: /lib/systemd/system/rild.service, /etc/init/rild.conf)
+running_rootfs=sda31 (ext4, LABEL=nuxel-beyond2lte)
+missing_on_running_rootfs=rild, cass, bionic linker64, lxc/android container,
+  /dev/socket/rild, ofonod
+read_only_mounts=unmounted cleanly

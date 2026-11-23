@@ -120,3 +120,31 @@ RADIO/vendor via an explicit TWRP pull (no flash), then run Option 1 (isolated
 Bionic RIL + narrow D-Bus bridge) or, alternatively, produce an owner-approved
 redacted FMT vocabulary trace for a clean-room `nuxel-radiod` extension. Until
 then, SMS/voice/IMS remain false and LTE data remains BLOCKED with honest UI.
+
+---
+
+## 8. Post-investigation update: vendor RIL present, runtime absent (read-only mount)
+
+Additional read-only partition inspection (mount `-o ro,noload`, no write, no
+flash) established:
+
+- `sda26` (PARTLABEL=`vendor`, ext4) contains the **exact vendor RIL blobs**:
+  `libsec-ril.so`, `libsec-ril-dsds.so`, `libsec_semRil.so`,
+  `libvndsecril-client.so`, `libril.so`, `librilutils.so`,
+  `libreference-ril.so`, and `bin/hw/rild`.
+- `sda25` (PARTLABEL=`system`, ext4) is the **leftover Android system image**; it
+  retains Halium-style scaffolding (`/lib/systemd/system/rild.service`,
+  `/etc/init/rild.conf`) that references an "Android container" + `/dev/socket/rild`
+  + an oFono RIL driver (`OFONO_RIL_DEVICE`, `_OFONO_RIL_NUM_SIM_SLOTS`).
+- The **running Nuxel rootfs is `sda31`** (LABEL=`nuxel-beyond2lte`); it does NOT
+  contain `rild`, `cass`, a Bionic `linker64`, an LXC/Android container, or
+  `/dev/socket/rild`, and no `ofonod`/`rild` process is present.
+- `cass` (the Samsung RFS/NV server that the CP requires) was **not found** on
+  the running rootfs (the vendor partition carries RIL, but `cass` is normally on
+  the Android `system` or `vendor` `bin/`; it was not located read-only here).
+
+Conclusion: the closed RIL vocabulary is physically available read-only in `sda26`,
+but **driving it requires building the missing Bionic/container + oFono (Halium-
+style) runtime and recovering `cass`**, which is a substantial, separately-reviewed
+project beyond this stage's no-flash scope and cannot be safely completed here.
+The read-only mounts were unmounted cleanly; no write occurred.
