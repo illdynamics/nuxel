@@ -1,0 +1,6 @@
+# build artifacts (never committed)
+/test_sipc5_fmt
+/test_rfs_policy
+/fuzz_driver
+/test_sipc5_fmt_asan
+*.dSYM/

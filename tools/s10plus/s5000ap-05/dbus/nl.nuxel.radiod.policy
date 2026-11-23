@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
+<!--
+  nuxel-radiod polkit policy — caller authorization for the nl.nuxel.Radio1
+  D-Bus interface. Version 1.
+
+  Read-only state queries (properties, GetSignalInfo, GetCapabilities,
+  GetPacketStats, GetSimState) are allowed for the local active / unix-session
+  user. State-CHANGING operations require explicit auth (auth_admin), and are
+  additionally gated in-daemon on the REAL capability existing (a method
+  returning success on an unsupported capability is impossible).
+-->
+<policyconfig>
+  <vendor>Nuxel</vendor>
+  <vendor_url>https://nuxel.invalid/</vendor_url>
+  <icon_name>network-cellular</icon_name>
+
+  <action id="nl.nuxel.radiod.read-state">
+    <description>Read Nuxel radio daemon state</description>
+    <message>Authentication is required to read radio daemon state</message>
+    <defaults>
+      <allow_any>yes</allow_any>
+      <allow_inactive>yes</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+
+  <action id="nl.nuxel.radiod.set-radio">
+    <description>Enable or disable the cellular radio</description>
+    <message>Authentication is required to change the cellular radio state</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+  </action>
+
+  <action id="nl.nuxel.radiod.create-bearer">
+    <description>Create a cellular data bearer with an APN</description>
+    <message>Authentication is required to create a data bearer</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+  </action>
+
+  <action id="nl.nuxel.radiod.delete-bearer">
+    <description>Delete a cellular data bearer</description>
+    <message>Authentication is required to delete a data bearer</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+  </action>
+</policyconfig>
