@@ -2,7 +2,7 @@
 
 **STATUS: STAGE_04_PHYSICAL_SUCCESS — CP ONLINE (kernel-confirmed, stable).**
 **TRIAL_ID:** `S5000AP-04-EFUJ2-20261123T112639Z`
-**Branch/HEAD:** `cs/mob` @ `e2c97bfd…` (final fix commit; see §9)
+**Branch/HEAD:** `cs/mob` @ `bea25f0e…` (final Stage-04 commit; see §9)
 **Round window:** `2026-11-23` (current) — the Stage-04 FINAL EXECUTION DIRECTIVE run.
 **Handset actions (authorized physical trial):** the approved, exact EFUJ2 read-only CP
 boot was executed ONCE against the normally-booted Nuxel. `/dev/sda16` (RADIO/EFUJ2) was
@@ -21,7 +21,7 @@ Classification: `PROVED_LIVE` (CP ONLINE corroborated by kernel sysfs `modem_sta
 **STATUS: STAGE_04_PHYSICAL_SUCCESS.** The controlled physical trial executed, and the
 kernel reports stable `STATE_ONLINE(4)` (repeated ≥2×, corroborated independently).
 
-**Final Git commit:** `e2c97bfd…` (the stage-04 fix commit; see §9 — full hash in the commit).
+**Final Git commit:** `bea25f0e…` (`cs/mob`; full hash `bea25f0ed3baaf32e3d5a4000ea798b22e9d7c33` or latest).
 **Exact executable SHA-256:** `86de42aa9c0657791f6fe67d443d0231c51162e01880cd85708e27220a679402`
   (`tools/s10plus/s5000ap-uapi/nuxel-cpbootd.aarch64.hw`; reproducible — rebuild verified byte-identical).
 **Exact firmware SHA-256 (read-only source):** `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7`
@@ -34,11 +34,11 @@ kernel reports stable `STATE_ONLINE(4)` (repeated ≥2×, corroborated independe
 
 | Field | Value |
 |---|---|
-| Final Git commit | `e2c97bfd…` (fix commit) + `5fc1a057…` (DeviceAllow) on `cs/mob` |
+| Final Git commit | `bea25f0e…` (result) + `e2c97bfd…` (fix) + `5fc1a057…` (DeviceAllow) on `cs/mob` |
 | Exact executable SHA-256 | `86de42aa9c0657791f6fe67d443d0231c51162e01880cd85708e27220a679402` (`nuxel-cpbootd.aarch64.hw`, reproducible) |
 | Exact firmware SHA-256 | `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7` (EFUJ2 `/dev/sda16`, read-only source) |
 | Exact immutable manifest SHA-256 | `13a5cf3d3c3367b8fb39049123ebc3f6236f2b717cdb559cb00bb819862de61d` (`S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`) |
-| Software fixes | `d8d772c4`→`e2c97bfd`: (1) parse_itoc block-device size via BLKGETSIZE64; (2) systemd DeviceAllow /dev/sda16 r; (3) source-faithful RE_INIT ret==11 EAGAIN normalization (matches BootDumpModap::std_security_req). |
+| Software fixes | `d8d772c4`→`bea25f0e`: (1) parse_itoc block-device size via BLKGETSIZE64; (2) systemd DeviceAllow /dev/sda16 r; (3) source-faithful RE_INIT ret==11 EAGAIN normalization (matches BootDumpModap::std_security_req). |
 | Test results | 31/31 UAPI pass; 22/22 firmware identity pass; reproducible build; on-device mock `--really-boot --mock --firmware /dev/sda16` → online (all 12 stages); real `--really-boot` → `{"verdict":"online","backend":"real"}`. |
 | Deployment result | DEPLOYED (`services/nuxel-modem`): `nuxel-cp-status.service` enabled (read-only); `nuxel-cpbootd.service` static (physical, never auto-enabled). |
 | Owner approval reference | `reports/S5000AP-04-OWNER-APPROVAL.md` — TRIAL_ID `S5000AP-04-EFUJ2-20261123T112639Z`. |
