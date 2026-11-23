@@ -165,29 +165,39 @@ bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
     size_t alen = strlen(apn);
     if (alen > 31u) return false;   /* APN field is 32 bytes */
 
-    /* AUTHORITATIVE layout (IpcTxSetPdpContext @0x31f6e0, 112-byte frame,
-     * main=13 sub=4 type=3, payload=105 bytes). Verified this round:
-     *   payload[0]     = protocol wire byte (proto_wire_byte)
-     *   payload[1]     = pdp_type = 3 (AccessNetworkType EUTRAN/LTE; verified via
-     *                    DataCallSetup::ToAccessNetworkType(RAT14)=3 table @0x14708c)
-     *   payload[2..5]  = flags word (0x11 = APN present | 0x10 activate)
-     *   payload[6..37] = APN (32 bytes NUL-padded)
-     *   payload[38..69] = username (32 bytes, zero)
-     *   payload[70..101]= password (32 bytes, zero)
-     *   payload[102]   = auth flag (0x00010201 >> ((auth-1)*8))
-     *   payload[103]   = reserved (0)
-     *   payload[104]   = protocol wire byte (2nd copy)
-     * The `cid` parameter is the PDP context/profile id; the vendor carries it
-     * in the transaction (not in the fixed payload), so it is advisory here. */
+    /* AUTHORITATIVE layout recovered from IpcTxSetPdpContext @0x31f6e0
+     * (libsec-ril.so build 60889dd714394ae0db7c2ecc2bf2740f). The mangled
+     * prototype is IpcTxSetPdpContext(unsigned char cid, int pdp_type,
+     * char const* apn, char const* password, int auth, int proto) and the
+     * stack writes are verbatim (frame base = sp, payload base = sp+7):
+     *
+     *   payload[0]      = pdp_type selector byte (AccessNetworkType wire code;
+     *                     EUTRAN/LTE => 3). Set by a jump-table on arg2.
+     *   payload[1]      = cid (unsigned char, frame offset 8 == payload[0]+1)
+     *   payload[2..5]   = flags word (LE): bit0 = APN present, bit4 = ACTIVATE.
+     *                     The vendor ORs 0x01 (APN) and 0x10 (activate) when
+     *                     the activation state requests it, yielding 0x11.
+     *   payload[6..37]  = APN (32 bytes NUL-padded)
+     *   payload[38..69] = password (32 bytes)   [the 2nd char* is password]
+     *   payload[70..101]= (username/reserved)    [zero for internet APN]
+     *   payload[102]    = auth flag (0x00010201 >> ((auth-1)*8))
+     *   payload[103]    = reserved (0)
+     *   payload[104]    = protocol wire byte (2nd copy)
+     *
+     * NOTE: the PRIOR layout (payload[0]=protocol, payload[1]=pdp_type, and
+     * cid being dropped) was WRONG. The CP therefore rejected the ACTIVATE,
+     * which is exactly the live-observed GPRS_CALL_STATUS call_state=3 /
+     * pdp_state=0. */
     uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 4u /*GPRS_PDP_CONTEXT*/,
                               FMT_TX_TYPE_NOTIFICATION, 105u);
     if (!p) return false;
     memset(p, 0, 105u);
 
-    p[0] = proto_wire_byte(proto);          /* protocol wire byte */
-    p[1] = 3u;                              /* pdp_type = 3 (EUTRAN/LTE) */
+    p[0] = FMT_TX_PDP_TYPE_LTE;             /* payload[0] = pdp_type (EUTRAN=3) */
+    p[1] = cid;                             /* payload[1] = cid */
 
-    p[2] = 0x11;                            /* flags: APN present + activate */
+    /* flags word (LE): APN present (bit0) | ACTIVATE (bit4) = 0x11 */
+    p[2] = 0x11;
     p[3] = 0x00;
     p[4] = 0x00;
     p[5] = 0x00;
@@ -201,7 +211,6 @@ bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
     }
     p[103] = 0u;
     p[104] = proto_wire_byte(proto);        /* protocol 2nd copy */
-    (void)cid;
 
     return true;
 }
@@ -244,7 +253,9 @@ bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
     if (!p) return false;
     memset(p, 0, 194u);
 
-    p[0] = 3u;                   /* bool enable=true => csinc(3,0,ne) = 3 */
+    /* payload[0] flag value 3 was LIVE-VERIFIED accepted by this CP
+     * (gen result 0), whereas 4 was rejected (gen result 1). Keep 3. */
+    p[0] = 3u;                   /* live-verified apply flag for SM-G975F */
     p[1] = cid;                  /* profile/context id */
     p[2] = proto_wire_byte(proto);
 

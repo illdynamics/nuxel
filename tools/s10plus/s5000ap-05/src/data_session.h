@@ -35,6 +35,7 @@ enum ds_phase {
     DS_DEFINE_PDP,         /* define PDP context w/ APN */
     DS_ALWAYS_ON_PDN,      /* always-on PDN profile */
     DS_PS_ATTACH,          /* GPRS PS attach */
+    DS_PS_REGIST_VERIFY,   /* re-query PS registration; gate data call on attach */
     DS_DATA_CALL,          /* activate PDP context */
     DS_GET_PDP_LIST,       /* query PDP context list (fetch IP config) */
     DS_WAIT_IP,            /* wait for rmnet + IP config */
@@ -65,11 +66,20 @@ struct data_session_ctx {
      * 0=off,1=registered,2=searching,3=denied,4=unknown,5=roaming. */
     uint8_t        last_cs_reg_state;
     uint8_t        last_ps_reg_state;
+    uint8_t        last_reject_cause;   /* NET_REGIST payload[10] reject byte */
     bool           net_regist_valid;
     bool           gen_result_valid;   /* a GEN result has been correlated */
     bool           gprs_call_state_valid;
     bool           gprs_pdp_state_valid;
 };
+
+/* Authoritative LTE attach CID recovered from GetAttachCid() @0x1e4500 in
+ * libsec-ril.so (build 60889dd714394ae0db7c2ecc2bf2740f). For the standard
+ * LTE model type (SM-G975F/beyond2lte, not model-type 1) this returns 5. The
+ * vendor uses this as the PDP context / LTE-attach-profile CID, which is
+ * DISTINCT from the DataProfile default id (1, via ConvertProfileId). Using
+ * profile_id==1 as the attach CID is why the PS attach never completed. */
+#define DS_ATTACH_CID 5u
 
 /* Gen echo result codes recovered live + source-backed (vendor IpcRxGeneral):
  * 0 == success; non-zero == rejection/failure. We deliberately do NOT map a

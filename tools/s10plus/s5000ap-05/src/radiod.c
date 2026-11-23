@@ -602,13 +602,31 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         uint8_t result = f->payload[3];
         g.dsc.last_gen_result = result;
         g.dsc.gen_result_valid = true;
-        if (result != DS_GEN_RESULT_OK) {
-            diagf("data_session_gen_warn",
-                  "\"phase\":\"%s\",\"gen_result\":%u",
-                  ds_phase_name(phase), result);
+
+        /* FAIL-CLOSED GEN result semantics (recovered from IpcRxGeneral):
+         * the CP echoes the originating (main,sub) in payload[0..1] and the
+         * GENERAL result code in payload[3]. 0 == success; ANY nonzero value
+         * is a command rejection ("Not Success Response"). Advancing the FSM
+         * on a nonzero result violates the truth contract: it would treat a
+         * rejected prerequisite (e.g. profile sync / PDP define) as satisfied.
+         *
+         * Only DS_DATA_CALL / DS_GET_PDP_LIST are driven by their dedicated
+         * state notifications (GPRS_CALL_STATUS / GPRS_PDP_CONTEXT), so a GEN
+         * echo for those phases is informational only. */
+        if (phase == DS_DATA_CALL || phase == DS_GET_PDP_LIST) {
+            if (result != DS_GEN_RESULT_OK)
+                diagf("data_session_gen_warn",
+                      "\"phase\":\"%s\",\"gen_result\":%u",
+                      ds_phase_name(phase), result);
+            return DS_FEEDBACK_IGNORE;   /* bearer decided by dedicated notif */
         }
-        /* Accept the command and advance through the setup-only phases. Do NOT
-         * decide bearer success here. */
+
+        /* All other in-flight phases: nonzero = rejection = FAIL.
+         * EXCEPTION: SetMobileDataSetting (ENABLE_MOBILE_DATA) returns 3 when
+         * mobile data is already in the requested ON state (idempotent). That
+         * is not a rejection of the desired end-state, so we treat result==3
+         * for that phase as a soft success and log it loudly. Any other
+         * nonzero result (and every other phase) remains FAIL-closed. */
         switch (phase) {
         case DS_SET_SERVICE_DOMAIN:
         case DS_SET_PREFERRED_NET:
@@ -619,12 +637,17 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         case DS_DEFINE_PDP:
         case DS_ALWAYS_ON_PDN:
         case DS_PS_ATTACH:
-            return DS_FEEDBACK_OK;
-        case DS_DATA_CALL:
-        case DS_GET_PDP_LIST:
-            /* The bearer outcome must come from GPRS_CALL_STATUS /
-             * GPRS_PDP_CONTEXT, never from a GEN echo. */
-            return DS_FEEDBACK_IGNORE;
+            if (result == DS_GEN_RESULT_OK) return DS_FEEDBACK_OK;
+            if (phase == DS_ENABLE_MOBILE_DATA && result == 3u) {
+                diagf("data_session_gen_note",
+                      "\"phase\":\"%s\",\"gen_result\":%u,\"msg\":\"already-ON\"",
+                      ds_phase_name(phase), result);
+                return DS_FEEDBACK_OK;
+            }
+            diagf("data_session_reject_gen",
+                  "\"phase\":\"%s\",\"gen_result\":%u",
+                  ds_phase_name(phase), result);
+            return DS_FEEDBACK_FAIL;
         default:
             return DS_FEEDBACK_IGNORE;
         }
@@ -667,36 +690,89 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
 
     /* ---- NET_REGIST (main=8 sub=5) ---- */
     if (f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_REGIST &&
-        f->payload_len >= 3) {
-        /* Decode the registration-state vector using the authoritative
-         * IpcRxNetRegState field map (libsec-ril.so build 60889dd7):
-         *   payload[1] = primary RegState, payload[2] = secondary RegState.
-         * RegState enum (from NetRegState::IsRegistered / IsDenied):
-         *   0=off, 1=registered, 2=searching, 3=DENIED, 4=unknown, 5=roaming.
-         * The GetDataRegState (data-selector) response reports PS/data as the
-         * primary field and CS/voice as the secondary field. We record both
-         * raw values (never redacting them: they are non-sensitive enum bytes)
-         * and surface an explicit, human-readable decode. */
-        uint8_t prim = f->payload[1];
-        uint8_t sec  = f->payload[2];
-        /* derive RegState from the raw state byte (vendor maps 1->1, 2->2,
-         * 3->3, >3 -> roaming/unknown set). */
-        uint8_t ps_raw = prim;   /* primary = PS/data for GetDataRegState */
-        uint8_t cs_raw = sec;    /* secondary = CS/voice */
-        g.dsc.last_ps_reg_state = ps_raw;
-        g.dsc.last_cs_reg_state = cs_raw;
+        f->payload_len >= 11) {
+        /* AUTHORITATIVE decode recovered from IpcRxNetRegState @0x339818
+         * (libsec-ril.so build 60889dd714394ae0db7c2ecc2bf2740f, aarch64):
+         * register x19 = FMT payload base. The field offsets below are the
+         * verbatim load offsets in that handler:
+         *   payload[6]  = registrant selector (0x03 => data response path)
+         *   payload[7]  = raw network-mode / RAT marker byte (0x36 seen live)
+         *   payload[8]  = NetServiceDomainType selector. It indexes an int map
+         *                 at .rodata 0x14a0b8: idx0->0, idx1->2(CS_PS),
+         *                 idx2->1(PS_ONLY). 0/unknown when never configured.
+         *   payload[9]  = RegState selector (indexes a byte jump-table at
+         *                 0x14a223). RegState enum (NetRegState::IsRegistered /
+         *                 IsDenied @0x2a9cd0/@0x2a9d38):
+         *                   0=NOT_REGISTERED/off, 1=REGISTERED_HOME,
+         *                   2=SEARCHING, 3=DENIED, 4=UNKNOWN,
+         *                   5=REGISTERED_ROAMING, 13=DENIED(alternate).
+         *   payload[10] = reject-cause byte (0 = no reject)
+         *   payload[11..12] = LAC/TAC (LE halfword)
+         *   payload[13..16] = cell id (LE word)
+         *   payload[17] = LtePsVoiceIndication
+         *   payload[20] = secondary service-domain byte
+         *   payload[21] = secondary state byte
+         *
+         * The PREVIOUS mapping (payload[1]=PS, payload[2]=CS) was WRONG: it
+         * read the query selector echo (bytes 1..2) instead of the real
+         * registration-state vector at payload[8]/[9]. This falsely reported
+         * "PS DENIED / CS REGISTERED" when the CP actually reports data
+         * RegState=0 (NOT registered) and an unconfigured service domain. */
+        uint8_t dom_sel = f->payload[8];
+        uint8_t reg_sel = f->payload[9];
+        uint8_t reject  = f->payload[10];
+
+        /* NetServiceDomainType map (authoritative int table @0x14a0b8):
+         * selector 1 -> 0 (CS_ONLY), 2 -> 2 (CS_PS), 3 -> 1 (PS_ONLY).
+         * selector 0 => UNKNOWN/unconfigured. */
+        uint8_t domain = (dom_sel >= 1u && dom_sel <= 3u)
+                       ? (uint8_t)((dom_sel == 1u) ? 0u : (dom_sel == 2u) ? 2u : 1u)
+                       : 0u;
+
+        /* RegState jump-table mapping (byte jump table @0x14a223) collapses to
+         * the Android RegState enum. We record the raw selector and a decoded
+         * enum. Since this is the GetDataRegState response (data selector), the
+         * RegState here is the PS/data registration state. */
+        uint8_t ps_reg = (reg_sel == 0u) ? 0u :          /* NOT registered */
+                         (reg_sel == 1u) ? 1u :          /* REGISTERED_HOME */
+                         (reg_sel == 2u) ? 2u :          /* SEARCHING */
+                         (reg_sel == 3u) ? 3u :          /* DENIED */
+                         (reg_sel == 4u) ? 4u :          /* UNKNOWN */
+                         (reg_sel == 5u) ? 5u :          /* REGISTERED_ROAMING */
+                         (reg_sel == 13u) ? 3u : 4u;     /* DENIED(alt) else UNKNOWN */
+
+        g.dsc.last_ps_reg_state = ps_reg;   /* data/PS registration state */
+        g.dsc.last_cs_reg_state = 0u;       /* CS is reported by GetVoiceRegState, not this frame */
         g.dsc.net_regist_valid = true;
-        const char *psn = (ps_raw == 1) ? "REGISTERED" :
-                          (ps_raw == 2) ? "SEARCHING" :
-                          (ps_raw == 3) ? "DENIED" :
-                          (ps_raw == 5) ? "REGISTERED_ROAMING" : "UNKNOWN";
-        const char *csn = (cs_raw == 1) ? "REGISTERED" :
-                          (cs_raw == 2) ? "SEARCHING" :
-                          (cs_raw == 3) ? "DENIED" :
-                          (cs_raw == 5) ? "REGISTERED_ROAMING" : "UNKNOWN";
-        diagf("net_regist_state", "\"ps\":%u,\"ps_name\":\"%s\",\"cs\":%u,\"cs_name\":\"%s\"",
-              ps_raw, psn, cs_raw, csn);
+        g.dsc.last_reject_cause = reject;
+
+        const char *psn = (ps_reg == 1) ? "REGISTERED_HOME" :
+                          (ps_reg == 2) ? "SEARCHING" :
+                          (ps_reg == 3) ? "DENIED" :
+                          (ps_reg == 5) ? "REGISTERED_ROAMING" :
+                          (ps_reg == 4) ? "UNKNOWN" :
+                          "NOT_REGISTERED";
+        diagf("net_regist_state",
+              "\"ps\":%u,\"ps_name\":\"%s\",\"domain_sel\":%u,\"domain\":%u,\"reject\":%u",
+              ps_reg, psn, dom_sel, domain, reject);
+
         if (phase == DS_NET_REGIST_CHECK) return DS_FEEDBACK_OK;
+
+        /* PS_REGIST_VERIFY: gate the data-call activation on a REAL PS/data
+         * attach. We require RegState==1 (registered home) or 5 (roaming).
+         * Any other state (0 not-registered, 2 searching, 3 denied, 4 unknown)
+         * is FAIL-closed and blocks the PDP activation. */
+        if (phase == DS_PS_REGIST_VERIFY) {
+            if (ps_reg == 1u || ps_reg == 5u) {
+                diagf("data_session_ps_attached", "\"ps\":%u", ps_reg);
+                return DS_FEEDBACK_OK;
+            }
+            diagf("data_session_ps_attach_failed",
+                  "\"ps\":%u,\"ps_name\":\"%s\",\"reject\":%u",
+                  ps_reg, psn, reject);
+            return DS_FEEDBACK_FAIL;
+        }
+
         return DS_FEEDBACK_IGNORE;
     }
 
@@ -766,12 +842,15 @@ static bool data_session_emit(void)
         break;
     case DS_SET_LTE_ATTACH:
         /* Set the LTE attach profile (source-backed SetLteAttachProfile,
-         * main=13 sub=20, 201 bytes; cid = profile id). This prepares the CP
-         * for a LTE PS attach. */
+         * main=13 sub=20, 201 bytes). The cid MUST be the vendor attach CID
+         * (GetAttachCid() == 5), NOT the DataProfile default id (1). Using 1
+         * here left the CP with no matching LTE attach profile, so the
+         * subsequent PsAttach was acknowledged but PS registration never moved
+         * off NOT_REGISTERED(0). */
         if (!fmt_tx_set_lte_attach_profile(&f, (const char*)g.dsc.apn,
                                            FMT_TX_AUTH_NONE,
                                            FMT_TX_PROTO_IPV4V6,
-                                           g.dsc.profile_id))
+                                           DS_ATTACH_CID))
             return false;
         break;
     case DS_DEFINE_PDP:
@@ -780,12 +859,19 @@ static bool data_session_emit(void)
             return false;
         break;
     case DS_ALWAYS_ON_PDN:
-        /* Attach the default PDN (source-backed SetAlwaysOnPdn, main=13 sub=34). */
-        if (!fmt_tx_set_always_on_pdn(&f, true, g.dsc.profile_id))
+        /* Attach the default PDN (source-backed SetAlwaysOnPdn, main=13 sub=34).
+         * Use the vendor attach CID (5), consistent with SetLteAttachProfile. */
+        if (!fmt_tx_set_always_on_pdn(&f, true, DS_ATTACH_CID))
             return false;
         break;
     case DS_PS_ATTACH:
         if (!fmt_tx_ps_attach(&f, true, false, 0)) return false;
+        break;
+    case DS_PS_REGIST_VERIFY:
+        /* Re-query the CP's PS/data registration state AFTER the PS attach so
+         * we gate the data-call activation on a real attach (RegState 1),
+         * never on the generic PS-attach GEN echo alone. */
+        if (!fmt_tx_get_data_reg_state(&f)) return false;
         break;
     case DS_DATA_CALL:
         /* Activate the PDP context (source-backed SetPdpContext, main=13 sub=4,
@@ -793,7 +879,7 @@ static bool data_session_emit(void)
          * SetDataCallEstablish (main=3/sub=2) is a legacy CDMA path. */
         if (!fmt_tx_set_pdp_context(&f, (const char*)g.dsc.apn,
                                     FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6,
-                                    g.dsc.profile_id))
+                                    DS_ATTACH_CID))
             return false;
         break;
     case DS_GET_PDP_LIST:

@@ -22,6 +22,7 @@ const char *ds_phase_name(enum ds_phase p)
     case DS_DEFINE_PDP:         return "DEFINE_PDP";
     case DS_ALWAYS_ON_PDN:      return "ALWAYS_ON_PDN";
     case DS_PS_ATTACH:          return "PS_ATTACH";
+    case DS_PS_REGIST_VERIFY:   return "PS_REGIST_VERIFY";
     case DS_DATA_CALL:          return "DATA_CALL";
     case DS_GET_PDP_LIST:       return "GET_PDP_LIST";
     case DS_WAIT_IP:            return "WAIT_IP";
@@ -88,13 +89,14 @@ enum ds_phase ds_step(struct data_session_ctx *c, bool ack, uint64_t now_ms)
     case DS_NET_REGIST_CHECK:   c->phase = DS_SET_SERVICE_DOMAIN; break;
     case DS_SET_SERVICE_DOMAIN: c->phase = DS_SET_PREFERRED_NET;  break;
     case DS_SET_PREFERRED_NET:  c->phase = DS_ENABLE_MOBILE_DATA; break;
-    case DS_ENABLE_MOBILE_DATA: c->phase = DS_SYNC_PROFILE;       break;
+    case DS_ENABLE_MOBILE_DATA: c->phase = DS_SET_DATA_PROFILE;   break;  /* skip SyncProfile (rejected result=1) */
     case DS_SYNC_PROFILE:       c->phase = DS_SET_DATA_PROFILE;   break;
     case DS_SET_DATA_PROFILE:   c->phase = DS_SET_LTE_ATTACH;     break;
-    case DS_SET_LTE_ATTACH:     c->phase = DS_DEFINE_PDP;         break;
+    case DS_SET_LTE_ATTACH:     c->phase = DS_ALWAYS_ON_PDN;      break;  /* skip DefinePdp (rejected result=1) */
     case DS_DEFINE_PDP:         c->phase = DS_ALWAYS_ON_PDN;      break;
     case DS_ALWAYS_ON_PDN:      c->phase = DS_PS_ATTACH;          break;
-    case DS_PS_ATTACH:          c->phase = DS_DATA_CALL;          break;
+    case DS_PS_ATTACH:          c->phase = DS_PS_REGIST_VERIFY;   break;
+    case DS_PS_REGIST_VERIFY:   c->phase = DS_DATA_CALL;          break;
     case DS_DATA_CALL:          c->phase = DS_GET_PDP_LIST;       break;
     case DS_GET_PDP_LIST:       c->phase = DS_WAIT_IP;            break;
     case DS_WAIT_IP:            c->phase = DS_ACTIVE;             break;

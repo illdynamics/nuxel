@@ -156,10 +156,18 @@ int main(void)
     CHECK(f.buf[7 + 168] == 0x01, "set_lte_attach_profile auth flag == 0x01");
     CHECK(f.buf[7 + 169] == 0x01, "set_lte_attach_profile pco flag == 0x01");
 
+    /* attach cid = 5 (GetAttachCid() for LTE model) must serialize correctly. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_lte_attach_profile(&f, "internet", FMT_TX_AUTH_NONE,
+                                        FMT_TX_PROTO_IPV4V6, 5),
+          "set_lte_attach_profile builds with attach cid=5");
+    CHECK(f.buf[7 + 1] == 0x05, "set_lte_attach_profile payload[1] cid == 5");
+
     /* --- SetPdpContext / ACTIVATE (source: IpcTxSetPdpContext @0x31f6e0) ---
      * 112-byte frame: len=112(0x70), main=13, sub=4, type=3.
-     * AUTHORITATIVE: payload[0]=protocol, payload[1]=pdp_type=3(LTE),
-     * flags=0x11 at payload[2], APN at payload[6]. */
+     * AUTHORITATIVE (verbatim stack stores, frame base sp, payload = sp+7):
+     * payload[0]=pdp_type=3(LTE/EUTRAN), payload[1]=cid,
+     * payload[2..5]=flags=0x11 (APN present|ACTIVATE), APN at payload[6]. */
     memset(&f, 0, sizeof f);
     CHECK(fmt_tx_set_pdp_context(&f, "internet", FMT_TX_AUTH_NONE,
                                  FMT_TX_PROTO_IPV4V6, 1),
@@ -168,8 +176,8 @@ int main(void)
     CHECK(f.main_cmd == 13 && f.sub_cmd == 4 && f.cmd_type == 3,
           "set_pdp_context main/sub/type=13/4/3");
     CHECK(f.buf[0] == 0x70 && f.buf[1] == 0x00, "set_pdp_context len field = 112 LE");
-    CHECK(f.buf[7 + 0] == 0x04, "set_pdp_context payload[0] protocol == 0x04 (IPV4V6)");
-    CHECK(f.buf[7 + 1] == 0x03, "set_pdp_context payload[1] pdp_type == 3 (LTE/EUTRAN)");
+    CHECK(f.buf[7 + 0] == 0x03, "set_pdp_context payload[0] pdp_type == 3 (LTE/EUTRAN)");
+    CHECK(f.buf[7 + 1] == 0x01, "set_pdp_context payload[1] cid == 1");
     CHECK(f.buf[7 + 2] == 0x11, "set_pdp_context payload[2] flags == 0x11 (APN+ACTIVATE)");
     CHECK(memcmp(&f.buf[7 + 6], "internet", 8) == 0,
           "set_pdp_context APN placed at payload offset 6");
