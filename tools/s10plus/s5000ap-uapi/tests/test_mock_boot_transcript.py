@@ -22,6 +22,9 @@ BIN = os.path.join(UAPI_DIR, "nuxel-cpbootd.host")
 
 NAME = 12
 MAX_TOC = 16
+# BootDumpModap.cpp: CP_MEMORY_MASK strips the top 2 bits of the absolute load
+# address to yield the XMIT_BOOT relative offset.
+CP_MEMORY_MASK = (0x40000000 - 1)
 
 
 def _entry(name, b_off, m_off, size, crc=0, cnt=0):
@@ -30,15 +33,31 @@ def _entry(name, b_off, m_off, size, crc=0, cnt=0):
 
 
 def build_fixture(tmp, main_size=128, vss_size=64, nv_size=64):
-    """Build a structurally-valid synthetic S5000AP ITOC (NOT real firmware)."""
+    """Build a structurally-valid synthetic S5000AP ITOC matching the REAL
+    verified layout (load addresses == CP DRAM base-relative offsets), NOT a
+    fabricated sequentially-accumulated layout."""
     boot_size = 7744
-    hdr = 6 * 32
-    entries = [_entry("TOC", 0, 0, 0, 0, 6)]
-    entries.append(_entry("BOOT", hdr, 0, boot_size))
-    entries.append(_entry("MAIN", hdr + boot_size, boot_size, main_size))
-    entries.append(_entry("VSS", hdr + boot_size + main_size, boot_size + main_size, vss_size))
-    entries.append(_entry("NV", hdr + boot_size + main_size + vss_size, boot_size + main_size + vss_size, nv_size))
+    # Absolute load addresses mirroring the verified DTK9/EFUJ2 modem.bin ITOC:
+    #   TOC 0x40008000, BOOT 0x40000000, MAIN 0x40010000,
+    #   VSS 0x47800000,  NV 0x45600000, OFFSET 0x00000000
+    LOAD_TOC  = 0x40008000
+    LOAD_BOOT = 0x40000000
+    LOAD_MAIN = 0x40010000
+    LOAD_VSS  = 0x47800000
+    LOAD_NV   = 0x45600000
+
+    hdr = MAX_TOC * 32
+    entries = []
+    # TOC: size=1040 (like the real TOC part), nonzero m_offset, stage count = 5
+    entries.append(_entry("TOC", 0, LOAD_TOC, 1040, 0, 5))
+    entries.append(_entry("BOOT", hdr, LOAD_BOOT, boot_size))
+    entries.append(_entry("MAIN", hdr + boot_size, LOAD_MAIN, main_size))
+    entries.append(_entry("VSS", hdr + boot_size + main_size, LOAD_VSS, vss_size))
+    entries.append(_entry("NV", hdr + boot_size + main_size + vss_size, LOAD_NV, nv_size))
     entries.append(_entry("OFFSET", 0, 0, 0))
+    # Pad remaining slots to a full 16 x 32-byte TOC table (zero-filled).
+    while len(entries) < MAX_TOC:
+        entries.append(_entry("", 0, 0, 0, 0, 0))
     blob = b"".join(entries)
     assert len(blob) == hdr
     blob += b"\xAB" * boot_size + b"\xCD" * main_size + b"\xEF" * vss_size + b"\x01" * nv_size
@@ -49,7 +68,8 @@ def build_fixture(tmp, main_size=128, vss_size=64, nv_size=64):
 
 
 def run(args):
-    return subprocess.run([BIN] + args, capture_output=True, text=True)
+    return subprocess.run([BIN] + args, capture_output=True, text=True,
+                          errors="replace")
 
 
 def test_full_mock_boot_reaches_online():
@@ -149,3 +169,38 @@ def test_dry_run_status_only_no_mutation():
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+def test_itoc_parse_reports_stage_count_and_toc_m_offset():
+    """Regression: parse_itoc must report the stage count (toc[0].toc_count)
+    and the TOC's own masked m_offset, mirroring the real EFUJ2/DTK9 layout."""
+    with tempfile.TemporaryDirectory() as td:
+        fx = build_fixture(td)
+        p = run(["--really-boot", "--mock", "--firmware", fx])
+        assert p.returncode == 0, f"rc={p.returncode}\nstderr={p.stderr}"
+        assert "stages=5" in p.stderr
+        assert "BOOT@1 MAIN@2 VSS@3 NV@4 OFFSET@5" in p.stderr
+        assert "TOC(m_off=0x40008000 size=1040)" in p.stderr
+
+def test_toc_missing_moffset_fails_closed():
+    """Regression: secure verify requires TOC m_offset != 0 (cbd rejects a TOC
+    with no m_offset under CONFIG_SEC_CP_VERIFYING_ALL)."""
+    with tempfile.TemporaryDirectory() as td:
+        p_path = os.path.join(td, "no_toc_moff.itoc")
+        boot_size = 7744
+        hdr = MAX_TOC * 32
+        entries = [_entry("TOC", 0, 0, 1040, 0, 5),  # m_offset == 0 -> reject
+                   _entry("BOOT", hdr, 0x40000000, boot_size),
+                   _entry("MAIN", hdr + boot_size, 0x40010000, 128),
+                   _entry("VSS", hdr + boot_size + 128, 0x47800000, 64),
+                   _entry("NV", hdr + boot_size + 128 + 64, 0x45600000, 64),
+                   _entry("OFFSET", 0, 0, 0)]
+        while len(entries) < MAX_TOC:
+            entries.append(_entry("", 0, 0, 0, 0, 0))
+        blob = b"".join(entries)
+        blob += b"\xAB" * (boot_size + 128 + 64 + 64)
+        with open(p_path, "wb") as f:
+            f.write(blob)
+        r = run(["--really-boot", "--mock", "--firmware", p_path])
+        assert r.returncode != 0
+        assert "no m_offset for TOC verification" in r.stderr

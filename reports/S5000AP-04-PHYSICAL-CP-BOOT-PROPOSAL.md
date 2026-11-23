@@ -41,7 +41,7 @@ exact manifest, in a separate interaction. Do NOT execute.
 
 ## 4. Native executable (hardware-disabled default)
 
-- Binary: `nuxel-cpbootd.aarch64.hw` (SHA-256 `88c0a25ba23ac7166dc54042996bb7e005019ca3931ce1ed3de31eac418f7137`).
+- Binary: `nuxel-cpbootd.aarch64.hw` (SHA-256 `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7`).
 - glibc AArch64 (interpreter `/lib/ld-linux-aarch64.so.1`, NEEDED `libc.so.6`).
 - Compile-time gate `NUXEL_CPBOOTD_ENABLE_HW=1` (value-aware); runtime `--really-boot`
   + `--manifest-sha256 <immutable manifest>` + exact `/dev/umts_boot0`.

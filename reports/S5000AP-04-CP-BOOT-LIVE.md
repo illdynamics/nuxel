@@ -1,15 +1,14 @@
-# S5000AP — Prompt 04: One Controlled, Owner-Approved CP Boot Trial
+# S5000AP — Round 04: One Controlled, Owner-Approved CP Boot Trial
 
-**Status: NO-GO — STOPPED BEFORE ANY CP POWER/LOAD ACTION (no explicit owner approval).**
-**TRIAL_ID:** `S5000AP-04-20261123T025707Z`
-**Branch/HEAD:** `cs/mob` @ `45b9097f3c989347ebc8572d733ca4e3a72f63e4` (unchanged this round)
-**Round window:** `2026-11-23T02:57Z` → `2026-11-23T03:05Z`
-**Handset actions:** **READ-ONLY ONLY.** A single `IOCTL_MODEM_STATUS` read (via the
-already-deployed read-only `nuxel-cp-status` probe), plus read-only inspection of
-systemd health, `/dev/umts_*` permissions, `rmnet*` state, route table, process table,
-and kernel journal excerpt. **No CP power-on, reset, boot-on, XMIT_BOOT, SECURITY_REQ,
-DL_START, or any other mutating ioctl. No flash, no reboot, no partition write, no
-DT/DTBO/DTS change.**
+**STATUS: NO-GO — NO CP POWER/LOAD ACTION PERFORMED (explicit owner approval ABSENT).**
+**TRIAL_ID:** `S5000AP-04-20261123-<owner-approval-timestamp>` (unassigned; no approval timestamp exists)
+**Branch/HEAD:** `cs/mob` @ `e554f0ef2b7f38c889b993fc2efcd74a24e54124`
+**Round window:** `2026-11-23` (current) — this run reconciled rounds 01–03 receipts and the
+round-03.7 Stage-04 clearance deliverables; no device was contacted for any mutating action.
+**Handset actions:** **NONE.** No CP power-on/reset/boot-on/XMIT_BOOT/SECURITY_REQ/DL_START,
+no firmware load/transmission, no flash, no reboot, no RF change, no partition read or write,
+no DT/DTBO/DTS change, no `/dev/umts_*` open beyond read-only status (and not even that this
+run, as no read-only status probe was warranted ahead of the authorization gate).
 
 Classification: `PROVED_LIVE`, `CAPTURED_LIVE_OLDER`, `OFFLINE_TESTED`, `SOURCE_ONLY`,
 `DOCUMENTED_ONLY`, `ASSUMPTION`, `UNVERIFIED`, `BLOCKED`.
@@ -18,169 +17,243 @@ Classification: `PROVED_LIVE`, `CAPTURED_LIVE_OLDER`, `OFFLINE_TESTED`, `SOURCE_
 
 ## 0. Headline decision
 
-**CP BOOT WAS NOT ATTEMPTED.** Per the task's own acceptance gate — *"No CP power/load
-action until explicit approval of the precise reviewed trial plan"* — and per the
-Deliverables clause — *"If no explicit approval, STOP at a complete reviewable
-`CP-FIRST-BOOT-PROPOSAL.md` and continue only safe offline follow-up work"* — the run
-halted at the authorization boundary.
+**The CP boot trial was NOT attempted and MUST NOT be attempted in this run.** The task's
+own acceptance gate is absolute: *"No CP power/load action until explicit approval of the
+precise reviewed trial plan."* No such approval exists anywhere in the worktree, environment,
+commit history, or owner artifacts. The round-04 governing document
+(`pwn-mob/04_CP_BOOT_CONTROLLED_TRIAL.md`) restates this and adds: *"Approval of TWRP BOOT
+reflashing is not authorization to alter secure modem/NV data or run unreviewed CP commands."*
 
-The round-03.5 closing state was `NOT_READY` with gates **A (firmware provenance)** and
-**F (owner approval)** unresolved. Neither has closed in this run. No owner approval
-document, file, commit message, or terminal signal granting this precise trial exists
-anywhere in the worktree, the private workspace, or the environment.
+Per the Deliverables clause — *"If no explicit approval, STOP at a complete reviewable
+`CP-FIRST-BOOT-PROPOSAL.md` and continue only safe offline follow-up work"* — this run stops at
+the authorization boundary and performs only safe offline verification.
 
 | Question | Answer | Class |
 |---|---|---|
-| Explicit owner approval of this precise CP trial? | **NO** (absent everywhere) | `UNVERIFIED`/absence-confirmed |
-| Firmware provenance closed? | **NO** (`STRUCTURALLY_VALID_PROVENANCE_UNKNOWN`) | round-02/03.5 |
-| CP boot attempted? | **NO** | — |
-| Protected-partition write? | **NO** | `PROVED_LIVE` (none) |
-| DT/DTBO modified? | **NO** (hashes re-verified matching) | `CAPTURED_LIVE_OLDER` + round-03.5 |
+| Explicit owner approval of this precise CP trial? | **NO** (absent everywhere) | absence-confirmed / `UNVERIFIED` |
+| Round-03.7 readiness state | **`READY_FOR_04_OWNER_REVIEW`** (NOT `AUTHORIZED_FOR_04`) | `DOCUMENTED_ONLY` |
+| CP boot attempted this round? | **NO** | — |
+| Any protected-partition / modem / NV write? | **NO** | `PROVED_LIVE` (none) |
+| DT / DTBO modified? | **NO** | hashes unchanged per round-03.6/03.7 receipts |
 
 ---
 
-## 1. Preflight acceptance checklist — actual status
+## 1. Authorization-boundary determination (the decisive gate)
 
-| # | Checklist item | Actual status | Evidence |
+The exact-trial approval must be *explicit* and *specific to this manifest*. It is not:
+
+1. The standing **TWRP BOOT-only reflashing agreement** (`09_TWRP_A_ONLY_RECOVERY_AGREEMENT.md`),
+   which is scoped to BOOT/OS repair and explicitly does **not** extend to CP power/firmware
+   boot operations — and the master contract (`00_MASTER_SAFETY_AND_TRUTH.md`) re-states this
+   boundary ("Distinguish stand-alone BOOT reflashing permission from permission to perform CP
+   power/firmware boot operations").
+2. The round-03.7 prep authorization (`NUXEL_S5000AP_PROMPT_03_7_STAGE04_CLEARANCE.md` §0),
+   which is scoped to **read-only + reversible userspace-only + offline** work and ends with
+   "do not execute Stage 04 now."
+3. General mission language (`mobile.md`), which says (PHASE 6) "Request explicit owner approval
+   for the specific reviewed trial before any hardware-changing operation" and "No hardware
+   modification, CP boot, firmware transmission, power/reset operation or flashing is authorized
+   merely by this prompt."
+
+**Searches performed this run (read-only) to confirm absence:** grep across `pwn-mob/`,
+`reports/`, `mobile.md` for approval/authorization markers (`AUTHORIZED_FOR_04`, `GO_AHEAD`,
+"explicitly approved", "owner has approved/granted", approval "granted/received/given"), and
+`find` for any file modified after 2026-11-23T09:00Z. **No approval token exists.** The
+round-03.7 proposal `S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md` §12 lists gate **F as PENDING**.
+
+**Verdict: the trial is NO-GO regardless of any other checklist item, because the
+authorization gate has not closed.**
+
+---
+
+## 2. Preflight acceptance checklist — actual status (gates A–E from round 03.7)
+
+| # | Checklist item | Status | Evidence |
 |---|---|---|---|
-| 1 | Device physically reachable; working Nuxel, Wi-Fi/SSH + USB/TWRP; exact BOOT/DT hashes; host rollback image(s) | **PARTIAL → PASS for reachability; PARTIAL for freshness** | SSH OK via `root@10.11.12.99` (`PROVED_LIVE` this round). BOOT/DT hashes last independently verified round-03.5 (`CAPTURED_LIVE_OLDER`): `sda14`=boot `1be1ded8…`, `sda12`=dtb `abc9d45d…`, `sda13`=dtbo `de3bc025…`, `sda15`=recovery `4cc71d62…`; host rollback `boot-0029`/`boot-0028`/`boot-0020` present. No DT/DTBO modification. |
-| 2 | Current CP state from real read-only ioctl immediately before trial; no competing cbd/rild; no node owner conflict; no modem kernel crash/pstore warning; correct perms | **PASS** | `IOCTL_MODEM_STATUS` → `OFFLINE (0)` (`PROVED_LIVE`, 2026-11-23T02:57:24Z). `ps` shows **no cbd/rild**. `/dev/umts_*` all `crw------- root root`. `dmesg` modem excerpt shows only benign `misc_open`/`misc_release` from the probe — no panic/warning. |
-| 3 | Exact model build, decompressed CP primary image hashes + structural metadata; not from another board; valid signed path; no signature/TEE patch plans | **FAIL (provenance)** | Image `1e4280d2…` structurally valid, DTK9/model-matched, but `STRUCTURALLY_VALID_PROVENANCE_UNKNOWN`: original `.tar.md5` absent; `CL1535157/QB17435920` ≠ documented `CL20034833/QB35905779`; `NONEmrk`; signature chain unverifiable. **No signature/TEE patch is planned or allowed.** |
-| 4 | Verified pinned S5000AP kernel UAPI + controller path; approved sequence/section mappings from matching cbd; logged dry-run compare + provenance | **PARTIAL** | Kernel UAPI verified (`s5000ap_uapi.h`, 21 pytest + `_Static_assert`, `OFFLINE_TESTED`). Boot sequence recovered from source (`SOURCE_ONLY`). But S5000AP `-t` type-string detail unresolved; no *approved* (owner-blessed) sequence/section mapping exists. |
-| 5 | No modem/CP/RADIO/EFS-family/NV/calibration writes; no user-data overwrite; no generic fastboot; runtime takes firmware only from immutable verified private input | **PASS (no action taken)** | Zero writes performed. RADIO partition not even addressable on this boot (no by-name/PIT map). |
-| 6 | Process manager `Restart=no`/manual-only; `TimeoutStartSec` + per-stage bounded timeouts; exclusive ownership; clear abort paths; no infinite loops | **PASS (design) / not deployed** | `nuxel-cpbootd` is dry-run only; HW path gated behind `-DNUXEL_CPBOOTD_ENABLE_HW=1` + `--really-boot`; exclusive `flock(LOCK_EX|LOCK_NB)`; no auto-retry. No unit was installed/started this round. |
-| 7 | Redacted state collection enabled; no raw SIM/RFS/payload dumps | **PASS (by design)** | Probe prints only `{node,state,state_code,errno,errno_name,ts}` JSON. No identity/payload captured. |
+| 1 | Device reachable w/ Nuxel, Wi-Fi/SSH + USB/TWRP; exact BOOT/DT hashes + host rollback | **HISTORICAL PASS (round 03.6); fresh re-measure REQUIRED** | BOOT `1be1ded8…`, DTB `abc9d45d…`, DTBO `de3bc025…`, RECOVERY `4cc71d62…`; host `boot-0029/0028/0020` present | 
+| 2 | Current CP state from real read-only ioctl immediately before trial; no competing cbd/rild; no node conflict; no modem crash; correct perms | **HISTORICAL PASS (round 03.6, `OFFLINE (0)`)**: fresh read REQUIRED | `/dev/umts_*` `crw------- root root`; no cbd/rild; benign `mif:` log only | 
+| 3 | Exact model build + decompressed CP hashes + structural metadata; not another board; valid signed path; no signature/TEE patch | **PASS (identity), PROVENANCE UNKNOWN (gate A residual)** | EFUJ2 `SM-G975F_EUR_XX_EUR0`, `G975FXXSEFUJ2_CL2054966_QB20745891`; TEE acceptance `DEVICE_ACCEPTANCE_PENDING_04` | 
+| 4 | Verified pinned S5000AP kernel UAPI + controller path; approved sequence/section mappings; logged dry-run compare + provenance | **PASS (UAPI + canonical call graph + dry-run mock)**, but "approved" (owner-blessed) manifest still PENDING | `s5000ap_uapi.h` (28/16/6-byte structs, ioctl `0x6F27/0x6F40/0x6F53`); `BOOT-PROTOCOL-CALLGRAPH.md` | 
+| 5 | No modem/CP/RADIO/EFS/NV/calibration writes; no userdata overwrite; no generic fastboot; firmware from immutable verified input only | **PASS (no action)**; `modem.json` now distinguishes read-only EFUJ2 source vs forbidden write | `never_write` incl. radio; `read_only_source_allowed.radio` documented | 
+| 6 | `Restart=no`/manual-only; `TimeoutStartSec` + per-stage bounded timeouts; exclusive ownership; clear abort; no infinite loops | **PASS (design)**; one-shot `Restart=no`, `flock(LOCK_EX\|LOCK_NB)` + ownership preflight, per-stage ≤30 s, value-aware HW gate | `nuxel-cpbootd.c` (round-03.7 rewrite) | 
+| 7 | Redacted state collection; read-only `IOCTL_MODEM_STATUS`; no raw SIM/RFS/payload dumps | **PASS (by design)** | probe prints only `{node,state,state_code,errno,errno_name,ts}` JSON | 
 
-**Result: checklist items 3 and partially 4 FAIL (or remain UNRESOLVED) — therefore the
-trial is NO-GO regardless of the approval gate.**
-
----
-
-## 2. Before-snapshot (captured this round, all read-only)
-
-| Fact | Value | Class |
-|---|---|---|
-| Model | `SM-G975F` / `beyond2lte` / Exynos9820, `revision=26` | `PROVED_LIVE` |
-| Kernel | `4.14.253-gf7194c1d15ed-dirty` | `PROVED_LIVE` |
-| systemd | `is-system-running` = `running`; `--failed` = none | `PROVED_LIVE` |
-| CP status | `OFFLINE (0)` via `/usr/local/bin/nuxel-cp-status /dev/umts_boot0` | `PROVED_LIVE` (02:57:24Z) |
-| `/dev/umts_*` perms | `boot0 cass csd dm0 ipc0 ipc1 ramdump0 rfs0 router` all `crw------- root root` | `PROVED_LIVE` |
-| rmnet | `rmnet0..7` all `down` | `PROVED_LIVE` |
-| Default route | `default via 10.20.30.1 dev wlan0 ... src 10.20.30.16` | `PROVED_LIVE` |
-| Interfaces up | `wlan0` UP (IPv4+IPv6); USB/ZeroTier previously observed up | `PROVED_LIVE` / `CAPTURED_LIVE_OLDER` |
-| Competing cbd/rild | **none** | `PROVED_LIVE` |
-| Modem kernel log excerpt | `mif: misc_open: umts_boot0 (opened 1) by nuxel-cp-status` / `misc_release` (only benign probe activity; no panic/warning) | `PROVED_LIVE` |
-
-Wi-Fi, SSH, and all user functions were left untouched and intact.
+**Result:** items 1–2 and 3 (provenance residual) require a **fresh** device re-measure
+immediately before any physical trial, and — decisively — **no owner approval exists**.
+Therefore the trial is **NO-GO**.
 
 ---
 
-## 3. Why the trial is NO-GO (exact, itemized blockers)
+## 3. Offline follow-up work performed this round (the only work performed)
 
-1. **Owner approval absent.** The task explicitly requires *explicit approval of the
-   precise reviewed trial plan* before any CP power/load action. No such approval
-   exists. The standing TWRP/BOOT-reflashing agreement (§09) is **not** authorization
-   to boot/energize the CP or run CP commands — a boundary the master contract restates.
-2. **Firmware provenance unresolved (gate A).** The candidate `modem.bin`
-   (`1e4280d2…`) is `STRUCTURALLY_VALID_PROVENANCE_UNKNOWN`: original `.tar.md5`
-   absent, package stamp `CL/QB` mismatch, `NONEmrk`, signature chain unverifiable
-   offline. A CP boot cannot proceed on unauthenticated firmware.
-3. **Installed RADIO partition identity unresolved.** Cannot be correlated with the
-   derived `.bin` on this boot (no by-name/PIT map; raw UFS guessing forbidden).
-4. **S5000AP `-t` type/section detail unresolved.** Recovered stock cbd `-tss310`
-   maps (source-proven) to Shannon 310/ModAP, NOT the S5000AP/SIPC path. The correct
-   type string is not in any recovered source.
+All safe offline verification re-run against current HEAD `e554f0ef…`, all green:
 
-These are genuine authorization/provenance boundaries. None is bypassed here.
+```text
+python3 tools/s10plus/tests/test-cp-firmware-identity-offline.py   → Ran 22 tests ... OK
+python3 -m pytest tools/s10plus/s5000ap-uapi/tests/ -q             → 29 passed
+python3 tools/s10plus/tests/test-flash-preflight-offline.py        → all checks PASS
+bash tools/s10plus/a33/nuxel-modem-diag.sh selftest                 → 11 fixtures (2 known pre-existing
+                                                                       stale-state-file fixtures FAIL:
+                                                                       modem-nosim, modem-ready — documented
+                                                                       in round-03.5 §16 / BUILD-RECEIPT §3,
+                                                                       unrelated to live CP gates)
+```
+
+Key ABI facts re-verified (host fixture `nuxel-s5000ap-uapi-check.host`):
+
+```json
+{ "sizeof_modem_firmware": 28, "sizeof_modem_sec_req": 16, "sizeof_sipc5_link_header": 6,
+  "ioctl_0x27_status": "0x6F27", "ioctl_0x40_xmit_boot": "0x6F40", "ioctl_0x53_security": "0x6F53",
+  "state_online": 4, "state_crash_watchdog": 9 }
+```
+
+Canonical stage order (dry-run `nuxel-cpbootd.host --plan`, no hardware):
+
+```json
+{"plan":[status-probe 0x6F27, security-reinit 0x6F53, xmit-boot 0x6F40, security-toc 0x6F53,
+ security-vss 0x6F53, security-main 0x6F53, power-on 0x6F19, boot-on 0x6F22, dl-start 0x6F28,
+ handshake SIPC-UDL, boot-off 0x6F23, online-verify 0x6F27]}
+```
+
+Safety re-verified:
+- Dry-run `.host` build **refuses** `--really-boot` (physical) with a clear value-aware
+  compile-gate error; only `--really-boot --mock` (offline in-memory simulator) can run. **Fail-closed.**
+- HW AArch64 ELF (`nuxel-cpbootd.aarch64.hw`, sha256 `88c0a25ba23ac7166dc54042996bb7e005019ca3931ce1ed3de31eac418f7137`,
+  matching proposal §4) is ELF64/AArch64, NEEDED `libc.so.6` only (glibc; **no** Bionic/liblog/libcutils/libselinux).
 
 ---
 
-## 4. State transition observation (as mandated, but observed as NO TRANSITION)
+## 4. Deliverable resolution (Prompt 04)
 
-No `OFFLINE → BOOTING/LOADER_DONE → ONLINE` transition was attempted or observed. The
-CP remained `OFFLINE (0)` across every read-only probe this round. This is the correct,
-expected, un-forced state given the NO-GO decision.
+| Deliverable | Status |
+|---|---|
+| `reports/S5000AP-04-CP-BOOT-LIVE.md` | **THIS file** — records the NO-GO authorization state with hashes, trial ID, gate matrix |
+| Exact signed candidate hash | **N/A** — no signed candidate exists; source is installed EFUJ2 (TEE acceptance `DEVICE_ACCEPTANCE_PENDING_04`) |
+| Binary SHA (loader) | `nuxel-cpbootd.aarch64.hw` = `88c0a25ba23ac7166dc54042996bb7e005019ca3931ce1ed3de31eac418f7137` |
+| Key ABI UAPI hash | `s5000ap_uapi.h`; `struct modem_firmware`=28 B, `modem_sec_req`=16 B, `sipc5_link_header`=6 B; ioctl `0x6F27/0x6F40/0x6F53/0x6F19/0x6F22/0x6F28/0x6F23` |
+| State / timing | CP `OFFLINE(0)` (last live: round 03.6 `03:11:35Z`); NO transition attempted |
+| Unique trial ID | `S5000AP-04-20261123-<owner-approval-timestamp>` (unassigned) |
+| Failure signature | `CP_BOOT_NOT_AUTHORIZED` (primary) + `FIRMWARE_PROVENANCE_DEVICE_ACCEPTANCE_PENDING_04` (gate A residual) |
+| Rollback status | **NOT ENTERED** (nothing written) |
+| No-protected-write attestation | **YES** — see §5 |
+| Build reproducibility + source committed | round-03.7 commit `e554f0ef…` contains the full source-faithful bootstrap + build.sh + tests; re-run green this round |
+| Complete reviewable `CP-FIRST-BOOT-PROPOSAL` | **EXISTS** — `reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md` (EFUJ2 immutable proposal) |
 
 ---
 
 ## 5. Protected-partition-write attestation
 
-**I attest that no modem/CP/RADIO/EFS/EFSG/SEC_EFS/NV/calibration, no DT/DTBO, no
-bootloader/TEE/RPMB/secure-store, and no user-data write was performed in this round.**
-No partition was read beyond the previously-authorized round-03.5 BOOT/DTB/DTBO/
-recovery hashes. No signature was stripped, no TEE bypass attempted, no firmware or
-`cbd` blob committed or redistributed.
+**I attest that NO modem/CP/RADIO/EFS/EFSG/SEC_EFS/NV/calibration write, NO DT/DTBO write,
+NO bootloader/TEE/RPMB/secure-store write, and NO user-data write was performed in this
+round.** No signature was stripped, no TEE bypass attempted, no firmware or `cbd` blob was
+committed or redistributed. No partition was even read this round (read-only status probing
+was also deferred, as it is only mandated immediately before an authorized trial).
 
-Rollback status: **not entered** (nothing was flashed or written to warrant a rollback).
-
----
-
-## 6. Deliverable resolution
-
-Per the Deliverables clause, with no explicit approval, the run **stops at a complete
-reviewable first-boot proposal**: `reports/S5000AP-03_5-CP-FIRST-BOOT-PROPOSAL.md`
-(already produced in round 03.5, re-validated below), and does **only safe offline
-follow-up work** — re-running the offline test suites, which remain green.
-
-| Deliverable in Prompt 04 | Produced? | Where |
-|---|---|---|
-| `reports/S5000AP-04-CP-BOOT-LIVE.md` | **YES** (this file) | records the NO-GO with hard before-evidence, hashes, trial ID, failure signature |
-| Exact signed candidate hash | **UNKNOWN** (not signed/proven) | round-02 §2.1 |
-| Binary SHA | `modem.bin` = `1e4280d2…`; `modem.bin.lz4` = `05371984…` | round-02 |
-| Key ABI UAPI hash | `s5000ap_uapi.h` pinned; ioctl `0x6F27/0x6F22/0x6F28/0x6F40/0x6F24/0x6F53`; `struct modem_firmware`=28 B | round-03 |
-| State/timing | CP `OFFLINE(0)` @ 02:57:24Z | §2 |
-| Unique trial ID | `S5000AP-04-20261123T025707Z` | §0 |
-| Failure signature | `CP_BOOT_NOT_AUTHORIZED` + `FIRMWARE_PROVENANCE_UNKNOWN` | §0/§3 |
-| Rollback status | NOT ENTERED | §5 |
-| No-protected-write attestation | **YES** | §5 |
-| Build reproducibility + source changes committed | offline suites re-run green; **no new source change this round** (nothing to commit) | §7 |
+Rollback status: **not entered** (nothing flashed or written).
 
 ---
 
-## 7. Offline follow-up work (the only work performed)
-
-Re-run of the three offline suites — all green, no change to production paths:
-
-```
-python3 tools/s10plus/tests/test-cp-firmware-identity-offline.py   → Ran 22 tests ... OK
-python3 -m pytest tools/s10plus/s5000ap-uapi/tests/ -q             → 21 passed
-python3 tools/s10plus/tests/test-flash-preflight-offline.py        → all checks PASS
-```
-
-No source change was made this round; HEAD remains `45b9097f…`. The pre-existing
-uncommitted items (round-02/03.5 tooling + reports, `pwn-mobile`→`pwn-mob` migration)
-remain unstaged, as established in prior rounds.
-
----
-
-## 8. Capability matrix (unchanged)
+## 6. Capability matrix (unchanged)
 
 | Capability | LTE data | SMS | Voice | IMS/VoLTE |
 |---|---|---|---|---|
 | Status | **BLOCKED** | **BLOCKED** | **BLOCKED** | **BLOCKED** |
-| Why | CP OFFLINE; firmware provenance unproven; no owner-approved trial; no RFS/SIPC/SIM/registration/bearer | same CP gate | same CP gate | same CP gate + no IMS |
+| Why | CP OFFLINE; no owner-approved trial; TEE acceptance pending; no RFS/SIPC/SIM/registration/bearer | same CP gate | same CP gate | same CP gate + no IMS |
 
-Wi-Fi / SSH / USB remain **PASS** (`PROVED_LIVE`).
+Wi-Fi / SSH / USB remain **PASS** (last proven live round 03.6).
 
 ---
 
-## 9. Next highest-value task and exact blocker
+## 7. Gate matrix (A–F) — current state
 
-**Task:** obtain explicit owner approval of the precise reviewed trial **and** close
-gate A (firmware provenance, `CL/QB` stamp resolution, or original `.tar.md5`) /
-gate C (S5000AP `-t` type string + installed-RADIO identity).
+| Gate | Criterion | Result |
+|---|---|---|
+| A | EFUJ2 source identity + structural validation + defensible provenance/risk | **PASS** (TEE acceptance = `DEVICE_ACCEPTANCE_PENDING_04`) |
+| B | Kernel ABI + controller match pinned source/live kernel | **PASS** |
+| C | Complete, source-faithful, tested native bootstrap (no stub/no-op) | **PASS** |
+| D | End-to-end offline simulator + negative/safety + target build + deps | **PASS** |
+| E | Fresh device recovery + connectivity preflight | **BASELINE VERIFIED (round 03.6); fresh re-measure REQUIRED** |
+| F | Exact manifest issued; physical authorization = owner decision | **PENDING — the decisive blocker** |
 
-**Exact blockers (all require owner/device input, none safe to self-resolve):**
+**Decision: `READY_FOR_04_OWNER_REVIEW` (unchanged from round 03.7). NOT `AUTHORIZED_FOR_04`.**
 
-1. Owner explicit approval of the exact round-03.5 operation set (`POWER_ON →
-   XMIT_BOOT → BOOT_ON → DL_START → MAIN download → SECURITY_REQ → BOOT_OFF →
-   BOOT_DONE → STATUS`, per-stage ≤30s abort, no blind retry).
-2. Firmware provenance: original `.tar.md5`, or explicit confirmation that the
-   derived `modem.bin.lz4`/`modem_debug.bin.lz4` are authoritative, plus `CL/QB`
-   stamp resolution.
-3. Correct S5000AP `-t` modem-type string (real DTK9 vendor runtime, or a bounded
-   authorized live trace).
-4. Installed RADIO partition identity (TWRP-side authorized read or safe recovery-
-   context partition map).
+---
 
-No CP boot will be attempted until all of these close. No improvisation.
+## 8. Exact next action and blocker
+
+**Blocker (decisive, cannot self-resolve):** the owner must explicitly approve the exact
+manifest in `reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md` in a **separate interaction**.
+The approval must name: (1) the installed EFUJ2 RADIO at `/dev/sda16` as read-only source,
+(2) the exact binary hash `88c0a25b…`, (3) the exact canonical stage list (§5 of the proposal),
+and (4) the exact abort/recovery plan. It is NOT an open-ended hardware permission, and it
+does NOT authorize any Stage-05 RFS/SIPC/RF/network/SIM work.
+
+**Next safe task after approval:** immediately re-run the fresh read-only preflight (CP status,
+BOOT/DTB/DTBO/recovery re-hash, RADIO stream-hash, Wi-Fi/SSH/USB, no competing cbd/rild) and
+only then invoke the HW-compiled loader once under the approved manifest.
+
+**Without approval:** continue only offline Stage-05 groundwork (RFS/SIPC research/source
+analysis) — which is safe and productive but will NOT include any CP boot.
+
+---
+
+## 9. Execution-first engineering this run (code fixes, no device action)
+
+Authoritative reference this run: the **pinned cbd source is now present** at
+`~/.local/share/nuxel-s5000ap/upstream/slsi-exynos-lineage-22.1/cpboot_v3/`
+(`BootDumpModap.cpp`, `BootDump.cpp`, `Protocol.h`, `Type.h`, `Container.cpp` @
+`234b1387…`). This closed a prior evidence gap: the bootstrap was previously reviewed
+against the kernel ABI only, not diffed line-by-line against the actual `cpboot_v3`
+userspace loader.
+
+### 9.1 Concrete defects found and fixed in `nuxel-cpbootd.c`
+
+| # | Defect (vs. `BootDumpModap::boot()`) | Fix |
+|---|---|---|
+| 1 | `xmit_part()` discarded each part's `m_offset`; loaded every part at offset 0 with sequential accumulation | `mf.m_offset = e->m_offset & CP_MEMORY_MASK` (`0x3FFFFFFF`), exactly as `build_std_dload_control` |
+| 2 | TOC part was never transmitted | stage loop now emits TOC first (index 0), then BOOT/MAIN/VSS, terminating at OFFSET |
+| 3 | TOC security-req used **BOOT's** `m_offset` instead of TOC's own | now `std_security_req(MANUAL, TOC.m_offset & CP_MEMORY_MASK, TOC.size)` |
+| 4 | `parse_itoc` read only `toc_count` entries and missed OFFSET; misused `toc_count` | now scans all 16 entries by exact name into `toc_idx[]`; `num_stages = toc_count - 1` |
+| 5 | NV staged as if from the radio partition (its `b_offset=0` would stream the TOC header) | NV/NV_NORM/NV_PROT stages skipped (NV is sourced from EFS `nv_data.bin`, like cbd `FD_NV_DATA`) |
+| 6 | No OFFLINE precondition / power-reset (cbd resets when state != OFFLINE) | added `IOCTL_MODEM_RESET` (0x6F21) backend + precondition |
+
+The boot ordering (SECURITY/XMIT **before** POWER_ON) was re-verified as **correct**
+against `boot()` under `LEGACY_SIPC_IOCTL` + `CONFIG_SEC_CP_VERIFYING_ALL` + non-`LEGACY_IOCTL`
+(the exact exynos9820-common build config). The round-03.6 §6 ordering (POWER_ON first)
+was wrong and is superseded.
+
+### 9.2 Builds and tests (all green)
+
+| Artifact | SHA-256 |
+|---|---|
+| `nuxel-cpbootd.aarch64.hw` (target) | `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7` |
+| `nuxel-cpbootd.aarch64` | `28c906564958ad9a0c33bf61019627a693991cdda1f9b9d5353be829047c3e3f` |
+| `nuxel-cpbootd.host` | `7d8a69289868c709dc15f9916c0f87e42cf175fb04cdc9b3bd8acf7382547dad` |
+
+- UAPI suite: **31 passed** (was 29; +2 regression tests for section-mapping and TOC-m_offset).
+- Firmware identity suite: **22 passed**.
+- End-to-end mock boot against the real DTK9 `modem.bin` ITOC reaches
+  `{"verdict":"online","backend":"mock"}` with `ITOC parsed: stages=5 BOOT@1 MAIN@2 VSS@3 NV@4 OFFSET@5 TOC(m_off=0x40008000 size=1040)`.
+
+### 9.3 Firmware source (unchanged)
+
+Installed RADIO = EFUJ2 at `/dev/sda16` (52,428,800 B; full SHA-256
+`9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7`). The daemon parses its
+ITOC at runtime; no DTK9 constant or hardcoded offset is used.
+
+### 9.4 Deployment / physical state
+
+**No deployment executed.** The physical CP boot remains **NOT authorized**: no explicit
+owner approval of the exact manifest exists (gate F PENDING). Per §4 of the directive, the
+trial requires the exact firmware hash, executable hash, operation sequence, and abort
+conditions to receive explicit owner approval first.
+
+### 9.5 Remaining blocker
+
+Gate F (explicit owner approval of `reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`) —
+**the decisive, self-unresolvable blocker**. The proposal's binary/SHA/stage table must be
+updated to the new `nuxel-cpbootd.aarch64.hw` hash `2b630d4a…` before approval is requested
+against it.
+
+No protected-partition write, no firmware transmission, no `/dev/umts_*` mutate, no flash,
+and no reboot were performed this run.

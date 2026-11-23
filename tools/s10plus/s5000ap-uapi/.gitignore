@@ -2,3 +2,6 @@
 *.host
 *.aarch64
 *.o
+
+# .hw variants are also build artifacts
+*.hw

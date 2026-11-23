@@ -122,7 +122,14 @@ struct toc_element {
 } __attribute__((packed));
 
 /* ITOC part type indices (Type.h: enum cp_image_toc_type) */
-enum { TOC_TOC = 0, TOC_BOOT, TOC_MAIN, TOC_VSS, TOC_NV, TOC_OFFSET, TOC_MAX };
+enum { TOC_TOC = 0, TOC_BOOT, TOC_MAIN, TOC_VSS, TOC_NV_NORM, TOC_NV_PROT,
+       TOC_NV, TOC_OFFSET, TOC_MAX };
+
+/* BootDumpModap.cpp: CP_MEMORY_MASK masks off the top 2 bits of the absolute
+ * load address (0x4000_0000 / 0x8000_0000 / 0xC000_0000 base) to yield the
+ * offset relative to the CP DRAM base used by IOCTL_MODEM_XMIT_BOOT. */
+#define CP_MEMORY_MASK  (0x40000000u - 1u)
+
 
 /* ---- boot dance enum (canonical stage order) ----------------------------- */
 enum boot_stage {
@@ -163,6 +170,10 @@ struct mock_cp {
     /* firmware window content hash tracking (simulated shmem) */
     uint64_t boot_size;
     uint64_t main_size;
+    /* record of m_offset values streamed via XMIT_BOOT (section mapping proof) */
+    uint32_t first_m_offset;
+    uint32_t last_m_offset;
+    int      xmit_calls;
 };
 
 struct backend {
@@ -180,8 +191,10 @@ struct ctx {
 
     /* parsed ITOC */
     struct toc_element toc[MAX_TOC_INDEX];
-    int toc_count;
-    int boot_idx, main_idx, vss_idx, nv_idx, offset_idx;
+    int toc_count;          /* toc[0].toc_count: total stage count (TOC..NV) */
+    int num_stages;         /* toc_count - 1 (cbd: std_boot.num_stages)       */
+    int start_stage;        /* 0 when first_stage_toc_type == TOC_TOC         */
+    int toc_idx[TOC_MAX];   /* cp_image_toc_type -> TOC element index (-1)    */
 
     long deadline_ms;
     int  really_boot;
@@ -222,10 +235,16 @@ static void stage_result(enum boot_stage s, int rc, long elapsed_ms, const char 
 }
 
 /* ---------------------------------------------------------------------------
- * ITOC parsing (read-only, bounds-checked). Mirrors BootDump::std_boot_parse_toc_img.
- * The FIRST TOC entry must be named "TOC"; toc_count must be sane; entries are
- * located by name. No DTK9 constants anywhere: sizes/offsets come from the
- * parsed EFUJ2 image at runtime only.
+ * ITOC parsing (read-only, bounds-checked). Faithful transcription of
+ * BootDump::std_boot_parse_toc_img + BootDumpModap::prepare_boot_args:
+ *   - read the full 512-byte TOC table (MAX_TOC_INDEX entries),
+ *   - toc[0] must be "TOC"; toc[0].toc_count is the *stage count* (TOC..NV),
+ *     NOT the byte size; cbd only rejects a count > MAX_TOC_INDEX,
+ *   - scan EVERY entry by exact name into toc_idx[cp_image_toc_type],
+ *   - num_stages = toc_count - 1 (cbd), start_stage = TOC stage (TOC_TOC first),
+ *   - "OFFSET" terminates the download stage list,
+ *   - secure-verify also requires TOC to carry a nonzero m_offset.
+ * No DTK9 constants anywhere: sizes/offsets come from the parsed image only.
  * ------------------------------------------------------------------------- */
 static int parse_itoc(struct ctx *c)
 {
@@ -234,7 +253,7 @@ static int parse_itoc(struct ctx *c)
     int i;
 
     memset(c->toc, 0, sizeof(c->toc));
-    c->boot_idx = c->main_idx = c->vss_idx = c->nv_idx = c->offset_idx = -1;
+    for (i = 0; i < TOC_MAX; i++) c->toc_idx[i] = -1;
 
     c->firmware_fd = open(c->firmware_path, O_RDONLY | O_CLOEXEC | O_NOCTTY);
     if (c->firmware_fd < 0) {
@@ -251,38 +270,43 @@ static int parse_itoc(struct ctx *c)
         c->firmware_size = (uint64_t)st.st_size;
     }
 
-    /* read first entry: must be "TOC" */
-    r = read(c->firmware_fd, &c->toc[0], want);
-    if (r != (ssize_t)want) {
-        fprintf(stderr, "error: short TOC read (%zd != %zu)\n", r, want);
+    /* Read the whole 512-byte table in one go (cbd read the full struct). */
+    r = read(c->firmware_fd, &c->toc[0], MAX_TOC_INDEX * want);
+    if (r < (ssize_t)want) {
+        fprintf(stderr, "error: short TOC read (%zd < %zu)\n", r, want);
         return -EFAULT;
     }
-    if (memcmp(c->toc[0].name, "TOC", 3) != 0) {
-        fprintf(stderr, "error: invalid ITOC magic %.16s\n", c->toc[0].name);
+
+    /* The 1st toc should be TOC (cbd: strcmp(toc[0].name, "TOC")). */
+    if (strcmp(c->toc[0].name, "TOC") != 0) {
+        fprintf(stderr, "error: invalid ITOC magic %.12s\n", c->toc[0].name);
         return -EINVAL;
     }
     c->toc_count = c->toc[0].toc_count;
-    if (c->toc_count < 1 || c->toc_count > MAX_TOC_INDEX) {
-        fprintf(stderr, "error: ITOC toc_count %d out of range\n", c->toc_count);
+    if (c->toc_count > MAX_TOC_INDEX) {
+        fprintf(stderr, "error: ITOC stage count %d exceeds MAX_TOC_INDEX\n", c->toc_count);
+        return -EINVAL;
+    }
+    if (c->toc_count == 0) {
+        fprintf(stderr, "error: ITOC stage count is 0\n");
         return -EINVAL;
     }
 
-    /* read remaining entries */
-    for (i = 1; i < c->toc_count; i++) {
-        r = read(c->firmware_fd, &c->toc[i], want);
-        if (r != (ssize_t)want) {
-            fprintf(stderr, "error: short TOC entry %d read\n", i);
-            return -EFAULT;
-        }
-    }
-
-    for (i = 0; i < c->toc_count; i++) {
+    /* Scan every (up to MAX_TOC_INDEX) entry by exact name into toc_idx. */
+    for (i = 0; i < MAX_TOC_INDEX; i++) {
         struct toc_element *e = &c->toc[i];
-        if (!strncmp(e->name, "BOOT", 4)) c->boot_idx = i;
-        else if (!strncmp(e->name, "MAIN", 4)) c->main_idx = i;
-        else if (!strncmp(e->name, "VSS", 3)) c->vss_idx = i;
-        else if (!strncmp(e->name, "NV", 2)) c->nv_idx = i;
-        else if (!strncmp(e->name, "OFFSET", 6)) c->offset_idx = i;
+        if (strcmp(e->name, "TOC") == 0)      c->toc_idx[TOC_TOC] = i;
+        else if (strcmp(e->name, "BOOT") == 0) c->toc_idx[TOC_BOOT] = i;
+        else if (strcmp(e->name, "MAIN") == 0) c->toc_idx[TOC_MAIN] = i;
+        else if (strcmp(e->name, "VSS") == 0)  c->toc_idx[TOC_VSS] = i;
+        else if (strcmp(e->name, "NV_NORM") == 0) c->toc_idx[TOC_NV_NORM] = i;
+        else if (strcmp(e->name, "NV_PROT") == 0) c->toc_idx[TOC_NV_PROT] = i;
+        else if (strcmp(e->name, "NV") == 0)   c->toc_idx[TOC_NV] = i;
+        else if (strcmp(e->name, "OFFSET") == 0) c->toc_idx[TOC_OFFSET] = i;
+        /* Empty name ends the populated region; do not bounds-check trailing
+         * zero-filled slots (they carry b_offset==0,size==0 and are empty). */
+        if (e->name[0] == '\0')
+            continue;
         /* bounds: b_offset + size must fit within firmware_size */
         if ((uint64_t)e->b_offset + (uint64_t)e->size > c->firmware_size) {
             fprintf(stderr, "error: TOC[%d] %s out of bounds (b_off=%u size=%u)\n",
@@ -291,16 +315,30 @@ static int parse_itoc(struct ctx *c)
         }
     }
 
-    if (c->boot_idx < 0 || c->main_idx < 0) {
+    if (c->toc_idx[TOC_BOOT] < 0 || c->toc_idx[TOC_MAIN] < 0) {
         fprintf(stderr, "error: ITOC missing BOOT/MAIN entries\n");
         return -EINVAL;
     }
 
-    fprintf(stderr, "ITOC parsed: count=%d BOOT@%d(%u B) MAIN@%d(%u B) VSS@%d NV@%d OFFSET@%d\n",
+    /* cbd: num_stages = toc_count - 1 (with TOC first); start_stage = TOC stage. */
+    c->num_stages = c->toc_count - 1;
+    c->start_stage = c->toc_idx[TOC_TOC];   /* first_stage_toc_type == TOC_TOC -> 0 */
+
+    /* Secure verify (CONFIG_SEC_CP_VERIFYING_ALL) needs a real TOC m_offset. */
+    {
+        int ti = c->toc_idx[TOC_TOC];
+        if (c->toc[ti].m_offset == 0) {
+            fprintf(stderr, "error: invalid TOC: no m_offset for TOC verification\n");
+            return -EINVAL;
+        }
+    }
+
+    fprintf(stderr, "ITOC parsed: stages=%d BOOT@%d MAIN@%d VSS@%d NV@%d OFFSET@%d "
+            "TOC(m_off=0x%08x size=%u)\n",
             c->toc_count,
-            c->boot_idx, c->toc[c->boot_idx].size,
-            c->main_idx, c->toc[c->main_idx].size,
-            c->vss_idx, c->nv_idx, c->offset_idx);
+            c->toc_idx[TOC_BOOT], c->toc_idx[TOC_MAIN], c->toc_idx[TOC_VSS],
+            c->toc_idx[TOC_NV], c->toc_idx[TOC_OFFSET],
+            c->toc[c->toc_idx[TOC_TOC]].m_offset, c->toc[c->toc_idx[TOC_TOC]].size);
     return 0;
 }
 
@@ -314,6 +352,7 @@ static int parse_itoc(struct ctx *c)
 #if HW_ENABLED
 static int real_status(struct backend *be)  { return ioctl(be->fd, IOCTL_MODEM_STATUS); }
 static int real_on(struct backend *be)      { return ioctl(be->fd, IOCTL_MODEM_ON); }
+static int real_reset(struct backend *be)   { return ioctl(be->fd, IOCTL_MODEM_RESET); }
 static int real_boot_on(struct backend *be) { return ioctl(be->fd, IOCTL_MODEM_BOOT_ON); }
 static int real_dl_start(struct backend *be){ return ioctl(be->fd, IOCTL_MODEM_DL_START); }
 static int real_boot_off(struct backend *be){ return ioctl(be->fd, IOCTL_MODEM_BOOT_OFF); }
@@ -359,6 +398,9 @@ static int real_udl_req_resp(struct backend *be, uint32_t req, uint32_t exp)
 /* ---- mock backend (offline deterministic fake CP) ------------------------ */
 static int mock_status(struct backend *be) { return be->mock.state; }
 static int mock_on(struct backend *be)      { be->mock.powered = 1; be->mock.state = STATE_OFFLINE; return 0; }
+static int mock_reset(struct backend *be)    { be->mock.powered = 0; be->mock.boot_on = 0;
+    be->mock.dl_start = 0; be->mock.handshake_done = 0; be->mock.boot_off = 0;
+    be->mock.security_done = 0; be->mock.state = STATE_OFFLINE; return 0; }
 static int mock_boot_on(struct backend *be)
 {
     if (!be->mock.powered) return -EACCES;
@@ -374,8 +416,11 @@ static int mock_dl_start(struct backend *be)
 }
 static int mock_xmit_boot(struct backend *be, const struct modem_firmware *mf)
 {
-    (void)mf;
     /* xmit happens BEFORE power-on in the SIPC path, so no prereq here */
+    if (be->mock.xmit_calls == 0)
+        be->mock.first_m_offset = mf->m_offset;
+    be->mock.last_m_offset = mf->m_offset;
+    be->mock.xmit_calls++;
     be->mock.boot_size += mf->len;
     return 0;
 }
@@ -415,6 +460,15 @@ static int do_on(struct backend *be)
     if (be->kind == BACKEND_MOCK) return mock_on(be);
 #if HW_ENABLED
     return real_on(be);
+#else
+    return -ENOTSUP;
+#endif
+}
+static int do_reset(struct backend *be)
+{
+    if (be->kind == BACKEND_MOCK) return mock_reset(be);
+#if HW_ENABLED
+    return real_reset(be);
 #else
     return -ENOTSUP;
 #endif
@@ -476,8 +530,11 @@ static int do_udl_req_resp(struct backend *be, uint32_t req, uint32_t exp)
 
 /* ---------------------------------------------------------------------------
  * XMIT_BOOT: stream a TOC part into shmem via struct modem_firmware.
- * Mirrors BootDumpModap::load_cp_image_by_stage. mode==0 (BOOT window).
- * Bounds-checked; never populated from any DTK9 constant.
+ * Faithful transcription of BootDumpModap::load_cp_image_by_stage:
+ *   img.m_offset = dlc->m_offset = (toc[idx].m_offset & CP_MEMORY_MASK);
+ * The absolute load address (0x4000_0000 / 0x4780_0000 / ...) is masked by
+ * CP_MEMORY_MASK (0x3FFF_FFFF) to the offset relative to the CP DRAM base,
+ * exactly as cbd does. mode==0 (BOOT window). Bounds-checked.
  * ------------------------------------------------------------------------- */
 static int xmit_part(struct ctx *c, int part_idx)
 {
@@ -487,15 +544,15 @@ static int xmit_part(struct ctx *c, int part_idx)
     int rc = 0;
 
     if (!buf) return -ENOMEM;
+    if (e->size == 0) { free(buf); return 0; } /* empty part: nothing to stream */
 
     struct modem_firmware mf;
     memset(&mf, 0, sizeof(mf));
     mf.binary   = (unsigned long long)(uintptr_t)buf;
     mf.size     = e->size;
-    mf.m_offset = 0;      /* shmem window-relative offset; XMIT_BOOT path copies
-                             to boot_base + m_offset, so relative 0 starts BOOT */
+    mf.m_offset = e->m_offset & CP_MEMORY_MASK; /* source-faithful (cbd) */
     mf.b_offset = e->b_offset;
-    mf.mode     = 0;      /* BOOT window */
+    mf.mode     = 0;      /* CP_BOOT_MODE_NORMAL -> BOOT window */
     mf.len      = EXYNOS_PAYLOAD_LEN;
 
     if (lseek(c->firmware_fd, (off_t)e->b_offset, SEEK_SET) < 0) { free(buf); return -errno; }
@@ -541,7 +598,8 @@ static int run_boot(struct ctx *c)
     c->first_failed_stage = STAGE_STATUS_PROBE;
     c->first_failed_rc = 0;
 
-    /* 0. status probe (read-only; before any mutation) */
+    /* 0. status probe (read-only; before any mutation).
+     *    cbd: if get_modem_state() != STATE_OFFLINE -> std_boot_power_reset. */
     s = STAGE_STATUS_PROBE;
     {
         long t0 = now_ms();
@@ -549,6 +607,15 @@ static int run_boot(struct ctx *c)
         stage_result(s, st < 0 ? st : 0, now_ms() - t0, "state");
         if (st < 0) { c->first_failed_stage = s; c->first_failed_rc = st; return st; }
         fprintf(stderr, "initial CP state=%d\n", st);
+
+        if (st != STATE_OFFLINE) {
+            /* Power-reset to a known-good OFFLINE pre-state before xmit/security. */
+            long rt0 = now_ms();
+            rc = do_reset(&c->be);
+            stage_result(s, rc, now_ms() - rt0, "power-reset (non-OFFLINE)");
+            if (rc < 0) goto fail;
+            fprintf(stderr, "power-reset issued (was state=%d)\n", st);
+        }
     }
 
     /* 1. security request: non-secure (CP_BOOT_RE_INIT=2) — std_security_req(2,0,0) */
@@ -560,43 +627,60 @@ static int run_boot(struct ctx *c)
         if (rc < 0) goto fail;
     }
 
-    /* 2. load CP images -> XMIT_BOOT over every TOC stage (BOOT/MAIN/VSS/NV) */
+    /* 2. load CP images -> XMIT_BOOT over each stage in TOC-index order,
+     *    starting at start_stage (TOC) and terminating at OFFSET.
+     *    Faithful to BootDumpModap::load_cp_images + build_std_dload_control.
+     *    NV stages (TOC_NV / TOC_NV_NORM / TOC_NV_PROT) are sourced from the
+     *    EFS nv_data.bin (FD_NV_DATA), NOT the radio partition, so they are
+     *    SKIPPED here — equivalent to cbd's `b_fd < 0 -> continue`. */
     s = STAGE_XMIT_BOOT;
     {
         long t0 = now_ms();
-        /* stream every present part in TOC order (BOOT, MAIN, VSS, NV) */
-        int idx;
-        for (idx = 0; idx < c->toc_count; idx++) {
-            const char *nm = c->toc[idx].name;
-            if (!strncmp(nm, "BOOT", 4) || !strncmp(nm, "MAIN", 4) ||
-                !strncmp(nm, "VSS", 3) || !strncmp(nm, "NV", 2)) {
-                rc = xmit_part(c, idx);
-                if (rc < 0) goto fail;
-            }
+        int stage;
+        for (stage = c->start_stage; stage < c->num_stages + 1; stage++) {
+            if (stage == c->toc_idx[TOC_OFFSET])
+                break;  /* OFFSET terminates the stage list (cbd) */
+            if (stage == c->toc_idx[TOC_NV] ||
+                stage == c->toc_idx[TOC_NV_NORM] ||
+                stage == c->toc_idx[TOC_NV_PROT])
+                continue;  /* NV comes from EFS, never the radio partition */
+            if (stage != c->toc_idx[TOC_TOC] &&
+                stage != c->toc_idx[TOC_BOOT] &&
+                stage != c->toc_idx[TOC_MAIN] &&
+                stage != c->toc_idx[TOC_VSS])
+                continue;  /* skip empty/unrecognised slots */
+            rc = xmit_part(c, stage);
+            if (rc < 0) goto fail;
         }
-        stage_result(s, rc, now_ms() - t0, NULL);
+        stage_result(s, rc, now_ms() - t0, "TOC/BOOT/MAIN/VSS in TOC order (NV from EFS)");
         if (rc < 0) goto fail;
     }
 
-    /* 3. security request: TOC (CP_BOOT_MODE_MANUAL=7) */
+    /* 3. security request: TOC (CP_BOOT_MODE_MANUAL=7).
+     *    cbd: std_security_req(MANUAL, dl_ctrl[TOC_TOC].m_offset,
+     *                          dl_ctrl[TOC_TOC].b_size) — TOC's OWN masked
+     *    m_offset and size, NOT BOOT's. */
     s = STAGE_SECURITY_REQ_TOC;
     {
         long t0 = now_ms();
+        int ti = c->toc_idx[TOC_TOC];
         rc = security_req(c, 7 /*CP_BOOT_MODE_MANUAL*/,
-                          c->toc[c->boot_idx].m_offset,
-                          c->toc[0].size);
+                          c->toc[ti].m_offset & CP_MEMORY_MASK,
+                          c->toc[ti].size);
         stage_result(s, rc, now_ms() - t0, NULL);
         if (rc < 0) goto fail;
     }
 
-    /* 4. security request: VSS (optional if present) */
+    /* 4. security request: VSS (optional if present).
+     *    SS310 without -v uses CP_BOOT_MODE_MANUAL (not CP_BOOT_MODE_VSS). */
     s = STAGE_SECURITY_REQ_VSS;
     {
         long t0 = now_ms();
-        if (c->vss_idx >= 0) {
+        int vi = c->toc_idx[TOC_VSS];
+        if (vi >= 0) {
             rc = security_req(c, 7 /*CP_BOOT_MODE_MANUAL*/,
-                              c->toc[c->vss_idx].m_offset,
-                              c->toc[c->vss_idx].size);
+                              c->toc[vi].m_offset & CP_MEMORY_MASK,
+                              c->toc[vi].size);
         } else {
             rc = 0;  /* no VSS part -> no verify, matching source */
         }
@@ -604,13 +688,14 @@ static int run_boot(struct ctx *c)
         if (rc < 0) goto fail;
     }
 
-    /* 5. security request: BOOT/MAIN (CP_BOOT_MODE_NORMAL=0) */
+    /* 5. security request: BOOT/MAIN (CP_BOOT_MODE_NORMAL=0).
+     *    cbd: std_security_req(NORMAL, BOOT.b_size, MAIN.b_size) — sizes, raw. */
     s = STAGE_SECURITY_REQ_MAIN;
     {
         long t0 = now_ms();
         rc = security_req(c, 0 /*CP_BOOT_MODE_NORMAL*/,
-                          c->toc[c->boot_idx].size,
-                          c->toc[c->main_idx].size);
+                          c->toc[c->toc_idx[TOC_BOOT]].size,
+                          c->toc[c->toc_idx[TOC_MAIN]].size);
         stage_result(s, rc, now_ms() - t0, NULL);
         if (rc < 0) goto fail;
     }
