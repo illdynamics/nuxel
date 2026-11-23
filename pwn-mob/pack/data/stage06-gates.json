@@ -1,17 +1,17 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "target": "SM-G975F beyond2lte S5000AP Stage 06",
-  "note": "Honest per-gate state updated 2026-11-23 round-2. g01/g03 PASS live; g05-g08 BLOCKED on closed FMT/RFS vocabulary; g09 PASS (reviewed, no write); g10 PASS (offline FSM).",
+  "note": "Round-3 (2026-11-23): g01/g02/g03 PASS live; g04 PASS (source-backed, RFS handler corrected to Nv/Modem); g05-g08 BLOCKED on closed RFS response contract + FMT vocabulary; g09 PASS (no write); g10 PASS (offline incl. IpcProtocol41 recovery test).",
   "gates": [
-    {"id": "g01", "name": "Real CP ONLINE for test session", "passed": true, "evidence": "modem_state=ONLINE; IOCTL_MODEM_STATUS state_code=4 (live 2026-11-23)"},
-    {"id": "g02", "name": "Exactly one authorized radio daemon owns IPC", "passed": true, "evidence": "nuxel-radiod PID141084 owns umts_ipc0(fd5)+umts_rfs0(fd6); rild_ready() satisfiable (live)"},
-    {"id": "g03", "name": "RIL reference exact model/build provenance recorded", "passed": true, "evidence": "vendor-ril-manifest.txt: 13 ELFs SHA256+BuildID, libsec-ril.so=60889dd7 (read-only sda26)"},
-    {"id": "g04", "name": "SIM status semantics corroborated offline", "passed": true, "evidence": "sim_state only set via io_dev_sim_state_changed() (userspace RIL); ds_detect=1 is static config (kernel source)"},
-    {"id": "g05", "name": "Authorized SIM request-response verified live", "passed": false, "evidence": "BLOCKED: closed FMT SIM vocabulary in libsec-ril.so; no RIL runtime"},
+    {"id": "g01", "name": "Real CP ONLINE for test session", "passed": true, "evidence": "modem_state=ONLINE; radiod saw OFFLINE->BOOTING->ONLINE live"},
+    {"id": "g02", "name": "Exactly one authorized radio daemon owns IPC", "passed": true, "evidence": "nuxel-radiod owns umts_ipc0+umts_rfs0; AST_POWERON + DELETE_ALL_VIS received live"},
+    {"id": "g03", "name": "RIL reference exact model/build provenance recorded", "passed": true, "evidence": "libsec-ril.so build ID 60889dd7 (read-only sda26) reconfirmed"},
+    {"id": "g04", "name": "SIM/RFS semantics corroborated offline", "passed": true, "evidence": "dialect IpcProtocol41; FMT 7B header ABI-verified; RFS handler = Nv/Modem (IpcRxRfs is stub); 34 main_cmd family names"},
+    {"id": "g05", "name": "Authorized SIM request-response verified live", "passed": false, "evidence": "BLOCKED: RFS DELETE_ALL_VIS unanswered -> CP never reaches STATE_SIM_ATTACH(7)"},
     {"id": "g06", "name": "Network registration verified from actual CP", "passed": false, "evidence": "BLOCKED: requires FMT registration query"},
     {"id": "g07", "name": "Data bearer and host IP interface verified", "passed": false, "evidence": "rmnet0..7 all DOWN"},
     {"id": "g08", "name": "Mobile IP connectivity verified, Wi-Fi ruled out", "passed": false, "evidence": "not reached; no cellular IP/route"},
-    {"id": "g09", "name": "NV/EFS and protected partition safety reviewed", "passed": true, "evidence": "BOOT/DTB/DTBO/RADIO SHA unchanged; no efs/sec_efs/NV write; read-only mounts unmounted"},
-    {"id": "g10", "name": "Daemon regressions, crash/reconnect and privacy pass", "passed": true, "evidence": "radio_fsm build.sh RESULT=PASS 0 failures (normal+ASan); no identifiers captured"}
+    {"id": "g09", "name": "NV/EFS and protected partition safety reviewed", "passed": true, "evidence": "sda16 RADIO unchanged 9ffa1426...66fc7; no write; read-only mount"},
+    {"id": "g10", "name": "Daemon regressions, crash/reconnect and privacy pass", "passed": true, "evidence": "build.sh PASS incl test_ipc41_recovery + fuzzer 534/559 cov + ASan/UBSan"}
   ]
 }

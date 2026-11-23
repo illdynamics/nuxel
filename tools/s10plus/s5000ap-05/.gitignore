@@ -6,3 +6,4 @@
 /test_rfs_proto
 /test_live_frame
 *.dSYM/
+/test_ipc41_recovery

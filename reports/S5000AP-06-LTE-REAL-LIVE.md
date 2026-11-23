@@ -1,246 +1,209 @@
-# S5000AP Stage-06 — SIM → Registration → Real LTE Data → ModemManager/NetworkManager
+# S5000AP Stage-06 — SIM → Registration → Real LTE Data (Round 3, live + protocol recovery)
 
-**STATUS: BLOCKED for "Data PASS" (honest). Stronger supportable verdict:**
-`STAGE_06_BLOCKED_NEEDS_VERSION_MATCHED_REFERENCE` — with the exact version-matched
-vendor RIL now *fingerprinted* (O1) and its RFS command vocabulary *statically
-recovered* (O3), but the runtime still cannot be driven without the closed FMT
-telephony vocabulary and the missing `cass`/Bionic/Halium container runtime.
+**Round 3 status:** deeper live re-verification + decisive source-backed protocol
+recovery from the exact vendor RIL. The CP is confirmed ONLINE and its boot-stage
+FMT/RFS traffic is reproduced live; the *exact first blocker* is now pinned to the
+RFS/NV initialisation handshake (`DELETE_ALL_VIS` request with no AP answer). The
+dialect is confirmed `IpcProtocol41`, the 7-byte FMT transport header is ABI-verified,
+and the RFS handler location is corrected (it is `Nv`/`Modem`, not the `IpcRxRfs` stub).
 
-**Branch:** `cs/mob` — **HEAD:** `46c20464` (this round adds `vendor-ril-manifest`
-evidence + RFS vocabulary matrix; no code-behavior change to booted device).
-**Device:** SM-G975F / beyond2lte / Exynos9820 / S5000AP (rev 26), Nuxel native.
-**Kernel:** `4.14.253-gf7194c1d15ed-dirty`. **Date:** 2026-11-23 (owner-authorized
-"any action necessary"; active SIM seated on-device).
-
----
-
-## 0. Round summary (what changed vs. previous round)
-
-The prior round honestly concluded BLOCKED at SIM READY because the FMT telephony
-vocabulary and vendor RIL were "absent at runtime". This round:
-
-1. **Re-verified live CP ONLINE + SIPC RX** with unchanged protected-partition hashes.
-2. **Pinpointed the exact kernel gate** (`rild_ready()` in `link_device_shmem.c`) that
-   admits the CP past `INIT_START` → `INIT_END`, and the `sim_state_changed` callback
-   path that is *exclusively* driven by the userspace RIL (no in-tree ioctl).
-3. **Fingerprinted the exact EFUJ2-window vendor RIL** on `sda26` (SHA256 + GNU Build
-   ID for 13 ELFs) and recovered its complete RFS command vocabulary from the
-   (unstripped) symbol/string table — O3 static-candidate evidence, non-fabricated.
-4. **Determined the MM 1.24.2 plugin ABI is private/internal** (subjob A) and verified
-   NM 1.54.3 gsm-profile behavior (subjob B) — both honest, live, on-device.
-5. Reconciled the "leftover Android system" (sda25) as a **Halium/Ubuntu-Touch image**
-   carrying `ofonod` + `rilbinderplugin.so` + `libhybris/linker`, i.e. the *right*
-   runtime family exists on the device but is not the running Nuxel rootfs (sda31).
-
-No flash, no DT/CP/RADIO/NV/EFS write, no speculative SIPC Tx, no PIN/IMSI/ICCID/IMEI
-capture. Read-only mounts were unmounted cleanly. Wi-Fi/USB/Zerotier management links
-preserved (mobile-data test not reached, so no data-charge risk).
+**Branch:** `cs/mob` **HEAD (before this round):** `a0c065e8`
+**Device:** SM-G975F / beyond2lte / Exynos9820 / S5000AP (BEYOND2LTE EUR OPEN 26).
+**Kernel:** `4.14.253-gf7194c1d15ed-dirty` (SMP PREEMPT, 2026-11-23 00:43:30 CET).
+**Owner authorisation:** explicit "any action necessary" + active SIM seated on-device.
+**Date:** 2026-11-23 (Europe/Amsterdam).
 
 ---
 
-## 1. Per-gate receipt (honest ladder)
+## 0. Executive summary
+
+The physical CP is alive and stable (`modem_state=ONLINE`), SIPC5 RX is live
+(`nuxel-radiod` received `AST_POWERON` on ch235 and a 25-byte RFS `DELETE_ALL_VIS`
+on ch245 in *this* session, seconds after ONLINE). The modem is **not** crashed and is
+**not** mis-detecting SIM — it is blocked at the NV/RFS initialisation stage because the
+AP does not yet answer the RFS exchange.
+
+This round did NOT fabricate any success and did NOT flash/write anything. It:
+
+1. Re-verified live CP ONLINE + unchanged protected-partition hashes (RADIO
+   `/dev/sda16` = `9ffa1426…66fc7`, unchanged from Stage-05 baseline).
+2. Confirmed the dialect is **IpcProtocol41** and that the existing 7-byte
+   `sipc_fmt_hdr` parser is ABI-correct (corroborated by `IpcTxExchange` disassembly
+   and by the live AST_POWERON bytes).
+3. Recovered the 34 main_cmd **family names** and located the RFS receive/send code
+   paths in `libsec-ril.so` (`Nv::ProcessRfsPacket`/`SendRfsMessage`, `Modem::*RfsIoChannel`).
+4. Added source-backed offline tests (dialect pin, FMT ABI, live-frame, family-name
+   table, RFS-handler-location fact); all green incl. 3000-iteration fuzzer + ASan/UBSan.
+
+**Strongest supportable verdict:** `STAGE_06_BLOCKED_NEEDS_VERSION_MATCHED_REFERENCE`
+— the version-matched reference is now *fingerprinted and partially decoded* (O3), but
+SIM READY → registration → LTE data still requires implementing the closed RFS response
+contract + FMT telephony vocabulary, which is a remaining clean-room RE effort that was
+not completed this round (and is not safe to shortcut with speculative transmissions).
+
+---
+
+## 1. Live per-gate receipt (honest ladder)
 
 | Gate | State | Evidence / class |
 |---|---|---|
-| KERNEL_PROBE | **PASS** | `/dev/umts_*` present; modem_v1 loaded. `LIVE_VERIFIED` |
-| CP_FIRMWARE_VERIFIED | **PASS** | RADIO sda16 `9ffa1426…66fc7` (EFUJ2) re-hashed read-only, unchanged. `KNOWN_SOURCE`+`LIVE` |
-| CBD_ABI_MATCHED | **PASS** | pinned ioctl; static-asserts green. `LIVE_VERIFIED` |
-| CP_ONLINE | **PASS** | `modem_state=ONLINE`; `IOCTL_MODEM_STATUS -> 4`. `LIVE_VERIFIED` |
-| RFS_AND_SIPC_RESPOND | **PARTIAL** | SIPC RX live; RFS receive-only (DELETE_ALL_VIS fail-closed, no answer). `LIVE_VERIFIED`(RX) / `BLOCKED`(service) |
-| SIM_READY | **BLOCKED** | `IOCTL_MODEM_STATUS` returns `ONLINE(4)`, NOT `STATE_SIM_ATTACH(7)`. `LIVE_VERIFIED` |
-| REGISTERED | **BLOCKED** | requires FMT registration query (closed libsec-ril vocabulary). |
-| DATA_BEARER | **BLOCKED** | rmnet0..7 all `DOWN`. `LIVE_VERIFIED (down)` |
-| VERIFIED_RMNET_INTERNET | **BLOCKED** | no cellular IP/route. |
-| SMS / VOICE / IMS | **BLOCKED / not started** | capability flags remain false. |
+| KERNEL_PROBE | PASS | `/dev/umts_*` present; modem_v1 loaded. LIVE |
+| CP_FIRMWARE_VERIFIED | PASS | RADIO `/dev/sda16` `9ffa1426…66fc7` re-hashed read-only, unchanged. LIVE |
+| CBD_ABI_MATCHED | PASS | pinned ioctl; static-asserts green. LIVE |
+| CP_ONLINE | PASS | `modem_state=ONLINE`; radiod saw OFFLINE→BOOTING→ONLINE this session. LIVE |
+| RFS_AND_SIPC_RESPOND | PARTIAL | SIPC5 RX live (AST_POWERON); RFS RX live (DELETE_ALL_VIS) but **no response sent** → CP waits. LIVE(RX)/BLOCKED(Tx) |
+| SIM_READY | BLOCKED | `modem_state` never reaches STATE_SIM_ATTACH(7); stuck at RFS NV init. LIVE |
+| REGISTERED | BLOCKED | requires FMT registration query (closed vocabulary). |
+| DATA_BEARER | BLOCKED | rmnet0..7 all DOWN. LIVE |
+| VERIFIED_RMNET_INTERNET | BLOCKED | no cellular IP/route. |
+| SMS / VOICE / IMS | BLOCKED / not started | capability flags remain false. |
 
 **Capability matrix:** LTE=BLOCKED, SMS=BLOCKED, Voice=BLOCKED, IMS=BLOCKED.
 
----
+### Live capture (this session, journalctl -u nuxel-radiod)
 
-## 2. The exact kernel gate (decisive, source-grounded)
-
-Pinned driver `drivers/misc/modem_v1/link_device_shmem.c` (`rild_ready()`):
-
-```c
-static bool rild_ready(struct link_device *ld) {
-    fmt_iod = link_get_iod_with_channel(ld, SIPC5_CH_ID_FMT_0);  // /dev/umts_ipc0
-    rfs_iod = link_get_iod_with_channel(ld, SIPC5_CH_ID_RFS_0);  // /dev/umts_rfs0
-    if (fmt_iod->opened > 0 && rfs_iod->opened > 0) return true;   // both open()
-    return false;
-}
+```
+cp_state_changed ONLINE code=4
+(≈10 s) fmt_rx ch=235 main=19(0x13) sub=5 type=3 plen=18   → AST_POWERON
+        rfs_rx ch=245 len=25 op=11 opcode=DELETE_ALL_VIS      → fail-closed-no-op
 ```
 
-- CP sends `CMD_PHONE_START` periodically; AP replies `CMD_INIT_END` **only** when
-  `rild_ready()` is true.
-- `nuxel-radiod` (PID 141084) currently holds `/dev/umts_ipc0`(fd5) + `/dev/umts_rfs0`(fd6),
-  so `rild_ready()` **is** satisfiable and `INIT_END` is sent. Verified live.
-- After `INIT_END`, the CP enters NV/RFS init and emits the `DELETE_ALL_VIS` RFS
-  request; it then **waits for a valid RFS response + FMT telephony** to signal SIM.
-- `STATE_SIM_ATTACH(7)` is only produced when `sim_state.changed==true`, which the
-  kernel sets *exclusively* via `io_dev_sim_state_changed()` — a callback that is
-  **registered but never invoked by any in-tree ioctl**. It is driven by the userspace
-  RIL (which abstracts the FMT/RFS CP<->AP telephony). `ds_detect=1` is a static
-  dual-SIM config parameter (modem_ctrl_s5000ap.c), NOT physical SIM presence.
-
-**Conclusion:** the FMT telephony + RFS response vocabulary is the single upstream
-blocker, and it is defined only in the closed `libsec-ril.so`.
+A prior round re-started radiod and the CP re-booted OFFLINE→BOOTING→ONLINE and
+re-issued the *same* AST_POWERON + DELETE_ALL_VIS pair, confirming a deterministic
+boot-stage exchange rather than a transient error. **No response is produced, so the CP
+does not advance.** This is the exact first blocker.
 
 ---
 
-## 3. Vendor RIL provenance (O1 — exact fingerprint, non-fabricated)
+## 2. Decisive protocol recovery (source-backed)
 
-Read-only mount of `sda26` (PARTLABEL=`vendor`, ext4) exposes a LineageOS SM-G975F
-(beyond2lte) vendor image (dir timestamps `Oct 31 2021`, consistent with an EFUJ2
-`G975FXXSEFUJ2` pairing window). It is **not** independently verified byte-identical
-to a Samsung-stock EFUJ2 vendor; provenance is recorded, not asserted.
+Source: `vendor/lib64/libsec-ril.so` (sda26, GNU Build ID `60889dd714394ae0db7c2ecc2bf2740f`),
+analysed **on-device** with the native aarch64 binutils (`objdump/readelf/strings/nm`)
+against a read-only mount. No vendor binary is copied into the repo.
 
-| Artifact | SHA256 | GNU Build ID |
-|---|---|---|
-| lib64/libsec-ril.so | `b02bd095…877e282cb3` | `60889dd714394ae0db7c2ecc2bf2740f` |
-| lib64/libril.so | `0660581f…d4eb85998c2` | `81d22bdcf0663880d8c488d72b7f325d` |
-| lib64/librilutils.so | `304c34b5…ab3aa15dfac` | `80a46e13699ebf8e57c0207919349de9` |
-| lib64/libsec-ril-dsds.so | `31df8929…aff4597b0a` | `9725b129e629007e1855f5dff30f94f7` |
-| lib64/libsec_semRil.so | `fb255c65…7545bb0201d` | `4afbb4937b153b9b36d80aea66a6f054` |
-| lib64/libvndsecril-client.so | `87da2b4f…bdea40aa4c1` | `9f908d91bc06aac4ea64ed09704b0de8` |
-| lib64/libreference-ril.so | `aa5d0df0…6b8569ba0d3` | `315acf3ba0d6b76f6a8699c2c4b71146` |
-| lib64/vendor.samsung.hardware.radio@2.0.so | `bb022de5…c12711eb7c62c` | `1d613d05a4a95348db40c16d69ebcf3c` |
-| lib64/vendor.samsung.hardware.radio@2.1.so | `a9a1ac19…d711c557771f646d0` | `1edd8932161ed35f91eef6153c2201e9` |
-| lib64/vendor.samsung.hardware.radio.bridge@2.0.so | `5115c8ed…a40615000a9443152` | `e1e5437a07f4009eff04757b9659e89c` |
-| lib64/vendor.samsung.hardware.radio.channel@2.0.so | `2502bf1c…d7769ae542467d92d0` | `208c799f762a900c4cbf184aafe20656` |
-| bin/hw/rild | `dae4525d…1880fa433f9d` | `04e52e2074364537e967f366af1e9192` |
-| bin/cbd | `c3e869fa…75c08349ba969c75ef78f7b83` | `aa0233da8c71aab8410f42203d93e15e` |
+### 2.1 Dialect = IpcProtocol41
 
-Full line-for-line manifest is committed to `evidence/s5000ap-06-live/vendor-ril-manifest.txt`.
-No binary contents are reproduced anywhere.
+Exported class `IpcProtocol41` (symbols `IpcProtocol41::IpcRx…`/`IpcTx…`). This
+narrows the closed vocabulary to the Samsung "Ipc41" dialect and enables targeted
+reference matching (BaseMirror's SM-G973F `Ipc41X` is a *sibling*, not a substitute).
 
----
+### 2.2 FMT transport header (7 bytes) — ABI-correct
 
-## 4. RFS command vocabulary recovered (O3 static candidate)
+`IpcProtocol41::IpcTxExchange(char,char,char,char,char,char*,int)` at `0x342a80`
+stores `main,sub,type,…` into consecutive bytes after a `u16 len`. This matches the
+pinned `struct sipc_fmt_hdr { u16 len; u8 msg_seq; u8 ack_seq; u8 main_cmd; u8 sub_cmd;
+u8 cmd_type; }` exactly. The existing parser (`sipc5_fmt.c`) is therefore correct; the
+live `AST_POWERON` frame (`len=25, seq=0, ack=0, main=0x13, sub=0x05, type=0x03`)
+confirms it O4.
 
-`libsec-ril.so` is **unstripped** (mangled C++ symbols present), so its string table
-yields the complete RFS main/sub-command set. This is static-candidate evidence (O3),
-**not** live corroboration (O4/O5); it is recorded to bound the closed vocabulary, not
-to authorize any transmission:
+### 2.3 cmd_type semantics
 
-`RFS_CMD`, `RFS_EXT_CMD`, `RFS_SUB_CMD_UNDEFINED`,
-`RFS_CREATE_FILE`, `RFS_OPEN_FILE`, `RFS_CLOSE_FILE`, `RFS_READ_FILE`, `RFS_WRITE_FILE`,
-`RFS_GET_FILE`, `RFS_PUT_FILE`, `RFS_GET_FILE_INFO`, `RFS_GET_HANDLE_INFO`,
-`RFS_LSEEK_FILE`, `RFS_FTRUNCATE_FILE`, `RFS_MAKE_DIR`, `RFS_OPEN_DIR`, `RFS_READ_DIR`,
-`RFS_CLOSE_DIR`, `RFS_REMOVE_DIR`, `RFS_RENAME_FILE`, `RFS_UNLINK_FILE`,
-`RFS_NV_BUFFER_MESSAGE`, `RFS_NV_READ_ITEM`, `RFS_NV_WRITE_ITEM`, `RFS_NV_WRITE_ALL_ITEM`,
-`RFS_NV_RESTORE`.
+String table carries `IPC_CMD_NOTI`; the live notification (`AST_POWERON`) carries
+`type=0x03`. So `0x03` is (at minimum) the notification class. Request/response classes
+are numeric-recoverable but are recorded as UNKNOWN pending further disassembly; they
+are NOT invented.
 
-`DELETE_ALL_VIS` does **not** appear as a named literal (its opcode is embedded in the
-closed RFS ext handler); it is classed in the REMOVE/UNLINK destructive family and
-remains **fail-closed** (radiod never executes it and never fabricates a response).
-`/dev/nr_rfs0`, `/dev/umts_rfs0`, `/mnt/vendor/efs`, `/efs/imei` string references confirm
-the RFS layer binds NV/EFS and the RFS char devices — consistent with the pinned kernel
-channel map, and re-affirming the NV/EFS protected gate is never bypassed.
+### 2.4 main_cmd families (34 names, numeric ids UNKNOWN)
 
----
+Recovered from `*_SUB_CMD_UNDEFINED` printf format strings (O3 static candidates):
 
-## 5. Subjob A — ModemManager plugin compile/API/udev (honest, live)
+`CALL`, `CDMA DATA`, `CFG`, `DISP`, `DOMESTIC`, `EMBMS`, `FACTORY`, `GEN`, `GPRS`,
+`GPS`, `IIL`, `IMEI`, `IMS`, `JPN`, `MCPTT`, `MISC`, `MMS`, `MODEMTEST`, `NET`, `OES`,
+`OMADM`, `PB`, `PROSE`, `PWR`, `QMIIMS`, `RFS`, `SAP`, `SAT`, `SEC`, `SMS`, `SND`,
+`SS`, `SVC`, `SYSTEM`.
 
-- MM `1.24.2-1.fc43`, plugin dir `/usr/lib64/ModemManager/` (includes `libmm-plugin-samsung.so`).
-- `libmm-plugin-samsung.so` is `MMBroadbandModemSamsung` — an AT-command USB broadband
-  driver (tty/net/QMI/MBIM port probe), **no SIPC linkage** (`strings`/`ldd` confirmed).
-- **Decisive:** MM's *plugin* ABI (`mm-plugin.h`, `mm-broadband-modem.h`, `mm-base-modem.h`,
-  `mm-port-serial-at.h`, …) is a **private, daemon-internal interface**. `/usr/include/ModemManager/`
-  exposes only the public client API (`ModemManager.h`, `-enums.h`, `-errors.h`, `-names.h`,
-  `-version.h`, `libmm-glib.h`). There are **no plugin headers** to compile an out-of-tree
-  SIPC5 plugin against; each plugin is compiled *into* the MM build from MM's own source tree.
-- Therefore a "compile a custom Shannon/SIPC5 MM plugin" (subjob A literal) is **not possible
-  against the installed MM 1.24.2 system headers** without obtaining/building the MM source.
-  This is a documented ABI determination, not a silent skip.
-- `mmcli -L` => `No modems were found` (honest). No fake `org.freedesktop.ModemManager1`
-  object masquerades as attached hardware. udev publishes no `ID_MM_*` tags for the
-  `/dev/umts_*` misc chardevs (they are `root:root crw-------`, not USB ports).
+Names only. Numeric `main_cmd` ids for SIM/registration/bearer are NOT asserted.
 
-**Determination:** even if a plugin could be built, it still could not populate
-SIM/registration/bearer without the closed FMT vocabulary. The plugin is the *last*
-integration layer; the vocabulary is the first blocker.
+### 2.5 RFS handler location CORRECTED (important)
+
+`IpcProtocol41::IpcRxRfs` (`0x340308`) is a **stub** (`mov x0,xzr; ret`). RFS is handled
+elsewhere in the same library by:
+
+- `Nv::ProcessRfsPacket(char*,int)` `0x1d7f20`
+- `Nv::ProcessRfsMessage()` `0x1d81d8`
+- `Nv::SendRfsMessage(char*,int)` `0x1dbfb8` (virtual-dispatch write to the RFS channel)
+- `Modem::CreateRfsIoChannel/OpenRfsIoChannel/CloseRfsIoChannel` `0x1dc6b0/0x1dc720/0x1dc480`
+- `IpcModem::ProcessRfsMessageReceived(char*,int)` `0x2ea2b8`
+
+`vendor.sec.rild.libpath=/vendor/lib64/libsec-ril.so` (build.prop) and
+`init.vendor.rilchip.rc` (`rild` + `cpboot-daemon`) confirm the runtime wiring. SELinux
+labels `/dev/umts_rfs0` `vendor_radio_device`.
+
+`vendor/bin/cbd` (the CP boot/NV daemon) handles NV *data-file loading* (`nv_data.bin`,
+`fsm_data.bin`, `nv_5g_data.bin` under `/mnt/vendor/efs`) and references
+`vendor.cbd.rfs_check_done`/`rfs_5g_check_done` completion properties — the RFS protocol
+transport is on `/dev/umts_rfs0` (ch 245), opened by `rild` via `libsec-ril.so`, with the
+NV response model in the `Nv` class.
+
+### 2.6 Remaining unknown (blocks SIM READY)
+
+The exact **RFS response byte contract** (reply to `DELETE_ALL_VIS`) and the **FMT
+SIM/registration/bearer request ids** are closed and not yet decoded to O4/O5. They are
+the next recovery target and must NOT be transmitted speculatively.
 
 ---
 
-## 6. Subjob B — NetworkManager bearer/profile (honest, live)
+## 3. Subjobs this round
 
-- NM `1.54.3-3.fc43`. `nmcli -f WWAN-HW g` => `WWAN-HW: missing` (no cellular hardware
-  advertised over the standard MM D-Bus org.freedesktop.ModemManager1 path).
-- `nmcli connection add type gsm` **succeeds** and stores a valid profile
-  (`connection.type=gsm`, `gsm.apn=<owner-supplied>`, `gsm.auto-config=no`,
-  `ipv4.method=auto`, `ipv6.method=auto`). This confirms NM's gsm-setting schema and
-  IPv4/v6 method behavior are functional — but the profile is **inert** (no modem object
-  to bind, no bearer) and was deleted after the test to avoid a dangling nonfunctional
-  profile.
-- `rmnet0..7` + `umts_dm0` are `ppp:unmanaged` (all `DOWN`). No `wwan`/`cdc-wdm`/`qmi_wwan`
-  device exists. No generic QMI/MBIM/PPP code was pulled.
+- **A (MM plugin ABI):** unchanged determination from prior round — MM 1.24.2 plugin ABI
+  is daemon-internal; no out-of-tree SIPC5 plugin is buildable against installed headers.
+- **B (NM bearer/profile):** unchanged — `rmnet*` are `ppp:unmanaged` DOWN; no wwan device.
+- **C (offline negative/state/fixtures):** PASS (existing FSM + new `test_ipc41_recovery.c`).
+- **D (UI state machine):** offline scope only; truthful states preserved; no false
+  operator/bars/data.
 
----
+New tests added this round (`tools/s10plus/s5000ap-05/tests/test_ipc41_recovery.c`):
 
-## 7. Subjob C — Offline negative route / state-machine fixtures (PASS)
+```
+RESULT=PASS: 0 failures
+  dialect == IpcProtocol41
+  sipc_fmt_hdr ABI == 7 bytes
+  live AST_POWERON parse (main=0x13 sub=0x05 type=0x03)
+  cmd_type 0x03 is notification class (live)
+  recovered family-name count == 34 (CALL/…/SYSTEM)
+  RFS receive documented as cbd/Nv-handled (IpcRxRfs is a stub)
+```
 
-`tools/s10plus/s5000ap-06/` (from prior round, re-run this round):
-- `src/radio_fsm.{h,c}` — pure 9-state FSM (`no modem`, `CP offline`, `SIM missing`,
-  `PIN required`, `searching`, `registered`, `attached`, `data active`, `failure`),
-  monotonic gate ladder, zero side effects.
-- `tests/test_radio_fsm.c` — 14 offline fixtures.
-- `./build.sh` => `RESULT=PASS: 0 failures` (normal + ASan/UBSan). Re-run live this round.
-
-## Subjob D — UI state machine / accessibility (PASS, offline scope)
-
-The same FSM encodes the truthful UI states the shell/settings must render; the negative
-paths (`no modem`/`SIM missing`/`failure`) are covered by fixtures. Live UI wiring to the
-running shell is **not** executed this round (no bearer state to reflect); capability
-flags for SMS/voice/IMS remain false, so no false signal bars/operator/data icon is shown.
+Full `build.sh` green: 4 unit suites + 3000-iteration fuzzer (534/559 coverage) + ASan/UBSan.
 
 ---
 
-## 8. Negative controls / what was NOT done
+## 4. Safety / what was NOT done
 
-- No protected-partition write: BOOT/DTB/DTBO/RADIO SHAs **unchanged** (re-hashed read-only
-  this round == Stage-05 baseline). No efs/sec_efs/NV/calibration access.
-- No DT/CP/RADIO modification, no flash, no `cbd`/`rild` boot, no speculative SIPC Tx, no
-  APDU, no modem reset, no airplane/airplane-release toggle, no carrier/registration storm.
-- Wi-Fi + USB + Zerotier management links preserved (mobile-data path not attempted, since
-  registration is unreachable → no data-charge or roaming risk).
-- No PIN/PUK/IMSI/ICCID/IMEI/MSISDN/SPN/SMS-body capture. No brute-force. No emergency calls.
-
----
-
-## 9. Blocker and the smallest necessary owner action
-
-**Exact first blocker:** SIM READY. The CP is `ONLINE` but has not entered
-`STATE_SIM_ATTACH` because no userspace RIL/RFS service answers the FMT/RFS telephony
-exchange. Root cause: the FMT telephony + RFS response vocabulary is closed-licensed in
-`libsec-ril.so`, and the runtime (`rild` + `cass` + Bionic/Halium LXC + oFono binder
-plugin) is **not present on the running Nuxel rootfs (sda31)**, even though the matching
-vendor RIL (sda26) and a Halium/Ubuntu-Touch oFono stack (sda25) exist on-device read-only.
-
-**Smallest necessary owner action (pick one, both are large):**
-
-- **A (runtime):** authorize building/booting the on-device Halium Android container
-  (`libhybris/linker` + `rild` + recover `cass` + `ofonod`/`rilbinderplugin`) so the
-  version-matched vendor RIL genuinely drives the modem. This is a separate OS-bring-up
-  project, requires `cass` (currently absent from sda25/sda26), and needs its own reviewed
-  flash/boot plan (gate `09`).
-- **B (clean-room):** authorize a Ghidra/BaseMirror offline static analysis of the now-
-  fingerprinted `libsec-ril.so` (`60889dd7…`) to recover the exact RFS response byte format
-  and FMT SIM/registration/bearer command IDs at O4/O5 grade, then extend `nuxel-radiod`
-  natively. Multi-week RE effort; no binary redistribution.
-
-Neither is silently executed. Until one completes, SMS/voice/IMS remain false and LTE
-data remains BLOCKED with honest UI (`CP offline`/`SIM missing`, not `registered`/`attached`).
+- No protected-partition write: `/dev/sda16` (RADIO) hash unchanged `9ffa1426…66fc7`.
+- No DT/DTBO/RADIO/EFS/NV/calibration/IMEI/bootloader/TEE write; no flash.
+- Read-only `sda26` mount (used for vendor RIL analysis) — unmount before close.
+- No speculative SIPC/RFS/FMT transmit; no APDU; no radio-power/airplane toggle; no
+  modem reset; no carrier/registration storm; no PIN/PUK/IMSI/ICCID/IMEI/MSISDN/SMS
+  capture; no emergency call.
+- Wi-Fi + USB + management links preserved (no data-charge risk: mobile-data path not reached).
 
 ---
 
-## 10. Final verdict
+## 5. Blocker and next step
+
+**Exact first blocker:** RFS/NV initialisation handshake. CP sends `DELETE_ALL_VIS`
+(on ch245) after `AST_POWERON`; AP never replies, so `modem_state` stays `ONLINE(4)`
+and never enters `STATE_SIM_ATTACH(7)`.
+
+**Next smallest action (clean-room, no flash):** recover the RFS response byte contract
+from `Nv::SendRfsMessage`/`Nv::ProcessRfsPacket` + `IpcModem::ProcessRfsMessageReceived`
+(Ghidra/BaseMirror offline on the already-fingerprinted `libsec-ril.so`), then implement
+a bounded, fail-closed RFS responder in `nuxel-radiod` that replies to non-destructive
+boot-stage RFS requests and never executes destructive filesystem ops. Only after the CP
+reaches SIM ATTACH, decode the FMT SIM/registration/bearer ids to drive real LTE data.
+
+This is a substantial clean-room RE effort (multi-week). Until it completes, SMS/Voice/IMS
+remain false and LTE data remains BLOCKED with truthful UI (`SIM missing`, not `registered`).
+
+---
+
+## 6. Final verdict
 
 **`STAGE_06_BLOCKED_NEEDS_VERSION_MATCHED_REFERENCE`**
 
-Physical CP is ONLINE with SIPC5 alive (live-verified), the exact version-matched vendor
-RIL is fingerprinted (O1) and its RFS vocabulary statically recovered (O3), and MM 1.24.2 /
-NM 1.54.3 integration realities are honestly determined (subjobs A/B) with offline FSM
-tests green (subjobs C/D). But SIM READY → registration → real LTE data cannot be truthfully
-claimed until the closed FMT/RFS telephony is answered by either a real vendor-RIL runtime
-or a source-back clean-room reimplementation, both of which are owner-gated actions beyond
-this round's no-flash scope.
+Physical CP ONLINE (live), SIPC5 RX live, dialect `IpcProtocol41` and 7-byte FMT header
+ABI confirmed, RFS handler location corrected, and source-backed offline tests green —
+but SIM READY → registration → real LTE data cannot be truthfully claimed until the
+closed RFS response contract + FMT telephony vocabulary are recovered and implemented.
+No fabricated success.

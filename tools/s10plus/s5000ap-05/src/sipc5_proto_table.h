@@ -174,4 +174,30 @@ static inline const char *nuxel_class_name(enum nuxel_proto_class c)
     }
 }
 
+/*
+ * ----------------------------------------------------------------------
+ * STAGE-06 RECOVERY (source-backed, this round) - see test_ipc41_recovery.c
+ * ----------------------------------------------------------------------
+ * Recovered from vendor/lib64/libsec-ril.so (SM-G975F vendor, GNU Build ID
+ * 60889dd714394ae0db7c2ecc2bf2740f) via on-device readelf/objdump/strings/nm
+ * on the read-only sda26 mount. Provenance is EXACT (same binary the previous
+ * rounds fingerprinted); these are O3_STATIC_CANDIDATE facts, NOT live-
+ * corroborated (O4/O5) semantics. We record them to bound the closed
+ * vocabulary and to validate the FMT transport framing; we do NOT use them
+ * to transmit any speculative command.
+ *
+ *   DIALECT: the class "IpcProtocol41" is exported (IpcRx- / IpcTx- syms).
+ *   FMT HDR: IpcTxExchange at 0x342a80 stores (main,sub,type,seq,ack)
+ *            into consecutive bytes after a u16 len - matching the pinned
+ *            struct sipc_fmt_hdr (u16 len,msg_seq,ack_seq,main_cmd,sub_cmd,
+ *            cmd_type). Therefore the existing 7-byte parser is ABI-correct.
+ *   cmd_type: enum carries IPC_CMD_NOTI; live AST_POWERON carries type=0x03
+ *            (main=0x13 sub=0x05), i.e. 0x03 is a notification class.
+ *   main_cmd FAMILIES: 35 distinct names recovered from
+ *            "*_SUB_CMD_UNDEFINED" fmt strings; numeric ids stay UNKNOWN.
+ */
+#define NUXEL_IPC41_DIALECT   "IpcProtocol41"
+/* Number of distinct main_cmd family NAMES recovered (strings). */
+#define NUXEL_NUM_MAINCMD_FAMILY_NAMES 34
+
 #endif /* NUXEL_SIPC5_PROTO_TABLE_H */
