@@ -1,0 +1,2 @@
+#!/bin/sh
+printf '{"state":"ONLINE","state_code":4,"errno":0,"errno_name":"0","ts":"2026-11-23T00:00:00Z"}\n'

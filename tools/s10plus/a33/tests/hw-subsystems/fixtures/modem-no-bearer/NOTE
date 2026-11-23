@@ -1,0 +1,1 @@
+An rmnet netdev existing is a TRANSPORT, never a bearer; both bearer gates must remain unknown.

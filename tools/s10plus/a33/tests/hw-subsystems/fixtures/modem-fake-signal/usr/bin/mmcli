@@ -1,0 +1,2 @@
+#!/bin/sh
+echo "signal: -70 dBm"; echo "operator: 12345"; exit 0

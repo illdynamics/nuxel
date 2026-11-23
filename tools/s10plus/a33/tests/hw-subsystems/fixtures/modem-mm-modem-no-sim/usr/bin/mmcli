@@ -1,0 +1,6 @@
+#!/bin/sh
+case "$1" in
+  -L) echo "/org/freedesktop/ModemManager1/Modem/0 [Samsung] Shannon"; exit 0;;
+  -m) echo "Modem '0'"; echo "  -----------------"; echo "  State : registered"; exit 0;;
+  *) exit 1;;
+esac

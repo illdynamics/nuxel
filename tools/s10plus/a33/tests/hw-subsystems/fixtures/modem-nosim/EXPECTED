@@ -1,1 +1,4 @@
-state=NO_SIM
+state=NEEDS_CP_PROBE
+first_failing_stage=ipc_responsive
+sim_ready=no
+sim_source=state_file

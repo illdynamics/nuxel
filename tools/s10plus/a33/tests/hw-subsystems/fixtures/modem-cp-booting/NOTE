@@ -1,0 +1,1 @@
+CP BOOTING must not advance cp_boot_completed nor be reported as ONLINE.

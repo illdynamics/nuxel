@@ -22,7 +22,13 @@ BLOCK = 1024 * 1024
 SAFE_PARTITION = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
 SAFE_SERIAL = re.compile(r"^[a-zA-Z0-9:._-]+$")
 SAFE_DEVICE = re.compile(r"^/dev/block/(?:[a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+$")
-DENY = {"recovery", "dtb", "dtbo", "vbmeta", "efs", "sec_efs", "persist", "persistent", "modem", "radio", "bootloader", "sboot", "abl", "xbl", "xbl_config", "tz", "rpm", "hyp", "cm", "keydata", "keyrefuge", "keystorage", "param", "misc", "frp", "super"}
+# Superset of configs/nuxel/modem/modem.json#protected_partitions.never_read_or_write
+# (proved by tools/s10plus/tests/test-flash-preflight-offline.py). Anything in
+# the policy denylist must be blocked here BEFORE any adb call.
+DENY = {"recovery", "dtb", "dtbo", "vbmeta", "efs", "efsg", "sec_efs", "persist", "persistbak", "persistent",
+        "modem", "radio", "radiobak", "bootloader", "sboot", "abl", "xbl", "xbl_config",
+        "tz", "rpm", "hyp", "cm", "keydata", "keyrefuge", "keystorage", "param", "up_param",
+        "steady", "carrier", "cp_debug", "misc", "frp", "super"}
 
 class Abort(Exception):
     pass
@@ -107,6 +113,8 @@ def select_parts(args: argparse.Namespace, props: dict) -> tuple[str, str | None
     bp = args.boot_partition or ('boot' if args.profile == 's10plus' else None)
     if boot_only:
         # BOOT-only mode: the rootfs target is not used at all (USERDATA untouched).
+        # Crucially, `boot_only` here is `... is True`, so a truthy string from a
+        # crashed/typo'd caller does NOT silently skip the rootfs requirements.
         rp = None
     else:
         rp = args.rootfs_partition or ('userdata' if args.profile == 's10plus' else None)
@@ -115,7 +123,9 @@ def select_parts(args: argparse.Namespace, props: dict) -> tuple[str, str | None
     for part in ([bp] + ([rp] if rp else [])):
         if not SAFE_PARTITION.fullmatch(part):
             raise Abort(f"Invalid partition name {part!r}: use by-name entries, e.g. boot_a or userdata")
-        if part in DENY or part.startswith(('modem_', 'vbmeta_', 'dtbo_', 'recovery_', 'bootloader_')):
+        if part in DENY or part.startswith(('modem_', 'vbmeta_', 'dtbo_', 'recovery_', 'bootloader_',
+                                             'efs_', 'efsg_', 'sec_efs_', 'radio_', 'radiobak_',
+                                             'persist_', 'param_', 'up_param_', 'misc_', 'carrier_', 'cp_debug_')):
             raise Abort(f"Blocked high-risk partition {part!r}. Only BOOT and explicitly selected rootfs targets allowed.")
     if (rp is not None and bp == rp) or not re.fullmatch(r'boot(?:_[ab])?', bp):
         raise Abort("Boot target must be boot, boot_a, or boot_b and distinct from rootfs target.")

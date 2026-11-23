@@ -1,0 +1,5 @@
+state=BLOCKED_FIRMWARE
+first_failing_stage=cp_status
+bearer_connected=unknown
+rmnet_verified=unknown
+

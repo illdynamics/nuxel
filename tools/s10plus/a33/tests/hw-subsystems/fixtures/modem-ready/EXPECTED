@@ -1,1 +1,6 @@
-state=NEEDS_OWNER_TEST
+state=NEEDS_CP_PROBE
+first_failing_stage=ipc_responsive
+sim_ready=yes
+registered=unknown
+cellular_available=false
+registration_verified=false

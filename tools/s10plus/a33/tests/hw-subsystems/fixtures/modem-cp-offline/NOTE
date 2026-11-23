@@ -1,0 +1,1 @@
+CP OFFLINE read from real ioctl; the missing ModemManager plugin must NOT be the first blocker.

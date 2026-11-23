@@ -1,1 +1,1 @@
-CP transport present, no Shannon-capable ModemManager plugin => BLOCKED_FIRMWARE.
+CP ONLINE + firmware receipt + cbd, but no IPC transaction: first failing stage is ipc_responsive — NOT modemmanager_plugin.

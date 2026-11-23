@@ -1,0 +1,5 @@
+state=BLOCKED_FIRMWARE
+first_failing_stage=cp_status
+cp_status=OFFLINE
+cp_boot_completed=no
+

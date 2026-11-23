@@ -1,0 +1,4 @@
+state=BLOCKED_FIRMWARE
+first_failing_stage=cp_status
+sim=unknown
+

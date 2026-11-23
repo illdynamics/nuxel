@@ -1,0 +1,6 @@
+state=BLOCKED_FIRMWARE
+first_failing_stage=firmware_candidate_verified
+cp_status=ONLINE
+cp_boot_completed=yes
+firmware_candidate_verified=unknown
+ipc_responsive=unknown

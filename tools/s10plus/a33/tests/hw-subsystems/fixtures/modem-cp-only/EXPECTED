@@ -1,1 +1,7 @@
-state=BLOCKED_FIRMWARE
+state=NEEDS_CP_PROBE
+first_failing_stage=ipc_responsive
+cp_status=ONLINE
+cp_boot_completed=yes
+firmware_candidate_verified=yes
+cbd_available=present
+ipc_responsive=unknown
