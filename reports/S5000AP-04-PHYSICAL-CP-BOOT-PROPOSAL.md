@@ -41,7 +41,7 @@ exact manifest, in a separate interaction. Do NOT execute.
 
 ## 4. Native executable (hardware-disabled default)
 
-- Binary: `nuxel-cpbootd.aarch64.hw` (SHA-256 `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7`).
+- Binary: `nuxel-cpbootd.aarch64.hw` (SHA-256 `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630`).
 - glibc AArch64 (interpreter `/lib/ld-linux-aarch64.so.1`, NEEDED `libc.so.6`).
 - Compile-time gate `NUXEL_CPBOOTD_ENABLE_HW=1` (value-aware); runtime `--really-boot`
   + `--manifest-sha256 <immutable manifest>` + exact `/dev/umts_boot0`.
@@ -96,7 +96,7 @@ CP boot ends here; later SIPC/RFS/LTE work is Stage-05 and NOT authorization now
 
 - **Device identity:** SM-G975F / beyond2lte / Exynos9820 / S5000AP, `revision=26`.
 - **Complete firmware SHA-256:** `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7` (installed EFUJ2 `/dev/sda16`, 52,428,800 B).
-- **Complete executable SHA-256:** `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7` (`nuxel-cpbootd.aarch64.hw`).
+- **Complete executable SHA-256:** `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630` (`nuxel-cpbootd.aarch64.hw`).
 - **Exact operation sequence:** stage 0 → 0.1 (conditional) → 1…11 as §5 (source-faithful LEGACY_SIPC_IOCTL order).
 - **Whether a modem reset is included:** YES — one conditional `IOCTL_MODEM_RESET` (0x6F21) at stage 0, issued only if initial `IOCTL_MODEM_STATUS` != `STATE_OFFLINE(0)`. It is a single bare call, no loop, never repeated; any failure aborts the trial.
 - **Maximum execution duration:** 300 s hard cap (`--deadline-ms 300000`), with per-stage deadlines in §5 (≤30 s); the daemon returns nonzero on any abort.

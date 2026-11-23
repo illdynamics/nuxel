@@ -50,6 +50,9 @@
 #include <sys/stat.h>
 #include <stdarg.h>
 #include <poll.h>
+#if defined(__linux__)
+#include <linux/fs.h>
+#endif
 
 #include "s5000ap_uapi.h"
 
@@ -263,11 +266,30 @@ static int parse_itoc(struct ctx *c)
 
     {
         struct stat st;
+        uint64_t devsize = 0;
         if (fstat(c->firmware_fd, &st) != 0) {
             int e = errno; close(c->firmware_fd); c->firmware_fd = -1;
             return -e;
         }
-        c->firmware_size = (uint64_t)st.st_size;
+        /* The firmware source may be a BLOCK DEVICE (/dev/sda16 RADIO). fstat()
+         * reports st_size==0 for block special files, which is NOT the partition
+         * length. Determine the real size via BLKGETSIZE64 (block only) or
+         * lseek(SEEK_END) (regular file), and keep st_size as a final fallback. */
+        if (S_ISBLK(st.st_mode)) {
+#if defined(__linux__)
+            unsigned long long b64 = 0;
+            if (ioctl(c->firmware_fd, BLKGETSIZE64, &b64) == 0)
+                devsize = (uint64_t)b64;
+            else
+#endif
+            devsize = 0;
+        }
+        if (devsize == 0) {
+            off_t end = lseek(c->firmware_fd, 0, SEEK_END);
+            if (end >= 0) devsize = (uint64_t)end;
+            lseek(c->firmware_fd, 0, SEEK_SET);
+        }
+        c->firmware_size = devsize ? devsize : (uint64_t)st.st_size;
     }
 
     /* Read the whole 512-byte table in one go (cbd read the full struct). */

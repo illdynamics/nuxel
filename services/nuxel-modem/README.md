@@ -14,7 +14,7 @@ Reversible, FAIL-CLOSED userspace deployment for the Samsung Shannon S5000AP
 - `systemd/nuxel-cpbootd.service` — `Restart=no`, **never auto-enabled** (no
   `WantedBy`), no timer. Invokes `nuxel-cpbootd-stage04-guard`.
 - `bin/nuxel-cpbootd-stage04-guard` — fail-closed gate. Never runs the HW binary
-  unless the pinned binary hash matches (`2b630d4a…`) and a populated
+  unless the pinned binary hash matches (`d963219f…`) and a populated
   `/etc/nuxel/modem/stage04-trial.env` supplies the owner-approved manifest SHA.
 - `bin/nuxel-modem-install.sh` — deploy/uninstall (see `--uninstall`).
 

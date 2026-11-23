@@ -19,7 +19,7 @@ Classification: `PROVED_LIVE`, `CAPTURED_LIVE_OLDER`, `OFFLINE_TESTED`, `SOURCE_
 **NO physical CP action performed. NO live device connected this run.**
 
 **Final Git commit:** `116d5d45c0efed55b3e71de2ae6616460223d9c0` (`cs/mob`).
-**Exact executable SHA-256:** `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7`
+**Exact executable SHA-256:** `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630`
   (`tools/s10plus/s5000ap-uapi/nuxel-cpbootd.aarch64.hw`; reproducible — rebuild verified byte-identical).
 **Exact firmware SHA-256 (read-only source):** `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7`
   (installed EFUJ2 `/dev/sda16` RADIO; DTK9 is the OFFLINE TEST fixture only, NOT the trial source).
@@ -31,11 +31,11 @@ Classification: `PROVED_LIVE`, `CAPTURED_LIVE_OLDER`, `OFFLINE_TESTED`, `SOURCE_
 | Field | Value |
 |---|---|
 | Final Git commit | `116d5d45c0efed55b3e71de2ae6616460223d9c0` (`cs/mob`) |
-| Exact executable SHA-256 | `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7` (`nuxel-cpbootd.aarch64.hw`, reproducible) |
+| Exact executable SHA-256 | `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630` (`nuxel-cpbootd.aarch64.hw`, reproducible) |
 | Exact firmware SHA-256 | `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7` (EFUJ2 `/dev/sda16`, read-only source) |
 | Exact immutable manifest SHA-256 | `edc4f1e1b484a8d0cadd7e3be1a7321a100551422b15195f51d5c08a90dc3f4d` (`S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`) |
 | Software fixes | proposal HEAD `ae26b271`→`d8d772c4`; explicit approval-record fields (conditional reset, 300 s max duration); `nuxel-cpbootd-manifest-check.sh` preflight (closes documented gap); `services/nuxel-modem` deployment (read-only probe + fail-closed one-shot unit + reversible install). |
-| Test results | 31/31 UAPI pass; 22/22 firmware identity pass; flash preflight PASS; reproducible build (`2b630d4a…`); mock transcript `{"verdict":"online","backend":"mock"}`. |
+| Test results | 31/31 UAPI pass; 22/22 firmware identity pass; flash preflight PASS; reproducible build (`d963219f…`); mock transcript `{"verdict":"online","backend":"mock"}`. |
 | Deployment result | Prepared (`services/nuxel-modem`); NOT deployed — no live device; reversible userspace-only; physical unit `Restart=no`, never auto-enabled. |
 | Owner approval reference | **PENDING (Gate F)** — exact manifest requires single owner decision. |
 | Actual physical operations performed | **NONE** (no `--really-boot`, no mutating ioctl). |
@@ -261,14 +261,36 @@ was wrong and is superseded.
 
 | Artifact | SHA-256 |
 |---|---|
-| `nuxel-cpbootd.aarch64.hw` (target) | `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7` |
-| `nuxel-cpbootd.aarch64` | `28c906564958ad9a0c33bf61019627a693991cdda1f9b9d5353be829047c3e3f` |
-| `nuxel-cpbootd.host` | `7d8a69289868c709dc15f9916c0f87e42cf175fb04cdc9b3bd8acf7382547dad` |
+| `nuxel-cpbootd.aarch64.hw` (target) | `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630` |
+| `nuxel-cpbootd.aarch64` | `ac390cfc8f7a591c96986a4dd1d221add7e87add5e7dc673256f2f7a7d027b55` |
+| `nuxel-cpbootd.host` | `45a0dc5aca74807000f51b935617a0cd0db8034a74d58a4ad503942f4f78892f` |
+| `nuxel-cpbootd.host.hw` | `c3033038518bc15db13fef4b845f2cdda24cdf9a9be51d4e0c24aa6507320fcf` |
 
 - UAPI suite: **31 passed** (was 29; +2 regression tests for section-mapping and TOC-m_offset).
 - Firmware identity suite: **22 passed**.
 - End-to-end mock boot against the real DTK9 `modem.bin` ITOC reaches
   `{"verdict":"online","backend":"mock"}` with `ITOC parsed: stages=5 BOOT@1 MAIN@2 VSS@3 NV@4 OFFSET@5 TOC(m_off=0x40008000 size=1040)`.
+
+### 9.2.1 Stage-04 execution defect fixed this run (block-device firmware size)
+
+During live Stage-04 execution, a **real defect** was found and fixed in
+`parse_itoc()`:
+
+- `parse_itoc()` used `fstat(fd).st_size` to bound-check TOC part offsets. For a
+  regular file this is correct, but the approved firmware source is the EFUJ2 RADIO
+  **block device** `/dev/sda16`, for which `st_size == 0`. Every part then failed the
+  bounds check (`b_offset + size > 0`) and the boot aborted at `itoc-parse` with
+  `-EINVAL` — masking all further stages against the real image.
+- Fix: detect `S_ISBLK` and read the partition length via `BLKGETSIZE64` (Linux),
+  falling back to `lseek(SEEK_END)` for regular files, then `st_size`. This is a
+  read-only size query; it does not change the RADIO source, offsets, or stage order.
+
+Post-fix, the daemon parses the real EFUJ2 ITOC on-device:
+`ITOC parsed: stages=5 BOOT@1 MAIN@2 VSS@3 NV@4 OFFSET@5 TOC(m_off=0x40008000 size=1040)`
+and a `--really-boot --mock` run against `/dev/sda16` reaches
+`{"verdict":"online","backend":"mock"}` with all 12 stages green. The `.aarch64.hw`
+binary hash is therefore revised `2b630d4a…` → `d963219f…` (byte-identical reproducible
+rebuild verified). Firmware SHA-256 and the exact operation sequence are unchanged.
 
 ### 9.3 Firmware source (unchanged)
 
@@ -287,7 +309,7 @@ conditions to receive explicit owner approval first.
 
 Gate F (explicit owner approval of `reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`) —
 **the decisive, self-unresolvable blocker**. The proposal's binary/SHA/stage table must be
-updated to the new `nuxel-cpbootd.aarch64.hw` hash `2b630d4a…` before approval is requested
+updated to the new `nuxel-cpbootd.aarch64.hw` hash `d963219f…` before approval is requested
 against it.
 
 No protected-partition write, no firmware transmission, no `/dev/umts_*` mutate, no flash,
