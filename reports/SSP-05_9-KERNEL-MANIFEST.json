@@ -1,0 +1,79 @@
+{
+  "schema": "nuxel-ssp-kernel-manifest-v1",
+  "prompt": "05_9",
+  "generated": "2026-11-22T19:35:00+01:00",
+  "target": "SM-G975F (beyond2lte) Exynos 9820",
+  "repo": "https://github.com/Linux4/android_kernel_samsung_exynos9820",
+  "pinned_commit": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+  "actual_head": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+  "release_string": "4.14.253-gf7194c1d15ed-dirty",
+  "toolchain": {
+    "gcc": "aarch64-linux-gnu-gcc (GCC) 15.2.0",
+    "binutils": "GNU ld (GNU Binutils) 2.45",
+    "make": "GNU Make 4.4.1",
+    "host": "darwin/arm64 (Apple Silicon)",
+    "host_headers_shim": "kernel/host-tools/include/{elf.h,endian.h,byteswap.h}",
+    "werror_relaxation": "tools/kernel-relax-werror.sh (described and reviewed)",
+    "case_collision_fix": "tools/kernel-case-collision-fix.sh (1 file)"
+  },
+  "patch_set": {
+    "candidate": "0020 + 0023 + 0025",
+    "excluded": "0027 (in-kernel firmware downloader; not required; dangling nuxel_bbd_patch_bytes)",
+    "patches": {
+      "0020-nuxel-ssp-spi-runtime-reinit.patch": {
+        "sha256": "62a339642a8c039471c360da9a9175fd7e1b3e5e821cf3013ae953b0d6f73200",
+        "applied": true,
+        "purpose": "SPI s3c64xx runtime-suspend re-init (spi17 BCM47752 hub readiness)",
+        "verify_marker": "sci->need_hw_init=1 in s3c64xx_spi_runtime_suspend (DOMAIN_TOP)"
+      },
+      "0023-nuxel-ssp-native-bringup-reconciled.patch": {
+        "sha256": "b21abad67fdee4734bfbc8c259295ff85f326fb16aabd68dc15dd208f92ca1db",
+        "applied": true,
+        "purpose": "native BBD /dev/ttyBCM + peer transport + nuxel_ssp_bringup_hw",
+        "verify_symbol": "nuxel_ssp_bringup_hw, nuxel_ssp_register_data (in vmlinux)"
+      },
+      "0025-nuxel-ssp-rail-force-coldcycle.patch": {
+        "sha256": "ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99",
+        "applied": true,
+        "purpose": "set_mcu_power case 0: regulator_disable -> regulator_force_disable (MCU cold cycle)",
+        "verify_symbol": "regulator_force_disable + set_mcu_power (in vmlinux)"
+      },
+      "0027-nuxel-ssp-kernel-firmware-download.patch": {
+        "sha256": "cc33f15e034b823c0b019d02f4948df2013715fdf86473f0ce4fab94c51e289d",
+        "applied": false,
+        "why_excluded": "in-kernel firmware downloader; userspace nuxel_bbd_flash/download already implements ROM protocol; dangling extern nuxel_bbd_patch_bytes"
+      }
+    }
+  },
+  "artifacts": {
+    "vmlinux": {
+      "path": "kernel/s10plus/.build/out/vmlinux",
+      "bytes": 308521616,
+      "sha256": "8e030f6f14e15789bd50216255d11397ab8ddf3d803e3473508dd14038c27803"
+    },
+    "Image": {
+      "path": "kernel/s10plus/.build/out/arch/arm64/boot/Image",
+      "bytes": 45848584,
+      "sha256": "8dae55e28a0ce5b173860d0dc8c52a1022a0cedcc214d009fc8d4fd1108dfdcb",
+      "arm64_magic_at_0x38": "ARMd"
+    },
+    "Image.gz": {
+      "path": "kernel/s10plus/.build/out/arch/arm64/boot/Image.gz",
+      "bytes": 16404688,
+      "sha256": "a79b64353c9722b0d1b2b2e2b494348d87f8841569c20cd1e93d938bba77bc53"
+    },
+    "dtb": {
+      "path": "kernel/s10plus/.build/out/arch/arm64/boot/dts/exynos/exynos9820.dtb",
+      "bytes": 238880,
+      "note": "informational; BOOT candidate is kernel-only, separate-DTB design (no appended DTB)"
+    }
+  },
+  "ssp_config": {
+    "CONFIG_SENSORS_SSP": "y",
+    "CONFIG_SENSORS_SSP_BBD": "y",
+    "CONFIG_SENSORS_SSP_SENSORHUB": "y",
+    "CONFIG_SENSORS_SSP_BEYOND": "y"
+  },
+  "build_status": "SUCCESS",
+  "no_flash_no_power_transition": true
+}

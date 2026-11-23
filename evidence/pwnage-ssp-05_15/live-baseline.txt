@@ -1,0 +1,44 @@
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+=== LIVE BASELINE SSP-05_15 ===
+Sun Nov 22 23:59:09 UTC 2026
+--- identity ---
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT Mon Nov 23 00:43:30 CET 2026 aarch64 GNU/Linux
+--- serial ---
+
+--- systemd ---
+running
+0 loaded units listed.
+--- BOOT sha (from rollback) ---
+--- GPS_PWR_EN ---
+0
+out
+--- gpio145 owner ---
+out
+0
+--- regulator vdd_mcu_1p8 ---
+state=enabled num_users=0
+--- mcu_power ---
+1
+--- bbd nodes ---
+crw-------. 1 root root  236,  2 Jan  1  1970 /dev/bbd_control
+crw-------. 1 root root  236,  3 Jan  1  1970 /dev/bbd_patch
+crw-------. 1 root root  236,  1 Jan  1  1970 /dev/bbd_sensor
+crw-------. 1 root root  236,  4 Jan  1  1970 /dev/bbd_urgent_patch
+crw-rw----. 1 root audio  10, 91 Jan  1  1970 /dev/ttyBCM
+--- gnss-lhd unit ---
+○ nuxel-gnss-lhd.service - Nuxel native Broadcom BBD/LHD GNSS bridge (beyond2lte BCM4773)
+     Loaded: loaded (/etc/systemd/system/nuxel-gnss-lhd.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: inactive (dead) since Mon 2026-11-23 00:46:54 CET; 12min ago
+   Duration: 23.714s
+ Invocation: d6c448f752e74c148cc21e5f9b863f3a
+       Docs: file:///usr/share/doc/nuxel/docs/hardware/gps/GPS-IMPLEMENTATION.md
+--- recent gnss journal ---
+Nov 22 23:59:24 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-gnss-lhd.service: Deactivated successfully.
+-- Boot d298257e2cfd42b39e13d34c98050c8a --
+Nov 23 00:46:30 WIN-CLIENT systemd[1]: Started nuxel-gnss-lhd.service - Nuxel native Broadcom BBD/LHD GNSS bridge (beyond2lte BCM4773).
+Nov 23 00:46:54 WIN-CLIENT python3[5412]: state=TRANSPORT_READY present=True power={'success': True, 'enabled': True} handshake={'ok': False, 'gps': False, 'elapsed_s': 15.021077374} fix_decoded=False error=transport/handshake boundary reached; GNSS position decode unavailable (proprietary lhd/gpsd RPC map)
+Nov 23 00:46:54 WIN-CLIENT systemd[1]: nuxel-gnss-lhd.service: Deactivated successfully.

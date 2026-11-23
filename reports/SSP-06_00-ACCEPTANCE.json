@@ -1,0 +1,93 @@
+{
+  "schema": "ssp-06_00-acceptance-v1",
+  "timestamp": "2026-11-23T00:30:16Z",
+  "agent": "Nuxel Stage 06 preflight",
+  "commit_head": "8e2f47254d189babaea989d6da50c013744c2d97",
+  "device": {"serial": "R58M75KDB2X", "product": "beyond2lte", "model": "SM-G975F"},
+  "decision": "READY_FOR_SPECIFIC_OWNER_APPROVAL",
+  "physical_trial_performed": false,
+  "physical_trial_success_claimed": false,
+
+  "baseline": {
+    "kernel": "4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT",
+    "systemd": "running (0 failed)",
+    "controller_identity": "BCM47752KUB1G (mcu_rev BR0121080900,BR010)",
+    "hub_diag": "mcu_probe=1 shutdown=1 resetting=1",
+    "gps_pwr_en_gpio145": 0,
+    "vdd_mcu_1p8": "enabled num_users=0",
+    "recovery_artifacts": "5+ BOOT images under /media/nuxel-boot + /var/backups/nuxel",
+    "status": "HEALTHY_AND_PRESERVED"
+  },
+
+  "audit_05_16": {
+    "controller_identity_BCM47752KUB1G": {"value": "CONFIRMED", "evidence": "live mcu_name sysfs (re-collected this mission)"},
+    "stock_firmware_G975FXXS9DTK9": {"value": "CONFIRMED", "evidence": "camera-stock-DTK9.json + lhd hash 6362e80d..."},
+    "getversion_request_id_0": {"value": "CONFIRMED", "evidence": "lhd state 7/14->8/15 'RPC ID 0 empty body'"},
+    "getversion_response_id_3": {"value": "CONFIRMED", "evidence": "lhd rpc_ids['3'] compare_va 0x3d1dc (3xLE32)"},
+    "memorywrite_id_5": {"value": "CONFIRMED", "evidence": "lhd memory_write_encoder 0x3d60c 'RPC ID 5'"},
+    "startscratch_id_46": {"value": "CONFIRMED", "evidence": "lhd scratch encoder 0x3cee0 rpc_id 46"},
+    "servicestart_id_55": {"value": "CONFIRMED", "evidence": "lhd service encoder 0x3cff8 rpc_id 55"},
+    "firmware_sha256": {"value": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d", "status": "MATCH", "evidence": "independent decode of r_os/bbd_patch_file_beyond.h"},
+    "f1_record_count": {"value": 479, "status": "MATCH", "evidence": "independent record-walk (all 0xF1)"},
+    "asic_version": {"value": "0x004775B0", "status": "MATCH"},
+    "entry_address": {"value": "0x00800161", "status": "MATCH"},
+    "first_f1_dest": {"value": "0x00800000", "note": "distinct from entry (entry != first dest property confirmed)"}
+  },
+
+  "firmware_first_hypothesis": {
+    "conclusion": "CONFIRMED (source-proven)",
+    "detail": "bcm_rxtx_work_func calls bcm477x_hello first, gates ALL SSI I/O behind MCU_REQ->MCU_RESP; bcm477x_rpc_get_version (raw ROM helper) has zero callers (dead code). Firmware download is genuinely required before live version identification.",
+    "corrected_minimal_trial": "firmware-download + app-start, then post-download GetVersion",
+    "caveat": "conclusion NOT based on dead helper alone; based on live-only SSI path being handshake-gated with no alternative routing"
+  },
+
+  "firmware_compatibility": {
+    "status": "PROVISIONALLY_CONFIRMED",
+    "note": "structural + identity match; final die/board acceptance delegated to post-download GetVersion (open runtime items recorded)"
+  },
+
+  "failure_recovery": {
+    "status": "CONFIRMED",
+    "key_proof": "bbd_mcu_reset pushes a host-side control request (SIGKILL lhd or BBD_CTRL_RESET_REQ), does NOT directly reset the die; actual reset done by host userspace reading the request. Recovery independent of downloaded firmware executing.",
+    "bounded_ops": "PASS",
+    "timeouts": "PASS",
+    "response_validation": "PASS",
+    "partial_transfer": "PASS",
+    "interrupted_transfer": "PASS",
+    "unexpected_reset": "PASS",
+    "transport_contention": "PASS (bridge masked + advisory flock recommended)",
+    "safe_cleanup": "PASS",
+    "recovery_incomplete_init": "PASS"
+  },
+
+  "power_timing": {
+    "status": "PARTIALLY_RESOLVED",
+    "resolved": ["ordering (source-proven)", "handshake-as-readiness-gate", "reversible GPIO vs regulator cold-cycle separation", "no-reboot re-confirmed"],
+    "missing": "GPS_PWR_EN rise -> ROM autobaud-ready settle delay (Broadcom datasheet, not derivable offline)",
+    "policy": "NO arbitrary settle delay invented; reported as missing evidence"
+  },
+
+  "offline_tests": {
+    "status": "ALL_RUNNABLE_TESTS_PASS",
+    "native_c": "PASS (download/framing + flash/F1/RX + 17 negative tests)",
+    "python_suites": "PASS (kernel_identity + isolation, 10 tests)",
+    "protocol_replay": "PASS (SIMULATED framing replay)",
+    "firmware_identity_recompute": "PASS (sha256 + 479 F1 + asic + entry)",
+    "lhd_emulation_tests": "OWNER_BINARY_REQUIRED (test_lhd_response.py needs packs/... vendor-bin-hw-lhd, gitignored)",
+    "accidental_startup_proof": "PASS (hard gate flag + mutual exclusion + hardened nuxel_lhd.py + no deployed downloader)"
+  },
+
+  "remaining_owner_actions": [
+    "RF authorization (bounded GNSS-domain energisation)",
+    "Timing artifact (datasheet power/ROM-ready value OR bounded settle-delay instruction OR accept handshake-gated readiness)",
+    "Explicit bounded-trial grant (MCU wake + 479x MemoryWrite + StartScratch + ServiceStart + post-download GetVersion)"
+  ],
+
+  "not_performed": [
+    "physical firmware execution",
+    "GPS_PWR_EN assertion",
+    "MemoryWrite / StartScratch / ServiceStart",
+    "ESW:READY emission",
+    "BOOT/DTB/DTBO/recovery write"
+  ]
+}

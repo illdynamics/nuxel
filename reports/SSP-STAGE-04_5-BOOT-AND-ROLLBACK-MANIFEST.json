@@ -1,0 +1,86 @@
+{
+  "schema": "nuxel-ssp-boot-rollback-manifest-v1",
+  "generated": "2026-11-22T18:15:00+01:00",
+  "stage": "04_5 final remediation (read-only, no flash)",
+  "verdict": "READY_FOR_STAGE_05_SOFTWARE_ONLY_NO_CANDIDATE",
+
+  "boot_donor": {
+    "status": "VERIFIED",
+    "device": "/dev/sda14",
+    "label_hint": "boot (historical PARTLABEL=boot; this session confirmed size/geometry)",
+    "bytes": 57671680,
+    "sectors": 112640,
+    "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+    "verified_this_session": true,
+    "matches_stage01": true
+  },
+
+  "boot_header": {
+    "magic": "ANDROID!",
+    "kernel_size": 45848584,
+    "kernel_addr": "0x10008000",
+    "ramdisk_size": 2424832,
+    "ramdisk_addr": "0x11000000",
+    "second_size": 0,
+    "second_addr": 0,
+    "tags_addr": "0x10000100",
+    "page_size": 2048,
+    "header_version": 1,
+    "header_size": 1648,
+    "name": "nuxel-s10plus",
+    "kernel_image_magic_offset_2048_0x38": "ARMd (0x644d5241 LE)",
+    "ramdisk_lzma_magic_at_45852672": "5d 00 00 80"
+  },
+
+  "separate_dt_evidence": {
+    "appended_dtb_count": 0,
+    "fdt_magic_0xD00DFEED_occurrences": 0,
+    "trailing_slack": "all-zero from offset 48277504 to 57671680 (9,394,176 zero bytes)",
+    "dtb_partition": {"device": "/dev/sda12", "sha256": "abc9d45d3745866346fd94c7c04028cc2c62ade4dd274b400dbbfec0c2ef4780", "sectors": 8192, "unchanged": true},
+    "dtbo_partition": {"device": "/dev/sda13", "sha256": "de3bc02526c66647992a744608fdf61548823866e822a7400619d74126095c23", "sectors": 8192, "unchanged": true},
+    "recovery_partition": {"device": "/dev/sda15", "sha256": "4cc71d6277e020cdec729b85934cfb6111e9abee8db2fbcc344aad3173335d87", "sectors": 132096, "unchanged": true}
+  },
+
+  "boot_candidate": {
+    "status": "NOT_BUILT_NO_FLASH_NEEDED",
+    "reason": "No kernel change justified; running kernel already has full SSP/BBD passthrough. No candidate Image exists and none is fabricated."
+  },
+
+  "rollback": {
+    "host_seed": {
+      "path": "/tmp/nuxel-ssp-preflight/boot-sda14-fresh.img",
+      "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+      "bytes": 57671680,
+      "verified_this_session": true,
+      "matches_live_donor": true
+    },
+    "twrp_seed": {
+      "status": "NOT_ESTABLISHED",
+      "reason": "No intentional TWRP session in Stage 04_5; device running normal Nuxel Linux. Not required for software-only Stage-05."
+    },
+    "restoration_plan": "If a future BOOT-only candidate fails: verify current by-name partition map in TWRP, diff live sda14 vs host seed, dd host seed back to verified BOOT target (readback+hash), reboot normal Nuxel. NOT executed in this stage."
+  },
+
+  "partition_mapping_live": {
+    "boot": "/dev/sda14 (112640 sectors, 57,671,680 bytes)",
+    "dtb": "/dev/sda12 (8192 sectors, 8,388,608 bytes)",
+    "dtbo": "/dev/sda13 (8192 sectors, 8,388,608 bytes)",
+    "recovery": "/dev/sda15 (132096 sectors, 67,641,344 bytes)",
+    "root": "/dev/sda31 (ext4, 111G, 54% used)"
+  },
+
+  "device_state": {
+    "hostname": "2001-1c00-4d09-8a00-162b-e49d-dc7c-4128",
+    "kernel": "4.14.253-gf7194c1d15ed-dirty",
+    "uptime": "~1 day 4.5h, load ~12",
+    "mcu": "BCM47752KUB1G",
+    "mcu_test": "NG,NG,NG",
+    "rx": 0,
+    "healthy": true,
+    "note": "running normal Nuxel Linux (NOT TWRP)"
+  },
+
+  "final_decision": "READY_FOR_STAGE_05_SOFTWARE_ONLY",
+  "no_partition_written": true,
+  "no_candidate_flashed": true
+}

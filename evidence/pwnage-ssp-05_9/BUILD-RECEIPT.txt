@@ -1,0 +1,38 @@
+SSP-05_9 BUILD/TEST RECEIPT (2026-11-22)
+==========================================
+Kernel build: SUCCESS
+  toolchain: aarch64-linux-gnu-gcc (GCC) 15.2.0, binutils 2.45, GNU Make 4.4.1
+  source: /Volumes/kernelbuild/src @ f7194c1d15ed (case-sensitive)
+  command: gmake O=... ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- \
+           HOSTCFLAGS="<host-tools shim>" KCFLAGS="<gcc15 relax>" -j10 Image.gz dtbs
+  vmlinux:  8e030f6f14e15789bd50216255d11397ab8ddf3d803e3473508dd14038c27803 (308521616 B)
+  Image:    8dae55e28a0ce5b173860d0dc8c52a1022a0cedcc214d009fc8d4fd1108dfdcb (45848584 B)
+  Image.gz: a79b64353c9722b0d1b2b2e2b494348d87f8841569c20cd1e93d938bba77bc53 (16404688 B)
+
+Patch set: 0020+0023+0025 (0027 excluded)
+  0020 62a339642a8c039471c360da9a9175fd7e1b3e5e821cf3013ae953b0d6f73200 APPLIED
+  0023 b21abad67fdee4734bfbc8c259295ff85f326fb16aabd68dc15dd208f92ca1db APPLIED
+  0025 ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99 APPLIED
+  0027 cc33f15e034b823c0b019d02f4948df2013715fdf86473f0ce4fab94c51e289d EXCLUDED
+
+BOOT candidate:
+  path: evidence/pwnage-ssp-05_9/candidate-boot-0020-0023-0025.img
+  sha256: 9805d519b61c38a960158753679e1e2af0cf1783ce4f4c6e3c8b0ba6be5fbca7
+  kernel_sha256: 8dae55e28a0ce5b173860d0dc8c52a1022a0cedcc214d009fc8d4fd1108dfdcb
+
+Known-good donor: 0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c
+
+Regression tests (all PASS):
+  native BBD C harness: flash/negative/download/embedded/replay PASS
+  orientation: 77/77 PASS
+  recovery: 14/14 PASS
+  boot packer: 9/9 PASS
+  kernel source audit: 4/4 PASS
+  stage05 gate: 3/3 PASS
+  kernel identity: 3/3 PASS
+  isolation: 7/7 PASS
+  ssp native/orientation: 0 failing
+
+Final status: AWAITING_BOOT_FLASH_AUTHORIZATION
+  (live device gates + TWRP rollback copy + flash authorization + power-transition
+   safety analysis all still required; no flash/power/ROM-probe performed)

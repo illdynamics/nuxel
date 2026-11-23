@@ -1,0 +1,83 @@
+{
+  "schema": "nuxel-ssp-source-build-manifest-v1",
+  "generated": "2026-11-22T18:10:00+01:00",
+  "stage": "04_5 final remediation",
+  "verdict": "NO_FLASH_NEEDED_SOFTWARE_ONLY",
+  "source": {
+    "main_repo_head": "ecbbdb41f6f30d4fbbbfd9ff7955509178d0da80",
+    "main_repo_branch": "cs/ssp",
+    "kernel_repo": "https://github.com/Linux4/android_kernel_samsung_exynos9820",
+    "kernel_pinned_full_commit": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+    "kernel_version": "4.14.253 downstream",
+    "running_kernel": "4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT Sat Nov 21 12:30:11 CET 2026 aarch64",
+    "defconfig": "exynos9820-beyond2lte_defconfig",
+    "local_kernel_checkout_present": false,
+    "note": "kernel/s10plus/.build/src is NOT materialized in this tree; a local clean build was not performed because no kernel change is justified (software-only decision)."
+  },
+  "compiler": {
+    "status": "NOT_INVOKED",
+    "reason": "no build justified; running kernel already has SSP/BBD passthrough"
+  },
+  "kconfig_running_kernel": {
+    "CONFIG_SENSORS_SSP": "y",
+    "CONFIG_SENSORS_SSP_BBD": "y",
+    "CONFIG_SENSORS_SSP_SENSORHUB": "y",
+    "CONFIG_SENSORS_SSP_LSM6DSO": "y",
+    "CONFIG_SENSORS_SSP_MAGNETIC_COMMON": "y",
+    "CONFIG_SENSORS_SSP_LPS22H": "y",
+    "CONFIG_SENSORS_SSP_MOBEAM": "y",
+    "CONFIG_SENSORS_SSP_TMD4910": "y",
+    "source": "/proc/config.gz on live device (read-only)"
+  },
+  "patches": [
+    {"name": "0020-nuxel-ssp-spi-runtime-reinit.patch", "sha256": "62a339642a8c039471c360da9a9175fd7e1b3e5e821cf3013ae953b0d6f73200", "required": true, "in_running_kernel": true},
+    {"name": "0023-nuxel-ssp-native-bringup-reconciled.patch", "sha256": "b21abad67fdee4734bfbc8c259295ff85f326fb16aabd68dc15dd208f92ca1db", "required": true, "in_running_kernel": true},
+    {"name": "0025-nuxel-ssp-rail-force-coldcycle.patch", "sha256": "ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99", "required": true, "in_running_kernel": "PARTIAL (set_mcu_power/regulator_force_disable present)"},
+    {"name": "0027-nuxel-ssp-kernel-firmware-download.patch", "sha256": "cc33f15e034b823c0b019d02f4948df2013715fdf86473f0ce4fab94c51e289d", "required": true, "in_running_kernel": false, "necessary_for_software_only": false}
+  ],
+  "running_kernel_symbols": {
+    "nuxel_ssp_bringup_hw": "present",
+    "nuxel_ssp_register_data": "present",
+    "bbd_nuxel_peer_open": "present",
+    "bbd_nuxel_peer_active": "present",
+    "bbd_nuxel_peer_rx": "present",
+    "bbd_nuxel_peer_release": "present",
+    "nuxel_bbd_peer_send.constprop.0": "present",
+    "nuxel_ssp_bcm_diag": "present",
+    "total_nuxel_symbols": 36,
+    "nuxel_ssp_dl_download": "ABSENT (0027 not deployed, not required)",
+    "dl_fire_rpc": "ABSENT (0027 net deployed, not required)",
+    "nuxel_bbd_patch_bytes": "ABSENT (0027 not deployed, not required)"
+  },
+  "device_nodes": {
+    "/dev/ttyBCM": "10,91 (crw-rw---- root:audio)",
+    "/dev/bbd_sensor": "236,1",
+    "/dev/bbd_control": "236,2",
+    "/dev/bbd_patch": "236,3",
+    "bd_device_major": "236 (BBD)"
+  },
+  "embedded_firmware_identity": {
+    "status": "PASS",
+    "asic": "0x004775b0",
+    "blob_length": 438895,
+    "patch_address": "0x00800161",
+    "crc32_ieee": "93d35bb4",
+    "blob_sha256": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d"
+  },
+  "tests": {
+    "native_c_harness": {"command": "make -C tools/s10plus/ssp-native OUT=/tmp/nuxel-ssp-04_5-build check", "result": "PASS"},
+    "orientation": {"command": "PYTHONPATH=services/nuxel-orientation python3 -m pytest -q services/nuxel-orientation/tests", "total": 77, "passed": 77},
+    "recovery": {"command": "python3 -S -m unittest discover -s NUXEL_SSP_RECOVERY_V2 -p 'test_*.py'", "total": 14, "passed": 14},
+    "pack_ssp_boot": {"command": "python3 -S tools/s10plus/ssp-stage04/test_pack_ssp_boot.py", "total": 9, "passed": 9},
+    "kernel_source_audit": {"command": "python3 -S tools/s10plus/ssp-stage04/test_kernel_source_audit.py", "total": 4, "passed": 4},
+    "stage05_gate": {"command": "python3 -S tools/s10plus/ssp-stage04/test_stage05_gate.py", "total": 3, "passed": 3},
+    "build_script_syntax": {"command": "bash -n kernel/s10plus/build-kernel.sh && bash -n kernel/s10plus/build-kernel-kbase.sh", "result": "PASS"},
+    "verify_stage05_gate_on_historical": {"command": "verify_stage05_gate.py --preflight reports/SSP-CANDIDATE-PREFLIGHT.json", "result": "NO_FLASH exit 1 (correct, fail-closed)"}
+  },
+  "provenance": {
+    "git_diff_modified_files_sha256": "55b073c528c432573b4b33907f8b3b3af524e32a5e26f60064d55073752e7f5d",
+    "modified_files": ["kernel/s10plus/build-kernel.sh", "tools/s10plus/pack-ssp-boot.py"],
+    "preserved_stashes": ["ds/cam EMERGENCY-RECOVERY-PRESERVE-camera-work", "A56-snakepwn-5000", "a45-keyboard-home", "feature/haptic-and-triple-button"],
+    "no_reset_or_clean_run": true
+  }
+}

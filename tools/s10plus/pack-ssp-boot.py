@@ -1,181 +1,172 @@
 #!/usr/bin/env python3
-"""Pack a combined Nuxel S10+ boot image from proven parts (PWNAGE-SSP).
+"""Fail-closed, *offline* SSP BOOT-v1 kernel-only repacker for SM-G975F.
 
-The container is assembled exactly the way the currently-booting image is
-laid out.  Rather than re-deriving S-Boot's page rules from a comment, the
-layout is *measured* from the donor (the live, verified boot partition):
+This particular donor is a full-size 57,671,680-byte BOOT partition image
+with a 2048-byte header page, an arm64 Image, LZMA-alone ramdisk and **no**
+appended DTB. Device-tree material lives in SEPARATE partitions. An arbitrary
+FDT search is never a legitimate way to determine where the kernel starts.
 
-    start of kernel   = offset of the little-endian arm64 magic "ARMd"
-    start of ramdisk  = kernel_start + round_up(header_kernel_size, 2048)
-    ramdisk length    = header field 3 (unchanged; S-Boot derives it)
-    start of DTB tail = first 0xD00DFEED after the ramdisk
-
-Only the kernel payload changes by default.  The ramdisk (LZMA-alone with the
-0xFFFFFFFFFFFFFFFF size field) and the entire DTB/hash tail are copied
-byte-for-byte, so every other boot behaviour (NFC/USBNET/DTBO selection)
-is preserved.  An optional --initramfs-cpio replaces only the cpio inside the
-ramdisk using the same LZMA parameters the installer baked in.
-
-This tool never writes to a device; verify-boot-image.py is the gate.
+This script cannot flash anything. Its successful exit proves only that its
+byte-level packaging invariants hold. See SSP Stage 04/05 gates for required
+*independent* BOOT and DT evidence and verified TWRP rollback copies.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
-import lzma
+import json
+import os
 import struct
 import sys
 from pathlib import Path
 
+PAGE = 2048
+PARTITION_BYTES = 57_671_680
 MAGIC = b"ANDROID!"
 ARM64_MAGIC = b"ARM\x64"
-ARM64_MAGIC_OFF = 0x38
-FDT_MAGIC = b"\xd0\r\xfe\xed"
-PAGE = 2048
-LINUX_IMAGE_STEXT = b"\x00\x00\x6c\x14"
+HEADER_VERSION = 1
+HEADER_SIZE = 1648
 
 
-def up(n, p=PAGE):
-    return (n + p - 1) // p * p
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
-def sha(b):
-    return hashlib.sha256(b).hexdigest()
+def aligned(length: int, page: int = PAGE) -> int:
+    return ((length + page - 1) // page) * page
 
 
-def locate(donor: bytes):
-    # Primary rule: the Image entry stub's branch instruction.  The exact
-    # opcode is not stable across builds (b vs bl, different jump distance),
-    # so a missed literal must not be fatal.  Fall back to the arm64 header
-    # magic at +0x38, which every arm64 Image carries.
-    kstart = None
-    pos = donor.find(LINUX_IMAGE_STEXT)
-    while pos >= 0:
-        if donor[pos + ARM64_MAGIC_OFF:pos + ARM64_MAGIC_OFF + 4] == ARM64_MAGIC:
-            kstart = pos
-            break
-        pos = donor.find(LINUX_IMAGE_STEXT, pos + 1)
-    if kstart is None:
-        pos = donor.find(ARM64_MAGIC)
-        while pos >= 0:
-            cand = pos - ARM64_MAGIC_OFF
-            if cand >= 0:
-                klen = struct.unpack_from("<I", donor, 8)[0]
-                if donor[cand - min(cand, PAGE):cand] or True:
-                    kstart = cand
-                    break
-            pos = donor.find(ARM64_MAGIC, pos + 1)
-    if kstart is None:
-        raise SystemExit("cannot locate the arm64 Image in the donor")
-    (klen, _kaddr, rlen, _raddr) = struct.unpack_from("<IIII", donor, 8)
-    rstart = kstart + up(klen)
-    ramdisk = donor[rstart:rstart + rlen]
-    if not ramdisk or ramdisk[0] != 0x5d:
-        raise SystemExit("donor ramdisk is not LZMA-alone (props 0x%02x)"
-                         % (ramdisk[0] if ramdisk else -1))
-    dtb_at = donor.find(FDT_MAGIC, rstart + rlen)
-    if dtb_at < 0:
-        raise SystemExit("cannot locate the appended DTB region")
-    return kstart, rstart, rlen, ramdisk, dtb_at
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise ValueError(message)
 
 
-def lzma_alone(cpio: bytes) -> bytes:
-    filt = [{"id": lzma.FILTER_LZMA1, "preset": 6, "dict_size": 1 << 23}]
-    comp = lzma.compress(cpio, format=lzma.FORMAT_ALONE, filters=filt)
-    if comp[:1] != b"\x5d":
-        raise SystemExit("unexpected LZMA props")
-    return comp[:5] + b"\xff" * 8 + comp[13:]
+def section_layout(buf: bytes, capacity: int) -> dict:
+    require(len(buf) == capacity, f"donor must be full partition ({capacity} bytes), got {len(buf)}")
+    require(buf[:8] == MAGIC, "invalid Android BOOT magic")
+    klen, kaddr, rlen, raddr = struct.unpack_from("<IIII", buf, 8)
+    second, second_addr, tags, page, version = struct.unpack_from("<IIIII", buf, 24)
+    hdrsize = struct.unpack_from("<I", buf, 1644)[0]
+    require(page == PAGE, f"unapproved BOOT page size {page}")
+    require(version == HEADER_VERSION and hdrsize == HEADER_SIZE,
+            f"requires BOOT-v1 header size {HEADER_SIZE}, found {version}/{hdrsize}")
+    require(second == 0 and second_addr == 0, "unexpected second-stage payload")
+    require(struct.unpack_from("<I", buf, 1632)[0] == 0 and
+            struct.unpack_from("<Q", buf, 1636)[0] == 0,
+            "unexpected recovery DTBO payload in BOOT header")
+    require(kaddr == 0x10008000 and raddr == 0x11000000 and tags == 0x10000100,
+            "unexpected S10+ kernel/ramdisk/tags load addresses")
+    require(b"nuxel.device=s10plus" in buf[64:576], "not a Nuxel S10+ donor")
+    require(klen >= 65536 and rlen > 0, "empty/tiny BOOT component")
+    koff = PAGE
+    roff = koff + aligned(klen)
+    end = roff + aligned(rlen)
+    require(end <= capacity, "kernel+ramdisk overflows donor")
+    require(buf[koff + 0x38:koff + 0x3c] == ARM64_MAGIC,
+            "donor is missing raw ARM64 Image header")
+    require(buf[roff:roff + 3] == b"\x5d\x00\x00", "unexpected donor ramdisk compression")
+    require(not any(buf[koff + klen:roff]), "nonzero donor kernel alignment bytes")
+    require(not any(buf[roff + rlen:end]), "nonzero donor ramdisk alignment bytes")
+    require(not any(buf[end:]),
+            "nonzero data after donor ramdisk: possible appended DTB or other trailer; REFUSE")
+    return {"kernel_offset": koff, "kernel_size": klen, "ramdisk_offset": roff,
+            "ramdisk_size": rlen, "payload_end_aligned": end,
+            "header": buf[:PAGE], "ramdisk": buf[roff:roff + rlen],
+            "kernel_addr": kaddr, "ramdisk_addr": raddr, "tags_addr": tags}
 
 
-def main(argv=None):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--donor", default="backups/boot/boot-orig-20261113.img")
-    ap.add_argument("--kernel", required=True)
-    ap.add_argument("--out", required=True)
-    ap.add_argument("--ramdisk-raw", default="",
-                    help="replace the compressed ramdisk byte-for-byte")
-    ap.add_argument("--initramfs-cpio", default="",
-                    help="newc cpio to compress as the new ramdisk")
-    ap.add_argument("--ramdisk-align", type=int, default=PAGE)
-    ap.add_argument("--manifest", default="")
-    ap.add_argument("--pad-to-partition", action="store_true",
-                    help="zero-pad to the donor size (flash tool writes a fixed length)")
-    a = ap.parse_args(argv)
-
-    donor = Path(a.donor).read_bytes()
-    if donor[:8] != MAGIC:
-        raise SystemExit("donor is not an Android boot image")
-    if b"nuxel.device=s10plus" not in donor[64:576]:
-        raise SystemExit("donor is not a Nuxel S10+ boot image")
-    kstart, rstart, rlen, ramdisk, dtb_at = locate(donor)
-    (klen0, kaddr, rlen0, raddr) = struct.unpack_from("<IIII", donor, 8)
-    hdr = bytearray(donor[:kstart])
-    tail = donor[dtb_at:]
-
-    if a.ramdisk_raw:
-        ramdisk = Path(a.ramdisk_raw).read_bytes()
-    elif a.initramfs_cpio:
-        cpio = Path(a.initramfs_cpio).read_bytes()
-        if cpio[:6] != b"070701":
-            raise SystemExit("--initramfs-cpio is not newc (070701)")
-        ramdisk = lzma_alone(cpio)
-    if ramdisk[0] != 0x5d:
-        raise SystemExit("ramdisk is not LZMA-alone")
-    if a.ramdisk_align > 1 and len(ramdisk) % a.ramdisk_align:
-        ramdisk += b"\x00" * (a.ramdisk_align - len(ramdisk) % a.ramdisk_align)
-
-    kernel = Path(a.kernel).read_bytes()
-    if kernel[ARM64_MAGIC_OFF:ARM64_MAGIC_OFF + 4] != ARM64_MAGIC:
-        raise SystemExit("kernel is not a raw little-endian arm64 Image")
-    # Header layout (v1): +0x08 kernel size, +0x0c kernel load address,
-    # +0x10 ramdisk size, +0x14 ramdisk load address (+0x18 second size).
-    # This file used to write a "<II" pair at +0x08, which also overwrote
-    # the kernel load address with the ramdisk length; the resulting image
-    # had kaddr ≈ 0x250000 instead of 0x10008000 and never booted.  Only the
-    # two size fields may change here - addresses are inherited from the
-    # donor and are what S-Boot uses to place Image and the ramdisk.
-    struct.pack_into("<I", hdr, 8, len(kernel))
-    struct.pack_into("<I", hdr, 0x10, rlen)
-    assert struct.unpack_from("<I", hdr, 0x0c)[0] == kaddr, "kernel addr disturbed"
-    assert struct.unpack_from("<I", hdr, 0x14)[0] == raddr, "ramdisk addr disturbed"
-
-    out = bytes(hdr) + kernel + b"\0" * (up(len(kernel)) - len(kernel)) + ramdisk
-    pad = (dtb_at - len(out)) % PAGE
-    out += b"\0" * pad + tail
-    if len(out) > len(donor):
-        raise SystemExit(
-            "image does not fit the boot partition: %d bytes > %d "
-            "(kernel %d + ramdisk %d + dtb %d); flashing it would truncate "
-            "the appended DTB or overflow the partition"
-            % (len(out), len(donor), len(kernel), len(ramdisk), len(tail)))
-    if a.pad_to_partition and len(out) < len(donor):
-        out += b"\0" * (len(donor) - len(out))
-    Path(a.out).write_bytes(out)
-
-    facts = {
-        "image": a.out,
-        "sha256": sha(out),
-        "size": len(out),
-        "header_bytes": kstart,
-        "kernel_offset": kstart,
-        "kernel_size": len(kernel),
-        "kernel_sha256": sha(kernel),
-        "ramdisk_offset": kstart + up(len(kernel)),
-        "ramdisk_size": len(ramdisk),
-        "ramdisk_sha256": sha(ramdisk),
-        "dtb_offset": kstart + up(len(kernel)) + len(ramdisk) + pad,
-        "dtb_region_size": len(tail),
-        "dtb_region_sha256": sha(tail),
-        "kernel_addr": hex(kaddr),
-        "ramdisk_addr": hex(raddr),
-        "cmdline": donor[64:576].split(b"\0")[0].decode(),
+def make_candidate(donor: bytes, kernel: bytes, *, capacity: int,
+                   expect_donor_sha256: str) -> tuple[bytes, dict]:
+    require(len(expect_donor_sha256) == 64 and
+            all(c in "0123456789abcdef" for c in expect_donor_sha256.lower()),
+            "--expect-donor-sha256 must contain the complete SHA-256")
+    actual_donor_sha = sha256(donor)
+    require(actual_donor_sha == expect_donor_sha256.lower(),
+            f"donor SHA-256 mismatch (actual {actual_donor_sha})")
+    parts = section_layout(donor, capacity)
+    require(len(kernel) >= 65536 and kernel[0x38:0x3c] == ARM64_MAGIC,
+            "candidate must be raw, uncompressed AArch64 Image")
+    k_aligned = aligned(len(kernel))
+    rlen = parts["ramdisk_size"]
+    end = PAGE + k_aligned + aligned(rlen)
+    require(end <= capacity, f"candidate components {end} exceed partition {capacity}")
+    header = bytearray(parts["header"])
+    struct.pack_into("<I", header, 8, len(kernel))  # kernel_size is the *only* changed header field
+    candidate = bytes(header) + kernel + bytes(k_aligned - len(kernel))
+    candidate += parts["ramdisk"] + bytes(aligned(rlen) - rlen)
+    candidate += bytes(capacity - len(candidate))
+    require(len(candidate) == capacity, "candidate not partition sized")
+    check = section_layout(candidate, capacity)
+    require(check["ramdisk"] == parts["ramdisk"], "candidate ramdisk was modified")
+    require(candidate[0:8] == donor[0:8] and
+            candidate[12:PAGE] == donor[12:PAGE], "donor header unexpectedly changed")
+    require(candidate[PAGE:PAGE + len(kernel)] == kernel, "candidate kernel differs")
+    manifest = {
+        "format": "nuxel-ssp-separate-dt-boot-v1", "offline_only": True,
+        "flash_authorized": False,
+        "donor_sha256": actual_donor_sha, "donor_bytes": len(donor),
+        "candidate_sha256": sha256(candidate), "candidate_bytes": len(candidate),
+        "kernel_sha256": sha256(kernel), "kernel_size": len(kernel),
+        "kernel_offset": PAGE, "kernel_addr": hex(parts["kernel_addr"]),
+        "ramdisk_sha256": sha256(check["ramdisk"]), "ramdisk_size": rlen,
+        "ramdisk_offset": check["ramdisk_offset"],
+        "ramdisk_addr": hex(parts["ramdisk_addr"]),
+        "header_change_only": "kernel_size@0x08", "appended_dtb_count": 0,
+        "dtb_dtbo_external_partitions": True, "trailing_partition_slack_zero": True,
+        "requires_independent_boot_verifier": True,
+        "requires_two_verified_rollback_copies": True,
+        "requires_live_dt_readback": True,
     }
-    for k, v in facts.items():
-        print("%-18s %s" % (k, v))
-    if a.manifest:
-        Path(a.manifest).write_text(
-            "\n".join("%-18s %s" % (k, v) for k, v in facts.items()) + "\n")
-    return 0
+    return candidate, manifest
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--donor", required=True, help="full-size known-good BOOT partition backup")
+    p.add_argument("--kernel", required=True, help="verified uncompressed ARM64 kernel Image")
+    p.add_argument("--out", required=True)
+    p.add_argument("--expect-donor-sha256", required=True, help="trusted independently acquired SHA-256")
+    p.add_argument("--partition-bytes", type=int, default=PARTITION_BYTES)
+    p.add_argument("--manifest", help="write JSON packaging evidence (not flash approval)")
+    p.add_argument("--pad-to-partition", action="store_true", help="retained compatibility; padding is always mandatory")
+    # Explicitly reject former ramdisk-changing options rather than silently ignoring them.
+    p.add_argument("--ramdisk-raw", default="")
+    p.add_argument("--initramfs-cpio", default="")
+    p.add_argument("--ramdisk-align", type=int, default=PAGE)
+    args = p.parse_args(argv)
+    try:
+        require(not args.ramdisk_raw and not args.initramfs_cpio,
+                "SSP candidate must be kernel-only; ramdisk replacement is forbidden")
+        require(args.ramdisk_align == PAGE, "SSP uses canonical 2048-byte alignment")
+        require(args.partition_bytes > PAGE * 2 and args.partition_bytes % PAGE == 0,
+                "invalid BOOT partition byte count")
+        require(Path(args.donor).resolve() != Path(args.out).resolve(),
+                "refusing to overwrite donor BOOT image")
+        require(Path(args.kernel).resolve() != Path(args.out).resolve(),
+                "refusing to overwrite kernel Image")
+        candidate, facts = make_candidate(Path(args.donor).read_bytes(),
+                                          Path(args.kernel).read_bytes(),
+                                          capacity=args.partition_bytes,
+                                          expect_donor_sha256=args.expect_donor_sha256)
+        # Atomic replacement prevents incomplete output after an interrupted write.
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_name(out.name + ".ssp-incomplete")
+        try:
+            with tmp.open("wb") as fh:
+                fh.write(candidate)
+                fh.flush()
+                os.fsync(fh.fileno())
+            tmp.replace(out)
+        finally:
+            tmp.unlink(missing_ok=True)
+        if args.manifest:
+            Path(args.manifest).write_text(json.dumps(facts, indent=2, sort_keys=True) + "\n")
+        print(json.dumps(facts, indent=2, sort_keys=True))
+        return 0
+    except (ValueError, OSError, struct.error) as exc:
+        print(f"SSP BOOT pack REFUSED: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

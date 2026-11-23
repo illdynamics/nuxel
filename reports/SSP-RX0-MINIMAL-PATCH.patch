@@ -1,0 +1,52 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH] ssp-native: nuxel_bbd_flash RX node + ROM-phase ownership fix
+
+The boot-ROM GetVersion/MemoryWrite replies are raw SSI/TL bytes delivered on
+/dev/ttyBCM (bcm_gps_spi.c bcm_on_packet_received -> priv->read_buf circ-buffer,
+the non-peer branch).  nuxel_bbd_flash.c was reading them from /dev/bbd_sensor,
+which under the native peer path (bbd_nuxel_peer_active) carries the SSP
+application [u16 len][ssp_msg] frames from callback_bbd_on_packet, NOT the raw
+boot-ROM TL stream.  Hence every ROM reply was silently dropped and rx=0.
+
+Fix: during the ROM phase, read replies from /dev/ttyBCM (fd_tty), and do NOT
+open/hold /dev/bbd_sensor as a peer in that phase, so the kernel keeps the raw
+SSI RX path.  Keep /dev/bbd_control writes unchanged (gated, reversible).
+
+This is a userspace correction; no kernel image change and no BOOT flash.
+---
+ tools/s10plus/ssp-native/nuxel_bbd_flash.c | 31 +++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
+
+diff --git a/tools/s10plus/ssp-native/nuxel_bbd_flash.c b/tools/s10plus/ssp-native/nuxel_bbd_flash.c
+--- a/tools/s10plus/ssp-native/nuxel_bbd_flash.c
++++ b/tools/s10plus/ssp-native/nuxel_bbd_flash.c
+@@
+-    sess.fd_sensor = open(BBD_SENSOR, O_RDWR | O_NONBLOCK);
+-    if (sess.fd_sensor < 0) {
+-        logx("open %s: %s", BBD_SENSOR, strerror(errno));
+-        ret = EXIT_TRANSPORT_UNAVAIL; goto out;
+-    }
++    /*
++     * ROM-phase ownership: boot-ROM SSI/TL replies are raw RX bytes on
++     * /dev/ttyBCM.  Do NOT open /dev/bbd_sensor here: holding the native peer
++     * routes bcm_on_packet_received into the SSP app state machine instead of
++     * the raw SSI circ-buffer, which would swallow every ROM reply (rx=0).
++     */
++    sess.fd_sensor = -1;
+@@
+ static int pump(struct session *s, int ms)
+ {
+@@
+-        struct pollfd p = { .fd = s->fd_sensor, .events = POLLIN };
++        struct pollfd p = { .fd = s->fd_tty, .events = POLLIN };
+         int pr = poll(&p, 1, 50);
+         if (pr <= 0) continue;
+-        ssize_t r = read(s->fd_sensor, buf, sizeof buf);
++        ssize_t r = read(s->fd_tty, buf, sizeof buf);
+         if (r < 0) {
+             if (errno == EINTR || errno == EAGAIN) continue;
+             break;
+@@
+-        rx_feed(&s->rx, buf, (size_t)r, on_pkt, s);
++        rx_feed(&s->rx, buf, (size_t)r, on_pkt, s);
+---

@@ -1,0 +1,96 @@
+{
+  "schema": "nuxel-ssp-candidate-preflight-v2",
+  "prompt": "05_9",
+  "generated": "2026-11-22T19:36:00+01:00",
+  "overall_verdict": "AWAITING_BOOT_FLASH_AUTHORIZATION",
+  "overall_reason": "Verified BOOT-only kernel candidate built and all OFFLINE preflight gates pass. Flash and power transition NOT authorized. Live-device gates (running-kernel health, live partition hashes, TWRP rollback copy) still require a connected device + TWRP session.",
+  "candidate": {
+    "path": "evidence/pwnage-ssp-05_9/candidate-boot-0020-0023-0025.img",
+    "sha256": "9805d519b61c38a960158753679e1e2af0cf1783ce4f4c6e3c8b0ba6be5fbca7",
+    "bytes": 57671680,
+    "kernel_sha256": "8dae55e28a0ce5b173860d0dc8c52a1022a0cedcc214d009fc8d4fd1108dfdcb",
+    "kernel_size": 45848584,
+    "patch_set": "0020 + 0023 + 0025 (0027 excluded)"
+  },
+  "known_good_boot_donor": {
+    "path": "/tmp/nuxel-ssp-preflight/boot-sda14-fresh.img",
+    "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+    "bytes": 57671680,
+    "partition": "/dev/sda14 (boot)",
+    "sectors": 112640
+  },
+  "gates": {
+    "G_KERNEL_BUILD": {
+      "status": "PASS",
+      "detail": "vmlinux + Image + Image.gz linked successfully"
+    },
+    "G_SSP_PATCH_SET": {
+      "status": "PASS",
+      "detail": "0020+0023+0025 applied; 0027 excluded (documented)"
+    },
+    "G_SSP_SYMBOL_PRESENCE": {
+      "status": "PASS",
+      "detail": "bringup+register+force_disable present; dl_download/patch_bytes absent"
+    },
+    "G_BOOT_PACKAGE": {
+      "status": "PASS",
+      "detail": "pack-ssp-boot.py produced candidate; kernel-only, ramdisk untouched"
+    },
+    "G_BOOT_INDEPENDENT_UNPACK": {
+      "status": "PASS",
+      "detail": "candidate kernel payload == new Image; ramdisk byte-identical to donor; header only kernel_size changed"
+    },
+    "G_BOOT_DONOR_IDENTITY": {
+      "status": "PASS",
+      "detail": "donor SHA-256 matches trusted baseline"
+    },
+    "G_BOOT_TAIL_BYTEEXACT": {
+      "status": "PASS",
+      "detail": "trailing region 100% zero; FDT magic count = 0; appended_dtb_count = 0"
+    },
+    "G_BOOT_DTB_DTBO_UNCHANGED": {
+      "status": "PASS_BASELINE",
+      "detail": "dtb sda12 abc9d45d...; dtbo sda13 de3bc025... (unchanged vs Stage-01 baseline)"
+    },
+    "G_RECOVERY_PARTITION": {
+      "status": "PASS_BASELINE",
+      "detail": "recovery sda15 4cc71d62... (unchanged)"
+    },
+    "G_NATIVE_BBD_TESTS": {
+      "status": "PASS",
+      "detail": "flash, negative, download, embedded patch, protocol replay"
+    },
+    "G_ORIENTATION_TESTS": {
+      "status": "PASS",
+      "detail": "77/77"
+    },
+    "G_RECOVERY_TESTS": {
+      "status": "PASS",
+      "detail": "14/14"
+    },
+    "G_BOOT_PACKER_TESTS": {
+      "status": "PASS",
+      "detail": "9/9"
+    },
+    "G_KERNEL_SOURCE_AUDIT": {
+      "status": "PASS",
+      "detail": "4/4"
+    },
+    "G_LIVE_DEVICE_HEALTH": {
+      "status": "NOT_VERIFIED",
+      "detail": "device not connected over ADB this session; MUST re-confirm before flash"
+    },
+    "G_LIVE_PARTITION_HASHES": {
+      "status": "NOT_VERIFIED",
+      "detail": "requires connected device read-only dd+sha256 of sda12/13/14/15"
+    },
+    "G_TWRP_ROLLBACK_COPY": {
+      "status": "NOT_ESTABLISHED",
+      "detail": "second TWRP-accessible rollback copy requires a TWRP session; MUST establish before flash"
+    }
+  },
+  "flash_authorization": "NOT_AUTHORIZED",
+  "power_transition_authorization": "NOT_AUTHORIZED",
+  "no_flash_performed": true,
+  "no_power_transition_performed": true
+}

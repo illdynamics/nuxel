@@ -1,0 +1,52 @@
+{
+  "schema": "ssp-0025-boot-preflight-v1",
+  "prompt": "05_8",
+  "generated": "2026-11-22T19:20:00+01:00",
+  "decision": "NO_FLASH_BLOCKED_PREFLIGHT",
+  "candidate": {
+    "name": "0025-nuxel-ssp-rail-force-coldcycle",
+    "sha256": "ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99",
+    "function": "set_mcu_power case 0: regulator_disable -> regulator_force_disable"
+  },
+  "source": {
+    "repo": "https://github.com/Linux4/android_kernel_samsung_exynos9820",
+    "pinned_commit": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+    "actual_head": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+    "case_sensitive_volume": "/Volumes/kernelbuild",
+    "source_audit_status": "PASS"
+  },
+  "patches": {
+    "0020-nuxel-ssp-spi-runtime-reinit.patch": "62a339642a8c039471c360da9a9175fd7e1b3e5e821cf3013ae953b0d6f73200",
+    "0023-nuxel-ssp-native-bringup-reconciled.patch": "b21abad67fdee4734bfbc8c259295ff85f326fb16aabd68dc15dd208f92ca1db",
+    "0025-nuxel-ssp-rail-force-coldcycle.patch": "ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99",
+    "0027_note": "EXCLUDED_from_candidate: dangling extern nuxel_bbd_patch_bytes (unlinkable)"
+  },
+  "gates": {
+    "exact_pinned_commit": {"status": "PASS"},
+    "clean_source_manifest": {"status": "PASS"},
+    "reproducible_patch_apply": {"status": "PASS", "note": "0020->0023->0025 forward clean; full reverse returns 0-diff"},
+    "patch_0025_scoped_no_blanket_replace": {"status": "PASS", "note": "2 force-disable sites only"},
+    "ssp_object_compile": {"status": "PASS", "note": "ssp_bbd.o + ssp_sysfs.o + ssp_dev.o built; ssp_sysfs.o contains regulator_force_disable sym"},
+    "successful_kernel_build_image_gz": {"status": "FAIL",
+      "reason": "0027 dangling extern nuxel_bbd_patch_bytes (link); GCC-15 -Werror on unrelated vendor drivers (exynos-ppmpu, DPU20); host lacks elf.h (need build-script host-tools shim)"},
+    "boot_candidate_packaged": {"status": "NOT_REACHED", "reason": "no Image.gz produced"},
+    "verified_original_boot_donor": {"status": "PRESERVED", "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c"},
+    "external_dtb_preserved": {"status": "UNCHANGED", "sha256": "abc9d45d3745866346fd94c7c04028cc2c62ade4dd274b400dbbfec0c2ef4780"},
+    "external_dtbo_preserved": {"status": "UNCHANGED", "sha256": "de3bc02526c66647992a744608fdf61548823866e822a7400619d74126095c23"},
+    "recovery_preserved": {"status": "UNCHANGED", "sha256": "4cc71d6277e020cdec729b85934cfb6111e9abee8db2fbcc344aad3173335d87"},
+    "known_good_rollback_images": {"status": "PRESERVED", "note": "host seeds + TWRP cache copy from Stage-05"}
+  },
+  "physical_execution": {
+    "boot_flash": "NOT_AUTHORIZED",
+    "regulator_force_disable": "NOT_AUTHORIZED",
+    "live_checks_performed": ["read-only regulator state", "read-only kallsyms", "read-only uname"],
+    "live_findings": {
+      "kernel": "4.14.253-gf7194c1d15ed-dirty",
+      "vdd_mcu_1p8": {"state": "enabled", "num_users": 0},
+      "nuxel_ssp_dl_download_symbol": "ABSENT (0027 not deployed)",
+      "nuxel_ssp_bringup_hw_symbol": "PRESENT (0023 deployed)"
+    }
+  },
+  "final_decision": "BLOCKED_PREFLIGHT",
+  "rationale": "Patch 0025 is source-correct and compiles, but the mandatory 'successful kernel build' gate fails: 0027 is unlinkable (dangling nuxel_bbd_patch_bytes) and the macOS/GCC-15 host cannot complete the unrelated vendor drivers. No Image.gz, no BOOT candidate, therefore NO_FLASH."
+}

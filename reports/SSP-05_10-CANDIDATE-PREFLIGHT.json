@@ -1,0 +1,69 @@
+{
+  "schema": "nuxel-ssp-candidate-preflight-v2",
+  "prompt": "05_10",
+  "generated": "2026-11-22T19:50:00+01:00",
+  "overall_verdict": "AWAITING_FLASH_AUTHORIZATION",
+  "overall_reason": "All mandatory preflight gates PASS against live TWRP device evidence. BOOT-only flash prepared; awaiting explicit owner authorization for the exact candidate.",
+  "device": {
+    "serial": "R58M75KDB2X",
+    "model": "Galaxy S10+",
+    "codename": "beyond2lte",
+    "soc": "exynos9820",
+    "adb_state": "recovery",
+    "twrp_version": "3.7.0_9-2",
+    "recovery_kernel": "4.14.113-g55f042627"
+  },
+  "partitions": {
+    "dtb": {"device": "/dev/block/sda12", "sectors": 16384, "bytes": 8388608, "sha256": "abc9d45d3745866346fd94c7c04028cc2c62ade4dd274b400dbbfec0c2ef4780"},
+    "dtbo": {"device": "/dev/block/sda13", "sectors": 16384, "bytes": 8388608, "sha256": "de3bc02526c66647992a744608fdf61548823866e822a7400619d74126095c23"},
+    "boot": {"device": "/dev/block/sda14", "sectors": 112640, "bytes": 57671680, "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c", "role": "FLASH_TARGET"},
+    "recovery": {"device": "/dev/block/sda15", "sectors": 132096, "bytes": 67633152, "sha256": "4cc71d6277e020cdec729b85934cfb6111e9abee8db2fbcc344aad3173335d87"}
+  },
+  "candidate": {
+    "path": "evidence/pwnage-ssp-05_9/candidate-boot-0020-0023-0025.img",
+    "sha256": "9805d519b61c38a960158753679e1e2af0cf1783ce4f4c6e3c8b0ba6be5fbca7",
+    "bytes": 57671680,
+    "kernel_sha256": "8dae55e28a0ce5b173860d0dc8c52a1022a0cedcc214d009fc8d4fd1108dfdcb",
+    "ramdisk_sha256": "0dd0fb5a3d6895f28d8861d967382a0b87182d0f9c63b1d560393818b290f407",
+    "kernel_size": 45848584,
+    "ramdisk_size": 2424832,
+    "patch_set": "0020 + 0023 + 0025 (0027 excluded)",
+    "release": "4.14.253-gf7194c1d15ed-dirty",
+    "appended_dtb_count": 0
+  },
+  "known_good_boot": {
+    "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+    "bytes": 57671680,
+    "live_partition_match": true
+  },
+  "rollback": {
+    "host_copy_1": {"path": "/tmp/nuxel-ssp-preflight/boot-sda14-fresh.img", "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c", "verified": true},
+    "host_copy_2": {"path": "/tmp/nuxel-ssp-baseline/boot-sda14.img", "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c", "verified": true, "note": "treated as one logical host copy with copy_1"},
+    "device_copy": {"path": "/data/media/nuxel-boot/boot-sda14-known-good-0e6aa34c-20261122.img", "sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c", "bytes": 57671680, "verified_device": true, "independent": true, "twrp_accessible": true},
+    "independence": "host copy (build host fs) + device copy (phone sda31 = /data/media) are distinct physical storage"
+  },
+  "gates": {
+    "G_KERNEL_BUILD": "PASS",
+    "G_SSP_PATCH_SET": "PASS",
+    "G_SSP_SYMBOL_PRESENCE": "PASS",
+    "G_BOOT_PACKAGE": "PASS",
+    "G_BOOT_INDEPENDENT_UNPACK": "PASS",
+    "G_BOOT_DONOR_IDENTITY": "PASS",
+    "G_BOOT_TAIL_BYTEEXACT": "PASS",
+    "G_BOOT_DTB_DTBO_UNCHANGED": "PASS",
+    "G_RECOVERY_PARTITION": "PASS",
+    "G_NATIVE_BBD_TESTS": "PASS",
+    "G_ORIENTATION_TESTS": "PASS",
+    "G_RECOVERY_TESTS": "PASS",
+    "G_BOOT_PACKER_TESTS": "PASS",
+    "G_KERNEL_SOURCE_AUDIT": "PASS",
+    "G_LIVE_DEVICE_HEALTH": "PASS",
+    "G_LIVE_PARTITION_HASHES": "PASS",
+    "G_TWRP_ROLLBACK_COPY": "PASS"
+  },
+  "flash_authorization": "NOT_AUTHORIZED",
+  "power_transition_authorization": "NOT_AUTHORIZED",
+  "no_flash_performed": true,
+  "no_power_transition_performed": true,
+  "no_partition_writes": true
+}

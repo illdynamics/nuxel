@@ -1,0 +1,45 @@
+{
+  "schema": "ssp-05_15-acceptance-v1",
+  "timestamp": "2026-11-23T01:05:00+01:00",
+  "agent": "DeepSeek-V4-Pro-Thinking",
+  "device": {"serial": "R58M75KDB2X", "product": "beyond2lte", "model": "SM-G975F"},
+  "deployed_boot_sha256": "1be1ded89f9e04a6a2ca0d32d9273bd363c2e200f478ab10213ea3927674a599",
+  "deployed_kernel": "4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT Mon Nov 23 00:43:30 CET 2026",
+  "carried_forward_gates": {
+    "BOOT_NUXEL": {"status": "PASS", "note": "unchanged", "evidence": "reports/SSP-05_15-LIVE-BASELINE.md"},
+    "KERNEL_PATCH_INTEGRITY": {"status": "PASS", "note": "unchanged (0020/0023/0025/0028/0029)"},
+    "REGULATOR_CORE_SAFETY": {"status": "PASS", "note": "unchanged (0029)"},
+    "POWER_DOMAIN_IDENTITY": {"status": "PASS", "note": "re-verified live (gpio145)", "evidence": "reports/SSP-05_15-POWER-SEQUENCE.md"},
+    "VENDOR_SEQUENCE": {"status": "PASS", "note": "re-verified + dead-code refinement", "evidence": "reports/SSP-05_15-POWER-SEQUENCE.md"},
+    "GPIO_OWNERSHIP": {"status": "PASS", "note": "re-verified live (gpg0-2/gpio145)"},
+    "DOWNLOADER_OFFLINE": {"status": "PASS", "note": "regression suite re-run PASS", "evidence": "make check (all PASS)"},
+    "SYSTEM_INTEGRITY": {"status": "PASS", "note": "unchanged; 0 failed units"},
+    "ROLLBACK_READY": {"status": "PASS", "note": "unchanged; 5 copies"}
+  },
+  "remaining_gates": {
+    "POWER_TRANSITION_SAFETY": {
+      "status": "NOT_RUN",
+      "evidence": "reports/SSP-05_15-PHYSICAL-TRIAL-DECISION.md",
+      "blocking_reason": "PHYSICAL_TRIAL_SAFE = FALSE: RF-safety owner confirmation + vendor post-power timing/artefact required"
+    },
+    "ROM_GETVERSION": {
+      "status": "NOT_RUN",
+      "evidence": "reports/SSP-05_15-ROM-FIRST-LIGHT.md",
+      "blocking_reason": "blocked by POWER_TRANSITION_SAFETY + unverified proprietary lhd GetVersion RPC id"
+    }
+  },
+  "new_findings_this_mission": [
+    "BBD transport nodes are flat char devices /dev/bbd_{sensor,control,patch,urgent_patch} (236,1..4), not a directory as prior reports implied",
+    "GPS_PWR_EN confirmed live = gpio145 (gpg0-2), direction=out, value=0",
+    "nuxel-gnss-lhd.service is enabled and DID assert GPS_PWR_EN=1 at boot (power=success, enabled=True) but handshake gps=False",
+    "nuxel-ssp-bridge.service is masked; nuxel_ssp_bringup_hw/regulator_force_enable present in kallsyms",
+    "bcm477x_rpc_get_version() is orphaned dead code (zero callers); live ROM GetVersion is via proprietary lhd over BBD RPC",
+    "RPC_GET_VERSION=0 attribution is unsourced from GPL code (bbd_rpc_lh.c id0 = IRpcA.A; no 'GetVersion')"
+  ],
+  "readiness": {
+    "READY_FOR_06": false,
+    "blocking_gates": ["POWER_TRANSITION_SAFETY", "ROM_GETVERSION"],
+    "blocking_reason": "PHYSICAL_TRIAL_SAFE=FALSE: requires owner RF-safety authorization AND (BCM47752 datasheet timing | stock lhd binary | explicit trial grant). Additionally the proprietary lhd GetVersion RPC id must be verified.",
+    "minimum_owner_action": "Authorize bounded GNSS-domain (RF) energisation + provide one of: Broadcom BCM47752 power/ROM-ready timing, or the owner's stock vendor/bin/hw/lhd binary, or an explicit bounded-trial grant with a specific settle delay and recovery bound."
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "schema": "nuxel-ssp-candidate-preflight-v1",
+  "generated": "2026-11-22T18:05:00+01:00",
+  "stage": "04_5",
+  "title": "SSP Stage 04_5 revalidated preflight — software-only decision, no flash, live-device evidence",
+  "overall_verdict": "NO_FLASH_NEEDED",
+  "overall_reason": "A new BOOT/kernel candidate is NOT justified. The running kernel 4.14.253-gf7194c1d15ed-dirty already carries 0020+0023 native BBD passthrough (/dev/ttyBCM 10,91, /dev/bbd_sensor 236,1, /dev/bbd_control 236,2, /dev/bbd_patch 236,3, nuxel_bringup sysfs) with CONFIG_SENSORS_SSP_BBD=y. The userspace nuxel_bbd_flash/nuxel_bbd_download tools target these exact nodes. 0027 kernel-side downloader is absent and NOT required; relocating the parser into kernel space is explicitly forbidden when unnecessary. The unresolved rx=0/mcu_test=NG is a software/electrical matter for a bounded userspace first-light trial in Stage 05, NOT a reflash. No partition was written and no candidate image exists.",
+  "no_zero_brick_probability_assertion": "No assertion of zero brick probability is made. This report authorizes NO partition write and NO power-rail/reset experiment.",
+  "software_only_decision": true,
+  "final_decision": "READY_FOR_STAGE_05_SOFTWARE_ONLY",
+
+  "gates": {
+    "G_TEST_NATIVE_C_HARNESS": {
+      "status": "PASS",
+      "detail": "make -C tools/s10plus/ssp-native OUT=/tmp/nuxel-ssp-04_5-build check (this session)",
+      "results": {
+        "nuxel_bbd_flash": "PASS framing + F1 records + RX decode (offline)",
+        "nuxel_bbd_flash_negative": "PASS (F0..F5 malformed/truncated, version/ACK/CRC/timeout/cancellation)",
+        "nuxel_bbd_download": "PASS",
+        "verify_embedded_patch": "PASS (2 tests)",
+        "check_protocol_replay": "PASS (SIMULATED, hardware_verified=false)"
+      }
+    },
+    "G_TEST_ORIENTATION_PYTEST": {
+      "status": "PASS",
+      "detail": "PYTHONPATH=services/nuxel-orientation python3 -m pytest -q services/nuxel-orientation/tests",
+      "results": {"total": 77, "passed": 77}
+    },
+    "G_TEST_RECOVERY_UNITTEST": {
+      "status": "PASS",
+      "detail": "python3 -S -m unittest discover -s NUXEL_SSP_RECOVERY_V2 -p 'test_*.py'",
+      "results": {"total": 14, "passed": 14}
+    },
+    "G_TEST_SSP_BOOT_PACKER": {
+      "status": "PASS",
+      "detail": "python3 -S tools/s10plus/ssp-stage04/test_pack_ssp_boot.py",
+      "results": {"total": 9, "passed": 9}
+    },
+    "G_TEST_KERNEL_SOURCE_AUDIT": {
+      "status": "PASS",
+      "detail": "python3 -S tools/s10plus/ssp-stage04/test_kernel_source_audit.py",
+      "results": {"total": 4, "passed": 4}
+    },
+    "G_TEST_STAGE05_GATE": {
+      "status": "PASS",
+      "detail": "python3 -S tools/s10plus/ssp-stage04/test_stage05_gate.py",
+      "results": {"total": 3, "passed": 3}
+    },
+    "G_KERNEL_CLEAN_INPUTS": {
+      "status": "N_A_SOFTWARE_ONLY",
+      "detail": "No local kernel checkout exists in this tree (kernel/s10plus/.build/src absent); a clean build was not attempted because no kernel change is justified. Historical dirty tree (28 netfilter files, diff sha 7340907c...) preserved and NOT carried into any build. A fresh pinned clone at f7194c1d15ed... on a case-sensitive volume would be required IF a kernel build ever becomes necessary."
+    },
+    "G_KERNEL_BUILD_EXACT_PINNED": {
+      "status": "N_A_SOFTWARE_ONLY",
+      "detail": "No kernel built. NO_FLASH_NEEDED: running kernel 4.14.253-gf7194c1d15ed-dirty already has SSP/BBD passthrough. evidence: config.gz CONFIG_SENSORS_SSP_BBD=y, CONFIG_SENSORS_SSP_SENSORHUB=y, CONFIG_SENSORS_SSP=y, MCU=BCM47752KUB1G."
+    },
+    "G_SSP_PATCH_RECEIPTS": {
+      "status": "PASS",
+      "detail": "All four SSP patch files SHA-256 verified against manifest, this session.",
+      "results": {
+        "0020-nuxel-ssp-spi-runtime-reinit.patch": "62a339642a8c039471c360da9a9175fd7e1b3e5e821cf3013ae953b0d6f73200",
+        "0023-nuxel-ssp-native-bringup-reconciled.patch": "b21abad67fdee4734bfbc8c259295ff85f326fb16aabd68dc15dd208f92ca1db",
+        "0025-nuxel-ssp-rail-force-coldcycle.patch": "ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99",
+        "0027-nuxel-ssp-kernel-firmware-download.patch": "cc33f15e034b823c0b019d02f4948df2013715fdf86473f0ce4fab94c51e289d"
+      }
+    },
+    "G_EMBEDDED_FIRMWARE_IDENTITY": {
+      "status": "PASS",
+      "detail": "Verified firmware identity against real host bytes: asic=0x004775b0, blob_length=438895, patch_address=0x00800161, crc32_ieee=93d35bb4, blob_sha256=56e8b1ea4b34... (matches SSP-SOURCE-BUILD-MANIFEST.json)."
+    },
+    "G_BOOT_DONOR_REVALIDATION": {
+      "status": "PASS",
+      "detail": "Fresh read-only live dd+sha256 of /dev/sda14 (boot) this session == Stage-01. No flash performed.",
+      "evidence": {
+        "boot_sda14_live_sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+        "boot_bytes": 57671680,
+        "boot_sectors": 112640,
+        "header_version": 1,
+        "header_size": 1648,
+        "page_size": 2048,
+        "kernel_size": 45848584,
+        "ramdisk_size": 2424832,
+        "appended_dtb_count": 0,
+        "zero_slack_confirmed": true,
+        "kernel_magic_at_2048_0x38": "ARMd (ARM64)",
+        "ramdisk_lzma_magic": "5d 00 00 80"
+      }
+    },
+    "G_BOOT_PACK_VERIFY": {
+      "status": "N_A_SOFTWARE_ONLY",
+      "detail": "Corrected pack-ssp-boot.py (canonical BOOT-v1 parse, only kernel_size changes, no FDT search) is present and its 9 synthetic tests PASS. No candidate built/packed because no kernel change is justified and no kernel Image exists."
+    },
+    "G_BOOT_BYTEEXACT_TAIL": {
+      "status": "PASS",
+      "detail": "Confirmed this session: no appended/embedded DTB; region after ramdisk (offset 48277504+) is 100% zero partition slack; FDT magic 0xD00DFEED occurs 0 times in the full 57,671,680-byte boot partition."
+    },
+    "G_BOOT_DTB_DTBO_PARTITION_HASHES": {
+      "status": "PASS",
+      "detail": "Fresh read-only live hashes this session; both UNCHANGED vs Stage-01.",
+      "evidence": {
+        "dtb_sda12": "abc9d45d3745866346fd94c7c04028cc2c62ade4dd274b400dbbfec0c2ef4780",
+        "dtbo_sda13": "de3bc02526c66647992a744608fdf61548823866e822a7400619d74126095c23",
+        "recovery_sda15": "4cc71d6277e020cdec729b85934cfb6111e9abee8db2fbcc344aad3173335d87",
+        "note": "androidboot.dtbo_idx referenced in historical receipt; not re-read this session (boot cmdline not needed for software-only decision)"
+      }
+    },
+    "G_BOOT_ROLLBACK_STAGING": {
+      "status": "PARTIAL",
+      "detail": "HOST seed verified this session (hash == live donor). SECOND TWRP-accessible copy NOT established (no TWRP session this stage).",
+      "evidence": {
+        "host_seed_path": "/tmp/nuxel-ssp-preflight/boot-sda14-fresh.img",
+        "host_seed_sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+        "host_seed_size": 57671680,
+        "twrp_copy": "NOT_ESTABLISHED",
+        "note": "NOT required for software-only Stage-05; MUST be established before any future BOOT-only flash."
+      }
+    },
+    "G_TWRP_PARTITION_MAPPING": {
+      "status": "BLOCKED",
+      "detail": "No TWRP session in Stage 04_5 (device is running normal Nuxel Linux, not TWRP). TWRP partition mapping/accessibility unconfirmed. Not required for software-only Stage-05."
+    },
+    "G_SOFTWARE_ONLY_ALTERNATIVE_REVIEW": {
+      "status": "PASS",
+      "detail": "Independently reviewed and PROVEN: the running kernel already exposes the complete SSP/BBD userspace passthrough. /dev/ttyBCM (10,91), /dev/bbd_sensor (236,1), /dev/bbd_control (236,2), /dev/bbd_patch (236,3), nuxel_bringup sysfs node all present. Kernel symbols confirmed: nuxel_ssp_bringup_hw, nuxel_ssp_register_data, bbd_nuxel_peer_open/active/rx/release, nuxel_bbd_peer_send, nuxel_ssp_bcm_diag (36 nuxel symbols). Userspace tools nuxel_bbd_flash/nuxel_bbd_download target these exact nodes. 0027 kernel downloader symbols ABSENT and not required. A BOOT flash is NOT justified."
+    },
+    "G_EXPLICIT_BOUND_TRIAL_AUTHORIZATION": {
+      "status": "REQUIRED",
+      "detail": "Stage-05 software-only first-light trial requires explicit owner authorization for its exact bounded scope (read-only sensor query + bounded MCU init through existing nodes; NO power-rail/reset experiments, NO partition writes). This report does not infer such authorization."
+    }
+  },
+
+  "known_remaining_hardware_risks": [
+    "MCU BCM47752KUB1G mcu_test=NG, rx=0 — firmware download/handshake unproven at physical level; this is the target of the software-only Stage-05 trial, not a reflash.",
+    "Autobaud 32 (kernel) vs 36 (userspace/vendor) reconciliation remains source-unresolved.",
+    "Transport ACK is NOT equivalent to application-level MemoryWrite acceptance.",
+    "No physical accelerometer/gyroscope/autorotation claim is made from offline or read-only evidence."
+  ],
+
+  "rollback_receipt": {
+    "status": "PARTIAL",
+    "host_seed": "/tmp/nuxel-ssp-preflight/boot-sda14-fresh.img",
+    "host_seed_sha256": "0e6aa34cdc550fd975129d9fc0f9dc785733e0483e3b8c119eb4592b5463621c",
+    "host_seed_size": 57671680,
+    "twrp_seed": "NOT_ESTABLISHED",
+    "partition_mapping_live": "boot=/dev/sda14 (112640 sectors); dtb=/dev/sda12 (8192); dtbo=/dev/sda13 (8192); recovery=/dev/sda15 (132096)"
+  },
+
+  "final_decision": "READY_FOR_STAGE_05_SOFTWARE_ONLY",
+  "no_candidate_flashed": true,
+  "no_candidate_built": true
+}

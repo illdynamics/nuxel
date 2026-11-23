@@ -1,0 +1,45 @@
+{
+  "schema": "ssp-0025-kernel-source-manifest-v1",
+  "prompt": "05_8",
+  "generated": "2026-11-22T19:22:00+01:00",
+  "source": {
+    "repo_url": "https://github.com/Linux4/android_kernel_samsung_exynos9820",
+    "pinned_commit_full": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+    "pinned_commit_short": "f7194c1d15ed",
+    "defconfig": "exynos9820-beyond2lte_defconfig",
+    "linux_version": "4.14.253",
+    "checkout_volume": "/Volumes/kernelbuild (Case-sensitive APFS)",
+    "host_arch": "aarch64 (cross)",
+    "toolchain": {
+      "prefix": "aarch64-linux-gnu-",
+      "gcc_version": "15.2.0",
+      "note": "tree targets GCC 4.9/8-era; GCC-15 -Werror incompat in unrelated vendor drivers"
+    }
+  },
+  "patches": [
+    {"id": "0020", "file": "0020-nuxel-ssp-spi-runtime-reinit.patch",
+     "sha256": "62a339642a8c039471c360da9a9175fd7e1b3e5e821cf3013ae953b0d6f73200",
+     "role": "SPI re-init after runtime suspend", "applied": true},
+    {"id": "0023", "file": "0023-nuxel-ssp-native-bringup-reconciled.patch",
+     "sha256": "b21abad67fdee4734bfbc8c259295ff85f326fb16aabd68dc15dd208f92ca1db",
+     "role": "native peer + bring-up", "applied": true},
+    {"id": "0025", "file": "0025-nuxel-ssp-rail-force-coldcycle.patch",
+     "sha256": "ab293ae63951fe0e3753dd30e56478439c6db1523efbd174b58deee6d32d6e99",
+     "role": "mcu_power rail force-disable (cold-cycle)", "applied": true,
+     "compile_status": "ssp_sysfs.o builds; regulator_force_disable symbol present"},
+    {"id": "0027", "file": "0027-nuxel-ssp-kernel-firmware-download.patch",
+     "sha256": "cc33f15e034b823c0b019d02f4948df2013715fdf86473f0ce4fab94c51e289d",
+     "role": "in-kernel downloader", "applied_to_candidate": false,
+     "defect": "dangling extern nuxel_bbd_patch_bytes (undefined reference at vmlinux link)"}
+  ],
+  "ssp_object_compile_verified": [
+    "drivers/sensorhub/brcm/ssp_bbd.o",
+    "drivers/sensorhub/brcm/ssp_sysfs.o",
+    "drivers/sensorhub/brcm/ssp_dev.o"
+  ],
+  "full_link_status": "FAIL (0027 dangling symbol + GCC-15 -Werror in unrelated vendor drivers)",
+  "notes": {
+    "case_insensitive_workspace": "The repo workspace /Users/wicked/x/nuxel is APFS case-INSENSITIVE; clone corrupts 29 netfilter files. A case-sensitive volume is mandatory for the clean build.",
+    "audit_untracked_finding": "0023-created nuxel_ssp_variant_ctl.h must be git-add'd for audit PASS (documented in reconciliation report F2)."
+  }
+}
