@@ -2,10 +2,11 @@
  * data_session.h — S5000AP Stage-06 native data-session state machine.
  * SPDX-License-Identifier: GPL-2.0-only
  *
- * Drives the verified FMT data-path commands (mobile-data, define PDP context,
- * PS attach, data-call establish) in a bounded, step-wise, response-correlated
- * sequence. This module is PURE re: I/O — it only advances the FSM state; the
- * caller (radiod) performs the actual bounded device writes via fmt_tx + the
+ * Drives the verified FMT data-path commands (mobile-data, set-data-profile,
+ * set-lte-attach-profile, define PDP context, always-on PDN, PS attach,
+ * data-call establish) in a bounded, step-wise, response-correlated sequence.
+ * This module is PURE re: I/O — it only advances the FSM state; the caller
+ * (radiod) performs the actual bounded device writes via fmt_tx + the
  * transport, and feeds back modem responses.
  *
  * TRUTH CONTRACT:
@@ -25,7 +26,8 @@ enum ds_phase {
     DS_IDLE = 0,
     DS_SIM_CHECK,          /* confirm SIM READY */
     DS_ENABLE_MOBILE_DATA, /* GPRS mobile data ON */
-    DS_SET_DATA_PROFILE,   /* set APN/auth/protocol profile */
+    DS_SET_DATA_PROFILE,   /* set APN/auth/protocol data profile */
+    DS_SET_LTE_ATTACH,     /* set LTE attach profile (required for LTE PS) */
     DS_DEFINE_PDP,         /* define PDP context w/ APN */
     DS_ALWAYS_ON_PDN,      /* always-on PDN profile */
     DS_PS_ATTACH,          /* GPRS PS attach */

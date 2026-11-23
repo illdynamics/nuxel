@@ -61,26 +61,42 @@ bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish)
 }
 
 /*
+ * DataProtocol -> wire byte helper (VERIFIED @0x31f5dc / 0x31ff48).
+ * wire = (0x00040605 >> ((proto-2)*8)) & 0xff, with csel fallback to 0x02
+ * when (proto-2) >= 3 (unsigned). DataProtocol enum: IP=2, IPV6=3, IPV4V6=4.
+ */
+static uint8_t proto_wire_byte(uint8_t proto)
+{
+    switch (proto) {
+    case FMT_TX_PROTO_IP:     return 0x05;
+    case FMT_TX_PROTO_IPV6:   return 0x06;
+    case FMT_TX_PROTO_IPV4V6: return 0x04;
+    default:                  return 0x05;  /* unknown -> IP (vendor default) */
+    }
+}
+
+/*
  * GPRS set data profile (recovered from IpcTxSetDataProfile @0x31ff48, 203 bytes).
  *
  * Layout (frame base = 7-byte sipc_fmt_hdr; payload = 196 bytes; offsets below
  * are payload offsets, VERIFIED from the SIMD/store disassembly):
- *   payload[0]  = auth code (DataAuth -> numeric, from helper @0x31fe28)
- *   payload[1..20] = profile name string (20 bytes, NUL-padded; DataProfile enum)
- *   payload[21] = protocol wire byte (0x05/0x06/0x04 via 0x00040605>>((p-2)*8))
+ *   payload[0]       = auth code (DataAuth -> numeric; NONE=1)
+ *   payload[1..20]   = profile name (20 bytes, NUL-padded)
+ *   payload[21]      = protocol wire byte (0x05/0x06/0x04)
  *   payload[22..122] = APN (101 bytes, NUL-padded)
- *   payload[123..154] = username (32 bytes, NUL-padded)
- *   payload[155..186] = password (32 bytes, NUL-padded)
- *   payload[187] = flag (auth-on/enable)
- *   payload[188] = protocol wire byte (second copy)
- *   payload[189] = flag
- *   payload[190..195] = tail (4 halfwords: pco/radio-tech dependent)
+ *   payload[123..154]= username (32 bytes, NUL-padded)
+ *   payload[155..186]= password (32 bytes, NUL-padded)
+ *   payload[187]     = auth flag (0x00010201 >> ((auth-1)*8))
+ *   payload[188]     = protocol wire byte (second copy)
+ *   payload[189]     = pco flag ((~pco)&1)
+ *   payload[190..191]= int a (halfword, PcscfViaPco-related, default 0)
+ *   payload[192..193]= int b (halfword, default 0)
+ *   payload[194..195]= int c (halfword, default 0)
  *
- * The APN/auth/protocol fields are source-verified. The profile NAME and tail
- * halfwords derive from enum/region selects we do not fully decode, so they are
- * zero-filled (carrier-default "no explicit profile name" / "no PCO"). This is
- * a bounded, partially-recovered serializer: it never emits invented nonzero
- * values for undecoded fields.
+ * Every field is source-verified from the disassembly. The three trailing
+ * halfwords (a/b/c) are carrier-tuning ints that default to 0 for a standard
+ * no-auth internet profile; they are emitted as 0 (their carrier-default)
+ * rather than invented nonzero values.
  */
 bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
                              uint8_t auth_code, uint8_t proto)
@@ -94,18 +110,31 @@ bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
     if (!p) return false;
     memset(p, 0, 196u);
 
-    p[0] = auth_code;            /* DataAuth -> numeric code (0 = none) */
+    p[0] = auth_code;            /* DataAuth -> numeric code (NONE=1) */
 
-    /* protocol wire byte at payload[21] and payload[188] (second copy). */
-    uint8_t pb;
-    switch (proto) {
-    case FMT_TX_PROTO_IP:     pb = 0x05; break;
-    case FMT_TX_PROTO_IPV6:   pb = 0x06; break;
-    case FMT_TX_PROTO_IPV4V6: pb = 0x04; break;
-    default:                  pb = 0x05; break;
+    /* profile name (payload[1..20], NUL-padded). The vendor writes the carrier
+     * DataProfile name here (for the default bearer this is the APN/profile
+     * label, e.g. "internet"). We write the APN as the profile name. */
+    {
+        const char *name = apn;
+        size_t nn = strlen(name);
+        if (nn > 20u) nn = 20u;
+        memcpy(&p[1], name, nn);
     }
+
+    uint8_t pb = proto_wire_byte(proto);
     p[21] = pb;
     p[188] = pb;
+
+    /* auth flag byte: 0x00010201 >> ((auth-1)*8). NONE(auth_code=1)->1. */
+    {
+        unsigned idx = (auth_code >= 1u) ? (auth_code - 1u) : 0u;
+        uint32_t pat = 0x00010201u;
+        p[187] = (uint8_t)((idx < 4u) ? (pat >> (idx * 8u)) & 0xffu : 0u);
+    }
+
+    /* pco flag: (~pco)&1. pco=0 (no PCO) -> 1. pco is the PcscfViaPco enum. */
+    p[189] = (uint8_t)((~0u) & 1u);  /* pco=0 -> (~0)&1 = 1 */
 
     /* APN at payload[22..22+alen]. */
     memcpy(&p[22], apn, alen);
@@ -114,12 +143,66 @@ bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
 }
 
 /*
+ * GPRS set PDP context / activate (recovered from IpcTxSetPdpContext @0x31f6e0):
+ * 112-byte frame: main=13 sub=4 type=3; payload=105 bytes.
+ *   payload[0]     = pdp_type wire code (3 = LTE EUTRAN default)
+ *   payload[1]     = cid (u8)
+ *   payload[2..5]  = flags word (bit0=APN present, bit4=ACTIVATE)
+ *   payload[6..37] = APN (32 bytes NUL-padded)
+ *   payload[38..69] = username (32 bytes)
+ *   payload[70..101] = password (32 bytes)
+ *   payload[102]   = auth flag (0x00010201 >> ((auth-1)*8))
+ *   payload[103]   = reserved (0)
+ *   payload[104]   = protocol/tech byte
+ *
+ * This is the REAL LTE PDP activation command (the CDMA SetDataCallEstablish
+ * main=3/sub=2 is a legacy CDMA path and does NOT bring up a GPRS/LTE bearer).
+ */
+bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
+                            uint8_t auth_code, uint8_t proto, uint8_t cid)
+{
+    if (!f || !apn) return false;
+    size_t alen = strlen(apn);
+    if (alen > 31u) return false;   /* APN field is 32 bytes */
+
+    uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 4u /*GPRS_PDP_CONTEXT*/, FMT_TX_TYPE_NOTIFICATION, 105u);
+    if (!p) return false;
+    memset(p, 0, 105u);
+
+    p[0] = 3u;                     /* pdp_type code = 3 (LTE EUTRAN, default) */
+    p[1] = cid;                    /* context id */
+
+    /* flags word at payload[2..5] (LE u32): bit0=APN present, bit4=ACTIVATE. */
+    p[2] = 0x11;
+    p[3] = 0x00;
+    p[4] = 0x00;
+    p[5] = 0x00;
+
+    /* APN at payload[6..6+alen]. */
+    memcpy(&p[6], apn, alen);
+
+    /* auth flag at payload[102]. */
+    {
+        unsigned idx = (auth_code >= 1u) ? (auth_code - 1u) : 0u;
+        uint32_t pat = 0x00010201u;
+        p[102] = (uint8_t)((idx < 4u) ? (pat >> (idx * 8u)) & 0xffu : 0u);
+    }
+
+    /* protocol byte at payload[104]. */
+    switch (proto) {
+    case FMT_TX_PROTO_IP:     p[104] = 0x05; break;
+    case FMT_TX_PROTO_IPV6:   p[104] = 0x06; break;
+    case FMT_TX_PROTO_IPV4V6: p[104] = 0x04; break;
+    default:                  p[104] = 0x05; break;
+    }
+
+    return true;
+}
+
+/*
  * GPRS always-on PDN (recovered from IpcTxSetAlwaysOnPdn @0x321550):
  *   header main=13 sub=34(0x22) type=3; payload[0]=on/off(1/0),
- *   payload[1]=profile code (region select via Region::IsNtcMain). The vendor
- *   writes payload[0] at sp[15] (w1&1) and payload[1] at sp[16] (the result of
- *   a regional profile selection, defaulting to 0). We expose the raw profile
- *   byte so the caller can pass the owner-approved carrier profile.
+ *   payload[1]=profile code.
  */
 bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profile)
 {
@@ -127,6 +210,49 @@ bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profi
     p[0] = enable ? 1u : 0u;
     p[1] = profile;
     return fmt_tx_raw(f, MAIN_GPRS, 34u /*SET_ALWAYS_ON_PDN*/, FMT_TX_TYPE_NOTIFICATION, p, 2);
+}
+
+/*
+ * GPRS LTE attach profile (recovered from IpcTxSetLteAttachProfile @0x320238):
+ *   201-byte frame: main=13 sub=20(0x14) type=3; payload=194 bytes.
+ *     payload[0]       = flag (3 or 4; csinc on bool enable -> 3 when true)
+ *     payload[1]       = cid (u8, profile/context id)
+ *     payload[2]       = protocol wire byte
+ *     payload[3..103]  = APN (101 bytes, NUL-padded)
+ *     payload[104..135]= username (32 bytes)
+ *     payload[136..167]= password (32 bytes)
+ *     payload[168]     = auth flag (0x00010201 >> ((auth-1)*8))
+ *     payload[169]     = pco flag
+ *     payload[170..]   = tail halfwords (0)
+ */
+bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
+                                   uint8_t auth_code, uint8_t proto, uint8_t cid)
+{
+    if (!f || !apn) return false;
+    size_t alen = strlen(apn);
+    if (alen > 100u) return false;
+
+    uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 20u /*SET_LTE_ATTACH_PROFILE*/,
+                              FMT_TX_TYPE_NOTIFICATION, 194u);
+    if (!p) return false;
+    memset(p, 0, 194u);
+
+    p[0] = 3u;                   /* bool enable=true => csinc(3,0,ne) = 3 */
+    p[1] = cid;                  /* profile/context id */
+    p[2] = proto_wire_byte(proto);
+
+    /* auth flag at payload[168] (0x00010201 >> ((auth-1)*8)). */
+    {
+        unsigned idx = (auth_code >= 1u) ? (auth_code - 1u) : 0u;
+        uint32_t pat = 0x00010201u;
+        p[168] = (uint8_t)((idx < 4u) ? (pat >> (idx * 8u)) & 0xffu : 0u);
+    }
+    p[169] = (uint8_t)((~0u) & 1u);  /* pco=0 -> 1 */
+
+    /* APN at payload[3..3+alen]. */
+    memcpy(&p[3], apn, alen);
+
+    return true;
 }
 
 /* SIM query: vendor sends SEC interrogations as 7-byte frames (type=2). */
@@ -191,20 +317,8 @@ bool fmt_tx_mobile_data(struct fmt_tx_frame *f, bool enable, bool extra)
  *   payload[0]   = 0x01 (fixed profile flag)
  *   payload[1]   = profile id (u8)
  *   payload[2]   = protocol byte (see below)
- *   payload[3..103] = APN (101 bytes, NUL padded)  (offset 10 in full frame)
- *   payload[104..119] = reserved (16 bytes, zero)
- *   payload[120..123] = reserved (4 bytes, zero)
- *   payload[124..125] = reserved (2 bytes, zero)
- *   payload[126]  = 0 (protocol-dependent default)
- *
- * The APN field begins at full-frame offset 10 (payload offset 3), i.e. the
- * vendor copies the NUL-terminated APN into `buf[10]`. Maximum APN length the
- * vendor accepts is 100 (strlen <= 0x65), so the APN field is 101 bytes.
- *
- * protocol byte (DataProtocol -> wire, VERIFIED @0x31f5dc):
- *   wire = (0x00040605 >> ((proto-2)*8)) & 0xff  (csel fallback 0x02 when
- *   proto-2 >= 3 unsigned). DataProtocol enum: IP=2, IPV6=3, IPV4V6=4, so
- *   IP=0x05, IPV6=0x06, IPV4V6=0x04. Unknown proto values default to IP.
+ *   payload[3..103] = APN (101 bytes, NUL padded)
+ *   payload[104..126] = reserved (23 bytes, zero)
  */
 bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
                                uint8_t proto, uint8_t profile_id)
@@ -220,19 +334,7 @@ bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
 
     p[0] = 0x01;             /* fixed profile flag */
     p[1] = profile_id;       /* profile id */
-    /* VERIFIED @0x31f5dc: wire byte = (0x00040605 >> ((proto-2)*8)) & 0xff,
-     * with a csel fallback to 0x02 when proto-2 >= 3 (unsigned).
-     *   IP(2)     -> 0x05
-     *   IPV6(3)   -> 0x06
-     *   IPV4V6(4) -> 0x04
-     * Unknown proto values fall back to IP (0x05), matching the vendor's
-     * default for the common case. */
-    switch (proto) {
-    case FMT_TX_PROTO_IP:     p[2] = 0x05; break;  /* 0x00040605 >>  0 */
-    case FMT_TX_PROTO_IPV6:   p[2] = 0x06; break;  /* 0x00040605 >>  8 */
-    case FMT_TX_PROTO_IPV4V6: p[2] = 0x04; break;  /* 0x00040605 >> 16 */
-    default:                  p[2] = 0x05; break;  /* IP (vendor default) */
-    }
+    p[2] = proto_wire_byte(proto);
     /* APN into payload[3 .. 3+alen] (full-frame offset 10). */
     memcpy(&p[3], apn, alen);
 

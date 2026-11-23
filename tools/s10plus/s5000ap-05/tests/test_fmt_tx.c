@@ -111,16 +111,69 @@ int main(void)
      * auth=0 at payload[0], protocol byte at payload[21]+payload[188].
      */
     memset(&f, 0, sizeof f);
-    CHECK(fmt_tx_set_data_profile(&f, "internet", 0, FMT_TX_PROTO_IPV4V6), "set_data_profile builds");
+    CHECK(fmt_tx_set_data_profile(&f, "internet", FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6), "set_data_profile builds");
     CHECK(f.len == 203, "set_data_profile len==203 (got %zu)", f.len);
     CHECK(f.main_cmd == 13 && f.sub_cmd == 27 && f.cmd_type == 3,
           "set_data_profile main/sub/type=13/27/3");
     CHECK(f.buf[0] == 0xcb && f.buf[1] == 0x00, "set_data_profile len field = 203 LE");
-    CHECK(f.buf[7 + 0] == 0x00, "set_data_profile auth=0 (none)");
+    CHECK(f.buf[7 + 0] == FMT_TX_AUTH_NONE, "set_data_profile auth code = 1 (NONE)");
     CHECK(f.buf[7 + 21] == 0x04 && f.buf[7 + 188] == 0x04,
           "set_data_profile protocol IPV4V6=0x04 at payload[21]+payload[188]");
     CHECK(memcmp(&f.buf[7 + 22], "internet", 8) == 0,
           "set_data_profile APN placed at payload offset 22");
+    /* COMPLETE tail fields (recovered from disasm @0x31ff48):
+     * payload[187]=auth flag (NONE -> 0x01), payload[189]=pco flag (1),
+     * tail halfwords 0. */
+    CHECK(f.buf[7 + 187] == 0x01, "set_data_profile auth flag payload[187] == 0x01");
+    CHECK(f.buf[7 + 189] == 0x01, "set_data_profile pco flag payload[189] == 0x01");
+    CHECK(f.buf[7 + 190] == 0x00 && f.buf[7 + 191] == 0x00,
+          "set_data_profile tail int a == 0");
+    CHECK(f.buf[7 + 192] == 0x00 && f.buf[7 + 193] == 0x00,
+          "set_data_profile tail int b == 0");
+    CHECK(f.buf[7 + 194] == 0x00 && f.buf[7 + 195] == 0x00,
+          "set_data_profile tail int c == 0");
+    CHECK(f.buf[7 + 123] == 0x00 && f.buf[7 + 154] == 0x00,
+          "set_data_profile username field zero-filled");
+    CHECK(f.buf[7 + 155] == 0x00 && f.buf[7 + 186] == 0x00,
+          "set_data_profile password field zero-filled");
+
+    /* --- SetLteAttachProfile (source: IpcTxSetLteAttachProfile @0x320238) ---
+     * 201-byte frame: len=201(0xc9), main=13, sub=20(0x14), type=3.
+     * payload[0]=3 (enable), payload[1]=cid, payload[2]=protocol, APN at +3. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_lte_attach_profile(&f, "internet", FMT_TX_AUTH_NONE,
+                                        FMT_TX_PROTO_IPV4V6, 1),
+          "set_lte_attach_profile builds");
+    CHECK(f.len == 201, "set_lte_attach_profile len==201 (got %zu)", f.len);
+    CHECK(f.main_cmd == 13 && f.sub_cmd == 20 && f.cmd_type == 3,
+          "set_lte_attach_profile main/sub/type=13/20/3");
+    CHECK(f.buf[0] == 0xc9 && f.buf[1] == 0x00, "set_lte_attach_profile len field = 201 LE");
+    CHECK(f.buf[7 + 0] == 0x03, "set_lte_attach_profile payload[0] flag == 3");
+    CHECK(f.buf[7 + 1] == 0x01, "set_lte_attach_profile payload[1] cid == 1");
+    CHECK(f.buf[7 + 2] == 0x04, "set_lte_attach_profile payload[2] protocol == 0x04");
+    CHECK(memcmp(&f.buf[7 + 3], "internet", 8) == 0,
+          "set_lte_attach_profile APN placed at payload offset 3");
+    CHECK(f.buf[7 + 168] == 0x01, "set_lte_attach_profile auth flag == 0x01");
+    CHECK(f.buf[7 + 169] == 0x01, "set_lte_attach_profile pco flag == 0x01");
+
+    /* --- SetPdpContext / ACTIVATE (source: IpcTxSetPdpContext @0x31f6e0) ---
+     * 112-byte frame: len=112(0x70), main=13, sub=4, type=3.
+     * payload[0]=1 (pdp_type), payload[1]=cid, flags=0x11, APN at +6. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_pdp_context(&f, "internet", FMT_TX_AUTH_NONE,
+                                 FMT_TX_PROTO_IPV4V6, 1),
+          "set_pdp_context builds");
+    CHECK(f.len == 112, "set_pdp_context len==112 (got %zu)", f.len);
+    CHECK(f.main_cmd == 13 && f.sub_cmd == 4 && f.cmd_type == 3,
+          "set_pdp_context main/sub/type=13/4/3");
+    CHECK(f.buf[0] == 0x70 && f.buf[1] == 0x00, "set_pdp_context len field = 112 LE");
+    CHECK(f.buf[7 + 0] == 0x03, "set_pdp_context payload[0] pdp_type == 3 (LTE)");
+    CHECK(f.buf[7 + 1] == 0x01, "set_pdp_context payload[1] cid == 1");
+    CHECK(f.buf[7 + 2] == 0x11, "set_pdp_context payload[2] flags == 0x11 (APN+ACTIVATE)");
+    CHECK(memcmp(&f.buf[7 + 6], "internet", 8) == 0,
+          "set_pdp_context APN placed at payload offset 6");
+    CHECK(f.buf[7 + 102] == 0x01, "set_pdp_context auth flag == 0x01");
+    CHECK(f.buf[7 + 104] == 0x04, "set_pdp_context protocol byte == 0x04 IPV4V6");
 
     /* --- raw serializer + overflow guard --- */
     memset(&f, 0, sizeof f);

@@ -424,7 +424,11 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
           f->sub_cmd == IPC41_NET_SERVING_NETWORK ||
           f->sub_cmd == IPC41_NET_POWERON_ATTACH)) ||
         (f->main_cmd == IPC41_MAIN_GPRS &&
-         f->sub_cmd == IPC41_GPRS_PIN_CTRL) ||
+         (f->sub_cmd == IPC41_GPRS_PIN_CTRL ||
+          f->sub_cmd == IPC41_GPRS_PDP_CONTEXT ||
+          f->sub_cmd == IPC41_GPRS_IP_CONFIGURATION ||
+          f->sub_cmd == IPC41_GPRS_CURRENT_SESSION_DATA_CTR ||
+          f->sub_cmd == IPC41_GPRS_CALL_STATUS)) ||
         (f->main_cmd == IPC41_MAIN_GEN) ||
         f->main_cmd == IPC41_MAIN_DISP) {
         char hex[256];
@@ -547,6 +551,7 @@ static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
                 f->cmd_type != IPC41_TYPE_NOTIFICATION);
     case DS_ENABLE_MOBILE_DATA:
     case DS_SET_DATA_PROFILE:
+    case DS_SET_LTE_ATTACH:
     case DS_DEFINE_PDP:
     case DS_ALWAYS_ON_PDN:
     case DS_PS_ATTACH:
@@ -588,9 +593,19 @@ static bool data_session_emit(void)
         break;
     case DS_SET_DATA_PROFILE:
         /* Set the APN/auth/protocol data profile (source-backed SetDataProfile,
-         * main=13 sub=27, 203 bytes; auth=0 "none"). */
-        if (!fmt_tx_set_data_profile(&f, (const char*)g.dsc.apn, 0 /*none*/,
-                                     FMT_TX_PROTO_IPV4V6))
+         * main=13 sub=27, 203 bytes; auth NONE -> numeric code 1). */
+        if (!fmt_tx_set_data_profile(&f, (const char*)g.dsc.apn,
+                                     FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6))
+            return false;
+        break;
+    case DS_SET_LTE_ATTACH:
+        /* Set the LTE attach profile (source-backed SetLteAttachProfile,
+         * main=13 sub=20, 201 bytes; cid = profile id). This prepares the CP
+         * for a LTE PS attach. */
+        if (!fmt_tx_set_lte_attach_profile(&f, (const char*)g.dsc.apn,
+                                           FMT_TX_AUTH_NONE,
+                                           FMT_TX_PROTO_IPV4V6,
+                                           g.dsc.profile_id))
             return false;
         break;
     case DS_DEFINE_PDP:
@@ -607,8 +622,13 @@ static bool data_session_emit(void)
         if (!fmt_tx_ps_attach(&f, true, false, 0)) return false;
         break;
     case DS_DATA_CALL:
-        /* Establish the data call (source-backed CDMA_DATA_CALL_ESTABLISH). */
-        if (!fmt_tx_set_data_call_establish(&f, true)) return false;
+        /* Activate the PDP context (source-backed SetPdpContext, main=13 sub=4,
+         * 112-byte frame). This is the REAL LTE activation command; the CDMA
+         * SetDataCallEstablish (main=3/sub=2) is a legacy CDMA path. */
+        if (!fmt_tx_set_pdp_context(&f, (const char*)g.dsc.apn,
+                                    FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6,
+                                    g.dsc.profile_id))
+            return false;
         break;
     case DS_WAIT_IP:
     case DS_ACTIVE:

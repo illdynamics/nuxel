@@ -11,25 +11,6 @@
  *
  * total_len == 7 + payload_len.
  *
- * TX FRAMING RESOLUTION (the stage-06 "contradiction", now closed):
- * ----------------------------------------------------------------
- *  - Kernel RX already proved the CP emits `sipc_fmt_hdr` (AST_POWERON).
- *  - Kernel TX (modem_io_device.c `misc_write`) treats a userspace write as an
- *    OPAQUE payload: it `copy_from_user`'s the exact bytes then PREPENDS the
- *    SIPC5 link header via `sipc5_build_header` (when iod->link_header). It
- *    does NOT parse main/sub/type or add a checksum. So the userspace TX
- *    format is EXACTLY the same `sipc_fmt_hdr`+payload as RX.
- *  - Vendor disassembly corroborates: IpcTxGetPdpContext() and IpcTxPsAttach()
- *    build `sipc_fmt_hdr`+payload on the stack and write it via the channel
- *    vtable send ([x8,#48]). Confirmed byte layout:
- *        buf[0..1]=len, buf[2]=msg_seq, buf[3]=ack_seq,
- *        buf[4]=main, buf[5]=sub, buf[6]=type, buf[7..]=payload.
- *  - The alternative 14-byte layout with `0x0605` magic + additive checksum
- *    (IpcTxExchange @0x342a80) is a DIFFERENT inner dialogue used by a
- *    separate "exchange" path; it is NOT what the data-path IpcTx* functions
- *    emit and NOT what /dev/umts_ipc0 expects for SIM/PDP traffic. It must not
- *    be conflated with `sipc_fmt_hdr`.
- *
  * SAFETY: these builders only SERIALIZE bytes into a caller buffer. They never
  * open a device or transmit. A separate, explicitly-authorized caller decides
  * whether and when to write a frame, and every write is bounded + policy-gated.
@@ -44,7 +25,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-/* worst-case FMT frame this module can build (134-byte PDP + hdr + slack) */
+/* worst-case FMT frame this module can build (203 profile + hdr + slack) */
 #define FMT_TX_MAX_FRAME 256u
 
 /* cmd_type numeric classes (vendor enum; see ipc41_cmdmap.h) */
@@ -53,13 +34,18 @@
 
 /* Samsung DataProtocol (IP family) enum numeric values (recovered) */
 enum fmt_tx_data_protocol {
-    /* Vendor DataProtocol enum (libsec-ril, VERIFIED @0x31f580):
+    /* Vendor DataProtocol enum (libsec-ril, VERIFIED @0x31f580/@0x31ff48):
      * IP=2, IPV6=3, IPV4V6=4. Wire byte = 0x00040605 >> ((proto-2)*8):
      * IP(2)=0x05, IPV6(3)=0x06, IPV4V6(4)=0x04. */
     FMT_TX_PROTO_IP      = 2,
     FMT_TX_PROTO_IPV6    = 3,
     FMT_TX_PROTO_IPV4V6  = 4,
 };
+
+/* DataAuth numeric codes (VERIFIED from helper @31fe28):
+ * NONE -> 1 (returns 1 for the "no auth" enum). This is the ONLY value we
+ * currently authorize for transmission (owner-approved internet APN). */
+#define FMT_TX_AUTH_NONE 1u
 
 /* A serialized frame (header + payload). */
 struct fmt_tx_frame {
@@ -99,33 +85,34 @@ bool fmt_tx_ps_attach(struct fmt_tx_frame *f, bool attach, bool suspend,
 /* GPRS get PDP context (query, no payload). */
 bool fmt_tx_get_pdp_context(struct fmt_tx_frame *f);
 
-/* GPRS sync profile / mobile-data (sub=29) enable/disable (9-byte frame).
- * NOTE: recovered from IpcTxSetMobileDataSetting disasm (main=13,sub=0x1d). */
+/* GPRS sync profile / mobile-data (sub=29) enable/disable (9-byte frame). */
 bool fmt_tx_mobile_data(struct fmt_tx_frame *f, bool enable, bool extra);
 
-/* GPRS define PDP context (134-byte frame, APN + protocol).
- * apn: NUL-terminated, <=100 chars. proto: IP family (see enum). */
+/* GPRS define PDP context (134-byte frame, APN + protocol). */
 bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
                                uint8_t proto, uint8_t profile_id);
 
-/* GPRS data-call establish (main=3 CDMA_DATA, sub=2 CDMA_DATA_CALL_ESTABLISH).
- * Recovered from IpcTxSetDataCallEstablish @0x320a10: 8-byte frame,
- * payload[0]=1 when establish else 2. */
+/* GPRS data-call establish (main=3 CDMA_DATA, sub=2 CDMA_DATA_CALL_ESTABLISH). */
 bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish);
 
 /* GPRS set data profile / sync profile (main=13 GPRS, sub=27 SET_DATA_PROFILE).
- * Recovered from IpcTxSetDataProfile @0x31ff48: 203-byte frame. The APN field
- * lives at payload offset 22 (verbatim from the SIMD copies in the disassembly);
- * auth code at payload[0], profile name at payload[1..20], protocol bytes at
- * payload[21] and payload[188]. The tail enum/flag fields are reconstructed as
- * recovered offsets (zero-filled where their runtime values are carrier-default
- * and not yet individually decoded). */
+ * 203-byte frame; COMPLETE layout recovered — see fmt_tx.c. */
 bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
                              uint8_t auth_code, uint8_t proto);
 
-/* GPRS always-on PDN (main=13 GPRS, sub=34 SET_ALWAYS_ON_PDN).
- * Recovered from IpcTxSetAlwaysOnPdn @0x321550: 9-byte frame,
- * payload[0]=on/off(1/0), payload[1]=profile code (region-dependent). */
+/* GPRS LTE attach profile (main=13 GPRS, sub=20 SET_LTE_ATTACH_PROFILE).
+ * 201-byte frame; COMPLETE layout recovered from IpcTxSetLteAttachProfile
+ * @0x320238 — see fmt_tx.c. This prepares the CP for LTE PS attach. */
+bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
+                                   uint8_t auth_code, uint8_t proto, uint8_t cid);
+
+/* GPRS set PDP context / ACTIVATE (main=13 GPRS, sub=4). The REAL LTE PDP
+ * activation command (112-byte frame) recovered from IpcTxSetPdpContext
+ * @0x31f6e0 — see fmt_tx.c. */
+bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
+                            uint8_t auth_code, uint8_t proto, uint8_t cid);
+
+/* GPRS always-on PDN (main=13 GPRS, sub=34 SET_ALWAYS_ON_PDN). */
 bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profile);
 
 /* Serialize a raw FMT frame given explicit fields (validation helper). */

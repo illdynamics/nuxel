@@ -1,638 +1,596 @@
-# NUXEL — STAGE 06 FINAL
-## OPERATION MULTIBASS 9000: FINAL BOSS EXTERMINATOR
-### Complete Native Samsung Shannon LTE Data Integration
+# NUXEL — OPERATION FINAL BEARER
+## STAGE 06: PHYSICAL LTE INTERNET OR PROVEN EXTERNAL BLOCKER
+### Autonomous Engineering Directive — No Research Loops, No Premature PASS
 
-**Agent:** DeepSeek V4 Pro Thinking
-**Execution:** Autonomous, live hardware, full repository access
-**Repository:** `/Users/wicked/x/nuxel`
-**Branch:** `cs/mob`
-**Last known committed checkpoint:** `426e7c97`
-**Device:** Samsung Galaxy S10+ SM-G975F / beyond2lte
-**Modem:** Samsung Shannon S5000AP
-**Kernel:** Linux 4.14.253
-**SSH:** `root@10.11.12.99`
-**Vendor RIL:** SM-G975F EFUJ2, Build ID beginning `60889dd7`
+**MODE:** Maximum-effort autonomous engineering and hardware verification
+**TARGET:** `STAGE_06_FULL_PASS`
+**REPOSITORY:** `/Users/wicked/x/nuxel`
+**BRANCH:** `cs/mob`
+**LAST REPORTED HEAD:** `0f5eeb74`
+**DEVICE:** Samsung Galaxy S10+ beyond2lte
+**MODEM:** Samsung Shannon S5000AP
+**KERNEL:** Linux 4.14.253
 
-# 0. PRIMARY OBJECTIVE
+---
 
-Finish Stage 06 completely.
+# 0. MISSION — NO MORE PARTIAL COMPLETION
 
-The final acceptance target is:
+Your assignment is to complete Stage 06 native cellular networking.
 
-`STAGE_06_FULL_PASS — NATIVE CELLULAR IP/DNS/HTTPS AND RECONNECT VERIFIED`
+Do not terminate voluntarily after completing research, compilation, deployment, protocol decoding, or command acknowledgment.
 
-This is an implementation-and-validation mission, not another open-ended reverse-engineering report.
+Continue through every authorized, reversible implementation and verification step until cellular networking passes the physical acceptance tests.
 
-You must recover the remaining protocol details, implement the missing functionality, test it offline, deploy it safely, and verify a genuine cellular internet connection on the physical Nuxel device.
+The only successful final status is:
 
-Do not stop after finding another symbol, packet format, or disassembly offset.
+`STAGE_06_FULL_PASS — CELLULAR IP + DNS + HTTPS + RECONNECT VERIFIED`
 
-Do not repeat completed Stage 01–05 work.
+If hardware, carrier provisioning, missing authorization, or an unavoidable execution limit prevents completion, report the exact blocker and preserve the next executable action.
 
-Continue through all authorized and technically justified work until the acceptance target is reached or a specific hard blocker is demonstrated.
+Do not fabricate a PASS.
 
-# 1. OWNER AUTHORIZATION
+Do not claim that you can override execution limits.
 
-The owner authorizes the following operations for this Stage 06 mission:
+**No more research-only rounds. No more generic progress reports. No more rediscovering previously decoded functions.**
 
-- Read-only analysis of the existing Samsung vendor binaries.
-- Static disassembly and protocol recovery.
-- Source-code modifications within the Nuxel project.
-- Compilation, testing, sanitizers and fuzzing.
-- Creation and execution of offline protocol test harnesses.
-- Installation of tested Nuxel userspace binaries.
-- Reversible systemd service changes.
-- Controlled restart of `nuxel-radiod`.
-- Bounded, evidence-backed modem data-session requests.
-- Cellular packet-data attachment and disconnection.
-- Cellular APN configuration after verification.
-- Small cellular IP/DNS/HTTPS test requests.
-- Cellular interface configuration.
-- Isolated cellular routing tests.
-- Controlled modem resets when required and supported by the established recovery procedure.
-- Controlled service recovery and reconnection tests.
-- Git commits on `cs/mob`.
-- Documentation and test-report updates.
+---
 
-The owner also authorizes bounded cellular data usage necessary for verification, provided the subscription supports it and roaming is not enabled without separate approval.
-
-## Authorization boundaries
-
-This prompt does not authorize:
-
-- Writes to protected boot, radio, firmware or recovery partitions.
-- EFS/NV modifications or destructive RFS operations.
-- Security bypasses.
-- SIM PIN guessing.
-- Firmware flashing.
-- Unbounded modem-command experimentation.
-- Destructive filesystem operations.
-- Disabling the only remaining management connection.
-- Unbounded or unexpected cellular charges.
-- Publishing proprietary Samsung binaries.
-- Git merge, release or tag creation.
-
-If a protected or destructive operation becomes necessary, stop that operation and request a separate, specific authorization.
-
-Do not treat the general instruction to finish Stage 06 as permission to bypass these boundaries.
-
-# 2. EXACT STARTING POINT
+# 1. START FROM THE LAST VERIFIED MILESTONE
 
 The previous run reported:
 
 - CP ONLINE.
-- Native RFS communication functional.
-- SIM READY.
-- USIM recognized.
-- Serving PLMN `20416`.
-- Live IPC41 FMT receive traffic.
-- Complete IPC41 command-name mapping.
-- Native data-session TX not implemented.
-- `rmnet0..7` DOWN.
-- USB and Wi-Fi management preserved.
-- RADIO partition unchanged.
+- RFS handshake operational.
+- Native radio daemon running.
+- SIM READY previously observed.
+- IPC41 command vocabulary recovered.
+- PDP protocol-byte mapping corrected.
+- Native FMT TX implemented.
+- Data-session FSM implemented.
+- Always-on-PDN phase added.
+- GEN response echo correlation discovered.
+- Five consecutive data-session command responses observed.
+- Data-session FSM reached `WAIT_IP`.
+- No active cellular bearer.
+- No cellular IP/DNS/HTTPS.
+- RADIO hash unchanged.
+- Git HEAD `0f5eeb74`.
 
-The previous run also recovered a possible alternative TX packet layout from:
+The observed GEN response payloads include:
 
-`IpcProtocol41::IpcTxExchange` at approximately `0x342a80`.
+```text
+0d1d030380
+0d01030180
+0d22030080
+0d03030080
+0302030380
+```
 
-Cached analysis:
+These appear to echo the transmitted main/subcommand identifiers.
 
-`/tmp/s5000ap06/IpcTx_data.txt`
+However, their result semantics are not yet proven.
 
-Additional analysis may exist under:
+**Do not equate a GEN response with command success.**
 
-`/tmp/analysis/`
+Verify all previous claims against current source, logs, and vendor evidence.
 
-First inspect the current Git HEAD, repository state and available analysis artifacts.
+---
 
-Do not assume temporary files survived a reboot.
+# 2. ABSOLUTE PRIORITY — DECODE GEN RESULT SEMANTICS
 
-If the files are missing, regenerate the analysis from the exact read-only vendor binary.
+The first unresolved issue is the response status.
 
-Do not waste tokens repeating unrelated protocol research.
+The final byte `0x80` appears repeatedly.
 
-# 3. PRIORITY ZERO — RESOLVE THE TX FRAMING CONTRADICTION
+Determine exactly what it means.
 
-This is the first critical blocker.
+Analyze:
 
-The existing Nuxel receive parser uses:
+- Vendor GEN response dispatcher.
+- Response status translation.
+- Command completion handlers.
+- Error/cause-code mapping.
+- Per-command response semantics.
+- Relevant `IpcRxGprsCallStatus` behavior.
+- Relevant `IpcRxPdpContext` behavior.
+- IP-configuration response handling.
 
-`[u16 len][u8 msg_seq][u8 ack_seq][u8 main][u8 sub][u8 type]`
+Use the vendor EFUJ2 `libsec-ril.so` as a read-only interoperability reference.
 
-The latest vendor disassembly reportedly shows:
+Identify whether `0x80` means:
 
-`[u16 total_len][u16 cmd_id][u8 type][u8 cksum_hi][u8 cksum][op0][op1][op2][op3][payload]`
+- Success.
+- Failure.
+- Unsupported command.
+- Invalid state.
+- Pending operation.
+- A generic response category.
+- Something else.
 
-These structures cannot be assumed interchangeable.
+Do not assume.
 
-## Required investigation
+Document the exact evidence.
 
-Trace `IpcTxExchange` through the complete call chain:
+## Required implementation
 
-1. Function arguments.
-2. Internal command construction.
-3. Intermediate buffers.
-4. Any framing or wrapping functions.
-5. Transport abstraction.
-6. Final kernel write or ioctl.
-7. Kernel framing and channel handling.
-8. Corresponding receive-side representation.
+Replace the generic response acceptance logic with strict correlation.
 
-Determine whether the apparent discrepancy is caused by:
+Validate:
 
-- Different protocol layers.
-- Intermediate versus final buffers.
-- Distinct command and transport headers.
-- Command-ID packing.
-- Checksums.
-- Direction-specific framing.
-- Different device channels.
-- Incorrect interpretation of disassembly.
-- Different IPC protocol versions.
+1. Expected GEN message type.
+2. Outstanding command main/sub.
+3. Response echo.
+4. Transaction identity where available.
+5. Result-code semantics.
+6. Current FSM phase.
+7. Context identifier when applicable.
 
-Identify the exact bytes that must be written to the actual device interface.
+Never advance on an unrelated response.
 
-Do not assume the vendor function's internal buffer is the final on-wire frame.
+Never advance on an error result.
 
-## Mandatory evidence
+Never advance on an unknown result.
 
-Produce:
+Add tests for successful, rejected, malformed, duplicate, stale, and out-of-order responses.
 
-- A documented TX call graph.
-- A byte-level diagram of each framing layer.
-- The exact transformation between command ID and main/subcommand fields.
-- Verified frame-length semantics.
-- Verified checksum semantics, if applicable.
-- Sequence and acknowledgment behavior.
-- Evidence identifying the final transport write.
-- At least one source-backed offline serialization test vector.
+---
 
-Do not modify the working RX parser merely to match the new TX hypothesis.
+# 3. COMPLETE THE 203-BYTE DATA PROFILE
 
-Preserve both representations if they belong to different layers.
+The previous run identified incomplete `SetDataProfile` reconstruction as a likely blocker.
 
-**Gate TX-FRAME-01 passes only when the actual transport framing is unambiguous.**
+Treat this as a hypothesis requiring verification.
 
-# 4. FINISH THE DATA-PATH PAYLOAD DECODING
+Recover the complete vendor serializer for:
 
-Use the existing disassembly and exact vendor binary.
+`IpcTxSetDataProfile`
 
-Previously identified functions:
+Inspect the exact function and its relevant callees.
 
-- `IpcTxDefinePdpContext` — `0x31f580`
-- `IpcTxPsAttach` — `0x31fa98`
-- `IpcTxSetDataProfile` — `0x31ff48`
-- `IpcTxSetDataCallEstablish` — `0x320a10`
-- `IpcTxSetMobileDataSetting` — `0x3214c8`
+Recover every required field, including:
 
-Reported command words:
-
-- Define PDP context: `0x0605`
-- PS attach: `0x030d`
-- Set data profile: `0x1b0d`, possible fallback `0x090d`
-
-Reported payload sizes:
-
-- Define PDP context: 134 bytes.
-- Set data profile: up to 203 bytes.
-
-Treat all values as findings to verify against the exact call chain.
-
-## Recover every required field
-
-For each data-path command, establish:
-
-- Exact payload size.
-- Field offsets and widths.
-- Byte order.
-- APN representation.
-- IP-family selection.
-- Authentication configuration.
-- Profile and context identifiers.
-- Command flags.
+- Profile ID.
+- Context ID.
+- APN.
+- PDP protocol.
+- Roaming protocol.
+- Authentication.
+- Credential lengths.
+- Profile enable flags.
+- APN type.
 - Reserved fields.
-- String length and termination.
-- Optional field handling.
-- Transaction identifiers.
-- Response and error-code interpretation.
+- Length fields.
+- LTE-related flags.
+- Remaining tail bytes.
 
-Document every field with its source evidence.
+Do not assume zero-filled fields are valid.
 
-If a field is genuinely unknown, do not guess.
+Do not invent values.
 
-Determine whether it is required for the minimum valid data session.
+Do not blindly copy arbitrary vendor memory.
 
-Do not confuse structure allocation size with serialized payload length.
+Build a field-offset table with evidence.
 
-# 5. RECOVER THE ACTUAL TRANSACTION SEQUENCE
+Implement a deterministic, byte-exact serializer.
 
-Determine the modem-supported sequence for establishing a cellular data session.
+Add tests for:
+
+- Correct total length.
+- Correct field offsets.
+- Correct protocol mapping.
+- Valid APN.
+- Empty APN.
+- Maximum APN length.
+- Invalid enum values.
+- Overflow rejection.
+- Known-good vendor-derived test vectors.
+
+Ensure the serializer is integrated into the live data-session FSM.
+
+---
+
+# 4. IMPLEMENT VERIFIED LTE ATTACH PROFILE HANDLING
 
 Investigate:
 
-- Registration prerequisites.
-- Packet-data attachment.
-- Mobile-data enablement.
-- Profile configuration.
-- PDP-context definition.
-- Data-call establishment.
-- Data-call result.
-- IP configuration.
-- Data-call teardown.
+`SetLteAttachProfile`
 
-Do not assume the order above is the actual protocol order.
+Previously reported subcommand:
 
-Trace the vendor control flow and response handlers.
+`main=13, sub=20`
 
-Determine which steps are already satisfied by the modem and which require native commands.
+Verify that mapping against the vendor binary.
 
-Implement only the minimum evidence-backed sequence required for one data session.
+Determine:
 
-# 6. IMPLEMENT NATIVE IPC41 TX
+- Whether the command is required.
+- Its prerequisites.
+- Its payload structure.
+- Its relationship to SetDataProfile.
+- Its expected response.
+- Its correct position in the initialization sequence.
 
-Implement a complete native TX facility in `nuxel-radiod`.
+Implement it only when supported by evidence.
 
-Requirements:
+Do not transmit guessed payloads.
 
-- Correct transport framing.
-- Correct command serialization.
-- Validated lengths and offsets.
-- Correct command types.
-- Correct sequence handling.
-- Safe buffer management.
-- Partial-write handling.
-- Error propagation.
-- Response correlation.
-- Asynchronous notification handling.
-- Timeout handling.
-- Bounded retries.
-- Sensitive-data redaction.
+Do not assume that the command is mandatory merely because the vendor exposes it.
 
-Keep the implementation modular.
+Add byte-exact tests.
 
-Do not introduce an Android RIL dependency.
+Integrate it into the FSM at the verified point.
 
-Do not execute Samsung's proprietary RIL at runtime.
+---
 
-Preserve the existing receive path and RFS responder.
+# 5. RESOLVE THE ACTUAL DATA-CALL FAILURE
 
-Do not block the FMT receive loop while waiting for a command response.
+Once the serializers and response semantics are verified, determine why the data call does not produce a bearer.
 
-# 7. IMPLEMENT A REAL DATA-SESSION STATE MACHINE
+Investigate:
 
-Implement explicit state tracking for:
+- Packet-data registration.
+- PS attachment state.
+- PDP activation status.
+- Profile acceptance.
+- APN provisioning.
+- Carrier rejection codes.
+- Data-call activation responses.
+- GPRS call status.
+- IP-configuration notifications.
+- Context-to-rmnet mapping.
 
-- CP offline/online.
-- SIM unavailable/ready.
-- Network searching/registered.
-- LTE RAT confirmed.
-- Packet-data detached/attached.
-- Profile unconfigured/configured.
-- PDP context inactive/configured.
-- Data-call pending/active/rejected.
-- Interface unavailable/available.
-- IP unconfigured/configured.
-- Data-session disconnecting/disconnected.
-- Recoverable and terminal failures.
+Use actual modem evidence to distinguish:
 
-Transitions must be based on actual modem responses or authoritative kernel state.
+**A.** Command rejected.
 
-Never treat successful transmission as successful session establishment.
+**B.** Command acknowledged but not executed.
 
-Handle:
+**C.** Attach/profile incomplete.
 
-- Modem rejection.
-- Timeouts.
-- Lost registration.
-- Service restart.
-- Unexpected disconnect.
-- Repeated unsolicited notifications.
-- Modem recovery.
-- Controlled teardown.
+**D.** Carrier provisioning rejected.
 
-Retries must be bounded and justified.
+**E.** Data call active but IP configuration missing.
 
-# 8. CONFIRM LTE REGISTRATION AND CARRIER PROFILE
+**F.** IP configuration available but Linux interface not configured.
 
-Revalidate the actual registration-status value and radio access technology.
+**G.** Other verified root cause.
 
-A serving PLMN and RSSI alone do not prove successful LTE registration.
+Fix the identified cause.
 
-Confirm the correct APN for the active subscription.
+Do not repeat the same failed command sequence without a concrete correction.
 
-The previously suggested APN `internet` is a candidate, not proof.
+---
 
-Determine whether authentication is required.
+# 6. PHYSICAL TEST — ONE CONTROLLED SESSION
 
-Do not invent credentials.
+After offline verification:
 
-Do not enable roaming without separate authorization.
+1. Confirm CP ONLINE.
+2. Confirm SIM READY.
+3. Confirm packet-data registration.
+4. Confirm the correct APN.
+5. Confirm non-roaming conditions.
+6. Confirm management connectivity.
+7. Confirm rollback binary.
+8. Deploy the tested daemon.
+9. Verify deployed binary hash.
+10. Trigger one controlled data-session attempt.
+11. Capture complete sanitized FMT TX/RX.
+12. Decode every response.
+13. Determine the actual bearer state.
 
-Implement APN and data-session configuration independently of the protocol serializer.
+If the modem rejects the session, stop retries and decode the failure.
 
-Do not expose subscriber identifiers or credentials in logs.
+If the modem activates a bearer, proceed immediately to Linux networking integration.
 
-# 9. COMPLETE OFFLINE VALIDATION
+---
 
-Before live data-command transmission:
+# 7. BRING UP CELLULAR NETWORKING
 
-- Compile with strict warnings.
-- Run existing regression tests.
-- Run protocol serialization tests.
-- Run known-good packet-vector tests.
-- Test invalid lengths.
-- Test truncated frames.
-- Test invalid command types.
-- Test invalid profile parameters.
-- Test timeout and rejection handling.
-- Test state-machine transitions.
-- Test reconnect behavior.
-- Run applicable sanitizers.
-- Run bounded fuzz tests.
+Inspect:
 
-Do not use self-generated guessed packets as the only source of truth.
+`rmnet0..7`
 
-All mandatory tests must pass.
+Determine the actual active interface and its associated modem context.
 
-Document the test results.
+Do not assume `rmnet0`.
 
-# 10. VERIFY DEPLOYMENT PROVENANCE
-
-The project previously had a mismatch between canonical source, compiled output and deployed executable.
-
-Verify:
-
-- Canonical source path.
-- Complete build inputs.
-- Build-script source list.
-- Resulting executable.
-- Systemd `ExecStart`.
-- Deployed executable hash.
-- Running process executable.
-
-Deploy only the tested binary.
-
-Keep a verified rollback copy.
-
-Preserve USB and Wi-Fi management access.
-
-# 11. EXECUTE THE AUTHORIZED PHYSICAL DATA TEST
-
-Once the framing, serialization, state machine, carrier profile and offline tests are verified, perform a bounded cellular data-session test.
-
-This prompt authorizes that test subject to the safety boundaries in Section 1.
-
-Use one controlled attempt.
-
-Capture:
-
-- Outgoing command identifiers.
-- Sanitized request metadata.
-- Modem acknowledgments.
-- Packet-data attach status.
-- PDP-context result.
-- Data-call establishment result.
-- Context identifier.
-- Activated network interface.
-- Rejection/cause codes.
-
-If rejected:
-
-1. Stop additional speculative requests.
-2. Decode the exact failure.
-3. Investigate offline.
-4. Correct the implementation.
-5. Re-run tests.
-6. Retry only when a concrete correction is supported by evidence.
-
-Do not brute-force commands, APNs, flags or enum values.
-
-# 12. BRING UP CELLULAR NETWORKING
-
-After the modem accepts the data session, identify the correct Linux data interface.
-
-The device previously exposed `rmnet0..7`, all DOWN.
-
-Determine the actual modem-context-to-interface mapping.
-
-Verify:
+Implement:
 
 - Interface activation.
-- Link configuration.
-- MTU.
-- IP address and prefix.
-- IPv4/IPv6 negotiation.
-- Routing.
-- DNS.
-- Packet counters.
-- Interface teardown.
+- Correct MTU.
+- IP address configuration.
+- IPv4/IPv6 handling.
+- Gateway or point-to-point routing.
+- DNS configuration.
+- Data-session teardown.
+- Recovery after disconnect.
 
-Use native Linux networking facilities.
+Preserve Wi-Fi and USB management.
 
-Preserve USB SSH.
+Use isolated cellular routes for connectivity tests.
 
-Do not overwrite the system default route during initial validation.
+Never mistake traffic through Wi-Fi or ZeroTier for cellular connectivity.
 
-Use isolated routing or interface-specific tests to prove traffic uses cellular.
+---
 
-# 13. PROVE REAL CELLULAR INTERNET
+# 8. CELLULAR CONNECTIVITY ACCEPTANCE
 
-Perform these mandatory physical tests:
+All tests must use the verified cellular interface.
 
-**Test A — Active bearer**
+## Test A — Cellular IP
 
-The modem confirms an active data session and the corresponding Linux interface is usable.
+Perform a small, bounded IP connectivity test.
 
-**Test B — Cellular IP**
+## Test B — Cellular DNS
 
-A small IP request succeeds through cellular, with no Wi-Fi fallback.
+Resolve a hostname using the cellular connection.
 
-**Test C — Cellular DNS**
+## Test C — Cellular HTTPS
 
-A hostname resolves through cellular.
+Perform a small HTTPS request with certificate verification enabled.
 
-**Test D — Cellular HTTPS**
+## Test D — Routing isolation
 
-A bounded HTTPS request succeeds through cellular with certificate verification.
+Prove the traffic traversed the cellular bearer.
 
-**Test E — Routing proof**
+## Test E — Disconnect
 
-Evidence demonstrates the successful traffic traversed the cellular interface.
+Cleanly terminate the session.
 
-**Test F — Disconnect and reconnect**
+## Test F — Reconnect
 
-The data session disconnects cleanly and reconnects successfully.
+Re-establish the session and repeat IP/DNS/HTTPS.
 
-**Test G — Service recovery**
+## Test G — Service recovery
 
-The daemon recovers correctly after a controlled restart.
+Restart the daemon safely and verify recovery.
 
-**Test H — Management preservation**
+Only after all tests pass may Stage 06 be declared complete.
 
-USB management remains available throughout.
+---
 
-Do not claim cellular success from Wi-Fi connectivity.
+# 9. SYSTEM HEALTH IS PART OF THE ACCEPTANCE CRITERIA
 
-# 14. PROTECTED-HARDWARE SAFETY
+The previous run observed:
 
-Preserve the known RADIO partition integrity hash.
+- Load average approximately 13.
+- Python process PID 6784 reportedly consuming 100% CPU.
+- Approximately 8,170 zombie processes.
+- `ksoftirqd` reportedly consuming approximately 98% CPU.
+- Temporary ZeroTier SSH connectivity loss.
 
-Do not write protected partitions.
+Do not dismiss these findings merely because they predate the current session.
 
-Do not perform destructive NV/EFS or RFS operations.
+Investigate their relationship to:
 
-Do not guess protocol bytes.
+- Modem interrupts.
+- Network processing.
+- Excessive process creation.
+- Daemon restart loops.
+- Resource exhaustion.
+- Kernel softirq saturation.
+- SSH responsiveness.
 
-Do not execute uncontrolled modem resets.
+Identify the parent of zombie processes.
 
-Do not log sensitive subscriber identifiers.
+Inspect CPU, memory, process and interrupt trends.
 
-Do not create unbounded data usage.
+Determine whether the modem data path contributes to the load.
 
-Do not modify unrelated device subsystems.
+Do not terminate unrelated processes without authorization.
 
-Maintain rollback capability throughout.
+Do not modify unrelated subsystems unnecessarily.
 
-If the only path forward requires an unapproved destructive operation, stop and report the exact intervention required.
+If system health is unstable, stabilize the testing environment before continuing live modem experiments.
 
-# 15. CONTINUATION POLICY — NO MORE RESEARCH-ONLY LOOPS
+---
 
-Work through the following sequence:
+# 10. SAFETY INVARIANTS
 
-**A.** Resolve TX framing completely.
+The RADIO partition:
 
-**B.** Finish payload decoding.
+`/dev/sda16`
 
-**C.** Recover data-session response semantics.
+Expected SHA256:
 
-**D.** Implement native TX.
+`9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7`
 
-**E.** Implement data-session state management.
+Never write to it.
 
-**F.** Pass offline tests.
+Never modify:
 
-**G.** Deploy reversibly.
+- EFS.
+- NV.
+- IMEI.
+- ICCID.
+- SIM PIN/PUK.
+- Modem firmware.
+- Protected partitions.
 
-**H.** Establish the cellular data session.
+Never execute destructive RFS operations.
 
-**I.** Configure the Linux cellular interface.
+Never brute-force modem commands.
 
-**J.** Verify cellular IP, DNS and HTTPS.
+Never perform unbounded retries.
 
-**K.** Verify teardown and reconnect.
+Never intentionally destroy all management connectivity.
 
-**L.** Commit and document the completed implementation.
+Use reversible deployment with a verified rollback binary.
 
-Do not repeatedly inventory already known symbols.
+Keep proprietary Samsung code out of published deliverables.
 
-Do not restart earlier stages.
+---
 
-Do not spend the entire run rewriting documentation before implementing the missing functionality.
+# 11. NO MORE WASTED TOKEN BUDGET
 
-Do not stop at the first partial milestone.
+Do not repeat the full IPC41 discovery process.
 
-If a hard blocker is reached, report the exact unresolved issue and the minimum next action.
+Do not dump enormous disassemblies.
 
-If the execution budget is nearly exhausted, prioritize preserving the current implementation and an actionable checkpoint rather than starting another unfinishable investigation.
+Do not repeatedly inspect already verified functions.
 
-# 16. REQUIRED FINAL ACCEPTANCE MATRIX
+Do not produce large speculative research reports.
 
-| Gate | Required result |
-|---|---|
-| CP ONLINE | PASS |
-| RFS handshake | PASS |
-| SIM READY | PASS |
-| LTE registration and RAT | PASS |
-| TX framing reconciled | PASS |
-| PDP/profile serialization verified | PASS |
-| Native IPC41 TX implemented | PASS |
-| Offline protocol tests | PASS |
-| Packet-data attach | PASS |
-| PDP context accepted | PASS |
-| Data call active | PASS |
-| Cellular interface usable | PASS |
-| Cellular IP connectivity | PASS |
-| Cellular DNS | PASS |
-| Cellular HTTPS | PASS |
-| Cellular disconnect/reconnect | PASS |
-| Management preserved | PASS |
-| Protected storage unchanged | PASS |
+Work directly on the remaining blocker.
 
-Only declare:
+Use:
 
-`STAGE_06_FULL_PASS`
+**Evidence → Code → Test → Hardware → Next gate**
 
-when every mandatory gate passes on physical hardware.
+Maintain a concise checkpoint, but never treat checkpoint creation as completion.
 
-Otherwise declare:
+If an execution budget is nearly exhausted:
 
-`STAGE_06_NOT_YET_PASS — [EXACT BLOCKER]`
+1. Finish or safely interrupt the current operation.
+2. Preserve verified changes.
+3. Commit coherent tested milestones.
+4. Record the exact remaining blocker.
+5. Leave the device in a known recoverable state.
+6. Report `NOT_YET_PASS`.
 
-# 17. REQUIRED DELIVERABLES
+Do not claim automatic continuation unless an actual supervisor provides it.
 
-Commit to `cs/mob`:
+---
 
-1. Verified TX framing implementation.
-2. PDP/profile serializers.
-3. Native data-session command handling.
-4. Data-session state machine.
-5. Response decoders.
-6. Carrier configuration support.
-7. Linux cellular networking integration.
-8. Unit and negative-path tests.
-9. Sanitizer/fuzz results.
-10. Sanitized hardware verification evidence.
-11. Updated build and deployment scripts.
-12. Rollback procedure.
-13. Final Stage 06 report.
-14. Stage 07 handoff notes if Stage 06 passes.
+# 12. BUILD AND DEPLOYMENT RULES
 
-Do not merge or publish a release without separate authorization.
+The device has native GCC and libsystemd.
 
-# 18. FINAL RESPONSE CONTRACT
+Prefer the existing verified native-build path unless a working cross-build environment is already available.
 
-Your response must begin with exactly one of:
+Do not spend another run searching for toolchains unnecessarily.
 
-`STAGE_06_FULL_PASS — VERIFIED NATIVE CELLULAR INTERNET`
+Verify actual compiler exit status.
 
-or:
+Do not use a pipeline exit code as proof that GCC succeeded.
 
-`STAGE_06_NOT_YET_PASS — [EXACT REMAINING BLOCKER]`
+Use `pipefail` or capture the compiler status directly.
 
-Then report:
+Verify:
+
+- Binary exists.
+- Correct architecture.
+- Correct source revision.
+- Tests pass.
+- Executable hash.
+- Deployed hash.
+- Running process executable.
+- Service health.
+- Rollback availability.
+
+---
+
+# 13. MANDATORY COMPLETION GATES
+
+The following must all pass:
+
+- [ ] CP ONLINE.
+- [ ] RFS handshake operational.
+- [ ] SIM READY.
+- [ ] LTE registration verified.
+- [ ] GEN result semantics decoded.
+- [ ] Strict response correlation implemented.
+- [ ] Complete data-profile serializer verified.
+- [ ] LTE attach-profile requirements resolved.
+- [ ] PDP configuration accepted.
+- [ ] Packet-data attachment accepted.
+- [ ] Data call confirmed active.
+- [ ] Correct rmnet interface identified.
+- [ ] Cellular IP configuration established.
+- [ ] Cellular IP connectivity verified.
+- [ ] Cellular DNS verified.
+- [ ] Cellular HTTPS verified.
+- [ ] Disconnect successful.
+- [ ] Reconnect successful.
+- [ ] Service recovery successful.
+- [ ] Management connectivity preserved.
+- [ ] System health acceptable.
+- [ ] Protected storage unchanged.
+- [ ] Regression tests passing.
+- [ ] Final implementation committed.
+
+Do not mark a gate complete without evidence.
+
+---
+
+# 14. FINAL DELIVERABLES
+
+Provide:
+
+1. Corrected response decoder.
+2. Strict GEN correlation.
+3. Complete data-profile serializer.
+4. LTE attach-profile implementation, if required.
+5. Corrected data-session FSM.
+6. Linux cellular networking integration.
+7. Regression tests.
+8. Negative-path tests.
+9. Live modem logs.
+10. Cellular connectivity evidence.
+11. Reconnection evidence.
+12. System-health findings.
+13. Safety verification.
+14. Final Git commit.
+15. Stage 06 acceptance report.
+
+---
+
+# 15. FINAL RESPONSE CONTRACT
+
+If every gate passes, begin:
+
+`STAGE_06_FULL_PASS — NATIVE LTE INTERNET VERIFIED ON PHYSICAL HARDWARE`
+
+Otherwise begin:
+
+`STAGE_06_NOT_YET_PASS — [EXACT VERIFIED BLOCKER]`
+
+Include:
 
 - Git HEAD.
-- Implemented files.
-- Recovered protocol details.
-- Offline tests.
-- Physical modem results.
-- Cellular IP/DNS/HTTPS evidence.
-- Reconnection evidence.
-- Safety verification.
+- Verified fixes.
+- Actual hardware results.
+- GEN response interpretation.
+- Bearer status.
+- Cellular interface.
+- IP/DNS/HTTPS results.
+- Reconnection results.
+- Safety status.
 - Remaining blockers.
-- Stage 07 readiness.
 
-No fabricated evidence.
+Never report PASS based only on a successful build, an ACK, or a state-machine transition.
 
-No inflated milestone claims.
+---
 
-No premature PASS.
+# EXECUTE NOW
 
-# FINAL DIRECTIVE
+Start from HEAD `0f5eeb74`, verifying the actual current HEAD first.
 
-The modem is alive.
+Resolve GEN `0x80` semantics.
 
-The SIM is initialized.
+Complete the 203-byte SetDataProfile implementation.
 
-The proprietary protocol is substantially understood.
+Determine whether SetLteAttachProfile is required.
 
-The remaining challenge is the native data-session implementation.
+Fix the bearer-establishment failure.
 
-**Resolve the TX framing discrepancy, finish the protocol recovery, implement the missing code, and prove real cellular internet.**
+Bring up the cellular interface.
 
-Continue through all authorized, reversible engineering work until Stage 06 passes or a genuine blocker is demonstrated.
+Prove cellular IP, DNS and HTTPS.
 
-**OPERATION MULTIBASS 9000 — FINISH THE JOB.**
+Verify disconnect and reconnect.
 
-🐧🔥 BAAAAAAAAAM.
+Commit the completed implementation.
+
+**Do not voluntarily stop at another partial milestone.**
+
+**Do not repeat completed research.**
+
+**Do not substitute a checkpoint for working hardware.**
+
+**Do not manufacture a PASS.**
+
+**FINISH THE ENGINEERING. PROVE THE CONNECTION. PASS STAGE 06.**
+
+🐧🔥 OPERATION FINAL BEARER — BAAAAAAAAAM.
