@@ -113,6 +113,16 @@ bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
  * payload[0]=1 when establish else 2. */
 bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish);
 
+/* GPRS set data profile / sync profile (main=13 GPRS, sub=27 SET_DATA_PROFILE).
+ * Recovered from IpcTxSetDataProfile @0x31ff48: 203-byte frame. The APN field
+ * lives at payload offset 22 (verbatim from the SIMD copies in the disassembly);
+ * auth code at payload[0], profile name at payload[1..20], protocol bytes at
+ * payload[21] and payload[188]. The tail enum/flag fields are reconstructed as
+ * recovered offsets (zero-filled where their runtime values are carrier-default
+ * and not yet individually decoded). */
+bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
+                             uint8_t auth_code, uint8_t proto);
+
 /* GPRS always-on PDN (main=13 GPRS, sub=34 SET_ALWAYS_ON_PDN).
  * Recovered from IpcTxSetAlwaysOnPdn @0x321550: 9-byte frame,
  * payload[0]=on/off(1/0), payload[1]=profile code (region-dependent). */

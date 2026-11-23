@@ -25,6 +25,7 @@ enum ds_phase {
     DS_IDLE = 0,
     DS_SIM_CHECK,          /* confirm SIM READY */
     DS_ENABLE_MOBILE_DATA, /* GPRS mobile data ON */
+    DS_SET_DATA_PROFILE,   /* set APN/auth/protocol profile */
     DS_DEFINE_PDP,         /* define PDP context w/ APN */
     DS_ALWAYS_ON_PDN,      /* always-on PDN profile */
     DS_PS_ATTACH,          /* GPRS PS attach */

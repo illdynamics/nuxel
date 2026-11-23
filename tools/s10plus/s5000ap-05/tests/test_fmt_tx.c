@@ -106,6 +106,22 @@ int main(void)
     CHECK(bad == -1, "always_on_pdn bytes match disasm (diff @ %d)", bad);
     CHECK(f.main_cmd == 13 && f.sub_cmd == 34, "always_on_pdn main/sub=13/34");
 
+    /* --- SetDataProfile (source: IpcTxSetDataProfile @0x31ff48) ---
+     * 203-byte frame: len=203, main=13, sub=27, type=3. APN at payload[22],
+     * auth=0 at payload[0], protocol byte at payload[21]+payload[188].
+     */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_data_profile(&f, "internet", 0, FMT_TX_PROTO_IPV4V6), "set_data_profile builds");
+    CHECK(f.len == 203, "set_data_profile len==203 (got %zu)", f.len);
+    CHECK(f.main_cmd == 13 && f.sub_cmd == 27 && f.cmd_type == 3,
+          "set_data_profile main/sub/type=13/27/3");
+    CHECK(f.buf[0] == 0xcb && f.buf[1] == 0x00, "set_data_profile len field = 203 LE");
+    CHECK(f.buf[7 + 0] == 0x00, "set_data_profile auth=0 (none)");
+    CHECK(f.buf[7 + 21] == 0x04 && f.buf[7 + 188] == 0x04,
+          "set_data_profile protocol IPV4V6=0x04 at payload[21]+payload[188]");
+    CHECK(memcmp(&f.buf[7 + 22], "internet", 8) == 0,
+          "set_data_profile APN placed at payload offset 22");
+
     /* --- raw serializer + overflow guard --- */
     memset(&f, 0, sizeof f);
     uint8_t pl[3] = { 0xaa, 0xbb, 0xcc };

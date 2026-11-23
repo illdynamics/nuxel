@@ -546,6 +546,7 @@ static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
                 f->sub_cmd == IPC41_SEC_PIN_STATUS &&
                 f->cmd_type != IPC41_TYPE_NOTIFICATION);
     case DS_ENABLE_MOBILE_DATA:
+    case DS_SET_DATA_PROFILE:
     case DS_DEFINE_PDP:
     case DS_ALWAYS_ON_PDN:
     case DS_PS_ATTACH:
@@ -584,6 +585,13 @@ static bool data_session_emit(void)
         return false;
     case DS_ENABLE_MOBILE_DATA:
         if (!fmt_tx_mobile_data(&f, true, false)) return false;
+        break;
+    case DS_SET_DATA_PROFILE:
+        /* Set the APN/auth/protocol data profile (source-backed SetDataProfile,
+         * main=13 sub=27, 203 bytes; auth=0 "none"). */
+        if (!fmt_tx_set_data_profile(&f, (const char*)g.dsc.apn, 0 /*none*/,
+                                     FMT_TX_PROTO_IPV4V6))
+            return false;
         break;
     case DS_DEFINE_PDP:
         if (!fmt_tx_define_pdp_context(&f, (const char*)g.dsc.apn,

@@ -61,6 +61,59 @@ bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish)
 }
 
 /*
+ * GPRS set data profile (recovered from IpcTxSetDataProfile @0x31ff48, 203 bytes).
+ *
+ * Layout (frame base = 7-byte sipc_fmt_hdr; payload = 196 bytes; offsets below
+ * are payload offsets, VERIFIED from the SIMD/store disassembly):
+ *   payload[0]  = auth code (DataAuth -> numeric, from helper @0x31fe28)
+ *   payload[1..20] = profile name string (20 bytes, NUL-padded; DataProfile enum)
+ *   payload[21] = protocol wire byte (0x05/0x06/0x04 via 0x00040605>>((p-2)*8))
+ *   payload[22..122] = APN (101 bytes, NUL-padded)
+ *   payload[123..154] = username (32 bytes, NUL-padded)
+ *   payload[155..186] = password (32 bytes, NUL-padded)
+ *   payload[187] = flag (auth-on/enable)
+ *   payload[188] = protocol wire byte (second copy)
+ *   payload[189] = flag
+ *   payload[190..195] = tail (4 halfwords: pco/radio-tech dependent)
+ *
+ * The APN/auth/protocol fields are source-verified. The profile NAME and tail
+ * halfwords derive from enum/region selects we do not fully decode, so they are
+ * zero-filled (carrier-default "no explicit profile name" / "no PCO"). This is
+ * a bounded, partially-recovered serializer: it never emits invented nonzero
+ * values for undecoded fields.
+ */
+bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
+                             uint8_t auth_code, uint8_t proto)
+{
+    if (!f || !apn) return false;
+    size_t alen = strlen(apn);
+    if (alen > 100u) return false;
+
+    uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 27u /*SET_DATA_PROFILE*/,
+                              FMT_TX_TYPE_NOTIFICATION, 196u);
+    if (!p) return false;
+    memset(p, 0, 196u);
+
+    p[0] = auth_code;            /* DataAuth -> numeric code (0 = none) */
+
+    /* protocol wire byte at payload[21] and payload[188] (second copy). */
+    uint8_t pb;
+    switch (proto) {
+    case FMT_TX_PROTO_IP:     pb = 0x05; break;
+    case FMT_TX_PROTO_IPV6:   pb = 0x06; break;
+    case FMT_TX_PROTO_IPV4V6: pb = 0x04; break;
+    default:                  pb = 0x05; break;
+    }
+    p[21] = pb;
+    p[188] = pb;
+
+    /* APN at payload[22..22+alen]. */
+    memcpy(&p[22], apn, alen);
+
+    return true;
+}
+
+/*
  * GPRS always-on PDN (recovered from IpcTxSetAlwaysOnPdn @0x321550):
  *   header main=13 sub=34(0x22) type=3; payload[0]=on/off(1/0),
  *   payload[1]=profile code (region select via Region::IsNtcMain). The vendor
