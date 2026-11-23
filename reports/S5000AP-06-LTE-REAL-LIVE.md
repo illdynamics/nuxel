@@ -335,3 +335,47 @@ bearer), which is the remaining clean-room work (Stage-06 subjob data gate).
 - No PIN/PUK/IMSI/ICCID/IMEI captured, no protected-partition write, Wi-Fi/USB
   preserved throughout.
 
+
+### 11. Continuation checkpoint (FMT telephony, next gate)
+
+After the RFS response, the CP emits a deterministic FMT notification burst on
+ch235 (all `type=3` = CP→AP unsolicited notification unless noted). Full distinct
+set observed this session (count):
+
+```
+15x main=7  sub=6  type=3 plen=18   (periodic, ~10-15 s cadence)
+ 9x main=7  sub=1  type=3 plen=12   (periodic, interleaved with sub=6)
+ 7x main=5  sub=1  type=3 plen=2
+ 2x main=8  sub=5  type=3 plen=20   (GPRS/data family name)
+ 2x main=5  sub=7  type=3 plen=1
+ 1x main=8  sub=3  type=3 plen=26
+ 1x main=6  sub=5  type=3 plen=51
+ 1x main=5  sub=16 type=3 plen=1
+ 1x main=5  sub=12 type=3 plen=11
+ 1x main=4  sub=7  type=3 plen=1
+ 1x main=4  sub=12 type=3 plen=2
+ 1x main=39 sub=1  type=3 plen=9
+ 1x main=38 sub=1  type=1 plen=4    (type=1 = CP request/response)
+ 1x main=19 sub=5  type=3 plen=18   (AST_POWERON)
+ 1x main=14 sub=3  type=1 plen=20
+ 1x main=13 sub=15 type=3 plen=2
+ 1x main=1  sub=7  type=3 plen=1
+ 1x main=1  sub=1  type=3 plen=1
+```
+
+The CP is now ONLINE and **actively reporting** (the `main=7 sub=1/sub=6`
+notifications reproduce every ~10-15 s — a live telephony/status heartbeat that
+never appeared in Stage-05). CP has NOT yet reached `STATE_SIM_ATTACH(7)`; it is
+reporting status but waiting for the AP to drive SIM-attach/registration/bearer
+via FMT **requests** (type != 3), the closed vocabulary that remains to be
+decoded. rmnet0..7 remain DOWN.
+
+**Next executable step (precise):** decode the numeric `main_cmd` → family map for
+`main=1,4,5,6,7,8,13,14,19,38,39` from `IpcProtocol41` (the `Convert*SubCmd`
+string-set at `.rodata` offsets 0x10422c..0x1417ad, each called by a per-family
+`Convert*` function whose function ADDRESS encodes the numeric main_cmd). Then map
+`main=7 sub=1/sub=6` (the repeating status) and implement SIM-status handling and
+the registration/bearer FMT requests to drive `STATE_SIM_ATTACH(7)` → registered →
+PDP/rmnet UP. This is the remaining clean-room FMT-vocabulary RE effort; the RFS
+block is now removed.
+
