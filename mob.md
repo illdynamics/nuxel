@@ -1,476 +1,302 @@
-# NUXEL — PROMPT 03.6
-## S5000AP Firmware Provenance Recovery & CP Boot Clearance
+√# NUXEL — STAGE 04: FINAL EXECUTION DIRECTIVE
+## Resolve the Remaining Blockers, Deploy the Bootstrap, and Complete the Controlled Physical Trial
 
-**Execution model:** DeepSeek V4 Pro Thinking
-**Delegation:** Flash Thinking for read-only discovery, hashing, comparison and offline tests
-**Target:** Samsung Galaxy S10+ SM-G975F / beyond2lte / Exynos9820 / S5000AP
-**Current branch:** `cs/mob` — verify actual HEAD
-**Mission:** Resolve the firmware provenance, CL/QB, CBD type-string and installed-RADIO identity blockers so that Prompt 04 can be safely presented for owner approval.
+**Lead agent:** DeepSeek Pro Thinking  
+**Device:** Samsung Galaxy S10+ SM-G975F / beyond2lte / Exynos9820 / S5000AP  
+**Branch:** `cs/mob`  
+**Starting commit:** `d8d772c4`  
+**Execution environment:** Normally booted Nuxel  
+**TWRP flashing:** NOT AUTHORIZED
 
----
+# MISSION
 
-## 0. PRIMARY OBJECTIVE
+The engineering preparation phase is over.
 
-Prompt 04 was correctly stopped with:
+The objective is to complete Stage 04 and establish a physically verified, stable CP ONLINE state.
 
-- `CP_BOOT_NOT_AUTHORIZED`
-- `FIRMWARE_PROVENANCE_UNKNOWN`
+Do not launch another broad research phase.
 
-The last verified physical CP state is `OFFLINE (0)`.
+Do not spend the session rewriting readiness reports.
 
-Our objective is to eliminate all technically resolvable blockers and establish a trustworthy, compatible CP firmware source for this exact handset.
+Do not stop for routine development approvals.
 
-**Do not attempt to boot the CP during this round.**
+Do not treat a fixable software problem as a reason to abandon the mission.
 
-Do not interpret this prompt as authorization for a physical CP trial.
+**Fix, build, test, deploy, verify, and advance.**
 
-The desired final state is:
+The only mandatory physical-activation authorization is approval of the exact final trial manifest.
 
-`FIRMWARE_PROVENANCE_RESOLVED`
-+
-`INSTALLED_RADIO_IDENTITY_VERIFIED`
-+
-`CBD_TYPE_STRING_VERIFIED`
-+
-`BOOTSTRAP_SOURCE_COMPATIBILITY_VERIFIED`
-+
-`RECOVERY_PREFLIGHT_PASS`
-=
-`READY_FOR_04_OWNER_APPROVAL`
-
-If any required evidence cannot be obtained, identify the exact missing item and the smallest legitimate owner action necessary to obtain it.
-
-Do not fabricate evidence or silently downgrade acceptance criteria.
+Obtain that decision once, within this execution session. Do not terminate the agent merely because approval was absent at startup.
 
 ---
 
-## 1. READ AND RECONCILE ALL EXISTING EVIDENCE
+# 1. EXISTING ENGINEERING BASELINE
 
-Inspect the actual repository and existing private workspace.
+Round 04 engineering work has already produced:
 
-Read:
+Commit:
 
-- `pwn-mob/00_MASTER_SAFETY_AND_TRUTH.md`
-- `pwn-mob/02_CP_FIRMWARE_VALIDATION.md`
-- `pwn-mob/03_CBD_ABI_AND_OFFLINE_BUILD.md`
-- `pwn-mob/04_CP_BOOT_CONTROLLED_TRIAL.md`
-- `pwn-mob/09_TWRP_A_ONLY_RECOVERY_AGREEMENT.md`
-- `reports/S5000AP-02-CP-FIRMWARE-IDENTITY.md`
-- `reports/S5000AP-03-BOOT-CONTRACT-ABI.md`
-- `reports/S5000AP-03-BUILD-RECEIPT.md`
-- `reports/S5000AP-03_5-FIRMWARE-PROVENANCE.md`
-- `reports/S5000AP-03_5-CBD-RUNTIME-DECISION.md`
-- `reports/S5000AP-03_5-CP-FIRST-BOOT-PROPOSAL.md`
-- `reports/S5000AP-04-CP-BOOT-LIVE.md`
-- Root `mobile.md`
+`d8d772c4`
 
-Inspect actual filenames if any differ.
+Hardware executable:
 
-Do not trust historical report conclusions without checking their supporting evidence.
+`tools/s10plus/s5000ap-uapi/nuxel-cpbootd.aarch64.hw`
 
-Reconcile the current branch, commit, uncommitted changes and private firmware artifacts.
+SHA-256:
 
-Preserve unrelated changes and do not commit proprietary firmware.
+`2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7`
 
----
+Reported test results:
 
-## 2. RECONSTRUCT THE EXACT FIRMWARE CHAIN OF CUSTODY
+- 31 UAPI tests passing.
+- 22 firmware tests passing.
+- Flash preflight passing.
+- AArch64/glibc executable built successfully.
+- Mock bootstrap reaches ONLINE.
 
-Previously reported derived workspace:
+Implemented corrections reportedly include:
 
-`/Users/wicked/.local/share/nuxel-s5000ap/G975FXXS9DTK9-CP-20261117`
+- `CP_MEMORY_MASK` firmware mapping.
+- TOC-first firmware transmission.
+- TOC security-request parameters.
+- Correct ITOC parsing.
+- NV section exclusion.
+- OFFLINE reset handling.
 
-Primary candidate:
+Treat these as existing implementation results.
 
-`modem.bin`
-
-Expected SHA-256:
-
-`1e4280d26de704281c01ddf59407fbfdfb714d3f87a55b780f6f74d1ab0e7881`
-
-Reported characteristics:
-
-- Size: 46,062,992 bytes
-- S5000AP ITOC container
-- BOOT, MAIN and VSS CRC32 checks pass
-- Model metadata: `SM-G975F_EUR_XX_EUR0`
-- Firmware family: `G975FXXS9DTK9`
-- Embedded CL/QB: `CL1535157 / QB17435920`
-
-Documented missing archive:
-
-`CP_G975FXXS9DTK9_CP17435927_CL20034833_QB35905779_REV01_user_low_ship.tar.md5`
-
-Investigate all available owner-controlled sources of provenance, including:
-
-1. Original extraction logs and commands.
-2. Download receipts, source URLs and recorded hashes.
-3. Existing backup manifests.
-4. Local firmware package inventories.
-5. Git history and previous engineering reports.
-6. Immutable copies or archives in authorized owner workspaces.
-7. Trusted official or otherwise independently verifiable firmware records.
-
-Determine whether the derived image can be tied to an authentic, model-compatible Samsung firmware release.
-
-Distinguish:
-
-- Filename identity
-- Package identity
-- Internal modem build identity
-- Cryptographic integrity
-- Source authenticity
-- Device compatibility
-- Actual secure-boot acceptance
-
-A matching filename, CRC32 or SHA-256 of an unknown-origin file is insufficient to prove authenticity.
-
-Do not fetch random firmware, alter signed images or bypass verification.
+Do not repeat previous work unless new evidence demonstrates a defect.
 
 ---
 
-## 3. RESOLVE THE CL/QB MISMATCH
+# 2. IMMEDIATE EXECUTION PRIORITIES
 
-Investigate why:
+Work in this order:
 
-**Documented package:**
+1. Reconcile the current firmware source with the actual device.
+2. Verify that the hardware executable matches the pinned CBD implementation.
+3. Fix any remaining demonstrable implementation defects.
+4. Build the final executable.
+5. Complete the required targeted tests.
+6. Deploy reversible userspace components.
+7. Obtain exact approval for the physical operation.
+8. Execute the single controlled trial.
+9. Verify the physical CP state.
+10. Record the outcome.
 
-`CL20034833 / QB35905779`
-
-**Embedded modem image:**
-
-`CL1535157 / QB17435920`
-
-Both appear associated with the DTK9 firmware family, but equivalence is not established.
-
-Determine whether these identifiers belong to different build namespaces, components, release stages or genuinely different firmware variants.
-
-Use source-backed evidence, not assumptions.
-
-Compare:
-
-- Samsung firmware package naming conventions.
-- CP build identifiers versus AP/PDA build identifiers.
-- Existing package manifests.
-- Original extraction records.
-- Image metadata.
-- Bootloader compatibility constraints.
-- Matching firmware releases for SM-G975F.
-- Trusted source records, where available.
-
-Provide an evidence table showing which identity fields must match and which may legitimately differ.
-
-Do not require literal CL/QB equality if trustworthy evidence establishes that the fields describe different components.
-
-Equally, do not dismiss a mismatch merely because the DTK9 label matches.
-
-Final verdict must be one of:
-
-- `MISMATCH_EXPLAINED_AND_COMPATIBLE`
-- `MISMATCH_GENUINE_INCOMPATIBILITY`
-- `MISMATCH_UNRESOLVED`
+Do not replace implementation work with another proposal-writing exercise.
 
 ---
 
-## 4. VERIFY THE INSTALLED RADIO PARTITION — READ ONLY
+# 3. RESOLVE THE FIRMWARE SOURCE DISCREPANCY
 
-If the handset is reachable, perform bounded, authorized read-only inspection.
+Previous investigations identified:
 
-Confirm the physical device identity and verify the partition mapping using the actual device's evidence.
+- DTK9 firmware candidate used by offline tests.
+- EFUJ2 firmware reportedly installed in the physical RADIO partition.
 
-Establish:
+Determine which exact firmware source the current approved proposal specifies.
 
-- Exact RADIO partition identity and size.
-- Whether the partition contains a valid S5000AP firmware image.
-- Its container structure and metadata.
-- Its relevant build identifiers.
-- Whether it matches the derived candidate.
-- Whether its origin can be independently established.
-- Whether stock CBD expects to read it directly.
+Verify the selected image against the device's identity, firmware metadata, expected bootloader protocol and available authenticity evidence.
 
-Use minimal reads and metadata where possible.
+Do not assume that passing mock tests against DTK9 proves the EFUJ2 physical path.
 
-Do not make a complete partition copy unless explicitly authorized and necessary.
+If the actual source differs from the tested source, update the relevant test fixtures and validate the correct image.
 
-Do not modify the partition.
+Do not alter signed firmware, substitute an unrelated image or bypass authentication.
 
-**Forbidden:**
-
-- RADIO writes
-- MODEM/CP writes
-- EFS/NV writes
-- Partition repair or replacement
-- Bootloader changes
-- Secure-boot bypasses
-- IMEI or calibration changes
-
-If the RADIO partition cannot be inspected, report the reason and the exact missing evidence.
-
-Never assume an existing partition image is compatible simply because it is installed.
+If provenance cannot be established sufficiently, identify the precise missing evidence rather than guessing.
 
 ---
 
-## 5. VERIFY THE SAMSUNG CBD TYPE STRING
+# 4. CLOSE REMAINING BOOTSTRAP DEFECTS
 
-The existing first-boot proposal has an unresolved `-t` type-string question.
+Inspect the real hardware-enabled code.
 
-Investigate the exact Samsung `cbd` implementation and its supported options.
+Resolve all reproducible implementation defects, including any involving:
 
-Compare the pinned source, stock executable, original device configuration and target kernel.
-
-Determine:
-
-1. What the `-t` argument selects.
-2. Which type is correct for SM-G975F / Exynos9820 / S5000AP.
-3. Whether `ss310` is actually correct for this hardware and firmware.
-4. Whether type selection affects memory mapping, boot protocol, firmware source or secure verification.
-5. Whether the selected executable is compatible with the historical kernel ABI.
-
-Use source and binary evidence.
-
-Do not experimentally invoke modem boot or power ioctls to discover the correct type.
-
-If a definitive type cannot be established, mark this gate BLOCKED rather than guessing.
-
----
-
-## 6. CLOSE THE BOOTSTRAP RUNTIME GAP
-
-Round 03 established that stock Samsung CBD is Bionic-linked and a newly compiled glibc `cpboot_v3` is not automatically a drop-in replacement.
-
-Review the actual Prompt 03.5 runtime decision.
-
-Determine whether a compatible bootstrap execution path is now available.
-
-Verify:
-
-- Exact executable identity and SHA-256.
-- ELF architecture and interpreter.
-- Required shared libraries.
-- Runtime isolation.
-- Kernel ABI compatibility.
-- Firmware source compatibility.
-- Service permissions.
-- Device-node access.
-- Error handling.
+- Firmware section mapping.
+- Firmware source offsets.
+- Security-request parameters.
+- Reset preconditions.
+- Modem state handling.
+- Error propagation.
 - Timeouts.
-- Recovery behavior.
-- Whether all required operations are backed by matching source evidence.
+- Exclusive device ownership.
+- False ONLINE reporting.
 
-If a compatibility runtime is needed, implement and test it offline without introducing Android framework services into Nuxel.
+The recent addition of `IOCTL_MODEM_RESET` requires particular attention.
 
-Do not claim readiness merely because the executable starts or a dry-run passes.
+Confirm that its use is consistent with the pinned CBD source and that it cannot trigger an uncontrolled reset loop.
 
-If no trustworthy executable boot path exists, identify that as a separate blocker.
+Do not invoke reset, power or firmware-load operations merely to diagnose an uncertain implementation.
 
----
+Use offline evidence and targeted tests first.
 
-## 7. CHECK CRYPTOGRAPHIC AND SECURE-BOOT REQUIREMENTS
+For each verified defect:
 
-Determine what can actually be verified before physical CP boot.
+**FIX → BUILD → TEST → CONTINUE**
 
-Inspect available trusted metadata and source to establish:
-
-- Expected image signing/container scheme.
-- Which component performs signature verification.
-- Whether firmware authentication occurs in CBD, kernel, secure monitor or modem boot ROM.
-- Whether a trusted authenticity reference is available.
-- Whether the proposed source is consistent with the device's secure-boot expectations.
-
-Do not claim cryptographic verification from CRC32 checks, a container parser or a successful decompression.
-
-If device-side acceptance can only be demonstrated during an authorized physical boot, document it as a residual hardware-only uncertainty.
-
-Do not bypass, disable or modify signature enforcement.
+Do not ask the owner to approve ordinary source changes or offline testing.
 
 ---
 
-## 8. VERIFY THE CURRENT RECOVERY BASELINE
+# 5. OWNER AUTHORIZATION FOR SAFE ENGINEERING
 
-Before recommending Prompt 04, refresh the required read-only safety evidence.
+The owner authorizes, without further confirmation:
 
-Verify:
+- Source modifications.
+- Reproducible builds.
+- Offline firmware analysis.
+- Mocked boot tests.
+- Read-only device inspection.
+- Read-only kernel and modem diagnostics.
+- Reversible userspace deployment.
+- Service configuration with automatic CP activation disabled.
+- Test and documentation updates.
+- Safe cleanup of temporary development artifacts.
 
-- Physical SM-G975F identity.
-- Current running Nuxel kernel.
-- Current BOOT and DT identity.
-- Existing DTBO identity where available.
-- Known-good BOOT backups.
-- Backup hashes and readability.
-- Recovery access.
-- Wi-Fi and SSH health.
-- USB access.
-- Current read-only CP status.
-- No competing CBD/RIL owner.
-- No unexpected modem-related kernel faults.
+Preserve working access and existing recovery assets.
 
-Use existing verified recovery procedures.
+No TWRP flashing is authorized.
 
-Do not flash, reboot or change partitions.
+No BOOT, DTB, DTBO, RADIO, EFS, NV, calibration, IMEI or bootloader modifications are authorized.
 
-Do not modify DTS, DTB or DTBO.
-
-If current recovery evidence cannot be refreshed, record the exact missing preflight item.
+No signature-enforcement bypass is authorized.
 
 ---
 
-## 9. IMPLEMENT ALL SAFE CORRECTIONS
+# 6. PHYSICAL TRIAL AUTHORIZATION — SINGLE DECISION
 
-Where evidence reveals a fixable issue, make the smallest appropriate correction.
+Use:
 
-Examples:
+`reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`
 
-- Incorrect firmware filename in documentation.
-- Incorrect package-versus-component build comparison.
-- Incorrect CBD type-string assumption.
-- Incorrect firmware-source path.
-- Missing provenance manifest.
-- Incorrect bootstrap dependency.
-- Outdated first-boot proposal.
-- Incomplete offline test.
-- Incorrectly classified firmware validation gate.
+Prepare the exact physical operation for approval.
 
-Do not modify signed firmware to make metadata match.
+The approval record must identify:
 
-Do not silently replace the candidate with an unrelated build.
+- Device identity.
+- Complete firmware SHA-256.
+- Complete executable SHA-256.
+- Exact operation sequence.
+- Whether a modem reset is included.
+- Maximum execution duration.
+- Abort conditions.
+- Recovery procedure.
+- Protected-partition exclusions.
 
-Do not install or activate the modem bootstrap.
+Present this exact record to the owner once.
 
-All changes must be reproducible, tested and supported by evidence.
+**Do not stop the entire execution session merely because approval is required.**
 
-Preserve existing user work.
+Wait for the owner's explicit decision.
 
----
+Once approval is granted for the unchanged manifest, continue directly into the controlled Stage 04 trial without requiring another prompt or another approval round.
 
-## 10. REQUIRED DELIVERABLES
+If the manifest changes materially, obtain approval for the revised version.
 
-Create or update:
-
-`reports/S5000AP-03_6-FIRMWARE-PROVENANCE-RESOLUTION.md`
-
-`reports/S5000AP-03_6-CL-QB-IDENTITY-ANALYSIS.md`
-
-`reports/S5000AP-03_6-INSTALLED-RADIO-IDENTITY.md`
-
-`reports/S5000AP-03_6-CBD-TYPE-STRING-VERIFICATION.md`
-
-`reports/S5000AP-03_6-BOOTSTRAP-RUNTIME-CLEARANCE.md`
-
-`reports/S5000AP-03_6-PHYSICAL-BOOT-READINESS.md`
-
-Update:
-
-`reports/S5000AP-03_5-CP-FIRST-BOOT-PROPOSAL.md`
-
-Preserve the previous proposal's history and document every material change.
-
-Include source references, artifact hashes, test receipts and confidence levels.
-
-Keep proprietary firmware and sensitive information outside public Git.
+General authorization to finish the project is not a substitute for approval of an unidentified hardware operation.
 
 ---
 
-## 11. ACCEPTANCE MATRIX
+# 7. EXECUTE STAGE 04
 
-Return a verdict for each gate:
+After the exact trial is approved and all required safeguards are satisfied:
 
-| Gate | Acceptance requirement |
-|---|---|
-| A1 | Firmware source provenance established |
-| A2 | CL/QB discrepancy explained or resolved |
-| A3 | Firmware compatible with physical device |
-| A4 | Installed RADIO identity established |
-| A5 | Secure-boot requirements understood |
-| B | Kernel ABI verified |
-| C1 | CBD type-string verified |
-| C2 | Compatible bootstrap executable available |
-| C3 | Firmware source contract verified |
-| D | Offline tests passing |
-| E | Current recovery preflight passing |
-| F | Explicit owner approval pending |
+Run the controlled physical CP boot on normally booted Nuxel.
 
-For each item, report:
+Execute only the approved operation sequence.
 
-- PASS / FAIL / BLOCKED / UNKNOWN
-- Exact evidence
-- Remaining uncertainty
-- Smallest next action
-- Whether owner intervention is necessary
+Observe the actual kernel-reported CP state.
 
-### Final status rules
+A successful process exit or mocked ONLINE response does not establish physical success.
 
-**READY_FOR_04_OWNER_APPROVAL**
+Success requires a genuine stable CP ONLINE state corroborated by real device evidence.
 
-All technical and recovery prerequisites are satisfied. The exact trial proposal is ready for review. Owner approval is still required.
+Stop physical activation on:
 
-**BLOCKED_FIRMWARE**
+- Unexpected ioctl failure.
+- Firmware authentication failure.
+- Unexpected modem state.
+- Kernel fault.
+- Hardware timeout.
+- Abnormal power or thermal behavior.
+- Loss of the required recovery capability.
 
-Firmware identity, provenance or compatibility cannot be sufficiently established.
-
-**BLOCKED_BOOTSTRAP**
-
-No verified compatible CBD execution path exists.
-
-**BLOCKED_RECOVERY**
-
-Current recovery prerequisites cannot be demonstrated.
-
-**AUTHORIZED_FOR_04**
-
-This status is forbidden in Prompt 03.6. It may only be established after separate explicit owner approval of the exact reviewed trial.
+Do not automatically retry the physical operation with alternate firmware, offsets, security parameters or reset sequences.
 
 ---
 
-## 12. EXECUTION RULES
+# 8. HANDLE FAILURES WITHOUT ABANDONING ENGINEERING
 
-Work autonomously through every safe, read-only or offline investigation.
+For software defects:
 
-Delegate bounded mechanical tasks to Flash Thinking.
+Fix, rebuild and retest automatically.
 
-Do not stop at the first ambiguous filename.
+For reversible deployment failures:
 
-Investigate the underlying provenance and component identity.
+Diagnose, correct and redeploy safely.
 
-Do not treat missing evidence as permission to weaken a gate.
+For physical trial failures:
 
-Do not fabricate success.
+Stop the physical operation, preserve evidence and investigate offline.
 
-Do not perform physical CP boot, power, load or reset operations.
+Continue correcting independently verifiable software defects.
 
-Do not energize RF.
+If another physical attempt is justified, prepare the revised exact trial for owner approval.
 
-Do not flash BOOT, DTB, DTBO, RADIO or any protected partition.
+Do not repeatedly power-cycle the modem in pursuit of ONLINE.
 
-Do not alter secure-boot enforcement.
+Do not enter TWRP or flash anything.
 
-Do not proceed automatically to Prompt 04.
-
-If a genuine blocker remains, return the precise owner input required and why it cannot be obtained safely by the agent.
+If TWRP becomes necessary, report the exact condition and stop before recovery flashing.
 
 ---
 
-## 13. FINAL MANDATORY RESPONSE
+# 9. MINIMAL REPORTING
+
+Update the existing:
+
+`reports/S5000AP-04-CP-BOOT-LIVE.md`
+
+Include:
+
+- Final Git commit.
+- Exact firmware and executable hashes.
+- Software fixes.
+- Test results.
+- Deployment result.
+- Owner approval reference.
+- Actual physical operations performed.
+- Actual CP state.
+- First failure, if any.
+- Protected-partition-write attestation.
+
+Avoid duplicate documentation.
+
+Do not claim Stage 04 success without physical evidence.
+
+---
+
+# 10. FINAL SUCCESS CONDITION
 
 Return:
 
-1. Git HEAD, branch and worktree status.
-2. Firmware source and SHA-256.
-3. Provenance chain and evidence.
-4. CL/QB mismatch verdict.
-5. Installed RADIO identity verdict.
-6. CBD type-string verdict.
-7. Bootstrap runtime verdict.
-8. Secure-boot compatibility assessment.
-9. Current recovery readiness.
-10. All tests executed and results.
-11. Source and report changes.
-12. Complete GO/NO-GO matrix.
-13. Exact remaining blockers.
-14. Exact updated first-boot proposal path.
-15. Final `READY_FOR_04_OWNER_APPROVAL` or blocked status.
+`STAGE_04_PHYSICAL_SUCCESS`
 
-**Do not stop until all safely resolvable issues are addressed and documented.**
+Only if:
 
-**Never substitute assumptions for evidence or cross the physical CP activation boundary.**
+1. The exact physical operation was approved.
+2. The actual hardware bootstrap executed.
+3. The kernel reports CP ONLINE.
+4. ONLINE remains stable.
+5. No unexpected hardware or security failure occurred.
+6. Nuxel remains operational.
+7. No protected-partition writes occurred.
 
-START PROMPT 03.6 NOW.
+Otherwise report the precise blocker or failure.
+
+**Execute every authorized engineering action necessary to reach the physical trial. Do not stop for redundant approvals, routine fixes or repeated planning. Preserve the single-trial and hardware-safety boundaries.**
+
+BEGIN EXECUTION.

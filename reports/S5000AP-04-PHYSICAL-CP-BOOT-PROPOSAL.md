@@ -3,7 +3,7 @@
 **Status:** PROPOSAL ONLY — **NOT authorization**. Owner approval REQUIRED for this
 exact manifest, in a separate interaction. Do NOT execute.
 **TRIAL_ID:** `S5000AP-04-EFUJ2-<owner-approval-timestamp>`
-**Branch/HEAD:** `cs/mob` @ `ae26b271c144780abb748ce2fb172919abb1131d`
+**Branch/HEAD:** `cs/mob` @ `d8d772c4dd415621d5c06e09d99a0e875a53af64`
 **Prepared:** `2026-11-23` (Prompt 03.7 output)
 
 > This is a **completely fresh** proposal selecting the **installed EFUJ2 RADIO**
@@ -13,7 +13,7 @@ exact manifest, in a separate interaction. Do NOT execute.
 
 ## 1. Exact commit / build revisions
 
-- Git HEAD: `ae26b271c144780abb748ce2fb172919abb1131d` (`cs/mob`).
+- Git HEAD: `d8d772c4dd415621d5c06e09d99a0e875a53af64` (`cs/mob`).
 - Kernel ABI pin: `f7194c1d15eded1c2a1a4dc63825b26103435cc0`.
 - cbd source pin: `234b138716426c36ed801a71052bc144f7d8d806` (cpboot_v3, lineage-22.1).
 - Loader source: `tools/s10plus/s5000ap-uapi/nuxel-cpbootd.c` (rewritten 03.7).
@@ -51,6 +51,7 @@ exact manifest, in a separate interaction. Do NOT execute.
 | # | Operation | ioctl / transport | Verified section | Expected | Deadline | Abort |
 |---|---|---|---|---|---|---|
 | 0 | STATUS probe | 0x6F27 | — | OFFLINE | — | rc<0 |
+| 0.1 | **(conditional) MODEM RESET** | 0x6F21 (bare `_IO`, NULL arg) | — | issued ONLY if initial state != OFFLINE (mirrors `std_boot_power_reset`) | 30 s | rc<0 |
 | 1 | SECURITY_REQ non-secure | 0x6F53 (RE_INIT=2,0,0) | — | SMC ok | 30 s | TEE error |
 | 2 | XMIT_BOOT (BOOT/MAIN/VSS/NV) | 0x6F40 | EFUJ2 TOC parts | shmem copied | 30 s | bounds/rc<0 |
 | 3 | SECURITY_REQ TOC | 0x6F53 (MANUAL=7) | TOC | SMC ok | 30 s | TEE error |
@@ -67,7 +68,7 @@ exact manifest, in a separate interaction. Do NOT execute.
 
 `nuxel-cpbootd --really-boot --mock --firmware <efuj2.itoc>` reaches
 `{"verdict":"online","backend":"mock"}` passing every stage in the above order
-(29 UAPI + 22 firmware tests green). No unimplemented or silently-skipped stage.
+(31 UAPI + 22 firmware tests green). No unimplemented or silently-skipped stage.
 
 ## 7. Operational constraints
 
@@ -90,6 +91,18 @@ zero automatic retry/power-cycle. No protected-partition write. No DTB/DTBO chan
 
 Existing TWRP/ADB BOOT-only rollback; no DTB/DTBO modification. Clear boundary:
 CP boot ends here; later SIPC/RFS/LTE work is Stage-05 and NOT authorization now.
+
+## 11a. Explicit approval-record fields (Stage 04 directive §6)
+
+- **Device identity:** SM-G975F / beyond2lte / Exynos9820 / S5000AP, `revision=26`.
+- **Complete firmware SHA-256:** `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7` (installed EFUJ2 `/dev/sda16`, 52,428,800 B).
+- **Complete executable SHA-256:** `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7` (`nuxel-cpbootd.aarch64.hw`).
+- **Exact operation sequence:** stage 0 → 0.1 (conditional) → 1…11 as §5 (source-faithful LEGACY_SIPC_IOCTL order).
+- **Whether a modem reset is included:** YES — one conditional `IOCTL_MODEM_RESET` (0x6F21) at stage 0, issued only if initial `IOCTL_MODEM_STATUS` != `STATE_OFFLINE(0)`. It is a single bare call, no loop, never repeated; any failure aborts the trial.
+- **Maximum execution duration:** 300 s hard cap (`--deadline-ms 300000`), with per-stage deadlines in §5 (≤30 s); the daemon returns nonzero on any abort.
+- **Abort conditions:** unexpected ioctl failure; firmware authentication (TEE/SMC) failure; unexpected modem state; kernel fault; hardware timeout; abnormal power/thermal; loss of recovery capability. Zero automatic retry.
+- **Recovery procedure:** one-shot `Restart=no`, no timer/autostart; existing TWRP/ADB BOOT-only rollback (BOOT `1be1ded8…` == host `boot-0029-candidate.img`); process disabled + evidence preserved on abort.
+- **Protected-partition exclusions:** NO write to BOOT/DTB/DTBO/RADIO/EFS/EFSG/SEC_EFS/NV/calibration/IMEI/bootloader/TEE. RADIO is read-only source input only.
 
 ## 11. Owner approval clause
 
