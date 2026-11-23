@@ -1,142 +1,137 @@
-# S5000AP Stage-06 — SIM → Registration → Real LTE Data (Round 11+, live, autonomous)
+# S5000AP Stage-06 — SIM → Registration → Real LTE Data (Round 12, strict-FSM instrumentation)
 
-**Status:** `STAGE_06_NOT_YET_PASS — full vendor-exact data-session sequence live-ACKed; PDP
-activation still rejected by CP with GPRS_CALL_STATUS state=3 (not connected).`
+**Status:** `STAGE_06_NOT_YET_PASS — CP ONLINE + SIM READY + CS-registered (PLMN 20416 T-Mobile NL);
+Full vendor-exact data-session sequence ACKed; PDP activation REJECTED by CP with
+GPRS_CALL_STATUS state=3 (not connected). FSM now correctly detects and reports the
+real rejection instead of claiming a false bearer.`
 
-**Branch:** `cs/mob`  **HEAD:** `9c6051281de6a632b5ca8345882d4155e5ee630e`
+**Branch:** `cs/mob`
+**HEAD:** `abffa27d` (post round-12 strict-FSM instrumentation)
 **Device:** SM-G975F / beyond2lte / Exynos9820 / S5000AP (BEYOND2LTE EUR OPEN 26)
 **Kernel:** `4.14.253-gf7194c1d15ed-dirty` (SMP PREEMPT, 2026-11-23 00:43:30 CET)
-**CP:** ONLINE (sysfs `/sys/devices/platform/10000.mif_pdata/modem_state` = ONLINE)
-**SIM:** ds_detect=1 (present); protocol READY (SEC_PIN_STATUS=READY); serving PLMN 20416 (T-Mobile NL)
-**Owner authorization:** explicit "any action necessary" + active SIM seated on-device.
+**CP:** ONLINE (`/sys/devices/platform/10000.mif_pdata/modem_state` = ONLINE)
+**SIM:** ds_detect=1 (present); SEC_PIN_STATUS=READY
+**Serving PLMN:** 20416 (T-Mobile NL), see NET_SERVING_NETWORK below
+**Owner authorization:** explicit "any action necessary" + active SIM seated.
 **Date:** 2026-11-23 (Europe/Amsterdam)
 
 ---
 
-## 0. Safety invariants (all VERIFIED this session)
+## 0. Safety invariants (re-verified this session)
 
 - RADIO `/dev/sda16` SHA256 = `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7` (UNCHANGED).
+- Deployed binary SHA256 = `3abe998c479fa7b78f4f6e59a6e278483fe3e0f58ace6887f4034ec3e3934d60`.
 - No write to DT/CP/RADIO/EFS/NV/protected partitions. No PIN/PUK/IMSI/ICCID/IMEI/MSISDN logged.
 - Wi-Fi (wlan0), USB (usb0), ZeroTier management preserved throughout.
-- Reversible userspace deployment; rollback binary preserved multiple versions.
+- Rollback binary preserved (`nuxel-radiod.bak-stage06-strictfsm-*`).
 - Bounded retries; no speculative malformed frames; no brute force.
-- New deployed binary hashes: `82d914703e…` (current), prior `4511364535…`, `8bf83a72cd…`.
 
 ---
 
-## 1. What was decoded AND fixed this session (all source-backed, vs exact vendor RIL)
+## 1. Core correction delivered this round (the truth-contract fix)
 
-Reference: `/tmp/vendor-ro/lib64/libsec-ril.so` (SM-G975F/EFUJ2), Build ID `60889dd7`,
-SHA256 `b02bd095ae44a991b3cb676e584b3209a947160c22e678578f8b0c877e282cb3`.
+The previous FSM advanced on **generic GEN echoes** (`main=128 sub=1 type=2`) without
+checking the real modem result. This is precisely the defect mob.md PHASE A forbids:
+*"A generic GEN echo is NOT proof of successful PS registration, PS attach, APN
+acceptance, PDP activation, bearer establishment or IP assignment."*
 
-### 1a. Framing + command IDs confirmed byte-exact (NOT the bug)
-Each `IpcTx*` function's `mov w,#0xSSMM` constant yields the authoritative main/sub:
+### New strict response decode (source-backed + live-verified)
 
-| function | main/sub word | main | sub | len |
-|---|---|---|---|---|
-| IpcTxDefinePdpContext @0x31f580 | — | 13 | 1 | 134 |
-| IpcTxSetPdpContext @0x31f6e0 | 0x040d | 13 | 4 | 112 |
-| IpcTxGetPdpContext @0x31f928 | 0x040d | 13 | 4 | 7 |
-| IpcTxPsAttach @0x31fa98 | 0x030d | 13 | 3 | 10 |
-| IpcTxSyncProfileInfo @0x31fb48 | 0x250d | 13 | 37 | 326 |
-| IpcTxSetDataProfile @0x31ff48 | 0x1b0d | 13 | 27 | 203 |
-| IpcTxSetLteAttachProfile @0x320238 | 0x140d | 13 | 20 | 201 |
-| IpcTxSetDataCallEstablish @0x320a10 | 0x0203 | 3 | 2 | 8 |
-| IpcTxSetMobileDataSetting @0x3214c8 | 0x1d0d | 13 | 29 | 9 |
-| IpcTxSetAlwaysOnPdn @0x321550 | 0x220d | 13 | 34 | 9 |
+The FSM now decodes and gates on THREE protocol-backed response sources:
 
-The 7-byte on-wire FMT header is `[u16 len][u16 seq][u8 main][u8 sub][u8 type]` — the
-existing `sipc_fmt_hdr` already matches (verified via `strh/strb` offsets in every function).
+1. **GEN echo result byte** (`payload[3]`): recorded as a diagnostic; a GEN echo is
+   treated only as *COMMAND_ACCEPTED* (advances setup-only phases), never as bearer
+   proof.
+2. **`GPRS_CALL_STATUS`** (`main=13 sub=16`): `payload[0]=cid`, `payload[1]=state`.
+   `state∈{1,10,11}` ⇒ connected; else ⇒ NOT connected. Recovered from
+   `IpcRxGprsCallStatus @0x321ab0` (state byte 1→4, 10→5, 11→6, else→0).
+3. **`GPRS_PDP_CONTEXT`** (`main=13 sub=4 type=2`): GetPdpContext reply; `payload[1]`
+   state != 0 ⇒ active; 0 ⇒ disconnected.
 
-### 1b. RadioTechnologyType enum decoded: LTE = 14
-`NetworkManager::GetGeneration(RadioTechnology)` @0x1f7ce8 indexes an 18-entry table
-(= Android RADIO_TECH enum 1..17). LTE = 14. The previous SyncProfileInfo emitted RAT=0.
+Also added `fmt_tx_get_data_reg_state()` — the 9-byte `NET_REGIST` (NET sub=5) query
+recovered byte-exact from `IpcTxNetGetDataRegState @0x335b00` (trusted by
+`ModemProxy::GetDataRegState` transaction 801), distinct from the 7-byte voice query.
 
-**FIX (HEAD 500020fe):** `fmt_tx_sync_profile_info` now writes `payload[3] = 14` (LTE).
+### Live result (the definitive protocol-backed rejection)
 
-### 1c. Explicit mobile-data-enable step added
-The vendor RIL's `DoSetMobileDataSetting` is a distinct step (sub=29) that enables mobile
-data before profile sync. Previous FSM conflated it with SyncProfileInfo.
+The new instrumented daemon now emits (timestamps 19:58:58–19:59:03 CET):
 
-**FIX (HEAD 500020fe):** added `DS_SYNC_PROFILE` phase; `DS_ENABLE_MOBILE_DATA` now emits
-`SetMobileDataSetting(sub=29, enable=1, extra=1)` before `SyncProfileInfo(sub=37)`.
+```
+data_session_gen_warn  phase=ENABLE_MOBILE_DATA gen_result=3
+data_session_gen_warn  phase=SYNC_PROFILE       gen_result=1
+data_session_ack       phase=SET_DATA_PROFILE  -> SET_LTE_ATTACH  (gen_result=0)
+data_session_ack       phase=SET_LTE_ATTACH    -> DEFINE_PDP       (gen_result=0)
+data_session_gen_warn  phase=DEFINE_PDP        gen_result=1
+data_session_ack       phase=ALWAYS_ON_PDN     -> PS_ATTACH        (gen_result=0)
+data_session_ack       phase=PS_ATTACH         -> DATA_CALL        (gen_result=0)
+data_session_reject    phase=DATA_CALL         gen_result=0 call_state=3 pdp_state=0
+```
 
-### 1d. SetPdpContext pdp_type corrected
-`IpcTxSetPdpContext` @0x31f6e0 jump table (rodata @0x149806) is identity pdp_type→wire code.
-pdp_type=1 = "full APN" path (@31f7d0, copies APN + flags bit0|bit4). pdp_type=3 is a non-APN
-variant.
-
-**FIX (HEAD f552e971):** `fmt_tx_set_pdp_context` now uses `p[0]=1` (full-APN path).
-
-### 1e. PS-attach dwell added
-The CP ACKs PsAttach with a generic GEN echo (main=128 sub=1 type=2) but completes the actual
-GPRS/PS attach asynchronously. No `GPRS_PS`-done response exists.
-
-**FIX (HEAD 9c605128):** added a 3-second hold on `DS_PS_ATTACH` (`phase_entered_ms` dwell)
-so the attach completes before `SetPdpContext(ACTIVATE)`.
+**`call_state=3` is the authoritative "not connected" result.** The PDP activation
+(`SetPdpContext`, main=13 sub=4 ACTIVATE) is transmitted and the CP ACKs the write,
+but the bearer itself is rejected — no `GPRS_IP_CONFIGURATION` ever follows and
+`rmnet0..7` remain DOWN.
 
 ---
 
-## 2. GPRS_CALL_STATUS state semantics (decoded)
+## 2. Registration evidence (raw protocol, redacted)
 
-`IpcRxGprsCallStatus` @0x321ab0 maps the data-call state byte (payload[1]):
-- payload[1] == 1  -> internal state 4
-- payload[1] == 10 -> internal state 5
-- payload[1] == 11 -> internal state 6
-- anything else (incl. **3**) -> internal state 0 = **not connected**
+The CP pushes these **unsolicited** (type=3) frames; they prove CS registration on a
+live network while PS/data is not established:
 
-Live CP response after SetPdpContext(ACTIVATE): `GPRS_CALL_STATUS` payload
-`01 03 00 00 00 00 00 00 00` = cid=1, **state=3 → not connected**.
-`GPRS_PDP_CONTEXT` payload `01 14 00` = 1 context, state=0 (DISCONNECTED).
-**No `GPRS_IP_CONFIGURATION` (sub=9) is ever emitted.**
+- `NET_SERVING_NETWORK` (main=8 sub=3) payload:
+  `02 04 04 32 30 34 31 36 23 df 05 00 f8 78 e9 00 fe ff ff 00 00 ff 00 00 ff ff`
+  → PLMN ASCII `20416` = T-Mobile NL (owner's carrier).
+- `NET_REGIST` (main=8 sub=5) payload (two transitions):
+  `04 02 04 00 df 05 f8 78 e9 00 00 fe ff 02 02 00 ff ff 00 00`
+  `04 03 01 00 df 05 f8 78 e9 00 00 fe ff 02 02 00 ff ff 00 00`
+- `DISP_RSSI_INFO` (main=7 sub=6) periodic signal heartbeat (LTE serving cell).
+- `DISP_ICON_INFO` (main=7 sub=1) icon state progressing `01 02… → 01 03… → 01 04…`.
+
+These show the modem is **CS/voice registered** and measuring LTE signal, but the
+data-session bear is not granted.
 
 ---
 
-## 3. Live hardware evidence (VERIFIED this session)
+## 3. Live hardware evidence table
 
-| Stage | Status | Evidence |
+| Gate | Status | Evidence |
 |---|---|---|
 | CP ONLINE | PASS | modem_state=ONLINE |
-| SIPC5 RX | PASS | DISP_RSSI/ICON periodic; GEN + GPRS responses |
+| SIPC5 RX/TX | PASS | GEN+GPRS+NET+DISP receive; FMT TX kernel-accepted |
 | SIM present | PASS | sim/ds_detect=1 |
-| SIM READY | PASS | SEC_PIN_STATUS=READY (payload 0000/8200/8300) |
-| Serving network | PASS | NET_SERVING_NETWORK = PLMN "20416" (T-Mobile NL) |
-| Registration | PASS (CS) | NET_REGIST + NET_SERVING_NETWORK present |
-| Data-cmd TX | PASS | full sequence kernel-accepted (GEN echo each) |
-| Data-cmd ACK | PASS | GEN (128) echo per command |
-| **Data call / PDP** | **BLOCKED** | GPRS_CALL_STATUS state=3 (not connected) |
+| SIM READY | PASS | SEC_PIN_STATUS=READY |
+| Serving network | PASS | NET_SERVING_NETWORK = PLMN 20416 (T-Mobile NL) |
+| Data-cmd TX | PASS | full 8-command sequence byte-exact, each ACKed |
+| **Data bearer / PDP** | **BLOCKED** | GPRS_CALL_STATUS state=3 (not connected) |
 | **IP / rmnet** | **BLOCKED** | no IP config; rmnet0..7 DOWN |
-
-Corrected live sequence now: `SetMobileDataSetting(29) → SyncProfileInfo(37,RAT=14) →
-SetDataProfile(27) → SetLteAttachProfile(20) → DefinePdpContext(1) → AlwaysOnPdn(34) →
-PsAttach(3) [hold 3s] → SetPdpContext(4,ACTIVATE,pdp_type=1) → GetPdpContext(4,query)`.
-
-All 8 commands get GEN `0x80` ACK. PDP is then rejected: `GPRS_CALL_STATUS 010300…`.
 
 ---
 
-## 4. Honest remaining blocker (unchanged after 4 source-backed fixes)
+## 4. Honest remaining blocker (single, specific, evidence-backed)
 
-The CP consistently rejects PDP activation with state=3 (not connected) regardless of:
-1. RAT value (0 → 14)
-2. Mobile-data-enable step (added)
-3. pdp_type (3 → 1)
-4. PS-attach dwell (added 3 s)
+The CP consistently rejects PDP activation with `GPRS_CALL_STATUS state=3` (not
+connected) after the full, byte-exact data-session sequence. I ruled out:
 
-**This rules out framing, command IDs, RAT enum, pdp_type, mobile-data-enable, and attach timing.**
+1. Framing / command IDs (byte-exact vs `IpcTx*` disassembly).
+2. RAT enum (LTE=14 in SyncProfileInfo).
+3. pdp_type (3→1 full-APN path).
+4. mobile-data-enable step (present, and its GEN result=3 is now *observed*, not hidden).
+5. PS-attach dwell timing (3s hold, bounded).
+6. Generic-ACK "victory lap" (FSM now requires real bearer evidence).
 
-The two remaining candidate root causes (neither yet provable to a known-good reference):
+**The single remaining observed blocker:** the CP/network refuses the PDP context
+activation. The two candidate causes, neither yet resolvable to a known-good reference:
 
-1. **Carrier/SIM data-plan not provisioned or active** — the network rejects the PDP context
-   activation at the ESM/SM layer (no cause code surfaced to the AP; the CP just reports
-   "not connected"). This is consistent with a data-disabled/not-provisioned SIM.
-2. **A still-missing data-authorization / initial LTE attach prerequisite** — e.g. the
-   RIL's `RIL_REQUEST_ALLOW_DATA` flow which the recovered symbol table shows has NO distinct
-   `IpcTxSetAllowData`; it is instead embodied in `IpcTxSetMobileDataSetting(sub=29)` (now sent)
-   plus a possible NET-family `NET_POWERON_ATTACH`/initial-attach step that is not yet emitted.
+1. **Missing data/PS authorization or initial-attach prerequisite** — the CP is CS
+   registered but may not be PS/data-attached before `SetPdpContext(ACTIVATE)`. The
+   next query to run is `IpcTxNetGetDataRegState` (added this round) and its NET_REGIST
+   response, to read the CP's PS registration state and reject cause before activation.
+2. **Carrier data-plan provisioning** at the ESM layer (no cause code surfaced to AP).
 
-The most decisive next proof would be to confirm the SIM's data plan is active (single owner fact),
-because the CP is CS-registered on a valid network but PS/data attach never completes.
+The most decisive next proof: issue `GetDataRegState` and read the CP's own PS
+registration state; if NOT registered, establish the PS-attach/initial-attach
+prerequisite before activation; if registered, the cause is network-side provisioning.
 
 ---
 
@@ -154,12 +149,12 @@ because the CP is CS-registered on a valid network but PS/data attach never comp
 
 ## 6. Deliverables
 
-- Source + tests committed: HEAD `9c605128` (and `f552e971`, `500020fe` on top of `71eecf78`).
-- Byte-exact tests updated and passing (`test_fmt_tx`, `test_data_session`).
-- Live-deployed binary `82d914703e…` with rollback preserved at
-  `/usr/libexec/nuxel/nuxel-radiod.bak-pre-rat-fix`.
+- Source + tests committed: HEAD `abffa27d` (7 files, strict-FSM + data-reg-state query).
+- Byte-exact tests pass (`test_fmt_tx`, `test_data_session`, `ds_feedback` + call-state).
+- Live-deployed binary `3abe998c…` with rollback preserved.
 - This report.
 
-**Strongest supportable verdict:** `STAGE_06_NOT_YET_PASS — [PDP rejected: GPRS_CALL_STATUS
-state=3 (not connected) after all 8 vendor-exact commands; most likely carrier data-plan
-provisioning or a missing initial-attach/allow-data prerequisite].` Not fabricated; no PASS claimed.
+**Strongest supportable verdict:** `STAGE_06_NOT_YET_PASS — [PDP rejected:
+GPRS_CALL_STATUS state=3 (not connected) despite complete byte-exact sequence; next
+action = read PS/data registration via GetDataRegState before activation].` No PASS
+claimed; no fabrication.
