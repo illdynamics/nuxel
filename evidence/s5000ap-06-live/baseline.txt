@@ -1,0 +1,39 @@
+# S5000AP Stage-06 — live baseline (physical S10+ Nuxel), captured 2026-11-23T14:35Z
+# Redaction: no IMSI/ICCID/IMEI/PIN/PUK/MSISDN ever captured. Partition SHAs only.
+
+boot_id=4f3c1031-563b-40f3-bf73-852a4f84bae6
+hostname=WIN-CLIENT
+uname=4.14.253-gf7194c1d15ed-dirty
+device=SM-G975F beyond2lte Exynos9820 S5000AP
+
+# PARTITION HASHES (read-only sha256sum of block devices; == Stage-05 baseline,
+# therefore NO protected-partition write occurred)
+BOOT_sda14=1be1ded89f9e04a6a2ca0d32d9273bd363c2e200f478ab10213ea3927674a599
+DTB_sda12=abc9d45d3745866346fd94c7c04028cc2c62ade4dd274b400dbbfec0c2ef4780
+DTBO_sda13=de3bc02526c66647992a744608fdf61548823866e822a7400619d74126095c23
+RADIO_sda16=9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7
+
+# CP / SIM state (authoritative)
+modem_state_sysfs=ONLINE
+cp_status_ioctl={"node":"/dev/umts_boot0","state":"ONLINE","state_code":4,"errno":0,"errno_name":"0"}
+sim_ds_detect=1   # NOTE: static dual-SIM config flag, NOT physical SIM presence
+
+# CRITICAL correction vs Stage-05: IOCTL_MODEM_STATUS returns state ONLINE (4),
+# NOT STATE_SIM_ATTACH (7). Kernel sim_state.online is only set by the userspace
+# RIL signaling SIM attach; no RIL is present. Therefore SIM READY (protocol) is
+# NOT established. ds_detect=1 is a module param default, not a real SIM detect.
+
+# ModemManager / NetworkManager
+mmcli=mmcli 1.24.2
+ModemManager=ModemManager 1.24.2-1.fc43
+NetworkManager=1.54.3-3.fc43
+mmcli_L="No modems were found"
+
+# SIPC endpoints (misc chardevs, root:root 0600)
+/dev/umts_boot0 /dev/umts_cass /dev/umts_csd /dev/umts_dm0
+/dev/umts_ipc0 /dev/umts_ipc1 /dev/umts_ramdump0 /dev/umts_rfs0 /dev/umts_router
+
+# radiod live diagnostic counters (D-Bus nl.nuxel.Radio1 GetDiagnostics)
+RxFrames=1 RxBytes=76662 TxFrames=0 ParseTruncated=0 ParseErrors=0
+OverflowDrops=0 UnknownCmd=0 RawFrames=39 RawBytes=76637 RfsOps=1
+RfsDestructive=1 RawUnclassified=38 Disconnects=0 Reconnects=0 Timeouts=0

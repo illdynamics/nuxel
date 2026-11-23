@@ -1,0 +1,4 @@
+test_radio_fsm
+test_radio_fsm_asan
+
+*.dSYM/
