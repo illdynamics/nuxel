@@ -26,7 +26,8 @@ int main(void)
     /* Authenticated ack advances each phase in order
      * (ENABLE_MOBILE_DATA -> DEFINE_PDP -> PS_ATTACH -> DATA_CALL -> WAIT_IP -> ACTIVE). */
     p = ds_step(&c, true, 100);  CHECK(p == DS_DEFINE_PDP, "ENABLE_MOBILE_DATA -> DEFINE_PDP");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_PS_ATTACH, "DEFINE_PDP -> PS_ATTACH");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "DEFINE_PDP -> ALWAYS_ON_PDN");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_PS_ATTACH, "ALWAYS_ON_PDN -> PS_ATTACH");
     p = ds_step(&c, true, 100);  CHECK(p == DS_DATA_CALL, "PS_ATTACH -> DATA_CALL");
     p = ds_step(&c, true, 100);  CHECK(p == DS_WAIT_IP, "DATA_CALL -> WAIT_IP");
     p = ds_step(&c, true, 100);  CHECK(p == DS_ACTIVE, "WAIT_IP -> ACTIVE");

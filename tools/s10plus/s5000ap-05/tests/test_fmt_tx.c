@@ -95,6 +95,17 @@ int main(void)
     CHECK(bad == -1, "data_call_establish bytes match disasm (diff @ %d)", bad);
     CHECK(f.main_cmd == 3 && f.sub_cmd == 2, "data_call_establish main/sub=3/2");
 
+    /* --- SetAlwaysOnPdn (source: IpcTxSetAlwaysOnPdn @0x321550) ---
+     * 9-byte frame: len=9, main=13, sub=34(0x22), type=3, payload=[1, profile].
+     */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_always_on_pdn(&f, true, 1), "always_on_pdn builds");
+    const uint8_t aopn_expect[9] = { 0x09,0x00, 0x00,0x00, 0x0d,0x22, 0x03, 0x01,0x01 };
+    bad = hexcmp(f.buf, aopn_expect, 9);
+    CHECK(f.len == 9, "always_on_pdn len==9");
+    CHECK(bad == -1, "always_on_pdn bytes match disasm (diff @ %d)", bad);
+    CHECK(f.main_cmd == 13 && f.sub_cmd == 34, "always_on_pdn main/sub=13/34");
+
     /* --- raw serializer + overflow guard --- */
     memset(&f, 0, sizeof f);
     uint8_t pl[3] = { 0xaa, 0xbb, 0xcc };

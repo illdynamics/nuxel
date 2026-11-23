@@ -545,6 +545,7 @@ static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
                 f->cmd_type != IPC41_TYPE_NOTIFICATION);
     case DS_ENABLE_MOBILE_DATA:
     case DS_DEFINE_PDP:
+    case DS_ALWAYS_ON_PDN:
     case DS_PS_ATTACH:
     case DS_DATA_CALL:
         /* Data-call establish response: CDMA_DATA_CALL_ESTABLISH (main=3 sub=2)
@@ -581,6 +582,11 @@ static bool data_session_emit(void)
     case DS_DEFINE_PDP:
         if (!fmt_tx_define_pdp_context(&f, (const char*)g.dsc.apn,
                                        FMT_TX_PROTO_IPV4V6, g.dsc.profile_id))
+            return false;
+        break;
+    case DS_ALWAYS_ON_PDN:
+        /* Attach the default PDN (source-backed SetAlwaysOnPdn, main=13 sub=34). */
+        if (!fmt_tx_set_always_on_pdn(&f, true, g.dsc.profile_id))
             return false;
         break;
     case DS_PS_ATTACH:

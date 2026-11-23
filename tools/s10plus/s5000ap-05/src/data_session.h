@@ -26,6 +26,7 @@ enum ds_phase {
     DS_SIM_CHECK,          /* confirm SIM READY */
     DS_ENABLE_MOBILE_DATA, /* GPRS mobile data ON */
     DS_DEFINE_PDP,         /* define PDP context w/ APN */
+    DS_ALWAYS_ON_PDN,      /* always-on PDN profile */
     DS_PS_ATTACH,          /* GPRS PS attach */
     DS_DATA_CALL,          /* establish data call */
     DS_WAIT_IP,            /* wait for rmnet + IP config */
