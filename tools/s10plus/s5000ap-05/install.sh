@@ -23,7 +23,7 @@ CFLAGS=(-O2 -Wall -Wextra -Werror -std=gnu11)
 echo "building nuxel-radiod for $(uname -m)..."
 gcc "${CFLAGS[@]}" -I"$HERE/src" -o "$HERE/nuxel-radiod" \
     "$HERE/src/radiod.c" "$HERE/src/transport.c" "$HERE/src/sipc5_fmt.c" \
-    "$HERE/src/rfs_proto.c" -lsystemd
+    "$HERE/src/rfs_proto.c" "$HERE/src/rfs_respond.c" -lsystemd
 install -m 0755 "$HERE/nuxel-radiod" "$DEST_BIN/nuxel-radiod"
 install -m 0644 "$HERE/nuxel-radiod.service" "$DEST_SYS/nuxel-radiod.service"
 systemctl daemon-reload

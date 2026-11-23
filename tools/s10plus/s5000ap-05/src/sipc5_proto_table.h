@@ -127,21 +127,25 @@ static const struct nuxel_fmt_observation nuxel_fmt_observations[] = {
 };
 
 /*
- * RFS (ch 245) — OBSERVED raw request format (NOT sipc_fmt_hdr):
- *   [u32 len LE][u8 op_class][u8 flags][u16 path_len][u16 reserved][path+\0]
- * Observed op_class=0x0b, path="DELETE_ALL_VIS" (DESTRUCTIVE NV/EFS delete-all).
- * The full op_class->operation map is CLOSED/UNKNOWN. Destructive operations
- * are FAIL-CLOSED by policy: radiod never executes them. No response fabricated.
+ * RFS (ch 245) — RECOVERED request format (NOT sipc_fmt_hdr), source-backed
+ * from the exact vendor RIL this round (see rfs_respond.h + report round-4):
+ *   [u32 total_len][u8 op][u8 seq][u32 param][path+'\0'...]
+ * Observed op=0x0b (RFS_UNLINK_FILE), path="DELETE_ALL_VIS" — this is a
+ * boot-stage cache-clean MARKER (param=path_len=15), NOT a protected NV/EFS
+ * delete. The AP responds with a 14-byte record
+ *   [u32 result][u8 op echo][u8 seq echo][u16=0][u32 detail]
+ * and only the no-op DELETE_ALL_VIS marker is answered with success; every
+ * other op is fail-closed. Radiod NEVER executes a real filesystem op.
  */
 struct nuxel_rfs_observation {
     uint8_t op_class;
-    const char *op_text;   /* exact ASCII path/opcode observed (not a secret) */
+    const char *op_text;   /* exact ASCII path (not a secret; op name is rfs_op_name) */
     enum nuxel_proto_class cls;
     const char *live_note;
 };
 static const struct nuxel_rfs_observation nuxel_rfs_observations[] = {
-    { 0x0b, "DELETE_ALL_VIS", NUXEL_CLASS_UNKNOWN,
-      "LIVE: destructive NV/EFS delete-all request; FAIL-CLOSED, never executed" },
+    { 0x0b, "DELETE_ALL_VIS", NUXEL_CLASS_KNOWN_SOURCE,
+      "LIVE: RFS_UNLINK_FILE marker; AP replies success(14B); CP ADVANCED (round-4)" },
 };
 #define NUXEL_NUM_RFS_OBS (sizeof(nuxel_rfs_observations)/sizeof(nuxel_rfs_observations[0]))
 

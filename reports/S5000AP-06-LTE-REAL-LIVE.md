@@ -207,3 +207,131 @@ ABI confirmed, RFS handler location corrected, and source-backed offline tests g
 but SIM READY → registration → real LTE data cannot be truthfully claimed until the
 closed RFS response contract + FMT telephony vocabulary are recovered and implemented.
 No fabricated success.
+
+---
+
+## ROUND 4 — RFS response contract recovered + live CP advancement (2026-11-23 ~16:20 CET)
+
+### 7. RFS response contract RECOVERED (source-backed, O4/O5) and LIVE-VERIFIED
+
+The exact RFS request/response contract was recovered by disassembling the exact
+vendor RIL `vendor/lib64/libsec-ril.so` (SM-G975F / EFUJ2, GNU Build ID
+`60889dd714394ae0db7c2ecc2bf2740f`, on-device aarch64 binutils against the
+read-only sda26 mount). This SUPERSEDES the round-3 conclusion that the RFS
+vocabulary was "closed". Key recovered facts (each source-backed):
+
+- The RFS dispatch is `IpcModem::ProcessRfsMessageReceived` (0x2ea2b8) →
+  `Nv::ProcessRfsPacket` (0x1d7f20) → `Nv::ProcessRfsMessage` (0x1d81d8).
+- `Nv::ProcessRfsMessage` reads the op byte at request offset 4 and dispatches
+  through a 23-entry jump table at 0x143dee (relative offsets). Extract of the
+  recovered opcode map:
+
+  | op | RFS name (recovered) | handler |
+  |---|---|---|
+  | 0x01 | RFS_NV_READ | Nv::ProcessNVRead |
+  | 0x02 | RFS_NV_BUFFERING | Nv::ProcessNvBuffering |
+  | 0x03 | RFS_READ_FILE | Nv::ProcessReadFile |
+  | 0x04 | RFS_WRITE_FILE | Nv::ProcessWriteFile |
+  | 0x05 | RFS_LSEEK_FILE | Nv::ProcessLseekFile |
+  | 0x06 | RFS_CLOSE_FILE | Nv::ProcessCloseFile |
+  | 0x07 | RFS_PUT_FILE | Nv::ProcessPutFile |
+  | 0x08 | RFS_GET_FILE | Nv::ProcessGetFile |
+  | 0x09 | RFS_RENAME_FILE | Nv::ProcessRenameFile |
+  | 0x0a | RFS_GET_FILE_INFO | Nv::ProcessGetFileInfo |
+  | **0x0b** | **RFS_UNLINK_FILE** | **Nv::ProcessDeleteFile** |
+  | 0x0c | RFS_MAKE_DIR | Nv::ProcessMakeDirectory |
+  | 0x11 | RFS_OPEN_FILE | Nv::ProcessOpenFile |
+  | 0x13 | RFS_GET_HANDLE_INFO | Nv::ProcessGetFileInfoByHandle |
+  | 0x14 | RFS_CREATE_FILE | Nv::ProcessCreateFile |
+  | 0x15 | RFS_NV_WRITE_ALL | Nv::ProcessNVWriteAll |
+  | 0x16 | RFS_NV_BUFFER_START_END | Nv::ProcessNVBufferStartEnd |
+  | 0x17 | RFS_NV_RESTORE | Nv::ProcessNVRestore |
+
+- The observed 25-byte request is NOT "op = DELETE_ALL_VIS"; `DELETE_ALL_VIS`
+  is the PATH argument of an `RFS_UNLINK_FILE` (0x0b) request. The on-wire
+  request layout (corrected) is:
+
+  ```
+  [u32 total_len][u8 op][u8 seq][u32 param][path+'\0'...]
+  ```
+  where `param` is op-specific (path_len for path-carrying ops, fd/handle/offset
+  for open/close/lseek), and the path starts at offset 10. The live bytes decode
+  to: len=25, op=0x0b, seq=0x01, path_len=15, path="DELETE_ALL_VIS".
+
+- The AP→CP response is EXACTLY 14 bytes, written to /dev/umts_rfs0:
+  ```
+  [u32 result][u8 op echo][u8 seq echo][u16 reserved=0][u32 detail]
+  ```
+  (recovered from Nv::ProcessCloseFile/ProcessDeleteFile tail: op=0x0e length
+  write via Nv::SendRfsMessage → Modem::SendRfsMessage → RFS IoChannel send).
+
+- Nv::SendRfsMessage (0x1dbfb8) writes via the RFS IoChannel vtable send;
+  Modem::SendRfsMessage (0x1dc8b8) dispatches through the RFS channel's
+  [x8,#48] send method. The transport is the SAME /dev/umts_rfs0 (ch 245) the
+  daemon already owns exclusively.
+
+### 8. Native implementation (safe, fail-closed)
+
+New files `src/rfs_respond.{h,c}` implement a PURE (no I/O) RFS request parser
++ response builder + fail-closed policy:
+
+- Parses the full request (corrected offset-10 path layout, bounded path copy,
+  printable-ASCII validation, sane length bounds mirroring the vendor
+  `len <= 0x80000` check).
+- Policy: ONLY the boot-stage no-op `RFS_UNLINK_FILE("DELETE_ALL_VIS")` marker is
+  answered with `result=0` (success). This is a cleanup of non-existent
+  VIG/VIS cache on a filesystem Nuxel does not mount, so it is an exact no-op
+  and touches NO protected NV/EFS/IMEI/calibration data.
+- Every other op (NV_READ/WRITE, OPEN/READ/WRITE/CLOSE/LSEEK/RENAME/CREATE/
+  MAKE_DIR/GET/PUT, NV_WRITE_ALL, NV_RESTORE) is answered fail-closed with a
+  negative result (-EPERM / -ENOSYS), never a fabricated success, and never a
+  real filesystem operation.
+- `radiod.c` `dispatch_rfs()` now parses the full request, applies the policy,
+  builds the 14-byte response, and writes it via `nuxel_dev_write()` to the RFS
+  endpoint (bounded, single 14-byte response per request). Response/op/seq are
+  redacted in diagnostics (op name + special flag only; the path is NEVER logged).
+
+### 9. LIVE physical result — CP ADVANCED (verified, this session)
+
+Deployed `nuxel-radiod` (new SHA-256
+`45db4232b9e0673d571f80695411a2cc887e41f2e81bde20eace7f546a364a2e`) and re-booted
+the CP with the exact approved Stage-04 manifest. Live journal (redacted):
+
+```
+16:20:34 fmt_rx ch:235 main:19 sub:5 type:3     → AST_POWERON
+16:20:34 rfs_rx ch:245 op:11 opname:UNLINK_FILE seq:1 special:1 rlen:25
+16:20:34 rfs_tx op:11 res:0 len:14              → AP→CP RFS SUCCESS response
+16:20:34 fmt_rx main:1 sub:1 type:3             ← CP ADVANCES: telephony FMT begins
+16:20:34 fmt_rx main:13 sub:15 ... main:38 sub:1 ... main:5 ... main:14 ...
+16:20:50 fmt_rx main:8 sub:5 plen:20            ← GPRS/network family traffic
+16:20:51 fmt_rx main:6 sub:5 plen:51 ... main:7 sub:1 plen:12 (repeats ≈3 s)
+```
+
+The CP, which had been **blocked at the RFS/NV init handshake** (only
+AST_POWERON + one unanswered DELETE_ALL_VIS, then silent for 2+ hours), now
+**advances into the telephony stack** the moment the RFS response is returned:
+a burst of FMT telephony messages (main 1,5,6,7,8,13,14,38,39) that never
+appeared in the prior rounds. `GetDiagnostics` after the exchange:
+
+```
+RfsOps=1  RfsDestructive=1  RfsResponses=1  RfsRespErrors=0  TxFrames=1
+RxFrames=33  UnknownCmd=32  RawUnclassified=78
+```
+
+**Verdict for this round:** `RFS_HANDSHAKE_VERIFIED_CP_ADVANCED`. The RFS
+response contract is recovered (source-backed), implemented (fail-closed), and
+LIVE-VERIFIED to cause the physical CP to advance past the RFS block. The next
+blocker is the **FMT telephony vocabulary** (SIM attach → registration →
+bearer), which is the remaining clean-room work (Stage-06 subjob data gate).
+
+### 10. What still prevents LTE data (honest)
+
+- CP is ONLINE (state_code=4); SIM detect flag `ds_detect=1` (static dual-SIM
+  config, NOT protocol-backed presence — corrected vs earlier rounds).
+- rmnet0..7 remain DOWN (no PDP/bearer created).
+- The CP now emits telephony FMT traffic, but the daemon does not yet decode/
+  answer the FMT telephony vocabulary (SIM/registration/bearer), so the CP
+  does not yet reach STATE_SIM_ATTACH(7)/registration/data.
+- No PIN/PUK/IMSI/ICCID/IMEI captured, no protected-partition write, Wi-Fi/USB
+  preserved throughout.
+

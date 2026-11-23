@@ -22,6 +22,7 @@
 #include "radiod.h"
 #include "sipc5_proto_table.h"
 #include "rfs_proto.h"
+#include "rfs_respond.h"
 #include "sipc5_fmt.h"
 #include "transport.h"
 
@@ -316,30 +317,62 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
  * length, first-byte class) with NO payload contents.
  */
 /*
- * RFS raw request header (LIVE-observed, see sipc5_proto_table.h):
- *   [u32 len LE][u8 op_class][u8 flags][u16 path_len][u16 reserved][path+\0...]
- * We parse ONLY the small fixed header and the exact ASCII opcode for
- * CLASSIFICATION and diagnostics. We NEVER execute an RFS operation and NEVER
- * copy payload contents into logs. Destructive ops are fail-closed.
+ * RFS raw request (recovered contract, SOURCE-BACKED this round; see
+ * rfs_respond.h and reports/S5000AP-06-LTE-REAL-LIVE.md). The CP sends:
+ *   [u32 total_len][u8 op][u8 seq][u16 reserved][u32 path_len][path+\0]
+ * and expects a fixed 14-byte response on the same channel:
+ *   [u32 result][u8 op][u8 seq][u16 reserved][u32 detail]
+ *
+ * We now parse the full request, apply a fail-closed policy (only the
+ * boot-stage RFS_UNLINK_FILE("DELETE_ALL_VIS") no-op marker is answered with
+ * success), and write the correct AP->CP response so the CP can advance past
+ * the NV/RFS init handshake toward SIM attach. We NEVER execute filesystem
+ * operations and NEVER log the path or any identifier.
  */
 static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
 {
     g.stats.raw_frames++;
     g.stats.raw_bytes += (uint64_t)len;
-    struct rfs_proto_msg m;
-    int r = rfs_proto_parse(data, len, &m);
-    if (r != RFS_PROTO_OK) {
-        /* Not an RFS-header-shaped blob (e.g. opaque bulk). Count, no action. */
+
+    /* FULL RFS request parse (recovered contract, see rfs_respond.h). */
+    struct rfs_request req;
+    enum rfs_request_parse_result pr = rfs_request_parse(data, len, &req);
+    if (pr != RFS_REQ_OK) {
+        /* Not a valid RFS request: could be opaque bulk or malformed. Count
+         * and no-op. We never write a response to an unparseable record. */
         g.stats.raw_rx_unclassified++;
         return;
     }
+
     g.stats.rfs_ops++;
-    if (m.destructive) g.stats.rfs_destructive++;
-    diagf("rfs_rx", "\"ch\":%u,\"len\":%u,\"rlen\":%u,\"op\":%u,\"opcode\":\"%s\","
-          "\"plen\":%u,\"destructive\":%d,\"action\":\"%s\"",
-          ch, (unsigned)len, m.len, m.op_class, m.opcode, m.path_len,
-          m.destructive ? 1 : 0,
-          m.destructive ? "fail-closed-no-op" : "unimplemented-no-op");
+    if (req.op == RFS_OP_UNLINK_FILE) g.stats.rfs_destructive++;
+
+    diagf("rfs_rx", "\"ch\":%u,\"op\":%u,\"opname\":\"%s\",\"seq\":%u,"
+          "\"special\":%d,\"rlen\":%u",
+          ch, req.op, rfs_op_name(req.op), req.seq,
+          req.special_delete_all_vis ? 1 : 0, req.total_len);
+
+    /* POLICY GATE: build a fail-closed response. Only the no-op boot marker
+     * (DELETE_ALL_VIS) is answered with success. We never mention the path in
+     * logs (only the op name + special flag), never execute filesystem I/O. */
+    int32_t detail = 0;
+    int res = rfs_response_policy(&req, &detail);
+    uint8_t resp[RFS_RESP_LEN];
+    size_t n = rfs_response_build(req.op, req.seq, res, detail, resp);
+
+    /* Write the response to /dev/umts_rfs0. This is the AP->CP answer the CP
+     * is waiting for. Writes are bounded (14 bytes) and only performed here. */
+    enum nuxel_io_status st = nuxel_dev_write(&g.rfs.dev, resp, n);
+    if (st == NUXEL_IO_OK) {
+        g.stats.rfs_responses++;
+        g.stats.tx_frames++;
+        diagf("rfs_tx", "\"op\":%u,\"res\":%d,\"len\":%zu",
+              req.op, res, n);
+    } else {
+        g.stats.rfs_resp_errors++;
+        diagf("rfs_tx_fail", "\"op\":%u,\"st\":\"%s\"",
+              req.op, nuxel_io_status_name(st));
+    }
 }
 
 static void dispatch_raw(uint8_t ch, const uint8_t *data, size_t len)
@@ -684,6 +717,8 @@ static int method_get_diagnostics(sd_bus_message *m, void *u, sd_bus_error *e)
         {"RfsOps",         g.stats.rfs_ops},
         {"RfsDestructive", g.stats.rfs_destructive},
         {"RawUnclassified",g.stats.raw_rx_unclassified},
+        {"RfsResponses",   g.stats.rfs_responses},
+        {"RfsRespErrors",  g.stats.rfs_resp_errors},
         {"Disconnects",    g.stats.disconnects},
         {"Reconnects",     g.stats.reconnects},
         {"Timeouts",       g.stats.timeouts},

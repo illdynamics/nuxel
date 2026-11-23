@@ -13,6 +13,7 @@
  */
 #include "sipc5_fmt.h"
 #include "rfs_proto.h"
+#include "rfs_respond.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,6 +79,27 @@ int main(void)
             coverage ^= (unsigned long)((int)res + 7) * 0x85ebca6bu;
         }
         printf("rfs_coverage=%lu\n", coverage);
+    }
+
+    /* 4) full RFS request parser at every offset (recovered contract). */
+    {
+        size_t off;
+        unsigned long coverage = 0;
+        for (off = 0; off < n; off++) {
+            struct rfs_request rr;
+            int res = rfs_request_parse(buf + off, n - off, &rr);
+            coverage ^= (unsigned long)((int)res + 11) * 0x9e3779b9u;
+            /* also exercise the policy + response build on any successful parse
+             * to cover the responder decision path (never writes to a device). */
+            if (res == RFS_REQ_OK) {
+                int32_t detail = 0;
+                int pr = rfs_response_policy(&rr, &detail);
+                uint8_t resp[RFS_RESP_LEN];
+                size_t rn = rfs_response_build(rr.op, rr.seq, pr, detail, resp);
+                coverage ^= (unsigned long)pr * 31u + (unsigned long)rn;
+            }
+        }
+        printf("rfs_respond_coverage=%lu\n", coverage);
     }
 
     printf("bytes=%zu\n", n);

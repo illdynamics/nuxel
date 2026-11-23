@@ -33,6 +33,8 @@ struct radiod_diag_stats {
     uint64_t rfs_ops;            /* RFS raw requests observed */
     uint64_t rfs_destructive;    /* RFS destructive requests (never executed) */
     uint64_t raw_rx_unclassified;/* opaque blobs that are not RFS-header shaped */
+    uint64_t rfs_responses;    /* RFS responses written (policy-gated) */
+    uint64_t rfs_resp_errors;  /* RFS response write failures */
     uint64_t disconnects;        /* endpoint disconnect events */
     uint64_t reconnects;         /* successful reopens */
     uint64_t timeouts;           /* request/response timeouts */
