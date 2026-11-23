@@ -78,7 +78,7 @@ int main(void)
 
     /* ---- FMT: parse a complete message ---- */
     {
-        u8 m[7 + 4] = { 0x04, 0x00,          /* len=4 */
+        u8 m[7 + 4] = { 0x0B, 0x00,          /* len=11 TOTAL (7 hdr + 4 payload) */
                         0x01, 0x00,          /* msg_seq=1 ack_seq=0 */
                         0x07, 0x00, 0x00,    /* main_cmd=7,sub=0,type=0 */
                         0xDE, 0xAD, 0xBE, 0xEF }; /* payload */
@@ -86,7 +86,7 @@ int main(void)
         size_t consumed = 0;
         int r = sipc5_parse_fmt(m, sizeof m, 0x10000, &f, &consumed);
         CHECK(r == SIPC_PARSE_OK, "fmt parse OK (r=%d)", r);
-        CHECK(consumed == 11, "consumed==11 (got %zu)", consumed);
+        CHECK(consumed == 11, "consumed==11 total (got %zu)", consumed);
         CHECK(f.payload_len == 4, "payload_len==4 (got %u)", f.payload_len);
         CHECK(f.msg_seq == 1 && f.ack_seq == 0, "seq/ack correct");
         CHECK(f.main_cmd == 7 && f.cmd_type == 0, "cmd fields correct");
@@ -95,7 +95,7 @@ int main(void)
 
     /* ---- FMT: truncated payload ---- */
     {
-        u8 m[7 + 2] = { 0x08, 0x00, 1, 0, 7, 0, 0, 0xAA, 0xBB }; /* len=8, only 2 */
+        u8 m[7 + 2] = { 0x14, 0x00, 1, 0, 7, 0, 0, 0xAA, 0xBB }; /* total=20, only 9 */
         struct nuxel_sipc_fmt f;
         size_t consumed = 0;
         int r = sipc5_parse_fmt(m, sizeof m, 0x10000, &f, &consumed);

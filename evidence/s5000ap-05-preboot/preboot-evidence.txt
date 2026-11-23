@@ -1,0 +1,56 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== ts ===
+Mon Nov 23 12:38:06 UTC 2026
+=== uptime ===
+ 13:38:06 up 42 min,  0 user,  load average: 12.87, 12.79, 11.74
+=== boot_id ===
+4f3c1031-563b-40f3-bf73-852a4f84bae6
+=== cp_status ===
+{"node":"/dev/umts_boot0","state":"OFFLINE","state_code":0,"errno":0,"errno_name":"0","ts":"2026-11-23T12:38:06Z"}
+=== modem sysfs ===
+=== nodes ===
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 109 Jan  1  1970 /dev/umts_boot0
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 119 Jan  1  1970 /dev/umts_cass
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 115 Jan  1  1970 /dev/umts_csd
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 113 Jan  1  1970 /dev/umts_dm0
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 118 Jan  1  1970 /dev/umts_ipc0
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 117 Jan  1  1970 /dev/umts_ipc1
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 108 Jan  1  1970 /dev/umts_ramdump0
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 116 Jan  1  1970 /dev/umts_rfs0
+crw-------. 1 root root system_u:object_r:device_t:s0 10, 114 Jan  1  1970 /dev/umts_router
+=== dmesg modem tail ===
+Nov 23 13:37:59 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+Nov 23 13:38:00 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+Nov 23 13:38:00 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: D state: 0, 4f8200
+Nov 23 13:38:00 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+Nov 23 13:38:02 WIN-CLIENT kernel: dhd_set_rpm_state: 0
+Nov 23 13:38:03 WIN-CLIENT kernel: [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 2 NSC: 0 EC: 0 GPS: false
+Nov 23 13:38:06 WIN-CLIENT kernel: mif: misc_open: umts_boot0 (opened 1) by nuxel-cp-status
+Nov 23 13:38:06 WIN-CLIENT kernel: mif: misc_release: umts_boot0 (opened 0) by nuxel-cp-status
+Nov 23 13:38:06 WIN-CLIENT kernel: CFG80211-INFO) wl_cfg80211_event : Enqueing escan completion (0). WQ state:0x1 
+Nov 23 13:38:06 WIN-CLIENT kernel: dhd_set_rpm_state: 1
+Nov 23 13:38:07 WIN-CLIENT kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 23 13:38:07 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+Nov 23 13:38:07 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 23 13:38:07 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+Nov 23 13:38:08 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+Nov 23 13:38:08 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: D state: 0, c4cb00
+Nov 23 13:38:08 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+Nov 23 13:38:09 WIN-CLIENT kernel: [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 2 NSC: 0 EC: 0 GPS: false
+Nov 23 13:38:10 WIN-CLIENT kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 23 13:38:10 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+Nov 23 13:38:10 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 23 13:38:10 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+Nov 23 13:38:10 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+Nov 23 13:38:10 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: D state: 0, df6a00
+Nov 23 13:38:10 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+=== by-name ===
+

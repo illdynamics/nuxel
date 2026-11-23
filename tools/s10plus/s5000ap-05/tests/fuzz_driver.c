@@ -12,6 +12,7 @@
  * Cap: input capped at NUXEL_FUZZ_MAX_INPUT (1 MiB) via bounded read.
  */
 #include "sipc5_fmt.h"
+#include "rfs_proto.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,6 +66,18 @@ int main(void)
             coverage ^= (unsigned long)((int)res + 5) * 0x9e3779b9u;
         }
         printf("link_coverage=%lu\n", coverage);
+    }
+
+    /* 3) RFS raw-header parser at every offset (overread/classification check) */
+    {
+        size_t off;
+        unsigned long coverage = 0;
+        for (off = 0; off < n; off++) {
+            struct rfs_proto_msg m;
+            int res = rfs_proto_parse(buf + off, n - off, &m);
+            coverage ^= (unsigned long)((int)res + 7) * 0x85ebca6bu;
+        }
+        printf("rfs_coverage=%lu\n", coverage);
     }
 
     printf("bytes=%zu\n", n);

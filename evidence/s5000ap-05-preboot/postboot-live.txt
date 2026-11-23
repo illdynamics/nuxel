@@ -1,0 +1,60 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== ts ===
+Mon Nov 23 12:38:22 UTC 2026
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4,"errno":0,"errno_name":"0","ts":"2026-11-23T12:38:22Z"}
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4,"errno":0,"errno_name":"0","ts":"2026-11-23T12:38:23Z"}
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4,"errno":0,"errno_name":"0","ts":"2026-11-23T12:38:24Z"}
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4,"errno":0,"errno_name":"0","ts":"2026-11-23T12:38:25Z"}
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4,"errno":0,"errno_name":"0","ts":"2026-11-23T12:38:26Z"}
+=== dmesg after boot ===
+Nov 23 13:38:23 WIN-CLIENT kernel: fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+Nov 23 13:38:23 WIN-CLIENT kernel: mif: misc_open: umts_boot0 (opened 1) by nuxel-cp-status
+Nov 23 13:38:23 WIN-CLIENT kernel: mif: misc_release: umts_boot0 (opened 0) by nuxel-cp-status
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: cmd_phone_start_handler: shmem: CP_START <- s5000ap (s5000ap.state:ONLINE cp_boot_done:0)
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: rild_ready: shmem: umts_ipc0.opened=0, umts_rfs0.opened=0
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: cmd_phone_start_handler: shmem: CP_START <- s5000ap (s5000ap.state:ONLINE cp_boot_done:0)
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: rild_ready: shmem: umts_ipc0.opened=0, umts_rfs0.opened=0
+Nov 23 13:38:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+Nov 23 13:38:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: D state: 0, e7ca00
+Nov 23 13:38:24 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: cmd_phone_start_handler: shmem: CP_START <- s5000ap (s5000ap.state:ONLINE cp_boot_done:0)
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: rild_ready: shmem: umts_ipc0.opened=0, umts_rfs0.opened=0
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: cmd_phone_start_handler: shmem: CP_START <- s5000ap (s5000ap.state:ONLINE cp_boot_done:0)
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: rild_ready: shmem: umts_ipc0.opened=0, umts_rfs0.opened=0
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: cmd_phone_start_handler: shmem: CP_START <- s5000ap (s5000ap.state:ONLINE cp_boot_done:0)
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: rild_ready: shmem: umts_ipc0.opened=0, umts_rfs0.opened=0
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: misc_open: umts_boot0 (opened 1) by nuxel-cp-status
+Nov 23 13:38:24 WIN-CLIENT kernel: mif: misc_release: umts_boot0 (opened 0) by nuxel-cp-status
+Nov 23 13:38:25 WIN-CLIENT kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Nov 23 13:38:25 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+Nov 23 13:38:25 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Nov 23 13:38:25 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+Nov 23 13:38:25 WIN-CLIENT kernel: mif: misc_open: umts_boot0 (opened 1) by nuxel-cp-status
+Nov 23 13:38:25 WIN-CLIENT kernel: mif: misc_release: umts_boot0 (opened 0) by nuxel-cp-status
+Nov 23 13:38:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+Nov 23 13:38:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: D state: 0, d18a00
+Nov 23 13:38:26 WIN-CLIENT kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+Nov 23 13:38:26 WIN-CLIENT kernel: mif: misc_open: umts_boot0 (opened 1) by nuxel-cp-status
+Nov 23 13:38:26 WIN-CLIENT kernel: mif: misc_release: umts_boot0 (opened 0) by nuxel-cp-status
+Nov 23 13:38:27 WIN-CLIENT kernel: [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 2 NSC: 0 EC: 0 GPS: false
+=== ipc0 read (nonblock 2s) ===
+00000000: 302b 3020 7265 636f 7264 7320 696e 0a30  0+0 records in.0
+00000010: 2b30 2072 6563 6f72 6473 206f 7574 0a30  +0 records out.0
+00000020: 2062 7974 6573 2063 6f70 6965 642c 2030   bytes copied, 0
+00000030: 2e31 3031 3730 3620 732c 2030 2e30 206b  .101706 s, 0.0 k
+00000040: 422f 730a                                B/s.
+=== rfs0 read ===
+00000000: 302b 3020 7265 636f 7264 7320 696e 0a30  0+0 records in.0
+00000010: 2b30 2072 6563 6f72 6473 206f 7574 0a30  +0 records out.0
+00000020: 2062 7974 6573 2063 6f70 6965 642c 2030   bytes copied, 0
+00000030: 2e31 3031 3936 3320 732c 2030 2e30 206b  .101963 s, 0.0 k
+00000040: 422f 730a                                B/s.
+=== fuser ===

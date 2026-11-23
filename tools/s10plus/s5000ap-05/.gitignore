@@ -3,4 +3,6 @@
 /test_rfs_policy
 /fuzz_driver
 /test_sipc5_fmt_asan
+/test_rfs_proto
+/test_live_frame
 *.dSYM/

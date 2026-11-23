@@ -93,7 +93,7 @@ typedef uint32_t u32;
 #define SIPC_FMT_HDR_SIZE 7u
 
 struct __attribute__((__packed__)) sipc_fmt_hdr {
-    u16 len;       /* payload length, host-endian (little-endian on target) */
+    u16 len;       /* TOTAL message length incl. this 7-byte header (LIVE-proven) */
     u8  msg_seq;   /* message sequence number */
     u8  ack_seq;   /* acknowledgement/correlation sequence number */
     u8  main_cmd;  /* command class (message group) */
@@ -202,6 +202,9 @@ typedef enum sipc_parse_result {
  */
 int sipc5_parse_fmt(const u8 *buf, size_t len, u32 max_payload,
                     struct nuxel_sipc_fmt *out, size_t *consumed);
+
+/* Human-readable name for a sipc_parse_result (diagnostics only). */
+const char *sipc_parse_result_name(int r);
 
 #ifdef __cplusplus
 }

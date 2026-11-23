@@ -1,0 +1,45 @@
+# nuxel-radiod.service — native S5000AP SIPC5 radio service (production).
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# SAFETY: This unit NEVER boots/powers/resets the CP. It only OBSERVES an
+# already-kernel-ONLINE CP (or reports OFFLINE). Automatic CP activation stays
+# disabled (see nuxel-cpbootd.service, which is never auto-enabled).
+[Unit]
+Description=Nuxel S5000AP SIPC5/RFS radio service (event-tracker; never boots CP)
+Documentation=file:/usr/share/doc/nuxel/reports/S5000AP-05-RFS-SIPC.md
+After=dbus.service systemd-udevd.service
+Wants=systemd-udevd.service
+ConditionPathExists=/dev/umts_ipc0
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# Nuxel services use the Wayland session bus (consistent with soundd/portal).
+Environment=NUXEL_DBUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
+ExecStart=/usr/libexec/nuxel/nuxel-radiod
+Restart=on-failure
+RestartSec=3
+# Bounded, least privilege. It needs the FMT/RFS misc nodes and the boot0
+# status probe; nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+# Only the SIPC endpoints + boot status node (read) are reachable.
+DeviceAllow=/dev/umts_ipc0 rw
+DeviceAllow=/dev/umts_rfs0 rw
+DeviceAllow=/dev/umts_boot0 r
+DevicePolicy=closed
+# We must read kernel modem/sim sysfs for truthful state.
+ReadOnlyPaths=/sys/devices/platform/10000.mif_pdata
+
+[Install]
+WantedBy=multi-user.target

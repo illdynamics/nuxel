@@ -114,6 +114,12 @@
       <!-- keys: lte_data, sms, voice, ims, volte; values: supported/unsupported/unknown -->
     </method>
 
+    <!-- ================= diagnostics (redacted aggregates) ================= -->
+    <method name="GetDiagnostics">
+      <arg name="counters" type="a{st}" direction="out"/>
+      <!-- Aggregate receive/parse/RFS counters. NEVER payload/identifiers. -->
+    </method>
+
     <!-- ================= notifications ================= -->
     <signal name="StateChanged">
       <arg name="property" type="s"/>

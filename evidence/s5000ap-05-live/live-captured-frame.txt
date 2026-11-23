@@ -1,0 +1,13 @@
+# S5000AP Stage-05 — LIVE SIPC5 frame captured from the physical modem
+# Captured: 2026-11-23 ~12:38:50Z (dmesg DEBUG_MODEM_IF_LINK_RX "LNK-RX(29)")
+# Redaction: this frame is a CP debug/log line (ASCII), no SIM/IMSI/PIN/bearer.
+# Provenance: kernel link_device_memory_main.c pass_skb_to_demux -> mif_pkt(ch,"LNK-RX")
+#   bytes below are the COMPLETE on-wire SIPC5 link frame (link hdr included):
+f8 eb 1d 00 19 00 00 00 13 05 03 0f 00 0d 0a 41
+# interpretation (verified against pinned sipc5.h / modem_prj.h):
+#   link: cfg=f8 (start 0xf8, ext=0 -> 4-byte hdr) ch=0xeb (235 = SIPC5_CH_ID_FMT_0)
+#         len=0x001d (29) little-endian u16 = frame payload length
+#   after link hdr (4 bytes), the 29 bytes are the SIPC FORMAT message:
+#     fmt_hdr: len=0x0019 (25) seq=0x00 ack=0x00 main=0x13 sub=0x05 cmd_type=0x03
+#     payload: 0f 00 0d 0a 41 ...  (ASCII text line "\r\nA...", a debug/log notify)
+# This proves: link framing (f8/0xEB/len) + FMT header decode on REAL CP traffic.

@@ -1,0 +1,40 @@
+# S5000AP Stage-05 — LIVE frames captured from the physical S5000AP CP (userspace)
+# Captured: 2026-11-23 ~12:54:xxZ while radiod/rfsprobe held umts_ipc0+umts_rfs0
+#           through a controlled CP (re)boot.
+# Redaction: FMT payload is a boot-stage text notify; RFS request has a fixed
+#           ASCII opcode path ("DELETE_ALL_VIS"). No SIM/IMSI/ICCID/PIN/key data.
+# Method: read() on /dev/umts_ipc0 (format=FMT) and /dev/umts_rfs0 (format=RFS)
+#         AFTER the kernel stripped the 4-byte SIPC5 link header
+#         (modem_io_device.c rx_fmt_ipc -> skb_pull(hdr_len)).
+#
+# ---- FMT (ch 235, SIPC5_CH_ID_FMT_0) — SIPC FORMAT message ----
+19 00 00 00 13 05 03 0f 00 0d 0a 41 53 54 5f 50 4f 57 45 52 4f 4e 0d 0a 00
+ fmt_hdr: len=0x0019(25) seq=0x00 ack=0x00 main=0x13 sub=0x05 type=0x03
+ payload: 0f 00 \r\n A S T _ P O W E R O N \r\n 00   (ASCII "AST_POWERON"; 15-byte text)
+ => FMT framing CONFIRMED on real traffic; parser consumes 7+25=32 bytes.
+ => "AST_POWERON" is a CP boot-stage readiness text notification (not telephony).
+#
+# ---- RFS (ch 245, SIPC5_CH_ID_RFS_0) — OPAQUE, NOT SIPC FORMAT ----
+19 00 00 00 0b 01 0f 00 00 00 44 45 4c 45 54 45 5f 41 4c 4c 5f 56 49 53 00
+ bytes 0-3: len=0x19 (25) little-endian
+ byte 4:    op-class 0x0b
+ byte 5:    sub/flags 0x01
+ bytes 6-7: u16 = 15 (path length in bytes, includes NUL)
+ byte 8-9:  00 00
+ bytes 10..: ASCII path "DELETE_ALL_VIS\0" (15 bytes)
+ => RFS has its OWN raw protocol (u32 len + op-class + len + path), NOT sipc_fmt_hdr.
+ => "DELETE_ALL_VIS" is a DESTRUCTIVE NV/EFS delete-all request.
+ => POLICY: do NOT implement/answer destructive RFS ops. Fail closed. STOP + report.
+#
+# ---- RFS ch 245 also delivered 2040-byte opaque blobs (bulk) ----
+# Observed repeated 2040-byte reads on rfs0 during the same window. These are
+# opaque (not sipc_fmt_hdr; first bytes vary, hi-entropy in later frames). They are
+# NOT parsed as FMT. Their internal structure is UNKNOWN (closed). No response sent.
+
+# ---- CONFIRMED FMT capture (full 25-byte message, userspace read) ----
+# Re-captured 2026-11-23 ~13:0xZ with a dedicated ipc0 probe during approved boot:
+FMT len=25: 19 00 00 00 13 05 03 0f 00 0d 0a 41 53 54 5f 50 4f 57 45 52 4f 4e 0d 0a 00
+# decoded: fmt_hdr len=25 seq=0 ack=0 main=0x13 sub=0x05 type=0x03
+#          payload = 0f 00 "\r\nAST_POWERON\r\n" 00   (CP boot-stage readiness text)
+# This is a REAL bidirectional milestone: AP wrote (boot ioctls + INIT_END via
+# kernel), CP replied on the SIPC5 FMT channel; the native parser decoded it.

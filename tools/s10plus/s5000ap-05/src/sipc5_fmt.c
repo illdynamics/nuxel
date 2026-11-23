@@ -99,6 +99,7 @@ int sipc5_parse_fmt(const u8 *buf, size_t len, u32 max_payload,
 {
     const struct sipc_fmt_hdr *hdr;
     u32 plen;
+    u32 total_len;
 
     if (!buf || !out || !consumed)
         return -22 /* EINVAL */;
@@ -111,14 +112,22 @@ int sipc5_parse_fmt(const u8 *buf, size_t len, u32 max_payload,
 
     hdr = (const struct sipc_fmt_hdr *)buf;
 
-    /* length is host-endian; on the AArch64 target this is little-endian.
-     * (Linux x86_64/aarch64/arm all little-endian in practice.) */
-    plen = hdr->len;
+    /* `len` is the TOTAL message length INCLUDING the 7-byte header.
+     * PROVEN on live hardware (Stage-05): the S5000AP CP sent a 25-byte FMT
+     * read with len=25 where the payload-after-header was 18 bytes; the CP
+     * counts len from the start of sipc_fmt_hdr. (Verified against the actual
+     * read() byte count from /dev/umts_ipc0 on this handset.) */
+    total_len = hdr->len;
+
+    if (total_len < SIPC_FMT_HDR_SIZE)
+        return SIPC_PARSE_OVERFLOW;      /* impossible/ corrupt */
+
+    plen = total_len - SIPC_FMT_HDR_SIZE;
 
     if (plen > max_payload)
         return SIPC_PARSE_OVERFLOW;
 
-    if ((size_t)SIPC_FMT_HDR_SIZE + (size_t)plen > len) {
+    if ((size_t)total_len > len) {
         *consumed = 0;
         out->truncated = true;
         return SIPC_PARSE_TRUNCATED;
@@ -133,7 +142,7 @@ int sipc5_parse_fmt(const u8 *buf, size_t len, u32 max_payload,
     out->payload = buf + SIPC_FMT_HDR_SIZE;
     out->truncated = false;
 
-    *consumed = (size_t)SIPC_FMT_HDR_SIZE + (size_t)plen;
+    *consumed = (size_t)total_len;
     return SIPC_PARSE_OK;
 }
 
