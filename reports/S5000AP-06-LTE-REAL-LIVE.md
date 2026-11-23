@@ -475,3 +475,36 @@ Highest genuinely achieved milestone this round:
 (SIM is ready and the CP reports a real serving PLMN); `LTE_BEARER` remains
 the next gate.
 
+
+---
+
+## ROUND 6b — Data-path function inventory recovered (continuation checkpoint)
+
+For the remaining data-bearer gate, the exact vendor RIL function map was
+recovered (all `IpcProtocol41`, exact SM-G975F/EFUJ2 library, addresses are
+static link addresses, symbols present):
+
+| Function | Address | Role |
+|---|---|---|
+| `IpcTxDefinePdpContext(char const* apn, u8, DataProtocol, bool, u8*, u8*)` | 0x31f580 | define PDP context w/ APN (builds ~134-byte FMT request) |
+| `IpcTxSetPdpContext(u8, int, char const*, char const*, int, int)` | 0x31f6e0 | set PDP context params |
+| `IpcTxGetPdpContext()` | 0x31f928 | query PDP context |
+| `IpcTxPsAttach(u8, bool, bool, DataDetachReason)` | 0x31fa98 | GPRS PS attach/detach |
+| `IpcTxSetDataProfile(apn,user,pass,DataAuth,DataProtocol,DataProfile,...)` | 0x31ff48 | set data profile (APN/auth/protocol) |
+| `IpcTxSetLteAttachProfile(...)` | 0x320238 | LTE attach profile |
+| `IpcTxSetDataCallEstablish(bool)` | 0x320a10 | establish/teardown data call |
+| `IpcTxSetMobileDataSetting(bool, bool)` | 0x3214c8 | mobile data on/off |
+| `IpcTxSetAlwaysOnPdn(bool, DataProfile, int)` | 0x321550 | always-on PDN toggle |
+| `IpcRxPdpContext(char*, int, int&, RegistrantType&)` | 0x322088 | PDP context response handler |
+| `IpcTxExchange(char,char,char,char,char,char*,int)` | 0x342a80 | FMT frame builder (main/sub/type/seq/ack + len) |
+
+`IpcTxExchange` places `main@+0, sub@+0x0a? (see store offsets)`. The exact
+on-wire FMT request layout for a data call is NOT yet fully decoded; it is
+the next clean-room target. The APN for T-Mobile NL (MCC204/MNC16) must be
+confirmed before any transmitting data-call request, and any bearer request
+requires the operation-specific owner approval gate re: data charges.
+
+No speculative data-call or PDN request was transmitted, and no rmnet
+interface was forced UP. Wi-Fi (`wlan0 10.20.30.16`) and management links
+were preserved throughout.
+
