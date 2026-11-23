@@ -47,6 +47,13 @@ enum fmt_tx_data_protocol {
  * currently authorize for transmission (owner-approved internet APN). */
 #define FMT_TX_AUTH_NONE 1u
 
+/*
+ * RadioTechnologyType numeric values (VERIFIED: NetworkManager::GetGeneration
+ * @0x1f7ce8 indexes an 18-entry table = Android RADIO_TECH enum 1..17).
+ * LTE = 14. This is the ONLY RAT we authorize for the LTE internet attach.
+ */
+#define FMT_TX_RAT_LTE 14u
+
 /* A serialized frame (header + payload). */
 struct fmt_tx_frame {
     uint8_t  buf[FMT_TX_MAX_FRAME];

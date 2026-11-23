@@ -24,8 +24,9 @@ int main(void)
     CHECK(p == DS_ENABLE_MOBILE_DATA, "no ack -> stays ENABLE_MOBILE_DATA");
 
     /* Authenticated ack advances each phase in order
-     * (ENABLE_MOBILE_DATA -> DEFINE_PDP -> PS_ATTACH -> DATA_CALL -> WAIT_IP -> ACTIVE). */
-    p = ds_step(&c, true, 100);  CHECK(p == DS_SET_DATA_PROFILE, "ENABLE_MOBILE_DATA -> SET_DATA_PROFILE");
+     * (ENABLE_MOBILE_DATA -> SYNC_PROFILE -> SET_DATA_PROFILE -> ... -> ACTIVE). */
+    p = ds_step(&c, true, 100);  CHECK(p == DS_SYNC_PROFILE, "ENABLE_MOBILE_DATA -> SYNC_PROFILE");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_SET_DATA_PROFILE, "SYNC_PROFILE -> SET_DATA_PROFILE");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_LTE_ATTACH, "SET_DATA_PROFILE -> SET_LTE_ATTACH");
     p = ds_step(&c, true, 100);  CHECK(p == DS_DEFINE_PDP, "SET_LTE_ATTACH -> DEFINE_PDP");
     p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "DEFINE_PDP -> ALWAYS_ON_PDN");

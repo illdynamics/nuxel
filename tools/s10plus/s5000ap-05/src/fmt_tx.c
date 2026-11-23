@@ -306,7 +306,7 @@ bool fmt_tx_get_pdp_context(struct fmt_tx_frame *f)
  *
  *   payload[0]       = 1 (enable)
  *   payload[1..2]    = region code (1 = default/non-NTC)
- *   payload[3]       = rat code (RadioTechnologyType; LTE uses default path)
+ *   payload[3]       = rat code (RadioTechnologyType; LTE = 14, VERIFIED)
  *   payload[4..104]  = APN (101 bytes NUL-padded)
  *   payload[105..108]= reserved (0)
  *   payload[109]     = protocol byte (home)
@@ -333,9 +333,9 @@ bool fmt_tx_sync_profile_info(struct fmt_tx_frame *f, const char *apn,
     memset(p, 0, 319u);
 
     p[0] = 1u;
-    p[1] = 1u;
-    p[2] = 0u;
-    p[3] = 0u;
+    p[1] = 1u;   /* region code low byte (non-NTC default) */
+    p[2] = 0u;   /* region code high byte */
+    p[3] = FMT_TX_RAT_LTE;   /* RadioTechnologyType LTE = 14 (VERIFIED enum) */
 
     memcpy(&p[4], apn, alen);
 

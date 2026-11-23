@@ -188,6 +188,8 @@ int main(void)
     CHECK(f.buf[0] == 0x46 && f.buf[1] == 0x01, "sync_profile_info len field = 326 LE");
     CHECK(f.buf[7 + 0] == 0x01, "sync_profile_info payload[0] enable == 1");
     CHECK(f.buf[7 + 1] == 0x01, "sync_profile_info payload[1] region == 1");
+    CHECK(f.buf[7 + 2] == 0x00, "sync_profile_info payload[2] region hi == 0");
+    CHECK(f.buf[7 + 3] == 0x0e, "sync_profile_info payload[3] RAT == 14 (LTE)");
     CHECK(memcmp(&f.buf[7 + 4], "internet", 8) == 0,
           "sync_profile_info APN placed at payload offset 4");
     CHECK(f.buf[7 + 109] == 0x04 && f.buf[7 + 110] == 0x04,

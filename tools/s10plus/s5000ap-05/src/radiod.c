@@ -550,6 +550,7 @@ static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
                 f->sub_cmd == IPC41_SEC_PIN_STATUS &&
                 f->cmd_type != IPC41_TYPE_NOTIFICATION);
     case DS_ENABLE_MOBILE_DATA:
+    case DS_SYNC_PROFILE:
     case DS_SET_DATA_PROFILE:
     case DS_SET_LTE_ATTACH:
     case DS_DEFINE_PDP:
@@ -590,10 +591,16 @@ static bool data_session_emit(void)
          * this phase as already satisfied by silently advancing. */
         return false;
     case DS_ENABLE_MOBILE_DATA:
-        /* Sync the FULL data profile (source-backed IpcTxSyncProfileInfo,
-         * main=13 sub=37, 326 bytes) — the real profile sync incl. RAT that
-         * prepares the CP for LTE attach. The 9-byte SetMobileDataSetting is
-         * a simpler toggle and is NOT sufficient. */
+        /* Enable GPRS mobile data (source-backed IpcTxSetMobileDataSetting,
+         * main=13 sub=29, 9 bytes; enable=1, extra=1). This is the explicit
+         * mobile-data-authorization toggle the vendor RIL issues before the
+         * profile sync/PDP sequence. */
+        if (!fmt_tx_mobile_data(&f, true, true))
+            return false;
+        break;
+    case DS_SYNC_PROFILE:
+        /* Full data-profile sync incl. RAT (source-backed IpcTxSyncProfileInfo,
+         * main=13 sub=37, 326 bytes; RAT = LTE = 14). */
         if (!fmt_tx_sync_profile_info(&f, (const char*)g.dsc.apn,
                                       FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6))
             return false;
