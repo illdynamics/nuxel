@@ -50,3 +50,38 @@ running_rootfs=sda31 (ext4, LABEL=nuxel-beyond2lte)
 missing_on_running_rootfs=rild, cass, bionic linker64, lxc/android container,
   /dev/socket/rild, ofonod
 read_only_mounts=unmounted cleanly
+
+# --- Stage-06 round-2 update (2026-11-23T15:0xZ, owner-authorized "any action necessary") ---
+# Re-verified partition hashes (read-only): UNCHANGED from Stage-05. No write occurred.
+# CP state: ONLINE (LP state_code=4). SIM attach NOT signaled (sim_state.changed=false).
+# radiod PID 141084 holds umts_ipc0(fd5)+umts_rfs0(fd6) -> rild_ready() gate is satisfiable.
+
+# Vendor RIL is LINEAGE-OS SM-G975F vendor (build ts Oct 31 2021), on sda26 (ext4, ro).
+# FULL ELF manifest (sha256+build-id) in vendor-ril-manifest.txt (this directory).
+
+# Decisive kernel gate (pinned driver link_device_shmem.c):
+#   rild_ready() => (fmt_iod.opened>0 && rfs_iod.opened>0)
+#   CP sends CMD_PHONE_START repeatedly; AP replies CMD_INIT_END only when rild_ready().
+#   After INIT_END, CP proceeds to RFS(NV) init -> sends DELETE_ALL_VIS (RFS destructive
+#   extended request) -> WAITS for a valid RFS answer + FMT telephony (SIM attach).
+#   sim_state.online is set via io_dev_sim_state_changed(), which is ONLY ever driven by
+#   the userspace RIL stack (not by any in-tree ioctl). ds_detect=1 is a static dual-SIM
+#   config param, NOT physical SIM presence (confirmed by modem_ctrl_s5000ap.c).
+
+# RFS command vocabulary recovered O3 (static string table) from libsec-ril.so:
+#   RFS_CMD/RFS_EXT_CMD + CREATE/OPEN/CLOSE/READ/WRITE/GET/PUT_FILE + MAKE/OPEN/READ/CLOSE/
+#   REMOVE_DIR + RENAME/UNLINK_FILE + NV_{BUFFER_MESSAGE,READ_ITEM,WRITE_ITEM,WRITE_ALL_ITEM,
+#   RESTORE}. DELETE_ALL_VIS = destructive REMOVE/UNLINK-family RFS ext request (fail-closed).
+
+# Missing to run vendor RIL natively: cass (RFS/NV server) NOT on sda25/sda26; Bionic linker
+# (libhybris/linker present on sda25 system but for Halium/Ubuntu-Touch LXC container), oFono
+# rilbinderplugin.so present on sda25. Running Nuxel rootfs (sda31) has NONE of these.
+
+# ModemManager 1.24.2 integration determination (subjob A): plugin API is PRIVATE/internal
+# (no mm-plugin.h/mm-broadband-modem.h headers in /usr/include/ModemManager); an out-of-tree
+# SIPC5 plugin cannot be built against system headers. libmm-plugin-samsung.so is AT-command
+# USB broadband only (no SIPC linkage). mmcli -L => "No modems were found" (honest).
+
+# NetworkManager 1.54.3 (subjob B): WWAN-HW=missing; gsm profile creation succeeds
+# (connection.type=gsm, gsm.apn, ipv4/ipv6.method=auto) but is INERT without a MM modem object.
+# rmnet0..7 + umts_dm0 are ppp:unmanaged (all DOWN).

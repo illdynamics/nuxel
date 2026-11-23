@@ -1,0 +1,32 @@
+# S5000AP Stage-06 — exact vendor RIL ELF manifest (read-only, sda26 vendor partition)
+# Captured 2026-11-23. NO binary contents reproduced. SHA256 + GNU Build ID only.
+# Provenance: LineageOS SM-G975F (beyond2lte) vendor image, build timestamp Oct 31 2021,
+# consistent with installed EFUJ2 CP RADIO (G975FXXSEFUJ2) pairing window. NOT independently
+# verified as byte-identical to a Samsung-stock EFUJ2 vendor; classified PROVENANCE_RECORDED.
+
+path | sha256 | gnu_build_id
+lib64/libsec-ril.so | b02bd095ae44a991b3cb676e584b3209a947160c22e678578f8b0c877e282cb3 | 60889dd714394ae0db7c2ecc2bf2740f
+lib64/libril.so | 0660581fc1a590410d26170ead15834ee2953d60b32da20befe12d4eb85998c2 | 81d22bdcf0663880d8c488d72b7f325d
+lib64/librilutils.so | 304c34b5a017872760c5cf10647bbb23e0533c4bec3435c20314f7b3aa15dfac | 80a46e13699ebf8e57c0207919349de9
+lib64/libsec-ril-dsds.so | 31df892919db28ade9126b30cf9c2c0e1358cdc54b41b5aeda03e78ff4597b0a | 9725b129e629007e1855f5dff30f94f7
+lib64/libsec_semRil.so | fb255c65243b956051cf5cf2221ffe763efb29b4cac3acd5444307545bb0201d | 4afbb4937b153b9b36d80aea66a6f054
+lib64/libvndsecril-client.so | 87da2b4f4cdc52c04b3a10122a22c1b2af6b7a1fc02762e4a9e37bdea40aa4c1 | 9f908d91bc06aac4ea64ed09704b0de8
+lib64/libreference-ril.so | aa5d0df0a11ff0fb7b9662c87359ce63b91bcf3ab0c0a236b38f26b8569ba0d3 | 315acf3ba0d6b76f6a8699c2c4b71146
+lib64/vendor.samsung.hardware.radio@2.0.so | bb022de507de70b7c4ac1802b49b1794dd687eb0bba13917043c12711eb7c62c | 1d613d05a4a95348db40c16d69ebcf3c
+lib64/vendor.samsung.hardware.radio@2.1.so | a9a1ac19b7c952f638147e2b318e7c4f3bda0656b36601cd711c557771f646d0 | 1edd8932161ed35f91eef6153c2201e9
+lib64/vendor.samsung.hardware.radio.bridge@2.0.so | 5115c8eddea06823c1641eefe81243bed758fb68a2e1a79a40615000a9443152 | e1e5437a07f4009eff04757b9659e89c
+lib64/vendor.samsung.hardware.radio.channel@2.0.so | 2502bf1c2d5f90ae10a336f4f8c815b46e6f39882afa28d7769ae542467d92d0 | 208c799f762a900c4cbf184aafe20656
+bin/hw/rild | dae4525de9b1f932ce0dc9039b9f4b47d77a386c986b9d0ea0231880fa433f9d | 04e52e2074364537e967f366af1e9192
+bin/cbd | c3e869fa2f78b1e8141cac58602c2a6fb852e31d5c08349ba969c75ef78f7b83 | aa0233da8c71aab8410f42203d93e15e
+
+# RFS command vocabulary recovered from libsec-ril.so string table (O3 static candidate):
+# RFS_CMD, RFS_EXT_CMD, RFS_SUB_CMD_UNDEFINED, RFS_CREATE_FILE, RFS_OPEN_FILE,
+# RFS_CLOSE_FILE, RFS_READ_FILE, RFS_WRITE_FILE, RFS_GET_FILE, RFS_PUT_FILE,
+# RFS_GET_FILE_INFO, RFS_GET_HANDLE_INFO, RFS_LSEEK_FILE, RFS_FTRUNCATE_FILE,
+# RFS_MAKE_DIR, RFS_OPEN_DIR, RFS_READ_DIR, RFS_CLOSE_DIR, RFS_REMOVE_DIR,
+# RFS_RENAME_FILE, RFS_UNLINK_FILE, RFS_NV_BUFFER_MESSAGE, RFS_NV_READ_ITEM,
+# RFS_NV_WRITE_ITEM, RFS_NV_WRITE_ALL_ITEM, RFS_NV_RESTORE
+#
+# DELETE_ALL_VIS is an RFS extended destructive request in the REMOVE/UNLINK family.
+# It does NOT appear as a named string in the RIL; its opcode is embedded in the
+# closed RFS main/extension handler. The response byte format remains UNKNOWN (O2 RX only).
