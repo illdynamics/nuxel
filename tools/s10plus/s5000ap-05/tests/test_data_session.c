@@ -31,7 +31,8 @@ int main(void)
     p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "DEFINE_PDP -> ALWAYS_ON_PDN");
     p = ds_step(&c, true, 100);  CHECK(p == DS_PS_ATTACH, "ALWAYS_ON_PDN -> PS_ATTACH");
     p = ds_step(&c, true, 100);  CHECK(p == DS_DATA_CALL, "PS_ATTACH -> DATA_CALL");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_WAIT_IP, "DATA_CALL -> WAIT_IP");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_GET_PDP_LIST, "DATA_CALL -> GET_PDP_LIST");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_WAIT_IP, "GET_PDP_LIST -> WAIT_IP");
     p = ds_step(&c, true, 100);  CHECK(p == DS_ACTIVE, "WAIT_IP -> ACTIVE");
 
     CHECK(ds_terminal(&c), "ACTIVE is terminal");

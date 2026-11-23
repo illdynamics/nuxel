@@ -298,6 +298,64 @@ bool fmt_tx_get_pdp_context(struct fmt_tx_frame *f)
 }
 
 /*
+ * GPRS sync full data profile (recovered from IpcTxSyncProfileInfo @0x31fb48):
+ * 326-byte frame: main=13 sub=37(0x25) type=3; payload=319 bytes.
+ * This is the REAL full-profile sync (incl. RAT) the Android RIL issues to
+ * prepare the CP for a data session. The 9-byte SetMobileDataSetting (sub=29)
+ * is a simpler toggle and is NOT sufficient for LTE attach.
+ *
+ *   payload[0]       = 1 (enable)
+ *   payload[1..2]    = region code (1 = default/non-NTC)
+ *   payload[3]       = rat code (RadioTechnologyType; LTE uses default path)
+ *   payload[4..104]  = APN (101 bytes NUL-padded)
+ *   payload[105..108]= reserved (0)
+ *   payload[109]     = protocol byte (home)
+ *   payload[110]     = protocol byte (roaming)
+ *   payload[111..142]= username (32 bytes)
+ *   payload[143..174]= password (32 bytes)
+ *   payload[175..310]= reserved (0)
+ *   payload[311]     = auth flag (0x00010201 >> ((auth-1)*8))
+ *   payload[312]     = protocol byte (2nd copy)
+ *   payload[313]     = protocol byte (3rd copy)
+ *   payload[314]     = pco flag ((~pco)&1)
+ *   payload[315..318]= reserved (0)
+ */
+bool fmt_tx_sync_profile_info(struct fmt_tx_frame *f, const char *apn,
+                              uint8_t auth_code, uint8_t proto)
+{
+    if (!f || !apn) return false;
+    size_t alen = strlen(apn);
+    if (alen > 100u) return false;
+
+    uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 37u /*SYNC_PROFILE_INFO*/,
+                              FMT_TX_TYPE_NOTIFICATION, 319u);
+    if (!p) return false;
+    memset(p, 0, 319u);
+
+    p[0] = 1u;
+    p[1] = 1u;
+    p[2] = 0u;
+    p[3] = 0u;
+
+    memcpy(&p[4], apn, alen);
+
+    uint8_t pb = proto_wire_byte(proto);
+    p[109] = pb;
+    p[110] = pb;
+
+    {
+        unsigned idx = (auth_code >= 1u) ? (auth_code - 1u) : 0u;
+        uint32_t pat = 0x00010201u;
+        p[311] = (uint8_t)((idx < 4u) ? (pat >> (idx * 8u)) & 0xffu : 0u);
+    }
+    p[312] = pb;
+    p[313] = pb;
+    p[314] = (uint8_t)((~0u) & 1u);
+
+    return true;
+}
+
+/*
  * GPRS mobile-data on/off (recovered from IpcTxSetMobileDataSetting @0x3214c8):
  *   main=13 sub=0x1d(29 SYNC_PROFILE_INFO) type=3;
  *   payload[0]=enable, payload[1]=extra.

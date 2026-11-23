@@ -19,6 +19,7 @@ const char *ds_phase_name(enum ds_phase p)
     case DS_ALWAYS_ON_PDN:      return "ALWAYS_ON_PDN";
     case DS_PS_ATTACH:          return "PS_ATTACH";
     case DS_DATA_CALL:          return "DATA_CALL";
+    case DS_GET_PDP_LIST:       return "GET_PDP_LIST";
     case DS_WAIT_IP:            return "WAIT_IP";
     case DS_ACTIVE:             return "ACTIVE";
     case DS_REJECTED:           return "REJECTED";
@@ -82,7 +83,8 @@ enum ds_phase ds_step(struct data_session_ctx *c, bool ack, uint64_t now_ms)
     case DS_DEFINE_PDP:         c->phase = DS_ALWAYS_ON_PDN;      break;
     case DS_ALWAYS_ON_PDN:      c->phase = DS_PS_ATTACH;          break;
     case DS_PS_ATTACH:          c->phase = DS_DATA_CALL;          break;
-    case DS_DATA_CALL:          c->phase = DS_WAIT_IP;            break;
+    case DS_DATA_CALL:          c->phase = DS_GET_PDP_LIST;       break;
+    case DS_GET_PDP_LIST:       c->phase = DS_WAIT_IP;            break;
     case DS_WAIT_IP:            c->phase = DS_ACTIVE;             break;
     case DS_ACTIVE: case DS_REJECTED: case DS_FAILED:
         break;   /* terminal */

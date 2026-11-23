@@ -556,6 +556,7 @@ static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
     case DS_ALWAYS_ON_PDN:
     case DS_PS_ATTACH:
     case DS_DATA_CALL:
+    case DS_GET_PDP_LIST:
         /* Data-call establish response: CDMA_DATA_CALL_ESTABLISH (main=3 sub=2),
          * or GPRS-family response (type != NOTI), or the generic GEN response
          * (main=128, type=2) that the CP emits to acknowledge a data-path
@@ -589,7 +590,13 @@ static bool data_session_emit(void)
          * this phase as already satisfied by silently advancing. */
         return false;
     case DS_ENABLE_MOBILE_DATA:
-        if (!fmt_tx_mobile_data(&f, true, false)) return false;
+        /* Sync the FULL data profile (source-backed IpcTxSyncProfileInfo,
+         * main=13 sub=37, 326 bytes) — the real profile sync incl. RAT that
+         * prepares the CP for LTE attach. The 9-byte SetMobileDataSetting is
+         * a simpler toggle and is NOT sufficient. */
+        if (!fmt_tx_sync_profile_info(&f, (const char*)g.dsc.apn,
+                                      FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6))
+            return false;
         break;
     case DS_SET_DATA_PROFILE:
         /* Set the APN/auth/protocol data profile (source-backed SetDataProfile,
@@ -629,6 +636,12 @@ static bool data_session_emit(void)
                                     FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6,
                                     g.dsc.profile_id))
             return false;
+        break;
+    case DS_GET_PDP_LIST:
+        /* Query the PDP context list (source-backed IpcTxGetPdpContext,
+         * main=13 sub=4 type=2, 7-byte query). This fetches the established
+         * context (incl. IP config) from the CP. */
+        if (!fmt_tx_get_pdp_context(&f)) return false;
         break;
     case DS_WAIT_IP:
     case DS_ACTIVE:

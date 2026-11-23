@@ -25,8 +25,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-/* worst-case FMT frame this module can build (203 profile + hdr + slack) */
-#define FMT_TX_MAX_FRAME 256u
+/* worst-case FMT frame this module can build (326-byte SyncProfileInfo + slack) */
+#define FMT_TX_MAX_FRAME 512u
 
 /* cmd_type numeric classes (vendor enum; see ipc41_cmdmap.h) */
 #define FMT_TX_TYPE_REQUEST       2u
@@ -84,6 +84,11 @@ bool fmt_tx_ps_attach(struct fmt_tx_frame *f, bool attach, bool suspend,
 
 /* GPRS get PDP context (query, no payload). */
 bool fmt_tx_get_pdp_context(struct fmt_tx_frame *f);
+
+/* GPRS sync FULL data profile (sub=37, 326-byte frame). This is the real
+ * full-profile sync incl. RAT (IpcTxSyncProfileInfo @0x31fb48). */
+bool fmt_tx_sync_profile_info(struct fmt_tx_frame *f, const char *apn,
+                              uint8_t auth_code, uint8_t proto);
 
 /* GPRS sync profile / mobile-data (sub=29) enable/disable (9-byte frame). */
 bool fmt_tx_mobile_data(struct fmt_tx_frame *f, bool enable, bool extra);

@@ -175,6 +175,26 @@ int main(void)
     CHECK(f.buf[7 + 102] == 0x01, "set_pdp_context auth flag == 0x01");
     CHECK(f.buf[7 + 104] == 0x04, "set_pdp_context protocol byte == 0x04 IPV4V6");
 
+    /* --- SyncProfileInfo (source: IpcTxSyncProfileInfo @0x31fb48) ---
+     * 326-byte frame: len=326(0x146), main=13, sub=37(0x25), type=3.
+     * payload[0]=1, payload[1..2]=1, APN at +4, protocol at +109/110. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_sync_profile_info(&f, "internet", FMT_TX_AUTH_NONE,
+                                   FMT_TX_PROTO_IPV4V6),
+          "sync_profile_info builds");
+    CHECK(f.len == 326, "sync_profile_info len==326 (got %zu)", f.len);
+    CHECK(f.main_cmd == 13 && f.sub_cmd == 37 && f.cmd_type == 3,
+          "sync_profile_info main/sub/type=13/37/3");
+    CHECK(f.buf[0] == 0x46 && f.buf[1] == 0x01, "sync_profile_info len field = 326 LE");
+    CHECK(f.buf[7 + 0] == 0x01, "sync_profile_info payload[0] enable == 1");
+    CHECK(f.buf[7 + 1] == 0x01, "sync_profile_info payload[1] region == 1");
+    CHECK(memcmp(&f.buf[7 + 4], "internet", 8) == 0,
+          "sync_profile_info APN placed at payload offset 4");
+    CHECK(f.buf[7 + 109] == 0x04 && f.buf[7 + 110] == 0x04,
+          "sync_profile_info protocol IPV4V6=0x04 at payload[109]+[110]");
+    CHECK(f.buf[7 + 311] == 0x01, "sync_profile_info auth flag == 0x01");
+    CHECK(f.buf[7 + 314] == 0x01, "sync_profile_info pco flag == 0x01");
+
     /* --- raw serializer + overflow guard --- */
     memset(&f, 0, sizeof f);
     uint8_t pl[3] = { 0xaa, 0xbb, 0xcc };

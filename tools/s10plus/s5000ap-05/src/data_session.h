@@ -31,7 +31,8 @@ enum ds_phase {
     DS_DEFINE_PDP,         /* define PDP context w/ APN */
     DS_ALWAYS_ON_PDN,      /* always-on PDN profile */
     DS_PS_ATTACH,          /* GPRS PS attach */
-    DS_DATA_CALL,          /* establish data call */
+    DS_DATA_CALL,          /* activate PDP context */
+    DS_GET_PDP_LIST,       /* query PDP context list (fetch IP config) */
     DS_WAIT_IP,            /* wait for rmnet + IP config */
     DS_ACTIVE,             /* data active */
     DS_REJECTED,           /* modem rejected (terminal for this attempt) */
