@@ -629,12 +629,18 @@ static void data_session_tick(uint64_t now)
     /* Wait for ack or timeout. */
     enum ds_phase next = ds_step(&g.dsc, false, now);
     if (next != g.dsc.phase) {
-        /* timeout phase change: re-arm to re-emit (bounded by ds_step). */
+        /* phase actually changed (ack from dispatch_fmt, or terminal timeout). */
         if (next == DS_FAILED) {
             diag("data_session_failed", "\"phase\":\"TIMEOUT\"");
             g.data_path_armed = false;
         }
-        g.wrote_phase = false;   /* re-emit after retry/timeout */
+        g.wrote_phase = false;   /* re-emit after advance/retry */
+        return;
+    }
+    /* Same phase but the deadline lapsed: re-emit (bounded by ds_step's
+     * attempt counter; it returns DS_FAILED once attempts are exhausted). */
+    if (g.dsc.step_deadline_ms && now >= g.dsc.step_deadline_ms) {
+        g.wrote_phase = false;   /* re-arm for one bounded retry */
     }
 }
 
