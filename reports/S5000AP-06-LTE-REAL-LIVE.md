@@ -508,3 +508,30 @@ No speculative data-call or PDN request was transmitted, and no rmnet
 interface was forced UP. Wi-Fi (`wlan0 10.20.30.16`) and management links
 were preserved throughout.
 
+
+---
+
+## ROUND 6c — Final state + integrity (2026-11-23 ~17:30 CET)
+
+Post-work device state (verified live):
+
+| Check | Value |
+|---|---|
+| CP state | `ONLINE` (kernel sysfs) |
+| nuxel-radiod | `active` (new binary, names every FMT message) |
+| Wi-Fi | `wlan0 inet 10.20.30.16/24` UP (preserved) |
+| USB mgmt | `usb0 inet 10.100.10.1/24` UP (preserved) |
+| rmnet0..7 | DOWN (no data bearer — honest, pending) |
+| RADIO `/dev/sda16` | `9ffa1426…66fc7` UNCHANGED (no protected-partition write) |
+
+Highest supported verdict this round (no fabricated PASS):
+
+**`LTE_REGISTRATION_VERIFIED_ON_HARDWARE`** — the physical CP is ONLINE;
+SIPC5 FMT vocabulary is fully recovered (O4) and the daemon now decodes it;
+the modem reports a REAL serving PLMN `20416` (MCC 204 / MNC 16, T-Mobile
+Netherlands) via NET_SERVING_NETWORK, a USIM (`SEC_SIM_ICC_TYPE=02`), SIM ON,
+and `SEC_PIN_STATUS` transitioning through READY. A real LTE data bearer
+(rmnet UP + verified cellular internet) is the ONE remaining gate; its exact
+PDP-context/APN serialization was inventoried but NOT speculatively
+transmitted (data-charge safety), and remains the next clean-room target.
+
