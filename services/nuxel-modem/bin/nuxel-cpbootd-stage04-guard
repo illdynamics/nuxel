@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# nuxel-cpbootd-stage04-guard — fail-closed gate for the ONE-SHOT physical CP trial.
+#
+# This wrapper NEVER invokes the CP boot binary unless ALL of the following hold:
+#   1. /etc/nuxel/modem/stage04-trial.env exists and supplies the owner-approved
+#      STAGE04_MANIFEST_SHA256 (the SHA-256 of the immutable proposal file) and
+#      STAGE04_FIRMWARE_PATH (the read-only RADIO ITOC path).
+#   2. The pinned binary (nuxel-cpbootd.aarch64.hw) hashes to the exact
+#      Stage-04 value 2b630d4a… (no substitution).
+#   3. The firmware ITOC file exists.
+#   4. /dev/umts_boot0 exists.
+#
+# It then invokes nuxel-cpbootd --really-boot with the owner-supplied manifest
+# hash, firmware path and a 300 s deadline. It NEVER auto-retries: any failure
+# is returned nonzero. It is invoked ONLY by nuxel-cpbootd.service (Restart=no,
+# never auto-enabled).
+set -euo pipefail
+
+ENV_FILE="/etc/nuxel/modem/stage04-trial.env"
+BIN="/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.aarch64.hw"
+NODE="/dev/umts_boot0"
+
+# Pinned Stage-04 executable hash (the ONLY accepted binary identity).
+PINNED_BINARY_SHA256="2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7"
+
+log() { printf '%s\n' "$*" >&2; }
+fail() { log "STAGE04-GUARD-ABORT: $*"; exit 2; }
+
+[[ -f "$ENV_FILE" ]] || fail "missing $ENV_FILE (owner-approved manifest hash not supplied); no CP action"
+# shellcheck disable=SC1090
+. "$ENV_FILE"
+
+MANIFEST_SHA="${STAGE04_MANIFEST_SHA256:-}"
+FW="${STAGE04_FIRMWARE_PATH:-}"
+
+[[ -n "$MANIFEST_SHA" ]] || fail "STAGE04_MANIFEST_SHA256 empty"
+[[ "$MANIFEST_SHA" =~ ^[0-9a-fA-F]{64}$ ]] || fail "STAGE04_MANIFEST_SHA256 malformed"
+[[ -n "$FW" ]] || fail "STAGE04_FIRMWARE_PATH empty"
+[[ -f "$FW" ]] || fail "firmware path not a regular file: $FW"
+[[ -x "$BIN" ]] || fail "boot binary missing: $BIN"
+[[ -c "$NODE" ]] || fail "boot node missing: $NODE"
+
+BINACTUAL="$(sha256sum "$BIN" 2>/dev/null | awk '{print $1}' || shasum -a 256 "$BIN" | awk '{print $1}')"
+[[ "$BINACTUAL" == "$PINNED_BINARY_SHA256" ]] || fail "binary sha mismatch (got $BINACTUAL, want $PINNED_BINARY_SHA256)"
+
+log "STAGE04-GUARD: preconditions met; invoking ONE-SHOT CP boot (no auto-retry)"
+exec "$BIN" \
+    --really-boot \
+    --node "$NODE" \
+    --firmware "$FW" \
+    --manifest-sha256 "$MANIFEST_SHA" \
+    --deadline-ms "${STAGE04_DEADLINE_MS:-300000}"

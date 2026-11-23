@@ -1,0 +1,54 @@
+[Unit]
+Description=Nuxel S5000AP CP boot bootstrap (ONE-SHOT physical trial; default DISABLED)
+Documentation=file:///usr/share/doc/nuxel/reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md
+After=systemd-udevd.service
+Wants=systemd-udevd.service
+# FAIL-CLOSED: never auto-starts. This unit is NOT enabled and has no timer or
+# Wants/Pull-in dependency. It exists SOLELY so an owner-approved Stage-04
+# trial can be run as a bounded one-shot with a hard timeout and Restart=no.
+# The physical CP activation gate is NOT in this file; it is the exact immutable
+# manifest + --manifest-sha256 that the operator MUST supply explicitly.
+ConditionPathExists=/dev/umts_boot0
+
+[Service]
+Type=oneshot
+# NOTE: EnvironmentFile is OPTIONAL and if present MUST be created by the
+# operator to hold the owner-approved values. It is never shipped populated.
+EnvironmentFile=-/etc/nuxel/modem/stage04-trial.env
+# ExecStart is a placeholder that FAILS CLOSED by default. The real,
+# owner-approved invocation is:
+#   /usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.aarch64.hw \
+#     --really-boot \
+#     --node /dev/umts_boot0 \
+#     --firmware /run/nuxel/modem/efuj2-radioreadonly/radio.itoc \
+#     --manifest-sha256 ${STAGE04_MANIFEST_SHA256} \
+#     --deadline-ms 300000
+# It must NEVER be run with a hardcoded hash in this template. If the env file
+# is absent or the manifest hash is empty, ExecStart exits 2 without any CP action.
+ExecStart=/usr/libexec/nuxel/nuxel-cpbootd-stage04-guard
+ExecStopPost=/usr/bin/systemctl --no-block reset-failed nuxel-cpbootd.service
+User=root
+Group=root
+Restart=no
+TimeoutStartSec=300
+TimeoutStopSec=15
+# Exclusive ownership + least privilege. The daemon itself takes LOCK_EX|LOCK_NB
+# flock on /dev/umts_boot0 and preflights ownership; this unit adds no auto-restart.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/run/nuxel
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+DeviceAllow=/dev/umts_boot0 rw
+DevicePolicy=closed
+
+[Install]
+# Deliberately NOT WantedBy=multi-user.target. A caller may `systemctl start`
+# manually only after the exact manifest is approved. Nothing enables this.

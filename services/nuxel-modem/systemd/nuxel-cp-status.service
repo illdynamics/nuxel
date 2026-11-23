@@ -1,0 +1,36 @@
+[Unit]
+Description=Nuxel S5000AP read-only CP status probe (never boots/mutates CP)
+Documentation=file:///usr/share/doc/nuxel/docs/mobile.md
+After=systemd-udevd.service
+Wants=systemd-udevd.service
+# Never block boot. Present only so a read-only state read can be surfaced.
+ConditionPathExists=/dev/umts_boot0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-modem/nuxel-cp-status /dev/umts_boot0
+# READ-ONLY: this binary opens /dev/umts_boot0 O_RDONLY and issues exactly one
+# ioctl (IOCTL_MODEM_STATUS = _IO('o',0x27)). It never powers, resets, boots,
+# or transmits firmware. It takes a shared flock and fails if a boot owner
+# holds the node. This unit NEVER calls nuxel-cpbootd --really-boot.
+User=root
+Group=root
+Restart=no
+TimeoutStartSec=10
+TimeoutStopSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+DeviceAllow=/dev/umts_boot0 r
+DevicePolicy=closed
+
+[Install]
+WantedBy=multi-user.target
