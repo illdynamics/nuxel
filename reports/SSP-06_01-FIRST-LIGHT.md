@@ -16,15 +16,17 @@ The physical trial is gated on three owner decisions that are NOT satisfied by a
 agent prompt:
 
 1. **RF authorization** — `GPS_PWR_EN=1` energises the GNSS radio domain.
-2. **Timing artifact** — `GPS_PWR_EN`→ROM-ready settle value, OR acceptance of
-   handshake-gated readiness + bounded timeouts.
-3. **Explicit bounded-trial grant** — for the firmware-download + app-start
-   sequence.
+2. **Timing artifact / explicit risk acceptance** — the ROM-ready settle value, a
+   stock SSI trace, OR an explicit acknowledgement that readiness is unresolved and
+   the autobaud is a bounded blind attempt (the handshake is **not** a readiness
+   gate; see `SSP-06_01-TIMING-EVIDENCE.md`).
+3. **Explicit bounded-trial grant** — one S1 ROM-identity run (recommended), then a
+   separate S2 grant for firmware-download + app-start.
 
-Additionally, this mission surfaced a stale deployed GNSS service that already
-performs the (unauthorized) RF assertion + ESW:READY synthesis at boot; that
-should be remediated (mask service or deploy hardened binary) as a precondition
-so the trial's device ownership is exclusive.
+The stale deployed GNSS service that performed (unauthorized) `GPS_PWR_EN`
+assertion + `ESW:READY` synthesis at boot has now been **remediated on the device**
+(disabled + start-condition, hardened userspace deployed). See
+`SSP-06_01-GNSS-SERVICE-REMEDIATION.md`. Boot-time `ESW:READY` count is now 0.
 
 ## What this mission DID establish (verified, non-destructive)
 
@@ -34,8 +36,13 @@ so the trial's device ownership is exclusive.
 - Offline test suites re-run and PASS (all except owner-binary lhd tests).
 - Recovery classified: DESIGNED + OFFLINE_VALIDATED, but NOT physically verified.
 - Timing partially resolved (ordering proven; settle delay = missing datasheet value).
-- New safety finding: deployed `nuxel_lhd.py` stale → unauthorized RF assertion
-  + ESW:READY synthesis at boot (repo already contains the fix).
+- Safety finding remediated: stale deployed `nuxel_lhd.py` replaced with repo HEAD,
+  service disabled and gated; fail-closed proven live (0 hardware calls, rail 0).
+- Firmware identity verified against the **live device** `/dev/bbd_patch` bytes.
+- Timing reassessed: MCU_REQ/MCU_RESP is a work-item preamble, **not** a ROM-ready
+  gate; readiness remains unresolved.
+- Recovery reassessed: `bbd_mcu_reset` is host-side only and is a no-op during the
+  planned trial; recovery does not restore a known MCU state.
 
 ## Not sufficient for a PASS (per acceptance criteria)
 
@@ -50,6 +57,8 @@ None of these are claimed.
 
 ## Result
 
-`READY_FOR_SPECIFIC_PHYSICAL_APPROVAL` — all offline-solvable blockers are
-eliminated; the remaining gate is the explicit owner decision on the physical
-trial document.
+`READY_FOR_SPECIFIC_PHYSICAL_APPROVAL` — all *offline/device-solvable* blockers are
+eliminated (service ownership fixed and proven; firmware identity device-verified).
+The remaining gate is explicit owner approval of the S1 ROM-identity trial, which
+must be granted **with the knowledge that readiness is unresolved** and that
+recovery is host-side restore only, not a return to a known MCU state.

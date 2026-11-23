@@ -1,89 +1,116 @@
 {
-  "schema": "ssp-06_01-acceptance-v1",
-  "timestamp": "2026-11-23T02:10:00+01:00",
-  "agent": "Nuxel Stage 06_01 (Master 06 Unblock)",
-  "commit_head": "83271ac3",
+  "schema": "ssp-06_01-acceptance-v2",
+  "timestamp": "2026-11-23T02:20:00+01:00",
+  "agent": "Nuxel Stage 06_01 (final unblock)",
+  "previous_commit": "6ac11293",
   "device": {"serial": "R58M75KDB2X", "product": "beyond2lte", "model": "SM-G975F"},
+  "kernel": "4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT",
 
   "decision": "READY_FOR_SPECIFIC_PHYSICAL_APPROVAL",
-  "final_result": "READY_FOR_SPECIFIC_PHYSICAL_APPROVAL",
   "mcu_first_light": "NOT_RUN",
   "physical_trial_performed": false,
   "physical_trial_success_claimed": false,
+  "no_mcu_power_action": true,
+  "no_firmware_startup": true,
+  "no_boot_kernel_dt_recovery_write": true,
 
-  "live_baseline": {
-    "kernel": "4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT",
-    "systemd": "running",
-    "hub_diag": "mcu_probe=1 shutdown=1 resetting=1 sensor_state=0x3feff enable=0x0 shub_irq=443",
-    "controller_identity": "BCM47752KUB1G (BR0121080900,BR010)",
-    "mcu_test": "NG,NG,NG",
-    "gps_pwr_en_gpio145": 0,
-    "vdd_mcu_1p8": "enabled num_users=0",
-    "nuxel_gnss_lhd_service": "enabled / inactive(dead)",
-    "nuxel_ssp_bridge_service": "masked",
-    "status": "HEALTHY_AND_PRESERVED"
+  "task_a_service": {
+    "verdict": "REMEDIATED",
+    "authoritative_version": "repository services/nuxel-gnss/src @ 4175b949 (hardened), HEAD-identical",
+    "deployed_before": {
+      "nuxel_lhd.py": "6d90a2c0106fbceb333c5d0da40293a6a0258c42cd54df82f2d5653cd377a1ca",
+      "nuxel_bbd_tl.py": "7af7cee849ddc22aee1ff51fa12ce7ef454c1c1ec8cdd0b3db0f054a0d947d0d",
+      "nuxel_control.py": "72679d2e9b332555854ce6e04cb2e1456528a3015c61729e05cba3588bf3f00f"
+    },
+    "deployed_after": {
+      "nuxel_lhd.py": "aeed416dd3d1bfb6e2b3c3a28cb2d1e9c425323ab618bf314903161b01540cd1",
+      "nuxel_bbd_tl.py": "085096a99ebeb8de4feb9b2ab2ed5257927aa353ae7533cd2e15bc57997cd20d",
+      "nuxel_control.py": "72679d2e9b332555854ce6e04cb2e1456528a3015c61729e05cba3588bf3f00f"
+    },
+    "ownership_mode": "root:root 0755",
+    "stale_bytecode_removed": true,
+    "unit_state": "disabled; drop-in 90-nuxel-06_01-deny-start.conf ConditionPathExists=/run/nuxel/ssp-06_01/gnss-owner-authorized (absent)",
+    "systemctl_mask_refused": "File /etc/systemd/system/nuxel-gnss-lhd.service already exists (disable+condition used instead)",
+    "fail_closed_proven": {
+      "cli_exit": 2,
+      "blocker": "INITIALIZATION_PROTOCOL_UNVERIFIED",
+      "hardware_calls": 0,
+      "power_used": false,
+      "rail_after_forced_start": 0
+    },
+    "rollback": "/var/lib/nuxel/ssp-06_01/rollback/ (SHA256SUMS verified against originals)",
+    "boot_time_esw_ready_before": "1 per boot (boots -1..-4 verified)",
+    "boot_time_esw_ready_after": 0,
+    "boot_time_gps_pwr_en_after": 0
   },
 
-  "independently_reverified": {
-    "firmware_blob_sha256": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d",
-    "f1_record_count": 479,
-    "f1_all_tag": true,
-    "asic_version": "0x004775b0",
-    "entry_address": "0x00800161",
-    "first_f1_dest": "0x00800000",
-    "record_walk_exact": true,
-    "blob_crc32_ieee": "93d35bb4",
-    "firmware_first_ordering": "PROVEN (bcm_rxtx_work_func -> bcm477x_hello gate)",
-    "bcm477x_rpc_get_version_dead_code": "CONFIRMED (zero callers)",
-    "bbd_mcu_reset_host_side": "CONFIRMED (control-request / SIGKILL lhd)"
+  "task_b_timing": {
+    "verdict": "UNRESOLVED",
+    "handshake_is_readiness": false,
+    "handshake_is_ordering_gate": true,
+    "handshake_is_abort_gate": true,
+    "counter_evidence": "MCU_RESP observed HIGH while MCU_REQ LOW, GNSS domain powered ~24 s, system still GPS:false",
+    "kernel_rom_autobaud_helper_callers": 0,
+    "machine_delays_source_proven": {"start_scratch_ms": 40, "service_start_ms": 100, "getversion_window_ms": 2500, "autobaud_gap_ms": 20},
+    "autobaud_32_vs_36_resolved": false,
+    "missing_evidence": [
+      "BCM47752 datasheet / vendor BSP: ROM-ready and settle bounds, autobaud spec, ROM SSI availability without app firmware",
+      "OR captured stock-hardware SSI trace from G975FXXS9DTK9 lhd/gpsd boot",
+      "OR a kernel tree with a live ROM-phase path"
+    ]
   },
 
-  "offline_tests": {
-    "native_c_suites": "PASS (download/flash/negative + embedded patch + replay)",
-    "python_kernel_identity_isolation": "PASS (10 tests)",
-    "test_lhd_response": "OWNER_BINARY_REQUIRED (vendor-bin-hw-lhd absent, gitignored)",
-    "accidental_startup_proof": "PASS",
-    "simulated_never_reported_physical": true
+  "task_c_recovery": {
+    "verdict": "DESIGNED_AND_OFFLINE_VALIDATED_NOT_PHYSICALLY_VERIFIED",
+    "bbd_mcu_reset_is_physical_reset": false,
+    "bbd_mcu_reset_effect_in_trial": "no-op (bbd.lk.lhd NULL because /dev/bbd_sensor is not opened)",
+    "returns_to_known_hardware_state": false,
+    "inactive_states_host_restorable": ["GPS_PWR_EN=0", "fd close", "BBD:PassThru=0"],
+    "inactive_states_kernel_owned": ["MCU_REQ=0 (hello timeout/bye)", "die internal state (unobservable)"],
+    "compensating_control": "host watchdog writes only 0 to rail; operator manual power-off authority; no software rail cycle",
+    "watchdog_pattern_validated": true
   },
 
-  "recovery": {
-    "designed": "CONFIRMED",
-    "offline_validated": "CONFIRMED",
-    "physically_verified": "NOT_VERIFIED (no trial run)"
+  "firmware_identity": {
+    "device_bbd_patch_container_sha256": "0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72",
+    "kernel_tree_container_sha256": "0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72",
+    "blob_sha256": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d",
+    "blob_len": 438895,
+    "records": 479,
+    "all_f1": true,
+    "asic": "0x004775b0",
+    "entry": "0x00800161",
+    "first_dest": "0x00800000",
+    "device_bytes_accepted_by_downloader_parser": true
   },
 
-  "timing": {
-    "ordering": "PROVEN",
-    "internal_delays_40ms_100ms": "RECOVERED_FROM_LHD",
-    "gps_pwr_en_rom_ready_settle": "MISSING (Broadcom datasheet, absent)",
-    "policy": "handshake-gated readiness + bounded timeouts; no arbitrary delay"
+  "exclusive_ownership": {
+    "gnss_lhd_service": "disabled + condition unmet + inactive",
+    "ssp_bridge_service": "masked + inactive",
+    "ttybcm_holders": 0,
+    "gnss_config_preserved_sha256": "f402c54e103ffd0162969e76d8691f24a3ecd100e47cbb911ae1ddf909cab043",
+    "residual_gap": "no enforced flock on /dev/ttyBCM; kernel co-owns MCU_REQ; location API could write rail if used during trial"
   },
 
-  "new_finding": {
-    "id": "SSP-06_01-NF-001",
-    "title": "Deployed nuxel_lhd.py is stale; asserts GPS_PWR_EN + ESW:READY at boot without authorization",
-    "deployed_sha256": "6d90a2c0106fbceb333c5d0da40293a6a0258c42cd54df82f2d5653cd377a1ca",
-    "repo_head_sha256": "aeed416dd3d1bfb6e2b3c3a28cb2d1e9c425323ab618bf314903161b01540cd1",
-    "deployed_set_power_true_line": 300,
-    "deployed_esw_ready_line": 330,
-    "repo_head_refuses": "INITIALIZATION_PROTOCOL_UNVERIFIED",
-    "severity": "SAFETY (unauthorized RF energisation + synthesized readiness at every boot)",
-    "fix": "already committed in repo HEAD (4175b949); deploy hardened binary or mask service"
-  },
-
-  "required_owner_actions": [
-    "RF authorization (bounded GNSS-domain energisation)",
-    "Timing artifact (datasheet power/ROM-ready value OR bounded settle instruction OR accept handshake-gated readiness)",
-    "Explicit bounded-trial grant (MCU wake + 479x MemoryWrite + StartScratch + ServiceStart + post-download GetVersion)",
-    "Remediate stale deployed GNSS service (mask or deploy hardened binary)"
+  "required_owner_approvals": [
+    "A1 GNSS RF energisation for S1",
+    "A2 accept unresolved readiness (bounded blind autobaud attempt)",
+    "A3 exactly one S1 ROM-identity run",
+    "A4 separate S2 firmware+app grant only after S1 success",
+    "A5 accept host-side restore + manual reboot as recovery (no software rail cycle)",
+    "A6 named supervising operator with manual power-off authority",
+    "A7 optional datasheet/trace to close readiness",
+    "A8 optional flock/watchdog code hardening"
   ],
 
   "not_performed": [
     "physical firmware execution",
     "GPS_PWR_EN assertion",
+    "MCU_REQ assertion by userspace",
     "MemoryWrite / StartScratch / ServiceStart",
     "ESW:READY emission",
-    "regulator cold-cycle",
-    "BOOT/DTB/DTBO/recovery write"
+    "vdd_mcu_1p8 transition / regulator cold-cycle",
+    "BOOT/DTB/DTBO/recovery write",
+    "reboot"
   ]
 }

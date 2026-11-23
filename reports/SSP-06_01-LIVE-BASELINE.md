@@ -8,9 +8,16 @@
 
 ## 0. Verdict — device HEALTHY, MCU still offline (firmware-not-downloaded)
 
-All previously-established gates re-verified live and read-only. No hardware
-state was modified during this mission. The MCU remains in its post-probe,
-firmware-not-downloaded state, exactly as reported by Stage 06_00.
+All previously-established gates re-verified live and read-only. The MCU remains in
+its post-probe, firmware-not-downloaded state, exactly as reported by Stage 06_00.
+
+> **Update (final unblock pass, same day):** the service finding in §2 was
+> remediated on the device — hardened userspace deployed, unit disabled + gated.
+> Post-remediation state: `nuxel-gnss-lhd.service` **disabled/inactive**, boot-time
+> `ESW:READY` = **0**, `GPS_PWR_EN=0`. See
+> `SSP-06_01-GNSS-SERVICE-REMEDIATION.md` and
+> `evidence/pwnage-ssp-06_01/post-hardening-live.txt`. The rest of this baseline is
+> unchanged.
 
 ## 1. Live baseline capture (this mission, read-only)
 
@@ -81,11 +88,12 @@ Two violations of the Stage 06 non-negotiable rules:
 - **Safely resolvable offline:** yes — the fix is already authored and committed.
   It requires only deploying the hardened binary (or masking the service until
   the physical trial is authorized).
-- **Action taken this mission:** NONE performed on the device (the preservation
-  rules require the owner to authorize *any* change to the running service;
-  deployment/masking of the boot-time GNSS service is a userspace change that is
-  reversible, but it still changes the boot-time behavior and is therefore left
-  as an explicit, owner-approved action). Documented rather than auto-applied.
+- **Action taken in the original pass:** NONE on the device (owner-approval
+  discipline).
+- **Action taken in the final unblock pass (same day, explicitly instructed by
+  the `06_01 FINAL UNBLOCK` prompt Task A):** hardened files deployed, unit
+  disabled, start-condition added, rollback saved. Verified broken behaviour gone:
+  0 hardware calls, rail `0`, no boot-time `ESW:READY`.
 
 ## 3. Baseline integrity
 

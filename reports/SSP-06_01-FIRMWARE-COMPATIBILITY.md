@@ -1,76 +1,93 @@
-# SSP-06_01 — Firmware Compatibility Validation (independently recomputed)
+# SSP-06_01 — Firmware Identity (re-verified against the live device this mission)
 
 **Date:** 2026-11-23
-**Agent:** Nuxel Stage 06_01
+**Agent:** Nuxel Stage 06_01 (final unblock)
 
 ## 0. Verdict
 
-`COMPATIBILITY = STRUCTURALLY_AND_IDENTITY_CONFIRMED` (runtime acceptance
-delegated to trial). Every identity fact was **recomputed this mission** from the
-kernel-embedded header, not taken from prior reports.
+```
+FIRMWARE_IDENTITY = CONFIRMED
+SAME BYTES ON THE DEVICE AS IN THE RUNNING KERNEL AS IN THE REPOSITORY SOURCE
+```
 
-## 1. Independent recomputation (this mission)
+This mission upgraded the previous “recompute from the repository header” check to a
+**three-way byte comparison** that includes the firmware the running kernel actually
+serves:
 
-Source: `kernel/s10plus/.build/src.polluted.case-insensitive/drivers/sensorhub/brcm/bbdpl/r_os/bbd_patch_file_beyond.h`
+1. `/dev/bbd_patch` on the live handset (read-only, via `sudo cat`);
+2. the kernel source tree used to build the running kernel
+   (`r_os/bbd_patch_file_beyond.h`);
+3. the repository build manifest.
 
-Ran `tools/s10plus/ssp-native/verify_embedded_patch.py` plus an independent
-record-walk. Results:
+## 1. Three-way comparison
 
-| Field | Recomputed value | Mission-reported | Match |
-|---|---|---|---|
-| ASIC version | `0x004775b0` | `0x004775B0` | ✅ |
-| PatchAddress (entry) | `0x00800161` | `0x00800161` | ✅ |
-| Blob length | `438895` | `438895` | ✅ |
-| Blob SHA-256 | `56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d` | `56e8b1ea…` | ✅ |
-| Blob CRC-32 (IEEE) | `93d35bb4` | n/a | ✅ (self-consistent) |
-| Record count | `479`, all tag `0xF1` | `479 F1` | ✅ |
-| First F1 destination | `0x00800000` (distinct from entry) | same | ✅ |
-| Record-walk offset == blob length | `True` (438895 == 438895) | — | ✅ (clean stream) |
+| Artefact | SHA-256 | Size |
+|---|---|---|
+| `/dev/bbd_patch` container (live device) | `0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72` | 897113 B |
+| `bbd_patch_file_beyond.h` container (kernel source tree) | `0b53f3b04bfb3d5c19727aac1e33e7a44693a2c01be37bfd1ea3b0ef4e859d72` | 897113 B |
+| Decoded `<Blob=…>` firmware payload (both) | `56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d` | 438895 B |
 
-### Note on the two hashes
+Decoded blob comparison: `IDENTICAL_BLOB = True` (byte-for-byte).
 
-There are **two** SHA-256 values in the verifier, and they are different on
-purpose:
+## 2. Header fields (live device)
 
-- `blob_sha256 = 56e8b1ea…` — SHA-256 of the `<Blob=…>` hex (the actual firmware
-  record stream that gets downloaded). This is the mission's firmware hash.
-- `kernel_export_sha256 = 0b53f3b0…` — SHA-256 of the full C string-literal
-  payload plus its terminating NUL (the `r_os` C-array export as the kernel sees
-  it). This is a *container* hash, not the firmware hash.
+```
+<FormatVersion=0x00010003>
+<Crc=193>
+<BlobLength=438895>
+<AsicVersion=0x004775B0>
+<ChangeList=4294967295>
+<PatchAddress=0x00800161>
+```
 
-Both are correct for their respective definitions. The firmware identity is
-`56e8b1ea…`.
+(479 records, all tag `0xF1`, first destination `0x00800000`.) `<Crc>` is a vendor
+field, not IEEE CRC-32; it is carried, not reinterpreted.
 
-## 2. Controller vs firmware identity
+## 3. What was verified on the device, this mission
 
-| Dimension | Controller (live) | Firmware | Match |
-|---|---|---|---|
-| Part | `BCM47752KUB1G` (live `mcu_name`) | BCM47752 (`bcm_sensorhub_a1`, ASIC `0x4775b0`) | ✅ |
-| ASIC | `0x004775B0` | self-consistent | ✅ |
-| Board | beyond2lte / EXYNOS9820 | `r_os` container (beyond) | ✅ |
-| Stock build | `G975FXXS9DTK9` | lhd hash `6362e80d…` | ✅ |
+The downloader's own parser was compiled unchanged except for the patch path and a
+verify-only short-circuit (host harness, no device I/O), then run against the
+**device's** `/dev/bbd_patch` bytes:
 
-## 3. What compatibility does NOT yet prove (runtime-only)
+```
+bbd-flash: container 897113 B asic=0x004775b0 blobLen=438895 entry=0x00800161 crc_hdr=0x000000c1 decoded=438895
+bbd-flash: patch verified: 479 records (BCM47752, entry=0x00800161)
+bbd-flash: first memory-write dest=0x00800000 (entry=0x00800161)
+bbd-flash: exit 0 (GENUINE_VERIFIED_SUCCESS)
+```
 
-1. **Load addresses** (`0x00800000..`) are assumed to be the BCM47752 RAM window
-   for this die stepping; confirmed only by vendor BSP, not measurement.
-2. **ASIC match ≠ stepping match.** Full application `bcm_sensorhub_a1`; a
-   stepping-specific revision is indistinguishable offline.
-3. **Physical acceptance** — a matching ASIC does not establish the decoded record
-   stream is byte-correct for this exact die/board/power domain. That is the
-   post-download GetVersion check, which only the bounded physical trial performs.
+i.e. the exact downloader that the trial would use **accepts the exact bytes the
+handset would hand it**. This removes the previous “matches the header but not
+proven to match the running kernel” caveat.
 
-## 4. What would disprove compatibility at runtime
+Note on `Crc=193`: decimal 193 = `0xC1`; the harness prints the header field
+verbatim (`crc_hdr=0x000000c1`). No CRC conformance is claimed.
 
-- MemoryWrite NACK → `TRANSFER_REJECTED`
-- post-start GetVersion mismatch → `VERSION_MISMATCH`
-- no post-download GetVersion → `APP_START_MISSING`
+## 4. Structural facts re-derived
 
-These are distinct, evidence-backed exit codes, already implemented.
+| Fact | Value | How |
+|---|---|---|
+| ASIC version | `0x004775b0` | header + parser |
+| Entry (PatchAddress) | `0x00800161` | header + parser |
+| First F1 destination | `0x00800000` (≠ entry) | record walk |
+| Record count | 479, all `0xF1` | record walk |
+| Blob length | 438895 | declared == decoded |
+| Record walk | exact (offset == length) | parser |
 
-## 5. Conclusion
+## 5. Remaining runtime-only unknowns (unchanged)
 
-Structural + identity compatibility is independently confirmed. Final die/board
-acceptance is delegated to the post-download GetVersion handshake in the bounded,
-owner-authorized physical trial. A matching ASIC alone is NOT treated as full
-compatibility.
+- RAM load window (`0x00800000…`) accepted by *this* die at runtime.
+- Stepping-specific acceptance (ASIC match ≠ stepping match).
+- ROM/application acceptance of the record stream (post-download GetVersion).
+
+These are properties of the physical die, not of the bytes, and are only settled by
+the bounded trial.
+
+## 6. Provenance
+
+- Device: `SM-G975F` (`beyond2lte`), stock build `G975FXXS9DTK9`; matched vendor
+  `lhd` SHA-256 `6362e80d1f2ae37c76dd5f468bf08abacb89e1c2d2b80976d5b1c3abbf761dfe`.
+- Running kernel: `4.14.253-gf7194c1d15ed-dirty` (built from this tree).
+- Device copy preserved at `/var/lib/nuxel/ssp-06_01/staging/bbd_patch_file_beyond.h.gz`
+  (gzip of the exact kernel-tree header; decompressed SHA-256 =
+  `0b53f3b0…`).

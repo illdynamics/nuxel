@@ -1,0 +1,80 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
++ date -Is
+2026-11-23T02:11:14+01:00
++ uname -r
+4.14.253-gf7194c1d15ed-dirty
+== service ==
++ echo '== service =='
++ systemctl is-enabled nuxel-gnss-lhd.service
+disabled
++ systemctl is-active nuxel-gnss-lhd.service
+inactive
++ systemctl show -p ConditionResult -p ActiveState nuxel-gnss-lhd.service
+ActiveState=inactive
+ConditionResult=no
++ ls -l /etc/systemd/system/multi-user.target.wants/nuxel-gnss-lhd.service
+ls: cannot access '/etc/systemd/system/multi-user.target.wants/nuxel-gnss-lhd.service': No such file or directory
++ test -e /run/nuxel/ssp-06_01/gnss-owner-authorized
+AUTHORIZED_FILE_ABSENT
+== deployed hashes ==
++ echo AUTHORIZED_FILE_ABSENT
++ echo '== deployed hashes =='
++ sha256sum /usr/lib/nuxel/nuxel-gnss/nuxel_bbd_tl.py /usr/lib/nuxel/nuxel-gnss/nuxel_control.py /usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py /usr/lib/nuxel/nuxel-gnss/test_nuxel_bbd_tl.py /usr/lib/nuxel/nuxel-gnss/test_nuxel_control_firmware.py
+085096a99ebeb8de4feb9b2ab2ed5257927aa353ae7533cd2e15bc57997cd20d  /usr/lib/nuxel/nuxel-gnss/nuxel_bbd_tl.py
+72679d2e9b332555854ce6e04cb2e1456528a3015c61729e05cba3588bf3f00f  /usr/lib/nuxel/nuxel-gnss/nuxel_control.py
+aeed416dd3d1bfb6e2b3c3a28cb2d1e9c425323ab618bf314903161b01540cd1  /usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py
+0d3265220f4eba367af7ac2cbc7c9ef2ca7be2c35e809aa4c571ac1e79735829  /usr/lib/nuxel/nuxel-gnss/test_nuxel_bbd_tl.py
+93e87388f216a175b9140a0356fee9c3261e2023f752f11a717c0231e68b1b7d  /usr/lib/nuxel/nuxel-gnss/test_nuxel_control_firmware.py
+== gpio/rail ==
++ echo '== gpio/rail =='
++ cat /sys/devices/virtual/sec/gps/GPS_PWR_EN/value
+0
++ sudo -n cat /sys/kernel/debug/gpio
++ grep -E 'gpio-145|gpio-167|gpio-168'
+ gpio-145 (                    |GPS_PWR_EN          ) out lo    
+ gpio-167 (                    |MCU REQ             ) out lo    
+ gpio-168 (                    |MCU RESP            ) in  hi    
++ sudo -n sh -c 'grep vdd_mcu_1p8 /sys/kernel/debug/regulator/regulator_summary'
+ vdd_mcu_1p8                      0    2      0  1800mV     0mA  1800mV  1800mV 
+== holders ==
++ echo '== holders =='
++ fuser -v /dev/ttyBCM /dev/bbd_control /dev/bbd_sensor
+== ssp bridge ==
++ true
++ echo '== ssp bridge =='
++ systemctl is-enabled nuxel-ssp-bridge.service
+masked
++ systemctl is-active nuxel-ssp-bridge.service
+inactive
+== ESW:READY this boot (expected: 1, pre-remediation 00:46 only) ==
++ echo '== ESW:READY this boot (expected: 1, pre-remediation 00:46 only) =='
++ sudo -n journalctl -b --no-pager -o short-iso
++ grep ESW:READY
+2026-11-23T00:46:31+01:00 WIN-CLIENT kernel: bbd_control : ESW:READY
+== failed units ==
++ echo '== failed units =='
++ systemctl list-units --state=failed --no-legend --plain
++ wc -l
+0
+== rollback bucket ==
++ echo '== rollback bucket =='
++ sudo -n sh -c 'cd /var/lib/nuxel/ssp-06_01/rollback && sha256sum -c SHA256SUMS'
+nuxel-gnss-lhd.service: OK
+nuxel-gnss-lhd.service.wants-link-target: OK
+nuxel_bbd_tl.py: OK
+nuxel_control.py: OK
+nuxel_lhd.py: OK
+== config ==
++ echo '== config =='
++ sha256sum /etc/nuxel/gnss/gnss.json
+f402c54e103ffd0162969e76d8691f24a3ecd100e47cbb911ae1ddf909cab043  /etc/nuxel/gnss/gnss.json
++ readlink -f /sys/bus/spi/devices/spi17.0/driver
+/sys/bus/spi/drivers/brcm gps spi

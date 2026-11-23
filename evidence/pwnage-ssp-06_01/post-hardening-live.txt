@@ -1,0 +1,83 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
++ date -Is
+2026-11-23T02:05:14+01:00
++ uname -a
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT Mon Nov 23 00:43:30 CET 2026 aarch64 GNU/Linux
++ cat /sys/devices/virtual/sec/gps/GPS_PWR_EN/value
+0
++ grep -Ei 'gps|gpg0'
++ sudo -n cat /sys/kernel/debug/gpio
+gpiochip50: GPIOs 143-150, parent: platform/10430000.pinctrl, gpg0:
+ gpio-145 (                    |GPS_PWR_EN          ) out lo    
++ grep -E '^vdd_mcu_1p8:' /sys/kernel/debug/regulator/regulator_summary
++ sudo -n cat /sys/devices/virtual/sensors/ssp_sensor/sensor_state
+
+
++ echo
++ sudo -n cat /sys/devices/virtual/sensors/ssp_sensor/mcu_test
+NG,NG,NG
+
++ echo
++ sudo -n cat /sys/devices/virtual/sensors/ssp_sensor/mcu_name
+BCM47752KUB1G
+
++ echo
++ sha256sum /usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py /usr/lib/nuxel/nuxel-gnss/nuxel_bbd_tl.py /usr/lib/nuxel/nuxel-gnss/nuxel_control.py
+aeed416dd3d1bfb6e2b3c3a28cb2d1e9c425323ab618bf314903161b01540cd1  /usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py
+085096a99ebeb8de4feb9b2ab2ed5257927aa353ae7533cd2e15bc57997cd20d  /usr/lib/nuxel/nuxel-gnss/nuxel_bbd_tl.py
+72679d2e9b332555854ce6e04cb2e1456528a3015c61729e05cba3588bf3f00f  /usr/lib/nuxel/nuxel-gnss/nuxel_control.py
++ stat -c '%n %U:%G %a %s' /usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py /usr/lib/nuxel/nuxel-gnss/nuxel_bbd_tl.py /usr/lib/nuxel/nuxel-gnss/nuxel_control.py
+/usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py root:root 755 13236
+/usr/lib/nuxel/nuxel-gnss/nuxel_bbd_tl.py root:root 755 13172
+/usr/lib/nuxel/nuxel-gnss/nuxel_control.py root:root 755 2904
++ sha256sum /var/lib/nuxel/ssp-06_01/rollback/SHA256SUMS
+aa4df38ba2d85cac50554e8a99c32758af9cc9d66728b9b8b3171114ce95bfd0  /var/lib/nuxel/ssp-06_01/rollback/SHA256SUMS
++ cat /var/lib/nuxel/ssp-06_01/rollback/SHA256SUMS
+eb3455dbb9137f2c86e5a87157ba75c644adebade33e1ed83a1bf218610d80bb  nuxel-gnss-lhd.service
+eb3455dbb9137f2c86e5a87157ba75c644adebade33e1ed83a1bf218610d80bb  nuxel-gnss-lhd.service.wants-link-target
+7af7cee849ddc22aee1ff51fa12ce7ef454c1c1ec8cdd0b3db0f054a0d947d0d  nuxel_bbd_tl.py
+72679d2e9b332555854ce6e04cb2e1456528a3015c61729e05cba3588bf3f00f  nuxel_control.py
+6d90a2c0106fbceb333c5d0da40293a6a0258c42cd54df82f2d5653cd377a1ca  nuxel_lhd.py
++ systemctl is-enabled nuxel-gnss-lhd.service
+disabled
++ systemctl is-active nuxel-gnss-lhd.service
+inactive
++ cat /etc/systemd/system/nuxel-gnss-lhd.service.d/90-nuxel-06_01-deny-start.conf
+# SSP-06_01: stale deployed unit must never start at boot until an owner-approved
+# physical trial exists.  The unit required root and /dev/ttyBCM and its old
+# userspace revision asserted GPS_PWR_EN (RF) and wrote ESW:READY at every boot.
+# The deployed userspace is now the hardened refusal build; this override is a
+# second, independent barrier so a stale binary can never run the old path.
+[Unit]
+ConditionPathExists=/run/nuxel/ssp-06_01/gnss-owner-authorized
+ConditionPathExists=/run/nuxel/ssp-06_01/gnss-owner-authorized
++ ls -l /run/nuxel/ssp-06_01/
+total 0
++ systemctl is-enabled nuxel-ssp-bridge.service
+masked
++ systemctl is-active nuxel-ssp-bridge.service
+inactive
++ fuser -v /dev/ttyBCM /dev/bbd_control /dev/bbd_sensor
++ sudo -n journalctl -b --no-pager
++ grep -E 'ESW:READY|SSPBBD|gnss-lhd'
++ tail -12
+Nov 23 02:04:50 WIN-CLIENT systemd[1]: nuxel-gnss-lhd.service - Nuxel native Broadcom BBD/LHD GNSS bridge (beyond2lte BCM4773) skipped, unmet condition check ConditionPathExists=/run/nuxel/ssp-06_01/gnss-owner-authorized
+Nov 23 02:04:51 WIN-CLIENT sudo[133013]:    nuxel : PWD=/home/nuxel ; USER=root ; COMMAND=/usr/sbin/systemctl show -p ActiveState -p ExecMainCode -p ConditionResult nuxel-gnss-lhd.service
+Nov 23 02:04:54 WIN-CLIENT sudo[133126]:    nuxel : PWD=/home/nuxel ; USER=root ; COMMAND=/usr/sbin/systemctl start nuxel-gnss-lhd.service
+Nov 23 02:04:54 WIN-CLIENT systemd[1]: Attaching device control BPF program to cgroup /system.slice/nuxel-gnss-lhd.service failed: Argument list too long
+Nov 23 02:04:54 WIN-CLIENT systemd[1]: Started nuxel-gnss-lhd.service - Nuxel native Broadcom BBD/LHD GNSS bridge (beyond2lte BCM4773).
+Nov 23 02:04:54 WIN-CLIENT audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-gnss-lhd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 23 02:04:55 WIN-CLIENT audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:kernel_t:s0 msg='unit=nuxel-gnss-lhd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 23 02:04:55 WIN-CLIENT systemd[1]: nuxel-gnss-lhd.service: Deactivated successfully.
+Nov 23 02:04:57 WIN-CLIENT sudo[133199]:    nuxel : PWD=/home/nuxel ; USER=root ; COMMAND=/usr/sbin/systemctl show -p ActiveState -p ExecMainStatus -p InvocationID nuxel-gnss-lhd.service
+Nov 23 02:04:57 WIN-CLIENT sudo[133203]:    nuxel : PWD=/home/nuxel ; USER=root ; COMMAND=/usr/sbin/journalctl -u nuxel-gnss-lhd.service --since '-1 min' --no-pager
+Nov 23 02:04:58 WIN-CLIENT sudo[133225]:    nuxel : PWD=/home/nuxel ; USER=root ; COMMAND=/usr/sbin/systemctl stop nuxel-gnss-lhd.service
+Nov 23 02:04:58 WIN-CLIENT sudo[133230]:    nuxel : PWD=/home/nuxel ; USER=root ; COMMAND=/usr/sbin/systemctl reset-failed nuxel-gnss-lhd.service
