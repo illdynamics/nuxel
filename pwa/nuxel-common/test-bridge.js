@@ -21,6 +21,7 @@ let VERSION_OVERRIDE;
 
 // ---- Mock nuxel-bridge HTTP server --------------------------------
 const authenticatedTokens = new Set();
+let lastRpcAuthorization = null;
 const server = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
     const send = (code, body) => { res.statusCode = code; res.end(JSON.stringify(body)); };
@@ -85,6 +86,7 @@ const server = createServer((req, res) => {
 
         // Generic RPC.
         if (path === '/api/v1/rpc' && req.method === 'POST') {
+            lastRpcAuthorization = req.headers.authorization || null;
             const { namespace, verb } = payload;
             if (namespace === 'storage' && verb === 'list-dir') {
                 return send(200, { result: { success: true, entries: [{ name: 'readme.txt', path: '/readme.txt' }] } });
@@ -150,6 +152,20 @@ async function main() {
     await c2._resolveToken();
     assert.strictEqual(c2.token, 'from-window-token', 'window token should be preferred');
     console.log('[test] token from window.__NUXEL_TOKEN__ ok');
+
+    // 3b. Standalone surface (the bundled Android WebView app): there is no
+    //     launcher parent frame, so /rpc must carry the owner-pasted token.
+    const standaloneToken = 'launcher-token-android';
+    authenticatedTokens.add(standaloneToken);
+    globalThis.parent = globalThis;       // top frame: no launcher relay
+    globalThis.__NUXEL_TOKEN__ = standaloneToken;
+    const cStandalone = new NuxelBridgeClient({ apiUrl: base(), appId: 'org.nuxel.PenGuru' });
+    await cStandalone._init();
+    const penguru = await cStandalone.call('penguru', 'status', {});
+    assert.strictEqual(penguru.success, true, 'standalone PenGuru RPC must succeed');
+    assert.strictEqual(lastRpcAuthorization, 'Bearer ' + standaloneToken,
+        'standalone /rpc must send the owner-pasted launcher token');
+    console.log('[test] standalone android token reaches /rpc ok');
 
     // 4. Launcher -> app activation through the bridge (briq-04c rev 2).
     // 9. Launcher -> app activation through the bridge (briq-04c rev 2).

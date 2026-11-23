@@ -40,7 +40,12 @@ for tool in aapt2 d8 zipalign apksigner; do
 done
 
 VERSION_NAME="$(tr -d '[:space:]' < "$ROOT/VERSION" 2>/dev/null || echo 0.8.9-beta)"
-VERSION_CODE=809
+VERSION_NAME="${VERSION_NAME#v}"
+if [[ "$VERSION_NAME" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+  VERSION_CODE=$((10#${BASH_REMATCH[1]} * 10000 + 10#${BASH_REMATCH[2]} * 100 + 10#${BASH_REMATCH[3]}))
+else
+  VERSION_CODE=1
+fi
 
 "$HERE/scripts/stage-web.sh"
 python3 - "$BUILD" <<'PY'
@@ -68,6 +73,7 @@ echo "==> aapt2 link"
   --target-sdk-version 35 \
   --version-code "$VERSION_CODE" \
   --version-name "$VERSION_NAME" \
+  --replace-version \
   "$BUILD/res.zip"
 
 echo "==> javac"

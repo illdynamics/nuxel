@@ -3,16 +3,21 @@ package org.nuxel.penguru;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.webkit.ConsoleMessage;
+import android.webkit.JavascriptInterface;
 import android.webkit.MimeTypeMap;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
@@ -22,8 +27,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,6 +89,7 @@ public class MainActivity extends Activity {
 
         webView.setWebViewClient(new LocalAssetClient());
         webView.setWebChromeClient(new PenGuruChromeClient());
+        webView.addJavascriptInterface(new AndroidBridge(), "NuxelAndroid");
         applySystemBarInsets(webView);
         setContentView(webView);
 
@@ -156,6 +165,133 @@ public class MainActivity extends Activity {
             pendingAudio.deny();
         }
         pendingAudio = null;
+    }
+
+    /**
+     * Narrow JS bridge for the two browser actions a WebView cannot complete
+     * on its own: saving an exported response and opening a provenance link in
+     * the owner's browser.  It is exposed only to the bundled app origin; the
+     * WebView never navigates to remote HTML.
+     */
+    private final class AndroidBridge {
+        @JavascriptInterface
+        public String saveText(String filename, String text) {
+            if (text == null) {
+                return null;
+            }
+            try {
+                String safe = sanitizeFilename(filename);
+                if (safe.isEmpty()) {
+                    safe = "penguru-response.txt";
+                }
+                if (!safe.contains(".")) {
+                    safe += ".txt";
+                }
+                byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, safe);
+                    values.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain");
+                    values.put(MediaStore.MediaColumns.RELATIVE_PATH,
+                            Environment.DIRECTORY_DOWNLOADS + "/PenGuru");
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                    Uri uri = getContentResolver().insert(
+                            MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (uri == null) {
+                        return null;
+                    }
+                    try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                        if (out == null) {
+                            getContentResolver().delete(uri, null, null);
+                            return null;
+                        }
+                        out.write(bytes);
+                    } catch (IOException error) {
+                        getContentResolver().delete(uri, null, null);
+                        return null;
+                    }
+                    values.clear();
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    try {
+                        getContentResolver().update(uri, values, null, null);
+                    } catch (RuntimeException error) {
+                        // A pending row that cannot be published is not a
+                        // saved export; remove it rather than leave an
+                        // invisible orphan in Downloads.
+                        getContentResolver().delete(uri, null, null);
+                        return null;
+                    }
+                    // MediaStore may de-duplicate an existing name (for
+                    // example "file (1).txt").  Report the name the owner
+                    // will actually see, not the requested one.
+                    return "Downloads/PenGuru/" + mediaDisplayName(uri, safe);
+                }
+                File base = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                if (base == null) {
+                    return null;
+                }
+                File dir = new File(base, "PenGuru");
+                if (!dir.exists() && !dir.mkdirs()) {
+                    return null;
+                }
+                File target = new File(dir, safe);
+                try (FileOutputStream out = new FileOutputStream(target)) {
+                    out.write(bytes);
+                } catch (IOException error) {
+                    return null;
+                }
+                return target.getAbsolutePath();
+            } catch (RuntimeException error) {
+                // Fail closed: never crash the WebView bridge on a storage or
+                // permission refusal; the page reports that nothing was saved.
+                return null;
+            }
+        }
+
+        @JavascriptInterface
+        public boolean openExternal(String url) {
+            if (url == null) {
+                return false;
+            }
+            Uri uri = Uri.parse(url);
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                return false;
+            }
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                return true;
+            } catch (RuntimeException unavailable) {
+                return false;
+            }
+        }
+
+        private String mediaDisplayName(Uri uri, String fallback) {
+            try (Cursor cursor = getContentResolver().query(
+                    uri, new String[]{MediaStore.MediaColumns.DISPLAY_NAME},
+                    null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    String name = cursor.getString(0);
+                    if (name != null && !name.isEmpty()) {
+                        return name;
+                    }
+                }
+            } catch (RuntimeException ignored) {
+                // The export succeeded; fall back to the requested name.
+            }
+            return fallback;
+        }
+
+        private String sanitizeFilename(String filename) {
+            if (filename == null) {
+                return "";
+            }
+            String safe = filename.replaceAll("[^A-Za-z0-9._-]", "_");
+            while (safe.startsWith(".")) {
+                safe = safe.substring(1);
+            }
+            return safe.length() > 80 ? safe.substring(0, 80) : safe;
+        }
     }
 
     private final class PenGuruChromeClient extends WebChromeClient {

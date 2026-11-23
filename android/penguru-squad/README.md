@@ -95,6 +95,7 @@ bridge.
 
 - `pwa/nuxel-apps/penguru/index.html`, `penguru.js`, `penguru.css`, `voice.js`
 - `pwa/nuxel-apps/penguru/model-library.js` (moved out of Settings)
+- `pwa/nuxel-apps/penguru/manifest.json` and `app.json`
 - `pwa/nuxel-common/bridge.js`, `bridge-version.json`, `theme.css`
 - `assets/nuxel-penguru-squad.png` as the launcher/manifest icon
 
@@ -108,6 +109,14 @@ its OFF state. Against a mock bridge on the emulator host, the app fetched the
 PenGuru status through the real `bridge.js` path and displayed
 `PenGuru is OFF. Enable it to manage models and start a conversation.` No
 AndroidRuntime crash or launcher-resource failure was logged.
+
+The signed APK was then reinstalled on the same headless Android 15 emulator
+with a loopback mock bridge that enforced the real launcher-authority rule. The
+owner-pasted token was carried on `/api/v1/rpc`, a conversation request
+completed, **Export response** wrote `Downloads/PenGuru/penguru-response.txt`,
+and a Hugging Face provenance link opened the external browser. The APK reports
+`versionCode=809` / `versionName=0.8.9-beta`, derived from `VERSION` (which
+carries the leading `v`).
 
 ## Security and limitations
 

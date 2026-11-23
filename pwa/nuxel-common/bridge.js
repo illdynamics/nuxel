@@ -467,7 +467,14 @@ export class NuxelBridgeClient {
             this._pageBoundToken = t || '';
             this._pageBoundExpiry = Date.now() + 3000 * 1000;
         } catch (e) {
-            this._pageBoundToken = '';
+            // Standalone surfaces (the bundled Android WebView app is the
+            // canonical case) have no launcher parent frame to mint a fresh
+            // token.  Fall back to the token resolved from the owner's
+            // explicit connection settings; the bridge still verifies the
+            // launcher issuer and app identity server-side, so a
+            // self-bootstrapped token cannot gain authority.
+            this._pageBoundToken = this.token || '';
+            this._pageBoundExpiry = Date.now() + 3000 * 1000;
         }
         return this._pageBoundToken;
     }

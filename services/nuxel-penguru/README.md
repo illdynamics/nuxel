@@ -105,7 +105,7 @@ checks that creating an Internet socket is denied before loading a model.
 - ChatBird generation on this handset.
 - ONNX Runtime GenAI adapter and compatible exported model packages.
 - Broader SonarBird dataset and physical acceptance beyond the initial synthetic-family evaluation.
-- Microphone capture, local STT, tested Penguru wake-phrase model and native overlay.
+- Physically accepted microphone capture, wake-phrase accuracy and a native always-on overlay; foreground button/wake controls remain beta.
 - Privileged writes, approvals/rollback broker, and generated-code execution.
 - Full conversation quality, soak, thermal, suspend/resume and physical UI acceptance.
 

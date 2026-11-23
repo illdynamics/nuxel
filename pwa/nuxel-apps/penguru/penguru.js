@@ -36,7 +36,19 @@ $('forget').onclick = () => {
 const library = modelLibrary($('cards'), call);
 const voice = voiceControls(call, () => enabled && !request, text => { $('prompt').value = text; page('chat'); $('prompt').focus(); });
 async function call(op, params = {}) {
-  const r = await bridge.call('penguru', op, params);
+  let r;
+  try {
+    r = await bridge.call('penguru', op, params);
+  } catch (error) {
+    const text = String(error && error.message || error);
+    if (text.includes('launcher_token_required')) {
+      throw new Error('Launcher token required. Open Settings → Connection and paste a freshly minted token.');
+    }
+    if (error && error.status === 401) {
+      throw new Error('The bridge rejected the launcher token (expired or revoked). Re-mint it and reconnect in Settings → Connection.');
+    }
+    throw error;
+  }
   if (!r || r.ok !== true) throw new Error(r?.detail || r?.error || 'PenGuru is unavailable');
   return r;
 }
@@ -66,7 +78,7 @@ $('runtime').onchange=()=>call('set_runtime',{preference:$('runtime').value}).ca
 $('compose').onsubmit=async e=>{e.preventDefault();if(request)return;await voice.stop();const text=$('prompt').value.trim();if(!text)return;try{message('user',text);currentReply=message('assistant','Routing…');const r=await call('submit',{text,route_override:$('route').value||null});request=r.request_id;$('prompt').value='';$('cancel').disabled=false;$('send').disabled=true;}catch(err){notice(err.message);}};
 $('cancel').onclick=()=>request&&call('cancel',{request_id:request}).catch(e=>notice(e.message));
 $('clear').onclick=async()=>{try{if(request)await call('cancel',{request_id:request});await call('clear_all');request=null;lastOutput='';$('messages').replaceChildren();$('cancel').disabled=true;$('send').disabled=!enabled;}catch(e){notice(e.message);}};
-$('export').onclick=()=>{if(!lastOutput){notice('No response to export yet.');return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lastOutput],{type:'text/plain'}));a.download='penguru-response.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+$('export').onclick=()=>{if(!lastOutput){notice('No response to export yet.');return;}const filename='penguru-response.txt';const host=window.NuxelAndroid;if(host&&typeof host.saveText==='function'){try{const saved=host.saveText(filename,lastOutput);notice(saved?'Response saved to '+saved:'Could not save the response.');return;}catch(e){notice('Could not save the response: '+e.message);return;}}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lastOutput],{type:'text/plain'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
 $('refresh').onclick=async()=>{try{$('details').textContent=JSON.stringify(await call('diagnostics'),null,2);}catch(e){notice(e.message);}};
 let polling=false;
 setInterval(async()=>{if(polling)return;polling=true;try{

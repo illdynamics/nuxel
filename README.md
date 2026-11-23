@@ -219,11 +219,13 @@ revision + license, and run the runtime self-test to reach READY. Runtime,
 voice, connection and model controls all live in the app; the old Settings →
 **PenGuru AI** panel has been removed. A standalone Android APK of the same app
 is under [`android/penguru-squad`](android/penguru-squad/README.md) and
-[`dist/android`](dist/android). The
-two repository GGUF manifests are unsigned; download stays disabled until a
-manifest is signed with the production trust key. Voice/wake-word modes are out
-of scope and off. Every bridge/system call passes a typed permission broker, so a
-model cannot perform a privileged action by persuasive text. Full component list,
+[`dist/android`](dist/android). The two repository GGUF manifests are
+owner-release signed; download still requires the owner to acknowledge the exact
+revision's license. Foreground voice is a beta control in the app and requires
+the optional Voice tiny.en package;
+always-on/background wake-word mode is out of scope and off. Every bridge/system
+call passes a typed permission broker, so a model cannot perform a privileged
+action by persuasive text. Full component list,
 security gates, rollback steps and known limitations:
 
 [`docs/releases/v0.8.9-beta.md`](docs/releases/v0.8.9-beta.md).

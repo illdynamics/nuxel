@@ -9,7 +9,8 @@
   "url": "/pwa/nuxel-apps/penguru/index.html",
   "description": "Local ChatBird, CodeBird and Squad assistants",
   "capabilities": [
-    "system:inspect"
+    "system:inspect",
+    "microphone"
   ],
   "bridge_version": "1",
   "docked": false,

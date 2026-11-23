@@ -22,9 +22,17 @@ export function modelLibrary(container, call) {
       for (const variant of card.variants) {
         article.append(node('p', `${variant.format} · ${variant.quantization} · ${(variant.size_bytes / 1e9).toFixed(2)} GB · ${variant.engine}`));
         const source = node('a', variant.source_repo);
-        source.href = 'https://huggingface.co/' + variant.source_repo + '/tree/' + variant.source_revision;
+        const sourceUrl = 'https://huggingface.co/' + variant.source_repo + '/tree/' + variant.source_revision;
+        source.href = sourceUrl;
         source.target = '_blank';
         source.rel = 'noopener noreferrer';
+        source.onclick = event => {
+          const host = window.NuxelAndroid;
+          if (host && typeof host.openExternal === 'function') {
+            event.preventDefault();
+            host.openExternal(sourceUrl);
+          }
+        };
         article.append(source, node('p', `Revision: ${variant.source_revision}`));
         const details = node('details', '');
         details.append(node('summary', 'Hashes, license and provenance'),

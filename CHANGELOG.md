@@ -13,6 +13,12 @@ All notable changes to the Nuxel Phone OS repository are documented here.
   `tools/mint-android-token.py` for owner-authorized tokens.
 - Allow the APK origin in bridge CORS (authentication and the launcher-bound
   PenGuru authority gate are unchanged).
+- Fix standalone WebView authority RPCs so the owner-pasted launcher token is
+  actually sent on `/rpc` instead of only on `/ping`.
+- Add Android handling for response export (MediaStore/Downloads) and external
+  provenance links, which a bare WebView cannot complete on its own.
+- Bundle `app.json`, align the microphone capability metadata, and derive the
+  APK `versionCode`/`versionName` from `VERSION` with `--replace-version`.
 
 ## [v0.8.9-beta] - 2026-11-17
 
