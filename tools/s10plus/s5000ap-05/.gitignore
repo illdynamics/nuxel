@@ -8,3 +8,5 @@
 *.dSYM/
 /test_ipc41_recovery
 /test_rfs_respond
+/test_fmt_tx
+/test_data_session

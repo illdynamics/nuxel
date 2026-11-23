@@ -1,302 +1,638 @@
-√# NUXEL — STAGE 04: FINAL EXECUTION DIRECTIVE
-## Resolve the Remaining Blockers, Deploy the Bootstrap, and Complete the Controlled Physical Trial
+# NUXEL — STAGE 06 FINAL
+## OPERATION MULTIBASS 9000: FINAL BOSS EXTERMINATOR
+### Complete Native Samsung Shannon LTE Data Integration
 
-**Lead agent:** DeepSeek Pro Thinking  
-**Device:** Samsung Galaxy S10+ SM-G975F / beyond2lte / Exynos9820 / S5000AP  
-**Branch:** `cs/mob`  
-**Starting commit:** `d8d772c4`  
-**Execution environment:** Normally booted Nuxel  
-**TWRP flashing:** NOT AUTHORIZED
+**Agent:** DeepSeek V4 Pro Thinking
+**Execution:** Autonomous, live hardware, full repository access
+**Repository:** `/Users/wicked/x/nuxel`
+**Branch:** `cs/mob`
+**Last known committed checkpoint:** `426e7c97`
+**Device:** Samsung Galaxy S10+ SM-G975F / beyond2lte
+**Modem:** Samsung Shannon S5000AP
+**Kernel:** Linux 4.14.253
+**SSH:** `root@10.11.12.99`
+**Vendor RIL:** SM-G975F EFUJ2, Build ID beginning `60889dd7`
 
-# MISSION
+# 0. PRIMARY OBJECTIVE
 
-The engineering preparation phase is over.
+Finish Stage 06 completely.
 
-The objective is to complete Stage 04 and establish a physically verified, stable CP ONLINE state.
+The final acceptance target is:
 
-Do not launch another broad research phase.
+`STAGE_06_FULL_PASS — NATIVE CELLULAR IP/DNS/HTTPS AND RECONNECT VERIFIED`
 
-Do not spend the session rewriting readiness reports.
+This is an implementation-and-validation mission, not another open-ended reverse-engineering report.
 
-Do not stop for routine development approvals.
+You must recover the remaining protocol details, implement the missing functionality, test it offline, deploy it safely, and verify a genuine cellular internet connection on the physical Nuxel device.
 
-Do not treat a fixable software problem as a reason to abandon the mission.
+Do not stop after finding another symbol, packet format, or disassembly offset.
 
-**Fix, build, test, deploy, verify, and advance.**
+Do not repeat completed Stage 01–05 work.
 
-The only mandatory physical-activation authorization is approval of the exact final trial manifest.
+Continue through all authorized and technically justified work until the acceptance target is reached or a specific hard blocker is demonstrated.
 
-Obtain that decision once, within this execution session. Do not terminate the agent merely because approval was absent at startup.
+# 1. OWNER AUTHORIZATION
 
----
+The owner authorizes the following operations for this Stage 06 mission:
 
-# 1. EXISTING ENGINEERING BASELINE
+- Read-only analysis of the existing Samsung vendor binaries.
+- Static disassembly and protocol recovery.
+- Source-code modifications within the Nuxel project.
+- Compilation, testing, sanitizers and fuzzing.
+- Creation and execution of offline protocol test harnesses.
+- Installation of tested Nuxel userspace binaries.
+- Reversible systemd service changes.
+- Controlled restart of `nuxel-radiod`.
+- Bounded, evidence-backed modem data-session requests.
+- Cellular packet-data attachment and disconnection.
+- Cellular APN configuration after verification.
+- Small cellular IP/DNS/HTTPS test requests.
+- Cellular interface configuration.
+- Isolated cellular routing tests.
+- Controlled modem resets when required and supported by the established recovery procedure.
+- Controlled service recovery and reconnection tests.
+- Git commits on `cs/mob`.
+- Documentation and test-report updates.
 
-Round 04 engineering work has already produced:
+The owner also authorizes bounded cellular data usage necessary for verification, provided the subscription supports it and roaming is not enabled without separate approval.
 
-Commit:
+## Authorization boundaries
 
-`d8d772c4`
+This prompt does not authorize:
 
-Hardware executable:
+- Writes to protected boot, radio, firmware or recovery partitions.
+- EFS/NV modifications or destructive RFS operations.
+- Security bypasses.
+- SIM PIN guessing.
+- Firmware flashing.
+- Unbounded modem-command experimentation.
+- Destructive filesystem operations.
+- Disabling the only remaining management connection.
+- Unbounded or unexpected cellular charges.
+- Publishing proprietary Samsung binaries.
+- Git merge, release or tag creation.
 
-`tools/s10plus/s5000ap-uapi/nuxel-cpbootd.aarch64.hw`
+If a protected or destructive operation becomes necessary, stop that operation and request a separate, specific authorization.
 
-SHA-256:
+Do not treat the general instruction to finish Stage 06 as permission to bypass these boundaries.
 
-`2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7`
+# 2. EXACT STARTING POINT
 
-Reported test results:
+The previous run reported:
 
-- 31 UAPI tests passing.
-- 22 firmware tests passing.
-- Flash preflight passing.
-- AArch64/glibc executable built successfully.
-- Mock bootstrap reaches ONLINE.
+- CP ONLINE.
+- Native RFS communication functional.
+- SIM READY.
+- USIM recognized.
+- Serving PLMN `20416`.
+- Live IPC41 FMT receive traffic.
+- Complete IPC41 command-name mapping.
+- Native data-session TX not implemented.
+- `rmnet0..7` DOWN.
+- USB and Wi-Fi management preserved.
+- RADIO partition unchanged.
 
-Implemented corrections reportedly include:
+The previous run also recovered a possible alternative TX packet layout from:
 
-- `CP_MEMORY_MASK` firmware mapping.
-- TOC-first firmware transmission.
-- TOC security-request parameters.
-- Correct ITOC parsing.
-- NV section exclusion.
-- OFFLINE reset handling.
+`IpcProtocol41::IpcTxExchange` at approximately `0x342a80`.
 
-Treat these as existing implementation results.
+Cached analysis:
 
-Do not repeat previous work unless new evidence demonstrates a defect.
+`/tmp/s5000ap06/IpcTx_data.txt`
 
----
+Additional analysis may exist under:
 
-# 2. IMMEDIATE EXECUTION PRIORITIES
+`/tmp/analysis/`
 
-Work in this order:
+First inspect the current Git HEAD, repository state and available analysis artifacts.
 
-1. Reconcile the current firmware source with the actual device.
-2. Verify that the hardware executable matches the pinned CBD implementation.
-3. Fix any remaining demonstrable implementation defects.
-4. Build the final executable.
-5. Complete the required targeted tests.
-6. Deploy reversible userspace components.
-7. Obtain exact approval for the physical operation.
-8. Execute the single controlled trial.
-9. Verify the physical CP state.
-10. Record the outcome.
+Do not assume temporary files survived a reboot.
 
-Do not replace implementation work with another proposal-writing exercise.
+If the files are missing, regenerate the analysis from the exact read-only vendor binary.
 
----
+Do not waste tokens repeating unrelated protocol research.
 
-# 3. RESOLVE THE FIRMWARE SOURCE DISCREPANCY
+# 3. PRIORITY ZERO — RESOLVE THE TX FRAMING CONTRADICTION
 
-Previous investigations identified:
+This is the first critical blocker.
 
-- DTK9 firmware candidate used by offline tests.
-- EFUJ2 firmware reportedly installed in the physical RADIO partition.
+The existing Nuxel receive parser uses:
 
-Determine which exact firmware source the current approved proposal specifies.
+`[u16 len][u8 msg_seq][u8 ack_seq][u8 main][u8 sub][u8 type]`
 
-Verify the selected image against the device's identity, firmware metadata, expected bootloader protocol and available authenticity evidence.
+The latest vendor disassembly reportedly shows:
 
-Do not assume that passing mock tests against DTK9 proves the EFUJ2 physical path.
+`[u16 total_len][u16 cmd_id][u8 type][u8 cksum_hi][u8 cksum][op0][op1][op2][op3][payload]`
 
-If the actual source differs from the tested source, update the relevant test fixtures and validate the correct image.
+These structures cannot be assumed interchangeable.
 
-Do not alter signed firmware, substitute an unrelated image or bypass authentication.
+## Required investigation
 
-If provenance cannot be established sufficiently, identify the precise missing evidence rather than guessing.
+Trace `IpcTxExchange` through the complete call chain:
 
----
+1. Function arguments.
+2. Internal command construction.
+3. Intermediate buffers.
+4. Any framing or wrapping functions.
+5. Transport abstraction.
+6. Final kernel write or ioctl.
+7. Kernel framing and channel handling.
+8. Corresponding receive-side representation.
 
-# 4. CLOSE REMAINING BOOTSTRAP DEFECTS
+Determine whether the apparent discrepancy is caused by:
 
-Inspect the real hardware-enabled code.
+- Different protocol layers.
+- Intermediate versus final buffers.
+- Distinct command and transport headers.
+- Command-ID packing.
+- Checksums.
+- Direction-specific framing.
+- Different device channels.
+- Incorrect interpretation of disassembly.
+- Different IPC protocol versions.
 
-Resolve all reproducible implementation defects, including any involving:
+Identify the exact bytes that must be written to the actual device interface.
 
-- Firmware section mapping.
-- Firmware source offsets.
-- Security-request parameters.
-- Reset preconditions.
-- Modem state handling.
+Do not assume the vendor function's internal buffer is the final on-wire frame.
+
+## Mandatory evidence
+
+Produce:
+
+- A documented TX call graph.
+- A byte-level diagram of each framing layer.
+- The exact transformation between command ID and main/subcommand fields.
+- Verified frame-length semantics.
+- Verified checksum semantics, if applicable.
+- Sequence and acknowledgment behavior.
+- Evidence identifying the final transport write.
+- At least one source-backed offline serialization test vector.
+
+Do not modify the working RX parser merely to match the new TX hypothesis.
+
+Preserve both representations if they belong to different layers.
+
+**Gate TX-FRAME-01 passes only when the actual transport framing is unambiguous.**
+
+# 4. FINISH THE DATA-PATH PAYLOAD DECODING
+
+Use the existing disassembly and exact vendor binary.
+
+Previously identified functions:
+
+- `IpcTxDefinePdpContext` — `0x31f580`
+- `IpcTxPsAttach` — `0x31fa98`
+- `IpcTxSetDataProfile` — `0x31ff48`
+- `IpcTxSetDataCallEstablish` — `0x320a10`
+- `IpcTxSetMobileDataSetting` — `0x3214c8`
+
+Reported command words:
+
+- Define PDP context: `0x0605`
+- PS attach: `0x030d`
+- Set data profile: `0x1b0d`, possible fallback `0x090d`
+
+Reported payload sizes:
+
+- Define PDP context: 134 bytes.
+- Set data profile: up to 203 bytes.
+
+Treat all values as findings to verify against the exact call chain.
+
+## Recover every required field
+
+For each data-path command, establish:
+
+- Exact payload size.
+- Field offsets and widths.
+- Byte order.
+- APN representation.
+- IP-family selection.
+- Authentication configuration.
+- Profile and context identifiers.
+- Command flags.
+- Reserved fields.
+- String length and termination.
+- Optional field handling.
+- Transaction identifiers.
+- Response and error-code interpretation.
+
+Document every field with its source evidence.
+
+If a field is genuinely unknown, do not guess.
+
+Determine whether it is required for the minimum valid data session.
+
+Do not confuse structure allocation size with serialized payload length.
+
+# 5. RECOVER THE ACTUAL TRANSACTION SEQUENCE
+
+Determine the modem-supported sequence for establishing a cellular data session.
+
+Investigate:
+
+- Registration prerequisites.
+- Packet-data attachment.
+- Mobile-data enablement.
+- Profile configuration.
+- PDP-context definition.
+- Data-call establishment.
+- Data-call result.
+- IP configuration.
+- Data-call teardown.
+
+Do not assume the order above is the actual protocol order.
+
+Trace the vendor control flow and response handlers.
+
+Determine which steps are already satisfied by the modem and which require native commands.
+
+Implement only the minimum evidence-backed sequence required for one data session.
+
+# 6. IMPLEMENT NATIVE IPC41 TX
+
+Implement a complete native TX facility in `nuxel-radiod`.
+
+Requirements:
+
+- Correct transport framing.
+- Correct command serialization.
+- Validated lengths and offsets.
+- Correct command types.
+- Correct sequence handling.
+- Safe buffer management.
+- Partial-write handling.
 - Error propagation.
+- Response correlation.
+- Asynchronous notification handling.
+- Timeout handling.
+- Bounded retries.
+- Sensitive-data redaction.
+
+Keep the implementation modular.
+
+Do not introduce an Android RIL dependency.
+
+Do not execute Samsung's proprietary RIL at runtime.
+
+Preserve the existing receive path and RFS responder.
+
+Do not block the FMT receive loop while waiting for a command response.
+
+# 7. IMPLEMENT A REAL DATA-SESSION STATE MACHINE
+
+Implement explicit state tracking for:
+
+- CP offline/online.
+- SIM unavailable/ready.
+- Network searching/registered.
+- LTE RAT confirmed.
+- Packet-data detached/attached.
+- Profile unconfigured/configured.
+- PDP context inactive/configured.
+- Data-call pending/active/rejected.
+- Interface unavailable/available.
+- IP unconfigured/configured.
+- Data-session disconnecting/disconnected.
+- Recoverable and terminal failures.
+
+Transitions must be based on actual modem responses or authoritative kernel state.
+
+Never treat successful transmission as successful session establishment.
+
+Handle:
+
+- Modem rejection.
 - Timeouts.
-- Exclusive device ownership.
-- False ONLINE reporting.
+- Lost registration.
+- Service restart.
+- Unexpected disconnect.
+- Repeated unsolicited notifications.
+- Modem recovery.
+- Controlled teardown.
 
-The recent addition of `IOCTL_MODEM_RESET` requires particular attention.
+Retries must be bounded and justified.
 
-Confirm that its use is consistent with the pinned CBD source and that it cannot trigger an uncontrolled reset loop.
+# 8. CONFIRM LTE REGISTRATION AND CARRIER PROFILE
 
-Do not invoke reset, power or firmware-load operations merely to diagnose an uncertain implementation.
+Revalidate the actual registration-status value and radio access technology.
 
-Use offline evidence and targeted tests first.
+A serving PLMN and RSSI alone do not prove successful LTE registration.
 
-For each verified defect:
+Confirm the correct APN for the active subscription.
 
-**FIX → BUILD → TEST → CONTINUE**
+The previously suggested APN `internet` is a candidate, not proof.
 
-Do not ask the owner to approve ordinary source changes or offline testing.
+Determine whether authentication is required.
 
----
+Do not invent credentials.
 
-# 5. OWNER AUTHORIZATION FOR SAFE ENGINEERING
+Do not enable roaming without separate authorization.
 
-The owner authorizes, without further confirmation:
+Implement APN and data-session configuration independently of the protocol serializer.
 
-- Source modifications.
-- Reproducible builds.
-- Offline firmware analysis.
-- Mocked boot tests.
-- Read-only device inspection.
-- Read-only kernel and modem diagnostics.
-- Reversible userspace deployment.
-- Service configuration with automatic CP activation disabled.
-- Test and documentation updates.
-- Safe cleanup of temporary development artifacts.
+Do not expose subscriber identifiers or credentials in logs.
 
-Preserve working access and existing recovery assets.
+# 9. COMPLETE OFFLINE VALIDATION
 
-No TWRP flashing is authorized.
+Before live data-command transmission:
 
-No BOOT, DTB, DTBO, RADIO, EFS, NV, calibration, IMEI or bootloader modifications are authorized.
+- Compile with strict warnings.
+- Run existing regression tests.
+- Run protocol serialization tests.
+- Run known-good packet-vector tests.
+- Test invalid lengths.
+- Test truncated frames.
+- Test invalid command types.
+- Test invalid profile parameters.
+- Test timeout and rejection handling.
+- Test state-machine transitions.
+- Test reconnect behavior.
+- Run applicable sanitizers.
+- Run bounded fuzz tests.
 
-No signature-enforcement bypass is authorized.
+Do not use self-generated guessed packets as the only source of truth.
 
----
+All mandatory tests must pass.
 
-# 6. PHYSICAL TRIAL AUTHORIZATION — SINGLE DECISION
+Document the test results.
 
-Use:
+# 10. VERIFY DEPLOYMENT PROVENANCE
 
-`reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`
+The project previously had a mismatch between canonical source, compiled output and deployed executable.
 
-Prepare the exact physical operation for approval.
+Verify:
 
-The approval record must identify:
+- Canonical source path.
+- Complete build inputs.
+- Build-script source list.
+- Resulting executable.
+- Systemd `ExecStart`.
+- Deployed executable hash.
+- Running process executable.
 
-- Device identity.
-- Complete firmware SHA-256.
-- Complete executable SHA-256.
-- Exact operation sequence.
-- Whether a modem reset is included.
-- Maximum execution duration.
-- Abort conditions.
-- Recovery procedure.
-- Protected-partition exclusions.
+Deploy only the tested binary.
 
-Present this exact record to the owner once.
+Keep a verified rollback copy.
 
-**Do not stop the entire execution session merely because approval is required.**
+Preserve USB and Wi-Fi management access.
 
-Wait for the owner's explicit decision.
+# 11. EXECUTE THE AUTHORIZED PHYSICAL DATA TEST
 
-Once approval is granted for the unchanged manifest, continue directly into the controlled Stage 04 trial without requiring another prompt or another approval round.
+Once the framing, serialization, state machine, carrier profile and offline tests are verified, perform a bounded cellular data-session test.
 
-If the manifest changes materially, obtain approval for the revised version.
+This prompt authorizes that test subject to the safety boundaries in Section 1.
 
-General authorization to finish the project is not a substitute for approval of an unidentified hardware operation.
+Use one controlled attempt.
 
----
+Capture:
 
-# 7. EXECUTE STAGE 04
+- Outgoing command identifiers.
+- Sanitized request metadata.
+- Modem acknowledgments.
+- Packet-data attach status.
+- PDP-context result.
+- Data-call establishment result.
+- Context identifier.
+- Activated network interface.
+- Rejection/cause codes.
 
-After the exact trial is approved and all required safeguards are satisfied:
+If rejected:
 
-Run the controlled physical CP boot on normally booted Nuxel.
+1. Stop additional speculative requests.
+2. Decode the exact failure.
+3. Investigate offline.
+4. Correct the implementation.
+5. Re-run tests.
+6. Retry only when a concrete correction is supported by evidence.
 
-Execute only the approved operation sequence.
+Do not brute-force commands, APNs, flags or enum values.
 
-Observe the actual kernel-reported CP state.
+# 12. BRING UP CELLULAR NETWORKING
 
-A successful process exit or mocked ONLINE response does not establish physical success.
+After the modem accepts the data session, identify the correct Linux data interface.
 
-Success requires a genuine stable CP ONLINE state corroborated by real device evidence.
+The device previously exposed `rmnet0..7`, all DOWN.
 
-Stop physical activation on:
+Determine the actual modem-context-to-interface mapping.
 
-- Unexpected ioctl failure.
-- Firmware authentication failure.
-- Unexpected modem state.
-- Kernel fault.
-- Hardware timeout.
-- Abnormal power or thermal behavior.
-- Loss of the required recovery capability.
+Verify:
 
-Do not automatically retry the physical operation with alternate firmware, offsets, security parameters or reset sequences.
+- Interface activation.
+- Link configuration.
+- MTU.
+- IP address and prefix.
+- IPv4/IPv6 negotiation.
+- Routing.
+- DNS.
+- Packet counters.
+- Interface teardown.
 
----
+Use native Linux networking facilities.
 
-# 8. HANDLE FAILURES WITHOUT ABANDONING ENGINEERING
+Preserve USB SSH.
 
-For software defects:
+Do not overwrite the system default route during initial validation.
 
-Fix, rebuild and retest automatically.
+Use isolated routing or interface-specific tests to prove traffic uses cellular.
 
-For reversible deployment failures:
+# 13. PROVE REAL CELLULAR INTERNET
 
-Diagnose, correct and redeploy safely.
+Perform these mandatory physical tests:
 
-For physical trial failures:
+**Test A — Active bearer**
 
-Stop the physical operation, preserve evidence and investigate offline.
+The modem confirms an active data session and the corresponding Linux interface is usable.
 
-Continue correcting independently verifiable software defects.
+**Test B — Cellular IP**
 
-If another physical attempt is justified, prepare the revised exact trial for owner approval.
+A small IP request succeeds through cellular, with no Wi-Fi fallback.
 
-Do not repeatedly power-cycle the modem in pursuit of ONLINE.
+**Test C — Cellular DNS**
 
-Do not enter TWRP or flash anything.
+A hostname resolves through cellular.
 
-If TWRP becomes necessary, report the exact condition and stop before recovery flashing.
+**Test D — Cellular HTTPS**
 
----
+A bounded HTTPS request succeeds through cellular with certificate verification.
 
-# 9. MINIMAL REPORTING
+**Test E — Routing proof**
 
-Update the existing:
+Evidence demonstrates the successful traffic traversed the cellular interface.
 
-`reports/S5000AP-04-CP-BOOT-LIVE.md`
+**Test F — Disconnect and reconnect**
 
-Include:
+The data session disconnects cleanly and reconnects successfully.
 
-- Final Git commit.
-- Exact firmware and executable hashes.
-- Software fixes.
-- Test results.
-- Deployment result.
-- Owner approval reference.
-- Actual physical operations performed.
-- Actual CP state.
-- First failure, if any.
-- Protected-partition-write attestation.
+**Test G — Service recovery**
 
-Avoid duplicate documentation.
+The daemon recovers correctly after a controlled restart.
 
-Do not claim Stage 04 success without physical evidence.
+**Test H — Management preservation**
 
----
+USB management remains available throughout.
 
-# 10. FINAL SUCCESS CONDITION
+Do not claim cellular success from Wi-Fi connectivity.
 
-Return:
+# 14. PROTECTED-HARDWARE SAFETY
 
-`STAGE_04_PHYSICAL_SUCCESS`
+Preserve the known RADIO partition integrity hash.
 
-Only if:
+Do not write protected partitions.
 
-1. The exact physical operation was approved.
-2. The actual hardware bootstrap executed.
-3. The kernel reports CP ONLINE.
-4. ONLINE remains stable.
-5. No unexpected hardware or security failure occurred.
-6. Nuxel remains operational.
-7. No protected-partition writes occurred.
+Do not perform destructive NV/EFS or RFS operations.
 
-Otherwise report the precise blocker or failure.
+Do not guess protocol bytes.
 
-**Execute every authorized engineering action necessary to reach the physical trial. Do not stop for redundant approvals, routine fixes or repeated planning. Preserve the single-trial and hardware-safety boundaries.**
+Do not execute uncontrolled modem resets.
 
-BEGIN EXECUTION.
+Do not log sensitive subscriber identifiers.
+
+Do not create unbounded data usage.
+
+Do not modify unrelated device subsystems.
+
+Maintain rollback capability throughout.
+
+If the only path forward requires an unapproved destructive operation, stop and report the exact intervention required.
+
+# 15. CONTINUATION POLICY — NO MORE RESEARCH-ONLY LOOPS
+
+Work through the following sequence:
+
+**A.** Resolve TX framing completely.
+
+**B.** Finish payload decoding.
+
+**C.** Recover data-session response semantics.
+
+**D.** Implement native TX.
+
+**E.** Implement data-session state management.
+
+**F.** Pass offline tests.
+
+**G.** Deploy reversibly.
+
+**H.** Establish the cellular data session.
+
+**I.** Configure the Linux cellular interface.
+
+**J.** Verify cellular IP, DNS and HTTPS.
+
+**K.** Verify teardown and reconnect.
+
+**L.** Commit and document the completed implementation.
+
+Do not repeatedly inventory already known symbols.
+
+Do not restart earlier stages.
+
+Do not spend the entire run rewriting documentation before implementing the missing functionality.
+
+Do not stop at the first partial milestone.
+
+If a hard blocker is reached, report the exact unresolved issue and the minimum next action.
+
+If the execution budget is nearly exhausted, prioritize preserving the current implementation and an actionable checkpoint rather than starting another unfinishable investigation.
+
+# 16. REQUIRED FINAL ACCEPTANCE MATRIX
+
+| Gate | Required result |
+|---|---|
+| CP ONLINE | PASS |
+| RFS handshake | PASS |
+| SIM READY | PASS |
+| LTE registration and RAT | PASS |
+| TX framing reconciled | PASS |
+| PDP/profile serialization verified | PASS |
+| Native IPC41 TX implemented | PASS |
+| Offline protocol tests | PASS |
+| Packet-data attach | PASS |
+| PDP context accepted | PASS |
+| Data call active | PASS |
+| Cellular interface usable | PASS |
+| Cellular IP connectivity | PASS |
+| Cellular DNS | PASS |
+| Cellular HTTPS | PASS |
+| Cellular disconnect/reconnect | PASS |
+| Management preserved | PASS |
+| Protected storage unchanged | PASS |
+
+Only declare:
+
+`STAGE_06_FULL_PASS`
+
+when every mandatory gate passes on physical hardware.
+
+Otherwise declare:
+
+`STAGE_06_NOT_YET_PASS — [EXACT BLOCKER]`
+
+# 17. REQUIRED DELIVERABLES
+
+Commit to `cs/mob`:
+
+1. Verified TX framing implementation.
+2. PDP/profile serializers.
+3. Native data-session command handling.
+4. Data-session state machine.
+5. Response decoders.
+6. Carrier configuration support.
+7. Linux cellular networking integration.
+8. Unit and negative-path tests.
+9. Sanitizer/fuzz results.
+10. Sanitized hardware verification evidence.
+11. Updated build and deployment scripts.
+12. Rollback procedure.
+13. Final Stage 06 report.
+14. Stage 07 handoff notes if Stage 06 passes.
+
+Do not merge or publish a release without separate authorization.
+
+# 18. FINAL RESPONSE CONTRACT
+
+Your response must begin with exactly one of:
+
+`STAGE_06_FULL_PASS — VERIFIED NATIVE CELLULAR INTERNET`
+
+or:
+
+`STAGE_06_NOT_YET_PASS — [EXACT REMAINING BLOCKER]`
+
+Then report:
+
+- Git HEAD.
+- Implemented files.
+- Recovered protocol details.
+- Offline tests.
+- Physical modem results.
+- Cellular IP/DNS/HTTPS evidence.
+- Reconnection evidence.
+- Safety verification.
+- Remaining blockers.
+- Stage 07 readiness.
+
+No fabricated evidence.
+
+No inflated milestone claims.
+
+No premature PASS.
+
+# FINAL DIRECTIVE
+
+The modem is alive.
+
+The SIM is initialized.
+
+The proprietary protocol is substantially understood.
+
+The remaining challenge is the native data-session implementation.
+
+**Resolve the TX framing discrepancy, finish the protocol recovery, implement the missing code, and prove real cellular internet.**
+
+Continue through all authorized, reversible engineering work until Stage 06 passes or a genuine blocker is demonstrated.
+
+**OPERATION MULTIBASS 9000 — FINISH THE JOB.**
+
+🐧🔥 BAAAAAAAAAM.

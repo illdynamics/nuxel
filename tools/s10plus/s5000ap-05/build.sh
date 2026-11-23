@@ -28,6 +28,8 @@ $CC "${CFLAGS[@]}" -Isrc -o test_rfs_proto tests/test_rfs_proto.c src/rfs_proto.
 $CC "${CFLAGS[@]}" -Isrc -o test_live_frame tests/test_live_frame.c src/sipc5_fmt.c src/rfs_proto.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ipc41_recovery tests/test_ipc41_recovery.c src/sipc5_fmt.c
 $CC "${CFLAGS[@]}" -Isrc -o test_rfs_respond tests/test_rfs_respond.c src/rfs_respond.c
+$CC "${CFLAGS[@]}" -Isrc -o test_fmt_tx tests/test_fmt_tx.c src/fmt_tx.c
+$CC "${CFLAGS[@]}" -Isrc -o test_data_session tests/test_data_session.c src/data_session.c
 
 echo "=== run SIPC5/FMT unit tests ==="
 ./test_sipc5_fmt
@@ -41,6 +43,10 @@ echo "=== run Stage-06 IpcProtocol41 recovery-fact tests ==="
 ./test_ipc41_recovery
 echo "=== run Stage-06 source-backed RFS responder tests ==="
 ./test_rfs_respond
+echo "=== run Stage-06 FMT TX serialization tests ==="
+./test_fmt_tx
+echo "=== run Stage-06 data-session FSM tests ==="
+./test_data_session
 echo "=== run SIPC5 fuzzer (host, no writes) ==="
 python3 tests/fuzz_sipc5.py ./fuzz_driver --iters=3000
 

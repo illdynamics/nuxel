@@ -1,0 +1,15 @@
+{
+  "research_date": "2026-11-23",
+  "entries": [
+    {"id":"lineage_exynos9820_boardconfig", "grade":"A", "url":"https://github.com/LineageOS/android_device_samsung_exynos9820-common/blob/lineage-23.2/BoardConfigCommon.mk", "supports":"Exynos9820 lineage config selects cbd sipc and legacy SIPC ioctl", "limitation":"not Nuxel's exact firmware"},
+    {"id":"lineage_exynos9820_vendor_manifest", "grade":"A", "url":"https://github.com/LineageOS/android_device_samsung_exynos9820-common/blob/lineage-23.2/proprietary-files.txt", "supports":"vendor libsec-ril.so libril_sem.so and radio module paths", "limitation":"common source states N975F unless pinned"},
+    {"id":"lineage_beyond2lte_firmware", "grade":"A", "url":"https://github.com/LineageOS/android_device_samsung_beyond2lte/blob/lineage-23.2/proprietary-firmware.txt", "supports":"SM-G975F model-specific G975FXXSGHWC2 reference", "limitation":"not proof of EFUJ2 match"},
+    {"id":"public_s10_kernel_sipc5", "grade":"A", "url":"https://github.com/grant-h/SM-G973F-Kernel/blob/a6c2623ef5ce4644e701d689e60809b0553cf01d/drivers/misc/modem_v1/include/sipc5.h", "supports":"SIPC5 outer link header and channel classes", "limitation":"not inner telephony command definitions"},
+    {"id":"basemirror_paper", "grade":"A", "url":"https://zhiqlin.github.io/file/CCS24a.pdf", "supports":"RIL static command analysis including SM-G973F model sample", "limitation":"sample is S10 sibling not S10+ EFUJ2"},
+    {"id":"basemirror_code", "grade":"A", "url":"https://github.com/OSUSecLab/BaseMirror", "supports":"public offline static command extraction tooling and requirements", "limitation":"do not use automatic testing/attack payload modules on live modem"},
+    {"id":"old_samsung_rfs", "grade":"B", "url":"https://github.com/Ksys-labs/samsung-ril/blob/master/rfs.c", "supports":"historical Samsung RFS conceptual reference", "limitation":"not S5000AP semantics"},
+    {"id":"replicant_libsamsung_ipc", "grade":"B", "url":"https://github.com/LineageOS/android_external_libsamsung-ipc", "supports":"legacy Samsung IPC clean-room examples", "limitation":"not same generation as S5000AP"},
+    {"id":"fsf_rfs_security", "grade":"A", "url":"https://www.fsf.org/blogs/community/replicant-developers-find-and-close-samsung-galaxy-backdoor", "supports":"RFS access historically merits strict security boundaries", "limitation":"not proof a matching flaw exists on S5000AP"},
+    {"id":"shannonloader", "grade":"B", "url":"https://github.com/FirmWire/ShannonLoader", "supports":"CP firmware decompilation loader", "limitation":"does not replace analyzing AP-side RIL"}
+  ]
+}

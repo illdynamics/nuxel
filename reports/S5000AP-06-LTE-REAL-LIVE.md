@@ -535,3 +535,132 @@ and `SEC_PIN_STATUS` transitioning through READY. A real LTE data bearer
 PDP-context/APN serialization was inventoried but NOT speculatively
 transmitted (data-charge safety), and remains the next clean-room target.
 
+
+---
+
+## ROUND 7 — TX framing CONTRADICTION RESOLVED + native data-path TX serializer implemented (2026-11-23 ~18:10 CET)
+
+### 1. Priority-Zero resolved: the TX framing is `sipc_fmt_hdr` (SAME as RX)
+
+The Stage-06 "contradiction" between the RX parser (`sipc_fmt_hdr`) and the
+`IpcTxExchange` disassembly is now DEFINITIVELY resolved with three independent,
+source-backed lines of evidence. There are **two distinct framing layers** and
+they must not be conflated:
+
+**(a) The data-path `IpcTx*` functions emit `sipc_fmt_hdr` + payload (NOT the
+14-byte checksum frame).** Disassembly of the exact vendor RIL
+(`IpcTxGetPdpContext` @0x31f928, `IpcTxPsAttach` @0x31fa98,
+`IpcTxSetMobileDataSetting` @0x3214c8) proves the stack buffer is:
+
+```
++0..1  u16 total_len (LE)          e.g. 10 / 7 / 9 / 134
++2     u8  msg_seq                 (0)
++3     u8  ack_seq                 (0)
++4     u8  main_cmd                (packed `strh (main | sub<<8)`)
++5     u8  sub_cmd
++6     u8  cmd_type
++7..   payload
+```
+
+`IpcTxPsAttach` stores `strh 0x030d, [sp+12]` (main=0x0d/13 GPRS, sub=0x03/3 PS)
+and `strb 0x03, [sp+14]` (type) — byte-for-byte `sipc_fmt_hdr`. This is exactly
+the 7-byte header the existing RX parser (`sipc5_fmt.c`) already understands.
+
+**(b) The kernel TX path (`modem_io_device.c::misc_write`) is opaque w.r.t. the
+FMT header**: it `copy_from_user`'s the userspace bytes verbatim and only
+prepends the SIPC5 **link-layer** header (`sipc5_build_header`, gated on
+`iod->link_header == true` for the FMT channel). It does NOT parse main/sub/type
+and does NOT add a checksum. So userspace writes `sipc_fmt_hdr`+payload and the
+kernel adds the link header transparently — symmetric with RX, where the kernel
+strips the link header before `sipc_fmt_hdr` reaches userspace.
+
+**(c) `IpcTxExchange` @0x342a80 is a DIFFERENT, SEPARATE path.** It builds a
+14-byte-prefixed frame (`[u16 len][u16 0x0605][u8 0x02][u8 cksum_hi][u8
+cksum_lo][main][sub][type][ack][msg]...` with an additive
+`checksum = fid + payload_len`). That is an *exchange*-specific dialogue used by
+a different code path (IpcExchange), NOT the SIM/PDP data-path functions. It is
+therefore the source of the apparent contradiction and must NOT be used for
+SIM/registration/bearer traffic.
+
+**Gate TX-FRAME-01: PASS.** The physical transport framing is now unambiguous:
+`[u16 total_len][u8 msg_seq][u8 ack_seq][u8 main][u8 sub][u8 type][payload]`
+in both directions.
+
+### 2. cmd_type semantics (recovered from TX, direction-aware)
+
+| numeric | recovered meaning (TX evidence) |
+|---|---|
+| 0x01 | REQUEST (observed `main=38 sub=1 type=1` as CP request in round-4) |
+| 0x02 | REQUEST/RESPONSE (IpcTxGetPdpContext query emits type=2) |
+| 0x03 | NOTIFICATION (live AST_POWERON; IpcTxPsAttach/IpcTx* data-path emit type=3) |
+
+Because the vendor data-path TX uses `type=3` for `IpcTxPsAttach`/
+`IpcTxSetMobileDataSetting`/`IpcTxDefinePdpContext`, the earlier "0x03 = only
+CP→AP notification" simplification is corrected: the *direction* is encoded
+elsewhere; 0x03 is the vendor's "set/indication" class for these data-path
+writes. The serializer reproduces the recovered numeric value per command
+(source-backed; not guessed).
+
+### 3. Implemented: `fmt_tx.{h,c}` — source-backed FMT TX serializers
+
+New module `src/fmt_tx.{h,c}` (pure serializer, never transmits) with
+byte-exact builders recovered from the exact vendor disassembly:
+
+- `fmt_tx_ps_attach` — main=13 sub=3 type=3, 3-byte payload (attach/suspend/reason)
+- `fmt_tx_get_pdp_context` — main=13 sub=4 type=2, 7-byte query
+- `fmt_tx_mobile_data` — main=13 sub=29(SYNC_PROFILE_INFO) type=3, 2-byte payload
+- `fmt_tx_define_pdp_context` — main=13 sub=1 type=3, 134-byte (APN@offset10, protocol byte)
+- `fmt_tx_get_sim_status` / `fmt_tx_get_atr` / `fmt_tx_get_serving_network` /
+  `fmt_tx_get_registration` — 7-byte queries (SIM/NET families)
+
+### 4. Implemented: `data_session.{h,c}` — bounded response-correlated FSM
+
+`src/data_session.{h,c}`: a PURE state machine driving SIM_CHECK →
+ENABLE_MOBILE_DATA → DEFINE_PDP → PS_ATTACH → DATA_CALL → WAIT_IP → ACTIVE. A
+phase advances ONLY on an authenticated modem response (never on a frame
+write), retries are bounded (3), and REJECTED/FAILED are terminal. No PIN/PUK/
+IMSI/ICCID/IMEI/MSISDN is stored.
+
+### 5. radiod integration (reversible, opt-in)
+
+`radiod.c` now:
+- includes `fmt_tx` + `data_session`, adds an opt-in `write_enabled` +
+  `data_path_armed` flag;
+- emits the current data-session phase frame once and waits for a correlated
+  FMT response before advancing;
+- exposes `StartDataSession("su"→b)` / `StopDataSession` D-Bus methods and
+  `--write-enable` / `--arm-data-path` CLI flags;
+- reports `lte_data` capability as `active`/`pending`/`unsupported` truthfully.
+
+Off by default: the installed service remains observer-only unless explicitly
+armed. This preserves the safety contract (no speculative/automatic TX).
+
+### 6. Offline validation (all green, host + cross-compile)
+
+- `test_fmt_tx` — 25 assertions; every vector byte-compared against the vendor
+  disassembly (PsAttach 10B, GetPdpContext 7B, SetMobileDataSetting 9B,
+  DefinePdpContext 134B, APN rejection, overflow guard). RESULT=PASS.
+- `test_data_session` — 14 assertions; phase ordering, no-fabricated-advance,
+  terminal rejection, bounded-retry→FAILED. RESULT=PASS.
+- Full `build.sh`: 6 unit suites + 3000-iter fuzzer (536 cov) + ASan/UBSan
+  (3000-iter, 549 cov). build+test OK.
+- New radiod.c cross-compiles cleanly on-device (`-Wall -Wextra -Werror`, links
+  `-lsystemd`, 78024-byte binary `radiod-new`).
+
+### 7. What remains for a FULL data PASS (honest)
+
+- The **DefinePdpContext / SetDataProfile payload's APN profile wire bytes**
+  (protocol/auth enum → byte mapping) and the exact **SetDataCallEstablish /
+  SetDataProfile** final bytes are recovered but the *live* data-call
+  establishment must still be exercised on hardware.
+- A **live, bounded** data-session transmission (APN `internet`, T-Mobile NL
+  MCC204/MNC16) must be performed with per-step response correlation, then the
+  rmnet interface/IP/route/DNS/HTTPS proof. This is the next executable step
+  and is authorized by the owner.
+- Subjobs B (NetworkManager bearer) and D (UI state machine) remain offline-
+  only; SMS/Voice/IMS capability flags stay `false`.
+
+**Strongest supportable verdict this round:** `TX_FRAMING_RESOLVED` +
+`DATA_PATH_SERIALIZERS_IMPLEMENTED_SOURCE_BACKED` — the central framing blocker
+is closed and the native data-path serializer + bounded FSM are implemented and
+offline-verified, ready for the authorized live data-session test.

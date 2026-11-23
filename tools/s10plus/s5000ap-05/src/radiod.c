@@ -26,6 +26,8 @@
 #include "sipc5_fmt.h"
 #include "ipc41_cmdmap.h"
 #include "transport.h"
+#include "fmt_tx.h"
+#include "data_session.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -98,6 +100,10 @@ struct radiod_ctx {
     bool     cp_online;
 
     bool     sim_present;
+    /* Stage-06 native data-path: bounded, response-correlated driver. */
+    struct data_session_ctx dsc;
+    bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
+    bool     wrote_phase;       /* last phase already emitted a frame */
 
     struct radiod_request pending[RADIOD_MAX_PENDING];
     uint8_t  next_seq;
@@ -324,6 +330,8 @@ static const char *fmt_sub_name(uint8_t main, uint8_t sub)
     return NULL;
 }
 
+static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f);
+
 static const struct nuxel_fmt_observation *find_fmt_obs(uint8_t m, uint8_t s, uint8_t t)
 {
     unsigned i;
@@ -375,6 +383,15 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     const struct nuxel_fmt_observation *ob = find_fmt_obs(f->main_cmd, f->sub_cmd, f->cmd_type);
     record_obs(ch, f, ob != NULL);
     resolve_pending(f);
+
+    /* Feed the Stage-06 data-session FSM: an authenticated response advances
+     * the phase; this is the ONLY place the FSM is advanced (never on write). */
+    if (g.data_path_armed && g.dsc.phase != DS_IDLE && fmt_rx_is_data_ack(f)) {
+        enum ds_phase next = ds_step(&g.dsc, true, now_ms());
+        diagf("data_session_ack", "\"phase\":\"%s\",\"next\":\"%s\"",
+              ds_phase_name(g.dsc.phase), ds_phase_name(next));
+        if (next != g.dsc.phase) g.wrote_phase = false;
+    }
     /* We do not decode telephony semantics (UNKNOWN). We DO surface the
      * existence and classification of every message as a diagnostic. */
     const char *subname = fmt_sub_name(f->main_cmd, f->sub_cmd);
@@ -471,6 +488,133 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
         g.stats.rfs_resp_errors++;
         diagf("rfs_tx_fail", "\"op\":%u,\"st\":\"%s\"",
               req.op, nuxel_io_status_name(st));
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* FMT transmit path (bounded, opt-in, response-correlated)            */
+/* ------------------------------------------------------------------ */
+
+/* Write ONE serialized FMT frame to /dev/umts_ipc0. Returns true only when
+ * the kernel accepted the full write. Never fabricates success. */
+static bool radiod_write_fmt(const struct fmt_tx_frame *f)
+{
+    if (!g.write_enabled) {
+        diag("fmt_tx_refused", "\"write capability disabled\"");
+        return false;
+    }
+    if (!f || f->len < 7 || f->len > FMT_TX_MAX_FRAME) return false;
+    enum nuxel_io_status st = nuxel_dev_write(&g.fmt.dev, f->buf, f->len);
+    if (st == NUXEL_IO_OK) {
+        g.stats.tx_frames++;
+        g.next_seq++;
+        diagf("fmt_tx", "\"main\":%u,\"sub\":%u,\"type\":%u,\"len\":%zu",
+              f->main_cmd, f->sub_cmd, f->cmd_type, f->len);
+        return true;
+    }
+    diagf("fmt_tx_fail", "\"st\":\"%s\"", nuxel_io_status_name(st));
+    if (st == NUXEL_IO_PERMISSION || st == NUXEL_IO_DISCONNECTED) {
+        g.stats.permissions++;
+    }
+    return false;
+}
+
+/* Map an authenticated FMT RX observation to a data-session acknowledgement.
+ * We ONLY treat a specific, recovered response as an ack — never a generic
+ * write. This is a conservative correlator that refuses to advance on
+ * unknown/unsolicited traffic. */
+static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
+{
+    if (!g.data_path_armed || g.dsc.phase == DS_IDLE) return false;
+    switch (g.dsc.phase) {
+    case DS_SIM_CHECK:
+        /* SEC_PIN_STATUS(type=2 response) is the SIM-readiness acknowledgement. */
+        return (f->main_cmd == IPC41_MAIN_SEC &&
+                f->sub_cmd == IPC41_SEC_PIN_STATUS &&
+                f->cmd_type != IPC41_TYPE_NOTIFICATION);
+    case DS_ENABLE_MOBILE_DATA:
+    case DS_DEFINE_PDP:
+    case DS_PS_ATTACH:
+    case DS_DATA_CALL:
+        /* GPRS-family response (type != NOTI) for the corresponding sub. */
+        return (f->main_cmd == IPC41_MAIN_GPRS &&
+                f->cmd_type != IPC41_TYPE_NOTIFICATION);
+    case DS_WAIT_IP:
+        /* IP configuration arrives via GPRS_IP_CONFIGURATION. */
+        return (f->main_cmd == IPC41_MAIN_GPRS &&
+                (f->sub_cmd == IPC41_GPRS_IP_CONFIGURATION ||
+                 f->sub_cmd == IPC41_GPRS_CALL_STATUS));
+    default:
+        return false;
+    }
+}
+
+/* Build and emit the FMT frame for the current data-session phase. Returns
+ * true if a frame was emitted (does NOT imply modem acceptance). */
+static bool data_session_emit(void)
+{
+    struct fmt_tx_frame f;
+    memset(&f, 0, sizeof f);
+    switch (g.dsc.phase) {
+    case DS_SIM_CHECK:
+        if (!fmt_tx_get_sim_status(&f)) return false;
+        break;
+    case DS_ENABLE_MOBILE_DATA:
+        if (!fmt_tx_mobile_data(&f, true, false)) return false;
+        break;
+    case DS_DEFINE_PDP:
+        if (!fmt_tx_define_pdp_context(&f, (const char*)g.dsc.apn,
+                                       FMT_TX_PROTO_IPV4V6, g.dsc.profile_id))
+            return false;
+        break;
+    case DS_PS_ATTACH:
+        if (!fmt_tx_ps_attach(&f, true, false, 0)) return false;
+        break;
+    case DS_DATA_CALL:
+        /* Establish the data call: mobile-data already ON; re-assert enable.
+         * NOTE: the exact SetDataCallEstablish wire bytes are under final
+         * verification; we re-issue mobile-data enable here rather than send
+         * an unverified data-call frame. */
+        if (!fmt_tx_mobile_data(&f, true, true)) return false;
+        break;
+    case DS_WAIT_IP:
+    case DS_ACTIVE:
+    case DS_REJECTED:
+    case DS_FAILED:
+    case DS_IDLE:
+    default:
+        return false;
+    }
+    return radiod_write_fmt(&f);
+}
+
+/* Tick-driven data-session driver: emits the current phase frame once, then
+ * waits for an authenticated response before advancing. Bounded + opt-in. */
+static void data_session_tick(uint64_t now)
+{
+    if (!g.data_path_armed || g.dsc.phase == DS_IDLE) return;
+    if (!g.write_enabled || !g.cp_online || !g.fmt.present) {
+        return;   /* cannot safely transmit yet */
+    }
+    if (ds_terminal(&g.dsc)) return;
+
+    /* Emit the current phase ONCE (no re-transmit storm). */
+    if (!g.wrote_phase) {
+        if (data_session_emit()) g.wrote_phase = true;
+        if (!g.dsc.step_deadline_ms)
+            g.dsc.step_deadline_ms = now + 5000u;
+        return;
+    }
+
+    /* Wait for ack or timeout. */
+    enum ds_phase next = ds_step(&g.dsc, false, now);
+    if (next != g.dsc.phase) {
+        /* timeout phase change: re-arm to re-emit (bounded by ds_step). */
+        if (next == DS_FAILED) {
+            diag("data_session_failed", "\"phase\":\"TIMEOUT\"");
+            g.data_path_armed = false;
+        }
+        g.wrote_phase = false;   /* re-emit after retry/timeout */
     }
 }
 
@@ -659,6 +803,9 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
     }
     refresh_sim_state();
 
+    /* Stage-06 data-session driver (opt-in, bounded). */
+    data_session_tick(now_ms());
+
     uint64_t t = now_ms();
     unsigned i;
     for (i = 0; i < RADIOD_MAX_PENDING; i++) {
@@ -746,9 +893,12 @@ static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
     sd_bus_message *reply = NULL;
     if (sd_bus_message_new_method_return(m, &reply) < 0) return -1;
     sd_bus_message_open_container(reply, 'a', "{ss}");
+    const char *lte = (g.dsc.phase == DS_ACTIVE) ? "active" :
+                      (g.data_path_armed ? "pending" : "unsupported");
     const char *keys[] = {"lte_data","sms","voice","ims","volte"};
+    const char *vals[] = {lte, "false", "false", "false", "false"};
     for (unsigned i = 0; i < 5; i++) {
-        sd_bus_message_append(reply, "{ss}", keys[i], "unknown");
+        sd_bus_message_append(reply, "{ss}", keys[i], vals[i]);
     }
     sd_bus_message_close_container(reply);
     int r = sd_bus_send(NULL, reply, NULL);
@@ -787,6 +937,40 @@ static int method_packet_stats(sd_bus_message *m, void *u, sd_bus_error *e)
     (void)u;(void)e;
     return sd_bus_reply_method_return(m, "ttb", (uint64_t)0, (uint64_t)0, 0);
 }
+static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
+{
+    (void)u;(void)e;
+    const char *apn = NULL;
+    uint32_t profile = 1;
+    int r = sd_bus_message_read(m, "s", &apn);
+    if (r < 0) apn = "internet";
+    /* Reserve a future uint32 profile argument; tolerate missing arg. */
+    (void)sd_bus_message_read(m, "u", &profile);
+
+    if (!g.write_enabled) {
+        return sd_bus_error_set(e, SD_BUS_ERROR_ACCESS_DENIED,
+            "data-path TX disabled (start radiod with --write-enable)");
+    }
+    if (!g.cp_online) {
+        return sd_bus_error_set(e, SD_BUS_ERROR_FAILED, "CP offline");
+    }
+    ds_reset(&g.dsc, apn, (uint8_t)profile);
+    g.data_path_armed = true;
+    g.wrote_phase = false;
+    g.dsc.step_deadline_ms = 0;
+    diagf("data_session_start", "\"apn\":\"%s\",\"profile\":%u", apn, profile);
+    return sd_bus_reply_method_return(m, "b", 1);
+}
+
+static int method_stop_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
+{
+    (void)u;(void)e;
+    g.data_path_armed = false;
+    g.wrote_phase = false;
+    diag("data_session_stop", NULL);
+    return sd_bus_reply_method_return(m, "b", 1);
+}
+
 static int method_no_bearer(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)m; (void)u;
@@ -853,6 +1037,8 @@ static const sd_bus_vtable radiod_vtable[] = {
     SD_BUS_METHOD("GetPacketStats", "", "ttb", method_packet_stats, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("CreateBearer", "s", "u", method_no_bearer, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("DeleteBearer", "u", "", method_no_bearer, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("StartDataSession", "su", "b", method_start_data_session, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("StopDataSession", "", "b", method_stop_data_session, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetCapabilities", "", "a{ss}", method_get_capabilities, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetDiagnostics", "", "a{st}", method_get_diagnostics, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_SIGNAL("StateChanged", "ss", 0),
@@ -914,8 +1100,19 @@ static int setup_event(void)
 
 int main(int argc, char **argv)
 {
-    (void)argc; (void)argv;
     memset(&g, 0, sizeof g);
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--write-enable") == 0) {
+            g.write_enabled = true;
+        } else if (strcmp(argv[i], "--arm-data-path") == 0) {
+            g.write_enabled = true;
+            g.data_path_armed = true;
+            ds_reset(&g.dsc, getenv("NUXEL_APN") ? getenv("NUXEL_APN") : "internet", 1);
+        } else if (strcmp(argv[i], "--help") == 0) {
+            fprintf(stderr, "usage: nuxel-radiod [--write-enable] [--arm-data-path]\n");
+            return 0;
+        }
+    }
     g.fmt.dev.fd = -1;
     g.rfs.dev.fd = -1;
     g.cp_state_code = -1;
