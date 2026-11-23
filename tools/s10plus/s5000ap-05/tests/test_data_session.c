@@ -23,17 +23,15 @@ int main(void)
     enum ds_phase p = ds_step(&c, false, 100);
     CHECK(p == DS_NET_REGIST_CHECK, "no ack -> stays NET_REGIST_CHECK");
 
-    /* Authenticated ack advances each phase in order. The Stage-06 correction
-     * removed two vendor-REJECTED steps (SYNC_PROFILE and DEFINE_PDP, both
-     * result=1 live) and added a PS_REGIST_VERIFY gate after PS_ATTACH so the
-     * data-call activation is only attempted once PS attach is confirmed by a
-     * real NET_REGIST response. */
+    /* Authenticated ack advances each phase in order. Round-17 confirmed DEFINE_PDP (sub=1) is legacy-3G and is correctly
+     * skipped for LTE: the vendor uses SetPdpContext (sub=4) for define+activate
+     * in a single command. SYNC_PROFILE remains skipped. */
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_SERVICE_DOMAIN, "NET_REGIST_CHECK -> SET_SERVICE_DOMAIN");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_PREFERRED_NET, "SET_SERVICE_DOMAIN -> SET_PREFERRED_NET");
     p = ds_step(&c, true, 100);  CHECK(p == DS_ENABLE_MOBILE_DATA, "SET_PREFERRED_NET -> ENABLE_MOBILE_DATA");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_DATA_PROFILE, "ENABLE_MOBILE_DATA -> SET_DATA_PROFILE (skip SYNC_PROFILE)");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_LTE_ATTACH, "SET_DATA_PROFILE -> SET_LTE_ATTACH");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "SET_LTE_ATTACH -> ALWAYS_ON_PDN (skip DEFINE_PDP)");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "SET_LTE_ATTACH -> ALWAYS_ON_PDN (DefinePdp sub=1 is legacy)");
     p = ds_step(&c, true, 100);  CHECK(p == DS_PS_ATTACH, "ALWAYS_ON_PDN -> PS_ATTACH");
     p = ds_step(&c, true, 100);  CHECK(p == DS_PS_REGIST_VERIFY, "PS_ATTACH -> PS_REGIST_VERIFY");
     p = ds_step(&c, true, 100);  CHECK(p == DS_DATA_CALL, "PS_REGIST_VERIFY -> DATA_CALL");

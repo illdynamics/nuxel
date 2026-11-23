@@ -73,13 +73,30 @@ struct data_session_ctx {
     bool           gprs_pdp_state_valid;
 };
 
-/* Authoritative LTE attach CID recovered from GetAttachCid() @0x1e4500 in
- * libsec-ril.so (build 60889dd714394ae0db7c2ecc2bf2740f). For the standard
- * LTE model type (SM-G975F/beyond2lte, not model-type 1) this returns 5. The
- * vendor uses this as the PDP context / LTE-attach-profile CID, which is
- * DISTINCT from the DataProfile default id (1, via ConvertProfileId). Using
- * profile_id==1 as the attach CID is why the PS attach never completed. */
-#define DS_ATTACH_CID 5u
+/* ATTACH CID — corrected round-17 disassembly of GetAttachCid() @0x1e4500:
+ *
+ *     mov  w9, #5
+ *     cmp  w8, #1            ; DataCallManager::mModelType
+ *     csinc w9, w9, wzr, eq  ; model_type==1 -> w9=5, else w9=1
+ *     cmp  w8, #0
+ *     csinc w0, w9, wzr, ne  ; model_type!=0 -> w0=w9, else w0=1
+ *
+ *   => model_type==1 -> 5 ; model_type==0 -> 1 ; model_type>=2 -> 1
+ *
+ * The device is SM-G975F/beyond2lte EUR OPEN "_EUR0" (single physical SIM),
+ * i.e. NOT dual-sim model_type 1. The corrected GetAttachCid is therefore 1,
+ * NOT 5. (The prior "returns 5 for the standard LTE model" comment was a
+ * mis-read of the csinc chain; only model_type==1 yields 5.)
+ *
+ * The DATA PROFILE default id is a SEPARATE value (ConvertProfileId(DEFAULT)
+ * == 1, non-NTC). Keep attach CID and profile id as distinct names. */
+#define DS_ATTACH_CID 1u
+
+/* AlwaysOnPdn wire payload[1] (IpcTxSetAlwaysOnPdn(bool, DataProfile, int)
+ * @0x321550) is the *int* argument that DoAlwaysOnPdn() supplies as 1 (or 2
+ * under an ESM-flag-zero network), NOT the attach CID and NOT a raw
+ * DataProfile enum value. ConvertProfileId(DEFAULT)==1. */
+#define DS_ALWAYS_ON_PDN_PROFILE 1u
 
 /* Gen echo result codes recovered live + source-backed (vendor IpcRxGeneral):
  * 0 == success; non-zero == rejection/failure. We deliberately do NOT map a

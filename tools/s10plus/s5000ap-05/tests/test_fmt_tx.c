@@ -149,7 +149,7 @@ int main(void)
           "set_lte_attach_profile main/sub/type=13/20/3");
     CHECK(f.buf[0] == 0xc9 && f.buf[1] == 0x00, "set_lte_attach_profile len field = 201 LE");
     CHECK(f.buf[7 + 0] == 0x03, "set_lte_attach_profile payload[0] flag == 3");
-    CHECK(f.buf[7 + 1] == 0x01, "set_lte_attach_profile payload[1] cid == 1");
+    CHECK(f.buf[7 + 1] == 0x01, "set_lte_attach_profile payload[1] profile-selector int == 1 (vendor-hardcoded, NOT cid)");
     CHECK(f.buf[7 + 2] == 0x04, "set_lte_attach_profile payload[2] protocol == 0x04");
     CHECK(memcmp(&f.buf[7 + 3], "internet", 8) == 0,
           "set_lte_attach_profile APN placed at payload offset 3");
@@ -158,12 +158,13 @@ int main(void)
     CHECK(f.buf[7 + 168] == 0x00, "set_lte_attach_profile payload[168] (password region) zero");
     CHECK(f.buf[7 + 169] == 0x00, "set_lte_attach_profile payload[169] (password region) zero");
 
-    /* attach cid = 5 (GetAttachCid() for LTE model) must serialize correctly. */
+    /* attach cid = 1 (corrected GetAttachCid() for single-SIM beyond2lte;
+     * returns 5 ONLY for dual-sim model_type 1). */
     memset(&f, 0, sizeof f);
     CHECK(fmt_tx_set_lte_attach_profile(&f, "internet", FMT_TX_AUTH_NONE,
-                                        FMT_TX_PROTO_IPV4V6, 5, 3),
-          "set_lte_attach_profile builds with attach cid=5");
-    CHECK(f.buf[7 + 1] == 0x05, "set_lte_attach_profile payload[1] cid == 5");
+                                        FMT_TX_PROTO_IPV4V6, 1, 3),
+          "set_lte_attach_profile builds (profile int=1)");
+    CHECK(f.buf[7 + 1] == 0x01, "set_lte_attach_profile payload[1] profile int == 1");
 
     /* --- SetPdpContext / ACTIVATE (source: IpcTxSetPdpContext @0x31f6e0) ---
      * 112-byte frame: len=112(0x70), main=13, sub=4, type=3.

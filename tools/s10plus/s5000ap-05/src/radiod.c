@@ -855,11 +855,10 @@ static bool data_session_emit(void)
         break;
     case DS_SET_LTE_ATTACH:
         /* Set the LTE attach profile (source-backed SetLteAttachProfile,
-         * main=13 sub=20, 201 bytes). The cid MUST be the vendor attach CID
-         * (GetAttachCid() == 5), NOT the DataProfile default id (1). Using 1
-         * here left the CP with no matching LTE attach profile, so the
-         * subsequent PsAttach was acknowledged but PS registration never moved
-         * off NOT_REGISTERED(0). */
+         * main=13 sub=20, 201 bytes). payload[1] = attach CID. Corrected
+         * GetAttachCid() == 1 for single-SIM beyond2lte (see data_session.h),
+         * NOT the DataProfile default id and NOT 5 (which is only for
+         * dual-sim model_type 1). payload[0]=3 = apply profile. */
         if (!fmt_tx_set_lte_attach_profile(&f, (const char*)g.dsc.apn,
                                            FMT_TX_AUTH_NONE,
                                            FMT_TX_PROTO_IPV4V6,
@@ -867,14 +866,18 @@ static bool data_session_emit(void)
             return false;
         break;
     case DS_DEFINE_PDP:
+        /* Define the PDP context (source-backed IpcTxDefinePdpContext,
+         * main=13 sub=1, 134 bytes) using the corrected attach CID (1 for
+         * single-SIM; see GetAttachCid disassembly), NOT the DataProfile id. */
         if (!fmt_tx_define_pdp_context(&f, (const char*)g.dsc.apn,
-                                       FMT_TX_PROTO_IPV4V6, g.dsc.profile_id))
+                                       FMT_TX_PROTO_IPV4V6, DS_ATTACH_CID))
             return false;
         break;
     case DS_ALWAYS_ON_PDN:
         /* Attach the default PDN (source-backed SetAlwaysOnPdn, main=13 sub=34).
-         * Use the vendor attach CID (5), consistent with SetLteAttachProfile. */
-        if (!fmt_tx_set_always_on_pdn(&f, true, DS_ATTACH_CID))
+         * payload[1] is the int argument that DoAlwaysOnPdn() supplies as 1
+         * (ConvertProfileId(DEFAULT)), NOT the attach CID. */
+        if (!fmt_tx_set_always_on_pdn(&f, true, DS_ALWAYS_ON_PDN_PROFILE))
             return false;
         break;
     case DS_PS_ATTACH:

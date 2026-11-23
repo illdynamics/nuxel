@@ -257,10 +257,20 @@ bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
     if (!p) return false;
     memset(p, 0, 194u);
 
-    /* payload[0] flag value 3 was LIVE-VERIFIED accepted by this CP
-     * (gen result 0), whereas 4 was rejected (gen result 1). Keep 3. */
-    p[0] = flag;   /* apply flag: 3 = set profile (live-verified), 1 = attach APN */
-    p[1] = cid;    /* profile/context id */
+    /* AUTHORITATIVE (round-17) layout from IpcProtocol41::IpcTxSetLteAttachProfile
+     * @0x320238 and its caller DataCallManager::SetLteAttachProfile @0x22b518:
+     *
+     *   payload[0] = 3 when the trailing bool arg is set, else 1  (apply flag)
+     *   payload[1] = the first "int" argument = 1 (a profile selector
+     *               hardcoded to 1 by the vendor), NOT the attach CID. The CID
+     *               is allocated separately by CidManager during AllocateCall.
+     *   payload[2] = protocol-home wire byte
+     *
+     * Prior code wrote the attach CID into payload[1]; that is a semantic bug.
+     * `cid` is still accepted for API compatibility but is only advisory. */
+    p[0] = flag;   /* keep live-verified value 3 (set profile) */
+    p[1] = 1u;     /* vendor-hardcoded profile selector int (NOT the CID) */
+    (void)cid;
     p[2] = proto_wire_byte(proto);
 
     /* AUTHORITATIVE layout recovered this round from
