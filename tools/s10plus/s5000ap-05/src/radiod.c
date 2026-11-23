@@ -397,11 +397,26 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     /* Feed the Stage-06 data-session FSM: an authenticated response advances
      * the phase; this is the ONLY place the FSM is advanced (never on write). */
     if (g.data_path_armed && g.dsc.phase != DS_IDLE && fmt_rx_is_data_ack(f)) {
+        /* PS attach is asynchronous: the CP ACKs the PsAttach command with a
+         * generic GEN echo but completes the actual GPRS/PS attach in the
+         * background. Hold the PS_ATTACH phase for a short dwell so the attach
+         * completes before we emit SetPdpContext(ACTIVATE). Otherwise the PDP
+         * activation is sent too early and the CP rejects it with
+         * GPRS_CALL_STATUS state=3 (not connected). */
+        if (g.dsc.phase == DS_PS_ATTACH &&
+            g.dsc.phase_entered_ms &&
+            now_ms() - g.dsc.phase_entered_ms < 3000u) {
+            /* do not advance yet */
+        } else {
         enum ds_phase prev = g.dsc.phase;
         enum ds_phase next = ds_step(&g.dsc, true, now_ms());
         diagf("data_session_ack", "\"phase\":\"%s\",\"next\":\"%s\"",
               ds_phase_name(prev), ds_phase_name(next));
-        if (next != prev) g.wrote_phase = false;
+        if (next != prev) {
+            g.wrote_phase = false;
+            g.dsc.phase_entered_ms = now_ms();
+        }
+        } /* end dwell guard */
     }
     /* We do not decode telephony semantics (UNKNOWN). We DO surface the
      * existence and classification of every message as a diagnostic. */
@@ -686,13 +701,30 @@ static void data_session_tick(uint64_t now)
 
     /* Emit the current phase ONCE (no re-transmit storm). */
     if (!g.wrote_phase) {
+        if (!g.dsc.phase_entered_ms) g.dsc.phase_entered_ms = now;
         if (data_session_emit()) g.wrote_phase = true;
         if (!g.dsc.step_deadline_ms)
             g.dsc.step_deadline_ms = now + 5000u;
         return;
     }
 
-    /* Wait for ack or timeout. */
+    /* Wait for ack or timeout. If we are holding in PS_ATTACH past the dwell
+     * (the CP only sent a generic GEN echo, no separate PS-attach-done), the
+     * dwell guard in dispatch_fmt prevented an ack-based advance; advance here
+     * so the bounded attach -> activate sequence still proceeds. */
+    if (g.dsc.phase == DS_PS_ATTACH &&
+        g.dsc.phase_entered_ms &&
+        now - g.dsc.phase_entered_ms >= 3000u) {
+        enum ds_phase n2 = ds_step(&g.dsc, true, now);
+        if (n2 != DS_PS_ATTACH) {
+            g.wrote_phase = false;
+            g.dsc.phase_entered_ms = now;
+            diagf("data_session_ack", "\"phase\":\"PS_ATTACH\",\"next\":\"%s\"",
+                  ds_phase_name(n2));
+            return;
+        }
+    }
+
     enum ds_phase next = ds_step(&g.dsc, false, now);
     if (next != g.dsc.phase) {
         /* phase actually changed (ack from dispatch_fmt, or terminal timeout). */

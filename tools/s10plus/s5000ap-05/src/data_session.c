@@ -34,6 +34,7 @@ void ds_reset(struct data_session_ctx *c, const char *apn, uint8_t profile_id)
     if (!c) return;
     memset(c, 0, sizeof *c);
     c->phase = DS_ENABLE_MOBILE_DATA;  /* SIM already READY (CP-notified); no guessed SIM query */
+    c->phase_entered_ms = 0;
     c->profile_id = profile_id;
     if (apn) {
         size_t n = strlen(apn);

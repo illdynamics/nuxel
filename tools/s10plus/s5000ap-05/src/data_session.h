@@ -51,6 +51,7 @@ struct data_session_ctx {
     bool           call_established;
     bool           ip_configured;
     uint64_t       step_deadline_ms;
+    uint64_t       phase_entered_ms;  /* monotonic ts when current phase began */
 };
 
 /* Advance the FSM given: current phase, whether the last modem response
