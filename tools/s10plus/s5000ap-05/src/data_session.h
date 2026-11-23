@@ -50,6 +50,8 @@ struct data_session_ctx {
     uint8_t        apn[128];     /* configured APN (owner-approved) */
     uint8_t        apn_len;
     uint8_t        profile_id;
+    uint8_t        protocol;      /* IP family for PDP/attach (FMT_TX_PROTO_*) */
+    uint8_t        attach_flag;   /* SetLteAttachProfile payload[0] (3=apply, 1=define) */
     bool           mobile_data_on;
     bool           attached;
     bool           call_established;

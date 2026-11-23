@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -843,14 +844,14 @@ static bool data_session_emit(void)
         /* Full data-profile sync incl. RAT (source-backed IpcTxSyncProfileInfo,
          * main=13 sub=37, 326 bytes; RAT = LTE = 14). */
         if (!fmt_tx_sync_profile_info(&f, (const char*)g.dsc.apn,
-                                      FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6))
+                                      FMT_TX_AUTH_NONE, g.dsc.protocol))
             return false;
         break;
     case DS_SET_DATA_PROFILE:
         /* Set the APN/auth/protocol data profile (source-backed SetDataProfile,
          * main=13 sub=27, 203 bytes; auth NONE -> numeric code 1). */
         if (!fmt_tx_set_data_profile(&f, (const char*)g.dsc.apn,
-                                     FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6))
+                                     FMT_TX_AUTH_NONE, g.dsc.protocol))
             return false;
         break;
     case DS_SET_LTE_ATTACH:
@@ -861,8 +862,8 @@ static bool data_session_emit(void)
          * dual-sim model_type 1). payload[0]=3 = apply profile. */
         if (!fmt_tx_set_lte_attach_profile(&f, (const char*)g.dsc.apn,
                                            FMT_TX_AUTH_NONE,
-                                           FMT_TX_PROTO_IPV4V6,
-                                           DS_ATTACH_CID, 3u))
+                                           g.dsc.protocol,
+                                           DS_ATTACH_CID, g.dsc.attach_flag))
             return false;
         break;
     case DS_DEFINE_PDP:
@@ -870,7 +871,7 @@ static bool data_session_emit(void)
          * main=13 sub=1, 134 bytes) using the corrected attach CID (1 for
          * single-SIM; see GetAttachCid disassembly), NOT the DataProfile id. */
         if (!fmt_tx_define_pdp_context(&f, (const char*)g.dsc.apn,
-                                       FMT_TX_PROTO_IPV4V6, DS_ATTACH_CID))
+                                       g.dsc.protocol, DS_ATTACH_CID))
             return false;
         break;
     case DS_ALWAYS_ON_PDN:
@@ -894,7 +895,7 @@ static bool data_session_emit(void)
          * 112-byte frame). This is the REAL LTE activation command; the CDMA
          * SetDataCallEstablish (main=3/sub=2) is a legacy CDMA path. */
         if (!fmt_tx_set_pdp_context(&f, (const char*)g.dsc.apn,
-                                    FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6,
+                                    FMT_TX_AUTH_NONE, g.dsc.protocol,
                                     DS_ATTACH_CID))
             return false;
         break;
@@ -1300,6 +1301,33 @@ static int method_packet_stats(sd_bus_message *m, void *u, sd_bus_error *e)
     (void)u;(void)e;
     return sd_bus_reply_method_return(m, "ttb", (uint64_t)0, (uint64_t)0, 0);
 }
+/* Map NUXEL_PROTO env string -> fmt_tx_data_protocol numeric value.
+ * Accepted: ip|ipv4 -> 2 (IPv4-only), ipv6 -> 3, ipv4v6|ipv6v4|dual -> 4.
+ * Default (unset/unknown) -> 4 (IPv4v6), preserving prior behaviour. */
+static uint8_t env_protocol(void)
+{
+    const char *p = getenv("NUXEL_PROTO");
+    if (!p || !*p) return FMT_TX_PROTO_IPV4V6;
+    if (!strcasecmp(p, "ip") || !strcasecmp(p, "ipv4")) return FMT_TX_PROTO_IP;
+    if (!strcasecmp(p, "ipv6")) return FMT_TX_PROTO_IPV6;
+    if (!strcasecmp(p, "ipv4v6") || !strcasecmp(p, "ipv6v4") ||
+        !strcasecmp(p, "dual") || !strcasecmp(p, "default"))
+        return FMT_TX_PROTO_IPV4V6;
+    return FMT_TX_PROTO_IPV4V6;
+}
+
+/* Map NUXEL_ATTACH_FLAG env string -> SetLteAttachProfile payload[0] flag.
+ * Accepted: 3 (apply, default), 1 (define/initial-attach), 4 (prior variant).
+ * Unknown -> 3. */
+static uint8_t env_attach_flag(void)
+{
+    const char *p = getenv("NUXEL_ATTACH_FLAG");
+    if (!p || !*p) return 3u;
+    long v = strtol(p, NULL, 10);
+    if (v == 1 || v == 3 || v == 4) return (uint8_t)v;
+    return 3u;
+}
+
 static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
@@ -1318,10 +1346,13 @@ static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e
         return sd_bus_error_set(e, SD_BUS_ERROR_FAILED, "CP offline");
     }
     ds_reset(&g.dsc, apn, (uint8_t)profile);
+    g.dsc.protocol = env_protocol();
+    g.dsc.attach_flag = env_attach_flag();
     g.data_path_armed = true;
     g.wrote_phase = false;
     g.dsc.step_deadline_ms = 0;
-    diagf("data_session_start", "\"apn\":\"%s\",\"profile\":%u", apn, profile);
+    diagf("data_session_start", "\"apn\":\"%s\",\"profile\":%u,\"protocol\":%u",
+          apn, profile, g.dsc.protocol);
     return sd_bus_reply_method_return(m, "b", 1);
 }
 
@@ -1471,6 +1502,8 @@ int main(int argc, char **argv)
             g.write_enabled = true;
             g.data_path_armed = true;
             ds_reset(&g.dsc, getenv("NUXEL_APN") ? getenv("NUXEL_APN") : "internet", 1);
+            g.dsc.protocol = env_protocol();
+            g.dsc.attach_flag = env_attach_flag();
         } else if (strcmp(argv[i], "--help") == 0) {
             fprintf(stderr, "usage: nuxel-radiod [--write-enable] [--arm-data-path]\n");
             return 0;
