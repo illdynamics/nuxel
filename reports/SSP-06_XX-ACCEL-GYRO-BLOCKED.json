@@ -1,0 +1,45 @@
+{
+  "schema": "ssp-06_accel_gyro-v1",
+  "timestamp": "2026-11-23T01:45:00+01:00",
+  "agent": "DeepSeek-V4-Pro-Thinking",
+  "commit_head": "8e2f47254d189babaea989d6da50c013744c2d97",
+  "device": {"serial": "R58M75KDB2X", "product": "beyond2lte", "model": "SM-G975F"},
+  "gate": "BLOCKED_MCU",
+  "prerequisites": {
+    "real_mcu_app_running": false,
+    "normal_ssp_handshake_established": false
+  },
+  "live_evidence": {
+    "nuxel_hub_diag": "mcu_probe=1 shutdown=1 resetting=1 sensor_state=0x3feff enable=0x0 shub_irq=443",
+    "mcu_name": "BCM47752KUB1G",
+    "mcu_rev": "BR0121080900,BR010",
+    "mcu_test": "NG,NG,NG",
+    "enable_bitmap": 0,
+    "sensor_state": "",
+    "reset_info": "GPS OFF",
+    "irq_ttyBCM_441": 0,
+    "irq_ssp_shub_443": 1,
+    "accelerometer_raw_data": "0,0,0",
+    "gyro_raw_data": "0,0,0"
+  },
+  "sensor_verdicts": {
+    "SENSOR_ACCEL_PHYSICAL": "NOT_RUN",
+    "SENSOR_GYRO_PHYSICAL": "NOT_RUN"
+  },
+  "offline_tests": {
+    "ssp_native_make_check": "PASS",
+    "ssp_runtime_unittest": "10/10 PASS",
+    "orientation_pytest": "77 passed",
+    "test_sensor_hub_native": "0 failing",
+    "test_app_orientation_force": "0 failing",
+    "protocol_replay": "passed (hardware_verified=false)"
+  },
+  "physical_measurements": "NONE (correctly gated; no samples exist)",
+  "calibrated_axis_matrix": "NOT_PRODUCED (refused rather than fabricated)",
+  "blocking_reason": "Stage-06 firmware download + app start not authorized; no MCU firmware app, no SSP handshake, sensors disabled (enable=0).",
+  "minimum_owner_action": [
+    "RF authorization (bounded GNSS-domain energisation)",
+    "Timing artifact (datasheet VDD->ROM-ready or explicit bounded settle)",
+    "Explicit bounded-trial grant (MCU wake + MemoryWrite x479 + StartScratch + ServiceStart + post-download GetVersion)"
+  ]
+}

@@ -1,0 +1,26 @@
+2026-11-23T00:43:12Z
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT Mon Nov 23 00:43:30 CET 2026 aarch64 GNU/Linux
+---hub_diag---
+mcu_probe=1 shutdown=1 resetting=1 sensor_state=0x3feff enable=0x0 shub_irq=443
+---mcu_name---
+BCM47752KUB1G
+---mcu_rev---
+BR0121080900,BR010
+---mcu_test---
+NG,NG,NG
+---enable---
+0
+---sensor_state---
+
+(end)
+---nuxel_bringup---
+(end)
+---nuxel_stream---
+(end)
+---accel_raw---
+0,0,0
+---gyro_raw---
+0,0,0
+---ssp_bringup_sysfs---
+cat: /sys/class/sensors/ssp_sensor/nuxel_bringup: Permission denied
+(end)
