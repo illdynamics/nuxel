@@ -1,8 +1,10 @@
 # PenGuru on native Nuxel
 
 This is a partially implemented, local-first subsystem, not a completed
-dual-runtime/voice product. The application and Settings panel use the real
-launcher-authenticated bridge. No cloud inference is configured. Services are
+dual-runtime/voice product. The PenGuru Squad app uses the real
+launcher-authenticated bridge. Model downloads, runtime selection, voice and
+connection settings now live inside the app; the legacy Settings panel is
+removed on install. No cloud inference is configured. Services are
 OFF by default and are not enabled at boot by the installer.
 
 ## Install and test
@@ -31,19 +33,19 @@ This turn rebuilt the worker against the **existing** matching device libraries;
 a clean rebuild of the libraries is not claimed.
 
 The staged tree must include `services/nuxel-penguru`,
-`services/nuxel-bridge/src/penguru_api.py`, `pwa/nuxel-apps/penguru`,
-the Settings HTML and `penguru-*.js` files, the common app registry, and
+`services/nuxel-bridge/src/penguru_api.py`, `pwa/nuxel-apps/penguru`
+(including `model-library.js`), the Settings HTML, the common app registry, and
 `assets/nuxel-penguru-squad.png`. Keep model weights and private signing keys
 out of this tree/archive and Git. Never overwrite the device's public trust
 key merely to make an installation pass.
 
-The installer merges only the PenGuru registry entry, Settings tab/section,
-and bridge route. It preserves unrelated live changes, existing signed
-manifests, models and trust keys. It restarts the HTTP bridge (existing app
+The installer merges only the PenGuru registry entry and bridge route, and it
+removes the legacy Settings PenGuru tab/section when upgrading an older device.
+It preserves unrelated live changes, existing signed manifests, models and
+trust keys. It restarts the HTTP bridge (existing app
 tokens must be refreshed), but not SSH, networking, the display session or
 the handset. Close and reopen Settings/home after installation to load the
-new assets. The application is named **PenGuru Squad**; the Settings tab is
-**PenGuru AI**.
+new assets. The application is named **PenGuru Squad** and is self-contained.
 
 Each installation prints a receipt under `/var/backups/nuxel-penguru/`.
 The installer automatically restores files if it fails. For a later rollback:
@@ -87,8 +89,7 @@ python3 services/nuxel-penguru/tests/test_installation.py
 python3 services/nuxel-penguru/tests/test_worker_protocol.py
 python3 -m compileall -q services/nuxel-penguru
 node --check pwa/nuxel-apps/penguru/penguru.js
-node --check pwa/nuxel-apps/settings/penguru-settings.js
-node --check pwa/nuxel-apps/settings/penguru-models.js
+node --check pwa/nuxel-apps/penguru/model-library.js
 node pwa/nuxel-common/verify-wiring.js
 ```
 

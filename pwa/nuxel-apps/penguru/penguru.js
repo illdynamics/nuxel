@@ -1,8 +1,38 @@
 import {voiceControls} from './voice.js';
 import {bridge} from '../../nuxel-common/bridge.js';
-import {modelLibrary} from '../settings/penguru-models.js';
+import {modelLibrary} from './model-library.js';
 const $ = id => document.getElementById(id);
 let enabled = false, request = null, lastOutput = '', currentReply = null;
+const API_DEFAULT = 'http://127.0.0.1:8080/api/v1';
+function stored(key) { try { return localStorage.getItem(key) || ''; } catch (e) { return ''; } }
+function saveStored(key, value) { try { value ? localStorage.setItem(key, value) : localStorage.removeItem(key); } catch (e) { /* storage unavailable */ } }
+function connectionLabel() {
+  const url = stored('nuxel-api-url') || API_DEFAULT;
+  return `Bridge: ${url}${stored('nuxel-penguru-token') ? ' · launcher token configured' : ' · no launcher token'}`;
+}
+$('api-url').value = stored('nuxel-api-url') || API_DEFAULT;
+$('api-token').value = stored('nuxel-penguru-token');
+$('connection-status').textContent = connectionLabel();
+$('connect').onclick = () => {
+  let url = $('api-url').value.trim() || API_DEFAULT;
+  if (!/^https?:\/\/[^\s]+$/i.test(url)) { $('connection-status').textContent = 'Enter an http(s) API URL.'; return; }
+  url = url.replace(/\/+$/, '');
+  saveStored('nuxel-api-url', url);
+  const token = $('api-token').value.trim();
+  saveStored('nuxel-penguru-token', token);
+  if (token) {
+    saveStored('nuxel-bridge-token', token);
+    saveStored('nuxel-bridge-token-app', JSON.stringify({app_id: 'org.nuxel.PenGuru'}));
+  } else {
+    saveStored('nuxel-bridge-token', '');
+    saveStored('nuxel-bridge-token-app', '');
+  }
+  location.reload();
+};
+$('forget').onclick = () => {
+  for (const key of ['nuxel-api-url','nuxel-penguru-token','nuxel-bridge-token','nuxel-bridge-token-app']) saveStored(key, '');
+  location.reload();
+};
 const library = modelLibrary($('cards'), call);
 const voice = voiceControls(call, () => enabled && !request, text => { $('prompt').value = text; page('chat'); $('prompt').focus(); });
 async function call(op, params = {}) {

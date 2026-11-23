@@ -213,8 +213,13 @@ See [RELEASE-NOTES.md](RELEASE-NOTES.md) for user-facing release notes and
 ## PenGuru Squad opt-in beta (v0.8.9-beta)
 
 PenGuru is a **local-first** AI subsystem and is **disabled by default**. It is an
-opt-in beta: enable it in Settings → **PenGuru AI**, pick a model, acknowledge its
-immutable revision + license, and run the runtime self-test to reach READY. The
+opt-in beta: open the **PenGuru Squad** app, enable it on the main screen, then
+use the app's **Model library** to pick a model, acknowledge its immutable
+revision + license, and run the runtime self-test to reach READY. Runtime,
+voice, connection and model controls all live in the app; the old Settings →
+**PenGuru AI** panel has been removed. A standalone Android APK of the same app
+is under [`android/penguru-squad`](android/penguru-squad/README.md) and
+[`dist/android`](dist/android). The
 two repository GGUF manifests are unsigned; download stays disabled until a
 manifest is signed with the production trust key. Voice/wake-word modes are out
 of scope and off. Every bridge/system call passes a typed permission broker, so a

@@ -31,39 +31,64 @@ def merge_registry(existing, incoming):
 
 
 def merge_settings(existing, incoming):
-    start = incoming.index('  <section id="tab-penguru"')
-    end = incoming.index('</section>', start) + len('</section>')
-    section = incoming[start:end]
-    if 'id="tab-penguru"' in existing:
-        start = existing.index('  <section id="tab-penguru"')
-        end = existing.index('</section>', start) + len('</section>')
-        existing = existing[:start] + section + existing[end:]
-    else:
-        marker = '  <section id="tab-display"'
-        if existing.count(marker) != 1:
-            raise ValueError('Cannot safely locate Settings insertion point')
-        existing = existing.replace(marker, section + '\n' + marker, 1)
-    if 'data-tab="penguru"' not in existing:
-        matches = list(re.finditer(r'<button\b[^>]*\bdata-tab="display"[^>]*>', existing))
-        if len(matches) != 1:
-            raise ValueError('Cannot safely locate Settings tab insertion point')
-        marker = matches[0].group()
-        existing = existing.replace(marker, '<button class="tab" data-tab="penguru">PenGuru AI</button>\n  ' + marker, 1)
-    script = '<script type="module" src="penguru-settings.js"></script>'
-    if script not in existing:
-        existing = existing.replace('</body>', script + '\n</body>', 1)
+    """Remove the legacy PenGuru Settings tab from an installed handset.
+
+    PenGuru is now self-contained in its own app: model downloads, runtime
+    choice, voice and connection settings all live there.  Existing installs
+    may still carry the old tab, section and script, so the installer strips
+    exactly those three fragments and leaves every other Settings change alone.
+    """
+    del incoming  # kept in the signature for the installer/test contract
+    existing = re.sub(r'[ \t]*<button\b[^>]*\bdata-tab="penguru"[^>]*>.*?</button>\n?', '',
+                      existing, count=1, flags=re.S)
+    existing = re.sub(r'[ \t]*<section\b[^>]*\bid="tab-penguru"[^>]*>.*?</section>\n?', '', existing,
+                      count=1, flags=re.S)
+    existing = re.sub(r'[ \t]*<script type="module" src="penguru-settings.js"></script>\n?', '', existing)
     return existing
 
 
+ANDROID_ORIGIN = 'https://appassets.androidplatform.net'
+
+
+def merge_allow_origin(existing):
+    """Add the bundled Android APK origin to the bridge CORS allowlist.
+
+    CORS is not authentication: the launcher-bound PenGuru token gate remains
+    mandatory.  This only lets the WebView read the bridge's responses.
+    """
+    match = re.search(r'^Environment=NUXEL_API_ALLOW_ORIGIN=(.*)$', existing, re.M)
+    if match:
+        origins = [item.strip() for item in match.group(1).split(',') if item.strip()]
+        if ANDROID_ORIGIN not in origins:
+            origins.append(ANDROID_ORIGIN)
+        replacement = 'Environment=NUXEL_API_ALLOW_ORIGIN=' + ','.join(origins)
+        return existing[:match.start()] + replacement + existing[match.end():]
+    if '[Service]\n' not in existing:
+        raise ValueError('Cannot locate [Service] in the bridge unit')
+    return existing.replace('[Service]\n', '[Service]\nEnvironment=NUXEL_API_ALLOW_ORIGIN='
+                            + ANDROID_ORIGIN + '\n', 1)
+
+
 def merge_api(existing):
-    if "if namespace == 'penguru':" in existing:
-        return existing
-    marker = "        params = body.get('params', {}) or {}\n"
-    start = existing.index('    def _handle_rpc(self, app_id, body):')
-    insertion = existing.index(marker, start) + len(marker)
-    return existing[:insertion] + ("        if namespace == 'penguru':\n"
-        "            import penguru_api\n"
-        "            return penguru_api.handle(app_id, self._session_token(), verb, params)\n") + existing[insertion:]
+    if "if namespace == 'penguru':" not in existing:
+        marker = "        params = body.get('params', {}) or {}\n"
+        start = existing.index('    def _handle_rpc(self, app_id, body):')
+        insertion = existing.index(marker, start) + len(marker)
+        existing = existing[:insertion] + ("        if namespace == 'penguru':\n"
+            "            import penguru_api\n"
+            "            return penguru_api.handle(app_id, self._session_token(), verb, params)\n") + existing[insertion:]
+    # Android WebView requests cross a private-network boundary.  The
+    # authorization decision is unchanged; this header only lets the browser
+    # surface the bridge's CORS answer instead of blocking the preflight.
+    if 'Access-Control-Allow-Private-Network' not in existing:
+        marker = ("            self.send_header('Access-Control-Allow-Origin', cors_origin)\n"
+                  "        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')")
+        replacement = ("            self.send_header('Access-Control-Allow-Origin', cors_origin)\n"
+                       "            self.send_header('Access-Control-Allow-Private-Network', 'true')\n"
+                       "        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')")
+        if marker in existing:
+            existing = existing.replace(marker, replacement, 1)
+    return existing
 
 
 def main():
@@ -130,8 +155,6 @@ def main():
         settings = Path('/usr/share/nuxel/pwa/nuxel-apps/settings')
         install(settings / 'index.html', merge_settings((settings / 'index.html').read_text(),
                 (source / 'pwa/nuxel-apps/settings/index.html').read_text()))
-        for name in ('penguru-settings.js', 'penguru-models.js'):
-            install(settings / name, (source / 'pwa/nuxel-apps/settings' / name).read_bytes())
         incoming = json.loads((source / 'pwa/nuxel-common/app-registry.json').read_text())
         for name in ('/etc/nuxel/app-registry/app_registry.json', '/usr/share/nuxel/pwa/nuxel-common/app-registry.json', '/usr/share/nuxel/nuxel-common/app-registry.json'):
             destination = Path(name)
@@ -150,6 +173,9 @@ def main():
                 raise RuntimeError('Symlink in PenGuru state; ownership not changed')
         for item in [state, *state.rglob('*')]:
             os.chown(item, account.pw_uid, account.pw_gid)
+        unit = Path('/etc/systemd/system/nuxel-http-bridge.service')
+        if unit.exists():
+            install(unit, merge_allow_origin(unit.read_text()))
         subprocess.run(['systemctl', 'daemon-reload'], check=True)
         subprocess.run(['systemctl', 'restart', 'nuxel-http-bridge'], check=True)
         for attempt in range(40):

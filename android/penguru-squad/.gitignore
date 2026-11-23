@@ -1,0 +1,5 @@
+.build/
+assets/public/
+*.keystore
+local.properties
+.signing/

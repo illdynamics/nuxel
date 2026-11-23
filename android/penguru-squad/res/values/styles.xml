@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/penguru_background</item>
+        <item name="android:colorAccent">@color/penguru_accent</item>
+        <item name="android:statusBarColor">@color/penguru_status</item>
+        <item name="android:navigationBarColor">@color/penguru_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="penguru_background">#0b1422</color>
+    <color name="penguru_status">#101b2c</color>
+    <color name="penguru_accent">#7dd9cc</color>
+</resources>

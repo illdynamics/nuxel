@@ -44,19 +44,45 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(result['custom'], 1)
         self.assertEqual(len(installer.merge_registry(result, incoming)['apps']), 2)
 
-    def test_settings_merge_is_scoped_and_idempotent(self):
+    def test_settings_merge_removes_legacy_penguru_panel(self):
         incoming = (SERVICE.parents[1] / 'pwa/nuxel-apps/settings/index.html').read_text()
-        existing = '<body><button class="tab active" data-tab="display">Display</button>\n  <section id="tab-display">Owner settings</section></body>'
+        existing = ('<body>\n<nav><button class="tab" data-tab="penguru">PenGuru AI</button>'
+                    '<button class="tab active" data-tab="display">Display</button></nav>\n'
+                    '  <section id="tab-penguru" class="panel">Legacy PenGuru</section>\n'
+                    '  <section id="tab-display">Owner settings</section>\n'
+                    '<script type="module" src="penguru-settings.js"></script>\n</body>')
         merged = installer.merge_settings(existing, incoming)
         self.assertIn('Owner settings', merged)
-        self.assertIn('penguru-models', merged)
+        self.assertNotIn('tab-penguru', merged)
+        self.assertNotIn('penguru-settings.js', merged)
+        self.assertNotIn('Legacy PenGuru', merged)
         self.assertEqual(installer.merge_settings(merged, incoming), merged)
+
+    def test_allow_origin_merge_is_idempotent(self):
+        unit = ('[Service]\nEnvironment=NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000\n'
+                'ExecStart=/usr/bin/nuxel-http-bridge\n')
+        merged = installer.merge_allow_origin(unit)
+        self.assertIn('http://127.0.0.1:8000,https://appassets.androidplatform.net', merged)
+        self.assertEqual(installer.merge_allow_origin(merged), merged)
+        bare = installer.merge_allow_origin('[Service]\nExecStart=/bin/true\n')
+        self.assertIn('Environment=NUXEL_API_ALLOW_ORIGIN=https://appassets.androidplatform.net', bare)
 
     def test_api_merge_preserves_existing_routes(self):
         original = "    def _handle_rpc(self, app_id, body):\n        namespace = body.get('namespace', '')\n        params = body.get('params', {}) or {}\n        return 'owner-route'\n"
         result = installer.merge_api(original)
         self.assertIn("return 'owner-route'", result)
         self.assertEqual(installer.merge_api(result), result)
+        options = ("    def _handle_rpc(self, app_id, body):\n"
+                   "        namespace = body.get('namespace', '')\n"
+                   "        params = body.get('params', {}) or {}\n"
+                   "        return {}\n"
+                   "    def do_OPTIONS(self):\n"
+                   "        if cors_origin:\n"
+                   "            self.send_header('Access-Control-Allow-Origin', cors_origin)\n"
+                   "        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')\n")
+        merged = installer.merge_api(options)
+        self.assertIn("Access-Control-Allow-Private-Network", merged)
+        self.assertEqual(installer.merge_api(merged), merged)
 
 
 if __name__ == '__main__':

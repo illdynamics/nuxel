@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The PenGuru bridge is owner-hosted and may be reached over loopback or a
+     private LAN address using http://. Authentication and the launcher-bound
+     PenGuru token gate remain mandatory; this only permits transport. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

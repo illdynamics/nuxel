@@ -413,7 +413,14 @@ _ALLOWED_ORIGINS_ENV = os.environ.get('NUXEL_API_ALLOW_ORIGIN', '')
 ALLOWED_ORIGINS = set(_.strip() for _ in _ALLOWED_ORIGINS_ENV.split(',') if _.strip()) if _ALLOWED_ORIGINS_ENV.strip() else {
     'http://127.0.0.1:8000',
     'http://localhost:8000',
+    # Bundled PenGuru Android APK. CORS only: authentication and the
+    # launcher-bound PenGuru authority gate are still enforced.
+    'https://appassets.androidplatform.net',
 }
+# The Android shell is always allowed in addition to any owner allowlist, so
+# an existing device that only sets NUXEL_API_ALLOW_ORIGIN does not silently
+# break API access after installing the APK.
+ALLOWED_ORIGINS.add('https://appassets.androidplatform.net')
 
 # Single-source path config (briq-20): load /etc/nuxel/paths.conf, overridable
 # via NUXEL_PATHS_CONF. Environment variables take precedence over the file.
@@ -2835,6 +2842,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         self.send_response(204)
         if cors_origin:
             self.send_header('Access-Control-Allow-Origin', cors_origin)
+            self.send_header('Access-Control-Allow-Private-Network', 'true')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Nuxel-Bridge-Version, X-Nuxel-Launcher-Secret')
         self.end_headers()

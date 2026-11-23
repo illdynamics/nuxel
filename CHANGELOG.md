@@ -2,6 +2,18 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [Unreleased]
+
+- Add a standalone Android APK for PenGuru Squad (`android/penguru-squad`,
+  `dist/android/penguru-squad-debug.apk`). The bundled WebView app serves the
+  current PWA from a private in-APK origin and connects to the Nuxel bridge.
+- Move the model library and every PenGuru setting into the app. Remove the
+  legacy Settings → PenGuru AI tab/section/script and strip it during upgrades.
+- Add in-app bridge URL and launcher-token settings, plus
+  `tools/mint-android-token.py` for owner-authorized tokens.
+- Allow the APK origin in bridge CORS (authentication and the launcher-bound
+  PenGuru authority gate are unchanged).
+
 ## [v0.8.9-beta] - 2026-11-17
 
 - Enroll owner-local model signing trust while preserving the handset test key.
