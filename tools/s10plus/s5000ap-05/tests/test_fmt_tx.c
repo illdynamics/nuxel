@@ -158,7 +158,8 @@ int main(void)
 
     /* --- SetPdpContext / ACTIVATE (source: IpcTxSetPdpContext @0x31f6e0) ---
      * 112-byte frame: len=112(0x70), main=13, sub=4, type=3.
-     * payload[0]=1 (pdp_type), payload[1]=cid, flags=0x11, APN at +6. */
+     * AUTHORITATIVE: payload[0]=protocol, payload[1]=pdp_type=3(LTE),
+     * flags=0x11 at payload[2], APN at payload[6]. */
     memset(&f, 0, sizeof f);
     CHECK(fmt_tx_set_pdp_context(&f, "internet", FMT_TX_AUTH_NONE,
                                  FMT_TX_PROTO_IPV4V6, 1),
@@ -167,13 +168,13 @@ int main(void)
     CHECK(f.main_cmd == 13 && f.sub_cmd == 4 && f.cmd_type == 3,
           "set_pdp_context main/sub/type=13/4/3");
     CHECK(f.buf[0] == 0x70 && f.buf[1] == 0x00, "set_pdp_context len field = 112 LE");
-    CHECK(f.buf[7 + 0] == 0x01, "set_pdp_context payload[0] pdp_type == 1 (full APN path)");
-    CHECK(f.buf[7 + 1] == 0x01, "set_pdp_context payload[1] cid == 1");
+    CHECK(f.buf[7 + 0] == 0x04, "set_pdp_context payload[0] protocol == 0x04 (IPV4V6)");
+    CHECK(f.buf[7 + 1] == 0x03, "set_pdp_context payload[1] pdp_type == 3 (LTE/EUTRAN)");
     CHECK(f.buf[7 + 2] == 0x11, "set_pdp_context payload[2] flags == 0x11 (APN+ACTIVATE)");
     CHECK(memcmp(&f.buf[7 + 6], "internet", 8) == 0,
           "set_pdp_context APN placed at payload offset 6");
     CHECK(f.buf[7 + 102] == 0x01, "set_pdp_context auth flag == 0x01");
-    CHECK(f.buf[7 + 104] == 0x04, "set_pdp_context protocol byte == 0x04 IPV4V6");
+    CHECK(f.buf[7 + 104] == 0x04, "set_pdp_context protocol byte (2nd copy) == 0x04");
 
     /* --- SyncProfileInfo (source: IpcTxSyncProfileInfo @0x31fb48) ---
      * 326-byte frame: len=326(0x146), main=13, sub=37(0x25), type=3.
@@ -220,6 +221,29 @@ int main(void)
     CHECK(bad == -1, "get_data_reg_state bytes match disasm (diff @ %d)", bad);
     CHECK(f.main_cmd == 8 && f.sub_cmd == 5 && f.cmd_type == 2,
           "get_data_reg_state main/sub/type=8/5/2 (NET_REGIST REQUEST)");
+
+    /* --- SetServiceDomain (source: IpcTxNetSetServiceDomain @0x336dc8) ---
+     * 8-byte frame: len=8, main=8, sub=8, type=3, payload=[domain].
+     * domain 2 (CS_PS) -> payload[0]=2. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_service_domain(&f, FMT_TX_SERVICE_DOMAIN_CS_PS), "service_domain builds");
+    const uint8_t svcdom_expect[8] = { 0x08,0x00, 0x00,0x00, 0x08,0x08, 0x03, 0x02 };
+    bad = hexcmp(f.buf, svcdom_expect, 8);
+    CHECK(f.len == 8, "service_domain len==8 (got %zu)", f.len);
+    CHECK(bad == -1, "service_domain bytes match disasm (diff @ %d)", bad);
+    CHECK(f.main_cmd == 8 && f.sub_cmd == 8 && f.cmd_type == 3,
+          "service_domain main/sub/type=8/8/3");
+
+    /* --- SetPreferredNetType (source: IpcTxNetSetPreferredNetType @0x335e00) ---
+     * 8-byte frame: len=8, main=8, sub=10(0x0a), type=3, payload=[9]. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_preferred_net_type(&f, FMT_TX_PREFERRED_NET_LTE_AUTO), "preferred_net builds");
+    const uint8_t prefnet_expect[8] = { 0x08,0x00, 0x00,0x00, 0x08,0x0a, 0x03, 0x09 };
+    bad = hexcmp(f.buf, prefnet_expect, 8);
+    CHECK(f.len == 8, "preferred_net len==8 (got %zu)", f.len);
+    CHECK(bad == -1, "preferred_net bytes match disasm (diff @ %d)", bad);
+    CHECK(f.main_cmd == 8 && f.sub_cmd == 10 && f.cmd_type == 3,
+          "preferred_net main/sub/type=8/10/3");
 
     printf("\n%s: %d failures\n", failures ? "RESULT=FAIL" : "RESULT=PASS", failures);
     return failures ? 1 : 0;

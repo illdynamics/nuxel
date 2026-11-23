@@ -165,37 +165,43 @@ bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
     size_t alen = strlen(apn);
     if (alen > 31u) return false;   /* APN field is 32 bytes */
 
-    uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 4u /*GPRS_PDP_CONTEXT*/, FMT_TX_TYPE_NOTIFICATION, 105u);
+    /* AUTHORITATIVE layout (IpcTxSetPdpContext @0x31f6e0, 112-byte frame,
+     * main=13 sub=4 type=3, payload=105 bytes). Verified this round:
+     *   payload[0]     = protocol wire byte (proto_wire_byte)
+     *   payload[1]     = pdp_type = 3 (AccessNetworkType EUTRAN/LTE; verified via
+     *                    DataCallSetup::ToAccessNetworkType(RAT14)=3 table @0x14708c)
+     *   payload[2..5]  = flags word (0x11 = APN present | 0x10 activate)
+     *   payload[6..37] = APN (32 bytes NUL-padded)
+     *   payload[38..69] = username (32 bytes, zero)
+     *   payload[70..101]= password (32 bytes, zero)
+     *   payload[102]   = auth flag (0x00010201 >> ((auth-1)*8))
+     *   payload[103]   = reserved (0)
+     *   payload[104]   = protocol wire byte (2nd copy)
+     * The `cid` parameter is the PDP context/profile id; the vendor carries it
+     * in the transaction (not in the fixed payload), so it is advisory here. */
+    uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 4u /*GPRS_PDP_CONTEXT*/,
+                              FMT_TX_TYPE_NOTIFICATION, 105u);
     if (!p) return false;
     memset(p, 0, 105u);
 
-    p[0] = 1u;                     /* pdp_type code = 1 (full APN path; VERIFIED @31f7d0:
-                                   *   copies APN + sets flags bit0=APN, bit4=ACTIVATE) */
-    p[1] = cid;                    /* context id */
+    p[0] = proto_wire_byte(proto);          /* protocol wire byte */
+    p[1] = 3u;                              /* pdp_type = 3 (EUTRAN/LTE) */
 
-    /* flags word at payload[2..5] (LE u32): bit0=APN present, bit4=ACTIVATE. */
-    p[2] = 0x11;
+    p[2] = 0x11;                            /* flags: APN present + activate */
     p[3] = 0x00;
     p[4] = 0x00;
     p[5] = 0x00;
 
-    /* APN at payload[6..6+alen]. */
-    memcpy(&p[6], apn, alen);
+    memcpy(&p[6], apn, alen);               /* APN at payload[6..6+alen] */
 
-    /* auth flag at payload[102]. */
     {
         unsigned idx = (auth_code >= 1u) ? (auth_code - 1u) : 0u;
         uint32_t pat = 0x00010201u;
         p[102] = (uint8_t)((idx < 4u) ? (pat >> (idx * 8u)) & 0xffu : 0u);
     }
-
-    /* protocol byte at payload[104]. */
-    switch (proto) {
-    case FMT_TX_PROTO_IP:     p[104] = 0x05; break;
-    case FMT_TX_PROTO_IPV6:   p[104] = 0x06; break;
-    case FMT_TX_PROTO_IPV4V6: p[104] = 0x04; break;
-    default:                  p[104] = 0x05; break;
-    }
+    p[103] = 0u;
+    p[104] = proto_wire_byte(proto);        /* protocol 2nd copy */
+    (void)cid;
 
     return true;
 }
@@ -414,4 +420,34 @@ bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
     memcpy(&p[3], apn, alen);
 
     return true;
+}
+
+/*
+ * NET service domain config (IpcTxNetSetServiceDomain @0x336dc8).
+ * 8-byte frame: main=8 sub=8(0x08) type=3, payload=[domain].
+ * NetServiceDomainType: 1=CS_ONLY, 2=CS_PS (voice+data), 3=PS_ONLY.
+ * The vendor default for a normal LTE attach is CS_PS (2), required before the
+ * GPRS data path will accept a PS attach. Verified byte-exact this round.
+ */
+bool fmt_tx_set_service_domain(struct fmt_tx_frame *f, uint8_t domain)
+{
+    uint8_t p[1];
+    /* Mirror the vendor's csinc/csel: 1->1, 2->2, else->3. */
+    p[0] = (domain == 1u) ? 1u : (domain == 2u) ? 2u : 3u;
+    return fmt_tx_raw(f, MAIN_NET, 8u /*NET_SERVICE_DOMAIN_CONFIG*/,
+                      FMT_TX_TYPE_NOTIFICATION, p, 1);
+}
+
+/*
+ * NET preferred network type / network mode select
+ * (IpcTxNetSetPreferredNetType @0x335e00).
+ * 8-byte frame: main=8 sub=10(0x0a) type=3, payload=[PreferredNetType].
+ * 9 = LTE/WCDMA/GSM auto (Android PreferredNetworkType), the S10+ LTE default.
+ */
+bool fmt_tx_set_preferred_net_type(struct fmt_tx_frame *f, uint8_t net_type)
+{
+    uint8_t p[1];
+    p[0] = net_type;
+    return fmt_tx_raw(f, MAIN_NET, 10u /*NET_MODE_SEL*/,
+                      FMT_TX_TYPE_NOTIFICATION, p, 1);
 }

@@ -25,7 +25,9 @@ int main(void)
 
     /* Authenticated ack advances each phase in order
      * (NET_REGIST_CHECK -> ENABLE_MOBILE_DATA -> SYNC_PROFILE -> ... -> ACTIVE). */
-    p = ds_step(&c, true, 100);  CHECK(p == DS_ENABLE_MOBILE_DATA, "NET_REGIST_CHECK -> ENABLE_MOBILE_DATA");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_SET_SERVICE_DOMAIN, "NET_REGIST_CHECK -> SET_SERVICE_DOMAIN");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_SET_PREFERRED_NET, "SET_SERVICE_DOMAIN -> SET_PREFERRED_NET");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_ENABLE_MOBILE_DATA, "SET_PREFERRED_NET -> ENABLE_MOBILE_DATA");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SYNC_PROFILE, "ENABLE_MOBILE_DATA -> SYNC_PROFILE");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_DATA_PROFILE, "SYNC_PROFILE -> SET_DATA_PROFILE");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_LTE_ATTACH, "SET_DATA_PROFILE -> SET_LTE_ATTACH");
@@ -61,9 +63,9 @@ int main(void)
 
     /* --- ds_feedback: strict success/rejection behaviour --- */
     ds_reset(&c, "internet", 1);
-    /* success advances NET_REGIST_CHECK -> ENABLE_MOBILE_DATA */
+    /* success advances NET_REGIST_CHECK -> SET_SERVICE_DOMAIN */
     p = ds_feedback(&c, true, 1000);
-    CHECK(p == DS_ENABLE_MOBILE_DATA, "ds_feedback(success) advances (got %d)", (int)p);
+    CHECK(p == DS_SET_SERVICE_DOMAIN, "ds_feedback(success) advances (got %d)", (int)p);
     /* rejection -> REJECTED (terminal for this attempt, bounded) */
     p = ds_feedback(&c, false, 1000);
     CHECK(p == DS_REJECTED, "ds_feedback(fail) -> REJECTED (got %d)", (int)p);

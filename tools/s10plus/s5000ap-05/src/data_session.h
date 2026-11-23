@@ -26,6 +26,8 @@ enum ds_phase {
     DS_IDLE = 0,
     DS_SIM_CHECK,          /* confirm SIM READY */
     DS_NET_REGIST_CHECK,   /* read PS/data registration (GetDataRegState NET_REGIST) */
+    DS_SET_SERVICE_DOMAIN, /* NET service domain CS_PS (SetServiceDomain sub=8) */
+    DS_SET_PREFERRED_NET,  /* NET preferred type LTE (SetPreferredNetType sub=10) */
     DS_ENABLE_MOBILE_DATA, /* GPRS mobile data ON (SetMobileDataSetting sub=29) */
     DS_SYNC_PROFILE,       /* full profile sync w/ RAT (SyncProfileInfo sub=37) */
     DS_SET_DATA_PROFILE,   /* set APN/auth/protocol data profile */
@@ -59,6 +61,11 @@ struct data_session_ctx {
     uint8_t        last_gen_result;    /* GEN echo result byte (0=success) */
     uint8_t        last_gprs_call_state; /* GPRS_CALL_STATUS state byte */
     uint8_t        last_gprs_pdp_state;  /* GPRS_PDP_CONTEXT list state byte */
+    /* NET_REGIST decoded registration states (authoritative RegState enum):
+     * 0=off,1=registered,2=searching,3=denied,4=unknown,5=roaming. */
+    uint8_t        last_cs_reg_state;
+    uint8_t        last_ps_reg_state;
+    bool           net_regist_valid;
     bool           gen_result_valid;   /* a GEN result has been correlated */
     bool           gprs_call_state_valid;
     bool           gprs_pdp_state_valid;

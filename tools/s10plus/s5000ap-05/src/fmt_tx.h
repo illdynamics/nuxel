@@ -138,3 +138,23 @@ bool fmt_tx_raw(struct fmt_tx_frame *f, uint8_t main, uint8_t sub,
                 uint8_t type, const uint8_t *payload, size_t payload_len);
 
 #endif /* NUXEL_FMT_TX_H */
+
+/* ---- NET service-domain / preferred-network-type commands (AP -> CP) ---- */
+
+/* NET service domain config (source: IpcTxNetSetServiceDomain @0x336dc8).
+ * main=8 sub=8(0x08) type=3, 8-byte frame, payload=[domain].
+ * NetServiceDomainType: 1=CS_ONLY, 2=CS_PS (voice+data), 3=PS_ONLY. The vendor
+ * default for a normal LTE attach is CS_PS (2), which is REQUIRED before the
+ * GPRS/data path will accept a PS attach. */
+bool fmt_tx_set_service_domain(struct fmt_tx_frame *f, uint8_t domain);
+
+/* NET preferred network type / network mode select (source:
+ * IpcTxNetSetPreferredNetType @0x335e00). main=8 sub=10(0x0a) type=3,
+ * 8-byte frame, payload=[PreferredNetType]. 9 = LTE/WCDMA/GSM auto (Android
+ * RIL_PREFERRED_NETWORK_MODE_LTE_WCDMA_GSM), the S10+ default LTE mode. */
+bool fmt_tx_set_preferred_net_type(struct fmt_tx_frame *f, uint8_t net_type);
+
+/* Service-domain and preferred-network-type value constants. */
+#define FMT_TX_SERVICE_DOMAIN_CS_PS  2u  /* voice + data both enabled */
+#define FMT_TX_PREFERRED_NET_LTE_AUTO 9u  /* LTE/WCDMA/GSM auto */
+#define FMT_TX_PDP_TYPE_LTE 3u            /* AccessNetworkType EUTRAN (LTE) */

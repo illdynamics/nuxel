@@ -610,6 +610,8 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         /* Accept the command and advance through the setup-only phases. Do NOT
          * decide bearer success here. */
         switch (phase) {
+        case DS_SET_SERVICE_DOMAIN:
+        case DS_SET_PREFERRED_NET:
         case DS_ENABLE_MOBILE_DATA:
         case DS_SYNC_PROFILE:
         case DS_SET_DATA_PROFILE:
@@ -663,14 +665,39 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         return DS_FEEDBACK_IGNORE;
     }
 
-    /* ---- NET_REGIST response (main=8 sub=5) for DS_NET_REGIST_CHECK ---- */
-    if (phase == DS_NET_REGIST_CHECK &&
-        f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_REGIST) {
-        /* The CP reports its registration state. We record it (see fmt payload
-         * diagnostics) and advance; the decisive data gate remains GPRS_CALL_STATUS
-         * at DATA_CALL. This phase is a read-only state query, so any valid NET_REGIST
-         * response (type 2 response or type 3 notification) satisfies it. */
-        return DS_FEEDBACK_OK;
+    /* ---- NET_REGIST (main=8 sub=5) ---- */
+    if (f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_REGIST &&
+        f->payload_len >= 3) {
+        /* Decode the registration-state vector using the authoritative
+         * IpcRxNetRegState field map (libsec-ril.so build 60889dd7):
+         *   payload[1] = primary RegState, payload[2] = secondary RegState.
+         * RegState enum (from NetRegState::IsRegistered / IsDenied):
+         *   0=off, 1=registered, 2=searching, 3=DENIED, 4=unknown, 5=roaming.
+         * The GetDataRegState (data-selector) response reports PS/data as the
+         * primary field and CS/voice as the secondary field. We record both
+         * raw values (never redacting them: they are non-sensitive enum bytes)
+         * and surface an explicit, human-readable decode. */
+        uint8_t prim = f->payload[1];
+        uint8_t sec  = f->payload[2];
+        /* derive RegState from the raw state byte (vendor maps 1->1, 2->2,
+         * 3->3, >3 -> roaming/unknown set). */
+        uint8_t ps_raw = prim;   /* primary = PS/data for GetDataRegState */
+        uint8_t cs_raw = sec;    /* secondary = CS/voice */
+        g.dsc.last_ps_reg_state = ps_raw;
+        g.dsc.last_cs_reg_state = cs_raw;
+        g.dsc.net_regist_valid = true;
+        const char *psn = (ps_raw == 1) ? "REGISTERED" :
+                          (ps_raw == 2) ? "SEARCHING" :
+                          (ps_raw == 3) ? "DENIED" :
+                          (ps_raw == 5) ? "REGISTERED_ROAMING" : "UNKNOWN";
+        const char *csn = (cs_raw == 1) ? "REGISTERED" :
+                          (cs_raw == 2) ? "SEARCHING" :
+                          (cs_raw == 3) ? "DENIED" :
+                          (cs_raw == 5) ? "REGISTERED_ROAMING" : "UNKNOWN";
+        diagf("net_regist_state", "\"ps\":%u,\"ps_name\":\"%s\",\"cs\":%u,\"cs_name\":\"%s\"",
+              ps_raw, psn, cs_raw, csn);
+        if (phase == DS_NET_REGIST_CHECK) return DS_FEEDBACK_OK;
+        return DS_FEEDBACK_IGNORE;
     }
 
     /* ---- SIM readiness (SEC_PIN_STATUS) for DS_SIM_CHECK ---- */
@@ -702,6 +729,18 @@ static bool data_session_emit(void)
          * 9-byte query). The response tells us whether the modem is PS-registered
          * before we attempt a PDP activation that would otherwise be rejected. */
         if (!fmt_tx_get_data_reg_state(&f)) return false;
+        break;
+    case DS_SET_SERVICE_DOMAIN:
+        /* Enable CS+PS service domain (source-backed IpcTxNetSetServiceDomain,
+         * main=8 sub=8, payload=[2]=CS_PS). Prerequisite for PS/data attach. */
+        if (!fmt_tx_set_service_domain(&f, FMT_TX_SERVICE_DOMAIN_CS_PS))
+            return false;
+        break;
+    case DS_SET_PREFERRED_NET:
+        /* Set LTE/WCDMA/GSM auto network mode (source-backed
+         * IpcTxNetSetPreferredNetType, main=8 sub=10, payload=[9]). */
+        if (!fmt_tx_set_preferred_net_type(&f, FMT_TX_PREFERRED_NET_LTE_AUTO))
+            return false;
         break;
     case DS_ENABLE_MOBILE_DATA:
         /* Enable GPRS mobile data (source-backed IpcTxSetMobileDataSetting,

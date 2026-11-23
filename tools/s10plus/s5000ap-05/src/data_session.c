@@ -13,6 +13,8 @@ const char *ds_phase_name(enum ds_phase p)
     case DS_IDLE:               return "IDLE";
     case DS_SIM_CHECK:          return "SIM_CHECK";
     case DS_NET_REGIST_CHECK:   return "NET_REGIST_CHECK";
+    case DS_SET_SERVICE_DOMAIN: return "SET_SERVICE_DOMAIN";
+    case DS_SET_PREFERRED_NET:  return "SET_PREFERRED_NET";
     case DS_ENABLE_MOBILE_DATA: return "ENABLE_MOBILE_DATA";
     case DS_SYNC_PROFILE:       return "SYNC_PROFILE";
     case DS_SET_DATA_PROFILE:   return "SET_DATA_PROFILE";
@@ -83,7 +85,9 @@ enum ds_phase ds_step(struct data_session_ctx *c, bool ack, uint64_t now_ms)
     c->step_deadline_ms = now_ms + DS_STEP_TIMEOUT_MS;
     switch (c->phase) {
     case DS_SIM_CHECK:          c->phase = DS_NET_REGIST_CHECK;   break;
-    case DS_NET_REGIST_CHECK:   c->phase = DS_ENABLE_MOBILE_DATA; break;
+    case DS_NET_REGIST_CHECK:   c->phase = DS_SET_SERVICE_DOMAIN; break;
+    case DS_SET_SERVICE_DOMAIN: c->phase = DS_SET_PREFERRED_NET;  break;
+    case DS_SET_PREFERRED_NET:  c->phase = DS_ENABLE_MOBILE_DATA; break;
     case DS_ENABLE_MOBILE_DATA: c->phase = DS_SYNC_PROFILE;       break;
     case DS_SYNC_PROFILE:       c->phase = DS_SET_DATA_PROFILE;   break;
     case DS_SET_DATA_PROFILE:   c->phase = DS_SET_LTE_ATTACH;     break;
