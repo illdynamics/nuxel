@@ -13,6 +13,7 @@ The struct-layout numbers below were derived by cross-compiling for AArch64
 
 import json
 import subprocess
+import pytest
 import sys
 import tempfile
 import os

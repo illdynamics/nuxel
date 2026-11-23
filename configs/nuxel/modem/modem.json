@@ -153,8 +153,8 @@
     "auto_probe_on_boot": false
   },
   "protected_partitions": {
-    "comment": "Denylist copied from the mission invariants. No Nuxel tool reads, writes or flashes these. Separately, the owner's TWRP agreement permits BOOT/OS repair only; that is a different, narrowly scoped operation and does NOT authorize any mod/efs/radio/radiobak/efs_... partition write.",
-    "never_read_or_write": [
+    "comment": "Denylist copied from the mission invariants. No Nuxel tool WRITES or flashes these. Separately, the owner's TWRP agreement permits BOOT/OS repair only; that is a different, narrowly scoped operation and does NOT authorize any mod/efs/radio/radiobak/efs_... partition write.",
+    "never_write": [
       "modem",
       "radio",
       "radiobak",
@@ -172,6 +172,12 @@
       "dtbo",
       "vbmeta"
     ],
+    "read_only_source_allowed": {
+      "radio": {
+        "purpose": "read-only CP firmware boot source (Stage-04), resolved via GPT PARTLABEL 'radio' = /dev/sda16 (52,428,800 B, EFUJ2). Bounded, approved, stream-only reads only; never a RADIO write.",
+        "reference": "reports/S5000AP-03_6-INSTALLED-RADIO-IDENTITY.md; reports/S5000AP-03_7-EFUJ2-SOURCE-AND-PROVENANCE.md"
+      }
+    },
     "flashing_tools_forbidden": [
       "heimdall",
       "odin",

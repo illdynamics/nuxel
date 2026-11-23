@@ -7,10 +7,16 @@ Linux asm-generic ioctl encoding), the modem_state enum order, cp_boot_mode
 values, struct modem_firmware field order, and struct modem_sec_req fields.
 
 This is a SOURCE-level comparative assertion: it does not touch any device.
+
+The kernel source is a required input. If it is absent, this suite SKIPS with
+the missing path rather than reporting a false PASS (a real checkout at the
+pinned SHA f7194c1d15eded1c2a1a4dc63825b26103435cc0 is mandatory).
 """
 import os
 import re
 import sys
+
+import pytest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
@@ -23,6 +29,11 @@ SIPC5 = os.path.join(KERNEL, "include", "sipc5.h")
 MODEM_V1 = os.path.join(KERNEL, "modem_v1.h")
 
 IO = lambda n: 0x6F00 | n  # noqa: E731
+
+# PCIe-only ioctls, gated by #ifdef CONFIG_LINK_DEVICE_PCIE in the kernel.
+# This device is SHMEM (CONFIG_LINK_DEVICE_SHMEM=y), so these do NOT exist in
+# the running kernel and MUST be absent from the SHMEM UAPI header.
+PCIE_ONLY_IOCTLS = {"IOCTL_MODEM_DUMP_RESET", "IOCTL_REGISTER_PCIE"}
 
 
 def _src(path):
@@ -48,15 +59,21 @@ def _strip(src):
     return "".join(out)
 
 
+def _require_kernel():
+    """Raise a skip if the pinned kernel source is not present."""
+    if not os.path.isfile(MODEM_PRJ):
+        pytest.skip(
+            f"kernel source at {MODEM_PRJ} not present; require a genuine checkout "
+            "of android_kernel_samsung_exynos9820 @ f7194c1d15eded1c2a1a4dc63825b26103435cc0"
+        )
+
+
 def kernel_ioctl_values():
-    """Extract every IOCTL_* macro from modem_prj.h (the canonical source)."""
+    """Extract every IOCTL_* macro from modem_prj.h (the canonical kernel source)."""
+    _require_kernel()
     src = _strip(_src(MODEM_PRJ))
     vals = {}
     for m in re.finditer(r"#define\s+(IOCTL_[A-Z0-9_]+)\s+_IO\('o',\s*(0x[0-9A-Fa-f]+)\)", src):
-        name, num = m.group(1), int(m.group(2), 16)
-        vals[name] = IO(num)
-    # The two RAMDUMP ones use 0xCE/0xCF
-    for m in re.finditer(r"#define\s+(IOCTL_MODEM_RAMDUMP_[A-Z]+)\s+_IO\('o',\s*(0x[0-9A-Fa-f]+)\)", src):
         name, num = m.group(1), int(m.group(2), 16)
         vals[name] = IO(num)
     return vals
@@ -69,22 +86,6 @@ def uapi_ioctl_values():
     for m in re.finditer(r"#define\s+(IOCTL_[A-Z0-9_]+)\s+\(IOCTL_MAGIC\s*\|\s*(0x[0-9A-Fa-f]+)\)", src):
         name, num = m.group(1), int(m.group(2), 16)
         vals[name] = 0x6F00 | num
-    return vals
-
-
-# PCIe-only ioctls, gated by #ifdef CONFIG_LINK_DEVICE_PCIE in the kernel.
-# This device is SHMEM (CONFIG_LINK_DEVICE_SHMEM=y), so these do NOT exist in
-# the running kernel and MUST be absent from the SHMEM UAPI header.
-PCIE_ONLY_IOCTLS = {"IOCTL_MODEM_DUMP_RESET", "IOCTL_REGISTER_PCIE"}
-
-
-def kernel_ioctl_values():
-    """Full kernel ioctl set INCLUDING PCIe-only (for comparative analysis)."""
-    vals = {}
-    src = _strip(_src(MODEM_PRJ))
-    for m in re.finditer(r"#define\s+(IOCTL_[A-Z0-9_]+)\s+_IO\('o',\s*(0x[0-9A-Fa-f]+)\)", src):
-        name, num = m.group(1), int(m.group(2), 16)
-        vals[name] = IO(num)
     return vals
 
 
@@ -104,13 +105,6 @@ def test_every_kernel_ioctl_present_and_equal():
 def test_no_extra_dangerous_ioctl_injected():
     k = kernel_ioctl_values()
     u = uapi_ioctl_values()
-    for name in u:
-        assert name in k, f"UAPI {name} is NOT in the kernel (injected?)"
-
-
-def test_no_extra_dangerous_ioctl_injected():
-    k = kernel_ioctl_values()
-    u = uapi_ioctl_values()
     # Every UAPI ioctl must exist in the kernel (no invented commands)
     for name in u:
         assert name in k, f"UAPI {name} is NOT in the kernel (injected?)"
@@ -122,7 +116,6 @@ def test_kernel_state_enum_matches():
     assert m, "modem_state enum not found in kernel"
     body = m.group(1)
     members = [l.strip().strip(",").strip() for l in body.splitlines() if l.strip() and not l.strip().startswith("//")]
-    # kernel order: STATE_OFFLINE, STATE_CRASH_RESET, ... (implicit 0..9)
     expected = ["STATE_OFFLINE", "STATE_CRASH_RESET", "STATE_CRASH_EXIT",
                 "STATE_BOOTING", "STATE_ONLINE", "STATE_NV_REBUILDING",
                 "STATE_LOADER_DONE", "STATE_SIM_ATTACH", "STATE_SIM_DETACH",
@@ -138,7 +131,6 @@ def test_kernel_firmware_struct_field_order():
     body = m.group(1)
     fields = [l.strip().rstrip(";").split()[-1] for l in body.splitlines()
               if l.strip() and not l.strip().startswith("//")]
-    # kernel: unsigned long long binary; u32 size; u32 m_offset; u32 b_offset; u32 mode; u32 len;
     assert fields == ["binary", "size", "m_offset", "b_offset", "mode", "len"], \
         f"modem_firmware field order mismatch: {fields}"
 
@@ -154,5 +146,4 @@ def test_kernel_sec_req_field_order():
 
 
 if __name__ == "__main__":
-    import pytest
     sys.exit(pytest.main([__file__, "-v"]))

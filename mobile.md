@@ -1,4 +1,4 @@
-# NUXEL S10+ — SHANNON S5000AP COMPLETE MOBILE RECOVERY, CP ACQUIRED
+# NUXEL S10+ — SHANNON S5000AP COMPLETE MOBILE RECOVERY
 
 ## PRIMARY MISSION
 
@@ -6,7 +6,16 @@ You are the lead Linux kernel, Samsung Exynos9820, Shannon modem, SIPC and cellu
 
 Your mission is to restore genuine, fully verified mobile networking on the Samsung Galaxy S10+ SM-G975F.
 
-The required Samsung CP archive has now been located. **Do not stop at another missing-firmware report.**
+> **Correction (Prompt 03.6/03.7).** The earlier "CP archive has now been located" claim is
+> superseded. The documented DTK9 `.tar.md5`
+> `CP_G975FXXS9DTK9_CP17435927_CL20034833_QB35905779_REV01_user_low_ship.tar.md5`
+> was **NOT present** in subsequent host searches (`find / -xdev -iname 'CP_G975F*'` → empty).
+> What was recovered offline is a derived DTK9 `.lz4` pair (structurally valid, provenance
+> UNKNOWN), and — decisively — the **installed RADIO partition is EFUJ2 (`G975FXXSEFUJ2`),
+> not DTK9**. The selected read-only firmware source for Stage-04 is therefore the installed
+> EFUJ2 RADIO at `/dev/sda16` (PARTLABEL `radio`), not the DTK9 archive. Do not treat the
+> DTK9 archive as "found"; do not block the EFUJ2 path on the missing DTK9 archive.
+> **Do not stop at another missing-firmware report.**
 
 Continue through all independently executable research, implementation, compilation and offline verification work. Advance from one validated engineering milestone to the next rather than repeatedly rewriting reports.
 
@@ -45,18 +54,20 @@ Preserve all existing commits, user changes and working subsystems.
 
 ## PHASE 1 — ACQUIRE AND VALIDATE THE CP IMAGE
 
-**The missing CP archive has been found locally:**
+**Selected read-only firmware source: the INSTALLED EFUJ2 RADIO at `/dev/sda16`**
+(PARTLABEL `radio`, 52,428,800 B, model `SM-G975F_EUR_XX_EUR0`, build
+`G975FXXSEFUJ2_CL2054966_QB20745891`, ITOC magic `TOC\0`). See
+`reports/S5000AP-03_6-INSTALLED-RADIO-IDENTITY.md` and
+`reports/S5000AP-03_7-EFUJ2-SOURCE-AND-PROVENANCE.md`.
 
-`/Users/wicked/x/nuxel/SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/CP_G975FXXS9DTK9_CP17435927_CL20034833_QB35905779_REV01_user_low_ship.tar.md5`
+The previously-documented DTK9 archive
+`CP_G975FXXS9DTK9_CP17435927_CL20034833_QB35905779_REV01_user_low_ship.tar.md5`
+was **not found** in subsequent searches; the derived DTK9 `.lz4` pair
+(`modem.bin`/`modem_debug.bin`) is `STRUCTURALLY_VALID_PROVENANCE_UNKNOWN` and is
+a **different build** than the installed EFUJ2 image. The old "archive found" and
+"exact-build candidate" statements are superseded.
 
-Verified archive member names:
-
-- `modem.bin.lz4`
-- `modem_debug.bin.lz4`
-
-This archive is an exact-build candidate matching the previously recovered G975FXXS9DTK9 stock Android firmware.
-
-First verify the file exists, is readable and has not been altered.
+First verify the installed EFUJ2 source identity is readable and has not been altered.
 
 Perform the following offline:
 

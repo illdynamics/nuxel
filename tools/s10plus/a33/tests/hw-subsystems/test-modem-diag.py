@@ -102,7 +102,7 @@ check("policy names cp_status (CP OFFLINE) as the first real blocker, not the pl
       and "later hop" in pol["comment"].lower())
 check("policy protects modem/radio/efs/radiobak and forbids flashing tools",
       {"modem", "radio", "radiobak", "efs", "efsg", "sec_efs", "dtbo"}.issubset(
-          set(pol["protected_partitions"]["never_read_or_write"]))
+          set(pol["protected_partitions"]["never_write"]))
       and "heimdall" in pol["protected_partitions"]["flashing_tools_forbidden"])
 check("policy documents the BOOT-only TWRP repair scope without weakening the denylist",
       "BOOT/OS repair" in pol["protected_partitions"]["comment"]

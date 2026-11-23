@@ -22,7 +22,7 @@ BLOCK = 1024 * 1024
 SAFE_PARTITION = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
 SAFE_SERIAL = re.compile(r"^[a-zA-Z0-9:._-]+$")
 SAFE_DEVICE = re.compile(r"^/dev/block/(?:[a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+$")
-# Superset of configs/nuxel/modem/modem.json#protected_partitions.never_read_or_write
+# Superset of configs/nuxel/modem/modem.json#protected_partitions.never_write
 # (proved by tools/s10plus/tests/test-flash-preflight-offline.py). Anything in
 # the policy denylist must be blocked here BEFORE any adb call.
 DENY = {"recovery", "dtb", "dtbo", "vbmeta", "efs", "efsg", "sec_efs", "persist", "persistbak", "persistent",

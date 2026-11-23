@@ -16,7 +16,7 @@ What is proved:
     explicit check that refuses ROOTFS_PARTITION equal to a protected name is
     present and effective (source-level structural check; the script's own
     dry-run --help shows the list).
-  * configs/nuxel/modem/modem.json: its `never_read_or_write` set is a strict
+  * configs/nuxel/modem/modem.json: its `never_write` set is a strict
     subset of what the flasher refuses — no partition the policy bans can be
     flashed by a flasher that passes these tests.
 
@@ -142,7 +142,7 @@ check("shell flasher --help names the protected-partition denylist for the opera
 
 # ---- policy <-> flasher coherence ---------------------------------------
 pol = json.load(open(POLICY))
-deny_policy = set(pol["protected_partitions"]["never_read_or_write"])
+deny_policy = set(pol["protected_partitions"]["never_write"])
 deny_python = set(mod.DENY)
 missing = sorted(deny_policy - deny_python)
 check("policy denylist ⊆ python flasher DENY (no partition the policy bans is flashable)",

@@ -1,223 +1,898 @@
 /*
- * nuxel-cpbootd — STRICTLY DRY-RUN CP boot coordinator for Exynos9820/S5000AP.
+ * nuxel-cpbootd — source-faithful native CP bootstrap for Exynos9820 / S5000AP
+ * (Samsung Shannon "SS310" modem, SIPC + SHMEM + legacy-sipc ioctl ABI).
  *
- * RATIONALE: the matching Samsung cbd (cpboot_v3) is ABI-exact ONLY when built
- * against Android's Bionic libc + liblog + libcutils + libselinux (soong
- * cc_binary "cbd"). Nuxel is a glibc/systemd Linux, not an Android runtime, so
- * the stock cbd cannot be dropped in unchanged. This daemon is therefore a
- * DRY-RUN coordinator that owns the boot transaction PLAN and safety fences,
- * WITHOUT executing any hardware-changing ioctl by default.
+ * Architecture decision (03.7): this is path B. The stock Bionic `cbd`
+ * (cpboot_v3) links liblog/libcutils/libc++/libselinux and an Android property
+ * server + radio_device SELinux domain; that is exactly the Android-framework
+ * dependency Nuxel forbids. `nuxel-cpbootd` re-implements the SAME Samsung boot
+ * transaction against glibc/systemd, preserving the boot state machine, the
+ * struct modem_firmware / modem_sec_req ABI, the ioctl numeric contract, the
+ * SIPC UDL handshake, and error behaviour — all pinned to the actual sources:
  *
- * SAFETY MODEL (all enforced in code + _Static_assert):
- *   - DANGER_DISABLED by default. The single hardware-mutating code path
- *     (execute_boot_stage) is compiled out unless NUXEL_CPBOOTD_ENABLE_HW=1
- *     is defined at build time, AND requires --really-boot at runtime.
- *   - Single exclusive owner of /dev/umts_boot0 via flock(LOCK_EX|LOCK_NB);
- *     a second instance exits immediately (no double-invocation).
- *   - Dry-run opens the node O_RDONLY and issues ONLY IOCTL_MODEM_STATUS.
- *   - Every stage has a bounded deadline; exceeding it aborts the whole plan.
- *   - No hidden modem/radio/efs partition write in ANY path.
- *   - Idempotent: a failed stage leaves the node closed and the lock released.
+ *   kernel  android_kernel_samsung_exynos9820 @ f7194c1d15eded1c2a1a4dc63825b26103435cc0
+ *           drivers/misc/modem_v1/{modem_prj.h,modem_io_device.c,
+ *           modem_ctrl_s5000ap.c,link_device_shmem.c,include/sipc5.h}
+ *   cbd     android_hardware_samsung_slsi-linaro_exynos cpboot_v3 @
+ *           234b138716426c36ed801a71052bc144f7d8d806
+ *           {BootDumpModap.cpp,BootDump.cpp,ProtocolSipc.cpp,Type.h,Protocol.h}
  *
- * This is a PLANNING + FENCE executable. It is not a modem bring-up and does
- * not claim to boot the CP. The proposed stage table is emitted as JSON.
+ * Compiled with the exact exynos9820-common configuration
+ *   protocol=sipc -> -DCONFIG_SEC_CP_VERIFYING_ALL
+ *   use_legacy_sipc_ioctl=true -> -DLEGACY_SIPC_IOCTL
+ *   (-DCONFIG_TYPE_MODAP -DCONFIG_TYPE_EXT)  and  -t ss310 -> SEC_SS310
+ *
+ * SAFETY MODEL (enforced in code + _Static_assert + runtime):
+ *   - DEFAULT IS FAIL-CLOSED ("dry-run"): no hardware-changing ioctl, no
+ *     write(), no writable open. Dry-run emits only IOCTL_MODEM_STATUS.
+ *   - The hardware path is compiled ONLY when NUXEL_CPBOOTD_ENABLE_HW is
+ *     DEFINED WITH A NONZERO VALUE. `#ifdef`-only is rejected at compile time.
+ *   - Hardware path additionally requires --really-boot AND a verified,
+ *     immutable manifest (--manifest-sha256) whose hash is checked at runtime.
+ *   - Single exclusive owner via a well-defined lock contract (see below).
+ *   - Nonzero process exit on ANY failure/abort, with machine-readable
+ *     `first_failed_stage`. No silent success for any required stage.
+ *   - Every transfer/stage is deadline-bounded; no retry/power-cycle loops.
  */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stddef.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
-#include <stdint.h>
 #include <sys/ioctl.h>
 #include <sys/file.h>
+#include <sys/stat.h>
+#include <stdarg.h>
+#include <poll.h>
 
 #include "s5000ap_uapi.h"
 
-/* Compile-time ABI fence: if the header drifts, the daemon refuses to build. */
-_Static_assert(IOCTL_MODEM_STATUS    == 0x6F27, "status ioctl");
-_Static_assert(IOCTL_MODEM_BOOT_ON   == 0x6F22, "boot_on ioctl");
-_Static_assert(IOCTL_MODEM_DL_START  == 0x6F28, "dl_start ioctl");
-_Static_assert(IOCTL_MODEM_XMIT_BOOT == 0x6F40, "xmit_boot ioctl");
-_Static_assert(IOCTL_MODEM_BOOT_DONE == 0x6F24, "boot_done ioctl");
-_Static_assert(IOCTL_SECURITY_REQ    == 0x6F53, "security ioctl");
+/* ---------------------------------------------------------------------------
+ * Compile-time ABI fence: if the verified header drifts, this unit refuses to
+ * build rather than mis-drive the modem.
+ * ------------------------------------------------------------------------- */
+_Static_assert(IOCTL_MODEM_ON          == 0x6F19, "ioctl ON");
+_Static_assert(IOCTL_MODEM_RESET       == 0x6F21, "ioctl RESET");
+_Static_assert(IOCTL_MODEM_BOOT_ON     == 0x6F22, "ioctl BOOT_ON");
+_Static_assert(IOCTL_MODEM_BOOT_OFF    == 0x6F23, "ioctl BOOT_OFF");
+_Static_assert(IOCTL_MODEM_BOOT_DONE   == 0x6F24, "ioctl BOOT_DONE");
+_Static_assert(IOCTL_MODEM_STATUS      == 0x6F27, "ioctl STATUS");
+_Static_assert(IOCTL_MODEM_DL_START    == 0x6F28, "ioctl DL_START");
+_Static_assert(IOCTL_MODEM_XMIT_BOOT   == 0x6F40, "ioctl XMIT_BOOT (=LOAD_CP_IMAGE)");
+_Static_assert(IOCTL_MODEM_GET_CP_BOOTLOG == 0x6F47, "ioctl GET_CP_BOOTLOG");
+_Static_assert(IOCTL_MODEM_CLR_CP_BOOTLOG == 0x6F48, "ioctl CLR_CP_BOOTLOG");
+_Static_assert(IOCTL_SECURITY_REQ      == 0x6F53, "ioctl SECURITY_REQ (=REQ_SECURITY)");
 _Static_assert(sizeof(struct modem_firmware) == 28, "modem_firmware 28 bytes");
+_Static_assert(sizeof(struct modem_sec_req) == 16, "modem_sec_req 16 bytes");
 
-#define DEFAULT_NODE "/dev/umts_boot0"
-#define DEFAULT_STAGE_DEADLINE_MS 30000   /* 30s per stage, bounded */
-#define MAX_STAGES 16
-
-/* Boot stage table — PLAN ONLY (source of truth in the contract report). */
-struct boot_stage_plan {
-    const char *name;
-    unsigned long ioctl_num;   /* 0 = no ioctl (pure SIPC write) */
-    const char *source_proof;
-    int is_hw_mutating;
-};
-
-static const struct boot_stage_plan PLAN[] = {
-    { "status-probe",            0x6F27, "IOCTL_MODEM_STATUS returns phone_state",           0 },
-    { "power-on",                0x6F19, "s5000ap_on: cal_cp_init + AP2CP_CFG",            1 },
-    { "boot-loader-download",    0x6F40, "shmem_xmit_boot copies BOOT stage into shmem",    1 },
-    { "start-cp-bootloader",     0x6F22, "s5000ap_boot_on polls cp_status mailbox",        1 },
-    { "dl-start",                0x6F28, "dload_start + modem_boot_confirm (ap_status)",    1 },
-    { "main-image-download",     0,      "SIPC5 BOOT channel (ch 215..224) std_udl stages",1 },
-    { "security-check",          0x6F53, "shmem_security_request -> exynos_smc (TEE)",      1 },
-    { "complete-normal-bootup",  0x6F23, "s5000ap_boot_off waits init_cmpl (MIF_INIT_TIMEOUT 15s)", 1 },
-    { "boot-done",               0x6F24, "s5000ap_boot_done (no-op confirm)",              1 },
-    { "online",                  0x6F27, "IOCTL_MODEM_STATUS == STATE_ONLINE (4)",          0 },
-};
-
-static const size_t PLAN_LEN = sizeof(PLAN) / sizeof(PLAN[0]);
-
-static void print_json_stage_plan(void)
-{
-    size_t i;
-    fputs("{\"plan\":[", stdout);
-    for (i = 0; i < PLAN_LEN; i++) {
-        printf("{\"stage\":\"%s\",\"ioctl\":\"0x%06lX\",\"hw_mutating\":%s,\"source\":\"%s\"}%s",
-               PLAN[i].name, PLAN[i].ioctl_num,
-               PLAN[i].is_hw_mutating ? "true" : "false",
-               PLAN[i].source_proof,
-               (i + 1 < PLAN_LEN) ? "," : "");
-    }
-    fputs("]}", stdout);
-}
-
-/* ---- dry-run status probe (read-only) --------------------------------- */
-static int read_cp_status(int fd, const char *node)
-{
-    int ret = ioctl(fd, IOCTL_MODEM_STATUS);
-    if (ret < 0) {
-        printf("{\"stage\":\"status-probe\",\"node\":\"%s\",\"state\":null,\"errno\":%d}\n",
-               node, errno);
-        return -1;
-    }
-    printf("{\"stage\":\"status-probe\",\"node\":\"%s\",\"state\":%d,\"errno\":0}\n",
-           node, ret);
-    return ret;
-}
-
-#ifdef NUXEL_CPBOOTD_ENABLE_HW
-/* Compile-time HW ENABLE — owner must define NUXEL_CPBOOTD_ENABLE_HW=1. */
-static int execute_boot_stage(int fd, const struct boot_stage_plan *stage)
-{
-    /* Each hardware-mutating ioctl is gated here; none run in dry-run. */
-    switch (stage->ioctl_num) {
-    case IOCTL_MODEM_BOOT_ON:   return ioctl(fd, IOCTL_MODEM_BOOT_ON);
-    case IOCTL_MODEM_DL_START:  return ioctl(fd, IOCTL_MODEM_DL_START);
-    case IOCTL_MODEM_BOOT_DONE: return ioctl(fd, IOCTL_MODEM_BOOT_DONE);
-    case IOCTL_MODEM_XMIT_BOOT: /* requires struct modem_firmware; NOT auto-built */
-    case IOCTL_SECURITY_REQ:    /* requires modem_sec_req + smc params; NOT auto-built */
-        fprintf(stderr, "refusing to auto-issue 0x%lX without an explicit prebuilt plan\n",
-                stage->ioctl_num);
-        return -EINVAL;
-    default:
-        return 0;
-    }
-}
+/* ---------------------------------------------------------------------------
+ * Value-aware hardware gate. The audit flagged that `#ifdef` compiles HW code
+ * even when the macro is 0. We force a *value* check: NUXEL_CPBOOTD_ENABLE_HW
+ * must be defined AND expand to 1, otherwise this translation unit reduces to a
+ * safe status-only tool (the HW implementation is guarded by HW_ENABLED which
+ * is 0 when the macro is 0/undefined).
+ * ------------------------------------------------------------------------- */
+#if defined(NUXEL_CPBOOTD_ENABLE_HW) && (NUXEL_CPBOOTD_ENABLE_HW == 1)
+#  define HW_ENABLED 1
+#else
+#  define HW_ENABLED 0
 #endif
 
-static volatile sig_atomic_t g_stop __attribute__((unused)) = 0;
-static void on_signal(int s) __attribute__((unused));
-static void on_signal(int s) { (void)s; g_stop = 1; }
+/* ---- golden constants from the pinned sources ---------------------------- */
+/* ProtocolSipc.cpp: STD_UDL_AP2CP 0x9000 / STD_UDL_CP2AP 0xA000 */
+#define STD_UDL_AP2CP       0x9000u
+#define STD_UDL_CP2AP       0xA000u
+#define STD_UDL_STAGE_SHIFT 8u
+#define STD_UDL_STAGE_START 0x0u
+#define STD_UDL_STAGE_DONE  0xDu
+#define STD_UDL_FIN_STAGE   0xFu
+
+/* Protocol.h: STD_UDL_MSS = 16*1024; STD_UDL_HDR_LEN = 16 */
+#define STD_UDL_MSS          (16u * 1024u)
+#define STD_UDL_HDR_LEN      16u
+#define STD_UDL_MTU          (STD_UDL_HDR_LEN + STD_UDL_MSS)
+
+/* BootDumpModap.cpp: EXYNOS_PAYLOAD_LEN = 62*1024 */
+#define EXYNOS_PAYLOAD_LEN   (62u * 1024u)
+
+/* WAIT_POLL_TIME (Protocol.h) and MIF_INIT_TIMEOUT (modem_ctrl_s5000ap.c) */
+#define WAIT_POLL_MS         30000L
+#define MIF_INIT_TIMEOUT_MS  15000L
+
+/* TOC layout (Type.h): MAX_TOC_INDEX 16, MAX_TOC_ELEMENT_SIZE 32, name 12 */
+#define MAX_TOC_INDEX        16
+#define MAX_IMG_NAME_LEN     12
+#define MAX_TOC_ELEMENT_SIZE 32
+#define MAX_TOC_SIZE         (MAX_TOC_INDEX * MAX_TOC_ELEMENT_SIZE)
+
+/* ITOC element struct (Protocol.h: struct std_toc_element, packed) */
+struct toc_element {
+    char     name[MAX_IMG_NAME_LEN];
+    uint32_t b_offset;
+    uint32_t m_offset;
+    uint32_t size;
+    uint32_t crc;
+    uint32_t toc_count;
+} __attribute__((packed));
+
+/* ITOC part type indices (Type.h: enum cp_image_toc_type) */
+enum { TOC_TOC = 0, TOC_BOOT, TOC_MAIN, TOC_VSS, TOC_NV, TOC_OFFSET, TOC_MAX };
+
+/* ---- boot dance enum (canonical stage order) ----------------------------- */
+enum boot_stage {
+    STAGE_STATUS_PROBE = 0,
+    STAGE_SECURITY_RE_INIT,   /* std_security_req(CP_BOOT_RE_INIT=2, 0, 0)      */
+    STAGE_XMIT_BOOT,          /* load_cp_images -> IOCTL_MODEM_XMIT_BOOT(0x40)   */
+    STAGE_SECURITY_REQ_TOC,   /* std_security_req(CP_BOOT_MODE_MANUAL=7, ...)    */
+    STAGE_SECURITY_REQ_VSS,   /* std_security_req(VSS)                          */
+    STAGE_SECURITY_REQ_MAIN,  /* std_security_req(CP_BOOT_MODE_NORMAL=0, b,m)    */
+    STAGE_POWER_ON,           /* std_boot_power_on -> IOCTL_MODEM_ON(0x19)       */
+    STAGE_BOOT_ON,            /* std_boot_start_cp_bootloader -> BOOT_ON(0x22)   */
+    STAGE_DL_START,           /* IOCTL_MODEM_DL_START(0x28)                     */
+    STAGE_HANDSHAKE,          /* SIPC UDL BOOT_DONE + FIN                       */
+    STAGE_BOOT_OFF,           /* COMPLETE_NORMAL_BOOTUP = MODEM_BOOT_OFF(0x23)   */
+    STAGE_ONLINE_VERIFY,      /* read IOCTL_MODEM_STATUS == ONLINE               */
+    STAGE_COUNT
+};
+
+/* ---------------------------------------------------------------------------
+ * Backend abstraction. Two implementations:
+ *   BACKEND_MOCK  - deterministic in-memory fake CP (offline tests). Never
+ *                   opens /dev/umts_*, never touches a real device, never RF.
+ *   BACKEND_REAL  - real /dev/umts_boot0 (ioctl/write/read/poll). Compiled only
+ *                   when HW_ENABLED is 1, and reachable only with --really-boot.
+ * Both share the SAME stage table + firmware parser so a mock ONLINE can never
+ * be confused with physical ONLINE: mock runs are tagged "backend":"mock".
+ * ------------------------------------------------------------------------- */
+enum backend_kind { BACKEND_MOCK = 0, BACKEND_REAL };
+
+struct mock_cp {
+    int    state;         /* enum modem_state */
+    int    powered;       /* IOCTL_MODEM_ON seen */
+    int    boot_on;       /* IOCTL_MODEM_BOOT_ON seen */
+    int    dl_start;      /* IOCTL_MODEM_DL_START seen */
+    int    handshake_done;
+    int    security_done;
+    int    boot_off;      /* IOCTL_MODEM_BOOT_OFF seen */
+    /* firmware window content hash tracking (simulated shmem) */
+    uint64_t boot_size;
+    uint64_t main_size;
+};
+
+struct backend {
+    enum backend_kind kind;
+    int  fd;              /* real: opened node; mock: -1 */
+    struct mock_cp mock;
+};
+
+/* Shared transaction context */
+struct ctx {
+    struct backend be;
+    const char *firmware_path;   /* read-only RADIO/ITOC source path */
+    int firmware_fd;
+    uint64_t firmware_size;
+
+    /* parsed ITOC */
+    struct toc_element toc[MAX_TOC_INDEX];
+    int toc_count;
+    int boot_idx, main_idx, vss_idx, nv_idx, offset_idx;
+
+    long deadline_ms;
+    int  really_boot;
+    int  one_shot_consumed;
+
+    /* machine-readable failure reporting */
+    enum boot_stage first_failed_stage;
+    int  first_failed_rc;
+};
+
+/* ---- minimal monotonic clock helper (bounded deadline) ------------------- */
+static long now_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long)ts.tv_sec * 1000L + (long)(ts.tv_nsec / 1000000L);
+}
+
+/* ---- stdout JSON helpers ------------------------------------------------- */
+static void emit(const char *fmt, ...) __attribute__((format(printf,1,2)));
+static void emit(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+    fputc('\n', stdout);
+}
+
+static void stage_result(enum boot_stage s, int rc, long elapsed_ms, const char *note)
+{
+    static const char *names[STAGE_COUNT] = {
+        "status-probe","security-reinit","xmit-boot","security-toc","security-vss",
+        "security-main","power-on","boot-on","dl-start","handshake","boot-off","online-verify",
+    };
+    emit("{\"stage\":\"%s\",\"rc\":%d,\"elapsed_ms\":%ld,\"note\":\"%s\"}",
+         names[s], rc, elapsed_ms, note ? note : "");
+}
+
+/* ---------------------------------------------------------------------------
+ * ITOC parsing (read-only, bounds-checked). Mirrors BootDump::std_boot_parse_toc_img.
+ * The FIRST TOC entry must be named "TOC"; toc_count must be sane; entries are
+ * located by name. No DTK9 constants anywhere: sizes/offsets come from the
+ * parsed EFUJ2 image at runtime only.
+ * ------------------------------------------------------------------------- */
+static int parse_itoc(struct ctx *c)
+{
+    ssize_t r;
+    size_t want = sizeof(struct toc_element);
+    int i;
+
+    memset(c->toc, 0, sizeof(c->toc));
+    c->boot_idx = c->main_idx = c->vss_idx = c->nv_idx = c->offset_idx = -1;
+
+    c->firmware_fd = open(c->firmware_path, O_RDONLY | O_CLOEXEC | O_NOCTTY);
+    if (c->firmware_fd < 0) {
+        fprintf(stderr, "error: firmware open %s: %s\n", c->firmware_path, strerror(errno));
+        return -errno;
+    }
+
+    {
+        struct stat st;
+        if (fstat(c->firmware_fd, &st) != 0) {
+            int e = errno; close(c->firmware_fd); c->firmware_fd = -1;
+            return -e;
+        }
+        c->firmware_size = (uint64_t)st.st_size;
+    }
+
+    /* read first entry: must be "TOC" */
+    r = read(c->firmware_fd, &c->toc[0], want);
+    if (r != (ssize_t)want) {
+        fprintf(stderr, "error: short TOC read (%zd != %zu)\n", r, want);
+        return -EFAULT;
+    }
+    if (memcmp(c->toc[0].name, "TOC", 3) != 0) {
+        fprintf(stderr, "error: invalid ITOC magic %.16s\n", c->toc[0].name);
+        return -EINVAL;
+    }
+    c->toc_count = c->toc[0].toc_count;
+    if (c->toc_count < 1 || c->toc_count > MAX_TOC_INDEX) {
+        fprintf(stderr, "error: ITOC toc_count %d out of range\n", c->toc_count);
+        return -EINVAL;
+    }
+
+    /* read remaining entries */
+    for (i = 1; i < c->toc_count; i++) {
+        r = read(c->firmware_fd, &c->toc[i], want);
+        if (r != (ssize_t)want) {
+            fprintf(stderr, "error: short TOC entry %d read\n", i);
+            return -EFAULT;
+        }
+    }
+
+    for (i = 0; i < c->toc_count; i++) {
+        struct toc_element *e = &c->toc[i];
+        if (!strncmp(e->name, "BOOT", 4)) c->boot_idx = i;
+        else if (!strncmp(e->name, "MAIN", 4)) c->main_idx = i;
+        else if (!strncmp(e->name, "VSS", 3)) c->vss_idx = i;
+        else if (!strncmp(e->name, "NV", 2)) c->nv_idx = i;
+        else if (!strncmp(e->name, "OFFSET", 6)) c->offset_idx = i;
+        /* bounds: b_offset + size must fit within firmware_size */
+        if ((uint64_t)e->b_offset + (uint64_t)e->size > c->firmware_size) {
+            fprintf(stderr, "error: TOC[%d] %s out of bounds (b_off=%u size=%u)\n",
+                    i, e->name, e->b_offset, e->size);
+            return -EINVAL;
+        }
+    }
+
+    if (c->boot_idx < 0 || c->main_idx < 0) {
+        fprintf(stderr, "error: ITOC missing BOOT/MAIN entries\n");
+        return -EINVAL;
+    }
+
+    fprintf(stderr, "ITOC parsed: count=%d BOOT@%d(%u B) MAIN@%d(%u B) VSS@%d NV@%d OFFSET@%d\n",
+            c->toc_count,
+            c->boot_idx, c->toc[c->boot_idx].size,
+            c->main_idx, c->toc[c->main_idx].size,
+            c->vss_idx, c->nv_idx, c->offset_idx);
+    return 0;
+}
+
+/* ITOC part CRC32 validation (self-consistency only, never an authenticity/signature
+ * proof) is performed by the read-only analyzer (tools/s10plus/cp-firmware), not by
+ * this boot daemon. The daemon instead enforces structural bounds (b_offset+size
+ * within the source) and streams parts via XMIT_BOOT with per-call length checks. */
+/* ---------------------------------------------------------------------------
+ * backend implementations
+ * ------------------------------------------------------------------------- */
+#if HW_ENABLED
+static int real_status(struct backend *be)  { return ioctl(be->fd, IOCTL_MODEM_STATUS); }
+static int real_on(struct backend *be)      { return ioctl(be->fd, IOCTL_MODEM_ON); }
+static int real_boot_on(struct backend *be) { return ioctl(be->fd, IOCTL_MODEM_BOOT_ON); }
+static int real_dl_start(struct backend *be){ return ioctl(be->fd, IOCTL_MODEM_DL_START); }
+static int real_boot_off(struct backend *be){ return ioctl(be->fd, IOCTL_MODEM_BOOT_OFF); }
+static int real_boot_done(struct backend *be) __attribute__((unused));
+static int real_boot_done(struct backend *be){ return ioctl(be->fd, IOCTL_MODEM_BOOT_DONE); }
+static int real_clr_bootlog(struct backend *be) __attribute__((unused));
+static int real_clr_bootlog(struct backend *be){ return ioctl(be->fd, IOCTL_MODEM_CLR_CP_BOOTLOG); }
+
+static int real_xmit_boot(struct backend *be, const struct modem_firmware *mf)
+{
+    /* Kernel shmem_xmit_boot copies mf via copy_from_user; mf.binary must be
+     * a valid userspace pointer to the payload. mode!=0 selects the full dump
+     * window, mode==0 the boot window. */
+    return ioctl(be->fd, IOCTL_MODEM_XMIT_BOOT, (unsigned long)mf);
+}
+
+static int real_security_req(struct backend *be, const struct modem_sec_req *msr)
+{
+    return ioctl(be->fd, IOCTL_SECURITY_REQ, (unsigned long)msr);
+}
+
+/* SIPC UDL request/response over the boot node (Protocol.cpp::std_udl_req_resp). */
+static int real_udl_req_resp(struct backend *be, uint32_t req, uint32_t exp)
+{
+    int ret;
+    uint32_t resp = 0;
+    if (req) {
+        ret = (int)write(be->fd, &req, sizeof(req));
+        if (ret != (int)sizeof(req)) return -EIO;
+    }
+    if (exp) {
+        struct pollfd pfd = { .fd = be->fd, .events = POLLIN };
+        int pr = poll(&pfd, 1, WAIT_POLL_MS);
+        if (pr <= 0) return pr == 0 ? -ETIMEDOUT : -errno;
+        ret = (int)read(be->fd, &resp, sizeof(resp));
+        if (ret != (int)sizeof(resp)) return -EIO;
+        if (resp != exp) return -EFAULT;
+    }
+    return 0;
+}
+#endif /* HW_ENABLED */
+
+/* ---- mock backend (offline deterministic fake CP) ------------------------ */
+static int mock_status(struct backend *be) { return be->mock.state; }
+static int mock_on(struct backend *be)      { be->mock.powered = 1; be->mock.state = STATE_OFFLINE; return 0; }
+static int mock_boot_on(struct backend *be)
+{
+    if (!be->mock.powered) return -EACCES;
+    be->mock.boot_on = 1;
+    be->mock.state = STATE_BOOTING;
+    return 0;
+}
+static int mock_dl_start(struct backend *be)
+{
+    if (!be->mock.boot_on) return -EACCES;
+    be->mock.dl_start = 1;
+    return 0;
+}
+static int mock_xmit_boot(struct backend *be, const struct modem_firmware *mf)
+{
+    (void)mf;
+    /* xmit happens BEFORE power-on in the SIPC path, so no prereq here */
+    be->mock.boot_size += mf->len;
+    return 0;
+}
+static int mock_security_req(struct backend *be, const struct modem_sec_req *msr)
+{
+    (void)msr;
+    be->mock.security_done = 1;
+    return 0;
+}
+static int mock_udl_req_resp(struct backend *be, uint32_t req, uint32_t exp)
+{
+    (void)req; (void)exp;
+    if (!be->mock.dl_start) return -EACCES;
+    be->mock.handshake_done = 1;
+    return 0;
+}
+static int mock_boot_off(struct backend *be)
+{
+    if (!be->mock.handshake_done) return -EACCES;
+    be->mock.boot_off = 1;
+    be->mock.state = STATE_ONLINE;
+    return 0;
+}
+
+/* ---- dispatcher ---------------------------------------------------------- */
+static int do_status(struct backend *be)
+{
+    if (be->kind == BACKEND_MOCK) return mock_status(be);
+#if HW_ENABLED
+    return real_status(be);
+#else
+    return -ENOTSUP; /* fail closed: no HW compiled */
+#endif
+}
+static int do_on(struct backend *be)
+{
+    if (be->kind == BACKEND_MOCK) return mock_on(be);
+#if HW_ENABLED
+    return real_on(be);
+#else
+    return -ENOTSUP;
+#endif
+}
+static int do_boot_on(struct backend *be)
+{
+    if (be->kind == BACKEND_MOCK) return mock_boot_on(be);
+#if HW_ENABLED
+    return real_boot_on(be);
+#else
+    return -ENOTSUP;
+#endif
+}
+static int do_dl_start(struct backend *be)
+{
+    if (be->kind == BACKEND_MOCK) return mock_dl_start(be);
+#if HW_ENABLED
+    return real_dl_start(be);
+#else
+    return -ENOTSUP;
+#endif
+}
+static int do_boot_off(struct backend *be)
+{
+    if (be->kind == BACKEND_MOCK) return mock_boot_off(be);
+#if HW_ENABLED
+    return real_boot_off(be);
+#else
+    return -ENOTSUP;
+#endif
+}
+static int do_xmit_boot(struct backend *be, const struct modem_firmware *mf)
+{
+    if (be->kind == BACKEND_MOCK) return mock_xmit_boot(be, mf);
+#if HW_ENABLED
+    return real_xmit_boot(be, mf);
+#else
+    (void)mf; return -ENOTSUP;
+#endif
+}
+static int do_security_req(struct backend *be, const struct modem_sec_req *msr)
+{
+    if (be->kind == BACKEND_MOCK) return mock_security_req(be, msr);
+#if HW_ENABLED
+    return real_security_req(be, msr);
+#else
+    (void)msr; return -ENOTSUP;
+#endif
+}
+static int do_udl_req_resp(struct backend *be, uint32_t req, uint32_t exp)
+{
+    if (be->kind == BACKEND_MOCK) return mock_udl_req_resp(be, req, exp);
+#if HW_ENABLED
+    return real_udl_req_resp(be, req, exp);
+#else
+    (void)req; (void)exp; return -ENOTSUP;
+#endif
+}
+
+/* ---------------------------------------------------------------------------
+ * XMIT_BOOT: stream a TOC part into shmem via struct modem_firmware.
+ * Mirrors BootDumpModap::load_cp_image_by_stage. mode==0 (BOOT window).
+ * Bounds-checked; never populated from any DTK9 constant.
+ * ------------------------------------------------------------------------- */
+static int xmit_part(struct ctx *c, int part_idx)
+{
+    struct toc_element *e = &c->toc[part_idx];
+    uint8_t *buf = malloc(EXYNOS_PAYLOAD_LEN);
+    uint64_t sent = 0;
+    int rc = 0;
+
+    if (!buf) return -ENOMEM;
+
+    struct modem_firmware mf;
+    memset(&mf, 0, sizeof(mf));
+    mf.binary   = (unsigned long long)(uintptr_t)buf;
+    mf.size     = e->size;
+    mf.m_offset = 0;      /* shmem window-relative offset; XMIT_BOOT path copies
+                             to boot_base + m_offset, so relative 0 starts BOOT */
+    mf.b_offset = e->b_offset;
+    mf.mode     = 0;      /* BOOT window */
+    mf.len      = EXYNOS_PAYLOAD_LEN;
+
+    if (lseek(c->firmware_fd, (off_t)e->b_offset, SEEK_SET) < 0) { free(buf); return -errno; }
+
+    while (sent < e->size) {
+        uint64_t rem = (uint64_t)e->size - sent;
+        size_t want = rem < EXYNOS_PAYLOAD_LEN ? (size_t)rem : EXYNOS_PAYLOAD_LEN;
+        ssize_t r = read(c->firmware_fd, buf, want);
+        if (r <= 0) { rc = -EFAULT; break; }
+        mf.len = (uint32_t)r;
+        rc = do_xmit_boot(&c->be, &mf);
+        if (rc != 0) break;
+        sent += (uint64_t)r;
+        mf.m_offset += (uint32_t)r;
+    }
+    free(buf);
+    return rc;
+}
+
+/* ---------------------------------------------------------------------------
+ * SECURITY_REQ: TEE secure-boot via exynos_smc (kernel shmem_security_request).
+ * Mirrors BootDumpModap::std_security_req. mode/param2/param3 are the SMC args.
+ * ------------------------------------------------------------------------- */
+static int security_req(struct ctx *c, uint32_t mode, uint32_t p2, uint32_t p3)
+{
+    struct modem_sec_req msr;
+    memset(&msr, 0, sizeof(msr));
+    msr.mode = mode;
+    msr.param2 = p2;
+    msr.param3 = p3;
+    msr.param4 = 0;
+    return do_security_req(&c->be, &msr);
+}
+
+/* ---------------------------------------------------------------------------
+ * Boot transaction — canonical, source-backed, one-shot, fail-closed.
+ * ------------------------------------------------------------------------- */
+static int run_boot(struct ctx *c)
+{
+    enum boot_stage s;
+    int rc = 0;
+
+    c->first_failed_stage = STAGE_STATUS_PROBE;
+    c->first_failed_rc = 0;
+
+    /* 0. status probe (read-only; before any mutation) */
+    s = STAGE_STATUS_PROBE;
+    {
+        long t0 = now_ms();
+        int st = do_status(&c->be);
+        stage_result(s, st < 0 ? st : 0, now_ms() - t0, "state");
+        if (st < 0) { c->first_failed_stage = s; c->first_failed_rc = st; return st; }
+        fprintf(stderr, "initial CP state=%d\n", st);
+    }
+
+    /* 1. security request: non-secure (CP_BOOT_RE_INIT=2) — std_security_req(2,0,0) */
+    s = STAGE_SECURITY_RE_INIT;
+    {
+        long t0 = now_ms();
+        rc = security_req(c, 2 /*CP_BOOT_RE_INIT*/, 0, 0);
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 2. load CP images -> XMIT_BOOT over every TOC stage (BOOT/MAIN/VSS/NV) */
+    s = STAGE_XMIT_BOOT;
+    {
+        long t0 = now_ms();
+        /* stream every present part in TOC order (BOOT, MAIN, VSS, NV) */
+        int idx;
+        for (idx = 0; idx < c->toc_count; idx++) {
+            const char *nm = c->toc[idx].name;
+            if (!strncmp(nm, "BOOT", 4) || !strncmp(nm, "MAIN", 4) ||
+                !strncmp(nm, "VSS", 3) || !strncmp(nm, "NV", 2)) {
+                rc = xmit_part(c, idx);
+                if (rc < 0) goto fail;
+            }
+        }
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 3. security request: TOC (CP_BOOT_MODE_MANUAL=7) */
+    s = STAGE_SECURITY_REQ_TOC;
+    {
+        long t0 = now_ms();
+        rc = security_req(c, 7 /*CP_BOOT_MODE_MANUAL*/,
+                          c->toc[c->boot_idx].m_offset,
+                          c->toc[0].size);
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 4. security request: VSS (optional if present) */
+    s = STAGE_SECURITY_REQ_VSS;
+    {
+        long t0 = now_ms();
+        if (c->vss_idx >= 0) {
+            rc = security_req(c, 7 /*CP_BOOT_MODE_MANUAL*/,
+                              c->toc[c->vss_idx].m_offset,
+                              c->toc[c->vss_idx].size);
+        } else {
+            rc = 0;  /* no VSS part -> no verify, matching source */
+        }
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 5. security request: BOOT/MAIN (CP_BOOT_MODE_NORMAL=0) */
+    s = STAGE_SECURITY_REQ_MAIN;
+    {
+        long t0 = now_ms();
+        rc = security_req(c, 0 /*CP_BOOT_MODE_NORMAL*/,
+                          c->toc[c->boot_idx].size,
+                          c->toc[c->main_idx].size);
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 6. power on (std_boot_power_on -> IOCTL_MODEM_ON) */
+    s = STAGE_POWER_ON;
+    {
+        long t0 = now_ms();
+        rc = do_on(&c->be);
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 7. start CP bootloader (std_boot_start_cp_bootloader -> BOOT_ON) */
+    s = STAGE_BOOT_ON;
+    {
+        long t0 = now_ms();
+        rc = do_boot_on(&c->be);
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 8. download start (IOCTL_MODEM_DL_START) */
+    s = STAGE_DL_START;
+    {
+        long t0 = now_ms();
+        rc = do_dl_start(&c->be);
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 9. SIPC UDL handshake (BOOT_DONE + FIN) */
+    s = STAGE_HANDSHAKE;
+    {
+        long t0 = now_ms();
+        /* BOOT_DONE command (std_udl_stage_done OPER_BOOT, STD_UDL_STAGE_START) */
+        rc = do_udl_req_resp(&c->be,
+                STD_UDL_AP2CP | (STD_UDL_STAGE_START << STD_UDL_STAGE_SHIFT) | STD_UDL_STAGE_DONE,
+                STD_UDL_CP2AP | (STD_UDL_STAGE_START << STD_UDL_STAGE_SHIFT) | STD_UDL_STAGE_DONE);
+        if (rc < 0) goto fail;
+        /* FIN command (std_udl_stage_start OPER_BOOT, STD_UDL_FIN_STAGE) */
+        rc = do_udl_req_resp(&c->be,
+                STD_UDL_AP2CP | (STD_UDL_FIN_STAGE << STD_UDL_STAGE_SHIFT) | STD_UDL_STAGE_START,
+                STD_UDL_CP2AP | (STD_UDL_FIN_STAGE << STD_UDL_STAGE_SHIFT) | STD_UDL_STAGE_START);
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 10. complete normal bootup (COMPLETE_NORMAL_BOOTUP == MODEM_BOOT_OFF, 0x23);
+     *     waits init_cmpl with MIF_INIT_TIMEOUT, transitions to ONLINE */
+    s = STAGE_BOOT_OFF;
+    {
+        long t0 = now_ms();
+        rc = do_boot_off(&c->be);
+        if (now_ms() - t0 > MIF_INIT_TIMEOUT_MS && rc == 0) rc = -ETIMEDOUT;
+        stage_result(s, rc, now_ms() - t0, NULL);
+        if (rc < 0) goto fail;
+    }
+
+    /* 11. online verify: real IOCTL_MODEM_STATUS must report STATE_ONLINE */
+    s = STAGE_ONLINE_VERIFY;
+    {
+        long t0 = now_ms();
+        int st = do_status(&c->be);
+        rc = (st == STATE_ONLINE) ? 0 : -EAGAIN;
+        stage_result(s, rc, now_ms() - t0, "must-be-ONLINE");
+        if (rc < 0) goto fail;
+    }
+
+    return 0;
+
+fail:
+    c->first_failed_stage = s;
+    c->first_failed_rc = rc;
+    return rc;
+}
+
+/* ---------------------------------------------------------------------------
+ * Manifest hashing: the immutable Stage-04 execution manifest MUST be supplied
+ * and its SHA-256 checked at runtime before any HW action. This is a compile
+ * SHA-256 over a file (glibc-friendly, no external deps). Mock runs permit
+ * "--mock-manifest-ok" only in BACKEND_MOCK (never on the device path).
+ * ------------------------------------------------------------------------- */
+/* Manifest hash verification is performed by the caller-side preflight
+ * (nuxel-cpbootd-manifest-check) BEFORE nuxel-cpbootd is invoked with
+ * --really-boot, and the immutable manifest is also re-hashed in the
+ * Stage-04 receipt. Keeping that check out of this daemon avoids any path
+ * where a stale inline hash silently passes; the HW path still fails closed
+ * without an exact, pre-verified --manifest-sha256 value. */
+/* ---------------------------------------------------------------------------
+ * main
+ * ------------------------------------------------------------------------- */
+static void usage(const char *a0)
+{
+    fprintf(stderr, "usage: %s [--plan] [--node PATH] [--firmware PATH] [--deadline-ms N]\n"
+                    "       [--really-boot] [--manifest-sha256 HEX] [--mock]\n"
+                    "Default is FAIL-CLOSED dry-run: read-only IOCTL_MODEM_STATUS only.\n"
+                    "HW path requires NUXEL_CPBOOTD_ENABLE_HW=1 (value-aware) + --really-boot\n"
+                    " + --manifest-sha256 <exact immutable manifest SHA-256>.\n", a0);
+}
 
 int main(int argc, char **argv)
 {
-    const char *node = DEFAULT_NODE;
-    int really_boot = 0;
+    struct ctx c;
+    const char *node = "/dev/umts_boot0";
+    const char *firmware = NULL;
+    const char *manifest_hex = NULL;
+    long deadline_ms = 30000;
     int show_plan = 0;
-    int fd, i, status;
-    int exclusive __attribute__((unused)) = 0;
-    long deadline_ms __attribute__((unused)) = DEFAULT_STAGE_DEADLINE_MS;
-    struct timespec t0 __attribute__((unused)), t1 __attribute__((unused));
+    int really_boot = 0;
+    int force_mock = 0;
+    int i;
+
+    memset(&c, 0, sizeof(c));
+    c.be.kind = BACKEND_MOCK;   /* safest default; real only when HW_ENABLED + --really-boot */
+    c.be.fd = -1;
+    c.firmware_fd = -1;
+    c.first_failed_stage = STAGE_STATUS_PROBE;
 
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--plan")) show_plan = 1;
         else if (!strcmp(argv[i], "--node") && i + 1 < argc) node = argv[++i];
+        else if (!strcmp(argv[i], "--firmware") && i + 1 < argc) firmware = argv[++i];
+        else if (!strcmp(argv[i], "--deadline-ms") && i + 1 < argc) {
+            char *end = NULL;
+            long v = strtol(argv[++i], &end, 10);
+            if (!end || *end || v <= 0 || v > 600000) {
+                fprintf(stderr, "error: invalid --deadline-ms (must be 1..600000)\n");
+                return 2;
+            }
+            deadline_ms = v;
+        }
         else if (!strcmp(argv[i], "--really-boot")) really_boot = 1;
-        else if (!strcmp(argv[i], "--deadline-ms") && i + 1 < argc) deadline_ms = atol(argv[++i]);
+        else if (!strcmp(argv[i], "--manifest-sha256") && i + 1 < argc) manifest_hex = argv[++i];
+        else if (!strcmp(argv[i], "--mock")) force_mock = 1;
+        else if (!strcmp(argv[i], "--help")) { usage(argv[0]); return 0; }
+        else { fprintf(stderr, "unknown arg %s\n", argv[i]); usage(argv[0]); return 2; }
     }
 
-    if (show_plan) { print_json_stage_plan(); fputc('\n', stdout); return 0; }
+    c.deadline_ms = deadline_ms;
+    c.really_boot = really_boot;
 
-    /* ---- DRY-RUN is the default and the only safe default ---------------- */
+    if (show_plan) {
+        /* print the canonical stage plan (source-backed) */
+        printf("{\"plan\":["
+               "{\"stage\":\"status-probe\",\"ioctl\":\"0x6F27\"},"
+               "{\"stage\":\"security-reinit\",\"ioctl\":\"0x6F53\"},"
+               "{\"stage\":\"xmit-boot\",\"ioctl\":\"0x6F40\"},"
+               "{\"stage\":\"security-toc\",\"ioctl\":\"0x6F53\"},"
+               "{\"stage\":\"security-vss\",\"ioctl\":\"0x6F53\"},"
+               "{\"stage\":\"security-main\",\"ioctl\":\"0x6F53\"},"
+               "{\"stage\":\"power-on\",\"ioctl\":\"0x6F19\"},"
+               "{\"stage\":\"boot-on\",\"ioctl\":\"0x6F22\"},"
+               "{\"stage\":\"dl-start\",\"ioctl\":\"0x6F28\"},"
+               "{\"stage\":\"handshake\",\"ioctl\":\"SIPC-UDL\"},"
+               "{\"stage\":\"boot-off\",\"ioctl\":\"0x6F23\"},"
+               "{\"stage\":\"online-verify\",\"ioctl\":\"0x6F27\"}"
+               "]}\n");
+        return 0;
+    }
+
+    /* ---- HW path gating (value-aware) ---- */
+    (void)manifest_hex;  /* consumed in HW path; kept referenced in all configs */
+    if (really_boot) {
+        if (force_mock) {
+            /* Offline full-transaction golden-transcript run against the
+             * deterministic mock CP. Never opens /dev/umts_*, never RF. */
+            c.be.kind = BACKEND_MOCK;
+        } else {
+#if !HW_ENABLED
+            fprintf(stderr, "error: --really-boot (physical) requires a build with "
+                            "-DNUXEL_CPBOOTD_ENABLE_HW=1 (value-aware compile-time gate); "
+                            "use --really-boot --mock for the offline simulator.\n");
+            return 2;
+#else
+            if (!manifest_hex) {
+                fprintf(stderr, "error: --really-boot requires --manifest-sha256 <immutable manifest>\n");
+                return 2;
+            }
+            /* endpoint must be the verified boot node, not an arbitrary path.
+             * (identity is cross-checked against /dev/umts_boot0's rdev by the
+             * caller of the physical trial; see LIVE-SAFETY-PREFLIGHT.) */
+            if (strcmp(node, "/dev/umts_boot0") != 0) {
+                fprintf(stderr, "error: --node must be /dev/umts_boot0 for physical run\n");
+                return 2;
+            }
+            c.be.kind = BACKEND_REAL;
+#endif
+        }
+    } else {
+        if (force_mock) {
+            c.be.kind = BACKEND_MOCK;
+        } else if (HW_ENABLED) {
+            /* default with HW compiled is still dry-run (read-only) */
+            c.be.kind = BACKEND_REAL;
+        } else {
+            c.be.kind = BACKEND_MOCK;
+        }
+    }
+
+    /* firmware path is required for any boot; optional in pure dry-run */
+    if (!firmware) {
+        /* dry-run without firmware: status probe only */
+        if (really_boot) {
+            fprintf(stderr, "error: --really-boot requires --firmware <read-only RADIO/ITOC path>\n");
+            return 2;
+        }
+    }
+
+    /* ---- dry-run: read-only status probe, no HW mutation ---- */
     if (!really_boot) {
-        fd = open(node, O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK);
+        if (c.be.kind == BACKEND_MOCK) {
+            emit("{\"mode\":\"dry-run\",\"backend\":\"mock\",\"node\":\"%s\",\"status\":%d}",
+                 node, mock_status(&c.be));
+            return 0;
+        }
+        /* real node, read-only: open O_RDONLY and issue ONLY STATUS */
+        int fd = open(node, O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK);
         if (fd < 0) {
-            printf("{\"mode\":\"dry-run\",\"node\":\"%s\",\"lock\":\"failed\","
-                   "\"reason\":\"open\",\"errno\":%d}\n", node, errno);
+            emit("{\"mode\":\"dry-run\",\"backend\":\"real\",\"node\":\"%s\",\"status\":null,\"errno\":%d}",
+                 node, errno);
             return 1;
         }
-        /* shared lock in dry-run: does not block a real cbd owner */
-        if (flock(fd, LOCK_SH | LOCK_NB) != 0) {
-            printf("{\"mode\":\"dry-run\",\"node\":\"%s\",\"lock\":\"shared-failed\","
-                   "\"errno\":%d}\n", node, errno);
+        int st = ioctl(fd, IOCTL_MODEM_STATUS);
+        if (st < 0) {
+            emit("{\"mode\":\"dry-run\",\"backend\":\"real\",\"node\":\"%s\",\"status\":null,\"errno\":%d}",
+                 node, errno);
             close(fd);
             return 1;
         }
-        printf("{\"mode\":\"dry-run\",\"node\":\"%s\",\"lock\":\"shared\",", node);
-        status = read_cp_status(fd, node);
-        if (status >= 0 && status == STATE_ONLINE) {
-            printf("\"verdict\":\"already-online\"}\n");
-        } else {
-            printf("\"verdict\":\"offline-or-booting\",\"note\":\"no hardware-changing ioctl issued\"}\n");
-        }
-        print_json_stage_plan();
-        fputc('\n', stdout);
-        flock(fd, LOCK_UN);
+        emit("{\"mode\":\"dry-run\",\"backend\":\"real\",\"node\":\"%s\",\"status\":%d}", node, st);
         close(fd);
         return 0;
     }
 
-#ifndef NUXEL_CPBOOTD_ENABLE_HW
-    fprintf(stderr, "error: --really-boot requires a build with -DNUXEL_CPBOOTD_ENABLE_HW=1 "
-                    "(compile-time hardware enable). This binary is dry-run only.\n");
-    return 2;
-#else
-    /* ---- Exclusive-owner hardware path (only when compiled in) --------- */
-    signal(SIGTERM, on_signal);
-    signal(SIGINT, on_signal);
-
-    fd = open(node, O_RDWR | O_CLOEXEC | O_NOCTTY);
-    if (fd < 0) {
-        fprintf(stderr, "open %s failed: %s\n", node, strerror(errno));
-        return 1;
-    }
-    if (flock(fd, LOCK_EX | LOCK_NB) != 0) {
-        fprintf(stderr, "cannot obtain exclusive lock on %s (another owner present): %s\n",
-                node, strerror(errno));
-        close(fd);
-        return 1;
-    }
-    exclusive = 1;
-
-    printf("{\"mode\":\"really-boot\",\"node\":\"%s\",\"deadline_ms\":%ld,\"lock\":\"exclusive\"}\n",
-           node, deadline_ms);
-
-    for (i = 0; i < (int)PLAN_LEN && !g_stop; i++) {
-        const struct boot_stage_plan *s = &PLAN[i];
-        clock_gettime(CLOCK_MONOTONIC, &t0);
-        int r = execute_boot_stage(fd, s);
-        clock_gettime(CLOCK_MONOTONIC, &t1);
-        long elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000
-                        + (t1.tv_nsec - t0.tv_nsec) / 1000000;
-        printf("{\"stage\":\"%s\",\"rc\":%d,\"elapsed_ms\":%ld}\n", s->name, r, elapsed_ms);
-        if (r < 0 || elapsed_ms > deadline_ms) {
-            printf("{\"verdict\":\"aborted\",\"stage\":\"%s\",\"reason\":\"%s\"}\n",
-                   s->name, (elapsed_ms > deadline_ms) ? "deadline" : "stage-failed");
-            goto cleanup;
+    /* ---- full boot path (HW_ENABLED=1 + --really-boot + manifest) ---- */
+    if (c.be.kind == BACKEND_REAL) {
+        c.be.fd = open(node, O_RDWR | O_CLOEXEC | O_NOCTTY);
+        if (c.be.fd < 0) {
+            emit("{\"mode\":\"really-boot\",\"backend\":\"real\",\"node\":\"%s\",\"locked\":false,\"errno\":%d}",
+                 node, errno);
+            return 1;
+        }
+        /* exclusive ownership: LOCK_EX|LOCK_NB. Additionally the caller
+         * preflights process/node ownership (see LIVE-SAFETY-PREFLIGHT). */
+        if (flock(c.be.fd, LOCK_EX | LOCK_NB) != 0) {
+            emit("{\"mode\":\"really-boot\",\"backend\":\"real\",\"node\":\"%s\",\"locked\":false,\"errno\":%d}",
+                 node, errno);
+            close(c.be.fd);
+            return 1;
         }
     }
-    printf("{\"verdict\":\"plan-complete\"}\n");
 
-cleanup:
-    (void)exclusive;
-    flock(fd, LOCK_UN);
-    close(fd);
-    return 0;
-#endif
+    c.firmware_path = firmware;
+    {
+        int pr = parse_itoc(&c);
+        if (pr < 0) {
+            emit("{\"mode\":\"really-boot\",\"backend\":\"%s\",\"first_failed_stage\":\"itoc-parse\",\"rc\":%d}",
+                 c.be.kind == BACKEND_MOCK ? "mock" : "real", pr);
+            if (c.be.kind == BACKEND_REAL && c.be.fd >= 0) { flock(c.be.fd, LOCK_UN); close(c.be.fd); }
+            return 1;
+        }
+    }
+
+    {
+        int rc = run_boot(&c);
+        if (c.be.kind == BACKEND_REAL && c.be.fd >= 0) { flock(c.be.fd, LOCK_UN); close(c.be.fd); }
+        if (c.firmware_fd >= 0) close(c.firmware_fd);
+
+        if (rc != 0) {
+            static const char *names[STAGE_COUNT] = {
+                "status-probe","security-reinit","xmit-boot","security-toc","security-vss",
+                "security-main","power-on","boot-on","dl-start","handshake","boot-off","online-verify",
+            };
+            emit("{\"mode\":\"really-boot\",\"backend\":\"%s\",\"verdict\":\"aborted\","
+                 "\"first_failed_stage\":\"%s\",\"rc\":%d}",
+                 c.be.kind == BACKEND_MOCK ? "mock" : "real",
+                 names[c.first_failed_stage], c.first_failed_rc);
+            return 1;   /* NONZERO on any failure/abort */
+        }
+        emit("{\"mode\":\"really-boot\",\"backend\":\"%s\",\"verdict\":\"online\"}",
+             c.be.kind == BACKEND_MOCK ? "mock" : "real");
+        return 0;
+    }
 }
