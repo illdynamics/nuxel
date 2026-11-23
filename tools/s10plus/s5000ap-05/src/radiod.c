@@ -397,10 +397,11 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     /* Feed the Stage-06 data-session FSM: an authenticated response advances
      * the phase; this is the ONLY place the FSM is advanced (never on write). */
     if (g.data_path_armed && g.dsc.phase != DS_IDLE && fmt_rx_is_data_ack(f)) {
+        enum ds_phase prev = g.dsc.phase;
         enum ds_phase next = ds_step(&g.dsc, true, now_ms());
         diagf("data_session_ack", "\"phase\":\"%s\",\"next\":\"%s\"",
-              ds_phase_name(g.dsc.phase), ds_phase_name(next));
-        if (next != g.dsc.phase) g.wrote_phase = false;
+              ds_phase_name(prev), ds_phase_name(next));
+        if (next != prev) g.wrote_phase = false;
     }
     /* We do not decode telephony semantics (UNKNOWN). We DO surface the
      * existence and classification of every message as a diagnostic. */
@@ -424,6 +425,7 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
           f->sub_cmd == IPC41_NET_POWERON_ATTACH)) ||
         (f->main_cmd == IPC41_MAIN_GPRS &&
          f->sub_cmd == IPC41_GPRS_PIN_CTRL) ||
+        (f->main_cmd == IPC41_MAIN_GEN) ||
         f->main_cmd == IPC41_MAIN_DISP) {
         char hex[256];
         unsigned k, n = 0;
@@ -548,12 +550,16 @@ static bool fmt_rx_is_data_ack(const struct nuxel_sipc_fmt *f)
     case DS_ALWAYS_ON_PDN:
     case DS_PS_ATTACH:
     case DS_DATA_CALL:
-        /* Data-call establish response: CDMA_DATA_CALL_ESTABLISH (main=3 sub=2)
-         * or GPRS-family response (type != NOTI). */
+        /* Data-call establish response: CDMA_DATA_CALL_ESTABLISH (main=3 sub=2),
+         * or GPRS-family response (type != NOTI), or the generic GEN response
+         * (main=128, type=2) that the CP emits to acknowledge a data-path
+         * command (observed live after the mobile-data write). */
         return ((f->main_cmd == IPC41_MAIN_CDMA_DATA &&
                  f->sub_cmd == 2) ||
                 (f->main_cmd == IPC41_MAIN_GPRS &&
-                 f->cmd_type != IPC41_TYPE_NOTIFICATION));
+                 f->cmd_type != IPC41_TYPE_NOTIFICATION) ||
+                (f->main_cmd == IPC41_MAIN_GEN &&
+                 f->cmd_type == IPC41_TYPE_RESPONSE));
     case DS_WAIT_IP:
         /* IP configuration arrives via GPRS_IP_CONFIGURATION. */
         return (f->main_cmd == IPC41_MAIN_GPRS &&
@@ -619,8 +625,14 @@ static void data_session_tick(uint64_t now)
 
     /* SAFETY: only transmit data-path commands AFTER the CP has completed its
      * boot-stage RFS handshake AND reported the SIM READY (protocol-backed).
-     * Emitting during boot would be dropped/ignored by the CP. */
-    if (!g.rfs_handshake_done || !g.sim_ready_seen) {
+     * Emitting during boot would be dropped/ignored by the CP.
+     *
+     * If the CP is ALREADY ONLINE at daemon start (kernel sysfs proves the
+     * boot stage is complete), the RFS handshake is implicitly satisfied; we
+     * still require SIM present (SIM_DETECT sysfs) so we never transmit to a
+     * no-SIM radio. If the CP is freshly booting under this daemon, we keep
+     * the strict RFS-handshake + SIM-ready-notification gates. */
+    if (!g.rfs_handshake_done && !(g.cp_online && g.sim_present)) {
         return;
     }
 
