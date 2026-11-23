@@ -53,9 +53,12 @@
 
 /* Samsung DataProtocol (IP family) enum numeric values (recovered) */
 enum fmt_tx_data_protocol {
-    FMT_TX_PROTO_IP      = 0,
-    FMT_TX_PROTO_IPV6    = 1,
-    FMT_TX_PROTO_IPV4V6  = 2,
+    /* Vendor DataProtocol enum (libsec-ril, VERIFIED @0x31f580):
+     * IP=2, IPV6=3, IPV4V6=4. Wire byte = 0x00040605 >> ((proto-2)*8):
+     * IP(2)=0x05, IPV6(3)=0x06, IPV4V6(4)=0x04. */
+    FMT_TX_PROTO_IP      = 2,
+    FMT_TX_PROTO_IPV6    = 3,
+    FMT_TX_PROTO_IPV4V6  = 4,
 };
 
 /* A serialized frame (header + payload). */
@@ -109,6 +112,11 @@ bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
  * Recovered from IpcTxSetDataCallEstablish @0x320a10: 8-byte frame,
  * payload[0]=1 when establish else 2. */
 bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish);
+
+/* GPRS always-on PDN (main=13 GPRS, sub=34 SET_ALWAYS_ON_PDN).
+ * Recovered from IpcTxSetAlwaysOnPdn @0x321550: 9-byte frame,
+ * payload[0]=on/off(1/0), payload[1]=profile code (region-dependent). */
+bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profile);
 
 /* Serialize a raw FMT frame given explicit fields (validation helper). */
 bool fmt_tx_raw(struct fmt_tx_frame *f, uint8_t main, uint8_t sub,

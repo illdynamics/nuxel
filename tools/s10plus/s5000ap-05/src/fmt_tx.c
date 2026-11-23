@@ -60,6 +60,22 @@ bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish)
                       FMT_TX_TYPE_NOTIFICATION, p, 1);
 }
 
+/*
+ * GPRS always-on PDN (recovered from IpcTxSetAlwaysOnPdn @0x321550):
+ *   header main=13 sub=34(0x22) type=3; payload[0]=on/off(1/0),
+ *   payload[1]=profile code (region select via Region::IsNtcMain). The vendor
+ *   writes payload[0] at sp[15] (w1&1) and payload[1] at sp[16] (the result of
+ *   a regional profile selection, defaulting to 0). We expose the raw profile
+ *   byte so the caller can pass the owner-approved carrier profile.
+ */
+bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profile)
+{
+    uint8_t p[2];
+    p[0] = enable ? 1u : 0u;
+    p[1] = profile;
+    return fmt_tx_raw(f, MAIN_GPRS, 34u /*SET_ALWAYS_ON_PDN*/, FMT_TX_TYPE_NOTIFICATION, p, 2);
+}
+
 /* SIM query: vendor sends SEC interrogations as 7-byte frames (type=2). */
 bool fmt_tx_get_sim_status(struct fmt_tx_frame *f)
 {
@@ -132,12 +148,10 @@ bool fmt_tx_mobile_data(struct fmt_tx_frame *f, bool enable, bool extra)
  * vendor copies the NUL-terminated APN into `buf[10]`. Maximum APN length the
  * vendor accepts is 100 (strlen <= 0x65), so the APN field is 101 bytes.
  *
- * protocol byte (DataProtocol -> wire): IP=0x05, IPV6=0x60, IPV4V6=0x06
- * (recovered from the `0x00040605 >> ((proto-2)*8)` selection). For the common
- * case (proto==IPV4V6/2) the wire byte is 0x05... note this selection was
- * recovered from the shift of 0x00040605; the exact mapping for proto 0/1
- * collapses to the default 0x02. We map the three documented enum values to
- * their observed wire bytes and default unknown values to IPV4V6(0x05).
+ * protocol byte (DataProtocol -> wire, VERIFIED @0x31f5dc):
+ *   wire = (0x00040605 >> ((proto-2)*8)) & 0xff  (csel fallback 0x02 when
+ *   proto-2 >= 3 unsigned). DataProtocol enum: IP=2, IPV6=3, IPV4V6=4, so
+ *   IP=0x05, IPV6=0x06, IPV4V6=0x04. Unknown proto values default to IP.
  */
 bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
                                uint8_t proto, uint8_t profile_id)
@@ -153,11 +167,18 @@ bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
 
     p[0] = 0x01;             /* fixed profile flag */
     p[1] = profile_id;       /* profile id */
+    /* VERIFIED @0x31f5dc: wire byte = (0x00040605 >> ((proto-2)*8)) & 0xff,
+     * with a csel fallback to 0x02 when proto-2 >= 3 (unsigned).
+     *   IP(2)     -> 0x05
+     *   IPV6(3)   -> 0x06
+     *   IPV4V6(4) -> 0x04
+     * Unknown proto values fall back to IP (0x05), matching the vendor's
+     * default for the common case. */
     switch (proto) {
-    case FMT_TX_PROTO_IP:     p[2] = 0x05; break;
-    case FMT_TX_PROTO_IPV6:   p[2] = 0x60; break;
-    case FMT_TX_PROTO_IPV4V6: p[2] = 0x06; break;
-    default:                  p[2] = 0x05; break;   /* IP */
+    case FMT_TX_PROTO_IP:     p[2] = 0x05; break;  /* 0x00040605 >>  0 */
+    case FMT_TX_PROTO_IPV6:   p[2] = 0x06; break;  /* 0x00040605 >>  8 */
+    case FMT_TX_PROTO_IPV4V6: p[2] = 0x04; break;  /* 0x00040605 >> 16 */
+    default:                  p[2] = 0x05; break;  /* IP (vendor default) */
     }
     /* APN into payload[3 .. 3+alen] (full-frame offset 10). */
     memcpy(&p[3], apn, alen);
