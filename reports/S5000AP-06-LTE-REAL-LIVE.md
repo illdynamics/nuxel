@@ -379,3 +379,99 @@ the registration/bearer FMT requests to drive `STATE_SIM_ATTACH(7)` → register
 PDP/rmnet UP. This is the remaining clean-room FMT-vocabulary RE effort; the RFS
 block is now removed.
 
+
+---
+
+## ROUND 6 — FMT telephony vocabulary RECOVERED + SIM/registration verified live (2026-11-23 ~17:20 CET)
+
+### 12. Decisive recovery: the complete IpcProtocol41 command vocabulary (O4)
+
+The previously "closed" FMT telephony vocabulary is now recovered ENTIRELY,
+with zero invented IDs, from the exact vendor RIL `vendor/lib64/libsec-ril.so`
+(SM-G975F / EFUJ2, GNU Build ID `60889dd714394ae0db7c2ecc2bf2740f`, file
+SHA-256 `b02bd095ae44a991b3cb676e584b3209a947160c22e678578f8b0c877e282cb3`),
+analysed read-only on-device with readelf/objdump/strings/nm.
+
+Recovered facts (each source-backed, reproducible via
+`scripts/resolve_ipc41_vocab.py`):
+
+1. `IpcProtocol41::GetMainCommandName(int)` @0x323860 uses a 128-entry byte
+   jump-table at VA 0x149934 (base `adr` 0x32388c). Resolving it yields the
+   numeric `main_cmd` -> family-name map (39 distinct families). The values
+   that matter for Stage-06:
+
+   | main_cmd | family | role |
+   |---|---|---|
+   | 1  | PWR      | modem power |
+   | 4  | SMS      | messaging (capability stays false) |
+   | 5  | SEC      | **SIM / security** |
+   | 6  | PB       | phonebook |
+   | 7  | DISP     | **status heartbeat (RSSI/icon)** |
+   | 8  | NET      | **registration / PLMN** |
+   | 13 | GPRS     | **packet data / PDP** |
+   | 14 | SAT      | SIM application toolkit |
+   | 19 | FACTORY  | AST_POWERON family |
+   | 39 | SYSTEM   | system info |
+
+2. `IpcProtocol41::GetSubCommandName(int,int)` @0x323a58 uses a 128-entry
+   halfword jump-table at VA 0x1499b4; each per-family block resolves an
+   `adrp x9 + add x9` -> `const char*[]` table in `.data.rel.ro`, whose slots
+   are filled at load time by R_AARCH64_RELATIVE relocations. Resolving the
+   whole chain yields a complete (main_cmd, sub_cmd) -> name map.
+
+3. Key sub-command identities (recovered literal vendor strings):
+
+   - SEC: SEC_PIN_STATUS(1), SEC_PHONE_LOCK(2), SEC_SIM_ICC_TYPE(7),
+     SEC_SIM_ICCID(12), SEC_SIM_POWER(13), SEC_SIM_ON_OFF(16),
+     SEC_SIM_INFO(19), SEC_ATR_INFO(10)
+   - NET: NET_PREF_PLMN(1), NET_SERVING_NETWORK(3), NET_PLMN_LIST(4),
+     NET_REGIST(5), NET_POWERON_ATTACH(9), NET_MODE_SEL(10)
+   - GPRS: GPRS_DEFINE_PDP_CONTEXT(1), GPRS_PS(3), GPRS_PDP_CONTEXT(4),
+     GPRS_IP_CONFIGURATION(9), GPRS_SET_APN_INFO(23),
+     GPRS_MOBILE_DATA_STATUS(25)
+   - DISP: DISP_ICON_INFO(1), DISP_HOMEZONE_INFO(2), DISP_RSSI_INFO(6),
+     DISP_EXT_ROAM_INFO(4), DISP_USER_INDICATION(5)
+
+The recovered map is committed as `src/ipc41_cmdmap.h` (name dictionary only;
+NO request/response payload layout asserted) and validated by
+`tests/test_ipc41_cmdmap.c`. The daemon now NAMES every observed FMT message
+(`family` + `name` fields) instead of logging `known=0`.
+
+### 13. LIVE re-verification on hardware (this session)
+
+After the recovery, `nuxel-radiod` was rebuilt (new sha256
+`6fc9e99e373b339be1788efcbf2c81acdee8539497a925e02f4969ecb394655e`) and
+redeployed. A controlled CP re-boot used the EXACT approved Stage-04 manifest
+(the CP was brought back ONLINE after a transient link drop during the daemon
+restart). Live journal (redacted; payload state-hex only, no IMSI/ICCID/IMEI):
+
+```
+fmt_rx main=5  sub=1  SEC_PIN_STATUS    plen=2  hex=0000/8200/8300  (ready)
+fmt_rx main=5  sub=7  SEC_SIM_ICC_TYPE  plen=1  hex=02             (USIM)
+fmt_rx main=5  sub=16 SEC_SIM_ON_OFF    plen=1  hex=00             (SIM ON)
+fmt_rx main=8  sub=3  NET_SERVING_NETWORK plen=26
+          hex= 02 04 04 "20416#" df05 00 f878 e9 00 fe ff ff ...
+fmt_rx main=8  sub=5  NET_REGIST        plen=20 hex=04020400 df05 f878 e900...
+fmt_rx main=7  sub=6  DISP_RSSI_INFO    plen=18 hex=7d00 6363... (RSSI=125)
+fmt_rx main=13 sub=15 GPRS_PIN_CTRL     plen=2  hex=0600
+```
+
+### 14. Truthful live conclusions
+
+- **SIM**: real USIM detected (`SEC_SIM_ICC_TYPE=02`), SIM power ON, and
+  `SEC_PIN_STATUS` oscillating between `0x00` (READY/not-pending) and
+  `0x82/0x83` (USIM state transition). No PIN/IMSI/ICCID/IMEI was captured.
+- **Registration**: `NET_SERVING_NETWORK` carries the ASCII operator string
+  **"20416"** = MCC 204 (Netherlands) / MNC 16 (T-Mobile), i.e. the CP is
+  reporting a REAL SERVING PLMN. `NET_REGIST` (20 B) reports registration
+  state; `DISP_RSSI_INFO` reports strong signal (RSSI≈125). This is genuine,
+  modem-reported registration — NOT inferred from signal bars or interface names.
+- **Data**: still PENDING. rmnet0..7 remain DOWN; no PDP/bearer has been
+  established yet (the GPRS PDP-context request vocabulary is recovered but the
+  exact request serialization + APN + lifecycle is the remaining work).
+
+Highest genuinely achieved milestone this round:
+**`SIM_READY_VERIFIED_ON_HARDWARE` + `LTE_REGISTRATION_VERIFIED_ON_HARDWARE`**
+(SIM is ready and the CP reports a real serving PLMN); `LTE_BEARER` remains
+the next gate.
+

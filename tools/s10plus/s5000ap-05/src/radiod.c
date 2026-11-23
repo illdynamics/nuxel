@@ -24,6 +24,7 @@
 #include "rfs_proto.h"
 #include "rfs_respond.h"
 #include "sipc5_fmt.h"
+#include "ipc41_cmdmap.h"
 #include "transport.h"
 
 #include <errno.h>
@@ -252,6 +253,77 @@ static void emit_cp_reset(void)
 /* ------------------------------------------------------------------ */
 /* framing / reassembly / dispatch                                      */
 /* ------------------------------------------------------------------ */
+
+/* Return a recovered IpcProtocol41 sub-command name for the telephony
+ * families that Stage-06 targets. Returns NULL when the (main,sub) is not in
+ * the recovered vocabulary (we do NOT invent a name). */
+static const char *fmt_sub_name(uint8_t main, uint8_t sub)
+{
+    switch (main) {
+    case IPC41_MAIN_SEC:
+        switch (sub) {
+        case IPC41_SEC_PIN_STATUS: return "SEC_PIN_STATUS";
+        case IPC41_SEC_PHONE_LOCK: return "SEC_PHONE_LOCK";
+        case IPC41_SEC_SIM_ICC_TYPE: return "SEC_SIM_ICC_TYPE";
+        case IPC41_SEC_SIM_ICCID: return "SEC_SIM_ICCID";
+        case IPC41_SEC_SIM_POWER: return "SEC_SIM_POWER";
+        case IPC41_SEC_SIM_ON_OFF: return "SEC_SIM_ON_OFF";
+        case IPC41_SEC_SIM_INFO: return "SEC_SIM_INFO";
+        case IPC41_SEC_ATR_INFO: return "SEC_ATR_INFO";
+        default: break;
+        }
+        break;
+    case IPC41_MAIN_NET:
+        switch (sub) {
+        case IPC41_NET_SERVING_NETWORK: return "NET_SERVING_NETWORK";
+        case IPC41_NET_REGIST: return "NET_REGIST";
+        case IPC41_NET_POWERON_ATTACH: return "NET_POWERON_ATTACH";
+        case IPC41_NET_PLMN_LIST: return "NET_PLMN_LIST";
+        case IPC41_NET_PREF_PLMN: return "NET_PREF_PLMN";
+        case IPC41_NET_MODE_SEL: return "NET_MODE_SEL";
+        case IPC41_NET_CELL_INFO: return "NET_CELL_INFO";
+        default: break;
+        }
+        break;
+    case IPC41_MAIN_GPRS:
+        switch (sub) {
+        case IPC41_GPRS_DEFINE_PDP_CONTEXT: return "GPRS_DEFINE_PDP_CONTEXT";
+        case IPC41_GPRS_PDP_CONTEXT: return "GPRS_PDP_CONTEXT";
+        case IPC41_GPRS_PS: return "GPRS_PS";
+        case IPC41_GPRS_IP_CONFIGURATION: return "GPRS_IP_CONFIGURATION";
+        case IPC41_GPRS_CALL_STATUS: return "GPRS_CALL_STATUS";
+        case IPC41_GPRS_PIN_CTRL: return "GPRS_PIN_CTRL";
+        case IPC41_GPRS_SET_APN_INFO: return "GPRS_SET_APN_INFO";
+        case IPC41_GPRS_MOBILE_DATA_STATUS: return "GPRS_MOBILE_DATA_STATUS";
+        default: break;
+        }
+        break;
+    case IPC41_MAIN_DISP:
+        switch (sub) {
+        case IPC41_DISP_ICON_INFO: return "DISP_ICON_INFO";
+        case IPC41_DISP_HOMEZONE_INFO: return "DISP_HOMEZONE_INFO";
+        case IPC41_DISP_RSSI_INFO: return "DISP_RSSI_INFO";
+        case IPC41_DISP_EXT_ROAM_INFO: return "DISP_EXT_ROAM_INFO";
+        case IPC41_DISP_USER_INDICATION: return "DISP_USER_INDICATION";
+        default: break;
+        }
+        break;
+    case IPC41_MAIN_PWR:
+        switch (sub) {
+        case IPC41_PWR_PHONE_PWR_UP: return "PWR_PHONE_PWR_UP";
+        case IPC41_PWR_PHONE_STATE: return "PWR_PHONE_STATE";
+        case IPC41_PWR_ENABLE_MODEM: return "PWR_ENABLE_MODEM";
+        default: break;
+        }
+        break;
+    case IPC41_MAIN_SYSTEM:
+        if (sub == IPC41_SYSTEM_CP_CHANNEL_INFO) return "SYSTEM_CP_CHANNEL_INFO";
+        break;
+    default: break;
+    }
+    return NULL;
+}
+
 static const struct nuxel_fmt_observation *find_fmt_obs(uint8_t m, uint8_t s, uint8_t t)
 {
     unsigned i;
@@ -305,8 +377,35 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     resolve_pending(f);
     /* We do not decode telephony semantics (UNKNOWN). We DO surface the
      * existence and classification of every message as a diagnostic. */
-    diagf("fmt_rx", "\"ch\":%u,\"main\":%u,\"sub\":%u,\"type\":%u,\"plen\":%u,\"known\":%d",
-          ch, f->main_cmd, f->sub_cmd, f->cmd_type, f->payload_len, ob != NULL);
+    const char *subname = fmt_sub_name(f->main_cmd, f->sub_cmd);
+    diagf("fmt_rx", "\"ch\":%u,\"main\":%u,\"sub\":%u,\"type\":%u,\"plen\":%u,\"name\":\"%s\",\"family\":\"%s\"",
+          ch, f->main_cmd, f->sub_cmd, f->cmd_type, f->payload_len,
+          subname ? subname : "UNKNOWN", ipc41_main_name(f->main_cmd));
+
+    /* REDACTED-SAFE payload diagnostics: dump hex ONLY for state-enum
+     * messages that carry no subscriber/device identifier (no IMSI/ICCID/
+     * IMEI/MSISDN). SEC_PIN_STATUS, SEC_SIM_ICC_TYPE, NET_REGIST,
+     * NET_SERVING_NETWORK, GPRS_PIN_CTRL, DISP_* are safe. We explicitly
+     * EXCLUDE SEC_SIM_ICCID (sub=12) and IMEI family. */
+    if ((f->main_cmd == IPC41_MAIN_SEC &&
+         (f->sub_cmd == IPC41_SEC_PIN_STATUS ||
+          f->sub_cmd == IPC41_SEC_SIM_ICC_TYPE ||
+          f->sub_cmd == IPC41_SEC_SIM_ON_OFF)) ||
+        (f->main_cmd == IPC41_MAIN_NET &&
+         (f->sub_cmd == IPC41_NET_REGIST ||
+          f->sub_cmd == IPC41_NET_SERVING_NETWORK ||
+          f->sub_cmd == IPC41_NET_POWERON_ATTACH)) ||
+        (f->main_cmd == IPC41_MAIN_GPRS &&
+         f->sub_cmd == IPC41_GPRS_PIN_CTRL) ||
+        f->main_cmd == IPC41_MAIN_DISP) {
+        char hex[256];
+        unsigned k, n = 0;
+        for (k = 0; k < f->payload_len && k < 32; k++)
+            n += snprintf(hex + n, sizeof hex - n, "%02x", f->payload[k]);
+        hex[n] = 0;
+        diagf("fmt_payload", "\"main\":%u,\"sub\":%u,\"hex\":\"%s\"",
+              f->main_cmd, f->sub_cmd, hex);
+    }
 }
 
 /*
