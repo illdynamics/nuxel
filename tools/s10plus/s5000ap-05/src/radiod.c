@@ -834,7 +834,8 @@ static bool data_session_emit(void)
         /* Enable GPRS mobile data (source-backed IpcTxSetMobileDataSetting,
          * main=13 sub=29, 9 bytes; enable=1, extra=1). This is the explicit
          * mobile-data-authorization toggle the vendor RIL issues before the
-         * profile sync/PDP sequence. */
+         * profile sync/PDP sequence. GEN result 3 is the CP's idempotent
+         * "already enabled" signal (consistent across extra=0/1). */
         if (!fmt_tx_mobile_data(&f, true, true))
             return false;
         break;
@@ -862,7 +863,7 @@ static bool data_session_emit(void)
         if (!fmt_tx_set_lte_attach_profile(&f, (const char*)g.dsc.apn,
                                            FMT_TX_AUTH_NONE,
                                            FMT_TX_PROTO_IPV4V6,
-                                           DS_ATTACH_CID))
+                                           DS_ATTACH_CID, 3u))
             return false;
         break;
     case DS_DEFINE_PDP:

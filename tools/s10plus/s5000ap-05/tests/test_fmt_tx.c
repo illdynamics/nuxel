@@ -142,7 +142,7 @@ int main(void)
      * payload[0]=3 (enable), payload[1]=cid, payload[2]=protocol, APN at +3. */
     memset(&f, 0, sizeof f);
     CHECK(fmt_tx_set_lte_attach_profile(&f, "internet", FMT_TX_AUTH_NONE,
-                                        FMT_TX_PROTO_IPV4V6, 1),
+                                        FMT_TX_PROTO_IPV4V6, 1, 3),
           "set_lte_attach_profile builds");
     CHECK(f.len == 201, "set_lte_attach_profile len==201 (got %zu)", f.len);
     CHECK(f.main_cmd == 13 && f.sub_cmd == 20 && f.cmd_type == 3,
@@ -161,7 +161,7 @@ int main(void)
     /* attach cid = 5 (GetAttachCid() for LTE model) must serialize correctly. */
     memset(&f, 0, sizeof f);
     CHECK(fmt_tx_set_lte_attach_profile(&f, "internet", FMT_TX_AUTH_NONE,
-                                        FMT_TX_PROTO_IPV4V6, 5),
+                                        FMT_TX_PROTO_IPV4V6, 5, 3),
           "set_lte_attach_profile builds with attach cid=5");
     CHECK(f.buf[7 + 1] == 0x05, "set_lte_attach_profile payload[1] cid == 5");
 

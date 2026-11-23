@@ -245,7 +245,8 @@ bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profi
  *     payload[193]     = reserved (zero)
  */
 bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
-                                   uint8_t auth_code, uint8_t proto, uint8_t cid)
+                                   uint8_t auth_code, uint8_t proto, uint8_t cid,
+                                   uint8_t flag)
 {
     if (!f || !apn) return false;
     size_t alen = strlen(apn);
@@ -258,8 +259,8 @@ bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
 
     /* payload[0] flag value 3 was LIVE-VERIFIED accepted by this CP
      * (gen result 0), whereas 4 was rejected (gen result 1). Keep 3. */
-    p[0] = 3u;                   /* live-verified apply flag for SM-G975F */
-    p[1] = cid;                  /* profile/context id */
+    p[0] = flag;   /* apply flag: 3 = set profile (live-verified), 1 = attach APN */
+    p[1] = cid;    /* profile/context id */
     p[2] = proto_wire_byte(proto);
 
     /* AUTHORITATIVE layout recovered this round from

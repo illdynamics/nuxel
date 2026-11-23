@@ -120,9 +120,11 @@ bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
 
 /* GPRS LTE attach profile (main=13 GPRS, sub=20 SET_LTE_ATTACH_PROFILE).
  * 201-byte frame; COMPLETE layout recovered from IpcTxSetLteAttachProfile
- * @0x320238 — see fmt_tx.c. This prepares the CP for LTE PS attach. */
+ * @0x320238 — see fmt_tx.c. This prepares the CP for LTE PS attach.
+ * `flag` is payload[0] (3 = set data profile; 1 = set initial-attach APN). */
 bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
-                                   uint8_t auth_code, uint8_t proto, uint8_t cid);
+                                   uint8_t auth_code, uint8_t proto, uint8_t cid,
+                                   uint8_t flag);
 
 /* GPRS set PDP context / ACTIVATE (main=13 GPRS, sub=4). The REAL LTE PDP
  * activation command (112-byte frame) recovered from IpcTxSetPdpContext
