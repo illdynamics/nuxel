@@ -1,0 +1,77 @@
+{
+  "generated_at": "2026-11-23T03:30:00Z",
+  "purpose": "Pinned dependency manifest for Round 03 (S5000AP kernel ABI + offline cbd/cpbootd build). No blobs, no firmware, only source/tool hashes.",
+  "kernel": {
+    "repo": "android_kernel_samsung_exynos9820 (Linux4)",
+    "commit": "f7194c1d15eded1c2a1a4dc63825b26103435cc0",
+    "dated": "2021-11-13T07:26:52+01:00",
+    "version": "4.14.253",
+    "local_path": "kernel/s10plus/.build/src.polluted.case-insensitive",
+    "modem_v1_dir": "drivers/misc/modem_v1",
+    "abi_source_files": [
+      "modem_prj.h",
+      "modem_v1.h",
+      "include/sipc5.h",
+      "modem_io_device.c",
+      "modem_ctrl_s5000ap.c",
+      "link_device_shmem.c"
+    ],
+    "runtime_config_flags": {
+      "CONFIG_SEC_SIPC_MODEM_IF": "y",
+      "CONFIG_SEC_MODEM_S5000AP": "y",
+      "CONFIG_UMTS_MODEM_S5000AP": "y",
+      "CONFIG_LINK_DEVICE_SHMEM": "y",
+      "CONFIG_LINK_DEVICE_PCIE": "not set (SHMEM device; PCIe-only ioctls ABSENT)",
+      "CONFIG_CP_SECURE_BOOT": "y",
+      "CONFIG_CP_DIT": "y",
+      "CONFIG_CP_PKTPROC": "y",
+      "CONFIG_CP_RAM_LOGGING": "y",
+      "CONFIG_SHM_IPC": "y"
+    }
+  },
+  "cbd_source_candidates": {
+    "lineage-24.0_cpboot_v3": {
+      "repo": "android_hardware_samsung_slsi-linaro_exynos",
+      "commit": "e9816cf6ed8123a2f20ea334641794a0e64b1e7f",
+      "branch": "lineage-24.0",
+      "path": "cpboot_v3/",
+      "verdict": "SOURCE_ONLY reference; ABI-exact ONLY with -DLEGACY_SIPC_IOCTL"
+    },
+    "lineage-20": {
+      "repo": "android_hardware_samsung_slsi-linaro_exynos",
+      "commit": "46ebd379e0e39f62d5f659e1de10111d50ca99f3",
+      "branch": "lineage-20",
+      "note": "cpboot_v3 NOT present in this repo at lineage-20; only graphics/thermal/audio HALs"
+    },
+    "lineage-18.1_device_config": {
+      "repo": "android_device_samsung_exynos9820-common",
+      "commit": "8fec7c38ed6927cfeaf548be0c45c30eeeea759c",
+      "branch": "lineage-18.1",
+      "findings": [
+        "No source-built cbd; proprietary-files.txt:165 declares vendor/bin/cbd as a PREBUILT proprietary blob",
+        "sepolicy/vendor/cbd.te: allow cbd radio_device:chr_file rw_file_perms",
+        "configs/init/ueventd.rc:175 comment # cbd"
+      ]
+    },
+    "lineage-24.0_device_config": {
+      "repo": "android_device_samsung_exynos9820-common",
+      "commit": "38af956a4eec889cb352b4fd42e5e801c19a51b8",
+      "branch": "lineage-24.0",
+      "findings": [
+        "BoardConfigCommon.mk:154 soong_config_set(cbd, protocol, sipc)",
+        "BoardConfigCommon.mk:155 soong_config_set_bool(cbd, use_legacy_sipc_ioctl, true)"
+      ]
+    }
+  },
+  "stock_cbd_blob": {
+    "path": "/Users/wicked/.local/share/nuxel-s5000ap/G975FXXS9DTK9-CP-20261117/stock-cbd/cbd",
+    "sha256": "c3e869fa2f78b1e8141cac58602c2a6fb852e31d5c08349ba969c75ef78f7b83",
+    "note": "OWNER-LOCAL proprietary blob, NOT committed, NOT redistributed"
+  },
+  "toolchains": {
+    "aarch64_cross_gcc": "aarch64-linux-gnu-gcc (GCC) 15.2.0 (homebrew)",
+    "host_gcc": "/usr/bin/gcc (Apple clang)",
+    "host_clang": "/usr/bin/clang",
+    "note": "Mac host ioctl encoding differs (BSD _IO=0x20000000 dir bits); AArch64 target uses asm-generic _IO=0x6F00|N (verified via _Static_assert)"
+  }
+}

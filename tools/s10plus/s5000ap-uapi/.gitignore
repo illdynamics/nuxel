@@ -1,0 +1,4 @@
+# Compiled binaries are build artifacts, not source. Only commit the .c/.h/.py/json.
+*.host
+*.aarch64
+*.o
