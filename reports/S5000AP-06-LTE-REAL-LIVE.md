@@ -1,12 +1,12 @@
 # S5000AP Stage-06 — SIM → Registration → Real LTE Data (Round 12, strict-FSM instrumentation)
 
 **Status:** `STAGE_06_NOT_YET_PASS — CP ONLINE + SIM READY + CS-registered (PLMN 20416 T-Mobile NL);
-Full vendor-exact data-session sequence ACKed; PDP activation REJECTED by CP with
-GPRS_CALL_STATUS state=3 (not connected). FSM now correctly detects and reports the
-real rejection instead of claiming a false bearer.`
+Full vendor-exact data-session sequence ACKed; PS/data registration read-back shows
+DENIED (RegState 3); PDP activation REJECTED by CP with GPRS_CALL_STATUS state=3. FSM
+now correctly detects and reports the real rejection instead of a false bearer.`
 
 **Branch:** `cs/mob`
-**HEAD:** `abffa27d` (post round-12 strict-FSM instrumentation)
+**HEAD:** `ed391a29` (round-12 strict FSM + GetDataRegState query)
 **Device:** SM-G975F / beyond2lte / Exynos9820 / S5000AP (BEYOND2LTE EUR OPEN 26)
 **Kernel:** `4.14.253-gf7194c1d15ed-dirty` (SMP PREEMPT, 2026-11-23 00:43:30 CET)
 **CP:** ONLINE (`/sys/devices/platform/10000.mif_pdata/modem_state` = ONLINE)
@@ -71,6 +71,23 @@ data_session_reject    phase=DATA_CALL         gen_result=0 call_state=3 pdp_sta
 (`SetPdpContext`, main=13 sub=4 ACTIVATE) is transmitted and the CP ACKs the write,
 but the bearer itself is rejected — no `GPRS_IP_CONFIGURATION` ever follows and
 `rmnet0..7` remain DOWN.
+
+### PS/data registration read-back (NEW this round)
+
+Added `DS_NET_REGIST_CHECK` as the first data-session phase; it issues the
+source-backed `IpcTxNetGetDataRegState` (NET_REGIST sub=5, 9-byte query, transaction
+801). The CP returns a **type=2 RESPONSE** (20 bytes):
+
+```
+fmt_rx   main=8 sub=5 type=2 plen=20  name=NET_REGIST
+payload  04 03 01 00 df 05 f8 78 e9 00 00 fe ff 02 02 01 ff ff 00 00
+```
+
+Decode (Samsung RegState enum, recovered from NetRegState::IsDenied/IsRegistered
+@0x2a9d38/@0x2a9ce8 where 1/5=registered, 2=searching, 3=DENIED, 4=unknown):
+registry-state vector `04 03 01 00 …` carries **CS=REGISTERED (0x01)** and
+**PS/DATA=DENIED (0x03)**. This is the vendor's own answer to GetDataRegState and is
+consistent with the PDP activation rejection that follows.
 
 ---
 
