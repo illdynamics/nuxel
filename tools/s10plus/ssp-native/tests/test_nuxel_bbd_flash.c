@@ -115,14 +115,15 @@ static void cb_version(const struct rx_pkt *pkt, void *ctx)
 
 static void test_rx_decode(void)
 {
-    /* Construct a GetVersion reply: RPC 0 with a 4-byte version body,
-     * reliable ACK flags set. */
+    /* Construct a GetVersion RESPONSE: RPC id=3 (GetVersion request is id 0;
+     * the firmware replies with id 3 carrying the LE32 version words) with a
+     * 4-byte version body, reliable ACK flags set. */
     struct rx rr; rx_init(&rr);
-    /* body: seq=1, size=6 (RPC: id 0, len 4, payload), flags=RELIABLE|RELIABLE_ACK */
+    /* body: seq=1, size=6 (RPC: id 3, len 4, payload), flags=RELIABLE|RELIABLE_ACK */
     uint8_t body[3 + 1 + 1 + 6 + 1]; /* seq,size,flags, rel_seq, rel_ack_seq, [6], crc */
     size_t bn = 0;
-    uint8_t rpc[6]; /* RPC id=0, len=4, 4 payload bytes */
-    rpc[0]=0x00; rpc[1]=0x04; rpc[2]=0x12; rpc[3]=0x34; rpc[4]=0x56; rpc[5]=0x78;
+    uint8_t rpc[6]; /* RPC id=3 (version response), len=4, 4 payload bytes */
+    rpc[0]=RPC_GET_VERSION_RESPONSE; rpc[1]=0x04; rpc[2]=0x12; rpc[3]=0x34; rpc[4]=0x56; rpc[5]=0x78;
     body[bn++]=1;         /* seq */
     body[bn++]=6;         /* size = payload only = 6 */
     body[bn++]=F_RELIABLE | F_REL_ACK;

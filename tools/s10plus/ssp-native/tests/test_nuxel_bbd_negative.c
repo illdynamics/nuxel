@@ -4,13 +4,18 @@
  * (exercised over an in-memory socketpair). */
 #define NO_MAIN_NUXEL_BBD_FLASH
 #define main nuxel_bbd_flash_program_main
+/* Enable the offline RPC-recording instrumentation so we can PROVE that
+ * the ROM-identity-only path never emits a firmware-write/app-start RPC. */
+#define NUXEL_BBD_TEST_INSTRUMENT 1
 #include "../nuxel_bbd_flash.c"
 #undef main
 #undef NO_MAIN_NUXEL_BBD_FLASH
 
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 
 /* --- helpers ------------------------------------------------------------ */
 static uint8_t crc_of(const uint8_t *body, size_t n)
@@ -266,7 +271,7 @@ static void test_reliable_rpc_no_reply_times_out(void)
     struct session s;
     assert(socketpair(AF_UNIX, SOCK_STREAM, 0, fd) == 0);
     memset(&s, 0, sizeof s);
-    s.fd_tty = fd[0]; s.fd_sensor = fd[0]; /* write to fd[0], read notices nothing */
+    s.fd_tty = fd[0]; s.fd_sensor = -1; /* write to fd[0]; pump reads fd[0], nothing to read */
     rx_init(&s.rx);
     s.seq = 1; s.rel_seq = 1;
     /* Never write a reply from the peer: reliable_rpc must time out. */
@@ -282,17 +287,20 @@ static void test_reliable_rpc_nack(void)
     struct session s;
     assert(socketpair(AF_UNIX, SOCK_STREAM, 0, fd) == 0);
     memset(&s, 0, sizeof s);
+    /* Correction mirrors nuxel_bbd_flash.c: pump() reads ROM replies from
+     * fd_tty (raw SSI); fd_sensor is unused during the ROM phase.  Use a
+     * loopback fd_tty so the simulated hub reply is readable by pump(). */
     s.fd_tty = fd[0]; s.fd_sensor = fd[1];
     rx_init(&s.rx);
     s.seq = 1; s.rel_seq = 1;
-    /* Peer sends a REL_NACK for the outstanding rel_seq (2 after increment). */
-    /* reliable_rpc increments rel_seq to 2 and sends; peer replies NACK seq 2. */
-    /* We pre-write the NACK so pump() reads it. */
+    /* Peer sends a REL_NACK for the outstanding rel_seq (2 after increment).
+     * reliable_rpc increments rel_seq to 2 and sends; the hub replies NACK
+     * for seq 2, arriving on fd_tty (written to the peer end fd[1]). */
     {
         uint8_t nack_body[4] = { 1, 0x00, F_REL_NACK, 2 }; /* seq=1,size=0,flags=REL_NACK, detail=2 */
         uint8_t wire[64];
         size_t wn = build_wire(wire, nack_body, sizeof nack_body, crc_of(nack_body, sizeof nack_body));
-        assert(write(fd[0], wire, wn) == (ssize_t)wn);
+        assert(write(fd[1], wire, wn) == (ssize_t)wn);
     }
     int rc = reliable_rpc(&s, RPC_GET_VERSION, NULL, 0, 300);
     assert(rc == SSI_ENOTACK);
@@ -307,7 +315,7 @@ static void test_reliable_rpc_cancelled(void)
     struct session s;
     assert(socketpair(AF_UNIX, SOCK_STREAM, 0, fd) == 0);
     memset(&s, 0, sizeof s);
-    s.fd_tty = fd[0]; s.fd_sensor = fd[0];
+    s.fd_tty = fd[0]; s.fd_sensor = -1;
     rx_init(&s.rx);
     s.seq = 1; s.rel_seq = 1;
     g_cancelled = 1;
@@ -391,6 +399,211 @@ static void test_two_instances_independent(void)
     assert(a.packets == 1 && b.packets == 0);
 }
 
+
+/* --- ROM-identity-only mode must never reach firmware write / app start ----
+ *
+ * This is the decisive safety regression.  rom_identity_probe() is the only
+ * device-touching path reachable from --rom-probe.  We run it over an
+ * in-memory socketpair that never replies, then assert:
+ *
+ *   1. It returns ROM_PROBE_TIMEOUT (the MCU stayed silent; honest).
+ *   2. Every RPC id actually submitted to the transport was GetVersion (id 0).
+ *      No MemoryWrite (5), StartScratchApp (46) or ServiceStart (55) was ever
+ *      emitted.  This proves the firmware-write and app-start code is
+ *      structurally unreachable from the ROM-identity-only path.
+ */
+static int rpc_id_was_emitted(uint16_t id)
+{
+    size_t i;
+    for (i = 0; i < nuxel_test_rpc_ids_seen_n; i++)
+        if (nuxel_test_rpc_ids_seen[i] == id) return 1;
+    return 0;
+}
+
+static void test_rom_probe_never_writes_firmware(void)
+{
+    int fd[2];
+    struct session s;
+
+    /* Reset the global instrumentation. */
+    nuxel_test_rpc_ids_seen_n = 0;
+    memset(nuxel_test_rpc_ids_seen, 0, sizeof nuxel_test_rpc_ids_seen);
+
+    assert(socketpair(AF_UNIX, SOCK_STREAM, 0, fd) == 0);
+    memset(&s, 0, sizeof s);
+    s.fd_tty = fd[0]; s.fd_sensor = -1; /* ROM replies are read from fd_tty */
+    rx_init(&s.rx);
+    s.seq = 1; s.rel_seq = 1;
+
+    /* No reply is ever written to fd[1]; rom_identity_probe must time out. */
+    enum rom_probe_result r = rom_identity_probe(&s);
+    assert(r == ROM_PROBE_TIMEOUT);
+
+    /* Safety boundary: only GetVersion (0) may have been submitted. */
+    {
+        size_t i;
+        for (i = 0; i < nuxel_test_rpc_ids_seen_n; i++) {
+            uint16_t id = nuxel_test_rpc_ids_seen[i];
+            assert(id == RPC_GET_VERSION);
+        }
+    }
+    assert(!rpc_id_was_emitted(RPC_MEM_WRITE));
+    assert(!rpc_id_was_emitted(RPC_START_SCRATCH));
+    assert(!rpc_id_was_emitted(RPC_SERVICE_START));
+
+    close(fd[0]); close(fd[1]);
+}
+
+/* --- ROM-identity-only success path also stays within GetVersion --------- */
+static void test_rom_probe_success_never_writes_firmware(void)
+{
+    int fd[2];
+    struct session s;
+    pid_t child;
+
+    nuxel_test_rpc_ids_seen_n = 0;
+    memset(nuxel_test_rpc_ids_seen, 0, sizeof nuxel_test_rpc_ids_seen);
+
+    assert(socketpair(AF_UNIX, SOCK_STREAM, 0, fd) == 0);
+    memset(&s, 0, sizeof s);
+    s.fd_tty = fd[0]; s.fd_sensor = -1;
+    rx_init(&s.rx);
+    s.seq = 1; s.rel_seq = 1;
+
+    /* Deliver a valid GetVersion reply from a child AFTER the probe's initial
+     * stale-byte flush but within the GetVersion receive window, so it is
+     * read by reliable_rpc (not swept away by the flush). */
+    child = fork();
+    assert(child >= 0);
+    if (child == 0) {
+        /* Version RESPONSE payload: RPC id=3 len=4 version(LE32)=0x12345678.
+         * id 0 is the request; the firmware replies with id 3 (3 x LE32). */
+        uint8_t payload[6] = { RPC_GET_VERSION_RESPONSE, 0x04, 0x78, 0x56, 0x34, 0x12 };
+        uint8_t body[3 + 1 + 6] = { 1, (uint8_t)sizeof(payload), F_REL_ACK, 2 };
+        memcpy(body + 4, payload, sizeof(payload));
+        uint8_t wire[128];
+        size_t wn = build_wire(wire, body, sizeof body, crc_of(body, sizeof body));
+        usleep(150 * 1000); /* after the flush, during the 2500ms window */
+        (void)!write(fd[1], wire, wn);
+        _exit(0);
+    }
+
+    enum rom_probe_result r = rom_identity_probe(&s);
+    /* Reap child regardless of probe outcome. */
+    { int st; waitpid(child, &st, 0); }
+
+    assert(r == ROM_PROBE_OK);
+    assert(s.got_version && s.version_w0 == 0x12345678u);
+
+    /* Same boundary: only GetVersion was submitted. */
+    {
+        size_t i;
+        for (i = 0; i < nuxel_test_rpc_ids_seen_n; i++)
+            assert(nuxel_test_rpc_ids_seen[i] == RPC_GET_VERSION);
+    }
+    assert(!rpc_id_was_emitted(RPC_MEM_WRITE));
+    assert(!rpc_id_was_emitted(RPC_START_SCRATCH));
+    assert(!rpc_id_was_emitted(RPC_SERVICE_START));
+
+    close(fd[0]); close(fd[1]);
+}
+
+/* --- GetVersion request/response RPC id separation ------------------------
+ * Regression for the id-0/id-3 direction split.  The matched lhd sends
+ * RPC id 0 (empty) as the GetVersion REQUEST and decodes RPC id 3 (3 x LE32)
+ * as the RESPONSE.  on_pkt must therefore set got_version only for id 3. */
+static void test_getversion_request_response_id_separation(void)
+{
+    /* Helper: feed one TL packet whose payload is a single RPC record and
+     * run it through on_pkt (the rx_pkt_cb) with a session. */
+    struct {
+        uint8_t body[64];
+        size_t bn;
+    } build;
+    uint8_t wire[256];
+    struct rx rr;
+    struct session s;
+
+    /* Case A: RPC id 0 (request) echoed/present — must NOT set got_version. */
+    {
+        uint8_t pl[2] = { 0x00, 0x00 }; /* RPC id=0, len=0 (empty request) */
+        rx_init(&rr); memset(&s, 0, sizeof s); rx_init(&s.rx);
+        /* feed a synthetic packet via tl_parse path: build TL body */
+        build.bn = 0;
+        build.body[build.bn++] = 5;       /* seq */
+        build.body[build.bn++] = 2;       /* size = 2 payload bytes */
+        build.body[build.bn++] = 0;       /* flags = 0 (non-reliable, non-internal) */
+        memcpy(build.body + build.bn, pl, 2); build.bn += 2;
+        {
+            uint8_t crc = crc_of(build.body, build.bn);
+            build.body[build.bn++] = crc;
+        }
+        /* Use rx_feed with on_pkt to classify. Construct full wire by hand. */
+        {
+            size_t wn2 = 0, i;
+            wire[wn2++] = ESC; wire[wn2++] = 0x00; /* SOP */
+            for (i = 0; i < build.bn - 1; i++) {
+                uint8_t c = build.body[i];
+                if (c == ESC) { wire[wn2++] = ESC; wire[wn2++] = ESC_ESC; }
+                else if (c == XON) { wire[wn2++] = ESC; wire[wn2++] = ESC_XON; }
+                else if (c == XOFF) { wire[wn2++] = ESC; wire[wn2++] = ESC_XOFF; }
+                else wire[wn2++] = c;
+            }
+            /* CRC byte */
+            {
+                uint8_t c = build.body[build.bn - 1];
+                if (c == ESC) { wire[wn2++] = ESC; wire[wn2++] = ESC_ESC; }
+                else wire[wn2++] = c;
+            }
+            wire[wn2++] = ESC; wire[wn2++] = EOP;
+            rx_feed(&rr, wire, wn2, on_pkt, &s);
+        }
+        assert(s.rpc_count == 1);
+        assert(!s.got_version);   /* id 0 must NOT be classified as version */
+    }
+
+    /* Case B: RPC id 3 with 12-byte body (3 x LE32) — MUST set got_version,
+     * w0 = first LE32. */
+    {
+        uint8_t pl[14]; /* RPC id=3, len=12, 12 payload bytes */
+        pl[0] = 0x03; pl[1] = 0x0c;
+        pl[2] = 0x78; pl[3] = 0x56; pl[4] = 0x34; pl[5] = 0x12; /* w0 = 0x12345678 */
+        pl[6] = 0x02; pl[7] = 0x00; pl[8] = 0x00; pl[9] = 0x00;
+        pl[10]= 0x03; pl[11]= 0x00; pl[12]= 0x00; pl[13]= 0x00;
+        rx_init(&rr); memset(&s, 0, sizeof s); rx_init(&s.rx);
+        build.bn = 0;
+        build.body[build.bn++] = 6;
+        build.body[build.bn++] = 14;   /* size = 14 */
+        build.body[build.bn++] = 0;
+        memcpy(build.body + build.bn, pl, 14); build.bn += 14;
+        {
+            uint8_t crc = crc_of(build.body, build.bn);
+            build.body[build.bn++] = crc;
+        }
+        {
+            size_t wn2 = 0, i;
+            wire[wn2++] = ESC; wire[wn2++] = 0x00;
+            for (i = 0; i < build.bn - 1; i++) {
+                uint8_t c = build.body[i];
+                if (c == ESC) { wire[wn2++] = ESC; wire[wn2++] = ESC_ESC; }
+                else if (c == XON) { wire[wn2++] = ESC; wire[wn2++] = ESC_XON; }
+                else if (c == XOFF) { wire[wn2++] = ESC; wire[wn2++] = ESC_XOFF; }
+                else wire[wn2++] = c;
+            }
+            {
+                uint8_t c = build.body[build.bn - 1];
+                if (c == ESC) { wire[wn2++] = ESC; wire[wn2++] = ESC_ESC; }
+                else wire[wn2++] = c;
+            }
+            wire[wn2++] = ESC; wire[wn2++] = EOP;
+            rx_feed(&rr, wire, wn2, on_pkt, &s);
+        }
+        assert(s.rpc_count == 1);
+        assert(s.got_version);
+        assert(s.version_w0 == 0x12345678u);
+    }
+}
+
 int main(void)
 {
     test_f0_f5_malformed_truncated();
@@ -407,6 +620,9 @@ int main(void)
     test_rx_reentrancy();
     test_rx_partial_transfer_and_short_read();
     test_two_instances_independent();
+    test_rom_probe_never_writes_firmware();
+    test_rom_probe_success_never_writes_firmware();
+    test_getversion_request_response_id_separation();
     puts("PASS nuxel_bbd_flash negative cases (offline)");
     return 0;
 }

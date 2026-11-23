@@ -75,11 +75,32 @@
 /* Private protocol sentinel (not an errno). */
 #define SSI_ENOTACK (-1001)
 
-/* RPC ids recovered from the matched lhd. */
-#define RPC_GET_VERSION    0
-#define RPC_MEM_WRITE      5
-#define RPC_START_SCRATCH  46
-#define RPC_SERVICE_START  55
+/* RPC ids recovered from the matched stock lhd (G975FXXS9DTK9,
+ * SHA-256 6362e80d1f2ae37c76dd5f468bf08abacb89e1c2d2b80976d5b1c3abbf761dfe,
+ * hash-bound static analysis in tools/s10plus/ssp-runtime/inspect_lhd_init.py).
+ *
+ * The lhd decoder (VA 0x3d1a8..0x3d364) treats these as DISTINCT directions:
+ *   - RPC id 0, EMPTY body  = GetVersion REQUEST  (host -> firmware).  This is
+ *     what lhd serialises in the initializer state 7/14 -> 8/15 transition and
+ *     what we send below.
+ *   - RPC id 3, LE32 x3    = GetVersion RESPONSE (firmware -> host).  The three
+ *     LE32 words are the firmware/ASIC version fields; lhd stores w1 at the
+ *     version/ASIC comparison slot (metadata 2320) and latches w2 as the
+ *     "original version" when it is not 0xffffffff.
+ *     (See test_lhd_response.py: "test_unknown_ids_and_nonversion_response"
+ *      puts id 0 in the NON-version list and invokes the version callback only
+ *      for id 3.)
+ *
+ * The kernel GPL enum bbd_rpc_lh.c names these opaque IRpcA.A(=0)/IRpcB.A(=3);
+ * the semantic "GetVersion request/response" split is defined by the matched
+ * lhd, above.  RPC_MEM_WRITE=5 (F1 patch record), START_SCRATCH=46 (entry, 4
+ * LE32), SERVICE_START=55 (entry + 4 zero LE32) come from the same lhd encoders.
+ */
+#define RPC_GET_VERSION          0   /* request: empty body                           */
+#define RPC_GET_VERSION_RESPONSE 3   /* response: 3 x LE32 (version/ASIC words)       */
+#define RPC_MEM_WRITE            5
+#define RPC_START_SCRATCH        46
+#define RPC_SERVICE_START        55
 
 /* Expected patch identity. */
 #define EXPECT_ASIC     0x004775B0u
@@ -92,6 +113,7 @@ enum exit_code {
     EXIT_IDENTITY_INVALID   = 1,
     EXIT_TRANSPORT_UNAVAIL  = 2,
     EXIT_ROM_HANDSHAKE_TMO  = 3,
+    EXIT_ROM_IDENTIFIED    = 10, /* dedicated ROM-identity-only success */
     EXIT_INVALID_RESPONSE   = 4,
     EXIT_TRANSFER_REJECTED  = 5,
     EXIT_TRANSFER_INCOMPLETE= 6,
@@ -105,6 +127,17 @@ enum exit_code {
 static volatile sig_atomic_t g_cancelled;
 
 static int g_verbose;
+
+/*
+ * Offline-test instrumentation: when compiled with NUXEL_BBD_TEST_INSTRUMENT,
+ * record every RPC id actually submitted to the transport, so a regression
+ * test can prove that a given mode never emits a firmware-write or
+ * application-start RPC.  Zero cost in the production build.
+ */
+#ifdef NUXEL_BBD_TEST_INSTRUMENT
+uint16_t nuxel_test_rpc_ids_seen[16];
+size_t   nuxel_test_rpc_ids_seen_n;
+#endif
 
 static void logx(const char *fmt, ...)
 {
@@ -548,13 +581,18 @@ static void on_pkt(const struct rx_pkt *pkt, void *ctx)
             if (!used) break;
             s->last_rpc_id = v.id;
             s->rpc_count++;
-            if (v.id == RPC_GET_VERSION) {
+            /* GetVersion RESPONSE is RPC id 3 (3 x LE32), NOT id 0.  id 0
+             * is the host->firmware REQUEST.  Only id 3 with >=4 payload bytes
+             * marks a valid version reply; w0 (first LE32) is the version/ASIC
+             * word compared against ASIC 0x4775b0 by the matched lhd.
+             */
+            if (v.id == RPC_GET_VERSION_RESPONSE) {
                 s->got_version = true;
                 if (v.len >= 4)
                     s->version_w0 = (uint32_t)v.payload[0] | ((uint32_t)v.payload[1] << 8) |
                                     ((uint32_t)v.payload[2] << 16) | ((uint32_t)v.payload[3] << 24);
                 if (g_verbose)
-                    logx("GetVersion reply: w0=0x%08x (payload %u bytes)", s->version_w0, v.len);
+                    logx("GetVersion RESPONSE (id=3): w0=0x%08x (payload %u bytes)", s->version_w0, v.len);
             }
             if (g_verbose)
                 logx("  RPC id=%u len=%u", v.id, v.len);
@@ -602,10 +640,10 @@ static int pump(struct session *s, int ms)
     int before = s->rx.packets;
     uint8_t buf[8192];
     while (now_ms() < end && !g_cancelled) {
-        struct pollfd p = { .fd = s->fd_sensor, .events = POLLIN };
+        struct pollfd p = { .fd = s->fd_tty, .events = POLLIN };
         int pr = poll(&p, 1, 50);
         if (pr <= 0) continue;
-        ssize_t r = read(s->fd_sensor, buf, sizeof buf);
+        ssize_t r = read(s->fd_tty, buf, sizeof buf);
         if (r < 0) {
             if (errno == EINTR || errno == EAGAIN) continue;
             break;
@@ -632,6 +670,15 @@ static void op_reset(struct session *s)
  * Send one reliable RPC and wait for a reliable ACK for that sequence.
  * Returns 0 on reliable-ACK received, -ETIMEDOUT, or -ENOTACK (NACK/reject).
  */
+#ifdef NUXEL_BBD_TEST_INSTRUMENT
+static void nuxel_test_record_rpc(uint16_t id)
+{
+    if (nuxel_test_rpc_ids_seen_n <
+        (sizeof nuxel_test_rpc_ids_seen / sizeof nuxel_test_rpc_ids_seen[0]))
+        nuxel_test_rpc_ids_seen[nuxel_test_rpc_ids_seen_n++] = id;
+}
+#endif
+
 static int reliable_rpc(struct session *s, uint16_t rpc_id,
                         const uint8_t *payload, size_t plen, int wait_ms)
 {
@@ -641,6 +688,9 @@ static int reliable_rpc(struct session *s, uint16_t rpc_id,
     uint64_t deadline = now_ms() + (uint64_t)wait_ms;
     int retries = 0;
 
+#ifdef NUXEL_BBD_TEST_INSTRUMENT
+    nuxel_test_record_rpc(rpc_id);
+#endif
     rn = rpc_record(rpc, rpc_id, payload, plen);
     op_reset(s);
     s->rel_seq++;
@@ -677,6 +727,9 @@ static int fire_rpc(struct session *s, uint16_t rpc_id,
     uint8_t wire[MAX_TL_WIRE];
     size_t rn, wn;
     rn = rpc_record(rpc, rpc_id, payload, plen);
+#ifdef NUXEL_BBD_TEST_INSTRUMENT
+    nuxel_test_record_rpc(rpc_id);
+#endif
     wn = tl_build(wire, s->seq, 0, rpc, rn, 0);
     if (!wn) { logx("fire_rpc: build failed"); return -E2BIG; }
     s->seq++;
@@ -745,6 +798,7 @@ static const char *exit_name(int c)
     case EXIT_IDENTITY_INVALID:    return "IDENTITY_INVALID";
     case EXIT_TRANSPORT_UNAVAIL:   return "TRANSPORT_UNAVAILABLE";
     case EXIT_ROM_HANDSHAKE_TMO:   return "ROM_HANDSHAKE_TIMEOUT";
+    case EXIT_ROM_IDENTIFIED:    return "ROM_IDENTIFIED";
     case EXIT_INVALID_RESPONSE:    return "INVALID_RESPONSE";
     case EXIT_TRANSFER_REJECTED:   return "TRANSFER_REJECTED";
     case EXIT_TRANSFER_INCOMPLETE: return "TRANSFER_INCOMPLETE";
@@ -757,11 +811,71 @@ static const char *exit_name(int c)
     }
 }
 
+
+/*
+ * ROM identity-only probe: open transport, send autobaud, submit one
+ * GetVersion (RPC 0) and validate the reply.  This function performs NO
+ * MemoryWrite, NO StartScratchApp, NO ServiceStart and no rail/reset/GPIO
+ * operation.  It is the ONLY device-touching code path reachable by
+ * --rom-probe.  Returns an exit_code.
+ *
+ * Autobaud reconciliation: vendor kernel bcm477x_rpc_get_version sends 32 x
+ * 0x80; the lhd disassembly (VA 0xdfe4) sends 36.  We honour the vendor value
+ * FIRST (32), and only if that yields no reply do we attempt the 36-byte form
+ * as a secondary, still-bounded variant.  Each attempt has its own bounded
+ * timeout; the total remains under the single-trial limit.
+ */
+enum rom_probe_result {
+    ROM_PROBE_OK = 0,
+    ROM_PROBE_NACK,
+    ROM_PROBE_TIMEOUT,
+    ROM_PROBE_CANCELLED,
+    ROM_PROBE_TRANSPORT,
+};
+
+static enum rom_probe_result rom_identity_probe(struct session *s)
+{
+    int attempt;
+    int gr;
+
+    for (attempt = 0; attempt < 2; attempt++) {
+        size_t ab_len = (attempt == 0) ? 32 : 36;
+        uint8_t ab[36];
+        memset(ab, 0x80, sizeof ab);
+
+        op_reset(s);
+        if (write_all(s->fd_tty, ab, ab_len) < 0) {
+            logx("autobaud(%zu) write: %s", ab_len, strerror(errno));
+            return ROM_PROBE_TRANSPORT;
+        }
+        logx("autobaud sent (%zu x 0x80)", ab_len);
+        usleep(20 * 1000);
+
+        /* Flush any staled partial bytes before the fresh GetVersion window. */
+        pump(s, 50);
+
+        gr = reliable_rpc(s, RPC_GET_VERSION, NULL, 0, 2500);
+        if (gr == SSI_ENOTACK)
+            return ROM_PROBE_NACK;
+        if (gr == -ECANCELED)
+            return ROM_PROBE_CANCELLED;
+        if (gr == 0 && s->got_version && s->rpc_count > 0) {
+            logx("boot ROM identified (autobaud=%zu): GetVersion w0=0x%08x",
+                 ab_len, s->version_w0);
+            return ROM_PROBE_OK;
+        }
+        logx("autobaud=%zu: no valid GetVersion reply (packets=%d crc_err=%d malformed=%d rpc=%d)",
+             ab_len, s->rx.packets, s->rx.crc_err, s->rx.malformed, s->rpc_count);
+    }
+    return ROM_PROBE_TIMEOUT;
+}
+
 int main(int argc, char **argv)
 {
     struct patch pt;
     struct session sess;
     bool flash = false;
+    bool rom_probe = false;
     int i, ret = 0;
     uint32_t memdest_first = 0;
 
@@ -771,12 +885,26 @@ int main(int argc, char **argv)
 
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--flash")) flash = true;
+        else if (!strcmp(argv[i], "--rom-probe")) rom_probe = true;
         else if (!strcmp(argv[i], "--verbose")) g_verbose = 1;
-        else { fprintf(stderr, "usage: %s [--flash] [--verbose]\n", argv[0]); ret = EXIT_USAGE; goto out; }
+        else {
+            fprintf(stderr,
+                "usage: %s [--rom-probe] [--flash] [--verbose]\n"
+                "  --rom-probe : open transport, autobaud, GetVersion ONLY. Never writes firmware"
+                "                and never starts the application.\n"
+                "  --flash     : FULL firmware download + app-start (separately authorized).\n"
+                "These may not be combined.\n", argv[0]);
+            ret = EXIT_USAGE; goto out;
+        }
     }
 
     signal(SIGINT, sig_h);
     signal(SIGTERM, sig_h);
+
+    if (flash && rom_probe) {
+        fprintf(stderr, "--flash and --rom-probe are mutually exclusive\n");
+        ret = EXIT_USAGE; goto out;
+    }
 
     if (patch_load_and_verify(&pt)) { ret = EXIT_IDENTITY_INVALID; goto out; }
 
@@ -785,8 +913,8 @@ int main(int argc, char **argv)
         if (pt.recs[i].tag == 0xF1) { memdest_first = pt.recs[i].dest; break; }
     logx("first memory-write dest=0x%08x (entry=0x%08x)", memdest_first, pt.entry);
 
-    if (!flash) {
-        logx("read-only verification only (no device I/O). Pass --flash to download.");
+    if (!flash && !rom_probe) {
+        logx("read-only verification only (no device I/O). Pass --rom-probe (ROM-identity-only) or --flash (full download).");
         ret = EXIT_SUCCESS_VERIFIED; /* identity+records verified; still no hub claim */
         goto out;
     }
@@ -794,38 +922,53 @@ int main(int argc, char **argv)
     /* ---- open transport ---- */
     sess.fd_tty = open(TTY_BCM, O_RDWR | O_NONBLOCK);
     if (sess.fd_tty < 0) { logx("open %s: %s", TTY_BCM, strerror(errno)); ret = EXIT_TRANSPORT_UNAVAIL; goto out; }
-    sess.fd_sensor = open(BBD_SENSOR, O_RDWR | O_NONBLOCK);
-    if (sess.fd_sensor < 0) {
-        logx("open %s: %s", BBD_SENSOR, strerror(errno));
-        ret = EXIT_TRANSPORT_UNAVAIL; goto out;
-    }
+    /*
+     * ROM-phase ownership: boot-ROM SSI/TL replies are raw RX bytes surfaced
+     * on /dev/ttyBCM (see pump(), bcm_gps_spi.c bcm_on_packet_received non-peer
+     * branch).  Do NOT open /dev/bbd_sensor here: holding the native peer
+     * routes bcm_on_packet_received into the SSP application state machine
+     * (callback_bbd_on_packet) instead of the raw SSI circ-buffer, which would
+     * swallow every ROM reply and leave rx=0.
+     */
+    sess.fd_sensor = -1;
     rx_init(&sess.rx);
     sess.seq = 1; sess.rel_seq = 1;
 
     write_control("SSI:PassThru=1");
 
-    /* 1. autobaud — 36 x 0x80 (lhd VA 0xdfe4). */
+    /*
+     * 1+2. ROM sync + GetVersion (shared with --flash).  This is the ONLY
+     *      ROM-phase exchange.  It performs no firmware write and no app
+     *      start.
+     */
     {
-        uint8_t ab[36];
-        memset(ab, 0x80, sizeof ab);
-        if (write_all(sess.fd_tty, ab, sizeof ab) < 0)
-            logx("autobaud write: %s", strerror(errno));
-        else logx("autobaud sent (36 x 0x80)");
-        usleep(20 * 1000);
-    }
-
-    /* 2. GetVersion (RPC 0) — reliable.  First evidence that the boot ROM is
-     *    talking: a well-formed reply with a version body. */
-    {
-        int gr = reliable_rpc(&sess, RPC_GET_VERSION, NULL, 0, 2500);
-        if (gr == SSI_ENOTACK) { logx("GetVersion rejected (NACK)"); ret = EXIT_TRANSFER_REJECTED; goto out; }
-        if (gr == -ECANCELED) { ret = EXIT_CANCELLED; goto out; }
-        if (gr != 0 || !sess.got_version || sess.rpc_count == 0) {
+        enum rom_probe_result pr = rom_identity_probe(&sess);
+        if (pr == ROM_PROBE_NACK) {
+            logx("GetVersion rejected (NACK)");
+            ret = EXIT_TRANSFER_REJECTED;
+            goto out;
+        }
+        if (pr == ROM_PROBE_CANCELLED) { ret = EXIT_CANCELLED; goto out; }
+        if (pr == ROM_PROBE_TRANSPORT) { ret = EXIT_TRANSPORT_UNAVAIL; goto out; }
+        if (pr != ROM_PROBE_OK) {
             logx("boot ROM handshake: no valid GetVersion reply (packets=%d crc_err=%d malformed=%d rpc=%d)",
                  sess.rx.packets, sess.rx.crc_err, sess.rx.malformed, sess.rpc_count);
-            ret = EXIT_ROM_HANDSHAKE_TMO; goto out;
+            ret = EXIT_ROM_HANDSHAKE_TMO;
+            goto out;
         }
         logx("boot ROM identified: GetVersion reply w0=0x%08x", sess.version_w0);
+    }
+
+    /*
+     * ROM-identity-only mode ends here.  Returning now guarantees that no
+     * MemoryWrite (RPC 5), StartScratchApp (RPC 46) or ServiceStart (RPC 55)
+     * is ever emitted, and no rail/reset/GPIO operation is performed.  The
+     * firmware-download and application-start code below is unreachable from
+     * --rom-probe.
+     */
+    if (rom_probe) {
+        ret = EXIT_ROM_IDENTIFIED;
+        goto out;
     }
 
     /* 3. MemoryWrite each F1 record to its own destination, require reliable
@@ -913,8 +1056,15 @@ out:
     if (sess.fd_tty >= 0) close(sess.fd_tty);
     if (sess.fd_sensor >= 0) close(sess.fd_sensor);
     patch_free(&pt);
-    /* On any non-success, restore the pass-through control state. */
-    if (flash && ret != EXIT_SUCCESS_VERIFIED && ret != EXIT_IDENTITY_INVALID)
+    /*
+     * Restore the pass-through control state whenever we armed it
+     * (SSI:PassThru=1) and did NOT already restore it in the --flash success
+     * path.  This covers --rom-probe (success or failure) and every --flash
+     * failure.  ESW:READY is intentionally NOT emitted here: it belongs only
+     * to the fully-verified firmware+app path above.
+     */
+    if ((flash || rom_probe) &&
+        ret != EXIT_SUCCESS_VERIFIED && ret != EXIT_IDENTITY_INVALID)
         write_control("BBD:PassThru=0");
     logx("exit %d (%s)", ret, exit_name(ret));
     return ret;

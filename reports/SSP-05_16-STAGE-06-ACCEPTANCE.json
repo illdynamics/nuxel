@@ -1,0 +1,52 @@
+{
+  "schema": "ssp-05_16-acceptance-v1",
+  "timestamp": "2026-11-23T01:30:00+01:00",
+  "agent": "DeepSeek-V4-Pro-Thinking",
+  "device": {"serial": "R58M75KDB2X", "product": "beyond2lte", "model": "SM-G975F"},
+  "controller_identity": {
+    "mcu_name": "BCM47752KUB1G",
+    "mcu_rev": "BR0121080900,BR010",
+    "source": "live /sys/devices/virtual/sensors/ssp_sensor/mcu_name",
+    "status": "CONFIRMED_AT_RUNTIME"
+  },
+  "deployed_boot_sha256": "1be1ded89f9e04a6a2ca0d32d9273bd363c2e200f478ab10213ea3927674a599",
+  "deployed_kernel": "4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT Mon Nov 23 00:43:30 CET 2026",
+  "firmware_identity": {
+    "blob_sha256": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d",
+    "blob_length": 438895,
+    "record_count": 479,
+    "record_tag": "0xF1",
+    "asic_version": "0x004775B0",
+    "entry": "0x00800161",
+    "name": "bcm_sensorhub_a1",
+    "source": "kernel embedded r_os/bbd_patch_file_beyond.h"
+  },
+  "rpc_map": {
+    "GET_VERSION_REQUEST": 0,
+    "GET_VERSION_RESPONSE": 3,
+    "MEM_WRITE": 5,
+    "START_SCRATCH": 46,
+    "SERVICE_START": 55,
+    "source": "hash-bound lhd G975FXXS9DTK9 (6362e80d...) + test_lhd_response.py"
+  },
+  "gates": {
+    "BOOT_NUXEL": {"status": "PASS", "evidence": "reports/SSP-05_16-LIVE-BASELINE.md", "method": "live SSH + systemd is-system-running=running, 0 failed"},
+    "KERNEL_PATCH_INTEGRITY": {"status": "PASS", "evidence": "0020/0023/0025/0028/0029 deployed; kallsyms regulator_force_* + nuxel_ssp_bringup_hw present", "method": "live kallsyms + no re-flash this mission"},
+    "REGULATOR_CORE_SAFETY": {"status": "PASS", "evidence": "vdd_mcu_1p8 enabled num_users=0; no refcount anomaly", "method": "live read-only regulator sysfs"},
+    "POWER_DOMAIN_IDENTITY": {"status": "PASS", "evidence": "gpio145(GPS_PWR_EN) separate from gpio167/168(MCU); vdd_mcu_1p8 rail", "method": "live journal GPIO map + GPL probe source"},
+    "ROM_ENDPOINT_IDENTITY": {"status": "PASS", "evidence": "reports/SSP-05_16-ROM-VS-RPC-PROTOCOL.md", "method": "lhd disasm + kernel GPL + unit tests; req=0 resp=3 resolved"},
+    "VENDOR_SEQUENCE": {"status": "PASS", "evidence": "reports/SSP-05_16-VENDOR-STARTUP-SEQUENCE.md", "method": "lhd state machine + kernel bcm477x_hello ordering"},
+    "GPIO_OWNERSHIP": {"status": "PASS", "evidence": "reports/SSP-05_16-LIVE-BASELINE.md (gpio15/167/168/145 map; gps pwr unowned)", "method": "live + DT names"},
+    "POWER_TRANSITION_SAFETY": {"status": "NOT_RUN", "evidence": "reports/SSP-05_16-PHYSICAL-TRIAL-DECISION.md", "blocking_reason": "PHYSICAL_TRIAL_SAFE=FALSE: RF-safety owner confirmation + datasheet settle timing required; AND standalone ROM-only GetVersion not reachable (bcm477x_hello gate)"},
+    "ROM_GETVERSION": {"status": "NOT_RUN", "evidence": "reports/SSP-05_16-ROM-FIRST-LIGHT.md", "blocking_reason": "folded into Stage 06 firmware-download trial; cannot run standalone (bcm477x_rpc_get_version dead code + hello gate)"},
+    "DOWNLOADER_OFFLINE": {"status": "PASS", "evidence": "make check all PASS incl. ROM-probe-never-writes-firmware instrumentation", "method": "offline regression suite"},
+    "SYSTEM_INTEGRITY": {"status": "PASS", "evidence": "0 failed units; BBD nodes present; no storage/net regression", "method": "live systemctl --failed"},
+    "ROLLBACK_READY": {"status": "PASS", "evidence": "5+ BOOT rollback images under /media/nuxel-boot + /var/backups/nuxel", "method": "live inventory, no writes this mission"}
+  },
+  "readiness": {
+    "READY_FOR_06": false,
+    "reason": "POWER_TRANSITION_SAFETY and ROM_GETVERSION remain NOT_RUN because they are correctly folded into the Stage 06 firmware-download trial, which requires owner authorization (RF + timing + bounded-trial grant). All software-engineering work that can be completed offline is DONE, including the RPC id resolution and version-response fix.",
+    "blocking_gates": ["POWER_TRANSITION_SAFETY", "ROM_GETVERSION"],
+    "minimum_owner_action": "Authorize bounded GNSS-domain (RF) energisation + firmware download (MemoryWrite/StartScratch/ServiceStart) + provide BCM47752 power/ROM-ready timing (or explicit bounded settle delay), with MCU_REQ=0/GPS_PWR_EN=0 recovery bound."
+  }
+}
