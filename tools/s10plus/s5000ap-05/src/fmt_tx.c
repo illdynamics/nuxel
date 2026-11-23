@@ -169,7 +169,8 @@ bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
     if (!p) return false;
     memset(p, 0, 105u);
 
-    p[0] = 3u;                     /* pdp_type code = 3 (LTE EUTRAN, default) */
+    p[0] = 1u;                     /* pdp_type code = 1 (full APN path; VERIFIED @31f7d0:
+                                   *   copies APN + sets flags bit0=APN, bit4=ACTIVATE) */
     p[1] = cid;                    /* context id */
 
     /* flags word at payload[2..5] (LE u32): bit0=APN present, bit4=ACTIVATE. */

@@ -167,7 +167,7 @@ int main(void)
     CHECK(f.main_cmd == 13 && f.sub_cmd == 4 && f.cmd_type == 3,
           "set_pdp_context main/sub/type=13/4/3");
     CHECK(f.buf[0] == 0x70 && f.buf[1] == 0x00, "set_pdp_context len field = 112 LE");
-    CHECK(f.buf[7 + 0] == 0x03, "set_pdp_context payload[0] pdp_type == 3 (LTE)");
+    CHECK(f.buf[7 + 0] == 0x01, "set_pdp_context payload[0] pdp_type == 1 (full APN path)");
     CHECK(f.buf[7 + 1] == 0x01, "set_pdp_context payload[1] cid == 1");
     CHECK(f.buf[7 + 2] == 0x11, "set_pdp_context payload[2] flags == 0x11 (APN+ACTIVATE)");
     CHECK(memcmp(&f.buf[7 + 6], "internet", 8) == 0,
