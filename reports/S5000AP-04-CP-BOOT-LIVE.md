@@ -13,6 +13,41 @@ run, as no read-only status probe was warranted ahead of the authorization gate)
 Classification: `PROVED_LIVE`, `CAPTURED_LIVE_OLDER`, `OFFLINE_TESTED`, `SOURCE_ONLY`,
 `DOCUMENTED_ONLY`, `ASSUMPTION`, `UNVERIFIED`, `BLOCKED`.
 
+# S5000AP — Stage-04 FINAL EXECUTION DIRECTIVE status (2026-11-23)
+
+**STATUS: ENGINEERING COMPLETE — READY FOR OWNER APPROVAL GATE F.**
+**NO physical CP action performed. NO live device connected this run.**
+
+**Final Git commit:** `116d5d45c0efed55b3e71de2ae6616460223d9c0` (`cs/mob`).
+**Exact executable SHA-256:** `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7`
+  (`tools/s10plus/s5000ap-uapi/nuxel-cpbootd.aarch64.hw`; reproducible — rebuild verified byte-identical).
+**Exact firmware SHA-256 (read-only source):** `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7`
+  (installed EFUJ2 `/dev/sda16` RADIO; DTK9 is the OFFLINE TEST fixture only, NOT the trial source).
+**Exact immutable manifest SHA-256:** `edc4f1e1b484a8d0cadd7e3be1a7321a100551422b15195f51d5c08a90dc3f4d`
+  (`reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`, post-correction).
+
+## Stage-04 final fields (directive §9)
+
+| Field | Value |
+|---|---|
+| Final Git commit | `116d5d45c0efed55b3e71de2ae6616460223d9c0` (`cs/mob`) |
+| Exact executable SHA-256 | `2b630d4a8c7219c468a4aff94881029b23547d867f4f5a30898f080f2cb4fae7` (`nuxel-cpbootd.aarch64.hw`, reproducible) |
+| Exact firmware SHA-256 | `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7` (EFUJ2 `/dev/sda16`, read-only source) |
+| Exact immutable manifest SHA-256 | `edc4f1e1b484a8d0cadd7e3be1a7321a100551422b15195f51d5c08a90dc3f4d` (`S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`) |
+| Software fixes | proposal HEAD `ae26b271`→`d8d772c4`; explicit approval-record fields (conditional reset, 300 s max duration); `nuxel-cpbootd-manifest-check.sh` preflight (closes documented gap); `services/nuxel-modem` deployment (read-only probe + fail-closed one-shot unit + reversible install). |
+| Test results | 31/31 UAPI pass; 22/22 firmware identity pass; flash preflight PASS; reproducible build (`2b630d4a…`); mock transcript `{"verdict":"online","backend":"mock"}`. |
+| Deployment result | Prepared (`services/nuxel-modem`); NOT deployed — no live device; reversible userspace-only; physical unit `Restart=no`, never auto-enabled. |
+| Owner approval reference | **PENDING (Gate F)** — exact manifest requires single owner decision. |
+| Actual physical operations performed | **NONE** (no `--really-boot`, no mutating ioctl). |
+| Actual CP state | **OFFLINE(0)** (last live read round 03.6; NOT re-measured — no device connected). |
+| First failure | **None** (no physical attempt). |
+| Protected-partition-write attestation | **NONE** — no BOOT/DTB/DTBO/RADIO/EFS/NV/calibration/IMEI/bootloader/TEE write; RADIO read-only only. |
+
+**Gate F (owner approval of the unchanged manifest) is the sole remaining blocker.**
+
+
+---
+
 ---
 
 ## 0. Headline decision
