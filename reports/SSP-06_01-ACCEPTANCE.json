@@ -1,0 +1,89 @@
+{
+  "schema": "ssp-06_01-acceptance-v1",
+  "timestamp": "2026-11-23T02:10:00+01:00",
+  "agent": "Nuxel Stage 06_01 (Master 06 Unblock)",
+  "commit_head": "83271ac3",
+  "device": {"serial": "R58M75KDB2X", "product": "beyond2lte", "model": "SM-G975F"},
+
+  "decision": "READY_FOR_SPECIFIC_PHYSICAL_APPROVAL",
+  "final_result": "READY_FOR_SPECIFIC_PHYSICAL_APPROVAL",
+  "mcu_first_light": "NOT_RUN",
+  "physical_trial_performed": false,
+  "physical_trial_success_claimed": false,
+
+  "live_baseline": {
+    "kernel": "4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT",
+    "systemd": "running",
+    "hub_diag": "mcu_probe=1 shutdown=1 resetting=1 sensor_state=0x3feff enable=0x0 shub_irq=443",
+    "controller_identity": "BCM47752KUB1G (BR0121080900,BR010)",
+    "mcu_test": "NG,NG,NG",
+    "gps_pwr_en_gpio145": 0,
+    "vdd_mcu_1p8": "enabled num_users=0",
+    "nuxel_gnss_lhd_service": "enabled / inactive(dead)",
+    "nuxel_ssp_bridge_service": "masked",
+    "status": "HEALTHY_AND_PRESERVED"
+  },
+
+  "independently_reverified": {
+    "firmware_blob_sha256": "56e8b1ea4b34077f0c5c31b54c8619343d95d4f109c8ae54b99ed54a6b1e6d2d",
+    "f1_record_count": 479,
+    "f1_all_tag": true,
+    "asic_version": "0x004775b0",
+    "entry_address": "0x00800161",
+    "first_f1_dest": "0x00800000",
+    "record_walk_exact": true,
+    "blob_crc32_ieee": "93d35bb4",
+    "firmware_first_ordering": "PROVEN (bcm_rxtx_work_func -> bcm477x_hello gate)",
+    "bcm477x_rpc_get_version_dead_code": "CONFIRMED (zero callers)",
+    "bbd_mcu_reset_host_side": "CONFIRMED (control-request / SIGKILL lhd)"
+  },
+
+  "offline_tests": {
+    "native_c_suites": "PASS (download/flash/negative + embedded patch + replay)",
+    "python_kernel_identity_isolation": "PASS (10 tests)",
+    "test_lhd_response": "OWNER_BINARY_REQUIRED (vendor-bin-hw-lhd absent, gitignored)",
+    "accidental_startup_proof": "PASS",
+    "simulated_never_reported_physical": true
+  },
+
+  "recovery": {
+    "designed": "CONFIRMED",
+    "offline_validated": "CONFIRMED",
+    "physically_verified": "NOT_VERIFIED (no trial run)"
+  },
+
+  "timing": {
+    "ordering": "PROVEN",
+    "internal_delays_40ms_100ms": "RECOVERED_FROM_LHD",
+    "gps_pwr_en_rom_ready_settle": "MISSING (Broadcom datasheet, absent)",
+    "policy": "handshake-gated readiness + bounded timeouts; no arbitrary delay"
+  },
+
+  "new_finding": {
+    "id": "SSP-06_01-NF-001",
+    "title": "Deployed nuxel_lhd.py is stale; asserts GPS_PWR_EN + ESW:READY at boot without authorization",
+    "deployed_sha256": "6d90a2c0106fbceb333c5d0da40293a6a0258c42cd54df82f2d5653cd377a1ca",
+    "repo_head_sha256": "aeed416dd3d1bfb6e2b3c3a28cb2d1e9c425323ab618bf314903161b01540cd1",
+    "deployed_set_power_true_line": 300,
+    "deployed_esw_ready_line": 330,
+    "repo_head_refuses": "INITIALIZATION_PROTOCOL_UNVERIFIED",
+    "severity": "SAFETY (unauthorized RF energisation + synthesized readiness at every boot)",
+    "fix": "already committed in repo HEAD (4175b949); deploy hardened binary or mask service"
+  },
+
+  "required_owner_actions": [
+    "RF authorization (bounded GNSS-domain energisation)",
+    "Timing artifact (datasheet power/ROM-ready value OR bounded settle instruction OR accept handshake-gated readiness)",
+    "Explicit bounded-trial grant (MCU wake + 479x MemoryWrite + StartScratch + ServiceStart + post-download GetVersion)",
+    "Remediate stale deployed GNSS service (mask or deploy hardened binary)"
+  ],
+
+  "not_performed": [
+    "physical firmware execution",
+    "GPS_PWR_EN assertion",
+    "MemoryWrite / StartScratch / ServiceStart",
+    "ESW:READY emission",
+    "regulator cold-cycle",
+    "BOOT/DTB/DTBO/recovery write"
+  ]
+}

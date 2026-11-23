@@ -1,0 +1,40 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== UNIX ===
+Linux WIN-CLIENT 4.14.253-gf7194c1d15ed-dirty #1 SMP PREEMPT Mon Nov 23 00:43:30 CET 2026 aarch64 GNU/Linux
+=== HUB DIAG ===
+mcu_probe=1 shutdown=1 resetting=1 sensor_state=0x3feff enable=0x0 shub_irq=443
+=== MCU NAME ===
+BCM47752KUB1G
+=== MCU REV ===
+BR0121080900,BR010
+=== MCU TEST ===
+NG,NG,NG
+=== SENSOR STATE ===
+
+=== ENABLE ===
+0
+=== GPS_PWR_EN value ===
+0
+=== GPS_PWR_EN direction ===
+out
+=== REGULATOR 62 ===
+vdd_mcu_1p8
+enabled
+0
+=== SYSTEMD ===
+running
+=== GNSS SERVICE ===
+enabled
+inactive
+=== BRIDGE MASKED ===
+○ nuxel-ssp-bridge.service
+     Loaded: masked (Reason: Unit nuxel-ssp-bridge.service is masked.)
+     Active: inactive (dead)

@@ -1,0 +1,15 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== DEPLOYED nuxel_lhd.py sha256 ===
+6d90a2c0106fbceb333c5d0da40293a6a0258c42cd54df82f2d5653cd377a1ca  /usr/lib/nuxel/nuxel-gnss/nuxel_lhd.py
+=== DEPLOYED has set_power(True) / ESW:READY ===
+300:        pooled = self.power.set_power(True)
+328:            c1 = self.write_control(ctl.BBD_CTRL_SSI_PATCH_BEGIN)
+330:            c2 = self.write_control(ctl.ESW_CTRL_READY)
