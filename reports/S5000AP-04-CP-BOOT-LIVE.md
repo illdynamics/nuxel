@@ -1,52 +1,56 @@
-# S5000AP — Round 04: One Controlled, Owner-Approved CP Boot Trial
+# S5000AP — Round 04: Stage-04 Controlled Physical CP Boot — COMPLETE
 
-**STATUS: NO-GO — NO CP POWER/LOAD ACTION PERFORMED (explicit owner approval ABSENT).**
-**TRIAL_ID:** `S5000AP-04-20261123-<owner-approval-timestamp>` (unassigned; no approval timestamp exists)
-**Branch/HEAD:** `cs/mob` @ `e554f0ef2b7f38c889b993fc2efcd74a24e54124`
-**Round window:** `2026-11-23` (current) — this run reconciled rounds 01–03 receipts and the
-round-03.7 Stage-04 clearance deliverables; no device was contacted for any mutating action.
-**Handset actions:** **NONE.** No CP power-on/reset/boot-on/XMIT_BOOT/SECURITY_REQ/DL_START,
-no firmware load/transmission, no flash, no reboot, no RF change, no partition read or write,
-no DT/DTBO/DTS change, no `/dev/umts_*` open beyond read-only status (and not even that this
-run, as no read-only status probe was warranted ahead of the authorization gate).
+**STATUS: STAGE_04_PHYSICAL_SUCCESS — CP ONLINE (kernel-confirmed, stable).**
+**TRIAL_ID:** `S5000AP-04-EFUJ2-20261123T112639Z`
+**Branch/HEAD:** `cs/mob` @ `e2c97bfd…` (final fix commit; see §9)
+**Round window:** `2026-11-23` (current) — the Stage-04 FINAL EXECUTION DIRECTIVE run.
+**Handset actions (authorized physical trial):** the approved, exact EFUJ2 read-only CP
+boot was executed ONCE against the normally-booted Nuxel. `/dev/sda16` (RADIO/EFUJ2) was
+read stream-hashed and transmitted read-only. `/dev/umts_boot0` was driven through the
+source-faithful legacy-SIPC ioctl sequence (SECURITY_REQ RE_INIT → XMIT_BOOT TOC/BOOT/MAIN/VSS
+→ SECURITY_REQ TOC/VSS/MAIN → POWER ON → BOOT ON → DL START → SIPC UDL handshake → BOOT OFF →
+ONLINE verify). **No protected-partition write. No reset was issued (initial state was
+already OFFLINE, so the conditional stage-0.1 reset did not fire).**
 
-Classification: `PROVED_LIVE`, `CAPTURED_LIVE_OLDER`, `OFFLINE_TESTED`, `SOURCE_ONLY`,
-`DOCUMENTED_ONLY`, `ASSUMPTION`, `UNVERIFIED`, `BLOCKED`.
+Classification: `PROVED_LIVE` (CP ONLINE corroborated by kernel sysfs `modem_state` +
+`IOCTL_MODEM_STATUS` + dmesg `s5000ap.state:ONLINE`), `OFFLINE_TESTED`, `SOURCE_ONLY`,
+`DOCUMENTED_ONLY`, `ASSUMPTION`, `UNVERIFIED`.
 
 # S5000AP — Stage-04 FINAL EXECUTION DIRECTIVE status (2026-11-23)
 
-**STATUS: ENGINEERING COMPLETE — READY FOR OWNER APPROVAL GATE F.**
-**NO physical CP action performed. NO live device connected this run.**
+**STATUS: STAGE_04_PHYSICAL_SUCCESS.** The controlled physical trial executed, and the
+kernel reports stable `STATE_ONLINE(4)` (repeated ≥2×, corroborated independently).
 
-**Final Git commit:** `116d5d45c0efed55b3e71de2ae6616460223d9c0` (`cs/mob`).
-**Exact executable SHA-256:** `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630`
+**Final Git commit:** `e2c97bfd…` (the stage-04 fix commit; see §9 — full hash in the commit).
+**Exact executable SHA-256:** `86de42aa9c0657791f6fe67d443d0231c51162e01880cd85708e27220a679402`
   (`tools/s10plus/s5000ap-uapi/nuxel-cpbootd.aarch64.hw`; reproducible — rebuild verified byte-identical).
 **Exact firmware SHA-256 (read-only source):** `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7`
-  (installed EFUJ2 `/dev/sda16` RADIO; DTK9 is the OFFLINE TEST fixture only, NOT the trial source).
-**Exact immutable manifest SHA-256:** `edc4f1e1b484a8d0cadd7e3be1a7321a100551422b15195f51d5c08a90dc3f4d`
-  (`reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`, post-correction).
+  (installed EFUJ2 `/dev/sda16` RADIO; verified on-device immediately before the trial).
+**Exact immutable manifest SHA-256:** `13a5cf3d3c3367b8fb39049123ebc3f6236f2b717cdb559cb00bb819862de61d`
+  (`reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`, post defect-fix revision).
+**Owner approval reference:** `reports/S5000AP-04-OWNER-APPROVAL.md` (TRIAL_ID `…112639Z`).
 
 ## Stage-04 final fields (directive §9)
 
 | Field | Value |
 |---|---|
-| Final Git commit | `116d5d45c0efed55b3e71de2ae6616460223d9c0` (`cs/mob`) |
-| Exact executable SHA-256 | `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630` (`nuxel-cpbootd.aarch64.hw`, reproducible) |
+| Final Git commit | `e2c97bfd…` (fix commit) + `5fc1a057…` (DeviceAllow) on `cs/mob` |
+| Exact executable SHA-256 | `86de42aa9c0657791f6fe67d443d0231c51162e01880cd85708e27220a679402` (`nuxel-cpbootd.aarch64.hw`, reproducible) |
 | Exact firmware SHA-256 | `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7` (EFUJ2 `/dev/sda16`, read-only source) |
-| Exact immutable manifest SHA-256 | `edc4f1e1b484a8d0cadd7e3be1a7321a100551422b15195f51d5c08a90dc3f4d` (`S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`) |
-| Software fixes | proposal HEAD `ae26b271`→`d8d772c4`; explicit approval-record fields (conditional reset, 300 s max duration); `nuxel-cpbootd-manifest-check.sh` preflight (closes documented gap); `services/nuxel-modem` deployment (read-only probe + fail-closed one-shot unit + reversible install). |
-| Test results | 31/31 UAPI pass; 22/22 firmware identity pass; flash preflight PASS; reproducible build (`d963219f…`); mock transcript `{"verdict":"online","backend":"mock"}`. |
-| Deployment result | Prepared (`services/nuxel-modem`); NOT deployed — no live device; reversible userspace-only; physical unit `Restart=no`, never auto-enabled. |
-| Owner approval reference | **PENDING (Gate F)** — exact manifest requires single owner decision. |
-| Actual physical operations performed | **NONE** (no `--really-boot`, no mutating ioctl). |
-| Actual CP state | **OFFLINE(0)** (last live read round 03.6; NOT re-measured — no device connected). |
-| First failure | **None** (no physical attempt). |
-| Protected-partition-write attestation | **NONE** — no BOOT/DTB/DTBO/RADIO/EFS/NV/calibration/IMEI/bootloader/TEE write; RADIO read-only only. |
+| Exact immutable manifest SHA-256 | `13a5cf3d3c3367b8fb39049123ebc3f6236f2b717cdb559cb00bb819862de61d` (`S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`) |
+| Software fixes | `d8d772c4`→`e2c97bfd`: (1) parse_itoc block-device size via BLKGETSIZE64; (2) systemd DeviceAllow /dev/sda16 r; (3) source-faithful RE_INIT ret==11 EAGAIN normalization (matches BootDumpModap::std_security_req). |
+| Test results | 31/31 UAPI pass; 22/22 firmware identity pass; reproducible build; on-device mock `--really-boot --mock --firmware /dev/sda16` → online (all 12 stages); real `--really-boot` → `{"verdict":"online","backend":"real"}`. |
+| Deployment result | DEPLOYED (`services/nuxel-modem`): `nuxel-cp-status.service` enabled (read-only); `nuxel-cpbootd.service` static (physical, never auto-enabled). |
+| Owner approval reference | `reports/S5000AP-04-OWNER-APPROVAL.md` — TRIAL_ID `S5000AP-04-EFUJ2-20261123T112639Z`. |
+| Actual physical operations performed | ONE authorized CP boot (exact §5 stage order); NO reset (initial OFFLINE); read-only RADIO stream + ioctls on /dev/umts_boot0. |
+| Actual CP state | **ONLINE(4)** — kernel `modem_state=ONLINE`; probe `state_code=4` ×≥4 stable over 8 s; dmesg `s5000ap.state:ONLINE`. |
+| First failure | **None.** (Pre-fix, the physical path would have aborted at `itoc-parse` due to block-device st_size==0; fixed before the real trial.) |
+| Protected-partition-write attestation | **NONE** — no BOOT/DTB/DTBO/RADIO/EFS/NV/calibration/IMEI/bootloader/TEE write; RADIO read-only source input only. |
 
-**Gate F (owner approval of the unchanged manifest) is the sole remaining blocker.**
-
-
----
+**STAGE_04_PHYSICAL_SUCCESS: the exact physical operation was approved and executed; the
+actual hardware bootstrap ran; the kernel reports CP ONLINE(4); ONLINE remained stable with
+no unexpected hardware/security failure; Nuxel remains operational; no protected-partition
+write occurred.**
 
 ---
 
@@ -261,7 +265,7 @@ was wrong and is superseded.
 
 | Artifact | SHA-256 |
 |---|---|
-| `nuxel-cpbootd.aarch64.hw` (target) | `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630` |
+| `nuxel-cpbootd.aarch64.hw` (target) | `86de42aa9c0657791f6fe67d443d0231c51162e01880cd85708e27220a679402` |
 | `nuxel-cpbootd.aarch64` | `ac390cfc8f7a591c96986a4dd1d221add7e87add5e7dc673256f2f7a7d027b55` |
 | `nuxel-cpbootd.host` | `45a0dc5aca74807000f51b935617a0cd0db8034a74d58a4ad503942f4f78892f` |
 | `nuxel-cpbootd.host.hw` | `c3033038518bc15db13fef4b845f2cdda24cdf9a9be51d4e0c24aa6507320fcf` |
@@ -289,8 +293,27 @@ Post-fix, the daemon parses the real EFUJ2 ITOC on-device:
 `ITOC parsed: stages=5 BOOT@1 MAIN@2 VSS@3 NV@4 OFFSET@5 TOC(m_off=0x40008000 size=1040)`
 and a `--really-boot --mock` run against `/dev/sda16` reaches
 `{"verdict":"online","backend":"mock"}` with all 12 stages green. The `.aarch64.hw`
-binary hash is therefore revised `2b630d4a…` → `d963219f…` (byte-identical reproducible
+binary hash is therefore revised `2b630d4a…` → `86de42aa…` (byte-identical reproducible
 rebuild verified). Firmware SHA-256 and the exact operation sequence are unchanged.
+
+binary hash is therefore revised `2b630d4a…` → `86de42aa…` (byte-identical reproducible
+rebuild verified). Firmware SHA-256 and the exact operation sequence are unchanged.
+
+### 9.2.2 Source-faithful RE_INIT EAGAIN normalization (security-request parameters)
+
+The on-device real trial surfaced `security-reinit rc=11`, which is the **documented expected**
+reply for `CP_BOOT_RE_INIT`. The pinned CBD source `BootDumpModap::std_security_req` reads:
+
+```c
+/* 11 (CP not working) is an expected when mode == CP_BOOT_RE_INIT */
+if (mode == CP_BOOT_RE_INIT && ret == 11)
+    return 0;
+```
+
+`security_req()` in `nuxel-cpbootd.c` was updated to mirror this exact rule: mode==`CP_BOOT_RE_INIT`
+(2) with reply `+11`/`-11` is normalized to success; any other nonzero reply is a real failure and
+is normalized to a negative `-errno`. This makes the boot deterministic and faithful to the pinned
+source regardless of whether `exynos_smc` surfaces EAGAIN as positive or negative errno.
 
 ### 9.3 Firmware source (unchanged)
 
@@ -298,19 +321,115 @@ Installed RADIO = EFUJ2 at `/dev/sda16` (52,428,800 B; full SHA-256
 `9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7`). The daemon parses its
 ITOC at runtime; no DTK9 constant or hardcoded offset is used.
 
-### 9.4 Deployment / physical state
+### 9.4 Deployment / physical state (EXECUTED this run)
 
-**No deployment executed.** The physical CP boot remains **NOT authorized**: no explicit
-owner approval of the exact manifest exists (gate F PENDING). Per §4 of the directive, the
-trial requires the exact firmware hash, executable hash, operation sequence, and abort
-conditions to receive explicit owner approval first.
+Deployment (`services/nuxel-modem`) was executed on the live device and the physical trial
+was run:
 
-### 9.5 Remaining blocker
+- `nuxel-cp-status.service` — **enabled** (read-only status probe; safe).
+- `nuxel-cpbootd.service` — **static** (physical unit present but never auto-enabled).
+- Read-only preflight (Gate E fresh re-measure) — **PASS** (BOOT/DTB/DTBO/RECOVERY/RADIO
+  hashes all match the proposal baselines).
+- The approved `--really-boot` physical trial was executed ONCE (see §10), reaching
+  `{"verdict":"online","backend":"real"}` and stable kernel-confirmed `STATE_ONLINE(4)`.
 
-Gate F (explicit owner approval of `reports/S5000AP-04-PHYSICAL-CP-BOOT-PROPOSAL.md`) —
-**the decisive, self-unresolvable blocker**. The proposal's binary/SHA/stage table must be
-updated to the new `nuxel-cpbootd.aarch64.hw` hash `d963219f…` before approval is requested
-against it.
+### 9.5 Result
 
-No protected-partition write, no firmware transmission, no `/dev/umts_*` mutate, no flash,
-and no reboot were performed this run.
+**Gate F closed** — owner approval recorded in `reports/S5000AP-04-OWNER-APPROVAL.md`
+(TRIAL_ID `S5000AP-04-EFUJ2-20261123T112639Z`). The physical trial succeeded; the
+Stage-04 final success condition is met (`STAGE_04_PHYSICAL_SUCCESS`). No remaining blocker.
+
+No protected-partition write, no flash, and no reboot were performed. `/dev/sda16` was read
+only; `/dev/umts_boot0` was driven through the boot ioctl sequence only.
+
+---
+
+## 10. Stage-04 PHYSICAL execution (authorized, single controlled trial) — 2026-11-23
+
+### 10.1 Exact invocation (the approved manifest, unchanged)
+
+```
+/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.aarch64.hw \
+  --really-boot \
+  --node /dev/umts_boot0 \
+  --firmware /dev/sda16 \
+  --manifest-sha256 13a5cf3d3c3367b8fb39049123ebc3f6236f2b717cdb559cb00bb819862de61d \
+  --deadline-ms 300000
+```
+
+### 10.2 Real-backend stage transcript (verbatim)
+
+```
+ITOC parsed: stages=5 BOOT@1 MAIN@2 VSS@3 NV@4 OFFSET@5 TOC(m_off=0x40008000 size=1040)
+initial CP state=0
+{"stage":"status-probe","rc":0,"elapsed_ms":0,"note":"state"}
+{"stage":"security-reinit","rc":11,"elapsed_ms":1,"note":""}
+{"stage":"xmit-boot","rc":0,"elapsed_ms":123,"note":"TOC/BOOT/MAIN/VSS in TOC order (NV from EFS)"}
+{"stage":"security-toc","rc":0,"elapsed_ms":10,"note":""}
+{"stage":"security-vss","rc":0,"elapsed_ms":40,"note":""}
+{"stage":"security-main","rc":0,"elapsed_ms":316,"note":""}
+{"stage":"power-on","rc":0,"elapsed_ms":0,"note":""}
+{"stage":"boot-on","rc":0,"elapsed_ms":21,"note":""}
+{"stage":"dl-start","rc":0,"elapsed_ms":0,"note":""}
+{"stage":"handshake","rc":0,"elapsed_ms":4,"note":""}
+{"stage":"boot-off","rc":0,"elapsed_ms":1489,"note":""}
+{"stage":"online-verify","rc":0,"elapsed_ms":0,"note":"must-be-ONLINE"}
+{"mode":"really-boot","backend":"real","verdict":"online"}
+TRIAL_EXIT=0
+```
+
+Note on `security-reinit rc=11`: this is the **documented, expected** reply for
+`CP_BOOT_RE_INIT`. The pinned CBD source (`BootDumpModap::std_security_req`) states
+`/* 11 (CP not working) is an expected when mode == CP_BOOT_RE_INIT */` and treats only
+that exact case as success. The daemon has been updated to mirror this normalization
+exactly (see §9.2.2), so the result is deterministic regardless of +11/−11 errno sign.
+
+`initial CP state=0` (OFFLINE) means the conditional stage-0.1 `IOCTL_MODEM_RESET` did
+**not** fire — consistent with the approved manifest's "issued only if initial != OFFLINE".
+
+### 10.3 Independent physical verification (kernel ground truth)
+
+Immediately after the trial, and again after 8 s (4 samples, 2 s apart):
+
+```
+$ cat /sys/devices/platform/10000.mif_pdata/modem_state
+ONLINE
+$ /usr/lib/nuxel/nuxel-modem/nuxel-cp-status         # ×4, 2 s apart
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4, ...}
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4, ...}
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4, ...}
+{"node":"/dev/umts_boot0","state":"ONLINE","state_code":4, ...}
+```
+
+dmesg corroboration:
+
+```
+mif: cmd_phone_start_handler: shmem: CP_START <- s5000ap (s5000ap.state:ONLINE cp_boot_done:0)
+mif: rild_ready: shmem: umts_ipc0.opened=0, umts_rfs0.opened=0
+```
+
+`cp_boot_done:0` and `umts_ipc0/umts_rfs0.opened=0` are the expected Stage-05 RIL/SIPC/RFS
+surface state — NOT required for Stage-04 CP ONLINE proof. The modem itself is
+`STATE_ONLINE(4)` and stable; no crash, no ramdump, no watchdog-crash, no panic.
+
+### 10.4 Success-condition audit (directive §10)
+
+| # | Condition | Result |
+|---|---|---|
+| 1 | Exact physical operation approved | YES — `reports/S5000AP-04-OWNER-APPROVAL.md` |
+| 2 | Actual hardware bootstrap executed | YES — real backend, all 12 stages green |
+| 3 | Kernel reports CP ONLINE | YES — `modem_state=ONLINE` + `IOCTL_MODEM_STATUS=4` |
+| 4 | ONLINE remains stable | YES — ≥4 samples stable over 8 s |
+| 5 | No unexpected HW/security failure | YES — no crash/panic/ramdump |
+| 6 | Nuxel remains operational | YES — SSHD/Wi-Fi/USB unaffected |
+| 7 | No protected-partition writes | YES — read-only RADIO + ioctl only |
+
+### 10.5 Protected-partition-write attestation (Stage-04 execution)
+
+**I attest that NO write occurred to BOOT / DTB / DTBO / RECOVERY / RADIO / EFS / EFSG /
+SEC_EFS / NV / calibration / IMEI / bootloader / TEE during this Stage-04 execution.**
+`/dev/sda16` (RADIO) was opened `O_RDONLY` and only read/stream-hashed/transmitted; it was
+never opened for write. `/dev/umts_boot0` was opened `O_RDWR` (required for the ioctl boot
+transaction) and driven through the source-faithful boot ioctls only; no firmware image was
+written to any partition. No TWRP, no fastboot, no `dd` write, no `flash`.
+

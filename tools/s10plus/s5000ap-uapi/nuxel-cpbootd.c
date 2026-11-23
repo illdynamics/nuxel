@@ -601,12 +601,25 @@ static int xmit_part(struct ctx *c, int part_idx)
 static int security_req(struct ctx *c, uint32_t mode, uint32_t p2, uint32_t p3)
 {
     struct modem_sec_req msr;
+    int ret;
     memset(&msr, 0, sizeof(msr));
     msr.mode = mode;
     msr.param2 = p2;
     msr.param3 = p3;
     msr.param4 = 0;
-    return do_security_req(&c->be, &msr);
+    ret = do_security_req(&c->be, &msr);
+    /* Source-faithful normalization (BootDumpModap::std_security_req):
+     * "11 (CP not working) is an expected when mode == CP_BOOT_RE_INIT".
+     * The RE_INIT SMC is issued before the CP is powered, so the TEE may
+     * legitimately answer 11 (EAGAIN, "CP not working"). cbd treats ONLY this
+     * (mode==RE_INIT && reply==11) as success. Any other nonzero reply is a
+     * real failure. Mirror that exact rule so the outcome is deterministic
+     * regardless of whether exynos_smc surfaces +11 or -11. */
+    if (mode == CP_BOOT_RE_INIT && (ret == 11 || ret == -11))
+        return 0;
+    if (ret != 0)
+        return (ret < 0) ? ret : -ret;   /* normalize positive SMC err to -errno */
+    return 0;
 }
 
 /* ---------------------------------------------------------------------------

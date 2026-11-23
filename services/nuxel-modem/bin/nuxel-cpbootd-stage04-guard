@@ -6,7 +6,7 @@
 #      STAGE04_MANIFEST_SHA256 (the SHA-256 of the immutable proposal file) and
 #      STAGE04_FIRMWARE_PATH (the read-only RADIO ITOC path).
 #   2. The pinned binary (nuxel-cpbootd.aarch64.hw) hashes to the exact
-#      Stage-04 value d963219f… (no substitution).
+#      Stage-04 value 86de42aa… (no substitution).
 #   3. The firmware ITOC file exists.
 #   4. /dev/umts_boot0 exists.
 #
@@ -21,7 +21,7 @@ BIN="/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.aarch64.hw"
 NODE="/dev/umts_boot0"
 
 # Pinned Stage-04 executable hash (the ONLY accepted binary identity).
-PINNED_BINARY_SHA256="d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630"
+PINNED_BINARY_SHA256="86de42aa9c0657791f6fe67d443d0231c51162e01880cd85708e27220a679402"
 
 log() { printf '%s\n' "$*" >&2; }
 fail() { log "STAGE04-GUARD-ABORT: $*"; exit 2; }
