@@ -47,6 +47,8 @@ LockPersonality=true
 MemoryDenyWriteExecute=true
 SystemCallArchitectures=native
 DeviceAllow=/dev/umts_boot0 rw
+# Firmware source is the READ-ONLY EFUJ2 RADIO block device (never written).
+DeviceAllow=/dev/sda16 r
 DevicePolicy=closed
 
 [Install]
