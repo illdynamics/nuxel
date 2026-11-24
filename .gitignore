@@ -194,3 +194,4 @@ assets/nuxel-sounds/tight_*.mp3
 ./SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/
 SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/**
 .vendor-ro/
+.forensics/

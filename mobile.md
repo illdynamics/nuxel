@@ -1,321 +1,419 @@
-# NUXEL S10+ — SHANNON S5000AP COMPLETE MOBILE RECOVERY
+# LTE OR DIE — QRONIQQLES IV
+## THE RFS RESURRECTION PROTOCOL
+### STAGE 06 — FINAL MODEM, LTE DATA, SMS & VOICE COMPLETION
 
-## PRIMARY MISSION
+**MISSION: Make the Samsung SM-G975F (beyond2lte / Shannon S5000AP) a fully functional Nuxel Linux phone with working LTE, cellular Internet, SMS and voice telephony.**
 
-You are the lead Linux kernel, Samsung Exynos9820, Shannon modem, SIPC and cellular integration engineer working on the Nuxel operating system.
+There is one objective: physically working Stage 06.
 
-Your mission is to restore genuine, fully verified mobile networking on the Samsung Galaxy S10+ SM-G975F.
+No research-only rounds. No architectural essays. No speculative success. No endless reports describing the same blocker.
 
-> **Correction (Prompt 03.6/03.7).** The earlier "CP archive has now been located" claim is
-> superseded. The documented DTK9 `.tar.md5`
-> `CP_G975FXXS9DTK9_CP17435927_CL20034833_QB35905779_REV01_user_low_ship.tar.md5`
-> was **NOT present** in subsequent host searches (`find / -xdev -iname 'CP_G975F*'` → empty).
-> What was recovered offline is a derived DTK9 `.lz4` pair (structurally valid, provenance
-> UNKNOWN), and — decisively — the **installed RADIO partition is EFUJ2 (`G975FXXSEFUJ2`),
-> not DTK9**. The selected read-only firmware source for Stage-04 is therefore the installed
-> EFUJ2 RADIO at `/dev/sda16` (PARTLABEL `radio`), not the DTK9 archive. Do not treat the
-> DTK9 archive as "found"; do not block the EFUJ2 path on the missing DTK9 archive.
-> **Do not stop at another missing-firmware report.**
+**EXECUTE → IMPLEMENT → BUILD → TEST → DEPLOY → OBSERVE → FIX → RETEST.**
 
-Continue through all independently executable research, implementation, compilation and offline verification work. Advance from one validated engineering milestone to the next rather than repeatedly rewriting reports.
+Continue until the actual hardware acceptance criteria pass.
 
-The ultimate goal is a working S5000AP modem, SIM detection, mobile network registration, LTE data, SMS, voice calling and IMS/VoLTE where supported.
+A genuine external dependency must be identified honestly, but never declare something unrecoverable before exhausting the available software, firmware, transport and hardware avenues.
 
-Do not claim functionality without actual physical evidence. No hardware modification, CP boot, firmware transmission, power/reset operation or flashing is authorized merely by this prompt.
+---
 
-## PROJECT STATE
+# PART I — PRESERVE AND ESTABLISH BASELINE
 
-Repository:
+Repository: `~/x/nuxel`
 
-`/Users/wicked/x/nuxel`
+Target: Samsung SM-G975F, beyond2lte, Shannon S5000AP.
 
-Last reported mobile commit:
+Management connection: ZeroTier, currently known as `10.11.12.99`.
 
-`22dd6b3ab46dece28abfe83607d7cc64add76843`
+Previously used branch: `cs/mob-round35-stage06`.
 
-Authoritative existing report:
+Important known assets:
 
-`reports/S5000AP-RADIO-ENDGAME.md`
+- `./packs/SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/`
+- `./packs/android_device_samsung_beyond2lte-lineage-23.2/`
+- `./.vendor-ro/`
 
-Previously verified:
+Do not assume previous commit hashes or branch state remain current.
 
-- Exynos9820 / beyond2lte hardware.
-- S5000AP kernel controller compiled and present.
-- SIPC, SHMEM and secure CP boot support.
-- `/dev/umts_boot0` and IPC/RFS nodes available.
-- `rmnet0` through `rmnet7` exist.
-- CP reports `OFFLINE (0)`.
-- ModemManager 1.24.2 running, no modem discovered.
-- Generic Samsung ModemManager plugin is not a Shannon backend.
-- Honest modem diagnostics deployed with rollback.
-- Existing Wi-Fi and SSH operational.
+FIRST:
 
-Preserve all existing commits, user changes and working subsystems.
+1. Inspect Git HEAD, branch, status, staged changes and untracked files.
+2. Preserve all existing modifications, including `mobile.md`.
+3. Create a recoverable checkpoint.
+4. Inspect the complete Stage 06 implementation.
+5. Run the existing test suite.
+6. Establish SSH connectivity through ZeroTier.
+7. Verify CP ONLINE, SIM READY and KPN registration.
+8. Record current RFS, IPC41, data-call and modem states.
+9. Verify Wi-Fi, USB, ZeroTier, SSH and radiod.
 
-## PHASE 1 — ACQUIRE AND VALIDATE THE CP IMAGE
+Never destroy existing work or interrupt the management connection.
 
-**Selected read-only firmware source: the INSTALLED EFUJ2 RADIO at `/dev/sda16`**
-(PARTLABEL `radio`, 52,428,800 B, model `SM-G975F_EUR_XX_EUR0`, build
-`G975FXXSEFUJ2_CL2054966_QB20745891`, ITOC magic `TOC\0`). See
-`reports/S5000AP-03_6-INSTALLED-RADIO-IDENTITY.md` and
-`reports/S5000AP-03_7-EFUJ2-SOURCE-AND-PROVENANCE.md`.
+# PART II — THE IMMEDIATE BREAKTHROUGH
+## RFS DIRECTIONALITY AND AP-ORIGINATED NV OPERATIONS
 
-The previously-documented DTK9 archive
-`CP_G975FXXS9DTK9_CP17435927_CL20034833_QB35905779_REV01_user_low_ship.tar.md5`
-was **not found** in subsequent searches; the derived DTK9 `.lz4` pair
-(`modem.bin`/`modem_debug.bin`) is `STRUCTURALLY_VALID_PROVENANCE_UNKNOWN` and is
-a **different build** than the installed EFUJ2 image. The old "archive found" and
-"exact-build candidate" statements are superseded.
+This is the first engineering priority.
 
-First verify the installed EFUJ2 source identity is readable and has not been altered.
+Recent investigation established:
 
-Perform the following offline:
+- `rfs_proto.c/h` implements RFS parsing.
+- `rfs_respond.c/h` implements the CP-request response path.
+- `rfs_policy.c/h` controls permitted operations.
+- `radiod.c` integrates transport and protocol handling.
+- RFS operation `0x15` (`NV_WRITE_ALL`) is currently explicitly refused.
+- Previous investigations recovered the Samsung NV processing operations and their underlying write semantics.
+- The physical item-360 representation remains insufficiently established.
 
-1. Record the archive's size, SHA-256 and complete member listing.
-2. Validate TAR structure, member CRC/integrity where applicable, and Samsung MD5 trailer.
-3. Understand that MD5 validates archive consistency but is not proof of Samsung authenticity.
-4. Safely decompress both LZ4 members into a new owner-local host directory outside Git.
-5. Preserve the compressed originals.
-6. Record decompressed sizes and SHA-256 hashes.
-7. Inspect the binary formats and available modem version, build and model metadata.
-8. Compare the CP image's version against the original AP/vendor build and known device hardware.
-9. Inspect any firmware signing or image-container metadata without modifying or bypassing it.
-10. Determine which component the stock Samsung bootstrap actually uses and whether the debug image has any legitimate diagnostic purpose.
+**Do not confuse a CP-originated RFS request with an AP-originated RFS transaction.**
 
-Never assume that `modem_debug.bin` is a safe alternative to the primary modem image.
+Investigate the actual transaction architecture.
 
-Do not flash or upload either image.
+### Mandatory actions
 
-Do not commit proprietary modem images or extracted firmware to Git.
+1. Trace every RFS request and response direction in the current implementation.
+2. Determine how AP-originated messages are framed and transmitted, if supported.
+3. Inspect the SIPC transport and FMT/RFS integration.
+4. Determine whether the modem accepts AP-originated NV operations.
+5. Recover the actual command identifiers from vendor code and firmware.
+6. Establish transaction IDs, response correlation, framing, lengths and error handling.
+7. Determine whether `RFS_NV_WRITE_ITEM` is genuinely an exposed operation or merely a name used in documentation.
+8. Distinguish `NV_WRITE`, `NV_WRITE_ALL`, buffering and restore semantics.
+9. Identify whether the AP must initiate a transaction or respond to a CP request.
+10. Implement the missing transaction mechanism where supported.
 
-If the firmware passes structural validation, classify it as a verified local CP candidate—not a successfully booted modem.
+Inspect the actual Samsung implementations in `libsec-ril.so`, matching firmware and recovered CP binaries.
 
-## PHASE 2 — RECOVER AND ANALYZE SAMSUNG CBD
+Do not invent opcodes, directions or transaction formats.
 
-Prioritize reusing Samsung's existing CP bootstrap implementation rather than writing a new one.
+### Required result
 
-Research and inspect:
+A reproducible, independently verified understanding of the NV transaction path, including a successful read-only transaction against the live modem where possible.
 
-`https://github.com/LineageOS/android_hardware_samsung_slsi-linaro_exynos`
+Add regression tests for every recovered protocol contract.
 
-Focus on:
+# PART III — COMPLETE ITEM 360 / QBR CONTRACT
 
-`cpboot_v3`
+Known information:
 
-Also inspect:
+- Persistent key: `NASU.LTE.ATTACH.APN.INFO`
+- Dual-SIM variant: `DS_NASU.LTE.ATTACH.APN.INFO`
+- Previously recovered numeric ID: `360` (`0x168`)
+- Expected KPN APN: `internet`
+- NV write semantics recovered from vendor code: seek, write, fsync and MD5 handling.
+- Existing modules: `nv_items.{c,h}` and `qbr_items.{c,h}`.
 
-`https://github.com/LineageOS/android_device_samsung_exynos9820-common`
+However, do not confuse a recovered numeric ID with a fully recovered physical storage contract.
 
-Its relevant configuration selects:
+### Actions
 
-- CBD bootloader implementation.
-- SIPC protocol.
-- Legacy SIPC ioctl compatibility.
+Recover and independently validate:
 
-Pin exact upstream source revisions.
+1. Numeric ID to registry mapping.
+2. Item descriptor.
+3. Physical storage offset.
+4. Payload length.
+5. APN field representation.
+6. QBR record framing.
+7. Alignment and padding.
+8. Serialization and deserialization.
+9. MD5 handling.
+10. RFS transaction representation.
+11. Read-back behavior.
+12. Persistence across reboot.
 
-Analyze whether the available implementation and its configuration actually match the running Exynos9820/S5000AP kernel and Android 10 vendor interfaces.
+Inspect:
 
-Do not blindly assume the latest LineageOS branch is compatible with this older Samsung kernel.
+- CP `modem.bin`.
+- `modem_debug.bin.lz4`.
+- Samsung firmware TOC.
+- MAIN and BOOT regions.
+- QBR and NV handlers.
+- `PDNMGR_SET_STATELESSINFO_ATTACHINFO`.
+- `NASU.LTE.ATTACH.APN.INFO`.
+- Existing extracted vendor libraries.
+- Matching Samsung firmware and source.
 
-Document the exact build configuration, required runtime libraries, transport dependencies, device paths, firmware expectations and any incompatibilities.
+Use the TNL CSC to validate carrier configuration.
 
-Investigate whether the previously recovered matching Samsung Android/Bionic/VNDK runtime can support an isolated native `cbd` experiment.
+**Important:** The current `nv_apn_record` unit tests do not independently prove that the generated structure matches the physical QBR record.
 
-Prefer the exact Samsung implementation and existing compatibility layers wherever possible.
+Recover a genuine golden vector or equivalent authoritative evidence.
 
-## PHASE 3 — RECONSTRUCT THE VERIFIED CP BOOT INTERFACE
+# PART IV — IMPLEMENT THE COMPLETE NV PROVISIONING PATH
 
-Study the local kernel source:
+Once the physical record contract and transaction mechanism are independently established:
 
-`drivers/misc/modem_v1/`
+Implement the missing provisioning path.
 
-Focus on the S5000AP controller, boot interface, secure-boot integration, SIPC/SHMEM and RFS paths.
+Requirements:
 
-Build a compatibility matrix connecting:
+- Correct item ID.
+- Correct descriptor.
+- Correct physical offset.
+- Correct serialization.
+- Correct MD5 integrity.
+- Complete original backup.
+- Backup integrity verification.
+- Read-before-write verification.
+- Explicit transaction logging.
+- Post-write read-back.
+- Byte-for-byte verification.
+- Rollback capability.
+- No modification of unrelated NV items.
 
-1. The physical S5000AP controller.
-2. The kernel's boot and state interfaces.
-3. The recovered primary modem firmware.
-4. The selected Samsung `cbd` implementation.
-5. The required userspace runtime.
-6. The subsequent radio-control interfaces.
+Protect IMEI, RF calibration, radio configuration, SIM configuration, boot configuration and unrelated NV records.
 
-Determine the documented ABI and structures expected by `cbd`.
+Never guess offsets or write fabricated records.
 
-Identify which boot stages are supported by the running kernel and which still lack evidence.
+Do not modify persistent modem storage until the complete contract is proven and the backup and rollback path has been tested.
 
-Differentiate device presence, modem power state, firmware loading, security verification, IPC readiness and full CP boot completion.
+Then execute the verified provisioning operation and establish the initial-attach APN.
 
-Do not substitute driver interfaces from a different Samsung generation.
+# PART V — GET THE ACTUAL LTE DATA PATH WORKING
 
-Do not invent memory offsets, ioctl semantics, firmware signatures or undocumented reset sequences.
+After provisioning, immediately investigate live modem behavior.
 
-## PHASE 4 — IMPLEMENT THE NECESSARY USERSPACE COMPONENTS
+Do not assume the APN was the only failure.
 
-Build the compatible Samsung CP bootstrap implementation for the Nuxel environment if the available evidence supports it.
+Capture actual responses and rejection causes.
 
-Where a genuine incompatibility exists, implement the smallest justified compatibility adaptation.
+Implement and verify:
 
-Work on the host first.
+1. CP initialization.
+2. SIM initialization.
+3. Network registration.
+4. Packet-switched registration.
+5. LTE attach.
+6. EPS bearer establishment.
+7. Default data-call management.
+8. Cellular interface creation.
+9. Address assignment.
+10. Routing.
+11. DNS.
+12. HTTPS.
+13. Disconnect.
+14. Reconnect.
+15. Recovery after network loss.
+16. Reboot persistence.
 
-Provide:
+Use the actual Samsung modem interfaces and recovered IPC41 commands.
 
-- Reproducible source builds.
-- Exact upstream revision provenance.
-- Compiler warnings and static analysis.
-- Verified executable architecture.
-- Dynamic library dependency analysis.
-- Firmware identity and version validation.
-- Safe failure handling and error reporting.
-- Exclusive device ownership checks.
-- Strict time and resource bounds.
-- Reproducible unit and integration tests.
-- Hardware-denied isolation tests where practical.
+Implement missing Nuxel-side functionality rather than introducing Android framework dependencies.
 
-Use the original CP archive as an offline input only.
+Test cellular connectivity independently of Wi-Fi.
 
-Do not invent successful CP responses in tests or treat a simulated bootstrap as real modem boot.
+Verify actual route selection and interface usage.
 
-Complete all safe source and build investigations before proposing a physical trial.
+# PART VI — SMS AND VOICE
 
-## PHASE 5 — IDENTIFY THE ACTUAL BOOT BLOCKER
+Once LTE data works, continue directly into telephony.
 
-Determine whether successful CP initialization requires anything beyond the recovered modem image and Samsung `cbd`.
+Do not stop at an operational data connection.
 
-Investigate:
+### SMS
 
-- Missing runtime dependencies.
-- Device-specific boot configuration.
-- Firmware image format compatibility.
-- Kernel/bootloader ABI differences.
-- Required vendor components.
-- Protected partition dependencies.
-- Shared-memory configuration.
-- Legitimate secure-boot prerequisites.
-- Existing Samsung RIL support.
+Implement:
 
-Maintain an evidence-based decision table.
+- Modem SMS transport.
+- Outgoing SMS.
+- Incoming SMS.
+- PDU encoding/decoding where required.
+- Message storage.
+- Delivery reporting.
+- Notifications.
+- Error handling.
+- Recovery after reconnection.
 
-Every unresolved item must state whether it is:
+### Voice
 
-- Confirmed missing.
-- Present but unverified.
-- Verified compatible.
-- Verified incompatible.
-- Dependent on a live, authorized hardware test.
+Implement:
 
-Do not claim another proprietary artifact is indispensable unless the existing sources demonstrate that dependency.
+- Incoming calls.
+- Outgoing calls.
+- Answer and reject.
+- Hang-up.
+- Call-state reporting.
+- Audio routing.
+- Microphone routing.
+- Call recovery.
+- IMS/VoLTE integration where supported.
 
-## PHASE 6 — PREPARE ONE CONTROLLED HARDWARE TRIAL
+Investigate actual KPN and device support for the required voice technology.
 
-After the offline boot contract and recovery provisions have been verified, prepare a concrete CP first-boot proposal for owner approval.
+Do not simulate SMS acceptance or call states.
 
-Document:
+If a carrier-side limitation exists, establish it with actual evidence and complete every software-controlled component.
 
-- Exact verified firmware hashes.
-- Exact executable and kernel build identities.
-- Expected device-state transitions.
-- Intended device operations.
-- Preconditions and exclusive ownership.
-- Hardware and software rollback provisions.
-- Limits, abort conditions and failure detection.
-- Recovery from daemon failure or lost SSH.
-- Expected evidence of secure initialization and IPC readiness.
+# PART VII — FIX EVERYTHING DISCOVERED
 
-Preserve the original boot image and established TWRP/ADB recovery route.
+This is mandatory throughout the campaign.
 
-The handset is A-only; do not assume an inactive boot slot.
+Whenever a failure occurs:
 
-Do not modify EFS/NV data, device identity, calibration, carrier locks or secure-boot integrity.
+1. Reproduce it.
+2. Capture logs and actual responses.
+3. Identify the root cause.
+4. Fix the underlying implementation.
+5. Add a regression test.
+6. Rebuild.
+7. Rerun affected tests.
+8. Rerun the complete suite.
+9. Deploy the corrected implementation.
+10. Verify actual hardware behavior.
 
-Do not implement unattended flashing, reboot loops or repeated speculative CP startups.
+Do not merely document defects.
 
-Request explicit owner approval for the specific reviewed trial before any hardware-changing operation.
+Do not repeatedly retry unchanged failing operations.
 
-If a trial fails, preserve evidence and return to offline diagnosis.
+Do not assume earlier reports are infallible.
 
-## PHASE 7 — COMPLETE PHYSICAL MODEM VERIFICATION
+Revalidate previous assumptions against actual evidence.
 
-Once a validated CP bootstrap succeeds, establish that the modem genuinely becomes operational.
+Acquire matching firmware, vendor binaries, debug artifacts and public source where they materially help resolve a specific implementation blocker.
 
-Verify separately:
+# PART VIII — BUILD AND DEPLOYMENT
 
-1. CP state transitions to ONLINE.
-2. SIPC and shared-memory exchange operate.
-3. RFS behavior is functional.
-4. The modem stays online without crashing.
-5. Legitimate SIM presence and readiness are recognized.
-6. Network registration works.
-7. LTE data can establish and maintain an authorized connection.
-8. Data disconnection and reconnection work.
-9. SMS works in both directions.
-10. Incoming and outgoing voice calls work with audio.
-11. IMS/VoLTE works where supported and provisioned.
-12. Airplane mode, suspend/resume and service restart behave correctly.
+Every implementation must pass:
 
-Do not infer working LTE data, SMS or calls merely because the CP boots.
+- Host compilation with `-Wall -Wextra -Werror`.
+- Full unit test suite.
+- New regression tests.
+- 3,000-iteration fuzzing.
+- ASan/UBSan.
+- AArch64 cross-compilation.
+- Actual target execution.
+- Live modem verification.
 
-Never expose private SIM or subscriber identifiers in committed logs.
+Use `set -o pipefail` for build pipelines.
 
-## PHASE 8 — COMPLETE NUXEL INTEGRATION
+Do not mistake a successful downstream `head` command for a successful compilation.
 
-Once the CP and native radio transport are verified, integrate the required userspace radio-control implementation.
+Deploy with backups and rollback.
 
-Do not force an unrelated generic ModemManager plugin to claim the modem.
+Keep these working:
 
-Investigate reusable Samsung RIL/SIPC components first, and only implement a new backend when necessary.
+- `wlan0`
+- `usb0`
+- ZeroTier
+- SSH
+- radiod
+- Existing Nuxel services
 
-Integrate accurate service state, network status, mobile data controls and user-facing failure reporting.
+No unnecessary rebooting.
 
-Preserve existing Wi-Fi, USB, SSH, display, sensors, GNSS, camera and NFC functionality.
+TWRP flashing is permitted only when a verified requirement genuinely necessitates a partition modification and a tested recovery path exists.
 
-Test device and service restarts, reconnect behavior and authorized reboot persistence.
+# PART IX — PHYSICAL ACCEPTANCE
 
-Keep independently verified status for mobile data, SMS, voice and IMS.
+Stage 06 is complete only when every applicable criterion has been physically demonstrated.
 
-## PHASE 9 — CONTINUOUS ENGINEERING PROCESS
+| Acceptance criterion | Required result |
+|---|---|
+| CP initialization | PASS |
+| SIM READY | PASS |
+| KPN registration | PASS |
+| PS registration | PASS |
+| LTE attach | PASS |
+| EPS bearer | PASS |
+| Cellular IP | PASS |
+| Cellular routing | PASS |
+| Cellular DNS | PASS |
+| Cellular HTTPS | PASS |
+| Outgoing SMS | PASS |
+| Incoming SMS | PASS |
+| Outgoing voice | PASS |
+| Incoming voice | PASS |
+| Call audio | PASS |
+| Disconnect/reconnect | PASS |
+| Reboot persistence | PASS |
+| Wi-Fi regression | NONE |
+| USB regression | NONE |
+| ZeroTier/SSH regression | NONE |
+| Full regression suite | PASS |
 
-After every substantial task:
+Every network test must identify the actual interface and route.
 
-1. Identify the highest-value unresolved blocker.
-2. Verify the relevant source or hardware evidence.
-3. Research existing implementations first.
-4. Implement the smallest justified fix.
-5. Build and test it.
-6. Record meaningful results and limitations.
-7. Commit focused code changes.
-8. Proceed to the next safely executable milestone.
+SMS and voice must be tested using genuine network interactions.
 
-Do not stop merely because the first analysis is complete.
+No mocks, fabricated responses or simulated connectivity.
 
-Do not repeatedly perform completed firmware searches or produce another report without investigating a concrete unresolved issue.
+# PART X — EXECUTION DISCIPLINE
 
-If external approval, additional physical measurements or indispensable artifacts are required, identify the exact prerequisite and stop only the affected operation.
+- Actions first.
+- No research-only rounds.
+- No half implementations.
+- No premature blocker declarations.
+- No blind NV writes.
+- No speculative protocol structures.
+- No unnecessary flashing.
+- No destructive Git operations.
+- No loss of existing work.
+- No Android dependencies.
+- No disabling management connectivity.
+- No fake acceptance.
 
-Never force unsafe hardware changes simply to achieve the requested outcome.
+Do not stop at the first new blocker.
 
-## REQUIRED DELIVERABLE
+Do not stop after implementing the RFS transaction mechanism.
 
-Maintain:
+Do not stop after provisioning the APN.
 
-`reports/S5000AP-RADIO-FINAL-RECOVERY.md`
+Do not stop after LTE data works.
 
-Include:
+Continue into SMS, voice, audio and reboot persistence.
 
-- Git commit and branch information.
-- Primary CP archive and image hashes.
-- Samsung CBD source provenance.
-- Complete compatibility findings.
-- Implemented source code and tests.
-- Live modem-state evidence.
-- Cellular capability acceptance matrix.
-- Hardware trial authorization and recovery requirements.
-- Precise remaining blockers, if any.
-- Reproducible build and deployment instructions.
+Do not spend the entire round writing reports. Spend it implementing and testing.
 
-**FINAL GOAL: A genuine operational Samsung S5000AP modem with fully verified cellular networking on Nuxel.**
+# FINAL DELIVERABLES
 
-The matching CP archive is already available. Continue from that confirmed acquisition milestone, not from the obsolete missing-firmware blocker.
+When physically complete, deliver:
 
-Do all safe engineering work possible within this run. Do not fabricate completion or bypass secure hardware protections. Continue toward each real milestone until full functionality is verified or an independently demonstrated external constraint prevents further progress.
+1. Complete Stage 06 source.
+2. All necessary modem drivers and supporting modules.
+3. Correct NV provisioning implementation.
+4. Reproducible builds.
+5. Complete passing tests.
+6. AArch64 target binaries.
+7. Actual LTE connectivity.
+8. Working cellular Internet.
+9. Working incoming and outgoing SMS.
+10. Working incoming and outgoing voice.
+11. Working call audio.
+12. Reboot-persistence evidence.
+13. Regression evidence.
+14. Git commits.
+15. Updated documentation.
+16. Final engineering acceptance report.
+
+The report must contain actual command output, timestamps, modem responses, interface states and test results.
+
+Only after every physical acceptance criterion passes may `./wonqed4real` be created.
+
+---
+
+# FINAL DIRECTIVE
+
+**LTE OR DIE. QRONIQQLES IV. THE RFS RESURRECTION.**
+
+We have already recovered IPC41, SIPC5, substantial RFS functionality, the initial-attach APN identity, NV item ID 360, MD5 behavior and much of the Samsung modem architecture.
+
+Now finish the missing transaction path.
+
+Recover the real QBR representation.
+
+Provision the modem correctly.
+
+Establish the EPS bearer.
+
+Bring up cellular Internet.
+
+Finish SMS.
+
+Finish voice.
+
+Fix every newly discovered defect and retest until the physical acceptance criteria pass.
+
+**Do not return another report telling me what needs to be done. Do the work.**
+
+The objective is a fully functional Nuxel phone on the actual SM-G975F.
+
+The only valid completion claim is a physically verified Stage 06 PASS.
