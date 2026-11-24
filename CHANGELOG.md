@@ -1,5 +1,25 @@
 # Changelog
 
+# Changelog
+
+## Stage 06 Round 43 — SET_APN_INFO (sub 27) traced from CP firmware; DEFINE_PDP legacy confirmed
+
+- Traced `IPC41_GPRS_SET_APN_INFO` (sub 27) to its AUTHORITATIVE CP handler in the
+  G975FXXS9DTK9 firmware (`./packs` CP modem.bin): `sipcProcGprsSetApnInfoSet` ->
+  `PMPM_UpdateSetInitialAttachApnReq` -> DS item `NASU.LTE.ATTACH.APN.INFO` (item 360).
+  Confirmed the AP `IpcTxSetDataProfile @0x31ff48` maps main=13/sub=27/type=3 (196-byte
+  payload) and `IpcTxSetLteAttachProfile @0x320238` maps main=13/sub=20/type=3 (194-byte
+  payload); both are ACKed by the CP (GEN=0) but do NOT persist item 360.
+- Live-probed DefinePdpContext (sub 1): the S5000AP LTE CP REJECTS it (GEN=1,
+  `0d01030180`) — the LTE data path does not use the legacy Define/Activate PDP flow.
+  Reverted a round-43 FSM insertion and recorded the byte-exact rejection in
+  `tests/test_data_session.c`.
+- Recovered item-360 record size `0x9f = 159` bytes from the CP NV template (OFFSET
+  segment pair-table @0x169be). The physical live offset remains CP-runtime-assigned
+  (unchanged blocker). Full spec: `reports/S5000AP-06-ROUND43-SET-APN-INFO-CP-TRACE.md`.
+- Host suite (14 suites + 3000-iter fuzzer + ASan/UBSan) PASS; on-device AArch64
+  `-Wall -Wextra -Werror` cross-build PASS; live deployment + probe performed.
+
 ## Stage 06 Round 42 — RFS NV serving implemented (radiod)
 
 - `radiod` now serves RFS `NV_READ`/`NV_WRITE_ALL` against `/mnt/vendor/efs/nv_data.bin`
