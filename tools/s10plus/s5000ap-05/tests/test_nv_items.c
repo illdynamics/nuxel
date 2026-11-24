@@ -98,6 +98,26 @@ int main(void)
     CHECK(nv_provision_policy(true, true, false, false) == NV_PROV_DENY_MD5_MISMATCH, "write bad md5");
     CHECK(nv_provision_policy(true, true, false, true) == NV_PROV_ALLOW_BACKUP_READ, "write known+ok");
 
+    /* 9. Round-38: recovered initial-attach APN item contract. */
+    CHECK(NV_ATTACH_APN_ITEM_ID == 0x168u, "attach APN NV item id == 360");
+    {
+        struct nv_apn_record rec;
+        CHECK(nv_apn_record_init(&rec, "internet", 8) == 0, "apn record init rc");
+        CHECK(rec.valid, "apn record valid");
+        CHECK(rec.apn_len == 8, "apn length 8");
+        CHECK(strcmp((const char *)rec.apn, "internet") == 0, "apn bytes == internet");
+
+        /* fail-closed: empty / oversize / NULL */
+        CHECK(nv_apn_record_init(&rec, "", 0) == -1, "empty apn rejected");
+        CHECK(nv_apn_record_init(&rec, NULL, 8) == -1, "NULL apn rejected");
+        {
+            char big[200];
+            memset(big, 'a', sizeof big);
+            CHECK(nv_apn_record_init(&rec, big, 200) == -1, "oversize apn rejected");
+        }
+        CHECK(nv_apn_record_init(&rec, "internet", 0) == -1, "zero-length rejected");
+    }
+
     if (failures == 0) {
         printf("\nALL test_nv_items PASS\n");
         return 0;

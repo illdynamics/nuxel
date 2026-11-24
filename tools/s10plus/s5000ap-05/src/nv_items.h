@@ -103,6 +103,32 @@ enum nv_provision_decision nv_provision_policy(bool write_requested,
                                                bool item_protected,
                                                bool md5_ok);
 
+/* --- Round-38: recovered initial-attach APN item contract --- */
+
+/* Recovered type of NV item 360 (NASU.LTE.ATTACH.APN.INFO):
+ *   type_desc = "u8" (byte string), numeric_id = 0x168 (360).
+ * The item VALUE is the APN name as a NUL-terminated byte string
+ * (e.g. "internet"). This is the SEMANTIC contract only.
+ *
+ * The exact on-disk QBR serialization (length prefix / record framing inside
+ * nv_data.bin) is intentionally NOT reconstructed here: it is gated by the
+ * fail-closed provisioning policy (item_known now true, but the on-disk framing
+ * and per-item offset must still be recovered from a known-good reference or
+ * the CP QBR item metadata before any write is authorized).
+ */
+#define NV_ATTACH_APN_ITEM_ID    0x168u  /* 360, recovered round-38 */
+#define NV_ATTACH_APN_NAME_MAX   128u
+
+struct nv_apn_record {
+    uint8_t  apn[NV_ATTACH_APN_NAME_MAX]; /* NUL-terminated APN name */
+    size_t   apn_len;                     /* length excl. NUL */
+    bool     valid;                        /* apn is non-empty, length in range */
+};
+
+/* Build a validated APN record from a NUL-terminated or length-bounded APN
+ * string. Pure; never writes. Returns 0 on success, -1 on NULL/oversize/empty. */
+int nv_apn_record_init(struct nv_apn_record *rec, const char *apn, size_t apn_len);
+
 #ifdef __cplusplus
 }
 #endif

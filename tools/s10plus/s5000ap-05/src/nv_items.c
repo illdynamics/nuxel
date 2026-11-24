@@ -168,3 +168,21 @@ enum nv_provision_decision nv_provision_policy(bool write_requested,
         return NV_PROV_DENY_MD5_MISMATCH;
     return NV_PROV_ALLOW_BACKUP_READ;
 }
+
+/* --- Round-38: initial-attach APN record builder (semantic contract) --- */
+int nv_apn_record_init(struct nv_apn_record *rec, const char *apn, size_t apn_len)
+{
+    if (!rec || !apn)
+        return -1;
+    if (apn_len == 0 || apn_len >= NV_ATTACH_APN_NAME_MAX)
+        return -1;
+    /* Reject embedded NUL within the stated length (must be a single C string). */
+    if (memchr(apn, '\0', apn_len) != NULL && memchr(apn, '\0', apn_len) != apn + apn_len - 1)
+        return -1;
+    memset(rec, 0, sizeof(*rec));
+    memcpy(rec->apn, apn, apn_len);
+    rec->apn[apn_len] = '\0';
+    rec->apn_len = apn_len;
+    rec->valid = true;
+    return 0;
+}
