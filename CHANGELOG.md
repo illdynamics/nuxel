@@ -1,5 +1,20 @@
 # Changelog
 
+## Stage 06 Round 42 — RFS NV serving implemented (radiod)
+
+- `radiod` now serves RFS `NV_READ`/`NV_WRITE_ALL` against `/mnt/vendor/efs/nv_data.bin`
+  using the CP-supplied (offset,length) exactly like the vendor cbd/Nv path, replacing the
+  previous fail-closed stub. Writes remain gated behind `--write-enable` + `NUXEL_NV_WRITE=1`,
+  are bounded against the real file size, recompute the MD5 sidecar, and never log payload
+  bytes or item ids. `install.sh` now links `efs_nv.c` + `nv_items.c`.
+- Re-verified (independent disassembly + live evidence) the single remaining Stage-06 blocker:
+  the persistent initial-attach APN (NV item 360 / 0x168) is empty, and its physical offset
+  is assigned at CP boot by the vendor cbd/CP NvCoreInfo list (runtime-relocated, not
+  statically recoverable from any in-repo artifact). See
+  `reports/S5000AP-06-ROUND42-ULTIMATE-ANSWER.md`.
+- Host suite (14 suites + 3000-iter fuzzer + ASan/UBSan) and on-device AArch64 `-Wall
+  -Wextra -Werror` cross-build all PASS.
+
 ## v0.9.1-beta — PenGuru Beak userspace integration (candidate; live acceptance pending)
 
 - Added a single user-owned `beak.json` configuration shared by PenGuru Squad and Nuxel Settings: Qwen ASR selected, VAD and interruption enabled, RNNoise requested, Piper talkback enabled. Continuous foreground listening remains explicit opt-in.
