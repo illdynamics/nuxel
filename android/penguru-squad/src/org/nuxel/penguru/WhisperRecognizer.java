@@ -557,15 +557,18 @@ final class WhisperRecognizer {
         if (raw == null) {
             return "";
         }
-        String text = raw.replace("\r", "\n");
-        text = text.replaceAll("\\[(?:BLANK_AUDIO|silence|Silence|MUSIC|music)\\]", " ");
-        text = text.replaceAll("\\((?:silence|Silence)\\)", " ");
-        text = text.replaceAll("\\s+", " ").trim();
+        // Remove subtitle-style non-speech labels such as "[MUSIC PLAYING]",
+        // "[BLANK_AUDIO]" and "(silence)" before they can be treated as speech.
+        String text = VoiceCommandRouter.sanitizeTranscript(raw.replace("\r", "\n"));
+        if (text.isEmpty()) {
+            return "";
+        }
         // Drop Whisper tiny's common silence hallucinations only when the RMS
         // detector never saw voice energy. An owner who really says "okay" or
         // "thank you" must still get that transcript sent.
-        if (!speechDetected
-                && text.toLowerCase(Locale.ROOT).matches("^(you|thank you|thanks|bye|okay|ok)\\.?$")) {
+        if (!speechDetected && text.toLowerCase(Locale.ROOT).matches(
+                "^(you|thank you|thanks|bye|okay|ok|music playing|please subscribe"
+                + "|thank you for watching|subtitles? by)\\.?$")) {
             return "";
         }
         return text;

@@ -2,14 +2,54 @@
 
 **Date:** 2026-11-24
 **Branch checked:** `feat/android-penguru-squad`
-**HEAD:** v0.9.10-beta on `feat/android-penguru-squad`
-**Working tree:** v0.9.10 talkback-on-default, bulk model/runtime download controls, mobile-data and storage preflight, native background talkback, background wake-command delivery, interactive follow-up and PenGuru/NUXAI identity
+**HEAD:** v0.9.11-beta on `feat/android-penguru-squad`
+**Working tree:** v0.9.11 wake-only turns, non-speech transcript filtering, post-talkback echo guard and the 0.9.10 background talkback/download work
 **Artifact:** `dist/android/penguru-squad-debug.apk`
-**SHA-256:** `f7c941309cad4894f1b453c73511c18140b153b5c6075735971b4cdc992b52ba`
-**Package/version:** `org.nuxel.penguru` / `versionCode=910`, `versionName=0.9.10-beta`
+**SHA-256:** `65c5e3fa52eb9b44ead38d970936a3910a25a99d7830d11807670f5304453bf7`
+**Package/version:** `org.nuxel.penguru` / `versionCode=911`, `versionName=0.9.11-beta`
 **Min/target SDK:** 26 / 35
 **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
 **Verification device:** headless Android 15 (API 35) x86_64 emulator
+
+---
+
+## 2026-11-24 — wake-only turns and non-speech filtering
+
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `65c5e3fa52eb9b44ead38d970936a3910a25a99d7830d11807670f5304453bf7`
+- **Size:** 3,783,285 bytes
+- **Version:** `0.9.11-beta` (`versionCode=911`)
+- **Min / target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Native code:** `arm64-v8a` + `x86_64`
+
+**Each turn now starts with “Penguru”.** The service previously opened an
+interactive follow-up window after speaking an answer, so any nearby speech was
+sent as a new request and answered repeatedly. `finishSpeaking()` now clears the
+pending turn and re-arms the recognizer in wake-only mode. Bare `stop` and
+`cancel` also require the wake word; without it, ambient speech is discarded.
+
+**Non-speech labels can no longer become commands.** Whisper tiny.en emits
+subtitle-style annotations such as `[MUSIC PLAYING]`, `[BLANK_AUDIO]` and
+`(silence)`. The old cleanup removed only the exact `[MUSIC]` token, so
+`[MUSIC PLAYING]` survived, was treated as a request, was spoken back, and
+retriggered the loop. `VoiceCommandRouter.sanitizeTranscript()` now strips
+those labels and returns an empty transcript when nothing else remains; the
+final recognizer path, partials, dispatch and Whisper cleanup all use it.
+
+**Talkback cannot wake itself.** A 1.4 s post-speech guard keeps the microphone
+closed for the TTS tail, and transcripts that repeat the answer just spoken are
+ignored. This matters because every native answer contains the name
+“PenGuru”, which the recognizer would otherwise accept as a wake word.
+
+**Verification:** `javac --release 8` and the full APK build pass; `node --check`
+passes on every bundled module; `test-voice.mjs` and `test-downloads.mjs` pass.
+A standalone `VoiceCommandRouter` harness confirms `[MUSIC PLAYING]`,
+`[BLANK_AUDIO]`, `(silence)` and bare `music playing` sanitize to empty while
+`stop the music` is preserved. `apksigner verify` shows v2 + v3 signatures,
+`versionCode=911`, `versionName=0.9.11-beta`, and the SHA above matches
+`dist/android/SHA256SUMS`. Physical microphone/audio acceptance on the owner's
+phone remains the final check.
 
 ---
 
@@ -912,10 +952,10 @@ The backend is explicitly “a partially implemented, local-first subsystem, not
 | Property | Value |
 |---|---|
 | Path | `dist/android/penguru-squad-debug.apk` |
-| Size | 3,779,189 bytes (~3.6 MiB) |
-| SHA-256 | `65d96af22b77c8ff4876f33f93ebf1729f1070854ac1a440fc897b1711922061` |
+| Size | 3,783,285 bytes (~3.6 MiB) |
+| SHA-256 | `65c5e3fa52eb9b44ead38d970936a3910a25a99d7830d11807670f5304453bf7` |
 | Package | `org.nuxel.penguru` |
-| Version | `0.9.10-beta` (`versionCode=910`) |
+| Version | `0.9.11-beta` (`versionCode=911`) |
 | Min / target SDK | 26 / 35 |
 | Launch activity | `org.nuxel.penguru.MainActivity` |
 | Signature schemes | v2 = true, v3 = true, v1 = false |

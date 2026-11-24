@@ -2,6 +2,22 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.9.11-beta] - 2026-11-24
+
+- Require the wake word for every turn. After an answer is spoken, SonarBird
+  re-arms in wake-only mode instead of opening an interactive follow-up window,
+  so ambient speech cannot be sent as another request without saying
+  “Penguru” again. Bare `stop` / `cancel` no longer bypass the wake word.
+- Stop recognizer non-speech labels from becoming answers. `[MUSIC PLAYING]`,
+  `[BLANK_AUDIO]`, `(silence)`, `(music playing)` and similar subtitle-style
+  annotations are stripped in the shared router and in Whisper output before
+  wake matching. This removes the repeated “MUSIC PLAYING” talkback loop that
+  could start after the first command.
+- Add a post-talkback echo guard. The microphone stays closed for the TTS tail
+  and transcripts that repeat the answer just spoken are ignored, so the
+  native reply's own “PenGuru” cannot wake the listener again.
+- Rebuild PenGuru Squad 0.9.11-beta (`versionCode=911`).
+
 ## [v0.9.10-beta] - 2026-11-24
 
 - Fix spoken answers while PenGuru is not on screen. Talkback now runs in the

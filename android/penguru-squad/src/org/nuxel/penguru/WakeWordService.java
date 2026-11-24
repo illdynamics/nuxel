@@ -65,6 +65,10 @@ public class WakeWordService extends Service {
     private static final long SESSION_DEADLINE_MS = 12000L;
     private static final long COMMAND_FOLLOW_UP_MS = 20000L;
     private static final long MIN_SESSION_GAP_MS = 1000L;
+    // TTS can still be audible for a moment after Android reports "done".
+    // Keep the microphone closed during that tail so PenGuru cannot hear its
+    // own answer (which contains the name "PenGuru") and wake itself.
+    private static final long POST_SPEECH_GUARD_MS = 1400L;
     private static volatile WakeWordService instance;
     private static volatile boolean running;
     private static volatile boolean paused;
@@ -133,10 +137,11 @@ public class WakeWordService extends Service {
     private boolean voiceStopRequested;
     // Reply talkback lives in this foreground service, not the Activity, so an
     // answer is spoken even when PenGuru is not on screen. Recognition is
-    // stopped while the engine talks and re-armed afterwards so the owner can
-    // answer without repeating the wake word.
+    // stopped while the engine talks and re-armed afterwards in wake-only mode.
     private TalkbackEngine talkback;
     private boolean speaking;
+    private String lastSpokenText = "";
+    private long speechGuardUntil;
 
     public static boolean isRunning() {
         return running;
@@ -589,6 +594,7 @@ public class WakeWordService extends Service {
         if (value.isEmpty()) {
             return;
         }
+        lastSpokenText = value;
         // A new answer supersedes any sentence still being captured.
         speaking = true;
         restartQueued = false;
@@ -599,7 +605,7 @@ public class WakeWordService extends Service {
         cancelPendingPartial();
         stopRecognizer();
         listening = false;
-        updateNotification("Speaking the answer · listening resumes after");
+        updateNotification("Speaking the answer · then say “Penguru” again");
         // Give Android a moment to release the microphone before the voice
         // engine starts, otherwise the first syllable can be captured by the
         // recognizer and trigger a spurious wake command.
@@ -611,10 +617,12 @@ public class WakeWordService extends Service {
                 lastError = "Talkback is unavailable on this phone";
                 speaking = false;
                 if (!paused && !inAppSpeech) {
-                    awaitingCommand = true;
-                    awaitingSince = System.currentTimeMillis();
-                    updateNotification("Talkback unavailable · microphone open");
-                    scheduleNext(400L);
+                    awaitingCommand = false;
+                    capturedMode = "";
+                    commandBuffer = "";
+                    speechGuardUntil = System.currentTimeMillis() + POST_SPEECH_GUARD_MS;
+                    updateNotification("Talkback unavailable · say “Penguru” again");
+                    scheduleNext(POST_SPEECH_GUARD_MS);
                 }
             }
         }, 260L);
@@ -626,7 +634,7 @@ public class WakeWordService extends Service {
         }
         if ("speaking".equals(state)) {
             speaking = true;
-            updateNotification("Speaking the answer · listening resumes after");
+            updateNotification("Speaking the answer · then say “Penguru” again");
             return;
         }
         if ("idle".equals(state) || "error".equals(state)
@@ -653,19 +661,24 @@ public class WakeWordService extends Service {
                     : "Listening paused");
             return;
         }
-        // Interactive follow-up: the owner can answer the spoken reply without
-        // saying "Penguru" again. The next wake word still resets this window.
-        awaitingCommand = true;
-        awaitingSince = System.currentTimeMillis();
+        // One wake word opens exactly one turn. After the answer is spoken the
+        // listener re-arms in wake-only mode: random speech, music and
+        // recognizer filler must not be sent as another request.
+        awaitingCommand = false;
+        awaitingSince = 0L;
         capturedMode = "";
         commandBuffer = "";
         lastPartial = "";
-        updateNotification("Listening for your reply · say anything, or “Penguru stop”");
-        scheduleNext(450L);
+        speechGuardUntil = System.currentTimeMillis() + POST_SPEECH_GUARD_MS;
+        updateNotification("Say “Penguru” again to continue");
+        scheduleNext(POST_SPEECH_GUARD_MS);
     }
 
     private void stopSpeakingOnMain() {
         speaking = false;
+        awaitingCommand = false;
+        capturedMode = "";
+        commandBuffer = "";
         if (talkback != null) {
             talkback.stop();
         }
@@ -689,6 +702,11 @@ public class WakeWordService extends Service {
             paused = false;
         }
         if (destroyed || paused || inAppSpeech || speaking) {
+            return;
+        }
+        long guardLeft = speechGuardUntil - System.currentTimeMillis();
+        if (guardLeft > 0L) {
+            scheduleNext(Math.min(guardLeft, POST_SPEECH_GUARD_MS));
             return;
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
@@ -967,7 +985,14 @@ public class WakeWordService extends Service {
     }
 
     private void handleText(String raw, String carriedMode) {
-        String text = raw == null ? "" : raw.trim();
+        String text = VoiceCommandRouter.sanitizeTranscript(raw);
+        if (shouldIgnoreTranscript(text)) {
+            if (!listening && !destroyed && !paused && !inAppSpeech && !speaking) {
+                long guardLeft = speechGuardUntil - System.currentTimeMillis();
+                scheduleNext(Math.max(350L, guardLeft + 100L));
+            }
+            return;
+        }
         String inheritedMode = VoiceCommandRouter.isMode(carriedMode)
                 ? carriedMode
                 : (VoiceCommandRouter.isMode(capturedMode) ? capturedMode : "");
@@ -1067,11 +1092,11 @@ public class WakeWordService extends Service {
             return;
         }
 
-        // A bare "stop" / "cancel" is accepted while the listener is armed so
-        // the owner can stop it without first saying the wake word.
-        if (handleVoiceCommand(text)) {
-            return;
-        }
+        // Every turn starts with the wake word. Without "Penguru" this is
+        // ambient speech or a recognizer hallucination, so do not answer it.
+        awaitingCommand = false;
+        commandBuffer = "";
+        capturedMode = "";
         scheduleNext(500L);
     }
 
@@ -1141,8 +1166,8 @@ public class WakeWordService extends Service {
      * "Penguru" and the sentence after it before the final result arrives.
      */
     private void handlePartial(String text) {
-        String value = text == null ? "" : text.trim();
-        if (value.isEmpty()) {
+        String value = VoiceCommandRouter.sanitizeTranscript(text);
+        if (value.isEmpty() || shouldIgnoreTranscript(value)) {
             return;
         }
         lastPartial = value;
@@ -1236,8 +1261,8 @@ public class WakeWordService extends Service {
     }
 
     private void dispatch(String command, String requestedMode) {
-        String text = command == null ? "" : command.trim();
-        text = VoiceCommandRouter.stripWake(text);
+        String text = VoiceCommandRouter.sanitizeTranscript(command);
+        text = VoiceCommandRouter.sanitizeTranscript(VoiceCommandRouter.stripWake(text));
         String mode = VoiceCommandRouter.isMode(requestedMode) ? requestedMode : "";
         String classified = VoiceCommandRouter.classify(text);
         if (VoiceCommandRouter.STOP.equals(classified)) {
@@ -1345,6 +1370,40 @@ public class WakeWordService extends Service {
                 beginListening();
             }
         }, 2500L);
+    }
+
+    /**
+     * True when a transcript must not be treated as speech: it is empty, it is
+     * decoded while the TTS tail is still audible, or it repeats the answer
+     * PenGuru just spoke. Echo detection matters because every native answer
+     * contains the wake word "PenGuru" and could otherwise wake itself.
+     */
+    private boolean shouldIgnoreTranscript(String text) {
+        if (text == null || text.isEmpty()) {
+            // Empty transcripts are handled by the caller so it can keep a
+            // wake window open or schedule the next session.
+            return false;
+        }
+        if (System.currentTimeMillis() < speechGuardUntil) {
+            return true;
+        }
+        String transcript = echoKey(text);
+        String spoken = echoKey(lastSpokenText);
+        if (transcript.length() < 8 || spoken.isEmpty()) {
+            return false;
+        }
+        if (spoken.contains(transcript)) {
+            return true;
+        }
+        String afterWake = echoKey(VoiceCommandRouter.stripWake(text));
+        return afterWake.length() >= 8 && spoken.contains(afterWake);
+    }
+
+    private static String echoKey(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]+", " ").trim();
     }
 
     private static String shorten(String text) {

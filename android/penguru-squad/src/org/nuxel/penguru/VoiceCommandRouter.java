@@ -57,7 +57,40 @@ public final class VoiceCommandRouter {
             + "\\b[\\s,.:;!?\\-]*(.*)$",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
+    /**
+     * Whisper tiny.en marks non-speech audio with subtitle-style labels such as
+     * "[MUSIC PLAYING]", "(silence)" or "[BLANK_AUDIO]". They are not speech
+     * and must never become a wake command or be read back by talkback.
+     */
+    private static final Pattern NON_SPEECH_MARKER = Pattern.compile(
+            "[\\[\\(]\\s*(?:blank[_ ]?audio|silence|music(?:\\s+playing)?"
+            + "|applause|laughter|noise|background\\s+noise|sound(?:\\s+effect)?"
+            + "|inaudible|unintelligible)[^\\]\\)]*[\\]\\)]",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+
+    private static final Pattern NON_SPEECH_ONLY = Pattern.compile(
+            "^(?:blank[_ ]?audio|silence|music(?:\\s+playing)?|applause|laughter"
+            + "|noise|background\\s+noise|sound(?:\\s+effect)?|inaudible"
+            + "|unintelligible)[\\s.!?,;:]*$",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+
     private VoiceCommandRouter() { }
+
+    /**
+     * Remove recognizer noise before any wake or command matching. A transcript
+     * that contains only a non-speech label returns "" so it cannot reopen a
+     * turn or be echoed back by talkback.
+     */
+    public static String sanitizeTranscript(String text) {
+        String value = text == null ? "" : text;
+        value = NON_SPEECH_MARKER.matcher(value).replaceAll(" ");
+        value = value.replaceAll("\\s+", " ").trim();
+        if (value.isEmpty() || NON_SPEECH_ONLY.matcher(value).matches()
+                || !value.matches(".*[\\p{L}\\p{N}].*")) {
+            return "";
+        }
+        return value;
+    }
 
     /**
      * Remove a leading wake phrase. Returns the remainder, or the original
