@@ -14,7 +14,10 @@ the old `penguru` RPC namespace and delegates Android-only work to the
 - model downloads go directly from Hugging Face to app storage;
 - llama.cpp and ONNX Runtime installers download, verify and unpack into app
   storage;
-- Android `SpeechRecognizer` supplies foreground microphone transcripts.
+- Android `SpeechRecognizer` supplies foreground microphone transcripts;
+  every session has a native watchdog and an explicit microphone release;
+- a microphone foreground service keeps a persistent SonarBird listener for
+  the “Penguru” wake word while the app is in the background.
 
 The Nuxel connection form remains as an optional engine mode for owners who
 already run the PenGuru service. No URL or token is required on a regular
@@ -82,7 +85,8 @@ token, launcher or root access.
 | Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and Voice tiny.en packages with **Download to this phone**. |
 | Downloads | `MainActivity` streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. |
 | Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip into app storage. |
-| Voice | Android `SpeechRecognizer`; prefers offline, retries once online if the service rejects the offline hint, and always releases the controls on Stop. The transcript is reviewed before Send. |
+| Voice | Android `SpeechRecognizer`; prefers offline, retries through the phone's normal recognizer (including en-US) when a language pack is missing, has a native 16-second watchdog, and auto-sends the transcript. The microphone is destroyed after every session. |
+| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru” alone and the next sentence is sent, or say “Penguru <question>” in one go. Android 10+ may require tapping the notification to bring the conversation forward; the command is still sent automatically when the app opens. Boot/package-replaced receivers re-arm an enabled listener. |
 | Diagnostics | Battery, storage, Android version, CPU ABIs, model/runtime paths. |
 | Export | MediaStore `Downloads/PenGuru`; the actual de-duplicated name is reported. |
 
@@ -143,17 +147,23 @@ bridge must allow the APK origin for CORS; the current
   engine: status, model cards, model download spec (pinned URL/SHA-256),
   download-status → installed transition, runtime install spec, SYSTEM and CODE
   replies, and diagnostics.
-- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=900`,
-  `versionName=0.9.0-beta`.
+- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=901`,
+  `versionName=0.9.1-beta`.
 - A mocked-bridge harness also resolves the SonarBird Voice tiny.en download by
   model **and** variant (pinned `ggml-tiny.en.bin`) while MiniLM still resolves
   its six encoder files.
 - System-bar/cutout/IME insets are applied to a container view, so page text
   stays clear of the status bar and the three-button Android navigation row.
 
-The headless emulator available on this build host segfaulted before boot, so
-physical-device acceptance of the new download/install/voice flows is still
-required.
+The API 35 x86_64 emulator was booted with `-gpu off` (the Swiftshader path
+segfaulted on this host). It confirmed: the offline language-pack error (13)
+now retries through the online recognizer instead of leaving the microphone
+open; the 10-second dictation cap and 16-second hard watchdog release the mic;
+the transcript auto-send path creates the USER/assistant messages; the
+background service starts as `isForeground=true` with
+`types=0x00000080` (microphone), posts notification `8801`, pauses and resumes
+around in-app dictation, and stops cleanly from the UI and notification action.
+Audio-in acceptance on a physical phone is still recommended.
 
 ## Security and limitations
 

@@ -4,6 +4,14 @@ All notable changes to the Nuxel Phone OS repository are documented here.
 
 ## [Unreleased]
 
+- PenGuru Android 0.9.1-beta: fix the microphone that could stay open with no
+  transcript by adding a native 16-second watchdog, ten-second dictation
+  endpointing, recognizer destroy-after-session, and error 12/13 retry through
+  the phone's normal recognizer with an en-US fallback. Transcripts now
+  auto-send. Add a persistent SonarBird microphone foreground service for the
+  “Penguru” wake word, with a low-importance ongoing notification, notification
+  permission request, pause/resume around in-app dictation, command hand-off to
+  the WebView, and boot/package-replaced re-arm.
 - Fix PenGuru Android standalone follow-ups: SonarBird Voice tiny.en now
   resolves by model **and** variant instead of failing with `unknown_package`,
   the WebView is inset below the status bar and back/home/recents navigation

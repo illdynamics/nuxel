@@ -49,6 +49,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -83,6 +84,8 @@ public class MainActivity extends Activity {
     private static final String START_PATH = "/pwa/nuxel-apps/penguru/index.html";
     private static final int MIC_REQUEST = 7001;
     private static final int SPEECH_REQUEST = 7002;
+    private static final int WAKE_MIC_REQUEST = 7003;
+    private static final int WAKE_NOTIFICATION_REQUEST = 7004;
     private static final String MODELS_DIR_NAME = "Models";
     private static final String RUNTIMES_DIR_NAME = "Runtimes";
 
@@ -100,6 +103,9 @@ public class MainActivity extends Activity {
     private int speechToken;
     private boolean speechRetryUsed;
     private boolean speechPreferOffline = true;
+    private String speechLanguage = "";
+    private boolean pageReady;
+    private final ArrayDeque<String> pendingWakeCommands = new ArrayDeque<>();
 
     private final ExecutorService downloadExecutor = Executors.newSingleThreadExecutor();
     private final Map<String, DownloadJob> downloads = new ConcurrentHashMap<>();
@@ -165,6 +171,14 @@ public class MainActivity extends Activity {
         } else {
             webView.restoreState(savedInstanceState);
         }
+        handleWakeIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleWakeIntent(intent);
     }
 
     /** Keep the page out of the status bar, cutouts and the back/home/recents
@@ -253,6 +267,21 @@ public class MainActivity extends Activity {
             }
             return;
         }
+        if (requestCode == WAKE_MIC_REQUEST) {
+            if (!granted) {
+                WakeWordService.clearPendingCommand(this);
+                reportWakeStatus("Microphone permission denied. Enable it for PenGuru Squad in Android Settings.");
+            } else {
+                continueWakeStart();
+            }
+            return;
+        }
+        if (requestCode == WAKE_NOTIFICATION_REQUEST) {
+            // The foreground service still runs when notifications are denied;
+            // Android simply hides the ongoing row from the notification shade.
+            finishWakeStart();
+            return;
+        }
         if (requestCode != MIC_REQUEST || pendingAudio == null) {
             return;
         }
@@ -262,6 +291,135 @@ public class MainActivity extends Activity {
             pendingAudio.deny();
         }
         pendingAudio = null;
+    }
+
+    /* ------------------------------------------------ background listener */
+
+    private void requestWakeStart() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            reportWakeStatus("Waiting for microphone permission…");
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, WAKE_MIC_REQUEST);
+            return;
+        }
+        continueWakeStart();
+    }
+
+    private void continueWakeStart() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            reportWakeStatus("Waiting for notification permission…");
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    WAKE_NOTIFICATION_REQUEST);
+            return;
+        }
+        finishWakeStart();
+    }
+
+    private void finishWakeStart() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            reportWakeStatus("Microphone permission is required for background listening.");
+            return;
+        }
+        try {
+            Intent service = new Intent(this, WakeWordService.class)
+                    .setAction(WakeWordService.ACTION_START);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(service);
+            } else {
+                startService(service);
+            }
+            getSharedPreferences(WakeWordService.PREFS, MODE_PRIVATE).edit()
+                    .putBoolean(WakeWordService.PREF_ENABLED, true)
+                    .apply();
+            reportWakeStatus("SonarBird background listening started. The persistent notification means the microphone is in use.");
+        } catch (RuntimeException error) {
+            reportWakeStatus("Could not start background listening: " + error.getMessage());
+        }
+    }
+
+    private void reportWakeStatus(final String text) {
+        final WebView view = webView;
+        if (view == null) {
+            return;
+        }
+        final String script = "window.__penguruWakeStatus && window.__penguruWakeStatus("
+                + JSONObject.quote(text) + ")";
+        view.post(() -> {
+            if (webView != null) {
+                webView.evaluateJavascript(script, null);
+            }
+        });
+    }
+
+    private void handleWakeIntent(Intent intent) {
+        if (intent == null) {
+            return;
+        }
+        String command = intent.getStringExtra(WakeWordService.EXTRA_COMMAND);
+        if (command != null && !command.trim().isEmpty()) {
+            intent.removeExtra(WakeWordService.EXTRA_COMMAND);
+            WakeWordService.clearPendingCommand(this);
+            queueWakeCommand(command.trim());
+            return;
+        }
+        String pending = WakeWordService.takePendingCommand(this);
+        if (!pending.isEmpty()) {
+            queueWakeCommand(pending);
+        }
+    }
+
+    private void queueWakeCommand(String text) {
+        if (text == null) {
+            return;
+        }
+        String command = text.trim();
+        if (command.isEmpty()) {
+            return;
+        }
+        if (!pageReady) {
+            synchronized (pendingWakeCommands) {
+                pendingWakeCommands.addLast(command);
+            }
+            reportWakeStatus("Wake-word command queued until PenGuru finishes loading…");
+            return;
+        }
+        dispatchWakeCommand(command);
+    }
+
+    private void flushPendingWakeCommands() {
+        for (;;) {
+            String next;
+            synchronized (pendingWakeCommands) {
+                next = pendingWakeCommands.pollFirst();
+            }
+            if (next == null) {
+                return;
+            }
+            dispatchWakeCommand(next);
+        }
+    }
+
+    private void dispatchWakeCommand(final String text) {
+        final WebView view = webView;
+        if (view == null) {
+            return;
+        }
+        // Queue inside the page if the ES module has not installed its hook
+        // yet. This makes a command heard during page load survive instead of
+        // being dropped by evaluateJavascript.
+        final String script = "(function(t){if(window.__penguruWakeCommand){"
+                + "window.__penguruWakeCommand(t);return true;}"
+                + "(window.__penguruWakeQueue=window.__penguruWakeQueue||[]).push(t);"
+                + "return false;})(" + JSONObject.quote(text) + ")";
+        view.post(() -> {
+            if (webView != null) {
+                webView.evaluateJavascript(script, null);
+            }
+        });
+        reportWakeStatus("Heard via SonarBird · sending automatically");
     }
 
     /* ------------------------------------------------------------ storage */
@@ -515,8 +673,32 @@ public class MainActivity extends Activity {
                 // Invalidate any queued restart so a stop is final even if the
                 // recognizer was still connecting or a permission dialog was open.
                 speechToken++;
-                cancelSpeechQuietly();
+                releaseSpeechRecognizer();
+                WakeWordService.resumeFromActivity();
             });
+        }
+
+        @JavascriptInterface
+        public boolean startWakeWordService() {
+            runOnUiThread(MainActivity.this::requestWakeStart);
+            return true;
+        }
+
+        @JavascriptInterface
+        public void stopWakeWordService() {
+            runOnUiThread(() -> {
+                getSharedPreferences(WakeWordService.PREFS, MODE_PRIVATE).edit()
+                        .putBoolean(WakeWordService.PREF_ENABLED, false)
+                        .apply();
+                WakeWordService.clearPendingCommand(MainActivity.this);
+                stopService(new Intent(MainActivity.this, WakeWordService.class));
+                reportWakeStatus("Background SonarBird listening stopped.");
+            });
+        }
+
+        @JavascriptInterface
+        public String wakeServiceStatus() {
+            return WakeWordService.statusJson(MainActivity.this);
         }
 
         @JavascriptInterface
@@ -1114,27 +1296,41 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void cancelSpeechQuietly() {
-        if (speechRecognizer == null) {
+    /**
+     * Destroy the recognizer after every session. Reusing an instance that
+     * ended in ERROR_CLIENT or was cancelled is the common source of a
+     * microphone that appears to stay open forever.
+     */
+    private void releaseSpeechRecognizer() {
+        SpeechRecognizer recognizer = speechRecognizer;
+        speechRecognizer = null;
+        if (recognizer == null) {
             return;
         }
         try {
-            speechRecognizer.cancel();
+            recognizer.cancel();
         } catch (RuntimeException ignored) {
             // already stopped
         }
+        try {
+            recognizer.destroy();
+        } catch (RuntimeException ignored) {
+            // already destroyed
+        }
     }
 
-    private static Intent speechIntent(boolean preferOffline) {
+    private Intent speechIntent(boolean preferOffline) {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
-        if (preferOffline) {
-            intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+        intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline);
+        String language = speechLanguage;
+        if (language == null || language.isEmpty()) {
+            language = Locale.getDefault().toLanguageTag();
         }
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag());
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language);
         return intent;
     }
 
@@ -1146,17 +1342,21 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
             return;
         }
+        // The persistent SonarBird listener and this foreground session share
+        // the one microphone Android exposes. Pause the service while the
+        // in-app button owns it, then resume after the transcript arrives.
+        WakeWordService.pauseForActivity();
         if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
             deliverSpeech("", wake, "speech_recognizer_unavailable", speechToken);
             return;
         }
         speechRetryUsed = false;
         speechPreferOffline = true;
+        speechLanguage = "";
         if (speechRunning) {
-            // Reusing a recognizer that has not finished its previous session
-            // is the usual source of ERROR_CLIENT. Finish it, then start fresh.
+            // Finish the previous session before starting a new one.
             speechRunning = false;
-            cancelSpeechQuietly();
+            releaseSpeechRecognizer();
             restartSpeech(wake, 350);
             return;
         }
@@ -1165,7 +1365,7 @@ public class MainActivity extends Activity {
 
     private void restartSpeech(final boolean wake, long delayMillis) {
         speechRunning = false;
-        cancelSpeechQuietly();
+        releaseSpeechRecognizer();
         final int token = ++speechToken;
         mainHandler.postDelayed(() -> {
             if (token != speechToken) {
@@ -1190,9 +1390,18 @@ public class MainActivity extends Activity {
             deliverSpeech("", wake, "speech_start_failed", token);
             return;
         }
+        // Native hard deadline: no matter what the speech service does, the
+        // mic is cancelled and the UI is told the session ended.
+        mainHandler.postDelayed(() -> {
+            if (token != speechToken || !speechRunning) {
+                return;
+            }
+            deliverSpeech("", wake, "speech_timeout", token);
+        }, 16000L);
+        // Ask a dictation session to finalize after ten seconds even if the
+        // recognizer never reports end-of-speech. Wake sessions use the hard
+        // deadline because the user may still be saying the phrase.
         if (!wake) {
-            // The UI calls this the 5-second button; ask the recognizer to
-            // finalize after five seconds instead of waiting for a timeout.
             mainHandler.postDelayed(() -> {
                 if (token != speechToken || !speechRunning || speechRecognizer == null) {
                     return;
@@ -1202,7 +1411,7 @@ public class MainActivity extends Activity {
                 } catch (RuntimeException ignored) {
                     // already finished
                 }
-            }, 5000);
+            }, 10000L);
         }
     }
 
@@ -1213,6 +1422,7 @@ public class MainActivity extends Activity {
             return;
         }
         speechRunning = false;
+        releaseSpeechRecognizer();
         try {
             JSONObject result = new JSONObject();
             result.put("ok", error == null);
@@ -1234,6 +1444,7 @@ public class MainActivity extends Activity {
         } catch (JSONException ignored) {
             // primitive values only
         }
+        WakeWordService.resumeFromActivity();
     }
 
     private final class PenGuruSpeechListener implements RecognitionListener {
@@ -1247,23 +1458,40 @@ public class MainActivity extends Activity {
         @Override public void onBeginningOfSpeech() { }
         @Override public void onRmsChanged(float rmsdB) { }
         @Override public void onBufferReceived(byte[] buffer) { }
-        @Override public void onEndOfSpeech() { }
         @Override public void onEvent(int eventType, Bundle params) { }
         @Override public void onPartialResults(Bundle partialResults) { }
+
+        @Override
+        public void onEndOfSpeech() {
+            if (token != speechToken || !speechRunning || speechRecognizer == null) {
+                return;
+            }
+            // Natural end of speech: request the final hypothesis instead of
+            // waiting for a watchdog to cancel a recognizer that already
+            // stopped producing audio.
+            try {
+                speechRecognizer.stopListening();
+            } catch (RuntimeException ignored) {
+                // already stopping
+            }
+        }
 
         @Override
         public void onError(int error) {
             if (token != speechToken || !speechRunning) {
                 return;
             }
-            if (!speechRetryUsed
-                    && (error == SpeechRecognizer.ERROR_CLIENT
-                    || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY)) {
-                // Many bundled recognizers reject EXTRA_PREFER_OFFLINE or need
-                // a moment after cancel(). Retry once without the offline hint.
+            if (!speechRetryUsed && shouldRetrySpeech(error)) {
+                // Offline-only recognition frequently fails with error 12/13
+                // when no language pack is installed. Retry through the normal
+                // recognizer (network/on-device service) and try en-US.
                 speechRetryUsed = true;
                 speechPreferOffline = false;
-                restartSpeech(speechWake, 400);
+                if (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
+                        || error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED) {
+                    speechLanguage = "en-US";
+                }
+                restartSpeech(speechWake, 450L);
                 return;
             }
             deliverSpeech("", speechWake, speechErrorName(error), token);
@@ -1277,7 +1505,19 @@ public class MainActivity extends Activity {
             ArrayList<String> matches = results == null ? null
                     : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = matches == null || matches.isEmpty() ? "" : matches.get(0);
-            deliverSpeech(text, speechWake, text.isEmpty() ? "no_speech_detected" : null, token);
+            deliverSpeech(text, speechWake,
+                    text == null || text.trim().isEmpty() ? "no_speech_detected" : null, token);
+        }
+    }
+
+    private static boolean shouldRetrySpeech(int error) {
+        switch (error) {
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
+            case SpeechRecognizer.ERROR_NO_MATCH:
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
+                return false;
+            default:
+                return true;
         }
     }
 
@@ -1292,6 +1532,8 @@ public class MainActivity extends Activity {
             case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: return "recognizer_busy";
             case SpeechRecognizer.ERROR_SERVER: return "speech_service_error";
             case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: return "no_speech_detected";
+            case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED: return "language_not_supported";
+            case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: return "language_unavailable";
             default: return "speech_error_" + error;
         }
     }
@@ -1332,6 +1574,12 @@ public class MainActivity extends Activity {
     }
 
     private final class LocalAssetClient extends WebViewClient {
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            pageReady = true;
+            flushPendingWakeCommands();
+        }
+
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();

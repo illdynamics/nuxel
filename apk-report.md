@@ -13,7 +13,93 @@
 
 ---
 
-## v0.9.0 standalone update — current artifact
+## v0.9.1-beta — microphone repair, auto-send and persistent SonarBird
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `6a5860de1e39281ceb5b0221c56f5fce2118318324d4f58a300306d11a985641`
+- **Package/version:** `org.nuxel.penguru` / `versionCode=901`, `versionName=0.9.1-beta`
+- **Size:** 1,755,370 bytes
+- **Min/target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+
+### What changed
+
+1. **Microphone cannot hang open.** Every native session now has a native
+   16-second watchdog as well as the JavaScript deadline. Dictation asks the
+   recognizer to finalize after ten seconds, natural end-of-speech calls
+   `stopListening()`, and the recognizer is `cancel()` + `destroy()`ed after
+   every result, error, Stop or timeout. A stuck speech service can no longer
+   leave the microphone indicator on.
+2. **Offline language-pack failures recover.** Android returns error 12/13
+   when the selected language has no offline pack; the old build surfaced
+   `speech_error_13` and stopped. The app now retries once through the phone's
+   normal recognizer without the offline hint, falls back to `en-US`, and maps
+   the remaining errors to actionable text.
+3. **Transcripts auto-send.** Foreground dictation, in-app “Penguru” and the
+   background listener all route through one `sendMessage` path. The transcript
+   is placed in the message field, submitted immediately, and appears as the
+   normal USER/assistant pair. The engine is enabled automatically if it was
+   off.
+4. **Persistent SonarBird listener.** New `WakeWordService` is a microphone
+   foreground service (`foregroundServiceType="microphone"`) with a persistent,
+   low-importance notification (`8801`) and a **Stop listening** action. Say
+   “Penguru” alone and the next utterance is sent; say “Penguru <question>” in
+   one go. Sessions are short and self-restarting, with a watchdog so a silent
+   recognizer cannot hold the mic.
+5. **Notification permission + boot/package-replaced re-arm.** The app requests
+   `POST_NOTIFICATIONS` on Android 13+, declares `FOREGROUND_SERVICE`,
+   `FOREGROUND_SERVICE_MICROPHONE`, `WAKE_LOCK` and `RECEIVE_BOOT_COMPLETED`,
+   and `BootReceiver` restarts an enabled listener after reboot or an app
+   update. Android may still refuse a microphone FGS started from the
+   background; the setting stays enabled and the next in-app Start re-arms it.
+6. **No microphone contention.** In-app dictation pauses the background
+   recognizer; it resumes about 700 ms after the transcript/error is delivered.
+7. **Command hand-off.** The service stores the pending command, launches
+   `MainActivity` with `penguru_command`, and also puts it on the notification
+   content intent. If Android blocks the background activity launch, opening
+   the notification still auto-sends the stored command. A page-load queue
+   prevents a command heard during WebView startup from being lost.
+
+### Verification performed
+
+- `node --check` on `penguru.js` and `voice.js`.
+- `node pwa/nuxel-common/verify-wiring.js` — all 7 PWA surfaces OK.
+- `node pwa/nuxel-common/test-bridge.js` — all shared-bridge tests pass.
+- Rebuilt with `android/penguru-squad/scripts/build-apk.sh`; `apksigner verify`
+  reports v2 + v3, `versionCode=901`, `versionName=0.9.1-beta`.
+- API 35 x86_64 emulator (`-gpu off`):
+  - Error 13 now retries through `NetworkSpeechRecognizer`; the 10-second
+    endpointing cap stopped the session and released the mic with
+    `stopDisabled=true`.
+  - Injected native transcript callbacks produced USER “hello from the final
+    build” and auto-sent it (“Sent automatically”).
+  - “Penguru what is two plus two” sent only the command; “Penguru” alone
+    entered follow-up listening and sent the next utterance.
+  - Background service status: `running=true`, `listening=true`,
+    `microphone=true`, `notifications=true`; `dumpsys` shows
+    `isForeground=true`, `types=0x00000080` (microphone), notification `8801`.
+  - Pause/resume around in-app dictation verified; Stop from the JS bridge
+    removed the service and notification.
+  - `am start ... --es penguru_command "what is the battery"` auto-sent
+    “what is the battery” through the same hook used by the service.
+  - Reinstalling the APK with the preference enabled triggered
+    `MY_PACKAGE_REPLACED` and the service came back automatically.
+- No `FATAL EXCEPTION` or service crash in logcat.
+
+### Limitations
+
+- The emulator has no audio input, so recognition accuracy was not measured;
+  physical-phone audio acceptance is still recommended.
+- Android 10+ background activity-launch restrictions may require tapping the
+  ongoing notification to bring the conversation forward. The command is kept
+  and auto-sent when the app opens.
+- The phone's Android speech service may use the network depending on the
+  device; PenGuru itself never sends audio to a Nuxel host.
+
+---
+
+## v0.9.0 standalone update — previous artifact
 
 - **Date:** 2026-11-24
 - **Artifact:** `dist/android/penguru-squad-debug.apk`

@@ -1,15 +1,24 @@
-// Foreground-only local speech. Never auto-sends transcripts or system actions.
-// On Android this uses the built-in SpeechRecognizer (on-device where the device
-// supports it) so no Nuxel host is required. The Web Audio path remains as a
-// fallback for browsers and for a future whisper.cpp bridge.
+// Voice input for PenGuru. On Android this uses the built-in SpeechRecognizer
+// (on-device where the device supports it). Transcripts are auto-sent by the
+// caller. The Web Audio path remains a fallback for browsers and for a future
+// whisper.cpp bridge.
+//
+// Every native session has both a JavaScript deadline and a native watchdog so
+// the microphone is always released even when a speech service never calls
+// back. That "listening forever" state was the previous beta's biggest bug.
+const WAKE_RE = /\bpen[\s-]?guru\b[\s,.:;!?-]*(.*)$/i;
+
 export function voiceControls(call, available, onText) {
   const $ = id => document.getElementById(id);
   const host = typeof window !== 'undefined' ? window.NuxelAndroid : null;
-  const nativeSpeech = !!(host && typeof host.speechAvailable === 'function' && host.speechAvailable());
   let active = false, stream = null, context = null, processor = null, chunks = [], timer = null;
   let epoch = 0;
 
-  const status = text => { $('voice-status').textContent = text; };
+  const status = text => { const el = $('voice-status'); if (el) el.textContent = text; };
+  const nativeAvailable = () => {
+    try { return !!(host && typeof host.speechAvailable === 'function' && host.speechAvailable()); }
+    catch (error) { return false; }
+  };
 
   function idleUi() {
     $('voice-stop').disabled = true;
@@ -20,84 +29,143 @@ export function voiceControls(call, available, onText) {
   function finishNative() {
     active = false;
     clearTimeout(timer);
+    timer = null;
     idleUi();
+  }
+
+  function deliver(text, auto) {
+    const value = String(text || '').trim();
+    if (!value) { status('No speech detected. Try again.'); return; }
+    try {
+      const result = onText(value, !!auto);
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (error) { /* the caller reports UI errors */ }
   }
 
   async function stop() {
     active = false;
     epoch++;
     clearTimeout(timer);
+    timer = null;
     try {
-      if (nativeSpeech && host && typeof host.stopSpeechRecognition === 'function') {
+      if (host && typeof host.stopSpeechRecognition === 'function') {
         try { host.stopSpeechRecognition(); } catch (error) { /* already stopped */ }
       }
       if (processor) { processor.disconnect(); processor.onaudioprocess = null; processor = null; }
       if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
       if (context) { const c = context; context = null; try { await c.close(); } catch (error) { /* closed */ } }
     } finally {
-      // Always leave the controls usable, even if a native/audio call failed.
       chunks = [];
       idleUi();
       status('Microphone closed');
     }
   }
 
-  function nativeListen(wake) {
+  function errorText(error) {
+    switch (error) {
+      case 'microphone_permission_denied':
+        return 'Microphone permission denied. Enable it for PenGuru Squad in Android Settings.';
+      case 'speech_recognizer_unavailable':
+      case 'speech_start_failed':
+        return 'This phone has no working Android speech recognition service. Enable Google speech services or a system speech recognizer.';
+      case 'language_unavailable':
+      case 'language_not_supported':
+        return 'Android has no speech model for this language. Add English (US) voice input in Android Settings → System → Languages & input.';
+      case 'network_error':
+      case 'network_timeout':
+      case 'speech_service_error':
+        return 'The speech service could not answer. Check the network or install an offline speech language pack, then try again.';
+      case 'client_error':
+      case 'recognizer_busy':
+        return 'Android speech service was busy. Tap the microphone button again.';
+      case 'no_speech_detected':
+        return 'No speech detected. Try again.';
+      case 'speech_timeout':
+        return 'The microphone timed out and has been released. Try again.';
+      default:
+        return 'Speech recognition: ' + error + '. Tap the microphone button to retry.';
+    }
+  }
+
+  function nativeListen(nextMode) {
     if (active) return;
-    if (!available() || document.hidden) { status('Enable PenGuru and finish the current response first.'); return; }
+    if (!available() || document.hidden) {
+      status('Enable PenGuru and finish the current response first.');
+      return;
+    }
+    if (!nativeAvailable()) {
+      status(errorText('speech_recognizer_unavailable'));
+      return;
+    }
     active = true;
     const own = ++epoch;
     $('voice-stop').disabled = false;
     $('voice-talk').disabled = $('voice-wake').disabled = true;
-    status(wake ? 'Microphone on · say “Penguru” · foreground only' : 'Microphone on · speak now');
+    status(nextMode === 'dictate'
+      ? 'Microphone on · speak now · the transcript is sent automatically'
+      : nextMode === 'followup'
+        ? 'Listening for your message after “Penguru”…'
+        : 'Microphone on · say “Penguru” and then your message');
 
     window.__nuxelSpeechResult = result => {
       if (!active || own !== epoch) return;
       finishNative();
       if (!result || result.ok !== true) {
         const error = result && result.error ? result.error : 'unavailable';
-        if (error === 'client_error' || error === 'recognizer_busy') {
-          status('Android speech service was busy. Tap the microphone button again.');
-        } else if (error === 'no_speech_detected') {
-          status('No speech detected. Try again.');
-        } else if (error === 'microphone_permission_denied') {
-          status('Microphone permission denied. Enable it for PenGuru Squad in Android Settings.');
-        } else {
-          status('Speech recognition: ' + error + '. Tap the microphone button to retry.');
+        if (nextMode === 'wake' && error === 'no_speech_detected') {
+          status('No “Penguru” detected. Listening again…');
+          timer = setTimeout(() => { if (!document.hidden) nativeListen('wake'); }, 500);
+          return;
         }
+        status(errorText(error));
         return;
       }
       const text = String(result.text || '').trim();
-      if (!text) { status('No speech detected. Try again.'); return; }
-      if (wake) {
-        const match = text.match(/\bpenguru\b[\s,.:;!?-]*(.*)$/i);
+      if (!text) {
+        if (nextMode === 'wake' || nextMode === 'followup') {
+          status('No speech detected. Listening again…');
+          timer = setTimeout(() => { if (!document.hidden) nativeListen(nextMode); }, 500);
+        } else {
+          status('No speech detected. Try again.');
+        }
+        return;
+      }
+      if (nextMode === 'wake') {
+        const match = text.match(WAKE_RE);
         if (!match) {
           status('No “Penguru” detected. Listening again…');
-          timer = setTimeout(() => { if (!document.hidden) nativeListen(true); }, 600);
+          timer = setTimeout(() => { if (!document.hidden) nativeListen('wake'); }, 500);
           return;
         }
         const rest = match[1].trim();
-        if (rest) onText(rest);
-        status(rest ? '“Penguru” detected. Review your message and press Send.' : '“Penguru” detected. Say your message and tap again.');
-      } else {
-        onText(text);
-        status('Transcript ready. Review it and press Send.');
+        if (rest) {
+          deliver(rest, true);
+          status('Heard “Penguru” · sending: ' + rest);
+        } else {
+          status('“Penguru” detected · listening for your message…');
+          timer = setTimeout(() => { if (!document.hidden) nativeListen('followup'); }, 350);
+        }
+        return;
       }
+      deliver(text, true);
+      status('Transcript sent automatically: ' + text);
     };
 
     try {
-      if (!host.startSpeechRecognition(wake)) throw new Error('Could not start Android speech recognition');
+      if (!host.startSpeechRecognition(nextMode !== 'dictate')) throw new Error('Could not start Android speech recognition');
     } catch (error) {
       finishNative();
       status(error.message);
       return;
     }
+    // The native watchdog is authoritative; this one keeps the UI honest if
+    // the WebView throttles or the bridge disappears.
     timer = setTimeout(() => {
       if (!active || own !== epoch) return;
       finishNative();
       try { host.stopSpeechRecognition(); } catch (error) { /* already stopped */ }
-      status('Speech recognition timed out. Try again.');
-    }, 12000);
+      status('Microphone timed out and has been released. Try again.');
+    }, 16000);
   }
 
   function wav(samples, rate) {
@@ -146,15 +214,15 @@ export function voiceControls(call, available, onText) {
           if (epoch !== recognitionEpoch || document.hidden || !available()) return;
           if (wake && !result.wake_detected) { status('No “Penguru” detected. Listening again…'); timer = setTimeout(() => start(true), 500); return; }
           const text = wake ? result.after_wake : result.text;
-          if (text) onText(text);
-          status(wake ? '“Penguru” detected. Review your message and press Send.' : 'Transcript ready. Review it and press Send.');
+          if (text) deliver(text, true);
+          status('Transcript sent automatically.');
         } catch (e) { status(e.message); }
       }, 5000);
     } catch (e) { await stop(); status(e.message); }
   }
 
   function start(wake) {
-    if (nativeSpeech) nativeListen(wake);
+    if (nativeAvailable()) nativeListen(wake ? 'wake' : 'dictate');
     else recordListen(wake);
   }
 
