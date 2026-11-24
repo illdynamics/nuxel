@@ -63,3 +63,35 @@ daemon needed. The FMT framing is byte-exact per the recovered disassembly.
 ## Safety
 No NV/EFS/RADIO/BOOT/IMEI write performed. All reads were of the read-only vendor
 mount and the local .vendor-ro reference copy. Wi-Fi/ZeroTier/USB/SSH intact.
+
+---
+
+## LIVE TEST (first deployment, 2026-11-24 ~13:32 CET)
+
+Deployed the recovered MBIM sender (`mbim_tx` + `DS_MBIM_ATTACH_CONFIG`) with
+`NUXEL_MBIM_ATTACH=1` and observed the live FMT sequence. Result (honest,
+unfiltered):
+
+- FSM advanced SET_LTE_ATTACH -> MBIM_ATTACH_CONFIG (as designed).
+- The MBIM raw-IPC frame WAS emitted byte-correct:
+    `fmt_tx main=22 (0x16) sub=12 (0x0c) type=5 len=124`
+  (12-byte MBIM header + 8-byte command header + 88-byte info buffer +
+   7-byte FMT header + 1-byte forward flag = 124).
+- **The CP did NOT reply.** No GEN echo (main=128), no MBIM/raw-ipc response,
+  no advance to ALWAYS_ON_PDN. Next CP activity was the periodic
+  DISP_RSSI_INFO heartbeat ~23 s later.
+
+Interpretation: the FMT raw-IPC framing is rendered correctly, but the CP never
+processes/answers this specific MBIM attach-config forward. The likely missing
+pieces are the MBIM *session handshake* (MbimManager::Initialize / MBIM OPEN
+primitive + transaction sequencing) and/or the `ril.mbim.rawipcforward` gate,
+which the stock rild/libsec-ril performs before any MS LTE Attach Config is
+hosted. The reconstructed single-command send is therefore a necessary but not
+yet sufficient step: the MBIM control session still needs its open/transaction
+envelope recovered before the CP will act on the attach config.
+
+Deployment is rolled back to the safe default (NUXEL_MBIM_ATTACH disabled) so
+the existing FMT GPRS path is unchanged; the recovered/implemented MBIM sender
+remains in-tree, gated OFF by default, ready for the next round's handshake
+work. No NV/EFS/RADIO/BOOT/IMEI write was performed. Wi-Fi/ZeroTier/USB/SSH
+remain intact.
