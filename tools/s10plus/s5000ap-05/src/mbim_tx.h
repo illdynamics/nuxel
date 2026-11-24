@@ -79,6 +79,11 @@
 #define MBIM_MSG_TYPE_HOST_ERROR     0x00000004u
 #define MBIM_MSG_TYPE_INDICATE_STATUS 0x00000007u
 
+/* Standard MBIM CIDs (USB-IF MBIM v1.0). */
+#define MBIM_CID_DEVICE_CAPS            0x00000001u
+#define MBIM_CID_SUBSCRIBER_READY_STATUS 0x00000002u
+#define MBIM_CID_RADIO_STATE            0x00000003u
+
 /* Microsoft MBIM extension CIDs. */
 #define MBIM_CID_MS_LTE_ATTACH_CONFIG  0x0000000Au
 #define MBIM_CID_MS_LTE_ATTACH_STATUS  0x0000000Bu
@@ -151,3 +156,39 @@ size_t mbim_tx_utf8_to_utf16le(uint8_t *out16, size_t cap16,
                                const char *s, size_t max_bytes);
 
 #endif /* NUXEL_MBIM_TX_H */
+
+/* ------------------------------------------------------------------------- */
+/* MBIM session control-plane primitives (USB-IF MBIM v1.0 spec, §10.5).      */
+/* These are the control messages the native host must issue BEFORE a CID      */
+/* command (such as MS LTE Attach Config) to establish the MBIM session that   */
+/* the S5000AP CP expects. Recovered cross-check: the vendor MbimManager does   */
+/* not build these itself (it only forwards pre-formed MBIM payloads via       */
+/* SendRawIpc/DoOemRawIpc); the session handshake is performed by the MBIM      */
+/* host (libsecmbim) ahead of the first proprietary CID.                      */
+/* ------------------------------------------------------------------------- */
+
+/* Standard MBIM OPEN information element: max_control_transfer (u32) the host
+ * will accept. The vendor uses 4096; the spec minimum is 512. */
+#define MBIM_MAX_CONTROL_TRANSFER 4096u
+
+/* Build an MBIM OPEN message (16 bytes total):
+ *   [u32 type=OPEN][u32 length=16][u32 transaction_id][u32 max_control_transfer]
+ * Returns 16 on success, 0 on overflow. */
+size_t mbim_tx_build_open(uint8_t *out, size_t cap, uint32_t transaction_id,
+                          uint32_t max_control_transfer);
+
+/* Build an MBIM CLOSE message (12 bytes total):
+ *   [u32 type=CLOSE][u32 length=12][u32 transaction_id]
+ * Returns 12 on success, 0 on overflow. */
+size_t mbim_tx_build_close(uint8_t *out, size_t cap, uint32_t transaction_id);
+
+/* Build an MBIM "MS Device Caps" query (QUERY, no info buffer; Microsoft CID
+ * 0x00000001). The standard MBIM init sequence queries device caps + version
+ * before issuing commands. */
+size_t mbim_tx_build_caps_query(uint8_t *out, size_t cap, uint32_t transaction_id);
+
+/* Build an MBIM "MS Subscriber Ready State" style status query — the generic
+ * QUERY command header for an extension CID (used for the vendor attach-status
+ * read-back path: CID 0x0B = MBIM_CID_MS_LTE_ATTACH_STATUS). */
+size_t mbim_tx_build_query(uint8_t *out, size_t cap, uint32_t transaction_id,
+                           uint32_t cid);

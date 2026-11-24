@@ -201,3 +201,53 @@ size_t mbim_tx_build_raw_ipc_frame(uint8_t *out, size_t cap,
     if (mbim_len) memcpy(out + 8, mbim, mbim_len);
     return total;
 }
+
+/* ---- MBIM session control-plane primitives (USB-IF MBIM v1.0 §10.5) ---- */
+
+size_t mbim_tx_build_open(uint8_t *out, size_t cap, uint32_t transaction_id,
+                          uint32_t max_control_transfer)
+{
+    if (!out || cap < 16) return 0;
+    uint8_t *p = out;
+    p = put_u32le(p, MBIM_MSG_TYPE_OPEN);
+    p = put_u32le(p, 16u);
+    p = put_u32le(p, transaction_id);
+    p = put_u32le(p, max_control_transfer);
+    return 16;
+}
+
+size_t mbim_tx_build_close(uint8_t *out, size_t cap, uint32_t transaction_id)
+{
+    if (!out || cap < 12) return 0;
+    uint8_t *p = out;
+    p = put_u32le(p, MBIM_MSG_TYPE_CLOSE);
+    p = put_u32le(p, 12u);
+    p = put_u32le(p, transaction_id);
+    return 12;
+}
+
+size_t mbim_tx_build_caps_query(uint8_t *out, size_t cap, uint32_t transaction_id)
+{
+    /* MS Device Caps: MBIM command header [u32 CID=0x01][u32 type=QUERY]. */
+    if (!out || cap < 20) return 0;
+    uint8_t *p = out;
+    p = put_u32le(p, MBIM_MSG_TYPE_COMMAND);
+    p = put_u32le(p, 20u);
+    p = put_u32le(p, transaction_id);
+    p = put_u32le(p, 0x00000001u); /* MBIM_CID_DEVICE_CAPS */
+    p = put_u32le(p, 0u);          /* QUERY */
+    return 20;
+}
+
+size_t mbim_tx_build_query(uint8_t *out, size_t cap, uint32_t transaction_id,
+                           uint32_t cid)
+{
+    if (!out || cap < 20) return 0;
+    uint8_t *p = out;
+    p = put_u32le(p, MBIM_MSG_TYPE_COMMAND);
+    p = put_u32le(p, 20u);
+    p = put_u32le(p, transaction_id);
+    p = put_u32le(p, cid);
+    p = put_u32le(p, 0u);          /* QUERY */
+    return 20;
+}

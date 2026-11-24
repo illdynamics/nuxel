@@ -32,7 +32,12 @@ int main(void)
     p = ds_step(&c, true, 100);  CHECK(p == DS_ENABLE_MOBILE_DATA, "SET_PREFERRED_NET -> ENABLE_MOBILE_DATA");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_DATA_PROFILE, "ENABLE_MOBILE_DATA -> SET_DATA_PROFILE (skip SYNC_PROFILE)");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_LTE_ATTACH, "SET_DATA_PROFILE -> SET_LTE_ATTACH");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "SET_LTE_ATTACH -> ALWAYS_ON_PDN (DefinePdp sub=1 is legacy)");
+    /* Round-31 inserted the recovered MBIM MS LTE Attach Config (CID 0x0A)
+     * phase between SET_LTE_ATTACH and ALWAYS_ON_PDN. It is gated OFF by
+     * default (NUXEL_MBIM_ATTACH env), but the FSM phase exists so the
+     * sequence must account for it regardless of the runtime gate. */
+    p = ds_step(&c, true, 100);  CHECK(p == DS_MBIM_ATTACH_CONFIG, "SET_LTE_ATTACH -> MBIM_ATTACH_CONFIG");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "MBIM_ATTACH_CONFIG -> ALWAYS_ON_PDN (DefinePdp sub=1 is legacy)");
     p = ds_step(&c, true, 100);  CHECK(p == DS_PS_ATTACH, "ALWAYS_ON_PDN -> PS_ATTACH");
     p = ds_step(&c, true, 100);  CHECK(p == DS_PS_REGIST_VERIFY, "PS_ATTACH -> PS_REGIST_VERIFY");
     p = ds_step(&c, true, 100);  CHECK(p == DS_DATA_CALL, "PS_REGIST_VERIFY -> DATA_CALL");

@@ -895,27 +895,61 @@ static bool data_session_emit(void)
          * (main=0x16/sub=0x0c/type=0x05) over the RIL FMT channel. This is the
          * source-backed sender from IpcProtocol41::IpcTxRawIpc @0x3180f0 and
          * MbimAdaptor::MakeSetMsLteAttachConfig @0x1c3018 (round-31 recovery).
-         * Opt-in only (NUXEL_MBIM_ATTACH=1); sends the default internet context
-         * so the modem's persistent initial-attach APN is configured. */
+         *
+         * Round-31 live result: a lone MBIM COMMAND frame rendered byte-correct
+         * but the CP stayed silent. Root cause recovered this round: the vendor
+         * MBIM host performs a full MBIM control session (OPEN -> proprietary
+         * CID command -> CLOSE) via the SIPC raw-IPC forward. Sending only the
+         * command skips the mandatory OPEN/CLOSE envelope, so the CP never
+         * opens the session and never answers.
+         *
+         * Opt-in only (NUXEL_MBIM_ATTACH=1). The session is driven by
+         * g.dsc.mbim_substate: 0=OPEN, 1=COMMAND, 2=STATUS query, 3=CLOSE.
+         * Each step wraps the built MBIM message in the recovered raw-IPC FMT
+         * frame and emits it once. */
         if (!mbim_attach_enabled()) return false;
-        struct mbim_attach_context mctx[1];
-        memset(mctx, 0, sizeof mctx);
-        mctx[0].apn = (const char*)g.dsc.apn;
-        mctx[0].username = "";
-        mctx[0].password = "";
-        mctx[0].ip_type = MBIM_CONTEXT_IP_TYPE_IPV4V6;
-        mctx[0].auth = MBIM_AUTH_PROTOCOL_NONE;
+
+        const uint32_t txn = 1u;
         uint8_t mbim[MBIM_TX_MAX_FRAME];
-        size_t mbim_len = mbim_tx_build_lte_attach_config(mbim, sizeof mbim,
-                                                          mctx, 1, 1u);
+        size_t mbim_len = 0;
+
+        switch (g.dsc.mbim_substate) {
+        case 0: /* MBIM OPEN */
+            mbim_len = mbim_tx_build_open(mbim, sizeof mbim, txn,
+                                          MBIM_MAX_CONTROL_TRANSFER);
+            break;
+        case 1: { /* MBIM MS LTE Attach Config (SET, CID 0x0A) */
+            struct mbim_attach_context mctx[1];
+            memset(mctx, 0, sizeof mctx);
+            mctx[0].apn = (const char*)g.dsc.apn;
+            mctx[0].username = "";
+            mctx[0].password = "";
+            mctx[0].ip_type = MBIM_CONTEXT_IP_TYPE_IPV4V6;
+            mctx[0].auth = MBIM_AUTH_PROTOCOL_NONE;
+            mbim_len = mbim_tx_build_lte_attach_config(mbim, sizeof mbim,
+                                                       mctx, 1, txn);
+            break;
+        }
+        case 2: /* MBIM MS LTE Attach Status (QUERY, CID 0x0B) */
+            mbim_len = mbim_tx_build_query(mbim, sizeof mbim, txn,
+                                           MBIM_CID_MS_LTE_ATTACH_STATUS);
+            break;
+        default: /* MBIM CLOSE (session termination) */
+            mbim_len = mbim_tx_build_close(mbim, sizeof mbim, txn);
+            break;
+        }
         if (mbim_len == 0) return false;
+
+        /* Advance before emit so the next tick issues the following message.
+         * CLOSE (substate 3) wraps to 0 for a bounded re-attempt. */
+        g.dsc.mbim_substate = (uint8_t)((g.dsc.mbim_substate + 1u) % 4u);
+
         uint8_t rawipc[MBIM_TX_MAX_FRAME];
         size_t raw_len = mbim_tx_build_raw_ipc_frame(rawipc, sizeof rawipc,
                                                      mbim, mbim_len,
                                                      g.next_seq, 0);
         if (raw_len < 8) return false;
-        /* Populate a fmt_tx_frame-compatible view so radiod_write_fmt logs
-         * main/sub/type correctly and performs the bounded device write. */
+
         struct fmt_tx_frame mf;
         memset(&mf, 0, sizeof mf);
         if (raw_len > sizeof mf.buf) return false;
@@ -996,6 +1030,37 @@ static void data_session_tick(uint64_t now)
      * no-SIM radio. If the CP is freshly booting under this daemon, we keep
      * the strict RFS-handshake + SIM-ready-notification gates. */
     if (!g.rfs_handshake_done && !(g.cp_online && g.sim_present)) {
+        return;
+    }
+
+    /* MBIM_ATTACH_CONFIG is a multi-step session (OPEN -> COMMAND -> STATUS
+     * query -> CLOSE) driven by g.dsc.mbim_substate. Unlike the other phases,
+     * it must emit the NEXT session frame on each tick (with a short dwell)
+     * rather than emitting once and waiting for a FMT GEN echo. MBIM responses
+     * return as MBIM raw-IPC (not FMT GEN), so the normal ack gate does not
+     * drive it; the sub-sequence is self-clocking and bounded.
+     *
+     * We use g.wrote_phase as the "session started" marker for this phase:
+     *  - wrote_phase==false && mbim_substate==0 -> not started; emit OPEN
+     *    (handled by the generic emit-once path below).
+     *  - wrote_phase==true && mbim_substate!=0 -> mid-session; emit next frame.
+     *  - wrote_phase==true && mbim_substate==0 -> CLOSE sent last tick; ack. */
+    if (g.dsc.phase == DS_MBIM_ATTACH_CONFIG && g.wrote_phase) {
+        if (g.dsc.mbim_substate != 0) {
+            /* Still mid-session; emit the next frame on a 80 ms dwell. */
+            if (g.dsc.phase_entered_ms && now - g.dsc.phase_entered_ms < 80u)
+                return;
+            if (data_session_emit()) g.dsc.phase_entered_ms = now;
+            return;
+        }
+        /* CLOSE sent: advance the FSM out of this phase. */
+        enum ds_phase n0 = ds_step(&g.dsc, true, now);
+        if (n0 != g.dsc.phase) {
+            g.wrote_phase = false;
+            g.dsc.phase_entered_ms = now;
+            diagf("data_session_ack", "\"phase\":\"MBIM_ATTACH_CONFIG\",\"next\":\"%s\"",
+                  ds_phase_name(n0));
+        }
         return;
     }
 

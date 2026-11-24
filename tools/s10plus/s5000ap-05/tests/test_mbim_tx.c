@@ -111,6 +111,52 @@ int main(void)
         CHECK(mbim_tx_build_lte_attach_config(tiny, sizeof tiny, ctx, 1, 1) == 0, "empty APN -> 0");
     }
 
+    /* --- 5. MBIM session control-plane primitives (OPEN/CLOSE/CAPS query) --- */
+    {
+        uint8_t b[64];
+        size_t n;
+
+        /* OPEN: 16 bytes, type=1 */
+        memset(b, 0xaa, sizeof b);
+        n = mbim_tx_build_open(b, sizeof b, 0x07, MBIM_MAX_CONTROL_TRANSFER);
+        CHECK(n == 16u, "OPEN len == 16 (got %zu)", n);
+        CHECK(rd_u32le(b + 0) == MBIM_MSG_TYPE_OPEN, "OPEN msg type = 1");
+        CHECK(rd_u32le(b + 4) == 16u, "OPEN length = 16");
+        CHECK(rd_u32le(b + 8) == 0x07u, "OPEN transaction id");
+        CHECK(rd_u32le(b + 12) == MBIM_MAX_CONTROL_TRANSFER, "OPEN max_control_transfer = 4096");
+        CHECK(b[16] == 0xaa, "OPEN does not overflow buffer");
+
+        /* CLOSE: 12 bytes, type=2 */
+        memset(b, 0xbb, sizeof b);
+        n = mbim_tx_build_close(b, sizeof b, 0x08);
+        CHECK(n == 12u, "CLOSE len == 12 (got %zu)", n);
+        CHECK(rd_u32le(b + 0) == MBIM_MSG_TYPE_CLOSE, "CLOSE msg type = 2");
+        CHECK(rd_u32le(b + 4) == 12u, "CLOSE length = 12");
+        CHECK(rd_u32le(b + 8) == 0x08u, "CLOSE transaction id");
+
+        /* Device caps QUERY: 20 bytes, CID 0x01, type=QUERY */
+        memset(b, 0xcc, sizeof b);
+        n = mbim_tx_build_caps_query(b, sizeof b, 0x09);
+        CHECK(n == 20u, "caps query len == 20 (got %zu)", n);
+        CHECK(rd_u32le(b + 0) == MBIM_MSG_TYPE_COMMAND, "caps query msg type = COMMAND(3)");
+        CHECK(rd_u32le(b + 4) == 20u, "caps query length = 20");
+        CHECK(rd_u32le(b + 8) == 0x09u, "caps query transaction id");
+        CHECK(rd_u32le(b + 12) == MBIM_CID_DEVICE_CAPS, "caps query CID = 0x01");
+        CHECK(rd_u32le(b + 16) == 0u, "caps query type = QUERY(0)");
+
+        /* generic attach-status QUERY: CID 0x0B */
+        memset(b, 0xdd, sizeof b);
+        n = mbim_tx_build_query(b, sizeof b, 0x0a, MBIM_CID_MS_LTE_ATTACH_STATUS);
+        CHECK(n == 20u, "attach-status query len == 20 (got %zu)", n);
+        CHECK(rd_u32le(b + 12) == MBIM_CID_MS_LTE_ATTACH_STATUS, "attach-status CID = 0x0B");
+        CHECK(rd_u32le(b + 16) == 0u, "attach-status type = QUERY(0)");
+
+        /* fail-closed on tiny buffers */
+        uint8_t tiny[8];
+        CHECK(mbim_tx_build_open(tiny, sizeof tiny, 1, 1) == 0, "OPEN tiny -> 0");
+        CHECK(mbim_tx_build_close(tiny, sizeof tiny, 1) == 0, "CLOSE tiny -> 0");
+        CHECK(mbim_tx_build_caps_query(tiny, sizeof tiny, 1) == 0, "caps tiny -> 0");
+    }
     if (failures) { printf("%d failures\n", failures); return 1; }
     printf("test_mbim_tx: all PASS\n");
     return 0;

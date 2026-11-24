@@ -60,6 +60,12 @@ struct data_session_ctx {
     bool           attached;
     bool           call_established;
     bool           ip_configured;
+
+    /* MBIM session sub-state for DS_MBIM_ATTACH_CONFIG. The vendor host opens
+     * an MBIM session (OPEN primitive) before issuing the attach-config CID
+     * command, then closes it. 0=OPEN,1=COMMAND,2=STATUS query,3=CLOSE. */
+    uint8_t        mbim_substate;
+
     uint64_t       step_deadline_ms;
     uint64_t       phase_entered_ms;  /* monotonic ts when current phase began */
 
