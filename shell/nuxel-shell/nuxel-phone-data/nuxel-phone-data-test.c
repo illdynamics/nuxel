@@ -1,3 +1,7 @@
+/* macOS needs _DARWIN_C_SOURCE for mkdtemp() before _POSIX_C_SOURCE is set. */
+#ifdef __APPLE__
+#define _DARWIN_C_SOURCE 1
+#endif
 #define _POSIX_C_SOURCE 200809L
 
 /*
