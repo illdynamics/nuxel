@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-11-25T00:42:24.004339+01:00",
+  "boot_id": "4f8dc2f8-bca7-432d-b676-b63594ab714e",
+  "cp": "ONLINE",
+  "data": {
+    "exit": 0,
+    "stdout": "{\"type\":\"a{ss}\",\"data\":[{\"phase\":\"FAILED\",\"apn\":\"internet\",\"rat\":\"LTE\",\"home_plmn\":\"20408\",\"baseband\":\"G975FXXSEFUJ2\",\"registration\":\"UNKNOWN\",\"ps_attached\":\"false\",\"ip_configured\":\"false\",\"mobile_data_enabled\":\"true\",\"connection_state\":\"no-service\",\"disconnect_result\":\"0\",\"link_result\":\"0\",\"registration_raw\":\"7\",\"ps_reject_cause\":\"0\",\"cs_registration\":\"NOT_REGISTERED\",\"cs_reject_cause\":\"0\",\"failure_phase\":\"PS_REGIST_VERIFY\",\"failure_result\":\"unavailable\",\"service_domain_wire\":\"1\",\"ps_control_state\":\"0\"}]}",
+    "stderr": ""
+  },
+  "sim": {
+    "exit": 0,
+    "stdout": "{\"type\":\"s\",\"data\":[\"ready\"]}",
+    "stderr": ""
+  },
+  "preference": "enabled",
+  "addresses": {
+    "exit": 0,
+    "stdout": "[{\"ifindex\":4,\"ifname\":\"rmnet0\",\"flags\":[\"POINTOPOINT\",\"MULTICAST\",\"NOARP\"],\"mtu\":1500,\"qdisc\":\"noop\",\"operstate\":\"DOWN\",\"group\":\"default\",\"txqlen\":1000,\"link_type\":\"ppp\",\"addr_info\":[]}]",
+    "stderr": ""
+  },
+  "nm": {
+    "exit": 0,
+    "stdout": "wlan0:wifi:connected\nwlan1:wifi:disconnected\np2p0:ethernet:unmanaged\nusb0:ethernet:unmanaged\nip6_vti0:iptunnel:unmanaged\nip6tnl0:iptunnel:unmanaged\nip_vti0:iptunnel:unmanaged\nsit0:iptunnel:unmanaged\nlo:loopback:unmanaged\nrmnet0:ppp:unmanaged\nrmnet1:ppp:unmanaged\nrmnet2:ppp:unmanaged\nrmnet3:ppp:unmanaged\nrmnet4:ppp:unmanaged\nrmnet5:ppp:unmanaged\nrmnet6:ppp:unmanaged\nrmnet7:ppp:unmanaged\numts_dm0:ppp:unmanaged\nztly5zthnf:tun:unmanaged\nmcps0:unknown:unmanaged\np2p-dev-wlan0:wifi-p2p:unmanaged\np2p-dev-wlan1:wifi-p2p:unmanaged",
+    "stderr": ""
+  },
+  "services": {
+    "exit": 0,
+    "stdout": "active\nactive\nactive\nactive\nactive\nactive",
+    "stderr": ""
+  },
+  "usb_carrier": "1",
+  "efs_mount": {
+    "exit": 0,
+    "stdout": "ro,nosuid,nodev,noexec,relatime,seclabel,norecovery",
+    "stderr": ""
+  },
+  "boot_service": {
+    "exit": 0,
+    "stdout": "ActiveState=active\nExecMainStatus=0",
+    "stderr": ""
+  },
+  "hashes": {
+    "/usr/libexec/nuxel/nuxel-radiod": "06468e62e3846220edf403d07c65ccda3070115678709db6a2cc2db8281b68e0",
+    "/usr/libexec/nuxel/nuxel-cpbootd-production": "2566162f4483d33e849745888ea38315c6d92ec75a38a18e8bdb59de25e8bf7c",
+    "/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.production.hw": "530732cb35614ba9aa8d12a6a5717ef8ea7ff4a6d46039599e9a8e6c42d75b4c"
+  },
+  "routes4": {
+    "exit": 0,
+    "stdout": "[]",
+    "stderr": ""
+  },
+  "routes6": {
+    "exit": 0,
+    "stdout": "[]",
+    "stderr": ""
+  }
+}

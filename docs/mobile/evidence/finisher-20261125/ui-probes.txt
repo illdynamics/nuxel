@@ -1,0 +1,35 @@
+1795563523 A80_PROBE lte1795563523676685283 "<div class=\"qs-item\" id=\"qs-mobile\" data-enabled=\"false\" data-connection-state=\"disabled\" title=\"Mobile data: disabled\" aria-busy=\"false\">\n                <img class=\"qs-icon\" src=\"/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44\" alt=\"\" onerror=\"this.hidden=true\" data-icon-state=\"loaded\">\n                <span class=\"qs-label\">Mobile: disabled</span>\n            </div>"
+1795563531 A80_PROBE lte1795563531285541969 null
+1795563531 A80_PROBE lte1795563531587020585 "<span id=\"status-signal\" class=\"status-icon signal-icon unavailable\" data-user-visible=\"true\" data-provider-visible=\"true\" data-cellular-state=\"searching\" data-technology=\"LTE\" data-data-enabled=\"false\" data-data-active=\"false\" data-signal-known=\"false\" aria-label=\"Cellular network searching\" title=\"Cellular network searching\"><span class=\"signal-bars\"><span class=\"signal-bar\"></span><span class=\"signal-bar\"></span><span class=\"signal-bar\"></span><span class=\"signal-bar\"></span></span><span>?</span></span>"
+1795563542 A80_PROBE lte1795563542393921346 "<div class=\"qs-item\" id=\"qs-mobile\" data-enabled=\"true\" data-connection-state=\"connecting\" title=\"Mobile data: connecting\" aria-busy=\"true\">\n                <img class=\"qs-icon\" src=\"/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44\" alt=\"\" onerror=\"this.hidden=true\" data-icon-state=\"loaded\">\n                <span class=\"qs-label\">Mobile: connecting</span>\n            </div>"
+1795563542 A80_PROBE lte1795563542699576692 false
+1795563548 A80_PROBE lte1795563548299045419 {"height":291.890625,"left":0,"bottom":327.890625,"x":0,"y":36,"top":36,"width":360,"right":360}
+1795563548 A80_PROBE lte1795563548574535342 "quick-settings expanded"
+1795563558 A80_PROBE lte1795563558259679989 true
+1795563558 A80_PROBE lte1795563558532419835 null
+1795563558 A80_PROBE lte1795563558782351796 1
+1795563578 A80_PROBE lte1795563578746683320 "Wi-Fi"
+1795563579 A80_PROBE lte1795563579034272743 "http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html"
+1795563582 A80_PROBE lte1795563582069043125 "Sensors"
+1795563586 A80_PROBE lte1795563586142970199 null
+1795563586 A80_PROBE lte1795563586402866507 "Checking mobile transport…"
+1795563586 A80_PROBE lte1795563586646854930 null
+1795563591 A80_PROBE lte1795563591935997465 "SIM: ready\nOperator: unknown\nRegistration: UNKNOWN (raw 7)\nTechnology: LTE\nSignal: unknown\nData: no-service\nAPN: internet\nSession: FAILED\nFailure: PS_REGIST_VERIFY / unavailable\nIPv4: none\nIPv6: none\nInterface: rmnet0\nNetwork result: 0\nDisconnect result: 0\nError: Timed out at PS_REGIST_VERIFY"
+1795563592 A80_PROBE lte1795563592206152810 false
+1795563598 A80_PROBE lte1795563598886400767 null
+1795563605 A80_PROBE lte1795563605559064147 ERR Unsupported result type
+1795563605 A80_PROBE lte1795563605862617993 "SIM: ready\nOperator: unknown\nRegistration: UNKNOWN (raw 7)\nTechnology: LTE\nSignal: unknown\nData: no-service\nAPN: internet\nSession: FAILED\nFailure: PS_REGIST_VERIFY / unavailable\nIPv4: none\nIPv6: none\nInterface: rmnet0\nNetwork result: 0\nDisconnect result: 0\nError: Timed out at PS_REGIST_VERIFY"
+1795563614 A80_PROBE lte1795563614428301333 true
+1795563614 A80_PROBE lte1795563614697054102 false
+1795563662 A80_PROBE lte1795563662045291107 null
+1795563668 A80_PROBE lte1795563668736628179 true
+1795563672 A80_PROBE lte1795563672054205600 "<div class=\"qs-item\" id=\"qs-mobile\" data-enabled=\"true\" data-connection-state=\"no-service\" title=\"Mobile data: no-service\" aria-busy=\"false\">\n                <img class=\"qs-icon\" src=\"/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44\" alt=\"\" onerror=\"this.hidden=true\" data-icon-state=\"loaded\">\n                <span class=\"qs-label\">Mobile: no-service</span>\n            </div>"
+1795563681 A80_PROBE lte1795563681066457016 true
+1795563681 A80_PROBE lte1795563681341172901 null
+1795563689 A80_PROBE lte1795563689039495434 true
+1795563692 A80_PROBE lte1795563692356124316 "<div class=\"qs-item\" id=\"qs-mobile\" data-enabled=\"false\" data-connection-state=\"disabled\" title=\"Mobile data: disabled\" aria-busy=\"false\">\n                <img class=\"qs-icon\" src=\"/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44\" alt=\"\" onerror=\"this.hidden=true\" data-icon-state=\"loaded\">\n                <span class=\"qs-label\">Mobile: disabled</span>\n            </div>"
+1795563696 A80_PROBE lte1795563696812709620 true
+1795563697 A80_PROBE lte1795563697119197197 false
+1795563697 A80_PROBE lte1795563697428415004 null
+1795563701 A80_PROBE lte1795563701225255463 true
+1795563704 A80_PROBE lte1795563704526482807 "<div class=\"qs-item\" id=\"qs-mobile\" data-enabled=\"true\" data-connection-state=\"connecting\" title=\"Mobile data: connecting\" aria-busy=\"true\">\n                <img class=\"qs-icon\" src=\"/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44\" alt=\"\" onerror=\"this.hidden=true\" data-icon-state=\"loaded\">\n                <span class=\"qs-label\">Mobile: connecting</span>\n            </div>"

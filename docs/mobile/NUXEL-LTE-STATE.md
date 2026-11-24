@@ -1,5 +1,48 @@
 # Nuxel LTE implementation and physical state
 
+## Finisher implementation update — 2026-11-25
+
+**LTE internet is still blocked. Stage 06 is not complete.** This section
+supersedes older implementation/startup statements below. Receipts are in
+[evidence/finisher-20261125](evidence/finisher-20261125/).
+
+Implementation commit `c52726d3`. The existing drafts are now implemented and installed: durable enabled policy,
+serialized Radio1 start/stop, correlated CID1 release and inactive readback,
+bounded registration-gated reconnect, stale-link cleanup, Settings and Quick
+Settings native controls, and registration-aware Home/native top bars.
+Settings exposes APN, SIM, registration/raw state, technology, configured IPs
+and failure phase. Signal and serving operator remain explicitly unknown:
+there is still no verified decoder, and home PLMN is not a serving operator.
+The cellular icon preference was enabled, preserving all other icon settings.
+
+The bridge uses a narrow system-bus Radio1 endpoint, authorized for the bridge
+account; the full existing session-bus interface remains available. This fixes
+both private-session-bus access and the unsigned profile argument. Radio1 is
+the preference/transaction authority; UI polling never turns preference into
+connected status. OFF tolerates the observed optional-command 0x8003, releases
+CID1, confirms inactive state and leaves RF enabled.
+
+NetworkManager now receives a temporary generic native-bearer profile tied to
+rmnet0/CID1. It owns carrier addresses, DNS and routes; Radio1 alone owns modem
+commands/reconnect. No ModemManager modem is fabricated. IPv4 is disabled for
+IPv6-only reports and vice versa. Metric2100, table106 and source/interface
+rules preserve Wi-Fi preference and cellular-bound traffic. Live profile
+syntax was accepted/deleted without activation; bearer-dependent activation,
+DNS, route cleanup and internet remain **not physically accepted**.
+
+A normal enabled reboot exposed a missing EFS mount, before the verified loader
+could run. The new bounded nuxel-efs-readonly service mounts the established
+/dev/sda3 with ro,noload,nosuid,nodev,noexec before the unchanged production guard.
+It refuses unsafe existing mounts and does not replay journals. A corrected
+normal reboot brought CP ONLINE, SIM ready and automatic session start with the
+enabled preference. Registration still failed at PS_REGIST_VERIFY, raw7/UNKNOWN,
+LTE RAT, wire1 service domain, mode11, reject0; no bearer/IP resulted.
+
+Final disabled-reboot and UI acceptance details are recorded in
+[production acceptance](NUXEL-LTE-PRODUCTION-ACCEPTANCE.md). USB SSH and ZeroTier
+returned after normal reboot; Wi-Fi was preserved. No speed test, SMS, calls,
+IMS work, flashing, firmware/NV changes, merge or push.
+
 ## Latest execution update — 2026-11-25
 
 **LTE remains blocked at real PS registration.** This update supersedes the

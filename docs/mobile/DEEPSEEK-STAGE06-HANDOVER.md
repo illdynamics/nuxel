@@ -1,5 +1,79 @@
 # DeepSeek Stage 06 handover — read first
 
+## Finisher handover — 2026-11-25 (supersedes prior deployment notes)
+
+**Not LTE accepted; not full Stage 06 complete.** Implementation commit `c52726d3`. Read the new
+[acceptance receipt](NUXEL-LTE-PRODUCTION-ACCEPTANCE.md) and
+[evidence](evidence/finisher-20261125/) first. Existing protocol/SMS/voice
+research below is retained.
+
+Implementation: Radio1 owns persisted `/var/lib/nuxel-radio/mobile-data`, bounded
+start/reconnect, CID1 release/readback and network-helper lifecycle. Settings
+and QS use `network/mobile-data-enabled {enabled: boolean}` and `phone/status`.
+The bridge accesses system-bus `nl.nuxel.Radio1`, `/nl/nuxel/Radio1`: only
+GetDataSessionState, GetSimState, StartDataSession(su), StopDataSession are
+exported there. The full session-bus API is retained and retried if login starts
+later. Control is checked using sender credentials; bridge capability checks
+remain in force. Unsigned profile conversion is required with introspection off.
+
+NM: `cellular_nm.py` replaces direct L3/resolver application in the existing
+helper entry point. A temporary generic profile UUID
+`8ba40bd5-cc4c-4a12-96c5-757170a1d106`, handler `nuxel-cellular`, associates actual
+rmnet0/CID1. Only CP-provided usable IP/DNS can create it. NM owns addresses,
+routes and DNS; autoconnect is false because Radio1 must establish the bearer
+first. Bounded Radio1 reconnect supplies a fresh profile. Old helper journals
+are rolled back before migration. No competing modem owner or fake MM device.
+Profile syntax passed on installed NM 1.54.3; live bearer integration is untested.
+Reference: [NM device handler contract](https://www.networkmanager.dev/docs/api/latest/NetworkManager-dispatcher.html).
+
+Production install (on handset, staged repository root):
+
+```sh
+bash services/nuxel-modem/bin/nuxel-modem-install.sh --production-config \
+  /etc/nuxel/modem/production.json /usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.production.hw
+bash tools/s10plus/s5000ap-05/install.sh --with-ui
+```
+
+Installer saves replaced userspace files under `/var/lib/nuxel/radio-install.*`
+with `rollback.sh`; restarting affected services is explicit. Native top-bar
+build requires installed Wayland/Cairo/Pango development packages. Rootfs
+packaging already installs the bridge source directory and PWA tree. Production
+CP loader and hash checks remain unchanged. Missing normal-boot EFS input was
+fixed by the bounded read-only service; `.device` units are not announced for
+this handset's pre-existing block devices, so a verified oneshot mount is used.
+No protected-storage content is written. Preserve the original recovery loader.
+
+The corrected enabled reboot reached ONLINE and automatically attempted data;
+PS remains UNKNOWN/raw7, CS NOT_REGISTERED, no carrier reject cause, no bearer or
+IP. The entry executable matched historical successful build17 (`6893af43…`),
+and successful attach environment was retained. Fixing startup did not restore
+registration. Do not relabel raw7, bypass registration, repeat RF power cycles,
+or infer carrier outage/provisioning failure without evidence.
+
+UI: live handset WebKit clicks exercised QS OFF/ON and Settings OFF/ON after
+normal credential unlock. Screenshots and DOM/backend receipts verify the page,
+tile and synchronization. An exact-match installer migration replaces only the
+shipped obsolete Settings session grant with a persistent first-party network
+grant; explicit owner choices and denials are untouched. Signal strength and
+serving operator remain unknown; no decoder was fabricated. Final preference ON.
+Enabled startup and disabled startup were exercised in separate normal boots;
+the first failed reboot exposed the missing mount and is retained as evidence.
+Final running/installed radiod SHA256 is `06468e62e3846220edf403d07c65ccda3070115678709db6a2cc2db8281b68e0`,
+with zero daemon restarts in the final boot. Current installer rollback is
+`/var/lib/nuxel/radio-install.37RKtb/rollback.sh`; earliest entry-file backup is
+`/var/lib/nuxel/radio-install.MeZssL/`. Production mount install backup is
+`/var/lib/nuxel/modem-production-install.75t5f1/`. Staging/evidence live under
+`/var/lib/nuxel/lte-finisher-20261125/`. The enabled-reboot receipt predates the
+final SIM-wait timeout/IP-reporting refinements; final code booted with OFF and
+subsequently handled both live UI toggles. No enabled internet reboot is claimed.
+
+Existing SMS backend: durable storage and correlated native send/receive exist;
+outgoing/incoming physical acceptance remains outstanding. Existing call-control
+backend remains intact. Voice still needs ABOX VoiceCall routing, call audio and
+physical two-way acceptance. IMS/VoLTE remains unavailable/unimplemented. No SMS,
+call, audio or IMS work was performed. Owner `lte.md`, `pers.md`, and existing
+RFS policy/test edits are retained outside the implementation commit.
+
 ## Latest LTE finalizer handover — 2026-11-25
 
 **BLOCKED: genuine PS registration remains UNKNOWN/raw7 after the verified

@@ -1,0 +1,3 @@
+Starting nuxel-efs-readonly.service - Read-only device-owned EFS inputs for native CP startup...
+Device-owned EFS available read-only; journal replay disabled
+Finished nuxel-efs-readonly.service - Read-only device-owned EFS inputs for native CP startup.

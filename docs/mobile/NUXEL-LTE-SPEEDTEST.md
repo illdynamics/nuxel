@@ -1,5 +1,14 @@
 # Nuxel LTE speed test — 2026-11-25
 
+## Finisher measurement status — 2026-11-25
+
+**Not run: download, upload and latency are unmeasured.** The corrected normal
+boot reaches CP ONLINE and starts the native session automatically, but PS
+registration still fails with UNKNOWN/raw7. No cellular address, carrier DNS
+or cellular-only HTTPS was established. Data-allowance confirmation also remains
+absent. No speedtest-cli benchmark was invoked. See
+[finisher acceptance](NUXEL-LTE-PRODUCTION-ACCEPTANCE.md).
+
 **NOT RUN. No measured LTE throughput or latency is available from this pass.**
 
 The physical handset remains unregistered for packet service after one bounded

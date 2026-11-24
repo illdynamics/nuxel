@@ -1,5 +1,69 @@
 # Nuxel LTE production acceptance — 2026-11-25
 
+## Finisher acceptance — 2026-11-25
+
+**BLOCKED at genuine PS registration; not LTE production accepted.**
+Implementation commit **`c52726d3`**. Entry checkpoint `56b35c9d5b7a`, branch `cs/mob-round35-stage06`. Existing draft
+implementation was completed/installed where independently achievable. Final
+preference **ON**, CP ONLINE, SIM ready, RF ON, PS UNKNOWN/raw7, CS NOT_REGISTERED,
+LTE RAT, reject0, no cellular IP. See [final state](evidence/finisher-20261125/final-state.json)
+and [registration events](evidence/finisher-20261125/registration-events.json).
+
+| Gate | Measured result |
+|---|---|
+| First enabled reboot | FAIL: missing /mnt/vendor/efs/nv_data.bin; loader never ran |
+| Corrected enabled reboot | PASS startup/policy: read-only EFS, CP ONLINE, SIM ready, automatic native session; FAIL internet at PS_REGIST_VERIFY |
+| Disabled reboot | PASS: preference disabled, CP ONLINE, IDLE, inactive CID1, no cellular addresses |
+| QS OFF | PASS live WebKit widget click: durable OFF, correlated release/inactive readback, modem remains enabled; release of an already-active LTE bearer remains untested |
+| QS ON | PASS request/policy: durable ON and real bounded connection attempt; FAIL carrier connection |
+| Settings OFF/ON | PASS live rendered page clicks after exact legacy grant migration; OFF disabled, ON starts session |
+| Settings/QS synchronization | PASS: actual QS DOM follows Settings OFF and ON without fabricated connected state |
+| Top bar | PASS visible unknown/no-service indicator; no LTE registration claim; actual signal/serving operator decoding remains MISSING |
+| NM | Temporary generic profile syntax accepted/deleted on NM 1.54.3; no bearer activation, DNS/route integration or live cleanup acceptance |
+| Cellular-only HTTPS / DNS | BLOCKED: no carrier registration or usable cellular address |
+| Reconnect with active service | Implemented/bounded; NOT physically verified without service |
+| Wi-Fi | Preserved through reboot and UI tests; simultaneous live LTE coexistence NOT verified |
+| USB / ZeroTier | PASS: both SSH paths available after controlled reboots; USB carrier1 |
+| Speed test | NOT RUN; no LTE internet and allowance confirmation absent |
+| Tests | Full host build.sh including ASan/UBSan and both 3000-case fuzz gates PASS; final AArch64 compile PASS; 31 focused Python tests PASS |
+
+Live UI automation used the existing root-only host probe to click the real
+rendered WebKit elements; it did not use a mock modem or replacement page.
+[Settings screenshot](evidence/finisher-20261125/settings.png),
+[QS screenshot](evidence/finisher-20261125/qs-connecting.png),
+[disabled tile/top bar](evidence/finisher-20261125/topbar.png),
+[UI probes](evidence/finisher-20261125/ui-probes.txt),
+[Settings OFF](evidence/finisher-20261125/settings-off.json),
+[Settings ON](evidence/finisher-20261125/settings-on.json).
+The initial Settings attempt correctly failed capability checks after reboot;
+only the exact shipped obsolete session grant was migrated, preserving owner
+permissions/denials. This exposed a real integration defect before acceptance.
+
+Reboot receipts retain distinct boot IDs:
+[first failed](evidence/finisher-20261125/after-enabled-reboot.json),
+[corrected enabled](evidence/finisher-20261125/after-corrected-enabled-reboot.json),
+[disabled](evidence/finisher-20261125/after-disabled-reboot.json).
+Final code's installed/running hashes match, with NRestarts=0 in the final boot:
+[identity](evidence/finisher-20261125/identity.json). Enabled startup was tested
+before the final bounded SIM-wait and IP-reporting refinements; the final binary
+booted with OFF and then handled ON from QS/Settings. Automatic **internet**
+after reboot is not accepted.
+
+The older privacy-layout test `tests/pwnage52000/test_qs_privacy.py` still fails
+its `privacy.hidden = !on` source assertion; that string is also absent at entry
+HEAD. It was not changed as unrelated work. Host build tests include the owner's
+preserved RFS policy/test edits. See [native log](evidence/finisher-20261125/native-tests.txt)
+and [focused tests](evidence/finisher-20261125/focused-tests.txt).
+
+The original verified production loader/guard and registration decoder were
+preserved. Read-only EFS startup now has an actual bounded dependency, without
+journal replay. No RF OFF/ON experiments, SMS/calls, firmware/NV/protected-content
+writes, flashing, merge or push. Registration cause remains undiagnosed; do not
+infer a carrier outage or bypass the gate. Existing SMS/telephony documentation
+is retained below and in the handover.
+
+---
+
 **BLOCKED at genuine packet-service registration. Not production LTE accepted.**
 
 Entry: `cs/mob-round35-stage06`, `4b95f377a0fe742a103ff7f2a8260e1b3fae8c47`.
