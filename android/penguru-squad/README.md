@@ -82,7 +82,7 @@ token, launcher or root access.
 | Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and Voice tiny.en packages with **Download to this phone**. |
 | Downloads | `MainActivity` streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. |
 | Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip into app storage. |
-| Voice | Android `SpeechRecognizer` with `EXTRA_PREFER_OFFLINE`; the transcript is reviewed before Send. |
+| Voice | Android `SpeechRecognizer`; prefers offline, retries once online if the service rejects the offline hint, and always releases the controls on Stop. The transcript is reviewed before Send. |
 | Diagnostics | Battery, storage, Android version, CPU ABIs, model/runtime paths. |
 | Export | MediaStore `Downloads/PenGuru`; the actual de-duplicated name is reported. |
 
@@ -145,6 +145,11 @@ bridge must allow the APK origin for CORS; the current
   replies, and diagnostics.
 - APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=900`,
   `versionName=0.9.0-beta`.
+- A mocked-bridge harness also resolves the SonarBird Voice tiny.en download by
+  model **and** variant (pinned `ggml-tiny.en.bin`) while MiniLM still resolves
+  its six encoder files.
+- System-bar/cutout/IME insets are applied to a container view, so page text
+  stays clear of the status bar and the three-button Android navigation row.
 
 The headless emulator available on this build host segfaulted before boot, so
 physical-device acceptance of the new download/install/voice flows is still

@@ -17,7 +17,7 @@
 
 - **Date:** 2026-11-24
 - **Artifact:** `dist/android/penguru-squad-debug.apk`
-- **SHA-256:** `83a24496632cdf0922ca860c47f830f5aa2e8895916b68b78de8521af990cb8b`
+- **SHA-256:** `172f056e198d5e282809376d1e93086864fa8732d346c4cb46ba840e653c48d0`
 - **Package/version:** `org.nuxel.penguru` / `versionCode=900`, `versionName=0.9.0-beta`
 - **Size:** 1,743,004 bytes
 - **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
@@ -57,6 +57,27 @@ This release removes the Nuxel host requirement for ordinary Android phones.
   pinned download spec, READY/installed transition, runtime install spec,
   SYSTEM reply (device/storage diagnostics), CODE reply, diagnostics.
 - APK rebuilt and `apksigner verify` reports v2 + v3.
+
+### Follow-up fixes (2026-11-24, same 0.9.0-beta build)
+
+1. **Voice tiny.en downloads work.** `start_download` now resolves a package by
+   `model_id` **and** `variant_id`. Two SonarBird cards legitimately share the
+   `sonarbird` model id, so the previous lookup always selected the MiniLM card
+   and returned `unknown_package` for `speech-whisper-tiny-en`. A Node harness
+   confirms the tiny.en card now produces the pinned
+   `ggerganov/whisper.cpp` / `ggml-tiny.en.bin` download spec, and MiniLM still
+   resolves its six encoder files.
+2. **System bars no longer overlap the UI.** The WebView is wrapped in a padded
+   `FrameLayout`; window insets for the status bar, cutout, IME and the Android
+   back/home/recents navigation row are applied to that container. The page
+   viewport is genuinely reduced, so header text can no longer run under the
+   status bar and controls cannot sit under the three-button navigation row.
+3. **Speech recognition lifecycle hardened.** Each request is a numbered
+   session; stale callbacks and queued restarts are ignored after Stop.
+   `ERROR_CLIENT` / `ERROR_RECOGNIZER_BUSY` are retried once without the
+   offline-only hint, the 5-second button finalizes via `stopListening()`, and
+   Stop always invalidates pending work. The Web UI now re-enables all voice
+   controls in a `finally` block and reports actionable errors.
 
 ### Known limitation
 

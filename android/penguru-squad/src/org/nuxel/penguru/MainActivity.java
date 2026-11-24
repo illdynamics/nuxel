@@ -15,6 +15,8 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.StatFs;
 import android.provider.MediaStore;
 import android.speech.RecognitionListener;
@@ -23,6 +25,7 @@ import android.speech.SpeechRecognizer;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
 import android.webkit.MimeTypeMap;
@@ -83,13 +86,20 @@ public class MainActivity extends Activity {
     private static final String MODELS_DIR_NAME = "Models";
     private static final String RUNTIMES_DIR_NAME = "Runtimes";
 
+    private FrameLayout root;
     private WebView webView;
     private PermissionRequest pendingAudio;
     private SpeechRecognizer speechRecognizer;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean speechRunning;
     private boolean speechWake;
     private boolean pendingSpeech;
     private boolean pendingSpeechWake;
+    // Each start is a numbered session. Stale SpeechRecognizer callbacks and
+    // delayed retries are ignored instead of surfacing as a bogus client_error.
+    private int speechToken;
+    private boolean speechRetryUsed;
+    private boolean speechPreferOffline = true;
 
     private final ExecutorService downloadExecutor = Executors.newSingleThreadExecutor();
     private final Map<String, DownloadJob> downloads = new ConcurrentHashMap<>();
@@ -98,12 +108,29 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setStatusBarColor(Color.parseColor("#101b2c"));
-        getWindow().setNavigationBarColor(Color.parseColor("#0b1422"));
+        // Draw edge-to-edge on every supported release, then inset a real
+        // container view. Padding on the WebView itself is not consistently
+        // honoured by Chromium, which let page text run underneath the status
+        // bar and the three-button navigation row on Android.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().setDecorFitsSystemWindows(false);
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        }
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.parseColor("#0b1422"));
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        root = new FrameLayout(this);
+        root.setBackgroundColor(Color.parseColor("#0b1422"));
+        root.addView(webView, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -130,8 +157,8 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new LocalAssetClient());
         webView.setWebChromeClient(new PenGuruChromeClient());
         webView.addJavascriptInterface(new AndroidBridge(), "NuxelAndroid");
-        applySystemBarInsets(webView);
-        setContentView(webView);
+        applySystemBarInsets(root);
+        setContentView(root);
 
         if (savedInstanceState == null) {
             webView.loadUrl("https://" + ASSET_HOST + START_PATH);
@@ -140,9 +167,10 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** Keep the WebView content out of status/navigation bars on Android 15+
-     *  edge-to-edge and on cutout displays. */
-    private static void applySystemBarInsets(final WebView view) {
+    /** Keep the page out of the status bar, cutouts and the back/home/recents
+     *  navigation row. Applied to the container so Chromium's page viewport is
+     *  genuinely reduced rather than drawn under the system bars. */
+    private static void applySystemBarInsets(final View view) {
         view.setOnApplyWindowInsetsListener((v, insets) -> {
             int top = 0, bottom = 0, left = 0, right = 0;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -153,6 +181,11 @@ public class MainActivity extends Activity {
                 bottom = bars.bottom;
                 left = bars.left;
                 right = bars.right;
+                // Keep focused text fields above the on-screen keyboard.
+                int ime = insets.getInsets(android.view.WindowInsets.Type.ime()).bottom;
+                if (ime > bottom) {
+                    bottom = ime;
+                }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 top = insets.getSystemWindowInsetTop();
                 bottom = insets.getSystemWindowInsetBottom();
@@ -176,7 +209,16 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         downloadExecutor.shutdownNow();
+        speechToken++;
+        speechRunning = false;
+        pendingSpeech = false;
+        mainHandler.removeCallbacksAndMessages(null);
         if (speechRecognizer != null) {
+            try {
+                speechRecognizer.cancel();
+            } catch (RuntimeException ignored) {
+                // already stopped
+            }
             speechRecognizer.destroy();
             speechRecognizer = null;
         }
@@ -202,11 +244,12 @@ public class MainActivity extends Activity {
         boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
         if (requestCode == SPEECH_REQUEST) {
             boolean wake = pendingSpeechWake;
+            boolean shouldStart = pendingSpeech;
             pendingSpeech = false;
-            if (granted) {
+            if (!granted) {
+                deliverSpeech("", wake, "microphone_permission_denied", speechToken);
+            } else if (shouldStart) {
                 beginSpeech(wake);
-            } else {
-                deliverSpeech("", wake, "microphone_permission_denied");
             }
             return;
         }
@@ -448,6 +491,9 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public boolean startSpeechRecognition(final boolean wake) {
+            if (!speechAvailable()) {
+                return false;
+            }
             runOnUiThread(() -> {
                 if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -464,14 +510,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void stopSpeechRecognition() {
             runOnUiThread(() -> {
-                if (speechRecognizer != null) {
-                    try {
-                        speechRecognizer.cancel();
-                    } catch (RuntimeException ignored) {
-                        // already stopped
-                    }
-                }
+                pendingSpeech = false;
                 speechRunning = false;
+                // Invalidate any queued restart so a stop is final even if the
+                // recognizer was still connecting or a permission dialog was open.
+                speechToken++;
+                cancelSpeechQuietly();
             });
         }
 
@@ -1057,6 +1101,43 @@ public class MainActivity extends Activity {
 
     /* ----------------------------------------------------------- speech */
 
+    private boolean ensureSpeechRecognizer() {
+        if (speechRecognizer != null) {
+            return true;
+        }
+        try {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            return true;
+        } catch (RuntimeException error) {
+            speechRecognizer = null;
+            return false;
+        }
+    }
+
+    private void cancelSpeechQuietly() {
+        if (speechRecognizer == null) {
+            return;
+        }
+        try {
+            speechRecognizer.cancel();
+        } catch (RuntimeException ignored) {
+            // already stopped
+        }
+    }
+
+    private static Intent speechIntent(boolean preferOffline) {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        if (preferOffline) {
+            intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+        }
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag());
+        return intent;
+    }
+
     private void beginSpeech(boolean wake) {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -1065,37 +1146,72 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
             return;
         }
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            deliverSpeech("", wake, "speech_recognizer_unavailable");
+        if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
+            deliverSpeech("", wake, "speech_recognizer_unavailable", speechToken);
             return;
         }
-        if (speechRecognizer == null) {
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
-            speechRecognizer.setRecognitionListener(new PenGuruSpeechListener());
-        }
+        speechRetryUsed = false;
+        speechPreferOffline = true;
         if (speechRunning) {
-            try {
-                speechRecognizer.cancel();
-            } catch (RuntimeException ignored) {
-                // restart below
-            }
+            // Reusing a recognizer that has not finished its previous session
+            // is the usual source of ERROR_CLIENT. Finish it, then start fresh.
+            speechRunning = false;
+            cancelSpeechQuietly();
+            restartSpeech(wake, 350);
+            return;
         }
+        startSpeechNow(wake);
+    }
+
+    private void restartSpeech(final boolean wake, long delayMillis) {
+        speechRunning = false;
+        cancelSpeechQuietly();
+        final int token = ++speechToken;
+        mainHandler.postDelayed(() -> {
+            if (token != speechToken) {
+                return;
+            }
+            startSpeechNow(wake);
+        }, delayMillis);
+    }
+
+    private void startSpeechNow(boolean wake) {
+        if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
+            deliverSpeech("", wake, "speech_recognizer_unavailable", speechToken);
+            return;
+        }
+        final int token = ++speechToken;
         speechWake = wake;
         speechRunning = true;
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
-        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
-        intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag());
+        speechRecognizer.setRecognitionListener(new PenGuruSpeechListener(token));
         try {
-            speechRecognizer.startListening(intent);
+            speechRecognizer.startListening(speechIntent(speechPreferOffline));
         } catch (RuntimeException error) {
-            deliverSpeech("", wake, "speech_start_failed");
+            deliverSpeech("", wake, "speech_start_failed", token);
+            return;
+        }
+        if (!wake) {
+            // The UI calls this the 5-second button; ask the recognizer to
+            // finalize after five seconds instead of waiting for a timeout.
+            mainHandler.postDelayed(() -> {
+                if (token != speechToken || !speechRunning || speechRecognizer == null) {
+                    return;
+                }
+                try {
+                    speechRecognizer.stopListening();
+                } catch (RuntimeException ignored) {
+                    // already finished
+                }
+            }, 5000);
         }
     }
 
-    private void deliverSpeech(final String text, final boolean wake, final String error) {
+    private void deliverSpeech(final String text, final boolean wake,
+                               final String error, final int token) {
+        if (token != speechToken) {
+            // A stop or a newer session superseded this callback.
+            return;
+        }
         speechRunning = false;
         try {
             JSONObject result = new JSONObject();
@@ -1121,6 +1237,12 @@ public class MainActivity extends Activity {
     }
 
     private final class PenGuruSpeechListener implements RecognitionListener {
+        private final int token;
+
+        PenGuruSpeechListener(int token) {
+            this.token = token;
+        }
+
         @Override public void onReadyForSpeech(Bundle params) { }
         @Override public void onBeginningOfSpeech() { }
         @Override public void onRmsChanged(float rmsdB) { }
@@ -1131,21 +1253,31 @@ public class MainActivity extends Activity {
 
         @Override
         public void onError(int error) {
-            if (!speechRunning) {
+            if (token != speechToken || !speechRunning) {
                 return;
             }
-            deliverSpeech("", speechWake, speechErrorName(error));
+            if (!speechRetryUsed
+                    && (error == SpeechRecognizer.ERROR_CLIENT
+                    || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY)) {
+                // Many bundled recognizers reject EXTRA_PREFER_OFFLINE or need
+                // a moment after cancel(). Retry once without the offline hint.
+                speechRetryUsed = true;
+                speechPreferOffline = false;
+                restartSpeech(speechWake, 400);
+                return;
+            }
+            deliverSpeech("", speechWake, speechErrorName(error), token);
         }
 
         @Override
         public void onResults(Bundle results) {
-            if (!speechRunning) {
+            if (token != speechToken || !speechRunning) {
                 return;
             }
             ArrayList<String> matches = results == null ? null
                     : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = matches == null || matches.isEmpty() ? "" : matches.get(0);
-            deliverSpeech(text, speechWake, text.isEmpty() ? "no_speech_detected" : null);
+            deliverSpeech(text, speechWake, text.isEmpty() ? "no_speech_detected" : null, token);
         }
     }
 

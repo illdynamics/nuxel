@@ -523,7 +523,12 @@ export function createLocalEngine() {
       return { ok: true, runtime_preference: state.runtimePreference, per_model_engine: state.perModel };
     }
     if (op === 'start_download') {
-      const card = MODELS.find((model) => model.model_id === params.model_id);
+      // Several cards can share a logical model_id (SonarBird routing and
+      // SonarBird Voice). Match on model_id *and* variant_id so e.g. the
+      // tiny.en speech package resolves to its own card instead of failing
+      // with unknown_package against the MiniLM card.
+      const card = MODELS.find((model) => model.model_id === params.model_id
+        && model.variants.some((item) => item.variant_id === params.variant_id));
       const variant = card && card.variants.find((item) => item.variant_id === params.variant_id);
       if (!card || !variant) return { ok: false, error: 'unknown_package' };
       if (!params.license_accepted || params.license_revision !== variant.source_revision) {

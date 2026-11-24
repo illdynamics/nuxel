@@ -14,7 +14,7 @@ Squad**, package `org.nuxel.penguru`, version `0.9.0-beta` / versionCode
 `dist/android/SHA256SUMS`:
 
 ```
-83a24496632cdf0922ca860c47f830f5aa2e8895916b68b78de8521af990cb8b  penguru-squad-debug.apk
+172f056e198d5e282809376d1e93086864fa8732d346c4cb46ba840e653c48d0  penguru-squad-debug.apk
 ```
 
 The APK is signed with the repository's stable debug identity, so it installs

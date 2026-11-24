@@ -27,15 +27,19 @@ export function voiceControls(call, available, onText) {
     active = false;
     epoch++;
     clearTimeout(timer);
-    if (nativeSpeech && host && typeof host.stopSpeechRecognition === 'function') {
-      try { host.stopSpeechRecognition(); } catch (error) { /* already stopped */ }
+    try {
+      if (nativeSpeech && host && typeof host.stopSpeechRecognition === 'function') {
+        try { host.stopSpeechRecognition(); } catch (error) { /* already stopped */ }
+      }
+      if (processor) { processor.disconnect(); processor.onaudioprocess = null; processor = null; }
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      if (context) { const c = context; context = null; try { await c.close(); } catch (error) { /* closed */ } }
+    } finally {
+      // Always leave the controls usable, even if a native/audio call failed.
+      chunks = [];
+      idleUi();
+      status('Microphone closed');
     }
-    if (processor) { processor.disconnect(); processor.onaudioprocess = null; processor = null; }
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    if (context) { const c = context; context = null; try { await c.close(); } catch (error) { /* closed */ } }
-    chunks = [];
-    idleUi();
-    status('Microphone closed');
   }
 
   function nativeListen(wake) {
@@ -51,7 +55,16 @@ export function voiceControls(call, available, onText) {
       if (!active || own !== epoch) return;
       finishNative();
       if (!result || result.ok !== true) {
-        status('Speech recognition: ' + (result && result.error ? result.error : 'unavailable'));
+        const error = result && result.error ? result.error : 'unavailable';
+        if (error === 'client_error' || error === 'recognizer_busy') {
+          status('Android speech service was busy. Tap the microphone button again.');
+        } else if (error === 'no_speech_detected') {
+          status('No speech detected. Try again.');
+        } else if (error === 'microphone_permission_denied') {
+          status('Microphone permission denied. Enable it for PenGuru Squad in Android Settings.');
+        } else {
+          status('Speech recognition: ' + error + '. Tap the microphone button to retry.');
+        }
         return;
       }
       const text = String(result.text || '').trim();
@@ -84,7 +97,7 @@ export function voiceControls(call, available, onText) {
       finishNative();
       try { host.stopSpeechRecognition(); } catch (error) { /* already stopped */ }
       status('Speech recognition timed out. Try again.');
-    }, 15000);
+    }, 12000);
   }
 
   function wav(samples, rate) {

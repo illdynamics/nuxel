@@ -4,6 +4,12 @@ All notable changes to the Nuxel Phone OS repository are documented here.
 
 ## [Unreleased]
 
+- Fix PenGuru Android standalone follow-ups: SonarBird Voice tiny.en now
+  resolves by model **and** variant instead of failing with `unknown_package`,
+  the WebView is inset below the status bar and back/home/recents navigation
+  row, and Android speech recognition ignores stale callbacks, retries
+  `client_error` without the offline-only hint, and always releases the voice
+  controls after Stop.
 - Add a standalone Android APK for PenGuru Squad (`android/penguru-squad`,
   `dist/android/penguru-squad-debug.apk`). The bundled WebView app serves the
   current PWA from a private in-APK origin and connects to the Nuxel bridge.
