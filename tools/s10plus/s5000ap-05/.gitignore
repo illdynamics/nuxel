@@ -11,3 +11,5 @@
 /test_fmt_tx
 /test_data_session
 /test_mbim_tx
+
+/test_qbr_items

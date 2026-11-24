@@ -16,7 +16,7 @@ CC="${CC:-gcc}"
 CFLAGS=(-O2 -Wall -Wextra -Werror -std=gnu11)
 
 if [[ "${1:-}" == "clean" ]]; then
-    rm -f test_sipc5_fmt test_rfs_policy fuzz_driver test_sipc5_fmt_asan test_rfs_proto test_live_frame test_ipc41_recovery test_rfs_respond test_fmt_tx test_data_session test_mbim_tx
+    rm -f test_sipc5_fmt test_rfs_policy fuzz_driver test_sipc5_fmt_asan test_rfs_proto test_live_frame test_ipc41_recovery test_rfs_respond test_fmt_tx test_data_session test_mbim_tx test_qbr_items
     echo "cleaned"
     exit 0
 fi
@@ -31,6 +31,7 @@ $CC "${CFLAGS[@]}" -Isrc -o test_rfs_respond tests/test_rfs_respond.c src/rfs_re
 $CC "${CFLAGS[@]}" -Isrc -o test_fmt_tx tests/test_fmt_tx.c src/fmt_tx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_data_session tests/test_data_session.c src/data_session.c
 $CC "${CFLAGS[@]}" -Isrc -o test_mbim_tx tests/test_mbim_tx.c src/mbim_tx.c
+$CC "${CFLAGS[@]}" -Isrc -o test_qbr_items tests/test_qbr_items.c src/qbr_items.c
 
 echo "=== run SIPC5/FMT unit tests ==="
 ./test_sipc5_fmt
@@ -50,6 +51,8 @@ echo "=== run Stage-06 data-session FSM tests ==="
 ./test_data_session
 echo "=== run Stage-06 MBIM<->SIPC serialization tests ==="
 ./test_mbim_tx
+echo "=== run Stage-06 recovered QBR item dictionary tests ==="
+./test_qbr_items
 echo "=== run SIPC5 fuzzer (host, no writes) ==="
 python3 tests/fuzz_sipc5.py ./fuzz_driver --iters=3000
 
