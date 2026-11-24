@@ -13,6 +13,31 @@
 
 ---
 
+## v0.9.2-beta — launch permissions, background downloads and reinstall reuse
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `f2f7446cf1f106240de2fd154c6a01108b594f2ca25a484f2e24f17c98be795e`
+- **Version:** `0.9.2-beta` (`versionCode=902`)
+- On launch the app requests microphone and notification access, restores a
+  previously enabled SonarBird listener, and prompts for the battery exemption
+  and (optionally) All files access.
+- Downloads and archive extraction moved from `MainActivity` into a `dataSync`
+  foreground `DownloadService` with a partial wake lock and Wi-Fi lock, so the
+  screen going off no longer interrupts them. Interrupted jobs persist their
+  spec and resume from `.part`.
+- Foreground speech now waits for the background listener to release its
+  recognizer and retries busy/client sessions; the background listener uses a
+  per-session token, error backoff and language fallback so stale callbacks no
+  longer create competing recognizers.
+- With All files access, models and runtimes live in `Download/PenGuru` and are
+  discovered after uninstall/reinstall by validating file names and sizes.
+  Existing package-scoped downloads are migrated automatically.
+
+The older sections below describe earlier builds and are retained for history.
+
+---
+
 ## v0.9.1-beta — microphone repair, auto-send and persistent SonarBird
 
 - **Date:** 2026-11-24

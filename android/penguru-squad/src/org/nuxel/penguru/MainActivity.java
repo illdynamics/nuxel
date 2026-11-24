@@ -3,9 +3,11 @@ package org.nuxel.penguru;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -17,8 +19,10 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.StatFs;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -86,6 +90,10 @@ public class MainActivity extends Activity {
     private static final int SPEECH_REQUEST = 7002;
     private static final int WAKE_MIC_REQUEST = 7003;
     private static final int WAKE_NOTIFICATION_REQUEST = 7004;
+    private static final int STARTUP_PERMISSIONS_REQUEST = 7005;
+    private static final String UI_PREFS = "penguru_ui";
+    private static final String PREF_BATTERY_PROMPT_AT = "battery_prompt_at";
+    private static final String PREF_STORAGE_PROMPT_AT = "storage_prompt_at";
     private static final String MODELS_DIR_NAME = "Models";
     private static final String RUNTIMES_DIR_NAME = "Runtimes";
 
@@ -101,14 +109,15 @@ public class MainActivity extends Activity {
     // Each start is a numbered session. Stale SpeechRecognizer callbacks and
     // delayed retries are ignored instead of surfacing as a bogus client_error.
     private int speechToken;
-    private boolean speechRetryUsed;
+    private int speechRetryCount;
     private boolean speechPreferOffline = true;
     private String speechLanguage = "";
     private boolean pageReady;
+    private boolean startupChecked;
+    private boolean batteryDialogShowing;
+    private boolean storageDialogShowing;
+    private boolean batterySettingsOpened;
     private final ArrayDeque<String> pendingWakeCommands = new ArrayDeque<>();
-
-    private final ExecutorService downloadExecutor = Executors.newSingleThreadExecutor();
-    private final Map<String, DownloadJob> downloads = new ConcurrentHashMap<>();
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -172,6 +181,10 @@ public class MainActivity extends Activity {
             webView.restoreState(savedInstanceState);
         }
         handleWakeIntent(getIntent());
+        PenGuruStorage.migrateLegacy(this);
+        // Re-queue a download that was interrupted by a rebuild, process death
+        // or the Activity being reclaimed while the screen was off.
+        mainHandler.postDelayed(() -> DownloadService.resumePending(this), 600L);
     }
 
     @Override
@@ -179,6 +192,21 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         handleWakeIntent(intent);
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Returning from the "All files access" or battery screens can change
+        // where downloads live. Re-run the migration and refresh the UI.
+        if (startupChecked) {
+            mainHandler.postDelayed(() -> {
+                PenGuruStorage.migrateLegacy(MainActivity.this);
+                reportWakeStatus(PenGuruStorage.hasAllFilesAccess(MainActivity.this)
+                        ? "Downloads are stored in Download/PenGuru and survive reinstalls."
+                        : "Downloads are stored in app storage. Allow All files access to reuse them after a reinstall.");
+                maybeAskForAllFilesAccess();
+            }, 500L);
+        }
     }
 
     /** Keep the page out of the status bar, cutouts and the back/home/recents
@@ -222,7 +250,6 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        downloadExecutor.shutdownNow();
         speechToken++;
         speechRunning = false;
         pendingSpeech = false;
@@ -255,6 +282,19 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == STARTUP_PERMISSIONS_REQUEST) {
+            boolean mic = checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED;
+            boolean notifications = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                    || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    == PackageManager.PERMISSION_GRANTED;
+            reportWakeStatus(mic
+                    ? "Microphone permission ready. " + (notifications
+                        ? "Notifications ready." : "Notifications are disabled; the ongoing rows stay hidden.")
+                    : "Microphone permission is required for voice and background listening.");
+            mainHandler.postDelayed(this::afterStartupPermissions, 400L);
+            return;
+        }
         boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
         if (requestCode == SPEECH_REQUEST) {
             boolean wake = pendingSpeechWake;
@@ -291,6 +331,159 @@ public class MainActivity extends Activity {
             pendingAudio.deny();
         }
         pendingAudio = null;
+    }
+
+    /* ---------------------------------------------- startup permissions */
+
+    /**
+     * Runs once when the app page has loaded. Android requires microphone and
+     * notification permissions plus a battery-optimization exemption for a
+     * persistent background listener and screen-off downloads.
+     */
+    private void runStartupChecks() {
+        if (startupChecked) {
+            return;
+        }
+        startupChecked = true;
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED
+                || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED)) {
+            List<String> missing = new ArrayList<>();
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                missing.add(Manifest.permission.RECORD_AUDIO);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                missing.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+            reportWakeStatus("PenGuru needs microphone and notification access for voice and background listening.");
+            requestPermissions(missing.toArray(new String[0]), STARTUP_PERMISSIONS_REQUEST);
+            return;
+        }
+        afterStartupPermissions();
+    }
+
+    private void afterStartupPermissions() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            reportWakeStatus("Microphone permission is missing. Open Android Settings → Apps → PenGuru Squad → Permissions.");
+            return;
+        }
+        // Restore a listener the owner previously enabled (also after an APK
+        // update or process restart) now that permissions are definitely on.
+        SharedPreferences prefs = getSharedPreferences(WakeWordService.PREFS, MODE_PRIVATE);
+        if (prefs.getBoolean(WakeWordService.PREF_ENABLED, false)
+                && !WakeWordService.isRunning()) {
+            finishWakeStart();
+        }
+        maybeAskForBatteryExemption();
+        mainHandler.postDelayed(this::maybeAskForAllFilesAccess, 1200L);
+    }
+
+    private boolean isIgnoringBatteryOptimizations() {
+        try {
+            PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
+            return power != null && power.isIgnoringBatteryOptimizations(getPackageName());
+        } catch (RuntimeException error) {
+            return false;
+        }
+    }
+
+    private void maybeAskForBatteryExemption() {
+        if (isIgnoringBatteryOptimizations()) {
+            reportWakeStatus("Background listening and downloads are protected from battery saver.");
+            return;
+        }
+        if (batteryDialogShowing || isFinishing()) {
+            return;
+        }
+        SharedPreferences prefs = getSharedPreferences(UI_PREFS, MODE_PRIVATE);
+        long last = prefs.getLong(PREF_BATTERY_PROMPT_AT, 0L);
+        // Ask on first launch and then at most once a week until the owner
+        // grants the exemption; never nag on every activity resume.
+        if (last > 0 && System.currentTimeMillis() - last < 7L * 24L * 60L * 60L * 1000L) {
+            return;
+        }
+        batteryDialogShowing = true;
+        prefs.edit().putLong(PREF_BATTERY_PROMPT_AT, System.currentTimeMillis()).apply();
+        new AlertDialog.Builder(this)
+                .setTitle("Keep PenGuru running")
+                .setMessage("Android battery optimization can stop background listening and interrupt model downloads when the screen turns off.\n\nAllow PenGuru Squad to ignore battery optimization?")
+                .setPositiveButton("Open settings", (dialog, which) -> {
+                    batterySettingsOpened = true;
+                    requestBatteryExemption();
+                })
+                .setNegativeButton("Later", null)
+                .setOnDismissListener(dialog -> {
+                    batteryDialogShowing = false;
+                    if (!batterySettingsOpened) {
+                        mainHandler.postDelayed(MainActivity.this::maybeAskForAllFilesAccess, 400L);
+                    }
+                    batterySettingsOpened = false;
+                })
+                .show();
+    }
+
+    private void requestBatteryExemption() {
+        try {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        } catch (RuntimeException error) {
+            try {
+                startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+            } catch (RuntimeException unavailable) {
+                reportWakeStatus("Open Android Settings → Battery → Battery optimization to allow PenGuru Squad.");
+            }
+        }
+    }
+
+    private boolean hasAllFilesAccess() {
+        return PenGuruStorage.hasAllFilesAccess(this);
+    }
+
+    private void maybeAskForAllFilesAccess() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || hasAllFilesAccess()) {
+            return;
+        }
+        if (storageDialogShowing || batteryDialogShowing || isFinishing()) {
+            return;
+        }
+        SharedPreferences prefs = getSharedPreferences(UI_PREFS, MODE_PRIVATE);
+        long last = prefs.getLong(PREF_STORAGE_PROMPT_AT, 0L);
+        if (last > 0 && System.currentTimeMillis() - last < 7L * 24L * 60L * 60L * 1000L) {
+            return;
+        }
+        storageDialogShowing = true;
+        prefs.edit().putLong(PREF_STORAGE_PROMPT_AT, System.currentTimeMillis()).apply();
+        new AlertDialog.Builder(this)
+                .setTitle("Reuse downloads after reinstalling")
+                .setMessage("Android normally deletes app storage when an APK is uninstalled, which forces every model and llama.cpp runtime to be downloaded again.\n\nAllow All files access so PenGuru can keep models in Download/PenGuru and find them after the APK is reinstalled. PenGuru only reads and writes its own PenGuru folder.")
+                .setPositiveButton("Open settings", (dialog, which) -> requestAllFilesAccess())
+                .setNegativeButton("Not now", null)
+                .setOnDismissListener(dialog -> storageDialogShowing = false)
+                .show();
+    }
+
+    private void requestAllFilesAccess() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return;
+        }
+        try {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        } catch (RuntimeException error) {
+            try {
+                startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+            } catch (RuntimeException unavailable) {
+                reportWakeStatus("Open Android Settings → Apps → Special access → All files access → PenGuru Squad.");
+            }
+        }
     }
 
     /* ------------------------------------------------ background listener */
@@ -422,58 +615,6 @@ public class MainActivity extends Activity {
         reportWakeStatus("Heard via SonarBird · sending automatically");
     }
 
-    /* ------------------------------------------------------------ storage */
-
-    private File storageDir(String name) {
-        File dir = getExternalFilesDir(name);
-        if (dir == null) {
-            dir = new File(getFilesDir(), name);
-        }
-        if (!dir.exists() && !dir.mkdirs()) {
-            Log.w(TAG, "Could not create storage directory " + dir);
-        }
-        return dir;
-    }
-
-    private static String safeRelative(String raw) {
-        if (raw == null) {
-            throw new IllegalArgumentException("missing path");
-        }
-        String path = raw.replace('\\', '/');
-        while (path.startsWith("/")) {
-            path = path.substring(1);
-        }
-        if (path.isEmpty() || path.contains("..") || path.indexOf('\0') >= 0) {
-            throw new IllegalArgumentException("unsafe path");
-        }
-        return path;
-    }
-
-    private static File safeChild(File root, String relative) throws IOException {
-        String clean = safeRelative(relative);
-        File child = new File(root, clean);
-        String rootPath = root.getCanonicalPath();
-        String childPath = child.getCanonicalPath();
-        if (!childPath.equals(rootPath) && !childPath.startsWith(rootPath + File.separator)) {
-            throw new IOException("path escapes storage root");
-        }
-        return child;
-    }
-
-    private static void deleteRecursively(File file) {
-        if (file == null || !file.exists()) {
-            return;
-        }
-        File[] children = file.listFiles();
-        if (children != null) {
-            for (File child : children) {
-                deleteRecursively(child);
-            }
-        }
-        //noinspection ResultOfMethodCallIgnored
-        file.delete();
-    }
-
     /* --------------------------------------------------------- JS bridge */
 
     /**
@@ -498,9 +639,9 @@ public class MainActivity extends Activity {
                 out.put("release", Build.VERSION.RELEASE);
                 out.put("sdk", Build.VERSION.SDK_INT);
                 out.put("abis", TextUtils.join(",", Build.SUPPORTED_ABIS));
-                out.put("models_dir", storageDir(MODELS_DIR_NAME).getAbsolutePath());
-                out.put("runtimes_dir", storageDir(RUNTIMES_DIR_NAME).getAbsolutePath());
-                StatFs stat = new StatFs(getFilesDir().getAbsolutePath());
+                out.put("models_dir", PenGuruStorage.dir(MainActivity.this, PenGuruStorage.MODELS_DIR_NAME).getAbsolutePath());
+                out.put("runtimes_dir", PenGuruStorage.dir(MainActivity.this, PenGuruStorage.RUNTIMES_DIR_NAME).getAbsolutePath());
+                StatFs stat = new StatFs(PenGuruStorage.root(MainActivity.this).getAbsolutePath());
                 out.put("free_storage", stat.getAvailableBytes());
                 out.put("speech_available", SpeechRecognizer.isRecognitionAvailable(MainActivity.this));
                 BatteryManager battery = (BatteryManager) getSystemService(BATTERY_SERVICE);
@@ -521,8 +662,8 @@ public class MainActivity extends Activity {
         public String storagePaths() {
             try {
                 JSONObject out = new JSONObject();
-                out.put("models", storageDir(MODELS_DIR_NAME).getAbsolutePath());
-                out.put("runtimes", storageDir(RUNTIMES_DIR_NAME).getAbsolutePath());
+                out.put("models", PenGuruStorage.dir(MainActivity.this, PenGuruStorage.MODELS_DIR_NAME).getAbsolutePath());
+                out.put("runtimes", PenGuruStorage.dir(MainActivity.this, PenGuruStorage.RUNTIMES_DIR_NAME).getAbsolutePath());
                 out.put("exports", "Downloads/PenGuru");
                 return out.toString();
             } catch (JSONException error) {
@@ -532,110 +673,100 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String startDownload(String specJson) {
-            try {
-                JSONObject spec = new JSONObject(specJson);
-                String kind = spec.optString("kind", "model");
-                if (!"model".equals(kind) && !"runtime".equals(kind)) {
-                    return "";
-                }
-                String id = safeRelative(spec.optString("id", ""));
-                JSONArray rawFiles = spec.optJSONArray("files");
-                if (rawFiles == null || rawFiles.length() == 0) {
-                    return "";
-                }
-                List<FileSpec> files = new ArrayList<>();
-                long total = 0;
-                for (int i = 0; i < rawFiles.length(); i++) {
-                    JSONObject raw = rawFiles.getJSONObject(i);
-                    FileSpec file = new FileSpec();
-                    file.url = raw.optString("url", "");
-                    file.path = safeRelative(raw.optString("path", ""));
-                    file.sha256 = raw.optString("sha256", "");
-                    file.size = raw.optLong("size", 0);
-                    if (file.url.isEmpty()) {
-                        return "";
-                    }
-                    total += Math.max(0, file.size);
-                    files.add(file);
-                }
-                File base = "runtime".equals(kind)
-                        ? storageDir(RUNTIMES_DIR_NAME) : storageDir(MODELS_DIR_NAME);
-                File target = safeChild(base, id);
-                String jobId = kind + "-" + id.replace('/', '-') + "-" + UUID.randomUUID().toString().substring(0, 8);
-                DownloadJob job = new DownloadJob(jobId, kind, id, target, files, total,
-                        spec.optString("extract", ""));
-                downloads.put(jobId, job);
-                downloadExecutor.execute(() -> runDownload(job));
-                return jobId;
-            } catch (Exception error) {
-                Log.w(TAG, "startDownload rejected: " + error);
-                return "";
-            }
+            return DownloadService.start(MainActivity.this, specJson);
         }
 
         @JavascriptInterface
         public String downloadStatus(String jobId) {
-            DownloadJob job = downloads.get(jobId);
-            return job == null ? "" : job.toJson().toString();
+            return DownloadService.statusJson(jobId);
+        }
+
+        @JavascriptInterface
+        public String downloadJobs() {
+            return DownloadService.activeJobsJson();
         }
 
         @JavascriptInterface
         public boolean cancelDownload(String jobId) {
-            DownloadJob job = downloads.get(jobId);
-            if (job == null) {
-                return false;
-            }
-            job.cancel = true;
-            return true;
+            return DownloadService.cancel(MainActivity.this, jobId);
         }
 
         @JavascriptInterface
         public boolean isInstalled(String kind, String id) {
-            try {
-                File base = "runtime".equals(kind)
-                        ? storageDir(RUNTIMES_DIR_NAME) : storageDir(MODELS_DIR_NAME);
-                File target = safeChild(base, id);
-                return new File(target, "installed.json").isFile();
-            } catch (Exception error) {
-                return false;
-            }
+            return DownloadService.isInstalled(MainActivity.this, kind, id);
+        }
+
+        @JavascriptInterface
+        public boolean isInstalledWithFiles(String kind, String id, String filesJson) {
+            return DownloadService.isInstalledWithFiles(MainActivity.this, kind, id, filesJson);
         }
 
         @JavascriptInterface
         public String installedPath(String kind, String id) {
-            try {
-                File base = "runtime".equals(kind)
-                        ? storageDir(RUNTIMES_DIR_NAME) : storageDir(MODELS_DIR_NAME);
-                return safeChild(base, id).getAbsolutePath();
-            } catch (Exception error) {
-                return "";
-            }
+            return DownloadService.installedPath(MainActivity.this, kind, id);
         }
 
         @JavascriptInterface
         public boolean deleteInstalled(String kind, String id) {
-            try {
-                File base = "runtime".equals(kind)
-                        ? storageDir(RUNTIMES_DIR_NAME) : storageDir(MODELS_DIR_NAME);
-                File target = safeChild(base, id);
-                deleteRecursively(target);
-                return !target.exists();
-            } catch (Exception error) {
-                return false;
-            }
+            return DownloadService.deleteInstalled(MainActivity.this, kind, id);
         }
 
         @JavascriptInterface
         public String listInstalled(String kind) {
-            JSONArray out = new JSONArray();
+            return DownloadService.listInstalled(MainActivity.this, kind);
+        }
+
+        @JavascriptInterface
+        public String permissionStatus() {
             try {
-                File base = "runtime".equals(kind)
-                        ? storageDir(RUNTIMES_DIR_NAME) : storageDir(MODELS_DIR_NAME);
-                collectInstalled(base, base, out);
-            } catch (Exception error) {
-                // Return the entries found so far.
+                JSONObject out = new JSONObject();
+                boolean mic = checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED;
+                boolean notifications = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                        || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                        == PackageManager.PERMISSION_GRANTED;
+                out.put("microphone", mic);
+                out.put("notifications", notifications);
+                out.put("battery_optimized", !isIgnoringBatteryOptimizations());
+                out.put("all_files_access", hasAllFilesAccess());
+                out.put("storage_root", PenGuruStorage.root(MainActivity.this).getAbsolutePath());
+                out.put("wake_service", WakeWordService.isRunning());
+                out.put("downloads", DownloadService.activeJobsJson());
+                return out.toString();
+            } catch (JSONException error) {
+                return "{}";
             }
-            return out.toString();
+        }
+
+        @JavascriptInterface
+        public boolean requestBatteryExemption() {
+            runOnUiThread(MainActivity.this::requestBatteryExemption);
+            return true;
+        }
+
+        @JavascriptInterface
+        public boolean requestAppPermissions() {
+            runOnUiThread(() -> {
+                startupChecked = false;
+                runStartupChecks();
+            });
+            return true;
+        }
+
+        @JavascriptInterface
+        public boolean hasBatteryExemption() {
+            return isIgnoringBatteryOptimizations();
+        }
+
+        @JavascriptInterface
+        public boolean hasAllFilesAccess() {
+            return MainActivity.this.hasAllFilesAccess();
+        }
+
+        @JavascriptInterface
+        public boolean requestAllFilesAccess() {
+            runOnUiThread(MainActivity.this::requestAllFilesAccess);
+            return true;
         }
 
         @JavascriptInterface
@@ -813,474 +944,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private static void collectInstalled(File root, File dir, JSONArray out) {
-        File[] children = dir.listFiles();
-        if (children == null) {
-            return;
-        }
-        for (File child : children) {
-            if (child.isDirectory()) {
-                File marker = new File(child, "installed.json");
-                if (marker.isFile()) {
-                    try {
-                        JSONObject entry = new JSONObject();
-                        String path = child.getCanonicalPath();
-                        String rootPath = root.getCanonicalPath();
-                        entry.put("id", path.equals(rootPath) ? "" : path.substring(rootPath.length() + 1));
-                        entry.put("path", path);
-                        entry.put("installed_at", marker.lastModified());
-                        out.put(entry);
-                    } catch (Exception ignored) {
-                        // skip unreadable entry
-                    }
-                }
-                collectInstalled(root, child, out);
-            }
-        }
-    }
-
-    /* --------------------------------------------------------- downloads */
-
-    private static final class FileSpec {
-        String url;
-        String path;
-        String sha256;
-        long size;
-    }
-
-    private static final class DownloadJob {
-        final String jobId;
-        final String kind;
-        final String id;
-        final File targetDir;
-        final List<FileSpec> files;
-        final String extract;
-        final long total;
-        volatile boolean cancel;
-        volatile String state = "queued";
-        volatile String detail = "";
-        volatile double progress;
-        volatile long received;
-
-        DownloadJob(String jobId, String kind, String id, File targetDir,
-                    List<FileSpec> files, long total, String extract) {
-            this.jobId = jobId;
-            this.kind = kind;
-            this.id = id;
-            this.targetDir = targetDir;
-            this.files = files;
-            this.total = total;
-            this.extract = extract == null ? "" : extract;
-        }
-
-        JSONObject toJson() {
-            JSONObject out = new JSONObject();
-            try {
-                out.put("job_id", jobId);
-                out.put("kind", kind);
-                out.put("id", id);
-                out.put("state", state);
-                out.put("detail", detail);
-                out.put("progress", Math.max(0, Math.min(1, progress)));
-                out.put("received_bytes", received);
-                out.put("total_bytes", total);
-                out.put("path", targetDir.getAbsolutePath());
-            } catch (JSONException ignored) {
-                // Values are all primitives; this cannot fail in practice.
-            }
-            return out;
-        }
-    }
-
-    private static final class CancelledException extends IOException {
-        CancelledException() {
-            super("cancelled by owner");
-        }
-    }
-
-    private void runDownload(DownloadJob job) {
-        try {
-            if (!job.targetDir.exists() && !job.targetDir.mkdirs()) {
-                throw new IOException("cannot create " + job.targetDir);
-            }
-            job.state = "downloading";
-            if (job.total > 0) {
-                StatFs stat = new StatFs(job.targetDir.getAbsolutePath());
-                long reserve = 256L * 1024 * 1024;
-                if (stat.getAvailableBytes() < job.total + reserve) {
-                    throw new IOException("Not enough free storage: need "
-                            + (job.total + reserve) + " bytes, have "
-                            + stat.getAvailableBytes());
-                }
-            }
-            long completed = 0;
-            for (FileSpec spec : job.files) {
-                checkCancel(job);
-                File dest = safeChild(job.targetDir, spec.path);
-                File parent = dest.getParentFile();
-                if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                    throw new IOException("cannot create " + parent);
-                }
-                job.detail = "Downloading " + spec.path;
-                downloadOne(job, spec, dest, completed);
-                completed += dest.length();
-                job.received = completed;
-                if (job.total > 0) {
-                    job.progress = Math.min(0.99, completed / (double) job.total);
-                }
-            }
-            job.state = "verifying";
-            job.detail = "Verifying package";
-            if ("tar.gz".equals(job.extract)) {
-                File archive = safeChild(job.targetDir, job.files.get(0).path);
-                job.detail = "Unpacking " + archive.getName();
-                try (InputStream in = new GZIPInputStream(
-                        new BufferedInputStream(new FileInputStream(archive)))) {
-                    extractTar(job, in, job.targetDir);
-                }
-                //noinspection ResultOfMethodCallIgnored
-                archive.delete();
-            } else if ("zip".equals(job.extract)) {
-                File archive = safeChild(job.targetDir, job.files.get(0).path);
-                job.detail = "Unpacking " + archive.getName();
-                try (ZipInputStream in = new ZipInputStream(
-                        new BufferedInputStream(new FileInputStream(archive)))) {
-                    extractZip(job, in, job.targetDir);
-                }
-                //noinspection ResultOfMethodCallIgnored
-                archive.delete();
-            }
-            writeInstalledMarker(job);
-            job.progress = 1.0;
-            job.state = "ready";
-            job.detail = "Installed at " + job.targetDir.getAbsolutePath();
-        } catch (CancelledException cancelled) {
-            job.state = "cancelled";
-            job.detail = "Cancelled";
-        } catch (Exception error) {
-            job.state = "error";
-            job.detail = String.valueOf(error.getMessage());
-            Log.w(TAG, "download failed: " + error);
-        }
-    }
-
-    private void downloadOne(DownloadJob job, FileSpec spec, File dest, long completed) throws IOException {
-        File part = new File(dest.getAbsolutePath() + ".part");
-        long have = part.isFile() ? part.length() : 0;
-        HttpURLConnection connection = (HttpURLConnection) new URL(spec.url).openConnection();
-        try {
-            connection.setConnectTimeout(30000);
-            connection.setReadTimeout(30000);
-            connection.setInstanceFollowRedirects(true);
-            connection.setRequestProperty("User-Agent", "PenGuru-Squad-Android/0.9");
-            connection.setRequestProperty("Accept-Encoding", "identity");
-            if (have > 0) {
-                connection.setRequestProperty("Range", "bytes=" + have + "-");
-            }
-            int code = connection.getResponseCode();
-            if (code == 416 && spec.size > 0 && have == spec.size) {
-                finalizePart(part, dest);
-                return;
-            }
-            if (code == 200 && have > 0) {
-                have = 0;
-                //noinspection ResultOfMethodCallIgnored
-                part.delete();
-            }
-            if (code != 200 && code != 206) {
-                throw new IOException("HTTP " + code + " for " + spec.url);
-            }
-            boolean append = code == 206 && part.isFile();
-            try (InputStream in = new BufferedInputStream(connection.getInputStream());
-                 FileOutputStream out = new FileOutputStream(part, append)) {
-                byte[] buffer = new byte[1 << 18];
-                long written = append ? part.length() : 0;
-                int read;
-                long lastUpdate = 0;
-                while ((read = in.read(buffer)) > 0) {
-                    checkCancel(job);
-                    out.write(buffer, 0, read);
-                    written += read;
-                    long now = System.currentTimeMillis();
-                    if (now - lastUpdate > 250) {
-                        lastUpdate = now;
-                        job.received = completed + written;
-                        if (job.total > 0) {
-                            job.progress = Math.min(0.99, job.received / (double) job.total);
-                        }
-                    }
-                }
-            }
-        } finally {
-            connection.disconnect();
-        }
-        checkCancel(job);
-        if (spec.size > 0 && part.length() != spec.size) {
-            throw new IOException("incomplete download for " + spec.path
-                    + " (" + part.length() + " of " + spec.size + " bytes)");
-        }
-        if (!spec.sha256.isEmpty()) {
-            job.detail = "Verifying SHA-256 for " + spec.path;
-            String actual = sha256Hex(job, part);
-            if (!actual.equalsIgnoreCase(spec.sha256)) {
-                //noinspection ResultOfMethodCallIgnored
-                part.delete();
-                throw new IOException("SHA-256 mismatch for " + spec.path);
-            }
-        }
-        finalizePart(part, dest);
-    }
-
-    private static void finalizePart(File part, File dest) throws IOException {
-        if (dest.exists() && !dest.delete()) {
-            throw new IOException("cannot replace " + dest);
-        }
-        if (!part.renameTo(dest)) {
-            throw new IOException("cannot move " + part + " to " + dest);
-        }
-    }
-
-    private static void checkCancel(DownloadJob job) throws CancelledException {
-        if (job.cancel || Thread.currentThread().isInterrupted()) {
-            throw new CancelledException();
-        }
-    }
-
-    private static String sha256Hex(DownloadJob job, File file) throws IOException {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
-                byte[] buffer = new byte[1 << 20];
-                int read;
-                while ((read = in.read(buffer)) > 0) {
-                    checkCancel(job);
-                    digest.update(buffer, 0, read);
-                }
-            }
-            StringBuilder text = new StringBuilder();
-            for (byte value : digest.digest()) {
-                text.append(String.format(Locale.US, "%02x", value & 0xff));
-            }
-            return text.toString();
-        } catch (java.security.NoSuchAlgorithmException error) {
-            throw new IOException("SHA-256 unavailable", error);
-        }
-    }
-
-    private void writeInstalledMarker(DownloadJob job) throws IOException {
-        try {
-            JSONObject marker = new JSONObject();
-            marker.put("id", job.id);
-            marker.put("kind", job.kind);
-            marker.put("installed_at", System.currentTimeMillis());
-            marker.put("path", job.targetDir.getAbsolutePath());
-            JSONArray files = new JSONArray();
-            for (FileSpec spec : job.files) {
-                files.put(spec.path);
-            }
-            marker.put("archives", files);
-            File tmp = new File(job.targetDir, "installed.json.tmp");
-            try (FileOutputStream out = new FileOutputStream(tmp)) {
-                out.write(marker.toString().getBytes(StandardCharsets.UTF_8));
-            }
-            File markerFile = new File(job.targetDir, "installed.json");
-            //noinspection ResultOfMethodCallIgnored
-            markerFile.delete();
-            if (!tmp.renameTo(markerFile)) {
-                throw new IOException("cannot write installed marker");
-            }
-        } catch (JSONException error) {
-            throw new IOException("cannot encode installed marker", error);
-        }
-    }
-
-    /* ------------------------------------------------------- tar/zip unpack */
-
-    private static void extractTar(DownloadJob job, InputStream in, File dest) throws IOException {
-        byte[] header = new byte[512];
-        String longName = null;
-        while (true) {
-            int read = readFully(in, header, 0, header.length);
-            if (read == 0) {
-                break;
-            }
-            if (read < header.length) {
-                throw new IOException("truncated tar header");
-            }
-            boolean empty = true;
-            for (byte value : header) {
-                if (value != 0) {
-                    empty = false;
-                    break;
-                }
-            }
-            if (empty) {
-                break;
-            }
-            String name = cString(header, 0, 100);
-            String prefix = cString(header, 345, 155);
-            if (!prefix.isEmpty()) {
-                name = prefix + "/" + name;
-            }
-            long size = parseOctal(header, 124, 12);
-            char type = (char) (header[156] & 0xff);
-            if (type == 'L') {
-                longName = readString(in, size);
-                skipPadding(in, size);
-                continue;
-            }
-            if (type == 'x' || type == 'g') {
-                skipFully(in, size);
-                skipPadding(in, size);
-                continue;
-            }
-            if (longName != null) {
-                name = longName;
-                longName = null;
-            }
-            if (type == '5') {
-                File dir = safeChild(dest, name);
-                if (!dir.exists() && !dir.mkdirs()) {
-                    throw new IOException("cannot create " + dir);
-                }
-                skipFully(in, size);
-            } else if (type == '0' || type == 0 || type == '7') {
-                File out = safeChild(dest, name);
-                File parent = out.getParentFile();
-                if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                    throw new IOException("cannot create " + parent);
-                }
-                try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(out))) {
-                    copyExactly(job, in, stream, size);
-                }
-                // Best effort: the extracted CLI binaries are useful when the
-                // platform allows execution from an app-owned location.
-                //noinspection ResultOfMethodCallIgnored
-                out.setExecutable(true, false);
-            } else {
-                skipFully(in, size);
-            }
-            skipPadding(in, size);
-        }
-    }
-
-    private static void extractZip(DownloadJob job, ZipInputStream in, File dest) throws IOException {
-        ZipEntry entry;
-        while ((entry = in.getNextEntry()) != null) {
-            checkCancel(job);
-            String name = entry.getName();
-            if (name.endsWith("/")) {
-                File dir = safeChild(dest, name);
-                if (!dir.exists() && !dir.mkdirs()) {
-                    throw new IOException("cannot create " + dir);
-                }
-                continue;
-            }
-            File out = safeChild(dest, name);
-            File parent = out.getParentFile();
-            if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                throw new IOException("cannot create " + parent);
-            }
-            try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(out))) {
-                byte[] buffer = new byte[1 << 18];
-                int read;
-                while ((read = in.read(buffer)) > 0) {
-                    checkCancel(job);
-                    stream.write(buffer, 0, read);
-                }
-            }
-            in.closeEntry();
-        }
-    }
-
-    private static int readFully(InputStream in, byte[] buffer, int offset, int length) throws IOException {
-        int total = 0;
-        while (total < length) {
-            int read = in.read(buffer, offset + total, length - total);
-            if (read <= 0) {
-                break;
-            }
-            total += read;
-        }
-        return total;
-    }
-
-    private static void copyExactly(DownloadJob job, InputStream in, OutputStream out, long size)
-            throws IOException {
-        byte[] buffer = new byte[1 << 18];
-        long remaining = size;
-        while (remaining > 0) {
-            checkCancel(job);
-            int read = in.read(buffer, 0, (int) Math.min(buffer.length, remaining));
-            if (read <= 0) {
-                throw new IOException("truncated archive");
-            }
-            out.write(buffer, 0, read);
-            remaining -= read;
-        }
-    }
-
-    private static void skipFully(InputStream in, long size) throws IOException {
-        long remaining = size;
-        byte[] buffer = new byte[8192];
-        while (remaining > 0) {
-            int read = in.read(buffer, 0, (int) Math.min(buffer.length, remaining));
-            if (read <= 0) {
-                throw new IOException("truncated archive");
-            }
-            remaining -= read;
-        }
-    }
-
-    private static void skipPadding(InputStream in, long size) throws IOException {
-        long padding = (512 - (size % 512)) % 512;
-        if (padding > 0) {
-            skipFully(in, padding);
-        }
-    }
-
-    private static String readString(InputStream in, long size) throws IOException {
-        if (size <= 0 || size > 8192) {
-            throw new IOException("invalid long name");
-        }
-        byte[] data = new byte[(int) size];
-        if (readFully(in, data, 0, data.length) != data.length) {
-            throw new IOException("truncated long name");
-        }
-        int end = data.length;
-        while (end > 0 && data[end - 1] == 0) {
-            end--;
-        }
-        return new String(data, 0, end, StandardCharsets.UTF_8);
-    }
-
-    private static String cString(byte[] data, int offset, int length) {
-        int end = offset;
-        int limit = Math.min(data.length, offset + length);
-        while (end < limit && data[end] != 0) {
-            end++;
-        }
-        return new String(data, offset, end - offset, StandardCharsets.UTF_8);
-    }
-
-    private static long parseOctal(byte[] data, int offset, int length) {
-        long value = 0;
-        int end = Math.min(data.length, offset + length);
-        int index = offset;
-        while (index < end && (data[index] == 0 || data[index] == ' ')) {
-            index++;
-        }
-        while (index < end) {
-            int digit = data[index] & 0xff;
-            if (digit < '0' || digit > '7') {
-                break;
-            }
-            value = (value << 3) + (digit - '0');
-            index++;
-        }
-        return value;
-    }
-
     /* ----------------------------------------------------------- speech */
 
     private boolean ensureSpeechRecognizer() {
@@ -1334,7 +997,7 @@ public class MainActivity extends Activity {
         return intent;
     }
 
-    private void beginSpeech(boolean wake) {
+    private void beginSpeech(final boolean wake) {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             pendingSpeech = true;
@@ -1342,25 +1005,35 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
             return;
         }
+        pendingSpeech = false;
+        // Cancel any previous foreground session immediately so its callbacks
+        // cannot race the new one or surface a bogus client_error.
+        final int requestToken = ++speechToken;
+        speechRunning = false;
+        releaseSpeechRecognizer();
         // The persistent SonarBird listener and this foreground session share
-        // the one microphone Android exposes. Pause the service while the
-        // in-app button owns it, then resume after the transcript arrives.
-        WakeWordService.pauseForActivity();
-        if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
-            deliverSpeech("", wake, "speech_recognizer_unavailable", speechToken);
-            return;
-        }
-        speechRetryUsed = false;
-        speechPreferOffline = true;
-        speechLanguage = "";
-        if (speechRunning) {
-            // Finish the previous session before starting a new one.
-            speechRunning = false;
-            releaseSpeechRecognizer();
-            restartSpeech(wake, 350);
-            return;
-        }
-        startSpeechNow(wake);
+        // the one microphone Android exposes. Wait until the service has
+        // actually destroyed its recognizer before creating ours; starting
+        // immediately is what produced ERROR_RECOGNIZER_BUSY ("speech service
+        // busy") when both paths overlapped.
+        WakeWordService.pauseForActivity(() -> mainHandler.postDelayed(() -> {
+            if (requestToken != speechToken || isFinishing()) {
+                return;
+            }
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                deliverSpeech("", wake, "microphone_permission_denied", requestToken);
+                return;
+            }
+            if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
+                deliverSpeech("", wake, "speech_recognizer_unavailable", requestToken);
+                return;
+            }
+            speechRetryCount = 0;
+            speechPreferOffline = true;
+            speechLanguage = "";
+            startSpeechNow(wake);
+        }, 550L));
     }
 
     private void restartSpeech(final boolean wake, long delayMillis) {
@@ -1368,7 +1041,7 @@ public class MainActivity extends Activity {
         releaseSpeechRecognizer();
         final int token = ++speechToken;
         mainHandler.postDelayed(() -> {
-            if (token != speechToken) {
+            if (token != speechToken || isFinishing()) {
                 return;
             }
             startSpeechNow(wake);
@@ -1481,17 +1154,19 @@ public class MainActivity extends Activity {
             if (token != speechToken || !speechRunning) {
                 return;
             }
-            if (!speechRetryUsed && shouldRetrySpeech(error)) {
+            if (speechRetryCount < 2 && shouldRetrySpeech(error)) {
                 // Offline-only recognition frequently fails with error 12/13
-                // when no language pack is installed. Retry through the normal
-                // recognizer (network/on-device service) and try en-US.
-                speechRetryUsed = true;
+                // when no language pack is installed. Busy/client errors are
+                // usually the previous recognizer still releasing. Retry with
+                // a fresh instance, the normal recognizer and en-US fallback.
+                speechRetryCount++;
                 speechPreferOffline = false;
                 if (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
-                        || error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED) {
+                        || error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+                        || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
                     speechLanguage = "en-US";
                 }
-                restartSpeech(speechWake, 450L);
+                restartSpeech(speechWake, 700L * speechRetryCount);
                 return;
             }
             deliverSpeech("", speechWake, speechErrorName(error), token);
@@ -1578,6 +1253,7 @@ public class MainActivity extends Activity {
         public void onPageFinished(WebView view, String url) {
             pageReady = true;
             flushPendingWakeCommands();
+            mainHandler.postDelayed(MainActivity.this::runStartupChecks, 500L);
         }
 
         @Override

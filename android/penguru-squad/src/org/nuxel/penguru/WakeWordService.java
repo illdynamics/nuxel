@@ -42,7 +42,7 @@ import org.json.JSONObject;
  * auto-sent by the PWA. If Android blocks the background activity launch, the
  * ongoing notification still carries the command so tapping it delivers it.
  */
-public class WakeWordService extends Service implements RecognitionListener {
+public class WakeWordService extends Service {
     private static final String TAG = "PenGuruWake";
 
     public static final String ACTION_START = "org.nuxel.penguru.action.WAKE_START";
@@ -58,6 +58,7 @@ public class WakeWordService extends Service implements RecognitionListener {
     private static final int NOTIFICATION_ID = 8801;
     private static final long SESSION_DEADLINE_MS = 12000L;
     private static final long COMMAND_FOLLOW_UP_MS = 20000L;
+    private static final long MIN_SESSION_GAP_MS = 650L;
     private static final Pattern WAKE = Pattern.compile(
             "\\bpen[\\s-]?guru\\b[\\s,.:;!?\\-]*(.*)$",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
@@ -75,20 +76,47 @@ public class WakeWordService extends Service implements RecognitionListener {
     private boolean destroyed;
     private long awaitingSince;
     private long lastDispatchAt;
+    private long lastSessionAt;
     private String lastDispatch = "";
+    private String speechLanguage = "";
+    private String lastError = "";
+    private String lastHeard = "";
+    private int consecutiveErrors;
     private int session;
 
     public static boolean isRunning() {
         return running;
     }
 
-    /** Called when an in-app dictation session needs the only microphone. */
-    public static void pauseForActivity() {
+    public static boolean isPaused() {
+        return paused;
+    }
+
+    /** Wait until the service has released the recognizer and microphone. */
+    public static void pauseForActivity(Runnable whenPaused) {
         paused = true;
         WakeWordService service = instance;
-        if (service != null) {
-            service.handler.post(service::stopRecognizer);
+        if (service == null) {
+            if (whenPaused != null) {
+                whenPaused.run();
+            }
+            return;
         }
+        service.handler.post(() -> {
+            service.stopRecognizer();
+            service.listening = false;
+            service.updateNotification("Paused while the in-app microphone is in use");
+            if (whenPaused != null) {
+                // Give Android's speech service a moment to tear down its
+                // binder before the Activity creates a new recognizer.
+                service.handler.postDelayed(whenPaused, 120L);
+            }
+        });
+    }
+
+    /** Kept for callers that do not need a release callback. */
+    public static void pauseForActivity() {
+        pauseForActivity(null);
     }
 
     /** Called after the in-app dictation session releases the microphone. */
@@ -96,7 +124,7 @@ public class WakeWordService extends Service implements RecognitionListener {
         paused = false;
         WakeWordService service = instance;
         if (service != null) {
-            service.handler.postDelayed(service::beginListening, 700L);
+            service.handler.postDelayed(service::beginListening, 900L);
         }
     }
 
@@ -116,6 +144,9 @@ public class WakeWordService extends Service implements RecognitionListener {
                     == PackageManager.PERMISSION_GRANTED;
             out.put("notifications", notifications);
             out.put("awaiting_command", service != null && service.awaitingCommand);
+            out.put("last_error", service == null ? "" : service.lastError);
+            out.put("last_heard", service == null ? "" : service.lastHeard);
+            out.put("sessions", service == null ? 0 : service.session);
         } catch (Exception error) {
             // JSONObject only receives primitive values.
         }
@@ -169,12 +200,13 @@ public class WakeWordService extends Service implements RecognitionListener {
                 .apply();
         paused = false;
         if (!startInForeground("Listening for “Penguru” · say it, then your message")) {
+            lastError = "Android refused to start the microphone foreground service. Open PenGuru while the screen is on and start listening again.";
             stopSelf();
             return START_NOT_STICKY;
         }
         restartQueued = false;
         handler.removeCallbacksAndMessages(null);
-        handler.postDelayed(this::beginListening, 250L);
+        handler.postDelayed(this::beginListening, 350L);
         return START_STICKY;
     }
 
@@ -319,43 +351,55 @@ public class WakeWordService extends Service implements RecognitionListener {
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
+            lastError = "Microphone permission is missing";
             updateNotification("Microphone permission is missing · open PenGuru");
             scheduleNext(5000L);
             return;
         }
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            lastError = "No Android speech recognition service";
             updateNotification("No Android speech recognition service · open PenGuru");
             scheduleNext(10000L);
+            return;
+        }
+        long sinceLast = System.currentTimeMillis() - lastSessionAt;
+        if (sinceLast < MIN_SESSION_GAP_MS) {
+            scheduleNext(MIN_SESSION_GAP_MS - sinceLast);
             return;
         }
         stopRecognizer();
         final int token = session;
         try {
             recognizer = SpeechRecognizer.createSpeechRecognizer(this);
-            recognizer.setRecognitionListener(this);
+            recognizer.setRecognitionListener(new SessionListener(token));
         } catch (RuntimeException error) {
             recognizer = null;
-            scheduleNext(2000L);
+            lastError = "Speech recognizer unavailable: " + error.getMessage();
+            scheduleNext(2500L);
             return;
         }
         listening = true;
+        lastSessionAt = System.currentTimeMillis();
         awaitingCommand = awaitingCommand
                 && System.currentTimeMillis() - awaitingSince < COMMAND_FOLLOW_UP_MS;
         Intent intent = speechIntent();
         try {
             recognizer.startListening(intent);
+            lastError = "";
         } catch (RuntimeException error) {
             listening = false;
+            lastError = "Speech start failed: " + error.getMessage();
             stopRecognizer();
-            scheduleNext(1500L);
+            scheduleNext(1800L);
             return;
         }
         handler.postDelayed(() -> {
             if (token != session || destroyed) {
                 return;
             }
+            lastError = "Session watchdog released the microphone";
             stopRecognizer();
-            scheduleNext(250L);
+            scheduleNext(500L);
         }, SESSION_DEADLINE_MS);
     }
 
@@ -365,29 +409,37 @@ public class WakeWordService extends Service implements RecognitionListener {
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag());
+        String language = speechLanguage;
+        if (language == null || language.isEmpty()) {
+            language = Locale.getDefault().toLanguageTag();
+        }
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language);
         // Background wake listening needs the phone's normal recognizer. Many
         // offline-only recognizers have no language pack installed and then
         // hold the microphone open forever, so do not force offline here.
         intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false);
+        // Ask compliant recognizers to finish short wake phrases promptly.
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 700L);
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 700L);
         return intent;
     }
 
     private void stopRecognizer() {
         session++;
         listening = false;
-        if (recognizer != null) {
+        SpeechRecognizer current = recognizer;
+        recognizer = null;
+        if (current != null) {
             try {
-                recognizer.cancel();
+                current.cancel();
             } catch (RuntimeException ignored) {
                 // already cancelled
             }
             try {
-                recognizer.destroy();
+                current.destroy();
             } catch (RuntimeException ignored) {
                 // already destroyed
             }
-            recognizer = null;
         }
     }
 
@@ -407,36 +459,38 @@ public class WakeWordService extends Service implements RecognitionListener {
     private void handleText(String raw) {
         String text = raw == null ? "" : raw.trim();
         if (text.isEmpty()) {
-            scheduleNext(350L);
+            scheduleNext(500L);
             return;
         }
+        lastHeard = shorten(text);
+        consecutiveErrors = 0;
         Matcher match = WAKE.matcher(text);
         if (match.find()) {
             String rest = match.group(1) == null ? "" : match.group(1).trim();
             if (!rest.isEmpty()) {
                 awaitingCommand = false;
                 dispatch(rest);
-                scheduleNext(800L);
+                scheduleNext(900L);
                 return;
             }
             awaitingCommand = true;
             awaitingSince = System.currentTimeMillis();
             updateNotification("Heard “Penguru” · listening for your message…");
-            scheduleNext(200L);
+            scheduleNext(250L);
             return;
         }
         if (awaitingCommand) {
             if (System.currentTimeMillis() - awaitingSince > COMMAND_FOLLOW_UP_MS) {
                 awaitingCommand = false;
-                scheduleNext(400L);
+                scheduleNext(500L);
                 return;
             }
             awaitingCommand = false;
             dispatch(text);
-            scheduleNext(800L);
+            scheduleNext(900L);
             return;
         }
-        scheduleNext(350L);
+        scheduleNext(500L);
     }
 
     private void dispatch(String command) {
@@ -477,74 +531,127 @@ public class WakeWordService extends Service implements RecognitionListener {
 
     /* ------------------------------------------------------ recognition */
 
-    @Override
-    public void onReadyForSpeech(Bundle params) {
-        updateNotification(awaitingCommand
-                ? "Listening for your message…"
-                : "Listening for “Penguru” · say it, then your message");
-    }
+    /**
+     * One listener per recognizer session. Stale callbacks from a recognizer
+     * that was cancelled or replaced are ignored instead of scheduling two
+     * competing sessions (the source of repeated ERROR_RECOGNIZER_BUSY).
+     */
+    private final class SessionListener implements RecognitionListener {
+        private final int token;
 
-    @Override
-    public void onBeginningOfSpeech() { }
+        SessionListener(int token) {
+            this.token = token;
+        }
 
-    @Override
-    public void onRmsChanged(float rmsdB) { }
+        private boolean stale() {
+            return destroyed || paused || token != session;
+        }
 
-    @Override
-    public void onBufferReceived(byte[] buffer) { }
+        @Override
+        public void onReadyForSpeech(Bundle params) {
+            if (stale()) {
+                return;
+            }
+            lastError = "";
+            updateNotification(awaitingCommand
+                    ? "Listening for your message…"
+                    : "Listening for “Penguru” · say it, then your message");
+        }
 
-    @Override
-    public void onEndOfSpeech() {
-        // Ask the recognizer to return its final hypothesis promptly. This is
-        // what releases the microphone on devices that never send onResults
-        // after a natural end-of-speech.
-        if (listening && recognizer != null) {
+        @Override public void onBeginningOfSpeech() { }
+        @Override public void onRmsChanged(float rmsdB) { }
+        @Override public void onBufferReceived(byte[] buffer) { }
+        @Override public void onPartialResults(Bundle partialResults) { }
+        @Override public void onEvent(int eventType, Bundle params) { }
+
+        @Override
+        public void onEndOfSpeech() {
+            if (stale() || !listening || recognizer == null) {
+                return;
+            }
+            // Ask the recognizer to return its final hypothesis promptly. This is
+            // what releases the microphone on devices that never send onResults
+            // after a natural end-of-speech.
             try {
                 recognizer.stopListening();
             } catch (RuntimeException ignored) {
                 // already stopping
             }
         }
+
+        @Override
+        public void onError(int error) {
+            if (stale()) {
+                return;
+            }
+            final boolean keepCommand = awaitingCommand
+                    && System.currentTimeMillis() - awaitingSince < COMMAND_FOLLOW_UP_MS;
+            stopRecognizer();
+            lastError = speechErrorName(error);
+            consecutiveErrors++;
+            if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                updateNotification("Microphone permission is missing · open PenGuru");
+                scheduleNext(8000L);
+            } else if (error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+                    || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE) {
+                awaitingCommand = keepCommand;
+                if (!"en-US".equals(speechLanguage)) {
+                    speechLanguage = "en-US";
+                    scheduleNext(400L);
+                } else {
+                    scheduleNext(6000L);
+                }
+            } else if (error == SpeechRecognizer.ERROR_NO_MATCH
+                    || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                consecutiveErrors = 0;
+                awaitingCommand = keepCommand;
+                scheduleNext(awaitingCommand ? 300L : 650L);
+            } else if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY
+                    || error == SpeechRecognizer.ERROR_CLIENT) {
+                // The previous recognizer is still releasing, or another app
+                // owns the speech service. Back off instead of hammering it.
+                awaitingCommand = keepCommand;
+                long delay = Math.min(8000L, 1200L * consecutiveErrors);
+                updateNotification("Android speech service busy · retrying in "
+                        + Math.round(delay / 1000.0) + "s");
+                scheduleNext(delay);
+            } else {
+                awaitingCommand = keepCommand;
+                long delay = Math.min(8000L, 1000L * consecutiveErrors);
+                updateNotification("Speech service: " + lastError + " · retrying…");
+                scheduleNext(delay);
+            }
+        }
+
+        @Override
+        public void onResults(Bundle results) {
+            if (stale()) {
+                return;
+            }
+            ArrayList<String> matches = results == null ? null
+                    : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            String text = matches == null || matches.isEmpty() ? "" : matches.get(0);
+            stopRecognizer();
+            handleText(text);
+        }
     }
 
-    @Override
-    public void onError(int error) {
-        if (destroyed) {
-            return;
-        }
-        final boolean keepCommand = awaitingCommand
-                && System.currentTimeMillis() - awaitingSince < COMMAND_FOLLOW_UP_MS;
-        stopRecognizer();
-        if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
-            updateNotification("Microphone permission is missing · open PenGuru");
-            scheduleNext(5000L);
-        } else if (error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
-                || error == SpeechRecognizer.ERROR_NO_MATCH) {
-            awaitingCommand = keepCommand;
-            scheduleNext(awaitingCommand ? 250L : 600L);
-        } else {
-            awaitingCommand = keepCommand;
-            scheduleNext(error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ? 1500L : 1000L);
+    private static String speechErrorName(int error) {
+        switch (error) {
+            case SpeechRecognizer.ERROR_AUDIO: return "audio_error";
+            case SpeechRecognizer.ERROR_CLIENT: return "client_error";
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: return "microphone_permission_denied";
+            case SpeechRecognizer.ERROR_NETWORK: return "network_error";
+            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: return "network_timeout";
+            case SpeechRecognizer.ERROR_NO_MATCH: return "no_speech_detected";
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: return "recognizer_busy";
+            case SpeechRecognizer.ERROR_SERVER: return "speech_service_error";
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: return "speech_timeout";
+            case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED: return "language_not_supported";
+            case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: return "language_unavailable";
+            default: return "speech_error_" + error;
         }
     }
-
-    @Override
-    public void onResults(Bundle results) {
-        if (destroyed) {
-            return;
-        }
-        ArrayList<String> matches = results == null ? null
-                : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-        String text = matches == null || matches.isEmpty() ? "" : matches.get(0);
-        stopRecognizer();
-        handleText(text);
-    }
-
-    @Override
-    public void onPartialResults(Bundle partialResults) { }
-
-    @Override
-    public void onEvent(int eventType, Bundle params) { }
 
     private void shutdown() {
         destroyed = true;

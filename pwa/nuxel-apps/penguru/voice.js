@@ -77,7 +77,7 @@ export function voiceControls(call, available, onText) {
         return 'The speech service could not answer. Check the network or install an offline speech language pack, then try again.';
       case 'client_error':
       case 'recognizer_busy':
-        return 'Android speech service was busy. Tap the microphone button again.';
+        return 'Android’s speech service is still releasing the previous session. Wait a moment, then tap the microphone again.';
       case 'no_speech_detected':
         return 'No speech detected. Try again.';
       case 'speech_timeout':

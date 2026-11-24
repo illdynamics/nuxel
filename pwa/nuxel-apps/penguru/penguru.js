@@ -270,16 +270,54 @@ function updateWakePanel() {
   }
   const state = wakeJson(androidWake.wakeServiceStatus && androidWake.wakeServiceStatus());
   const running = !!state.running;
-  start.disabled = running || state.starting === true;
-  stop.disabled = !running && !state.starting;
+  start.disabled = running;
+  stop.disabled = !running;
   if (running) {
-    $('wake-service-status').textContent = 'SonarBird is listening for “Penguru” in the background · persistent notification active.';
+    const heard = state.last_heard ? ` · last heard “${state.last_heard}”` : '';
+    const error = state.last_error ? ` · ${state.last_error}` : '';
+    $('wake-service-status').textContent = state.listening
+      ? 'SonarBird is listening for “Penguru” · persistent notification active' + heard + error
+      : 'SonarBird service is running and restarting the speech session' + error;
   } else if (state.error) {
     $('wake-service-status').textContent = state.error;
-  } else if (state.starting) {
-    $('wake-service-status').textContent = 'Starting SonarBird background listening…';
   } else {
     $('wake-service-status').textContent = 'Background listening is off. Start it once; it keeps listening while the screen is off.';
+  }
+}
+
+function updatePermissionPanel() {
+  if (!$('permission-status')) return;
+  if (!androidWake || typeof androidWake.permissionStatus !== 'function') {
+    $('permission-status').textContent = 'Android permission checks are available in the APK.';
+    if ($('battery-exempt')) $('battery-exempt').disabled = true;
+    return;
+  }
+  const state = wakeJson(androidWake.permissionStatus());
+  const lines = [
+    'Microphone: ' + (state.microphone ? 'granted' : 'not granted'),
+    'Notifications: ' + (state.notifications ? 'granted' : 'not granted'),
+    'Battery optimization: ' + (state.battery_optimized ? 'ON · Android may stop background work' : 'off · protected'),
+    'Reinstall-safe storage: ' + (state.all_files_access
+      ? 'on · ' + (state.storage_root || 'Download/PenGuru')
+      : 'off · allow All files access to reuse downloads'),
+  ];
+  $('permission-status').textContent = lines.join(' · ');
+  if ($('battery-exempt')) {
+    $('battery-exempt').disabled = !state.battery_optimized;
+    $('battery-exempt').textContent = state.battery_optimized
+      ? 'Disable battery optimization' : 'Battery optimization disabled';
+  }
+  if ($('all-files-access')) {
+    $('all-files-access').disabled = !!state.all_files_access;
+    $('all-files-access').textContent = state.all_files_access
+      ? 'All files access enabled' : 'Allow all files access';
+  }
+  if ($('background-status')) {
+    const active = Array.isArray(state.downloads) ? state.downloads
+      : (typeof state.downloads === 'string' ? wakeJson(state.downloads) : []);
+    $('background-status').textContent = active.length
+      ? `${active.length} download${active.length === 1 ? '' : 's'} running in the background · the screen can turn off safely.`
+      : 'No download is running in the background right now.';
   }
 }
 if ($('wake-service-start')) {
@@ -294,8 +332,35 @@ if ($('wake-service-start')) {
     try { androidWake.stopWakeWordService(); } catch (error) { notice(error.message); }
     setTimeout(updateWakePanel, 300);
   };
+  if ($('permission-request')) {
+    $('permission-request').onclick = () => {
+      try {
+        androidWake.requestAppPermissions();
+        $('permission-status').textContent = 'Requesting Android permissions…';
+      } catch (error) { notice(error.message); }
+      setTimeout(updatePermissionPanel, 600);
+    };
+  }
+  if ($('battery-exempt')) {
+    $('battery-exempt').onclick = () => {
+      try {
+        androidWake.requestBatteryExemption();
+        $('background-status').textContent = 'Choose PenGuru Squad in the Android battery optimization screen and allow background activity.';
+      } catch (error) { notice(error.message); }
+    };
+  }
+  if ($('all-files-access')) {
+    $('all-files-access').onclick = () => {
+      try {
+        androidWake.requestAllFilesAccess();
+        $('background-status').textContent = 'Enable All files access for PenGuru Squad, then return to the app. Existing downloads will be reused instead of fetched again.';
+      } catch (error) { notice(error.message); }
+    };
+  }
   setInterval(updateWakePanel, 2000);
+  setInterval(updatePermissionPanel, 3000);
   updateWakePanel();
+  updatePermissionPanel();
 }
 
 applyEngineMode();

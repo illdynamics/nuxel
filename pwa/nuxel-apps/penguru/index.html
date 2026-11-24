@@ -46,7 +46,7 @@
 
   <section id="models" hidden>
     <h2>Model library</h2>
-    <p class="hint">Downloads go directly from Hugging Face to this phone's app storage. Review the exact revision and license before installing. Downloads are verified with the pinned SHA-256 and never leave the handset after installation.</p>
+    <p class="hint">Downloads go directly from Hugging Face to this phone. Review the exact revision and license before installing. They run in a foreground service and keep going when the screen turns off. Downloads are verified with the pinned SHA-256 and never leave the handset after installation.</p>
     <p id="models-path" class="hint">Storage on this phone: …</p>
     <div id="cards"></div>
   </section>
@@ -65,7 +65,7 @@
 
     <div id="local-panel">
       <h3>On-device dependencies</h3>
-      <p class="hint">Install the runtimes you want to use. Archives are downloaded to app-specific Android storage (<code>/Android/data/org.nuxel.penguru/files</code>), verified, and unpacked without root. Android's built-in speech recognizer needs no download.</p>
+      <p class="hint">Install the runtimes you want to use. Archives are downloaded to <code>Download/PenGuru</code> when All files access is granted (or to app storage otherwise), verified, and unpacked without root. Android's built-in speech recognizer needs no download. Downloads and unpacking continue with the screen off.</p>
       <div id="runtimes"></div>
       <h3>Storage</h3>
       <p id="storage-paths" class="hint">Models: …<br>Runtimes: …<br>Exports: Downloads/PenGuru</p>
@@ -100,12 +100,22 @@
     <p class="hint">Foreground dictation stops when you hide the app or turn PenGuru off. Speech never authorizes privileged actions.</p>
 
     <h3>SonarBird background listening</h3>
-    <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> followed by a question and it is sent to the conversation automatically. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — reopen PenGuru and start it again if the notification disappears.</p>
+    <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> followed by a question and it is sent to the conversation automatically. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — the battery exemption below prevents that.</p>
     <div class="controls">
       <button id="wake-service-start" type="button">Start background listening</button>
       <button id="wake-service-stop" type="button" disabled>Stop background listening</button>
     </div>
     <p id="wake-service-status" role="status">Background listening is off.</p>
+
+    <h3>Background reliability</h3>
+    <p class="hint">PenGuru checks these permissions every time it opens. The battery exemption keeps Android from stopping the microphone notification and model downloads when the screen is off. All files access lets a reinstalled APK find <code>Download/PenGuru</code> instead of downloading every model and runtime again.</p>
+    <p id="permission-status" class="hint">Checking Android permissions…</p>
+    <div class="controls">
+      <button id="permission-request" type="button">Check app permissions</button>
+      <button id="battery-exempt" type="button">Disable battery optimization</button>
+      <button id="all-files-access" type="button">Allow all files access</button>
+    </div>
+    <p id="background-status" role="status"></p>
 
     <h3>Privacy</h3>
     <p>Prompts and answers stay in this app's memory for the session. Model files and runtime archives are stored in this app's Android data directory. No cloud inference or telemetry. Turning PenGuru off stops downloads and workers.</p>

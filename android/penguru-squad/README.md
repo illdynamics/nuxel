@@ -11,13 +11,16 @@ the old `penguru` RPC namespace and delegates Android-only work to the
 `NuxelAndroid` bridge in `MainActivity`:
 
 - conversation, routing, device diagnostics and voice work immediately;
-- model downloads go directly from Hugging Face to app storage;
-- llama.cpp and ONNX Runtime installers download, verify and unpack into app
-  storage;
+- model downloads go directly from Hugging Face to `Download/PenGuru` (when
+  All files access is granted) or app storage;
+- llama.cpp and ONNX Runtime installers download, verify and unpack in a
+  foreground service, so screen-off does not interrupt them;
 - Android `SpeechRecognizer` supplies foreground microphone transcripts;
   every session has a native watchdog and an explicit microphone release;
 - a microphone foreground service keeps a persistent SonarBird listener for
-  the “Penguru” wake word while the app is in the background.
+  the “Penguru” wake word while the app is in the background;
+- on launch the app checks microphone, notification, battery-optimization and
+  reinstall-safe storage access, then restores an enabled background listener.
 
 The Nuxel connection form remains as an optional engine mode for owners who
 already run the PenGuru service. No URL or token is required on a regular
@@ -83,23 +86,29 @@ token, launcher or root access.
 |---|---|
 | Conversation | Local routing plus a built-in responder (device status, code outlines, clarifying questions, chat). |
 | Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and Voice tiny.en packages with **Download to this phone**. |
-| Downloads | `MainActivity` streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. |
-| Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip into app storage. |
-| Voice | Android `SpeechRecognizer`; prefers offline, retries through the phone's normal recognizer (including en-US) when a language pack is missing, has a native 16-second watchdog, and auto-sends the transcript. The microphone is destroyed after every session. |
-| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru” alone and the next sentence is sent, or say “Penguru <question>” in one go. Android 10+ may require tapping the notification to bring the conversation forward; the command is still sent automatically when the app opens. Boot/package-replaced receivers re-arm an enabled listener. |
+| Downloads | `DownloadService` (a `dataSync` foreground service) streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. It holds a partial wake lock and Wi-Fi lock so locking the screen does not pause or interrupt the transfer. |
+| Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip. An interrupted job resumes from the persisted spec after a rebuild or process restart. |
+| Voice | Android `SpeechRecognizer`; waits for the background service to release the microphone before starting, retries busy/client sessions with a fresh recognizer, falls back to the phone's normal recognizer and en-US when a language pack is missing, has a native 16-second watchdog, and auto-sends the transcript. The microphone is destroyed after every session. |
+| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru” alone and the next sentence is sent, or say “Penguru <question>” in one go. Each recognizer session has its own token and error backoff, so stale callbacks no longer create competing sessions. Android 10+ may require tapping the notification to bring the conversation forward; the command is still sent automatically when the app opens. Boot/package-replaced receivers re-arm an enabled listener. |
+| Permissions | On launch the app requests microphone and notification access, restores a previously enabled listener, and prompts once a week for the battery-optimization exemption and All files access until granted. |
+| Reinstall reuse | With **All files access**, models and runtimes live in `Download/PenGuru` and are discovered after an uninstall/reinstall by validating each file and byte length. Without it, `Android/media/<package>` survives APK updates but not a full uninstall. |
 | Diagnostics | Battery, storage, Android version, CPU ABIs, model/runtime paths. |
 | Export | MediaStore `Downloads/PenGuru`; the actual de-duplicated name is reported. |
 
 ### Storage paths
 
 ```
-/storage/emulated/0/Android/data/org.nuxel.penguru/files/Models/<model>/<variant>/
-/storage/emulated/0/Android/data/org.nuxel.penguru/files/Runtimes/<runtime>/
-/storage/emulated/0/Download/PenGuru/
+/storage/emulated/0/Download/PenGuru/Models/<model>/<variant>/
+/storage/emulated/0/Download/PenGuru/Runtimes/<runtime>/
+/storage/emulated/0/Download/PenGuru/            (exports too)
 ```
 
-These are app-specific external directories: no `WRITE_EXTERNAL_STORAGE`
-permission is needed, and the paths are shown in Settings → Storage.
+With **All files access**, `Download/PenGuru` is reused after an APK
+uninstall/reinstall and the runtime/model files stay directly readable. The
+app only touches that folder. Without the grant it falls back to
+`/storage/emulated/0/Android/media/org.nuxel.penguru/`, and the effective path
+is always shown in Settings → Storage. Existing files are migrated
+automatically when the grant is enabled.
 
 ### Runtime catalog
 
@@ -147,8 +156,13 @@ bridge must allow the APK origin for CORS; the current
   engine: status, model cards, model download spec (pinned URL/SHA-256),
   download-status → installed transition, runtime install spec, SYSTEM and CODE
   replies, and diagnostics.
-- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=901`,
-  `versionName=0.9.1-beta`.
+- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=902`,
+  `versionName=0.9.2-beta`.
+- API 35 emulator checks: launch-time microphone/notification prompts, the
+  battery dialog, the All files access dialog, a screen-off download that
+  completed in the `dataSync` foreground service, and a full
+  uninstall/reinstall where the app detected the existing `Download/PenGuru`
+  model by file size without downloading it again.
 - A mocked-bridge harness also resolves the SonarBird Voice tiny.en download by
   model **and** variant (pinned `ggml-tiny.en.bin`) while MiniLM still resolves
   its six encoder files.
@@ -163,6 +177,8 @@ the transcript auto-send path creates the USER/assistant messages; the
 background service starts as `isForeground=true` with
 `types=0x00000080` (microphone), posts notification `8801`, pauses and resumes
 around in-app dictation, and stops cleanly from the UI and notification action.
+The in-app “Listen for Penguru” path now waits for that pause to complete and
+retries a busy recognizer instead of surfacing `ERROR_RECOGNIZER_BUSY`.
 Audio-in acceptance on a physical phone is still recommended.
 
 ## Security and limitations
@@ -172,6 +188,9 @@ Audio-in acceptance on a physical phone is still recommended.
   own storage roots; `..` and absolute paths are rejected.
 - Runtime archives are pinned by URL and SHA-256 before unpacking.
 - Cleartext HTTP is permitted only for the optional local/LAN Nuxel bridge.
-- Microphone permission is requested only when the voice button is used.
+- Microphone and notification permissions are checked on launch; the
+  background listener and downloads remain explicit foreground services.
+- All files access is optional and used only for `Download/PenGuru`; without
+  it the app uses package-scoped storage.
 - Neural inference is not embedded; the runtime installers stage verified
   artifacts and the built-in responder provides the default answers.

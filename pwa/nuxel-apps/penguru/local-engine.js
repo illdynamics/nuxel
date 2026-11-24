@@ -373,7 +373,7 @@ export function createLocalEngine() {
   const host = android();
   let counter = 0;
 
-  function nativeInstalled(kind, id) {
+  function nativeInstalled(kind, id, files = null) {
     const key = kind + ':' + id;
     // A download that just reached READY is trustworthy even before the
     // native installed.json round-trip is observed by the page.
@@ -382,6 +382,21 @@ export function createLocalEngine() {
       return !!state.installed[key];
     }
     try {
+      // Reinstall-safe detection: the native side verifies each expected file
+      // and byte length, so packages downloaded before an APK reinstall are
+      // reported as installed even when the WebView localStorage was reset.
+      if (files && files.length && typeof host.isInstalledWithFiles === 'function') {
+        const expected = files.map(file => ({
+          path: file.path,
+          size: file.size_bytes != null ? file.size_bytes : file.size,
+        }));
+        if (host.isInstalledWithFiles(kind, id, JSON.stringify(expected))) {
+          confirmed.add(key);
+          state.installed[key] = true;
+          saveState(state);
+          return true;
+        }
+      }
       return !!host.isInstalled(kind, id);
     } catch (error) {
       return !!state.installed[key];
@@ -402,7 +417,7 @@ export function createLocalEngine() {
       role: model.role,
       variants: model.variants.map((variant) => {
         const id = model.model_id + '/' + variant.variant_id;
-        const ready = nativeInstalled('model', id);
+        const ready = nativeInstalled('model', id, variant.files);
         return Object.assign({}, variant, {
           status: ready ? 'ready' : 'not_installed',
           detail: ready
@@ -423,7 +438,8 @@ export function createLocalEngine() {
 
   function runtimeCatalog() {
     return RUNTIMES.map((runtime) => {
-      const installed = nativeInstalled('runtime', runtime.id);
+      const installed = nativeInstalled('runtime', runtime.id,
+        [{path: runtime.filename, size: runtime.size_bytes}]);
       return Object.assign({}, runtime, {
         installed,
         status: installed ? 'ready' : 'not_installed',
@@ -441,6 +457,15 @@ export function createLocalEngine() {
       }
     }
     const speech = !!(host && typeof host.speechAvailable === 'function' && host.speechAvailable());
+    let wakeWord = false;
+    let listening = false;
+    if (host && typeof host.wakeServiceStatus === 'function') {
+      try {
+        const wake = parseJson(host.wakeServiceStatus(), {});
+        wakeWord = !!wake.running;
+        listening = !!wake.listening;
+      } catch (error) { /* status is informational */ }
+    }
     return {
       ok: true,
       status: {
@@ -459,7 +484,7 @@ export function createLocalEngine() {
         sonarbird: { available: true, mode: 'built-in language rules' },
         providers: { CPU: { status: 'baseline' }, 'GPU/NPU': { status: 'not validated on this device' } },
         network: { workers: 'not required', local_only: true },
-        voice: { wake_word: false, foreground_speech: speech, listening: false },
+        voice: { wake_word: wakeWord, foreground_speech: speech, listening: listening },
         storage: paths(),
       },
     };
@@ -628,7 +653,8 @@ export function createLocalEngine() {
       if (params.job_id) return jobStatus(String(params.job_id), 'runtime', params.id);
       const runtime = RUNTIMES.find((item) => item.id === params.id);
       if (!runtime) return { ok: false, error: 'unknown_runtime' };
-      const installed = nativeInstalled('runtime', runtime.id);
+      const installed = nativeInstalled('runtime', runtime.id,
+        [{path: runtime.filename, size: runtime.size_bytes}]);
       return { ok: true, runtime: Object.assign({}, runtime, {
         installed,
         status: installed ? 'ready' : 'not_installed',

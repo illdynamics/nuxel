@@ -9,12 +9,12 @@ dist/android/penguru-squad-debug.apk
 ```
 
 That is the complete standalone PenGuru Squad Android app (label **PenGuru
-Squad**, package `org.nuxel.penguru`, version `0.9.1-beta` / versionCode
-`901`). There is no other APK to install. The matching checksum is in
+Squad**, package `org.nuxel.penguru`, version `0.9.2-beta` / versionCode
+`902`). There is no other APK to install. The matching checksum is in
 `dist/android/SHA256SUMS`:
 
 ```
-6a5860de1e39281ceb5b0221c56f5fce2118318324d4f58a300306d11a985641  penguru-squad-debug.apk
+f2f7446cf1f106240de2fd154c6a01108b594f2ca25a484f2e24f17c98be795e  penguru-squad-debug.apk
 ```
 
 The APK is signed with the repository's stable debug identity, so it installs
@@ -48,11 +48,12 @@ The app no longer asks for a Nuxel API URL or launcher token. It starts an
 
 - Conversation, routing, device diagnostics and voice work immediately.
 - **Model library → Download to this phone** downloads the pinned Hugging Face
-  revision directly to app storage, verifies its SHA-256, and records the
-  license acknowledgement.
+  revision directly to the phone, verifies its SHA-256, and records the license
+  acknowledgement. Downloads run in a data-sync foreground service and keep
+  going with the screen off.
 - **Settings → On-device dependencies** installs llama.cpp (arm64 or
-  Snapdragon/OpenCL) and ONNX Runtime archives, verifies them, and unpacks them
-  in app storage.
+  Snapdragon/OpenCL) and ONNX Runtime archives, verifies them, and unpacks them.
+  An interrupted download resumes from its `.part` file.
 - **Settings → Voice** uses Android's built-in speech recognition, so the
   microphone transcript works without a Nuxel host. The microphone closes as
   soon as speech ends and the transcript is sent automatically.
@@ -61,6 +62,11 @@ The app no longer asks for a Nuxel API URL or launcher token. It starts an
   talk to PenGuru while the app is in the background. Android may require you to
   allow notifications and to tap the ongoing notification to bring the chat
   forward on some releases/OEMs; the heard command is still auto-sent.
+- On every launch PenGuru checks microphone, notification, battery and storage
+  permissions and restores the listener if you had enabled it. Accept the
+  battery-optimization prompt so Android does not stop background work, and
+  accept **All files access** so a reinstalled APK can reuse
+  `Download/PenGuru` instead of downloading models again.
 
 The optional `Nuxel host` engine mode remains available in Settings for owners
 who already run the PenGuru service. It is not required and is not the default.
@@ -77,6 +83,8 @@ who already run the PenGuru service. It is not required and is not the default.
 - [ ] Open **Settings → Voice**, grant the microphone, and speak a message.
       The mic should close at the end of speech and the message should send
       automatically.
+- [ ] Accept **Settings → Allow all files access** and **Disable battery
+      optimization** so reinstall reuse and screen-off downloads work.
 - [ ] Tap **Start background listening**, allow the notification permission,
       press Home, say “Penguru, what is the battery?”, and confirm the ongoing
       notification / conversation.
@@ -85,12 +93,14 @@ who already run the PenGuru service. It is not required and is not the default.
 ## Where files go
 
 ```
-/storage/emulated/0/Android/data/org.nuxel.penguru/files/Models/<model>/<variant>/
-/storage/emulated/0/Android/data/org.nuxel.penguru/files/Runtimes/<runtime>/
+/storage/emulated/0/Download/PenGuru/Models/<model>/<variant>/
+/storage/emulated/0/Download/PenGuru/Runtimes/<runtime>/
 /storage/emulated/0/Download/PenGuru/            (exported responses)
 ```
 
-The exact paths are shown inside Settings → Storage.
+With **All files access**, these files survive an APK uninstall/reinstall.
+Without it the app falls back to package-scoped storage, which Android deletes
+on uninstall. The exact effective paths are shown inside Settings → Storage.
 
 ## Rebuilding the APK
 
@@ -114,8 +124,10 @@ prerequisites.
   future bundled/JNI runtime and for inspection.
 - Microphone use is foreground-only unless you explicitly start **SonarBird
   background listening**. That mode keeps a microphone foreground service and
-  a persistent notification running; Android may stop it under aggressive
-  battery saver.
+  a persistent notification running; grant the battery exemption to reduce the
+  chance of Android stopping it.
+- **All files access** is optional but required for reinstall-safe downloads.
+  PenGuru only reads and writes its own `Download/PenGuru` folder.
 - Android 10+ may block a background activity launch. If “Penguru” is heard
   while the app is closed, tap the ongoing notification to open the chat; the
   command is delivered and auto-sent.

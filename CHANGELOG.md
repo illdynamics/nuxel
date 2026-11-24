@@ -4,6 +4,17 @@ All notable changes to the Nuxel Phone OS repository are documented here.
 
 ## [Unreleased]
 
+- PenGuru Android 0.9.2-beta: check microphone and notification permissions on
+  launch, restore an enabled SonarBird listener, and ask for the battery
+  optimization exemption and (optionally) All files access. Move model/runtime
+  downloads and extraction into a `dataSync` foreground service with wake/Wi-Fi
+  locks so screen-off no longer interrupts them, and resume interrupted `.part`
+  downloads. Reuse verified downloads across uninstall/reinstall by storing
+  them in `Download/PenGuru` when All files access is granted and validating
+  each file name and size. Fix the in-app “Listen for Penguru” busy error by
+  waiting for the background listener to release the recognizer before starting
+  foreground speech, and harden the background listener with per-session
+  tokens, error backoff, language fallback and visible status.
 - PenGuru Android 0.9.1-beta: fix the microphone that could stay open with no
   transcript by adding a native 16-second watchdog, ten-second dictation
   endpointing, recognizer destroy-after-session, and error 12/13 retry through
