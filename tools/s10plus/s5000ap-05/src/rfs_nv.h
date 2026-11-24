@@ -29,9 +29,13 @@
  *  3. NV write item record (the payload Nv::ProcessNvWrite dereferences at
  *     its +896 member; the SAME record bytes are what the CP streams for an
  *     NV_WRITE / NV_WRITE_ALL operation):
- *       [u8  op][u8  seq][u32 reserved][u32 offset][u32 length][data...]
- *     - offset (LE) = byte offset INTO nv_data.bin where the value lives.
- *     - length (LE) = byte length of the value (clamped to 0x80000).
+ *       [u8 op][u8 seq][u32 mode/reserved][u32 offset][u32 length][data...]
+ *     - byte 4      = read-mode sentinel (ProcessNVRead: `ldrb w8,[x28,#4]`
+ *                     must equal 1 for a read; write path ignores it).
+ *     - offset (LE) = byte offset INTO nv_data.bin where the value lives
+ *                     (ProcessNvWrite/ProcessNVRead `ldur w20/w21,[x28,#6]`).
+ *     - length (LE) = byte length of the value (clamped to 0x80000;
+ *                     `ldur w8,[x28,#10]`).
  *     - data         = the item value bytes (length bytes).
  *     This is the ONLY authorization the CP gives for a specific item's
  *     physical location; we never invent an offset.
