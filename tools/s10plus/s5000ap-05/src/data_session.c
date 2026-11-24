@@ -98,8 +98,8 @@ enum ds_phase ds_step(struct data_session_ctx *c, bool ack, uint64_t now_ms)
     case DS_ENABLE_MOBILE_DATA: c->phase = DS_SET_DATA_PROFILE;   break;  /* SYNC_PROFILE(sub=37) live-rejected (GEN=1); skip */
     case DS_SYNC_PROFILE:       c->phase = DS_SET_DATA_PROFILE;   break;
     case DS_SET_DATA_PROFILE:   c->phase = DS_SET_LTE_ATTACH;     break;
-    case DS_SET_LTE_ATTACH:     c->phase = DS_MBIM_ATTACH_CONFIG; break;  /* MBIM attach-config (opt-in, skipped), then define PDP */
-    case DS_MBIM_ATTACH_CONFIG: c->phase = DS_DEFINE_PDP;         break;  /* define the "internet" PDP context BEFORE attach/activate */
+    case DS_SET_LTE_ATTACH:     c->phase = DS_MBIM_ATTACH_CONFIG; break;  /* then MBIM attach-config, then define+activate */
+    case DS_MBIM_ATTACH_CONFIG: c->phase = DS_ALWAYS_ON_PDN;       break;
     case DS_DEFINE_PDP:         c->phase = DS_ALWAYS_ON_PDN;      break;
     case DS_ALWAYS_ON_PDN:      c->phase = DS_PS_ATTACH;          break;
     case DS_PS_ATTACH:          c->phase = DS_PS_REGIST_VERIFY;   break;

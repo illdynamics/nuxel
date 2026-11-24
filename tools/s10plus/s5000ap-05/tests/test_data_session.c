@@ -25,11 +25,11 @@ int main(void)
 
     /* Authenticated ack advances each phase in order. SYNC_PROFILE (sub=37) is
      * LIVE-REJECTED by this modem (GEN=1, confirmed Round-22), so it is skipped.
-     * DEFINE_PDP (sub=1, sipcProcGprsDefinePdpContextSet) is a REAL CP handler
-     * (recovered from the G975FXXS9DTK9 CP firmware dispatch table this round)
-     * that MUST run before SetPdpContext (sub=4, sipcProcGprsPdpContextActDeactSet)
-     * activates the default bearer. Skipping DEFINE_PDP left the modem with no
-     * defined "internet" context and produced live GPRS_CALL_STATUS state=3. */
+     * DEFINE_PDP (sub=1, sipcProcGprsDefinePdpContextSet) is LIVE-REJECTED by
+     * this LTE CP with GEN=1 (Round-43, G975FXXS9DTK9 CP dispatch table probe
+     * 0d01030180): the S5000AP LTE data path does NOT use the legacy 3G
+     * DefinePdpContext/SetPdpContext flow; it attains the default EPS bearer via
+     * the persistent initial-attach APN (NV item 360). */
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_SERVICE_DOMAIN, "NET_REGIST_CHECK -> SET_SERVICE_DOMAIN");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_PREFERRED_NET, "SET_SERVICE_DOMAIN -> SET_PREFERRED_NET");
     p = ds_step(&c, true, 100);  CHECK(p == DS_ENABLE_MOBILE_DATA, "SET_PREFERRED_NET -> ENABLE_MOBILE_DATA");
@@ -40,8 +40,7 @@ int main(void)
      * default (NUXEL_MBIM_ATTACH env), but the FSM phase exists so the
      * sequence must account for it regardless of the runtime gate. */
     p = ds_step(&c, true, 100);  CHECK(p == DS_MBIM_ATTACH_CONFIG, "SET_LTE_ATTACH -> MBIM_ATTACH_CONFIG");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_DEFINE_PDP, "MBIM_ATTACH_CONFIG -> DEFINE_PDP (required before activate)");
-    p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "DEFINE_PDP -> ALWAYS_ON_PDN");
+    p = ds_step(&c, true, 100);  CHECK(p == DS_ALWAYS_ON_PDN, "MBIM_ATTACH_CONFIG -> ALWAYS_ON_PDN (DEFINE_PDP sub=1 LIVE-rejected)");
     p = ds_step(&c, true, 100);  CHECK(p == DS_PS_ATTACH, "ALWAYS_ON_PDN -> PS_ATTACH");
     p = ds_step(&c, true, 100);  CHECK(p == DS_PS_REGIST_VERIFY, "PS_ATTACH -> PS_REGIST_VERIFY");
     p = ds_step(&c, true, 100);  CHECK(p == DS_DATA_CALL, "PS_REGIST_VERIFY -> DATA_CALL");

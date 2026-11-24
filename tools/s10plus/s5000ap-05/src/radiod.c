@@ -1186,8 +1186,7 @@ static void data_session_tick(uint64_t now)
      * raw-IPC). When it is disabled, DS_SET_LTE_ATTACH advances the FSM into
      * DS_MBIM_ATTACH_CONFIG, but data_session_emit() returns false for that
      * phase with MBIM off. Without this skip the FSM stalls forever and the
-     * default EPS bearer can never be driven. Skip directly to DEFINE_PDP
-     * (which then leads ALWAYS_ON_PDN -> PS_ATTACH -> DATA_CALL). */
+     * default EPS bearer can never be driven. Skip directly to ALWAYS_ON_PDN. */
     if (g.dsc.phase == DS_MBIM_ATTACH_CONFIG && !mbim_attach_enabled()) {
         enum ds_phase skip = ds_step(&g.dsc, true, now);
         if (skip != DS_MBIM_ATTACH_CONFIG) {
