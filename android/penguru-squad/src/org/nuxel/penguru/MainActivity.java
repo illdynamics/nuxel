@@ -265,6 +265,7 @@ public class MainActivity extends Activity {
         }
         speechToken++;
         speechRunning = false;
+        speechHeldText = "";
         pendingSpeech = false;
         releaseSpeechRecognizer();
         stopTalkback();
@@ -334,6 +335,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         speechToken++;
         speechRunning = false;
+        speechHeldText = "";
         pendingSpeech = false;
         mainHandler.removeCallbacksAndMessages(null);
         if (speechRecognizer != null) {

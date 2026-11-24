@@ -17,7 +17,7 @@
 
 - **Date:** 2026-11-24
 - **Artifact:** `dist/android/penguru-squad-debug.apk`
-- **SHA-256:** `362d9604ea4bf9002fecfc709583c4cb5282a47adebf30f54b6f413cb4306952`
+- **SHA-256:** `bc7e9e29c34f5d61620c4da9a1d9f5f6d7e6f48cd56d1fd980cd5fa841a19fd2`
 - **Version:** `0.9.6-beta` (`versionCode=906`)
 - **Min/target SDK:** 26 / 35
 - **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
