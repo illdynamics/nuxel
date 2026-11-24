@@ -13,6 +13,52 @@
 
 ---
 
+## v0.9.5-beta — live SonarBird foreground listening and reliable dictation
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `b626669366d684a13910eb3c3df894395db9b6883c1ea8b545fec032cf3fad42`
+- **Version:** `0.9.5-beta` (`versionCode=905`)
+- **Size:** 1,784,136 bytes
+- **Min/target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Verification device:** headless Android 15 (API 35) x86_64 emulator
+
+  SonarBird is no longer paused for the whole time PenGuru is visible. It stays
+  armed while the app is open, pauses only for the in-app microphone session
+  (`SonarBird paused · Paused while the in-app microphone is in use`) and
+  re-arms about a second after the transcript/error. The Conversation page has
+  a live “SonarBird is listening…” row. This removes the previous behaviour in
+  which starting background listening while looking at the app appeared to do
+  nothing at all.
+
+  Foreground dictation now prefers the phone's normal recognizer instead of
+  forcing the offline language pack; partial hypotheses are retained and sent
+  when the recognizer ends with `no_speech_detected` or a timeout. The
+  `onEndOfSpeech` finalisation is delayed, the second-tap watchdog is 9 s, and
+  the JavaScript fallback allows 45–90 s so the visible fallback is not closed
+  while the owner is speaking.
+
+  If the in-process recognizer is unavailable, or two consecutive sessions
+  hear nothing, the app launches Android's visible
+  `ACTION_RECOGNIZE_SPEECH` activity. Its result is delivered through the same
+  transcript → auto-send → Conversation path. The system activity is treated as
+  a child session, so MainActivity `onStop` and the page's visibility handler
+  do not discard its result.
+
+  The wake pattern now accepts `Penguru`, `Peng Guru`, `Pen Guru`, `Penguro`,
+  `Pinguru` and `Panguru`, and partial results can hand off “Penguru <question>”
+  immediately.
+
+  Emulator verification: notification was **SonarBird is listening** with the
+  app open; tapping the mic changed it to **SonarBird paused** and it returned
+  to listening after `NO_SPEECH_DETECTED`; a second empty session opened
+  Google's voice-input activity; Back returned to PenGuru and SonarBird
+  re-armed. A simulated `penguru_command` intent auto-navigated to Conversation
+  and sent the transcript. The JS voice state machine was also exercised with a
+  mocked native bridge for auto-send, manual second-tap send, “Peng Guru”
+  wake-word send, wake-word-only follow-up and no-speech handling.
+
 ## v0.9.4-beta — talkback, conversation mic and silent wake hand-off
 
 - **Date:** 2026-11-24

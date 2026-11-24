@@ -129,7 +129,7 @@ $('refresh-storage').onclick = () => {
 };
 
 const library = modelLibrary($('cards'), call);
-const voice = voiceControls(call, () => enabled && !request, text => autoSendText(text));
+const voice = voiceControls(call, () => !request, text => autoSendText(text));
 const talkback = talkbackControls();
 window.addEventListener('penguru:transcript-ready', () => page('chat'));
 
@@ -226,6 +226,8 @@ window.__penguruWakeCommand = text => { autoSendText(text, {heard: text}); };
 window.__penguruWakeStatus = text => {
   const el = $('wake-service-status');
   if (el) el.textContent = text;
+  const live = $('wake-live');
+  if (live) { live.hidden = false; live.textContent = text; }
 };
 // Activity may have delivered a wake command before this module finished
 // parsing. Drain that tiny hand-off queue now.
@@ -286,16 +288,31 @@ function updateWakePanel() {
   const running = !!state.running;
   start.disabled = running;
   stop.disabled = !running;
+  let summary;
   if (running) {
     const heard = state.last_heard ? ` · last heard “${state.last_heard}”` : '';
     const error = state.last_error ? ` · ${state.last_error}` : '';
-    $('wake-service-status').textContent = state.listening
-      ? 'SonarBird is listening for “Penguru” · persistent notification active' + heard + error
-      : 'SonarBird service is running and restarting the speech session' + error;
+    if (state.in_app_speech) {
+      summary = 'SonarBird is paused while the in-app microphone is recording. It resumes automatically.';
+    } else if (state.handoff) {
+      summary = 'SonarBird heard your request and is sending it to the conversation…';
+    } else if (state.listening) {
+      summary = 'SonarBird is listening for “Penguru” · persistent notification active' + heard + error;
+    } else if (state.paused) {
+      summary = 'SonarBird is reopening the speech session…' + heard + error;
+    } else {
+      summary = 'SonarBird is starting the speech session…' + heard + error;
+    }
   } else if (state.error) {
-    $('wake-service-status').textContent = state.error;
+    summary = state.error;
   } else {
-    $('wake-service-status').textContent = 'Background listening is off. Start it once; it keeps listening while the screen is off.';
+    summary = 'Background listening is off. Start it once; it keeps listening while the screen is off.';
+  }
+  $('wake-service-status').textContent = summary;
+  const live = $('wake-live');
+  if (live) {
+    live.hidden = !running;
+    live.textContent = running ? summary : '';
   }
 }
 

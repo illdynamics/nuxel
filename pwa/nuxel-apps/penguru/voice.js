@@ -12,7 +12,7 @@
 // Every native session has both a JavaScript deadline and a native watchdog so
 // the microphone is always released even when a speech service never calls
 // back. That "listening forever" state was the previous beta's biggest bug.
-const WAKE_RE = /\bpen[\s-]?guru\b[\s,.:;!?-]*(.*)$/i;
+const WAKE_RE = /\b(?:pen[\s-]?guru|peng[\s-]?g?u(?:ru|ro|roo)|ping[\s-]?u?ru|pang[\s-]?u?ru)\b[\s,.:;!?-]*(.*)$/i;
 const KEY_AUTOSEND = 'penguru-voice-autosend';
 const KEY_SILENCE = 'penguru-voice-silence';
 const DEFAULT_SILENCE_MS = 2500;
@@ -53,8 +53,11 @@ export function voiceControls(call, available, onText) {
     }
   };
   const nativeAvailable = () => {
-    try { return !!(host && typeof host.speechAvailable === 'function' && host.speechAvailable()); }
-    catch (error) { return false; }
+    try {
+      if (!host) return false;
+      if (typeof host.speechInputAvailable === 'function') return !!host.speechInputAvailable();
+      return typeof host.speechAvailable === 'function' && !!host.speechAvailable();
+    } catch (error) { return false; }
   };
 
   function syncSilenceControls() {
@@ -268,12 +271,16 @@ export function voiceControls(call, available, onText) {
 
   function nativeListen(nextMode) {
     if (active) return;
-    if (!available() || document.hidden) {
-      status('Enable PenGuru and finish the current response first.');
+    if (document.hidden) {
+      status('Open PenGuru to use the microphone.');
+      return;
+    }
+    if (!available()) {
+      status('Wait for the current answer to finish, or press Stop generation first.');
       return;
     }
     if (!nativeAvailable()) {
-      status(errorText('speech_recognizer_unavailable'));
+      status('No speech recognizer is installed. Open Android Settings → System → Languages & input → Voice input and enable one.');
       return;
     }
     active = true;
@@ -308,10 +315,12 @@ export function voiceControls(call, available, onText) {
     }
     // The native watchdog is authoritative; this one keeps the UI honest if
     // the WebView throttles or the bridge disappears. It asks for the final
-    // hypothesis rather than cancelling so a spoken request is not lost.
+    // hypothesis rather than cancelling so a spoken request is not lost. The
+    // system voice-input fallback can stay on screen much longer than the
+    // in-process recognizer, so leave it room to finish.
     const fallback = nextMode === 'dictate'
-      ? (autoSend ? silenceMs + 8000 : 50000)
-      : 16000;
+      ? (autoSend ? Math.max(45000, silenceMs + 30000) : 90000)
+      : 45000;
     timer = setTimeout(() => {
       if (!active || own !== epoch) return;
       if (fallback > 20000) {
@@ -342,7 +351,7 @@ export function voiceControls(call, available, onText) {
   }
 
   async function recordListen(wake) {
-    if (!available() || document.hidden) { status('Enable PenGuru and finish the current response first.'); return; }
+    if (!available() || document.hidden) { status('Wait for the current answer to finish, or press Stop generation first.'); return; }
     if (active) return;
     const own = ++epoch;
     try {
@@ -378,8 +387,15 @@ export function voiceControls(call, available, onText) {
 
   function start(wake) {
     busyRetries = 0;
-    if (nativeAvailable()) nativeListen(wake ? 'wake' : 'dictate');
-    else recordListen(wake);
+    if (nativeAvailable()) {
+      nativeListen(wake ? 'wake' : 'dictate');
+    } else if (host) {
+      // The APK has no local transcription model; do not open the microphone
+      // only to fail in the Web Audio fallback.
+      status('No speech recognizer is installed. Open Android Settings → System → Languages & input → Voice input and enable one.');
+    } else {
+      recordListen(wake);
+    }
   }
 
   function toggleMic() {

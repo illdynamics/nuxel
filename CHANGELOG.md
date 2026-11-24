@@ -2,6 +2,28 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.9.5-beta] - 2026-11-24
+
+- PenGuru Android 0.9.5-beta: keep SonarBird armed while the app is open
+  instead of pausing the background listener for the whole foreground session.
+  It pauses only while the in-app microphone is recording and resumes
+  automatically afterwards, so wake-word listening is visibly alive. The
+  Conversation page shows the live SonarBird state.
+- Make foreground dictation reliable on real phones: use the normal online
+  recognizer by default instead of forcing the offline language pack, keep
+  partial hypotheses, and deliver the best partial instead of losing it when a
+  recognizer ends with `no_speech_detected` or a timeout. Do not call
+  `stopListening()` synchronously inside `onEndOfSpeech`, and give the final
+  hypothesis more time after the second mic tap.
+- Add a visible system voice-input fallback (`ACTION_RECOGNIZE_SPEECH`) when no
+  in-process recognizer exists or repeated sessions hear nothing. Its result is
+  delivered through the same transcript/send/conversation path.
+- Accept common recognizer renderings of the wake word (`Penguru`,
+  `Peng Guru`, `Pen Guru`, `Penguro`, `Pinguru`, `Panguru`) and use partial
+  results for an immediate wake-word hand-off.
+- Rebuild PenGuru Squad 0.9.5-beta (`versionCode=905`) and update the APK,
+  checksums and verification notes.
+
 ## [Unreleased]
 
 - PenGuru Android 0.9.4-beta: add native **Talkback** (Android TextToSpeech)

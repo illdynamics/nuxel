@@ -93,6 +93,7 @@ public class MainActivity extends Activity {
     private static final int WAKE_MIC_REQUEST = 7003;
     private static final int WAKE_NOTIFICATION_REQUEST = 7004;
     private static final int STARTUP_PERMISSIONS_REQUEST = 7005;
+    private static final int SPEECH_UI_REQUEST = 7006;
     private static final String UI_PREFS = "penguru_ui";
     private static final String PREF_BATTERY_PROMPT_AT = "battery_prompt_at";
     private static final String PREF_STORAGE_PROMPT_AT = "storage_prompt_at";
@@ -121,6 +122,16 @@ public class MainActivity extends Activity {
     // 0 = manual dictation; > 0 = finish automatically after this much silence.
     private int speechSilenceMs;
     private int pendingSpeechSilence;
+    // Partial hypotheses are kept so a recognizer that never sends a final
+    // result (common on Android 13/14) still produces a transcript.
+    private String speechPartialText = "";
+    private int pendingSpeechUiToken;
+    private boolean pendingSpeechUiWake;
+    private boolean systemSpeechUiActive;
+    // Two consecutive empty sessions on a phone whose recognizer never returns
+    // useful audio trigger the visible system voice-input activity.
+    private int speechNoMatchCount;
+    private long lastSpeechNoMatchAt;
     // Talkback (Android TextToSpeech). The engine is created lazily so a phone
     // without any TTS engine never blocks the app from starting.
     private TextToSpeech tts;
@@ -225,15 +236,20 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onStop() {
-        // Leaving the app hands the microphone back to SonarBird. Invalidate
-        // every queued foreground start and release any session first so the
-        // two recognizers never overlap.
+        // Leaving the app normally hands the microphone back to SonarBird.
+        // The system voice-input activity is a child of this Activity, so its
+        // result must survive this onStop and SonarBird must stay paused while
+        // that visible microphone is open.
+        WakeWordService.setAppForeground(false);
+        if (systemSpeechUiActive) {
+            super.onStop();
+            return;
+        }
         speechToken++;
         speechRunning = false;
         pendingSpeech = false;
         releaseSpeechRecognizer();
         stopTalkback();
-        WakeWordService.setAppForeground(false);
         if (getSharedPreferences(WakeWordService.PREFS, MODE_PRIVATE)
                 .getBoolean(WakeWordService.PREF_ENABLED, false)) {
             WakeWordService.resumeFromActivity();
@@ -827,17 +843,32 @@ public class MainActivity extends Activity {
             }
         }
 
+        /** True when either the in-process recognizer or the system voice
+         *  input activity can return a transcript. */
+        @JavascriptInterface
+        public boolean speechInputAvailable() {
+            return speechAvailable() || hasSystemSpeechActivity();
+        }
+
         @JavascriptInterface
         public boolean startSpeechRecognition(final boolean wake) {
-            if (!speechAvailable()) {
-                return false;
-            }
             runOnUiThread(() -> {
                 if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                         != PackageManager.PERMISSION_GRANTED) {
                     pendingSpeech = true;
                     pendingSpeechWake = wake;
                     requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
+                    return;
+                }
+                if (!speechAvailable()) {
+                    if (hasSystemSpeechActivity()) {
+                        WakeWordService.pauseForActivity(() -> {
+                            final int token = ++speechToken;
+                            launchSystemSpeech(wake, 0, token);
+                        });
+                    } else {
+                        deliverSpeech("", wake, "speech_recognizer_unavailable", speechToken);
+                    }
                     return;
                 }
                 beginSpeech(wake);
@@ -848,8 +879,15 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void stopSpeechRecognition() {
             runOnUiThread(() -> {
+                // The visible system voice-input activity owns the microphone
+                // until it returns a result; hiding our Activity must not
+                // discard that session.
+                if (systemSpeechUiActive) {
+                    return;
+                }
                 pendingSpeech = false;
                 speechRunning = false;
+                speechNoMatchCount = 0;
                 // Invalidate any queued restart so a stop is final even if the
                 // recognizer was still connecting or a permission dialog was open.
                 speechToken++;
@@ -866,9 +904,6 @@ public class MainActivity extends Activity {
          */
         @JavascriptInterface
         public boolean startSpeechRecognitionEx(final String mode, final int silenceMs) {
-            if (!speechAvailable()) {
-                return false;
-            }
             final boolean wake = !"dictate".equals(mode);
             final int silence = Math.max(0, Math.min(silenceMs, 120000));
             runOnUiThread(() -> {
@@ -878,6 +913,17 @@ public class MainActivity extends Activity {
                     pendingSpeechWake = wake;
                     pendingSpeechSilence = silence;
                     requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
+                    return;
+                }
+                if (!speechAvailable()) {
+                    if (hasSystemSpeechActivity()) {
+                        WakeWordService.pauseForActivity(() -> {
+                            final int token = ++speechToken;
+                            launchSystemSpeech(wake, silence, token);
+                        });
+                    } else {
+                        deliverSpeech("", wake, "speech_recognizer_unavailable", speechToken);
+                    }
                     return;
                 }
                 beginSpeech(wake, silence);
@@ -907,9 +953,14 @@ public class MainActivity extends Activity {
                 // microphone and tell the page instead of holding it forever.
                 mainHandler.postDelayed(() -> {
                     if (token == speechToken && speechRunning) {
-                        deliverSpeech("", speechWake, "no_speech_detected", token);
+                        // The second tap often arrives while the recognizer is
+                        // still composing the final hypothesis. Give it time,
+                        // then send the best partial instead of losing it.
+                        deliverSpeech(speechPartialText.trim(), speechWake,
+                                speechPartialText.trim().isEmpty()
+                                        ? "no_speech_detected" : null, token);
                     }
-                }, 4500L);
+                }, 9000L);
             });
         }
 
@@ -1181,6 +1232,7 @@ public class MainActivity extends Activity {
      */
     private void releaseSpeechRecognizer() {
         SpeechRecognizer recognizer = speechRecognizer;
+        speechPartialText = "";
         speechRecognizer = null;
         if (recognizer == null) {
             return;
@@ -1201,7 +1253,10 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+        // Keep every partial hypothesis. Google/Samsung recognizers frequently
+        // deliver a usable partial and then fail to send onResults, which made
+        // the app look as if it had heard nothing at all.
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
         intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline);
         String language = speechLanguage;
@@ -1248,12 +1303,18 @@ public class MainActivity extends Activity {
                 return;
             }
             if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
-                deliverSpeech("", wake, "speech_recognizer_unavailable", requestToken);
+                // No in-process recognizer (common on de-Googled builds). Use
+                // the system voice-input activity instead of failing silently.
+                launchSystemSpeech(wake, speechSilenceMs, requestToken);
                 return;
             }
             speechRetryCount = 0;
-            speechPreferOffline = true;
+            // The on-device/offline recognizer is optional on many phones and
+            // its missing language pack used to fail the first tap. Prefer the
+            // normal recognizer; retries explicitly remove the offline hint.
+            speechPreferOffline = false;
             speechLanguage = "";
+            speechPartialText = "";
             startSpeechNow(wake);
         }, 420L));
     }
@@ -1278,13 +1339,14 @@ public class MainActivity extends Activity {
 
     private void startSpeechNow(boolean wake) {
         if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
-            deliverSpeech("", wake, "speech_recognizer_unavailable", speechToken);
+            launchSystemSpeech(wake, speechSilenceMs, speechToken);
             return;
         }
         final int token = ++speechToken;
         final int silenceMs = speechSilenceMs;
         speechWake = wake;
         speechRunning = true;
+        speechPartialText = "";
         speechRecognizer.setRecognitionListener(new PenGuruSpeechListener(token));
         Intent intent = speechIntent(speechPreferOffline);
         if (silenceMs > 0) {
@@ -1318,7 +1380,11 @@ public class MainActivity extends Activity {
             if (token != speechToken || !speechRunning) {
                 return;
             }
-            deliverSpeech("", wake, "speech_timeout", token);
+            if (!speechPartialText.trim().isEmpty()) {
+                deliverSpeech(speechPartialText.trim(), wake, null, token);
+            } else {
+                deliverSpeech("", wake, "speech_timeout", token);
+            }
         }, hardDeadline);
         if (!wake && silenceMs > 0) {
             // Belt-and-braces: some recognizers ignore the silence extras.
@@ -1342,17 +1408,31 @@ public class MainActivity extends Activity {
             // A stop or a newer session superseded this callback.
             return;
         }
+        String finalText = text == null ? "" : text.trim();
+        String effectiveError = error;
+        // A recognizer may end with an error even though it already returned a
+        // perfectly good partial hypothesis. Never throw that transcript away.
+        if (finalText.isEmpty() && !speechPartialText.trim().isEmpty()
+                && (error == null || "no_speech_detected".equals(error)
+                    || "speech_timeout".equals(error))) {
+            finalText = speechPartialText.trim();
+            effectiveError = null;
+        }
         speechRunning = false;
         speechSilenceMs = 0;
+        speechPartialText = "";
+        if (!finalText.isEmpty()) {
+            speechNoMatchCount = 0;
+        }
         releaseSpeechRecognizer();
         try {
             JSONObject result = new JSONObject();
-            result.put("ok", error == null);
-            if (error == null) {
-                result.put("text", text == null ? "" : text);
+            result.put("ok", effectiveError == null);
+            if (effectiveError == null) {
+                result.put("text", finalText);
                 result.put("wake", wake);
             } else {
-                result.put("error", error);
+                result.put("error", effectiveError);
             }
             final String script = "window.__nuxelSpeechResult && window.__nuxelSpeechResult("
                     + result.toString() + ")";
@@ -1366,7 +1446,9 @@ public class MainActivity extends Activity {
         } catch (JSONException ignored) {
             // primitive values only
         }
-        WakeWordService.resumeFromActivity();
+        // Let SonarBird take the microphone back a moment after the in-app
+        // session has fully released it.
+        mainHandler.postDelayed(WakeWordService::resumeFromActivity, 650L);
     }
 
     private final class PenGuruSpeechListener implements RecognitionListener {
@@ -1381,21 +1463,41 @@ public class MainActivity extends Activity {
         @Override public void onRmsChanged(float rmsdB) { }
         @Override public void onBufferReceived(byte[] buffer) { }
         @Override public void onEvent(int eventType, Bundle params) { }
-        @Override public void onPartialResults(Bundle partialResults) { }
+
+        @Override
+        public void onPartialResults(Bundle partialResults) {
+            if (token != speechToken || !speechRunning || partialResults == null) {
+                return;
+            }
+            ArrayList<String> matches = partialResults
+                    .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            if (matches != null && !matches.isEmpty()) {
+                String value = matches.get(0);
+                if (value != null && !value.trim().isEmpty()) {
+                    speechPartialText = value.trim();
+                }
+            }
+        }
 
         @Override
         public void onEndOfSpeech() {
             if (token != speechToken || !speechRunning || speechRecognizer == null) {
                 return;
             }
-            // Natural end of speech: request the final hypothesis instead of
-            // waiting for a watchdog to cancel a recognizer that already
-            // stopped producing audio.
-            try {
-                speechRecognizer.stopListening();
-            } catch (RuntimeException ignored) {
-                // already stopping
-            }
+            // Do not call stopListening() synchronously here. Several
+            // recognizers drop their final hypothesis when it arrives inside
+            // onEndOfSpeech. Give the service a moment to deliver onResults;
+            // the watchdog still stops a session that never finishes.
+            mainHandler.postDelayed(() -> {
+                if (token != speechToken || !speechRunning || speechRecognizer == null) {
+                    return;
+                }
+                try {
+                    speechRecognizer.stopListening();
+                } catch (RuntimeException ignored) {
+                    // already stopping
+                }
+            }, 1200L);
         }
 
         @Override
@@ -1428,6 +1530,26 @@ public class MainActivity extends Activity {
                 restartSpeech(speechWake, delay);
                 return;
             }
+            final boolean nothingHeard = error == SpeechRecognizer.ERROR_NO_MATCH
+                    || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT;
+            if (nothingHeard) {
+                long now = System.currentTimeMillis();
+                if (now - lastSpeechNoMatchAt > 30000L) {
+                    speechNoMatchCount = 0;
+                }
+                lastSpeechNoMatchAt = now;
+                speechNoMatchCount++;
+            }
+            // If the recognizer keeps hearing nothing even though the owner is
+            // speaking, or it fails persistently, offer the visible system
+            // voice-input activity. Do not do this after a single quiet tap.
+            if (error != SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS
+                    && (speechNoMatchCount >= 2 || !nothingHeard)
+                    && hasSystemSpeechActivity()) {
+                speechNoMatchCount = 0;
+                launchSystemSpeech(speechWake, speechSilenceMs, token);
+                return;
+            }
             deliverSpeech("", speechWake, speechErrorName(error), token);
         }
 
@@ -1442,6 +1564,76 @@ public class MainActivity extends Activity {
             deliverSpeech(text, speechWake,
                     text == null || text.trim().isEmpty() ? "no_speech_detected" : null, token);
         }
+    }
+
+    /** True when a system activity can collect a spoken query. */
+    private boolean hasSystemSpeechActivity() {
+        try {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            return !getPackageManager().queryIntentActivities(intent, 0).isEmpty();
+        } catch (RuntimeException error) {
+            return false;
+        }
+    }
+
+    /**
+     * Fallback for phones with no usable in-process recognizer. The system
+     * voice-input UI uses the same speech service but in a visible activity,
+     * which is permitted on builds that refuse a silent in-app session.
+     */
+    private void launchSystemSpeech(final boolean wake, final int silenceMs,
+                                    final int token) {
+        if (token != speechToken) {
+            return;
+        }
+        speechRunning = false;
+        releaseSpeechRecognizer();
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false);
+        String language = speechLanguage;
+        if (language == null || language.isEmpty()) {
+            language = Locale.getDefault().toLanguageTag();
+        }
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
+                wake ? "Say \"Penguru\" and then your message"
+                     : "Speak your request to PenGuru");
+        pendingSpeechUiToken = ++speechToken;
+        pendingSpeechUiWake = wake;
+        systemSpeechUiActive = true;
+        try {
+            startActivityForResult(intent, SPEECH_UI_REQUEST);
+        } catch (RuntimeException error) {
+            systemSpeechUiActive = false;
+            deliverSpeech("", wake, "speech_recognizer_unavailable",
+                    pendingSpeechUiToken);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != SPEECH_UI_REQUEST) {
+            return;
+        }
+        systemSpeechUiActive = false;
+        String text = "";
+        if (resultCode == RESULT_OK && data != null) {
+            ArrayList<String> matches = data
+                    .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (matches != null && !matches.isEmpty() && matches.get(0) != null) {
+                text = matches.get(0).trim();
+            }
+        }
+        deliverSpeech(text, pendingSpeechUiWake,
+                text.isEmpty() ? "no_speech_detected" : null,
+                pendingSpeechUiToken);
     }
 
     private static boolean shouldRetrySpeech(int error) {

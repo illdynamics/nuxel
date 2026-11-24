@@ -9,12 +9,12 @@ dist/android/penguru-squad-debug.apk
 ```
 
 That is the complete standalone PenGuru Squad Android app (label **PenGuru
-Squad**, package `org.nuxel.penguru`, version `0.9.4-beta` / versionCode
-`904`). There is no other APK to install. The matching checksum is in
+Squad**, package `org.nuxel.penguru`, version `0.9.5-beta` / versionCode
+`905`). There is no other APK to install. The matching checksum is in
 `dist/android/SHA256SUMS`:
 
 ```
-2cd79bfa2590349f4deb3dcef8d3718e16b1eba56ecfc23ad275e40a02da67bc  penguru-squad-debug.apk
+b626669366d684a13910eb3c3df894395db9b6883c1ea8b545fec032cf3fad42  penguru-squad-debug.apk
 ```
 
 The APK is signed with the repository's stable debug identity, so it installs
@@ -55,13 +55,19 @@ The app no longer asks for a Nuxel API URL or launcher token. It starts an
   Snapdragon/OpenCL) and ONNX Runtime archives, verifies them, and unpacks them.
   An interrupted download resumes from its `.part` file.
 - **Settings → Voice** uses Android's built-in speech recognition, so the
-  microphone transcript works without a Nuxel host. The microphone closes as
-  soon as speech ends and the transcript is sent automatically.
+  microphone transcript works without a Nuxel host. It prefers the phone's
+  normal online recognizer, keeps partial hypotheses, and falls back to the
+  visible Android voice-input screen if the silent recognizer keeps hearing
+  nothing. The microphone closes as soon as speech ends and the transcript is
+  sent automatically to the Conversation page.
 - **Settings → SonarBird background listening** starts a persistent microphone
-  foreground service with a notification. Say “Penguru” and then a question to
-  talk to PenGuru while the app is in the background. Android may require you to
-  allow notifications and to tap the ongoing notification to bring the chat
-  forward on some releases/OEMs; the heard command is still auto-sent.
+  foreground service with a notification. Say “Penguru” (or “Peng Guru”,
+  “Pen Guru”, “Penguro”, “Pinguru”) and then a question to talk to PenGuru while
+  the app is in the background. SonarBird stays armed while the app is open and
+  pauses only while the in-app mic is recording; the Conversation page shows its
+  live state. Android may require you to allow notifications and to tap the
+  ongoing notification to bring the chat forward on some releases/OEMs; the
+  heard command is still auto-sent.
 - On every launch PenGuru checks microphone, notification, battery and storage
   permissions and restores the listener if you had enabled it. Accept the
   battery-optimization prompt so Android does not stop background work, and
@@ -80,9 +86,11 @@ who already run the PenGuru service. It is not required and is not the default.
 - [ ] Tick the license checkbox, download a model, and watch progress.
 - [ ] **Settings → On-device dependencies** lists llama.cpp / ONNX Runtime
       install buttons and the storage paths.
-- [ ] Open **Settings → Voice**, grant the microphone, and speak a message.
-      The mic should close at the end of speech and the message should send
-      automatically.
+- [ ] Tap the Conversation mic (or **Settings → Voice**), grant the
+      microphone, and speak a message. The mic should close at the end of
+      speech and the message should appear and send on the Conversation page.
+      If the silent recognizer hears nothing twice, Android's visible voice
+      input screen opens as a fallback; speak there and it still sends.
 - [ ] Accept **Settings → Allow all files access** and **Disable battery
       optimization** so reinstall reuse and screen-off downloads work.
 - [ ] Tap **Start background listening**, allow the notification permission,

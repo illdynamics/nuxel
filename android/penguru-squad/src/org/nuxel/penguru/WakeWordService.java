@@ -59,17 +59,25 @@ public class WakeWordService extends Service {
     private static final long SESSION_DEADLINE_MS = 12000L;
     private static final long COMMAND_FOLLOW_UP_MS = 20000L;
     private static final long MIN_SESSION_GAP_MS = 1000L;
+    // Speech recognizers render the wake word several ways: "Penguru",
+    // "Peng Guru", "Pen Guru", "Penguro", "Pinguru". Accept the common forms
+    // so a near miss does not look like the listener is dead.
     private static final Pattern WAKE = Pattern.compile(
-            "\\bpen[\\s-]?guru\\b[\\s,.:;!?\\-]*(.*)$",
+            "\\b(?:pen[\\s-]?guru|peng[\\s-]?g?u(?:ru|ro|roo)"
+            + "|ping[\\s-]?u?ru|pang[\\s-]?u?ru)"
+            + "\\b[\\s,.:;!?\\-]*(.*)$",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
     private static volatile WakeWordService instance;
     private static volatile boolean running;
     private static volatile boolean paused;
-    // True while MainActivity is visible. The foreground UI owns the one
-    // microphone Android exposes, so the background listener stays paused for
-    // the whole time the app is open instead of racing in-app dictation.
+    // True while MainActivity is visible (reported in status). Visibility does
+    // not pause the listener; only an active in-app microphone session does.
     private static volatile boolean appForeground;
+    // True only while MainActivity owns the microphone for an in-app speech
+    // session. The listener keeps running while the app is merely visible.
+    private static volatile boolean inAppSpeech;
+    private static volatile long inAppSpeechAt;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     // Hand-off callbacks deliberately do not use `handler`: onStartCommand
@@ -91,6 +99,9 @@ public class WakeWordService extends Service {
     private boolean stayingQuiet;
     private boolean stoppingForHandoff;
     private String lastHeard = "";
+    private String lastPartial = "";
+    private boolean dispatchedThisSession;
+    private Runnable pendingPartialDispatch;
     private int consecutiveErrors;
     private int session;
 
@@ -106,38 +117,33 @@ public class WakeWordService extends Service {
         return appForeground;
     }
 
+    public static boolean isInAppSpeech() {
+        return inAppSpeech;
+    }
+
     /**
-     * Tell the listener whether MainActivity is visible. While the app is in
-     * the foreground the service releases its recognizer immediately and does
-     * not schedule another session. This is the important half of the fix:
-     * opening the app used to leave the background recognizer holding the
-     * speech service, so the first tap on the microphone failed with
-     * ERROR_RECOGNIZER_BUSY ("speech service busy").
+     * Track whether MainActivity is visible. Visibility alone no longer pauses
+     * SonarBird: the listener stays armed while the app is open and is paused
+     * only for the short in-app recognition session. The previous behaviour
+     * made "background listening" look completely dead whenever the owner was
+     * looking at the app.
      */
     public static void setAppForeground(boolean visible) {
         appForeground = visible;
+        if (visible) {
+            return;
+        }
         WakeWordService service = instance;
-        if (!visible) {
-            return;
+        if (service != null && !paused && !inAppSpeech) {
+            service.scheduleNext(650L);
         }
-        paused = true;
-        if (service == null) {
-            return;
-        }
-        HANDOFF.post(() -> {
-            service.stopRecognizer();
-            service.listening = false;
-            service.restartQueued = false;
-            // Do not keep showing a stale "recognizer busy" error while the
-            // service is intentionally paused for the in-app microphone.
-            service.lastError = "";
-            service.updateNotification("Paused while PenGuru is open");
-        });
     }
 
     /** Wait until the service has released the recognizer and microphone. */
     public static void pauseForActivity(Runnable whenPaused) {
         paused = true;
+        inAppSpeech = true;
+        inAppSpeechAt = System.currentTimeMillis();
         WakeWordService service = instance;
         if (service == null) {
             if (whenPaused != null) {
@@ -165,19 +171,21 @@ public class WakeWordService extends Service {
 
     /**
      * Called after an in-app result or when MainActivity leaves the screen.
-     * The listener stays paused while the app is visible; only backgrounding
-     * the app hands the microphone back to SonarBird.
+     * SonarBird resumes even while the app is visible; the next in-app mic
+     * session pauses it again before creating its recognizer.
      */
     public static void resumeFromActivity() {
-        if (appForeground) {
-            paused = true;
-            return;
-        }
+        inAppSpeech = false;
         paused = false;
         WakeWordService service = instance;
-        if (service != null) {
-            service.handler.postDelayed(service::beginListening, 900L);
+        if (service != null && !destroyedStatic()) {
+            service.handler.postDelayed(service::beginListening, 700L);
         }
+    }
+
+    private static boolean destroyedStatic() {
+        WakeWordService service = instance;
+        return service == null || service.destroyed;
     }
 
     public static String statusJson(Context context) {
@@ -197,6 +205,7 @@ public class WakeWordService extends Service {
             out.put("notifications", notifications);
             out.put("awaiting_command", service != null && service.awaitingCommand);
             out.put("handoff", service != null && service.stoppingForHandoff);
+            out.put("in_app_speech", inAppSpeech);
             out.put("last_error", service == null || service.stayingQuiet ? "" : service.lastError);
             out.put("last_heard", service == null ? "" : service.lastHeard);
             out.put("sessions", service == null ? 0 : service.session);
@@ -252,11 +261,11 @@ public class WakeWordService extends Service {
                 .putBoolean(PREF_ENABLED, true)
                 .apply();
         // A START command must not steal the microphone back while the
-        // Activity is visible. This happened when launch-time permission
-        // checks restarted an enabled listener after onStart had paused it.
-        paused = appForeground;
-        if (!startInForeground(appForeground
-                ? "Paused while PenGuru is open"
+        // Activity is recording. This happened when launch-time permission
+        // checks restarted an enabled listener after the in-app mic began.
+        paused = inAppSpeech;
+        if (!startInForeground(inAppSpeech
+                ? "Paused while the in-app microphone is in use"
                 : "Listening for “Penguru” · say it, then your message")) {
             lastError = "Android refused to start the microphone foreground service. Open PenGuru while the screen is on and start listening again.";
             stopSelf();
@@ -264,7 +273,7 @@ public class WakeWordService extends Service {
         }
         restartQueued = false;
         handler.removeCallbacksAndMessages(null);
-        if (appForeground) {
+        if (inAppSpeech) {
             // A queued stop/handoff may have been cleared above; make sure no
             // recognizer survives while the Activity owns the microphone.
             stopRecognizer();
@@ -377,9 +386,11 @@ public class WakeWordService extends Service {
         Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? new Notification.Builder(this, CHANNEL_ID)
                 : new Notification.Builder(this);
-        builder.setContentTitle(appForeground
+        String title = inAppSpeech
                 ? "SonarBird paused"
-                : paused ? "PenGuru request ready" : "SonarBird is listening")
+                : paused || stoppingForHandoff ? "PenGuru request ready"
+                : "SonarBird is listening";
+        builder.setContentTitle(title)
                 .setContentText(text)
                 .setSmallIcon(R.drawable.ic_stat_penguru)
                 .setOngoing(true)
@@ -414,7 +425,13 @@ public class WakeWordService extends Service {
     private void beginListening() {
         restartQueued = false;
         stoppingForHandoff = false;
-        if (destroyed || paused || appForeground) {
+        // If the Activity was killed before it could release the hand-off,
+        // never leave the background listener paused forever.
+        if (inAppSpeech && System.currentTimeMillis() - inAppSpeechAt > 120000L) {
+            inAppSpeech = false;
+            paused = false;
+        }
+        if (destroyed || paused || inAppSpeech) {
             return;
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
@@ -447,6 +464,9 @@ public class WakeWordService extends Service {
             return;
         }
         listening = true;
+        dispatchedThisSession = false;
+        lastPartial = "";
+        cancelPendingPartial();
         lastSessionAt = System.currentTimeMillis();
         awaitingCommand = awaitingCommand
                 && System.currentTimeMillis() - awaitingSince < COMMAND_FOLLOW_UP_MS;
@@ -476,7 +496,10 @@ public class WakeWordService extends Service {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+        // Use partial hypotheses for an immediate "Penguru <question>"
+        // hand-off. Waiting for onResults alone made the wake listener look
+        // unresponsive on devices that frequently time out after a partial.
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
         String language = speechLanguage;
         if (language == null || language.isEmpty()) {
@@ -491,6 +514,28 @@ public class WakeWordService extends Service {
         intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 700L);
         intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 700L);
         return intent;
+    }
+
+    private void cancelPendingPartial() {
+        if (pendingPartialDispatch != null) {
+            handler.removeCallbacks(pendingPartialDispatch);
+            pendingPartialDispatch = null;
+        }
+    }
+
+    private void schedulePartialDispatch(final String command) {
+        cancelPendingPartial();
+        pendingPartialDispatch = () -> {
+            pendingPartialDispatch = null;
+            if (!destroyed && !paused && !inAppSpeech) {
+                dispatch(command);
+            } else {
+                scheduleNext(400L);
+            }
+        };
+        // Give the recognizer a moment to finish the sentence or send a final
+        // result before committing a partial hypothesis.
+        handler.postDelayed(pendingPartialDispatch, 700L);
     }
 
     private void stopRecognizer() {
@@ -513,13 +558,13 @@ public class WakeWordService extends Service {
     }
 
     private void scheduleNext(long delayMillis) {
-        if (destroyed || paused || appForeground || restartQueued) {
+        if (destroyed || paused || inAppSpeech || restartQueued) {
             return;
         }
         restartQueued = true;
         handler.postDelayed(() -> {
             restartQueued = false;
-            if (!destroyed && !paused && !appForeground) {
+            if (!destroyed && !paused && !inAppSpeech) {
                 beginListening();
             }
         }, delayMillis);
@@ -539,7 +584,6 @@ public class WakeWordService extends Service {
             if (!rest.isEmpty()) {
                 awaitingCommand = false;
                 dispatch(rest);
-                scheduleNext(900L);
                 return;
             }
             awaitingCommand = true;
@@ -556,7 +600,6 @@ public class WakeWordService extends Service {
             }
             awaitingCommand = false;
             dispatch(text);
-            scheduleNext(900L);
             return;
         }
         scheduleNext(500L);
@@ -573,12 +616,12 @@ public class WakeWordService extends Service {
         }
         lastDispatch = text;
         lastDispatchAt = now;
-        // The sentence has been heard and finalised. Close the microphone at
-        // once instead of starting another wake session: the owner asked for
-        // listening to stop when the sentence stops. MainActivity takes over,
-        // sends the transcript and shows the conversation page. Background
-        // listening resumes only after the app leaves the screen.
-        paused = true;
+        dispatchedThisSession = true;
+        cancelPendingPartial();
+        // The sentence has been heard and finalised. Release the microphone
+        // while MainActivity opens, sends the transcript and shows the
+        // conversation page. Listening then re-arms automatically; the in-app
+        // microphone can pause it again at any moment.
         restartQueued = false;
         awaitingCommand = false;
         lastError = "";
@@ -604,6 +647,12 @@ public class WakeWordService extends Service {
             Log.w(TAG, "Background activity launch blocked: " + error);
             updateNotification("Heard: " + shorten(text) + " · tap to send");
         }
+        handler.postDelayed(() -> {
+            stoppingForHandoff = false;
+            if (!destroyed && !paused && !inAppSpeech) {
+                beginListening();
+            }
+        }, 2500L);
     }
 
     private static String shorten(String text) {
@@ -642,8 +691,42 @@ public class WakeWordService extends Service {
         @Override public void onBeginningOfSpeech() { }
         @Override public void onRmsChanged(float rmsdB) { }
         @Override public void onBufferReceived(byte[] buffer) { }
-        @Override public void onPartialResults(Bundle partialResults) { }
         @Override public void onEvent(int eventType, Bundle params) { }
+
+        @Override
+        public void onPartialResults(Bundle partialResults) {
+            if (stale() || partialResults == null || dispatchedThisSession) {
+                return;
+            }
+            ArrayList<String> matches = partialResults
+                    .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            if (matches == null || matches.isEmpty()) {
+                return;
+            }
+            String text = matches.get(0) == null ? "" : matches.get(0).trim();
+            if (text.isEmpty() || text.equals(lastPartial)) {
+                return;
+            }
+            lastPartial = text;
+            Matcher match = WAKE.matcher(text);
+            if (!match.find()) {
+                return;
+            }
+            String rest = match.group(1) == null ? "" : match.group(1).trim();
+            if (!rest.isEmpty()) {
+                awaitingCommand = false;
+                lastHeard = shorten(text);
+                schedulePartialDispatch(rest);
+                return;
+            }
+            // "Penguru" alone: keep this session alive and accept the next
+            // sentence either as a later partial or in onResults.
+            if (!awaitingCommand) {
+                awaitingCommand = true;
+                awaitingSince = System.currentTimeMillis();
+                updateNotification("Heard “Penguru” · listening for your message…");
+            }
+        }
 
         @Override
         public void onEndOfSpeech() {
@@ -667,6 +750,7 @@ public class WakeWordService extends Service {
             }
             final boolean keepCommand = awaitingCommand
                     && System.currentTimeMillis() - awaitingSince < COMMAND_FOLLOW_UP_MS;
+            cancelPendingPartial();
             stopRecognizer();
             lastError = speechErrorName(error);
             consecutiveErrors++;
@@ -714,12 +798,20 @@ public class WakeWordService extends Service {
             if (stale()) {
                 return;
             }
+            cancelPendingPartial();
             ArrayList<String> matches = results == null ? null
                     : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = matches == null || matches.isEmpty() ? "" : matches.get(0);
             stopRecognizer();
             lastError = "";
             stayingQuiet = false;
+            if (dispatchedThisSession) {
+                dispatchedThisSession = false;
+                return;
+            }
+            if ((text == null || text.trim().isEmpty()) && !lastPartial.isEmpty()) {
+                text = lastPartial;
+            }
             handleText(text);
         }
     }
