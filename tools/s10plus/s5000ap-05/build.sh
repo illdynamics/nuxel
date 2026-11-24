@@ -42,6 +42,8 @@ $CC "${CFLAGS[@]}" -Isrc -o test_fmt_sms tests/test_fmt_sms.c src/fmt_sms.c src/
 $CC "${CFLAGS[@]}" -Isrc -o test_sms_pdu tests/test_sms_pdu.c src/sms_pdu.c
 $CC "${CFLAGS[@]}" -Isrc -o test_sms_store tests/test_sms_store.c src/sms_store.c src/sms_pdu.c -lsqlite3
 $CC "${CFLAGS[@]}" -Isrc -o test_sms_service tests/test_sms_service.c src/sms_service.c src/sms_store.c src/sms_pdu.c src/fmt_sms.c src/fmt_tx.c -lsqlite3
+$CC "${CFLAGS[@]}" -Isrc -o test_fmt_call tests/test_fmt_call.c src/fmt_call.c src/fmt_tx.c
+$CC "${CFLAGS[@]}" -Isrc -o test_call_service tests/test_call_service.c src/call_service.c src/fmt_call.c src/fmt_tx.c
 
 echo "=== run SIPC5/FMT unit tests ==="
 ./test_sipc5_fmt
@@ -76,6 +78,8 @@ echo "=== run Stage-06 native EFS NV backend tests ==="
 ./test_sms_pdu
 ./test_sms_store
 ./test_sms_service
+./test_fmt_call
+./test_call_service
 echo "=== run SIPC5 fuzzer (host, no writes) ==="
 python3 tests/fuzz_sipc5.py ./fuzz_driver --iters=3000
 
@@ -86,7 +90,7 @@ $CLANG -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-r
 python3 tests/fuzz_sipc5.py ./test_sipc5_fmt_asan --asan --iters=3000
 
 # Both serialization directions, FSM, and NV/backup transactions.
-for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service; do
+for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service; do
     libs=()
     case "$suite" in
         fmt_tx) sources=(src/fmt_tx.c) ;;
@@ -98,10 +102,12 @@ for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu s
         sms_pdu) sources=(src/sms_pdu.c) ;;
         sms_store) sources=(src/sms_store.c src/sms_pdu.c);libs=(-lsqlite3) ;;
         sms_service) sources=(src/sms_service.c src/sms_store.c src/sms_pdu.c src/fmt_sms.c src/fmt_tx.c);libs=(-lsqlite3) ;;
+        fmt_call) sources=(src/fmt_call.c src/fmt_tx.c) ;;
+        call_service) sources=(src/call_service.c src/fmt_call.c src/fmt_tx.c) ;;
     esac
     "$CLANG" -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined \
         -fno-sanitize-recover=all -std=gnu11 -Isrc -o "test_${suite}_asan" \
-        "tests/test_${suite}.c" "${sources[@]}" "${libs[@]}"
+        "tests/test_${suite}.c" "${sources[@]}" "${libs[@]:+${libs[@]}}"
     "./test_${suite}_asan"
 done
 

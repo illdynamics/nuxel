@@ -115,6 +115,36 @@ static bool nonzero(const uint8_t *p, size_t n)
     return false;
 }
 
+bool fmt_rx_pdp_profiles(const uint8_t *p, size_t n, struct fmt_rx_pdp_profiles *out)
+{
+    if (!p || !out || n < 1 || p[0] > FMT_RX_PDP_PROFILES ||
+        n != 1u + 126u * p[0]) return false;
+    struct fmt_rx_pdp_profiles v = {0};
+    uint32_t seen = 0;
+    for (unsigned i = 0; i < p[0]; i++) {
+        const uint8_t *q = p + 1 + 126u * i;
+        /* The CP counts valid contexts before filtering the RIL instance,
+         * then allocates/zeroes the whole reply. Unfilled slots stay zero
+         * (0x41301c62 versus 0x41301d18). They are not a CID0 profile. */
+        if (!nonzero(q,126)) continue;
+        if (!q[0] || q[0] > 27 || (seen & (1u << q[0]))) return false;
+        seen |= 1u << q[0];
+        const uint8_t *end = memchr(q + 2, 0, 101);
+        if (!end) return false;
+        size_t len = (size_t)(end - (q + 2));
+        for (size_t k = 0; k < len; k++)
+            if (q[2+k] < 0x20 || q[2+k] > 0x7e) return false;
+        v.profile[v.count].cid = q[0];
+        v.profile[v.count].protocol_wire = q[1];
+        memcpy(v.profile[v.count].apn, q + 2, len);
+        v.profile[v.count].data_compression = q[123];
+        v.profile[v.count].header_compression = q[124];
+        v.count++;
+    }
+    *out = v;
+    return true;
+}
+
 bool fmt_rx_ip(const uint8_t *p, size_t n, struct fmt_rx_ip *out)
 {
     if (!p || !out || n < 3 || p[0] == 0 || p[0] > 15) return false;

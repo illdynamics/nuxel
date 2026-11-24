@@ -10,7 +10,7 @@ DEST_SYS=/etc/systemd/system
 
 if [[ "${1:-}" == "--uninstall" ]]; then
     systemctl disable --now nuxel-radiod.service 2>/dev/null || true
-    rm -f "$DEST_SYS/nuxel-radiod.service" "$DEST_BIN/nuxel-radiod"
+    rm -f "$DEST_SYS/nuxel-radiod.service" "$DEST_BIN/nuxel-radiod" "$DEST_BIN/nuxel-cellular-link"
     systemctl daemon-reload
     echo "uninstalled nuxel-radiod"
     exit 0
@@ -25,8 +25,10 @@ gcc "${CFLAGS[@]}" -I"$HERE/src" -o "$HERE/nuxel-radiod" \
     "$HERE/src/radiod.c" "$HERE/src/oes_cert.c" "$HERE/src/transport.c" "$HERE/src/sipc5_fmt.c" \
     "$HERE/src/rfs_proto.c" "$HERE/src/rfs_respond.c" "$HERE/src/fmt_tx.c" \
     "$HERE/src/fmt_rx.c" "$HERE/src/data_session.c" "$HERE/src/mbim_tx.c" "$HERE/src/rfs_nv.c" "$HERE/src/efs_nv.c" "$HERE/src/nv_items.c" \
-    "$HERE/src/fmt_sms.c" "$HERE/src/sms_pdu.c" "$HERE/src/sms_store.c" "$HERE/src/sms_service.c" -lsystemd -lsqlite3
+    "$HERE/src/fmt_sms.c" "$HERE/src/sms_pdu.c" "$HERE/src/sms_store.c" "$HERE/src/sms_service.c" \
+    "$HERE/src/fmt_call.c" "$HERE/src/call_service.c" "$HERE/src/cellular_link.c" -lsystemd -lsqlite3
 install -m 0755 "$HERE/nuxel-radiod" "$DEST_BIN/nuxel-radiod"
+install -m 0755 "$HERE/scripts/cellular_link.py" "$DEST_BIN/nuxel-cellular-link"
 install -m 0644 "$HERE/nuxel-radiod.service" "$DEST_SYS/nuxel-radiod.service"
 systemctl daemon-reload
 systemctl enable nuxel-radiod.service

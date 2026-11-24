@@ -34,6 +34,8 @@
 #include "efs_nv.h"
 #include "oes_cert.h"
 #include "sms_service.h"
+#include "call_service.h"
+#include "cellular_link.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -115,6 +117,11 @@ struct radiod_ctx {
     struct data_session_ctx dsc;
     struct fmt_rx_ip ip;
     bool ip_received;
+    struct cellular_link link;
+    bool link_attempted, link_down_requested;
+    uint64_t link_check_ms;
+    struct fmt_rx_pdp_profiles profiles;
+    bool profiles_received;
     struct fmt_rx_registration cs_registration;
     bool cs_registration_valid;
     uint8_t service_domain_wire;
@@ -128,6 +135,7 @@ struct radiod_ctx {
     bool radio_state_valid, radio_on;
     unsigned oes_requests;
     struct sms_service sms;
+    struct call_service calls;
     uid_t control_uid;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
     bool     wrote_phase;       /* last phase already emitted a frame */
@@ -434,6 +442,16 @@ static void sms_notify(uint32_t id,bool incoming,void *user)
     }
 }
 
+static void call_notify(uint8_t id,const char *state,bool incoming,void *user)
+{
+    (void)user;
+    diagf("voice_call_state","\"id\":%u,\"state\":\"%s\"",id,state);
+    if(g.bus) {
+        sd_bus_emit_signal(g.bus,OBJ_PATH,IFACE_NAME,"CallStateChanged","us",(uint32_t)id,state);
+        if(incoming)sd_bus_emit_signal(g.bus,OBJ_PATH,IFACE_NAME,"IncomingCall","u",(uint32_t)id);
+    }
+}
+
 static void respond_oes_certificate(void)
 {
     if (!g.write_enabled || !g.cp_online || g.oes_requests++ >= 3) return;
@@ -469,6 +487,14 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     record_obs(ch, f, ob != NULL);
     resolve_pending(f);
     sms_service_receive(&g.sms,f);
+    call_service_receive(&g.calls,f);
+    if (f->main_cmd == 13 && f->sub_cmd == 1 && f->cmd_type == 2) {
+        struct fmt_rx_pdp_profiles profiles;
+        if (fmt_rx_pdp_profiles(f->payload,f->payload_len,&profiles)) {
+            g.profiles = profiles; g.profiles_received = true;
+            diagf("pdp_definitions", "\"count\":%u", profiles.count);
+        } else diagf("pdp_definitions_invalid", "\"length\":%u", f->payload_len);
+    }
     /* Reply only to the CP's actual startup request. Transfer the existing
      * device certificate unchanged, as OesManager::OnOesDrkCpInfo does. */
     if (f->main_cmd == 38 && f->sub_cmd == 1 && f->cmd_type == 1 && f->payload_len == 4)
@@ -957,6 +983,11 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         f->cmd_type == IPC41_TYPE_NOTIFICATION) {
         struct fmt_rx_ip ip;
         if (fmt_rx_ip(f->payload, f->payload_len, &ip) && ip.cid == g.dsc.attach_cid) {
+            if (g.data_path_armed && g.dsc.phase == DS_ACTIVE &&
+                memcmp(&ip,&g.ip,sizeof ip)) {
+                g.dsc.phase = DS_WAIT_IP; g.dsc.ip_configured = false;
+                g.link_attempted = false;
+            }
             g.ip = ip; g.ip_received = true;
             diagf("cellular_ip_received", "\"cid\":%u,\"ipv4\":\"%u.%u.%u.%u\",\"ipv6_valid\":%s",
                   ip.cid, ip.ipv4[0], ip.ipv4[1], ip.ipv4[2], ip.ipv4[3],
@@ -1247,11 +1278,45 @@ static bool data_session_emit(void)
  * waits for an authenticated response before advancing. Bounded + opt-in. */
 static void data_session_tick(uint64_t now)
 {
+    if (cellular_link_poll(&g.link,now)) {
+        diagf("cellular_link_complete", "\"operation\":%u,\"result\":%d,\"configured\":%s",
+              g.link.operation,g.link.result,g.link.configured ? "true" : "false");
+        g.dsc.ip_configured = g.link.configured && g.data_path_armed && g.cp_online;
+        g.link_check_ms = now + 30000;
+        if (g.link.result && g.dsc.phase == DS_WAIT_IP)
+            (void)ds_feedback(&g.dsc,false,now);
+        if (g.link.operation == CELL_LINK_CHECK && g.link.result && g.data_path_armed && g.cp_online) {
+            g.dsc.phase = DS_WAIT_IP; g.link_attempted = false;
+        }
+    }
+    if (g.link_down_requested && !g.link.pid) {
+        if (cellular_link_down(&g.link,now)) g.link_down_requested = false;
+        else diag("cellular_link_down_start_failed",NULL);
+    }
     if (!g.data_path_armed || g.dsc.phase == DS_IDLE) return;
     if (!g.write_enabled || !g.cp_online || !g.fmt.present) {
         return;   /* cannot safely transmit yet */
     }
+    if (g.dsc.phase == DS_ACTIVE && !g.link.pid && now >= g.link_check_ms) {
+        if (cellular_link_check(&g.link,now)) g.link_check_ms = now + 30000;
+    }
     if (ds_terminal(&g.dsc)) return;
+    if (g.dsc.phase == DS_WAIT_IP) {
+        if (g.dsc.ip_configured) {
+            (void)ds_step(&g.dsc,true,now);
+            emit_state_changed("DataState","active");
+            diag("data_session_active",NULL);
+            return;
+        }
+        if (g.ip_received && !g.link_attempted && !g.link.pid) {
+            g.link_attempted = true;
+            if (!cellular_link_apply(&g.link,&g.ip,now)) {
+                diag("cellular_link_start_failed",NULL);
+                (void)ds_feedback(&g.dsc,false,now);
+            }
+        }
+        if (g.link.pid) { g.dsc.step_deadline_ms=now+5000; return; }
+    }
 
     /* Query SIM state first. Sysfs ds_detect describes the board's dual-SIM
      * configuration and cannot establish that a card is present or ready. */
@@ -1542,6 +1607,8 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
             memset(g.home_plmn, 0, sizeof g.home_plmn);
             g.dsc.net_regist_valid = false; g.dsc.net_mode_valid = false;
             g.ip_received = false; g.dsc.ip_configured = false;
+            g.link_down_requested = true;
+            g.profiles_received = false;
             g.radio_state_valid = false;
             g.oes_requests = 0;
             g.dsc.ps_state_valid = false; g.dsc.attached = false;
@@ -1556,6 +1623,7 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         (g.dsc.net_regist_valid && fmt_rx_registered(g.dsc.last_ps_reg_state)) ||
         (g.cs_registration_valid && fmt_rx_registered(g.cs_registration.state)),
         g.write_enabled && g.fmt.present);
+    call_service_tick(&g.calls,now_ms(),g.cp_online,g.write_enabled && g.fmt.present && g.sim_ready_seen);
 
     /* Read-only status refresh uses the same serialized transport, only while
      * the data transaction is idle/terminal so query replies cannot satisfy a
@@ -1573,9 +1641,11 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         case 5: built = fmt_tx_get_sim_network(&q); break;
         case 6: built = fmt_tx_get_ps_attach(&q); break;
         case 7: built = fmt_tx_get_baseband_version(&q); break;
+        case 8: built = fmt_call_voice_registration(&q); break;
+        case 9: built = fmt_tx_get_pdp_definitions(&q); break;
         }
         if (built && radiod_write_fmt(&q)) {
-            g.status_query = (g.status_query + 1) % 8;
+            g.status_query = (g.status_query + 1) % 10;
             g.status_next_ms = now_ms() + (g.status_query ? 1000 : 60000);
         } else g.status_next_ms = now_ms() + 5000;
     }
@@ -1710,6 +1780,9 @@ static int method_get_data_state(sd_bus_message *m, void *u, sd_bus_error *e)
     if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ps_attached",
         g.dsc.ps_state_valid ? (g.dsc.attached ? "true" : "false") : "unknown");
     if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ip_configured", g.dsc.ip_configured ? "true" : "false");
+    char link_result[16];
+    snprintf(link_result,sizeof link_result,"%d",g.link.result);
+    if (r >= 0) r = sd_bus_message_append(reply,"{ss}","link_result",link_result);
     char number[16];
     if (g.dsc.net_regist_valid) snprintf(number, sizeof number, "%u", g.dsc.last_reject_cause);
     else snprintf(number, sizeof number, "unknown");
@@ -1774,6 +1847,25 @@ static int method_get_ip_info(sd_bus_message *m, void *u, sd_bus_error *e)
     return r;
 }
 
+static int method_get_pdp_profiles(sd_bus_message *m, void *u, sd_bus_error *e)
+{
+    (void)u;
+    if (!g.profiles_received)
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"No valid CP PDP definition response received");
+    sd_bus_message *reply = NULL;
+    int r = sd_bus_message_new_method_return(m,&reply);
+    if (r >= 0) r = sd_bus_message_open_container(reply,'a',"(yysyy)");
+    for (unsigned i = 0; i < g.profiles.count && r >= 0; i++) {
+        const struct fmt_rx_pdp_profile *p = &g.profiles.profile[i];
+        r = sd_bus_message_append(reply,"(yysyy)",p->cid,p->protocol_wire,p->apn,
+                                  p->data_compression,p->header_compression);
+    }
+    if (r >= 0) r = sd_bus_message_close_container(reply);
+    if (r >= 0) r = sd_bus_send(NULL,reply,NULL);
+    sd_bus_message_unref(reply);
+    return r;
+}
+
 static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
@@ -1783,7 +1875,7 @@ static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
     const char *lte = (g.dsc.phase == DS_ACTIVE) ? "active" :
                       (g.data_path_armed ? "pending" : "unsupported");
     const char *keys[] = {"lte_data","sms","voice","ims","volte"};
-    const char *vals[] = {lte, g.sms.store.db ? "implemented-unverified" : "unavailable", "false", "false", "false"};
+    const char *vals[] = {lte, g.sms.store.db ? "implemented-unverified" : "unavailable", "call-control-only", "false", "false"};
     for (unsigned i = 0; i < 5; i++) {
         sd_bus_message_append(reply, "{ss}", keys[i], vals[i]);
     }
@@ -1949,6 +2041,7 @@ static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e
         strspn(apn, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-") != strlen(apn))
         return sd_bus_error_set(e, SD_BUS_ERROR_INVALID_ARGS, "invalid APN or unsupported profile (use 1)");
     ds_reset(&g.dsc, apn, (uint8_t)profile);
+    g.link_attempted = false;
     memset(&g.ip, 0, sizeof g.ip); g.ip_received = false;
     g.dsc.protocol = env_protocol();
     g.dsc.preferred_net = env_preferred_net();
@@ -2046,6 +2139,71 @@ static int method_get_sms_status(sd_bus_message *m,void *u,sd_bus_error *e)
     sd_bus_message_unref(reply);return r;
 }
 
+static int method_dial(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;int r=require_control(m,e);if(r<0)return r;
+    const char *number;
+    if(sd_bus_message_read(m,"s",&number)<0)return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Phone number required");
+    if(!strcmp(number,"112") || !strcmp(number,"911"))
+        return sd_bus_error_set(e,SD_BUS_ERROR_NOT_SUPPORTED,"Emergency-call procedure is not implemented");
+    struct fmt_tx_frame check;
+    if(!fmt_call_dial(&check,number))return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Invalid phone number");
+    if(!g.write_enabled || !g.cp_online || !g.sim_ready_seen || !call_service_dial(&g.calls,number,now_ms()))
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Call transport unavailable, calls unknown/active, or previous setup unresolved");
+    return sd_bus_reply_method_return(m,"b",1);
+}
+static int method_answer_call(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;int r=require_control(m,e);if(r<0)return r;
+    if(!g.write_enabled || !g.cp_online || !call_service_answer(&g.calls,now_ms()))
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"No confirmed incoming call or command transport unavailable");
+    return sd_bus_reply_method_return(m,"b",1);
+}
+static int method_hangup_call(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;int r=require_control(m,e);if(r<0)return r;
+    if(!g.write_enabled || !g.cp_online || !call_service_hangup(&g.calls,now_ms()))
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Call release write failed");
+    return sd_bus_reply_method_return(m,"b",1);
+}
+static int method_get_calls(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;int r=require_control(m,e);if(r<0)return r;
+    if(!g.calls.list_valid)return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"CP call list unavailable or unsupported");
+    sd_bus_message *reply=NULL;r=sd_bus_message_new_method_return(m,&reply);
+    if(r>=0)r=sd_bus_message_open_container(reply,'a',"(ussb)");
+    for(size_t i=0;i<g.calls.list.count && r>=0;i++) {
+        const struct fmt_call *c=&g.calls.list.calls[i];
+        r=sd_bus_message_append(reply,"(ussb)",(uint32_t)c->id,fmt_call_state_name(c->state),c->number,c->direction==2);
+    }
+    if(r>=0)r=sd_bus_message_close_container(reply);
+    if(r>=0)r=sd_bus_send(NULL,reply,NULL);
+    sd_bus_message_unref(reply);return r;
+}
+static int method_get_voice_status(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;(void)e;sd_bus_message *reply=NULL;int r=sd_bus_message_new_method_return(m,&reply);
+    if(r>=0)r=sd_bus_message_open_container(reply,'a',"{ss}");
+    const char *keys[]={"registration","call_list","pending","audio_route","ims"};
+    const char *vals[]={g.cs_registration_valid ? fmt_rx_reg_name(g.cs_registration.state) : "UNKNOWN",
+        g.calls.list_valid ? "received" : "unknown",g.calls.pending || g.calls.dial_waiting ? "true" : "false","unconfigured","unimplemented"};
+    for(size_t i=0;i<5 && r>=0;i++)r=sd_bus_message_append(reply,"{ss}",keys[i],vals[i]);
+    char value[32];
+    if(g.cs_registration_valid)snprintf(value,sizeof value,"%u",g.cs_registration.reject_cause);else snprintf(value,sizeof value,"unknown");
+    if(r>=0)r=sd_bus_message_append(reply,"{ss}","registration_cause",value);
+    snprintf(value,sizeof value,"%d",g.calls.result);
+    if(r>=0)r=sd_bus_message_append(reply,"{ss}","command_result",value);
+    if(g.calls.status_valid) {
+        snprintf(value,sizeof value,"%u",g.calls.status.state);
+        if(r>=0)r=sd_bus_message_append(reply,"{ss}","status_wire",value);
+        snprintf(value,sizeof value,"%u/%u",g.calls.status.cause_class,g.calls.status.cause);
+        if(r>=0)r=sd_bus_message_append(reply,"{ss}","cause_wire",value);
+    }
+    if(r>=0)r=sd_bus_message_close_container(reply);
+    if(r>=0)r=sd_bus_send(NULL,reply,NULL);
+    sd_bus_message_unref(reply);return r;
+}
+
 /* GetDiagnostics: redacted, aggregate counters ONLY. No payload/identifiers. */
 static int method_get_diagnostics(sd_bus_message *m, void *u, sd_bus_error *e)
 {
@@ -2079,6 +2237,8 @@ static int method_get_diagnostics(sd_bus_message *m, void *u, sd_bus_error *e)
         {"SmsStoreErrors", g.sms.store_errors},
         {"SmsAckErrors",   g.sms.ack_errors},
         {"SmsUnmatched",   g.sms.unmatched},
+        {"CallParseErrors",g.calls.parse_errors},
+        {"CallUnmatched",  g.calls.unmatched},
     };
     for (unsigned i = 0; i < sizeof(kv)/sizeof(kv[0]); i++) {
         r = sd_bus_message_append(reply, "{st}", kv[i].k, kv[i].v);
@@ -2109,10 +2269,16 @@ static const sd_bus_vtable radiod_vtable[] = {
     SD_BUS_METHOD("RefreshStatus", "", "b", method_refresh_status, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetDataSessionState", "", "a{ss}", method_get_data_state, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetIpInfo", "", "a{ss}", method_get_ip_info, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetPdpProfiles", "", "a(yysyy)", method_get_pdp_profiles, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("SendSms", "ss", "u", method_send_sms, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("ListSms", "", "au", method_list_sms, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetSms", "u", "a{ss}", method_get_sms, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetSmsStatus", "", "a{ss}", method_get_sms_status, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("Dial", "s", "b", method_dial, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("AnswerCall", "", "b", method_answer_call, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("HangupCall", "", "b", method_hangup_call, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetCalls", "", "a(ussb)", method_get_calls, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetVoiceStatus", "", "a{ss}", method_get_voice_status, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetSignalInfo", "", "iiib", method_get_signal, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetAvailableOperators", "", "a(ss)", method_get_operators, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetPacketStats", "", "ttb", method_packet_stats, SD_BUS_VTABLE_UNPRIVILEGED),
@@ -2126,6 +2292,8 @@ static const sd_bus_vtable radiod_vtable[] = {
     SD_BUS_SIGNAL("CpReset", "", 0),
     SD_BUS_SIGNAL("SmsReceived", "u", 0),
     SD_BUS_SIGNAL("SmsStateChanged", "us", 0),
+    SD_BUS_SIGNAL("IncomingCall", "u", 0),
+    SD_BUS_SIGNAL("CallStateChanged", "us", 0),
     SD_BUS_VTABLE_END
 };
 
@@ -2210,6 +2378,7 @@ int main(int argc, char **argv)
     const char *sms_path=getenv("NUXEL_SMS_DATABASE");
     if (!sms_path || !*sms_path) sms_path="/var/lib/nuxel-radio/sms.sqlite3";
     if (!sms_service_open(&g.sms,sms_path,sms_write,sms_notify,NULL)) diag("sms_storage_unavailable",NULL);
+    call_service_init(&g.calls,sms_write,call_notify,NULL);
 
     if (setup_event() < 0) { diag("event_setup_failed", NULL); return 1; }
 

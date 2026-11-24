@@ -274,6 +274,11 @@ bool fmt_tx_get_pdp_context(struct fmt_tx_frame *f)
     return fmt_tx_raw(f, MAIN_GPRS, 4 /*GPRS_PDP_CONTEXT*/, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
 
+bool fmt_tx_get_pdp_definitions(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, MAIN_GPRS, 1, FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
 /*
  * GPRS sync full data profile (recovered from IpcTxSyncProfileInfo @0x31fb48):
  * 326-byte frame: main=13 sub=37(0x25) type=3; payload=319 bytes.

@@ -91,6 +91,8 @@ int main(void)
     CHECK(fmt_tx_ps_attach(&f, false, true, 4)); VECTOR(detach);
     const uint8_t pdp[] = {7,0,0,0,13,4,2};
     CHECK(fmt_tx_get_pdp_context(&f)); VECTOR(pdp);
+    const uint8_t definitions[] = {7,0,0,0,13,1,2};
+    CHECK(fmt_tx_get_pdp_definitions(&f)); VECTOR(definitions);
     const uint8_t mob[] = {9,0,0,0,13,29,3,1,1};
     CHECK(fmt_tx_mobile_data(&f, true, true)); VECTOR(mob);
     const uint8_t cdma[] = {8,0,0,0,3,2,3,1};

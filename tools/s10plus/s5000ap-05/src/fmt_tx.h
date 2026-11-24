@@ -111,6 +111,9 @@ bool fmt_tx_ps_attach(struct fmt_tx_frame *f, bool attach, bool suspend,
 
 /* GPRS get PDP context (query, no payload). */
 bool fmt_tx_get_pdp_context(struct fmt_tx_frame *f);
+/* Read definitions (APN/protocol), distinct from sub=4's active-state list.
+ * EFUJ2 CP dispatch +0x18 and GET handler 0x41301c56; no payload. */
+bool fmt_tx_get_pdp_definitions(struct fmt_tx_frame *f);
 
 /* GPRS sync FULL data profile (sub=37, 326-byte frame). This is the real
  * full-profile sync incl. RAT (IpcTxSyncProfileInfo @0x31fb48). */

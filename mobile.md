@@ -1,461 +1,649 @@
-# LTE OR DIE — QRONIQQLES IV
-## THE RFS RESURRECTION PROTOCOL
-### STAGE 06 — FINAL MODEM, LTE DATA, SMS & VOICE COMPLETION
+# ROUND 44 — LTE AND ALIVE
+## THE ASTRA RESURRECTION HANDOVER — STAGE 06 FINAL COMPLETION
 
-**MISSION: Make the Samsung SM-G975F (beyond2lte / Shannon S5000AP) a fully functional Nuxel Linux phone with working LTE, cellular Internet, SMS and voice telephony.**
+**Mission: Recover Astra's interrupted execution, preserve the achieved cellular connectivity milestone, and complete Stage 06 to 100% physically verified acceptance.**
 
-There is one objective: physically working Stage 06.
+You are continuing an existing implementation campaign. You are NOT starting a new investigation from scratch.
 
-No research-only rounds. No architectural essays. No speculative success. No endless reports describing the same blocker.
+The previous GPT-6 Astra MAX execution terminated because its API credit balance was exhausted, after reporting 2,406,550 tokens used.
 
-**EXECUTE → IMPLEMENT → BUILD → TEST → DEPLOY → OBSERVE → FIX → RETEST.**
+The termination was financial, not an established technical blocker.
 
-Continue until the actual hardware acceptance criteria pass.
+Astra achieved the most important breakthrough of the entire Stage 06 campaign: real cellular internet on physical Nuxel hardware.
 
-A genuine external dependency must be identified honestly, but never declare something unrecoverable before exhausting the available software, firmware, transport and hardware avenues.
+Your responsibility is to recover its exact working state, understand its changes, finish any interrupted operations, and complete the remaining acceptance criteria.
 
 ---
 
-# PART I — PRESERVE AND ESTABLISH BASELINE
+## 1. MANDATORY INITIAL RECOVERY AND RECONCILIATION
 
-Repository: `~/x/nuxel`
+Before modifying anything, inspect:
 
-Target: Samsung SM-G975F, beyond2lte, Shannon S5000AP.
+- Current Git branch, HEAD and complete working-tree status.
+- Staged, unstaged and untracked files.
+- Recent commits and reflog.
+- The complete `hw-mob-run.log`, if present.
+- Other Astra execution logs and session artifacts.
+- `/tmp/nuxel-round43/` and its deployment scripts, hardware logs, firmware analysis, test results and recovery artifacts.
+- Current `mobile.md`.
+- Existing Stage 06 reports and acceptance contracts.
+- `CHANGELOG.md`.
+- `docs/S5000AP-IPC41-DATA.md`.
+- Current physical device state.
+- Installed executable hashes versus repository build outputs.
+- Active systemd services, overrides, timers and recovery jobs.
+- Any incomplete deployment or Wi-Fi restoration operation.
 
-Management connection: ZeroTier, currently known as `10.11.12.99`.
+Do not assume Astra committed its changes.
 
-Previously used branch: `cs/mob-round35-stage06`.
+Do not reset, clean, stash away, overwrite or discard Astra's implementation.
 
-Important known assets:
+Do not overwrite the owner's existing changes.
 
-- `./packs/SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/`
-- `./packs/android_device_samsung_beyond2lte-lineage-23.2/`
-- `./.vendor-ro/`
+Preserve the current working tree and deployment state in a recoverable checkpoint before continuing.
 
-Do not assume previous commit hashes or branch state remain current.
+Establish exactly where Astra stopped, including whether SMS or telephony work was already implemented, deployed or physically tested.
 
-FIRST:
+Produce a concise initial reconciliation report, then proceed with implementation and acceptance. Do not stop merely because the reconciliation report is complete.
 
-1. Inspect Git HEAD, branch, status, staged changes and untracked files.
-2. Preserve all existing modifications, including `mobile.md`.
-3. Create a recoverable checkpoint.
-4. Inspect the complete Stage 06 implementation.
-5. Run the existing test suite.
-6. Establish SSH connectivity through ZeroTier.
-7. Verify CP ONLINE, SIM READY and KPN registration.
-8. Record current RFS, IPC41, data-call and modem states.
-9. Verify Wi-Fi, USB, ZeroTier, SSH and radiod.
+---
 
-Never destroy existing work or interrupt the management connection.
+## 2. ESTABLISHED ASTRA BREAKTHROUGH
 
-# PART II — THE IMMEDIATE BREAKTHROUGH
-## RFS DIRECTIONALITY AND AP-ORIGINATED NV OPERATIONS
+The previous agent explicitly reported:
 
-This is the first engineering priority.
+- Physical KPN LTE registration.
+- Active CID 1.
+- CALL_STATUS state 1.
+- Cause 0.
+- Active PDP context readback.
+- Global IPv6 address.
+- KPN DNS configuration.
+- Successful DNS resolution.
+- Successful HTTPS with HTTP 200 over `rmnet0`.
+- Wi-Fi radio disabled during cellular-only verification.
+- Wi-Fi interface down during cellular-only verification.
+- ZeroTier reachable through cellular connectivity.
 
-Recent investigation established:
+These constitute the reported successful cellular internet milestone.
 
-- `rfs_proto.c/h` implements RFS parsing.
-- `rfs_respond.c/h` implements the CP-request response path.
-- `rfs_policy.c/h` controls permitted operations.
-- `radiod.c` integrates transport and protocol handling.
-- RFS operation `0x15` (`NV_WRITE_ALL`) is currently explicitly refused.
-- Previous investigations recovered the Samsung NV processing operations and their underlying write semantics.
-- The physical item-360 representation remains insufficiently established.
+Recover the underlying hardware logs and verify the evidence.
 
-**Do not confuse a CP-originated RFS request with an AP-originated RFS transaction.**
+Do not discard this milestone or revert the working implementation simply because previous Stage 06 reports describe a nonworking modem.
 
-Investigate the actual transaction architecture.
+Historical reports predating Astra's corrections contain materially incorrect assumptions.
 
-### Mandatory actions
+---
 
-1. Trace every RFS request and response direction in the current implementation.
-2. Determine how AP-originated messages are framed and transmitted, if supported.
-3. Inspect the SIPC transport and FMT/RFS integration.
-4. Determine whether the modem accepts AP-originated NV operations.
-5. Recover the actual command identifiers from vendor code and firmware.
-6. Establish transaction IDs, response correlation, framing, lengths and error handling.
-7. Determine whether `RFS_NV_WRITE_ITEM` is genuinely an exposed operation or merely a name used in documentation.
-8. Distinguish `NV_WRITE`, `NV_WRITE_ALL`, buffering and restore semantics.
-9. Identify whether the AP must initiate a transaction or respond to a CP request.
-10. Implement the missing transaction mechanism where supported.
+## 3. ASTRA DISCOVERIES THAT MUST BE PRESERVED
 
-Inspect the actual Samsung implementations in `libsec-ril.so`, matching firmware and recovered CP binaries.
+### 3.1 Service-domain correction — CRITICAL
 
-Do not invent opcodes, directions or transaction formats.
+The previous implementation's supposed CS+PS setting actually selected CS-only and disabled packet service.
 
-### Required result
+Astra corrected this command using vendor-derived vectors and CP readback.
 
-A reproducible, independently verified understanding of the NV transaction path, including a successful read-only transaction against the live modem where possible.
+This correction was followed by successful LTE registration and cellular internet.
 
-Add regression tests for every recovered protocol contract.
+Preserve the corrected service-domain semantics.
 
-# PART III — COMPLETE ITEM 360 / QBR CONTRACT
+Never restore the historical incorrect encoding.
 
-Known information:
+### 3.2 Registration decoder
 
-- Persistent key: `NASU.LTE.ATTACH.APN.INFO`
-- Dual-SIM variant: `DS_NASU.LTE.ATTACH.APN.INFO`
-- Previously recovered numeric ID: `360` (`0x168`)
-- Expected KPN APN: `internet`
-- NV write semantics recovered from vendor code: seek, write, fsync and MD5 handling.
-- Existing modules: `nv_items.{c,h}` and `qbr_items.{c,h}`.
+Raw registration state 1 means NOT REGISTERED, not REGISTERED_HOME.
 
-However, do not confuse a recovered numeric ID with a fully recovered physical storage contract.
+Previous reports claiming successful registration based on that value were incorrect.
 
-### Actions
+Preserve the corrected vendor-derived registration conversion.
 
-Recover and independently validate:
+Distinguish:
 
-1. Numeric ID to registry mapping.
-2. Item descriptor.
-3. Physical storage offset.
-4. Payload length.
-5. APN field representation.
-6. QBR record framing.
-7. Alignment and padding.
-8. Serialization and deserialization.
-9. MD5 handling.
-10. RFS transaction representation.
-11. Read-back behavior.
-12. Persistence across reboot.
+- Network registration.
+- Packet-service state.
+- PDP context state.
+- Actual IP connectivity.
 
-Inspect:
+Never substitute generic command acknowledgment for successful state transition.
 
-- CP `modem.bin`.
-- `modem_debug.bin.lz4`.
-- Samsung firmware TOC.
-- MAIN and BOOT regions.
-- QBR and NV handlers.
-- `PDNMGR_SET_STATELESSINFO_ATTACHINFO`.
-- `NASU.LTE.ATTACH.APN.INFO`.
-- Existing extracted vendor libraries.
-- Matching Samsung firmware and source.
+### 3.3 Packet-service control
 
-Use the TNL CSC to validate carrier configuration.
+The corrected session flow avoids redundant PS attach when NET already reports successful registration.
 
-**Important:** The current `nv_apn_record` unit tests do not independently prove that the generated structure matches the physical QBR record.
+GPRS_PS GET control flags must not incorrectly override verified registration state.
 
-Recover a genuine golden vector or equivalent authoritative evidence.
+Preserve state-aware initial APN configuration, detach verification, bounded recovery and explicit failure reporting.
 
-# PART IV — IMPLEMENT THE COMPLETE NV PROVISIONING PATH
+### 3.4 Native CP initialization
 
-Once the physical record contract and transaction mechanism are independently established:
+Astra corrected the omitted NV download during CP initialization.
 
-Implement the missing provisioning path.
+The native loader now accepts a verified device-owned NV snapshot and checksum.
 
-Requirements:
+Preserve:
 
-- Correct item ID.
-- Correct descriptor.
-- Correct physical offset.
-- Correct serialization.
-- Correct MD5 integrity.
-- Complete original backup.
-- Backup integrity verification.
-- Read-before-write verification.
-- Explicit transaction logging.
-- Post-write read-back.
-- Byte-for-byte verification.
-- Rollback capability.
-- No modification of unrelated NV items.
+- NV preflight.
+- Exact size validation.
+- TOC-derived destination validation.
+- Fail-closed handling.
+- Corruption rejection before physical CP actions.
+- Known-good recovery implementation.
 
-Protect IMEI, RF calibration, radio configuration, SIM configuration, boot configuration and unrelated NV records.
+The Samsung checksum convention recovered by Astra is:
 
-Never guess offsets or write fabricated records.
+`MD5(image || "Samsung_Android_RIL")`
 
-Do not modify persistent modem storage until the complete contract is proven and the backup and rollback path has been tested.
+This is an integrity convention, not proof of authenticity or authorization to modify protected data.
 
-Then execute the verified provisioning operation and establish the initial-attach APN.
+### 3.5 NV metadata
 
-# PART V — GET THE ACTUAL LTE DATA PATH WORKING
+The previous item-360 interpretation was incorrect.
 
-After provisioning, immediately investigate live modem behavior.
+Astra recovered:
 
-Do not assume the APN was the only failure.
+- APN descriptor index 220.
+- Dual-subscription APN descriptor index 224.
+- Value size 360 bytes.
 
-Capture actual responses and rejection causes.
+These are logical descriptor indices, not physical EFS offsets.
 
-Implement and verify:
+Astra cross-checked DTK9 and EFUJ2 firmware.
 
-1. CP initialization.
-2. SIM initialization.
-3. Network registration.
-4. Packet-switched registration.
-5. LTE attach.
-6. EPS bearer establishment.
-7. Default data-call management.
-8. Cellular interface creation.
-9. Address assignment.
-10. Routing.
-11. DNS.
-12. HTTPS.
-13. Disconnect.
-14. Reconnect.
-15. Recovery after network loss.
-16. Reboot persistence.
+The actual baseband reported by the physical device is G975FXXSEFUJ2.
 
-Use the actual Samsung modem interfaces and recovered IPC41 commands.
+Preserve the corrected metadata and fail-closed provisioning policy.
 
-Implement missing Nuxel-side functionality rather than introducing Android framework dependencies.
+Do not reopen speculative NV provisioning investigations. Working cellular internet has already been achieved without arbitrary APN record modification.
 
-Test cellular connectivity independently of Wi-Fi.
+### 3.6 Other protocol improvements
 
-Verify actual route selection and interface usage.
+Preserve and verify Astra's implementation of:
 
-# PART VI — SMS AND VOICE
+- Complete generic response decoding.
+- Response correlation.
+- Vendor-derived golden vectors.
+- SIM readiness verification.
+- Correct RAT decoding.
+- Preferred network mode readback.
+- Corrected initial attach profile.
+- Accepted PDP context definition.
+- State-aware detach and recovery.
+- Native GetIpInfo.
+- IP configuration decoding.
+- Bounded retries.
+- Explicit failure states.
+- Any completed native startup exchanges.
 
-Once LTE data works, continue directly into telephony.
+Inspect the status of the DAK certificate exchange. Preserve legitimate device authentication and existing device-owned credentials unchanged. Do not bypass authentication or expose protected material.
 
-Do not stop at an operational data connection.
+Treat all reported discoveries as implementation claims to reconcile against the actual source and hardware evidence.
 
-### SMS
+---
 
-Implement:
+## 4. IMMEDIATE PHYSICAL DEVICE HEALTH CHECK
 
-- Modem SMS transport.
-- Outgoing SMS.
-- Incoming SMS.
-- PDU encoding/decoding where required.
-- Message storage.
-- Delivery reporting.
-- Notifications.
+Before restarting anything, determine:
+
+- Whether the CP is online.
+- Whether the SIM is ready.
+- Current serving network and RAT.
+- Actual registration state.
+- Active PDP contexts.
+- Current `rmnet` interfaces.
+- IPv4 and IPv6 addresses.
+- Routes and policy routing.
+- DNS configuration.
+- Wi-Fi state.
+- USB management connectivity.
+- ZeroTier connectivity.
+- Radio daemon health.
+- CP boot daemon health.
+- Pending rollback or recovery timers.
+
+The previous agent reported a Wi-Fi restoration timing race.
+
+Verify whether it resolved successfully.
+
+Do not assume the phone is currently in the same state as the last successful LTE test.
+
+Preserve an independent management path before any disruptive test.
+
+Do not restart the CP unnecessarily if the working cellular session is still active.
+
+---
+
+## 5. REPRODUCE AND PRESERVE CELLULAR INTERNET
+
+First reproduce the achieved milestone using the current working implementation.
+
+Verify:
+
+- Correct native modem initialization.
+- SIM readiness.
+- Successful network registration.
+- Active PDP context.
+- Valid cellular IP configuration.
+- Correct carrier DNS.
+- Correct routes through the cellular interface.
+- Real HTTPS connectivity.
+
+Perform an isolated cellular-only acceptance test.
+
+Ensure Wi-Fi and any other internet uplinks cannot accidentally satisfy the test.
+
+Keep an independent management path available.
+
+Verify actual traffic traverses the cellular interface using interface counters, routing evidence and interface-specific connectivity tests.
+
+Record:
+
+- Serving PLMN.
+- RAT.
+- Registration state.
+- CID.
+- PDP state.
+- Address family.
+- DNS result.
+- HTTPS result.
+- Cellular interface traffic evidence.
+
+Do not log subscriber identifiers or protected credentials.
+
+Astra demonstrated IPv6 connectivity. Determine actual IPv4 and dual-stack capabilities independently.
+
+Do not claim IPv4 works merely because IPv6 HTTPS works.
+
+Support the carrier's legitimately provisioned address families and document any carrier-dependent limitations.
+
+Once the successful cellular baseline is reproduced, checkpoint it before making additional changes.
+
+---
+
+## 6. COMPLETE SMS FUNCTIONALITY
+
+Inspect Astra's existing work before implementing anything.
+
+Determine whether native SMS support is:
+
+- Already implemented and verified.
+- Implemented but untested.
+- Partially implemented.
+- Missing required integration.
+
+Complete only what remains necessary.
+
+Verify the supported native SMS path, including:
+
+- Outbound message submission.
+- Correct modem response handling.
+- Actual message delivery.
+- Incoming message notifications.
+- Incoming message decoding.
+- Delivery status where supported.
+- D-Bus integration.
+- Messaging application integration.
 - Error handling.
-- Recovery after reconnection.
+- Persistence where applicable.
 
-### Voice
+Use an owner-authorized test recipient and incoming test message.
 
-Implement:
+Do not send unsolicited messages, contact random recipients or generate repeated billable traffic.
 
-- Incoming calls.
-- Outgoing calls.
-- Answer and reject.
-- Hang-up.
-- Call-state reporting.
-- Audio routing.
-- Microphone routing.
-- Call recovery.
-- IMS/VoLTE integration where supported.
+A successful submission acknowledgment alone does not establish delivery.
 
-Investigate actual KPN and device support for the required voice technology.
+An inbound synthetic fixture alone does not establish physical SMS reception.
 
-Do not simulate SMS acceptance or call states.
+Where actual sending or receiving requires owner participation, prepare the test completely and request the minimum necessary action.
 
-If a carrier-side limitation exists, establish it with actual evidence and complete every software-controlled component.
-
-# PART VII — FIX EVERYTHING DISCOVERED
-
-This is mandatory throughout the campaign.
-
-Whenever a failure occurs:
-
-1. Reproduce it.
-2. Capture logs and actual responses.
-3. Identify the root cause.
-4. Fix the underlying implementation.
-5. Add a regression test.
-6. Rebuild.
-7. Rerun affected tests.
-8. Rerun the complete suite.
-9. Deploy the corrected implementation.
-10. Verify actual hardware behavior.
-
-Do not merely document defects.
-
-Do not repeatedly retry unchanged failing operations.
-
-Do not assume earlier reports are infallible.
-
-Revalidate previous assumptions against actual evidence.
-
-Acquire matching firmware, vendor binaries, debug artifacts and public source where they materially help resolve a specific implementation blocker.
-
-# PART VIII — BUILD AND DEPLOYMENT
-
-Every implementation must pass:
-
-- Host compilation with `-Wall -Wextra -Werror`.
-- Full unit test suite.
-- New regression tests.
-- 3,000-iteration fuzzing.
-- ASan/UBSan.
-- AArch64 cross-compilation.
-- Actual target execution.
-- Live modem verification.
-
-Use `set -o pipefail` for build pipelines.
-
-Do not mistake a successful downstream `head` command for a successful compilation.
-
-Deploy with backups and rollback.
-
-Keep these working:
-
-- `wlan0`
-- `usb0`
-- ZeroTier
-- SSH
-- radiod
-- Existing Nuxel services
-
-No unnecessary rebooting.
-
-TWRP flashing is permitted only when a verified requirement genuinely necessitates a partition modification and a tested recovery path exists.
-
-# PART IX — PHYSICAL ACCEPTANCE
-
-Stage 06 is complete only when every applicable criterion has been physically demonstrated.
-
-| Acceptance criterion | Required result |
-|---|---|
-| CP initialization | PASS |
-| SIM READY | PASS |
-| KPN registration | PASS |
-| PS registration | PASS |
-| LTE attach | PASS |
-| EPS bearer | PASS |
-| Cellular IP | PASS |
-| Cellular routing | PASS |
-| Cellular DNS | PASS |
-| Cellular HTTPS | PASS |
-| Outgoing SMS | PASS |
-| Incoming SMS | PASS |
-| Outgoing voice | PASS |
-| Incoming voice | PASS |
-| Call audio | PASS |
-| Disconnect/reconnect | PASS |
-| Reboot persistence | PASS |
-| Wi-Fi regression | NONE |
-| USB regression | NONE |
-| ZeroTier/SSH regression | NONE |
-| Full regression suite | PASS |
-
-Every network test must identify the actual interface and route.
-
-SMS and voice must be tested using genuine network interactions.
-
-No mocks, fabricated responses or simulated connectivity.
-
-# PART X — EXECUTION DISCIPLINE
-
-- Actions first.
-- No research-only rounds.
-- No half implementations.
-- No premature blocker declarations.
-- No blind NV writes.
-- No speculative protocol structures.
-- No unnecessary flashing.
-- No destructive Git operations.
-- No loss of existing work.
-- No Android dependencies.
-- No disabling management connectivity.
-- No fake acceptance.
-
-Do not stop at the first new blocker.
-
-Do not stop after implementing the RFS transaction mechanism.
-
-Do not stop after provisioning the APN.
-
-Do not stop after LTE data works.
-
-Continue into SMS, voice, audio and reboot persistence.
-
-Do not spend the entire round writing reports. Spend it implementing and testing.
-
-# FINAL DELIVERABLES
-
-When physically complete, deliver:
-
-1. Complete Stage 06 source.
-2. All necessary modem drivers and supporting modules.
-3. Correct NV provisioning implementation.
-4. Reproducible builds.
-5. Complete passing tests.
-6. AArch64 target binaries.
-7. Actual LTE connectivity.
-8. Working cellular Internet.
-9. Working incoming and outgoing SMS.
-10. Working incoming and outgoing voice.
-11. Working call audio.
-12. Reboot-persistence evidence.
-13. Regression evidence.
-14. Git commits.
-15. Updated documentation.
-16. Final engineering acceptance report.
-
-The report must contain actual command output, timestamps, modem responses, interface states and test results.
-
-Only after every physical acceptance criterion passes may `./wonqed4real` be created.
+Preserve cellular internet while completing SMS integration.
 
 ---
 
-# FINAL DIRECTIVE
+## 7. COMPLETE TELEPHONY VERIFICATION
 
-**LTE OR DIE. QRONIQQLES IV. THE RFS RESURRECTION.**
+Voice functionality was reportedly working before the latest changes.
 
-We have already recovered IPC41, SIPC5, substantial RFS functionality, the initial-attach APN identity, NV item ID 360, MD5 behavior and much of the Samsung modem architecture.
+Treat this as a regression-sensitive subsystem.
 
-Now finish the missing transaction path.
+Inspect the current implementation and determine whether Astra already performed physical telephony tests.
 
-Recover the real QBR representation.
+Verify:
 
-Provision the modem correctly.
+- Incoming call notification.
+- Outgoing call initiation.
+- Call state transitions.
+- Answer and reject handling.
+- Call termination.
+- Earpiece audio.
+- Microphone audio.
+- Speaker routing where supported.
+- Correct dialer state.
+- Recovery to idle.
+- Cellular data recovery after a call.
 
-Establish the EPS bearer.
+Use only owner-authorized test numbers and ordinary test calls.
 
-Bring up cellular Internet.
+Do not place emergency calls for testing.
 
-Finish SMS.
+Determine whether voice uses VoLTE, circuit-switched fallback or another supported carrier mechanism.
 
-Finish voice.
+Do not claim VoLTE unless independently demonstrated.
 
-Fix every newly discovered defect and retest until the physical acceptance criteria pass.
+If voice requires fallback from LTE, ensure the radio returns to an appropriate data-capable state afterward.
 
-**Do not return another report telling me what needs to be done. Do the work.**
-
-The objective is a fully functional Nuxel phone on the actual SM-G975F.
-
-The only valid completion claim is a physically verified Stage 06 PASS.
+Do not permanently force LTE-only mode if it breaks ordinary voice functionality.
 
 ---
 
-# ROUND 39 STATUS APPENDIX (2026-11-24)
+## 8. COMPLETE NATIVE LINUX NETWORK INTEGRATION
 
-## Live baseline (re-verified)
-- All 20+ modem IO-devices present: /dev/umts_ipc0, /dev/umts_rfs0, /dev/umts_boot0,
-  /dev/umts_dm0, rmnet0..7, /dev/multipdp, /dev/s5p-smem. (Round <34 "malformed DTB"
-  blocker is RESOLVED — device tree is correct.)
-- radiod running `--write-enable --arm-data-path`, CP ONLINE (code 4), SIM=1,
-  PS REGISTERED_HOME (PLMN 20408 KPN), live RSSI DISP frames.
-- Data FSM runs the full LTE attach sequence and reaches DATA_CALL:
-  `{"phase":"DATA_CALL","gen_result":0,"call_state":3,"pdp_state":0}`
-  (GPRS_CALL_STATUS state=3 == default EPS bearer NOT established).
+Ensure working cellular connectivity is integrated into Nuxel's normal operating environment, rather than depending on manual diagnostic commands.
 
-## Root cause (byte-level, now definitive)
-NV item 360 (NASU.LTE.ATTACH.APN.INFO, id 0x168) is EMPTY in the persistent NV store.
-Verified: "internet"/"kpn" absent from nv_data.bin (1 MiB) AND .nv_core.bak (546,304 B);
-name_ptr 0x404793fc/0x404793e0 absent; nv_data.bin MD5 sidecar stale
-(stored c665d4… != live f9f847…). The physical offset of item 360 is computed at
-runtime by the vendor cbd NvCoreInfo list ([this+872]) which Nuxel does not run.
+Inspect and complete the existing architecture for:
 
-## Recovered + implemented (round 39, committed)
-- RFS NV transaction contract (byte-exact from libsec-ril.so build 60889dd7):
-  - NV item record: [u8 op][u8 seq][u8 mode][u32 offset@6][u32 length@10][data@14]
-    (ProcessNvWrite/ProcessNVWriteAll/ProcessNVRead; 0x80000 length clamp).
-  - AP->CP NV response: 15 bytes [u32 len][u8 type=2][u8 op][u8 result][u32 detail].
-  - Storage: lseek(nv_data.bin,offset)+write+fsync + MD5 sidecar recompute.
-    NO asymmetric signing (round-38 correction confirmed).
-- New pure module `rfs_nv.{h,c}` + golden regression tests; wired the recovered
-  15-byte NV response + (offset,length) parse into radiod dispatch_rfs (fail-closed,
-  no blind write). AArch64 cross-compile clean on device.
+- Native radio daemon.
+- ModemManager integration or existing native compatibility provider.
+- NetworkManager integration.
+- Cellular connection lifecycle.
+- APN configuration.
+- Mobile-data enable and disable.
+- SIM status.
+- Carrier display.
+- Signal reporting.
+- Network technology display.
+- IP configuration.
+- DNS.
+- Route management.
+- Wi-Fi and cellular coexistence.
+- Nuxel Settings integration.
+- Status bar indicators.
 
-## Remaining external dependency (honest)
-Item 360 offset+length originate from vendor `cbd` (/vendor/bin/cbd -d -tss310 -bm
--mm -P .../by-name/radio, serving /mnt/vendor/efs/nv_data.bin via CP_REQ_NV_DATA).
-cbd is an Android cpboot-daemon NOT running on Nuxel. Unblock requires either (a)
-a known-good identical SM-G975F/KPN nv_data.bin with "internet" attach APN, or (b)
-running cbd under an owner-approved, CP-safe controlled trial to obtain the runtime
-item->offset map. No blind NV write is authorized until then.
+Use the existing architectural contracts.
 
-`wonqed4real` NOT created (correct: LTE bearer not established).
+Do not introduce Android runtime dependencies.
+
+Do not replace working native components unnecessarily.
+
+Verify that enabling and disabling mobile data behaves correctly without leaving stale routes, stale DNS configuration or incorrect UI state.
+
+Ensure normal applications can use cellular internet without requiring manual interface binding.
+
+---
+
+## 9. AUTOMATIC RECOVERY AND PERSISTENCE
+
+Once the current working baseline is safely checkpointed, verify:
+
+### Session lifecycle
+
+- Mobile data disconnect.
+- Mobile data reconnect.
+- Repeated connection establishment.
+- Correct cleanup of stale PDP and IP state.
+
+### Service lifecycle
+
+- Radio daemon restart.
+- Network integration service restart.
+- Recovery from temporary service interruption.
+
+### Network lifecycle
+
+- Wi-Fi to cellular transition.
+- Cellular to Wi-Fi transition.
+- Wi-Fi restoration after isolated testing.
+- Cellular fallback when Wi-Fi becomes unavailable.
+- Correct route and DNS replacement.
+
+### Device lifecycle
+
+- Controlled normal reboot.
+- Native CP initialization after reboot.
+- SIM readiness after reboot.
+- Network registration after reboot.
+- Automatic cellular connectivity after reboot.
+- SMS and voice availability after reboot.
+
+Do not intentionally create dangerous or uncontrolled failure conditions.
+
+Use bounded tests and preserve a known-good recovery path.
+
+A normal reboot is permitted only after the current working implementation and management recovery arrangements have been verified.
+
+TWRP is not the default execution environment.
+
+Use the established TWRP recovery agreement only if a genuine boot-related defect or recovery requirement makes it necessary.
+
+Do not modify kernel, DTB or DTBO speculatively.
+
+---
+
+## 10. NON-NEGOTIABLE SAFETY AND REGRESSION CONTRACT
+
+Preserve:
+
+- Known-good BOOT image.
+- Existing kernel and device-tree baseline.
+- Original firmware.
+- Device-owned EFS contents.
+- Identity and calibration data.
+- Existing security and authentication mechanisms.
+- USB management connectivity.
+- Wi-Fi management connectivity.
+- ZeroTier management connectivity.
+- Previously working hardware and applications.
+
+Do not:
+
+- Copy another device's EFS.
+- Modify device identity.
+- Rewrite calibration data.
+- Bypass carrier restrictions.
+- Bypass modem authentication.
+- Guess NV offsets.
+- Perform arbitrary raw NV provisioning.
+- Regenerate checksums to conceal corruption.
+- Reflash firmware speculatively.
+- Disable security controls to make tests pass.
+- Revert Astra's successful fixes to satisfy historical assumptions.
+
+Keep direct NV provisioning disabled.
+
+Any experiment must have a specific evidence-supported hypothesis, a bounded execution plan and an appropriate recovery path.
+
+---
+
+## 11. REGRESSION TESTING
+
+Run the complete relevant test suites, including:
+
+- Native CP bootloader tests.
+- NV preflight tests.
+- Corrupted NV rejection.
+- Incorrect NV length rejection.
+- Incorrect checksum rejection.
+- IPC encoding tests.
+- IPC decoding tests.
+- Vendor golden-vector tests.
+- Registration conversion tests.
+- Service-domain tests.
+- SIM readiness tests.
+- Data-session FSM tests.
+- Detach and recovery tests.
+- IP configuration tests.
+- RFS and NV policy tests.
+- SMS tests.
+- Telephony tests.
+- Network integration tests.
+- Sanitizer checks.
+- Fuzzing.
+- Native AArch64 builds.
+
+Capture actual process exit statuses.
+
+Do not hide build failures behind `grep`, `head`, `tail` or `tee` pipelines.
+
+Distinguish mock tests, host tests, native builds and physical acceptance.
+
+Never change expected test values merely to accommodate incorrect implementation behaviour.
+
+---
+
+## 12. AUTONOMOUS EXECUTION WITHOUT REPEATING HISTORY
+
+Work continuously through the remaining acceptance criteria.
+
+For each incomplete criterion:
+
+1. Inspect existing implementation.
+2. Establish the actual failure.
+3. Identify the smallest evidence-supported correction.
+4. Implement it.
+5. Test it.
+6. Deploy safely where necessary.
+7. Verify physical behaviour.
+8. Checkpoint the result.
+9. Proceed to the next criterion.
+
+Do not stop after producing a plan or report when implementation remains possible.
+
+Do not spend millions of tokens rediscovering Astra's completed work.
+
+Do not reopen previously disproven theories without contradictory new evidence.
+
+If an experiment fails repeatedly without producing new information, stop repeating it and reconsider the underlying hypothesis.
+
+If an external blocker requires owner participation, complete all independent work first and request only the necessary intervention.
+
+Checkpoint after every major physical milestone so another interrupted execution cannot lose the current state.
+
+---
+
+## 13. STAGE 06 FINAL ACCEPTANCE MATRIX
+
+Every applicable criterion must have explicit evidence.
+
+### Native modem
+
+- CP initializes reliably.
+- Correct NV input is validated.
+- SIM becomes ready.
+- Native radio services start successfully.
+- No Android runtime dependencies are introduced.
+
+### Cellular data
+
+- Real network registration.
+- Active PDP context.
+- Valid cellular IP configuration.
+- Carrier DNS.
+- Cellular routing.
+- Cellular-only HTTPS.
+- Ordinary application connectivity.
+- Mobile-data toggle.
+- Automatic reconnection.
+
+### Messaging
+
+- Physical outgoing SMS delivery.
+- Physical incoming SMS reception.
+- Native messaging integration.
+
+### Telephony
+
+- Physical outgoing call.
+- Physical incoming call.
+- Two-way audio.
+- Correct call lifecycle.
+- Cellular data recovery after calls.
+
+### Integration and persistence
+
+- Correct Wi-Fi/cellular transitions.
+- Correct UI status.
+- Normal reboot persistence.
+- Automatic service startup.
+- Automatic cellular reconnection after reboot.
+- Management connectivity preserved.
+- Relevant regression tests pass.
+
+Use the existing Stage 06 acceptance contract as the authoritative scope. Reconcile this matrix with that contract rather than silently expanding or reducing it.
+
+---
+
+## 14. FINAL DELIVERABLES
+
+Create:
+
+`reports/S5000AP-06-ROUND44-FINAL-ACCEPTANCE.md`
+
+Include:
+
+- Recovered Astra implementation state.
+- Exact changes preserved from Astra.
+- Additional changes made during this execution.
+- Corrected root causes.
+- Physical test evidence.
+- Firmware version.
+- Final deployed executable hashes.
+- Network integration status.
+- SMS results.
+- Telephony results.
+- Reconnection results.
+- Reboot persistence results.
+- Regression results.
+- Recovery instructions.
+- Remaining limitations, if any.
+- Final acceptance matrix.
+
+Update relevant architecture documentation and `CHANGELOG.md`.
+
+Commit the completed implementation, tests and documentation.
+
+Preserve unrelated owner changes.
+
+Do not merge or push unrelated work without authorization.
+
+---
+
+## 15. TERMINATION CONDITION
+
+This is a completion campaign, not an unlimited research campaign.
+
+When all Stage 06 acceptance criteria are physically verified:
+
+- Finalize documentation.
+- Confirm repository and deployed implementation consistency.
+- Commit the final changes.
+- Confirm management connectivity.
+- Report the final acceptance matrix.
+- Output the completion marker:
+
+**wonqed4real**
+
+Then TERMINATE.
+
+Do not start Stage 07.
+
+Do not expand into NFC, fingerprint, sensors, camera, hotspot or unrelated subsystems.
+
+If a genuine external blocker prevents complete acceptance, preserve every working milestone, document the exact outstanding requirement and terminate with an actionable handover instead of entering an endless investigation.
+
+Never output the completion marker while required acceptance criteria remain unverified.
+
+---
+
+## FINAL MISSION STATEMENT
+
+Astra already demonstrated real cellular internet on Nuxel.
+
+Your job is to protect that breakthrough, recover the interrupted execution, finish the remaining native mobile networking functionality, and turn the demonstrated success into a reliable, persistent, fully verified Stage 06 implementation.
+
+No regression.
+No speculative reinvention.
+No false completion.
+No unnecessary scope expansion.
+
+**LTE OR DIE is over.**
+
+**LTE AND ALIVE — FINISH THE MISSION.**

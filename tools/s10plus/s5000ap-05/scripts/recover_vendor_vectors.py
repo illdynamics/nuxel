@@ -15,6 +15,7 @@ parser.add_argument("elf", help="DTK9 vendor/lib64/libsec-ril.so (not distribute
 parser.add_argument("--header", action="store_true", help="emit normalized C golden vectors")
 parser.add_argument("--rx-header", action="store_true", help="emit receive-conversion C golden vectors")
 parser.add_argument("--sms-header", action="store_true", help="emit SMS transport golden vectors")
+parser.add_argument("--call-header", action="store_true", help="emit call control golden vectors")
 options = parser.parse_args()
 ELF = options.elf
 EXPECTED_SHA256 = "b02bd095ae44a991b3cb676e584b3209a947160c22e678578f8b0c877e282cb3"
@@ -158,7 +159,13 @@ if __name__=='__main__':
     results['sms_ack_memory_full']=run('IpcTxDeliveryReport',[2,0x42,0,0x16]).hex()
     results['sms_get_smsc']=run('IpcTxGetSmscAddress',[]).hex()
     results['sms_device_ready']=run('IpcTxSetDeviceReady',[]).hex()
-    if not options.header and not options.rx_header and not options.sms_header:
+    results['call_dial_international']=run('IpcTxCallOriginate',[STR,0,1,0],{0:'+12345678901'}).hex()
+    results['call_dial_national']=run('IpcTxCallOriginate',[STR,0,1,0],{0:'0123456789'}).hex()
+    results['call_answer']=run('IpcTxCallAnswer',[1]).hex()
+    results['call_release']=run('IpcTxCallRelease',[]).hex()
+    results['call_get_list']=run('IpcTxCallGetCallList',[]).hex()
+    results['call_get_voice_registration']=run('IpcTxNetGetVoiceRegState',[]).hex()
+    if not options.header and not options.rx_header and not options.sms_header and not options.call_header:
         print(json.dumps(results,indent=2))
     else:
         print("/* Golden vectors from isolated execution of DTK9 libsec-ril.so.\n"
@@ -168,6 +175,7 @@ if __name__=='__main__':
               " * See scripts/recover_vendor_vectors.py. No hardware access. */")
         for name, raw in results.items():
             if name.startswith('sms_') != options.sms_header:continue
+            if name.startswith('call_') != options.call_header:continue
             if (name == 'registration_states') != options.rx_header:continue
             frame = bytearray.fromhex(raw)
             if frame[4:7] == bytes([13,27,3]):

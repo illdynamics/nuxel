@@ -29,3 +29,5 @@ test_oes_cert
 /test_sms_store
 
 /test_sms_service
+/test_fmt_call
+/test_call_service

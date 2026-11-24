@@ -37,6 +37,25 @@
     <method name="GetIpInfo">
       <arg name="out0" type="a{ss}" direction="out" />
     </method>
+    <method name="GetPdpProfiles">
+      <arg name="out0" type="a(yysyy)" direction="out" />
+    </method>
+    <method name="Dial">
+      <arg name="in0" type="s" direction="in" />
+      <arg name="out0" type="b" direction="out" />
+    </method>
+    <method name="AnswerCall">
+      <arg name="out0" type="b" direction="out" />
+    </method>
+    <method name="HangupCall">
+      <arg name="out0" type="b" direction="out" />
+    </method>
+    <method name="GetCalls">
+      <arg name="out0" type="a(ussb)" direction="out" />
+    </method>
+    <method name="GetVoiceStatus">
+      <arg name="out0" type="a{ss}" direction="out" />
+    </method>
     <method name="SendSms">
       <arg name="in0" type="s" direction="in" />
       <arg name="in1" type="s" direction="in" />
@@ -96,6 +115,13 @@
       <arg name="value0" type="u" />
     </signal>
     <signal name="SmsStateChanged">
+      <arg name="value0" type="u" />
+      <arg name="value1" type="s" />
+    </signal>
+    <signal name="IncomingCall">
+      <arg name="value0" type="u" />
+    </signal>
+    <signal name="CallStateChanged">
       <arg name="value0" type="u" />
       <arg name="value1" type="s" />
     </signal>

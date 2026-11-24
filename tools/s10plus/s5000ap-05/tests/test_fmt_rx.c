@@ -89,6 +89,32 @@ int main(void)
     assert(!fmt_rx_pdp_state(contexts, 6, 5, &state));
     const uint8_t empty[] = {0};
     assert(fmt_rx_pdp_state(empty, 1, 1, &state) && state == 0);
+    /* Independent synthetic vector from CP 0x41301c56's response writes.
+     * sm_GetApn is copied at record+2; compression occupies +123/+124. */
+    uint8_t definitions[253] = {2,1,5,'i','n','t','e','r','n','e','t'};
+    definitions[124] = 2; definitions[125] = 3;
+    definitions[127] = 27; definitions[128] = 6;
+    memcpy(definitions+129, "ims", 4);
+    struct fmt_rx_pdp_profiles profiles;
+    assert(fmt_rx_pdp_profiles(definitions, sizeof definitions, &profiles));
+    assert(profiles.count == 2 && profiles.profile[0].cid == 1);
+    assert(profiles.profile[0].protocol_wire == 5 && !strcmp(profiles.profile[0].apn,"internet"));
+    assert(profiles.profile[0].data_compression == 2 && profiles.profile[0].header_compression == 3);
+    assert(profiles.profile[1].cid == 27 && !strcmp(profiles.profile[1].apn,"ims"));
+    uint8_t capacity[1387] = {11};
+    memcpy(capacity+1,definitions+1,sizeof definitions-1);
+    assert(fmt_rx_pdp_profiles(capacity,sizeof capacity,&profiles) && profiles.count == 2);
+    capacity[253+50] = 1;
+    assert(!fmt_rx_pdp_profiles(capacity,sizeof capacity,&profiles));
+    for (size_t n = 0; n < sizeof definitions; n++)
+        assert(!fmt_rx_pdp_profiles(definitions,n,&profiles));
+    definitions[127] = 1; assert(!fmt_rx_pdp_profiles(definitions,sizeof definitions,&profiles));
+    definitions[127] = 28; assert(!fmt_rx_pdp_profiles(definitions,sizeof definitions,&profiles));
+    definitions[127] = 27;
+    memset(definitions+3,'x',101);
+    assert(!fmt_rx_pdp_profiles(definitions,sizeof definitions,&profiles));
+    assert(fmt_rx_pdp_profiles(empty,1,&profiles) && !profiles.count);
+    assert(!fmt_rx_pdp_profiles(NULL,1,&profiles));
     assert(fmt_rx_rat(1) == 16 && !strcmp(fmt_rx_rat_name(1), "GSM"));
     assert(fmt_rx_rat(33) == 14 && !strcmp(fmt_rx_rat_name(33), "LTE"));
     assert(fmt_rx_rat(255) == 0);

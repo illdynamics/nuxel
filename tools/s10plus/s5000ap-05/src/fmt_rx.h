@@ -34,6 +34,19 @@ const char *fmt_rx_rat_name(uint8_t wire);
 /* PDP list: count followed by count pairs {CID, state}. */
 bool fmt_rx_pdp_state(const uint8_t *p, size_t n, uint8_t cid, uint8_t *state);
 
+#define FMT_RX_PDP_PROFILES 11u
+struct fmt_rx_pdp_profile {
+    uint8_t cid, protocol_wire, data_compression, header_compression;
+    char apn[101];
+};
+struct fmt_rx_pdp_profiles {
+    uint8_t count;
+    struct fmt_rx_pdp_profile profile[FMT_RX_PDP_PROFILES];
+};
+/* EFUJ2 CP GET handler 0x41301c56: count + count * 126 bytes. This
+ * reports sm_GetApn's context value; it does not prove NV persistence. */
+bool fmt_rx_pdp_profiles(const uint8_t *p, size_t n, struct fmt_rx_pdp_profiles *out);
+
 struct fmt_rx_ip {
     uint8_t cid;
     uint16_t flags;
