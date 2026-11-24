@@ -1340,15 +1340,15 @@ static uint8_t env_attach_cid(void)
     return DS_ATTACH_CID;
 }
 
-/* Map NUXEL_AUTH env string -> DataAuth numeric code.
- * none=1 (default), pap=2, chap=3. Unknown -> 1. */
+/* Map NUXEL_AUTH env string -> DataAuth region code.
+ * none=1 (default non-NTC), pap=2, chap=3. Unknown -> 1. */
 static uint8_t env_auth(void)
 {
     const char *p = getenv("NUXEL_AUTH");
     if (!p || !*p) return 1u;
-    if (!strcasecmp(p, "none") || !strcasecmp(p, "0") || !strcasecmp(p, "1")) return 1u;
-    if (!strcasecmp(p, "pap")  || !strcasecmp(p, "2")) return 2u;
-    if (!strcasecmp(p, "chap") || !strcasecmp(p, "3")) return 3u;
+    if (!strcasecmp(p, "none")) return 1u;
+    if (!strcasecmp(p, "pap"))  return 2u;
+    if (!strcasecmp(p, "chap")) return 3u;
     return 1u;
 }
 

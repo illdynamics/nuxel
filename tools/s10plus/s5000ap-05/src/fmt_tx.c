@@ -199,20 +199,38 @@ bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
 
     /* The vendor's "full" path (payload[0]==1) carries the APN + flags; the
      * simple paths (payload[0]==2..8) carry NONE of these. When the wire
-     * selector is the full path we emit the APN + ACTIVATE flags; otherwise we
-     * emit the simple (APN-empty, flags-zero) frame exactly as the vendor does.
-     * This is the Round-22 correction: the PRIOR code always emitted APN +
-     * flags=0x11 regardless of the selector, which the CP rejects for LTE. */
+     * selector is the full path we emit the APN + flags; otherwise we emit the
+     * simple (APN-empty, flags-zero) frame exactly as the vendor does.
+     *
+     * ROUND-28 correction (IpcTxSetPdpContext @0x31f6e0 authoritative):
+     * the ACTIVATE bit (flags bit4 = 0x10) is OR'd in ONLY when the DataAuth
+     * argument (auth_code) is NON-ZERO. For a no-auth APN (auth_code==0, e.g.
+     * KPN "internet") the vendor emits flags=0x01 (APN present, NO ACTIVATE)
+     * and relies on the LTE initial attach to activate the default bearer.
+     * The PRIOR code hardcoded 0x11 (APN|ACTIVATE) regardless of auth, which
+     * the CP rejects (the immediate GPRS_CALL_STATUS state=3, no cause). */
     if (pdp_type_wire == FMT_TX_PDP_TYPE_FULL) {
-        /* flags word (LE): APN present (bit0) | ACTIVATE (bit4) = 0x11 */
-        p[2] = 0x11;
+        /* flags word (LE): APN present (bit0); ACTIVATE (bit4) only if the
+         * SetPdpContext DataAuth int (0=NONE) is non-zero. auth_code here uses
+         * the region-code convention (1=NONE); convert to the DataAuth enum. */
+        uint8_t pdp_auth = (auth_code == FMT_TX_AUTH_NONE) ? 0u : (auth_code - 1u);
+        uint8_t flags = 0x01u;              /* APN present */
+        if (pdp_auth != 0u) flags |= 0x10u; /* ACTIVATE */
+        p[2] = flags;
         memcpy(&p[6], apn, alen);           /* APN at payload[6..6+alen] */
     }
 
     {
-        unsigned idx = (auth_code >= 1u) ? (auth_code - 1u) : 0u;
-        uint32_t pat = 0x00010201u;
-        p[102] = (uint8_t)((idx < 4u) ? (pat >> (idx * 8u)) & 0xffu : 0u);
+        /* auth flag byte (payload[102], IpcTxSetPdpContext @0x31f6e0):
+         * 0x00010201 >> ((auth-1)*8) for the SetPdpContext DataAuth int auth in
+         * {1,2,3}; 0x00 when auth==0 (NONE) or auth>3. */
+        uint8_t pdp_auth = (auth_code == FMT_TX_AUTH_NONE) ? 0u : (auth_code - 1u);
+        if (pdp_auth >= 1u && pdp_auth <= 3u) {
+            uint32_t pat = 0x00010201u;
+            p[102] = (uint8_t)((pat >> ((pdp_auth - 1u) * 8u)) & 0xffu);
+        } else {
+            p[102] = 0u;
+        }
     }
     p[103] = 0u;
     p[104] = proto_wire_byte(proto);        /* protocol 2nd copy */

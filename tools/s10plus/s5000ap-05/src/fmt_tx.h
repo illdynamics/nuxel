@@ -42,10 +42,17 @@ enum fmt_tx_data_protocol {
     FMT_TX_PROTO_IPV4V6  = 4,
 };
 
-/* DataAuth numeric codes (VERIFIED from helper @31fe28):
- * NONE -> 1 (returns 1 for the "no auth" enum). This is the ONLY value we
- * currently authorize for transmission (owner-approved internet APN). */
+/* DataAuth region codes (VERIFIED from helper @31fe28, non-NTC):
+ *   1 = NONE (no auth)   -> SetPdpContext converts this to DataAuth int 0
+ *   2 = PAP
+ *   3 = CHAP
+ * The DataAuth ENUM (DataCallSetup::ToDataAuth @0x29f970) is NONE=0/PAP=1/CHAP=2;
+ * SetPdpContext (IpcTxSetPdpContext @0x31f6e0) uses that enum directly (auth==0
+ * => ACTIVATE bit NOT set), while SetDataProfile/SetLteAttachProfile use the
+ * region code (NONE => 1). SetPdpContext converts region 1 -> 0. */
 #define FMT_TX_AUTH_NONE 1u
+#define FMT_TX_AUTH_PAP  2u
+#define FMT_TX_AUTH_CHAP 3u
 
 /*
  * RadioTechnologyType numeric values (VERIFIED: NetworkManager::GetGeneration

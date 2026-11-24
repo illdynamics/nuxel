@@ -170,7 +170,8 @@ int main(void)
      * 112-byte frame: len=112(0x70), main=13, sub=4, type=3.
      * AUTHORITATIVE (verbatim stack stores, frame base sp, payload = sp+7):
      * payload[0]=pdp_type=3(LTE/EUTRAN), payload[1]=cid,
-     * payload[2..5]=flags=0x11 (APN present|ACTIVATE), APN at payload[6]. */
+     * payload[2..5]=flags=0x01 (APN present, NO ACTIVATE for auth==0), APN at
+     * payload[6]. The ACTIVATE bit is OR'd in ONLY when auth != 0 (ROUND-28). */
     memset(&f, 0, sizeof f);
     CHECK(fmt_tx_set_pdp_context(&f, "internet", FMT_TX_AUTH_NONE,
                                  FMT_TX_PROTO_IPV4V6, 1, FMT_TX_PDP_TYPE_FULL),
@@ -181,11 +182,19 @@ int main(void)
     CHECK(f.buf[0] == 0x70 && f.buf[1] == 0x00, "set_pdp_context len field = 112 LE");
     CHECK(f.buf[7 + 0] == 0x01, "set_pdp_context payload[0] FULL path selector == 1");
     CHECK(f.buf[7 + 1] == 0x01, "set_pdp_context payload[1] cid == 1");
-    CHECK(f.buf[7 + 2] == 0x11, "set_pdp_context payload[2] flags == 0x11 (APN+ACTIVATE)");
+    CHECK(f.buf[7 + 2] == 0x01, "set_pdp_context payload[2] flags == 0x01 (APN, no ACTIVATE for auth==0)");
     CHECK(memcmp(&f.buf[7 + 6], "internet", 8) == 0,
           "set_pdp_context APN placed at payload offset 6");
-    CHECK(f.buf[7 + 102] == 0x01, "set_pdp_context auth flag == 0x01");
+    CHECK(f.buf[7 + 102] == 0x00, "set_pdp_context auth flag == 0x00 (NONE region 1 -> DataAuth 0)");
     CHECK(f.buf[7 + 104] == 0x04, "set_pdp_context protocol byte (2nd copy) == 0x04");
+
+    /* PAP auth (auth==1): ACTIVATE bit MUST be set (flags 0x11). */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_pdp_context(&f, "internet", FMT_TX_AUTH_PAP,
+                                 FMT_TX_PROTO_IPV4V6, 1, FMT_TX_PDP_TYPE_FULL),
+          "set_pdp_context (full, PAP) builds");
+    CHECK(f.buf[7 + 2] == 0x11, "set_pdp_context PAP flags == 0x11 (APN|ACTIVATE)");
+    CHECK(f.buf[7 + 102] == 0x01, "set_pdp_context PAP auth flag == 0x01 (region 2 == DataAuth PAP=1)");
 
     /* LTE simple-path selector (payload[0]=4): no APN, no flags. */
     memset(&f, 0, sizeof f);

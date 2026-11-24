@@ -43,7 +43,7 @@ void ds_reset(struct data_session_ctx *c, const char *apn, uint8_t profile_id)
     c->protocol = 4;   /* default FMT_TX_PROTO_IPV4V6; caller may override */
     c->attach_cid = DS_ATTACH_CID; /* default GetAttachCid is 1 for single-SIM */
     c->attach_flag = 3; /* default SetLteAttachProfile flag: 3 = apply */
-    c->auth_code = 1;   /* default DataAuth NONE */
+    c->auth_code = 1;   /* default DataAuth region code: NONE -> 1 (non-NTC); see fmt_tx.h */
     c->pdp_type_wire = 1; /* default SetPdpContext payload[0] = FULL (APN) path */
     c->gen_result_valid = false;
     c->gprs_call_state_valid = false;
