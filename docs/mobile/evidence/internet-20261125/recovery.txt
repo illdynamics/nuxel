@@ -1,0 +1,22 @@
+Physical handset, 2026-11-25, entry e10a0ab8 / implementation c52726d3.
+USB SSH port2022 preserved; CP not reset.
+Entry: PS UNKNOWN/raw7, no bearer or IP; running radiod SHA256
+06468e62e3846220edf403d07c65ccda3070115678709db6a2cc2db8281b68e0.
+Restored historical overrides: ATTACH_FLAG=1, PROTO=ipv4, NETWORK_MODE=lte,
+REATTACH_IA=0. Protocol 'default' and 'ipv4' serialize identically.
+PS became REGISTERED_HOME/raw2; CID1 active; carrier supplied IPv6 and DNS.
+The experiment changed selector and mode together; it does not isolate their
+individual contribution. CP startup, decoder, firmware and NV unchanged.
+NM generic profile then failed: existing rmnet0 is NMDevicePpp, incompatible.
+Existing journalled native helper configured the genuine bearer instead.
+Wi-Fi radio disabled, USB SSH retained, no USB/VPN default route used:
+CP DNS query bound to rmnet0 PASS; HTTPS example.com HTTP200, TLS verify0,
+curl exit0, 577 bytes, no proxy. RX13028/TX7756 bytes at probe completion;
+errors/drops0. Private packet capture and before/after counters retained on
+handset under /var/lib/nuxel/internet-20261125/traffic-22.*.
+Production resolver: installed Fedora systemd-resolved. Fixed actual GetLink
+object path and busctl array decoding. Kernel4.14 rejects SO_BINDTOIFINDEX;
+service-scoped compatibility library preserves binding via SO_BINDTODEVICE.
+Native binding test PASS (bind, invalid-index rejection, unbind, bad fd).
+With the production helper, Radio1 ACTIVE/ip_configured=true, resolved carrier
+DNS and normal curl HTTPS200/TLS0 pass. Reboot acceptance follows separately.

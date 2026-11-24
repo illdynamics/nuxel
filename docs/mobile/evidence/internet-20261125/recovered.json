@@ -1,0 +1,1708 @@
+{
+  "timestamp": "2026-11-24T23:59:30Z",
+  "boot_id": "4f8dc2f8-bca7-432d-b676-b63594ab714e",
+  "radio": {
+    "phase": "ACTIVE",
+    "apn": "internet",
+    "rat": "LTE",
+    "home_plmn": "20408",
+    "baseband": "G975FXXSEFUJ2",
+    "registration": "REGISTERED_HOME",
+    "ps_attached": "true",
+    "ip_configured": "true",
+    "mobile_data_enabled": "true",
+    "connection_state": "connected",
+    "disconnect_result": "0",
+    "link_result": "0",
+    "registration_raw": "2",
+    "ipv6": "[redacted address]",
+    "ps_reject_cause": "0",
+    "cs_registration": "DENIED",
+    "cs_reject_cause": "0",
+    "failure_phase": "IDLE",
+    "failure_result": "unavailable",
+    "service_domain_wire": "1",
+    "ps_control_state": "0"
+  },
+  "usb_carrier": "1",
+  "services": {
+    "exit": 0,
+    "stdout": "active\nactive\nactive\nactive\nactive",
+    "stderr": ""
+  },
+  "counters": {
+    "rx_bytes": 6002473,
+    "tx_bytes": 444652,
+    "rx_errors": 0,
+    "tx_errors": 0
+  },
+  "preference": "enabled",
+  "radiod_sha256": "06468e62e3846220edf403d07c65ccda3070115678709db6a2cc2db8281b68e0",
+  "events": [
+    {
+      "ts": 1795563446893,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 2,
+      "result": 0,
+      "configured": false
+    },
+    {
+      "ts": 1795563449030,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563449765,
+      "svc": "nuxel-radiod",
+      "event": "data_call_status",
+      "cid": 1,
+      "state": 3,
+      "cause": 0
+    },
+    {
+      "ts": 1795563450794,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563453764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563454764,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795563522765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563523764,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795563531658,
+      "svc": "nuxel-radiod",
+      "event": "data_session_start",
+      "apn": "internet",
+      "profile": 1,
+      "protocol": 2,
+      "pdp_type": 1
+    },
+    {
+      "ts": 1795563531659,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SIM_CHECK",
+      "next": "NET_REGIST_CHECK"
+    },
+    {
+      "ts": 1795563532767,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563532767,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "NET_REGIST_CHECK",
+      "next": "SET_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795563533765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_SERVICE_DOMAIN",
+      "next": "VERIFY_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795563534764,
+      "svc": "nuxel-radiod",
+      "event": "service_domain_readback",
+      "wire": 1,
+      "packet_service_enabled": true
+    },
+    {
+      "ts": 1795563534764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_SERVICE_DOMAIN",
+      "next": "SET_PREFERRED_NET"
+    },
+    {
+      "ts": 1795563535765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_PREFERRED_NET",
+      "next": "VERIFY_NET_MODE"
+    },
+    {
+      "ts": 1795563536764,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795563536764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_NET_MODE",
+      "next": "ENABLE_MOBILE_DATA"
+    },
+    {
+      "ts": 1795563537768,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ENABLE_MOBILE_DATA",
+      "next": "SET_DATA_PROFILE"
+    },
+    {
+      "ts": 1795563538764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_DATA_PROFILE",
+      "next": "SET_LTE_ATTACH"
+    },
+    {
+      "ts": 1795563539764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_LTE_ATTACH",
+      "next": "MBIM_ATTACH_CONFIG"
+    },
+    {
+      "ts": 1795563540763,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "MBIM_ATTACH_CONFIG",
+      "next": "DEFINE_PDP",
+      "skipped": true
+    },
+    {
+      "ts": 1795563541766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DEFINE_PDP",
+      "next": "ALWAYS_ON_PDN"
+    },
+    {
+      "ts": 1795563542765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ALWAYS_ON_PDN",
+      "next": "PS_REGIST_CHECK"
+    },
+    {
+      "ts": 1795563543678,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563543678,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_REGIST_CHECK",
+      "next": "PS_ATTACH"
+    },
+    {
+      "ts": 1795563546763,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_ATTACH",
+      "next": "PS_REGIST_VERIFY"
+    },
+    {
+      "ts": 1795563547765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563553765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563558764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563563764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563631764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563633767,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795563682763,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 2,
+      "result": 0,
+      "configured": false
+    },
+    {
+      "ts": 1795563684767,
+      "svc": "nuxel-radiod",
+      "event": "data_call_status",
+      "cid": 1,
+      "state": 3,
+      "cause": 0
+    },
+    {
+      "ts": 1795563697606,
+      "svc": "nuxel-radiod",
+      "event": "data_session_start",
+      "apn": "internet",
+      "profile": 1,
+      "protocol": 2,
+      "pdp_type": 1
+    },
+    {
+      "ts": 1795563697662,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SIM_CHECK",
+      "next": "NET_REGIST_CHECK"
+    },
+    {
+      "ts": 1795563698764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563698764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "NET_REGIST_CHECK",
+      "next": "SET_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795563699769,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_SERVICE_DOMAIN",
+      "next": "VERIFY_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795563700764,
+      "svc": "nuxel-radiod",
+      "event": "service_domain_readback",
+      "wire": 1,
+      "packet_service_enabled": true
+    },
+    {
+      "ts": 1795563700764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_SERVICE_DOMAIN",
+      "next": "SET_PREFERRED_NET"
+    },
+    {
+      "ts": 1795563701764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_PREFERRED_NET",
+      "next": "VERIFY_NET_MODE"
+    },
+    {
+      "ts": 1795563702765,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795563702765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_NET_MODE",
+      "next": "ENABLE_MOBILE_DATA"
+    },
+    {
+      "ts": 1795563703764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ENABLE_MOBILE_DATA",
+      "next": "SET_DATA_PROFILE"
+    },
+    {
+      "ts": 1795563704764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_DATA_PROFILE",
+      "next": "SET_LTE_ATTACH"
+    },
+    {
+      "ts": 1795563705765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_LTE_ATTACH",
+      "next": "MBIM_ATTACH_CONFIG"
+    },
+    {
+      "ts": 1795563706762,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "MBIM_ATTACH_CONFIG",
+      "next": "DEFINE_PDP",
+      "skipped": true
+    },
+    {
+      "ts": 1795563707652,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DEFINE_PDP",
+      "next": "ALWAYS_ON_PDN"
+    },
+    {
+      "ts": 1795563708766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ALWAYS_ON_PDN",
+      "next": "PS_REGIST_CHECK"
+    },
+    {
+      "ts": 1795563709764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563709764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_REGIST_CHECK",
+      "next": "PS_ATTACH"
+    },
+    {
+      "ts": 1795563713762,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_ATTACH",
+      "next": "PS_REGIST_VERIFY"
+    },
+    {
+      "ts": 1795563714768,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563719764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563724764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563730768,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563737671,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563738765,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795563810768,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563812765,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795563883764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563885765,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795563957768,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795563959764,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795564031768,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564033746,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795564105767,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564106765,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795564178765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564179764,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795564250765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564252765,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795564326764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564327767,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 11
+    },
+    {
+      "ts": 1795564330343,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SIM_CHECK",
+      "next": "NET_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564330448,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 4,
+      "ps_name": "UNKNOWN",
+      "raw_state": 7,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564330448,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "NET_REGIST_CHECK",
+      "next": "SET_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564330553,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_SERVICE_DOMAIN",
+      "next": "VERIFY_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564330660,
+      "svc": "nuxel-radiod",
+      "event": "service_domain_readback",
+      "wire": 1,
+      "packet_service_enabled": true
+    },
+    {
+      "ts": 1795564330661,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_SERVICE_DOMAIN",
+      "next": "SET_PREFERRED_NET"
+    },
+    {
+      "ts": 1795564330763,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 2,
+      "result": 0,
+      "configured": false
+    },
+    {
+      "ts": 1795564330803,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_PREFERRED_NET",
+      "next": "VERIFY_NET_MODE"
+    },
+    {
+      "ts": 1795564330905,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564330905,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_NET_MODE",
+      "next": "ENABLE_MOBILE_DATA"
+    },
+    {
+      "ts": 1795564331107,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ENABLE_MOBILE_DATA",
+      "next": "SET_DATA_PROFILE"
+    },
+    {
+      "ts": 1795564331767,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_DATA_PROFILE",
+      "next": "SET_LTE_ATTACH"
+    },
+    {
+      "ts": 1795564332782,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_LTE_ATTACH",
+      "next": "MBIM_ATTACH_CONFIG"
+    },
+    {
+      "ts": 1795564333750,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564333891,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "MBIM_ATTACH_CONFIG",
+      "next": "DEFINE_PDP",
+      "skipped": true
+    },
+    {
+      "ts": 1795564334798,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DEFINE_PDP",
+      "next": "ALWAYS_ON_PDN"
+    },
+    {
+      "ts": 1795564335765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ALWAYS_ON_PDN",
+      "next": "PS_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564336765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564336765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_REGIST_CHECK",
+      "next": "DATA_CALL"
+    },
+    {
+      "ts": 1795564337769,
+      "svc": "nuxel-radiod",
+      "event": "data_call_status",
+      "cid": 1,
+      "state": 1,
+      "cause": 0
+    },
+    {
+      "ts": 1795564337769,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DATA_CALL",
+      "next": "GET_PDP_LIST"
+    },
+    {
+      "ts": 1795564338764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "GET_PDP_LIST",
+      "next": "WAIT_IP"
+    },
+    {
+      "ts": 1795564341763,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 1,
+      "result": 1,
+      "configured": false
+    },
+    {
+      "ts": 1795564341765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564342766,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564415764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564416765,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564490770,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564491768,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564542527,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SIM_CHECK",
+      "next": "NET_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564542662,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564542662,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "NET_REGIST_CHECK",
+      "next": "SET_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564542956,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 2,
+      "result": 0,
+      "configured": false
+    },
+    {
+      "ts": 1795564542959,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_SERVICE_DOMAIN",
+      "next": "VERIFY_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564543071,
+      "svc": "nuxel-radiod",
+      "event": "service_domain_readback",
+      "wire": 1,
+      "packet_service_enabled": true
+    },
+    {
+      "ts": 1795564543071,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_SERVICE_DOMAIN",
+      "next": "SET_PREFERRED_NET"
+    },
+    {
+      "ts": 1795564543180,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_PREFERRED_NET",
+      "next": "VERIFY_NET_MODE"
+    },
+    {
+      "ts": 1795564543290,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564543290,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_NET_MODE",
+      "next": "ENABLE_MOBILE_DATA"
+    },
+    {
+      "ts": 1795564543396,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ENABLE_MOBILE_DATA",
+      "next": "SET_DATA_PROFILE"
+    },
+    {
+      "ts": 1795564543502,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_DATA_PROFILE",
+      "next": "SET_LTE_ATTACH"
+    },
+    {
+      "ts": 1795564543607,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_LTE_ATTACH",
+      "next": "MBIM_ATTACH_CONFIG"
+    },
+    {
+      "ts": 1795564543712,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "MBIM_ATTACH_CONFIG",
+      "next": "DEFINE_PDP",
+      "skipped": true
+    },
+    {
+      "ts": 1795564543716,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DEFINE_PDP",
+      "next": "ALWAYS_ON_PDN"
+    },
+    {
+      "ts": 1795564543911,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ALWAYS_ON_PDN",
+      "next": "PS_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564544014,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564544014,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_REGIST_CHECK",
+      "next": "DATA_CALL"
+    },
+    {
+      "ts": 1795564544120,
+      "svc": "nuxel-radiod",
+      "event": "data_call_status",
+      "cid": 1,
+      "state": 1,
+      "cause": 0
+    },
+    {
+      "ts": 1795564544121,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DATA_CALL",
+      "next": "GET_PDP_LIST"
+    },
+    {
+      "ts": 1795564544225,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "GET_PDP_LIST",
+      "next": "WAIT_IP"
+    },
+    {
+      "ts": 1795564544763,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 1,
+      "result": 1,
+      "configured": false
+    },
+    {
+      "ts": 1795564544766,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564545766,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564555036,
+      "svc": "nuxel-radiod",
+      "event": "data_session_start",
+      "apn": "internet",
+      "profile": 1,
+      "protocol": 2,
+      "pdp_type": 1
+    },
+    {
+      "ts": 1795564555768,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SIM_CHECK",
+      "next": "NET_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564556765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564556765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "NET_REGIST_CHECK",
+      "next": "SET_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564557766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_SERVICE_DOMAIN",
+      "next": "VERIFY_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564558765,
+      "svc": "nuxel-radiod",
+      "event": "service_domain_readback",
+      "wire": 1,
+      "packet_service_enabled": true
+    },
+    {
+      "ts": 1795564558765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_SERVICE_DOMAIN",
+      "next": "SET_PREFERRED_NET"
+    },
+    {
+      "ts": 1795564559767,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_PREFERRED_NET",
+      "next": "VERIFY_NET_MODE"
+    },
+    {
+      "ts": 1795564560746,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564560746,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_NET_MODE",
+      "next": "ENABLE_MOBILE_DATA"
+    },
+    {
+      "ts": 1795564561769,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ENABLE_MOBILE_DATA",
+      "next": "SET_DATA_PROFILE"
+    },
+    {
+      "ts": 1795564562765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_DATA_PROFILE",
+      "next": "SET_LTE_ATTACH"
+    },
+    {
+      "ts": 1795564563766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_LTE_ATTACH",
+      "next": "MBIM_ATTACH_CONFIG"
+    },
+    {
+      "ts": 1795564564763,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "MBIM_ATTACH_CONFIG",
+      "next": "DEFINE_PDP",
+      "skipped": true
+    },
+    {
+      "ts": 1795564565766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DEFINE_PDP",
+      "next": "ALWAYS_ON_PDN"
+    },
+    {
+      "ts": 1795564566766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ALWAYS_ON_PDN",
+      "next": "PS_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564567764,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564567764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_REGIST_CHECK",
+      "next": "DATA_CALL"
+    },
+    {
+      "ts": 1795564568765,
+      "svc": "nuxel-radiod",
+      "event": "data_call_status",
+      "cid": 1,
+      "state": 1,
+      "cause": 0
+    },
+    {
+      "ts": 1795564568765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DATA_CALL",
+      "next": "GET_PDP_LIST"
+    },
+    {
+      "ts": 1795564569765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "GET_PDP_LIST",
+      "next": "WAIT_IP"
+    },
+    {
+      "ts": 1795564571763,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 1,
+      "result": 1,
+      "configured": false
+    },
+    {
+      "ts": 1795564586990,
+      "svc": "nuxel-radiod",
+      "event": "data_session_start",
+      "apn": "internet",
+      "profile": 1,
+      "protocol": 2,
+      "pdp_type": 1
+    },
+    {
+      "ts": 1795564587765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SIM_CHECK",
+      "next": "NET_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564588765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564588765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "NET_REGIST_CHECK",
+      "next": "SET_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564589765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_SERVICE_DOMAIN",
+      "next": "VERIFY_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564590764,
+      "svc": "nuxel-radiod",
+      "event": "service_domain_readback",
+      "wire": 1,
+      "packet_service_enabled": true
+    },
+    {
+      "ts": 1795564590764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_SERVICE_DOMAIN",
+      "next": "SET_PREFERRED_NET"
+    },
+    {
+      "ts": 1795564591768,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_PREFERRED_NET",
+      "next": "VERIFY_NET_MODE"
+    },
+    {
+      "ts": 1795564592764,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564592764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_NET_MODE",
+      "next": "ENABLE_MOBILE_DATA"
+    },
+    {
+      "ts": 1795564593768,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ENABLE_MOBILE_DATA",
+      "next": "SET_DATA_PROFILE"
+    },
+    {
+      "ts": 1795564594766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_DATA_PROFILE",
+      "next": "SET_LTE_ATTACH"
+    },
+    {
+      "ts": 1795564595766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_LTE_ATTACH",
+      "next": "MBIM_ATTACH_CONFIG"
+    },
+    {
+      "ts": 1795564596763,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "MBIM_ATTACH_CONFIG",
+      "next": "DEFINE_PDP",
+      "skipped": true
+    },
+    {
+      "ts": 1795564597766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DEFINE_PDP",
+      "next": "ALWAYS_ON_PDN"
+    },
+    {
+      "ts": 1795564598766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ALWAYS_ON_PDN",
+      "next": "PS_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564599765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564599765,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_REGIST_CHECK",
+      "next": "DATA_CALL"
+    },
+    {
+      "ts": 1795564600766,
+      "svc": "nuxel-radiod",
+      "event": "data_call_status",
+      "cid": 1,
+      "state": 1,
+      "cause": 0
+    },
+    {
+      "ts": 1795564600766,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DATA_CALL",
+      "next": "GET_PDP_LIST"
+    },
+    {
+      "ts": 1795564601764,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "GET_PDP_LIST",
+      "next": "WAIT_IP"
+    },
+    {
+      "ts": 1795564603820,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 1,
+      "result": 0,
+      "configured": true
+    },
+    {
+      "ts": 1795564634780,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564635707,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 3,
+      "result": 0,
+      "configured": true
+    },
+    {
+      "ts": 1795564636765,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564666763,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 3,
+      "result": 0,
+      "configured": true
+    },
+    {
+      "ts": 1795564697672,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 3,
+      "result": 0,
+      "configured": true
+    },
+    {
+      "ts": 1795564709765,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564710767,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564725868,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SIM_CHECK",
+      "next": "NET_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564725985,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564725985,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "NET_REGIST_CHECK",
+      "next": "SET_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564726089,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_SERVICE_DOMAIN",
+      "next": "VERIFY_SERVICE_DOMAIN"
+    },
+    {
+      "ts": 1795564726191,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 2,
+      "result": 0,
+      "configured": false
+    },
+    {
+      "ts": 1795564726193,
+      "svc": "nuxel-radiod",
+      "event": "service_domain_readback",
+      "wire": 1,
+      "packet_service_enabled": true
+    },
+    {
+      "ts": 1795564726193,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_SERVICE_DOMAIN",
+      "next": "SET_PREFERRED_NET"
+    },
+    {
+      "ts": 1795564726298,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_PREFERRED_NET",
+      "next": "VERIFY_NET_MODE"
+    },
+    {
+      "ts": 1795564726416,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564726416,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "VERIFY_NET_MODE",
+      "next": "ENABLE_MOBILE_DATA"
+    },
+    {
+      "ts": 1795564726524,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ENABLE_MOBILE_DATA",
+      "next": "SET_DATA_PROFILE"
+    },
+    {
+      "ts": 1795564726629,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_DATA_PROFILE",
+      "next": "SET_LTE_ATTACH"
+    },
+    {
+      "ts": 1795564726826,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "SET_LTE_ATTACH",
+      "next": "MBIM_ATTACH_CONFIG"
+    },
+    {
+      "ts": 1795564726928,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "MBIM_ATTACH_CONFIG",
+      "next": "DEFINE_PDP",
+      "skipped": true
+    },
+    {
+      "ts": 1795564726938,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DEFINE_PDP",
+      "next": "ALWAYS_ON_PDN"
+    },
+    {
+      "ts": 1795564727042,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "ALWAYS_ON_PDN",
+      "next": "PS_REGIST_CHECK"
+    },
+    {
+      "ts": 1795564727150,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564727150,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "PS_REGIST_CHECK",
+      "next": "DATA_CALL"
+    },
+    {
+      "ts": 1795564727258,
+      "svc": "nuxel-radiod",
+      "event": "data_call_status",
+      "cid": 1,
+      "state": 1,
+      "cause": 0
+    },
+    {
+      "ts": 1795564727258,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "DATA_CALL",
+      "next": "GET_PDP_LIST"
+    },
+    {
+      "ts": 1795564727368,
+      "svc": "nuxel-radiod",
+      "event": "data_session_ack",
+      "phase": "GET_PDP_LIST",
+      "next": "WAIT_IP"
+    },
+    {
+      "ts": 1795564728763,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 1,
+      "result": 0,
+      "configured": true
+    },
+    {
+      "ts": 1795564728766,
+      "svc": "nuxel-radiod",
+      "event": "net_regist_state",
+      "ps": 1,
+      "ps_name": "REGISTERED_HOME",
+      "raw_state": 2,
+      "domain_sel": 3,
+      "rat_wire": 33,
+      "rat": "LTE",
+      "reject_cause": 0
+    },
+    {
+      "ts": 1795564730683,
+      "svc": "nuxel-radiod",
+      "event": "network_mode_readback",
+      "mask": 8
+    },
+    {
+      "ts": 1795564760763,
+      "svc": "nuxel-radiod",
+      "event": "cellular_link_complete",
+      "operation": 3,
+      "result": 0,
+      "configured": true
+    }
+  ]
+}

@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 STATE_DIR = Path('/run/nuxel-radio')
 IP = '/usr/sbin/ip'
@@ -158,10 +159,13 @@ class Link:
     def resolver_dns(index):
         if not resolved_available():
             return []
-        obj = f'/org/freedesktop/resolve1/link/_{index}'
+        # Object paths use D-Bus escaping (e.g. index 4 is _34), not _4.
+        obj = query([BUSCTL, '--json=short', 'call', 'org.freedesktop.resolve1',
+                     '/org/freedesktop/resolve1', 'org.freedesktop.resolve1.Manager',
+                     'GetLink', 'i', str(index)])['data'][0]
         value = query([BUSCTL, '--json=short', 'get-property', 'org.freedesktop.resolve1',
                        obj, 'org.freedesktop.resolve1.Link', 'DNS'])
-        return [str(ipaddress.ip_address(bytes(record[1]))) for record in value['data'][0]]
+        return [str(ipaddress.ip_address(bytes(record[1]))) for record in value['data']]
 
     def verify(self, config):
         iface = config['iface']
@@ -224,7 +228,8 @@ class Link:
             rules = query([IP, '-j', f'-{family}', 'rule', 'show'])
             if any(r.get('priority') in (30600, 30601) for r in rules):
                 raise LinkError('reserved rule priority already in use')
-        self.journal = {'version': 1, 'config': config, 'configured': False, 'undo': []}
+        self.journal = {'version': 1, 'config': config, 'configured': False,
+                        'started_monotonic': time.monotonic(), 'undo': []}
         self.save()
         try:
             self.change([IP, 'link', 'set', 'dev', iface, 'mtu', str(config['mtu']), 'up'],
@@ -266,8 +271,17 @@ def main():
     fd = os.open(STATE_DIR / 'cellular-link.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd, 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        from cellular_nm import NetworkManagerLink
-        link = NetworkManagerLink()
+        # S5000AP exposes raw IP as ARPHRD_PPP. NM 1.54's PPP device only
+        # accepts PPPoE and cannot activate a generic profile on this link.
+        # Keep one L3 owner: the existing journalled native helper for this
+        # hardware, with resolved shared by NM's Wi-Fi and cellular DNS.
+        if Path('/sys/class/net/rmnet0/type').read_text().strip() == '512':
+            if sys.argv[1:2] == ['apply'] and not resolved_available():
+                raise LinkError('native raw-IP requires systemd-resolved for carrier DNS')
+            link = Link()
+        else:
+            from cellular_nm import NetworkManagerLink
+            link = NetworkManagerLink()
         if len(sys.argv) > 1 and sys.argv[1] == 'apply':
             link.apply(configuration(sys.argv[2:]))
         elif sys.argv[1:] == ['down']:
