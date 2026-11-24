@@ -53,6 +53,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
 PY=python3
 GATE="$ROOT/tools/s10plus/verify-boot-image.py"
+MODEM_DT_GATE="$ROOT/tools/s10plus/check-modem-dt.py"
 UNPACK="$ROOT/tools/s10plus/unpack-boot-image.py"
 NEWC="$ROOT/tools/s10plus/newc.py"
 
@@ -213,6 +214,16 @@ PY
 say "### release gate"
 if ! "$GATE" --partition-bytes "$PARTITION_BYTES" "$OUT" 2>&1 | tee -a "$LOG"; then
   echo "build-candidate: GATE FAILED — $OUT must not be flashed" >&2
+  exit 1
+fi
+
+# Build-time regression gate: the appended DTB MUST carry the Shannon S5000AP
+# modem io-device subtree (num_iodevs=22, umts_ipc0/0xeb, umts_rfs0/0xf5,
+# umts_boot0/0xd7, rmnet0..7). This permanently rejects the historical zero-DTB
+# defect and any future build that strips the modem nodes.
+say "### modem device-tree regression gate"
+if ! "$MODEM_DT_GATE" "$OUT" 2>&1 | tee -a "$LOG"; then
+  echo "build-candidate: MODEM DT GATE FAILED — $OUT must not be flashed" >&2
   exit 1
 fi
 

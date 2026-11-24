@@ -1,568 +1,580 @@
-# NUXEL — STAGE 06: OPERATION BOOMBATSCH
-## AUTONOMOUS EXECUTION MISSION — REAL LTE MOBILE INTERNET
+# NUXEL — OPERATION WONQ: THE TRIPLE KILL
+## FINAL MOBILE NETWORKING IMPLEMENTATION CAMPAIGN
+### LTE + TELEPHONY + SMS
 
-### MISSION DIRECTIVE
+**Repository:** `/Users/wicked/x/nuxel`
+**Branch:** `cs/mob`
+**Device:** Samsung Galaxy S10+ SM-G975F / beyond2lte
+**SoC:** Exynos 9820
+**Modem:** Shannon S5000AP
+**Architecture:** Native Linux, zero Android runtime dependencies.
 
-You are the lead modem integration engineer responsible for finishing Stage 06 of Nuxel, the native Linux mobile operating system running on the Samsung Galaxy S10+ SM-G975F (beyond2lte), Exynos 9820, Shannon S5000AP.
+# 0. MISSION
 
-**Your mission is to establish and independently verify real LTE mobile internet through the physical SIM and modem.**
+Deliver a complete, functional native Linux mobile networking stack on the physical Nuxel phone.
 
-This is an **EXECUTION mission**, not another research report.
+The three mandatory objectives are:
 
-You have authorization to inspect, reverse-engineer, modify, build, test, deploy, troubleshoot and commit the Nuxel userspace modem implementation as necessary.
+- Fully working LTE mobile internet.
+- Fully working incoming and outgoing telephone calls with bidirectional audio.
+- Fully working incoming and outgoing SMS.
 
-Do not stop merely because you have found a plausible root cause. Continue through diagnosis, implementation, live validation and correction.
+This is an implementation campaign, not a research-only assignment.
 
-Do not substitute documentation, simulated success, passing unit tests or command acknowledgements for a working cellular bearer.
+Do not terminate after discovering a defect, writing a report, compiling a candidate, restoring device nodes or obtaining network registration.
 
-**The goal is a genuine `STAGE_06_PASS`.**
+Implement the correction, validate it, deploy it through the established safe deployment process and continue with the next functional dependency.
 
-There is no artificial time or token budget. Work iteratively and make measurable progress.
+Keep working through all independently actionable tasks.
 
----
+Do not fabricate success or conceal failures.
 
-## 1. CURRENT VERIFIED BASELINE
+# 1. CURRENT ESTABLISHED BASELINE
 
-Repository:
+Read the latest:
 
-`/Users/wicked/x/nuxel`
+- `mob.md`
+- `reports/S5000AP-06-LTE-FINAL-EXECUTION.md`
+- `reports/S5000AP-06-ROUND25-LIVE-CPBOOT-UNBLOCKED.md`
+- `09_TWRP_A_ONLY_RECOVERY_AGREEMENT.md`
+- All newer mobile networking commits and reports.
 
-Device:
+Reconcile these documents against the actual running device.
 
-`root@10.11.12.99`
+Latest reported findings:
 
-Current branch:
-
-`cs/mob`
-
-Latest documented commits:
-
-- `df3d2c19` — Stage 06 modem source fixes.
-- `effd616d` — Round 14 documentation.
-
-Current deployed daemon SHA-256:
-
-`e50b9c820c97e0bdab9aad816c0b4cba9d4c5ad28fa706774b5d9a08d212df01`
-
-Device:
-
-- Modem CP ONLINE.
-- SIM detected and READY.
-- PLMN 20416.
-- CS registration reported REGISTERED.
-- PS registration reported DENIED.
-- `rmnet0` through `rmnet7` DOWN.
-- No verified cellular IP, DNS or HTTPS.
-
-Live generic responses previously observed:
-
-| Command | Observed result |
-|---|---|
-| SetServiceDomain | 0 |
-| SetPreferredNetType | 0 |
-| SetMobileDataSetting | 3 |
-| SyncProfileInfo | 1 |
-| SetDataProfile | 0 |
-| SetLteAttachProfile | 0 |
-| DefinePdpContext | 1 |
-| SetAlwaysOnPdn | 0 |
-| PsAttach | 0 |
-| SetPdpContext | 0 |
-| DataCall | 0 |
-
-These are observed generic response values. Independently verify their exact vendor semantics before interpreting zero as success or nonzero as rejection.
-
-Final data-call indication:
-
-`GPRS_CALL_STATUS main=13 sub=16 type=3`
-
-Reported:
-
-`call_state=3, pdp_state=0`
-
-The existing daemon transitions through its data-session FSM but does not establish a bearer.
-
-The SIM's data subscription has been confirmed functional in another phone.
-
-### Existing implementation
+- CP ONLINE.
+- Real SIPC5 RSSI frames received by the kernel.
+- Running kernel `4.14.253-gf7194c1d15ed-dirty`.
+- Missing `/dev/umts_ipc0`.
+- Missing `/dev/umts_rfs0`.
+- Missing `/dev/umts_boot0`.
+- `/dev/multipdp` and `/dev/s5p-smem` exist.
+- Radiod has no apparent open modem transport descriptor.
+- Live device tree declares `mif,num_iodevs = 22`.
+- Live `iodevs` child is reportedly empty.
+- Repository DTS contains the complete 22 IO-device definitions.
 
 Relevant source:
 
-`tools/s10plus/s5000ap-05/`
+`arch/arm64/boot/dts/samsung/exynos9820-beyond2lte_eur_open_26.dts`
 
-Relevant files include:
+Relevant driver functions:
 
-- `src/radiod.c`
-- `src/data_session.c`
-- `src/data_session.h`
-- `src/fmt_tx.c`
-- `src/fmt_tx.h`
-- SIPC5 transport and parser files
-- Data-session and TX tests
+- `create_io_device()`
+- `sipc5_init_io_device()`
+- `sipc5_deinit_io_device()`
 
-Vendor reference:
+Relevant expected channels:
 
-`/tmp/vendor-ro/lib64/libsec-ril.so`
+- FMT: `umts_ipc0`, ID `0xeb`.
+- RFS: `umts_rfs0`, ID `0xf5`.
+- BOOT: `umts_boot0`, ID `0xd7`.
+- PDP interfaces: `rmnet0..7`.
 
-Read-only vendor analysis is permitted.
+Treat the malformed live device tree as the immediate defect.
 
-Do not assume the vendor library or its temporary path is still available. Verify before using it.
+Do not assume the earlier NV/APN hypothesis has been disproven or confirmed.
 
----
+# 2. PHASE A — RESTORE PERSISTENT MODEM DEVICE REGISTRATION
 
-## 2. NON-NEGOTIABLE ENGINEERING RULES
+This is the first mandatory implementation target.
 
-1. Preserve the existing working Nuxel installation.
-2. Preserve SSH, Wi-Fi, USB and ZeroTier management connectivity.
-3. Never fabricate a successful registration, bearer, IP address or network test.
-4. Never declare PASS based on the FSM reaching ACTIVE alone.
-5. Never advance the FSM solely because an unrelated response arrived.
-6. Never silently ignore a modem error.
-7. Never guess an IPC payload and transmit it as though vendor-verified.
-8. Never use a successful build as proof of a successful deployment.
-9. Never overwrite a working binary without a recoverable backup.
-10. Never modify IMEI, subscriber identity, carrier authorization, CP firmware, bootloader, partition tables, EFS or protected NV data.
-11. Do not bypass SIM PIN, network locks, carrier authentication or access controls.
-12. Do not use destructive modem resets or repeated uncontrolled registration attempts.
-13. Honor network backoff timers and modem retry limits.
-14. Preserve user data and management access.
-15. Do not reboot into recovery or reflash partitions merely to investigate userspace LTE.
-16. Keep unrelated Nuxel functionality outside this mission.
+## A1. Identify the actual image construction defect
 
-You may perform reversible, verified userspace changes and controlled service restarts.
+Compare:
 
-If a proposed action could affect protected persistent modem state, stop that specific action, document the precise requirement, and continue all safe alternative paths.
+- Original known-good device tree.
+- Repository DTS and included DTSI files.
+- Compiled DTB.
+- Packaged BOOT image.
+- Relevant DTBO contents.
+- Actual live flattened device tree.
+- Boot-image construction scripts.
+- Previous known-working deployment artifacts.
 
-**Authorization to finish the mission does not justify bypassing network controls or destroying the device.**
+Determine precisely where the 22 IO-device children disappear.
 
----
+Distinguish between:
 
-## 3. EXECUTION PHASE A — ESTABLISH A TRUSTWORTHY LIVE BASELINE
+- Incorrect source selection.
+- Incorrect device-tree compilation.
+- Incorrect DTB packaging.
+- Overlay replacement or merge behavior.
+- Bootloader DTB selection.
+- An incorrect deployed image.
 
-Immediately:
+Do not assume DTBO is responsible merely because the live tree is malformed.
 
-1. Read `mob.md` and the existing Stage 06 safety documentation.
-2. Inspect the current branch, working tree and latest commits.
-3. Confirm the modem is ONLINE and the SIM is READY.
-4. Confirm the deployed daemon's binary hash and running process.
-5. Confirm that management connectivity is independent of cellular interfaces.
-6. Inspect the current radio daemon configuration and APN source.
-7. Capture a timestamped baseline of relevant modem responses.
-8. Preserve the currently working daemon for rollback.
+## A2. Implement the smallest permanent correction
 
-Record the current modem registration state, data-call status, active network interfaces and routing configuration.
+Correct the actual build or packaging defect.
 
-Do not clear or overwrite the existing `mob.md` content.
+Preserve:
 
-Do not expose IMSI, ICCID, IMEI, PIN, subscriber secrets or authentication material in logs or reports.
+- All 22 IO-device definitions.
+- Exact channel IDs.
+- IO-device types and attributes.
+- Modem shared-memory configuration.
+- Interrupt definitions.
+- Reserved-memory regions.
+- Existing CP boot functionality.
+- Existing unrelated hardware configuration.
 
-### Mandatory deployment correction
+Do not introduce a broad device-tree redesign.
 
-Replace the existing unsafe deployment pattern:
+Do not perform unnecessary DTB round trips.
 
-`gcc ...; install ...; systemctl restart ...`
+Do not modify unrelated hardware nodes.
 
-with a fail-closed deployment workflow.
+## A3. Prepare the verified deployment
 
-The workflow must:
+Follow the established TWRP A-only recovery agreement.
 
-- Abort on unsuccessful file transfer.
-- Verify transferred source hashes.
-- Abort on unsuccessful compilation.
-- Run applicable tests before installation.
-- Back up the previous executable.
-- Install the new executable atomically.
-- Restart only after successful installation.
-- Verify the service is active and running the expected executable.
-- Verify management connectivity.
-- Automatically restore the previous executable on a failed health check.
+Locate and verify the actual partition mapping using authoritative device-specific information.
 
-A command returning exit code zero is insufficient if an earlier step failed.
+Locate the known-good BOOT and relevant recovery artifacts.
 
----
+Prepare verified rollback copies and validate their integrity.
 
-## 4. EXECUTION PHASE B — CORRECT THE RESPONSE/ACK STATE MACHINE
+Produce a candidate image using the established Nuxel image-building process.
 
-Inspect every data-session FSM transition.
+Verify the candidate contains the intended modem IO-device subtree and preserves unrelated device-tree content.
 
-A transition is valid only when supported by the correct response to the correct outstanding request, or by an explicitly documented asynchronous state event.
+Only proceed with a physical deployment when the existing recovery agreement's requirements are satisfied.
 
-Implement robust correlation using available IPC identifiers, command identity, transaction sequencing and modem-specific response rules.
+Do not guess partition identities or bypass recovery safeguards.
 
-Ensure that:
+If physical owner interaction with TWRP is required, provide the exact necessary interaction in one concise message. Continue independent implementation work while awaiting it.
 
-- NET_REGIST events are not treated as successful registration merely because they arrived.
-- Generic responses are associated with their originating commands.
-- Nonzero results are decoded using vendor-confirmed semantics.
-- Timeouts are distinguished from successful acknowledgements.
-- Unsolicited modem notifications cannot advance unrelated FSM phases.
-- Failed attach prerequisites prevent dependent data-call operations.
-- Retry logic is bounded and respects backoff.
-- Duplicate or delayed responses cannot corrupt state.
-- Logs preserve sufficient context to reconstruct each transaction.
+## A4. Verify persistent recovery
 
-Add deterministic tests for these cases.
+After deployment, require:
 
-The FSM must distinguish:
+- Nuxel boots normally.
+- Live device tree contains all expected IO-device children.
+- Kernel registers the expected modem interfaces.
+- Real FMT, RFS and BOOT nodes exist.
+- Radiod opens its real transport.
+- CP remains ONLINE.
+- SIM detection works.
+- Real FMT TX/RX works.
+- RFS requests and responses work.
+- Wi-Fi, USB, ZeroTier and SSH remain functional.
 
-`COMMAND_SENT`
+Repeat verification after a controlled reboot.
 
-`COMMAND_ACCEPTED`
+Fix the image-generation pipeline permanently so future builds cannot silently remove these nodes.
 
-`REGISTRATION_CONFIRMED`
+Add a build-time regression check that rejects images missing the required modem subtree.
 
-`PS_ATTACHED`
+# 3. PHASE B — COMPLETE THE COMMON RADIO FOUNDATION
 
-`BEARER_ESTABLISHED`
+Before separating LTE, voice and SMS, complete their shared infrastructure.
 
-`IP_CONFIGURED`
+Implement or repair:
 
-`CONNECTIVITY_VERIFIED`
+- Persistent CP initialization lifecycle.
+- Correct systemd service ordering.
+- Real transport discovery.
+- FMT request/response correlation.
+- Unsolicited indication handling.
+- RFS lifecycle.
+- SIM state handling.
+- Network registration.
+- Signal-strength reporting.
+- Radio availability reporting.
+- Timeout and recovery behavior.
+- Modem crash detection.
+- Service restart recovery.
+- Truthful D-Bus properties and signals.
 
-These states must not be conflated.
+Do not let radiod report healthy transport merely because its process is running.
 
----
+Expose explicit distinctions between:
 
-## 5. EXECUTION PHASE C — RECOVER THE ACTUAL ATTACH PREREQUISITES
+- CP online.
+- Transport available.
+- SIM ready.
+- Network registered.
+- Packet-data connected.
+- Voice service available.
+- SMS service available.
 
-This is the highest-priority remaining implementation investigation.
+Retain the existing native Shannon/SIPC implementation.
 
-The vendor library contains relevant routines including:
+Do not introduce Android runtime dependencies or fake AT ports.
 
-- `DataCallManager::DoAttach`
-- `DataCallManager::TryAttach`
-- `DataCallManager::OnPsAttachDone`
-- `DataCallManager::DoSetInitialAttachApn`
-- `ModemProxy::SetAttachApn`
-- `ModemProxy::SetLteAttachProfile`
-- `IpcTxSetLteAttachProfile`
-- `IpcTxSyncProfileInfo`
-- `IpcTxPsAttach`
+# 4. PHASE C — FINISH STAGE 06: LTE
 
-Recover the real call chain.
+Restore and execute the complete existing data-session FSM.
 
-Determine:
+Previously established sequence:
 
-1. Which operations must occur before PS registration.
-2. Whether an initial attach APN must be explicitly supplied.
-3. Whether SetAttachApn uses an existing IPC command.
-4. Whether SetLteAttachPdnList is required.
-5. Whether SetLteAttachtype is required.
-6. Which profile identifiers and CID values are expected.
-7. Whether LTE attach profiles and data-call profiles must match.
-8. Whether a particular command requires a preceding query.
-9. Whether profile synchronization is failing because of missing initialization.
-10. Whether registration is being attempted before the modem reaches the required state.
+`SetServiceDomain → SetPreferredNetType → SetMobileDataSetting → SetDataProfile → SetLteAttachProfile → SetAlwaysOnPdn → PsAttach → SetPdpContext`
 
-Use read-only static analysis of the actual vendor implementation, including internal call paths and virtual dispatch where necessary.
+Preserve previously validated protocol semantics.
 
-Do not rely on exported symbol names alone.
+Do not repeat CID, PAP, IPv4/IPv6 or attach-flag experiments unchanged.
 
-For every recovered wire command, document:
+## C1. Establish the real bearer
 
-- Vendor function and binary build ID.
-- Exact command family, main, sub and type.
-- Payload size.
-- Field offsets.
-- Field semantics.
-- Preconditions.
-- Expected response.
-- Evidence supporting the reconstruction.
+Confirm the SIM has an active cellular data subscription and that the configured APN matches the actual carrier and plan.
 
-Implement only verified commands.
+Use a known-working reference SIM or reference phone where available.
 
-Add byte-exact tests.
+Trace the complete initial-attach and PDP activation lifecycle.
 
----
+Fix any demonstrated:
 
-## 6. EXECUTION PHASE D — RECOVER REGISTRATION AND FAILURE CAUSES
+- Missing initialization operation.
+- Incorrect profile configuration.
+- Incorrect activation parameter.
+- Missing unsolicited indication.
+- Incorrect state transition.
+- Incorrect timeout.
+- Missing context-list processing.
+- Incorrect interface association.
 
-Investigate the receive-side vendor implementations responsible for:
+Do not treat GEN acknowledgement as bearer success.
 
-- NET_REGIST
-- GPRS_PS
-- GPRS_CALL_STATUS
-- PDP context responses
-- IP configuration
-- GPRS backoff timer
-- Relevant reject and status notifications
+Do not bypass carrier provisioning or access restrictions.
 
-Determine the exact meaning of:
+Do not modify raw NV/EFS records, subscriber identity, IMEI, RF calibration or security configuration.
 
-`ps=3`
+Use supported carrier and modem configuration mechanisms.
 
-`cs=1`
+## C2. Finish the Linux networking integration
 
-`call_state=3`
+Once the bearer connects:
 
-`pdp_state=0`
+- Receive actual modem IP configuration.
+- Associate the correct rmnet interface.
+- Configure IPv4 and IPv6 as provided.
+- Configure routes.
+- Configure DNS.
+- Implement disconnect and reconnect.
+- Integrate with NetworkManager.
+- Integrate with ModemManager through a genuine supported native backend where appropriate.
+- Synchronize the Nuxel Settings UI with authoritative connection state.
 
-`gen_result=0/1/3`
+Do not fabricate a ModemManager device.
 
-The reported PS registration denial is an important finding, but identify whether it is caused by:
+Do not hardcode a fake cellular IP.
 
-- An incomplete modem initialization sequence.
-- An attach profile mismatch.
-- A missing or incorrect APN.
-- An unsupported PDP protocol.
-- A radio access technology configuration issue.
-- A modem-imposed backoff.
-- A SIM/subscription/carrier restriction.
-- A genuine network registration rejection.
+## C3. LTE acceptance
 
-Do not collapse these into a generic "carrier issue" diagnosis.
+Require:
 
-If the modem exposes an EMM/ESM reject cause, decode it against the appropriate specification and vendor implementation.
+- Real connected EPS bearer.
+- Valid cellular IP.
+- Correct rmnet interface UP.
+- Cellular routing.
+- Cellular DNS.
+- Successful fresh HTTPS connection over cellular.
+- Increasing rmnet TX/RX counters.
+- Disconnect and reconnect.
+- Recovery after reboot.
 
-If no cause is exposed, state that explicitly.
+Perform cellular-isolated verification while preserving an independent USB management connection.
 
-Do not infer a backoff merely because the vendor library contains a backoff handler.
+Only then mark Stage 06 PASS.
 
-Do not repeatedly trigger attach requests while a backoff timer is active.
+# 5. PHASE D — COMPLETE TELEPHONY
 
----
+Audit the existing call-control implementation and complete missing functionality.
 
-## 7. EXECUTION PHASE E — IMPLEMENT AND TEST THE CORRECTED LTE SEQUENCE
+Use the actual native SIPC call-control protocol.
 
-Once the actual prerequisites are established:
+## D1. Call lifecycle
 
-1. Implement the smallest complete vendor-supported attach sequence.
-2. Keep all changes confined to the modem userspace integration unless a separate, verified prerequisite requires otherwise.
-3. Preserve existing voice/SIM behavior.
-4. Run unit tests, sanitizer tests and fuzzing.
-5. Compare serialized frames against the vendor reference.
-6. Deploy using the corrected fail-closed mechanism.
-7. Verify the deployed binary and active process.
-8. Capture live registration and attach responses.
-9. Diagnose any failure and iterate.
+Implement and verify:
 
-Do not repeatedly retry the same unchanged sequence without new evidence.
+- Outgoing call initiation.
+- Incoming call indications.
+- Ringing state.
+- Answer.
+- Reject.
+- Hang up.
+- Remote hangup detection.
+- Call-state synchronization.
+- Busy and failure reporting.
+- Cleanup after disconnected calls.
+- DTMF where supported.
 
-Every failed iteration must produce a specific correction or a newly validated diagnostic result before another live attempt.
+Do not report a call as active until the modem confirms it.
 
-Avoid changing multiple independent modem settings in a single experiment unless the vendor reference proves they form one required sequence.
+## D2. Voice audio
 
----
+Complete the actual modem-to-Linux voice audio path.
 
-## 8. EXECUTION PHASE F — ESTABLISH THE CELLULAR BEARER
+Verify:
 
-After successful PS registration and attach:
+- Microphone uplink.
+- Earpiece downlink.
+- Bidirectional speech.
+- Speakerphone.
+- Mute/unmute.
+- Call volume.
+- Audio route restoration after hangup.
+- Existing media audio remains functional.
 
-- Request the appropriate PDP/PDN context.
-- Verify the modem reports successful data-call establishment.
-- Identify the correct cellular network interface.
-- Obtain or configure the IP parameters provided by the modem.
-- Apply the appropriate address, prefix, gateway and DNS settings.
-- Verify interface state and packet counters.
-- Preserve existing management routing.
-- Ensure cellular routing is explicitly selected for validation.
-- Support the IP protocol actually negotiated by the modem.
+Integrate with the existing Nuxel audio stack rather than introducing a second competing audio architecture.
 
-Do not assume that `rmnet0` is necessarily the active bearer.
+## D3. LTE voice and IMS
 
-Inspect all supported cellular interfaces and select the one associated with the successful modem data call.
+Determine the carrier-supported voice mechanism.
 
-Do not synthesize an IP address, gateway or DNS server to manufacture apparent connectivity.
+Distinguish:
 
----
+- Circuit-switched voice.
+- Circuit-switched fallback.
+- IMS registration.
+- VoLTE.
 
-## 9. EXECUTION PHASE G — INDEPENDENT REAL-WORLD VALIDATION
+Do not assume working LTE internet automatically provides VoLTE.
 
-Stage 06 may be marked PASS only when all of the following are independently verified on the physical device:
+Implement the supported native voice path using legitimate modem interfaces and carrier provisioning.
 
-- [ ] Modem CP ONLINE.
-- [ ] SIM READY.
-- [ ] Valid PS registration.
-- [ ] Successful PS attach or equivalent confirmed packet-service state.
-- [ ] Successful cellular data-call establishment.
-- [ ] A real cellular bearer interface is active.
-- [ ] A modem-provided cellular IP configuration is installed.
-- [ ] Cellular routing is functional.
-- [ ] DNS resolution works through the cellular connection.
-- [ ] HTTPS succeeds through the cellular connection.
-- [ ] At least one independent connectivity test explicitly uses the cellular interface.
-- [ ] Packet counters demonstrate actual cellular traffic.
-- [ ] Wi-Fi/USB/ZeroTier are not carrying the supposedly cellular test.
-- [ ] A controlled disconnect/reconnect restores the bearer.
-- [ ] The service remains healthy after reconnection.
-- [ ] No persistent corruption or regression is observed.
-- [ ] The implementation and test results are committed and documented.
+If IMS is required, complete the actual supported IMS registration and call integration.
 
-Use interface-bound tests, routing inspection and packet counters to prove the traffic path.
+Do not fabricate IMS registration or bypass carrier entitlement.
 
-Do not disable the management network to prove cellular connectivity.
+Do not place emergency calls as part of testing.
 
-Prefer a dedicated routing table or network namespace for cellular tests when supported and safe.
+## D4. Nuxel phone application
 
-A successful HTTPS request over Wi-Fi is NOT Stage 06 PASS.
+Connect the existing phone application to the authoritative radio backend.
 
-A generic response of zero is NOT Stage 06 PASS.
+Require:
 
-A successful PDP command without an active bearer is NOT Stage 06 PASS.
+- Dial pad.
+- Incoming call screen.
+- Answer/reject controls.
+- Active call screen.
+- Call duration.
+- Mute and speaker controls.
+- Call history.
+- Correct error reporting.
 
-A manually assigned cellular IP without actual packet connectivity is NOT Stage 06 PASS.
+Ensure all UI state reflects actual modem state.
 
----
+## D5. Telephony acceptance
 
-## 10. ITERATION AND AUTONOMY
+Using a consenting test recipient and ordinary test numbers, demonstrate:
 
-You are expected to continue working through successive engineering iterations.
+- Outgoing call connects.
+- Incoming call rings.
+- Incoming call can be answered.
+- Both parties can hear each other.
+- Hangup works from either side.
+- Repeated calls work.
+- Calls recover after reboot.
+- LTE data resumes or remains available as supported by the carrier.
 
-For each iteration:
+Record the actual voice technology used.
 
-**OBSERVE → IDENTIFY → IMPLEMENT → TEST → DEPLOY → VERIFY → CORRECT**
+Do not claim VoLTE success if only fallback voice works.
 
-Prioritize actions that can change the functional outcome.
+# 6. PHASE E — COMPLETE SMS
 
-Do not spend an entire iteration rewriting documentation.
+Implement the full native Shannon SMS lifecycle.
 
-Do not stop at the first failed hypothesis.
+## E1. Outgoing SMS
 
-Do not repeat previously disproven experiments without new evidence.
+Complete:
 
-Do not broaden into unrelated hardware or Nuxel subsystems.
+- Destination validation.
+- Message encoding.
+- GSM 7-bit encoding.
+- UCS-2 encoding.
+- Multipart messages.
+- Modem submission.
+- Submission acknowledgements.
+- Failure reporting.
+- Delivery reports where supported.
 
-Use vendor reverse engineering as an implementation tool, not as an end in itself.
+## E2. Incoming SMS
 
-If a required external action cannot be performed autonomously, isolate that dependency precisely. Do not invent a workaround or silently assume it has been completed.
+Complete:
 
-When a genuine blocker requires carrier intervention or a user-supplied configuration value, provide the exact minimum request and preserve all completed work.
+- Unsolicited SMS indications.
+- PDU decoding.
+- Sender extraction.
+- Timestamp extraction.
+- GSM 7-bit decoding.
+- Unicode decoding.
+- Multipart reassembly.
+- Duplicate suppression.
+- Required modem acknowledgement.
+- Persistent message storage.
+- Notification delivery.
 
----
+## E3. Messaging application
 
-## 11. REQUIRED DELIVERABLES
+Connect the existing Nuxel messaging application to the actual radio backend.
 
-Maintain the following:
+Require:
 
-**A. Working implementation**
+- Conversation list.
+- Message history.
+- Send and receive.
+- Pending/sent/failed state.
+- Incoming notifications.
+- Persistent storage.
+- Correct timestamps.
+- Multipart and Unicode support.
 
-Production-ready modem source changes with regression tests.
+Do not create fake received messages or synthetic delivery confirmations.
 
-**B. Live evidence**
+## E4. SMS acceptance
 
-Timestamped evidence of registration, attach, bearer establishment, IP configuration and cellular HTTPS.
+Using a consenting test recipient, demonstrate:
 
-**C. Safe deployment**
+- Outgoing SMS received by another phone.
+- Incoming SMS received by Nuxel.
+- Reply works.
+- Unicode works.
+- Multipart messages work.
+- Message history persists after reboot.
+- Failure states are truthful.
 
-A repeatable, fail-closed deployment and rollback procedure.
+Record whether SMS uses the supported circuit-switched, NAS or IMS mechanism.
 
-**D. Documentation**
+# 7. PHASE F — INTEGRATED MOBILE NETWORKING
 
-Update `mob.md` with the verified current state, changes, failure causes and actual test results.
+Once the individual functions work, verify them together.
 
-**E. Git checkpoint**
+Required scenarios:
 
-Commit coherent, tested changes on the current feature branch.
+1. LTE browsing while receiving SMS.
+2. Incoming call during LTE data activity.
+3. Outgoing call followed by LTE recovery.
+4. SMS after a completed telephone call.
+5. Wi-Fi-to-cellular transition.
+6. Cellular-to-Wi-Fi transition.
+7. Mobile-data disable and enable.
+8. Temporary network loss and recovery.
+9. Radiod restart and recovery.
+10. Controlled cold boot and automatic recovery.
 
-Preserve unrelated modifications and do not force-push or rewrite history.
+Fix any cross-subsystem state conflicts.
 
-**F. Final verdict**
+Ensure there is one authoritative radio state machine and consistent connection lifecycle.
 
-Use exactly one of:
+Avoid competing services independently controlling the modem.
 
-`STAGE_06_PASS`
+# 8. CONTINUOUS IMPLEMENTATION MODE
 
-Only if every mandatory physical-device acceptance criterion passes.
+For every identified defect:
 
-`STAGE_06_NOT_YET_PASS`
+1. Implement the smallest justified correction.
+2. Build.
+3. Run focused regression tests.
+4. Deploy through the established safe process.
+5. Verify on physical hardware.
+6. Fix any regression.
+7. Continue immediately to the next dependency.
 
-If LTE data is still not established, including when a genuine external dependency prevents completion.
+No separate research-only rounds.
 
-Never claim PASS because the source compiles, tests pass, the modem responds, or a report is complete.
+No unnecessary reports between implementation steps.
 
----
+No repeated unchanged failed experiments.
 
-## 12. START NOW
+No blind flashing, raw partition writes or destructive recovery shortcuts.
 
-Begin with the actual repository and live device.
+Do not weaken device security to make a feature appear functional.
 
-Do not produce another preliminary research plan.
+Do not sacrifice existing working hardware.
 
-Do not ask for permission to perform ordinary, reversible userspace engineering actions already authorized here.
+Keep progressing on independent tasks if a physical interaction or external carrier dependency is temporarily unavailable.
 
-Do not request another prompt between iterations.
+# 9. BUILD-TIME REGRESSION PROTECTION
 
-Do not stop after producing a diagnostic report if a safe implementation path remains.
+Add automated checks covering:
 
-**Your first priority is to identify and implement the missing attach prerequisite or registration correction that actually changes the live PS registration result.**
+- Required modem IO-device definitions in compiled DTB.
+- Correct modem channel IDs.
+- Boot-image device-tree preservation.
+- SIPC frame encoding and decoding.
+- Data-session transitions.
+- Call-state transitions.
+- SMS encoding and decoding.
+- Timeout and recovery behavior.
+- Truthful D-Bus state.
+- Network interface lifecycle.
 
-Then establish the cellular bearer.
+Run the existing unit, fuzz and sanitizer suites.
 
-Then configure IP.
+Build with strict warnings.
 
-Then prove real cellular DNS and HTTPS.
+Ensure the deployed binary corresponds to the committed source.
 
-Then test reconnection.
+# 10. FINAL DELIVERABLES
 
-Then commit the finished work.
+Commit all completed implementation work to `cs/mob`.
 
-The mission is not complete until the physical device has verified working LTE mobile internet.
+Create:
 
-**EXECUTE. VERIFY. ITERATE. DELIVER.**
+`reports/S5000AP-MOBILE-NETWORKING-FINAL-ACCEPTANCE.md`
 
-# OPERATION BOOMBATSCH — GO.ZZ
+Include:
 
----
+- Exact device-tree defect and permanent correction.
+- Image build and deployment identity.
+- Actual live modem device registration.
+- CP and SIM status.
+- LTE bearer and cellular-only HTTPS evidence.
+- Incoming/outgoing call evidence.
+- Bidirectional audio verification.
+- Incoming/outgoing SMS evidence.
+- Unicode and multipart SMS results.
+- Reboot and reconnect results.
+- Regression-test results.
+- Source commits and deployed binary hashes.
+- Remaining limitations, if any.
 
-# STAGE 06 — LIVE EXECUTION LOG (OPERATION BOOMBATSCH) — appending, not overwriting
+Do not merge unrelated changes.
 
-## VERIFIED BASELINE (timestamped 2026-11-23 ~20:39 CET, device root@10.11.12.99)
+Do not mark incomplete functionality as implemented.
 
-- CP: ONLINE (sysfs modem_state == ONLINE, ioctl code 4).
-- SIM: present/READY (sim/ds_detect == 1; SEC_PIN_STATUS protocol-backed READY seen).
-- Management connectivity (ZeroTier 10.11.12.99 + wlan0 + usb) independent of cellular — preserved.
-- Deployed baseline daemon SHA-256: e50b9c820c97e0bdab9aad816c0b4cba9d4c5ad28fa706774b5d9a08d212df01.
+# 11. THE WONQ VICTORY CONTRACT
 
-## AUTHORITATIVE CORRECTIONS IMPLEMENTED (commit 454df1f3)
+Display `./wonqed` when persistent modem device registration and real IPC transport are restored.
 
-1. **NET_REGIST decode was WRONG.** The old code read payload[1]/[2] (query selector echo) and
-   falsely reported "PS DENIED, CS REGISTERED". Correct field map recovered from
-   IpcRxNetRegState @0x339818 (libsec-ril.so build 60889dd714394ae0db7c2ecc2bf2740f):
-   payload[7]=RAT, payload[8]=NetServiceDomainType selector, payload[9]=RegState selector,
-   payload[10]=reject cause. LIVE READBACK is now correct and consistent:
-   `"ps":0,"ps_name":"NOT_REGISTERED","domain_sel":0,"domain":0,"reject":0`
-   => the modem's data/PS registration is genuinely NOT-REGISTERED (state 0), NOT denied.
-   Reject cause 0 => no EMM/ESM reject was reported.
+Display `./wonqed4real` ONLY when ALL THREE physical acceptance targets pass:
 
-2. **SetPdpContext layout was WRONG.** payload[0] was protocol, payload[1] was pdp_type, and cid
-   was dropped. Correct (IpcTxSetPdpContext @0x31f6e0): payload[0]=pdp_type(3 EUTRAN/LTE),
-   payload[1]=cid, flags@[2..5]=0x11 (APN|ACTIVATE), APN@[6..37]. Fixed byte-exact.
+- LTE INTERNET: PASS.
+- TELEPHONY WITH BIDIRECTIONAL AUDIO: PASS.
+- INCOMING AND OUTGOING SMS: PASS.
 
-3. **GEN result FAIL-CLOSED.** Nonzero general-result byte (IpcRxGeneral payload[3]) is now a
-   hard rejection for all setup phases. Exception (live-verified): SetMobileDataSetting
-   (sub=29) returns result=3 idempotently ("mobile data already ON") — treated as already-configured.
+Final output:
 
-4. **Minimal vendor attach sequence.** Removed SyncProfileInfo (sub=37, live result=1) and
-   DefinePdpContext (sub=1, live result=1) — both rejected and NOT in vendor DoAttach. Added
-   DS_PS_REGIST_VERIFY after PsAttach to gate data-call activation on a real NET_REGIST
-   PS-attached state. LTE attach CID corrected to 5 (GetAttachCid @0x1e4500), distinct from
-   DataProfile id 1 (ConvertProfileId).
+CP:
+IPC/RFS/BOOT:
+SIM:
+NETWORK REGISTRATION:
+LTE BEARER:
+CELLULAR IP:
+CELLULAR HTTPS:
+OUTGOING CALL:
+INCOMING CALL:
+BIDIRECTIONAL AUDIO:
+OUTGOING SMS:
+INCOMING SMS:
+REBOOT RECOVERY:
+REGRESSION TESTS:
+FINAL COMMIT:
 
-5. SetLteAttachProfile payload[0]=3 is LIVE-VERIFIED (result 0 accepted); value 4 is
-   REJECTED (result 1) — 3 is the correct apply-flag for beyond2lte.
+OVERALL RESULT: PASS / NOT YET PASS
 
-## REMAINING BLOCKER (precise)
+No fabricated victory.
 
-After a full, mostly-accepted attach sequence:
-   SetServiceDomain(CS_PS=2) -> result 0
-   SetPreferredNet(LTE auto 9) -> result 0
-   SetMobileDataSetting -> result 3 (idempotent)
-   SetDataProfile(APN "internet", IPV4V6) -> result 0
-   SetLteAttachProfile(cid=5, flag=3, IPV4V6) -> result 0
-   SetAlwaysOnPdn -> result 0
-   PsAttach(attach=1) -> result 0
-   GetDataRegState re-query -> RegState still 0 (NOT_REGISTERED), reject 0
+ONE NATIVE LINUX PHONE.
 
-The PsAttach is ACK-ed (GEN result 0) but the CP never moves PS/data registration off
-NOT_REGISTERED(0). CS stays registered (RSSI heartbeat continues). There is no EMM/ESM
-reject exposed on the data path (reject byte 0). This is NOT a carrier DENIED; it is an
-incomplete/ineffective PS attach (missing prerequisite in the userspace sequence).
+THREE WORKING MOBILE NETWORKING FUNCTIONS.
 
-Next investigation targets (ranked, to be tested one at a time):
-  A. Initial-attach APN via SetAttachApn state (IpcModem::SetAttachApn @0x2f1410 is a pure
-     state-store; the CP must receive the initial attach APN through a yet-unverified wire path).
-  B. DataProtocol: initial EPS attach bearer is IPv4 (wire 0x05), while the data PDN is
-     IPV4V6 (0x04). Test IP for the attach profile.
-  C. NET_POWERON_ATTACH (main=8 sub=9) power-on attach trigger.
+ZERO ANDROID RUNTIME DEPENDENCIES.
 
-No PASS is claimed. Verified daemon SHA-256 (current): e4aa6b27a94b8cc0d1fe794d8c5dd21699ac157df4222f966930a56b9047fb26.
+OPERATION WONQ — EXECUTE.

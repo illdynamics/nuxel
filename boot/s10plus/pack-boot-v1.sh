@@ -64,6 +64,7 @@ import sys
 
 MAGIC = b"ANDROID!"
 PAGE_SIZE = 2048
+FDT_MAGIC = b"\xd0\x0d\xfe\xed"  # flat device tree magic (big-endian)
 HEADER_SIZE = 1632
 # Real boot_img_hdr_v1 header size, written to the v1 `header_size` field when
 # --v1-spec is used.  Mirrors this unit's TWRP recovery.img (0x18000171 = 12.0.0).
@@ -113,6 +114,26 @@ def pack(kernel, ramdisk, dtb, cmdline, output, kernel_addr, ramdisk_addr, tags_
     kernel_data = read_file(kernel, "kernel")
     ramdisk_data = read_file(ramdisk, "ramdisk")
     dtb_data = read_file(dtb, "dtb") if dtb else b""
+
+    # Fail-closed device-tree guard (beyond2lte regression): the BOOT image's
+    # appended DTB must be a real, non-trivial FDT. A zero-filled / empty DTB
+    # (the historically-shipped defect that sent the device into TWRP) must
+    # never be silently packed. This is the permanent image-construction fix.
+    if dtb_data[:4] != FDT_MAGIC:
+        sys.stderr.write("pack-boot-v1: ERROR appended DTB has no FDT magic "
+                         "(got %s); refusing to pack a zero/empty device tree\n"
+                         % (dtb_data[:4].hex() or "<empty>"))
+        sys.exit(1)
+    if len(dtb_data) < 1024:
+        sys.stderr.write("pack-boot-v1: ERROR appended DTB too small (%d bytes); "
+                         "refusing to pack a truncated device tree\n" % len(dtb_data))
+        sys.exit(1)
+    # Guard against an all-zeros blob that happens to be large (the exact prior
+    # defect wrote 9,394,176 zero bytes behind a v1 header).
+    if dtb_data[:64] == b"\x00" * 64:
+        sys.stderr.write("pack-boot-v1: ERROR appended DTB begins with 64 zero "
+                         "bytes; refusing to pack a zero-filled device tree\n")
+        sys.exit(1)
 
     # Hardware-proven on beyond2lte: Samsung S-Boot jumps to kernel_addr and does
     # NOT decompress, so a gzip kernel payload is executed as code (attempt A1
