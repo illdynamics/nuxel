@@ -13,6 +13,11 @@ export function voiceControls(call, available, onText) {
   const host = typeof window !== 'undefined' ? window.NuxelAndroid : null;
   let active = false, stream = null, context = null, processor = null, chunks = [], timer = null;
   let epoch = 0;
+  // Android can return ERROR_RECOGNIZER_BUSY / ERROR_CLIENT for a moment while
+  // the speech service releases the background listener. Retry those
+  // automatically instead of making the owner tap the microphone again; the
+  // counter is reset whenever a fresh user-initiated listen starts.
+  let busyRetries = 0;
 
   const status = text => { const el = $('voice-status'); if (el) el.textContent = text; };
   const nativeAvailable = () => {
@@ -45,6 +50,7 @@ export function voiceControls(call, available, onText) {
   async function stop() {
     active = false;
     epoch++;
+    busyRetries = 0;
     clearTimeout(timer);
     timer = null;
     try {
@@ -77,7 +83,7 @@ export function voiceControls(call, available, onText) {
         return 'The speech service could not answer. Check the network or install an offline speech language pack, then try again.';
       case 'client_error':
       case 'recognizer_busy':
-        return 'Android’s speech service is still releasing the previous session. Wait a moment, then tap the microphone again.';
+        return 'Android’s speech service is busy. PenGuru has paused the background listener; tap the microphone again in a moment.';
       case 'no_speech_detected':
         return 'No speech detected. Try again.';
       case 'speech_timeout':
@@ -112,6 +118,14 @@ export function voiceControls(call, available, onText) {
       finishNative();
       if (!result || result.ok !== true) {
         const error = result && result.error ? result.error : 'unavailable';
+        if ((error === 'recognizer_busy' || error === 'client_error') && busyRetries < 3) {
+          busyRetries++;
+          status('Releasing the microphone…');
+          timer = setTimeout(() => {
+            if (!document.hidden) nativeListen(nextMode);
+          }, 650 * busyRetries);
+          return;
+        }
         if (nextMode === 'wake' && error === 'no_speech_detected') {
           status('No “Penguru” detected. Listening again…');
           timer = setTimeout(() => { if (!document.hidden) nativeListen('wake'); }, 500);
@@ -120,6 +134,7 @@ export function voiceControls(call, available, onText) {
         status(errorText(error));
         return;
       }
+      busyRetries = 0;
       const text = String(result.text || '').trim();
       if (!text) {
         if (nextMode === 'wake' || nextMode === 'followup') {
@@ -222,6 +237,7 @@ export function voiceControls(call, available, onText) {
   }
 
   function start(wake) {
+    busyRetries = 0;
     if (nativeAvailable()) nativeListen(wake ? 'wake' : 'dictate');
     else recordListen(wake);
   }

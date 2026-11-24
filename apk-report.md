@@ -13,6 +13,33 @@
 
 ---
 
+## v0.9.3-beta — SonarBird and in-app microphone hand-off
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `0dbc36d14824c349351389ccd8a35ab0ebc71ae534b54530d90910029d8355f1`
+- **Version:** `0.9.3-beta` (`versionCode=903`)
+- **Size:** 1,767,658 bytes
+- MainActivity now pauses the SonarBird service in `onStart` and releases its
+  recognizer, so the first in-app microphone tap no longer races the persistent
+  listener's session. The service is paused for as long as the app is visible
+  and only resumes 900 ms after `onStop`; `onStartCommand` can no longer
+  unpause it behind the foreground UI.
+- Busy/client errors in the foreground path get six retries with a fresh
+  recognizer and a pause hand-off between attempts (`350 ms × n`, capped at
+  2.6 s). The PWA also retries `recognizer_busy`/`client_error` three times
+  automatically, so the owner is not told to tap again for a transient hand-off.
+- While paused, the ongoing notification says “SonarBird paused” and status
+  JSON no longer carries a stale `recognizer_busy` error from an earlier
+  session.
+- `versionName`/`versionCode` and the PWA `pwa_version` were bumped to
+  `0.9.3-beta` / `903`.
+- Verified on an API 35 x86_64 emulator: with SonarBird running, opening
+  PenGuru changed the ongoing notification to **SonarBird paused** / “Paused
+  while PenGuru is open”; pressing Home resumed it as **SonarBird is
+  listening**; returning to the app paused it again. No recognizer-busy error
+  was reported by the service.
+
 ## v0.9.2-beta — launch permissions, background downloads and reinstall reuse
 
 - **Date:** 2026-11-24

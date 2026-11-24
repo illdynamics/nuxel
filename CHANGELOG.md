@@ -4,6 +4,14 @@ All notable changes to the Nuxel Phone OS repository are documented here.
 
 ## [Unreleased]
 
+- PenGuru Android 0.9.3-beta: make the in-app microphone and the persistent
+  SonarBird listener take turns instead of competing. SonarBird now releases its
+  recognizer when PenGuru becomes visible and stays paused while the app is
+  open, then resumes 900 ms after the app leaves the screen. Foreground speech
+  retries busy/client hand-offs six times with backoff (and the PWA retries
+  them automatically), so the first tap no longer shows “speech service is
+  still releasing the previous session”. A paused listener no longer reports a
+  stale `recognizer_busy` error in its notification or status.
 - PenGuru Android 0.9.2-beta: check microphone and notification permissions on
   launch, restore an enabled SonarBird listener, and ask for the battery
   optimization exemption and (optionally) All files access. Move model/runtime

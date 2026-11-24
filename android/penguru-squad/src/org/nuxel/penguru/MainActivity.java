@@ -194,6 +194,34 @@ public class MainActivity extends Activity {
         handleWakeIntent(intent);
     }
     @Override
+    protected void onStart() {
+        super.onStart();
+        // The in-app UI owns the microphone while it is visible. Releasing the
+        // SonarBird recognizer here (rather than only on the first mic tap)
+        // gives Android's speech service time to tear down its binder, so the
+        // first tap no longer reports "speech service is still releasing the
+        // previous session" / ERROR_RECOGNIZER_BUSY.
+        WakeWordService.setAppForeground(true);
+    }
+
+    @Override
+    protected void onStop() {
+        // Leaving the app hands the microphone back to SonarBird. Invalidate
+        // every queued foreground start and release any session first so the
+        // two recognizers never overlap.
+        speechToken++;
+        speechRunning = false;
+        pendingSpeech = false;
+        releaseSpeechRecognizer();
+        WakeWordService.setAppForeground(false);
+        if (getSharedPreferences(WakeWordService.PREFS, MODE_PRIVATE)
+                .getBoolean(WakeWordService.PREF_ENABLED, false)) {
+            WakeWordService.resumeFromActivity();
+        }
+        super.onStop();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         // Returning from the "All files access" or battery screens can change
@@ -1033,19 +1061,23 @@ public class MainActivity extends Activity {
             speechPreferOffline = true;
             speechLanguage = "";
             startSpeechNow(wake);
-        }, 550L));
+        }, 420L));
     }
 
     private void restartSpeech(final boolean wake, long delayMillis) {
         speechRunning = false;
         releaseSpeechRecognizer();
         final int token = ++speechToken;
-        mainHandler.postDelayed(() -> {
+        // A busy/client error means the speech binder from the previous
+        // session (usually SonarBird's recognizer) has not finished releasing.
+        // Pause the service again and re-check before each retry instead of
+        // immediately creating another recognizer.
+        WakeWordService.pauseForActivity(() -> mainHandler.postDelayed(() -> {
             if (token != speechToken || isFinishing()) {
                 return;
             }
             startSpeechNow(wake);
-        }, delayMillis);
+        }, delayMillis));
     }
 
     private void startSpeechNow(boolean wake) {
@@ -1154,7 +1186,14 @@ public class MainActivity extends Activity {
             if (token != speechToken || !speechRunning) {
                 return;
             }
-            if (speechRetryCount < 2 && shouldRetrySpeech(error)) {
+            final boolean transientBusy = error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY
+                    || error == SpeechRecognizer.ERROR_CLIENT;
+            // Busy/client errors are a hand-off race with the background
+            // listener or the previous in-app session, so retry long enough
+            // for Android to release the recognizer instead of surfacing the
+            // old "wait a moment and tap again" message on the first tap.
+            final int maxRetries = transientBusy ? 6 : 2;
+            if (speechRetryCount < maxRetries && shouldRetrySpeech(error)) {
                 // Offline-only recognition frequently fails with error 12/13
                 // when no language pack is installed. Busy/client errors are
                 // usually the previous recognizer still releasing. Retry with
@@ -1166,7 +1205,10 @@ public class MainActivity extends Activity {
                         || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
                     speechLanguage = "en-US";
                 }
-                restartSpeech(speechWake, 700L * speechRetryCount);
+                long delay = transientBusy
+                        ? Math.min(2600L, 350L * speechRetryCount)
+                        : 700L * speechRetryCount;
+                restartSpeech(speechWake, delay);
                 return;
             }
             deliverSpeech("", speechWake, speechErrorName(error), token);

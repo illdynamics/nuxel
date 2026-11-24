@@ -66,8 +66,16 @@ public class WakeWordService extends Service {
     private static volatile WakeWordService instance;
     private static volatile boolean running;
     private static volatile boolean paused;
+    // True while MainActivity is visible. The foreground UI owns the one
+    // microphone Android exposes, so the background listener stays paused for
+    // the whole time the app is open instead of racing in-app dictation.
+    private static volatile boolean appForeground;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    // Hand-off callbacks deliberately do not use `handler`: onStartCommand
+    // clears that queue, and losing the "recognizer released" callback would
+    // leave the in-app microphone waiting forever.
+    private static final Handler HANDOFF = new Handler(Looper.getMainLooper());
     private SpeechRecognizer recognizer;
     private PowerManager.WakeLock wakeLock;
     private boolean listening;
@@ -92,6 +100,39 @@ public class WakeWordService extends Service {
         return paused;
     }
 
+    public static boolean isAppForeground() {
+        return appForeground;
+    }
+
+    /**
+     * Tell the listener whether MainActivity is visible. While the app is in
+     * the foreground the service releases its recognizer immediately and does
+     * not schedule another session. This is the important half of the fix:
+     * opening the app used to leave the background recognizer holding the
+     * speech service, so the first tap on the microphone failed with
+     * ERROR_RECOGNIZER_BUSY ("speech service busy").
+     */
+    public static void setAppForeground(boolean visible) {
+        appForeground = visible;
+        WakeWordService service = instance;
+        if (!visible) {
+            return;
+        }
+        paused = true;
+        if (service == null) {
+            return;
+        }
+        HANDOFF.post(() -> {
+            service.stopRecognizer();
+            service.listening = false;
+            service.restartQueued = false;
+            // Do not keep showing a stale "recognizer busy" error while the
+            // service is intentionally paused for the in-app microphone.
+            service.lastError = "";
+            service.updateNotification("Paused while PenGuru is open");
+        });
+    }
+
     /** Wait until the service has released the recognizer and microphone. */
     public static void pauseForActivity(Runnable whenPaused) {
         paused = true;
@@ -102,14 +143,15 @@ public class WakeWordService extends Service {
             }
             return;
         }
-        service.handler.post(() -> {
+        HANDOFF.post(() -> {
             service.stopRecognizer();
             service.listening = false;
+            service.lastError = "";
             service.updateNotification("Paused while the in-app microphone is in use");
             if (whenPaused != null) {
                 // Give Android's speech service a moment to tear down its
                 // binder before the Activity creates a new recognizer.
-                service.handler.postDelayed(whenPaused, 120L);
+                HANDOFF.postDelayed(whenPaused, 120L);
             }
         });
     }
@@ -119,8 +161,16 @@ public class WakeWordService extends Service {
         pauseForActivity(null);
     }
 
-    /** Called after the in-app dictation session releases the microphone. */
+    /**
+     * Called after an in-app result or when MainActivity leaves the screen.
+     * The listener stays paused while the app is visible; only backgrounding
+     * the app hands the microphone back to SonarBird.
+     */
     public static void resumeFromActivity() {
+        if (appForeground) {
+            paused = true;
+            return;
+        }
         paused = false;
         WakeWordService service = instance;
         if (service != null) {
@@ -198,15 +248,27 @@ public class WakeWordService extends Service {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                 .putBoolean(PREF_ENABLED, true)
                 .apply();
-        paused = false;
-        if (!startInForeground("Listening for “Penguru” · say it, then your message")) {
+        // A START command must not steal the microphone back while the
+        // Activity is visible. This happened when launch-time permission
+        // checks restarted an enabled listener after onStart had paused it.
+        paused = appForeground;
+        if (!startInForeground(appForeground
+                ? "Paused while PenGuru is open"
+                : "Listening for “Penguru” · say it, then your message")) {
             lastError = "Android refused to start the microphone foreground service. Open PenGuru while the screen is on and start listening again.";
             stopSelf();
             return START_NOT_STICKY;
         }
         restartQueued = false;
         handler.removeCallbacksAndMessages(null);
-        handler.postDelayed(this::beginListening, 350L);
+        if (appForeground) {
+            // A queued stop/handoff may have been cleared above; make sure no
+            // recognizer survives while the Activity owns the microphone.
+            stopRecognizer();
+            listening = false;
+        } else {
+            handler.postDelayed(this::beginListening, 350L);
+        }
         return START_STICKY;
     }
 
@@ -312,7 +374,7 @@ public class WakeWordService extends Service {
         Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? new Notification.Builder(this, CHANNEL_ID)
                 : new Notification.Builder(this);
-        builder.setContentTitle("SonarBird is listening")
+        builder.setContentTitle(appForeground ? "SonarBird paused" : "SonarBird is listening")
                 .setContentText(text)
                 .setSmallIcon(R.drawable.ic_stat_penguru)
                 .setOngoing(true)
@@ -346,7 +408,7 @@ public class WakeWordService extends Service {
 
     private void beginListening() {
         restartQueued = false;
-        if (destroyed || paused) {
+        if (destroyed || paused || appForeground) {
             return;
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
@@ -444,13 +506,13 @@ public class WakeWordService extends Service {
     }
 
     private void scheduleNext(long delayMillis) {
-        if (destroyed || paused || restartQueued) {
+        if (destroyed || paused || appForeground || restartQueued) {
             return;
         }
         restartQueued = true;
         handler.postDelayed(() -> {
             restartQueued = false;
-            if (!destroyed && !paused) {
+            if (!destroyed && !paused && !appForeground) {
                 beginListening();
             }
         }, delayMillis);

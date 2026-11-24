@@ -88,8 +88,8 @@ token, launcher or root access.
 | Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and Voice tiny.en packages with **Download to this phone**. |
 | Downloads | `DownloadService` (a `dataSync` foreground service) streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. It holds a partial wake lock and Wi-Fi lock so locking the screen does not pause or interrupt the transfer. |
 | Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip. An interrupted job resumes from the persisted spec after a rebuild or process restart. |
-| Voice | Android `SpeechRecognizer`; waits for the background service to release the microphone before starting, retries busy/client sessions with a fresh recognizer, falls back to the phone's normal recognizer and en-US when a language pack is missing, has a native 16-second watchdog, and auto-sends the transcript. The microphone is destroyed after every session. |
-| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru” alone and the next sentence is sent, or say “Penguru <question>” in one go. Each recognizer session has its own token and error backoff, so stale callbacks no longer create competing sessions. Android 10+ may require tapping the notification to bring the conversation forward; the command is still sent automatically when the app opens. Boot/package-replaced receivers re-arm an enabled listener. |
+| Voice | Android `SpeechRecognizer`; the background listener stays paused while PenGuru is visible, retries busy/client sessions six times with a fresh recognizer, falls back to the phone's normal recognizer and en-US when a language pack is missing, has a native 16-second watchdog, and auto-sends the transcript. The microphone is destroyed after every session. |
+| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru” alone and the next sentence is sent, or say “Penguru <question>” in one go. The service releases the recognizer when the app is opened (notification: “SonarBird paused”) and resumes after the app leaves the screen, so the in-app microphone never competes with it. Each recognizer session has its own token and error backoff, so stale callbacks no longer create competing sessions. Android 10+ may require tapping the notification to bring the conversation forward; the command is still sent automatically when the app opens. Boot/package-replaced receivers re-arm an enabled listener. |
 | Permissions | On launch the app requests microphone and notification access, restores a previously enabled listener, and prompts once a week for the battery-optimization exemption and All files access until granted. |
 | Reinstall reuse | With **All files access**, models and runtimes live in `Download/PenGuru` and are discovered after an uninstall/reinstall by validating each file and byte length. Without it, `Android/media/<package>` survives APK updates but not a full uninstall. |
 | Diagnostics | Battery, storage, Android version, CPU ABIs, model/runtime paths. |
@@ -157,7 +157,7 @@ bridge must allow the APK origin for CORS; the current
   download-status → installed transition, runtime install spec, SYSTEM and CODE
   replies, and diagnostics.
 - APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=902`,
-  `versionName=0.9.2-beta`.
+  `versionName=0.9.3-beta`.
 - API 35 emulator checks: launch-time microphone/notification prompts, the
   battery dialog, the All files access dialog, a screen-off download that
   completed in the `dataSync` foreground service, and a full
