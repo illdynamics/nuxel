@@ -1,0 +1,19 @@
+tests/test_rfs_policy.c: In function 'main':
+tests/test_rfs_policy.c:30:28: error: 'snprintf' output may be truncated before the last format character [-Werror=format-truncation=]
+   30 |     snprintf(dst, n, "%s/%s", a, b);
+      |                            ^
+In function 'join_path',
+    inlined from 'main' at tests/test_rfs_policy.c:115:5:
+tests/test_rfs_policy.c:30:5: note: 'snprintf' output 2 or more bytes (assuming 1025) into a destination of size 1024
+   30 |     snprintf(dst, n, "%s/%s", a, b);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tests/test_rfs_policy.c: In function 'main':
+tests/test_rfs_policy.c:30:28: error: 'snprintf' output may be truncated before the last format character [-Werror=format-truncation=]
+   30 |     snprintf(dst, n, "%s/%s", a, b);
+      |                            ^
+In function 'join_path',
+    inlined from 'main' at tests/test_rfs_policy.c:116:5:
+tests/test_rfs_policy.c:30:5: note: 'snprintf' output 2 or more bytes (assuming 1025) into a destination of size 1024
+   30 |     snprintf(dst, n, "%s/%s", a, b);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cc1: all warnings being treated as errors

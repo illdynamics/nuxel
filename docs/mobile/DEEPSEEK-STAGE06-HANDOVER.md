@@ -16,7 +16,7 @@ protocol research. Read [acceptance](NUXEL-LTE-PRODUCTION-ACCEPTANCE.md),
 - `483be956`: bounded RFS test fixture join; only this correction was staged.
 - `35f673a9`: repeat installation support and competing-owner test (nine startup tests now pass).
 - The final documentation commit follows; resolve it with
-  `git log -1 --format=%H -- docs/mobile/DEEPSEEK-STAGE06-HANDOVER.md`.
+  `git log -1 --format=%H -- docs/mobile/`.
 - Existing uncommitted Settings/QS/top-bar, bridge, mobile_data, radiod,
   serializers, RFS and test changes remain in the tree. They were not replaced,
   deployed or claimed as production acceptance. Entry diff/status are saved in
@@ -268,7 +268,7 @@ Incremental consolidation checkpoints:
 | `91f246aa` | Telephony and SMS source/evidence audits |
 
 The final documentation/evidence/changelog commit follows these; obtain its
-exact hash from `git log -1 --format=%H -- docs/mobile/DEEPSEEK-STAGE06-HANDOVER.md`.
+exact hash from `git log -1 --format=%H -- docs/mobile/`.
 The final response records that hash. This avoids embedding a self-referential
 commit hash in its own tree.
 

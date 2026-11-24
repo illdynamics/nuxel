@@ -1,0 +1,19 @@
+ITOC parsed: stages=5 BOOT@1 MAIN@2 VSS@3 NV@4 OFFSET@5 TOC(m_off=0x40008000 size=1040)
+initial CP state=4
+power-reset issued (was state=4)
+{"nv_preflight":"verified","bytes":1048576,"source":"read-only EFS snapshot"}
+{"stage":"status-probe","rc":0,"elapsed_ms":0,"note":"state"}
+{"stage":"status-probe","rc":0,"elapsed_ms":24,"note":"power-reset (non-OFFLINE)"}
+{"stage":"security-reinit","rc":0,"elapsed_ms":13,"note":""}
+{"nv_download":"complete","bytes":1048576,"m_offset":90177536}
+{"stage":"xmit-boot","rc":0,"elapsed_ms":109,"note":"TOC/BOOT/MAIN/VSS/NV; NV from verified EFS snapshot"}
+{"stage":"security-toc","rc":0,"elapsed_ms":9,"note":""}
+{"stage":"security-vss","rc":0,"elapsed_ms":29,"note":""}
+{"stage":"security-main","rc":0,"elapsed_ms":301,"note":""}
+{"stage":"power-on","rc":0,"elapsed_ms":0,"note":""}
+{"stage":"boot-on","rc":0,"elapsed_ms":21,"note":""}
+{"stage":"dl-start","rc":0,"elapsed_ms":0,"note":""}
+{"stage":"handshake","rc":0,"elapsed_ms":4,"note":""}
+{"stage":"boot-off","rc":0,"elapsed_ms":805,"note":""}
+{"stage":"online-verify","rc":0,"elapsed_ms":0,"note":"must-be-ONLINE"}
+{"mode":"really-boot","backend":"real","verdict":"online"}

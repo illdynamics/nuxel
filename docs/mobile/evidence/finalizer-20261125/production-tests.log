@@ -1,0 +1,15 @@
+test_existing_radio_owner_prevents_boot (test_production_startup.StartupTests.test_existing_radio_owner_prevents_boot) ... ok
+test_invalid_configuration (test_production_startup.StartupTests.test_invalid_configuration) ... ok
+test_loader_failure_does_not_retry (test_production_startup.StartupTests.test_loader_failure_does_not_retry) ... ok
+test_loader_success_without_online_fails (test_production_startup.StartupTests.test_loader_success_without_online_fails) ... ok
+test_offline_single_boot_and_nv_arguments (test_production_startup.StartupTests.test_offline_single_boot_and_nv_arguments) ... ok
+test_online_never_invokes_loader (test_production_startup.StartupTests.test_online_never_invokes_loader) ... CP already ONLINE; no reset or boot performed
+ok
+test_preflight_integrity_and_nv_checksum (test_production_startup.StartupTests.test_preflight_integrity_and_nv_checksum) ... ok
+test_regular_rejects_symlinks_and_writable_artifacts (test_production_startup.StartupTests.test_regular_rejects_symlinks_and_writable_artifacts) ... ok
+test_unknown_and_crashed_states_never_reset (test_production_startup.StartupTests.test_unknown_and_crashed_states_never_reset) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.017s
+
+OK

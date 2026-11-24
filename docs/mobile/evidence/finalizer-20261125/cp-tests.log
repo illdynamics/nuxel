@@ -1,0 +1,23 @@
+test_bounds_overflow_part_rejected: PASS
+test_dry_run_status_only_no_mutation: PASS
+test_full_mock_boot_reaches_online: PASS
+test_invalid_deadline_rejected: PASS
+test_invalid_itoc_magic_fails_closed: PASS
+test_itoc_parse_reports_stage_count_and_toc_m_offset: PASS
+test_missing_firmware_fails_closed: PASS
+test_mock_online_is_never_mislabeled_physical: PASS
+test_nv_corruption_rejected_before_cp_reset_or_download: PASS
+test_nv_length_mismatch_and_plain_md5_fail_closed: PASS
+test_nv_snapshot_is_verified_and_downloaded_to_toc_address: PASS
+test_physical_really_boot_rejected_on_no_hw_build: PASS
+test_toc_missing_moffset_fails_closed: PASS
+13 CP loader tests passed
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
