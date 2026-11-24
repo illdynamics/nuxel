@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-11-25T00:16:54.867068+01:00",
+  "kernel": {
+    "exit": 0,
+    "stdout": "4.14.253-gf7194c1d15ed-dirty",
+    "stderr": ""
+  },
+  "cp_state": "ONLINE",
+  "data": {
+    "exit": 0,
+    "stdout": "{\"type\":\"a{ss}\",\"data\":[{\"phase\":\"FAILED\",\"apn\":\"internet\",\"rat\":\"LTE\",\"home_plmn\":\"20408\",\"baseband\":\"G975FXXSEFUJ2\",\"registration\":\"UNKNOWN\",\"ps_attached\":\"false\",\"ip_configured\":\"false\",\"link_result\":\"0\",\"ps_reject_cause\":\"0\",\"cs_registration\":\"NOT_REGISTERED\",\"cs_reject_cause\":\"0\",\"failure_phase\":\"PS_REGIST_VERIFY\",\"failure_result\":\"unavailable\",\"service_domain_wire\":\"1\",\"ps_control_state\":\"0\"}]}",
+    "stderr": ""
+  },
+  "sim": {
+    "exit": 0,
+    "stdout": "{\"type\":\"s\",\"data\":[\"ready\"]}",
+    "stderr": ""
+  },
+  "radio": {
+    "exit": 0,
+    "stdout": "{\"type\":\"s\",\"data\":\"on\"}",
+    "stderr": ""
+  },
+  "cellular_addresses": {
+    "exit": 0,
+    "stdout": "[{\"ifindex\":4,\"ifname\":\"rmnet0\",\"flags\":[\"POINTOPOINT\",\"MULTICAST\",\"NOARP\"],\"mtu\":1500,\"qdisc\":\"noop\",\"operstate\":\"DOWN\",\"group\":\"default\",\"txqlen\":1000,\"link_type\":\"ppp\",\"addr_info\":[]}]",
+    "stderr": ""
+  },
+  "cellular_ipv4_routes": {
+    "exit": 0,
+    "stdout": "[]",
+    "stderr": ""
+  },
+  "cellular_ipv6_routes": {
+    "exit": 0,
+    "stdout": "[]",
+    "stderr": ""
+  },
+  "networkmanager": {
+    "exit": 0,
+    "stdout": "wlan0:wifi:connected\nwlan1:wifi:disconnected\np2p0:ethernet:unmanaged\nusb0:ethernet:unmanaged\nip6_vti0:iptunnel:unmanaged\nip6tnl0:iptunnel:unmanaged\nip_vti0:iptunnel:unmanaged\nsit0:iptunnel:unmanaged\nlo:loopback:unmanaged\nrmnet0:ppp:unmanaged\nrmnet1:ppp:unmanaged\nrmnet2:ppp:unmanaged\nrmnet3:ppp:unmanaged\nrmnet4:ppp:unmanaged\nrmnet5:ppp:unmanaged\nrmnet6:ppp:unmanaged\nrmnet7:ppp:unmanaged\numts_dm0:ppp:unmanaged\nztly5zthnf:tun:unmanaged\nmcps0:unknown:unmanaged\np2p-dev-wlan0:wifi-p2p:unmanaged\np2p-dev-wlan1:wifi-p2p:unmanaged",
+    "stderr": ""
+  },
+  "modemmanager": {
+    "exit": 0,
+    "stdout": "\u2514\u2500 /org\n  \u2514\u2500 /org/freedesktop\n    \u2514\u2500 /org/freedesktop/ModemManager1",
+    "stderr": ""
+  },
+  "usb_carrier": "1",
+  "services": {
+    "exit": 0,
+    "stdout": "active\nactive\nactive\nactive\nactive",
+    "stderr": ""
+  },
+  "boot_service": {
+    "exit": 0,
+    "stdout": "ActiveState=active\nSubState=exited\nExecMainStatus=0",
+    "stderr": ""
+  },
+  "efs_mount": {
+    "exit": 0,
+    "stdout": "ro,nosuid,nodev,noexec,relatime,seclabel,norecovery",
+    "stderr": ""
+  },
+  "cellular_counters": {
+    "rx_bytes": 0,
+    "tx_bytes": 0,
+    "rx_packets": 0,
+    "tx_packets": 0
+  },
+  "hashes": {
+    "/usr/libexec/nuxel/nuxel-radiod": "6893af43cea0129234ed0adceed55517db5834d5c558f4f3e0bc4e694e76955a",
+    "/usr/libexec/nuxel/nuxel-cpbootd-production": "2566162f4483d33e849745888ea38315c6d92ec75a38a18e8bdb59de25e8bf7c",
+    "/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.production.hw": "530732cb35614ba9aa8d12a6a5717ef8ea7ff4a6d46039599e9a8e6c42d75b4c",
+    "/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.aarch64.hw": "d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630"
+  }
+}

@@ -1,5 +1,15 @@
 # Nuxel SMS implementation and evidence
 
+## LTE finalizer update — 2026-11-25
+
+The two previously authorized messages remain unsent; no separate evidence of submission was found or produced. No physical SMS test was performed.
+
+One bounded native NV-capable CP boot completed, but packet registration
+remains UNKNOWN. A separate verified production boot guard was installed;
+the running radio daemon and this subsystem were not changed. Normal reboot
+and LTE persistence remain unverified. Existing research below is retained.
+
+
 Consolidation source/evidence audit, 2026-11-24 CET. Native SMS serialization,
 encoding, decoding, durable storage and asynchronous service exist. **No
 confirmed recipient delivery or real network-delivered incoming SMS is

@@ -1,5 +1,165 @@
 # DeepSeek Stage 06 handover — read first
 
+## Latest LTE finalizer handover — 2026-11-25
+
+**BLOCKED: genuine PS registration remains UNKNOWN/raw7 after the verified
+NV-capable CP boot. LTE production acceptance is incomplete.** This section
+supersedes older runtime/deployment statements below, without replacing the
+protocol research. Read [acceptance](NUXEL-LTE-PRODUCTION-ACCEPTANCE.md),
+[speed-test status](NUXEL-LTE-SPEEDTEST.md), and the
+[physical receipt](evidence/finalizer-20261125/final-state.json).
+
+### Checkpoints and preservation
+
+- Verified entry HEAD `4b95f377a0fe742a103ff7f2a8260e1b3fae8c47`, requested branch.
+- `f42c18ef`: installed verified bounded CP production startup and eight tests.
+- `483be956`: bounded RFS test fixture join; only this correction was staged.
+- `35f673a9`: repeat installation support and competing-owner test (nine startup tests now pass).
+- The final documentation commit follows; resolve it with
+  `git log -1 --format=%H -- docs/mobile/DEEPSEEK-STAGE06-HANDOVER.md`.
+- Existing uncommitted Settings/QS/top-bar, bridge, mobile_data, radiod,
+  serializers, RFS and test changes remain in the tree. They were not replaced,
+  deployed or claimed as production acceptance. Entry diff/status are saved in
+  private host `/tmp/nuxel-lte-finalizer-20261125/`.
+- No merge/push, phone reboot, Wi-Fi disable, SMS, calls or protected writes.
+
+### What was actually reconciled and exercised
+
+The installed/running daemon still hashes to the successful Round43 build17
+`6893af43cea0129234ed0adceed55517db5834d5c558f4f3e0bc4e694e76955a`.
+The tracked LTE/loader source did not change between `24e61763` and entry HEAD;
+changes in that subtree were a receipt and focused call-service code/tests.
+The CP loader source is unchanged between `9dc13efd` and `24e61763`.
+The later uncommitted policy/UI work is not in the running binary.
+
+The old production loader hash `d963219f…` was confirmed. One controlled CP
+boot at 00:12:31 CET used historical verified `530732cb…`, existing read-only
+RADIO and verified device-owned NV. It returned ONLINE/exit0. Native OES
+transferred 987 bytes and SIM became ready; radio was ON. One subsequent
+native StartDataSession ran the successful APN/profile configuration, preserving
+all Astra corrections. Service domain read back wire1, preferred mode11,
+profile/attach commands returned success; optional mobile-data command returned
+0x8003 (unsupported). PS remained raw7/UNKNOWN and the bounded registration
+wait failed. No actual bearer/IP/traffic resulted.
+
+This is new counterevidence against the old loader being the **sole** cause.
+There is no demonstrated carrier outage or provisioning diagnosis. Do not
+rename raw7 to registered, repeat resets, or skip the registration gate.
+Native NET_REGIST carries LTE RAT but not actual packet registration.
+The old daemon's initial-attach flag remains3, protocol default, auth none,
+PDP full, CID1; environment identical to the previously successful build17 path.
+The temporary registration-only override was removed and systemd reloaded.
+Current running daemon was launched without CLI auto-arm; the bounded session
+was explicitly requested and is now FAILED. On its next start the original
+persistent `10-data-path.conf` still supplies `--arm-data-path`. This is not a
+persisted user preference and remains an unfinished integration task.
+
+### Installed production boot correction
+
+`services/nuxel-modem/bin/nuxel-modem-install.sh --production-config CONFIG LOADER`
+now invokes the production installer. It validates the supplied binary hash,
+saves prior files, installs the separate production loader/guard/config/unit,
+preflights all inputs, and creates `05-production-boot.conf` with Requires/After
+for radiod. It reloads systemd but does not restart CP or radio. It leaves the
+old Stage04 boot loader/guard/unit unchanged. Failure restores prior files.
+
+Installed paths and identity:
+
+| Artifact | SHA-256 / location |
+|---|---|
+| Production NV-capable loader | `/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.production.hw`, `530732cb35614ba9aa8d12a6a5717ef8ea7ff4a6d46039599e9a8e6c42d75b4c` |
+| Production guard | `/usr/libexec/nuxel/nuxel-cpbootd-production`, `2566162f4483d33e849745888ea38315c6d92ec75a38a18e8bdb59de25e8bf7c` |
+| Existing recovery loader | `d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630`, unchanged |
+| Production configuration | `/etc/nuxel/modem/production.json`, root0600 |
+| Execution manifest | `/var/lib/nuxel/lte-finalizer-20261125/production-manifest.txt` |
+| Source staging / logs | `/var/lib/nuxel/lte-finalizer-20261125/` |
+| Install rollback backup | `/var/lib/nuxel/modem-production-install.EwaFUS/` (first install); `Nj9ejQ` (repeat install) |
+
+The guard validates SHA256 of binary, firmware and manifest, exact Samsung NV
+checksum and size, root-controlled config/artifacts, persistent paths, and
+character-device boot endpoint. It waits for the EFS mount via systemd, rejects
+existing FMT/RFS owners before an OFFLINE boot, and bounds a single attempt to
+60 seconds plus process timeout. ONLINE is a no-op; other states fail without
+reset. Production service has Restart=no and 120-second total deadline.
+The old loader itself only checks that a manifest argument exists; actual
+manifest hashing is now enforced by the wrapper.
+
+Target `--check` passed; `systemd-analyze verify` exited0 with unrelated existing
+unit warnings retained in evidence. Starting the service on the ONLINE CP
+returned active/exited/ExecMainStatus0 without reset. This proves installation,
+input validation and ONLINE skip, **not cold boot or LTE readiness**.
+
+Reproduction on this handset (does not start/restart hardware):
+
+```sh
+bash services/nuxel-modem/bin/nuxel-modem-install.sh --production-config \
+  /etc/nuxel/modem/production.json \
+  /var/lib/nuxel/round43-20261124-fixed-wire/nuxel-cpbootd.aarch64.hw
+/usr/libexec/nuxel/nuxel-cpbootd-production --check
+```
+
+For another installation, build `tools/s10plus/s5000ap-uapi/build.sh` with the
+native/cross toolchain, supply the resulting hardware loader and a root0600
+JSON with `loader_sha256`, `firmware`, `firmware_sha256`, `manifest`,
+`manifest_sha256`, `nv_image`, `nv_md5`, `deadline_ms`. Use that handset's verified
+inputs. A rebuilt loader must be separately accepted; compiler success is not
+physical equivalence to the pinned historical executable. No NV/firmware is
+redistributed or copied from a different handset. The startup wrapper is
+reproducible from this checkpoint; the complete radio/NM/UI install is not done.
+
+Rollback before another startup: stop only `nuxel-cpbootd-production` (its
+oneshot has no CP shutdown action); remove the new five paths listed by the
+installer's `paths` array, restore numbered backups0..4 where present, and
+`systemctl daemon-reload`. For this first install all five were previously
+absent. Do not remove the old Stage04 loader or reset CP. Base radiod service
+and original drop-ins were also backed up under the finalizer directory.
+
+### Remaining integration and acceptance
+
+- Real MM integration is absent; live MM has only its root object and NM labels
+  rmnet0 unmanaged PPP. Existing cellular_link owns Linux addresses/routes;
+  do not add a second route manager or fake MM bearer. NM DNS ownership remains
+  unfinished. Preserve metric2100/table106/source rules and Wi-Fi preference
+  while deciding actual NM/MM integration.
+- Existing policy/UI draft is unaccepted. In particular draft mobile_stop treats
+  optional 13/29 unsupported0x8003 as a terminal failure, although that result
+  was physically observed on this modem. Review this before exposing OFF.
+  APN persistence, radio/session-bus startup readiness, full state invalidation,
+  stop/reconnect/rapid toggle behavior and actual carrier/signal remain gaps.
+- No signal conversion was invented. GetSignalInfo remains unavailable in the
+  running daemon. No physical Settings/QS/top-bar acceptance occurred.
+- USB SSH is verified at `10.100.10.1:2022`, carrier1; ZeroTier SSH remains at
+  `10.11.12.99:22`. Wi-Fi and ZeroTier were preserved, not used as LTE evidence.
+- No current IPv4 or IPv6 data service. Historical IPv6-only successes stand.
+  No benchmark or reboot-to-internet measurement. Data-allowance confirmation
+  was requested but not received. Both normal reboot gates remain unperformed.
+
+Next execution: begin with the fresh failure evidence and a read-only live
+state check. Establish the next demonstrated registration-layer defect or
+external carrier/SIM condition before any more CP recovery. Finish/test the
+existing native policy drafts and actual NM integration; then deploy with
+independent USB management, validate real cellular DNS/HTTPS, UI ON/OFF/ON,
+Wi-Fi transitions, enabled/disabled normal reboot, and one consented speed test.
+Do not count the new boot guard as completion of those gates.
+
+The two previously authorized SMS messages remain unsent. Native SMS physical
+acceptance is a separate future task. Voice still needs ABOX VoiceCall routing,
+call-audio integration and physical acceptance; IMS limitations remain. No SMS,
+telephony or IMS work was performed in this pass.
+
+Regression details: see `evidence/finalizer-20261125/regression.json`. The initial
+GCC suite exposed a test-only snprintf truncation warning, corrected without
+warning suppression; initial diagnostics retained. Phone pytest/clang were
+unavailable. CP tests were run directly with a stdlib function runner. AArch64
+GCC sanitizer fuzz failed at runtime allocating its shadow mapping; that
+failure is retained, not labeled a parser pass. The full host suite and ASan/UBSan completed with exit0, including both
+3,000-case fuzz runs. Nine production guard tests passed on host and handset;
+13 CP mock tests and six draft adapter tests passed. The phone sanitizer
+failure remains a limitation. No NM/route/DNS/UI/reboot physical tests passed
+by implication from these offline suites.
+
+---
+
 Final consolidation audit, 2026-11-24 CET. **Persistent LTE internet is not
 physically verified. Mobile-data toggle, Settings, Quick Settings and top-bar
 native integration are not complete or physically verified.** No Stage06 or

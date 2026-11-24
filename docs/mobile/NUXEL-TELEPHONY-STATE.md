@@ -1,5 +1,15 @@
 # Nuxel telephony implementation and evidence
 
+## LTE finalizer update — 2026-11-25
+
+No calls or telephony implementation were performed. The outstanding ABOX VoiceCall audio-route and IMS limitations remain unchanged.
+
+One bounded native NV-capable CP boot completed, but packet registration
+remains UNKNOWN. A separate verified production boot guard was installed;
+the running radio daemon and this subsystem were not changed. Normal reboot
+and LTE persistence remain unverified. Existing research below is retained.
+
+
 Consolidation source/evidence audit, 2026-11-24 CET. Native normal-CS call
 control exists. **No end-to-end call or two-way voice-audio acceptance is
 established.** LTE data does not establish VoLTE, IMS or circuit-switched

@@ -1,5 +1,45 @@
 # Nuxel LTE implementation and physical state
 
+## Latest execution update — 2026-11-25
+
+**LTE remains blocked at real PS registration.** This update supersedes the
+older audit's deployment/management statements below; historical protocol
+findings remain unchanged. See [production acceptance](NUXEL-LTE-PRODUCTION-ACCEPTANCE.md).
+
+USB SSH was physically verified on port 2022, carrier1, alongside ZeroTier SSH.
+One bounded CP initialization used the historical verified NV loader
+`530732cb…`, unchanged `/dev/sda16`, and the device-owned read-only EFS NV image.
+It returned ONLINE, exit0; native OES transferred 987 bytes and SIM became ready.
+A subsequent native session with the successful build17 daemon `6893af43…`
+again failed PS_REGIST_VERIFY: wire1 CS+PS, preferred mask11, raw PS7/UNKNOWN,
+CS NOT_REGISTERED, no attachment/IP. The old loader mismatch was real but
+is not the sole cause. Carrier availability or another cause is **unproven**.
+No data-call activation was accepted without registration; decoder unchanged.
+
+Production boot-layer correction (`f42c18ef`): a separate NV-capable loader at
+`/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.production.hw`, a root-only persistent
+JSON config, and `nuxel-cpbootd-production.service` pulled in before radiod.
+The guard verifies loader/firmware/manifest hashes and Samsung NV integrity,
+requires OFFLINE to boot, skips ONLINE without reset, refuses other states or
+existing FMT/RFS owners, and bounds a single attempt. EFS mount readiness is
+required. The original Stage04 loader/guard remain intact for recovery.
+Physical preflight and ONLINE no-op passed; **normal reboot not tested**.
+
+The running radio daemon/helper are unchanged. The complete startup radio
+readiness, session-bus readiness, persistent APN/data policy, NetworkManager
+integration, UI state, signal decoding, DNS ownership and normal reconnect
+remain unfinished. Owner's existing uncommitted implementation drafts were
+preserved, not deployed or represented as acceptance. Native NM currently
+reports rmnet0 as unmanaged PPP, and MM exposes no modem; a fake modem was not
+introduced. Existing Wi-Fi/USB/ZeroTier routing was preserved. Neither IPv4 nor
+IPv6 internet worked in this pass; only the historical IPv6 evidence stands.
+Reboot tests, UI toggles, transitions and benchmark remain blocked/unperformed.
+
+Detailed receipts and deployment/rollback procedure are in the updated
+[handover](DEEPSEEK-STAGE06-HANDOVER.md). No SMS or calls were performed.
+
+---
+
 Authoritative consolidation audit, 2026-11-24 CET. Read alongside
 [DeepSeek handover](DEEPSEEK-STAGE06-HANDOVER.md). This is a source/evidence
 assessment, **not a persistent-LTE acceptance certificate**.

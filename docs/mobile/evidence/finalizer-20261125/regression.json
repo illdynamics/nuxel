@@ -1,0 +1,89 @@
+{
+  "tested_tree": "35f673a9 plus preserved entry owner drafts; not all draft source is committed or deployed",
+  "checks": [
+    {
+      "name": "production startup unit tests",
+      "host_exit": 0,
+      "phone_exit": 0,
+      "tests": 9
+    },
+    {
+      "name": "physical production input preflight",
+      "exit": 0
+    },
+    {
+      "name": "physical ONLINE service no-op",
+      "exit": 0,
+      "note": "no reset, no reboot acceptance"
+    },
+    {
+      "name": "production repeat installation",
+      "exit": 0,
+      "backup": "/var/lib/nuxel/modem-production-install.Nj9ejQ"
+    },
+    {
+      "name": "systemd-analyze verify",
+      "exit": 0,
+      "log": "unit-verify.log",
+      "note": "existing unrelated unit warnings retained"
+    },
+    {
+      "name": "initial phone GCC native suite",
+      "exit": 1,
+      "log": "native-tests.log",
+      "note": "RFS test snprintf truncation; corrected in 483be956"
+    },
+    {
+      "name": "phone clang attempt",
+      "exit": 127,
+      "note": "clang not installed"
+    },
+    {
+      "name": "phone pytest attempt",
+      "exit": 1,
+      "note": "pytest not installed; CP tests subsequently run with stdlib runner"
+    },
+    {
+      "name": "phone CP loader mock tests",
+      "exit": 0,
+      "tests": 13,
+      "log": "cp-tests.log"
+    },
+    {
+      "name": "phone corrected GCC native suite including ASan/UBSan",
+      "exit": 1,
+      "log": "native-fixed-tests.log",
+      "note": "native unit tests and unsanitized 3000-case fuzz passed; sanitizer fails shadow-memory allocation before coverage; not a sanitizer pass"
+    },
+    {
+      "name": "host native full suite and ASan/UBSan",
+      "exit": 0,
+      "log": "host-native-tests.log",
+      "note": "unit suites, SMS/call offline tests, mobile data, 3000-case ordinary and sanitizer fuzz passed"
+    },
+    {
+      "name": "host pytest tests/stage06",
+      "exit": 0,
+      "tests": 6,
+      "note": "existing draft NativeRadio adapter tests only"
+    },
+    {
+      "name": "bash syntax installer scripts",
+      "exit": 0
+    },
+    {
+      "name": "git diff --check",
+      "exit": 0
+    }
+  ],
+  "not_verified": [
+    "NetworkManager integration",
+    "carrier DNS integration",
+    "route cleanup physical acceptance",
+    "automatic reconnect physical acceptance",
+    "Settings/QS/top bar physical state",
+    "normal reboot enabled/disabled",
+    "cellular-only HTTPS",
+    "LTE speed test"
+  ]
+}
