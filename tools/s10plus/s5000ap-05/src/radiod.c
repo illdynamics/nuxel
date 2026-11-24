@@ -29,6 +29,7 @@
 #include "fmt_tx.h"
 #include "data_session.h"
 #include "mbim_tx.h"
+#include "rfs_nv.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -531,16 +532,53 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
           ch, req.op, rfs_op_name(req.op), req.seq,
           req.special_delete_all_vis ? 1 : 0, req.total_len, req.param);
 
+    /* RECOVERED NV-TRANSACTION HANDLING (rfs_nv.h): for NV ops the request
+     * body carries [u8 op][u8 seq][u32 reserved][u32 offset][u32 length]
+     * [data...] (Nv::ProcessNvWrite @0x1d8550 dereferences offset @+6 and
+     * length @+10). Parse it read-only so the CP's (offset,length) become
+     * observable. We STILL fail closed: no storage write is ever performed
+     * here because the item->offset mapping is generated at runtime by cbd
+     * (not present on Nuxel) and a blind seek/write would risk the protected
+     * NV container. The offset/length are surfaced for diagnosis only. */
+    uint32_t nv_offset = 0, nv_length = 0;
+    bool nv_parsed = false;
+    if (req.op == RFS_OP_NV_READ || req.op == RFS_OP_WRITE_FILE ||
+        req.op == RFS_OP_NV_WRITE_ALL || req.op == RFS_OP_NV_RESTORE ||
+        req.op == RFS_OP_NV_BUFFERING || req.op == RFS_OP_NV_BUFFER_START_END) {
+        struct rfs_nv_item nvi;
+        enum rfs_nv_parse_result npr = rfs_nv_item_parse(data, len, &nvi);
+        if (npr == RFS_NV_PARSE_OK) {
+            nv_offset = nvi.offset;
+            nv_length = nvi.length;
+            nv_parsed = true;
+        }
+    }
+
+    diagf("rfs_nv", "\"ch\":%u,\"op\":%u,\"nv_parsed\":%d,"
+          "\"offset\":%u,\"length\":%u",
+          ch, req.op, nv_parsed ? 1 : 0, nv_offset, nv_length);
+
     /* POLICY GATE: build a fail-closed response. Only the no-op boot marker
-     * (DELETE_ALL_VIS) is answered with success. We never mention the path in
-     * logs (only the op name + special flag), never execute filesystem I/O. */
+     * (DELETE_ALL_VIS) is answered with success. NV ops remain refused
+     * (fail-closed) because the item->offset map is not recoverable without
+     * the vendor cbd runtime table; we never fabricate an offset or a success.
+     * We never mention the path in logs. */
     int32_t detail = 0;
     int res = rfs_response_policy(&req, &detail);
-    uint8_t resp[RFS_RESP_LEN];
-    size_t n = rfs_response_build(req.op, req.seq, res, detail, resp);
+    uint8_t resp[RFS_RESP_LEN + 1];
+    size_t n;
+    if (nv_parsed) {
+        /* NV transaction envelope is 15 bytes (recovered). */
+        n = rfs_nv_response_build(req.op, req.seq,
+                                  (uint8_t)(res == 0 ? 0u : 1u),
+                                  (uint32_t)(res == 0 ? 0 : detail), resp);
+    } else {
+        n = rfs_response_build(req.op, req.seq, res, detail, resp);
+    }
 
     /* Write the response to /dev/umts_rfs0. This is the AP->CP answer the CP
-     * is waiting for. Writes are bounded (14 bytes) and only performed here. */
+     * is waiting for. Writes are bounded (14/15 bytes) and only performed
+     * here. */
     enum nuxel_io_status st = nuxel_dev_write(&g.rfs.dev, resp, n);
     if (st == NUXEL_IO_OK) {
         g.stats.rfs_responses++;
