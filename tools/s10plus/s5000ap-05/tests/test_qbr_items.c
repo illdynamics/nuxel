@@ -22,16 +22,27 @@ int main(void)
     if (it) {
         CHECK(it->klass == QBR_CLASS_APN, "attach APN key class == APN");
         CHECK(strcmp(it->name, "NASU.LTE.ATTACH.APN.INFO") == 0, "name roundtrip");
+        /* Round-38: numeric NV item ID recovered from CP flash-item table. */
+        CHECK(it->nv_id == QBR_ATTACH_APN_NV_ID, "attach APN numeric NV id == 360");
+        CHECK(it->nv_id == 0x168u, "attach APN numeric NV id == 0x168");
+        CHECK(qbr_nv_id_known(it), "attach APN numeric NV id is known");
     }
 
     it = qbr_item_lookup(QBR_ATTACH_APN_DS_NAME);
     CHECK(it != NULL, "DS_NASU.LTE.ATTACH.APN.INFO must be in dictionary");
-    if (it) CHECK(it->klass == QBR_CLASS_APN, "DS attach APN key class == APN");
+    if (it) {
+        CHECK(it->klass == QBR_CLASS_APN, "DS attach APN key class == APN");
+        CHECK(it->nv_id == QBR_ATTACH_APN_NV_ID, "DS attach APN numeric NV id == 360");
+    }
 
     /* Config flag recovered from the flash-item table. */
     it = qbr_item_lookup("!SAEL3.Cfg.INTERNET_ATTACH_ENABLED");
     CHECK(it != NULL, "INTERNET_ATTACH_ENABLED key present");
-    if (it) CHECK(it->klass == QBR_CLASS_CONFIG, "flag class == CONFIG");
+    if (it) {
+        CHECK(it->klass == QBR_CLASS_CONFIG, "flag class == CONFIG");
+        CHECK(!qbr_nv_id_known(it), "INTERNET_ATTACH_ENABLED numeric id still unknown");
+        CHECK(it->nv_id == QBR_NV_ID_UNKNOWN, "unknown id == QBR_NV_ID_UNKNOWN");
+    }
 
     /* Protected RF/calibration item must be classified protected. */
     it = qbr_item_lookup("CAL.LTE.CAL_ITEM10");
