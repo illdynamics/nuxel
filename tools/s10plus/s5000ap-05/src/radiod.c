@@ -30,6 +30,7 @@
 #include "data_session.h"
 #include "mbim_tx.h"
 #include "rfs_nv.h"
+#include "efs_nv.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -505,6 +506,96 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
  * the NV/RFS init handshake toward SIM attach. We NEVER execute filesystem
  * operations and NEVER log the path or any identifier.
  */
+/*
+ * EFS-NV serving path (role of the vendor cbd / Nv::ProcessNVRead / Nv::ProcessNvWrite).
+ *
+ * The CP supplies (offset,length) in the RFS NV request — the AP NEVER invents
+ * them (round-40 independent disasm: the AP applies a bounded lseek/read/write
+ * into /mnt/vendor/efs/nv_data.bin using the CP's own offset+length). This
+ * helper performs exactly that, against the canonical image, with the existing
+ * bounded + fail-closed efs_nv backend (no blind seek, no offset fabrication).
+ *
+ * SAFETY:
+ *   - NV_READ  is served from a read-only open of the canonical image, bounded.
+ *   - NV_WRITE_ALL is served ONLY when the daemon was started with explicit
+ *     write authorization (--write-enable) AND the operator armed NV writes via
+ *     NUXEL_NV_WRITE=1. It refuses a write unless that is set (fail-closed),
+ *     recomputes the MD5 sidecar only after a full bounded write succeeds, and
+ *     never logs payload bytes / item ids.
+ */
+#define RADIOD_EFS_NV_PATH "/mnt/vendor/efs/nv_data.bin"
+
+static bool nv_write_armed(void)
+{
+    const char *p = getenv("NUXEL_NV_WRITE");
+    return p && (!strcasecmp(p, "1") || !strcasecmp(p, "on") ||
+                 !strcasecmp(p, "true") || !strcasecmp(p, "yes"));
+}
+
+/* Serve an RFS NV transaction. Returns true when a response was fully built in
+ * `out`/`out_cap` (and `*out_len` set); false means "answer fail-closed" and the
+ * caller falls back to the error envelope. Never fabricates offset/length. */
+static bool serve_rfs_nv(const struct rfs_nv_item *item, uint8_t op,
+                         uint8_t *out, size_t out_cap, size_t *out_len)
+{
+    struct stat st;
+    uint8_t *val = NULL;
+    int fd = -1;
+
+    if (!item || !item->valid) return false;
+
+    /* READ path: bounded read from the canonical image, then a 15+N read reply. */
+    if (op == RFS_OP_NV_READ) {
+        if (item->length > EFS_NV_MAX_VALUE) return false;
+        fd = open(RADIOD_EFS_NV_PATH, O_RDONLY | O_CLOEXEC);
+        if (fd < 0) return false;
+        if (fstat(fd, &st) != 0 || st.st_size <= 0) { close(fd); return false; }
+        val = malloc(item->length ? item->length : 1u);
+        if (!val) { close(fd); return false; }
+        enum efs_nv_result r = efs_nv_read_at(fd, item->offset, item->length,
+                                              (uint64_t)st.st_size, val);
+        close(fd);
+        if (r != EFS_NV_OK) { free(val); return false; }
+        size_t n = rfs_nv_read_response_build(item->seq, 0 /*OK*/,
+                                              item->offset, item->length, val,
+                                              out, out_cap);
+        free(val);
+        if (n == 0) return false;
+        *out_len = n;
+        return true;
+    }
+
+    /* WRITE path: only with explicit write auth + arm, offset/length from the CP,
+     * bounded + fsync, MD5 sidecar recomputed after success. */
+    if (op == RFS_OP_NV_WRITE_ALL) {
+        if (!g.write_enabled || !nv_write_armed()) return false;
+        if (item->length > EFS_NV_MAX_VALUE) return false;
+        fd = open(RADIOD_EFS_NV_PATH, O_RDWR | O_CLOEXEC);
+        if (fd < 0) return false;
+        if (fstat(fd, &st) != 0 || st.st_size <= 0) { close(fd); return false; }
+        enum efs_nv_result r = efs_nv_write_at(fd, item->offset, item->length,
+                                               (uint64_t)st.st_size,
+                                               item->data, true);
+        close(fd);
+        if (r != EFS_NV_OK) return false;
+        /* Recompute the MD5 sidecar exactly like Nv::UpdateChecksumFile. */
+        enum efs_nv_result m = efs_nv_update_checksum_sidecar(
+            RADIOD_EFS_NV_PATH, RADIOD_EFS_NV_PATH ".md5");
+        if (m != EFS_NV_OK) {
+            /* The write succeeded but the checksum sidecar did not. Report a
+             * genuine failure so the CP can retry; do not claim success. */
+            return false;
+        }
+        size_t n = rfs_nv_response_build(item->seq, 0 /*OK*/, item->offset,
+                                         item->length, out);
+        if (n == 0) return false;
+        *out_len = n;
+        return true;
+    }
+
+    return false;
+}
+
 static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
 {
     g.stats.raw_frames++;
@@ -525,8 +616,7 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
 
     /* For NV ops the `param` word is the NV item id (ProcessNVRead reads the
      * u32 at offset 6 as the item id and the u32 at offset 10 as the length).
-     * Surface it read-only so the CP's exact NV item IDs become observable;
-     * we STILL do not serve the read (fail-closed) and never log a path. */
+     * Surface it read-only so the CP's exact NV item IDs become observable. */
     diagf("rfs_rx", "\"ch\":%u,\"op\":%u,\"opname\":\"%s\",\"seq\":%u,"
           "\"special\":%d,\"rlen\":%u,\"item_id\":%u",
           ch, req.op, rfs_op_name(req.op), req.seq,
@@ -535,17 +625,15 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
     /* RECOVERED NV-TRANSACTION HANDLING (rfs_nv.h): for NV ops the request
      * body carries [u8 op][u8 seq][u32 reserved][u32 offset][u32 length]
      * [data...] (Nv::ProcessNvWrite @0x1d8550 dereferences offset @+6 and
-     * length @+10). Parse it read-only so the CP's (offset,length) become
-     * observable. We STILL fail closed: no storage write is ever performed
-     * here because the item->offset mapping is generated at runtime by cbd
-     * (not present on Nuxel) and a blind seek/write would risk the protected
-     * NV container. The offset/length are surfaced for diagnosis only. */
+     * length @+10). The offset/length are ALWAYS supplied by the CP; we never
+     * invent them. */
     uint32_t nv_offset = 0, nv_length = 0;
     bool nv_parsed = false;
+    struct rfs_nv_item nvi;
+    memset(&nvi, 0, sizeof nvi);
     if (req.op == RFS_OP_NV_READ || req.op == RFS_OP_WRITE_FILE ||
         req.op == RFS_OP_NV_WRITE_ALL || req.op == RFS_OP_NV_RESTORE ||
         req.op == RFS_OP_NV_BUFFERING || req.op == RFS_OP_NV_BUFFER_START_END) {
-        struct rfs_nv_item nvi;
         enum rfs_nv_parse_result npr = rfs_nv_item_parse(data, len, &nvi);
         if (npr == RFS_NV_PARSE_OK) {
             nv_offset = nvi.offset;
@@ -558,44 +646,61 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
           "\"offset\":%u,\"length\":%u",
           ch, req.op, nv_parsed ? 1 : 0, nv_offset, nv_length);
 
-    /* POLICY GATE: build a fail-closed response. Only the no-op boot marker
-     * (DELETE_ALL_VIS) is answered with success. NV ops remain refused
-     * (fail-closed) because the item->offset map is not recoverable without
-     * the vendor cbd runtime table; we never fabricate an offset or a success.
-     * We never mention the path in logs. */
+    /* POLICY GATE: default fail-closed. The no-op boot marker is answered with
+     * success; NV_READ/NV_WRITE_ALL are served against the canonical nv_data.bin
+     * using the CP-supplied (offset,length). A write additionally requires
+     * explicit write auth + NUXEL_NV_WRITE arm. Everything else stays refused. */
     int32_t detail = 0;
     int res = rfs_response_policy(&req, &detail);
-    uint8_t resp[RFS_RESP_LEN + 1];
-    size_t n;
-    if (nv_parsed) {
-        /* NV transaction envelope is 15 bytes (recovered, round-40 corrected):
-         * [u32 len][u8 type][u8 seq][u8 result][u32 offset][u32 written]. We
-         * build an ERROR response here (fail-closed): result=1, offset=0,
-         * written=0. The successful NV_READ/NV_WRITE serving path (with the
-         * real offset/length from the CP and EFS read/write) is gated behind
-         * the explicit provisioning arm below. */
-        n = rfs_nv_response_build(req.seq,
-                                  (uint8_t)(res == 0 ? 0u : 1u),
-                                  0u, 0u, resp);
-    } else {
-        n = rfs_response_build(req.op, req.seq, res, detail, resp);
+
+    /* Response bytes. NV read responses append read-back data (15+length); the
+     * vendor clamps length to 0x80000, so allocate up to that bound. */
+    uint8_t *nvbuf = NULL;
+    size_t nvcap = 0, n = 0;
+    bool served = false;
+
+    if (nv_parsed && (req.op == RFS_OP_NV_READ || req.op == RFS_OP_NV_WRITE_ALL)) {
+        size_t needed = (size_t)RFS_NV_RESP_LEN;
+        if (req.op == RFS_OP_NV_READ) {
+            if (nv_length > 0x80000u - RFS_NV_RESP_LEN) { needed = 0; }
+            else { needed += (size_t)nv_length; }
+        }
+        if (needed >= RFS_NV_RESP_LEN && needed <= (RFS_NV_RESP_LEN + 0x80000u)) {
+            nvbuf = malloc(needed);
+            if (nvbuf) {
+                nvcap = needed;
+                served = serve_rfs_nv(&nvi, req.op, nvbuf, nvcap, &n);
+            }
+        }
     }
 
+    /* Fallback envelope when serving was unavailable/unauthorized. */
+    uint8_t fallback[RFS_NV_RESP_LEN];
+    if (!(served && n > 0)) {
+        if (nv_parsed) {
+            n = rfs_nv_response_build(req.seq, 1u /*failure*/, 0u, 0u, fallback);
+        } else {
+            n = rfs_response_build(req.op, req.seq, res, detail, fallback);
+        }
+    }
+
+    const uint8_t *payload = (served && nvbuf) ? nvbuf : fallback;
+
     /* Write the response to /dev/umts_rfs0. This is the AP->CP answer the CP
-     * is waiting for. Writes are bounded (14/15 bytes) and only performed
-     * here. */
-    enum nuxel_io_status st = nuxel_dev_write(&g.rfs.dev, resp, n);
+     * is waiting for. Writes are bounded (14/15/15+N bytes). */
+    enum nuxel_io_status st = nuxel_dev_write(&g.rfs.dev, payload, n);
     if (st == NUXEL_IO_OK) {
         g.stats.rfs_responses++;
         g.stats.tx_frames++;
         g.rfs_handshake_done = true;
-        diagf("rfs_tx", "\"op\":%u,\"res\":%d,\"len\":%zu",
-              req.op, res, n);
+        diagf("rfs_tx", "\"op\":%u,\"res\":%d,\"len\":%zu,\"served\":%d",
+              req.op, served ? 0 : res, n, served ? 1 : 0);
     } else {
         g.stats.rfs_resp_errors++;
         diagf("rfs_tx_fail", "\"op\":%u,\"st\":\"%s\"",
               req.op, nuxel_io_status_name(st));
     }
+    free(nvbuf);
 }
 
 /* ------------------------------------------------------------------ */
