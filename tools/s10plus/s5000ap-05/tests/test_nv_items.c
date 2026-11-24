@@ -99,7 +99,8 @@ int main(void)
     CHECK(nv_provision_policy(true, true, false, true) == NV_PROV_ALLOW_BACKUP_READ, "write known+ok");
 
     /* 9. Round-38: recovered initial-attach APN item contract. */
-    CHECK(NV_ATTACH_APN_ITEM_ID == 0x168u, "attach APN NV item id == 360");
+    CHECK(NV_ATTACH_APN_ITEM_ID == 220u, "attach APN logical index == 220");
+    CHECK(NV_ATTACH_APN_VALUE_SIZE == 360u, "attach profile value size == 360");
     {
         struct nv_apn_record rec;
         CHECK(nv_apn_record_init(&rec, "internet", 8) == 0, "apn record init rc");

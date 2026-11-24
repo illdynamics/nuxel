@@ -2,34 +2,20 @@
  * nv_items.h — S5000AP CP-NV (QBR/.nv_core) record decoder + provisioning
  * policy. SPDX-License-Identifier: GPL-2.0-only
  *
- * Round-37 recovery, derived STRICTLY from the physical CP EFS snapshot
- * recovered from the live SM-G975F (/dev/sdd1 cpefs). This module is PURE
- * (no I/O, no write), so it can be host-fuzzed and unit-tested. It decodes
- * the on-disk NV record envelope and computes/verifies the MD5 integrity that
- * the vendor NvCore path actually applies (nv.log shows "MD5 on"/"MD5 off" toggles;
- * there is NO mandatory asymmetric signature — see reports/S5000AP-06-RESULTS).
+ * Historical bounded decoder for a candidate .nv_core envelope, plus checksum
+ * primitives. The candidate record interpretation below is NOT a verified EFS
+ * APN item schema and MUST NOT authorize provisioning or select a file offset.
+ * Actual compiled NV descriptors and their item indices are independently
+ * recovered by scripts/recover_cp_apn_metadata.py (DTK9 and EFUJ2).
  *
- * RECOVERED .nv_core record envelope (little-endian, observed at cpefs):
+ * Candidate envelope (little endian): size, name_ptr, type, aux_ptr, data.
+ * The parser is retained for offline fixtures only. Its ability to parse bytes
+ * does not prove these fields describe a real item in nv_data.bin/.nv_core.
  *
- *   [u32 size][u32 name_ptr][u32 type][u32 aux_ptr][ payload ... ]
- *
- *   size      = total record size in bytes (observed 0x01,0x46,0x47,0x60,
- *               0x7e,0x80). Variable-length; never process OOB.
- *   name_ptr  = CP runtime RAM address of the item-name string (0x4160xxxx
- *               data/BSS or 0x40fcxxxx text). These are the CP's register
- *               table pointers, resolved only at CP boot.
- *   type      = small data-type/class code (observed 0x04..0x12).
- *   aux_ptr   = secondary pointer (0x4177xxxx / 0x40fcxxxx) or 0.
- *   payload   = size-(fixed header) bytes of item value.
- *
- * TRUTH CONTRACT (rounds 25-36):
- *  - Item NAMES are recovered (qbr_items.h). The numeric item-ID used by
- *    pal_Security_NV_ITEM_{Read,Write}("Item %d") is a SEPARATE proprietary
- *    cbd/flash-item key and is NOT recoverable from name ordering/offsets.
- *  - This module does NOT fabricate a numeric item ID. A provisioning attempt
- *    that requires an unknown numeric ID is classified DENY (fail-closed).
- *  - No protected NV (RF/calibration/IMEI) may ever be rewritten.
- *  - MD5 verification here proves self-consistency, NOT authenticity.
+ * nv_md5_hex is plain RFC 1321 MD5. Samsung's nv_data.bin.md5 is instead
+ * nv_vendor_md5_hex: MD5(image || "Samsung_Android_RIL"). Neither checksum
+ * authenticates an item or proves that an APN-only write is authorized.
+ * Protected identity/calibration items must never be rewritten.
  */
 #ifndef NUXEL_NV_ITEMS_H
 #define NUXEL_NV_ITEMS_H
@@ -77,6 +63,8 @@ const char *nv_name_ptr_span(uint32_t name_ptr);
 /* Returns the 32-char lowercase hex MD5 of buf[0..len) into out[33].
  * Returns 0 on success, -1 on NULL out. */
 int nv_md5_hex(const uint8_t *data, size_t len, char out[33]);
+/* Samsung sidecar checksum: MD5(image || "Samsung_Android_RIL"). */
+int nv_vendor_md5_hex(const uint8_t *data, size_t len, char out[33]);
 
 /* Compare a stored 32-hex MD5 string against the computed MD5 of data.
  * Returns 0 (match), 1 (mismatch), -1 (malformed stored hex). */
@@ -105,18 +93,11 @@ enum nv_provision_decision nv_provision_policy(bool write_requested,
 
 /* --- Round-38: recovered initial-attach APN item contract --- */
 
-/* Recovered type of NV item 360 (NASU.LTE.ATTACH.APN.INFO):
- *   type_desc = "u8" (byte string), numeric_id = 0x168 (360).
- * The item VALUE is the APN name as a NUL-terminated byte string
- * (e.g. "internet"). This is the SEMANTIC contract only.
- *
- * The exact on-disk QBR serialization (length prefix / record framing inside
- * nv_data.bin) is intentionally NOT reconstructed here: it is gated by the
- * fail-closed provisioning policy (item_known now true, but the on-disk framing
- * and per-item offset must still be recovered from a known-good reference or
- * the CP QBR item metadata before any write is authorized).
- */
-#define NV_ATTACH_APN_ITEM_ID    0x168u  /* 360, recovered round-38 */
+/* Logical CP index 220; value size 360. The value contains a 324-byte profile,
+ * NOT a plaintext APN string at byte zero. See qbr_items.h and the protocol
+ * recovery document. A physical file offset is still required separately. */
+#define NV_ATTACH_APN_ITEM_ID    220u
+#define NV_ATTACH_APN_VALUE_SIZE 360u
 #define NV_ATTACH_APN_NAME_MAX   128u
 
 struct nv_apn_record {
@@ -125,8 +106,8 @@ struct nv_apn_record {
     bool     valid;                        /* apn is non-empty, length in range */
 };
 
-/* Build a validated APN record from a NUL-terminated or length-bounded APN
- * string. Pure; never writes. Returns 0 on success, -1 on NULL/oversize/empty. */
+/* Validate an APN string only. This is NOT an encoder for the 360-byte NV
+ * value, and its output must never be written at an item's base offset. */
 int nv_apn_record_init(struct nv_apn_record *rec, const char *apn, size_t apn_len);
 
 #ifdef __cplusplus

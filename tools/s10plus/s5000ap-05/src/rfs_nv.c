@@ -144,7 +144,9 @@ enum rfs_nv_provision_decision rfs_nv_provision_policy(
     if (!have_offset || length_limit == 0) return RFS_NV_DENY_NO_OFFSET;
     if (apn_len > length_limit) return RFS_NV_DENY_LENGTH;
 
-    if (out_offset) *out_offset = authenticated_offset;
-    if (out_length) *out_length = (uint32_t)apn_len;
-    return RFS_NV_ALLOW;
+    (void)authenticated_offset;
+    /* CP PMPM stores a structured profile. The former plaintext-at-base
+     * permission could corrupt its CID/protocol/auth fields. This API cannot
+     * authenticate the record layout or preserve the other 352 bytes. */
+    return RFS_NV_DENY_SCHEMA;
 }

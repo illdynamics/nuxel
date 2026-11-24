@@ -35,16 +35,38 @@ static int make_tmp(uint8_t **out, size_t *sz)
 
 int main(void)
 {
-    /* --- MD5 correctness (RFC 1321 vectors) --- */
+    /* --- Vendor checksum vectors, independently generated with hashlib. --- */
     {
         char h[33];
         efs_nv_md5_hex((const uint8_t*)"", 0, h);
-        CHECK(strcmp(h, "d41d8cd98f00b204e9800998ecf8427e") == 0);
+        CHECK(strcmp(h, "2d44b1b4d8b512c006e8dfa559eaad1a") == 0);
         efs_nv_md5_hex((const uint8_t*)"abc", 3, h);
-        CHECK(strcmp(h, "900150983cd24fb0d6963f7d28e17f72") == 0);
-        CHECK(efs_nv_md5_verify((const uint8_t*)"abc", 3, "900150983cd24fb0d6963f7d28e17f72") == 0);
+        CHECK(strcmp(h, "8b558dbf8cefc62e27d58a07e9c6ef2b") == 0);
+        CHECK(efs_nv_md5_verify((const uint8_t*)"abc", 3, "8b558dbf8cefc62e27d58a07e9c6ef2b") == 0);
         CHECK(efs_nv_md5_verify((const uint8_t*)"abc", 3, "00000000000000000000000000000000") == 1);
         CHECK(efs_nv_md5_verify((const uint8_t*)"abc", 3, "zzz") == -1);
+    }
+
+    /* Suffix and MD5 padding straddle both 64-byte block boundaries. */
+    {
+        static const struct { size_t len; const char *hash; } vectors[] = {
+            {36, "e6eaad646c68a9307c398b0c08138bd3"},
+            {37, "23eccc74bc08b2e5a19b361c4a21cd6f"},
+            {44, "28be8bf85665874bfe5b8791c6358391"},
+            {45, "0aed06e9834f4d7a059ea618ca608f8a"},
+            {63, "b3cd3b2c12936bc89b3a36aef9d41c61"},
+            {64, "7bf43de43eeec29b7ed9e82dc5826f74"},
+            {65, "bca7a4970e05d158bce2fe54e4da5d02"},
+            {1048576, "7ba6a80d263cbee33643a8e6806fd25c"}
+        };
+        uint8_t *fixture = malloc(1048576);
+        CHECK(fixture != NULL);
+        memset(fixture, 0xcc, 1048576);
+        for (size_t i=0; i<sizeof vectors / sizeof vectors[0]; i++)
+            CHECK(efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0);
+        fixture[0] ^= 1;
+        CHECK(efs_nv_md5_verify(fixture, 1048576, vectors[7].hash) == 1);
+        free(fixture);
     }
 
     /* --- bounded write + read round-trip at CP-supplied offset --- */
@@ -82,7 +104,8 @@ int main(void)
         CHECK(efs_nv_update_checksum_sidecar(path, md5p) == EFS_NV_OK);
         /* read back sidecar and verify against an independently computed MD5 */
         char hex[33];
-        efs_nv_md5_hex(data, sizeof data, hex);
+        CHECK(efs_nv_md5_hex(data, sizeof data, hex) == 0);
+        CHECK(strcmp(hex, "ccc0536e0f7561ba76afd12234614dae") == 0);
         FILE *m = fopen(md5p, "r");
         char stored[33] = {0};
         CHECK(m != NULL);

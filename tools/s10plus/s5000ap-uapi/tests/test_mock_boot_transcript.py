@@ -10,6 +10,7 @@ physical ONLINE. No /dev/umts_*, no block device, no RF, no ioctl are touched
 here — the mock backend is pure in-memory state.
 """
 import json
+import hashlib
 import os
 import struct
 import subprocess
@@ -204,3 +205,50 @@ def test_toc_missing_moffset_fails_closed():
         r = run(["--really-boot", "--mock", "--firmware", p_path])
         assert r.returncode != 0
         assert "no m_offset for TOC verification" in r.stderr
+
+
+def nv_fixture(td, data=b"\xcc" * 64):
+    fx = build_fixture(td)
+    # NV b_offset is zero in the real TOC: it names a separate EFS input.
+    with open(fx, "r+b") as f:
+        f.seek(4 * 32 + 12)
+        f.write(struct.pack("<I", 0))
+    nv = os.path.join(td, "nv.bin")
+    md5 = nv + ".md5"
+    with open(nv, "wb") as f:
+        f.write(data)
+    with open(md5, "w") as f:
+        f.write(hashlib.md5(data + b"Samsung_Android_RIL").hexdigest())
+    return ["--really-boot", "--mock", "--firmware", fx, "--nv-image", nv, "--nv-md5", md5]
+
+
+def test_nv_snapshot_is_verified_and_downloaded_to_toc_address():
+    with tempfile.TemporaryDirectory() as td:
+        p = run(nv_fixture(td))
+        assert p.returncode == 0, p.stdout + p.stderr
+        events = [json.loads(line) for line in p.stdout.splitlines()]
+        nv = next(e for e in events if "nv_download" in e)
+        assert nv == {"nv_download": "complete", "bytes": 64, "m_offset": 0x5600000}
+        assert events[0]["nv_preflight"] == "verified"
+        assert events[-1]["verdict"] == "online"
+
+
+def test_nv_corruption_rejected_before_cp_reset_or_download():
+    with tempfile.TemporaryDirectory() as td:
+        args = nv_fixture(td)
+        with open(os.path.join(td, "nv.bin"), "r+b") as f:
+            f.write(b"\0")
+        p = run(args)
+        assert p.returncode != 0 and "nv-preflight" in p.stdout
+        assert '"stage"' not in p.stdout
+
+
+def test_nv_length_mismatch_and_plain_md5_fail_closed():
+    with tempfile.TemporaryDirectory() as td:
+        p = run(nv_fixture(td, b"\xcc" * 63))
+        assert p.returncode != 0 and '"stage"' not in p.stdout
+        args = nv_fixture(td)
+        with open(os.path.join(td, "nv.bin.md5"), "w") as f:
+            f.write(hashlib.md5(b"\xcc" * 64).hexdigest())
+        p = run(args)
+        assert p.returncode != 0 and '"stage"' not in p.stdout

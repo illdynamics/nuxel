@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+#ifndef NUXEL_FMT_RX_H
+#define NUXEL_FMT_RX_H
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#define FMT_RX_GEN_OK 0x8000u
+#define FMT_RX_GEN_UNSUPPORTED 0x8003u
+struct fmt_rx_gen { uint8_t main, sub, type; uint16_t result; };
+bool fmt_rx_gen(const uint8_t *p, size_t n, struct fmt_rx_gen *out);
+/* Recognize the two network prefixes relevant to this device investigation.
+ * Never copy or return the subscriber part of an IMSI. Empty on unknown. */
+bool fmt_rx_sim_network(const uint8_t *p, size_t n, char plmn[6]);
+/* ConvertLockType @0x343300 and GenerateSimStatus @0x315be0. */
+bool fmt_rx_sim_ready(const uint8_t *p, size_t n);
+/* Software version field only; never return equipment/subscriber identifiers. */
+bool fmt_rx_baseband(const uint8_t *p, size_t n, char version[33]);
+
+/* IpcRxNetRegState's wire enum is NOT the public RegState enum. */
+uint8_t fmt_rx_reg_state(uint8_t wire);
+const char *fmt_rx_reg_name(uint8_t state);
+bool fmt_rx_registered(uint8_t state);
+struct fmt_rx_registration {
+    uint8_t rat_wire, domain, state_wire, state, reject_cause;
+};
+/* IpcRxNetRegState @0x339818: reject cause is payload[10], not [3]. */
+bool fmt_rx_registration(const uint8_t *p, size_t n, struct fmt_rx_registration *out);
+
+/* NET_REGIST's RAT is a Samsung wire enum, not the Android RadioTechnology. */
+uint8_t fmt_rx_rat(uint8_t wire);
+const char *fmt_rx_rat_name(uint8_t wire);
+
+/* PDP list: count followed by count pairs {CID, state}. */
+bool fmt_rx_pdp_state(const uint8_t *p, size_t n, uint8_t cid, uint8_t *state);
+
+struct fmt_rx_ip {
+    uint8_t cid;
+    uint16_t flags;
+    bool ipv4_valid, ipv6_valid;
+    uint8_t ipv4[4], dns4[2][4], gateway4[4], prefix4;
+    uint8_t ipv6[16], dns6[2][16];
+    uint16_t mtu;
+};
+/* Bounds-checked IpcRxIpConfiguration @0x321620, addresses in network order. */
+bool fmt_rx_ip(const uint8_t *p, size_t n, struct fmt_rx_ip *out);
+#endif

@@ -22,9 +22,10 @@ int main(void)
     if (it) {
         CHECK(it->klass == QBR_CLASS_APN, "attach APN key class == APN");
         CHECK(strcmp(it->name, "NASU.LTE.ATTACH.APN.INFO") == 0, "name roundtrip");
-        /* Round-38: numeric NV item ID recovered from CP flash-item table. */
-        CHECK(it->nv_id == QBR_ATTACH_APN_NV_ID, "attach APN numeric NV id == 360");
-        CHECK(it->nv_id == 0x168u, "attach APN numeric NV id == 0x168");
+        /* (0x4014e1d4 - 0x4014d0a4) / 20, independently from CP indexing. */
+        CHECK(it->nv_id == QBR_ATTACH_APN_NV_ID, "attach APN index matches constant");
+        CHECK(it->nv_id == (0x4014e1d4u - 0x4014d0a4u)/20u, "attach APN table index 220");
+        CHECK(it->nv_id != 360u && QBR_ATTACH_APN_VALUE_SIZE == 360u, "size is not item id");
         CHECK(qbr_nv_id_known(it), "attach APN numeric NV id is known");
     }
 
@@ -32,7 +33,8 @@ int main(void)
     CHECK(it != NULL, "DS_NASU.LTE.ATTACH.APN.INFO must be in dictionary");
     if (it) {
         CHECK(it->klass == QBR_CLASS_APN, "DS attach APN key class == APN");
-        CHECK(it->nv_id == QBR_ATTACH_APN_NV_ID, "DS attach APN numeric NV id == 360");
+        CHECK(it->nv_id == (0x4014e224u - 0x4014d0a4u)/20u, "DS profile has its own index 224");
+        CHECK(it->nv_id != QBR_ATTACH_APN_NV_ID, "SIM slots do not alias");
     }
 
     /* Config flag recovered from the flash-item table. */
@@ -48,6 +50,8 @@ int main(void)
     it = qbr_item_lookup("CAL.LTE.CAL_ITEM10");
     CHECK(it != NULL, "CAL.LTE.CAL_ITEM10 present (for deny classification)");
     if (it) CHECK(qbr_class_protected(it->klass), "RF/cal item is protected");
+    it = qbr_item_lookup("NASU.LAST.INSERTED.IMSI");
+    CHECK(it && qbr_class_protected(it->klass), "subscriber identity is protected");
 
     /* Fail-closed: unknown / fabricated names are not addressable. */
     CHECK(qbr_item_lookup("") == NULL, "empty name -> NULL");

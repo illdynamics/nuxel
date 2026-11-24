@@ -13,22 +13,15 @@
  * diagnostics a typed, length-checked way to NAME an item without fabricating
  * a numeric NV ID or an undocumented on-disk encoding.
  *
- * TRUTH CONTRACT (round-38 update):
- *  - Numeric QBR item IDs WERE recovered this round from the CP flash-item
- *    descriptor table in modem.bin MAIN. Each entry is 16 bytes:
- *        [u32 type_desc_ptr][u32 name_ptr][u32 type_code][u32 numeric_id]
- *    The type_desc_ptr 0x4041f54c points at the C-type-name pool ("bool",
- *    "char", "Lac_t", ...). The numeric_id in field 4 is the NV item ID that
- *    pal_Security_NV_ITEM_{Read,Write}("Item %d") accepts.
- *  - QBR_CLASS_APN      "NASU.LTE.ATTACH.APN.INFO"    -> ID 360 (0x168)
- *                        "DS_NASU.LTE.ATTACH.APN.INFO" -> ID 360 (0x168)
- *  - PROVENANCE (two independent data points in the CP firmware):
- *      1) Flash-item descriptor table MAIN@0x13e1d0 (abs 0x140430):
- *         name_ptr 0x404793fc = "NASU.LTE.ATTACH.APN.INFO", type_code=1,
- *         numeric_id=0x168=360.
- *      2) Flash-item descriptor table MAIN@0x13e220 (abs 0x140480):
- *         name_ptr 0x404793e0 = "DS_NASU.LTE.ATTACH.APN.INFO", type_code=1,
- *         numeric_id=0x168=360 (same ID for the dual-sim variant).
+ * Corrected Round-43 contract: the table at MAIN VA 0x4014d0a4 has TWENTY
+ * bytes per descriptor: name pointer, element size, element count, flags,
+ * type-name pointer (five LE u32s). The previous 16-byte interpretation was
+ * wrong: 360 is the record SIZE, not its ID. The hash-table initializer at
+ * 0x40c92bf2 records the descriptor index; lookup at 0x40c92bb2 returns it.
+ * Read at 0x40c92e76 and GetSize at 0x40c92ee2 index the table with index*20.
+ * NASU.LTE.ATTACH.APN.INFO: descriptor 0x4014e1d4, index 220, 1*360 bytes.
+ * DS_NASU.LTE.ATTACH.APN.INFO: 0x4014e224, index 224, 1*360 bytes.
+ * These are logical CP indices, never physical offsets in nv_data.bin.
  *  - A "PROTECTED" item is RF/calibration/IMEI-adjacent and is deny-listed
  *    unconditionally. Its numeric ID is recorded ONLY for deny classification.
  *  - No function here may be used to justify a write to an unknown NV ID.
@@ -71,12 +64,10 @@ struct qbr_item {
 #define QBR_ATTACH_APN_NAME    "NASU.LTE.ATTACH.APN.INFO"
 #define QBR_ATTACH_APN_DS_NAME "DS_NASU.LTE.ATTACH.APN.INFO"
 
-/* The RECOVERED numeric NV item ID for the LTE initial-attach APN item.
- * Recovered (round-38) from the CP flash-item descriptor table in modem.bin
- * MAIN: NASU.LTE.ATTACH.APN.INFO -> 0x168 (360); DS variant -> same 0x168.
- * This is the integer accepted by pal_Security_NV_ITEM_{Read,Write}("Item %d").
- */
-#define QBR_ATTACH_APN_NV_ID 0x168u  /* 360 */
+/* Logical indices in the exact DTK9 CP descriptor table. */
+#define QBR_ATTACH_APN_NV_ID 220u
+#define QBR_ATTACH_APN_DS_NV_ID 224u
+#define QBR_ATTACH_APN_VALUE_SIZE 360u
 
 /* Look up a recovered item by name. Returns NULL when the name is not part of
  * the recovered dictionary (fail-closed: unknown names are NOT addressable). */

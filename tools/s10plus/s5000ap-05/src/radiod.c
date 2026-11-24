@@ -27,11 +27,14 @@
 #include "ipc41_cmdmap.h"
 #include "transport.h"
 #include "fmt_tx.h"
+#include "fmt_rx.h"
 #include "data_session.h"
 #include "mbim_tx.h"
 #include "rfs_nv.h"
 #include "efs_nv.h"
+#include "oes_cert.h"
 
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -58,7 +61,6 @@ static bool mbim_attach_enabled(void);
 #define FMT_NODE    "/dev/umts_ipc0"
 #define RFS_NODE    "/dev/umts_rfs0"
 #define MODEM_STATE_SYSFS "/sys/devices/platform/10000.mif_pdata/modem_state"
-#define SIM_DETECT_SYSFS  "/sys/devices/platform/10000.mif_pdata/sim/ds_detect"
 
 /* IOCTL_MODEM_STATUS (legacy sipc ioctl, pinned) */
 #define IOCTL_MODEM_STATUS 0x6F27
@@ -109,6 +111,20 @@ struct radiod_ctx {
     bool     sim_present;
     /* Stage-06 native data-path: bounded, response-correlated driver. */
     struct data_session_ctx dsc;
+    struct fmt_rx_ip ip;
+    bool ip_received;
+    struct fmt_rx_registration cs_registration;
+    bool cs_registration_valid;
+    uint8_t service_domain_wire;
+    bool service_domain_valid;
+    uint64_t status_next_ms;
+    unsigned status_query;
+    uint8_t sim_lock_type, sim_lock_key;
+    bool sim_lock_valid;
+    char home_plmn[6];
+    char baseband[33];
+    bool radio_state_valid, radio_on;
+    unsigned oes_requests;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
     bool     wrote_phase;       /* last phase already emitted a frame */
     bool     rfs_handshake_done;/* RFS boot handshake answered (CP advanced) */
@@ -151,9 +167,7 @@ static uint64_t wall_ms(void)
 static void diag(const char *event, const char *detail)
 {
     fprintf(stderr, "{\"ts\":%llu,\"svc\":\"nuxel-radiod\",\"event\":\"%s\"%s%s}\n",
-            (unsigned long long)wall_ms(), event,
-            detail ? ",\"detail\":\"" : "", detail ? detail : "");
-    fputc('\n', stderr);
+            (unsigned long long)wall_ms(), event, detail ? "," : "", detail ? detail : "");
 }
 static void diagf(const char *event, const char *fmt, ...)
 {
@@ -243,11 +257,9 @@ static void refresh_cp_state(void)
 
 static void refresh_sim_state(void)
 {
-    char s[8] = "";
-    if (read_text_file(SIM_DETECT_SYSFS, s, sizeof s) == 0)
-        g.sim_present = (s[0] == '1');
-    else
-        g.sim_present = false;
+    /* ds_detect describes board dual-SIM configuration, never card presence.
+     * 0x80 maps to LockType 16 / absent in vendor GenerateSimStatus. */
+    g.sim_present = g.cp_online && g.sim_lock_valid && g.sim_lock_type != 0x80;
 }
 
 /* ------------------------------------------------------------------ */
@@ -397,18 +409,73 @@ static void resolve_pending(const struct nuxel_sipc_fmt *f)
     }
 }
 
+static bool radiod_write_fmt(const struct fmt_tx_frame *f);
+
+static void respond_oes_certificate(void)
+{
+    if (!g.write_enabled || !g.cp_online || g.oes_requests++ >= 3) return;
+    struct oes_cert cert;
+    int rc = oes_cert_load("/mnt/vendor/efs/DAK/sakeccert0.der", &cert);
+    struct fmt_tx_frame reply;
+    if (!fmt_tx_oes_confirm(&reply) || !radiod_write_fmt(&reply)) {
+        oes_cert_free(&cert); diag("oes_confirm_write_failed", NULL); return;
+    }
+    if (rc) {
+        if (fmt_tx_oes_certificate(&reply, 1, 0, NULL, 0))
+            (void)radiod_write_fmt(&reply);
+        diagf("oes_certificate_unavailable", "\"error\":%d", rc);
+        return;
+    }
+    size_t sent = 0;
+    uint8_t index = 0;
+    while (sent < cert.len) {
+        size_t n = cert.len - sent;
+        if (n > FMT_TX_OES_CERT_CHUNK) n = FMT_TX_OES_CERT_CHUNK;
+        if (!fmt_tx_oes_certificate(&reply, 0, index, cert.data+sent, n) ||
+            !radiod_write_fmt(&reply)) break;
+        sent += n; index++;
+    }
+    diagf("oes_certificate_transfer", "\"bytes\":%u,\"sent\":%u,\"complete\":%s",
+          (unsigned)cert.len, (unsigned)sent, sent == cert.len ? "true" : "false");
+    oes_cert_free(&cert);
+}
+
 static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
 {
     const struct nuxel_fmt_observation *ob = find_fmt_obs(f->main_cmd, f->sub_cmd, f->cmd_type);
     record_obs(ch, f, ob != NULL);
     resolve_pending(f);
+    /* Reply only to the CP's actual startup request. Transfer the existing
+     * device certificate unchanged, as OesManager::OnOesDrkCpInfo does. */
+    if (f->main_cmd == 38 && f->sub_cmd == 1 && f->cmd_type == 1 && f->payload_len == 4)
+        respond_oes_certificate();
 
-    /* SIM readiness gate: SEC_PIN_STATUS payload == 0x0000 means READY (the
-     * CP-notified state, protocol-backed — NOT static ds_detect). */
+    /* Cache the CP's lock indication, including transitions away from unlocked.
+     * IpcRxSecPinStatus/ConvertLockType map 0 and 0x82 to no lock. */
     if (f->main_cmd == IPC41_MAIN_SEC && f->sub_cmd == IPC41_SEC_PIN_STATUS &&
-        f->payload_len >= 2 && f->payload[0] == 0x00 && f->payload[1] == 0x00) {
-        if (!g.sim_ready_seen) diag("sim_ready", "\"SEC_PIN_STATUS\":\"READY\"");
-        g.sim_ready_seen = true;
+        f->payload_len == 2) {
+        g.sim_lock_type = f->payload[0]; g.sim_lock_key = f->payload[1];
+        g.sim_lock_valid = true;
+        g.sim_ready_seen = fmt_rx_sim_ready(f->payload, f->payload_len);
+        refresh_sim_state();
+        diagf("sim_lock_state", "\"type\":%u,\"key\":%u,\"unlocked\":%s",
+              g.sim_lock_type, g.sim_lock_key, g.sim_ready_seen ? "true" : "false");
+    }
+    if (f->main_cmd == 10 && f->sub_cmd == 2 && f->cmd_type == IPC41_TYPE_RESPONSE) {
+        if (fmt_rx_sim_network(f->payload, f->payload_len, g.home_plmn))
+            diagf("sim_home_network", "\"plmn\":\"%s\"", g.home_plmn);
+        else diag("sim_home_network", "\"plmn\":\"unknown\"");
+    }
+    if (f->main_cmd == 10 && f->sub_cmd == 1 && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        fmt_rx_baseband(f->payload, f->payload_len, g.baseband))
+        diagf("baseband_version", "\"version\":\"%s\"", g.baseband);
+    /* IpcRxPwrState @0x3400e8, payload[0] 2..4 -> ON, 1 -> OFF. */
+    if (f->main_cmd == 1 && f->sub_cmd == 7 && f->cmd_type == IPC41_TYPE_NOTIFICATION &&
+        f->payload_len >= 1 && f->payload[0] >= 1 && f->payload[0] <= 4) {
+        g.radio_state_valid = true; g.radio_on = f->payload[0] >= 2;
+        diagf("radio_power_state", "\"on\":%s,\"wire_state\":%u",
+              g.radio_on ? "true" : "false", f->payload[0]);
+        emit_state_changed("RadioState", g.radio_on ? "on" : "off");
     }
 
     /* Feed the Stage-06 data-session FSM. We now honour the REAL decoded
@@ -416,8 +483,8 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
      * GPRS_PDP_CONTEXT state). A generic GEN echo with non-zero result, or a
      * "not connected" call-state, is treated as a FAILURE and blocks advance.
      * This is the core Stage-06 correction: we no longer advance on a bare ACK. */
+    ds_feedback_kind k = decode_gating_response(f);
     if (g.data_path_armed && g.dsc.phase != DS_IDLE) {
-        ds_feedback_kind k = decode_gating_response(f);
         if (k == DS_FEEDBACK_OK) {
             /* Hold PS_ATTACH for a short dwell so the asynchronous PS attach
              * completes before SetPdpContext(ACTIVATE). Bounded: only applies to
@@ -467,6 +534,7 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         (f->main_cmd == IPC41_MAIN_NET &&
          (f->sub_cmd == IPC41_NET_REGIST ||
           f->sub_cmd == IPC41_NET_SERVING_NETWORK ||
+          f->sub_cmd == IPC41_NET_MODE_SEL ||
           f->sub_cmd == IPC41_NET_POWERON_ATTACH)) ||
         (f->main_cmd == IPC41_MAIN_GPRS &&
          (f->sub_cmd == IPC41_GPRS_PIN_CTRL ||
@@ -712,7 +780,7 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
 static bool radiod_write_fmt(const struct fmt_tx_frame *f)
 {
     if (!g.write_enabled) {
-        diag("fmt_tx_refused", "\"write capability disabled\"");
+        diag("fmt_tx_refused", "\"reason\":\"write capability disabled\"");
         return false;
     }
     if (!f || f->len < 7 || f->len > FMT_TX_MAX_FRAME) return false;
@@ -750,6 +818,27 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
 {
     uint8_t phase = (uint8_t)g.dsc.phase;
 
+    if (f->main_cmd == 8 && f->sub_cmd == 8 && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->payload_len == 1 && f->payload[0] >= 1 && f->payload[0] <= 3) {
+        g.service_domain_wire = f->payload[0]; g.service_domain_valid = true;
+        diagf("service_domain_readback", "\"wire\":%u,\"packet_service_enabled\":%s",
+              f->payload[0], f->payload[0] == 2 ? "false" : "true");
+        if (phase == DS_VERIFY_SERVICE_DOMAIN)
+            return f->payload[0] == 1 ? DS_FEEDBACK_OK : DS_FEEDBACK_FAIL;
+        return DS_FEEDBACK_IGNORE;
+    }
+
+    if (f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_MODE_SEL &&
+        f->cmd_type == IPC41_TYPE_RESPONSE && f->payload_len == 1) {
+        g.dsc.last_net_mode = f->payload[0]; g.dsc.net_mode_valid = true;
+        diagf("network_mode_readback", "\"mask\":%u", f->payload[0]);
+        if (phase == DS_VERIFY_NET_MODE) {
+            uint8_t wanted = g.dsc.preferred_net == FMT_TX_PREFERRED_NET_LTE_ONLY ? 8 : 11;
+            return f->payload[0] == wanted ? DS_FEEDBACK_OK : DS_FEEDBACK_FAIL;
+        }
+        return DS_FEEDBACK_IGNORE;
+    }
+
     /* ---- MBIM raw-IPC response (main=0x16 sub=0x0c) ----
      * This is the CP's reply to the recovered MbimAdaptor::MakeSetMsLteAttachConfig
      * / IpcTxRawIpc frame. It is an authoritative command acknowledgement for
@@ -763,73 +852,56 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         return DS_FEEDBACK_OK;
     }
 
-    /* ---- GEN echo (main=128) record result byte as diagnostic ---- */
-    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
-        f->payload_len >= 4) {
-        /* payload = [echo_main][echo_sub][echo_type][?][?]. We record the 4th
-         * byte as a RESULT indicator for diagnostics, but a GEN echo is only a
-         * COMMAND-ACCEPTED signal — it is NOT proof of operation completion.
-         * Per the Stage-06 truth contract we never treat it as the authority
-         * for a data-session transition. The bearer outcome is decided by
-         * GPRS_CALL_STATUS (DATA_CALL) and GPRS_PDP_CONTEXT (GET_PDP_LIST). */
-        uint8_t result = f->payload[3];
-        g.dsc.last_gen_result = result;
-        g.dsc.gen_result_valid = true;
-
-        /* FAIL-CLOSED GEN result semantics (recovered from IpcRxGeneral):
-         * the CP echoes the originating (main,sub) in payload[0..1] and the
-         * GENERAL result code in payload[3]. 0 == success; ANY nonzero value
-         * is a command rejection ("Not Success Response"). Advancing the FSM
-         * on a nonzero result violates the truth contract: it would treat a
-         * rejected prerequisite (e.g. profile sync / PDP define) as satisfied.
-         *
-         * Only DS_DATA_CALL / DS_GET_PDP_LIST are driven by their dedicated
-         * state notifications (GPRS_CALL_STATUS / GPRS_PDP_CONTEXT), so a GEN
-         * echo for those phases is informational only. */
-        if (phase == DS_DATA_CALL || phase == DS_GET_PDP_LIST) {
-            if (result != DS_GEN_RESULT_OK)
-                diagf("data_session_gen_warn",
-                      "\"phase\":\"%s\",\"gen_result\":%u",
-                      ds_phase_name(phase), result);
-            return DS_FEEDBACK_IGNORE;   /* bearer decided by dedicated notif */
+    /* GEN is a five-byte payload with a 16-bit LE result. Only the
+     * outstanding command's complete origin tuple may advance this phase. */
+    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE) {
+        enum ds_gen_status r = ds_gen_response(&g.dsc, f->payload, f->payload_len);
+        if (r == DS_GEN_IGNORE) return DS_FEEDBACK_IGNORE;
+        diagf("data_session_gen", "\"phase\":\"%s\",\"result\":%u,\"origin\":\"%u/%u/%u\"",
+              ds_phase_name(phase), g.dsc.last_gen_result,
+              f->payload[0], f->payload[1], f->payload[2]);
+        if (r == DS_GEN_REJECTED) return DS_FEEDBACK_FAIL;
+        if (r == DS_GEN_OPTIONAL_UNSUPPORTED) {
+            diag("mobile_data_toggle_unsupported", "\"result\":32771");
+            return DS_FEEDBACK_OK; /* optional facility absent; bearer still required */
         }
-
-        /* All other in-flight phases: nonzero = rejection = FAIL.
-         * EXCEPTION: SetMobileDataSetting (ENABLE_MOBILE_DATA) returns 3 when
-         * mobile data is already in the requested ON state (idempotent). That
-         * is not a rejection of the desired end-state, so we treat result==3
-         * for that phase as a soft success and log it loudly. Any other
-         * nonzero result (and every other phase) remains FAIL-closed. */
-        switch (phase) {
-        case DS_SET_SERVICE_DOMAIN:
-        case DS_SET_PREFERRED_NET:
-        case DS_ENABLE_MOBILE_DATA:
-        case DS_SYNC_PROFILE:
-        case DS_SET_DATA_PROFILE:
-        case DS_SET_LTE_ATTACH:
-        case DS_DEFINE_PDP:
-        case DS_ALWAYS_ON_PDN:
-        case DS_PS_ATTACH:
-            if (result == DS_GEN_RESULT_OK) return DS_FEEDBACK_OK;
-            if (phase == DS_ENABLE_MOBILE_DATA && result == 3u) {
-                diagf("data_session_gen_note",
-                      "\"phase\":\"%s\",\"gen_result\":%u,\"msg\":\"already-ON\"",
-                      ds_phase_name(phase), result);
-                return DS_FEEDBACK_OK;
-            }
-            diagf("data_session_reject_gen",
-                  "\"phase\":\"%s\",\"gen_result\":%u",
-                  ds_phase_name(phase), result);
-            return DS_FEEDBACK_FAIL;
-        default:
-            return DS_FEEDBACK_IGNORE;
-        }
+        if (phase == DS_SIM_CHECK || phase == DS_DATA_CALL || phase == DS_GET_PDP_LIST ||
+            phase == DS_VERIFY_NET_MODE || phase == DS_VERIFY_SERVICE_DOMAIN ||
+            phase == DS_IA_STATE_QUERY || phase == DS_PS_DETACHED_VERIFY || phase == DS_PS_REGIST_CHECK ||
+            phase == DS_RECOVER_PS_REGIST ||
+            phase == DS_NET_REGIST_CHECK || phase == DS_PS_REGIST_VERIFY)
+            return DS_FEEDBACK_IGNORE; /* need actual state, not command acceptance */
+        if (phase == DS_ENABLE_MOBILE_DATA) g.dsc.mobile_data_on = true;
+        if (phase == DS_PS_ATTACH) g.dsc.ps_attach_ack = true;
+        return DS_FEEDBACK_OK;
     }
 
     /* ---- GPRS_CALL_STATUS (main=13 sub=16) ---- */
+    /* CP GET replies have two bytes; IpcRxGprsPsState notifications have
+     * three (the third is a detach reason). Query after detach acceptance. */
+    if (f->main_cmd == 13 && f->sub_cmd == 3 &&
+        ((f->cmd_type == IPC41_TYPE_RESPONSE && f->payload_len == 2) ||
+         (f->cmd_type == IPC41_TYPE_NOTIFICATION && f->payload_len == 3))) {
+        if (f->payload[0] > 1) return DS_FEEDBACK_IGNORE;
+        g.dsc.ps_control_valid = true;
+        g.dsc.ps_control_state = f->payload[0]; g.dsc.ps_control_suspend = f->payload[1];
+        /* GET reads PDNCOMMON_PSINFO and is ignored by the vendor AP receiver.
+         * It remained 00 00 with NET PS registered and CID1 active on EFUJ2.
+         * Keep it observable; it cannot override actual network registration. */
+        diagf("ps_control_state", "\"state\":%u,\"suspend\":%u,\"notification\":%s",
+              f->payload[0], f->payload[1], f->cmd_type == IPC41_TYPE_NOTIFICATION ? "true" : "false");
+        if (phase == DS_PS_DETACHED_VERIFY && f->cmd_type == IPC41_TYPE_NOTIFICATION && f->payload[0] == 0)
+            return DS_FEEDBACK_OK;
+        return DS_FEEDBACK_IGNORE;
+    }
+
     if (f->main_cmd == IPC41_MAIN_GPRS && f->sub_cmd == IPC41_GPRS_CALL_STATUS &&
-        f->payload_len >= 2) {
+        f->cmd_type == IPC41_TYPE_NOTIFICATION && f->payload_len >= 9 &&
+        f->payload[0] == g.dsc.attach_cid) {
         uint8_t state = f->payload[1];
+        g.dsc.last_call_cause = f->payload[2];
+        diagf("data_call_status", "\"cid\":%u,\"state\":%u,\"cause\":%u",
+              f->payload[0], state, f->payload[2]);
         g.dsc.last_gprs_call_state = state;
         g.dsc.gprs_call_state_valid = true;
         if (phase == DS_DATA_CALL) {
@@ -841,121 +913,79 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
     /* ---- GPRS_PDP_CONTEXT list (main=13 sub=4 type=2, GetPdpContext reply) ---- */
     if (f->main_cmd == IPC41_MAIN_GPRS && f->sub_cmd == IPC41_GPRS_PDP_CONTEXT &&
         f->cmd_type == IPC41_TYPE_RESPONSE) {
-        if (f->payload_len >= 2) {
-            g.dsc.last_gprs_pdp_state = f->payload[1];
-        } else {
-            g.dsc.last_gprs_pdp_state = 0;
-        }
+        uint8_t state;
+        if (!fmt_rx_pdp_state(f->payload, f->payload_len, g.dsc.attach_cid, &state))
+            return DS_FEEDBACK_IGNORE;
+        g.dsc.last_gprs_pdp_state = state;
         g.dsc.gprs_pdp_state_valid = true;
-        if (phase == DS_GET_PDP_LIST) {
-            /* A list state of 0 => the PDP context is DISCONNECTED. */
-            return (g.dsc.last_gprs_pdp_state != 0) ? DS_FEEDBACK_OK : DS_FEEDBACK_FAIL;
-        }
+        if (phase == DS_GET_PDP_LIST)
+            return ds_gprs_call_connected(state) ? DS_FEEDBACK_OK : DS_FEEDBACK_FAIL;
         return DS_FEEDBACK_IGNORE;
     }
 
-    /* ---- GPRS_IP_CONFIGURATION (main=13 sub=9): bearer IP handshake ---- */
+    /* IP notification can precede CALL_STATUS. Keep it across phase changes,
+     * but do not call the session ACTIVE until the Linux link is configured. */
     if (f->main_cmd == IPC41_MAIN_GPRS &&
-        f->sub_cmd == IPC41_GPRS_IP_CONFIGURATION) {
-        if (phase == DS_WAIT_IP) return DS_FEEDBACK_OK;
+        f->sub_cmd == IPC41_GPRS_IP_CONFIGURATION &&
+        f->cmd_type == IPC41_TYPE_NOTIFICATION) {
+        struct fmt_rx_ip ip;
+        if (fmt_rx_ip(f->payload, f->payload_len, &ip) && ip.cid == g.dsc.attach_cid) {
+            g.ip = ip; g.ip_received = true;
+            diagf("cellular_ip_received", "\"cid\":%u,\"ipv4\":\"%u.%u.%u.%u\",\"ipv6_valid\":%s",
+                  ip.cid, ip.ipv4[0], ip.ipv4[1], ip.ipv4[2], ip.ipv4[3],
+                  ip.ipv6_valid ? "true" : "false");
+            diagf("cellular_ip_parameters", "\"flags\":%u,\"mtu\":%u,\"ipv6_link_local\":%s",
+                  ip.flags, ip.mtu, ip.ipv6_valid && ip.ipv6[0] == 0xfe &&
+                  (ip.ipv6[1] & 0xc0) == 0x80 ? "true" : "false");
+        }
         return DS_FEEDBACK_IGNORE;
     }
 
     /* ---- NET_REGIST (main=8 sub=5) ---- */
     if (f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_REGIST &&
-        f->payload_len >= 11) {
-        /* AUTHORITATIVE decode recovered from IpcRxNetRegState @0x339818
-         * (libsec-ril.so build 60889dd714394ae0db7c2ecc2bf2740f, aarch64),
-         * with the pointer base CORRECTED this round.
-         *
-         * CRITICAL: every IpcRx* receive handler takes (char* data) = the FULL
-         * FMT frame (7-byte sipc_fmt_hdr + payload), NOT the payload alone.
-         * PROVEN from IpcRxGeneral @0x32b0f0 (GEN echo) which reads
-         * data[7]=echo_main, data[8]=echo_sub (i.e. payload[0], payload[1]),
-         * and confirmed by the kernel struct sipc_fmt_hdr (modem_prj.h)
-         * [u16 len][u8 msg_seq][u8 ack_seq][u8 main][u8 sub][u8 type].
-         *
-         * Therefore in IpcRxNetRegState the payload begins at data+7, and the
-         * field loads are:
-         *   data[6]  = header cmd_type (registrant selector: 0x03 => noti path)
-         *   data[7]  = payload[0] = RAT marker (RAT converter @0x33a028)
-         *   data[8]  = payload[1] = service-domain selector (int map @0x14a0b8)
-         *   data[9]  = payload[2] = RegState raw enum (IDENTITY to RegState)
-         *   data[10] = payload[3] = reject-cause byte
-         *   data[11..12]= payload[4..5] = LAC/TAC (LE halfword)
-         *   data[13..16]= payload[6..9] = cell id (LE word)
-         *   data[17] = payload[10] = LtePsVoiceIndication
-         *   data[18..19]= payload[11..12] (halfword)
-         *   data[20] = payload[13] = secondary service-domain byte
-         *   data[21] = payload[14] = secondary state byte
-         *
-         * RegState enum (NetRegState::IsRegistered @0x2a9ce8 => (r|4)==5 i.e.
-         * r in {1,5}; NetRegState::IsDenied @0x2a9d38 => r in {3,13}):
-         *   0=NOT_REGISTERED/off, 1=REGISTERED_HOME, 2=SEARCHING, 3=DENIED,
-         *   4=UNKNOWN, 5=REGISTERED_ROAMING, 13=DENIED(alternate).
-         *
-         * Service domain int map @0x14a0b8 (LE dwords): selector 1->0,
-         * selector 2->2 (CS_PS), selector 3->1 (PS_ONLY).
-         *
-         * THIS CORRECTS A PRIOR BUG: the previous code read payload[8]/[9]
-         * (cell-id bytes) as domain/RegState and falsely reported
-         * "NOT_REGISTERED(0)" + "service domain unconfigured(0)". The round-14
-         * report also mis-read payload[1]/payload[2] as PS/CS. With the correct
-         * offsets the live payload[1]=0x03 => PS_ONLY and payload[2]=0x01 =>
-         * REGISTERED_HOME: PS/data registration is ALREADY SUCCESSFUL. */
-        uint8_t dom_sel = f->payload[1];
-        uint8_t reg_sel = f->payload[2];
-        uint8_t reject  = f->payload[3];
-
-        /* NetServiceDomainType map (authoritative int table @0x14a0b8):
-         * selector 1 -> 0 (CS_ONLY), 2 -> 2 (CS_PS), 3 -> 1 (PS_ONLY).
-         * selector 0 => UNKNOWN/unconfigured. */
-        uint8_t domain = (dom_sel >= 1u && dom_sel <= 3u)
-                       ? (uint8_t)((dom_sel == 1u) ? 0u : (dom_sel == 2u) ? 2u : 1u)
-                       : 0u;
-
-        /* RegState value at payload[2] is the raw RegState enum (identity;
-         * IsRegistered/IsDenied operate on these raw values directly). Since
-         * this is the GetDataRegState response, payload[2] is the PS/data
-         * registration state. */
-        uint8_t ps_reg = (reg_sel == 0u) ? 0u :          /* NOT registered */
-                         (reg_sel == 1u) ? 1u :          /* REGISTERED_HOME */
-                         (reg_sel == 2u) ? 2u :          /* SEARCHING */
-                         (reg_sel == 3u) ? 3u :          /* DENIED */
-                         (reg_sel == 4u) ? 4u :          /* UNKNOWN */
-                         (reg_sel == 5u) ? 5u :          /* REGISTERED_ROAMING */
-                         (reg_sel == 13u) ? 3u : 4u;     /* DENIED(alt) else UNKNOWN */
-
-        g.dsc.last_ps_reg_state = ps_reg;   /* data/PS registration state */
-        g.dsc.last_cs_reg_state = 0u;       /* CS is reported by GetVoiceRegState, not this frame */
+        (f->cmd_type == IPC41_TYPE_RESPONSE || f->cmd_type == IPC41_TYPE_NOTIFICATION)) {
+        /* IpcRxNetRegState @0x3399cc maps the CP enum through table
+         * 0x14a212. The old identity conversion falsely called raw 1 home.
+         * Keep the raw byte alongside its converted state for diagnostics. */
+        struct fmt_rx_registration reg;
+        if (!fmt_rx_registration(f->payload, f->payload_len, &reg)) return DS_FEEDBACK_IGNORE;
+        if (reg.domain == 2) {
+            g.cs_registration = reg; g.cs_registration_valid = true;
+            diagf("cs_registration", "\"state\":\"%s\",\"raw_state\":%u,\"rat\":\"%s\",\"reject_cause\":%u",
+                  fmt_rx_reg_name(reg.state), reg.state_wire, fmt_rx_rat_name(reg.rat_wire), reg.reject_cause);
+        }
+        if (reg.domain != 3u) return DS_FEEDBACK_IGNORE;
+        uint8_t ps_reg = reg.state;
+        g.dsc.last_rat_wire = reg.rat_wire;
+        g.dsc.last_reg_wire = reg.state_wire;
+        g.dsc.last_ps_reg_state = ps_reg;
         g.dsc.net_regist_valid = true;
-        g.dsc.last_reject_cause = reject;
-
-        const char *psn = (ps_reg == 1) ? "REGISTERED_HOME" :
-                          (ps_reg == 2) ? "SEARCHING" :
-                          (ps_reg == 3) ? "DENIED" :
-                          (ps_reg == 5) ? "REGISTERED_ROAMING" :
-                          (ps_reg == 4) ? "UNKNOWN" :
-                          "NOT_REGISTERED";
+        g.dsc.ps_state_valid = true; g.dsc.attached = fmt_rx_registered(ps_reg);
+        g.dsc.last_reject_cause = reg.reject_cause;
+        const char *psn = fmt_rx_reg_name(ps_reg);
         diagf("net_regist_state",
-              "\"ps\":%u,\"ps_name\":\"%s\",\"domain_sel\":%u,\"domain\":%u,\"reject\":%u",
-              ps_reg, psn, dom_sel, domain, reject);
+              "\"ps\":%u,\"ps_name\":\"%s\",\"raw_state\":%u,\"domain_sel\":%u,\"rat_wire\":%u,\"rat\":\"%s\",\"reject_cause\":%u",
+              ps_reg, psn, reg.state_wire, reg.domain, reg.rat_wire, fmt_rx_rat_name(reg.rat_wire), reg.reject_cause);
 
-        if (phase == DS_NET_REGIST_CHECK) return DS_FEEDBACK_OK;
+        if (phase == DS_NET_REGIST_CHECK || phase == DS_IA_STATE_QUERY || phase == DS_PS_REGIST_CHECK)
+            return DS_FEEDBACK_OK;
+        if (phase == DS_PS_DETACHED_VERIFY && !g.dsc.attached) return DS_FEEDBACK_OK;
 
         /* PS_REGIST_VERIFY: gate the data-call activation on a REAL PS/data
          * attach. We require RegState==1 (registered home) or 5 (roaming).
          * Any other state (0 not-registered, 2 searching, 3 denied, 4 unknown)
          * is FAIL-closed and blocks the PDP activation. */
-        if (phase == DS_PS_REGIST_VERIFY) {
-            if (ps_reg == 1u || ps_reg == 5u) {
+        if (phase == DS_PS_REGIST_VERIFY || phase == DS_RECOVER_PS_REGIST) {
+            if (g.dsc.ps_state_valid && g.dsc.attached && fmt_rx_registered(ps_reg)) {
                 diagf("data_session_ps_attached", "\"ps\":%u", ps_reg);
                 return DS_FEEDBACK_OK;
             }
             diagf("data_session_ps_attach_failed",
-                  "\"ps\":%u,\"ps_name\":\"%s\",\"reject\":%u",
-                  ps_reg, psn, reject);
-            return DS_FEEDBACK_FAIL;
+                  "\"ps\":%u,\"ps_name\":\"%s\",\"ps_attached\":%s",
+                  ps_reg, psn, g.dsc.attached ? "true" : "false");
+            /* Reselection is asynchronous. Keep polling within the bounded
+             * deadline; an unregistered indication is not a final result. */
+            return ps_reg == 3u ? DS_FEEDBACK_FAIL : DS_FEEDBACK_IGNORE;
         }
 
         return DS_FEEDBACK_IGNORE;
@@ -965,8 +995,8 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
     if (phase == DS_SIM_CHECK &&
         f->main_cmd == IPC41_MAIN_SEC &&
         f->sub_cmd == IPC41_SEC_PIN_STATUS &&
-        f->cmd_type != IPC41_TYPE_NOTIFICATION) {
-        return DS_FEEDBACK_OK;
+        f->cmd_type == IPC41_TYPE_RESPONSE && f->payload_len == 2) {
+        return fmt_rx_sim_ready(f->payload, f->payload_len) ? DS_FEEDBACK_OK : DS_FEEDBACK_FAIL;
     }
 
     return DS_FEEDBACK_IGNORE;
@@ -980,10 +1010,8 @@ static bool data_session_emit(void)
     memset(&f, 0, sizeof f);
     switch (g.dsc.phase) {
     case DS_SIM_CHECK:
-        /* SIM readiness is authenticated via CP-notified SEC_PIN_STATUS=READY;
-         * a SIM query command is NOT source-backed, so we never emit one. Treat
-         * this phase as already satisfied by silently advancing. */
-        return false;
+        if (!fmt_tx_get_sim_status(&f)) return false;
+        break;
     case DS_NET_REGIST_CHECK:
         /* Read the CP's PS/data registration state before any data-path command.
          * This is the source-backed IpcTxNetGetDataRegState (NET_REGIST sub=5,
@@ -993,22 +1021,28 @@ static bool data_session_emit(void)
         break;
     case DS_SET_SERVICE_DOMAIN:
         /* Enable CS+PS service domain (source-backed IpcTxNetSetServiceDomain,
-         * main=8 sub=8, payload=[2]=CS_PS). Prerequisite for PS/data attach. */
+         * main=8 sub=8, payload=[1]=CS_PS). Wire 2 is CS-only. */
         if (!fmt_tx_set_service_domain(&f, FMT_TX_SERVICE_DOMAIN_CS_PS))
             return false;
         break;
+    case DS_VERIFY_SERVICE_DOMAIN:
+        if (!fmt_tx_get_service_domain(&f)) return false;
+        break;
     case DS_SET_PREFERRED_NET:
         /* Set LTE/WCDMA/GSM auto network mode (source-backed
-         * IpcTxNetSetPreferredNetType, main=8 sub=10, payload=[9]). */
-        if (!fmt_tx_set_preferred_net_type(&f, FMT_TX_PREFERRED_NET_LTE_AUTO))
+         * IpcTxNetSetPreferredNetType, main=8 sub=10, payload=[0x0b]). */
+        if (!fmt_tx_set_preferred_net_type(&f, g.dsc.preferred_net))
             return false;
+        break;
+    case DS_VERIFY_NET_MODE:
+        if (!fmt_tx_get_preferred_net_type(&f)) return false;
         break;
     case DS_ENABLE_MOBILE_DATA:
         /* Enable GPRS mobile data (source-backed IpcTxSetMobileDataSetting,
          * main=13 sub=29, 9 bytes; enable=1, extra=1). This is the explicit
          * mobile-data-authorization toggle the vendor RIL issues before the
-         * profile sync/PDP sequence. GEN result 3 is the CP's idempotent
-         * "already enabled" signal (consistent across extra=0/1). */
+         * profile sync/PDP sequence. A feature-gated 0x8003 response is
+         * recorded as unsupported, never as already enabled. */
         if (!fmt_tx_mobile_data(&f, true, true))
             return false;
         break;
@@ -1021,7 +1055,7 @@ static bool data_session_emit(void)
         break;
     case DS_SET_DATA_PROFILE:
         /* Set the APN/auth/protocol data profile (source-backed SetDataProfile,
-         * main=13 sub=27, 203 bytes; auth NONE -> numeric code 1). */
+         * main=13 sub=27, 203 bytes; auth NONE -> numeric code 0). */
         if (!fmt_tx_set_data_profile(&f, (const char*)g.dsc.apn,
                                      g.dsc.auth_code, g.dsc.protocol))
             return false;
@@ -1029,14 +1063,28 @@ static bool data_session_emit(void)
     case DS_SET_LTE_ATTACH:
         /* Set the LTE attach profile (source-backed SetLteAttachProfile,
          * main=13 sub=20, 201 bytes). payload[1] = attach CID. Corrected
-         * GetAttachCid() == 1 for single-SIM beyond2lte (see data_session.h),
-         * NOT the DataProfile default id and NOT 5 (which is only for
-         * dual-sim model_type 1). payload[0]=3 = apply profile. */
+         * GetAttachCid() == 1 for RIL slot 0, 5 for RIL slot 1 (see
+         * data_session.h). payload[0]=1 creates the initial profile;
+         * 3 instead calls PMPM_AddAlwaysOnProfile (CP 0x40711db2). */
         if (!fmt_tx_set_lte_attach_profile(&f, (const char*)g.dsc.apn,
                                            g.dsc.auth_code,
                                            g.dsc.protocol,
                                            g.dsc.attach_cid, g.dsc.attach_flag))
             return false;
+        break;
+    case DS_PS_DETACH:
+        if (!fmt_tx_ps_attach(&f, false, false, 4)) return false;
+        break;
+    case DS_PS_DETACHED_VERIFY:
+    case DS_IA_STATE_QUERY:
+    case DS_PS_REGIST_CHECK:
+        if (!fmt_tx_get_data_reg_state(&f)) return false;
+        break;
+    case DS_RECOVER_PS_ATTACH:
+        if (!fmt_tx_ps_attach(&f, true, false, 0)) return false;
+        break;
+    case DS_RECOVER_PS_REGIST:
+        if (!fmt_tx_get_data_reg_state(&f)) return false;
         break;
     case DS_MBIM_ATTACH_CONFIG: {
         /* Recovered MBIM MS LTE Attach Config (CID 0x0A) via IpcTxRawIpc
@@ -1113,8 +1161,15 @@ static bool data_session_emit(void)
          * main=13 sub=1, 134 bytes) using the corrected attach CID (1 for
          * single-SIM; see GetAttachCid disassembly), NOT the DataProfile id. */
         if (!fmt_tx_define_pdp_context(&f, (const char*)g.dsc.apn,
-                                       g.dsc.protocol, g.dsc.attach_cid))
+                                       g.dsc.protocol == FMT_TX_PROTO_IPV4V6 ?
+                                       FMT_TX_PROTO_IP : g.dsc.protocol,
+                                       g.dsc.attach_cid))
             return false;
+        /* CP validator 0x41219fe4 accepts only PDP wire types 2,5,6.
+         * The dual-stack attach profile remains separate; DEFINE requests
+         * an IPv4 context when the requested family is dual stack. */
+        diagf("pdp_definition", "\"cid\":%u,\"requested_protocol\":%u,\"wire_protocol\":%u",
+              g.dsc.attach_cid, g.dsc.protocol, f.buf[9]);
         break;
     case DS_ALWAYS_ON_PDN:
         /* Attach the default PDN (source-backed SetAlwaysOnPdn, main=13 sub=34).
@@ -1155,7 +1210,10 @@ static bool data_session_emit(void)
     default:
         return false;
     }
-    return radiod_write_fmt(&f);
+    if (!radiod_write_fmt(&f)) return false;
+    if (g.dsc.phase == DS_PS_DETACH) g.dsc.needs_ps_restore = true;
+    ds_expect(&g.dsc, f.main_cmd, f.sub_cmd, f.cmd_type);
+    return true;
 }
 
 /* Tick-driven data-session driver: emits the current phase frame once, then
@@ -1168,16 +1226,9 @@ static void data_session_tick(uint64_t now)
     }
     if (ds_terminal(&g.dsc)) return;
 
-    /* SAFETY: only transmit data-path commands AFTER the CP has completed its
-     * boot-stage RFS handshake AND reported the SIM READY (protocol-backed).
-     * Emitting during boot would be dropped/ignored by the CP.
-     *
-     * If the CP is ALREADY ONLINE at daemon start (kernel sysfs proves the
-     * boot stage is complete), the RFS handshake is implicitly satisfied; we
-     * still require SIM present (SIM_DETECT sysfs) so we never transmit to a
-     * no-SIM radio. If the CP is freshly booting under this daemon, we keep
-     * the strict RFS-handshake + SIM-ready-notification gates. */
-    if (!g.rfs_handshake_done && !(g.cp_online && g.sim_present)) {
+    /* Query SIM state first. Sysfs ds_detect describes the board's dual-SIM
+     * configuration and cannot establish that a card is present or ready. */
+    if (g.dsc.phase != DS_SIM_CHECK && !g.sim_ready_seen) {
         return;
     }
 
@@ -1235,14 +1286,15 @@ static void data_session_tick(uint64_t now)
         if (data_session_emit()) g.wrote_phase = true;
         if (!g.dsc.step_deadline_ms)
             g.dsc.step_deadline_ms = now + 5000u;
-        return;
+        if (g.wrote_phase) return;
+        /* Failed serialization/write still reaches the bounded timeout. */
     }
 
     /* Wait for ack or timeout. If we are holding in PS_ATTACH past the dwell
      * (the CP only sent a generic GEN echo, no separate PS-attach-done), the
      * dwell guard in dispatch_fmt prevented an ack-based advance; advance here
      * so the bounded attach -> activate sequence still proceeds. */
-    if (g.dsc.phase == DS_PS_ATTACH &&
+    if (g.dsc.phase == DS_PS_ATTACH && g.dsc.ps_attach_ack &&
         g.dsc.phase_entered_ms &&
         now - g.dsc.phase_entered_ms >= 3000u) {
         enum ds_phase n2 = ds_step(&g.dsc, true, now);
@@ -1255,8 +1307,10 @@ static void data_session_tick(uint64_t now)
         }
     }
 
+    enum ds_phase previous = g.dsc.phase;
+    uint8_t previous_attempt = g.dsc.attempt;
     enum ds_phase next = ds_step(&g.dsc, false, now);
-    if (next != g.dsc.phase) {
+    if (next != previous) {
         /* phase actually changed (ack from dispatch_fmt, or terminal timeout). */
         if (next == DS_FAILED) {
             diag("data_session_failed", "\"phase\":\"TIMEOUT\"");
@@ -1267,7 +1321,7 @@ static void data_session_tick(uint64_t now)
     }
     /* Same phase but the deadline lapsed: re-emit (bounded by ds_step's
      * attempt counter; it returns DS_FAILED once attempts are exhausted). */
-    if (g.dsc.step_deadline_ms && now >= g.dsc.step_deadline_ms) {
+    if (g.dsc.attempt != previous_attempt) {
         g.wrote_phase = false;   /* re-arm for one bounded retry */
     }
 }
@@ -1454,11 +1508,46 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
     if (prev_online != g.cp_online) {
         emit_state_changed("CpState", g.cp_state);
         if (g.cp_online) maybe_open_endpoints();
+        else {
+            g.sim_lock_valid = false; g.sim_ready_seen = false;
+            g.cs_registration_valid = false;
+            g.service_domain_valid = false;
+            memset(g.home_plmn, 0, sizeof g.home_plmn);
+            g.dsc.net_regist_valid = false; g.dsc.net_mode_valid = false;
+            g.ip_received = false; g.dsc.ip_configured = false;
+            g.radio_state_valid = false;
+            g.oes_requests = 0;
+            g.dsc.ps_state_valid = false; g.dsc.attached = false;
+            g.baseband[0] = 0;
+        }
     }
     refresh_sim_state();
 
     /* Stage-06 data-session driver (opt-in, bounded). */
     data_session_tick(now_ms());
+
+    /* Read-only status refresh uses the same serialized transport, only while
+     * the data transaction is idle/terminal so query replies cannot satisfy a
+     * different transaction's registration gate. */
+    if (g.write_enabled && g.cp_online && g.fmt.present &&
+        (g.dsc.phase == DS_IDLE || ds_terminal(&g.dsc)) && now_ms() >= g.status_next_ms) {
+        struct fmt_tx_frame q;
+        bool built = false;
+        switch (g.status_query) {
+        case 0: built = fmt_tx_get_sim_status(&q); break;
+        case 1: built = fmt_tx_get_data_reg_state(&q); break;
+        case 2: built = fmt_tx_get_preferred_net_type(&q); break;
+        case 3: built = fmt_tx_get_pdp_context(&q); break;
+        case 4: built = fmt_tx_get_serving_network(&q); break;
+        case 5: built = fmt_tx_get_sim_network(&q); break;
+        case 6: built = fmt_tx_get_ps_attach(&q); break;
+        case 7: built = fmt_tx_get_baseband_version(&q); break;
+        }
+        if (built && radiod_write_fmt(&q)) {
+            g.status_query = (g.status_query + 1) % 8;
+            g.status_next_ms = now_ms() + (g.status_query ? 1000 : 60000);
+        } else g.status_next_ms = now_ms() + 5000;
+    }
 
     uint64_t t = now_ms();
     unsigned i;
@@ -1516,10 +1605,7 @@ static int prop_radio_state(sd_bus *b, const char *p, const char *i, const char 
 {
     (void)b;(void)p;(void)i;(void)prop;(void)u;(void)e;
     refresh_cp_state();
-    /* We know only CP ONLINE. Actual "radio on" requires an FMT source we do
-     * not have, so report "on" only if online, honoring the truth contract. */
-    const char *v = g.cp_online ? "on" : "off";
-    if (!g.cp_online && strcmp(g.cp_state, "UNKNOWN") == 0) v = "unknown";
+    const char *v = g.cp_online && g.radio_state_valid ? (g.radio_on ? "on" : "off") : "unknown";
     return sd_bus_message_append(reply, "s", v);
 }
 static int prop_sim_present(sd_bus *b, const char *p, const char *i, const char *prop,
@@ -1539,8 +1625,110 @@ static int prop_sim_pin(sd_bus *b, const char *p, const char *i, const char *pro
 static int method_get_sim_state(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
-    return sd_bus_reply_method_return(m, "s", "__NOT_SUPPORTED__");
+    return sd_bus_reply_method_return(m, "s", !g.sim_lock_valid ? "unknown" :
+        !g.sim_present ? "absent" : g.sim_ready_seen ? "ready" : "locked-or-unavailable");
 }
+
+static int prop_registered(sd_bus *b, const char *p, const char *i, const char *prop,
+                           sd_bus_message *reply, void *u, sd_bus_error *e)
+{
+    (void)b;(void)p;(void)i;(void)prop;(void)u;(void)e;
+    bool registered = g.cp_online && g.dsc.net_regist_valid &&
+                      fmt_rx_registered(g.dsc.last_ps_reg_state);
+    return sd_bus_message_append(reply, "b", (int)registered);
+}
+
+static int method_refresh_status(sd_bus_message *m, void *u, sd_bus_error *e)
+{
+    (void)u;
+    if (!g.write_enabled || !g.cp_online)
+        return sd_bus_error_set(e, SD_BUS_ERROR_FAILED, "CP unavailable or command transport disabled");
+    g.status_query = 0; g.status_next_ms = 0;
+    return sd_bus_reply_method_return(m, "b", 1);
+}
+
+static int method_get_data_state(sd_bus_message *m, void *u, sd_bus_error *e)
+{
+    (void)u;(void)e;
+    sd_bus_message *reply = NULL;
+    int r = sd_bus_message_new_method_return(m, &reply);
+    if (r < 0) return r;
+    r = sd_bus_message_open_container(reply, 'a', "{ss}");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "phase", ds_phase_name(g.dsc.phase));
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "apn", (const char *)g.dsc.apn);
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "rat",
+        g.dsc.net_regist_valid ? fmt_rx_rat_name(g.dsc.last_rat_wire) : "unknown");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "home_plmn", g.home_plmn);
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "baseband", g.baseband);
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "registration",
+        g.dsc.net_regist_valid ? fmt_rx_reg_name(g.dsc.last_ps_reg_state) : "UNKNOWN");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ps_attached",
+        g.dsc.ps_state_valid ? (g.dsc.attached ? "true" : "false") : "unknown");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ip_configured", g.dsc.ip_configured ? "true" : "false");
+    char number[16];
+    if (g.dsc.net_regist_valid) snprintf(number, sizeof number, "%u", g.dsc.last_reject_cause);
+    else snprintf(number, sizeof number, "unknown");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ps_reject_cause", number);
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "cs_registration",
+        g.cs_registration_valid ? fmt_rx_reg_name(g.cs_registration.state) : "UNKNOWN");
+    if (g.cs_registration_valid) snprintf(number, sizeof number, "%u", g.cs_registration.reject_cause);
+    else snprintf(number, sizeof number, "unknown");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "cs_reject_cause", number);
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "failure_phase", ds_phase_name(g.dsc.failure_phase));
+    if (g.dsc.failure_result_valid) snprintf(number, sizeof number, "0x%04x", g.dsc.failure_result);
+    else snprintf(number, sizeof number, "unavailable");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "failure_result", number);
+    if (g.service_domain_valid) snprintf(number, sizeof number, "%u", g.service_domain_wire);
+    else snprintf(number, sizeof number, "unknown");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "service_domain_wire", number);
+    if (g.dsc.ps_control_valid) snprintf(number, sizeof number, "%u", g.dsc.ps_control_state);
+    else snprintf(number, sizeof number, "unknown");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ps_control_state", number);
+    if (r >= 0) r = sd_bus_message_close_container(reply);
+    if (r >= 0) r = sd_bus_send(NULL, reply, NULL);
+    sd_bus_message_unref(reply);
+    return r;
+}
+static int method_get_ip_info(sd_bus_message *m, void *u, sd_bus_error *e)
+{
+    (void)u; (void)e;
+    sd_bus_message *reply = NULL;
+    int r = sd_bus_message_new_method_return(m, &reply);
+    if (r < 0) return r;
+    r = sd_bus_message_open_container(reply, 'a', "{ss}");
+    if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "received", g.ip_received ? "true" : "false");
+    if (g.ip_received) {
+        const struct { const char *key; int family; const void *bytes; bool valid; } fields[] = {
+            {"ipv4", AF_INET, g.ip.ipv4, g.ip.ipv4_valid},
+            {"gateway4", AF_INET, g.ip.gateway4, g.ip.ipv4_valid},
+            {"dns4_primary", AF_INET, g.ip.dns4[0], g.ip.ipv4_valid},
+            {"dns4_secondary", AF_INET, g.ip.dns4[1], g.ip.ipv4_valid},
+            {"ipv6", AF_INET6, g.ip.ipv6, g.ip.ipv6_valid},
+            {"dns6_primary", AF_INET6, g.ip.dns6[0], g.ip.ipv6_valid},
+            {"dns6_secondary", AF_INET6, g.ip.dns6[1], g.ip.ipv6_valid}
+        };
+        for (size_t i = 0; i < sizeof fields / sizeof fields[0] && r >= 0; i++) {
+            char address[INET6_ADDRSTRLEN] = "";
+            if (fields[i].valid && !inet_ntop(fields[i].family, fields[i].bytes, address, sizeof address))
+                return sd_bus_message_unref(reply), -errno;
+            r = sd_bus_message_append(reply, "{ss}", fields[i].key, address);
+        }
+        char value[16];
+        snprintf(value, sizeof value, "%u", g.ip.cid);
+        if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "cid", value);
+        snprintf(value, sizeof value, "%u", g.ip.flags);
+        if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "flags", value);
+        snprintf(value, sizeof value, "%u", g.ip.mtu);
+        if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "mtu", value);
+        snprintf(value, sizeof value, "%u", g.ip.prefix4);
+        if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "prefix4", value);
+    }
+    if (r >= 0) r = sd_bus_message_close_container(reply);
+    if (r >= 0) r = sd_bus_send(NULL, reply, NULL);
+    sd_bus_message_unref(reply);
+    return r;
+}
+
 static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
@@ -1565,9 +1753,31 @@ static int method_set_radio(sd_bus_message *m, void *u, sd_bus_error *e)
     int en = 0;
     if (sd_bus_message_read(m, "b", &en) < 0)
         return sd_bus_error_set(e, SD_BUS_ERROR_INVALID_ARGS, "bad arg");
-    /* No authorized radio-power vocabulary is known; refuse rather than guess. */
-    return sd_bus_error_set(e, SD_BUS_ERROR_ACCESS_DENIED,
-                            "radio power control not implemented (vocab UNKNOWN)");
+    if (!g.write_enabled || !g.cp_online)
+        return sd_bus_error_set(e, SD_BUS_ERROR_ACCESS_DENIED, "radio transport unavailable");
+    if (g.data_path_armed && !ds_terminal(&g.dsc))
+        return sd_bus_error_set(e, SD_BUS_ERROR_FAILED, "data transaction in progress");
+    struct fmt_tx_frame f;
+    if (!fmt_tx_radio_power(&f, en != 0) || !radiod_write_fmt(&f))
+        return sd_bus_error_set(e, SD_BUS_ERROR_FAILED, "radio command write failed");
+    g.radio_state_valid = false;
+    diagf("radio_power_requested", "\"on\":%s", en ? "true" : "false");
+    g.status_query = 0; g.status_next_ms = 0;
+    return sd_bus_reply_method_return(m, "");
+}
+static int method_select_auto(sd_bus_message *m, void *u, sd_bus_error *e)
+{
+    (void)u;
+    if (!g.write_enabled || !g.cp_online)
+        return sd_bus_error_set(e, SD_BUS_ERROR_ACCESS_DENIED, "radio transport unavailable");
+    if (g.data_path_armed && !ds_terminal(&g.dsc))
+        return sd_bus_error_set(e, SD_BUS_ERROR_FAILED, "data transaction in progress");
+    struct fmt_tx_frame f;
+    if (!fmt_tx_net_selection_auto(&f) || !radiod_write_fmt(&f))
+        return sd_bus_error_set(e, SD_BUS_ERROR_FAILED, "network selection command write failed");
+    diag("network_selection_auto_requested", NULL);
+    g.status_query = 0; g.status_next_ms = 0;
+    return sd_bus_reply_method_return(m, "");
 }
 static int method_get_signal(sd_bus_message *m, void *u, sd_bus_error *e)
 {
@@ -1593,29 +1803,35 @@ static int method_packet_stats(sd_bus_message *m, void *u, sd_bus_error *e)
 }
 /* Map NUXEL_PROTO env string -> fmt_tx_data_protocol numeric value.
  * Accepted: ip|ipv4 -> 2 (IPv4-only), ipv6 -> 3, ipv4v6|ipv6v4|dual -> 4.
- * Default (unset/unknown) -> 4 (IPv4v6), preserving prior behaviour. */
+ * Default -> IPv4, which this CP accepts for the initial profile. */
 static uint8_t env_protocol(void)
 {
     const char *p = getenv("NUXEL_PROTO");
-    if (!p || !*p) return FMT_TX_PROTO_IPV4V6;
+    if (!p || !*p || !strcasecmp(p, "default")) return FMT_TX_PROTO_IP;
     if (!strcasecmp(p, "ip") || !strcasecmp(p, "ipv4")) return FMT_TX_PROTO_IP;
     if (!strcasecmp(p, "ipv6")) return FMT_TX_PROTO_IPV6;
     if (!strcasecmp(p, "ipv4v6") || !strcasecmp(p, "ipv6v4") ||
-        !strcasecmp(p, "dual") || !strcasecmp(p, "default"))
+        !strcasecmp(p, "dual"))
         return FMT_TX_PROTO_IPV4V6;
-    return FMT_TX_PROTO_IPV4V6;
+    return FMT_TX_PROTO_IP;
 }
 
 /* Map NUXEL_ATTACH_FLAG env string -> SetLteAttachProfile payload[0] flag.
- * Accepted: 3 (apply, default), 1 (define/initial-attach), 4 (prior variant).
- * Unknown -> 3. */
+ * 1 creates profile zero. 3 selects PMPM_AddAlwaysOnProfile, not initial APN.
+ * Unknown -> 1. */
 static uint8_t env_attach_flag(void)
 {
     const char *p = getenv("NUXEL_ATTACH_FLAG");
-    if (!p || !*p) return 3u;
+    if (!p || !*p) return 1u;
     long v = strtol(p, NULL, 10);
-    if (v == 1 || v == 3 || v == 4) return (uint8_t)v;
-    return 3u;
+    if (v == 1 || v == 3) return (uint8_t)v;
+    return 1u;
+}
+
+static uint8_t env_preferred_net(void)
+{
+    const char *p = getenv("NUXEL_NETWORK_MODE");
+    return p && !strcmp(p, "lte") ? FMT_TX_PREFERRED_NET_LTE_ONLY : FMT_TX_PREFERRED_NET_LTE_AUTO;
 }
 
 /* Map NUXEL_ATTACH_CID env string -> attach/context CID.
@@ -1630,16 +1846,13 @@ static uint8_t env_attach_cid(void)
     return DS_ATTACH_CID;
 }
 
-/* Map NUXEL_AUTH env string -> DataAuth region code.
- * none=1 (default non-NTC), pap=2, chap=3. Unknown -> 1. */
+/* Map configuration to DataAuth; no-auth is 0 in ALL serializers. */
 static uint8_t env_auth(void)
 {
     const char *p = getenv("NUXEL_AUTH");
-    if (!p || !*p) return 1u;
-    if (!strcasecmp(p, "none")) return 1u;
-    if (!strcasecmp(p, "pap"))  return 2u;
-    if (!strcasecmp(p, "chap")) return 3u;
-    return 1u;
+    if (p && !strcasecmp(p, "pap")) return FMT_TX_AUTH_PAP;
+    if (p && !strcasecmp(p, "chap")) return FMT_TX_AUTH_CHAP;
+    return FMT_TX_AUTH_NONE;
 }
 
 /* Map NUXEL_PDP_TYPE env string -> SetPdpContext payload[0] wire-byte selector.
@@ -1684,12 +1897,19 @@ static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e
     if (!g.cp_online) {
         return sd_bus_error_set(e, SD_BUS_ERROR_FAILED, "CP offline");
     }
+    if (!apn || !*apn || strlen(apn) > 100 || profile != 1 ||
+        strspn(apn, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-") != strlen(apn))
+        return sd_bus_error_set(e, SD_BUS_ERROR_INVALID_ARGS, "invalid APN or unsupported profile (use 1)");
     ds_reset(&g.dsc, apn, (uint8_t)profile);
+    memset(&g.ip, 0, sizeof g.ip); g.ip_received = false;
     g.dsc.protocol = env_protocol();
+    g.dsc.preferred_net = env_preferred_net();
     g.dsc.attach_flag = env_attach_flag();
     g.dsc.auth_code = env_auth();
     g.dsc.pdp_type_wire = env_pdp_type();
     g.dsc.attach_cid = env_attach_cid();
+    g.dsc.reattach_for_apn = getenv("NUXEL_REATTACH_IA") &&
+        !strcmp(getenv("NUXEL_REATTACH_IA"), "1");
     g.data_path_armed = true;
     g.wrote_phase = false;
     g.dsc.step_deadline_ms = 0;
@@ -1764,10 +1984,14 @@ static const sd_bus_vtable radiod_vtable[] = {
     SD_BUS_PROPERTY("CpState", "s", prop_cp_state, 0, SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
     SD_BUS_PROPERTY("RadioState", "s", prop_radio_state, 0, SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
     SD_BUS_METHOD("SetRadioEnabled", "b", "", method_set_radio, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("SelectNetworkAutomatic", "", "", method_select_auto, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_PROPERTY("SimPresent", "b", prop_sim_present, 0, SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
     SD_BUS_PROPERTY("SimPinRequired", "b", prop_sim_pin, 0, SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
     SD_BUS_METHOD("GetSimState", "", "s", method_get_sim_state, SD_BUS_VTABLE_UNPRIVILEGED),
-    SD_BUS_PROPERTY("Registered", "b", NULL, 0, 0),
+    SD_BUS_PROPERTY("Registered", "b", prop_registered, 0, SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
+    SD_BUS_METHOD("RefreshStatus", "", "b", method_refresh_status, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetDataSessionState", "", "a{ss}", method_get_data_state, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetIpInfo", "", "a{ss}", method_get_ip_info, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetSignalInfo", "", "iiib", method_get_signal, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetAvailableOperators", "", "a(ss)", method_get_operators, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetPacketStats", "", "ttb", method_packet_stats, SD_BUS_VTABLE_UNPRIVILEGED),
@@ -1815,7 +2039,7 @@ static int setup_dbus(void)
     r = sd_bus_request_name(g.bus, DEST_NAME, 0);
     if (r < 0) { diagf("dbus_name_failed", "\"err\":%d", r); return r; }
     sd_bus_attach_event(g.bus, g.loop, SD_EVENT_PRIORITY_NORMAL);
-    diag("dbus_ready", DEST_NAME);
+    diagf("dbus_ready", "\"bus_name\":\"%s\"", DEST_NAME);
     return 0;
 }
 
@@ -1845,6 +2069,7 @@ int main(int argc, char **argv)
             g.data_path_armed = true;
             ds_reset(&g.dsc, getenv("NUXEL_APN") ? getenv("NUXEL_APN") : "internet", 1);
             g.dsc.protocol = env_protocol();
+            g.dsc.preferred_net = env_preferred_net();
             g.dsc.attach_flag = env_attach_flag();
             g.dsc.auth_code = env_auth();
             g.dsc.pdp_type_wire = env_pdp_type();

@@ -23,7 +23,7 @@ def fmt_field_bytes():
     """Build a valid FMT message with randomized fields (no real vocab)."""
     plen = random.choice([0, 1, 2, 3, 4, 8, 16, 31, 32, 255, 256, 1024])
     hdr = bytes([
-        plen & 0xFF, (plen >> 8) & 0xFF,
+        (plen + FMT_HDR) & 0xFF, ((plen + FMT_HDR) >> 8) & 0xFF,
         random.randint(0, 255),   # msg_seq
         random.randint(0, 255),   # ack_seq
         random.randint(0, 255),   # main_cmd
@@ -72,21 +72,21 @@ def mutate(b):
 def run(driver, blob, timeout_s):
     try:
         p = subprocess.run([driver], input=blob, timeout=timeout_s,
-                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        return p.returncode, p.stdout
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return p.returncode, p.stdout, p.stderr
     except subprocess.TimeoutExpired:
-        return 'TIMEOUT', b''
+        return 'TIMEOUT', b'', b''
 
 def main():
     _i = [a.split("=",1)[1] for a in sys.argv if a.startswith("--iters=")]
     iters = int(_i[0]) if _i else int(os.environ.get("FUZZ_ITERS", "5000"))
     driver = sys.argv[1] if len(sys.argv) > 1 else '/tmp/fuzz_driver'
-    asan = "--asan" in sys.argv
     timeout_s = 2.0
     crash = 0
     timeout_ct = 0
     seen_coverage = set()
     rng = random.Random(0x55005)
+    random.seed(0x55005)
 
     corpus = []
     for _ in range(40):
@@ -100,13 +100,14 @@ def main():
             blob = mutate(rng.choice(corpus))
         # cap blob size to protect against pathological growth
         blob = blob[: (1 << 20)]
-        rc, out = run(driver, blob, timeout_s)
+        rc, out, err = run(driver, blob, timeout_s)
         if rc == 'TIMEOUT':
             timeout_ct += 1
-        elif rc != 0 and not asan:
+        elif rc != 0:
             crash += 1
             if crash <= 3:
                 print(f"[CRASH] rc={rc} len={len(blob)}")
+                print(err.decode('utf-8', 'replace')[:2000])
         # coverage
         txt = out.decode('latin1', 'replace')
         for line in txt.splitlines():

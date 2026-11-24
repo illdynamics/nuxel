@@ -50,7 +50,7 @@ enum efs_nv_result {
 };
 
 /*
- * Deterministic MD5 (public domain bytes; matches vendor UpdateChecksumFile).
+ * Vendor sidecar checksum: MD5(image || "Samsung_Android_RIL").
  * Writes 32 lowercase hex + NUL into out[33]. Returns 0 on success, -1 on NULL.
  */
 int efs_nv_md5_hex(const uint8_t *data, size_t len, char out[EFS_NV_MD5_HEX]);

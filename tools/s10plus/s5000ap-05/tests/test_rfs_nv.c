@@ -117,35 +117,39 @@ int main(void)
     /* --- provisioning policy --- */
     {
         uint32_t off = 0, len = 0;
-        /* OK: item 360, known offset/length, valid APN */
+        /* A known logical item and offset do NOT permit replacing a structured
+         * profile with plaintext. The original size-as-id bug is rejected. */
         enum rfs_nv_provision_decision d = rfs_nv_provision_policy(
             0x168u, false, true, 16u, 0x12340u, "internet", 8, &off, &len);
-        CHECK(d == RFS_NV_ALLOW);
-        CHECK(off == 0x12340u && len == 8);
+        CHECK(d == RFS_NV_DENY_UNKNOWN_ITEM);
+        off = len = 0xffffffffu;
+        CHECK(rfs_nv_provision_policy(220u, false, true, 360u, 0x12340u,
+                                      "internet", 8, &off, &len) == RFS_NV_DENY_SCHEMA);
+        CHECK(off == 0 && len == 0);
 
         /* unknown item */
         CHECK(rfs_nv_provision_policy(0x169u, false, true, 16u, 0x12340u,
                                       "internet", 8, &off, &len) == RFS_NV_DENY_UNKNOWN_ITEM);
         /* protected */
-        CHECK(rfs_nv_provision_policy(0x168u, true, true, 16u, 0x12340u,
+        CHECK(rfs_nv_provision_policy(220u, true, true, 16u, 0x12340u,
                                       "internet", 8, &off, &len) == RFS_NV_DENY_PROTECTED);
         /* no offset */
-        CHECK(rfs_nv_provision_policy(0x168u, false, false, 0, 0,
+        CHECK(rfs_nv_provision_policy(220u, false, false, 0, 0,
                                       "internet", 8, &off, &len) == RFS_NV_DENY_NO_OFFSET);
         /* length too big */
-        CHECK(rfs_nv_provision_policy(0x168u, false, true, 4u, 0x12340u,
+        CHECK(rfs_nv_provision_policy(220u, false, true, 4u, 0x12340u,
                                       "internet", 8, &off, &len) == RFS_NV_DENY_LENGTH);
         /* empty APN */
-        CHECK(rfs_nv_provision_policy(0x168u, false, true, 16u, 0x12340u,
+        CHECK(rfs_nv_provision_policy(220u, false, true, 16u, 0x12340u,
                                       "", 0, &off, &len) == RFS_NV_DENY_BADAPN);
         /* oversize APN */
         {
             char big[200]; memset(big, 'a', sizeof big);
-            CHECK(rfs_nv_provision_policy(0x168u, false, true, 256u, 0x12340u,
+            CHECK(rfs_nv_provision_policy(220u, false, true, 256u, 0x12340u,
                                           big, 128, &off, &len) == RFS_NV_DENY_BADAPN);
         }
         /* embedded NUL */
-        CHECK(rfs_nv_provision_policy(0x168u, false, true, 16u, 0x12340u,
+        CHECK(rfs_nv_provision_policy(220u, false, true, 16u, 0x12340u,
                                       "inter\0net", 10, &off, &len) == RFS_NV_DENY_BADAPN);
     }
 

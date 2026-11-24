@@ -19,12 +19,21 @@
 
 int efs_nv_md5_hex(const uint8_t *data, size_t len, char out[EFS_NV_MD5_HEX])
 {
-    return nv_md5_hex(data, len, out);
+    return nv_vendor_md5_hex(data, len, out);
 }
 
 int efs_nv_md5_verify(const uint8_t *data, size_t len, const char *stored_hex)
 {
-    return nv_md5_verify(data, len, stored_hex);
+    if (!stored_hex || strlen(stored_hex) != 32) return -1;
+    char actual[EFS_NV_MD5_HEX];
+    if (efs_nv_md5_hex(data, len, actual)) return -1;
+    for (size_t i = 0; i < 32; i++) {
+        char c = stored_hex[i];
+        if (c >= 'A' && c <= 'F') c = (char)(c + ('a'-'A'));
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return -1;
+        if (c != actual[i]) return 1;
+    }
+    return 0;
 }
 
 enum efs_nv_result efs_nv_read_at(int fd, uint32_t offset, uint32_t length,

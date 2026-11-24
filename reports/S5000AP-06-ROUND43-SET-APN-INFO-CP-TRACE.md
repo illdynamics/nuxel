@@ -1,136 +1,146 @@
-# Stage 06 — Round 43: CP-firmware SET_APN_INFO (sub 27) byte-exact trace
+# Stage 06 — Round 43: implementation and physical evidence
 
-**Date:** 2026-11-24 CET
-**Branch:** cs/mob-round35-stage06
-**Device:** SM-G975F / beyond2lte / Shannon S5000AP (G975FXXS9DTK9)
-**Sources:** ./packs CP modem.bin (46,062,992 B) + .vendor-ro/libsec-ril.so (60889dd7)
+Date: 2026-11-24 CET. Branch: `cs/mob-round35-stage06`.
+Target: Samsung SM-G975F / beyond2lte / S5000AP, Linux 4.14.253 AArch64.
 
-## Objective
+**Stage 06 is incomplete. No victory marker has been created.**
+This report supersedes the earlier text at this path, including its assertions
+about registration, item 360, a 159-byte APN record, command support and the
+running firmware. Those assertions did not follow from the executable code.
+The byte-exact specification and reproducible vendor-emulation commands are in
+[the protocol document](../docs/S5000AP-IPC41-DATA.md).
 
-The Round-43 mission named `IPC41_GPRS_SET_APN_INFO = 27` as the primary lead.
-This round recovered the command from the AUTHORITATIVE CP firmware itself
-(not from the AP RIL), producing a byte-exact protocol specification below.
+## Implemented corrections
 
-## 1. CP firmware extraction (verified this round)
+- SET_APN_INFO 13/27 has 196 payload bytes, profile selector 1, and an
+  **APN-disabled** byte at offset 189. The enabled value is zero. Complete
+  vendor-executed golden vectors replace the prior self-consistent guesses.
+- The vendor's derived initial-APN manager has an actual SIPC path. The initial
+  profile uses selector 1, not the always-on selector 3 or invented selector 4.
+  An already detached CP skips the otherwise rejected detach request.
+- DEFINE and activation frames now match the AP serializer. The earlier DEFINE
+  rejection was a protocol-value rejection, not evidence that DEFINE was absent.
+  IPv4 DEFINE succeeds. Activation no longer sends the APN as a username or the
+  IP protocol as a deactivation cause.
+- Registration raw state 1 is **not registered**. Raw 2/6 map to home/roaming.
+  The receive oracle executes all 256 states. Actual NET PS registration gates
+  data-call activation; GPRS_PS GET does not report that state reliably.
+- The native service-domain command was selecting **CS-only**, despite being
+  labeled CS+PS. Vendor enum 0 maps to wire 1 for CS+PS; wire 2 means CS-only.
+  The corrected transaction queries and verifies the service domain.
+- The network rejection field is payload byte 10. CS and PS registration are
+  tracked separately, preserving the actual rejection rather than reporting a
+  generic bearer failure.
+- Samsung NV checksums are MD5(image + `Samsung_Android_RIL`), not plain MD5.
+  Both the existing live image and its backup passed the correct algorithm.
+  No checksum repair or EFS modification was needed.
+- Native CP bootstrap previously omitted the NV download performed by vendor
+  cpboot. It now validates a read-only snapshot before any reset, then downloads
+  exactly the firmware TOC's NV size/address. This is volatile boot transfer,
+  not a guessed APN filesystem offset or an EFS write.
+- The native daemon now answers the CP's OES startup request and transfers the
+  existing DAK certificate in the vendor's fixed frames. Only lengths and
+  transfer results are logged; no certificate, subscriber or device identity
+  content is included in this report.
 
-`./packs/SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/CP_..._tar.md5` -> modem.bin.lz4
--> modem.bin (46,062,992 B, Samsung "TOC" container).
+## Firmware and storage evidence
 
-TOC layout (independently re-parsed, matches Round 42):
+The CP's MISC software-version query returns **G975FXXSEFUJ2**, not DTK9.
+Read-only extraction of the live RADIO partition independently identifies the
+same image. RADIO SHA-256:
+`9ffa1426a4ef7d1187779a14f22ec4b8cb4c2ab473b6626304a77030d9966fc7`.
+The offline DTK9 AP serializer is byte-identical to `.vendor-ro/libsec-ril.so`;
+both CP command tables and handler layouts were cross-checked.
 
-| seg   | file_off  | load_addr  | size      |
-|-------|-----------|------------|-----------|
-| BOOT  | 0x420     | 0x40000000 | 0x1e40    |
-| MAIN  | 0x2260    | 0x40010000 | 0x260c170 |
-| VSS   | 0x260e3e0 | 0x47800000 | 0x5df6a0  |
-| NV    | 0x0       | 0x45600000 | 0x100000  |
-| OFFSET| 0x7aa00   | 0x0        | 0x85600   |
+The descriptors identify APN items **220 and 224**, each **360 bytes**.
+360 is not the item ID. The full record schema and physical file offset have
+not been established. Merely finding no ASCII `internet` in the whole image
+never proved that a specific APN record was empty. Direct APN provisioning
+therefore remains denied, even if a caller supplies a guessed offset/length.
+The Round 42 RFS serving implementation remains present; its live NV write gate
+has not been enabled.
 
-MAIN is raw 32-bit ARM code (vector table `7cf09fe5` = LDR pc at offset 0).
+KPN's official APN guidance and the AOSP 20408 carrier entry specify `internet`.
+The available DTK9 TNL CSC targets T-Mobile; it is not a matching KPN PHN CSC.
+Matching KPN CSC confirmation and persistent CP APN readback remain outstanding.
 
-## 2. CP SIPC GPRS command table (authoritative)
+## Physical executions
 
-Recovered from MAIN `.data.rel.ro` @0x4034a9e0 (src file
-`VARIANT/HIUVar/MCD/HIC/SIPC/Code/Src/sipcGprsCmdHandle.c`). Each entry is
-16 bytes: `{const char* src_file; u32 cmd_id; const char* fmt; const char* proc_name}`.
+Private operation records, immutable backup checks, builds and logs are retained
+under `/var/lib/nuxel/round43-20261124-fixed-wire` on the phone and
+`/tmp/nuxel-round43` on the workstation. They contain private recovery material
+and must not be committed wholesale.
 
-| cmd_id      | proc_name                        | decode format string (CP-authored) |
-|-------------|----------------------------------|------------------------------------|
-| 0x05130800  | sipcProcGprsDefinePdpContextSet  | `Rx Define PDP Context SET (mode=%s, cid=%d, PDP type=%s, dComp=0x%X, hComp=0x%X, PCSCF req=0x%X, PCO req=0x%X)` |
-| 0x05160102  | sipcProcGprsDefinePdpContextSet  | `[SIPC] APN: ` |
-| 0x062b0400  | sipcProcGprsPdpContextActDeactSet| `Rx PDP Context Activation SET (state=%s, CID=%d, secondary CID=%d)` |
-| 0x07c70800  | sipcProcGprsLteAttachApnInfoSet  | `[%d] LTE Attach APN INFO SET cid:%d PDP type:0x%X APN %X %X %X` |
-| 0x08580700  | sipcProcGprsSetApnInfoSet       | `[%d] APN Info SET Profile ID:0x%X APN %X %X %X` |
-| 0x085b0700  | sipcProcGprsSetApnInfoSet       | `[%d] APN Info SET Profile ID:0x%X APN %X %X %X` |
+1. Corrected profile/initial-profile/DEFINE commands were accepted with full
+   GEN result `0x8000`. The optional mobile-data toggle returned `0x8003` and
+   was reported unsupported, not already enabled. Earlier activation attempts
+   returned call state 3, with no cellular address.
+2. The corrected registration decoder disproved the old PS-registered baseline:
+   raw registration 1 means not registered. GPRS_PS GET returned `00 00`; later
+   evidence showed that these control flags cannot independently establish
+   network attachment.
+3. CP-only restart operation 10 transferred the unchanged, checksum-verified
+   1,048,576-byte NV snapshot at TOC RAM offset `0x05600000`. All boot/security
+   stages succeeded. CP returned ONLINE, radio notification 2 indicated ON,
+   SIM became ready, and KPN LTE camping was observed. No EPS bearer followed.
+4. Operation 13 repeated that verified bootstrap and handled the actual OES
+   request: confirmation length 7, two event frames of 711 bytes, 987 certificate
+   bytes transferred. This proves transfer, not CP certificate authentication.
+   EFS image and checksum remained byte-identical to the verified backup.
+5. Operation 14 applied the initial APN while already detached. Profile SET,
+   initial-profile SET, DEFINE, always-on PDN and PS attach all returned
+   `0x8000`. Repeated PS GET returned `00 00`. The then-incorrect gate blocked PDP
+   activation. EDGE CS registration reported denied with cause 11 at 21:10:53.
+6. Operation 15 read back LTE-only mask `0x08`; the modem nevertheless fell back
+   to an unregistered UMTS cell. This led to discovering the
+   erroneous CS-only command described above. The failed transaction terminated
+   on its bounded deadline; management and CP remained healthy.
+7. Operation 16 corrected CS+PS selection and verified wire-1 readback. KPN LTE
+   PS registration became raw 2 / REGISTERED_HOME and PDP CID 1 became active.
+   Redundant PS_ATTACH returned `0x8005`. Vendor AP analysis then established
+   that GPRS_PS GET responses are ignored; their `00 00` was not detachment.
+8. Operation 17 skipped that redundant attach using real NET registration.
+   ACTIVATE returned `0x8000`, followed by an actual IP notification (313-byte
+   payload, flags `0x2340`, IPv6 present), CALL_STATUS CID 1 / state 1 / cause 0,
+   and a PDP list confirming CID 1 active. Linux interface configuration and
+   traffic verification remain outstanding. Build-10 deployed SHA-256:
+   `1f262cdbdf7d44ce68f02f41338e562ab44428fb590189693cb8287a849ee5e9`.
 
-The two `sipcProcGprsSetApnInfoSet` entries (0x08580700 vs 0x085b0700) differ
-only in the subscription byte (SIM0 vs SIM1, DSDS), matching the
-`[SIPC_0_GPRS]`/`[SIPC_1_GPRS]` log prefixes.
+No BOOT, DTB, DTBO, RADIO partition, identity, calibration or EFS record has been
+modified. CP restarts had independent timed rollback and retained Wi-Fi/ZeroTier
+management. All completed restart timers were cancelled after health checks.
 
-### FMT (AP->CP on-wire) mapping
+## Validation and acceptance
 
-The AP libsec-ril.so sends FMT header `[u16 len][u8 seq][u8 ack][u8 main][u8 sub][u8 type]`
-(main=13 GPRS). Verified this round by disassembling:
+The latest completed build-10 gate passed all 16 host suites, 3,000 ordinary fuzz
+iterations, 3,000 ASan/UBSan fuzz iterations, targeted sanitizer suites, and native
+AArch64 compilation with `-Wall -Wextra -Werror`. Bootstrap tests passed all 34 tests;
+its 13 mock-boot tests also passed ASan/UBSan, including invalid NV preflight
+rejection before mutation. Safe EFS fixtures verify write, checksum, bounds,
+backup and rollback behavior. The live NV backup was extracted and compared.
 
-- `IpcTxSetDataProfile @0x31ff48`: `mov w8,#0x1b0d; strh w8,[sp,#20]` = main=0x0d(13), sub=0x1b(27), type=3, len=203 (196 payload).
-- `IpcTxSetLteAttachProfile @0x320238`: `mov w9,#0x140d` = main=13, sub=0x14(20), type=3, len=201 (194 payload).
+| Requirement | Current evidence |
+|---|---|
+| CP initialization | PASS: two corrected NV boots, ONLINE |
+| SIM detection | PASS: native ready responses, KPN home prefix |
+| Network registration | PASS in operation 16/17: KPN LTE, raw 2, home |
+| PS registration | PASS: NET domain 3 registered; no rejection |
+| LTE profile / initial APN persistence | Command accepted; persistent readback unverified |
+| EPS bearer / cellular IP | Active CID 1, CALL_STATUS 1, IPv6 configuration received |
+| Cellular routing / DNS / HTTPS | Not achieved |
+| SMS outbound / inbound | Not delivered or received; test number still required |
+| Voice outbound / inbound / audio | Not demonstrated |
+| Reconnection / APN restart persistence | Not demonstrated |
+| Wi-Fi / ZeroTier / SSH regression | PASS during completed operations |
+| USB physical regression | Unverified: configured listener, carrier=0 |
+| Host / sanitizer / AArch64 regression | Build 10 PASS |
 
-Therefore: **sub 27 = SET_APN_INFO (CP) == IpcTxSetDataProfile (AP)**, and
-**sub 20 = LTE_ATTACH_APN_INFO (CP) == IpcTxSetLteAttachProfile (AP)**. The AP
-"SetDataProfile"/"SetLteAttachProfile" names are aliases of the CP SET_APN_INFO /
-LTE_ATTACH_APN_INFO commands.
+Cause 11 establishes a denial on the observed EDGE access path. KPN documents
+selective 2G retirement beginning in March 2026, but this does not establish the
+subscription's LTE eligibility or excuse the independently found Nuxel defects.
+No carrier-wide or SIM-specific LTE limitation has yet been proven.
 
-## 3. Persistence path (CP -> DS item -> NV)
-
-CP flow recovered from function names (`.symtab`/log strings):
-
-- `sipcProcGprsSetApnInfoSet` (sub 27) -> `PMPM_UpdateSetInitialAttachApnReq`
-  -> `PMPM_HdlrSetInitialAttachApnReq` -> DS item `NASU.LTE.ATTACH.APN.INFO`.
-- `sipcProcGprsLteAttachApnInfoSet` (sub 20) -> `PMPM_UpdateGprsAttachApnInfoReq`
-  -> `PMPM_HdlrGprsAttachApnInfoReq` -> `PMPM_SendEsmApnInfoUpdReq`.
-- Downstream `sm_SetApn`/`sm_GetApn`/`sm_SetApnLength` (MAIN @0x400b5bd7+).
-
-DS item string pool (MAIN `.rodata` @0x404793e0): `DS_NASU.LTE.ATTACH.APN.INFO`
-and `NASU.LTE.ATTACH.APN.INFO` are adjacent (item 360, numeric id 0x168).
-
-## 4. Item-360 physical offset: NOT statically recoverable (re-confirmed)
-
-`OFFSET` segment (0x85600 B) is a QBR NV template whose per-item `name_ptr`
-fields are CP-RUNTIME-RELOCATED addresses (0x416a2xxx). Resolving those
-against MAIN yields binary data, NOT the `NASU.LTE.ATTACH.APN.INFO` string.
-The item-id -> physical-offset mapping is assigned at CP boot by the vendor
-`cbd`/NvCoreInfo list and is not present in the on-flash image. This
-independently re-confirms the Round-42 conclusion.
-
-## 5. LIVE round-43 results (deployed + observed)
-
-1. The full data-session sequence is BYTE-CORRECT and runs:
-   NET_REGIST (PS REGISTERED_HOME) -> service domain -> preferred net ->
-   mobile data ON -> SET_DATA_PROFILE(sub 27) -> SET_LTE_ATTACH(sub 20) ->
-   ALWAYS_ON_PDN(sub 34) -> PS_ATTACH(sub 3) -> PS_REGIST_VERIFY -> DATA_CALL(sub 4).
-2. sub 27/20/34/3 are ACKed by CP GEN result=0 (`0d...030080`).
-3. DATA_CALL (sub 4) returns `GPRS_CALL_STATUS` state=3 (`010300...`): default
-   EPS bearer NOT established.
-4. Probing DefinePdpContext (sub 1) is LIVE-REJECTED with GEN=1
-   (`0d01030180`) — the S5000AP LTE path does NOT use the legacy
-   DefinePdpContext/SetPdpContext flow (corrects the prior "insert DEFINE_PDP"
-   hypothesis, now reverted + documented in test_data_session.c).
-5. `/mnt/vendor/efs/nv_data.bin` contains NO "internet" string and `nv.log`
-   shows no post-2024-02-03 NvBackup -> item 360 remains EMPTY even after
-   sub 27/20 are ACKed (they set in-memory profiles; they do NOT persist).
-
-## 6. Conclusion
-
-Blocking dependency (unchanged, now harder evidence): the persistent
-initial-attach APN (item 360) requires a `(offset,length)` pair that only the
-CP can compute at boot, OR a known-good nv_data.bin reference from an identical
-KPN-provisioned G975F. The RFS NV serving path is implemented and ready to
-provision item 360 the moment a legitimate offset is supplied by the CP.
-
-## 7. NEW: item-360 record-size recovered from OFFSET (CP NV template)
-
-The OFFSET segment (CP `.nv_core` template, 0x85600 B) contains a `{u32 item_id, u32 value}` pair table in its first 0x17000 B. At OFFSET file
-offset 0x169be:
-
-```
-... item=0x151(337)  item=0x168(360)  value=0x9f(159)  0x00000000   item=0x15e(350)  value=0x5f(95) ...
-```
-
-Item 360 (`NASU.LTE.ATTACH.APN.INFO`) therefore has a record size/default of
-`0x9f = 159` bytes in the CP-authored NV template. This is the FIRST concrete
-size datum for item 360 recovered from the firmware itself (previously the
-record size was unknown). It constrains any future RFS NV write of item 360 to
-a 159-byte record (APN string NUL-padded to at most 159 bytes).
-
-NOTE: this is the CP firmware's *template* pair table, not the physical live
-offset in `/mnt/vendor/efs/nv_data.bin`; the live offset remains CP-runtime-
-assigned (see section 4). The size datum removes one unknown (record length)
-but not the offset unknown.
-
-## 8. Continuation point
-
-Next concrete operation: cross-reference the 159-byte record size against a
-known-good KPN-provisioned G975F `nv_data.bin` (or a CP-supplied RFS
-NV_WRITE_ALL offset for item 360) and, once a legitimate (offset,159) is
-available, call efs_nv_write_at + efs_nv_update_checksum_sidecar through the
-already-implemented rfs_nv serving path (--write-enable + NUXEL_NV_WRITE=1).
+Continuation uses the running native service and its `GetDataSessionState` /
+`RefreshStatus` methods. Do not run older binaries' data sequences: their
+service-domain setter disables packet service. Do not write APN NV until the
+record representation and CP-authoritative storage mapping are proven.

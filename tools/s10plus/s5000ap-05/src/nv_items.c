@@ -97,20 +97,30 @@ static void md5_process(md5_state *s, const uint8_t block[64])
     s->a += A; s->b += B; s->c += C; s->d += D;
 }
 
-int nv_md5_hex(const uint8_t *data, size_t len, char out[33])
+static int md5_hex_suffix(const uint8_t *data, size_t len, const uint8_t *suffix,
+                          size_t suffix_len, char out[33])
 {
-    if (!out) return -1;
+    if (!out || (!data && len) || suffix_len > 19 || len > SIZE_MAX - suffix_len)
+        return -1;
     md5_state s = { 0x67452301u, 0xefcdab89u, 0x98badcfeu, 0x10325476u };
-    uint64_t bitlen = (uint64_t)len * 8u;
+    uint64_t bitlen = (uint64_t)(len + suffix_len) * 8u;
     uint8_t block[64];
 
     size_t i = 0;
-    for (; i + 64 <= len; i += 64) md5_process(&s, data + i);
+    for (; len - i >= 64; i += 64) md5_process(&s, data + i);
 
     /* final block with padding */
     size_t rem = len - i;
     memset(block, 0, sizeof block);
     if (rem) memcpy(block, data + i, rem);
+    for (size_t j = 0; j < suffix_len; j++) {
+        block[rem++] = suffix[j];
+        if (rem == 64) {
+            md5_process(&s, block);
+            memset(block, 0, sizeof block);
+            rem = 0;
+        }
+    }
     block[rem] = 0x80;
     if (rem >= 56) {
         md5_process(&s, block);
@@ -129,6 +139,19 @@ int nv_md5_hex(const uint8_t *data, size_t len, char out[33])
     }
     out[32] = '\0';
     return 0;
+}
+
+int nv_md5_hex(const uint8_t *data, size_t len, char out[33])
+{
+    return md5_hex_suffix(data, len, NULL, 0, out);
+}
+
+int nv_vendor_md5_hex(const uint8_t *data, size_t len, char out[33])
+{
+    /* Nv::ComputeChecksum @0x1d57f0: MD5(image || fixed 19-byte suffix).
+     * This is a checksum convention, not a secret or an authenticity check. */
+    static const uint8_t suffix[] = "Samsung_Android_RIL";
+    return md5_hex_suffix(data, len, suffix, sizeof suffix - 1, out);
 }
 
 static int hexval(char c)

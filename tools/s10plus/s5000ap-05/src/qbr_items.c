@@ -16,16 +16,12 @@
  * lookups can classify-and-deny rather than guess.
  */
 static const struct qbr_item g_qbr_items[] = {
-    /* --- data-session APN / attach profile ---
-     * Round-38: numeric NV item IDs recovered from the CP flash-item
-     * descriptor table (modem.bin MAIN): NASU.LTE.ATTACH.APN.INFO -> 0x168;
-     * DS_NASU.LTE.ATTACH.APN.INFO -> 0x168. */
-    { "NASU.LTE.ATTACH.APN.INFO",        QBR_CLASS_APN, 0x168u },
-    { "DS_NASU.LTE.ATTACH.APN.INFO",     QBR_CLASS_APN, 0x168u },
+    { "NASU.LTE.ATTACH.APN.INFO",        QBR_CLASS_APN, QBR_ATTACH_APN_NV_ID },
+    { "DS_NASU.LTE.ATTACH.APN.INFO",     QBR_CLASS_APN, QBR_ATTACH_APN_DS_NV_ID },
     { "!SAEL3.LTE_VZW_APN_DISABLED_FLAG", QBR_CLASS_APN, QBR_NV_ID_UNKNOWN },
     { "!SAEL3_DS.LTE_VZW_APN_DISABLED_FLAG", QBR_CLASS_APN, QBR_NV_ID_UNKNOWN },
     { "NASU.BLOCK.APN",                  QBR_CLASS_APN, QBR_NV_ID_UNKNOWN },
-    { "!SAEL3.Cfg.IMS.APN",              QBR_CLASS_APN, 0x14u },  /* recovered id 20 */
+    { "!SAEL3.Cfg.IMS.APN",              QBR_CLASS_APN, 519u }, /* size 20 */
 
     /* --- L3 / user-plane configuration flags --- */
     { "!SAEL3.Cfg.INTERNET_ATTACH_ENABLED", QBR_CLASS_CONFIG, QBR_NV_ID_UNKNOWN },
@@ -53,10 +49,10 @@ static const struct qbr_item g_qbr_items[] = {
     { "PDNMGR_FLASH_IMS_OVER_WLAN_STATUS", QBR_CLASS_CONFIG, QBR_NV_ID_UNKNOWN },
 
     /* --- network / PLMN registration state --- */
-    { "NASU.LAST.REGISTERED.PLMN",        QBR_CLASS_NETWORK, 0x3u },   /* recovered id 3 */
-    { "DS_NASU.LAST.REGISTERED.PLMN",     QBR_CLASS_NETWORK, 0x3u },   /* recovered id 3 */
-    { "NASU.LAST.INSERTED.IMSI",          QBR_CLASS_NETWORK, 0x8u },   /* recovered id 8 */
-    { "DS_NASU.LAST.INSERTED.IMSI",       QBR_CLASS_NETWORK, 0x8u },   /* recovered id 8 */
+    { "NASU.LAST.REGISTERED.PLMN",        QBR_CLASS_NETWORK, 221u },
+    { "DS_NASU.LAST.REGISTERED.PLMN",     QBR_CLASS_NETWORK, 225u },
+    { "NASU.LAST.INSERTED.IMSI",          QBR_CLASS_IMEI_ID, 222u },
+    { "DS_NASU.LAST.INSERTED.IMSI",       QBR_CLASS_IMEI_ID, 226u },
     { "NASU.EF_RAT",                      QBR_CLASS_NETWORK, QBR_NV_ID_UNKNOWN },
     { "NASU.MODEM.STATE",                 QBR_CLASS_NETWORK, QBR_NV_ID_UNKNOWN },
 

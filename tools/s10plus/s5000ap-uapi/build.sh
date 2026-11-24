@@ -32,14 +32,15 @@ if [[ "${1:-}" == "clean" ]]; then
 fi
 
 # --- host builds -------------------------------------------------------
-$HOST_CC "${CFLAGS_COMMON[@]}" -o nuxel-cpbootd.host nuxel-cpbootd.c
-$HOST_CC "${CFLAGS_COMMON[@]}" -DNUXEL_CPBOOTD_ENABLE_HW=1 -o nuxel-cpbootd.host.hw nuxel-cpbootd.c
+NV_SOURCE=../s5000ap-05/src/nv_items.c
+$HOST_CC "${CFLAGS_COMMON[@]}" -o nuxel-cpbootd.host nuxel-cpbootd.c "$NV_SOURCE"
+$HOST_CC "${CFLAGS_COMMON[@]}" -DNUXEL_CPBOOTD_ENABLE_HW=1 -o nuxel-cpbootd.host.hw nuxel-cpbootd.c "$NV_SOURCE"
 $HOST_CC "${CFLAGS_COMMON[@]}" -o nuxel-s5000ap-uapi-check.host nuxel-s5000ap-uapi-check.c
 $HOST_CC "${CFLAGS_COMMON[@]}" -o s5000ap-status.host s5000ap-status.c
 
 # --- AArch64 target builds ---------------------------------------------
-$AARCH64_CC "${CFLAGS_COMMON[@]}" -o nuxel-cpbootd.aarch64 nuxel-cpbootd.c
-$AARCH64_CC "${CFLAGS_COMMON[@]}" -DNUXEL_CPBOOTD_ENABLE_HW=1 -o nuxel-cpbootd.aarch64.hw nuxel-cpbootd.c
+$AARCH64_CC "${CFLAGS_COMMON[@]}" -o nuxel-cpbootd.aarch64 nuxel-cpbootd.c "$NV_SOURCE"
+$AARCH64_CC "${CFLAGS_COMMON[@]}" -DNUXEL_CPBOOTD_ENABLE_HW=1 -o nuxel-cpbootd.aarch64.hw nuxel-cpbootd.c "$NV_SOURCE"
 $AARCH64_CC "${CFLAGS_COMMON[@]}" -o nuxel-s5000ap-uapi-check.aarch64 nuxel-s5000ap-uapi-check.c
 $AARCH64_CC "${CFLAGS_COMMON[@]}" -o s5000ap-status.aarch64 s5000ap-status.c
 

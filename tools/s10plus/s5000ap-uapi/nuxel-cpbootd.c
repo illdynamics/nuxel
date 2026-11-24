@@ -55,6 +55,7 @@
 #endif
 
 #include "s5000ap_uapi.h"
+#include "../s5000ap-05/src/nv_items.h"
 
 /* ---------------------------------------------------------------------------
  * Compile-time ABI fence: if the verified header drifts, this unit refuses to
@@ -191,6 +192,8 @@ struct ctx {
     const char *firmware_path;   /* read-only RADIO/ITOC source path */
     int firmware_fd;
     uint64_t firmware_size;
+    uint8_t *nv_image;          /* verified immutable read-only input snapshot */
+    size_t nv_size;
 
     /* parsed ITOC */
     struct toc_element toc[MAX_TOC_INDEX];
@@ -594,6 +597,68 @@ static int xmit_part(struct ctx *c, int part_idx)
     return rc;
 }
 
+/* BootDump::build_std_dload_control_nv_fd selects FD_NV_DATA for SIPC NV.
+ * Validate the whole input BEFORE resetting the CP, and transfer the exact
+ * snapshot. Never create, repair or write any EFS file here. */
+static int prepare_nv(struct ctx *c, const char *path, const char *checksum_path)
+{
+    if (!path && !checksum_path)
+        return c->be.kind == BACKEND_MOCK ? 0 : -EINVAL;
+    int idx = c->toc_idx[TOC_NV];
+    if (!path || !checksum_path || idx < 0) return -EINVAL;
+    struct toc_element *e = &c->toc[idx];
+    if (!e->size || e->size > (64u << 20) || e->b_offset != 0 ||
+        (uint64_t)(e->m_offset & CP_MEMORY_MASK) + e->size > (uint64_t)CP_MEMORY_MASK + 1)
+        return -EINVAL;
+    int fd = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    if (fd < 0) return -errno;
+    struct stat st;
+    if (fstat(fd, &st) || !S_ISREG(st.st_mode) || st.st_size != (off_t)e->size) {
+        close(fd); return -EINVAL;
+    }
+    c->nv_image = malloc(e->size);
+    if (!c->nv_image) { close(fd); return -ENOMEM; }
+    size_t got = 0;
+    while (got < e->size) {
+        ssize_t n = read(fd, c->nv_image + got, e->size - got);
+        if (n < 0 && errno == EINTR) continue;
+        if (n <= 0) { close(fd); return -EIO; }
+        got += (size_t)n;
+    }
+    close(fd);
+    fd = open(checksum_path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    if (fd < 0) return -errno;
+    char stored[33] = {0}, actual[33];
+    ssize_t n = read(fd, stored, sizeof stored);
+    close(fd);
+    if (n != 32 || nv_vendor_md5_hex(c->nv_image, e->size, actual) ||
+        memcmp(stored, actual, 32)) return -EBADMSG;
+    c->nv_size = e->size;
+    emit("{\"nv_preflight\":\"verified\",\"bytes\":%u,\"source\":\"read-only EFS snapshot\"}", e->size);
+    return 0;
+}
+
+static int xmit_nv(struct ctx *c, int part_idx)
+{
+    const struct toc_element *e = &c->toc[part_idx];
+    if (!c->nv_image || c->nv_size != e->size) return -EINVAL;
+    struct modem_firmware mf = {0};
+    mf.size = e->size;
+    mf.m_offset = e->m_offset & CP_MEMORY_MASK;
+    for (size_t sent = 0; sent < c->nv_size;) {
+        size_t remaining = c->nv_size - sent;
+        mf.len = remaining < EXYNOS_PAYLOAD_LEN ? (uint32_t)remaining : EXYNOS_PAYLOAD_LEN;
+        mf.binary = (unsigned long long)(uintptr_t)(c->nv_image + sent);
+        int rc = do_xmit_boot(&c->be, &mf);
+        if (rc) return rc < 0 ? rc : -EIO;
+        sent += mf.len;
+        mf.m_offset += mf.len;
+    }
+    emit("{\"nv_download\":\"complete\",\"bytes\":%u,\"m_offset\":%u}",
+         e->size, e->m_offset & CP_MEMORY_MASK);
+    return 0;
+}
+
 /* ---------------------------------------------------------------------------
  * SECURITY_REQ: TEE secure-boot via exynos_smc (kernel shmem_security_request).
  * Mirrors BootDumpModap::std_security_req. mode/param2/param3 are the SMC args.
@@ -665,9 +730,8 @@ static int run_boot(struct ctx *c)
     /* 2. load CP images -> XMIT_BOOT over each stage in TOC-index order,
      *    starting at start_stage (TOC) and terminating at OFFSET.
      *    Faithful to BootDumpModap::load_cp_images + build_std_dload_control.
-     *    NV stages (TOC_NV / TOC_NV_NORM / TOC_NV_PROT) are sourced from the
-     *    EFS nv_data.bin (FD_NV_DATA), NOT the radio partition, so they are
-     *    SKIPPED here — equivalent to cbd's `b_fd < 0 -> continue`. */
+     *    SIPC NV is sourced from the verified EFS snapshot (FD_NV_DATA).
+     *    NV_NORM/NV_PROT belong to SIT and are skipped for this SIPC target. */
     s = STAGE_XMIT_BOOT;
     {
         long t0 = now_ms();
@@ -675,10 +739,15 @@ static int run_boot(struct ctx *c)
         for (stage = c->start_stage; stage < c->num_stages + 1; stage++) {
             if (stage == c->toc_idx[TOC_OFFSET])
                 break;  /* OFFSET terminates the stage list (cbd) */
-            if (stage == c->toc_idx[TOC_NV] ||
-                stage == c->toc_idx[TOC_NV_NORM] ||
+            if (stage == c->toc_idx[TOC_NV]) {
+                if (!c->nv_image && c->be.kind == BACKEND_MOCK) continue;
+                rc = xmit_nv(c, stage);
+                if (rc) goto fail;
+                continue;
+            }
+            if (stage == c->toc_idx[TOC_NV_NORM] ||
                 stage == c->toc_idx[TOC_NV_PROT])
-                continue;  /* NV comes from EFS, never the radio partition */
+                continue;
             if (stage != c->toc_idx[TOC_TOC] &&
                 stage != c->toc_idx[TOC_BOOT] &&
                 stage != c->toc_idx[TOC_MAIN] &&
@@ -687,7 +756,8 @@ static int run_boot(struct ctx *c)
             rc = xmit_part(c, stage);
             if (rc < 0) goto fail;
         }
-        stage_result(s, rc, now_ms() - t0, "TOC/BOOT/MAIN/VSS in TOC order (NV from EFS)");
+        stage_result(s, rc, now_ms() - t0, c->nv_image ?
+            "TOC/BOOT/MAIN/VSS/NV; NV from verified EFS snapshot" : "mock without NV input");
         if (rc < 0) goto fail;
     }
 
@@ -827,6 +897,7 @@ static void usage(const char *a0)
 {
     fprintf(stderr, "usage: %s [--plan] [--node PATH] [--firmware PATH] [--deadline-ms N]\n"
                     "       [--really-boot] [--manifest-sha256 HEX] [--mock]\n"
+                    "       [--nv-image PATH --nv-md5 PATH] (required for physical boot)\n"
                     "Default is FAIL-CLOSED dry-run: read-only IOCTL_MODEM_STATUS only.\n"
                     "HW path requires NUXEL_CPBOOTD_ENABLE_HW=1 (value-aware) + --really-boot\n"
                     " + --manifest-sha256 <exact immutable manifest SHA-256>.\n", a0);
@@ -838,6 +909,7 @@ int main(int argc, char **argv)
     const char *node = "/dev/umts_boot0";
     const char *firmware = NULL;
     const char *manifest_hex = NULL;
+    const char *nv_path = NULL, *nv_md5_path = NULL;
     long deadline_ms = 30000;
     int show_plan = 0;
     int really_boot = 0;
@@ -854,6 +926,8 @@ int main(int argc, char **argv)
         if (!strcmp(argv[i], "--plan")) show_plan = 1;
         else if (!strcmp(argv[i], "--node") && i + 1 < argc) node = argv[++i];
         else if (!strcmp(argv[i], "--firmware") && i + 1 < argc) firmware = argv[++i];
+        else if (!strcmp(argv[i], "--nv-image") && i + 1 < argc) nv_path = argv[++i];
+        else if (!strcmp(argv[i], "--nv-md5") && i + 1 < argc) nv_md5_path = argv[++i];
         else if (!strcmp(argv[i], "--deadline-ms") && i + 1 < argc) {
             char *end = NULL;
             long v = strtol(argv[++i], &end, 10);
@@ -996,9 +1070,18 @@ int main(int argc, char **argv)
     }
 
     {
-        int rc = run_boot(&c);
+        int rc = prepare_nv(&c, nv_path, nv_md5_path);
+        if (rc) {
+            emit("{\"first_failed_stage\":\"nv-preflight\",\"rc\":%d}", rc);
+            if (c.be.fd >= 0) close(c.be.fd);
+            if (c.firmware_fd >= 0) close(c.firmware_fd);
+            free(c.nv_image);
+            return 1;
+        }
+        rc = run_boot(&c);
         if (c.be.kind == BACKEND_REAL && c.be.fd >= 0) { flock(c.be.fd, LOCK_UN); close(c.be.fd); }
         if (c.firmware_fd >= 0) close(c.firmware_fd);
+        free(c.nv_image);
 
         if (rc != 0) {
             static const char *names[STAGE_COUNT] = {

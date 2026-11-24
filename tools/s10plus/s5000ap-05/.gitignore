@@ -16,3 +16,8 @@
 /test_nv_items
 /test_rfs_nv
 /test_efs_nv
+/test_fmt_rx
+/test_ipc41_cmdmap
+/test_*_asan
+
+test_oes_cert

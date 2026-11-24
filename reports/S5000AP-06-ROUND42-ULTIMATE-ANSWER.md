@@ -1,3 +1,5 @@
+> Historical report. Round 43 supersedes its registration, APN item identity, checksum and startup conclusions. See [corrected implementation and hardware evidence](S5000AP-06-ROUND43-SET-APN-INFO-CP-TRACE.md).
+
 # Stage 06 — Round 42: THE ULTIMATE ANSWER (execution pass — NV serving implemented + external dependency precisely re-verified)
 
 **Date:** 2026-11-24 CET

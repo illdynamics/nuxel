@@ -21,25 +21,34 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 enum ds_phase {
     DS_IDLE = 0,
     DS_SIM_CHECK,          /* confirm SIM READY */
     DS_NET_REGIST_CHECK,   /* read PS/data registration (GetDataRegState NET_REGIST) */
     DS_SET_SERVICE_DOMAIN, /* NET service domain CS_PS (SetServiceDomain sub=8) */
+    DS_VERIFY_SERVICE_DOMAIN, /* require wire 1 (CS+PS), never wire 2 (CS only) */
     DS_SET_PREFERRED_NET,  /* NET preferred type LTE (SetPreferredNetType sub=10) */
+    DS_VERIFY_NET_MODE,    /* read back the CP network-mode mask */
     DS_ENABLE_MOBILE_DATA, /* GPRS mobile data ON (SetMobileDataSetting sub=29) */
     DS_SYNC_PROFILE,       /* full profile sync w/ RAT (SyncProfileInfo sub=37) */
     DS_SET_DATA_PROFILE,   /* set APN/auth/protocol data profile */
+    DS_IA_STATE_QUERY,     /* query actual PS registration before an IA detach */
+    DS_PS_DETACH,          /* vendor DoDetachForIA: {0,0,4} */
+    DS_PS_DETACHED_VERIFY, /* require actual detached PS status */
     DS_SET_LTE_ATTACH,     /* set LTE attach profile (required for LTE PS) */
     DS_MBIM_ATTACH_CONFIG, /* MBIM MS LTE Attach Config (CID 0x0A) via IpcTxRawIpc */
     DS_DEFINE_PDP,         /* define PDP context w/ APN */
     DS_ALWAYS_ON_PDN,      /* always-on PDN profile */
+    DS_PS_REGIST_CHECK,    /* avoid redundant PS attach when already registered */
     DS_PS_ATTACH,          /* GPRS PS attach */
     DS_PS_REGIST_VERIFY,   /* re-query PS registration; gate data call on attach */
     DS_DATA_CALL,          /* activate PDP context */
     DS_GET_PDP_LIST,       /* query PDP context list (fetch IP config) */
     DS_WAIT_IP,            /* wait for rmnet + IP config */
+    DS_RECOVER_PS_ATTACH,  /* restore PS after failed initial-attach transaction */
+    DS_RECOVER_PS_REGIST,
     DS_ACTIVE,             /* data active */
     DS_REJECTED,           /* modem rejected (terminal for this attempt) */
     DS_FAILED,             /* timeout/generic failure */
@@ -52,14 +61,29 @@ struct data_session_ctx {
     uint8_t        apn_len;
     uint8_t        profile_id;
     uint8_t        protocol;      /* IP family for PDP/attach (FMT_TX_PROTO_*) */
-    uint8_t        attach_cid;    /* attach/context CID (GetAttachCid: single-SIM=1, DSDS=5) */
-    uint8_t        attach_flag;   /* SetLteAttachProfile payload[0] (3=apply, 1=define) */
-    uint8_t        auth_code;     /* DataAuth region code (1=none, 2=PAP, 3=CHAP); SetPdpContext converts 1->0 */
+    uint8_t        preferred_net; /* vendor PreferredNetType: 9=auto, 11=LTE */
+    uint8_t        last_net_mode;
+    bool           net_mode_valid;
+    uint8_t        attach_cid;    /* GetAttachCid: RIL slot 0 -> 1, slot 1 -> 5 */
+    uint8_t        attach_flag;   /* 1=profile zero, 3=always-on profile (CP) */
+    uint8_t        auth_code;     /* DataAuth: 0=none, 1=PAP, 2=CHAP, 3=auto */
     uint8_t        pdp_type_wire; /* SetPdpContext payload[0] (FMT_TX_PDP_TYPE_*) */
     bool           mobile_data_on;
     bool           attached;
+    bool           ps_state_valid;
+    uint8_t        ps_control_state, ps_control_suspend;
+    bool           ps_control_valid;
     bool           call_established;
     bool           ip_configured;
+    bool           ps_attach_ack;
+    bool           mobile_data_unsupported;
+    bool           reattach_for_apn;
+    bool           needs_ps_restore;
+    enum ds_phase  failure_phase;
+    uint16_t       failure_result;
+    bool           failure_result_valid;
+    uint8_t        expected_main, expected_sub, expected_type;
+    bool           expected_valid;
 
     /* MBIM session sub-state for DS_MBIM_ATTACH_CONFIG. The vendor host opens
      * an MBIM session (OPEN primitive) before issuing the attach-config CID
@@ -71,37 +95,27 @@ struct data_session_ctx {
 
     /* Stage-06 response-decode state (populated from REAL modem responses only;
      * never from a frame write). These drive the strict FSM transitions. */
-    uint8_t        last_gen_result;    /* GEN echo result byte (0=success) */
+    uint16_t       last_gen_result;    /* complete LE result: 0x8000=success */
     uint8_t        last_gprs_call_state; /* GPRS_CALL_STATUS state byte */
     uint8_t        last_gprs_pdp_state;  /* GPRS_PDP_CONTEXT list state byte */
     /* NET_REGIST decoded registration states (authoritative RegState enum):
      * 0=off,1=registered,2=searching,3=denied,4=unknown,5=roaming. */
     uint8_t        last_cs_reg_state;
     uint8_t        last_ps_reg_state;
-    uint8_t        last_reject_cause;   /* NET_REGIST payload[10] reject byte */
+    uint8_t        last_reg_wire;
+    uint8_t        last_reject_cause;   /* NET_REGIST payload[10], vendor reasonDenied */
+    uint8_t        last_rat_wire;
+    uint8_t        last_call_cause;
     bool           net_regist_valid;
     bool           gen_result_valid;   /* a GEN result has been correlated */
     bool           gprs_call_state_valid;
     bool           gprs_pdp_state_valid;
 };
 
-/* ATTACH CID — corrected round-17 disassembly of GetAttachCid() @0x1e4500:
- *
- *     mov  w9, #5
- *     cmp  w8, #1            ; DataCallManager::mModelType
- *     csinc w9, w9, wzr, eq  ; model_type==1 -> w9=5, else w9=1
- *     cmp  w8, #0
- *     csinc w0, w9, wzr, ne  ; model_type!=0 -> w0=w9, else w0=1
- *
- *   => model_type==1 -> 5 ; model_type==0 -> 1 ; model_type>=2 -> 1
- *
- * The device is SM-G975F/beyond2lte EUR OPEN "_EUR0" (single physical SIM),
- * i.e. NOT dual-sim model_type 1. The corrected GetAttachCid is therefore 1,
- * NOT 5. (The prior "returns 5 for the standard LTE model" comment was a
- * mis-read of the csinc chain; only model_type==1 yields 5.)
- *
- * The DATA PROFILE default id is a SEPARATE value (ConvertProfileId(DEFAULT)
- * == 1, non-NTC). Keep attach CID and profile id as distinct names. */
+/* GetAttachCid @0x1e4500 loads GOT 0x3ad028. Its ELF relocation identifies
+ * Feature::mRilIndex, NOT DataCallManager::mModelType. RIL slot 1 returns 5;
+ * slot 0 returns 1. ds_detect is a board dual-SIM flag, not SIM presence.
+ * The data profile id (ConvertProfileId(DEFAULT)==1) is a separate value. */
 #define DS_ATTACH_CID 1u
 
 /* AlwaysOnPdn wire payload[1] (IpcTxSetAlwaysOnPdn(bool, DataProfile, int)
@@ -110,10 +124,14 @@ struct data_session_ctx {
  * DataProfile enum value. ConvertProfileId(DEFAULT)==1. */
 #define DS_ALWAYS_ON_PDN_PROFILE 1u
 
-/* Gen echo result codes recovered live + source-backed (vendor IpcRxGeneral):
- * 0 == success; non-zero == rejection/failure. We deliberately do NOT map a
- * specific enum for 0x01/0x03 yet — non-zero is sufficient to fail-closed. */
-#define DS_GEN_RESULT_OK 0u
+/* Complete little-endian GEN result; do not discard its high byte. */
+#define DS_GEN_RESULT_OK 0x8000u
+
+enum ds_gen_status { DS_GEN_IGNORE, DS_GEN_ACCEPTED, DS_GEN_REJECTED,
+                     DS_GEN_OPTIONAL_UNSUPPORTED };
+void ds_expect(struct data_session_ctx *c, uint8_t main, uint8_t sub, uint8_t type);
+enum ds_gen_status ds_gen_response(struct data_session_ctx *c, const uint8_t *p,
+                                   size_t n);
 
 /* GPRS data-call state (IpcRxGprsCallStatus @0x321ab0): the CP reports
  * payload[1] as the data-call state. 1/10/11 -> connected (4/5/6 internal); any

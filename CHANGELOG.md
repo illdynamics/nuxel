@@ -1,24 +1,26 @@
 # Changelog
 
-# Changelog
+## Stage 06 Round 43 — wire-format, registration and CP startup corrections
 
-## Stage 06 Round 43 — SET_APN_INFO (sub 27) traced from CP firmware; DEFINE_PDP legacy confirmed
-
-- Traced `IPC41_GPRS_SET_APN_INFO` (sub 27) to its AUTHORITATIVE CP handler in the
-  G975FXXS9DTK9 firmware (`./packs` CP modem.bin): `sipcProcGprsSetApnInfoSet` ->
-  `PMPM_UpdateSetInitialAttachApnReq` -> DS item `NASU.LTE.ATTACH.APN.INFO` (item 360).
-  Confirmed the AP `IpcTxSetDataProfile @0x31ff48` maps main=13/sub=27/type=3 (196-byte
-  payload) and `IpcTxSetLteAttachProfile @0x320238` maps main=13/sub=20/type=3 (194-byte
-  payload); both are ACKed by the CP (GEN=0) but do NOT persist item 360.
-- Live-probed DefinePdpContext (sub 1): the S5000AP LTE CP REJECTS it (GEN=1,
-  `0d01030180`) — the LTE data path does not use the legacy Define/Activate PDP flow.
-  Reverted a round-43 FSM insertion and recorded the byte-exact rejection in
-  `tests/test_data_session.c`.
-- Recovered item-360 record size `0x9f = 159` bytes from the CP NV template (OFFSET
-  segment pair-table @0x169be). The physical live offset remains CP-runtime-assigned
-  (unchanged blocker). Full spec: `reports/S5000AP-06-ROUND43-SET-APN-INFO-CP-TRACE.md`.
-- Host suite (14 suites + 3000-iter fuzzer + ASan/UBSan) PASS; on-device AArch64
-  `-Wall -Wextra -Werror` cross-build PASS; live deployment + probe performed.
+- Corrected SET_APN_INFO, initial-profile, DEFINE and activation frames against
+  isolated vendor execution; added complete golden vectors and strict responses.
+- Corrected registration decoding: raw state 1 is not registered. Previous home
+  registration claims were false. Network/PS state now independently gate data.
+- Fixed the service-domain command: the old CS+PS setting actually selected
+  CS-only and disabled packet service. Added vendor vectors and CP readback.
+- Physically established KPN LTE registration and CID 1: CALL_STATUS state 1,
+  cause 0, active PDP readback, global IPv6 address and KPN DNS received. The
+  session flow now skips redundant PS attach when NET already reports registered;
+  GPRS_PS GET control flags do not override that state. Added native GetIpInfo.
+- Queried the real baseband: G975FXXSEFUJ2. Cross-checked its command table against
+  the initial DTK9 reference. APN NV indices are 220/224; 360 is the value size.
+- Fixed Samsung NV checksum handling (fixed suffix), and the omitted NV download
+  in native CP boot. Physically restarted the CP with the unchanged verified EFS
+  image: ONLINE, SIM ready, radio-on and KPN LTE camping observed.
+- Added the native OES device-certificate startup response, using only the existing
+  file and vendor-executed vectors. Added an already-detached APN transaction path.
+- Stage 06 remains incomplete. See the Round 43 report and
+  [wire specification](docs/S5000AP-IPC41-DATA.md) for physical evidence and limits.
 
 ## Stage 06 Round 42 — RFS NV serving implemented (radiod)
 
@@ -27,11 +29,9 @@
   previous fail-closed stub. Writes remain gated behind `--write-enable` + `NUXEL_NV_WRITE=1`,
   are bounded against the real file size, recompute the MD5 sidecar, and never log payload
   bytes or item ids. `install.sh` now links `efs_nv.c` + `nv_items.c`.
-- Re-verified (independent disassembly + live evidence) the single remaining Stage-06 blocker:
-  the persistent initial-attach APN (NV item 360 / 0x168) is empty, and its physical offset
-  is assigned at CP boot by the vendor cbd/CP NvCoreInfo list (runtime-relocated, not
-  statically recoverable from any in-repo artifact). See
-  `reports/S5000AP-06-ROUND42-ULTIMATE-ANSWER.md`.
+- Round 43 supersedes this round's original blocker claim. The APN descriptors
+  are indices 220/224 with 360-byte values; neither an empty APN record nor a
+  unique runtime-only storage-mapping dependency was established by Round 42.
 - Host suite (14 suites + 3000-iter fuzzer + ASan/UBSan) and on-device AArch64 `-Wall
   -Wextra -Werror` cross-build all PASS.
 

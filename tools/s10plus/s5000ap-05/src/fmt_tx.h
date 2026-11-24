@@ -25,8 +25,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-/* worst-case FMT frame this module can build (326-byte SyncProfileInfo + slack) */
-#define FMT_TX_MAX_FRAME 512u
+/* Includes the vendor's fixed 711-byte OES certificate event frame. */
+#define FMT_TX_MAX_FRAME 1024u
 
 /* cmd_type numeric classes (vendor enum; see ipc41_cmdmap.h) */
 #define FMT_TX_TYPE_REQUEST       2u
@@ -42,17 +42,11 @@ enum fmt_tx_data_protocol {
     FMT_TX_PROTO_IPV4V6  = 4,
 };
 
-/* DataAuth region codes (VERIFIED from helper @31fe28, non-NTC):
- *   1 = NONE (no auth)   -> SetPdpContext converts this to DataAuth int 0
- *   2 = PAP
- *   3 = CHAP
- * The DataAuth ENUM (DataCallSetup::ToDataAuth @0x29f970) is NONE=0/PAP=1/CHAP=2;
- * SetPdpContext (IpcTxSetPdpContext @0x31f6e0) uses that enum directly (auth==0
- * => ACTIVATE bit NOT set), while SetDataProfile/SetLteAttachProfile use the
- * region code (NONE => 1). SetPdpContext converts region 1 -> 0. */
-#define FMT_TX_AUTH_NONE 1u
-#define FMT_TX_AUTH_PAP  2u
-#define FMT_TX_AUTH_CHAP 3u
+/* DataAuth enum from the vendor function signatures. */
+#define FMT_TX_AUTH_NONE 0u
+#define FMT_TX_AUTH_PAP  1u
+#define FMT_TX_AUTH_CHAP 2u
+#define FMT_TX_AUTH_PAP_OR_CHAP 3u
 
 /*
  * RadioTechnologyType numeric values (VERIFIED: NetworkManager::GetGeneration
@@ -79,6 +73,19 @@ uint8_t *fmt_tx_begin(struct fmt_tx_frame *f, uint8_t main, uint8_t sub,
 
 /* Query SIM application status. No payload (len=7). */
 bool fmt_tx_get_sim_status(struct fmt_tx_frame *f);
+/* IMSI response is used only for known home-PLMN classification. Never log it. */
+bool fmt_tx_get_sim_network(struct fmt_tx_frame *f);
+/* CP GET handler 0x4121a43c returns {PS attached, suspend state}. */
+bool fmt_tx_get_ps_attach(struct fmt_tx_frame *f);
+bool fmt_tx_get_baseband_version(struct fmt_tx_frame *f);
+/* RF on/off, not CP boot/reset. IpcTxRadioPower @0x33fa80. */
+bool fmt_tx_radio_power(struct fmt_tx_frame *f, bool on);
+bool fmt_tx_net_selection_auto(struct fmt_tx_frame *f);
+/* OES startup exchange, vendor IpcTxCfrm/EventDrkCpInfo. No EFS writes. */
+#define FMT_TX_OES_CERT_CHUNK 700u
+bool fmt_tx_oes_confirm(struct fmt_tx_frame *f);
+bool fmt_tx_oes_certificate(struct fmt_tx_frame *f, uint8_t result, uint8_t index,
+                             const uint8_t *data, size_t len);
 
 /* Query SIM ATR info. No payload (len=7). */
 bool fmt_tx_get_atr(struct fmt_tx_frame *f);
@@ -147,26 +154,27 @@ bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profi
 bool fmt_tx_raw(struct fmt_tx_frame *f, uint8_t main, uint8_t sub,
                 uint8_t type, const uint8_t *payload, size_t payload_len);
 
-#endif /* NUXEL_FMT_TX_H */
-
 /* ---- NET service-domain / preferred-network-type commands (AP -> CP) ---- */
 
 /* NET service domain config (source: IpcTxNetSetServiceDomain @0x336dc8).
  * main=8 sub=8(0x08) type=3, 8-byte frame, payload=[domain].
- * NetServiceDomainType: 1=CS_ONLY, 2=CS_PS (voice+data), 3=PS_ONLY. The vendor
- * default for a normal LTE attach is CS_PS (2), which is REQUIRED before the
- * GPRS/data path will accept a PS attach. */
+ * Internal values 0=CS_PS, 1=PS_ONLY, 2=CS_ONLY; wire values 1,3,2. */
 bool fmt_tx_set_service_domain(struct fmt_tx_frame *f, uint8_t domain);
+bool fmt_tx_get_service_domain(struct fmt_tx_frame *f);
 
 /* NET preferred network type / network mode select (source:
  * IpcTxNetSetPreferredNetType @0x335e00). main=8 sub=10(0x0a) type=3,
  * 8-byte frame, payload=[PreferredNetType]. 9 = LTE/WCDMA/GSM auto (Android
  * RIL_PREFERRED_NETWORK_MODE_LTE_WCDMA_GSM), the S10+ default LTE mode. */
 bool fmt_tx_set_preferred_net_type(struct fmt_tx_frame *f, uint8_t net_type);
+bool fmt_tx_get_preferred_net_type(struct fmt_tx_frame *f);
 
 /* Service-domain and preferred-network-type value constants. */
-#define FMT_TX_SERVICE_DOMAIN_CS_PS  2u  /* voice + data both enabled */
+#define FMT_TX_SERVICE_DOMAIN_CS_PS   0u
+#define FMT_TX_SERVICE_DOMAIN_PS_ONLY 1u
+#define FMT_TX_SERVICE_DOMAIN_CS_ONLY 2u
 #define FMT_TX_PREFERRED_NET_LTE_AUTO 9u  /* LTE/WCDMA/GSM auto */
+#define FMT_TX_PREFERRED_NET_LTE_ONLY 11u /* LTE only; wire mask 0x08 */
 /* SetPdpContext payload[0] wire-byte selectors (VERIFIED this round from the
  * IpcTxSetPdpContext @0x31f6e0 jump table @0x149806; the value is a jump-table
  * selector, NOT "AccessNetworkType LTE = 3"):
@@ -179,3 +187,5 @@ bool fmt_tx_set_preferred_net_type(struct fmt_tx_frame *f, uint8_t net_type);
 #define FMT_TX_PDP_TYPE_LTE  4u
 #define FMT_TX_PDP_TYPE_LEGACY 3u
 #define FMT_TX_PDP_TYPE_DEFAULT FMT_TX_PDP_TYPE_FULL
+
+#endif /* NUXEL_FMT_TX_H */

@@ -56,8 +56,9 @@
  *     the CP, or — for the AP-originated provisioning path — only after an
  *     authenticated CP-originated NV_READ returned that same item's offset
  *     and length.
- *   - NV item id 360 == 0x168 (NASU.LTE.ATTACH.APN.INFO) is the ONLY item the
- *     provisioning policy may target, and ONLY to set the owner-approved APN.
+ *   - NASU.LTE.ATTACH.APN.INFO is logical CP index 220, size 360 bytes.
+ *     Neither the logical index nor size supplies a physical file offset.
+ *     AP-originated writes remain denied without a verified record schema.
  *   - Protected RF/calibration/IMEI/keys items are deny-classified and can
  *     never reach the serialization path.
  */
@@ -80,7 +81,7 @@ extern "C" {
 #define RFS_NV_RESP_LEN      15u    /* recovered response length for NV ops */
 
 /* RFS NV item-id constants (recovered; qbr_items.h duplicates for dict use). */
-#define RFS_NV_ITEM_ATTACH_APN_ID 0x168u  /* 360 */
+#define RFS_NV_ITEM_ATTACH_APN_ID 220u
 
 /* A fully-decoded NV write/read item transaction record. */
 struct rfs_nv_item {
@@ -108,6 +109,7 @@ enum rfs_nv_provision_decision {
     RFS_NV_DENY_NO_OFFSET   = -3,    /* no authenticated offset/length yet */
     RFS_NV_DENY_LENGTH      = -4,    /* length exceeds authenticated length */
     RFS_NV_DENY_BADAPN      = -5,    /* APN empty/oversize/invalid */
+    RFS_NV_DENY_SCHEMA     = -6,    /* string is not a complete NV profile */
 };
 
 /*
@@ -157,13 +159,15 @@ size_t rfs_nv_read_response_build(uint8_t seq, uint8_t result,
 /*
  * Decide whether an AP-originated provisioning write for the given item id
  * and validated APN record may proceed.
- *   item_id       : numeric NV item id (RFS_NV_ITEM_ATTACH_APN_ID == 360)
+ *   item_id       : logical CP item index (RFS_NV_ITEM_ATTACH_APN_ID == 220)
  *   item_protected: whether the id is RF/cal/IMEI/keys
  *   have_offset   : an authenticated (offset,length) has been read back
  *   length_limit  : the authenticated value length (0 if have_offset false)
  *   apn, apn_len  : the APN value to write (must be 1..127, no embedded NUL)
- * On success out_offset/out_length are set to the authenticated (offset,
- * apn_len) to write. Returns an rfs_nv_provision_decision. Pure.
+ * The old API lacks a record pre-image, schema and authenticated item-range
+ * binding. It must never authorize writing a string over a structured record;
+ * returns DENY_SCHEMA even after its other prerequisites pass. Outputs zero.
+ * CP-originated RFS transaction serving remains a separate implementation.
  */
 enum rfs_nv_provision_decision rfs_nv_provision_policy(
     uint32_t item_id, bool item_protected, bool have_offset,
