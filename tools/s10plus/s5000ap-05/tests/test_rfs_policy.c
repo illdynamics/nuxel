@@ -26,7 +26,14 @@ static void wr(const char *p, const char *s) {
     if (fd >= 0) { write(fd, s, strlen(s)); close(fd); }
 }
 static void jn(char *dst, size_t n, const char *a, const char *b) {
-    snprintf(dst, n, "%s/%s", a, b);
+    size_t an = strlen(a), bn = strlen(b);
+    if (an >= n || bn >= n - an - 1) {
+        fputs("test path exceeds buffer\n", stderr);
+        exit(2);
+    }
+    memcpy(dst, a, an);
+    dst[an] = '/';
+    memcpy(dst + an + 1, b, bn + 1);
 }
 
 int main(void)
