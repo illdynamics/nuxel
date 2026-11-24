@@ -158,11 +158,17 @@ public class MainActivity extends Activity {
     private boolean storageDialogShowing;
     private boolean batterySettingsOpened;
     private final ArrayDeque<WakeCommand> pendingWakeCommands = new ArrayDeque<>();
+    /** Live Activity used by WakeWordService to inject a background wake
+     *  command directly into the running page. Android 10+ blocks
+     *  startActivity from a background service, so the service posts the
+     *  command here instead of bringing PenGuru to the front. */
+    private static volatile MainActivity sLiveActivity;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sLiveActivity = this;
         // Draw edge-to-edge on every supported release, then inset a real
         // container view. Padding on the WebView itself is not consistently
         // honoured by Chromium, which let page text run underneath the status
@@ -334,6 +340,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (sLiveActivity == this) {
+            sLiveActivity = null;
+        }
         speechToken++;
         speechRunning = false;
         speechHeldText = "";
@@ -681,6 +690,34 @@ public class MainActivity extends Activity {
             }
             dispatchWakeCommand(next.text, next.mode);
         }
+    }
+
+    /**
+     * Inject a SonarBird wake command into the already-running page without
+     * launching this Activity. Returns false when no live page exists, so
+     * the service can fall back to startActivity / the notification.
+     */
+    static boolean deliverWakeCommand(String text, String mode) {
+        MainActivity activity = sLiveActivity;
+        if (activity == null || activity.isFinishing()) {
+            return false;
+        }
+        String safeText = text == null ? "" : text.trim();
+        String safeMode = VoiceCommandRouter.isMode(mode) ? mode : "";
+        if (safeText.isEmpty() && safeMode.isEmpty()) {
+            return false;
+        }
+        final MainActivity target = activity;
+        target.mainHandler.post(() -> {
+            if (sLiveActivity != target) {
+                return;
+            }
+            // Consume the pending hand-off so a later foreground launch
+            // does not deliver the same command a second time.
+            WakeWordService.clearPendingCommand(target);
+            target.queueWakeCommand(safeText, safeMode);
+        });
+        return true;
     }
 
     private void dispatchWakeCommand(final String text, final String mode) {

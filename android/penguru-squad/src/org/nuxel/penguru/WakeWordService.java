@@ -1277,26 +1277,38 @@ public class WakeWordService extends Service {
                 .putString(PREF_PENDING_MODE, mode)
                 .putLong(PREF_PENDING_AT, now)
                 .apply();
-        updateNotification(text.isEmpty()
-                ? VoiceCommandRouter.modeName(mode) + " selected · opening PenGuru"
-                : "Heard: " + shorten(text) + " · opening PenGuru");
-
-        Intent launch = new Intent(this, MainActivity.class);
-        launch.setAction(Intent.ACTION_VIEW);
-        launch.putExtra(EXTRA_COMMAND, text);
-        launch.putExtra(EXTRA_MODE, mode);
-        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        try {
-            startActivity(launch);
-        } catch (RuntimeException error) {
-            // Android 10+ may block background activity launches. The ongoing
-            // notification's content intent carries the command instead.
-            Log.w(TAG, "Background activity launch blocked: " + error);
+        if (MainActivity.deliverWakeCommand(text, mode)) {
+            // Android 10+ blocks startActivity from a background service. When
+            // the page is already alive (even stopped behind another app or
+            // with the screen off), the command is injected straight into the
+            // WebView so the on-device engine can answer and the service-owned
+            // talkback can speak it without bringing PenGuru to the front.
             updateNotification(text.isEmpty()
-                    ? VoiceCommandRouter.modeName(mode) + " selected · tap to open PenGuru"
-                    : "Heard: " + shorten(text) + " · tap to send");
+                    ? VoiceCommandRouter.modeName(mode) + " selected · answering"
+                    : "Heard: " + shorten(text) + " · answering");
+        } else {
+            updateNotification(text.isEmpty()
+                    ? VoiceCommandRouter.modeName(mode) + " selected · opening PenGuru"
+                    : "Heard: " + shorten(text) + " · opening PenGuru");
+
+            Intent launch = new Intent(this, MainActivity.class);
+            launch.setAction(Intent.ACTION_VIEW);
+            launch.putExtra(EXTRA_COMMAND, text);
+            launch.putExtra(EXTRA_MODE, mode);
+            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            try {
+                startActivity(launch);
+            } catch (RuntimeException error) {
+                // Android 10+ may block background activity launches. The
+                // ongoing notification's content intent carries the command
+                // instead.
+                Log.w(TAG, "Background activity launch blocked: " + error);
+                updateNotification(text.isEmpty()
+                        ? VoiceCommandRouter.modeName(mode) + " selected · tap to open PenGuru"
+                        : "Heard: " + shorten(text) + " · tap to send");
+            }
         }
         handler.postDelayed(() -> {
             stoppingForHandoff = false;

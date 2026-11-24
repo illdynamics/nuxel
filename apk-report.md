@@ -3,9 +3,9 @@
 **Date:** 2026-11-24
 **Branch checked:** `feat/android-penguru-squad`
 **HEAD:** v0.9.10-beta on `feat/android-penguru-squad`
-**Working tree:** v0.9.10 talkback-on-default, bulk model/runtime download controls, mobile-data and storage preflight, background talkback, interactive follow-up and PenGuru/NUXAI identity
+**Working tree:** v0.9.10 talkback-on-default, bulk model/runtime download controls, mobile-data and storage preflight, background talkback, background wake-command delivery, interactive follow-up and PenGuru/NUXAI identity
 **Artifact:** `dist/android/penguru-squad-debug.apk`
-**SHA-256:** `133806d3bd6443aed996b230f5cd51c93439a28150adc857ecbb1dacb6378a27`
+**SHA-256:** `65d96af22b77c8ff4876f33f93ebf1729f1070854ac1a440fc897b1711922061`
 **Package/version:** `org.nuxel.penguru` / `versionCode=910`, `versionName=0.9.10-beta`
 **Min/target SDK:** 26 / 35
 **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
@@ -13,10 +13,35 @@
 
 ---
 
+## 2026-11-24 — background wake-command delivery fix
+
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `65d96af22b77c8ff4876f33f93ebf1729f1070854ac1a440fc897b1711922061`
+- **Size:** 3,779,189 bytes
+- **Version:** `0.9.10-beta` (`versionCode=910`)
+- **Min / target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Native code:** `arm64-v8a` + `x86_64`
+
+**Background wake-word replies now reach the running page.** Android 10+
+blocks `startActivity` from a background service, so a command recognised
+while PenGuru was behind another app (or with the screen off) used to wait
+inside the notification until the owner tapped it. `MainActivity` now exposes
+a live-instance hook and `WakeWordService.dispatch()` injects the command
+straight into the already-running WebView, so the on-device engine can answer
+and the service-owned talkback can speak it without bringing PenGuru to the
+front. The pending hand-off is consumed only when the page actually accepts
+the command, and the existing `startActivity` + notification fallback remains
+for the case where the Activity has been destroyed.
+
+**Verification:** `javac --release 8` compiles the updated sources; the APK
+was rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=910`,
+`versionName=0.9.10-beta`, and the SHA above matches `dist/android/SHA256SUMS`.
+
 ## 2026-11-24 — bulk download controls, mobile-data guard and talkback default
 
 - **Artifact:** `dist/android/penguru-squad-debug.apk`
-- **SHA-256:** `133806d3bd6443aed996b230f5cd51c93439a28150adc857ecbb1dacb6378a27`
+- **SHA-256:** `65d96af22b77c8ff4876f33f93ebf1729f1070854ac1a440fc897b1711922061`
 - **Size:** 3,779,189 bytes
 - **Version:** `0.9.10-beta` (`versionCode=910`)
 - **Min / target SDK:** 26 / 35
@@ -859,7 +884,7 @@ The backend is explicitly “a partially implemented, local-first subsystem, not
 |---|---|
 | Path | `dist/android/penguru-squad-debug.apk` |
 | Size | 3,779,189 bytes (~3.6 MiB) |
-| SHA-256 | `133806d3bd6443aed996b230f5cd51c93439a28150adc857ecbb1dacb6378a27` |
+| SHA-256 | `65d96af22b77c8ff4876f33f93ebf1729f1070854ac1a440fc897b1711922061` |
 | Package | `org.nuxel.penguru` |
 | Version | `0.9.10-beta` (`versionCode=910`) |
 | Min / target SDK | 26 / 35 |
