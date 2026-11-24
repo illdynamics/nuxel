@@ -417,3 +417,45 @@ Fix every newly discovered defect and retest until the physical acceptance crite
 The objective is a fully functional Nuxel phone on the actual SM-G975F.
 
 The only valid completion claim is a physically verified Stage 06 PASS.
+
+---
+
+# ROUND 39 STATUS APPENDIX (2026-11-24)
+
+## Live baseline (re-verified)
+- All 20+ modem IO-devices present: /dev/umts_ipc0, /dev/umts_rfs0, /dev/umts_boot0,
+  /dev/umts_dm0, rmnet0..7, /dev/multipdp, /dev/s5p-smem. (Round <34 "malformed DTB"
+  blocker is RESOLVED — device tree is correct.)
+- radiod running `--write-enable --arm-data-path`, CP ONLINE (code 4), SIM=1,
+  PS REGISTERED_HOME (PLMN 20408 KPN), live RSSI DISP frames.
+- Data FSM runs the full LTE attach sequence and reaches DATA_CALL:
+  `{"phase":"DATA_CALL","gen_result":0,"call_state":3,"pdp_state":0}`
+  (GPRS_CALL_STATUS state=3 == default EPS bearer NOT established).
+
+## Root cause (byte-level, now definitive)
+NV item 360 (NASU.LTE.ATTACH.APN.INFO, id 0x168) is EMPTY in the persistent NV store.
+Verified: "internet"/"kpn" absent from nv_data.bin (1 MiB) AND .nv_core.bak (546,304 B);
+name_ptr 0x404793fc/0x404793e0 absent; nv_data.bin MD5 sidecar stale
+(stored c665d4… != live f9f847…). The physical offset of item 360 is computed at
+runtime by the vendor cbd NvCoreInfo list ([this+872]) which Nuxel does not run.
+
+## Recovered + implemented (round 39, committed)
+- RFS NV transaction contract (byte-exact from libsec-ril.so build 60889dd7):
+  - NV item record: [u8 op][u8 seq][u8 mode][u32 offset@6][u32 length@10][data@14]
+    (ProcessNvWrite/ProcessNVWriteAll/ProcessNVRead; 0x80000 length clamp).
+  - AP->CP NV response: 15 bytes [u32 len][u8 type=2][u8 op][u8 result][u32 detail].
+  - Storage: lseek(nv_data.bin,offset)+write+fsync + MD5 sidecar recompute.
+    NO asymmetric signing (round-38 correction confirmed).
+- New pure module `rfs_nv.{h,c}` + golden regression tests; wired the recovered
+  15-byte NV response + (offset,length) parse into radiod dispatch_rfs (fail-closed,
+  no blind write). AArch64 cross-compile clean on device.
+
+## Remaining external dependency (honest)
+Item 360 offset+length originate from vendor `cbd` (/vendor/bin/cbd -d -tss310 -bm
+-mm -P .../by-name/radio, serving /mnt/vendor/efs/nv_data.bin via CP_REQ_NV_DATA).
+cbd is an Android cpboot-daemon NOT running on Nuxel. Unblock requires either (a)
+a known-good identical SM-G975F/KPN nv_data.bin with "internet" attach APN, or (b)
+running cbd under an owner-approved, CP-safe controlled trial to obtain the runtime
+item->offset map. No blind NV write is authorized until then.
+
+`wonqed4real` NOT created (correct: LTE bearer not established).
