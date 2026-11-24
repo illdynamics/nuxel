@@ -132,7 +132,7 @@ The normative wire details and vectors are in `docs/S5000AP-IPC41-DATA.md` and
 | Initial attach | `ds_step()`, `data_session_emit()`: verified profile, state-aware optional detach and detached readback, finite restoration after failed IA update. |
 | APN / PDP | `fmt_tx` serializers, `fmt_rx_pdp_profiles()`, `GetPdpProfiles`. Native session-start accepts profile 1 and validates APN syntax. No Settings APN editing integration yet. |
 | Bearer | GPRS CALL_STATUS 1/10/11 means connected; state 3 does not. GET PDP list confirms CID state independently of generic ACK. |
-| IP | `fmt_rx_ip_config()` and native `GetIpInfo`; decoded family/address/DNS/MTU feed the helper. Do not hardcode prior assignments. |
+| IP | `fmt_rx_ip()` and native `GetIpInfo`; decoded family/address/DNS/MTU feed the helper. Do not hardcode prior assignments. |
 | NV metadata | Logical APN descriptor indices 220/224, size 360 bytes; not EFS byte offsets. Direct NV provisioning stays disabled. |
 
 `fmt_rx_sim_network()` currently recognizes only two home-PLMN prefixes. Do
