@@ -1,0 +1,76 @@
+{
+  "authoritative_source": {
+    "app_test": "tools/s10plus/a33/tests/test-phone-apps.py",
+    "git_branch": "cs/mob-round35-stage06",
+    "git_head": "ce0664a98a97f11907396b65943c65a4ee4d116f",
+    "source_file_sha256": {
+      "./call_service.c": "675a2e49386fe69ef7679e53fe445ddad7df78749f35f7d590fbc17414dccba7",
+      "./call_service.h": "3093f26d71a653e9d54b88f47edc37785e9e22a0a58fefec70beaf265f95cf2e",
+      "./cellular_link.c": "bd645dad3e5c2b1e0e380b7e4acc882845b9a36175eb1978181ad316f8f2589e",
+      "./cellular_link.h": "325adbd5753337b045277d35f61d4e810077e746fc3aad811cd2b259904c7ba3",
+      "./data_session.c": "d7391829672052280bc08c411e046bf1313b4a786bb6032033cc7d31b41e3dcb",
+      "./data_session.h": "f4d14e4a47e5655f697091eed23dbcd34c4db6b4115bc58bff70724bc5052d70",
+      "./efs_nv.c": "78f6426741e889f9e55672206c8b728f209b9abc8fec7367a425e97b83fbca13",
+      "./efs_nv.h": "7bf6fc63770d853322f9e022b120b146648149c2d47e2d3dec8742c1325877fc",
+      "./fmt_call.c": "e2a388807020b608598d90622ec0359e2e0c7c6e947536677c956975b80ab13b",
+      "./fmt_call.h": "9d59ba4d6e99da1635bd2017d4ed64a1bfe375035a2cd7f0a21b822252567046",
+      "./fmt_rx.c": "9b2b9e16918ad084d82e00f48a0fb98b59ac9ae5ebcdcc8fa06d2e83428f4a01",
+      "./fmt_rx.h": "dfaea8cb820e23d0fe954632f1be858637deb96e36ba4b8bab05d6dd31b8600a",
+      "./fmt_sms.c": "a109d676f475ee3a3ac19feb18db6d268a3d5db733ebd5081b249638629025bd",
+      "./fmt_sms.h": "f81c986e07faaf0eca205729e3268f5d5d638a1c91f03d13a559ee2bf685a9ff",
+      "./fmt_tx.c": "d902107ab75a207e327953a18ce899ca53bf6bb020f99b8176ab45f4b19e0a52",
+      "./fmt_tx.h": "60caa5d59300f82e93fa1f857beb969f84269acfd6a8b089a31d3da35c804e13",
+      "./ipc41_cmdmap.h": "95054f5c7537b4d6435001fe1efae58f147f1435cba38b74f8ccb36b580c1e86",
+      "./mbim_tx.c": "796f9d232b0c07fe03f81dd91841bca6fa052eab3924a64b1ab81d87b66743a1",
+      "./mbim_tx.h": "e0fb4416044ad6bd7cca87f60addc80e4b810155950ec9c9e4b79b6f4d31023e",
+      "./nv_items.c": "ededc2edf071a8f16517e1f3be68201c1807e22881d155382fdf784f166a0ece",
+      "./nv_items.h": "1ef21195f8c18f54e6d4784cffc1b0f296f14783d2e3d59154229f50f7fe28ed",
+      "./oes_cert.c": "2007ff3adeb4966cfddae65996e9a0b4689830242246bfada07dc47b3adfb1f4",
+      "./oes_cert.h": "ba536f987084f012eb6e71092b709cfb8b76383e3ae1dd6902bd36f9bb622196",
+      "./qbr_items.c": "981d3cc9d7c21f68b19070685eddd7bf9a4d5bfb5422076ff099e4e8109e25a7",
+      "./qbr_items.h": "158ddf409403b73c6f8c52262616c5456ca84f1842aa15bcb806345e290d38b8",
+      "./radio_status.c": "4f850fa96b8476b4680f2d38005e4f1d70f45a35379c1c533157a5f3d137a30c",
+      "./radiod.c": "6614e98c4620eca4305e037403fc81a38f27b1e57d73d33993e360379a5909aa",
+      "./radiod.h": "048e0e2246bfb4a76d1bdbe9f3ac8c9dc83c619fa61586281b86255a5a36736a",
+      "./rfs_nv.c": "08be9b9504eb038a4ebfa500b546761946d29e3c7b7fe5153bfb787d4d6150f4",
+      "./rfs_nv.h": "75b199a920af12ffdb00d184b3ab4fa5497be50952a8921c4e1bf83df5028b24",
+      "./rfs_policy.c": "29df62b04903edb37a7eb8aad0f909f46e3f515cf6ffef4c5fe215d81742ecc3",
+      "./rfs_policy.h": "9a9f3766a1655bd2e7f41002684ecfd53b259ac34ee668d1335bd355404750ae",
+      "./rfs_proto.c": "f03b5b32c221e0a63b824ffef31c3c4cdc9c0d9004ec6e64c83a59db42bc9c69",
+      "./rfs_proto.h": "4164d7ee1b799f0f68b45e9b38a133dd179dad974f24a4339af12574e5329a6c",
+      "./rfs_respond.c": "7fb8d86bcafcf04ecba19a234475cb6c80131701463ef51eab6ca3245644b247",
+      "./rfs_respond.h": "11f511e483a2e26e539736273dc91ba04cb9aa71cae0b845777c54ea992313ac",
+      "./sipc5_fmt.c": "38ce7eddc7ac06f6146989d579eb87749cfdd9919d9332e511be0e33a08cc10a",
+      "./sipc5_fmt.h": "e5b56bf3d9fc23709a09e7661bc9e2c6ef4b0345ddb6d2866d63e2079952f80a",
+      "./sipc5_proto_table.h": "cdeecc9963b9352642fb5507b4e0afa3a5dee9bbb7efa153d3a123e3c23bd9ab",
+      "./sms_pdu.c": "3fc2f7331682c66e6916d00ed04f2f9329a71aa533122feaab5a6c35f373e4b3",
+      "./sms_pdu.h": "6b993fe285b992cb574b640a9d3b7f450ff85c726fef6c5e325c14dab9cf3e05",
+      "./sms_service.c": "fe47586dedac409abc1a2163168f2189114902af1f685100a78b43c81ac21b14",
+      "./sms_service.h": "f661d489738ea9de76ca3f6de05c5669b5044c1b31ec1909b5d21a142b66ce69",
+      "./sms_store.c": "9d1ed7c36845fe3ce8797794481449bccf1f9653b2d78e3e051aae02bed5460f",
+      "./sms_store.h": "054b58b44e65ddfd45c68d64d6884c0fccd9310fe0a477856a6637da36453821",
+      "./transport.c": "78c33255574b1b91ec678312c73965c7e7437be5a4f0ab947ea0327d86c80ccf",
+      "./transport.h": "b2fc63075caa66e3b9a52020de72ab0c23ef257ea6d933a603f9f42b5c490d1f"
+    },
+    "suite_script": "tools/s10plus/s5000ap-05/build.sh",
+    "tree_state": "dirty"
+  },
+  "generated": "2026-11-24T22:33:00Z",
+  "honesty": {
+    "host_pass_establishes_physical_layer": false,
+    "note": "Host PASS validates source/parsers/FSM only. Physical SMS/voice/IMS remain owner-gated and are NOT claimed by this receipt."
+  },
+  "results": {
+    "phone_app_offline_acceptance": {
+      "exit": 0,
+      "status": "PASS",
+      "summary": "RESULT: PASS=37 FAIL=0 verdict=OFFLINE_TESTED"
+    },
+    "radio_host_suite": {
+      "exit": 0,
+      "status": "PASS",
+      "tail": "Call vendor vectors/parser: PASS (0 failures) Call service correlation/lifecycle: PASS (0 failures) build+test OK "
+    }
+  },
+  "schema": "s5000ap-07-host-test-receipt-v1"
+}

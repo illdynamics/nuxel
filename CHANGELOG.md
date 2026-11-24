@@ -1,5 +1,33 @@
 # Changelog
 
+## Stage 07-08 — independent SMS/voice/IMS gates, regression audit and honest handoff
+
+- Added independent SMS (`S5000AP-07-TELEPHONY.md`), voice and IMS/VoLTE exit
+  receipts with truthful per-gate status: SMS and ordinary call control are
+  HOST_TESTED (source-validated + host suites pass) while physical send/receive,
+  two-way audio and any IMS registration remain owner/carrier-gated and are
+  reported BLOCKED, never collapsed into a single "modem working" flag.
+- Added source-validated IMS feasibility matrix
+  (`docs/S5000AP-IPC41-IMS-FEASIBILITY.md`) and a voice/call protocol contract
+  (`docs/S5000AP-IPC41-CALL.md`). IMS command IDs (main=22, QMIIMS=64,
+  SEC_IMS_AUTH=9) are recovered from the pinned vendor `libsec-ril.so`, not
+  invented; IMS is `IMS_BLOCKED_VENDOR_STACK` + `IMS_BLOCKED_PROVISIONING` +
+  `IMS_UNSUPPORTED`.
+- Fixed the macOS phone-data runner strict-C11 `mkdtemp` build failure by
+  defining `_DARWIN_C_SOURCE` before `_POSIX_C_SOURCE`; all 74 data-layer
+  checks and the 37 phone-app offline acceptance checks now pass.
+- Added a machine-readable host-test receipt generator
+  (`tools/s10plus/s5000ap-05/receipt.sh`) producing
+  `reports/S5000AP-07-HOST-TEST-RECEIPT.json` with authoritative source hashes
+  and an explicit "host PASS does not establish a physical layer" honesty note.
+- Produced final recovery report
+  (`reports/S5000AP-RADIO-FINAL-RECOVERY.md`) and a concise user summary
+  (`reports/S5000AP-RADIO-USER-SUMMARY.md`) including the repeatability audit
+  (firmware/BOOT/DTB/vendor-RIL hashes, DTBO-unchanged attestation, init order),
+  a per-capability VERIFIED_LIVE/HOST_TESTED/SOURCE_ONLY/BLOCKED/FAILED matrix,
+  and conservative weighted completion (data ~95%, SMS ~60%, voice ~40%,
+  IMS 0%, UI ~80%). No single all-features 100% is reported.
+
 ## Stage 06 LTE consolidation — preserved baseline and definitive handover
 
 - Checkpointed Astra/DeepSeek source and deployed binaries/configuration before
