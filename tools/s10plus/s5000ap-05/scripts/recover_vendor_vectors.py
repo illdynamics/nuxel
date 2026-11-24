@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("elf", help="DTK9 vendor/lib64/libsec-ril.so (not distributed)")
 parser.add_argument("--header", action="store_true", help="emit normalized C golden vectors")
 parser.add_argument("--rx-header", action="store_true", help="emit receive-conversion C golden vectors")
+parser.add_argument("--sms-header", action="store_true", help="emit SMS transport golden vectors")
 options = parser.parse_args()
 ELF = options.elf
 EXPECTED_SHA256 = "b02bd095ae44a991b3cb676e584b3209a947160c22e678578f8b0c877e282cb3"
@@ -43,7 +44,7 @@ def run(name, args, strings=None):
     q(OBJ+16,OBJ+0x2000); q(OBJ+0x2000,OBJ+0x3000);q(OBJ+0x3030,STOP)
     q(OBJ+0x68,OBJ+0x5000)
     if strings:
-        for off,s in strings.items():u.mem_write(STR+off,s.encode()+b'\0')
+        for off,s in strings.items():u.mem_write(STR+off,s.encode()+b'\0' if isinstance(s,str) else bytes(s))
     u.reg_write(UC_ARM64_REG_TPIDR_EL0,OBJ+0x4000)
     sp=STACK+0x80000
     u.reg_write(UC_ARM64_REG_SP,sp);u.reg_write(UC_ARM64_REG_LR,STOP+4)
@@ -82,7 +83,12 @@ def run(name, args, strings=None):
         else:raise RuntimeError(f'unhandled import {symbol} at {addr:x}')
         uc.reg_write(UC_ARM64_REG_X0,ret);uc.reg_write(UC_ARM64_REG_PC,uc.reg_read(UC_ARM64_REG_LR))
     u.hook_add(UC_HOOK_CODE,hook)
-    addr=next(v for k,v in syms.items() if name in k and k.startswith('_ZN13IpcProtocol41'))
+    # Match the complete Itanium method name. A substring would accidentally
+    # select IpcTxDeliveryReportWithPdu for IpcTxDeliveryReport.
+    prefix=f'_ZN13IpcProtocol41{len(name)}{name}E'
+    matches=[v for k,v in syms.items() if k.startswith(prefix)]
+    if len(matches)!=1:raise RuntimeError(f'non-unique serializer {name}: {matches}')
+    addr=matches[0]
     try:u.emu_start(addr,STOP+8,count=100000)
     except Exception:
         print('failed PC',hex(u.reg_read(UC_ARM64_REG_PC)));raise
@@ -144,7 +150,15 @@ if __name__=='__main__':
     results['chap_attach']=run('IpcTxSetLteAttachProfile',[5,STR,STR+128,STR+256,2,2,2,0,0,0,0],{0:'internet'}).hex()
     results['pap_activate']=run('IpcTxSetPdpContext',[1,1,STR,STR+128,1,0],{0:''}).hex()
     results['registration_states']=registration_states().hex()
-    if not options.header and not options.rx_header:
+    sms_pdu=bytes.fromhex('00212a0b912143658709f1000005e8329bfd06')
+    for domain in range(4):
+        results[f'sms_send_domain_{domain}']=run('IpcTxSendSms',[2,1,1,1,domain,STR,len(sms_pdu)],{0:sms_pdu}).hex()
+    results['sms_send_more']=run('IpcTxSendSms',[2,1,2,2,2,STR,len(sms_pdu)],{0:sms_pdu}).hex()
+    results['sms_ack_ok']=run('IpcTxDeliveryReport',[2,0x42,1,0]).hex()
+    results['sms_ack_memory_full']=run('IpcTxDeliveryReport',[2,0x42,0,0x16]).hex()
+    results['sms_get_smsc']=run('IpcTxGetSmscAddress',[]).hex()
+    results['sms_device_ready']=run('IpcTxSetDeviceReady',[]).hex()
+    if not options.header and not options.rx_header and not options.sms_header:
         print(json.dumps(results,indent=2))
     else:
         print("/* Golden vectors from isolated execution of DTK9 libsec-ril.so.\n"
@@ -153,6 +167,7 @@ if __name__=='__main__':
               " * over-copies adjacent literal PB_CMD; the CP ignores this string padding.\n"
               " * See scripts/recover_vendor_vectors.py. No hardware access. */")
         for name, raw in results.items():
+            if name.startswith('sms_') != options.sms_header:continue
             if (name == 'registration_states') != options.rx_header:continue
             frame = bytearray.fromhex(raw)
             if frame[4:7] == bytes([13,27,3]):

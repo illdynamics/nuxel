@@ -21,3 +21,11 @@
 /test_*_asan
 
 test_oes_cert
+
+/test_fmt_sms
+
+/test_sms_pdu
+
+/test_sms_store
+
+/test_sms_service

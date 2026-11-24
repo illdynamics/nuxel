@@ -12,6 +12,13 @@
   cause 0, active PDP readback, global IPv6 address and KPN DNS received. The
   session flow now skips redundant PS attach when NET already reports registered;
   GPRS_PS GET control flags do not override that state. Added native GetIpInfo.
+- Physically verified cellular DNS and HTTPS with the Wi-Fi radio disabled,
+  USB carrier 0 and sockets bound to rmnet0. Repeated with a 27-packet capture,
+  valid TLS, HTTP 200, and verified Wi-Fi/ZeroTier/SSH restoration. Automatic
+  interface and system resolver configuration remain to be integrated.
+- Added native SMS wire serialization, GSM 7-bit/UCS-2 and multipart codecs,
+  durable inbox/outbox, status-report tracking and credential-checked D-Bus
+  methods. SMS delivery and voice acceptance remain unverified.
 - Queried the real baseband: G975FXXSEFUJ2. Cross-checked its command table against
   the initial DTK9 reference. APN NV indices are 220/224; 360 is the value size.
 - Fixed Samsung NV checksum handling (fixed suffix), and the omitted NV download

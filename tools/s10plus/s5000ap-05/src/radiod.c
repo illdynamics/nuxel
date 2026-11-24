@@ -33,10 +33,12 @@
 #include "rfs_nv.h"
 #include "efs_nv.h"
 #include "oes_cert.h"
+#include "sms_service.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -125,6 +127,8 @@ struct radiod_ctx {
     char baseband[33];
     bool radio_state_valid, radio_on;
     unsigned oes_requests;
+    struct sms_service sms;
+    uid_t control_uid;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
     bool     wrote_phase;       /* last phase already emitted a frame */
     bool     rfs_handshake_done;/* RFS boot handshake answered (CP advanced) */
@@ -411,6 +415,25 @@ static void resolve_pending(const struct nuxel_sipc_fmt *f)
 
 static bool radiod_write_fmt(const struct fmt_tx_frame *f);
 
+static bool sms_write(const struct fmt_tx_frame *f,uint8_t *sequence,void *user)
+{
+    (void)user;
+    *sequence=g.next_seq;
+    return g.cp_online && radiod_write_fmt(f);
+}
+
+static void sms_notify(uint32_t id,bool incoming,void *user)
+{
+    (void)user;
+    struct sms_record record;
+    if (!sms_store_get(&g.sms.store,id,&record)) return;
+    diagf("sms_state","\"id\":%u,\"state\":\"%s\",\"error\":%d",id,record.state,record.error);
+    if (g.bus) {
+        sd_bus_emit_signal(g.bus,OBJ_PATH,IFACE_NAME,"SmsStateChanged","us",id,record.state);
+        if (incoming) sd_bus_emit_signal(g.bus,OBJ_PATH,IFACE_NAME,"SmsReceived","u",id);
+    }
+}
+
 static void respond_oes_certificate(void)
 {
     if (!g.write_enabled || !g.cp_online || g.oes_requests++ >= 3) return;
@@ -445,6 +468,7 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     const struct nuxel_fmt_observation *ob = find_fmt_obs(f->main_cmd, f->sub_cmd, f->cmd_type);
     record_obs(ch, f, ob != NULL);
     resolve_pending(f);
+    sms_service_receive(&g.sms,f);
     /* Reply only to the CP's actual startup request. Transfer the existing
      * device certificate unchanged, as OesManager::OnOesDrkCpInfo does. */
     if (f->main_cmd == 38 && f->sub_cmd == 1 && f->cmd_type == 1 && f->payload_len == 4)
@@ -518,9 +542,9 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     /* We do not decode telephony semantics (UNKNOWN). We DO surface the
      * existence and classification of every message as a diagnostic. */
     const char *subname = fmt_sub_name(f->main_cmd, f->sub_cmd);
-    diagf("fmt_rx", "\"ch\":%u,\"main\":%u,\"sub\":%u,\"type\":%u,\"plen\":%u,\"name\":\"%s\",\"family\":\"%s\"",
+    diagf("fmt_rx", "\"ch\":%u,\"main\":%u,\"sub\":%u,\"type\":%u,\"plen\":%u,\"name\":\"%s\",\"family\":\"%s\",\"seq\":%u,\"ack\":%u",
           ch, f->main_cmd, f->sub_cmd, f->cmd_type, f->payload_len,
-          subname ? subname : "UNKNOWN", ipc41_main_name(f->main_cmd));
+          subname ? subname : "UNKNOWN", ipc41_main_name(f->main_cmd),f->msg_seq,f->ack_seq);
 
     /* REDACTED-SAFE payload diagnostics: dump hex ONLY for state-enum
      * messages that carry no subscriber/device identifier (no IMSI/ICCID/
@@ -784,12 +808,15 @@ static bool radiod_write_fmt(const struct fmt_tx_frame *f)
         return false;
     }
     if (!f || f->len < 7 || f->len > FMT_TX_MAX_FRAME) return false;
-    enum nuxel_io_status st = nuxel_dev_write(&g.fmt.dev, f->buf, f->len);
+    /* IpcProtocol41::SetMsgSequence @0x316860 writes byte 2. The vendor
+     * GenerateMsgSequence @0x314cc0 cycles 0..254, reserving 255. */
+    uint8_t frame[FMT_TX_MAX_FRAME];memcpy(frame,f->buf,f->len);frame[2]=g.next_seq;
+    enum nuxel_io_status st = nuxel_dev_write(&g.fmt.dev, frame, f->len);
     if (st == NUXEL_IO_OK) {
         g.stats.tx_frames++;
-        g.next_seq++;
-        diagf("fmt_tx", "\"main\":%u,\"sub\":%u,\"type\":%u,\"len\":%zu",
-              f->main_cmd, f->sub_cmd, f->cmd_type, f->len);
+        diagf("fmt_tx", "\"main\":%u,\"sub\":%u,\"type\":%u,\"len\":%zu,\"seq\":%u",
+              f->main_cmd, f->sub_cmd, f->cmd_type, f->len,g.next_seq);
+        g.next_seq=(uint8_t)((g.next_seq+1u)%255u);
         return true;
     }
     diagf("fmt_tx_fail", "\"st\":\"%s\"", nuxel_io_status_name(st));
@@ -1525,6 +1552,10 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
 
     /* Stage-06 data-session driver (opt-in, bounded). */
     data_session_tick(now_ms());
+    sms_service_tick(&g.sms,now_ms(),g.cp_online,g.sim_ready_seen,
+        (g.dsc.net_regist_valid && fmt_rx_registered(g.dsc.last_ps_reg_state)) ||
+        (g.cs_registration_valid && fmt_rx_registered(g.cs_registration.state)),
+        g.write_enabled && g.fmt.present);
 
     /* Read-only status refresh uses the same serialized transport, only while
      * the data transaction is idle/terminal so query replies cannot satisfy a
@@ -1627,6 +1658,20 @@ static int method_get_sim_state(sd_bus_message *m, void *u, sd_bus_error *e)
     (void)u;(void)e;
     return sd_bus_reply_method_return(m, "s", !g.sim_lock_valid ? "unknown" :
         !g.sim_present ? "absent" : g.sim_ready_seen ? "ready" : "locked-or-unavailable");
+}
+
+/* The native session owner and root may control the modem and read private
+ * messages. The previous XML's polkit claim was not implemented. Check actual
+ * sender credentials on the bus; never trust a caller-supplied UID. */
+static int require_control(sd_bus_message *m,sd_bus_error *e)
+{
+    sd_bus_creds *creds=NULL;uid_t uid=(uid_t)-1;
+    int r=sd_bus_query_sender_creds(m,SD_BUS_CREDS_EUID,&creds);
+    if (r>=0) r=sd_bus_creds_get_euid(creds,&uid);
+    sd_bus_creds_unref(creds);
+    if (r<0 || (uid!=0 && uid!=g.control_uid))
+        return sd_bus_error_set(e,SD_BUS_ERROR_ACCESS_DENIED,"Only root or the Nuxel session owner may control telephony or read messages");
+    return 0;
 }
 
 static int prop_registered(sd_bus *b, const char *p, const char *i, const char *prop,
@@ -1738,7 +1783,7 @@ static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
     const char *lte = (g.dsc.phase == DS_ACTIVE) ? "active" :
                       (g.data_path_armed ? "pending" : "unsupported");
     const char *keys[] = {"lte_data","sms","voice","ims","volte"};
-    const char *vals[] = {lte, "false", "false", "false", "false"};
+    const char *vals[] = {lte, g.sms.store.db ? "implemented-unverified" : "unavailable", "false", "false", "false"};
     for (unsigned i = 0; i < 5; i++) {
         sd_bus_message_append(reply, "{ss}", keys[i], vals[i]);
     }
@@ -1750,6 +1795,7 @@ static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
 static int method_set_radio(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
+    int access=require_control(m,e);if (access<0) return access;
     int en = 0;
     if (sd_bus_message_read(m, "b", &en) < 0)
         return sd_bus_error_set(e, SD_BUS_ERROR_INVALID_ARGS, "bad arg");
@@ -1768,6 +1814,7 @@ static int method_set_radio(sd_bus_message *m, void *u, sd_bus_error *e)
 static int method_select_auto(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;
+    int access=require_control(m,e);if (access<0) return access;
     if (!g.write_enabled || !g.cp_online)
         return sd_bus_error_set(e, SD_BUS_ERROR_ACCESS_DENIED, "radio transport unavailable");
     if (g.data_path_armed && !ds_terminal(&g.dsc))
@@ -1883,6 +1930,7 @@ static bool mbim_attach_enabled(void)
 static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
+    int access=require_control(m,e);if (access<0) return access;
     const char *apn = NULL;
     uint32_t profile = 1;
     int r = sd_bus_message_read(m, "s", &apn);
@@ -1921,6 +1969,7 @@ static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e
 static int method_stop_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
+    int access=require_control(m,e);if (access<0) return access;
     g.data_path_armed = false;
     g.wrote_phase = false;
     diag("data_session_stop", NULL);
@@ -1932,6 +1981,69 @@ static int method_no_bearer(sd_bus_message *m, void *u, sd_bus_error *e)
     (void)m; (void)u;
     return sd_bus_error_set(e, SD_BUS_ERROR_ACCESS_DENIED,
                             "bearer control not implemented (vocab UNKNOWN)");
+}
+
+static int method_send_sms(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;int r=require_control(m,e);if (r<0) return r;
+    if (!g.write_enabled || !g.sms.store.db || g.sms.blocked)
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"SMS transport disabled, storage unavailable, or unresolved submission");
+    const char *to,*text;
+    if (sd_bus_message_read(m,"ss",&to,&text)<0)
+        return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Recipient and UTF-8 text required");
+    struct sms_encoded encoded;enum sms_codec_result result=sms_encode(to,text,0,0,&encoded);
+    if (result!=SMS_CODEC_OK) return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,sms_codec_name(result));
+    uint32_t id;
+    if (!sms_store_queue(&g.sms.store,to,text,&id))
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Could not durably queue SMS or reserve message references");
+    sms_notify(id,false,NULL);
+    return sd_bus_reply_method_return(m,"u",id);
+}
+
+static int method_list_sms(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;int r=require_control(m,e);if(r<0)return r;
+    if (!g.sms.store.db) return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"SMS storage unavailable");
+    uint32_t ids[256];size_t n=sms_store_list(&g.sms.store,ids,256);sd_bus_message *reply=NULL;
+    r=sd_bus_message_new_method_return(m,&reply);
+    if (r>=0) r=sd_bus_message_append_array(reply,'u',ids,n*sizeof ids[0]);
+    if (r>=0) r=sd_bus_send(NULL,reply,NULL);
+    sd_bus_message_unref(reply);return r;
+}
+
+static int method_get_sms(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;int r=require_control(m,e);if(r<0)return r;
+    uint32_t id;struct sms_record record;
+    if (sd_bus_message_read(m,"u",&id)<0) return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Message ID required");
+    if (!sms_store_get(&g.sms.store,id,&record)) return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Message unavailable");
+    sd_bus_message *reply=NULL;r=sd_bus_message_new_method_return(m,&reply);
+    if(r>=0)r=sd_bus_message_open_container(reply,'a',"{ss}");
+    const char *keys[]={"direction","peer","text","state","timestamp"};
+    const char *vals[]={record.direction,record.peer,record.text,record.state,record.timestamp};
+    for(size_t i=0;i<5 && r>=0;i++)r=sd_bus_message_append(reply,"{ss}",keys[i],vals[i]);
+    char value[32];snprintf(value,sizeof value,"%u",record.parts);
+    if(r>=0)r=sd_bus_message_append(reply,"{ss}","parts",value);
+    snprintf(value,sizeof value,"%d",record.error);
+    if(r>=0)r=sd_bus_message_append(reply,"{ss}","error",value);
+    if(r>=0)r=sd_bus_message_close_container(reply);
+    if(r>=0)r=sd_bus_send(NULL,reply,NULL);
+    sd_bus_message_unref(reply);return r;
+}
+
+static int method_get_sms_status(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;(void)e;sd_bus_message *reply=NULL;int r=sd_bus_message_new_method_return(m,&reply);
+    if(r>=0)r=sd_bus_message_open_container(reply,'a',"{ss}");
+    const char *keys[]={"storage","device_ready","smsc","pending","blocked","domain","delivery_verified"};
+    const char *vals[]={g.sms.store.db ? "available" : "unavailable",
+        g.sms.ready_rejected ? "rejected" : g.sms.ready_ack ? "accepted" : g.sms.ready_sent ? "sent" : "unknown",
+        g.sms.smsc_len ? "received" : "unknown",g.sms.active ? "true" : "false",
+        g.sms.blocked ? "true" : "false","CS","false"};
+    for(size_t i=0;i<7 && r>=0;i++)r=sd_bus_message_append(reply,"{ss}",keys[i],vals[i]);
+    if(r>=0)r=sd_bus_message_close_container(reply);
+    if(r>=0)r=sd_bus_send(NULL,reply,NULL);
+    sd_bus_message_unref(reply);return r;
 }
 
 /* GetDiagnostics: redacted, aggregate counters ONLY. No payload/identifiers. */
@@ -1962,6 +2074,11 @@ static int method_get_diagnostics(sd_bus_message *m, void *u, sd_bus_error *e)
         {"Reconnects",     g.stats.reconnects},
         {"Timeouts",       g.stats.timeouts},
         {"Permissions",    g.stats.permissions},
+        {"SmsReceived",    g.sms.received},
+        {"SmsDecodeErrors",g.sms.decode_errors},
+        {"SmsStoreErrors", g.sms.store_errors},
+        {"SmsAckErrors",   g.sms.ack_errors},
+        {"SmsUnmatched",   g.sms.unmatched},
     };
     for (unsigned i = 0; i < sizeof(kv)/sizeof(kv[0]); i++) {
         r = sd_bus_message_append(reply, "{st}", kv[i].k, kv[i].v);
@@ -1992,6 +2109,10 @@ static const sd_bus_vtable radiod_vtable[] = {
     SD_BUS_METHOD("RefreshStatus", "", "b", method_refresh_status, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetDataSessionState", "", "a{ss}", method_get_data_state, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetIpInfo", "", "a{ss}", method_get_ip_info, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("SendSms", "ss", "u", method_send_sms, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("ListSms", "", "au", method_list_sms, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetSms", "u", "a{ss}", method_get_sms, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetSmsStatus", "", "a{ss}", method_get_sms_status, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetSignalInfo", "", "iiib", method_get_signal, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetAvailableOperators", "", "a(ss)", method_get_operators, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetPacketStats", "", "ttb", method_packet_stats, SD_BUS_VTABLE_UNPRIVILEGED),
@@ -2003,6 +2124,8 @@ static const sd_bus_vtable radiod_vtable[] = {
     SD_BUS_METHOD("GetDiagnostics", "", "a{st}", method_get_diagnostics, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_SIGNAL("StateChanged", "ss", 0),
     SD_BUS_SIGNAL("CpReset", "", 0),
+    SD_BUS_SIGNAL("SmsReceived", "u", 0),
+    SD_BUS_SIGNAL("SmsStateChanged", "us", 0),
     SD_BUS_VTABLE_END
 };
 
@@ -2083,6 +2206,10 @@ int main(int argc, char **argv)
     g.rfs.dev.fd = -1;
     g.cp_state_code = -1;
     snprintf(g.cp_state, sizeof g.cp_state, "UNKNOWN");
+    struct passwd *owner=getpwnam("nuxel");g.control_uid=owner ? owner->pw_uid : 0;
+    const char *sms_path=getenv("NUXEL_SMS_DATABASE");
+    if (!sms_path || !*sms_path) sms_path="/var/lib/nuxel-radio/sms.sqlite3";
+    if (!sms_service_open(&g.sms,sms_path,sms_write,sms_notify,NULL)) diag("sms_storage_unavailable",NULL);
 
     if (setup_event() < 0) { diag("event_setup_failed", NULL); return 1; }
 
@@ -2111,6 +2238,7 @@ int main(int argc, char **argv)
     diag("running", NULL);
     int r = sd_event_loop(g.loop);
     diag("shutdown", NULL);
+    sms_service_close(&g.sms);
     ep_close(&g.fmt);
     ep_close(&g.rfs);
     (void)r;

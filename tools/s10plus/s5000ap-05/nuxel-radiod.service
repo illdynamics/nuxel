@@ -18,6 +18,9 @@ Type=simple
 # Nuxel services use the Wayland session bus (consistent with soundd/portal).
 Environment=NUXEL_DBUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
 ExecStart=/usr/libexec/nuxel/nuxel-radiod
+StateDirectory=nuxel-radio
+StateDirectoryMode=0700
+UMask=0077
 Restart=on-failure
 RestartSec=3
 # Bounded, least privilege. It needs the FMT/RFS misc nodes and the boot0

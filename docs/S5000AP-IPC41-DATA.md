@@ -332,7 +332,8 @@ subscriber portion of its identifier. KPN's published APN and AOSP's 20408
 configuration specify `internet`; AOSP includes `default,ia` and IPv4v6.
 The matching firmware package here is **TNL** and its CSC APN is
 `smartsites.t-mobile`, not a KPN PHN configuration. Therefore a matching KPN
-CSC has not been verified. The IPv4 test is a CP-compatible subset, not proof
-of the carrier's current provisioning or data entitlement.
+CSC has not been verified. The profile's IPv4 request is a CP-compatible subset;
+the actual session subsequently received IPv6 and passed cellular-only DNS and
+HTTPS in operations 21/22. See the Round 43 hardware report for packet evidence.
 
 Sources: [KPN APN instructions](https://www.kpn.com/service/ugs/slecht-bereik-in-het-buitenland), [AOSP APN configuration](https://android.googlesource.com/device/sample/+/main/etc/apns-full-conf.xml).

@@ -1,133 +1,103 @@
-<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
- "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
-<!--
-  nl.nuxel.Radio1 — versioned D-Bus API for nuxel-radiod.
-
-  SPDX-License-Identifier: Apache-2.0
-  CONTRACT VERSION: 1
-
-  SAFETY CONTRACT
-  ---------------
-  "Running"/"Online" means the DAEMON is alive and its event loop is running.
-  It NEVER means the modem, a SIM, registration, or a data bearer is usable.
-  Every modem-derived field is populated ONLY from a real modem source path;
-  when no such source exists, the property is ABSENT (or present=false), never
-  fabricated. Identifiers (IMSI/ICCID/IMEI/PIN/PUK/MSISDN) are redacted by the
-  daemon before any value crosses this interface; raw SIPC/AT control is not
-  exposed. State-changing methods require authorization via the installed
-  polkit actions nl.nuxel.radiod.* (caller identity checked by the bus + policy
-  daemon). All write-oriented methods return org.freedesktop.DBus.Error.AccessDenied
-  unless the caller is authorized AND the corresponding capability is real.
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+ Native Nuxel Radio1 methods match the implementation vtable.
+ State-changing methods and SMS content require actual bus sender credentials
+ of root or the nuxel account. This service does not use polkit.
+ SendSms returns a durable local message ID, not a delivery acknowledgement.
+ GetSms.state distinguishes queued, sending, submitted, delivered, failed,
+ unknown, receiving and received. Only TP-ST=0 establishes network delivery.
+ No phone number or message body is broadcast in signals or journal entries.
+ GetIpInfo reports CP-assigned addresses; GetDataSessionState.ip_configured
+ separately reports Linux configuration. Never infer internet from Registered.
 -->
 <node name="/nl/nuxel/Radio1">
   <interface name="nl.nuxel.Radio1">
-
-    <!-- ================= constants ================= -->
-    <property name="Version" type="u" access="read">
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="const"/>
-    </property>
-    <property name="ApiRevision" type="s" access="read">
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="const"/>
-    </property>
-
-    <!-- ================= daemon / transport liveness ================= -->
-    <property name="DaemonState" type="s" access="read">
-      <!-- "initializing" | "running" | "degraded" | "stopping" -->
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-    </property>
-    <property name="DevicePresent" type="b" access="read">
-      <!-- true iff /dev/umts_* endpoints were probed successfully -->
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-    </property>
-    <property name="CpState" type="s" access="read">
-      <!-- mirror of kernel modem_state: OFFLINE|BOOTING|ONLINE|CRASH_RESET|... -->
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-    </property>
-
-    <!-- ================= radio / power ================= -->
-    <property name="RadioState" type="s" access="read">
-      <!-- "unknown"|"off"|"on" (on only when modem actually online + radio on) -->
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-    </property>
+    <property name="Version" type="u" access="read" />
+    <property name="ApiRevision" type="s" access="read" />
+    <property name="DaemonState" type="s" access="read" />
+    <property name="DevicePresent" type="b" access="read" />
+    <property name="CpState" type="s" access="read" />
+    <property name="RadioState" type="s" access="read" />
     <method name="SetRadioEnabled">
-      <arg name="enabled" type="b" direction="in"/>
+      <arg name="in0" type="b" direction="in" />
     </method>
-
-    <!-- ================= SIM ================= -->
-    <property name="SimPresent" type="b" access="read">
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-    </property>
-    <property name="SimPinRequired" type="b" access="read">
-      <!-- true only if modem reports PIN-required; never a guessed value -->
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-    </property>
+    <method name="SelectNetworkAutomatic" />
+    <property name="SimPresent" type="b" access="read" />
+    <property name="SimPinRequired" type="b" access="read" />
     <method name="GetSimState">
-      <arg name="state" type="s" direction="out"/>
-      <!-- ABSENT|PIN_REQUIRED|READY|NOT_READY|__NOT_SUPPORTED__ -->
+      <arg name="out0" type="s" direction="out" />
     </method>
-
-    <!-- ================= network / registration ================= -->
-    <property name="Registered" type="b" access="read">
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-    </property>
-    <property name="OperatorName" type="s" access="read"/>
-    <property name="AccessTechnology" type="u" access="read">
-      <!-- 3GPP access technology bitmask; 0 = unknown -->
-    </property>
-    <property name="Rat" type="s" access="read">
-      <!-- "gsm"|"umts"|"lte"|"unknown" -->
-    </property>
+    <property name="Registered" type="b" access="read" />
+    <method name="RefreshStatus">
+      <arg name="out0" type="b" direction="out" />
+    </method>
+    <method name="GetDataSessionState">
+      <arg name="out0" type="a{ss}" direction="out" />
+    </method>
+    <method name="GetIpInfo">
+      <arg name="out0" type="a{ss}" direction="out" />
+    </method>
+    <method name="SendSms">
+      <arg name="in0" type="s" direction="in" />
+      <arg name="in1" type="s" direction="in" />
+      <arg name="out0" type="u" direction="out" />
+    </method>
+    <method name="ListSms">
+      <arg name="out0" type="au" direction="out" />
+    </method>
+    <method name="GetSms">
+      <arg name="in0" type="u" direction="in" />
+      <arg name="out0" type="a{ss}" direction="out" />
+    </method>
+    <method name="GetSmsStatus">
+      <arg name="out0" type="a{ss}" direction="out" />
+    </method>
     <method name="GetSignalInfo">
-      <arg name="rssi_dbm" type="i" direction="out"/>
-      <arg name="rsrq_db" type="i" direction="out"/>
-      <arg name="rsrp_dbm" type="i" direction="out"/>
-      <arg name="available" type="b" direction="out"/>
+      <arg name="out0" type="i" direction="out" />
+      <arg name="out1" type="i" direction="out" />
+      <arg name="out2" type="i" direction="out" />
+      <arg name="out3" type="b" direction="out" />
     </method>
     <method name="GetAvailableOperators">
-      <arg name="operators" type="a(ss)" direction="out"/>
-      <!-- array of (name,status); identifiers redacted -->
-    </method>
-
-    <!-- ================= data bearer ================= -->
-    <property name="BearerActive" type="b" access="read">
-      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="true"/>
-    </property>
-    <property name="InterfaceName" type="s" access="read">
-      <!-- rmnet0..rmnet7 when bearer active, else empty -->
-    </property>
-    <method name="CreateBearer">
-      <arg name="apn" type="s" direction="in"/>
-      <arg name="bearer_id" type="u" direction="out"/>
-    </method>
-    <method name="DeleteBearer">
-      <arg name="bearer_id" type="u" direction="in"/>
+      <arg name="out0" type="a(ss)" direction="out" />
     </method>
     <method name="GetPacketStats">
-      <arg name="rx_bytes" type="t" direction="out"/>
-      <arg name="tx_bytes" type="t" direction="out"/>
-      <arg name="available" type="b" direction="out"/>
+      <arg name="out0" type="t" direction="out" />
+      <arg name="out1" type="t" direction="out" />
+      <arg name="out2" type="b" direction="out" />
     </method>
-
-    <!-- ================= capability truth ================= -->
+    <method name="CreateBearer">
+      <arg name="in0" type="s" direction="in" />
+      <arg name="out0" type="u" direction="out" />
+    </method>
+    <method name="DeleteBearer">
+      <arg name="in0" type="u" direction="in" />
+    </method>
+    <method name="StartDataSession">
+      <arg name="in0" type="s" direction="in" />
+      <arg name="in1" type="u" direction="in" />
+      <arg name="out0" type="b" direction="out" />
+    </method>
+    <method name="StopDataSession">
+      <arg name="out0" type="b" direction="out" />
+    </method>
     <method name="GetCapabilities">
-      <arg name="caps" type="a{ss}" direction="out"/>
-      <!-- keys: lte_data, sms, voice, ims, volte; values: supported/unsupported/unknown -->
+      <arg name="out0" type="a{ss}" direction="out" />
     </method>
-
-    <!-- ================= diagnostics (redacted aggregates) ================= -->
     <method name="GetDiagnostics">
-      <arg name="counters" type="a{st}" direction="out"/>
-      <!-- Aggregate receive/parse/RFS counters. NEVER payload/identifiers. -->
+      <arg name="out0" type="a{st}" direction="out" />
     </method>
-
-    <!-- ================= notifications ================= -->
     <signal name="StateChanged">
-      <arg name="property" type="s"/>
-      <arg name="value" type="s"/>
+      <arg name="value0" type="s" />
+      <arg name="value1" type="s" />
     </signal>
-    <signal name="CpReset">
-      <!-- emitted when an unexpected CP reset/crash is observed -->
+    <signal name="CpReset" />
+    <signal name="SmsReceived">
+      <arg name="value0" type="u" />
     </signal>
-
+    <signal name="SmsStateChanged">
+      <arg name="value0" type="u" />
+      <arg name="value1" type="s" />
+    </signal>
   </interface>
 </node>
