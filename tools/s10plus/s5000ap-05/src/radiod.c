@@ -863,7 +863,7 @@ static bool data_session_emit(void)
         if (!fmt_tx_set_lte_attach_profile(&f, (const char*)g.dsc.apn,
                                            g.dsc.auth_code,
                                            g.dsc.protocol,
-                                           DS_ATTACH_CID, g.dsc.attach_flag))
+                                           g.dsc.attach_cid, g.dsc.attach_flag))
             return false;
         break;
     case DS_DEFINE_PDP:
@@ -871,7 +871,7 @@ static bool data_session_emit(void)
          * main=13 sub=1, 134 bytes) using the corrected attach CID (1 for
          * single-SIM; see GetAttachCid disassembly), NOT the DataProfile id. */
         if (!fmt_tx_define_pdp_context(&f, (const char*)g.dsc.apn,
-                                       g.dsc.protocol, DS_ATTACH_CID))
+                                       g.dsc.protocol, g.dsc.attach_cid))
             return false;
         break;
     case DS_ALWAYS_ON_PDN:
@@ -896,7 +896,7 @@ static bool data_session_emit(void)
          * SetDataCallEstablish (main=3/sub=2) is a legacy CDMA path. */
         if (!fmt_tx_set_pdp_context(&f, (const char*)g.dsc.apn,
                                     g.dsc.auth_code, g.dsc.protocol,
-                                    DS_ATTACH_CID, g.dsc.pdp_type_wire))
+                                    g.dsc.attach_cid, g.dsc.pdp_type_wire))
             return false;
         break;
     case DS_GET_PDP_LIST:
@@ -1328,6 +1328,18 @@ static uint8_t env_attach_flag(void)
     return 3u;
 }
 
+/* Map NUXEL_ATTACH_CID env string -> attach/context CID.
+ * Accepted: 1 (default, single-SIM), 5 (DSDS/second-slot), 2..15 raw.
+ * Unknown -> 1 (DS_ATTACH_CID). */
+static uint8_t env_attach_cid(void)
+{
+    const char *p = getenv("NUXEL_ATTACH_CID");
+    if (!p || !*p) return DS_ATTACH_CID;
+    long v = strtol(p, NULL, 10);
+    if (v >= 1 && v <= 15) return (uint8_t)v;
+    return DS_ATTACH_CID;
+}
+
 /* Map NUXEL_AUTH env string -> DataAuth numeric code.
  * none=1 (default), pap=2, chap=3. Unknown -> 1. */
 static uint8_t env_auth(void)
@@ -1377,6 +1389,7 @@ static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e
     g.dsc.attach_flag = env_attach_flag();
     g.dsc.auth_code = env_auth();
     g.dsc.pdp_type_wire = env_pdp_type();
+    g.dsc.attach_cid = env_attach_cid();
     g.data_path_armed = true;
     g.wrote_phase = false;
     g.dsc.step_deadline_ms = 0;
@@ -1535,6 +1548,7 @@ int main(int argc, char **argv)
             g.dsc.attach_flag = env_attach_flag();
             g.dsc.auth_code = env_auth();
             g.dsc.pdp_type_wire = env_pdp_type();
+            g.dsc.attach_cid = env_attach_cid();
         } else if (strcmp(argv[i], "--help") == 0) {
             fprintf(stderr, "usage: nuxel-radiod [--write-enable] [--arm-data-path]\n");
             return 0;

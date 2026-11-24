@@ -51,6 +51,7 @@ struct data_session_ctx {
     uint8_t        apn_len;
     uint8_t        profile_id;
     uint8_t        protocol;      /* IP family for PDP/attach (FMT_TX_PROTO_*) */
+    uint8_t        attach_cid;    /* attach/context CID (GetAttachCid: single-SIM=1, DSDS=5) */
     uint8_t        attach_flag;   /* SetLteAttachProfile payload[0] (3=apply, 1=define) */
     uint8_t        auth_code;     /* DataAuth (1=none, 2=PAP, 3=CHAP) */
     uint8_t        pdp_type_wire; /* SetPdpContext payload[0] (FMT_TX_PDP_TYPE_*) */

@@ -41,6 +41,7 @@ void ds_reset(struct data_session_ctx *c, const char *apn, uint8_t profile_id)
     c->phase_entered_ms = 0;
     c->profile_id = profile_id;
     c->protocol = 4;   /* default FMT_TX_PROTO_IPV4V6; caller may override */
+    c->attach_cid = DS_ATTACH_CID; /* default GetAttachCid is 1 for single-SIM */
     c->attach_flag = 3; /* default SetLteAttachProfile flag: 3 = apply */
     c->auth_code = 1;   /* default DataAuth NONE */
     c->pdp_type_wire = 1; /* default SetPdpContext payload[0] = FULL (APN) path */
