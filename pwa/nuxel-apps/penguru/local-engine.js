@@ -1,0 +1,639 @@
+/**
+ * PenGuru Squad — on-device engine.
+ *
+ * This module replaces the Nuxel HTTP bridge for ordinary Android phones. It
+ * implements the same `call(op, params)` contract as the `penguru` RPC
+ * namespace (status, model library, downloads, conversation, diagnostics), so
+ * the PWA UI runs unchanged without a Nuxel host, URL, token or launcher.
+ *
+ * Heavy work (multi-gigabyte downloads, runtime archives, speech recognition)
+ * is delegated to the small `window.NuxelAndroid` bridge exposed by
+ * MainActivity. When that bridge is absent (desktop browser), model management
+ * reports a clear error instead of pretending to work.
+ */
+
+const STORE_KEY = 'penguru-ondevice-state-v1';
+const DOWNLOAD_HISTORY_KEY = 'penguru-ondevice-downloads-v1';
+
+function android() {
+  try {
+    return (typeof window !== 'undefined' && window.NuxelAndroid) || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function parseJson(text, fallback) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function hf(repo, revision, file) {
+  return `https://huggingface.co/${repo}/resolve/${revision}/${file}`;
+}
+
+function bytes(value) {
+  const n = Number(value) || 0;
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + ' GB';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + ' MB';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + ' KB';
+  return n + ' B';
+}
+
+/* ------------------------------------------------------------------ catalog */
+
+const CHATBIRD_REV = '084c0f4eee820a4e2052de264d3bb60de14555b7';
+const CODEBIRD_REV = '391fc7d103e3942a408def3e4f51c2f85d464417';
+const MINILM_REV = '1110a243fdf4706b3f48f1d95db1a4f5529b4d41';
+const WHISPER_REV = '5359861c739e955e79d9a303bcbc70fb988958b1';
+
+const MINILM_REPO = 'sentence-transformers/all-MiniLM-L6-v2';
+const MINILM_FILES = [
+  ['encoder.onnx', 23026053, '4278337fd0ff3c68bfb6291042cad8ab363e1d9fbc43dcb499fe91c871902474', 'onnx/model_qint8_arm64.onnx'],
+  ['tokenizer.json', 466247, 'be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037', 'tokenizer.json'],
+  ['config.json', 612, '953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41', 'config.json'],
+  ['tokenizer_config.json', 350, 'acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b', 'tokenizer_config.json'],
+  ['pooling.json', 190, '4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23', '1_Pooling/config.json'],
+  ['sentence_bert_config.json', 53, 'fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7', 'sentence_bert_config.json'],
+].map(([path, size, sha256, remote]) => ({
+  path, size_bytes: size, sha256, url: hf(MINILM_REPO, MINILM_REV, remote),
+}));
+
+const MODELS = [
+  {
+    model_id: 'chatbird',
+    name: 'ChatBird',
+    role: 'chat',
+    variants: [{
+      variant_id: 'gguf-q4km',
+      format: 'GGUF',
+      quantization: 'Q4_K_M',
+      architecture: 'llama',
+      size_bytes: 2778282752,
+      engine: 'llama.cpp',
+      source_repo: 'SicariusSicariiStuff/Impish_LLAMA_4B_Abliterated_GGUF',
+      source_revision: CHATBIRD_REV,
+      source_url: hf('SicariusSicariiStuff/Impish_LLAMA_4B_Abliterated_GGUF', CHATBIRD_REV, 'Impish_LLAMA_4B_Abliterated-Q4_K_M.gguf'),
+      files: [{
+        path: 'Impish_LLAMA_4B_Abliterated-Q4_K_M.gguf',
+        size_bytes: 2778282752,
+        sha256: '8827d0e2850e47cb78fe13bdb583618be9c07dab1f20149c0918e5c399a3733c',
+      }],
+      license: {
+        spdx: 'Apache-2.0',
+        notice: 'GGUF repository metadata tags Apache-2.0, but the fine-tune card declares llama3.1 and the NVIDIA base model uses the NVIDIA Open Model License. Redistribution is blocked pending provenance review.',
+      },
+      download_allowed: true,
+      download_reason: 'Direct upstream download from the pinned Hugging Face revision.',
+      detail: 'Chat assistant package. Download to this phone, then install a compatible llama.cpp runtime.',
+    }],
+  },
+  {
+    model_id: 'codebird',
+    name: 'CodeBird',
+    role: 'code',
+    variants: [{
+      variant_id: 'gguf-q4km',
+      format: 'GGUF',
+      quantization: 'Q4_K_M',
+      architecture: 'qwen35',
+      size_bytes: 2783446304,
+      engine: 'llama.cpp',
+      source_repo: 'empero-ai/Qwen3.8-4B-Distill-GGUF',
+      source_revision: CODEBIRD_REV,
+      source_url: hf('empero-ai/Qwen3.8-4B-Distill-GGUF', CODEBIRD_REV, 'Qwen3.8-4B-Q4_K_M.gguf'),
+      files: [{
+        path: 'Qwen3.8-4B-Q4_K_M.gguf',
+        size_bytes: 2783446304,
+        sha256: 'dec96e8cf2e11b613bb46513dec485377f9ca5a351e71712ee0e244f287c6790',
+      }],
+      license: {
+        spdx: 'Apache-2.0',
+        notice: 'GGUF repository tags Apache-2.0; derived from empero-ai/Qwen3.8-4B-Distill (Apache-2.0). Preserve upstream model and source notices.',
+      },
+      download_allowed: true,
+      download_reason: 'Direct upstream download from the pinned Hugging Face revision.',
+      detail: 'Coding assistant package. Download to this phone, then install a compatible llama.cpp runtime.',
+    }],
+  },
+  {
+    model_id: 'sonarbird',
+    name: 'SonarBird · MiniLM-L6',
+    role: 'routing',
+    variants: [{
+      variant_id: 'onnx-int8-arm64',
+      format: 'ONNX_CLASSIFIER',
+      quantization: 'INT8 ARM64',
+      architecture: 'bert',
+      size_bytes: MINILM_FILES.reduce((sum, file) => sum + file.size_bytes, 0),
+      engine: 'onnxruntime',
+      source_repo: MINILM_REPO,
+      source_revision: MINILM_REV,
+      source_url: hf(MINILM_REPO, MINILM_REV, 'onnx/model_qint8_arm64.onnx'),
+      files: MINILM_FILES,
+      license: {
+        spdx: 'Apache-2.0',
+        notice: 'MiniLM encoder and tokenizer: sentence-transformers/all-MiniLM-L6-v2, Apache-2.0. Routing in this standalone build uses built-in language rules.',
+      },
+      download_allowed: true,
+      download_reason: 'Upstream encoder files from the pinned Hugging Face revision.',
+      detail: 'Local text-routing encoder. The standalone build routes with built-in rules while the encoder is optional.',
+    }],
+  },
+  {
+    model_id: 'sonarbird',
+    name: 'SonarBird · Voice tiny.en',
+    role: 'optional_voice',
+    variants: [{
+      variant_id: 'speech-whisper-tiny-en',
+      format: 'WHISPER',
+      quantization: 'FP16 · Voice tiny.en (optional)',
+      architecture: 'whisper',
+      size_bytes: 77704715,
+      engine: 'whisper.cpp',
+      source_repo: 'ggerganov/whisper.cpp',
+      source_revision: WHISPER_REV,
+      source_url: hf('ggerganov/whisper.cpp', WHISPER_REV, 'ggml-tiny.en.bin'),
+      files: [{
+        path: 'ggml-tiny.en.bin',
+        size_bytes: 77704715,
+        sha256: '921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f',
+      }],
+      license: {
+        spdx: 'MIT',
+        notice: 'Optional local English speech model. Android speech recognition is used by default and needs no download.',
+      },
+      download_allowed: true,
+      download_reason: 'Upstream Whisper tiny.en model, pinned revision.',
+      detail: 'Optional offline speech model for a whisper.cpp runtime. Android speech recognition works without it.',
+    }],
+  },
+];
+
+const RUNTIMES = [
+  {
+    id: 'llama.cpp',
+    name: 'llama.cpp for Android arm64',
+    detail: 'Official b12675 Android arm64 build (llama-cli, llama-server and shared libraries).',
+    url: 'https://github.com/ggml-org/llama.cpp/releases/download/b12675/llama-b12675-bin-android-arm64.tar.gz',
+    filename: 'llama-b12675-bin-android-arm64.tar.gz',
+    size_bytes: 82520261,
+    sha256: 'fbe76190d82f02e1c2f3d4b2f1a03c9663d7c968e165f7e6eb07ad3092258f6c',
+    extract: 'tar.gz',
+  },
+  {
+    id: 'llama.cpp-snapdragon',
+    name: 'llama.cpp Snapdragon / Adreno (OpenCL)',
+    detail: 'Official b12675 Android arm64 build with the Snapdragon OpenCL CPU backend.',
+    url: 'https://github.com/ggml-org/llama.cpp/releases/download/b12675/llama-b12675-bin-android-arm64-snapdragon.tar.gz',
+    filename: 'llama-b12675-bin-android-arm64-snapdragon.tar.gz',
+    size_bytes: 68598141,
+    sha256: 'bdd94b3106a73dd538ec7e6e2389f5a3c8a9e2c5b0f25a2845d7af399b477ede',
+    extract: 'tar.gz',
+  },
+  {
+    id: 'onnxruntime',
+    name: 'ONNX Runtime for Android (AAR)',
+    detail: 'Microsoft ONNX Runtime 1.20.0 Android archive, including the arm64-v8a native library.',
+    url: 'https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/1.20.0/onnxruntime-android-1.20.0.aar',
+    filename: 'onnxruntime-android-1.20.0.aar',
+    size_bytes: 27867924,
+    sha256: '07a8f71ef890afed8c6087a56220e6d558a492804276ee2dd7cb7f6262242027',
+    extract: 'zip',
+  },
+];
+
+/* -------------------------------------------------------------------- state */
+
+function defaultState() {
+  return {
+    enabled: true,
+    mode: 'squad',
+    runtimePreference: 'auto',
+    perModel: {},
+    requests: {},
+    installed: {},
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Object.assign(defaultState(), parsed || {});
+  } catch (error) {
+    return defaultState();
+  }
+}
+
+function saveState(state) {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch (error) {
+    /* storage unavailable: keep the in-memory state */
+  }
+}
+
+/* ------------------------------------------------------------------ helpers */
+
+function choice(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function firstLine(text, max) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  return clean.length > max ? clean.slice(0, max - 1) + '…' : clean;
+}
+
+function routeFor(text, mode) {
+  if (mode === 'chatbird') return 'CHAT';
+  if (mode === 'codebird') return 'CODE';
+  const value = String(text || '').toLowerCase();
+  if (/\b(code|function|method|class|bug|error|exception|stack trace|python|javascript|typescript|java|kotlin|rust|golang|sql|regex|compile|refactor|api|json)\b/.test(value)) {
+    return 'CODE';
+  }
+  if (/\b(battery|storage|disk|free space|device|android|microphone|mic|cpu|memory|ram|model|download|install|diagnostic|folder|path)\b/.test(value)) {
+    return 'SYSTEM';
+  }
+  if (/\?\s*$/.test(value) || /^(how|what|why|when|where|who|which|can|does|do|is|are|should)\b/.test(value)) {
+    return 'ASK';
+  }
+  return 'CHAT';
+}
+
+function reasonFor(route) {
+  if (route === 'CODE') return { code: 'R_ONDEVICE_CODE', confidence: 0.82 };
+  if (route === 'SYSTEM') return { code: 'R_ONDEVICE_SYSTEM', confidence: 0.78 };
+  if (route === 'ASK') return { code: 'R_ONDEVICE_ASK', confidence: 0.7 };
+  return { code: 'R_ONDEVICE_CHAT', confidence: 0.72 };
+}
+
+function deviceInfo() {
+  const host = android();
+  if (!host || typeof host.deviceInfo !== 'function') return {};
+  return parseJson(host.deviceInfo(), {});
+}
+
+function formatDevice() {
+  const info = deviceInfo();
+  const lines = [
+    'On-device diagnostics (read-only):',
+    `• Device: ${info.manufacturer || 'Android'} ${info.model || ''}`.trim(),
+    `• Android: ${info.release || '?'} (API ${info.sdk || '?'})`,
+    `• CPU ABIs: ${info.abis || '?'}`,
+    `• Battery: ${info.battery >= 0 ? info.battery + '%' + (info.charging ? ' · charging' : '') : 'unknown'}`,
+    `• Free storage: ${bytes(info.free_storage)}`,
+    `• Models: ${info.models_dir || 'unavailable'}`,
+    `• Runtimes: ${info.runtimes_dir || 'unavailable'}`,
+    `• Android speech: ${info.speech_available ? 'available' : 'unavailable'}`,
+  ];
+  return lines.join('\n');
+}
+
+function codeReply(text) {
+  const value = String(text || '').toLowerCase();
+  const header = 'CodeBird · on-device assistant\n';
+  if (/\bsort\b/.test(value) && /\bpython\b/.test(value)) {
+    return header + '\nA small, dependency-free Python example:\n\n' +
+      'def quicksort(items):\n' +
+      '    if len(items) <= 1:\n' +
+      '        return items\n' +
+      '    pivot = items[len(items) // 2]\n' +
+      '    lower = [x for x in items if x < pivot]\n' +
+      '    same = [x for x in items if x == pivot]\n' +
+      '    higher = [x for x in items if x > pivot]\n' +
+      '    return quicksort(lower) + same + quicksort(higher)\n\n' +
+      'print(quicksort([5, 2, 9, 1]))\n';
+  }
+  if (/\b(fetch|http|api|request)\b/.test(value) && /\b(javascript|typescript|js|node)\b/.test(value)) {
+    return header + '\nA minimal fetch example with error handling:\n\n' +
+      'async function getJson(url) {\n' +
+      '  const response = await fetch(url, { headers: { Accept: "application/json" } });\n' +
+      '  if (!response.ok) throw new Error(`HTTP ${response.status}`);\n' +
+      '  return response.json();\n' +
+      '}\n\n' +
+      'getJson("https://example.com/api").then(console.log).catch(console.error);\n';
+  }
+  return header + '\nRequest: ' + firstLine(text, 300) + '\n\n' +
+    'A practical outline:\n' +
+    '1. State the input, the expected output and the failure cases.\n' +
+    '2. Keep the smallest reproduction alongside the fix so the behaviour is testable.\n' +
+    '3. Add one automated check for the bug you are fixing, then re-run it after each change.\n\n' +
+    'Paste the relevant code or error text and I will turn this into a more specific patch outline.';
+}
+
+function chatReply(text) {
+  const value = String(text || '').toLowerCase();
+  if (/^(hi|hello|hey|yo|good morning|good evening)\b/.test(value)) {
+    return 'Hi — PenGuru is running entirely on this phone.\n\n' +
+      'I can report device status, outline code, help route a request, and keep the conversation local. ' +
+      'No Nuxel server, API URL or token is involved. Use the Model library to download models and Settings → On-device dependencies to stage runtimes.';
+  }
+  if (/\b(what can you do|help|capabilit|feature)/.test(value)) {
+    return 'This standalone build works without a Nuxel host:\n\n' +
+      '• Conversation: local routing plus a built-in responder.\n' +
+      '• Model library: download verified model files from Hugging Face to this phone.\n' +
+      '• Dependencies: install llama.cpp and ONNX Runtime archives into app storage.\n' +
+      '• Voice: Android speech recognition, foreground only, transcript reviewed before sending.\n' +
+      '• Diagnostics: read-only device and storage status.\n\n' +
+      'Full neural generation needs a native model runtime loaded by the app; the download/install controls are ready for that.';
+  }
+  const time = /\b(time|date|today)\b/.test(value);
+  if (time) {
+    return 'On this phone it is ' + new Date().toLocaleString() + '.';
+  }
+  return 'PenGuru · on-device\n\nI received: "' + firstLine(text, 300) + '"\n\n' +
+    'This standalone build keeps the conversation on the handset and answers with local logic. ' +
+    'Ask about device status, request a code outline, or use the voice button. ' +
+    'For full neural answers, download a model and install a runtime in Settings.';
+}
+
+function askReply(text) {
+  return 'I can help, but I need one detail first.\n\n' +
+    'You asked: "' + firstLine(text, 300) + '"\n\n' +
+    'Which outcome do you want — a short explanation, a code example, or a device/storage check?';
+}
+
+function replyFor(text, route) {
+  if (route === 'SYSTEM') return formatDevice();
+  if (route === 'CODE') return codeReply(text);
+  if (route === 'ASK') return askReply(text);
+  return chatReply(text);
+}
+
+/* ------------------------------------------------------------ engine object */
+
+export function createLocalEngine() {
+  const state = loadState();
+  const pendingJobs = new Map();
+  const confirmed = new Set(Object.keys(state.installed || {}).filter((key) => state.installed[key]));
+  const host = android();
+  let counter = 0;
+
+  function nativeInstalled(kind, id) {
+    const key = kind + ':' + id;
+    // A download that just reached READY is trustworthy even before the
+    // native installed.json round-trip is observed by the page.
+    if (confirmed.has(key)) return true;
+    if (!host || typeof host.isInstalled !== 'function') {
+      return !!state.installed[key];
+    }
+    try {
+      return !!host.isInstalled(kind, id);
+    } catch (error) {
+      return !!state.installed[key];
+    }
+  }
+
+  function markInstalled(kind, id, value) {
+    const key = kind + ':' + id;
+    if (value) confirmed.add(key); else confirmed.delete(key);
+    state.installed[key] = !!value;
+    saveState(state);
+  }
+
+  function cards() {
+    return MODELS.map((model) => ({
+      model_id: model.model_id,
+      name: model.name,
+      role: model.role,
+      variants: model.variants.map((variant) => {
+        const id = model.model_id + '/' + variant.variant_id;
+        const ready = nativeInstalled('model', id);
+        return Object.assign({}, variant, {
+          status: ready ? 'ready' : 'not_installed',
+          detail: ready
+            ? 'Downloaded and verified in ' + (paths().models || 'app storage') + '/' + id
+            : variant.detail,
+          installed_path: ready ? (paths().models || '') + '/' + id : null,
+        });
+      }),
+    }));
+  }
+
+  function paths() {
+    if (host && typeof host.storagePaths === 'function') {
+      return parseJson(host.storagePaths(), {});
+    }
+    return { models: 'app storage/Models', runtimes: 'app storage/Runtimes' };
+  }
+
+  function runtimeCatalog() {
+    return RUNTIMES.map((runtime) => {
+      const installed = nativeInstalled('runtime', runtime.id);
+      return Object.assign({}, runtime, {
+        installed,
+        status: installed ? 'ready' : 'not_installed',
+        installed_path: installed ? (paths().runtimes || '') + '/' + runtime.id : null,
+      });
+    });
+  }
+
+  function status() {
+    const modelCards = cards();
+    const ready = [];
+    for (const card of modelCards) {
+      for (const variant of card.variants) {
+        if (variant.status === 'ready') ready.push(card.model_id + '/' + variant.variant_id);
+      }
+    }
+    const speech = !!(host && typeof host.speechAvailable === 'function' && host.speechAvailable());
+    return {
+      ok: true,
+      status: {
+        schema_version: 1,
+        enabled: !!state.enabled,
+        state: state.enabled ? (ready.length ? 'IDLE · local package ready' : 'IDLE · local') : 'DISABLED',
+        mode: state.mode,
+        runtime_preference: state.runtimePreference,
+        per_model_engine: Object.assign({}, state.perModel),
+        loaded_model: ready.length ? ready[0].split('/')[0] : null,
+        loaded_variant: ready.length ? ready[0].split('/')[1] : null,
+        engine: ready.length ? 'on-device · runtime staged' : 'on-device · built-in responder',
+        provider: 'CPU',
+        queue_depth: 0,
+        models: modelCards,
+        sonarbird: { available: true, mode: 'built-in language rules' },
+        providers: { CPU: { status: 'baseline' }, 'GPU/NPU': { status: 'not validated on this device' } },
+        network: { workers: 'not required', local_only: true },
+        voice: { wake_word: false, foreground_speech: speech, listening: false },
+        storage: paths(),
+      },
+    };
+  }
+
+  function startRemoteJob(kind, id, files, extract) {
+    if (!host || typeof host.startDownload !== 'function') {
+      return { ok: false, error: 'android_bridge_required', detail: 'Downloads require the Android app.' };
+    }
+    const spec = JSON.stringify({ kind, id, files, extract: extract || null });
+    let jobId = '';
+    try {
+      jobId = host.startDownload(spec) || '';
+    } catch (error) {
+      return { ok: false, error: 'download_start_failed', detail: String(error && error.message || error) };
+    }
+    if (!jobId) return { ok: false, error: 'download_start_failed' };
+    pendingJobs.set(jobId, { kind, id });
+    return { ok: true, job_id: jobId, state: 'downloading' };
+  }
+
+  function jobStatus(jobId, fallbackKind, fallbackId) {
+    if (!host || typeof host.downloadStatus !== 'function') {
+      return { ok: false, error: 'android_bridge_required' };
+    }
+    const raw = host.downloadStatus(jobId);
+    const job = parseJson(raw, null);
+    if (!job) return { ok: false, error: 'unknown_job' };
+    const info = pendingJobs.get(jobId) || { kind: fallbackKind, id: fallbackId };
+    if (job.state === 'ready') {
+      markInstalled(info.kind, info.id, true);
+      pendingJobs.delete(jobId);
+    }
+    return { ok: true, job: Object.assign({ job_id: jobId }, job) };
+  }
+
+  async function call(op, params) {
+    params = params || {};
+    if (op === 'status') return status();
+    if (op === 'list_models') return { ok: true, models: cards() };
+    if (op === 'set_enabled') {
+      state.enabled = params.enabled !== false;
+      saveState(state);
+      return Object.assign({ ok: true, enabled: state.enabled }, status().status);
+    }
+    if (op === 'set_mode') {
+      if (!['squad', 'chatbird', 'codebird'].includes(params.mode)) {
+        return { ok: false, error: 'invalid_mode' };
+      }
+      state.mode = params.mode;
+      saveState(state);
+      return { ok: true, mode: state.mode };
+    }
+    if (op === 'set_runtime') {
+      if (params.model_id) {
+        state.perModel[params.model_id] = params.engine || 'inherit';
+      } else {
+        state.runtimePreference = params.preference || 'auto';
+      }
+      saveState(state);
+      return { ok: true, runtime_preference: state.runtimePreference, per_model_engine: state.perModel };
+    }
+    if (op === 'start_download') {
+      const card = MODELS.find((model) => model.model_id === params.model_id);
+      const variant = card && card.variants.find((item) => item.variant_id === params.variant_id);
+      if (!card || !variant) return { ok: false, error: 'unknown_package' };
+      if (!params.license_accepted || params.license_revision !== variant.source_revision) {
+        return { ok: false, error: 'license_ack_required', detail: 'Accept the exact revision notice first.' };
+      }
+      const files = variant.files.map((file) => ({
+        url: file.url || variant.source_url,
+        path: file.path,
+        sha256: file.sha256,
+        size: file.size_bytes,
+      }));
+      return startRemoteJob('model', card.model_id + '/' + variant.variant_id, files);
+    }
+    if (op === 'download_status') return jobStatus(String(params.job_id || ''));
+    if (op === 'cancel_download') {
+      const jobId = String(params.job_id || '');
+      if (!host || typeof host.cancelDownload !== 'function') return { ok: false, error: 'android_bridge_required' };
+      return { ok: !!host.cancelDownload(jobId), job_id: jobId };
+    }
+    if (op === 'delete_model') {
+      const id = params.model_id + '/' + params.variant_id;
+      if (!host || typeof host.deleteInstalled !== 'function') return { ok: false, error: 'android_bridge_required' };
+      const deleted = !!host.deleteInstalled('model', id);
+      if (deleted) markInstalled('model', id, false);
+      return { ok: deleted, deleted: deleted ? id : null, error: deleted ? null : 'delete_failed' };
+    }
+    if (op === 'submit') {
+      if (!state.enabled) return { ok: false, error: 'disabled', detail: 'Enable PenGuru first.' };
+      if (!params.text || !String(params.text).trim()) return { ok: false, error: 'invalid_text' };
+      const route = params.route_override || routeFor(params.text, state.mode);
+      if (!['CHAT', 'CODE', 'ASK', 'SYSTEM'].includes(route)) return { ok: false, error: 'invalid_override' };
+      const id = 'local-' + Date.now().toString(36) + '-' + (++counter).toString(36);
+      const reason = reasonFor(route);
+      const request = {
+        request_id: id,
+        status: 'generating',
+        route,
+        reason_code: reason.code,
+        confidence: reason.confidence,
+        worker: route === 'CODE' ? 'codebird' : route === 'CHAT' ? 'chatbird' : null,
+        engine: 'on-device-rules',
+        variant_id: 'builtin',
+        revision: 'local',
+        output: '',
+      };
+      state.requests[id] = request;
+      saveState(state);
+      setTimeout(() => {
+        if (request.status === 'cancelled') return;
+        request.status = 'done';
+        request.output = replyFor(params.text, route);
+        saveState(state);
+      }, 320);
+      return { ok: true, request_id: id, status: 'queued' };
+    }
+    if (op === 'get') {
+      const request = state.requests[String(params.request_id || '')];
+      if (!request) return { ok: false, error: 'not_owner' };
+      return { ok: true, request };
+    }
+    if (op === 'cancel') {
+      const request = state.requests[String(params.request_id || '')];
+      if (request) request.status = 'cancelled';
+      saveState(state);
+      return { ok: true, cancelled: !!request };
+    }
+    if (op === 'clear_all') {
+      const count = Object.keys(state.requests).length;
+      state.requests = {};
+      saveState(state);
+      return { ok: true, deleted: count };
+    }
+    if (op === 'transcribe') {
+      return { ok: false, error: 'use_android_speech', detail: 'Use the microphone button; Android speech recognition is built in.' };
+    }
+    if (op === 'diagnostics') {
+      return {
+        ok: true,
+        status: status().status,
+        device: deviceInfo(),
+        paths: paths(),
+        runtimes: runtimeCatalog(),
+        speech: { available: !!(host && host.speechAvailable && host.speechAvailable()) },
+      };
+    }
+    if (op === 'install_runtime') {
+      const runtime = RUNTIMES.find((item) => item.id === params.id);
+      if (!runtime) return { ok: false, error: 'unknown_runtime' };
+      return startRemoteJob('runtime', runtime.id, [{
+        url: runtime.url,
+        path: runtime.filename,
+        sha256: runtime.sha256,
+        size: runtime.size_bytes,
+      }], runtime.extract);
+    }
+    if (op === 'runtime_status') {
+      if (params.job_id) return jobStatus(String(params.job_id), 'runtime', params.id);
+      const runtime = RUNTIMES.find((item) => item.id === params.id);
+      if (!runtime) return { ok: false, error: 'unknown_runtime' };
+      const installed = nativeInstalled('runtime', runtime.id);
+      return { ok: true, runtime: Object.assign({}, runtime, {
+        installed,
+        status: installed ? 'ready' : 'not_installed',
+      }) };
+    }
+    if (op === 'paths') return { ok: true, paths: paths(), device: deviceInfo() };
+    return { ok: false, error: 'unknown_op' };
+  }
+
+  return { call, runtimeCatalog, paths, status, cards };
+}
+
+export { RUNTIMES };

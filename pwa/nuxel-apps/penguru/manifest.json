@@ -20,6 +20,6 @@
       "system:inspect",
       "microphone"
     ],
-    "pwa_version": "0.8.9-beta"
+    "pwa_version": "0.9.0-beta"
   }
 }

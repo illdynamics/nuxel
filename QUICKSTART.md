@@ -8,13 +8,13 @@ Install this file on your Android phone:
 dist/android/penguru-squad-debug.apk
 ```
 
-That is the complete PenGuru Squad Android client (app label **PenGuru Squad**,
-package `org.nuxel.penguru`, version `0.8.9-beta` / versionCode `809`). There
-is no other APK to install. The matching checksum is in
+That is the complete standalone PenGuru Squad Android app (label **PenGuru
+Squad**, package `org.nuxel.penguru`, version `0.9.0-beta` / versionCode
+`900`). There is no other APK to install. The matching checksum is in
 `dist/android/SHA256SUMS`:
 
 ```
-be8e5b2381c81411ccae5f6b529f33d8999f6e893e6dcef8d7d644dc3e5915e8  penguru-squad-debug.apk
+83a24496632cdf0922ca860c47f830f5aa2e8895916b68b78de8521af990cb8b  penguru-squad-debug.apk
 ```
 
 The APK is signed with the repository's stable debug identity, so it installs
@@ -22,7 +22,7 @@ as an in-place upgrade over earlier builds of the same app.
 
 ## Install it
 
-Phone requirements: Android 8.0 (API 26) or newer.
+Phone requirements: Android 8.0 (API 26) or newer, arm64 recommended.
 
 **Option A — USB / ADB (recommended):**
 
@@ -41,32 +41,45 @@ Verify the copy first if you like:
 sha256sum penguru-squad-debug.apk
 ```
 
-## Point it at your Nuxel host
+## It works without a Nuxel server
 
-The APK is the client; inference still runs on the Nuxel host.
+The app no longer asks for a Nuxel API URL or launcher token. It starts an
+**on-device engine** inside the APK:
 
-1. On the Nuxel host, mint a one-hour PenGuru token as root:
+- Conversation, routing, device diagnostics and voice work immediately.
+- **Model library → Download to this phone** downloads the pinned Hugging Face
+  revision directly to app storage, verifies its SHA-256, and records the
+  license acknowledgement.
+- **Settings → On-device dependencies** installs llama.cpp (arm64 or
+  Snapdragon/OpenCL) and ONNX Runtime archives, verifies them, and unpacks them
+  in app storage.
+- **Settings → Voice** uses Android's built-in speech recognition, so the
+  microphone transcript works without a Nuxel host.
 
-   ```sh
-   python3 services/nuxel-penguru/tools/mint-android-token.py
-   ```
-
-2. Open **PenGuru Squad → Settings → Connection**.
-3. Enter the bridge URL. On the same handset use
-   `http://127.0.0.1:8080/api/v1`; from Wi-Fi use the host's LAN address, e.g.
-   `http://192.168.1.20:8080/api/v1`.
-4. Paste the token and press **Save & reconnect**.
+The optional `Nuxel host` engine mode remains available in Settings for owners
+who already run the PenGuru service. It is not required and is not the default.
 
 ## First-run checklist
 
 - [ ] App opens to the PenGuru Squad home screen (no blank/white page).
-- [ ] Connection says connected and the model library lists models.
-- [ ] Enable PenGuru, then start a chat.
+- [ ] Conversation is enabled and a message returns an on-device answer.
+- [ ] **Model library** shows ChatBird, CodeBird and SonarBird with
+      **Download to this phone** buttons.
+- [ ] Tick the license checkbox, download a model, and watch progress.
+- [ ] **Settings → On-device dependencies** lists llama.cpp / ONNX Runtime
+      install buttons and the storage paths.
+- [ ] Open **Settings → Voice**, grant the microphone, and speak a message.
 - [ ] **Export response** writes to `Downloads/PenGuru/`.
 
-If the app reports `launcher_token_required`, the token expired — re-run the
-mint command and paste the new one. If the model controls stop responding,
-check that the Nuxel bridge is reachable from the phone's network.
+## Where files go
+
+```
+/storage/emulated/0/Android/data/org.nuxel.penguru/files/Models/<model>/<variant>/
+/storage/emulated/0/Android/data/org.nuxel.penguru/files/Runtimes/<runtime>/
+/storage/emulated/0/Download/PenGuru/            (exported responses)
+```
+
+The exact paths are shown inside Settings → Storage.
 
 ## Rebuilding the APK
 
@@ -76,13 +89,17 @@ check that the Nuxel bridge is reachable from the phone's network.
 
 Output is rewritten to `dist/android/penguru-squad-debug.apk` plus
 `dist/android/SHA256SUMS`. See `android/penguru-squad/README.md` for SDK
-prerequisites and `apk-report.md` for the full verification report.
+prerequisites.
 
 ## Limitations
 
-- No model weights are inside the APK; a reachable Nuxel host is required for
-  inference, model downloads, deletion and diagnostics.
-- Bundled assets only — the WebView loads no remote HTML.
-- Cleartext HTTP is allowed for local/LAN bridges; use a trusted network or a
-  TLS-terminating proxy on untrusted Wi-Fi.
-- Microphone permission is requested only when you use the in-app voice button.
+- Model weights and runtime archives are not embedded in the APK; the app
+  downloads them on demand.
+- The built-in responder is the default conversational engine. Neural
+  generation requires a native model runtime loaded by the app; the download
+  and installation controls stage the model and runtime artifacts on the phone.
+- Android blocks executing arbitrary binaries downloaded into app data on
+  modern releases. The installer keeps the archives and unpacked files for a
+  future bundled/JNI runtime and for inspection.
+- Microphone use is foreground-only; listening stops when the app is hidden.
+- Bundled web assets only — the WebView loads no remote HTML.

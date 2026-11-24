@@ -1,10 +1,117 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="nuxel-app-id" content="org.nuxel.PenGuru"><meta name="theme-color" content="#101b2c"><title>PenGuru Squad</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="../../nuxel-common/theme.css"><link rel="stylesheet" href="penguru.css"></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="nuxel-app-id" content="org.nuxel.PenGuru">
+<meta name="theme-color" content="#101b2c">
+<title>PenGuru Squad</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="../../nuxel-common/theme.css">
+<link rel="stylesheet" href="penguru.css">
+</head>
+<body>
 <script>try{const u=localStorage.getItem("nuxel-api-url");if(u)globalThis.NUXEL_API_URL=u;const t=localStorage.getItem("nuxel-penguru-token");if(t)globalThis.__NUXEL_TOKEN__=t;}catch(e){}</script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
-<header><div><small>NUXAI · LOCAL ASSISTANTS</small><h1>PenGuru Squad</h1></div><button id="power">Enable PenGuru</button></header>
-<p id="notice" role="status" aria-live="polite">Connecting to Nuxel…</p>
-<nav aria-label="PenGuru sections"><button data-page="chat">Conversation</button><button data-page="models">Model library</button><button data-page="settings">Settings</button><button data-page="diagnostics">Diagnostics</button></nav>
-<main><section id="chat"><div class="controls"><label>Assistant<select id="mode"><option value="squad">PenGuru Squad</option><option value="chatbird">Single ChatBird</option><option value="codebird">Single CodeBird</option></select></label><label>Route for next request<select id="route"><option value="">Automatic</option><option>CHAT</option><option>CODE</option><option>ASK</option></select></label></div><p class="hint">Local answers and code proposals. System requests support read-only diagnostics. Generated code never runs automatically.</p><div id="messages" aria-live="polite"></div><form id="compose"><label for="prompt">Message</label><textarea id="prompt" rows="4" maxlength="16000" placeholder="Ask a question, explain some code, or check the battery…" required></textarea><div class="controls"><button id="send" type="submit">Send</button><button id="cancel" type="button" disabled>Stop generation</button><button id="clear" type="button">Clear conversation</button><button id="export" type="button">Export response</button></div></form></section>
-<section id="models" hidden><h2>Model library</h2><p class="hint">Downloads go directly from Hugging Face to the PenGuru host. Review the exact revision and license before installing. Inference stays offline after installation.</p><div id="cards"></div></section>
-<section id="settings" hidden><h2>Runtime &amp; privacy</h2><h3>Connection</h3><label>Nuxel API URL<input id="api-url" type="url" inputmode="url" autocomplete="url" placeholder="http://127.0.0.1:8080/api/v1"></label><label>Launcher token<input id="api-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste a launcher-minted token"></label><div class="controls"><button id="connect" type="button">Save &amp; reconnect</button><button id="forget" type="button">Forget connection</button></div><p id="connection-status" class="hint">Bridge: http://127.0.0.1:8080/api/v1</p><p class="hint">On the Nuxel host, run <code>python3 services/nuxel-penguru/tools/mint-android-token.py</code> as root, then paste the printed token here. The token is bound to PenGuru and expires; re-mint it if model controls report <code>launcher_token_required</code>.</p><label>Generative backend<select id="runtime"><option value="auto">Auto — verified compatible package</option><option value="llama.cpp">llama.cpp (GGUF)</option><option value="onnxruntime-genai">ONNX Runtime GenAI</option></select></label><p>CPU · 4 threads · 4096-token context · one model worker at a time.</p><p class="hint">ONNX GenAI requires separately exported, signed and device-tested packages. None are installed; selecting it returns an explicit unavailable error.</p><h3>Voice · local speech</h3><p>Install the optional Voice tiny.en package under SonarBird in Model library. Audio is sent only to your PenGuru host on the configured link and is discarded after recognition. MiniLM routes text; Whisper handles speech.</p><button id="voice-talk">Speak a message (5 seconds)</button><button id="voice-wake">Listen for “Penguru” while open</button><button id="voice-stop" disabled>Stop microphone</button><p id="voice-status" role="status">Microphone closed</p><p class="hint">Foreground beta: listening stops when you hide the app or turn PenGuru off. Wake detection uses local transcription, not a low-power background wake-word model. Review the transcript and press Send; speech never authorizes actions.</p><h3>Privacy</h3><p>Prompts and answers are not saved to disk. Responses remain in memory for this session. No cloud inference or telemetry. Turning PenGuru off stops its services, downloads and workers.</p><h3>Approvals &amp; code</h3><p>Privileged actions and generated-code execution are unavailable until their isolation and approval gates pass on the host. You can review and export responses.</p></section>
-<section id="diagnostics" hidden><h2>Device diagnostics</h2><button id="refresh">Refresh diagnostics</button><pre id="details"></pre></section></main><script type="module" src="penguru.js"></script></body></html>
+<header>
+  <div><small>NUXAI · LOCAL ASSISTANTS</small><h1>PenGuru Squad</h1></div>
+  <button id="power">Enable PenGuru</button>
+</header>
+<p id="notice" role="status" aria-live="polite">Starting the on-device engine…</p>
+<nav aria-label="PenGuru sections">
+  <button data-page="chat">Conversation</button>
+  <button data-page="models">Model library</button>
+  <button data-page="settings">Settings</button>
+  <button data-page="diagnostics">Diagnostics</button>
+</nav>
+<main>
+  <section id="chat">
+    <div class="controls">
+      <label>Assistant<select id="mode"><option value="squad">PenGuru Squad</option><option value="chatbird">Single ChatBird</option><option value="codebird">Single CodeBird</option></select></label>
+      <label>Route for next request<select id="route"><option value="">Automatic</option><option>CHAT</option><option>CODE</option><option>ASK</option></select></label>
+    </div>
+    <p class="hint">Runs on this phone. No Nuxel server, API URL or token is required. Generated code is never run automatically.</p>
+    <div id="messages" aria-live="polite"></div>
+    <form id="compose">
+      <label for="prompt">Message</label>
+      <textarea id="prompt" rows="4" maxlength="16000" placeholder="Ask a question, explain some code, or check the battery…" required></textarea>
+      <div class="controls">
+        <button id="send" type="submit">Send</button>
+        <button id="cancel" type="button" disabled>Stop generation</button>
+        <button id="clear" type="button">Clear conversation</button>
+        <button id="export" type="button">Export response</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="models" hidden>
+    <h2>Model library</h2>
+    <p class="hint">Downloads go directly from Hugging Face to this phone's app storage. Review the exact revision and license before installing. Downloads are verified with the pinned SHA-256 and never leave the handset after installation.</p>
+    <p id="models-path" class="hint">Storage on this phone: …</p>
+    <div id="cards"></div>
+  </section>
+
+  <section id="settings" hidden>
+    <h2>Runtime &amp; privacy</h2>
+
+    <h3>Engine</h3>
+    <label>Where should PenGuru run?
+      <select id="engine-mode">
+        <option value="local">On this phone (no Nuxel server)</option>
+        <option value="nuxel">Nuxel host (optional)</option>
+      </select>
+    </label>
+    <p class="hint">On-device mode keeps prompts, downloads and voice on the handset. The optional Nuxel mode is only for owners who already run the PenGuru service on a Nuxel device.</p>
+
+    <div id="local-panel">
+      <h3>On-device dependencies</h3>
+      <p class="hint">Install the runtimes you want to use. Archives are downloaded to app-specific Android storage (<code>/Android/data/org.nuxel.penguru/files</code>), verified, and unpacked without root. Android's built-in speech recognizer needs no download.</p>
+      <div id="runtimes"></div>
+      <h3>Storage</h3>
+      <p id="storage-paths" class="hint">Models: …<br>Runtimes: …<br>Exports: Downloads/PenGuru</p>
+      <button id="refresh-storage" type="button">Refresh storage info</button>
+    </div>
+
+    <div id="connection-fields" hidden>
+      <h3>Nuxel connection (optional)</h3>
+      <label>Nuxel API URL<input id="api-url" type="url" inputmode="url" autocomplete="url" placeholder="http://127.0.0.1:8080/api/v1"></label>
+      <label>Launcher token<input id="api-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste a launcher-minted token"></label>
+      <div class="controls">
+        <button id="connect" type="button">Save &amp; reconnect</button>
+        <button id="forget" type="button">Forget connection</button>
+      </div>
+      <p id="connection-status" class="hint">Bridge: http://127.0.0.1:8080/api/v1</p>
+      <p class="hint">Only needed for a Nuxel host. On the host, run <code>python3 services/nuxel-penguru/tools/mint-android-token.py</code> as root, then paste the printed token here. The token is bound to PenGuru and expires; re-mint it if controls report <code>launcher_token_required</code>.</p>
+    </div>
+
+    <h3>Generative backend</h3>
+    <label>Runtime preference<select id="runtime"><option value="auto">Auto — verified compatible package</option><option value="llama.cpp">llama.cpp (GGUF)</option><option value="onnxruntime-genai">ONNX Runtime GenAI</option></select></label>
+    <p>CPU · 4 threads · 4096-token context · one model worker at a time.</p>
+    <p class="hint">llama.cpp and ONNX Runtime archives can be installed above. This build also ships a built-in local responder so conversation, routing, device status and voice work immediately without a Nuxel host.</p>
+
+    <h3>Voice · on-device speech</h3>
+    <p>Android speech recognition runs in the foreground. Audio is handled by the phone's speech service and the transcript is shown for review; nothing is sent to a Nuxel host. MiniLM routing is optional; the built-in rules work without it.</p>
+    <div class="controls">
+      <button id="voice-talk" type="button">Speak a message (5 seconds)</button>
+      <button id="voice-wake" type="button">Listen for “Penguru” while open</button>
+      <button id="voice-stop" type="button" disabled>Stop microphone</button>
+    </div>
+    <p id="voice-status" role="status">Microphone closed</p>
+    <p class="hint">Foreground beta: listening stops when you hide the app or turn PenGuru off. Review the transcript and press Send; speech never authorizes actions.</p>
+
+    <h3>Privacy</h3>
+    <p>Prompts and answers stay in this app's memory for the session. Model files and runtime archives are stored in this app's Android data directory. No cloud inference or telemetry. Turning PenGuru off stops downloads and workers.</p>
+
+    <h3>Approvals &amp; code</h3>
+    <p>Privileged actions and generated-code execution are unavailable. You can review and export responses.</p>
+  </section>
+
+  <section id="diagnostics" hidden>
+    <h2>Device diagnostics</h2>
+    <button id="refresh" type="button">Refresh diagnostics</button>
+    <pre id="details"></pre>
+  </section>
+</main>
+<script type="module" src="penguru.js"></script>
+</body>
+</html>

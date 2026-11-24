@@ -14,11 +14,15 @@ export function modelLibrary(container, call) {
       container.textContent = 'Enable PenGuru to inspect and download packages. No model downloads run while OFF.';
       return;
     }
+    if (!cards.length) {
+      container.textContent = 'No model packages are available.';
+      return;
+    }
     for (const card of cards) {
       const article = node('article', '');
       article.className = 'card';
-      article.append(node('h4', card.name || card.model_id));
-      if (!card.variants.length) article.append(node('p', 'No approved package. Squad currently uses deterministic routing only.'));
+      article.append(node('h4', card.name || card.model_id), node('p', 'Model id: ' + card.model_id));
+      if (!card.variants.length) article.append(node('p', 'No approved package is available.'));
       for (const variant of card.variants) {
         article.append(node('p', `${variant.format} · ${variant.quantization} · ${(variant.size_bytes / 1e9).toFixed(2)} GB · ${variant.engine}`));
         const source = node('a', variant.source_repo);
@@ -40,12 +44,13 @@ export function modelLibrary(container, call) {
           node('p', `${variant.license.spdx}: ${variant.license.notice || ''}`));
         article.append(details, node('p', `${variant.status}: ${variant.detail}`),
           node('p', variant.download_reason || 'Manifest trust not verified'));
+        if (variant.installed_path) article.append(node('p', 'Installed at: ' + variant.installed_path));
         const accepted = document.createElement('input');
         accepted.type = 'checkbox';
-        accepted.disabled = !variant.download_allowed;
+        accepted.disabled = !variant.download_allowed || variant.status === 'ready';
         const label = node('label', '');
         label.append(accepted, document.createTextNode(' I reviewed this revision’s license and provenance.'));
-        const download = node('button', variant.status === 'ready' ? 'Verified & ready' : 'Download from Hugging Face');
+        const download = node('button', variant.status === 'ready' ? 'Downloaded · ready' : 'Download to this phone');
         let active = false;
         const updateDownload = () => {
           download.disabled = active || !accepted.checked || !variant.download_allowed || variant.status === 'ready';
@@ -75,8 +80,9 @@ export function modelLibrary(container, call) {
               accepted.disabled = !variant.download_allowed;
               if (state === 'ready') {
                 variant.status = 'ready';
-                download.textContent = 'Verified & ready';
+                download.textContent = 'Downloaded · ready';
                 remove.disabled = false;
+                accepted.disabled = true;
               }
               updateDownload();
             }});
@@ -88,11 +94,11 @@ export function modelLibrary(container, call) {
             updateDownload();
           }
         };
-        const remove = node('button', 'Delete package');
-        remove.disabled = variant.status === 'not_installed';
+        const remove = node('button', 'Delete from this phone');
+        remove.disabled = variant.status !== 'ready';
         remove.onclick = async () => {
           if (active || jobs.size) { status.textContent = 'Finish or cancel the download first.'; return; }
-          if (!confirm(`Delete ${card.model_id} ${variant.variant_id} from this device?`)) return;
+          if (!confirm(`Delete ${card.model_id} ${variant.variant_id} from this phone?`)) return;
           remove.disabled = true;
           try {
             await call('delete_model', {model_id: card.model_id, variant_id: variant.variant_id});

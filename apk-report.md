@@ -13,6 +13,62 @@
 
 ---
 
+## v0.9.0 standalone update — current artifact
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `83a24496632cdf0922ca860c47f830f5aa2e8895916b68b78de8521af990cb8b`
+- **Package/version:** `org.nuxel.penguru` / `versionCode=900`, `versionName=0.9.0-beta`
+- **Size:** 1,743,004 bytes
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+
+This release removes the Nuxel host requirement for ordinary Android phones.
+
+### What changed
+
+1. **On-device engine** — `pwa/nuxel-apps/penguru/local-engine.js` implements
+   the `penguru` RPC verbs locally (status, models, downloads, conversation,
+   diagnostics). The Android default engine mode is now `local`; no API URL,
+   token, launcher or server is required.
+2. **Real model downloads** — the Model library shows ChatBird, CodeBird,
+   SonarBird MiniLM and Voice tiny.en cards with **Download to this phone**.
+   `MainActivity` streams the pinned Hugging Face URL, resumes `.part` files,
+   verifies the pinned SHA-256, writes `installed.json`, and reports progress.
+   Files live under
+   `/storage/emulated/0/Android/data/org.nuxel.penguru/files/Models/<model>/<variant>/`.
+3. **Runtime installers** — Settings → On-device dependencies installs llama.cpp
+   arm64, llama.cpp Snapdragon/OpenCL and ONNX Runtime Android (AAR), verifies
+   SHA-256, and unpacks tar.gz/zip into
+   `/storage/emulated/0/Android/data/org.nuxel.penguru/files/Runtimes/`.
+4. **Microphone wiring** — Android `SpeechRecognizer` (prefer-offline) delivers
+   transcripts to the PWA through `window.__nuxelSpeechResult`; the existing
+   Web Audio path remains a fallback. Wake-phrase review still requires an
+   explicit Send.
+5. **Optional Nuxel mode** — the old connection form remains under Settings →
+   Engine → Nuxel host for owners who run the service. It is no longer the
+   default and is not needed on a regular phone.
+
+### Verification performed
+
+- JS syntax checks on all bundled files.
+- `verify-wiring.js`: all 7 PWA surfaces OK.
+- `test-bridge.js`: all shared bridge tests pass.
+- Node harness with a mocked `NuxelAndroid` bridge: status, four model cards,
+  pinned download spec, READY/installed transition, runtime install spec,
+  SYSTEM reply (device/storage diagnostics), CODE reply, diagnostics.
+- APK rebuilt and `apksigner verify` reports v2 + v3.
+
+### Known limitation
+
+Android blocks executing arbitrary binaries downloaded into app data on modern
+releases. The installers stage verified runtime archives and the built-in
+on-device responder provides default answers; full neural generation still
+needs a bundled/JNI runtime. The headless emulator on this build host segfaulted
+before boot, so physical-device acceptance of the new flows remains required.
+
+The sections below describe the earlier `0.8.9-beta` client-only verification
+and are retained for history.
+
 ## 1. Executive verdict
 
 ### Is this the full APK Android port of PenGuru Squad?

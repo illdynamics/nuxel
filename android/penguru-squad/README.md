@@ -1,15 +1,24 @@
 # PenGuru Squad — Android APK
 
-This directory packages the current PenGuru Squad PWA as a standalone Android
-application. The APK bundles the app's HTML/CSS/JS and serves it from a private
-virtual origin (`https://appassets.androidplatform.net`); it is not a shortcut
-to a remote website and does not require Android Studio.
+This directory packages PenGuru Squad as a standalone Android application. The
+APK bundles the app's HTML/CSS/JS and serves it from a private virtual origin
+(`https://appassets.androidplatform.net`); it is not a shortcut to a remote
+website and does not require Android Studio.
 
-The Nuxel inference service is still the backend. The APK is the owner-facing
-client: it talks to the Nuxel HTTP bridge to enable PenGuru, list/download/
-verify models, and run local chat. The model library, runtime choice, voice
-controls and connection settings all live inside the PenGuru app now; the old
-Settings → PenGuru AI panel has been removed.
+Since `0.9.0-beta` the app runs without a Nuxel host. A bundled on-device
+engine (`pwa/nuxel-apps/penguru/local-engine.js`) implements the same verbs as
+the old `penguru` RPC namespace and delegates Android-only work to the
+`NuxelAndroid` bridge in `MainActivity`:
+
+- conversation, routing, device diagnostics and voice work immediately;
+- model downloads go directly from Hugging Face to app storage;
+- llama.cpp and ONNX Runtime installers download, verify and unpack into app
+  storage;
+- Android `SpeechRecognizer` supplies foreground microphone transcripts.
+
+The Nuxel connection form remains as an optional engine mode for owners who
+already run the PenGuru service. No URL or token is required on a regular
+phone.
 
 ## Build
 
@@ -56,77 +65,98 @@ The script uses `aapt2`, `javac`, `d8`, `zipalign` and `apksigner` directly.
 adb install -r dist/android/penguru-squad-debug.apk
 ```
 
-Or copy the APK to the phone and open it. The stable debug signing key is generated under
-`android/penguru-squad/.signing/` and is not committed, so repeated builds
-upgrade the same install instead of failing the signature check. For a release
-identity, create an owner-managed keystore and pass `PENGURU_KEYSTORE` to the
-build script; never commit a private signing key.
+Or copy the APK to the phone and open it. The stable debug signing key is
+generated under `android/penguru-squad/.signing/` and is not committed, so
+repeated builds upgrade the same install instead of failing the signature
+check. For a release identity, create an owner-managed keystore and pass
+`PENGURU_KEYSTORE` to the build script; never commit a private signing key.
 
-## Connect to Nuxel
+## On-device engine
 
-PenGuru RPC is a launcher-authority route. A self-bootstrapped token is not
-enough (by design). Mint a one-hour, PenGuru-bound token on the Nuxel host as
-root:
+The default engine mode is **On this phone**. It requires no server, URL,
+token, launcher or root access.
+
+| Feature | How it works |
+|---|---|
+| Conversation | Local routing plus a built-in responder (device status, code outlines, clarifying questions, chat). |
+| Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and Voice tiny.en packages with **Download to this phone**. |
+| Downloads | `MainActivity` streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. |
+| Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip into app storage. |
+| Voice | Android `SpeechRecognizer` with `EXTRA_PREFER_OFFLINE`; the transcript is reviewed before Send. |
+| Diagnostics | Battery, storage, Android version, CPU ABIs, model/runtime paths. |
+| Export | MediaStore `Downloads/PenGuru`; the actual de-duplicated name is reported. |
+
+### Storage paths
+
+```
+/storage/emulated/0/Android/data/org.nuxel.penguru/files/Models/<model>/<variant>/
+/storage/emulated/0/Android/data/org.nuxel.penguru/files/Runtimes/<runtime>/
+/storage/emulated/0/Download/PenGuru/
+```
+
+These are app-specific external directories: no `WRITE_EXTERNAL_STORAGE`
+permission is needed, and the paths are shown in Settings → Storage.
+
+### Runtime catalog
+
+| Runtime | Source | Size | SHA-256 |
+|---|---|---:|---|
+| llama.cpp Android arm64 | ggml-org/llama.cpp release `b12675` | 82.5 MB | `fbe76190…58f6c` |
+| llama.cpp Snapdragon/OpenCL | ggml-org/llama.cpp release `b12675` | 68.6 MB | `bdd94b31…7ede` |
+| ONNX Runtime Android 1.20.0 | Maven Central AAR | 27.9 MB | `07a8f71e…2027` |
+
+Android blocks executing arbitrary binaries downloaded into app data on modern
+releases. The installers therefore stage verified, unpacked artifacts for a
+future bundled/JNI runtime and for owner inspection; neural generation in this
+build is not claimed. The built-in responder makes the app usable immediately.
+
+## Optional Nuxel host mode
+
+Switch **Settings → Engine** to **Nuxel host (optional)** only if you run the
+PenGuru service on a Nuxel device. Mint a one-hour, PenGuru-bound token on the
+host as root:
 
 ```sh
 python3 services/nuxel-penguru/tools/mint-android-token.py
 ```
 
-In PenGuru Squad → Settings → Connection:
-
-1. Enter the bridge URL. On the same handset use
-   `http://127.0.0.1:8080/api/v1`; from another device use the host's private
-   LAN address, for example `http://192.168.1.20:8080/api/v1`.
-2. Paste the printed token.
-3. Press **Save & reconnect**.
-
-The token is stored in the app's WebView local storage, bound to
-`org.nuxel.PenGuru`, and never shown back in clear text. Re-mint it when the app
-reports `launcher_token_required` or when model controls stop responding after
-expiry.
-
-The host bridge must allow the APK origin for CORS. The current
-`nuxel-http-bridge.service` and `services/nuxel-bridge/src/api.py` include
-`https://appassets.androidplatform.net`; `services/nuxel-penguru/tools/
-install-device.py` also merges it into an existing unit and restarts the
-bridge.
+Then enter the bridge URL and token and press **Save & reconnect**. The host
+bridge must allow the APK origin for CORS; the current
+`services/nuxel-bridge/src/api.py` includes
+`https://appassets.androidplatform.net`.
 
 ## What is bundled
 
 - `pwa/nuxel-apps/penguru/index.html`, `penguru.js`, `penguru.css`, `voice.js`
-- `pwa/nuxel-apps/penguru/model-library.js` (moved out of Settings)
+- `pwa/nuxel-apps/penguru/local-engine.js` (standalone RPC engine)
+- `pwa/nuxel-apps/penguru/model-library.js`
 - `pwa/nuxel-apps/penguru/manifest.json` and `app.json`
 - `pwa/nuxel-common/bridge.js`, `bridge-version.json`, `theme.css`
 - `assets/nuxel-penguru-squad.png` as the launcher/manifest icon
 
 ## Verification performed
 
-The APK was installed on a headless Android 15 (API 35) emulator. The activity
-resolved, the bundled page loaded from
-`https://appassets.androidplatform.net/pwa/nuxel-apps/penguru/index.html`, the
-four in-app sections and connection form rendered, and the model library showed
-its OFF state. Against a mock bridge on the emulator host, the app fetched the
-PenGuru status through the real `bridge.js` path and displayed
-`PenGuru is OFF. Enable it to manage models and start a conversation.` No
-AndroidRuntime crash or launcher-resource failure was logged.
+- `node --check` on every bundled JS file.
+- `node pwa/nuxel-common/verify-wiring.js` — all 7 PWA surfaces OK.
+- `node pwa/nuxel-common/test-bridge.js` — all shared-bridge tests pass.
+- A Node harness with a mocked `NuxelAndroid` bridge exercised the on-device
+  engine: status, model cards, model download spec (pinned URL/SHA-256),
+  download-status → installed transition, runtime install spec, SYSTEM and CODE
+  replies, and diagnostics.
+- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=900`,
+  `versionName=0.9.0-beta`.
 
-The signed APK was then reinstalled on the same headless Android 15 emulator
-with a loopback mock bridge that enforced the real launcher-authority rule. The
-owner-pasted token was carried on `/api/v1/rpc`, a conversation request
-completed, **Export response** wrote `Downloads/PenGuru/penguru-response.txt`,
-and a Hugging Face provenance link opened the external browser. The APK reports
-`versionCode=809` / `versionName=0.8.9-beta`, derived from `VERSION` (which
-carries the leading `v`).
+The headless emulator available on this build host segfaulted before boot, so
+physical-device acceptance of the new download/install/voice flows is still
+required.
 
 ## Security and limitations
 
 - Bundled assets only; no remote HTML is loaded in the WebView.
-- Cleartext HTTP is permitted because the owner-hosted bridge is local/LAN.
-  Use a trusted private network or a TLS-terminating proxy for untrusted Wi-Fi.
-- Microphone permission is requested only when the in-app voice control calls
-  `getUserMedia`; the transcript is still reviewed and manually sent.
-- Model weights are downloaded by the Nuxel PenGuru service, not stored in the
-  APK. An enabled, reachable Nuxel host is required for inference, downloads,
-  deletion and diagnostics.
-- ONNX GenAI, privileged actions and generated-code execution remain
-  unavailable, matching the current PenGuru backend gates.
+- All download/extract paths are canonicalized and must stay inside the app's
+  own storage roots; `..` and absolute paths are rejected.
+- Runtime archives are pinned by URL and SHA-256 before unpacking.
+- Cleartext HTTP is permitted only for the optional local/LAN Nuxel bridge.
+- Microphone permission is requested only when the voice button is used.
+- Neural inference is not embedded; the runtime installers stage verified
+  artifacts and the built-in responder provides the default answers.
