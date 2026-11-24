@@ -67,7 +67,7 @@ class QuickSettings {
         this.state = {
             wifi: null,
             bluetooth: false,
-            mobile: false,
+            mobile: null,
             location: false,
             dnd: null,
             flashlight: false,
@@ -99,6 +99,7 @@ class QuickSettings {
         // so the Wi-Fi tile reflects live NetworkManager state without ever
         // inventing a false OFF from the pre-flight placeholder.
         this._syncState();
+        this._mobilePoll = setInterval(() => { if (this.isOpen && !this.mobileBusy) this._syncState(); }, 3000);
     }
 
     // One decode/error owner for custom tile artwork.  The label remains usable
@@ -202,6 +203,7 @@ class QuickSettings {
     _normalizeLabels() {
         Object.keys(this._labelNames).forEach((id) => {
             const label = document.querySelector('#qs-' + id + ' .qs-label');
+            if (id === 'mobile' && this.mobileConnection) return;
             if (label && label.textContent !== this._labelNames[id]) label.textContent = this._labelNames[id];
         });
     }
@@ -834,6 +836,21 @@ class QuickSettings {
     }
 
     async _toggle(id) {
+        if (id === 'mobile') {
+            if (this.mobileBusy) return;
+            this.mobileBusy = true;
+            try {
+                const status = await bridge.getPhoneStatus();
+                const modem = status && status.modem;
+                if (!modem || typeof modem.mobile_data_enabled !== 'boolean') throw new Error('Native data preference unavailable');
+                if (['connecting', 'disconnecting'].includes(modem.connection_state)) throw new Error('Mobile data operation in progress');
+                const result = await bridge.call('network', 'mobile-data-enabled', { enabled: !modem.mobile_data_enabled });
+                if (!result || result.success === false) throw new Error((result && result.error) || 'Operation refused');
+                await this._syncState();
+            } catch (error) { this._osdNotice('Mobile data: ' + error.message); }
+            finally { this.mobileBusy = false; }
+            return;
+        }
         if (id === 'wifi') {
             // Unknown is not OFF.  Resolve once before deciding; if the bridge
             // still cannot report the radio, request ON and let NetworkManager
@@ -1647,7 +1664,16 @@ class QuickSettings {
                 if (!preserveRadio) this.wifiConnected = null;
             }
             if (status && status.modem) {
-                this.state.mobile = status.modem.connected || false;
+                this.state.mobile = typeof status.modem.mobile_data_enabled === 'boolean' ? status.modem.mobile_data_enabled : null;
+                this.mobileConnection = status.modem.connection_state || 'unknown';
+                const tile = document.getElementById('qs-mobile');
+                if (tile) {
+                    tile.dataset.connectionState = this.mobileConnection;
+                    tile.title = 'Mobile data: ' + this.mobileConnection;
+                    const label = tile.querySelector('.qs-label');
+                    if (label) label.textContent = 'Mobile: ' + this.mobileConnection;
+                    tile.setAttribute('aria-busy', String(['connecting', 'disconnecting'].includes(this.mobileConnection)));
+                }
             }
         } catch (e) {
             // An unavailable bridge is UNKNOWN, not a fabricated OFF.
@@ -1695,7 +1721,7 @@ class QuickSettings {
             if (id === 'wifi') continue;
             const el = document.getElementById(`qs-${id}`);
             if (!el) continue;
-            const next = enabled ? 'true' : 'false';
+            const next = id === 'mobile' && enabled === null ? 'unknown' : enabled ? 'true' : 'false';
             if (el.dataset.enabled !== next) el.dataset.enabled = next;
         }
 

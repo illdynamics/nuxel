@@ -130,6 +130,11 @@ class StatusBar {
             bluetooth: st.bluetoothOn === true,
             bluetooth_state: String(st.bluetoothState || 'unknown'),
             mobile: String(st.cellularState || 'unknown'),
+            mobile_visible: this._prefVisible('signal'),
+            mobile_technology: String(st.cellularTechnology || 'unknown'),
+            mobile_data_active: st.cellularDataActive === true,
+            mobile_data_enabled: st.cellularDataEnabled === true,
+            signal_known: st.cellularSignalKnown === true,
             signal: Number.isFinite(st.signalLevel) ? st.signalLevel : 0,
             location: st.locationEnabled === true,
             location_state: String(st.locationState || 'unknown'),
@@ -244,7 +249,7 @@ class StatusBar {
         // lockscreen and refreshed on unlock.
         this._pollPhoneStatus();
         this._pollBluetooth();
-        this._pollTimer = setInterval(() => { if (!this._statusInactive()) this._pollPhoneStatus(); }, 30000);
+        this._pollTimer = setInterval(() => { if (!this._statusInactive()) this._pollPhoneStatus(); }, 5000);
         this._pollLocation();
         this._locationPollTimer = setInterval(() => {
             if (!this._statusInactive()) this._pollLocation();
@@ -555,9 +560,13 @@ class StatusBar {
         // was indistinguishable from a real radio with no signal; on this
         // handset the CP transport is UNSUPPORTED, so it reserves no width.
         const registered = state === 'registered';
-        const visible = registered;
+        const visible = registered || ['no-sim', 'searching'].includes(state);
         this._setProviderVisible(this.elements.signal, visible);
         this.elements.signal.dataset.cellularState = state;
+        this.elements.signal.dataset.technology = this.state.cellularTechnology || 'unknown';
+        this.elements.signal.dataset.dataEnabled = String(this.state.cellularDataEnabled);
+        this.elements.signal.dataset.dataActive = String(this.state.cellularDataActive === true);
+        this.elements.signal.dataset.signalKnown = String(this.state.cellularSignalKnown === true);
         this.elements.signal.classList.toggle('unavailable', !registered);
         if (!registered) {
             const labels = {
@@ -570,8 +579,17 @@ class StatusBar {
             this.elements.signal.title = labels[state] || labels.unknown;
             let muted = '<span class="signal-bars">';
             for (let i = 0; i < 4; i++) muted += '<span class="signal-bar"></span>';
-            muted += '</span>';
+            muted += '</span><span>' + (state === 'no-sim' ? 'No SIM' : '?') + '</span>';
             this.elements.signal.innerHTML = muted;
+            this._applySafeZones();
+            return;
+        }
+        if (this.state.cellularSignalKnown === false) {
+            const technology = this.state.cellularTechnology || 'Cellular';
+            const data = this.state.cellularDataActive ? 'data connected' : this.state.cellularDataEnabled ? 'data enabled, disconnected' : 'data off';
+            this.elements.signal.textContent = technology + ' ?';
+            this.elements.signal.title = technology + ' registered; signal unknown; ' + data;
+            this.elements.signal.setAttribute('aria-label', this.elements.signal.title);
             this._applySafeZones();
             return;
         }
@@ -1047,8 +1065,8 @@ class StatusBar {
         const simAbsent = modem && (modem.sim_present === false ||
             modem.sim === 'absent' || modem.sim_state === 'absent' ||
             modem.state === 'no-sim');
-        if (modem && modem.connected && !simAbsent) {
-            const signalQuality = Number(status.modem.signal_quality || 0);
+        if (modem && (modem.registered === true || (modem.registered === undefined && modem.connected)) && !simAbsent) {
+            const signalQuality = modem.signal_valid === false ? 0 : Number(status.modem.signal_quality || 0);
             this.state.signalLevel = Math.round((signalQuality / 100) * this.state.signalMax);
             this.state.mobileNetwork = true;
             this.state.cellularState = 'registered';
@@ -1073,6 +1091,13 @@ class StatusBar {
             this.state.mobileNetwork = false;
             this.state.cellularState = 'unknown';
             this.state.operator = '';
+        }
+
+        if (modem && modem.source === 'native:Radio1') {
+            this.state.cellularTechnology = modem.technology || 'unknown';
+            this.state.cellularDataEnabled = modem.mobile_data_enabled;
+            this.state.cellularDataActive = modem.connected === true;
+            this.state.cellularSignalKnown = modem.signal_valid === true;
         }
 
         // Network / Wi-Fi. The bridge reports Wi-Fi device state separately

@@ -27,7 +27,9 @@ paths=(/usr/libexec/nuxel/nuxel-cpbootd-production
        /usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.production.hw
        /etc/nuxel/modem/production.json
        /etc/systemd/system/nuxel-cpbootd-production.service
-       /etc/systemd/system/nuxel-radiod.service.d/05-production-boot.conf)
+       /etc/systemd/system/nuxel-radiod.service.d/05-production-boot.conf
+       /etc/systemd/system/nuxel-efs-readonly.service
+       /usr/libexec/nuxel/nuxel-efs-readonly)
 for index in "${!paths[@]}"; do
     path=${paths[$index]}
     if [[ -e "$path" || -L "$path" ]]; then cp -a "$path" "$backup/$index"; fi
@@ -51,6 +53,11 @@ trap rollback EXIT
 install -m 0755 "$HERE/nuxel-cpbootd-production" "${paths[0]}"
 install -m 0750 "$backup/loader.input" "${paths[1]}"
 install -m 0600 "$backup/config.input" "${paths[2]}"
+install -m 0644 "$HERE/../systemd/nuxel-efs-readonly.service" "${paths[5]}"
+install -m 0755 "$HERE/nuxel-efs-readonly" "${paths[6]}"
+systemctl daemon-reload
+# Read-only, no journal replay; no loader or CP is started by installation.
+systemctl start nuxel-efs-readonly.service
 "${paths[0]}" --check
 install -m 0644 "$HERE/../systemd/nuxel-cpbootd-production.service" "${paths[3]}"
 cat > "${paths[4]}" <<'UNIT'

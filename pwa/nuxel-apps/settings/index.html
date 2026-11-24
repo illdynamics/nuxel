@@ -838,10 +838,10 @@
   <section id="tab-mobile" class="panel">
     <h2>Mobile network</h2>
     <div class="card">
-      <h3>Shannon LTE transport &amp; driver</h3>
-      <p class="hint">Read-only driver truth from the same diagnostic the live console uses.
-        A CP node or netdev is a transport, never proof of registration or data.</p>
-      <div class="row"><button id="mobile-refresh" class="primary">Refresh driver status</button></div>
+      <h3>Mobile data</h3>
+      <p class="hint">Internet access uses the native cellular service. Turning data off leaves the modem enabled.</p>
+      <div class="row"><label><input type="checkbox" id="mobile-enabled" disabled> Mobile data</label>
+      <button id="mobile-refresh" class="primary">Refresh</button></div>
       <pre id="mobile-state" class="state" role="status" aria-live="polite">Checking mobile transport…</pre>
     </div>
   </section>
@@ -1114,7 +1114,7 @@
 <script src="hardware-settings.js?v=p52000"></script>
 <script src="physical-input-settings.js?v=p103000"></script>
 <script src="pwange45000-settings.js?v=p50002"></script>
-<script src="driver-diagnostics.js?v=p50002"></script>
+<script src="driver-diagnostics.js?v=stage06-native"></script>
 <script src="graphics-diagnostics.js?v=p52000"></script>
 <script src="services-settings.js?v=p88000"></script>
 <script src="firewall-settings.js?v=2"></script>

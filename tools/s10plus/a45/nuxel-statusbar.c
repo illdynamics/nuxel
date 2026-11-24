@@ -439,6 +439,28 @@ static void render(void) {
     draw_wifi(cr, wifi_x, BAR_HEIGHT / 2.0, wifi_on);
     double loc_x = wifi_x - 20.0;
     if (loc_on) draw_location(cr, loc_x, BAR_HEIGHT / 2.0);
+    /* Same measured cellular model as Home; unknown signal never draws bars. */
+    char cellular[48]="unknown", technology[24]="", known[8]="false", active[8]="false";
+    model_get("mobile",cellular,sizeof cellular);
+    model_get("mobile_technology",technology,sizeof technology);
+    model_get("signal_known",known,sizeof known);
+    model_get("mobile_data_active",active,sizeof active);
+    char cellular_label[64]="";
+    if (!strcmp(cellular,"registered"))
+      snprintf(cellular_label,sizeof cellular_label,"%s%s%s",technology,
+               !strcmp(known,"true") ? "" : " ?",!strcmp(active,"true") ? " +" : "");
+    else if (!strcmp(cellular,"no-sim")) snprintf(cellular_label,sizeof cellular_label,"No SIM");
+    else if (!strcmp(cellular,"searching")) snprintf(cellular_label,sizeof cellular_label,"No service");
+    char cellular_visible[8]="true";
+    model_get("mobile_visible",cellular_visible,sizeof cellular_visible);
+    if (cellular_label[0] && strcmp(cellular_visible,"false")) {
+      pango_layout_set_text(layout,cellular_label,-1);
+      pango_layout_get_pixel_size(layout,&tw,&th);
+      cairo_set_source_rgb(cr,0.96,0.98,1.0);
+      cairo_move_to(cr,loc_x-tw-12,(BAR_HEIGHT-th)/2.0-1);
+      pango_cairo_show_layout(cr,layout);
+    }
+
 
     /* Match status-bar.css border-bottom: 1px rgba(255,255,255,0.03). */
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.03);

@@ -1,0 +1,35 @@
+#!/usr/bin/python3
+"""Mount the established beyond2lte EFS input read-only, without journal replay.
+
+A oneshot is used because this kernel's pre-existing block devices are not
+announced as systemd .device units. Never format, repair, remount or unmount.
+"""
+import json
+import subprocess
+from pathlib import Path
+
+
+def inspect():
+    result = subprocess.run(['findmnt', '-J', '-M', '/mnt/vendor/efs', '-o', 'SOURCE,OPTIONS'],
+                            text=True, capture_output=True, timeout=5)
+    if result.returncode == 1:
+        return None
+    result.check_returncode()
+    return json.loads(result.stdout)['filesystems'][0]
+
+
+def main():
+    entry = inspect()
+    if entry is None:
+        Path('/mnt/vendor/efs').mkdir(parents=True, exist_ok=True)
+        subprocess.run(['mount', '-t', 'ext4', '-o', 'ro,noload,nosuid,nodev,noexec',
+                        '/dev/sda3', '/mnt/vendor/efs'], check=True, timeout=15)
+        entry = inspect()
+    options = set(entry['options'].split(',')) if entry else set()
+    if not entry or entry['source'] != '/dev/sda3' or not {'ro', 'nosuid', 'nodev', 'noexec'} <= options or not options.intersection({'noload', 'norecovery'}):
+        raise RuntimeError('EFS is not the established read-only, no-replay source')
+    print('Device-owned EFS available read-only; journal replay disabled')
+
+
+if __name__ == '__main__':
+    main()

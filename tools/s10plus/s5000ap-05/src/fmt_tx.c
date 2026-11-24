@@ -274,6 +274,17 @@ bool fmt_tx_get_pdp_context(struct fmt_tx_frame *f)
     return fmt_tx_raw(f, MAIN_GPRS, 4 /*GPRS_PDP_CONTEXT*/, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
 
+/* IpcTxSetPdpContext(CID, 0, empty credentials): isolated vendor vector.
+ * Release only this context; do not detach packet service or power off RF. */
+bool fmt_tx_release_pdp_context(struct fmt_tx_frame *f, uint8_t cid)
+{
+    if (!f || cid < 1 || cid > 15) return false;
+    uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 4u, FMT_TX_TYPE_NOTIFICATION, 105u);
+    if (!p) return false;
+    memset(p, 0, 105u); p[1] = cid;
+    return true;
+}
+
 bool fmt_tx_get_pdp_definitions(struct fmt_tx_frame *f)
 {
     return fmt_tx_raw(f, MAIN_GPRS, 1, FMT_TX_TYPE_REQUEST, NULL, 0);

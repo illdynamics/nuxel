@@ -1,0 +1,14 @@
+[Unit]
+Description=Read-only device-owned EFS inputs for native CP startup
+After=systemd-udevd.service
+Before=nuxel-cpbootd-production.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-efs-readonly
+RemainAfterExit=yes
+Restart=no
+TimeoutStartSec=25
+# Mount must be visible to the CP guard, so no private mount namespace here.
+User=root
+NoNewPrivileges=true

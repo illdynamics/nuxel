@@ -44,6 +44,7 @@ import threading
 import time
 import subprocess
 import media_store
+from native_radio import NativeRadio
 
 logging.basicConfig(
     level=logging.INFO,
@@ -2262,6 +2263,7 @@ class NuxelBridgeService(dbus.service.Object):
         
         # Backend connectors
         self.modem = ModemManagerConnector()
+        self.native_radio = NativeRadio()
         self.network = NetworkManagerConnector()
         self.geoclue = GeoClueConnector()
         self.orientation = OrientationConnector()
@@ -2867,11 +2869,18 @@ class NuxelBridgeService(dbus.service.Object):
     
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
     def GetPhoneStatus(self, app_id):
-        result = {'modem': self.modem.get_status(),
+        result = {'modem': self.native_radio.status(),
                    'network': self.network.get_status(),
                    'battery': read_battery_status(),
                    'timestamp': time.time()}
         return json.dumps(result)
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='sb', out_signature='s')
+    def NetworkMobileDataSetEnabled(self, app_id, enabled):
+        if not self._check_capability(app_id, 'network:manage'):
+            return json.dumps({'success': False, 'error': 'Capability not granted: network:manage',
+                               'error_code': 'CAPABILITY_DENIED'})
+        return json.dumps(self.native_radio.set_enabled(bool(enabled)))
 
     @dbus.service.method(INTERFACE_NAME, in_signature='sb', out_signature='s')
     def NetworkWifiSetEnabled(self, app_id, enabled):

@@ -1,8 +1,9 @@
 {
   "network:manage": {
-    "duration": "session",
-    "granted_at": 1792500231.2952952,
-    "source": "preserved first-party grant: Settings Wi-Fi controls"
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "network",
+    "source": "first-party-system-grant: Settings Wi-Fi and mobile-data controls"
   },
   "location:manage": {
     "duration": "always",

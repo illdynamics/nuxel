@@ -10,6 +10,7 @@ against an API key or session token. It is a convenience layer for development
 and testing; production PWAs should use D-Bus directly via xdg-desktop-portal.
 """
 
+from native_radio import NativeRadio
 import base64
 import binascii
 import json
@@ -2751,22 +2752,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         except Exception:
             pass
 
-        # Modem — live from org.freedesktop.ModemManager1 when present, else
-        # in-memory mock (typical in a VM without a real modem).
-        modem_source = "mock"
-        modem_info = {"connected": False, "signal_quality": 0, "operator": "Nuxel VM"}
-        try:
-            bus = dbus.SystemBus()
-            mm = bus.get_object('org.freedesktop.ModemManager1', '/org/freedesktop/ModemManager1')
-            props = dbus.Interface(mm, 'org.freedesktop.DBus.Properties')
-            modems = props.Get('org.freedesktop.ModemManager1', 'Modems')
-            if modems:
-                modem_source = "live:ModemManager"
-                modem_info["connected"] = True
-                modem_info["signal_quality"] = 100
-                modem_info["operator"] = "Nuxel"
-        except Exception:
-            pass
+        modem_info = NativeRadio().status()
+        modem_source = modem_info['source']
 
         return {
             "success": True,
@@ -3161,6 +3148,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("ping", "ping"): "Ping",
         ("phone", "status"): "GetPhoneStatus",
         ("network", "wifi-enabled"): "NetworkWifiSetEnabled",
+        ("network", "mobile-data-enabled"): "NetworkMobileDataSetEnabled",
         ("network", "wifi-scan"): "NetworkWifiScan",
         ("network", "wifi-connect"): "NetworkWifiConnect",
         ("network", "wifi-disconnect"): "NetworkWifiDisconnect",
@@ -3214,6 +3202,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     RPC_ARG_BUILDERS = {
         "Ping": lambda app_id, params: [params.get("message") if isinstance(params, dict) and params.get("message") is not None else app_id],
         "GetPhoneStatus": lambda app_id, params: [app_id],
+        "NetworkMobileDataSetEnabled": lambda app_id, params: [app_id, params.get("enabled")],
         "NetworkWifiSetEnabled": lambda app_id, params: [app_id, bool(params.get("enabled", False))],
         "NetworkWifiScan": lambda app_id, params: [app_id],
         "NetworkWifiConnect": lambda app_id, params: [app_id, params.get("ssid", ""), params.get("password", ""), params.get("security", "wpa2"), params.get("ap_path", ""), params.get("bssid", ""), params.get("device", ""), params.get("ssid_hex", "")],

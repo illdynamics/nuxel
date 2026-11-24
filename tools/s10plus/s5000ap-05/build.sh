@@ -16,7 +16,7 @@ CC="${CC:-gcc}"
 CFLAGS=(-O2 -Wall -Wextra -Werror -std=gnu11)
 
 if [[ "${1:-}" == "clean" ]]; then
-    rm -f test_sipc5_fmt test_rfs_policy fuzz_driver test_sipc5_fmt_asan test_rfs_proto test_live_frame test_ipc41_recovery test_rfs_respond test_fmt_tx test_data_session test_mbim_tx test_qbr_items test_nv_items
+    rm -f test_mobile_data test_mobile_data_asan test_sipc5_fmt test_rfs_policy fuzz_driver test_sipc5_fmt_asan test_rfs_proto test_live_frame test_ipc41_recovery test_rfs_respond test_fmt_tx test_data_session test_mbim_tx test_qbr_items test_nv_items
     echo "cleaned"
     exit 0
 fi
@@ -44,6 +44,9 @@ $CC "${CFLAGS[@]}" -Isrc -o test_sms_store tests/test_sms_store.c src/sms_store.
 $CC "${CFLAGS[@]}" -Isrc -o test_sms_service tests/test_sms_service.c src/sms_service.c src/sms_store.c src/sms_pdu.c src/fmt_sms.c src/fmt_tx.c -lsqlite3
 $CC "${CFLAGS[@]}" -Isrc -o test_fmt_call tests/test_fmt_call.c src/fmt_call.c src/fmt_tx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_call_service tests/test_call_service.c src/call_service.c src/fmt_call.c src/fmt_tx.c
+
+$CC "${CFLAGS[@]}" -Isrc -o test_mobile_data tests/test_mobile_data.c src/mobile_data.c src/fmt_tx.c src/fmt_rx.c
+./test_mobile_data
 
 echo "=== run SIPC5/FMT unit tests ==="
 ./test_sipc5_fmt
@@ -90,9 +93,10 @@ $CLANG -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-r
 python3 tests/fuzz_sipc5.py ./test_sipc5_fmt_asan --asan --iters=3000
 
 # Both serialization directions, FSM, and NV/backup transactions.
-for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service; do
+for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service mobile_data; do
     libs=()
     case "$suite" in
+        mobile_data) sources=(src/mobile_data.c src/fmt_tx.c src/fmt_rx.c) ;;
         fmt_tx) sources=(src/fmt_tx.c) ;;
         fmt_rx|data_session) sources=(src/fmt_rx.c src/data_session.c) ;;
         rfs_nv) sources=(src/rfs_nv.c) ;;

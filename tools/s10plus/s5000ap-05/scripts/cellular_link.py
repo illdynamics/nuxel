@@ -27,7 +27,7 @@ class LinkError(RuntimeError):
 
 
 def run(argv, check=True):
-    result = subprocess.run(argv, capture_output=True, text=True, timeout=5,
+    result = subprocess.run(argv, capture_output=True, text=True, timeout=15,
                             env={'PATH': '/usr/sbin:/usr/bin', 'LC_ALL': 'C'})
     if check and result.returncode:
         raise LinkError(f'{Path(argv[0]).name} failed ({result.returncode}): {result.stderr.strip()}')
@@ -266,7 +266,8 @@ def main():
     fd = os.open(STATE_DIR / 'cellular-link.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd, 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        link = Link()
+        from cellular_nm import NetworkManagerLink
+        link = NetworkManagerLink()
         if len(sys.argv) > 1 and sys.argv[1] == 'apply':
             link.apply(configuration(sys.argv[2:]))
         elif sys.argv[1:] == ['down']:

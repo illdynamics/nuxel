@@ -195,3 +195,10 @@ assets/nuxel-sounds/tight_*.mp3
 SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/**
 .vendor-ro/
 .forensics/
+
+/tools/s10plus/s5000ap-05/test_mobile_data
+/tools/s10plus/s5000ap-05/test_mobile_data_asan
+
+/tools/s10plus/s5000ap-05/nuxel-statusbar
+/tools/s10plus/s5000ap-05/*-protocol.c
+/tools/s10plus/s5000ap-05/*-protocol.h

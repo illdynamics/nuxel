@@ -93,6 +93,9 @@ int main(void)
     CHECK(fmt_tx_get_pdp_context(&f)); VECTOR(pdp);
     const uint8_t definitions[] = {7,0,0,0,13,1,2};
     CHECK(fmt_tx_get_pdp_definitions(&f)); VECTOR(definitions);
+    CHECK(fmt_tx_release_pdp_context(&f, 1)); VECTOR(golden_release_pdp);
+    CHECK(!fmt_tx_release_pdp_context(&f, 0));
+    CHECK(!fmt_tx_release_pdp_context(&f, 16));
     const uint8_t mob[] = {9,0,0,0,13,29,3,1,1};
     CHECK(fmt_tx_mobile_data(&f, true, true)); VECTOR(mob);
     const uint8_t cdma[] = {8,0,0,0,3,2,3,1};

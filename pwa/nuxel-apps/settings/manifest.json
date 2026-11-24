@@ -25,6 +25,7 @@
   "nuxel": {
     "bridge_version": "1", "pwa_version": "0.8.9-beta",
     "capabilities": [
+      "network:manage",
       "location:read",
       "location:manage"
     ],

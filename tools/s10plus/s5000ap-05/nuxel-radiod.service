@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 # SAFETY: This unit NEVER boots/powers/resets the CP. It only OBSERVES an
-# already-kernel-ONLINE CP (or reports OFFLINE). Automatic CP activation stays
-# disabled (see nuxel-cpbootd.service, which is never auto-enabled).
+# already-kernel-ONLINE CP (or reports OFFLINE). The separate verified
+# production boot dependency is installed by nuxel-modem-install.sh.
 [Unit]
 Description=Nuxel S5000AP SIPC5/RFS radio service (event-tracker; never boots CP)
 Documentation=file:/usr/share/doc/nuxel/reports/S5000AP-05-RFS-SIPC.md
-After=dbus.service systemd-udevd.service
+After=dbus.service systemd-udevd.service NetworkManager.service
+Wants=NetworkManager.service
 Wants=systemd-udevd.service
 ConditionPathExists=/dev/umts_ipc0
 StartLimitIntervalSec=60
@@ -18,6 +19,9 @@ Type=simple
 # Nuxel services use the Wayland session bus (consistent with soundd/portal).
 Environment=NUXEL_DBUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
 ExecStart=/usr/libexec/nuxel/nuxel-radiod
+RuntimeDirectory=nuxel-radio
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=restart
 StateDirectory=nuxel-radio
 StateDirectoryMode=0700
 UMask=0077

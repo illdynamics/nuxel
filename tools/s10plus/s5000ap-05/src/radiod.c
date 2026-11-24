@@ -36,6 +36,8 @@
 #include "sms_service.h"
 #include "call_service.h"
 #include "cellular_link.h"
+#include "mobile_data.h"
+#define MOBILE_PREFERENCE "/var/lib/nuxel-radio/mobile-data"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -117,6 +119,10 @@ struct radiod_ctx {
     struct data_session_ctx dsc;
     struct fmt_rx_ip ip;
     bool ip_received;
+    bool mobile_enabled;
+    struct mobile_stop mobile_stop;
+    unsigned reconnect_attempts;
+    uint64_t reconnect_at;
     struct cellular_link link;
     bool link_attempted, link_down_requested;
     uint64_t link_check_ms;
@@ -136,7 +142,8 @@ struct radiod_ctx {
     unsigned oes_requests;
     struct sms_service sms;
     struct call_service calls;
-    uid_t control_uid;
+    uid_t control_uid, bridge_uid;
+    sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
     bool     wrote_phase;       /* last phase already emitted a frame */
     bool     rfs_handshake_done;/* RFS boot handshake answered (CP advanced) */
@@ -157,6 +164,8 @@ struct radiod_ctx {
 };
 
 static struct radiod_ctx g;
+static void begin_data_session(const char *apn);
+static int setup_session_bus(void);
 
 /* ------------------------------------------------------------------ */
 /* time helpers                                                         */
@@ -488,6 +497,7 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     resolve_pending(f);
     sms_service_receive(&g.sms,f);
     call_service_receive(&g.calls,f);
+    mobile_stop_receive(&g.mobile_stop,f);
     if (f->main_cmd == 13 && f->sub_cmd == 1 && f->cmd_type == 2) {
         struct fmt_rx_pdp_profiles profiles;
         if (fmt_rx_pdp_profiles(f->payload,f->payload_len,&profiles)) {
@@ -508,6 +518,11 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         g.sim_lock_valid = true;
         g.sim_ready_seen = fmt_rx_sim_ready(f->payload, f->payload_len);
         refresh_sim_state();
+        if(!g.sim_ready_seen && g.dsc.phase==DS_ACTIVE) {
+            g.data_path_armed=false;g.dsc.ip_configured=false;g.ip_received=false;
+            g.dsc.net_regist_valid=false;g.link_down_requested=true;
+            g.reconnect_at=now_ms()+30000;
+        }
         diagf("sim_lock_state", "\"type\":%u,\"key\":%u,\"unlocked\":%s",
               g.sim_lock_type, g.sim_lock_key, g.sim_ready_seen ? "true" : "false");
     }
@@ -955,6 +970,11 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         g.dsc.last_call_cause = f->payload[2];
         diagf("data_call_status", "\"cid\":%u,\"state\":%u,\"cause\":%u",
               f->payload[0], state, f->payload[2]);
+        if(g.dsc.phase==DS_ACTIVE && !ds_gprs_call_connected(state)) {
+            g.data_path_armed=false;g.dsc.ip_configured=false;g.ip_received=false;
+            g.link_down_requested=true;g.reconnect_at=now_ms()+30000;
+            emit_state_changed("DataState","disconnected");
+        }
         g.dsc.last_gprs_call_state = state;
         g.dsc.gprs_call_state_valid = true;
         if (phase == DS_DATA_CALL) {
@@ -1020,6 +1040,11 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         g.dsc.net_regist_valid = true;
         g.dsc.ps_state_valid = true; g.dsc.attached = fmt_rx_registered(ps_reg);
         g.dsc.last_reject_cause = reg.reject_cause;
+        if(g.dsc.phase==DS_ACTIVE && !fmt_rx_registered(ps_reg)) {
+            g.data_path_armed=false;g.dsc.ip_configured=false;g.ip_received=false;
+            g.link_down_requested=true;g.reconnect_at=now_ms()+30000;
+            emit_state_changed("DataState","no-service");
+        }
         const char *psn = fmt_rx_reg_name(ps_reg);
         diagf("net_regist_state",
               "\"ps\":%u,\"ps_name\":\"%s\",\"raw_state\":%u,\"domain_sel\":%u,\"rat_wire\":%u,\"rat\":\"%s\",\"reject_cause\":%u",
@@ -1278,6 +1303,8 @@ static bool data_session_emit(void)
  * waits for an authenticated response before advancing. Bounded + opt-in. */
 static void data_session_tick(uint64_t now)
 {
+    static uint64_t bus_retry;
+    if(!g.bus && now>=bus_retry) { bus_retry=now+5000; (void)setup_session_bus(); }
     if (cellular_link_poll(&g.link,now)) {
         diagf("cellular_link_complete", "\"operation\":%u,\"result\":%d,\"configured\":%s",
               g.link.operation,g.link.result,g.link.configured ? "true" : "false");
@@ -1293,6 +1320,27 @@ static void data_session_tick(uint64_t now)
         if (cellular_link_down(&g.link,now)) g.link_down_requested = false;
         else diag("cellular_link_down_start_failed",NULL);
     }
+    mobile_stop_tick(&g.mobile_stop,now);
+    if(mobile_stop_busy(&g.mobile_stop) && !g.mobile_stop.deadline)g.mobile_stop.deadline=now+120000;
+    if(mobile_stop_busy(&g.mobile_stop) && !g.mobile_stop.pending && now>=g.mobile_stop.deadline) {
+        g.mobile_stop.phase=MOBILE_STOP_FAILED;g.mobile_stop.result=-ENETDOWN;
+    }
+    if(mobile_stop_busy(&g.mobile_stop) && g.write_enabled && g.cp_online && g.sim_ready_seen && !g.link.pid) {
+        struct fmt_tx_frame frame;uint8_t sequence;
+        if(mobile_stop_frame(&g.mobile_stop,&frame)) {
+            if(sms_write(&frame,&sequence,NULL))mobile_stop_sent(&g.mobile_stop,sequence,now);
+            else { g.mobile_stop.phase=MOBILE_STOP_FAILED;g.mobile_stop.result=-EIO; }
+        }
+    }
+    /* Reconnect only after actual registration and SIM readiness. Three
+     * bounded sessions, spaced 30 seconds apart; never reset/power-cycle CP. */
+    if(g.mobile_enabled && !g.data_path_armed && !mobile_stop_busy(&g.mobile_stop) &&
+       !g.link_down_requested && !g.link.result && g.mobile_stop.phase!=MOBILE_STOP_FAILED && g.write_enabled && g.cp_online &&
+       g.sim_ready_seen && g.dsc.net_regist_valid && fmt_rx_registered(g.dsc.last_ps_reg_state) &&
+       g.reconnect_attempts<3 && now>=g.reconnect_at && !g.link.pid) {
+        g.reconnect_attempts++;g.reconnect_at=now+30000;
+        begin_data_session(g.dsc.apn[0] ? (const char *)g.dsc.apn : "internet");
+    }
     if (!g.data_path_armed || g.dsc.phase == DS_IDLE) return;
     if (!g.write_enabled || !g.cp_online || !g.fmt.present) {
         return;   /* cannot safely transmit yet */
@@ -1300,12 +1348,16 @@ static void data_session_tick(uint64_t now)
     if (g.dsc.phase == DS_ACTIVE && !g.link.pid && now >= g.link_check_ms) {
         if (cellular_link_check(&g.link,now)) g.link_check_ms = now + 30000;
     }
-    if (ds_terminal(&g.dsc)) return;
+    if (ds_terminal(&g.dsc)) {
+        if(g.dsc.phase!=DS_ACTIVE)g.data_path_armed=false;
+        return;
+    }
     if (g.dsc.phase == DS_WAIT_IP) {
         if (g.dsc.ip_configured) {
             (void)ds_step(&g.dsc,true,now);
             emit_state_changed("DataState","active");
             diag("data_session_active",NULL);
+            g.reconnect_attempts=0;
             return;
         }
         if (g.ip_received && !g.link_attempted && !g.link.pid) {
@@ -1320,7 +1372,14 @@ static void data_session_tick(uint64_t now)
 
     /* Query SIM state first. Sysfs ds_detect describes the board's dual-SIM
      * configuration and cannot establish that a card is present or ready. */
-    if (g.dsc.phase != DS_SIM_CHECK && !g.sim_ready_seen) {
+    if (!g.sim_ready_seen) {
+        /* SIM startup/loss must not suspend the bounded transaction forever.
+         * Background status queries continue while waiting for readiness. */
+        if(!g.dsc.step_deadline_ms)g.dsc.step_deadline_ms=now+30000;
+        if(ds_step(&g.dsc,false,now)==DS_FAILED) {
+            g.data_path_armed=false;g.wrote_phase=false;
+            diag("data_session_failed","\"phase\":\"SIM_UNAVAILABLE_TIMEOUT\"");
+        }
         return;
     }
 
@@ -1608,6 +1667,7 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
             g.dsc.net_regist_valid = false; g.dsc.net_mode_valid = false;
             g.ip_received = false; g.dsc.ip_configured = false;
             g.link_down_requested = true;
+            g.data_path_armed=false;g.dsc.phase=DS_IDLE;g.reconnect_at=now_ms()+30000;
             g.profiles_received = false;
             g.radio_state_valid = false;
             g.oes_requests = 0;
@@ -1629,7 +1689,8 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
      * the data transaction is idle/terminal so query replies cannot satisfy a
      * different transaction's registration gate. */
     if (g.write_enabled && g.cp_online && g.fmt.present &&
-        (g.dsc.phase == DS_IDLE || ds_terminal(&g.dsc)) && now_ms() >= g.status_next_ms) {
+        (g.dsc.phase == DS_IDLE || ds_terminal(&g.dsc) || !g.sim_ready_seen) &&
+        !mobile_stop_busy(&g.mobile_stop) && now_ms() >= g.status_next_ms) {
         struct fmt_tx_frame q;
         bool built = false;
         switch (g.status_query) {
@@ -1744,6 +1805,16 @@ static int require_control(sd_bus_message *m,sd_bus_error *e)
     return 0;
 }
 
+static int require_data_control(sd_bus_message *m, sd_bus_error *e)
+{
+    sd_bus_creds *creds=NULL; uid_t uid=(uid_t)-1;
+    int r=sd_bus_query_sender_creds(m,SD_BUS_CREDS_EUID,&creds);
+    if(r>=0)r=sd_bus_creds_get_euid(creds,&uid);
+    sd_bus_creds_unref(creds);
+    if(r>=0 && uid==g.bridge_uid)return 0;
+    return require_control(m,e);
+}
+
 static int prop_registered(sd_bus *b, const char *p, const char *i, const char *prop,
                            sd_bus_message *reply, void *u, sd_bus_error *e)
 {
@@ -1780,10 +1851,28 @@ static int method_get_data_state(sd_bus_message *m, void *u, sd_bus_error *e)
     if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ps_attached",
         g.dsc.ps_state_valid ? (g.dsc.attached ? "true" : "false") : "unknown");
     if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ip_configured", g.dsc.ip_configured ? "true" : "false");
+    const char *connection=g.mobile_enabled ? (g.dsc.ip_configured ? "connected" :
+        g.data_path_armed ? "connecting" : !g.cp_online || !g.sim_ready_seen ? "unavailable" :
+        g.dsc.net_regist_valid && !fmt_rx_registered(g.dsc.last_ps_reg_state) ? "no-service" :
+        ds_terminal(&g.dsc) && g.dsc.phase!=DS_ACTIVE ? "failed" : "disconnected") :
+        (mobile_stop_busy(&g.mobile_stop) || g.link.pid || g.link_down_requested ? "disconnecting" :
+         g.mobile_stop.phase==MOBILE_STOP_FAILED || g.link.result ? "failed" : "disabled");
+    if(r>=0)r=sd_bus_message_append(reply,"{ss}","mobile_data_enabled",g.mobile_enabled ? "true" : "false");
+    if(r>=0)r=sd_bus_message_append(reply,"{ss}","connection_state",connection);
+    char stop_result[24];snprintf(stop_result,sizeof stop_result,"%d",g.mobile_stop.result);
+    if(r>=0)r=sd_bus_message_append(reply,"{ss}","disconnect_result",stop_result);
     char link_result[16];
     snprintf(link_result,sizeof link_result,"%d",g.link.result);
     if (r >= 0) r = sd_bus_message_append(reply,"{ss}","link_result",link_result);
     char number[16];
+    if(g.dsc.net_regist_valid)snprintf(number,sizeof number,"%u",g.dsc.last_reg_wire);
+    else snprintf(number,sizeof number,"unknown");
+    if(r>=0)r=sd_bus_message_append(reply,"{ss}","registration_raw",number);
+    char address[INET6_ADDRSTRLEN];
+    if(g.dsc.ip_configured && g.ip_received && g.ip.ipv4_valid && inet_ntop(AF_INET,g.ip.ipv4,address,sizeof address))
+        if(r>=0)r=sd_bus_message_append(reply,"{ss}","ipv4",address);
+    if(g.dsc.ip_configured && g.ip_received && g.ip.ipv6_valid && inet_ntop(AF_INET6,g.ip.ipv6,address,sizeof address))
+        if(r>=0)r=sd_bus_message_append(reply,"{ss}","ipv6",address);
     if (g.dsc.net_regist_valid) snprintf(number, sizeof number, "%u", g.dsc.last_reject_cause);
     else snprintf(number, sizeof number, "unknown");
     if (r >= 0) r = sd_bus_message_append(reply, "{ss}", "ps_reject_cause", number);
@@ -2019,10 +2108,31 @@ static bool mbim_attach_enabled(void)
                  !strcasecmp(p, "true") || !strcasecmp(p, "yes"));
 }
 
+static void begin_data_session(const char *apn)
+{
+    char saved_apn[101];snprintf(saved_apn,sizeof saved_apn,"%s",apn);
+    ds_reset(&g.dsc, saved_apn, 1);
+    g.link_attempted = false;
+    memset(&g.ip, 0, sizeof g.ip); g.ip_received = false;
+    g.dsc.protocol = env_protocol();
+    g.dsc.preferred_net = env_preferred_net();
+    g.dsc.attach_flag = env_attach_flag();
+    g.dsc.auth_code = env_auth();
+    g.dsc.pdp_type_wire = env_pdp_type();
+    g.dsc.attach_cid = env_attach_cid();
+    g.dsc.reattach_for_apn = getenv("NUXEL_REATTACH_IA") &&
+        !strcmp(getenv("NUXEL_REATTACH_IA"), "1");
+    g.data_path_armed = true;
+    g.wrote_phase = false;
+    g.dsc.step_deadline_ms = 0;
+    diagf("data_session_start", "\"apn\":\"%s\",\"profile\":%u,\"protocol\":%u,\"pdp_type\":%u",
+          saved_apn, 1u, g.dsc.protocol, g.dsc.pdp_type_wire);
+}
+
 static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
-    int access=require_control(m,e);if (access<0) return access;
+    int access=require_data_control(m,e);if (access<0) return access;
     const char *apn = NULL;
     uint32_t profile = 1;
     int r = sd_bus_message_read(m, "s", &apn);
@@ -2040,32 +2150,37 @@ static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e
     if (!apn || !*apn || strlen(apn) > 100 || profile != 1 ||
         strspn(apn, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-") != strlen(apn))
         return sd_bus_error_set(e, SD_BUS_ERROR_INVALID_ARGS, "invalid APN or unsupported profile (use 1)");
-    ds_reset(&g.dsc, apn, (uint8_t)profile);
-    g.link_attempted = false;
-    memset(&g.ip, 0, sizeof g.ip); g.ip_received = false;
-    g.dsc.protocol = env_protocol();
-    g.dsc.preferred_net = env_preferred_net();
-    g.dsc.attach_flag = env_attach_flag();
-    g.dsc.auth_code = env_auth();
-    g.dsc.pdp_type_wire = env_pdp_type();
-    g.dsc.attach_cid = env_attach_cid();
-    g.dsc.reattach_for_apn = getenv("NUXEL_REATTACH_IA") &&
-        !strcmp(getenv("NUXEL_REATTACH_IA"), "1");
-    g.data_path_armed = true;
-    g.wrote_phase = false;
-    g.dsc.step_deadline_ms = 0;
-    diagf("data_session_start", "\"apn\":\"%s\",\"profile\":%u,\"protocol\":%u,\"pdp_type\":%u",
-          apn, profile, g.dsc.protocol, g.dsc.pdp_type_wire);
+    if(mobile_stop_busy(&g.mobile_stop) || g.link_down_requested || g.link.pid)
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Mobile data operation in progress");
+    if(g.data_path_armed && (g.dsc.phase==DS_ACTIVE || !ds_terminal(&g.dsc))) {
+        if(strcmp(apn,(const char *)g.dsc.apn))return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Stop data before changing APN");
+        return sd_bus_reply_method_return(m,"b",1);
+    }
+    if(mobile_preference_save(MOBILE_PREFERENCE,true)<0)
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Could not persist mobile data preference");
+    g.mobile_enabled=true;g.mobile_stop.phase=MOBILE_STOP_IDLE;
+    g.reconnect_attempts=0;g.reconnect_at=now_ms()+30000;
+    begin_data_session(apn);
+    emit_state_changed("MobileDataEnabled","true");
     return sd_bus_reply_method_return(m, "b", 1);
 }
 
 static int method_stop_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
-    int access=require_control(m,e);if (access<0) return access;
-    g.data_path_armed = false;
-    g.wrote_phase = false;
-    diag("data_session_stop", NULL);
+    int access=require_data_control(m,e);if (access<0) return access;
+    if(!g.write_enabled)return sd_bus_error_set(e,SD_BUS_ERROR_ACCESS_DENIED,"Data transport disabled");
+    if(mobile_stop_busy(&g.mobile_stop) || (!g.mobile_enabled && g.mobile_stop.phase==MOBILE_STOP_DONE &&
+       !g.link.pid && !g.link_down_requested && !g.link.result))return sd_bus_reply_method_return(m,"b",1);
+    if(g.data_path_armed && !ds_terminal(&g.dsc))
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Connecting; wait for this bounded operation to finish");
+    if(mobile_preference_save(MOBILE_PREFERENCE,false)<0)
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Could not persist mobile data preference");
+    g.mobile_enabled=false;g.data_path_armed=false;g.wrote_phase=false;
+    g.dsc.ip_configured=false;g.ip_received=false;g.link_down_requested=true;
+    mobile_stop_begin(&g.mobile_stop);
+    emit_state_changed("MobileDataEnabled","false");
+    diag("data_session_stop_requested",NULL);
     return sd_bus_reply_method_return(m, "b", 1);
 }
 
@@ -2308,7 +2423,27 @@ static int on_signal(sd_event_source *s, const struct signalfd_siginfo *si, void
     return 0;
 }
 
+static const sd_bus_vtable mobile_vtable[] = {
+    SD_BUS_VTABLE_START(0),
+    SD_BUS_METHOD("GetSimState", "", "s", method_get_sim_state, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetDataSessionState", "", "a{ss}", method_get_data_state, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("StartDataSession", "su", "b", method_start_data_session, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("StopDataSession", "", "b", method_stop_data_session, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_VTABLE_END
+};
+
 static int setup_dbus(void)
+{
+    int system_result=sd_bus_open_system(&g.data_bus);
+    if(system_result>=0)system_result=sd_bus_add_object_vtable(g.data_bus,NULL,OBJ_PATH,IFACE_NAME,mobile_vtable,NULL);
+    if(system_result>=0)system_result=sd_bus_request_name(g.data_bus,DEST_NAME,0);
+    if(system_result>=0)system_result=sd_bus_attach_event(g.data_bus,g.loop,SD_EVENT_PRIORITY_NORMAL);
+    if(system_result<0)return system_result;
+
+    return setup_session_bus();
+}
+
+static int setup_session_bus(void)
 {
     /* Nuxel services live on the Wayland session bus (same convention as
      * nuxel-soundd/portal/bridge). Fall back to the system bus for portability. */
@@ -2322,7 +2457,9 @@ static int setup_dbus(void)
         /* fallback: system bus */
         sd_bus_unref(g.bus);
         g.bus = NULL;
-        r = sd_bus_default_system(&g.bus);
+        /* Mobile policy is available independently of graphical login. */
+        diag("session_bus_unavailable",NULL);
+        return 0;
     }
     if (r < 0) { diagf("dbus_connect_failed", "\"err\":%d", r); return r; }
     r = sd_bus_add_object_vtable(g.bus, NULL, OBJ_PATH, IFACE_NAME, radiod_vtable, NULL);
@@ -2370,11 +2507,22 @@ int main(int argc, char **argv)
             return 0;
         }
     }
+    g.mobile_enabled=g.data_path_armed;
+    if(mobile_preference_load(MOBILE_PREFERENCE,&g.mobile_enabled)<0)
+        diag("mobile_preference_invalid_disabled",NULL);
+    if(g.mobile_enabled && g.write_enabled && !g.data_path_armed)
+        begin_data_session(getenv("NUXEL_APN") ? getenv("NUXEL_APN") : "internet");
+    if(!g.mobile_enabled) {
+        g.data_path_armed=false;g.dsc.phase=DS_IDLE;
+        if(g.write_enabled)mobile_stop_begin(&g.mobile_stop);
+    }
+    g.link_down_requested=g.write_enabled; /* reconcile a previous helper journal */
     g.fmt.dev.fd = -1;
     g.rfs.dev.fd = -1;
     g.cp_state_code = -1;
     snprintf(g.cp_state, sizeof g.cp_state, "UNKNOWN");
     struct passwd *owner=getpwnam("nuxel");g.control_uid=owner ? owner->pw_uid : 0;
+    owner=getpwnam("nuxel-bridge");g.bridge_uid=owner ? owner->pw_uid : 0;
     const char *sms_path=getenv("NUXEL_SMS_DATABASE");
     if (!sms_path || !*sms_path) sms_path="/var/lib/nuxel-radio/sms.sqlite3";
     if (!sms_service_open(&g.sms,sms_path,sms_write,sms_notify,NULL)) diag("sms_storage_unavailable",NULL);

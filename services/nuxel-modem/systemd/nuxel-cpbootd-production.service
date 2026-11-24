@@ -1,6 +1,8 @@
 [Unit]
 Description=Nuxel verified native CP initialization
-RequiresMountsFor=/mnt/vendor/efs /etc/nuxel/modem /usr/lib/nuxel/nuxel-modem
+Requires=nuxel-efs-readonly.service
+After=nuxel-efs-readonly.service
+RequiresMountsFor=/etc/nuxel/modem /usr/lib/nuxel/nuxel-modem
 Before=nuxel-radiod.service
 
 [Service]

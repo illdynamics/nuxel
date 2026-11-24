@@ -1,4 +1,4 @@
-/* PWNAGE-50000: read-only Modem / Camera / Sensors driver status.
+/* Native mobile-data controls and read-only Camera / Sensors driver status.
  *
  * The page renders the bridge's own diagnostic JSON.  It never invents a
  * sensor value, a carrier, a signal or a captured frame.  A class that the
@@ -33,6 +33,31 @@
       show(target, label + ' diagnostic failed: ' + (err && err.message ? err.message : err));
     });
   }
+  var mobileBusy = false;
+  function mobileStatus() {
+    if (mobileBusy) return Promise.resolve();
+    return call('phone', 'status', {}).then(function (doc) {
+      var m = doc && doc.modem, toggle = $('mobile-enabled');
+      if (!m || !m.available) throw new Error('Native radio unavailable');
+      if (toggle) {
+        toggle.checked = m.mobile_data_enabled === true;
+        toggle.disabled = typeof m.mobile_data_enabled !== 'boolean' || ['connecting', 'disconnecting'].indexOf(m.connection_state) >= 0;
+      }
+      show('mobile-state', [
+        'SIM: ' + (m.sim_state || 'unknown'), 'Operator: ' + (m.operator || 'unknown'),
+        'Registration: ' + m.registration + ' (raw ' + m.registration_raw + ')', 'Technology: ' + (m.technology || 'unknown'),
+        'Signal: ' + (m.signal_valid ? m.signal_quality + '%' : 'unknown'),
+        'Data: ' + m.connection_state, 'APN: ' + (m.apn || 'unknown'),
+        'Session: ' + m.phase, 'Failure: ' + m.failure_phase + ' / ' + m.failure_result,
+        'IPv4: ' + (m.ipv4 || 'none'), 'IPv6: ' + (m.ipv6 || 'none'),
+        'Interface: ' + (m.interface || 'unknown'), 'Network result: ' + m.link_result,
+        'Disconnect result: ' + m.disconnect_result, 'Error: ' + (m.error || 'none')
+      ].join('\n'));
+    }).catch(function (err) {
+      if ($('mobile-enabled')) $('mobile-enabled').disabled = true;
+      show('mobile-state', err.message);
+    });
+  }
   function sensorRead(cls, target) {
     show(target, 'Reading ' + cls + ' (raw kernel values only)…');
     call('system', 'sensor-read', { 'class': cls }).then(function (doc) {
@@ -43,7 +68,22 @@
   }
   document.addEventListener('DOMContentLoaded', function () {
     var m = $('mobile-refresh'), c = $('camera-refresh'), s = $('sensors-refresh');
-    if (m) m.addEventListener('click', function () { load('modem', 'mobile-state', 'Mobile network'); });
+    if (m) m.addEventListener('click', mobileStatus);
+    var toggle = $('mobile-enabled');
+    if (toggle) toggle.addEventListener('change', function () {
+      if (mobileBusy) return;
+      mobileBusy = true; toggle.disabled = true;
+      call('network', 'mobile-data-enabled', {enabled: toggle.checked}).then(function (result) {
+        if (!result || result.success === false) throw new Error((result && result.error) || 'Operation refused');
+        mobileBusy = false; return mobileStatus();
+      }).catch(function (err) {
+        mobileBusy = false; show('mobile-state', err.message); toggle.disabled = false;
+      });
+    });
+    setInterval(function () {
+      var panel = $('tab-mobile');
+      if (panel && panel.classList.contains('active')) mobileStatus();
+    }, 3000);
     if (c) c.addEventListener('click', function () { load('camera', 'camera-state', 'Camera'); });
     if (s) s.addEventListener('click', function () { load('sensors', 'sensors-state', 'Sensor'); });
     var a = $('sensors-read-accel'), g = $('sensors-read-gyro');
@@ -51,7 +91,7 @@
     if (g) g.addEventListener('click', function () { sensorRead('gyroscope', 'sensors-state'); });
     document.querySelectorAll('.tab').forEach(function (t) {
       t.addEventListener('click', function () {
-        if (t.dataset.tab === 'mobile') load('modem', 'mobile-state', 'Mobile network');
+        if (t.dataset.tab === 'mobile') mobileStatus();
         else if (t.dataset.tab === 'camera') load('camera', 'camera-state', 'Camera');
         else if (t.dataset.tab === 'sensors') load('sensors', 'sensors-state', 'Sensor');
       });

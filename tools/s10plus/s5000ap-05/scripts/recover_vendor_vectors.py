@@ -127,6 +127,7 @@ if __name__=='__main__':
         results[f'attach_bool_{apply}']=run('IpcTxSetLteAttachProfile',[1,STR,STR+128,STR+256,0,4,4,0,0,0,apply],{0:'internet'}).hex()
     results['define_pdp']=run('IpcTxDefinePdpContext',[STR,1,4,0,0,0],{0:'internet'}).hex()
     results['define_pdp_ipv4']=run('IpcTxDefinePdpContext',[STR,1,2,0,0,0],{0:'internet'}).hex()
+    results['release_pdp']=run('IpcTxSetPdpContext',[1,0,STR,STR+128,0,0],{0:''}).hex()
     results['activate_pdp']=run('IpcTxSetPdpContext',[1,1,STR,STR+128,0,0],{0:''}).hex()
     results['preferred_lte_auto']=run('IpcTxNetSetPreferredNetType',[9]).hex()
     results['preferred_lte_only']=run('IpcTxNetSetPreferredNetType',[11]).hex()
