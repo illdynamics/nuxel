@@ -122,3 +122,22 @@ is available, a blind write is correctly refused by fail-closed policy.
 
 No NV/EFS/RADIO/BOOT/IMEI/cal write performed. Wi-Fi/USB/ZeroTier/SSH intact.
 All new code is pure (no I/O) + fail-closed + fuzzed + sanitized.
+
+## 7. Runtime prerequisite satisfied (no NV write, no CP disruption)
+
+Recovered the exact vendor cbd invocation and EFS paths from init.baseband.rc:
+`/vendor/bin/cbd -d -tss310 -bm -mm -P platform/13d60000.ufs/by-name/radio`,
+which serves `/mnt/vendor/efs/nv_data.bin` via `CP_REQ_NV_DATA` and mounts
+`/mnt/vendor/cpefs` from the cpefs partition.
+
+Exposed the read-only EFS at the canonical paths the vendor Nv code expects
+(`Nv::OpenNVFile` opens `/mnt/vendor/efs/nv_data.bin`):
+```
+$ mount --bind /tmp/efs_inspect  /mnt/vendor/efs;   # rc=0
+$ mount --bind /tmp/cpefs_inspect /mnt/vendor/cpefs; # rc=0
+$ ls -la /mnt/vendor/efs/nv_data.bin /mnt/vendor/efs/nv_data.bin.md5
+-rwx------ 1 nuxel-remote nuxel-remote 1048576 Feb 3 2024 /mnt/vendor/efs/nv_data.bin
+-rwx------ 1 nuxel-remote nuxel-remote      32 Feb 3 2024 /mnt/vendor/efs/nv_data.bin.md5
+```
+Bind mount is read-only-backed (source already ro at /tmp/*_inspect); no NV write,
+no CP re-boot, management connection (ZeroTier/SSH/radiod) untouched.
