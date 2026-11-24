@@ -1,5 +1,23 @@
 # Changelog
 
+## Stage 06 LTE consolidation — preserved baseline and definitive handover
+
+- Checkpointed Astra/DeepSeek source and deployed binaries/configuration before
+  testing. Entry device had already rebooted: CP ONLINE, SIM ready, but no
+  cellular registration/address; one native session retry timed out. Preserved
+  Wi-Fi/ZeroTier management and stopped disruptive work at the mission blocker.
+- Documented the installed pre-NV CP loader/guard mismatch, incomplete persisted
+  data policy/disconnect, missing NetworkManager cellular DNS and native UI
+  integration. Historical cellular-only IPv6 HTTPS remains established evidence;
+  persistent LTE and new physical ON/OFF/reboot acceptance are not claimed.
+- Added authoritative LTE, telephony and SMS state documents plus the DeepSeek
+  continuation handover under docs/mobile/, with source symbols, recovery paths,
+  executable hashes, acceptance gaps and redacted regression receipts.
+- Host radio suites, both 3000-input fuzz gates, 12 sanitizer suites and 34 CP
+  tests pass; 13 CP sanitizer cases pass. Native core builds/12 suites pass,
+  while the full native runner stops on existing RFS compiler warnings; the
+  macOS phone-data runner also has an existing strict-C11 build failure.
+
 ## Stage 06 Round 43 — wire-format, registration and CP startup corrections
 
 - Corrected SET_APN_INFO, initial-profile, DEFINE and activation frames against

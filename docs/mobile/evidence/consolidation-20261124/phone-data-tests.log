@@ -1,0 +1,6 @@
+== building nuxel-phone-data tests with cc ==
+/Users/wicked/x/nuxel/shell/nuxel-shell/nuxel-phone-data/nuxel-phone-data-test.c:249:10: error: call to undeclared function 'mkdtemp'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+  249 |     if (!mkdtemp(dir)) { fprintf(stderr, "cannot create temp dir\n"); return 99; }
+      |          ^
+1 error generated.
+FAIL build

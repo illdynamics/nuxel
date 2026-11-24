@@ -1,0 +1,525 @@
+=== run SIPC5/FMT unit tests ===
+ok   tests/test_sipc5_fmt.c:23: sipc_fmt_hdr == 7 (got 7)
+ok   tests/test_sipc5_fmt.c:30: min 4-byte hdr parse OK (r=0)
+ok   tests/test_sipc5_fmt.c:31: hdr_len==4 (got 4)
+ok   tests/test_sipc5_fmt.c:32: frame_len==14 (got 14)
+ok   tests/test_sipc5_fmt.c:33: ch==10 (got 10)
+ok   tests/test_sipc5_fmt.c:35: no ext/ctl/padding flags
+ok   tests/test_sipc5_fmt.c:43: multi-frame hdr parse OK (r=0)
+ok   tests/test_sipc5_fmt.c:44: hdr_len==5 (got 5)
+ok   tests/test_sipc5_fmt.c:45: multi_frame==true
+ok   tests/test_sipc5_fmt.c:46: ctrl==0x81 (got 0x81)
+ok   tests/test_sipc5_fmt.c:47: more-bit set
+ok   tests/test_sipc5_fmt.c:48: frame-id==1
+ok   tests/test_sipc5_fmt.c:49: RFS ch==245
+ok   tests/test_sipc5_fmt.c:57: ext-len hdr parse OK (r=0)
+ok   tests/test_sipc5_fmt.c:58: hdr_len==6 (got 6)
+ok   tests/test_sipc5_fmt.c:59: ext_len==true
+ok   tests/test_sipc5_fmt.c:60: frame_len==0x1234 (got 0x1234)
+ok   tests/test_sipc5_fmt.c:68: bad start rejected (r=-2)
+ok   tests/test_sipc5_fmt.c:76: 1-byte link truncated (r=-1)
+ok   tests/test_sipc5_fmt.c:88: fmt parse OK (r=0)
+ok   tests/test_sipc5_fmt.c:89: consumed==11 total (got 11)
+ok   tests/test_sipc5_fmt.c:90: payload_len==4 (got 4)
+ok   tests/test_sipc5_fmt.c:91: seq/ack correct
+ok   tests/test_sipc5_fmt.c:92: cmd fields correct
+ok   tests/test_sipc5_fmt.c:93: payload intact
+ok   tests/test_sipc5_fmt.c:102: fmt truncated (r=-1)
+ok   tests/test_sipc5_fmt.c:103: truncated flag set
+ok   tests/test_sipc5_fmt.c:112: fmt overflow rejected (r=-4)
+ok   tests/test_sipc5_fmt.c:121: fmt 3-byte truncated (r=-1)
+
+RESULT=PASS: 0 failures
+=== run RFS policy unit tests ===
+ok   53: allow safe.bin read
+ok   55: allow sub/inner.bin read (dir entry)
+ok   66: DENY non-allowlisted file
+ok   67: reason NOT_ALLOWLISTED
+ok   70: DENY dotdot traversal
+ok   71: reason DOTDOT
+ok   74: DENY absolute path
+ok   75: reason ABSOLUTE
+ok   78: DENY backslash
+ok   81: DENY symlink escape
+ok   83: reason SYMLINK-or-ROOT_ESCAPE (got ROOT_ESCAPE)
+ok   86: DENY hardlink
+ok   87: reason HARDLINK
+ok   91: DENY protected /efs prefix
+ok   92: reason PROTECTED_PREFIX
+ok   95: DENY write to read-only-allowlisted file
+ok   97: DENY empty path
+ok   101: DENY when root not installed
+ok   107: ALLOW write to write-allowlisted subtree
+
+RESULT=PASS: 0 failures
+=== run RFS raw-proto unit tests ===
+ok   tests/test_rfs_proto.c:22: live DELETE_ALL_VIS parses OK (r=0)
+ok   tests/test_rfs_proto.c:23: len==25 (got 25)
+ok   tests/test_rfs_proto.c:24: op_class==0x0b (got 0x0b)
+ok   tests/test_rfs_proto.c:25: path_len==15 (got 15)
+ok   tests/test_rfs_proto.c:26: opcode==DELETE_ALL_VIS (got 'DELETE_ALL_VIS')
+ok   tests/test_rfs_proto.c:27: opcode printable
+ok   tests/test_rfs_proto.c:28: op_class known
+ok   tests/test_rfs_proto.c:29: DELETE_ALL_VIS is destructive (fail-closed)
+ok   tests/test_rfs_proto.c:33: short buffer -> SHORT (r=-1)
+ok   tests/test_rfs_proto.c:39: non-printable bulk REJECTED as RFS (r=-2)
+ok   tests/test_rfs_proto.c:44: unknown op parses (op=0x42)
+ok   tests/test_rfs_proto.c:45: unknown op not known/destructive
+
+RESULT=PASS: 0 failures
+=== run LIVE-captured frame tests (real CP bytes) ===
+ok   real prefix link parse OK (r=0)
+ok   link hdr_len==4 (got 4)
+ok   link ch==235 FMT (got 235)
+ok   link frame_len==29 (got 29)
+ok   no ext/ctl/pad
+ok   real prefix FMT correctly TRUNCATED (r=-1)
+ok   truncated flag set (declared len 25 > avail 9)
+ok   real message is 25 bytes (got 25)
+ok   complete real FMT parse OK (r=0)
+ok   consumed == 25 total (got 25)
+ok   payload_len == 25-7 == 18 (got 18)
+ok   main_cmd==0x13 (got 0x13)
+ok   sub_cmd==0x05 (got 0x05)
+ok   cmd_type==0x03 (got 0x03)
+ok   payload[4..] contains AST_POWERON (after 0f 00 CR LF)
+
+RESULT=PASS: 0 failures
+=== run Stage-06 IpcProtocol41 recovery-fact tests ===
+ok   dialect == IpcProtocol41
+ok   sipc_fmt_hdr ABI == 7 bytes (got 7)
+ok   live AST_POWERON parse OK (r=0)
+ok   AST_POWERON main=0x13 sub=0x05 type=0x03
+ok   cmd_type 0x03 is notification class (live)
+ok   recovered family-name count == 34 (got 34)
+ok   CALL present
+ok   DOMESTIC present
+ok   GPRS present
+ok   NET present
+ok   RFS present
+ok   SS present
+ok   RFS receive is documented as cbd-handled (IpcRxRfs is a stub)
+
+RESULT=PASS: 0 failures
+=== run Stage-06 source-backed RFS responder tests ===
+ok   tests/test_rfs_respond.c:34: live DELETE_ALL_VIS parses OK (pr=0)
+ok   tests/test_rfs_respond.c:35: total_len==25 (got 25)
+ok   tests/test_rfs_respond.c:36: op==UNLINK_FILE 0x0b (got 0x0b)
+ok   tests/test_rfs_respond.c:37: seq==1 (got 1)
+ok   tests/test_rfs_respond.c:38: path_len==15 (got 15)
+ok   tests/test_rfs_respond.c:39: path==DELETE_ALL_VIS (got 'DELETE_ALL_VIS')
+ok   tests/test_rfs_respond.c:40: path printable
+ok   tests/test_rfs_respond.c:41: special_delete_all_vis flagged
+ok   tests/test_rfs_respond.c:47: DELETE_ALL_VIS policy -> success (res=0)
+ok   tests/test_rfs_respond.c:48: DELETE_ALL_VIS detail == 0 (got 0)
+ok   tests/test_rfs_respond.c:56: response length == 14 (got 14)
+ok   tests/test_rfs_respond.c:57: result==0
+ok   tests/test_rfs_respond.c:58: resp op echo==0x0b (got 0x0b)
+ok   tests/test_rfs_respond.c:59: resp seq echo==0x01 (got 0x01)
+ok   tests/test_rfs_respond.c:60: resp reserved==0
+ok   tests/test_rfs_respond.c:61: resp detail==0
+ok   tests/test_rfs_respond.c:70: NV_WRITE_ALL parses
+ok   tests/test_rfs_respond.c:73: NV_WRITE_ALL policy fail-closed (res=-13)
+ok   tests/test_rfs_respond.c:82: OPEN_FILE parses
+ok   tests/test_rfs_respond.c:84: OPEN_FILE fail-closed
+ok   tests/test_rfs_respond.c:88: truncated -> SHORT
+ok   tests/test_rfs_respond.c:95: path_len 1024 -> OVERFLOW
+ok   tests/test_rfs_respond.c:102: non-printable path rejected
+ok   tests/test_rfs_respond.c:110: unlink foo parses
+ok   tests/test_rfs_respond.c:111: unlink foo NOT special
+ok   tests/test_rfs_respond.c:113: unlink other path fail-closed
+
+RESULT=PASS: 0 failures
+=== run Stage-06 FMT TX serialization tests ===
+FMT vendor golden vectors: PASS (0 failures)
+=== run Stage-06 data-session FSM tests ===
+ok   tests/test_data_session.c:18: starts by querying SIM state
+ok   tests/test_data_session.c:19: APN recorded
+ok   tests/test_data_session.c:20: profile id recorded
+ok   tests/test_data_session.c:21: initial profile uses flag 1, never always-on flag 3
+ok   tests/test_data_session.c:25: no ack -> stays SIM_CHECK
+ok   tests/test_data_session.c:30: SIM_CHECK -> NET_REGIST_CHECK
+ok   tests/test_data_session.c:31: NET_REGIST_CHECK -> SET_SERVICE_DOMAIN
+ok   tests/test_data_session.c:32: SET_SERVICE_DOMAIN needs actual readback
+ok   tests/test_data_session.c:33: verified CS+PS -> SET_PREFERRED_NET
+ok   tests/test_data_session.c:34: SET_PREFERRED_NET -> VERIFY_NET_MODE
+ok   tests/test_data_session.c:35: VERIFY_NET_MODE -> ENABLE_MOBILE_DATA
+ok   tests/test_data_session.c:36: ENABLE_MOBILE_DATA -> SET_DATA_PROFILE (skip SYNC_PROFILE)
+ok   tests/test_data_session.c:37: SET_DATA_PROFILE -> SET_LTE_ATTACH
+ok   tests/test_data_session.c:42: SET_LTE_ATTACH -> MBIM_ATTACH_CONFIG
+ok   tests/test_data_session.c:43: MBIM_ATTACH_CONFIG -> DEFINE_PDP
+ok   tests/test_data_session.c:44: DEFINE_PDP -> ALWAYS_ON_PDN
+ok   tests/test_data_session.c:45: query real registration before PS attach
+ok   tests/test_data_session.c:47: unregistered -> PS_ATTACH
+ok   tests/test_data_session.c:48: PS_ATTACH needs actual registration
+ok   tests/test_data_session.c:49: PS_REGIST_VERIFY -> DATA_CALL
+ok   tests/test_data_session.c:50: DATA_CALL -> GET_PDP_LIST
+ok   tests/test_data_session.c:51: GET_PDP_LIST -> WAIT_IP
+ok   tests/test_data_session.c:52: WAIT_IP -> ACTIVE
+ok   tests/test_data_session.c:54: ACTIVE is terminal
+ok   tests/test_data_session.c:59: REJECTED is terminal
+ok   tests/test_data_session.c:73: bounded retries -> FAILED (got 27)
+ok   tests/test_data_session.c:74: attempt count bounded (got 3)
+ok   tests/test_data_session.c:80: ds_feedback(success) advances (got 2)
+ok   tests/test_data_session.c:83: ds_feedback(fail) -> REJECTED (got 26)
+ok   tests/test_data_session.c:84: REJECTED is terminal after feedback failure
+ok   tests/test_data_session.c:90: ds_feedback(fail) at attempt==3 -> FAILED (got 27)
+ok   tests/test_data_session.c:93: call state 1 is connected
+ok   tests/test_data_session.c:94: call state 10 is connected
+ok   tests/test_data_session.c:95: call state 11 is connected
+ok   tests/test_data_session.c:96: call state 3 (live-observed) is NOT connected
+ok   tests/test_data_session.c:97: call state 0 is NOT connected
+ok   tests/test_data_session.c:103: IA update queries packet state first
+ok   tests/test_data_session.c:104: missing state cannot authorize detach
+ok   tests/test_data_session.c:106: already detached does not send a rejected detach
+ok   tests/test_data_session.c:108: attached IA update requests detach
+ok   tests/test_data_session.c:110: detach ACK needs state verification
+ok   tests/test_data_session.c:111: no state proof cannot change profile
+ok   tests/test_data_session.c:112: detached -> initial profile
+ok   tests/test_data_session.c:115: profile rejection restores PS
+ok   tests/test_data_session.c:116: preserves original failure
+ok   tests/test_data_session.c:117: rejected command result is valid
+ok   tests/test_data_session.c:118: recovery ACK still needs registration
+ok   tests/test_data_session.c:119: registered recovery reports rejection, never ACTIVE
+ok   tests/test_data_session.c:123: detach timeout restores PS
+ok   tests/test_data_session.c:124: failed recovery stays explicit
+ok   tests/test_data_session.c:132: PS control reply alone proves no registration
+ok   tests/test_data_session.c:134: registered default context avoids redundant PS attach
+ok   tests/test_data_session.c:136: actual registration clears pending PS restoration
+ok   tests/test_data_session.c:137: control flag 1 cannot fabricate network registration
+
+RESULT=PASS: 0 failures
+FMT receive bounds, result correlation, RAT, PDP and IP: PASS
+RESULT=PASS (ipc41_cmdmap)
+=== run Stage-06 MBIM<->SIPC serialization tests ===
+ok   tests/test_mbim_tx.c:34: rawipc frame len == 16 (got 16)
+ok   tests/test_mbim_tx.c:35: rawipc total_len u16 LE
+ok   tests/test_mbim_tx.c:36: rawipc msg_seq = 0x11
+ok   tests/test_mbim_tx.c:37: rawipc ack_seq = 0x22
+ok   tests/test_mbim_tx.c:38: rawipc main_cmd = 0x16
+ok   tests/test_mbim_tx.c:39: rawipc sub_cmd = 0x0c
+ok   tests/test_mbim_tx.c:40: rawipc cmd_type = 0x05
+ok   tests/test_mbim_tx.c:41: rawipc forward-flag = 0x01
+ok   tests/test_mbim_tx.c:42: rawipc MBIM payload copied
+ok   tests/test_mbim_tx.c:53: attach config built (len 116)
+ok   tests/test_mbim_tx.c:54: msg type = COMMAND
+ok   tests/test_mbim_tx.c:55: msg length == total
+ok   tests/test_mbim_tx.c:56: transaction id
+ok   tests/test_mbim_tx.c:57: CID = 0x0A
+ok   tests/test_mbim_tx.c:58: command type = SET
+ok   tests/test_mbim_tx.c:63: elementCount = 1
+ok   tests/test_mbim_tx.c:64: info buffer data offset >= 28 (got 28)
+ok   tests/test_mbim_tx.c:69: context 0 size > 44 (got 60)
+ok   tests/test_mbim_tx.c:71: ctx0 index = 0
+ok   tests/test_mbim_tx.c:72: ctx0 ipType = 5
+ok   tests/test_mbim_tx.c:73: ctx0 auth = 0
+ok   tests/test_mbim_tx.c:76: ctx0 APN UTF-16 len = 16 (got 16)
+ok   tests/test_mbim_tx.c:78: ctx0 APN = 'internet' UTF-16LE
+ok   tests/test_mbim_tx.c:90: 3-ctx built (len 228)
+ok   tests/test_mbim_tx.c:92: 3-ctx elementCount = 3
+ok   tests/test_mbim_tx.c:96: ctx0 index = 0
+ok   tests/test_mbim_tx.c:97: ctx1 index = 1
+ok   tests/test_mbim_tx.c:98: ctx2 index = 2
+ok   tests/test_mbim_tx.c:99: 3-ctx offsets monotonic
+ok   tests/test_mbim_tx.c:108: overflow -> 0
+ok   tests/test_mbim_tx.c:109: 0 contexts -> 0
+ok   tests/test_mbim_tx.c:111: empty APN -> 0
+ok   tests/test_mbim_tx.c:122: OPEN len == 16 (got 16)
+ok   tests/test_mbim_tx.c:123: OPEN msg type = 1
+ok   tests/test_mbim_tx.c:124: OPEN length = 16
+ok   tests/test_mbim_tx.c:125: OPEN transaction id
+ok   tests/test_mbim_tx.c:126: OPEN max_control_transfer = 4096
+ok   tests/test_mbim_tx.c:127: OPEN does not overflow buffer
+ok   tests/test_mbim_tx.c:132: CLOSE len == 12 (got 12)
+ok   tests/test_mbim_tx.c:133: CLOSE msg type = 2
+ok   tests/test_mbim_tx.c:134: CLOSE length = 12
+ok   tests/test_mbim_tx.c:135: CLOSE transaction id
+ok   tests/test_mbim_tx.c:140: caps query len == 20 (got 20)
+ok   tests/test_mbim_tx.c:141: caps query msg type = COMMAND(3)
+ok   tests/test_mbim_tx.c:142: caps query length = 20
+ok   tests/test_mbim_tx.c:143: caps query transaction id
+ok   tests/test_mbim_tx.c:144: caps query CID = 0x01
+ok   tests/test_mbim_tx.c:145: caps query type = QUERY(0)
+ok   tests/test_mbim_tx.c:150: attach-status query len == 20 (got 20)
+ok   tests/test_mbim_tx.c:151: attach-status CID = 0x0B
+ok   tests/test_mbim_tx.c:152: attach-status type = QUERY(0)
+ok   tests/test_mbim_tx.c:156: OPEN tiny -> 0
+ok   tests/test_mbim_tx.c:157: CLOSE tiny -> 0
+ok   tests/test_mbim_tx.c:158: caps tiny -> 0
+test_mbim_tx: all PASS
+=== run Stage-06 recovered QBR item dictionary tests ===
+test_qbr_items: all PASS
+=== run Stage-06 recovered CP-NV record/MD5/policy tests ===
+ok: scalar record size
+ok: scalar size field
+ok: scalar name_ptr
+ok: scalar type
+ok: scalar aux_ptr
+ok: scalar size_valid
+ok: scalar name_is_ram
+ok: name span
+ok: guard record size
+ok: guard type
+ok: guard aux zero
+ok: short buffer -> 0
+ok: size>len -> 0
+ok: text span
+ok: vss span
+ok: unknown span
+ok: md5 empty rc
+ok: md5 empty vector
+ok: md5 abc rc
+ok: md5 abc vector
+ok: verify match
+ok: verify mismatch
+ok: verify malformed
+ok: read allowed
+ok: write unknown id
+ok: write protected
+ok: write bad md5
+ok: write known+ok
+ok: attach APN logical index == 220
+ok: attach profile value size == 360
+ok: apn record init rc
+ok: apn record valid
+ok: apn length 8
+ok: apn bytes == internet
+ok: empty apn rejected
+ok: NULL apn rejected
+ok: oversize apn rejected
+ok: zero-length rejected
+
+ALL test_nv_items PASS
+=== run Stage-06 recovered RFS NV transaction tests ===
+ok: n == RFS_NV_HDR_MIN + alen
+ok: buf[0] == 0x15
+ok: buf[1] == 0x2b
+ok: buf[2] == 0 && buf[3] == 0 && buf[4] == 0 && buf[5] == 0
+ok: buf[6] == 0x40 && buf[7] == 0x23 && buf[8] == 0x01 && buf[9] == 0x00
+ok: buf[10] == 0x08
+ok: memcmp(buf + 14, "internet", 8) == 0
+ok: pr == RFS_NV_PARSE_OK
+ok: it.valid && it.op == 0x15 && it.seq == 0x2b
+ok: it.offset == 0x00012340u && it.length == 8
+ok: it.data && memcmp(it.data, "internet", 8) == 0
+ok: rfs_nv_item_parse(buf, 10, &it) == RFS_NV_PARSE_SHORT
+ok: !it.valid
+ok: rfs_nv_item_parse(buf, sizeof buf, &it) == RFS_NV_PARSE_OVERFLOW
+ok: rfs_nv_item_parse(buf, sizeof buf, &it) == RFS_NV_PARSE_OVERFLOW
+ok: rfs_nv_item_serialize(0x15, 0, 0, 4, NULL, buf, sizeof buf) == 0
+ok: n == RFS_NV_RESP_LEN
+ok: out[0] == 15
+ok: out[4] == 2
+ok: out[5] == 0x2b
+ok: out[6] == 0
+ok: out[7] == 0x40 && out[8] == 0x23 && out[9] == 0x01 && out[10] == 0x00
+ok: out[11] == 8 && out[12] == 0 && out[13] == 0 && out[14] == 0
+ok: n == 15 + 8
+ok: out[0] == 23
+ok: out[4] == 1
+ok: out[5] == 0x2b
+ok: out[6] == 0
+ok: out[7] == 0x40 && out[8] == 0x23 && out[9] == 0x01 && out[10] == 0x00
+ok: out[11] == 8
+ok: memcmp(out + 15, "internet", 8) == 0
+ok: rfs_nv_read_response_build(0, 0, 0, 100u, payload, out, 20) == 0
+ok: d == RFS_NV_DENY_UNKNOWN_ITEM
+ok: rfs_nv_provision_policy(220u, false, true, 360u, 0x12340u, "internet", 8, &off, &len) == RFS_NV_DENY_SCHEMA
+ok: off == 0 && len == 0
+ok: rfs_nv_provision_policy(0x169u, false, true, 16u, 0x12340u, "internet", 8, &off, &len) == RFS_NV_DENY_UNKNOWN_ITEM
+ok: rfs_nv_provision_policy(220u, true, true, 16u, 0x12340u, "internet", 8, &off, &len) == RFS_NV_DENY_PROTECTED
+ok: rfs_nv_provision_policy(220u, false, false, 0, 0, "internet", 8, &off, &len) == RFS_NV_DENY_NO_OFFSET
+ok: rfs_nv_provision_policy(220u, false, true, 4u, 0x12340u, "internet", 8, &off, &len) == RFS_NV_DENY_LENGTH
+ok: rfs_nv_provision_policy(220u, false, true, 16u, 0x12340u, "", 0, &off, &len) == RFS_NV_DENY_BADAPN
+ok: rfs_nv_provision_policy(220u, false, true, 256u, 0x12340u, big, 128, &off, &len) == RFS_NV_DENY_BADAPN
+ok: rfs_nv_provision_policy(220u, false, true, 16u, 0x12340u, "inter\0net", 10, &off, &len) == RFS_NV_DENY_BADAPN
+
+ALL test_rfs_nv PASS
+=== run Stage-06 native EFS NV backend tests ===
+ok: strcmp(h, "2d44b1b4d8b512c006e8dfa559eaad1a") == 0
+ok: strcmp(h, "8b558dbf8cefc62e27d58a07e9c6ef2b") == 0
+ok: efs_nv_md5_verify((const uint8_t*)"abc", 3, "8b558dbf8cefc62e27d58a07e9c6ef2b") == 0
+ok: efs_nv_md5_verify((const uint8_t*)"abc", 3, "00000000000000000000000000000000") == 1
+ok: efs_nv_md5_verify((const uint8_t*)"abc", 3, "zzz") == -1
+ok: fixture != NULL
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, 1048576, vectors[7].hash) == 1
+ok: fd >= 0
+ok: efs_nv_write_at(fd, 0x1234u, 8u, sz, apn, true) == EFS_NV_OK
+ok: efs_nv_read_at(fd, 0x1234u, 8u, sz, back) == EFS_NV_OK
+ok: memcmp(back, "internet", 8) == 0
+ok: efs_nv_read_at(fd, 0x7fffeu, 8u, sz, back) == EFS_NV_OVERFLOW
+ok: efs_nv_write_at(fd, 0x1234u, 8u, sz, apn, false) == EFS_NV_AUTH_DENY
+ok: efs_nv_write_at(fd, 0x7ffffu, 2u, sz, apn, true) == EFS_NV_OVERFLOW
+ok: f != NULL
+ok: fwrite(data, 1, sizeof data, f) == sizeof data
+ok: efs_nv_update_checksum_sidecar(path, md5p) == EFS_NV_OK
+ok: efs_nv_md5_hex(data, sizeof data, hex) == 0
+ok: strcmp(hex, "ccc0536e0f7561ba76afd12234614dae") == 0
+ok: m != NULL
+ok: fread(stored, 1, 32, m) == 32
+ok: memcmp(stored, hex, 32) == 0
+
+ALL test_efs_nv PASS
+OES certificate bounds, unchanged input, truncation and symlink rejection: PASS
+SMS vendor golden vectors: PASS (0 failures)
+SMS codec: PASS (0 failures)
+SMS durable store: PASS (0 failures)
+SMS service durability/correlation: PASS (0 failures)
+Call vendor vectors/parser: PASS (0 failures)
+Call service correlation/lifecycle: PASS (0 failures)
+=== run SIPC5 fuzzer (host, no writes) ===
+iters=3000 crashes=0 timeouts=0 unique_coverage=523
+FUZZ_RESULT=PASS
+=== ASan/UBSan build + fuzz (memory-safety gate) ===
+iters=3000 crashes=0 timeouts=0 unique_coverage=523
+FUZZ_RESULT=PASS
+FMT vendor golden vectors: PASS (0 failures)
+FMT receive bounds, result correlation, RAT, PDP and IP: PASS
+ok   tests/test_data_session.c:18: starts by querying SIM state
+ok   tests/test_data_session.c:19: APN recorded
+ok   tests/test_data_session.c:20: profile id recorded
+ok   tests/test_data_session.c:21: initial profile uses flag 1, never always-on flag 3
+ok   tests/test_data_session.c:25: no ack -> stays SIM_CHECK
+ok   tests/test_data_session.c:30: SIM_CHECK -> NET_REGIST_CHECK
+ok   tests/test_data_session.c:31: NET_REGIST_CHECK -> SET_SERVICE_DOMAIN
+ok   tests/test_data_session.c:32: SET_SERVICE_DOMAIN needs actual readback
+ok   tests/test_data_session.c:33: verified CS+PS -> SET_PREFERRED_NET
+ok   tests/test_data_session.c:34: SET_PREFERRED_NET -> VERIFY_NET_MODE
+ok   tests/test_data_session.c:35: VERIFY_NET_MODE -> ENABLE_MOBILE_DATA
+ok   tests/test_data_session.c:36: ENABLE_MOBILE_DATA -> SET_DATA_PROFILE (skip SYNC_PROFILE)
+ok   tests/test_data_session.c:37: SET_DATA_PROFILE -> SET_LTE_ATTACH
+ok   tests/test_data_session.c:42: SET_LTE_ATTACH -> MBIM_ATTACH_CONFIG
+ok   tests/test_data_session.c:43: MBIM_ATTACH_CONFIG -> DEFINE_PDP
+ok   tests/test_data_session.c:44: DEFINE_PDP -> ALWAYS_ON_PDN
+ok   tests/test_data_session.c:45: query real registration before PS attach
+ok   tests/test_data_session.c:47: unregistered -> PS_ATTACH
+ok   tests/test_data_session.c:48: PS_ATTACH needs actual registration
+ok   tests/test_data_session.c:49: PS_REGIST_VERIFY -> DATA_CALL
+ok   tests/test_data_session.c:50: DATA_CALL -> GET_PDP_LIST
+ok   tests/test_data_session.c:51: GET_PDP_LIST -> WAIT_IP
+ok   tests/test_data_session.c:52: WAIT_IP -> ACTIVE
+ok   tests/test_data_session.c:54: ACTIVE is terminal
+ok   tests/test_data_session.c:59: REJECTED is terminal
+ok   tests/test_data_session.c:73: bounded retries -> FAILED (got 27)
+ok   tests/test_data_session.c:74: attempt count bounded (got 3)
+ok   tests/test_data_session.c:80: ds_feedback(success) advances (got 2)
+ok   tests/test_data_session.c:83: ds_feedback(fail) -> REJECTED (got 26)
+ok   tests/test_data_session.c:84: REJECTED is terminal after feedback failure
+ok   tests/test_data_session.c:90: ds_feedback(fail) at attempt==3 -> FAILED (got 27)
+ok   tests/test_data_session.c:93: call state 1 is connected
+ok   tests/test_data_session.c:94: call state 10 is connected
+ok   tests/test_data_session.c:95: call state 11 is connected
+ok   tests/test_data_session.c:96: call state 3 (live-observed) is NOT connected
+ok   tests/test_data_session.c:97: call state 0 is NOT connected
+ok   tests/test_data_session.c:103: IA update queries packet state first
+ok   tests/test_data_session.c:104: missing state cannot authorize detach
+ok   tests/test_data_session.c:106: already detached does not send a rejected detach
+ok   tests/test_data_session.c:108: attached IA update requests detach
+ok   tests/test_data_session.c:110: detach ACK needs state verification
+ok   tests/test_data_session.c:111: no state proof cannot change profile
+ok   tests/test_data_session.c:112: detached -> initial profile
+ok   tests/test_data_session.c:115: profile rejection restores PS
+ok   tests/test_data_session.c:116: preserves original failure
+ok   tests/test_data_session.c:117: rejected command result is valid
+ok   tests/test_data_session.c:118: recovery ACK still needs registration
+ok   tests/test_data_session.c:119: registered recovery reports rejection, never ACTIVE
+ok   tests/test_data_session.c:123: detach timeout restores PS
+ok   tests/test_data_session.c:124: failed recovery stays explicit
+ok   tests/test_data_session.c:132: PS control reply alone proves no registration
+ok   tests/test_data_session.c:134: registered default context avoids redundant PS attach
+ok   tests/test_data_session.c:136: actual registration clears pending PS restoration
+ok   tests/test_data_session.c:137: control flag 1 cannot fabricate network registration
+
+RESULT=PASS: 0 failures
+ok: n == RFS_NV_HDR_MIN + alen
+ok: buf[0] == 0x15
+ok: buf[1] == 0x2b
+ok: buf[2] == 0 && buf[3] == 0 && buf[4] == 0 && buf[5] == 0
+ok: buf[6] == 0x40 && buf[7] == 0x23 && buf[8] == 0x01 && buf[9] == 0x00
+ok: buf[10] == 0x08
+ok: memcmp(buf + 14, "internet", 8) == 0
+ok: pr == RFS_NV_PARSE_OK
+ok: it.valid && it.op == 0x15 && it.seq == 0x2b
+ok: it.offset == 0x00012340u && it.length == 8
+ok: it.data && memcmp(it.data, "internet", 8) == 0
+ok: rfs_nv_item_parse(buf, 10, &it) == RFS_NV_PARSE_SHORT
+ok: !it.valid
+ok: rfs_nv_item_parse(buf, sizeof buf, &it) == RFS_NV_PARSE_OVERFLOW
+ok: rfs_nv_item_parse(buf, sizeof buf, &it) == RFS_NV_PARSE_OVERFLOW
+ok: rfs_nv_item_serialize(0x15, 0, 0, 4, NULL, buf, sizeof buf) == 0
+ok: n == RFS_NV_RESP_LEN
+ok: out[0] == 15
+ok: out[4] == 2
+ok: out[5] == 0x2b
+ok: out[6] == 0
+ok: out[7] == 0x40 && out[8] == 0x23 && out[9] == 0x01 && out[10] == 0x00
+ok: out[11] == 8 && out[12] == 0 && out[13] == 0 && out[14] == 0
+ok: n == 15 + 8
+ok: out[0] == 23
+ok: out[4] == 1
+ok: out[5] == 0x2b
+ok: out[6] == 0
+ok: out[7] == 0x40 && out[8] == 0x23 && out[9] == 0x01 && out[10] == 0x00
+ok: out[11] == 8
+ok: memcmp(out + 15, "internet", 8) == 0
+ok: rfs_nv_read_response_build(0, 0, 0, 100u, payload, out, 20) == 0
+ok: d == RFS_NV_DENY_UNKNOWN_ITEM
+ok: rfs_nv_provision_policy(220u, false, true, 360u, 0x12340u, "internet", 8, &off, &len) == RFS_NV_DENY_SCHEMA
+ok: off == 0 && len == 0
+ok: rfs_nv_provision_policy(0x169u, false, true, 16u, 0x12340u, "internet", 8, &off, &len) == RFS_NV_DENY_UNKNOWN_ITEM
+ok: rfs_nv_provision_policy(220u, true, true, 16u, 0x12340u, "internet", 8, &off, &len) == RFS_NV_DENY_PROTECTED
+ok: rfs_nv_provision_policy(220u, false, false, 0, 0, "internet", 8, &off, &len) == RFS_NV_DENY_NO_OFFSET
+ok: rfs_nv_provision_policy(220u, false, true, 4u, 0x12340u, "internet", 8, &off, &len) == RFS_NV_DENY_LENGTH
+ok: rfs_nv_provision_policy(220u, false, true, 16u, 0x12340u, "", 0, &off, &len) == RFS_NV_DENY_BADAPN
+ok: rfs_nv_provision_policy(220u, false, true, 256u, 0x12340u, big, 128, &off, &len) == RFS_NV_DENY_BADAPN
+ok: rfs_nv_provision_policy(220u, false, true, 16u, 0x12340u, "inter\0net", 10, &off, &len) == RFS_NV_DENY_BADAPN
+
+ALL test_rfs_nv PASS
+ok: strcmp(h, "2d44b1b4d8b512c006e8dfa559eaad1a") == 0
+ok: strcmp(h, "8b558dbf8cefc62e27d58a07e9c6ef2b") == 0
+ok: efs_nv_md5_verify((const uint8_t*)"abc", 3, "8b558dbf8cefc62e27d58a07e9c6ef2b") == 0
+ok: efs_nv_md5_verify((const uint8_t*)"abc", 3, "00000000000000000000000000000000") == 1
+ok: efs_nv_md5_verify((const uint8_t*)"abc", 3, "zzz") == -1
+ok: fixture != NULL
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, vectors[i].len, vectors[i].hash) == 0
+ok: efs_nv_md5_verify(fixture, 1048576, vectors[7].hash) == 1
+ok: fd >= 0
+ok: efs_nv_write_at(fd, 0x1234u, 8u, sz, apn, true) == EFS_NV_OK
+ok: efs_nv_read_at(fd, 0x1234u, 8u, sz, back) == EFS_NV_OK
+ok: memcmp(back, "internet", 8) == 0
+ok: efs_nv_read_at(fd, 0x7fffeu, 8u, sz, back) == EFS_NV_OVERFLOW
+ok: efs_nv_write_at(fd, 0x1234u, 8u, sz, apn, false) == EFS_NV_AUTH_DENY
+ok: efs_nv_write_at(fd, 0x7ffffu, 2u, sz, apn, true) == EFS_NV_OVERFLOW
+ok: f != NULL
+ok: fwrite(data, 1, sizeof data, f) == sizeof data
+ok: efs_nv_update_checksum_sidecar(path, md5p) == EFS_NV_OK
+ok: efs_nv_md5_hex(data, sizeof data, hex) == 0
+ok: strcmp(hex, "ccc0536e0f7561ba76afd12234614dae") == 0
+ok: m != NULL
+ok: fread(stored, 1, 32, m) == 32
+ok: memcmp(stored, hex, 32) == 0
+
+ALL test_efs_nv PASS
+OES certificate bounds, unchanged input, truncation and symlink rejection: PASS
+SMS vendor golden vectors: PASS (0 failures)
+SMS codec: PASS (0 failures)
+SMS durable store: PASS (0 failures)
+SMS service durability/correlation: PASS (0 failures)
+Call vendor vectors/parser: PASS (0 failures)
+Call service correlation/lifecycle: PASS (0 failures)
+build+test OK

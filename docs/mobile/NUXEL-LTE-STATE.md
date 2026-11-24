@@ -15,7 +15,7 @@ but PS registration was NOT_REGISTERED, CS registration DENIED, and `rmnet0`
 DOWN with zero traffic. One normal native session-start retry failed at
 `PS_REGIST_VERIFY`; no new internet acceptance succeeded.
 
-The deployed CP loader is the pre-NV implementation, while Astra's verified
+The final native `RadioState` property is also `unknown`; normal radio-power/network-selection readiness is not established by CP ONLINE. The deployed CP loader is the pre-NV implementation, while Astra's verified
 NV-capable loader remains in the Round43 recovery directory. This mismatch is
 proven by executable hashes. It is a leading recovery issue, **not proof of the
 cause of current registration failure**: this pass did not reset CP to compare
@@ -127,7 +127,7 @@ The normative wire details and vectors are in `docs/S5000AP-IPC41-DATA.md` and
 | SIM | `fmt_rx_sim_ready()` and `method_get_sim_state()` use CP SEC_PIN_STATUS. Board `ds_detect` is not card readiness. `SimPinRequired` currently returns false without a complete lock-state implementation; do not interpret that alone as ready. |
 | RAT | `fmt_rx_rat()` vendor table, `fmt_rx_rat_name()`. Wire 33 -> LTE, wire 4 -> UMTS. Current UMTS response does not establish registration. |
 | Preferred mode | `fmt_tx_set_preferred_net_type()`: Android mode 9 -> wire mask 11 (LTE/WCDMA/GSM auto); mode 11 -> mask 8 (LTE-only). Installed session uses auto. Preserve telephony compatibility. |
-| GEN validation | `fmt_rx_gen()`, `ds_expect()`, `ds_gen_response()`: exact five-byte original-command/result response, complete little-endian 0x8000 success. Radiod adds request/ack correlation. |
+| GEN validation | `fmt_rx_gen()`, `ds_expect()`, `ds_gen_response()`: exact five-byte original-command/result response, complete little-endian 0x8000 success. Data gating matches the expected origin tuple/phase; the legacy `resolve_pending()` explicitly does not match ACK sequence. SMS/call services do sequence matching separately. Stale data responses across rapid resets still require work. |
 | Optional mobile-data command | Rejection 0x8003 is explicitly unsupported, not already enabled. It cannot replace an AP policy or an actual disconnect lifecycle. |
 | Initial attach | `ds_step()`, `data_session_emit()`: verified profile, state-aware optional detach and detached readback, finite restoration after failed IA update. |
 | APN / PDP | `fmt_tx` serializers, `fmt_rx_pdp_profiles()`, `GetPdpProfiles`. Native session-start accepts profile 1 and validates APN syntax. No Settings APN editing integration yet. |

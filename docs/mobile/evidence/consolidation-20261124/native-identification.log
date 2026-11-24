@@ -1,0 +1,17 @@
+File: s5000ap-uapi/cpboot-built-not-run
+  Class:                             ELF64
+  Machine:                           AArch64
+File: s5000ap-05/nuxel-radiod
+  Class:                             ELF64
+  Machine:                           AArch64
+ce65bf9df20343325ceb491e2482fdf735a1a690e1491dd08d2d5b1423bb67df  s5000ap-uapi/cpboot-built-not-run
+6893af43cea0129234ed0adceed55517db5834d5c558f4f3e0bc4e694e76955a  s5000ap-05/nuxel-radiod
+6893af43cea0129234ed0adceed55517db5834d5c558f4f3e0bc4e694e76955a  /usr/libexec/nuxel/nuxel-radiod
+05619ace0149123f51b8f4f0f289e887ce63f78b342394ecb3e6c42e27054e39  /usr/libexec/nuxel/nuxel-cellular-link
+d963219f424113a63695c0c2aad583be7ff2cba9ccc22700107f95a1031ba630  /usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.aarch64.hw
+active
+active
+active
+active
+ONLINE
+0

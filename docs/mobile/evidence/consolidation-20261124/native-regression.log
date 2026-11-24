@@ -1,0 +1,15 @@
+tests/test_rfs_policy.c:28:13: error: conflicting types for built-in function 'jn'; expected 'double(int,  double)' [-Werror=builtin-declaration-mismatch]
+   28 | static void jn(char *dst, size_t n, const char *a, const char *b) {
+      |             ^~
+cc1: all warnings being treated as errors
+src/rfs_policy.c: In function 'rfs_policy_validate':
+src/rfs_policy.c:173:38: error: 'snprintf' output may be truncated before the last format character [-Werror=format-truncation=]
+  173 |     snprintf(rel, sizeof(rel), "%s/%s", g_root, path);
+      |                                      ^
+src/rfs_policy.c:173:5: note: 'snprintf' output 2 or more bytes (assuming 4097) into a destination of size 4096
+  173 |     snprintf(rel, sizeof(rel), "%s/%s", g_root, path);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/rfs_policy.c:216:5: error: 'strncpy' output may be truncated copying 511 bytes from a string of length 4095 [-Werror=stringop-truncation]
+  216 |     strncpy(a.path, resolved, RFS_MAX_PATH - 1);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cc1: all warnings being treated as errors
