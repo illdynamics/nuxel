@@ -9,12 +9,12 @@ dist/android/penguru-squad-debug.apk
 ```
 
 That is the complete standalone PenGuru Squad Android app (label **PenGuru
-Squad**, package `org.nuxel.penguru`, version `0.9.3-beta` / versionCode
-`903`). There is no other APK to install. The matching checksum is in
+Squad**, package `org.nuxel.penguru`, version `0.9.4-beta` / versionCode
+`904`). There is no other APK to install. The matching checksum is in
 `dist/android/SHA256SUMS`:
 
 ```
-0dbc36d14824c349351389ccd8a35ab0ebc71ae534b54530d90910029d8355f1  penguru-squad-debug.apk
+2cd79bfa2590349f4deb3dcef8d3718e16b1eba56ecfc23ad275e40a02da67bc  penguru-squad-debug.apk
 ```
 
 The APK is signed with the repository's stable debug identity, so it installs

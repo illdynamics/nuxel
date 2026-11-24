@@ -49,6 +49,8 @@ const CHATBIRD_REV = '084c0f4eee820a4e2052de264d3bb60de14555b7';
 const CODEBIRD_REV = '391fc7d103e3942a408def3e4f51c2f85d464417';
 const MINILM_REV = '1110a243fdf4706b3f48f1d95db1a4f5529b4d41';
 const WHISPER_REV = '5359861c739e955e79d9a303bcbc70fb988958b1';
+const SPARK_REV = '642071559bfc6346c2359d19dcb6be3f9dd8a05d';
+const KOKORO_REV = 'f3ff3571791e39611d31c381e3a41a3af07b4987';
 
 const MINILM_REPO = 'sentence-transformers/all-MiniLM-L6-v2';
 const MINILM_FILES = [
@@ -61,6 +63,34 @@ const MINILM_FILES = [
 ].map(([path, size, sha256, remote]) => ({
   path, size_bytes: size, sha256, url: hf(MINILM_REPO, MINILM_REV, remote),
 }));
+
+const SPARK_REPO = 'SparkAudio/Spark-TTS-0.5B';
+const SPARK_FILES = [
+  ['config.yaml', 169, '49a07abffcdfb5358e91eda83b1f4f8068f54b0a4e1ef1ef6ac22d9a312a7ae3'],
+  ['BiCodec/config.yaml', 1164, '744f4093ae2381a2eb44ea8c4a5268a8d1e581498e9bf0808c034d1b076429be'],
+  ['BiCodec/model.safetensors', 625518756, 'e9940cd48d4446e4340ced82d234bf5618350dd9f5db900ebe47a4fdb03867ec'],
+  ['LLM/config.json', 658, 'a08401458b097cceb08bc40b26ec799b685ca44cebc7fa71c56721b6634e4ae8'],
+  ['LLM/model.safetensors', 2026568968, '54825baf0a2f6076eb3c78fa1d22a95aee225f59070a8b295f8169db860eb109'],
+  ['LLM/tokenizer.json', 14129172, '9c8b057d6ca205a429cc3428b9fc815f0d6ee1d53106dd5e5b129ef9db2ff057'],
+  ['LLM/tokenizer_config.json', 2579652, 'd4b4dff03ac7e25aa2873a429b80bf255b27a1aec2e6a9879bbbed113dbb7cf8'],
+  ['LLM/vocab.json', 2776833, 'ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910'],
+  ['LLM/merges.txt', 1671853, '8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5'],
+  ['LLM/added_tokens.json', 508522, '3b2b3e1c3fd4e50a340e85e9b76c26ebc2bab0bf72f4c5bb88d085e3929930ac'],
+  ['LLM/special_tokens_map.json', 613, '76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd'],
+  ['wav2vec2-large-xlsr-53/config.json', 1768, '48576e4a1b0f02c7770f57e236747169459db9a8b9a529bbd7a58bbbf52c45b5'],
+  ['wav2vec2-large-xlsr-53/preprocessor_config.json', 212, 'a2254a5b58f72cd4de3632f8eee64f3f098b7c1402128d2f419e7d00ae13e335'],
+  ['wav2vec2-large-xlsr-53/pytorch_model.bin', 1269737156, '314340227371a608f71adcd5f0de5933824fe77e55822aa4b24dba9c1c364dcb'],
+].map(([path, size, sha256]) => ({path, size_bytes: size, sha256,
+  url: hf(SPARK_REPO, SPARK_REV, path)}));
+
+const KOKORO_REPO = 'hexgrad/Kokoro-82M';
+const KOKORO_FILES = [
+  ['config.json', 2351, '5abb01e2403b072bf03d04fde160443e209d7a0dad49a423be15196b9b43c17f'],
+  ['kokoro-v1_0.pth', 327212226, '496dba118d1a58f5f3db2efc88dbdc216e0483fc89fe6e47ee1f2c53f18ad1e4'],
+  ['voices/af_heart.pt', 523425, '0ab5709b8ffab19bfd849cd11d98f75b60af7733253ad0d67b12382a102cb4ff'],
+  ['voices/am_michael.pt', 523435, '9a443b79a4b22489a5b0ab7c651a0bcd1a30bef675c28333f06971abbd47bd37'],
+].map(([path, size, sha256]) => ({path, size_bytes: size, sha256,
+  url: hf(KOKORO_REPO, KOKORO_REV, path)}));
 
 const MODELS = [
   {
@@ -169,6 +199,54 @@ const MODELS = [
       download_allowed: true,
       download_reason: 'Upstream Whisper tiny.en model, pinned revision.',
       detail: 'Optional offline speech model for a whisper.cpp runtime. Android speech recognition works without it.',
+    }],
+  },
+  {
+    model_id: 'spark-tts',
+    name: 'Spark-TTS · 0.5B talkback voice',
+    role: 'talkback_voice',
+    variants: [{
+      variant_id: 'spark-tts-0.5b',
+      format: 'TTS_TORCH',
+      quantization: 'FP32 · BiCodec + LLM + wav2vec2',
+      architecture: 'spark-tts',
+      size_bytes: SPARK_FILES.reduce((sum, file) => sum + file.size_bytes, 0),
+      engine: 'spark-tts',
+      source_repo: SPARK_REPO,
+      source_revision: SPARK_REV,
+      source_url: hf(SPARK_REPO, SPARK_REV, 'LLM/model.safetensors'),
+      files: SPARK_FILES,
+      license: {
+        spdx: 'CC-BY-NC-SA-4.0',
+        notice: 'SparkAudio/Spark-TTS-0.5B is licensed CC-BY-NC-SA-4.0 (non-commercial, share-alike). Review the upstream card before use. PenGuru downloads the pinned upstream files directly; the APK does not bundle them.',
+      },
+      download_allowed: true,
+      download_reason: 'Pinned upstream Spark-TTS download for the neural talkback runtime.',
+      detail: 'Neural talkback voice package. Android TextToSpeech is active immediately; these files are staged for the on-device Spark-TTS runtime.',
+    }],
+  },
+  {
+    model_id: 'kokoro-tts',
+    name: 'Kokoro · 82M talkback voice',
+    role: 'talkback_voice',
+    variants: [{
+      variant_id: 'kokoro-82m',
+      format: 'TTS_TORCH',
+      quantization: 'FP32 · 82M + voice embeddings',
+      architecture: 'kokoro',
+      size_bytes: KOKORO_FILES.reduce((sum, file) => sum + file.size_bytes, 0),
+      engine: 'kokoro-tts',
+      source_repo: KOKORO_REPO,
+      source_revision: KOKORO_REV,
+      source_url: hf(KOKORO_REPO, KOKORO_REV, 'kokoro-v1_0.pth'),
+      files: KOKORO_FILES,
+      license: {
+        spdx: 'Apache-2.0',
+        notice: 'hexgrad/Kokoro-82M is Apache-2.0. Voice embeddings are pinned by revision and SHA-256.',
+      },
+      download_allowed: true,
+      download_reason: 'Pinned upstream Kokoro-82M download for the neural talkback runtime.',
+      detail: 'Lightweight neural talkback voice package. Android TextToSpeech is active immediately; these files are staged for the on-device Kokoro runtime.',
     }],
   },
 ];

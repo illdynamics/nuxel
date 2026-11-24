@@ -33,6 +33,25 @@
     <p class="hint">Runs on this phone. No Nuxel server, API URL or token is required. Voice transcripts are sent automatically. Generated code is never run automatically.</p>
     <div id="messages" aria-live="polite"></div>
     <form id="compose">
+      <div class="voice-row">
+        <button id="mic" type="button" class="mic-button" aria-pressed="false"
+                aria-label="Record a request" title="Record a request">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2Z"/>
+          </svg>
+        </button>
+        <span id="mic-status" class="mic-status" role="status">Tap the mic to record a request; tap it again to send.</span>
+        <label class="toggle"><input id="talkback-toggle" type="checkbox"> Talkback</label>
+        <label class="compact">Auto-send after silence
+          <select id="convo-silence">
+            <option value="0">Off · tap mic again</option>
+            <option value="1500">1.5 s</option>
+            <option value="2500">2.5 s</option>
+            <option value="4000">4 s</option>
+            <option value="7000">7 s</option>
+          </select>
+        </label>
+      </div>
       <label for="prompt">Message</label>
       <textarea id="prompt" rows="4" maxlength="16000" placeholder="Ask a question, explain some code, or check the battery…" required></textarea>
       <div class="controls">
@@ -97,7 +116,32 @@
       <button id="voice-stop" type="button" disabled>Stop microphone</button>
     </div>
     <p id="voice-status" role="status">Microphone closed</p>
-    <p class="hint">Foreground dictation stops when you hide the app or turn PenGuru off. Speech never authorizes privileged actions.</p>
+    <label>Auto-send after silence
+      <select id="voice-silence">
+        <option value="0">Off · tap the mic again to send</option>
+        <option value="1500">1.5 seconds</option>
+        <option value="2500">2.5 seconds</option>
+        <option value="4000">4 seconds</option>
+        <option value="7000">7 seconds</option>
+      </select>
+    </label>
+    <p class="hint">With auto-send off, tap the conversation mic to start and tap it again to send. The same setting is available on the conversation page. Foreground dictation stops when you hide the app or turn PenGuru off. Speech never authorizes privileged actions.</p>
+
+    <h3>Talkback · spoken answers</h3>
+    <p class="hint">Talkback reads PenGuru's answers aloud using an installed Android TextToSpeech engine. It works immediately with the phone's system voices. Spark-TTS and Kokoro voice packages are in the Model library as pinned, verified downloads for the on-device neural talkback runtime.</p>
+    <label class="toggle"><input id="talkback-enabled" type="checkbox"> Read PenGuru answers aloud</label>
+    <label>Android talkback engine
+      <select id="talkback-engine"><option value="">System default engine</option></select>
+    </label>
+    <div class="controls">
+      <label>Speech rate<input id="talkback-rate" type="range" min="0.5" max="2" step="0.1" value="1"></label>
+      <label>Pitch<input id="talkback-pitch" type="range" min="0.5" max="2" step="0.1" value="1"></label>
+    </div>
+    <div class="controls">
+      <button id="talkback-test" type="button">Test talkback</button>
+      <button id="talkback-stop" type="button">Stop talking</button>
+    </div>
+    <p id="talkback-status" role="status">Checking the Android talkback engine…</p>
 
     <h3>SonarBird background listening</h3>
     <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> followed by a question and it is sent to the conversation automatically. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — the battery exemption below prevents that.</p>

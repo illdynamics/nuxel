@@ -2,9 +2,11 @@ import {voiceControls} from './voice.js';
 import {bridge} from '../../nuxel-common/bridge.js';
 import {modelLibrary} from './model-library.js';
 import {createLocalEngine} from './local-engine.js';
+import {talkbackControls} from './talkback.js';
 
 const $ = id => document.getElementById(id);
 let enabled = false, request = null, lastOutput = '', currentReply = null;
+let spokenRequest = '';
 const API_DEFAULT = 'http://127.0.0.1:8080/api/v1';
 const nativeHost = typeof window !== 'undefined' ? window.NuxelAndroid : null;
 const onAndroid = !!(nativeHost && typeof nativeHost.isStandalone === 'function' && nativeHost.isStandalone());
@@ -128,6 +130,8 @@ $('refresh-storage').onclick = () => {
 
 const library = modelLibrary($('cards'), call);
 const voice = voiceControls(call, () => enabled && !request, text => autoSendText(text));
+const talkback = talkbackControls();
+window.addEventListener('penguru:transcript-ready', () => page('chat'));
 
 async function call(op, params = {}) {
   if (engineMode === 'local') {
@@ -168,6 +172,7 @@ function message(role, text) {
   const el = document.createElement('article'); el.className = 'message ' + role;
   const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = role === 'user' ? 'You' : 'PenGuru';
   const pre = document.createElement('pre'); pre.textContent = text; el.append(meta, pre); $('messages').append(el);
+  try { el.scrollIntoView({block: 'end', behavior: 'smooth'}); } catch (error) { /* older WebView */ }
   return {meta, pre};
 }
 
@@ -250,7 +255,16 @@ $('refresh').onclick=async()=>{try{$('details').textContent=JSON.stringify(await
 
 let polling=false;
 setInterval(async()=>{if(polling)return;polling=true;try{
-  if(request){const r=(await call('get',{request_id:request})).request;currentReply.meta.textContent=[r.route,r.reason_code,r.confidence!=null?Math.round(r.confidence*100)+'%':'',r.engine,r.variant_id,r.revision].filter(Boolean).join(' · ');lastOutput=r.output||'';currentReply.pre.textContent=r.output||r.error||(r.status==='awaiting_user'?'Please clarify, or choose CHAT or CODE and send again.':r.status);if(['done','error','cancelled','awaiting_user'].includes(r.status)){request=null;$('cancel').disabled=true;$('send').disabled=!enabled;}}
+  if(request){
+    const owner=request;
+    const r=(await call('get',{request_id:owner})).request;
+    currentReply.meta.textContent=[r.route,r.reason_code,r.confidence!=null?Math.round(r.confidence*100)+'%':'',r.engine,r.variant_id,r.revision].filter(Boolean).join(' · ');
+    lastOutput=r.output||'';
+    currentReply.pre.textContent=r.output||r.error||(r.status==='awaiting_user'?'Please clarify, or choose CHAT or CODE and send again.':r.status);
+    // Talkback reads each completed answer once, even if polling sees it again.
+    if(r.status==='done'&&r.output&&spokenRequest!==owner){spokenRequest=owner;talkback.speak(r.output);}
+    if(['done','error','cancelled','awaiting_user'].includes(r.status)){request=null;$('cancel').disabled=true;$('send').disabled=!enabled;}
+  }
   if(engineMode==='local'&&runtimeJobs.size){for(const [jobId,view] of runtimeJobs){try{const r=await call('runtime_status',{job_id:jobId,id:view.id});const job=r.job;view.progress.value=job.progress||0;view.status.textContent=`${job.state} · ${Math.round((job.progress||0)*100)}% · ${job.detail||''}`;if(['ready','error','cancelled','quarantined'].includes(job.state)){runtimeJobs.delete(jobId);if(job.state==='ready'){view.button.textContent='Installed';view.button.disabled=true;}else{view.button.disabled=false;}}}catch(e){view.status.textContent=e.message;runtimeJobs.delete(jobId);}}}
 }catch(e){notice(e.message);}finally{polling=false;}},1000);
 
@@ -362,6 +376,73 @@ if ($('wake-service-start')) {
   updateWakePanel();
   updatePermissionPanel();
 }
+
+/* --------------------------------------------------------------- talkback */
+
+function syncTalkbackControls() {
+  const enabledBox = $('talkback-toggle');
+  const settingsBox = $('talkback-enabled');
+  const on = talkback.state.enabled;
+  if (enabledBox) enabledBox.checked = on;
+  if (settingsBox) settingsBox.checked = on;
+  if ($('talkback-status')) {
+    const status = talkback.status();
+    let text;
+    if (status.browser) text = 'Browser speech synthesis talkback is available.';
+    else if (status.ready) text = 'Android talkback ready · ' + (status.engine || 'system default engine');
+    else if (status.available) text = 'Android talkback is starting…';
+    else text = 'No Android talkback engine found. Install one in Android Settings → Accessibility → Text-to-speech.';
+    if (status.error) text += ' · ' + status.error;
+    if (status.speaking) text += ' · speaking';
+    $('talkback-status').textContent = text;
+  }
+}
+
+function populateTalkbackEngines() {
+  const select = $('talkback-engine');
+  if (!select) return;
+  const current = talkback.state.engine;
+  const engines = talkback.engines();
+  const choices = engines.length ? engines : [{name: '', label: 'System default engine'}];
+  select.replaceChildren();
+  for (const engine of choices) {
+    const option = document.createElement('option');
+    option.value = engine.name || '';
+    option.textContent = engine.label || engine.name || 'System default engine';
+    select.append(option);
+  }
+  select.value = current;
+  select.onchange = () => talkback.setEngine(select.value);
+}
+
+talkback.onChange(syncTalkbackControls);
+for (const id of ['talkback-toggle', 'talkback-enabled']) {
+  if ($(id)) $(id).onchange = () => talkback.setEnabled($(id).checked);
+}
+if ($('talkback-rate')) {
+  $('talkback-rate').value = String(talkback.state.rate);
+  $('talkback-rate').oninput = () => talkback.setRate($('talkback-rate').value);
+}
+if ($('talkback-pitch')) {
+  $('talkback-pitch').value = String(talkback.state.pitch);
+  $('talkback-pitch').oninput = () => talkback.setPitch($('talkback-pitch').value);
+}
+if ($('talkback-test')) {
+  $('talkback-test').onclick = () => {
+    if (!talkback.state.enabled) talkback.setEnabled(true);
+    talkback.speak('PenGuru talkback is ready. This is what an answer sounds like.');
+  };
+}
+if ($('talkback-stop')) $('talkback-stop').onclick = () => talkback.stop();
+window.__nuxelTalkbackState = state => {
+  if (state === 'speaking' && $('talkback-status')) $('talkback-status').textContent = 'Talkback is speaking…';
+  else syncTalkbackControls();
+};
+populateTalkbackEngines();
+syncTalkbackControls();
+setInterval(syncTalkbackControls, 2500);
+setTimeout(populateTalkbackEngines, 1500);
+setTimeout(populateTalkbackEngines, 5000);
 
 applyEngineMode();
 page(location.hash==='#models'?'models':location.hash==='#settings'?'settings':'chat');

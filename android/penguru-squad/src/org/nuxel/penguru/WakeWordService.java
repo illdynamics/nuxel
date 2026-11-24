@@ -58,7 +58,7 @@ public class WakeWordService extends Service {
     private static final int NOTIFICATION_ID = 8801;
     private static final long SESSION_DEADLINE_MS = 12000L;
     private static final long COMMAND_FOLLOW_UP_MS = 20000L;
-    private static final long MIN_SESSION_GAP_MS = 650L;
+    private static final long MIN_SESSION_GAP_MS = 1000L;
     private static final Pattern WAKE = Pattern.compile(
             "\\bpen[\\s-]?guru\\b[\\s,.:;!?\\-]*(.*)$",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
@@ -88,6 +88,8 @@ public class WakeWordService extends Service {
     private String lastDispatch = "";
     private String speechLanguage = "";
     private String lastError = "";
+    private boolean stayingQuiet;
+    private boolean stoppingForHandoff;
     private String lastHeard = "";
     private int consecutiveErrors;
     private int session;
@@ -194,7 +196,8 @@ public class WakeWordService extends Service {
                     == PackageManager.PERMISSION_GRANTED;
             out.put("notifications", notifications);
             out.put("awaiting_command", service != null && service.awaitingCommand);
-            out.put("last_error", service == null ? "" : service.lastError);
+            out.put("handoff", service != null && service.stoppingForHandoff);
+            out.put("last_error", service == null || service.stayingQuiet ? "" : service.lastError);
             out.put("last_heard", service == null ? "" : service.lastHeard);
             out.put("sessions", service == null ? 0 : service.session);
         } catch (Exception error) {
@@ -374,7 +377,9 @@ public class WakeWordService extends Service {
         Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? new Notification.Builder(this, CHANNEL_ID)
                 : new Notification.Builder(this);
-        builder.setContentTitle(appForeground ? "SonarBird paused" : "SonarBird is listening")
+        builder.setContentTitle(appForeground
+                ? "SonarBird paused"
+                : paused ? "PenGuru request ready" : "SonarBird is listening")
                 .setContentText(text)
                 .setSmallIcon(R.drawable.ic_stat_penguru)
                 .setOngoing(true)
@@ -408,6 +413,7 @@ public class WakeWordService extends Service {
 
     private void beginListening() {
         restartQueued = false;
+        stoppingForHandoff = false;
         if (destroyed || paused || appForeground) {
             return;
         }
@@ -448,6 +454,7 @@ public class WakeWordService extends Service {
         try {
             recognizer.startListening(intent);
             lastError = "";
+            stayingQuiet = false;
         } catch (RuntimeException error) {
             listening = false;
             lastError = "Speech start failed: " + error.getMessage();
@@ -566,6 +573,17 @@ public class WakeWordService extends Service {
         }
         lastDispatch = text;
         lastDispatchAt = now;
+        // The sentence has been heard and finalised. Close the microphone at
+        // once instead of starting another wake session: the owner asked for
+        // listening to stop when the sentence stops. MainActivity takes over,
+        // sends the transcript and shows the conversation page. Background
+        // listening resumes only after the app leaves the screen.
+        paused = true;
+        restartQueued = false;
+        awaitingCommand = false;
+        lastError = "";
+        stoppingForHandoff = true;
+        stopRecognizer();
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                 .putString(PREF_PENDING, text)
                 .putLong(PREF_PENDING_AT, now)
@@ -584,6 +602,7 @@ public class WakeWordService extends Service {
             // Android 10+ may block background activity launches. The ongoing
             // notification's content intent carries the command instead.
             Log.w(TAG, "Background activity launch blocked: " + error);
+            updateNotification("Heard: " + shorten(text) + " · tap to send");
         }
     }
 
@@ -670,12 +689,17 @@ public class WakeWordService extends Service {
                 scheduleNext(awaitingCommand ? 300L : 650L);
             } else if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY
                     || error == SpeechRecognizer.ERROR_CLIENT) {
-                // The previous recognizer is still releasing, or another app
-                // owns the speech service. Back off instead of hammering it.
+                // This is the normal hand-off window while Android tears down
+                // the previous recognizer. It is not an owner-facing fault and
+                // must not show "speech service busy" in the ongoing
+                // notification. Keep the row calm and retry with backoff.
+                lastError = "";
+                stayingQuiet = true;
                 awaitingCommand = keepCommand;
-                long delay = Math.min(8000L, 1200L * consecutiveErrors);
-                updateNotification("Android speech service busy · retrying in "
-                        + Math.round(delay / 1000.0) + "s");
+                long delay = Math.min(12000L, 900L * consecutiveErrors);
+                updateNotification(awaitingCommand
+                        ? "Listening for your message…"
+                        : "Listening for “Penguru” · say it, then your message");
                 scheduleNext(delay);
             } else {
                 awaitingCommand = keepCommand;
@@ -694,6 +718,8 @@ public class WakeWordService extends Service {
                     : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = matches == null || matches.isEmpty() ? "" : matches.get(0);
             stopRecognizer();
+            lastError = "";
+            stayingQuiet = false;
             handleText(text);
         }
     }

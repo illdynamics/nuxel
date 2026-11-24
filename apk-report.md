@@ -13,6 +13,49 @@
 
 ---
 
+## v0.9.4-beta — talkback, conversation mic and silent wake hand-off
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `2cd79bfa2590349f4deb3dcef8d3718e16b1eba56ecfc23ad275e40a02da67bc`
+- **Version:** `0.9.4-beta` (`versionCode=904`)
+- **Size:** 1,780,040 bytes
+- Added a native Android `TextToSpeech` talkback bridge (`ttsStatus`,
+  `ttsEngines`, `ttsConfigure`, `ttsSpeak`, `ttsStop`) and the manifest
+  `TTS_SERVICE` query. Conversation now has a **Talkback** toggle, and Settings
+  has engine, rate, pitch, Test and Stop controls. Completed assistant answers
+  are read aloud through an installed engine. On the API 35 emulator the bridge
+  reported **Android talkback ready · com.google.android.tts**, and a completed
+  answer produced a real Google TTS synthesis request.
+- Added pinned talkback voice packages to the Model library:
+  **Spark-TTS · 0.5B** (14 files, 3,943,495,496 bytes,
+  `SparkAudio/Spark-TTS-0.5B@642071559bfc6346c2359d19dcb6be3f9dd8a05d`,
+  CC-BY-NC-SA-4.0) and **Kokoro · 82M** (4 files, 328,261,437 bytes,
+  `hexgrad/Kokoro-82M@f3ff3571791e39611d31c381e3a41a3af07b4987`,
+  Apache-2.0). Every file has a pinned URL, size and SHA-256; the APK does not
+  bundle the weights.
+- Added a Conversation mic icon. Tap once to record an ad-hoc request, tap
+  again to finalise and send, or auto-send after a configurable silence window
+  (off, 1.5 s, 2.5 s, 4 s, 7 s). The same select is in Settings. `voice.js`
+  distinguishes `finishSpeechRecognition()` (deliver the hypothesis) from
+  `stopSpeechRecognition()` (discard), and preserves a transcript in the
+  composer when auto-send is off. The emulator verified both the 2.5-second
+  auto-send session and the manual “tap the mic again” path; the second tap
+  left `No active record clients`.
+- SonarBird no longer writes **“Android speech service busy”** to the ongoing
+  notification. Busy/client errors are treated as a normal hand-off: the
+  recognizer is released, the notification stays on “Listening for Penguru…”,
+  and a fresh session is scheduled with backoff. The notification title is
+  **SonarBird paused** while the app is open, **PenGuru request ready** after a
+  command is captured, and **SonarBird is listening** otherwise.
+- When “Penguru” + the sentence are heard, the service closes the recognizer
+  immediately, persists the command and launches PenGuru. A simulated
+  `penguru_command` intent on the emulator auto-navigated to Conversation,
+  showed **“Heard ‘check the battery’ · sent automatically”**, added the user
+  message and rendered the SYSTEM diagnostics reply.
+- `versionName`/`versionCode` and the PWA `pwa_version` bumped to
+  `0.9.4-beta` / `904`.
+
 ## v0.9.3-beta — SonarBird and in-app microphone hand-off
 
 - **Date:** 2026-11-24

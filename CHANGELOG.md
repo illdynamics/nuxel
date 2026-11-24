@@ -4,6 +4,22 @@ All notable changes to the Nuxel Phone OS repository are documented here.
 
 ## [Unreleased]
 
+- PenGuru Android 0.9.4-beta: add native **Talkback** (Android TextToSpeech)
+  with a Conversation toggle, Settings engine/rate/pitch/test controls, and
+  spoken answers for completed assistant replies. Add pinned **Spark-TTS 0.5B**
+  (CC-BY-NC-SA-4.0) and **Kokoro-82M** (Apache-2.0) talkback voice packages to
+  the on-device Model library with verified SHA-256 downloads.
+- Add a Conversation mic toggle for ad-hoc requests: tap to record, tap again
+  to finish and send, or auto-send after a configurable silence window (off,
+  1.5 s, 2.5 s, 4 s, 7 s). The same control is in Settings. Manual dictation
+  asks the recognizer for a long silence window and the second tap finalises
+  the hypothesis instead of cancelling it.
+- Fix the persistent SonarBird notification so it never reports
+  `Android speech service busy`; busy/client hand-offs are silent with backoff.
+  When “Penguru” and the sentence are heard, the service closes its recognizer
+  immediately, stores the command, opens PenGuru, sends the transcript and
+  switches to the Conversation page. Background listening resumes only after
+  the app leaves the screen.
 - PenGuru Android 0.9.3-beta: make the in-app microphone and the persistent
   SonarBird listener take turns instead of competing. SonarBird now releases its
   recognizer when PenGuru becomes visible and stays paused while the app is

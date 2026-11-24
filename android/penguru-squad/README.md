@@ -85,11 +85,12 @@ token, launcher or root access.
 | Feature | How it works |
 |---|---|
 | Conversation | Local routing plus a built-in responder (device status, code outlines, clarifying questions, chat). |
-| Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and Voice tiny.en packages with **Download to this phone**. |
+| Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and Voice tiny.en packages, plus the Spark-TTS 0.5B and Kokoro-82M talkback voice packages, with **Download to this phone**. |
 | Downloads | `DownloadService` (a `dataSync` foreground service) streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. It holds a partial wake lock and Wi-Fi lock so locking the screen does not pause or interrupt the transfer. |
 | Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip. An interrupted job resumes from the persisted spec after a rebuild or process restart. |
-| Voice | Android `SpeechRecognizer`; the background listener stays paused while PenGuru is visible, retries busy/client sessions six times with a fresh recognizer, falls back to the phone's normal recognizer and en-US when a language pack is missing, has a native 16-second watchdog, and auto-sends the transcript. The microphone is destroyed after every session. |
-| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru” alone and the next sentence is sent, or say “Penguru <question>” in one go. The service releases the recognizer when the app is opened (notification: “SonarBird paused”) and resumes after the app leaves the screen, so the in-app microphone never competes with it. Each recognizer session has its own token and error backoff, so stale callbacks no longer create competing sessions. Android 10+ may require tapping the notification to bring the conversation forward; the command is still sent automatically when the app opens. Boot/package-replaced receivers re-arm an enabled listener. |
+| Voice | Android `SpeechRecognizer`. The Conversation page has a mic toggle: tap to record an ad-hoc request, tap again to finish and send. Auto-send after silence is configurable (off, 1.5 s, 2.5 s, 4 s or 7 s) and the same control lives in Settings. The background listener stays paused while PenGuru is visible, retries busy/client sessions with a fresh recognizer, falls back to the phone's normal recognizer and en-US when a language pack is missing, and has native watchdogs. The microphone is destroyed after every session. |
+| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru <question>” in one go, or say “Penguru” alone and then the next sentence. As soon as the sentence ends, the service closes its recognizer, stores the command, opens PenGuru, sends the transcript and switches to the Conversation page; background listening resumes only after the app leaves the screen. The ongoing notification stays calm (“Listening for Penguru…”, “SonarBird paused” or “PenGuru request ready”) and never reports a transient `speech service busy` hand-off. Each recognizer session has its own token and error backoff, so stale callbacks no longer create competing sessions. Boot/package-replaced receivers re-arm an enabled listener. |
+| Talkback | **Conversation → Talkback** and **Settings → Talkback · spoken answers** read each completed assistant answer aloud through an installed Android TextToSpeech engine. The engine, speech rate and pitch are configurable; the Test button speaks a sample. No download is needed. The pinned Spark-TTS and Kokoro packages are staged for the future on-device neural voice runtime. |
 | Permissions | On launch the app requests microphone and notification access, restores a previously enabled listener, and prompts once a week for the battery-optimization exemption and All files access until granted. |
 | Reinstall reuse | With **All files access**, models and runtimes live in `Download/PenGuru` and are discovered after an uninstall/reinstall by validating each file and byte length. Without it, `Android/media/<package>` survives APK updates but not a full uninstall. |
 | Diagnostics | Battery, storage, Android version, CPU ABIs, model/runtime paths. |
@@ -140,7 +141,7 @@ bridge must allow the APK origin for CORS; the current
 
 ## What is bundled
 
-- `pwa/nuxel-apps/penguru/index.html`, `penguru.js`, `penguru.css`, `voice.js`
+- `pwa/nuxel-apps/penguru/index.html`, `penguru.js`, `penguru.css`, `voice.js`, `talkback.js`
 - `pwa/nuxel-apps/penguru/local-engine.js` (standalone RPC engine)
 - `pwa/nuxel-apps/penguru/model-library.js`
 - `pwa/nuxel-apps/penguru/manifest.json` and `app.json`
@@ -156,8 +157,8 @@ bridge must allow the APK origin for CORS; the current
   engine: status, model cards, model download spec (pinned URL/SHA-256),
   download-status → installed transition, runtime install spec, SYSTEM and CODE
   replies, and diagnostics.
-- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=902`,
-  `versionName=0.9.3-beta`.
+- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=904`,
+  `versionName=0.9.4-beta`.
 - API 35 emulator checks: launch-time microphone/notification prompts, the
   battery dialog, the All files access dialog, a screen-off download that
   completed in the `dataSync` foreground service, and a full
@@ -179,7 +180,21 @@ background service starts as `isForeground=true` with
 around in-app dictation, and stops cleanly from the UI and notification action.
 The in-app “Listen for Penguru” path now waits for that pause to complete and
 retries a busy recognizer instead of surfacing `ERROR_RECOGNIZER_BUSY`.
-Audio-in acceptance on a physical phone is still recommended.
+
+The v0.9.4-beta emulator run also verified: the native TextToSpeech bridge
+reports **Android talkback ready · com.google.android.tts**; the conversation
+Talkback toggle persists and a completed answer issues a real Google TTS
+synthesis request; the mic toggle starts a 2.5-second auto-send session and a
+manual session that waits for the second tap; choosing **Off · tap mic again**
+persists `penguru-voice-autosend=0`; the manual second tap finalises and
+releases the microphone (`No active record clients`); the Model library lists
+**Spark-TTS · 0.5B talkback voice** (3.94 GB, CC-BY-NC-SA-4.0) and
+**Kokoro · 82M talkback voice** (0.33 GB, Apache-2.0) with pinned hashes; a
+simulated `penguru_command` intent auto-navigated to Conversation and sent the
+transcript; and the SonarBird notification showed only **SonarBird paused** /
+**SonarBird is listening** across foreground/background transitions, with no
+`busy` text. Audio-in and wake-phrase acceptance on a physical phone is still
+recommended.
 
 ## Security and limitations
 

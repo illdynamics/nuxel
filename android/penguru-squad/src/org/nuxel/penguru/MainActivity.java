@@ -26,6 +26,8 @@ import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -94,6 +96,10 @@ public class MainActivity extends Activity {
     private static final String UI_PREFS = "penguru_ui";
     private static final String PREF_BATTERY_PROMPT_AT = "battery_prompt_at";
     private static final String PREF_STORAGE_PROMPT_AT = "storage_prompt_at";
+    private static final String PREF_TTS_ENGINE = "tts_engine";
+    private static final String PREF_TTS_RATE = "tts_rate";
+    private static final String PREF_TTS_PITCH = "tts_pitch";
+    private static final String PREF_TTS_LANGUAGE = "tts_language";
     private static final String MODELS_DIR_NAME = "Models";
     private static final String RUNTIMES_DIR_NAME = "Runtimes";
 
@@ -112,6 +118,19 @@ public class MainActivity extends Activity {
     private int speechRetryCount;
     private boolean speechPreferOffline = true;
     private String speechLanguage = "";
+    // 0 = manual dictation; > 0 = finish automatically after this much silence.
+    private int speechSilenceMs;
+    private int pendingSpeechSilence;
+    // Talkback (Android TextToSpeech). The engine is created lazily so a phone
+    // without any TTS engine never blocks the app from starting.
+    private TextToSpeech tts;
+    private volatile boolean ttsReady;
+    private volatile String ttsLastError = "";
+    private volatile String ttsActiveState = "idle";
+    private String ttsLanguage = "";
+    private float ttsRate = 1.0f;
+    private float ttsPitch = 1.0f;
+    private String pendingTtsText = "";
     private boolean pageReady;
     private boolean startupChecked;
     private boolean batteryDialogShowing;
@@ -213,6 +232,7 @@ public class MainActivity extends Activity {
         speechRunning = false;
         pendingSpeech = false;
         releaseSpeechRecognizer();
+        stopTalkback();
         WakeWordService.setAppForeground(false);
         if (getSharedPreferences(WakeWordService.PREFS, MODE_PRIVATE)
                 .getBoolean(WakeWordService.PREF_ENABLED, false)) {
@@ -291,6 +311,7 @@ public class MainActivity extends Activity {
             speechRecognizer.destroy();
             speechRecognizer = null;
         }
+        shutdownTalkback();
         if (webView != null) {
             webView.destroy();
             webView = null;
@@ -331,7 +352,7 @@ public class MainActivity extends Activity {
             if (!granted) {
                 deliverSpeech("", wake, "microphone_permission_denied", speechToken);
             } else if (shouldStart) {
-                beginSpeech(wake);
+                beginSpeech(wake, pendingSpeechSilence);
             }
             return;
         }
@@ -837,6 +858,172 @@ public class MainActivity extends Activity {
             });
         }
 
+        /**
+         * Extended dictation start. mode is "dictate", "wake" or "followup".
+         * silenceMs > 0 asks Android (and our watchdog) to finish and return
+         * the transcript after that much silence; 0 keeps the microphone open
+         * until the owner taps the mic again or the hard deadline expires.
+         */
+        @JavascriptInterface
+        public boolean startSpeechRecognitionEx(final String mode, final int silenceMs) {
+            if (!speechAvailable()) {
+                return false;
+            }
+            final boolean wake = !"dictate".equals(mode);
+            final int silence = Math.max(0, Math.min(silenceMs, 120000));
+            runOnUiThread(() -> {
+                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    pendingSpeech = true;
+                    pendingSpeechWake = wake;
+                    pendingSpeechSilence = silence;
+                    requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
+                    return;
+                }
+                beginSpeech(wake, silence);
+            });
+            return true;
+        }
+
+        /**
+         * Finalize the current session and deliver its last hypothesis. This
+         * is the "tap the mic again to send" path; unlike
+         * stopSpeechRecognition() it does not discard the transcript.
+         */
+        @JavascriptInterface
+        public void finishSpeechRecognition() {
+            runOnUiThread(() -> {
+                if (speechRecognizer == null || !speechRunning) {
+                    return;
+                }
+                final int token = speechToken;
+                try {
+                    speechRecognizer.stopListening();
+                } catch (RuntimeException error) {
+                    deliverSpeech("", speechWake, "speech_stop_failed", token);
+                    return;
+                }
+                // If the recognizer ignores stopListening(), release the
+                // microphone and tell the page instead of holding it forever.
+                mainHandler.postDelayed(() -> {
+                    if (token == speechToken && speechRunning) {
+                        deliverSpeech("", speechWake, "no_speech_detected", token);
+                    }
+                }, 4500L);
+            });
+        }
+
+        @JavascriptInterface
+        public String ttsStatus() {
+            runOnUiThread(MainActivity.this::ensureTalkback);
+            try {
+                JSONObject out = new JSONObject();
+                boolean available = ttsReady;
+                if (!available && tts != null) {
+                    try {
+                        available = tts.getEngines() != null && !tts.getEngines().isEmpty();
+                    } catch (RuntimeException ignored) {
+                        available = false;
+                    }
+                }
+                out.put("available", available);
+                out.put("ready", ttsReady);
+                out.put("engine", tts != null && ttsReady && tts.getDefaultEngine() != null
+                        ? tts.getDefaultEngine() : "");
+                out.put("language", ttsLanguage);
+                out.put("rate", ttsRate);
+                out.put("pitch", ttsPitch);
+                out.put("speaking", tts != null && ttsReady && tts.isSpeaking());
+                out.put("state", ttsActiveState);
+                out.put("error", ttsLastError);
+                return out.toString();
+            } catch (JSONException | RuntimeException error) {
+                return "{\"available\":false,\"ready\":false}";
+            }
+        }
+
+        @JavascriptInterface
+        public String ttsEngines() {
+            runOnUiThread(MainActivity.this::ensureTalkback);
+            JSONArray out = new JSONArray();
+            try {
+                JSONObject system = new JSONObject();
+                system.put("name", "");
+                system.put("label", "System default engine");
+                out.put(system);
+                if (tts == null) {
+                    return out.toString();
+                }
+                for (TextToSpeech.EngineInfo info : tts.getEngines()) {
+                    JSONObject entry = new JSONObject();
+                    entry.put("name", info.name);
+                    String label = info.label == null || info.label.trim().isEmpty()
+                            ? info.name : info.label;
+                    entry.put("label", label);
+                    out.put(entry);
+                }
+            } catch (JSONException | RuntimeException error) {
+                // Return the entries found so far.
+            }
+            return out.toString();
+        }
+
+        @JavascriptInterface
+        public boolean ttsConfigure(String optionsJson) {
+            try {
+                JSONObject options = new JSONObject(optionsJson == null ? "{}" : optionsJson);
+                String engine = options.optString("engine", null);
+                String language = options.optString("language", null);
+                if (options.has("rate")) {
+                    ttsRate = (float) Math.max(0.4, Math.min(2.5, options.optDouble("rate", ttsRate)));
+                }
+                if (options.has("pitch")) {
+                    ttsPitch = (float) Math.max(0.4, Math.min(2.5, options.optDouble("pitch", ttsPitch)));
+                }
+                if (language != null && !language.trim().isEmpty()) {
+                    ttsLanguage = language;
+                }
+                SharedPreferences prefs = getSharedPreferences(UI_PREFS, MODE_PRIVATE);
+                final boolean engineChanged = engine != null
+                        && !engine.equals(prefs.getString(PREF_TTS_ENGINE, ""));
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putFloat(PREF_TTS_RATE, ttsRate);
+                editor.putFloat(PREF_TTS_PITCH, ttsPitch);
+                editor.putString(PREF_TTS_LANGUAGE, ttsLanguage);
+                if (engine != null) {
+                    editor.putString(PREF_TTS_ENGINE, engine);
+                }
+                editor.apply();
+                runOnUiThread(() -> {
+                    if (engineChanged) {
+                        shutdownTalkback();
+                        ensureTalkback();
+                    } else {
+                        applyTalkbackConfig();
+                    }
+                });
+                return true;
+            } catch (JSONException | RuntimeException error) {
+                ttsLastError = String.valueOf(error.getMessage());
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public boolean ttsSpeak(String text) {
+            if (text == null || text.trim().isEmpty()) {
+                return false;
+            }
+            final String safe = text.length() > 12000 ? text.substring(0, 12000) : text;
+            runOnUiThread(() -> speakWithTalkback(safe));
+            return true;
+        }
+
+        @JavascriptInterface
+        public void ttsStop() {
+            runOnUiThread(MainActivity.this::stopTalkback);
+        }
+
         @JavascriptInterface
         public boolean startWakeWordService() {
             runOnUiThread(MainActivity.this::requestWakeStart);
@@ -1026,14 +1213,21 @@ public class MainActivity extends Activity {
     }
 
     private void beginSpeech(final boolean wake) {
+        beginSpeech(wake, 0);
+    }
+
+    private void beginSpeech(final boolean wake, final int silenceMs) {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             pendingSpeech = true;
             pendingSpeechWake = wake;
+            pendingSpeechSilence = Math.max(0, silenceMs);
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
             return;
         }
         pendingSpeech = false;
+        pendingSpeechSilence = 0;
+        speechSilenceMs = Math.max(0, silenceMs);
         // Cancel any previous foreground session immediately so its callbacks
         // cannot race the new one or surface a bogus client_error.
         final int requestToken = ++speechToken;
@@ -1065,6 +1259,7 @@ public class MainActivity extends Activity {
     }
 
     private void restartSpeech(final boolean wake, long delayMillis) {
+        final int silenceMs = speechSilenceMs;
         speechRunning = false;
         releaseSpeechRecognizer();
         final int token = ++speechToken;
@@ -1076,6 +1271,7 @@ public class MainActivity extends Activity {
             if (token != speechToken || isFinishing()) {
                 return;
             }
+            speechSilenceMs = silenceMs;
             startSpeechNow(wake);
         }, delayMillis));
     }
@@ -1086,27 +1282,47 @@ public class MainActivity extends Activity {
             return;
         }
         final int token = ++speechToken;
+        final int silenceMs = speechSilenceMs;
         speechWake = wake;
         speechRunning = true;
         speechRecognizer.setRecognitionListener(new PenGuruSpeechListener(token));
+        Intent intent = speechIntent(speechPreferOffline);
+        if (silenceMs > 0) {
+            // Let the phone's recognizer endpoint on the owner-selected silence
+            // window instead of the recognizer's short default.
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+                    (long) silenceMs);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+                    (long) silenceMs);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 900L);
+        } else if (!wake) {
+            // Manual "tap the mic again to send" dictation: ask compliant
+            // recognizers to wait a long time before deciding the sentence is
+            // over. The owner ends it with the second tap.
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 30000L);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 30000L);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 900L);
+        }
         try {
-            speechRecognizer.startListening(speechIntent(speechPreferOffline));
+            speechRecognizer.startListening(intent);
         } catch (RuntimeException error) {
             deliverSpeech("", wake, "speech_start_failed", token);
             return;
         }
         // Native hard deadline: no matter what the speech service does, the
-        // mic is cancelled and the UI is told the session ended.
+        // mic is cancelled and the UI is told the session ended. Manual
+        // dictation gets a long window because only the second mic tap ends it.
+        long hardDeadline = wake ? 16000L
+                : (silenceMs > 0 ? Math.max(16000L, silenceMs + 12000L) : 45000L);
         mainHandler.postDelayed(() -> {
             if (token != speechToken || !speechRunning) {
                 return;
             }
             deliverSpeech("", wake, "speech_timeout", token);
-        }, 16000L);
-        // Ask a dictation session to finalize after ten seconds even if the
-        // recognizer never reports end-of-speech. Wake sessions use the hard
-        // deadline because the user may still be saying the phrase.
-        if (!wake) {
+        }, hardDeadline);
+        if (!wake && silenceMs > 0) {
+            // Belt-and-braces: some recognizers ignore the silence extras.
+            // Ask for the final hypothesis shortly after the silence window.
             mainHandler.postDelayed(() -> {
                 if (token != speechToken || !speechRunning || speechRecognizer == null) {
                     return;
@@ -1116,7 +1332,7 @@ public class MainActivity extends Activity {
                 } catch (RuntimeException ignored) {
                     // already finished
                 }
-            }, 10000L);
+            }, silenceMs + 3500L);
         }
     }
 
@@ -1127,6 +1343,7 @@ public class MainActivity extends Activity {
             return;
         }
         speechRunning = false;
+        speechSilenceMs = 0;
         releaseSpeechRecognizer();
         try {
             JSONObject result = new JSONObject();
@@ -1253,6 +1470,164 @@ public class MainActivity extends Activity {
             case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: return "language_unavailable";
             default: return "speech_error_" + error;
         }
+    }
+
+    /* --------------------------------------------------------- talkback */
+
+    private void ensureTalkback() {
+        if (tts != null) {
+            return;
+        }
+        SharedPreferences prefs = getSharedPreferences(UI_PREFS, MODE_PRIVATE);
+        ttsRate = prefs.getFloat(PREF_TTS_RATE, 1.0f);
+        ttsPitch = prefs.getFloat(PREF_TTS_PITCH, 1.0f);
+        ttsLanguage = prefs.getString(PREF_TTS_LANGUAGE, "");
+        final String engine = prefs.getString(PREF_TTS_ENGINE, "");
+        TextToSpeech.OnInitListener listener = status -> {
+            if (status == TextToSpeech.SUCCESS && tts != null) {
+                ttsReady = true;
+                ttsLastError = "";
+                try {
+                    tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                        @Override public void onStart(String utteranceId) {
+                            reportTalkbackState("speaking");
+                        }
+                        @Override public void onDone(String utteranceId) {
+                            reportTalkbackState("idle");
+                        }
+                        @Override public void onError(String utteranceId) {
+                            reportTalkbackState("error");
+                        }
+                        @Override public void onError(String utteranceId, int errorCode) {
+                            ttsLastError = "tts_error_" + errorCode;
+                            reportTalkbackState("error");
+                        }
+                    });
+                } catch (RuntimeException ignored) {
+                    // Progress callbacks are optional.
+                }
+                applyTalkbackConfig();
+                String pending = pendingTtsText;
+                pendingTtsText = "";
+                if (!pending.isEmpty()) {
+                    speakWithTalkback(pending);
+                }
+            } else {
+                ttsReady = false;
+                ttsLastError = "tts_init_failed";
+                reportTalkbackState("unavailable");
+            }
+        };
+        try {
+            if (engine != null && !engine.isEmpty()) {
+                tts = new TextToSpeech(getApplicationContext(), listener, engine);
+            } else {
+                tts = new TextToSpeech(getApplicationContext(), listener);
+            }
+            ttsLastError = "";
+        } catch (RuntimeException error) {
+            tts = null;
+            ttsReady = false;
+            ttsLastError = String.valueOf(error.getMessage());
+        }
+    }
+
+    private boolean sameEngine(String requested) {
+        if (tts == null) {
+            return false;
+        }
+        try {
+            String current = tts.getDefaultEngine();
+            return requested != null && requested.equals(current);
+        } catch (RuntimeException error) {
+            return false;
+        }
+    }
+
+    private void applyTalkbackConfig() {
+        if (tts == null || !ttsReady) {
+            return;
+        }
+        try {
+            int result;
+            if (ttsLanguage != null && !ttsLanguage.isEmpty()) {
+                result = tts.setLanguage(Locale.forLanguageTag(ttsLanguage));
+            } else {
+                result = tts.setLanguage(Locale.getDefault());
+            }
+            if (result == TextToSpeech.LANG_MISSING_DATA
+                    || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                ttsLastError = "language_not_supported";
+            }
+            tts.setSpeechRate(ttsRate);
+            tts.setPitch(ttsPitch);
+        } catch (RuntimeException error) {
+            ttsLastError = String.valueOf(error.getMessage());
+        }
+    }
+
+    private void speakWithTalkback(final String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return;
+        }
+        ensureTalkback();
+        if (tts == null || !ttsReady) {
+            pendingTtsText = text;
+            return;
+        }
+        try {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "penguru-" + System.currentTimeMillis());
+            reportTalkbackState("speaking");
+        } catch (RuntimeException error) {
+            ttsLastError = String.valueOf(error.getMessage());
+            reportTalkbackState("error");
+        }
+    }
+
+    private void stopTalkback() {
+        pendingTtsText = "";
+        if (tts != null) {
+            try {
+                tts.stop();
+            } catch (RuntimeException ignored) {
+                // already stopped
+            }
+        }
+        reportTalkbackState("idle");
+    }
+
+    private void shutdownTalkback() {
+        pendingTtsText = "";
+        TextToSpeech current = tts;
+        tts = null;
+        ttsReady = false;
+        if (current != null) {
+            try {
+                current.stop();
+            } catch (RuntimeException ignored) {
+                // already stopped
+            }
+            try {
+                current.shutdown();
+            } catch (RuntimeException ignored) {
+                // already shut down
+            }
+        }
+    }
+
+    private void reportTalkbackState(final String state) {
+        ttsActiveState = state;
+        final WebView view = webView;
+        if (view == null) {
+            return;
+        }
+        final String script = "window.__nuxelTalkbackState && window.__nuxelTalkbackState("
+                + JSONObject.quote(state) + ")";
+        view.post(() -> {
+            if (webView != null) {
+                webView.evaluateJavascript(script, null);
+            }
+        });
     }
 
     private final class PenGuruChromeClient extends WebChromeClient {
