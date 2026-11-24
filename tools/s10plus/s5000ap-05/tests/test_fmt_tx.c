@@ -173,19 +173,28 @@ int main(void)
      * payload[2..5]=flags=0x11 (APN present|ACTIVATE), APN at payload[6]. */
     memset(&f, 0, sizeof f);
     CHECK(fmt_tx_set_pdp_context(&f, "internet", FMT_TX_AUTH_NONE,
-                                 FMT_TX_PROTO_IPV4V6, 1),
-          "set_pdp_context builds");
+                                 FMT_TX_PROTO_IPV4V6, 1, FMT_TX_PDP_TYPE_FULL),
+          "set_pdp_context (full) builds");
     CHECK(f.len == 112, "set_pdp_context len==112 (got %zu)", f.len);
     CHECK(f.main_cmd == 13 && f.sub_cmd == 4 && f.cmd_type == 3,
           "set_pdp_context main/sub/type=13/4/3");
     CHECK(f.buf[0] == 0x70 && f.buf[1] == 0x00, "set_pdp_context len field = 112 LE");
-    CHECK(f.buf[7 + 0] == 0x03, "set_pdp_context payload[0] pdp_type == 3 (LTE/EUTRAN)");
+    CHECK(f.buf[7 + 0] == 0x01, "set_pdp_context payload[0] FULL path selector == 1");
     CHECK(f.buf[7 + 1] == 0x01, "set_pdp_context payload[1] cid == 1");
     CHECK(f.buf[7 + 2] == 0x11, "set_pdp_context payload[2] flags == 0x11 (APN+ACTIVATE)");
     CHECK(memcmp(&f.buf[7 + 6], "internet", 8) == 0,
           "set_pdp_context APN placed at payload offset 6");
     CHECK(f.buf[7 + 102] == 0x01, "set_pdp_context auth flag == 0x01");
     CHECK(f.buf[7 + 104] == 0x04, "set_pdp_context protocol byte (2nd copy) == 0x04");
+
+    /* LTE simple-path selector (payload[0]=4): no APN, no flags. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_pdp_context(&f, "internet", FMT_TX_AUTH_NONE,
+                                 FMT_TX_PROTO_IPV4V6, 1, FMT_TX_PDP_TYPE_LTE),
+          "set_pdp_context (LTE simple) builds");
+    CHECK(f.buf[7 + 0] == 0x04, "set_pdp_context payload[0] LTE simple selector == 4");
+    CHECK(f.buf[7 + 2] == 0x00, "set_pdp_context payload[2] flags == 0 (simple path)");
+    CHECK(f.buf[7 + 6] == 0x00, "set_pdp_context APN empty on simple path");
 
     /* --- SyncProfileInfo (source: IpcTxSyncProfileInfo @0x31fb48) ---
      * 326-byte frame: len=326(0x146), main=13, sub=37(0x25), type=3.

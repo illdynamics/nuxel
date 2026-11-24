@@ -896,7 +896,7 @@ static bool data_session_emit(void)
          * SetDataCallEstablish (main=3/sub=2) is a legacy CDMA path. */
         if (!fmt_tx_set_pdp_context(&f, (const char*)g.dsc.apn,
                                     g.dsc.auth_code, g.dsc.protocol,
-                                    DS_ATTACH_CID))
+                                    DS_ATTACH_CID, g.dsc.pdp_type_wire))
             return false;
         break;
     case DS_GET_PDP_LIST:
@@ -1340,6 +1340,21 @@ static uint8_t env_auth(void)
     return 1u;
 }
 
+/* Map NUXEL_PDP_TYPE env string -> SetPdpContext payload[0] wire-byte selector.
+ * full=1 (default; APN + flags path), lte=4, legacy=3, 2..8 raw. Unknown -> 1. */
+static uint8_t env_pdp_type(void)
+{
+    const char *p = getenv("NUXEL_PDP_TYPE");
+    if (!p || !*p) return FMT_TX_PDP_TYPE_DEFAULT;
+    if (!strcasecmp(p, "full") || !strcasecmp(p, "1")) return FMT_TX_PDP_TYPE_FULL;
+    if (!strcasecmp(p, "lte")  || !strcasecmp(p, "eutran") || !strcasecmp(p, "4"))
+        return FMT_TX_PDP_TYPE_LTE;
+    if (!strcasecmp(p, "legacy") || !strcasecmp(p, "3")) return FMT_TX_PDP_TYPE_LEGACY;
+    long v = strtol(p, NULL, 10);
+    if (v >= 1 && v <= 8) return (uint8_t)v;
+    return FMT_TX_PDP_TYPE_DEFAULT;
+}
+
 static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
@@ -1361,11 +1376,12 @@ static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e
     g.dsc.protocol = env_protocol();
     g.dsc.attach_flag = env_attach_flag();
     g.dsc.auth_code = env_auth();
+    g.dsc.pdp_type_wire = env_pdp_type();
     g.data_path_armed = true;
     g.wrote_phase = false;
     g.dsc.step_deadline_ms = 0;
-    diagf("data_session_start", "\"apn\":\"%s\",\"profile\":%u,\"protocol\":%u",
-          apn, profile, g.dsc.protocol);
+    diagf("data_session_start", "\"apn\":\"%s\",\"profile\":%u,\"protocol\":%u,\"pdp_type\":%u",
+          apn, profile, g.dsc.protocol, g.dsc.pdp_type_wire);
     return sd_bus_reply_method_return(m, "b", 1);
 }
 
@@ -1518,6 +1534,7 @@ int main(int argc, char **argv)
             g.dsc.protocol = env_protocol();
             g.dsc.attach_flag = env_attach_flag();
             g.dsc.auth_code = env_auth();
+            g.dsc.pdp_type_wire = env_pdp_type();
         } else if (strcmp(argv[i], "--help") == 0) {
             fprintf(stderr, "usage: nuxel-radiod [--write-enable] [--arm-data-path]\n");
             return 0;

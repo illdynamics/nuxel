@@ -43,6 +43,7 @@ void ds_reset(struct data_session_ctx *c, const char *apn, uint8_t profile_id)
     c->protocol = 4;   /* default FMT_TX_PROTO_IPV4V6; caller may override */
     c->attach_flag = 3; /* default SetLteAttachProfile flag: 3 = apply */
     c->auth_code = 1;   /* default DataAuth NONE */
+    c->pdp_type_wire = 1; /* default SetPdpContext payload[0] = FULL (APN) path */
     c->gen_result_valid = false;
     c->gprs_call_state_valid = false;
     c->gprs_pdp_state_valid = false;
@@ -92,7 +93,7 @@ enum ds_phase ds_step(struct data_session_ctx *c, bool ack, uint64_t now_ms)
     case DS_NET_REGIST_CHECK:   c->phase = DS_SET_SERVICE_DOMAIN; break;
     case DS_SET_SERVICE_DOMAIN: c->phase = DS_SET_PREFERRED_NET;  break;
     case DS_SET_PREFERRED_NET:  c->phase = DS_ENABLE_MOBILE_DATA; break;
-    case DS_ENABLE_MOBILE_DATA: c->phase = DS_SET_DATA_PROFILE;   break;  /* skip SyncProfile (rejected result=1) */
+    case DS_ENABLE_MOBILE_DATA: c->phase = DS_SET_DATA_PROFILE;   break;  /* SYNC_PROFILE(sub=37) live-rejected (GEN=1); skip */
     case DS_SYNC_PROFILE:       c->phase = DS_SET_DATA_PROFILE;   break;
     case DS_SET_DATA_PROFILE:   c->phase = DS_SET_LTE_ATTACH;     break;
     case DS_SET_LTE_ATTACH:     c->phase = DS_ALWAYS_ON_PDN;      break;  /* DefinePdp(sub=1) is legacy 3G; LTE uses SetPdpContext(sub=4) define+activate in one */

@@ -23,9 +23,10 @@ int main(void)
     enum ds_phase p = ds_step(&c, false, 100);
     CHECK(p == DS_NET_REGIST_CHECK, "no ack -> stays NET_REGIST_CHECK");
 
-    /* Authenticated ack advances each phase in order. Round-17 confirmed DEFINE_PDP (sub=1) is legacy-3G and is correctly
-     * skipped for LTE: the vendor uses SetPdpContext (sub=4) for define+activate
-     * in a single command. SYNC_PROFILE remains skipped. */
+    /* Authenticated ack advances each phase in order. SYNC_PROFILE (sub=37) is
+     * LIVE-REJECTED by this modem (GEN=1, confirmed Round-22), so it is skipped;
+     * DEFINE_PDP (sub=1) is legacy-3G and also skipped for LTE (SetPdpContext
+     * sub=4 does define+activate in one command). */
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_SERVICE_DOMAIN, "NET_REGIST_CHECK -> SET_SERVICE_DOMAIN");
     p = ds_step(&c, true, 100);  CHECK(p == DS_SET_PREFERRED_NET, "SET_SERVICE_DOMAIN -> SET_PREFERRED_NET");
     p = ds_step(&c, true, 100);  CHECK(p == DS_ENABLE_MOBILE_DATA, "SET_PREFERRED_NET -> ENABLE_MOBILE_DATA");

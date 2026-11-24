@@ -130,7 +130,8 @@ bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
  * activation command (112-byte frame) recovered from IpcTxSetPdpContext
  * @0x31f6e0 — see fmt_tx.c. */
 bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
-                            uint8_t auth_code, uint8_t proto, uint8_t cid);
+                            uint8_t auth_code, uint8_t proto, uint8_t cid,
+                            uint8_t pdp_type_wire);
 
 /* GPRS always-on PDN (main=13 GPRS, sub=34 SET_ALWAYS_ON_PDN). */
 bool fmt_tx_set_always_on_pdn(struct fmt_tx_frame *f, bool enable, uint8_t profile);
@@ -159,4 +160,15 @@ bool fmt_tx_set_preferred_net_type(struct fmt_tx_frame *f, uint8_t net_type);
 /* Service-domain and preferred-network-type value constants. */
 #define FMT_TX_SERVICE_DOMAIN_CS_PS  2u  /* voice + data both enabled */
 #define FMT_TX_PREFERRED_NET_LTE_AUTO 9u  /* LTE/WCDMA/GSM auto */
-#define FMT_TX_PDP_TYPE_LTE 3u            /* AccessNetworkType EUTRAN (LTE) */
+/* SetPdpContext payload[0] wire-byte selectors (VERIFIED this round from the
+ * IpcTxSetPdpContext @0x31f6e0 jump table @0x149806; the value is a jump-table
+ * selector, NOT "AccessNetworkType LTE = 3"):
+ *   1 = full APN+user path (default internet bearer, flags 0x11 carry APN)
+ *   2 = simple 3G/UTRAN
+ *   4 = simple LTE/EUTRAN (payload[0]=4, flags=0, no APN)
+ *   3 = simple (the PRIOR value; wire byte for 2nd-arg==2, NOT LTE).
+ * The correct default for the "internet" APN ACTIVATE is 1 (full path). */ 
+#define FMT_TX_PDP_TYPE_FULL 1u
+#define FMT_TX_PDP_TYPE_LTE  4u
+#define FMT_TX_PDP_TYPE_LEGACY 3u
+#define FMT_TX_PDP_TYPE_DEFAULT FMT_TX_PDP_TYPE_FULL

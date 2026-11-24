@@ -159,7 +159,8 @@ bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
  * main=3/sub=2 is a legacy CDMA path and does NOT bring up a GPRS/LTE bearer).
  */
 bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
-                            uint8_t auth_code, uint8_t proto, uint8_t cid)
+                            uint8_t auth_code, uint8_t proto, uint8_t cid,
+                            uint8_t pdp_type_wire)
 {
     if (!f || !apn) return false;
     size_t alen = strlen(apn);
@@ -193,16 +194,20 @@ bool fmt_tx_set_pdp_context(struct fmt_tx_frame *f, const char *apn,
     if (!p) return false;
     memset(p, 0, 105u);
 
-    p[0] = FMT_TX_PDP_TYPE_LTE;             /* payload[0] = pdp_type (EUTRAN=3) */
+    p[0] = pdp_type_wire;                   /* payload[0] = jump-table selector */
     p[1] = cid;                             /* payload[1] = cid */
 
-    /* flags word (LE): APN present (bit0) | ACTIVATE (bit4) = 0x11 */
-    p[2] = 0x11;
-    p[3] = 0x00;
-    p[4] = 0x00;
-    p[5] = 0x00;
-
-    memcpy(&p[6], apn, alen);               /* APN at payload[6..6+alen] */
+    /* The vendor's "full" path (payload[0]==1) carries the APN + flags; the
+     * simple paths (payload[0]==2..8) carry NONE of these. When the wire
+     * selector is the full path we emit the APN + ACTIVATE flags; otherwise we
+     * emit the simple (APN-empty, flags-zero) frame exactly as the vendor does.
+     * This is the Round-22 correction: the PRIOR code always emitted APN +
+     * flags=0x11 regardless of the selector, which the CP rejects for LTE. */
+    if (pdp_type_wire == FMT_TX_PDP_TYPE_FULL) {
+        /* flags word (LE): APN present (bit0) | ACTIVATE (bit4) = 0x11 */
+        p[2] = 0x11;
+        memcpy(&p[6], apn, alen);           /* APN at payload[6..6+alen] */
+    }
 
     {
         unsigned idx = (auth_code >= 1u) ? (auth_code - 1u) : 0u;
