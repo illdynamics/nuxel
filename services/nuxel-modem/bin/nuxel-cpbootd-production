@@ -1,0 +1,142 @@
+#!/usr/bin/python3
+"""Bounded, verified native CP startup. Never reset an already ONLINE CP.
+
+The device-specific JSON is installed explicitly, not sourced as shell code.
+The loader independently verifies ITOC bounds and Samsung NV integrity before
+its first mutating ioctl. No input partition is opened for writing.
+"""
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import subprocess
+import sys
+
+CONFIG = '/etc/nuxel/modem/production.json'
+STATE = '/sys/devices/platform/10000.mif_pdata/modem_state'
+LOADER = '/usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.production.hw'
+NODE = '/dev/umts_boot0'
+
+
+def regular(path, private=False):
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    info = os.fstat(fd)
+    if (not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or
+            info.st_mode & (0o077 if private else 0o022)):
+        os.close(fd)
+        raise ValueError('unsafe configuration/artifact permissions')
+    return os.fdopen(fd, 'rb')
+
+
+def digest(stream):
+    h = hashlib.sha256()
+    for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+        h.update(chunk)
+    return h.hexdigest()
+
+
+def validate(config):
+    keys = {'loader_sha256', 'firmware', 'firmware_sha256', 'manifest',
+            'manifest_sha256', 'nv_image', 'nv_md5', 'deadline_ms'}
+    if set(config) != keys:
+        raise ValueError('missing or unknown production configuration keys')
+    for key in ('loader_sha256', 'firmware_sha256', 'manifest_sha256'):
+        if not isinstance(config[key], str) or not re.fullmatch('[0-9a-f]{64}', config[key]):
+            raise ValueError('invalid artifact hash')
+    for key in ('firmware', 'manifest', 'nv_image', 'nv_md5'):
+        path = config[key]
+        if (not isinstance(path, str) or not path.startswith('/') or
+                '..' in Path(path).parts or path.startswith(('/tmp/', '/run/'))):
+            raise ValueError('startup inputs must have persistent absolute paths')
+    deadline = config['deadline_ms']
+    if type(deadline) is not int or not 1000 <= deadline <= 90000:
+        raise ValueError('startup deadline outside 1..90 seconds')
+    return config
+
+
+def preflight(path):
+    with regular(path, private=True) as stream:
+        config = validate(json.load(stream))
+    for artifact, expected in ((LOADER, config['loader_sha256']),
+                               (config['manifest'], config['manifest_sha256'])):
+        with regular(artifact) as stream:
+            if digest(stream) != expected:
+                raise ValueError('production artifact hash mismatch')
+    fd = os.open(config['firmware'], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    with os.fdopen(fd, 'rb') as stream:
+        info = os.fstat(stream.fileno())
+        if not (stat.S_ISREG(info.st_mode) or stat.S_ISBLK(info.st_mode)):
+            raise ValueError('firmware is not a regular file or block device')
+        if digest(stream) != config['firmware_sha256']:
+            raise ValueError('firmware hash mismatch')
+    # EFS ownership is device-specific; validate content without changing it.
+    nv = os.open(config['nv_image'], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    with os.fdopen(nv, 'rb') as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_size != 1048576:
+            raise ValueError('unexpected beyond2lte NV image size/type')
+        h = hashlib.md5(stream.read() + b'Samsung_Android_RIL').hexdigest()
+    md5 = os.open(config['nv_md5'], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    with os.fdopen(md5, 'rb') as stream:
+        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode) or stream.read(33) != h.encode():
+            raise ValueError('Samsung NV checksum mismatch')
+    if not stat.S_ISCHR(os.stat(NODE, follow_symlinks=False).st_mode):
+        raise ValueError('CP boot endpoint is not a character device')
+    return config
+
+
+def start(config, state_path=STATE, run=subprocess.run):
+    state = Path(state_path).read_text().strip()
+    if state == 'ONLINE':
+        print('CP already ONLINE; no reset or boot performed', flush=True)
+        return
+    if state != 'OFFLINE':
+        raise ValueError('CP must be OFFLINE or ONLINE; recovery requires diagnosis')
+    # Refuse concurrent radio ownership, including non-systemd processes.
+    for endpoint in ('/dev/umts_ipc0', '/dev/umts_rfs0'):
+        for directory in Path('/proc').glob('[0-9]*/fd'):
+            try:
+                entries = list(directory.iterdir())
+            except FileNotFoundError:
+                continue
+            for entry in entries:
+                try:
+                    if os.readlink(entry) == endpoint:
+                        raise ValueError('radio endpoint already owned')
+                except FileNotFoundError:
+                    pass
+    run([LOADER, '--really-boot', '--node', NODE,
+         '--firmware', config['firmware'], '--manifest-sha256', config['manifest_sha256'],
+         '--nv-image', config['nv_image'], '--nv-md5', config['nv_md5'],
+         '--deadline-ms', str(config['deadline_ms'])],
+        check=True, timeout=config['deadline_ms'] / 1000 + 5)
+    if Path(state_path).read_text().strip() != 'ONLINE':
+        raise ValueError('loader returned without ONLINE readiness')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true', help='validate without CP action')
+    parser.add_argument('--config', default=CONFIG)
+    args = parser.parse_args()
+    config = preflight(args.config)
+    if args.check:
+        print('Production startup inputs verified; no CP action')
+        return
+    os.makedirs('/run/nuxel-modem', mode=0o700, exist_ok=True)
+    fd = os.open('/run/nuxel-modem/boot.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, 'w'):
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        start(config)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        print(f'CP production startup refused: {error}', file=sys.stderr)
+        sys.exit(1)

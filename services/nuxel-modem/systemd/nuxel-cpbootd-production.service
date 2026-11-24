@@ -1,0 +1,29 @@
+[Unit]
+Description=Nuxel verified native CP initialization
+RequiresMountsFor=/mnt/vendor/efs /etc/nuxel/modem /usr/lib/nuxel/nuxel-modem
+Before=nuxel-radiod.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-cpbootd-production
+RemainAfterExit=yes
+Restart=no
+TimeoutStartSec=120
+TimeoutStopSec=10
+RuntimeDirectory=nuxel-modem
+RuntimeDirectoryMode=0700
+User=root
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadOnlyPaths=/mnt/vendor/efs
+DevicePolicy=closed
+DeviceAllow=/dev/umts_boot0 rw
+DeviceAllow=/dev/sda16 r
+
+[Install]
+WantedBy=multi-user.target

@@ -20,6 +20,11 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# The production path is explicit and preserves the separate Stage04 loader.
+if [[ "${1:-}" == "--production-config" ]]; then
+    [[ $# == 3 ]] || { echo 'usage: nuxel-modem-install.sh --production-config CONFIG LOADER' >&2; exit 2; }
+    exec "$HERE/nuxel-modem-install-production.sh" "$2" "$3"
+fi
 SRC_BIN="$HERE/../../../tools/s10plus/s5000ap-uapi"
 DEST_BIN="/usr/lib/nuxel/nuxel-modem"
 DEST_LIBEXEC="/usr/libexec/nuxel"
