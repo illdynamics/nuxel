@@ -95,3 +95,13 @@ the existing FMT GPRS path is unchanged; the recovered/implemented MBIM sender
 remains in-tree, gated OFF by default, ready for the next round's handshake
 work. No NV/EFS/RADIO/BOOT/IMEI write was performed. Wi-Fi/ZeroTier/USB/SSH
 remain intact.
+
+---
+
+## REGRESSION CONFIRMATION (post-deployment, rolled-back default)
+
+After rolling back to NUXEL_MBIM_ATTACH=off: radiod active, deployed binary
+sha256 80d7220ae1ef0947e89feb4b4559e8679c0ec726a37b0f6e7d9c4dd56d07cbc7.
+Wi-Fi wlan0 10.20.30.16/24 UP, ZeroTier ztly5zthnf 10.11.12.99/24 UP,
+usb0 10.100.10.1/24 UP, SSH responsive, rmnet0 DOWN (unchanged baseline).
+No regression.
