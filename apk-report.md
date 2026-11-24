@@ -3,13 +3,42 @@
 **Date:** 2026-11-24
 **Branch checked:** `feat/android-penguru-squad`
 **HEAD:** v0.9.10-beta on `feat/android-penguru-squad`
-**Working tree:** v0.9.10 talkback-on-default, bulk model/runtime download controls, mobile-data and storage preflight, background talkback, background wake-command delivery, interactive follow-up and PenGuru/NUXAI identity
+**Working tree:** v0.9.10 talkback-on-default, bulk model/runtime download controls, mobile-data and storage preflight, native background talkback, background wake-command delivery, interactive follow-up and PenGuru/NUXAI identity
 **Artifact:** `dist/android/penguru-squad-debug.apk`
-**SHA-256:** `65d96af22b77c8ff4876f33f93ebf1729f1070854ac1a440fc897b1711922061`
+**SHA-256:** `f7c941309cad4894f1b453c73511c18140b153b5c6075735971b4cdc992b52ba`
 **Package/version:** `org.nuxel.penguru` / `versionCode=910`, `versionName=0.9.10-beta`
 **Min/target SDK:** 26 / 35
 **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
 **Verification device:** headless Android 15 (API 35) x86_64 emulator
+
+---
+
+## 2026-11-24 — native background talkback
+
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `f7c941309cad4894f1b453c73511c18140b153b5c6075735971b4cdc992b52ba`
+- **Size:** 3,783,285 bytes
+- **Version:** `0.9.10-beta` (`versionCode=910`)
+- **Min / target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Native code:** `arm64-v8a` + `x86_64`
+
+**Background replies are now spoken by SonarBird itself.** The previous
+hand-off injected a background wake command into the live WebView, but a
+stopped WebView suspends its JavaScript timers, so the page could not submit,
+poll or call `ttsSpeak` until the owner reopened the app. `WakeWordService`
+now mirrors the on-device rule-based responder in native code
+(`NativeReply`) and voices the answer through the service-owned
+`TalkbackEngine` while the Activity is behind another window. The command is
+still delivered to the page for its conversation history, but marked as
+already spoken so it is not read out a second time when the page resumes. The
+pending hand-off and notification content intent carry the same flag.
+
+**Verification:** `javac --release 8` compiles the updated sources; `node
+--check` passes on the staged PWA modules; `test-downloads.mjs` and
+`test-voice.mjs` still pass; the APK was rebuilt, `apksigner verify` shows v2
++ v3 signatures, `versionCode=910`, `versionName=0.9.10-beta`, and the SHA
+above matches `dist/android/SHA256SUMS`.
 
 ---
 

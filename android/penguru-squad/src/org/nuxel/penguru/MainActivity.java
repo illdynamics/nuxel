@@ -650,22 +650,24 @@ public class MainActivity extends Activity {
         }
         String command = intent.getStringExtra(WakeWordService.EXTRA_COMMAND);
         String mode = intent.getStringExtra(WakeWordService.EXTRA_MODE);
+        boolean spoken = intent.getBooleanExtra(WakeWordService.EXTRA_SPOKEN, false);
         if ((command != null && !command.trim().isEmpty())
                 || (mode != null && VoiceCommandRouter.isMode(mode))) {
             intent.removeExtra(WakeWordService.EXTRA_COMMAND);
             intent.removeExtra(WakeWordService.EXTRA_MODE);
+            intent.removeExtra(WakeWordService.EXTRA_SPOKEN);
             WakeWordService.clearPendingCommand(this);
-            queueWakeCommand(command == null ? "" : command.trim(), mode);
+            queueWakeCommand(command == null ? "" : command.trim(), mode, spoken);
             return;
         }
         WakeWordService.PendingCommand pending = WakeWordService.takePendingCommand(this);
         if (!pending.isEmpty()) {
-            queueWakeCommand(pending.text, pending.mode);
+            queueWakeCommand(pending.text, pending.mode, pending.spoken);
         }
     }
 
-    private void queueWakeCommand(String text, String mode) {
-        WakeCommand command = new WakeCommand(text, mode);
+    private void queueWakeCommand(String text, String mode, boolean spoken) {
+        WakeCommand command = new WakeCommand(text, mode, spoken);
         if (command.isEmpty()) {
             return;
         }
@@ -676,7 +678,7 @@ public class MainActivity extends Activity {
             reportWakeStatus("Wake-word command queued until PenGuru finishes loading…");
             return;
         }
-        dispatchWakeCommand(command.text, command.mode);
+        dispatchWakeCommand(command.text, command.mode, command.spoken);
     }
 
     private void flushPendingWakeCommands() {
@@ -688,7 +690,7 @@ public class MainActivity extends Activity {
             if (next == null) {
                 return;
             }
-            dispatchWakeCommand(next.text, next.mode);
+            dispatchWakeCommand(next.text, next.mode, next.spoken);
         }
     }
 
@@ -696,8 +698,13 @@ public class MainActivity extends Activity {
      * Inject a SonarBird wake command into the already-running page without
      * launching this Activity. Returns false when no live page exists, so
      * the service can fall back to startActivity / the notification.
+     *
+     * @param spoken true when the SonarBird service already voiced this reply
+     *               natively (the Activity was stopped and WebView JavaScript
+     *               timers were suspended). The page then displays the
+     *               conversation but does not speak it a second time.
      */
-    static boolean deliverWakeCommand(String text, String mode) {
+    static boolean deliverWakeCommand(String text, String mode, boolean spoken) {
         MainActivity activity = sLiveActivity;
         if (activity == null || activity.isFinishing()) {
             return false;
@@ -715,24 +722,27 @@ public class MainActivity extends Activity {
             // Consume the pending hand-off so a later foreground launch
             // does not deliver the same command a second time.
             WakeWordService.clearPendingCommand(target);
-            target.queueWakeCommand(safeText, safeMode);
+            target.queueWakeCommand(safeText, safeMode, spoken);
         });
         return true;
     }
 
-    private void dispatchWakeCommand(final String text, final String mode) {
+    private void dispatchWakeCommand(final String text, final String mode, final boolean spoken) {
         final WebView view = webView;
         if (view == null) {
             return;
         }
         // Queue inside the page if the ES module has not installed its hook
         // yet. This makes a command heard during page load survive instead of
-        // being dropped by evaluateJavascript.
-        final String script = "(function(t,m){if(window.__penguruWakeCommand){"
-                + "window.__penguruWakeCommand(t,m);return true;}"
-                + "(window.__penguruWakeQueue=window.__penguruWakeQueue||[]).push({text:t,mode:m});"
+        // being dropped by evaluateJavascript. The third argument tells the
+        // page that the SonarBird service already voiced the answer so it
+        // should not read it out again when it eventually resumes.
+        final String script = "(function(t,m,s){if(window.__penguruWakeCommand){"
+                + "window.__penguruWakeCommand(t,m,s);return true;}"
+                + "(window.__penguruWakeQueue=window.__penguruWakeQueue||[]).push({text:t,mode:m,spoken:s});"
                 + "return false;})(" + JSONObject.quote(text == null ? "" : text)
-                + "," + JSONObject.quote(mode == null ? "" : mode) + ")";
+                + "," + JSONObject.quote(mode == null ? "" : mode)
+                + "," + (spoken ? "true" : "false") + ")";
         view.post(() -> {
             if (webView != null) {
                 webView.evaluateJavascript(script, null);
@@ -747,10 +757,12 @@ public class MainActivity extends Activity {
     private static final class WakeCommand {
         final String text;
         final String mode;
+        final boolean spoken;
 
-        WakeCommand(String text, String mode) {
+        WakeCommand(String text, String mode, boolean spoken) {
             this.text = text == null ? "" : text.trim();
             this.mode = VoiceCommandRouter.isMode(mode) ? mode : "";
+            this.spoken = spoken;
         }
 
         boolean isEmpty() {

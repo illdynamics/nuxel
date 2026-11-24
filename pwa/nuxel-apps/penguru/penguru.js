@@ -8,6 +8,7 @@ import {confirmDownload, formatBytes, sumBytes} from './download-confirm.js';
 const $ = id => document.getElementById(id);
 let enabled = false, request = null, lastOutput = '', currentReply = null;
 let spokenRequest = '';
+const serviceSpokenRequests = new Set();
 const API_DEFAULT = 'http://127.0.0.1:8080/api/v1';
 const nativeHost = typeof window !== 'undefined' ? window.NuxelAndroid : null;
 const onAndroid = !!(nativeHost && typeof nativeHost.isStandalone === 'function' && nativeHost.isStandalone());
@@ -577,6 +578,7 @@ async function sendMessage(rawText, options = {}) {
       ? options.routeOverride : ($('route').value || null);
     const r = await call('submit', {text, route_override: override});
     request = r.request_id;
+    if (options.spoken) serviceSpokenRequests.add(request);
     $('prompt').value = '';
     $('cancel').disabled = false;
     $('send').disabled = true;
@@ -616,7 +618,7 @@ async function autoSendText(text, meta = {}) {
 // MainActivity forwards commands recognised by the persistent background
 // SonarBird listener into this hook. mode is "" for an ordinary message, or
 // "chatbird"/"codebird" when the owner said "Penguru chat"/"Penguru code".
-window.__penguruWakeCommand = (text, mode) => { autoSendText(text, {heard: text || '', mode}); };
+window.__penguruWakeCommand = (text, mode, spoken) => { autoSendText(text, {heard: text || '', mode, spoken: !!spoken}); };
 window.__penguruWakeStatus = text => {
   const el = $('wake-service-status');
   if (el) el.textContent = text;
@@ -628,9 +630,9 @@ window.__penguruWakeStatus = text => {
 if (Array.isArray(window.__penguruWakeQueue)) {
   for (const item of window.__penguruWakeQueue.splice(0)) {
     if (item && typeof item === 'object') {
-      window.__penguruWakeCommand(item.text || '', item.mode || '');
+      window.__penguruWakeCommand(item.text || '', item.mode || '', item.spoken);
     } else {
-      window.__penguruWakeCommand(item, '');
+      window.__penguruWakeCommand(item, '', false);
     }
   }
 }
@@ -664,7 +666,7 @@ setInterval(async()=>{if(polling)return;polling=true;try{
     lastOutput=r.output||'';
     currentReply.pre.textContent=r.output||r.error||(r.status==='awaiting_user'?'Please clarify, or choose CHAT or CODE and send again.':r.status);
     // Talkback reads each completed answer once, even if polling sees it again.
-    if(r.status==='done'&&r.output&&spokenRequest!==owner){spokenRequest=owner;talkback.speak(r.output);}
+    if(r.status==='done'&&r.output&&spokenRequest!==owner){spokenRequest=owner;if(!serviceSpokenRequests.has(owner))talkback.speak(r.output);}
     if(['done','error','cancelled','awaiting_user'].includes(r.status)){request=null;$('cancel').disabled=true;$('send').disabled=!enabled;}
   }
   if(engineMode==='local'&&runtimeJobs.size){for(const [jobId,view] of runtimeJobs){try{const r=await call('runtime_status',{job_id:jobId,id:view.id});const job=r.job;view.progress.value=job.progress||0;view.status.textContent=`${job.state} · ${Math.round((job.progress||0)*100)}% · ${job.detail||''}`;if(['ready','error','cancelled','quarantined'].includes(job.state)){runtimeJobs.delete(jobId);if(job.state==='ready'){view.button.textContent='Installed';view.button.disabled=true;}else{view.button.disabled=false;}}}catch(e){view.status.textContent=e.message;runtimeJobs.delete(jobId);}}}

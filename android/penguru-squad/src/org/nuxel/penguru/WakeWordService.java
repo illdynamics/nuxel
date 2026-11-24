@@ -51,12 +51,14 @@ public class WakeWordService extends Service {
     public static final String ACTION_FINISH = "org.nuxel.penguru.action.WAKE_FINISH";
     public static final String EXTRA_COMMAND = "penguru_command";
     public static final String EXTRA_MODE = "penguru_mode";
+    public static final String EXTRA_SPOKEN = "penguru_spoken";
 
     static final String PREFS = "penguru_wake";
     static final String PREF_ENABLED = "enabled";
     private static final String PREF_PENDING = "pending_command";
     private static final String PREF_PENDING_MODE = "pending_mode";
     private static final String PREF_PENDING_AT = "pending_command_at";
+    private static final String PREF_PENDING_SPOKEN = "pending_command_spoken";
 
     private static final String CHANNEL_ID = "penguru_listening";
     private static final int NOTIFICATION_ID = 8801;
@@ -322,6 +324,7 @@ public class WakeWordService extends Service {
                 .remove(PREF_PENDING)
                 .remove(PREF_PENDING_MODE)
                 .remove(PREF_PENDING_AT)
+                .remove(PREF_PENDING_SPOKEN)
                 .apply();
     }
 
@@ -330,12 +333,13 @@ public class WakeWordService extends Service {
         String text = prefs.getString(PREF_PENDING, "");
         String mode = prefs.getString(PREF_PENDING_MODE, "");
         long at = prefs.getLong(PREF_PENDING_AT, 0);
+        boolean spoken = prefs.getBoolean(PREF_PENDING_SPOKEN, false);
         clearPendingCommand(context);
         if (System.currentTimeMillis() - at > 120000L) {
-            return new PendingCommand("", "");
+            return new PendingCommand("", "", false);
         }
         return new PendingCommand(text == null ? "" : text.trim(),
-                VoiceCommandRouter.isMode(mode) ? mode : "");
+                VoiceCommandRouter.isMode(mode) ? mode : "", spoken);
     }
 
     /** A wake-word hand-off can carry only a mode ("Penguru chat"), only a
@@ -343,10 +347,12 @@ public class WakeWordService extends Service {
     public static final class PendingCommand {
         public final String text;
         public final String mode;
+        public final boolean spoken;
 
-        PendingCommand(String text, String mode) {
+        PendingCommand(String text, String mode, boolean spoken) {
             this.text = text == null ? "" : text.trim();
             this.mode = VoiceCommandRouter.isMode(mode) ? mode : "";
+            this.spoken = spoken;
         }
 
         public boolean isEmpty() {
@@ -507,11 +513,15 @@ public class WakeWordService extends Service {
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         String pending = prefs.getString(PREF_PENDING, "");
         String pendingMode = prefs.getString(PREF_PENDING_MODE, "");
+        boolean pendingSpoken = prefs.getBoolean(PREF_PENDING_SPOKEN, false);
         if (pending != null && !pending.isEmpty()) {
             open.putExtra(EXTRA_COMMAND, pending);
         }
         if (pendingMode != null && VoiceCommandRouter.isMode(pendingMode)) {
             open.putExtra(EXTRA_MODE, pendingMode);
+        }
+        if (pendingSpoken) {
+            open.putExtra(EXTRA_SPOKEN, true);
         }
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -1272,20 +1282,38 @@ public class WakeWordService extends Service {
         lastError = "";
         stoppingForHandoff = true;
         stopRecognizer();
+
+        // While the app is behind another window the WebView's JavaScript
+        // timers are suspended, so the injected page command cannot submit,
+        // poll and speak the answer until the owner reopens the app. The
+        // service therefore generates the same rule-based reply natively and
+        // voices it through the service-owned TalkbackEngine. The page is
+        // still given the command for its history, but marked as already
+        // spoken so it does not read the answer out a second time.
+        boolean spokenByService = false;
+        if (!appForeground && !text.isEmpty()) {
+            spokenByService = speakReply(getApplicationContext(),
+                    NativeReply.replyFor(this, text, mode));
+        }
+
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                 .putString(PREF_PENDING, text)
                 .putString(PREF_PENDING_MODE, mode)
                 .putLong(PREF_PENDING_AT, now)
+                .putBoolean(PREF_PENDING_SPOKEN, spokenByService)
                 .apply();
-        if (MainActivity.deliverWakeCommand(text, mode)) {
+
+        if (MainActivity.deliverWakeCommand(text, mode, spokenByService)) {
             // Android 10+ blocks startActivity from a background service. When
             // the page is already alive (even stopped behind another app or
             // with the screen off), the command is injected straight into the
             // WebView so the on-device engine can answer and the service-owned
             // talkback can speak it without bringing PenGuru to the front.
-            updateNotification(text.isEmpty()
-                    ? VoiceCommandRouter.modeName(mode) + " selected · answering"
-                    : "Heard: " + shorten(text) + " · answering");
+            updateNotification(spokenByService
+                    ? "Heard: " + shorten(text) + " · speaking"
+                    : (text.isEmpty()
+                        ? VoiceCommandRouter.modeName(mode) + " selected · answering"
+                        : "Heard: " + shorten(text) + " · answering"));
         } else {
             updateNotification(text.isEmpty()
                     ? VoiceCommandRouter.modeName(mode) + " selected · opening PenGuru"
@@ -1295,6 +1323,7 @@ public class WakeWordService extends Service {
             launch.setAction(Intent.ACTION_VIEW);
             launch.putExtra(EXTRA_COMMAND, text);
             launch.putExtra(EXTRA_MODE, mode);
+            launch.putExtra(EXTRA_SPOKEN, spokenByService);
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                     | Intent.FLAG_ACTIVITY_SINGLE_TOP
                     | Intent.FLAG_ACTIVITY_CLEAR_TOP);
