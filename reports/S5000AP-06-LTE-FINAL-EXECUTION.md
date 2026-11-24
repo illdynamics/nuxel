@@ -103,3 +103,19 @@ run the DS_* FSM (NET_REGIST -> ... -> SetPdpContext) and the CP's initial-attac
 APN/EPS-bearer path be exercised. The NV initial-attach APN investigation
 (rounds 19-25) is downstream of this DTBO/io-device gate and does not need to be
 re-run first.
+
+## Confirmation (live DT, decisive)
+- mif,num_iodevs = 0x16 (22) IS present in the running DTB, but the `iodevs`
+  node has ZERO io_device_* children (only a `name` property). The DTB is
+  therefore MALFORMED: it advertises 22 io-devices but carries none of their
+  iod,name/iod,id/iod,format/iod,io_type/iod,links definitions.
+- Consequence: modem_if_parse_dt_pdata() allocates 22 modem_io_t entries, the
+  for_each_child_of_node(iodevs) loop runs zero times, every io_t->name stays
+  empty, and create_io_device()/sipc5_init_io_device()/misc_register() produce
+  no valid umts_* node.  => /dev/umts_ipc0, /dev/umts_rfs0, /dev/umts_boot0
+  never appear, so nuxel-radiod cannot open FMT/RFS and cannot drive LTE data.
+
+This is a DTB generation/repack defect (consistent with the 09 agreement's
+warning that dtc round-trips are not byte-preserving), NOT a radiod/serialization
+bug and NOT an NV/APN bug. It is the upstream gate for the whole Stage-06 data
+path.
