@@ -3,6 +3,7 @@ import {bridge} from '../../nuxel-common/bridge.js';
 import {modelLibrary} from './model-library.js';
 import {createLocalEngine} from './local-engine.js';
 import {talkbackControls} from './talkback.js';
+import {confirmDownload, formatBytes, sumBytes} from './download-confirm.js';
 
 const $ = id => document.getElementById(id);
 let enabled = false, request = null, lastOutput = '', currentReply = null;
@@ -77,6 +78,25 @@ function renderPaths() {
 renderPaths();
 
 const runtimeJobs = new Map();
+let runtimeBulk = null;
+let runtimeBulkPolling = false;
+
+function pendingRuntimes(runtimes) {
+  return runtimes.filter(runtime => !runtime.bundled && !runtime.installed);
+}
+
+const RUNTIME_STORAGE_RESERVE = 256 * 1024 * 1024;
+function freeStorageBytes() {
+  try {
+    const host = window.NuxelAndroid;
+    if (!host || typeof host.deviceInfo !== 'function') return 0;
+    const info = JSON.parse(host.deviceInfo() || '{}');
+    return Math.max(0, Number(info.free_storage) || 0);
+  } catch (error) {
+    return 0;
+  }
+}
+
 function runtimeCard(runtime) {
   const article = document.createElement('article');
   article.className = 'card';
@@ -96,6 +116,16 @@ function runtimeCard(runtime) {
   button.disabled = !!runtime.installed;
   button.onclick = async () => {
     button.disabled = true;
+    const confirmed = await confirmDownload({
+      title: `Install ${runtime.name}?`,
+      sizeBytes: runtime.size_bytes,
+      packageCount: 1,
+      detail: 'Runtime archive ' + runtime.filename + '.',
+    });
+    if (!confirmed) {
+      button.disabled = !!runtime.installed;
+      return;
+    }
     status.textContent = 'Starting download…';
     try {
       const result = await call('install_runtime', {id: runtime.id});
@@ -110,18 +140,242 @@ function runtimeCard(runtime) {
   return article;
 }
 
-function renderRuntimes() {
+function renderRuntimeBulk(runtimes, message) {
+  const host = $('runtimes-bulk');
+  if (!host) return;
+  const installable = runtimes.filter(runtime => !runtime.bundled);
+  if (!installable.length) {
+    host.replaceChildren();
+    host.hidden = true;
+    return;
+  }
+  host.hidden = false;
+  if (runtimeBulk && runtimeBulk.running) return;
+  host.replaceChildren();
+  const total = sumBytes(installable, runtime => runtime.size_bytes);
+  const todo = pendingRuntimes(runtimes);
+  const todoBytes = sumBytes(todo, runtime => runtime.size_bytes);
+  const free = freeStorageBytes();
+  const fits = !todo.length || !free || free >= todoBytes + RUNTIME_STORAGE_RESERVE;
+  const panel = document.createElement('article');
+  panel.className = 'card bulk-panel';
+  const heading = document.createElement('h4');
+  heading.textContent = 'All on-device runtimes';
+  const summary = document.createElement('p');
+  summary.textContent = `Complete set: ${formatBytes(total)} across ${installable.length} runtimes. `
+    + (todo.length ? `${formatBytes(todoBytes)} remains to install.` : 'Everything is installed.')
+    + ' The bundled Whisper.cpp engine is already inside this APK.';
+  panel.append(heading, summary);
+  if (free > 0) {
+    const storage = document.createElement('p');
+    storage.textContent = `Free storage on this phone: ${formatBytes(free)}`
+      + (fits ? '.' : ` — not enough for this install (${formatBytes(todoBytes + RUNTIME_STORAGE_RESERVE)} needed).`);
+    panel.append(storage);
+  }
+  const warning = document.createElement('p');
+  warning.className = 'hint bulk-warning';
+  warning.textContent = 'Mobile-data warning: runtime archives can be hundreds of megabytes. '
+    + 'On mobile data this can use up your allowance and may cost money. Wi-Fi is strongly recommended.';
+  panel.append(warning);
+  if (message) {
+    const status = document.createElement('p');
+    status.setAttribute('role', 'status');
+    status.textContent = message;
+    panel.append(status);
+  }
+  if (todo.length) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'primary';
+    button.textContent = `Accept all & install remaining (${formatBytes(todoBytes)})`;
+    button.disabled = !fits;
+    if (!fits) button.title = 'Not enough free storage for all runtimes';
+    button.onclick = () => startRuntimeBulk(runtimes).catch(error => {
+      const status = document.createElement('p');
+      status.textContent = error.message || String(error);
+      panel.append(status);
+    });
+    panel.append(button);
+  }
+  host.append(panel);
+}
+
+function renderRuntimes(message) {
   if (!$('runtimes')) return;
   const container = $('runtimes');
   container.replaceChildren();
   if (engineMode !== 'local') {
     container.textContent = 'Runtime installation is available in On-device mode.';
+    const host = $('runtimes-bulk');
+    if (host) { host.replaceChildren(); host.hidden = true; }
     return;
   }
-  for (const runtime of local.runtimeCatalog()) container.append(runtimeCard(runtime));
+  const runtimes = local.runtimeCatalog();
+  for (const runtime of runtimes) container.append(runtimeCard(runtime));
+  renderRuntimeBulk(runtimes, message);
+}
+
+function showRuntimeBulkProgress() {
+  const host = $('runtimes-bulk');
+  if (!host) return null;
+  host.hidden = false;
+  host.replaceChildren();
+  const panel = document.createElement('article');
+  panel.className = 'card bulk-panel';
+  const heading = document.createElement('h4');
+  heading.textContent = 'Installing all on-device runtimes';
+  const warning = document.createElement('p');
+  warning.className = 'hint';
+  warning.textContent = 'Keep this phone on Wi-Fi if possible. The foreground service keeps '
+    + 'downloading when the screen turns off.';
+  const progress = document.createElement('progress');
+  progress.max = 1;
+  progress.value = 0;
+  const status = document.createElement('p');
+  status.setAttribute('role', 'status');
+  status.textContent = 'Starting downloads…';
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.textContent = 'Cancel all runtime downloads';
+  cancel.onclick = async () => {
+    cancel.disabled = true;
+    status.textContent = 'Cancelling downloads…';
+    for (const jobId of (runtimeBulk ? runtimeBulk.items.keys() : [])) {
+      try { await call('cancel_download', {job_id: jobId}); } catch (error) { /* already stopped */ }
+    }
+  };
+  panel.append(heading, warning, progress, status, cancel);
+  host.append(panel);
+  return {progress, status, cancel};
+}
+
+function runtimeBulkTotals() {
+  let doneBytes = 0;
+  let ready = 0;
+  let failed = runtimeBulk ? runtimeBulk.startFailures : 0;
+  let active = 0;
+  for (const entry of (runtimeBulk ? runtimeBulk.items.values() : [])) {
+    if (entry.state === 'ready') {
+      ready += 1;
+      doneBytes += entry.size;
+    } else if (['error', 'quarantined', 'cancelled'].includes(entry.state)) {
+      failed += 1;
+    } else {
+      active += 1;
+      doneBytes += entry.progress * entry.size;
+    }
+  }
+  return {doneBytes, ready, failed, active,
+    progress: runtimeBulk && runtimeBulk.total ? Math.min(1, doneBytes / runtimeBulk.total) : 0};
+}
+
+function updateRuntimeBulkProgress() {
+  if (!runtimeBulk || !runtimeBulk.ui) return;
+  const totals = runtimeBulkTotals();
+  runtimeBulk.ui.progress.value = totals.progress;
+  runtimeBulk.ui.status.textContent = `${totals.ready} of ${runtimeBulk.totalCount} installed · `
+    + `${Math.round(totals.progress * 100)}% · `
+    + `${formatBytes(Math.max(0, runtimeBulk.total - totals.doneBytes))} left`
+    + (totals.failed ? ` · ${totals.failed} failed` : '')
+    + (totals.active ? ` · ${totals.active} active` : '');
+}
+
+async function finishRuntimeBulk() {
+  if (!runtimeBulk || !runtimeBulk.running) return;
+  runtimeBulk.running = false;
+  const totals = runtimeBulkTotals();
+  const finished = `Runtime install finished: ${totals.ready} installed`
+    + (totals.failed ? `, ${totals.failed} failed.` : '.');
+  if (runtimeBulk.ui) {
+    runtimeBulk.ui.progress.value = 1;
+    runtimeBulk.ui.status.textContent = finished;
+    runtimeBulk.ui.cancel.hidden = true;
+  }
+  runtimeBulk = null;
+  renderRuntimes(finished);
+}
+
+async function pollRuntimeBulk() {
+  if (!runtimeBulk || !runtimeBulk.running || runtimeBulkPolling) return;
+  runtimeBulkPolling = true;
+  try {
+    let settled = true;
+    for (const [jobId, entry] of runtimeBulk.items) {
+      if (['ready', 'error', 'quarantined', 'cancelled'].includes(entry.state)) continue;
+      try {
+        const result = await call('runtime_status', {job_id: jobId, id: entry.runtime.id});
+        const job = result.job || {};
+        entry.progress = Math.max(0, Math.min(1, Number(job.progress) || 0));
+        if (['ready', 'error', 'quarantined', 'cancelled'].includes(job.state)) {
+          entry.state = job.state;
+          if (job.state === 'ready') entry.progress = 1;
+        } else {
+          settled = false;
+        }
+      } catch (error) {
+        entry.state = 'error';
+      }
+    }
+    updateRuntimeBulkProgress();
+    if (settled) await finishRuntimeBulk();
+  } finally {
+    runtimeBulkPolling = false;
+  }
+}
+
+async function startRuntimeBulk(runtimes) {
+  if (runtimeBulk && runtimeBulk.running) return;
+  const todo = pendingRuntimes(runtimes);
+  if (!todo.length) return;
+  const todoBytes = sumBytes(todo, runtime => runtime.size_bytes);
+  const totalBytes = sumBytes(runtimes.filter(runtime => !runtime.bundled),
+    runtime => runtime.size_bytes);
+  const free = freeStorageBytes();
+  if (free > 0 && free < todoBytes + RUNTIME_STORAGE_RESERVE) {
+    renderRuntimes(`Not enough free storage for all runtimes: `
+      + `${formatBytes(todoBytes + RUNTIME_STORAGE_RESERVE)} needed, ${formatBytes(free)} free.`);
+    return;
+  }
+  const accepted = await confirmDownload({
+    title: 'Install all on-device PenGuru runtimes?',
+    sizeBytes: todoBytes,
+    packageCount: todo.length,
+    detail: `The complete runtime set is ${formatBytes(totalBytes)}. `
+      + (free > 0 ? `Free storage on this phone: ${formatBytes(free)}. ` : '')
+      + 'This installs llama.cpp, the Snapdragon build and ONNX Runtime in one go.',
+  });
+  if (!accepted) return;
+  runtimeBulk = {
+    running: true,
+    total: todoBytes,
+    totalCount: todo.length,
+    startFailures: 0,
+    items: new Map(),
+    ui: showRuntimeBulkProgress(),
+  };
+  for (const runtime of todo) {
+    try {
+      const result = await call('install_runtime', {id: runtime.id});
+      if (result.bundled) continue;
+      if (!result.job_id) throw new Error('Download did not start');
+      runtimeBulk.items.set(result.job_id, {
+        runtime,
+        size: Number(runtime.size_bytes) || 0,
+        state: 'downloading',
+        progress: 0,
+      });
+    } catch (error) {
+      runtimeBulk.startFailures += 1;
+      if (runtimeBulk.ui) runtimeBulk.ui.status.textContent = 'Could not start '
+        + runtime.name + ': ' + error.message;
+    }
+  }
+  updateRuntimeBulkProgress();
+  if (!runtimeBulk.items.size) await finishRuntimeBulk();
 }
 
 if (engineMode === 'local') renderRuntimes();
+
 $('refresh-storage').onclick = () => {
   renderPaths();
   renderRuntimes();
@@ -414,6 +668,7 @@ setInterval(async()=>{if(polling)return;polling=true;try{
     if(['done','error','cancelled','awaiting_user'].includes(r.status)){request=null;$('cancel').disabled=true;$('send').disabled=!enabled;}
   }
   if(engineMode==='local'&&runtimeJobs.size){for(const [jobId,view] of runtimeJobs){try{const r=await call('runtime_status',{job_id:jobId,id:view.id});const job=r.job;view.progress.value=job.progress||0;view.status.textContent=`${job.state} · ${Math.round((job.progress||0)*100)}% · ${job.detail||''}`;if(['ready','error','cancelled','quarantined'].includes(job.state)){runtimeJobs.delete(jobId);if(job.state==='ready'){view.button.textContent='Installed';view.button.disabled=true;}else{view.button.disabled=false;}}}catch(e){view.status.textContent=e.message;runtimeJobs.delete(jobId);}}}
+  if(engineMode==='local'&&runtimeBulk&&runtimeBulk.running){await pollRuntimeBulk();}
 }catch(e){notice(e.message);}finally{polling=false;}},1000);
 
 /* ---------------------------------------------- persistent wake listening */

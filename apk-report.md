@@ -3,13 +3,72 @@
 **Date:** 2026-11-24
 **Branch checked:** `feat/android-penguru-squad`
 **HEAD:** v0.9.10-beta on `feat/android-penguru-squad`
-**Working tree:** v0.9.10 background talkback, interactive follow-up and PenGuru/NUXAI identity
+**Working tree:** v0.9.10 talkback-on-default, bulk model/runtime download controls, mobile-data and storage preflight, background talkback, interactive follow-up and PenGuru/NUXAI identity
 **Artifact:** `dist/android/penguru-squad-debug.apk`
-**SHA-256:** `956adbd13640c9d2eb4a8505503057511c81fd7462262ab165add74051934c78`
+**SHA-256:** `133806d3bd6443aed996b230f5cd51c93439a28150adc857ecbb1dacb6378a27`
 **Package/version:** `org.nuxel.penguru` / `versionCode=910`, `versionName=0.9.10-beta`
 **Min/target SDK:** 26 / 35
 **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
 **Verification device:** headless Android 15 (API 35) x86_64 emulator
+
+---
+
+## 2026-11-24 — bulk download controls, mobile-data guard and talkback default
+
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `133806d3bd6443aed996b230f5cd51c93439a28150adc857ecbb1dacb6378a27`
+- **Size:** 3,779,189 bytes
+- **Version:** `0.9.10-beta` (`versionCode=910`)
+- **Min / target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Native code:** `arm64-v8a` + `x86_64`
+
+**Talkback is now on by default.** `penguru-talkback-enabled` falls back to
+`1` when no preference has been stored; an explicit user "off" is still
+persisted and respected. Both the Conversation toggle and the Settings toggle
+show as checked on a fresh install.
+
+**Bulk accept-and-download controls were added in both places.**
+
+- **Model library → All required models:** shows the exact complete-set total
+  (currently **9.94 GB across 8 packages**), the remaining bytes, the phone's
+  free storage, and an **Accept all & download remaining** button. The button
+  accepts every pinned revision in one action.
+- **Settings → On-device dependencies:** shows the complete runtime total
+  (currently **179.0 MB across 3 runtimes**, with bundled Whisper.cpp called
+  out separately) and an **Accept all & install remaining** button.
+- Both bulk actions and every individual download first open a blocking
+  mobile-data warning that states the exact transfer size and explains that
+  model downloads can be gigabytes and may cost money. Cancel starts nothing.
+- A 256 MiB safety reserve is included in the preflight. When the phone does
+  not have enough free storage, the batch button is disabled and the panel says
+  how much is needed instead of starting a download that cannot finish.
+
+**Verification performed on the final APK** (headless Android 15 / API 35
+x86_64 emulator, WebView DevTools + `adb`):
+
+- Fresh install renders **talkback checked by default** in both locations.
+- Model library reports **9.94 GB / 8 packages**; Settings reports
+  **179.0 MB / 3 runtimes** and notes the bundled Whisper.cpp engine.
+- The runtime bulk warning opens with the exact 179.0 MB total; cancelling
+  leaves `downloads = []` and starts no job.
+- The model bulk button is correctly disabled on the emulator because its
+  4.88 GB free space is below the 10.21 GB needed (9.94 GB + 256 MiB reserve).
+- A real **Silero VAD** individual download completed through
+  `DownloadService`; the installed file is exactly **2,204,103 bytes** with
+  SHA-256 `f6f4407b41e05e277e7f5cfd9b9ae957b1dfe763c6076a934734c0b448e09b31`,
+  matching the catalog. Reinstalling the APK preserved detection of that
+  installed model.
+- The local conversation flow answered through the on-device engine, and the
+  status showed `local package ready · on-device · runtime staged`.
+- Static checks passed: `node --check` on all bundled modules,
+  `test-downloads.mjs`, `test-voice.mjs`, `test-bridge.js`,
+  `verify-wiring.js`, and all five `services/nuxel-penguru/tests/test_*.py`.
+
+The complete 9.94 GB batch was not transferred to the emulator (it has only
+4.88 GB free). The full eight-job bulk start path was exercised against the
+mocked host harness, and the APK's native downloader was exercised end-to-end
+with the small Silero package.
 
 ---
 
@@ -799,10 +858,10 @@ The backend is explicitly “a partially implemented, local-first subsystem, not
 | Property | Value |
 |---|---|
 | Path | `dist/android/penguru-squad-debug.apk` |
-| Size | 1,718,330 bytes (~1.7 MiB) |
-| SHA-256 | `be8e5b2381c81411ccae5f6b529f33d8999f6e893e6dcef8d7d644dc3e5915e8` |
+| Size | 3,779,189 bytes (~3.6 MiB) |
+| SHA-256 | `133806d3bd6443aed996b230f5cd51c93439a28150adc857ecbb1dacb6378a27` |
 | Package | `org.nuxel.penguru` |
-| Version | `0.8.9-beta` (`versionCode=809`) |
+| Version | `0.9.10-beta` (`versionCode=910`) |
 | Min / target SDK | 26 / 35 |
 | Launch activity | `org.nuxel.penguru.MainActivity` |
 | Signature schemes | v2 = true, v3 = true, v1 = false |
@@ -827,6 +886,9 @@ adb shell am start -W -n org.nuxel.penguru/.MainActivity
 # Local static checks
 node --check pwa/nuxel-apps/penguru/penguru.js
 node --check pwa/nuxel-apps/penguru/model-library.js
+node --check pwa/nuxel-apps/penguru/download-confirm.js
+node pwa/nuxel-apps/penguru/test-downloads.mjs
+node pwa/nuxel-apps/penguru/test-voice.mjs
 node pwa/nuxel-common/verify-wiring.js
 node pwa/nuxel-common/test-bridge.js
 python3 services/nuxel-penguru/tests/test_registry.py
@@ -853,4 +915,4 @@ Then in PenGuru Squad → Settings → Connection, enter the bridge URL (for exa
 
 **It is not a full standalone Android port of the PenGuru AI subsystem.** The AI runtime, model weights, scheduler, downloader, and speech backend remain on the Nuxel host. The APK is the polished owner-facing client for that backend, not a replacement for it. The most important remaining work is real-host/model E2E acceptance, physical microphone/wake testing, a release signing identity, and the backend features that are still marked incomplete.
 
-**Important repository-state note:** the fixes described above are currently **uncommitted** in the working tree on `feat/android-penguru-squad`. HEAD `fc0cbc1c` alone does not contain the `/rpc` token fix, export bridge, external-link bridge, or final versioning. Commit the 15 modified tracked files (including the rebuilt APK and `SHA256SUMS`) if you want the branch tip itself to represent this verified state.
+**Repository-state note:** this verification was performed before the final commit. The rebuilt APK, `dist/android/SHA256SUMS`, the PWA source, the Android README and this report are committed together so the branch tip represents the verified state.

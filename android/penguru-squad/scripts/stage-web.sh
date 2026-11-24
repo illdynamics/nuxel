@@ -19,7 +19,7 @@ PY
 
 APP="$ROOT/pwa/nuxel-apps/penguru"
 COMMON="$ROOT/pwa/nuxel-common"
-for name in index.html penguru.js penguru.css voice.js talkback.js model-library.js local-engine.js manifest.json app.json; do
+for name in index.html penguru.js penguru.css voice.js talkback.js model-library.js download-confirm.js local-engine.js manifest.json app.json; do
   cp "$APP/$name" "$OUT/pwa/nuxel-apps/penguru/$name"
 done
 for name in bridge.js bridge-version.json theme.css; do

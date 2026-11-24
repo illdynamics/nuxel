@@ -875,7 +875,11 @@ g.NuxelBridge = shared;
 g.nuxelBridge = shared;
 g.NuxelBridgeClient = NuxelBridgeClient;
 
-if (typeof addEventListener === 'function') {
+// Standalone shells (for example the PenGuru APK in on-device mode) set
+// __NUXEL_BRIDGE_NO_AUTO_INIT so importing the shared module does not probe a
+// Nuxel host that is not configured. A later bridge.call() still initialises
+// lazily, so switching to Nuxel mode keeps working.
+if (typeof addEventListener === 'function' && !g.__NUXEL_BRIDGE_NO_AUTO_INIT) {
     addEventListener('load', () => shared && shared._init && shared._init());
 }
 

@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="penguru.css">
 </head>
 <body>
-<script>try{const u=localStorage.getItem("nuxel-api-url");if(u)globalThis.NUXEL_API_URL=u;const t=localStorage.getItem("nuxel-penguru-token");if(t)globalThis.__NUXEL_TOKEN__=t;}catch(e){}</script>
+<script>try{const u=localStorage.getItem("nuxel-api-url");if(u)globalThis.NUXEL_API_URL=u;const t=localStorage.getItem("nuxel-penguru-token");if(t)globalThis.__NUXEL_TOKEN__=t;if(globalThis.NuxelAndroid&&typeof globalThis.NuxelAndroid.isStandalone==="function"&&globalThis.NuxelAndroid.isStandalone())globalThis.__NUXEL_BRIDGE_NO_AUTO_INIT=true;}catch(e){}</script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <header>
   <div><small>NUXAI · VIRTUAL PENGUIN</small><h1>PenGuru Squad</h1></div>
@@ -75,8 +75,9 @@
 
   <section id="models" hidden>
     <h2>Model library</h2>
-    <p class="hint">Downloads go directly from Hugging Face to this phone. Review the exact revision and license before installing. They run in a foreground service and keep going when the screen turns off. Downloads are verified with the pinned SHA-256 and never leave the handset after installation.</p>
+    <p class="hint">Downloads go directly from Hugging Face to this phone. Review the exact revision and license before installing. They run in a foreground service and keep going when the screen turns off. Downloads are verified with the pinned SHA-256 and never leave the handset after installation. The complete model set is several gigabytes, so PenGuru shows the exact total and asks you to confirm the mobile-data warning before every download.</p>
     <p id="models-path" class="hint">Storage on this phone: …</p>
+    <div id="models-bulk"></div>
     <div id="cards"></div>
   </section>
 
@@ -94,7 +95,8 @@
 
     <div id="local-panel">
       <h3>On-device dependencies</h3>
-      <p class="hint">Install the runtimes you want to use. Archives are downloaded to <code>Download/PenGuru</code> when All files access is granted (or to app storage otherwise), verified, and unpacked without root. Android's built-in speech recognizer needs no download; the bundled Whisper engine is already installed and only needs the Whisper tiny.en model from the Model library. Downloads and unpacking continue with the screen off.</p>
+      <p class="hint">Install the runtimes you want to use. Archives are downloaded to <code>Download/PenGuru</code> when All files access is granted (or to app storage otherwise), verified, and unpacked without root. Android's built-in speech recognizer needs no download; the bundled Whisper engine is already installed and only needs the Whisper tiny.en model from the Model library. You can accept and install every runtime in one go; the total size and mobile-data warning are shown before the download starts. Downloads and unpacking continue with the screen off.</p>
+      <div id="runtimes-bulk"></div>
       <div id="runtimes"></div>
       <h3>Storage</h3>
       <p id="storage-paths" class="hint">Models: …<br>Runtimes: …<br>Exports: Downloads/PenGuru</p>

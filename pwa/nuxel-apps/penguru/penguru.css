@@ -16,3 +16,18 @@ input[type=url],input[type=password],input[type=text]{display:block;width:100%;m
 input[type=range]{display:block;width:100%;min-width:150px;margin-top:8px;accent-color:#7dd9cc}
 #talkback-status{padding:10px 12px;border-radius:10px;background:#17253a;overflow-wrap:anywhere}
 @media(max-width:560px){.voice-row{gap:10px}.mic-status{flex-basis:100%;order:5}.compact,.toggle{font-size:13px}}
+
+/* Bulk download / install controls and the mobile-data confirmation */
+.bulk-panel{border-color:#7dd9cc;background:#0f2733}
+.bulk-panel h4{margin-top:0;font-size:18px}
+.bulk-warning{color:#ffd27d;background:rgba(255,210,125,.08);border:1px solid rgba(255,210,125,.35);border-radius:10px;padding:10px 12px}
+button.primary{background:#236e69;border-color:#7dd9cc;font-weight:600}
+.download-warning-backdrop{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,15,.82)}
+.download-warning{width:100%;max-width:540px;max-height:calc(100vh - 40px);overflow:auto;padding:22px;border:2px solid #ffd27d;border-radius:16px;background:#101e30;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+.download-warning h3{margin:0 0 10px;font-size:21px}
+.download-warning p{margin:10px 0;line-height:1.55}
+.download-warning-lead{margin-top:0!important;color:#ffd27d;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+.download-warning-size{padding:12px;border-radius:10px;background:#17253a;font-weight:700;font-size:18px}
+.download-warning .controls{justify-content:flex-end;margin-top:16px}
+.download-warning .controls button{min-width:110px}
+@media(max-width:480px){.download-warning-backdrop{padding:12px}.download-warning{padding:18px}.download-warning .controls button{flex:1}}

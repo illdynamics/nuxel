@@ -62,7 +62,9 @@ export function talkbackControls() {
   const native = !!(host && typeof host.ttsSpeak === 'function');
   const listeners = new Set();
   const state = {
-    enabled: read(KEY_ENABLED, '0') === '1',
+    // Talkback is on by default. An explicit "off" choice is still
+    // persisted, so only a missing preference falls back to enabled.
+    enabled: read(KEY_ENABLED, '1') === '1',
     rate: number(read(KEY_RATE, '1'), 1),
     pitch: number(read(KEY_PITCH, '1'), 1),
     engine: read(KEY_ENGINE, ''),
