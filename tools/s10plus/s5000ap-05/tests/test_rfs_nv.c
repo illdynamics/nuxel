@@ -81,18 +81,37 @@ int main(void)
         CHECK(rfs_nv_item_serialize(0x15, 0, 0, 4, NULL, buf, sizeof buf) == 0);
     }
 
-    /* --- response build 15 bytes layout --- */
+    /* --- response build 15 bytes layout (round-40 CORRECTED) --- */
     {
         uint8_t out[RFS_NV_RESP_LEN];
         memset(out, 0xFF, sizeof out);
-        size_t n = rfs_nv_response_build(0x15, 0x2b, 0, 0x00012340u, out);
+        /* WRITE response: [len=15][type=2][seq][result][offset u32][written u32] */
+        size_t n = rfs_nv_response_build(0x2b, 0, 0x00012340u, 8u, out);
         CHECK(n == RFS_NV_RESP_LEN);
         CHECK(out[0] == 15);   /* total len */
-        CHECK(out[4] == 2);    /* type byte */
-        CHECK(out[5] == 0x15); /* op echo */
-        CHECK(out[6] == 0x2b); /* seq echo */
-        CHECK(out[7] == 0);    /* result success */
-        CHECK(out[8] == 0x40 && out[9] == 0x23 && out[10] == 0x01 && out[11] == 0x00);
+        CHECK(out[4] == 2);    /* type byte (WRITE) */
+        CHECK(out[5] == 0x2b); /* seq echo */
+        CHECK(out[6] == 0);    /* result success */
+        CHECK(out[7] == 0x40 && out[8] == 0x23 && out[9] == 0x01 && out[10] == 0x00);
+        CHECK(out[11] == 8 && out[12] == 0 && out[13] == 0 && out[14] == 0); /* written */
+    }
+
+    /* --- READ response build (type=1, 15+data, appends payload) --- */
+    {
+        uint8_t out[64];
+        const uint8_t payload[8] = { 'i','n','t','e','r','n','e','t' };
+        memset(out, 0xFF, sizeof out);
+        size_t n = rfs_nv_read_response_build(0x2b, 0, 0x12340u, 8u, payload, out, sizeof out);
+        CHECK(n == 15 + 8);
+        CHECK(out[0] == 23);   /* total len 15+8 */
+        CHECK(out[4] == 1);    /* type byte (READ) */
+        CHECK(out[5] == 0x2b); /* seq */
+        CHECK(out[6] == 0);    /* result */
+        CHECK(out[7] == 0x40 && out[8] == 0x23 && out[9] == 0x01 && out[10] == 0x00);
+        CHECK(out[11] == 8);   /* bytes */
+        CHECK(memcmp(out + 15, "internet", 8) == 0);
+        /* overflow: cap too small */
+        CHECK(rfs_nv_read_response_build(0, 0, 0, 100u, payload, out, 20) == 0);
     }
 
     /* --- provisioning policy --- */

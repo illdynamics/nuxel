@@ -34,6 +34,7 @@ $CC "${CFLAGS[@]}" -Isrc -o test_mbim_tx tests/test_mbim_tx.c src/mbim_tx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_qbr_items tests/test_qbr_items.c src/qbr_items.c
 $CC "${CFLAGS[@]}" -Isrc -o test_nv_items tests/test_nv_items.c src/nv_items.c
 $CC "${CFLAGS[@]}" -Isrc -o test_rfs_nv tests/test_rfs_nv.c src/rfs_nv.c
+$CC "${CFLAGS[@]}" -Isrc -o test_efs_nv tests/test_efs_nv.c src/efs_nv.c src/nv_items.c
 
 echo "=== run SIPC5/FMT unit tests ==="
 ./test_sipc5_fmt
@@ -59,6 +60,8 @@ echo "=== run Stage-06 recovered CP-NV record/MD5/policy tests ==="
 ./test_nv_items
 echo "=== run Stage-06 recovered RFS NV transaction tests ==="
 ./test_rfs_nv
+echo "=== run Stage-06 native EFS NV backend tests ==="
+./test_efs_nv
 echo "=== run SIPC5 fuzzer (host, no writes) ==="
 python3 tests/fuzz_sipc5.py ./fuzz_driver --iters=3000
 

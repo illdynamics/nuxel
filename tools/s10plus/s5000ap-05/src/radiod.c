@@ -568,10 +568,15 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
     uint8_t resp[RFS_RESP_LEN + 1];
     size_t n;
     if (nv_parsed) {
-        /* NV transaction envelope is 15 bytes (recovered). */
-        n = rfs_nv_response_build(req.op, req.seq,
+        /* NV transaction envelope is 15 bytes (recovered, round-40 corrected):
+         * [u32 len][u8 type][u8 seq][u8 result][u32 offset][u32 written]. We
+         * build an ERROR response here (fail-closed): result=1, offset=0,
+         * written=0. The successful NV_READ/NV_WRITE serving path (with the
+         * real offset/length from the CP and EFS read/write) is gated behind
+         * the explicit provisioning arm below. */
+        n = rfs_nv_response_build(req.seq,
                                   (uint8_t)(res == 0 ? 0u : 1u),
-                                  (uint32_t)(res == 0 ? 0 : detail), resp);
+                                  0u, 0u, resp);
     } else {
         n = rfs_response_build(req.op, req.seq, res, detail, resp);
     }

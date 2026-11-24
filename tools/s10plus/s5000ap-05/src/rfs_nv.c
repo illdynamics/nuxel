@@ -65,25 +65,61 @@ size_t rfs_nv_item_serialize(uint8_t op, uint8_t seq, uint32_t offset,
     return RFS_NV_HDR_MIN + (size_t)length;
 }
 
-size_t rfs_nv_response_build(uint8_t op, uint8_t seq, uint8_t result,
-                             uint32_t detail, uint8_t out[RFS_NV_RESP_LEN])
+size_t rfs_nv_response_build(uint8_t seq, uint8_t result,
+                             uint32_t offset, uint32_t written,
+                             uint8_t out[RFS_NV_RESP_LEN])
 {
     if (!out) return 0;
-    /* [u32 total_len][u8 type][u8 op_echo][u8 result][u32 detail] = 15 */
-    out[0] = RFS_NV_RESP_LEN;   /* total length (15) */
-    out[1] = 0;                 /* length hi byte (0) */
+    /* WRITE response (ProcessNvWrite @0x1d8920), EXACTLY 15 bytes:
+     * [u32 total_len=15][u8 type=2][u8 seq][u8 result][u32 offset][u32 written] */
+    out[0] = RFS_NV_RESP_LEN & 0xff;   /* total length (15) */
+    out[1] = 0;
     out[2] = 0;
     out[3] = 0;
-    out[4] = 2;                 /* type = 2 (NV format) */
-    out[5] = op;                /* op echo (request byte offset 5 -> op) */
-    out[6] = (uint8_t)(seq ? seq : 0);  /* seq/correlation echo */
-    out[7] = result;            /* 0 success / 1 failure */
-    out[8] = (uint8_t)(detail & 0xff);
-    out[9] = (uint8_t)((detail >> 8) & 0xff);
-    out[10] = (uint8_t)((detail >> 16) & 0xff);
-    out[11] = (uint8_t)((detail >> 24) & 0xff);
-    out[12] = 0; out[13] = 0; out[14] = 0;
+    out[4] = 2;                        /* type = 2 (WRITE NV format) */
+    out[5] = seq;                      /* sequence echo (request byte +5) */
+    out[6] = result;                   /* 0 success / 1 failure */
+    out[7]  = (uint8_t)(offset & 0xff);
+    out[8]  = (uint8_t)((offset >> 8) & 0xff);
+    out[9]  = (uint8_t)((offset >> 16) & 0xff);
+    out[10] = (uint8_t)((offset >> 24) & 0xff);
+    out[11] = (uint8_t)(written & 0xff);
+    out[12] = (uint8_t)((written >> 8) & 0xff);
+    out[13] = (uint8_t)((written >> 16) & 0xff);
+    out[14] = (uint8_t)((written >> 24) & 0xff);
     return RFS_NV_RESP_LEN;
+}
+
+size_t rfs_nv_read_response_build(uint8_t seq, uint8_t result,
+                                  uint32_t offset, uint32_t bytes,
+                                  const uint8_t *data,
+                                  uint8_t *out, size_t cap)
+{
+    uint32_t total;
+    size_t i;
+    if (!out || cap < RFS_NV_RESP_LEN) return 0;
+    if (bytes > 0 && !data) return 0;
+    if (bytes > 0 && (size_t)bytes > cap - RFS_NV_RESP_LEN) return 0;
+    total = RFS_NV_RESP_LEN + bytes;
+    /* READ response (ProcessNVRead @0x1d8c2c): type byte 1, total_len=15+bytes,
+     * then offset and bytes, then the read-back data appended. */
+    out[0] = (uint8_t)(total & 0xff);
+    out[1] = (uint8_t)((total >> 8) & 0xff);
+    out[2] = (uint8_t)((total >> 16) & 0xff);
+    out[3] = (uint8_t)((total >> 24) & 0xff);
+    out[4] = 1;                        /* type = 1 (READ NV format) */
+    out[5] = seq;
+    out[6] = result;
+    out[7]  = (uint8_t)(offset & 0xff);
+    out[8]  = (uint8_t)((offset >> 8) & 0xff);
+    out[9]  = (uint8_t)((offset >> 16) & 0xff);
+    out[10] = (uint8_t)((offset >> 24) & 0xff);
+    out[11] = (uint8_t)(bytes & 0xff);
+    out[12] = (uint8_t)((bytes >> 8) & 0xff);
+    out[13] = (uint8_t)((bytes >> 16) & 0xff);
+    out[14] = (uint8_t)((bytes >> 24) & 0xff);
+    for (i = 0; i < bytes; i++) out[RFS_NV_RESP_LEN + i] = data[i];
+    return (size_t)total;
 }
 
 enum rfs_nv_provision_decision rfs_nv_provision_policy(

@@ -128,12 +128,31 @@ size_t rfs_nv_item_serialize(uint8_t op, uint8_t seq, uint32_t offset,
                              uint8_t *out, size_t cap);
 
 /*
- * Build the 15-byte AP->CP NV response envelope (recovered). `op` and `seq`
- * are echoed; `result` is 0 (success) / 1 (failure); `detail` is the u32
- * to echo (offset written on success). Returns RFS_NV_RESP_LEN or 0.
+ * Build the AP->CP NV response envelope (recovered; ProcessNvWrite @0x1d8920).
+ * WRITE response (type byte 2) is EXACTLY 15 bytes:
+ *   [u32 total_len=15][u8 type=2][u8 seq][u8 result][u32 offset][u32 written]
+ * RECOVERED (round-40 independent disassembly): the 3 bytes after total_len
+ * are type, SEQUENCE (not op), and result; then two u32 detail words
+ * (offset, bytes_written). Previous rounds had op@+5/seq@+6, which is WRONG.
+ * `seq` is echoed at +5; `result` at +6; `detail` (offset) at +7; `written`
+ * at +11. Returns RFS_NV_RESP_LEN or 0.
  */
-size_t rfs_nv_response_build(uint8_t op, uint8_t seq, uint8_t result,
-                             uint32_t detail, uint8_t out[RFS_NV_RESP_LEN]);
+size_t rfs_nv_response_build(uint8_t seq, uint8_t result,
+                             uint32_t offset, uint32_t written,
+                             uint8_t out[RFS_NV_RESP_LEN]);
+
+/*
+ * Build the AP->CP NV READ response envelope (recovered; ProcessNVRead
+ * @0x1d8c2c). READ uses type byte 1 and APPENDS the read-back data:
+ *   [u32 total_len=15+bytes][u8 type=1][u8 seq][u8 result]
+ *   [u32 offset][u32 bytes][data...]
+ * Returns total bytes written (>=15) into out[0..cap), or 0 on overflow.
+ * Pure; never reads past data_len. cap must be >= 15+bytes.
+ */
+size_t rfs_nv_read_response_build(uint8_t seq, uint8_t result,
+                                  uint32_t offset, uint32_t bytes,
+                                  const uint8_t *data,
+                                  uint8_t *out, size_t cap);
 
 /*
  * Decide whether an AP-originated provisioning write for the given item id
