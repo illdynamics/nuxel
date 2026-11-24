@@ -122,6 +122,19 @@ class StartupTests(unittest.TestCase):
             self.assertIn('--nv-md5', argv)
             self.assertEqual(run.call_args.kwargs['timeout'], 65)
 
+    def test_existing_radio_owner_prevents_boot(self):
+        with tempfile.TemporaryDirectory() as td:
+            state = Path(td) / 'state'
+            state.write_text('OFFLINE')
+            directory = Mock()
+            directory.iterdir.return_value = [Path(td) / 'fd']
+            run = Mock()
+            with patch.object(production.Path, 'glob', return_value=[directory]), \
+                 patch.object(production.os, 'readlink', return_value='/dev/umts_ipc0'):
+                with self.assertRaisesRegex(ValueError, 'already owned'):
+                    production.start(config(), state, run)
+            run.assert_not_called()
+
     def test_loader_success_without_online_fails(self):
         with tempfile.TemporaryDirectory() as td:
             state = Path(td) / 'state'

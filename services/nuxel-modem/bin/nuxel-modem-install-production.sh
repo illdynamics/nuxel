@@ -19,6 +19,10 @@ PY
 mkdir -p /var/lib/nuxel
 backup=$(mktemp -d /var/lib/nuxel/modem-production-install.XXXXXX)
 chmod 0700 "$backup"
+# Snapshot inputs before replacing destinations; allow reinstall from the
+# already-installed config/binary without install(1)'s same-file failure.
+cp -- "$config" "$backup/config.input"
+cp -- "$loader" "$backup/loader.input"
 paths=(/usr/libexec/nuxel/nuxel-cpbootd-production
        /usr/lib/nuxel/nuxel-modem/nuxel-cpbootd.production.hw
        /etc/nuxel/modem/production.json
@@ -45,8 +49,8 @@ rollback() {
 }
 trap rollback EXIT
 install -m 0755 "$HERE/nuxel-cpbootd-production" "${paths[0]}"
-install -m 0750 "$loader" "${paths[1]}"
-install -m 0600 "$config" "${paths[2]}"
+install -m 0750 "$backup/loader.input" "${paths[1]}"
+install -m 0600 "$backup/config.input" "${paths[2]}"
 "${paths[0]}" --check
 install -m 0644 "$HERE/../systemd/nuxel-cpbootd-production.service" "${paths[3]}"
 cat > "${paths[4]}" <<'UNIT'
