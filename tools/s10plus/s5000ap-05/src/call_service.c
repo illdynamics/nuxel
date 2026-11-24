@@ -5,6 +5,16 @@ void call_service_init(struct call_service *s,call_write_fn write,call_notify_fn
 { memset(s,0,sizeof *s);s->write=write;s->notify=notify;s->user=user;s->result=-1; }
 static void notification(struct call_service *s,uint8_t id,const char *state,bool incoming)
 { if(s->notify)s->notify(id,state,incoming,s->user); }
+static void invalidate_list(struct call_service *s)
+{
+    /* Loss of observation is not a remotely confirmed hang-up. Publish it
+     * once so consumers cannot retain an active call/audio route forever. */
+    if(s->list_valid)
+        for(size_t i=0;i<s->list.count;i++)
+            notification(s,s->list.calls[i].id,"unknown",false);
+    s->list_valid=false;
+    s->list.count=0;
+}
 static bool command(struct call_service *s,struct fmt_tx_frame *f,uint64_t now)
 {
     if(s->pending || !s->write)return false;
@@ -41,12 +51,15 @@ void call_service_tick(struct call_service *s,uint64_t now,bool online,bool writ
     if(!online) {
         if(s->pending)s->result=-2;
         s->pending=false;s->query_pending=false;s->status_valid=false;s->dial_waiting=false;
-        if(s->list_valid)for(size_t i=0;i<s->list.count;i++)notification(s,s->list.calls[i].id,"unknown",false);
-        s->list_valid=false;s->list.count=0;s->next_query_ms=0;return;
+        invalidate_list(s);s->next_query_ms=0;return;
     }
     if(s->pending && now>=s->deadline_ms) { s->pending=false;s->result=-2;s->next_query_ms=0; }
     if(s->dial_waiting && now>=s->deadline_ms) { s->dial_waiting=false;s->result=-2;s->next_query_ms=0; }
-    if(s->query_pending && now>=s->query_deadline_ms) { s->query_pending=false;s->list_valid=false; }
+    if(s->query_pending && now>=s->query_deadline_ms) {
+        s->query_pending=false;invalidate_list(s);s->next_query_ms=now+5000;
+    }
+    if(s->list.count && s->next_query_ms>now+1000)
+        s->next_query_ms=now+1000;
     if(writable && !s->query_pending && now>=s->next_query_ms) {
         struct fmt_tx_frame f;
         if(fmt_call_get_list(&f) && s->write(&f,&s->query_sequence,s->user)) {
@@ -77,7 +90,9 @@ void call_service_receive(struct call_service *s,const struct nuxel_sipc_fmt *f)
     if(!s->query_pending || f->ack_seq!=s->query_sequence) { s->unmatched++;return; }
     s->query_pending=false;
     struct fmt_call_list list;
-    if(!fmt_call_list(p,n,&list)) { s->parse_errors++;s->list_valid=false;return; }
+    if(!fmt_call_list(p,n,&list)) {
+        s->parse_errors++;invalidate_list(s);return;
+    }
     for(size_t i=0;i<list.count;i++) {
         const struct fmt_call *c=&list.calls[i];bool different=true;
         for(size_t j=0;j<s->list.count && s->list_valid;j++)
