@@ -1033,6 +1033,23 @@ static void data_session_tick(uint64_t now)
         return;
     }
 
+    /* MBIM is an opt-in, non-essential attach-config path (round-32 ruled it
+     * out as the control-plane transport: vendor GetIntfType==SIPC skips
+     * raw-IPC). When it is disabled, DS_SET_LTE_ATTACH advances the FSM into
+     * DS_MBIM_ATTACH_CONFIG, but data_session_emit() returns false for that
+     * phase with MBIM off. Without this skip the FSM stalls forever and the
+     * default EPS bearer can never be driven. Skip directly to ALWAYS_ON_PDN. */
+    if (g.dsc.phase == DS_MBIM_ATTACH_CONFIG && !mbim_attach_enabled()) {
+        enum ds_phase skip = ds_step(&g.dsc, true, now);
+        if (skip != DS_MBIM_ATTACH_CONFIG) {
+            g.wrote_phase = false;
+            g.dsc.phase_entered_ms = now;
+            diagf("data_session_ack", "\"phase\":\"MBIM_ATTACH_CONFIG\",\"next\":\"%s\",\"skipped\":true",
+                  ds_phase_name(skip));
+        }
+        return;
+    }
+
     /* MBIM_ATTACH_CONFIG is a multi-step session (OPEN -> COMMAND -> STATUS
      * query -> CLOSE) driven by g.dsc.mbim_substate. Unlike the other phases,
      * it must emit the NEXT session frame on each tick (with a short dwell)

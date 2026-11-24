@@ -149,6 +149,20 @@ int main(void)
           "set_lte_attach_profile main/sub/type=13/20/3");
     CHECK(f.buf[0] == 0xc9 && f.buf[1] == 0x00, "set_lte_attach_profile len field = 201 LE");
     CHECK(f.buf[7 + 0] == 0x03, "set_lte_attach_profile payload[0] flag == 3");
+
+    /* Byte-exact flag decode: payload[0] = (flag & 1) ? 3 : 4 (never 1/2).
+     * flag=1 selects the same "apply" wire byte as flag=3. */
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_lte_attach_profile(&f, "internet", FMT_TX_AUTH_NONE,
+                                        FMT_TX_PROTO_IPV4V6, 1, 1),
+          "set_lte_attach_profile flag=1 builds");
+    CHECK(f.buf[7 + 0] == 0x03, "flag=1 -> payload[0]==3 (bit0 set => apply)");
+    memset(&f, 0, sizeof f);
+    CHECK(fmt_tx_set_lte_attach_profile(&f, "internet", FMT_TX_AUTH_NONE,
+                                        FMT_TX_PROTO_IPV4V6, 1, 4),
+          "set_lte_attach_profile flag=4 builds");
+    CHECK(f.buf[7 + 0] == 0x04, "flag=4 -> payload[0]==4 (bit0 clear => alternate)");
+
     CHECK(f.buf[7 + 1] == 0x01, "set_lte_attach_profile payload[1] profile-selector int == 1 (vendor-hardcoded, NOT cid)");
     CHECK(f.buf[7 + 2] == 0x04, "set_lte_attach_profile payload[2] protocol == 0x04");
     CHECK(memcmp(&f.buf[7 + 3], "internet", 8) == 0,

@@ -291,7 +291,12 @@ bool fmt_tx_set_lte_attach_profile(struct fmt_tx_frame *f, const char *apn,
      *
      * Prior code wrote the attach CID into payload[1]; that is a semantic bug.
      * `cid` is still accepted for API compatibility but is only advisory. */
-    p[0] = flag;   /* keep live-verified value 3 (set profile) */
+    /* AUTHORITATIVE flag decode (IpcTxSetLteAttachProfile @0x320238):
+     *   tst w8,#1 ; csinc w8,3,wzr,ne  ->  payload[0] = (flag & 1) ? 3 : 4.
+     * The vendor NEVER emits 1/2 as payload[0]; those are live-rejected
+     * (gen_result=4). 3 = apply profile (accepted), 4 = the alternate selector
+     * (live-rejected on this modem). */
+    p[0] = (uint8_t)((flag & 1u) ? 3u : 4u);
     p[1] = 1u;     /* vendor-hardcoded profile selector int (NOT the CID) */
     (void)cid;
     p[2] = proto_wire_byte(proto);
