@@ -45,6 +45,12 @@ export function speakable(text) {
   value = value.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ');
   value = value.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
   value = value.replace(/https?:\/\/\S+/g, ' link ');
+  // Do not make Android TTS read decorative separators out loud ("middle dot",
+  // "bullet"). This is especially important for the answer header
+  // "PenGuru · on-device": it should sound like "PenGuru on-device".
+  value = value.replace(/\bPenGuru\s*[·•]\s*on-device\b/gi, 'PenGuru on-device');
+  value = value.replace(/[·•]/g, ' ');
+  value = value.replace(/[→←↑↓]/g, ' ');
   value = value.replace(/[#*_>~|]/g, ' ');
   value = value.replace(/\s+/g, ' ').trim();
   if (!value) value = 'The response is on screen.';

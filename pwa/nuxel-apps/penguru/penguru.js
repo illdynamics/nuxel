@@ -1,4 +1,4 @@
-import {voiceControls} from './voice.js';
+import {voiceControls, modeLabel} from './voice.js';
 import {bridge} from '../../nuxel-common/bridge.js';
 import {modelLibrary} from './model-library.js';
 import {createLocalEngine} from './local-engine.js';
@@ -129,7 +129,8 @@ $('refresh-storage').onclick = () => {
 };
 
 const library = modelLibrary($('cards'), call);
-const voice = voiceControls(call, () => !request, text => autoSendText(text));
+const voice = voiceControls(call, () => !request, (text, auto, meta) =>
+  autoSendText(text, Object.assign({auto}, meta || {})));
 const talkback = talkbackControls();
 window.addEventListener('penguru:transcript-ready', () => page('chat'));
 
@@ -285,6 +286,21 @@ function message(role, text) {
 
 // Voice transcripts and background wake-word commands are sent immediately.
 // Nothing is left waiting in the textarea: the user asked for hands-free use.
+const ASSISTANT_MODES = ['squad', 'chatbird', 'codebird'];
+
+// A spoken "Penguru chat" / "Penguru code" forces the matching assistant mode.
+async function applyMode(name) {
+  const mode = ASSISTANT_MODES.includes(name) ? name : '';
+  if (!mode) return '';
+  if ($('mode')) $('mode').value = mode;
+  try {
+    await call('set_mode', {mode});
+  } catch (error) {
+    notice(error.message);
+  }
+  return mode;
+}
+
 async function sendMessage(rawText, options = {}) {
   const text = String(rawText || '').trim();
   if (!text || request) return false;
@@ -303,7 +319,9 @@ async function sendMessage(rawText, options = {}) {
   try {
     message('user', text);
     currentReply = message('assistant', 'Routing…');
-    const r = await call('submit', {text, route_override: $('route').value || null});
+    const override = Object.prototype.hasOwnProperty.call(options, 'routeOverride')
+      ? options.routeOverride : ($('route').value || null);
+    const r = await call('submit', {text, route_override: override});
     request = r.request_id;
     $('prompt').value = '';
     $('cancel').disabled = false;
@@ -321,15 +339,30 @@ async function sendMessage(rawText, options = {}) {
 
 let ready = false;
 const queuedVoice = [];
-function autoSendText(text, meta = {}) {
+async function autoSendText(text, meta = {}) {
   const value = String(text || '').trim();
-  if (!value) return false;
+  const mode = ASSISTANT_MODES.includes(meta.mode) ? meta.mode : '';
   if (!ready) { queuedVoice.push({value, meta}); return false; }
-  return sendMessage(value, Object.assign({auto: true}, meta));
+  if (mode) await applyMode(mode);
+  if (!value) {
+    if (mode) {
+      notice(modeLabel(mode) + ' selected' + (meta.heard ? ' by voice' : '') + '.');
+      page('chat');
+      return true;
+    }
+    return false;
+  }
+  const options = Object.assign({auto: true}, meta);
+  if (mode) {
+    options.routeOverride = mode === 'codebird' ? 'CODE'
+      : mode === 'chatbird' ? 'CHAT' : null;
+  }
+  return sendMessage(value, options);
 }
 // MainActivity forwards commands recognised by the persistent background
-// SonarBird listener into this hook.
-window.__penguruWakeCommand = text => { autoSendText(text, {heard: text}); };
+// SonarBird listener into this hook. mode is "" for an ordinary message, or
+// "chatbird"/"codebird" when the owner said "Penguru chat"/"Penguru code".
+window.__penguruWakeCommand = (text, mode) => { autoSendText(text, {heard: text || '', mode}); };
 window.__penguruWakeStatus = text => {
   const el = $('wake-service-status');
   if (el) el.textContent = text;
@@ -339,7 +372,13 @@ window.__penguruWakeStatus = text => {
 // Activity may have delivered a wake command before this module finished
 // parsing. Drain that tiny hand-off queue now.
 if (Array.isArray(window.__penguruWakeQueue)) {
-  for (const text of window.__penguruWakeQueue.splice(0)) window.__penguruWakeCommand(text);
+  for (const item of window.__penguruWakeQueue.splice(0)) {
+    if (item && typeof item === 'object') {
+      window.__penguruWakeCommand(item.text || '', item.mode || '');
+    } else {
+      window.__penguruWakeCommand(item, '');
+    }
+  }
 }
 
 async function refresh() {
@@ -354,7 +393,7 @@ async function refresh() {
 }
 
 $('power').onclick=async()=>{try{await voice.stop();await call('set_enabled',{enabled:!enabled});request=null;$('cancel').disabled=true;await refresh();}catch(e){notice(e.message);}};
-$('mode').onchange=()=>call('set_mode',{mode:$('mode').value}).catch(e=>notice(e.message));
+$('mode').onchange=()=>applyMode($('mode').value).catch(e=>notice(e.message));
 $('runtime').onchange=()=>call('set_runtime',{preference:$('runtime').value}).catch(e=>notice(e.message));
 $('compose').onsubmit=e=>{e.preventDefault();sendMessage($('prompt').value).catch(err=>notice(err.message));};
 $('cancel').onclick=()=>request&&call('cancel',{request_id:request}).catch(e=>notice(e.message));
@@ -576,5 +615,5 @@ applyEngineMode();
 page(location.hash==='#models'?'models':location.hash==='#settings'?'settings':'chat');
 refresh().catch(e=>notice(e.message)).finally(() => {
   ready = true;
-  for (const item of queuedVoice.splice(0)) sendMessage(item.value, item.meta);
+  for (const item of queuedVoice.splice(0)) autoSendText(item.value, item.meta);
 });

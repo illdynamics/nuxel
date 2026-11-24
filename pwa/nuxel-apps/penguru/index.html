@@ -30,7 +30,7 @@
       <label>Assistant<select id="mode"><option value="squad">PenGuru Squad</option><option value="chatbird">Single ChatBird</option><option value="codebird">Single CodeBird</option></select></label>
       <label>Route for next request<select id="route"><option value="">Automatic</option><option>CHAT</option><option>CODE</option><option>ASK</option></select></label>
     </div>
-    <p class="hint">Runs on this phone. No Nuxel server, API URL or token is required. Voice transcripts are sent automatically. Generated code is never run automatically.</p>
+    <p class="hint">Runs on this phone. No Nuxel server, API URL or token is required. Voice transcripts are sent automatically; saying “Penguru” first works in every mic mode and strips the wake word. Say “Penguru chat” or “Penguru code” to force ChatBird or CodeBird. Generated code is never run automatically.</p>
     <p id="wake-live" class="hint" role="status" hidden></p>
     <div id="messages" aria-live="polite"></div>
     <form id="compose">
@@ -151,7 +151,7 @@
     <p class="hint" id="speech-engine-status">Checking installed recognizers…</p>
 
     <h3>Voice activity, commands &amp; noise</h3>
-    <label class="toggle"><input id="voice-commands" type="checkbox" checked> Voice commands (“stop”, “send it”, “Penguru stop”)</label>
+    <label class="toggle"><input id="voice-commands" type="checkbox" checked> Voice commands (“stop”, “send it”, “Penguru stop”, “Penguru chat”, “Penguru code”)</label>
     <label>Noise suppression
       <select id="voice-noise">
         <option value="auto">Auto · Android NoiseSuppressor / AGC / echo cancellation</option>
@@ -178,7 +178,7 @@
     <p id="talkback-status" role="status">Checking the Android talkback engine…</p>
 
     <h3>SonarBird background listening</h3>
-    <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> and then your sentence. The notification shows the partial transcript live and the sentence is finalised as soon as the adaptive VAD detects that you stopped talking. Say <strong>“Penguru stop”</strong> (or tap the notification action) to stop the listener, and <strong>“Penguru send”</strong> to send the sentence captured so far. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — the battery exemption below prevents that.</p>
+    <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> and then your sentence. The notification shows the partial transcript live and the sentence is finalised as soon as the adaptive VAD detects that you stopped talking. Say <strong>“Penguru stop”</strong> (or tap the notification action) to stop the listener, <strong>“Penguru send”</strong> to send the sentence captured so far, and <strong>“Penguru chat”</strong> / <strong>“Penguru code”</strong> to force ChatBird or CodeBird for the next request. If the phone has no Android speech service, SonarBird falls back to the bundled Whisper tiny.en model when it is installed. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — the battery exemption below prevents that.</p>
     <div class="controls">
       <button id="wake-service-start" type="button">Start background listening</button>
       <button id="wake-service-stop" type="button" disabled>Stop background listening</button>

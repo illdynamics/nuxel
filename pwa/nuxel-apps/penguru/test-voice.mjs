@@ -62,10 +62,29 @@ globalThis.navigator = { mediaDevices: {} };
 let clock = 0;
 globalThis.performance = { now: () => clock++ };
 
-const { voiceControls } = await import(new URL('./voice.js', import.meta.url));
-const voice = voiceControls(async () => ({}), () => true, (text, auto) => {
-  calls.results.push({ text, auto });
+const { voiceControls, parseVoiceText } = await import(new URL('./voice.js', import.meta.url));
+const { speakable } = await import(new URL('./talkback.js', import.meta.url));
+const voice = voiceControls(async () => ({}), () => true, (text, auto, meta) => {
+  calls.results.push({ text, auto, meta: meta || {} });
 });
+
+const codeCommand = parseVoiceText('Penguru code write a sort function');
+if (!codeCommand.hadWake || codeCommand.mode !== 'codebird'
+    || codeCommand.rest !== 'write a sort function') {
+  throw new Error('wake/mode parsing failed: ' + JSON.stringify(codeCommand));
+}
+if (parseVoiceText('chat').hadWake || parseVoiceText('chat').mode) {
+  throw new Error('a bare "chat" must not force a mode without the wake word');
+}
+
+// Talkback must not read the decorative middle dot in "PenGuru · on-device".
+const spoken = speakable('PenGuru · on-device\n\nCPU · 4 threads');
+if (spoken.includes('·') || spoken.includes('•')) {
+  throw new Error('talkback left a decorative separator in: ' + spoken);
+}
+if (!spoken.includes('PenGuru on-device')) {
+  throw new Error('talkback header was not cleaned: ' + spoken);
+}
 
 voice.start();
 await new Promise(resolve => setTimeout(resolve, 10));
@@ -105,6 +124,26 @@ window.__nuxelSpeechResult({ ok: true, text: 'held sentence', wake: false });
 await new Promise(resolve => setTimeout(resolve, 10));
 if (calls.results.length !== 2 || calls.results[1].text !== 'held sentence') {
   throw new Error('held transcript was dropped');
+}
+
+// Every microphone mode strips "Penguru" and takes the rest as the request.
+voice.start();
+await new Promise(resolve => setTimeout(resolve, 10));
+window.__nuxelSpeechResult({ok: true, text: 'Penguru code write a sort function', wake: false});
+await new Promise(resolve => setTimeout(resolve, 10));
+const codeResult = calls.results[calls.results.length - 1];
+if (codeResult.text !== 'write a sort function' || codeResult.meta.mode !== 'codebird') {
+  throw new Error('wake/mode command was not routed: ' + JSON.stringify(codeResult));
+}
+
+// A mode-only command switches the assistant without sending an empty message.
+voice.start();
+await new Promise(resolve => setTimeout(resolve, 10));
+window.__nuxelSpeechResult({ok: true, text: 'Penguru chat', wake: false});
+await new Promise(resolve => setTimeout(resolve, 10));
+const chatResult = calls.results[calls.results.length - 1];
+if (chatResult.text !== '' || chatResult.meta.mode !== 'chatbird') {
+  throw new Error('mode-only command was not routed: ' + JSON.stringify(chatResult));
 }
 
 console.log('voice.js state-machine test PASSED');

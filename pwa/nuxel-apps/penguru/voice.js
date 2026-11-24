@@ -13,9 +13,13 @@
 // The persistent SonarBird listener has the same adaptive endpointing, and the
 // voice-command vocabulary ("Penguru stop", "stop listening", "send it") is
 // handled natively as well as here.
-const WAKE_RE = /\b(?:pen[\s-]?guru|peng[\s-]?g?u(?:ru|ro|roo)|ping[\s-]?u?ru|pang[\s-]?u?ru)\b[\s,.:;!?-]*(.*)$/i;
-const STOP_RE = /^(?:(?:hey|hi|ok|okay|oi)\s+)?(?:pen[\s-]?guru|peng[\s-]?g?u(?:ru|ro|roo)|ping[\s-]?u?ru|pang[\s-]?u?ru)[\s,.:;!?-]*(?:stop(?:\s+(?:listening|recording|now|it|that|the\s+mic))?|abort|halt|never[\s-]?mind|that'?s\s+all|that\s+is\s+all|cancel|quiet|silence|shut\s+up|enough)[\s.!,]*$/i;
-const SEND_RE = /^(?:(?:hey|hi|ok|okay|oi)\s+)?(?:pen[\s-]?guru|peng[\s-]?g?u(?:ru|ro|roo)|ping[\s-]?u?ru|pang[\s-]?u?ru)[\s,.:;!?-]*(?:send(?:\s+(?:it|now|this|that|message))?|submit|finish|done|that'?s\s+it|go\s+ahead)[\s.!,]*$/i;
+// The same wake-word variants as the native SonarBird service. Requiring a
+// real word boundary keeps unrelated words such as "pengurus" out.
+const WAKE_WORD = '(?:pen|peng|ping|pang)[\\s-]*(?:g[uo]{0,2})?[\\s-]*[uo]{0,2}[\\s-]*r[ou]{1,2}';
+const WAKE_RE = new RegExp('\\b(?:' + WAKE_WORD + ')\\b[\\s,.:;!?-]*(.*)$', 'i');
+const STOP_RE = new RegExp('^(?:(?:hey|hi|ok|okay|oi)\\s+)?(?:' + WAKE_WORD + ')\\b[\\s,.:;!?-]*(?:stop(?:\\s+(?:listening|recording|now|it|that|the\\s+mic))?|abort|halt|never[\\s-]?mind|that\'?s\\s+all|that\\s+is\\s+all|cancel|quiet|silence|shut\\s+up|enough)[\\s.!,]*$', 'i');
+const SEND_RE = new RegExp('^(?:(?:hey|hi|ok|okay|oi)\\s+)?(?:' + WAKE_WORD + ')\\b[\\s,.:;!?-]*(?:send(?:\\s+(?:it|now|this|that|message))?|submit|finish|done|that\'?s\\s+it|go\\s+ahead)[\\s.!,]*$', 'i');
+const MODE_RE = /^(chat\s*bird|chatbird|chat|code\s*bird|codebird|code|squad)\b[\s,.:;!?-]*(.*)$/i;
 
 const KEY_MODE = 'penguru-voice-mode';
 const KEY_END_SILENCE = 'penguru-voice-end-silence';
@@ -44,6 +48,42 @@ function save(key, value) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value) || min));
+}
+
+export function modeName(word) {
+  const value = String(word || '').toLowerCase().replace(/\s+/g, '');
+  if (value === 'chat' || value === 'chatbird') return 'chatbird';
+  if (value === 'code' || value === 'codebird') return 'codebird';
+  if (value === 'squad') return 'squad';
+  return '';
+}
+
+export function modeLabel(mode) {
+  if (mode === 'chatbird') return 'ChatBird';
+  if (mode === 'codebird') return 'CodeBird';
+  if (mode === 'squad') return 'PenGuru Squad';
+  return 'PenGuru';
+}
+
+/**
+ * Split a transcript into an optional wake phrase, an optional forced mode and
+ * the actual request. Works in every microphone mode: "Penguru code write a
+ * sort function" sends only "write a sort function" to CodeBird.
+ */
+export function parseVoiceText(raw) {
+  const text = String(raw || '').trim();
+  const match = text.match(WAKE_RE);
+  if (!match) {
+    return {hadWake: false, rest: text, mode: ''};
+  }
+  let rest = String(match[1] || '').trim();
+  let mode = '';
+  const modeMatch = rest.match(MODE_RE);
+  if (modeMatch) {
+    mode = modeName(modeMatch[1]);
+    rest = String(modeMatch[2] || '').trim();
+  }
+  return {hadWake: true, rest, mode};
 }
 
 export function voiceControls(call, available, onText) {
@@ -185,15 +225,27 @@ export function voiceControls(call, available, onText) {
     updateMicUi();
   }
 
-  function deliver(text, auto) {
+  function deliver(text, auto, meta) {
     const value = String(text || '').trim();
-    if (!value) { status('No speech detected. Try again.'); return; }
+    if (!value) { status('No speech detected. Try again.'); return false; }
     pendingText = '';
     try {
-      const result = onText(value, !!auto);
+      const result = onText(value, !!auto, meta || {});
       if (result && typeof result.catch === 'function') result.catch(() => {});
     } catch (error) { /* the caller reports UI errors */ }
     updateMicUi();
+    return true;
+  }
+
+  function deliverMode(mode) {
+    if (!mode) return false;
+    pendingText = '';
+    try {
+      const result = onText('', true, {mode});
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (error) { /* the caller reports UI errors */ }
+    updateMicUi();
+    return true;
   }
 
   function sendPending() {
@@ -352,37 +404,63 @@ export function voiceControls(call, available, onText) {
       }
       return;
     }
-    if (nextMode === 'wake') {
-      const match = text.match(WAKE_RE);
-      if (!match) {
-        status('No “Penguru” detected. Listening again…');
-        timer = setTimeout(() => { if (!document.hidden) nativeListen('wake'); }, 450);
-        return;
-      }
-      const rest = match[1].trim();
-      if (rest) {
-        if (commands && (STOP_RE.test(rest) || SEND_RE.test(rest))) {
-          if (STOP_RE.test(rest)) { status(errorText('voice_stop_command')); return; }
-        }
-        deliver(rest, true);
-        status('Heard “Penguru” · sending: ' + rest);
-      } else {
-        status('“Penguru” detected · listening for your message…');
-        timer = setTimeout(() => { if (!document.hidden) nativeListen('followup'); }, 300);
-      }
+
+    const spoken = parseVoiceText(text);
+    const wakeMode = nextMode === 'wake';
+    const followup = nextMode === 'followup';
+    if (wakeMode && !spoken.hadWake) {
+      status('No “Penguru” detected. Listening again…');
+      timer = setTimeout(() => { if (!document.hidden) nativeListen('wake'); }, 450);
       return;
     }
-    if (nextMode === 'followup') {
-      if (commands && STOP_RE.test(text)) { status(errorText('voice_stop_command')); return; }
-      deliver(text, true);
-      status('“Penguru” request sent: ' + text);
+
+    const rest = spoken.hadWake ? spoken.rest : text;
+    if (spoken.mode) {
+      if (!rest) {
+        deliverMode(spoken.mode);
+        status('“Penguru” detected · ' + modeLabel(spoken.mode) + ' selected'
+          + (wakeMode || followup ? ' · listening for your message…' : ''));
+        if (wakeMode || followup) {
+          timer = setTimeout(() => { if (!document.hidden) nativeListen('followup'); }, 300);
+        }
+        return;
+      }
+      if (commands && STOP_RE.test(rest)) {
+        status(errorText('voice_stop_command'));
+        return;
+      }
+      deliver(rest, true, {mode: spoken.mode});
+      status('Heard “Penguru” · ' + modeLabel(spoken.mode) + ' · sending: ' + rest);
+      return;
+    }
+
+    if (spoken.hadWake && !rest) {
+      status('“Penguru” detected · listening for your message…');
+      timer = setTimeout(() => { if (!document.hidden) nativeListen('followup'); }, 300);
+      return;
+    }
+    if (commands && STOP_RE.test(rest)) {
+      status(errorText('voice_stop_command'));
+      return;
+    }
+    if (commands && SEND_RE.test(rest)) {
+      status(errorText('voice_send_command'));
+      return;
+    }
+    if (followup) {
+      deliver(rest, true);
+      status('“Penguru” request sent: ' + rest);
+      return;
+    }
+    if (wakeMode || spoken.hadWake) {
+      deliver(rest, true);
+      status('Heard “Penguru” · sending: ' + rest);
       return;
     }
     // Conversation mic and the five-second "Speak a message" mode always
     // stop, transcribe and send. This is the owner-selected default.
-    if (commands && STOP_RE.test(text)) { status(errorText('voice_stop_command')); return; }
-    deliver(text, true);
-    status((nextMode === 'fixed' ? 'Five-second transcript sent: ' : 'Transcript sent: ') + text);
+    deliver(rest, true);
+    status((nextMode === 'fixed' ? 'Five-second transcript sent: ' : 'Transcript sent: ') + rest);
   }
 
   function nativeConfig(nextMode) {
@@ -567,8 +645,13 @@ export function voiceControls(call, available, onText) {
         const result = await call('transcribe', {audio});
         if (epoch !== own + 1 || document.hidden || !available()) return;
         if (nextMode === 'wake' && !result.wake_detected) { status('No “Penguru” detected. Listening again…'); return; }
-        const text = nextMode === 'wake' ? result.after_wake : result.text;
-        if (text) deliver(text, true);
+        const spoken = parseVoiceText(nextMode === 'wake' ? result.after_wake : result.text);
+        if (spoken.mode) {
+          if (spoken.rest) deliver(spoken.rest, true, {mode: spoken.mode});
+          else deliverMode(spoken.mode);
+        } else if (spoken.rest) {
+          deliver(spoken.rest, true);
+        }
         status('Transcript sent automatically.');
       } catch (e) { status(e.message); }
     }).finally(() => { finishing = false; });

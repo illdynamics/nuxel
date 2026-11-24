@@ -168,7 +168,7 @@ public class MainActivity extends Activity {
     private boolean batteryDialogShowing;
     private boolean storageDialogShowing;
     private boolean batterySettingsOpened;
-    private final ArrayDeque<String> pendingWakeCommands = new ArrayDeque<>();
+    private final ArrayDeque<WakeCommand> pendingWakeCommands = new ArrayDeque<>();
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -253,6 +253,14 @@ public class MainActivity extends Activity {
         // first tap no longer reports "speech service is still releasing the
         // previous session" / ERROR_RECOGNIZER_BUSY.
         WakeWordService.setAppForeground(true);
+        // If the Activity was killed during a dictation, SonarBird can be left
+        // in its paused hand-off state. Opening PenGuru re-arms it immediately
+        // unless the visible system voice-input activity still owns the mic.
+        if (!systemSpeechUiActive
+                && getSharedPreferences(WakeWordService.PREFS, MODE_PRIVATE)
+                    .getBoolean(WakeWordService.PREF_ENABLED, false)) {
+            WakeWordService.resumeFromActivity();
+        }
     }
 
     @Override
@@ -643,23 +651,23 @@ public class MainActivity extends Activity {
             return;
         }
         String command = intent.getStringExtra(WakeWordService.EXTRA_COMMAND);
-        if (command != null && !command.trim().isEmpty()) {
+        String mode = intent.getStringExtra(WakeWordService.EXTRA_MODE);
+        if ((command != null && !command.trim().isEmpty())
+                || (mode != null && VoiceCommandRouter.isMode(mode))) {
             intent.removeExtra(WakeWordService.EXTRA_COMMAND);
+            intent.removeExtra(WakeWordService.EXTRA_MODE);
             WakeWordService.clearPendingCommand(this);
-            queueWakeCommand(command.trim());
+            queueWakeCommand(command == null ? "" : command.trim(), mode);
             return;
         }
-        String pending = WakeWordService.takePendingCommand(this);
+        WakeWordService.PendingCommand pending = WakeWordService.takePendingCommand(this);
         if (!pending.isEmpty()) {
-            queueWakeCommand(pending);
+            queueWakeCommand(pending.text, pending.mode);
         }
     }
 
-    private void queueWakeCommand(String text) {
-        if (text == null) {
-            return;
-        }
-        String command = text.trim();
+    private void queueWakeCommand(String text, String mode) {
+        WakeCommand command = new WakeCommand(text, mode);
         if (command.isEmpty()) {
             return;
         }
@@ -670,23 +678,23 @@ public class MainActivity extends Activity {
             reportWakeStatus("Wake-word command queued until PenGuru finishes loading…");
             return;
         }
-        dispatchWakeCommand(command);
+        dispatchWakeCommand(command.text, command.mode);
     }
 
     private void flushPendingWakeCommands() {
         for (;;) {
-            String next;
+            WakeCommand next;
             synchronized (pendingWakeCommands) {
                 next = pendingWakeCommands.pollFirst();
             }
             if (next == null) {
                 return;
             }
-            dispatchWakeCommand(next);
+            dispatchWakeCommand(next.text, next.mode);
         }
     }
 
-    private void dispatchWakeCommand(final String text) {
+    private void dispatchWakeCommand(final String text, final String mode) {
         final WebView view = webView;
         if (view == null) {
             return;
@@ -694,16 +702,34 @@ public class MainActivity extends Activity {
         // Queue inside the page if the ES module has not installed its hook
         // yet. This makes a command heard during page load survive instead of
         // being dropped by evaluateJavascript.
-        final String script = "(function(t){if(window.__penguruWakeCommand){"
-                + "window.__penguruWakeCommand(t);return true;}"
-                + "(window.__penguruWakeQueue=window.__penguruWakeQueue||[]).push(t);"
-                + "return false;})(" + JSONObject.quote(text) + ")";
+        final String script = "(function(t,m){if(window.__penguruWakeCommand){"
+                + "window.__penguruWakeCommand(t,m);return true;}"
+                + "(window.__penguruWakeQueue=window.__penguruWakeQueue||[]).push({text:t,mode:m});"
+                + "return false;})(" + JSONObject.quote(text == null ? "" : text)
+                + "," + JSONObject.quote(mode == null ? "" : mode) + ")";
         view.post(() -> {
             if (webView != null) {
                 webView.evaluateJavascript(script, null);
             }
         });
-        reportWakeStatus("Heard via SonarBird · sending automatically");
+        reportWakeStatus(mode != null && VoiceCommandRouter.isMode(mode)
+                ? VoiceCommandRouter.modeName(mode) + " selected via SonarBird"
+                : "Heard via SonarBird · sending automatically");
+    }
+
+    /** A WakeWordService hand-off: a forced assistant mode, a message, or both. */
+    private static final class WakeCommand {
+        final String text;
+        final String mode;
+
+        WakeCommand(String text, String mode) {
+            this.text = text == null ? "" : text.trim();
+            this.mode = VoiceCommandRouter.isMode(mode) ? mode : "";
+        }
+
+        boolean isEmpty() {
+            return text.isEmpty() && mode.isEmpty();
+        }
     }
 
     /* --------------------------------------------------------- JS bridge */
@@ -2250,17 +2276,30 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** Android TTS otherwise pronounces decorative separators literally. */
+    private static String speakableText(String text) {
+        if (text == null) {
+            return "";
+        }
+        String value = text.replace('·', ' ').replace('•', ' ')
+                .replace('…', '.').replace('\n', ' ').replace('\r', ' ');
+        value = value.replaceAll("[\t ]{2,}", " ").trim();
+        return value;
+    }
+
     private void speakWithTalkback(final String text) {
-        if (text == null || text.trim().isEmpty()) {
+        String speakable = speakableText(text);
+        if (speakable.isEmpty()) {
             return;
         }
         ensureTalkback();
         if (tts == null || !ttsReady) {
-            pendingTtsText = text;
+            pendingTtsText = speakable;
             return;
         }
         try {
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "penguru-" + System.currentTimeMillis());
+            tts.speak(speakable, TextToSpeech.QUEUE_FLUSH, null,
+                    "penguru-" + System.currentTimeMillis());
             reportTalkbackState("speaking");
         } catch (RuntimeException error) {
             ttsLastError = String.valueOf(error.getMessage());

@@ -2,6 +2,32 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.9.9-beta] - 2026-11-24
+
+- Make the wake word work in every microphone mode, not only the dedicated
+  **Listen for “Penguru”** button. In toggle, VAD and five-second mode a
+  transcript such as “Penguru what is the battery level” now strips the wake
+  phrase and sends only “what is the battery level”.
+- Add forced assistant commands: **“Penguru chat”** selects ChatBird and
+  **“Penguru code”** selects CodeBird. The mode is carried into the next
+  request, and a combined phrase such as “Penguru code write a sort function”
+  switches to CodeBird and sends the remainder immediately. “Penguru squad”
+  returns to automatic Squad routing.
+- Stop talkback from reading decorative separators aloud. The answer header
+  **“PenGuru · on-device”** is spoken as “PenGuru on-device”; middle dots,
+  bullets and arrows are removed in both the PWA and the native TTS bridge.
+- Repair the persistent SonarBird listener: feed it from the plain microphone
+  source instead of `VOICE_RECOGNITION`, accept more recognizer renderings of
+  “Penguru” (Pen Guru, Peng Guru, Pengu ru, Penguro, Pinguru, Panguru), use one
+  wake matcher for partial and final hypotheses, and carry a selected
+  ChatBird/CodeBird mode through the short follow-up session.
+- Add a listener health check and recover a stale in-app hand-off when PenGuru
+  is reopened, so SonarBird cannot remain silently paused. On phones without an
+  Android recognition service, or after three hard recognizer failures, the
+  persistent listener falls back to bundled whisper.cpp when the tiny.en model
+  is installed.
+- Rebuild PenGuru Squad 0.9.9-beta (`versionCode=909`).
+
 ## [v0.9.8-beta] - 2026-11-24
 
 - Fix the Android speech path so the microphone is captured from the first

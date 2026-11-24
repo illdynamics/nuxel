@@ -2,14 +2,53 @@
 
 **Date:** 2026-11-24
 **Branch checked:** `feat/android-penguru-squad`
-**HEAD:** v0.9.8-beta follow-up on `feat/android-penguru-squad`
-**Working tree:** v0.9.8 immediate local capture, long-dictation and state-machine repair
+**HEAD:** v0.9.9-beta on `feat/android-penguru-squad`
+**Working tree:** v0.9.9 wake-word, forced-mode and SonarBird reliability repair
 **Artifact:** `dist/android/penguru-squad-debug.apk`
-**SHA-256:** `b3962f5b1a52585572eadca0167fa658b389f2fbb6ab8319deb43d1258f40395`
-**Package/version:** `org.nuxel.penguru` / `versionCode=908`, `versionName=0.9.8-beta`
+**SHA-256:** `847b68829052059e521bdde3faf2309057fc20ff6400d5b56c237907faca5cf0`
+**Package/version:** `org.nuxel.penguru` / `versionCode=909`, `versionName=0.9.9-beta`
 **Min/target SDK:** 26 / 35
 **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
 **Verification device:** headless Android 15 (API 35) x86_64 emulator
+
+---
+
+## v0.9.9-beta — wake commands in every mode and SonarBird reliability
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `847b68829052059e521bdde3faf2309057fc20ff6400d5b56c237907faca5cf0`
+- **Version:** `0.9.9-beta` (`versionCode=909`)
+- **Min/target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Native code:** `arm64-v8a` + `x86_64`
+
+  **Wake word in every mic mode.** Toggle, VAD and the five-second mode now
+  strip a leading “Penguru” from the transcript and send only the remainder.
+  A bare “Penguru” starts the follow-up microphone session instead of being
+  sent as text.
+
+  **Forced assistant commands.** “Penguru chat” selects ChatBird and “Penguru
+  code” selects CodeBird. A combined command such as “Penguru code write a
+  sort function” forces CodeBird and sends “write a sort function”. The
+  selected mode survives the short SonarBird follow-up window.
+
+  **Talkback separator cleanup.** The answer header “PenGuru · on-device” is
+  spoken as “PenGuru on-device”; middle dots, bullets and arrows are removed in
+  both the page and the native TextToSpeech bridge.
+
+  **SonarBird reliability.** The persistent listener now uses the plain
+  microphone source (not `VOICE_RECOGNITION`), shares one wake matcher between
+  partial and final hypotheses, accepts more renderings of the invented word,
+  runs a 15-second health check, recovers a stale in-app hand-off when PenGuru
+  is reopened, and falls back to bundled whisper.cpp when Android recognition
+  is absent or fails three times.
+
+  **Verification:** `node --check` on all bundled JS, the extended
+  `test-voice.mjs` state-machine / wake-mode / talkback checks pass, and the
+  APK rebuilt with `versionCode=909`, `versionName=0.9.9-beta`, and v2 + v3
+  signatures verified. Physical on-device audio acceptance is still required
+  for the recognizer path; the emulator has no microphone input.
 
 ---
 

@@ -165,8 +165,8 @@ bridge must allow the APK origin for CORS; the current
   engine: status, model cards, model download spec (pinned URL/SHA-256),
   download-status → installed transition, runtime install spec, SYSTEM and CODE
   replies, and diagnostics.
-- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=907`,
-  `versionName=0.9.8-beta`.
+- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=909`,
+  `versionName=0.9.9-beta`.
 - The bundled x86_64 `whisper-cli` transcribed the whisper.cpp `jfk.wav` sample
   on the API 35 emulator: “And so my fellow Americans ask not what your country
   can do for you, ask what you can do for your country.” (4.8 s for 11 s of
