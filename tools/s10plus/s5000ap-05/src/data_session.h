@@ -32,6 +32,7 @@ enum ds_phase {
     DS_SYNC_PROFILE,       /* full profile sync w/ RAT (SyncProfileInfo sub=37) */
     DS_SET_DATA_PROFILE,   /* set APN/auth/protocol data profile */
     DS_SET_LTE_ATTACH,     /* set LTE attach profile (required for LTE PS) */
+    DS_MBIM_ATTACH_CONFIG, /* MBIM MS LTE Attach Config (CID 0x0A) via IpcTxRawIpc */
     DS_DEFINE_PDP,         /* define PDP context w/ APN */
     DS_ALWAYS_ON_PDN,      /* always-on PDN profile */
     DS_PS_ATTACH,          /* GPRS PS attach */

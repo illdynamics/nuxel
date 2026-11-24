@@ -10,3 +10,4 @@
 /test_rfs_respond
 /test_fmt_tx
 /test_data_session
+/test_mbim_tx

@@ -19,6 +19,7 @@ const char *ds_phase_name(enum ds_phase p)
     case DS_SYNC_PROFILE:       return "SYNC_PROFILE";
     case DS_SET_DATA_PROFILE:   return "SET_DATA_PROFILE";
     case DS_SET_LTE_ATTACH:     return "SET_LTE_ATTACH";
+    case DS_MBIM_ATTACH_CONFIG: return "MBIM_ATTACH_CONFIG";
     case DS_DEFINE_PDP:         return "DEFINE_PDP";
     case DS_ALWAYS_ON_PDN:      return "ALWAYS_ON_PDN";
     case DS_PS_ATTACH:          return "PS_ATTACH";
@@ -97,7 +98,8 @@ enum ds_phase ds_step(struct data_session_ctx *c, bool ack, uint64_t now_ms)
     case DS_ENABLE_MOBILE_DATA: c->phase = DS_SET_DATA_PROFILE;   break;  /* SYNC_PROFILE(sub=37) live-rejected (GEN=1); skip */
     case DS_SYNC_PROFILE:       c->phase = DS_SET_DATA_PROFILE;   break;
     case DS_SET_DATA_PROFILE:   c->phase = DS_SET_LTE_ATTACH;     break;
-    case DS_SET_LTE_ATTACH:     c->phase = DS_ALWAYS_ON_PDN;      break;  /* DefinePdp(sub=1) is legacy 3G; LTE uses SetPdpContext(sub=4) define+activate in one */
+    case DS_SET_LTE_ATTACH:     c->phase = DS_MBIM_ATTACH_CONFIG; break;  /* then MBIM attach-config, then define+activate */
+    case DS_MBIM_ATTACH_CONFIG: c->phase = DS_ALWAYS_ON_PDN;       break;
     case DS_DEFINE_PDP:         c->phase = DS_ALWAYS_ON_PDN;      break;
     case DS_ALWAYS_ON_PDN:      c->phase = DS_PS_ATTACH;          break;
     case DS_PS_ATTACH:          c->phase = DS_PS_REGIST_VERIFY;   break;

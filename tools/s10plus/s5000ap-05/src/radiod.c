@@ -28,6 +28,7 @@
 #include "transport.h"
 #include "fmt_tx.h"
 #include "data_session.h"
+#include "mbim_tx.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -44,6 +45,9 @@
 
 #include <systemd/sd-bus.h>
 #include <systemd/sd-event.h>
+
+/* Forward declaration (env-gated MBIM attach-config opt-in). */
+static bool mbim_attach_enabled(void);
 
 /* ------------------------------------------------------------------ */
 /* constants                                                            */
@@ -598,6 +602,19 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
 {
     uint8_t phase = (uint8_t)g.dsc.phase;
 
+    /* ---- MBIM raw-IPC response (main=0x16 sub=0x0c) ----
+     * This is the CP's reply to the recovered MbimAdaptor::MakeSetMsLteAttachConfig
+     * / IpcTxRawIpc frame. It is an authoritative command acknowledgement for
+     * the DS_MBIM_ATTACH_CONFIG phase only. We accept it as the phase's ack
+     * (an MBIM message returning means the CP processed the hosted command),
+     * but NEVER treat it as bearer proof — the default EPS bearer is still
+     * decided by GPRS_CALL_STATUS / GPRS_PDP_CONTEXT downstream. */
+    if (f->main_cmd == MBIM_RAW_IPC_MAIN_CMD &&
+        f->sub_cmd == MBIM_RAW_IPC_SUB_CMD &&
+        phase == DS_MBIM_ATTACH_CONFIG) {
+        return DS_FEEDBACK_OK;
+    }
+
     /* ---- GEN echo (main=128) record result byte as diagnostic ---- */
     if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
         f->payload_len >= 4) {
@@ -873,6 +890,42 @@ static bool data_session_emit(void)
                                            g.dsc.attach_cid, g.dsc.attach_flag))
             return false;
         break;
+    case DS_MBIM_ATTACH_CONFIG: {
+        /* Recovered MBIM MS LTE Attach Config (CID 0x0A) via IpcTxRawIpc
+         * (main=0x16/sub=0x0c/type=0x05) over the RIL FMT channel. This is the
+         * source-backed sender from IpcProtocol41::IpcTxRawIpc @0x3180f0 and
+         * MbimAdaptor::MakeSetMsLteAttachConfig @0x1c3018 (round-31 recovery).
+         * Opt-in only (NUXEL_MBIM_ATTACH=1); sends the default internet context
+         * so the modem's persistent initial-attach APN is configured. */
+        if (!mbim_attach_enabled()) return false;
+        struct mbim_attach_context mctx[1];
+        memset(mctx, 0, sizeof mctx);
+        mctx[0].apn = (const char*)g.dsc.apn;
+        mctx[0].username = "";
+        mctx[0].password = "";
+        mctx[0].ip_type = MBIM_CONTEXT_IP_TYPE_IPV4V6;
+        mctx[0].auth = MBIM_AUTH_PROTOCOL_NONE;
+        uint8_t mbim[MBIM_TX_MAX_FRAME];
+        size_t mbim_len = mbim_tx_build_lte_attach_config(mbim, sizeof mbim,
+                                                          mctx, 1, 1u);
+        if (mbim_len == 0) return false;
+        uint8_t rawipc[MBIM_TX_MAX_FRAME];
+        size_t raw_len = mbim_tx_build_raw_ipc_frame(rawipc, sizeof rawipc,
+                                                     mbim, mbim_len,
+                                                     g.next_seq, 0);
+        if (raw_len < 8) return false;
+        /* Populate a fmt_tx_frame-compatible view so radiod_write_fmt logs
+         * main/sub/type correctly and performs the bounded device write. */
+        struct fmt_tx_frame mf;
+        memset(&mf, 0, sizeof mf);
+        if (raw_len > sizeof mf.buf) return false;
+        memcpy(mf.buf, rawipc, raw_len);
+        mf.len = raw_len;
+        mf.main_cmd = MBIM_RAW_IPC_MAIN_CMD;
+        mf.sub_cmd  = MBIM_RAW_IPC_SUB_CMD;
+        mf.cmd_type = MBIM_RAW_IPC_CMD_TYPE;
+        return radiod_write_fmt(&mf);
+    }
     case DS_DEFINE_PDP:
         /* Define the PDP context (source-backed IpcTxDefinePdpContext,
          * main=13 sub=1, 134 bytes) using the corrected attach CID (1 for
@@ -1372,6 +1425,16 @@ static uint8_t env_pdp_type(void)
     long v = strtol(p, NULL, 10);
     if (v >= 1 && v <= 8) return (uint8_t)v;
     return FMT_TX_PDP_TYPE_DEFAULT;
+}
+
+/* Opt-in gate for the recovered MBIM MS LTE Attach Config (CID 0x0A) path.
+ * OFF by default: the default FMT GPRS path is unchanged until the MBIM
+ * attach-config transport is live-validated on hardware. */
+static bool mbim_attach_enabled(void)
+{
+    const char *p = getenv("NUXEL_MBIM_ATTACH");
+    return p && (!strcasecmp(p, "1") || !strcasecmp(p, "on") ||
+                 !strcasecmp(p, "true") || !strcasecmp(p, "yes"));
 }
 
 static int method_start_data_session(sd_bus_message *m, void *u, sd_bus_error *e)
