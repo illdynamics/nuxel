@@ -18,6 +18,32 @@
   while the full native runner stops on existing RFS compiler warnings; the
   macOS phone-data runner also has an existing strict-C11 build failure.
 
+## Stage 06 Round 44 — native automatic cellular data, telephony control, SMS storage
+
+- Recovered Astra's interrupted run and completed the automatic cellular data
+  path: the radiod data-session FSM now reaches WAIT_IP -> ACTIVE and configures
+  rmnet0 itself via the new cellular_link helper (policy table 106, rules
+  30600/30601, metric 2100). This closes the WAIT_IP gap that previously left
+  cellular connectivity manual-only. The helper is tolerant of systemd-resolved
+  absence (Nuxel uses NetworkManager) and uses `ip link` for interface presence.
+- Physically verified on the device (baseband G975FXXSEFUJ2, KPN LTE PLMN 20408):
+  automatic session ACTIVE with ip_configured=true and link_result=0; rmnet0 UP
+  with a fresh global IPv6 assignment, source-bound HTTPS 200 over cellular with
+  zero rx/tx errors, and reconnection verified across daemon restarts.
+- Added native CS voice call control: fmt_call/call_service serializers and FSM
+  for dial/answer/hangup, voice registration and call list/status, plus D-Bus
+  methods Dial/AnswerCall/HangupCall/GetCalls/GetVoiceStatus/GetPdpProfiles and
+  signals CallStateChanged/IncomingCall. Fail-closed: no emergency encoding.
+- Fixed installer gaps: install.sh now compiles cellular_link.c into radiod and
+  installs the cellular_link.py helper; build.sh uses a portable empty-array
+  expansion for bash 3.2 `set -u`; D-Bus XML matches the new methods/signals.
+- SMS: resolved the systemd-unit storage failure by documenting/requiring
+  ReadWritePaths=/var/lib/nuxel-radio for the sms.sqlite3 store. SMS physical
+  delivery and voice two-way audio remain gated on owner-authorized test numbers.
+- Full regression: 12 host suites, 12 native AArch64 suites, 3000 ordinary fuzz
+  and 3000 ASan/UBSan fuzz iterations all pass (clang absent on-device; ASan ran
+  on host). PDP definition readback now decodes the CP's capacity-11 response.
+
 ## Stage 06 Round 43 — wire-format, registration and CP startup corrections
 
 - Corrected SET_APN_INFO, initial-profile, DEFINE and activation frames against
