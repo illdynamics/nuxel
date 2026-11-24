@@ -18,6 +18,7 @@
 #include <gio/gio.h>
 /* Shared phone data layer: contacts, call log and honest capability labels. */
 #include "nuxel-phone-data.h"
+#include "nuxel-radio-client.h"
 
 /* ============================================================
  * Data structures
@@ -34,6 +35,10 @@ typedef struct {
     
     GCancellable *cancellable;
     gboolean modem_ready;
+    NuxelRadioClient radio;
+    gboolean incoming, command_pending, refreshing, refresh_again;
+    guint call_id;
+    gchar *native_state;
 #ifdef HAVE_MM_GLIB
     /* ModemManager integration (only when the client library is available) */
     MMManager *mm_manager;
@@ -73,179 +78,111 @@ static void modem_connect(NuxelDialer *dialer);
 static void dialer_update_capabilities(NuxelDialer *dialer);
 static void dialer_log_call(NuxelDialer *dialer, const gchar *number, const gchar *state);
 
-#ifdef HAVE_MM_GLIB
-/* ============================================================
- * ModemManager Integration
- * ============================================================ */
-
-static void
-on_modem_added_cb (MMManager *manager,
-                   MMModem   *modem,
-                   NuxelDialer *dialer)
+static void native_refresh(gpointer user);
+static void dialer_update_capabilities(NuxelDialer *dialer)
 {
-    g_debug ("[Dialer] Modem detected: %s",
-             mm_modem_get_path (modem));
-    
-    dialer->mm_modem = g_object_ref (modem);
-    dialer->modem_ready = TRUE;
-    
-    /* Update call button state */
-    dialer_update_ui (dialer);
-    
-    /* Monitor call state changes */
-    g_signal_connect_swapped (modem, "state-changed",
-                              G_CALLBACK (dialer_update_ui), dialer);
+    if(!nuxel_radio_available(&dialer->radio) && dialer->capability_label)
+        gtk_label_set_text(GTK_LABEL(dialer->capability_label),"Native call service unavailable");
 }
-
-static void
-on_modem_removed_cb (MMManager *manager,
-                     MMModem   *modem,
-                     NuxelDialer *dialer)
+static void dialer_log_call(NuxelDialer *dialer,const gchar *number,const gchar *state)
 {
-    if (dialer->mm_modem == modem) {
-        g_clear_object (&dialer->mm_modem);
-        dialer->modem_ready = FALSE;
-        dialer_update_ui (dialer);
-    }
+    /* Reload to preserve contact edits from Contacts. Never manufacture a
+     * completed call after loss of the native service. */
+    nuxel_phone_store_free(&dialer->store);nuxel_phone_store_init(&dialer->store);
+    if(nuxel_phone_store_load(&dialer->store,dialer->store_path)<0)return;
+    nuxel_phone_add_call(&dialer->store,number,dialer->incoming ? "in" : "out",state,nuxel_phone_now(),0);
+    nuxel_phone_store_save(&dialer->store,dialer->store_path);
 }
-
-static void
-modem_manager_ready_cb (GObject      *source,
-                        GAsyncResult *res,
-                        gpointer      user_data)
+static void native_calls(GVariant *reply,const GError *error,gpointer user)
 {
-    NuxelDialer *dialer = (NuxelDialer *)user_data;
-    GError *error = NULL;
-    
-    dialer->mm_manager = mm_manager_new_finish (res, &error);
-    
-    if (error) {
-        g_warning ("[Dialer] Failed to connect to ModemManager: %s",
-                   error->message);
-        g_error_free (error);
-        return;
-    }
-    
-    g_debug ("[Dialer] Connected to ModemManager");
-    
-    /* Connect signals for modem add/remove */
-    g_signal_connect (dialer->mm_manager, "modem-added",
-                      G_CALLBACK (on_modem_added_cb), dialer);
-    g_signal_connect (dialer->mm_manager, "modem-removed",
-                      G_CALLBACK (on_modem_removed_cb), dialer);
-    
-    /* Get existing modems */
-    GList *modems = mm_manager_peek_modems (dialer->mm_manager);
-    if (modems) {
-        dialer->mm_modem = g_object_ref (MM_MODEM (modems->data));
-        dialer->modem_ready = TRUE;
-        dialer->caps.modem_present = 1;
-        dialer->caps.voice_calls = 1;
-        dialer->caps.sms_send = 1;
-        dialer->caps.data_connection = 1;
-        {
-            const gchar *nm = mm_modem_get_manufacturer (MM_MODEM (modems->data));
-            g_strlcpy (dialer->caps.modem_name, nm ? nm : "ModemManager modem",
-                       sizeof dialer->caps.modem_name);
+    NuxelDialer *dialer=user;
+    dialer->refreshing=FALSE;
+    if(!reply || error) {
+        dialer->in_call=FALSE;dialer->incoming=FALSE;
+        gtk_label_set_text(GTK_LABEL(dialer->call_status),error ? error->message : "Call state unknown");
+    } else {
+        GVariant *list=g_variant_get_child_value(reply,0);
+        gboolean was_call=dialer->in_call;
+        if(g_variant_n_children(list)) {
+            guint id;const char *state,*number;gboolean incoming;
+            g_variant_get_child(list,0,"(u&s&sb)",&id,&state,&number,&incoming);
+            dialer->in_call=TRUE;
+            dialer->incoming=!strcmp(state,"incoming") || !strcmp(state,"waiting");
+            if(dialer->call_id!=id || g_strcmp0(dialer->native_state,state)) {
+                /* Only the observed transition is recorded, never ACK=active. */
+                dialer_log_call(dialer,number,state);
+                dialer->call_id=id;g_free(dialer->native_state);dialer->native_state=g_strdup(state);
+            }
+            g_free(dialer->current_number);dialer->current_number=g_strdup(number);
+            gtk_label_set_text(GTK_LABEL(dialer->display_label),number);
+            gtk_label_set_text(GTK_LABEL(dialer->call_status),state);
+        } else {
+            if(was_call && dialer->current_number)dialer_log_call(dialer,dialer->current_number,"ended");
+            dialer->in_call=FALSE;dialer->incoming=FALSE;dialer->call_id=0;
+            g_clear_pointer(&dialer->native_state,g_free);
+            if(!dialer->command_pending)gtk_label_set_text(GTK_LABEL(dialer->call_status),"No active call");
         }
-        g_strlcpy (dialer->caps.detail,
-                   "ModemManager reported a modem with a call interface.",
-                   sizeof dialer->caps.detail);
-        dialer_update_capabilities (dialer);
-        dialer_update_ui (dialer);
-    } else {
-        dialer->caps.modem_present = 0;
-        g_strlcpy (dialer->caps.detail,
-                   "ModemManager is running but exposes no modem.",
-                   sizeof dialer->caps.detail);
-        dialer_update_capabilities (dialer);
+        g_variant_unref(list);
     }
+    dialer_update_ui(dialer);
+    if(dialer->refresh_again) { dialer->refresh_again=FALSE;native_refresh(dialer); }
 }
-
-/* Append a call-log entry through the shared store and flush it.  A failed or
- * impossible call is still recorded with its honest state so the log itself
- * never lies about what happened. */
-static void
-dialer_log_call (NuxelDialer *dialer, const gchar *number, const gchar *state)
+static void native_status(GVariant *reply,const GError *error,gpointer user)
 {
-    nuxel_phone_add_call (&dialer->store, number, "out", state, nuxel_phone_now (), 0);
-    if (dialer->store_path)
-        nuxel_phone_store_save (&dialer->store, dialer->store_path);
-}
-
-/* Rebuild the capability sentence from the probe only. */
-static void
-dialer_update_capabilities (NuxelDialer *dialer)
-{
-    if (!dialer->capability_label)
-        return;
-
-    char label[NUXEL_LABEL_MAX];
-    char detail[200];
-    nuxel_phone_capability_label (&dialer->caps, "summary", label, sizeof label);
-
-    if (dialer->caps.modem_present == 1 && dialer->caps.voice_calls) {
-        snprintf (detail, sizeof detail,
-                  "%s  Placing a real call still needs an owner test (proof area 17).", label);
-    } else if (dialer->caps.modem_present == 0) {
-        snprintf (detail, sizeof detail,
-                  "%s  This build records attempted calls in the call log and never "
-                  "pretends a call connected.", label);
-    } else {
-        snprintf (detail, sizeof detail, "%s", label);
+    NuxelDialer *dialer=user;
+    if(!reply || error) {
+        dialer->refreshing=FALSE;dialer->modem_ready=FALSE;dialer->in_call=FALSE;dialer->incoming=FALSE;
+        gtk_label_set_text(GTK_LABEL(dialer->call_status),"Call state unknown; native service unavailable");
+        dialer_update_ui(dialer);return;
     }
-    gtk_label_set_text (GTK_LABEL (dialer->capability_label), detail);
+    GVariant *dict=g_variant_get_child_value(reply,0);
+    const char *registration="unknown",*audio="unknown",*list="unknown",*pending="false";
+    g_variant_lookup(dict,"registration","&s",&registration);g_variant_lookup(dict,"audio_route","&s",&audio);
+    g_variant_lookup(dict,"call_list","&s",&list);g_variant_lookup(dict,"pending","&s",&pending);
+    dialer->modem_ready=!strcmp(registration,"REGISTERED_HOME") || !strcmp(registration,"REGISTERED_ROAMING");
+    gchar *label=g_strdup_printf("Native voice · %s · call audio %s",registration,audio);
+    gtk_label_set_text(GTK_LABEL(dialer->capability_label),label);g_free(label);
+    gboolean valid=!strcmp(list,"received");g_variant_unref(dict);
+    if(!valid) {
+        dialer->refreshing=FALSE;dialer->in_call=FALSE;dialer->incoming=FALSE;
+        gtk_label_set_text(GTK_LABEL(dialer->call_status),"Call state unknown");dialer_update_ui(dialer);return;
+    }
+    nuxel_radio_call(&dialer->radio,"GetCalls",NULL,"call:status",native_calls,dialer);
+}
+static void native_refresh(gpointer user)
+{
+    NuxelDialer *dialer=user;
+    if(dialer->refreshing) { dialer->refresh_again=TRUE;return; }
+    dialer->refreshing=TRUE;
+    nuxel_radio_call(&dialer->radio,"GetVoiceStatus",NULL,NULL,native_status,dialer);
+}
+static gboolean native_poll(gpointer user)
+{ native_refresh(user);return G_SOURCE_CONTINUE; }
+static void modem_connect(NuxelDialer *dialer)
+{
+    nuxel_radio_connect(&dialer->radio,"org.nuxel.Dialer",native_refresh,dialer);
+    g_timeout_add_seconds(3,native_poll,dialer);
+}
+static void native_command_done(GVariant *reply,const GError *error,gpointer user)
+{
+    NuxelDialer *dialer=user;dialer->command_pending=FALSE;
+    gboolean accepted=FALSE;if(reply)g_variant_get(reply,"(b)",&accepted);
+    gtk_label_set_text(GTK_LABEL(dialer->call_status),error ? error->message :
+                       accepted ? "Command accepted; waiting for call state" : "Command rejected");
+    dialer_update_ui(dialer);
+}
+static void native_command(NuxelDialer *dialer,const char *method,GVariant *args,const char *capability)
+{
+    if(dialer->command_pending)return;
+    dialer->command_pending=TRUE;dialer_update_ui(dialer);
+    nuxel_radio_call(&dialer->radio,method,args,capability,native_command_done,dialer);
+}
+static void native_answer(GtkWidget *button,gpointer user)
+{
+    (void)button;NuxelDialer *dialer=user;
+    if(dialer->incoming)native_command(dialer,"AnswerCall",NULL,"call:initiate");
 }
 
-static void
-modem_connect (NuxelDialer *dialer)
-{
-    mm_manager_new (g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, NULL),
-                    G_PRIORITY_DEFAULT,
-                    dialer->cancellable,
-                    modem_manager_ready_cb,
-                    dialer);
-}
-#else /* no libmm-glib: GDBus runtime path */
-static void
-modem_connect (NuxelDialer *dialer)
-{
-    /* ModemManager is only available when built against libmm-glib. When
-     * absent we report the modem as unavailable; the UI still works and shows
-     * the user a clear status message. On real hardware the native build ships
-     * libmm-glib so this path is unused. */
-    dialer->modem_ready = FALSE;
-    /* No libmm-glib build: we cannot even ask ModemManager, so the modem stays
-     * UNKNOWN (not "absent") and the label says so. */
-    dialer->caps.modem_present = -1;
-    g_strlcpy (dialer->caps.detail,
-               "Built without libmm-glib: ModemManager was not queried, so modem "
-               "availability is unknown. No call can be placed from this build.",
-               sizeof dialer->caps.detail);
-    gtk_label_set_text (GTK_LABEL (dialer->call_status),
-                        "Calls unavailable (built without libmm-glib)");
-    dialer_update_capabilities (dialer);
-    dialer_update_ui (dialer);
-}
-
-static void
-dialer_log_call (NuxelDialer *dialer, const gchar *number, const gchar *state)
-{
-    nuxel_phone_add_call (&dialer->store, number, "out", state, nuxel_phone_now (), 0);
-    if (dialer->store_path)
-        nuxel_phone_store_save (&dialer->store, dialer->store_path);
-}
-
-static void
-dialer_update_capabilities (NuxelDialer *dialer)
-{
-    char label[NUXEL_LABEL_MAX];
-    if (!dialer->capability_label)
-        return;
-    nuxel_phone_capability_label (&dialer->caps, "summary", label, sizeof label);
-    gtk_label_set_text (GTK_LABEL (dialer->capability_label), label);
-}
-#endif /* HAVE_MM_GLIB */
 /* ============================================================
  * UI Callbacks
  * ============================================================ */
@@ -336,157 +273,17 @@ dialer_backspace (NuxelDialer *dialer)
     dialer_update_ui (dialer);
 }
 
-#ifdef HAVE_MM_GLIB /* ModemManager call orchestration (libmm-glib only) */
-static void
-on_call_state_changed (MMModem    *modem,
-                       guint       old_state,
-                       guint       new_state,
-                       guint       reason,
-                       NuxelDialer *dialer)
+static void dialer_initiate_call(NuxelDialer *dialer)
 {
-    g_debug ("[Dialer] Call state changed: %u -> %u (reason: %u)",
-             old_state, new_state, reason);
-    
-    if (new_state == 0) { /* MM_MODEM_STATE_UNKNOWN or disconnected */
-        dialer->in_call = FALSE;
-        gtk_label_set_text (GTK_LABEL (dialer->call_status), "");
-    } else {
-        dialer->in_call = (new_state >= 8 && new_state <= 11); /* Connected/Calling states */
-        if (dialer->in_call) {
-            gtk_label_set_text (GTK_LABEL (dialer->call_status),
-                                "Call in progress...");
-        }
+    const char *number=gtk_label_get_text(GTK_LABEL(dialer->display_label));
+    if(!number || !*number)return;
+    if(!dialer->modem_ready) {
+        gtk_label_set_text(GTK_LABEL(dialer->call_status),"Voice network not registered");return;
     }
-    
-    dialer_update_ui (dialer);
+    native_command(dialer,"Dial",g_variant_new("(s)",number),"call:initiate");
 }
-
-static void
-on_call_created (GObject      *source,
-                 GAsyncResult *res,
-                 NuxelDialer  *dialer)
-{
-    GError *error = NULL;
-    MMCall *call = mm_modem_create_call_finish (MM_MODEM (source), res, &error);
-    
-    if (error) {
-        g_warning ("[Dialer] Failed to create call: %s", error->message);
-        gtk_label_set_text (GTK_LABEL (dialer->call_status), error->message);
-        g_error_free (error);
-        return;
-    }
-    
-    g_debug ("[Dialer] Call created: %s", mm_call_get_path (call));
-    dialer->in_call = TRUE;
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), "Connecting...");
-    
-    /* Start the call */
-    mm_call_start (call, dialer->cancellable, NULL, NULL);
-    
-    /* Monitor call state */
-    g_signal_connect_swapped (call, "state-changed",
-                              G_CALLBACK (on_call_state_changed), dialer);
-    
-    dialer_update_ui (dialer);
-}
-
-static void
-dialer_initiate_call (NuxelDialer *dialer)
-{
-    const gchar *number = gtk_label_get_text (GTK_LABEL (dialer->display_label));
-
-    if (!dialer->modem_ready || !dialer->mm_modem) {
-        char label[NUXEL_LABEL_MAX];
-        nuxel_phone_capability_label (&dialer->caps, "voice", label, sizeof label);
-        gtk_label_set_text (GTK_LABEL (dialer->call_status), label);
-        if (number && *number)
-            dialer_log_call (dialer, number, "no-modem");
-        return;
-    }
-
-    if (!number || strlen (number) == 0) {
-        gtk_label_set_text (GTK_LABEL (dialer->call_status),
-                            "Enter a number first");
-        return;
-    }
-
-    /* Record the attempt before it is made: if the app dies mid-dial the log
-     * still shows what the user asked for. */
-    dialer_log_call (dialer, number, "attempted");
-
-    g_debug ("[Dialer] Initiating call to: %s", number);
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), "Dialing...");
-    
-    /* Create a voice call via ModemManager.  The previous code built
-     * MMSmsProperties (an SMS object) and passed it to mm_modem_create_call(),
-     * which is a type-mismatched call and made the phone app look "bugged". */
-    MMCallProperties *properties = mm_call_properties_new ();
-    g_object_set (properties,
-                  MM_CALL_PROPERTY_NUMBER, number,
-                  NULL);
-    
-    mm_modem_create_call (dialer->mm_modem,
-                          properties,
-                          dialer->cancellable,
-                          (GAsyncReadyCallback)on_call_created,
-                          dialer);
-    
-    g_object_unref (properties);
-}
-
-static void
-on_call_deleted (GObject      *source,
-                 GAsyncResult *res,
-                 NuxelDialer  *dialer)
-{
-    GError *error = NULL;
-    gboolean result = mm_modem_delete_call_finish (MM_MODEM (source), res, &error);
-    
-    if (error) {
-        g_warning ("[Dialer] Failed to end call: %s", error->message);
-        g_error_free (error);
-    }
-    
-    dialer->in_call = FALSE;
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), "Call ended");
-    dialer_update_ui (dialer);
-}
-
-static void
-dialer_end_call (NuxelDialer *dialer)
-{
-    if (!dialer->modem_ready || !dialer->mm_modem) {
-        return;
-    }
-    
-    g_debug ("[Dialer] Ending call");
-    
-    /* Hangup all active calls */
-    mm_modem_hangup_all (dialer->mm_modem,
-                         dialer->cancellable,
-                         (GAsyncReadyCallback)on_call_deleted,
-                         dialer);
-}
-#else /* no libmm-glib: dialer still works but cannot place/end real calls */
-static void
-dialer_initiate_call (NuxelDialer *dialer)
-{
-    const gchar *number = gtk_label_get_text (GTK_LABEL (dialer->display_label));
-    char label[NUXEL_LABEL_MAX];
-    nuxel_phone_capability_label (&dialer->caps, "voice", label, sizeof label);
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), label);
-    if (number && *number)
-        dialer_log_call (dialer, number, "no-modem");
-}
-
-static void
-dialer_end_call (NuxelDialer *dialer)
-{
-    dialer->in_call = FALSE;
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), "");
-    dialer_update_ui (dialer);
-}
-#endif /* HAVE_MM_GLIB */
+static void dialer_end_call(NuxelDialer *dialer)
+{ native_command(dialer,"HangupCall",NULL,"call:end"); }
 static void
 dialer_update_ui (NuxelDialer *dialer)
 {
@@ -508,7 +305,11 @@ dialer_update_ui (NuxelDialer *dialer)
      * the user can press it and read WHY nothing will happen; the call log then
      * records the attempt with an honest state instead of a fake "connected". */
     gtk_widget_set_sensitive (dialer->call_button,
-                              has_number || dialer->in_call);
+                              !dialer->command_pending && (has_number || dialer->in_call));
+    if(dialer->end_button) {
+        gtk_widget_set_visible(dialer->end_button,dialer->incoming);
+        gtk_widget_set_sensitive(dialer->end_button,!dialer->command_pending);
+    }
 
     dialer_update_capabilities (dialer);
 }
@@ -629,7 +430,7 @@ create_dialer_page (NuxelDialer *dialer)
     
     int n_keys = sizeof (keys) / sizeof (keys[0]);
     for (int i = 0; i < n_keys; i += 2) {
-        int row = i / 2;
+        int row = (i / 2) / 3;
         int col = (i / 2) % 3;
         
         GtkWidget *btn = create_digit_button (dialer, keys[i], keys[i + 1]);
@@ -650,6 +451,10 @@ create_dialer_page (NuxelDialer *dialer)
     g_signal_connect (dialer->call_button, "clicked",
                       G_CALLBACK (on_call_clicked), dialer);
     gtk_box_append (GTK_BOX (call_box), dialer->call_button);
+    dialer->end_button=gtk_button_new_with_label("Answer");
+    g_signal_connect(dialer->end_button,"clicked",G_CALLBACK(native_answer),dialer);
+    gtk_widget_set_visible(dialer->end_button,FALSE);
+    gtk_box_append(GTK_BOX(call_box),dialer->end_button);
     
     gtk_box_append (GTK_BOX (page), call_box);
     

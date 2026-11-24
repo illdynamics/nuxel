@@ -11,6 +11,7 @@
 #include <gio/gio.h>
 /* Shared phone data layer: message threads + the honest capability model. */
 #include "nuxel-phone-data.h"
+#include "nuxel-radio-client.h"
 
 /* ============================================================
  * Data structures
@@ -21,6 +22,8 @@ typedef struct {
     gchar   *text;
     gchar   *timestamp;
     gboolean incoming;
+    guint native_id;
+    gchar *state;
 } Message;
 
 typedef struct {
@@ -52,6 +55,11 @@ typedef struct {
     GCancellable    *cancellable;
     gboolean         modem_ready;
     
+    NuxelRadioClient radio;
+    GArray *native_ids;
+    guint native_index;
+    gboolean refreshing, refresh_again, sending;
+
     /* Data */
     GPtrArray *conversations;    /* Array of Conversation */
     Conversation *active_conversation;
@@ -130,6 +138,7 @@ message_free(gpointer data)
         g_free(msg->number);
         g_free(msg->text);
         g_free(msg->timestamp);
+        g_free(msg->state);
         g_free(msg);
     }
 }
@@ -157,160 +166,102 @@ find_or_create_conversation(NuxelMessages *app, const gchar *number)
     return conv;
 }
 
-/* ============================================================
- * SMS Handling via ModemManager (GDBus) + Nuxel bridge mock
- * ============================================================
- * On a real target we subscribe to
- *   org.freedesktop.ModemManager1.Modem.Messaging: 'Added'
- *   and send via that interface's Send(recipient, text).
- * When ModemManager is absent (ARM64 UTM VM mock), we fall back
- * to the Nuxel bridge (org.nuxel.Bridge.SmsSend) gateway pattern.
- * ============================================================ */
-
-/* Send completion callback for the ModemManager Messaging.Send() path. */
-static void
-on_mm_send_ready(GObject *source, GAsyncResult *res, NuxelMessages *app)
+/* Native IDs and status stay authoritative in Radio1's durable SQLite store.
+ * They are rendered here, never copied into a second outgoing queue. */
+static void native_refresh(gpointer user);
+static void native_next(NuxelMessages *app);
+static void native_message(GVariant *reply,const GError *error,gpointer user)
 {
-    GError *error = NULL;
-    GVariant *result =
-        g_dbus_connection_call_finish(app->mm_conn, res, &error);
-
-    if (error) {
-        g_warning("[Messages] ModemManager Send failed: %s", error->message);
-        g_error_free(error);
-        return;
-    }
-    if (result)
-        g_variant_unref(result);
-
-    g_debug("[Messages] SMS sent successfully via ModemManager");
-    if (app->active_conversation)
-        open_conversation(app, app->active_conversation);
+    NuxelMessages *app=user;
+    guint id=g_array_index(app->native_ids,guint,app->native_index-1);
+    if(reply && !error) {
+        GVariant *dict=g_variant_get_child_value(reply,0);
+        const char *peer="",*body="",*state="unknown",*direction="",*stamp="";
+        g_variant_lookup(dict,"peer","&s",&peer);g_variant_lookup(dict,"text","&s",&body);
+        g_variant_lookup(dict,"state","&s",&state);g_variant_lookup(dict,"direction","&s",&direction);
+        g_variant_lookup(dict,"timestamp","&s",&stamp);
+        Conversation *conv=find_or_create_conversation(app,peer);
+        Message *msg=NULL;
+        for(guint i=0;i<conv->messages->len;i++) {
+            Message *candidate=g_ptr_array_index(conv->messages,i);
+            if(candidate->native_id==id) { msg=candidate;break; }
+        }
+        if(!msg) {
+            msg=message_new(peer,body,!strcmp(direction,"in"));msg->native_id=id;
+            g_ptr_array_add(conv->messages,msg);
+        }
+        g_free(msg->text);msg->text=g_strdup(body);
+        g_free(msg->state);msg->state=g_strdup(state);
+        g_free(msg->timestamp);
+        g_free(msg->state);msg->timestamp=g_strdup(stamp);
+        conv->last_message=msg;
+        g_variant_unref(dict);
+    } else if(error) gtk_label_set_text(GTK_LABEL(app->capability_label),error->message);
+    native_next(app);
 }
-
-/* Send completion callback for the Nuxel bridge (SmsSend) mock path. */
-static void
-on_bridge_send_ready(GObject *source, GAsyncResult *res, NuxelMessages *app)
+static void native_next(NuxelMessages *app)
 {
-    GError *error = NULL;
-    GVariant *result =
-        g_dbus_connection_call_finish(app->mm_conn, res, &error);
-    if (error) {
-        g_warning("[Messages] Bridge SmsSend failed: %s", error->message);
-        g_error_free(error);
+    if(app->native_index<app->native_ids->len) {
+        guint id=g_array_index(app->native_ids,guint,app->native_index++);
+        nuxel_radio_call(&app->radio,"GetSms",g_variant_new("(u)",id),"sms:receive",native_message,app);
         return;
     }
-    if (result)
-        g_variant_unref(result);
-    g_debug("[Messages] SMS sent successfully via bridge mock");
-    if (app->active_conversation)
-        open_conversation(app, app->active_conversation);
-}
-
-/* Send an SMS via the real ModemManager Messaging.Send() interface. */
-static void
-send_message_via_modem(NuxelMessages *app, const gchar *number, const gchar *text)
-{
-    if (app->mm_ready && app->mm_messaging && app->mm_conn) {
-        const gchar *iface =
-            "org.freedesktop.ModemManager1.Modem.Messaging";
-        g_dbus_connection_call(
-            app->mm_conn,
-            "org.freedesktop.ModemManager1",
-            app->mm_modem_path,
-            iface,
-            "Send",
-            g_variant_new("(ss)", number, text),
-            G_VARIANT_TYPE("(o)"),
-            G_DBUS_CALL_FLAGS_NONE,
-            -1,
-            app->cancellable,
-            (GAsyncReadyCallback)on_mm_send_ready,
-            app);
-        return;
-    }
-
-    /* Fallback: route through the Nuxel bridge mock (VM mode). */
-    if (app->bridge_mock && app->mm_conn) {
-        g_dbus_connection_call(
-            app->mm_conn,
-            "org.nuxel.Bridge",
-            "/org/nuxel/Bridge",
-            "org.nuxel.Bridge",
-            "SmsSend",
-            g_variant_new("(sss)", "org.nuxel.Messages", number, text),
-            G_VARIANT_TYPE("(s)"),
-            G_DBUS_CALL_FLAGS_NONE,
-            -1,
-            app->cancellable,
-            (GAsyncReadyCallback)on_bridge_send_ready,
-            app);
-        return;
-    }
-
-    g_warning("[Messages] No send backend available (ModemManager or bridge mock)");
-}
-
-/*
- * Handler for org.freedesktop.ModemManager1.Modem.Messaging 'Added' signal.
- * The signal payload is the new SMS object path (object 'o'), a boolean
- * (storage 'b') and a bool of whether it was received ('b').
- */
-static void
-on_messaging_added(GDBusConnection *connection,
-                   const gchar    *sender_name,
-                   const gchar    *object_path,
-                   const gchar    *interface_name,
-                   const gchar    *signal_name,
-                   GVariant       *parameters,
-                   gpointer        user_data)
-{
-    NuxelMessages *app = user_data;
-    g_debug("[Messages] D-Bus signal received: "
-            "org.freedesktop.ModemManager1.Modem.Messaging Added");
-
-    const gchar *sms_path = NULL;
-    g_variant_get_child(parameters, 0, "o", &sms_path);
-    if (!sms_path)
-        return;
-
-    /* Read the SMS properties via org.freedesktop.DBus.Properties. */
-    GVariant *props = g_dbus_connection_call_sync(
-        app->mm_conn,
-        "org.freedesktop.ModemManager1",
-        sms_path,
-        "org.freedesktop.DBus.Properties",
-        "GetAll",
-        g_variant_new("(s)", "org.freedesktop.ModemManager1.Sms"),
-        G_VARIANT_TYPE("(a{sv})"),
-        G_DBUS_CALL_FLAGS_NONE,
-        -1,
-        NULL, NULL);
-    if (!props)
-        return;
-
-    const gchar *number = NULL, *text = NULL;
-    GVariant *dict = g_variant_get_child_value(props, 0);
-    GVariant *v = g_variant_lookup_value(dict, "Number", G_VARIANT_TYPE_STRING);
-    if (v) { number = g_variant_get_string(v, NULL); g_variant_unref(v); }
-    v = g_variant_lookup_value(dict, "Text", G_VARIANT_TYPE_STRING);
-    if (v) { text = g_variant_get_string(v, NULL); g_variant_unref(v); }
-    g_variant_unref(dict);
-    g_variant_unref(props);
-
-    if (!number || !text)
-        return;
-
-    g_debug("[Messages] SMS received from %s: %s", number, text);
-    Conversation *conv = find_or_create_conversation(app, number);
-    Message *msg = message_new(number, text, TRUE);
-    g_ptr_array_add(conv->messages, msg);
-    conv->last_message = msg;
-
-    messages_persist(app);
+    app->refreshing=FALSE;g_clear_pointer(&app->native_ids,g_array_unref);
     render_conversations(app);
-    if (app->active_conversation == conv)
-        open_conversation(app, conv);
+    if(app->active_conversation)open_conversation(app,app->active_conversation);
+    if(app->refresh_again) { app->refresh_again=FALSE;native_refresh(app); }
+}
+static void native_list(GVariant *reply,const GError *error,gpointer user)
+{
+    NuxelMessages *app=user;
+    if(!reply || error) {
+        app->refreshing=FALSE;
+        gtk_label_set_text(GTK_LABEL(app->capability_label),error ? error->message : "Inbox unavailable");return;
+    }
+    GVariant *ids=g_variant_get_child_value(reply,0);
+    app->native_ids=g_array_new(FALSE,FALSE,sizeof(guint));app->native_index=0;
+    GVariantIter iter;guint id;g_variant_iter_init(&iter,ids);
+    while(g_variant_iter_next(&iter,"u",&id))g_array_append_val(app->native_ids,id);
+    g_variant_unref(ids);native_next(app);
+}
+static void native_status(GVariant *reply,const GError *error,gpointer user)
+{
+    NuxelMessages *app=user;
+    if(!reply || error) {
+        app->refreshing=FALSE;app->modem_ready=FALSE;
+        gtk_label_set_text(GTK_LABEL(app->capability_label),"Native SMS unavailable");return;
+    }
+    GVariant *dict=g_variant_get_child_value(reply,0);
+    const char *storage="unknown",*ready="unknown",*domain="unknown";
+    g_variant_lookup(dict,"storage","&s",&storage);g_variant_lookup(dict,"device_ready","&s",&ready);
+    g_variant_lookup(dict,"domain","&s",&domain);
+    app->modem_ready=!strcmp(storage,"available") && !strcmp(ready,"accepted");
+    gchar *label=g_strdup_printf("Native SMS · %s · storage %s · transport %s. Submission is not delivery.",domain,storage,ready);
+    gtk_label_set_text(GTK_LABEL(app->capability_label),label);g_free(label);g_variant_unref(dict);
+    gtk_widget_set_sensitive(app->send_button,app->modem_ready && !app->sending);
+    nuxel_radio_call(&app->radio,"ListSms",NULL,"sms:receive",native_list,app);
+}
+static void native_refresh(gpointer user)
+{
+    NuxelMessages *app=user;
+    if(app->refreshing) { app->refresh_again=TRUE;return; }
+    app->refreshing=TRUE;
+    nuxel_radio_call(&app->radio,"GetSmsStatus",NULL,NULL,native_status,app);
+}
+static void native_sent(GVariant *reply,const GError *error,gpointer user)
+{
+    NuxelMessages *app=user;
+    if(!reply || error) {
+        /* A lost reply might follow a durable queue insertion. Do not retry. */
+        gboolean denied=error && g_error_matches(error,G_IO_ERROR,G_IO_ERROR_PERMISSION_DENIED);
+        app->sending=!denied;
+        gtk_widget_set_sensitive(app->send_button,denied);
+        gtk_label_set_text(GTK_LABEL(app->capability_label),denied ? error->message :
+            "Submission outcome uncertain or rejected. Check the native outbox before another attempt.");
+        return;
+    }
+    app->sending=FALSE;gtk_editable_set_text(GTK_EDITABLE(app->message_entry),"");
+    native_refresh(app);
 }
 
 /* ============================================================
@@ -367,28 +318,10 @@ send_message(NuxelMessages *app)
     
     if (!number || strlen(number) == 0) return;
     
-    /* Add to local messages */
-    Conversation *conv = find_or_create_conversation(app, number);
-    Message *msg = message_new(number, text, FALSE);
-    g_ptr_array_add(conv->messages, msg);
-    conv->last_message = msg;
-    
-    /* Send via modem (or record honestly that there is no backend) */
-    if (!app->modem_ready) {
-        msg->text = g_strdup_printf("%s", text);
-    }
-    send_message_via_modem(app, number, text);
-    messages_persist(app);
-    messages_update_capabilities(app);
-    
-    /* Clear entry */
-    gtk_editable_set_text(GTK_EDITABLE(app->message_entry), "");
-    
-    /* Update views */
-    render_conversations(app);
-    if (app->active_conversation == conv) {
-        open_conversation(app, conv);
-    }
+    if(app->sending || !nuxel_radio_available(&app->radio))return;
+    app->sending=TRUE;gtk_widget_set_sensitive(app->send_button,FALSE);
+    nuxel_radio_call(&app->radio,"SendSms",g_variant_new("(ss)",number,text),
+                     "sms:send",native_sent,app);
 }
 
 static void
@@ -463,7 +396,9 @@ create_message_widget(Message *msg)
     gtk_widget_set_margin_bottom(bubble, 8);
     gtk_box_append(GTK_BOX(bubble), text);
     
-    GtkWidget *time = gtk_label_new(msg->timestamp);
+    gchar *status_text=g_strdup_printf("%s · %s",msg->timestamp,msg->state ? msg->state : "local history");
+    GtkWidget *time = gtk_label_new(status_text);
+    g_free(status_text);
     gtk_widget_add_css_class(time, "caption");
     gtk_label_set_xalign(GTK_LABEL(time), 1.0);
     gtk_widget_set_margin_start(bubble, 8);
@@ -530,13 +465,17 @@ messages_persist(NuxelMessages *app)
     if (!app->store_path || !app->conversations)
         return;
 
+    /* Preserve contacts and call history written by the other phone apps. */
     nuxel_phone_store_free(&app->store);
     nuxel_phone_store_init(&app->store);
+    if(nuxel_phone_store_load(&app->store,app->store_path)<0)return;
+    free(app->store.messages);app->store.messages=NULL;app->store.n_messages=0;app->store.cap_messages=0;
 
     for (guint i = 0; i < app->conversations->len; i++) {
         Conversation *conv = g_ptr_array_index(app->conversations, i);
         for (guint j = 0; j < conv->messages->len; j++) {
             Message *m = g_ptr_array_index(conv->messages, j);
+            if(m->native_id)continue;
             const gchar *state = m->incoming ? "received"
                                : (app->mm_ready ? "sent"
                                : (app->bridge_mock ? "queued-bridge" : "no-modem"));
@@ -698,68 +637,8 @@ load_conversations(NuxelMessages *app)
 static void
 modem_connect(NuxelMessages *app)
 {
-    GError *err = NULL;
-
-    app->mm_conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &err);
-    if (!app->mm_conn) {
-        g_warning("[Messages] System bus unavailable: %s",
-                  err ? err->message : "unknown");
-        if (err) g_error_free(err);
-        return;
-    }
-
-    /* Probe for a real ModemManager modem. */
-    GVariant *path = g_dbus_connection_call_sync(
-        app->mm_conn,
-        "org.freedesktop.ModemManager1",
-        "/org/freedesktop/ModemManager1",
-        "org.freedesktop.DBus.Properties",
-        "Get",
-        g_variant_new("(ss)", "org.freedesktop.ModemManager1", "Modems"),
-        G_VARIANT_TYPE("(v)"),
-        G_DBUS_CALL_FLAGS_NONE,
-        -1, NULL, NULL);
-
-    if (path) {
-        GVariant *value = g_variant_get_variant(
-            g_variant_get_child_value(path, 0));
-        if (g_variant_n_children(value) > 0) {
-            const gchar *modem_path = NULL;
-            g_variant_get_child(value, 0, "o", &modem_path);
-            app->mm_modem_path = g_strdup(modem_path);
-            app->mm_ready = TRUE;
-
-            /* Subscribe to Modem.Messaging 'Added' signals. */
-            app->mm_messaging = g_dbus_proxy_new_sync(
-                app->mm_conn,
-                G_DBUS_PROXY_FLAGS_NONE, NULL,
-                "org.freedesktop.ModemManager1",
-                app->mm_modem_path,
-                "org.freedesktop.ModemManager1.Modem.Messaging",
-                NULL, &err);
-            if (app->mm_messaging && !err) {
-                g_signal_connect(app->mm_messaging, "g-signal",
-                                 G_CALLBACK(on_messaging_added), app);
-            }
-            g_debug("[Messages] ModemManager connected: %s", app->mm_modem_path);
-        } else {
-            g_message("[Messages] ModemManager present but no modem found — "
-                      "using bridge mock");
-            app->bridge_mock = TRUE;
-        }
-        g_variant_unref(value);
-        g_variant_unref(path);
-    } else {
-        /* ModemManager absent (VM) — use the Nuxel bridge mock gateway. */
-        g_debug("[Messages] ModemManager unavailable — using Nuxel bridge mock "
-                "(org.nuxel.Bridge.SmsSend)");
-        if (err) { g_warning("[Messages] %s", err->message); g_error_free(err); }
-        app->bridge_mock = TRUE;
-    }
-
-    app->modem_ready = app->mm_ready || app->bridge_mock;
-    messages_update_capabilities(app);
-    g_debug("[Messages] Backend ready: mm=%d mock=%d", app->mm_ready, app->bridge_mock);
+    gtk_widget_set_sensitive(app->send_button,FALSE);
+    nuxel_radio_connect(&app->radio,"org.nuxel.Messages",native_refresh,app);
 }
 
 /* ============================================================

@@ -62,17 +62,7 @@ if gtk4_dep.found() and adwaita_dep.found()
 
     extra_c_args = []
 
-    # ModemManager client library: only for the dialer and only when the dev
-    # package is present. The dialer guards that header behind HAVE_MM_GLIB.
-    if app_name == 'nuxel-dialer'
-      if mm_glib_dep.found()
-        deps += mm_glib_dep
-        extra_c_args += '-DHAVE_MM_GLIB'
-      else
-        extra_c_args += '-DNUXEL_NO_MM=1'
-      endif
-    endif
-
+    # Radio1 supplies native call control; no libmm-glib dependency.
     # nuxel-contacts and nuxel-permissions both parse/store JSON via
     # json-glib, so link them against json-glib when it is present in the
     # sysroot (json-glib-devel). Declared required: false so a sysroot without
@@ -92,6 +82,11 @@ if gtk4_dep.found() and adwaita_dep.found()
     if app_name == 'nuxel-dialer' or app_name == 'nuxel-contacts' or app_name == 'nuxel-messages'
       app_sources += 'nuxel-phone-data/nuxel-phone-data.c'
       app_includes += include_directories('nuxel-phone-data')
+    endif
+
+    if app_name == 'nuxel-dialer' or app_name == 'nuxel-messages'
+      deps += dependency('json-glib-1.0')
+      app_sources += 'nuxel-phone-data/nuxel-radio-client.c'
     endif
 
     executable(app_name, app_sources,
@@ -133,3 +128,10 @@ install_data(
   ],
   install_dir: get_option('datadir') / 'applications',
 )
+
+if gio_dep.found() and json_glib_dep.found()
+  radio_client_test = executable('nuxel-radio-client-test',
+    ['nuxel-phone-data/nuxel-radio-client.c', 'nuxel-phone-data/nuxel-radio-client-test.c'],
+    dependencies: [gio_dep, json_glib_dep], c_args: ['-Wall', '-Wextra', '-Werror'])
+  test('nuxel-radio-client', radio_client_test)
+endif
